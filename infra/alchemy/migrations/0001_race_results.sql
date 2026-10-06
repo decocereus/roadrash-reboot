@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS race_results (
+  room_code TEXT PRIMARY KEY,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

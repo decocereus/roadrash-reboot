@@ -1,0 +1,37 @@
+{
+  "name": "roadrash-reboot",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "infra/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "check": "bun run lint && bun run format:check && bun run typecheck && bun run test && bun run build",
+    "test:e2e": "playwright test",
+    "lint": "oxlint .",
+    "lint:style": "ultracite check apps/web/src apps/web/vite.config.ts",
+    "format:check": "node scripts/format-check.mjs",
+    "format": "node scripts/format-check.mjs --write",
+    "typecheck": "node scripts/run-workspaces.mjs typecheck",
+    "test": "node scripts/run-workspaces.mjs test",
+    "build": "node scripts/run-workspaces.mjs build",
+    "architecture": "node scripts/check-architecture.mjs",
+    "doctor": "node scripts/react-doctor.mjs",
+    "lint:architecture": "bun run architecture",
+    "quality": "bun run check && bun run lint:style && bun run architecture && bun run doctor"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "1.85.0",
+    "@playwright/test": "1.63.0",
+    "effect": "4.0.0-rc.117",
+    "oxfmt": "0.70.0",
+    "oxlint": "1.85.0",
+    "react-doctor": "0.9.14",
+    "typescript": "7.0.2",
+    "ultracite": "7.12.0"
+  },
+  "packageManager": "bun@1.3.5"
+}

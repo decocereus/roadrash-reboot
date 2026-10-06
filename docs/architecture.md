@@ -1,6 +1,12 @@
 # Architecture plan for the motorcycle combat racer
 
-Status: stack direction agreed, 2026-09-23. Capacity and gameplay details remain to be proved. No game implementation or deployment has begun.
+Status: first local playable verified, 2026-09-24. No public deployment or capacity claim yet. This document records the target architecture; [first-playable.md](first-playable.md) records the current build and its tests.
+
+## Current implementation
+
+The Bun workspace now has a Vite/React/Three.js browser app, a Cloudflare Worker and SQLite Durable Object per room, an Effect 4 schema protocol, and a shared fixed-step TypeScript race simulation. The room accepts up to four people, fills empty seats with bots, runs at 30 Hz, and owns movement, traffic collisions, attacks, crash recovery, and finish placement. The browser renders server snapshots on a curved city road with original rider, traffic, and scenery sprites, plus synthesized sound cues. The Alchemy program defines Cloudflare resources; the local development path uses Wrangler and Vite.
+
+This is a local prototype. The browser currently renders authoritative snapshots without client prediction, replay, or latency compensation. Room access uses an opaque bearer ticket; it does not yet provide accounts or signed guest identity. The Alchemy plan reaches Cloudflare profile configuration, so the infrastructure definition is present but no resources have been deployed. Real-network playtests, 500 CCU load testing, production abuse controls, content clearance, and payments remain separate gates. The first version uses four riders per room; the 4-8 rider range below is a later capacity option.
 
 ## Goal and launch assumptions
 
@@ -14,12 +20,12 @@ The first playable release is an indie launch for desktop browsers. The earlier 
 | --- | --- | --- |
 | Browser | TypeScript, Vite, Three.js with WebGL 2 | One web codebase and direct control over rendering and the arcade feel. Three.js currently describes WebGPU support as experimental. |
 | Tooling | Bun with a committed lockfile; Cloudflare workerd in production | Alchemy's current development and deployment guides use Bun. Production Workers run on Cloudflare, not Bun. |
-| Race simulation | Shared, fixed-step TypeScript package | The server owns movement, collisions, attacks, damage, and finish order. Browser code uses the same step function for local prediction. Start with simple road-relative geometry rather than a full rigid-body bike simulation. |
-| Multiplayer | Native WebSockets in a Cloudflare Durable Object, one authoritative object per race | This keeps every room independent and lets Cloudflare create rooms as demand grows. We implement the small game's prediction, interpolation, reconnection, and hit validation. |
+| Race simulation | Shared, fixed-step TypeScript package | The server owns movement, collisions, attacks, damage, and finish order. Start with simple road-relative geometry rather than a full rigid-body bike simulation; add browser prediction after measuring the first race. |
+| Multiplayer | Native WebSockets in a Cloudflare Durable Object, one authoritative object per race | This keeps every room independent and lets Cloudflare create rooms as demand grows. The first build uses server snapshots; prediction and latency handling follow measured playtests. |
 | Hosting | Cloudflare Worker with static assets, Durable Objects, D1, and optional R2 | One provider serves the owned site, API, live rooms, and durable records. No fixed first-launch server region or warm game VM. |
 | Application services | Effect at API and room boundaries | Define protocol schemas, guest identity, errors, persistence, and result ingestion. Keep the hot simulation step as a plain TypeScript function. |
 | Infrastructure | Alchemy for Cloudflare resources and stages | Define the site, Worker, room namespace, D1, and later R2 in one TypeScript deployment program. Pin compatible Alchemy and Effect versions with a lockfile. |
-| Durable data | Durable Object SQLite for room lifecycle; D1 for profiles, race summaries, and leaderboards; R2 when art or replays justify it | Persist race transitions and final results, not every physics frame. |
+| Durable data | Durable Object SQLite for room lifecycle; D1 for race summaries; profiles and leaderboards later; R2 when art or replays justify it | Persist race transitions and final results, not every physics frame. |
 | Art | Procedural Three.js geometry for the first bikes and road; optional GLB assets later | Blender is a tool choice, not a requirement. Detailed hero bikes, riders, or landmarks can be modeled or generated separately and loaded as GLB. |
 
 This stack deliberately uses Effect and Alchemy. Effect belongs around network, identity, storage, and error boundaries; the pure race simulation remains easy to test and profile. Alchemy currently has a beta v2 line that requires a compatible Effect 4 release candidate, so pin exact tested versions, commit the lockfile, use separate preview/staging/production stages, and smoke-test deployment before relying on an upgrade. [Alchemy release notes](https://alchemy.run/blog/2026-09-17-beta-78/), [Alchemy Cloudflare Vite guide](https://alchemy.run/cloudflare/frontend/vite-spa/), [Alchemy Durable Objects](https://alchemy.run/cloudflare/compute/durable-objects/).
@@ -32,13 +38,13 @@ Rust or Go would add a second language and a browser/server simulation boundary 
 
 The original Windows game already runs in a third-party [browser emulator at DOS.Zone](https://dos.zone/road-rash/). We reached a playable race there during research, though startup was slow and the emulator reported missing-file and MIDI warnings. That proves browser delivery is possible, not that we have rights to reuse or distribute that copy. Browser-native inspired games such as [Roadkill](https://gadgaming.itch.io/roadkill) and [Road Bash](https://megacode.itch.io/road-bash) also exist. Our harder job is a polished 3D multiplayer game with predictable latency and original content.
 
-The usual architecture for a fast multiplayer game is an authoritative room server. Clients send controls, predict their own immediate motion, and smooth remote players from server updates. The server settles hits, collisions, and results. [Colyseus's browser kart example](https://docs.colyseus.io/netcode) shows the pattern, but its Node.js room server is not part of this Cloudflare-only plan. We will implement the narrower netcode needed for 4-8 rider races inside Durable Objects. That saves a second hosting provider and means prediction, reconciliation, lag handling, and reconnect behavior need careful tests.
+The usual architecture for a fast multiplayer game is an authoritative room server. Clients send controls; the server settles hits, collisions, and results. [Colyseus's browser kart example](https://docs.colyseus.io/netcode) shows prediction and smoothing patterns, but its Node.js room server is not part of this Cloudflare-only plan. The first four-rider prototype renders server snapshots. Playtests will show how much prediction, reconciliation, and remote smoothing to add before a broader launch.
 
 ## How a race works
 
 ```mermaid
 flowchart LR
-    B[Browser: Three.js and predicted bike] -->|HTTPS and WSS| W[Cloudflare Worker]
+    B[Browser: Three.js and input] -->|HTTPS and WSS| W[Cloudflare Worker]
     W -->|room code| R[RaceRoom Durable Object]
     R -->|authoritative updates| B
     W --> D[D1: profiles and results]
@@ -47,10 +53,10 @@ flowchart LR
 ```
 
 1. The browser loads the site from a Cloudflare Worker with static assets. A guest can create or join an invite race without a full account.
-2. The Worker issues a short-lived signed guest identity and a random room code. It routes the WSS upgrade to the corresponding RaceRoom Durable Object. That object alone owns its room; there is no global lobby object in the first slice.
+2. The Worker issues an opaque room ticket and a random room code. It routes the WSS upgrade to the corresponding RaceRoom Durable Object. That object alone owns its room; there is no global lobby object in the first slice.
 3. Each client sends bounded, sequenced control inputs, not position claims. The room advances the fixed-step race and owns collisions, hit windows, damage, traffic, placement, and finish order. Effect validates network messages and models room/session errors at the boundary; a plain TypeScript step function handles each tick.
-4. The local bike responds immediately through client prediction. When a server update arrives, the client replays unacknowledged inputs and corrects its position. Other riders interpolate between updates. The server applies bounded latency compensation to melee hit checks, then broadcasts the accepted event.
-5. A brief network disconnect may rejoin with the same guest identity while the room remains active. The rider then coasts or follows a documented safe input policy. The room records lifecycle transitions and occasional checkpoints in Durable Object SQLite, then records a final result there before attempting a D1 write. D1 uses a unique race ID so retries cannot duplicate a result. If the object loses its in-memory race and cannot restore a valid checkpoint after a host failure, mark that race aborted rather than fabricate a winner. Idle rooms may hibernate after the race timer stops; active ticking rooms remain awake. On an idle wake, rebuild attached player sessions from WebSocket attachments.
+4. The first browser renders server snapshots and sends inputs at a bounded client cadence. Prediction, reconciliation, remote interpolation, and latency compensation are planned only after local and real-network feel tests. The room broadcasts accepted events and retains authority over placement.
+5. A reconnect with the same room ticket replaces the prior socket. A disconnected rider receives neutral input when no fresh input exists. The room records lifecycle transitions and occasional checkpoints in Durable Object SQLite and writes the final summary to D1 when configured. D1 uses a unique room code so retries cannot duplicate a result. If the object loses its in-memory race and cannot restore a valid checkpoint after a host failure, it marks that race aborted. Idle rooms may hibernate after the race timer stops; active ticking rooms remain awake. On an idle wake, attached player sessions are rebuilt from WebSocket attachments.
 
 The starting tuning hypothesis is a 30 Hz server simulation, 20 input updates per second per rider, and 10-20 state updates per second, with a 60 FPS browser target on a representative desktop. These are design inputs, not measured capacity claims. Tune them after network and device tests. Shared TypeScript rules help prediction but do not guarantee byte-identical floating-point replay across browsers; server state remains authoritative. Cloudflare's hibernation WebSocket API can keep idle sockets connected, but scheduled tick timers prevent hibernation during an active race. [Cloudflare WebSockets](https://developers.cloudflare.com/durable-objects/best-practices/websockets/), [Durable Object lifecycle](https://developers.cloudflare.com/durable-objects/concepts/durable-object-lifecycle/), [Alchemy hibernation guide](https://alchemy.run/cloudflare/compute/hibernatable-websockets/).
 
@@ -90,7 +96,7 @@ Treat monetization as a separate design decision after a fun, stable race. Cosme
 4. **Visual and content pass.** Replace placeholders selectively with original models, animation, sound, and the chosen visual style. Set scene performance and asset budgets on representative desktop machines.
 5. **Commercial gate.** Clear the name and rider designs, settle the progression and monetization model, and add abuse controls, support, analytics, and payment operations before a broad launch.
 
-The next work session should settle the core game feel: speed, steering weight, combat timing, camera, and how traffic changes a race. Those choices drive the simulation and visual direction. The architecture is ready for a two-player technical spike, but this document remains a planning artifact until the user asks to build.
+The next product pass should tune speed, steering weight, combat timing, camera, and traffic after the local first playable clears its browser test. Those choices drive the final art direction and later prediction work.
 
 ## Sources checked
 
