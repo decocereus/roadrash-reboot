@@ -1,13 +1,37 @@
 import { defineConfig } from "oxlint";
+import core from "ultracite/oxlint/core";
+import vitest from "ultracite/oxlint/vitest";
 
 export default defineConfig({
-  categories: {
-    correctness: "error",
-  },
+  extends: [core, vitest],
+  ignorePatterns: [
+    ...core.ignorePatterns,
+    "**/dist/**",
+    "**/routeTree.gen.ts",
+    "tools/oxlint/anti-slop/**",
+  ],
   jsPlugins: [
+    { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },
+  ],
+  overrides: [
     {
-      name: "anti-slop",
-      specifier: "./tools/oxlint/anti-slop/index.ts",
+      files: ["alchemy.run.ts"],
+      rules: {
+        "func-names": "off",
+        "max-classes-per-file": "off",
+      },
+    },
+    {
+      files: ["apps/web/**/*.{ts,tsx}", "packages/ui/**/*.{ts,tsx}"],
+      rules: {
+        "func-style": "off",
+        "no-await-in-loop": "off",
+        "no-nested-ternary": "off",
+        "no-shadow": "off",
+        "no-use-before-define": "off",
+        "promise/prefer-await-to-callbacks": "off",
+        "promise/prefer-await-to-then": "off",
+      },
     },
   ],
   rules: {

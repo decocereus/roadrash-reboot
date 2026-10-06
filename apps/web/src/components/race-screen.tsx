@@ -1,0 +1,207 @@
+import { Button } from "@racer/ui/components/button";
+import { useEffect, useRef, useState } from "react";
+
+import { idleHud } from "../game/hud.ts";
+import type { GameHandle, HudState } from "../game/hud.ts";
+
+const notices = {
+  "": "",
+  air: "Air",
+  close: "Close call",
+  wipeout: "Wipeout",
+} as const;
+
+function raceClock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const rest = (seconds - minutes * 60).toFixed(2).padStart(5, "0");
+  return `${minutes}:${rest}`;
+}
+
+function Key({ children }: { readonly children: string }) {
+  return (
+    <kbd className="border-border bg-background/60 rounded border px-1.5 py-0.5 font-mono text-[11px]">
+      {children}
+    </kbd>
+  );
+}
+
+function TitleCard({
+  ready,
+  onRide,
+}: {
+  readonly ready: boolean;
+  readonly onRide: () => void;
+}) {
+  return (
+    <section className="absolute bottom-10 left-6 max-w-sm sm:left-10">
+      <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">
+        Ridge Road · 4.2 km
+      </p>
+      <h1 className="mt-2 text-6xl leading-none font-black tracking-tight italic sm:text-7xl">
+        RUSHLINE
+      </h1>
+      <p className="text-foreground/85 mt-3 text-base">
+        Hold it open, lean through the bends, and stay out of the oncoming lane.
+      </p>
+      <div className="mt-6 flex items-center gap-4">
+        <Button disabled={!ready} onClick={onRide} size="lg">
+          {ready ? "Ride" : "Loading"}
+        </Button>
+        <span className="text-muted-foreground text-xs">
+          or press <Key>Enter</Key>
+        </span>
+      </div>
+      <dl className="text-muted-foreground mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+        <dt>
+          <Key>W</Key> <Key>↑</Key>
+        </dt>
+        <dd>Throttle</dd>
+        <dt>
+          <Key>S</Key> <Key>↓</Key> <Key>Space</Key>
+        </dt>
+        <dd>Brake</dd>
+        <dt>
+          <Key>A</Key> <Key>D</Key> <Key>←</Key> <Key>→</Key>
+        </dt>
+        <dd>Lean</dd>
+        <dt>
+          <Key>R</Key> <Key>M</Key>
+        </dt>
+        <dd>Restart, mute</dd>
+      </dl>
+    </section>
+  );
+}
+
+function Results({
+  hud,
+  onRide,
+}: {
+  readonly hud: HudState;
+  readonly onRide: () => void;
+}) {
+  return (
+    <section className="bg-card/85 notice-in absolute top-1/2 left-1/2 w-80 -translate-x-1/2 -translate-y-1/2 rounded-xl border p-6 backdrop-blur">
+      <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">
+        Ridge Road
+      </p>
+      <p className="numeric mt-2 text-5xl font-black italic">
+        {raceClock(hud.seconds)}
+      </p>
+      <dl className="text-muted-foreground mt-4 grid grid-cols-2 gap-y-1 text-sm">
+        <dt>Top speed</dt>
+        <dd className="text-foreground numeric text-right">
+          {Math.round(hud.topSpeedKmh)} km/h
+        </dd>
+        <dt>Crashes</dt>
+        <dd className="text-foreground numeric text-right">{hud.crashes}</dd>
+      </dl>
+      <Button className="mt-6 w-full" onClick={onRide} size="lg">
+        Ride again
+      </Button>
+    </section>
+  );
+}
+
+function Dash({ hud }: { readonly hud: HudState }) {
+  return (
+    <>
+      <div className="absolute top-5 left-1/2 w-[min(28rem,60vw)] -translate-x-1/2">
+        <div className="bg-background/50 h-1.5 overflow-hidden rounded-full">
+          <div
+            className="bg-primary h-full origin-left"
+            style={{ transform: `scaleX(${hud.progress})` }}
+          />
+        </div>
+      </div>
+      <p className="numeric absolute top-4 right-6 font-mono text-xl font-semibold drop-shadow">
+        {raceClock(hud.seconds)}
+      </p>
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center drop-shadow-lg">
+        <p className="numeric text-7xl leading-none font-black italic">
+          {Math.round(hud.speedKmh)}
+        </p>
+        <p className="text-foreground/80 font-mono text-xs tracking-[0.3em]">
+          KM/H
+        </p>
+      </div>
+    </>
+  );
+}
+
+export function RaceScreen() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const gameRef = useRef<GameHandle | null>(null);
+  const [hud, setHud] = useState<HudState>(idleHud);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+    let disposed = false;
+    void import("../game/game.ts").then(({ createGame }) => {
+      if (disposed) {
+        return;
+      }
+      gameRef.current = createGame(canvas, setHud);
+      setReady(true);
+    });
+    return () => {
+      disposed = true;
+      gameRef.current?.dispose();
+      gameRef.current = null;
+    };
+  }, []);
+
+  const ride = () => gameRef.current?.startRace();
+  const live = hud.phase === "racing" || hud.phase === "countdown";
+
+  return (
+    <main className="fixed inset-0 overflow-hidden bg-[#c9dbe8] select-none">
+      <canvas
+        aria-label="Motorcycle race on Ridge Road"
+        className="block size-full"
+        ref={canvasRef}
+      />
+      {hud.phase === "attract" && (
+        <>
+          <div className="from-background/80 via-background/30 pointer-events-none absolute inset-0 bg-gradient-to-tr to-transparent" />
+          <TitleCard onRide={ride} ready={ready} />
+        </>
+      )}
+      {(live || hud.phase === "finished") && <Dash hud={hud} />}
+      {hud.phase === "countdown" && (
+        <p
+          className="numeric notice-in absolute top-1/3 left-1/2 -translate-x-1/2 text-9xl font-black italic drop-shadow-lg"
+          key={hud.countdown}
+        >
+          {hud.countdown}
+        </p>
+      )}
+      {hud.phase === "racing" && hud.notice !== "" && (
+        <p
+          className="text-primary notice-in absolute top-1/4 left-1/2 -translate-x-1/2 text-4xl font-black tracking-tight uppercase italic drop-shadow-lg"
+          key={hud.notice}
+        >
+          {notices[hud.notice]}
+          {hud.notice === "air" && ` ${hud.noticeDetail}`}
+        </p>
+      )}
+      {hud.phase === "finished" && <Results hud={hud} onRide={ride} />}
+      {hud.phase !== "attract" && (
+        <button
+          className="text-foreground/80 hover:text-foreground absolute top-4 left-6 font-mono text-xs tracking-[0.2em] uppercase"
+          onClick={(event) => {
+            gameRef.current?.toggleMute();
+            event.currentTarget.blur();
+          }}
+          type="button"
+        >
+          Sound {hud.muted ? "off" : "on"}
+        </button>
+      )}
+    </main>
+  );
+}

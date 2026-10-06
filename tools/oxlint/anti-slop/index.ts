@@ -16,7 +16,6 @@ import { noUnsafeDictionaryTypeRule } from "./rules/no-unsafe-dictionary-type.ts
 import { noWidenThenAssertRule } from "./rules/no-widen-then-assert.ts";
 import { requireSafetyCommentForTypeAssertionRule } from "./rules/require-safety-comment-for-type-assertion.ts";
 
-/** Generic Oxlint rules that reject low-evidence and low-signal implementation patterns. */
 const antiSlopPlugin = definePlugin({
   meta: { name: "anti-slop" },
   rules: {
@@ -34,7 +33,8 @@ const antiSlopPlugin = definePlugin({
     "no-unknown-returns": noUnknownReturnsRule,
     "no-unknown-type-aliases": noUnknownTypeAliasesRule,
     "no-widen-then-assert": noWidenThenAssertRule,
-    "require-safety-comment-for-type-assertion": requireSafetyCommentForTypeAssertionRule,
+    "require-safety-comment-for-type-assertion":
+      requireSafetyCommentForTypeAssertionRule,
   },
 });
 

@@ -7,7 +7,6 @@ function containsForbiddenSymbolName(name: string): boolean {
   return name.toLowerCase().includes(FORBIDDEN_SYMBOL_NAME);
 }
 
-/** Ban the case-insensitive substring "shape" in every JavaScript and TypeScript symbol name. */
 export const noForbiddenTermInSymbolNamesRule = defineRule({
   meta: {
     type: "problem",
@@ -21,7 +20,9 @@ export const noForbiddenTermInSymbolNamesRule = defineRule({
     },
   },
   create(context) {
-    const reportForbiddenSymbolName = (node: ESTree.Node & { name: string }) => {
+    const reportForbiddenSymbolName = (
+      node: ESTree.Node & { name: string }
+    ) => {
       if (!containsForbiddenSymbolName(node.name)) return;
       context.report({
         node,

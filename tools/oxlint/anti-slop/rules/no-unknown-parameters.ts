@@ -11,7 +11,9 @@ type ParameterOwner =
   | ESTree.TSFunctionType
   | ESTree.TSMethodSignature;
 
-function parameterAnnotation(parameter: Parameter): ESTree.TSTypeAnnotation | null | undefined {
+function parameterAnnotation(
+  parameter: Parameter
+): ESTree.TSTypeAnnotation | null | undefined {
   if (parameter.type === "TSParameterProperty") {
     return parameterAnnotation(parameter.parameter);
   }
@@ -39,7 +41,6 @@ function parameterName(parameter: Parameter, sourceText: string): string {
     : sourceText.replace(/\s*:\s*unknown\s*$/u, "");
 }
 
-/** Disallow unknown inputs except explicitly named error-cause enrichment. */
 export const noUnknownParametersRule = defineRule({
   meta: {
     type: "problem",
@@ -57,7 +58,10 @@ export const noUnknownParametersRule = defineRule({
       for (const parameter of node.params) {
         const annotation = parameterAnnotation(parameter);
         if (annotation?.typeAnnotation.type !== "TSUnknownKeyword") continue;
-        const name = parameterName(parameter, context.sourceCode.getText(parameter));
+        const name = parameterName(
+          parameter,
+          context.sourceCode.getText(parameter)
+        );
         if (name === "cause") continue;
         context.report({
           node: annotation.typeAnnotation,

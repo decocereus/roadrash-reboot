@@ -1,4 +1,5 @@
 import { defineRule } from "@oxlint/plugins";
+import type { ESTree } from "@oxlint/plugins";
 
 import {
   classifyUnsafeDictionary,
@@ -6,8 +7,6 @@ import {
   createTypeEnvironment,
   type TypeEnvironment,
 } from "../shared/dictionary-types.ts";
-
-import type { ESTree } from "@oxlint/plugins";
 
 const typeNodeKinds: ReadonlySet<string> = new Set([
   "JSDocNonNullableType",
@@ -66,25 +65,38 @@ function isInsideTypeAliasDeclaration(node: ESTree.Node): boolean {
   return false;
 }
 
-function isPlainAliasConsumerUse(node: ESTree.TSType, environment: TypeEnvironment): boolean {
-  if (node.type !== "TSTypeReference" || node.typeArguments?.params.length) return false;
+function isPlainAliasConsumerUse(
+  node: ESTree.TSType,
+  environment: TypeEnvironment
+): boolean {
+  if (node.type !== "TSTypeReference" || node.typeArguments?.params.length)
+    return false;
   const name = typeReferenceName(node);
-  return name !== null && environment.aliases.has(name) && !isInsideTypeAliasDeclaration(node);
+  return (
+    name !== null &&
+    environment.aliases.has(name) &&
+    !isInsideTypeAliasDeclaration(node)
+  );
 }
 
-function shouldReportType(node: ESTree.TSType, environment: TypeEnvironment): boolean {
+function shouldReportType(
+  node: ESTree.TSType,
+  environment: TypeEnvironment
+): boolean {
   if (isPlainAliasConsumerUse(node, environment)) return false;
   if (classifyUnsafeDictionary(node, environment) === null) return false;
   let current: ESTree.Node | null = node.parent;
   while (current !== null && current.type !== "Program") {
-    if (isTypeNode(current) && classifyUnsafeDictionary(current, environment) !== null)
+    if (
+      isTypeNode(current) &&
+      classifyUnsafeDictionary(current, environment) !== null
+    )
       return false;
     current = current.parent;
   }
   return true;
 }
 
-/** Disallow object-dictionary contracts whose direct value type is an unsafe escape hatch. */
 export const noUnsafeDictionaryTypeRule = defineRule({
   meta: {
     type: "problem",
@@ -125,7 +137,7 @@ export const noUnsafeDictionaryTypeRule = defineRule({
           return;
         const unsafe = classifyUnsafeDictionaryValue(
           node.typeAnnotation.typeAnnotation,
-          environment,
+          environment
         );
         if (unsafe !== null) report(node, unsafe.unsafeValue);
       },

@@ -1,17 +1,9 @@
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173,
-    strictPort: true,
-    proxy: {
-      "/api": "http://localhost:8787",
-      "/ws": {
-        target: "ws://localhost:8787",
-        ws: true,
-      },
-    },
-  },
+  build: { rolldownOptions: { external: [/^cloudflare:/u] } },
+  plugins: [tailwindcss(), tanstackStart(), viteReact()],
 });

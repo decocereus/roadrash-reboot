@@ -1,14 +1,10 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
+    "allowImportingTsExtensions": true,
+    "lib": ["ES2024"],
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "types": ["bun-types"]
+    "moduleResolution": "Bundler"
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"]
+  "include": ["src"]
 }

@@ -1,5 +1,4 @@
 import { defineRule } from "@oxlint/plugins";
-
 import type { ESTree, SourceCode } from "@oxlint/plugins";
 
 type TypeAssertion = ESTree.TSAsExpression | ESTree.TSTypeAssertion;
@@ -20,22 +19,31 @@ function isConstAssertion(node: TypeAssertion): boolean {
   );
 }
 
-function hasSafetyComment(sourceCode: SourceCode, node: TypeAssertion): boolean {
+function hasSafetyComment(
+  sourceCode: SourceCode,
+  node: TypeAssertion
+): boolean {
   let current: ESTree.Node = node;
   while (true) {
     if (
       sourceCode
         .getCommentsBefore(current)
-        .some((comment) => comment.end <= node.start && /\bSAFETY\s*:/u.test(comment.value))
+        .some(
+          (comment) =>
+            comment.end <= node.start && /\bSAFETY\s*:/u.test(comment.value)
+        )
     ) {
       return true;
     }
-    if (commentOwnerKinds.has(current.type) || current.parent.type === "Program") return false;
+    if (
+      commentOwnerKinds.has(current.type) ||
+      current.parent.type === "Program"
+    )
+      return false;
     current = current.parent;
   }
 }
 
-/** Require every non-const type assertion to state the invariant TypeScript cannot express. */
 export const requireSafetyCommentForTypeAssertionRule = defineRule({
   meta: {
     type: "problem",
@@ -50,7 +58,8 @@ export const requireSafetyCommentForTypeAssertionRule = defineRule({
   },
   create(context) {
     const checkAssertion = (node: TypeAssertion) => {
-      if (isConstAssertion(node) || hasSafetyComment(context.sourceCode, node)) return;
+      if (isConstAssertion(node) || hasSafetyComment(context.sourceCode, node))
+        return;
       context.report({ node, messageId: "missingSafetyComment" });
     };
 
