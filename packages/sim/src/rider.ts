@@ -45,7 +45,9 @@ const MOUNT_TICKS = 30;
 const SETTLE_TICKS = 50;
 const FINISH_BRAKE = 0.35;
 const REMOUNT_STAMINA = 55;
-const STUN_STEER = 0.35;
+const STUN_STEER = 0.65;
+const VERGE_STEER = 0.8;
+const VERGE_BLEND = 0.75;
 const BRAKE_RESERVE = 0.35;
 
 const coasting: RiderInput = {
@@ -172,10 +174,15 @@ const ride = (
 
   rider.offRoad = Math.abs(rider.x) > track.roadHalfWidth;
   rider.load = clamp(1 + verticalAcceleration / GRAVITY, 0, 1.8);
-  const grip = (rider.offRoad ? VERGE_GRIP : ROAD_GRIP) * rider.load;
+  const verge = clamp(
+    (Math.abs(rider.x) - track.roadHalfWidth) / VERGE_BLEND,
+    0,
+    1
+  );
+  const grip = (ROAD_GRIP + (VERGE_GRIP - ROAD_GRIP) * verge) * rider.load;
 
   const limit =
-    lateralSpeedLimit(bike, rider.speed) * (rider.offRoad ? 0.6 : 1);
+    lateralSpeedLimit(bike, rider.speed) * (1 - (1 - VERGE_STEER) * verge);
   const wantedLateral =
     input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
   rider.lateralSpeed +=

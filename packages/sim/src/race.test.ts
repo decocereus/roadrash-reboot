@@ -472,6 +472,44 @@ const pressing = (key: "punch" | "kick", pressed: boolean): RiderInput => ({
   [key]: pressed,
 });
 
+describe("recovering", () => {
+  it("a rider punched onto the outside grass of a bend at 40 m/s steers back onto the road within two seconds", () => {
+    const state = createRace(quietTrack, 1, 1, 0);
+    const me = riderAt(state, 0);
+    const rival = riderAt(state, 1);
+    me.s = 1550;
+    me.speed = 40;
+    rival.speed = 40;
+    rival.weapon = "none";
+    const back = { ...cruising, steer: -1, throttle: 0.6 };
+    let punched = -1;
+    let onRoad = -1;
+    for (let tick = 0; tick < 4 * TICK_RATE && onRoad < 0; tick += 1) {
+      if (punched < 0) {
+        me.x = quietTrack.roadHalfWidth + 0.5;
+        me.lateralSpeed = 0;
+        rival.x = me.x - 1.5;
+        rival.s = me.s;
+      }
+      const rivalInput =
+        punched < 0
+          ? { ...cruising, punch: true, throttle: 0.6 }
+          : { ...cruising, brake: 1, throttle: 0 };
+      stepRace(state, quietTrack, [punched < 0 ? cruising : back, rivalInput]);
+      if (punched < 0 && state.events.some((event) => event.kind === "hit")) {
+        punched = tick;
+      }
+      if (punched >= 0 && Math.abs(me.x) < quietTrack.roadHalfWidth) {
+        onRoad = tick;
+      }
+    }
+    expect(punched).toBeGreaterThanOrEqual(0);
+    expect(me.mode).toBe("riding");
+    expect(onRoad).toBeGreaterThanOrEqual(0);
+    expect((onRoad - punched) / TICK_RATE).toBeLessThan(2);
+  });
+});
+
 describe("weapons", () => {
   it("a club swing drains far more stamina than a punch", () => {
     const punched = sideBySide();
