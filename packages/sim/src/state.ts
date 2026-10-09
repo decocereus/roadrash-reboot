@@ -22,7 +22,7 @@ export interface BikeSpec {
 
 export const streetBike: BikeSpec = {
   brakeDeceleration: 11,
-  curvePush: 2,
+  curvePush: 2.1,
   dragFactor: 1.38e-3,
   engineBraking: 1.2,
   lateralSpeed: 9,
@@ -31,7 +31,7 @@ export const streetBike: BikeSpec = {
   name: "Street 600",
   powerPerMass: 284,
   rollingDeceleration: 0.25,
-  steerResponse: 16,
+  steerResponse: 20,
   visualLean: 0.38,
 };
 

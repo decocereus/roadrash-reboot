@@ -1,7 +1,7 @@
 import type { RiderInput } from "@racer/sim/state";
 
-const STEER_ATTACK = 5.5;
-const STEER_RELEASE = 9;
+const STEER_ATTACK = 9;
+const STEER_RELEASE = 18;
 const STICK_DEADZONE = 0.12;
 
 const handled = new Set([
