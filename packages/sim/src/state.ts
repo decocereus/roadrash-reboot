@@ -25,13 +25,13 @@ export const streetBike: BikeSpec = {
   curvePush: 2,
   dragFactor: 1.38e-3,
   engineBraking: 1.2,
-  lateralSpeed: 8,
+  lateralSpeed: 9,
   lateralSpeedPerSpeed: 0.03,
   launchAcceleration: 8.5,
   name: "Street 600",
   powerPerMass: 284,
   rollingDeceleration: 0.25,
-  steerResponse: 12,
+  steerResponse: 16,
   visualLean: 0.38,
 };
 

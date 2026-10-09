@@ -118,7 +118,7 @@ describe("riding", () => {
     hold(state, flat, { brake: 0, steer: 1, throttle: 0.6 }, 0.5);
     const atRelease = rider.x;
     expect(atRelease).toBeGreaterThan(3);
-    expect(atRelease).toBeLessThan(4.6);
+    expect(atRelease).toBeLessThan(5.2);
     hold(state, flat, { brake: 0, steer: 0, throttle: 0.6 }, 1);
     expect(rider.x - atRelease).toBeLessThan(0.9);
   });

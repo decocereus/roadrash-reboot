@@ -5,8 +5,8 @@ import * as THREE from "three";
 import { placeOnGround } from "./world.ts";
 
 const TOP_SPEED = 60;
-const BASE_FOV = 56;
-const SPEED_FOV = 20;
+const BASE_FOV = 60;
+const SPEED_FOV = 16;
 
 export interface Subject {
   s: number;
@@ -50,15 +50,15 @@ export function createChaseCamera(): ChaseCamera {
     },
     update(track, subject, seconds) {
       const pace = Math.min(1, subject.speed / TOP_SPEED);
-      const distance = 5 + 1.4 * pace;
+      const distance = 5.8 + 1.5 * pace;
       const follow = settled ? Math.min(1, seconds * 7) : 1;
       const cameraS = subject.s - distance;
 
       sideways += (subject.x * 0.82 - sideways) * follow;
       const wantedHeight =
         Math.max(heightAt(track, cameraS), heightAt(track, subject.s) - 0.4) +
-        2.25 -
-        0.3 * pace +
+        2.85 -
+        0.25 * pace +
         subject.air * 0.55;
       height +=
         (wantedHeight - height) * (settled ? Math.min(1, seconds * 9) : 1);
@@ -71,8 +71,8 @@ export function createChaseCamera(): ChaseCamera {
         point.z
       );
 
-      placeOnGround(track, subject.s + 11 + 6 * pace, subject.x * 0.55, point);
-      target.set(point.x, point.y + 1.05 + subject.air * 0.6, point.z);
+      placeOnGround(track, subject.s + 24 + 10 * pace, subject.x * 0.5, point);
+      target.set(point.x, point.y + 1.3 + subject.air * 0.6, point.z);
       camera.lookAt(target);
       roll += (subject.lean * 0.1 - roll) * follow;
       camera.rotateZ(-roll);
