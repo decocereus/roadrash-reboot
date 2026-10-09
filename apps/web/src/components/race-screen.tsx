@@ -8,6 +8,8 @@ const notices = {
   "": "",
   air: "Air",
   close: "Close call",
+  hit: "Hit by",
+  knockdown: "Knocked down",
   wipeout: "Wipeout",
 } as const;
 
@@ -15,6 +17,43 @@ function raceClock(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const rest = (seconds - minutes * 60).toFixed(2).padStart(5, "0");
   return `${minutes}:${rest}`;
+}
+
+function placeSuffix(place: number): string {
+  if (place === 1) {
+    return "st";
+  }
+  if (place === 2) {
+    return "nd";
+  }
+  if (place === 3) {
+    return "rd";
+  }
+  return "th";
+}
+
+function Stamina({
+  label,
+  value,
+  align,
+}: {
+  readonly label: string;
+  readonly value: number;
+  readonly align: "left" | "right";
+}) {
+  return (
+    <div className={`w-44 ${align === "right" ? "text-right" : ""}`}>
+      <p className="text-foreground/80 font-mono text-[11px] tracking-[0.25em] uppercase drop-shadow">
+        {label}
+      </p>
+      <div className="bg-background/50 mt-1 h-2 overflow-hidden rounded-full">
+        <div
+          className={`h-full ${value > 0.35 ? "bg-success" : "bg-destructive"} ${align === "right" ? "origin-right" : "origin-left"}`}
+          style={{ transform: `scaleX(${Math.max(0, value)})` }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function Key({ children }: { readonly children: string }) {
@@ -57,13 +96,17 @@ function TitleCard({
         </dt>
         <dd>Throttle</dd>
         <dt>
-          <Key>S</Key> <Key>↓</Key> <Key>Space</Key>
+          <Key>S</Key> <Key>↓</Key>
         </dt>
         <dd>Brake</dd>
         <dt>
           <Key>A</Key> <Key>D</Key> <Key>←</Key> <Key>→</Key>
         </dt>
         <dd>Lean</dd>
+        <dt>
+          <Key>Space</Key> <Key>K</Key>
+        </dt>
+        <dd>Punch, kick</dd>
         <dt>
           <Key>R</Key> <Key>M</Key>
         </dt>
@@ -86,8 +129,26 @@ function Results({
         Ridge Road
       </p>
       <p className="numeric mt-2 text-5xl font-black italic">
-        {raceClock(hud.seconds)}
+        {hud.position}
+        <span className="text-muted-foreground text-2xl">
+          {placeSuffix(hud.position)} · {raceClock(hud.seconds)}
+        </span>
       </p>
+      <ol className="mt-4 space-y-1 text-sm">
+        {hud.placings.map((placing, index) => (
+          <li
+            className={`flex justify-between ${placing.you ? "text-primary" : "text-muted-foreground"}`}
+            key={placing.name}
+          >
+            <span>
+              {index + 1}. {placing.name}
+            </span>
+            <span className="numeric">
+              {placing.seconds >= 0 ? raceClock(placing.seconds) : "racing"}
+            </span>
+          </li>
+        ))}
+      </ol>
       <dl className="text-muted-foreground mt-4 grid grid-cols-2 gap-y-1 text-sm">
         <dt>Top speed</dt>
         <dd className="text-foreground numeric text-right">
@@ -117,6 +178,22 @@ function Dash({ hud }: { readonly hud: HudState }) {
       <p className="numeric absolute top-4 right-6 font-mono text-xl font-semibold drop-shadow">
         {raceClock(hud.seconds)}
       </p>
+      <p className="numeric absolute top-12 right-6 text-4xl font-black italic drop-shadow-lg">
+        {hud.position}
+        <span className="text-foreground/70 text-lg">/{hud.riderCount}</span>
+      </p>
+      <div className="absolute bottom-8 left-6">
+        <Stamina align="left" label="You" value={hud.stamina} />
+      </div>
+      {hud.rivalName !== "" && (
+        <div className="absolute right-6 bottom-8">
+          <Stamina
+            align="right"
+            label={hud.rivalName}
+            value={hud.rivalStamina}
+          />
+        </div>
+      )}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center drop-shadow-lg">
         <p className="numeric text-7xl leading-none font-black italic">
           {Math.round(hud.speedKmh)}
@@ -186,7 +263,9 @@ export function RaceScreen() {
           key={hud.notice}
         >
           {notices[hud.notice]}
-          {hud.notice === "air" && ` ${hud.noticeDetail}`}
+          {hud.notice !== "wipeout" &&
+            hud.notice !== "close" &&
+            ` ${hud.noticeDetail}`}
         </p>
       )}
       {hud.phase === "finished" && <Results hud={hud} onRide={ride} />}

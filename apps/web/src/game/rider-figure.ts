@@ -1,10 +1,26 @@
 import * as THREE from "three";
 
-export type RiderPose = "seated" | "tumble" | "lying" | "run" | "lift";
+export type RiderPose =
+  | "seated"
+  | "tumble"
+  | "lying"
+  | "run"
+  | "lift"
+  | "punch"
+  | "kick";
+
+export const jacketColours = [
+  0x23_26_2c, 0x1d_3a_6e, 0x5a_1f_1f, 0x1f_4a_2a, 0x3a_1f_4f, 0x6b_5a_3a,
+];
 
 export interface RiderFigure {
   readonly root: THREE.Group;
-  animate: (pose: RiderPose, time: number, seconds: number) => void;
+  animate: (
+    pose: RiderPose,
+    time: number,
+    seconds: number,
+    side: number
+  ) => void;
 }
 
 interface Joint {
@@ -55,7 +71,36 @@ const settle = (joint: Joint, x: number, z: number, blend: number): void => {
   joint.node.rotation.set(joint.x, 0, joint.z);
 };
 
-const postureFor = (pose: RiderPose, time: number): Posture => {
+const seatedPosture = (): Posture => ({
+  armSpread: 0,
+  forearm: 0.35,
+  head: -0.55,
+  legSpread: 0,
+  shin: [-1.55, -1.55],
+  thigh: [1.3, 1.3],
+  torso: 0.78,
+  upperArm: [1.15, 1.15],
+});
+
+const attackPosture = (pose: RiderPose, side: number): Posture => {
+  const base = seatedPosture();
+  const index = side < 0 ? 0 : 1;
+  if (pose === "kick") {
+    const thigh: [number, number] = [...base.thigh];
+    const shin: [number, number] = [...base.shin];
+    thigh[index] = 0.2;
+    shin[index] = 0;
+    return { ...base, legSpread: 1.1, shin, thigh, torso: 0.6 };
+  }
+  const upperArm: [number, number] = [...base.upperArm];
+  upperArm[index] = 0.1;
+  return { ...base, armSpread: 1.5, forearm: 0.05, torso: 0.55, upperArm };
+};
+
+const postureFor = (pose: RiderPose, time: number, side: number): Posture => {
+  if (pose === "punch" || pose === "kick") {
+    return attackPosture(pose, side);
+  }
   if (pose === "seated") {
     return {
       armSpread: 0,
@@ -120,9 +165,9 @@ const postureFor = (pose: RiderPose, time: number): Posture => {
   };
 };
 
-export const createRiderFigure = (): RiderFigure => {
+export const createRiderFigure = (jacketIndex: number): RiderFigure => {
   const root = new THREE.Group();
-  const leather = matte(0x23_26_2c);
+  const leather = matte(jacketColours[jacketIndex] ?? 0x23_26_2c);
   const denim = matte(0x2d_3d_5c);
   const skin = matte(0xc9_9a_7a);
 
@@ -181,26 +226,24 @@ export const createRiderFigure = (): RiderFigure => {
   }
 
   return {
-    animate(pose, time, seconds) {
-      const target = postureFor(pose, time);
+    animate(pose, time, seconds, side) {
+      const target = postureFor(pose, time, side);
       const blend = Math.min(1, BLEND_RATE * seconds);
       settle(torso, target.torso, 0, blend);
       settle(head, target.head, 0, blend);
+      const attacking = pose === "punch" || pose === "kick";
       for (const [index, arm] of upperArms.entries()) {
-        const side = index === 0 ? -1 : 1;
-        settle(
-          arm,
-          target.upperArm[index] ?? 0,
-          side * target.armSpread,
-          blend
-        );
+        const armSide = index === 0 ? -1 : 1;
+        const spread = attacking && armSide !== side ? 0 : target.armSpread;
+        settle(arm, target.upperArm[index] ?? 0, armSide * spread, blend);
       }
       for (const arm of forearms) {
         settle(arm, target.forearm, 0, blend);
       }
       for (const [index, thigh] of thighs.entries()) {
-        const side = index === 0 ? -1 : 1;
-        settle(thigh, target.thigh[index] ?? 0, side * target.legSpread, blend);
+        const legSide = index === 0 ? -1 : 1;
+        const spread = attacking && legSide !== side ? 0 : target.legSpread;
+        settle(thigh, target.thigh[index] ?? 0, legSide * spread, blend);
       }
       for (const [index, shin] of shins.entries()) {
         settle(shin, target.shin[index] ?? 0, 0, blend);

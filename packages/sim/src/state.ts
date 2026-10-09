@@ -39,15 +39,41 @@ export interface RiderInput {
   steer: number;
   throttle: number;
   brake: number;
+  punch: boolean;
+  kick: boolean;
 }
+
+export type AttackKind = "punch" | "kick";
+
+export interface RiderProfile {
+  readonly name: string;
+  readonly paint: number;
+  readonly aggression: number;
+  readonly skill: number;
+}
+
+export const MAX_STAMINA = 100;
 
 export type RiderMode = "riding" | "thrown" | "running" | "mounting";
 
-export type CrashCause = "traffic" | "prop" | "offTrack" | "landing";
+export type CrashCause =
+  | "traffic"
+  | "prop"
+  | "offTrack"
+  | "landing"
+  | "combat"
+  | "rider";
 
 export interface RiderState {
+  readonly profile: RiderProfile;
   mode: RiderMode;
   modeTicks: number;
+  stamina: number;
+  attack: AttackKind | "none";
+  attackSide: number;
+  attackTicks: number;
+  attackCooldown: number;
+  hitStun: number;
   s: number;
   x: number;
   speed: number;
@@ -102,6 +128,23 @@ export type RaceEvent =
       readonly closingSpeed: number;
     }
   | { readonly kind: "remount"; readonly rider: number }
+  | {
+      readonly kind: "attack";
+      readonly rider: number;
+      readonly attack: AttackKind;
+      readonly side: number;
+    }
+  | {
+      readonly kind: "hit";
+      readonly rider: number;
+      readonly target: number;
+      readonly attack: AttackKind;
+    }
+  | {
+      readonly kind: "riderContact";
+      readonly rider: number;
+      readonly other: number;
+    }
   | { readonly kind: "finish"; readonly rider: number; readonly tick: number };
 
 export interface RaceState {

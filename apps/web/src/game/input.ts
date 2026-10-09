@@ -14,7 +14,28 @@ const handled = new Set([
   "KeyW",
   "KeyS",
   "Space",
+  "KeyJ",
+  "KeyK",
+  "ShiftLeft",
+  "ShiftRight",
 ]);
+
+const nextSteer = (
+  current: number,
+  stick: number,
+  keys: number,
+  seconds: number
+): number => {
+  if (Math.abs(stick) > STICK_DEADZONE) {
+    return stick;
+  }
+  const rate = keys === 0 ? STEER_RELEASE : STEER_ATTACK;
+  const step = rate * seconds;
+  if (current < keys) {
+    return Math.min(keys, current + step);
+  }
+  return Math.max(keys, current - step);
+};
 
 export interface Controls {
   read: (seconds: number, input: RiderInput) => void;
@@ -46,6 +67,8 @@ export function createControls(onCommand: (code: string) => void): Controls {
 
   const down = (...codes: string[]): boolean =>
     codes.some((code) => held.has(code));
+  const keySteer = (): number =>
+    (down("ArrowRight", "KeyD") ? 1 : 0) - (down("ArrowLeft", "KeyA") ? 1 : 0);
 
   return {
     dispose() {
@@ -55,29 +78,21 @@ export function createControls(onCommand: (code: string) => void): Controls {
     },
     read(seconds, input) {
       const pad = navigator.getGamepads().find((each) => each?.connected);
-      const stick = pad?.axes[0] ?? 0;
-      const keys =
-        (down("ArrowRight", "KeyD") ? 1 : 0) -
-        (down("ArrowLeft", "KeyA") ? 1 : 0);
-      if (Math.abs(stick) > STICK_DEADZONE) {
-        steer = stick;
-      } else {
-        const rate = keys === 0 ? STEER_RELEASE : STEER_ATTACK;
-        const step = rate * seconds;
-        steer =
-          steer < keys
-            ? Math.min(keys, steer + step)
-            : Math.max(keys, steer - step);
-      }
+      steer = nextSteer(steer, pad?.axes[0] ?? 0, keySteer(), seconds);
       input.steer = steer;
       input.throttle = Math.max(
         down("ArrowUp", "KeyW") ? 1 : 0,
         pad?.buttons[7]?.value ?? 0
       );
       input.brake = Math.max(
-        down("ArrowDown", "KeyS", "Space") ? 1 : 0,
+        down("ArrowDown", "KeyS") ? 1 : 0,
         pad?.buttons[6]?.value ?? 0
       );
+      input.punch =
+        down("Space", "KeyJ") || (pad?.buttons[2]?.pressed ?? false);
+      input.kick =
+        down("KeyK", "ShiftLeft", "ShiftRight") ||
+        (pad?.buttons[1]?.pressed ?? false);
     },
   };
 }

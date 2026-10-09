@@ -43,8 +43,16 @@ const RUN_SPEED = 10;
 const MOUNT_TICKS = 30;
 const SETTLE_TICKS = 50;
 const FINISH_BRAKE = 0.35;
+const REMOUNT_STAMINA = 55;
+const STUN_STEER = 0.35;
 
-const coasting: RiderInput = { brake: FINISH_BRAKE, steer: 0, throttle: 0 };
+const coasting: RiderInput = {
+  brake: FINISH_BRAKE,
+  kick: false,
+  punch: false,
+  steer: 0,
+  throttle: 0,
+};
 
 const forwardRateOf = (rider: RiderState, curvature: number): number =>
   rider.speed / Math.max(0.5, 1 - curvature * rider.x);
@@ -63,7 +71,7 @@ const settleVisuals = (
     Math.atan2(rider.lateralSpeed, Math.max(rider.speed, 6)) * 0.5;
 };
 
-const throwRider = (
+export const throwRider = (
   state: RaceState,
   riderIndex: number,
   cause: CrashCause,
@@ -76,6 +84,9 @@ const throwRider = (
   }
   const impactSpeed = rider.speed;
   rider.mode = "thrown";
+  rider.attack = "none";
+  rider.attackTicks = 0;
+  rider.hitStun = 0;
   rider.modeTicks = 0;
   rider.crashes += 1;
   rider.bodyS = rider.s;
@@ -161,7 +172,8 @@ const ride = (
 
   const limit =
     lateralSpeedLimit(bike, rider.speed) * (rider.offRoad ? 0.6 : 1);
-  const wantedLateral = input.steer * limit;
+  const wantedLateral =
+    input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
   rider.lateralSpeed +=
     (wantedLateral - rider.lateralSpeed) *
     Math.min(1, bike.steerResponse * TICK_SECONDS);
@@ -377,6 +389,7 @@ const mount = (
   rider.modeTicks = 0;
   rider.lean = 0;
   rider.heading = 0;
+  rider.stamina = Math.max(rider.stamina, REMOUNT_STAMINA);
   state.events.push({ kind: "remount", rider: riderIndex });
 };
 
@@ -439,6 +452,10 @@ export const stepRider = (
     return;
   }
 
+  if (rider.stamina <= 0) {
+    throwRider(state, riderIndex, "combat", 0.5, 0.65);
+    return;
+  }
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air;

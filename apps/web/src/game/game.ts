@@ -1,7 +1,13 @@
+import { PUNCH_TICKS, KICK_TICKS, nearestRival } from "@racer/sim/combat";
 import { pilotInput } from "@racer/sim/pilot";
-import { createRace, stepRace } from "@racer/sim/race";
-import { TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
-import type { RaceState, RiderInput, RiderState } from "@racer/sim/state";
+import { createRace, standings, stepRace } from "@racer/sim/race";
+import { MAX_STAMINA, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
+import type {
+  RaceEvent,
+  RaceState,
+  RiderInput,
+  RiderState,
+} from "@racer/sim/state";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import * as THREE from "three";
@@ -13,14 +19,20 @@ import {
   HIP_SETBACK,
   poseOnTrack,
 } from "./actors.ts";
-import type { Fleet } from "./actors.ts";
+import type { BikeModel, Fleet } from "./actors.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
-import type { GameHandle, GamePhase, HudState, Notice } from "./hud.ts";
+import type {
+  GameHandle,
+  GamePhase,
+  HudState,
+  Notice,
+  Placing,
+} from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createRiderFigure } from "./rider-figure.ts";
-import type { RiderPose } from "./rider-figure.ts";
+import type { RiderFigure, RiderPose } from "./rider-figure.ts";
 import { createWorld } from "./world.ts";
 
 const COUNTDOWN_SECONDS = 3;
@@ -36,6 +48,7 @@ const LYING_HEIGHT = 0.22;
 const STANDING_HEIGHT = 0.98;
 const RISE_SECONDS = 0.45;
 const LIFT_TICKS = 14;
+const RUN_HZ = 2.6;
 
 interface Pose {
   s: number;
@@ -48,7 +61,18 @@ interface Pose {
   bodyAir: number;
 }
 
-function capture(rider: RiderState, pose: Pose): void {
+interface RiderView {
+  readonly bike: BikeModel;
+  readonly figure: RiderFigure;
+  readonly before: Pose;
+  readonly after: Pose;
+  tumbleAngle: number;
+  pitch: number;
+  lift: number;
+  yaw: number;
+}
+
+const capture = (rider: RiderState, pose: Pose): void => {
   pose.s = rider.s;
   pose.x = rider.x;
   pose.heading = rider.heading;
@@ -57,24 +81,37 @@ function capture(rider: RiderState, pose: Pose): void {
   pose.bodyS = rider.bodyS;
   pose.bodyX = rider.bodyX;
   pose.bodyAir = rider.bodyAir;
-}
+};
 
-function emptyPose(): Pose {
-  return {
-    air: 0,
-    bodyAir: 0,
-    bodyS: 0,
-    bodyX: 0,
-    heading: 0,
-    lean: 0,
-    s: 0,
-    x: 0,
-  };
-}
+const emptyPose = (): Pose => ({
+  air: 0,
+  bodyAir: 0,
+  bodyS: 0,
+  bodyX: 0,
+  heading: 0,
+  lean: 0,
+  s: 0,
+  x: 0,
+});
 
-function mix(from: number, to: number, blend: number): number {
-  return from + (to - from) * blend;
-}
+const mix = (from: number, to: number, blend: number): number =>
+  from + (to - from) * blend;
+
+const freshInput = (): RiderInput => ({
+  brake: 0,
+  kick: false,
+  punch: false,
+  steer: 0,
+  throttle: 0,
+});
+
+const attackPose = (rider: RiderState): RiderPose | undefined => {
+  if (rider.attack === "none") {
+    return undefined;
+  }
+  const length = rider.attack === "kick" ? KICK_TICKS : PUNCH_TICKS;
+  return rider.attackTicks > length * 0.2 ? rider.attack : undefined;
+};
 
 export function createGame(
   canvas: HTMLCanvasElement,
@@ -92,9 +129,6 @@ export function createGame(
 
   const world = createWorld(track);
   const chase = createChaseCamera();
-  const bike = createBike();
-  const figure = createRiderFigure();
-  world.scene.add(bike.root, figure.root, bike.shadow);
   const sound = createSound();
 
   let seed = 1;
@@ -102,6 +136,8 @@ export function createGame(
   let fleet: Fleet = createFleet(race.cars);
   world.scene.add(fleet.group);
   let previousCars = new Float64Array(race.cars.length);
+  let views: RiderView[] = [];
+  let inputs: RiderInput[] = [];
 
   let phase: GamePhase = "attract";
   let countdown = 0;
@@ -116,15 +152,8 @@ export function createGame(
   let slowFrames = 0;
   let calmSeconds = 0;
   let raisesLeft = 2;
-  let tumbleAngle = 0;
   let clock = 0;
-  let figurePitch = 0;
-  let figureLift = 0;
-  let figureYaw = 0;
 
-  const input: RiderInput = { brake: 0, steer: 0, throttle: 0 };
-  const before = emptyPose();
-  const after = emptyPose();
   const subject: Subject = { air: 0, lean: 0, rough: 0, s: 0, speed: 0, x: 0 };
 
   const player = (): RiderState => {
@@ -141,6 +170,31 @@ export function createGame(
     noticeLeft = NOTICE_SECONDS;
   };
 
+  const buildViews = () => {
+    for (const view of views) {
+      world.scene.remove(view.bike.root, view.bike.shadow, view.figure.root);
+    }
+    views = race.riders.map((rider) => {
+      const bike = createBike(rider.profile.paint);
+      const figure = createRiderFigure(rider.profile.paint);
+      world.scene.add(bike.root, bike.shadow, figure.root);
+      const view: RiderView = {
+        after: emptyPose(),
+        before: emptyPose(),
+        bike,
+        figure,
+        lift: STANDING_HEIGHT,
+        pitch: 0,
+        tumbleAngle: 0,
+        yaw: 0,
+      };
+      capture(rider, view.before);
+      capture(rider, view.after);
+      return view;
+    });
+    inputs = race.riders.map(() => freshInput());
+  };
+
   const loadRace = (nextPhase: GamePhase) => {
     world.scene.remove(fleet.group);
     seed += 1;
@@ -151,8 +205,7 @@ export function createGame(
     for (const [index, car] of race.cars.entries()) {
       previousCars[index] = car.s;
     }
-    capture(player(), before);
-    capture(player(), after);
+    buildViews();
     phase = nextPhase;
     countdown = nextPhase === "countdown" ? COUNTDOWN_SECONDS : 0;
     raceTicks = 0;
@@ -184,31 +237,70 @@ export function createGame(
     }
   });
 
+  const reactToHit = (attacker: number, target: number) => {
+    if (attacker === 0) {
+      sound.hit();
+      const victim = race.riders[target];
+      if (victim && victim.stamina <= 0) {
+        say("knockdown", victim.profile.name);
+      }
+    } else if (target === 0) {
+      sound.hit();
+      chase.jolt(0.5);
+      say("hit", race.riders[attacker]?.profile.name ?? "");
+    }
+  };
+
+  const reactToOwn = (event: RaceEvent) => {
+    if (event.kind === "crash") {
+      chase.jolt(1);
+      sound.crash();
+      say("wipeout");
+    } else if (event.kind === "nearMiss") {
+      sound.whoosh();
+      say("close");
+    } else if (event.kind === "land" && event.airSeconds > 0.35) {
+      chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
+      sound.thump(Math.abs(event.impact) / 10);
+      say("air", `${event.airSeconds.toFixed(1)} s`);
+    } else if (event.kind === "glance" || event.kind === "bump") {
+      chase.jolt(0.45);
+      sound.thump(0.5);
+    } else if (event.kind === "attack") {
+      sound.swing();
+    } else if (event.kind === "riderContact") {
+      chase.jolt(0.3);
+      sound.thump(0.35);
+    } else if (event.kind === "finish" && phase === "racing") {
+      phase = "finished";
+    }
+  };
+
   const react = () => {
     for (const event of race.events) {
-      if (event.kind === "crash") {
-        chase.jolt(1);
-        sound.crash();
-        say("wipeout");
-      } else if (event.kind === "nearMiss") {
-        sound.whoosh();
-        say("close");
-      } else if (event.kind === "land" && event.airSeconds > 0.35) {
-        chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
-        sound.thump(Math.abs(event.impact) / 10);
-        say("air", `${event.airSeconds.toFixed(1)} s`);
-      } else if (event.kind === "glance" || event.kind === "bump") {
-        chase.jolt(0.45);
-        sound.thump(0.5);
-      } else if (event.kind === "finish" && phase === "racing") {
-        phase = "finished";
+      if (event.kind === "hit") {
+        reactToHit(event.rider, event.target);
+      } else if (event.rider === 0) {
+        reactToOwn(event);
+      } else if (event.kind === "riderContact" && event.other === 0) {
+        chase.jolt(0.3);
+        sound.thump(0.35);
+      } else if (event.kind === "crash" && event.cause === "combat") {
+        const fallen = race.riders[event.rider];
+        if (fallen && Math.abs(fallen.s - player().s) < 30) {
+          sound.thump(0.6);
+        }
       }
     }
   };
 
   const tick = () => {
-    const rider = player();
-    capture(rider, before);
+    for (const [index, rider] of race.riders.entries()) {
+      const view = views[index];
+      if (view) {
+        capture(rider, view.before);
+      }
+    }
     for (const [index, car] of race.cars.entries()) {
       previousCars[index] = car.s;
     }
@@ -217,101 +309,119 @@ export function createGame(
       if (countdown <= 0) {
         phase = "racing";
       }
-      capture(rider, after);
+      for (const [index, rider] of race.riders.entries()) {
+        const view = views[index];
+        if (view) {
+          capture(rider, view.after);
+        }
+      }
       return;
     }
-    if (phase === "attract") {
-      pilotInput(race, track, 0, input);
-      if (rider.finishTick >= 0) {
-        loadRace("attract");
-        return;
+    for (const [index, input] of inputs.entries()) {
+      if (index === 0 && phase !== "attract") {
+        controls.read(TICK_SECONDS, input);
+      } else {
+        pilotInput(race, track, index, input);
       }
-    } else {
-      controls.read(TICK_SECONDS, input);
     }
-    stepRace(race, track, [input]);
+    if (phase === "attract" && player().finishTick >= 0) {
+      loadRace("attract");
+      return;
+    }
+    stepRace(race, track, inputs);
+    const me = player();
     if (phase === "racing") {
       raceTicks += 1;
-      topSpeed = Math.max(topSpeed, rider.speed);
+      topSpeed = Math.max(topSpeed, me.speed);
     }
     if (phase !== "attract") {
       react();
     }
-    capture(rider, after);
+    for (const [index, rider] of race.riders.entries()) {
+      const view = views[index];
+      if (view) {
+        capture(rider, view.after);
+      }
+    }
   };
 
   const placeFigure = (
     rider: RiderState,
+    view: RiderView,
     seated: boolean,
     bodyS: number,
     bodyX: number,
     bodyAir: number,
     seconds: number
   ) => {
-    clock += seconds;
     let pose: RiderPose = "seated";
+    const { figure, bike } = view;
     if (seated) {
       pose =
         rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS
           ? "lift"
-          : "seated";
+          : (attackPose(rider) ?? "seated");
       figure.root.position.copy(bike.root.position);
       figure.root.quaternion.copy(bike.root.quaternion);
       figure.root.translateY(HIP_HEIGHT);
       figure.root.translateZ(HIP_SETBACK);
-      tumbleAngle = 0;
-      figurePitch = 0;
-      figureLift = STANDING_HEIGHT;
-      figureYaw = 0;
+      view.tumbleAngle = 0;
+      view.pitch = 0;
+      view.lift = STANDING_HEIGHT;
+      view.yaw = 0;
     } else if (rider.mode === "thrown") {
       const resting = rider.bodySpeed < 0.5 && rider.bodyAir === 0;
       pose = resting ? "lying" : "tumble";
       if (resting) {
-        figurePitch += (LYING_PITCH - figurePitch) * Math.min(1, seconds * 6);
-        figureLift += (LYING_HEIGHT - figureLift) * Math.min(1, seconds * 6);
+        view.pitch += (LYING_PITCH - view.pitch) * Math.min(1, seconds * 6);
+        view.lift += (LYING_HEIGHT - view.lift) * Math.min(1, seconds * 6);
       } else {
-        tumbleAngle -= (5 + rider.bodySpeed * 0.4) * seconds;
-        figurePitch = tumbleAngle;
-        figureLift = 0.5;
+        view.tumbleAngle -= (5 + rider.bodySpeed * 0.4) * seconds;
+        view.pitch = view.tumbleAngle;
+        view.lift = 0.5;
       }
       poseOnTrack(
         figure.root,
         track,
         bodyS,
         bodyX,
-        bodyAir + figureLift,
-        figureYaw,
+        bodyAir + view.lift,
+        view.yaw,
         0,
-        figurePitch
+        view.pitch
       );
     } else {
       pose = "run";
       const rise = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
       const eased = rise * rise * (3 - 2 * rise);
-      figurePitch = LYING_PITCH * (1 - eased);
+      view.pitch = LYING_PITCH * (1 - eased);
       const bob =
-        rise >= 1 ? Math.abs(Math.sin(clock * Math.PI * 2 * 2.6)) * 0.05 : 0;
-      figureLift =
-        LYING_HEIGHT + (STANDING_HEIGHT - LYING_HEIGHT) * eased + bob;
+        rise >= 1 ? Math.abs(Math.sin(clock * Math.PI * 2 * RUN_HZ)) * 0.05 : 0;
+      view.lift = LYING_HEIGHT + (STANDING_HEIGHT - LYING_HEIGHT) * eased + bob;
       if (rise >= 0.5) {
-        figureYaw = Math.atan2(rider.x - rider.bodyX, rider.s - rider.bodyS);
+        view.yaw = Math.atan2(rider.x - rider.bodyX, rider.s - rider.bodyS);
       }
       poseOnTrack(
         figure.root,
         track,
         bodyS,
         bodyX,
-        figureLift,
-        figureYaw,
+        view.lift,
+        view.yaw,
         0,
-        figurePitch
+        view.pitch
       );
     }
-    figure.animate(pose, clock, seconds);
+    figure.animate(pose, clock, seconds, rider.attackSide);
   };
 
-  const draw = (blend: number, seconds: number) => {
-    const rider = player();
+  const drawRider = (
+    rider: RiderState,
+    view: RiderView,
+    blend: number,
+    seconds: number
+  ) => {
+    const { before, after, bike } = view;
     const s = mix(before.s, after.s, blend);
     const x = mix(before.x, after.x, blend);
     const air = mix(before.air, after.air, blend);
@@ -328,8 +438,28 @@ export function createGame(
     poseOnTrack(bike.root, track, s, x, air, heading, lean, flightPitch);
     poseOnTrack(bike.shadow, track, s, x, 0.03, heading, 0, -Math.PI / 2);
     bike.spin(rider.speed * seconds);
+    placeFigure(rider, view, seated, bodyS, bodyX, bodyAir, seconds);
+    return { air, bodyAir, bodyS, bodyX, lean, s, seated, x };
+  };
 
-    placeFigure(rider, seated, bodyS, bodyX, bodyAir, seconds);
+  const draw = (blend: number, seconds: number) => {
+    clock += seconds;
+    for (const [index, rider] of race.riders.entries()) {
+      const view = views[index];
+      if (!view) {
+        continue;
+      }
+      const placed = drawRider(rider, view, blend, seconds);
+      if (index === 0) {
+        subject.s = placed.seated ? placed.s : placed.bodyS;
+        subject.x = placed.seated ? placed.x : placed.bodyX;
+        subject.air = placed.seated ? placed.air : Math.min(placed.bodyAir, 2);
+        subject.speed = placed.seated ? rider.speed : rider.bodySpeed;
+        subject.lean = placed.seated ? placed.lean : 0;
+        subject.rough =
+          placed.seated && rider.offRoad ? Math.min(1, rider.speed / 20) : 0;
+      }
+    }
 
     for (const [index, car] of race.cars.entries()) {
       const from = previousCars[index] ?? car.s;
@@ -338,12 +468,6 @@ export function createGame(
     }
     fleet.commit();
 
-    subject.s = seated ? s : bodyS;
-    subject.x = seated ? x : bodyX;
-    subject.air = seated ? air : Math.min(bodyAir, 2);
-    subject.speed = seated ? rider.speed : rider.bodySpeed;
-    subject.lean = seated ? lean : 0;
-    subject.rough = seated && rider.offRoad ? Math.min(1, rider.speed / 20) : 0;
     chase.update(track, subject, seconds);
     world.follow(chase.camera);
     renderer.render(world.scene, chase.camera);
@@ -370,21 +494,43 @@ export function createGame(
     }
   };
 
+  const placings = (): Placing[] =>
+    standings(race).map((index) => {
+      const rider = race.riders[index];
+      return {
+        name: rider?.profile.name ?? "",
+        seconds:
+          rider && rider.finishTick >= 0 ? rider.finishTick / TICK_RATE : -1,
+        you: index === 0,
+      };
+    });
+
   const report = () => {
-    const rider = player();
+    const me = player();
+    const rivalIndex = Math.max(
+      nearestRival(race, 0, -1),
+      nearestRival(race, 0, 1)
+    );
+    const rival = rivalIndex >= 0 ? race.riders[rivalIndex] : undefined;
     onHud({
       countdown: Math.ceil(countdown),
-      crashes: rider.crashes,
+      crashes: me.crashes,
       muted,
       notice: noticeLeft > 0 ? notice : "",
       noticeDetail,
       phase,
-      progress: Math.min(1, Math.max(0, rider.bodyS / track.length)),
+      placings: phase === "finished" ? placings() : [],
+      position: standings(race).indexOf(0) + 1,
+      progress: Math.min(1, Math.max(0, me.bodyS / track.length)),
+      riderCount: race.riders.length,
+      rivalName: rival?.profile.name ?? "",
+      rivalStamina: rival ? rival.stamina / MAX_STAMINA : 0,
       seconds:
-        (rider.finishTick >= 0 && phase === "finished"
-          ? rider.finishTick
+        (me.finishTick >= 0 && phase === "finished"
+          ? me.finishTick
           : raceTicks) / TICK_RATE,
-      speedKmh: rider.speed * 3.6,
+      speedKmh: me.speed * 3.6,
+      stamina: me.stamina / MAX_STAMINA,
       topSpeedKmh: topSpeed * 3.6,
     });
   };
@@ -398,6 +544,7 @@ export function createGame(
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   resize();
+  buildViews();
 
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
@@ -408,12 +555,13 @@ export function createGame(
       tick();
       accumulator -= TICK_SECONDS;
     }
-    const rider = player();
-    const riding = rider.mode === "riding" && phase !== "attract";
+    const me = player();
+    const riding = me.mode === "riding" && phase !== "attract";
+    const [own] = inputs;
     sound.drive(
-      riding ? rider.speed : 0,
-      riding && phase === "racing" ? input.throttle : 0,
-      riding && rider.offRoad
+      riding ? me.speed : 0,
+      riding && phase === "racing" ? (own?.throttle ?? 0) : 0,
+      riding && me.offRoad
     );
     draw(accumulator / TICK_SECONDS, seconds);
     govern(seconds);

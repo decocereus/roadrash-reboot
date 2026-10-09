@@ -8,6 +8,8 @@ export interface Sound {
   drive: (speed: number, throttle: number, offRoad: boolean) => void;
   thump: (strength: number) => void;
   crash: () => void;
+  swing: () => void;
+  hit: () => void;
   whoosh: () => void;
   dispose: () => void;
 }
@@ -99,6 +101,10 @@ export function createSound(): Sound {
         0.15
       );
     },
+    hit() {
+      burst(260, 0.16, 0.7, 70);
+      burst(1200, 0.08, 0.3, 300);
+    },
     setMuted(next) {
       muted = next;
       master?.gain.setTargetAtTime(
@@ -106,6 +112,9 @@ export function createSound(): Sound {
         context?.currentTime ?? 0,
         0.02
       );
+    },
+    swing() {
+      burst(1800, 0.12, 0.3, 500);
     },
     thump(strength) {
       burst(140, 0.22, Math.min(0.9, 0.25 + strength * 0.5), 60);

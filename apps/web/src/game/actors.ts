@@ -48,9 +48,13 @@ export interface BikeModel {
   spin: (distance: number) => void;
 }
 
-export function createBike(): BikeModel {
+export const bikePaints = [
+  0xc8_2f_2f, 0x2f_62_c8, 0x1c_1f_24, 0x2f_9a_4e, 0x7a_3b_b8, 0xe6_e1_d6,
+];
+
+export function createBike(paintIndex: number): BikeModel {
   const root = new THREE.Group();
-  const paint = matte(0xc8_2f_2f);
+  const paint = matte(bikePaints[paintIndex] ?? 0xc8_2f_2f);
   const metal = matte(0x2b_2e_33);
   const rubber = matte(0x15_16_18);
 
