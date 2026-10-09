@@ -1,6 +1,9 @@
 const GEAR_TOPS = [15, 25, 35, 45, 54, 80];
 const IDLE_HERTZ = 58;
 const REDLINE_HERTZ = 235;
+const SIREN_LOW = 660;
+const SIREN_HIGH = 880;
+const SIREN_STEP = 0.28;
 
 export interface Sound {
   unlock: () => void;
@@ -10,6 +13,8 @@ export interface Sound {
   crash: () => void;
   swing: () => void;
   hit: () => void;
+  weaponHit: () => void;
+  siren: () => void;
   whoosh: () => void;
   dispose: () => void;
 }
@@ -113,6 +118,32 @@ export function createSound(): Sound {
         0.02
       );
     },
+    siren() {
+      if (!context || !master) {
+        return;
+      }
+      const now = context.currentTime;
+      const tone = context.createOscillator();
+      tone.type = "square";
+      for (let step = 0; step < 4; step += 1) {
+        tone.frequency.setValueAtTime(
+          step % 2 === 0 ? SIREN_LOW : SIREN_HIGH,
+          now + step * SIREN_STEP
+        );
+      }
+      const filter = context.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 2200;
+      const gain = context.createGain();
+      const end = now + SIREN_STEP * 4;
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.09, now + 0.05);
+      gain.gain.setValueAtTime(0.09, end - 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, end);
+      tone.connect(filter).connect(gain).connect(master);
+      tone.start(now);
+      tone.stop(end);
+    },
     swing() {
       burst(1800, 0.12, 0.3, 500);
     },
@@ -166,6 +197,11 @@ export function createSound(): Sound {
       windGain.gain.value = 0;
       wind.connect(windTone).connect(windGain).connect(master);
       wind.start();
+    },
+    weaponHit() {
+      burst(120, 0.34, 0.95, 40);
+      burst(520, 0.14, 0.55, 140);
+      burst(2600, 0.06, 0.25, 900);
     },
     whoosh() {
       burst(1400, 0.35, 0.5, 260);

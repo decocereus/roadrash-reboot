@@ -24,6 +24,7 @@ import type {
   RiderState,
   TrafficCar,
 } from "./state.ts";
+import { disarm, rearm } from "./weapons.ts";
 
 const ROAD_GRIP = 1.2;
 const VERGE_GRIP = 0.55;
@@ -84,6 +85,8 @@ export const throwRider = (
   }
   const impactSpeed = rider.speed;
   rider.mode = "thrown";
+  disarm(rider);
+  rider.chase = -1;
   rider.attack = "none";
   rider.attackTicks = 0;
   rider.hitStun = 0;
@@ -390,6 +393,7 @@ const mount = (
   rider.lean = 0;
   rider.heading = 0;
   rider.stamina = Math.max(rider.stamina, REMOUNT_STAMINA);
+  rearm(rider);
   state.events.push({ kind: "remount", rider: riderIndex });
 };
 
@@ -401,6 +405,9 @@ export const stepRider = (
 ): void => {
   const rider = state.riders[riderIndex];
   if (!rider) {
+    return;
+  }
+  if (rider.mode === "busted") {
     return;
   }
   if (rider.mode === "thrown") {
@@ -459,7 +466,11 @@ export const stepRider = (
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air;
-  if (rider.finishTick < 0 && rider.s >= track.length) {
+  if (
+    rider.finishTick < 0 &&
+    rider.s >= track.length &&
+    rider.profile.role === "racer"
+  ) {
     rider.finishTick = state.tick;
     state.events.push({ kind: "finish", rider: riderIndex, tick: state.tick });
   }

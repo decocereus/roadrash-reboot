@@ -43,18 +43,24 @@ export interface RiderInput {
   kick: boolean;
 }
 
-export type AttackKind = "punch" | "kick";
+export type AttackKind = "punch" | "kick" | "swing";
+
+export type WeaponKind = "none" | "club" | "chain" | "crowbar" | "baton";
+
+export type RiderRole = "racer" | "police";
 
 export interface RiderProfile {
   readonly name: string;
   readonly paint: number;
   readonly aggression: number;
   readonly skill: number;
+  readonly role: RiderRole;
+  readonly weapon: WeaponKind;
 }
 
 export const MAX_STAMINA = 100;
 
-export type RiderMode = "riding" | "thrown" | "running" | "mounting";
+export type RiderMode = "riding" | "thrown" | "running" | "mounting" | "busted";
 
 export type CrashCause =
   | "traffic"
@@ -74,6 +80,9 @@ export interface RiderState {
   attackTicks: number;
   attackCooldown: number;
   hitStun: number;
+  weapon: WeaponKind;
+  weaponHits: number;
+  chase: number;
   s: number;
   x: number;
   speed: number;
@@ -132,6 +141,7 @@ export type RaceEvent =
       readonly kind: "attack";
       readonly rider: number;
       readonly attack: AttackKind;
+      readonly weapon: WeaponKind;
       readonly side: number;
     }
   | {
@@ -139,6 +149,29 @@ export type RaceEvent =
       readonly rider: number;
       readonly target: number;
       readonly attack: AttackKind;
+      readonly weapon: WeaponKind;
+    }
+  | {
+      readonly kind: "weaponTaken";
+      readonly rider: number;
+      readonly target: number;
+      readonly weapon: WeaponKind;
+    }
+  | {
+      readonly kind: "weaponBroken";
+      readonly rider: number;
+      readonly weapon: WeaponKind;
+    }
+  | {
+      readonly kind: "pursuit";
+      readonly rider: number;
+      readonly target: number;
+    }
+  | {
+      readonly kind: "busted";
+      readonly rider: number;
+      readonly cop: number;
+      readonly fine: number;
     }
   | {
       readonly kind: "riderContact";
@@ -149,6 +182,7 @@ export type RaceEvent =
 
 export interface RaceState {
   tick: number;
+  dice: number;
   readonly bike: BikeSpec;
   readonly riders: RiderState[];
   readonly cars: TrafficCar[];

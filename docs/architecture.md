@@ -36,9 +36,24 @@ A rider lives in track space: distance along the road `s`, lateral offset `x` in
 
 `BikeSpec` holds the numbers for one bike: power, drag, brakes, lateral speed, steering response, curve push, and visual lean. Faster bikes are new specs, not new code.
 
-`pilotInput` is the AI rider. It brakes for bends from the same physics, picks a lane around traffic and other riders, and throws punches and kicks at a rate set by its profile's aggression. The same code drives the title screen and the five rivals in a race.
+`pilotInput` is the AI rider. It brakes for bends from the same physics, picks a lane around traffic and other riders, and throws punches and kicks at a rate set by its profile's aggression. An unarmed rider next to an armed one prefers to kick. The same code drives the title screen, the five rivals, and the police. Its dice live in `RaceState`, so a race replays the same way whatever ran before it.
 
 Combat lives in `combat.ts`. A punch or kick lands on the nearest rider on the chosen side within about two metres, drains stamina, shoves them sideways, and stuns their steering briefly. A rider whose stamina reaches zero is thrown. Rider-to-rider contact shoves both bikes apart, and a hard rear-end throws the rider behind. Remounting restores stamina to 55.
+
+Weapons are numbers in `weapons.ts`, the same way handling is a `BikeSpec`. A rider holding one swings it when they press punch; kick stays a kick. Each strike has damage, shove, reach, timing, and a number of hits before the weapon breaks:
+
+| Strike  | Damage | Shove | Reach (along × across) | Hits |
+| ------- | ------ | ----- | ---------------------- | ---- |
+| Fist    | 14     | 1.6   | 1.9 × 2.2 m            |      |
+| Boot    | 22     | 3.2   | 1.9 × 2.2 m            |      |
+| Club    | 28     | 3.8   | 2.2 × 2.6 m            | 6    |
+| Chain   | 20     | 2.2   | 2.6 × 3.1 m            | 8    |
+| Crowbar | 22     | 2.8   | 2.2 × 2.6 m            | 4    |
+| Baton   | 18     | 2.4   | 2.2 × 2.6 m            | 12   |
+
+A kick that lands on an armed rider hands the weapon to the kicker if the kicker is unarmed. A thrown rider drops whatever they hold. Viper starts with a chain, Bruiser with a club, and Ratchet with a crowbar; the player starts with nothing.
+
+Police are riders with the `police` role, so riding, contacts, combat, and the renderer treat them like anyone else. `createRace` places them on the road ahead of the grid, 700 m and then every 1.6 km, cruising at 22 m/s. `police.ts` decides whom a cop chases: a downed racer whose body is within 60 m ahead comes first, then the nearest racer riding within 40 m, who is kept until they are 120 m away. The pilot rides alongside a riding target at up to 54 m/s, below a racer's top speed, and swings its baton. A racer who is off the bike (thrown, running back, or lifting it) when a riding cop comes within 2.5 m of their body is busted. Their race ends with a $1,500 fine, and standings put busted riders after everyone still racing. The busted rider and bike are moved onto the verge and traffic stops braking for them, so a bust never blocks the road. A cop near the end of the track pulls onto the verge for the same reason. A cop who is knocked down remounts with a fresh baton. Police are not in the standings and cannot finish.
 
 ## Tracks
 
@@ -60,7 +75,7 @@ The target is 60 frames per second on an integrated-graphics laptop.
 | --- | --- | --- |
 | 1 | Faceless-style workspace | Done |
 | 2 | Riding greybox: physics, Ridge Road, traffic, crashes, AI pilot, placeholder models, audio | Done |
-| 3 | Combat, weapons, a pack of rival riders, police | In progress: five rivals, punches, kicks, stamina, and standings done; weapons and police next |
+| 3 | Combat, weapons, a pack of rival riders, police | Done |
 | 4 | Art: rigged bike and rider, vehicles, environment kit |  |
 | 5 | Career: more tracks, levels, money, bike shop, characters, story |  |
 | 6 | Multiplayer on the same simulation, then ads |  |

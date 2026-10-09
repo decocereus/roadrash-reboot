@@ -2,19 +2,11 @@ import type { Track } from "@racer/track/track";
 
 import { approach, BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, clamp } from "./state.ts";
 import type { AttackKind, RaceState, RiderInput, RiderState } from "./state.ts";
+import { disarm, punch, strikeOf } from "./weapons.ts";
+import type { StrikeSpec } from "./weapons.ts";
 
-export const PUNCH_TICKS = 16;
-export const KICK_TICKS = 26;
-const PUNCH_COOLDOWN = 30;
-const KICK_COOLDOWN = 45;
-const PUNCH_DAMAGE = 14;
-const KICK_DAMAGE = 22;
-const PUNCH_SHOVE = 1.6;
-const KICK_SHOVE = 3.2;
 const HIT_STUN_TICKS = 14;
 const HIT_SPEED_LOSS = 0.06;
-export const REACH_S = 1.9;
-export const REACH_X = 2.2;
 const CONTACT_CLOSING_SPEED = 9;
 const SIDE_SHOVE = 1.2;
 const BUMP_SPEED_LOSS = 0.9;
@@ -23,10 +15,14 @@ const CONTACT_COOLDOWN_TICKS = 6;
 const canFight = (rider: RiderState): boolean =>
   rider.mode === "riding" && !rider.airborne && rider.finishTick < 0;
 
+const allies = (rider: RiderState, other: RiderState): boolean =>
+  rider.profile.role === "police" && other.profile.role === "police";
+
 export const nearestRival = (
   state: RaceState,
   riderIndex: number,
-  side: number
+  side: number,
+  strike: StrikeSpec = punch
 ): number => {
   const rider = state.riders[riderIndex];
   if (!rider) {
@@ -35,15 +31,15 @@ export const nearestRival = (
   let best = -1;
   let bestGap = Number.POSITIVE_INFINITY;
   for (const [index, other] of state.riders.entries()) {
-    if (index === riderIndex || !canFight(other)) {
+    if (index === riderIndex || !canFight(other) || allies(rider, other)) {
       continue;
     }
     const gapX = other.x - rider.x;
     const gapS = Math.abs(other.s - rider.s);
     if (
       Math.sign(gapX) === side &&
-      Math.abs(gapX) < REACH_X &&
-      gapS < REACH_S
+      Math.abs(gapX) < strike.reachX &&
+      gapS < strike.reachS
     ) {
       const gap = gapS + Math.abs(gapX);
       if (gap < bestGap) {
@@ -55,14 +51,39 @@ export const nearestRival = (
   return best;
 };
 
-export const rivalSide = (state: RaceState, riderIndex: number): number => {
-  if (nearestRival(state, riderIndex, -1) >= 0) {
+export const rivalSide = (
+  state: RaceState,
+  riderIndex: number,
+  strike: StrikeSpec = punch
+): number => {
+  if (nearestRival(state, riderIndex, -1, strike) >= 0) {
     return -1;
   }
-  if (nearestRival(state, riderIndex, 1) >= 0) {
+  if (nearestRival(state, riderIndex, 1, strike) >= 0) {
     return 1;
   }
   return 0;
+};
+
+const takeWeapon = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  targetIndex: number,
+  target: RiderState
+): void => {
+  if (rider.weapon !== "none" || target.weapon === "none") {
+    return;
+  }
+  rider.weapon = target.weapon;
+  rider.weaponHits = target.weaponHits;
+  disarm(target);
+  state.events.push({
+    kind: "weaponTaken",
+    rider: riderIndex,
+    target: targetIndex,
+    weapon: rider.weapon,
+  });
 };
 
 const landHit = (
@@ -72,16 +93,15 @@ const landHit = (
   attack: AttackKind,
   side: number
 ): void => {
+  const rider = state.riders[riderIndex];
   const target = state.riders[targetIndex];
-  if (!target) {
+  if (!rider || !target) {
     return;
   }
-  const kick = attack === "kick";
-  target.stamina = Math.max(
-    0,
-    target.stamina - (kick ? KICK_DAMAGE : PUNCH_DAMAGE)
-  );
-  target.lateralSpeed += side * (kick ? KICK_SHOVE : PUNCH_SHOVE);
+  const strike = strikeOf(attack, rider.weapon);
+  const weapon = attack === "swing" ? rider.weapon : "none";
+  target.stamina = Math.max(0, target.stamina - strike.damage);
+  target.lateralSpeed += side * strike.shove;
   target.speed *= 1 - HIT_SPEED_LOSS;
   target.hitStun = HIT_STUN_TICKS;
   target.attack = "none";
@@ -91,7 +111,41 @@ const landHit = (
     kind: "hit",
     rider: riderIndex,
     target: targetIndex,
+    weapon,
   });
+  if (weapon !== "none") {
+    rider.weaponHits -= 1;
+  }
+  if (attack === "kick") {
+    takeWeapon(state, riderIndex, rider, targetIndex, target);
+  }
+};
+
+const finishSwing = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState
+): void => {
+  rider.attack = "none";
+  if (rider.weapon === "none" || rider.weaponHits > 0) {
+    return;
+  }
+  const { weapon } = rider;
+  disarm(rider);
+  state.events.push({ kind: "weaponBroken", rider: riderIndex, weapon });
+};
+
+const wantedAttack = (
+  rider: RiderState,
+  input: RiderInput
+): AttackKind | "none" => {
+  if (input.kick) {
+    return "kick";
+  }
+  if (input.punch) {
+    return rider.weapon === "none" ? "punch" : "swing";
+  }
+  return "none";
 };
 
 export const stepAttack = (
@@ -111,42 +165,44 @@ export const stepAttack = (
     return;
   }
   if (rider.attack !== "none") {
+    const strike = strikeOf(rider.attack, rider.weapon);
     rider.attackTicks -= 1;
-    const strikeTick =
-      rider.attack === "kick" ? KICK_TICKS - 10 : PUNCH_TICKS - 6;
-    if (rider.attackTicks === strikeTick) {
-      const targetIndex = nearestRival(state, riderIndex, rider.attackSide);
+    if (rider.attackTicks === strike.strikeTick) {
+      const targetIndex = nearestRival(
+        state,
+        riderIndex,
+        rider.attackSide,
+        strike
+      );
       if (targetIndex >= 0) {
         landHit(state, riderIndex, targetIndex, rider.attack, rider.attackSide);
       }
     }
     if (rider.attackTicks <= 0) {
-      rider.attack = "none";
+      finishSwing(state, riderIndex, rider);
     }
     return;
   }
   if (rider.hitStun > 0 || rider.attackCooldown > 0) {
     return;
   }
-  let wanted: AttackKind | "none" = "none";
-  if (input.kick) {
-    wanted = "kick";
-  } else if (input.punch) {
-    wanted = "punch";
-  }
+  const wanted = wantedAttack(rider, input);
   if (wanted === "none") {
     return;
   }
-  const side = rivalSide(state, riderIndex) || (input.steer < 0 ? -1 : 1);
+  const strike = strikeOf(wanted, rider.weapon);
+  const side =
+    rivalSide(state, riderIndex, strike) || (input.steer < 0 ? -1 : 1);
   rider.attack = wanted;
   rider.attackSide = side;
-  rider.attackTicks = wanted === "kick" ? KICK_TICKS : PUNCH_TICKS;
-  rider.attackCooldown = wanted === "kick" ? KICK_COOLDOWN : PUNCH_COOLDOWN;
+  rider.attackTicks = strike.ticks;
+  rider.attackCooldown = strike.cooldown;
   state.events.push({
     attack: wanted,
     kind: "attack",
     rider: riderIndex,
     side,
+    weapon: wanted === "swing" ? rider.weapon : "none",
   });
 };
 

@@ -1,8 +1,9 @@
-import { createRandom } from "@racer/track/random";
+import { nextSeed, unitOf } from "@racer/track/random";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { nearestRival } from "./combat.ts";
+import { isDown, PATROL_SPEED, PULL_OVER } from "./police.ts";
 import { clamp, curvePushOf, lateralSpeedLimit } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 
@@ -18,6 +19,11 @@ const SPLITTING_SPEED = 8;
 const RIDER_FOLLOW_SECONDS = 1.2;
 const ATTACK_CHANCE_PER_SECOND = 1.4;
 const TRUCE_TICKS = 180;
+const COP_TOP_SPEED = 54;
+const CATCH_UP_RATE = 0.8;
+const ALONGSIDE = 1.5;
+const BODY_CREEP_SPEED = 3;
+const PATROL_END_MARGIN = 80;
 
 const cornerSpeedLimit = (
   state: RaceState,
@@ -98,36 +104,70 @@ const laneThreat = (
   return threat;
 };
 
-const dice = createRandom(0x5a_17);
+interface Aim {
+  readonly speed: number;
+  readonly x: number;
+}
 
-export const pilotInput = (
+const laneAim = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  ownLane: number,
+  cruise: number
+): Aim => {
+  const ahead = laneThreat(state, riderIndex, rider, ownLane);
+  if (!ahead) {
+    return { speed: cruise, x: ownLane };
+  }
+  if (laneThreat(state, riderIndex, rider, -ownLane)) {
+    return {
+      speed: Math.min(cruise, Math.max(0, ahead.speed) + SPLITTING_SPEED),
+      x: 0,
+    };
+  }
+  return { speed: cruise, x: -ownLane };
+};
+
+const copAim = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
+  cop: RiderState
+): Aim | undefined => {
+  if (cop.s > track.length - PATROL_END_MARGIN) {
+    return { speed: 0, x: track.roadHalfWidth + PULL_OVER };
+  }
+  const target = state.riders[cop.chase];
+  if (!target) {
+    return undefined;
+  }
+  if (isDown(target)) {
+    const gap = Math.max(0, target.bodyS - cop.s - 1);
+    return {
+      speed: Math.max(BODY_CREEP_SPEED, Math.sqrt(2 * PLANNED_BRAKING * gap)),
+      x: target.bodyX,
+    };
+  }
+  const side = cop.x < target.x ? -1 : 1;
+  const catchUp = clamp((target.s - cop.s) * CATCH_UP_RATE, -6, 14);
+  return {
+    speed: Math.min(COP_TOP_SPEED, target.speed + catchUp),
+    x: target.x + side * ALONGSIDE,
+  };
+};
+
+const cruiseSpeed = (rider: RiderState): number =>
+  rider.profile.role === "racer" ? Number.POSITIVE_INFINITY : PATROL_SPEED;
+
+const ride = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  aim: Aim,
   input: RiderInput
 ): void => {
-  const rider = state.riders[riderIndex];
-  if (!rider) {
-    return;
-  }
-  const ownLane = track.plan.laneWidth / 2;
-  let targetSpeed = cornerSpeedLimit(state, track, rider) * rider.profile.skill;
-  let targetX = ownLane;
-  const ahead = laneThreat(state, riderIndex, rider, ownLane);
-  if (ahead) {
-    if (laneThreat(state, riderIndex, rider, -ownLane)) {
-      targetX = 0;
-      targetSpeed = Math.min(
-        targetSpeed,
-        Math.max(0, ahead.speed) + SPLITTING_SPEED
-      );
-    } else {
-      targetX = -ownLane;
-    }
-  }
-
   const lateralSpeed = clamp(
-    (targetX - rider.x) * LANE_CHANGE_RATE,
+    (aim.x - rider.x) * LANE_CHANGE_RATE,
     -MAX_LATERAL_SPEED,
     MAX_LATERAL_SPEED
   );
@@ -143,6 +183,10 @@ export const pilotInput = (
     1
   );
 
+  const targetSpeed = Math.min(
+    aim.speed,
+    cornerSpeedLimit(state, track, rider) * rider.profile.skill
+  );
   const excess = rider.speed - targetSpeed;
   input.brake = excess > 1.5 ? clamp(excess / 6, 0.25, 1) : 0;
   if (excess < -1) {
@@ -150,20 +194,60 @@ export const pilotInput = (
   } else {
     input.throttle = excess < 0 ? 0.4 : 0;
   }
+};
 
+const roll = (state: RaceState): number => {
+  state.dice = nextSeed(state.dice);
+  return unitOf(state.dice);
+};
+
+const fight = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  input: RiderInput
+): void => {
   input.punch = false;
   input.kick = false;
-  const rivalNear =
-    nearestRival(state, riderIndex, -1) >= 0 ||
-    nearestRival(state, riderIndex, 1) >= 0;
+  const left = nearestRival(state, riderIndex, -1);
+  const target =
+    state.riders[left >= 0 ? left : nearestRival(state, riderIndex, 1)];
   const hostile =
-    rivalNear && state.tick > TRUCE_TICKS && rider.attack === "none";
-  if (hostile && rider.profile.aggression > 0) {
-    const roll = dice();
-    if (roll < (rider.profile.aggression * ATTACK_CHANCE_PER_SECOND) / 60) {
-      input.kick =
-        roll < (rider.profile.aggression * ATTACK_CHANCE_PER_SECOND) / 180;
-      input.punch = !input.kick;
-    }
+    target !== undefined && state.tick > TRUCE_TICKS && rider.attack === "none";
+  if (!hostile || rider.profile.aggression <= 0) {
+    return;
   }
+  const chance = (rider.profile.aggression * ATTACK_CHANCE_PER_SECOND) / 60;
+  const chosen = roll(state);
+  if (chosen >= chance) {
+    return;
+  }
+  const covetsWeapon = rider.weapon === "none" && target.weapon !== "none";
+  input.kick = covetsWeapon ? chosen < chance * 0.7 : chosen < chance / 3;
+  input.punch = !input.kick;
+};
+
+export const pilotInput = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  input: RiderInput
+): void => {
+  const rider = state.riders[riderIndex];
+  if (!rider) {
+    return;
+  }
+  const aim =
+    (rider.profile.role === "police"
+      ? copAim(state, track, rider)
+      : undefined) ??
+    laneAim(
+      state,
+      riderIndex,
+      rider,
+      track.plan.laneWidth / 2,
+      cruiseSpeed(rider)
+    );
+  ride(state, track, rider, aim, input);
+  fight(state, riderIndex, rider, input);
 };

@@ -7,11 +7,22 @@ import type { GameHandle, HudState } from "../game/hud.ts";
 const notices = {
   "": "",
   air: "Air",
+  armed: "Got the",
+  broken: "Broke the",
+  busted: "Busted",
   close: "Close call",
+  disarmed: "Disarmed by",
   hit: "Hit by",
   knockdown: "Knocked down",
+  police: "Police on you",
   wipeout: "Wipeout",
 } as const;
+
+const bareNotices = new Set(["wipeout", "close", "police", "busted"]);
+
+function money(amount: number): string {
+  return `$${amount.toLocaleString("en-US")}`;
+}
 
 function raceClock(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -106,7 +117,7 @@ function TitleCard({
         <dt>
           <Key>Space</Key> <Key>K</Key>
         </dt>
-        <dd>Punch, kick</dd>
+        <dd>Punch or swing a weapon, kick to steal one</dd>
         <dt>
           <Key>R</Key> <Key>M</Key>
         </dt>
@@ -128,12 +139,21 @@ function Results({
       <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">
         Ridge Road
       </p>
-      <p className="numeric mt-2 text-5xl font-black italic">
-        {hud.position}
-        <span className="text-muted-foreground text-2xl">
-          {placeSuffix(hud.position)} · {raceClock(hud.seconds)}
-        </span>
-      </p>
+      {hud.busted ? (
+        <p className="text-destructive mt-2 text-5xl font-black uppercase italic">
+          Busted
+          <span className="text-muted-foreground numeric block text-lg normal-case not-italic">
+            Fined {money(hud.fine)}
+          </span>
+        </p>
+      ) : (
+        <p className="numeric mt-2 text-5xl font-black italic">
+          {hud.position}
+          <span className="text-muted-foreground text-2xl">
+            {placeSuffix(hud.position)} · {raceClock(hud.seconds)}
+          </span>
+        </p>
+      )}
       <ol className="mt-4 space-y-1 text-sm">
         {hud.placings.map((placing, index) => (
           <li
@@ -144,7 +164,9 @@ function Results({
               {index + 1}. {placing.name}
             </span>
             <span className="numeric">
-              {placing.seconds >= 0 ? raceClock(placing.seconds) : "racing"}
+              {placing.busted && "busted"}
+              {!placing.busted &&
+                (placing.seconds >= 0 ? raceClock(placing.seconds) : "racing")}
             </span>
           </li>
         ))}
@@ -183,8 +205,22 @@ function Dash({ hud }: { readonly hud: HudState }) {
         <span className="text-foreground/70 text-lg">/{hud.riderCount}</span>
       </p>
       <div className="absolute bottom-8 left-6">
+        {hud.weaponName !== "" && (
+          <p className="text-primary mb-2 font-mono text-xs tracking-[0.25em] uppercase drop-shadow">
+            {hud.weaponName}
+            <span className="text-foreground/70 numeric">
+              {" "}
+              · {hud.weaponHits} {hud.weaponHits === 1 ? "hit" : "hits"}
+            </span>
+          </p>
+        )}
         <Stamina align="left" label="You" value={hud.stamina} />
       </div>
+      {hud.copChasing && hud.phase === "racing" && (
+        <p className="bg-destructive/85 absolute top-24 right-6 animate-pulse rounded px-2 py-1 font-mono text-xs font-semibold tracking-[0.25em] text-white uppercase">
+          Police
+        </p>
+      )}
       {hud.rivalName !== "" && (
         <div className="absolute right-6 bottom-8">
           <Stamina
@@ -263,9 +299,7 @@ export function RaceScreen() {
           key={hud.notice}
         >
           {notices[hud.notice]}
-          {hud.notice !== "wipeout" &&
-            hud.notice !== "close" &&
-            ` ${hud.noticeDetail}`}
+          {!bareNotices.has(hud.notice) && ` ${hud.noticeDetail}`}
         </p>
       )}
       {hud.phase === "finished" && <Results hud={hud} onRide={ride} />}

@@ -17,14 +17,14 @@ pnpm build
 
 ## Controls
 
-| Action        | Keys               | Gamepad       |
-| ------------- | ------------------ | ------------- |
-| Throttle      | `W` or `↑`         | Right trigger |
-| Brake         | `S` or `↓`         | Left trigger  |
-| Lean          | `A` `D` or `←` `→` | Left stick    |
-| Punch, kick   | `Space`, `K`       | X, B          |
-| Start         | `Enter`            |               |
-| Restart, mute | `R`, `M`           |               |
+| Action               | Keys               | Gamepad       |
+| -------------------- | ------------------ | ------------- |
+| Throttle             | `W` or `↑`         | Right trigger |
+| Brake                | `S` or `↓`         | Left trigger  |
+| Lean                 | `A` `D` or `←` `→` | Left stick    |
+| Punch or swing, kick | `Space`, `K`       | X, B          |
+| Start                | `Enter`            |               |
+| Restart, mute        | `R`, `M`           |               |
 
 ## Layout
 

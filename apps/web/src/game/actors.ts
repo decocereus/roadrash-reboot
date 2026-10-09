@@ -50,9 +50,10 @@ export interface BikeModel {
 
 export const bikePaints = [
   0xc8_2f_2f, 0x2f_62_c8, 0x1c_1f_24, 0x2f_9a_4e, 0x7a_3b_b8, 0xe6_e1_d6,
+  0xf4_f6_f8,
 ];
 
-export function createBike(paintIndex: number): BikeModel {
+export function createBike(paintIndex: number, beacon = false): BikeModel {
   const root = new THREE.Group();
   const paint = matte(bikePaints[paintIndex] ?? 0xc8_2f_2f);
   const metal = matte(0x2b_2e_33);
@@ -74,6 +75,21 @@ export function createBike(paintIndex: number): BikeModel {
     [0.16, 0.06, 0.03],
     [0, 0.97, 0.9]
   );
+  if (beacon) {
+    block(
+      root,
+      new THREE.MeshBasicMaterial({ color: 0x2f_6b_ff }),
+      [0.12, 0.1, 0.1],
+      [-0.09, 1.12, 0.78]
+    );
+    block(
+      root,
+      new THREE.MeshBasicMaterial({ color: 0xff_2f_3a }),
+      [0.12, 0.1, 0.1],
+      [0.09, 1.12, 0.78]
+    );
+    block(root, matte(0x14_1c_33), [0.36, 0.08, 0.5], [0, 0.98, -0.14]);
+  }
 
   const shadow = new THREE.Mesh(
     new THREE.CircleGeometry(1, 16),

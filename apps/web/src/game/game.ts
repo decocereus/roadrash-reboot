@@ -1,4 +1,4 @@
-import { PUNCH_TICKS, KICK_TICKS, nearestRival } from "@racer/sim/combat";
+import { nearestRival } from "@racer/sim/combat";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, standings, stepRace } from "@racer/sim/race";
 import { MAX_STAMINA, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
@@ -8,6 +8,7 @@ import type {
   RiderInput,
   RiderState,
 } from "@racer/sim/state";
+import { strikeOf, weapons } from "@racer/sim/weapons";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import * as THREE from "three";
@@ -49,6 +50,8 @@ const STANDING_HEIGHT = 0.98;
 const RISE_SECONDS = 0.45;
 const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
+const BUSTED_SECONDS = 2.2;
+const COP_WARNING_RANGE = 80;
 
 interface Pose {
   s: number;
@@ -109,9 +112,18 @@ const attackPose = (rider: RiderState): RiderPose | undefined => {
   if (rider.attack === "none") {
     return undefined;
   }
-  const length = rider.attack === "kick" ? KICK_TICKS : PUNCH_TICKS;
-  return rider.attackTicks > length * 0.2 ? rider.attack : undefined;
+  const strike = strikeOf(rider.attack, rider.weapon);
+  if (rider.attackTicks <= strike.ticks * 0.2) {
+    return undefined;
+  }
+  if (rider.attack === "swing") {
+    return rider.attackTicks > strike.strikeTick ? "windup" : "swing";
+  }
+  return rider.attack;
 };
+
+const weaponName = (rider: RiderState): string =>
+  rider.weapon === "none" ? "" : weapons[rider.weapon].name;
 
 export function createGame(
   canvas: HTMLCanvasElement,
@@ -146,6 +158,8 @@ export function createGame(
   let notice: Notice = "";
   let noticeDetail = "";
   let noticeLeft = 0;
+  let bustedLeft = 0;
+  let fine = 0;
   let muted = false;
   let accumulator = 0;
   let hudClock = 0;
@@ -175,7 +189,10 @@ export function createGame(
       world.scene.remove(view.bike.root, view.bike.shadow, view.figure.root);
     }
     views = race.riders.map((rider) => {
-      const bike = createBike(rider.profile.paint);
+      const bike = createBike(
+        rider.profile.paint,
+        rider.profile.role === "police"
+      );
       const figure = createRiderFigure(rider.profile.paint);
       world.scene.add(bike.root, bike.shadow, figure.root);
       const view: RiderView = {
@@ -211,6 +228,8 @@ export function createGame(
     raceTicks = 0;
     topSpeed = 0;
     notice = "";
+    bustedLeft = 0;
+    fine = 0;
     accumulator = 0;
     chase.snap();
   };
@@ -237,16 +256,24 @@ export function createGame(
     }
   });
 
-  const reactToHit = (attacker: number, target: number) => {
-    if (attacker === 0) {
+  const strikeSound = (armed: boolean) => {
+    if (armed) {
+      sound.weaponHit();
+    } else {
       sound.hit();
+    }
+  };
+
+  const reactToHit = (attacker: number, target: number, armed: boolean) => {
+    if (attacker === 0) {
+      strikeSound(armed);
       const victim = race.riders[target];
       if (victim && victim.stamina <= 0) {
         say("knockdown", victim.profile.name);
       }
     } else if (target === 0) {
-      sound.hit();
-      chase.jolt(0.5);
+      strikeSound(armed);
+      chase.jolt(armed ? 0.8 : 0.5);
       say("hit", race.riders[attacker]?.profile.name ?? "");
     }
   };
@@ -271,25 +298,62 @@ export function createGame(
     } else if (event.kind === "riderContact") {
       chase.jolt(0.3);
       sound.thump(0.35);
+    } else if (event.kind === "weaponTaken") {
+      say("armed", weapons[event.weapon].name);
+    } else if (event.kind === "weaponBroken") {
+      say("broken", weapons[event.weapon].name);
+    } else if (event.kind === "busted") {
+      chase.jolt(0.4);
+      ({ fine } = event);
+      bustedLeft = BUSTED_SECONDS;
+      say("busted");
     } else if (event.kind === "finish" && phase === "racing") {
       phase = "finished";
+    }
+  };
+
+  const reactToOthers = (event: RaceEvent) => {
+    if (event.kind === "riderContact" && event.other === 0) {
+      chase.jolt(0.3);
+      sound.thump(0.35);
+    } else if (event.kind === "weaponTaken" && event.target === 0) {
+      say("disarmed", race.riders[event.rider]?.profile.name ?? "");
+    } else if (event.kind === "pursuit" && event.target === 0) {
+      sound.siren();
+      say("police");
+    } else if (event.kind === "crash" && event.cause === "combat") {
+      const fallen = race.riders[event.rider];
+      if (fallen && Math.abs(fallen.s - player().s) < 30) {
+        sound.thump(0.6);
+      }
     }
   };
 
   const react = () => {
     for (const event of race.events) {
       if (event.kind === "hit") {
-        reactToHit(event.rider, event.target);
+        reactToHit(event.rider, event.target, event.weapon !== "none");
       } else if (event.rider === 0) {
         reactToOwn(event);
-      } else if (event.kind === "riderContact" && event.other === 0) {
-        chase.jolt(0.3);
-        sound.thump(0.35);
-      } else if (event.kind === "crash" && event.cause === "combat") {
-        const fallen = race.riders[event.rider];
-        if (fallen && Math.abs(fallen.s - player().s) < 30) {
-          sound.thump(0.6);
-        }
+      } else {
+        reactToOthers(event);
+      }
+    }
+  };
+
+  const attractOver = (): boolean =>
+    player().finishTick >= 0 || player().mode === "busted";
+
+  const advanceClock = () => {
+    const me = player();
+    if (phase === "racing" && me.mode !== "busted") {
+      raceTicks += 1;
+      topSpeed = Math.max(topSpeed, me.speed);
+    }
+    if (bustedLeft > 0) {
+      bustedLeft -= TICK_SECONDS;
+      if (bustedLeft <= 0 && phase === "racing") {
+        phase = "finished";
       }
     }
   };
@@ -324,16 +388,12 @@ export function createGame(
         pilotInput(race, track, index, input);
       }
     }
-    if (phase === "attract" && player().finishTick >= 0) {
+    if (phase === "attract" && attractOver()) {
       loadRace("attract");
       return;
     }
     stepRace(race, track, inputs);
-    const me = player();
-    if (phase === "racing") {
-      raceTicks += 1;
-      topSpeed = Math.max(topSpeed, me.speed);
-    }
+    advanceClock();
     if (phase !== "attract") {
       react();
     }
@@ -390,6 +450,11 @@ export function createGame(
         0,
         view.pitch
       );
+    } else if (rider.mode === "busted") {
+      pose = "surrender";
+      view.pitch = 0;
+      view.lift = STANDING_HEIGHT;
+      poseOnTrack(figure.root, track, bodyS, bodyX, view.lift, view.yaw, 0, 0);
     } else {
       pose = "run";
       const rise = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
@@ -412,7 +477,7 @@ export function createGame(
         view.pitch
       );
     }
-    figure.animate(pose, clock, seconds, rider.attackSide);
+    figure.animate(pose, clock, seconds, rider.attackSide, rider.weapon);
   };
 
   const drawRider = (
@@ -498,6 +563,7 @@ export function createGame(
     standings(race).map((index) => {
       const rider = race.riders[index];
       return {
+        busted: rider?.mode === "busted",
         name: rider?.profile.name ?? "",
         seconds:
           rider && rider.finishTick >= 0 ? rider.finishTick / TICK_RATE : -1,
@@ -505,24 +571,36 @@ export function createGame(
       };
     });
 
+  const copChasing = (): boolean =>
+    race.riders.some(
+      (rider) =>
+        rider.profile.role === "police" &&
+        rider.chase === 0 &&
+        Math.abs(rider.s - player().bodyS) < COP_WARNING_RANGE
+    );
+
   const report = () => {
     const me = player();
+    const order = standings(race);
     const rivalIndex = Math.max(
       nearestRival(race, 0, -1),
       nearestRival(race, 0, 1)
     );
     const rival = rivalIndex >= 0 ? race.riders[rivalIndex] : undefined;
     onHud({
+      busted: me.mode === "busted",
+      copChasing: copChasing(),
       countdown: Math.ceil(countdown),
       crashes: me.crashes,
+      fine,
       muted,
       notice: noticeLeft > 0 ? notice : "",
       noticeDetail,
       phase,
       placings: phase === "finished" ? placings() : [],
-      position: standings(race).indexOf(0) + 1,
+      position: order.indexOf(0) + 1,
       progress: Math.min(1, Math.max(0, me.bodyS / track.length)),
-      riderCount: race.riders.length,
+      riderCount: order.length,
       rivalName: rival?.profile.name ?? "",
       rivalStamina: rival ? rival.stamina / MAX_STAMINA : 0,
       seconds:
@@ -532,6 +610,8 @@ export function createGame(
       speedKmh: me.speed * 3.6,
       stamina: me.stamina / MAX_STAMINA,
       topSpeedKmh: topSpeed * 3.6,
+      weaponHits: me.weaponHits,
+      weaponName: weaponName(me),
     });
   };
 
