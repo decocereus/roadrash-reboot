@@ -184,10 +184,22 @@ export function createGame(
     noticeLeft = NOTICE_SECONDS;
   };
 
-  const buildViews = () => {
+  const dropViews = () => {
     for (const view of views) {
       world.scene.remove(view.bike.root, view.bike.shadow, view.figure.root);
+      view.bike.dispose();
+      view.figure.dispose();
     }
+    views = [];
+  };
+
+  const dropFleet = () => {
+    world.scene.remove(fleet.group);
+    fleet.dispose();
+  };
+
+  const buildViews = () => {
+    dropViews();
     views = race.riders.map((rider) => {
       const bike = createBike(
         rider.profile.paint,
@@ -213,7 +225,7 @@ export function createGame(
   };
 
   const loadRace = (nextPhase: GamePhase) => {
-    world.scene.remove(fleet.group);
+    dropFleet();
     seed += 1;
     race = createRace(track, seed);
     fleet = createFleet(race.cars);
@@ -659,6 +671,9 @@ export function createGame(
       observer.disconnect();
       controls.dispose();
       sound.dispose();
+      dropViews();
+      dropFleet();
+      world.dispose();
       renderer.dispose();
     },
     startRace,

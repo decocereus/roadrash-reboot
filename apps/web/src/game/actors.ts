@@ -2,6 +2,7 @@ import type { TrafficCar } from "@racer/sim/state";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 
+import { disposeTree } from "./dispose.ts";
 import { placeOnGround } from "./world.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
@@ -46,6 +47,7 @@ export interface BikeModel {
   readonly root: THREE.Group;
   readonly shadow: THREE.Mesh;
   spin: (distance: number) => void;
+  dispose: () => void;
 }
 
 export const bikePaints = [
@@ -104,6 +106,10 @@ export function createBike(paintIndex: number, beacon = false): BikeModel {
   shadow.scale.set(0.55, 1.25, 1);
 
   return {
+    dispose() {
+      disposeTree(root);
+      disposeTree(shadow);
+    },
     root,
     shadow,
     spin(distance) {
@@ -146,6 +152,7 @@ export interface Fleet {
   readonly group: THREE.Group;
   place: (track: Track, index: number, s: number) => void;
   commit: () => void;
+  dispose: () => void;
 }
 
 export function createFleet(cars: readonly TrafficCar[]): Fleet {
@@ -236,6 +243,9 @@ export function createFleet(cars: readonly TrafficCar[]): Fleet {
       for (const each of parts) {
         each.mesh.instanceMatrix.needsUpdate = true;
       }
+    },
+    dispose() {
+      disposeTree(group);
     },
     group,
     place(track, index, s) {

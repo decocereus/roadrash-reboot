@@ -1,6 +1,8 @@
 import type { WeaponKind } from "@racer/sim/state";
 import * as THREE from "three";
 
+import { disposeTree } from "./dispose.ts";
+
 export type RiderPose =
   | "seated"
   | "tumble"
@@ -25,6 +27,7 @@ const helmetColours = [
 
 export interface RiderFigure {
   readonly root: THREE.Group;
+  dispose: () => void;
   animate: (
     pose: RiderPose,
     time: number,
@@ -379,6 +382,9 @@ export const createRiderFigure = (jacketIndex: number): RiderFigure => {
       for (const [index, shin] of shins.entries()) {
         settle(shin, target.shin[index] ?? 0, 0, blend);
       }
+    },
+    dispose() {
+      disposeTree(root);
     },
     root,
   };

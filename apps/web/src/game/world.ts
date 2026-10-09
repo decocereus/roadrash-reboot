@@ -2,6 +2,8 @@ import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
 import * as THREE from "three";
 
+import { disposeTree } from "./dispose.ts";
+
 const CHUNK_LENGTH = 200;
 const ROAD_STEP = 2;
 const TERRAIN_STEP = 4;
@@ -436,6 +438,7 @@ function buildMountains(): THREE.InstancedMesh {
 export interface World {
   readonly scene: THREE.Scene;
   follow: (camera: THREE.Camera) => void;
+  dispose: () => void;
 }
 
 export function createWorld(track: Track): World {
@@ -478,6 +481,9 @@ export function createWorld(track: Track): World {
   scene.add(plain, sky, mountains);
 
   return {
+    dispose() {
+      disposeTree(scene);
+    },
     follow(camera) {
       plain.position.x = camera.position.x;
       plain.position.z = camera.position.z;
