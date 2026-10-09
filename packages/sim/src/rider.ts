@@ -12,10 +12,9 @@ import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
   clamp,
+  curvePushOf,
   GRAVITY,
-  headingAssist,
-  maxYawRate,
-  MIN_STEER_SPEED,
+  lateralSpeedLimit,
   TICK_SECONDS,
 } from "./state.ts";
 import type {
@@ -48,8 +47,21 @@ const FINISH_BRAKE = 0.35;
 const coasting: RiderInput = { brake: FINISH_BRAKE, steer: 0, throttle: 0 };
 
 const forwardRateOf = (rider: RiderState, curvature: number): number =>
-  (rider.speed * Math.cos(rider.heading)) /
-  Math.max(0.5, 1 - curvature * rider.x);
+  rider.speed / Math.max(0.5, 1 - curvature * rider.x);
+
+const settleVisuals = (
+  state: RaceState,
+  rider: RiderState,
+  authority: number
+): void => {
+  const limit = Math.max(1, lateralSpeedLimit(state.bike, rider.speed));
+  rider.lean =
+    clamp(rider.lateralSpeed / limit, -1, 1) *
+    state.bike.visualLean *
+    authority;
+  rider.heading =
+    Math.atan2(rider.lateralSpeed, Math.max(rider.speed, 6)) * 0.5;
+};
 
 const throwRider = (
   state: RaceState,
@@ -70,7 +82,7 @@ const throwRider = (
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air + 0.9;
   rider.bodySpeed = impactSpeed * bodyKeep;
-  rider.bodyLateralSpeed = impactSpeed * Math.sin(rider.heading) * bodyKeep;
+  rider.bodyLateralSpeed = rider.lateralSpeed * bodyKeep;
   rider.bodyVerticalSpeed =
     2 + impactSpeed * 0.05 + Math.max(0, rider.verticalSpeed);
   rider.speed = impactSpeed * bikeKeep;
@@ -94,15 +106,15 @@ const fly = (
   const curvature = curvatureAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
   const groundBefore = heightAt(track, rider.s);
-  rider.heading -= curvature * forwardRate * TICK_SECONDS;
-  rider.x += rider.speed * Math.sin(rider.heading) * TICK_SECONDS;
+  const push = curvePushOf(state.bike, curvature, rider.speed);
+  rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   rider.air +=
     rider.verticalSpeed * TICK_SECONDS -
     (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 -
     (heightAt(track, rider.s) - groundBefore);
   rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
-  rider.lean = approach(rider.lean, 0, 0.6 * TICK_SECONDS);
+  settleVisuals(state, rider, 0.6);
   rider.load = 0;
   rider.airTicks += 1;
   if (rider.air > 0) {
@@ -147,21 +159,15 @@ const ride = (
   rider.load = clamp(1 + verticalAcceleration / GRAVITY, 0, 1.8);
   const grip = (rider.offRoad ? VERGE_GRIP : ROAD_GRIP) * rider.load;
 
-  const steerSpeed = Math.max(rider.speed, MIN_STEER_SPEED);
-  const commandedYawRate =
-    input.steer * maxYawRate(bike, rider.speed) -
-    headingAssist(bike, input.steer) * rider.heading;
-  const leanLimit = Math.min(bike.maxLean, Math.atan(grip));
-  const targetLean = clamp(
-    Math.atan((commandedYawRate * steerSpeed) / GRAVITY),
-    -leanLimit,
-    leanLimit
-  );
-  rider.lean = approach(rider.lean, targetLean, bike.leanRate * TICK_SECONDS);
-  const yawRate =
-    ((GRAVITY * Math.tan(rider.lean)) / steerSpeed) *
-    clamp(rider.speed / 2, 0, 1);
-  const lateralAcceleration = yawRate * rider.speed;
+  const limit =
+    lateralSpeedLimit(bike, rider.speed) * (rider.offRoad ? 0.6 : 1);
+  const wantedLateral = input.steer * limit;
+  rider.lateralSpeed +=
+    (wantedLateral - rider.lateralSpeed) *
+    Math.min(1, bike.steerResponse * TICK_SECONDS);
+  const push = curvePushOf(bike, curvature, rider.speed);
+  const lateralAcceleration =
+    Math.abs(rider.lateralSpeed - push) * GRAVITY * 0.08;
 
   let acceleration =
     -bike.dragFactor * rider.speed * rider.speed -
@@ -193,9 +199,9 @@ const ride = (
   }
   rider.speed = Math.max(0, rider.speed + acceleration * TICK_SECONDS);
 
-  rider.heading += (yawRate - curvature * forwardRate) * TICK_SECONDS;
-  rider.x += rider.speed * Math.sin(rider.heading) * TICK_SECONDS;
+  rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
+  settleVisuals(state, rider, 1);
 };
 
 const hitProps = (
@@ -262,7 +268,7 @@ const hitCar = (
   const awayFromCar = gapX > 0 ? -1 : 1;
   if (-sideGap < GLANCE_OVERLAP) {
     rider.x -= awayFromCar * sideGap;
-    rider.heading += awayFromCar * 0.05;
+    rider.lateralSpeed = awayFromCar * 2.5;
     rider.speed *= Math.abs(closingSpeed) > 40 ? 0.85 : 0.94;
     state.events.push({ kind: "glance", rider: riderIndex });
     return false;
@@ -316,9 +322,10 @@ const tumble = (track: Track, rider: RiderState): void => {
     0,
     BIKE_SLIDE_DECELERATION * TICK_SECONDS
   );
-  rider.s += rider.speed * Math.cos(rider.heading) * TICK_SECONDS;
+  rider.lateralSpeed = approach(rider.lateralSpeed, 0, 6 * TICK_SECONDS);
+  rider.s += rider.speed * TICK_SECONDS;
   rider.x = clamp(
-    rider.x + rider.speed * Math.sin(rider.heading) * TICK_SECONDS,
+    rider.x + rider.lateralSpeed * TICK_SECONDS,
     -track.vergeHalfWidth,
     track.vergeHalfWidth
   );
@@ -361,7 +368,8 @@ const mount = (
 ): void => {
   rider.modeTicks += 1;
   rider.lean = approach(rider.lean, 0, 4 * TICK_SECONDS);
-  rider.heading = approach(rider.heading, 0, 2 * TICK_SECONDS);
+  rider.heading = 0;
+  rider.lateralSpeed = 0;
   if (rider.modeTicks < MOUNT_TICKS) {
     return;
   }

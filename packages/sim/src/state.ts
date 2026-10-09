@@ -3,7 +3,7 @@ export const TICK_SECONDS = 1 / TICK_RATE;
 export const GRAVITY = 9.81;
 export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
-export const MIN_STEER_SPEED = 4;
+export const MIN_STEER_SPEED = 12;
 
 export interface BikeSpec {
   readonly name: string;
@@ -13,26 +13,26 @@ export interface BikeSpec {
   readonly rollingDeceleration: number;
   readonly engineBraking: number;
   readonly brakeDeceleration: number;
-  readonly maxLean: number;
-  readonly leanRate: number;
-  readonly lowSpeedYawRate: number;
-  readonly straightenRate: number;
-  readonly steeringCarry: number;
+  readonly lateralSpeed: number;
+  readonly lateralSpeedPerSpeed: number;
+  readonly steerResponse: number;
+  readonly curvePush: number;
+  readonly visualLean: number;
 }
 
 export const streetBike: BikeSpec = {
   brakeDeceleration: 11,
+  curvePush: 2,
   dragFactor: 1.38e-3,
   engineBraking: 1.2,
+  lateralSpeed: 8,
+  lateralSpeedPerSpeed: 0.03,
   launchAcceleration: 8.5,
-  leanRate: 3.8,
-  lowSpeedYawRate: 1.5,
-  maxLean: 0.87,
   name: "Street 600",
   powerPerMass: 284,
   rollingDeceleration: 0.25,
-  steeringCarry: 2,
-  straightenRate: 4.5,
+  steerResponse: 12,
+  visualLean: 0.38,
 };
 
 export interface RiderInput {
@@ -51,6 +51,7 @@ export interface RiderState {
   s: number;
   x: number;
   speed: number;
+  lateralSpeed: number;
   heading: number;
   lean: number;
   air: number;
@@ -128,12 +129,12 @@ export const approach = (
   return Math.max(target, value - step);
 };
 
-export const maxYawRate = (bike: BikeSpec, speed: number): number =>
-  Math.min(
-    (GRAVITY * Math.tan(bike.maxLean)) / Math.max(speed, MIN_STEER_SPEED),
-    bike.lowSpeedYawRate
-  );
+export const lateralSpeedLimit = (bike: BikeSpec, speed: number): number =>
+  (bike.lateralSpeed + bike.lateralSpeedPerSpeed * speed) *
+  clamp(speed / MIN_STEER_SPEED, 0, 1);
 
-export const headingAssist = (bike: BikeSpec, steer: number): number =>
-  bike.straightenRate +
-  (bike.steeringCarry - bike.straightenRate) * Math.min(1, Math.abs(steer));
+export const curvePushOf = (
+  bike: BikeSpec,
+  curvature: number,
+  speed: number
+): number => (curvature * speed * speed) / bike.curvePush;

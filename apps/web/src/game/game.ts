@@ -19,6 +19,8 @@ import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
 import type { GameHandle, GamePhase, HudState, Notice } from "./hud.ts";
 import { createControls } from "./input.ts";
+import { createRiderFigure } from "./rider-figure.ts";
+import type { RiderPose } from "./rider-figure.ts";
 import { createWorld } from "./world.ts";
 
 const COUNTDOWN_SECONDS = 3;
@@ -29,7 +31,11 @@ const MAX_PIXEL_RATIO = 2;
 const MIN_PIXEL_RATIO = 0.6;
 const SLOW_FRAME_SECONDS = 0.0195;
 const WRAP_JUMP = 30;
-const LYING_PITCH = 2.29;
+const LYING_PITCH = -Math.PI / 2;
+const LYING_HEIGHT = 0.22;
+const STANDING_HEIGHT = 0.98;
+const RISE_SECONDS = 0.45;
+const LIFT_TICKS = 14;
 
 interface Pose {
   s: number;
@@ -87,7 +93,8 @@ export function createGame(
   const world = createWorld(track);
   const chase = createChaseCamera();
   const bike = createBike();
-  world.scene.add(bike.root, bike.figure, bike.shadow);
+  const figure = createRiderFigure();
+  world.scene.add(bike.root, figure.root, bike.shadow);
   const sound = createSound();
 
   let seed = 1;
@@ -110,6 +117,10 @@ export function createGame(
   let calmSeconds = 0;
   let raisesLeft = 2;
   let tumbleAngle = 0;
+  let clock = 0;
+  let figurePitch = 0;
+  let figureLift = 0;
+  let figureYaw = 0;
 
   const input: RiderInput = { brake: 0, steer: 0, throttle: 0 };
   const before = emptyPose();
@@ -229,6 +240,76 @@ export function createGame(
     capture(rider, after);
   };
 
+  const placeFigure = (
+    rider: RiderState,
+    seated: boolean,
+    bodyS: number,
+    bodyX: number,
+    bodyAir: number,
+    seconds: number
+  ) => {
+    clock += seconds;
+    let pose: RiderPose = "seated";
+    if (seated) {
+      pose =
+        rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS
+          ? "lift"
+          : "seated";
+      figure.root.position.copy(bike.root.position);
+      figure.root.quaternion.copy(bike.root.quaternion);
+      figure.root.translateY(HIP_HEIGHT);
+      figure.root.translateZ(HIP_SETBACK);
+      tumbleAngle = 0;
+      figurePitch = 0;
+      figureLift = STANDING_HEIGHT;
+      figureYaw = 0;
+    } else if (rider.mode === "thrown") {
+      const resting = rider.bodySpeed < 0.5 && rider.bodyAir === 0;
+      pose = resting ? "lying" : "tumble";
+      if (resting) {
+        figurePitch += (LYING_PITCH - figurePitch) * Math.min(1, seconds * 6);
+        figureLift += (LYING_HEIGHT - figureLift) * Math.min(1, seconds * 6);
+      } else {
+        tumbleAngle -= (5 + rider.bodySpeed * 0.4) * seconds;
+        figurePitch = tumbleAngle;
+        figureLift = 0.5;
+      }
+      poseOnTrack(
+        figure.root,
+        track,
+        bodyS,
+        bodyX,
+        bodyAir + figureLift,
+        figureYaw,
+        0,
+        figurePitch
+      );
+    } else {
+      pose = "run";
+      const rise = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
+      const eased = rise * rise * (3 - 2 * rise);
+      figurePitch = LYING_PITCH * (1 - eased);
+      const bob =
+        rise >= 1 ? Math.abs(Math.sin(clock * Math.PI * 2 * 2.6)) * 0.05 : 0;
+      figureLift =
+        LYING_HEIGHT + (STANDING_HEIGHT - LYING_HEIGHT) * eased + bob;
+      if (rise >= 0.5) {
+        figureYaw = Math.atan2(rider.x - rider.bodyX, rider.s - rider.bodyS);
+      }
+      poseOnTrack(
+        figure.root,
+        track,
+        bodyS,
+        bodyX,
+        figureLift,
+        figureYaw,
+        0,
+        figurePitch
+      );
+    }
+    figure.animate(pose, clock, seconds);
+  };
+
   const draw = (blend: number, seconds: number) => {
     const rider = player();
     const s = mix(before.s, after.s, blend);
@@ -248,39 +329,7 @@ export function createGame(
     poseOnTrack(bike.shadow, track, s, x, 0.03, heading, 0, -Math.PI / 2);
     bike.spin(rider.speed * seconds);
 
-    if (seated) {
-      bike.figure.position.copy(bike.root.position);
-      bike.figure.quaternion.copy(bike.root.quaternion);
-      bike.figure.translateY(HIP_HEIGHT);
-      bike.figure.translateZ(HIP_SETBACK);
-      tumbleAngle = 0;
-    } else if (rider.mode === "thrown") {
-      tumbleAngle -= (4 + rider.bodySpeed * 0.5) * seconds;
-      const resting = rider.bodySpeed < 0.5 && rider.bodyAir === 0;
-      poseOnTrack(
-        bike.figure,
-        track,
-        bodyS,
-        bodyX,
-        bodyAir + (resting ? 0.25 : 0.6),
-        0,
-        0,
-        resting ? LYING_PITCH : tumbleAngle
-      );
-    } else {
-      const facing = rider.s < rider.bodyS ? Math.PI : 0;
-      const stride = Math.abs(Math.sin(rider.modeTicks * 0.45)) * 0.12;
-      poseOnTrack(
-        bike.figure,
-        track,
-        bodyS,
-        bodyX,
-        1.05 + stride,
-        facing,
-        0,
-        0.55
-      );
-    }
+    placeFigure(rider, seated, bodyS, bodyX, bodyAir, seconds);
 
     for (const [index, car] of race.cars.entries()) {
       const from = previousCars[index] ?? car.s;

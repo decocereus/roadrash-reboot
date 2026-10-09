@@ -25,6 +25,7 @@ const createRider = (track: Track): RiderState => {
     crashes: 0,
     finishTick: -1,
     heading: 0,
+    lateralSpeed: 0,
     lean: 0,
     load: 1,
     mode: "riding",

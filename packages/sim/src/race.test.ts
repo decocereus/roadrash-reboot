@@ -95,32 +95,58 @@ describe("riding", () => {
     expect(rider.x).toBeLessThan(-1.5);
   });
 
-  it("leaning into the curve holds the lane at a sane speed", () => {
+  it("a light steer into the curve holds the lane at a sane speed", () => {
     const state = createRace(quietTrack, 1);
     const rider = player(state);
     rider.s = 300;
     rider.x = 0;
     rider.speed = 40;
-    hold(state, quietTrack, { brake: 0, steer: 0.45, throttle: 0.6 }, 2.5);
-    expect(Math.abs(rider.x)).toBeLessThan(3);
-    expect(rider.lean).toBeGreaterThan(0.1);
+    hold(state, quietTrack, { brake: 0, steer: 0.2, throttle: 0.6 }, 2.5);
+    expect(Math.abs(rider.x)).toBeLessThan(1.5);
   });
 
-  it("the tightest bend cannot be held flat out", () => {
-    const state = createRace(quietTrack, 1);
+  it("a lane change takes about half a second and stops when the key lifts", () => {
+    const flat = compileTrack({
+      ...ridgeRoad,
+      sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+      trafficPerKilometre: 0,
+    });
+    const state = createRace(flat, 1);
     const rider = player(state);
-    rider.s = 1650;
-    rider.x = 1.8;
-    rider.speed = 58;
+    rider.speed = 40;
+    rider.x = 0;
+    hold(state, flat, { brake: 0, steer: 1, throttle: 0.6 }, 0.5);
+    const atRelease = rider.x;
+    expect(atRelease).toBeGreaterThan(3);
+    expect(atRelease).toBeLessThan(4.6);
+    hold(state, flat, { brake: 0, steer: 0, throttle: 0.6 }, 1);
+    expect(rider.x - atRelease).toBeLessThan(0.9);
+  });
+
+  it("the tightest bend cannot be held flat out but can at a sane speed", () => {
+    const flatOut = createRace(quietTrack, 1);
+    const fast = player(flatOut);
+    fast.s = 1520;
+    fast.x = 1.8;
+    fast.speed = 58;
     const events = hold(
-      state,
+      flatOut,
       quietTrack,
-      { brake: 0, steer: 1, throttle: 1 },
-      6
+      { brake: 0, steer: -1, throttle: 1 },
+      5
     );
-    const leftTheRoad =
-      rider.offRoad || events.some((event) => event.kind === "crash");
-    expect(leftTheRoad).toBeTruthy();
+    expect(
+      fast.offRoad || events.some((event) => event.kind === "crash")
+    ).toBeTruthy();
+
+    const sane = createRace(quietTrack, 1);
+    const steady = player(sane);
+    steady.s = 1560;
+    steady.x = 0;
+    steady.speed = 36;
+    hold(sane, quietTrack, { brake: 0, steer: -0.45, throttle: 0.4 }, 3);
+    expect(steady.mode).toBe("riding");
+    expect(Math.abs(steady.x)).toBeLessThan(quietTrack.roadHalfWidth);
   });
 
   it("launches over the big crest at speed and lands without crashing", () => {

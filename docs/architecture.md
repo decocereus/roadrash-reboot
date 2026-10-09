@@ -26,15 +26,15 @@ There is no API Worker or database yet, because nothing needs one. Leaderboards,
 
 `packages/sim` owns every rule. It has no DOM, Three.js, clock, or unseeded randomness, so the same inputs always produce the same race. State is plain data that `stepRace` advances by exactly 1/60 second.
 
-A rider lives in track space: distance along the road `s`, lateral offset `x` in metres, speed, heading relative to the road, and lean angle. The bike is not a rigid body. The model is the smallest one that produces the behaviour we want:
+A rider lives in track space: distance along the road `s`, lateral offset `x` in metres, speed, and lateral speed. The bike is not a rigid body. The model is the smallest one that produces the behaviour we want, and it steers the way the Road Rash games did:
 
-- **Steering is leaning.** Input sets a wanted yaw rate. The bike rolls toward the lean that produces it at a limited rate, and the actual yaw rate comes from the lean (`g · tan(lean) / speed`). Changing direction takes time and carries after release.
-- **Curves push you out.** The road turns under the bike at `curvature · speed`. A rider who does nothing drifts to the outside, and every bend has a speed above which full lean cannot hold it.
-- **Grip is a budget.** Lean and braking share one traction circle. Grass has less than half the grip of asphalt and heavy drag.
+- **Steering is direct.** Holding left or right moves the bike sideways at up to about 9 m/s, so a lane change takes half a second. Lateral speed follows the key with a short response, so releasing stops the bike within about half a metre. The lean is only a visual tilt that follows the lateral motion.
+- **Curves push you out.** A bend drifts the bike outward at `curvature · speed² / curvePush`. A rider who does nothing ends up on the grass, and every bend has a speed above which full steer cannot hold it.
+- **Grass is slow.** Off the road the bike has less steering authority and heavy drag.
 - **Hills matter.** Grade speeds you up or slows you down. Vertical curvature changes the load on the tyres, so a crest goes light, and above about 170 km/h the big crest launches the bike.
-- **Crashes separate rider and bike.** A hard hit throws the rider, who tumbles, runs back to the bike, and remounts. A light side contact with a car only costs speed.
+- **Crashes separate rider and bike.** A hard hit throws the rider, who tumbles, lies still, gets up, runs back to the bike, lifts it, and remounts. A light side contact with a car only costs speed.
 
-`BikeSpec` holds the numbers for one bike: power, drag, brakes, maximum lean, lean rate, and the two steering assists. Faster bikes are new specs, not new code.
+`BikeSpec` holds the numbers for one bike: power, drag, brakes, lateral speed, steering response, curve push, and visual lean. Faster bikes are new specs, not new code.
 
 `pilotInput` is the AI rider. It brakes for bends from the same physics, picks a lane around traffic, and drives the title screen today. Rival riders build on it.
 

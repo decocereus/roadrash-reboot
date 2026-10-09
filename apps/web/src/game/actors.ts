@@ -6,8 +6,8 @@ import { placeOnGround } from "./world.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
-export const HIP_HEIGHT = 1.15;
-export const HIP_SETBACK = 0.1;
+export const HIP_HEIGHT = 1.02;
+export const HIP_SETBACK = 0.22;
 
 function matte(color: number): THREE.MeshLambertMaterial {
   return new THREE.MeshLambertMaterial({ color, flatShading: true });
@@ -44,7 +44,6 @@ function wheel(
 
 export interface BikeModel {
   readonly root: THREE.Group;
-  readonly figure: THREE.Group;
   readonly shadow: THREE.Mesh;
   spin: (distance: number) => void;
 }
@@ -72,33 +71,6 @@ export function createBike(): BikeModel {
     [0, 0.97, 0.9]
   );
 
-  const figure = new THREE.Group();
-  const seated = new THREE.Group();
-  seated.position.set(0, -HIP_HEIGHT, -HIP_SETBACK);
-  figure.add(seated);
-  const leather = matte(0x23_26_2c);
-  const denim = matte(0x2d_3d_5c);
-  block(seated, leather, [0.42, 0.62, 0.26], [0, 1.3, 0.1], -0.72);
-  block(seated, denim, [0.4, 0.2, 0.3], [0, 1, 0.32]);
-  for (const side of [-1, 1]) {
-    block(
-      seated,
-      leather,
-      [0.11, 0.52, 0.11],
-      [side * 0.26, 1.3, -0.22],
-      -1.15
-    );
-    block(seated, denim, [0.15, 0.5, 0.16], [side * 0.2, 0.82, 0.12], -0.9);
-    block(seated, denim, [0.12, 0.46, 0.13], [side * 0.21, 0.5, 0.22], 0.3);
-  }
-  const helmet = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.17, 1),
-    matte(0xf2_c2_30)
-  );
-  helmet.position.set(0, 1.64, -0.2);
-  seated.add(helmet);
-  block(seated, matte(0x10_12_14), [0.24, 0.1, 0.06], [0, 1.64, -0.36]);
-
   const shadow = new THREE.Mesh(
     new THREE.CircleGeometry(1, 16),
     new THREE.MeshBasicMaterial({
@@ -112,7 +84,6 @@ export function createBike(): BikeModel {
   shadow.scale.set(0.55, 1.25, 1);
 
   return {
-    figure,
     root,
     shadow,
     spin(distance) {

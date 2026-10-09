@@ -1,15 +1,14 @@
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { clamp, GRAVITY, maxYawRate } from "./state.ts";
+import { clamp, curvePushOf, lateralSpeedLimit } from "./state.ts";
 import type { RaceState, RiderInput, RiderState, TrafficCar } from "./state.ts";
 
 const CORNER_CONFIDENCE = 0.72;
 const PLANNED_BRAKING = 6.5;
 const SCAN_STEP = 10;
 const LANE_CHANGE_RATE = 1.2;
-const MAX_LATERAL_SPEED = 3.5;
-const HEADING_GAIN = 4;
+const MAX_LATERAL_SPEED = 5;
 const FOLLOW_SECONDS = 2.4;
 const ONCOMING_SECONDS = 4.5;
 const LANE_REACH = 1.7;
@@ -21,7 +20,9 @@ const cornerSpeedLimit = (
   rider: RiderState
 ): number => {
   const lateralLimit =
-    GRAVITY * Math.tan(state.bike.maxLean) * CORNER_CONFIDENCE;
+    lateralSpeedLimit(state.bike, 60) *
+    state.bike.curvePush *
+    CORNER_CONFIDENCE;
   const horizon = (rider.speed * rider.speed) / (2 * PLANNED_BRAKING) + 40;
   let limit = Number.POSITIVE_INFINITY;
   for (let ahead = 0; ahead < horizon; ahead += SCAN_STEP) {
@@ -97,16 +98,14 @@ export const pilotInput = (
     -MAX_LATERAL_SPEED,
     MAX_LATERAL_SPEED
   );
-  const wantedHeading = lateralSpeed / Math.max(rider.speed, 8);
-  const wantedYawRate =
-    curvatureAt(track, rider.s) * rider.speed +
-    HEADING_GAIN * (wantedHeading - rider.heading);
-  const yawLimit = maxYawRate(state.bike, rider.speed);
-  const demand = wantedYawRate + state.bike.straightenRate * rider.heading;
-  const carryShift =
-    (state.bike.steeringCarry - state.bike.straightenRate) * rider.heading;
+  const push = curvePushOf(
+    state.bike,
+    curvatureAt(track, rider.s),
+    rider.speed
+  );
   input.steer = clamp(
-    demand / (yawLimit - Math.sign(demand) * carryShift),
+    (lateralSpeed + push) /
+      Math.max(1, lateralSpeedLimit(state.bike, rider.speed)),
     -1,
     1
   );
