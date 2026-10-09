@@ -36,7 +36,9 @@ A rider lives in track space: distance along the road `s`, lateral offset `x` in
 
 `BikeSpec` holds the numbers for one bike: power, drag, brakes, lateral speed, steering response, curve push, and visual lean. Faster bikes are new specs, not new code.
 
-`pilotInput` is the AI rider. It brakes for bends from the same physics, picks a lane around traffic, and drives the title screen today. Rival riders build on it.
+`pilotInput` is the AI rider. It brakes for bends from the same physics, picks a lane around traffic and other riders, and throws punches and kicks at a rate set by its profile's aggression. The same code drives the title screen and the five rivals in a race.
+
+Combat lives in `combat.ts`. A punch or kick lands on the nearest rider on the chosen side within about two metres, drains stamina, shoves them sideways, and stuns their steering briefly. A rider whose stamina reaches zero is thrown. Rider-to-rider contact shoves both bikes apart, and a hard rear-end throws the rider behind. Remounting restores stamina to 55.
 
 ## Tracks
 
@@ -57,8 +59,8 @@ The target is 60 frames per second on an integrated-graphics laptop.
 | Step | Delivers | Status |
 | --- | --- | --- |
 | 1 | Faceless-style workspace | Done |
-| 2 | Riding greybox: physics, Ridge Road, traffic, crashes, AI pilot, placeholder models, audio | In progress |
-| 3 | Combat, weapons, a pack of rival riders, police |  |
+| 2 | Riding greybox: physics, Ridge Road, traffic, crashes, AI pilot, placeholder models, audio | Done |
+| 3 | Combat, weapons, a pack of rival riders, police | In progress: five rivals, punches, kicks, stamina, and standings done; weapons and police next |
 | 4 | Art: rigged bike and rider, vehicles, environment kit |  |
 | 5 | Career: more tracks, levels, money, bike shop, characters, story |  |
 | 6 | Multiplayer on the same simulation, then ads |  |
