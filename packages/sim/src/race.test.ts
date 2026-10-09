@@ -79,6 +79,33 @@ const pilotUntilFinish = (
   return events;
 };
 
+const brakeIntoBend = (brake: number) => {
+  const state = createRace(quietTrack, 1, 0, 0);
+  const rider = player(state);
+  rider.s = 1520;
+  rider.speed = 50;
+  const input = { brake, kick: false, punch: false, steer: -1, throttle: 0 };
+  for (let tick = 0; tick < 6 * TICK_RATE && rider.speed > 30; tick += 1) {
+    stepRace(state, quietTrack, [input]);
+  }
+  return { distance: rider.s - 1520, mode: rider.mode };
+};
+
+const brakeAcrossBend = (brake: number): number => {
+  const state = createRace(quietTrack, 1, 0, 0);
+  const rider = player(state);
+  rider.s = 1560;
+  rider.x = -4;
+  rider.speed = 50;
+  hold(
+    state,
+    quietTrack,
+    { brake, kick: false, punch: false, steer: 1, throttle: 0 },
+    0.4
+  );
+  return rider.speed;
+};
+
 describe("riding", () => {
   it("reaches 100 km/h in under five seconds and tops out near 210 km/h", () => {
     const state = createRace(quietTrack, 1, 0, 0);
@@ -211,6 +238,14 @@ describe("riding", () => {
     );
     expect(steady.mode).toBe("riding");
     expect(Math.abs(steady.x)).toBeLessThan(quietTrack.roadHalfWidth);
+  });
+
+  it("the brakes still bite in the tightest bend whichever way the rider steers", () => {
+    const braking = brakeIntoBend(1);
+    const coasting = brakeIntoBend(0);
+    expect([braking.mode, coasting.mode]).toStrictEqual(["riding", "riding"]);
+    expect(braking.distance).toBeLessThan(coasting.distance * 0.7);
+    expect(brakeAcrossBend(1)).toBeLessThan(brakeAcrossBend(0) - 1.2);
   });
 
   it("launches over the big crest at speed and lands without crashing", () => {

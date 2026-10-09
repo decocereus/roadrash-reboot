@@ -46,6 +46,7 @@ const SETTLE_TICKS = 50;
 const FINISH_BRAKE = 0.35;
 const REMOUNT_STAMINA = 55;
 const STUN_STEER = 0.35;
+const BRAKE_RESERVE = 0.35;
 
 const coasting: RiderInput = {
   brake: FINISH_BRAKE,
@@ -201,8 +202,9 @@ const ride = (
     acceleration -= bike.engineBraking;
   }
   if (input.brake > 0) {
-    const tractionLeft = Math.sqrt(
-      Math.max(0, (grip * GRAVITY) ** 2 - lateralAcceleration ** 2)
+    const tractionLeft = Math.max(
+      BRAKE_RESERVE * grip * GRAVITY,
+      Math.sqrt(Math.max(0, (grip * GRAVITY) ** 2 - lateralAcceleration ** 2))
     );
     acceleration -= Math.min(
       bike.brakeDeceleration * input.brake,
