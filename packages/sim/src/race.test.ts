@@ -556,3 +556,129 @@ describe("police", () => {
     expect(me.s).toBeGreaterThan(cop.s);
   });
 });
+
+const column = (riderCount: number) => {
+  const state = createRace(straight, 1, riderCount - 1, 0);
+  for (const rider of state.riders) {
+    rider.s = 100;
+    rider.x = 0;
+    rider.speed = 30;
+  }
+  return state;
+};
+
+const ride = <Sample>(
+  state: RaceState,
+  seconds: number,
+  sample: (events: readonly RaceEvent[]) => Sample
+): Sample[] => {
+  const inputs = state.riders.map(() => cruising);
+  const samples: Sample[] = [];
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    stepRace(state, straight, inputs);
+    samples.push(sample(state.events));
+  }
+  return samples;
+};
+
+describe("rider contact", () => {
+  it.each([
+    { front: 1, rear: 0 },
+    { front: 0, rear: 1 },
+  ])(
+    "a rider who runs into the back of another stays behind ($rear into $front)",
+    ({ front, rear }) => {
+      const state = column(2);
+      const behind = riderAt(state, rear);
+      const ahead = riderAt(state, front);
+      behind.s = ahead.s - 1.5;
+      behind.speed = 34;
+      const gaps = ride(state, 1, () => ahead.s - behind.s);
+      expect(behind.mode).toBe("riding");
+      expect(Math.min(...gaps)).toBeGreaterThan(0);
+    }
+  );
+
+  it("a pileup throws each rider at most once a tick", () => {
+    const state = column(3);
+    const rear = riderAt(state, 0);
+    rear.speed = 45;
+    riderAt(state, 1).s = 101.8;
+    riderAt(state, 1).x = -0.3;
+    const stopped = riderAt(state, 2);
+    stopped.s = 102.5;
+    stopped.x = 0.3;
+    stopped.speed = 0;
+    const crashes = ride(state, 0.5, (events) =>
+      state.riders.map(
+        (_, index) =>
+          events.filter(
+            (event) => event.kind === "crash" && event.rider === index
+          ).length
+      )
+    ).flat();
+    expect(Math.max(...crashes)).toBe(1);
+    expect(rear.crashes).toBe(1);
+    expect(rear.bodyS).toBeGreaterThan(stopped.s);
+  });
+});
+
+describe("simultaneous strikes", () => {
+  it("two riders who punch each other on the same tick both land", () => {
+    const { bruiser, me, state } = sideBySide();
+    bruiser.weapon = "none";
+    bruiser.weaponHits = 0;
+    const events = brawl(state, 1, (tick) => [
+      pressing("punch", tick === 0),
+      cruising,
+      pressing("punch", tick === 0),
+    ]);
+    const hits = events.filter((event) => event.kind === "hit");
+    expect(hits).toContainEqual({
+      attack: "punch",
+      kind: "hit",
+      rider: 0,
+      target: 2,
+      weapon: "none",
+    });
+    expect(hits).toContainEqual({
+      attack: "punch",
+      kind: "hit",
+      rider: 2,
+      target: 0,
+      weapon: "none",
+    });
+    expect(me.stamina).toBe(bruiser.stamina);
+    expect(me.stamina).toBeLessThan(MAX_STAMINA);
+  });
+});
+
+const pilotPack = (states: readonly RaceState[], seconds: number) => {
+  const inputs = states.map((state) =>
+    state.riders.map(() => ({ ...cruising }))
+  );
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    for (const [raceIndex, state] of states.entries()) {
+      const each = inputs[raceIndex] ?? [];
+      for (const [index, input] of each.entries()) {
+        pilotInput(state, track, index, input);
+      }
+      stepRace(state, track, each);
+    }
+  }
+};
+
+describe("replays", () => {
+  it("a six-rider pack replays the same from the same seed, alone or beside another race", () => {
+    const alone = createRace(track, 5);
+    pilotPack([alone], 40);
+    const again = createRace(track, 5);
+    pilotPack([again], 40);
+    const beside = createRace(track, 5);
+    const other = createRace(track, 9);
+    pilotPack([beside, other], 40);
+    expect(JSON.stringify(again)).toBe(JSON.stringify(alone));
+    expect(JSON.stringify(beside)).toBe(JSON.stringify(alone));
+    expect(JSON.stringify(other)).not.toBe(JSON.stringify(alone));
+  });
+});

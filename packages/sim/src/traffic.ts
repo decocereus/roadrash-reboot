@@ -84,17 +84,22 @@ const gapToRider = (car: TrafficCar, rider: RiderState): number => {
 };
 
 export const stepTraffic = (state: RaceState, track: Track): void => {
-  for (const car of state.cars) {
+  const lastS = state.cars.map((car) => car.s);
+  const lastSpeed = state.cars.map((car) => Math.abs(car.speed));
+  for (const [index, car] of state.cars.entries()) {
     const direction = Math.sign(car.cruiseSpeed);
     let targetSpeed = Math.abs(car.cruiseSpeed);
-    const speed = Math.abs(car.speed);
+    const speed = lastSpeed[index] ?? 0;
+    const s = lastS[index] ?? car.s;
 
-    for (const other of state.cars) {
-      if (other !== car && Math.sign(other.cruiseSpeed) === direction) {
+    for (const [otherIndex, other] of state.cars.entries()) {
+      if (otherIndex !== index && Math.sign(other.cruiseSpeed) === direction) {
         const gap =
-          (other.s - car.s) * direction - other.halfLength - car.halfLength;
+          ((lastS[otherIndex] ?? other.s) - s) * direction -
+          other.halfLength -
+          car.halfLength;
         if (gap > 0 && gap < FOLLOW_GAP + speed * FOLLOW_SECONDS) {
-          targetSpeed = Math.min(targetSpeed, Math.abs(other.speed));
+          targetSpeed = Math.min(targetSpeed, lastSpeed[otherIndex] ?? 0);
         }
       }
     }

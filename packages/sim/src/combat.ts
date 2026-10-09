@@ -1,7 +1,13 @@
 import type { Track } from "@racer/track/track";
 
 import { approach, BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, clamp } from "./state.ts";
-import type { AttackKind, RaceState, RiderInput, RiderState } from "./state.ts";
+import type {
+  AttackKind,
+  RaceState,
+  RiderInput,
+  RiderState,
+  WeaponKind,
+} from "./state.ts";
 import { disarm, punch, strikeOf } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
 
@@ -86,40 +92,12 @@ const takeWeapon = (
   });
 };
 
-const landHit = (
-  state: RaceState,
-  riderIndex: number,
-  targetIndex: number,
-  attack: AttackKind,
-  side: number
-): void => {
-  const rider = state.riders[riderIndex];
-  const target = state.riders[targetIndex];
-  if (!rider || !target) {
-    return;
-  }
-  const strike = strikeOf(attack, rider.weapon);
-  const weapon = attack === "swing" ? rider.weapon : "none";
-  target.stamina = Math.max(0, target.stamina - strike.damage);
-  target.lateralSpeed += side * strike.shove;
-  target.speed *= 1 - HIT_SPEED_LOSS;
-  target.hitStun = HIT_STUN_TICKS;
-  target.attack = "none";
-  target.attackTicks = 0;
-  state.events.push({
-    attack,
-    kind: "hit",
-    rider: riderIndex,
-    target: targetIndex,
-    weapon,
-  });
-  if (weapon !== "none") {
-    rider.weaponHits -= 1;
-  }
-  if (attack === "kick") {
-    takeWeapon(state, riderIndex, rider, targetIndex, target);
-  }
-};
+export interface Strike {
+  readonly attack: AttackKind;
+  readonly side: number;
+  readonly target: number;
+  readonly weapon: WeaponKind;
+}
 
 const finishSwing = (
   state: RaceState,
@@ -127,12 +105,46 @@ const finishSwing = (
   rider: RiderState
 ): void => {
   rider.attack = "none";
+  rider.attackTicks = 0;
   if (rider.weapon === "none" || rider.weaponHits > 0) {
     return;
   }
   const { weapon } = rider;
   disarm(rider);
   state.events.push({ kind: "weaponBroken", rider: riderIndex, weapon });
+};
+
+const landHit = (
+  state: RaceState,
+  riderIndex: number,
+  { attack, side, target: targetIndex, weapon }: Strike
+): void => {
+  const rider = state.riders[riderIndex];
+  const target = state.riders[targetIndex];
+  if (!rider || !target) {
+    return;
+  }
+  const strike = strikeOf(attack, weapon);
+  target.stamina = Math.max(0, target.stamina - strike.damage);
+  target.lateralSpeed += side * strike.shove;
+  target.speed *= 1 - HIT_SPEED_LOSS;
+  target.hitStun = HIT_STUN_TICKS;
+  if (target.attack !== "none") {
+    finishSwing(state, targetIndex, target);
+  }
+  state.events.push({
+    attack,
+    kind: "hit",
+    rider: riderIndex,
+    target: targetIndex,
+    weapon,
+  });
+  if (weapon !== "none" && rider.weapon === weapon) {
+    rider.weaponHits -= 1;
+  }
+  if (attack === "kick") {
+    takeWeapon(state, riderIndex, rider, targetIndex, target);
+  }
 };
 
 const wantedAttack = (
@@ -148,10 +160,38 @@ const wantedAttack = (
   return "none";
 };
 
+const aimStrike = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState
+): Strike | undefined => {
+  if (!canFight(rider) || rider.attack === "none") {
+    return undefined;
+  }
+  const strike = strikeOf(rider.attack, rider.weapon);
+  if (rider.attackTicks - 1 !== strike.strikeTick) {
+    return undefined;
+  }
+  const target = nearestRival(state, riderIndex, rider.attackSide, strike);
+  if (target < 0) {
+    return undefined;
+  }
+  return {
+    attack: rider.attack,
+    side: rider.attackSide,
+    target,
+    weapon: rider.attack === "swing" ? rider.weapon : "none",
+  };
+};
+
+export const aimStrikes = (state: RaceState): (Strike | undefined)[] =>
+  state.riders.map((rider, index) => aimStrike(state, index, rider));
+
 export const stepAttack = (
   state: RaceState,
   riderIndex: number,
-  input: RiderInput
+  input: RiderInput,
+  aimed: Strike | undefined
 ): void => {
   const rider = state.riders[riderIndex];
   if (!rider) {
@@ -164,20 +204,11 @@ export const stepAttack = (
     rider.attackTicks = 0;
     return;
   }
-  if (rider.attack !== "none") {
-    const strike = strikeOf(rider.attack, rider.weapon);
-    rider.attackTicks -= 1;
-    if (rider.attackTicks === strike.strikeTick) {
-      const targetIndex = nearestRival(
-        state,
-        riderIndex,
-        rider.attackSide,
-        strike
-      );
-      if (targetIndex >= 0) {
-        landHit(state, riderIndex, targetIndex, rider.attack, rider.attackSide);
-      }
-    }
+  if (aimed) {
+    landHit(state, riderIndex, aimed);
+  }
+  if (rider.attack !== "none" || aimed) {
+    rider.attackTicks = Math.max(0, rider.attackTicks - 1);
     if (rider.attackTicks <= 0) {
       finishSwing(state, riderIndex, rider);
     }
@@ -234,8 +265,6 @@ const rearEnd = (
   state: RaceState,
   rearIndex: number,
   frontIndex: number,
-  gapX: number,
-  behind: number,
   throwRider: ThrowRider
 ): void => {
   const rear = state.riders[rearIndex];
@@ -248,11 +277,11 @@ const rearEnd = (
     rear.speed = front.speed * 0.9;
     throwRider(rearIndex, "rider", 0.4, 0.6);
     front.speed = clamp(front.speed + closing * 0.2, 0, front.speed + 6);
-    front.lateralSpeed += (gapX >= 0 ? 1 : -1) * behind * 0.8;
+    front.lateralSpeed += front.x >= rear.x ? 0.8 : -0.8;
     return;
   }
   rear.speed = Math.max(0, Math.min(rear.speed, front.speed) - 0.5);
-  rear.s = front.s - behind * BIKE_HALF_LENGTH * 2;
+  rear.s = front.s - BIKE_HALF_LENGTH * 2;
   front.speed = approach(
     front.speed,
     front.speed + Math.max(0, closing) * 0.3,
@@ -283,7 +312,7 @@ export const stepRiderContacts = (
     if (!left || !canFight(left)) {
       continue;
     }
-    for (let b = a + 1; b < riders.length; b += 1) {
+    for (let b = a + 1; b < riders.length && canFight(left); b += 1) {
       const right = riders[b];
       if (!right || !canFight(right)) {
         continue;
@@ -299,9 +328,9 @@ export const stepRiderContacts = (
       if (overlapX < overlapS) {
         shoveApart(state, a, b, gapX, overlapX);
       } else if (gapS > 0) {
-        rearEnd(state, a, b, gapX, 1, throwRider);
+        rearEnd(state, a, b, throwRider);
       } else {
-        rearEnd(state, b, a, gapX, -1, throwRider);
+        rearEnd(state, b, a, throwRider);
       }
     }
   }

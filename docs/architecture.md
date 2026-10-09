@@ -38,7 +38,7 @@ A rider lives in track space: distance along the road `s`, lateral offset `x` in
 
 `pilotInput` is the AI rider. It brakes for bends from the same physics, picks a lane around traffic and other riders, and throws punches and kicks at a rate set by its profile's aggression. An unarmed rider next to an armed one prefers to kick. The same code drives the title screen, the five rivals, and the police. Its dice live in `RaceState`, so a race replays the same way whatever ran before it.
 
-Combat lives in `combat.ts`. A punch or kick lands on the nearest rider on the chosen side within about two metres, drains stamina, shoves them sideways, and stuns their steering briefly. A rider whose stamina reaches zero is thrown. Rider-to-rider contact shoves both bikes apart, and a hard rear-end throws the rider behind. Remounting restores stamina to 55.
+Combat lives in `combat.ts`. A punch or kick lands on the nearest rider on the chosen side within about two metres, drains stamina, shoves them sideways, and stuns their steering briefly. A rider whose stamina reaches zero is thrown. Strikes that come due on the same tick are all aimed before any of them lands, so two riders who swing at each other both connect. Rider-to-rider contact shoves both bikes apart, and a hard rear-end throws the rider behind, once per tick at most, and leaves them behind the bike they hit. Traffic cars follow each other from the previous tick's positions. Remounting restores stamina to 55.
 
 Weapons are numbers in `weapons.ts`, the same way handling is a `BikeSpec`. A rider holding one swings it when they press punch; kick stays a kick. Each strike has damage, shove, reach, timing, and a number of hits before the weapon breaks:
 
