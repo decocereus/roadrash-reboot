@@ -70,14 +70,61 @@ export function createSound(): Sound {
     source.stop(context.currentTime + seconds);
   };
 
+  const shutDown = () => {
+    void context?.close();
+    context = undefined;
+    master = undefined;
+  };
+
+  const build = () => {
+    const audio = new AudioContext();
+    context = audio;
+    master = audio.createGain();
+    master.gain.value = muted ? 0 : 0.8;
+    master.connect(audio.destination);
+
+    noise = audio.createBuffer(1, audio.sampleRate * 2, audio.sampleRate);
+    const samples = noise.getChannelData(0);
+    for (let index = 0; index < samples.length; index += 1) {
+      samples[index] = Math.random() * 2 - 1;
+    }
+
+    engineTone = audio.createBiquadFilter();
+    engineTone.type = "lowpass";
+    engineTone.frequency.value = 600;
+    engineGain = audio.createGain();
+    engineGain.gain.value = 0.07;
+    engine = audio.createOscillator();
+    engine.type = "sawtooth";
+    growl = audio.createOscillator();
+    growl.type = "square";
+    const growlGain = audio.createGain();
+    growlGain.gain.value = 0.5;
+    engine.connect(engineTone);
+    growl.connect(growlGain).connect(engineTone);
+    engineTone.connect(engineGain).connect(master);
+    engine.start();
+    growl.start();
+
+    const wind = audio.createBufferSource();
+    wind.buffer = noise;
+    wind.loop = true;
+    windTone = audio.createBiquadFilter();
+    windTone.type = "bandpass";
+    windTone.Q.value = 0.5;
+    windGain = audio.createGain();
+    windGain.gain.value = 0;
+    wind.connect(windTone).connect(windGain).connect(master);
+    wind.start();
+  };
+
   return {
     crash() {
       burst(900, 0.7, 0.9, 90);
       burst(180, 0.45, 0.8, 50);
     },
     dispose() {
-      void context?.close();
-      context = undefined;
+      shutDown();
     },
     drive(speed, throttle, offRoad) {
       if (!context || !engine || !growl || !engineGain || !engineTone) {
@@ -155,48 +202,11 @@ export function createSound(): Sound {
         void context.resume();
         return;
       }
-      context = new AudioContext();
-      master = context.createGain();
-      master.gain.value = muted ? 0 : 0.8;
-      master.connect(context.destination);
-
-      noise = context.createBuffer(
-        1,
-        context.sampleRate * 2,
-        context.sampleRate
-      );
-      const samples = noise.getChannelData(0);
-      for (let index = 0; index < samples.length; index += 1) {
-        samples[index] = Math.random() * 2 - 1;
+      try {
+        build();
+      } catch {
+        shutDown();
       }
-
-      engineTone = context.createBiquadFilter();
-      engineTone.type = "lowpass";
-      engineTone.frequency.value = 600;
-      engineGain = context.createGain();
-      engineGain.gain.value = 0.07;
-      engine = context.createOscillator();
-      engine.type = "sawtooth";
-      growl = context.createOscillator();
-      growl.type = "square";
-      const growlGain = context.createGain();
-      growlGain.gain.value = 0.5;
-      engine.connect(engineTone);
-      growl.connect(growlGain).connect(engineTone);
-      engineTone.connect(engineGain).connect(master);
-      engine.start();
-      growl.start();
-
-      const wind = context.createBufferSource();
-      wind.buffer = noise;
-      wind.loop = true;
-      windTone = context.createBiquadFilter();
-      windTone.type = "bandpass";
-      windTone.Q.value = 0.5;
-      windGain = context.createGain();
-      windGain.gain.value = 0;
-      wind.connect(windTone).connect(windGain).connect(master);
-      wind.start();
     },
     weaponHit() {
       burst(120, 0.34, 0.95, 40);

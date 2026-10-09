@@ -77,9 +77,11 @@ function Key({ children }: { readonly children: string }) {
 
 function TitleCard({
   ready,
+  failure,
   onRide,
 }: {
   readonly ready: boolean;
+  readonly failure: string;
   readonly onRide: () => void;
 }) {
   return (
@@ -93,14 +95,20 @@ function TitleCard({
       <p className="text-foreground/85 mt-3 text-base">
         Hold it open, lean through the bends, and stay out of the oncoming lane.
       </p>
-      <div className="mt-6 flex items-center gap-4">
-        <Button disabled={!ready} onClick={onRide} size="lg">
-          {ready ? "Ride" : "Loading"}
-        </Button>
-        <span className="text-muted-foreground text-xs">
-          or press <Key>Enter</Key>
-        </span>
-      </div>
+      {failure === "" ? (
+        <div className="mt-6 flex items-center gap-4">
+          <Button disabled={!ready} onClick={onRide} size="lg">
+            {ready ? "Ride" : "Loading"}
+          </Button>
+          <span className="text-muted-foreground text-xs">
+            or press <Key>Enter</Key>
+          </span>
+        </div>
+      ) : (
+        <p className="text-destructive mt-6 text-sm font-medium" role="alert">
+          Could not start the game: {failure}
+        </p>
+      )}
       <dl className="text-muted-foreground mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
         <dt>
           <Key>W</Key> <Key>↑</Key>
@@ -247,6 +255,7 @@ export function RaceScreen() {
   const gameRef = useRef<GameHandle | null>(null);
   const [hud, setHud] = useState<HudState>(idleHud);
   const [ready, setReady] = useState(false);
+  const [failure, setFailure] = useState("");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -254,13 +263,19 @@ export function RaceScreen() {
       return;
     }
     let disposed = false;
-    void import("../game/game.ts").then(({ createGame }) => {
-      if (disposed) {
-        return;
-      }
-      gameRef.current = createGame(canvas, setHud);
-      setReady(true);
-    });
+    import("../game/game.ts")
+      .then(({ createGame }) => {
+        if (disposed) {
+          return;
+        }
+        gameRef.current = createGame(canvas, setHud);
+        setReady(true);
+      })
+      .catch((error) => {
+        if (!disposed) {
+          setFailure(error instanceof Error ? error.message : String(error));
+        }
+      });
     return () => {
       disposed = true;
       gameRef.current?.dispose();
@@ -281,7 +296,7 @@ export function RaceScreen() {
       {hud.phase === "attract" && (
         <>
           <div className="from-background/80 via-background/30 pointer-events-none absolute inset-0 bg-gradient-to-tr to-transparent" />
-          <TitleCard onRide={ride} ready={ready} />
+          <TitleCard failure={failure} onRide={ride} ready={ready} />
         </>
       )}
       {(live || hud.phase === "finished") && <Dash hud={hud} />}
