@@ -1,7 +1,7 @@
 import { nearestRival } from "@racer/sim/combat";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, standings, stepRace } from "@racer/sim/race";
-import { MAX_STAMINA, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
+import { clamp, MAX_STAMINA, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
 import type {
   RaceEvent,
   RaceState,
@@ -162,6 +162,7 @@ export function createGame(
   let fine = 0;
   let muted = false;
   let accumulator = 0;
+  let clockReset = false;
   let hudClock = 0;
   let slowFrames = 0;
   let calmSeconds = 0;
@@ -242,7 +243,7 @@ export function createGame(
     notice = "";
     bustedLeft = 0;
     fine = 0;
-    accumulator = 0;
+    clockReset = true;
     chase.snap();
   };
 
@@ -640,12 +641,19 @@ export function createGame(
 
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
-    const seconds = Math.min(MAX_FRAME_SECONDS, (now - last) / 1000);
+    const seconds = clamp((now - last) / 1000, 0, MAX_FRAME_SECONDS);
     last = now;
+    if (clockReset) {
+      accumulator = 0;
+      clockReset = false;
+    }
     accumulator += seconds;
     while (accumulator >= TICK_SECONDS) {
       tick();
       accumulator -= TICK_SECONDS;
+      if (clockReset) {
+        break;
+      }
     }
     const me = player();
     const riding = me.mode === "riding" && phase !== "attract";
@@ -655,7 +663,7 @@ export function createGame(
       riding && phase === "racing" ? (own?.throttle ?? 0) : 0,
       riding && me.offRoad
     );
-    draw(accumulator / TICK_SECONDS, seconds);
+    draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     govern(seconds);
     noticeLeft -= seconds;
     hudClock += seconds;
