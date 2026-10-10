@@ -810,6 +810,87 @@ describe("police", () => {
   });
 });
 
+const knockedOffBeside = (speed: number) => {
+  const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
+  const me = riderAt(state, 0);
+  const cop = patrolFrom(state, 1, 200);
+  cop.speed = speed;
+  me.s = 200;
+  me.x = 0;
+  me.speed = speed;
+  me.stamina = 0;
+  const copInput = { ...cruising };
+  const flatOut = { ...cruising, throttle: 1 };
+  let ticksToArrest = -1;
+  for (let tick = 0; tick < 15 * TICK_RATE; tick += 1) {
+    pilotInput(state, straight, 1, copInput);
+    stepRace(state, straight, [flatOut, copInput]);
+    if (state.events.some((event) => event.kind === "busted")) {
+      ticksToArrest = tick;
+    }
+  }
+  return { mode: me.mode, ticksToArrest };
+};
+
+const patrolWithBeat = (beat: number) => {
+  const state = createRace({
+    ...defaultSetup(straight, 1),
+    police: { ...defaultPolice, beat },
+    rivals: [],
+  });
+  const me = riderAt(state, 0);
+  const cop = riderAt(state, 1);
+  const post = cop.s;
+  me.s = post - 10;
+  me.x = -1.8;
+  const copInput = { ...cruising };
+  let chased = false;
+  for (let tick = 0; tick < 40 * TICK_RATE; tick += 1) {
+    me.speed = 40;
+    me.stamina = MAX_STAMINA;
+    pilotInput(state, straight, 1, copInput);
+    stepRace(state, straight, [cruising, copInput]);
+    chased ||= chaserDistance(state, 0) >= 0;
+  }
+  return {
+    chased,
+    chasing: chaserDistance(state, 0) >= 0,
+    offTheRoad: Math.abs(cop.x) > straight.roadHalfWidth,
+    past: cop.s - post,
+    speed: cop.speed,
+  };
+};
+
+describe("the bust window", () => {
+  it("a cop beside a rider who is knocked off at walking pace arrests them, but not in the first half second", () => {
+    const { mode, ticksToArrest } = knockedOffBeside(4);
+    expect(mode).toBe("busted");
+    expect(ticksToArrest).toBeGreaterThanOrEqual(30);
+    expect(ticksToArrest).toBeLessThan(90);
+  });
+
+  it("a cop beside a rider who is knocked off at 160 km/h overshoots, and the rider gets back on", () => {
+    expect(knockedOffBeside(45)).toStrictEqual({
+      mode: "riding",
+      ticksToArrest: -1,
+    });
+  });
+
+  it("a cop gives up the chase at the end of its beat and pulls off the road", () => {
+    const short = patrolWithBeat(400);
+    const long = patrolWithBeat(5000);
+    expect(short).toMatchObject({
+      chased: true,
+      chasing: false,
+      offTheRoad: true,
+      speed: 0,
+    });
+    expect(short.past).toBeGreaterThan(400);
+    expect(short.past).toBeLessThan(550);
+    expect(long).toMatchObject({ chasing: true, offTheRoad: false });
+  });
+});
+
 const parked: RiderInput = { ...cruising, brake: 1, throttle: 0 };
 
 describe("the end of a patrol", () => {

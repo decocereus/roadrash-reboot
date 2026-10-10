@@ -8,13 +8,21 @@ export const PATROL_SPEED = 22;
 export const BODY_RANGE = 60;
 export const WAKE_RANGE = 35;
 const LOSE_RANGE = 120;
-export const BUST_REACH = 2.5;
+export const BUST_REACH = 4;
+export const BUST_DELAY_TICKS = 30;
 export const PULL_OVER = 1.1;
 
 export const isDown = (rider: RiderState): boolean =>
   rider.mode === "thrown" ||
   rider.mode === "running" ||
   rider.mode === "mounting";
+
+const arrestable = (rider: RiderState): boolean =>
+  isDown(rider) &&
+  (rider.mode !== "thrown" || rider.modeTicks >= BUST_DELAY_TICKS);
+
+export const onBeat = (state: RaceState, cop: RiderState): boolean =>
+  cop.s < cop.post + state.police.beat;
 
 const wanted = (rider: RiderState): boolean =>
   rider.profile.role === "racer" &&
@@ -85,6 +93,10 @@ const updateChase = (state: RaceState, copIndex: number, cop: RiderState) => {
   let chosen = current && stillChasing(cop, current) ? cop.chase : next;
   if (nextRider && isDown(nextRider)) {
     chosen = next;
+  }
+  const quarry = state.riders[chosen];
+  if (!(onBeat(state, cop) || (quarry && isDown(quarry)))) {
+    chosen = -1;
   }
   if (chosen >= 0 && chosen !== cop.chase) {
     state.events.push({ kind: "pursuit", rider: copIndex, target: chosen });
@@ -159,7 +171,7 @@ const catchDowned = (
   }
   for (const [index, rider] of state.riders.entries()) {
     const reach = Math.hypot(rider.bodyS - cop.s, rider.bodyX - cop.x);
-    if (wanted(rider) && isDown(rider) && reach < BUST_REACH) {
+    if (wanted(rider) && arrestable(rider) && reach < BUST_REACH) {
       bust(state, track, index, copIndex);
     }
   }

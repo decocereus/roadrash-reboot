@@ -141,15 +141,46 @@ export interface PoliceLevel {
   readonly count: number;
   readonly topSpeed: number;
   readonly sightRange: number;
+  readonly beat: number;
   readonly bike: BikeId;
 }
 
 export const policeLevels = {
-  1: { bike: "ostra-sesta-600", count: 1, sightRange: 40, topSpeed: 46 },
-  2: { bike: "ostra-sesta-600", count: 2, sightRange: 40, topSpeed: 50 },
-  3: { bike: "ostra-sesta-600", count: 3, sightRange: 45, topSpeed: 54 },
-  4: { bike: "halden-meridian-900", count: 4, sightRange: 50, topSpeed: 58 },
-  5: { bike: "ostra-nera-1000", count: 5, sightRange: 60, topSpeed: 62 },
+  1: {
+    beat: 3000,
+    bike: "ostra-sesta-600",
+    count: 1,
+    sightRange: 40,
+    topSpeed: 46,
+  },
+  2: {
+    beat: 1200,
+    bike: "ostra-sesta-600",
+    count: 2,
+    sightRange: 40,
+    topSpeed: 50,
+  },
+  3: {
+    beat: 1400,
+    bike: "ostra-sesta-600",
+    count: 3,
+    sightRange: 45,
+    topSpeed: 54,
+  },
+  4: {
+    beat: 750,
+    bike: "halden-meridian-900",
+    count: 4,
+    sightRange: 50,
+    topSpeed: 58,
+  },
+  5: {
+    beat: 700,
+    bike: "ostra-nera-1000",
+    count: 5,
+    sightRange: 60,
+    topSpeed: 62,
+  },
 } as const satisfies Record<Level, PoliceLevel>;
 
 export const catalogue: readonly BikeId[] = [
@@ -199,6 +230,7 @@ export const creditLimitOf = (bikeId: BikeId): number =>
     : Math.round(tradeInOf(bikeId) * CREDIT_RATE);
 
 export const policeFor = (level: Level, region: RegionId): PoliceSetup => ({
+  beat: policeLevels[level].beat,
   bike: bikes[policeLevels[level].bike],
   count: policeLevels[level].count,
   fine: fines[level],

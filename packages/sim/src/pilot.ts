@@ -3,7 +3,7 @@ import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { grudgeSide, nearestRival } from "./combat.ts";
-import { isDown, PATROL_SPEED, PULL_OVER } from "./police.ts";
+import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
 import {
   BIKE_HALF_WIDTH,
   clamp,
@@ -217,14 +217,15 @@ const copAim = (
   if (cop.parked) {
     return { speed: 0, x: cop.x };
   }
-  if (cop.s > track.length - PATROL_END_MARGIN) {
+  const target = state.riders[cop.chase];
+  const offDuty = !(target || onBeat(state, cop));
+  if (offDuty || cop.s > track.length - PATROL_END_MARGIN) {
     const offRoad = cop.x > track.roadHalfWidth + BIKE_HALF_WIDTH;
     return {
       speed: offRoad ? 0 : PULL_OVER_CRAWL,
       x: track.roadHalfWidth + PULL_OVER,
     };
   }
-  const target = state.riders[cop.chase];
   if (!target) {
     return laneAim(state, copIndex, cop, ownLane, PATROL_SPEED);
   }

@@ -102,6 +102,7 @@ export interface RiderState {
   weaponAtThrow: WeaponKind;
   chase: number;
   parked: boolean;
+  post: number;
   s: number;
   x: number;
   speed: number;
@@ -207,6 +208,7 @@ export type RaceEvent =
 export interface PoliceRules {
   readonly topSpeed: number;
   readonly sightRange: number;
+  readonly beat: number;
   readonly fine: number;
 }
 

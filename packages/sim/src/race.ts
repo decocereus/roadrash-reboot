@@ -56,6 +56,7 @@ export const defaultPlayer: PlayerSetup = {
 };
 
 export const defaultPolice: PoliceSetup = {
+  beat: 1500,
   bike: streetBike,
   count: 1,
   fine: 1500,
@@ -137,6 +138,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   modeTicks: 0,
   offRoad: false,
   parked: false,
+  post: spot.s,
   profile: entry.profile,
   s: spot.s,
   speed: 0,
@@ -259,6 +261,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
     police: {
+      beat: police.beat,
       fine: police.fine,
       sightRange: police.sightRange,
       topSpeed: police.topSpeed,
