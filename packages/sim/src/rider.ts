@@ -90,6 +90,7 @@ export const throwRider = (
   rider.mode = "thrown";
   disarm(rider);
   rider.chase = -1;
+  rider.parked = false;
   rider.attack = "none";
   rider.attackTicks = 0;
   rider.hitStun = 0;

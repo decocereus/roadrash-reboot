@@ -83,6 +83,7 @@ export interface RiderState {
   weapon: WeaponKind;
   weaponHits: number;
   chase: number;
+  parked: boolean;
   s: number;
   x: number;
   speed: number;

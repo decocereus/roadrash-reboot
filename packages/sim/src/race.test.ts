@@ -4,7 +4,7 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { pilotInput } from "./pilot.ts";
-import { BUST_FINE } from "./police.ts";
+import { BUST_FINE, PATROL_SPEED } from "./police.ts";
 import { createRace, standings, stepRace } from "./race.ts";
 import { MAX_STAMINA, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput } from "./state.ts";
@@ -584,14 +584,55 @@ describe("weapons", () => {
   });
 });
 
+const patrolFrom = (state: RaceState, copIndex: number, s: number) => {
+  const cop = riderAt(state, copIndex);
+  cop.parked = false;
+  cop.s = s;
+  cop.x = track.plan.laneWidth / 2;
+  cop.speed = PATROL_SPEED;
+  return cop;
+};
+
+describe("meeting the police", () => {
+  it("a cop parked on the verge pulls out after the pack before the player has ridden a kilometre", () => {
+    const state = createRace(track, 4);
+    const cop = riderAt(state, 6);
+    expect({
+      offRoad: Math.abs(cop.x) > track.roadHalfWidth,
+      s: cop.s,
+      speed: cop.speed,
+    }).toStrictEqual({ offRoad: true, s: 700, speed: 0 });
+    const inputs = state.riders.map(() => ({ ...cruising }));
+    const pursuits: RaceEvent[] = [];
+    let fastestWhileParked = 0;
+    while (player(state).s < 1000 && state.tick < 120 * TICK_RATE) {
+      for (const [index, input] of inputs.entries()) {
+        pilotInput(state, track, index, input);
+      }
+      stepRace(state, track, inputs);
+      pursuits.push(
+        ...state.events.filter((event) => event.kind === "pursuit")
+      );
+      if (pursuits.length === 0) {
+        fastestWhileParked = Math.max(fastestWhileParked, cop.speed);
+      }
+    }
+    expect(player(state).s).toBeGreaterThanOrEqual(1000);
+    expect(pursuits.length).toBeGreaterThan(0);
+    expect({
+      fastestWhileParked,
+      onRoad: Math.abs(cop.x) < track.roadHalfWidth,
+    }).toStrictEqual({ fastestWhileParked: 0, onRoad: true });
+  });
+});
+
 const crashNearCop = (copS: number) => {
   const state = createRace(straight, 1, 0, 1);
   const me = riderAt(state, 0);
-  const cop = riderAt(state, 1);
+  const cop = patrolFrom(state, 1, copS);
   me.s = 200;
   me.speed = 15;
   me.stamina = 0;
-  cop.s = copS;
   const copInput = { ...cruising };
   const flatOut = { ...cruising, throttle: 1 };
   const events: RaceEvent[] = [];
@@ -636,9 +677,7 @@ const parked: RiderInput = { ...cruising, brake: 1, throttle: 0 };
 describe("the end of a patrol", () => {
   it("a cop that reaches the end of the track pulls off the road and the traffic behind it drives on", () => {
     const state = createRace(track, 7, 0, 1);
-    const cop = riderAt(state, 1);
-    cop.s = track.length - 79;
-    cop.x = track.plan.laneWidth / 2;
+    const cop = patrolFrom(state, 1, track.length - 79);
     cop.speed = 3;
     const follower = state.cars.find((car) => car.speed > 0);
     if (!follower) {

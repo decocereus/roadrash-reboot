@@ -7,7 +7,7 @@ import {
   stepAttack,
   stepRiderContacts,
 } from "./combat.ts";
-import { PATROL_SPEED, stepPolice } from "./police.ts";
+import { PULL_OVER, stepPolice } from "./police.ts";
 import { stepRider, throwRider } from "./rider.ts";
 import { MAX_STAMINA, streetBike } from "./state.ts";
 import type {
@@ -123,6 +123,7 @@ const createRider = (
   mode: "riding",
   modeTicks: 0,
   offRoad: false,
+  parked: false,
   profile,
   s,
   speed: 0,
@@ -155,9 +156,13 @@ export const createRace = (
   }
   for (let index = 0; index < copCount; index += 1) {
     const cop = armed(
-      createRider(copProfile, FIRST_COP_S + index * COP_SPACING, lane)
+      createRider(
+        copProfile,
+        FIRST_COP_S + index * COP_SPACING,
+        track.roadHalfWidth + PULL_OVER
+      )
     );
-    cop.speed = PATROL_SPEED;
+    cop.parked = true;
     riders.push(cop);
   }
   return {

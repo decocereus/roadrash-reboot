@@ -1,11 +1,13 @@
 import type { Track } from "@racer/track/track";
 
+import { BIKE_HALF_LENGTH } from "./state.ts";
 import type { RaceState, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
 export const PATROL_SPEED = 22;
 export const SIGHT_RANGE = 40;
 export const BODY_RANGE = 60;
+export const WAKE_RANGE = 35;
 const LOSE_RANGE = 120;
 export const BUST_REACH = 2.5;
 export const BUST_FINE = 1500;
@@ -60,9 +62,22 @@ const pickTarget = (state: RaceState, cop: RiderState): number => {
   return best;
 };
 
+const passing = (cop: RiderState, rider: RiderState): boolean => {
+  const ahead = bodyAhead(cop, rider);
+  return ahead > -BIKE_HALF_LENGTH * 2 && ahead < WAKE_RANGE;
+};
+
+const stillParked = (state: RaceState, cop: RiderState): boolean =>
+  cop.parked &&
+  !state.riders.some((rider) => wanted(rider) && passing(cop, rider));
+
 const updateChase = (state: RaceState, copIndex: number, cop: RiderState) => {
   if (cop.mode !== "riding") {
     cop.chase = -1;
+    return;
+  }
+  cop.parked = stillParked(state, cop);
+  if (cop.parked) {
     return;
   }
   const current = state.riders[cop.chase];

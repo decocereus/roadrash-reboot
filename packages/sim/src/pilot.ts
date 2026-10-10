@@ -142,6 +142,9 @@ const copAim = (
   track: Track,
   cop: RiderState
 ): Aim | undefined => {
+  if (cop.parked) {
+    return { speed: 0, x: cop.x };
+  }
   if (cop.s > track.length - PATROL_END_MARGIN) {
     const offRoad = cop.x > track.roadHalfWidth + BIKE_HALF_WIDTH;
     return {
