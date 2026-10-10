@@ -670,6 +670,20 @@ const column = (riderCount: number) => {
   return state;
 };
 
+const pileup = (movingIndex: number) => {
+  const state = column(3);
+  const rear = riderAt(state, 0);
+  rear.speed = 45;
+  const moving = riderAt(state, movingIndex);
+  moving.s = 101.8;
+  moving.x = -0.3;
+  const stopped = riderAt(state, 3 - movingIndex);
+  stopped.s = 102.5;
+  stopped.x = 0.3;
+  stopped.speed = 0;
+  return { moving, rear, state, stopped };
+};
+
 const ride = <Sample>(
   state: RaceState,
   seconds: number,
@@ -703,15 +717,7 @@ describe("rider contact", () => {
   );
 
   it("a pileup throws each rider at most once a tick", () => {
-    const state = column(3);
-    const rear = riderAt(state, 0);
-    rear.speed = 45;
-    riderAt(state, 1).s = 101.8;
-    riderAt(state, 1).x = -0.3;
-    const stopped = riderAt(state, 2);
-    stopped.s = 102.5;
-    stopped.x = 0.3;
-    stopped.speed = 0;
+    const { rear, state, stopped } = pileup(1);
     const crashes = ride(state, 0.5, (events) =>
       state.riders.map(
         (_, index) =>
@@ -723,6 +729,26 @@ describe("rider contact", () => {
     expect(Math.max(...crashes)).toBe(1);
     expect(rear.crashes).toBe(1);
     expect(rear.bodyS).toBeGreaterThan(stopped.s);
+  });
+
+  it("a pileup launches the rear rider and leaves the two in front the same whichever of them is listed first", () => {
+    const [first, swapped] = [1, 2].map((movingIndex) => {
+      const { moving, rear, state, stopped } = pileup(movingIndex);
+      const launches = ride(state, 0.5, (events) =>
+        events.flatMap((event) =>
+          event.kind === "crash" && event.rider === 0 ? [event.speed] : []
+        )
+      ).flat();
+      return {
+        launches,
+        moving: [moving.mode, moving.s, moving.x, moving.speed],
+        rear: [rear.bodyS, rear.bodyX, rear.s, rear.x],
+        stopped: [stopped.mode, stopped.s, stopped.x, stopped.speed],
+      };
+    });
+    expect(first?.launches).toHaveLength(1);
+    expect(first?.launches[0]).toBeGreaterThan(20);
+    expect(swapped).toStrictEqual(first);
   });
 });
 

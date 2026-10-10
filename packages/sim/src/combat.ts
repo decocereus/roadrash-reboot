@@ -1,6 +1,6 @@
 import type { Track } from "@racer/track/track";
 
-import { approach, BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, clamp } from "./state.ts";
+import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, clamp } from "./state.ts";
 import type {
   AttackKind,
   RaceState,
@@ -17,6 +17,9 @@ const CONTACT_CLOSING_SPEED = 9;
 const SIDE_SHOVE = 1.2;
 const BUMP_SPEED_LOSS = 0.9;
 const CONTACT_COOLDOWN_TICKS = 6;
+const TAP_SPEED_LOSS = 0.5;
+const SOFT_SHUNT = 1;
+const HARD_SHUNT = 6;
 
 const canFight = (rider: RiderState): boolean =>
   rider.mode === "riding" && !rider.airborne && rider.finishTick < 0;
@@ -295,63 +298,6 @@ export const stepAttack = (
   });
 };
 
-const shoveApart = (
-  state: RaceState,
-  a: number,
-  b: number,
-  gapX: number,
-  overlapX: number
-): void => {
-  const left = state.riders[a];
-  const right = state.riders[b];
-  if (!left || !right) {
-    return;
-  }
-  const away = gapX >= 0 ? 1 : -1;
-  left.x -= (away * overlapX) / 2;
-  right.x += (away * overlapX) / 2;
-  left.lateralSpeed = -away * SIDE_SHOVE;
-  right.lateralSpeed = away * SIDE_SHOVE;
-  left.speed = Math.max(0, left.speed - BUMP_SPEED_LOSS);
-  right.speed = Math.max(0, right.speed - BUMP_SPEED_LOSS);
-  if (left.attackCooldown < CONTACT_COOLDOWN_TICKS) {
-    state.events.push({ kind: "riderContact", other: b, rider: a });
-  }
-};
-
-const rearEnd = (
-  state: RaceState,
-  rearIndex: number,
-  frontIndex: number,
-  throwRider: ThrowRider
-): void => {
-  const rear = state.riders[rearIndex];
-  const front = state.riders[frontIndex];
-  if (!rear || !front) {
-    return;
-  }
-  const closing = rear.speed - front.speed;
-  if (closing > CONTACT_CLOSING_SPEED) {
-    rear.speed = front.speed * 0.9;
-    throwRider(rearIndex, "rider", 0.4, 0.6);
-    front.speed = clamp(front.speed + closing * 0.2, 0, front.speed + 6);
-    front.lateralSpeed += front.x >= rear.x ? 0.8 : -0.8;
-    return;
-  }
-  rear.speed = Math.max(0, Math.min(rear.speed, front.speed) - 0.5);
-  rear.s = front.s - BIKE_HALF_LENGTH * 2;
-  front.speed = approach(
-    front.speed,
-    front.speed + Math.max(0, closing) * 0.3,
-    1
-  );
-  state.events.push({
-    kind: "riderContact",
-    other: frontIndex,
-    rider: rearIndex,
-  });
-};
-
 export type ThrowRider = (
   riderIndex: number,
   cause: "rider",
@@ -359,40 +305,148 @@ export type ThrowRider = (
   bodyKeep: number
 ) => void;
 
+interface Jolt {
+  shift: number;
+  shove: number;
+  shoved: boolean;
+  nudge: number;
+  speedCap: number;
+  speedLoss: number;
+  speedGain: number;
+  behind: number;
+  struckGap: number;
+  struckSpeed: number;
+}
+
+interface Party {
+  readonly index: number;
+  readonly rider: RiderState;
+  readonly jolt: Jolt;
+}
+
+const untouched = (): Jolt => ({
+  behind: Number.POSITIVE_INFINITY,
+  nudge: 0,
+  shift: 0,
+  shove: 0,
+  shoved: false,
+  speedCap: Number.POSITIVE_INFINITY,
+  speedGain: 0,
+  speedLoss: 0,
+  struckGap: Number.POSITIVE_INFINITY,
+  struckSpeed: 0,
+});
+
+const shoveApart = (
+  state: RaceState,
+  left: Party,
+  right: Party,
+  gapX: number,
+  overlapX: number
+): void => {
+  const away = gapX >= 0 ? 1 : -1;
+  left.jolt.shift -= (away * overlapX) / 2;
+  right.jolt.shift += (away * overlapX) / 2;
+  left.jolt.shove -= away * SIDE_SHOVE;
+  right.jolt.shove += away * SIDE_SHOVE;
+  left.jolt.shoved = true;
+  right.jolt.shoved = true;
+  left.jolt.speedLoss += BUMP_SPEED_LOSS;
+  right.jolt.speedLoss += BUMP_SPEED_LOSS;
+  if (left.rider.attackCooldown < CONTACT_COOLDOWN_TICKS) {
+    state.events.push({
+      kind: "riderContact",
+      other: right.index,
+      rider: left.index,
+    });
+  }
+};
+
+const rearEnd = (state: RaceState, rear: Party, front: Party): void => {
+  const closing = rear.rider.speed - front.rider.speed;
+  if (closing > CONTACT_CLOSING_SPEED) {
+    const gap = front.rider.s - rear.rider.s;
+    const nearer =
+      gap < rear.jolt.struckGap ||
+      (gap === rear.jolt.struckGap &&
+        front.rider.speed < rear.jolt.struckSpeed);
+    if (nearer) {
+      rear.jolt.struckGap = gap;
+      rear.jolt.struckSpeed = front.rider.speed;
+    }
+    front.jolt.speedGain += Math.min(closing * 0.2, HARD_SHUNT);
+    front.jolt.nudge += front.rider.x >= rear.rider.x ? 0.8 : -0.8;
+    return;
+  }
+  rear.jolt.speedCap = Math.min(rear.jolt.speedCap, front.rider.speed);
+  rear.jolt.speedLoss += TAP_SPEED_LOSS;
+  rear.jolt.behind = Math.min(
+    rear.jolt.behind,
+    front.rider.s - BIKE_HALF_LENGTH * 2
+  );
+  front.jolt.speedGain += Math.min(SOFT_SHUNT, Math.max(0, closing) * 0.3);
+  state.events.push({
+    kind: "riderContact",
+    other: front.index,
+    rider: rear.index,
+  });
+};
+
+const meet = (state: RaceState, left: Party, right: Party): void => {
+  const gapS = right.rider.s - left.rider.s;
+  const gapX = right.rider.x - left.rider.x;
+  const reachX = BIKE_HALF_WIDTH * 2 + 0.1;
+  if (Math.abs(gapS) >= BIKE_HALF_LENGTH * 2 || Math.abs(gapX) >= reachX) {
+    return;
+  }
+  const overlapS = BIKE_HALF_LENGTH * 2 - Math.abs(gapS);
+  const overlapX = reachX - Math.abs(gapX);
+  if (overlapX < overlapS) {
+    shoveApart(state, left, right, gapX, overlapX);
+  } else if (gapS > 0) {
+    rearEnd(state, left, right);
+  } else {
+    rearEnd(state, right, left);
+  }
+};
+
+const settle = (
+  { index, jolt, rider }: Party,
+  throwRider: ThrowRider
+): void => {
+  rider.x += jolt.shift;
+  if (jolt.shoved) {
+    rider.lateralSpeed = clamp(jolt.shove, -SIDE_SHOVE, SIDE_SHOVE);
+  }
+  rider.lateralSpeed += jolt.nudge;
+  if (jolt.struckGap < Number.POSITIVE_INFINITY) {
+    rider.speed = jolt.struckSpeed * 0.9;
+    throwRider(index, "rider", 0.4, 0.6);
+    return;
+  }
+  rider.speed =
+    Math.max(0, Math.min(rider.speed, jolt.speedCap) - jolt.speedLoss) +
+    jolt.speedGain;
+  rider.s = Math.min(rider.s, jolt.behind);
+};
+
 export const stepRiderContacts = (
   state: RaceState,
   track: Track,
   throwRider: ThrowRider
 ): void => {
-  const { riders } = state;
-  for (let a = 0; a < riders.length; a += 1) {
-    const left = riders[a];
-    if (!left || !canFight(left)) {
-      continue;
-    }
-    for (let b = a + 1; b < riders.length && canFight(left); b += 1) {
-      const right = riders[b];
-      if (!right || !canFight(right)) {
-        continue;
-      }
-      const gapS = right.s - left.s;
-      const gapX = right.x - left.x;
-      const reachX = BIKE_HALF_WIDTH * 2 + 0.1;
-      if (Math.abs(gapS) >= BIKE_HALF_LENGTH * 2 || Math.abs(gapX) >= reachX) {
-        continue;
-      }
-      const overlapS = BIKE_HALF_LENGTH * 2 - Math.abs(gapS);
-      const overlapX = reachX - Math.abs(gapX);
-      if (overlapX < overlapS) {
-        shoveApart(state, a, b, gapX, overlapX);
-      } else if (gapS > 0) {
-        rearEnd(state, a, b, throwRider);
-      } else {
-        rearEnd(state, b, a, throwRider);
-      }
+  const parties = state.riders.flatMap((rider, index): Party[] =>
+    canFight(rider) ? [{ index, jolt: untouched(), rider }] : []
+  );
+  for (const [position, left] of parties.entries()) {
+    for (const right of parties.slice(position + 1)) {
+      meet(state, left, right);
     }
   }
-  for (const rider of riders) {
+  for (const party of parties) {
+    settle(party, throwRider);
+  }
+  for (const rider of state.riders) {
     rider.x = clamp(rider.x, -track.vergeHalfWidth, track.vergeHalfWidth);
   }
 };
