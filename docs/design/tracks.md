@@ -76,7 +76,7 @@ Each level also changes the race around the road:
 | 4 | +1,150 m | Base + 3 | 4 | 209 km/h | 2 |
 | 5 | +1,150 m | Base + 4 | 5 | 223 km/h | 3 |
 
-Traffic is a field of the plan, so a level's plan carries its own `trafficPerKilometre` and the sim needs no change for it. Cops stay at 700 m and every 1,600 m after, which puts the fifth at 7.1 km and fits every level-5 road. Cop count, pursuit speed, and roadblocks are race settings listed in `game-design.md` section 14; roadblocks come after the first career release. A level's plan id is the road id with the level, for example `slag-row-3`, and it keeps the road's seed so the scenery of the familiar part does not change.
+Traffic is a field of the plan, so a level's plan carries its own `trafficPerKilometre` and the sim needs no change for it. Cops stay at 700 m and every 1,600 m after, which puts the fifth at 7.1 km and fits every level-5 road. Each gives up the chase a beat past its post: 3,000, 1,200, 1,400, 750, and 700 m at levels 1 to 5 (`game-design.md` section 8). Cop count, pursuit speed, beat, and roadblocks are race settings listed in `game-design.md` section 14; roadblocks come after the first career release. A level's plan id is the road id with the level, for example `slag-row-3`, and it keeps the road's seed so the scenery of the familiar part does not change.
 
 ### Roadblock spots
 
@@ -481,7 +481,7 @@ Roadblocks: the warehouse straight at 0.75 km (270 m past Foundry Corner, 210 m 
 
 ## Ridge Road (Stonepeak)
 
-Ridge Road is the existing track, unchanged at level 1: 4.25 km, ten bends, and two crests on the climb to the lookout. It is the balanced road and the home road. On a Wren every bend is flat; on a Sesta 600 two are not; on an Anvil 1100 four are not. The signature moments are **the Switchback**, a 44° left straight into a 50° right at radii of 155 and 136 m, where the right is the first bend the Sesta cannot take flat (199 km/h); **the Saddle**, a 90 m rise and 90 m drop at 2.19 km that launches at 162 km/h with bare rock on both sides; **Quarry Bend**, a 42° right at a radius of 143 m that a Sesta holds at 204 km/h; and **the Hump**, a second, gentler crest before the finish that only launches above 211 km/h. Its name stays. It is the finale at level 5, where it is called the Long Ridge.
+Ridge Road is the existing track at level 1: 4.25 km, ten bends, and two crests on the climb to the lookout. Its sections are unchanged. Its rocks are not quite the greybox's: they moved to their own seeded stream so that a longer road keeps the scenery of the part the player knows, and that changed 34 rocks into 35. The track tests pin the level-1 road as it compiles today by digest: curvature, heights, centre line, crests, every prop, and the rocks by themselves. It is the balanced road and the home road. On a Wren every bend is flat; on a Sesta 600 two are not; on an Anvil 1100 four are not. The signature moments are **the Switchback**, a 44° left straight into a 50° right at radii of 155 and 136 m, where the right is the first bend the Sesta cannot take flat (199 km/h); **the Saddle**, a 90 m rise and 90 m drop at 2.19 km that launches at 162 km/h with bare rock on both sides; **Quarry Bend**, a 42° right at a radius of 143 m that a Sesta holds at 204 km/h; and **the Hump**, a second, gentler crest before the finish that only launches above 211 km/h. Its name stays. It is the finale at level 5, where it is called the Long Ridge.
 
 ### Level 1 sections
 

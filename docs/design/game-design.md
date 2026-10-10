@@ -346,31 +346,60 @@ The loop that results: arrive unarmed, find the armed rider, line up a kick, kee
 
 ### Escalation
 
-Police keep their current rules: a cop chases a downed racer within 60 m first, then the nearest riding racer within sight range, and busts a racer whose body is within 2.5 m while they are off the bike. Cops are placed 700 m into the road and every 1,600 m after that. With five cops at level 5, the last one sits at 7.1 km, which fits every level-5 road.
+A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked 700 m into the road and every 1,600 m after that. With five cops at level 5, the last one sits at 7.1 km, which fits every level-5 road.
 
-| Level | Cops | Pursuit top speed | Sight range | Roadblocks |   Fine |
-| ----: | ---: | ----------------: | ----------: | ---------: | -----: |
-|     1 |    1 | 46 m/s (166 km/h) |        40 m |          0 |   $500 |
-|     2 |    2 | 50 m/s (180 km/h) |        40 m |          0 |   $900 |
-|     3 |    3 | 54 m/s (194 km/h) |        45 m |          1 | $1,500 |
-|     4 |    4 | 58 m/s (209 km/h) |        50 m |          2 | $2,200 |
-|     5 |    5 | 62 m/s (223 km/h) |        60 m |          3 | $3,000 |
+Each cop has a **beat**: it gives up the chase that many metres past the spot where it was parked, pulls onto the verge, and stays there. A cop that is riding to a downed racer finishes that first. Without a beat every cop the pack woke rode with it to the finish, so five cops meant five batons around the player for the last three kilometres.
 
-The pursuit top speed always stays below the top speed of the bike a decent player rides at that level (Wren 177, Kite 190, Sesta 209, Sette 218, Meridian 228 km/h), by 11, 10, 15, 9, and 5 km/h. A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not. Level 3 is today's `COP_TOP_SPEED` and `BUST_FINE`.
+| Level | Cops | Pursuit top speed | Sight range | Beat | Roadblocks | Fine |
+| --: | --: | --: | --: | --: | --: | --: |
+| 1 | 1 | 46 m/s (166 km/h) | 40 m | 3,000 m | 0 | $500 |
+| 2 | 2 | 50 m/s (180 km/h) | 40 m | 1,200 m | 0 | $900 |
+| 3 | 3 | 54 m/s (194 km/h) | 45 m | 1,400 m | 1 | $1,500 |
+| 4 | 4 | 58 m/s (209 km/h) | 50 m | 750 m | 2 | $2,200 |
+| 5 | 5 | 62 m/s (223 km/h) | 60 m | 700 m | 3 | $3,000 |
+
+The beats are not in order of level because the police bikes are not equal. Levels 1 to 3 ride the Sesta, which stops a few metres later than a body slides, so those cops need a long beat to make an arrest at all. The Meridian at level 4 and the Nera at level 5 stop inside the slide, so each of those cops is about twice as dangerous per kilometre and holds a short stretch.
+
+The pursuit top speed always stays below the top speed of the bike a decent player rides at that level (Wren 177, Kite 190, Sesta 209, Sette 218, Meridian 228 km/h), by 11, 10, 15, 9, and 5 km/h. A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
 
 A player who falls a bike behind loses that margin. A Wren at level 2 is 3 km/h slower than the cops, and the Gutter Pup (151 km/h) cannot outrun a cop at any level, not even level 1's 166 km/h. The Pup's survival rule is therefore different and should be taught on the repossession notice: **stay on the bike.** A cop can swing a baton at a riding racer but can only bust one who is off the bike, so a Pup rider survives by not crashing and not being knocked down, never by speed.
 
-### Balance still to measure
+### The bust window
 
-The cop counts, pursuit speeds, and sight ranges in the table are a first setting, not a final one. Before they are fixed, measure the bust rate per level by simulation: run the eight-rider field with a pilot standing in for the decent player on that level's bike, over many seeds on all five roads.
+A racer is busted when a riding cop is within **4 m** of their body while they are off the bike, but not in the first **half second** (30 ticks) after the fall. A rider who is already on their feet, running back or lifting the bike, can be arrested at once.
 
-|  Level | Target: a decent player is busted in at most |
-| -----: | -------------------------------------------- |
-|      1 | 1 of 8 starts                                |
-| 2 to 4 | Between the two, rising with the level       |
-|      5 | 2 of 8 starts                                |
+Both numbers matter to what the player sees:
 
-The economy in section 5 assumes one bust in eight starts at every level. If a level measures above its target, lower the cop count or the sight range for that level before touching the fine. Rival bust rates should be measured in the same runs: a field that loses three riders to the police every race makes top three too easy.
+- **The half second.** Before it, a cop riding alongside arrested a rider on the very tick they were knocked off. Every level-1 bust in the first measurement was of that kind, which is what a play test met as "busted after one crash, 29 seconds in". Now the cop has to still be beside the body half a second later. At walking pace it is. At 160 km/h the body slides 50 m, the cop needs 70 m to stop, and the rider is back on the bike before anyone reaches them.
+- **The 4 m.** A cop gives up on a body once it is more than the reach behind it. At 2.5 m a cop on a Sesta stopped just past the body nearly every time and rode off, so levels 1 to 3 measured between 1% and 9%.
+
+The window has no player input in it: a rider who is down gets up by themselves. The player's part comes before the fall, by staying clear of the cop, outrunning it, or knocking it down first.
+
+### Measured bust rates
+
+Measured by simulation, with a pilot standing in for the decent player: skill 0.9, aggression 0.5, the level's bike from section 5, a field of seven rivals from the career's own draw, 16 seeds on each of the five roads, 80 starts a level. "Before" is 8 seeds, 40 starts.
+
+| Level |         Target | Before | After | Rivals busted per race, after |
+| ----: | -------------: | -----: | ----: | ----------------------------: |
+|     1 | 12.5% (1 of 8) |  25.0% | 11.3% |                           0.8 |
+|     2 |      about 16% |  50.0% | 18.8% |                           0.7 |
+|     3 |      about 19% |  92.5% | 17.5% |                           1.7 |
+|     4 |      about 22% |  85.0% | 20.0% |                           1.6 |
+|     5 |   25% (2 of 8) |  95.0% | 27.5% |                           1.7 |
+
+With 80 starts a rate is good to about 4 or 5 points either way, so the five levels are on their targets and nothing finer can be claimed. `packages/career/src/police.test.ts` runs 40 of those starts a level on every check and fails if a level leaves a band around its target, so a retune shows.
+
+What the measurement found about the dials, in the order they were tried:
+
+- **Cop count** cannot do it alone. One cop per race at every level, with the old rules, still measured 25% at level 1 and over 60% at level 3.
+- **Sight range** does almost nothing. Halving it and quartering it moved no level by more than the noise, because a cop that has lost its quarry patrols at 22 m/s and every rider behind it has to pass within range. It is kept in the table but it is not a balance dial.
+- **Pursuit top speed** does little. Cutting it to 85% of the decent bike's top speed moved level 5 from 68% to 63%. The pilot is rarely flat out for long, and the officer's skill of 0.95 is better than the decent player's in the bends.
+- **The bust window and the beat** are the two dials that work, and the table above is set with them.
+
+Two things the same runs show that are not fixed here:
+
+- **The pilot never wrecks.** No start in 400 ended in a wreck. The stand-in falls about once a race at 100 to 150 km/h, which costs 15% to 20% of the bike (section 14). The economy in section 5 assumes one wreck in eight starts for the decent player, so either a human crashes into traffic far more than the pilot does or that assumption is too high. A play test has to say which.
+- **Cops knock riders down themselves.** At levels 3 to 5 the baton is the most common cause of the fall that ends in a bust. The officer's aggression of 0.9 and the baton's 18 damage were not touched.
 
 ### Roadblocks
 
@@ -429,9 +458,9 @@ Two profiles describe behaviour that skill and aggression alone do not produce, 
 
 ### The pack: balance still to measure
 
-- **Side contact needs a cap.** Each pair of bikes in side contact costs both riders 0.9 m/s on every tick the contact lasts, and the losses add up across pairs. With five rivals that was rare. On a grid of eight, a rider boxed in on both sides for one second would lose 108 m/s of speed, which is every bit of it. Before the eight-bike grid ships, cap the total side-contact loss per rider, for example at 0.9 m/s per tick however many bikes touch and at 6 m/s over any one second.
+- **Side contact is capped.** Each pair of bikes in side contact used to cost both riders 0.9 m/s on every tick, and the losses added up across pairs, so a rider boxed in on both sides for one second lost every bit of their speed and two bikes leaning on each other from the grid could hold each other at walking pace for a whole race. A rider now loses 0.9 m/s on a tick with side contact however many bikes touch, and at most 6 m/s over any one second.
 - **The opening pack.** The player starts last (section 14). Measure how many of the seven rivals the pilot standing in for the decent player has passed by the first cop at 700 m, and how many riders are down by then. If more than two riders are regularly on the ground in the first 700 m, widen the grid rows before lowering aggression.
-- **Bust rates** for the pack are measured with the police settings (section 8).
+- **Bust rates** for the pack are in section 8: between 0.7 and 1.7 rivals busted per race, down from 1.5 to 3.2.
 
 ### Bikes by level
 
@@ -719,8 +748,8 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | --: | --- | --- | --- |
 | 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and `rider.ts`, `pilot.ts`, and the renderer read it from the rider. | First career release |
 | 2 | Selected cast | `createRace` takes the list of rival profiles for this race. The earlier placeholder names are replaced by the cast; "Viper" in particular is the name of a rider in the original game (section 15). | First career release |
-| 3 | Per-race police settings | Cop count, pursuit top speed, sight range, and fine are race inputs. `FIRST_COP_S` and `COP_SPACING` stay. | First career release |
-| 4 | Bike condition and the wreck | A `condition` value from 100 on each rider. Each crash takes damage by cause, scaled by impact speed over 40 m/s (clamped 0.5 to 1.5): traffic 35, prop 30, landing 25, rider 15, combat 10, off-track 10. At zero the rider enters the `wrecked` mode, which ends their race like a bust without a fine. About three hard crashes wreck a bike. | First career release |
+| 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. `FIRST_COP_S` (700 m) and `COP_SPACING` (1,600 m) stay. | Built |
+| 4 | Bike condition and the wreck | A `condition` value from 100 on each rider. Each crash takes the damage its cause costs at 200 km/h (traffic 34, prop 32, landing 30, rider 30, combat 28, off-track 22), scaled by the rider's speed at impact over 200 km/h and held between 0.1 and 1.25. At zero the rider enters the `wrecked` mode, which ends their race like a bust without a fine. Three or four hard crashes wreck a bike. The table below gives the cost by speed. | Built, retuned |
 | 5 | Crash attribution | The `crash` event has a `by` field naming the rider whose hit or contact caused it within the last second, so memory knows who knocked whom down. | First career release |
 | 6 | Carried weapon | `createRace` accepts a starting weapon and hit count for the player. | First career release |
 | 7 | Grudge targeting | The pilot's attack choice takes a preferred target, and its aggression can differ for that target. | First career release |
@@ -730,18 +759,36 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 11 | Career rules | Money, level, qualified roads, repeat-run pay, owned bike, carried weapon, rival memory, season points, story flags, settlement, the active-race record, and the debt check are plain data advanced by plain functions. They are rules, so they live in a deterministic package (a new `packages/career`, or a `career` module in `packages/sim`), not in React. | First career release |
 | 12 | Paint palette | `paint` stays an index, but into a palette of twelve rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | First career release |
 | 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |
-| 14 | Side-contact cap | The cap on speed lost to side contact described in section 9. Needed before eight bikes share a grid. | First career release |
+| 14 | Side-contact cap | The cap on speed lost to side contact described in section 9: 0.9 m/s a tick and 6 m/s in any second, kept as `bumpLoss` on the rider. | Built |
 | 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 42, `strikeTick` 12. |
 | 16 | Last-slot grid start | The player starts in the last grid slot, behind the seven rivals. | Built, tune later. The sim foundation already has it; row spacing and the opening pack are tuned after the measurement in section 9. |
 | 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8 at the spots in `tracks.md`. | Later |
 | 18 | Region scenery kits | A `kit` field on `TrackPlan` so `scatterProps` places palms, cacti, streetlights, or pines instead of the same trees everywhere. | Later |
+| 19 | The bust window | A racer cannot be busted in the first 30 ticks after a fall unless they are already on their feet, and the arrest reach is 4 m. `BUST_DELAY_TICKS` and `BUST_REACH` in `police.ts`. Section 8 has the reasons. | Built |
+| 20 | Patrol beats | Every cop remembers where it was parked (`post`) and gives up the chase `beat` metres past it, unless it is riding to a downed racer. The beat is a race input per level. | Built |
+| 21 | Rear-end by the last tick | Rider contact is classified by where the two bikes were a tick earlier. Clear along the road and overlapping across it means the rider behind ran in: a rear-end, which throws them above a closing speed of 9 m/s. Clear across and overlapping along is a side shove. If both gaps closed in the same tick, the one that closed last decides. Before this a rider closing fast enough to overlap more than 0.86 m in a tick was shoved aside and rode through. | Built |
+
+### Condition by speed
+
+What one crash takes off a bike that starts at 100, by cause and by the rider's speed at impact. The earlier numbers are in brackets.
+
+| Cause                | 60 km/h | 100 km/h | 150 km/h | 200 km/h |
+| -------------------- | ------: | -------: | -------: | -------: |
+| Traffic              | 10 (18) |  17 (24) |  26 (37) |  34 (49) |
+| Tree, pole, or rock  | 10 (15) |  16 (21) |  24 (31) |  32 (42) |
+| Hard landing         |  9 (13) |  15 (17) |  23 (26) |  30 (35) |
+| Running into a rider |   9 (8) |  15 (10) |  23 (16) |  30 (21) |
+| Knocked down         |   8 (5) |   14 (7) |  21 (10) |  28 (14) |
+| Leaving the track    |   7 (5) |   11 (7) |  17 (10) |  22 (14) |
+
+A crash at 200 km/h costs about 30 and one at 100 km/h about 15, whatever caused it. Three crashes into traffic at 200 km/h wreck a bike, four knockdowns at that speed do, and at 100 km/h it takes six to eight. A tip-over at walking pace costs about 3. The earlier curve had a floor of half the base figure and a spread of three and a half to one between causes, so one car at 200 km/h took half the bike and a wreck from fights took ten falls. A ride onto the grass that does not end in a fall still costs nothing.
 
 ### The first career release without the later items
 
 - **No roadblocks.** The Roadblocks column in section 8 reads 0 at every level until item 17 ships. Dee still turns ally at level 3 and still texts, but her texts carry no distance, the Route Board shows no tip line, and the HUD shows no blue tick. Vic's level-3 card uses its alternate copy (`screens.md`).
 - **One scenery kit.** Every road uses today's trees, poles, rocks, and chevrons with its region's palette and fog. The roads are told apart by colour, layout, and traffic until item 18 ships.
 - **Cue and sign as built.** Coach carries the cue from level 2 and Gus the sign from level 3 with the numbers in section 7. Tuning them does not change a save.
-- **Balance measurements** (bust rates in section 8, the pack in section 9) are done on the first-release build and may change numbers in this document, not its rules.
+- **Balance measurements.** The bust rates in section 8 are measured and pinned by a test. The opening pack in section 9 is still to measure. Measurements may change numbers in this document, not its rules.
 
 ## 15. Originality check
 
