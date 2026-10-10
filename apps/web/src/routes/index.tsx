@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { RaceScreen } from "../components/race-screen.tsx";
+import { GameShell } from "../components/game-shell.tsx";
 
 export const Route = createFileRoute("/")({
-  component: RaceScreen,
+  component: GameShell,
 });

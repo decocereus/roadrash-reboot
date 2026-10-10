@@ -1,7 +1,20 @@
-export type GamePhase = "attract" | "countdown" | "racing" | "finished";
+import type { CareerRaceSetup } from "@racer/career/field";
+import type { RaceOutcome } from "@racer/career/outcome";
+import type { BikeId } from "@racer/sim/bikes";
+
+export type GamePhase = "attract" | "idle" | "countdown" | "racing" | "settled";
+
+export type RaceMode = "career" | "quick";
+
+export interface RacePlan {
+  readonly mode: RaceMode;
+  readonly bikeId: BikeId;
+  readonly setup: CareerRaceSetup;
+}
 
 export type Notice =
   | ""
+  | "go"
   | "wipeout"
   | "close"
   | "air"
@@ -11,25 +24,14 @@ export type Notice =
   | "disarmed"
   | "broken"
   | "police"
-  | "busted"
-  | "wrecked";
-
-export interface Placing {
-  readonly name: string;
-  readonly seconds: number;
-  readonly busted: boolean;
-  readonly wrecked: boolean;
-  readonly you: boolean;
-}
+  | "lastKm";
 
 export interface HudState {
   readonly phase: GamePhase;
   readonly countdown: number;
   readonly speedKmh: number;
-  readonly seconds: number;
+  readonly offBike: boolean;
   readonly progress: number;
-  readonly crashes: number;
-  readonly topSpeedKmh: number;
   readonly notice: Notice;
   readonly noticeDetail: string;
   readonly muted: boolean;
@@ -38,52 +40,87 @@ export interface HudState {
   readonly stamina: number;
   readonly rivalName: string;
   readonly rivalStamina: number;
+  readonly rivalColour: string;
+  readonly speech: string;
   readonly weaponName: string;
   readonly weaponHits: number;
+  readonly weaponCapacity: number;
   readonly bikeName: string;
   readonly condition: number;
   readonly copDistance: number;
   readonly distanceLeft: number;
   readonly roadName: string;
   readonly roadLength: number;
-  readonly busted: boolean;
-  readonly wrecked: boolean;
-  readonly fine: number;
-  readonly placings: readonly Placing[];
 }
 
 export const idleHud: HudState = {
   bikeName: "",
-  busted: false,
   condition: 1,
   copDistance: -1,
   countdown: 0,
-  crashes: 0,
   distanceLeft: 0,
-  fine: 0,
   muted: false,
   notice: "",
   noticeDetail: "",
+  offBike: false,
   phase: "attract",
-  placings: [],
   position: 1,
   progress: 0,
   riderCount: 1,
+  rivalColour: "",
   rivalName: "",
   rivalStamina: 0,
   roadLength: 0,
   roadName: "",
-  seconds: 0,
+  speech: "",
   speedKmh: 0,
-  stamina: 100,
-  topSpeedKmh: 0,
+  stamina: 1,
+  weaponCapacity: 0,
   weaponHits: 0,
   weaponName: "",
-  wrecked: false,
 };
 
-export interface GameHandle {
-  startRace: () => void;
-  toggleMute: () => void;
-  dispose: () => void;
+export interface GameEvents {
+  readonly onHud: (hud: HudState) => void;
+  readonly onStart: (plan: RacePlan) => void;
+  readonly onSettle: (plan: RacePlan, outcome: RaceOutcome) => void;
+  readonly onOver: (plan: RacePlan, outcome: RaceOutcome) => void;
 }
+
+export interface GameHandle {
+  readonly attract: () => void;
+  readonly sleep: () => void;
+  readonly startRace: (plan: RacePlan) => void;
+  readonly pause: () => boolean;
+  readonly resume: () => void;
+  readonly quit: () => RaceOutcome | null;
+  readonly toggleMute: () => void;
+  readonly followRival: (tag: HTMLElement | null) => void;
+  readonly dispose: () => void;
+}
+
+export interface HudFeed {
+  readonly read: () => HudState;
+  readonly write: (hud: HudState) => void;
+  readonly subscribe: (listener: () => void) => () => void;
+}
+
+export const createHudFeed = (): HudFeed => {
+  let current = idleHud;
+  const listeners = new Set<() => void>();
+  return {
+    read: () => current,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    write(hud) {
+      current = hud;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+  };
+};

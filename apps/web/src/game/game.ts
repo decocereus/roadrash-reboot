@@ -1,4 +1,6 @@
-import { nearestRival } from "@racer/sim/combat";
+import { rivalLines } from "@racer/career/lines";
+import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
+import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
 import { pilotInput } from "@racer/sim/pilot";
 import { chaserDistance } from "@racer/sim/police";
 import {
@@ -17,6 +19,7 @@ import {
 } from "@racer/sim/state";
 import type {
   RaceEvent,
+  RaceSetup,
   RaceState,
   RiderInput,
   RiderState,
@@ -26,6 +29,7 @@ import { roadIds, trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
+import { bikeColour } from "../career/colours.ts";
 import {
   createBike,
   createFleet,
@@ -38,11 +42,11 @@ import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
 import type {
+  GameEvents,
   GameHandle,
   GamePhase,
-  HudState,
   Notice,
-  Placing,
+  RacePlan,
 } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createRiderFigure } from "./rider-figure.ts";
@@ -51,7 +55,13 @@ import { createWorld } from "./world.ts";
 
 const COUNTDOWN_SECONDS = 3;
 const HUD_INTERVAL = 1 / 15;
-const NOTICE_SECONDS = 1.4;
+const NOTICE_SECONDS = 0.8;
+const SPEECH_SECONDS = 2;
+const RESUME_SECONDS = 3;
+const LAST_STRETCH = 1000;
+const TAG_RANGE = 25;
+const TAG_HEIGHT = 2.2;
+const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
 const MAX_PIXEL_RATIO = 2;
 const MIN_PIXEL_RATIO = 0.6;
@@ -63,7 +73,7 @@ const STANDING_HEIGHT = 0.98;
 const RISE_SECONDS = 0.45;
 const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
-const BUSTED_SECONDS = 2.2;
+const BUSTED_SECONDS = 0.8;
 const WRECKED_SECONDS = 1.2;
 const ROAD_LEVEL = 1;
 
@@ -139,15 +149,40 @@ const attackPose = (rider: RiderState): RiderPose | undefined => {
 const weaponName = (rider: RiderState): string =>
   rider.weapon === "none" ? "" : weapons[rider.weapon].name;
 
+const weaponCapacity = (rider: RiderState): number =>
+  rider.weapon === "none" ? 0 : weapons[rider.weapon].hits;
+
+const consequenceSeconds = (outcome: RaceOutcome): number => {
+  if (outcome.result === "busted") {
+    return BUSTED_SECONDS;
+  }
+  return outcome.result === "wrecked" ? WRECKED_SECONDS : 0;
+};
+
+interface Placed {
+  s: number;
+  x: number;
+  air: number;
+  lean: number;
+  bodyS: number;
+  bodyX: number;
+  bodyAir: number;
+  seated: boolean;
+}
+
 const out = (rider: RiderState): boolean =>
   rider.mode === "busted" || rider.mode === "wrecked";
+
+const autopilot =
+  import.meta.env.DEV &&
+  new URLSearchParams(globalThis.location.search).has("autopilot");
 
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
 export function createGame(
   canvas: HTMLCanvasElement,
-  onHud: (hud: HudState) => void
+  events: GameEvents
 ): GameHandle {
   let roadTurn = 0;
   let track = roadForTurn(roadTurn);
@@ -173,14 +208,23 @@ export function createGame(
   let inputs: RiderInput[] = [];
 
   let phase: GamePhase = "attract";
+  let plan: RacePlan | null = null;
+  let log: RaceLog | null = null;
+  let settled: RaceOutcome | null = null;
+  let overLeft = 0;
+  let frozen = false;
+  let holdLeft = 0;
   let countdown = 0;
-  let raceTicks = 0;
-  let topSpeed = 0;
+  let lastStretchSaid = false;
   let notice: Notice = "";
   let noticeDetail = "";
   let noticeLeft = 0;
-  let outLeft = 0;
-  let fine = 0;
+  let speech = "";
+  let speechRider = -1;
+  let speechLeft = 0;
+  let tagRider = -1;
+  let tag: HTMLElement | null = null;
+  let plates: string[] = [];
   let muted = false;
   let accumulator = 0;
   let clockReset = false;
@@ -191,6 +235,17 @@ export function createGame(
   let clock = 0;
 
   const subject: Subject = { air: 0, lean: 0, rough: 0, s: 0, speed: 0, x: 0 };
+  const placed: Placed = {
+    air: 0,
+    bodyAir: 0,
+    bodyS: 0,
+    bodyX: 0,
+    lean: 0,
+    s: 0,
+    seated: true,
+    x: 0,
+  };
+  const tagPoint = new THREE.Vector3();
 
   const player = (): RiderState => {
     const [rider] = race.riders;
@@ -244,11 +299,10 @@ export function createGame(
       return view;
     });
     inputs = race.riders.map(() => freshInput());
+    plates = race.riders.map((rider) => bikeColour(rider.profile.paint));
   };
 
-  const takeNextRoad = () => {
-    roadTurn += 1;
-    const next = roadForTurn(roadTurn);
+  const takeTrack = (next: Track) => {
     if (next === track) {
       return;
     }
@@ -258,13 +312,10 @@ export function createGame(
     world = createWorld(track);
   };
 
-  const loadRace = (nextPhase: GamePhase, nextRoad: boolean) => {
+  const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
-    seed += 1;
-    if (nextRoad) {
-      takeNextRoad();
-    }
-    race = createRace(defaultSetup(track, seed));
+    takeTrack(setup.track);
+    race = createRace(setup);
     fleet = createFleet(race.cars);
     world.scene.add(fleet.group);
     previousCars = new Float64Array(race.cars.length);
@@ -274,18 +325,42 @@ export function createGame(
     buildViews();
     phase = nextPhase;
     countdown = nextPhase === "countdown" ? COUNTDOWN_SECONDS : 0;
-    raceTicks = 0;
-    topSpeed = 0;
+    settled = null;
+    overLeft = 0;
+    frozen = false;
+    holdLeft = 0;
+    lastStretchSaid = false;
     notice = "";
-    outLeft = 0;
-    fine = 0;
+    noticeLeft = 0;
+    speech = "";
+    speechLeft = 0;
+    tagRider = -1;
     clockReset = true;
     chase.snap();
   };
 
-  const startRace = () => {
+  const loadAttract = (nextRoad: boolean) => {
+    plan = null;
+    log = null;
+    seed += 1;
+    if (nextRoad) {
+      roadTurn += 1;
+    }
+    loadRace(defaultSetup(roadForTurn(roadTurn), seed), "attract");
+  };
+
+  const startRace = (next: RacePlan) => {
     sound.unlock();
-    loadRace("countdown", phase !== "attract");
+    plan = next;
+    log = createRaceLog(next.setup);
+    loadRace(next.setup, "countdown");
+  };
+
+  const quiet = () => {
+    sound.drive(0, 0, false);
+    if (tag) {
+      tag.style.visibility = "hidden";
+    }
   };
 
   const toggleMute = () => {
@@ -293,15 +368,17 @@ export function createGame(
     sound.setMuted(muted);
   };
 
+  const halted = (): boolean => frozen || phase === "idle";
+
+  const live = (): boolean =>
+    !frozen && (phase === "countdown" || phase === "racing");
+
   const controls = createControls((code) => {
     if (code === "KeyM") {
       toggleMute();
     }
-    if (code === "KeyR" && phase !== "attract") {
-      startRace();
-    }
-    if (code === "Enter" && (phase === "attract" || phase === "finished")) {
-      startRace();
+    if (code === "KeyR" && plan?.mode === "quick" && live()) {
+      startRace(plan);
     }
   });
 
@@ -317,14 +394,21 @@ export function createGame(
     if (attacker === 0) {
       strikeSound(armed);
       const victim = race.riders[target];
-      if (victim && victim.stamina <= 0) {
-        say("knockdown", victim.profile.name);
-      }
+      say(victim && victim.stamina <= 0 ? "knockdown" : "hit");
     } else if (target === 0) {
       strikeSound(armed);
       chase.jolt(armed ? 0.8 : 0.5);
-      say("hit", race.riders[attacker]?.profile.name ?? "");
     }
+  };
+
+  const speak = (rider: number, line: "knocksYouDown" | "youKnockThemDown") => {
+    const rival = plan?.setup.field[rider - 1];
+    if (rival === undefined) {
+      return;
+    }
+    speech = rivalLines[rival][line];
+    speechRider = rider;
+    speechLeft = SPEECH_SECONDS;
   };
 
   const reactToOwn = (event: RaceEvent) => {
@@ -332,6 +416,9 @@ export function createGame(
       chase.jolt(1);
       sound.crash();
       say("wipeout");
+      if (event.cause !== "rider") {
+        speak(event.by, "knocksYouDown");
+      }
     } else if (event.kind === "nearMiss") {
       sound.whoosh();
       say("close");
@@ -353,14 +440,6 @@ export function createGame(
       say("broken", weapons[event.weapon].name);
     } else if (event.kind === "busted") {
       chase.jolt(0.4);
-      ({ fine } = event);
-      outLeft = BUSTED_SECONDS;
-      say("busted");
-    } else if (event.kind === "wrecked") {
-      outLeft = WRECKED_SECONDS;
-      say("wrecked");
-    } else if (event.kind === "finish" && phase === "racing") {
-      phase = "finished";
     }
   };
 
@@ -369,14 +448,21 @@ export function createGame(
       chase.jolt(0.3);
       sound.thump(0.35);
     } else if (event.kind === "weaponTaken" && event.target === 0) {
-      say("disarmed", race.riders[event.rider]?.profile.name ?? "");
+      say("disarmed");
     } else if (event.kind === "pursuit" && event.target === 0) {
       sound.siren();
       say("police");
-    } else if (event.kind === "crash" && event.cause === "combat") {
+    } else if (event.kind === "crash") {
       const fallen = race.riders[event.rider];
-      if (fallen && Math.abs(fallen.s - player().s) < 30) {
+      if (
+        event.cause === "combat" &&
+        fallen &&
+        Math.abs(fallen.s - player().s) < 30
+      ) {
         sound.thump(0.6);
+      }
+      if (event.by === 0 && event.cause !== "rider") {
+        speak(event.rider, "youKnockThemDown");
       }
     }
   };
@@ -395,16 +481,46 @@ export function createGame(
 
   const attractOver = (): boolean => player().finishTick >= 0 || out(player());
 
-  const advanceClock = () => {
-    const me = player();
-    if (phase === "racing" && !out(me)) {
-      raceTicks += 1;
-      topSpeed = Math.max(topSpeed, me.speed);
+  const record = () => {
+    if (!(plan && log) || settled) {
+      return;
     }
-    if (outLeft > 0) {
-      outLeft -= TICK_SECONDS;
-      if (outLeft <= 0 && phase === "racing") {
-        phase = "finished";
+    recordTick(log, race, plan.setup);
+    if (!log.outcome) {
+      return;
+    }
+    settled = log.outcome;
+    phase = "settled";
+    overLeft = consequenceSeconds(settled);
+    events.onSettle(plan, settled);
+    if (overLeft <= 0) {
+      events.onOver(plan, settled);
+    }
+  };
+
+  const advanceClock = () => {
+    if (
+      phase === "racing" &&
+      !lastStretchSaid &&
+      track.length > LAST_STRETCH * 2 &&
+      distanceLeft(track, player()) < LAST_STRETCH
+    ) {
+      lastStretchSaid = true;
+      say("lastKm");
+    }
+    if (plan && settled && overLeft > 0) {
+      overLeft -= TICK_SECONDS;
+      if (overLeft <= 0) {
+        events.onOver(plan, settled);
+      }
+    }
+  };
+
+  const holdStill = () => {
+    for (const [index, rider] of race.riders.entries()) {
+      const view = views[index];
+      if (view) {
+        capture(rider, view.after);
       }
     }
   };
@@ -419,41 +535,39 @@ export function createGame(
     for (const [index, car] of race.cars.entries()) {
       previousCars[index] = car.s;
     }
+    if (holdLeft > 0) {
+      holdLeft -= TICK_SECONDS;
+      holdStill();
+      return;
+    }
     if (phase === "countdown") {
       countdown -= TICK_SECONDS;
-      if (countdown <= 0) {
+      if (countdown <= 0 && plan) {
         phase = "racing";
+        say("go");
+        events.onStart(plan);
       }
-      for (const [index, rider] of race.riders.entries()) {
-        const view = views[index];
-        if (view) {
-          capture(rider, view.after);
-        }
-      }
+      holdStill();
       return;
     }
     for (const [index, input] of inputs.entries()) {
-      if (index === 0 && phase !== "attract") {
+      if (index === 0 && phase !== "attract" && !autopilot) {
         controls.read(TICK_SECONDS, input);
       } else {
         pilotInput(race, track, index, input);
       }
     }
     if (phase === "attract" && attractOver()) {
-      loadRace("attract", true);
+      loadAttract(true);
       return;
     }
     stepRace(race, track, inputs);
-    advanceClock();
     if (phase !== "attract") {
       react();
     }
-    for (const [index, rider] of race.riders.entries()) {
-      const view = views[index];
-      if (view) {
-        capture(rider, view.after);
-      }
-    }
+    record();
+    advanceClock();
+    holdStill();
   };
 
   const placeFigure = (
@@ -555,7 +669,36 @@ export function createGame(
     poseOnTrack(bike.shadow, track, s, x, 0.03, heading, 0, -Math.PI / 2);
     bike.spin(rider.speed * seconds);
     placeFigure(rider, view, seated, bodyS, bodyX, bodyAir, seconds);
-    return { air, bodyAir, bodyS, bodyX, lean, s, seated, x };
+    placed.air = air;
+    placed.bodyAir = bodyAir;
+    placed.bodyS = bodyS;
+    placed.bodyX = bodyX;
+    placed.lean = lean;
+    placed.s = s;
+    placed.seated = seated;
+    placed.x = x;
+  };
+
+  const placeTag = () => {
+    if (!tag) {
+      return;
+    }
+    const view = views[tagRider];
+    if (!view || phase === "attract" || phase === "idle") {
+      tag.style.visibility = "hidden";
+      return;
+    }
+    tagPoint.copy(view.bike.root.position);
+    tagPoint.y += TAG_HEIGHT;
+    tagPoint.project(chase.camera);
+    if (tagPoint.z > 1) {
+      tag.style.visibility = "hidden";
+      return;
+    }
+    const across = clamp(tagPoint.x, -TAG_MARGIN, TAG_MARGIN) * 0.5 + 0.5;
+    const down = 0.5 - clamp(tagPoint.y, -TAG_MARGIN, TAG_MARGIN) * 0.5;
+    tag.style.visibility = "visible";
+    tag.style.transform = `translate3d(${(across * canvas.clientWidth).toFixed(1)}px, ${(down * canvas.clientHeight).toFixed(1)}px, 0) translate(-50%, -100%)`;
   };
 
   const draw = (blend: number, seconds: number) => {
@@ -565,7 +708,7 @@ export function createGame(
       if (!view) {
         continue;
       }
-      const placed = drawRider(rider, view, blend, seconds);
+      drawRider(rider, view, blend, seconds);
       if (index === 0) {
         subject.s = placed.seated ? placed.s : placed.bodyS;
         subject.x = placed.seated ? placed.x : placed.bodyX;
@@ -587,6 +730,7 @@ export function createGame(
     chase.update(track, subject, seconds);
     world.follow(chase.camera);
     renderer.render(world.scene, chase.camera);
+    placeTag();
   };
 
   const govern = (seconds: number) => {
@@ -610,58 +754,52 @@ export function createGame(
     }
   };
 
-  const placings = (): Placing[] =>
-    standings(race).map((index) => {
-      const rider = race.riders[index];
-      return {
-        busted: rider?.mode === "busted",
-        name: rider?.profile.name ?? "",
-        seconds:
-          rider && rider.finishTick >= 0 ? rider.finishTick / TICK_RATE : -1,
-        wrecked: rider?.mode === "wrecked",
-        you: index === 0,
-      };
-    });
+  const nearestRacer = (me: RiderState): number => {
+    let best = -1;
+    let bestGap = TAG_RANGE;
+    for (const [index, other] of race.riders.entries()) {
+      if (index === 0 || other.profile.role !== "racer" || out(other)) {
+        continue;
+      }
+      const gap = Math.abs(other.s - me.s) + Math.abs(other.x - me.x);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = index;
+      }
+    }
+    return best;
+  };
 
   const report = () => {
     const me = player();
     const order = standings(race);
-    const rivalIndex = Math.max(
-      nearestRival(race, 0, -1),
-      nearestRival(race, 0, 1)
-    );
-    const rival = rivalIndex >= 0 ? race.riders[rivalIndex] : undefined;
-    onHud({
+    tagRider = speechLeft > 0 ? speechRider : nearestRacer(me);
+    const rival = tagRider >= 0 ? race.riders[tagRider] : undefined;
+    events.onHud({
       bikeName: me.bike.name,
-      busted: me.mode === "busted",
       condition: me.condition / FULL_CONDITION,
       copDistance: chaserDistance(race, 0),
-      countdown: Math.ceil(countdown),
-      crashes: me.crashes,
+      countdown: Math.max(0, Math.ceil(holdLeft > 0 ? holdLeft : countdown)),
       distanceLeft: distanceLeft(track, me),
-      fine,
       muted,
       notice: noticeLeft > 0 ? notice : "",
       noticeDetail,
+      offBike: me.mode !== "riding",
       phase,
-      placings: phase === "finished" ? placings() : [],
-      position: order.indexOf(0) + 1,
-      progress: Math.min(1, Math.max(0, me.bodyS / track.length)),
+      position: settled?.place ?? order.indexOf(0) + 1,
+      progress: clamp(me.bodyS / track.length, 0, 1),
       riderCount: order.length,
+      rivalColour: plates[tagRider] ?? "",
       rivalName: rival?.profile.name ?? "",
       rivalStamina: rival ? rival.stamina / MAX_STAMINA : 0,
       roadLength: track.length,
       roadName: track.plan.name,
-      seconds:
-        (me.finishTick >= 0 && phase === "finished"
-          ? me.finishTick
-          : raceTicks) / TICK_RATE,
+      speech: speechLeft > 0 ? speech : "",
       speedKmh: me.speed * 3.6,
       stamina: me.stamina / MAX_STAMINA,
-      topSpeedKmh: topSpeed * 3.6,
+      weaponCapacity: weaponCapacity(me),
       weaponHits: me.weaponHits,
       weaponName: weaponName(me),
-      wrecked: me.mode === "wrecked",
     });
   };
 
@@ -670,6 +808,9 @@ export function createGame(
     const height = canvas.clientHeight;
     renderer.setSize(width, height, false);
     chase.resize(width, height);
+    if (halted()) {
+      renderer.render(world.scene, chase.camera);
+    }
   };
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
@@ -680,12 +821,15 @@ export function createGame(
   renderer.setAnimationLoop((now) => {
     const seconds = clamp((now - last) / 1000, 0, MAX_FRAME_SECONDS);
     last = now;
+    if (halted()) {
+      return;
+    }
     if (clockReset) {
       accumulator = 0;
       clockReset = false;
     }
     accumulator += seconds;
-    while (accumulator >= TICK_SECONDS) {
+    while (accumulator >= TICK_SECONDS && !halted()) {
       tick();
       accumulator -= TICK_SECONDS;
       if (clockReset) {
@@ -697,12 +841,13 @@ export function createGame(
     const [own] = inputs;
     sound.drive(
       riding ? me.speed : 0,
-      riding && phase === "racing" ? (own?.throttle ?? 0) : 0,
+      riding && phase === "racing" && holdLeft <= 0 ? (own?.throttle ?? 0) : 0,
       riding && me.offRoad
     );
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     govern(seconds);
     noticeLeft -= seconds;
+    speechLeft -= seconds;
     hudClock += seconds;
     if (hudClock >= HUD_INTERVAL) {
       hudClock = 0;
@@ -711,6 +856,12 @@ export function createGame(
   });
 
   return {
+    attract() {
+      if (phase !== "attract") {
+        loadAttract(false);
+        report();
+      }
+    },
     dispose() {
       renderer.setAnimationLoop(null);
       observer.disconnect();
@@ -721,7 +872,51 @@ export function createGame(
       world.dispose();
       renderer.dispose();
     },
+    followRival(element) {
+      tag = element;
+    },
+    pause() {
+      if (frozen || phase !== "racing") {
+        return false;
+      }
+      frozen = true;
+      quiet();
+      return true;
+    },
+    quit() {
+      const outcome = plan && log ? outcomeOf(race, plan.setup, log) : null;
+      plan = null;
+      log = null;
+      frozen = false;
+      phase = "idle";
+      quiet();
+      report();
+      return outcome;
+    },
+    resume() {
+      if (!frozen) {
+        return;
+      }
+      frozen = false;
+      holdLeft = RESUME_SECONDS;
+      clockReset = true;
+      last = performance.now();
+    },
+    sleep() {
+      if (phase === "idle") {
+        return;
+      }
+      plan = null;
+      log = null;
+      frozen = false;
+      phase = "idle";
+      quiet();
+      report();
+    },
     startRace,
-    toggleMute,
+    toggleMute() {
+      toggleMute();
+      report();
+    },
   };
 }
