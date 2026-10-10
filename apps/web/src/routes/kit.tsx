@@ -1,12 +1,17 @@
 import { AdSlot } from "@racer/ui/components/ad-slot";
-import { Bar } from "@racer/ui/components/bar";
+import { Bar, Pips } from "@racer/ui/components/bar";
 import { BikeCard } from "@racer/ui/components/bike-card";
 import type { BikeStat } from "@racer/ui/components/bike-card";
+import { Confirm } from "@racer/ui/components/confirm";
 import { CorkBoard, CorkNote } from "@racer/ui/components/cork-note";
 import { Heading } from "@racer/ui/components/heading";
 import { Invoice } from "@racer/ui/components/invoice";
 import { Ledger, LedgerRow, LedgerTotal } from "@racer/ui/components/ledger";
-import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
+import {
+  MenuItem,
+  MenuList,
+  MenuStepper,
+} from "@racer/ui/components/menu-list";
 import { Money } from "@racer/ui/components/money";
 import { Notice, Toast } from "@racer/ui/components/notice";
 import { Panel } from "@racer/ui/components/panel";
@@ -475,6 +480,8 @@ function Meters() {
             tone="plain"
             value={0.66}
           />
+          <Pips label="Club hits left" max={8} value={5} />
+          <Pips label="Pipe hits left" max={3} value={0} />
         </div>
         <div className="flex flex-col gap-4">
           <Stat label="Speed" size="lg" value="187" />
@@ -533,12 +540,29 @@ function Board() {
             tilt={-4}
             title="Juno"
           />
+          <Postcard
+            caption="4 · New meat"
+            pin="yellow"
+            scene={<RegionScene region="lowtown" />}
+            size="xs"
+            tilt={3}
+            title="You"
+          />
           <CorkNote>Moose wants his club back.</CorkNote>
           <CorkNote pin="blue" tilt={2}>
             Photo finish: you by a wheel over Ines.
           </CorkNote>
           <CorkNote hand="typed" pin="green" signature="V." tilt={-0.5}>
             Longer roads. Two cops. Bigger purses. The garage got a delivery.
+          </CorkNote>
+          <CorkNote hand="typed" pin="yellow" tilt={1.5}>
+            <Stat
+              label="1st place now pays"
+              layout="row"
+              size="sm"
+              tone="ink"
+              value="$2,400"
+            />
           </CorkNote>
         </div>
       </CorkBoard>
@@ -626,6 +650,25 @@ function Riders() {
           }))}
         />
       </div>
+      <div className="mt-10 grid max-w-3xl grid-cols-2 gap-3">
+        <RiderCard
+          colours={moose}
+          grid={2}
+          home="Halden Kite 500 · Club"
+          layout="row"
+          name="Moose Kowalczyk"
+          speaking
+          tag="Holds a grudge"
+        />
+        <RiderCard
+          colours={you}
+          grid={8}
+          home="Halden Wren 400 · Fists"
+          layout="row"
+          name="You"
+          you
+        />
+      </div>
       <Panel className="mt-10 max-w-3xl">
         <RiderRows>
           {standings.map((row, index) => (
@@ -647,26 +690,125 @@ function Riders() {
   );
 }
 
+const sampleBikes = ["Halden Wren 400", "Halden Kite 500", "Ostra Sesta 600"];
+const LAST_LEVEL = 5;
+
 function Garage() {
+  const [level, setLevel] = useState(2);
+  const [bike, setBike] = useState(0);
   return (
-    <Section title="MenuList, small">
-      <Panel className="w-80 max-w-full">
-        <Heading as="h3" className="mb-2" size="sm" tone="muted">
-          Featherweight
-        </Heading>
-        <MenuList defaultValue="kite" label="Catalogue" size="sm">
-          {garageMenu.map((entry) => (
-            <MenuItem
-              className="w-full"
-              key={entry.value}
-              trailing={entry.mark}
-              value={entry.value}
+    <Section title="MenuList small, MenuStepper">
+      <div className="flex flex-wrap items-start gap-8">
+        <Panel className="w-96 max-w-full">
+          <MenuList defaultValue="level" label="Single race" size="sm">
+            <MenuStepper
+              label="Level"
+              onStep={(step) =>
+                setLevel(Math.min(LAST_LEVEL, Math.max(1, level + step)))
+              }
+              value="level"
             >
-              {entry.label}
-            </MenuItem>
-          ))}
-        </MenuList>
-      </Panel>
+              {level}
+            </MenuStepper>
+            <MenuStepper
+              label="Bike"
+              onStep={(step) =>
+                setBike((bike + step + sampleBikes.length) % sampleBikes.length)
+              }
+              value="bike"
+            >
+              {sampleBikes[bike]}
+            </MenuStepper>
+            <MenuItem value="race">Race</MenuItem>
+            <MenuItem value="back">Back</MenuItem>
+          </MenuList>
+        </Panel>
+        <Panel className="w-80 max-w-full">
+          <Heading as="h3" className="mb-2" size="sm" tone="muted">
+            Featherweight
+          </Heading>
+          <MenuList defaultValue="kite" label="Catalogue" size="sm">
+            {garageMenu.map((entry) => (
+              <MenuItem
+                className="w-full"
+                key={entry.value}
+                trailing={entry.mark}
+                value={entry.value}
+              >
+                {entry.label}
+              </MenuItem>
+            ))}
+          </MenuList>
+        </Panel>
+      </div>
+    </Section>
+  );
+}
+
+function Asking() {
+  const [answer, setAnswer] = useState("not asked");
+  const [open, setOpen] = useState(true);
+  return (
+    <Section title="Confirm, Screen enter">
+      <div className="border-line relative h-80 border-2">
+        <Screen enter="fade" fit="parent">
+          <ScreenBody className="flex flex-col justify-end gap-4">
+            <p className="text-muted">Answer: {answer}</p>
+            <MenuList
+              label="Confirm demo"
+              onSelect={() => setOpen(true)}
+              orientation="horizontal"
+              size="sm"
+            >
+              <MenuItem value="ask">Quit race</MenuItem>
+            </MenuList>
+          </ScreenBody>
+          {open && (
+            <Confirm
+              defaultValue="keep"
+              label="Quit race"
+              onDismiss={() => {
+                setOpen(false);
+                setAnswer("dismissed");
+              }}
+              onSelect={(value) => {
+                setOpen(false);
+                setAnswer(value);
+              }}
+              options={[
+                { label: "Keep racing", value: "keep" },
+                { label: "Quit and pay", value: "quit" },
+              ]}
+              warning="This bill takes the Halden Kite 500."
+            >
+              Quit this race? It counts as a wreck: no prize, and a $900 repair
+              bill.
+            </Confirm>
+          )}
+        </Screen>
+      </div>
+    </Section>
+  );
+}
+
+function Hud() {
+  return (
+    <Section title="HUD utilities">
+      <div className="border-line bg-muted relative flex h-40 items-center justify-around border-2">
+        <p className="font-display tracking-display hud-ink text-hud font-extrabold uppercase">
+          3rd <span className="text-name">/ 8</span>
+        </p>
+        <p className="font-display tracking-display flash-hold hud-ink text-hud font-extrabold uppercase">
+          2nd
+        </p>
+        <p className="font-display tracking-display cop-blink text-name bg-ink/85 px-4 py-1 font-extrabold uppercase">
+          ▲ Cop 40 m ▲
+        </p>
+      </div>
+      <p className="text-muted mt-3 max-w-2xl text-sm">
+        hud-ink outlines text over the road. flash-hold shows yellow for half a
+        second when it mounts. cop-blink is the one blinking element.
+      </p>
     </Section>
   );
 }
@@ -708,6 +850,8 @@ function KitPage() {
         <Bills />
         <Riders />
         <Garage />
+        <Asking />
+        <Hud />
         <Notices />
       </div>
     </div>
