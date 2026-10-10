@@ -1,7 +1,20 @@
 import { nearestRival } from "@racer/sim/combat";
 import { pilotInput } from "@racer/sim/pilot";
-import { createRace, defaultSetup, standings, stepRace } from "@racer/sim/race";
-import { clamp, MAX_STAMINA, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
+import { chaserDistance } from "@racer/sim/police";
+import {
+  createRace,
+  defaultSetup,
+  distanceLeft,
+  standings,
+  stepRace,
+} from "@racer/sim/race";
+import {
+  clamp,
+  FULL_CONDITION,
+  MAX_STAMINA,
+  TICK_RATE,
+  TICK_SECONDS,
+} from "@racer/sim/state";
 import type {
   RaceEvent,
   RaceState,
@@ -51,6 +64,7 @@ const RISE_SECONDS = 0.45;
 const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
 const BUSTED_SECONDS = 2.2;
+const WRECKED_SECONDS = 1.2;
 const COP_WARNING_RANGE = 80;
 
 interface Pose {
@@ -125,6 +139,9 @@ const attackPose = (rider: RiderState): RiderPose | undefined => {
 const weaponName = (rider: RiderState): string =>
   rider.weapon === "none" ? "" : weapons[rider.weapon].name;
 
+const out = (rider: RiderState): boolean =>
+  rider.mode === "busted" || rider.mode === "wrecked";
+
 export function createGame(
   canvas: HTMLCanvasElement,
   onHud: (hud: HudState) => void
@@ -158,7 +175,7 @@ export function createGame(
   let notice: Notice = "";
   let noticeDetail = "";
   let noticeLeft = 0;
-  let bustedLeft = 0;
+  let outLeft = 0;
   let fine = 0;
   let muted = false;
   let accumulator = 0;
@@ -241,7 +258,7 @@ export function createGame(
     raceTicks = 0;
     topSpeed = 0;
     notice = "";
-    bustedLeft = 0;
+    outLeft = 0;
     fine = 0;
     clockReset = true;
     chase.snap();
@@ -318,8 +335,11 @@ export function createGame(
     } else if (event.kind === "busted") {
       chase.jolt(0.4);
       ({ fine } = event);
-      bustedLeft = BUSTED_SECONDS;
+      outLeft = BUSTED_SECONDS;
       say("busted");
+    } else if (event.kind === "wrecked") {
+      outLeft = WRECKED_SECONDS;
+      say("wrecked");
     } else if (event.kind === "finish" && phase === "racing") {
       phase = "finished";
     }
@@ -354,20 +374,17 @@ export function createGame(
     }
   };
 
-  const attractOver = (): boolean =>
-    player().finishTick >= 0 ||
-    player().mode === "busted" ||
-    player().mode === "wrecked";
+  const attractOver = (): boolean => player().finishTick >= 0 || out(player());
 
   const advanceClock = () => {
     const me = player();
-    if (phase === "racing" && me.mode !== "busted") {
+    if (phase === "racing" && !out(me)) {
       raceTicks += 1;
       topSpeed = Math.max(topSpeed, me.speed);
     }
-    if (bustedLeft > 0) {
-      bustedLeft -= TICK_SECONDS;
-      if (bustedLeft <= 0 && phase === "racing") {
+    if (outLeft > 0) {
+      outLeft -= TICK_SECONDS;
+      if (outLeft <= 0 && phase === "racing") {
         phase = "finished";
       }
     }
@@ -582,17 +599,15 @@ export function createGame(
         name: rider?.profile.name ?? "",
         seconds:
           rider && rider.finishTick >= 0 ? rider.finishTick / TICK_RATE : -1,
+        wrecked: rider?.mode === "wrecked",
         you: index === 0,
       };
     });
 
-  const copChasing = (): boolean =>
-    race.riders.some(
-      (rider) =>
-        rider.profile.role === "police" &&
-        rider.chase === 0 &&
-        Math.abs(rider.s - player().bodyS) < COP_WARNING_RANGE
-    );
+  const copDistance = (): number => {
+    const distance = chaserDistance(race, 0);
+    return distance < COP_WARNING_RANGE ? distance : -1;
+  };
 
   const report = () => {
     const me = player();
@@ -603,10 +618,13 @@ export function createGame(
     );
     const rival = rivalIndex >= 0 ? race.riders[rivalIndex] : undefined;
     onHud({
+      bikeName: me.bike.name,
       busted: me.mode === "busted",
-      copChasing: copChasing(),
+      condition: me.condition / FULL_CONDITION,
+      copDistance: copDistance(),
       countdown: Math.ceil(countdown),
       crashes: me.crashes,
+      distanceLeft: distanceLeft(track, me),
       fine,
       muted,
       notice: noticeLeft > 0 ? notice : "",
@@ -627,6 +645,7 @@ export function createGame(
       topSpeedKmh: topSpeed * 3.6,
       weaponHits: me.weaponHits,
       weaponName: weaponName(me),
+      wrecked: me.mode === "wrecked",
     });
   };
 

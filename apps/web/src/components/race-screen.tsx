@@ -2,7 +2,7 @@ import { Button } from "@racer/ui/components/button";
 import { useEffect, useRef, useState } from "react";
 
 import { idleHud } from "../game/hud.ts";
-import type { GameHandle, HudState } from "../game/hud.ts";
+import type { GameHandle, HudState, Placing } from "../game/hud.ts";
 
 const notices = {
   "": "",
@@ -16,9 +16,16 @@ const notices = {
   knockdown: "Knocked down",
   police: "Police on you",
   wipeout: "Wipeout",
+  wrecked: "Wrecked",
 } as const;
 
-const bareNotices = new Set(["wipeout", "close", "police", "busted"]);
+const bareNotices = new Set([
+  "wipeout",
+  "close",
+  "police",
+  "busted",
+  "wrecked",
+]);
 
 function money(amount: number): string {
   return `$${amount.toLocaleString("en-US")}`;
@@ -47,24 +54,67 @@ function Stamina({
   label,
   value,
   align,
+  thin = false,
 }: {
   readonly label: string;
   readonly value: number;
   readonly align: "left" | "right";
+  readonly thin?: boolean;
 }) {
   return (
     <div className={`w-44 ${align === "right" ? "text-right" : ""}`}>
       <p className="text-foreground/80 font-mono text-[11px] tracking-[0.25em] uppercase drop-shadow">
         {label}
       </p>
-      <div className="bg-background/50 mt-1 h-2 overflow-hidden rounded-full">
+      <div
+        className={`bg-background/50 mt-1 overflow-hidden rounded-full ${thin ? "h-1" : "h-2"}`}
+      >
         <div
-          className={`h-full ${value > 0.35 ? "bg-success" : "bg-destructive"} ${align === "right" ? "origin-right" : "origin-left"}`}
+          className={`h-full ${value > (thin ? 0.25 : 0.35) ? "bg-success" : "bg-destructive"} ${align === "right" ? "origin-right" : "origin-left"}`}
           style={{ transform: `scaleX(${Math.max(0, value)})` }}
         />
       </div>
     </div>
   );
+}
+
+function distance(metres: number): string {
+  return metres >= 1000
+    ? `${(metres / 1000).toFixed(1)} km`
+    : `${Math.round(metres / 10) * 10} m`;
+}
+
+function Outcome({ hud }: { readonly hud: HudState }) {
+  if (hud.busted || hud.wrecked) {
+    return (
+      <p className="text-destructive mt-2 text-5xl font-black uppercase italic">
+        {hud.busted ? "Busted" : "Wrecked"}
+        <span className="text-muted-foreground numeric block text-lg normal-case not-italic">
+          {hud.busted
+            ? `Fined ${money(hud.fine)}`
+            : `The ${hud.bikeName} is finished`}
+        </span>
+      </p>
+    );
+  }
+  return (
+    <p className="numeric mt-2 text-5xl font-black italic">
+      {hud.position}
+      <span className="text-muted-foreground text-2xl">
+        {placeSuffix(hud.position)} · {raceClock(hud.seconds)}
+      </span>
+    </p>
+  );
+}
+
+function placingResult(placing: Placing): string {
+  if (placing.busted) {
+    return "busted";
+  }
+  if (placing.wrecked) {
+    return "wrecked";
+  }
+  return placing.seconds >= 0 ? raceClock(placing.seconds) : "racing";
 }
 
 function Key({ children }: { readonly children: string }) {
@@ -147,21 +197,7 @@ function Results({
       <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">
         Ridge Road
       </p>
-      {hud.busted ? (
-        <p className="text-destructive mt-2 text-5xl font-black uppercase italic">
-          Busted
-          <span className="text-muted-foreground numeric block text-lg normal-case not-italic">
-            Fined {money(hud.fine)}
-          </span>
-        </p>
-      ) : (
-        <p className="numeric mt-2 text-5xl font-black italic">
-          {hud.position}
-          <span className="text-muted-foreground text-2xl">
-            {placeSuffix(hud.position)} · {raceClock(hud.seconds)}
-          </span>
-        </p>
-      )}
+      <Outcome hud={hud} />
       <ol className="mt-4 space-y-1 text-sm">
         {hud.placings.map((placing, index) => (
           <li
@@ -171,11 +207,7 @@ function Results({
             <span>
               {index + 1}. {placing.name}
             </span>
-            <span className="numeric">
-              {placing.busted && "busted"}
-              {!placing.busted &&
-                (placing.seconds >= 0 ? raceClock(placing.seconds) : "racing")}
-            </span>
+            <span className="numeric">{placingResult(placing)}</span>
           </li>
         ))}
       </ol>
@@ -186,6 +218,10 @@ function Results({
         </dd>
         <dt>Crashes</dt>
         <dd className="text-foreground numeric text-right">{hud.crashes}</dd>
+        <dt>Bike</dt>
+        <dd className="text-foreground numeric text-right">
+          {Math.round(hud.condition * 100)}%
+        </dd>
       </dl>
       <Button className="mt-6 w-full" onClick={onRide} size="lg">
         Ride again
@@ -204,6 +240,9 @@ function Dash({ hud }: { readonly hud: HudState }) {
             style={{ transform: `scaleX(${hud.progress})` }}
           />
         </div>
+        <p className="text-foreground/80 numeric mt-1 text-center font-mono text-[11px] tracking-[0.25em] uppercase drop-shadow">
+          {distance(hud.distanceLeft)} to go
+        </p>
       </div>
       <p className="numeric absolute top-4 right-6 font-mono text-xl font-semibold drop-shadow">
         {raceClock(hud.seconds)}
@@ -223,10 +262,18 @@ function Dash({ hud }: { readonly hud: HudState }) {
           </p>
         )}
         <Stamina align="left" label="You" value={hud.stamina} />
+        <div className="mt-2">
+          <Stamina
+            align="left"
+            label={hud.bikeName}
+            thin
+            value={hud.condition}
+          />
+        </div>
       </div>
-      {hud.copChasing && hud.phase === "racing" && (
-        <p className="bg-destructive/85 absolute top-24 right-6 animate-pulse rounded px-2 py-1 font-mono text-xs font-semibold tracking-[0.25em] text-white uppercase">
-          Police
+      {hud.copDistance >= 0 && hud.phase === "racing" && (
+        <p className="bg-destructive/85 numeric absolute top-24 right-6 animate-pulse rounded px-2 py-1 font-mono text-xs font-semibold tracking-[0.25em] text-white uppercase">
+          Police {Math.round(hud.copDistance)} m
         </p>
       )}
       {hud.rivalName !== "" && (

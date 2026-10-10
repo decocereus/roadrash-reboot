@@ -11,12 +11,14 @@ export type Notice =
   | "disarmed"
   | "broken"
   | "police"
-  | "busted";
+  | "busted"
+  | "wrecked";
 
 export interface Placing {
   readonly name: string;
   readonly seconds: number;
   readonly busted: boolean;
+  readonly wrecked: boolean;
   readonly you: boolean;
 }
 
@@ -38,17 +40,24 @@ export interface HudState {
   readonly rivalStamina: number;
   readonly weaponName: string;
   readonly weaponHits: number;
-  readonly copChasing: boolean;
+  readonly bikeName: string;
+  readonly condition: number;
+  readonly copDistance: number;
+  readonly distanceLeft: number;
   readonly busted: boolean;
+  readonly wrecked: boolean;
   readonly fine: number;
   readonly placings: readonly Placing[];
 }
 
 export const idleHud: HudState = {
+  bikeName: "",
   busted: false,
-  copChasing: false,
+  condition: 1,
+  copDistance: -1,
   countdown: 0,
   crashes: 0,
+  distanceLeft: 0,
   fine: 0,
   muted: false,
   notice: "",
@@ -66,6 +75,7 @@ export const idleHud: HudState = {
   topSpeedKmh: 0,
   weaponHits: 0,
   weaponName: "",
+  wrecked: false,
 };
 
 export interface GameHandle {
