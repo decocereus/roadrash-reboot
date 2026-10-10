@@ -70,24 +70,69 @@ function RiderCard({
   tag,
   grid,
   you = false,
+  speaking = false,
+  layout = "card",
   ...props
 }: Omit<ComponentProps<"article">, "children"> & {
   readonly name: string;
   readonly home: string;
   readonly colours: RiderColours;
-  readonly skill: number;
-  readonly aggression: number;
+  readonly skill?: number | undefined;
+  readonly aggression?: number | undefined;
   readonly line?: string | undefined;
   readonly tag?: string | undefined;
   readonly grid?: number | undefined;
   readonly you?: boolean;
+  readonly speaking?: boolean;
+  readonly layout?: "card" | "row";
 }) {
+  if (layout === "row") {
+    return (
+      <article
+        data-slot="rider-card"
+        data-layout="row"
+        data-you={you ? "" : undefined}
+        data-speaking={speaking ? "" : undefined}
+        className={cn(
+          "bg-panel border-line text-text outline-yellow data-speaking:bg-raised data-speaking:border-text flex min-w-0 items-stretch border-2 data-you:outline-2 data-you:outline-offset-2",
+          className
+        )}
+        {...props}
+      >
+        <RiderPortrait
+          className="h-auto w-[4.5em] shrink-0 border-r-2 border-b-0"
+          colours={colours}
+        />
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-1.5">
+          <div className="flex items-baseline gap-2">
+            {grid !== undefined && (
+              <span className="font-display numeric text-muted text-name leading-none font-bold">
+                {grid}
+              </span>
+            )}
+            <h3 className="font-display tracking-display text-name truncate leading-none font-bold uppercase">
+              {name}
+            </h3>
+          </div>
+          <p className="font-body text-label text-muted truncate font-semibold uppercase">
+            {home}
+          </p>
+          {tag !== undefined && (
+            <p className="font-body text-label text-red truncate font-semibold uppercase">
+              {tag}
+            </p>
+          )}
+        </div>
+      </article>
+    );
+  }
   return (
     <article
       data-slot="rider-card"
       data-you={you ? "" : undefined}
+      data-speaking={speaking ? "" : undefined}
       className={cn(
-        "bg-panel border-line text-text outline-yellow flex w-72 max-w-full flex-col border-2 data-you:outline-2 data-you:outline-offset-2",
+        "bg-panel border-line text-text outline-yellow data-speaking:border-text flex w-72 max-w-full flex-col border-2 data-you:outline-2 data-you:outline-offset-2",
         className
       )}
       {...props}
@@ -114,10 +159,12 @@ function RiderCard({
             </p>
           )}
         </div>
-        <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
-          <RiderTrait label="Skill" value={skill} />
-          <RiderTrait label="Aggression" value={aggression} />
-        </div>
+        {skill !== undefined && aggression !== undefined && (
+          <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
+            <RiderTrait label="Skill" value={skill} />
+            <RiderTrait label="Aggression" value={aggression} />
+          </div>
+        )}
         {line !== undefined && (
           <blockquote className="font-body border-line border-t-2 pt-3 text-base leading-snug font-semibold text-pretty">
             “{line}”

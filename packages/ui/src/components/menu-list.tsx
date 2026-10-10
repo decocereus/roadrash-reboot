@@ -14,6 +14,7 @@ type MenuOrientation = "vertical" | "horizontal";
 interface MenuSelection {
   readonly value: string | undefined;
   readonly size: "md" | "sm";
+  readonly orientation: MenuOrientation;
   readonly choose: (value: string) => void;
   readonly confirm: (value: string) => void;
 }
@@ -100,10 +101,11 @@ function MenuList({
         }
       },
       confirm: (chosen) => onSelect?.(chosen),
+      orientation,
       size,
       value: current,
     }),
-    [current, onSelect, onValueChange, size]
+    [current, onSelect, onValueChange, orientation, size]
   );
 
   const moveFocus = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -238,4 +240,106 @@ function MenuItem({
   );
 }
 
-export { MenuItem, MenuList };
+type MenuStep = -1 | 1;
+
+function stepOf(key: string, orientation: MenuOrientation): MenuStep | 0 {
+  const cross = orientation === "vertical" ? "horizontal" : "vertical";
+  if (forwardKeys[cross].has(key)) {
+    return 1;
+  }
+  return backKeys[cross].has(key) ? -1 : 0;
+}
+
+function MenuStepper({
+  className,
+  value,
+  label,
+  disabled = false,
+  onStep,
+  onFocus,
+  onPointerEnter,
+  onKeyDown,
+  children,
+  ...props
+}: Omit<ComponentProps<"button">, "value" | "type" | "onClick"> & {
+  readonly value: string;
+  readonly label: ReactNode;
+  readonly onStep: (step: MenuStep) => void;
+}) {
+  const menu = use(MenuContext);
+  if (menu === null) {
+    throw new Error("MenuStepper must be rendered inside a MenuList");
+  }
+  const selected = menu.value === value;
+  return (
+    <button
+      data-slot="menu-item"
+      data-stepper=""
+      data-selected={selected ? "true" : undefined}
+      role="menuitem"
+      type="button"
+      disabled={disabled}
+      tabIndex={selected || menu.value === undefined ? 0 : -1}
+      className={cn(
+        "group/menu-item font-display tracking-display text-text data-selected:text-yellow disabled:text-muted flex items-baseline gap-[0.4em] rounded-sm py-0.5 pr-2 text-left font-bold uppercase transition-colors duration-100",
+        menu.size === "md" ? "text-name" : "text-body leading-tight",
+        className
+      )}
+      onClick={() => onStep(1)}
+      onFocus={(event) => {
+        onFocus?.(event);
+        menu.choose(value);
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        const step = stepOf(event.key, menu.orientation);
+        if (step !== 0 && !event.defaultPrevented) {
+          event.preventDefault();
+          onStep(step);
+        }
+      }}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        if (!selected) {
+          event.currentTarget.focus({ preventScroll: true });
+        }
+      }}
+      {...props}
+    >
+      <span
+        aria-hidden
+        data-slot="menu-pointer"
+        className="invisible group-data-selected/menu-item:visible"
+      >
+        ▸
+      </span>
+      <span className="font-body text-label text-muted min-w-[4.5em] font-semibold">
+        {label}
+      </span>
+      <span
+        aria-hidden
+        data-slot="menu-step-back"
+        className="text-muted group-data-selected/menu-item:text-yellow px-1"
+        onClick={(event) => {
+          event.stopPropagation();
+          onStep(-1);
+        }}
+      >
+        ◄
+      </span>
+      <span data-slot="menu-step-value" className="numeric whitespace-nowrap">
+        {children}
+      </span>
+      <span
+        aria-hidden
+        data-slot="menu-step-forward"
+        className="text-muted group-data-selected/menu-item:text-yellow px-1"
+      >
+        ►
+      </span>
+    </button>
+  );
+}
+
+export { MenuItem, MenuList, MenuStepper };
+export type { MenuStep };

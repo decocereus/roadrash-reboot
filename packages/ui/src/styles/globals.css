@@ -406,6 +406,47 @@
     50% / 10px 100%;
 }
 
+@utility hud-ink {
+  text-shadow:
+    -2px 0 var(--ink),
+    2px 0 var(--ink),
+    0 -2px var(--ink),
+    0 2px var(--ink),
+    0 4px 10px rgb(0 0 0 / 45%);
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+  }
+}
+@utility screen-in {
+  animation: screen-in 180ms ease-out both;
+}
+
+@keyframes cop-blink {
+  0%,
+  49.9% {
+    color: var(--blue);
+  }
+  50%,
+  100% {
+    color: var(--red);
+  }
+}
+@utility cop-blink {
+  animation: cop-blink 500ms steps(1, end) infinite;
+}
+
+@keyframes flash-hold {
+  from {
+    color: var(--yellow);
+  }
+}
+@utility flash-hold {
+  animation: flash-hold 500ms steps(1, end) both;
+}
+
 @keyframes notice-in {
   from {
     opacity: 0;

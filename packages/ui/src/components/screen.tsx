@@ -7,6 +7,11 @@ const scrims = {
   soft: "from-ink/85 via-ink/35 bg-linear-to-tr to-transparent",
 } as const;
 
+const enters = {
+  cut: "",
+  fade: "screen-in",
+} as const;
+
 const fits = {
   parent: "relative size-full",
   viewport: "fixed inset-0",
@@ -17,12 +22,14 @@ function Screen({
   scene,
   scrim = "none",
   fit = "viewport",
+  enter = "cut",
   children,
   ...props
 }: ComponentProps<"main"> & {
   readonly scene?: ReactNode;
   readonly scrim?: keyof typeof scrims;
   readonly fit?: keyof typeof fits;
+  readonly enter?: keyof typeof enters;
 }) {
   return (
     <main
@@ -30,6 +37,7 @@ function Screen({
       className={cn(
         "bg-ink text-text font-body text-body isolate overflow-hidden",
         fits[fit],
+        enters[enter],
         className
       )}
       {...props}

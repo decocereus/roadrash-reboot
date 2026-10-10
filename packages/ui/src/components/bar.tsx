@@ -84,4 +84,39 @@ function Bar({
   );
 }
 
-export { Bar };
+function Pips({
+  className,
+  value,
+  max,
+  label,
+  ...props
+}: Omit<ComponentProps<"div">, "children"> & {
+  readonly value: number;
+  readonly max: number;
+  readonly label: string;
+}) {
+  const left = Math.min(max, Math.max(0, Math.round(value)));
+  return (
+    <div
+      data-slot="pips"
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={left}
+      className={cn("flex gap-1", className)}
+      {...props}
+    >
+      {Array.from({ length: max }, (_, index) => (
+        <span
+          data-slot="pip"
+          data-spent={index < left ? undefined : ""}
+          key={index}
+          className="border-text bg-text ring-ink h-4 w-2 border-2 ring-2 data-spent:bg-transparent"
+        />
+      ))}
+    </div>
+  );
+}
+
+export { Bar, Pips };

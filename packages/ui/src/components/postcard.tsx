@@ -7,6 +7,14 @@ const widths = {
   lg: "w-96",
   md: "w-60",
   sm: "w-36",
+  xs: "w-28",
+} as const;
+
+const titles = {
+  lg: "text-2xl",
+  md: "text-2xl",
+  sm: "text-lg",
+  xs: "text-base",
 } as const;
 
 function Postcard({
@@ -62,7 +70,7 @@ function Postcard({
         <p
           className={cn(
             "font-display tracking-display leading-none font-extrabold uppercase",
-            size === "sm" ? "text-lg" : "text-2xl"
+            titles[size]
           )}
         >
           {title}
