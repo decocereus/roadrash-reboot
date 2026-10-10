@@ -780,6 +780,22 @@ describe("simultaneous strikes", () => {
     expect(me.stamina).toBe(bruiser.stamina);
     expect(me.stamina).toBeLessThan(MAX_STAMINA);
   });
+
+  it("two riders who punch each other on the same tick are stunned for the same time", () => {
+    const { bruiser, me, state } = sideBySide();
+    disarm(bruiser);
+    const stuns: number[][] = [];
+    brawl(state, 0.5, (tick) => {
+      stuns.push([me.hitStun, bruiser.hitStun]);
+      return [
+        pressing("punch", tick === 0),
+        cruising,
+        pressing("punch", tick === 0),
+      ];
+    });
+    expect(Math.max(...stuns.flat())).toBe(10);
+    expect(stuns.filter(([mine, theirs]) => mine !== theirs)).toStrictEqual([]);
+  });
 });
 
 const duel = (

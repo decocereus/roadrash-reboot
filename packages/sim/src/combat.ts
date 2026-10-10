@@ -95,7 +95,7 @@ const takeWeapon = (
   });
 };
 
-export interface Strike {
+interface Strike {
   readonly attack: AttackKind;
   readonly side: number;
   readonly target: number;
@@ -240,7 +240,7 @@ const wearWeapons = (
   }
 };
 
-export const settleStrikes = (state: RaceState): (Strike | undefined)[] => {
+const settleStrikes = (state: RaceState): (Strike | undefined)[] => {
   const strikes = state.riders.map((rider, index) =>
     aimStrike(state, index, rider)
   );
@@ -248,27 +248,36 @@ export const settleStrikes = (state: RaceState): (Strike | undefined)[] => {
   return pickThieves(state, strikes);
 };
 
+export const coolDown = (state: RaceState): void => {
+  for (const rider of state.riders) {
+    rider.attackCooldown = Math.max(0, rider.attackCooldown - 1);
+    rider.hitStun = Math.max(0, rider.hitStun - 1);
+  }
+};
+
+export const landStrikes = (state: RaceState): void => {
+  for (const [index, strike] of settleStrikes(state).entries()) {
+    if (strike) {
+      landHit(state, index, strike);
+    }
+  }
+};
+
 export const stepAttack = (
   state: RaceState,
   riderIndex: number,
-  input: RiderInput,
-  aimed: Strike | undefined
+  input: RiderInput
 ): void => {
   const rider = state.riders[riderIndex];
   if (!rider) {
     return;
   }
-  rider.attackCooldown = Math.max(0, rider.attackCooldown - 1);
-  rider.hitStun = Math.max(0, rider.hitStun - 1);
   if (!canFight(rider)) {
     rider.attack = "none";
     rider.attackTicks = 0;
     return;
   }
-  if (aimed) {
-    landHit(state, riderIndex, aimed);
-  }
-  if (rider.attack !== "none" || aimed) {
+  if (rider.attack !== "none") {
     rider.attackTicks = Math.max(0, rider.attackTicks - 1);
     if (rider.attackTicks <= 0) {
       finishSwing(state, riderIndex, rider);

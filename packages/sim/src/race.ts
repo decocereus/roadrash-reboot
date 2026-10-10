@@ -1,7 +1,12 @@
 import { createRandom, nextSeed } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
-import { settleStrikes, stepAttack, stepRiderContacts } from "./combat.ts";
+import {
+  coolDown,
+  landStrikes,
+  stepAttack,
+  stepRiderContacts,
+} from "./combat.ts";
 import { PATROL_SPEED, stepPolice } from "./police.ts";
 import { stepRider, throwRider } from "./rider.ts";
 import { MAX_STAMINA, streetBike } from "./state.ts";
@@ -202,9 +207,10 @@ export const stepRace = (
   stepRiderContacts(state, track, (riderIndex, cause, bikeKeep, bodyKeep) => {
     throwRider(state, riderIndex, cause, bikeKeep, bodyKeep);
   });
-  const strikes = settleStrikes(state);
+  coolDown(state);
+  landStrikes(state);
   for (let index = 0; index < state.riders.length; index += 1) {
-    stepAttack(state, index, inputs[index] ?? neutralInput, strikes[index]);
+    stepAttack(state, index, inputs[index] ?? neutralInput);
   }
   stepPolice(state, track);
 };
