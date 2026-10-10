@@ -83,28 +83,101 @@ const gapToRider = (car: TrafficCar, rider: RiderState): number => {
   return nearest - car.halfLength - BIKE_HALF_LENGTH;
 };
 
-export const stepTraffic = (state: RaceState, track: Track): void => {
-  const lastS = state.cars.map((car) => car.s);
-  const lastSpeed = state.cars.map((car) => Math.abs(car.speed));
-  for (const [index, car] of state.cars.entries()) {
-    const direction = Math.sign(car.cruiseSpeed);
-    let targetSpeed = Math.abs(car.cruiseSpeed);
-    const speed = lastSpeed[index] ?? 0;
-    const s = lastS[index] ?? car.s;
+interface Lane {
+  readonly direction: number;
+  readonly order: readonly number[];
+  readonly longest: number;
+}
 
-    for (const [otherIndex, other] of state.cars.entries()) {
-      if (otherIndex !== index && Math.sign(other.cruiseSpeed) === direction) {
-        const gap =
-          ((lastS[otherIndex] ?? other.s) - s) * direction -
-          other.halfLength -
-          car.halfLength;
-        if (gap > 0 && gap < FOLLOW_GAP + speed * FOLLOW_SECONDS) {
-          targetSpeed = Math.min(targetSpeed, lastSpeed[otherIndex] ?? 0);
-        }
+const laneOf = (
+  cars: readonly TrafficCar[],
+  lastS: readonly number[],
+  direction: number
+): Lane => {
+  const order: number[] = [];
+  let longest = 0;
+  for (let index = 0; index < cars.length; index += 1) {
+    const car = cars[index];
+    if (car && Math.sign(car.cruiseSpeed) === direction) {
+      order.push(index);
+      longest = Math.max(longest, car.halfLength);
+    }
+  }
+  order.sort(
+    (left, right) => ((lastS[left] ?? 0) - (lastS[right] ?? 0)) * direction
+  );
+  return { direction, longest, order };
+};
+
+const followLane = (
+  cars: readonly TrafficCar[],
+  lastS: readonly number[],
+  lastSpeed: readonly number[],
+  lane: Lane,
+  followed: number[]
+): void => {
+  const { direction, longest, order } = lane;
+  for (let place = 0; place < order.length; place += 1) {
+    const index = order[place] ?? -1;
+    const car = cars[index];
+    if (!car) {
+      continue;
+    }
+    const s = lastS[index] ?? car.s;
+    const reach = FOLLOW_GAP + (lastSpeed[index] ?? 0) * FOLLOW_SECONDS;
+    let targetSpeed = Math.abs(car.cruiseSpeed);
+    for (let ahead = place + 1; ahead < order.length; ahead += 1) {
+      const otherIndex = order[ahead] ?? -1;
+      const other = cars[otherIndex];
+      if (!other) {
+        continue;
+      }
+      const apart = ((lastS[otherIndex] ?? other.s) - s) * direction;
+      if (apart - longest - car.halfLength >= reach) {
+        break;
+      }
+      const gap = apart - other.halfLength - car.halfLength;
+      if (gap > 0 && gap < reach) {
+        targetSpeed = Math.min(targetSpeed, lastSpeed[otherIndex] ?? 0);
       }
     }
+    followed[index] = targetSpeed;
+  }
+};
 
-    for (const rider of state.riders) {
+export const stepTraffic = (state: RaceState, track: Track): void => {
+  const { cars, riders } = state;
+  const lastS = cars.map((car) => car.s);
+  const lastSpeed = cars.map((car) => Math.abs(car.speed));
+  const followed = cars.map((car) => Math.abs(car.cruiseSpeed));
+  for (const direction of [1, -1]) {
+    followLane(
+      cars,
+      lastS,
+      lastSpeed,
+      laneOf(cars, lastS, direction),
+      followed
+    );
+  }
+  for (let index = 0; index < cars.length; index += 1) {
+    const car = cars[index];
+    if (!car) {
+      continue;
+    }
+    const direction = Math.sign(car.cruiseSpeed);
+    const speed = lastSpeed[index] ?? 0;
+    let targetSpeed = followed[index] ?? Math.abs(car.cruiseSpeed);
+
+    const sight = LOOK_AHEAD + car.halfLength + BIKE_HALF_LENGTH;
+    for (const rider of riders) {
+      const bikeAhead = (rider.s - car.s) * direction;
+      const bodyAhead = (rider.bodyS - car.s) * direction;
+      if (
+        (bikeAhead <= 0 || bikeAhead >= sight) &&
+        (bodyAhead <= 0 || bodyAhead >= sight)
+      ) {
+        continue;
+      }
       const gap = gapToRider(car, rider);
       const riderSpeed =
         rider.mode === "riding" ? Math.max(0, rider.speed * direction) : 0;
