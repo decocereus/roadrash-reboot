@@ -1,0 +1,257 @@
+# Art direction
+
+Drafted October 10, 2026. The look and sound of the game: palette, type, HUD, models, the five regions, readability rules, camera, and audio. It builds on what the greybox already does (flat matte materials, a chase camera, synthesised audio) and on `docs/architecture.md`, which fixes the style as stylized low-poly.
+
+The reference captures were studied for composition only: a large rider low in the frame, a high horizon, bright riders on a grey road, orange headings on dark menus, and consequences shown as a character's reaction. Nothing here copies a screen, a portrait, a logo, or a layout.
+
+## Principles
+
+1. **The road is the brightest idea on screen.** Grey road, clear lines, a horizon in the upper third. Scenery frames it and never competes with it.
+2. **Riders are colour blocks.** Each rider is one bike colour and one jacket colour, readable as a pair at 80 m. Detail comes third.
+3. **Flat and matte.** Flat-shaded faces, vertex colour, no photo textures. Decals (numbers, stripes, signs) are the only textures. This keeps generated and hand-made models consistent and the download small.
+4. **Clean in the race, rough in the menus.** The race view is tidy. Grit lives between races: cork, torn paper, Polaroids, marker pen, stencil type.
+5. **Funny through silhouette.** A veil, a delivery box, a stop sign, a hat brim. The joke should read as a shape before it reads as a texture.
+
+## Palette
+
+### Interface
+
+| Role | Hex | Use |
+| --- | --- | --- |
+| Ink | `#0E0F12` | Screen background |
+| Panel | `#17191F` | Cards, strips |
+| Raised | `#22252D` | Selected card, bar tracks |
+| Line | `#2E323C` | Dividers, outlines |
+| Text | `#F2EEE6` | Body text, warm white |
+| Muted | `#9A9AA3` | Secondary text, locked items |
+| **Orange** | `#FF6A1A` | Headings, the one accent per screen |
+| **Yellow** | `#FFC531` | Current selection, the player's outline, `QUALIFIED` |
+| Red | `#E5312B` | Money out, debt, low stamina, `WRECKED` |
+| Green | `#5BD06A` | Money in, full stamina |
+| Police blue | `#2F6BFF` | Cop warning, `BUSTED` (with red) |
+| Cork | `#8A6A45` | The board |
+| Paper | `#EDE4D0` | Notes, invoices, tickets |
+| Polaroid | `#F7F3EA` | Photo frames |
+
+Orange and yellow never sit on a light background. Orange is for what a thing is called; yellow is for where you are.
+
+### Road
+
+| Role         | Hex                    |
+| ------------ | ---------------------- |
+| Asphalt      | `#3A3C40`              |
+| Worn patch   | `#4A4B4E`              |
+| Centre line  | `#E8C23A`              |
+| Edge line    | `#E9E6DF`              |
+| Shoulder     | `#5E5A52`              |
+| Gravel verge | `#8C7D5E`              |
+| Chevron sign | `#FFC531` on `#15171B` |
+
+Each region tints the asphalt slightly (below) but the centre and edge lines keep these values everywhere, so the road reads the same in every light.
+
+### Region skies
+
+| Region | Zenith | Horizon | Light |
+| --- | --- | --- | --- |
+| Salt Coast | `#3C7FCC` | `#CFE3EC` | Clear late morning, cool |
+| Cinder Flats | `#4A8FD4` | `#F1D9B0` | High noon, dusty warm horizon |
+| Kettle Woods | `#6F8FA6` | `#C9D3CF` | Overcast, soft, low contrast |
+| Lowtown | `#3B3354` | `#E08A5C` | Smoggy dusk, sodium lamps on |
+| Stonepeak | `#3F7FD6` | `#C9DBE8` | Bright mountain afternoon (today's sky) |
+
+### Riders
+
+Bike paint is the primary identifier; the jacket is the second. These twelve entries replace the current seven-colour `bikePaints` and `jacketColours` tables.
+
+| Index | Rider | Bike | Jacket | Helmet |
+| --: | --- | --- | --- | --- |
+| 0 | Player (default) | `#C82F2F` | `#23262C` | `#F2C230` |
+| 1 | Juno Kade | `#15171B` | `#15171B` | `#15171B`, gold stripe `#D4A63A` |
+| 2 | Ruth Ann Bixby | `#26A6A0` | `#A8743E` | `#EDE4D0`, brim |
+| 3 | Dee Santangelo | `#2F9A4E` | `#D7263D` | `#F2EEE6`, stickers |
+| 4 | Ines Marchetti | `#F2ECDF` | `#F2ECDF` | `#FFFFFF`, veil |
+| 5 | Mags Dunleavy | `#77806A` | `#3F4A57` | `#5B432E`, goggles |
+| 6 | Lyle Gorski | `#22335C` | `#8A7A55` | `#22335C` |
+| 7 | Tristan Lux | `#E040A0` | `#7B4FE0` | `#E040A0`, camera |
+| 8 | Coach Dale Hutto | `#E0A21B` | `#1E5AA8` | `#F2EEE6`, visor |
+| 9 | Moose Kowalczyk | `#C2521F` | `#5B4632` | `#2B2E33` |
+| 10 | Gus Abernathy | `#6B6B3A` | `#C8E03A` | `#F2C230`, hard-hat shape |
+| 11 | Police | `#F4F6F8` with `#2F6BFF` panels | `#141C33` | `#F4F6F8` |
+
+The player can repaint their bike in the Garage from eight swatches that avoid the rivals' hues at close range: `#C82F2F`, `#F26B1D`, `#F2C230`, `#3FA34D`, `#2C8ED6`, `#5A4FCF`, `#B14FC9`, `#E9E6DF`.
+
+## Typography
+
+Three free faces, all under the SIL Open Font License, self-hosted as `woff2` so the page makes no font request to another origin.
+
+| Role | Face | Use |
+| --- | --- | --- |
+| Display | **Saira Extra Condensed**, weights 700 and 800 | Screen headings, rider names, HUD numerals, buttons. Always capitals, tracking +0.02 em. |
+| Body | **Inter**, weights 400 and 600 | Descriptions, rival lines, ledgers, small labels. Tabular numerals on for all money and times. |
+| Outcome | **Big Shoulders Stencil Display**, weight 800 | Only the big outcome words: `WRECKED`, `BUSTED`, `BROKE`, `WINNER`, `FINISHED`, and the title wordmark. |
+
+Scale at 1280 × 720, scaling with the shorter screen side: outcome words 120 px; headings 56 px; HUD speed and position 64 px; rider names 28 px; body 18 px on a 26 px line; labels 13 px capitals with +0.08 em tracking. Rival lines are set in Inter 600 at 22 px inside quotation marks, never in italics.
+
+HUD numerals sit in fixed-width boxes, one per digit, so a changing speed does not shift the layout.
+
+Handwriting on the board (Vic's notes, the marker on Polaroids) is drawn as part of the illustration, not set in a font.
+
+## HUD style
+
+- No dashboard, no bezel, no dials. Text and bars float directly over the road with a 2 px `#0E0F12` outline and a soft shadow so they hold up against sky and asphalt.
+- Bars are flat rectangles with a 2 px `#0E0F12` border and square ends, 10 px tall for stamina and 6 px for bike condition. Stamina is green above 50, yellow to 25, red below.
+- Weapon hits are pips: small solid rectangles in `#F2EEE6`, hollow when spent.
+- The rival tag is a `#17191F` plate at 85% opacity with the rival's bike colour as a 4 px left edge, their name in Saira, and their stamina bar. The speech tag is the same plate, wider, with the line in Inter.
+- The cop warning alternates `#2F6BFF` and `#E5312B` at 2 Hz. Nothing else on the HUD blinks.
+- Notices are one or two words in Saira 800, yellow, centred at 30% of the screen height, on screen for 0.8 seconds, scaling from 110% to 100% as they appear.
+- Layout, strings, and data sources are in `screens.md`.
+
+## Riders and bikes
+
+### Budget and build
+
+About 900 triangles for a rider, 1,200 for a bike, 500 for a car, and 20 to 200 for a prop. One material per rider and one per bike, coloured by vertex colour and instance colour. Riders share one rig (hips, spine, head, two-bone arms and legs) so every animation works on everyone. Character differences are attached parts: hat brim, veil strip, delivery box, camera, vest, beard, sign.
+
+### Rider silhouette
+
+Heads are 15% larger than life and hands 20% larger, so a raised fist or weapon reads at distance. Shoulders are squared and the back is one clean plane, because the player looks at backs all race. Every rival has one feature that breaks the helmet-and-shoulders outline: the cast list in `game-design.md` names it for each.
+
+The player's rider is the plainest in the field on purpose: charcoal jacket, yellow helmet, no attachment. The yellow helmet is the one constant anchor in the frame.
+
+### Bike silhouettes by class
+
+| Class | Shape | Tells |
+| --- | --- | --- |
+| Featherweight | Narrow, tall, exposed frame, round headlight, thin tyres, short tail. The rider sits upright and looks big on it. | Daylight visible through the frame. A single thin exhaust. |
+| Middleweight | Half fairing, wedge profile, twin headlights, rider leaning forward. | A solid nose and an open engine. One wide exhaust. |
+| Heavyweight | Full fairing, wide tank, fat rear tyre, long low tail. The rider is tucked and looks small on it. | No daylight through the body. Twin exhausts. |
+
+The **Gutter Pup 250** breaks its class shape: mismatched wheels, a milk crate bolted to the tail, one mirror, a seat in the wrong colour, and a headlight held on with tape. It leans further than anything else (`visualLean` 0.46) and trails a thin line of smoke.
+
+Makers have a visual habit each: Halden bikes have round lights and visible frames, Ostra bikes have sharp noses and a diagonal stripe, Brack bikes are boxy with square lights and oversized exhausts.
+
+### Weapons
+
+Each weapon is a distinct shape and colour so the player knows what a rival holds before reaching them: club (thick, tapered, wood `#6B4A2B`), chain (thin, sagging, steel `#8A9096`), crowbar (hooked, dark red `#7A1C1C`), baton (straight, black `#15161A`), pool cue (very long, pale wood `#D9B98A` with a blue tip `#2C8ED6`), stop sign (red octagon `#D7263D` on a grey pole, white border). Held weapons are carried upright or across the shoulder while riding, so they add to the silhouette.
+
+## Regions
+
+Each region is a kit: a ground treatment, a near prop set scattered by `scatterProps`, a far backdrop, and set pieces placed at the road's signature moments from `tracks.md`. The compiler today scatters trees, poles, rocks, and chevrons for every road; a `kit` field on `TrackPlan` selects the set below.
+
+### Salt Coast (Breakwater Run)
+
+Sea on the right for most of the road, low cliff or seawall on the left. Open, bright, and windy.
+
+- **Ground.** Asphalt `#44474B`, pale and salt-bleached. Sand `#D9C79A`, dune grass `#7FA35A`, cliff rock `#B9A88C`, sea `#2B6F8F` with a lighter band `#5FA6BF` at the shore.
+- **Near props.** Wind-bent cypress (replaces tree), wooden telegraph poles, low stone seawall segments, beach huts in `#E5503A`, `#F2C230`, and `#3FB8AF`, upturned rowing boats, lifebuoy posts, gull flocks as flat cards.
+- **Far backdrop.** A headland, a lighthouse `#F2EEE6` with a red band, container ships as flat silhouettes on the horizon.
+- **Set pieces.** The harbour start with moored boats. The tunnel through the headland: a dark concrete mouth, inside lit by a row of orange lamps `#FFB347`. The lighthouse at the kink. The pier at the finish with a striped pavilion.
+- **Traffic.** Hatchbacks, a camper van, an ice cream van.
+
+### Cinder Flats (Cinder Wash)
+
+Flat, enormous, and empty, with a red mesa at the end. Heat and distance.
+
+- **Ground.** Asphalt `#4B4640`, sun-baked and cracked at the edges. Sand `#C9925A`, dry lake bed `#E3CFA5`, mesa rock `#A8512E` with a darker band `#7C3A22`, scrub `#8C9A5B`.
+- **Near props.** Saguaro-like cacti with one or two arms (replaces tree), tumbleweeds, leaning wooden fence posts with wire, dead tyres, a cow skull on a post, billboards faded to pastel, cattle grid rails.
+- **Far backdrop.** Mesas in three flat layers fading to `#D8B48A`, a line of pylons, dust devils.
+- **Set pieces.** The dead gas station at the start with a toppled sign. The three washes, each marked by a yellow "DIP" sign and a line of white stones. The mesa hairpin with a wall of red rock on the inside and a long drop on the outside. The drive-in cinema at the finish, its blank screen `#EDE4D0` facing the road and a teal neon arrow `#3FB8AF`.
+- **Traffic.** Pickup trucks, a road train (the longest vehicle in the game), a dusty sedan.
+
+### Kettle Woods (Hollow Pine Road)
+
+A narrow road in a tall dark forest. The sky is a strip overhead and the next bend is always hidden.
+
+- **Ground.** Asphalt `#33363A`, dark and damp, with a faint green edge. Forest floor `#3E4A2E`, fern `#4F7A3D`, bark `#5B432E`, pine `#2E4A33` with a lighter tip `#3F6A45`, fog `#AEBBB5`.
+- **Near props.** Tall pines close to the verge (the 5 m verge puts them near the road), fern clumps, log piles, mossy boulders, yellow diamond warning signs `#E0A43A`, deer standing still at the tree line.
+- **Far backdrop.** Layers of pine silhouettes fading into fog. No horizon line; the fog is the horizon.
+- **Set pieces.** The ranger station at the start. A log truck parked at the Logjam Left. The covered bridge: a red timber tunnel `#8A2E24` with slatted light. The sawmill at the finish with a conical burner and stacked planks.
+- **Traffic.** Log trucks, an old station wagon, a forestry pickup.
+- **Light.** Fog shortens the draw distance to about 350 m, which helps the frame budget and hides the bends.
+
+### Lowtown (Slag Row)
+
+An industrial port at dusk: brick, steel, and orange light. The widest road and the most traffic.
+
+- **Ground.** Asphalt `#2F3033` with lighter repair patches `#55585C`, tram rails, and painted lane arrows. Kerbs `#8A8C90`, pavement `#6E6F73`, brick `#7A3B2E`, steel `#3A3F47`, canal water `#2C4A52`.
+- **Near props.** Sodium streetlights `#FFB347` (replaces pole, with a warm pool of light on the road), brick warehouses with roller doors, shipping containers in `#B8432E`, `#2C6E8F`, and `#C99A2E`, chain-link fence, oil drums, traffic cones, bus shelters. Buildings replace trees: flat-roofed blocks set back 6 m from the road.
+- **Far backdrop.** Gantry cranes, smokestacks with slow smoke, the freeway on stilts, a skyline of lit windows.
+- **Set pieces.** The cranes over the start. The level crossing with striped barriers up and lights flashing. The underpass beneath the freeway (the Lowside's neon sign is visible on the left as you come out). The canal with moored barges. The drawbridge with its towers. The smelter gate at the finish, glowing orange inside.
+- **Traffic.** Box vans, a city bus, taxis, a forklift that should not be on the road.
+
+### Stonepeak (Ridge Road)
+
+The existing road: a two-lane mountain road climbing through meadow and rock to a lookout.
+
+- **Ground.** Asphalt `#3A3C40`. Grass `#6A9A3F` near and `#4C7A38` far, dry grass `#9AA84A`, gravel `#8C7D5E`, rock `#7D7F82`, far ridges `#9DB6CC`. These are today's values.
+- **Near props.** Firs and broadleaf trees as now, timber poles, boulders, chevrons, plus steel guard rail on the outside of bends, snow poles, and a few cows behind a fence.
+- **Far backdrop.** Two layers of blue ridges and one snow-capped peak.
+- **Set pieces.** A stone bridge at the first climb. The quarry cut at Quarry Bend with grey terraces. The Saddle: bare rock both sides and nothing but sky ahead. The lookout at the finish with a car park, a coin telescope, and a view of every other region in the distance.
+- **Traffic.** Sedans, a tour bus, a farm tractor at higher levels.
+
+## Readability rules for crashes and fights
+
+1. **A hit has three beats: wind-up, contact, reaction.** The wind-up is the arm or weapon raised clear of the body for at least 10 ticks (the fist's `strikeTick`), so a watchful player can react. Contact is one frame of white flash on the struck rider and a spark or dust puff at the point of impact. The reaction is the struck rider's body rocking away for the length of the hit stun.
+2. **The attacking arm is always on the side of the target** and extends away from the body, never across it, so the silhouette changes.
+3. **Weapons are visible before they are used.** A rider's weapon is on screen from the grid onward, and the HUD rival tag is the second source.
+4. **Low stamina shows on the rider.** Below 25 stamina a rider slumps and wobbles slightly; the player can see who is one hit from falling without reading a bar.
+5. **A knockdown separates two shapes.** The rider leaves the bike upward and away from the hit; the bike slides on its side with sparks. They never overlap after the first three frames.
+6. **A downed rider stays readable.** The rider on the ground keeps their jacket colour, lies flat for the settle time, then stands. The run back is a full-height figure, upright, arms pumping. A yellow outline marks the player's own rider and bike while they are apart.
+7. **The world slows only once.** A knockdown the player causes gets 150 ms at 60% speed in the render only (the simulation does not slow). Nothing else uses slow motion.
+8. **Crash causes look different.** Traffic: the bike stops dead and the rider goes over the bars. Prop: the bike spins. Landing: both bounce. Combat: the rider goes sideways. Off-track: a long slide in a dust cloud.
+9. **Damage shows on the bike.** Below 50 condition the bike smokes lightly; below 25 it smokes dark and the fairing is cracked. A wreck is a clear event: the bike breaks into three pieces and stays down.
+10. **Police read at a distance.** White bike, blue panels, and a light bar that flashes blue and red at all times while pursuing. A roadblock cruiser's lights are visible from the full 150 m sightline.
+11. **No gore.** Riders tumble, groan, and get up. The tone is slapstick.
+
+## Camera rules
+
+1. **Chase camera, behind and above.** The rider sits at the horizontal centre and in the lower third of the frame; the horizon sits in the upper third. The camera is high enough to see the road surface between the rider and the next bend, which is the current raised position.
+2. **Speed opens the lens.** Field of view runs from 60° at rest to 76° at top speed, as now, and the camera drops back about a metre over that range.
+3. **The camera follows the road, not the lean.** It yaws with the road's heading and shifts sideways with half the bike's lateral offset. It rolls at most 30% of the bike's visual lean.
+4. **Crests are honest.** The camera does not rise to peek over a crest. What the rider cannot see, the player cannot see.
+5. **In the air, the camera stays level** and lets the bike rise in the frame. On landing it dips by an amount scaled to the impact and recovers in 200 ms. This and the hit shake are scaled by the `REDUCE CAMERA SHAKE` setting.
+6. **On a hit, a small shake.** 2 px for a fist, 4 px for a weapon, 100 ms, no rotation.
+7. **Thrown: the camera follows the body, not the bike.** It pulls back to hold both the rider and the bike in frame while they are apart, and eases back behind the bike on remount.
+8. **Finish: one move.** The camera swings 30° to the side and slows over 1.5 seconds.
+9. **Never clip.** The camera stays above the road surface and outside tunnel walls; in the tunnel, covered bridge, and underpass it lowers by 0.4 m instead of pushing through the roof.
+
+## Audio direction
+
+All music is original and instrumental. Nothing is licensed and nothing imitates a named band. Music and effects have separate volume controls, and effects always sit above music in the mix: the player must hear an engine behind them and a siren ahead.
+
+### Music
+
+| Where | Style | Tempo | Lead |
+| --- | --- | --: | --- |
+| The Lowside (menus) | Slow bar-room groove, fuzz bass, brushed drums, a jukebox crackle underneath | 92 bpm | Baritone guitar |
+| Salt Coast | Surf garage: tremolo-picked guitar, spring reverb, driving snare | 152 bpm | Twang guitar |
+| Cinder Flats | Desert rock: one heavy riff, lots of space, a slide guitar that enters on the mesa | 128 bpm | Fuzz guitar, slide |
+| Kettle Woods | Tense post-punk: tight bass line, dry drums, chiming guitar, minor key | 160 bpm | Bass |
+| Lowtown | Industrial breakbeat: distorted bass, metal percussion, a factory-hooter stab | 140 bpm | Synth bass |
+| Stonepeak | Grunge-weight rock: drop-tuned guitars, half-time drums that double for the last kilometre | 120 bpm | Rhythm guitar |
+| Results | A 12-second sting in the region's style: major for qualified, a slump for not |  |  |
+
+Each race track has three layers (drums and bass; rhythm; lead). The lead layer drops out when the player is off the bike and returns on remount. The last kilometre adds a fourth percussion layer. Tracks loop at about 90 seconds with a clean seam.
+
+### Engines
+
+The current synthesised engine is kept and given a character per class by its oscillator mix and pitch range.
+
+| Class | Character | Idle to redline |
+| --- | --- | --- |
+| Featherweight | Buzzy and thin, a small twin. Square-heavy mix, quick to rev. | 70 to 290 Hz |
+| Middleweight | A smooth four-cylinder whine. Today's sound. | 58 to 235 Hz |
+| Heavyweight | A deep, uneven growl with a second voice a fifth below. Slow to rev, loud on the overrun. | 44 to 190 Hz |
+| Gutter Pup | A rattly single with a random misfire every few seconds and a backfire when the throttle closes. | 62 to 210 Hz |
+
+Rival engines pan and fade by position, so a bike coming up on the left is heard on the left before it is seen. Police engines are Middleweights with a two-tone siren (today's 660 and 880 Hz) that starts when a pursuit starts.
+
+### Hits, crashes, and voices
+
+- **Strikes.** A whoosh on the wind-up and a distinct contact per weapon: fist (dull thud), boot (heavier thud with a scrape), club (wooden knock), chain (rattle and slap), crowbar (metal clang), baton (sharp crack), pool cue (a light tock, and a splintering snap when it breaks), stop sign (a loud sheet-metal gong, the most satisfying sound in the game).
+- **Grunts.** Short wordless voice sounds, three effort grunts and three pain grunts per voice type, with five voice types shared across the cast. No recorded dialogue; rival lines are text.
+- **Knockdown.** Tyre chirp, a scrape of metal on road with sparks, a body thud, then a second of ringing quiet in the music's lead layer.
+- **Crash by cause.** Traffic: a crunch and a car horn that holds. Prop: a wooden or metal knock by prop type. Landing: a suspension bottom-out. Off-track: gravel hiss.
+- **Remount.** A grunt, a kick, and the engine catching. This cue tells the player they have control again.
+- **World.** Wind that rises with speed; a doppler pass for each oncoming car; tunnel and underpass reverb on the player's own engine; gulls on the coast, cicadas in the desert, a rail crossing bell in Lowtown, a cowbell on the Ridge.
+- **Interface.** Menu moves are a soft cork tap, confirm is a rubber stamp, money in is a cash-drawer ring, money out is paper tearing.
