@@ -1,6 +1,11 @@
 import type { Track } from "@racer/track/track";
 
-import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, clamp } from "./state.ts";
+import {
+  BIKE_HALF_LENGTH,
+  BIKE_HALF_WIDTH,
+  clamp,
+  TICK_SECONDS,
+} from "./state.ts";
 import type {
   AttackKind,
   RaceState,
@@ -20,6 +25,8 @@ const CONTACT_COOLDOWN_TICKS = 6;
 const TAP_SPEED_LOSS = 0.5;
 const SOFT_SHUNT = 1;
 const HARD_SHUNT = 6;
+const REACH_S = BIKE_HALF_LENGTH * 2;
+const REACH_X = BIKE_HALF_WIDTH * 2 + 0.1;
 
 const canFight = (rider: RiderState): boolean =>
   rider.mode === "riding" && !rider.airborne && rider.finishTick < 0;
@@ -457,19 +464,40 @@ const rearEnd = (state: RaceState, rear: Party, front: Party): void => {
   });
 };
 
+const roomLastTick = (gap: number, closing: number, reach: number): number =>
+  Math.abs(gap - closing * TICK_SECONDS) - reach;
+
+const entryShare = (room: number, gap: number, reach: number): number =>
+  room / (room + reach - Math.abs(gap));
+
+const cameFromBehind = (left: RiderState, right: RiderState): boolean => {
+  const gapS = right.s - left.s;
+  const gapX = right.x - left.x;
+  const roomS = roomLastTick(gapS, right.speed - left.speed, REACH_S);
+  const roomX = roomLastTick(
+    gapX,
+    right.lateralSpeed - left.lateralSpeed,
+    REACH_X
+  );
+  if (roomS >= 0 && roomX >= 0) {
+    return entryShare(roomS, gapS, REACH_S) >= entryShare(roomX, gapX, REACH_X);
+  }
+  if (roomS < 0 && roomX < 0) {
+    return Math.abs(gapS) - REACH_S >= Math.abs(gapX) - REACH_X;
+  }
+  return roomS >= 0;
+};
+
 const meet = (state: RaceState, left: Party, right: Party): void => {
   const gapS = right.rider.s - left.rider.s;
   const gapX = right.rider.x - left.rider.x;
-  const reachX = BIKE_HALF_WIDTH * 2 + 0.1;
-  if (Math.abs(gapS) >= BIKE_HALF_LENGTH * 2 || Math.abs(gapX) >= reachX) {
+  if (Math.abs(gapS) >= REACH_S || Math.abs(gapX) >= REACH_X) {
     return;
   }
-  const overlapS = BIKE_HALF_LENGTH * 2 - Math.abs(gapS);
-  const overlapX = reachX - Math.abs(gapX);
   touch(left, right);
   touch(right, left);
-  if (overlapX < overlapS) {
-    shoveApart(state, left, right, gapX, overlapX);
+  if (!cameFromBehind(left.rider, right.rider)) {
+    shoveApart(state, left, right, gapX, REACH_X - Math.abs(gapX));
   } else if (gapS > 0) {
     rearEnd(state, left, right);
   } else {

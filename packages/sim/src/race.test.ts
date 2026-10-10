@@ -918,6 +918,58 @@ describe("rider contact", () => {
     expect(rear.bodyS).toBeLessThan(ahead.s);
   });
 
+  it.each([
+    { across: 0, back: 2.1, speed: 60 },
+    { across: 0, back: 2.5, speed: 60 },
+    { across: 0, back: 2.9, speed: 60 },
+    { across: 0, back: 3.05, speed: 60 },
+    { across: 0.5, back: 2.2, speed: 45 },
+    { across: 0.5, back: 2.65, speed: 45 },
+    { across: -0.7, back: 2.4, speed: 30 },
+    { across: -0.7, back: 2.45, speed: 30 },
+  ])(
+    "a rider closing at $speed m/s from $back m behind a stopped bike, $across m across, is thrown off the back of it and not shoved past",
+    ({ across, back, speed }) => {
+      const state = column(2);
+      const rear = riderAt(state, 0);
+      const ahead = riderAt(state, 1);
+      rear.s = ahead.s - back;
+      rear.x = across;
+      rear.speed = speed;
+      ahead.speed = 0;
+      const events = ride(state, 0.2, (tick) =>
+        tick.flatMap((event) => {
+          if (event.kind === "crash" && event.rider === 0) {
+            return [event.cause];
+          }
+          return event.kind === "riderContact" ? ["shove"] : [];
+        })
+      ).flat();
+      expect(events).toStrictEqual(["rider"]);
+      expect(rear.x).toBeCloseTo(across, 5);
+      expect(rear.bodyS).toBeLessThan(ahead.s);
+      expect(ahead.speed).toBeGreaterThan(0);
+    }
+  );
+
+  it("a rider who drifts across into a slower bike alongside is shoved and keeps riding", () => {
+    const state = column(2);
+    const passing = riderAt(state, 0);
+    const slower = riderAt(state, 1);
+    passing.s = slower.s - 1;
+    passing.x = 0.9;
+    passing.speed = 42;
+    passing.lateralSpeed = -4;
+    const shoves = ride(
+      state,
+      0.2,
+      (tick) => tick.filter((event) => event.kind === "riderContact").length
+    );
+    expect(Math.max(...shoves)).toBe(1);
+    expect([passing.mode, slower.mode]).toStrictEqual(["riding", "riding"]);
+    expect(passing.x - slower.x).toBeGreaterThan(0.8);
+  });
+
   it("a pileup throws each rider at most once a tick", () => {
     const { rear, state, stopped } = pileup(1);
     const crashes = ride(state, 0.5, (events) =>
