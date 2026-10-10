@@ -86,6 +86,7 @@ const gapToRider = (car: TrafficCar, rider: RiderState): number => {
 interface Lane {
   readonly direction: number;
   readonly order: readonly number[];
+  readonly along: readonly number[];
   readonly longest: number;
 }
 
@@ -106,16 +107,23 @@ const laneOf = (
   order.sort(
     (left, right) => ((lastS[left] ?? 0) - (lastS[right] ?? 0)) * direction
   );
-  return { direction, longest, order };
+  return {
+    along: order.map((index) => (lastS[index] ?? 0) * direction),
+    direction,
+    longest,
+    order,
+  };
 };
 
-const followLane = (
-  cars: readonly TrafficCar[],
-  lastS: readonly number[],
-  lastSpeed: readonly number[],
-  lane: Lane,
-  followed: number[]
-): void => {
+interface Flow {
+  readonly cars: readonly TrafficCar[];
+  readonly lastS: readonly number[];
+  readonly lastSpeed: readonly number[];
+  readonly target: number[];
+}
+
+const followLane = (flow: Flow, lane: Lane): void => {
+  const { cars, lastS, lastSpeed, target } = flow;
   const { direction, longest, order } = lane;
   for (let place = 0; place < order.length; place += 1) {
     const index = order[place] ?? -1;
@@ -141,23 +149,72 @@ const followLane = (
         targetSpeed = Math.min(targetSpeed, lastSpeed[otherIndex] ?? 0);
       }
     }
-    followed[index] = targetSpeed;
+    target[index] = targetSpeed;
+  }
+};
+
+const firstPast = (along: readonly number[], point: number): number => {
+  let low = 0;
+  let high = along.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if ((along[middle] ?? 0) <= point) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
+};
+
+const yieldTo = (
+  flow: Flow,
+  lane: Lane,
+  rider: RiderState,
+  point: number
+): void => {
+  const { cars, lastSpeed, target } = flow;
+  const { along, direction, longest, order } = lane;
+  const riderSpeed =
+    rider.mode === "riding" ? Math.max(0, rider.speed * direction) : 0;
+  const reach = point * direction;
+  const sight = LOOK_AHEAD + longest + BIKE_HALF_LENGTH;
+  for (
+    let place = firstPast(along, reach - sight);
+    place < order.length && (along[place] ?? reach) < reach;
+    place += 1
+  ) {
+    const index = order[place] ?? -1;
+    const car = cars[index];
+    const speed = lastSpeed[index] ?? 0;
+    if (car && riderSpeed <= speed) {
+      const gap = gapToRider(car, rider);
+      const stoppingRoom =
+        (speed * speed - riderSpeed * riderSpeed) / (2 * BRAKING) + 8;
+      if (gap < LOOK_AHEAD && gap < stoppingRoom) {
+        target[index] = Math.min(target[index] ?? riderSpeed, riderSpeed);
+      }
+    }
   }
 };
 
 export const stepTraffic = (state: RaceState, track: Track): void => {
   const { cars, riders } = state;
-  const lastS = cars.map((car) => car.s);
-  const lastSpeed = cars.map((car) => Math.abs(car.speed));
-  const followed = cars.map((car) => Math.abs(car.cruiseSpeed));
+  const flow: Flow = {
+    cars,
+    lastS: cars.map((car) => car.s),
+    lastSpeed: cars.map((car) => Math.abs(car.speed)),
+    target: cars.map((car) => Math.abs(car.cruiseSpeed)),
+  };
   for (const direction of [1, -1]) {
-    followLane(
-      cars,
-      lastS,
-      lastSpeed,
-      laneOf(cars, lastS, direction),
-      followed
-    );
+    const lane = laneOf(cars, flow.lastS, direction);
+    followLane(flow, lane);
+    for (const rider of riders) {
+      yieldTo(flow, lane, rider, rider.s);
+      if (rider.bodyS !== rider.s) {
+        yieldTo(flow, lane, rider, rider.bodyS);
+      }
+    }
   }
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
@@ -165,31 +222,8 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
       continue;
     }
     const direction = Math.sign(car.cruiseSpeed);
-    const speed = lastSpeed[index] ?? 0;
-    let targetSpeed = followed[index] ?? Math.abs(car.cruiseSpeed);
-
-    const sight = LOOK_AHEAD + car.halfLength + BIKE_HALF_LENGTH;
-    for (const rider of riders) {
-      const bikeAhead = (rider.s - car.s) * direction;
-      const bodyAhead = (rider.bodyS - car.s) * direction;
-      if (
-        (bikeAhead <= 0 || bikeAhead >= sight) &&
-        (bodyAhead <= 0 || bodyAhead >= sight)
-      ) {
-        continue;
-      }
-      const gap = gapToRider(car, rider);
-      const riderSpeed =
-        rider.mode === "riding" ? Math.max(0, rider.speed * direction) : 0;
-      if (gap < LOOK_AHEAD && riderSpeed <= speed) {
-        const stoppingRoom =
-          (speed * speed - riderSpeed * riderSpeed) / (2 * BRAKING) + 8;
-        if (gap < stoppingRoom) {
-          targetSpeed = Math.min(targetSpeed, riderSpeed);
-        }
-      }
-    }
-
+    const speed = flow.lastSpeed[index] ?? 0;
+    const targetSpeed = flow.target[index] ?? Math.abs(car.cruiseSpeed);
     const rate = targetSpeed < speed ? BRAKING : ACCELERATION;
     car.speed = direction * approach(speed, targetSpeed, rate * TICK_SECONDS);
     car.s += car.speed * TICK_SECONDS;

@@ -107,14 +107,23 @@ const carThreat = (
   laneX: number,
   within: number
 ): Threat | undefined => {
-  let threat: Threat | undefined;
+  let seconds = Number.POSITIVE_INFINITY;
+  let speed = 0;
   for (const car of state.cars) {
-    if (car.s - rider.s < within) {
+    if (
+      car.s - rider.s < within &&
+      Math.abs(car.x - laneX) < LANE_REACH &&
+      rider.speed > car.speed
+    ) {
       const horizon = car.cruiseSpeed < 0 ? ONCOMING_SECONDS : FOLLOW_SECONDS;
-      threat = sooner(threat, threatFrom(rider, laneX, car, horizon));
+      const contact = secondsUntilContact(rider, car);
+      if (contact < horizon && contact < seconds) {
+        seconds = contact;
+        ({ speed } = car);
+      }
     }
   }
-  return threat;
+  return seconds < Number.POSITIVE_INFINITY ? { seconds, speed } : undefined;
 };
 
 const laneThreat = (
