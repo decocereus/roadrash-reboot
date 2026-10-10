@@ -65,7 +65,7 @@ Police are riders with the `police` role, so riding, contacts, combat, and the r
 
 `defaultSetup(track, seed)` is the race the tests and the title screen use: the player on the Sesta, five rivals on their level-3 bikes, one cop at 54 m/s with a 40 m sight range and a $1,500 fine, and the player last on the grid.
 
-`cast.ts` holds the ten rivals and the two officers from the design: name, skill, aggression, home region, the weapon they carry and the level they carry it from, a bike for each of the five levels, and their colours. `rivalAt(rival, level)` turns one into a setup entry. From level 4 an unarmed rival with aggression of 0.5 or more starts with a club. Their lines, the field draw, and everything else about the career are not in the simulation yet.
+`cast.ts` holds the ten rivals and the two officers from the design: name, skill, aggression, home region, the weapon they carry and the level they carry it from, a bike for each of the five levels, and their colours. `rivalAt(rival, level)` turns one into a setup entry. From level 4 an unarmed rival with aggression of 0.5 or more starts with a club. Their lines, the field draw, and everything else about the career live in `packages/career`.
 
 A profile's `paint` and `jacket` are indices into the twelve entries of `palette.ts`, which gives the bike, jacket, and helmet colour for each rider and a trim colour where there is one: the gold stripe on Juno Kade and the blue panels on the white police bikes.
 
@@ -74,6 +74,36 @@ A profile's `paint` and `jacket` are indices into the twelve entries of `palette
 `packages/track` compiles a `TrackPlan` into a `Track`. A plan is a list of sections, each with a length, a total turn in degrees, and a climb in metres. Compilation eases curvature and height through each section, samples the centre line every metre, and scatters trees, poles, rocks, and chevron signs from the plan's seed. The simulation and the renderer read the same compiled track.
 
 Ridge Road is the first track: 4.25 km, two lanes, eleven bends, and two crests.
+
+## Career
+
+`packages/career` owns every career rule: money, levels, qualification, the shop, the field draw, rival memory, season points, story flags, settlement, and the save format. Like the simulation it is plain data and plain functions, with no DOM, clock, or unseeded randomness. React renders what it returns and never changes a rule; if the career should behave differently, change `packages/career`. It reads the cast, the bikes, and `RaceSetup` from `packages/sim` and the road ids and levels from `packages/track`. It never looks up or compiles a track: the caller passes one in.
+
+`CareerState` is the save. It holds cash, level, the bike ridden and every bike owned, the carried weapon, the roads qualified at each level with the best place, the record, season points, what each rival remembers, story flags, the three newest board notes, the active-race record, and the game-over flag. Bike condition is not in it, because bikes are repaired between races. Every function returns a new state and leaves the old one alone, so a screen can ask what a bill would do before the player agrees to it.
+
+| File | Owns |
+| --- | --- |
+| `tables.ts` | The numbers from `docs/design/game-design.md`: prizes, repairs, fines, police per level, shop stock, road lengths, trade-in and credit rates |
+| `state.ts` | `CareerState` and `newCareer` |
+| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open |
+| `outcome.ts` | The race log and `outcomeOf` |
+| `settle.ts` | `startRace`, `settleRace`, `quitRace`, `resumeCareer`, and the `Ledger` |
+| `memory.ts`, `season.ts` | Rival memory and the season board |
+| `shop.ts`, `story.ts`, `lines.ts` | The garage, the story beats and the envelope, and every line the cast and the officers say |
+| `save.ts` | `serialiseCareer` and `parseCareer` |
+
+A career race runs like this. `setupFor(career, roadId, seed, track)` draws the seven rivals, puts each on their bike and weapon for the level, sets grudges from memory, and adds the level's police. `startRace` writes the active-race record. The simulation clears its events every tick, so the runner calls `recordTick(log, state, setup)` after each `stepRace`. The log counts knockdowns, stolen weapons, hits, and busts, keeps the weapon the player held before the last throw and where their body was, and freezes the result at the tick the player's `finish`, `busted`, or `wrecked` event fires. Nothing after that tick changes it. `outcomeOf` returns the frozen result, or a quit if the player has not settled yet. `settleRace(career, outcome)` applies it once: prize with the repeat-run rule, repair or fine, the envelope, the debt check with repossession and game over, qualification, level-up, the ending, season points, memory, and the carried weapon. It clears the active-race record in the same step and returns a `Ledger` for Results. A second call with the same outcome changes nothing.
+
+`resumeCareer` is what the web app calls on a loaded save. If the save holds an active-race record, it settles that race as a wreck at the full bill, once. `parseCareer` checks every field and range and returns an error value for a bad save; it does not throw. Reading and writing `localStorage` is the web app's job.
+
+The design left some things open. These are the choices made here:
+
+- A knockdown is a `crash` whose `by` names the other rider, whatever the cause except `rider`, so a rival punched into a car counts and a rival who runs into the back of the player does not.
+- The simulation applies a rival's extra aggression only toward their grudge target. A bonus below the grudge threshold is stored and passed in the setup but has no effect in the race until the pilot can use it.
+- Police ride the Sesta at levels 1 to 3, the Meridian at level 4, and the Nera at level 5, so the bike is always faster than the level's pursuit speed.
+- Selling is `sellBike`: the player gets the trade-in value and rides the Gutter Pup. It is the only shop action open to a player in debt.
+- The envelope can be taken until the player's first start on Breakwater Run at level 2 or the move to level 3, whichever comes first.
+- Once an ending is earned, no further career race starts.
 
 ## Browser client
 
@@ -91,7 +121,7 @@ The target is 60 frames per second on an integrated-graphics laptop.
 | 2 | Riding greybox: physics, Ridge Road, traffic, crashes, AI pilot, placeholder models, audio | Done |
 | 3 | Combat, weapons, a pack of rival riders, police | Done |
 | 4 | Art: rigged bike and rider, vehicles, environment kit |  |
-| 5 | Career: more tracks, levels, money, bike shop, characters, story | In progress: the simulation has the bikes, the cast, race setups, condition and wrecks, the two new weapons, and grudges. Career state, the roads, and the screens are next. |
+| 5 | Career: more tracks, levels, money, bike shop, characters, story | In progress: the simulation has the bikes, the cast, race setups, condition and wrecks, the two new weapons, and grudges. `packages/track` has the five roads. `packages/career` has the career rules, the lines, and the save format. The screens and the save adapter in the web app are next. |
 | 6 | Multiplayer on the same simulation, then ads |  |
 
 Step 2 is finished when a person riding Ridge Road alone wants another run. That is a play test, not an automated one.

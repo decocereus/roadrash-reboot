@@ -7,6 +7,7 @@ Read `docs/architecture.md` first. It defines the game, the riding model, and th
 - `alchemy.run.ts` is the Alchemy composition root. `apps/` holds deployable Cloudflare apps. `packages/` holds shared code. Create apps and packages there instead of inventing new top-level folders.
 - `packages/sim` owns every game rule. It must stay deterministic: no DOM, no Three.js, no `Math.random`, no clock. State is plain data and `stepRace` advances it by one 1/60 second tick. Randomness comes from a seeded generator in `packages/track`.
 - `packages/track` owns the track format, compilation, and track data. The simulation and the renderer both read the compiled `Track`.
+- `packages/career` owns every career rule: money, levels, the shop, the field draw, rival memory, settlement, and the save format. It is deterministic plain data like the simulation. React renders it and never changes a rule.
 - `apps/web/src/game` owns rendering, audio, input, and the frame loop. It reads simulation state and never changes a rule. If the game should behave differently, change `packages/sim`.
 - React renders menus and the HUD. It does no per-frame work, and the game module is loaded with a dynamic import.
 - `packages/ui` owns shadcn components and global styles.
