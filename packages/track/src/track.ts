@@ -1,5 +1,6 @@
-import { createRandom } from "./random.ts";
-import type { Random } from "./random.ts";
+import { createRandom, nextSeed } from "./random.ts";
+import { regions } from "./regions.ts";
+import type { RegionId } from "./regions.ts";
 
 export interface TrackSection {
   readonly length: number;
@@ -10,6 +11,8 @@ export interface TrackSection {
 export interface TrackPlan {
   readonly id: string;
   readonly name: string;
+  readonly region: RegionId;
+  readonly level: number;
   readonly seed: number;
   readonly laneWidth: number;
   readonly shoulderWidth: number;
@@ -17,6 +20,7 @@ export interface TrackPlan {
   readonly leadInLength: number;
   readonly runoffLength: number;
   readonly trafficPerKilometre: number;
+  readonly roadblocks: readonly number[];
   readonly sections: readonly TrackSection[];
 }
 
@@ -59,6 +63,7 @@ export interface TrackPoint {
 
 const CURVE_RAMP = 0.3;
 const SHARP_CURVATURE = 1 / 420;
+const ROCK_SEED_SALT = 0x70_c5;
 
 const smoothstep = (value: number): number => {
   const clamped = Math.min(1, Math.max(0, value));
@@ -78,10 +83,12 @@ const curveWeight = (progress: number): number => {
 const scatterProps = (
   plan: TrackPlan,
   length: number,
-  curvature: Float64Array,
-  random: Random
+  curvature: Float64Array
 ): TrackProp[] => {
   const props: TrackProp[] = [];
+  const mix = regions[plan.region].propMix;
+  const random = createRandom(plan.seed);
+  const rockRandom = createRandom(nextSeed(plan.seed + ROCK_SEED_SALT));
   const roadHalfWidth = plan.laneWidth + plan.shoulderWidth;
   const startS = -plan.leadInLength;
   const endS = length + plan.runoffLength;
@@ -91,7 +98,7 @@ const scatterProps = (
   for (let s = startS; s < endS; s += 6) {
     const grove = 0.55 + 0.4 * Math.sin(s / 140) * Math.sin(s / 53 + 1.7);
     for (const side of [-1, 1]) {
-      if (random() < grove) {
+      if (random() < grove * mix.tree) {
         const spread = random();
         props.push({
           kind: "tree",
@@ -104,38 +111,44 @@ const scatterProps = (
     }
   }
 
-  for (let s = startS + 20; s < endS; s += 45) {
-    props.push({
-      kind: "pole",
-      radius: 0.18,
-      s,
-      scale: 1,
-      x: roadHalfWidth + 2.4,
-    });
-  }
-
-  for (let s = 40; s < length; s += 18) {
-    const bend = curvatureNear(s);
-    if (Math.abs(bend) > SHARP_CURVATURE) {
+  if (mix.pole > 0) {
+    for (let s = startS + 20; s < endS; s += 45 / mix.pole) {
       props.push({
-        kind: "chevron",
-        radius: 0.2,
+        kind: "pole",
+        radius: 0.18,
         s,
         scale: 1,
-        x: -Math.sign(bend) * (roadHalfWidth + 1.8),
+        x: roadHalfWidth + 2.4,
       });
     }
   }
 
-  for (let s = 180; s < length; s += 70 + random() * 90) {
-    const side = random() < 0.5 ? -1 : 1;
-    props.push({
-      kind: "rock",
-      radius: 0.75,
-      s,
-      scale: 0.8 + random() * 0.7,
-      x: side * (roadHalfWidth + 2.5 + random() * 5),
-    });
+  if (mix.chevron > 0) {
+    for (let s = 40; s < length; s += 18 / mix.chevron) {
+      const bend = curvatureNear(s);
+      if (Math.abs(bend) > SHARP_CURVATURE) {
+        props.push({
+          kind: "chevron",
+          radius: 0.2,
+          s,
+          scale: 1,
+          x: -Math.sign(bend) * (roadHalfWidth + 1.8),
+        });
+      }
+    }
+  }
+
+  if (mix.rock > 0) {
+    for (let s = 180; s < length; s += (70 + rockRandom() * 90) / mix.rock) {
+      const side = rockRandom() < 0.5 ? -1 : 1;
+      props.push({
+        kind: "rock",
+        radius: 0.75,
+        s,
+        scale: 0.8 + rockRandom() * 0.7,
+        x: side * (roadHalfWidth + 2.5 + rockRandom() * 5),
+      });
+    }
   }
 
   props.push(
@@ -220,7 +233,7 @@ export const compileTrack = (plan: TrackPlan): Track => {
     worldZ[index] = (worldZ[index + 1] ?? 0) + 1;
   }
 
-  const props = scatterProps(plan, length, curvature, createRandom(plan.seed));
+  const props = scatterProps(plan, length, curvature);
   const roadHalfWidth = plan.laneWidth + plan.shoulderWidth;
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
 

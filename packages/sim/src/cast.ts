@@ -1,14 +1,11 @@
+import type { RegionId } from "@racer/track/regions";
+
 import { bikes } from "./bikes.ts";
 import type { BikeId } from "./bikes.ts";
 import { POLICE_COLOURS } from "./palette.ts";
 import type { RiderProfile, RivalSetup, WeaponKind } from "./state.ts";
 
-export type RegionId =
-  | "salt-coast"
-  | "cinder-flats"
-  | "kettle-woods"
-  | "lowtown"
-  | "stonepeak";
+export type { RegionId } from "@racer/track/regions";
 
 export type RivalId =
   | "juno-kade"
