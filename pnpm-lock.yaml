@@ -45,6 +45,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@racer/career':
+        specifier: workspace:*
+        version: link:../../packages/career
       '@racer/sim':
         specifier: workspace:*
         version: link:../../packages/sim

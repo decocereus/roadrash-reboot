@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@racer/career": "workspace:*",
     "@racer/sim": "workspace:*",
     "@racer/track": "workspace:*",
     "@racer/ui": "workspace:*",
