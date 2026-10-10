@@ -1,6 +1,7 @@
 import { officerFor } from "@racer/sim/cast";
 import type { OfficerId, RivalId } from "@racer/sim/cast";
 import { distanceLeft, standings } from "@racer/sim/race";
+import { PLAYER_RIDER } from "@racer/sim/state";
 import type {
   RaceEvent,
   RaceState,
@@ -13,7 +14,6 @@ import type { ActiveRace, RacerId } from "./state.ts";
 import { FIELD_SIZE, roads } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
-const PLAYER_RIDER = 0;
 const WHEEL_TICKS = 30;
 const WHEEL_METRES = 25;
 const BLAME_METRES = 100;
@@ -37,11 +37,16 @@ export interface RivalIncidents {
   readonly rival: RivalId;
   readonly knockedDownByPlayer: number;
   readonly knockdownKm: number;
+  readonly knockdownTick: number;
   readonly knockedPlayerDown: number;
+  readonly knockedPlayerDownKm: number;
+  readonly knockedPlayerDownTick: number;
   readonly weaponTakenByPlayer: WeaponKind;
+  readonly weaponTakenTick: number;
   readonly tookPlayerWeapon: WeaponKind;
   readonly tradedHits: boolean;
   readonly busted: BustWitness;
+  readonly bustedTick: number;
   readonly beatPlayerByAWheel: boolean;
   readonly lostToPlayerByAWheel: boolean;
 }
@@ -50,10 +55,12 @@ export interface Arrest {
   readonly officer: OfficerId;
   readonly fine: number;
   readonly km: number;
+  readonly x: number;
   readonly weapon: WeaponKind;
 }
 
 export interface RaceOutcome {
+  readonly raceId: number;
   readonly roadId: RoadId;
   readonly level: Level;
   readonly seed: number;
@@ -61,6 +68,7 @@ export interface RaceOutcome {
   readonly place: number;
   readonly tick: number;
   readonly finishTick: number;
+  readonly km: number;
   readonly weapon: WeaponKind;
   readonly weaponHits: number;
   readonly arrest: Arrest | null;
@@ -71,60 +79,79 @@ export interface RaceOutcome {
 interface Tally {
   knockedDownByPlayer: number;
   knockdownKm: number;
+  knockdownTick: number;
   knockedPlayerDown: number;
+  knockedPlayerDownKm: number;
+  knockedPlayerDownTick: number;
   weaponTakenByPlayer: WeaponKind;
+  weaponTakenTick: number;
   tookPlayerWeapon: WeaponKind;
   tradedHits: boolean;
   busted: BustWitness;
+  bustedTick: number;
 }
 
 export interface RaceLog {
+  readonly raceId: number;
   readonly tallies: Tally[];
-  heldWeapon: WeaponKind;
-  weaponAtThrow: WeaponKind;
-  bodyS: number;
-  fine: number;
   outcome: RaceOutcome | null;
 }
 
 export const createRaceLog = (setup: CareerRaceSetup): RaceLog => ({
-  bodyS: 0,
-  fine: setup.police.fine,
-  heldWeapon: setup.player.weaponHits > 0 ? setup.player.weapon : "none",
   outcome: null,
+  raceId: setup.raceId,
   tallies: setup.field.map(() => ({
     busted: "none",
+    bustedTick: 0,
     knockdownKm: 0,
+    knockdownTick: 0,
     knockedDownByPlayer: 0,
     knockedPlayerDown: 0,
+    knockedPlayerDownKm: 0,
+    knockedPlayerDownTick: 0,
     tookPlayerWeapon: "none",
     tradedHits: false,
     weaponTakenByPlayer: "none",
+    weaponTakenTick: 0,
   })),
-  weaponAtThrow: "none",
 });
 
 const kmOf = (metres: number): number => Math.max(0, metres) / METRES_PER_KM;
+
+type Bust = RaceEvent & { readonly kind: "busted" };
+
+const bustOf = (state: RaceState, riderIndex: number): Bust | undefined => {
+  for (const event of state.events) {
+    if (event.kind === "busted" && event.rider === riderIndex) {
+      return event;
+    }
+  }
+  return undefined;
+};
+
+const bodyOf = (state: RaceState, riderIndex: number): number =>
+  bustOf(state, riderIndex)?.s ?? state.riders[riderIndex]?.bodyS ?? 0;
 
 const noteCrash = (
   log: RaceLog,
   state: RaceState,
   event: RaceEvent & { readonly kind: "crash" }
 ): void => {
-  if (event.rider === PLAYER_RIDER) {
-    log.weaponAtThrow = log.heldWeapon;
-  }
   if (event.cause === "rider") {
     return;
   }
+  const km = kmOf(bodyOf(state, event.rider));
   const attacker = log.tallies[event.by - 1];
   if (event.rider === PLAYER_RIDER && attacker) {
     attacker.knockedPlayerDown += 1;
+    attacker.knockedPlayerDownKm = km;
+    attacker.knockedPlayerDownTick = state.tick;
   }
   const victim = log.tallies[event.rider - 1];
   if (event.by === PLAYER_RIDER && victim) {
     victim.knockedDownByPlayer += 1;
-    victim.knockdownKm = kmOf(state.riders[event.rider]?.s ?? 0);
+    victim.knockdownKm = km;
+    victim.knockdownTick = state.tick;
   }
 };
 
@@ -135,14 +162,12 @@ const noteEvent = (log: RaceLog, state: RaceState, event: RaceEvent): void => {
   }
   if (event.kind === "busted") {
     const tally = log.tallies[event.rider - 1];
-    const rival = state.riders[event.rider];
-    const player = state.riders[PLAYER_RIDER];
-    if (event.rider === PLAYER_RIDER) {
-      log.fine = event.fine;
-    }
-    if (tally && rival && player) {
+    if (tally) {
       tally.busted =
-        Math.abs(player.bodyS - rival.s) <= BLAME_METRES ? "near" : "far";
+        Math.abs(bodyOf(state, PLAYER_RIDER) - event.s) <= BLAME_METRES
+          ? "near"
+          : "far";
+      tally.bustedTick = state.tick;
     }
     return;
   }
@@ -153,8 +178,10 @@ const noteEvent = (log: RaceLog, state: RaceState, event: RaceEvent): void => {
   const striker = log.tallies[event.rider - 1];
   if (event.rider === PLAYER_RIDER && struck) {
     struck.tradedHits = true;
-    struck.weaponTakenByPlayer =
-      event.kind === "weaponTaken" ? event.weapon : struck.weaponTakenByPlayer;
+    if (event.kind === "weaponTaken") {
+      struck.weaponTakenByPlayer = event.weapon;
+      struck.weaponTakenTick = state.tick;
+    }
   }
   if (event.target === PLAYER_RIDER && striker) {
     striker.tradedHits = true;
@@ -205,19 +232,32 @@ const orderOf = (state: RaceState, result: RaceResult): number[] => {
   return [...others.slice(0, slot), PLAYER_RIDER, ...others.slice(slot)];
 };
 
-const byAWheelAhead = (player: RiderState, rival: RiderState): boolean =>
+const beatByAWheel = (player: RiderState, rival: RiderState): boolean =>
   player.finishTick >= 0 &&
   rival.finishTick >= 0 &&
   player.finishTick - rival.finishTick <= WHEEL_TICKS;
 
-const byAWheelBehind = (player: RiderState, rival: RiderState): boolean => {
+const lostByAWheel = (player: RiderState, rival: RiderState): boolean => {
   if (player.finishTick < 0) {
     return false;
   }
   if (rival.finishTick >= 0) {
-    return rival.finishTick === player.finishTick;
+    return rival.finishTick - player.finishTick <= WHEEL_TICKS;
   }
   return rival.mode === "riding" && player.s - rival.s <= WHEEL_METRES;
+};
+
+const arrestOf = (state: RaceState, setup: CareerRaceSetup): Arrest | null => {
+  const bust = bustOf(state, PLAYER_RIDER);
+  return bust
+    ? {
+        fine: bust.fine,
+        km: kmOf(bust.s),
+        officer: officerFor(roads[setup.roadId].region).id,
+        weapon: bust.weapon,
+        x: bust.x,
+      }
+    : null;
 };
 
 const classify = (
@@ -257,28 +297,22 @@ const classify = (
     return [
       {
         ...tally,
-        beatPlayerByAWheel: ahead && byAWheelAhead(player, rider),
-        lostToPlayerByAWheel: !ahead && byAWheelBehind(player, rider),
+        beatPlayerByAWheel: ahead && beatByAWheel(player, rider),
+        lostToPlayerByAWheel: !ahead && lostByAWheel(player, rider),
         rival,
       },
     ];
   });
   const finished = result === "finished";
   return {
-    arrest:
-      result === "busted"
-        ? {
-            fine: log.fine,
-            km: kmOf(log.bodyS),
-            officer: officerFor(roads[setup.roadId].region).id,
-            weapon: log.weaponAtThrow,
-          }
-        : null,
+    arrest: result === "busted" ? arrestOf(state, setup) : null,
     finishTick: player?.finishTick ?? -1,
     incidents,
+    km: kmOf(bodyOf(state, PLAYER_RIDER)),
     level: setup.level,
     place: playerSpot === -1 ? FIELD_SIZE : playerSpot + 1,
     placings,
+    raceId: log.raceId,
     result,
     roadId: setup.roadId,
     seed: setup.seed,
@@ -302,12 +336,6 @@ export const recordTick = (
   const result = terminalOf(state.events);
   if (result) {
     log.outcome = classify(log, state, setup, result);
-    return;
-  }
-  const player = state.riders[PLAYER_RIDER];
-  if (player) {
-    log.heldWeapon = player.weapon;
-    log.bodyS = player.bodyS;
   }
 };
 
@@ -321,9 +349,11 @@ export const abandonedOutcome = (race: ActiveRace): RaceOutcome => ({
   arrest: null,
   finishTick: -1,
   incidents: [],
+  km: 0,
   level: race.level,
   place: FIELD_SIZE,
   placings: [],
+  raceId: race.raceId,
   result: "quit",
   roadId: race.roadId,
   seed: race.seed,

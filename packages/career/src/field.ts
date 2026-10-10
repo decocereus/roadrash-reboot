@@ -2,13 +2,13 @@ import { bikes } from "@racer/sim/bikes";
 import { cast, rivalAt, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { defaultPlayer } from "@racer/sim/race";
-import { clamp } from "@racer/sim/state";
+import { clamp, PLAYER_RIDER } from "@racer/sim/state";
 import type { RaceSetup, RivalSetup } from "@racer/sim/state";
 import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
-import { qualifiedCount } from "./state.ts";
+import { nextRaceId, qualifiedCount } from "./state.ts";
 import type { CareerState, RivalMemory } from "./state.ts";
 import {
   ALLY,
@@ -28,9 +28,9 @@ import {
 import type { Level, Road, RoadId } from "./tables.ts";
 
 const FIELD_SALT = 0xf1_e1_d0;
-const PLAYER_RIDER = 0;
 
 export interface CareerRaceSetup extends RaceSetup {
+  readonly raceId: number;
   readonly roadId: RoadId;
   readonly level: Level;
   readonly field: readonly RivalId[];
@@ -120,6 +120,7 @@ export const setupFor = (
       weaponHits: career.weaponHits,
     },
     police: policeFor(level, roads[roadId].region),
+    raceId: career.activeRace?.raceId ?? nextRaceId(career),
     rivals: field.map((rival) =>
       withMemory(
         {

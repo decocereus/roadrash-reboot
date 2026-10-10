@@ -3,6 +3,7 @@ import type { RivalId } from "@racer/sim/cast";
 import type { WeaponKind } from "@racer/sim/state";
 import { nextSeed } from "@racer/track/random";
 
+import type { LastResult } from "./result.ts";
 import {
   byLevel,
   creditLimitOf,
@@ -108,6 +109,12 @@ export type BoardNote =
       readonly km: number;
     }
   | {
+      readonly kind: "knockedPlayerDown";
+      readonly rival: RivalId;
+      readonly roadId: RoadId;
+      readonly km: number;
+    }
+  | {
       readonly kind: "photoFinish";
       readonly winner: RacerId;
       readonly loser: RacerId;
@@ -125,6 +132,7 @@ export type BoardNote =
 export const BOARD_NOTES = 3;
 
 export interface ActiveRace {
+  readonly raceId: number;
   readonly roadId: RoadId;
   readonly level: Level;
   readonly seed: number;
@@ -148,6 +156,7 @@ export interface CareerState {
   readonly story: StoryFlags;
   readonly board: readonly BoardNote[];
   readonly activeRace: ActiveRace | null;
+  readonly lastResult: LastResult | null;
   readonly gameOver: boolean;
 }
 
@@ -173,6 +182,7 @@ export const newCareer = (seed: number): CareerState => ({
   cash: STARTING_CASH,
   gameOver: false,
   garage: [STARTING_BIKE],
+  lastResult: null,
   level: 1,
   memory: byRival(() => blankMemory),
   qualified: byLevel(() => ({})),
@@ -209,7 +219,10 @@ export const creditLimit = (career: CareerState): number =>
 export const qualifiedCount = (roads: QualifiedRoads): number =>
   roadList.filter((road) => roads[road.id] !== undefined).length;
 
+export const nextRaceId = (career: CareerState): number =>
+  career.record.starts + 1;
+
 const RACE_SEED_STEP = 0x9e_37;
 
 export const nextRaceSeed = (career: CareerState): number =>
-  nextSeed(nextSeed(career.seed) + (career.record.starts + 1) * RACE_SEED_STEP);
+  nextSeed(nextSeed(career.seed) + nextRaceId(career) * RACE_SEED_STEP);

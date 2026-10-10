@@ -5,9 +5,15 @@ import { resultLine } from "./lines.ts";
 import type { RivalLine } from "./lines.ts";
 import { remember } from "./memory.ts";
 import { abandonedOutcome } from "./outcome.ts";
-import type { Placing, RaceOutcome, RaceResult } from "./outcome.ts";
+import type {
+  Placing,
+  RaceOutcome,
+  RaceResult,
+  RivalIncidents,
+} from "./outcome.ts";
+import { summaryOf } from "./result.ts";
 import { scoreRace } from "./season.ts";
-import { BOARD_NOTES, qualifiedCount } from "./state.ts";
+import { BOARD_NOTES, nextRaceId, qualifiedCount } from "./state.ts";
 import type {
   ActiveRace,
   BoardNote,
@@ -90,10 +96,20 @@ export interface Ledger {
   readonly line: RivalLine | null;
 }
 
-export interface Settlement {
-  readonly career: CareerState;
-  readonly ledger: Ledger | null;
-}
+export type SettleRefusal = "noActiveRace" | "gameOver" | "wrongRace";
+
+export type Settlement =
+  | {
+      readonly settled: true;
+      readonly career: CareerState;
+      readonly ledger: Ledger;
+    }
+  | {
+      readonly settled: false;
+      readonly career: CareerState;
+      readonly ledger: null;
+      readonly reason: SettleRefusal;
+    };
 
 const startRefusal = (
   career: CareerState,
@@ -128,10 +144,12 @@ export const startRace = (
       activeRace: {
         bikeId: career.bikeId,
         level: career.level,
+        raceId: nextRaceId(career),
         roadId,
         seed,
         started: true,
       },
+      lastResult: null,
       record: { ...career.record, starts: career.record.starts + 1 },
       story: {
         ...career.story,
@@ -212,48 +230,71 @@ const repairOf = (
   return outcome.result === "quit" ? repairBill(race.level, race.bikeId) : 0;
 };
 
-const notesOf = (outcome: RaceOutcome): BoardNote[] => {
-  const { incidents, level, roadId } = outcome;
-  return [
-    ...incidents
-      .filter((incident) => incident.weaponTakenByPlayer !== "none")
-      .map((incident): BoardNote => ({
+interface DatedNote {
+  readonly tick: number;
+  readonly note: BoardNote;
+}
+
+const datedNotes = (
+  outcome: RaceOutcome,
+  incident: RivalIncidents
+): DatedNote[] => {
+  const { level, roadId, tick } = outcome;
+  const { rival } = incident;
+  const notes: DatedNote[] = [];
+  if (incident.weaponTakenByPlayer !== "none") {
+    notes.push({
+      note: {
         kind: "weaponWanted",
-        rival: incident.rival,
+        rival,
         weapon: incident.weaponTakenByPlayer,
-      })),
-    ...incidents
-      .filter((incident) => incident.knockedDownByPlayer > 0)
-      .map((incident): BoardNote => ({
-        kind: "wentDown",
-        km: incident.knockdownKm,
-        rival: incident.rival,
+      },
+      tick: incident.weaponTakenTick,
+    });
+  }
+  if (incident.knockedDownByPlayer > 0) {
+    notes.push({
+      note: { kind: "wentDown", km: incident.knockdownKm, rival, roadId },
+      tick: incident.knockdownTick,
+    });
+  }
+  if (incident.knockedPlayerDown > 0) {
+    notes.push({
+      note: {
+        kind: "knockedPlayerDown",
+        km: incident.knockedPlayerDownKm,
+        rival,
         roadId,
-      })),
-    ...incidents
-      .filter((incident) => incident.lostToPlayerByAWheel)
-      .map((incident): BoardNote => ({
-        kind: "photoFinish",
-        loser: incident.rival,
-        winner: "player",
-      })),
-    ...incidents
-      .filter((incident) => incident.beatPlayerByAWheel)
-      .map((incident): BoardNote => ({
-        kind: "photoFinish",
-        loser: "player",
-        winner: incident.rival,
-      })),
-    ...incidents
-      .filter((incident) => incident.busted !== "none")
-      .map((incident): BoardNote => ({
-        fine: fines[level],
-        kind: "busted",
-        rival: incident.rival,
-        roadId,
-      })),
-  ];
+      },
+      tick: incident.knockedPlayerDownTick,
+    });
+  }
+  if (incident.busted !== "none") {
+    notes.push({
+      note: { fine: fines[level], kind: "busted", rival, roadId },
+      tick: incident.bustedTick,
+    });
+  }
+  if (incident.lostToPlayerByAWheel) {
+    notes.push({
+      note: { kind: "photoFinish", loser: rival, winner: "player" },
+      tick,
+    });
+  }
+  if (incident.beatPlayerByAWheel) {
+    notes.push({
+      note: { kind: "photoFinish", loser: "player", winner: rival },
+      tick,
+    });
+  }
+  return notes;
 };
+
+const notesOf = (outcome: RaceOutcome): BoardNote[] =>
+  outcome.incidents
+    .flatMap((incident) => datedNotes(outcome, incident))
+    .toSorted((left, right) => right.tick - left.tick)
+    .map((dated) => dated.note);
 
 const memoryAfter = (
   career: CareerState,
@@ -430,9 +471,17 @@ const carried = (
     : { weapon: "none", weaponHits: 0 };
 
 const sameRace = (race: ActiveRace, outcome: RaceOutcome): boolean =>
+  race.raceId === outcome.raceId &&
   race.roadId === outcome.roadId &&
   race.level === outcome.level &&
   race.seed === outcome.seed;
+
+const refused = (career: CareerState, reason: SettleRefusal): Settlement => ({
+  career,
+  ledger: null,
+  reason,
+  settled: false,
+});
 
 export const settleRace = (
   career: CareerState,
@@ -440,8 +489,14 @@ export const settleRace = (
   offer: RepairOffer = "full"
 ): Settlement => {
   const race = career.activeRace;
-  if (!race || career.gameOver || !sameRace(race, outcome)) {
-    return { career, ledger: null };
+  if (!race) {
+    return refused(career, "noActiveRace");
+  }
+  if (career.gameOver) {
+    return refused(career, "gameOver");
+  }
+  if (!sameRace(race, outcome)) {
+    return refused(career, "wrongRace");
   }
   const bill = billOf(career, race, outcome, offer);
   const debt = checkDebt(
@@ -475,49 +530,55 @@ export const settleRace = (
     season: scoreRace(career.season, outcome.placings, career.record.starts),
     story: storyAfter(career, outcome, progress, bill),
   };
+  const ledger: Ledger = {
+    ...bill,
+    cashAfter: debt.cash,
+    cashBefore: career.cash,
+    ending: progress.ending,
+    gameOver: debt.gameOver,
+    level: race.level,
+    levelUp: progress.promoted
+      ? { bikes: progress.arrivals, level: progress.level }
+      : null,
+    line: resultLine(outcome),
+    place: outcome.place,
+    qualified: progress.newlyQualified,
+    qualifiedCount: qualifiedCount(progress.roads),
+    repossessed: debt.repossessed,
+    result: outcome.result,
+    roadId: race.roadId,
+  };
   return {
     career: {
       ...settled,
+      lastResult: { ledger, summary: summaryOf(race, outcome, bill.prize) },
       story: { ...settled.story, finaleUnlocked: finaleOpen(settled) },
     },
-    ledger: {
-      ...bill,
-      cashAfter: debt.cash,
-      cashBefore: career.cash,
-      ending: progress.ending,
-      gameOver: debt.gameOver,
-      level: race.level,
-      levelUp: progress.promoted
-        ? { bikes: progress.arrivals, level: progress.level }
-        : null,
-      line: resultLine(outcome),
-      place: outcome.place,
-      qualified: progress.newlyQualified,
-      qualifiedCount: qualifiedCount(progress.roads),
-      repossessed: debt.repossessed,
-      result: outcome.result,
-      roadId: race.roadId,
-    },
+    ledger,
+    settled: true,
   };
 };
 
-export const quitRace = (career: CareerState): Settlement =>
-  career.activeRace
-    ? settleRace(career, abandonedOutcome(career.activeRace))
-    : { career, ledger: null };
+export const quitRace = (
+  career: CareerState,
+  outcome: RaceOutcome
+): Settlement => settleRace(career, outcome);
 
 export const resumeCareer = (save: CareerState): Settlement => {
-  const settlement = quitRace(save);
-  if (!settlement.ledger) {
+  if (!save.activeRace) {
+    return refused(save, "noActiveRace");
+  }
+  const settlement = settleRace(save, abandonedOutcome(save.activeRace));
+  if (!settlement.settled) {
     return settlement;
   }
   const leftRace: BoardNote = { kind: "leftRace" };
   return {
+    ...settlement,
     career: {
       ...settlement.career,
       board: [leftRace, ...settlement.career.board].slice(0, BOARD_NOTES),
       story: { ...settlement.career.story, leftRace: true },
     },
-    ledger: settlement.ledger,
   };
 };
