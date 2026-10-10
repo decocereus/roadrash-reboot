@@ -16,6 +16,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { content: "width=device-width, initial-scale=1", name: "viewport" },
+      { content: "dark", name: "color-scheme" },
+      { content: "#0e0f12", name: "theme-color" },
       { title: "Rushline" },
       {
         content:
@@ -37,7 +39,7 @@ function RootComponent() {
 
 function Document({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html className="dark" lang="en">
       <head>
         <HeadContent />
       </head>

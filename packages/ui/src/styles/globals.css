@@ -3,36 +3,315 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
+@import "@fontsource/saira-extra-condensed/latin-700";
+@import "@fontsource/saira-extra-condensed/latin-800";
+@import "@fontsource/inter/latin-400";
+@import "@fontsource/inter/latin-600";
+@import "@fontsource/big-shoulders-stencil-display/latin-800";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
   color-scheme: dark;
-  --background: oklch(0.16 0.008 255);
-  --foreground: oklch(0.96 0.004 255);
-  --card: oklch(0.19 0.01 255);
-  --card-foreground: var(--foreground);
-  --popover: oklch(0.21 0.01 255);
-  --popover-foreground: var(--foreground);
-  --primary: oklch(0.85 0.16 88);
-  --primary-foreground: oklch(0.2 0.04 88);
-  --secondary: oklch(0.24 0.01 255);
-  --secondary-foreground: var(--foreground);
-  --muted: oklch(0.22 0.008 255);
-  --muted-foreground: oklch(0.72 0.014 255);
-  --accent: oklch(0.24 0.01 255);
-  --accent-foreground: var(--foreground);
-  --destructive: oklch(0.66 0.21 27);
-  --success: oklch(0.78 0.15 150);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.85 0.16 88 / 60%);
-  --radius: 0.5rem;
+
+  --ink: #0e0f12;
+  --panel: #17191f;
+  --raised: #22252d;
+  --line: #2e323c;
+  --text: #f2eee6;
+  --muted: #9a9aa3;
+  --orange: #ff6a1a;
+  --yellow: #ffc531;
+  --red: #e5312b;
+  --green: #5bd06a;
+  --blue: #2f6bff;
+  --cork: #8a6a45;
+  --paper: #ede4d0;
+  --polaroid: #f7f3ea;
+
+  --asphalt: #3a3c40;
+  --road-worn: #4a4b4e;
+  --road-centre: #e8c23a;
+  --road-edge: #e9e6df;
+  --road-shoulder: #5e5a52;
+  --road-verge: #8c7d5e;
+
+  --salt-coast-zenith: #3c7fcc;
+  --salt-coast-horizon: #cfe3ec;
+  --salt-coast-far: #2b6f8f;
+  --salt-coast-ground: #d9c79a;
+  --salt-coast-verge: #7fa35a;
+  --salt-coast-asphalt: #44474b;
+
+  --cinder-flats-zenith: #4a8fd4;
+  --cinder-flats-horizon: #f1d9b0;
+  --cinder-flats-far: #a8512e;
+  --cinder-flats-ground: #c9925a;
+  --cinder-flats-verge: #e3cfa5;
+  --cinder-flats-asphalt: #4b4640;
+
+  --kettle-woods-zenith: #6f8fa6;
+  --kettle-woods-horizon: #c9d3cf;
+  --kettle-woods-far: #2e4a33;
+  --kettle-woods-ground: #3e4a2e;
+  --kettle-woods-verge: #4f7a3d;
+  --kettle-woods-asphalt: #33363a;
+
+  --lowtown-zenith: #3b3354;
+  --lowtown-horizon: #e08a5c;
+  --lowtown-far: #3a3f47;
+  --lowtown-ground: #6e6f73;
+  --lowtown-verge: #7a3b2e;
+  --lowtown-asphalt: #2f3033;
+
+  --stonepeak-zenith: #3f7fd6;
+  --stonepeak-horizon: #c9dbe8;
+  --stonepeak-far: #9db6cc;
+  --stonepeak-ground: #6a9a3f;
+  --stonepeak-verge: #4c7a38;
+  --stonepeak-asphalt: #3a3c40;
+
+  --background: var(--ink);
+  --foreground: var(--text);
+  --card: var(--panel);
+  --card-foreground: var(--text);
+  --popover: var(--raised);
+  --popover-foreground: var(--text);
+  --primary: var(--yellow);
+  --primary-foreground: var(--ink);
+  --secondary: var(--raised);
+  --secondary-foreground: var(--text);
+  --muted-foreground: var(--muted);
+  --accent: var(--raised);
+  --accent-foreground: var(--text);
+  --destructive: var(--red);
+  --success: var(--green);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--yellow);
+  --radius: 0.25rem;
+}
+
+[data-region="salt-coast"] {
+  --scene-zenith: var(--salt-coast-zenith);
+  --scene-horizon: var(--salt-coast-horizon);
+  --scene-far: var(--salt-coast-far);
+  --scene-ground: var(--salt-coast-ground);
+  --scene-verge: var(--salt-coast-verge);
+  --scene-asphalt: var(--salt-coast-asphalt);
+  --scene-skyline: polygon(
+    0 100%,
+    0 28%,
+    9% 12%,
+    17% 26%,
+    24% 62%,
+    100% 62%,
+    100% 100%
+  );
+}
+
+[data-region="cinder-flats"] {
+  --scene-zenith: var(--cinder-flats-zenith);
+  --scene-horizon: var(--cinder-flats-horizon);
+  --scene-far: var(--cinder-flats-far);
+  --scene-ground: var(--cinder-flats-ground);
+  --scene-verge: var(--cinder-flats-verge);
+  --scene-asphalt: var(--cinder-flats-asphalt);
+  --scene-skyline: polygon(
+    0 100%,
+    0 78%,
+    7% 78%,
+    10% 34%,
+    29% 34%,
+    33% 78%,
+    56% 78%,
+    59% 8%,
+    80% 8%,
+    84% 78%,
+    100% 78%,
+    100% 100%
+  );
+}
+
+[data-region="kettle-woods"] {
+  --scene-zenith: var(--kettle-woods-zenith);
+  --scene-horizon: var(--kettle-woods-horizon);
+  --scene-far: var(--kettle-woods-far);
+  --scene-ground: var(--kettle-woods-ground);
+  --scene-verge: var(--kettle-woods-verge);
+  --scene-asphalt: var(--kettle-woods-asphalt);
+  --scene-skyline: polygon(
+    0 100%,
+    0 46%,
+    5% 2%,
+    10% 48%,
+    14% 14%,
+    19% 52%,
+    24% 0,
+    30% 50%,
+    34% 20%,
+    38% 60%,
+    62% 60%,
+    66% 16%,
+    71% 50%,
+    76% 0,
+    82% 48%,
+    86% 12%,
+    91% 50%,
+    96% 6%,
+    100% 44%,
+    100% 100%
+  );
+}
+
+[data-region="lowtown"] {
+  --scene-zenith: var(--lowtown-zenith);
+  --scene-horizon: var(--lowtown-horizon);
+  --scene-far: var(--lowtown-far);
+  --scene-ground: var(--lowtown-ground);
+  --scene-verge: var(--lowtown-verge);
+  --scene-asphalt: var(--lowtown-asphalt);
+  --scene-skyline: polygon(
+    0 100%,
+    0 52%,
+    8% 52%,
+    8% 22%,
+    14% 22%,
+    14% 58%,
+    22% 58%,
+    22% 4%,
+    25% 4%,
+    25% 46%,
+    36% 46%,
+    36% 30%,
+    44% 30%,
+    44% 64%,
+    56% 64%,
+    56% 14%,
+    60% 14%,
+    60% 42%,
+    72% 42%,
+    72% 26%,
+    80% 26%,
+    80% 56%,
+    90% 56%,
+    90% 36%,
+    100% 36%,
+    100% 100%
+  );
+}
+
+[data-region="stonepeak"] {
+  --scene-zenith: var(--stonepeak-zenith);
+  --scene-horizon: var(--stonepeak-horizon);
+  --scene-far: var(--stonepeak-far);
+  --scene-ground: var(--stonepeak-ground);
+  --scene-verge: var(--stonepeak-verge);
+  --scene-asphalt: var(--stonepeak-asphalt);
+  --scene-skyline: polygon(
+    0 100%,
+    0 62%,
+    14% 26%,
+    27% 58%,
+    44% 0,
+    60% 52%,
+    74% 20%,
+    89% 56%,
+    100% 40%,
+    100% 100%
+  );
+}
+
+@theme static {
+  --font-display:
+    "Saira Extra Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-stencil:
+    "Big Shoulders Stencil Display", "Saira Extra Condensed", "Arial Narrow",
+    sans-serif;
+
+  --spacing: 0.25rem;
+  --spacing-panel: clamp(0.75rem, 2.2vmin, 1.5rem);
+  --spacing-gutter: clamp(1rem, 4.4vmin, 3rem);
+  --spacing-strip: clamp(3rem, 8.9vmin, 5.5rem);
+
+  --text-outcome: clamp(3.5rem, 16.67vmin, 11rem);
+  --text-outcome--line-height: 0.85;
+  --text-hud: clamp(2.5rem, 8.89vmin, 6rem);
+  --text-hud--line-height: 0.9;
+  --text-heading: clamp(2.25rem, 7.78vmin, 5rem);
+  --text-heading--line-height: 0.9;
+  --text-name: clamp(1.375rem, 3.89vmin, 2.5rem);
+  --text-name--line-height: 1;
+  --text-quote: clamp(1.0625rem, 3.06vmin, 2rem);
+  --text-quote--line-height: 1.3;
+  --text-body: clamp(0.9375rem, 2.5vmin, 1.5rem);
+  --text-body--line-height: 1.444;
+  --text-label: clamp(0.6875rem, 1.8vmin, 1.125rem);
+  --text-label--line-height: 1.3;
+  --text-label--letter-spacing: 0.08em;
+
+  --tracking-display: 0.02em;
+  --tracking-label: 0.08em;
 }
 
 @theme inline {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-orange: var(--orange);
+  --color-yellow: var(--yellow);
+  --color-red: var(--red);
+  --color-green: var(--green);
+  --color-blue: var(--blue);
+  --color-cork: var(--cork);
+  --color-paper: var(--paper);
+  --color-polaroid: var(--polaroid);
+
+  --color-asphalt: var(--asphalt);
+  --color-road-worn: var(--road-worn);
+  --color-road-centre: var(--road-centre);
+  --color-road-edge: var(--road-edge);
+  --color-road-shoulder: var(--road-shoulder);
+  --color-road-verge: var(--road-verge);
+
+  --color-salt-coast-zenith: var(--salt-coast-zenith);
+  --color-salt-coast-horizon: var(--salt-coast-horizon);
+  --color-salt-coast-far: var(--salt-coast-far);
+  --color-salt-coast-ground: var(--salt-coast-ground);
+  --color-salt-coast-verge: var(--salt-coast-verge);
+  --color-salt-coast-asphalt: var(--salt-coast-asphalt);
+  --color-cinder-flats-zenith: var(--cinder-flats-zenith);
+  --color-cinder-flats-horizon: var(--cinder-flats-horizon);
+  --color-cinder-flats-far: var(--cinder-flats-far);
+  --color-cinder-flats-ground: var(--cinder-flats-ground);
+  --color-cinder-flats-verge: var(--cinder-flats-verge);
+  --color-cinder-flats-asphalt: var(--cinder-flats-asphalt);
+  --color-kettle-woods-zenith: var(--kettle-woods-zenith);
+  --color-kettle-woods-horizon: var(--kettle-woods-horizon);
+  --color-kettle-woods-far: var(--kettle-woods-far);
+  --color-kettle-woods-ground: var(--kettle-woods-ground);
+  --color-kettle-woods-verge: var(--kettle-woods-verge);
+  --color-kettle-woods-asphalt: var(--kettle-woods-asphalt);
+  --color-lowtown-zenith: var(--lowtown-zenith);
+  --color-lowtown-horizon: var(--lowtown-horizon);
+  --color-lowtown-far: var(--lowtown-far);
+  --color-lowtown-ground: var(--lowtown-ground);
+  --color-lowtown-verge: var(--lowtown-verge);
+  --color-lowtown-asphalt: var(--lowtown-asphalt);
+  --color-stonepeak-zenith: var(--stonepeak-zenith);
+  --color-stonepeak-horizon: var(--stonepeak-horizon);
+  --color-stonepeak-far: var(--stonepeak-far);
+  --color-stonepeak-ground: var(--stonepeak-ground);
+  --color-stonepeak-verge: var(--stonepeak-verge);
+  --color-stonepeak-asphalt: var(--stonepeak-asphalt);
+
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -41,7 +320,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -74,10 +352,58 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @utility numeric {
   font-variant-numeric: tabular-nums;
+}
+
+@utility cork {
+  background-color: var(--cork);
+  background-image:
+    radial-gradient(
+      circle at 20% 30%,
+      rgb(0 0 0 / 16%) 0 1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 70% 60%,
+      rgb(255 255 255 / 10%) 0 1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 45% 85%,
+      rgb(0 0 0 / 12%) 0 1.5px,
+      transparent 2px
+    );
+  background-size:
+    13px 13px,
+    19px 19px,
+    23px 23px;
+}
+
+@utility torn-top {
+  mask: conic-gradient(
+      from 135deg at top,
+      transparent,
+      black 1deg 89deg,
+      transparent 90deg
+    )
+    50% / 10px 100%;
 }
 
 @keyframes notice-in {
