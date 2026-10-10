@@ -4,6 +4,7 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
+import { rivalAt, rivals } from "./cast.ts";
 import { pilotInput } from "./pilot.ts";
 import { chaserDistance, PATROL_SPEED } from "./police.ts";
 import {
@@ -12,12 +13,14 @@ import {
   defaultSetup,
   standings,
   stepRace,
+  validateSetup,
 } from "./race.ts";
-import { MAX_STAMINA, TICK_RATE } from "./state.ts";
+import { FULL_CONDITION, MAX_STAMINA, TICK_RATE } from "./state.ts";
 import type {
   BikeSpec,
   PoliceSetup,
   RaceEvent,
+  RaceSetup,
   RaceState,
   RiderInput,
   RiderState,
@@ -861,6 +864,24 @@ describe("rider contact", () => {
     }
   );
 
+  it("a rider who runs into a stopped bike at 60 m/s takes the damage of a 60 m/s crash", () => {
+    const state = column(2);
+    const rear = riderAt(state, 0);
+    const ahead = riderAt(state, 1);
+    rear.s = ahead.s - 2.6;
+    rear.speed = 60;
+    ahead.speed = 0;
+    const crashes = ride(state, 0.1, (events) =>
+      events.flatMap((event) =>
+        event.kind === "crash" && event.rider === 0 ? [event.speed] : []
+      )
+    ).flat();
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0]).toBeGreaterThan(58);
+    expect(FULL_CONDITION - rear.condition).toBeCloseTo(22.5, 0);
+    expect(rear.bodyS).toBeLessThan(ahead.s);
+  });
+
   it("a pileup throws each rider at most once a tick", () => {
     const { rear, state, stopped } = pileup(1);
     const crashes = ride(state, 0.5, (events) =>
@@ -1181,6 +1202,57 @@ const rivalsOf = (state: RaceState): number[] =>
     .slice(1)
     .filter((rider) => rider.profile.role === "racer")
     .map((rider) => rider.s);
+
+const everyRival = Object.values(rivals).map((rival) => rivalAt(rival, 3));
+
+const setupWith = (entrants: readonly RivalSetup[]): RaceSetup => ({
+  ...defaultSetup(straight, 1),
+  rivals: entrants,
+});
+
+describe("race setups", () => {
+  it("a setup that lists a rival twice is rejected", () => {
+    const [dee, moose] = everyRival;
+    if (!(dee && moose)) {
+      throw new Error("The cast has fewer than two rivals.");
+    }
+    const setup = setupWith([dee, moose, dee]);
+    expect(validateSetup(setup)).toStrictEqual([
+      { kind: "duplicateRival", name: dee.name },
+    ]);
+    expect(() => createRace(setup)).toThrow(
+      `${dee.name} is on the grid more than once.`
+    );
+  });
+
+  it("a setup with eight rivals is rejected and seven fill the grid", () => {
+    const eight = setupWith(everyRival.slice(0, 8));
+    const seven = setupWith(everyRival.slice(0, 7));
+    expect(validateSetup(eight)).toStrictEqual([
+      { count: 8, kind: "tooManyRivals" },
+    ]);
+    expect(() => createRace(eight)).toThrow("at most 7 rivals");
+    expect(validateSetup(seven)).toStrictEqual([]);
+    expect(
+      createRace(seven).riders.filter((rider) => rider.profile.role === "racer")
+    ).toHaveLength(8);
+  });
+
+  it("every problem with a setup is reported at once", () => {
+    const [dee] = everyRival;
+    if (!dee) {
+      throw new Error("The cast has no rivals.");
+    }
+    const setup = setupWith([...everyRival.slice(0, 8), dee]);
+    expect(validateSetup(setup).map((problem) => problem.kind)).toStrictEqual([
+      "tooManyRivals",
+      "duplicateRival",
+    ]);
+    expect(() => createRace(setup)).toThrow(
+      `A race takes at most 7 rivals, and this one has 9. ${dee.name} is on the grid more than once.`
+    );
+  });
+});
 
 describe("the grid", () => {
   it("the player starts behind every rival when the grid order puts them last", () => {
@@ -1549,6 +1621,32 @@ const chase = (police: PoliceSetup, lead: number, quarrySpeed: number) => {
   return { distance: chaserDistance(state, 0), fastest, pursued };
 };
 
+const rideToBody = (police: PoliceSetup) => {
+  const state = createRace({
+    ...defaultSetup(straight, 1),
+    police,
+    rivals: [],
+  });
+  const me = riderAt(state, 0);
+  const cop = patrolFrom(state, 1, 150);
+  cop.speed = 0;
+  me.s = 190;
+  me.speed = 15;
+  me.stamina = 0;
+  const copInput = { ...cruising };
+  let fastest = 0;
+  let ticksAfterTheBody = 0;
+  for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
+    pilotInput(state, straight, 1, copInput);
+    stepRace(state, straight, [cruising, copInput]);
+    if (cop.chase === 0 && me.mode === "thrown") {
+      fastest = Math.max(fastest, cop.speed);
+      ticksAfterTheBody += 1;
+    }
+  }
+  return { fastest, ticksAfterTheBody };
+};
+
 describe("police settings", () => {
   it("the number of cops and the fine come from the setup", () => {
     const police = { ...defaultPolice, count: 3, fine: 900 };
@@ -1579,6 +1677,15 @@ describe("police settings", () => {
     expect(far.pursued).toBeTruthy();
     expect(far.distance).toBeGreaterThan(45);
     expect(far.distance).toBeLessThan(55);
+  });
+
+  it("a cop riding to a downed rider keeps to the pursuit speed the setup allows", () => {
+    const slow = rideToBody({ ...defaultPolice, topSpeed: 10 });
+    const quick = rideToBody(defaultPolice);
+    expect(slow.ticksAfterTheBody).toBeGreaterThan(TICK_RATE);
+    expect(slow.fastest).toBeGreaterThan(8);
+    expect(slow.fastest).toBeLessThan(11);
+    expect(quick.fastest).toBeGreaterThan(slow.fastest + 3);
   });
 
   it("a cop in pursuit rides no faster than the setup allows", () => {

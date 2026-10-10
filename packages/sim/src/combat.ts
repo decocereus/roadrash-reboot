@@ -352,7 +352,8 @@ export type ThrowRider = (
   riderIndex: number,
   cause: "rider",
   bikeKeep: number,
-  bodyKeep: number
+  bodyKeep: number,
+  speedAtImpact: number
 ) => void;
 
 interface Jolt {
@@ -491,8 +492,9 @@ const settle = (
   }
   rider.lateralSpeed += jolt.nudge;
   if (jolt.struckGap < Number.POSITIVE_INFINITY) {
+    const speedAtImpact = rider.speed;
     rider.speed = jolt.struckSpeed * 0.9;
-    throwRider(index, "rider", 0.4, 0.6);
+    throwRider(index, "rider", 0.4, 0.6, speedAtImpact);
     return;
   }
   rider.speed =

@@ -33,6 +33,7 @@ const FIRST_COP_S = 700;
 const COP_SPACING = 1600;
 const PILOT_DICE_SALT = 0x5a_17;
 const DEFAULT_LEVEL = 3;
+export const MAX_RIVALS = 7;
 
 export const neutralInput: RiderInput = {
   brake: 0,
@@ -158,7 +159,53 @@ const lastRow = (lane: number, rivalCount: number): GridSpot => ({
 const freshHits = (profile: RiderProfile): number =>
   weapons[profile.weapon].hits;
 
+export type SetupError =
+  | { readonly kind: "tooManyRivals"; readonly count: number }
+  | { readonly kind: "duplicateRival"; readonly name: string }
+  | { readonly kind: "missingBike"; readonly rider: string };
+
+const missingBikes = (setup: RaceSetup): SetupError[] => {
+  const entrants: readonly { name: string; bike: BikeSpec | undefined }[] = [
+    setup.player,
+    ...setup.rivals,
+    { bike: setup.police.bike, name: setup.police.officer.name },
+  ];
+  return entrants
+    .filter((entrant) => !entrant.bike)
+    .map((entrant) => ({ kind: "missingBike", rider: entrant.name }));
+};
+
+const duplicateRivals = (setup: RaceSetup): SetupError[] => {
+  const names = setup.rivals.map((rival) => rival.name);
+  const repeated = new Set(
+    names.filter((name, index) => names.indexOf(name) !== index)
+  );
+  return [...repeated].map((name) => ({ kind: "duplicateRival", name }));
+};
+
+export const validateSetup = (setup: RaceSetup): SetupError[] => [
+  ...(setup.rivals.length > MAX_RIVALS
+    ? [{ count: setup.rivals.length, kind: "tooManyRivals" } as const]
+    : []),
+  ...duplicateRivals(setup),
+  ...missingBikes(setup),
+];
+
+export const describeSetupError = (error: SetupError): string => {
+  if (error.kind === "tooManyRivals") {
+    return `A race takes at most ${MAX_RIVALS} rivals, and this one has ${error.count}.`;
+  }
+  if (error.kind === "duplicateRival") {
+    return `${error.name} is on the grid more than once.`;
+  }
+  return `${error.rider} has no bike.`;
+};
+
 export const createRace = (setup: RaceSetup): RaceState => {
+  const problems = validateSetup(setup);
+  if (problems.length > 0) {
+    throw new Error(problems.map(describeSetupError).join(" "));
+  }
   const { gridOrder, player, police, rivals: field, seed, track } = setup;
   const lane = track.plan.laneWidth / 2;
   const playerLast = gridOrder === "playerLast";
@@ -256,9 +303,13 @@ export const stepRace = (
   for (let index = 0; index < state.riders.length; index += 1) {
     stepRider(state, track, index, inputs[index] ?? neutralInput);
   }
-  stepRiderContacts(state, track, (riderIndex, cause, bikeKeep, bodyKeep) => {
-    throwRider(state, riderIndex, cause, bikeKeep, bodyKeep);
-  });
+  stepRiderContacts(
+    state,
+    track,
+    (riderIndex, cause, bikeKeep, bodyKeep, speedAtImpact) => {
+      throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, speedAtImpact);
+    }
+  );
   coolDown(state);
   landStrikes(state);
   for (let index = 0; index < state.riders.length; index += 1) {

@@ -99,18 +99,19 @@ export const throwRider = (
   riderIndex: number,
   cause: CrashCause,
   bikeKeep: number,
-  bodyKeep: number
+  bodyKeep: number,
+  speedAtImpact?: number
 ): void => {
   const rider = state.riders[riderIndex];
   if (!rider) {
     return;
   }
   const impactSpeed = rider.speed;
+  const struckAt = speedAtImpact ?? impactSpeed;
   if (takesDamage(rider)) {
     rider.condition = Math.max(
       0,
-      rider.condition -
-        damage[cause] * clamp(impactSpeed / DAMAGE_SPEED, 0.5, 1.5)
+      rider.condition - damage[cause] * clamp(struckAt / DAMAGE_SPEED, 0.5, 1.5)
     );
   }
   const wrecked = rider.condition <= 0;
@@ -139,7 +140,7 @@ export const throwRider = (
     cause,
     kind: "crash",
     rider: riderIndex,
-    speed: impactSpeed,
+    speed: struckAt,
   });
   if (wrecked) {
     state.events.push({ kind: "wrecked", rider: riderIndex });

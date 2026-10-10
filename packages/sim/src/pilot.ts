@@ -173,9 +173,12 @@ const pursuitOf = (
     const within = target.bodyS - cop.s;
     return {
       engaged: true,
-      speed: Math.max(
-        BODY_CREEP_SPEED,
-        Math.sqrt(2 * PLANNED_BRAKING * Math.max(0, within - 1))
+      speed: Math.min(
+        state.police.topSpeed,
+        Math.max(
+          BODY_CREEP_SPEED,
+          Math.sqrt(2 * PLANNED_BRAKING * Math.max(0, within - 1))
+        )
       ),
       within,
       x: target.bodyX,
