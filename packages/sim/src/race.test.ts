@@ -844,6 +844,38 @@ describe("simultaneous weapon grabs", () => {
   );
 });
 
+describe("armed rivals", () => {
+  it("a chain holder at full aggression swings at a rider 2.8 m across within five seconds", () => {
+    const state = createRace(straight, 1, 1, 0);
+    const viper = riderAt(state, 1);
+    const rival = { ...viper, profile: { ...viper.profile, aggression: 1 } };
+    state.riders[1] = rival;
+    state.tick = 10 * TICK_RATE;
+    const me = riderAt(state, 0);
+    const rivalInput = { ...cruising };
+    const events: RaceEvent[] = [];
+    for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
+      for (const rider of state.riders) {
+        rider.s = 50;
+        rider.speed = 30;
+      }
+      me.x = -1;
+      rival.x = 1.8;
+      pilotInput(state, straight, 1, rivalInput);
+      stepRace(state, straight, [cruising, rivalInput]);
+      events.push(...state.events);
+    }
+    expect(rival.weapon).toBe("chain");
+    expect(events).toContainEqual({
+      attack: "swing",
+      kind: "hit",
+      rider: 1,
+      target: 0,
+      weapon: "chain",
+    });
+  });
+});
+
 const pilotPack = (states: readonly RaceState[], seconds: number) => {
   const inputs = states.map((state) =>
     state.riders.map(() => ({ ...cruising }))
