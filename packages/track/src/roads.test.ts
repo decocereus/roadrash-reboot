@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { nextSeed } from "./random.ts";
 import { roadLevels } from "./road.ts";
 import type { RoadId, RoadLevel } from "./road.ts";
 import { regionOf, roadIds, roads, trackFor } from "./roads.ts";
 import { compileTrack } from "./track.ts";
-import type { Track } from "./track.ts";
+import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 
 const GRAVITY = 9.81;
 const STRAIGHT = 1 / 1500;
@@ -112,6 +113,40 @@ const straightAhead = (track: Track, s: number): number => {
   return metres;
 };
 
+const WORD = 2 ** 32;
+
+const digestOf = (values: Iterable<number>, scale: number): string => {
+  let digest = 0;
+  for (const value of values) {
+    const scaled = Math.round(value * scale);
+    digest = nextSeed(digest + (scaled % WORD));
+    digest = nextSeed(digest + Math.floor(scaled / WORD));
+  }
+  return (digest + WORD).toString(16).slice(-8);
+};
+
+const propKinds: readonly TrackPropKind[] = [
+  "tree",
+  "pole",
+  "chevron",
+  "rock",
+  "gate",
+];
+
+const propNumbers = (prop: TrackProp): number[] => [
+  propKinds.indexOf(prop.kind),
+  prop.s,
+  prop.x,
+  prop.radius,
+  prop.scale,
+];
+
+const rocksOf = (track: Track): TrackProp[] =>
+  track.props.filter((prop) => prop.kind === "rock");
+
+const treesOf = (track: Track): TrackProp[] =>
+  track.props.filter((prop) => prop.kind === "tree" && prop.s > 0);
+
 describe("the five roads", () => {
   it("the registry lists the five roads in career order with their regions", () => {
     expect(roadIds.map((roadId) => [roadId, regionOf(roadId)])).toStrictEqual([
@@ -171,12 +206,32 @@ describe("the five roads", () => {
     }
   );
 
-  it("Ridge Road at level 1 is the road the simulation was tuned on", () => {
-    const tuned = compileTrack(roads["ridge-road"].plan);
+  it("Ridge Road at level 1 is still the pinned road, sample for sample and prop for prop", () => {
     const levelOne = trackFor("ridge-road", 1);
-    expect(levelOne.curvature).toStrictEqual(tuned.curvature);
-    expect(levelOne.slopeRate).toStrictEqual(tuned.slopeRate);
-    expect(levelOne.props).toStrictEqual(tuned.props);
+    expect({
+      curvature: digestOf(levelOne.curvature, 1e9),
+      height: digestOf(levelOne.worldY, 1e6),
+      line: digestOf([...levelOne.worldX, ...levelOne.worldZ], 1e6),
+      props: digestOf(levelOne.props.flatMap(propNumbers), 1e6),
+      rocks: digestOf(rocksOf(levelOne).flatMap(propNumbers), 1e6),
+      slopeRate: digestOf(levelOne.slopeRate, 1e9),
+    }).toStrictEqual({
+      curvature: "c549d971",
+      height: "5d229316",
+      line: "d3195a21",
+      props: "aceb06e3",
+      rocks: "0356dee5",
+      slopeRate: "0d92b9b9",
+    });
+  });
+
+  it("the rocks on a road stay where they are when a longer lead-in scatters its trees differently", () => {
+    const { plan } = roads["ridge-road"];
+    const pinned = compileTrack(plan);
+    const longer = compileTrack({ ...plan, leadInLength: 200 });
+    expect(rocksOf(longer)).toStrictEqual(rocksOf(pinned));
+    expect(rocksOf(pinned)).toHaveLength(35);
+    expect(treesOf(longer)).not.toStrictEqual(treesOf(pinned));
   });
 });
 
