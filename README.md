@@ -31,7 +31,7 @@ pnpm build
 ```text
 alchemy.run.ts     Alchemy stack: the composition root
 apps/web/          TanStack Start shell and the Three.js game client
-packages/sim/      Deterministic riding, traffic, crash, and AI rules
+packages/sim/      Deterministic riding, combat, police, and AI rules; bikes and cast
 packages/track/    Track format, compilation, and Ridge Road
 packages/ui/       shadcn components and global styles
 docs/              Architecture and build order
