@@ -4,6 +4,7 @@ export const GRAVITY = 9.81;
 export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
 export const MIN_STEER_SPEED = 12;
+export const WALKING_PACE = 3;
 
 export interface BikeSpec {
   readonly name: string;
@@ -207,9 +208,17 @@ export const approach = (
   return Math.max(target, value - step);
 };
 
-export const lateralSpeedLimit = (bike: BikeSpec, speed: number): number =>
+export const lateralSpeedLimit = (
+  bike: BikeSpec,
+  speed: number,
+  throttle = 0
+): number =>
   (bike.lateralSpeed + bike.lateralSpeedPerSpeed * speed) *
-  clamp(speed / MIN_STEER_SPEED, 0, 1);
+  clamp(
+    (throttle > 0 ? Math.max(speed, WALKING_PACE) : speed) / MIN_STEER_SPEED,
+    0,
+    1
+  );
 
 export const curvePushOf = (
   bike: BikeSpec,

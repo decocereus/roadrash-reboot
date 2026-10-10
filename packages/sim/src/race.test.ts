@@ -326,6 +326,36 @@ describe("crashing", () => {
     );
     expect(events.map((event) => event.kind)).toContain("crash");
   });
+
+  it("a gentle head-on bump permits a throttle-and-steer escape", () => {
+    const state = createRace(straight, 1, 0, 0);
+    const me = player(state);
+    Object.assign(me, { bodyS: 100, bodyX: -1.8, s: 100, speed: 2, x: -1.8 });
+    const car = {
+      cruiseSpeed: -22,
+      halfLength: 2.2,
+      halfWidth: 0.92,
+      height: 1.45,
+      paint: 2,
+      s: 103.1,
+      speed: -3,
+      x: -1.8,
+    };
+    state.cars.push(car);
+    let stoppedTicks = 0;
+    let longestStop = 0;
+    for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
+      stepRace(state, straight, [
+        { ...cruising, steer: me.x < 0 ? 1 : 0, throttle: 1 },
+      ]);
+      stoppedTicks =
+        me.mode === "riding" && me.speed < 0.5 ? stoppedTicks + 1 : 0;
+      longestStop = Math.max(longestStop, stoppedTicks);
+    }
+    expect(me.mode).toBe("riding");
+    expect(longestStop).toBeLessThanOrEqual(1.5 * TICK_RATE);
+    expect(me.s).toBeGreaterThan(car.s + 20);
+  });
 });
 
 describe("a full race", () => {

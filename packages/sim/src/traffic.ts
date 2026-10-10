@@ -108,7 +108,7 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
       const gap = gapToRider(car, rider);
       const riderSpeed =
         rider.mode === "riding" ? Math.max(0, rider.speed * direction) : 0;
-      if (gap < LOOK_AHEAD && riderSpeed < speed) {
+      if (gap < LOOK_AHEAD && riderSpeed <= speed) {
         const stoppingRoom =
           (speed * speed - riderSpeed * riderSpeed) / (2 * BRAKING) + 8;
         if (gap < stoppingRoom) {

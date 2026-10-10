@@ -16,6 +16,7 @@ import {
   GRAVITY,
   lateralSpeedLimit,
   TICK_SECONDS,
+  WALKING_PACE,
 } from "./state.ts";
 import type {
   CrashCause,
@@ -49,6 +50,8 @@ const STUN_STEER = 0.65;
 const VERGE_STEER = 0.8;
 const VERGE_BLEND = 0.75;
 const BRAKE_RESERVE = 0.35;
+const SIDESTEP_SPEED = 3;
+const STEERING_AWAY = 0.5;
 
 const coasting: RiderInput = {
   brake: FINISH_BRAKE,
@@ -183,7 +186,8 @@ const ride = (
   const grip = (ROAD_GRIP + (VERGE_GRIP - ROAD_GRIP) * verge) * rider.load;
 
   const limit =
-    lateralSpeedLimit(bike, rider.speed) * (1 - (1 - VERGE_STEER) * verge);
+    lateralSpeedLimit(bike, rider.speed, input.throttle) *
+    (1 - (1 - VERGE_STEER) * verge);
   const wantedLateral =
     input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
   rider.lateralSpeed +=
@@ -260,6 +264,13 @@ const hitProps = (
   return false;
 };
 
+const wayAround = (rider: RiderState, car: TrafficCar): number => {
+  if (Math.abs(rider.lateralSpeed) > STEERING_AWAY) {
+    return Math.sign(rider.lateralSpeed);
+  }
+  return Math.sign(rider.x - car.x) || -Math.sign(car.x) || 1;
+};
+
 const hitCar = (
   state: RaceState,
   riderIndex: number,
@@ -307,8 +318,16 @@ const hitCar = (
     return true;
   }
   if (gapS > 0) {
-    rider.speed = Math.max(0, Math.min(rider.speed, car.speed) - 1);
+    rider.speed = Math.max(
+      Math.min(rider.speed, WALKING_PACE),
+      Math.min(rider.speed, car.speed) - 1
+    );
     rider.s = car.s - reachS;
+    if (car.speed < WALKING_PACE) {
+      const side = wayAround(rider, car);
+      rider.x +=
+        side * Math.min(SIDESTEP_SPEED * TICK_SECONDS, reachX + side * gapX);
+    }
   } else {
     rider.speed = Math.max(rider.speed, car.speed + 1);
   }
