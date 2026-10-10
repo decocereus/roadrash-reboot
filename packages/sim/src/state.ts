@@ -91,6 +91,7 @@ export interface RiderState {
   condition: number;
   lastHitBy: number;
   lastHitTick: number;
+  bumpLoss: number;
   attack: AttackKind | "none";
   attackSide: number;
   attackTicks: number;

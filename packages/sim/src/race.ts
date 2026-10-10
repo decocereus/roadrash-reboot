@@ -120,6 +120,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   bodySpeed: 0,
   bodyVerticalSpeed: 0,
   bodyX: spot.x,
+  bumpLoss: 0,
   chase: -1,
   condition: FULL_CONDITION,
   crashes: 0,

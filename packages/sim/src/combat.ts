@@ -21,6 +21,7 @@ const HIT_SPEED_LOSS = 0.06;
 const CONTACT_CLOSING_SPEED = 9;
 const SIDE_SHOVE = 1.2;
 const BUMP_SPEED_LOSS = 0.9;
+const BUMP_LOSS_PER_SECOND = 6;
 const CONTACT_COOLDOWN_TICKS = 6;
 const TAP_SPEED_LOSS = 0.5;
 const SOFT_SHUNT = 1;
@@ -423,8 +424,6 @@ const shoveApart = (
   right.jolt.shove += away * SIDE_SHOVE;
   left.jolt.shoved = true;
   right.jolt.shoved = true;
-  left.jolt.speedLoss += BUMP_SPEED_LOSS;
-  right.jolt.speedLoss += BUMP_SPEED_LOSS;
   if (left.rider.attackCooldown < CONTACT_COOLDOWN_TICKS) {
     state.events.push({
       kind: "riderContact",
@@ -505,6 +504,18 @@ const meet = (state: RaceState, left: Party, right: Party): void => {
   }
 };
 
+const bumpLossOf = (rider: RiderState, shoved: boolean): number => {
+  if (!shoved) {
+    return 0;
+  }
+  const loss = Math.min(
+    BUMP_SPEED_LOSS,
+    Math.max(0, BUMP_LOSS_PER_SECOND - rider.bumpLoss)
+  );
+  rider.bumpLoss += loss;
+  return loss;
+};
+
 const settle = (
   state: RaceState,
   { index, jolt, rider }: Party,
@@ -525,8 +536,9 @@ const settle = (
     throwRider(index, "rider", 0.4, 0.6, speedAtImpact);
     return;
   }
+  const speedLoss = jolt.speedLoss + bumpLossOf(rider, jolt.shoved);
   rider.speed =
-    Math.max(0, Math.min(rider.speed, jolt.speedCap) - jolt.speedLoss) +
+    Math.max(0, Math.min(rider.speed, jolt.speedCap) - speedLoss) +
     jolt.speedGain;
   rider.s = Math.min(rider.s, jolt.behind);
 };
@@ -549,5 +561,9 @@ export const stepRiderContacts = (
   }
   for (const rider of state.riders) {
     rider.x = clamp(rider.x, -track.vergeHalfWidth, track.vergeHalfWidth);
+    rider.bumpLoss = Math.max(
+      0,
+      rider.bumpLoss - BUMP_LOSS_PER_SECOND * TICK_SECONDS
+    );
   }
 };

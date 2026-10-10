@@ -970,6 +970,55 @@ describe("rider contact", () => {
     expect(passing.x - slower.x).toBeGreaterThan(0.8);
   });
 
+  it("a rider squeezed from both sides for a second loses about 6 m/s, not all of their speed", () => {
+    const state = column(3);
+    const [me, left, right] = [0, 1, 2].map((index) => riderAt(state, index));
+    if (!(me && left && right)) {
+      throw new Error("The column has fewer than three riders.");
+    }
+    left.x = -0.9;
+    right.x = 0.9;
+    for (const rider of state.riders) {
+      rider.speed = 40;
+    }
+    const flatOut = { ...cruising, throttle: 1 };
+    let contacts = 0;
+    for (let tick = 0; tick < TICK_RATE; tick += 1) {
+      stepRace(state, straight, [
+        flatOut,
+        { ...flatOut, steer: 1 },
+        { ...flatOut, steer: -1 },
+      ]);
+      contacts += state.events.filter(
+        (event) => event.kind === "riderContact"
+      ).length;
+    }
+    expect(contacts).toBeGreaterThan(20);
+    expect(me.mode).toBe("riding");
+    expect(me.speed).toBeGreaterThan(32);
+    expect(me.speed).toBeLessThan(38);
+  });
+
+  it("two bikes that lean on each other from a standstill both pull away", () => {
+    const state = column(2);
+    const behind = riderAt(state, 0);
+    const ahead = riderAt(state, 1);
+    behind.s = ahead.s - 1.975;
+    behind.x = 0.43;
+    ahead.x = -0.43;
+    behind.speed = 0;
+    ahead.speed = 0;
+    const flatOut = { ...cruising, throttle: 1 };
+    for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
+      stepRace(state, straight, [
+        { ...flatOut, steer: -0.5 },
+        { ...flatOut, steer: 0.5 },
+      ]);
+    }
+    expect(behind.speed).toBeGreaterThan(8);
+    expect(ahead.speed).toBeGreaterThan(8);
+  });
+
   it("a pileup throws each rider at most once a tick", () => {
     const { rear, state, stopped } = pileup(1);
     const crashes = ride(state, 0.5, (events) =>
