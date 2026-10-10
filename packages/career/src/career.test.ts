@@ -4,6 +4,7 @@ import { bikeAt, rivals, weaponAt } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
+import { MAX_STAMINA } from "@racer/sim/state";
 import type { RaceState, RiderInput, RiderState } from "@racer/sim/state";
 import { arm } from "@racer/sim/weapons";
 import { roadAtLevel } from "@racer/track/road";
@@ -40,6 +41,7 @@ import { levels, policeLevels, roadList } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
 const TICKS = 60;
+const TRUCE_SECONDS = 3;
 const road = compileTrack({
   ...ridgeRoad,
   sections: [{ climb: 0, length: 9000, turnDegrees: 0 }],
@@ -136,10 +138,10 @@ const crashOut = (race: Entered): void => {
   ride(race, 20, () => [{ ...flatOut, steer: 1, throttle: 0.5 }]);
 };
 
-const getArrested = (race: Entered): void => {
+const getArrested = (race: Entered, racer: RivalId | "player" = "player") => {
   const copIndex = race.setup.field.length + 1;
   const cop = race.state.riders[copIndex];
-  const player = riderOf(race, "player");
+  const arrested = riderOf(race, racer);
   if (!cop) {
     throw new Error("The race has no cop.");
   }
@@ -147,18 +149,135 @@ const getArrested = (race: Entered): void => {
   cop.s = 150;
   cop.x = road.plan.laneWidth / 2;
   cop.speed = 22;
-  player.s = 200;
-  player.speed = 15;
+  arrested.s = 200;
+  arrested.speed = 15;
   const inputs = race.state.riders.map(() => ({ ...neutralInput }));
   ride(race, 1 / TICKS, () => inputs);
-  player.stamina = 0;
-  ride(race, 30, () => {
+  arrested.stamina = 0;
+  for (
+    let tick = 0;
+    tick < 30 * TICKS && arrested.mode !== "busted";
+    tick += 1
+  ) {
     const copInput = inputs[copIndex];
     if (copInput) {
       pilotInput(race.state, road, copIndex, copInput);
     }
-    return inputs;
-  });
+    ride(race, 1 / TICKS, () => inputs);
+  }
+  cop.parked = true;
+  cop.speed = 0;
+  cop.s = road.length / 2;
+  cop.x = road.roadHalfWidth + 1.1;
+};
+
+const idle: RiderInput = { ...neutralInput, throttle: 0.5 };
+
+const knockDown = (race: Entered, rival: RivalId, times: number): void => {
+  const me = riderOf(race, "player");
+  const them = riderOf(race, rival);
+  const themIndex = race.setup.field.indexOf(rival) + 1;
+  for (const other of race.setup.field) {
+    riderOf(race, other).s = other === rival ? 50 : 400 + themIndex;
+  }
+  me.s = 50;
+  me.speed = 30;
+  them.speed = 30;
+  let downs = 0;
+  let wasRiding = false;
+  for (let tick = 0; tick < 60 * TICKS && downs < times; tick += 1) {
+    const riding = them.mode === "riding";
+    if (riding) {
+      them.stamina = wasRiding ? them.stamina : 10;
+      them.x = 1.8;
+      them.s = me.s;
+      me.x = 0.3;
+    }
+    downs += wasRiding && !riding ? 1 : 0;
+    wasRiding = riding;
+    const inputs = race.state.riders.map(() => neutralInput);
+    inputs[0] = { ...idle, punch: riding && tick % 40 === 0 };
+    inputs[themIndex] = idle;
+    stepRace(race.state, road, inputs);
+    recordTick(race.log, race.state, race.setup);
+  }
+};
+
+const rivalIn = (setup: CareerRaceSetup, rival: RivalId) =>
+  setup.rivals[setup.field.indexOf(rival)];
+
+const takeWeaponFrom = (race: Entered, rival: RivalId): void => {
+  const me = riderOf(race, "player");
+  const them = riderOf(race, rival);
+  const themIndex = race.setup.field.indexOf(rival) + 1;
+  for (const other of race.setup.field) {
+    riderOf(race, other).s = 400;
+  }
+  me.s = 50;
+  me.speed = 30;
+  them.speed = 30;
+  for (let tick = 0; tick < TICKS; tick += 1) {
+    me.x = 0.3;
+    them.x = 1.8;
+    them.s = me.s;
+    const inputs = race.state.riders.map(() => neutralInput);
+    inputs[0] = { ...idle, kick: tick === 0 };
+    inputs[themIndex] = idle;
+    stepRace(race.state, road, inputs);
+    recordTick(race.log, race.state, race.setup);
+  }
+};
+
+const photoFinishOver = (race: Entered, rival: RivalId): void => {
+  const chaser = riderOf(race, rival);
+  const me = riderOf(race, "player");
+  const inputs = race.state.riders.map(() => neutralInput);
+  inputs[0] = flatOut;
+  inputs[race.setup.field.indexOf(rival) + 1] = flatOut;
+  me.s = road.length - 60;
+  me.x = 1.8;
+  me.speed = 40;
+  chaser.s = road.length - 72;
+  chaser.x = -1.8;
+  chaser.speed = 40;
+  ride(race, 10, () => inputs);
+};
+
+const attacksOnThePlayer = (career: CareerState, rival: RivalId): number => {
+  let attacks = 0;
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const setup = setupFor(career, "slag-row", seed, road);
+    const state = createRace(setup);
+    const index = setup.field.indexOf(rival) + 1;
+    const inputs = state.riders.map(() => ({ ...neutralInput }));
+    const input = inputs[index];
+    const [me] = state.riders;
+    const them = state.riders[index];
+    if (!(input && me && them)) {
+      throw new Error(`${rival} is not in the race with seed ${seed}.`);
+    }
+    for (const other of setup.field) {
+      const rider = state.riders[setup.field.indexOf(other) + 1];
+      if (rider) {
+        rider.s = 400;
+      }
+    }
+    for (let tick = 0; tick < (TRUCE_SECONDS + 30) * TICKS; tick += 1) {
+      me.s = 50;
+      me.x = 0.3;
+      me.speed = 30;
+      me.stamina = MAX_STAMINA;
+      them.s = 50;
+      them.x = 1.8;
+      them.speed = 30;
+      pilotInput(state, road, index, input);
+      stepRace(state, road, inputs);
+      attacks += state.events.filter(
+        (event) => event.kind === "attack" && event.rider === index
+      ).length;
+    }
+  }
+  return attacks;
 };
 
 type Step =
@@ -374,8 +493,11 @@ const wreckTimes = (career: CareerState, times: number): Settlement[] => {
   const settlements: Settlement[] = [];
   let current = career;
   for (let wreck = 0; wreck < times; wreck += 1) {
-    const start = startRace(current, "slag-row", wreck + 1);
-    const settlement = quitRace(start.career);
+    const race = enter(current, "slag-row", wreck + 1);
+    const settlement = quitRace(
+      race.career,
+      outcomeOf(race.state, race.setup, race.log)
+    );
     settlements.push(settlement);
     current = settlement.career;
   }
@@ -514,6 +636,11 @@ describe("the rewarded ad", () => {
   });
 });
 
+const topPoints = (career: CareerState): number[] =>
+  seasonBoard(career)
+    .map((row) => row.points)
+    .slice(0, 8);
+
 describe("leaving a race", () => {
   it("a reload in the middle of a race settles it as a wreck once and only once", () => {
     const racing = enter(newCareer(3), "ridge-road").career;
@@ -549,18 +676,47 @@ describe("leaving a race", () => {
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const once = settleRace(race.career, outcome);
     const twice = settleRace(once.career, outcome);
-    expect([once.career.cash, twice.career.cash, twice.ledger]).toStrictEqual([
-      3000,
-      3000,
-      null,
+    expect([once.career.cash, once.settled]).toStrictEqual([3000, true]);
+    expect(twice).toStrictEqual({
+      career: once.career,
+      ledger: null,
+      reason: "noActiveRace",
+      settled: false,
+    });
+  });
+
+  it("a result from an earlier race cannot settle a later one on the same road with the same seed", () => {
+    const first = enter(newCareer(3), "slag-row", 7);
+    sprint(first, 1);
+    const won = outcomeOf(first.state, first.setup, first.log);
+    const paid = settleRace(first.career, won);
+    const second = enter(paid.career, "slag-row", 7);
+    const replayed = settleRace(second.career, won);
+    sprint(second, 1);
+    const repeat = settle(second);
+    expect([first.setup.seed, won.raceId]).toStrictEqual([
+      second.setup.seed,
+      1,
     ]);
+    expect(replayed).toStrictEqual({
+      career: second.career,
+      ledger: null,
+      reason: "wrongRace",
+      settled: false,
+    });
+    expect([
+      paid.career.cash,
+      replayed.career.cash,
+      replayed.career.activeRace?.raceId,
+      repeat.career.cash,
+    ]).toStrictEqual([3000, 3000, 2, 3750]);
   });
 
   it("quitting from the pause menu costs the repair bill and still scores the riders left racing", () => {
     const race = enter(newCareer(3), "slag-row");
     ride(race, 5, () => race.state.riders.map(() => flatOut));
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const settled = settleRace(race.career, outcome);
+    const settled = quitRace(race.career, outcome);
     const board = seasonBoard(settled.career);
     expect([
       outcome.result,
@@ -572,6 +728,39 @@ describe("leaving a race", () => {
       8, 7, 6, 5, 4, 3, 2, 0,
     ]);
     expect(settled.career.season.player.points).toBe(0);
+  });
+
+  it("quitting after a fight still scores the season and the rival remembers the fight, and a reload remembers nothing", () => {
+    const race = enter(newCareer(3), "slag-row");
+    knockDown(race, "dee-santangelo", 1);
+    ride(race, 2, () => race.state.riders.map(() => flatOut));
+    const quit = quitRace(
+      race.career,
+      outcomeOf(race.state, race.setup, race.log)
+    );
+    const reloaded = resumeCareer(race.career);
+    expect([ledgerOf(quit), ledgerOf(reloaded)]).toMatchObject([
+      { cashAfter: 1100, prize: 0, repair: 400, result: "quit" },
+      { cashAfter: 1100, prize: 0, repair: 400, result: "quit" },
+    ]);
+    expect([topPoints(quit.career), topPoints(reloaded.career)]).toStrictEqual([
+      [8, 7, 6, 5, 4, 3, 2, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+    ]);
+    expect([
+      quit.career.memory["dee-santangelo"].knockedDownByPlayer,
+      quit.career.record.knockdowns,
+      quit.career.board[0]?.kind,
+      reloaded.career.memory["dee-santangelo"].knockedDownByPlayer,
+      reloaded.career.record.knockdowns,
+      reloaded.career.board[0]?.kind,
+    ]).toStrictEqual([1, 1, "wentDown", 0, 0, "leftRace"]);
+    expect(
+      preRaceLine(quit.career, setupFor(quit.career, "slag-row", 8, road))
+    ).toStrictEqual({
+      rival: "dee-santangelo",
+      text: rivalLines["dee-santangelo"].grudgeTaunt,
+    });
   });
 
   it("nothing that happens after the player finishes changes the result", () => {
@@ -832,40 +1021,19 @@ describe("the field", () => {
   });
 });
 
-const idle: RiderInput = { ...neutralInput, throttle: 0.5 };
-
-const knockDown = (race: Entered, rival: RivalId, times: number): void => {
-  const me = riderOf(race, "player");
-  const them = riderOf(race, rival);
-  const themIndex = race.setup.field.indexOf(rival) + 1;
-  for (const other of race.setup.field) {
-    riderOf(race, other).s = other === rival ? 50 : 400 + themIndex;
-  }
-  me.s = 50;
-  me.speed = 30;
-  them.speed = 30;
-  let downs = 0;
-  let wasRiding = false;
-  for (let tick = 0; tick < 60 * TICKS && downs < times; tick += 1) {
-    const riding = them.mode === "riding";
-    if (riding) {
-      them.stamina = wasRiding ? them.stamina : 10;
-      them.x = 1.8;
-      them.s = me.s;
-      me.x = 0.3;
-    }
-    downs += wasRiding && !riding ? 1 : 0;
-    wasRiding = riding;
-    const inputs = race.state.riders.map(() => neutralInput);
-    inputs[0] = { ...idle, punch: riding && tick % 40 === 0 };
-    inputs[themIndex] = idle;
-    stepRace(race.state, road, inputs);
-    recordTick(race.log, race.state, race.setup);
-  }
+const afterMooseIsBusted = (playerAhead: number) => {
+  const race = enter(newCareer(2), "slag-row");
+  riderOf(race, "player").s = 200 + playerAhead;
+  getArrested(race, "moose-kowalczyk");
+  sprint(race, 1);
+  const { career } = settle(race);
+  return {
+    blamed: career.memory["moose-kowalczyk"].bustedNearPlayer,
+    line: preRaceLine(career, setupFor(career, "slag-row", 8, road)),
+    note: career.board.find((note) => note.kind === "busted"),
+    unblamed: career.memory["moose-kowalczyk"].busted,
+  };
 };
-
-const rivalIn = (setup: CareerRaceSetup, rival: RivalId) =>
-  setup.rivals[setup.field.indexOf(rival)];
 
 describe("memory", () => {
   it("a rival the player knocked down twice holds a grudge next race and opens with the grudge taunt", () => {
@@ -897,23 +1065,25 @@ describe("memory", () => {
     ]);
   });
 
-  it("one knockdown earns the grudge taunt and more aggression but not yet the grudge", () => {
-    const race = enter(newCareer(2), "slag-row");
-    knockDown(race, "moose-kowalczyk", 1);
-    sprint(race, 1);
-    const { career } = settle(race);
-    const next = setupFor(career, "slag-row", 8, road);
+  it("a rival knocked down once attacks the player more often next race, and one beaten cleanly attacks less often", () => {
+    const fresh = newCareer(2);
+    const fought = enter(fresh, "slag-row");
+    knockDown(fought, "dee-santangelo", 1);
+    sprint(fought, 1);
+    const sore = settle(fought).career;
+    const clean = enter(fresh, "slag-row");
+    sprint(clean, 1);
+    const respectful = settle(clean).career;
+    const usual = attacksOnThePlayer(fresh, "dee-santangelo");
+    expect(usual).toBeGreaterThan(20);
+    expect(attacksOnThePlayer(sore, "dee-santangelo")).toBeGreaterThan(usual);
+    expect(attacksOnThePlayer(respectful, "dee-santangelo")).toBeLessThan(
+      usual
+    );
     expect([
-      career.memory["moose-kowalczyk"].aggressionBonus,
-      career.memory["moose-kowalczyk"].grudge,
-      rivalIn(next, "moose-kowalczyk")?.grudge,
-      preRaceLine(career, next)?.text,
-    ]).toStrictEqual([
-      0.1,
-      false,
-      undefined,
-      rivalLines["moose-kowalczyk"].grudgeTaunt,
-    ]);
+      rivalIn(setupFor(sore, "slag-row", 8, road), "dee-santangelo")?.grudge,
+      preRaceLine(sore, setupFor(sore, "slag-row", 8, road))?.text,
+    ]).toStrictEqual([undefined, rivalLines["dee-santangelo"].grudgeTaunt]);
   });
 
   it("a rival the player beat cleanly cools off, and one with no memory opens with the default taunt", () => {
@@ -933,16 +1103,7 @@ describe("memory", () => {
 
   it("a win by a wheel is remembered and pinned to the board", () => {
     const race = enter(newCareer(2), "slag-row");
-    const chaser = riderOf(race, "dee-santangelo");
-    const inputs = race.state.riders.map(() => neutralInput);
-    inputs[0] = flatOut;
-    inputs[race.setup.field.indexOf("dee-santangelo") + 1] = flatOut;
-    riderOf(race, "player").s = road.length - 60;
-    riderOf(race, "player").speed = 40;
-    chaser.s = road.length - 72;
-    chaser.x = -1.8;
-    chaser.speed = 40;
-    ride(race, 10, () => inputs);
+    photoFinishOver(race, "dee-santangelo");
     const settled = settle(race);
     expect(settled.career.memory["dee-santangelo"]).toMatchObject({
       aggressionBonus: 0.05,
@@ -961,25 +1122,7 @@ describe("memory", () => {
 
   it("a stolen weapon is carried into the next race and its owner wants it back", () => {
     const race = enter(newCareer(2), "slag-row");
-    const me = riderOf(race, "player");
-    const moose = riderOf(race, "moose-kowalczyk");
-    const mooseIndex = race.setup.field.indexOf("moose-kowalczyk") + 1;
-    for (const other of race.setup.field) {
-      riderOf(race, other).s = 400;
-    }
-    me.s = 50;
-    me.speed = 30;
-    moose.speed = 30;
-    for (let tick = 0; tick < TICKS; tick += 1) {
-      me.x = 0.3;
-      moose.x = 1.8;
-      moose.s = me.s;
-      const inputs = race.state.riders.map(() => neutralInput);
-      inputs[0] = { ...idle, kick: tick === 0 };
-      inputs[mooseIndex] = idle;
-      stepRace(race.state, road, inputs);
-      recordTick(race.log, race.state, race.setup);
-    }
+    takeWeaponFrom(race, "moose-kowalczyk");
     sprint(race, 1);
     const { career } = settle(race);
     const next = setupFor(career, "cinder-wash", 4, road);
@@ -999,6 +1142,154 @@ describe("memory", () => {
       weapon: "club",
     });
   });
+
+  it("a rival who punches the player into a car is put down for the knockdown, with the kilometre it happened at", () => {
+    const race = enter(newCareer(2), "slag-row");
+    const me = riderOf(race, "player");
+    const dee = riderOf(race, "dee-santangelo");
+    const deeIndex = race.setup.field.indexOf("dee-santangelo") + 1;
+    const inputs = race.state.riders.map(() => neutralInput);
+    inputs[0] = idle;
+    let struck = false;
+    for (let tick = 0; tick < TICKS && !struck; tick += 1) {
+      me.s = 2000;
+      me.x = 0.3;
+      me.speed = 30;
+      dee.s = 2000;
+      dee.x = 1.8;
+      dee.speed = 30;
+      inputs[deeIndex] = { ...idle, punch: tick === 0 };
+      stepRace(race.state, road, inputs);
+      recordTick(race.log, race.state, race.setup);
+      struck = race.state.events.some(
+        (event) => event.kind === "hit" && event.target === 0
+      );
+    }
+    race.state.cars.push({
+      cruiseSpeed: 0,
+      halfLength: 2.2,
+      halfWidth: 0.92,
+      height: 1.45,
+      paint: 0,
+      s: me.s + 6,
+      speed: 0,
+      x: me.x,
+    });
+    const crashes: string[] = [];
+    for (let tick = 0; tick < TICKS; tick += 1) {
+      stepRace(race.state, road, inputs);
+      recordTick(race.log, race.state, race.setup);
+      crashes.push(
+        ...race.state.events.flatMap((event) =>
+          event.kind === "crash" && event.rider === 0 ? [event.cause] : []
+        )
+      );
+    }
+    const outcome = outcomeOf(race.state, race.setup, race.log);
+    const { career } = quitRace(race.career, outcome);
+    const incidents = outcome.incidents.find(
+      (incident) => incident.rival === "dee-santangelo"
+    );
+    expect(crashes).toStrictEqual(["traffic"]);
+    expect(incidents?.knockedPlayerDown).toBe(1);
+    expect(incidents?.knockedPlayerDownKm).toBeCloseTo(2, 1);
+    expect(career.memory["dee-santangelo"]).toMatchObject({
+      aggressionBonus: -0.05,
+      knockedPlayerDown: 1,
+    });
+    expect(career.board[0]).toStrictEqual({
+      kind: "knockedPlayerDown",
+      km: incidents?.knockedPlayerDownKm,
+      rival: "dee-santangelo",
+      roadId: "slag-row",
+    });
+  });
+
+  it("a rival who crosses the line within half a second ahead won by a wheel, and one further ahead did not", () => {
+    const race = enter(newCareer(2), "slag-row");
+    const [clear, close] = race.setup.field;
+    if (!(clear && close)) {
+      throw new Error("The field is short.");
+    }
+    const inputs = race.state.riders.map(() => neutralInput);
+    inputs[0] = flatOut;
+    inputs[1] = flatOut;
+    inputs[2] = flatOut;
+    const placed = [
+      [riderOf(race, clear), 10],
+      [riderOf(race, close), 70],
+      [riderOf(race, "player"), 82],
+    ] as const;
+    for (const [rider, short] of placed) {
+      rider.s = road.length - short;
+      rider.speed = 40;
+    }
+    ride(race, 10, () => inputs);
+    const outcome = outcomeOf(race.state, race.setup, race.log);
+    const { career } = settle(race);
+    const finishOf = (racer: RivalId | "player") =>
+      outcome.placings.find((placing) => placing.racer === racer)?.finishTick ??
+      0;
+    expect(outcome.place).toBe(3);
+    expect(finishOf("player") - finishOf(close)).toBeLessThanOrEqual(30);
+    expect(finishOf("player") - finishOf(clear)).toBeGreaterThan(30);
+    expect([
+      career.memory[close].beatPlayerByAWheel,
+      career.memory[clear].beatPlayerByAWheel,
+    ]).toStrictEqual([1, 0]);
+    expect(career.board).toStrictEqual([
+      { kind: "photoFinish", loser: "player", winner: close },
+    ]);
+  });
+
+  it("a rival busted within 100 m of the player blames them, and one busted further off does not", () => {
+    const note = {
+      fine: 500,
+      kind: "busted",
+      rival: "moose-kowalczyk",
+      roadId: "slag-row",
+    };
+    expect(afterMooseIsBusted(90)).toStrictEqual({
+      blamed: 1,
+      line: {
+        rival: "moose-kowalczyk",
+        text: rivalLines["moose-kowalczyk"].grudgeTaunt,
+      },
+      note,
+      unblamed: 0,
+    });
+    expect(afterMooseIsBusted(115)).toStrictEqual({
+      blamed: 0,
+      line: {
+        rival: "moose-kowalczyk",
+        text: rivalLines["moose-kowalczyk"].taunt,
+      },
+      note,
+      unblamed: 1,
+    });
+  });
+
+  it("the board keeps the three newest notes with the newest first", () => {
+    const left = resumeCareer(enter(newCareer(2), "slag-row").career).career;
+    const race = enter(left, "slag-row");
+    const third = race.setup.field.find(
+      (rival) => rival !== "moose-kowalczyk" && rival !== "dee-santangelo"
+    );
+    if (!third) {
+      throw new Error("The field is short.");
+    }
+    takeWeaponFrom(race, "moose-kowalczyk");
+    knockDown(race, "dee-santangelo", 1);
+    photoFinishOver(race, third);
+    const { career } = settle(race);
+    expect(left.board).toStrictEqual([{ kind: "leftRace" }]);
+    expect(career.board).toMatchObject([
+      { kind: "photoFinish", loser: third, winner: "player" },
+      { kind: "wentDown", rival: "dee-santangelo" },
+      { kind: "weaponWanted", rival: "moose-kowalczyk" },
+    ]);
+    expect(career.board).toHaveLength(3);
+  });
 });
 
 describe("a bust", () => {
@@ -1009,11 +1300,23 @@ describe("a bust", () => {
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const settled = settleRace(race.career, outcome);
     expect(outcome).toMatchObject({
-      arrest: { fine: 500, officer: "wendell-haverty", weapon: "chain" },
+      arrest: {
+        fine: 500,
+        km: expect.closeTo(0.2, 1),
+        officer: "wendell-haverty",
+        weapon: "chain",
+      },
       place: 8,
       result: "busted",
     });
-    expect(outcome.arrest?.km).toBeCloseTo(0.2, 1);
+    expect(settled.career.lastResult?.summary.bust).toStrictEqual({
+      fine: 500,
+      km: outcome.arrest?.km,
+      line: bustedLine("wendell-haverty", race.setup.seed),
+      officer: "wendell-haverty",
+      officerName: "Deputy Wendell Haverty",
+      weapon: "chain",
+    });
     expect(ledgerOf(settled)).toMatchObject({
       cashAfter: 1000,
       fine: 500,
@@ -1027,6 +1330,40 @@ describe("a bust", () => {
     expect(officerLines["wendell-haverty"]).toContain(
       bustedLine("wendell-haverty", race.setup.seed)
     );
+  });
+
+  it("the ticket names the spot on the road where the rider lay, not the verge they were moved to", () => {
+    const race = enter(newCareer(2), "hollow-pine-road");
+    const player = riderOf(race, "player");
+    let lay = { s: player.bodyS, x: player.bodyX };
+    const copIndex = race.setup.field.length + 1;
+    const cop = race.state.riders[copIndex];
+    const inputs = race.state.riders.map(() => ({ ...neutralInput }));
+    const copInput = inputs[copIndex];
+    if (!(cop && copInput)) {
+      throw new Error("The race has no cop.");
+    }
+    cop.parked = false;
+    cop.s = 150;
+    cop.x = road.plan.laneWidth / 2;
+    cop.speed = 22;
+    player.s = 200;
+    player.speed = 15;
+    player.stamina = 0;
+    for (let tick = 0; tick < 30 * TICKS && !race.log.outcome; tick += 1) {
+      lay = { s: player.bodyS, x: player.bodyX };
+      pilotInput(race.state, road, copIndex, copInput);
+      stepRace(race.state, road, inputs);
+      recordTick(race.log, race.state, race.setup);
+    }
+    const { arrest, km } = outcomeOf(race.state, race.setup, race.log);
+    expect(Math.abs((arrest?.km ?? 0) * 1000 - lay.s)).toBeLessThan(0.2);
+    expect(Math.abs((arrest?.x ?? 9) - lay.x)).toBeLessThan(0.2);
+    expect(km).toBe(arrest?.km);
+    expect([
+      Math.abs(arrest?.x ?? 9) < road.roadHalfWidth,
+      Math.abs(player.bodyX) > road.roadHalfWidth,
+    ]).toStrictEqual([true, true]);
   });
 });
 
@@ -1132,6 +1469,49 @@ describe("race seeds", () => {
   });
 });
 
+type Json = null | boolean | number | string | Json[] | JsonRecord;
+
+interface JsonRecord {
+  readonly [key: string]: Json;
+}
+
+const isJsonRecord = (value: Json): value is JsonRecord =>
+  Object(value) === value && !Array.isArray(value);
+
+const withField = (node: Json, path: readonly string[], value: Json): Json => {
+  const [key, ...rest] = path;
+  if (key === undefined) {
+    return value;
+  }
+  if (Array.isArray(node)) {
+    return node.map((item, index) =>
+      String(index) === key ? withField(item, rest, value) : item
+    );
+  }
+  if (!isJsonRecord(node)) {
+    throw new Error(`The save has nothing at ${key}.`);
+  }
+  return { ...node, [key]: withField(node[key] ?? null, rest, value) };
+};
+
+const corrupted = (career: CareerState, path: string, value: Json): string => {
+  const save: Json = JSON.parse(serialiseCareer(career));
+  return JSON.stringify(withField(save, path.split("."), value));
+};
+
+const verdictOn = (save: string): string => {
+  const result = parseCareer(save);
+  return result.ok ? "loaded" : `${result.error.kind}:${result.error.field}`;
+};
+
+const loaded = (career: CareerState): CareerState => {
+  const save = parseCareer(serialiseCareer(career));
+  if (!save.ok) {
+    throw new Error(`The save did not load: ${save.error.field}.`);
+  }
+  return save.career;
+};
+
 describe("the save", () => {
   it("a career round-trips through its save text", () => {
     const careers = [
@@ -1139,42 +1519,253 @@ describe("the save", () => {
       seasonAt(decent, 5).end,
       seasonAt(weak, 3).start,
       enter(seasonAt(decent, 2).start, "cinder-wash").career,
+      play(newCareer(2), { ends: "busted", roadId: "slag-row" }).career,
+      play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
     ];
     expect(
       careers.map((career) => parseCareer(serialiseCareer(career)))
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a corrupt save is rejected with the reason and never throws", () => {
+  it("text that is not a save, or a save from another version, is rejected with the reason", () => {
     const good = seasonAt(decent, 2).end;
-    const text = serialiseCareer(good);
-    const errors = [
-      text.slice(0, -40),
-      "[]",
-      serialiseCareer({ ...good, version: 1 }).replace(
-        '"version":1',
-        '"version":2'
-      ),
-      text.replace('"level":3', '"level":9'),
-      text.replace(`"cash":${good.cash}`, '"cash":"lots"'),
-      text.replace(`"bikeId":"${good.bikeId}"`, '"bikeId":"rocket"'),
-      text.replace('"weaponHits":0', '"weaponHits":4'),
-      text.replace('"gameOver":false', '"gameOver":0'),
-    ].map((save) => {
-      const result = parseCareer(save);
-      return result.ok
-        ? "loaded"
-        : `${result.error.kind}:${result.error.field}`;
-    });
-    expect(errors).toStrictEqual([
+    expect([
+      verdictOn(serialiseCareer(good).slice(0, -40)),
+      verdictOn("[]"),
+      verdictOn('"a save"'),
+      verdictOn(corrupted(good, "version", 2)),
+    ]).toStrictEqual([
+      "notJson:",
       "notJson:",
       "notJson:",
       "wrongVersion:version",
+    ]);
+  });
+
+  it("a save with a value of the wrong kind or out of range is rejected with the field", () => {
+    const good = seasonAt(decent, 2).end;
+    const cases: readonly (readonly [string, Json])[] = [
+      ["level", 9],
+      ["cash", "lots"],
+      ["bikeId", "rocket"],
+      ["weaponHits", 4],
+      ["gameOver", 0],
+      ["garage.0", "rocket"],
+      ["record.starts", -1],
+      ["story.envelope", "burned"],
+      ["memory.juno-kade.aggressionBonus", 2],
+      ["board.0.kind", "graffiti"],
+      ["lastResult.ledger.cashAfter", "lots"],
+      ["lastResult.ledger.result", "won"],
+      ["lastResult.summary.rows.0.name", 7],
+      ["lastResult.summary.rows.0.fate", "vanished"],
+      ["lastResult.summary", null],
+    ];
+    expect(
+      cases.map(([path, value]) => verdictOn(corrupted(good, path, value)))
+    ).toStrictEqual([
       "invalid:level",
       "invalid:cash",
       "invalid:bikeId",
       "invalid:weaponHits",
       "invalid:gameOver",
+      "invalid:garage.0",
+      "invalid:record.starts",
+      "invalid:story.envelope",
+      "invalid:memory.juno-kade.aggressionBonus",
+      "invalid:board.0",
+      "invalid:lastResult.ledger.cashAfter",
+      "invalid:lastResult.ledger.result",
+      "invalid:lastResult.summary.rows.0.name",
+      "invalid:lastResult.summary.rows.0.fate",
+      "invalid:lastResult.summary",
     ]);
+  });
+
+  it("an object that cannot be read as text, in place of any field, is an error value and never a throw", () => {
+    const good = seasonAt(decent, 2).end;
+    const poison: Json = { toString: 1, valueOf: 1 };
+    const fields = Object.keys(good).filter((field) => field !== "version");
+    const verdicts = fields.map((field) =>
+      verdictOn(corrupted(good, field, poison))
+    );
+    expect(verdictOn(corrupted(good, "version", poison))).toBe(
+      "wrongVersion:version"
+    );
+    expect(
+      verdicts.map((verdict, index) =>
+        verdict.startsWith(`invalid:${fields[index]}`)
+      )
+    ).toStrictEqual(fields.map(() => true));
+    expect(verdictOn(JSON.stringify(poison))).toBe("wrongVersion:version");
+  });
+
+  it("a road or a racer the game does not have is rejected by name instead of being dropped", () => {
+    const good = seasonAt(decent, 2).end;
+    expect([
+      verdictOn(corrupted(good, "qualified.1.moon-road", 1)),
+      verdictOn(corrupted(good, "season.player.lastAhead.nobody", 1)),
+    ]).toStrictEqual([
+      "invalid:qualified.1.moon-road",
+      "invalid:season.player.lastAhead.nobody",
+    ]);
+  });
+
+  it("a save that contradicts itself is rejected with the field that does not fit", () => {
+    const racing = enter(seasonAt(decent, 2).start, "cinder-wash").career;
+    const settled = seasonAt(decent, 2).end;
+    const { starts } = settled.record;
+    expect([
+      verdictOn(corrupted(racing, "activeRace.bikeId", "ostra-nera-1000")),
+      verdictOn(corrupted(racing, "gameOver", true)),
+      verdictOn(corrupted(racing, "activeRace.raceId", 1)),
+      verdictOn(corrupted(racing, "activeRace.level", 1)),
+      verdictOn(
+        corrupted(settled, "activeRace", {
+          bikeId: settled.bikeId,
+          level: settled.level,
+          raceId: starts,
+          roadId: "slag-row",
+          seed: 1,
+          started: true,
+        })
+      ),
+      verdictOn(
+        corrupted(settled, "season.player.lastAhead.juno-kade", starts + 1)
+      ),
+      verdictOn(corrupted(settled, "lastResult.summary.raceId", starts + 1)),
+      verdictOn(corrupted(settled, "memory.juno-kade.sharedRace", starts + 1)),
+      verdictOn(corrupted(settled, "bikeId", "ostra-nera-1000")),
+    ]).toStrictEqual([
+      "inconsistent:activeRace.bikeId",
+      "inconsistent:gameOver",
+      "inconsistent:activeRace.raceId",
+      "inconsistent:activeRace.level",
+      "inconsistent:lastResult",
+      "inconsistent:season.player.lastAhead.juno-kade",
+      "inconsistent:lastResult.summary.raceId",
+      "inconsistent:memory.juno-kade",
+      "inconsistent:garage",
+    ]);
+  });
+});
+
+describe("the last result", () => {
+  it("a refresh during the finish animation still has every number Results shows", () => {
+    const race = enter(newCareer(3), "slag-row");
+    sprint(race, 2);
+    const settled = settle(race);
+    const stored = loaded(settled.career).lastResult;
+    const [winner, ...others] = race.setup.field;
+    if (!(stored && winner)) {
+      throw new Error("The save holds no result.");
+    }
+    const [first, second, third] = stored.summary.rows;
+    expect(stored.ledger).toStrictEqual(ledgerOf(settled));
+    expect(stored.ledger).toMatchObject({
+      cashAfter: 2500,
+      cashBefore: 1500,
+      fine: 0,
+      gameOver: false,
+      levelUp: null,
+      line: { rival: winner, text: rivalLines[winner].beatYou },
+      place: 2,
+      prize: 1000,
+      qualified: true,
+      repair: 0,
+      repeat: false,
+      repossessed: null,
+    });
+    expect(stored.summary).toMatchObject({
+      bust: null,
+      rows: [
+        {
+          bikeId: bikeAt(rivals[winner], 1),
+          fate: "finished",
+          name: rivals[winner].name,
+          place: 1,
+          prize: 1500,
+          racer: winner,
+        },
+        {
+          bikeId: "halden-wren-400",
+          fate: "finished",
+          name: "You",
+          place: 2,
+          prize: 1000,
+          racer: "player",
+        },
+        ...others.toReversed().map((rival, index) => ({
+          fate: "racing",
+          finishTick: -1,
+          name: rivals[rival].name,
+          place: index + 3,
+          prize: [700, 400, 250, 150, 100, 50][index],
+          racer: rival,
+        })),
+      ],
+      wreck: null,
+    });
+    expect([
+      (first?.finishTick ?? 0) > 0,
+      (second?.finishTick ?? 0) > (first?.finishTick ?? 0),
+      (third?.metresLeft ?? 0) > 8000,
+    ]).toStrictEqual([true, true, true]);
+  });
+
+  it("holds the wreck, the level-up, and the repossession, and is cleared when the next race starts", () => {
+    const race = enter(newCareer(2), "slag-row");
+    crashOut(race);
+    const { km } = outcomeOf(race.state, race.setup, race.log);
+    const wrecked = settle(race);
+    const four = playAll(
+      newCareer(5),
+      roadList.slice(0, 4).map((entry) => ({ place: 3, roadId: entry.id }))
+    );
+    const promoted = play(four, { place: 1, roadId: "ridge-road" });
+    const broke = lastOf(
+      wreckTimes(lastOf(wreckTimes(newCareer(1), 4)).career, 3)
+    );
+    const next = startRace(promoted.career, "slag-row", 3);
+    expect(km).toBeGreaterThan(0.3);
+    expect(loaded(wrecked.career).lastResult).toMatchObject({
+      ledger: { repair: 400, result: "wrecked" },
+      summary: { wreck: { bikeId: "halden-wren-400", km } },
+    });
+    expect(loaded(promoted.career).lastResult?.ledger.levelUp).toStrictEqual({
+      bikes: ["ostra-sette-750", "brack-stoker-800"],
+      level: 2,
+    });
+    expect(loaded(broke.career).lastResult?.ledger).toMatchObject({
+      cashAfter: 500,
+      repossessed: { bikeId: "halden-wren-400", tradeIn: 1800 },
+    });
+    expect([
+      promoted.career.lastResult?.summary.raceId,
+      next.career.lastResult,
+      next.career.activeRace?.raceId,
+    ]).toStrictEqual([5, null, 6]);
+  });
+
+  it("carries the incidents Results prints under a rival's row", () => {
+    const race = enter(newCareer(2), "slag-row");
+    takeWeaponFrom(race, "moose-kowalczyk");
+    knockDown(race, "dee-santangelo", 1);
+    sprint(race, 1);
+    const incidents = loaded(settle(race).career).lastResult?.summary.incidents;
+    const about = (rival: RivalId) =>
+      incidents?.find((incident) => incident.rival === rival);
+    expect(about("moose-kowalczyk")).toMatchObject({
+      knockedDownByPlayer: 0,
+      weaponTakenByPlayer: "club",
+    });
+    expect(about("dee-santangelo")).toMatchObject({
+      knockedDownByPlayer: 1,
+      weaponTakenByPlayer: "none",
+    });
+    expect(about("dee-santangelo")?.knockdownTick).toBeGreaterThan(
+      about("moose-kowalczyk")?.weaponTakenTick ?? 0
+    );
+    expect(about("dee-santangelo")?.knockdownKm).toBeGreaterThan(0.05);
   });
 });
