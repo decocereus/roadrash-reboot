@@ -110,7 +110,7 @@ export const weapons = {
     reachX: 2.8,
     shove: 4.6,
     steerFactor: 0.85,
-    strikeTick: 30,
+    strikeTick: 12,
     ticks: 42,
   },
 } as const satisfies Record<WeaponKind, StrikeSpec>;

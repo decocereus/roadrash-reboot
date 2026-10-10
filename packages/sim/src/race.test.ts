@@ -1668,7 +1668,42 @@ const staminaLostTo = (weapon: "sign" | "club"): number => {
   return MAX_STAMINA - me.stamina;
 };
 
+const ticksToLand = (weapon: WeaponKind, steer: number): number => {
+  const { moose, me, state } = sideBySide();
+  arm(moose, weapon);
+  me.x = 0.6;
+  let pressed = -1;
+  let landed = -1;
+  for (let tick = 0; tick < TICK_RATE; tick += 1) {
+    moose.x = 1.8;
+    moose.s = me.s;
+    stepRace(state, straight, [
+      { ...cruising, steer },
+      cruising,
+      pressing("punch", tick === 0),
+    ]);
+    for (const event of state.events) {
+      if (event.kind === "attack" && event.rider === 2) {
+        pressed = state.tick;
+      }
+      if (event.kind === "hit" && event.rider === 2) {
+        landed = state.tick;
+      }
+    }
+  }
+  return landed < 0 ? -1 : landed - pressed;
+};
+
 describe("the new weapons", () => {
+  it("a stop sign lands half a second after the press, so a rider who steers away at once is out of reach, and a club lands before they can be", () => {
+    expect({
+      club: ticksToLand("club", 0),
+      clubDodged: ticksToLand("club", -1),
+      sign: ticksToLand("sign", 0),
+      signDodged: ticksToLand("sign", -1),
+    }).toStrictEqual({ club: 9, clubDodged: 9, sign: 30, signDodged: -1 });
+  });
+
   it("a pool cue breaks after three hits", () => {
     const { moose, me, state } = sideBySide();
     arm(moose, "cue");

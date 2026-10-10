@@ -301,22 +301,24 @@ Rivals ride these same specs. Each rider needs their own `BikeSpec`; section 14 
 
 The four existing weapons stay as they are. Two new ones fill gaps the set does not cover: a long, fragile reach weapon and a slow, huge hit.
 
-| Strike | Damage | Shove | Reach (along × across) | Hits | ticks / strikeTick / cooldown | First appears |
-| --- | --: | --: | --- | --: | --- | --- |
-| Fist | 14 | 1.6 | 1.9 × 2.2 m |  | 16 / 10 / 30 | Level 1 |
-| Boot | 22 | 3.2 | 1.9 × 2.2 m |  | 26 / 16 / 45 | Level 1 |
-| Club | 28 | 3.8 | 2.2 × 2.6 m | 6 | 22 / 13 / 40 | Level 1 (Moose) |
-| Chain | 20 | 2.2 | 2.6 × 3.1 m | 8 | 22 / 13 / 38 | Level 1 (Dee) |
-| Crowbar | 22 | 2.8 | 2.2 × 2.6 m | 4 | 20 / 12 / 36 | Level 1 (Mags) |
-| Baton | 18 | 2.4 | 2.2 × 2.6 m | 12 | 20 / 12 / 36 | Level 1 (police, Lyle) |
-| **Pool cue** | 15 | 1.8 | 3.0 × 3.4 m | 3 | 18 / 11 / 30 | Level 2 (Coach) |
-| **Stop sign** | 32 | 4.6 | 2.4 × 2.8 m | 3 | 42 / 30 / 66 | Level 3 (Gus) |
+| Strike | Damage | Shove | Reach (along × across) | Hits | ticks / strikeTick / cooldown | Lands after | First appears |
+| --- | --: | --: | --- | --: | --- | --: | --- |
+| Fist | 14 | 1.6 | 1.9 × 2.2 m |  | 16 / 10 / 30 | 6 ticks | Level 1 |
+| Boot | 22 | 3.2 | 1.9 × 2.2 m |  | 26 / 16 / 45 | 10 ticks | Level 1 |
+| Club | 28 | 3.8 | 2.2 × 2.6 m | 6 | 22 / 13 / 40 | 9 ticks | Level 1 (Moose) |
+| Chain | 20 | 2.2 | 2.6 × 3.1 m | 8 | 22 / 13 / 38 | 9 ticks | Level 1 (Dee) |
+| Crowbar | 22 | 2.8 | 2.2 × 2.6 m | 4 | 20 / 12 / 36 | 8 ticks | Level 1 (Mags) |
+| Baton | 18 | 2.4 | 2.2 × 2.6 m | 12 | 20 / 12 / 36 | 8 ticks | Level 1 (police, Lyle) |
+| **Pool cue** | 15 | 1.8 | 3.0 × 3.4 m | 3 | 18 / 11 / 30 | 7 ticks | Level 2 (Coach) |
+| **Stop sign** | 32 | 4.6 | 2.4 × 2.8 m | 3 | 42 / 12 / 66 | 30 ticks | Level 3 (Gus) |
+
+These are the numbers in `packages/sim/src/weapons.ts`. `ticks` is how long the swing lasts. `strikeTick` is the number of ticks left in the swing when the hit lands, so a strike lands `ticks − strikeTick` ticks after the press, which is the "Lands after" column, and `strikeTick` is the follow-through. `cooldown` counts from the press, so the wait after a swing ends is `cooldown − ticks`. Every weapon leaves its holder's steering alone except the stop sign, whose holder has 85% of the bike's `steerResponse`.
 
 The pool cue has the longest reach in the game: 3.4 m across, against 3.1 m for the chain and 2.2 m for a fist. That is still not a full lane. Lanes are 3.4 to 3.8 m wide, so two riders in the middle of neighbouring lanes are at least 3.4 m apart and the cue does not connect. The holder has to close laterally first, by moving toward the lane line, and then needs far less of a move than any other weapon asks for. It snaps after three hits, so it is a weapon to steal, use, and lose.
 
-The stop sign is the biggest hit in the game and the slowest. Its `strikeTick` is 30, so the wind-up is 30 ticks, exactly the half second that a watchful rider can use to steer away. The swing lasts 42 ticks and the cooldown is 66, which keeps the same 12 ticks of follow-through and the same 24-tick wait after the swing that the earlier 30 / 18 / 54 timing had. It reads at a distance because it is a red octagon on a pole.
+The stop sign is the biggest hit in the game and the slowest. Its swing lasts 42 ticks with a `strikeTick` of 12, so the wind-up is 30 ticks, exactly the half second that a watchful rider can use to steer away: a rider 1.2 m across who steers away on the press is out of reach when it lands, and the same rider does not get clear of a club. The follow-through is 12 ticks and the cooldown is 66, so the wait after the swing is 24 ticks. It reads at a distance because it is a red octagon on a pole.
 
-Both are `WeaponKind` values (`"cue"`, `"sign"`) with entries in `weapons.ts`. The sim foundation already has them, with placeholder numbers to be tuned to this table (section 14).
+Both are `WeaponKind` values (`"cue"`, `"sign"`) with entries in `weapons.ts`, and their numbers are the ones in this table.
 
 ### By level
 
@@ -729,7 +731,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 12 | Paint palette | `paint` stays an index, but into a palette of twelve rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | First career release |
 | 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |
 | 14 | Side-contact cap | The cap on speed lost to side contact described in section 9. Needed before eight bikes share a grid. | First career release |
-| 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built, tune later. The sim foundation already has both; their numbers are placeholders until tuned to the table in section 7, including the sign's 30-tick wind-up. |
+| 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 42, `strikeTick` 12. |
 | 16 | Last-slot grid start | The player starts in the last grid slot, behind the seven rivals. | Built, tune later. The sim foundation already has it; row spacing and the opening pack are tuned after the measurement in section 9. |
 | 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8 at the spots in `tracks.md`. | Later |
 | 18 | Region scenery kits | A `kit` field on `TrackPlan` so `scatterProps` places palms, cacti, streetlights, or pines instead of the same trees everywhere. | Later |
@@ -738,7 +740,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 
 - **No roadblocks.** The Roadblocks column in section 8 reads 0 at every level until item 17 ships. Dee still turns ally at level 3 and still texts, but her texts carry no distance, the Route Board shows no tip line, and the HUD shows no blue tick. Vic's level-3 card uses its alternate copy (`screens.md`).
 - **One scenery kit.** Every road uses today's trees, poles, rocks, and chevrons with its region's palette and fog. The roads are told apart by colour, layout, and traffic until item 18 ships.
-- **Cue and sign as built.** Coach carries the cue from level 2 and Gus the sign from level 3 with the placeholder numbers. Tuning them does not change a save.
+- **Cue and sign as built.** Coach carries the cue from level 2 and Gus the sign from level 3 with the numbers in section 7. Tuning them does not change a save.
 - **Balance measurements** (bust rates in section 8, the pack in section 9) are done on the first-release build and may change numbers in this document, not its rules.
 
 ## 15. Originality check

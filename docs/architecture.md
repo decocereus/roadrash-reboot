@@ -55,7 +55,7 @@ Weapons are numbers in `weapons.ts`, the same way handling is a `BikeSpec`. A ri
 
 The pool cue has the longest reach, 3.4 m across against the chain's 3.1 m, which is still short of a lane width. It swings again soonest and snaps after three hits. The stop sign is the biggest hit and the slowest to come round again, 66 ticks against the club's 40, and a rider holding it has 85% of their bike's steering response.
 
-`strikeTick` counts the ticks left in the swing when the hit lands, so a strike lands `ticks − strikeTick` ticks after the press. The design reads the stop sign's 42 / 30 / 66 as a 30-tick wind-up; the simulation lands it after 12 and follows through for 30. That difference is open.
+`strikeTick` counts the ticks left in the swing when the hit lands, so a strike lands `ticks − strikeTick` ticks after the press. The stop sign's swing is 42 ticks with a `strikeTick` of 12, so it lands 30 ticks after the press, the half-second wind-up the design asks for, and follows through for 12.
 
 A kick that lands on an armed rider hands the weapon to the kicker if the kicker is unarmed. Who was armed is read when the strikes are aimed, so two riders who kick each other on the same tick end the same way whichever is listed first: the unarmed one takes the weapon and keeps it. A swing that lands on that tick still costs the weapon a hit, and if two unarmed riders kick the same holder the nearer one gets it. A thrown rider drops whatever they hold. Rivals start with the weapon in their profile and a full count of hits. The player starts with the weapon and the hits left that the race setup carries over from the last race.
 
