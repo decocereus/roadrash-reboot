@@ -631,6 +631,35 @@ describe("police", () => {
   });
 });
 
+const parked: RiderInput = { ...cruising, brake: 1, throttle: 0 };
+
+describe("the end of a patrol", () => {
+  it("a cop that reaches the end of the track pulls off the road and the traffic behind it drives on", () => {
+    const state = createRace(track, 7, 0, 1);
+    const cop = riderAt(state, 1);
+    cop.s = track.length - 79;
+    cop.x = track.plan.laneWidth / 2;
+    cop.speed = 3;
+    const follower = state.cars.find((car) => car.speed > 0);
+    if (!follower) {
+      throw new Error("The race has no traffic going the cop's way.");
+    }
+    follower.s = cop.s - 40;
+    const copInput = { ...cruising };
+    let slowest = follower.speed;
+    for (let tick = 0; tick < 12 * TICK_RATE; tick += 1) {
+      pilotInput(state, track, 1, copInput);
+      stepRace(state, track, [parked, copInput]);
+      slowest = Math.min(slowest, follower.speed);
+    }
+    expect(cop.mode).toBe("riding");
+    expect(cop.speed).toBe(0);
+    expect(Math.abs(cop.x)).toBeGreaterThan(track.roadHalfWidth);
+    expect(slowest).toBeGreaterThan(10);
+    expect(follower.s).toBeGreaterThan(cop.s + 50);
+  });
+});
+
 const column = (riderCount: number) => {
   const state = createRace(straight, 1, riderCount - 1, 0);
   for (const rider of state.riders) {

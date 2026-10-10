@@ -4,7 +4,12 @@ import type { Track } from "@racer/track/track";
 
 import { nearestRival } from "./combat.ts";
 import { isDown, PATROL_SPEED, PULL_OVER } from "./police.ts";
-import { clamp, curvePushOf, lateralSpeedLimit } from "./state.ts";
+import {
+  BIKE_HALF_WIDTH,
+  clamp,
+  curvePushOf,
+  lateralSpeedLimit,
+} from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 
 const CORNER_CONFIDENCE = 0.72;
@@ -24,6 +29,7 @@ const CATCH_UP_RATE = 0.8;
 const ALONGSIDE = 1.5;
 const BODY_CREEP_SPEED = 3;
 const PATROL_END_MARGIN = 80;
+const PULL_OVER_CRAWL = 6;
 
 const cornerSpeedLimit = (
   state: RaceState,
@@ -135,7 +141,11 @@ const copAim = (
   cop: RiderState
 ): Aim | undefined => {
   if (cop.s > track.length - PATROL_END_MARGIN) {
-    return { speed: 0, x: track.roadHalfWidth + PULL_OVER };
+    const offRoad = cop.x > track.roadHalfWidth + BIKE_HALF_WIDTH;
+    return {
+      speed: offRoad ? 0 : PULL_OVER_CRAWL,
+      x: track.roadHalfWidth + PULL_OVER,
+    };
   }
   const target = state.riders[cop.chase];
   if (!target) {
