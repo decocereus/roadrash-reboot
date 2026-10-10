@@ -8,6 +8,7 @@ import { BUST_FINE } from "./police.ts";
 import { createRace, standings, stepRace } from "./race.ts";
 import { MAX_STAMINA, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput } from "./state.ts";
+import { arm, disarm } from "./weapons.ts";
 
 const track = compileTrack(ridgeRoad);
 const quietTrack = compileTrack({ ...ridgeRoad, trafficPerKilometre: 0 });
@@ -724,6 +725,68 @@ describe("simultaneous strikes", () => {
     expect(me.stamina).toBe(bruiser.stamina);
     expect(me.stamina).toBeLessThan(MAX_STAMINA);
   });
+});
+
+const duel = (
+  unarmedIndex: number,
+  inputsAt: (tick: number) => { unarmed: RiderInput; holder: RiderInput }
+) => {
+  const state = createRace(straight, 1, 1, 0);
+  const unarmed = riderAt(state, unarmedIndex);
+  const holder = riderAt(state, 1 - unarmedIndex);
+  disarm(unarmed);
+  arm(holder, "chain");
+  for (const rider of state.riders) {
+    rider.s = 50;
+    rider.speed = 30;
+  }
+  for (let tick = 0; tick < TICK_RATE; tick += 1) {
+    unarmed.x = 0.3;
+    holder.x = 1.8;
+    holder.s = unarmed.s;
+    const inputs = inputsAt(tick);
+    stepRace(
+      state,
+      straight,
+      unarmedIndex === 0
+        ? [inputs.unarmed, inputs.holder]
+        : [inputs.holder, inputs.unarmed]
+    );
+  }
+  return {
+    holder: [holder.weapon, holder.weaponHits],
+    unarmed: [unarmed.weapon, unarmed.weaponHits],
+  };
+};
+
+describe("simultaneous weapon grabs", () => {
+  it.each([{ unarmedIndex: 0 }, { unarmedIndex: 1 }])(
+    "an unarmed rider and a chain holder who kick each other on the same tick leave the chain with the unarmed one (unarmed is rider $unarmedIndex)",
+    ({ unarmedIndex }) => {
+      const after = duel(unarmedIndex, (tick) => ({
+        holder: pressing("kick", tick === 0),
+        unarmed: pressing("kick", tick === 0),
+      }));
+      expect(after).toStrictEqual({
+        holder: ["none", 0],
+        unarmed: ["chain", 8],
+      });
+    }
+  );
+
+  it.each([{ unarmedIndex: 0 }, { unarmedIndex: 1 }])(
+    "a chain that lands on the tick it is kicked away has one hit fewer (unarmed is rider $unarmedIndex)",
+    ({ unarmedIndex }) => {
+      const after = duel(unarmedIndex, (tick) => ({
+        holder: pressing("punch", tick === 1),
+        unarmed: pressing("kick", tick === 0),
+      }));
+      expect(after).toStrictEqual({
+        holder: ["none", 0],
+        unarmed: ["chain", 7],
+      });
+    }
+  );
 });
 
 const pilotPack = (states: readonly RaceState[], seconds: number) => {

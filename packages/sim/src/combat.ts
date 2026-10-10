@@ -78,7 +78,7 @@ const takeWeapon = (
   targetIndex: number,
   target: RiderState
 ): void => {
-  if (rider.weapon !== "none" || target.weapon === "none") {
+  if (target.weapon === "none") {
     return;
   }
   rider.weapon = target.weapon;
@@ -97,6 +97,7 @@ export interface Strike {
   readonly side: number;
   readonly target: number;
   readonly weapon: WeaponKind;
+  readonly takesWeapon: boolean;
 }
 
 const finishSwing = (
@@ -117,7 +118,7 @@ const finishSwing = (
 const landHit = (
   state: RaceState,
   riderIndex: number,
-  { attack, side, target: targetIndex, weapon }: Strike
+  { attack, side, takesWeapon, target: targetIndex, weapon }: Strike
 ): void => {
   const rider = state.riders[riderIndex];
   const target = state.riders[targetIndex];
@@ -139,10 +140,7 @@ const landHit = (
     target: targetIndex,
     weapon,
   });
-  if (weapon !== "none" && rider.weapon === weapon) {
-    rider.weaponHits -= 1;
-  }
-  if (attack === "kick") {
+  if (takesWeapon) {
     takeWeapon(state, riderIndex, rider, targetIndex, target);
   }
 };
@@ -179,13 +177,73 @@ const aimStrike = (
   return {
     attack: rider.attack,
     side: rider.attackSide,
+    takesWeapon: false,
     target,
     weapon: rider.attack === "swing" ? rider.weapon : "none",
   };
 };
 
-export const aimStrikes = (state: RaceState): (Strike | undefined)[] =>
-  state.riders.map((rider, index) => aimStrike(state, index, rider));
+const reachTo = (state: RaceState, riderIndex: number, strike: Strike) => {
+  const rider = state.riders[riderIndex];
+  const target = state.riders[strike.target];
+  if (!rider || !target) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return Math.abs(target.s - rider.s) + Math.abs(target.x - rider.x);
+};
+
+const covets = (
+  state: RaceState,
+  riderIndex: number,
+  strike: Strike | undefined
+): strike is Strike =>
+  strike?.attack === "kick" &&
+  state.riders[riderIndex]?.weapon === "none" &&
+  (state.riders[strike.target]?.weaponHits ?? 0) > 0;
+
+const pickThieves = (
+  state: RaceState,
+  strikes: readonly (Strike | undefined)[]
+): (Strike | undefined)[] => {
+  const thieves = new Map<number, number>();
+  for (const [index, strike] of strikes.entries()) {
+    if (covets(state, index, strike)) {
+      const rival = thieves.get(strike.target) ?? -1;
+      const rivalStrike = strikes[rival];
+      if (
+        !rivalStrike ||
+        reachTo(state, index, strike) < reachTo(state, rival, rivalStrike)
+      ) {
+        thieves.set(strike.target, index);
+      }
+    }
+  }
+  return strikes.map((strike, index) =>
+    strike && thieves.get(strike.target) === index
+      ? { ...strike, takesWeapon: true }
+      : strike
+  );
+};
+
+const wearWeapons = (
+  state: RaceState,
+  strikes: readonly (Strike | undefined)[]
+): void => {
+  for (const [index, strike] of strikes.entries()) {
+    const rider = state.riders[index];
+    if (rider && strike && strike.weapon !== "none") {
+      rider.weaponHits -= 1;
+    }
+  }
+};
+
+export const settleStrikes = (state: RaceState): (Strike | undefined)[] => {
+  const strikes = state.riders.map((rider, index) =>
+    aimStrike(state, index, rider)
+  );
+  wearWeapons(state, strikes);
+  return pickThieves(state, strikes);
+};
 
 export const stepAttack = (
   state: RaceState,
