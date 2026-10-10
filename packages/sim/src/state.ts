@@ -7,6 +7,7 @@ export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
 export const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
+export const PLAYER_RIDER = 0;
 
 export type BikeClass = "featherweight" | "middleweight" | "heavyweight";
 

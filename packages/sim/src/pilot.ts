@@ -9,6 +9,7 @@ import {
   clamp,
   curvePushOf,
   lateralSpeedLimit,
+  PLAYER_RIDER,
 } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 import { kick, weapons } from "./weapons.ts";
@@ -289,7 +290,7 @@ const aggressionToward = (
     return 0;
   }
   const boost =
-    target === state.riders[rider.grudge] ? rider.aggressionBoost : 0;
+    target === state.riders[PLAYER_RIDER] ? rider.aggressionBoost : 0;
   return rider.profile.aggression + boost;
 };
 

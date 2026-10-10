@@ -1576,7 +1576,11 @@ describe("the new weapons", () => {
   });
 });
 
-const hitsByTheRival = (rival: RivalSetup, bystanderAcross: number) => {
+const hitsByTheRival = (
+  rival: RivalSetup,
+  bystanderAcross: number,
+  playerAcross = -1.2
+) => {
   const setup = defaultSetup(straight, 1);
   const [, other] = setup.rivals;
   if (!other) {
@@ -1596,7 +1600,7 @@ const hitsByTheRival = (rival: RivalSetup, bystanderAcross: number) => {
       rider.speed = 30;
       rider.stamina = MAX_STAMINA;
     }
-    riderAt(state, 0).x = -1.2;
+    riderAt(state, 0).x = playerAcross;
     riderAt(state, 1).x = 0;
     riderAt(state, 2).x = bystanderAcross;
     pilotInput(state, straight, 1, rivalInput);
@@ -1623,14 +1627,37 @@ describe("grudges", () => {
     expect(new Set(grudging)).toStrictEqual(new Set([2]));
   });
 
-  it("a rival who is otherwise peaceful attacks the rider it has a grudge against, and only that rider", () => {
+  it("a rival who is otherwise peaceful attacks the player it has a score to settle with, and nobody else", () => {
     const [dee] = defaultSetup(straight, 1).rivals;
     if (!dee) {
       throw new Error("The default field has no rival.");
     }
-    const vengeful = { ...dee, aggression: 0, aggressionBoost: 1, grudge: 2 };
-    expect(hitsByTheRival(vengeful, 2).length).toBeGreaterThan(0);
-    expect(hitsByTheRival(vengeful, 12)).toStrictEqual([]);
+    const sore = { ...dee, aggression: 0, aggressionBoost: 1 };
+    const alongside = hitsByTheRival(sore, 2);
+    expect(alongside.length).toBeGreaterThan(0);
+    expect(new Set(alongside)).toStrictEqual(new Set([0]));
+    expect(hitsByTheRival(sore, 2, -12)).toStrictEqual([]);
+  });
+
+  it("a rival who has gone soft on the player leaves them alone and still fights the others", () => {
+    const [dee] = defaultSetup(straight, 1).rivals;
+    if (!dee) {
+      throw new Error("The default field has no rival.");
+    }
+    const friendly = { ...dee, aggression: 1, aggressionBoost: -1 };
+    const others = hitsByTheRival(friendly, 2, -12);
+    expect(hitsByTheRival(friendly, 12)).toStrictEqual([]);
+    expect(others.length).toBeGreaterThan(0);
+    expect(new Set(others)).toStrictEqual(new Set([2]));
+  });
+
+  it("a grudge picks the target and leaves the rival's aggression toward that rider as it was", () => {
+    const [dee] = defaultSetup(straight, 1).rivals;
+    if (!dee) {
+      throw new Error("The default field has no rival.");
+    }
+    const peaceful = { ...dee, aggression: 0, aggressionBoost: 1, grudge: 2 };
+    expect(hitsByTheRival(peaceful, 2, -12)).toStrictEqual([]);
   });
 });
 
