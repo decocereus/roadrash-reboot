@@ -22,6 +22,7 @@ import type {
   RiderInput,
   RiderState,
   RivalSetup,
+  WeaponKind,
 } from "./state.ts";
 import { arm, disarm } from "./weapons.ts";
 
@@ -1100,6 +1101,16 @@ const pushedWideInSwitchback = (bike: BikeSpec, kmh?: number): boolean => {
   return widest > 0;
 };
 
+const steerShare = (bike: BikeSpec): number => {
+  const state = alone(straight, bike);
+  const rider = player(state);
+  rider.speed = 40;
+  hold(state, straight, { ...cruising, steer: 1, throttle: 0.6 }, 0.05);
+  return (
+    rider.lateralSpeed / (bike.lateralSpeed + bike.lateralSpeedPerSpeed * 40)
+  );
+};
+
 const topSpeedKmh = (bike: BikeSpec): number => {
   const state = alone(straight, bike);
   hold(state, straight, { ...cruising, throttle: 1 }, 60);
@@ -1115,16 +1126,44 @@ describe("the bike catalogue", () => {
       wren: pushedWideInSwitchback(wren),
     }).toStrictEqual({ sesta: true, wren: false });
     expect({
-      sestaAbove: pushedWideInSwitchback(sesta, 194 * 1.05),
-      sestaBelow: pushedWideInSwitchback(sesta, 194 * 0.95),
-      wrenAbove: pushedWideInSwitchback(wren, 222 * 1.05),
-      wrenBelow: pushedWideInSwitchback(wren, 222 * 0.95),
+      sestaAbove: pushedWideInSwitchback(sesta, 199 * 1.05),
+      sestaBelow: pushedWideInSwitchback(sesta, 199 * 0.95),
+      wrenAbove: pushedWideInSwitchback(wren, 229 * 1.05),
+      wrenBelow: pushedWideInSwitchback(wren, 229 * 0.95),
     }).toStrictEqual({
       sestaAbove: true,
       sestaBelow: false,
       wrenAbove: true,
       wrenBelow: false,
     });
+  });
+
+  it.each([
+    { bike: bikes["gutter-pup-250"], kmh: 204 },
+    { bike: bikes["halden-kite-500"], kmh: 215 },
+    { bike: bikes["ostra-sette-750"], kmh: 194 },
+    { bike: bikes["brack-stoker-800"], kmh: 186 },
+    { bike: bikes["halden-meridian-900"], kmh: 194 },
+    { bike: bikes["brack-anvil-1100"], kmh: 175 },
+    { bike: bikes["ostra-nera-1000"], kmh: 185 },
+  ])(
+    "the $bike.name holds the Switchback up to about $kmh km/h",
+    ({ bike, kmh }) => {
+      expect({
+        above: pushedWideInSwitchback(bike, kmh * 1.05),
+        below: pushedWideInSwitchback(bike, kmh * 0.95),
+      }).toStrictEqual({ above: true, below: false });
+    }
+  );
+
+  it("the Gutter Pup answers the bars more slowly than any other bike, and the Wren fastest", () => {
+    const settled = Object.values(bikes).map((bike) => ({
+      id: bike.id,
+      share: steerShare(bike),
+    }));
+    const slowest = settled.toSorted((left, right) => left.share - right.share);
+    expect(slowest.at(0)?.id).toBe("gutter-pup-250");
+    expect(slowest.at(-1)?.id).toBe("halden-wren-400");
   });
 
   it("every Heavyweight is faster flat out than the Sesta, and the Featherweights are slower", () => {
@@ -1334,13 +1373,13 @@ const steerAway = (weapon: "none" | "sign", seconds: number): number => {
   return rider.lateralSpeed;
 };
 
-const reaches = (weapon: "cue" | "club"): boolean => {
+const reaches = (weapon: WeaponKind, across = 2.8): boolean => {
   const { moose, state } = sideBySide();
   arm(moose, weapon);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < TICK_RATE; tick += 1) {
     riderAt(state, 0).x = -1;
-    moose.x = 1.8;
+    moose.x = across - 1;
     moose.s = riderAt(state, 0).s;
     stepRace(state, straight, [
       cruising,
@@ -1350,6 +1389,21 @@ const reaches = (weapon: "cue" | "club"): boolean => {
     events.push(...state.events);
   }
   return events.some((event) => event.kind === "hit");
+};
+
+const ticksBetweenHits = (weapon: WeaponKind): number => {
+  const { moose, me, state } = sideBySide();
+  arm(moose, weapon);
+  const landedAt: number[] = [];
+  brawl(state, 3, () => {
+    me.stamina = MAX_STAMINA;
+    if (state.events.some((event) => event.kind === "hit")) {
+      landedAt.push(state.tick);
+    }
+    return [cruising, cruising, pressing("punch", true)];
+  });
+  const [first = 0, second = 0] = landedAt;
+  return second - first;
 };
 
 const staminaLostTo = (weapon: "sign" | "club"): number => {
@@ -1364,7 +1418,7 @@ const staminaLostTo = (weapon: "sign" | "club"): number => {
 };
 
 describe("the new weapons", () => {
-  it("a pool cue breaks after five hits", () => {
+  it("a pool cue breaks after three hits", () => {
     const { moose, me, state } = sideBySide();
     arm(moose, "cue");
     const events = brawl(state, 10, () => {
@@ -1373,7 +1427,7 @@ describe("the new weapons", () => {
     });
     expect(
       events.filter((event) => event.kind === "hit" && event.weapon === "cue")
-    ).toHaveLength(5);
+    ).toHaveLength(3);
     expect(events).toContainEqual({
       kind: "weaponBroken",
       rider: 2,
@@ -1387,6 +1441,22 @@ describe("the new weapons", () => {
       club: false,
       cue: true,
     });
+  });
+
+  it("a pool cue has the longest reach, 3.3 m across where a chain falls short, and still not a full lane", () => {
+    expect({
+      chain: reaches("chain", 3.3),
+      cue: reaches("cue", 3.3),
+      cueAcrossTheLane: reaches("cue", 3.5),
+    }).toStrictEqual({ chain: false, cue: true, cueAcrossTheLane: false });
+  });
+
+  it("a stop sign comes round again more slowly than any other weapon, and a pool cue fastest", () => {
+    expect({
+      club: ticksBetweenHits("club"),
+      cue: ticksBetweenHits("cue"),
+      sign: ticksBetweenHits("sign"),
+    }).toStrictEqual({ club: 40, cue: 30, sign: 66 });
   });
 
   it("a stop sign hits harder than a club and its holder answers the bars more slowly", () => {
