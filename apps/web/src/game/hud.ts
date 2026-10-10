@@ -44,6 +44,8 @@ export interface HudState {
   readonly condition: number;
   readonly copDistance: number;
   readonly distanceLeft: number;
+  readonly roadName: string;
+  readonly roadLength: number;
   readonly busted: boolean;
   readonly wrecked: boolean;
   readonly fine: number;
@@ -69,6 +71,8 @@ export const idleHud: HudState = {
   riderCount: 1,
   rivalName: "",
   rivalStamina: 0,
+  roadLength: 0,
+  roadName: "",
   seconds: 0,
   speedKmh: 0,
   stamina: 100,

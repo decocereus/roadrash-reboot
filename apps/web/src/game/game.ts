@@ -22,8 +22,8 @@ import type {
   RiderState,
 } from "@racer/sim/state";
 import { strikeOf, weapons } from "@racer/sim/weapons";
-import { compileTrack } from "@racer/track/track";
-import { ridgeRoad } from "@racer/track/tracks/ridge-road";
+import { roadIds, trackFor } from "@racer/track/roads";
+import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
 import {
@@ -65,7 +65,7 @@ const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
 const BUSTED_SECONDS = 2.2;
 const WRECKED_SECONDS = 1.2;
-const COP_WARNING_RANGE = 80;
+const ROAD_LEVEL = 1;
 
 interface Pose {
   s: number;
@@ -142,11 +142,15 @@ const weaponName = (rider: RiderState): string =>
 const out = (rider: RiderState): boolean =>
   rider.mode === "busted" || rider.mode === "wrecked";
 
+const roadForTurn = (turn: number): Track =>
+  trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
+
 export function createGame(
   canvas: HTMLCanvasElement,
   onHud: (hud: HudState) => void
 ): GameHandle {
-  const track = compileTrack(ridgeRoad);
+  let roadTurn = 0;
+  let track = roadForTurn(roadTurn);
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     canvas,
@@ -156,7 +160,7 @@ export function createGame(
   let pixelRatio = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
   renderer.setPixelRatio(pixelRatio);
 
-  const world = createWorld(track);
+  let world = createWorld(track);
   const chase = createChaseCamera();
   const sound = createSound();
 
@@ -242,9 +246,24 @@ export function createGame(
     inputs = race.riders.map(() => freshInput());
   };
 
-  const loadRace = (nextPhase: GamePhase) => {
+  const takeNextRoad = () => {
+    roadTurn += 1;
+    const next = roadForTurn(roadTurn);
+    if (next === track) {
+      return;
+    }
+    dropViews();
+    world.dispose();
+    track = next;
+    world = createWorld(track);
+  };
+
+  const loadRace = (nextPhase: GamePhase, nextRoad: boolean) => {
     dropFleet();
     seed += 1;
+    if (nextRoad) {
+      takeNextRoad();
+    }
     race = createRace(defaultSetup(track, seed));
     fleet = createFleet(race.cars);
     world.scene.add(fleet.group);
@@ -266,7 +285,7 @@ export function createGame(
 
   const startRace = () => {
     sound.unlock();
-    loadRace("countdown");
+    loadRace("countdown", phase !== "attract");
   };
 
   const toggleMute = () => {
@@ -421,7 +440,7 @@ export function createGame(
       }
     }
     if (phase === "attract" && attractOver()) {
-      loadRace("attract");
+      loadRace("attract", true);
       return;
     }
     stepRace(race, track, inputs);
@@ -604,11 +623,6 @@ export function createGame(
       };
     });
 
-  const copDistance = (): number => {
-    const distance = chaserDistance(race, 0);
-    return distance < COP_WARNING_RANGE ? distance : -1;
-  };
-
   const report = () => {
     const me = player();
     const order = standings(race);
@@ -621,7 +635,7 @@ export function createGame(
       bikeName: me.bike.name,
       busted: me.mode === "busted",
       condition: me.condition / FULL_CONDITION,
-      copDistance: copDistance(),
+      copDistance: chaserDistance(race, 0),
       countdown: Math.ceil(countdown),
       crashes: me.crashes,
       distanceLeft: distanceLeft(track, me),
@@ -636,6 +650,8 @@ export function createGame(
       riderCount: order.length,
       rivalName: rival?.profile.name ?? "",
       rivalStamina: rival ? rival.stamina / MAX_STAMINA : 0,
+      roadLength: track.length,
+      roadName: track.plan.name,
       seconds:
         (me.finishTick >= 0 && phase === "finished"
           ? me.finishTick

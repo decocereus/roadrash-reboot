@@ -1,3 +1,5 @@
+import { regions } from "@racer/track/regions";
+import type { GroundColours, Region } from "@racer/track/regions";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
 import * as THREE from "three";
@@ -9,10 +11,10 @@ const ROAD_STEP = 2;
 const TERRAIN_STEP = 4;
 const TERRAIN_RINGS = [0, 1.5, 4, 9, 20, 45, 90, 160];
 const DASH_CYCLE = 12;
-const HORIZON = 0xc9_db_e8;
-const ZENITH = 0x3f_7f_d6;
+const SKY_RADIUS = 4000;
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
+const tint = new THREE.Color();
 
 function smoothstep(value: number): number {
   const clamped = Math.min(1, Math.max(0, value));
@@ -50,7 +52,10 @@ export function placeOnGround(
   target.y += groundLift(Math.abs(x) - track.roadHalfWidth, target.x, target.z);
 }
 
-function createRoadTexture(track: Track): THREE.CanvasTexture {
+function createRoadTexture(
+  track: Track,
+  asphalt: THREE.Color
+): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
@@ -61,11 +66,13 @@ function createRoadTexture(track: Track): THREE.CanvasTexture {
   const roadWidth = track.roadHalfWidth * 2;
   const across = (metres: number): number =>
     (0.5 + metres / roadWidth) * canvas.width;
-  context.fillStyle = "#3b3e44";
+  context.fillStyle = asphalt.getStyle();
   context.fillRect(0, 0, canvas.width, canvas.height);
   for (let speck = 0; speck < 9000; speck += 1) {
-    const shade = 46 + Math.floor(Math.random() * 34);
-    context.fillStyle = `rgb(${shade},${shade},${shade + 4})`;
+    context.fillStyle = tint
+      .copy(asphalt)
+      .multiplyScalar(0.78 + Math.random() * 0.58)
+      .getStyle();
     context.fillRect(
       Math.random() * canvas.width,
       Math.random() * canvas.height,
@@ -126,12 +133,23 @@ function buildRoadChunk(
 }
 
 const gravel = new THREE.Color(0x8c_7d_5e);
-const grassNear = new THREE.Color(0x6a_9a_3f);
-const grassFar = new THREE.Color(0x4c_7a_38);
-const grassDry = new THREE.Color(0x9a_a8_4a);
-const tint = new THREE.Color();
+
+interface Ground {
+  readonly near: THREE.Color;
+  readonly far: THREE.Color;
+  readonly patch: THREE.Color;
+}
+
+function groundOf(colours: GroundColours): Ground {
+  return {
+    far: new THREE.Color(colours.far),
+    near: new THREE.Color(colours.near),
+    patch: new THREE.Color(colours.patch),
+  };
+}
 
 function terrainColor(
+  ground: Ground,
   ring: number,
   worldX: number,
   worldZ: number
@@ -141,9 +159,9 @@ function terrainColor(
   }
   const patch = (rolling(worldX * 3.1, worldZ * 2.7) + 1.5) / 3;
   return tint
-    .copy(grassNear)
-    .lerp(grassFar, smoothstep((ring - 2) / 5))
-    .lerp(grassDry, patch * 0.35);
+    .copy(ground.near)
+    .lerp(ground.far, smoothstep((ring - 2) / 5))
+    .lerp(ground.patch, patch * 0.35);
 }
 
 function buildTerrainChunk(
@@ -151,6 +169,7 @@ function buildTerrainChunk(
   from: number,
   to: number,
   side: number,
+  ground: Ground,
   material: THREE.Material
 ): THREE.Mesh {
   const positions: number[] = [];
@@ -167,7 +186,7 @@ function buildTerrainChunk(
       placeOnTrack(track, s, side * (track.roadHalfWidth + distance), point);
       const lift = groundLift(distance, point.x, point.z);
       positions.push(point.x, point.y + lift, point.z);
-      const color = terrainColor(ring, point.x, point.z);
+      const color = terrainColor(ground, ring, point.x, point.z);
       colors.push(color.r, color.g, color.b);
     }
     if (s + TERRAIN_STEP <= to) {
@@ -388,14 +407,14 @@ function buildScenery(track: Track): THREE.Group {
   return scenery;
 }
 
-function buildSky(): THREE.Mesh {
-  const geometry = new THREE.SphereGeometry(4000, 24, 12);
+function buildSky(region: Region): THREE.Mesh {
+  const geometry = new THREE.SphereGeometry(SKY_RADIUS, 24, 12);
   const colors: number[] = [];
-  const low = new THREE.Color(HORIZON);
-  const high = new THREE.Color(ZENITH);
+  const low = new THREE.Color(region.skyHorizon);
+  const high = new THREE.Color(region.skyZenith);
   const position = geometry.getAttribute("position");
   for (let index = 0; index < position.count; index += 1) {
-    const height = Math.max(0, position.getY(index) / 4000);
+    const height = Math.max(0, position.getY(index) / SKY_RADIUS);
     tint.copy(low).lerp(high, smoothstep(height * 1.6));
     colors.push(tint.r, tint.g, tint.b);
   }
@@ -411,11 +430,11 @@ function buildSky(): THREE.Mesh {
   );
 }
 
-function buildMountains(): THREE.InstancedMesh {
+function buildMountains(region: Region): THREE.InstancedMesh {
   const count = 44;
   const mountains = new THREE.InstancedMesh(
     new THREE.ConeGeometry(1, 1, 5),
-    new THREE.MeshBasicMaterial({ color: 0x9d_b6_cc, fog: false }),
+    new THREE.MeshBasicMaterial({ color: region.backdrop, fog: false }),
     count
   );
   for (let index = 0; index < count; index += 1) {
@@ -442,16 +461,24 @@ export interface World {
 }
 
 export function createWorld(track: Track): World {
+  const region: Region = regions[track.plan.region];
+  const ground = groundOf(region.ground);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(HORIZON);
-  scene.fog = new THREE.Fog(HORIZON, 260, 2100);
-  scene.add(new THREE.HemisphereLight(0xe6_f1_ff, 0x6b_7a_4f, 1.7));
-  const sun = new THREE.DirectionalLight(0xff_f2_d6, 2.1);
+  scene.background = new THREE.Color(region.skyHorizon);
+  scene.fog = new THREE.Fog(region.skyHorizon, region.fogNear, region.fogFar);
+  scene.add(
+    new THREE.HemisphereLight(
+      region.skylight,
+      region.ground.near,
+      region.skyStrength
+    )
+  );
+  const sun = new THREE.DirectionalLight(region.sunlight, region.sunStrength);
   sun.position.set(0.5, 1, 0.3);
   scene.add(sun);
 
   const roadMaterial = new THREE.MeshLambertMaterial({
-    map: createRoadTexture(track),
+    map: createRoadTexture(track, new THREE.Color(region.asphalt)),
   });
   const terrainMaterial = new THREE.MeshLambertMaterial({
     flatShading: true,
@@ -461,7 +488,9 @@ export function createWorld(track: Track): World {
     const to = Math.min(track.endS, from + CHUNK_LENGTH);
     scene.add(buildRoadChunk(track, from, to, roadMaterial));
     for (const side of [-1, 1]) {
-      scene.add(buildTerrainChunk(track, from, to, side, terrainMaterial));
+      scene.add(
+        buildTerrainChunk(track, from, to, side, ground, terrainMaterial)
+      );
     }
   }
   scene.add(buildScenery(track));
@@ -472,12 +501,14 @@ export function createWorld(track: Track): World {
   }
   const plain = new THREE.Mesh(
     new THREE.CircleGeometry(4200, 32),
-    new THREE.MeshBasicMaterial({ color: 0x5d_86_4a })
+    new THREE.MeshBasicMaterial({
+      color: tint.copy(ground.near).lerp(ground.far, 0.5),
+    })
   );
   plain.rotation.x = -Math.PI / 2;
   plain.position.y = lowest - 24;
-  const sky = buildSky();
-  const mountains = buildMountains();
+  const sky = buildSky(region);
+  const mountains = buildMountains(region);
   scene.add(plain, sky, mountains);
 
   return {

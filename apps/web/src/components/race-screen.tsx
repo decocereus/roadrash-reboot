@@ -27,6 +27,8 @@ const bareNotices = new Set([
   "wrecked",
 ]);
 
+const COP_WARNING_RANGE = 80;
+
 function money(amount: number): string {
   return `$${amount.toLocaleString("en-US")}`;
 }
@@ -84,6 +86,12 @@ function distance(metres: number): string {
     : `${Math.round(metres / 10) * 10} m`;
 }
 
+function roadLine(hud: HudState): string {
+  return hud.roadName === ""
+    ? "Loading the road"
+    : `${hud.roadName} · ${distance(hud.roadLength)}`;
+}
+
 function Outcome({ hud }: { readonly hud: HudState }) {
   if (hud.busted || hud.wrecked) {
     return (
@@ -126,18 +134,20 @@ function Key({ children }: { readonly children: string }) {
 }
 
 function TitleCard({
+  road,
   ready,
   failure,
   onRide,
 }: {
+  readonly road: string;
   readonly ready: boolean;
   readonly failure: string;
   readonly onRide: () => void;
 }) {
   return (
     <section className="absolute bottom-10 left-6 max-w-sm sm:left-10">
-      <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">
-        Ridge Road · 4.2 km
+      <p className="text-primary numeric font-mono text-xs tracking-[0.3em] uppercase">
+        {road}
       </p>
       <h1 className="mt-2 text-6xl leading-none font-black tracking-tight italic sm:text-7xl">
         RUSHLINE
@@ -195,7 +205,7 @@ function Results({
   return (
     <section className="bg-card/85 notice-in absolute top-1/2 left-1/2 w-80 -translate-x-1/2 -translate-y-1/2 rounded-xl border p-6 backdrop-blur">
       <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">
-        Ridge Road
+        {hud.roadName}
       </p>
       <Outcome hud={hud} />
       <ol className="mt-4 space-y-1 text-sm">
@@ -241,7 +251,7 @@ function Dash({ hud }: { readonly hud: HudState }) {
           />
         </div>
         <p className="text-foreground/80 numeric mt-1 text-center font-mono text-[11px] tracking-[0.25em] uppercase drop-shadow">
-          {distance(hud.distanceLeft)} to go
+          {hud.roadName} · {distance(hud.distanceLeft)} to go
         </p>
       </div>
       <p className="numeric absolute top-4 right-6 font-mono text-xl font-semibold drop-shadow">
@@ -272,7 +282,9 @@ function Dash({ hud }: { readonly hud: HudState }) {
         </div>
       </div>
       {hud.copDistance >= 0 && hud.phase === "racing" && (
-        <p className="bg-destructive/85 numeric absolute top-24 right-6 animate-pulse rounded px-2 py-1 font-mono text-xs font-semibold tracking-[0.25em] text-white uppercase">
+        <p
+          className={`numeric absolute top-24 right-6 rounded px-2 py-1 font-mono text-xs font-semibold tracking-[0.25em] text-white uppercase ${hud.copDistance < COP_WARNING_RANGE ? "bg-destructive/85 animate-pulse" : "bg-background/60"}`}
+        >
           Police {Math.round(hud.copDistance)} m
         </p>
       )}
@@ -336,14 +348,19 @@ export function RaceScreen() {
   return (
     <main className="fixed inset-0 overflow-hidden bg-[#c9dbe8] select-none">
       <canvas
-        aria-label="Motorcycle race on Ridge Road"
+        aria-label={`Motorcycle race on ${hud.roadName || "the road"}`}
         className="block size-full"
         ref={canvasRef}
       />
       {hud.phase === "attract" && (
         <>
           <div className="from-background/80 via-background/30 pointer-events-none absolute inset-0 bg-gradient-to-tr to-transparent" />
-          <TitleCard failure={failure} onRide={ride} ready={ready} />
+          <TitleCard
+            failure={failure}
+            onRide={ride}
+            ready={ready}
+            road={roadLine(hud)}
+          />
         </>
       )}
       {(live || hud.phase === "finished") && <Dash hud={hud} />}

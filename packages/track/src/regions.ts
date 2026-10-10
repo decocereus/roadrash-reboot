@@ -28,6 +28,7 @@ export interface Region {
   readonly backdrop: number;
   readonly sunlight: number;
   readonly sunStrength: number;
+  readonly skylight: number;
   readonly skyStrength: number;
   readonly fogNear: number;
   readonly fogFar: number;
@@ -47,6 +48,7 @@ export const regions = {
     skyHorizon: 0xf1_d9_b0,
     skyStrength: 1.8,
     skyZenith: 0x4a_8f_d4,
+    skylight: 0xff_f0_d8,
     sunStrength: 2.4,
     sunlight: 0xff_e9_c2,
   },
@@ -62,6 +64,7 @@ export const regions = {
     skyHorizon: 0xc9_d3_cf,
     skyStrength: 1.9,
     skyZenith: 0x6f_8f_a6,
+    skylight: 0xdf_e6_e3,
     sunStrength: 1.1,
     sunlight: 0xe8_ee_ea,
   },
@@ -77,8 +80,9 @@ export const regions = {
     skyHorizon: 0xe0_8a_5c,
     skyStrength: 1.3,
     skyZenith: 0x3b_33_54,
-    sunStrength: 1.5,
-    sunlight: 0xff_b3_47,
+    skylight: 0xc4_b4_d2,
+    sunStrength: 1.2,
+    sunlight: 0xff_c8_94,
   },
   "salt-coast": {
     asphalt: 0x44_47_4b,
@@ -92,6 +96,7 @@ export const regions = {
     skyHorizon: 0xcf_e3_ec,
     skyStrength: 1.8,
     skyZenith: 0x3c_7f_cc,
+    skylight: 0xea_f4_fb,
     sunStrength: 2.2,
     sunlight: 0xf6_f8_ff,
   },
@@ -107,6 +112,7 @@ export const regions = {
     skyHorizon: 0xc9_db_e8,
     skyStrength: 1.7,
     skyZenith: 0x3f_7f_d6,
+    skylight: 0xe6_f1_ff,
     sunStrength: 2.1,
     sunlight: 0xff_f2_d6,
   },
