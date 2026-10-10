@@ -7,7 +7,7 @@ import { pilotInput } from "./pilot.ts";
 import { BUST_FINE, PATROL_SPEED } from "./police.ts";
 import { createRace, standings, stepRace } from "./race.ts";
 import { MAX_STAMINA, TICK_RATE } from "./state.ts";
-import type { RaceEvent, RaceState, RiderInput } from "./state.ts";
+import type { RaceEvent, RaceState, RiderInput, RiderState } from "./state.ts";
 import { arm, disarm } from "./weapons.ts";
 
 const track = compileTrack(ridgeRoad);
@@ -386,6 +386,27 @@ describe("a full race", () => {
   });
 });
 
+const raceIsOver = (rider: RiderState): boolean =>
+  rider.finishTick >= 0 || rider.mode === "busted";
+
+const raceThePack = (seed: number) => {
+  const state = createRace(track, seed);
+  const racers = state.riders.filter((rider) => rider.profile.role === "racer");
+  const inputs = state.riders.map(() => ({ ...cruising }));
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < 300 * TICK_RATE; tick += 1) {
+    for (const [index, input] of inputs.entries()) {
+      pilotInput(state, track, index, input);
+    }
+    stepRace(state, track, inputs);
+    events.push(...state.events);
+    if (racers.every((rider) => raceIsOver(rider))) {
+      break;
+    }
+  }
+  return { events, racers, state };
+};
+
 describe("the pack", () => {
   it("a punch drains stamina and enough of them knock the rival down", () => {
     const flat = compileTrack({
@@ -430,41 +451,42 @@ describe("the pack", () => {
     ).toBeTruthy();
   });
 
-  it("six riders all finish Ridge Road with a cop on patrol and the standings are ordered", () => {
-    const state = createRace(track, 4);
-    const racers = state.riders.filter(
-      (rider) => rider.profile.role === "racer"
+  it("six riders each finish Ridge Road or are busted by the cop on patrol and the standings are ordered", () => {
+    const { events, racers, state } = raceThePack(4);
+    const finishTicks = standings(state).map(
+      (index) => riderAt(state, index).finishTick
     );
-    expect(state.riders).toHaveLength(7);
-    const inputs = state.riders.map(() => ({
-      brake: 0,
-      kick: false,
-      punch: false,
-      steer: 0,
-      throttle: 0,
-    }));
-    const events: RaceEvent[] = [];
-    for (let tick = 0; tick < 300 * TICK_RATE; tick += 1) {
-      for (const [index, input] of inputs.entries()) {
-        pilotInput(state, track, index, input);
-      }
-      stepRace(state, track, inputs);
-      events.push(...state.events);
-      if (racers.every((rider) => rider.finishTick >= 0)) {
-        break;
-      }
-    }
+    const finished = finishTicks.filter((tick) => tick >= 0);
+    expect({
+      placed: finishTicks.length,
+      riders: state.riders.length,
+    }).toStrictEqual({ placed: 6, riders: 7 });
     expect(events.some((event) => event.kind === "pursuit")).toBeTruthy();
-    expect(racers.every((rider) => rider.finishTick >= 0)).toBeTruthy();
-    const order = standings(state);
-    expect(order).toHaveLength(6);
-    for (let place = 1; place < order.length; place += 1) {
-      const ahead = state.riders[order[place - 1] ?? 0];
-      const behind = state.riders[order[place] ?? 0];
-      expect(
-        (ahead?.finishTick ?? 0) <= (behind?.finishTick ?? 0)
-      ).toBeTruthy();
+    expect(racers.every((rider) => raceIsOver(rider))).toBeTruthy();
+    expect(finished.length).toBeGreaterThanOrEqual(3);
+    expect(finishTicks).toStrictEqual([
+      ...finished.toSorted((left, right) => left - right),
+      ...finishTicks.filter((tick) => tick < 0),
+    ]);
+  });
+
+  it("a cop chasing the pack through traffic does not ride into a car", () => {
+    const copsInTraffic: RaceEvent[] = [];
+    let batonHits = 0;
+    for (let seed = 1; seed <= 6; seed += 1) {
+      const { events, state } = raceThePack(seed);
+      const byCop = events.filter(
+        (event) => riderAt(state, event.rider).profile.role === "police"
+      );
+      copsInTraffic.push(
+        ...byCop.filter(
+          (event) => event.kind === "crash" && event.cause === "traffic"
+        )
+      );
+      batonHits += byCop.filter((event) => event.kind === "hit").length;
     }
+    expect(copsInTraffic).toStrictEqual([]);
+    expect(batonHits).toBeGreaterThan(0);
   });
 });
 
