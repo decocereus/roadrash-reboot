@@ -99,10 +99,10 @@ Handwriting on the board (Vic's notes, the marker on Polaroids) is drawn as part
 ## HUD style
 
 - No dashboard, no bezel, no dials. Text and bars float directly over the road with a 2 px `#0E0F12` outline and a soft shadow so they hold up against sky and asphalt.
-- Bars are flat rectangles with a 2 px `#0E0F12` border and square ends, 10 px tall for stamina and 6 px for bike condition. Stamina is green above 50, yellow to 25, red below.
+- Bars are flat rectangles with a 2 px `#0E0F12` border and square ends, 10 px tall for stamina and 6 px for bike condition. Stamina is green above 50, yellow to 25, red below. Bike condition is warm white `#F2EEE6` above 50, yellow to 25, red below. A bar changes colour at its threshold and holds that colour; it does not flash.
 - Weapon hits are pips: small solid rectangles in `#F2EEE6`, hollow when spent.
 - The rival tag is a `#17191F` plate at 85% opacity with the rival's bike colour as a 4 px left edge, their name in Saira, and their stamina bar. The speech tag is the same plate, wider, with the line in Inter.
-- The cop warning alternates `#2F6BFF` and `#E5312B` at 2 Hz. Nothing else on the HUD blinks.
+- The cop warning alternates `#2F6BFF` and `#E5312B` at 2 Hz. Nothing else on the HUD blinks. The position numeral turns yellow `#FFC531` for half a second when it changes and then returns to warm white, as one steady change of colour.
 - Notices are one or two words in Saira 800, yellow, centred at 30% of the screen height, on screen for 0.8 seconds, scaling from 110% to 100% as they appear.
 - Layout, strings, and data sources are in `screens.md`.
 
@@ -136,7 +136,9 @@ Each weapon is a distinct shape and colour so the player knows what a rival hold
 
 ## Regions
 
-Each region is a kit: a ground treatment, a near prop set scattered by `scatterProps`, a far backdrop, and set pieces placed at the road's signature moments from `tracks.md`. The compiler today scatters trees, poles, rocks, and chevrons for every road; a `kit` field on `TrackPlan` selects the set below.
+Each region is a kit: a ground treatment, a near prop set scattered by `scatterProps`, a far backdrop, and set pieces placed at the road's signature moments from `tracks.md`. The compiler today scatters trees, poles, rocks, and chevrons for every road; a `kit` field on `TrackPlan` selects the set below. The kits come after the first career release (`game-design.md` section 14). Until then every road uses today's scatter with its own palette, sky, and fog from this document.
+
+Every road is two lanes, one each way, with the same centre and edge lines. Regions differ in lane width, shoulder, verge, and what stands beside the road, not in lane count.
 
 ### Salt Coast (Breakwater Run)
 
@@ -155,7 +157,7 @@ Flat, enormous, and empty, with a red mesa at the end. Heat and distance.
 - **Ground.** Asphalt `#4B4640`, sun-baked and cracked at the edges. Sand `#C9925A`, dry lake bed `#E3CFA5`, mesa rock `#A8512E` with a darker band `#7C3A22`, scrub `#8C9A5B`.
 - **Near props.** Saguaro-like cacti with one or two arms (replaces tree), tumbleweeds, leaning wooden fence posts with wire, dead tyres, a cow skull on a post, billboards faded to pastel, cattle grid rails.
 - **Far backdrop.** Mesas in three flat layers fading to `#D8B48A`, a line of pylons, dust devils.
-- **Set pieces.** The dead gas station at the start with a toppled sign. The three washes, each marked by a yellow "DIP" sign and a line of white stones. The mesa hairpin with a wall of red rock on the inside and a long drop on the outside. The drive-in cinema at the finish, its blank screen `#EDE4D0` facing the road and a teal neon arrow `#3FB8AF`.
+- **Set pieces.** The dead gas station at the start with a toppled sign. The three washes, each marked by a yellow "DIP" sign and a line of white stones; the third, the Main Wash, is the one that launches and gets a second sign and a bleached cattle skull on its lip. The mesa hairpin with a wall of red rock on the inside and a long drop on the outside. The drive-in cinema at the finish, its blank screen `#EDE4D0` facing the road and a teal neon arrow `#3FB8AF`.
 - **Traffic.** Pickup trucks, a road train (the longest vehicle in the game), a dusty sedan.
 
 ### Kettle Woods (Hollow Pine Road)
@@ -171,9 +173,9 @@ A narrow road in a tall dark forest. The sky is a strip overhead and the next be
 
 ### Lowtown (Slag Row)
 
-An industrial port at dusk: brick, steel, and orange light. The widest road and the most traffic.
+An industrial port at dusk: brick, steel, and orange light. Two lanes like every other road, and the most traffic of any. It feels broad because the buildings stand 6 m back and the straights are long, not because the road is wider: its 3.5 m lanes are narrower than Cinder Wash's.
 
-- **Ground.** Asphalt `#2F3033` with lighter repair patches `#55585C`, tram rails, and painted lane arrows. Kerbs `#8A8C90`, pavement `#6E6F73`, brick `#7A3B2E`, steel `#3A3F47`, canal water `#2C4A52`.
+- **Ground.** Asphalt `#2F3033` with lighter repair patches `#55585C`, tram rails set into the two lanes, and painted arrows. Kerbs `#8A8C90`, pavement `#6E6F73`, brick `#7A3B2E`, steel `#3A3F47`, canal water `#2C4A52`.
 - **Near props.** Sodium streetlights `#FFB347` (replaces pole, with a warm pool of light on the road), brick warehouses with roller doors, shipping containers in `#B8432E`, `#2C6E8F`, and `#C99A2E`, chain-link fence, oil drums, traffic cones, bus shelters. Buildings replace trees: flat-roofed blocks set back 6 m from the road.
 - **Far backdrop.** Gantry cranes, smokestacks with slow smoke, the freeway on stilts, a skyline of lit windows.
 - **Set pieces.** The cranes over the start. The level crossing with striped barriers up and lights flashing. The underpass beneath the freeway (the Lowside's neon sign is visible on the left as you come out). The canal with moored barges. The drawbridge with its towers. The smelter gate at the finish, glowing orange inside.
@@ -200,7 +202,7 @@ The existing road: a two-lane mountain road climbing through meadow and rock to 
 7. **The world slows only once.** A knockdown the player causes gets 150 ms at 60% speed in the render only (the simulation does not slow). Nothing else uses slow motion.
 8. **Crash causes look different.** Traffic: the bike stops dead and the rider goes over the bars. Prop: the bike spins. Landing: both bounce. Combat: the rider goes sideways. Off-track: a long slide in a dust cloud.
 9. **Damage shows on the bike.** Below 50 condition the bike smokes lightly; below 25 it smokes dark and the fairing is cracked. A wreck is a clear event: the bike breaks into three pieces and stays down.
-10. **Police read at a distance.** White bike, blue panels, and a light bar that flashes blue and red at all times while pursuing. A roadblock cruiser's lights are visible from the full 150 m sightline.
+10. **Police read at a distance.** White bike, blue panels, and a light bar that flashes blue and red at all times while pursuing. A roadblock cruiser's lights are visible from the full 250 m sightline that the placement rule in `tracks.md` guarantees.
 11. **No gore.** Riders tumble, groan, and get up. The tone is slapstick.
 
 ## Camera rules
