@@ -243,10 +243,17 @@ const photoFinishOver = (race: Entered, rival: RivalId): void => {
   ride(race, 10, () => inputs);
 };
 
-const attacksOnThePlayer = (career: CareerState, rival: RivalId): number => {
+const ATTACK_SEEDS = Array.from({ length: 40 }, (_, index) => index + 1);
+const ATTACK_SECONDS = 60;
+
+const attacksOnThePlayer = (
+  career: CareerState,
+  rival: RivalId,
+  roadId: RoadId
+): number => {
   let attacks = 0;
-  for (const seed of [1, 2, 3, 4, 5]) {
-    const setup = setupFor(career, "slag-row", seed, road);
+  for (const seed of ATTACK_SEEDS) {
+    const setup = setupFor(career, roadId, seed, road);
     const state = createRace(setup);
     const index = setup.field.indexOf(rival) + 1;
     const inputs = state.riders.map(() => ({ ...neutralInput }));
@@ -262,7 +269,11 @@ const attacksOnThePlayer = (career: CareerState, rival: RivalId): number => {
         rider.s = 400;
       }
     }
-    for (let tick = 0; tick < (TRUCE_SECONDS + 30) * TICKS; tick += 1) {
+    for (
+      let tick = 0;
+      tick < (TRUCE_SECONDS + ATTACK_SECONDS) * TICKS;
+      tick += 1
+    ) {
       me.s = 50;
       me.x = 0.3;
       me.speed = 30;
@@ -1065,26 +1076,33 @@ describe("memory", () => {
     ]);
   });
 
-  it("a rival knocked down once attacks the player more often next race, and one beaten cleanly attacks less often", () => {
-    const fresh = newCareer(2);
-    const fought = enter(fresh, "slag-row");
-    knockDown(fought, "dee-santangelo", 1);
-    sprint(fought, 1);
-    const sore = settle(fought).career;
-    const clean = enter(fresh, "slag-row");
-    sprint(clean, 1);
-    const respectful = settle(clean).career;
-    const usual = attacksOnThePlayer(fresh, "dee-santangelo");
-    expect(usual).toBeGreaterThan(20);
-    expect(attacksOnThePlayer(sore, "dee-santangelo")).toBeGreaterThan(usual);
-    expect(attacksOnThePlayer(respectful, "dee-santangelo")).toBeLessThan(
-      usual
-    );
-    expect([
-      rivalIn(setupFor(sore, "slag-row", 8, road), "dee-santangelo")?.grudge,
-      preRaceLine(sore, setupFor(sore, "slag-row", 8, road))?.text,
-    ]).toStrictEqual([undefined, rivalLines["dee-santangelo"].grudgeTaunt]);
-  });
+  it(
+    "a rival knocked down once attacks the player more often next race, and one beaten cleanly attacks less often",
+    { timeout: 30_000 },
+    () => {
+      const fresh = newCareer(2);
+      const fought = enter(fresh, "breakwater-run");
+      knockDown(fought, "tristan-lux", 1);
+      sprint(fought, 1);
+      const sore = settle(fought).career;
+      const clean = enter(fresh, "breakwater-run");
+      sprint(clean, 1);
+      const respectful = settle(clean).career;
+      const usual = attacksOnThePlayer(fresh, "tristan-lux", "breakwater-run");
+      expect(usual).toBeGreaterThan(500);
+      expect(
+        attacksOnThePlayer(sore, "tristan-lux", "breakwater-run")
+      ).toBeGreaterThan(usual);
+      expect(
+        attacksOnThePlayer(respectful, "tristan-lux", "breakwater-run")
+      ).toBeLessThan(usual);
+      expect([
+        rivalIn(setupFor(sore, "breakwater-run", 8, road), "tristan-lux")
+          ?.grudge,
+        preRaceLine(sore, setupFor(sore, "breakwater-run", 8, road))?.text,
+      ]).toStrictEqual([undefined, rivalLines["tristan-lux"].grudgeTaunt]);
+    }
+  );
 
   it("a rival the player beat cleanly cools off, and one with no memory opens with the default taunt", () => {
     const fresh = newCareer(2);
