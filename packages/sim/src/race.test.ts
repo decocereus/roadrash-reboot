@@ -914,7 +914,7 @@ describe("rider contact", () => {
     ).flat();
     expect(crashes).toHaveLength(1);
     expect(crashes[0]).toBeGreaterThan(58);
-    expect(FULL_CONDITION - rear.condition).toBeCloseTo(22.5, 0);
+    expect(FULL_CONDITION - rear.condition).toBeCloseTo(32.4, 0);
     expect(rear.bodyS).toBeLessThan(ahead.s);
   });
 
@@ -1382,15 +1382,20 @@ describe("the grid", () => {
   });
 });
 
-const headOn = (state: RaceState, rider: RiderState): RaceEvent[] => {
+const headOn = (
+  state: RaceState,
+  rider: RiderState,
+  speed = 56,
+  ahead = 60
+): RaceEvent[] => {
   const [car] = state.cars;
   if (!car) {
     throw new Error("The race has no car.");
   }
-  car.s = rider.s + 60;
+  car.s = rider.s + ahead;
   car.speed = car.cruiseSpeed;
   rider.x = car.x;
-  rider.speed = 45;
+  rider.speed = speed;
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
     stepRace(state, straight, [{ ...cruising, throttle: 1 }]);
@@ -1403,7 +1408,102 @@ const headOn = (state: RaceState, rider: RiderState): RaceEvent[] => {
   return events;
 };
 
+const KMH = 3.6;
+
+const oncomingCar = (state: RaceState): void => {
+  state.cars.push({
+    cruiseSpeed: -22,
+    halfLength: 2.2,
+    halfWidth: 0.92,
+    height: 1.45,
+    paint: 2,
+    s: 0,
+    speed: -22,
+    x: -1.8,
+  });
+};
+
+const knockedOffAt = (kmh: number): number => {
+  const state = field(straight, 1, 0, 0);
+  const me = riderAt(state, 0);
+  me.s = 100;
+  me.speed = kmh / KMH;
+  me.stamina = 0;
+  stepRace(state, straight, [cruising]);
+  return FULL_CONDITION - me.condition;
+};
+
+const headOnAt = (kmh: number): number => {
+  const state = field(straight, 1, 0, 0);
+  const me = riderAt(state, 0);
+  me.s = 100;
+  oncomingCar(state);
+  headOn(state, me, kmh / KMH, 8);
+  return FULL_CONDITION - me.condition;
+};
+
+const crashesToWreck = (crash: (state: RaceState) => void): number => {
+  const state = field(straight, 1, 0, 0);
+  const me = riderAt(state, 0);
+  me.s = 100;
+  oncomingCar(state);
+  while (me.mode !== "wrecked" && me.crashes < 20) {
+    crash(state);
+  }
+  return me.crashes;
+};
+
+const knockOffAndRemount = (state: RaceState, kmh: number): void => {
+  const me = riderAt(state, 0);
+  me.speed = kmh / KMH;
+  me.stamina = 0;
+  const [car] = state.cars;
+  if (car) {
+    car.s = me.s - 400;
+  }
+  for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
+    stepRace(state, straight, [cruising]);
+    if (me.mode === "riding" || me.mode === "wrecked") {
+      break;
+    }
+  }
+};
+
 describe("bike condition", () => {
+  it("a crash at 200 km/h costs about 30% of the bike, one at 100 km/h about 15%, and a tip-over at walking pace almost nothing", () => {
+    expect({
+      headOn: [100, 200].map((kmh) => Math.round(headOnAt(kmh))),
+      knockdown: [10, 60, 100, 150, 200].map((kmh) =>
+        Math.round(knockedOffAt(kmh))
+      ),
+    }).toStrictEqual({
+      headOn: [17, 34],
+      knockdown: [3, 8, 14, 21, 28],
+    });
+  });
+
+  it("three or four hard crashes wreck a bike, and it takes about twice as many at half the speed", () => {
+    expect({
+      knockdownsAt100: crashesToWreck((state) => {
+        knockOffAndRemount(state, 100);
+      }),
+      knockdownsAt200: crashesToWreck((state) => {
+        knockOffAndRemount(state, 200);
+      }),
+      trafficAt160: crashesToWreck((state) => {
+        headOn(state, riderAt(state, 0), 160 / KMH, 8);
+      }),
+      trafficAt200: crashesToWreck((state) => {
+        headOn(state, riderAt(state, 0), 200 / KMH, 8);
+      }),
+    }).toStrictEqual({
+      knockdownsAt100: 8,
+      knockdownsAt200: 4,
+      trafficAt160: 4,
+      trafficAt200: 3,
+    });
+  });
+
   it("three hard traffic crashes wreck the bike and the rider is placed after everyone else", () => {
     const state = field(straight, 1, 2, 0);
     const me = riderAt(state, 0);
@@ -1411,16 +1511,7 @@ describe("bike condition", () => {
     finisher.s = straight.length - 20;
     finisher.speed = 30;
     me.s = 100;
-    state.cars.push({
-      cruiseSpeed: -22,
-      halfLength: 2.2,
-      halfWidth: 0.92,
-      height: 1.45,
-      paint: 2,
-      s: 0,
-      speed: -22,
-      x: -1.8,
-    });
+    oncomingCar(state);
     const conditions: number[] = [];
     const kinds: string[] = [];
     for (let crash = 0; crash < 3; crash += 1) {

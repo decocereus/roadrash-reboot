@@ -53,16 +53,18 @@ const VERGE_BLEND = 0.75;
 const BRAKE_RESERVE = 0.35;
 const SIDESTEP_SPEED = 3;
 const STEERING_AWAY = 0.5;
-const DAMAGE_SPEED = 40;
+const DAMAGE_SPEED = 200 / 3.6;
+const LEAST_DAMAGE = 0.1;
+const MOST_DAMAGE = 1.25;
 const BLAME_TICKS = 60;
 
 const damage = {
-  combat: 10,
-  landing: 25,
-  offTrack: 10,
-  prop: 30,
-  rider: 15,
-  traffic: 35,
+  combat: 28,
+  landing: 30,
+  offTrack: 22,
+  prop: 32,
+  rider: 30,
+  traffic: 34,
 } as const satisfies Record<CrashCause, number>;
 
 const coasting: RiderInput = {
@@ -111,7 +113,9 @@ export const throwRider = (
   if (takesDamage(rider)) {
     rider.condition = Math.max(
       0,
-      rider.condition - damage[cause] * clamp(struckAt / DAMAGE_SPEED, 0.5, 1.5)
+      rider.condition -
+        damage[cause] *
+          clamp(struckAt / DAMAGE_SPEED, LEAST_DAMAGE, MOST_DAMAGE)
     );
   }
   const wrecked = rider.condition <= 0;
