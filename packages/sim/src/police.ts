@@ -5,12 +5,10 @@ import type { RaceState, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
 export const PATROL_SPEED = 22;
-export const SIGHT_RANGE = 40;
 export const BODY_RANGE = 60;
 export const WAKE_RANGE = 35;
 const LOSE_RANGE = 120;
 export const BUST_REACH = 2.5;
-export const BUST_FINE = 1500;
 export const PULL_OVER = 1.1;
 
 export const isDown = (rider: RiderState): boolean =>
@@ -21,7 +19,8 @@ export const isDown = (rider: RiderState): boolean =>
 const wanted = (rider: RiderState): boolean =>
   rider.profile.role === "racer" &&
   rider.finishTick < 0 &&
-  rider.mode !== "busted";
+  rider.mode !== "busted" &&
+  rider.mode !== "wrecked";
 
 const bodyAhead = (cop: RiderState, rider: RiderState): number =>
   rider.bodyS - cop.s;
@@ -52,7 +51,7 @@ const pickTarget = (state: RaceState, cop: RiderState): number => {
       }
     } else if (rider.mode === "riding") {
       const gap = Math.abs(rider.s - cop.s);
-      score = gap < SIGHT_RANGE ? gap : score;
+      score = gap < state.police.sightRange ? gap : score;
     }
     if (score < bestScore) {
       bestScore = score;
@@ -93,18 +92,8 @@ const updateChase = (state: RaceState, copIndex: number, cop: RiderState) => {
   cop.chase = chosen;
 };
 
-const bust = (
-  state: RaceState,
-  track: Track,
-  riderIndex: number,
-  copIndex: number
-): void => {
-  const rider = state.riders[riderIndex];
-  if (!rider) {
-    return;
-  }
+export const pullOver = (track: Track, rider: RiderState): void => {
   const side = Math.sign(rider.bodyX) || 1;
-  rider.mode = "busted";
   rider.x = side * (track.roadHalfWidth + PULL_OVER);
   rider.bodyX = side * (track.roadHalfWidth + PULL_OVER + 0.8);
   rider.bodyS = rider.s;
@@ -119,12 +108,41 @@ const bust = (
   rider.attack = "none";
   rider.attackTicks = 0;
   disarm(rider);
+};
+
+const bust = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  copIndex: number
+): void => {
+  const rider = state.riders[riderIndex];
+  if (!rider) {
+    return;
+  }
+  rider.mode = "busted";
+  pullOver(track, rider);
   state.events.push({
     cop: copIndex,
-    fine: BUST_FINE,
+    fine: state.police.fine,
     kind: "busted",
     rider: riderIndex,
   });
+};
+
+export const chaserDistance = (
+  state: RaceState,
+  riderIndex: number
+): number => {
+  const rider = state.riders[riderIndex];
+  let nearest = -1;
+  for (const cop of state.riders) {
+    if (rider && cop.profile.role === "police" && cop.chase === riderIndex) {
+      const distance = Math.hypot(rider.bodyS - cop.s, rider.bodyX - cop.x);
+      nearest = nearest < 0 ? distance : Math.min(nearest, distance);
+    }
+  }
+  return nearest;
 };
 
 const catchDowned = (

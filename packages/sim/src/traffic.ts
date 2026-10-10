@@ -63,7 +63,7 @@ export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
 };
 
 const gapToRider = (car: TrafficCar, rider: RiderState): number => {
-  if (rider.mode === "busted") {
+  if (rider.mode === "busted" || (rider.mode === "wrecked" && rider.parked)) {
     return Number.POSITIVE_INFINITY;
   }
   const direction = Math.sign(car.cruiseSpeed);

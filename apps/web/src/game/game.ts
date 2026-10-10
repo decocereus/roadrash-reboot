@@ -1,6 +1,6 @@
 import { nearestRival } from "@racer/sim/combat";
 import { pilotInput } from "@racer/sim/pilot";
-import { createRace, standings, stepRace } from "@racer/sim/race";
+import { createRace, defaultSetup, standings, stepRace } from "@racer/sim/race";
 import { clamp, MAX_STAMINA, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
 import type {
   RaceEvent,
@@ -144,7 +144,7 @@ export function createGame(
   const sound = createSound();
 
   let seed = 1;
-  let race: RaceState = createRace(track, seed);
+  let race: RaceState = createRace(defaultSetup(track, seed));
   let fleet: Fleet = createFleet(race.cars);
   world.scene.add(fleet.group);
   let previousCars = new Float64Array(race.cars.length);
@@ -206,7 +206,7 @@ export function createGame(
         rider.profile.paint,
         rider.profile.role === "police"
       );
-      const figure = createRiderFigure(rider.profile.paint);
+      const figure = createRiderFigure(rider.profile.jacket);
       world.scene.add(bike.root, bike.shadow, figure.root);
       const view: RiderView = {
         after: emptyPose(),
@@ -228,7 +228,7 @@ export function createGame(
   const loadRace = (nextPhase: GamePhase) => {
     dropFleet();
     seed += 1;
-    race = createRace(track, seed);
+    race = createRace(defaultSetup(track, seed));
     fleet = createFleet(race.cars);
     world.scene.add(fleet.group);
     previousCars = new Float64Array(race.cars.length);
@@ -355,7 +355,9 @@ export function createGame(
   };
 
   const attractOver = (): boolean =>
-    player().finishTick >= 0 || player().mode === "busted";
+    player().finishTick >= 0 ||
+    player().mode === "busted" ||
+    player().mode === "wrecked";
 
   const advanceClock = () => {
     const me = player();
@@ -442,7 +444,7 @@ export function createGame(
       view.pitch = 0;
       view.lift = STANDING_HEIGHT;
       view.yaw = 0;
-    } else if (rider.mode === "thrown") {
+    } else if (rider.mode === "thrown" || rider.mode === "wrecked") {
       const resting = rider.bodySpeed < 0.5 && rider.bodyAir === 0;
       pose = resting ? "lying" : "tumble";
       if (resting) {

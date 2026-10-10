@@ -7,6 +7,7 @@ import {
 } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { pullOver } from "./police.ts";
 import {
   approach,
   BIKE_HALF_LENGTH,
@@ -25,7 +26,7 @@ import type {
   RiderState,
   TrafficCar,
 } from "./state.ts";
-import { disarm, rearm } from "./weapons.ts";
+import { disarm, rearm, weapons } from "./weapons.ts";
 
 const ROAD_GRIP = 1.2;
 const VERGE_GRIP = 0.55;
@@ -52,6 +53,17 @@ const VERGE_BLEND = 0.75;
 const BRAKE_RESERVE = 0.35;
 const SIDESTEP_SPEED = 3;
 const STEERING_AWAY = 0.5;
+const DAMAGE_SPEED = 40;
+const BLAME_TICKS = 60;
+
+const damage = {
+  combat: 10,
+  landing: 25,
+  offTrack: 10,
+  prop: 30,
+  rider: 15,
+  traffic: 35,
+} as const satisfies Record<CrashCause, number>;
 
 const coasting: RiderInput = {
   brake: FINISH_BRAKE,
@@ -64,19 +76,23 @@ const coasting: RiderInput = {
 const forwardRateOf = (rider: RiderState, curvature: number): number =>
   rider.speed / Math.max(0.5, 1 - curvature * rider.x);
 
-const settleVisuals = (
-  state: RaceState,
-  rider: RiderState,
-  authority: number
-): void => {
-  const limit = Math.max(1, lateralSpeedLimit(state.bike, rider.speed));
+const settleVisuals = (rider: RiderState, authority: number): void => {
+  const limit = Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
   rider.lean =
     clamp(rider.lateralSpeed / limit, -1, 1) *
-    state.bike.visualLean *
+    rider.bike.visualLean *
     authority;
   rider.heading =
     Math.atan2(rider.lateralSpeed, Math.max(rider.speed, 6)) * 0.5;
 };
+
+const blamedFor = (state: RaceState, rider: RiderState): number =>
+  rider.lastHitBy >= 0 && state.tick - rider.lastHitTick <= BLAME_TICKS
+    ? rider.lastHitBy
+    : -1;
+
+const takesDamage = (rider: RiderState): boolean =>
+  rider.profile.role === "racer" && rider.finishTick < 0;
 
 export const throwRider = (
   state: RaceState,
@@ -90,7 +106,15 @@ export const throwRider = (
     return;
   }
   const impactSpeed = rider.speed;
-  rider.mode = "thrown";
+  if (takesDamage(rider)) {
+    rider.condition = Math.max(
+      0,
+      rider.condition -
+        damage[cause] * clamp(impactSpeed / DAMAGE_SPEED, 0.5, 1.5)
+    );
+  }
+  const wrecked = rider.condition <= 0;
+  rider.mode = wrecked ? "wrecked" : "thrown";
   disarm(rider);
   rider.chase = -1;
   rider.parked = false;
@@ -111,11 +135,15 @@ export const throwRider = (
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
   state.events.push({
+    by: blamedFor(state, rider),
     cause,
     kind: "crash",
     rider: riderIndex,
     speed: impactSpeed,
   });
+  if (wrecked) {
+    state.events.push({ kind: "wrecked", rider: riderIndex });
+  }
 };
 
 const fly = (
@@ -127,7 +155,7 @@ const fly = (
   const curvature = curvatureAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
   const groundBefore = heightAt(track, rider.s);
-  const push = curvePushOf(state.bike, curvature, rider.speed);
+  const push = curvePushOf(rider.bike, curvature, rider.speed);
   rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   rider.air +=
@@ -135,7 +163,7 @@ const fly = (
     (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 -
     (heightAt(track, rider.s) - groundBefore);
   rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
-  settleVisuals(state, rider, 0.6);
+  settleVisuals(rider, 0.6);
   rider.load = 0;
   rider.airTicks += 1;
   if (rider.air > 0) {
@@ -162,7 +190,7 @@ const ride = (
   rider: RiderState,
   input: RiderInput
 ): void => {
-  const { bike } = state;
+  const { bike } = rider;
   const curvature = curvatureAt(track, rider.s);
   const slope = slopeAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
@@ -192,7 +220,10 @@ const ride = (
     input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
   rider.lateralSpeed +=
     (wantedLateral - rider.lateralSpeed) *
-    Math.min(1, bike.steerResponse * TICK_SECONDS);
+    Math.min(
+      1,
+      bike.steerResponse * weapons[rider.weapon].steerFactor * TICK_SECONDS
+    );
   const push = curvePushOf(bike, curvature, rider.speed);
   const lateralAcceleration =
     Math.abs(rider.lateralSpeed - push) * GRAVITY * 0.08;
@@ -230,7 +261,7 @@ const ride = (
 
   rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
-  settleVisuals(state, rider, 1);
+  settleVisuals(rider, 1);
 };
 
 const hitProps = (
@@ -335,7 +366,7 @@ const hitCar = (
   return false;
 };
 
-const tumble = (track: Track, rider: RiderState): void => {
+const slide = (track: Track, rider: RiderState): boolean => {
   rider.modeTicks += 1;
   rider.bodyVerticalSpeed -= GRAVITY * TICK_SECONDS;
   rider.bodyAir += rider.bodyVerticalSpeed * TICK_SECONDS;
@@ -382,11 +413,22 @@ const tumble = (track: Track, rider: RiderState): void => {
 
   const settled =
     rider.bodyAir === 0 && rider.bodySpeed < 0.3 && rider.speed < 0.3;
-  if (settled && rider.modeTicks > SETTLE_TICKS) {
+  return settled && rider.modeTicks > SETTLE_TICKS;
+};
+
+const tumble = (track: Track, rider: RiderState): void => {
+  if (slide(track, rider)) {
     rider.mode = "running";
     rider.modeTicks = 0;
     rider.speed = 0;
     rider.bodySpeed = 0;
+  }
+};
+
+const comeToRest = (track: Track, rider: RiderState): void => {
+  if (!rider.parked && slide(track, rider)) {
+    pullOver(track, rider);
+    rider.parked = true;
   }
 };
 
@@ -437,6 +479,10 @@ export const stepRider = (
     return;
   }
   if (rider.mode === "busted") {
+    return;
+  }
+  if (rider.mode === "wrecked") {
+    comeToRest(track, rider);
     return;
   }
   if (rider.mode === "thrown") {

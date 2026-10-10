@@ -1,3 +1,5 @@
+import type { Track } from "@racer/track/track";
+
 export const TICK_RATE = 60;
 export const TICK_SECONDS = 1 / TICK_RATE;
 export const GRAVITY = 9.81;
@@ -6,8 +8,13 @@ export const BIKE_HALF_WIDTH = 0.38;
 export const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
 
+export type BikeClass = "featherweight" | "middleweight" | "heavyweight";
+
 export interface BikeSpec {
+  readonly id: string;
   readonly name: string;
+  readonly bikeClass: BikeClass;
+  readonly price: number;
   readonly launchAcceleration: number;
   readonly powerPerMass: number;
   readonly dragFactor: number;
@@ -21,21 +28,6 @@ export interface BikeSpec {
   readonly visualLean: number;
 }
 
-export const streetBike: BikeSpec = {
-  brakeDeceleration: 11,
-  curvePush: 2.1,
-  dragFactor: 1.38e-3,
-  engineBraking: 1.2,
-  lateralSpeed: 9,
-  lateralSpeedPerSpeed: 0.03,
-  launchAcceleration: 8.5,
-  name: "Street 600",
-  powerPerMass: 284,
-  rollingDeceleration: 0.25,
-  steerResponse: 20,
-  visualLean: 0.38,
-};
-
 export interface RiderInput {
   steer: number;
   throttle: number;
@@ -46,13 +38,21 @@ export interface RiderInput {
 
 export type AttackKind = "punch" | "kick" | "swing";
 
-export type WeaponKind = "none" | "club" | "chain" | "crowbar" | "baton";
+export type WeaponKind =
+  | "none"
+  | "club"
+  | "chain"
+  | "crowbar"
+  | "baton"
+  | "cue"
+  | "sign";
 
 export type RiderRole = "racer" | "police";
 
 export interface RiderProfile {
   readonly name: string;
   readonly paint: number;
+  readonly jacket: number;
   readonly aggression: number;
   readonly skill: number;
   readonly role: RiderRole;
@@ -61,7 +61,15 @@ export interface RiderProfile {
 
 export const MAX_STAMINA = 100;
 
-export type RiderMode = "riding" | "thrown" | "running" | "mounting" | "busted";
+export const FULL_CONDITION = 100;
+
+export type RiderMode =
+  | "riding"
+  | "thrown"
+  | "running"
+  | "mounting"
+  | "busted"
+  | "wrecked";
 
 export type CrashCause =
   | "traffic"
@@ -73,9 +81,15 @@ export type CrashCause =
 
 export interface RiderState {
   readonly profile: RiderProfile;
+  readonly bike: BikeSpec;
+  readonly grudge: number;
+  readonly aggressionBoost: number;
   mode: RiderMode;
   modeTicks: number;
   stamina: number;
+  condition: number;
+  lastHitBy: number;
+  lastHitTick: number;
   attack: AttackKind | "none";
   attackSide: number;
   attackTicks: number;
@@ -124,7 +138,9 @@ export type RaceEvent =
       readonly rider: number;
       readonly cause: CrashCause;
       readonly speed: number;
+      readonly by: number;
     }
+  | { readonly kind: "wrecked"; readonly rider: number }
   | { readonly kind: "glance"; readonly rider: number }
   | { readonly kind: "bump"; readonly rider: number }
   | {
@@ -182,10 +198,44 @@ export type RaceEvent =
     }
   | { readonly kind: "finish"; readonly rider: number; readonly tick: number };
 
+export interface PoliceRules {
+  readonly topSpeed: number;
+  readonly sightRange: number;
+  readonly fine: number;
+}
+
+export interface PlayerSetup extends RiderProfile {
+  readonly bike: BikeSpec;
+  readonly weaponHits: number;
+}
+
+export interface RivalSetup extends RiderProfile {
+  readonly bike: BikeSpec;
+  readonly grudge?: number;
+  readonly aggressionBoost?: number;
+}
+
+export interface PoliceSetup extends PoliceRules {
+  readonly count: number;
+  readonly officer: RiderProfile;
+  readonly bike: BikeSpec;
+}
+
+export type GridOrder = "playerLast" | "playerFirst";
+
+export interface RaceSetup {
+  readonly track: Track;
+  readonly seed: number;
+  readonly player: PlayerSetup;
+  readonly rivals: readonly RivalSetup[];
+  readonly police: PoliceSetup;
+  readonly gridOrder: GridOrder;
+}
+
 export interface RaceState {
   tick: number;
   dice: number;
-  readonly bike: BikeSpec;
+  readonly police: PoliceRules;
   readonly riders: RiderState[];
   readonly cars: TrafficCar[];
   readonly events: RaceEvent[];

@@ -1,3 +1,4 @@
+import { riderPalette } from "@racer/sim/palette";
 import type { WeaponKind } from "@racer/sim/state";
 import * as THREE from "three";
 
@@ -15,15 +16,8 @@ export type RiderPose =
   | "swing"
   | "surrender";
 
-export const jacketColours = [
-  0x23_26_2c, 0x1d_3a_6e, 0x5a_1f_1f, 0x1f_4a_2a, 0x3a_1f_4f, 0x6b_5a_3a,
-  0x14_1c_33,
-];
-
-const helmetColours = [
-  0xf2_c2_30, 0xf2_c2_30, 0xf2_c2_30, 0xf2_c2_30, 0xf2_c2_30, 0xf2_c2_30,
-  0xf4_f6_f8,
-];
+const DEFAULT_JACKET = 0x23_26_2c;
+const DEFAULT_HELMET = 0xf2_c2_30;
 
 export interface RiderFigure {
   readonly root: THREE.Group;
@@ -249,6 +243,28 @@ const weaponMesh = (kind: WeaponKind): THREE.Group => {
     );
     grip.position.set(0, -0.12, 0.06);
     held.add(grip);
+  } else if (kind === "cue") {
+    shaft(0.012, 0.02, 1.3, 0xc9_a2_6b);
+    const butt = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.024, 0.3, 6),
+      matte(0x3a_24_18)
+    );
+    butt.position.y = 0.05;
+    held.add(butt);
+  } else if (kind === "sign") {
+    shaft(0.02, 0.02, 0.9, 0x8a_90_96);
+    const face = new THREE.CylinderGeometry(0.24, 0.24, 0.025, 8);
+    face.rotateY(Math.PI / 8);
+    face.rotateZ(Math.PI / 2);
+    const plate = new THREE.Mesh(face, matte(0xd7_26_3d));
+    plate.position.y = -1.08;
+    held.add(plate);
+    const band = new THREE.Mesh(
+      new THREE.BoxGeometry(0.03, 0.07, 0.3),
+      matte(0xf2_ee_e6)
+    );
+    band.position.y = -1.08;
+    held.add(band);
   } else if (kind === "chain") {
     const steel = matte(0x8a_90_96);
     for (let link = 0; link < 6; link += 1) {
@@ -289,11 +305,14 @@ const weaponKinds: readonly WeaponKind[] = [
   "chain",
   "crowbar",
   "baton",
+  "cue",
+  "sign",
 ];
 
 export const createRiderFigure = (jacketIndex: number): RiderFigure => {
   const root = new THREE.Group();
-  const leather = matte(jacketColours[jacketIndex] ?? 0x23_26_2c);
+  const colours = riderPalette[jacketIndex];
+  const leather = matte(colours?.jacket ?? DEFAULT_JACKET);
   const denim = matte(0x2d_3d_5c);
   const skin = matte(0xc9_9a_7a);
 
@@ -314,9 +333,17 @@ export const createRiderFigure = (jacketIndex: number): RiderFigure => {
   head.node.position.y = 0.62;
   const helmet = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.17, 1),
-    matte(helmetColours[jacketIndex] ?? 0xf2_c2_30)
+    matte(colours?.helmet ?? DEFAULT_HELMET)
   );
   helmet.position.y = 0.14;
+  if (colours?.trim !== undefined) {
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.03, 0.3),
+      matte(colours.trim)
+    );
+    stripe.position.y = 0.3;
+    head.node.add(stripe);
+  }
   const visor = new THREE.Mesh(
     new THREE.BoxGeometry(0.24, 0.1, 0.06),
     matte(0x10_12_14)

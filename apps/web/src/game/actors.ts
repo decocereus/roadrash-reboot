@@ -1,3 +1,4 @@
+import { riderPalette } from "@racer/sim/palette";
 import type { TrafficCar } from "@racer/sim/state";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
@@ -50,14 +51,12 @@ export interface BikeModel {
   dispose: () => void;
 }
 
-export const bikePaints = [
-  0xc8_2f_2f, 0x2f_62_c8, 0x1c_1f_24, 0x2f_9a_4e, 0x7a_3b_b8, 0xe6_e1_d6,
-  0xf4_f6_f8,
-];
+const DEFAULT_PAINT = 0xc8_2f_2f;
 
 export function createBike(paintIndex: number, beacon = false): BikeModel {
   const root = new THREE.Group();
-  const paint = matte(bikePaints[paintIndex] ?? 0xc8_2f_2f);
+  const colours = riderPalette[paintIndex];
+  const paint = matte(colours?.bike ?? DEFAULT_PAINT);
   const metal = matte(0x2b_2e_33);
   const rubber = matte(0x15_16_18);
 
@@ -90,7 +89,18 @@ export function createBike(paintIndex: number, beacon = false): BikeModel {
       [0.12, 0.1, 0.1],
       [0.09, 1.12, 0.78]
     );
-    block(root, matte(0x14_1c_33), [0.36, 0.08, 0.5], [0, 0.98, -0.14]);
+  }
+  if (colours?.trim !== undefined) {
+    const trim = matte(colours.trim);
+    if (beacon) {
+      block(root, trim, [0.03, 0.18, 0.46], [-0.18, 0.88, -0.14]);
+      block(root, trim, [0.03, 0.18, 0.46], [0.18, 0.88, -0.14]);
+      block(root, trim, [0.03, 0.2, 0.2], [-0.19, 1, -0.58], -0.3);
+      block(root, trim, [0.03, 0.2, 0.2], [0.19, 1, -0.58], -0.3);
+    } else {
+      block(root, trim, [0.07, 0.02, 0.54], [0, 1.01, -0.14]);
+      block(root, trim, [0.07, 0.02, 0.34], [0, 1.02, 0.72], 0.25);
+    }
   }
 
   const shadow = new THREE.Mesh(

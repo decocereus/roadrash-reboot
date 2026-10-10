@@ -1,13 +1,28 @@
-import { compileTrack } from "@racer/track/track";
+import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
+import { bikes } from "./bikes.ts";
 import { pilotInput } from "./pilot.ts";
-import { BUST_FINE, PATROL_SPEED } from "./police.ts";
-import { createRace, standings, stepRace } from "./race.ts";
+import { chaserDistance, PATROL_SPEED } from "./police.ts";
+import {
+  createRace,
+  defaultPolice,
+  defaultSetup,
+  standings,
+  stepRace,
+} from "./race.ts";
 import { MAX_STAMINA, TICK_RATE } from "./state.ts";
-import type { RaceEvent, RaceState, RiderInput, RiderState } from "./state.ts";
+import type {
+  BikeSpec,
+  PoliceSetup,
+  RaceEvent,
+  RaceState,
+  RiderInput,
+  RiderState,
+  RivalSetup,
+} from "./state.ts";
 import { arm, disarm } from "./weapons.ts";
 
 const track = compileTrack(ridgeRoad);
@@ -17,6 +32,20 @@ const straight = compileTrack({
   sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
   trafficPerKilometre: 0,
 });
+
+const field = (
+  course: Track,
+  seed: number,
+  rivalCount: number,
+  copCount: number
+): RaceState => {
+  const setup = defaultSetup(course, seed);
+  return createRace({
+    ...setup,
+    police: { ...setup.police, count: copCount },
+    rivals: setup.rivals.slice(0, rivalCount),
+  });
+};
 
 const cruising: RiderInput = {
   brake: 0,
@@ -81,7 +110,7 @@ const pilotUntilFinish = (
 };
 
 const brakeIntoBend = (brake: number) => {
-  const state = createRace(quietTrack, 1, 0, 0);
+  const state = field(quietTrack, 1, 0, 0);
   const rider = player(state);
   rider.s = 1520;
   rider.speed = 50;
@@ -93,7 +122,7 @@ const brakeIntoBend = (brake: number) => {
 };
 
 const brakeAcrossBend = (brake: number): number => {
-  const state = createRace(quietTrack, 1, 0, 0);
+  const state = field(quietTrack, 1, 0, 0);
   const rider = player(state);
   rider.s = 1560;
   rider.x = -4;
@@ -109,7 +138,7 @@ const brakeAcrossBend = (brake: number): number => {
 
 describe("riding", () => {
   it("reaches 100 km/h in under five seconds and tops out near 210 km/h", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const fullThrottle = {
       brake: 0,
       kick: false,
@@ -125,7 +154,7 @@ describe("riding", () => {
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
-    const sprint = createRace(flat, 1, 0, 0);
+    const sprint = field(flat, 1, 0, 0);
     hold(sprint, flat, fullThrottle, 60);
     expect(player(sprint).speed * 3.6).toBeGreaterThan(200);
     expect(player(sprint).speed * 3.6).toBeLessThan(220);
@@ -137,7 +166,7 @@ describe("riding", () => {
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
-    const state = createRace(flat, 1, 0, 0);
+    const state = field(flat, 1, 0, 0);
     const rider = player(state);
     rider.speed = 200 / 3.6;
     const from = rider.s;
@@ -153,7 +182,7 @@ describe("riding", () => {
   });
 
   it("a curve pushes a rider who does not steer to the outside", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
     rider.x = 0;
@@ -168,7 +197,7 @@ describe("riding", () => {
   });
 
   it("a light steer into the curve holds the lane at a sane speed", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
     rider.x = 0;
@@ -188,7 +217,7 @@ describe("riding", () => {
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
-    const state = createRace(flat, 1, 0, 0);
+    const state = field(flat, 1, 0, 0);
     const rider = player(state);
     rider.speed = 40;
     rider.x = 0;
@@ -211,7 +240,7 @@ describe("riding", () => {
   });
 
   it("the tightest bend cannot be held flat out but can at a sane speed", () => {
-    const flatOut = createRace(quietTrack, 1, 0, 0);
+    const flatOut = field(quietTrack, 1, 0, 0);
     const fast = player(flatOut);
     fast.s = 1520;
     fast.x = 1.8;
@@ -226,7 +255,7 @@ describe("riding", () => {
       fast.offRoad || events.some((event) => event.kind === "crash")
     ).toBeTruthy();
 
-    const sane = createRace(quietTrack, 1, 0, 0);
+    const sane = field(quietTrack, 1, 0, 0);
     const steady = player(sane);
     steady.s = 1560;
     steady.x = 0;
@@ -250,7 +279,7 @@ describe("riding", () => {
   });
 
   it("launches over the big crest at speed and lands without crashing", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 2110;
     rider.speed = 56;
@@ -268,7 +297,7 @@ describe("riding", () => {
   });
 
   it("stays on the ground over the same crest at a cruise", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 2110;
     rider.speed = 30;
@@ -284,7 +313,7 @@ describe("riding", () => {
 
 describe("crashing", () => {
   it("a head-on hit throws the rider, who runs back and rides again", () => {
-    const state = createRace(track, 7, 0, 0);
+    const state = field(track, 7, 0, 0);
     const rider = player(state);
     const oncoming = state.cars.find((car) => car.speed < 0 && car.s > 400);
     if (!oncoming) {
@@ -314,7 +343,7 @@ describe("crashing", () => {
   });
 
   it("riding into the trees ends in a crash", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 100;
     rider.speed = 30;
@@ -328,7 +357,7 @@ describe("crashing", () => {
   });
 
   it("a gentle head-on bump permits a throttle-and-steer escape", () => {
-    const state = createRace(straight, 1, 0, 0);
+    const state = field(straight, 1, 0, 0);
     const me = player(state);
     Object.assign(me, { bodyS: 100, bodyX: -1.8, s: 100, speed: 2, x: -1.8 });
     const car = {
@@ -360,7 +389,7 @@ describe("crashing", () => {
 
 describe("a full race", () => {
   it("the pilot finishes an empty Ridge Road cleanly in a sensible time", () => {
-    const state = createRace(quietTrack, 1, 0, 0);
+    const state = field(quietTrack, 1, 0, 0);
     const events = pilotUntilFinish(state, quietTrack, 240);
     const rider = player(state);
     expect(rider.finishTick).toBeGreaterThan(0);
@@ -372,14 +401,14 @@ describe("a full race", () => {
   });
 
   it("the pilot gets through traffic and still finishes", () => {
-    const state = createRace(track, 11, 0, 0);
+    const state = field(track, 11, 0, 0);
     pilotUntilFinish(state, track, 400);
     expect(player(state).finishTick).toBeGreaterThan(0);
   });
 
   it("replays identically from the same seed and inputs", () => {
-    const first = createRace(track, 3, 0, 0);
-    const second = createRace(track, 3, 0, 0);
+    const first = field(track, 3, 0, 0);
+    const second = field(track, 3, 0, 0);
     pilotUntilFinish(first, track, 60);
     pilotUntilFinish(second, track, 60);
     expect(second).toStrictEqual(first);
@@ -387,10 +416,10 @@ describe("a full race", () => {
 });
 
 const raceIsOver = (rider: RiderState): boolean =>
-  rider.finishTick >= 0 || rider.mode === "busted";
+  rider.finishTick >= 0 || rider.mode === "busted" || rider.mode === "wrecked";
 
 const raceThePack = (seed: number) => {
-  const state = createRace(track, seed);
+  const state = createRace(defaultSetup(track, seed));
   const racers = state.riders.filter((rider) => rider.profile.role === "racer");
   const inputs = state.riders.map(() => ({ ...cruising }));
   const events: RaceEvent[] = [];
@@ -414,7 +443,7 @@ describe("the pack", () => {
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
-    const state = createRace(flat, 1, 1, 0);
+    const state = field(flat, 1, 1, 0);
     const [me, rival] = state.riders;
     if (!(me && rival)) {
       throw new Error("The race needs a rival.");
@@ -451,7 +480,7 @@ describe("the pack", () => {
     ).toBeTruthy();
   });
 
-  it("six riders each finish Ridge Road or are busted by the cop on patrol and the standings are ordered", () => {
+  it("six riders of the new cast each finish Ridge Road, wreck, or are busted by the cop on patrol and the standings are ordered", () => {
     const { events, racers, state } = raceThePack(4);
     const finishTicks = standings(state).map(
       (index) => riderAt(state, index).finishTick
@@ -460,7 +489,20 @@ describe("the pack", () => {
     expect({
       placed: finishTicks.length,
       riders: state.riders.length,
-    }).toStrictEqual({ placed: 6, riders: 7 });
+      roster: state.riders.map((rider) => rider.profile.name),
+    }).toStrictEqual({
+      placed: 6,
+      riders: 7,
+      roster: [
+        "You",
+        "Dee Santangelo",
+        "Moose Kowalczyk",
+        "Juno Kade",
+        "Mags Dunleavy",
+        "Ruth Ann Bixby",
+        "Sergeant Dolores Pike",
+      ],
+    });
     expect(events.some((event) => event.kind === "pursuit")).toBeTruthy();
     expect(racers.every((rider) => raceIsOver(rider))).toBeTruthy();
     expect(finished.length).toBeGreaterThanOrEqual(3);
@@ -491,15 +533,15 @@ describe("the pack", () => {
 });
 
 const sideBySide = () => {
-  const state = createRace(straight, 1, 2, 0);
+  const state = field(straight, 1, 2, 0);
   riderAt(state, 1).s = 900;
   const me = riderAt(state, 0);
-  const bruiser = riderAt(state, 2);
-  for (const rider of [me, bruiser]) {
+  const moose = riderAt(state, 2);
+  for (const rider of [me, moose]) {
     rider.s = 50;
     rider.speed = 30;
   }
-  return { bruiser, me, state };
+  return { me, moose, state };
 };
 
 const brawl = (
@@ -508,12 +550,12 @@ const brawl = (
   inputsAt: (tick: number) => readonly RiderInput[]
 ): RaceEvent[] => {
   const me = riderAt(state, 0);
-  const bruiser = riderAt(state, 2);
+  const moose = riderAt(state, 2);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     me.x = 0.3;
-    bruiser.x = 1.8;
-    bruiser.s = me.s;
+    moose.x = 1.8;
+    moose.s = me.s;
     stepRace(state, straight, inputsAt(tick));
     events.push(...state.events);
   }
@@ -527,7 +569,7 @@ const pressing = (key: "punch" | "kick", pressed: boolean): RiderInput => ({
 
 describe("recovering", () => {
   it("a rider punched onto the outside grass of a bend at 40 m/s steers back onto the road within two seconds", () => {
-    const state = createRace(quietTrack, 1, 1, 0);
+    const state = field(quietTrack, 1, 1, 0);
     const me = riderAt(state, 0);
     const rival = riderAt(state, 1);
     me.s = 1550;
@@ -577,7 +619,7 @@ describe("weapons", () => {
       cruising,
       pressing("punch", tick === 0),
     ]);
-    const fist = MAX_STAMINA - punched.bruiser.stamina;
+    const fist = MAX_STAMINA - punched.moose.stamina;
     const club = MAX_STAMINA - clubbed.me.stamina;
     expect(fist).toBeGreaterThan(0);
     expect(club).toBeGreaterThan(fist * 1.5);
@@ -591,8 +633,8 @@ describe("weapons", () => {
   });
 
   it("a club breaks after six hits and its owner goes back to fists", () => {
-    const { bruiser, me, state } = sideBySide();
-    expect(bruiser.weapon).toBe("club");
+    const { moose, me, state } = sideBySide();
+    expect(moose.weapon).toBe("club");
     const events = brawl(state, 14, () => {
       me.stamina = MAX_STAMINA;
       return [cruising, cruising, pressing("punch", true)];
@@ -606,12 +648,12 @@ describe("weapons", () => {
       rider: 2,
       weapon: "club",
     });
-    expect(bruiser.weapon).toBe("none");
+    expect(moose.weapon).toBe("none");
     expect(events.at(-1)).toMatchObject({ attack: "punch", weapon: "none" });
   });
 
   it("a kick that lands on an armed rival takes the weapon", () => {
-    const { bruiser, me, state } = sideBySide();
+    const { moose, me, state } = sideBySide();
     expect(me.weapon).toBe("none");
     const events = brawl(state, 2, (tick) => [
       tick < 60 ? pressing("kick", tick === 0) : pressing("punch", tick === 60),
@@ -624,7 +666,7 @@ describe("weapons", () => {
       target: 2,
       weapon: "club",
     });
-    expect([me.weapon, bruiser.weapon]).toStrictEqual(["club", "none"]);
+    expect([me.weapon, moose.weapon]).toStrictEqual(["club", "none"]);
     expect(events).toContainEqual({
       attack: "swing",
       kind: "hit",
@@ -647,7 +689,7 @@ const patrolFrom = (state: RaceState, copIndex: number, s: number) => {
 
 describe("meeting the police", () => {
   it("a cop parked on the verge pulls out after the pack before the player has ridden a kilometre", () => {
-    const state = createRace(track, 4);
+    const state = createRace(defaultSetup(track, 4));
     const cop = riderAt(state, 6);
     expect({
       offRoad: Math.abs(cop.x) > track.roadHalfWidth,
@@ -678,8 +720,12 @@ describe("meeting the police", () => {
   });
 });
 
-const crashNearCop = (copS: number) => {
-  const state = createRace(straight, 1, 0, 1);
+const crashNearCop = (copS: number, police: PoliceSetup = defaultPolice) => {
+  const state = createRace({
+    ...defaultSetup(straight, 1),
+    police,
+    rivals: [],
+  });
   const me = riderAt(state, 0);
   const cop = patrolFrom(state, 1, copS);
   me.s = 200;
@@ -702,7 +748,7 @@ describe("police", () => {
     expect(events.map((event) => event.kind)).toContain("crash");
     expect(events).toContainEqual({
       cop: 1,
-      fine: BUST_FINE,
+      fine: defaultPolice.fine,
       kind: "busted",
       rider: 0,
     });
@@ -728,7 +774,7 @@ const parked: RiderInput = { ...cruising, brake: 1, throttle: 0 };
 
 describe("the end of a patrol", () => {
   it("a cop that reaches the end of the track pulls off the road and the traffic behind it drives on", () => {
-    const state = createRace(track, 7, 0, 1);
+    const state = field(track, 7, 0, 1);
     const cop = patrolFrom(state, 1, track.length - 79);
     cop.speed = 3;
     const follower = state.cars.find((car) => car.speed > 0);
@@ -752,7 +798,14 @@ describe("the end of a patrol", () => {
 });
 
 const column = (riderCount: number) => {
-  const state = createRace(straight, 1, riderCount - 1, 0);
+  const setup = defaultSetup(straight, 1);
+  const state = createRace({
+    ...setup,
+    police: { ...setup.police, count: 0 },
+    rivals: setup.rivals
+      .slice(0, riderCount - 1)
+      .map((rival) => ({ ...rival, bike: setup.player.bike })),
+  });
   for (const rider of state.riders) {
     rider.s = 100;
     rider.x = 0;
@@ -845,9 +898,9 @@ describe("rider contact", () => {
 
 describe("simultaneous strikes", () => {
   it("two riders who punch each other on the same tick both land", () => {
-    const { bruiser, me, state } = sideBySide();
-    bruiser.weapon = "none";
-    bruiser.weaponHits = 0;
+    const { moose, me, state } = sideBySide();
+    moose.weapon = "none";
+    moose.weaponHits = 0;
     const events = brawl(state, 1, (tick) => [
       pressing("punch", tick === 0),
       cruising,
@@ -868,16 +921,16 @@ describe("simultaneous strikes", () => {
       target: 0,
       weapon: "none",
     });
-    expect(me.stamina).toBe(bruiser.stamina);
+    expect(me.stamina).toBe(moose.stamina);
     expect(me.stamina).toBeLessThan(MAX_STAMINA);
   });
 
   it("two riders who punch each other on the same tick are stunned for the same time", () => {
-    const { bruiser, me, state } = sideBySide();
-    disarm(bruiser);
+    const { moose, me, state } = sideBySide();
+    disarm(moose);
     const stuns: number[][] = [];
     brawl(state, 0.5, (tick) => {
-      stuns.push([me.hitStun, bruiser.hitStun]);
+      stuns.push([me.hitStun, moose.hitStun]);
       return [
         pressing("punch", tick === 0),
         cruising,
@@ -893,7 +946,7 @@ const duel = (
   unarmedIndex: number,
   inputsAt: (tick: number) => { unarmed: RiderInput; holder: RiderInput }
 ) => {
-  const state = createRace(straight, 1, 1, 0);
+  const state = field(straight, 1, 1, 0);
   const unarmed = riderAt(state, unarmedIndex);
   const holder = riderAt(state, 1 - unarmedIndex);
   disarm(unarmed);
@@ -953,9 +1006,9 @@ describe("simultaneous weapon grabs", () => {
 
 describe("armed rivals", () => {
   it("a chain holder at full aggression swings at a rider 2.8 m across within five seconds", () => {
-    const state = createRace(straight, 1, 1, 0);
-    const viper = riderAt(state, 1);
-    const rival = { ...viper, profile: { ...viper.profile, aggression: 1 } };
+    const state = field(straight, 1, 1, 0);
+    const dee = riderAt(state, 1);
+    const rival = { ...dee, profile: { ...dee.profile, aggression: 1 } };
     state.riders[1] = rival;
     state.tick = 10 * TICK_RATE;
     const me = riderAt(state, 0);
@@ -1000,15 +1053,470 @@ const pilotPack = (states: readonly RaceState[], seconds: number) => {
 
 describe("replays", () => {
   it("a six-rider pack replays the same from the same seed, alone or beside another race", () => {
-    const alone = createRace(track, 5);
+    const alone = createRace(defaultSetup(track, 5));
     pilotPack([alone], 40);
-    const again = createRace(track, 5);
+    const again = createRace(defaultSetup(track, 5));
     pilotPack([again], 40);
-    const beside = createRace(track, 5);
-    const other = createRace(track, 9);
+    const beside = createRace(defaultSetup(track, 5));
+    const other = createRace(defaultSetup(track, 9));
     pilotPack([beside, other], 40);
     expect(JSON.stringify(again)).toBe(JSON.stringify(alone));
     expect(JSON.stringify(beside)).toBe(JSON.stringify(alone));
     expect(JSON.stringify(other)).not.toBe(JSON.stringify(alone));
+  });
+});
+
+const alone = (course: Track, bike: BikeSpec): RaceState => {
+  const setup = defaultSetup(course, 1);
+  return createRace({
+    ...setup,
+    player: { ...setup.player, bike },
+    police: { ...setup.police, count: 0 },
+    rivals: [],
+  });
+};
+
+const SWITCHBACK_FROM = 1670;
+const SWITCHBACK_TO = 1840;
+
+const pushedWideInSwitchback = (bike: BikeSpec, kmh?: number): boolean => {
+  const state = alone(quietTrack, bike);
+  const rider = player(state);
+  rider.s = 900;
+  rider.speed = (kmh ?? 180) / 3.6;
+  let widest = Number.NEGATIVE_INFINITY;
+  while (rider.s < SWITCHBACK_TO) {
+    rider.x = 0;
+    rider.speed = kmh === undefined ? rider.speed : kmh / 3.6;
+    const inBend = rider.s > SWITCHBACK_FROM;
+    const inside = Math.sign(curvatureAt(quietTrack, rider.s));
+    stepRace(state, quietTrack, [
+      { ...cruising, steer: inBend ? inside : 0, throttle: 1 },
+    ]);
+    if (inBend) {
+      widest = Math.max(widest, -rider.x * inside);
+    }
+  }
+  return widest > 0;
+};
+
+const topSpeedKmh = (bike: BikeSpec): number => {
+  const state = alone(straight, bike);
+  hold(state, straight, { ...cruising, throttle: 1 }, 60);
+  return player(state).speed * 3.6;
+};
+
+describe("the bike catalogue", () => {
+  it("a Featherweight takes the Switchback flat out where the Sesta cannot", () => {
+    const wren = bikes["halden-wren-400"];
+    const sesta = bikes["ostra-sesta-600"];
+    expect({
+      sesta: pushedWideInSwitchback(sesta),
+      wren: pushedWideInSwitchback(wren),
+    }).toStrictEqual({ sesta: true, wren: false });
+    expect({
+      sestaAbove: pushedWideInSwitchback(sesta, 194 * 1.05),
+      sestaBelow: pushedWideInSwitchback(sesta, 194 * 0.95),
+      wrenAbove: pushedWideInSwitchback(wren, 222 * 1.05),
+      wrenBelow: pushedWideInSwitchback(wren, 222 * 0.95),
+    }).toStrictEqual({
+      sestaAbove: true,
+      sestaBelow: false,
+      wrenAbove: true,
+      wrenBelow: false,
+    });
+  });
+
+  it("every Heavyweight is faster flat out than the Sesta, and the Featherweights are slower", () => {
+    const sesta = topSpeedKmh(bikes["ostra-sesta-600"]);
+    expect(topSpeedKmh(bikes["halden-meridian-900"])).toBeGreaterThan(sesta);
+    expect(topSpeedKmh(bikes["brack-anvil-1100"])).toBeGreaterThan(sesta);
+    expect(topSpeedKmh(bikes["ostra-nera-1000"])).toBeGreaterThan(sesta);
+    expect(topSpeedKmh(bikes["halden-kite-500"])).toBeLessThan(sesta);
+    expect(topSpeedKmh(bikes["gutter-pup-250"])).toBeLessThan(160);
+  });
+});
+
+const rivalsOf = (state: RaceState): number[] =>
+  state.riders
+    .slice(1)
+    .filter((rider) => rider.profile.role === "racer")
+    .map((rider) => rider.s);
+
+describe("the grid", () => {
+  it("the player starts behind every rival when the grid order puts them last", () => {
+    const setup = defaultSetup(track, 1);
+    const last = createRace({ ...setup, gridOrder: "playerLast" });
+    const first = createRace({ ...setup, gridOrder: "playerFirst" });
+    expect(rivalsOf(last)).toHaveLength(5);
+    expect(player(last).s).toBeLessThan(Math.min(...rivalsOf(last)));
+    expect(player(first).s).toBeGreaterThanOrEqual(
+      Math.max(...rivalsOf(first))
+    );
+  });
+
+  it("the player starts with the weapon and the hits left that the setup carries over", () => {
+    const setup = defaultSetup(straight, 1);
+    const state = createRace({
+      ...setup,
+      player: { ...setup.player, weapon: "chain", weaponHits: 3 },
+      police: { ...setup.police, count: 0 },
+      rivals: setup.rivals.slice(0, 2),
+    });
+    const me = riderAt(state, 0);
+    const moose = riderAt(state, 2);
+    riderAt(state, 1).s = 900;
+    disarm(moose);
+    for (const rider of [me, moose]) {
+      rider.s = 50;
+      rider.speed = 30;
+    }
+    expect([me.weapon, me.weaponHits]).toStrictEqual(["chain", 3]);
+    const events = brawl(state, 8, () => {
+      moose.stamina = MAX_STAMINA;
+      return [pressing("punch", true), cruising, cruising];
+    });
+    expect(
+      events.filter((event) => event.kind === "hit" && event.weapon === "chain")
+    ).toHaveLength(3);
+    expect(me.weapon).toBe("none");
+  });
+});
+
+const headOn = (state: RaceState, rider: RiderState): RaceEvent[] => {
+  const [car] = state.cars;
+  if (!car) {
+    throw new Error("The race has no car.");
+  }
+  car.s = rider.s + 60;
+  car.speed = car.cruiseSpeed;
+  rider.x = car.x;
+  rider.speed = 45;
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
+    stepRace(state, straight, [{ ...cruising, throttle: 1 }]);
+    events.push(...state.events);
+    const down = events.some((event) => event.kind === "crash");
+    if (down && (rider.mode === "riding" || rider.parked)) {
+      break;
+    }
+  }
+  return events;
+};
+
+describe("bike condition", () => {
+  it("three hard traffic crashes wreck the bike and the rider is placed after everyone else", () => {
+    const state = field(straight, 1, 2, 0);
+    const me = riderAt(state, 0);
+    const finisher = riderAt(state, 1);
+    finisher.s = straight.length - 20;
+    finisher.speed = 30;
+    me.s = 100;
+    state.cars.push({
+      cruiseSpeed: -22,
+      halfLength: 2.2,
+      halfWidth: 0.92,
+      height: 1.45,
+      paint: 2,
+      s: 0,
+      speed: -22,
+      x: -1.8,
+    });
+    const conditions: number[] = [];
+    const kinds: string[] = [];
+    for (let crash = 0; crash < 3; crash += 1) {
+      kinds.push(...headOn(state, me).map((event) => event.kind));
+      conditions.push(me.condition);
+    }
+    expect(conditions[0]).toBeLessThan(70);
+    expect(conditions.slice(1).map((left) => left > 0)).toStrictEqual([
+      true,
+      false,
+    ]);
+    expect(
+      ["crash", "remount", "wrecked"].map(
+        (wanted) => kinds.filter((kind) => kind === wanted).length
+      )
+    ).toStrictEqual([3, 2, 1]);
+    expect({
+      finished: finisher.finishTick >= 0,
+      mode: me.mode,
+      offTheRoad: Math.abs(me.x) > straight.roadHalfWidth,
+    }).toStrictEqual({ finished: true, mode: "wrecked", offTheRoad: true });
+    expect(standings(state)).toStrictEqual([1, 2, 0]);
+  });
+
+  it("the traffic drives on past a wreck that has come to rest", () => {
+    const state = field(straight, 1, 0, 0);
+    const me = riderAt(state, 0);
+    me.s = 100;
+    me.condition = 1;
+    state.cars.push({
+      cruiseSpeed: -22,
+      halfLength: 2.2,
+      halfWidth: 0.92,
+      height: 1.45,
+      paint: 2,
+      s: 0,
+      speed: -22,
+      x: -1.8,
+    });
+    headOn(state, me);
+    const [car] = state.cars;
+    hold(state, straight, cruising, 6);
+    expect(me.mode).toBe("wrecked");
+    expect(Math.abs(car?.speed ?? 0)).toBeGreaterThan(20);
+  });
+});
+
+const knockedOffTrack = (ticksAfterPunch: number): RaceEvent[] => {
+  const { moose, me, state } = sideBySide();
+  const crashes: RaceEvent[] = [];
+  let punchedAt = -1;
+  for (let tick = 0; tick < 3 * TICK_RATE && crashes.length === 0; tick += 1) {
+    me.x = 0.3;
+    moose.s = me.s;
+    moose.x =
+      punchedAt >= 0 && state.tick + 1 === punchedAt + ticksAfterPunch
+        ? straight.vergeHalfWidth + 1
+        : 1.8;
+    stepRace(state, straight, [
+      pressing("punch", tick === 0),
+      cruising,
+      cruising,
+    ]);
+    if (state.events.some((event) => event.kind === "hit")) {
+      punchedAt = state.tick;
+    }
+    crashes.push(...state.events.filter((event) => event.kind === "crash"));
+  }
+  return crashes;
+};
+
+describe("crash attribution", () => {
+  it("a crash within a second of a punch names the rider who threw it, and a later one names nobody", () => {
+    expect(knockedOffTrack(60)).toMatchObject([
+      { by: 0, cause: "offTrack", rider: 2 },
+    ]);
+    expect(knockedOffTrack(61)).toMatchObject([
+      { by: -1, cause: "offTrack", rider: 2 },
+    ]);
+  });
+
+  it("a rider knocked down by punches is put down to the puncher, and a rider who falls alone to nobody", () => {
+    const { moose, state } = sideBySide();
+    moose.stamina = 10;
+    const fight = brawl(state, 1, (tick) => [
+      pressing("punch", tick === 0),
+      cruising,
+      cruising,
+    ]);
+    expect(fight.filter((event) => event.kind === "crash")).toMatchObject([
+      { by: 0, cause: "combat", rider: 2 },
+    ]);
+
+    const solo = field(quietTrack, 1, 0, 0);
+    player(solo).s = 100;
+    player(solo).speed = 30;
+    const fall = hold(solo, quietTrack, { ...cruising, steer: 1 }, 6);
+    expect(fall.filter((event) => event.kind === "crash")).toMatchObject([
+      { by: -1, rider: 0 },
+    ]);
+  });
+});
+
+const steerAway = (weapon: "none" | "sign", seconds: number): number => {
+  const state = field(straight, 1, 0, 0);
+  const rider = player(state);
+  rider.speed = 40;
+  arm(rider, weapon);
+  hold(state, straight, { ...cruising, steer: 1, throttle: 0.6 }, seconds);
+  return rider.lateralSpeed;
+};
+
+const reaches = (weapon: "cue" | "club"): boolean => {
+  const { moose, state } = sideBySide();
+  arm(moose, weapon);
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < TICK_RATE; tick += 1) {
+    riderAt(state, 0).x = -1;
+    moose.x = 1.8;
+    moose.s = riderAt(state, 0).s;
+    stepRace(state, straight, [
+      cruising,
+      cruising,
+      pressing("punch", tick === 0),
+    ]);
+    events.push(...state.events);
+  }
+  return events.some((event) => event.kind === "hit");
+};
+
+const staminaLostTo = (weapon: "sign" | "club"): number => {
+  const { moose, me, state } = sideBySide();
+  arm(moose, weapon);
+  brawl(state, 1, (tick) => [
+    cruising,
+    cruising,
+    pressing("punch", tick === 0),
+  ]);
+  return MAX_STAMINA - me.stamina;
+};
+
+describe("the new weapons", () => {
+  it("a pool cue breaks after five hits", () => {
+    const { moose, me, state } = sideBySide();
+    arm(moose, "cue");
+    const events = brawl(state, 10, () => {
+      me.stamina = MAX_STAMINA;
+      return [cruising, cruising, pressing("punch", true)];
+    });
+    expect(
+      events.filter((event) => event.kind === "hit" && event.weapon === "cue")
+    ).toHaveLength(5);
+    expect(events).toContainEqual({
+      kind: "weaponBroken",
+      rider: 2,
+      weapon: "cue",
+    });
+    expect(moose.weapon).toBe("none");
+  });
+
+  it("a pool cue reaches a rider 2.8 m across, where a club does not", () => {
+    expect({ club: reaches("club"), cue: reaches("cue") }).toStrictEqual({
+      club: false,
+      cue: true,
+    });
+  });
+
+  it("a stop sign hits harder than a club and its holder answers the bars more slowly", () => {
+    expect(staminaLostTo("sign")).toBeGreaterThan(staminaLostTo("club"));
+    expect(steerAway("sign", 0.05)).toBeLessThan(
+      steerAway("none", 0.05) * 0.95
+    );
+    expect(steerAway("sign", 1)).toBeCloseTo(steerAway("none", 1), 1);
+  });
+});
+
+const hitsByTheRival = (rival: RivalSetup, bystanderAcross: number) => {
+  const setup = defaultSetup(straight, 1);
+  const [, other] = setup.rivals;
+  if (!other) {
+    throw new Error("The default field has no second rival.");
+  }
+  const state = createRace({
+    ...setup,
+    police: { ...setup.police, count: 0 },
+    rivals: [rival, other],
+  });
+  state.tick = 10 * TICK_RATE;
+  const rivalInput = { ...cruising };
+  const targets: number[] = [];
+  for (let tick = 0; tick < 6 * TICK_RATE; tick += 1) {
+    for (const rider of state.riders) {
+      rider.s = 50;
+      rider.speed = 30;
+      rider.stamina = MAX_STAMINA;
+    }
+    riderAt(state, 0).x = -1.2;
+    riderAt(state, 1).x = 0;
+    riderAt(state, 2).x = bystanderAcross;
+    pilotInput(state, straight, 1, rivalInput);
+    stepRace(state, straight, [cruising, rivalInput, cruising]);
+    targets.push(
+      ...state.events.flatMap((event) =>
+        event.kind === "hit" && event.rider === 1 ? [event.target] : []
+      )
+    );
+  }
+  return targets;
+};
+
+describe("grudges", () => {
+  it("a rival with a grudge attacks its target rather than a nearer rider when both are in reach", () => {
+    const [dee] = defaultSetup(straight, 1).rivals;
+    if (!dee) {
+      throw new Error("The default field has no rival.");
+    }
+    const impartial = hitsByTheRival({ ...dee, aggression: 1 }, 2);
+    const grudging = hitsByTheRival({ ...dee, aggression: 1, grudge: 2 }, 2);
+    expect(impartial[0]).toBe(0);
+    expect(grudging.length).toBeGreaterThan(0);
+    expect(new Set(grudging)).toStrictEqual(new Set([2]));
+  });
+
+  it("a rival who is otherwise peaceful attacks the rider it has a grudge against, and only that rider", () => {
+    const [dee] = defaultSetup(straight, 1).rivals;
+    if (!dee) {
+      throw new Error("The default field has no rival.");
+    }
+    const vengeful = { ...dee, aggression: 0, aggressionBoost: 1, grudge: 2 };
+    expect(hitsByTheRival(vengeful, 2).length).toBeGreaterThan(0);
+    expect(hitsByTheRival(vengeful, 12)).toStrictEqual([]);
+  });
+});
+
+const chase = (police: PoliceSetup, lead: number, quarrySpeed: number) => {
+  const state = createRace({
+    ...defaultSetup(straight, 1),
+    police,
+    rivals: [],
+  });
+  const me = riderAt(state, 0);
+  const cop = patrolFrom(state, 1, 100);
+  const copInput = { ...cruising };
+  let pursued = false;
+  let fastest = 0;
+  for (let tick = 0; tick < 12 * TICK_RATE; tick += 1) {
+    me.s = cop.s + lead;
+    me.x = -1.8;
+    me.speed = quarrySpeed;
+    pilotInput(state, straight, 1, copInput);
+    stepRace(state, straight, [cruising, copInput]);
+    pursued ||= state.events.some((event) => event.kind === "pursuit");
+    fastest = Math.max(fastest, cop.speed);
+  }
+  return { distance: chaserDistance(state, 0), fastest, pursued };
+};
+
+describe("police settings", () => {
+  it("the number of cops and the fine come from the setup", () => {
+    const police = { ...defaultPolice, count: 3, fine: 900 };
+    const { events, state } = crashNearCop(150, police);
+    const cops = state.riders.filter(
+      (rider) => rider.profile.role === "police"
+    );
+    expect(cops.map((cop) => cop.profile.name)).toStrictEqual([
+      "Sergeant Dolores Pike",
+      "Sergeant Dolores Pike",
+      "Sergeant Dolores Pike",
+    ]);
+    expect(events).toContainEqual({
+      cop: 1,
+      fine: 900,
+      kind: "busted",
+      rider: 0,
+    });
+  });
+
+  it("a cop sees as far as the setup says and no further", () => {
+    const near = chase({ ...defaultPolice, sightRange: 40 }, 50, PATROL_SPEED);
+    const far = chase({ ...defaultPolice, sightRange: 60 }, 50, PATROL_SPEED);
+    expect({ distance: near.distance, pursued: near.pursued }).toStrictEqual({
+      distance: -1,
+      pursued: false,
+    });
+    expect(far.pursued).toBeTruthy();
+    expect(far.distance).toBeGreaterThan(45);
+    expect(far.distance).toBeLessThan(55);
+  });
+
+  it("a cop in pursuit rides no faster than the setup allows", () => {
+    const slow = chase({ ...defaultPolice, topSpeed: 46 }, 15, 70);
+    const quick = chase({ ...defaultPolice, topSpeed: 54 }, 15, 70);
+    expect(slow.fastest).toBeGreaterThan(44);
+    expect(slow.fastest).toBeLessThan(48);
+    expect(quick.fastest).toBeGreaterThan(52);
+    expect(quick.fastest).toBeLessThan(56);
   });
 });

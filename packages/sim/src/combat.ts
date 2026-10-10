@@ -27,6 +27,20 @@ const canFight = (rider: RiderState): boolean =>
 const allies = (rider: RiderState, other: RiderState): boolean =>
   rider.profile.role === "police" && other.profile.role === "police";
 
+const reaches = (
+  rider: RiderState,
+  other: RiderState,
+  side: number,
+  strike: StrikeSpec
+): boolean => {
+  const gapX = other.x - rider.x;
+  return (
+    Math.sign(gapX) === side &&
+    Math.abs(gapX) < strike.reachX &&
+    Math.abs(other.s - rider.s) < strike.reachS
+  );
+};
+
 export const nearestRival = (
   state: RaceState,
   riderIndex: number,
@@ -43,14 +57,8 @@ export const nearestRival = (
     if (index === riderIndex || !canFight(other) || allies(rider, other)) {
       continue;
     }
-    const gapX = other.x - rider.x;
-    const gapS = Math.abs(other.s - rider.s);
-    if (
-      Math.sign(gapX) === side &&
-      Math.abs(gapX) < strike.reachX &&
-      gapS < strike.reachS
-    ) {
-      const gap = gapS + Math.abs(gapX);
+    if (reaches(rider, other, side, strike)) {
+      const gap = Math.abs(other.s - rider.s) + Math.abs(other.x - rider.x);
       if (gap < bestGap) {
         bestGap = gap;
         best = index;
@@ -60,11 +68,42 @@ export const nearestRival = (
   return best;
 };
 
+export const grudgeSide = (
+  state: RaceState,
+  riderIndex: number,
+  strike: StrikeSpec = punch
+): number => {
+  const rider = state.riders[riderIndex];
+  const target = state.riders[rider?.grudge ?? -1];
+  if (!(rider && target) || target === rider || !canFight(target)) {
+    return 0;
+  }
+  const side = Math.sign(target.x - rider.x);
+  return reaches(rider, target, side, strike) ? side : 0;
+};
+
+export const strikeTarget = (
+  state: RaceState,
+  riderIndex: number,
+  side: number,
+  strike: StrikeSpec = punch
+): number => {
+  const rider = state.riders[riderIndex];
+  if (rider && grudgeSide(state, riderIndex, strike) === side) {
+    return rider.grudge;
+  }
+  return nearestRival(state, riderIndex, side, strike);
+};
+
 export const rivalSide = (
   state: RaceState,
   riderIndex: number,
   strike: StrikeSpec = punch
 ): number => {
+  const grudge = grudgeSide(state, riderIndex, strike);
+  if (grudge !== 0) {
+    return grudge;
+  }
   if (nearestRival(state, riderIndex, -1, strike) >= 0) {
     return -1;
   }
@@ -133,6 +172,8 @@ const landHit = (
   target.lateralSpeed += side * strike.shove;
   target.speed *= 1 - HIT_SPEED_LOSS;
   target.hitStun = HIT_STUN_TICKS;
+  target.lastHitBy = riderIndex;
+  target.lastHitTick = state.tick;
   if (target.attack !== "none") {
     finishSwing(state, targetIndex, target);
   }
@@ -173,7 +214,7 @@ const aimStrike = (
   if (rider.attackTicks - 1 !== strike.strikeTick) {
     return undefined;
   }
-  const target = nearestRival(state, riderIndex, rider.attackSide, strike);
+  const target = strikeTarget(state, riderIndex, rider.attackSide, strike);
   if (target < 0) {
     return undefined;
   }
@@ -325,6 +366,8 @@ interface Jolt {
   behind: number;
   struckGap: number;
   struckSpeed: number;
+  touchedBy: number;
+  touchedGap: number;
 }
 
 interface Party {
@@ -344,7 +387,19 @@ const untouched = (): Jolt => ({
   speedLoss: 0,
   struckGap: Number.POSITIVE_INFINITY,
   struckSpeed: 0,
+  touchedBy: -1,
+  touchedGap: Number.POSITIVE_INFINITY,
 });
+
+const touch = (party: Party, other: Party): void => {
+  const gap =
+    Math.abs(other.rider.s - party.rider.s) +
+    Math.abs(other.rider.x - party.rider.x);
+  if (gap < party.jolt.touchedGap) {
+    party.jolt.touchedGap = gap;
+    party.jolt.touchedBy = other.index;
+  }
+};
 
 const shoveApart = (
   state: RaceState,
@@ -410,6 +465,8 @@ const meet = (state: RaceState, left: Party, right: Party): void => {
   }
   const overlapS = BIKE_HALF_LENGTH * 2 - Math.abs(gapS);
   const overlapX = reachX - Math.abs(gapX);
+  touch(left, right);
+  touch(right, left);
   if (overlapX < overlapS) {
     shoveApart(state, left, right, gapX, overlapX);
   } else if (gapS > 0) {
@@ -420,9 +477,14 @@ const meet = (state: RaceState, left: Party, right: Party): void => {
 };
 
 const settle = (
+  state: RaceState,
   { index, jolt, rider }: Party,
   throwRider: ThrowRider
 ): void => {
+  if (jolt.touchedBy >= 0) {
+    rider.lastHitBy = jolt.touchedBy;
+    rider.lastHitTick = state.tick;
+  }
   rider.x += jolt.shift;
   if (jolt.shoved) {
     rider.lateralSpeed = clamp(jolt.shove, -SIDE_SHOVE, SIDE_SHOVE);
@@ -453,7 +515,7 @@ export const stepRiderContacts = (
     }
   }
   for (const party of parties) {
-    settle(party, throwRider);
+    settle(state, party, throwRider);
   }
   for (const rider of state.riders) {
     rider.x = clamp(rider.x, -track.vergeHalfWidth, track.vergeHalfWidth);
