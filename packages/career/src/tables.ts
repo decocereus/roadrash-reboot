@@ -1,0 +1,208 @@
+import { bikes } from "@racer/sim/bikes";
+import type { BikeId } from "@racer/sim/bikes";
+import { officerFor } from "@racer/sim/cast";
+import type { RegionId, RivalId } from "@racer/sim/cast";
+import type { BikeClass, PoliceSetup } from "@racer/sim/state";
+import type { RoadId, RoadLevel } from "@racer/track/road";
+
+export type { RoadId } from "@racer/track/road";
+
+export type Level = RoadLevel;
+
+export const levels: readonly Level[] = [1, 2, 3, 4, 5];
+
+export const FIRST_LEVEL: Level = 1;
+export const LAST_LEVEL: Level = 5;
+
+export const levelAfter = (level: Level): Level =>
+  levels.find((candidate) => candidate === level + 1) ?? LAST_LEVEL;
+
+export const byLevel = <Value>(make: (level: Level) => Value) => ({
+  1: make(1),
+  2: make(2),
+  3: make(3),
+  4: make(4),
+  5: make(5),
+});
+
+export interface Road {
+  readonly id: RoadId;
+  readonly name: string;
+  readonly region: RegionId;
+  readonly regionName: string;
+  readonly lengths: Record<Level, number>;
+}
+
+export const roads = {
+  "breakwater-run": {
+    id: "breakwater-run",
+    lengths: { 1: 3900, 2: 5050, 3: 6200, 4: 7350, 5: 8500 },
+    name: "Breakwater Run",
+    region: "salt-coast",
+    regionName: "Salt Coast",
+  },
+  "cinder-wash": {
+    id: "cinder-wash",
+    lengths: { 1: 4400, 2: 5550, 3: 6700, 4: 7850, 5: 9000 },
+    name: "Cinder Wash",
+    region: "cinder-flats",
+    regionName: "Cinder Flats",
+  },
+  "hollow-pine-road": {
+    id: "hollow-pine-road",
+    lengths: { 1: 3600, 2: 4750, 3: 5900, 4: 7050, 5: 8200 },
+    name: "Hollow Pine Road",
+    region: "kettle-woods",
+    regionName: "Kettle Woods",
+  },
+  "ridge-road": {
+    id: "ridge-road",
+    lengths: { 1: 4250, 2: 5400, 3: 6550, 4: 7700, 5: 8850 },
+    name: "Ridge Road",
+    region: "stonepeak",
+    regionName: "Stonepeak",
+  },
+  "slag-row": {
+    id: "slag-row",
+    lengths: { 1: 4000, 2: 5150, 3: 6300, 4: 7450, 5: 8600 },
+    name: "Slag Row",
+    region: "lowtown",
+    regionName: "Lowtown",
+  },
+} as const satisfies Record<RoadId, Road>;
+
+export const roadList: readonly Road[] = [
+  roads["breakwater-run"],
+  roads["cinder-wash"],
+  roads["hollow-pine-road"],
+  roads["slag-row"],
+  roads["ridge-road"],
+];
+
+export const FINALE_ROAD: RoadId = "ridge-road";
+export const ENVELOPE_ROAD: RoadId = "breakwater-run";
+export const ENVELOPE_LEVEL: Level = 2;
+export const ENVELOPE_RIVAL: RivalId = "tristan-lux";
+export const ENVELOPE_PAYMENT = 1500;
+export const ENVELOPE_CLAWBACK = 2000;
+
+export const ALLY: RivalId = "dee-santangelo";
+export const ALLY_LEVEL: Level = 3;
+export const ALLY_BREAKING_KNOCKDOWNS = 2;
+
+export const CHAMPION: RivalId = "juno-kade";
+export const CHAMPION_STAND_IN: RivalId = "ruth-ann-bixby";
+export const FINALE_AGGRESSION = 0.9;
+
+export const RIVALS_PER_RACE = 7;
+export const FIELD_SIZE = RIVALS_PER_RACE + 1;
+export const QUALIFYING_PLACE = 3;
+
+export const STARTING_CASH = 1500;
+export const STARTING_BIKE: BikeId = "halden-wren-400";
+export const REPOSSESSION_BIKE: BikeId = "gutter-pup-250";
+export const REPOSSESSION_CREDIT_LIMIT = 750;
+export const TRADE_IN_RATE = 0.6;
+export const CREDIT_RATE = 0.5;
+export const REPEAT_RATE = 0.5;
+export const AD_REPAIR_RATE = 0.5;
+
+export const prizes = {
+  1: [1500, 1000, 700, 400, 250, 150, 100, 50],
+  2: [2400, 1600, 1120, 640, 400, 240, 160, 80],
+  3: [3600, 2400, 1680, 960, 600, 360, 240, 120],
+  4: [5100, 3400, 2380, 1360, 850, 510, 340, 170],
+  5: [6900, 4600, 3220, 1840, 1150, 690, 460, 230],
+} as const satisfies Record<Level, readonly number[]>;
+
+export const repairBase = {
+  1: 400,
+  2: 700,
+  3: 1100,
+  4: 1600,
+  5: 2200,
+} as const satisfies Record<Level, number>;
+
+export const repairMultiplier = {
+  featherweight: 1,
+  heavyweight: 2,
+  middleweight: 1.5,
+} as const satisfies Record<BikeClass, number>;
+
+export const fines = {
+  1: 500,
+  2: 900,
+  3: 1500,
+  4: 2200,
+  5: 3000,
+} as const satisfies Record<Level, number>;
+
+export interface PoliceLevel {
+  readonly count: number;
+  readonly topSpeed: number;
+  readonly sightRange: number;
+  readonly bike: BikeId;
+}
+
+export const policeLevels = {
+  1: { bike: "ostra-sesta-600", count: 1, sightRange: 40, topSpeed: 46 },
+  2: { bike: "ostra-sesta-600", count: 2, sightRange: 40, topSpeed: 50 },
+  3: { bike: "ostra-sesta-600", count: 3, sightRange: 45, topSpeed: 54 },
+  4: { bike: "halden-meridian-900", count: 4, sightRange: 50, topSpeed: 58 },
+  5: { bike: "ostra-nera-1000", count: 5, sightRange: 60, topSpeed: 62 },
+} as const satisfies Record<Level, PoliceLevel>;
+
+export const catalogue: readonly BikeId[] = [
+  "gutter-pup-250",
+  "halden-wren-400",
+  "halden-kite-500",
+  "ostra-sesta-600",
+  "ostra-sette-750",
+  "brack-stoker-800",
+  "halden-meridian-900",
+  "brack-anvil-1100",
+  "ostra-nera-1000",
+];
+
+export const stockLevel = {
+  "brack-anvil-1100": 4,
+  "brack-stoker-800": 2,
+  "gutter-pup-250": 1,
+  "halden-kite-500": 1,
+  "halden-meridian-900": 3,
+  "halden-wren-400": 1,
+  "ostra-nera-1000": 5,
+  "ostra-sesta-600": 1,
+  "ostra-sette-750": 2,
+} as const satisfies Record<BikeId, Level>;
+
+export const stockArrivingAt = (level: Level): readonly BikeId[] =>
+  catalogue.filter((bikeId) => stockLevel[bikeId] === level);
+
+export const prizeFor = (level: Level, place: number): number =>
+  prizes[level][place - 1] ?? 0;
+
+export const repeatPrizeFor = (level: Level, place: number): number =>
+  place <= QUALIFYING_PLACE ? prizeFor(level, place) * REPEAT_RATE : 0;
+
+export const repairBill = (level: Level, bikeId: BikeId): number =>
+  repairBase[level] * repairMultiplier[bikes[bikeId].bikeClass];
+
+export const tradeInOf = (bikeId: BikeId): number =>
+  bikeId === REPOSSESSION_BIKE
+    ? 0
+    : Math.round(bikes[bikeId].price * TRADE_IN_RATE);
+
+export const creditLimitOf = (bikeId: BikeId): number =>
+  bikeId === REPOSSESSION_BIKE
+    ? REPOSSESSION_CREDIT_LIMIT
+    : Math.round(tradeInOf(bikeId) * CREDIT_RATE);
+
+export const policeFor = (level: Level, region: RegionId): PoliceSetup => ({
+  bike: bikes[policeLevels[level].bike],
+  count: policeLevels[level].count,
+  fine: fines[level],
+  officer: officerFor(region).profile,
+  sightRange: policeLevels[level].sightRange,
+  topSpeed: policeLevels[level].topSpeed,
+});
