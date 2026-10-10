@@ -50,6 +50,10 @@ Title
 - If a save exists, the first item reads `CONTINUE CAREER` with a second line `Level {level} · ${cash} · {bike}`, and `NEW CAREER` appears below it.
 - Small print: `Arrows to steer · Space to punch · Shift to kick`
 - New career confirm, when a save exists: `Start over? Your Level {level} career will be erased.` Buttons `ERASE AND START` / `KEEP IT`.
+- An entry whose screen has not shipped is dimmed, cannot be selected, and carries the second line `SOON`.
+- After the ending, the first item reads `SEASON OVER` with the second line `See the ending`.
+- Damaged save, in a red-edged panel above the menu (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
+- When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
 
 **Buttons.** The four menu items. Enter on the selected one.
 
@@ -101,6 +105,7 @@ Title
 - Board notes (templates, newest first, at most three shown):
   - `{RIVAL} WANTS {THEIR} {WEAPON} BACK.`
   - `{RIVAL} WENT DOWN AT {km} KM ON {ROAD}. ASK {THEM} ABOUT IT.`
+  - `{RIVAL} PUT YOU DOWN AT {km} KM ON {ROAD}. EVERYBODY SAW.` (when a rival knocked the player off)
   - `PHOTO FINISH: {WINNER} BY A WHEEL OVER {LOSER}.`
   - `{RIVAL}: BUSTED ON {ROAD}. FINE ${fine}.`
   - `NEW AT THE GARAGE: {bike}.`
@@ -201,9 +206,12 @@ Title
 - When in debt: `THE GARAGE DOESN'T SELL TO PEOPLE WHO OWE VIC MONEY. YOU CAN STILL SELL.`
 - Buy confirm: `Trade your {owned} for the {new}? You'll have ${remainder} left.` Buttons `DO IT` / `NOT YET`.
 - After buying: `It's yours. Try not to bend it.`
+- Why the selected bike cannot be bought, beside the price: `Yours.`, `Arrives at level {n}.`, `Short by ${amount}.`, or the debt line above.
+- Sell confirm: `Sell the {owned} for ${trade-in}? You'll ride the Gutter Pup and have ${cash + trade}.` Buttons `SELL IT` / `KEEP IT`, with `KEEP IT` selected. The `SELL` button carries the second line `{owned} for ${trade-in}`, or `Nobody wants the Gutter Pup.` when it is dimmed.
+- After selling: `Sold. You ride the Gutter Pup now.`
 - Repair bill reminder under the bars: `A wreck at Level {n} costs ${repair} on this bike.`
 
-**Buttons.** `BUY` (primary), `BACK`. Up and down move through the catalogue.
+**Buttons.** `BUY` (primary), `SELL`, `BACK`. Up and down move through the catalogue.
 
 **In.** From the Clubhouse. The roller door lifts (the screen wipes upward, 250 ms).
 
