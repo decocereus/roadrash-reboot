@@ -750,18 +750,54 @@ describe("police", () => {
   it("a cop busts a rider who is still off the bike when it arrives", () => {
     const { events, me, state } = crashNearCop(150);
     expect(events.map((event) => event.kind)).toContain("crash");
-    expect(events).toContainEqual({
-      cop: 1,
-      fine: defaultPolice.fine,
-      kind: "busted",
-      rider: 0,
-    });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        cop: 1,
+        fine: defaultPolice.fine,
+        kind: "busted",
+        rider: 0,
+      })
+    );
     expect(events.map((event) => event.kind)).not.toContain("remount");
     expect({
       mode: me.mode,
       pulledOver: Math.abs(me.bodyX) > straight.roadHalfWidth,
     }).toStrictEqual({ mode: "busted", pulledOver: true });
     expect(standings(state)).toStrictEqual([0]);
+  });
+
+  it("the arrest is reported where the body lay and with the weapon the rider was thrown with", () => {
+    const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
+    const me = riderAt(state, 0);
+    patrolFrom(state, 1, 150);
+    me.s = 200;
+    me.speed = 15;
+    me.stamina = 0;
+    arm(me, "chain");
+    const copInput = { ...cruising };
+    let body = { s: me.bodyS, x: me.bodyX };
+    let arrest: RaceEvent | undefined;
+    while (!arrest && state.tick < 15 * TICK_RATE) {
+      body = { s: me.bodyS, x: me.bodyX };
+      pilotInput(state, straight, 1, copInput);
+      stepRace(state, straight, [cruising, copInput]);
+      arrest = state.events.find((event) => event.kind === "busted");
+    }
+    if (arrest?.kind !== "busted") {
+      throw new Error("The cop made no arrest.");
+    }
+    expect(arrest.weapon).toBe("chain");
+    expect(Math.abs(arrest.s - body.s)).toBeLessThan(0.2);
+    expect(Math.abs(arrest.x - body.x)).toBeLessThan(0.2);
+    expect({
+      arrestedOnTheRoad: Math.abs(arrest.x) < straight.roadHalfWidth,
+      movedToTheVerge: Math.abs(me.bodyX) > straight.roadHalfWidth,
+      weapon: me.weapon,
+    }).toStrictEqual({
+      arrestedOnTheRoad: true,
+      movedToTheVerge: true,
+      weapon: "none",
+    });
   });
 
   it("a rider who remounts and rides away in time is not busted", () => {
@@ -1659,12 +1695,14 @@ describe("police settings", () => {
       "Sergeant Dolores Pike",
       "Sergeant Dolores Pike",
     ]);
-    expect(events).toContainEqual({
-      cop: 1,
-      fine: 900,
-      kind: "busted",
-      rider: 0,
-    });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        cop: 1,
+        fine: 900,
+        kind: "busted",
+        rider: 0,
+      })
+    );
   });
 
   it("a cop sees as far as the setup says and no further", () => {

@@ -97,6 +97,7 @@ export interface RiderState {
   hitStun: number;
   weapon: WeaponKind;
   weaponHits: number;
+  weaponAtThrow: WeaponKind;
   chase: number;
   parked: boolean;
   s: number;
@@ -190,6 +191,9 @@ export type RaceEvent =
       readonly rider: number;
       readonly cop: number;
       readonly fine: number;
+      readonly s: number;
+      readonly x: number;
+      readonly weapon: WeaponKind;
     }
   | {
       readonly kind: "riderContact";

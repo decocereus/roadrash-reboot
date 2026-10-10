@@ -120,14 +120,17 @@ const bust = (
   if (!rider) {
     return;
   }
-  rider.mode = "busted";
-  pullOver(track, rider);
   state.events.push({
     cop: copIndex,
     fine: state.police.fine,
     kind: "busted",
     rider: riderIndex,
+    s: rider.bodyS,
+    weapon: rider.weaponAtThrow,
+    x: rider.bodyX,
   });
+  rider.mode = "busted";
+  pullOver(track, rider);
 };
 
 export const chaserDistance = (

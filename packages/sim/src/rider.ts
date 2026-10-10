@@ -116,6 +116,7 @@ export const throwRider = (
   }
   const wrecked = rider.condition <= 0;
   rider.mode = wrecked ? "wrecked" : "thrown";
+  rider.weaponAtThrow = rider.weapon;
   disarm(rider);
   rider.chase = -1;
   rider.parked = false;
