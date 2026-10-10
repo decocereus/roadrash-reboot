@@ -9,6 +9,7 @@ const sizes = {
 
 const tones = {
   green: "text-green",
+  ink: "text-ink",
   muted: "text-muted",
   orange: "text-orange",
   red: "text-red",
@@ -48,7 +49,10 @@ function Stat({
     >
       <span
         data-slot="stat-label"
-        className="font-body text-label text-muted font-semibold uppercase"
+        className={cn(
+          "font-body text-label font-semibold uppercase",
+          tone === "ink" ? "text-ink/70" : "text-muted"
+        )}
       >
         {label}
       </span>
