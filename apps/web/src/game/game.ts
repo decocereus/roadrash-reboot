@@ -30,14 +30,9 @@ import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
 import { bikeColour } from "../career/colours.ts";
-import {
-  createBike,
-  createFleet,
-  HIP_HEIGHT,
-  HIP_SETBACK,
-  poseOnTrack,
-} from "./actors.ts";
+import { createBike, createFleet, poseOnTrack } from "./actors.ts";
 import type { BikeModel, Fleet } from "./actors.ts";
+import { loadAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
@@ -49,6 +44,7 @@ import type {
   RacePlan,
 } from "./hud.ts";
 import { createControls } from "./input.ts";
+import { createPipeline } from "./post.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, RiderPose } from "./rider-figure.ts";
 import { createWorld } from "./world.ts";
@@ -69,7 +65,6 @@ const SLOW_FRAME_SECONDS = 0.0195;
 const WRAP_JUMP = 30;
 const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
-const STANDING_HEIGHT = 0.98;
 const RISE_SECONDS = 0.45;
 const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
@@ -177,31 +172,42 @@ const autopilot =
   import.meta.env.DEV &&
   new URLSearchParams(globalThis.location.search).has("autopilot");
 
+const firstRoad = import.meta.env.DEV
+  ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
+  : 0;
+
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
-export function createGame(
+export async function createGame(
   canvas: HTMLCanvasElement,
   events: GameEvents
-): GameHandle {
-  let roadTurn = 0;
+): Promise<GameHandle> {
+  const assets = await loadAssets();
+  let roadTurn = firstRoad;
   let track = roadForTurn(roadTurn);
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,
+    antialias: false,
     canvas,
     powerPreference: "high-performance",
   });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.autoUpdate = false;
   let pixelRatio = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
   renderer.setPixelRatio(pixelRatio);
+  const pipeline = createPipeline(renderer);
 
   let world = createWorld(track);
+  pipeline.setLook(world.shading.look);
   const chase = createChaseCamera();
   const sound = createSound();
 
   let seed = 1;
   let race: RaceState = createRace(defaultSetup(track, seed));
-  let fleet: Fleet = createFleet(race.cars);
+  let fleet: Fleet = createFleet(assets, world.shading, race.cars);
   world.scene.add(fleet.group);
   let previousCars = new Float64Array(race.cars.length);
   let views: RiderView[] = [];
@@ -263,7 +269,7 @@ export function createGame(
 
   const dropViews = () => {
     for (const view of views) {
-      world.scene.remove(view.bike.root, view.bike.shadow, view.figure.root);
+      world.scene.remove(view.bike.root, view.figure.root);
       view.bike.dispose();
       view.figure.dispose();
     }
@@ -277,19 +283,26 @@ export function createGame(
 
   const buildViews = () => {
     dropViews();
-    views = race.riders.map((rider) => {
+    views = race.riders.map((rider, index) => {
       const bike = createBike(
+        assets,
+        world.shading,
         rider.profile.paint,
         rider.profile.role === "police"
       );
-      const figure = createRiderFigure(rider.profile.jacket);
-      world.scene.add(bike.root, bike.shadow, figure.root);
+      const figure = createRiderFigure(
+        assets,
+        world.shading,
+        rider.profile.jacket,
+        index
+      );
+      world.scene.add(bike.root, figure.root);
       const view: RiderView = {
         after: emptyPose(),
         before: emptyPose(),
         bike,
         figure,
-        lift: STANDING_HEIGHT,
+        lift: figure.standHeight,
         pitch: 0,
         tumbleAngle: 0,
         yaw: 0,
@@ -310,13 +323,14 @@ export function createGame(
     world.dispose();
     track = next;
     world = createWorld(track);
+    pipeline.setLook(world.shading.look);
   };
 
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
     takeTrack(setup.track);
     race = createRace(setup);
-    fleet = createFleet(race.cars);
+    fleet = createFleet(assets, world.shading, race.cars);
     world.scene.add(fleet.group);
     previousCars = new Float64Array(race.cars.length);
     for (const [index, car] of race.cars.entries()) {
@@ -588,11 +602,11 @@ export function createGame(
           : (attackPose(rider) ?? "seated");
       figure.root.position.copy(bike.root.position);
       figure.root.quaternion.copy(bike.root.quaternion);
-      figure.root.translateY(HIP_HEIGHT);
-      figure.root.translateZ(HIP_SETBACK);
+      figure.root.translateY(figure.seat.y);
+      figure.root.translateZ(figure.seat.z);
       view.tumbleAngle = 0;
       view.pitch = 0;
-      view.lift = STANDING_HEIGHT;
+      view.lift = figure.standHeight;
       view.yaw = 0;
     } else if (rider.mode === "thrown" || rider.mode === "wrecked") {
       const resting = rider.bodySpeed < 0.5 && rider.bodyAir === 0;
@@ -618,7 +632,7 @@ export function createGame(
     } else if (rider.mode === "busted") {
       pose = "surrender";
       view.pitch = 0;
-      view.lift = STANDING_HEIGHT;
+      view.lift = figure.standHeight;
       poseOnTrack(figure.root, track, bodyS, bodyX, view.lift, view.yaw, 0, 0);
     } else {
       pose = "run";
@@ -627,7 +641,8 @@ export function createGame(
       view.pitch = LYING_PITCH * (1 - eased);
       const bob =
         rise >= 1 ? Math.abs(Math.sin(clock * Math.PI * 2 * RUN_HZ)) * 0.05 : 0;
-      view.lift = LYING_HEIGHT + (STANDING_HEIGHT - LYING_HEIGHT) * eased + bob;
+      view.lift =
+        LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased + bob;
       if (rise >= 0.5) {
         view.yaw = Math.atan2(rider.x - rider.bodyX, rider.s - rider.bodyS);
       }
@@ -666,7 +681,6 @@ export function createGame(
       : 0;
 
     poseOnTrack(bike.root, track, s, x, air, heading, lean, flightPitch);
-    poseOnTrack(bike.shadow, track, s, x, 0.03, heading, 0, -Math.PI / 2);
     bike.spin(rider.speed * seconds);
     placeFigure(rider, view, seated, bodyS, bodyX, bodyAir, seconds);
     placed.air = air;
@@ -724,9 +738,15 @@ export function createGame(
     fleet.commit();
 
     chase.update(track, subject, seconds);
-    world.follow(chase.camera);
-    renderer.render(world.scene, chase.camera);
+    world.follow(chase.camera, subject.s);
+    pipeline.render(world.scene, chase.camera);
     placeTag();
+  };
+
+  const applySize = () => {
+    renderer.setPixelRatio(pixelRatio);
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
   };
 
   const govern = (seconds: number) => {
@@ -740,11 +760,11 @@ export function createGame(
     }
     if (slowFrames > 20 && pixelRatio > MIN_PIXEL_RATIO) {
       pixelRatio = Math.max(MIN_PIXEL_RATIO, pixelRatio - 0.15);
-      renderer.setPixelRatio(pixelRatio);
+      applySize();
       slowFrames = 0;
     } else if (calmSeconds > 20 && raisesLeft > 0 && pixelRatio < ceiling) {
       pixelRatio = Math.min(ceiling, pixelRatio + 0.15);
-      renderer.setPixelRatio(pixelRatio);
+      applySize();
       raisesLeft -= 1;
       calmSeconds = 0;
     }
@@ -800,12 +820,11 @@ export function createGame(
   };
 
   const resize = () => {
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    renderer.setSize(width, height, false);
-    chase.resize(width, height);
+    applySize();
+    chase.resize(canvas.clientWidth, canvas.clientHeight);
     if (halted()) {
-      renderer.render(world.scene, chase.camera);
+      world.follow(chase.camera, subject.s);
+      pipeline.render(world.scene, chase.camera);
     }
   };
   const observer = new ResizeObserver(resize);
@@ -866,6 +885,7 @@ export function createGame(
       dropViews();
       dropFleet();
       world.dispose();
+      pipeline.dispose();
       renderer.dispose();
     },
     followRival(element) {

@@ -3,128 +3,106 @@ import type { TrafficCar } from "@racer/sim/state";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 
+import { paintPrimitives } from "./assets.ts";
+import type { Assets, Palette, Primitive } from "./assets.ts";
+import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { placeOnGround } from "./world.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
-export const HIP_HEIGHT = 1.02;
-export const HIP_SETBACK = 0.22;
-
-function matte(color: number): THREE.MeshLambertMaterial {
-  return new THREE.MeshLambertMaterial({ color, flatShading: true });
-}
-
-function block(
-  parent: THREE.Object3D,
-  material: THREE.Material,
-  size: readonly [number, number, number],
-  position: readonly [number, number, number],
-  pitch = 0
-): THREE.Mesh {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
-  mesh.position.set(...position);
-  mesh.rotation.x = pitch;
-  parent.add(mesh);
-  return mesh;
-}
-
-function wheel(
-  parent: THREE.Object3D,
-  material: THREE.Material,
-  radius: number,
-  width: number,
-  z: number
-): THREE.Mesh {
-  const geometry = new THREE.CylinderGeometry(radius, radius, width, 12);
-  geometry.rotateZ(Math.PI / 2);
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(0, radius, z);
-  parent.add(mesh);
-  return mesh;
-}
+const DEFAULT_PAINT = 0xc8_2f_2f;
+const DARK_TRIM = "#1c1826";
+const WHEELS = [
+  ["wheel_f", 0.293, 0.69],
+  ["wheel_r", 0.306, -0.69],
+] as const;
 
 export interface BikeModel {
   readonly root: THREE.Group;
-  readonly shadow: THREE.Mesh;
   spin: (distance: number) => void;
   dispose: () => void;
 }
 
-const DEFAULT_PAINT = 0xc8_2f_2f;
+const lit = <Target extends THREE.Object3D>(target: Target): Target => {
+  target.castShadow = true;
+  target.receiveShadow = true;
+  return target;
+};
 
-export function createBike(paintIndex: number, beacon = false): BikeModel {
+const addPainted = (
+  parent: THREE.Object3D,
+  primitives: readonly Primitive[],
+  palette: Palette,
+  shading: Shading,
+  shift: readonly [number, number, number] = [0, 0, 0]
+): void => {
+  const painted = paintPrimitives(primitives, palette);
+  if (painted.cel) {
+    painted.cel.translate(...shift);
+    parent.add(lit(new THREE.Mesh(painted.cel, shading.paint())));
+  }
+  if (painted.glow) {
+    painted.glow.translate(...shift);
+    parent.add(new THREE.Mesh(painted.glow, shading.glowPaint()));
+  }
+};
+
+const beaconLight = (
+  parent: THREE.Object3D,
+  shading: Shading,
+  colour: number,
+  x: number
+): void => {
+  const lamp = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 0.08, 0.1),
+    shading.glow(colour, 2.4)
+  );
+  lamp.position.set(x, 1.02, -0.92);
+  parent.add(lamp);
+};
+
+export function createBike(
+  assets: Assets,
+  shading: Shading,
+  paintIndex: number,
+  beacon = false
+): BikeModel {
   const root = new THREE.Group();
+  const model = new THREE.Group();
+  model.rotation.y = Math.PI;
+  root.add(model);
   const colours = riderPalette[paintIndex];
-  const paint = matte(colours?.bike ?? DEFAULT_PAINT);
-  const metal = matte(0x2b_2e_33);
-  const rubber = matte(0x15_16_18);
-
-  const rear = wheel(root, rubber, 0.32, 0.17, 0.72);
-  const front = wheel(root, rubber, 0.31, 0.13, -0.74);
-  block(root, metal, [0.3, 0.36, 0.72], [0, 0.52, 0.02]);
-  block(root, paint, [0.34, 0.24, 0.52], [0, 0.88, -0.14]);
-  block(root, metal, [0.26, 0.1, 0.5], [0, 0.86, 0.36]);
-  block(root, paint, [0.22, 0.14, 0.34], [0, 0.94, 0.72], 0.25);
-  block(root, metal, [0.09, 0.72, 0.09], [0, 0.66, -0.62], -0.42);
-  block(root, paint, [0.36, 0.32, 0.26], [0, 1, -0.58], -0.3);
-  block(root, metal, [0.64, 0.05, 0.05], [0, 1.08, -0.44]);
-  block(root, metal, [0.1, 0.1, 0.7], [0.2, 0.42, 0.5], 0.12);
-  block(
-    root,
-    new THREE.MeshBasicMaterial({ color: 0xff_3b_30 }),
-    [0.16, 0.06, 0.03],
-    [0, 0.97, 0.9]
-  );
+  const palette: Palette = new Map<string, THREE.ColorRepresentation>([
+    ["body", colours?.bike ?? DEFAULT_PAINT],
+    ["accent", colours?.trim ?? DARK_TRIM],
+  ]);
+  addPainted(model, assets.bike.get("bike_body") ?? [], palette, shading);
+  const pivots = WHEELS.map(([name, radius, z]) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(0, radius, z);
+    addPainted(pivot, assets.bike.get(name) ?? [], palette, shading, [
+      0,
+      -radius,
+      -z,
+    ]);
+    model.add(pivot);
+    return { pivot, radius };
+  });
   if (beacon) {
-    block(
-      root,
-      new THREE.MeshBasicMaterial({ color: 0x2f_6b_ff }),
-      [0.12, 0.1, 0.1],
-      [-0.09, 1.12, 0.78]
-    );
-    block(
-      root,
-      new THREE.MeshBasicMaterial({ color: 0xff_2f_3a }),
-      [0.12, 0.1, 0.1],
-      [0.09, 1.12, 0.78]
-    );
+    beaconLight(model, shading, 0x2f_6b_ff, -0.07);
+    beaconLight(model, shading, 0xff_2f_3a, 0.07);
   }
-  if (colours?.trim !== undefined) {
-    const trim = matte(colours.trim);
-    if (beacon) {
-      block(root, trim, [0.03, 0.18, 0.46], [-0.18, 0.88, -0.14]);
-      block(root, trim, [0.03, 0.18, 0.46], [0.18, 0.88, -0.14]);
-      block(root, trim, [0.03, 0.2, 0.2], [-0.19, 1, -0.58], -0.3);
-      block(root, trim, [0.03, 0.2, 0.2], [0.19, 1, -0.58], -0.3);
-    } else {
-      block(root, trim, [0.07, 0.02, 0.54], [0, 1.01, -0.14]);
-      block(root, trim, [0.07, 0.02, 0.34], [0, 1.02, 0.72], 0.25);
-    }
-  }
-
-  const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(1, 16),
-    new THREE.MeshBasicMaterial({
-      color: 0x0c_0e_10,
-      depthWrite: false,
-      opacity: 0.32,
-      transparent: true,
-    })
-  );
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.scale.set(0.55, 1.25, 1);
 
   return {
     dispose() {
       disposeTree(root);
-      disposeTree(shadow);
     },
     root,
-    shadow,
     spin(distance) {
-      rear.rotation.x -= distance / 0.32;
-      front.rotation.x -= distance / 0.31;
+      for (const { pivot, radius } of pivots) {
+        pivot.rotation.x += distance / radius;
+      }
     },
   };
 }
@@ -150,12 +128,15 @@ export function poseOnTrack(
 }
 
 const paints = [
-  0xd9_d4_c7, 0x3d_6f_b5, 0xb8_3a_32, 0x2f_8f_6b, 0xe0_a4_3a, 0x55_5c_66,
+  0xe8_e2_d6, 0x2f_6f_d0, 0xc8_32_3c, 0x2f_8f_6b, 0xd8_a0_20, 0x3a_35_50,
 ];
+const BOXY_HEIGHT = 1.8;
+const WHITE: Palette = new Map([["body", "#ffffff"]]);
+const NO_PAINT: Palette = new Map();
 
 interface FleetPart {
   readonly mesh: THREE.InstancedMesh;
-  readonly local: readonly THREE.Matrix4[];
+  readonly cars: readonly number[];
 }
 
 export interface Fleet {
@@ -165,93 +146,103 @@ export interface Fleet {
   dispose: () => void;
 }
 
-export function createFleet(cars: readonly TrafficCar[]): Fleet {
-  const group = new THREE.Group();
-  const unit = new THREE.BoxGeometry(1, 1, 1);
-  const count = cars.length;
-  const scratch = new THREE.Object3D();
+const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
+  const bounds = new THREE.Box3();
+  for (const primitive of primitives) {
+    primitive.geometry.computeBoundingBox();
+    if (primitive.geometry.boundingBox) {
+      bounds.union(primitive.geometry.boundingBox);
+    }
+  }
+  return bounds.getSize(new THREE.Vector3());
+};
 
-  const part = (
-    material: THREE.Material,
-    layout: (
-      car: TrafficCar
-    ) => readonly [number, number, number, number, number]
-  ): FleetPart => {
-    const mesh = new THREE.InstancedMesh(unit, material, count);
-    mesh.frustumCulled = false;
-    group.add(mesh);
-    const local = cars.map((car) => {
-      const [width, height, length, y, z] = layout(car);
-      scratch.position.set(0, y, z);
-      scratch.rotation.set(0, 0, 0);
-      scratch.scale.set(width, height, length);
+export function createFleet(
+  assets: Assets,
+  shading: Shading,
+  cars: readonly TrafficCar[]
+): Fleet {
+  const group = new THREE.Group();
+  const parts: FleetPart[] = [];
+  const local: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
+  const slotOf: number[] = cars.map(() => 0);
+  const scratch = new THREE.Object3D();
+  const color = new THREE.Color();
+
+  const muster = (primitives: readonly Primitive[], boxy: boolean): void => {
+    const members = cars
+      .map((car, index) => ({ car, index }))
+      .filter(({ car }) => car.height > BOXY_HEIGHT === boxy);
+    if (members.length === 0) {
+      return;
+    }
+    const size = sizeOf(primitives);
+    for (const [slot, { car, index }] of members.entries()) {
+      scratch.position.set(0, 0, 0);
+      scratch.rotation.set(0, Math.PI, 0);
+      scratch.scale.set(
+        (car.halfWidth * 2) / size.x,
+        car.height / size.y,
+        (car.halfLength * 2) / size.z
+      );
       scratch.updateMatrix();
-      return scratch.matrix.clone();
-    });
-    return { local, mesh };
+      local[index]?.copy(scratch.matrix);
+      slotOf[index] = slot;
+    }
+    const indices = members.map(({ index }) => index);
+    const body = paintPrimitives(
+      primitives.filter((primitive) => primitive.slot === "body"),
+      WHITE
+    );
+    const rest = paintPrimitives(
+      primitives.filter((primitive) => primitive.slot !== "body"),
+      NO_PAINT
+    );
+    const instanced = (
+      geometry: THREE.BufferGeometry | null,
+      material: THREE.Material,
+      shadows: boolean
+    ): THREE.InstancedMesh | null => {
+      if (!geometry) {
+        material.dispose();
+        return null;
+      }
+      const mesh = new THREE.InstancedMesh(geometry, material, members.length);
+      mesh.frustumCulled = false;
+      mesh.castShadow = shadows;
+      mesh.receiveShadow = shadows;
+      group.add(mesh);
+      parts.push({ cars: indices, mesh });
+      return mesh;
+    };
+    const shell = instanced(body.cel, shading.paint(), true);
+    instanced(rest.cel, shading.paint(), true);
+    instanced(rest.glow, shading.glowPaint(), false);
+    if (shell) {
+      for (const [slot, { car }] of members.entries()) {
+        shell.setColorAt(slot, color.setHex(paints[car.paint] ?? 0x88_88_88));
+      }
+    }
   };
 
-  const bodyMaterial = new THREE.MeshLambertMaterial({ flatShading: true });
-  const body = part(bodyMaterial, (car) => {
-    const boxy = car.height > 1.8;
-    const height = boxy ? car.height - 0.45 : car.height * 0.5;
-    return [
-      car.halfWidth * 2,
-      height,
-      car.halfLength * 2,
-      0.35 + height / 2,
-      0,
-    ];
-  });
-  const cabin = part(matte(0x1c_23_2b), (car) => {
-    const boxy = car.height > 1.8;
-    if (boxy) {
-      return [
-        car.halfWidth * 1.9,
-        car.height * 0.24,
-        0.1,
-        car.height * 0.62,
-        -car.halfLength - 0.02,
-      ];
-    }
-    return [
-      car.halfWidth * 1.75,
-      car.height * 0.36,
-      car.halfLength * 0.95,
-      0.35 + car.height * 0.5 + car.height * 0.18,
-      car.halfLength * 0.12,
-    ];
-  });
-  const under = part(matte(0x12_13_15), (car) => [
-    car.halfWidth * 2.02,
-    0.42,
-    car.halfLength * 1.7,
-    0.24,
-    0,
-  ]);
-  const headlights = part(
-    new THREE.MeshBasicMaterial({ color: 0xff_f6_d8 }),
-    (car) => [car.halfWidth * 1.7, 0.14, 0.06, 0.72, -car.halfLength]
-  );
-  const taillights = part(
-    new THREE.MeshBasicMaterial({ color: 0xe5_2b_22 }),
-    (car) => [car.halfWidth * 1.7, 0.12, 0.06, 0.78, car.halfLength]
-  );
-  const parts = [body, cabin, under, headlights, taillights];
-
-  const color = new THREE.Color();
-  for (const [index, car] of cars.entries()) {
-    body.mesh.setColorAt(index, color.setHex(paints[car.paint] ?? 0x88_88_88));
-  }
+  muster(assets.car, false);
+  muster(assets.van, true);
 
   const base = new THREE.Object3D();
   const world = new THREE.Matrix4();
-  const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
+  const spot: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
+  const placed: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
 
   return {
     commit() {
-      for (const each of parts) {
-        each.mesh.instanceMatrix.needsUpdate = true;
+      for (const part of parts) {
+        for (const index of part.cars) {
+          const matrix = placed[index];
+          if (matrix) {
+            part.mesh.setMatrixAt(slotOf[index] ?? 0, matrix);
+          }
+        }
+        part.mesh.instanceMatrix.needsUpdate = true;
       }
     },
     dispose() {
@@ -260,26 +251,21 @@ export function createFleet(cars: readonly TrafficCar[]): Fleet {
     group,
     place(track, index, s) {
       const car = cars[index];
-      if (!car) {
+      const fit = local[index];
+      if (!(car && fit)) {
         return;
       }
-      placeOnGround(track, s, car.x, point);
-      base.position.set(point.x, point.y, point.z);
+      placeOnGround(track, s, car.x, spot);
+      base.position.set(spot.x, spot.y, spot.z);
       const oncoming = car.cruiseSpeed < 0;
       base.rotation.set(
-        Math.atan(point.slope) * (oncoming ? -1 : 1),
-        -point.heading + (oncoming ? Math.PI : 0),
+        Math.atan(spot.slope) * (oncoming ? -1 : 1),
+        -spot.heading + (oncoming ? Math.PI : 0),
         0,
         "YXZ"
       );
       base.updateMatrix();
-      for (const each of parts) {
-        const local = each.local[index];
-        if (local) {
-          world.multiplyMatrices(base.matrix, local);
-          each.mesh.setMatrixAt(index, world);
-        }
-      }
+      placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
     },
   };
 }

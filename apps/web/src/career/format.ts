@@ -4,7 +4,6 @@ import { TICK_RATE } from "@racer/sim/state";
 import type { WeaponKind } from "@racer/sim/state";
 import { weapons } from "@racer/sim/weapons";
 
-const METRES_PER_KM = 1000;
 const SECONDS_PER_MINUTE = 60;
 const TENTHS = 10;
 
@@ -25,11 +24,6 @@ export const raceTime = (ticks: number): string => {
   const seconds = String(Math.floor(rest / TENTHS)).padStart(2, "0");
   return `${minutes}:${seconds}.${rest % TENTHS}`;
 };
-
-export const distanceToGo = (metres: number): string =>
-  metres >= METRES_PER_KM
-    ? `${(metres / METRES_PER_KM).toFixed(1)} km`
-    : `${Math.max(0, Math.round(metres / 10) * 10)} m`;
 
 export const bikeName = (bikeId: BikeId): string => bikes[bikeId].name;
 

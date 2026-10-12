@@ -2,6 +2,8 @@
 
 Drafted October 10, 2026. The look and sound of the game: palette, type, HUD, models, the five regions, readability rules, camera, and audio. It builds on what the greybox already does (flat matte materials, a chase camera, synthesised audio) and on `docs/architecture.md`, which fixes the style as stylized low-poly.
 
+Superseded in part on October 13, 2026. The race view is now cel-shaded cyberpunk anime, as `docs/architecture.md` describes under Product and Browser client. The principles of flat matte low-poly shading, the palette, the HUD style, and the region kits below describe the earlier direction and no longer bind the race view. The readability rules, camera rules, and audio direction still hold.
+
 The reference captures were studied for composition only: a large rider low in the frame, a high horizon, bright riders on a grey road, orange headings on dark menus, and consequences shown as a character's reaction. Nothing here copies a screen, a portrait, a logo, or a layout.
 
 ## Principles

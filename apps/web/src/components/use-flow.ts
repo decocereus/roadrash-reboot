@@ -170,17 +170,21 @@ const useGame = (
     }
     let disposed = false;
     import("../game/game.ts")
-      .then(({ createGame }) => {
-        if (disposed) {
-          return;
-        }
-        gameRef.current = createGame(canvas, {
+      .then(({ createGame }) =>
+        createGame(canvas, {
           onHud: (hud) => eventsRef.current?.onHud(hud),
           onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
           onSettle: (plan, outcome) =>
             eventsRef.current?.onSettle(plan, outcome),
           onStart: (plan) => eventsRef.current?.onStart(plan),
-        });
+        })
+      )
+      .then((game) => {
+        if (disposed) {
+          game.dispose();
+          return;
+        }
+        gameRef.current = game;
         setReady(true);
       })
       .catch((error) => {

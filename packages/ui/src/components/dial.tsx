@@ -1,25 +1,47 @@
 import { cn } from "@racer/ui/utils";
 import type { ComponentProps } from "react";
 
-const CENTRE = 100;
-const RADIUS = 86;
-const ARC_LENGTH = Math.PI * RADIUS;
-const REDLINE = 0.85;
-const TICKS = 12;
-const LABEL_EVERY = 3;
+const TICKS = 48;
+const MAJOR_EVERY = 12;
+const REDLINE_FROM = 40;
+const START_DEGREES = 150;
+const SWEEP_DEGREES = 240;
+const TICK_INNER = 82;
+const TICK_OUTER = 94;
+const MAJOR_OUTER = 100;
+const LABEL_RADIUS = 70;
+const TRACK_RADIUS = 106;
+const TRACK_LENGTH = (2 * Math.PI * TRACK_RADIUS * SWEEP_DEGREES) / 360;
+const YELLOW = "#fff04a";
+const CYAN = "#19e6ff";
+const RED = "#ff2e3d";
+const INK = "#0a0810";
 
-const rim = `M ${CENTRE - RADIUS} ${CENTRE} A ${RADIUS} ${RADIUS} 0 0 1 ${CENTRE + RADIUS} ${CENTRE}`;
-
-const onRim = (ratio: number, radius: number) => {
-  const angle = Math.PI * (1 - ratio);
-  return {
-    x: CENTRE + Math.cos(angle) * radius,
-    y: CENTRE - Math.sin(angle) * radius,
-  };
+const onRing = (degrees: number, radius: number) => {
+  const angle = (degrees * Math.PI) / 180;
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
 };
+
+const trackStart = onRing(START_DEGREES, TRACK_RADIUS);
+const trackEnd = onRing(START_DEGREES + SWEEP_DEGREES, TRACK_RADIUS);
+const track = `M${trackStart.x} ${trackStart.y}A${TRACK_RADIUS} ${TRACK_RADIUS} 0 1 1 ${trackEnd.x} ${trackEnd.y}`;
 
 const ratioOf = (value: number, max: number): number =>
   max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
+
+const tickColour = (index: number, lit: boolean): string => {
+  if (index >= REDLINE_FROM) {
+    return RED;
+  }
+  return lit ? YELLOW : "#ffffff";
+};
+
+const tickOpacity = (index: number, lit: boolean): number => {
+  if (lit) {
+    return 1;
+  }
+  return index >= REDLINE_FROM ? 0.6 : 0.3;
+};
 
 function Dial({
   className,
@@ -27,14 +49,21 @@ function Dial({
   max,
   unit,
   label,
+  place,
+  field,
+  progress,
   ...props
 }: Omit<ComponentProps<"svg">, "children"> & {
   readonly value: number;
   readonly max: number;
   readonly unit: string;
   readonly label: string;
+  readonly place: string;
+  readonly field: number;
+  readonly progress: number;
 }) {
   const ratio = ratioOf(value, max);
+  const shown = Math.round(value);
   return (
     <svg
       data-slot="dial"
@@ -42,81 +71,115 @@ function Dial({
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={max}
-      aria-valuenow={Math.round(value)}
-      viewBox="0 0 200 112"
-      className={cn("overflow-visible", className)}
+      aria-valuenow={shown}
+      viewBox="-112 -112 224 208"
+      className={cn("font-display overflow-visible", className)}
       {...props}
     >
-      <path d={rim} className="stroke-raised fill-none" strokeWidth={10} />
-      <path
-        d={rim}
-        className="stroke-red fill-none"
-        strokeWidth={10}
-        strokeDasharray={ARC_LENGTH}
-        strokeDashoffset={-ARC_LENGTH * REDLINE}
-      />
-      <path
-        d={rim}
-        data-slot="dial-fill"
-        className="stroke-yellow fill-none transition-[stroke-dashoffset] duration-150 ease-linear"
-        strokeWidth={10}
-        strokeDasharray={ARC_LENGTH}
-        strokeDashoffset={ARC_LENGTH * (1 - ratio)}
-      />
+      <defs>
+        <radialGradient id="dial-backing">
+          <stop offset="0" stopColor={INK} stopOpacity={0.62} />
+          <stop offset="0.72" stopColor={INK} stopOpacity={0.5} />
+          <stop offset="1" stopColor={INK} stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      <circle r={112} fill="url(#dial-backing)" />
       {Array.from({ length: TICKS + 1 }, (_, index) => {
-        const at = index / TICKS;
-        const major = index % LABEL_EVERY === 0;
-        const outer = onRim(at, RADIUS - 8);
-        const inner = onRim(at, RADIUS - (major ? 20 : 14));
-        const mark = onRim(at, RADIUS - 29);
+        const degrees = START_DEGREES + (SWEEP_DEGREES * index) / TICKS;
+        const lit = index / TICKS <= ratio;
+        const major = index % MAJOR_EVERY === 0;
+        const inner = onRing(degrees, TICK_INNER);
+        const outer = onRing(degrees, major ? MAJOR_OUTER : TICK_OUTER);
+        const mark = onRing(degrees, LABEL_RADIUS);
         return (
           <g key={index}>
             <line
-              x1={outer.x}
-              y1={outer.y}
-              x2={inner.x}
-              y2={inner.y}
-              className="stroke-text"
-              strokeWidth={major ? 3 : 1.5}
+              x1={inner.x}
+              y1={inner.y}
+              x2={outer.x}
+              y2={outer.y}
+              stroke={tickColour(index, lit)}
+              strokeOpacity={tickOpacity(index, lit)}
+              strokeWidth={major ? 4 : 2.6}
             />
             {major && (
               <text
                 x={mark.x}
-                y={mark.y}
+                y={mark.y + 4}
                 textAnchor="middle"
-                dominantBaseline="middle"
-                className="fill-muted font-body text-[11px] font-semibold"
+                fill="#ffffff"
+                fillOpacity={0.75}
+                className="text-[12px] font-semibold"
               >
-                {Math.round(max * at)}
+                {Math.round((max * index) / TICKS)}
               </text>
             )}
           </g>
         );
       })}
-      <line
-        data-slot="dial-needle"
-        x1={CENTRE}
-        y1={CENTRE - 46}
-        x2={CENTRE}
-        y2={CENTRE - RADIUS + 3}
-        className="stroke-orange origin-[100px_100px] transition-transform duration-150 ease-linear [transform-box:view-box]"
-        strokeWidth={5}
-        strokeLinecap="round"
-        style={{ transform: `rotate(${ratio * 180 - 90}deg)` }}
+      <path
+        d={track}
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity={0.22}
+        strokeWidth={2}
       />
-      <text
-        x={CENTRE}
-        y={CENTRE - 6}
-        textAnchor="middle"
-        className="fill-text font-display numeric text-[40px] font-extrabold"
-      >
-        {Math.round(value)}
-        <tspan
-          dx={4}
-          className="fill-muted font-body text-[10px] font-semibold uppercase"
+      <path
+        d={track}
+        data-slot="dial-progress"
+        fill="none"
+        stroke={CYAN}
+        strokeWidth={3}
+        strokeDasharray={`${TRACK_LENGTH * ratioOf(progress, 1)} 999`}
+      />
+      <g transform="skewX(-10)" textAnchor="middle" className="numeric">
+        <text x={-3} y={20} fill={CYAN} className="text-[68px] font-extrabold">
+          {shown}
+        </text>
+        <text x={3} y={20} fill={RED} className="text-[68px] font-extrabold">
+          {shown}
+        </text>
+        <text
+          x={0}
+          y={20}
+          fill="#ffffff"
+          stroke={INK}
+          strokeWidth={4}
+          strokeLinejoin="round"
+          paintOrder="stroke"
+          className="text-[68px] font-extrabold"
         >
-          {unit}
-        </tspan>
+          {shown}
+        </text>
+      </g>
+      <text
+        x={0}
+        y={38}
+        textAnchor="middle"
+        fill="#ffffff"
+        fillOpacity={0.8}
+        className="text-[12px] font-semibold tracking-[2px] uppercase"
+      >
+        {unit}
+      </text>
+      <polygon points="-40,54 40,54 40,78 31,88 -40,88" fill={YELLOW} />
+      <text
+        x={-11}
+        y={82}
+        textAnchor="middle"
+        fill={INK}
+        className="numeric text-[31px] font-extrabold uppercase"
+      >
+        {place}
+      </text>
+      <text
+        x={24}
+        y={81}
+        textAnchor="middle"
+        fill={INK}
+        className="numeric text-[16px] font-semibold"
+      >
+        /{field}
       </text>
     </svg>
   );
