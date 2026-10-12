@@ -234,7 +234,7 @@ export function createGame(
   let raisesLeft = 2;
   let clock = 0;
 
-  const subject: Subject = { air: 0, lean: 0, rough: 0, s: 0, speed: 0, x: 0 };
+  const subject: Subject = { air: 0, s: 0, x: 0 };
   const placed: Placed = {
     air: 0,
     bodyAir: 0,
@@ -713,10 +713,6 @@ export function createGame(
         subject.s = placed.seated ? placed.s : placed.bodyS;
         subject.x = placed.seated ? placed.x : placed.bodyX;
         subject.air = placed.seated ? placed.air : Math.min(placed.bodyAir, 2);
-        subject.speed = placed.seated ? rider.speed : rider.bodySpeed;
-        subject.lean = placed.seated ? placed.lean : 0;
-        subject.rough =
-          placed.seated && rider.offRoad ? Math.min(1, rider.speed / 20) : 0;
       }
     }
 

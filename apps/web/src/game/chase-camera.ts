@@ -4,17 +4,43 @@ import * as THREE from "three";
 
 import { placeOnGround } from "./world.ts";
 
-const TOP_SPEED = 60;
-const BASE_FOV = 60;
-const SPEED_FOV = 16;
+const FIELD_OF_VIEW = 48;
+const HORIZON_DOWN_FRAME = 0.34;
+const RIDER_BASE_DOWN_FRAME = 0.685;
+const RIDER_HEIGHT_IN_FRAME = 0.27;
+const RIDER_TOP = 1.85;
+const REAR_WHEEL_BEHIND = 0.75;
+const SIDEWAYS_FOLLOW = 0.75;
+const AIR_FOLLOW = 0.25;
+const GROUND_CLEARANCE = 0.6;
+
+interface Rig {
+  readonly pitch: number;
+  readonly distance: number;
+  readonly height: number;
+}
+
+const frameRig = (): Rig => {
+  const span = 2 * Math.tan(THREE.MathUtils.degToRad(FIELD_OF_VIEW) / 2);
+  const pitch = Math.atan(span * (0.5 - HORIZON_DOWN_FRAME));
+  const toBase = pitch + Math.atan(span * (RIDER_BASE_DOWN_FRAME - 0.5));
+  const toTop =
+    pitch +
+    Math.atan(span * (RIDER_BASE_DOWN_FRAME - RIDER_HEIGHT_IN_FRAME - 0.5));
+  const distance =
+    (RIDER_TOP + REAR_WHEEL_BEHIND * Math.tan(toBase)) /
+    (Math.tan(toBase) - Math.tan(toTop));
+  return {
+    distance,
+    height: (distance - REAR_WHEEL_BEHIND) * Math.tan(toBase),
+    pitch,
+  };
+};
 
 export interface Subject {
   s: number;
   x: number;
   air: number;
-  speed: number;
-  lean: number;
-  rough: number;
 }
 
 export interface ChaseCamera {
@@ -26,13 +52,12 @@ export interface ChaseCamera {
 }
 
 export function createChaseCamera(): ChaseCamera {
-  const camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.3, 6000);
+  const rig = frameRig();
+  const camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.3, 6000);
+  camera.rotation.order = "YXZ";
   const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
-  const target = new THREE.Vector3();
   let sideways = 0;
   let height = 0;
-  let roll = 0;
-  let fov = BASE_FOV;
   let shake = 0;
   let settled = false;
 
@@ -49,38 +74,25 @@ export function createChaseCamera(): ChaseCamera {
       settled = false;
     },
     update(track, subject, seconds) {
-      const pace = Math.min(1, subject.speed / TOP_SPEED);
-      const distance = 5.8 + 1.5 * pace;
-      const follow = settled ? Math.min(1, seconds * 7) : 1;
-      const cameraS = subject.s - distance;
-
-      sideways += (subject.x * 0.82 - sideways) * follow;
+      const follow = settled ? Math.min(1, seconds * 12) : 1;
+      sideways += (subject.x * SIDEWAYS_FOLLOW - sideways) * follow;
       const wantedHeight =
-        Math.max(heightAt(track, cameraS), heightAt(track, subject.s) - 0.4) +
-        2.85 -
-        0.25 * pace +
-        subject.air * 0.55;
-      height +=
-        (wantedHeight - height) * (settled ? Math.min(1, seconds * 9) : 1);
-      placeOnGround(track, cameraS, sideways, point);
+        heightAt(track, subject.s) + rig.height + subject.air * AIR_FOLLOW;
+      height += (wantedHeight - height) * follow;
+
+      placeOnGround(track, subject.s, sideways, point);
+      const backX = point.x - Math.sin(point.heading) * rig.distance;
+      const backZ = point.z + Math.cos(point.heading) * rig.distance;
+      const floor =
+        heightAt(track, subject.s - rig.distance) + GROUND_CLEARANCE;
       shake = Math.max(0, shake - seconds * 2.4);
-      const tremor = shake * 0.22 + subject.rough * 0.05 + pace * pace * 0.012;
+      const tremor = shake * 0.16;
       camera.position.set(
-        point.x + (Math.random() - 0.5) * tremor,
-        Math.max(height, point.y + 1.1) + (Math.random() - 0.5) * tremor,
-        point.z
+        backX + (Math.random() - 0.5) * tremor,
+        Math.max(height, floor) + (Math.random() - 0.5) * tremor,
+        backZ
       );
-
-      placeOnGround(track, subject.s + 24 + 10 * pace, subject.x * 0.5, point);
-      target.set(point.x, point.y + 1.3 + subject.air * 0.6, point.z);
-      camera.lookAt(target);
-      roll += (subject.lean * 0.1 - roll) * follow;
-      camera.rotateZ(-roll);
-
-      const wantedFov = BASE_FOV + SPEED_FOV * pace * pace;
-      fov += (wantedFov - fov) * (settled ? Math.min(1, seconds * 3) : 1);
-      camera.fov = fov;
-      camera.updateProjectionMatrix();
+      camera.rotation.set(-rig.pitch, -point.heading, 0);
       settled = true;
     },
   };
