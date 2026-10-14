@@ -32,6 +32,7 @@ import type {
 import { arm, disarm } from "./weapons.ts";
 
 const MPH = 2.237;
+const KMH = 3.6;
 const track = compileTrack(ridgeRoad);
 const quietTrack = compileTrack({ ...ridgeRoad, trafficPerKilometre: 0 });
 const straight = compileTrack({
@@ -374,6 +375,50 @@ describe("riding", () => {
   });
 });
 
+const crashIntoPole = (kmh: number) => {
+  const state = field(quietTrack, 1, 0, 0);
+  const rider = player(state);
+  const pole = quietTrack.solidProps.find(
+    (prop) => prop.s > 300 && Math.abs(prop.x) < quietTrack.vergeHalfWidth - 0.5
+  );
+  if (!pole) {
+    throw new Error("The road has no pole beside it.");
+  }
+  rider.s = pole.s - 15;
+  rider.x = pole.x;
+  rider.speed = kmh / KMH;
+  const order: string[] = [];
+  let crashTick = -1;
+  let slidingSeconds = -1;
+  let onFeetSeconds = -1;
+  let remountSeconds = -1;
+  for (let tick = 0; tick < 20 * TICK_RATE && remountSeconds < 0; tick += 1) {
+    stepRace(state, quietTrack, [neutralInput]);
+    if (order.at(-1) !== rider.mode) {
+      order.push(rider.mode);
+    }
+    if (crashTick < 0 && rider.mode === "thrown") {
+      crashTick = tick;
+    }
+    const since = (tick - crashTick) / TICK_RATE;
+    if (crashTick >= 0 && rider.mode === "lying" && slidingSeconds < 0) {
+      slidingSeconds = since;
+    }
+    if (crashTick >= 0 && rider.mode === "running" && onFeetSeconds < 0) {
+      onFeetSeconds = since;
+    }
+    if (crashTick >= 0 && rider.mode === "riding") {
+      remountSeconds = since;
+    }
+  }
+  return {
+    onFeetSeconds,
+    order: order.filter((mode) => mode !== "riding" && mode !== "mounting"),
+    remountSeconds,
+    slidingSeconds,
+  };
+};
+
 describe("crashing", () => {
   it("a head-on hit throws the rider, who runs back and rides again", () => {
     const state = field(track, 7, 0, 0);
@@ -403,6 +448,22 @@ describe("crashing", () => {
     );
     expect(later.map((event) => event.kind)).toContain("remount");
     expect(rider.mode).toBe("riding");
+  });
+
+  it("a rider thrown into a pole at 160 km/h tumbles and slides for over four and a half seconds, lies still, and is on their feet about five and a half seconds after the impact; a fall at 50 km/h is over in half the time", () => {
+    const fast = crashIntoPole(160);
+    const slow = crashIntoPole(50);
+    expect({
+      onFeetAboutFiveAndAHalf: fast.onFeetSeconds > 5 && fast.onFeetSeconds < 6,
+      order: fast.order,
+      slidesOverFourAndAHalf: fast.slidingSeconds > 4.5,
+    }).toStrictEqual({
+      onFeetAboutFiveAndAHalf: true,
+      order: ["thrown", "lying", "running"],
+      slidesOverFourAndAHalf: true,
+    });
+    expect(slow.onFeetSeconds).toBeLessThan(fast.onFeetSeconds / 2);
+    expect(slow.remountSeconds).toBeLessThan(4.5);
   });
 
   it("riding into the trees ends in a crash", () => {
@@ -935,11 +996,11 @@ describe("the bust window", () => {
     expect(ticksToArrest).toBeLessThan(90);
   });
 
-  it("a cop beside a rider who is knocked off at 160 km/h stops inside the slide and arrests them once they have stopped tumbling", () => {
+  it("a cop beside a rider who is knocked off at 160 km/h brakes, is passed by the flying body, and arrests it within a second and a half", () => {
     const { mode, ticksToArrest } = knockedOffBeside(45);
     expect(mode).toBe("busted");
     expect(ticksToArrest).toBeGreaterThanOrEqual(30);
-    expect(ticksToArrest).toBeLessThan(5 * TICK_RATE);
+    expect(ticksToArrest).toBeLessThan(1.5 * TICK_RATE);
   });
 
   it("a cop gives up the chase at the end of its beat and pulls off the road", () => {
@@ -1205,6 +1266,180 @@ describe("rider contact", () => {
   });
 });
 
+const strikeTiming = (key: "punch" | "kick", pressTicks: readonly number[]) => {
+  const { me, moose, state } = sideBySide();
+  disarm(moose);
+  const landed: number[] = [];
+  const started: number[] = [];
+  let neutralTicks = 0;
+  brawl(state, 1.5, (tick) => {
+    moose.stamina = MAX_STAMINA;
+    for (const event of state.events) {
+      if (event.kind === "hit" && event.rider === 0) {
+        landed.push(tick - 1);
+      }
+      if (event.kind === "attack" && event.rider === 0) {
+        started.push(tick - 1);
+      }
+    }
+    if (tick > 0 && tick <= 42 && me.attack === "none") {
+      neutralTicks += 1;
+    }
+    return [pressing(key, pressTicks.includes(tick)), cruising, cruising];
+  });
+  return { landed, neutralTicks, started };
+};
+
+describe("strike timing", () => {
+  it("a punch is fully out 12 ticks after the press and the swing is over at 42; a kick is out at 14 and over at 33", () => {
+    const { me, moose, state } = sideBySide();
+    disarm(moose);
+    const ends: Record<string, number> = {};
+    const lands: Record<string, number> = {};
+    for (const key of ["punch", "kick"] as const) {
+      me.attackCooldown = 0;
+      let pressed = -1;
+      brawl(state, 1, (tick) => {
+        for (const event of state.events) {
+          if (event.kind === "attack" && event.rider === 0) {
+            pressed = state.tick;
+          }
+          if (event.kind === "hit" && event.rider === 0) {
+            lands[key] = state.tick - pressed;
+          }
+        }
+        if (pressed >= 0 && me.attack === "none" && ends[key] === undefined) {
+          ends[key] = state.tick - pressed;
+        }
+        return [pressing(key, tick === 0), cruising, cruising];
+      });
+    }
+    expect({ ends, lands }).toStrictEqual({
+      ends: { kick: 33, punch: 42 },
+      lands: { kick: 14, punch: 12 },
+    });
+  });
+
+  it("a second punch pressed 0.3 s after the first starts at once, lands 0.2 s later, and the arm never comes back to neutral between them", () => {
+    const { landed, neutralTicks, started } = strikeTiming("punch", [0, 18]);
+    expect(started).toStrictEqual([0, 18]);
+    expect(landed).toStrictEqual([12, 30]);
+    expect(neutralTicks).toBe(0);
+  });
+
+  it("a second punch pressed while the first is still winding up is ignored", () => {
+    const { landed, started } = strikeTiming("punch", [0, 6]);
+    expect(started).toStrictEqual([0]);
+    expect(landed).toStrictEqual([12]);
+  });
+
+  it("a kick cannot be chained into a punch's follow-through", () => {
+    const { me, moose, state } = sideBySide();
+    disarm(moose);
+    const started: string[] = [];
+    brawl(state, 1, (tick) => {
+      for (const event of state.events) {
+        if (event.kind === "attack" && event.rider === 0) {
+          started.push(`${event.attack}@${state.tick - 1}`);
+        }
+      }
+      return [
+        { ...cruising, kick: tick === 20, punch: tick === 0 },
+        cruising,
+        cruising,
+      ];
+    });
+    expect(started).toStrictEqual(["punch@0"]);
+    expect(me.attack).toBe("none");
+  });
+});
+
+const knockedOffAndRunning = () => {
+  const state = field(straight, 1, 1, 0);
+  const me = riderAt(state, 0);
+  const rival = riderAt(state, 1);
+  rival.s = 900;
+  me.s = 100;
+  me.x = -1.8;
+  me.speed = 30 / KMH;
+  me.stamina = 0;
+  for (
+    let tick = 0;
+    tick < 10 * TICK_RATE && me.mode !== "running";
+    tick += 1
+  ) {
+    stepRace(state, straight, [neutralInput, cruising]);
+  }
+  expect(me.mode).toBe("running");
+  return { me, rival, state };
+};
+
+const untilOnFeetAgain = (
+  state: RaceState,
+  me: RiderState,
+  inputs: readonly RiderInput[]
+) => {
+  const events: RaceEvent[] = [];
+  let ticksDown = -1;
+  for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+    stepRace(state, straight, inputs);
+    events.push(...state.events);
+    if (ticksDown < 0 && me.mode === "thrown") {
+      ticksDown = 0;
+    } else if (ticksDown >= 0 && me.mode !== "running") {
+      ticksDown += 1;
+    } else if (ticksDown >= 0) {
+      break;
+    }
+  }
+  return { events, ticksDown };
+};
+
+describe("knocked down on foot", () => {
+  it("a rider running back to the bike who is hit by a car goes down again and is back on their feet about two seconds later", () => {
+    const { me, state } = knockedOffAndRunning();
+    state.cars.push({
+      cruiseSpeed: 20,
+      halfLength: 2.2,
+      halfWidth: 0.92,
+      height: 1.45,
+      paint: 2,
+      s: me.bodyS - 2.2,
+      speed: 20,
+      x: me.bodyX,
+    });
+    const { events, ticksDown } = untilOnFeetAgain(state, me, [
+      neutralInput,
+      cruising,
+    ]);
+    expect(events).toContainEqual(
+      expect.objectContaining({ by: -1, kind: "knockedDown", rider: 0 })
+    );
+    expect({
+      crashed: events.some((event) => event.kind === "crash"),
+      crashes: me.crashes,
+      mode: me.mode,
+    }).toStrictEqual({ crashed: false, crashes: 1, mode: "running" });
+    expect(ticksDown / TICK_RATE).toBeGreaterThan(1.2);
+    expect(ticksDown / TICK_RATE).toBeLessThan(2.5);
+  });
+
+  it("a rider on foot who is run over by a rival is put down to that rival, and the rival only loses a little speed", () => {
+    const { me, rival, state } = knockedOffAndRunning();
+    rival.s = me.bodyS - 1.5;
+    rival.x = me.bodyX;
+    rival.speed = 25;
+    const { events } = untilOnFeetAgain(state, me, [neutralInput, cruising]);
+    expect(events).toContainEqual(
+      expect.objectContaining({ by: 1, kind: "knockedDown", rider: 0 })
+    );
+    expect(events).toContainEqual({ kind: "bump", rider: 1 });
+    expect(rival.mode).toBe("riding");
+    expect(rival.speed).toBeGreaterThan(18);
+    expect(me.lastHitBy).toBe(1);
+  });
+});
+
 describe("simultaneous strikes", () => {
   it("two riders who punch each other on the same tick both land", () => {
     const { moose, me, state } = sideBySide();
@@ -1302,8 +1537,8 @@ describe("simultaneous weapon grabs", () => {
     "a chain that lands on the tick it is kicked away has one hit fewer (unarmed is rider $unarmedIndex)",
     ({ unarmedIndex }) => {
       const after = duel(unarmedIndex, (tick) => ({
-        holder: pressing("punch", tick === 1),
-        unarmed: pressing("kick", tick === 0),
+        holder: pressing("punch", tick === 0),
+        unarmed: pressing("kick", tick === 1),
       }));
       expect(after).toStrictEqual({
         holder: ["none", 0],
@@ -1685,8 +1920,6 @@ const headOn = (
   return events;
 };
 
-const KMH = 3.6;
-
 const oncomingCar = (state: RaceState): void => {
   state.cars.push({
     cruiseSpeed: -22,
@@ -1978,7 +2211,7 @@ describe("the new weapons", () => {
       clubDodged: ticksToLand("club", -1),
       sign: ticksToLand("sign", 0),
       signDodged: ticksToLand("sign", -1),
-    }).toStrictEqual({ club: 9, clubDodged: 9, sign: 30, signDodged: -1 });
+    }).toStrictEqual({ club: 15, clubDodged: 15, sign: 30, signDodged: -1 });
   });
 
   it("a pool cue breaks after three hits", () => {

@@ -197,6 +197,11 @@ const landHit = (
   }
 };
 
+const followingThrough = (rider: RiderState): boolean =>
+  rider.attack !== "none" &&
+  rider.attack !== "kick" &&
+  rider.attackTicks <= strikeOf(rider.attack, rider.weapon).strikeTick;
+
 const wantedAttack = (
   rider: RiderState,
   input: RiderInput
@@ -330,11 +335,15 @@ export const stepAttack = (
     rider.attackTicks = Math.max(0, rider.attackTicks - 1);
     if (rider.attackTicks <= 0) {
       finishSwing(state, riderIndex, rider);
+    } else if (!(followingThrough(rider) && input.punch && !input.kick)) {
+      return;
     }
-    return;
   }
   if (rider.hitStun > 0 || rider.attackCooldown > 0) {
     return;
+  }
+  if (rider.attack !== "none") {
+    finishSwing(state, riderIndex, rider);
   }
   const wanted = wantedAttack(rider, input);
   if (wanted === "none") {

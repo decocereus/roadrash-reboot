@@ -437,7 +437,7 @@ const fight = (
 ): void => {
   input.punch = false;
   input.kick = false;
-  if (state.tick <= TRUCE_TICKS || rider.attack !== "none") {
+  if (state.tick <= TRUCE_TICKS || rider.attackCooldown > 0) {
     return;
   }
   const inHandReach = rivalWithin(state, riderIndex, weapons[rider.weapon]);

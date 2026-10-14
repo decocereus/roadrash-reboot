@@ -42,11 +42,17 @@ const NEAR_MISS_MARGIN = 1.1;
 const NEAR_MISS_CLOSING_SPEED = 12;
 const PROP_CRASH_SPEED = 7;
 const CLEARANCE_OVER_PROPS = 2;
-const BODY_GROUND_DECELERATION = 14;
-const BIKE_SLIDE_DECELERATION = 9;
+const BODY_GROUND_DECELERATION = 6;
+const BIKE_SLIDE_DECELERATION = 5;
 const RUN_SPEED = 10;
 const MOUNT_TICKS = 30;
 const SETTLE_TICKS = 50;
+const LIE_TICKS = 30;
+const KNOCKDOWN_KEEP = 0.25;
+const KNOCKDOWN_LIFT = 2.5;
+const KNOCKDOWN_HOP = 0.3;
+const BODY_REACH = 0.5;
+const RUN_OVER_SPEED_LOSS = 0.1;
 const FINISH_BRAKE = 0.35;
 const REMOUNT_STAMINA = 55;
 const STUN_STEER = 0.65;
@@ -293,7 +299,7 @@ const hitProps = (
       Math.abs(prop.x - rider.x) < prop.radius + BIKE_HALF_WIDTH;
     if (touching && rider.air < CLEARANCE_OVER_PROPS) {
       if (rider.speed > PROP_CRASH_SPEED) {
-        throwRider(state, riderIndex, "prop", 0.15, 0.45);
+        throwRider(state, riderIndex, "prop", 0.15, 0.5);
         return true;
       }
       rider.x -= Math.sign(prop.x) * 0.06;
@@ -426,10 +432,86 @@ const slide = (track: Track, rider: RiderState): boolean => {
 
 const tumble = (track: Track, rider: RiderState): void => {
   if (slide(track, rider)) {
-    rider.mode = "running";
+    rider.mode = "lying";
     rider.modeTicks = 0;
     rider.speed = 0;
     rider.bodySpeed = 0;
+  }
+};
+
+const knockDown = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  by: number,
+  speed: number
+): void => {
+  rider.mode = "thrown";
+  rider.modeTicks = 0;
+  rider.bodySpeed = speed * KNOCKDOWN_KEEP;
+  rider.bodyLateralSpeed = 0;
+  rider.bodyVerticalSpeed = KNOCKDOWN_LIFT;
+  rider.bodyAir = KNOCKDOWN_HOP;
+  if (by >= 0) {
+    rider.lastHitBy = by;
+    rider.lastHitTick = state.tick;
+  }
+  state.events.push({
+    by,
+    kind: "knockedDown",
+    rider: riderIndex,
+    speed: Math.abs(speed),
+  });
+};
+
+const overBody = (
+  rider: RiderState,
+  s: number,
+  x: number,
+  halfLength: number,
+  halfWidth: number
+): boolean =>
+  Math.abs(s - rider.bodyS) < halfLength + BODY_REACH &&
+  Math.abs(x - rider.bodyX) < halfWidth + BODY_REACH;
+
+const hitOnFoot = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState
+): boolean => {
+  for (const car of state.cars) {
+    if (
+      Math.abs(car.speed) > WALKING_PACE &&
+      overBody(rider, car.s, car.x, car.halfLength, car.halfWidth)
+    ) {
+      knockDown(state, riderIndex, rider, -1, car.speed);
+      return true;
+    }
+  }
+  for (const [index, other] of state.riders.entries()) {
+    if (
+      index !== riderIndex &&
+      other.mode === "riding" &&
+      other.speed > WALKING_PACE &&
+      overBody(rider, other.s, other.x, BIKE_HALF_LENGTH, BIKE_HALF_WIDTH)
+    ) {
+      other.speed *= 1 - RUN_OVER_SPEED_LOSS;
+      state.events.push({ kind: "bump", rider: index });
+      knockDown(state, riderIndex, rider, index, other.speed);
+      return true;
+    }
+  }
+  return false;
+};
+
+const lie = (state: RaceState, riderIndex: number, rider: RiderState): void => {
+  if (hitOnFoot(state, riderIndex, rider)) {
+    return;
+  }
+  rider.modeTicks += 1;
+  if (rider.modeTicks >= LIE_TICKS) {
+    rider.mode = "running";
+    rider.modeTicks = 0;
   }
 };
 
@@ -440,7 +522,14 @@ const comeToRest = (track: Track, rider: RiderState): void => {
   }
 };
 
-const runToBike = (rider: RiderState): void => {
+const runToBike = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState
+): void => {
+  if (hitOnFoot(state, riderIndex, rider)) {
+    return;
+  }
   rider.modeTicks += 1;
   const gapS = rider.s - rider.bodyS;
   const gapX = rider.x - rider.bodyX;
@@ -478,6 +567,27 @@ const mount = (
   state.events.push({ kind: "remount", rider: riderIndex });
 };
 
+const stepOffBike = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState
+): void => {
+  if (rider.mode === "wrecked") {
+    comeToRest(track, rider);
+  } else if (rider.mode === "thrown") {
+    tumble(track, rider);
+  } else if (rider.mode === "lying") {
+    lie(state, riderIndex, rider);
+  } else if (rider.mode === "running") {
+    runToBike(state, riderIndex, rider);
+  } else if (rider.mode === "mounting") {
+    mount(state, riderIndex, rider);
+    rider.bodyS = rider.s;
+    rider.bodyX = rider.x;
+  }
+};
+
 export const stepRider = (
   state: RaceState,
   track: Track,
@@ -488,25 +598,8 @@ export const stepRider = (
   if (!rider) {
     return;
   }
-  if (rider.mode === "busted") {
-    return;
-  }
-  if (rider.mode === "wrecked") {
-    comeToRest(track, rider);
-    return;
-  }
-  if (rider.mode === "thrown") {
-    tumble(track, rider);
-    return;
-  }
-  if (rider.mode === "running") {
-    runToBike(rider);
-    return;
-  }
-  if (rider.mode === "mounting") {
-    mount(state, riderIndex, rider);
-    rider.bodyS = rider.s;
-    rider.bodyX = rider.x;
+  if (rider.mode !== "riding") {
+    stepOffBike(state, track, riderIndex, rider);
     return;
   }
 
@@ -545,7 +638,7 @@ export const stepRider = (
   }
 
   if (rider.stamina <= 0) {
-    throwRider(state, riderIndex, "combat", 0.5, 0.65);
+    throwRider(state, riderIndex, "combat", 0.6, 0.65);
     return;
   }
   rider.bodyS = rider.s;

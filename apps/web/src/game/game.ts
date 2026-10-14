@@ -132,7 +132,7 @@ const attackPose = (rider: RiderState): RiderPose | undefined => {
     return undefined;
   }
   const strike = strikeOf(rider.attack, rider.weapon);
-  if (rider.attackTicks <= strike.ticks * 0.2) {
+  if (rider.attackTicks <= strike.ticks * 0.2 && rider.attackCooldown === 0) {
     return undefined;
   }
   if (rider.attack === "swing") {
@@ -433,6 +433,9 @@ export async function createGame(
       if (event.cause !== "rider") {
         speak(event.by, "knocksYouDown");
       }
+    } else if (event.kind === "knockedDown") {
+      chase.jolt(0.7);
+      sound.thump(0.8);
     } else if (event.kind === "nearMiss") {
       sound.whoosh();
       say("close");
@@ -608,7 +611,11 @@ export async function createGame(
       view.pitch = 0;
       view.lift = figure.standHeight;
       view.yaw = 0;
-    } else if (rider.mode === "thrown" || rider.mode === "wrecked") {
+    } else if (
+      rider.mode === "thrown" ||
+      rider.mode === "lying" ||
+      rider.mode === "wrecked"
+    ) {
       const resting = rider.bodySpeed < 0.5 && rider.bodyAir === 0;
       pose = resting ? "lying" : "tumble";
       if (resting) {

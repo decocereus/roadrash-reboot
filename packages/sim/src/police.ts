@@ -14,6 +14,7 @@ export const PULL_OVER = 1.1;
 
 export const isDown = (rider: RiderState): boolean =>
   rider.mode === "thrown" ||
+  rider.mode === "lying" ||
   rider.mode === "running" ||
   rider.mode === "mounting";
 

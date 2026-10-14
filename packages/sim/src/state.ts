@@ -67,6 +67,7 @@ export const FULL_CONDITION = 100;
 export type RiderMode =
   | "riding"
   | "thrown"
+  | "lying"
   | "running"
   | "mounting"
   | "busted"
@@ -147,6 +148,12 @@ export type RaceEvent =
       readonly by: number;
     }
   | { readonly kind: "wrecked"; readonly rider: number }
+  | {
+      readonly kind: "knockedDown";
+      readonly rider: number;
+      readonly speed: number;
+      readonly by: number;
+    }
   | { readonly kind: "glance"; readonly rider: number }
   | { readonly kind: "bump"; readonly rider: number }
   | {

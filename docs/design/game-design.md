@@ -334,20 +334,22 @@ The four existing weapons stay as they are. Two new ones fill gaps the set does 
 
 | Strike | Damage | Shove | Reach (along × across) | Hits | ticks / strikeTick / cooldown | Lands after | First appears |
 | --- | --: | --: | --- | --: | --- | --: | --- |
-| Fist | 14 | 1.6 | 1.9 × 2.2 m |  | 16 / 10 / 30 | 6 ticks | Level 1 |
-| Boot | 22 | 3.2 | 1.9 × 2.2 m |  | 26 / 16 / 45 | 10 ticks | Level 1 |
-| Club | 28 | 3.8 | 2.2 × 2.6 m | 6 | 22 / 13 / 40 | 9 ticks | Level 1 (Moose) |
-| Chain | 20 | 2.2 | 2.6 × 3.1 m | 8 | 22 / 13 / 38 | 9 ticks | Level 1 (Dee) |
-| Crowbar | 22 | 2.8 | 2.2 × 2.6 m | 4 | 20 / 12 / 36 | 8 ticks | Level 1 (Mags) |
-| Baton | 18 | 2.4 | 2.2 × 2.6 m | 12 | 20 / 12 / 36 | 8 ticks | Level 1 (police, Lyle) |
-| **Pool cue** | 15 | 1.8 | 3.0 × 3.4 m | 3 | 18 / 11 / 30 | 7 ticks | Level 2 (Coach) |
-| **Stop sign** | 32 | 4.6 | 2.4 × 2.8 m | 3 | 42 / 12 / 66 | 30 ticks | Level 3 (Gus) |
+| Fist | 14 | 1.6 | 1.9 × 2.2 m |  | 42 / 30 / 18 | 12 ticks | Level 1 |
+| Boot | 22 | 3.2 | 1.9 × 2.2 m |  | 33 / 19 / 45 | 14 ticks | Level 1 |
+| Club | 28 | 3.8 | 2.2 × 2.6 m | 6 | 48 / 33 / 40 | 15 ticks | Level 1 (Moose) |
+| Chain | 20 | 2.2 | 2.6 × 3.1 m | 8 | 48 / 33 / 38 | 15 ticks | Level 1 (Dee) |
+| Crowbar | 22 | 2.8 | 2.2 × 2.6 m | 4 | 46 / 32 / 36 | 14 ticks | Level 1 (Mags) |
+| Baton | 18 | 2.4 | 2.2 × 2.6 m | 12 | 46 / 32 / 36 | 14 ticks | Level 1 (police, Lyle) |
+| **Pool cue** | 15 | 1.8 | 3.0 × 3.4 m | 3 | 44 / 31 / 30 | 13 ticks | Level 2 (Coach) |
+| **Stop sign** | 32 | 4.6 | 2.4 × 2.8 m | 3 | 62 / 32 / 66 | 30 ticks | Level 3 (Gus) |
 
-These are the numbers in `packages/sim/src/weapons.ts`. `ticks` is how long the swing lasts. `strikeTick` is the number of ticks left in the swing when the hit lands, so a strike lands `ticks − strikeTick` ticks after the press, which is the "Lands after" column, and `strikeTick` is the follow-through. `cooldown` counts from the press, so the wait after a swing ends is `cooldown − ticks`. Every weapon leaves its holder's steering alone except the stop sign, whose holder has 85% of the bike's `steerRate`.
+These are the numbers in `packages/sim/src/weapons.ts`. `ticks` is how long the swing lasts. `strikeTick` is the number of ticks left in the swing when the hit lands, so a strike lands `ticks − strikeTick` ticks after the press, which is the "Lands after" column, and `strikeTick` is the follow-through. `cooldown` is the shortest time from one press to the next and can be shorter than the swing: a press during the follow-through, once the hit has landed, starts the next swing at once with no return to neutral. A kick cannot be chained that way and always waits for its cooldown. Every weapon leaves its holder's steering alone except the stop sign, whose holder has 85% of the bike's `steerRate`.
+
+The fist and the boot are the original's timings, measured on its starter rider on October 12, 2026: the swing's arm is fully out about 0.2 s after the key and back to neutral at 0.65 to 0.85 s; the kick's leg is out at 0.20 to 0.27 s and back by 0.47 to 0.63 s; a second swing pressed 0.30 s after the first is accepted and extends the swing with no neutral pose between. Ours: punch out at 0.20 s and the pose starts back at 0.57 s, blended to neutral at about 0.7 s; kick out at 0.23 s, back by about 0.55 s; a second punch pressed at 0.30 s starts at once and lands at 0.50 s. The original's backhand (arm raised at 0.19 s, out at 0.3 to 0.4 s, neutral by 0.8 s, one trial) has no strike of its own here: the public decompilation suggests it is the alternate attack animation chosen by holding Up with the attack key or by pressing again during the follow-up, and since Up is the throttle on our keyboard the follow-through press is the part we keep. The weapons were not measured; each keeps the one to three ticks of extra wind-up and follow-through it had over the fist, and its old cooldown, so the pool cue is still the quickest weapon round and the sign the slowest.
 
 The pool cue has the longest reach in the game: 3.4 m across, against 3.1 m for the chain and 2.2 m for a fist. That is still not a full lane. Lanes are 3.4 to 3.8 m wide, so two riders in the middle of neighbouring lanes are at least 3.4 m apart and the cue does not connect. The holder has to close laterally first, by moving toward the lane line, and then needs far less of a move than any other weapon asks for. It snaps after three hits, so it is a weapon to steal, use, and lose.
 
-The stop sign is the biggest hit in the game and the slowest. Its swing lasts 42 ticks with a `strikeTick` of 12, so the wind-up is 30 ticks, exactly the half second that a watchful rider can use to steer away: a rider 1.2 m across who steers away on the press is out of reach when it lands, and the same rider does not get clear of a club. The follow-through is 12 ticks and the cooldown is 66, so the wait after the swing is 24 ticks. It reads at a distance because it is a red octagon on a pole.
+The stop sign is the biggest hit in the game and the slowest. Its swing lasts 62 ticks with a `strikeTick` of 32, so the wind-up is 30 ticks, exactly the half second that a watchful rider can use to steer away: a rider 1.2 m across who steers away on the press is out of reach when it lands, and the same rider does not get clear of a club, which lands at 15. The follow-through is 32 ticks and the cooldown is 66, so the wait after the swing is 4 ticks. It reads at a distance because it is a red octagon on a pole.
 
 Both are `WeaponKind` values (`"cue"`, `"sign"`) with entries in `weapons.ts`, and their numbers are the ones in this table.
 
@@ -401,7 +403,7 @@ A racer is busted when a riding cop is within **4 m** of their body while they a
 
 Both numbers matter to what the player sees:
 
-- **The half second.** Before it, a cop riding alongside arrested a rider on the very tick they were knocked off. Every level-1 bust in the first measurement was of that kind, which is what a play test met as "busted after one crash, 29 seconds in". Now the cop has to still be beside the body half a second later. At walking pace it is. At 160 km/h the body slides 50 m and, with the brakes the bikes have had since the handling retune, the cop stops in about 45 m and is beside the body once the tumble is over, so a cop riding alongside is an arrest; a cop 60 m back when a rider falls at walking pace arrives after the remount and gives chase instead.
+- **The half second.** Before it, a cop riding alongside arrested a rider on the very tick they were knocked off. Every level-1 bust in the first measurement was of that kind, which is what a play test met as "busted after one crash, 29 seconds in". Now the cop has to still be beside the body half a second later. At walking pace it is. At 160 km/h the body flies and slides about 70 m over five seconds; the cop brakes for it, the body passes it still flying at 29 m/s, and the cop picks it up again and makes the arrest about a second after the fall, so a cop riding alongside is an arrest; a cop 60 m back when a rider falls at 50 km/h arrives after the remount and gives chase instead.
 - **The 4 m.** A cop gives up on a body once it is more than the reach behind it. At 2.5 m a cop on a Sesta stopped just past the body nearly every time and rode off, so levels 1 to 3 measured between 1% and 9%.
 
 The window has no player input in it: a rider who is down gets up by themselves. The player's part comes before the fall, by staying clear of the cop, outrunning it, or knocking it down first.
@@ -917,7 +919,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 12 | Paint palette | `paint` stays an index, but into a palette of eighteen rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | First career release |
 | 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |
 | 14 | Side-contact cap | The cap on speed lost to side contact described in section 9: 0.9 m/s a tick and 6 m/s in any second, kept as `bumpLoss` on the rider. | Built |
-| 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 42, `strikeTick` 12. |
+| 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 62, `strikeTick` 32. |
 | 16 | Last-slot grid start | The player starts in the last grid slot, behind the fourteen rivals, in rows 7 m apart across every lane: four abreast on a road with two lanes each way, two abreast on a one-lane road. | Built and measured (section 9). |
 | 22 | Pacing by the gap to the player | `RaceSetup.pacing` carries `leadEase` and `catchUp`; the pilot caps a leading rival's throttle and lifts a dropped rival's corner skill by the gap to rider 0 (section 9). | Built |
 | 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8 at the spots in `tracks.md`. | Later |
@@ -940,6 +942,21 @@ What one crash takes off a bike that starts at 100, by cause and by the rider's 
 | Leaving the track    |   7 (5) |   11 (7) |  17 (10) |  22 (14) |
 
 A crash at 200 km/h costs about 30 and one at 100 km/h about 15, whatever caused it. Three crashes into traffic at 200 km/h wreck a bike, four knockdowns at that speed do, and at 100 km/h it takes six to eight. A tip-over at walking pace costs about 3. The earlier curve had a floor of half the base figure and a spread of three and a half to one between causes, so one car at 200 km/h took half the bike and a wreck from fights took ten falls. A ride onto the grass that does not end in a fall still costs nothing.
+
+### The fall, by speed
+
+How long a crash takes, measured by simulation on a straight road on October 14, 2026, against the original's crash near 100 mph into a billboard, where the rider tumbles and slides for at least 4.5 s and is standing about 5.5 s after the impact, and its remount within about 3 s after a slower fall. The rider lands, slides at 6 m/s², lies still for half a second, takes 0.45 s to stand, runs back at 10 m/s, and lifts the bike for half a second. "Standing" includes the rise.
+
+| Fall | Sliding ends | Standing | Back on the bike | Run back |
+| --- | --: | --: | --: | --: |
+| Into a pole at 160 km/h | 5.1 s | 6.0 s | 12.7 s | 67 m |
+| Knocked off at 160 km/h | 6.2 s | 7.1 s | 11.0 s | 39 m |
+| Knocked off at 100 km/h | 4.2 s | 5.1 s | 7.3 s | 21 m |
+| Knocked off at 50 km/h | 2.6 s | 3.5 s | 4.5 s | 10 m |
+| Into a pole at 50 km/h | 2.2 s | 3.1 s | 4.2 s | 11 m |
+| Knocked off at 10 km/h | 1.3 s | 2.2 s | 2.4 s | 2 m |
+
+The pole crash matches the measured one; the knockdown at the same speed is a second longer because the body keeps 65% of the bike's speed instead of half, which is what lets a cop riding alongside catch it (section 8). The slow falls are a second longer than the original's "about 3 s", most of it the run back, and the original's rider who holds Up runs away from the bike on foot, which we do not model: our rider always runs to the bike and no input is read until they are back on it. A rider on foot who is hit by a car or a bike goes down again for about two seconds, as the original's did.
 
 ### The first career release without the later items
 
