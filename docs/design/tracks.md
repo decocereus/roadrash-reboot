@@ -8,11 +8,11 @@ All figures were produced by compiling each plan at each level with `compileTrac
 
 | Region | Road | id | Level-1 length | Lane width / shoulder / verge | Traffic per km, level 1 | Seed |
 | --- | --- | --- | --: | --- | --: | --- |
-| Salt Coast | Breakwater Run | `breakwater-run` | 3,900 m | 3.6 / 0.9 / 7 m | 5 | `0xb4_7a_c1` |
-| Cinder Flats | Cinder Wash | `cinder-wash` | 4,400 m | 3.8 / 1.4 / 14 m | 3 | `0xc1_d3_0a` |
-| Kettle Woods | Hollow Pine Road | `hollow-pine-road` | 3,600 m | 3.4 / 0.6 / 5 m | 6 | `0x4f_17_e2` |
-| Lowtown | Slag Row | `slag-row` | 4,000 m | 3.5 / 0.5 / 6 m | 8 | `0x5a_9c_33` |
-| Stonepeak | Ridge Road | `ridge-road` | 4,250 m | 3.6 / 0.9 / 9 m | 5 | `0x51_ed_27` |
+| Salt Coast | Breakwater Run | `breakwater-run` | 3,900 m | 2 × 3.6 / 0.9 / 7 m | 5 | `0xb4_7a_c1` |
+| Cinder Flats | Cinder Wash | `cinder-wash` | 4,400 m | 2 × 3.8 / 1.4 / 14 m | 3 | `0xc1_d3_0a` |
+| Kettle Woods | Hollow Pine Road | `hollow-pine-road` | 3,600 m | 1 × 3.4 / 0.6 / 5 m | 6 | `0x4f_17_e2` |
+| Lowtown | Slag Row | `slag-row` | 4,000 m | 2 × 3.5 / 0.5 / 6 m | 8 | `0x5a_9c_33` |
+| Stonepeak | Ridge Road | `ridge-road` | 4,250 m | 1 × 3.6 / 0.9 / 9 m | 5 | `0x51_ed_27` |
 
 Every road has two lanes, one in each direction. The roads differ in lane width, shoulder, and verge, never in lane count. `trafficPerKilometre` is per direction, as in `createTraffic`. Every plan uses `leadInLength: 80` and `runoffLength: 400`.
 

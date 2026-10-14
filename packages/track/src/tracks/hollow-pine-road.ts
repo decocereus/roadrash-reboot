@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 export const hollowPineRoad: TrackPlan = {
   id: "hollow-pine-road",
   laneWidth: 3.4,
+  lanesEachWay: 1,
   leadInLength: 80,
   level: 1,
   name: "Hollow Pine Road",

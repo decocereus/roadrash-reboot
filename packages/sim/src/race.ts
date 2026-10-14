@@ -150,14 +150,22 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   x: spot.x,
 });
 
-const gridSpot = (lane: number, slot: number): GridSpot => ({
-  s: GRID_S - Math.floor(slot / 2) * GRID_ROW_GAP,
-  x: slot % 2 === 0 ? lane : -lane,
+const gridColumns = (track: Track): readonly number[] => {
+  if (track.plan.lanesEachWay > 1) {
+    return track.sameWayLanes;
+  }
+  const [lane = 0] = track.sameWayLanes;
+  return [lane, -lane];
+};
+
+const gridSpot = (columns: readonly number[], slot: number): GridSpot => ({
+  s: GRID_S - Math.floor(slot / columns.length) * GRID_ROW_GAP,
+  x: columns[slot % columns.length] ?? 0,
 });
 
-const lastRow = (lane: number, rivalCount: number): GridSpot => ({
-  s: GRID_S - Math.ceil(rivalCount / 2) * GRID_ROW_GAP,
-  x: lane,
+const lastRow = (columns: readonly number[], rivalCount: number): GridSpot => ({
+  s: GRID_S - Math.ceil(rivalCount / columns.length) * GRID_ROW_GAP,
+  x: columns[0] ?? 0,
 });
 
 const freshHits = (profile: RiderProfile): number =>
@@ -211,7 +219,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     throw new Error(problems.map(describeSetupError).join(" "));
   }
   const { gridOrder, player, police, rivals: field, seed, track } = setup;
-  const lane = track.plan.laneWidth / 2;
+  const columns = gridColumns(track);
   const playerLast = gridOrder === "playerLast";
   const riders = [
     createRider(
@@ -222,7 +230,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
         profile: profileOf(player),
         weaponHits: player.weapon === "none" ? 0 : player.weaponHits,
       },
-      playerLast ? lastRow(lane, field.length) : gridSpot(lane, 0)
+      playerLast ? lastRow(columns, field.length) : gridSpot(columns, 0)
     ),
   ];
   for (const [index, rival] of field.entries()) {
@@ -235,7 +243,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
           profile: profileOf(rival),
           weaponHits: freshHits(rival),
         },
-        gridSpot(lane, playerLast ? index : index + 1)
+        gridSpot(columns, playerLast ? index : index + 1)
       )
     );
   }

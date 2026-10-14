@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 export const breakwaterRun: TrackPlan = {
   id: "breakwater-run",
   laneWidth: 3.6,
+  lanesEachWay: 2,
   leadInLength: 80,
   level: 1,
   name: "Breakwater Run",

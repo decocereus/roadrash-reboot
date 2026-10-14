@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 export const cinderWash: TrackPlan = {
   id: "cinder-wash",
   laneWidth: 3.8,
+  lanesEachWay: 2,
   leadInLength: 80,
   level: 1,
   name: "Cinder Wash",

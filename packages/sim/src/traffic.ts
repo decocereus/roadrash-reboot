@@ -12,6 +12,8 @@ const FOLLOW_GAP = 10;
 const FOLLOW_SECONDS = 0.9;
 const LOOK_AHEAD = 70;
 const PAINT_COUNT = 6;
+const SLOW_CRUISE = 23;
+const FAVOURED_LANE_SHARE = 0.8;
 
 interface Body {
   readonly halfLength: number;
@@ -33,6 +35,21 @@ const pickBody = (roll: number): Body => {
   return truck;
 };
 
+const laneFor = (
+  lanes: readonly number[],
+  cruiseSpeed: number,
+  random: Random
+): number => {
+  const inner = lanes[0] ?? 0;
+  const outer = lanes.at(-1) ?? inner;
+  if (lanes.length === 1) {
+    return inner;
+  }
+  const favoured = Math.abs(cruiseSpeed) < SLOW_CRUISE ? outer : inner;
+  const other = favoured === outer ? inner : outer;
+  return random() < FAVOURED_LANE_SHARE ? favoured : other;
+};
+
 export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
   const cars: TrafficCar[] = [];
   const span = track.endS - track.startS;
@@ -41,6 +58,7 @@ export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
   );
   const spacing = span / perDirection;
   for (const direction of [1, -1]) {
+    const lanes = direction === 1 ? track.sameWayLanes : track.oncomingLanes;
     for (let index = 0; index < perDirection; index += 1) {
       const s = track.startS + (index + 0.15 + random() * 0.7) * spacing;
       const body = pickBody(random());
@@ -54,7 +72,7 @@ export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
           paint: Math.floor(random() * PAINT_COUNT),
           s,
           speed: cruiseSpeed,
-          x: (direction * track.plan.laneWidth) / 2,
+          x: laneFor(lanes, cruiseSpeed, random),
         });
       }
     }
@@ -90,16 +108,28 @@ interface Lane {
   readonly longest: number;
 }
 
+const laneIndexOf = (track: Track, car: TrafficCar): number =>
+  Math.min(
+    track.plan.lanesEachWay - 1,
+    Math.floor(Math.abs(car.x) / track.plan.laneWidth)
+  );
+
 const laneOf = (
+  track: Track,
   cars: readonly TrafficCar[],
   lastS: readonly number[],
-  direction: number
+  direction: number,
+  laneIndex: number
 ): Lane => {
   const order: number[] = [];
   let longest = 0;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
-    if (car && Math.sign(car.cruiseSpeed) === direction) {
+    if (
+      car &&
+      Math.sign(car.cruiseSpeed) === direction &&
+      laneIndexOf(track, car) === laneIndex
+    ) {
       order.push(index);
       longest = Math.max(longest, car.halfLength);
     }
@@ -207,12 +237,18 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
     target: cars.map((car) => Math.abs(car.cruiseSpeed)),
   };
   for (const direction of [1, -1]) {
-    const lane = laneOf(cars, flow.lastS, direction);
-    followLane(flow, lane);
-    for (const rider of riders) {
-      yieldTo(flow, lane, rider, rider.s);
-      if (rider.bodyS !== rider.s) {
-        yieldTo(flow, lane, rider, rider.bodyS);
+    for (
+      let laneIndex = 0;
+      laneIndex < track.plan.lanesEachWay;
+      laneIndex += 1
+    ) {
+      const lane = laneOf(track, cars, flow.lastS, direction, laneIndex);
+      followLane(flow, lane);
+      for (const rider of riders) {
+        yieldTo(flow, lane, rider, rider.s);
+        if (rider.bodyS !== rider.s) {
+          yieldTo(flow, lane, rider, rider.bodyS);
+        }
       }
     }
   }

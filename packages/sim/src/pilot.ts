@@ -33,6 +33,8 @@ const ENGAGE_RANGE = 20;
 const BODY_CREEP_SPEED = 3;
 const PATROL_END_MARGIN = 80;
 const PULL_OVER_CRAWL = 6;
+const CROSSING_SECONDS = 1.5;
+const OWN_LANE_REACH = 1;
 
 const cornerSpeedLimit = (track: Track, rider: RiderState): number => {
   const lateralLimit =
@@ -149,24 +151,84 @@ interface Aim {
   readonly x: number;
 }
 
+const nearestLaneIndex = (lanes: readonly number[], x: number): number => {
+  let nearest = 0;
+  for (const [index, lane] of lanes.entries()) {
+    if (Math.abs(lane - x) < Math.abs((lanes[nearest] ?? 0) - x)) {
+      nearest = index;
+    }
+  }
+  return nearest;
+};
+
+const neighbourOf = (
+  lanes: readonly number[],
+  sameWayCount: number,
+  current: number
+): number => {
+  const here = lanes[current] ?? 0;
+  let neighbour = current;
+  for (const [index, lane] of lanes.entries()) {
+    if (index === current) {
+      continue;
+    }
+    const apart = Math.abs(lane - here);
+    const nearestSoFar = Math.abs((lanes[neighbour] ?? here) - here);
+    if (
+      neighbour === current ||
+      apart < nearestSoFar ||
+      (apart === nearestSoFar && index < sameWayCount)
+    ) {
+      neighbour = index;
+    }
+  }
+  return neighbour;
+};
+
+const between = (x: number, target: number, lane: number): boolean =>
+  (lane - x) * (lane - target) < 0;
+
 const laneAim = (
   state: RaceState,
+  track: Track,
   riderIndex: number,
   rider: RiderState,
-  ownLane: number,
   cruise: number
 ): Aim => {
-  const ahead = laneThreat(state, riderIndex, rider, ownLane);
-  if (!ahead) {
-    return { speed: cruise, x: ownLane };
+  const { oncomingLanes, sameWayLanes } = track;
+  const lanes = [...sameWayLanes, ...oncomingLanes];
+  const threats: (Threat | undefined)[] = [];
+  const checked: boolean[] = [];
+  const threatIn = (index: number): Threat | undefined => {
+    if (!checked[index]) {
+      checked[index] = true;
+      threats[index] = laneThreat(state, riderIndex, rider, lanes[index] ?? 0);
+    }
+    return threats[index];
+  };
+  const crossesBlocked = (target: number): boolean =>
+    lanes.some((lane, index) => {
+      if (
+        !between(rider.x, target, lane) ||
+        Math.abs(lane - rider.x) < OWN_LANE_REACH
+      ) {
+        return false;
+      }
+      const crossed = threatIn(index);
+      return crossed !== undefined && crossed.seconds < CROSSING_SECONDS;
+    });
+  for (const [index, lane] of lanes.entries()) {
+    if (!threatIn(index) && !crossesBlocked(lane)) {
+      return { speed: cruise, x: lane };
+    }
   }
-  if (laneThreat(state, riderIndex, rider, -ownLane)) {
-    return {
-      speed: Math.min(cruise, Math.max(0, ahead.speed) + SPLITTING_SPEED),
-      x: 0,
-    };
-  }
-  return { speed: cruise, x: -ownLane };
+  const current = nearestLaneIndex(lanes, rider.x);
+  const neighbour = neighbourOf(lanes, sameWayLanes.length, current);
+  const pace = threats[neighbour < sameWayLanes.length ? neighbour : current];
+  return {
+    speed: Math.min(cruise, Math.max(0, pace?.speed ?? 0) + SPLITTING_SPEED),
+    x: ((lanes[current] ?? 0) + (lanes[neighbour] ?? 0)) / 2,
+  };
 };
 
 interface Pursuit extends Aim {
@@ -211,8 +273,7 @@ const copAim = (
   state: RaceState,
   track: Track,
   copIndex: number,
-  cop: RiderState,
-  ownLane: number
+  cop: RiderState
 ): Aim => {
   if (cop.parked) {
     return { speed: 0, x: cop.x };
@@ -227,13 +288,13 @@ const copAim = (
     };
   }
   if (!target) {
-    return laneAim(state, copIndex, cop, ownLane, PATROL_SPEED);
+    return laneAim(state, track, copIndex, cop, PATROL_SPEED);
   }
   const pursuit = pursuitOf(state, cop, target);
   if (pursuit.engaged && !carThreat(state, cop, pursuit.x, pursuit.within)) {
     return pursuit;
   }
-  return laneAim(state, copIndex, cop, ownLane, pursuit.speed);
+  return laneAim(state, track, copIndex, cop, pursuit.speed);
 };
 
 const ride = (
@@ -347,11 +408,10 @@ export const pilotInput = (
   if (!rider) {
     return;
   }
-  const ownLane = track.plan.laneWidth / 2;
   const aim =
     rider.profile.role === "police"
-      ? copAim(state, track, riderIndex, rider, ownLane)
-      : laneAim(state, riderIndex, rider, ownLane, Number.POSITIVE_INFINITY);
+      ? copAim(state, track, riderIndex, rider)
+      : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY);
   ride(track, rider, aim, input);
   fight(state, riderIndex, rider, input);
 };

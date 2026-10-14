@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 export const slagRow: TrackPlan = {
   id: "slag-row",
   laneWidth: 3.5,
+  lanesEachWay: 2,
   leadInLength: 80,
   level: 1,
   name: "Slag Row",

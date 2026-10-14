@@ -14,6 +14,7 @@ export interface TrackPlan {
   readonly region: RegionId;
   readonly level: number;
   readonly seed: number;
+  readonly lanesEachWay: 1 | 2;
   readonly laneWidth: number;
   readonly shoulderWidth: number;
   readonly vergeWidth: number;
@@ -41,6 +42,8 @@ export interface Track {
   readonly endS: number;
   readonly roadHalfWidth: number;
   readonly vergeHalfWidth: number;
+  readonly sameWayLanes: readonly number[];
+  readonly oncomingLanes: readonly number[];
   readonly sampleCount: number;
   readonly worldX: Float64Array;
   readonly worldY: Float64Array;
@@ -70,6 +73,17 @@ const smoothstep = (value: number): number => {
   return clamped * clamped * (3 - 2 * clamped);
 };
 
+const roadHalfWidthOf = (plan: TrackPlan): number =>
+  plan.lanesEachWay * plan.laneWidth + plan.shoulderWidth;
+
+const laneCentres = (plan: TrackPlan, side: number): number[] => {
+  const centres: number[] = [];
+  for (let lane = 0; lane < plan.lanesEachWay; lane += 1) {
+    centres.push(side * (lane + 0.5) * plan.laneWidth);
+  }
+  return centres;
+};
+
 const curveWeight = (progress: number): number => {
   if (progress < CURVE_RAMP) {
     return smoothstep(progress / CURVE_RAMP);
@@ -89,7 +103,7 @@ const scatterProps = (
   const mix = regions[plan.region].propMix;
   const random = createRandom(plan.seed);
   const rockRandom = createRandom(nextSeed(plan.seed + ROCK_SEED_SALT));
-  const roadHalfWidth = plan.laneWidth + plan.shoulderWidth;
+  const roadHalfWidth = roadHalfWidthOf(plan);
   const startS = -plan.leadInLength;
   const endS = length + plan.runoffLength;
   const curvatureNear = (s: number): number =>
@@ -234,7 +248,7 @@ export const compileTrack = (plan: TrackPlan): Track => {
   }
 
   const props = scatterProps(plan, length, curvature);
-  const roadHalfWidth = plan.laneWidth + plan.shoulderWidth;
+  const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
 
   return {
@@ -242,9 +256,11 @@ export const compileTrack = (plan: TrackPlan): Track => {
     endS,
     heading,
     length,
+    oncomingLanes: laneCentres(plan, -1),
     plan,
     props,
     roadHalfWidth,
+    sameWayLanes: laneCentres(plan, 1),
     sampleCount,
     slope,
     slopeRate,

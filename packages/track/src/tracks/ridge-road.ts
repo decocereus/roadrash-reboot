@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 export const ridgeRoad: TrackPlan = {
   id: "ridge-road",
   laneWidth: 3.6,
+  lanesEachWay: 1,
   leadInLength: 80,
   level: 1,
   name: "Ridge Road",
