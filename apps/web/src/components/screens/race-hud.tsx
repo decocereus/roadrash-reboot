@@ -23,11 +23,7 @@ const noticeText = (hud: HudState): string => {
   }
   return {
     "": "",
-    air: "Air",
-    close: "Close",
     disarmed: "Disarmed",
-    go: "Go",
-    hit: "Hit",
     knockdown: "Down!",
     lastKm: "Last km",
     police: "Cop!",

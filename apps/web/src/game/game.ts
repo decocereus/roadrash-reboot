@@ -408,7 +408,9 @@ export async function createGame(
     if (attacker === 0) {
       strikeSound(armed);
       const victim = race.riders[target];
-      say(victim && victim.stamina <= 0 ? "knockdown" : "hit");
+      if (victim && victim.stamina <= 0) {
+        say("knockdown");
+      }
     } else if (target === 0) {
       strikeSound(armed);
       chase.jolt(armed ? 0.8 : 0.5);
@@ -438,11 +440,9 @@ export async function createGame(
       sound.thump(0.8);
     } else if (event.kind === "nearMiss") {
       sound.whoosh();
-      say("close");
     } else if (event.kind === "land" && event.airSeconds > 0.35) {
       chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
       sound.thump(Math.abs(event.impact) / 10);
-      say("air", `${event.airSeconds.toFixed(1)} s`);
     } else if (event.kind === "glance" || event.kind === "bump") {
       chase.jolt(0.45);
       sound.thump(0.5);
@@ -561,7 +561,6 @@ export async function createGame(
       countdown -= TICK_SECONDS;
       if (countdown <= 0 && plan) {
         phase = "racing";
-        say("go");
         events.onStart(plan);
       }
       holdStill();

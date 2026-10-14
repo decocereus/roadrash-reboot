@@ -14,11 +14,7 @@ export interface RacePlan {
 
 export type Notice =
   | ""
-  | "go"
   | "wipeout"
-  | "close"
-  | "air"
-  | "hit"
   | "knockdown"
   | "armed"
   | "disarmed"
