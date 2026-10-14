@@ -1276,7 +1276,7 @@ describe("memory", () => {
       note,
       unblamed: 0,
     });
-    expect(afterMooseIsBusted(115)).toStrictEqual({
+    expect(afterMooseIsBusted(135)).toStrictEqual({
       blamed: 0,
       line: {
         rival: "moose-kowalczyk",
