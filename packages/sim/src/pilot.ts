@@ -462,6 +462,18 @@ const fight = (
   input.punch = !input.kick;
 };
 
+const walkToBike = (rider: RiderState, input: RiderInput): void => {
+  const gapS = rider.s - rider.bodyS;
+  const gapX = rider.x - rider.bodyX;
+  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
+  const along = gapS / distance;
+  input.steer = gapX / distance;
+  input.throttle = Math.max(0, along);
+  input.brake = Math.max(0, -along);
+  input.punch = false;
+  input.kick = false;
+};
+
 export const pilotInput = (
   state: RaceState,
   track: Track,
@@ -470,6 +482,10 @@ export const pilotInput = (
 ): void => {
   const rider = state.riders[riderIndex];
   if (!rider) {
+    return;
+  }
+  if (rider.mode !== "riding") {
+    walkToBike(rider, input);
     return;
   }
   const police = rider.profile.role === "police";

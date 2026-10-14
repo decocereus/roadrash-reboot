@@ -197,7 +197,11 @@ const knockDown = (race: Entered, rival: RivalId, times: number): void => {
     wasRiding = riding;
     const inputs = race.state.riders.map(() => neutralInput);
     inputs[0] = { ...idle, punch: riding && tick % 40 === 0 };
-    inputs[themIndex] = idle;
+    const theirInput = { ...idle };
+    if (!riding) {
+      pilotInput(race.state, road, themIndex, theirInput);
+    }
+    inputs[themIndex] = theirInput;
     stepRace(race.state, road, inputs);
     recordTick(race.log, race.state, race.setup);
   }

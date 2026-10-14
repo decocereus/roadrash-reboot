@@ -13,6 +13,7 @@ export type RiderPose =
   | "tumble"
   | "lying"
   | "run"
+  | "stand"
   | "lift"
   | "punch"
   | "kick"
@@ -23,7 +24,9 @@ export type RiderPose =
 const DEFAULT_JACKET = 0x23_26_2c;
 const DEFAULT_HELMET = 0xf2_c2_30;
 const SUIT_PANEL = "#1c1826";
-const BLEND_RATE = 14;
+const BLEND_RATE = 16;
+const SNAP_RATE = 24;
+const RECOIL = 0.6;
 const RUN_HZ = 2.6;
 const TUMBLE_HZ = 1.75;
 const FULL_TURN = Math.PI * 2;
@@ -33,6 +36,7 @@ export interface RiderFigure {
   readonly seat: THREE.Vector3;
   readonly standHeight: number;
   dispose: () => void;
+  recoil: () => void;
   animate: (
     pose: RiderPose,
     time: number,
@@ -41,6 +45,9 @@ export interface RiderFigure {
     weapon: WeaponKind
   ) => void;
 }
+
+const striking = (pose: RiderPose): boolean =>
+  pose === "punch" || pose === "kick" || pose === "windup" || pose === "swing";
 
 interface Target {
   from: PoseName;
@@ -76,6 +83,9 @@ const aimFor = (
   }
   if (pose === "run") {
     return ["run_a", "run_b", 0.5 - 0.5 * Math.cos(time * RUN_HZ * FULL_TURN)];
+  }
+  if (pose === "stand") {
+    return ["run_a", "run_b", 0.5];
   }
   if (pose === "tumble") {
     return [
@@ -268,7 +278,8 @@ export const createRiderFigure = (
       if (!(from && to)) {
         return;
       }
-      const blend = Math.min(1, BLEND_RATE * seconds);
+      const rate = striking(pose) ? SNAP_RATE : BLEND_RATE;
+      const blend = Math.min(1, rate * seconds);
       for (let offset = 0; offset < current.length; offset += 4) {
         THREE.Quaternion.slerpFlat(
           wanted,
@@ -295,6 +306,22 @@ export const createRiderFigure = (
     dispose() {
       disposeTree(root);
       skeleton.dispose();
+    },
+    recoil() {
+      if (!seated) {
+        return;
+      }
+      for (let offset = 0; offset < current.length; offset += 4) {
+        THREE.Quaternion.slerpFlat(
+          current,
+          offset,
+          current,
+          offset,
+          seated,
+          offset,
+          RECOIL
+        );
+      }
     },
     root,
     seat: asset.seat,

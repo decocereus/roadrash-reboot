@@ -10,6 +10,7 @@ import {
   standings,
   stepRace,
 } from "@racer/sim/race";
+import { RUN_SPEED } from "@racer/sim/rider";
 import {
   clamp,
   FULL_CONDITION,
@@ -65,9 +66,12 @@ const SLOW_FRAME_SECONDS = 0.0195;
 const WRAP_JUMP = 30;
 const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
-const RISE_SECONDS = 0.45;
+const RISE_SECONDS = 0.3;
 const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
+const WALKING = 0.3;
+const RETURN_SHARE = 0.3;
+const SWING_LEAD_TICKS = 3;
 const BUSTED_SECONDS = 0.8;
 const WRECKED_SECONDS = 1.2;
 const ROAD_LEVEL = 1;
@@ -92,6 +96,7 @@ interface RiderView {
   pitch: number;
   lift: number;
   yaw: number;
+  stride: number;
 }
 
 const capture = (rider: RiderState, pose: Pose): void => {
@@ -132,11 +137,13 @@ const attackPose = (rider: RiderState): RiderPose | undefined => {
     return undefined;
   }
   const strike = strikeOf(rider.attack, rider.weapon);
-  if (rider.attackTicks <= strike.ticks * 0.2 && rider.attackCooldown === 0) {
+  if (rider.attackTicks <= strike.ticks * RETURN_SHARE) {
     return undefined;
   }
   if (rider.attack === "swing") {
-    return rider.attackTicks > strike.strikeTick ? "windup" : "swing";
+    return rider.attackTicks > strike.strikeTick + SWING_LEAD_TICKS
+      ? "windup"
+      : "swing";
   }
   return rider.attack;
 };
@@ -304,6 +311,7 @@ export async function createGame(
         figure,
         lift: figure.standHeight,
         pitch: 0,
+        stride: 0,
         tumbleAngle: 0,
         yaw: 0,
       };
@@ -486,6 +494,9 @@ export async function createGame(
 
   const react = () => {
     for (const event of race.events) {
+      if (event.kind === "attack") {
+        views[event.rider]?.figure.recoil();
+      }
       if (event.kind === "hit") {
         reactToHit(event.rider, event.target, event.weapon !== "none");
       } else if (event.rider === 0) {
@@ -596,6 +607,7 @@ export async function createGame(
     seconds: number
   ) => {
     let pose: RiderPose = "seated";
+    let time = clock;
     const { figure, bike } = view;
     if (seated) {
       pose =
@@ -641,15 +653,23 @@ export async function createGame(
       view.lift = figure.standHeight;
       poseOnTrack(figure.root, track, bodyS, bodyX, view.lift, view.yaw, 0, 0);
     } else {
-      pose = "run";
+      const pace =
+        Math.hypot(rider.bodySpeed, rider.bodyLateralSpeed) / RUN_SPEED;
+      const moving = pace > WALKING / RUN_SPEED;
+      pose = moving ? "run" : "stand";
+      time = view.stride;
+      view.stride += pace * seconds;
       const rise = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
       const eased = rise * rise * (3 - 2 * rise);
       view.pitch = LYING_PITCH * (1 - eased);
-      const bob =
-        rise >= 1 ? Math.abs(Math.sin(clock * Math.PI * 2 * RUN_HZ)) * 0.05 : 0;
+      const bob = moving
+        ? Math.abs(Math.sin(view.stride * Math.PI * 2 * RUN_HZ)) * 0.05
+        : 0;
       view.lift =
         LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased + bob;
-      if (rise >= 0.5) {
+      if (moving) {
+        view.yaw = Math.atan2(rider.bodyLateralSpeed, rider.bodySpeed);
+      } else if (rise >= 0.5 && rise < 1) {
         view.yaw = Math.atan2(rider.x - rider.bodyX, rider.s - rider.bodyS);
       }
       poseOnTrack(
@@ -663,7 +683,7 @@ export async function createGame(
         view.pitch
       );
     }
-    figure.animate(pose, clock, seconds, rider.attackSide, rider.weapon);
+    figure.animate(pose, time, seconds, rider.attackSide, rider.weapon);
   };
 
   const drawRider = (
@@ -730,9 +750,10 @@ export async function createGame(
       }
       drawRider(rider, view, blend, seconds);
       if (index === 0) {
-        subject.s = placed.seated ? placed.s : placed.bodyS;
-        subject.x = placed.seated ? placed.x : placed.bodyX;
-        subject.air = placed.seated ? placed.air : Math.min(placed.bodyAir, 2);
+        const onBike = placed.seated || placed.s < placed.bodyS;
+        subject.s = onBike ? placed.s : placed.bodyS;
+        subject.x = onBike ? placed.x : placed.bodyX;
+        subject.air = onBike ? placed.air : Math.min(placed.bodyAir, 2);
       }
     }
 

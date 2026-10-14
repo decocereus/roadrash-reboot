@@ -93,6 +93,35 @@ const hold = (
   return events;
 };
 
+const towardTheBike = (rider: RiderState, riding: RiderInput): RiderInput => {
+  if (rider.mode !== "running") {
+    return riding;
+  }
+  const gapS = rider.s - rider.bodyS;
+  const gapX = rider.x - rider.bodyX;
+  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
+  return {
+    ...riding,
+    brake: Math.max(0, -gapS / distance),
+    steer: gapX / distance,
+    throttle: Math.max(0, gapS / distance),
+  };
+};
+
+const holdAndRunBack = (
+  state: RaceState,
+  course: Track,
+  input: RiderInput,
+  seconds: number
+): RaceEvent[] => {
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    stepRace(state, course, [towardTheBike(player(state), input)]);
+    events.push(...state.events);
+  }
+  return events;
+};
+
 const alone = (course: Track, bike: BikeSpec): RaceState => {
   const setup = defaultSetup(course, 1);
   return createRace({
@@ -393,7 +422,7 @@ const crashIntoPole = (kmh: number) => {
   let onFeetSeconds = -1;
   let remountSeconds = -1;
   for (let tick = 0; tick < 20 * TICK_RATE && remountSeconds < 0; tick += 1) {
-    stepRace(state, quietTrack, [neutralInput]);
+    stepRace(state, quietTrack, [towardTheBike(rider, neutralInput)]);
     if (order.at(-1) !== rider.mode) {
       order.push(rider.mode);
     }
@@ -440,7 +469,7 @@ describe("crashing", () => {
     expect(rider.mode).toBe("thrown");
     expect(rider.bodyS).toBeGreaterThan(rider.s);
 
-    const later = hold(
+    const later = holdAndRunBack(
       state,
       track,
       { brake: 0, kick: false, punch: false, steer: 0, throttle: 0 },
@@ -450,7 +479,7 @@ describe("crashing", () => {
     expect(rider.mode).toBe("riding");
   });
 
-  it("a rider thrown into a pole at 160 km/h tumbles and slides for over four and a half seconds, lies still, and is on their feet about five and a half seconds after the impact; a fall at 50 km/h is over in half the time", () => {
+  it("a rider thrown into a pole at 160 km/h tumbles and slides for over four and a half seconds, lies still, and is on their feet about five and a half seconds after the impact; a fall at 50 km/h is over in half the time and a rider who runs straight back is riding again within five and a half seconds", () => {
     const fast = crashIntoPole(160);
     const slow = crashIntoPole(50);
     expect({
@@ -463,7 +492,7 @@ describe("crashing", () => {
       slidesOverFourAndAHalf: true,
     });
     expect(slow.onFeetSeconds).toBeLessThan(fast.onFeetSeconds / 2);
-    expect(slow.remountSeconds).toBeLessThan(4.5);
+    expect(slow.remountSeconds).toBeLessThan(5.5);
   });
 
   it("riding into the trees ends in a crash", () => {
@@ -866,7 +895,7 @@ const crashNearCop = (
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     pilotInput(state, straight, 1, copInput);
-    stepRace(state, straight, [flatOut, copInput]);
+    stepRace(state, straight, [towardTheBike(me, flatOut), copInput]);
     events.push(...state.events);
   }
   return { cop, events, me, state };
@@ -950,7 +979,7 @@ const knockedOffBeside = (speed: number) => {
   let ticksToArrest = -1;
   for (let tick = 0; tick < 15 * TICK_RATE; tick += 1) {
     pilotInput(state, straight, 1, copInput);
-    stepRace(state, straight, [flatOut, copInput]);
+    stepRace(state, straight, [towardTheBike(me, flatOut), copInput]);
     if (state.events.some((event) => event.kind === "busted")) {
       ticksToArrest = tick;
     }
@@ -1282,7 +1311,7 @@ const strikeTiming = (key: "punch" | "kick", pressTicks: readonly number[]) => {
         started.push(tick - 1);
       }
     }
-    if (tick > 0 && tick <= 42 && me.attack === "none") {
+    if (tick > 0 && tick <= 34 && me.attack === "none") {
       neutralTicks += 1;
     }
     return [pressing(key, pressTicks.includes(tick)), cruising, cruising];
@@ -1291,7 +1320,7 @@ const strikeTiming = (key: "punch" | "kick", pressTicks: readonly number[]) => {
 };
 
 describe("strike timing", () => {
-  it("a punch is fully out 12 ticks after the press and the swing is over at 42; a kick is out at 14 and over at 33", () => {
+  it("a punch is fully out 6 ticks after the press and the swing is over at 18; a kick is out at 7 and over at 20", () => {
     const { me, moose, state } = sideBySide();
     disarm(moose);
     const ends: Record<string, number> = {};
@@ -1315,22 +1344,34 @@ describe("strike timing", () => {
       });
     }
     expect({ ends, lands }).toStrictEqual({
-      ends: { kick: 33, punch: 42 },
-      lands: { kick: 14, punch: 12 },
+      ends: { kick: 20, punch: 18 },
+      lands: { kick: 7, punch: 6 },
     });
   });
 
-  it("a second punch pressed 0.3 s after the first starts at once, lands 0.2 s later, and the arm never comes back to neutral between them", () => {
-    const { landed, neutralTicks, started } = strikeTiming("punch", [0, 18]);
-    expect(started).toStrictEqual([0, 18]);
-    expect(landed).toStrictEqual([12, 30]);
+  it("a second punch pressed 16 ticks after the first starts at once, lands 6 ticks later, and the arm never comes back to neutral between them", () => {
+    const { landed, neutralTicks, started } = strikeTiming("punch", [0, 16]);
+    expect(started).toStrictEqual([0, 16]);
+    expect(landed).toStrictEqual([6, 22]);
     expect(neutralTicks).toBe(0);
   });
 
   it("a second punch pressed while the first is still winding up is ignored", () => {
-    const { landed, started } = strikeTiming("punch", [0, 6]);
+    const { landed, started } = strikeTiming("punch", [0, 3]);
     expect(started).toStrictEqual([0]);
-    expect(landed).toStrictEqual([12]);
+    expect(landed).toStrictEqual([6]);
+  });
+
+  it("mashing the punch key lands a hit no more often than every 16 ticks", () => {
+    const { landed } = strikeTiming(
+      "punch",
+      Array.from({ length: 90 }, (_, tick) => tick)
+    );
+    const gaps = landed
+      .slice(1)
+      .map((tick, index) => tick - (landed[index] ?? 0));
+    expect(landed.length).toBeGreaterThanOrEqual(4);
+    expect(Math.min(...gaps)).toBe(16);
   });
 
   it("a kick cannot be chained into a punch's follow-through", () => {
@@ -1344,7 +1385,7 @@ describe("strike timing", () => {
         }
       }
       return [
-        { ...cruising, kick: tick === 20, punch: tick === 0 },
+        { ...cruising, kick: tick === 16, punch: tick === 0 },
         cruising,
         cruising,
       ];
@@ -1437,6 +1478,135 @@ describe("knocked down on foot", () => {
     expect(rival.mode).toBe("riding");
     expect(rival.speed).toBeGreaterThan(18);
     expect(me.lastHitBy).toBe(1);
+  });
+});
+
+const awayFromTheBike = (rider: RiderState): RiderInput => {
+  const back = towardTheBike(rider, neutralInput);
+  return {
+    ...back,
+    brake: back.throttle,
+    steer: -back.steer,
+    throttle: back.brake,
+  };
+};
+
+const onFoot = (
+  state: RaceState,
+  me: RiderState,
+  seconds: number,
+  inputFor: (rider: RiderState) => RiderInput
+) => {
+  const from = { s: me.bodyS, x: me.bodyX };
+  const bike = { s: me.s, x: me.x };
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    stepRace(state, straight, [inputFor(me), cruising]);
+    events.push(...state.events);
+  }
+  const gap = (s: number, x: number) => Math.hypot(bike.s - s, bike.x - x);
+  return {
+    events,
+    gapAtEnd: gap(me.bodyS, me.bodyX),
+    gapAtStart: gap(from.s, from.x),
+    moved: Math.hypot(me.bodyS - from.s, me.bodyX - from.x),
+    remounted: events.some((event) => event.kind === "remount"),
+  };
+};
+
+describe("on foot", () => {
+  it("a rider on their feet who holds the controls toward the bike runs to it and remounts, and the bike has not moved", () => {
+    const { me, state } = knockedOffAndRunning();
+    const bike = { s: me.s, x: me.x };
+    const run = onFoot(state, me, 6, (rider) =>
+      towardTheBike(rider, neutralInput)
+    );
+    expect(run.gapAtStart).toBeGreaterThan(2);
+    expect(run.remounted).toBeTruthy();
+    expect(me.mode).toBe("riding");
+    expect(Math.abs(me.s - bike.s)).toBeLessThan(0.01);
+    expect(Math.abs(me.x - bike.x)).toBeLessThan(0.01);
+  });
+
+  it("a rider who runs the other way gets further from the bike at about seven metres a second and does not remount", () => {
+    const { me, state } = knockedOffAndRunning();
+    const run = onFoot(state, me, 3, awayFromTheBike);
+    expect(run.remounted).toBeFalsy();
+    expect(me.mode).toBe("running");
+    expect(run.gapAtEnd).toBeGreaterThan(run.gapAtStart + 15);
+    expect(run.moved).toBeLessThan(3 * 7);
+  });
+
+  it("a rider who touches nothing stays where they got up", () => {
+    const { me, state } = knockedOffAndRunning();
+    const run = onFoot(state, me, 3, () => neutralInput);
+    expect(run.moved).toBe(0);
+    expect(run.remounted).toBeFalsy();
+    expect(me.mode).toBe("running");
+  });
+
+  it("a rider on foot cannot leave the verge or walk through the finish", () => {
+    const { me, state } = knockedOffAndRunning();
+    const sideways = { ...neutralInput, steer: -1 };
+    onFoot(state, me, 4, () => sideways);
+    expect(me.bodyX).toBe(-straight.vergeHalfWidth);
+    me.bodyS = straight.length - 5;
+    const forward = { ...neutralInput, throttle: 1 };
+    onFoot(state, me, 3, () => forward);
+    expect(me.bodyS).toBe(straight.length);
+    expect(me.finishTick).toBe(-1);
+  });
+
+  it("a rival knocked off runs back to their bike and remounts on their own", () => {
+    const state = field(straight, 1, 1, 0);
+    const me = riderAt(state, 0);
+    const rival = riderAt(state, 1);
+    me.s = 900;
+    rival.s = 100;
+    rival.speed = 20;
+    rival.stamina = 0;
+    const rivalInput = { ...cruising };
+    const events: RaceEvent[] = [];
+    const modes: string[] = [];
+    for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+      pilotInput(state, straight, 1, rivalInput);
+      stepRace(state, straight, [neutralInput, rivalInput]);
+      events.push(...state.events);
+      if (modes.at(-1) !== rival.mode) {
+        modes.push(rival.mode);
+      }
+    }
+    expect(modes).toStrictEqual([
+      "thrown",
+      "lying",
+      "running",
+      "mounting",
+      "riding",
+    ]);
+    expect(events).toContainEqual({ kind: "remount", rider: 1 });
+    expect(rival.speed).toBeGreaterThan(5);
+  });
+
+  it("a cop reaching a rider who is standing on foot arrests them", () => {
+    const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
+    const me = riderAt(state, 0);
+    patrolFrom(state, 1, 100);
+    me.s = 200;
+    me.speed = 10;
+    me.stamina = 0;
+    const copInput = { ...cruising };
+    const events: RaceEvent[] = [];
+    for (
+      let tick = 0;
+      tick < 15 * TICK_RATE && me.mode !== "busted";
+      tick += 1
+    ) {
+      pilotInput(state, straight, 1, copInput);
+      stepRace(state, straight, [neutralInput, copInput]);
+      events.push(...state.events);
+    }
+    expect(events.map((event) => event.kind)).not.toContain("remount");
+    expect(me.mode).toBe("busted");
   });
 });
 
@@ -1538,7 +1708,7 @@ describe("simultaneous weapon grabs", () => {
     ({ unarmedIndex }) => {
       const after = duel(unarmedIndex, (tick) => ({
         holder: pressing("punch", tick === 0),
-        unarmed: pressing("kick", tick === 1),
+        unarmed: pressing("kick", tick === 2),
       }));
       expect(after).toStrictEqual({
         holder: ["none", 0],
@@ -1627,7 +1797,11 @@ const pushedWideInSwitchback = (bike: BikeSpec, kmh?: number): boolean => {
     const turningIn = rider.s > SWITCHBACK_FROM - TURN_IN_BEFORE;
     const inside = Math.sign(curvatureAt(quietTrack, SWITCHBACK_FROM + 60));
     stepRace(state, quietTrack, [
-      { ...cruising, steer: turningIn ? inside : 0, throttle: 1 },
+      towardTheBike(rider, {
+        ...cruising,
+        steer: turningIn ? inside : 0,
+        throttle: 1,
+      }),
     ]);
     if (inBend) {
       widest = Math.max(widest, -rider.x * inside);
@@ -1909,8 +2083,10 @@ const headOn = (
   rider.x = car.x;
   rider.speed = speed;
   const events: RaceEvent[] = [];
-  for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [{ ...cruising, throttle: 1 }]);
+  for (let tick = 0; tick < 30 * TICK_RATE; tick += 1) {
+    stepRace(state, straight, [
+      towardTheBike(rider, { ...cruising, throttle: 1 }),
+    ]);
     events.push(...state.events);
     const down = events.some((event) => event.kind === "crash");
     if (down && (rider.mode === "riding" || rider.parked)) {
@@ -1972,7 +2148,7 @@ const knockOffAndRemount = (state: RaceState, kmh: number): void => {
     car.s = me.s - 400;
   }
   for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [cruising]);
+    stepRace(state, straight, [towardTheBike(me, cruising)]);
     if (me.mode === "riding" || me.mode === "wrecked") {
       break;
     }
@@ -2205,13 +2381,13 @@ const ticksToLand = (weapon: WeaponKind, steer: number): number => {
 };
 
 describe("the new weapons", () => {
-  it("a stop sign lands half a second after the press, so a rider two metres across who steers away at once is out of reach, and a club lands before they can move", () => {
+  it("a stop sign lands 27 ticks after the press, so a rider two metres across who steers away at once is out of reach, and a club lands at 9 before they can move", () => {
     expect({
       club: ticksToLand("club", 0),
       clubDodged: ticksToLand("club", -1),
       sign: ticksToLand("sign", 0),
       signDodged: ticksToLand("sign", -1),
-    }).toStrictEqual({ club: 15, clubDodged: 15, sign: 30, signDodged: -1 });
+    }).toStrictEqual({ club: 9, clubDodged: 9, sign: 27, signDodged: -1 });
   });
 
   it("a pool cue breaks after three hits", () => {
@@ -2252,7 +2428,7 @@ describe("the new weapons", () => {
       club: ticksBetweenHits("club"),
       cue: ticksBetweenHits("cue"),
       sign: ticksBetweenHits("sign"),
-    }).toStrictEqual({ club: 40, cue: 30, sign: 66 });
+    }).toStrictEqual({ club: 40, cue: 30, sign: 50 });
   });
 
   it("a stop sign hits harder than a club and its holder answers the bars more slowly", () => {

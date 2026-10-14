@@ -44,7 +44,10 @@ const PROP_CRASH_SPEED = 7;
 const CLEARANCE_OVER_PROPS = 2;
 const BODY_GROUND_DECELERATION = 6;
 const BIKE_SLIDE_DECELERATION = 5;
-const RUN_SPEED = 10;
+export const RUN_SPEED = 7;
+const RUN_ACCELERATION = 28;
+const RISE_TICKS = 18;
+const MOUNT_REACH = 0.7;
 const MOUNT_TICKS = 30;
 const SETTLE_TICKS = 50;
 const LIE_TICKS = 30;
@@ -77,6 +80,14 @@ const damage = {
 
 const coasting: RiderInput = {
   brake: FINISH_BRAKE,
+  kick: false,
+  punch: false,
+  steer: 0,
+  throttle: 0,
+};
+
+const standing: RiderInput = {
+  brake: 0,
   kick: false,
   punch: false,
   steer: 0,
@@ -436,6 +447,7 @@ const tumble = (track: Track, rider: RiderState): void => {
     rider.modeTicks = 0;
     rider.speed = 0;
     rider.bodySpeed = 0;
+    rider.bodyLateralSpeed = 0;
   }
 };
 
@@ -522,26 +534,54 @@ const comeToRest = (track: Track, rider: RiderState): void => {
   }
 };
 
-const runToBike = (
+const atTheBike = (rider: RiderState): boolean =>
+  Math.hypot(rider.s - rider.bodyS, rider.x - rider.bodyX) < MOUNT_REACH;
+
+const run = (
   state: RaceState,
+  track: Track,
   riderIndex: number,
-  rider: RiderState
+  rider: RiderState,
+  input: RiderInput
 ): void => {
   if (hitOnFoot(state, riderIndex, rider)) {
     return;
   }
   rider.modeTicks += 1;
-  const gapS = rider.s - rider.bodyS;
-  const gapX = rider.x - rider.bodyX;
-  const distance = Math.hypot(gapS, gapX);
-  if (distance < 0.7) {
+  if (atTheBike(rider)) {
     rider.mode = "mounting";
     rider.modeTicks = 0;
+    rider.bodySpeed = 0;
+    rider.bodyLateralSpeed = 0;
     return;
   }
-  const stride = Math.min(distance, RUN_SPEED * TICK_SECONDS);
-  rider.bodyS += (gapS / distance) * stride;
-  rider.bodyX += (gapX / distance) * stride;
+  if (rider.modeTicks < RISE_TICKS) {
+    return;
+  }
+  const along = clamp(input.throttle - input.brake, -1, 1);
+  const across = clamp(input.steer, -1, 1);
+  const effort = Math.max(1, Math.hypot(along, across));
+  const step = RUN_ACCELERATION * TICK_SECONDS;
+  rider.bodySpeed = approach(
+    rider.bodySpeed,
+    (along / effort) * RUN_SPEED,
+    step
+  );
+  rider.bodyLateralSpeed = approach(
+    rider.bodyLateralSpeed,
+    (across / effort) * RUN_SPEED,
+    step
+  );
+  rider.bodyS = clamp(
+    rider.bodyS + rider.bodySpeed * TICK_SECONDS,
+    Math.min(rider.s, 0),
+    track.length
+  );
+  rider.bodyX = clamp(
+    rider.bodyX + rider.bodyLateralSpeed * TICK_SECONDS,
+    -track.vergeHalfWidth,
+    track.vergeHalfWidth
+  );
 };
 
 const mount = (
@@ -571,7 +611,8 @@ const stepOffBike = (
   state: RaceState,
   track: Track,
   riderIndex: number,
-  rider: RiderState
+  rider: RiderState,
+  input: RiderInput
 ): void => {
   if (rider.mode === "wrecked") {
     comeToRest(track, rider);
@@ -580,7 +621,7 @@ const stepOffBike = (
   } else if (rider.mode === "lying") {
     lie(state, riderIndex, rider);
   } else if (rider.mode === "running") {
-    runToBike(state, riderIndex, rider);
+    run(state, track, riderIndex, rider, input);
   } else if (rider.mode === "mounting") {
     mount(state, riderIndex, rider);
     rider.bodyS = rider.s;
@@ -599,7 +640,13 @@ export const stepRider = (
     return;
   }
   if (rider.mode !== "riding") {
-    stepOffBike(state, track, riderIndex, rider);
+    stepOffBike(
+      state,
+      track,
+      riderIndex,
+      rider,
+      rider.finishTick < 0 ? input : standing
+    );
     return;
   }
 

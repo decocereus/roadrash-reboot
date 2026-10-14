@@ -14,7 +14,7 @@ export interface StrikeSpec {
 }
 
 export const punch: StrikeSpec = {
-  cooldown: 18,
+  cooldown: 16,
   damage: 14,
   hits: 0,
   name: "Fists",
@@ -22,12 +22,12 @@ export const punch: StrikeSpec = {
   reachX: 2.2,
   shove: 1.6,
   steerFactor: 1,
-  strikeTick: 30,
-  ticks: 42,
+  strikeTick: 12,
+  ticks: 18,
 };
 
 export const kick: StrikeSpec = {
-  cooldown: 45,
+  cooldown: 36,
   damage: 22,
   hits: 0,
   name: "Boot",
@@ -35,8 +35,8 @@ export const kick: StrikeSpec = {
   reachX: 2.2,
   shove: 3.2,
   steerFactor: 1,
-  strikeTick: 19,
-  ticks: 33,
+  strikeTick: 13,
+  ticks: 20,
 };
 
 export const weapons = {
@@ -49,8 +49,8 @@ export const weapons = {
     reachX: 2.6,
     shove: 2.4,
     steerFactor: 1,
-    strikeTick: 32,
-    ticks: 46,
+    strikeTick: 14,
+    ticks: 22,
   },
   chain: {
     cooldown: 38,
@@ -61,8 +61,8 @@ export const weapons = {
     reachX: 3.1,
     shove: 2.2,
     steerFactor: 1,
-    strikeTick: 33,
-    ticks: 48,
+    strikeTick: 15,
+    ticks: 24,
   },
   club: {
     cooldown: 40,
@@ -73,8 +73,8 @@ export const weapons = {
     reachX: 2.6,
     shove: 3.8,
     steerFactor: 1,
-    strikeTick: 33,
-    ticks: 48,
+    strikeTick: 15,
+    ticks: 24,
   },
   crowbar: {
     cooldown: 36,
@@ -85,8 +85,8 @@ export const weapons = {
     reachX: 2.6,
     shove: 2.8,
     steerFactor: 1,
-    strikeTick: 32,
-    ticks: 46,
+    strikeTick: 14,
+    ticks: 22,
   },
   cue: {
     cooldown: 30,
@@ -97,12 +97,12 @@ export const weapons = {
     reachX: 3.4,
     shove: 1.8,
     steerFactor: 1,
-    strikeTick: 31,
-    ticks: 44,
+    strikeTick: 13,
+    ticks: 20,
   },
   none: punch,
   sign: {
-    cooldown: 66,
+    cooldown: 50,
     damage: 32,
     hits: 3,
     name: "Stop sign",
@@ -110,8 +110,8 @@ export const weapons = {
     reachX: 2.8,
     shove: 4.6,
     steerFactor: 0.85,
-    strikeTick: 32,
-    ticks: 62,
+    strikeTick: 17,
+    ticks: 44,
   },
 } as const satisfies Record<WeaponKind, StrikeSpec>;
 
