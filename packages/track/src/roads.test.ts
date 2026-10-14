@@ -9,6 +9,7 @@ import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 
 const GRAVITY = 9.81;
 const STRAIGHT = 1 / 1500;
+const PINNED_RIDGE_LENGTH = 4250;
 
 interface Stretch {
   readonly from: number;
@@ -26,54 +27,54 @@ interface Expected {
 
 const design: readonly Expected[] = [
   {
-    lengths: [3900, 5050, 6200, 7350, 8500],
+    lengths: [8500, 9650, 10_800, 11_950, 13_100],
     lowestLaunch: [169, 169, 169, 169, 169],
     roadId: "breakwater-run",
-    roadblocks: [[], [], [2800, 4850], [2800, 4850], [2800, 4850, 7450]],
+    roadblocks: [[], [], [2800, 9450], [2800, 9450], [2800, 9450, 12_050]],
     signature: undefined,
     traffic: [5, 6, 7, 8, 9],
   },
   {
-    lengths: [4400, 5550, 6700, 7850, 9000],
+    lengths: [8850, 10_000, 11_150, 12_300, 13_450],
     lowestLaunch: [154, 154, 154, 154, 154],
     roadId: "cinder-wash",
     roadblocks: [
       [],
       [],
-      [1900, 4600, 5800],
-      [1900, 4600, 5800],
-      [1900, 4600, 5800],
+      [1900, 9050, 10_250],
+      [1900, 9050, 10_250],
+      [1900, 9050, 10_250],
     ],
     signature: { from: 1640, to: 1740 },
     traffic: [3, 4, 5, 6, 7],
   },
   {
-    lengths: [3600, 4750, 5900, 7050, 8200],
+    lengths: [8050, 9200, 10_350, 11_500, 12_650],
     lowestLaunch: [186, 173, 173, 170, 162],
     roadId: "hollow-pine-road",
-    roadblocks: [[], [], [5700], [5700, 6850], [5700, 6850, 7650]],
+    roadblocks: [[], [], [10_150], [10_150, 11_300], [10_150, 11_300, 12_100]],
     signature: undefined,
     traffic: [6, 7, 8, 9, 10],
   },
   {
-    lengths: [4000, 5150, 6300, 7450, 8600],
+    lengths: [8500, 9650, 10_800, 11_950, 13_100],
     lowestLaunch: [152, 152, 152, 152, 152],
     roadId: "slag-row",
     roadblocks: [
       [],
       [],
-      [750, 2150, 6150],
-      [750, 2150, 6150],
-      [750, 2150, 6150],
+      [750, 2150, 10_650],
+      [750, 2150, 10_650],
+      [750, 2150, 10_650],
     ],
     signature: { from: 960, to: 1020 },
     traffic: [8, 9, 10, 11, 12],
   },
   {
-    lengths: [4250, 5400, 6550, 7700, 8850],
+    lengths: [8550, 9700, 10_850, 12_000, 13_150],
     lowestLaunch: [162, 162, 162, 162, 162],
     roadId: "ridge-road",
-    roadblocks: [[], [], [5250], [5250, 6650], [5250, 6650, 8650]],
+    roadblocks: [[], [], [9550], [9550, 10_950], [9550, 10_950, 12_950]],
     signature: undefined,
     traffic: [5, 6, 7, 8, 9],
   },
@@ -206,22 +207,33 @@ describe("the five roads", () => {
     }
   );
 
-  it("Ridge Road at level 1 is still the pinned road, sample for sample and prop for prop", () => {
+  it("the first 4,250 m of Ridge Road at level 1 are still the pinned road, sample for sample and prop for prop", () => {
     const levelOne = trackFor("ridge-road", 1);
+    const samples = PINNED_RIDGE_LENGTH - levelOne.startS;
+    const props = levelOne.props.filter((prop) => prop.s < PINNED_RIDGE_LENGTH);
     expect({
-      curvature: digestOf(levelOne.curvature, 1e9),
-      height: digestOf(levelOne.worldY, 1e6),
-      line: digestOf([...levelOne.worldX, ...levelOne.worldZ], 1e6),
-      props: digestOf(levelOne.props.flatMap(propNumbers), 1e6),
-      rocks: digestOf(rocksOf(levelOne).flatMap(propNumbers), 1e6),
-      slopeRate: digestOf(levelOne.slopeRate, 1e9),
+      curvature: digestOf(levelOne.curvature.slice(0, samples), 1e9),
+      height: digestOf(levelOne.worldY.slice(0, samples), 1e6),
+      line: digestOf(
+        [
+          ...levelOne.worldX.slice(0, samples),
+          ...levelOne.worldZ.slice(0, samples),
+        ],
+        1e6
+      ),
+      props: digestOf(props.flatMap(propNumbers), 1e6),
+      rocks: digestOf(
+        props.filter((prop) => prop.kind === "rock").flatMap(propNumbers),
+        1e6
+      ),
+      slopeRate: digestOf(levelOne.slopeRate.slice(0, samples), 1e9),
     }).toStrictEqual({
-      curvature: "c549d971",
-      height: "5d229316",
-      line: "d3195a21",
-      props: "aceb06e3",
+      curvature: "becd6387",
+      height: "bdd0d924",
+      line: "cbabb60b",
+      props: "ef5015ad",
       rocks: "0356dee5",
-      slopeRate: "0d92b9b9",
+      slopeRate: "1656c28f",
     });
   });
 
@@ -230,7 +242,9 @@ describe("the five roads", () => {
     const pinned = compileTrack(plan);
     const longer = compileTrack({ ...plan, leadInLength: 200 });
     expect(rocksOf(longer)).toStrictEqual(rocksOf(pinned));
-    expect(rocksOf(pinned)).toHaveLength(35);
+    expect(
+      rocksOf(pinned).filter((rock) => rock.s < PINNED_RIDGE_LENGTH)
+    ).toHaveLength(35);
     expect(treesOf(longer)).not.toStrictEqual(treesOf(pinned));
   });
 });

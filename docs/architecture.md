@@ -83,11 +83,13 @@ There are five roads, one per region. Breakwater Run, Cinder Wash, and Slag Row 
 
 | Road | id | Region | Level 1 | Level 5 | Lowest launch |
 | --- | --- | --- | --: | --: | --: |
-| Breakwater Run | `breakwater-run` | Salt Coast | 3,900 m | 8,500 m | 169 km/h |
-| Cinder Wash | `cinder-wash` | Cinder Flats | 4,400 m | 9,000 m | 154 km/h, the Main Wash |
-| Hollow Pine Road | `hollow-pine-road` | Kettle Woods | 3,600 m | 8,200 m | 162 km/h, at level 5 |
-| Slag Row | `slag-row` | Lowtown | 4,000 m | 8,600 m | 152 km/h, the rail crossing |
-| Ridge Road | `ridge-road` | Stonepeak | 4,250 m | 8,850 m | 162 km/h, the Saddle |
+| Breakwater Run | `breakwater-run` | Salt Coast | 8,500 m | 13,100 m | 169 km/h |
+| Cinder Wash | `cinder-wash` | Cinder Flats | 8,850 m | 13,450 m | 154 km/h, the Main Wash |
+| Hollow Pine Road | `hollow-pine-road` | Kettle Woods | 8,050 m | 12,650 m | 162 km/h, at level 5 |
+| Slag Row | `slag-row` | Lowtown | 8,500 m | 13,100 m | 152 km/h, the rail crossing |
+| Ridge Road | `ridge-road` | Stonepeak | 8,550 m | 13,150 m | 162 km/h, the Saddle |
+
+The level-1 lengths follow the original game's level-1 roads, which measure 8.0 to 8.9 km. A level-1 race takes the AI pilot 2.6 to 3 minutes alone on an empty road and 3.6 to 4.2 minutes in a full field with traffic.
 
 A road file in `tracks/` exports its level-1 plan, the four blocks of sections that levels 2 to 5 append, and a `Road` that ties them to the road's roadblock spots. `roadAtLevel(road, level)` builds a level's plan: the level-1 sections followed by the blocks up to that level, 1,150 m more road each time, one more car per kilometre, the id `slag-row-3`, and the same seed. `roadblocks` lists the spots that exist on the road at that level and is empty below level 3. A level can list more spots than it uses, and nothing in the simulation reads them yet.
 
@@ -95,7 +97,7 @@ A road file in `tracks/` exports its level-1 plan, the four blocks of sections t
 
 `regions.ts` holds each region's name and prop mix. The prop mix weights trees, poles, rocks, and chevrons in the scatter, so Kettle Woods is dense with trees and has no poles and Cinder Flats is nearly bare. A region's colours and light are the renderer's business and live in `apps/web/src/game/looks.ts`. The renderer decides what a prop looks like per kit: a tree is a round street tree in a city and a pine on open ground, and a rock is a barrier block in a city. Rocks are scattered from their own seeded stream, so the scenery of the part of a road the player already knows is the same at every level.
 
-The track tests compile every road at every level. They check the lengths, the lowest launch speed against the crest tables, that only the Main Wash and the rail crossing launch below 160 km/h, and that every roadblock spot is on a straight with 250 m behind it and 150 m ahead. They also pin the level-1 Ridge Road by digest (curvature, heights, centre line, crests, every prop, and the rocks by themselves), and check that a longer lead-in changes the trees and leaves the 35 rocks where they were.
+The track tests compile every road at every level. They check the lengths, the lowest launch speed against the crest tables, that only the Main Wash and the rail crossing launch below 160 km/h, and that every roadblock spot is on a straight with 250 m behind it and 150 m ahead. They also pin the first 4,250 m of the level-1 Ridge Road, the original track, by digest (curvature, heights, centre line, crests, every prop, and the rocks by themselves), and check that a longer lead-in changes the trees and leaves the 35 rocks where they were.
 
 ## Career
 

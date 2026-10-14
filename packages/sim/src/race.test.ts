@@ -400,8 +400,8 @@ describe("a full race", () => {
     expect(rider.crashes).toBe(0);
     expect(events.some((event) => event.kind === "crash")).toBeFalsy();
     const seconds = rider.finishTick / TICK_RATE;
-    expect(seconds).toBeGreaterThan(80);
-    expect(seconds).toBeLessThan(130);
+    expect(seconds).toBeGreaterThan(140);
+    expect(seconds).toBeLessThan(190);
   });
 
   it("the pilot gets through traffic and still finishes", () => {

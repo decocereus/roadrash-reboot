@@ -40,13 +40,13 @@ There are five levels. Each level has the same five roads, one per region. A roa
 
 | Region | Road | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
 | --- | --- | --: | --: | --: | --: | --: |
-| Salt Coast | Breakwater Run | 3.90 km | 5.05 km | 6.20 km | 7.35 km | 8.50 km |
-| Cinder Flats | Cinder Wash | 4.40 km | 5.55 km | 6.70 km | 7.85 km | 9.00 km |
-| Kettle Woods | Hollow Pine Road | 3.60 km | 4.75 km | 5.90 km | 7.05 km | 8.20 km |
-| Lowtown | Slag Row | 4.00 km | 5.15 km | 6.30 km | 7.45 km | 8.60 km |
-| Stonepeak | Ridge Road | 4.25 km | 5.40 km | 6.55 km | 7.70 km | 8.85 km |
+| Salt Coast | Breakwater Run | 8.50 km | 9.65 km | 10.80 km | 11.95 km | 13.10 km |
+| Cinder Flats | Cinder Wash | 8.85 km | 10.00 km | 11.15 km | 12.30 km | 13.45 km |
+| Kettle Woods | Hollow Pine Road | 8.05 km | 9.20 km | 10.35 km | 11.50 km | 12.65 km |
+| Lowtown | Slag Row | 8.50 km | 9.65 km | 10.80 km | 11.95 km | 13.10 km |
+| Stonepeak | Ridge Road | 8.55 km | 9.70 km | 10.85 km | 12.00 km | 13.15 km |
 
-Each level adds 1,150 m to every road. At a race average of about 42 m/s, a level-1 race lasts 90 to 110 seconds of riding and a level-5 race about 3.5 minutes, plus whatever time the player spends lying in the road. That keeps a single race inside a browser session's patience while still making level 5 feel like a long haul. A 9 km road is 9,481 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
+The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. Each level adds 1,150 m to every road; the original's growth per level was not measured. The AI pilot rides a level-1 road in 2.6 to 3 minutes alone and in 3.6 to 4.2 minutes in a full field with traffic, and a level-5 race on the Meridian 900 in 5.5 to 6.5 minutes, plus whatever time the player spends lying in the road. A 13.45 km road is 13,931 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
 
 ### The field
 
@@ -346,7 +346,7 @@ The loop that results: arrive unarmed, find the armed rider, line up a kick, kee
 
 ### Escalation
 
-A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked 700 m into the road and every 1,600 m after that. With five cops at level 5, the last one sits at 7.1 km, which fits every level-5 road.
+A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked 700 m into the road and every 1,600 m after that. With five cops at level 5, the last one sits at 7.1 km, which fits every level-5 road. Since the level-1 roads were lengthened to 8.05 to 8.85 km, no cop's beat reaches the last 4.3 to 6.5 km of a race at any level; whether to space cops by road length is open.
 
 Each cop has a **beat**: it gives up the chase that many metres past the spot where it was parked, pulls onto the verge, and stays there. A cop that is riding to a downed racer finishes that first. Without a beat every cop the pack woke rode with it to the finish, so five cops meant five batons around the player for the last three kilometres.
 
@@ -673,7 +673,7 @@ The story is told in short screens between races: the clubhouse corkboard, text 
 
 **Level 4: The Badge.** Lyle, drunk and furious, tells you what he was really fired for: he wrote up Sergeant Pike for taking money from Vic, and the report vanished. Now the cops seem to know which riders Vic likes, and you are not one of them. Coach Dale tries to sell you tape seven. Someone writes your name in marker over the top of Juno's spot on the board; Juno crosses it out, then, after you beat her once, leaves it there. She says your name for the first time.
 
-**Level 5: The Long Ridge.** The last race of the season is Ridge Road at full length, 8.85 km, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the lookout but the summit mast, and Vic is waiting there with a cash box and two friends.
+**Level 5: The Long Ridge.** The last race of the season is Ridge Road at full length, 13.15 km, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.
 
 **Ending: Clean Crown.** You win the Long Ridge and never took the envelope. Sergeant Pike, who has read the room, busts Vic in the Lowside car park instead of you. Deputy Haverty asks Vic to hold still for a photo. Your Polaroid goes at the top of the board, Juno buys the first round, and Dee delivers a pizza nobody ordered.
 
