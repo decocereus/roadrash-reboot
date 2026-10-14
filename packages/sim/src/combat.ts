@@ -18,13 +18,14 @@ import type { StrikeSpec } from "./weapons.ts";
 
 const HIT_STUN_TICKS = 10;
 const HIT_SPEED_LOSS = 0.06;
-const CONTACT_CLOSING_SPEED = 9;
+const CONTACT_CLOSING_SPEED = 18;
 const SIDE_SHOVE = 1.2;
 const BUMP_SPEED_LOSS = 0.9;
 const BUMP_LOSS_PER_SECOND = 6;
 const CONTACT_COOLDOWN_TICKS = 6;
 const TAP_SPEED_LOSS = 0.5;
-const SOFT_SHUNT = 1;
+const SHUNT_SHARE = 0.3;
+const SOFT_SHUNT = CONTACT_CLOSING_SPEED * SHUNT_SHARE;
 const HARD_SHUNT = 6;
 const REACH_S = BIKE_HALF_LENGTH * 2;
 const REACH_X = BIKE_HALF_WIDTH * 2 + 0.1;
@@ -464,7 +465,10 @@ const rearEnd = (state: RaceState, rear: Party, front: Party): void => {
     rear.jolt.behind,
     front.rider.s - BIKE_HALF_LENGTH * 2
   );
-  front.jolt.speedGain += Math.min(SOFT_SHUNT, Math.max(0, closing) * 0.3);
+  front.jolt.speedGain += Math.min(
+    SOFT_SHUNT,
+    Math.max(0, closing) * SHUNT_SHARE
+  );
   state.events.push({
     kind: "riderContact",
     other: front.index,

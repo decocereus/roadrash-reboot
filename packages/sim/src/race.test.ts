@@ -4,7 +4,7 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { bikes, streetBike } from "./bikes.ts";
-import { rivalAt, rivals } from "./cast.ts";
+import { cast, rivalAt, rivals } from "./cast.ts";
 import { topSpeedOf } from "./engine.ts";
 import { pilotInput } from "./pilot.ts";
 import { chaserDistance, PATROL_SPEED } from "./police.ts";
@@ -36,6 +36,7 @@ const MPH = 2.237;
 const KMH = 3.6;
 const track = compileTrack(ridgeRoad);
 const quietTrack = compileTrack({ ...ridgeRoad, trafficPerKilometre: 0 });
+const wideTrack = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
 const straight = compileTrack({
   ...ridgeRoad,
   sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
@@ -1099,7 +1100,7 @@ const column = (riderCount: number) => {
 const pileup = (movingIndex: number) => {
   const state = column(3);
   const rear = riderAt(state, 0);
-  rear.speed = 45;
+  rear.speed = 50;
   const moving = riderAt(state, movingIndex);
   moving.s = 101.8;
   moving.x = -0.3;
@@ -1124,6 +1125,23 @@ const ride = <Sample>(
   return samples;
 };
 
+const rearEndAt = (closing: number) => {
+  const state = column(2);
+  const rear = riderAt(state, 0);
+  const ahead = riderAt(state, 1);
+  rear.s = ahead.s - 2.6;
+  rear.speed = 30 + closing;
+  ahead.speed = 30;
+  const kinds = ride(state, 0.2, (events) =>
+    events.flatMap((event) =>
+      event.kind === "crash" || event.kind === "riderContact"
+        ? [event.kind]
+        : []
+    )
+  ).flat();
+  return { ahead, kinds, rear };
+};
+
 describe("rider contact", () => {
   it.each([
     { front: 1, rear: 0 },
@@ -1141,6 +1159,27 @@ describe("rider contact", () => {
       expect(Math.min(...gaps)).toBeGreaterThan(0);
     }
   );
+
+  it.each([{ closing: 12 }, { closing: 17 }])(
+    "a rider who runs into the back of a bike $closing m/s slower is not thrown: they drop to its speed and shove it on",
+    ({ closing }) => {
+      const { ahead, kinds, rear } = rearEndAt(closing);
+      expect({
+        crashed: kinds.includes("crash"),
+        mode: rear.mode,
+        touched: kinds.includes("riderContact"),
+      }).toStrictEqual({ crashed: false, mode: "riding", touched: true });
+      expect(rear.s).toBeLessThan(ahead.s);
+      expect(rear.speed).toBeLessThan(30 + closing - 5);
+      expect(ahead.speed).toBeGreaterThan(30 + closing * 0.25);
+    }
+  );
+
+  it("a rider who runs into the back of a bike 20 m/s slower is thrown", () => {
+    const { kinds, rear } = rearEndAt(20);
+    expect(kinds).toContain("crash");
+    expect(rear.mode).toBe("thrown");
+  });
 
   it("a rider who runs into a stopped bike at 60 m/s takes the damage of a 60 m/s crash", () => {
     const state = column(2);
@@ -1496,6 +1535,26 @@ const awayFromTheBike = (rider: RiderState): RiderInput => {
   };
 };
 
+const thrownWhileHolding = (held: RiderInput) => {
+  const state = field(straight, 1, 1, 0);
+  const me = riderAt(state, 0);
+  const rival = riderAt(state, 1);
+  rival.s = 900;
+  me.s = 100;
+  me.x = -1.8;
+  me.speed = 30 / KMH;
+  me.stamina = 0;
+  for (
+    let tick = 0;
+    tick < 10 * TICK_RATE && me.mode !== "running";
+    tick += 1
+  ) {
+    stepRace(state, straight, [held, cruising]);
+  }
+  expect(me.mode).toBe("running");
+  return { me, state };
+};
+
 const onFoot = (
   state: RaceState,
   me: RiderState,
@@ -1512,6 +1571,7 @@ const onFoot = (
   const gap = (s: number, x: number) => Math.hypot(bike.s - s, bike.x - x);
   return {
     events,
+    from,
     gapAtEnd: gap(me.bodyS, me.bodyX),
     gapAtStart: gap(from.s, from.x),
     moved: Math.hypot(me.bodyS - from.s, me.bodyX - from.x),
@@ -1542,12 +1602,36 @@ describe("on foot", () => {
     expect(run.moved).toBeLessThan(3 * 7);
   });
 
-  it("a rider who touches nothing stays where they got up", () => {
+  it("a rider who touches nothing stands where they got up for four seconds, then walks back to the bike by themselves", () => {
     const { me, state } = knockedOffAndRunning();
-    const run = onFoot(state, me, 3, () => neutralInput);
-    expect(run.moved).toBe(0);
-    expect(run.remounted).toBeFalsy();
+    const waiting = onFoot(state, me, 3.5, () => neutralInput);
+    expect(waiting.moved).toBe(0);
+    expect(waiting.remounted).toBeFalsy();
     expect(me.mode).toBe("running");
+    const walking = onFoot(state, me, 6, () => neutralInput);
+    expect(walking.remounted).toBeTruthy();
+    expect(me.mode).toBe("riding");
+  });
+
+  it("a rider still holding the throttle when they are thrown does not run off; the rider moves only once the key has been released and pressed again", () => {
+    const held = { ...neutralInput, throttle: 1 };
+    const { me, state } = thrownWhileHolding(held);
+    const stillHeld = onFoot(state, me, 2, () => held);
+    expect(stillHeld.moved).toBe(0);
+    expect(me.mode).toBe("running");
+    onFoot(state, me, 0.1, () => neutralInput);
+    const pressedAgain = onFoot(state, me, 1, () => held);
+    expect(pressedAgain.moved).toBeGreaterThan(4);
+    expect(me.bodyS).toBeGreaterThan(stillHeld.from.s + 4);
+  });
+
+  it("a key that was not held at the fall works at once while a held one is still dead", () => {
+    const held = { ...neutralInput, throttle: 1 };
+    const { me, state } = thrownWhileHolding(held);
+    const from = { s: me.bodyS, x: me.bodyX };
+    onFoot(state, me, 1, () => ({ ...held, steer: 1 }));
+    expect(me.bodyX).toBeGreaterThan(from.x + 4);
+    expect(Math.abs(me.bodyS - from.s)).toBeLessThan(0.01);
   });
 
   it("a rider on foot cannot leave the verge or walk through the finish", () => {
@@ -2747,5 +2831,78 @@ describe("police settings", () => {
     expect(slow.fastest).toBeLessThan(42);
     expect(quick.fastest).toBeGreaterThan(46);
     expect(quick.fastest).toBeLessThan(50);
+  });
+});
+
+const fullGrid = (course: Track, seed: number): RaceState => {
+  const setup = defaultSetup(course, seed);
+  return createRace({
+    ...setup,
+    player: { ...setup.player, bike: bikes["halden-wren-400"] },
+    rivals: cast
+      .filter((rival) => rival.racesFrom <= 1)
+      .slice(0, 14)
+      .map((rival) => rivalAt(rival, 1)),
+  });
+};
+
+const launch = (state: RaceState, course: Track, seconds: number) => {
+  const inputs = state.riders.map(() => ({ ...neutralInput }));
+  const crashes: { rider: number; tick: number }[] = [];
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    for (const [index, input] of inputs.entries()) {
+      if (index === 0) {
+        Object.assign(input, { ...neutralInput, throttle: 1 });
+      } else {
+        pilotInput(state, course, index, input);
+      }
+    }
+    stepRace(state, course, inputs);
+    crashes.push(
+      ...state.events.flatMap((event) =>
+        event.kind === "crash" ? [{ rider: event.rider, tick }] : []
+      )
+    );
+  }
+  return crashes;
+};
+
+describe("the start", () => {
+  it.each([
+    { course: track, lanes: "one lane each way" },
+    { course: wideTrack, lanes: "two lanes each way" },
+  ])(
+    "a player who holds full throttle from the back of a fifteen-rider grid is not thrown in the first ten seconds, and no rival goes down in the first three, with $lanes",
+    ({ course }) => {
+      for (const seed of [1, 2, 3]) {
+        const state = fullGrid(course, seed);
+        const crashes = launch(state, course, 10);
+        expect(crashes.filter((crash) => crash.rider === 0)).toStrictEqual([]);
+        expect(
+          crashes.filter((crash) => crash.tick < 3 * TICK_RATE)
+        ).toStrictEqual([]);
+        expect(player(state).s).toBeGreaterThan(120);
+      }
+    }
+  );
+
+  it("the pack gets away on its own bikes' curves: three seconds in, the rider ahead of the player is within four metres a second of the player", () => {
+    const state = fullGrid(wideTrack, 1);
+    const me = player(state);
+    launch(state, wideTrack, 3);
+    const [ahead] = state.riders
+      .slice(1)
+      .filter(
+        (rider) =>
+          rider.profile.role === "racer" &&
+          rider.s > me.s &&
+          Math.abs(rider.x - me.x) < 1
+      )
+      .toSorted((left, right) => left.s - right.s);
+    if (!ahead) {
+      throw new Error("Nobody is ahead of the player in their lane.");
+    }
+    expect(me.speed).toBeGreaterThan(10);
+    expect(me.speed - ahead.speed).toBeLessThan(4);
   });
 });

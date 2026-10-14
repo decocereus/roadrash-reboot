@@ -129,6 +129,10 @@ export interface RiderState {
   bodySpeed: number;
   bodyLateralSpeed: number;
   bodyVerticalSpeed: number;
+  staleThrottle: boolean;
+  staleBrake: boolean;
+  staleSteer: boolean;
+  idleTicks: number;
   finishTick: number;
   crashes: number;
 }

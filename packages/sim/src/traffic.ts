@@ -6,6 +6,7 @@ import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const CLEAR_START_FROM = -70;
 const CLEAR_START_TO = 260;
+const CLEAR_ONCOMING_START_TO = 300;
 const BRAKING = 7;
 const ACCELERATION = 2.5;
 const FOLLOW_GAP = 10;
@@ -63,8 +64,9 @@ export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
       const s = track.startS + (index + 0.15 + random() * 0.7) * spacing;
       const body = pickBody(random());
       const cruiseSpeed = direction * (19 + random() * 8);
-      const blocksStart =
-        direction === 1 && s > CLEAR_START_FROM && s < CLEAR_START_TO;
+      const clearTo =
+        direction === 1 ? CLEAR_START_TO : CLEAR_ONCOMING_START_TO;
+      const blocksStart = s > CLEAR_START_FROM && s < clearTo;
       if (!blocksStart) {
         cars.push({
           ...body,

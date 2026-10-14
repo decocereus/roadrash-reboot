@@ -51,6 +51,7 @@ const BIKE_SLIDE_DECELERATION = 5;
 export const RUN_SPEED = 7;
 const RUN_ACCELERATION = 28;
 const RISE_TICKS = 18;
+const IDLE_WALK_TICKS = 240;
 const MOUNT_REACH = 0.7;
 const MOUNT_TICKS = 30;
 const SETTLE_TICKS = 50;
@@ -152,6 +153,10 @@ export const throwRider = (
   rider.hitStun = 0;
   rider.modeTicks = 0;
   rider.crashes += 1;
+  rider.staleThrottle = true;
+  rider.staleBrake = true;
+  rider.staleSteer = true;
+  rider.idleTicks = 0;
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air + 0.9;
@@ -551,6 +556,37 @@ const comeToRest = (track: Track, rider: RiderState): void => {
 const atTheBike = (rider: RiderState): boolean =>
   Math.hypot(rider.s - rider.bodyS, rider.x - rider.bodyX) < MOUNT_REACH;
 
+interface Stride {
+  readonly along: number;
+  readonly across: number;
+}
+
+export const towardBike = (rider: RiderState): Stride => {
+  const gapS = rider.s - rider.bodyS;
+  const gapX = rider.x - rider.bodyX;
+  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
+  return { across: gapX / distance, along: gapS / distance };
+};
+
+const releaseHeldInput = (rider: RiderState, input: RiderInput): void => {
+  rider.staleThrottle &&= input.throttle !== 0;
+  rider.staleBrake &&= input.brake !== 0;
+  rider.staleSteer &&= input.steer !== 0;
+};
+
+const strideOf = (rider: RiderState, input: RiderInput): Stride => {
+  const throttle = rider.staleThrottle ? 0 : input.throttle;
+  const brake = rider.staleBrake ? 0 : input.brake;
+  const steer = rider.staleSteer ? 0 : input.steer;
+  const chosen = {
+    across: clamp(steer, -1, 1),
+    along: clamp(throttle - brake, -1, 1),
+  };
+  rider.idleTicks =
+    chosen.along === 0 && chosen.across === 0 ? rider.idleTicks + 1 : 0;
+  return rider.idleTicks > IDLE_WALK_TICKS ? towardBike(rider) : chosen;
+};
+
 const run = (
   state: RaceState,
   track: Track,
@@ -572,8 +608,7 @@ const run = (
   if (rider.modeTicks < RISE_TICKS) {
     return;
   }
-  const along = clamp(input.throttle - input.brake, -1, 1);
-  const across = clamp(input.steer, -1, 1);
+  const { across, along } = strideOf(rider, input);
   const effort = Math.max(1, Math.hypot(along, across));
   const step = RUN_ACCELERATION * TICK_SECONDS;
   rider.bodySpeed = approach(
@@ -628,6 +663,7 @@ const stepOffBike = (
   rider: RiderState,
   input: RiderInput
 ): void => {
+  releaseHeldInput(rider, input);
   if (rider.mode === "wrecked") {
     comeToRest(track, rider);
   } else if (rider.mode === "thrown") {

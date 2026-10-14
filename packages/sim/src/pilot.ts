@@ -5,6 +5,7 @@ import type { Track } from "@racer/track/track";
 import { grudgeSide, nearestRival } from "./combat.ts";
 import { topSpeedOf } from "./engine.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
+import { towardBike } from "./rider.ts";
 import {
   BIKE_HALF_WIDTH,
   clamp,
@@ -26,6 +27,10 @@ const LANE_CHANGE_RATE = 1.2;
 const MAX_LATERAL_SPEED = 5;
 const FOLLOW_SECONDS = 2.4;
 const ONCOMING_SECONDS = 4.5;
+const ONCOMING_ENTRY_SECONDS = 8;
+const START_TICKS = 600;
+const START_ONCOMING_ENTRY_SECONDS = 12;
+const CENTRE_SEAM_BIAS = 0.6;
 const LANE_REACH = 1.7;
 const SPLITTING_SPEED = 8;
 const RIDER_FOLLOW_SECONDS = 1.2;
@@ -119,10 +124,26 @@ interface Obstacle {
 const secondsUntilContact = (rider: RiderState, obstacle: Obstacle): number => {
   const gap = obstacle.s - rider.s - obstacle.halfLength - 1;
   const closingSpeed = rider.speed - obstacle.speed;
-  if (gap < -2 * obstacle.halfLength - 2 || closingSpeed <= 0) {
+  if (gap < -2 * obstacle.halfLength - 2) {
     return Number.POSITIVE_INFINITY;
   }
-  return Math.max(0, gap) / closingSpeed;
+  if (gap <= 0) {
+    return 0;
+  }
+  return closingSpeed > 0 ? gap / closingSpeed : Number.POSITIVE_INFINITY;
+};
+
+const oncomingHorizon = (
+  state: RaceState,
+  rider: RiderState,
+  laneX: number
+): number => {
+  if (Math.abs(laneX - rider.x) < OWN_LANE_REACH) {
+    return ONCOMING_SECONDS;
+  }
+  return state.tick < START_TICKS
+    ? START_ONCOMING_ENTRY_SECONDS
+    : ONCOMING_ENTRY_SECONDS;
 };
 
 const riderObstacle = (other: RiderState): Obstacle => ({
@@ -160,12 +181,15 @@ const carThreat = (
   let seconds = Number.POSITIVE_INFINITY;
   let speed = 0;
   for (const car of state.cars) {
+    const oncoming = car.cruiseSpeed < 0;
     if (
-      car.s - rider.s < within &&
+      (oncoming || car.s - rider.s < within) &&
       Math.abs(car.x - laneX) < LANE_REACH &&
       rider.speed > car.speed
     ) {
-      const horizon = car.cruiseSpeed < 0 ? ONCOMING_SECONDS : FOLLOW_SECONDS;
+      const horizon = oncoming
+        ? oncomingHorizon(state, rider, laneX)
+        : FOLLOW_SECONDS;
       const contact = secondsUntilContact(rider, car);
       if (contact < horizon && contact < seconds) {
         seconds = contact;
@@ -236,6 +260,17 @@ const neighbourOf = (
 const between = (x: number, target: number, lane: number): boolean =>
   (lane - x) * (lane - target) < 0;
 
+const seamOf = (
+  lanes: readonly number[],
+  sameWayCount: number,
+  current: number,
+  neighbour: number
+): number => {
+  const middle = ((lanes[current] ?? 0) + (lanes[neighbour] ?? 0)) / 2;
+  const straddlesCentre = current < sameWayCount !== neighbour < sameWayCount;
+  return straddlesCentre ? middle + CENTRE_SEAM_BIAS : middle;
+};
+
 const laneAim = (
   state: RaceState,
   track: Track,
@@ -275,7 +310,7 @@ const laneAim = (
   const pace = threats[neighbour < sameWayLanes.length ? neighbour : current];
   return {
     speed: Math.min(cruise, Math.max(0, pace?.speed ?? 0) + SPLITTING_SPEED),
-    x: ((lanes[current] ?? 0) + (lanes[neighbour] ?? 0)) / 2,
+    x: seamOf(lanes, sameWayLanes.length, current, neighbour),
   };
 };
 
@@ -472,11 +507,9 @@ const fight = (
 };
 
 const walkToBike = (rider: RiderState, input: RiderInput): void => {
-  const gapS = rider.s - rider.bodyS;
-  const gapX = rider.x - rider.bodyX;
-  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
-  const along = gapS / distance;
-  input.steer = gapX / distance;
+  const { across, along } =
+    rider.mode === "running" ? towardBike(rider) : { across: 0, along: 0 };
+  input.steer = across;
   input.throttle = Math.max(0, along);
   input.brake = Math.max(0, -along);
   input.punch = false;
