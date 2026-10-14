@@ -346,19 +346,19 @@ The loop that results: arrive unarmed, find the armed rider, line up a kick, kee
 
 ### Escalation
 
-A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked 700 m into the road and every 1,600 m after that. With five cops at level 5, the last one sits at 7.1 km, which fits every level-5 road. Since the level-1 roads were lengthened to 8.05 to 8.85 km, no cop's beat reaches the last 4.3 to 6.5 km of a race at any level; whether to space cops by road length is open.
+A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked across the whole road: the first 700 m in, the last 1 km before the finish, and the rest evenly between, so the spacing comes from the road's length and the level's count. At level 2 that is two cops about 8 km apart, at level 5 five cops about 2.9 km apart, and at level 1 the single cop sits at 700 m. Before this they were parked 700 m in and every 1,600 m after, which was set for the 4 km level-1 roads; once those roads ran 8.05 to 8.85 km the last 4.3 to 6.5 km of every race had no police, and the stand-in player was busted in 8% of starts against a target of 12.5% to 25%.
 
 Each cop has a **beat**: it gives up the chase that many metres past the spot where it was parked, pulls onto the verge, and stays there. A cop that is riding to a downed racer finishes that first. Without a beat every cop the pack woke rode with it to the finish, so five cops meant five batons around the player for the last three kilometres.
 
 | Level | Cops | Pursuit top speed | Sight range | Beat | Roadblocks | Fine |
 | --: | --: | --: | --: | --: | --: | --: |
 | 1 | 1 | 46 m/s (166 km/h) | 40 m | 3,000 m | 0 | $500 |
-| 2 | 2 | 50 m/s (180 km/h) | 40 m | 1,200 m | 0 | $900 |
-| 3 | 3 | 54 m/s (194 km/h) | 45 m | 1,400 m | 1 | $1,500 |
-| 4 | 4 | 58 m/s (209 km/h) | 50 m | 750 m | 2 | $2,200 |
-| 5 | 5 | 62 m/s (223 km/h) | 60 m | 700 m | 3 | $3,000 |
+| 2 | 2 | 50 m/s (180 km/h) | 40 m | 5,000 m | 0 | $900 |
+| 3 | 3 | 54 m/s (194 km/h) | 45 m | 3,000 m | 1 | $1,500 |
+| 4 | 4 | 58 m/s (209 km/h) | 50 m | 1,500 m | 2 | $2,200 |
+| 5 | 5 | 62 m/s (223 km/h) | 60 m | 2,000 m | 3 | $3,000 |
 
-The beats are not in order of level because the police bikes are not equal. Levels 1 to 3 ride the Sesta, which stops a few metres later than a body slides, so those cops need a long beat to make an arrest at all. The Meridian at level 4 and the Nera at level 5 stop inside the slide, so each of those cops is about twice as dangerous per kilometre and holds a short stretch.
+The beats are not in order of level because the police bikes are not equal and the cops are not equally far apart. Levels 1 to 3 ride the Sesta, which stops a few metres later than a body slides, so those cops need a long beat to make an arrest at all; the two level-2 cops are the furthest apart of any level, so each holds the longest stretch. The Meridian at level 4 and the Nera at level 5 stop inside the slide, so each of those cops is about twice as dangerous per kilometre and holds a shorter one. The beats were 3,000, 1,200, 1,400, 750, and 700 m when the level-1 roads were 4 km with one lane each way; see "Measured bust rates" for the retune.
 
 The pursuit top speed always stays below the top speed of the bike a decent player rides at that level (Wren 177, Kite 190, Sesta 209, Sette 218, Meridian 228 km/h), by 11, 10, 15, 9, and 5 km/h. A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
 
@@ -395,6 +395,13 @@ What the measurement found about the dials, in the order they were tried:
 - **Sight range** does almost nothing. Halving it and quartering it moved no level by more than the noise, because a cop that has lost its quarry patrols at 22 m/s and every rider behind it has to pass within range. It is kept in the table but it is not a balance dial.
 - **Pursuit top speed** does little. Cutting it to 85% of the decent bike's top speed moved level 5 from 68% to 63%. The pilot is rarely flat out for long, and the officer's skill of 0.95 is better than the decent player's in the bends.
 - **The bust window and the beat** are the two dials that work, and the table above is set with them.
+
+**The wide, long roads.** When three roads gained a second lane each way and every level-1 road grew to 8.05 to 8.85 km, the same 40 starts a level measured 4, 4, 3, 4, and 1 busts at levels 1 to 5, 8% overall: levels 3 and 5 left their bands. The stand-in fell no less often (0.7 to 0.85 falls a race, most of them in the first kilometre where the pack is bunched), but the cops no longer reached most of the road. Two changes brought it back, measured the same way:
+
+- **Posts spread by road length.** Moving the posts alone changed no level by more than the noise (4, 3, 5, 2, 1), because the beats were still set for 4 km roads; it is kept for the feel, so a fall at 11 km can still be a bust.
+- **Longer beats at levels 2 to 5.** With the spread posts, the beats in the table measure 4, 7, 8, 7, and 10 busts of 40 (10%, 17.5%, 20%, 17.5%, 25%), 18% overall, with 0.5, 0.6, 1.1, 1.6, and 1.8 rivals busted a race. Making every beat reach the next post measured 5, 6, 8, 14, and 12, which is over the band at level 4 and 2.5 rivals a race at level 5: the Meridian and Nera cops knock riders down for the whole stretch. Level 1 keeps 3,000 m; 4,000 to 7,800 m all measured 5.
+
+With the retune the busts come anywhere on the road, from 1 to 12.6 km, instead of inside the first 4 km. At level 5 the stand-in now falls 1.3 times a race against 0.7 before, nearly all of the extra from batons: the Nera cops are the fall as well as the arrest, which the note below already records.
 
 Two things the same runs show that are not fixed here:
 
@@ -748,7 +755,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | --: | --- | --- | --- |
 | 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and `rider.ts`, `pilot.ts`, and the renderer read it from the rider. | First career release |
 | 2 | Selected cast | `createRace` takes the list of rival profiles for this race. The earlier placeholder names are replaced by the cast; "Viper" in particular is the name of a rider in the original game (section 15). | First career release |
-| 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. `FIRST_COP_S` (700 m) and `COP_SPACING` (1,600 m) stay. | Built |
+| 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. The posts come from the track: the first at `FIRST_COP_S` (700 m), the last `LAST_COP_BEFORE_FINISH` (1,000 m) before the finish, the rest evenly between. | Built |
 | 4 | Bike condition and the wreck | A `condition` value from 100 on each rider. Each crash takes the damage its cause costs at 200 km/h (traffic 34, prop 32, landing 30, rider 30, combat 28, off-track 22), scaled by the rider's speed at impact over 200 km/h and held between 0.1 and 1.25. At zero the rider enters the `wrecked` mode, which ends their race like a bust without a fine. Three or four hard crashes wreck a bike. The table below gives the cost by speed. | Built, retuned |
 | 5 | Crash attribution | The `crash` event has a `by` field naming the rider whose hit or contact caused it within the last second, so memory knows who knocked whom down. | First career release |
 | 6 | Carried weapon | `createRace` accepts a starting weapon and hit count for the player. | First career release |

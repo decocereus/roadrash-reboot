@@ -1007,7 +1007,7 @@ describe("the field", () => {
       ])
     );
     expect(setup.police).toMatchObject({
-      beat: 750,
+      beat: 1500,
       count: 4,
       fine: 2200,
       officer: { name: "Deputy Wendell Haverty" },

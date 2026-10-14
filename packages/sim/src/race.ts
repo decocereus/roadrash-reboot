@@ -30,7 +30,7 @@ import { weapons } from "./weapons.ts";
 const GRID_S = -2;
 const GRID_ROW_GAP = 4.5;
 const FIRST_COP_S = 700;
-const COP_SPACING = 1600;
+const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const DEFAULT_LEVEL = 3;
 export const MAX_RIVALS = 7;
@@ -171,6 +171,12 @@ const lastRow = (columns: readonly number[], rivalCount: number): GridSpot => ({
 const freshHits = (profile: RiderProfile): number =>
   weapons[profile.weapon].hits;
 
+const copPost = (track: Track, index: number, count: number): number => {
+  const last = Math.max(FIRST_COP_S, track.length - LAST_COP_BEFORE_FINISH);
+  const spacing = count > 1 ? (last - FIRST_COP_S) / (count - 1) : 0;
+  return FIRST_COP_S + index * spacing;
+};
+
 export type SetupError =
   | { readonly kind: "tooManyRivals"; readonly count: number }
   | { readonly kind: "duplicateRival"; readonly name: string }
@@ -257,7 +263,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
         weaponHits: freshHits(police.officer),
       },
       {
-        s: FIRST_COP_S + index * COP_SPACING,
+        s: copPost(track, index, police.count),
         x: track.roadHalfWidth + PULL_OVER,
       }
     );
