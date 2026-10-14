@@ -52,6 +52,7 @@ function Dial({
   place,
   field,
   progress,
+  gear = 0,
   ...props
 }: Omit<ComponentProps<"svg">, "children"> & {
   readonly value: number;
@@ -61,6 +62,7 @@ function Dial({
   readonly place: string;
   readonly field: number;
   readonly progress: number;
+  readonly gear?: number;
 }) {
   const ratio = ratioOf(value, max);
   const shown = Math.round(value);
@@ -132,6 +134,21 @@ function Dial({
         strokeWidth={3}
         strokeDasharray={`${TRACK_LENGTH * ratioOf(progress, 1)} 999`}
       />
+      {gear > 0 && (
+        <text
+          x={0}
+          y={-44}
+          textAnchor="middle"
+          fill={YELLOW}
+          stroke={INK}
+          strokeWidth={3}
+          strokeLinejoin="round"
+          paintOrder="stroke"
+          className="numeric text-[24px] font-extrabold"
+        >
+          {gear}
+        </text>
+      )}
       <g transform="skewX(-10)" textAnchor="middle" className="numeric">
         <text x={-3} y={20} fill={CYAN} className="text-[68px] font-extrabold">
           {shown}

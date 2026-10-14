@@ -10,7 +10,7 @@ import { idleHud } from "../../game/hud.ts";
 import type { HudFeed, HudState } from "../../game/hud.ts";
 
 const COP_ON_YOU = 15;
-const DIAL_TOP_KMH = 240;
+const DIAL_TOP_KMH = 300;
 const numeral =
   "font-display tracking-display numeric text-hud hud-ink font-extrabold";
 
@@ -78,6 +78,7 @@ function Speedometer({ hud }: { readonly hud: HudState }) {
     <Dial
       className={`absolute bottom-[1.5%] left-1/2 h-[25%] min-h-36 -translate-x-1/2 ${hud.offBike ? "opacity-60" : ""}`}
       field={hud.riderCount}
+      gear={hud.offBike ? 0 : hud.gear}
       label="Speed"
       max={DIAL_TOP_KMH}
       place={ordinal(hud.position)}

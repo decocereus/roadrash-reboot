@@ -30,6 +30,28 @@ const RECOIL = 0.6;
 const RUN_HZ = 2.6;
 const TUMBLE_HZ = 1.75;
 const FULL_TURN = Math.PI * 2;
+const PITCH_FORWARD = new THREE.Vector3(-1, 0, 0);
+const ROLL_INWARD = new THREE.Vector3(0, 0, 1);
+
+interface Turn {
+  readonly bone: string;
+  readonly axis: THREE.Vector3;
+  readonly degrees: number;
+}
+
+const TUCK_TURNS: readonly Turn[] = [
+  { axis: PITCH_FORWARD, bone: "spine_01", degrees: 9 },
+  { axis: PITCH_FORWARD, bone: "spine_02", degrees: 11 },
+  { axis: PITCH_FORWARD, bone: "spine_03", degrees: 9 },
+  { axis: PITCH_FORWARD, bone: "neck_01", degrees: -10 },
+  { axis: PITCH_FORWARD, bone: "head", degrees: -12 },
+  { axis: PITCH_FORWARD, bone: "upperarm_l", degrees: -22 },
+  { axis: PITCH_FORWARD, bone: "upperarm_r", degrees: -22 },
+  { axis: ROLL_INWARD, bone: "upperarm_l", degrees: 16 },
+  { axis: ROLL_INWARD, bone: "upperarm_r", degrees: -16 },
+  { axis: PITCH_FORWARD, bone: "lowerarm_l", degrees: 14 },
+  { axis: PITCH_FORWARD, bone: "lowerarm_r", degrees: 14 },
+];
 
 export interface RiderFigure {
   readonly root: THREE.Group;
@@ -42,7 +64,8 @@ export interface RiderFigure {
     time: number,
     seconds: number,
     side: number,
-    weapon: WeaponKind
+    weapon: WeaponKind,
+    tuck: number
   ) => void;
 }
 
@@ -190,6 +213,37 @@ const paletteOf = (index: number): Palette => {
   ]);
 };
 
+const tuckedFrom = (
+  seated: readonly number[],
+  root: THREE.Object3D,
+  skeleton: THREE.Skeleton,
+  names: readonly string[],
+  bones: readonly (THREE.Bone | undefined)[]
+): number[] => {
+  for (const [index, bone] of bones.entries()) {
+    bone?.quaternion.fromArray(seated, index * 4);
+  }
+  root.updateMatrixWorld(true);
+  const tucked = [...seated];
+  const world = new THREE.Quaternion();
+  const parent = new THREE.Quaternion();
+  const turn = new THREE.Quaternion();
+  for (const { axis, bone: name, degrees } of TUCK_TURNS) {
+    const bone = skeleton.getBoneByName(name);
+    const index = names.indexOf(name);
+    if (!bone || index === -1) {
+      continue;
+    }
+    bone.getWorldQuaternion(world);
+    bone.parent?.getWorldQuaternion(parent);
+    turn.setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees));
+    bone.quaternion.copy(parent.invert().multiply(turn.multiply(world)));
+    bone.updateMatrixWorld(true);
+    bone.quaternion.toArray(tucked, index * 4);
+  }
+  return tucked;
+};
+
 const bodyFor = (assets: Assets, index: number): RiderAsset => {
   const asset = assets.riders[index % assets.riders.length];
   if (!asset) {
@@ -235,6 +289,9 @@ export const createRiderFigure = (
   const bones = asset.bones.map((name) => skeleton.getBoneByName(name));
   skeleton.getBoneByName("pelvis")?.position.set(0, 0, 0);
   const seated = asset.poses.get("seated");
+  const tucked = seated
+    ? tuckedFrom(seated, root, skeleton, asset.bones, bones)
+    : [];
   const current = [...(seated ?? [])];
   const wanted = [...current];
   const target: Target = { blend: 0, from: "seated", to: "seated" };
@@ -271,10 +328,14 @@ export const createRiderFigure = (
   apply();
 
   return {
-    animate(pose, time, seconds, side, weapon) {
+    animate(pose, time, seconds, side, weapon, tuck) {
       [target.from, target.to, target.blend] = aimFor(pose, time, side);
       const from = asset.poses.get(target.from);
-      const to = asset.poses.get(target.to);
+      let to = asset.poses.get(target.to);
+      if (pose === "seated" && tuck > 0 && tucked.length > 0) {
+        to = tucked;
+        target.blend = tuck;
+      }
       if (!(from && to)) {
         return;
       }

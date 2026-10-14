@@ -72,11 +72,11 @@ Only a big crest launches a bike, and only at speed. The rule for every road at 
 
 - **No crest launches below 160 km/h,** except one signature launch on a road that is built around it.
 - **Two roads have a signature launch between 150 and 160 km/h:** Cinder Wash's Main Wash at 154 km/h and Slag Row's rail crossing at 152 km/h. Ridge Road's signature, the Saddle, is at 162 km/h and needs no exception. Breakwater Run and Hollow Pine Road have none below 160.
-- The Gutter Pup tops out at 135 km/h, below every launch speed here, so it never flies on level ground. The Wren's 158 km/h clears only the two signature launches below 160; every other crest in the game is a lurch on a Wren.
+- The Gutter Pup tops out at 145 km/h, 151 tucked in, still below every launch speed here, so it never flies on level ground. The Wren's 190 km/h (198 tucked) clears every crest up to that speed, so the Saddle and the two signature launches are flights on a Wren, and the AI pilot lifts for a drop ahead to stay under 1.15 times its launch speed.
 
 Height is eased through each section with a cosine, so every section that climbs or falls has one point where the road curves away fastest: the top of a rise and the start of a drop. For a section of length `L` and climb `c` the peak is `slopeRate = π² × c / (2 × L²)`, and the bike leaves the road above `L × √(2g / (π² × |c|))` m/s, which is `5.08 × L / √|c|` km/h. A dip launches at both of its lips: where the road drops into it and where it climbs out.
 
-Each road below has a table of every crest that launches under 260 km/h, read from the compiled `slopeRate`. A crest made of a rise and a drop is listed once, at its top, with the lower of its two launch speeds. A dip is listed at its far lip. Every other change of grade on these roads needs more than 260 km/h, above the Nera 1000's top speed of 249 km/h.
+Each road below has a table of every crest that launches under 260 km/h, read from the compiled `slopeRate`. A crest made of a rise and a drop is listed once, at its top, with the lower of its two launch speeds. A dip is listed at its far lip. Every other change of grade on these roads needs more than 260 km/h, which only the Meridian (263 km/h tucked), the Anvil (278), and the Nera (294) can reach, and only at the end of a long straight.
 
 ## How levels extend a road
 

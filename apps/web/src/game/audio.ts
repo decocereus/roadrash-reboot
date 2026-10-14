@@ -1,14 +1,21 @@
-const GEAR_TOPS = [15, 25, 35, 45, 54, 80];
-const IDLE_HERTZ = 58;
-const REDLINE_HERTZ = 235;
+const IDLE_HERTZ = 52;
+const REDLINE_HERTZ = 300;
+const SHIFT_SECONDS = 0.12;
 const SIREN_LOW = 660;
 const SIREN_HIGH = 880;
 const SIREN_STEP = 0.28;
+const RUSH_SPEED = 75;
 
 export interface Sound {
   unlock: () => void;
   setMuted: (muted: boolean) => void;
-  drive: (speed: number, throttle: number, offRoad: boolean) => void;
+  drive: (
+    speed: number,
+    throttle: number,
+    revs: number,
+    offRoad: boolean
+  ) => void;
+  shift: () => void;
   thump: (strength: number) => void;
   crash: () => void;
   swing: () => void;
@@ -19,15 +26,6 @@ export interface Sound {
   dispose: () => void;
 }
 
-function revs(speed: number): number {
-  for (const top of GEAR_TOPS) {
-    if (speed < top) {
-      return Math.max(0.3, speed / top);
-    }
-  }
-  return 1;
-}
-
 export function createSound(): Sound {
   let context: AudioContext | undefined;
   let master: GainNode | undefined;
@@ -35,6 +33,7 @@ export function createSound(): Sound {
   let growl: OscillatorNode | undefined;
   let engineGain: GainNode | undefined;
   let engineTone: BiquadFilterNode | undefined;
+  let shiftGain: GainNode | undefined;
   let windGain: GainNode | undefined;
   let windTone: BiquadFilterNode | undefined;
   let noise: AudioBuffer | undefined;
@@ -94,6 +93,8 @@ export function createSound(): Sound {
     engineTone.frequency.value = 600;
     engineGain = audio.createGain();
     engineGain.gain.value = 0.07;
+    shiftGain = audio.createGain();
+    shiftGain.gain.value = 1;
     engine = audio.createOscillator();
     engine.type = "sawtooth";
     growl = audio.createOscillator();
@@ -102,7 +103,7 @@ export function createSound(): Sound {
     growlGain.gain.value = 0.5;
     engine.connect(engineTone);
     growl.connect(growlGain).connect(engineTone);
-    engineTone.connect(engineGain).connect(master);
+    engineTone.connect(engineGain).connect(shiftGain).connect(master);
     engine.start();
     growl.start();
 
@@ -126,29 +127,32 @@ export function createSound(): Sound {
     dispose() {
       shutDown();
     },
-    drive(speed, throttle, offRoad) {
+    drive(speed, throttle, revs, offRoad) {
       if (!context || !engine || !growl || !engineGain || !engineTone) {
         return;
       }
       const now = context.currentTime;
-      const hertz =
-        IDLE_HERTZ + (REDLINE_HERTZ - IDLE_HERTZ) * revs(speed) ** 1.25;
-      engine.frequency.setTargetAtTime(hertz, now, 0.04);
-      growl.frequency.setTargetAtTime(hertz / 2, now, 0.04);
-      engineGain.gain.setTargetAtTime(0.07 + throttle * 0.11, now, 0.06);
+      const hertz = IDLE_HERTZ + (REDLINE_HERTZ - IDLE_HERTZ) * revs ** 1.1;
+      engine.frequency.setTargetAtTime(hertz, now, 0.03);
+      growl.frequency.setTargetAtTime(hertz / 2, now, 0.03);
+      engineGain.gain.setTargetAtTime(
+        0.06 + throttle * 0.1 + revs * 0.03,
+        now,
+        0.06
+      );
       engineTone.frequency.setTargetAtTime(
-        500 + throttle * 1700 + speed * 14,
+        450 + throttle * 1500 + revs * 1200,
         now,
         0.08
       );
-      const rush = Math.min(1, speed / 60);
+      const rush = Math.min(1, speed / RUSH_SPEED);
       windGain?.gain.setTargetAtTime(
-        rush * rush * 0.22 + (offRoad ? 0.12 : 0),
+        rush * rush * 0.26 + (offRoad ? 0.12 : 0),
         now,
         0.15
       );
       windTone?.frequency.setTargetAtTime(
-        offRoad ? 240 : 500 + rush * 900,
+        offRoad ? 240 : 500 + rush * 1100,
         now,
         0.15
       );
@@ -164,6 +168,16 @@ export function createSound(): Sound {
         context?.currentTime ?? 0,
         0.02
       );
+    },
+    shift() {
+      if (!context || !shiftGain) {
+        return;
+      }
+      const now = context.currentTime;
+      shiftGain.gain.cancelScheduledValues(now);
+      shiftGain.gain.setValueAtTime(0.25, now);
+      shiftGain.gain.linearRampToValueAtTime(1, now + SHIFT_SECONDS);
+      burst(1600, 0.05, 0.18, 700);
     },
     siren() {
       if (!context || !master) {

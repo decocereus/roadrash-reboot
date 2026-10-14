@@ -297,7 +297,8 @@ export async function createGame(
   let raisesLeft = RAISES;
   let clock = 0;
 
-  const subject: Subject = { air: 0, s: 0, x: 0 };
+  const subject: Subject = { air: 0, s: 0, speed: 0, tuck: 0, x: 0 };
+  let lastGear = 1;
   const placed: Placed = {
     air: 0,
     bodyAir: 0,
@@ -429,7 +430,7 @@ export async function createGame(
   };
 
   const quiet = () => {
-    sound.drive(0, 0, false);
+    sound.drive(0, 0, 0, false);
     if (tag) {
       tag.style.visibility = "hidden";
     }
@@ -733,7 +734,14 @@ export async function createGame(
         view.pitch
       );
     }
-    figure.animate(pose, time, seconds, rider.attackSide, rider.weapon);
+    figure.animate(
+      pose,
+      time,
+      seconds,
+      rider.attackSide,
+      rider.weapon,
+      rider.tuck
+    );
   };
 
   const drawRider = (
@@ -804,6 +812,8 @@ export async function createGame(
         subject.s = onBike ? placed.s : placed.bodyS;
         subject.x = onBike ? placed.x : placed.bodyX;
         subject.air = onBike ? placed.air : Math.min(placed.bodyAir, 2);
+        subject.speed = placed.seated ? rider.speed : 0;
+        subject.tuck = placed.seated ? rider.tuck : 0;
       }
     }
 
@@ -887,6 +897,7 @@ export async function createGame(
       copDistance: chaserDistance(race, 0),
       countdown: Math.max(0, Math.ceil(holdLeft > 0 ? holdLeft : countdown)),
       distanceLeft: distanceLeft(track, me),
+      gear: me.gear,
       muted,
       notice: noticeLeft > 0 ? notice : "",
       noticeDetail,
@@ -944,9 +955,14 @@ export async function createGame(
     const me = player();
     const riding = me.mode === "riding" && phase !== "attract";
     const [own] = inputs;
+    if (riding && me.gear > lastGear) {
+      sound.shift();
+    }
+    lastGear = me.gear;
     sound.drive(
       riding ? me.speed : 0,
       riding && phase === "racing" && holdLeft <= 0 ? (own?.throttle ?? 0) : 0,
+      riding ? me.revs : 0,
       riding && me.offRoad
     );
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);

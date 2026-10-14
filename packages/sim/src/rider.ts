@@ -7,6 +7,7 @@ import {
 } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { CONTROL_RAMP, dragOf, stepDrive } from "./engine.ts";
 import { pullOver } from "./police.ts";
 import {
   approach,
@@ -31,9 +32,12 @@ import { disarm, rearm, weapons } from "./weapons.ts";
 const VERGE_BRAKES = 0.45;
 const VERGE_DRAG = 1.5;
 const VERGE_DRAG_PER_SPEED = 0.09;
-const CONTROL_RAMP = 4;
 const STEER_DRAG = 0.3;
-const ENGINE_BRAKING_FADE_SPEED = 20;
+const TUCK_THROTTLE = 0.8;
+const TUCK_STEER = 0.3;
+const TUCK_SPEED = 20;
+const TUCK_IN_RATE = 1.6;
+const TUCK_OUT_RATE = 5;
 const TAKEOFF_SPEED = 10;
 const HARD_LANDING = -11;
 const GLANCE_OVERLAP = 0.3;
@@ -256,23 +260,33 @@ const ride = (
   const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
   const push = curvePushOf(bike, curvature, rider.speed);
 
+  const tucking =
+    input.throttle > TUCK_THROTTLE &&
+    input.brake === 0 &&
+    Math.abs(input.steer) < TUCK_STEER &&
+    rider.speed > TUCK_SPEED &&
+    rider.attack === "none" &&
+    rider.hitStun === 0 &&
+    !rider.offRoad;
+  rider.tuck = approach(
+    rider.tuck,
+    tucking ? 1 : 0,
+    (tucking ? TUCK_IN_RATE : TUCK_OUT_RATE) * TICK_SECONDS
+  );
+  const pull = stepDrive(bike, rider, rider.speed, rider.throttle);
+
   let acceleration =
-    -bike.dragFactor * rider.speed * rider.speed -
-    (GRAVITY * slope) / Math.hypot(1, slope) -
+    -(GRAVITY * slope) / Math.hypot(1, slope) -
     STEER_DRAG * Math.abs(rider.lateralSpeed);
   if (rider.speed > 0) {
     acceleration -=
-      bike.rollingDeceleration +
-      bike.engineBraking *
-        (1 - rider.throttle) *
-        Math.min(1, rider.speed / ENGINE_BRAKING_FADE_SPEED);
+      dragOf(bike, rider.speed, rider.tuck) +
+      bike.engineBraking * (1 - rider.throttle) * Math.min(1, rider.revs);
   }
-  acceleration +=
-    rider.throttle *
-    Math.min(
-      bike.launchAcceleration * Math.min(1, rider.load),
-      bike.powerPerMass / Math.max(rider.speed, 1)
-    );
+  acceleration += Math.min(
+    bike.launchAcceleration * Math.min(1, rider.load) * rider.throttle,
+    pull
+  );
   acceleration -=
     bike.brakeDeceleration *
     rider.brake *

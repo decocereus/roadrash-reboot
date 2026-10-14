@@ -46,7 +46,7 @@ There are five levels. Each level has the same five roads, one per region. A roa
 | Lowtown | Slag Row | 8.50 km | 9.65 km | 10.80 km | 11.95 km | 13.10 km |
 | Stonepeak | Ridge Road | 8.55 km | 9.70 km | 10.85 km | 12.00 km | 13.15 km |
 
-The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. Each level adds 1,150 m to every road; the original's growth per level was not measured. The AI pilot rides a level-1 road in 2.6 to 3 minutes alone and in 3.6 to 4.2 minutes in a full field with traffic, and a level-5 race on the Meridian 900 in 5.5 to 6.5 minutes, plus whatever time the player spends lying in the road. A 13.45 km road is 13,931 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
+The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. Each level adds 1,150 m to every road; the original's growth per level was not measured. The AI pilot rides a level-1 road in 3 to 3.6 minutes alone on the Wren and in 3.2 to 4.1 minutes in a full field with traffic, and a level-5 race on the Meridian 900 in 5.2 to 7.2 minutes, plus whatever time the player spends lying in the road. A 13.45 km road is 13,931 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
 
 ### The field
 
@@ -248,7 +248,7 @@ The tables above are a plan. To see what fifteen riders and 8 to 13 km roads do 
 
 The differences between the two rows are mostly noise. The memory rule changes which rival attacks whom, and that changes every race that follows, so the same seed gives a different career. What both rows show:
 
-- **The stand-in needs about three times the plan's eight starts a level.** It places in the top three in one start in five, so qualifying five roads takes 10 to 49 starts. A level-1 race lasts 217 to 277 seconds, so level 1 takes about 40 minutes to two and a half hours of racing.
+- **The stand-in needs about three times the plan's eight starts a level.** It places in the top three in one start in five, so qualifying five roads takes 10 to 49 starts. A level-1 race lasts 190 to 248 seconds, so level 1 takes about 35 minutes to two and a quarter hours of racing.
 - **It still buys one bike per level.** Every attempt on a road that is not yet qualified pays in full, and places 4 to 8 pay $50 to $400 at level 1, so the extra starts pay for themselves. All six careers bought the Kite at level 2. After the change all six bought the Sesta at level 3, and both careers that reached level 4 bought the Sette. Before it, one career paid fourteen level-2 fines ($12,600), ended level 2 with $1,996, and could not buy the Sesta.
 - **Busts, not wrecks, are the bill.** No start in 960, over all levels the twelve careers reached, ended in a wreck, and no bike fell below 25 condition. The plan's one wreck in eight starts is still a guess about human riders.
 
@@ -268,7 +268,7 @@ The decent player's level 1, start by start.
 | 7 | Cinder Wash | 2nd, qualified | +$1,000 | $4,200 |
 | 8 | Ridge Road | 3rd, qualified; level 2 | +$700 | $4,900 |
 
-At the start of level 2 the Wren trades in for $1,800, giving $6,700 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,700, or stay on the Wren with $4,900 in hand and aim straight for the Sesta 600, which two level-2 thirds ($2,240) would then pay for. With the Kite and $1,700, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, every level-2 cop (160 km/h) is faster than the bike (158 km/h). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
+At the start of level 2 the Wren trades in for $1,800, giving $6,700 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,700, or stay on the Wren with $4,900 in hand and aim straight for the Sesta 600, which two level-2 thirds ($2,240) would then pay for. With the Kite and $1,700, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, a level-2 cop (187 km/h) is nearly as fast as the bike (190 km/h, 198 tucked in). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
 
 ## 6. Bike catalogue
 
@@ -282,46 +282,49 @@ At the start of level 2 the Wren trades in for $1,800, giving $6,700 of spending
 
 ### The nine bikes
 
-Retuned October 14, 2026 to the original game's measured starter bike (`docs/architecture.md`, "Riding model"): the Wren now reaches 60 mph in 6.2 s and tops out at 158 km/h, stops from top speed in 1.8 s, and takes most of a second to reach full lock. Every other bike keeps the ratio it had to the Wren, so the order within and between classes is unchanged. Top speed is where `powerPerMass / v` meets drag plus rolling deceleration. "Switchback" is the highest speed at which full steer holds Ridge Road's 50° right (section 9 of the road table, radius 136 m), turning in 50 m before the bend. Full lock also costs speed, so a bike held at full throttle and full lock settles below its top speed: the Wren at 140 km/h, the Sesta at 164, the Anvil at 190.
+Retuned October 14, 2026, twice. The morning's tune fitted the Wren to the original game's measured starter bike (158 km/h, 60 mph in 6.2 s); the user played it and found the whole game slow, so the evening's tune made the lineup read like modern road bikes and gave every bike a gearbox (`docs/architecture.md`, "Riding model"). The Wren now reaches 100 km/h in 3.6 s and tops out at 190 km/h, 198 tucked in; the Nera reaches 100 in 2.6 s and tops out at 283, 294 tucked. The ladder is kept: every class is quicker and faster than the one below. Top speed is where the thrust in top gear meets drag plus rolling deceleration, seated; the tucked figure cuts drag by 14%. "Switchback" is the highest speed at which full steer holds Ridge Road's 50° right (section 9 of the road table, radius 136 m), turning in 50 m before the bend; the grip was not changed, so those numbers are the morning's.
 
-| Bike | Class | Price | Top speed | 0 to 100 km/h | Switchback | Pitch |
-| --- | --- | --: | --: | --: | --: | --- |
-| Gutter Pup 250 | Featherweight | $1,000 | 135 km/h | 9.1 s | 122 km/h | Zip ties, spite, and a seat from a different bike. Too slow to fly off anything. |
-| Halden Wren 400 | Featherweight | $3,000 | 158 km/h | 6.4 s | 137 km/h | Light, honest, and forgiving. Takes all but three level-1 bends on the Ridge flat and still loses to people who brake. |
-| Halden Kite 500 | Featherweight | $5,000 | 170 km/h | 6.0 s | 129 km/h | The Wren with more lungs. Still turns before you finish deciding to. |
-| Ostra Sesta 600 | Middleweight | $8,000 | 187 km/h | 5.7 s | 119 km/h | The bike everyone measures against. Fast enough to need the brakes, light enough to forgive you. |
-| Ostra Sette 750 | Middleweight | $11,000 | 193 km/h | 5.4 s | 116 km/h | More of everything the Sesta does, and a little less patience in the bends. |
-| Brack Stoker 800 | Middleweight | $13,500 | 185 km/h | 5.0 s | 111 km/h | Tops out early, leaves the line like it was kicked. Built for riders who fall off a lot. |
-| Halden Meridian 900 | Heavyweight | $18,500 | 200 km/h | 5.1 s | 116 km/h | The heavyweight that still listens to the handlebars. |
-| Brack Anvil 1100 | Heavyweight | $26,000 | 212 km/h | 4.7 s | 105 km/h | Straights are a formality. Bends are a negotiation. |
-| Ostra Nera 1000 | Heavyweight | $34,000 | 219 km/h | 4.5 s | 111 km/h | The fastest thing in the Lowside car park, and it knows it. Brake early or brake in the trees. |
+| Bike | Class | Price | Top speed | Tucked | 0 to 100 km/h | Switchback | Pitch |
+| --- | --- | --: | --: | --: | --: | --: | --- |
+| Gutter Pup 250 | Featherweight | $1,000 | 145 km/h | 151 km/h | 7.1 s | 122 km/h | Zip ties, spite, and a seat from a different bike. Too slow to fly off anything. |
+| Halden Wren 400 | Featherweight | $3,000 | 190 km/h | 198 km/h | 3.6 s | 137 km/h | Light, honest, and forgiving. Takes all but three level-1 bends on the Ridge flat and still loses to people who brake. |
+| Halden Kite 500 | Featherweight | $5,000 | 203 km/h | 211 km/h | 3.5 s | 129 km/h | The Wren with more lungs. Still turns before you finish deciding to. |
+| Ostra Sesta 600 | Middleweight | $8,000 | 230 km/h | 239 km/h | 3.3 s | 119 km/h | The bike everyone measures against. Fast enough to need the brakes, light enough to forgive you. |
+| Ostra Sette 750 | Middleweight | $11,000 | 243 km/h | 253 km/h | 3.0 s | 116 km/h | More of everything the Sesta does, and a little less patience in the bends. |
+| Brack Stoker 800 | Middleweight | $13,500 | 233 km/h | 242 km/h | 3.0 s | 111 km/h | Tops out early, leaves the line like it was kicked. Built for riders who fall off a lot. |
+| Halden Meridian 900 | Heavyweight | $18,500 | 253 km/h | 263 km/h | 3.0 s | 116 km/h | The heavyweight that still listens to the handlebars. |
+| Brack Anvil 1100 | Heavyweight | $26,000 | 267 km/h | 278 km/h | 2.7 s | 105 km/h | Straights are a formality. Bends are a negotiation. |
+| Ostra Nera 1000 | Heavyweight | $34,000 | 283 km/h | 294 km/h | 2.6 s | 111 km/h | The fastest thing in the Lowside car park, and it knows it. Brake early or brake in the trees. |
 
-No bike takes the Switchback flat out any more: the Wren's 158 km/h is 21 km/h above its 137, and the Pup's 135 is 13 above its 122. The Gutter Pup is the joke bike and the repossession bike. It is the exception to the Featherweight rule: its `steerRate` of 3.5 is the slowest in the catalogue on purpose, so it wallows where a Wren darts, and its `curvePush` is only the Sesta's. Its brakes are weak, and its top speed of 135 km/h is below every launch speed in the game (the lowest is the Slag Row rail crossing at 152 km/h, `tracks.md`), so on level ground it never leaves the road. The Wren at 158 just clears the two signature launches below 160 km/h, Cinder Wash's Main Wash at 154 and Slag Row's rail crossing at 152, and no other crest: Ridge Road's Saddle at 162 is a lurch on a Wren and a flight on anything faster. The Brack Stoker is the sideways choice: lower top speed than the Sette for more money, but the best launch in its class and the strongest brakes, which matters to a rider who spends a lot of time remounting from zero.
+No bike takes the Switchback flat out: the Wren's 190 km/h is 53 km/h above its 137, and the Pup's 145 is 23 above its 122. The Gutter Pup is the joke bike and the repossession bike. It is the exception to the Featherweight rule: its `steerRate` of 3.5 is the slowest in the catalogue on purpose, so it wallows where a Wren darts, and its `curvePush` is only the Sesta's. Its brakes are weak, and its top speed of 145 km/h, 151 tucked, is still below every launch speed in the game (the lowest is the Slag Row rail crossing at 152 km/h, `tracks.md`), so on level ground it never leaves the road. The Wren at 190 clears every crest up to that speed, so Ridge Road's Saddle at 162 is a flight on a Wren now and the AI pilot lifts for it. The Brack Stoker is the sideways choice: lower top speed than the Sette for more money, but the best launch in its class and the strongest brakes, which matters to a rider who spends a lot of time remounting from zero.
 
 ### BikeSpec numbers
 
-`name` is the bike name above. The rows are `packages/sim/src/bikes.ts`. The Wren's row was fitted to the original's measured curves; each other row is the earlier row scaled by the Wren's ratios (see the notes under the table).
+`name` is the bike name above. The rows are `packages/sim/src/bikes.ts`. The steering and braking columns are the morning's fit to the original's measured starter bike, scaled by class; the drive columns were set in the evening for the modern feel (see the notes under the table).
 
-| Bike | launchAcceleration | powerPerMass | dragFactor | rollingDeceleration | engineBraking | brakeDeceleration | lateralSpeed | lateralSpeedPerSpeed | steerRate | curvePush | visualLean |
-| --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
-| Gutter Pup 250 | 4.2 | 127 | 2.07e-3 | 0.48 | 3.45 | 17.5 | 3.80 | 0.0214 | 3.5 | 1.87 | 0.46 |
-| Halden Wren 400 | 5.3 | 192 | 2.10e-3 | 0.30 | 3.8 | 23.0 | 4.00 | 0.0250 | 6.0 | 2.15 | 0.44 |
-| Halden Kite 500 | 5.6 | 232 | 2.07e-3 | 0.30 | 3.95 | 23.7 | 3.84 | 0.0236 | 5.6 | 2.00 | 0.41 |
-| Ostra Sesta 600 | 5.9 | 301 | 2.04e-3 | 0.30 | 4.15 | 24.1 | 3.60 | 0.0214 | 5.0 | 1.87 | 0.38 |
-| Ostra Sette 750 | 6.1 | 337 | 2.01e-3 | 0.30 | 4.3 | 24.5 | 3.52 | 0.0214 | 4.9 | 1.82 | 0.37 |
-| Brack Stoker 800 | 6.7 | 318 | 2.22e-3 | 0.34 | 5.5 | 26.3 | 3.44 | 0.0200 | 4.4 | 1.73 | 0.34 |
-| Halden Meridian 900 | 6.4 | 375 | 1.97e-3 | 0.30 | 4.5 | 25.8 | 3.60 | 0.0221 | 5.0 | 1.78 | 0.37 |
-| Brack Anvil 1100 | 7.0 | 419 | 1.92e-3 | 0.32 | 5.2 | 25.2 | 3.36 | 0.0193 | 4.1 | 1.59 | 0.33 |
-| Ostra Nera 1000 | 7.25 | 462 | 1.88e-3 | 0.30 | 4.65 | 27.4 | 3.52 | 0.0207 | 4.75 | 1.68 | 0.36 |
+| Bike | gears (redline m/s) | launchAcceleration | powerPerMass | dragFactor | rollingDeceleration | engineBraking | brakeDeceleration | lateralSpeed | lateralSpeedPerSpeed | steerRate | curvePush | visualLean |
+| --- | --- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| Gutter Pup 250 | 18.4, 26.3, 33.7, 39.4, 43.8 | 5.2 | 126 | 1.60e-3 | 0.48 | 1.2 | 17.5 | 3.80 | 0.0214 | 3.5 | 1.87 | 0.46 |
+| Halden Wren 400 | 22.9, 31.6, 39, 45.3, 51.6, 57.4 | 9.0 | 240 | 1.50e-3 | 0.30 | 1.5 | 23.0 | 4.00 | 0.0250 | 6.0 | 2.15 | 0.44 |
+| Halden Kite 500 | 24.5, 33.7, 41.7, 48.4, 55.2, 61.3 | 9.3 | 281 | 1.45e-3 | 0.30 | 1.6 | 23.7 | 3.84 | 0.0236 | 5.6 | 2.00 | 0.41 |
+| Ostra Sesta 600 | 27.8, 38.2, 47.2, 54.9, 62.5, 69.4 | 9.8 | 385 | 1.38e-3 | 0.30 | 1.8 | 24.1 | 3.60 | 0.0214 | 5.0 | 1.87 | 0.38 |
+| Ostra Sette 750 | 29.3, 40.4, 49.9, 58, 66, 73.4 | 10.2 | 439 | 1.34e-3 | 0.30 | 1.9 | 24.5 | 3.52 | 0.0214 | 4.9 | 1.82 | 0.37 |
+| Brack Stoker 800 | 28.1, 38.7, 47.8, 55.6, 63.3, 70.4 | 11.0 | 430 | 1.48e-3 | 0.34 | 2.4 | 26.3 | 3.44 | 0.0200 | 4.4 | 1.73 | 0.34 |
+| Halden Meridian 900 | 30.6, 42, 51.9, 60.3, 68.8, 76.4 | 10.4 | 479 | 1.30e-3 | 0.30 | 2.0 | 25.8 | 3.60 | 0.0221 | 5.0 | 1.78 | 0.37 |
+| Brack Anvil 1100 | 32.2, 44.3, 54.8, 63.7, 72.6, 80.6 | 11.6 | 546 | 1.26e-3 | 0.32 | 2.4 | 25.2 | 3.36 | 0.0193 | 4.1 | 1.59 | 0.33 |
+| Ostra Nera 1000 | 34.2, 47, 58.1, 67.5, 76.9, 85.4 | 12.0 | 625 | 1.22e-3 | 0.30 | 2.1 | 27.4 | 3.52 | 0.0207 | 4.75 | 1.68 | 0.36 |
 
 How the numbers were derived:
 
-- The Wren's row was fitted so that `packages/sim` reproduces the original starter bike's measured throttle curve, coast-down, and stop (`docs/architecture.md`): `launchAcceleration` 5.3 and `powerPerMass` 192 against `dragFactor` 2.10e-3 give the 10, 21, 31, 50, 66, 84, 90 mph curve and the 158 km/h top; `engineBraking` 3.8 gives the coast-down; `brakeDeceleration` 23 stops it in 1.8 s; `lateralSpeed` 4 plus 0.025 per m/s and `steerRate` 6 give 5 m/s of sideways speed at 90 mph reached in 0.8 s, which is the road edge at 0.8 s and the shoulder at 1.0 s from the lane centre.
-- Every other bike is its earlier row times the Wren's ratio for that column: launch × 0.70, power × 1.06, drag × 1.48, rolling × 1.2, engine braking × 3.45, brakes × 2.19, lateral speed × 0.4, lateral speed per speed × 0.71, curve push × 0.89, and `steerRate` is the old `steerResponse` divided by 4. Every bike therefore stands in the same ratio to the Wren as before, and the order within and between classes is unchanged. `steerRate` is in m/s² of sideways speed: the bars move the bike's sideways speed by that much each second, toward lock and back.
-- `powerPerMass` sets top speed through the cube root of `powerPerMass / dragFactor`. Featherweights also carry slightly more drag, because a small bike with an upright rider is not slippery. Top speeds fell by about 10% and the 0 to 100 km/h times rose by about 60%, as the measurement asked.
+- The drive is `packages/sim/src/engine.ts`. `gears` lists the road speed at each gear's redline; the box shifts up at 96% of it and down below 58%. Thrust in a gear is `throttle × powerPerMass × torque(revs) / (redline speed × 0.79)`, where the torque hump peaks at 72% of the redline, so the bikes pull hardest in the middle of each gear and surge again after every shift. `powerPerMass` was chosen for the 0 to 100 km/h time of each class (a modern 400 in under 4 s, a superbike under 3 s) and `dragFactor` for the top speed in sixth; the drag is lower than the morning's because the redline speeds, not the drag alone, now decide where each bike runs out. `launchAcceleration` caps the pull off the line, so the lightest bikes leave the grid cleanly and the heavy ones still need the first second to hook up.
+- `engineBraking` is light on purpose, 1.2 to 2.4 m/s² at the redline and fading with the revs, so coasting keeps three quarters of a bike's speed over three seconds. The morning's coast-down, fitted to the original's needle, bled half the speed in three seconds and made every lift feel like a brake.
+- The Wren's steering and braking were fitted to the original starter bike's measured stop and lane change: `brakeDeceleration` 23 stops it from 190 km/h in 2.3 s and under 70 m; `lateralSpeed` 4 plus 0.025 per m/s and `steerRate` 6 give 5 m/s of sideways speed at 90 mph reached in 0.8 s, which is the road edge at 0.8 s and the shoulder at 1.0 s from the lane centre.
+- Every other bike's steering, braking, and push columns are its earlier row times the Wren's ratio for that column: brakes × 2.19, lateral speed × 0.4, lateral speed per speed × 0.71, curve push × 0.89, and `steerRate` is the old `steerResponse` divided by 4. Every bike therefore stands in the same ratio to the Wren as before in the bends, and the order within and between classes is unchanged. `steerRate` is in m/s² of sideways speed: the bars move the bike's sideways speed by that much each second, toward lock and back.
+- Featherweights carry slightly more drag, because a small bike with an upright rider is not slippery.
 - `curvePush` falls with weight. The push at a given speed is `curvature · speed² / curvePush`, so the Anvil at 1.59 is pushed 18% harder than the Sesta at the same speed, and the Wren at 2.15 13% less.
 - `lateralSpeed`, `lateralSpeedPerSpeed`, and `steerRate` are highest on the Featherweights, with the Gutter Pup's `steerRate` as the deliberate exception. The Meridian keeps the Sesta's steering, which is what you pay for.
 - `brakeDeceleration` rises with class. In a bend the brakes keep 35% of their bite at full lock, so the Nera at 27.4 still stops harder at full lock than the old catalogue did on a straight. `engineBraking` is highest on the Stoker and Anvil (big engines).
+- Measured on a flat road, 0 to 100 km/h, top seated and tucked, and the stop from top speed: Pup 7.1 s, 145/151 km/h, 48 m; Wren 3.6 s, 190/198, 63 m; Kite 3.5 s, 203/211, 70 m; Sesta 3.3 s, 230/239, 85 m; Sette 3.0 s, 243/253, 93 m; Stoker 3.0 s, 233/242, 80 m; Meridian 3.0 s, 253/263, 96 m; Anvil 2.7 s, 267/278, 106 m; Nera 2.6 s, 283/294, 111 m.
 - `visualLean` is larger on light bikes so a Wren looks busy and an Anvil looks planted.
 
 Rivals ride these same specs. Each rider needs their own `BikeSpec`; section 14 lists the change. The other eight rows in `packages/sim/src/bikes.ts` should be brought in line with this table.
@@ -385,17 +388,17 @@ Each cop has a **beat**: it gives up the chase that many metres past the spot wh
 
 | Level | Cops | Pursuit top speed | Sight range | Beat | Roadblocks | Fine |
 | --: | --: | --: | --: | --: | --: | --: |
-| 1 | 1 | 41 m/s (148 km/h) | 40 m | 6,000 m | 0 | $400 |
-| 2 | 2 | 44 m/s (158 km/h) | 40 m | 5,000 m | 0 | $900 |
-| 3 | 3 | 48 m/s (173 km/h) | 45 m | 1,800 m | 1 | $1,500 |
-| 4 | 4 | 51 m/s (184 km/h) | 50 m | 1,500 m | 2 | $2,200 |
-| 5 | 5 | 54 m/s (194 km/h) | 60 m | 1,200 m | 3 | $3,000 |
+| 1 | 1 | 49 m/s (176 km/h) | 40 m | 6,000 m | 0 | $400 |
+| 2 | 2 | 52 m/s (187 km/h) | 40 m | 5,000 m | 0 | $900 |
+| 3 | 3 | 60 m/s (216 km/h) | 45 m | 1,800 m | 1 | $1,500 |
+| 4 | 4 | 64 m/s (230 km/h) | 50 m | 1,500 m | 2 | $2,200 |
+| 5 | 5 | 69 m/s (248 km/h) | 60 m | 1,200 m | 3 | $3,000 |
 
 The beats are not in order of level because the police bikes are not equal and the cops are not equally far apart. With the brakes the bikes have had since the handling retune of October 14, 2026, every cop stops inside a body's slide, so a cop riding alongside a rider who falls makes the arrest; the beat is what limits how much road each cop covers. The single level-1 cop holds the longest beat because the decent player on a Wren falls only about once every three races and seldom near it; levels 3 to 5 hold short ones because three to five cops with batons are the fall as well as the arrest. The beats were 3,000, 5,000, 3,000, 1,500, and 2,000 m before that retune and 3,000, 1,200, 1,400, 750, and 700 m when the level-1 roads were 4 km with one lane each way; see "Measured bust rates" for both retunes.
 
-The pursuit top speed always stays below the top speed of the bike a decent player rides at that level (Wren 158, Kite 170, Sesta 187, Sette 193, Meridian 200 km/h), by 10, 12, 14, 9, and 6 km/h. A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
+The pursuit top speed always stays below the seated top speed of the bike a decent player rides at that level (Wren 190, Kite 203, Sesta 230, Sette 243, Meridian 253 km/h), by 14, 16, 14, 13, and 5 km/h, and a rider who tucks in gains another 4%. A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
 
-A player who falls a bike behind loses that margin. A Wren at level 2 is level with the cops, and the Gutter Pup (135 km/h) cannot outrun a cop at any level, not even level 1's 148 km/h. The Pup's survival rule is therefore different and should be taught on the repossession notice: **stay on the bike.** A cop can swing a baton at a riding racer but can only bust one who is off the bike, so a Pup rider survives by not crashing and not being knocked down, never by speed.
+A player who falls a bike behind loses that margin. A Wren at level 2 has 3 km/h on the cops seated and 11 tucked in, and the Gutter Pup (145 km/h) cannot outrun a cop at any level, not even level 1's 176 km/h. The Pup's survival rule is therefore different and should be taught on the repossession notice: **stay on the bike.** A cop can swing a baton at a riding racer but can only bust one who is off the bike, so a Pup rider survives by not crashing and not being knocked down, never by speed.
 
 ### The bust window
 
@@ -439,6 +442,8 @@ With the retune the busts come anywhere on the road, from 1 to 12.6 km, instead 
 **The snappy strikes and the run on foot.** With strikes landing in 6 to 9 ticks instead of 12 to 15, the run back at 7 m/s instead of 10, and the pilot steering every downed rider straight to its bike, the same 40 starts a level measure 6, 7, 6, 10, and 10 busts (15%, 17.5%, 15%, 25%, 25%), 19.5% overall, with 2.8, 2.1, 2.9, 3.0, and 2.7 rivals busted a race and the stand-in falling 0.9 to 1.2 times a race. Every level is inside its band and no police dial changed.
 
 **The measured handling.** When the bikes were retuned to the original's starter bike (section 6), the same 40 starts a level measured 1, 7, 15, 8, and 19 busts with the pursuit speeds already lowered to keep their margins. The decent player on the slower Wren fell only 15 times in 40 level-1 races, three of them near the one cop, so level 1 starved; at levels 3 and 5 the brakes made every baton knockdown beside a cop an arrest, so they overflowed. The beats were retuned, level 1 to 6,000 m and levels 3 and 5 to 1,800 and 1,200 m, which measures 3, 7, 8, 8, and 12 busts of 40 (7.5%, 17.5%, 20%, 20%, 30%), 19% overall, with 0.8, 0.6, 1.3, 1.4, and 2.0 rivals busted a race. Level-1 career races on the Wren now take 218 to 255 s, level 3 on the Sesta 267 to 348 s, level 5 on the Meridian 329 to 433 s. At level 5 the stand-in now falls 1.3 times a race against 0.7 before, nearly all of the extra from batons: the Nera cops are the fall as well as the arrest, which the note below already records.
+
+**The fast lineup.** When the bikes were retuned again the same evening for the modern feel (section 6), the pursuit speeds were raised to 49, 52, 60, 64, and 69 m/s to keep their margins under the new tops, and the pilot's corner limit was changed from a guess at the bike's grip at 60 m/s to the exact speed at which a bend's push takes 80% of its sideways speed, which cut the stand-in's falls at level 1 from 1.07 to 0.88 a race and stopped the cops riding into traffic in the Switchback. The beats are unchanged. The same 40 starts a level measure 4, 8, 6, 7, and 7 busts of 40 (10%, 20%, 15%, 17.5%, 17.5%), 16% overall, with 1.8, 2.0, 1.9, 2.4, and 2.0 rivals busted a race. Level-1 career races on the Wren take 190 to 248 s (median 225), level 2 on the Kite 218 to 300 s, level 3 on the Sesta 236 to 351 s, level 4 on the Sette 260 to 392 s, and level 5 on the Meridian 309 to 429 s (median 374). The stand-in finishes fifth to seventh in the median level-1 race and fourth at level 5.
 
 Two things the same runs show that are not fixed here:
 

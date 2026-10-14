@@ -1,23 +1,26 @@
 import { nextSeed, unitOf } from "@racer/track/random";
-import { curvatureAt } from "@racer/track/track";
+import { curvatureAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { grudgeSide, nearestRival } from "./combat.ts";
+import { topSpeedOf } from "./engine.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
 import {
   BIKE_HALF_WIDTH,
   clamp,
   curvePushOf,
+  GRAVITY,
   lateralSpeedLimit,
   PLAYER_RIDER,
-  topSpeedOf,
 } from "./state.ts";
-import type { RaceState, RiderInput, RiderState } from "./state.ts";
+import type { BikeSpec, RaceState, RiderInput, RiderState } from "./state.ts";
 import { kick, weapons } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
 
-const CORNER_CONFIDENCE = 0.72;
+const CORNER_CONFIDENCE = 0.8;
+const CREST_MARGIN = 1.15;
 const PLANNED_BRAKING = 6.5;
+const PLANNED_LIFT = 3.5;
 const SCAN_STEP = 10;
 const LANE_CHANGE_RATE = 1.2;
 const MAX_LATERAL_SPEED = 5;
@@ -37,7 +40,7 @@ const PULL_OVER_CRAWL = 6;
 const CROSSING_SECONDS = 1.5;
 const OWN_LANE_REACH = 1;
 const CRUISE_THROTTLE = 0.6;
-const THROTTLE_PER_EXCESS = 0.4;
+const THROTTLE_PER_EXCESS = 0.8;
 const PACING_RANGE = 200;
 
 interface Pace {
@@ -75,21 +78,27 @@ const paceOf = (
   return { cap: Number.POSITIVE_INFINITY, lift: state.pacing.catchUp * share };
 };
 
+const letGoSpeed = (bike: BikeSpec, bend: number): number => {
+  const push = bend / bike.curvePush;
+  const held = bike.lateralSpeedPerSpeed * CORNER_CONFIDENCE;
+  const grip = bike.lateralSpeed * CORNER_CONFIDENCE;
+  return (held + Math.sqrt(held * held + 4 * push * grip)) / (2 * push);
+};
+
 const cornerSpeedLimit = (track: Track, rider: RiderState): number => {
-  const lateralLimit =
-    lateralSpeedLimit(rider.bike, 60) *
-    rider.bike.curvePush *
-    CORNER_CONFIDENCE;
   const horizon = (rider.speed * rider.speed) / (2 * PLANNED_BRAKING) + 40;
   let limit = Number.POSITIVE_INFINITY;
+  const slowFor = (speed: number, ahead: number, planned: number) => {
+    limit = Math.min(limit, Math.sqrt(speed * speed + 2 * planned * ahead));
+  };
   for (let ahead = 0; ahead < horizon; ahead += SCAN_STEP) {
     const bend = Math.abs(curvatureAt(track, rider.s + ahead));
     if (bend > 1e-5) {
-      const cornerSpeed = Math.sqrt(lateralLimit / bend);
-      limit = Math.min(
-        limit,
-        Math.sqrt(cornerSpeed * cornerSpeed + 2 * PLANNED_BRAKING * ahead)
-      );
+      slowFor(letGoSpeed(rider.bike, bend), ahead, PLANNED_BRAKING);
+    }
+    const drop = slopeRateAt(track, rider.s + ahead);
+    if (drop < 0) {
+      slowFor(Math.sqrt(-GRAVITY / drop) * CREST_MARGIN, ahead, PLANNED_LIFT);
     }
   }
   return limit;

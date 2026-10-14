@@ -26,6 +26,7 @@ export interface HudState {
   readonly phase: GamePhase;
   readonly countdown: number;
   readonly speedKmh: number;
+  readonly gear: number;
   readonly offBike: boolean;
   readonly progress: number;
   readonly notice: Notice;
@@ -55,6 +56,7 @@ export const idleHud: HudState = {
   copDistance: -1,
   countdown: 0,
   distanceLeft: 0,
+  gear: 1,
   muted: false,
   notice: "",
   noticeDetail: "",

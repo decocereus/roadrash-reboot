@@ -18,6 +18,7 @@ export interface BikeSpec {
   readonly price: number;
   readonly launchAcceleration: number;
   readonly powerPerMass: number;
+  readonly gears: readonly number[];
   readonly dragFactor: number;
   readonly rollingDeceleration: number;
   readonly engineBraking: number;
@@ -110,6 +111,10 @@ export interface RiderState {
   lateralSpeed: number;
   throttle: number;
   brake: number;
+  gear: number;
+  revs: number;
+  shiftTicks: number;
+  tuck: number;
   heading: number;
   lean: number;
   air: number;
@@ -299,19 +304,3 @@ export const curvePushOf = (
   curvature: number,
   speed: number
 ): number => (curvature * speed * speed) / bike.curvePush;
-
-const TOP_SPEED_STEPS = 4;
-
-export const topSpeedOf = (bike: BikeSpec): number => {
-  let speed = Math.cbrt(bike.powerPerMass / bike.dragFactor);
-  for (let step = 0; step < TOP_SPEED_STEPS; step += 1) {
-    const shortfall =
-      bike.dragFactor * speed * speed * speed +
-      bike.rollingDeceleration * speed -
-      bike.powerPerMass;
-    speed -=
-      shortfall /
-      (3 * bike.dragFactor * speed * speed + bike.rollingDeceleration);
-  }
-  return speed;
-};
