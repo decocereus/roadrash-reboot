@@ -132,7 +132,7 @@ export const repairMultiplier = {
 } as const satisfies Record<BikeClass, number>;
 
 export const fines = {
-  1: 500,
+  1: 400,
   2: 900,
   3: 1500,
   4: 2200,

@@ -112,8 +112,7 @@ export const remember = (
   const rows = memoryRows.filter((row) =>
     happened(row, incidents, playerAhead)
   );
-  let bonus =
-    rows.length === 0 ? fade(memory.aggressionBonus) : memory.aggressionBonus;
+  let bonus = fade(memory.aggressionBonus);
   const stamped = { ...memory };
   for (const row of rows) {
     bonus += bonusOf(row, incidents);

@@ -381,7 +381,7 @@ const cashAt = (seasons: readonly Season[]) =>
   seasons.map((season) => [season.start.cash, season.end.cash]);
 
 describe("the economy", () => {
-  it("a decent level-1 season ends with the $4,800 of the worked example and moves up", () => {
+  it("a decent level-1 season ends with the $4,900 of the worked example and moves up", () => {
     const { end } = seasonAt(decent, 1);
     expect({
       bike: end.bikeId,
@@ -390,7 +390,7 @@ describe("the economy", () => {
       record: end.record,
     }).toStrictEqual({
       bike: "halden-wren-400",
-      cash: 4800,
+      cash: 4900,
       level: 2,
       record: {
         busts: 1,
@@ -406,11 +406,11 @@ describe("the economy", () => {
 
   it("the decent player buys one bike per level and ends each level with the cash in the pacing table", () => {
     expect(cashAt(decent)).toStrictEqual([
-      [1500, 4800],
-      [1600, 6720],
-      [1720, 8650],
-      [2450, 12_130],
-      [230, 12_150],
+      [1500, 4900],
+      [1700, 6820],
+      [1820, 8750],
+      [2550, 12_230],
+      [330, 12_250],
     ]);
     expect(decent.map((season) => season.start.bikeId)).toStrictEqual([
       "halden-wren-400",
@@ -496,7 +496,7 @@ describe("the economy", () => {
     const wreck = ledgerOf(
       play(onSesta, { ends: "wrecked", roadId: "slag-row" })
     );
-    expect([bust.fine, bust.prize, wreck.repair]).toStrictEqual([500, 0, 600]);
+    expect([bust.fine, bust.prize, wreck.repair]).toStrictEqual([400, 0, 600]);
   });
 });
 
@@ -594,16 +594,13 @@ describe("going broke", () => {
 
 describe("the rewarded ad", () => {
   it("halves a repair bill, which can be what keeps the bike", () => {
-    const inDebt = play(lastOf(wreckTimes(newCareer(1), 4)).career, {
-      ends: "busted",
-      roadId: "slag-row",
-    }).career;
+    const inDebt: CareerState = { ...newCareer(1), cash: -600 };
     const race = enter(inDebt, "slag-row");
     crashOut(race);
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const full = ledgerOf(settleRace(race.career, outcome));
     const half = ledgerOf(settleRace(race.career, outcome, "half"));
-    expect([inDebt.cash, outcome.result]).toStrictEqual([-600, "wrecked"]);
+    expect(outcome.result).toBe("wrecked");
     expect([
       full.repair,
       full.cashAfter,
@@ -1101,18 +1098,24 @@ describe("memory", () => {
     }
   );
 
-  it("a rival the player beat cleanly cools off, and one with no memory opens with the default taunt", () => {
+  it("a rival the player beat cleanly cools off, however often, and one with no memory opens with the default taunt", () => {
     const fresh = newCareer(2);
     const first = setupFor(fresh, "slag-row", 7, road);
     const race = enter(fresh, "slag-row");
     sprint(race, 1);
     const { career } = settle(race);
+    const again = enter(career, "slag-row");
+    sprint(again, 1);
+    const twice = settle(again).career;
     const speaker = preRaceLine(fresh, first);
     expect(speaker?.text).toBe(
       speaker ? rivalLines[speaker.rival].taunt : undefined
     );
     expect(
       race.setup.field.map((rival) => career.memory[rival].aggressionBonus)
+    ).toStrictEqual(Array.from({ length: 14 }, () => -0.05));
+    expect(
+      again.setup.field.map((rival) => twice.memory[rival].aggressionBonus)
     ).toStrictEqual(Array.from({ length: 14 }, () => -0.05));
   });
 
@@ -1259,7 +1262,7 @@ describe("memory", () => {
 
   it("a rival busted within 100 m of the player blames them, and one busted further off does not", () => {
     const note = {
-      fine: 500,
+      fine: 400,
       kind: "busted",
       rival: "moose-kowalczyk",
       roadId: "slag-row",
@@ -1316,7 +1319,7 @@ describe("a bust", () => {
     const settled = settleRace(race.career, outcome);
     expect(outcome).toMatchObject({
       arrest: {
-        fine: 500,
+        fine: 400,
         km: expect.closeTo(0.2, 1),
         officer: "wendell-haverty",
         weapon: "chain",
@@ -1325,7 +1328,7 @@ describe("a bust", () => {
       result: "busted",
     });
     expect(settled.career.lastResult?.summary.bust).toStrictEqual({
-      fine: 500,
+      fine: 400,
       km: outcome.arrest?.km,
       line: bustedLine("wendell-haverty", race.setup.seed),
       officer: "wendell-haverty",
@@ -1333,8 +1336,8 @@ describe("a bust", () => {
       weapon: "chain",
     });
     expect(ledgerOf(settled)).toMatchObject({
-      cashAfter: 1000,
-      fine: 500,
+      cashAfter: 1100,
+      fine: 400,
       prize: 0,
       qualified: false,
     });
@@ -1434,8 +1437,7 @@ describe("the story", () => {
     });
     expect(
       rivalIn(setupFor(career, "slag-row", 3, road), "dee-santangelo")
-        ?.aggressionBoost
-    ).toBeGreaterThan(-1);
+    ).toMatchObject({ aggressionBoost: 0.2, grudge: 0 });
   });
 
   it("winning the Long Ridge after taking the envelope is the bought crown", () => {

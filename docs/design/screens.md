@@ -169,7 +169,7 @@ Title
 
 ```
 +------------------------------------------------------------------------------+
-| GARAGE                                              CASH $4,800  TRADE $1,800|
+| GARAGE                                              CASH $4,900  TRADE $1,800|
 +--------------------+-----------------------------------+---------------------+
 | FEATHERWEIGHT      |                                   | HALDEN KITE 500     |
 |   Gutter Pup 250   |                                   | FEATHERWEIGHT       |
@@ -185,7 +185,7 @@ Title
 |   Ostra Nera     🔒|   deciding to."                   | BRAKES              |
 |                    |                                   | ▓▓▓▓▓▓▓▓░░░░ ┆      |
 +--------------------+-----------------------------------+---------------------+
-| PRICE $5,000   YOU HAVE $6,600 WITH TRADE-IN   LEFT AFTER $1,600    ► BUY    |
+| PRICE $5,000   YOU HAVE $6,700 WITH TRADE-IN   LEFT AFTER $1,700    ► BUY    |
 +------------------------------------------------------------------------------+
 ```
 
@@ -217,7 +217,7 @@ Title
 
 **Out.** `BACK` to the Clubhouse.
 
-The wireframe is the decent player's garage at the start of level 2 (`game-design.md` section 5): $4,800 in cash, a Wren worth $1,800 in trade, and the Kite within reach with $1,600 left over.
+The wireframe is the decent player's garage at the start of level 2 (`game-design.md` section 5): $4,900 in cash, a Wren worth $1,800 in trade, and the Kite within reach with $1,700 left over.
 
 **Data.** Catalogue (name, class, price, pitch, `BikeSpec`), unlock level per bike, owned bike, cash, trade-in (60% of the owned bike's price), debt. The bars are computed from the `BikeSpec`: top speed from power and drag; launch from the 0 to 100 km/h time; steering from `steerRate` and `lateralSpeed`; bend grip from `curvePush`, where a larger `curvePush` is a longer bar because the bike is pushed out less; brakes from `brakeDeceleration`. The Gutter Pup is the one Featherweight with a short steering bar.
 

@@ -27,7 +27,7 @@ export const chapters = {
   },
   5: {
     name: "The Long Ridge",
-    note: "The last race of the season is Ridge Road at full length, 8.85 km, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the lookout but the summit mast, and Vic is waiting there with a cash box and two friends.",
+    note: "The last race of the season is Ridge Road at full length, 13.15 km, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.",
   },
 } as const satisfies Record<Level, StoryChapter>;
 

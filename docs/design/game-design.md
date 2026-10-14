@@ -159,13 +159,15 @@ A **spill** (thrown, run back, remount) costs only time. A **wreck** happens whe
 
 | Level | Repair base | Featherweight (×1) | Middleweight (×1.5) | Heavyweight (×2) | Police fine |
 | --: | --: | --: | --: | --: | --: |
-| 1 | $400 | $400 | $600 | $800 | $500 |
+| 1 | $400 | $400 | $600 | $800 | $400 |
 | 2 | $700 | $700 | $1,050 | $1,400 | $900 |
 | 3 | $1,100 | $1,100 | $1,650 | $2,200 | $1,500 |
 | 4 | $1,600 | $1,600 | $2,400 | $3,200 | $2,200 |
 | 5 | $2,200 | $2,200 | $3,300 | $4,400 | $3,000 |
 
 Heavier bikes cost more to fix, so a faster bike is also a bigger bet.
+
+The level-1 fine is the original's: a level-1 arrest there cost $400 every time it was measured (cash went from $1,000 to $600 to $200 over two arrests, and from $1,000 to $600 in a second career). The original's fines at levels 2 to 5, its repair bills, and its prizes have not been measured, so the rest of this table and the prize table are still our own numbers.
 
 ### Trade-in
 
@@ -179,12 +181,12 @@ At level 2 the promoter offers an envelope (section 11). Taking it pays **$1,500
 
 Prize money depends on whether the road is already qualified at the current level.
 
-| Road at the current level | Places 1 to 3    | Places 4 to 8 |
-| ------------------------- | ---------------- | ------------- |
-| Not yet qualified         | Full prize       | Full prize    |
-| Already qualified         | 50% of the prize | Nothing       |
+| Road at the current level | Places 1 to 3    | Places 4 to 15 |
+| ------------------------- | ---------------- | -------------- |
+| Not yet qualified         | Full prize       | Full prize     |
+| Already qualified         | 50% of the prize | Nothing        |
 
-Fines and repair bills are never reduced. A repeat win at level 1 pays $750 and a repeat third pays $350, against a possible $500 fine or $400 to $800 repair. A repeat win at level 5 pays $3,450 against a $3,000 fine. Rerunning a qualified road is therefore a poor way to earn and a real way to lose, while a player who is still trying to qualify is always paid in full for the attempt. Moving up is the better trade: a third on a new level-2 road pays $1,120, more than three repeat thirds at level 1.
+Fines and repair bills are never reduced. A repeat win at level 1 pays $750 and a repeat third pays $350, against a possible $400 fine or $400 to $800 repair. A repeat win at level 5 pays $3,450 against a $3,000 fine. Rerunning a qualified road is therefore a poor way to earn and a real way to lose, while a player who is still trying to qualify is always paid in full for the attempt. Moving up is the better trade: a third on a new level-2 road pays $1,120, more than three repeat thirds at level 1.
 
 Single Race and multiplayer pay nothing, so the rule only applies to the career.
 
@@ -196,18 +198,18 @@ The promise to that player is **one bike per level and one class every other lev
 
 | Level | Rides | Cash at start | Prizes | Fine | Repair | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$4,200 | −$500 | −$400 | $4,800 | $1,800 | Halden Kite 500, $5,000 | $1,600 |
-| 2 | Kite 500 | $1,600 | +$6,720 | −$900 | −$700 | $6,720 | $3,000 | Ostra Sesta 600, $8,000 | $1,720 |
-| 3 | Sesta 600 | $1,720 | +$10,080 | −$1,500 | −$1,650 | $8,650 | $4,800 | Ostra Sette 750, $11,000 | $2,450 |
-| 4 | Sette 750 | $2,450 | +$14,280 | −$2,200 | −$2,400 | $12,130 | $6,600 | Halden Meridian 900, $18,500 | $230 |
-| 5 | Meridian 900 | $230 | +$19,320 | −$3,000 | −$4,400 | $12,150 |  |  |  |
+| 1 | Wren 400 | $1,500 | +$4,200 | −$400 | −$400 | $4,900 | $1,800 | Halden Kite 500, $5,000 | $1,700 |
+| 2 | Kite 500 | $1,700 | +$6,720 | −$900 | −$700 | $6,820 | $3,000 | Ostra Sesta 600, $8,000 | $1,820 |
+| 3 | Sesta 600 | $1,820 | +$10,080 | −$1,500 | −$1,650 | $8,750 | $4,800 | Ostra Sette 750, $11,000 | $2,550 |
+| 4 | Sette 750 | $2,550 | +$14,280 | −$2,200 | −$2,400 | $12,230 | $6,600 | Halden Meridian 900, $18,500 | $330 |
+| 5 | Meridian 900 | $330 | +$19,320 | −$3,000 | −$4,400 | $12,250 |  |  |  |
 
 Prizes are one 2nd, four 3rds, and one 4th from the level's column of the prize table. The repair is the level's bill for the class of the bike ridden.
 
 What the table shows:
 
-- Each purchase is the next bike up and nothing more. After level 1 the Sesta is $1,400 out of reach; after level 2 the Sette is $1,280 out of reach; after level 3 the Stoker is $50 out of reach.
-- The Meridian is the tightest step. It leaves $230, and the Meridian's credit limit is $5,550, so a level-5 bust ($3,000) is survivable but a bust and a wreck ($4,400) before the first prize would repossess it. A careful player rides the Sette into level 5 and buys the Meridian after the first third ($3,220).
+- Each purchase is the next bike up and nothing more. After level 1 the Sesta is $1,300 out of reach; after level 2 the Sette is $1,180 out of reach; after level 3 the Stoker, the sideways choice at $13,500, would leave $50.
+- The Meridian is the tightest step. It leaves $330, and the Meridian's credit limit is $5,550, so a level-5 bust ($3,000) is survivable but a bust and a wreck ($4,400) before the first prize would repossess it. A careful player rides the Sette into level 5 and buys the Meridian after the first third ($3,220).
 - The Anvil 1100 needs a better season. A player who wins three roads per level, places 2nd and 3rd on the other two, and pays no bills has $29,100 of spending power after level 3 and can buy the Anvil ($26,000) the day it arrives at level 4, and the Nera 1000 ($34,000) at level 5.
 
 ### The weak player
@@ -227,8 +229,28 @@ What the table shows:
 - The weak player still moves forward. Five thirds qualify a level whatever else happens, and the sevenths pay a little because those roads were not yet qualified.
 - Progress is slow in the way that matters to the player: twelve starts per level instead of eight, so sixty races for the season instead of forty, and the fifth bike never arrives. The weak player finishes the season on the Sette.
 - The margin is thin after every purchase. If both wrecks come before the first prize of a level, cash goes to $100 at level 2, to $1,800 of debt at level 3 (the Sesta's limit is $2,400), and to $3,200 of debt at level 4 (the Sette's limit is $3,300).
-- Bankruptcy comes from busts and wrecks, never from slow riding. Prize money is never negative, so a player with no bills only gains: the same ten finishes without the two wrecks end level 4 with $20,700 and buy the Meridian with $8,800 to spare. Add one bust per level to the two wrecks and the Sesta leaves only $100 at the start of level 3; two wrecks and a bust before the first prize ($4,800) then pass the Sesta's $2,400 limit and cost the bike.
+- Bankruptcy comes from busts and wrecks, never from slow riding. Prize money is never negative, so a player with no bills only gains: the same ten finishes without the two wrecks end level 4 with $20,700 and buy the Meridian with $8,800 to spare. Add one bust per level to the two wrecks and the Sesta leaves only $200 at the start of level 3; two wrecks and a bust before the first prize ($4,800) then pass the Sesta's $2,400 limit and cost the bike.
 - Farming does not rescue a weak player. Twelve reruns of a qualified level-1 road at this player's results pay five thirds at $350, nothing for five sevenths, and cost two $400 repairs: $950 for twelve races, about $80 a race. The price of a Kite is more than sixty races away.
+
+### Measured careers
+
+The tables above are a plan. To see what fifteen riders and 8 to 13 km roads do to it, the pilot standing in for the decent player (skill 0.9, aggression 0.5) rode six whole careers through the career rules. It always took the first road it had not yet qualified, and it bought the next bike in the pacing table whenever it moved up and could afford it. "Before" is the rules as they were with the field of fifteen: the old memory rule and a $500 level-1 fine. "After" is the memory fade (section 10) and the $400 fine. The same six career seeds were used for both.
+
+|  | Level-1 starts | Busts | Wrecks | Median place | Top three | Net per start | Cash when level 1 ends |
+| --- | --- | --: | --: | --: | --: | --: | --- |
+| Before | 17 to 39, 162 in all | 11% | 0 | 5th | 19% | $228 | $6,465 to $9,235 |
+| After | 10 to 38, 141 in all | 13% | 0 | 5th | 21% | $240 | $5,740 to $9,035 |
+
+|  | Level-2 starts | Busts | Wrecks | Median place | Top three | Net per start | Cash when level 2 ends |
+| --- | --- | --: | --: | --: | --: | --: | --- |
+| Before | 23 to 42, 201 in all | 20% | 0 | 6th | 15% | $182 | $1,996 to $19,599 |
+| After | 17 to 49, 192 in all | 16% | 0 | 5th | 16% | $241 | $9,282 to $18,731 |
+
+The differences between the two rows are mostly noise. The memory rule changes which rival attacks whom, and that changes every race that follows, so the same seed gives a different career. What both rows show:
+
+- **The stand-in needs about three times the plan's eight starts a level.** It places in the top three in one start in five, so qualifying five roads takes 10 to 49 starts. A level-1 race lasts 217 to 277 seconds, so level 1 takes about 40 minutes to two and a half hours of racing.
+- **It still buys one bike per level.** Every attempt on a road that is not yet qualified pays in full, and places 4 to 8 pay $50 to $400 at level 1, so the extra starts pay for themselves. All six careers bought the Kite at level 2. After the change all six bought the Sesta at level 3, and both careers that reached level 4 bought the Sette. Before it, one career paid fourteen level-2 fines ($12,600), ended level 2 with $1,996, and could not buy the Sesta.
+- **Busts, not wrecks, are the bill.** No start in 960, over all levels the twelve careers reached, ended in a wreck, and no bike fell below 25 condition. The plan's one wreck in eight starts is still a guess about human riders.
 
 ### Worked example: a level-1 season
 
@@ -240,13 +262,13 @@ The decent player's level 1, start by start.
 | 1 | Slag Row | 3rd, qualified | +$700 | $2,200 |
 | 2 | Breakwater Run | 4th, not qualified | +$400 | $2,600 |
 | 3 | Breakwater Run | 3rd, qualified | +$700 | $3,300 |
-| 4 | Hollow Pine Road | Busted at the Sawmill Hook | −$500 | $2,800 |
-| 5 | Hollow Pine Road | 3rd, qualified | +$700 | $3,500 |
-| 6 | Cinder Wash | Wrecked in the Main Wash | −$400 | $3,100 |
-| 7 | Cinder Wash | 2nd, qualified | +$1,000 | $4,100 |
-| 8 | Ridge Road | 3rd, qualified; level 2 | +$700 | $4,800 |
+| 4 | Hollow Pine Road | Busted at the Sawmill Hook | −$400 | $2,900 |
+| 5 | Hollow Pine Road | 3rd, qualified | +$700 | $3,600 |
+| 6 | Cinder Wash | Wrecked in the Main Wash | −$400 | $3,200 |
+| 7 | Cinder Wash | 2nd, qualified | +$1,000 | $4,200 |
+| 8 | Ridge Road | 3rd, qualified; level 2 | +$700 | $4,900 |
 
-At the start of level 2 the Wren trades in for $1,800, giving $6,600 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,600, or stay on the Wren with $4,800 in hand and aim straight for the Sesta 600, which two level-2 thirds ($2,240) would then pay for. With the Kite and $1,600, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, every level-2 cop (160 km/h) is faster than the bike (158 km/h). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
+At the start of level 2 the Wren trades in for $1,800, giving $6,700 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,700, or stay on the Wren with $4,900 in hand and aim straight for the Sesta 600, which two level-2 thirds ($2,240) would then pay for. With the Kite and $1,700, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, every level-2 cop (160 km/h) is faster than the bike (158 km/h). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
 
 ## 6. Bike catalogue
 
@@ -361,7 +383,7 @@ Each cop has a **beat**: it gives up the chase that many metres past the spot wh
 
 | Level | Cops | Pursuit top speed | Sight range | Beat | Roadblocks | Fine |
 | --: | --: | --: | --: | --: | --: | --: |
-| 1 | 1 | 41 m/s (148 km/h) | 40 m | 6,000 m | 0 | $500 |
+| 1 | 1 | 41 m/s (148 km/h) | 40 m | 6,000 m | 0 | $400 |
 | 2 | 2 | 44 m/s (158 km/h) | 40 m | 5,000 m | 0 | $900 |
 | 3 | 3 | 48 m/s (173 km/h) | 45 m | 1,800 m | 1 | $1,500 |
 | 4 | 4 | 51 m/s (184 km/h) | 50 m | 1,500 m | 2 | $2,200 |
@@ -500,7 +522,7 @@ Two profiles describe behaviour that skill and aggression alone do not produce, 
 
 ### Bikes by level
 
-Rivals move up the catalogue as the season goes on. The player's "decent" path (section 5) is in the last row for comparison. From level 2 the decent player is a step behind the front of the field: the fastest rivals ride a Sesta against the player's Kite at level 2, and a Nera against the player's Meridian at level 5. Top three out of eight allows for that, and it is what makes a win pay for the next class.
+Rivals move up the catalogue as the season goes on. The player's "decent" path (section 5) is in the last row for comparison. From level 2 the decent player is a step behind the front of the field: the fastest rivals ride a Sesta against the player's Kite at level 2, and a Nera against the player's Meridian at level 5. Top three out of fifteen allows for that, and it is what makes a win pay for the next class.
 
 | Rival | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
 | --- | --- | --- | --- | --- | --- |
@@ -534,7 +556,7 @@ Juno grew up above her father's tyre shop on the Ridge and learned to ride on th
 
 Visual: tall and narrow, upright on the bike. Black one-piece leathers with a single gold stripe from collar to boot. Black helmet, dark visor, gold stripe continued over the crown. The cleanest silhouette in the field: no fringe, no patches, nothing loose.
 
-- Taunt: "There are seven people on this grid. I counted you as a maybe."
+- Taunt: "There are fourteen people on this grid. I counted you as a maybe."
 - Grudge taunt: "You touched me last time. I wrote it down. I don't write things down."
 - She beat you: "Good effort. I mean that the way people say it to children."
 - You beat her: "Enjoy it. Frame something. I'll be back to normal by Thursday."
@@ -780,16 +802,19 @@ Each rival keeps a small record about the player in the career save: their `aggr
 | They knocked you down | `crash` with cause `combat` and `by` = them | Default taunt | −0.05 | They are satisfied. |
 | They beat you by a wheel | they finished 30 ticks (0.5 s) or less before you | Default taunt | 0 | Board post in their favour. |
 | You finished ahead and never hit them | no `hit` either way | Default taunt | −0.05 | Respect. |
-| No shared incident |  | Default taunt | Moves 0.05 toward 0 |  |
+| No shared incident |  | Default taunt | 0 | Only the fade below. |
 
 Rules:
 
 - When several incidents apply, the line comes from the highest row; bonuses add up.
+- **Memory fades.** Every race a rival shares with you, their bonus first moves 0.05 toward 0, and then that race's incidents add to it. A race a rival sits out changes nothing. A rider remembers recent races, not the whole season.
+- So respect has a floor. Outrunning a rider cleanly every race, or letting them knock you down every race, holds their bonus at −0.05 and no lower: they ease off a little but never stop fighting. Anger has no such floor, because one race can add up to +0.55. Two knockdowns in a race take a rider from −0.05 to +0.20 and a grudge. A grudge from a stolen weapon ends after two races in which the player outruns that rider cleanly (0.15, then 0.05, then −0.05), and lasts as long as the player keeps adding to it.
+- Why: with fourteen of the sixteen rivals in every race, a player who finishes near the front and stays out of fights outruns about ten of them cleanly every race. Before the fade applied to every race, the −0.05 for respect added up for each of them: twenty such races put a rider on the −1 floor, where they never attack and two knockdowns still leave them at −0.8. In the stand-in pilot's careers (section 5, "Measured careers") one rival reached −0.95 by the end of level 1. With the fade, every rival in those careers ends every level between −0.05 and +0.20, and grudges still form.
 - Effective aggression toward the player is `profile.aggression + aggressionBonus`, clamped to 0 to 1. Toward other riders it stays the profile value.
 - The grudge flag is set when the bonus reaches 0.15 and cleared when it falls below 0.05. A rider with a grudge picks the player as their attack target whenever the player is in reach, even if another rider is closer.
 - The post-race line follows the settled places: if they are placed ahead, their "beat you" line; if you are placed ahead, their "you beat them" line. A rival who was busted or wrecked uses the "you beat them" line.
 - The two in-race lines appear as a speech tag on the HUD for two seconds when the knockdown happens.
-- Dee's bonus is fixed at −1 toward the player from level 3 (she will not attack you), unless the player knocks her down twice in one race, which ends the alliance for the rest of that level.
+- Dee's bonus is fixed at −1 toward the player from level 3 (she will not attack you), unless the player knocks her down twice in one race, which ends the alliance for the rest of that level. Her memory keeps running underneath the alliance, so the two knockdowns that end it also give her the usual +0.20 and a grudge for the next race.
 
 ## 11. Story
 
