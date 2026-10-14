@@ -22,7 +22,7 @@ export const punch: StrikeSpec = {
   reachX: 2.2,
   shove: 1.6,
   steerFactor: 1,
-  strikeTick: 12,
+  strikeTick: 14,
   ticks: 18,
 };
 
@@ -35,7 +35,7 @@ export const kick: StrikeSpec = {
   reachX: 2.2,
   shove: 3.2,
   steerFactor: 1,
-  strikeTick: 13,
+  strikeTick: 15,
   ticks: 20,
 };
 
@@ -49,7 +49,7 @@ export const weapons = {
     reachX: 2.6,
     shove: 2.4,
     steerFactor: 1,
-    strikeTick: 14,
+    strikeTick: 16,
     ticks: 22,
   },
   chain: {
@@ -61,7 +61,7 @@ export const weapons = {
     reachX: 3.1,
     shove: 2.2,
     steerFactor: 1,
-    strikeTick: 15,
+    strikeTick: 17,
     ticks: 24,
   },
   club: {
@@ -73,7 +73,7 @@ export const weapons = {
     reachX: 2.6,
     shove: 3.8,
     steerFactor: 1,
-    strikeTick: 15,
+    strikeTick: 17,
     ticks: 24,
   },
   crowbar: {
@@ -85,7 +85,7 @@ export const weapons = {
     reachX: 2.6,
     shove: 2.8,
     steerFactor: 1,
-    strikeTick: 14,
+    strikeTick: 16,
     ticks: 22,
   },
   cue: {
@@ -97,7 +97,7 @@ export const weapons = {
     reachX: 3.4,
     shove: 1.8,
     steerFactor: 1,
-    strikeTick: 13,
+    strikeTick: 15,
     ticks: 20,
   },
   none: punch,

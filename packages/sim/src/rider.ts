@@ -35,9 +35,13 @@ const VERGE_DRAG_PER_SPEED = 0.09;
 const STEER_DRAG = 0.3;
 const TUCK_THROTTLE = 0.8;
 const TUCK_STEER = 0.3;
-const TUCK_SPEED = 20;
-const TUCK_IN_RATE = 1.6;
+const TUCK_SPEED = 120 / 3.6;
+const TUCK_HOLD_SPEED = 95 / 3.6;
+const TUCK_SETTLE_TICKS = 90;
+const TUCK_STEER_COST = 0.25;
+const TUCK_IN_RATE = 1;
 const TUCK_OUT_RATE = 5;
+const HARD_BRAKE = 0.5;
 const TAKEOFF_SPEED = 10;
 const HARD_LANDING = -11;
 const GLANCE_OVERLAP = 0.3;
@@ -112,6 +116,37 @@ const settleVisuals = (rider: RiderState, authority: number): void => {
     Math.atan2(rider.lateralSpeed, Math.max(rider.speed, 6)) * 0.5;
 };
 
+const settleIntoTuck = (
+  rider: RiderState,
+  input: RiderInput,
+  lock: number
+): void => {
+  const calm =
+    rider.attack === "none" &&
+    rider.hitStun === 0 &&
+    !rider.offRoad &&
+    input.brake < HARD_BRAKE;
+  const settling =
+    calm &&
+    input.throttle > TUCK_THROTTLE &&
+    input.brake === 0 &&
+    lock < TUCK_STEER &&
+    rider.speed > TUCK_SPEED;
+  const holding =
+    calm &&
+    rider.tuckTicks >= TUCK_SETTLE_TICKS &&
+    rider.speed > TUCK_HOLD_SPEED;
+  rider.tuckTicks =
+    settling || holding ? Math.min(TUCK_SETTLE_TICKS, rider.tuckTicks + 1) : 0;
+  const wanted =
+    rider.tuckTicks >= TUCK_SETTLE_TICKS ? 1 - TUCK_STEER_COST * lock : 0;
+  rider.tuck = approach(
+    rider.tuck,
+    wanted,
+    (wanted > 0 ? TUCK_IN_RATE : TUCK_OUT_RATE) * TICK_SECONDS
+  );
+};
+
 const blamedFor = (state: RaceState, rider: RiderState): number =>
   rider.lastHitBy >= 0 && state.tick - rider.lastHitTick <= BLAME_TICKS
     ? rider.lastHitBy
@@ -151,6 +186,8 @@ export const throwRider = (
   rider.attack = "none";
   rider.attackTicks = 0;
   rider.hitStun = 0;
+  rider.tuck = 0;
+  rider.tuckTicks = 0;
   rider.modeTicks = 0;
   rider.crashes += 1;
   rider.staleThrottle = true;
@@ -265,19 +302,7 @@ const ride = (
   const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
   const push = curvePushOf(bike, curvature, rider.speed);
 
-  const tucking =
-    input.throttle > TUCK_THROTTLE &&
-    input.brake === 0 &&
-    Math.abs(input.steer) < TUCK_STEER &&
-    rider.speed > TUCK_SPEED &&
-    rider.attack === "none" &&
-    rider.hitStun === 0 &&
-    !rider.offRoad;
-  rider.tuck = approach(
-    rider.tuck,
-    tucking ? 1 : 0,
-    (tucking ? TUCK_IN_RATE : TUCK_OUT_RATE) * TICK_SECONDS
-  );
+  settleIntoTuck(rider, input, lock);
   const pull = stepDrive(bike, rider, rider.speed, rider.throttle);
 
   let acceleration =

@@ -1,6 +1,7 @@
 import { rivalLines } from "@racer/career/lines";
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
+import { HIT_STUN_TICKS } from "@racer/sim/combat";
 import { pilotInput } from "@racer/sim/pilot";
 import { chaserDistance } from "@racer/sim/police";
 import {
@@ -19,6 +20,7 @@ import {
   TICK_SECONDS,
 } from "@racer/sim/state";
 import type {
+  AttackKind,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -48,7 +50,7 @@ import type {
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
 import { createRiderFigure } from "./rider-figure.ts";
-import type { RiderFigure, RiderPose } from "./rider-figure.ts";
+import type { RiderFigure, RiderPose, Stance } from "./rider-figure.ts";
 import { createWorld } from "./world.ts";
 
 const COUNTDOWN_SECONDS = 3;
@@ -78,8 +80,10 @@ const RISE_SECONDS = 0.3;
 const LIFT_TICKS = 14;
 const RUN_HZ = 2.6;
 const WALKING = 0.3;
-const RETURN_SHARE = 0.3;
+const WINDUP_TICKS = 3;
 const SWING_LEAD_TICKS = 3;
+const HOLD_TICKS = 4;
+const RETURN_TICKS = 5;
 const BUSTED_SECONDS = 0.8;
 const WRECKED_SECONDS = 1.2;
 const ROAD_LEVEL = 1;
@@ -140,20 +144,48 @@ const freshInput = (): RiderInput => ({
   throttle: 0,
 });
 
-const attackPose = (rider: RiderState): RiderPose | undefined => {
+interface StrikeFrame {
+  readonly pose: RiderPose;
+  readonly reach: number;
+}
+
+const windingUp = (
+  attack: AttackKind,
+  elapsed: number,
+  land: number
+): StrikeFrame => {
+  if (attack !== "swing") {
+    return { pose: attack, reach: elapsed / land };
+  }
+  const lead = land - SWING_LEAD_TICKS;
+  if (elapsed < lead) {
+    return { pose: "windup", reach: Math.min(1, elapsed / WINDUP_TICKS) };
+  }
+  return { pose: "swing", reach: (elapsed - lead) / SWING_LEAD_TICKS };
+};
+
+const flinchOf = (rider: RiderState, subTick: number): number =>
+  Math.max(0, rider.hitStun - subTick) / HIT_STUN_TICKS;
+
+const strikeFrame = (
+  rider: RiderState,
+  subTick: number
+): StrikeFrame | undefined => {
   if (rider.attack === "none") {
     return undefined;
   }
   const strike = strikeOf(rider.attack, rider.weapon);
-  if (rider.attackTicks <= strike.ticks * RETURN_SHARE) {
-    return undefined;
+  const land = strike.ticks - strike.strikeTick;
+  const elapsed = strike.ticks - rider.attackTicks + subTick;
+  const out = rider.attack === "swing" ? "swung" : rider.attack;
+  if (elapsed < land) {
+    return windingUp(rider.attack, elapsed, land);
   }
-  if (rider.attack === "swing") {
-    return rider.attackTicks > strike.strikeTick + SWING_LEAD_TICKS
-      ? "windup"
-      : "swing";
+  if (elapsed < land + HOLD_TICKS) {
+    return { pose: out, reach: 1 };
   }
-  return rider.attack;
+  const back = (elapsed - land - HOLD_TICKS) / RETURN_TICKS;
+  return back < 1 ? { pose: out, reach: 1 - back } : undefined;
 };
 
 const weaponName = (rider: RiderState): string =>
@@ -298,6 +330,17 @@ export async function createGame(
   let clock = 0;
 
   const subject: Subject = { air: 0, s: 0, speed: 0, tuck: 0, x: 0 };
+  const stance: Stance = {
+    flinch: 0,
+    flinchSide: 1,
+    lean: 0,
+    pose: "seated",
+    reach: 0,
+    side: 1,
+    time: 0,
+    tuck: 0,
+    weapon: "none",
+  };
   let lastGear = 1;
   const placed: Placed = {
     air: 0,
@@ -545,9 +588,6 @@ export async function createGame(
 
   const react = () => {
     for (const event of race.events) {
-      if (event.kind === "attack") {
-        views[event.rider]?.figure.recoil();
-      }
       if (event.kind === "hit") {
         reactToHit(event.rider, event.target, event.weapon !== "none");
       } else if (event.rider === 0) {
@@ -648,6 +688,11 @@ export async function createGame(
     holdStill();
   };
 
+  const flinchSideOf = (rider: RiderState): number => {
+    const hitter = race.riders[rider.lastHitBy];
+    return hitter ? Math.sign(rider.x - hitter.x) || 1 : 1;
+  };
+
   const placeFigure = (
     rider: RiderState,
     view: RiderView,
@@ -655,16 +700,21 @@ export async function createGame(
     bodyS: number,
     bodyX: number,
     bodyAir: number,
+    lean: number,
+    subTick: number,
     seconds: number
   ) => {
     let pose: RiderPose = "seated";
+    let reach = 0;
     let time = clock;
     const { figure, bike } = view;
     if (seated) {
-      pose =
-        rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS
-          ? "lift"
-          : (attackPose(rider) ?? "seated");
+      const strike = strikeFrame(rider, subTick);
+      if (rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS) {
+        pose = "lift";
+      } else if (strike) {
+        ({ pose, reach } = strike);
+      }
       figure.root.position.copy(bike.root.position);
       figure.root.quaternion.copy(bike.root.quaternion);
       figure.root.translateY(figure.seat.y);
@@ -734,14 +784,16 @@ export async function createGame(
         view.pitch
       );
     }
-    figure.animate(
-      pose,
-      time,
-      seconds,
-      rider.attackSide,
-      rider.weapon,
-      rider.tuck
-    );
+    stance.pose = pose;
+    stance.time = time;
+    stance.side = rider.attackSide;
+    stance.weapon = rider.weapon;
+    stance.tuck = seated ? rider.tuck : 0;
+    stance.lean = seated ? lean / rider.bike.visualLean : 0;
+    stance.reach = reach;
+    stance.flinch = seated ? flinchOf(rider, subTick) : 0;
+    stance.flinchSide = flinchSideOf(rider);
+    figure.animate(stance, seconds);
   };
 
   const drawRider = (
@@ -766,7 +818,17 @@ export async function createGame(
 
     poseOnTrack(bike.root, track, s, x, air, heading, lean, flightPitch);
     bike.spin(rider.speed * seconds);
-    placeFigure(rider, view, seated, bodyS, bodyX, bodyAir, seconds);
+    placeFigure(
+      rider,
+      view,
+      seated,
+      bodyS,
+      bodyX,
+      bodyAir,
+      lean,
+      blend,
+      seconds
+    );
     placed.air = air;
     placed.bodyAir = bodyAir;
     placed.bodyS = bodyS;

@@ -16,7 +16,7 @@ import type {
 import { disarm, punch, strikeOf } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
 
-const HIT_STUN_TICKS = 10;
+export const HIT_STUN_TICKS = 10;
 const HIT_SPEED_LOSS = 0.06;
 const CONTACT_CLOSING_SPEED = 18;
 const SIDE_SHOVE = 1.2;

@@ -115,6 +115,7 @@ export interface RiderState {
   revs: number;
   shiftTicks: number;
   tuck: number;
+  tuckTicks: number;
   heading: number;
   lean: number;
   air: number;

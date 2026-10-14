@@ -160,6 +160,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   stamina: MAX_STAMINA,
   throttle: 0,
   tuck: 0,
+  tuckTicks: 0,
   verticalSpeed: 0,
   weapon: entry.weaponHits > 0 ? entry.profile.weapon : "none",
   weaponAtThrow: "none",

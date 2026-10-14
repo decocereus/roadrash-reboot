@@ -19,19 +19,30 @@ export type RiderPose =
   | "kick"
   | "windup"
   | "swing"
+  | "swung"
   | "surrender";
+
+export interface Stance {
+  pose: RiderPose;
+  time: number;
+  side: number;
+  weapon: WeaponKind;
+  tuck: number;
+  lean: number;
+  reach: number;
+  flinch: number;
+  flinchSide: number;
+}
 
 const DEFAULT_JACKET = 0x23_26_2c;
 const DEFAULT_HELMET = 0xf2_c2_30;
 const SUIT_PANEL = "#1c1826";
 const BLEND_RATE = 16;
-const SNAP_RATE = 24;
-const RECOIL = 0.6;
 const RUN_HZ = 2.6;
 const TUMBLE_HZ = 1.75;
 const FULL_TURN = Math.PI * 2;
 const PITCH_FORWARD = new THREE.Vector3(-1, 0, 0);
-const ROLL_INWARD = new THREE.Vector3(0, 0, 1);
+const ROLL = new THREE.Vector3(0, 0, 1);
 
 interface Turn {
   readonly bone: string;
@@ -47,10 +58,26 @@ const TUCK_TURNS: readonly Turn[] = [
   { axis: PITCH_FORWARD, bone: "head", degrees: -12 },
   { axis: PITCH_FORWARD, bone: "upperarm_l", degrees: -22 },
   { axis: PITCH_FORWARD, bone: "upperarm_r", degrees: -22 },
-  { axis: ROLL_INWARD, bone: "upperarm_l", degrees: 16 },
-  { axis: ROLL_INWARD, bone: "upperarm_r", degrees: -16 },
+  { axis: ROLL, bone: "upperarm_l", degrees: 16 },
+  { axis: ROLL, bone: "upperarm_r", degrees: -16 },
   { axis: PITCH_FORWARD, bone: "lowerarm_l", degrees: 14 },
   { axis: PITCH_FORWARD, bone: "lowerarm_r", degrees: 14 },
+];
+
+const hangTurns = (side: number): readonly Turn[] => [
+  { axis: ROLL, bone: "spine_01", degrees: -7 * side },
+  { axis: ROLL, bone: "spine_02", degrees: -6 * side },
+  { axis: ROLL, bone: "spine_03", degrees: -5 * side },
+  { axis: ROLL, bone: "neck_01", degrees: 4 * side },
+  { axis: ROLL, bone: "head", degrees: 5 * side },
+];
+
+const flinchTurns = (side: number): readonly Turn[] => [
+  { axis: ROLL, bone: "spine_02", degrees: -9 * side },
+  { axis: ROLL, bone: "spine_03", degrees: -8 * side },
+  { axis: ROLL, bone: "head", degrees: -10 * side },
+  { axis: PITCH_FORWARD, bone: "neck_01", degrees: -8 },
+  { axis: PITCH_FORWARD, bone: "head", degrees: -10 },
 ];
 
 export interface RiderFigure {
@@ -58,52 +85,36 @@ export interface RiderFigure {
   readonly seat: THREE.Vector3;
   readonly standHeight: number;
   dispose: () => void;
-  recoil: () => void;
-  animate: (
-    pose: RiderPose,
-    time: number,
-    seconds: number,
-    side: number,
-    weapon: WeaponKind,
-    tuck: number
-  ) => void;
+  animate: (stance: Stance, seconds: number) => void;
 }
 
 const striking = (pose: RiderPose): boolean =>
-  pose === "punch" || pose === "kick" || pose === "windup" || pose === "swing";
+  pose === "punch" ||
+  pose === "kick" ||
+  pose === "windup" ||
+  pose === "swing" ||
+  pose === "swung";
 
-interface Target {
-  from: PoseName;
-  to: PoseName;
-  blend: number;
-}
+const sidedName = (left: PoseName, right: PoseName, side: number): PoseName =>
+  side < 0 ? left : right;
 
-const sided = (
-  left: PoseName,
-  right: PoseName,
-  side: number
-): readonly [PoseName, PoseName, number] => {
-  const pose = side < 0 ? left : right;
-  return [pose, pose, 0];
-};
-
-const aimFor = (
-  pose: RiderPose,
-  time: number,
-  side: number
-): readonly [PoseName, PoseName, number] => {
+const strikeName = (pose: RiderPose, side: number): PoseName => {
   if (pose === "punch") {
-    return sided("punch_l", "punch_r", side);
+    return sidedName("punch_l", "punch_r", side);
   }
   if (pose === "kick") {
-    return sided("kick_l", "kick_r", side);
+    return sidedName("kick_l", "kick_r", side);
   }
   if (pose === "windup") {
-    return sided("windup_l", "windup_r", side);
+    return sidedName("windup_l", "windup_r", side);
   }
-  if (pose === "swing") {
-    return sided("swing_l", "swing_r", side);
-  }
+  return sidedName("swing_l", "swing_r", side);
+};
+
+const cycleFor = (
+  pose: RiderPose,
+  time: number
+): readonly [PoseName, PoseName, number] => {
   if (pose === "run") {
     return ["run_a", "run_b", 0.5 - 0.5 * Math.cos(time * RUN_HZ * FULL_TURN)];
   }
@@ -117,7 +128,7 @@ const aimFor = (
       0.5 + 0.5 * Math.sin(time * TUMBLE_HZ * FULL_TURN),
     ];
   }
-  if (pose === "seated" || pose === "lift" || pose === "lying") {
+  if (pose === "lift" || pose === "lying") {
     return [pose, pose, 0];
   }
   return ["surrender", "surrender", 0];
@@ -213,22 +224,23 @@ const paletteOf = (index: number): Palette => {
   ]);
 };
 
-const tuckedFrom = (
-  seated: readonly number[],
+const turnedFrom = (
+  base: readonly number[],
+  turns: readonly Turn[],
   root: THREE.Object3D,
   skeleton: THREE.Skeleton,
   names: readonly string[],
   bones: readonly (THREE.Bone | undefined)[]
 ): number[] => {
   for (const [index, bone] of bones.entries()) {
-    bone?.quaternion.fromArray(seated, index * 4);
+    bone?.quaternion.fromArray(base, index * 4);
   }
   root.updateMatrixWorld(true);
-  const tucked = [...seated];
+  const turned = [...base];
   const world = new THREE.Quaternion();
   const parent = new THREE.Quaternion();
   const turn = new THREE.Quaternion();
-  for (const { axis, bone: name, degrees } of TUCK_TURNS) {
+  for (const { axis, bone: name, degrees } of turns) {
     const bone = skeleton.getBoneByName(name);
     const index = names.indexOf(name);
     if (!bone || index === -1) {
@@ -239,10 +251,26 @@ const tuckedFrom = (
     turn.setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees));
     bone.quaternion.copy(parent.invert().multiply(turn.multiply(world)));
     bone.updateMatrixWorld(true);
-    bone.quaternion.toArray(tucked, index * 4);
+    bone.quaternion.toArray(turned, index * 4);
   }
-  return tucked;
+  return turned;
 };
+
+interface Sided<T> {
+  readonly left: T;
+  readonly right: T;
+}
+
+interface Riding {
+  readonly seated: number[];
+  readonly tucked: number[];
+  readonly hang: Sided<number[]>;
+  readonly tuckedHang: Sided<number[]>;
+  readonly flinch: Sided<number[]>;
+}
+
+const sideOf = <T>(sided: Sided<T>, side: number): T =>
+  side < 0 ? sided.left : sided.right;
 
 const bodyFor = (assets: Assets, index: number): RiderAsset => {
   const asset = assets.riders[index % assets.riders.length];
@@ -289,12 +317,33 @@ export const createRiderFigure = (
   const bones = asset.bones.map((name) => skeleton.getBoneByName(name));
   skeleton.getBoneByName("pelvis")?.position.set(0, 0, 0);
   const seated = asset.poses.get("seated");
-  const tucked = seated
-    ? tuckedFrom(seated, root, skeleton, asset.bones, bones)
-    : [];
-  const current = [...(seated ?? [])];
+  if (!seated) {
+    throw new Error("The rider model has no seated pose.");
+  }
+  const bake = (base: readonly number[], turns: readonly Turn[]) =>
+    turnedFrom(base, turns, root, skeleton, asset.bones, bones);
+  const tucked = bake(seated, TUCK_TURNS);
+  const riding: Riding = {
+    flinch: {
+      left: bake(seated, flinchTurns(-1)),
+      right: bake(seated, flinchTurns(1)),
+    },
+    hang: {
+      left: bake(seated, hangTurns(-1)),
+      right: bake(seated, hangTurns(1)),
+    },
+    seated,
+    tucked,
+    tuckedHang: {
+      left: bake(tucked, hangTurns(-1)),
+      right: bake(tucked, hangTurns(1)),
+    },
+  };
+  const current = [...seated];
   const wanted = [...current];
-  const target: Target = { blend: 0, from: "seated", to: "seated" };
+  const base = [...current];
+  const upright = [...current];
+  const bent = [...current];
 
   const hands = [
     skeleton.getBoneByName("hand_l"),
@@ -311,7 +360,7 @@ export const createRiderFigure = (
   );
 
   const showWeapon = (weapon: WeaponKind, pose: RiderPose, side: number) => {
-    const swinging = pose === "windup" || pose === "swing";
+    const swinging = pose === "windup" || pose === "swing" || pose === "swung";
     const weaponHand = swinging && side < 0 ? 0 : 1;
     for (const [hand, meshes] of held.entries()) {
       for (const each of meshes) {
@@ -327,21 +376,70 @@ export const createRiderFigure = (
   };
   apply();
 
-  return {
-    animate(pose, time, seconds, side, weapon, tuck) {
-      [target.from, target.to, target.blend] = aimFor(pose, time, side);
-      const from = asset.poses.get(target.from);
-      let to = asset.poses.get(target.to);
-      if (pose === "seated" && tuck > 0 && tucked.length > 0) {
-        to = tucked;
-        target.blend = tuck;
+  const settleBase = ({ flinch, flinchSide, lean, tuck }: Stance) => {
+    const hang = Math.min(1, Math.abs(lean));
+    const hangSide = lean < 0 ? -1 : 1;
+    const seatedHang = sideOf(riding.hang, hangSide);
+    const tuckedHang = sideOf(riding.tuckedHang, hangSide);
+    const flinched = sideOf(riding.flinch, flinchSide);
+    for (let offset = 0; offset < base.length; offset += 4) {
+      THREE.Quaternion.slerpFlat(
+        upright,
+        offset,
+        riding.seated,
+        offset,
+        seatedHang,
+        offset,
+        hang
+      );
+      THREE.Quaternion.slerpFlat(
+        bent,
+        offset,
+        riding.tucked,
+        offset,
+        tuckedHang,
+        offset,
+        hang
+      );
+      THREE.Quaternion.slerpFlat(
+        base,
+        offset,
+        upright,
+        offset,
+        bent,
+        offset,
+        tuck
+      );
+      if (flinch > 0) {
+        THREE.Quaternion.slerpFlat(
+          base,
+          offset,
+          base,
+          offset,
+          flinched,
+          offset,
+          flinch
+        );
       }
+    }
+  };
+
+  const aim = (stance: Stance): boolean => {
+    const { pose, reach, side, time } = stance;
+    if (pose === "seated") {
+      settleBase(stance);
+      wanted.splice(0, wanted.length, ...base);
+      return true;
+    }
+    if (striking(pose)) {
+      settleBase(stance);
+      const to = asset.poses.get(strikeName(pose, side));
+      const from =
+        pose === "swing" ? asset.poses.get(strikeName("windup", side)) : base;
       if (!(from && to)) {
-        return;
+        return false;
       }
-      const rate = striking(pose) ? SNAP_RATE : BLEND_RATE;
-      const blend = Math.min(1, rate * seconds);
-      for (let offset = 0; offset < current.length; offset += 4) {
+      for (let offset = 0; offset < wanted.length; offset += 4) {
         THREE.Quaternion.slerpFlat(
           wanted,
           offset,
@@ -349,8 +447,40 @@ export const createRiderFigure = (
           offset,
           to,
           offset,
-          target.blend
+          reach
         );
+      }
+      return true;
+    }
+    const [fromName, toName, blend] = cycleFor(pose, time);
+    const from = asset.poses.get(fromName);
+    const to = asset.poses.get(toName);
+    if (!(from && to)) {
+      return false;
+    }
+    for (let offset = 0; offset < wanted.length; offset += 4) {
+      THREE.Quaternion.slerpFlat(
+        wanted,
+        offset,
+        from,
+        offset,
+        to,
+        offset,
+        blend
+      );
+    }
+    return true;
+  };
+
+  return {
+    animate(stance, seconds) {
+      if (!aim(stance)) {
+        return;
+      }
+      const blend = striking(stance.pose)
+        ? 1
+        : Math.min(1, BLEND_RATE * seconds);
+      for (let offset = 0; offset < current.length; offset += 4) {
         THREE.Quaternion.slerpFlat(
           current,
           offset,
@@ -362,27 +492,15 @@ export const createRiderFigure = (
         );
       }
       apply();
-      showWeapon(pose === "surrender" ? "none" : weapon, pose, side);
+      showWeapon(
+        stance.pose === "surrender" ? "none" : stance.weapon,
+        stance.pose,
+        stance.side
+      );
     },
     dispose() {
       disposeTree(root);
       skeleton.dispose();
-    },
-    recoil() {
-      if (!seated) {
-        return;
-      }
-      for (let offset = 0; offset < current.length; offset += 4) {
-        THREE.Quaternion.slerpFlat(
-          current,
-          offset,
-          current,
-          offset,
-          seated,
-          offset,
-          RECOIL
-        );
-      }
     },
     root,
     seat: asset.seat,
