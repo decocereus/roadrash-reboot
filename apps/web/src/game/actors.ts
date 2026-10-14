@@ -7,7 +7,7 @@ import { paintPrimitives } from "./assets.ts";
 import type { Assets, Palette, Primitive } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
-import { placeOnGround } from "./ground.ts";
+import { placeOnGround, whiteInstances } from "./ground.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
@@ -211,6 +211,7 @@ export function createFleet(
       mesh.frustumCulled = false;
       mesh.castShadow = shadows;
       mesh.receiveShadow = shadows;
+      whiteInstances(mesh);
       group.add(mesh);
       parts.push({ cars: indices, mesh });
       return mesh;

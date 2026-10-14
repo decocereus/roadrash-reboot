@@ -1,7 +1,4 @@
 import * as THREE from "three";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
@@ -12,6 +9,7 @@ const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
 const BLOOM_RADIUS = 0.5;
 const BLOOM_THRESHOLD = 0.93;
+const BLOOM_SCALE = 2;
 const FRINGE = 0.012;
 const VIGNETTE = 0.42;
 const SAMPLES = 4;
@@ -75,6 +73,7 @@ void main() {
   colour *= grade;
   colour *= 1.0 - vignette * smoothstep(0.16, 0.62, radius);
   gl_FragColor = vec4(colour, 1.0);
+  #include <colorspace_fragment>
 }`;
 
 const uniform = (pass: ShaderPass, name: string): THREE.IUniform => {
@@ -85,6 +84,30 @@ const uniform = (pass: ShaderPass, name: string): THREE.IUniform => {
   return found;
 };
 
+const variantOf = (object: THREE.Object3D): number => {
+  if (object instanceof THREE.InstancedMesh) {
+    return 1;
+  }
+  return object instanceof THREE.SkinnedMesh ? 2 : 0;
+};
+
+const byMaterial = (a: THREE.Material, b: THREE.Material): number => {
+  if (a.uuid === b.uuid) {
+    return 0;
+  }
+  return a.uuid < b.uuid ? -1 : 1;
+};
+
+const byVariantThenMaterial = (
+  a: THREE.RenderItem,
+  b: THREE.RenderItem
+): number =>
+  a.groupOrder - b.groupOrder ||
+  a.renderOrder - b.renderOrder ||
+  variantOf(a.object) - variantOf(b.object) ||
+  byMaterial(a.material, b.material) ||
+  a.z - b.z;
+
 export interface Pipeline {
   setLook: (look: Look) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
@@ -93,17 +116,18 @@ export interface Pipeline {
 }
 
 export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
-  const normalTarget = new THREE.WebGLRenderTarget(4, 4, { samples: SAMPLES });
+  renderer.setOpaqueSort(byVariantThenMaterial);
+  const normalTarget = new THREE.WebGLRenderTarget(4, 4);
   normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
   const normalMaterial = new THREE.MeshNormalMaterial();
-  const composer = new EffectComposer(
-    renderer,
-    new THREE.WebGLRenderTarget(4, 4, {
-      samples: SAMPLES,
-      type: THREE.HalfFloatType,
-    })
-  );
-  const scenePass = new RenderPass(new THREE.Scene(), new THREE.Camera());
+  const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
+    samples: SAMPLES,
+    type: THREE.HalfFloatType,
+  });
+  const inkTarget = new THREE.WebGLRenderTarget(4, 4, {
+    depthBuffer: false,
+    type: THREE.HalfFloatType,
+  });
   const line = new ShaderPass({
     fragmentShader: LINE_FRAGMENT,
     uniforms: {
@@ -133,11 +157,7 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
     },
     vertexShader: SCREEN_VERTEX,
   });
-  composer.addPass(scenePass);
-  composer.addPass(line);
-  composer.addPass(bloom);
-  composer.addPass(grade);
-  composer.addPass(new OutputPass());
+  grade.renderToScreen = true;
 
   uniform(line, "normals").value = normalTarget.texture;
   uniform(line, "depths").value = normalTarget.depthTexture;
@@ -147,13 +167,16 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       normalTarget.depthTexture?.dispose();
       normalTarget.dispose();
       normalMaterial.dispose();
-      composer.dispose();
+      sceneTarget.dispose();
+      inkTarget.dispose();
       bloom.dispose();
       line.dispose();
       grade.dispose();
     },
     render(scene, camera) {
       const { background, fog } = scene;
+      scene.matrixWorldAutoUpdate = false;
+      scene.updateMatrixWorld();
       renderer.shadowMap.needsUpdate = true;
       uniform(line, "range").value.set(camera.near, camera.far);
       scene.overrideMaterial = normalMaterial;
@@ -164,21 +187,23 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       renderer.setClearColor(FACING_CAMERA, 1);
       renderer.clear();
       renderer.render(scene, camera);
-      renderer.setRenderTarget(null);
       scene.overrideMaterial = null;
       scene.background = background;
       scene.fog = fog;
       seesFx(camera, true);
-      scenePass.scene = scene;
-      scenePass.camera = camera;
-      composer.render();
+      renderer.setRenderTarget(sceneTarget);
+      renderer.render(scene, camera);
+      line.render(renderer, inkTarget, sceneTarget, 0, false);
+      bloom.render(renderer, inkTarget, inkTarget, 0, false);
+      grade.render(renderer, inkTarget, inkTarget, 0, false);
     },
     resize(width, height, pixelRatio) {
-      composer.setPixelRatio(pixelRatio);
-      composer.setSize(width, height);
       const wide = Math.max(1, Math.floor(width * pixelRatio));
       const tall = Math.max(1, Math.floor(height * pixelRatio));
       normalTarget.setSize(wide, tall);
+      sceneTarget.setSize(wide, tall);
+      inkTarget.setSize(wide, tall);
+      bloom.setSize(width * BLOOM_SCALE, height * BLOOM_SCALE);
       uniform(line, "resolution").value.set(wide, tall);
       uniform(line, "width").value =
         LINE_WIDTH * Math.max(1, tall / LINE_REFERENCE_HEIGHT);

@@ -37,6 +37,7 @@ import { loadAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
+import { createFrameMeter, wantsFrameMeter } from "./fps-meter.ts";
 import type {
   GameEvents,
   GameHandle,
@@ -62,7 +63,14 @@ const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
 const MAX_PIXEL_RATIO = 2;
 const MIN_PIXEL_RATIO = 0.6;
-const SLOW_FRAME_SECONDS = 0.0195;
+const PIXEL_RATIO_STEP = 0.15;
+const REFRESH_RATES = [60, 75, 90, 120, 144, 165, 240];
+const REFRESH_SAMPLES = 24;
+const FASTEST_FRAME_SECONDS = 1 / 250;
+const DROPPED_FRAME_FACTOR = 1.5;
+const DROP_AFTER_SLOW_FRAMES = 20;
+const RAISE_AFTER_CALM_SECONDS = 20;
+const RAISES = 3;
 const WRAP_JUMP = 30;
 const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
@@ -183,6 +191,40 @@ const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
   : 0;
 
+const pinnedPixelRatio = Number(
+  new URLSearchParams(globalThis.location.search).get("ratio") ?? 0
+);
+
+const nearestRefresh = (seconds: number): number => {
+  const rate = 1 / seconds;
+  let best = 60;
+  for (const candidate of REFRESH_RATES) {
+    if (Math.abs(candidate - rate) < Math.abs(best - rate)) {
+      best = candidate;
+    }
+  }
+  return best;
+};
+
+const watchRefresh = (report: (rate: number) => void): void => {
+  let shortest = Number.POSITIVE_INFINITY;
+  let last = -1;
+  let left = REFRESH_SAMPLES;
+  const sample = (now: number) => {
+    if (last >= 0) {
+      shortest = Math.min(shortest, (now - last) / 1000);
+    }
+    last = now;
+    left -= 1;
+    if (left > 0) {
+      requestAnimationFrame(sample);
+    } else if (shortest >= FASTEST_FRAME_SECONDS) {
+      report(nearestRefresh(shortest));
+    }
+  };
+  requestAnimationFrame(sample);
+};
+
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
@@ -190,6 +232,10 @@ export async function createGame(
   canvas: HTMLCanvasElement,
   events: GameEvents
 ): Promise<GameHandle> {
+  const display = { refresh: 60 };
+  watchRefresh((rate) => {
+    display.refresh = Math.max(display.refresh, rate);
+  });
   const assets = await loadAssets();
   let roadTurn = firstRoad;
   let track = roadForTurn(roadTurn);
@@ -203,9 +249,13 @@ export async function createGame(
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
-  let pixelRatio = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
+  let pixelRatio =
+    pinnedPixelRatio > 0
+      ? pinnedPixelRatio
+      : Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
   renderer.setPixelRatio(pixelRatio);
   const pipeline = createPipeline(renderer);
+  const meter = wantsFrameMeter() ? createFrameMeter(canvas) : null;
 
   let world = createWorld(track);
   pipeline.setLook(world.shading.look);
@@ -244,7 +294,7 @@ export async function createGame(
   let hudClock = 0;
   let slowFrames = 0;
   let calmSeconds = 0;
-  let raisesLeft = 2;
+  let raisesLeft = RAISES;
   let clock = 0;
 
   const subject: Subject = { air: 0, s: 0, x: 0 };
@@ -776,21 +826,34 @@ export async function createGame(
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
   };
 
+  const targetRate = (): number =>
+    pixelRatio > 1 ? display.refresh : Math.min(display.refresh, 60);
+
   const govern = (seconds: number) => {
+    if (seconds >= FASTEST_FRAME_SECONDS) {
+      display.refresh = Math.max(display.refresh, nearestRefresh(seconds));
+    }
+    if (pinnedPixelRatio > 0) {
+      return;
+    }
     const ceiling = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
-    if (seconds > SLOW_FRAME_SECONDS) {
+    if (seconds > DROPPED_FRAME_FACTOR / targetRate()) {
       slowFrames += 1;
       calmSeconds = 0;
     } else {
       calmSeconds += seconds;
       slowFrames = Math.max(0, slowFrames - 0.25);
     }
-    if (slowFrames > 20 && pixelRatio > MIN_PIXEL_RATIO) {
-      pixelRatio = Math.max(MIN_PIXEL_RATIO, pixelRatio - 0.15);
+    if (slowFrames > DROP_AFTER_SLOW_FRAMES && pixelRatio > MIN_PIXEL_RATIO) {
+      pixelRatio = Math.max(MIN_PIXEL_RATIO, pixelRatio - PIXEL_RATIO_STEP);
       applySize();
       slowFrames = 0;
-    } else if (calmSeconds > 20 && raisesLeft > 0 && pixelRatio < ceiling) {
-      pixelRatio = Math.min(ceiling, pixelRatio + 0.15);
+    } else if (
+      calmSeconds > RAISE_AFTER_CALM_SECONDS &&
+      raisesLeft > 0 &&
+      pixelRatio < ceiling
+    ) {
+      pixelRatio = Math.min(ceiling, pixelRatio + PIXEL_RATIO_STEP);
       applySize();
       raisesLeft -= 1;
       calmSeconds = 0;
@@ -888,6 +951,7 @@ export async function createGame(
     );
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     govern(seconds);
+    meter?.frame(seconds, pixelRatio, display.refresh);
     noticeLeft -= seconds;
     speechLeft -= seconds;
     hudClock += seconds;
@@ -907,6 +971,7 @@ export async function createGame(
     dispose() {
       renderer.setAnimationLoop(null);
       observer.disconnect();
+      meter?.dispose();
       controls.dispose();
       sound.dispose();
       dropViews();

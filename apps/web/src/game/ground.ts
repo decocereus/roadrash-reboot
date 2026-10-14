@@ -72,6 +72,13 @@ export const lifted = (
   at: readonly [number, number, number]
 ): THREE.BufferGeometry => geometry.translate(...at);
 
+export const whiteInstances = (mesh: THREE.InstancedMesh): void => {
+  mesh.instanceColor = new THREE.InstancedBufferAttribute(
+    new Float32Array(mesh.count * 3).fill(1),
+    3
+  );
+};
+
 export function plant(
   group: THREE.Group,
   track: Track,
@@ -95,6 +102,7 @@ export function plant(
     const lit = !(part.material instanceof THREE.MeshBasicMaterial);
     mesh.castShadow = lit;
     mesh.receiveShadow = lit;
+    whiteInstances(mesh);
     group.add(mesh);
     return mesh;
   });
