@@ -16,7 +16,7 @@ All figures were produced by compiling each plan at each level with `compileTrac
 | Lowtown | Slag Row | `slag-row` | 8,500 m | 2 × 3.5 / 0.5 / 6 m | 8 | `0x5a_9c_33` |
 | Stonepeak | Ridge Road | `ridge-road` | 8,550 m | 1 × 3.6 / 0.9 / 9 m | 5 | `0x51_ed_27` |
 
-Every road has two lanes, one in each direction. The roads differ in lane width, shoulder, and verge, never in lane count. `trafficPerKilometre` is per direction, as in `createTraffic`. Every plan uses `leadInLength: 80` and `runoffLength: 400`.
+Breakwater Run, Cinder Wash and Slag Row have two lanes each way, as The City did in the original; Hollow Pine Road and Ridge Road have one. `trafficPerKilometre` is per direction, as in `createTraffic`, and a two-lane direction shares it between its lanes. Every plan uses `leadInLength: 80` and `runoffLength: 400`.
 
 ### How hard each road is
 
