@@ -4,13 +4,13 @@ import type { BikeStat } from "@racer/ui/components/bike-card";
 
 const KMH = 3.6;
 const HUNDRED_KMH = 100 / KMH;
-const FASTEST = 260 / KMH;
-const SLOWEST_LAUNCH = 7;
-const QUICKEST_LAUNCH = 2;
-const BEST_RESPONSE = 26;
-const BEST_SIDESTEP = 10.5;
-const BEST_GRIP = 2.6;
-const BEST_BRAKES = 13.5;
+const FASTEST = 230 / KMH;
+const SLOWEST_LAUNCH = 10;
+const QUICKEST_LAUNCH = 4;
+const BEST_RESPONSE = 6.5;
+const BEST_SIDESTEP = 4.2;
+const BEST_GRIP = 2.3;
+const BEST_BRAKES = 30;
 const SEARCH_STEPS = 40;
 const LAUNCH_LIMIT = 30;
 
@@ -58,8 +58,7 @@ const measure = (bike: BikeSpec): Measures => ({
     (SLOWEST_LAUNCH - launchSecondsOf(bike)) /
     (SLOWEST_LAUNCH - QUICKEST_LAUNCH),
   steering:
-    (bike.steerResponse / BEST_RESPONSE + bike.lateralSpeed / BEST_SIDESTEP) /
-    2,
+    (bike.steerRate / BEST_RESPONSE + bike.lateralSpeed / BEST_SIDESTEP) / 2,
   topSpeed: topSpeedOf(bike) / FASTEST,
 });
 

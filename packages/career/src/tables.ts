@@ -147,39 +147,39 @@ export interface PoliceLevel {
 
 export const policeLevels = {
   1: {
-    beat: 3000,
+    beat: 6000,
     bike: "ostra-sesta-600",
     count: 1,
     sightRange: 40,
-    topSpeed: 46,
+    topSpeed: 41,
   },
   2: {
     beat: 5000,
     bike: "ostra-sesta-600",
     count: 2,
     sightRange: 40,
-    topSpeed: 50,
+    topSpeed: 44,
   },
   3: {
-    beat: 3000,
+    beat: 1800,
     bike: "ostra-sesta-600",
     count: 3,
     sightRange: 45,
-    topSpeed: 54,
+    topSpeed: 48,
   },
   4: {
     beat: 1500,
     bike: "halden-meridian-900",
     count: 4,
     sightRange: 50,
-    topSpeed: 58,
+    topSpeed: 51,
   },
   5: {
-    beat: 2000,
+    beat: 1200,
     bike: "ostra-nera-1000",
     count: 5,
     sightRange: 60,
-    topSpeed: 62,
+    topSpeed: 54,
   },
 } as const satisfies Record<Level, PoliceLevel>;
 

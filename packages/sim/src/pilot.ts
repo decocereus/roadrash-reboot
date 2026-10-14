@@ -35,6 +35,8 @@ const PATROL_END_MARGIN = 80;
 const PULL_OVER_CRAWL = 6;
 const CROSSING_SECONDS = 1.5;
 const OWN_LANE_REACH = 1;
+const CRUISE_THROTTLE = 0.6;
+const THROTTLE_PER_EXCESS = 0.4;
 
 const cornerSpeedLimit = (track: Track, rider: RiderState): number => {
   const lateralLimit =
@@ -269,6 +271,23 @@ const pursuitOf = (
   };
 };
 
+const carOnTheWay = (
+  state: RaceState,
+  track: Track,
+  cop: RiderState,
+  toX: number,
+  within: number
+): boolean => {
+  if (carThreat(state, cop, toX, within)) {
+    return true;
+  }
+  return [...track.sameWayLanes, ...track.oncomingLanes].some(
+    (lane) =>
+      between(cop.x, toX, lane) &&
+      carThreat(state, cop, lane, within) !== undefined
+  );
+};
+
 const copAim = (
   state: RaceState,
   track: Track,
@@ -291,7 +310,10 @@ const copAim = (
     return laneAim(state, track, copIndex, cop, PATROL_SPEED);
   }
   const pursuit = pursuitOf(state, cop, target);
-  if (pursuit.engaged && !carThreat(state, cop, pursuit.x, pursuit.within)) {
+  if (
+    pursuit.engaged &&
+    !carOnTheWay(state, track, cop, pursuit.x, pursuit.within)
+  ) {
     return pursuit;
   }
   return laneAim(state, track, copIndex, cop, pursuit.speed);
@@ -303,8 +325,11 @@ const ride = (
   aim: Aim,
   input: RiderInput
 ): void => {
+  const settling =
+    (rider.lateralSpeed * Math.abs(rider.lateralSpeed)) /
+    (2 * rider.bike.steerRate);
   const lateralSpeed = clamp(
-    (aim.x - rider.x) * LANE_CHANGE_RATE,
+    (aim.x - rider.x - settling) * LANE_CHANGE_RATE,
     -MAX_LATERAL_SPEED,
     MAX_LATERAL_SPEED
   );
@@ -326,11 +351,10 @@ const ride = (
   );
   const excess = rider.speed - targetSpeed;
   input.brake = excess > 1.5 ? clamp(excess / 6, 0.25, 1) : 0;
-  if (excess < -1) {
-    input.throttle = 1;
-  } else {
-    input.throttle = excess < 0 ? 0.4 : 0;
-  }
+  input.throttle =
+    targetSpeed > 0
+      ? clamp(CRUISE_THROTTLE - excess * THROTTLE_PER_EXCESS, 0, 1)
+      : 0;
 };
 
 const roll = (state: RaceState): number => {

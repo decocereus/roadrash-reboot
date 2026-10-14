@@ -24,7 +24,7 @@ export interface BikeSpec {
   readonly brakeDeceleration: number;
   readonly lateralSpeed: number;
   readonly lateralSpeedPerSpeed: number;
-  readonly steerResponse: number;
+  readonly steerRate: number;
   readonly curvePush: number;
   readonly visualLean: number;
 }
@@ -107,6 +107,8 @@ export interface RiderState {
   x: number;
   speed: number;
   lateralSpeed: number;
+  throttle: number;
+  brake: number;
   heading: number;
   lean: number;
   air: number;

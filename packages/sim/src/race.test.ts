@@ -3,7 +3,7 @@ import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
-import { bikes } from "./bikes.ts";
+import { bikes, streetBike } from "./bikes.ts";
 import { rivalAt, rivals } from "./cast.ts";
 import { pilotInput } from "./pilot.ts";
 import { chaserDistance, PATROL_SPEED } from "./police.ts";
@@ -29,6 +29,7 @@ import type {
 } from "./state.ts";
 import { arm, disarm } from "./weapons.ts";
 
+const MPH = 2.237;
 const track = compileTrack(ridgeRoad);
 const quietTrack = compileTrack({ ...ridgeRoad, trafficPerKilometre: 0 });
 const straight = compileTrack({
@@ -89,6 +90,16 @@ const hold = (
   return events;
 };
 
+const alone = (course: Track, bike: BikeSpec): RaceState => {
+  const setup = defaultSetup(course, 1);
+  return createRace({
+    ...setup,
+    player: { ...setup.player, bike },
+    police: { ...setup.police, count: 0 },
+    rivals: [],
+  });
+};
+
 const pilotUntilFinish = (
   state: RaceState,
   course: Track,
@@ -141,7 +152,7 @@ const brakeAcrossBend = (brake: number): number => {
 };
 
 describe("riding", () => {
-  it("reaches 100 km/h in under five seconds and tops out near 210 km/h", () => {
+  it("the Sesta reaches 100 km/h in about six seconds and tops out near 190 km/h", () => {
     const state = field(quietTrack, 1, 0, 0);
     const fullThrottle = {
       brake: 0,
@@ -150,7 +161,9 @@ describe("riding", () => {
       steer: 0,
       throttle: 1,
     };
-    hold(state, quietTrack, fullThrottle, 4.5);
+    hold(state, quietTrack, fullThrottle, 5);
+    expect(player(state).speed * 3.6).toBeLessThan(100);
+    hold(state, quietTrack, fullThrottle, 1.5);
     expect(player(state).speed * 3.6).toBeGreaterThan(100);
 
     const flat = compileTrack({
@@ -160,11 +173,49 @@ describe("riding", () => {
     });
     const sprint = field(flat, 1, 0, 0);
     hold(sprint, flat, fullThrottle, 60);
-    expect(player(sprint).speed * 3.6).toBeGreaterThan(200);
-    expect(player(sprint).speed * 3.6).toBeLessThan(220);
+    expect(player(sprint).speed * 3.6).toBeGreaterThan(180);
+    expect(player(sprint).speed * 3.6).toBeLessThan(195);
   });
 
-  it("stops from 200 km/h in under 170 metres", () => {
+  it("the starter bike reaches 60 mph between six and seven seconds and tops out between 150 and 161 km/h", () => {
+    const state = alone(straight, bikes["halden-wren-400"]);
+    const rider = player(state);
+    const fullThrottle = { ...cruising, throttle: 1 };
+    hold(state, straight, fullThrottle, 6);
+    expect(rider.speed * MPH).toBeLessThan(60);
+    hold(state, straight, fullThrottle, 1);
+    expect(rider.speed * MPH).toBeGreaterThan(60);
+    hold(state, straight, fullThrottle, 53);
+    expect(rider.speed * 3.6).toBeGreaterThan(150);
+    expect(rider.speed * 3.6).toBeLessThan(161);
+  });
+
+  it("the starter bike loses half its speed in three seconds off the throttle", () => {
+    const state = alone(straight, bikes["halden-wren-400"]);
+    const rider = player(state);
+    hold(state, straight, { ...cruising, throttle: 1 }, 60);
+    const top = rider.speed;
+    hold(state, straight, { ...cruising, throttle: 0 }, 3);
+    expect(rider.speed).toBeLessThan(top * 0.6);
+    expect(rider.speed).toBeGreaterThan(top * 0.5);
+  });
+
+  it("the brakes take a fifth of a second to bite and then stop the starter bike from top speed in under two seconds and 45 metres", () => {
+    const state = alone(straight, bikes["halden-wren-400"]);
+    const rider = player(state);
+    hold(state, straight, { ...cruising, throttle: 1 }, 60);
+    const top = rider.speed;
+    const from = rider.s;
+    const braking = { ...cruising, brake: 1, throttle: 0 };
+    hold(state, straight, braking, 0.2);
+    expect(rider.speed).toBeGreaterThan(top * 0.9);
+    hold(state, straight, braking, 1.8);
+    expect(rider.speed).toBe(0);
+    expect(rider.s - from).toBeLessThan(45);
+    expect(rider.s - from).toBeGreaterThan(30);
+  });
+
+  it("stops from 200 km/h in about 55 metres", () => {
     const flat = compileTrack({
       ...ridgeRoad,
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
@@ -181,8 +232,8 @@ describe("riding", () => {
       8
     );
     expect(rider.speed).toBe(0);
-    expect(rider.s - from).toBeLessThan(170);
-    expect(rider.s - from).toBeGreaterThan(90);
+    expect(rider.s - from).toBeLessThan(65);
+    expect(rider.s - from).toBeGreaterThan(45);
   });
 
   it("a curve pushes a rider who does not steer to the outside", () => {
@@ -200,7 +251,7 @@ describe("riding", () => {
     expect(rider.x).toBeLessThan(-1.5);
   });
 
-  it("a light steer into the curve holds the lane at a sane speed", () => {
+  it("half lock holds the opening bend at 144 km/h", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
@@ -209,38 +260,44 @@ describe("riding", () => {
     hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0.2, throttle: 0.6 },
+      { brake: 0, kick: false, punch: false, steer: 0.5, throttle: 0.6 },
       2.5
     );
     expect(Math.abs(rider.x)).toBeLessThan(1.5);
   });
 
-  it("a lane change takes about half a second and stops when the key lifts", () => {
-    const flat = compileTrack({
-      ...ridgeRoad,
-      sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
-      trafficPerKilometre: 0,
-    });
-    const state = field(flat, 1, 0, 0);
+  it("the bars take most of a second to reach full lock, so a lane change takes over a second", () => {
+    const state = alone(straight, streetBike);
     const rider = player(state);
     rider.speed = 40;
     rider.x = 0;
-    hold(
-      state,
-      flat,
-      { brake: 0, kick: false, punch: false, steer: 1, throttle: 0.6 },
-      0.5
-    );
+    const steering = { ...cruising, steer: 1, throttle: 0.6 };
+    hold(state, straight, steering, 0.25);
+    expect(rider.x).toBeLessThan(0.3);
+    hold(state, straight, steering, 0.75);
+    expect(rider.x).toBeGreaterThan(2);
+    expect(rider.x).toBeLessThan(3.2);
+  });
+
+  it("the bike carries on sideways for most of a second after the key lifts", () => {
+    const flat = straight;
+    const state = alone(flat, streetBike);
+    const rider = player(state);
+    rider.speed = 40;
+    rider.x = 0;
+    const steering = { ...cruising, steer: 1, throttle: 0.6 };
+    hold(state, flat, steering, 1);
     const atRelease = rider.x;
-    expect(atRelease).toBeGreaterThan(3);
-    expect(atRelease).toBeLessThan(5.2);
-    hold(
-      state,
-      flat,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 0.6 },
-      1
-    );
-    expect(rider.x - atRelease).toBeLessThan(0.9);
+    const released = { ...steering, steer: 0 };
+    hold(state, flat, released, 0.5);
+    expect(rider.x - atRelease).toBeGreaterThan(1);
+    const afterHalfASecond = rider.x;
+    hold(state, flat, released, 0.5);
+    expect(rider.x - afterHalfASecond).toBeLessThan(0.5);
+    expect(rider.x - atRelease).toBeLessThan(2.6);
+    const atRest = rider.x;
+    hold(state, flat, released, 0.5);
+    expect(rider.x - atRest).toBeLessThan(0.01);
   });
 
   it("the tightest bend cannot be held flat out but can at a sane speed", () => {
@@ -400,8 +457,8 @@ describe("a full race", () => {
     expect(rider.crashes).toBe(0);
     expect(events.some((event) => event.kind === "crash")).toBeFalsy();
     const seconds = rider.finishTick / TICK_RATE;
-    expect(seconds).toBeGreaterThan(140);
-    expect(seconds).toBeLessThan(190);
+    expect(seconds).toBeGreaterThan(185);
+    expect(seconds).toBeLessThan(225);
   });
 
   it("the pilot gets through traffic and still finishes", () => {
@@ -472,6 +529,7 @@ describe("the pack", () => {
       events.push(...state.events);
       me.x = 0.3;
       me.s = rival.s;
+      rival.x = 1.8;
       if (rival.mode !== "riding") {
         break;
       }
@@ -572,13 +630,13 @@ const pressing = (key: "punch" | "kick", pressed: boolean): RiderInput => ({
 });
 
 describe("recovering", () => {
-  it("a rider punched onto the outside grass of a bend at 40 m/s steers back onto the road within two seconds", () => {
+  it("a rider punched onto the outside grass of a bend at 80 km/h steers back onto the road within two seconds", () => {
     const state = field(quietTrack, 1, 1, 0);
     const me = riderAt(state, 0);
     const rival = riderAt(state, 1);
     me.s = 1550;
-    me.speed = 40;
-    rival.speed = 40;
+    me.speed = 22;
+    rival.speed = 22;
     rival.weapon = "none";
     const back = { ...cruising, steer: -1, throttle: 0.6 };
     let punched = -1;
@@ -724,7 +782,11 @@ describe("meeting the police", () => {
   });
 });
 
-const crashNearCop = (copS: number, police: PoliceSetup = defaultPolice) => {
+const crashNearCop = (
+  copS: number,
+  police: PoliceSetup = defaultPolice,
+  seconds = 15
+) => {
   const state = createRace({
     ...defaultSetup(straight, 1),
     police,
@@ -738,7 +800,7 @@ const crashNearCop = (copS: number, police: PoliceSetup = defaultPolice) => {
   const copInput = { ...cruising };
   const flatOut = { ...cruising, throttle: 1 };
   const events: RaceEvent[] = [];
-  for (let tick = 0; tick < 15 * TICK_RATE; tick += 1) {
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     pilotInput(state, straight, 1, copInput);
     stepRace(state, straight, [flatOut, copInput]);
     events.push(...state.events);
@@ -800,8 +862,8 @@ describe("police", () => {
     });
   });
 
-  it("a rider who remounts and rides away in time is not busted", () => {
-    const { cop, events, me } = crashNearCop(60);
+  it("a rider who remounts before the cop arrives is not busted, and the cop gives chase instead", () => {
+    const { cop, events, me } = crashNearCop(60, defaultPolice, 9);
     expect(events.map((event) => event.kind)).toContain("remount");
     expect(events).toContainEqual({ kind: "pursuit", rider: 1, target: 0 });
     expect(events.map((event) => event.kind)).not.toContain("busted");
@@ -846,7 +908,8 @@ const patrolWithBeat = (beat: number) => {
   const copInput = { ...cruising };
   let chased = false;
   for (let tick = 0; tick < 40 * TICK_RATE; tick += 1) {
-    me.speed = 40;
+    me.speed = 30;
+    me.x = -1.8;
     me.stamina = MAX_STAMINA;
     pilotInput(state, straight, 1, copInput);
     stepRace(state, straight, [cruising, copInput]);
@@ -869,11 +932,11 @@ describe("the bust window", () => {
     expect(ticksToArrest).toBeLessThan(90);
   });
 
-  it("a cop beside a rider who is knocked off at 160 km/h overshoots, and the rider gets back on", () => {
-    expect(knockedOffBeside(45)).toStrictEqual({
-      mode: "riding",
-      ticksToArrest: -1,
-    });
+  it("a cop beside a rider who is knocked off at 160 km/h stops inside the slide and arrests them once they have stopped tumbling", () => {
+    const { mode, ticksToArrest } = knockedOffBeside(45);
+    expect(mode).toBe("busted");
+    expect(ticksToArrest).toBeGreaterThanOrEqual(30);
+    expect(ticksToArrest).toBeLessThan(5 * TICK_RATE);
   });
 
   it("a cop gives up the chase at the end of its beat and pulls off the road", () => {
@@ -1051,7 +1114,7 @@ describe("rider contact", () => {
     expect(passing.x - slower.x).toBeGreaterThan(0.8);
   });
 
-  it("a rider squeezed from both sides for a second loses about 6 m/s, not all of their speed", () => {
+  it("a rider squeezed from both sides for a second loses about a quarter of their speed, not all of it", () => {
     const state = column(3);
     const [me, left, right] = [0, 1, 2].map((index) => riderAt(state, index));
     if (!(me && left && right)) {
@@ -1065,6 +1128,9 @@ describe("rider contact", () => {
     const flatOut = { ...cruising, throttle: 1 };
     let contacts = 0;
     for (let tick = 0; tick < TICK_RATE; tick += 1) {
+      me.x = 0;
+      left.x = -0.7;
+      right.x = 0.7;
       stepRace(state, straight, [
         flatOut,
         { ...flatOut, steer: 1 },
@@ -1076,8 +1142,8 @@ describe("rider contact", () => {
     }
     expect(contacts).toBeGreaterThan(20);
     expect(me.mode).toBe("riding");
-    expect(me.speed).toBeGreaterThan(32);
-    expect(me.speed).toBeLessThan(38);
+    expect(me.speed).toBeGreaterThan(28);
+    expect(me.speed).toBeLessThan(34);
   });
 
   it("two bikes that lean on each other from a standstill both pull away", () => {
@@ -1293,31 +1359,22 @@ const pilotPack = (states: readonly RaceState[], seconds: number) => {
 
 describe("replays", () => {
   it("a six-rider pack replays the same from the same seed, alone or beside another race", () => {
-    const alone = createRace(defaultSetup(track, 5));
-    pilotPack([alone], 40);
+    const solo = createRace(defaultSetup(track, 5));
+    pilotPack([solo], 40);
     const again = createRace(defaultSetup(track, 5));
     pilotPack([again], 40);
     const beside = createRace(defaultSetup(track, 5));
     const other = createRace(defaultSetup(track, 9));
     pilotPack([beside, other], 40);
-    expect(JSON.stringify(again)).toBe(JSON.stringify(alone));
-    expect(JSON.stringify(beside)).toBe(JSON.stringify(alone));
-    expect(JSON.stringify(other)).not.toBe(JSON.stringify(alone));
+    expect(JSON.stringify(again)).toBe(JSON.stringify(solo));
+    expect(JSON.stringify(beside)).toBe(JSON.stringify(solo));
+    expect(JSON.stringify(other)).not.toBe(JSON.stringify(solo));
   });
 });
 
-const alone = (course: Track, bike: BikeSpec): RaceState => {
-  const setup = defaultSetup(course, 1);
-  return createRace({
-    ...setup,
-    player: { ...setup.player, bike },
-    police: { ...setup.police, count: 0 },
-    rivals: [],
-  });
-};
-
 const SWITCHBACK_FROM = 1670;
 const SWITCHBACK_TO = 1840;
+const TURN_IN_BEFORE = 50;
 
 const pushedWideInSwitchback = (bike: BikeSpec, kmh?: number): boolean => {
   const state = alone(quietTrack, bike);
@@ -1329,9 +1386,10 @@ const pushedWideInSwitchback = (bike: BikeSpec, kmh?: number): boolean => {
     rider.x = 0;
     rider.speed = kmh === undefined ? rider.speed : kmh / 3.6;
     const inBend = rider.s > SWITCHBACK_FROM;
-    const inside = Math.sign(curvatureAt(quietTrack, rider.s));
+    const turningIn = rider.s > SWITCHBACK_FROM - TURN_IN_BEFORE;
+    const inside = Math.sign(curvatureAt(quietTrack, SWITCHBACK_FROM + 60));
     stepRace(state, quietTrack, [
-      { ...cruising, steer: inBend ? inside : 0, throttle: 1 },
+      { ...cruising, steer: turningIn ? inside : 0, throttle: 1 },
     ]);
     if (inBend) {
       widest = Math.max(widest, -rider.x * inside);
@@ -1357,18 +1415,18 @@ const topSpeedKmh = (bike: BikeSpec): number => {
 };
 
 describe("the bike catalogue", () => {
-  it("a Featherweight takes the Switchback flat out where the Sesta cannot", () => {
+  it("the Wren holds the Switchback at 137 km/h where the Sesta lets go at 119, and neither takes it flat out", () => {
     const wren = bikes["halden-wren-400"];
     const sesta = bikes["ostra-sesta-600"];
     expect({
       sesta: pushedWideInSwitchback(sesta),
       wren: pushedWideInSwitchback(wren),
-    }).toStrictEqual({ sesta: true, wren: false });
+    }).toStrictEqual({ sesta: true, wren: true });
     expect({
-      sestaAbove: pushedWideInSwitchback(sesta, 199 * 1.05),
-      sestaBelow: pushedWideInSwitchback(sesta, 199 * 0.95),
-      wrenAbove: pushedWideInSwitchback(wren, 229 * 1.05),
-      wrenBelow: pushedWideInSwitchback(wren, 229 * 0.95),
+      sestaAbove: pushedWideInSwitchback(sesta, 119 * 1.05),
+      sestaBelow: pushedWideInSwitchback(sesta, 119 * 0.95),
+      wrenAbove: pushedWideInSwitchback(wren, 137 * 1.05),
+      wrenBelow: pushedWideInSwitchback(wren, 137 * 0.95),
     }).toStrictEqual({
       sestaAbove: true,
       sestaBelow: false,
@@ -1378,13 +1436,13 @@ describe("the bike catalogue", () => {
   });
 
   it.each([
-    { bike: bikes["gutter-pup-250"], kmh: 204 },
-    { bike: bikes["halden-kite-500"], kmh: 215 },
-    { bike: bikes["ostra-sette-750"], kmh: 194 },
-    { bike: bikes["brack-stoker-800"], kmh: 186 },
-    { bike: bikes["halden-meridian-900"], kmh: 194 },
-    { bike: bikes["brack-anvil-1100"], kmh: 175 },
-    { bike: bikes["ostra-nera-1000"], kmh: 185 },
+    { bike: bikes["gutter-pup-250"], kmh: 122 },
+    { bike: bikes["halden-kite-500"], kmh: 129 },
+    { bike: bikes["ostra-sette-750"], kmh: 116 },
+    { bike: bikes["brack-stoker-800"], kmh: 111 },
+    { bike: bikes["halden-meridian-900"], kmh: 116 },
+    { bike: bikes["brack-anvil-1100"], kmh: 105 },
+    { bike: bikes["ostra-nera-1000"], kmh: 111 },
   ])(
     "the $bike.name holds the Switchback up to about $kmh km/h",
     ({ bike, kmh }) => {
@@ -1516,7 +1574,7 @@ const headOn = (
   state: RaceState,
   rider: RiderState,
   speed = 56,
-  ahead = 60
+  ahead = 8
 ): RaceEvent[] => {
   const [car] = state.cars;
   if (!car) {
@@ -1801,7 +1859,7 @@ const staminaLostTo = (weapon: "sign" | "club"): number => {
 const ticksToLand = (weapon: WeaponKind, steer: number): number => {
   const { moose, me, state } = sideBySide();
   arm(moose, weapon);
-  me.x = 0.6;
+  me.x = -0.5;
   let pressed = -1;
   let landed = -1;
   for (let tick = 0; tick < TICK_RATE; tick += 1) {
@@ -1825,7 +1883,7 @@ const ticksToLand = (weapon: WeaponKind, steer: number): number => {
 };
 
 describe("the new weapons", () => {
-  it("a stop sign lands half a second after the press, so a rider who steers away at once is out of reach, and a club lands before they can be", () => {
+  it("a stop sign lands half a second after the press, so a rider two metres across who steers away at once is out of reach, and a club lands before they can move", () => {
     expect({
       club: ticksToLand("club", 0),
       clubDodged: ticksToLand("club", -1),
@@ -1880,7 +1938,7 @@ describe("the new weapons", () => {
     expect(steerAway("sign", 0.05)).toBeLessThan(
       steerAway("none", 0.05) * 0.95
     );
-    expect(steerAway("sign", 1)).toBeCloseTo(steerAway("none", 1), 1);
+    expect(steerAway("sign", 1.5)).toBeCloseTo(steerAway("none", 1.5), 1);
   });
 });
 
@@ -2010,7 +2068,7 @@ const rideToBody = (police: PoliceSetup) => {
   for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
     pilotInput(state, straight, 1, copInput);
     stepRace(state, straight, [cruising, copInput]);
-    if (cop.chase === 0 && me.mode === "thrown") {
+    if (cop.chase === 0 && me.mode !== "riding") {
       fastest = Math.max(fastest, cop.speed);
       ticksAfterTheBody += 1;
     }
@@ -2062,11 +2120,11 @@ describe("police settings", () => {
   });
 
   it("a cop in pursuit rides no faster than the setup allows", () => {
-    const slow = chase({ ...defaultPolice, topSpeed: 46 }, 15, 70);
-    const quick = chase({ ...defaultPolice, topSpeed: 54 }, 15, 70);
-    expect(slow.fastest).toBeGreaterThan(44);
-    expect(slow.fastest).toBeLessThan(48);
-    expect(quick.fastest).toBeGreaterThan(52);
-    expect(quick.fastest).toBeLessThan(56);
+    const slow = chase({ ...defaultPolice, topSpeed: 40 }, 15, 70);
+    const quick = chase({ ...defaultPolice, topSpeed: 48 }, 15, 70);
+    expect(slow.fastest).toBeGreaterThan(38);
+    expect(slow.fastest).toBeLessThan(42);
+    expect(quick.fastest).toBeGreaterThan(46);
+    expect(quick.fastest).toBeLessThan(50);
   });
 });

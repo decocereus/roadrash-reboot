@@ -62,7 +62,7 @@ export const defaultPolice: PoliceSetup = {
   fine: 1500,
   officer: officers["dolores-pike"].profile,
   sightRange: 40,
-  topSpeed: 54,
+  topSpeed: 48,
 };
 
 const defaultRivals: readonly RivalId[] = [
@@ -121,6 +121,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   bodySpeed: 0,
   bodyVerticalSpeed: 0,
   bodyX: spot.x,
+  brake: 0,
   bumpLoss: 0,
   chase: -1,
   condition: FULL_CONDITION,
@@ -143,6 +144,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   s: spot.s,
   speed: 0,
   stamina: MAX_STAMINA,
+  throttle: 0,
   verticalSpeed: 0,
   weapon: entry.weaponHits > 0 ? entry.profile.weapon : "none",
   weaponAtThrow: "none",

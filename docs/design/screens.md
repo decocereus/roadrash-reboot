@@ -174,9 +174,9 @@ Title
 | FEATHERWEIGHT      |                                   | HALDEN KITE 500     |
 |   Gutter Pup 250   |                                   | FEATHERWEIGHT       |
 |   Halden Wren 400 ●|          [ bike, turning ]        |                     |
-| ► Halden Kite 500  |                                   | TOP SPEED  190 km/h |
+| ► Halden Kite 500  |                                   | TOP SPEED  170 km/h |
 | MIDDLEWEIGHT       |                                   | ▓▓▓▓▓▓▓▓░░░░ ┆      |
-|   Ostra Sesta 600  |                                   | LAUNCH     3.8 s    |
+|   Ostra Sesta 600  |                                   | LAUNCH     6.0 s    |
 |   Ostra Sette 750  |                                   | ▓▓▓▓▓▓▓░░░░░ ┆      |
 |   Brack Stoker 800 |                                   | STEERING            |
 | HEAVYWEIGHT        |                                   | ▓▓▓▓▓▓▓▓▓░░░   ┆    |
@@ -219,7 +219,7 @@ Title
 
 The wireframe is the decent player's garage at the start of level 2 (`game-design.md` section 5): $4,800 in cash, a Wren worth $1,800 in trade, and the Kite within reach with $1,600 left over.
 
-**Data.** Catalogue (name, class, price, pitch, `BikeSpec`), unlock level per bike, owned bike, cash, trade-in (60% of the owned bike's price), debt. The bars are computed from the `BikeSpec`: top speed from power and drag; launch from the 0 to 100 km/h time; steering from `steerResponse` and `lateralSpeed`; bend grip from `curvePush`, where a larger `curvePush` is a longer bar because the bike is pushed out less; brakes from `brakeDeceleration`. The Gutter Pup is the one Featherweight with a short steering bar.
+**Data.** Catalogue (name, class, price, pitch, `BikeSpec`), unlock level per bike, owned bike, cash, trade-in (60% of the owned bike's price), debt. The bars are computed from the `BikeSpec`: top speed from power and drag; launch from the 0 to 100 km/h time; steering from `steerRate` and `lateralSpeed`; bend grip from `curvePush`, where a larger `curvePush` is a longer bar because the bike is pushed out less; brakes from `brakeDeceleration`. The Gutter Pup is the one Featherweight with a short steering bar.
 
 ## 5. Pre-race
 

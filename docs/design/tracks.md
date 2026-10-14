@@ -24,47 +24,47 @@ A bend counts as "not flat" for a bike when the bike's top speed is above the sp
 
 | Road | Level | Length | Bends | Tightest radius | Not flat: Wren 400 | Not flat: Sesta 600 | Not flat: Anvil 1100 |
 | --- | --: | --: | --: | --: | --: | --: | --: |
-| Breakwater Run | 1 | 8.50 km | 16 | 102 m | 0 | 4 | 8 |
-| Breakwater Run | 2 | 9.65 km | 19 | 102 m | 0 | 6 | 10 |
-| Breakwater Run | 3 | 10.80 km | 22 | 102 m | 0 | 7 | 11 |
-| Breakwater Run | 4 | 11.95 km | 25 | 62 m | 1 | 8 | 13 |
-| Breakwater Run | 5 | 13.10 km | 28 | 62 m | 2 | 10 | 15 |
-| Cinder Wash | 1 | 8.85 km | 10 | 67 m | 1 | 2 | 2 |
-| Cinder Wash | 2 | 10.00 km | 12 | 67 m | 1 | 3 | 3 |
-| Cinder Wash | 3 | 11.15 km | 13 | 67 m | 2 | 4 | 4 |
-| Cinder Wash | 4 | 12.30 km | 15 | 67 m | 3 | 5 | 5 |
-| Cinder Wash | 5 | 13.45 km | 17 | 56 m | 4 | 7 | 7 |
-| Hollow Pine Road | 1 | 8.05 km | 24 | 88 m | 0 | 12 | 13 |
-| Hollow Pine Road | 2 | 9.20 km | 28 | 88 m | 0 | 13 | 16 |
-| Hollow Pine Road | 3 | 10.35 km | 31 | 88 m | 0 | 16 | 19 |
-| Hollow Pine Road | 4 | 11.50 km | 34 | 67 m | 2 | 18 | 21 |
-| Hollow Pine Road | 5 | 12.65 km | 37 | 67 m | 3 | 21 | 24 |
-| Slag Row | 1 | 8.50 km | 15 | 70 m | 7 | 8 | 11 |
-| Slag Row | 2 | 9.65 km | 17 | 67 m | 8 | 9 | 13 |
-| Slag Row | 3 | 10.80 km | 19 | 67 m | 9 | 10 | 14 |
-| Slag Row | 4 | 11.95 km | 22 | 59 m | 10 | 13 | 17 |
-| Slag Row | 5 | 13.10 km | 25 | 59 m | 11 | 14 | 19 |
-| Ridge Road | 1 | 8.55 km | 19 | 136 m | 0 | 4 | 8 |
-| Ridge Road | 2 | 9.70 km | 22 | 92 m | 0 | 6 | 11 |
-| Ridge Road | 3 | 10.85 km | 25 | 92 m | 0 | 8 | 13 |
-| Ridge Road | 4 | 12.00 km | 27 | 58 m | 1 | 10 | 15 |
-| Ridge Road | 5 | 13.15 km | 30 | 58 m | 3 | 12 | 18 |
+| Breakwater Run | 1 | 8.50 km | 16 | 102 m | 4 | 9 | 12 |
+| Breakwater Run | 2 | 9.65 km | 19 | 102 m | 6 | 11 | 15 |
+| Breakwater Run | 3 | 10.80 km | 22 | 102 m | 7 | 13 | 18 |
+| Breakwater Run | 4 | 11.95 km | 25 | 62 m | 9 | 15 | 20 |
+| Breakwater Run | 5 | 13.10 km | 28 | 62 m | 11 | 17 | 23 |
+| Cinder Wash | 1 | 8.85 km | 10 | 67 m | 2 | 5 | 6 |
+| Cinder Wash | 2 | 10.00 km | 12 | 67 m | 3 | 6 | 8 |
+| Cinder Wash | 3 | 11.15 km | 13 | 67 m | 4 | 7 | 9 |
+| Cinder Wash | 4 | 12.30 km | 15 | 67 m | 5 | 8 | 10 |
+| Cinder Wash | 5 | 13.45 km | 17 | 56 m | 7 | 10 | 12 |
+| Hollow Pine Road | 1 | 8.05 km | 24 | 88 m | 12 | 19 | 23 |
+| Hollow Pine Road | 2 | 9.20 km | 28 | 88 m | 14 | 22 | 26 |
+| Hollow Pine Road | 3 | 10.35 km | 31 | 88 m | 17 | 25 | 29 |
+| Hollow Pine Road | 4 | 11.50 km | 34 | 67 m | 19 | 27 | 32 |
+| Hollow Pine Road | 5 | 12.65 km | 37 | 67 m | 22 | 30 | 35 |
+| Slag Row | 1 | 8.50 km | 15 | 70 m | 10 | 12 | 12 |
+| Slag Row | 2 | 9.65 km | 17 | 67 m | 11 | 14 | 14 |
+| Slag Row | 3 | 10.80 km | 19 | 67 m | 12 | 15 | 16 |
+| Slag Row | 4 | 11.95 km | 22 | 59 m | 15 | 18 | 19 |
+| Slag Row | 5 | 13.10 km | 25 | 59 m | 17 | 20 | 21 |
+| Ridge Road | 1 | 8.55 km | 19 | 136 m | 7 | 10 | 17 |
+| Ridge Road | 2 | 9.70 km | 22 | 92 m | 9 | 13 | 20 |
+| Ridge Road | 3 | 10.85 km | 25 | 92 m | 11 | 16 | 23 |
+| Ridge Road | 4 | 12.00 km | 27 | 58 m | 13 | 18 | 25 |
+| Ridge Road | 5 | 13.15 km | 30 | 58 m | 15 | 21 | 28 |
 
-The pattern is the design: Cinder Wash is easy to steer and hard to survive, Hollow Pine Road asks the most of a fast bike, Slag Row makes even the Wren brake, and every road gets tighter in the kilometres that later levels add. The stretch each level-1 road gained in October keeps to the road's level-1 limits: no new bend on Breakwater Run, Hollow Pine Road, or Ridge Road is tighter than that road's tightest old bend, and Slag Row's new right angles sit at radii of 70 to 73 m beside its old ones at 71 to 73 m.
+The counts are for the bikes as retuned to the original game's measured starter bike on October 14, 2026 (`game-design.md`, section 6). Hold speeds fell to about 60% of what they were, top speeds to about 90%, so far more bends ask for the brakes: before the retune the Wren took every level-1 bend on Breakwater Run, Hollow Pine Road, and Ridge Road flat, and now it takes all but four, twelve, and seven. The hold speeds quoted in the road sections below are for the retuned bikes. The pattern is the design: Cinder Wash is easy to steer and hard to survive, Hollow Pine Road asks the most of a fast bike, Slag Row makes even the Wren brake, and every road gets tighter in the kilometres that later levels add. The stretch each level-1 road gained in October keeps to the road's level-1 limits: no new bend on Breakwater Run, Hollow Pine Road, or Ridge Road is tighter than that road's tightest old bend, and Slag Row's new right angles sit at radii of 70 to 73 m beside its old ones at 71 to 73 m.
 
 ### Ridden by the pilot
 
-The AI pilot rode each level-1 road headless through `createRace` and `stepRace`. Alone on an empty road on the Sesta 600 it finishes every road without a crash. With the career's level-1 field, the Wren 400, traffic, and the level-1 cop, it finished 16 of 20 starts (four seeds a road); the other four were busts in the first 2.8 km, inside the cop's beat.
+The AI pilot rode each level-1 road headless through `createRace` and `stepRace`, on the bikes as retuned on October 14, 2026. Alone on an empty road on the Sesta 600 it finishes every road without a crash and without touching the brake. With the career's level-1 field, the Wren 400, traffic, and the level-1 cop, it finished 37 of 40 starts (eight seeds a road); the other three were busts at 1.2, 2.1, and 6.5 km, each a baton knockdown beside the cop.
 
 | Road | Alone, Sesta 600, no traffic | Career level 1, Wren 400, finishes | Their times |
 | --- | --: | --: | --- |
-| Breakwater Run | 158 s | 4 of 4 | 218 to 240 s |
-| Cinder Wash | 165 s | 2 of 4 | 214 and 232 s |
-| Hollow Pine Road | 159 s | 3 of 4 | 218 to 223 s |
-| Slag Row | 175 s | 3 of 4 | 240 to 251 s |
-| Ridge Road | 160 s | 4 of 4 | 218 to 232 s |
+| Breakwater Run | 199 s | 8 of 8 | 218 to 232 s |
+| Cinder Wash | 199 s | 8 of 8 | 221 to 236 s |
+| Hollow Pine Road | 212 s | 6 of 8 | 241 to 245 s |
+| Slag Row | 227 s | 8 of 8 | 246 to 255 s |
+| Ridge Road | 204 s | 7 of 8 | 236 to 249 s |
 
-The old 4.25 km Ridge Road took the same pilot 82 s alone.
+Before the retune the same pilot took 158 to 175 s alone on the Sesta and 214 to 251 s in the level-1 field. The old 4.25 km Ridge Road took it 82 s alone on the old Sesta.
 
 ## The crest rule
 
@@ -72,7 +72,7 @@ Only a big crest launches a bike, and only at speed. The rule for every road at 
 
 - **No crest launches below 160 km/h,** except one signature launch on a road that is built around it.
 - **Two roads have a signature launch between 150 and 160 km/h:** Cinder Wash's Main Wash at 154 km/h and Slag Row's rail crossing at 152 km/h. Ridge Road's signature, the Saddle, is at 162 km/h and needs no exception. Breakwater Run and Hollow Pine Road have none below 160.
-- The Gutter Pup tops out at 151 km/h, below every launch speed here, so it never flies on level ground.
+- The Gutter Pup tops out at 135 km/h, below every launch speed here, so it never flies on level ground. The Wren's 158 km/h clears only the two signature launches below 160; every other crest in the game is a lurch on a Wren.
 
 Height is eased through each section with a cosine, so every section that climbs or falls has one point where the road curves away fastest: the top of a rise and the start of a drop. For a section of length `L` and climb `c` the peak is `slopeRate = π² × c / (2 × L²)`, and the bike leaves the road above `L × √(2g / (π² × |c|))` m/s, which is `5.08 × L / √|c|` km/h. A dip launches at both of its lips: where the road drops into it and where it climbs out.
 
@@ -104,9 +104,9 @@ Each road has three spots, checked against the compiled sections at every level 
 
 ## Breakwater Run (Salt Coast)
 
-Breakwater Run goes from the harbour along the seawall, over the pier, and out round the harbour wall to the fish market, with the sea beside it nearly the whole way. It is the easiest road to see down and the gentlest on a light bike: the Wren takes every level-1 bend flat. Its character is rhythm, a long stretch of holding one line followed by a sudden demand. The signature moments are **the Long Sweeper**, 700 m of constant right-hand bend beside the water at a radius of about 739 m that every bike holds flat out and that is the best place on any road to fight side by side; **the tunnel**, 300 m of straight where engine noise doubles and oncoming headlights are all you see; and **the Lighthouse Kink**, a 55° left packed into 140 m right at the tunnel mouth, which a Sesta 600 holds at 170 km/h and no faster. A rider who comes out of the tunnel flat out on a Middleweight meets the lighthouse. Two crests, the Headland drop and the Seawall hump, launch at 176 and 169 km/h: a Wren at full stretch just clears the road over them, and anything faster flies.
+Breakwater Run goes from the harbour along the seawall, over the pier, and out round the harbour wall to the fish market, with the sea beside it nearly the whole way. It is the easiest road to see down and the gentlest on a light bike: the Wren takes all but four level-1 bends flat. Its character is rhythm, a long stretch of holding one line followed by a sudden demand. The signature moments are **the Long Sweeper**, 700 m of constant right-hand bend beside the water at a radius of about 739 m that every bike holds flat out and that is the best place on any road to fight side by side; **the tunnel**, 300 m of straight where engine noise doubles and oncoming headlights are all you see; and **the Lighthouse Kink**, a 55° left packed into 140 m right at the tunnel mouth, which a Sesta 600 holds at 102 km/h and a Wren at 117, and no faster. A rider who comes out of the tunnel flat out on any bike meets the lighthouse. Two crests, the Headland drop and the Seawall hump, launch at 176 and 169 km/h: a Wren at full stretch stays on the road over them, and anything from the Sesta up flies.
 
-The pier is no longer the end. The road runs off it onto **the Promenade**, 800 m of straight between the arcades counting the pier itself, and over **the Marina bridge**, a crest that launches at 179 km/h, then round the yacht basin and out along the harbour wall. **The Mole** is 440 m of straight with spray on both sides, and **the Harbour Arm** is the Long Sweeper's twin: 600 m of constant right at a radius of 752 m, flat out on every bike. At the end of the arm is **the Fort Gate**, a 58° left in 150 m at a radius of 104 m that a Sesta 600 holds at 172 km/h, so the road asks the same question as at the lighthouse: whoever comes off the sweeper flat out on a Middleweight meets the fort. **The Battery crest** under the fort walls launches at 186 km/h, the road sweeps down to the quay, and **the Crane Kink**, a 46° left at a radius of 122 m (187 km/h on a Sesta), comes 300 m before the finish at the fish market. The Wren still takes every level-1 bend flat.
+The pier is no longer the end. The road runs off it onto **the Promenade**, 800 m of straight between the arcades counting the pier itself, and over **the Marina bridge**, a crest that launches at 179 km/h, then round the yacht basin and out along the harbour wall. **The Mole** is 440 m of straight with spray on both sides, and **the Harbour Arm** is the Long Sweeper's twin: 600 m of constant right at a radius of 752 m, flat out on every bike. At the end of the arm is **the Fort Gate**, a 58° left in 150 m at a radius of 104 m that a Sesta 600 holds at 103 km/h and a Wren at 118, so the road asks the same question as at the lighthouse: whoever comes off the sweeper flat out meets the fort. **The Battery crest** under the fort walls launches at 186 km/h, the road sweeps down to the quay, and **the Crane Kink**, a 46° left at a radius of 122 m (112 km/h on a Sesta, 129 on a Wren), comes 300 m before the finish at the fish market. The Wren brakes for four level-1 bends: the Lighthouse Kink, the 48° right after it, the Fort Gate, and the Crane Kink.
 
 ### Level 1 sections
 
@@ -120,7 +120,7 @@ The pier is no longer the end. The road runs off it onto **the Promenade**, 800 
 | 6 | 1,020 | 220 | -42 | -4 | Left down to the beach |
 | 7 | 1,240 | 700 | 38 | 0 | The Long Sweeper, along the water |
 | 8 | 1,940 | 300 | 0 | 0 | Tunnel |
-| 9 | 2,240 | 140 | -55 | 0 | Lighthouse Kink at the tunnel mouth; 170 km/h on a Sesta 600 |
+| 9 | 2,240 | 140 | -55 | 0 | Lighthouse Kink at the tunnel mouth; 102 km/h on a Sesta 600 |
 | 10 | 2,380 | 160 | 48 | 2 | Right, recovering |
 | 11 | 2,540 | 360 | 0 | 8 | Seawall climb |
 | 12 | 2,900 | 100 | 0 | 6 | Seawall hump, rise |
@@ -136,7 +136,7 @@ The pier is no longer the end. The road runs off it onto **the Promenade**, 800 
 | 22 | 5,040 | 240 | -48 | -3 | Left round the yacht basin |
 | 23 | 5,280 | 440 | 0 | 0 | The Mole |
 | 24 | 5,720 | 600 | 32 | 0 | The Harbour Arm |
-| 25 | 6,320 | 150 | -58 | 0 | Fort Gate at the end of the arm; 172 km/h on a Sesta 600 |
+| 25 | 6,320 | 150 | -58 | 0 | Fort Gate at the end of the arm; 103 km/h on a Sesta 600 |
 | 26 | 6,470 | 200 | 40 | 2 | Right under the fort walls |
 | 27 | 6,670 | 260 | 0 | 4 | Climb along the battery |
 | 28 | 6,930 | 110 | 0 | 5 | Battery crest, rise |
@@ -144,7 +144,7 @@ The pier is no longer the end. The road runs off it onto **the Promenade**, 800 
 | 30 | 7,150 | 300 | -24 | -4 | Sweeping left down to the quay |
 | 31 | 7,450 | 250 | 30 | 0 | Right onto the quay |
 | 32 | 7,700 | 360 | 0 | -2 | Quay straight |
-| 33 | 8,060 | 140 | -46 | 0 | The Crane Kink; 187 km/h on a Sesta 600 |
+| 33 | 8,060 | 140 | -46 | 0 | The Crane Kink; 112 km/h on a Sesta 600 |
 | 34 | 8,200 | 300 | 0 | 0 | Finish at the fish market |
 
 Total 8,500 m.
@@ -209,7 +209,7 @@ export const breakwaterRun: TrackPlan = {
 
 `[320, 44, 6], [120, 0, 7], [100, 0, -9], [200, -70, -4], [240, 22, 0], [170, 0, 0]`
 
-**Level 4 appends (1,150 m).** A third long sweeper, 500 m to the left this time, then the Boathouse Hairpin: 84° in 130 m at a radius of 62 m, 131 km/h on a Sesta 600.
+**Level 4 appends (1,150 m).** A third long sweeper, 500 m to the left this time, then the Boathouse Hairpin: 84° in 130 m at a radius of 62 m, 78 km/h on a Sesta 600.
 
 `[500, -36, 0], [160, 0, 0], [130, 84, 3], [160, -40, 3], [200, 0, -6]`
 
@@ -236,9 +236,9 @@ Roadblocks: the seawall climb at 2.8 km (260 m past the bend, 200 m before the t
 
 ## Cinder Wash (Cinder Flats)
 
-Cinder Wash is the fast road: 2.5 km of near-straight across the dry lake before the first real bend. The danger is speed and air. **The three washes** are dips where the road drops into a dry stream bed and climbs out, each shorter and sharper than the one before. The first launches only above 205 km/h and the second above 182, both beyond a Wren, so at level 1 they are a lurch in the suspension and a warning. The third is **the Main Wash**, the road's signature: its lips launch at 154 km/h, so every bike but the Gutter Pup flies, and the question is who lands next to whom. Then comes **the Drag**, 760 m flat out, and at the end of it **the Mesa Hairpin**: 120° of right-hand bend at a radius of 67 m, which a Sesta 600 holds at 136 km/h. It is the hairpin after the straight, the hardest braking zone at level 1, and the place where slipstreaming rivals arrive too fast together. The road then climbs 22 m up the mesa, crosses a crest that launches only the fastest bikes (215 km/h), and falls in a long sweeper to the drive-in. Traffic is light, the verge is wide and open, and there is nothing to hit but the occasional cactus and each other.
+Cinder Wash is the fast road: 2.5 km of near-straight across the dry lake before the first real bend. The danger is speed and air. **The three washes** are dips where the road drops into a dry stream bed and climbs out, each shorter and sharper than the one before. The first launches only above 205 km/h and the second above 182, both beyond a Wren, so at level 1 they are a lurch in the suspension and a warning. The third is **the Main Wash**, the road's signature: its lips launch at 154 km/h, so every bike but the Gutter Pup flies, and the question is who lands next to whom. Then comes **the Drag**, 760 m flat out, and at the end of it **the Mesa Hairpin**: 120° of right-hand bend at a radius of 67 m, which a Sesta 600 holds at 81 km/h and a Wren at 93. It is the hairpin after the straight, the hardest braking zone at level 1, and the place where slipstreaming rivals arrive too fast together. The road then climbs 22 m up the mesa, crosses a crest that launches only the fastest bikes (215 km/h), and falls in a long sweeper to the drive-in. Traffic is light, the verge is wide and open, and there is nothing to hit but the occasional cactus and each other.
 
-The drive-in is no longer the end. Past it the road drops onto **the Salt Pan**, 900 m of dead straight across the white crust, and from the start of the pan to the next real bend is 1.7 km without a turn of the bars. Halfway across is **the Ladder**: three short washes 40 m apart, each a little smaller than the last, launching at 196, 190, and 184 km/h. A Wren at 177 km/h rides through them on the suspension; a Sesta flat out skips from rung to rung and lands each time next to whoever it took off beside. At the end of the 1.7 km is **the Boneyard Bend**, a 90° left at a radius of 94 m around the rows of parked bombers. A Wren takes it flat at 186 km/h; a Sesta 600 holds 162 and an Anvil 1100 143, so it is the Mesa Hairpin's lesson again, at the end of a longer straight. The road then climbs a butte, crosses **the Butte crest** at 192 km/h, and falls 14 m in a long left to the finish at the Last Chance motel. Only two level-1 bends are not flat on a Sesta or an Anvil: the Mesa Hairpin and the Boneyard Bend.
+The drive-in is no longer the end. Past it the road drops onto **the Salt Pan**, 900 m of dead straight across the white crust, and from the start of the pan to the next real bend is 1.7 km without a turn of the bars. Halfway across is **the Ladder**: three short washes 40 m apart, each a little smaller than the last, launching at 196, 190, and 184 km/h. A Wren at 158 km/h rides through them on the suspension; a Sesta flat out rides the first two and hops the third; an Anvil or a Nera skips from rung to rung and lands each time next to whoever it took off beside. At the end of the 1.7 km is **the Boneyard Bend**, a 90° left at a radius of 94 m around the rows of parked bombers. A Wren holds it at 112 km/h, a Sesta 600 at 97, and an Anvil 1100 at 86, so it is the Mesa Hairpin's lesson again, at the end of a longer straight. The road then climbs a butte, crosses **the Butte crest** at 192 km/h, and falls 14 m in a long left to the finish at the Last Chance motel. The Wren brakes for only two level-1 bends, the Mesa Hairpin and the Boneyard Bend; a Sesta brakes for five and an Anvil for six.
 
 ### Level 1 sections
 
@@ -255,7 +255,7 @@ The drive-in is no longer the end. Past it the road drops onto **the Salt Pan**,
 | 9 | 1,640 | 50 | 0 | -2.7 | Main Wash, down |
 | 10 | 1,690 | 50 | 0 | 2.7 | Main Wash, up; the signature launch at 154 km/h |
 | 11 | 1,740 | 760 | 0 | 2 | The Drag, 760 m flat out |
-| 12 | 2,500 | 200 | 120 | 6 | Mesa Hairpin; 136 km/h on a Sesta 600 |
+| 12 | 2,500 | 200 | 120 | 6 | Mesa Hairpin; 81 km/h on a Sesta 600 |
 | 13 | 2,700 | 300 | 0 | 22 | Climb the mesa |
 | 14 | 3,000 | 200 | -30 | 4 | Left along the rim |
 | 15 | 3,200 | 120 | 0 | 5 | Mesa top, rise |
@@ -275,7 +275,7 @@ The drive-in is no longer the end. Past it the road drops onto **the Salt Pan**,
 | 29 | 6,150 | 60 | 0 | -2.75 | Third rung, down |
 | 30 | 6,210 | 60 | 0 | 2.75 | Third rung, up; launches at 184 km/h |
 | 31 | 6,270 | 350 | 0 | 2 | Run-up to the boneyard |
-| 32 | 6,620 | 210 | -90 | 0 | The Boneyard Bend; 162 km/h on a Sesta 600 |
+| 32 | 6,620 | 210 | -90 | 0 | The Boneyard Bend; 97 km/h on a Sesta 600 |
 | 33 | 6,830 | 300 | 0 | 0 | Past the bombers |
 | 34 | 7,130 | 250 | 26 | 6 | Climbing right toward the butte |
 | 35 | 7,380 | 200 | 0 | 8 | Climb the butte |
@@ -359,7 +359,7 @@ export const cinderWash: TrackPlan = {
 
 `[330, 18, -10], [65, 0, -3], [65, 0, 3], [60, 0, -3.2], [60, 0, 3.2], [220, 0, 0], [170, -100, 0], [180, 0, 0]`
 
-**Level 5 appends (1,150 m).** The last drag into the tightest bend in the game, a 130° right at a radius of 56 m (123 km/h on a Sesta 600), then a climb, a crest at 169 km/h, and a 50° left down to the airstrip finish.
+**Level 5 appends (1,150 m).** The last drag into the tightest bend in the game, a 130° right at a radius of 56 m (74 km/h on a Sesta 600), then a climb, a crest at 169 km/h, and a 50° left down to the airstrip finish.
 
 `[380, 0, 0], [180, 130, 8], [160, 0, 10], [90, 0, 5], [100, 0, -9], [140, -50, -6], [100, 0, 0]`
 
@@ -390,9 +390,9 @@ Roadblocks: the Drag at 1.9 km (160 m past the lip of the Main Wash, 600 m befor
 
 ## Hollow Pine Road (Kettle Woods)
 
-Hollow Pine Road is the technical road: the shortest, the narrowest (3.4 m lanes and a 5 m verge with trees at the edge of it), and at level 1 never straight for more than 380 m. Twenty-four bends in 8.05 km, twelve of which a Sesta 600 cannot take flat; ten in the first 3.6 km, five of them not flat. Its signature is the **blind crest** at 0.96 km: the road rises 6 m, drops away, and the 44° right that follows is hidden until the bike is over the top. The crest only launches above 207 km/h, so at level 1 it hides the bend without throwing anyone at it. After it come **the Esses**, a left and a right at radii of 120 and 127 m with no straight between them, where a shove sends a rider into the pines. **Logjam Left** is a 60° bend at the bottom of a long descent, **the Hummocks** are a double crest that launches at 186 km/h, and the **covered bridge** is 220 m of straight in a timber tunnel. **The Sawmill Hook**, 64° at a radius of 88 m, 157 km/h on a Sesta, 380 m before the old finish in the sawmill yard, is still the tightest bend at level 1. Fog limits sight to about 350 m. Log trucks make the traffic slow and long.
+Hollow Pine Road is the technical road: the shortest, the narrowest (3.4 m lanes and a 5 m verge with trees at the edge of it), and at level 1 never straight for more than 380 m. Twenty-four bends in 8.05 km, nineteen of which a Sesta 600 cannot take flat and twelve of which even a Wren cannot; ten in the first 3.6 km, eight of them not flat on a Sesta. Its signature is the **blind crest** at 0.96 km: the road rises 6 m, drops away, and the 44° right that follows is hidden until the bike is over the top. The crest only launches above 207 km/h, so at level 1 it hides the bend without throwing anyone at it. After it come **the Esses**, a left and a right at radii of 120 and 127 m with no straight between them, where a shove sends a rider into the pines. **Logjam Left** is a 60° bend at the bottom of a long descent, **the Hummocks** are a double crest that launches at 186 km/h, and the **covered bridge** is 220 m of straight in a timber tunnel. **The Sawmill Hook**, 64° at a radius of 88 m, 94 km/h on a Sesta and 108 on a Wren, 380 m before the old finish in the sawmill yard, is still the tightest bend at level 1. Fog limits sight to about 350 m. Log trucks make the traffic slow and long.
 
-The sawmill yard is no longer the end. The road leaves it into **the Chapel Bends**, a 48° right and a 44° left at radii of 134 and 128 m with no straight between them (197 and 192 km/h on a Sesta), past the burnt-out chapel. It climbs along the dam to **the Spillway crest**, which launches only above 207 km/h, and drops to **the Widowmaker**, a 52° right at a radius of 108 m around a lone dead pine that leans over the road (175 km/h on a Sesta). **The Flume** is 350 m of falling straight beside the log flume, and it ends in a 66° left at a radius of 115 m. **The Windfall crest** launches at 192 km/h between storm-felled trunks, and **the Ranger's Elbow**, a 58° left at a radius of 97 m (165 km/h on a Sesta), is followed at once by a 50° right. **The trestle** is 240 m of straight on timber over the gorge. The last bend is **the Kiln Hook**, 66° at a radius of 91 m, 160 km/h on a Sesta, 380 m before the finish at the charcoal kilns: like the Sawmill Hook before it, the place where a lead is lost. The Wren still takes every level-1 bend flat.
+The sawmill yard is no longer the end. The road leaves it into **the Chapel Bends**, a 48° right and a 44° left at radii of 134 and 128 m with no straight between them (118 and 115 km/h on a Sesta), past the burnt-out chapel. It climbs along the dam to **the Spillway crest**, which launches only above 207 km/h, and drops to **the Widowmaker**, a 52° right at a radius of 108 m around a lone dead pine that leans over the road (105 km/h on a Sesta). **The Flume** is 350 m of falling straight beside the log flume, and it ends in a 66° left at a radius of 115 m. **The Windfall crest** launches at 192 km/h between storm-felled trunks, and **the Ranger's Elbow**, a 58° left at a radius of 97 m (99 km/h on a Sesta), is followed at once by a 50° right. **The trestle** is 240 m of straight on timber over the gorge. The last bend is **the Kiln Hook**, 66° at a radius of 91 m, 96 km/h on a Sesta, 380 m before the finish at the charcoal kilns: like the Sawmill Hook before it, the place where a lead is lost. The Wren brakes for twelve of the twenty-four level-1 bends, every one with a radius under 175 m.
 
 ### Level 1 sections
 
@@ -415,30 +415,30 @@ The sawmill yard is no longer the end. The road leaves it into **the Chapel Bend
 | 15 | 2,360 | 300 | 32 | -2 | Right through the clearing |
 | 16 | 2,660 | 200 | -28 | 0 | Left along the creek |
 | 17 | 2,860 | 220 | 0 | 0 | Covered bridge |
-| 18 | 3,080 | 140 | 64 | 0 | Sawmill Hook; 157 km/h on a Sesta 600 |
+| 18 | 3,080 | 140 | 64 | 0 | Sawmill Hook; 94 km/h on a Sesta 600 |
 | 19 | 3,220 | 380 | 0 | 0 | Through the sawmill yard, the old finish |
 | 20 | 3,600 | 200 | -26 | 0 | Left out of the yard |
 | 21 | 3,800 | 180 | 0 | -4 |  |
-| 22 | 3,980 | 160 | 48 | -3 | Chapel Bends, right; 197 km/h on a Sesta 600 |
-| 23 | 4,140 | 140 | -44 | -2 | Chapel Bends, left; 192 km/h on a Sesta 600 |
+| 22 | 3,980 | 160 | 48 | -3 | Chapel Bends, right; 118 km/h on a Sesta 600 |
+| 23 | 4,140 | 140 | -44 | -2 | Chapel Bends, left; 115 km/h on a Sesta 600 |
 | 24 | 4,280 | 200 | 0 | 2 |  |
 | 25 | 4,480 | 260 | 18 | 6 | Climbing along the dam |
 | 26 | 4,740 | 100 | 0 | 4 | Spillway crest, rise |
 | 27 | 4,840 | 100 | 0 | -6 | Spillway crest, drop; launches at 207 km/h |
 | 28 | 4,940 | 220 | -30 | -4 | Left below the dam |
-| 29 | 5,160 | 140 | 52 | 0 | The Widowmaker; 175 km/h on a Sesta 600 |
+| 29 | 5,160 | 140 | 52 | 0 | The Widowmaker; 105 km/h on a Sesta 600 |
 | 30 | 5,300 | 350 | 0 | -6 | The Flume |
-| 31 | 5,650 | 190 | -66 | -4 | Left at the foot of the flume; 182 km/h on a Sesta 600 |
+| 31 | 5,650 | 190 | -66 | -4 | Left at the foot of the flume; 109 km/h on a Sesta 600 |
 | 32 | 5,840 | 220 | 24 | 0 |  |
 | 33 | 6,060 | 260 | -36 | 3 | Climbing left |
 | 34 | 6,320 | 140 | 0 | 5 | Windfall crest, rise |
 | 35 | 6,460 | 100 | 0 | -7 | Windfall crest, drop; launches at 192 km/h |
 | 36 | 6,560 | 220 | 30 | -3 |  |
-| 37 | 6,780 | 140 | -58 | 0 | The Ranger's Elbow; 165 km/h on a Sesta 600 |
-| 38 | 6,920 | 160 | 50 | 0 | Right out of the Elbow; 192 km/h on a Sesta 600 |
+| 37 | 6,780 | 140 | -58 | 0 | The Ranger's Elbow; 99 km/h on a Sesta 600 |
+| 38 | 6,920 | 160 | 50 | 0 | Right out of the Elbow; 115 km/h on a Sesta 600 |
 | 39 | 7,080 | 240 | 0 | 0 | The trestle |
 | 40 | 7,320 | 200 | -28 | 0 |  |
-| 41 | 7,520 | 150 | 66 | 0 | The Kiln Hook; 160 km/h on a Sesta 600 |
+| 41 | 7,520 | 150 | 66 | 0 | The Kiln Hook; 96 km/h on a Sesta 600 |
 | 42 | 7,670 | 380 | 0 | 0 | Finish at the charcoal kilns |
 
 Total 8,050 m.
@@ -542,9 +542,9 @@ Roadblocks: the Firebreak at 10.15 km, from level 3 (275 m past the 70° right, 
 
 ## Slag Row (Lowtown)
 
-Slag Row is the stop-and-go road. Long straights through the port end in right-angle corners at radii near 70 m, which even the Wren must brake for (159 to 163 km/h) and a Sesta 600 holds at 139 to 142 km/h. It has two lanes like every other road; it feels wide because the buildings stand back and the straights are long. Three corners, **Foundry Corner**, **Canal Corner**, and **Smelter Gate**, set the rhythm: sprint, brake, turn, sprint. Between them, **the rail crossing** is a 60 m hump and the road's signature launch at 152 km/h, so every bike but the Gutter Pup hops it at full speed, and **the underpass** is a dip under the freeway that compresses the suspension and hides what is coming up the far side. **The scrapyard chicane** flicks right and left at 46° each, and **the drawbridge** is a 10 m ramp with a crest at the top that launches at 166 km/h. Traffic is the heaviest of any road and includes buses and vans that block the view. The old finish was 310 m after Smelter Gate.
+Slag Row is the stop-and-go road. Long straights through the port end in right-angle corners at radii near 70 m, which even the Wren must brake for (95 to 97 km/h) and a Sesta 600 holds at 83 to 85 km/h. It has two lanes like every other road; it feels wide because the buildings stand back and the straights are long. Three corners, **Foundry Corner**, **Canal Corner**, and **Smelter Gate**, set the rhythm: sprint, brake, turn, sprint. Between them, **the rail crossing** is a 60 m hump and the road's signature launch at 152 km/h, so every bike but the Gutter Pup hops it at full speed, and **the underpass** is a dip under the freeway that compresses the suspension and hides what is coming up the far side. **The scrapyard chicane** flicks right and left at 46° each, and **the drawbridge** is a 10 m ramp with a crest at the top that launches at 166 km/h. Traffic is the heaviest of any road and includes buses and vans that block the view. The old finish was 310 m after Smelter Gate.
 
-The smelter is no longer the end. Past it the road runs along the slag heaps and keeps the rhythm with four more right angles. **Coke Oven Corner** is an 88° left at a radius of 73 m after a 710 m sprint from Smelter Gate. **The Slipway**, 560 m along the shipyard where hulls stand over the road, ends in **Dry Dock Corner**, a 92° right at a radius of 70 m and the tightest bend on the level-1 road: 159 km/h on a Wren and 139 on a Sesta 600. **The Gasholder Esses** are a second, gentler chicane, 40° each way at radii of 180 and 160 m, which the Wren and the Sesta take flat and an Anvil 1100 does not. **The ore bridge** climbs 12 m over the ore railway to a crest that launches at 176 km/h, and the road comes down off it to **Customs Corner**, a 90° left at a radius of 71 m. The last corner is **the Dock Gate**, an 88° right at a radius of 73 m, and the finish at the dry dock is 360 m after it, close enough that the exit of the last corner decides the race.
+The smelter is no longer the end. Past it the road runs along the slag heaps and keeps the rhythm with four more right angles. **Coke Oven Corner** is an 88° left at a radius of 73 m after a 710 m sprint from Smelter Gate. **The Slipway**, 560 m along the shipyard where hulls stand over the road, ends in **Dry Dock Corner**, a 92° right at a radius of 70 m and the tightest bend on the level-1 road: 95 km/h on a Wren and 83 on a Sesta 600. **The Gasholder Esses** are a second, gentler chicane, 40° each way at radii of 180 and 160 m, which a Wren holds at 160 and 150 km/h, so even the Wren brakes for the second; a Sesta holds 139 and 130, an Anvil 1100 122 and 115. **The ore bridge** climbs 12 m over the ore railway to a crest that launches at 176 km/h, and the road comes down off it to **Customs Corner**, a 90° left at a radius of 71 m. The last corner is **the Dock Gate**, an 88° right at a radius of 73 m, and the finish at the dry dock is 360 m after it, close enough that the exit of the last corner decides the race.
 
 ### Level 1 sections
 
@@ -571,7 +571,7 @@ The smelter is no longer the end. Past it the road runs along the slag heaps and
 | 19 | 4,000 | 400 | 0 | 0 | Along the slag heaps |
 | 20 | 4,400 | 160 | -88 | 0 | Coke Oven Corner |
 | 21 | 4,560 | 560 | 0 | 0 | The Slipway |
-| 22 | 5,120 | 160 | 92 | 0 | Dry Dock Corner; 139 km/h on a Sesta 600 |
+| 22 | 5,120 | 160 | 92 | 0 | Dry Dock Corner; 83 km/h on a Sesta 600 |
 | 23 | 5,280 | 330 | 0 | 2 |  |
 | 24 | 5,610 | 180 | 40 | 0 | Gasholder Esses, right |
 | 25 | 5,790 | 160 | -40 | 0 | Gasholder Esses, left |
@@ -678,9 +678,9 @@ Roadblocks: the warehouse straight at 0.75 km (270 m past Foundry Corner, 210 m 
 
 ## Ridge Road (Stonepeak)
 
-Ridge Road's first 4.25 km are the existing track: ten bends and two crests on the climb to the lookout. Those sections are unchanged. Its rocks are not quite the greybox's: they moved to their own seeded stream so that a longer road keeps the scenery of the part the player knows, and that changed 34 rocks into 35. The track tests pin those first 4,250 m as they compiled before the road was lengthened, by digest: curvature, heights, centre line, crests, every prop, and the rocks by themselves. It is the balanced road and the home road. On a Wren every level-1 bend is flat; on a Sesta 600 four are not; on an Anvil 1100 eight are not. The signature moments are **the Switchback**, a 44° left straight into a 50° right at radii of 155 and 136 m, where the right is the first bend the Sesta cannot take flat (199 km/h); **the Saddle**, a 90 m rise and 90 m drop at 2.19 km that launches at 162 km/h with bare rock on both sides; **Quarry Bend**, a 42° right at a radius of 143 m that a Sesta holds at 204 km/h; and **the Hump**, a second, gentler crest before the lookout that only launches above 211 km/h. Its name stays. It is the finale at level 5, where it is called the Long Ridge.
+Ridge Road's first 4.25 km are the existing track: ten bends and two crests on the climb to the lookout. Those sections are unchanged. Its rocks are not quite the greybox's: they moved to their own seeded stream so that a longer road keeps the scenery of the part the player knows, and that changed 34 rocks into 35. The track tests pin those first 4,250 m as they compiled before the road was lengthened, by digest: curvature, heights, centre line, crests, every prop, and the rocks by themselves. It is the balanced road and the home road. On a Wren seven level-1 bends are not flat; on a Sesta 600 ten; on an Anvil 1100 seventeen. The signature moments are **the Switchback**, a 44° left straight into a 50° right at radii of 155 and 136 m, where the left is the first bend on the road the Wren cannot take flat (147 km/h) and the right (137 km/h on a Wren, 119 on a Sesta) is the first it must brake hard for; **the Saddle**, a 90 m rise and 90 m drop at 2.19 km that launches at 162 km/h with bare rock on both sides, just above the Wren's 158 km/h, so at level 1 it is a lurch and from the Kite up a flight; **Quarry Bend**, a 42° right at a radius of 143 m that a Sesta holds at 123 km/h; and **the Hump**, a second, gentler crest before the lookout that only launches above 211 km/h. Its name stays. It is the finale at level 5, where it is called the Long Ridge.
 
-The lookout is no longer the end. Past it the road takes **the Cornice**, 450 m of sweeping left along the cliff edge at a radius of 531 m, flat out on every bike with the drop on the outside, then a right and a left at radii of 157 and 160 m that a Sesta takes flat and an Anvil does not. It climbs 16 m to **the Notch**, a crest cut through the rock that launches at 179 km/h, falls into **Hermit's Bend**, a 52° left at a radius of 139 m (201 km/h on a Sesta 600), and runs through **the Snow Shed**, 240 m of avalanche gallery where the light flickers between the pillars. **The Gendarme** is a 44° right at a radius of 137 m around a rock pinnacle, 199 km/h on a Sesta, the Switchback's right again. **The Knuckle** is a last small crest that launches only above 228 km/h, and the finish is at the cable-car station. No new crest launches below the Saddle.
+The lookout is no longer the end. Past it the road takes **the Cornice**, 450 m of sweeping left along the cliff edge at a radius of 531 m, flat out on every bike with the drop on the outside, then a right and a left at radii of 157 and 160 m that a Wren holds at 148 and 150 km/h and a Sesta at 129 and 130, so no bike takes them flat. It climbs 16 m to **the Notch**, a crest cut through the rock that launches at 179 km/h, falls into **Hermit's Bend**, a 52° left at a radius of 139 m (121 km/h on a Sesta 600, 139 on a Wren), and runs through **the Snow Shed**, 240 m of avalanche gallery where the light flickers between the pillars. **The Gendarme** is a 44° right at a radius of 137 m around a rock pinnacle, 120 km/h on a Sesta, the Switchback's right again. **The Knuckle** is a last small crest that launches only above 228 km/h, and the finish is at the cable-car station. No new crest launches below the Saddle.
 
 ### Level 1 sections
 
@@ -694,13 +694,13 @@ The lookout is no longer the end. Past it the road takes **the Cornice**, 450 m 
 | 6 | 1,060 | 300 | 48 | -4 | Long right, falling |
 | 7 | 1,360 | 140 | 0 | 3 |  |
 | 8 | 1,500 | 170 | -44 | 0 | Switchback left |
-| 9 | 1,670 | 170 | 50 | 2 | Switchback right; 199 km/h on a Sesta 600 |
+| 9 | 1,670 | 170 | 50 | 2 | Switchback right; 119 km/h on a Sesta 600 |
 | 10 | 1,840 | 260 | 0 | 10 | Climb to the Saddle |
 | 11 | 2,100 | 90 | 0 | 7 | The Saddle, rise |
 | 12 | 2,190 | 90 | 0 | -8 | The Saddle, drop; the signature launch at 162 km/h |
 | 13 | 2,280 | 320 | -30 | -10 | Long descending left |
 | 14 | 2,600 | 200 | 16 | 3 |  |
-| 15 | 2,800 | 150 | 42 | 0 | Quarry Bend; 204 km/h on a Sesta 600 |
+| 15 | 2,800 | 150 | 42 | 0 | Quarry Bend; 123 km/h on a Sesta 600 |
 | 16 | 2,950 | 240 | 0 | -6 |  |
 | 17 | 3,190 | 280 | -52 | 8 | Climbing left 52 degrees |
 | 18 | 3,470 | 110 | 0 | 6 | The Hump, rise |
@@ -716,12 +716,12 @@ The lookout is no longer the end. Past it the road takes **the Cornice**, 450 m 
 | 28 | 5,620 | 100 | 0 | 6 | The Notch, rise |
 | 29 | 5,720 | 100 | 0 | -8 | The Notch, drop; launches at 179 km/h |
 | 30 | 5,820 | 240 | 0 | -10 | Falling straight |
-| 31 | 6,060 | 180 | -52 | -4 | Hermit's Bend; 201 km/h on a Sesta 600 |
+| 31 | 6,060 | 180 | -52 | -4 | Hermit's Bend; 121 km/h on a Sesta 600 |
 | 32 | 6,240 | 200 | 0 | -6 |  |
 | 33 | 6,440 | 240 | 0 | 0 | The Snow Shed |
 | 34 | 6,680 | 260 | 30 | 2 | Right out of the shed |
 | 35 | 6,940 | 200 | -24 | 4 |  |
-| 36 | 7,140 | 150 | 44 | 0 | The Gendarme; 199 km/h on a Sesta 600 |
+| 36 | 7,140 | 150 | 44 | 0 | The Gendarme; 120 km/h on a Sesta 600 |
 | 37 | 7,290 | 200 | 0 | -8 |  |
 | 38 | 7,490 | 300 | -36 | -6 | Long falling left |
 | 39 | 7,790 | 110 | 0 | 5 | The Knuckle, rise |
@@ -743,7 +743,7 @@ Sections 1 to 21 are the original road and are unchanged; sections 22 to 42 were
 
 `[225, 30, 8], [120, 0, 6], [95, 0, -8], [220, -80, -6], [180, 0, 0], [160, 62, 4], [150, 0, -4]`
 
-**Level 4 appends (1,150 m).** A 300 m descent into the Drop Hairpin, 96° at a radius of 58 m (127 km/h on a Sesta 600), then a crest at 173 km/h.
+**Level 4 appends (1,150 m).** A 300 m descent into the Drop Hairpin, 96° at a radius of 58 m (76 km/h on a Sesta 600), then a crest at 173 km/h.
 
 `[300, 0, -12], [140, -96, -3], [200, 0, 5], [100, 0, 6], [90, 0, -7], [180, 54, -2], [140, 0, 0]`
 

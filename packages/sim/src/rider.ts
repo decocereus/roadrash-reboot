@@ -28,10 +28,12 @@ import type {
 } from "./state.ts";
 import { disarm, rearm, weapons } from "./weapons.ts";
 
-const ROAD_GRIP = 1.2;
-const VERGE_GRIP = 0.55;
-const VERGE_DRAG = 2.5;
+const VERGE_BRAKES = 0.45;
+const VERGE_DRAG = 1.5;
 const VERGE_DRAG_PER_SPEED = 0.09;
+const CONTROL_RAMP = 4;
+const STEER_DRAG = 0.3;
+const ENGINE_BRAKING_FADE_SPEED = 20;
 const TAKEOFF_SPEED = 10;
 const HARD_LANDING = -11;
 const GLANCE_OVERLAP = 0.3;
@@ -217,49 +219,49 @@ const ride = (
     0,
     1
   );
-  const grip = (ROAD_GRIP + (VERGE_GRIP - ROAD_GRIP) * verge) * rider.load;
+  rider.throttle = approach(
+    rider.throttle,
+    input.throttle,
+    CONTROL_RAMP * TICK_SECONDS
+  );
+  rider.brake = approach(rider.brake, input.brake, CONTROL_RAMP * TICK_SECONDS);
 
   const limit =
     lateralSpeedLimit(bike, rider.speed, input.throttle) *
     (1 - (1 - VERGE_STEER) * verge);
   const wantedLateral =
     input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
-  rider.lateralSpeed +=
-    (wantedLateral - rider.lateralSpeed) *
-    Math.min(
-      1,
-      bike.steerResponse * weapons[rider.weapon].steerFactor * TICK_SECONDS
-    );
+  rider.lateralSpeed = approach(
+    rider.lateralSpeed,
+    wantedLateral,
+    bike.steerRate * weapons[rider.weapon].steerFactor * TICK_SECONDS
+  );
+  const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
   const push = curvePushOf(bike, curvature, rider.speed);
-  const lateralAcceleration =
-    Math.abs(rider.lateralSpeed - push) * GRAVITY * 0.08;
 
   let acceleration =
     -bike.dragFactor * rider.speed * rider.speed -
-    (GRAVITY * slope) / Math.hypot(1, slope);
+    (GRAVITY * slope) / Math.hypot(1, slope) -
+    STEER_DRAG * Math.abs(rider.lateralSpeed);
   if (rider.speed > 0) {
-    acceleration -= bike.rollingDeceleration;
+    acceleration -=
+      bike.rollingDeceleration +
+      bike.engineBraking *
+        (1 - rider.throttle) *
+        Math.min(1, rider.speed / ENGINE_BRAKING_FADE_SPEED);
   }
-  if (input.throttle > 0) {
-    acceleration +=
-      input.throttle *
-      Math.min(
-        bike.launchAcceleration * Math.min(1, rider.load),
-        bike.powerPerMass / Math.max(rider.speed, 1)
-      );
-  } else if (rider.speed > 0) {
-    acceleration -= bike.engineBraking;
-  }
-  if (input.brake > 0) {
-    const tractionLeft = Math.max(
-      BRAKE_RESERVE * grip * GRAVITY,
-      Math.sqrt(Math.max(0, (grip * GRAVITY) ** 2 - lateralAcceleration ** 2))
+  acceleration +=
+    rider.throttle *
+    Math.min(
+      bike.launchAcceleration * Math.min(1, rider.load),
+      bike.powerPerMass / Math.max(rider.speed, 1)
     );
-    acceleration -= Math.min(
-      bike.brakeDeceleration * input.brake,
-      tractionLeft
-    );
-  }
+  acceleration -=
+    bike.brakeDeceleration *
+    rider.brake *
+    (1 - (1 - VERGE_BRAKES) * verge) *
+    Math.min(1, rider.load) *
+    (1 - (1 - BRAKE_RESERVE) * lock);
   if (rider.offRoad) {
     acceleration -= VERGE_DRAG + VERGE_DRAG_PER_SPEED * rider.speed;
   }
@@ -469,6 +471,8 @@ const mount = (
   rider.modeTicks = 0;
   rider.lean = 0;
   rider.heading = 0;
+  rider.throttle = 0;
+  rider.brake = 0;
   rider.stamina = Math.max(rider.stamina, REMOUNT_STAMINA);
   rearm(rider);
   state.events.push({ kind: "remount", rider: riderIndex });
