@@ -17,7 +17,13 @@ export type RivalId =
   | "tristan-lux"
   | "coach-dale-hutto"
   | "moose-kowalczyk"
-  | "gus-abernathy";
+  | "gus-abernathy"
+  | "benny-okafor"
+  | "wanda-pruitt"
+  | "orrin-blackwell"
+  | "agnes-mulcahy"
+  | "hollis-thorne"
+  | "felix-aurand";
 
 export const LEVEL_COUNT = 5;
 const CLUB_LEVEL = 4;
@@ -38,6 +44,44 @@ export interface Rival {
 }
 
 export const rivals = {
+  "agnes-mulcahy": {
+    aggression: 0.2,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+    ],
+    home: "lowtown",
+    id: "agnes-mulcahy",
+    jacket: 15,
+    name: "Sister Agnes Mulcahy",
+    paint: 15,
+    racesFrom: 1,
+    skill: 0.89,
+    weapon: "none",
+  },
+  "benny-okafor": {
+    aggression: 0.4,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "halden-meridian-900",
+    ],
+    home: "salt-coast",
+    id: "benny-okafor",
+    jacket: 12,
+    name: "Benny Okafor",
+    paint: 12,
+    racesFrom: 1,
+    skill: 0.85,
+    weapon: "none",
+  },
   "coach-dale-hutto": {
     aggression: 0.55,
     armedFrom: 2,
@@ -76,6 +120,25 @@ export const rivals = {
     skill: 0.93,
     weapon: "chain",
   },
+  "felix-aurand": {
+    aggression: 0.7,
+    armedFrom: 1,
+    bikes: [
+      "halden-kite-500",
+      "halden-kite-500",
+      "brack-stoker-800",
+      "brack-stoker-800",
+      "brack-anvil-1100",
+    ],
+    home: "lowtown",
+    id: "felix-aurand",
+    jacket: 17,
+    name: "Dr Felix Aurand",
+    paint: 17,
+    racesFrom: 1,
+    skill: 0.8,
+    weapon: "club",
+  },
   "gus-abernathy": {
     aggression: 0.65,
     armedFrom: 3,
@@ -94,6 +157,25 @@ export const rivals = {
     racesFrom: 1,
     skill: 0.82,
     weapon: "sign",
+  },
+  "hollis-thorne": {
+    aggression: 0.45,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "halden-meridian-900",
+    ],
+    home: "stonepeak",
+    id: "hollis-thorne",
+    jacket: 16,
+    name: "Hollis Thorne",
+    paint: 16,
+    racesFrom: 1,
+    skill: 0.88,
+    weapon: "none",
   },
   "ines-marchetti": {
     aggression: 0.75,
@@ -190,6 +272,25 @@ export const rivals = {
     skill: 0.84,
     weapon: "club",
   },
+  "orrin-blackwell": {
+    aggression: 0.55,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+    ],
+    home: "kettle-woods",
+    id: "orrin-blackwell",
+    jacket: 14,
+    name: "Orrin Blackwell",
+    paint: 14,
+    racesFrom: 1,
+    skill: 0.83,
+    weapon: "none",
+  },
   "ruth-ann-bixby": {
     aggression: 0.45,
     armedFrom: 1,
@@ -228,6 +329,25 @@ export const rivals = {
     skill: 0.88,
     weapon: "none",
   },
+  "wanda-pruitt": {
+    aggression: 0.3,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "ostra-sette-750",
+    ],
+    home: "cinder-flats",
+    id: "wanda-pruitt",
+    jacket: 13,
+    name: "Wanda Pruitt",
+    paint: 13,
+    racesFrom: 1,
+    skill: 0.87,
+    weapon: "none",
+  },
 } as const satisfies Record<RivalId, Rival>;
 
 export const cast: readonly Rival[] = [
@@ -241,6 +361,12 @@ export const cast: readonly Rival[] = [
   rivals["coach-dale-hutto"],
   rivals["moose-kowalczyk"],
   rivals["gus-abernathy"],
+  rivals["benny-okafor"],
+  rivals["wanda-pruitt"],
+  rivals["orrin-blackwell"],
+  rivals["agnes-mulcahy"],
+  rivals["hollis-thorne"],
+  rivals["felix-aurand"],
 ];
 
 const levelOf = (level: number): number =>

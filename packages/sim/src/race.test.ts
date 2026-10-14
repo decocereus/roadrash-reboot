@@ -11,13 +11,15 @@ import {
   createRace,
   defaultPolice,
   defaultSetup,
+  neutralInput,
   standings,
   stepRace,
   validateSetup,
 } from "./race.ts";
-import { FULL_CONDITION, MAX_STAMINA, TICK_RATE } from "./state.ts";
+import { FULL_CONDITION, MAX_STAMINA, TICK_RATE, topSpeedOf } from "./state.ts";
 import type {
   BikeSpec,
+  PacingRules,
   PoliceSetup,
   RaceEvent,
   RaceSetup,
@@ -574,7 +576,7 @@ describe("the pack", () => {
     ]);
   });
 
-  it("a cop chasing the pack through traffic does not ride into a car", () => {
+  it("a cop chasing the pack through traffic does not ride into a car unless a rider shoves it there", () => {
     const copsInTraffic: RaceEvent[] = [];
     let batonHits = 0;
     for (let seed = 1; seed <= 6; seed += 1) {
@@ -584,7 +586,8 @@ describe("the pack", () => {
       );
       copsInTraffic.push(
         ...byCop.filter(
-          (event) => event.kind === "crash" && event.cause === "traffic"
+          (event) =>
+            event.kind === "crash" && event.cause === "traffic" && event.by < 0
         )
       );
       batonHits += byCop.filter((event) => event.kind === "hit").length;
@@ -750,18 +753,18 @@ const patrolFrom = (state: RaceState, copIndex: number, s: number) => {
 };
 
 describe("meeting the police", () => {
-  it("a cop parked on the verge pulls out after the pack before the player has ridden a kilometre", () => {
+  it("a cop parked on the verge pulls out after the pack before the player has ridden two kilometres", () => {
     const state = createRace(defaultSetup(track, 4));
     const cop = riderAt(state, 6);
     expect({
       offRoad: Math.abs(cop.x) > track.roadHalfWidth,
       s: cop.s,
       speed: cop.speed,
-    }).toStrictEqual({ offRoad: true, s: 700, speed: 0 });
+    }).toStrictEqual({ offRoad: true, s: 1500, speed: 0 });
     const inputs = state.riders.map(() => ({ ...cruising }));
     const pursuits: RaceEvent[] = [];
     let fastestWhileParked = 0;
-    while (player(state).s < 1000 && state.tick < 120 * TICK_RATE) {
+    while (player(state).s < 2000 && state.tick < 120 * TICK_RATE) {
       for (const [index, input] of inputs.entries()) {
         pilotInput(state, track, index, input);
       }
@@ -773,7 +776,7 @@ describe("meeting the police", () => {
         fastestWhileParked = Math.max(fastestWhileParked, cop.speed);
       }
     }
-    expect(player(state).s).toBeGreaterThanOrEqual(1000);
+    expect(player(state).s).toBeGreaterThanOrEqual(2000);
     expect(pursuits.length).toBeGreaterThan(0);
     expect({
       fastestWhileParked,
@@ -1501,17 +1504,19 @@ describe("race setups", () => {
     );
   });
 
-  it("a setup with eight rivals is rejected and seven fill the grid", () => {
-    const eight = setupWith(everyRival.slice(0, 8));
-    const seven = setupWith(everyRival.slice(0, 7));
-    expect(validateSetup(eight)).toStrictEqual([
-      { count: 8, kind: "tooManyRivals" },
+  it("a setup with fifteen rivals is rejected and fourteen fill the grid", () => {
+    const fifteen = setupWith(everyRival.slice(0, 15));
+    const fourteen = setupWith(everyRival.slice(0, 14));
+    expect(validateSetup(fifteen)).toStrictEqual([
+      { count: 15, kind: "tooManyRivals" },
     ]);
-    expect(() => createRace(eight)).toThrow("at most 7 rivals");
-    expect(validateSetup(seven)).toStrictEqual([]);
+    expect(() => createRace(fifteen)).toThrow("at most 14 rivals");
+    expect(validateSetup(fourteen)).toStrictEqual([]);
     expect(
-      createRace(seven).riders.filter((rider) => rider.profile.role === "racer")
-    ).toHaveLength(8);
+      createRace(fourteen).riders.filter(
+        (rider) => rider.profile.role === "racer"
+      )
+    ).toHaveLength(15);
   });
 
   it("every problem with a setup is reported at once", () => {
@@ -1519,13 +1524,97 @@ describe("race setups", () => {
     if (!dee) {
       throw new Error("The cast has no rivals.");
     }
-    const setup = setupWith([...everyRival.slice(0, 8), dee]);
+    const setup = setupWith([...everyRival.slice(0, 15), dee]);
     expect(validateSetup(setup).map((problem) => problem.kind)).toStrictEqual([
       "tooManyRivals",
       "duplicateRival",
     ]);
     expect(() => createRace(setup)).toThrow(
-      `A race takes at most 7 rivals, and this one has 9. ${dee.name} is on the grid more than once.`
+      `A race takes at most 14 rivals, and this one has 16. ${dee.name} is on the grid more than once.`
+    );
+  });
+});
+
+const pacedPair = (course: Track, pacing: PacingRules): RaceState => {
+  const setup = defaultSetup(course, 1);
+  return createRace({
+    ...setup,
+    pacing,
+    police: { ...setup.police, count: 0 },
+    rivals: setup.rivals.slice(0, 1),
+  });
+};
+
+const riderInputAt = (inputs: RiderInput[], index: number): RiderInput => {
+  const input = inputs[index];
+  if (!input) {
+    throw new Error(`The race has no input ${index}.`);
+  }
+  return input;
+};
+
+const rideTheRival = (
+  state: RaceState,
+  course: Track,
+  seconds: number
+): number => {
+  const inputs = state.riders.map(() => ({ ...neutralInput }));
+  let fastest = 0;
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    pilotInput(state, course, 1, riderInputAt(inputs, 1));
+    stepRace(state, course, inputs);
+    fastest = Math.max(fastest, riderAt(state, 1).speed);
+  }
+  return fastest;
+};
+
+describe("pacing by the gap to the player", () => {
+  it("a rival well clear of the player rolls off to the level's share of its top speed, and rides flat out once the player is out", () => {
+    const eased: PacingRules = { catchUp: 0, leadEase: 0.2 };
+    const free: PacingRules = { catchUp: 0, leadEase: 0 };
+    const [paced, unpaced, playerOut] = [eased, free, eased].map((pacing) => {
+      const state = pacedPair(straight, pacing);
+      riderAt(state, 1).s = 400;
+      return state;
+    });
+    if (!(paced && unpaced && playerOut)) {
+      throw new Error("The pacing races were not made.");
+    }
+    player(playerOut).mode = "busted";
+    const top = topSpeedOf(riderAt(paced, 1).bike);
+    expect({
+      busted: rideTheRival(playerOut, straight, 40) / top,
+      free: rideTheRival(unpaced, straight, 40) / top,
+      paced: rideTheRival(paced, straight, 40) / top,
+    }).toStrictEqual({
+      busted: expect.closeTo(1, 1),
+      free: expect.closeTo(1, 1),
+      paced: expect.closeTo(0.82, 1),
+    });
+  });
+
+  it("a rival dropped behind the player takes the bends harder but never beats its bike's top speed", () => {
+    const helped: PacingRules = { catchUp: 0.1, leadEase: 0 };
+    const unhelped: PacingRules = { catchUp: 0, leadEase: 0 };
+    const [onBends, onBendsAlone, onStraight] = [
+      pacedPair(quietTrack, helped),
+      pacedPair(quietTrack, unhelped),
+      pacedPair(straight, helped),
+    ];
+    if (!(onBends && onBendsAlone && onStraight)) {
+      throw new Error("The pacing races were not made.");
+    }
+    for (const state of [onBends, onBendsAlone, onStraight]) {
+      player(state).s = 2000;
+    }
+    rideTheRival(onBends, quietTrack, 60);
+    rideTheRival(onBendsAlone, quietTrack, 60);
+    const fastest = rideTheRival(onStraight, straight, 40);
+    expect(riderAt(onBends, 1).s).toBeGreaterThan(
+      riderAt(onBendsAlone, 1).s + 20
+    );
+    expect(fastest).toBeLessThanOrEqual(
+      topSpeedOf(riderAt(onStraight, 1).bike) * 1.01
     );
   });
 });

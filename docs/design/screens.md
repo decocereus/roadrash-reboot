@@ -264,11 +264,11 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Out.** `START` fades to the race view with the riders on the grid and plays the countdown. In a career race the active-race record is written to the save when the countdown ends. From that tick, leaving the page counts as a wreck.
 
-**Grid order.** The player starts in slot 8, at the back, so every race opens with a pack to ride through. Rivals fill slots 1 to 7 in an order drawn from the race seed. The sim foundation already has this start; its spacing is tuned later (`game-design.md` section 14).
+**Grid order.** The player starts in slot 15, at the back, so every race opens with a pack to ride through. Rivals fill slots 1 to 14 in an order drawn from the race seed, across every lane of the road in rows 7 m apart (`game-design.md` section 9).
 
 **The field.** The road's two home riders and five drawn from the rest of the cast. At level 1 Juno is never drawn, and Ridge Road's home riders are Coach and Ruth Ann.
 
-**Data.** The compiled track's name and length, police count, the seven drawn rivals and their grid slots, each rider's profile (name, paint, weapon) and bike for this level, memory record (grudge flag, chosen taunt), the player's bike and carried weapon.
+**Data.** The compiled track's name and length, police count, the fourteen drawn rivals and their grid slots, each rider's profile (name, paint, weapon) and bike for this level, memory record (grudge flag, chosen taunt), the player's bike and carried weapon.
 
 ## 6. Race HUD
 
@@ -278,7 +278,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 ```
 +------------------------------------------------------------------------------+
-| 3rd / 8                    ▲ COP 40 m ▲                         2.1 km to go |
+| 3rd / 15                   ▲ COP 40 m ▲                         2.1 km to go |
 |                                                    ├────────●───────────┤    |
 |                                                                              |
 |                                                                              |
@@ -298,7 +298,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 | Where | Element | Shows | Sim source |
 | --- | --- | --- | --- |
-| Top left | Position | `3rd / 8`, large numerals. Turns yellow when it changes, holds for half a second, and returns to white. It does not blink. | `standings` |
+| Top left | Position | `3rd / 15`, large numerals. Turns yellow when it changes, holds for half a second, and returns to white. It does not blink. | `standings` |
 | Top centre | Cop warning | Hidden unless a cop is chasing the player. `▲ COP {m} m ▲` in police blue and red, alternating at 2 Hz, with a short siren cue. Under 15 m it reads `COP ON YOU`. This is the only element on the HUD that blinks. | `chase` on police riders, distance to the player |
 | Top right | Distance | `{km} km to go` over a thin progress line with a dot for the player and small ticks for the riders ahead. Police roadblocks the player knows about (Dee's tip) show as a blue tick. | `s` over track length |
 | Bottom left | Speed | Speed in km/h as large tabular numerals with `km/h` under it. No dial. | `speed` |
@@ -396,7 +396,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Purpose.** The reckoning: place, qualification, money in, money out, cash now, and what the rivals made of it.
 
-**Layout.** Heading and outcome across the top. Left: the standings as eight rows. Right: the money as a short ledger, and under it one rival's post-race line. Bottom: the ad slot, then the buttons. The ad slot is the only one inside the race loop; the other two placements in the game are the poster on the Clubhouse board and the rewarded repair discount on the Wrecked screen.
+**Layout.** Heading and outcome across the top. Left: the standings as fifteen rows. Right: the money as a short ledger, and under it one rival's post-race line. Bottom: the ad slot, then the buttons. The ad slot is the only one inside the race loop; the other two placements in the game are the poster on the Clubhouse board and the rewarded repair discount on the Wrecked screen.
 
 ```
 +------------------------------------------------------------------------------+
@@ -425,7 +425,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 - Rows: place, name, bike, result, prize. The result is a time as `m:ss.t` for a rider who had finished by the settlement tick, `+ {m} m` (distance behind the player, or behind the leader on the road if the player did not finish) for a rider still racing at that tick, or `BUSTED`, `WRECKED`, or `LEFT` (multiplayer). Rivals' prizes are shown for flavour and follow the settled places.
 - Incident line under a rival's row, at most two on the screen (templates): `you knocked {Rival} down at {km} km` · `{Rival} knocked you down at {km} km` · `you took {Rival}'s {weapon}` · `by a wheel`
 - Ledger: `PRIZE, {place}` · `REPAIRS` · `FINES` · `VIC'S ENVELOPE` (only when it applies) · `CASH` (or `OWED`)
-- On a road that was already qualified the prize line reads `PRIZE, {place} · REPEAT RUN, HALF PAY` for places 1 to 3 and `REPEAT RUN · NO PAY BELOW 3RD` with `$0` for places 4 to 8.
+- On a road that was already qualified the prize line reads `PRIZE, {place} · REPEAT RUN, HALF PAY` for places 1 to 3 and `REPEAT RUN · NO PAY BELOW 3RD` with `$0` for places 4 to 15.
 - After the rewarded ad the repair line reads `REPAIRS · HALF, THANKS TO OUR SPONSOR`.
 - Under the ledger when a road qualifies: `{q} / 5 ROADS QUALIFIED`
 - Rival line: `{RIVAL}: "{post-race line}"`, from the rival who finished directly ahead of the player, or directly behind if the player won.
@@ -435,7 +435,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to Pre-race). `RACE AGAIN` is not shown when the career is over, when this race qualified the fifth road, or when the finale was just finished in the top three. On a road that this race qualified, it carries the small print `REPEAT RUN: HALF PAY`.
 
-**In.** From Finish, Wrecked, or Busted, and from a career quit. Never before the settlement write. The rows count in from eighth to first, 80 ms apart; the ledger adds up after them.
+**In.** From Finish, Wrecked, or Busted, and from a career quit. Never before the settlement write. The rows count in from fifteenth to first, 80 ms apart; the ledger adds up after them.
 
 **Out.** `CONTINUE` goes to Game Over if the debt check ended the career, to the ending if the player finished the finale in the top three, to Level Up if this race qualified the fifth road of levels 1 to 4, and otherwise to the Clubhouse. There is no interstitial ad on the way. A reload on this screen opens the Clubhouse, or Game Over if the career is over, because everything shown here is already in the save.
 
@@ -496,14 +496,14 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Purpose.** Gather two to eight players, let each pick a bike, and start.
 
-**Layout.** The Lowside car park. Eight parking bays in a row across the middle, each either a player's bike in their paint with their name above it or an AI rival's bike with an `AI` tag. A bay with no player always holds an AI rival, so the grid is always eight. Top left: the room code. Left column: the host's race settings. Right column: the local player's bike picker, a compact version of the Garage bars. Bottom strip: ready state.
+**Layout.** The Lowside car park. Eight parking bays in a row across the middle, each either a player's bike in their paint with their name above it or an AI rival's bike with an `AI` tag. A bay with no player always holds an AI rival, and seven more AI rivals wait beyond the bays, so the grid is always fifteen. Top left: the room code. Left column: the host's race settings. Right column: the local player's bike picker, a compact version of the Garage bars. Bottom strip: ready state.
 
 **Text.**
 
 - Heading: `CAR PARK`
 - Room: `ROOM {CODE}` · `COPY INVITE LINK`
 - Bays: `{player name}` with `READY` or `PICKING`, or `{Rival} · AI` with the small print `JOIN TO TAKE THIS BAY`
-- Host settings: `ROAD ◄ {road} ►` · `LEVEL ◄ {n} ►` · `BIKES ◄ ANY | FEATHERWEIGHT | MIDDLEWEIGHT | HEAVYWEIGHT ►`. There is no setting for AI riders: every race has eight riders, and AI rivals fill whatever the players do not.
+- Host settings: `ROAD ◄ {road} ►` · `LEVEL ◄ {n} ►` · `BIKES ◄ ANY | FEATHERWEIGHT | MIDDLEWEIGHT | HEAVYWEIGHT ►`. There is no setting for AI riders: every race has fifteen riders, and AI rivals fill whatever the players do not.
 - Non-hosts see the same settings read-only with `{host} IS PICKING THE ROAD`.
 - Bike picker: `YOUR BIKE ◄ {bike} ►` · `PAINT ◄ ► `
 - Bottom strip: `{ready} / {players} READY` and, for the host, `START` (enabled when everyone is ready and at least two players are present).

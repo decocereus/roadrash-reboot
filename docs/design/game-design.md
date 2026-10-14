@@ -30,7 +30,7 @@ Recommendation: **LOWSIDE**. If the search finds a conflict, keep **RUSHLINE**, 
 
 **Single Race** picks any road at any level the player has reached in a career (all of level 1 is open from the start), any bike in the catalogue the player has ever owned, and a random field. There is no qualification and no money: no prize, no fine, no repair bill, and nothing is written to the career. Results go back to the Single Race menu. It is the quick session and the place to learn a road.
 
-**Multiplayer** comes after the career, in step 6. Two to eight players race on the same deterministic simulation run in a Cloudflare Durable Object, with AI filling empty grid slots. Section 12 describes it.
+**Multiplayer** comes after the career, in step 6. Two to eight players race on the same deterministic simulation run in a Cloudflare Durable Object, with AI rivals filling the rest of the fifteen grid slots. Section 12 describes it.
 
 ## 4. Career structure
 
@@ -50,14 +50,14 @@ The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to
 
 ### The field
 
-Every race has **8 racers: the player and 7 rivals.** The reasons:
+Every race has **15 racers: the player and 14 rivals**, the original's field. The reasons:
 
-- Eight riders stay bunched for the first minute, so the opening fight happens on every road. With fifteen, the field strings out and most riders are dots.
-- Seven rivals out of a cast of ten means every race has a different mix, but the player sees each rival in most races, which the memory system needs.
-- It is a reasonable draw cost on an integrated-graphics laptop: eight rigged riders plus up to five police and the traffic.
-- Multiplayer races hold up to eight players. Career and multiplayer use the same field size, so the same roads, police counts, and balance work for both.
+- Fifteen riders is what the original put on the road, and the pack is the game: with fourteen rivals the player is never alone for long, and there is always someone to pass or to fend off.
+- Fourteen rivals out of a cast of sixteen means every rival is in nearly every race, so the memory system sees each rider often; the draw changes which two sit out.
+- The pacing rule in section 9 keeps the field around the player. Without it fifteen riders string out and most of them are dots, which is why the field was eight for a while.
+- Multiplayer races hold up to eight players and AI rivals fill the other seven slots, so career and multiplayer use the same field size, roads, police counts, and balance.
 
-Field selection: the two rivals whose home is the road's region always race there. The other five are drawn from the remaining cast with the race seed.
+Field selection: the rivals whose home is the road's region always race there (three, or four on Slag Row). The rest are drawn from the remaining cast with the race seed.
 
 Juno Kade is the one exception. She does not race at level 1 ("she doesn't race new meat"), so at level 1 no draw includes her, and Ridge Road's two home riders are Coach Dale Hutto and Ruth Ann Bixby, who stands in for Juno as the best rider left in the cast. She also keeps her own home road, Cinder Wash. From level 2 Juno takes her place back, Ridge Road's home riders are Juno and Coach, and at level 5 Ridge Road's field always includes her.
 
@@ -65,7 +65,7 @@ Juno Kade is the one exception. She does not race at level 1 ("she doesn't race 
 
 **Finish in the top 3 to qualify a road.** Qualify all five roads in a level to move up. Roads can be raced in any order and retried as often as the player wants; each attempt on a road that is not yet qualified pays full prize money for whatever place it earns. A qualified road can be raced again but pays less (section 5, "Repeat runs") and does not need to be.
 
-Top 3 of 8 is a little more forgiving than the originals' ratios. That is deliberate: the browser player is often new, the session is short, and the real pressure comes from money, not from qualification alone.
+Top 3 of 15 is the 1994 original's rule (its manual asks for third place or better; the 1991 game asked for fourth of fifteen). The pilot standing in for the decent player finishes fifth of fifteen in the median level-1 race and fourth at level 5 with the pacing rule, so a third is within reach but not given. The place is one value, `QUALIFYING_PLACE` in `packages/career/src/tables.ts`; if play tests show that new players cannot qualify level 1, loosen it to 4 before touching the field or the pacing, because the real pressure is meant to come from money, not from qualification alone.
 
 A busted or wrecked rider does not finish, so the race does not qualify and pays no prize.
 
@@ -119,7 +119,7 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 **What the Busted screen needs.** A racer is only busted while off the bike, and a thrown rider has already dropped their weapon, so the sim's state at the `busted` event no longer holds either fact the ticket prints. The runner records the weapon the player held on the tick before the throw that led to the bust, and the arrest position (road, and the body's distance along it in km) at the `busted` event, before the sim moves the rider and bike onto the verge.
 
-**Season standings.** Every settled career race scores points for all ten rivals and the player: 8 for 1st, 7 for 2nd, down to 1 for 8th. A busted or wrecked rider scores 0 for that race, and so does a rival who was not in that race's field. The Clubhouse board ranks by total points. Ties go to the rider with more wins, then to the rider who most recently placed better than the other in a race they shared.
+**Season standings.** Every settled career race scores points for all sixteen rivals and the player: 15 for 1st, 14 for 2nd, down to 1 for 15th. A busted or wrecked rider scores 0 for that race, and so does a rival who was not in that race's field. The Clubhouse board ranks by total points. Ties go to the rider with more wins, then to the rider who most recently placed better than the other in a race they shared.
 
 **The finale.** Ridge Road at level 5 opens only when the other four level-5 roads are qualified. A top-three finish there ends the season and plays an ending (section 11). Anything else, including a quit, a wreck, a bust, or fourth place, is an ordinary result: it pays or costs what it normally would, the debt check runs as usual, and the finale stays open for another attempt. Failing the finale never ends the career by itself.
 
@@ -143,6 +143,15 @@ Prize money by finishing place. Level 1 is the base; later levels multiply it by
 |     6 |    $150 |    $240 |    $360 |    $510 |    $690 |
 |     7 |    $100 |    $160 |    $240 |    $340 |    $460 |
 |     8 |     $50 |     $80 |    $120 |    $170 |    $230 |
+|     9 |     $40 |     $64 |     $96 |    $136 |    $184 |
+|    10 |     $30 |     $48 |     $72 |    $102 |    $138 |
+|    11 |     $25 |     $40 |     $60 |     $85 |    $115 |
+|    12 |     $20 |     $32 |     $48 |     $68 |     $92 |
+|    13 |     $15 |     $24 |     $36 |     $51 |     $69 |
+|    14 |     $10 |     $16 |     $24 |     $34 |     $46 |
+|    15 |     $10 |     $16 |     $24 |     $34 |     $46 |
+
+Places 9 to 15 pay pocket money, so a rider who limps home is paid something and a bust or a wreck, which pays nothing, is still worse than last.
 
 ### Money out
 
@@ -324,11 +333,11 @@ Both are `WeaponKind` values (`"cue"`, `"sign"`) with entries in `weapons.ts`, a
 
 | Level | Armed at the start |
 | --: | --- |
-| 1 | Moose (club), Dee (chain), Mags (crowbar), Lyle (baton). Police carry batons. |
+| 1 | Moose (club), Dee (chain), Mags (crowbar), Lyle (baton), Felix (club). Police carry batons. |
 | 2 | As level 1, plus Coach (pool cue). |
 | 3 | As level 2, plus Gus (stop sign). |
-| 4 | Unarmed rivals with aggression 0.5 or more start with a club (Ines). |
-| 5 | As level 4. Juno, Tristan, and Ruth Ann still start unarmed; Juno never carries one. |
+| 4 | Unarmed rivals with aggression 0.5 or more start with a club (Ines, Orrin). |
+| 5 | As level 4. Juno, Tristan, Ruth Ann, Benny, Wanda, Hollis, and Agnes still start unarmed; Juno never carries one. |
 
 ### The stealing loop
 
@@ -346,7 +355,7 @@ The loop that results: arrive unarmed, find the armed rider, line up a kick, kee
 
 ### Escalation
 
-A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked across the whole road: the first 700 m in, the last 1 km before the finish, and the rest evenly between, so the spacing comes from the road's length and the level's count. At level 2 that is two cops about 8 km apart, at level 5 five cops about 2.9 km apart, and at level 1 the single cop sits at 700 m. Before this they were parked 700 m in and every 1,600 m after, which was set for the 4 km level-1 roads; once those roads ran 8.05 to 8.85 km the last 4.3 to 6.5 km of every race had no police, and the stand-in player was busted in 8% of starts against a target of 12.5% to 25%.
+A cop chases a downed racer within 60 m first, then the nearest riding racer within sight range. Cops are parked across the whole road: the first 1.5 km in, the last 1 km before the finish, and the rest evenly between, so the spacing comes from the road's length and the level's count. At level 2 that is two cops about 7.2 km apart, at level 5 five cops about 2.7 km apart, and at level 1 the single cop sits at 1.5 km. The first post was 700 m while the field was eight; with fifteen riders the pack is still bunched there, and a cop pulling into it put the stand-in player on the ground in the first kilometre in a fifth of level-1 starts, most of them at 690 to 780 m. At 1.5 km the pack has sorted itself and those falls are one in thirteen starts. Before either, cops were parked 700 m in and every 1,600 m after, which was set for the 4 km level-1 roads; once those roads ran 8.05 to 8.85 km the last 4.3 to 6.5 km of every race had no police, and the stand-in player was busted in 8% of starts against a target of 12.5% to 25%.
 
 Each cop has a **beat**: it gives up the chase that many metres past the spot where it was parked, pulls onto the verge, and stays there. A cop that is riding to a downed racer finishes that first. Without a beat every cop the pack woke rode with it to the finish, so five cops meant five batons around the player for the last three kilometres.
 
@@ -377,7 +386,7 @@ The window has no player input in it: a rider who is down gets up by themselves.
 
 ### Measured bust rates
 
-Measured by simulation, with a pilot standing in for the decent player: skill 0.9, aggression 0.5, the level's bike from section 5, a field of seven rivals from the career's own draw, 16 seeds on each of the five roads, 80 starts a level. "Before" is 8 seeds, 40 starts.
+Measured by simulation, with a pilot standing in for the decent player: skill 0.9, aggression 0.5, the level's bike from section 5, a field of seven rivals from the career's own draw, 16 seeds on each of the five roads, 80 starts a level. "Before" is 8 seeds, 40 starts. These were measured with the field of eight; the police balance test pins the same bands with the field of fifteen, and the stand-in's bust rate there is 15% of level-1 starts and 30% of level-5 starts (8 seeds, 40 starts a level), with 2.1 and 3.0 rivals busted per race.
 
 | Level |         Target | Before | After | Rivals busted per race, after |
 | ----: | -------------: | -----: | ----: | ----------------------------: |
@@ -453,10 +462,16 @@ Deputy Haverty's lines:
 | Coach Dale Hutto | 55 | Stonepeak | 0.86 | 0.55 | Pool cue from level 2 | `#E0A21B` gold | `#1E5AA8` polo blue |
 | Moose Kowalczyk | 41 | Lowtown | 0.84 | 0.85 | Club | `#C2521F` rust | `#5B4632` brown vest |
 | Gus Abernathy | 66 | Kettle | 0.82 | 0.65 | Stop sign from level 3 | `#6B6B3A` olive | `#C8E03A` hi-vis |
+| Sister Agnes Mulcahy | 61 | Lowtown | 0.89 | 0.20 | Nothing | `#BFC4C9` convent grey | `#1A1A1F` black habit |
+| Hollis Thorne | 33 | Stonepeak | 0.88 | 0.45 | Nothing | `#7A1F3D` rescue maroon | `#F26B1D` high-vis orange |
+| Wanda Pruitt | 49 | Cinder Junction | 0.87 | 0.30 | Nothing | `#5FB7E6` studio blue | `#E9E3D6` cream blazer |
+| Benny Okafor | 27 | Saltmouth | 0.85 | 0.40 | Nothing | `#F27D16` tangerine | `#1D7A8C` sequin teal |
+| Orrin Blackwell | 31 | Kettle | 0.83 | 0.55 | Nothing (club from level 4) | `#6B4A2B` bark brown | `#8C9A5B` field khaki |
+| Dr Felix Aurand | 44 | Lowtown | 0.80 | 0.70 | Club | `#6AD6B5` mint | `#2B5F8F` scrubs blue |
 
 The player's default is bike `#C82F2F` red and jacket `#23262C` charcoal. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#141C33`.
 
-Home roads: Breakwater Run (Tristan, Ines), Cinder Wash (Ruth Ann, Mags), Hollow Pine Road (Lyle, Gus), Slag Row (Moose, Dee), Ridge Road (Juno, Coach). At level 1, where Juno does not race, Ridge Road's home riders are Coach and Ruth Ann (section 4).
+Home roads: Breakwater Run (Tristan, Ines, Benny), Cinder Wash (Ruth Ann, Mags, Wanda), Hollow Pine Road (Lyle, Gus, Orrin), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis). At level 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
 
 ### Pilot rules two riders need
 
@@ -468,7 +483,19 @@ Two profiles describe behaviour that skill and aggression alone do not produce, 
 ### The pack: balance still to measure
 
 - **Side contact is capped.** Each pair of bikes in side contact used to cost both riders 0.9 m/s on every tick, and the losses added up across pairs, so a rider boxed in on both sides for one second lost every bit of their speed and two bikes leaning on each other from the grid could hold each other at walking pace for a whole race. A rider now loses 0.9 m/s on a tick with side contact however many bikes touch, and at most 6 m/s over any one second.
-- **The opening pack.** The player starts last (section 14). Measure how many of the seven rivals the pilot standing in for the decent player has passed by the first cop at 700 m, and how many riders are down by then. If more than two riders are regularly on the ground in the first 700 m, widen the grid rows before lowering aggression.
+- **The opening pack.** The player starts last (section 14), behind fourteen rivals in rows 7 m apart across every lane of the road. Measured with the pilot standing in for the decent player over 80 level-1 starts: the player falls in the first kilometre in 6 of them, 2.2 rivals go down per race in the first kilometre (most into traffic, the rest in fights), and no rival is busted there. The three things that got it there, in order of effect: the first cop post moved from 700 m to 1.5 km (section 8), the rows widened from 4.5 m to 7 m, and the truce before the first punch grew from 3 s to 7 s (420 ticks) so the pack sorts itself before the fists come out.
+- **Pacing by the gap to the player.** Each rival's pace depends on where the player is, so the player rides in the field for most of a race. A rival ahead of the player rolls off the throttle: its throttle holds it at no more than `topSpeed × (1 − leadEase × share)`, where `share` is the gap over 200 m, clamped to 1. It never brakes for pace and the corner speeds its bike asks for still apply, so at level 1 a rival 200 m clear cruises at 78% of its top speed and one 50 m clear at 94.5%. A rival behind the player takes its bends a little better: its corner skill is lifted by `catchUp × share`, never above 1.0, and it never exceeds its bike's top speed, so a rival on a Wren cannot catch a player on a Sesta down a straight. The player, the police, busted and wrecked rivals, and every rival once the player has finished, been busted, or been wrecked are not paced. The numbers by level are in `pacingLevels` in `packages/career/src/tables.ts`:
+
+  | Level | leadEase | catchUp |
+  | ----: | -------: | ------: |
+  |     1 |     0.22 |    0.08 |
+  |     2 |     0.20 |    0.07 |
+  |     3 |     0.18 |    0.06 |
+  |     4 |     0.16 |    0.05 |
+  |     5 |     0.14 |    0.04 |
+
+  The original (the 1994 3DO version, read from a third-party reconstruction of its code, so a prediction rather than a fact) paced opponents by rank once a second: the three rivals ranked just ahead of the player took a speed penalty from a table and the three just behind a bonus; far rivals ahead of the player lost a level-scaled share of their target speed (10% at level 1 down to 2% at level 5) while those behind gained one; rivals near the player were scaled by a table indexed by the gap in 256-unit steps; and far rivals halved their target speed while the player was down. The tables are not in the reconstruction, so this rule keeps the idea, ease the leaders by the gap and help the dropped, in two numbers a level, and measures the result. Measured with the pilot standing in for the decent player, 8 seeds on five roads: at level 1 the leader is 124, 143, and 134 m ahead at 2, 4, and 6 km (medians), the last rival 298, 460, and 492 m behind, five to seven rivals are within 100 m of the player, and the pilot finishes fifth of fifteen in the median race in 3.7 to 4.4 minutes. At level 5 on the Meridian the leader is 279, 395, and 435 m ahead, the last rival 346, 445, and 438 m behind, and the pilot finishes fourth in 5.6 to 7.7 minutes. Bike and skill still decide: at level 5 the Nera and Anvil riders lead, and the Gutter Pup is last whatever Gus does.
+
 - **Bust rates** for the pack are in section 8: between 0.7 and 1.7 rivals busted per race, down from 1.5 to 3.2.
 
 ### Bikes by level
@@ -487,6 +514,12 @@ Rivals move up the catalogue as the season goes on. The player's "decent" path (
 | Coach Dale Hutto | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Anvil 1100 |
 | Moose Kowalczyk | Kite 500 | Kite 500 | Stoker 800 | Stoker 800 | Anvil 1100 |
 | Gus Abernathy | Gutter Pup 250 | Wren 400 | Kite 500 | Stoker 800 | Stoker 800 |
+| Sister Agnes Mulcahy | Wren 400 | Kite 500 | Sesta 600 | Sesta 600 | Sette 750 |
+| Hollis Thorne | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 |
+| Wanda Pruitt | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Sette 750 |
+| Benny Okafor | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 |
+| Orrin Blackwell | Wren 400 | Wren 400 | Kite 500 | Sesta 600 | Sette 750 |
+| Dr Felix Aurand | Kite 500 | Kite 500 | Stoker 800 | Stoker 800 | Anvil 1100 |
 | _Player, decent path_ | _Wren 400_ | _Kite 500_ | _Sesta 600_ | _Sette 750_ | _Meridian 900_ |
 
 ### The riders
@@ -643,6 +676,96 @@ Visual: lanky and bent, white beard, hi-vis vest over a red flannel shirt, a hel
 - He knocks you down: "STOP. Means stop."
 - You knock him down: "That's coming out of the county's budget!"
 
+#### Sister Agnes Mulcahy
+
+61, Lowtown. Skill 0.89, aggression 0.20. Brakes once, early, and carries the speed through the bend like she is late for something that matters. She almost never raises a hand, and when she does it is one measured shove.
+
+Sister Agnes runs the Lowtown soup kitchen and rides because the diocese van was repossessed and the bike was donated. Every dollar she wins goes to the roof fund, and she keeps the ledger in her jacket.
+
+Visual: small and very upright, elbows in. Black habit cut short over grey leathers, a plain white helmet with a black band, and a wooden rosary wound round the left mirror.
+
+- Taunt: "I'll pray for you. From ahead. The reception's better up there."
+- Grudge taunt: "You struck a nun last time. I've forgiven you. The roof fund hasn't."
+- She beat you: "Blessed are the meek, dear. Meek enough to brake for the corners."
+- You beat her: "Well done. Put something in the tin on your way out."
+- She knocks you down: "Mind the step."
+- You knock her down: "Sixty-one years, and that's the first time I've said that word."
+
+#### Benny Okafor
+
+27, Saltmouth. Skill 0.85, aggression 0.40. Rides in time with whatever he is singing, which means smooth on the ballads and ragged on the fast ones. Swings only on the downbeat.
+
+Benny fronts a wedding band that plays the Saltmouth hotels, and he sings the entire race, audibly, to nobody. He learned to ride delivering sound gear between gigs and has never been on time for either.
+
+Visual: broad-shouldered, head back, mouth open. A teal sequinned stage jacket over tangerine leathers, with a white helmet and a tangerine bike that matches the jacket's lining.
+
+- Taunt: "I'll be singing the whole way. You'll know where I am. You won't catch up."
+- Grudge taunt: "You hit me last time, mid-chorus. Nobody hits Benny mid-chorus."
+- He beat you: "That was a duet. You sang backup."
+- You beat him: "Fine. Encore next week. Bring a bike this time."
+- He knocks you down: "And that's the key change!"
+- You knock him down: "My voice! My beautiful... no, wait, that's my knee."
+
+#### Dr Felix Aurand
+
+44, Lowtown. Skill 0.80, aggression 0.70. The weakest rider in the cast and the most willing to fight for it. Starts every level with a club and swings it like a man who bills by the hour.
+
+Felix has the dental practice on the corner of Slag Row and most of the field as patients. He races, he says, for the cardio. He also races because every rider he knocks down comes back to him for the crown.
+
+Visual: lean and tense, elbows high. Pale blue surgical scrubs under a mint jacket, matching mint bike, a white helmet with a mirrored visor and his practice's name on the back.
+
+- Taunt: "Open wide. Not your mouth. The gap. I'm coming through it."
+- Grudge taunt: "You chipped something of mine last time. I don't do my own work."
+- He beat you: "Floss, ride less, and see me in six months."
+- You beat him: "Congratulations. Here's my card. You'll need it eventually."
+- He knocks you down: "That's going to need a crown."
+- You knock him down: "My hands! Do you know what these hands bill by the hour?"
+
+#### Hollis Thorne
+
+33, Stonepeak. Skill 0.88, aggression 0.45. Knows every inch of the Ridge because he has carried people off it. Rides the bends with wide margins and the straights with none, and fights only to make room.
+
+Hollis leads the Stonepeak mountain rescue volunteers and entered the circuit after one too many call-outs to the Saddle. He hands out hydration advice to riders who did not ask for it.
+
+Visual: tall, square, and relaxed, sitting far back on the seat. High-vis orange rescue jacket with reflective bands on the arms, a maroon bike, and an orange helmet with a headlamp strapped round it.
+
+- Taunt: "If you go off at the Saddle, stay with the bike. Makes you easier to find."
+- Grudge taunt: "You put me over the edge last time. I had to rescue myself. There's paperwork."
+- He beat you: "You're fine. You're all fine. I checked, from the front."
+- You beat him: "Good ride. Hydrate. I mean it, hydrate."
+- He knocks you down: "Don't move. I'm trained. Okay, move a little."
+- You knock him down: "That's a textbook fall, actually. Chapter four."
+
+#### Orrin Blackwell
+
+31, Kettle. Skill 0.83, aggression 0.55. Rides like someone is filming, because someone is: a camera is strapped to his helmet. Takes risks a thinking rider would not and narrates them as they happen.
+
+Orrin runs a wilderness survival channel from a rented cabin on the edge of Kettle Woods with the heating on. He has never spent a night outdoors by accident and says he has spent hundreds.
+
+Visual: compact and forward, chin down. Field khaki jacket with too many pockets, a bark-brown bike, a brown helmet with an action camera on top and a second one on the chest strap.
+
+- Taunt: "Rule one of survival: never let the new kid finish ahead of you. I made that up just now."
+- Grudge taunt: "You put me in the dirt last time. I got footage. It did numbers."
+- He beat you: "And that, subscribers, is how you survive a race. Like and remember."
+- You beat him: "The wild is unpredictable. So are you, apparently. Cut that bit."
+- He knocks you down: "Nature is brutal! Did we get that? Say we got that."
+- You knock him down: "I've survived worse. I haven't, but I've said I have."
+
+#### Wanda Pruitt
+
+49, Cinder Junction. Skill 0.87, aggression 0.30. Rides to a plan she announced before the start and sticks to it whatever the road does. Rarely fights; prefers to be proved right.
+
+Wanda has read the weather on the Cinder Junction evening news for twenty years and has been wrong in public exactly once, which she still brings up. She treats the race as a forecast and the finish as the six o'clock bulletin.
+
+Visual: neat and still on the bike, shoulders square. A cream blazer with the station logo over studio-blue leathers, a studio-blue bike, and a matching helmet with a tinted visor and her hair pinned under it.
+
+- Taunt: "Today's forecast: you, behind me, with a chance of gravel."
+- Grudge taunt: "Last week I predicted you'd behave. I'm correcting that on air tonight."
+- She beat you: "As predicted. Back to you in the studio."
+- You beat her: "An unexpected front. I'll be issuing an apology at six."
+- She knocks you down: "Heavy fall expected. Oh, there it is."
+- You knock her down: "This blazer is station property!"
+
 ## 10. Memory
 
 Each rival keeps a small record about the player in the career save: their `aggressionBonus` toward the player (starts at 0), a `grudge` flag, and the incidents from the last race they shared. Incidents are read from the race's events up to the settlement tick (section 4) and nothing after it.
@@ -694,14 +817,14 @@ The story is told in short screens between races: the clubhouse corkboard, text 
 
 ### What it is
 
-Two to eight players race one road at one level on the same simulation. Empty grid slots are filled by rivals from the cast, so every race has eight riders and the same police and traffic as the career. There is no money; the reward is the result and, later, a leaderboard. Each player picks a bike from the full catalogue in the lobby, so a lobby can agree on "Featherweights only" or let anyone ride the Nera.
+Two to eight players race one road at one level on the same simulation. The other grid slots are filled by rivals from the cast, so every race has fifteen riders and the same police and traffic as the career. The pacing rule in section 9 reads the gap to rider 0, so in a multiplayer race it would pace the rivals around the host's slot; a fairer rule for several humans (the gap to the nearest human, or no pacing at all) is a lobby setting to decide when multiplayer is built. There is no money; the reward is the result and, later, a leaderboard. Each player picks a bike from the full catalogue in the lobby, so a lobby can agree on "Featherweights only" or let anyone ride the Nera.
 
 ### How it runs
 
 One Durable Object per race holds the room, collects inputs, and runs `stepRace` itself as the authority. Clients run the same `stepRace` locally.
 
 - **Lobby.** The host creates a room and gets a short code. Players join, pick a bike and paint, and ready up. The host picks road, level, and seed. The Durable Object sends a start message with the seed, the grid order, each rider's `BikeSpec` name and profile, and a start tick.
-- **Lockstep at 60 Hz with input delay.** Each client samples its input every tick and sends it tagged for `currentTick + delay`. The default delay is 4 ticks (67 ms); the Durable Object raises it to as much as 8 ticks (133 ms) for a room with a slow player. The Durable Object collects inputs for tick N; if a player's input has not arrived by its deadline, it reuses that player's last input. It then broadcasts the input frame for tick N, and every client steps tick N with exactly those inputs. Inputs are five values (steer, throttle, brake, punch, kick) and pack into two bytes, so a frame for eight riders is small.
+- **Lockstep at 60 Hz with input delay.** Each client samples its input every tick and sends it tagged for `currentTick + delay`. The default delay is 4 ticks (67 ms); the Durable Object raises it to as much as 8 ticks (133 ms) for a room with a slow player. The Durable Object collects inputs for tick N; if a player's input has not arrived by its deadline, it reuses that player's last input. It then broadcasts the input frame for tick N, and every client steps tick N with exactly those inputs. Inputs are five values (steer, throttle, brake, punch, kick) and pack into two bytes, so a frame for fifteen riders is small.
 - **Desync check.** Every 60 ticks the Durable Object and each client hash the race state. A client whose hash differs asks for a snapshot and rejoins from it.
 - **AI fill.** AI slots are driven by `pilotInput` on every client; it reads `RaceState` and uses the dice in it, so it is deterministic and needs no network input.
 
@@ -757,7 +880,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | --: | --- | --- | --- |
 | 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and `rider.ts`, `pilot.ts`, and the renderer read it from the rider. | First career release |
 | 2 | Selected cast | `createRace` takes the list of rival profiles for this race. The earlier placeholder names are replaced by the cast; "Viper" in particular is the name of a rider in the original game (section 15). | First career release |
-| 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. The posts come from the track: the first at `FIRST_COP_S` (700 m), the last `LAST_COP_BEFORE_FINISH` (1,000 m) before the finish, the rest evenly between. | Built |
+| 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. The posts come from the track: the first at `FIRST_COP_S` (1,500 m), the last `LAST_COP_BEFORE_FINISH` (1,000 m) before the finish, the rest evenly between. | Built |
 | 4 | Bike condition and the wreck | A `condition` value from 100 on each rider. Each crash takes the damage its cause costs at 200 km/h (traffic 34, prop 32, landing 30, rider 30, combat 28, off-track 22), scaled by the rider's speed at impact over 200 km/h and held between 0.1 and 1.25. At zero the rider enters the `wrecked` mode, which ends their race like a bust without a fine. Three or four hard crashes wreck a bike. The table below gives the cost by speed. | Built, retuned |
 | 5 | Crash attribution | The `crash` event has a `by` field naming the rider whose hit or contact caused it within the last second, so memory knows who knocked whom down. | First career release |
 | 6 | Carried weapon | `createRace` accepts a starting weapon and hit count for the player. | First career release |
@@ -766,11 +889,12 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 9 | HUD data | Bike condition, distance to the nearest chasing cop, and distance remaining. | First career release |
 | 10 | Detail for the Busted screen | The player's `crash` event carries the weapon dropped, and the `busted` event carries the body's `s`, both read before the sim clears or moves them (section 4). | First career release |
 | 11 | Career rules | Money, level, qualified roads, repeat-run pay, owned bike, carried weapon, rival memory, season points, story flags, settlement, the active-race record, and the debt check are plain data advanced by plain functions. They are rules, so they live in a deterministic package (a new `packages/career`, or a `career` module in `packages/sim`), not in React. | First career release |
-| 12 | Paint palette | `paint` stays an index, but into a palette of twelve rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | First career release |
+| 12 | Paint palette | `paint` stays an index, but into a palette of eighteen rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | First career release |
 | 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |
 | 14 | Side-contact cap | The cap on speed lost to side contact described in section 9: 0.9 m/s a tick and 6 m/s in any second, kept as `bumpLoss` on the rider. | Built |
 | 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 42, `strikeTick` 12. |
-| 16 | Last-slot grid start | The player starts in the last grid slot, behind the seven rivals. | Built, tune later. The sim foundation already has it; row spacing and the opening pack are tuned after the measurement in section 9. |
+| 16 | Last-slot grid start | The player starts in the last grid slot, behind the fourteen rivals, in rows 7 m apart across every lane: four abreast on a road with two lanes each way, two abreast on a one-lane road. | Built and measured (section 9). |
+| 22 | Pacing by the gap to the player | `RaceSetup.pacing` carries `leadEase` and `catchUp`; the pilot caps a leading rival's throttle and lifts a dropped rival's corner skill by the gap to rider 0 (section 9). | Built |
 | 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8 at the spots in `tracks.md`. | Later |
 | 18 | Region scenery kits | A `kit` field on `TrackPlan` so `scatterProps` places palms, cacti, streetlights, or pines instead of the same trees everywhere. | Later |
 | 19 | The bust window | A racer cannot be busted in the first 30 ticks after a fall unless they are already on their feet, and the arrest reach is 4 m. `BUST_DELAY_TICKS` and `BUST_REACH` in `police.ts`. Section 8 has the reasons. | Built |
@@ -797,13 +921,13 @@ A crash at 200 km/h costs about 30 and one at 100 km/h about 15, whatever caused
 - **No roadblocks.** The Roadblocks column in section 8 reads 0 at every level until item 17 ships. Dee still turns ally at level 3 and still texts, but her texts carry no distance, the Route Board shows no tip line, and the HUD shows no blue tick. Vic's level-3 card uses its alternate copy (`screens.md`).
 - **One scenery kit.** Every road uses today's trees, poles, rocks, and chevrons with its region's palette and fog. The roads are told apart by colour, layout, and traffic until item 18 ships.
 - **Cue and sign as built.** Coach carries the cue from level 2 and Gus the sign from level 3 with the numbers in section 7. Tuning them does not change a save.
-- **Balance measurements.** The bust rates in section 8 are measured and pinned by a test. The opening pack in section 9 is still to measure. Measurements may change numbers in this document, not its rules.
+- **Balance measurements.** The bust rates in section 8 and the opening pack and pacing in section 9 are measured, and the bust rates are pinned by a test. Measurements may change numbers in this document, not its rules.
 
 ## 15. Originality check
 
 Checked against every name in the research note and the 25 reference captures:
 
-- **Riders.** None of the ten rivals or two officers shares a first name, surname, or nickname with a rider or officer named in the reference (including the 1991, 1992, 1994, 1995, and later casts and the officers seen in the captures). The existing sim name **Viper** does match a rider in the original game's results screen and must be replaced.
+- **Riders.** None of the sixteen rivals or two officers shares a first name, surname, or nickname with a rider or officer named in the reference (including the 1991, 1992, 1994, 1995, and later casts and the officers seen in the captures). The existing sim name **Viper** does match a rider in the original game's results screen and must be replaced.
 - **Bikes.** No bike name or maker matches the reference catalogues (none of the original makers, models, or the original class names). Two draft names were dropped during this check: "Mule", a Kawasaki product name, and "Ultima", an Electronic Arts game series.
 - **Roads and regions.** Salt Coast, Cinder Flats, Kettle Woods, Lowtown, Stonepeak, and the five road names do not match any original route or location name. Ridge Road is ours already.
 - **Places.** The Lowside, Gino's, and the scrapyard are ours. The reference clubhouse, shop, and restroom names are not used, and there is no restroom options menu.

@@ -16,6 +16,7 @@ import { stepRider, throwRider } from "./rider.ts";
 import { FULL_CONDITION, MAX_STAMINA } from "./state.ts";
 import type {
   BikeSpec,
+  PacingRules,
   PlayerSetup,
   PoliceSetup,
   RaceSetup,
@@ -28,12 +29,12 @@ import { createTraffic, stepTraffic } from "./traffic.ts";
 import { weapons } from "./weapons.ts";
 
 const GRID_S = -2;
-const GRID_ROW_GAP = 4.5;
-const FIRST_COP_S = 700;
+const GRID_ROW_GAP = 7;
+const FIRST_COP_S = 1500;
 const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const DEFAULT_LEVEL = 3;
-export const MAX_RIVALS = 7;
+export const MAX_RIVALS = 14;
 
 export const neutralInput: RiderInput = {
   brake: 0,
@@ -65,6 +66,11 @@ export const defaultPolice: PoliceSetup = {
   topSpeed: 48,
 };
 
+export const defaultPacing: PacingRules = {
+  catchUp: 0.06,
+  leadEase: 0.18,
+};
+
 const defaultRivals: readonly RivalId[] = [
   "dee-santangelo",
   "moose-kowalczyk",
@@ -75,6 +81,7 @@ const defaultRivals: readonly RivalId[] = [
 
 export const defaultSetup = (track: Track, seed: number): RaceSetup => ({
   gridOrder: "playerLast",
+  pacing: defaultPacing,
   player: defaultPlayer,
   police: defaultPolice,
   rivals: defaultRivals.map((id) => rivalAt(rivals[id], DEFAULT_LEVEL)),
@@ -152,13 +159,10 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   x: spot.x,
 });
 
-const gridColumns = (track: Track): readonly number[] => {
-  if (track.plan.lanesEachWay > 1) {
-    return track.sameWayLanes;
-  }
-  const [lane = 0] = track.sameWayLanes;
-  return [lane, -lane];
-};
+const gridColumns = (track: Track): readonly number[] => [
+  ...track.sameWayLanes,
+  ...track.oncomingLanes,
+];
 
 const gridSpot = (columns: readonly number[], slot: number): GridSpot => ({
   s: GRID_S - Math.floor(slot / columns.length) * GRID_ROW_GAP,
@@ -226,7 +230,15 @@ export const createRace = (setup: RaceSetup): RaceState => {
   if (problems.length > 0) {
     throw new Error(problems.map(describeSetupError).join(" "));
   }
-  const { gridOrder, player, police, rivals: field, seed, track } = setup;
+  const {
+    gridOrder,
+    pacing,
+    player,
+    police,
+    rivals: field,
+    seed,
+    track,
+  } = setup;
   const columns = gridColumns(track);
   const playerLast = gridOrder === "playerLast";
   const riders = [
@@ -276,6 +288,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     cars: createTraffic(track, createRandom(seed)),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
+    pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
     police: {
       beat: police.beat,
       fine: police.fine,

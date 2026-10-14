@@ -154,13 +154,13 @@ describe("a road with two lanes each way", () => {
     expect(pass.leftmost).toBeLessThan(-1);
   });
 
-  it("the grid stands two abreast in the same-way lanes with the player at the back", () => {
+  it("the grid fills every lane of the road with the player at the back", () => {
     const state = createRace(defaultSetup(wide, 1));
     const racers = state.riders.filter(
       (rider) => rider.profile.role === "racer"
     );
     expect(lanesUsed(racers.map((rider) => slowCar(0, rider.x)))).toStrictEqual(
-      [1.8, 5.4]
+      [-5.4, -1.8, 1.8, 5.4]
     );
     const me = riderAt(state, 0);
     expect(me.x).toBe(1.8);

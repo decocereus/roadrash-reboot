@@ -214,6 +214,11 @@ export interface PoliceRules {
   readonly fine: number;
 }
 
+export interface PacingRules {
+  readonly leadEase: number;
+  readonly catchUp: number;
+}
+
 export interface PlayerSetup extends RiderProfile {
   readonly bike: BikeSpec;
   readonly weaponHits: number;
@@ -239,6 +244,7 @@ export interface RaceSetup {
   readonly player: PlayerSetup;
   readonly rivals: readonly RivalSetup[];
   readonly police: PoliceSetup;
+  readonly pacing: PacingRules;
   readonly gridOrder: GridOrder;
 }
 
@@ -246,6 +252,7 @@ export interface RaceState {
   tick: number;
   dice: number;
   readonly police: PoliceRules;
+  readonly pacing: PacingRules;
   readonly riders: RiderState[];
   readonly cars: TrafficCar[];
   readonly events: RaceEvent[];
@@ -285,3 +292,19 @@ export const curvePushOf = (
   curvature: number,
   speed: number
 ): number => (curvature * speed * speed) / bike.curvePush;
+
+const TOP_SPEED_STEPS = 4;
+
+export const topSpeedOf = (bike: BikeSpec): number => {
+  let speed = Math.cbrt(bike.powerPerMass / bike.dragFactor);
+  for (let step = 0; step < TOP_SPEED_STEPS; step += 1) {
+    const shortfall =
+      bike.dragFactor * speed * speed * speed +
+      bike.rollingDeceleration * speed -
+      bike.powerPerMass;
+    speed -=
+      shortfall /
+      (3 * bike.dragFactor * speed * speed + bike.rollingDeceleration);
+  }
+  return speed;
+};

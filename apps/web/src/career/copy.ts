@@ -93,16 +93,22 @@ export const BROKE_CARD =
 export const ENVELOPE_INSIDE = "$1,500 inside.";
 
 export const shortNames = {
+  "agnes-mulcahy": "Agnes",
+  "benny-okafor": "Benny",
   "coach-dale-hutto": "Coach",
   "dee-santangelo": "Dee",
+  "felix-aurand": "Felix",
   "gus-abernathy": "Gus",
+  "hollis-thorne": "Hollis",
   "ines-marchetti": "Ines",
   "juno-kade": "Juno",
   "lyle-gorski": "Lyle",
   "mags-dunleavy": "Mags",
   "moose-kowalczyk": "Moose",
+  "orrin-blackwell": "Orrin",
   "ruth-ann-bixby": "Ruth Ann",
   "tristan-lux": "Tristan",
+  "wanda-pruitt": "Wanda",
 } as const satisfies Record<RivalId, string>;
 
 interface Pronouns {
@@ -114,16 +120,22 @@ const hers: Pronouns = { their: "her", them: "her" };
 const his: Pronouns = { their: "his", them: "him" };
 
 export const pronouns = {
+  "agnes-mulcahy": hers,
+  "benny-okafor": his,
   "coach-dale-hutto": his,
   "dee-santangelo": hers,
+  "felix-aurand": his,
   "gus-abernathy": his,
+  "hollis-thorne": his,
   "ines-marchetti": hers,
   "juno-kade": hers,
   "lyle-gorski": his,
   "mags-dunleavy": hers,
   "moose-kowalczyk": his,
+  "orrin-blackwell": his,
   "ruth-ann-bixby": hers,
   "tristan-lux": his,
+  "wanda-pruitt": hers,
 } as const satisfies Record<RivalId, Pronouns>;
 
 export const saveErrors = {

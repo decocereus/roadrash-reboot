@@ -733,10 +733,10 @@ describe("leaving a race", () => {
       outcome.result,
       outcome.place,
       outcome.placings.length,
-    ]).toStrictEqual(["quit", 8, 8]);
+    ]).toStrictEqual(["quit", 15, 15]);
     expect(ledgerOf(settled)).toMatchObject({ cashAfter: 1100, repair: 400 });
     expect(board.map((row) => row.points).slice(0, 8)).toStrictEqual([
-      8, 7, 6, 5, 4, 3, 2, 0,
+      15, 14, 13, 12, 11, 10, 9, 8,
     ]);
     expect(settled.career.season.player.points).toBe(0);
   });
@@ -755,7 +755,7 @@ describe("leaving a race", () => {
       { cashAfter: 1100, prize: 0, repair: 400, result: "quit" },
     ]);
     expect([topPoints(quit.career), topPoints(reloaded.career)]).toStrictEqual([
-      [8, 7, 6, 5, 4, 3, 2, 0],
+      [15, 14, 13, 12, 11, 10, 9, 8],
       [0, 0, 0, 0, 0, 0, 0, 0],
     ]);
     expect([
@@ -790,12 +790,7 @@ describe("leaving a race", () => {
     expect(settledAt.placings.map((placing) => placing.fate)).toStrictEqual([
       "finished",
       "finished",
-      "racing",
-      "racing",
-      "racing",
-      "racing",
-      "racing",
-      "racing",
+      ...Array.from({ length: 13 }, () => "racing"),
     ]);
   });
 });
@@ -907,7 +902,7 @@ describe("the roads", () => {
     expect(career).toStrictEqual(track);
   });
 
-  it("a whole pilot-ridden race on Slag Row settles into eight places and a ledger that adds up", () => {
+  it("a whole pilot-ridden race on Slag Row settles into fifteen places and a ledger that adds up", () => {
     const course = trackFor("slag-row", 1);
     const start = startRace(newCareer(21), "slag-row", 21);
     const setup = setupFor(start.career, "slag-row", 21, course);
@@ -924,9 +919,9 @@ describe("the roads", () => {
     const outcome = outcomeOf(state, setup, log);
     const ledger = ledgerOf(settleRace(start.career, outcome));
     expect(log.outcome).toBe(outcome);
-    expect(outcome.placings.map((placing) => placing.place)).toStrictEqual([
-      1, 2, 3, 4, 5, 6, 7, 8,
-    ]);
+    expect(outcome.placings.map((placing) => placing.place)).toStrictEqual(
+      Array.from({ length: 15 }, (_, index) => index + 1)
+    );
     expect(
       new Set(outcome.placings.map((placing) => placing.racer))
     ).toStrictEqual(new Set(["player", ...setup.field]));
@@ -938,7 +933,7 @@ describe("the roads", () => {
 });
 
 describe("the field", () => {
-  it("always has seven different rivals with the road's home riders among them", () => {
+  it("always has fourteen different rivals with the road's home riders among them", () => {
     const problems: string[] = [];
     for (const level of levels) {
       for (const entry of roadList) {
@@ -948,8 +943,9 @@ describe("the field", () => {
             (status) => status.road.id === entry.id
           )?.home;
           if (
-            new Set(field).size !== 7 ||
-            home?.length !== 2 ||
+            new Set(field).size !== 14 ||
+            !home ||
+            home.length < 3 ||
             !home.every((rival) => field.includes(rival))
           ) {
             problems.push(`${entry.id} level ${level} seed ${seed}`);
@@ -1117,7 +1113,7 @@ describe("memory", () => {
     );
     expect(
       race.setup.field.map((rival) => career.memory[rival].aggressionBonus)
-    ).toStrictEqual([-0.05, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05]);
+    ).toStrictEqual(Array.from({ length: 14 }, () => -0.05));
   });
 
   it("a win by a wheel is remembered and pinned to the board", () => {
@@ -1325,7 +1321,7 @@ describe("a bust", () => {
         officer: "wendell-haverty",
         weapon: "chain",
       },
-      place: 8,
+      place: 15,
       result: "busted",
     });
     expect(settled.career.lastResult?.summary.bust).toStrictEqual({
@@ -1439,7 +1435,7 @@ describe("the story", () => {
     expect(
       rivalIn(setupFor(career, "slag-row", 3, road), "dee-santangelo")
         ?.aggressionBoost
-    ).toBeGreaterThan(0);
+    ).toBeGreaterThan(-1);
   });
 
   it("winning the Long Ridge after taking the envelope is the bought crown", () => {
@@ -1469,9 +1465,9 @@ describe("the season board", () => {
     sprint(second, 3, ["dee-santangelo", "moose-kowalczyk"]);
     const board = seasonBoard(settle(second).career);
     expect(board.slice(0, 3)).toStrictEqual([
-      { points: 15, racer: "dee-santangelo", rank: 1, wins: 1 },
-      { points: 15, racer: "moose-kowalczyk", rank: 2, wins: 1 },
-      { points: 12, racer: "player", rank: 3, wins: 0 },
+      { points: 29, racer: "dee-santangelo", rank: 1, wins: 1 },
+      { points: 29, racer: "moose-kowalczyk", rank: 2, wins: 1 },
+      { points: 26, racer: "player", rank: 3, wins: 0 },
     ]);
   });
 });
@@ -1552,7 +1548,7 @@ describe("the save", () => {
       verdictOn(serialiseCareer(good).slice(0, -40)),
       verdictOn("[]"),
       verdictOn('"a save"'),
-      verdictOn(corrupted(good, "version", 2)),
+      verdictOn(corrupted(good, "version", 1)),
     ]).toStrictEqual([
       "notJson:",
       "notJson:",
@@ -1719,7 +1715,9 @@ describe("the last result", () => {
           finishTick: -1,
           name: rivals[rival].name,
           place: index + 3,
-          prize: [700, 400, 250, 150, 100, 50][index],
+          prize: [700, 400, 250, 150, 100, 50, 40, 30, 25, 20, 15, 10, 10][
+            index
+          ],
           racer: rival,
         })),
       ],

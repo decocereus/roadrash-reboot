@@ -16,6 +16,27 @@ export interface RivalLines {
 }
 
 export const rivalLines = {
+  "agnes-mulcahy": {
+    beatYou:
+      "Blessed are the meek, dear. Meek enough to brake for the corners.",
+    grudgeTaunt:
+      "You struck a nun last time. I've forgiven you. The roof fund hasn't.",
+    knocksYouDown: "Mind the step.",
+    taunt: "I'll pray for you. From ahead. The reception's better up there.",
+    youBeatThem: "Well done. Put something in the tin on your way out.",
+    youKnockThemDown:
+      "Sixty-one years, and that's the first time I've said that word.",
+  },
+  "benny-okafor": {
+    beatYou: "That was a duet. You sang backup.",
+    grudgeTaunt:
+      "You hit me last time, mid-chorus. Nobody hits Benny mid-chorus.",
+    knocksYouDown: "And that's the key change!",
+    taunt:
+      "I'll be singing the whole way. You'll know where I am. You won't catch up.",
+    youBeatThem: "Fine. Encore next week. Bring a bike this time.",
+    youKnockThemDown: "My voice! My beautiful... no, wait, that's my knee.",
+  },
   "coach-dale-hutto": {
     beatYou: "Winners never quit, and you, my friend, should quit.",
     grudgeTaunt:
@@ -38,6 +59,16 @@ export const rivalLines = {
     youKnockThemDown:
       "My box! Do you know how hard it is to get cheese off a highway?",
   },
+  "felix-aurand": {
+    beatYou: "Floss, ride less, and see me in six months.",
+    grudgeTaunt:
+      "You chipped something of mine last time. I don't do my own work.",
+    knocksYouDown: "That's going to need a crown.",
+    taunt: "Open wide. Not your mouth. The gap. I'm coming through it.",
+    youBeatThem: "Congratulations. Here's my card. You'll need it eventually.",
+    youKnockThemDown:
+      "My hands! Do you know what these hands bill by the hour?",
+  },
   "gus-abernathy": {
     beatYou: "Slow and steady. Mostly slow. But steady.",
     grudgeTaunt: "You ran my sign last time, kid. Nobody runs my sign.",
@@ -46,6 +77,16 @@ export const rivalLines = {
     youBeatThem:
       "Back in my day the road was shorter. And I was faster. And it was uphill.",
     youKnockThemDown: "That's coming out of the county's budget!",
+  },
+  "hollis-thorne": {
+    beatYou: "You're fine. You're all fine. I checked, from the front.",
+    grudgeTaunt:
+      "You put me over the edge last time. I had to rescue myself. There's paperwork.",
+    knocksYouDown: "Don't move. I'm trained. Okay, move a little.",
+    taunt:
+      "If you go off at the Saddle, stay with the bike. Makes you easier to find.",
+    youBeatThem: "Good ride. Hydrate. I mean it, hydrate.",
+    youKnockThemDown: "That's a textbook fall, actually. Chapter four.",
   },
   "ines-marchetti": {
     beatYou:
@@ -103,6 +144,18 @@ export const rivalLines = {
     youBeatThem: "You were very fast. I'll be faster after a sandwich.",
     youKnockThemDown: "Ow. Okay. That's fair. Ow.",
   },
+  "orrin-blackwell": {
+    beatYou:
+      "And that, subscribers, is how you survive a race. Like and remember.",
+    grudgeTaunt:
+      "You put me in the dirt last time. I got footage. It did numbers.",
+    knocksYouDown: "Nature is brutal! Did we get that? Say we got that.",
+    taunt:
+      "Rule one of survival: never let the new kid finish ahead of you. I made that up just now.",
+    youBeatThem:
+      "The wild is unpredictable. So are you, apparently. Cut that bit.",
+    youKnockThemDown: "I've survived worse. I haven't, but I've said I have.",
+  },
   "ruth-ann-bixby": {
     beatYou: "Rode you like a fence line. Straight, then done.",
     grudgeTaunt: "You kicked me last time. Mules remember. So do I.",
@@ -120,6 +173,15 @@ export const rivalLines = {
     youBeatThem:
       "Chat, that was a sponsored loss. Use code CRASH for ten percent off.",
     youKnockThemDown: "Not the phone! Not the phone! Is it still recording?",
+  },
+  "wanda-pruitt": {
+    beatYou: "As predicted. Back to you in the studio.",
+    grudgeTaunt:
+      "Last week I predicted you'd behave. I'm correcting that on air tonight.",
+    knocksYouDown: "Heavy fall expected. Oh, there it is.",
+    taunt: "Today's forecast: you, behind me, with a chance of gravel.",
+    youBeatThem: "An unexpected front. I'll be issuing an apology at six.",
+    youKnockThemDown: "This blazer is station property!",
   },
 } as const satisfies Record<RivalId, RivalLines>;
 

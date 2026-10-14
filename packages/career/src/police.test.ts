@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { setupFor } from "./field.ts";
 import { newCareer } from "./state.ts";
-import { levels } from "./tables.ts";
+import { levels, RIVALS_PER_RACE } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
 const decentBikes = {
@@ -141,7 +141,9 @@ describe("police balance", () => {
       expect(tally.busted + tally.finished + tally.wrecked).toBe(STARTS);
       expect(tally.busted).toBeGreaterThanOrEqual(fewest);
       expect(tally.busted).toBeLessThanOrEqual(most);
-      expect(tally.rivalsBusted / STARTS).toBeLessThan(2.5);
+      expect(tally.rivalsBusted / STARTS).toBeLessThan(
+        (2.5 * RIVALS_PER_RACE) / 7
+      );
     }
   );
 

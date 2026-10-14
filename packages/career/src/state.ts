@@ -13,7 +13,7 @@ import {
 } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type RacerId = RivalId | "player";
 
@@ -28,21 +28,33 @@ export const rivalIds: readonly RivalId[] = [
   "coach-dale-hutto",
   "moose-kowalczyk",
   "gus-abernathy",
+  "benny-okafor",
+  "wanda-pruitt",
+  "orrin-blackwell",
+  "agnes-mulcahy",
+  "hollis-thorne",
+  "felix-aurand",
 ];
 
 export const racerIds: readonly RacerId[] = ["player", ...rivalIds];
 
 export const byRival = <Value>(make: (rival: RivalId) => Value) => ({
+  "agnes-mulcahy": make("agnes-mulcahy"),
+  "benny-okafor": make("benny-okafor"),
   "coach-dale-hutto": make("coach-dale-hutto"),
   "dee-santangelo": make("dee-santangelo"),
+  "felix-aurand": make("felix-aurand"),
   "gus-abernathy": make("gus-abernathy"),
+  "hollis-thorne": make("hollis-thorne"),
   "ines-marchetti": make("ines-marchetti"),
   "juno-kade": make("juno-kade"),
   "lyle-gorski": make("lyle-gorski"),
   "mags-dunleavy": make("mags-dunleavy"),
   "moose-kowalczyk": make("moose-kowalczyk"),
+  "orrin-blackwell": make("orrin-blackwell"),
   "ruth-ann-bixby": make("ruth-ann-bixby"),
   "tristan-lux": make("tristan-lux"),
+  "wanda-pruitt": make("wanda-pruitt"),
 });
 
 export const byRacer = <Value>(make: (racer: RacerId) => Value) => ({

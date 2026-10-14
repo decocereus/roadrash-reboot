@@ -17,6 +17,7 @@ import {
   FINALE_AGGRESSION,
   FINALE_ROAD,
   LAST_LEVEL,
+  pacingLevels,
   policeFor,
   policeLevels,
   prizeFor,
@@ -113,6 +114,7 @@ export const setupFor = (
     field,
     gridOrder: "playerLast",
     level,
+    pacing: pacingLevels[level],
     player: {
       ...defaultPlayer,
       bike: bikes[career.bikeId],

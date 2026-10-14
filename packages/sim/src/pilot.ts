@@ -10,6 +10,7 @@ import {
   curvePushOf,
   lateralSpeedLimit,
   PLAYER_RIDER,
+  topSpeedOf,
 } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 import { kick, weapons } from "./weapons.ts";
@@ -26,7 +27,7 @@ const LANE_REACH = 1.7;
 const SPLITTING_SPEED = 8;
 const RIDER_FOLLOW_SECONDS = 1.2;
 const ATTACK_CHANCE_PER_SECOND = 1.4;
-const TRUCE_TICKS = 180;
+const TRUCE_TICKS = 420;
 const CATCH_UP_RATE = 0.8;
 const ALONGSIDE = 1.5;
 const ENGAGE_RANGE = 20;
@@ -37,6 +38,42 @@ const CROSSING_SECONDS = 1.5;
 const OWN_LANE_REACH = 1;
 const CRUISE_THROTTLE = 0.6;
 const THROTTLE_PER_EXCESS = 0.4;
+const PACING_RANGE = 200;
+
+interface Pace {
+  readonly cap: number;
+  readonly lift: number;
+}
+
+const freePace: Pace = { cap: Number.POSITIVE_INFINITY, lift: 0 };
+
+const stillRacing = (rider: RiderState): boolean =>
+  rider.finishTick < 0 && rider.mode !== "busted" && rider.mode !== "wrecked";
+
+const paceOf = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState
+): Pace => {
+  const player = state.riders[PLAYER_RIDER];
+  if (
+    riderIndex === PLAYER_RIDER ||
+    !player ||
+    !stillRacing(player) ||
+    !stillRacing(rider)
+  ) {
+    return freePace;
+  }
+  const gap = rider.s - player.s;
+  const share = clamp(Math.abs(gap) / PACING_RANGE, 0, 1);
+  if (gap > 0) {
+    return {
+      cap: topSpeedOf(rider.bike) * (1 - state.pacing.leadEase * share),
+      lift: 0,
+    };
+  }
+  return { cap: Number.POSITIVE_INFINITY, lift: state.pacing.catchUp * share };
+};
 
 const cornerSpeedLimit = (track: Track, rider: RiderState): number => {
   const lateralLimit =
@@ -323,6 +360,7 @@ const ride = (
   track: Track,
   rider: RiderState,
   aim: Aim,
+  pace: Pace,
   input: RiderInput
 ): void => {
   const settling =
@@ -345,15 +383,17 @@ const ride = (
     1
   );
 
+  const skill = Math.min(1, rider.profile.skill + pace.lift);
   const targetSpeed = Math.min(
     aim.speed,
-    cornerSpeedLimit(track, rider) * rider.profile.skill
+    cornerSpeedLimit(track, rider) * skill
   );
   const excess = rider.speed - targetSpeed;
   input.brake = excess > 1.5 ? clamp(excess / 6, 0.25, 1) : 0;
+  const over = Math.max(excess, rider.speed - pace.cap);
   input.throttle =
     targetSpeed > 0
-      ? clamp(CRUISE_THROTTLE - excess * THROTTLE_PER_EXCESS, 0, 1)
+      ? clamp(CRUISE_THROTTLE - over * THROTTLE_PER_EXCESS, 0, 1)
       : 0;
 };
 
@@ -432,10 +472,16 @@ export const pilotInput = (
   if (!rider) {
     return;
   }
-  const aim =
-    rider.profile.role === "police"
-      ? copAim(state, track, riderIndex, rider)
-      : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY);
-  ride(track, rider, aim, input);
+  const police = rider.profile.role === "police";
+  const aim = police
+    ? copAim(state, track, riderIndex, rider)
+    : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY);
+  ride(
+    track,
+    rider,
+    aim,
+    police ? freePace : paceOf(state, riderIndex, rider),
+    input
+  );
   fight(state, riderIndex, rider, input);
 };

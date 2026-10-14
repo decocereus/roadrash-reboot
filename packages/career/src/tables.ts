@@ -2,7 +2,7 @@ import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { officerFor } from "@racer/sim/cast";
 import type { RegionId, RivalId } from "@racer/sim/cast";
-import type { BikeClass, PoliceSetup } from "@racer/sim/state";
+import type { BikeClass, PacingRules, PoliceSetup } from "@racer/sim/state";
 import type { RoadId, RoadLevel } from "@racer/track/road";
 
 export type { RoadId } from "@racer/track/road";
@@ -94,7 +94,7 @@ export const CHAMPION: RivalId = "juno-kade";
 export const CHAMPION_STAND_IN: RivalId = "ruth-ann-bixby";
 export const FINALE_AGGRESSION = 0.9;
 
-export const RIVALS_PER_RACE = 7;
+export const RIVALS_PER_RACE = 14;
 export const FIELD_SIZE = RIVALS_PER_RACE + 1;
 export const QUALIFYING_PLACE = 3;
 
@@ -107,13 +107,15 @@ export const CREDIT_RATE = 0.5;
 export const REPEAT_RATE = 0.5;
 export const AD_REPAIR_RATE = 0.5;
 
-export const prizes = {
-  1: [1500, 1000, 700, 400, 250, 150, 100, 50],
-  2: [2400, 1600, 1120, 640, 400, 240, 160, 80],
-  3: [3600, 2400, 1680, 960, 600, 360, 240, 120],
-  4: [5100, 3400, 2380, 1360, 850, 510, 340, 170],
-  5: [6900, 4600, 3220, 1840, 1150, 690, 460, 230],
-} as const satisfies Record<Level, readonly number[]>;
+const levelOnePrizes = [
+  1500, 1000, 700, 400, 250, 150, 100, 50, 40, 30, 25, 20, 15, 10, 10,
+];
+
+const PRIZE_MULTIPLIER = { 1: 1, 2: 1.6, 3: 2.4, 4: 3.4, 5: 4.6 } as const;
+
+export const prizes = byLevel((level) =>
+  levelOnePrizes.map((prize) => Math.round(prize * PRIZE_MULTIPLIER[level]))
+);
 
 export const repairBase = {
   1: 400,
@@ -182,6 +184,14 @@ export const policeLevels = {
     topSpeed: 54,
   },
 } as const satisfies Record<Level, PoliceLevel>;
+
+export const pacingLevels = {
+  1: { catchUp: 0.08, leadEase: 0.22 },
+  2: { catchUp: 0.07, leadEase: 0.2 },
+  3: { catchUp: 0.06, leadEase: 0.18 },
+  4: { catchUp: 0.05, leadEase: 0.16 },
+  5: { catchUp: 0.04, leadEase: 0.14 },
+} as const satisfies Record<Level, PacingRules>;
 
 export const catalogue: readonly BikeId[] = [
   "gutter-pup-250",
