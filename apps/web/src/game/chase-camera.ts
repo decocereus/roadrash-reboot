@@ -2,7 +2,7 @@ import { heightAt } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 
-import { placeOnGround } from "./world.ts";
+import { placeOnGround } from "./ground.ts";
 
 const FIELD_OF_VIEW = 48;
 const HORIZON_DOWN_FRAME = 0.34;

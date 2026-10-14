@@ -1,4 +1,5 @@
 import type { Random } from "@racer/track/random";
+import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
 import { CYAN, MAGENTA, ORANGE, RED, YELLOW } from "./looks.ts";
@@ -571,34 +572,38 @@ export const signAtlas = (random: Random): SignAtlas => {
 
 const ROAD_TILE = 1024;
 export const ROAD_TILE_METRES = 24;
+const ROAD_TEXELS = 512;
+const ROAD_TEXELS_WIDE = 1024;
+const ROAD_TEXELS_PER_METRE = ROAD_TILE / ROAD_TILE_METRES;
+const DASH_METRES = 3;
+const DASH_PERIOD_METRES = 8;
 
-export const roadTexture = (
-  random: Random,
-  look: Look,
-  lane: number,
-  half: number
-): Lit => {
-  const { canvas, context } = sheet(512, ROAD_TILE);
-  const light = sheet(512, ROAD_TILE);
+export const roadTexture = (random: Random, look: Look, track: Track): Lit => {
+  const half = track.roadHalfWidth;
+  const { laneWidth, lanesEachWay } = track.plan;
+  const width = lanesEachWay > 1 ? ROAD_TEXELS_WIDE : ROAD_TEXELS;
+  const density = width / ROAD_TEXELS;
+  const { canvas, context } = sheet(width, ROAD_TILE);
+  const light = sheet(width, ROAD_TILE);
   const across = (metres: number): number =>
-    ((metres + half) / (half * 2)) * 512;
-  const scale = 512 / (half * 2);
+    ((metres + half) / (half * 2)) * width;
+  const scale = width / (half * 2);
   context.fillStyle = look.road;
-  context.fillRect(0, 0, 512, ROAD_TILE);
-  for (let speck = 0; speck < 6000; speck += 1) {
+  context.fillRect(0, 0, width, ROAD_TILE);
+  for (let speck = 0; speck < 6000 * density; speck += 1) {
     context.fillStyle =
       random() < 0.5 ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.1)";
     context.fillRect(
-      random() * 512,
+      random() * width,
       random() * ROAD_TILE,
       1 + random() * 2,
       1 + random() * 3
     );
   }
-  for (let patch = 0; patch < 5; patch += 1) {
+  for (let patch = 0; patch < 5 * density; patch += 1) {
     context.fillStyle = "rgba(0,0,0,.07)";
     context.fillRect(
-      random() * 400,
+      random() * (width - 112),
       random() * 900,
       40 + random() * 70,
       60 + random() * 120
@@ -606,9 +611,9 @@ export const roadTexture = (
   }
   context.strokeStyle = "rgba(0,0,0,.2)";
   context.lineWidth = 1.2;
-  for (let crack = 0; crack < 4; crack += 1) {
+  for (let crack = 0; crack < 4 * density; crack += 1) {
     context.beginPath();
-    let x = random() * 512;
+    let x = random() * width;
     let y = random() * ROAD_TILE;
     context.moveTo(x, y);
     for (let step = 0; step < 6; step += 1) {
@@ -618,9 +623,26 @@ export const roadTexture = (
     }
     context.stroke();
   }
+  const paved = lanesEachWay * laneWidth;
   context.fillStyle = look.line;
-  for (const edge of [-lane, lane]) {
+  for (const edge of [-paved, paved]) {
     context.fillRect(across(edge) - 0.075 * scale, 0, 0.15 * scale, ROAD_TILE);
+  }
+  if (lanesEachWay > 1) {
+    for (const divider of [-laneWidth, laneWidth]) {
+      for (
+        let start = 0;
+        start < ROAD_TILE_METRES;
+        start += DASH_PERIOD_METRES
+      ) {
+        context.fillRect(
+          across(divider) - 0.06 * scale,
+          start * ROAD_TEXELS_PER_METRE,
+          0.12 * scale,
+          DASH_METRES * ROAD_TEXELS_PER_METRE
+        );
+      }
+    }
   }
   context.fillStyle = look.centre;
   for (const offset of [-0.17, 0.17]) {
@@ -632,21 +654,21 @@ export const roadTexture = (
     );
   }
   context.fillStyle = "rgba(0,0,0,.06)";
-  for (const wheel of [-lane * 0.5, lane * 0.5]) {
-    context.fillRect(across(wheel) - 0.5 * scale, 0, scale, ROAD_TILE);
+  for (const centre of [...track.oncomingLanes, ...track.sameWayLanes]) {
+    context.fillRect(across(centre) - 0.5 * scale, 0, scale, ROAD_TILE);
   }
   light.context.fillStyle = "#000";
-  light.context.fillRect(0, 0, 512, ROAD_TILE);
+  light.context.fillRect(0, 0, width, ROAD_TILE);
   if (look.wet) {
     const bands = 16;
     for (let streak = 0; streak < 7; streak += 1) {
-      const x = random() * 512;
-      const width = 24 + random() * 40;
+      const x = random() * width;
+      const reach = (24 + random() * 40) * density;
       const phase = random() * FULL_TURN;
       const fade = light.context.createLinearGradient(
-        x - width,
+        x - reach,
         0,
-        x + width,
+        x + reach,
         0
       );
       const colour = pick(random, [MAGENTA, CYAN, YELLOW, look.lamp]);
@@ -658,9 +680,9 @@ export const roadTexture = (
         light.context.globalAlpha =
           0.16 + 0.14 * Math.sin((band / bands) * FULL_TURN + phase);
         light.context.fillRect(
-          x - width,
+          x - reach,
           (band / bands) * ROAD_TILE,
-          width * 2,
+          reach * 2,
           ROAD_TILE / bands + 1
         );
       }
@@ -833,6 +855,33 @@ export const chevronTexture = (): THREE.CanvasTexture => {
   context.lineTo(66, 86);
   context.lineTo(34, 86);
   context.lineTo(68, 48);
+  context.closePath();
+  context.fill();
+  return textureOf(canvas, false);
+};
+
+export const warningSignTexture = (): THREE.CanvasTexture => {
+  const { canvas, context } = sheet(128, 128);
+  context.fillStyle = YELLOW;
+  context.fillRect(0, 0, 128, 128);
+  context.strokeStyle = "#15171a";
+  context.lineWidth = 10;
+  context.strokeRect(9, 9, 110, 110);
+  context.translate(64, 64);
+  context.rotate(-Math.PI / 4);
+  context.lineCap = "round";
+  context.lineWidth = 9;
+  context.beginPath();
+  context.moveTo(-6, 30);
+  context.lineTo(-6, 6);
+  context.quadraticCurveTo(-6, -12, 10, -12);
+  context.lineTo(18, -12);
+  context.stroke();
+  context.fillStyle = "#15171a";
+  context.beginPath();
+  context.moveTo(14, -24);
+  context.lineTo(30, -12);
+  context.lineTo(14, 0);
   context.closePath();
   context.fill();
   return textureOf(canvas, false);

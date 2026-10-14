@@ -8,8 +8,17 @@ import type { Shading } from "./cel.ts";
 import { createCity, FRONT_GAP, KERB_HEIGHT } from "./city.ts";
 import type { City } from "./city.ts";
 import { disposeTree } from "./dispose.ts";
+import {
+  groundLift,
+  KERB_WIDTH,
+  lifted,
+  plant,
+  rolling,
+  smoothstep,
+} from "./ground.ts";
 import { lookOf } from "./looks.ts";
-import type { Kit, Look } from "./looks.ts";
+import type { Look } from "./looks.ts";
+import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import {
   bannerTexture,
   chevronTexture,
@@ -24,7 +33,6 @@ const ROAD_STEP = 2;
 const TERRAIN_STEP = 4;
 const TERRAIN_RINGS = [0, 1.5, 4, 9, 20, 45, 90, 160];
 const SKY_RADIUS = 4000;
-const KERB_WIDTH = 0.3;
 const SHADOW_SPAN = 70;
 const SHADOW_MAP = 4096;
 const SHADOW_AHEAD = 42;
@@ -36,51 +44,7 @@ const POLE = "#221a30";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const tint = new THREE.Color();
-
-function smoothstep(value: number): number {
-  const clamped = Math.min(1, Math.max(0, value));
-  return clamped * clamped * (3 - 2 * clamped);
-}
-
-function rolling(worldX: number, worldZ: number): number {
-  return (
-    Math.sin(worldX * 0.011 + 1.3) * Math.cos(worldZ * 0.013) +
-    0.5 * Math.sin(worldX * 0.031 - worldZ * 0.027)
-  );
-}
-
-export function groundLift(
-  kit: Kit,
-  distance: number,
-  worldX: number,
-  worldZ: number
-): number {
-  if (distance <= 0) {
-    return 0;
-  }
-  if (kit === "city") {
-    return KERB_HEIGHT * Math.min(1, distance / KERB_WIDTH);
-  }
-  const ditch =
-    -0.35 * smoothstep(distance / 1.5) * (1 - smoothstep((distance - 4) / 6));
-  const rise = smoothstep((distance - 9) / 90);
-  return ditch + rise * (6 + 16 * rolling(worldX, worldZ));
-}
-
-export function placeOnGround(
-  track: Track,
-  s: number,
-  x: number,
-  target: TrackPoint
-): void {
-  placeOnTrack(track, s, x, target);
-  target.y += groundLift(
-    lookOf(track.plan.region).kit,
-    Math.abs(x) - track.roadHalfWidth,
-    target.x,
-    target.z
-  );
-}
+const placer = new THREE.Object3D();
 
 type Rail = readonly [offset: number, lift: number, u: number];
 
@@ -186,61 +150,6 @@ function buildTerrainChunk(
   return geometry;
 }
 
-interface Part {
-  readonly geometry: THREE.BufferGeometry;
-  readonly material: THREE.Material;
-}
-
-const placer = new THREE.Object3D();
-
-function plant(
-  group: THREE.Group,
-  track: Track,
-  props: readonly TrackProp[],
-  parts: readonly Part[],
-  mirrored = false
-): void {
-  if (props.length === 0) {
-    for (const part of parts) {
-      part.geometry.dispose();
-      part.material.dispose();
-    }
-    return;
-  }
-  const meshes = parts.map((part) => {
-    const mesh = new THREE.InstancedMesh(
-      part.geometry,
-      part.material,
-      props.length
-    );
-    const lit = !(part.material instanceof THREE.MeshBasicMaterial);
-    mesh.castShadow = lit;
-    mesh.receiveShadow = lit;
-    group.add(mesh);
-    return mesh;
-  });
-  for (const [index, prop] of props.entries()) {
-    placeOnGround(track, prop.s, prop.x, point);
-    placer.position.set(point.x, point.y, point.z);
-    placer.rotation.set(0, -point.heading, 0);
-    const flip = mirrored && prop.x > 0 ? -1 : 1;
-    placer.scale.set(prop.scale * flip, prop.scale, prop.scale);
-    placer.updateMatrix();
-    for (const mesh of meshes) {
-      mesh.setMatrixAt(index, placer.matrix);
-    }
-  }
-  for (const mesh of meshes) {
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingSphere();
-  }
-}
-
-const lifted = (
-  geometry: THREE.BufferGeometry,
-  at: readonly [number, number, number]
-): THREE.BufferGeometry => geometry.translate(...at);
-
 function buildGate(
   track: Track,
   s: number,
@@ -309,23 +218,7 @@ function buildScenery(
             material: shading.cel(look.foliage[1]),
           },
         ]
-      : [
-          {
-            geometry: lifted(
-              new THREE.CylinderGeometry(0.16, 0.26, 2.4, 6),
-              [0, 0.9, 0]
-            ),
-            material: shading.cel(look.trunk),
-          },
-          {
-            geometry: lifted(new THREE.ConeGeometry(2.1, 4.2, 8), [0, 3.9, 0]),
-            material: shading.cel(look.foliage[0]),
-          },
-          {
-            geometry: lifted(new THREE.ConeGeometry(1.5, 3.4, 8), [0, 6.1, 0]),
-            material: shading.cel(look.foliage[1]),
-          },
-        ]
+      : pineParts(shading)
   );
   plant(scenery, track, ofKind("pole"), [
     {
@@ -387,15 +280,7 @@ function buildScenery(
             material: shading.cel(look.centre),
           },
         ]
-      : [
-          {
-            geometry: lifted(
-              new THREE.IcosahedronGeometry(0.95, 0),
-              [0, 0.35, 0]
-            ),
-            material: shading.cel(look.rock),
-          },
-        ]
+      : boulderParts(shading)
   );
   scenery.add(buildGate(track, 0, "START", shading));
   scenery.add(buildGate(track, track.length, "FINISH", shading));
@@ -511,7 +396,7 @@ export function createWorld(track: Track): World {
   scene.add(rig.light, rig.light.target);
 
   const half = track.roadHalfWidth;
-  const paved = roadTexture(random, look, track.plan.laneWidth, half);
+  const paved = roadTexture(random, look, track);
   const roadMaterial = shading.cel("#ffffff", {
     emissiveIntensity: 0.9,
     emissiveMap: paved.glow,
@@ -584,6 +469,8 @@ export function createWorld(track: Track): World {
   );
   if (city) {
     scene.add(city.group);
+  } else {
+    scene.add(buildRoadside(track, shading));
   }
 
   let lowest = Number.POSITIVE_INFINITY;

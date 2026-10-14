@@ -11,6 +11,24 @@ export type Kit = "city" | "open";
 
 type Triple = readonly [number, number, number];
 
+export interface Roadside {
+  readonly bank: number;
+  readonly bankHeight: readonly [number, number];
+  readonly bankColour: string;
+  readonly treeline: number;
+  readonly boulders: number;
+  readonly signs: number;
+}
+
+const bare: Roadside = {
+  bank: 0,
+  bankColour: "#000000",
+  bankHeight: [0, 0],
+  boulders: 0,
+  signs: 0,
+  treeline: 0,
+};
+
 export interface Look {
   readonly kit: Kit;
   readonly sky: readonly (readonly [number, string])[];
@@ -47,6 +65,7 @@ export interface Look {
   readonly bloom: number;
   readonly grade: Triple;
   readonly wet: boolean;
+  readonly roadside: Roadside;
 }
 
 const dusk: Look = {
@@ -85,6 +104,7 @@ const dusk: Look = {
   rim: "#fff2a8",
   rimDirection: [-0.3, 0.45, -0.84],
   road: "#75606f",
+  roadside: bare,
   rock: "#8a7488",
   shadow: [0.62, 0.5, 0.77],
   sky: [
@@ -129,6 +149,7 @@ const night: Look = {
   rim: "#7af2ff",
   rimDirection: [0.75, 0.3, -0.58],
   road: "#3a4070",
+  roadside: bare,
   rock: "#4a5088",
   shadow: [0.42, 0.47, 0.8],
   sky: [
@@ -173,6 +194,14 @@ const dawn: Look = {
   rim: "#ffe8b0",
   rimDirection: [0.5, 0.4, -0.76],
   road: "#7a6470",
+  roadside: {
+    bank: 0.3,
+    bankColour: "#c87a58",
+    bankHeight: [1.6, 3.4],
+    boulders: 0.3,
+    signs: 0.7,
+    treeline: 0,
+  },
   rock: "#c07a5a",
   shadow: [0.6, 0.5, 0.74],
   sky: [
@@ -199,6 +228,14 @@ const woods: Look = {
   keyDirection: [-0.3, 0.8, -0.5],
   kit: "open",
   road: "#343c66",
+  roadside: {
+    bank: 0.12,
+    bankColour: "#1a3448",
+    bankHeight: [1.4, 2.6],
+    boulders: 0.12,
+    signs: 0.3,
+    treeline: 1.3,
+  },
   wet: false,
 };
 
@@ -210,6 +247,14 @@ const ridge: Look = {
   groundNear: "#8a7a6a",
   groundPatch: "#a8a060",
   kit: "open",
+  roadside: {
+    bank: 0.55,
+    bankColour: "#8a7488",
+    bankHeight: [3, 7],
+    boulders: 0.5,
+    signs: 0.6,
+    treeline: 0.15,
+  },
 };
 
 const looks = {

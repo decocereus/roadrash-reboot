@@ -7,7 +7,7 @@ import { paintPrimitives } from "./assets.ts";
 import type { Assets, Palette, Primitive } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
-import { placeOnGround } from "./world.ts";
+import { placeOnGround } from "./ground.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
