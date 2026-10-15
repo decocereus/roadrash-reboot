@@ -92,6 +92,19 @@ const variantOf = (object: THREE.Object3D): number => {
   return object instanceof THREE.SkinnedMesh ? 2 : 0;
 };
 
+const materialOrder = new WeakMap<THREE.Material, number>();
+let materialsSeen = 0;
+
+const orderOf = (material: THREE.Material): number => {
+  const known = materialOrder.get(material);
+  if (known !== undefined) {
+    return known;
+  }
+  materialsSeen += 1;
+  materialOrder.set(material, materialsSeen);
+  return materialsSeen;
+};
+
 const byVariantThenMaterial = (
   a: THREE.RenderItem,
   b: THREE.RenderItem
@@ -99,7 +112,7 @@ const byVariantThenMaterial = (
   a.groupOrder - b.groupOrder ||
   a.renderOrder - b.renderOrder ||
   variantOf(a.object) - variantOf(b.object) ||
-  a.material.id - b.material.id ||
+  orderOf(a.material) - orderOf(b.material) ||
   a.z - b.z;
 
 export interface Pipeline {

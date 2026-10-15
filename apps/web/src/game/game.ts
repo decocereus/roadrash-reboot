@@ -1048,6 +1048,26 @@ export async function createGame(
     tag.style.transform = `translate3d(${(across * canvas.clientWidth).toFixed(1)}px, ${(down * canvas.clientHeight).toFixed(1)}px, 0) translate(-50%, -100%)`;
   };
 
+  const followPlayer = (rider: RiderState) => {
+    const onBike = placed.seated || placed.s < placed.bodyS;
+    subject.s = onBike ? placed.s : placed.bodyS;
+    subject.x = onBike ? placed.x : placed.bodyX;
+    subject.air = onBike ? placed.air : Math.min(placed.bodyAir, 2);
+    subject.speed = placed.seated ? rider.speed : 0;
+    subject.tuck = placed.seated ? rider.tuck : 0;
+  };
+
+  const placeFleet = (blend: number) => {
+    const { cars } = race;
+    for (let index = 0; index < cars.length; index += 1) {
+      const s = cars[index]?.s ?? 0;
+      const from = previousCars[index] ?? s;
+      const wrapped = Math.abs(s - from) > WRAP_JUMP;
+      fleet.place(track, index, wrapped ? s : mix(from, s, blend));
+    }
+    fleet.commit(subject.s);
+  };
+
   const draw = (blend: number, seconds: number) => {
     clock += seconds;
     let index = -1;
@@ -1059,12 +1079,7 @@ export async function createGame(
       }
       drawRider(index, rider, view, blend, seconds);
       if (index === 0) {
-        const onBike = placed.seated || placed.s < placed.bodyS;
-        subject.s = onBike ? placed.s : placed.bodyS;
-        subject.x = onBike ? placed.x : placed.bodyX;
-        subject.air = onBike ? placed.air : Math.min(placed.bodyAir, 2);
-        subject.speed = placed.seated ? rider.speed : 0;
-        subject.tuck = placed.seated ? rider.tuck : 0;
+        followPlayer(rider);
       }
     }
     const [lead] = views;
@@ -1073,14 +1088,7 @@ export async function createGame(
     }
     profiler?.lap("riders");
 
-    const { cars } = race;
-    for (let index = 0; index < cars.length; index += 1) {
-      const s = cars[index]?.s ?? 0;
-      const from = previousCars[index] ?? s;
-      const wrapped = Math.abs(s - from) > WRAP_JUMP;
-      fleet.place(track, index, wrapped ? s : mix(from, s, blend));
-    }
-    fleet.commit(subject.s);
+    placeFleet(blend);
     profiler?.lap("fleet");
 
     chase.update(track, subject, seconds);
