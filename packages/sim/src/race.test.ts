@@ -19,7 +19,12 @@ import {
   stepRace,
   validateSetup,
 } from "./race.ts";
-import { FULL_CONDITION, MAX_STAMINA, TICK_RATE } from "./state.ts";
+import {
+  FULL_CONDITION,
+  lateralSpeedLimit,
+  MAX_STAMINA,
+  TICK_RATE,
+} from "./state.ts";
 import type {
   BikeSpec,
   PacingRules,
@@ -3112,5 +3117,210 @@ describe("the start", () => {
     }
     expect(me.speed).toBeGreaterThan(10);
     expect(me.speed - ahead.speed).toBeLessThan(4);
+  });
+});
+
+const loadingRamp = {
+  kind: "jump",
+  length: 16,
+  rise: 0.8,
+  width: 1.4,
+} as const;
+const rampRoad = compileTrack({
+  ...ridgeRoad,
+  features: [
+    {
+      feature: loadingRamp,
+      fromLevel: 1,
+      id: "middle-ramp",
+      placement: "fixed",
+      s: 1000,
+      x: 0,
+    },
+    {
+      feature: loadingRamp,
+      fromLevel: 1,
+      id: "edge-ramp",
+      placement: "fixed",
+      s: 2000,
+      x: 3.8,
+    },
+  ],
+  sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+  trafficPerKilometre: 0,
+});
+const flatOut: RiderInput = {
+  brake: 0,
+  kick: false,
+  punch: false,
+  steer: 0,
+  throttle: 1,
+};
+
+const jumpFrom = (s: number, x: number, speed: number, steering: number) => {
+  const state = field(rampRoad, 1, 0, 0);
+  const rider = player(state);
+  rider.s = s;
+  rider.x = x;
+  rider.speed = speed;
+  rider.lateralSpeed = steering * lateralSpeedLimit(rider.bike, speed);
+  const events: RaceEvent[] = [];
+  let takeoff = -1;
+  let touchdown = -1;
+  let speedBefore = 0;
+  let speedAfter = 0;
+  for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
+    const { airborne: flying, speed: pace } = rider;
+    stepRace(state, rampRoad, [{ ...flatOut, steer: Math.sign(steering) }]);
+    events.push(...state.events);
+    if (!flying && rider.airborne && takeoff < 0) {
+      takeoff = rider.s;
+    }
+    if (state.events.some((event) => event.kind === "land")) {
+      touchdown = rider.s;
+      speedBefore = pace;
+      speedAfter = rider.speed;
+    }
+  }
+  return {
+    crashes: events.filter((event) => event.kind === "crash"),
+    events,
+    flights: events.filter((event) => event.kind === "land"),
+    speedAfter,
+    speedBefore,
+    takeoff,
+    touchdown,
+  };
+};
+
+const dropOnto = (metres: number): RaceEvent[] => {
+  const state = field(rampRoad, 1, 0, 0);
+  const rider = player(state);
+  rider.s = 3000;
+  rider.speed = 40;
+  rider.airborne = true;
+  rider.air = metres;
+  return hold(state, rampRoad, flatOut, 2).filter(
+    (event) => event.kind === "crash"
+  );
+};
+
+const overSlagRowHump = (speed: number, throttle: number): RaceEvent[] => {
+  const state = field(quietSlagRow, 1, 0, 0);
+  const rider = player(state);
+  rider.s = 3940;
+  rider.speed = speed;
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < 4 * TICK_RATE && rider.s < 4300; tick += 1) {
+    stepRace(state, quietSlagRow, [{ ...flatOut, throttle }]);
+    events.push(...state.events);
+  }
+  return events;
+};
+
+describe("jumping", () => {
+  it("a loading ramp taken flat out at 180 km/h throws the bike about 60 m from the lip and it lands straight and rides on", () => {
+    const jump = jumpFrom(900, 0, 50, 0);
+    expect(jump.crashes).toHaveLength(0);
+    expect(jump.flights).toHaveLength(1);
+    expect(Math.abs(jump.takeoff - 1016.5)).toBeLessThan(1);
+    expect(Math.abs(jump.touchdown - 1016 - 62)).toBeLessThan(13);
+  });
+
+  it("a straight landing costs a little speed, not a lot", () => {
+    const jump = jumpFrom(900, 0, 50, 0);
+    const kept = jump.speedAfter / jump.speedBefore;
+    expect(kept).toBeGreaterThan(0.9);
+    expect(kept).toBeLessThan(0.99);
+  });
+
+  it("a bike still steering hard when it leaves the lip lands leaned over and crashes; a gentle drift lands", () => {
+    const leaned = jumpFrom(1012, -0.2, 50, 0.75);
+    const drifting = jumpFrom(1012, -0.2, 50, 0.3);
+    expect(leaned.crashes.map((crash) => crash.cause)).toStrictEqual([
+      "landing",
+    ]);
+    expect(drifting.crashes).toHaveLength(0);
+    expect(drifting.flights).toHaveLength(1);
+  });
+
+  it("the same gentle drift off a ramp at the road edge lands on the verge and crashes", () => {
+    const jump = jumpFrom(2012, 3.8, 50, 0.3);
+    expect(jump.crashes.map((crash) => crash.cause)).toStrictEqual(["landing"]);
+  });
+
+  it("swerving sharply into the side of a ramp throws the rider", () => {
+    const swerve = jumpFrom(1010, 0.9, 40, -0.8);
+    expect(swerve.crashes.map((crash) => crash.cause)).toStrictEqual(["prop"]);
+  });
+
+  it("brushing the side of a ramp glances off it: the rider stays beside it on the ground and rides on", () => {
+    const brush = field(rampRoad, 1, 0, 0);
+    const rider = player(brush);
+    rider.s = 1010;
+    rider.x = 0.75;
+    rider.speed = 40;
+    rider.lateralSpeed = -0.9;
+    const events = hold(brush, rampRoad, { ...flatOut, steer: -0.05 }, 0.12);
+    expect(rider.s).toBeLessThan(1016);
+    expect(events.map((event) => event.kind)).toContain("glance");
+    expect(events.some((event) => event.kind === "crash")).toBeFalsy();
+    expect(rider.x).toBeGreaterThan(0.7);
+    expect(rider.airborne).toBeFalsy();
+  });
+
+  it("a bike that drops eight metres onto the road crashes however straight it lands; a two metre drop is ridden out", () => {
+    expect(
+      dropOnto(8).map((crash) => crash.kind === "crash" && crash.cause)
+    ).toStrictEqual(["landing"]);
+    expect(dropOnto(2)).toHaveLength(0);
+  });
+
+  it("Slag Row's hump is ridden over on the ground at 130 km/h and gives a short hop flat out", () => {
+    const cruise = overSlagRowHump(36, 0.6);
+    const flat = overSlagRowHump(53, 1);
+    expect(cruise.some((event) => event.kind === "land")).toBeFalsy();
+    const hops = flat.filter((event) => event.kind === "land");
+    expect(hops).toHaveLength(1);
+    expect(hops[0]?.kind === "land" && hops[0].airSeconds).toBeGreaterThan(0.1);
+    expect(hops[0]?.kind === "land" && hops[0].airSeconds).toBeLessThan(1);
+    expect(flat.some((event) => event.kind === "crash")).toBeFalsy();
+  });
+
+  it("computer riders line up on a ramp and land it, and the odd unsure one misjudges it and goes down", () => {
+    let jumped = 0;
+    let passed = 0;
+    let downAtRamp = 0;
+    for (let seed = 1; seed <= 24; seed += 1) {
+      const state = field(rampRoad, seed, 6, 0);
+      const inputs = state.riders.map(() => ({ ...neutralInput }));
+      for (let tick = 0; tick < 60 * TICK_RATE; tick += 1) {
+        for (const [index, input] of inputs.entries()) {
+          pilotInput(state, rampRoad, index, input);
+        }
+        const before = state.riders.map((rider) => rider.s);
+        stepRace(state, rampRoad, inputs);
+        for (const [index, rider] of state.riders.entries()) {
+          if ((before[index] ?? 0) <= 1016 && rider.s > 1016) {
+            passed += 1;
+            jumped += rider.airborne ? 1 : 0;
+          }
+        }
+        for (const event of state.events) {
+          const crashed =
+            event.kind === "crash" ? state.riders[event.rider] : undefined;
+          if (crashed && crashed.s > 990 && crashed.s < 1100) {
+            downAtRamp += 1;
+          }
+        }
+        if (state.riders.every((rider) => rider.s > 1200)) {
+          break;
+        }
+      }
+    }
+    expect(passed).toBeGreaterThan(140);
+    expect(jumped / passed).toBeGreaterThan(0.75);
+    expect(downAtRamp).toBeGreaterThan(0);
+    expect(downAtRamp / passed).toBeLessThan(0.1);
   });
 });
