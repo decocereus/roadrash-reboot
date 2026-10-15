@@ -50,11 +50,14 @@ const frameSample = Schema.Struct({
   calls: Schema.Array(Schema.Number),
   cpu: Schema.Array(Schema.Number),
   frame: Schema.Number,
+  geometries: Schema.optionalKey(Schema.Number),
   gpu: Schema.NullOr(Schema.Array(Schema.Number)),
   interval: Schema.Number,
   pixelRatio: Schema.Number,
+  programs: Schema.optionalKey(Schema.Number),
   rung: Schema.Number,
   start: Schema.optionalKey(Schema.Number),
+  textures: Schema.optionalKey(Schema.Number),
   tick: Schema.Number,
   ticks: Schema.Number,
   triangles: Schema.Array(Schema.Number),
@@ -129,6 +132,31 @@ interface Stall {
   readonly events: readonly StallEvent[];
 }
 
+interface Growth {
+  readonly resource: "programs" | "textures" | "geometries";
+  readonly first: number;
+  readonly last: number;
+  readonly grownAt: readonly number[];
+}
+
+const resources = ["programs", "textures", "geometries"] as const;
+
+const growthOf = (frames: readonly Frame[]): Growth[] =>
+  resources.map((resource) => {
+    const counts = frames.map((frame) => frame[resource] ?? 0);
+    return {
+      first: counts[0] ?? 0,
+      grownAt: frames
+        .filter(
+          (frame, index) =>
+            index > 0 && (frame[resource] ?? 0) > (counts[index - 1] ?? 0)
+        )
+        .map((frame) => frame.tick),
+      last: counts.at(-1) ?? 0,
+      resource,
+    };
+  });
+
 interface RunResult {
   readonly run: number;
   readonly renderer: string;
@@ -152,6 +180,7 @@ interface RunResult {
   readonly allocations: Allocations | null;
   readonly shots: readonly string[];
   readonly late: readonly number[];
+  readonly growth: readonly Growth[];
   readonly stalls: readonly Stall[];
   readonly samples: readonly Frame[];
 }
@@ -509,6 +538,7 @@ const measureOnce = async (
       frames: frames.length,
       gcEventNames: options.trace ? gcNamesSeen(events) : [],
       gpuTimer: info.gpuTimer,
+      growth: growthOf(frames),
       heapAfter,
       heapBefore,
       hot: profile ? await hottest(profile, TOP_FUNCTIONS) : null,
@@ -544,6 +574,12 @@ const printRun = (result: RunResult) => {
   if (trace) {
     console.log(
       `  gc minor ${trace.minorGc.count} (${trace.minorGc.totalMs.toFixed(1)} ms, max ${trace.minorGc.maxMs.toFixed(2)})  major ${trace.majorGc.count} (${trace.majorGc.totalMs.toFixed(1)} ms, max ${trace.majorGc.maxMs.toFixed(2)})  long tasks ${trace.longTasks.count}  longest task ${trace.longestTaskMs.toFixed(1)} ms over ${(trace.spanMs / 1000).toFixed(1)} s`
+    );
+  }
+  for (const each of result.growth) {
+    const shown = each.grownAt.slice(0, 12).join(", ");
+    console.log(
+      `  ${each.resource} ${each.first} -> ${each.last}, grew in ${each.grownAt.length} frames${shown ? ` (ticks ${shown}${each.grownAt.length > 12 ? ", ..." : ""})` : ""}`
     );
   }
   for (const stall of result.stalls) {
