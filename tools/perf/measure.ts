@@ -29,8 +29,8 @@ import type {
 } from "./analysis.ts";
 import { evaluate } from "./cdp.ts";
 import type { Session } from "./cdp.ts";
-import { launch } from "./chrome.ts";
-import type { Viewport } from "./chrome.ts";
+import { browserNamed, launch } from "./chrome.ts";
+import type { BrowserChoice, Viewport } from "./chrome.ts";
 
 const POLL_MS = 40;
 const TIMEOUT_MS = 240_000;
@@ -92,6 +92,7 @@ const screenshot = Schema.Struct({ data: Schema.String });
 
 interface Options {
   readonly url: string;
+  readonly browser: BrowserChoice;
   readonly label: string;
   readonly runs: number;
   readonly from: number;
@@ -212,6 +213,7 @@ const readOptions = (): Options => {
   const { values } = parseArgs({
     options: {
       "alloc-profile": { default: false, type: "boolean" },
+      browser: { default: "chrome", type: "string" },
       "cpu-profile": { default: false, type: "boolean" },
       "first-run": { default: false, type: "boolean" },
       from: { type: "string" },
@@ -238,6 +240,7 @@ const readOptions = (): Options => {
   const firstRun = values["first-run"];
   return {
     allocProfile: values["alloc-profile"],
+    browser: browserNamed(values.browser),
     cpuProfile: values["cpu-profile"],
     firstRun,
     from: Number(values.from ?? (firstRun ? 1 : benchWindow.from)),
@@ -449,7 +452,7 @@ const measureOnce = async (
   options: Options,
   run: number
 ): Promise<RunResult> => {
-  const browser = await launch(options.port, options.viewport);
+  const browser = await launch(options.port, options.viewport, options.browser);
   const { page } = browser;
   const deadline = Date.now() + TIMEOUT_MS;
   try {

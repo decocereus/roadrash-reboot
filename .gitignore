@@ -12,3 +12,5 @@ coverage/
 .output/
 .wrangler/
 tools/perf/results/
+.claude/*
+!.claude/skills/
