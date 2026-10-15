@@ -1,3 +1,5 @@
+import { lipOf, lipSlopeOf, nextJumpFrom } from "@racer/track/features";
+import type { TrackFeature } from "@racer/track/features";
 import { nextSeed, unitOf } from "@racer/track/random";
 import { curvatureAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -5,7 +7,7 @@ import type { Track } from "@racer/track/track";
 import { grudgeSide, nearestRival } from "./combat.ts";
 import { topSpeedOf } from "./engine.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
-import { towardBike } from "./rider.ts";
+import { HARD_LANDING, towardBike } from "./rider.ts";
 import {
   BIKE_HALF_WIDTH,
   clamp,
@@ -47,6 +49,22 @@ const OWN_LANE_REACH = 1;
 const CRUISE_THROTTLE = 0.6;
 const THROTTLE_PER_EXCESS = 0.8;
 const PACING_RANGE = 200;
+const JUMP_SIGHT_SECONDS = 3.5;
+const JUMP_SIGHT_EXTRA = 10;
+const JUMP_PULL = 2.6;
+const JUMP_ALIGN_SECONDS = 0.5;
+const JUMP_ALIGN_PER_METRE = 0.45;
+const JUMP_LANDING_ROOM = 1;
+const JUMP_IMPACT_MARGIN = 0.9;
+const JUMP_LINE_SPREAD = 1.2;
+const JUMP_WALL_CLEARANCE = 1.2;
+const MISREAD_SHARE = 0.8;
+const MISREAD_EDGE = 0.15;
+const MISREAD_REACH = 1.5;
+const MISREAD_SLACK = 0.1;
+const MISREAD_DIVE = 5;
+const STRAIGHTEN_SECONDS = 0.6;
+const STRAIGHTEN_SCAN_STEP = 2;
 
 interface Pace {
   readonly cap: number;
@@ -314,6 +332,133 @@ const laneAim = (
   };
 };
 
+const roll = (state: RaceState): number => {
+  state.dice = nextSeed(state.dice);
+  return unitOf(state.dice);
+};
+
+const safeLaunchSpeed = (jump: TrackFeature): number => {
+  const impact = -HARD_LANDING * JUMP_IMPACT_MARGIN;
+  const fall = 2 * GRAVITY * jump.rise;
+  return impact * impact > fall
+    ? Math.sqrt(impact * impact - fall) / lipSlopeOf(jump)
+    : 0;
+};
+
+const misreads = (
+  state: RaceState,
+  rider: RiderState,
+  jumpIndex: number
+): boolean => {
+  if (rider.jumpSeen !== jumpIndex) {
+    rider.jumpSeen = jumpIndex;
+    rider.jumpMisread = roll(state) < (1 - rider.profile.skill) * MISREAD_SHARE;
+  }
+  return rider.jumpMisread;
+};
+
+const lineOnto = (
+  jump: TrackFeature,
+  riderIndex: number,
+  rider: RiderState,
+  misread: boolean
+): number => {
+  const side = riderIndex % 2 === 0 ? 1 : -1;
+  if (misread) {
+    const across = rider.x - jump.x;
+    const gap = Math.abs(across) - jump.width / 2;
+    const toLip = (lipOf(jump) - rider.s) / Math.max(1, rider.speed);
+    const dives =
+      gap > 0 &&
+      gap < MISREAD_REACH &&
+      toLip < Math.sqrt((2 * gap) / rider.bike.steerRate) + MISREAD_SLACK;
+    return dives
+      ? jump.x - Math.sign(across) * MISREAD_DIVE
+      : jump.x + side * (jump.width / 2 + MISREAD_EDGE);
+  }
+  const spread = (1 - rider.profile.skill) * JUMP_LINE_SPREAD;
+  return jump.x + side * Math.min(spread, jump.width / 2 - BIKE_HALF_WIDTH);
+};
+
+const clearOfWall = (jump: TrackFeature, rider: RiderState, aim: Aim): Aim => {
+  const wall = jump.width / 2 + JUMP_WALL_CLEARANCE;
+  if (Math.abs(aim.x - jump.x) >= wall) {
+    return aim;
+  }
+  const side = Math.sign(rider.x - jump.x) || 1;
+  return { speed: aim.speed, x: jump.x + side * wall };
+};
+
+const jumpAim = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  aim: Aim
+): Aim => {
+  const jumpIndex = nextJumpFrom(track, rider.s);
+  const jump = track.features[jumpIndex];
+  if (!jump) {
+    return aim;
+  }
+  const toToe = jump.s - rider.s;
+  const offset = Math.abs(rider.x - jump.x);
+  if (toToe <= 0) {
+    if (offset <= jump.width / 2) {
+      return { speed: aim.speed, x: jump.x };
+    }
+    return rider.jumpSeen === jumpIndex && rider.jumpMisread
+      ? { speed: aim.speed, x: lineOnto(jump, riderIndex, rider, true) }
+      : clearOfWall(jump, rider, aim);
+  }
+  if (toToe > rider.speed * JUMP_SIGHT_SECONDS + JUMP_SIGHT_EXTRA) {
+    return aim;
+  }
+  const drawn =
+    Math.abs(aim.x - jump.x) < JUMP_PULL ||
+    offset < jump.width / 2 + BIKE_HALF_WIDTH;
+  if (!drawn) {
+    return aim;
+  }
+  const lined = offset <= jump.width / 2 - BIKE_HALF_WIDTH;
+  const committed = rider.jumpSeen === jumpIndex && rider.jumpMisread;
+  const reachable =
+    lined ||
+    committed ||
+    toToe / Math.max(1, rider.speed) >
+      JUMP_ALIGN_SECONDS + JUMP_ALIGN_PER_METRE * offset;
+  const landsOnRoad =
+    Math.abs(jump.x) < track.roadHalfWidth - JUMP_LANDING_ROOM;
+  if (reachable && landsOnRoad) {
+    return {
+      speed: Math.min(aim.speed, safeLaunchSpeed(jump)),
+      x: lineOnto(jump, riderIndex, rider, misreads(state, rider, jumpIndex)),
+    };
+  }
+  return clearOfWall(jump, rider, aim);
+};
+
+const launchesSoon = (track: Track, rider: RiderState): boolean => {
+  const reach = rider.speed * STRAIGHTEN_SECONDS;
+  const lift = -GRAVITY / (rider.speed * rider.speed);
+  for (let ahead = 0; ahead <= reach; ahead += STRAIGHTEN_SCAN_STEP) {
+    if (slopeRateAt(track, rider.s + ahead) < lift) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const straightened = (track: Track, rider: RiderState, aim: Aim): Aim => {
+  if (rider.speed <= 0 || !launchesSoon(track, rider)) {
+    return aim;
+  }
+  const settling =
+    (rider.lateralSpeed * Math.abs(rider.lateralSpeed)) /
+    (2 * rider.bike.steerRate);
+  return { speed: aim.speed, x: rider.x + settling };
+};
+
 interface Pursuit extends Aim {
   readonly engaged: boolean;
   readonly within: number;
@@ -441,11 +586,6 @@ const ride = (
       : 0;
 };
 
-const roll = (state: RaceState): number => {
-  state.dice = nextSeed(state.dice);
-  return unitOf(state.dice);
-};
-
 const rivalWithin = (
   state: RaceState,
   riderIndex: number,
@@ -531,9 +671,19 @@ export const pilotInput = (
     return;
   }
   const police = rider.profile.role === "police";
-  const aim = police
-    ? copAim(state, track, riderIndex, rider)
-    : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY);
+  const aim = straightened(
+    track,
+    rider,
+    jumpAim(
+      state,
+      track,
+      riderIndex,
+      rider,
+      police
+        ? copAim(state, track, riderIndex, rider)
+        : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY)
+    )
+  );
   ride(
     track,
     rider,

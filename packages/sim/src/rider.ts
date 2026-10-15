@@ -1,4 +1,11 @@
 import {
+  emptySupport,
+  lipOf,
+  lipSlopeOf,
+  supportAt,
+} from "@racer/track/features";
+import type { Support, TrackFeature } from "@racer/track/features";
+import {
   curvatureAt,
   firstSolidPropFrom,
   heightAt,
@@ -42,7 +49,21 @@ const TUCK_IN_RATE = 1;
 const TUCK_OUT_RATE = 5;
 const HARD_BRAKE = 0.5;
 const TAKEOFF_SPEED = 10;
-const HARD_LANDING = -11;
+export const HARD_LANDING = -11;
+export const LANDING_SLIP = 0.6;
+const JUDGED_FLIGHT_TICKS = 15;
+const LANDING_LOSS_PER_IMPACT = 0.008;
+const MOST_LANDING_LOSS = 0.1;
+const WOBBLE_PER_IMPACT = 1 / 12;
+const WOBBLE_DECAY = 1.1;
+const WOBBLE_TURNS = 20;
+const WOBBLE_SWAY = 0.8;
+const WOBBLE_LEAN = 0.35;
+const WOBBLE_GRIP = 0.4;
+const DECK_STEP = 0.1;
+const WALL_SPEED_KEEP = 0.98;
+const WALL_THROW_HEIGHT = 0.2;
+const WALL_THROW_SPEED = 1;
 const GLANCE_OVERLAP = 0.3;
 const CRASH_CLOSING_SPEED = 9;
 const NEAR_MISS_MARGIN = 1.1;
@@ -105,12 +126,15 @@ const standing: RiderInput = {
 const forwardRateOf = (rider: RiderState, curvature: number): number =>
   rider.speed / Math.max(0.5, 1 - curvature * rider.x);
 
+const swayOf = (rider: RiderState): number =>
+  rider.wobble * Math.sin(rider.wobble * WOBBLE_TURNS);
+
 const settleVisuals = (rider: RiderState, authority: number): void => {
   const limit = Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
   rider.lean =
-    clamp(rider.lateralSpeed / limit, -1, 1) *
-    rider.bike.visualLean *
-    authority;
+    (clamp(rider.lateralSpeed / limit, -1, 1) * authority +
+      swayOf(rider) * WOBBLE_LEAN) *
+    rider.bike.visualLean;
   rider.heading =
     Math.atan2(rider.lateralSpeed, Math.max(rider.speed, 6)) * 0.5;
 };
@@ -204,6 +228,7 @@ export const throwRider = (
   rider.airborne = false;
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
+  rider.wobble = 0;
   state.events.push({
     by: blamedFor(state, rider),
     cause,
@@ -216,12 +241,77 @@ export const throwRider = (
   }
 };
 
+const before: Support = emptySupport();
+const under: Support = emptySupport();
+
+interface Contact {
+  readonly x: number;
+  readonly slope: number;
+  readonly verticalSpeed: number;
+}
+
+const contactOf = (
+  track: Track,
+  rider: RiderState,
+  from: Readonly<{ s: number; x: number; clearance: number; rise: number }>
+): Contact => {
+  const clearance = rider.air - under.height;
+  const share = clamp(from.clearance / (from.clearance - clearance), 0, 1);
+  const s = from.s + (rider.s - from.s) * share;
+  const x = from.x + (rider.x - from.x) * share;
+  supportAt(track, s, x, before);
+  return {
+    slope: slopeAt(track, s) + before.slope,
+    verticalSpeed: from.rise - GRAVITY * TICK_SECONDS * share,
+    x,
+  };
+};
+
+const land = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  contact: Contact,
+  forwardRate: number
+): void => {
+  const impact = contact.verticalSpeed - contact.slope * forwardRate;
+  const judged = rider.airTicks >= JUDGED_FLIGHT_TICKS;
+  const airSeconds = rider.airTicks * TICK_SECONDS;
+  const slip =
+    Math.abs(rider.lateralSpeed) /
+    Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
+  rider.air = under.height;
+  rider.airborne = false;
+  rider.airTicks = 0;
+  rider.verticalSpeed = 0;
+  rider.offRoad = Math.abs(contact.x) > track.roadHalfWidth;
+  if (
+    impact < HARD_LANDING ||
+    (judged && (rider.offRoad || slip > LANDING_SLIP))
+  ) {
+    throwRider(state, riderIndex, "landing", 0.7, 0.75);
+    return;
+  }
+  rider.speed *=
+    1 - Math.min(MOST_LANDING_LOSS, -impact * LANDING_LOSS_PER_IMPACT);
+  rider.wobble = clamp(-impact * WOBBLE_PER_IMPACT + slip, 0, 1);
+  state.events.push({ airSeconds, impact, kind: "land", rider: riderIndex });
+};
+
 const fly = (
   state: RaceState,
   track: Track,
   riderIndex: number,
   rider: RiderState
 ): void => {
+  supportAt(track, rider.s, rider.x, before);
+  const from = {
+    clearance: rider.air - before.height,
+    rise: rider.verticalSpeed,
+    s: rider.s,
+    x: rider.x,
+  };
   const curvature = curvatureAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
   const groundBefore = heightAt(track, rider.s);
@@ -236,21 +326,95 @@ const fly = (
   settleVisuals(rider, 0.6);
   rider.load = 0;
   rider.airTicks += 1;
-  if (rider.air > 0) {
+  supportAt(track, rider.s, rider.x, under);
+  if (rider.air > under.height) {
     return;
   }
-  const impact = rider.verticalSpeed - slopeAt(track, rider.s) * forwardRate;
-  const airSeconds = rider.airTicks * TICK_SECONDS;
-  rider.air = 0;
-  rider.airborne = false;
+  land(
+    state,
+    track,
+    riderIndex,
+    rider,
+    contactOf(track, rider, from),
+    forwardRate
+  );
+};
+
+const launchFromLip = (
+  track: Track,
+  rider: RiderState,
+  jump: TrackFeature,
+  forwardRate: number
+): void => {
+  const lip = lipOf(jump);
+  const seconds = (rider.s - lip) / Math.max(1, forwardRate);
+  const climb = lipSlopeOf(jump) * forwardRate;
+  rider.airborne = true;
   rider.airTicks = 0;
-  rider.verticalSpeed = 0;
-  if (impact < HARD_LANDING) {
-    throwRider(state, riderIndex, "landing", 0.7, 0.75);
+  rider.air = jump.rise + climb * seconds - (GRAVITY * seconds * seconds) / 2;
+  rider.verticalSpeed =
+    slopeAt(track, lip) * forwardRate + climb - GRAVITY * seconds;
+};
+
+const fallOffSide = (
+  track: Track,
+  rider: RiderState,
+  height: number,
+  forwardRate: number
+): void => {
+  rider.airborne = true;
+  rider.airTicks = 0;
+  rider.air = height;
+  rider.verticalSpeed = (slopeAt(track, rider.s) + before.slope) * forwardRate;
+};
+
+const hitWall = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  fromX: number
+): void => {
+  if (
+    under.height > WALL_THROW_HEIGHT &&
+    Math.abs(rider.lateralSpeed) > WALL_THROW_SPEED
+  ) {
+    throwRider(state, riderIndex, "prop", 0.5, 0.7);
     return;
   }
-  rider.speed *= 1 - Math.min(0.15, Math.abs(impact) * 0.012);
-  state.events.push({ airSeconds, impact, kind: "land", rider: riderIndex });
+  rider.x = fromX;
+  rider.lateralSpeed = 0;
+  rider.speed *= WALL_SPEED_KEEP;
+  supportAt(track, rider.s, rider.x, under);
+  rider.air = under.height;
+  state.events.push({ kind: "glance", rider: riderIndex });
+};
+
+const settleOnSurface = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  fromX: number,
+  forwardRate: number
+): void => {
+  const deck = track.features[before.feature];
+  if (deck && rider.s > lipOf(deck)) {
+    launchFromLip(track, rider, deck, forwardRate);
+    return;
+  }
+  supportAt(track, rider.s, rider.x, under);
+  const climbing = under.feature >= 0 && under.feature !== before.feature;
+  if (climbing && under.height > rider.air + DECK_STEP) {
+    hitWall(state, track, riderIndex, rider, fromX);
+    return;
+  }
+  const leaving = before.feature >= 0 && under.feature !== before.feature;
+  if (leaving && rider.air > DECK_STEP) {
+    fallOffSide(track, rider, rider.air, forwardRate);
+    return;
+  }
+  rider.air = under.height;
 };
 
 const ride = (
@@ -261,11 +425,14 @@ const ride = (
   input: RiderInput
 ): void => {
   const { bike } = rider;
+  supportAt(track, rider.s, rider.x, before);
   const curvature = curvatureAt(track, rider.s);
-  const slope = slopeAt(track, rider.s);
+  const slope = slopeAt(track, rider.s) + before.slope;
   const forwardRate = forwardRateOf(rider, curvature);
   const verticalAcceleration =
-    slopeRateAt(track, rider.s) * forwardRate * forwardRate;
+    (slopeRateAt(track, rider.s) + before.slopeRate) *
+    forwardRate *
+    forwardRate;
 
   if (verticalAcceleration < -GRAVITY && rider.speed > TAKEOFF_SPEED) {
     rider.airborne = true;
@@ -288,9 +455,11 @@ const ride = (
   );
   rider.brake = approach(rider.brake, input.brake, CONTROL_RAMP * TICK_SECONDS);
 
+  rider.wobble = Math.max(0, rider.wobble - WOBBLE_DECAY * TICK_SECONDS);
   const limit =
     lateralSpeedLimit(bike, rider.speed, input.throttle) *
-    (1 - (1 - VERGE_STEER) * verge);
+    (1 - (1 - VERGE_STEER) * verge) *
+    (1 - WOBBLE_GRIP * rider.wobble);
   const wantedLateral =
     input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
   rider.lateralSpeed = approach(
@@ -327,9 +496,12 @@ const ride = (
   }
   rider.speed = Math.max(0, rider.speed + acceleration * TICK_SECONDS);
 
-  rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
+  const fromX = rider.x;
+  rider.x +=
+    (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   settleVisuals(rider, 1);
+  settleOnSurface(state, track, riderIndex, rider, fromX, forwardRate);
 };
 
 const hitProps = (
