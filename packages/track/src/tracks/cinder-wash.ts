@@ -3,6 +3,7 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const cinderWash: TrackPlan = {
+  features: [],
   id: "cinder-wash",
   laneWidth: 3.8,
   lanesEachWay: 2,

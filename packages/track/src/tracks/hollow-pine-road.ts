@@ -3,6 +3,7 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const hollowPineRoad: TrackPlan = {
+  features: [],
   id: "hollow-pine-road",
   laneWidth: 3.4,
   lanesEachWay: 1,

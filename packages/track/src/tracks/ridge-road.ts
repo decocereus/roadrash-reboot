@@ -3,6 +3,7 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const ridgeRoad: TrackPlan = {
+  features: [],
   id: "ridge-road",
   laneWidth: 3.6,
   lanesEachWay: 1,

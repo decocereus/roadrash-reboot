@@ -1,3 +1,5 @@
+import { compileFeatures, indexFeatures } from "./features.ts";
+import type { FeatureIndex, FeatureRule, TrackFeature } from "./features.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
@@ -23,6 +25,7 @@ export interface TrackPlan {
   readonly trafficPerKilometre: number;
   readonly roadblocks: readonly number[];
   readonly sections: readonly TrackSection[];
+  readonly features: readonly FeatureRule[];
 }
 
 export type TrackPropKind = "tree" | "pole" | "chevron" | "rock" | "gate";
@@ -54,6 +57,8 @@ export interface Track {
   readonly slopeRate: Float64Array;
   readonly props: readonly TrackProp[];
   readonly solidProps: readonly TrackProp[];
+  readonly features: readonly TrackFeature[];
+  readonly featureIndex: FeatureIndex;
 }
 
 export interface TrackPoint {
@@ -250,10 +255,17 @@ export const compileTrack = (plan: TrackPlan): Track => {
   const props = scatterProps(plan, length, curvature);
   const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
+  const features = compileFeatures(plan.features, {
+    length,
+    level: plan.level,
+    roadHalfWidth,
+  });
 
   return {
     curvature,
     endS,
+    featureIndex: indexFeatures(features, startS, endS),
+    features,
     heading,
     length,
     oncomingLanes: laneCentres(plan, -1),

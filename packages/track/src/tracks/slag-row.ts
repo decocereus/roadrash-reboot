@@ -3,6 +3,7 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
+  features: [],
   id: "slag-row",
   laneWidth: 3.5,
   lanesEachWay: 2,

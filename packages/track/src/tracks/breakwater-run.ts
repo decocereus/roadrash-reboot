@@ -3,6 +3,7 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const breakwaterRun: TrackPlan = {
+  features: [],
   id: "breakwater-run",
   laneWidth: 3.6,
   lanesEachWay: 2,
