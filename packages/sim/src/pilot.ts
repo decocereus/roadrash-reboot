@@ -77,6 +77,11 @@ const HAZARD_SIGHT_EXTRA = 15;
 const DODGE_MARGIN = 0.45;
 const DODGE_EDGE = 0.2;
 const HAZARD_MISS_SHARE = 0.4;
+const DODGE_LEAD_SECONDS = 0.5;
+const DODGE_LEAD_PER_METRE = 0.45;
+const ROCK_THROUGH_SPEED = 150 / 3.6;
+const ROCK_DODGE_SHARE = 0.85;
+const FLAT_DODGE_SHARE = 0.95;
 const SLIPPING = 0.2;
 const SLIPPING_STEER = 0.45;
 
@@ -476,6 +481,11 @@ const jumpAim = (
   return clearOfWall(track, jump, rider, aim);
 };
 
+const hazardRoll = (state: RaceState): number => {
+  state.hazardDice = nextSeed(state.hazardDice);
+  return unitOf(state.hazardDice);
+};
+
 const overlooks = (
   state: RaceState,
   rider: RiderState,
@@ -484,7 +494,7 @@ const overlooks = (
   if (rider.hazardSeen !== hazardIndex) {
     rider.hazardSeen = hazardIndex;
     rider.hazardMissed =
-      roll(state) < (1 - rider.profile.skill) * HAZARD_MISS_SHARE;
+      hazardRoll(state) < (1 - rider.profile.skill) * HAZARD_MISS_SHARE;
   }
   return rider.hazardMissed;
 };
@@ -492,34 +502,65 @@ const overlooks = (
 const dodgeReach = (hazard: Hazard): number =>
   hazard.halfWidth + BIKE_HALF_WIDTH + DODGE_MARGIN;
 
-const inTheWay = (rider: RiderState, aim: Aim, hazard: Hazard): boolean => {
-  const reach = dodgeReach(hazard);
-  return (
-    Math.abs(aim.x - hazard.x) < reach ||
-    Math.abs(rider.x - hazard.x) < reach ||
-    between(rider.x, aim.x, hazard.x)
-  );
-};
-
 const metresToContact = (rider: RiderState, hazard: Hazard): number =>
   hazard.s - hazard.halfLength - BIKE_HALF_LENGTH - rider.s;
 
-const nearestHazard = (
+const inSight: number[] = [];
+
+const gatherInSight = (state: RaceState, rider: RiderState): void => {
+  inSight.length = 0;
+  const sight = rider.speed * HAZARD_SIGHT_SECONDS + HAZARD_SIGHT_EXTRA;
+  for (const [index, hazard] of state.hazards.entries()) {
+    const passed = hazard.s + hazard.halfLength + BIKE_HALF_LENGTH < rider.s;
+    if (!passed && metresToContact(rider, hazard) <= sight) {
+      inSight.push(index);
+    }
+  }
+};
+
+const sitsOn = (x: number, hazard: Hazard): boolean =>
+  Math.abs(x - hazard.x) < dodgeReach(hazard);
+
+const speedToCross = (rider: RiderState, x: number, hazard: Hazard): number => {
+  if (sitsOn(x, hazard)) {
+    return 0;
+  }
+  if (!sitsOn(rider.x, hazard) && !between(rider.x, x, hazard.x)) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const exit = hazard.x + Math.sign(x - hazard.x) * dodgeReach(hazard);
+  const lead =
+    DODGE_LEAD_SECONDS + DODGE_LEAD_PER_METRE * Math.abs(exit - rider.x);
+  return Math.max(0, metresToContact(rider, hazard)) / lead;
+};
+
+const speedAlong = (state: RaceState, rider: RiderState, x: number): number => {
+  let speed = Number.POSITIVE_INFINITY;
+  for (const index of inSight) {
+    const hazard = state.hazards[index];
+    if (hazard) {
+      speed = Math.min(speed, speedToCross(rider, x, hazard));
+    }
+  }
+  return speed;
+};
+
+const blockingHazard = (
   state: RaceState,
   rider: RiderState,
   aim: Aim
 ): number => {
-  const sight = rider.speed * HAZARD_SIGHT_SECONDS + HAZARD_SIGHT_EXTRA;
   let nearest = -1;
   let nearestAhead = Number.POSITIVE_INFINITY;
-  for (const [index, hazard] of state.hazards.entries()) {
+  for (const index of inSight) {
+    const hazard = state.hazards[index];
+    if (!hazard) {
+      continue;
+    }
     const ahead = metresToContact(rider, hazard);
-    const passed = hazard.s + hazard.halfLength + BIKE_HALF_LENGTH < rider.s;
     if (
-      !passed &&
-      ahead <= sight &&
       ahead < nearestAhead &&
-      inTheWay(rider, aim, hazard)
+      speedToCross(rider, aim.x, hazard) < rider.speed
     ) {
       nearest = index;
       nearestAhead = ahead;
@@ -528,54 +569,131 @@ const nearestHazard = (
   return nearest;
 };
 
-const sideOf = (x: number, hazard: Hazard, fallback: number): number =>
-  Math.sign(x - hazard.x) || fallback;
+const crossingBlocked = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  lanes: readonly number[],
+  x: number
+): boolean =>
+  lanes.some(
+    (lane) =>
+      between(rider.x, x, lane) &&
+      Math.abs(lane - rider.x) >= OWN_LANE_REACH &&
+      (laneThreat(state, riderIndex, rider, lane)?.seconds ??
+        Number.POSITIVE_INFINITY) < CROSSING_SECONDS
+  );
 
-const lineAround = (
+const trafficClear = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  x: number
+): boolean =>
+  !laneThreat(state, riderIndex, rider, x) &&
+  !crossingBlocked(state, riderIndex, rider, track.sameWayLanes, x) &&
+  !crossingBlocked(state, riderIndex, rider, track.oncomingLanes, x);
+
+const rampClear = (
   track: Track,
   rider: RiderState,
   aim: Aim,
-  hazard: Hazard
-): number => {
-  const reach = dodgeReach(hazard);
-  const riderSide = sideOf(rider.x, hazard, sideOf(aim.x, hazard, 1));
-  const aimClear = Math.abs(aim.x - hazard.x) >= reach;
-  const wanted = aimClear ? riderSide : sideOf(aim.x, hazard, riderSide);
-  const room = track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE;
-  const side = Math.abs(hazard.x + wanted * reach) <= room ? wanted : -wanted;
-  return hazard.x + side * reach;
+  hazard: Hazard,
+  x: number
+): boolean => {
+  const jump = track.features[nextJumpFrom(track, rider.s)];
+  if (!jump || jump.s > hazard.s + hazard.halfLength) {
+    return true;
+  }
+  const across = Math.abs(x - jump.x);
+  return Math.abs(aim.x - jump.x) <= jump.width / 2
+    ? across <= jump.width / 2 - BIKE_HALF_WIDTH
+    : across >= jump.width / 2 + JUMP_WALL_CLEARANCE;
 };
+
+const throughSpeed = (hazard: Hazard, wanted: number): number =>
+  hazard.kind === "rock"
+    ? Math.min(ROCK_THROUGH_SPEED, wanted * ROCK_DODGE_SHARE)
+    : wanted * FLAT_DODGE_SHARE;
 
 const settledLine = (rider: RiderState): number =>
   rider.x +
   (rider.lateralSpeed * Math.abs(rider.lateralSpeed)) /
     (2 * rider.bike.steerRate);
 
+const rideThrough = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  aim: Aim,
+  hazard: Hazard
+): Aim => {
+  const straight = settledLine(rider);
+  return {
+    speed:
+      hazard.kind === "rock"
+        ? Math.min(aim.speed, ROCK_THROUGH_SPEED)
+        : aim.speed,
+    x: trafficClear(state, track, riderIndex, rider, straight)
+      ? straight
+      : aim.x,
+  };
+};
+
 const hazardAim = (
   state: RaceState,
   track: Track,
+  riderIndex: number,
   rider: RiderState,
   aim: Aim
 ): Aim => {
-  const index = nearestHazard(state, rider, aim);
+  gatherInSight(state, rider);
+  const index = blockingHazard(state, rider, aim);
   const hazard = state.hazards[index];
   if (!hazard || overlooks(state, rider, index)) {
     return aim;
   }
-  const reach = dodgeReach(hazard);
-  const aimClear = Math.abs(aim.x - hazard.x) >= reach;
-  if (aimClear && !between(rider.x, aim.x, hazard.x)) {
-    return aim;
+  const wanted = Math.min(aim.speed, rider.speed);
+  const room = track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE;
+  let bestX = aim.x;
+  let bestSpeed = speedAlong(state, rider, aim.x);
+  let bestCost = Math.abs(aim.x - rider.x);
+  const consider = (x: number): void => {
+    if (
+      Math.abs(x) > room ||
+      !rampClear(track, rider, aim, hazard, x) ||
+      !trafficClear(state, track, riderIndex, rider, x)
+    ) {
+      return;
+    }
+    const speed = speedAlong(state, rider, x);
+    const cost = Math.abs(x - rider.x) + Math.abs(x - aim.x);
+    const free = speed >= wanted;
+    const better =
+      bestSpeed >= wanted ? free && cost < bestCost : speed > bestSpeed;
+    if (better) {
+      bestX = x;
+      bestSpeed = speed;
+      bestCost = cost;
+    }
+  };
+  const side =
+    Math.sign(rider.x - hazard.x) || Math.sign(aim.x - hazard.x) || 1;
+  consider(hazard.x + side * dodgeReach(hazard));
+  consider(hazard.x - side * dodgeReach(hazard));
+  for (const other of inSight) {
+    const beyond = state.hazards[other];
+    if (beyond && other !== index) {
+      consider(beyond.x + dodgeReach(beyond));
+      consider(beyond.x - dodgeReach(beyond));
+    }
   }
-  const x = lineAround(track, rider, aim, hazard);
-  if (hazard.kind !== "oil") {
-    return { speed: aim.speed, x };
+  if (bestSpeed < throughSpeed(hazard, wanted)) {
+    return rideThrough(state, track, riderIndex, rider, aim, hazard);
   }
-  const seconds =
-    Math.max(0, metresToContact(rider, hazard)) / Math.max(1, rider.speed);
-  const avoidable =
-    seconds > JUMP_ALIGN_SECONDS + JUMP_ALIGN_PER_METRE * Math.abs(x - rider.x);
-  return { speed: aim.speed, x: avoidable ? x : settledLine(rider) };
+  return { speed: Math.min(aim.speed, bestSpeed), x: bestX };
 };
 
 const launchesSoon = (track: Track, rider: RiderState): boolean => {
@@ -818,6 +936,7 @@ export const pilotInput = (
     hazardAim(
       state,
       track,
+      riderIndex,
       rider,
       jumpAim(
         state,
