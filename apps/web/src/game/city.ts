@@ -23,6 +23,8 @@ const FACADE_TILE_WIDE = 16;
 const FACADE_TILE_TALL = 32;
 const SKIRT = 18;
 const SIGN_GLOW = 1.5;
+const CHUNK_BEHIND = 260;
+const BLOCKS_PER_FRAME = 3;
 const AWNINGS = [MAGENTA, CYAN, YELLOW, ORANGE, RED] as const;
 const SCREENS = [CYAN, "#ffffff", MAGENTA] as const;
 
@@ -34,6 +36,13 @@ interface Block {
 }
 
 type Batch = Map<string, THREE.BufferGeometry[]>;
+
+interface Build {
+  readonly index: number;
+  readonly chunk: THREE.Group;
+  readonly batch: Batch;
+  raised: number;
+}
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const tint = new THREE.Color();
@@ -542,32 +551,81 @@ export const createCity = (track: Track, shading: Shading): City => {
     return solid([1, 1, 1], "#ffffff");
   };
 
-  const buildChunk = (index: number): THREE.Group => {
-    const from = track.startS + index * CITY_CHUNK;
-    const batch: Batch = new Map();
-    for (const block of blocks) {
-      if (block.s >= from && block.s < from + CITY_CHUNK) {
-        raise(batch, block);
-      }
+  const blocksOf: Block[][] = Array.from({ length: chunkCount }, () => []);
+  for (const block of blocks) {
+    blocksOf[Math.floor((block.s - track.startS) / CITY_CHUNK)]?.push(block);
+  }
+  let building: Build | null = null;
+
+  const mergeOne = (build: Build): void => {
+    const next = build.batch.entries().next();
+    if (next.done) {
+      return;
     }
+    const [key, geometries] = next.value;
+    build.batch.delete(key);
+    const material = materials.get(key);
+    if (material) {
+      build.chunk.add(meshFor(key, mergeGeometries(geometries), material));
+    }
+    for (const geometry of geometries) {
+      geometry.dispose();
+    }
+  };
+
+  const stepBuild = (build: Build, blockBudget: number): boolean => {
+    const own = blocksOf[build.index] ?? [];
+    if (build.raised < own.length) {
+      const until = Math.min(own.length, build.raised + blockBudget);
+      for (; build.raised < until; build.raised += 1) {
+        const block = own[build.raised];
+        if (block) {
+          raise(build.batch, block);
+        }
+      }
+      return false;
+    }
+    mergeOne(build);
+    return build.batch.size === 0;
+  };
+
+  const startBuild = (index: number): Build => {
     const chunk = new THREE.Group();
-    for (const [key, geometries] of batch) {
-      const material = materials.get(key);
-      if (!material) {
-        continue;
-      }
-      chunk.add(meshFor(key, mergeGeometries(geometries), material));
-      for (const geometry of geometries) {
-        geometry.dispose();
-      }
+    chunks[index] = chunk;
+    group.add(chunk);
+    return { batch: new Map(), chunk, index, raised: 0 };
+  };
+
+  const finish = (index: number): void => {
+    const build =
+      building?.index === index
+        ? building
+        : chunks[index]
+          ? null
+          : startBuild(index);
+    if (!build) {
+      return;
     }
-    return chunk;
+    while (!stepBuild(build, Number.POSITIVE_INFINITY)) {
+      continue;
+    }
+    if (building === build) {
+      building = null;
+    }
   };
 
   const drop = (index: number): void => {
     const chunk = chunks[index];
     if (!chunk) {
       return;
+    }
+    if (building?.index === index) {
+      for (const geometries of building.batch.values()) {
+        for (const geometry of geometries) {
+          geometry.dispose();
+        }
+      }
+      building = null;
     }
     group.remove(chunk);
     chunk.traverse((node) => {
@@ -577,8 +635,6 @@ export const createCity = (track: Track, shading: Shading): City => {
     });
     chunks[index] = null;
   };
-
-  let settled = false;
 
   return {
     dispose() {
@@ -594,21 +650,23 @@ export const createCity = (track: Track, shading: Shading): City => {
     },
     facades,
     follow(s, reach) {
-      const first = Math.floor((s - track.startS - 260) / CITY_CHUNK);
+      const first = Math.floor((s - track.startS - CHUNK_BEHIND) / CITY_CHUNK);
       const last = Math.floor((s - track.startS + reach) / CITY_CHUNK);
-      let budget = settled ? 1 : chunkCount;
       for (let index = 0; index < chunkCount; index += 1) {
-        const wanted = index >= first && index <= last;
-        if (!wanted) {
+        if (index < first || index > last) {
           drop(index);
-        } else if (!chunks[index] && budget > 0) {
-          const chunk = buildChunk(index);
-          chunks[index] = chunk;
-          group.add(chunk);
-          budget -= 1;
         }
       }
-      settled = true;
+      const nearEnd = Math.min(last, chunkCount);
+      for (let index = Math.max(0, first); index < nearEnd; index += 1) {
+        finish(index);
+      }
+      if (!building && last < chunkCount && !chunks[last]) {
+        building = startBuild(last);
+      }
+      if (building && stepBuild(building, BLOCKS_PER_FRAME)) {
+        building = null;
+      }
     },
     group,
     samples() {
