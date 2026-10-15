@@ -1,6 +1,8 @@
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
+import { hollowPineRoad } from "@racer/track/tracks/hollow-pine-road";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
+import { slagRow } from "@racer/track/tracks/slag-row";
 import { describe, expect, it } from "vitest";
 
 import { bikes, streetBike } from "./bikes.ts";
@@ -289,7 +291,7 @@ describe("riding", () => {
     expect(rider.x).toBeLessThan(-1.5);
   });
 
-  it("half lock holds the opening bend at 144 km/h", () => {
+  it("a third of lock holds the opening bend at 144 km/h", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
@@ -298,7 +300,7 @@ describe("riding", () => {
     hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0.5, throttle: 0.6 },
+      { brake: 0, kick: false, punch: false, steer: 0.3, throttle: 0.6 },
       2.5
     );
     expect(Math.abs(rider.x)).toBeLessThan(1.5);
@@ -1916,18 +1918,18 @@ const topSpeedKmh = (bike: BikeSpec): number => {
 };
 
 describe("the bike catalogue", () => {
-  it("the Wren holds the Switchback at 137 km/h where the Sesta lets go at 119, and neither takes it flat out", () => {
+  it("the Wren holds the Switchback at 158 km/h where the Sesta lets go at 138; flat out the Wren scrubs down and holds it where the Sesta is pushed wide", () => {
     const wren = bikes["halden-wren-400"];
     const sesta = bikes["ostra-sesta-600"];
     expect({
       sesta: pushedWideInSwitchback(sesta),
       wren: pushedWideInSwitchback(wren),
-    }).toStrictEqual({ sesta: true, wren: true });
+    }).toStrictEqual({ sesta: true, wren: false });
     expect({
-      sestaAbove: pushedWideInSwitchback(sesta, 119 * 1.05),
-      sestaBelow: pushedWideInSwitchback(sesta, 119 * 0.95),
-      wrenAbove: pushedWideInSwitchback(wren, 137 * 1.05),
-      wrenBelow: pushedWideInSwitchback(wren, 137 * 0.95),
+      sestaAbove: pushedWideInSwitchback(sesta, 138 * 1.05),
+      sestaBelow: pushedWideInSwitchback(sesta, 138 * 0.95),
+      wrenAbove: pushedWideInSwitchback(wren, 158 * 1.05),
+      wrenBelow: pushedWideInSwitchback(wren, 158 * 0.95),
     }).toStrictEqual({
       sestaAbove: true,
       sestaBelow: false,
@@ -1937,13 +1939,13 @@ describe("the bike catalogue", () => {
   });
 
   it.each([
-    { bike: bikes["gutter-pup-250"], kmh: 122 },
-    { bike: bikes["halden-kite-500"], kmh: 129 },
-    { bike: bikes["ostra-sette-750"], kmh: 116 },
-    { bike: bikes["brack-stoker-800"], kmh: 111 },
-    { bike: bikes["halden-meridian-900"], kmh: 116 },
-    { bike: bikes["brack-anvil-1100"], kmh: 105 },
-    { bike: bikes["ostra-nera-1000"], kmh: 111 },
+    { bike: bikes["gutter-pup-250"], kmh: 141 },
+    { bike: bikes["halden-kite-500"], kmh: 149 },
+    { bike: bikes["ostra-sette-750"], kmh: 134 },
+    { bike: bikes["brack-stoker-800"], kmh: 128 },
+    { bike: bikes["halden-meridian-900"], kmh: 134 },
+    { bike: bikes["brack-anvil-1100"], kmh: 121 },
+    { bike: bikes["ostra-nera-1000"], kmh: 128 },
   ])(
     "the $bike.name holds the Switchback up to about $kmh km/h",
     ({ bike, kmh }) => {
@@ -1971,6 +1973,146 @@ describe("the bike catalogue", () => {
     expect(topSpeedKmh(bikes["ostra-nera-1000"])).toBeGreaterThan(sesta);
     expect(topSpeedKmh(bikes["halden-kite-500"])).toBeLessThan(sesta);
     expect(topSpeedKmh(bikes["gutter-pup-250"])).toBeLessThan(160);
+  });
+});
+
+const quietSlagRow = compileTrack({ ...slagRow, trafficPerKilometre: 0 });
+const quietHollowPine = compileTrack({
+  ...hollowPineRoad,
+  trafficPerKilometre: 0,
+});
+const HERMITS_BEND_FROM = 6060;
+const HERMITS_BEND_TO = 6240;
+const DRY_DOCK_CORNER_FROM = 5120;
+const DRY_DOCK_CORNER_TO = 5280;
+const SAWMILL_HOOK_FROM = 3080;
+const SAWMILL_HOOK_TO = 3240;
+
+interface Cornering {
+  readonly entered: number;
+  readonly slowest: number;
+  readonly left: number;
+  readonly widest: number;
+  readonly crashed: boolean;
+  readonly offRoad: boolean;
+}
+
+const throttleHeldThrough = (
+  course: Track,
+  bike: BikeSpec,
+  from: number,
+  to: number,
+  kmh: number
+): Cornering => {
+  const state = alone(course, bike);
+  const rider = player(state);
+  rider.s = from - TURN_IN_BEFORE;
+  rider.x = 0;
+  rider.speed = kmh / KMH;
+  rider.gear = bike.gears.length;
+  const inside = Math.sign(curvatureAt(course, from + 60));
+  const input = { ...cruising, throttle: 1 };
+  let slowest = rider.speed;
+  let widest = 0;
+  let offRoad = false;
+  let crashed = false;
+  while (rider.s < to && rider.mode === "riding") {
+    pilotInput(state, course, 0, input);
+    input.throttle = 1;
+    input.brake = 0;
+    stepRace(state, course, [input]);
+    slowest = Math.min(slowest, rider.speed);
+    widest = Math.max(widest, -rider.x * inside);
+    offRoad ||= rider.offRoad;
+    crashed ||= state.events.some((event) => event.kind === "crash");
+  }
+  return {
+    crashed,
+    entered: kmh,
+    left: rider.speed * KMH,
+    offRoad,
+    slowest: slowest * KMH,
+    widest,
+  };
+};
+
+const lockedFor = (bike: BikeSpec, steer: number, seconds: number) => {
+  const state = alone(straight, bike);
+  const rider = player(state);
+  rider.speed = 45;
+  rider.gear = bike.gears.length;
+  let moved = 0;
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    stepRace(state, straight, [{ ...cruising, steer, throttle: 0 }]);
+    moved += rider.x;
+    rider.x = 0;
+  }
+  return { moved, speed: rider.speed };
+};
+
+describe("cornering with the throttle held", () => {
+  it("a Wren that holds the throttle into Hermit's Bend at 190 km/h scrubs down into the 140s, stays on the road, and leaves slower than it arrived", () => {
+    const run = throttleHeldThrough(
+      quietTrack,
+      bikes["halden-wren-400"],
+      HERMITS_BEND_FROM,
+      HERMITS_BEND_TO,
+      190
+    );
+    expect(run.crashed).toBeFalsy();
+    expect(run.offRoad).toBeFalsy();
+    expect(run.slowest).toBeGreaterThan(130);
+    expect(run.slowest).toBeLessThan(165);
+    expect(run.left).toBeLessThan(run.entered - 20);
+  });
+
+  it("the same Wren holding the throttle into Dry Dock Corner at 190 km/h runs out of road, and a lift with no brake gets it round", () => {
+    const held = throttleHeldThrough(
+      quietSlagRow,
+      bikes["halden-wren-400"],
+      DRY_DOCK_CORNER_FROM,
+      DRY_DOCK_CORNER_TO,
+      190
+    );
+    expect(held.offRoad || held.crashed).toBeTruthy();
+    const state = alone(quietSlagRow, bikes["halden-wren-400"]);
+    const rider = player(state);
+    rider.s = DRY_DOCK_CORNER_FROM - TURN_IN_BEFORE;
+    rider.x = 0;
+    rider.speed = 190 / KMH;
+    rider.gear = 6;
+    const input = { ...cruising, throttle: 0 };
+    while (rider.s < DRY_DOCK_CORNER_TO && rider.mode === "riding") {
+      pilotInput(state, quietSlagRow, 0, input);
+      input.throttle = rider.speed * KMH > 110 ? 0 : 1;
+      input.brake = 0;
+      stepRace(state, quietSlagRow, [input]);
+      expect(rider.offRoad).toBeFalsy();
+    }
+    expect(rider.mode).toBe("riding");
+  });
+
+  it("the Sawmill Hook at 190 km/h on a Wren is a brake bend: the throttle held runs out of road", () => {
+    const held = throttleHeldThrough(
+      quietHollowPine,
+      bikes["halden-wren-400"],
+      SAWMILL_HOOK_FROM,
+      SAWMILL_HOOK_TO,
+      190
+    );
+    expect(held.offRoad || held.crashed).toBeTruthy();
+  });
+
+  it("a heavyweight at full lock scrubs less speed and moves less sideways than a featherweight", () => {
+    const scrubOf = (bike: BikeSpec) =>
+      lockedFor(bike, 0, 2).speed - lockedFor(bike, 1, 2).speed;
+    const wren = bikes["halden-wren-400"];
+    const anvil = bikes["brack-anvil-1100"];
+    expect(scrubOf(wren)).toBeGreaterThan(scrubOf(anvil) * 1.2);
+    expect(scrubOf(wren)).toBeGreaterThan(8);
+    expect(lockedFor(anvil, 1, 1).moved).toBeLessThan(
+      lockedFor(wren, 1, 1).moved
+    );
   });
 });
 

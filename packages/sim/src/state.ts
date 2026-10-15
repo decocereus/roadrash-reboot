@@ -27,6 +27,7 @@ export interface BikeSpec {
   readonly lateralSpeedPerSpeed: number;
   readonly steerRate: number;
   readonly curvePush: number;
+  readonly leanScrub: number;
   readonly visualLean: number;
 }
 

@@ -32,7 +32,6 @@ import { disarm, rearm, weapons } from "./weapons.ts";
 const VERGE_BRAKES = 0.45;
 const VERGE_DRAG = 1.5;
 const VERGE_DRAG_PER_SPEED = 0.09;
-const STEER_DRAG = 0.3;
 const TUCK_THROTTLE = 0.8;
 const TUCK_STEER = 0.3;
 const TUCK_SPEED = 120 / 3.6;
@@ -307,7 +306,7 @@ const ride = (
 
   let acceleration =
     -(GRAVITY * slope) / Math.hypot(1, slope) -
-    STEER_DRAG * Math.abs(rider.lateralSpeed);
+    bike.leanScrub * lock * lock * rider.speed;
   if (rider.speed > 0) {
     acceleration -=
       dragOf(bike, rider.speed, rider.tuck) +

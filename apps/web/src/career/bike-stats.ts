@@ -8,7 +8,7 @@ const SLOWEST_LAUNCH = 8;
 const QUICKEST_LAUNCH = 2.5;
 const BEST_RESPONSE = 6.5;
 const BEST_SIDESTEP = 4.2;
-const BEST_GRIP = 2.3;
+const BEST_GRIP = 3;
 const BEST_BRAKES = 30;
 
 interface Measures {
