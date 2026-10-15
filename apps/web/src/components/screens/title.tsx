@@ -10,6 +10,7 @@ import { useState } from "react";
 import { CONTROLS, saveErrors, TAGLINE, WORDMARK } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
 import type { SaveState } from "../../career/save.ts";
+import { SettingsScreen } from "./settings.tsx";
 import { ActionMenu, SmallPrint } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
@@ -84,6 +85,7 @@ export function TitleScreen({
   readonly onStartOver: () => void;
 }) {
   const [asking, setAsking] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   const quick: MenuAction[] = [
     { id: "quick", label: "Single race", run: onQuickRace },
     {
@@ -92,6 +94,7 @@ export function TitleScreen({
       label: "Multiplayer",
       trailing: SOON,
     },
+    { id: "settings", label: "Settings", run: () => setAdjusting(true) },
   ];
   const career: MenuAction[] =
     save.status === "ready"
@@ -99,6 +102,9 @@ export function TitleScreen({
       : save.status === "corrupt"
         ? [{ id: "continue", label: "Start over", run: onStartOver }]
         : [{ id: "continue", label: "Career", run: onNewCareer }];
+  if (adjusting) {
+    return <SettingsScreen onBack={() => setAdjusting(false)} />;
+  }
   return (
     <Screen className="bg-transparent" enter="fade" scrim="soft">
       <ScreenBody
