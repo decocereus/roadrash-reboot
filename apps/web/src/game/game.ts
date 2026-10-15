@@ -897,7 +897,6 @@ export async function createGame(
     stance.rise = rise;
     stance.flinch = seated ? flinchOf(rider, subTick) : 0;
     stance.flinchSide = flinchSideOf(rider);
-    figure.animate(stance, seconds);
   };
 
   const withinReach = (s: number): boolean =>
@@ -940,6 +939,11 @@ export async function createGame(
       blend,
       seconds
     );
+    if (index === 0 || withinReach(seated ? s : bodyS)) {
+      view.figure.animate(stance, seconds);
+    } else {
+      view.figure.rest();
+    }
     placed.air = air;
     placed.bodyAir = bodyAir;
     placed.bodyS = bodyS;

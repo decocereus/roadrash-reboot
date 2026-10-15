@@ -48,6 +48,8 @@ const RISE_LIFT = 0.13;
 const RISE_SHIFT = 0.07;
 const RISE_FORWARD = 0.04;
 const REACH_SLACK = 0.002;
+const WEAPON_REACH = 1.45;
+const BLEND_SLACK = 0.25;
 
 interface Turn {
   readonly bone: string;
@@ -127,6 +129,7 @@ export interface RiderFigure {
   readonly standHeight: number;
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
+  rest: () => void;
 }
 
 const striking = (pose: RiderPose): boolean =>
@@ -436,6 +439,61 @@ interface Riding {
 const sideOf = <T>(sided: Sided<T>, side: number): T =>
   side < 0 ? sided.left : sided.right;
 
+const boneRadii = (body: THREE.SkinnedMesh): Float64Array => {
+  const { bindMatrix, geometry, skeleton } = body;
+  const toBone = skeleton.boneInverses.map((inverse) =>
+    inverse.clone().multiply(bindMatrix)
+  );
+  const radii = new Float64Array(skeleton.bones.length);
+  const position = geometry.getAttribute("position");
+  const boneOf = geometry.getAttribute("skinIndex");
+  const weightOf = geometry.getAttribute("skinWeight");
+  const point = new THREE.Vector3();
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    for (let influence = 0; influence < 4; influence += 1) {
+      const bone = boneOf.getComponent(vertex, influence);
+      const matrix = toBone[bone];
+      if (weightOf.getComponent(vertex, influence) > 0 && matrix) {
+        point.fromBufferAttribute(position, vertex).applyMatrix4(matrix);
+        radii[bone] = Math.max(radii[bone] ?? 0, point.length());
+      }
+    }
+  }
+  return radii;
+};
+
+const reachOfPoses = (
+  rig: Rig,
+  body: THREE.SkinnedMesh,
+  hands: readonly (THREE.Bone | undefined)[],
+  poses: readonly (readonly number[])[]
+): THREE.Sphere => {
+  const radii = boneRadii(body);
+  const bounds = new THREE.Sphere().makeEmpty();
+  const part = new THREE.Sphere();
+  const enclose = (bone: THREE.Object3D, radius: number) => {
+    part.center.setFromMatrixPosition(bone.matrixWorld);
+    part.radius = radius * bone.matrixWorld.getMaxScaleOnAxis();
+    bounds.union(part);
+  };
+  for (const pose of poses) {
+    posed(rig, pose);
+    for (const [index, bone] of body.skeleton.bones.entries()) {
+      enclose(bone, radii[index] ?? 0);
+    }
+    for (const hand of hands) {
+      if (hand) {
+        enclose(hand, WEAPON_REACH);
+      }
+    }
+  }
+  bounds.applyMatrix4(body.matrixWorld.clone().invert());
+  bounds.radius += BLEND_SLACK;
+  return bounds;
+};
+
+const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
+
 const bodyFor = (assets: Assets, index: number): RiderAsset => {
   const asset = assets.riders[index % assets.riders.length];
   if (!asset) {
@@ -471,7 +529,6 @@ export const createRiderFigure = (
   const body = new THREE.SkinnedMesh(painted.cel, shading.paint());
   body.castShadow = true;
   body.receiveShadow = true;
-  body.frustumCulled = false;
   first.parent?.add(body);
   body.bind(skeleton, first.bindMatrix);
   for (const mesh of skinned) {
@@ -521,11 +578,22 @@ export const createRiderFigure = (
   const base = [...current];
   const upright = [...current];
   const bent = [...current];
+  let resting = false;
 
   const hands = [
     skeleton.getBoneByName("hand_l"),
     skeleton.getBoneByName("hand_r"),
   ];
+  const reach =
+    reachByAsset.get(asset) ??
+    reachOfPoses(rig, body, hands, [
+      ...asset.poses.values(),
+      ...Object.values(riding).flatMap((pose: number[] | Sided<number[]>) =>
+        Array.isArray(pose) ? [pose] : [pose.left, pose.right]
+      ),
+    ]);
+  reachByAsset.set(asset, reach);
+  body.boundingSphere = reach;
   const held: HeldWeapon[][] = hands.map((hand) =>
     weaponKinds.map((kind) => {
       const mesh = weaponMesh(kind, shading);
@@ -676,9 +744,14 @@ export const createRiderFigure = (
       if (!aim(stance)) {
         return;
       }
-      const blend = striking(stance.pose)
-        ? 1
-        : Math.min(1, BLEND_RATE * seconds);
+      if (resting) {
+        root.add(model);
+      }
+      const blend =
+        resting || striking(stance.pose)
+          ? 1
+          : Math.min(1, BLEND_RATE * seconds);
+      resting = false;
       for (let offset = 0; offset < current.length; offset += 4) {
         THREE.Quaternion.slerpFlat(
           current,
@@ -701,8 +774,14 @@ export const createRiderFigure = (
       );
     },
     dispose() {
-      disposeTree(root);
+      disposeTree(model);
       skeleton.dispose();
+    },
+    rest() {
+      if (!resting) {
+        model.removeFromParent();
+        resting = true;
+      }
     },
     root,
     seat: asset.seat,
