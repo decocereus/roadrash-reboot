@@ -82,6 +82,7 @@ const DODGE_LEAD_PER_METRE = 0.45;
 const ROCK_THROUGH_SPEED = 150 / 3.6;
 const ROCK_DODGE_SHARE = 0.85;
 const FLAT_DODGE_SHARE = 0.95;
+const ESCAPE_REACH = 0.1;
 const SLIPPING = 0.2;
 const SLIPPING_STEER = 0.45;
 
@@ -612,6 +613,22 @@ const rampClear = (
     : across >= jump.width / 2 + JUMP_WALL_CLEARANCE;
 };
 
+const escapeOf = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  aim: Aim
+): number => {
+  const move = aim.x - rider.x;
+  return Math.abs(move) > ESCAPE_REACH &&
+    laneThreat(state, riderIndex, rider, rider.x)
+    ? move
+    : 0;
+};
+
+const keepsEscape = (rider: RiderState, escape: number, x: number): boolean =>
+  (x - rider.x) * Math.sign(escape) >= Math.abs(escape);
+
 const throughSpeed = (hazard: Hazard, wanted: number): number =>
   hazard.kind === "rock"
     ? Math.min(ROCK_THROUGH_SPEED, wanted * ROCK_DODGE_SHARE)
@@ -628,7 +645,8 @@ const rideThrough = (
   riderIndex: number,
   rider: RiderState,
   aim: Aim,
-  hazard: Hazard
+  hazard: Hazard,
+  escape: number
 ): Aim => {
   const straight = settledLine(rider);
   return {
@@ -636,9 +654,11 @@ const rideThrough = (
       hazard.kind === "rock"
         ? Math.min(aim.speed, ROCK_THROUGH_SPEED)
         : aim.speed,
-    x: trafficClear(state, track, riderIndex, rider, straight)
-      ? straight
-      : aim.x,
+    x:
+      keepsEscape(rider, escape, straight) &&
+      trafficClear(state, track, riderIndex, rider, straight)
+        ? straight
+        : aim.x,
   };
 };
 
@@ -656,6 +676,7 @@ const hazardAim = (
     return aim;
   }
   const wanted = Math.min(aim.speed, rider.speed);
+  const escape = escapeOf(state, riderIndex, rider, aim);
   const room = track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE;
   let bestX = aim.x;
   let bestSpeed = speedAlong(state, rider, aim.x);
@@ -663,6 +684,7 @@ const hazardAim = (
   const consider = (x: number): void => {
     if (
       Math.abs(x) > room ||
+      !keepsEscape(rider, escape, x) ||
       !rampClear(track, rider, aim, hazard, x) ||
       !trafficClear(state, track, riderIndex, rider, x)
     ) {
@@ -691,7 +713,7 @@ const hazardAim = (
     }
   }
   if (bestSpeed < throughSpeed(hazard, wanted)) {
-    return rideThrough(state, track, riderIndex, rider, aim, hazard);
+    return rideThrough(state, track, riderIndex, rider, aim, hazard, escape);
   }
   return { speed: Math.min(aim.speed, bestSpeed), x: bestX };
 };
