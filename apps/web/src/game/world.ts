@@ -9,6 +9,7 @@ import { createCity, FRONT_GAP, KERB_HEIGHT } from "./city.ts";
 import type { City } from "./city.ts";
 import { disposeTree } from "./dispose.ts";
 import {
+  freeze,
   groundLift,
   KERB_WIDTH,
   lifted,
@@ -395,6 +396,7 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
+  samples: () => THREE.Group;
   setShadowMap: (size: number) => void;
   dispose: () => void;
 }
@@ -434,7 +436,7 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
     material: THREE.Material,
     span: readonly [number, number]
   ): void => {
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = freeze(new THREE.Mesh(geometry, material));
     mesh.receiveShadow = true;
     scene.add(mesh);
     stretches.push({ from: span[0], object: mesh, to: span[1] });
@@ -482,17 +484,19 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
     }
   }
   scene.add(
-    buildScenery(
-      track,
-      shading,
-      city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY
+    freeze(
+      buildScenery(
+        track,
+        shading,
+        city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY
+      )
     )
   );
   if (city) {
-    scene.add(city.group);
+    scene.add(freeze(city.group));
   } else {
     const dressing = buildRoadside(track, shading);
-    scene.add(dressing.group);
+    scene.add(freeze(dressing.group));
     stretches.push(...dressing.stretches);
   }
 
@@ -531,6 +535,9 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
       rig.follow(camera);
       shading.aim(camera);
+    },
+    samples() {
+      return city?.samples() ?? new THREE.Group();
     },
     scene,
     setShadowMap(size) {

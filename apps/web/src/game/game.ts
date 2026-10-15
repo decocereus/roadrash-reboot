@@ -354,6 +354,37 @@ const ladderFor = (ceiling: number): readonly Rung[] => {
   }
 };
 
+const revealAll = (root: THREE.Object3D): (() => void) => {
+  const hidden: THREE.Object3D[] = [];
+  const culled: THREE.Object3D[] = [];
+  root.traverse((node) => {
+    if (!node.visible) {
+      hidden.push(node);
+      node.visible = true;
+    }
+    if (node.frustumCulled) {
+      culled.push(node);
+      node.frustumCulled = false;
+    }
+  });
+  return () => {
+    for (const node of hidden) {
+      node.visible = false;
+    }
+    for (const node of culled) {
+      node.frustumCulled = true;
+    }
+  };
+};
+
+const dropGeometry = (root: THREE.Object3D): void => {
+  root.traverse((node) => {
+    if (node instanceof THREE.Mesh) {
+      node.geometry.dispose();
+    }
+  });
+};
+
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
@@ -553,6 +584,18 @@ export async function createGame(
     pipeline.setLook(world.shading.look);
   };
 
+  const warmUp = () => {
+    world.follow(chase.camera, player().s);
+    const samples = world.samples();
+    world.scene.add(samples);
+    pipeline.prepare(world.scene);
+    const restore = revealAll(world.scene);
+    pipeline.render(world.scene, chase.camera);
+    restore();
+    world.scene.remove(samples);
+    dropGeometry(samples);
+  };
+
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
     takeTrack(setup.track);
@@ -578,6 +621,7 @@ export async function createGame(
     tagRider = -1;
     clockReset = true;
     chase.snap();
+    warmUp();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -760,24 +804,26 @@ export async function createGame(
     }
   };
 
-  const holdStill = () => {
-    for (const [index, rider] of race.riders.entries()) {
+  const captureAll = (into: "before" | "after") => {
+    const { riders } = race;
+    for (let index = 0; index < riders.length; index += 1) {
+      const rider = riders[index];
       const view = views[index];
-      if (view) {
-        capture(rider, view.after);
+      if (rider && view) {
+        capture(rider, view[into]);
       }
     }
   };
 
+  const holdStill = () => {
+    captureAll("after");
+  };
+
   const tick = () => {
-    for (const [index, rider] of race.riders.entries()) {
-      const view = views[index];
-      if (view) {
-        capture(rider, view.before);
-      }
-    }
-    for (const [index, car] of race.cars.entries()) {
-      previousCars[index] = car.s;
+    captureAll("before");
+    const { cars } = race;
+    for (let index = 0; index < cars.length; index += 1) {
+      previousCars[index] = cars[index]?.s ?? 0;
     }
     if (holdLeft > 0) {
       holdLeft -= TICK_SECONDS;
@@ -793,7 +839,11 @@ export async function createGame(
       holdStill();
       return;
     }
-    for (const [index, input] of inputs.entries()) {
+    for (let index = 0; index < inputs.length; index += 1) {
+      const input = inputs[index];
+      if (!input) {
+        continue;
+      }
       if (index === 0 && phase !== "attract" && !autopilot) {
         controls.read(TICK_SECONDS, input);
       } else {
@@ -1023,10 +1073,12 @@ export async function createGame(
     }
     profiler?.lap("riders");
 
-    for (const [index, car] of race.cars.entries()) {
-      const from = previousCars[index] ?? car.s;
-      const wrapped = Math.abs(car.s - from) > WRAP_JUMP;
-      fleet.place(track, index, wrapped ? car.s : mix(from, car.s, blend));
+    const { cars } = race;
+    for (let index = 0; index < cars.length; index += 1) {
+      const s = cars[index]?.s ?? 0;
+      const from = previousCars[index] ?? s;
+      const wrapped = Math.abs(s - from) > WRAP_JUMP;
+      fleet.place(track, index, wrapped ? s : mix(from, s, blend));
     }
     fleet.commit(subject.s);
     profiler?.lap("fleet");
@@ -1152,8 +1204,10 @@ export async function createGame(
   const nearestRacer = (me: RiderState): number => {
     let best = -1;
     let bestGap = TAG_RANGE;
-    for (const [index, other] of race.riders.entries()) {
-      if (index === 0 || other.profile.role !== "racer" || out(other)) {
+    const { riders } = race;
+    for (let index = 1; index < riders.length; index += 1) {
+      const other = riders[index];
+      if (!other || other.profile.role !== "racer" || out(other)) {
         continue;
       }
       const gap = Math.abs(other.s - me.s) + Math.abs(other.x - me.x);
@@ -1211,6 +1265,7 @@ export async function createGame(
   observer.observe(canvas);
   resize();
   buildViews();
+  warmUp();
 
   const advance = (seconds: number): number => {
     if (clockReset) {

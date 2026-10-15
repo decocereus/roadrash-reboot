@@ -38,6 +38,10 @@ export interface ProfileFrame {
   readonly tick: number;
   readonly ticks: number;
   readonly interval: number;
+  readonly start: number;
+  readonly programs: number;
+  readonly textures: number;
+  readonly geometries: number;
   readonly pixelRatio: number;
   readonly rung: number;
   readonly cpu: readonly number[];
@@ -117,6 +121,10 @@ export const createProfiler = (
   const ticksAt = new Int32Array(CAPACITY);
   const stepped = new Uint8Array(CAPACITY);
   const intervals = new Float32Array(CAPACITY);
+  const starts = new Float64Array(CAPACITY);
+  const programs = new Uint16Array(CAPACITY);
+  const textures = new Uint16Array(CAPACITY);
+  const geometries = new Uint16Array(CAPACITY);
   const ratios = new Float32Array(CAPACITY);
   const rungs = new Uint8Array(CAPACITY);
   const gpuSeen = new Uint8Array(CAPACITY);
@@ -246,10 +254,14 @@ export const createProfiler = (
       calls: read("calls"),
       cpu: read("cpu"),
       frame: index,
+      geometries: geometries[at] ?? 0,
       gpu: gpuSeen[at] ? read("gpu") : null,
       interval: intervals[at] ?? 0,
       pixelRatio: ratios[at] ?? 0,
+      programs: programs[at] ?? 0,
       rung: rungs[at] ?? 0,
+      start: starts[at] ?? 0,
+      textures: textures[at] ?? 0,
       tick: ticksAt[at] ?? 0,
       ticks: stepped[at] ?? 0,
       triangles: read("triangles"),
@@ -301,6 +313,9 @@ export const createProfiler = (
       stepped[slot] = end.ticks;
       ratios[slot] = end.pixelRatio;
       rungs[slot] = end.rung;
+      programs[slot] = renderer.info.programs?.length ?? 0;
+      textures[slot] = renderer.info.memory.textures;
+      geometries[slot] = renderer.info.memory.geometries;
       ({ tick } = end);
       frame += 1;
     },
@@ -318,6 +333,7 @@ export const createProfiler = (
       lastCalls = renderer.info.render.calls;
       lastTriangles = renderer.info.render.triangles;
       mark = performance.now();
+      starts[slot] = mark;
       beginQuery();
     },
   };
