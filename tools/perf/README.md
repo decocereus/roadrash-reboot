@@ -68,3 +68,42 @@ To find a window again, step `benchPlan("stress")` with `pilotInput` for every r
 | `line`, `bloom`, `grade` | The outline, bloom, and grade passes |
 
 On ANGLE over Metal the timer queries answer, but the per-pass GPU times they give add up to more than the frame interval, so treat them as unreliable there and compare `?ratio=1` against `?ratio=2` to see fill cost instead.
+
+## Play-test recordings
+
+A play test on another machine, such as the MacBook Air reaching this Mac through a tunnel, records into the same build it plays. The play server is the development-mode build served by `vite preview`:
+
+```sh
+cd apps/web
+NODE_ENV=development pnpm exec vite build --mode development
+NODE_ENV=development pnpm exec vite preview --mode development --host 127.0.0.1 --port <port>
+```
+
+`vite preview` runs the built TanStack Start server, so `POST /api/telemetry` works on it, and `vite.config.ts` mounts the local store for `vite preview` and `vite dev`: each session is appended to `tools/perf/results/sessions/<sessionId>.jsonl`, one acknowledged batch per line. The preview server loads the server build once, so restart it after every rebuild; otherwise it serves HTML that names the previous build's assets.
+
+In the game, Settings (from the title or the pause menu) turns on the frame meter, recording, and automatic upload, and sets the test device to MacBook Air or MacBook Pro. Recording and upload are off until the tester turns them on, and the settings live in `localStorage` under `rushline.settings.v1`, apart from the career save. B while riding stamps a report marker. Send report uploads the current recording and anything still queued, and shows the report id, which is the session's short id and the batch number.
+
+With recording on, every 30 seconds the page turns its rings into one batch of at most 48 KiB: the frame-interval histogram (8.33, 16.67, 23.33, 33.33, 50, 100, 250, and 1000 ms edges plus overflow), the 32 slowest frames with each part's CPU time, and the events since the last batch. Events are governor changes with the quality before and after and the reason, canvas resizes with their size generation, frames whose drawing a resize cleared before it was presented, unfinished render passes, WebGL context loss, errors with query strings stripped, visibility changes, race start, green, end, crash and quit, and report markers. Batches are numbered per session, sent oldest first, removed only once the collector acknowledges them, retried with backoff, and deduplicated by session and batch number on the server. The queue holds 24 batches and counts what it drops.
+
+### Read a session
+
+```sh
+node tools/perf/session.ts --dir tools/perf/results/sessions
+node tools/perf/session.ts --device air
+node tools/perf/session.ts --session 3f0c2a1e --worst 20
+node tools/perf/session.ts --session 3f0c2a1e --json
+```
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--dir` | `tools/perf/results/sessions` | Where the JSONL sessions are. |
+| `--device` | any | Only sessions whose tester picked this device: `air`, `pro`, or `unspecified`. |
+| `--session` | the latest | A session id or its first characters. |
+| `--worst` | 10 | How many of the slowest frames to list. |
+| `--json` | off | Print the summaries as JSON. |
+
+The summary lists every session that matches, then the latest in full: the build sha and whether the checkout was dirty, the device, the batches received and any numbers missing, the histogram, the quality timeline, race and report markers with the quality changes and slow frames within two seconds of each marker, the slowest frames with their top parts, the simulation time thrown away by the 0.1 s clamp, faults, and the black-frame suspects ranked: a resize after a draw first, then a lost context, an unfinished render pass, and stalls of 100 ms or more, higher when a quality change or resize happened on the same frame.
+
+### For agents
+
+`globalThis.__rushlineDiagnostics` answers over the DevTools protocol in any build: `info()` is the session, `snapshot()` the phase, race, tick, quality, context state, queued batches, and dropped records, `frames(afterFrame, limit)` the profiler's frames after a frame id, `events(afterSeq, limit)` the recorded events after a sequence number, and `flush()` queues a batch now. `globalThis.__rushlineProfile` works as before.
