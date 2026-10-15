@@ -152,32 +152,32 @@ const strikeName = (pose: RiderPose, side: number): PoseName => {
   return sidedName("swing_l", "swing_r", side);
 };
 
-const cycleFor = (
-  pose: RiderPose,
-  time: number
-): readonly [PoseName, PoseName, number] => {
-  if (pose === "run") {
-    return ["run_a", "run_b", 0.5 - 0.5 * Math.cos(time * RUN_HZ * FULL_TURN)];
+interface Cycle {
+  from: PoseName;
+  to: PoseName;
+  blend: number;
+}
+
+const cycleFor = (pose: RiderPose, time: number, cycle: Cycle): void => {
+  if (pose === "run" || pose === "stand") {
+    cycle.from = "run_a";
+    cycle.to = "run_b";
+    cycle.blend =
+      pose === "run" ? 0.5 - 0.5 * Math.cos(time * RUN_HZ * FULL_TURN) : 0.5;
+  } else if (pose === "tumble") {
+    cycle.from = "tumble_a";
+    cycle.to = "tumble_b";
+    cycle.blend = 0.5 + 0.5 * Math.sin(time * TUMBLE_HZ * FULL_TURN);
+  } else {
+    const held = pose === "lift" || pose === "lying" ? pose : "surrender";
+    cycle.from = held;
+    cycle.to = held;
+    cycle.blend = 0;
   }
-  if (pose === "stand") {
-    return ["run_a", "run_b", 0.5];
-  }
-  if (pose === "tumble") {
-    return [
-      "tumble_a",
-      "tumble_b",
-      0.5 + 0.5 * Math.sin(time * TUMBLE_HZ * FULL_TURN),
-    ];
-  }
-  if (pose === "lift" || pose === "lying") {
-    return [pose, pose, 0];
-  }
-  return ["surrender", "surrender", 0];
 };
 
 const weaponMesh = (kind: WeaponKind, shading: Shading): THREE.Group => {
   const held = new THREE.Group();
-  held.visible = false;
   const shaft = (
     radiusTop: number,
     radiusBottom: number,
@@ -240,11 +240,6 @@ const weaponMesh = (kind: WeaponKind, shading: Shading): THREE.Group => {
   }
   return held;
 };
-
-interface HeldWeapon {
-  readonly kind: WeaponKind;
-  readonly mesh: THREE.Group;
-}
 
 const weaponKinds: readonly WeaponKind[] = [
   "club",
@@ -595,6 +590,7 @@ export const createRiderFigure = (
   const bent = [...current];
   const written = current.map(() => Number.NaN);
   const turn = new THREE.Quaternion();
+  const cycle: Cycle = { blend: 0, from: "seated", to: "seated" };
   let resting = false;
 
   const hands = [
@@ -611,24 +607,29 @@ export const createRiderFigure = (
     ]);
   reachByAsset.set(asset, reach);
   body.boundingSphere = reach;
-  const held: HeldWeapon[][] = hands.map((hand) =>
+  const held: THREE.Group[][] = hands.map(() =>
     weaponKinds.map((kind) => {
       const mesh = weaponMesh(kind, shading);
       mesh.position.set(0, 0.07, 0);
       mesh.rotation.set(-Math.PI / 2, 0, 0);
-      hand?.add(mesh);
-      return { kind, mesh };
+      return mesh;
     })
   );
+  let holding: THREE.Group | null = null;
 
   const showWeapon = (weapon: WeaponKind, pose: RiderPose, side: number) => {
     const swinging = pose === "windup" || pose === "swing" || pose === "swung";
     const weaponHand = swinging && side < 0 ? 0 : 1;
-    for (const [hand, meshes] of held.entries()) {
-      for (const each of meshes) {
-        each.mesh.visible = each.kind === weapon && hand === weaponHand;
-      }
+    const kind = weaponKinds.indexOf(weapon);
+    const next = kind === -1 ? null : (held[weaponHand]?.[kind] ?? null);
+    if (next === holding) {
+      return;
     }
+    holding?.removeFromParent();
+    if (next) {
+      hands[weaponHand]?.add(next);
+    }
+    holding = next;
   };
 
   for (const bone of bones) {
@@ -725,43 +726,7 @@ export const createRiderFigure = (
     }
   };
 
-  const aim = (stance: Stance): boolean => {
-    const { pose, reach, side, time } = stance;
-    if (pose === "seated") {
-      settleBase(stance);
-      wanted.splice(0, wanted.length, ...base);
-      return true;
-    }
-    if (striking(pose)) {
-      settleBase(stance);
-      const to =
-        pose === "kick"
-          ? sideOf(riding.kicked, side)
-          : asset.poses.get(strikeName(pose, side));
-      const from =
-        pose === "swing" ? asset.poses.get(strikeName("windup", side)) : base;
-      if (!(from && to)) {
-        return false;
-      }
-      for (let offset = 0; offset < wanted.length; offset += 4) {
-        THREE.Quaternion.slerpFlat(
-          wanted,
-          offset,
-          from,
-          offset,
-          to,
-          offset,
-          reach
-        );
-      }
-      return true;
-    }
-    const [fromName, toName, blend] = cycleFor(pose, time);
-    const from = asset.poses.get(fromName);
-    const to = asset.poses.get(toName);
-    if (!(from && to)) {
-      return false;
-    }
+  const between = (from: number[], to: number[], blend: number): number[] => {
     for (let offset = 0; offset < wanted.length; offset += 4) {
       THREE.Quaternion.slerpFlat(
         wanted,
@@ -773,13 +738,36 @@ export const createRiderFigure = (
         blend
       );
     }
-    return true;
+    return wanted;
+  };
+
+  const aim = (stance: Stance): number[] | null => {
+    const { pose, reach: swing, side, time } = stance;
+    if (pose === "seated") {
+      settleBase(stance);
+      return base;
+    }
+    if (striking(pose)) {
+      settleBase(stance);
+      const to =
+        pose === "kick"
+          ? sideOf(riding.kicked, side)
+          : asset.poses.get(strikeName(pose, side));
+      const from =
+        pose === "swing" ? asset.poses.get(strikeName("windup", side)) : base;
+      return from && to ? between(from, to, swing) : null;
+    }
+    cycleFor(pose, time, cycle);
+    const from = asset.poses.get(cycle.from);
+    const to = asset.poses.get(cycle.to);
+    return from && to ? between(from, to, cycle.blend) : null;
   };
 
   return {
     animate(stance, seconds) {
       skeleton.stale = true;
-      if (!aim(stance)) {
+      const target = aim(stance);
+      if (!target) {
         return;
       }
       if (resting) {
@@ -796,7 +784,7 @@ export const createRiderFigure = (
           offset,
           current,
           offset,
-          wanted,
+          target,
           offset,
           blend
         );
@@ -812,6 +800,13 @@ export const createRiderFigure = (
       );
     },
     dispose() {
+      holding?.removeFromParent();
+      holding = null;
+      for (const meshes of held) {
+        for (const mesh of meshes) {
+          disposeTree(mesh);
+        }
+      }
       disposeTree(model);
       skeleton.dispose();
     },
