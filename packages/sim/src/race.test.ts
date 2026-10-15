@@ -3217,6 +3217,8 @@ interface Placement {
   readonly lateralSpeed: number;
   readonly air?: number;
   readonly verticalSpeed?: number;
+  readonly airborne?: boolean;
+  readonly steer?: number;
 }
 
 const besideRamp = (
@@ -3230,10 +3232,10 @@ const besideRamp = (
   rider.x = placement.x;
   rider.speed = placement.speed;
   rider.lateralSpeed = placement.lateralSpeed;
-  rider.airborne = placement.air !== undefined;
+  rider.airborne = placement.airborne ?? placement.air !== undefined;
   rider.air = placement.air ?? 0;
   rider.verticalSpeed = placement.verticalSpeed ?? 0;
-  const steer = Math.sign(placement.lateralSpeed);
+  const steer = placement.steer ?? Math.sign(placement.lateralSpeed);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < ticks; tick += 1) {
     stepRace(state, road, [{ ...flatOut, steer }]);
@@ -3371,6 +3373,59 @@ describe("jumping", () => {
     expect(brush.rider.s).toBeLessThan(1016);
     expect(brush.rider.air).toBe(0);
     expect(brush.rider.airborne).toBeFalsy();
+  });
+
+  it("a rider drifting across a ramp's deck onto its edge line rides on along the deck instead of dropping to the road", () => {
+    const drift = besideRamp(
+      {
+        air: 0.3125,
+        airborne: false,
+        lateralSpeed: 1 / 6,
+        s: 1010,
+        speed: 40,
+        steer: 0,
+        x: 0.7 - 1 / 720,
+      },
+      2
+    );
+    const deckHeight =
+      loadingRamp.rise * ((drift.rider.s - 1000) / loadingRamp.length) ** 2;
+    expect(drift.events).toStrictEqual([]);
+    expect(drift.rider.x).toBeCloseTo(0.7, 6);
+    expect(drift.rider.air).toBeCloseTo(deckHeight, 6);
+  });
+
+  it("a rider riding up a ramp exactly along its edge line leaves the lip the same as one up the middle", () => {
+    const deck = { air: 0.7605, airborne: false, s: 1015.6, speed: 60 };
+    const edge = besideRamp({ ...deck, lateralSpeed: 0, x: 0.7 }, 1);
+    const middle = besideRamp({ ...deck, lateralSpeed: 0, x: 0 }, 1);
+    expect(middle.rider.airborne).toBeTruthy();
+    expect(edge.rider.airborne).toBeTruthy();
+    expect(edge.rider.air).toBe(middle.rider.air);
+  });
+
+  it("a rider who steers off the side of a ramp's deck falls from the deck instead of dropping straight to the road", () => {
+    const off = besideRamp(
+      {
+        air: 0.3125,
+        airborne: false,
+        lateralSpeed: 3,
+        s: 1010,
+        speed: 40,
+        x: 0.69,
+      },
+      1
+    );
+    expect(off.rider.x).toBeGreaterThan(0.7);
+    expect(off.rider.airborne).toBeTruthy();
+    expect(off.rider.air).toBeGreaterThan(0.25);
+  });
+
+  it("a rider on the road who steers away from exactly a ramp's edge line stays on the road", () => {
+    const away = besideRamp({ lateralSpeed: 2, s: 1010, speed: 40, x: 0.7 }, 3);
+    expect(away.events).toStrictEqual([]);
+    expect(away.rider.airborne).toBeFalsy();
+    expect(away.rider.air).toBe(0);
   });
 
   it("a hard landing on the edge of a ramp off the middle of the road crashes the same as one on a ramp in the middle", () => {

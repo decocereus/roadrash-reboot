@@ -198,11 +198,17 @@ const leftEdgeOf = (jump: TrackFeature): number => jump.x - jump.width / 2;
 
 const rightEdgeOf = (jump: TrackFeature): number => jump.x + jump.width / 2;
 
-const betweenEdges = (jump: TrackFeature, x: number): boolean =>
-  x > leftEdgeOf(jump) && x < rightEdgeOf(jump);
+const withinEdges = (
+  jump: TrackFeature,
+  x: number,
+  fromDeck: boolean
+): boolean =>
+  fromDeck
+    ? x >= leftEdgeOf(jump) && x <= rightEdgeOf(jump)
+    : x > leftEdgeOf(jump) && x < rightEdgeOf(jump);
 
 const onDeck = (jump: TrackFeature, s: number, x: number): boolean =>
-  s >= jump.s && s <= lipOf(jump) && betweenEdges(jump, x);
+  s >= jump.s && s <= lipOf(jump) && withinEdges(jump, x, true);
 
 export const deckSupportOf = (
   jump: TrackFeature,
@@ -218,16 +224,21 @@ export const deckSupportOf = (
   return out;
 };
 
+export const groundSupport = (out: Support): Support => {
+  out.height = 0;
+  out.slope = 0;
+  out.slopeRate = 0;
+  out.feature = -1;
+  return out;
+};
+
 export const supportAt = (
   track: Track,
   s: number,
   x: number,
   out: Support
 ): Support => {
-  out.height = 0;
-  out.slope = 0;
-  out.slopeRate = 0;
-  out.feature = -1;
+  groundSupport(out);
   const index = track.featureIndex;
   const cell = cellOf(index, s);
   const end = index.offsets[cell + 1] ?? 0;
@@ -286,6 +297,7 @@ const crossJump = (
   fromX: number,
   alongS: number,
   alongX: number,
+  fromDeck: boolean,
   out: Crossing
 ): boolean => {
   let enterS = Number.NEGATIVE_INFINITY;
@@ -303,7 +315,7 @@ const crossJump = (
   let enterX = Number.NEGATIVE_INFINITY;
   let leaveX = Number.POSITIVE_INFINITY;
   if (alongX === 0) {
-    if (!betweenEdges(jump, fromX)) {
+    if (!withinEdges(jump, fromX, fromDeck)) {
       return false;
     }
   } else {
@@ -314,7 +326,8 @@ const crossJump = (
   }
   const enter = Math.max(enterS, enterX);
   const leave = Math.min(leaveS, leaveX);
-  if (enter > leave || enter > 1 || leave < 0) {
+  const touchesOnlyAtStart = leave === 0 && !fromDeck;
+  if (enter > leave || enter > 1 || leave < 0 || touchesOnlyAtStart) {
     return false;
   }
   out.enter = enter;
@@ -330,6 +343,7 @@ export const crossRamps = (
   fromX: number,
   toS: number,
   toX: number,
+  fromDeck: boolean,
   out: Crossing
 ): Crossing => {
   out.feature = -1;
@@ -343,7 +357,9 @@ export const crossRamps = (
     if (!jump || jump.s > reach) {
       break;
     }
-    if (crossJump(jump, fromS, fromX, toS - fromS, toX - fromX, out)) {
+    if (
+      crossJump(jump, fromS, fromX, toS - fromS, toX - fromX, fromDeck, out)
+    ) {
       out.feature = index;
       return out;
     }

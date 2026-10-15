@@ -5,6 +5,7 @@ import {
   deckSlopeOf,
   emptyCrossing,
   emptySupport,
+  groundSupport,
   lipOf,
   lipSlopeOf,
   supportAt,
@@ -256,6 +257,9 @@ interface Contact {
   readonly verticalSpeed: number;
 }
 
+const belowDeck = (deckHeight: number, air: number): boolean =>
+  deckHeight > air + DECK_STEP;
+
 const land = (
   state: RaceState,
   track: Track,
@@ -332,9 +336,10 @@ const settleOnSurface = (
   rider: RiderState,
   fromS: number,
   fromX: number,
+  fromDeck: boolean,
   forwardRate: number
 ): void => {
-  crossRamps(track, fromS, fromX, rider.s, rider.x, crossing);
+  crossRamps(track, fromS, fromX, rider.s, rider.x, fromDeck, crossing);
   const jump = track.features[crossing.feature];
   if (!jump) {
     rider.air = 0;
@@ -443,7 +448,7 @@ const touchDeck = (
   }
   rider.s = toS;
   rider.x = toX;
-  settleOnSurface(state, track, riderIndex, rider, s, x, forwardRate);
+  settleOnSurface(state, track, riderIndex, rider, s, x, true, forwardRate);
 };
 
 const fly = (
@@ -455,6 +460,10 @@ const fly = (
   const fromS = rider.s;
   const fromX = rider.x;
   const fromAir = rider.air;
+  const fromDeck = !belowDeck(
+    supportAt(track, fromS, fromX, under).height,
+    fromAir
+  );
   const rise = rider.verticalSpeed;
   const curvature = curvatureAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
@@ -469,7 +478,7 @@ const fly = (
   settleVisuals(rider, 0.6);
   rider.load = 0;
   rider.airTicks += 1;
-  crossRamps(track, fromS, fromX, rider.s, rider.x, crossing);
+  crossRamps(track, fromS, fromX, rider.s, rider.x, fromDeck, crossing);
   const jump = track.features[crossing.feature];
   if (jump) {
     const entry = Math.max(0, crossing.enter);
@@ -505,7 +514,7 @@ const fly = (
   }
   const share = clamp(fromAir / (fromAir - rider.air), 0, 1);
   const contactS = fromS + (rider.s - fromS) * share;
-  supportAt(track, rider.s, rider.x, under);
+  groundSupport(under);
   land(
     state,
     track,
@@ -605,7 +614,16 @@ const ride = (
     (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   settleVisuals(rider, 1);
-  settleOnSurface(state, track, riderIndex, rider, fromS, fromX, forwardRate);
+  settleOnSurface(
+    state,
+    track,
+    riderIndex,
+    rider,
+    fromS,
+    fromX,
+    !belowDeck(before.height, rider.air),
+    forwardRate
+  );
 };
 
 const hitProps = (
