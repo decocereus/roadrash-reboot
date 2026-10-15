@@ -104,12 +104,12 @@ The compiled ramps are indexed in 32 m cells along the road, and the simulation 
 
 ## Hazards
 
-A hazard is something lying on the road: an oil slick, a rock (drawn as a fallen crate on the city roads), or a pothole. The track carries a schedule of them, `Track.hazards`, and the race spawns each one into `RaceState.hazards` when it is created, so a hazard is race state, not part of the road's surface. `docs/architecture.md` says what each one does to a bike.
+A hazard is something lying on the road: an oil slick, a rock (drawn as a fallen crate on the city roads), or a pothole. The track carries a schedule of them, `Track.hazards`, and the race spawns each one into `RaceState.hazards` when it is created, so a hazard is race state, not part of the road's surface. Hazards are good to avoid, not must avoid: none is a crash on contact. Oil is safe straight across at any speed and puts down only a bike steering hard on it; a rock bumps the bike into the air and costs speed, and throws the rider only from about 210 km/h or when the bike is already steering hard; a pothole is a jolt and a wobble. They are drawn at their real size and are not made to stand out, so a rider who sees one late chooses between a quick swerve and riding through. `docs/architecture.md` has the numbers.
 
 | Kind | Footprint | Height | Where it lies across the road |
 | --- | --- | --- | --- |
 | Oil slick | 5.2 × 2.2 m | flat | In a lane, up to 0.5 m off its centre |
-| Rock | 0.9 × 0.9 m | 0.6 m | On a line no traffic touches: the centre line, the dashed line between two same-way or two oncoming lanes, or 0.05 m inside the road edge |
+| Rock | 0.9 × 0.9 m | 0.45 m | On a line no traffic touches: the centre line, the dashed line between two same-way or two oncoming lanes, or 0.05 m inside the road edge |
 | Pothole | 1 × 1.2 m | flat | In a lane, up to 0.9 m off its centre, in a wheel track |
 
 `placeHazards` in `packages/track/src/hazards.ts` walks each road from the start with its own seeded stream (the road's seed with a salt), so the hazards do not move when the props or the traffic change. A plan's `hazardsPerKilometre`, 2 on every road, sets the walk: the gap to the next candidate is 0.6 to 1.4 times 500 m. For each candidate the stream draws its kind from the region's `hazardMix`, its line across the road (oil and potholes go in a same-way lane seven times in ten), and the level it appears from: 55% of candidates from level 1 and 11% more from each level after. All four numbers are drawn whether or not the candidate is kept, so a hazard on the part of the road a player already knows is in the same place, with the same id, at every level. A candidate is kept when:
