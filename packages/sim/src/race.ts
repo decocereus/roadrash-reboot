@@ -21,6 +21,7 @@ import type {
   PacingRules,
   PlayerSetup,
   PoliceSetup,
+  RaceEvent,
   RaceSetup,
   RaceState,
   RiderInput,
@@ -132,13 +133,14 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   bodyX: spot.x,
   brake: 0,
   bumpLoss: 0,
+  bumpedBy: -1,
   chase: -1,
   condition: FULL_CONDITION,
   crashes: 0,
   finishTick: -1,
   gear: 1,
   grudge: entry.grudge,
-  hazardContact: -1,
+  hazardContacts: [],
   hazardMissed: false,
   hazardSeen: -1,
   heading: 0,
@@ -360,6 +362,22 @@ const throwForHazard: ThrowForHazard = (
   throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, undefined, hazard);
 };
 
+type Landing = Extract<RaceEvent, { kind: "land" }>;
+
+const touchdownOf = (
+  state: RaceState,
+  riderIndex: number,
+  from: number
+): Landing | undefined => {
+  for (let index = from; index < state.events.length; index += 1) {
+    const event = state.events[index];
+    if (event?.kind === "land" && event.rider === riderIndex) {
+      return event;
+    }
+  }
+  return undefined;
+};
+
 export const stepRace = (
   state: RaceState,
   track: Track,
@@ -372,8 +390,16 @@ export const stepRace = (
     const rider = state.riders[index];
     const fromS = rider?.s ?? 0;
     const fromX = rider?.x ?? 0;
+    const eventsBefore = state.events.length;
     stepRider(state, track, index, inputs[index] ?? neutralInput);
-    meetHazards(state, index, fromS, fromX, throwForHazard);
+    const touchdown = touchdownOf(state, index, eventsBefore);
+    meetHazards(
+      state,
+      index,
+      touchdown?.s ?? fromS,
+      touchdown?.x ?? fromX,
+      throwForHazard
+    );
   }
   stepRiderContacts(
     state,

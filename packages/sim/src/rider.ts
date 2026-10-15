@@ -247,6 +247,7 @@ export const throwRider = (
   rider.speed = impactSpeed * bikeKeep;
   rider.airborne = false;
   rider.airTicks = 0;
+  rider.bumpedBy = -1;
   rider.verticalSpeed = 0;
   rider.wobble = 0;
   rider.slip = 0;
@@ -269,6 +270,7 @@ const under: Support = emptySupport();
 const crossing: Crossing = emptyCrossing();
 
 interface Contact {
+  readonly s: number;
   readonly x: number;
   readonly slope: number;
   readonly verticalSpeed: number;
@@ -296,17 +298,34 @@ const land = (
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
   rider.offRoad = Math.abs(contact.x) > track.roadHalfWidth;
+  const bumpedBy = state.hazards[rider.bumpedBy] ?? null;
+  rider.bumpedBy = -1;
   if (
     impact < HARD_LANDING ||
     (judged && (rider.offRoad || slip > LANDING_SLIP))
   ) {
-    throwRider(state, riderIndex, "landing", 0.7, 0.75);
+    throwRider(
+      state,
+      riderIndex,
+      bumpedBy ? "hazard" : "landing",
+      0.7,
+      0.75,
+      undefined,
+      bumpedBy
+    );
     return;
   }
   rider.speed *=
     1 - Math.min(MOST_LANDING_LOSS, -impact * LANDING_LOSS_PER_IMPACT);
   rider.wobble = clamp(-impact * WOBBLE_PER_IMPACT + slip, 0, 1);
-  state.events.push({ airSeconds, impact, kind: "land", rider: riderIndex });
+  state.events.push({
+    airSeconds,
+    impact,
+    kind: "land",
+    rider: riderIndex,
+    s: contact.s,
+    x: contact.x,
+  });
 };
 
 const glancesOff = (
@@ -454,6 +473,7 @@ const touchDeck = (
     riderIndex,
     rider,
     {
+      s,
       slope: slopeAt(track, s) + under.slope,
       verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
       x,
@@ -536,6 +556,7 @@ const fly = (
     riderIndex,
     rider,
     {
+      s: contactS,
       slope: slopeAt(track, contactS),
       verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
       x: fromX + (rider.x - fromX) * share,

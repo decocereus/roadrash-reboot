@@ -20,7 +20,13 @@ import type {
 
 export const OIL_SLIP = 0.85;
 const OIL_WOBBLE = 0.25;
-const ROCK_THROW_SPEED = 14;
+const ROCK_JOLT_SPEED = 14;
+const ROCK_KICK = 0.07;
+const ROCK_LOSS = 0.06;
+const ROCK_FAST_LOSS = 0.1;
+const ROCK_FAST = 55.6;
+const ROCK_UPSET = 0.5;
+const ROCK_UPSET_SPEED = 55.6;
 const ROCK_GLANCE = 0.2;
 const ROCK_STAGGER_KEEP = 0.4;
 const ROCK_GLANCE_KEEP = 0.8;
@@ -136,16 +142,56 @@ export const spawnScheduledHazards = (state: RaceState, track: Track): void => {
 const clearsHazard = (rider: RiderState, hazard: Hazard): boolean =>
   rider.airborne || rider.air >= Math.max(FLAT_CLEARANCE, hazard.height);
 
-const touches = (
+const slabEnter = (
+  from: number,
+  to: number,
+  centre: number,
+  half: number
+): number => {
+  const delta = to - from;
+  if (delta === 0) {
+    return Math.abs(from - centre) < half
+      ? Number.NEGATIVE_INFINITY
+      : Number.POSITIVE_INFINITY;
+  }
+  return (centre - Math.sign(delta) * half - from) / delta;
+};
+
+const slabLeave = (
+  from: number,
+  to: number,
+  centre: number,
+  half: number
+): number => {
+  const delta = to - from;
+  if (delta === 0) {
+    return Math.abs(from - centre) < half
+      ? Number.POSITIVE_INFINITY
+      : Number.NEGATIVE_INFINITY;
+  }
+  return (centre + Math.sign(delta) * half - from) / delta;
+};
+
+const entryShare = (
   hazard: Hazard,
   fromS: number,
   fromX: number,
   rider: RiderState
-): boolean =>
-  Math.min(fromS, rider.s) - BIKE_HALF_LENGTH < hazard.s + hazard.halfLength &&
-  Math.max(fromS, rider.s) + BIKE_HALF_LENGTH > hazard.s - hazard.halfLength &&
-  Math.min(fromX, rider.x) - BIKE_HALF_WIDTH < hazard.x + hazard.halfWidth &&
-  Math.max(fromX, rider.x) + BIKE_HALF_WIDTH > hazard.x - hazard.halfWidth;
+): number => {
+  const alongHalf = hazard.halfLength + BIKE_HALF_LENGTH;
+  const acrossHalf = hazard.halfWidth + BIKE_HALF_WIDTH;
+  const enter = Math.max(
+    0,
+    slabEnter(fromS, rider.s, hazard.s, alongHalf),
+    slabEnter(fromX, rider.x, hazard.x, acrossHalf)
+  );
+  const leave = Math.min(
+    1,
+    slabLeave(fromS, rider.s, hazard.s, alongHalf),
+    slabLeave(fromX, rider.x, hazard.x, acrossHalf)
+  );
+  return enter < leave ? enter : -1;
+};
 
 const report = (
   state: RaceState,
@@ -176,21 +222,15 @@ const slipOnOil = (
   report(state, riderIndex, rider, hazard, "slip");
 };
 
-const hitRock = (
+const shoveOff = (
   state: RaceState,
   riderIndex: number,
   rider: RiderState,
   hazard: Hazard,
-  throwFor: ThrowForHazard
+  glancing: boolean
 ): void => {
-  const across = rider.x - hazard.x;
-  const overlap = hazard.halfWidth + BIKE_HALF_WIDTH - Math.abs(across);
-  const glancing = overlap < ROCK_GLANCE;
-  if (rider.speed > ROCK_THROW_SPEED && !glancing) {
-    throwFor(state, riderIndex, "hazard", 0.3, 0.6, hazard);
-    return;
-  }
-  const side = Math.sign(across) || Math.sign(rider.lateralSpeed) || 1;
+  const side =
+    Math.sign(rider.x - hazard.x) || Math.sign(rider.lateralSpeed) || 1;
   rider.speed *= glancing ? ROCK_GLANCE_KEEP : ROCK_STAGGER_KEEP;
   rider.wobble = Math.max(
     rider.wobble,
@@ -201,6 +241,45 @@ const hitRock = (
   rider.lateralSpeed = side * ROCK_SHOVE;
   rider.hitStun = ROCK_STUN;
   report(state, riderIndex, rider, hazard, "stagger");
+};
+
+const bumpOver = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  hazardIndex: number,
+  hazard: Hazard
+): void => {
+  const pace = rider.speed;
+  const upset =
+    lateralSpeedLimit(rider.bike, pace) *
+    ROCK_UPSET *
+    (pace / ROCK_UPSET_SPEED) ** 3;
+  const lean =
+    Math.sign(rider.lateralSpeed) || Math.sign(rider.x - hazard.x) || 1;
+  rider.speed *= 1 - ROCK_LOSS - ROCK_FAST_LOSS * Math.min(1, pace / ROCK_FAST);
+  rider.lateralSpeed += lean * upset;
+  rider.airborne = true;
+  rider.airTicks = 0;
+  rider.verticalSpeed = ROCK_KICK * pace;
+  rider.bumpedBy = hazardIndex;
+  report(state, riderIndex, rider, hazard, "bump");
+};
+
+const hitRock = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  hazardIndex: number,
+  hazard: Hazard
+): void => {
+  const overlap =
+    hazard.halfWidth + BIKE_HALF_WIDTH - Math.abs(rider.x - hazard.x);
+  if (overlap < ROCK_GLANCE || rider.speed <= ROCK_JOLT_SPEED) {
+    shoveOff(state, riderIndex, rider, hazard, overlap < ROCK_GLANCE);
+    return;
+  }
+  bumpOver(state, riderIndex, rider, hazardIndex, hazard);
 };
 
 const dropIntoPothole = (
@@ -262,23 +341,50 @@ const passesClose = (
   }
 };
 
-const firstTouched = (
+const touchedIndex: number[] = [];
+const touchedShare: number[] = [];
+
+const gatherTouched = (
   state: RaceState,
   rider: RiderState,
   fromS: number,
   fromX: number
-): number => {
-  let touched = -1;
+): void => {
+  touchedIndex.length = 0;
+  touchedShare.length = 0;
   for (const [index, hazard] of state.hazards.entries()) {
-    if (
-      !clearsHazard(rider, hazard) &&
-      touches(hazard, fromS, fromX, rider) &&
-      (touched < 0 || hazard.s < (state.hazards[touched]?.s ?? 0))
-    ) {
-      touched = index;
+    const share = clearsHazard(rider, hazard)
+      ? -1
+      : entryShare(hazard, fromS, fromX, rider);
+    if (share < 0) {
+      continue;
     }
+    let slot = touchedShare.length;
+    while (slot > 0 && (touchedShare[slot - 1] ?? 0) > share) {
+      touchedShare[slot] = touchedShare[slot - 1] ?? 0;
+      touchedIndex[slot] = touchedIndex[slot - 1] ?? 0;
+      slot -= 1;
+    }
+    touchedShare[slot] = share;
+    touchedIndex[slot] = index;
   }
-  return touched;
+};
+
+const meet = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  hazardIndex: number,
+  hazard: Hazard,
+  throwFor: ThrowForHazard
+): void => {
+  if (hazard.kind === "oil") {
+    slipOnOil(state, riderIndex, rider, hazardIndex, hazard);
+  } else if (hazard.kind === "rock") {
+    hitRock(state, riderIndex, rider, hazardIndex, hazard);
+  } else {
+    dropIntoPothole(state, riderIndex, rider, hazard, throwFor);
+  }
 };
 
 export const meetHazards = (
@@ -289,30 +395,37 @@ export const meetHazards = (
   throwFor: ThrowForHazard
 ): void => {
   const rider = state.riders[riderIndex];
-  if (!rider || rider.mode !== "riding") {
+  if (!rider) {
     return;
   }
-  const index = firstTouched(state, rider, fromS, fromX);
-  const hazard = state.hazards[index];
-  if (!hazard) {
-    rider.hazardContact = -1;
-    for (const passed of state.hazards) {
-      passesClose(state, riderIndex, rider, fromS, passed);
+  const contacts = rider.hazardContacts;
+  if (rider.mode !== "riding") {
+    contacts.length = 0;
+    return;
+  }
+  gatherTouched(state, rider, fromS, fromX);
+  let resolved = 0;
+  for (const index of touchedIndex) {
+    const hazard = state.hazards[index];
+    if (!hazard || rider.mode !== "riding" || rider.airborne) {
+      break;
     }
-    return;
+    resolved += 1;
+    if (hazard.kind === "oil") {
+      rider.slip = OIL_SLIP;
+      rider.slipFrom = index;
+    }
+    if (!contacts.includes(index)) {
+      meet(state, riderIndex, rider, index, hazard, throwFor);
+    }
   }
-  if (hazard.kind === "oil") {
-    rider.slip = OIL_SLIP;
+  contacts.length = 0;
+  for (let slot = 0; slot < resolved; slot += 1) {
+    contacts.push(touchedIndex[slot] ?? -1);
   }
-  if (index === rider.hazardContact) {
-    return;
-  }
-  rider.hazardContact = index;
-  if (hazard.kind === "oil") {
-    slipOnOil(state, riderIndex, rider, index, hazard);
-  } else if (hazard.kind === "rock") {
-    hitRock(state, riderIndex, rider, hazard, throwFor);
-  } else {
-    dropIntoPothole(state, riderIndex, rider, hazard, throwFor);
+  for (const [index, hazard] of state.hazards.entries()) {
+    if (!contacts.includes(index)) {
+      passesClose(state, riderIndex, rider, fromS, hazard);
+    }
   }
 };
