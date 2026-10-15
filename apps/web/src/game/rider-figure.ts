@@ -439,6 +439,17 @@ interface Riding {
 const sideOf = <T>(sided: Sided<T>, side: number): T =>
   side < 0 ? sided.left : sided.right;
 
+class PosedSkeleton extends THREE.Skeleton {
+  stale = true;
+
+  override update(): void {
+    if (this.stale) {
+      this.stale = false;
+      super.update();
+    }
+  }
+}
+
 const boneRadii = (body: THREE.SkinnedMesh): Float64Array => {
   const { bindMatrix, geometry, skeleton } = body;
   const toBone = skeleton.boneInverses.map((inverse) =>
@@ -525,7 +536,10 @@ export const createRiderFigure = (
   if (!(first && painted.cel)) {
     throw new Error("The rider model has no skin.");
   }
-  const { skeleton } = first;
+  const skeleton = new PosedSkeleton(
+    first.skeleton.bones,
+    first.skeleton.boneInverses
+  );
   const body = new THREE.SkinnedMesh(painted.cel, shading.paint());
   body.castShadow = true;
   body.receiveShadow = true;
@@ -533,6 +547,7 @@ export const createRiderFigure = (
   body.bind(skeleton, first.bindMatrix);
   for (const mesh of skinned) {
     mesh.removeFromParent();
+    mesh.skeleton.dispose();
   }
 
   const bones = asset.bones.map((name) => skeleton.getBoneByName(name));
@@ -578,6 +593,8 @@ export const createRiderFigure = (
   const base = [...current];
   const upright = [...current];
   const bent = [...current];
+  const written = current.map(() => Number.NaN);
+  const turn = new THREE.Quaternion();
   let resting = false;
 
   const hands = [
@@ -614,9 +631,29 @@ export const createRiderFigure = (
     }
   };
 
+  for (const bone of bones) {
+    if (bone) {
+      bone.matrixAutoUpdate = false;
+    }
+  }
+
   const apply = () => {
-    for (const [index, bone] of bones.entries()) {
-      bone?.quaternion.fromArray(current, index * 4);
+    let offset = -4;
+    for (const bone of bones) {
+      offset += 4;
+      if (
+        !bone ||
+        (current[offset] === written[offset] &&
+          current[offset + 1] === written[offset + 1] &&
+          current[offset + 2] === written[offset + 2] &&
+          current[offset + 3] === written[offset + 3])
+      ) {
+        continue;
+      }
+      turn.fromArray(current, offset);
+      turn.toArray(written, offset);
+      bone.matrix.compose(bone.position, turn, bone.scale);
+      bone.matrixWorldNeedsUpdate = true;
     }
   };
   apply();
@@ -741,6 +778,7 @@ export const createRiderFigure = (
 
   return {
     animate(stance, seconds) {
+      skeleton.stale = true;
       if (!aim(stance)) {
         return;
       }
