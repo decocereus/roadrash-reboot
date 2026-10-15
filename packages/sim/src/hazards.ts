@@ -1,8 +1,10 @@
 import { lipOf } from "@racer/track/features";
 import { hazardSizes } from "@racer/track/hazards";
 import type { HazardKind } from "@racer/track/hazards";
+import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { forwardRateOf } from "./rider.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -245,6 +247,7 @@ const shoveOff = (
 
 const bumpOver = (
   state: RaceState,
+  track: Track,
   riderIndex: number,
   rider: RiderState,
   hazardIndex: number,
@@ -261,13 +264,16 @@ const bumpOver = (
   rider.lateralSpeed += lean * upset;
   rider.airborne = true;
   rider.airTicks = 0;
-  rider.verticalSpeed = ROCK_KICK * pace;
+  rider.verticalSpeed =
+    ROCK_KICK * pace +
+    slopeAt(track, rider.s) * forwardRateOf(rider, curvatureAt(track, rider.s));
   rider.bumpedBy = hazardIndex;
   report(state, riderIndex, rider, hazard, "bump");
 };
 
 const hitRock = (
   state: RaceState,
+  track: Track,
   riderIndex: number,
   rider: RiderState,
   hazardIndex: number,
@@ -279,7 +285,7 @@ const hitRock = (
     shoveOff(state, riderIndex, rider, hazard, overlap < ROCK_GLANCE);
     return;
   }
-  bumpOver(state, riderIndex, rider, hazardIndex, hazard);
+  bumpOver(state, track, riderIndex, rider, hazardIndex, hazard);
 };
 
 const dropIntoPothole = (
@@ -372,6 +378,7 @@ const gatherTouched = (
 
 const meet = (
   state: RaceState,
+  track: Track,
   riderIndex: number,
   rider: RiderState,
   hazardIndex: number,
@@ -381,7 +388,7 @@ const meet = (
   if (hazard.kind === "oil") {
     slipOnOil(state, riderIndex, rider, hazardIndex, hazard);
   } else if (hazard.kind === "rock") {
-    hitRock(state, riderIndex, rider, hazardIndex, hazard);
+    hitRock(state, track, riderIndex, rider, hazardIndex, hazard);
   } else {
     dropIntoPothole(state, riderIndex, rider, hazard, throwFor);
   }
@@ -389,6 +396,7 @@ const meet = (
 
 export const meetHazards = (
   state: RaceState,
+  track: Track,
   riderIndex: number,
   fromS: number,
   fromX: number,
@@ -416,7 +424,7 @@ export const meetHazards = (
       rider.slipFrom = index;
     }
     if (!contacts.includes(index)) {
-      meet(state, riderIndex, rider, index, hazard, throwFor);
+      meet(state, track, riderIndex, rider, index, hazard, throwFor);
     }
   }
   contacts.length = 0;

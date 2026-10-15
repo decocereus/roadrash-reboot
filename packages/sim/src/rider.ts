@@ -142,7 +142,7 @@ const standing: RiderInput = {
   throttle: 0,
 };
 
-const forwardRateOf = (rider: RiderState, curvature: number): number =>
+export const forwardRateOf = (rider: RiderState, curvature: number): number =>
   rider.speed / Math.max(0.5, 1 - curvature * rider.x);
 
 const swayOf = (rider: RiderState): number =>
