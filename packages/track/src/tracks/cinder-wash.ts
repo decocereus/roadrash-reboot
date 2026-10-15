@@ -3,7 +3,24 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const cinderWash: TrackPlan = {
-  features: [],
+  features: [
+    {
+      feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },
+      fromLevel: 1,
+      id: "drive-in-ramp",
+      placement: "fixed",
+      s: 4250,
+      x: 0,
+    },
+    {
+      feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },
+      fromLevel: 1,
+      id: "salt-pan-ramp",
+      placement: "fixed",
+      s: 5300,
+      x: 3.8,
+    },
+  ],
   id: "cinder-wash",
   laneWidth: 3.8,
   lanesEachWay: 2,
@@ -35,7 +52,10 @@ export const cinderWash: TrackPlan = {
     { climb: 0, length: 310, turnDegrees: 0 },
     { climb: 0, length: 200, turnDegrees: 0 },
     { climb: -4, length: 300, turnDegrees: -14 },
-    { climb: 0, length: 900, turnDegrees: 0 },
+    { climb: 0, length: 100, turnDegrees: 0 },
+    { climb: 1.4, length: 40, turnDegrees: 0 },
+    { climb: -1.4, length: 40, turnDegrees: 0 },
+    { climb: 0, length: 720, turnDegrees: 0 },
     { climb: -3.3, length: 70, turnDegrees: 0 },
     { climb: 3.3, length: 70, turnDegrees: 0 },
     { climb: 0, length: 40, turnDegrees: 0 },

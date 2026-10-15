@@ -3,7 +3,16 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const ridgeRoad: TrackPlan = {
-  features: [],
+  features: [
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.2 },
+      fromLevel: 1,
+      id: "cable-car-ramp",
+      placement: "fixed",
+      s: 8290,
+      x: 0,
+    },
+  ],
   id: "ridge-road",
   laneWidth: 3.6,
   lanesEachWay: 1,

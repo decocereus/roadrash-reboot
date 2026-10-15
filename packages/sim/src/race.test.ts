@@ -41,6 +41,7 @@ const quietTrack = compileTrack({ ...ridgeRoad, trafficPerKilometre: 0 });
 const wideTrack = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
 const straight = compileTrack({
   ...ridgeRoad,
+  features: [],
   sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
   trafficPerKilometre: 0,
 });
@@ -204,6 +205,7 @@ describe("riding", () => {
 
     const flat = compileTrack({
       ...ridgeRoad,
+      features: [],
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
@@ -258,6 +260,7 @@ describe("riding", () => {
   it("stops from 200 km/h in about 55 metres", () => {
     const flat = compileTrack({
       ...ridgeRoad,
+      features: [],
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
@@ -601,6 +604,7 @@ describe("the pack", () => {
   it("a punch drains stamina and enough of them knock the rival down", () => {
     const flat = compileTrack({
       ...ridgeRoad,
+      features: [],
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });

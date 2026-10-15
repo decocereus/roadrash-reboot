@@ -10,6 +10,7 @@ import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 const GRAVITY = 9.81;
 const STRAIGHT = 1 / 1500;
 const PINNED_RIDGE_LENGTH = 4250;
+const RAMP_RUN_UP = 40;
 
 interface Stretch {
   readonly from: number;
@@ -21,6 +22,7 @@ interface Expected {
   readonly lengths: readonly number[];
   readonly traffic: readonly number[];
   readonly lowestLaunch: readonly number[];
+  readonly ramps: readonly (readonly string[])[];
   readonly signature: Stretch | undefined;
   readonly roadblocks: readonly (readonly number[])[];
 }
@@ -29,6 +31,13 @@ const design: readonly Expected[] = [
   {
     lengths: [8500, 9650, 10_800, 11_950, 13_100],
     lowestLaunch: [169, 169, 169, 169, 169],
+    ramps: [
+      ["promenade-ramp", "mole-ramp"],
+      ["promenade-ramp", "mole-ramp"],
+      ["promenade-ramp", "mole-ramp"],
+      ["promenade-ramp", "mole-ramp"],
+      ["promenade-ramp", "mole-ramp"],
+    ],
     roadId: "breakwater-run",
     roadblocks: [[], [], [2800, 9450], [2800, 9450], [2800, 9450, 12_050]],
     signature: undefined,
@@ -37,6 +46,13 @@ const design: readonly Expected[] = [
   {
     lengths: [8850, 10_000, 11_150, 12_300, 13_450],
     lowestLaunch: [154, 154, 154, 154, 154],
+    ramps: [
+      ["drive-in-ramp", "salt-pan-ramp"],
+      ["drive-in-ramp", "salt-pan-ramp"],
+      ["drive-in-ramp", "salt-pan-ramp"],
+      ["drive-in-ramp", "salt-pan-ramp"],
+      ["drive-in-ramp", "salt-pan-ramp"],
+    ],
     roadId: "cinder-wash",
     roadblocks: [
       [],
@@ -51,6 +67,13 @@ const design: readonly Expected[] = [
   {
     lengths: [8050, 9200, 10_350, 11_500, 12_650],
     lowestLaunch: [186, 173, 173, 170, 162],
+    ramps: [
+      ["sawmill-ramp", "kiln-ramp"],
+      ["sawmill-ramp", "kiln-ramp"],
+      ["sawmill-ramp", "kiln-ramp"],
+      ["sawmill-ramp", "kiln-ramp"],
+      ["sawmill-ramp", "kiln-ramp"],
+    ],
     roadId: "hollow-pine-road",
     roadblocks: [[], [], [10_150], [10_150, 11_300], [10_150, 11_300, 12_100]],
     signature: undefined,
@@ -59,6 +82,13 @@ const design: readonly Expected[] = [
   {
     lengths: [8500, 9650, 10_800, 11_950, 13_100],
     lowestLaunch: [152, 152, 152, 152, 152],
+    ramps: [
+      ["slipway-ramp", "bonded-ramp"],
+      ["slipway-ramp", "bonded-ramp"],
+      ["slipway-ramp", "bonded-ramp"],
+      ["slipway-ramp", "bonded-ramp", "boulevard-ramp"],
+      ["slipway-ramp", "bonded-ramp", "boulevard-ramp"],
+    ],
     roadId: "slag-row",
     roadblocks: [
       [],
@@ -73,6 +103,13 @@ const design: readonly Expected[] = [
   {
     lengths: [8550, 9700, 10_850, 12_000, 13_150],
     lowestLaunch: [162, 162, 162, 162, 162],
+    ramps: [
+      ["cable-car-ramp"],
+      ["cable-car-ramp"],
+      ["cable-car-ramp"],
+      ["cable-car-ramp"],
+      ["cable-car-ramp"],
+    ],
     roadId: "ridge-road",
     roadblocks: [[], [], [9550], [9550, 10_950], [9550, 10_950, 12_950]],
     signature: undefined,
@@ -299,6 +336,54 @@ describe("roadblock spots", () => {
         expect(spot.bend).toBeLessThan(STRAIGHT);
         expect(spot.behind).toBeGreaterThanOrEqual(250);
         expect(spot.ahead).toBeGreaterThanOrEqual(150);
+      }
+    }
+  );
+});
+
+describe("ramps", () => {
+  it.each(design)(
+    "$roadId has its ramps at each level",
+    ({ ramps, roadId }) => {
+      expect(
+        everyLevel((level) =>
+          trackFor(roadId, level).features.map((feature) => feature.id)
+        )
+      ).toStrictEqual(ramps);
+    }
+  );
+
+  it.each(design)(
+    "every ramp on $roadId sits on a straight from 40 m before the toe to the end of its landing, with no crest and no roadblock near it",
+    ({ roadId }) => {
+      const ramps = everyLevel((level) => {
+        const track = trackFor(roadId, level);
+        return track.features.map((feature) => {
+          let bend = 0;
+          let sharpest = 0;
+          for (let s = feature.fromS; s <= feature.toS; s += 1) {
+            sharpest = Math.min(
+              sharpest,
+              track.slopeRate[Math.round(s - track.startS)] ?? 0
+            );
+            if (s >= feature.s - RAMP_RUN_UP) {
+              bend = Math.max(bend, bendAt(track, s));
+            }
+          }
+          const nearestRoadblock = Math.min(
+            Number.POSITIVE_INFINITY,
+            ...track.plan.roadblocks.map((spot) =>
+              Math.max(0, feature.fromS - spot, spot - feature.toS)
+            )
+          );
+          return { bend, nearestRoadblock, sharpest };
+        });
+      }).flat();
+      expect(ramps.length).toBeGreaterThan(0);
+      for (const ramp of ramps) {
+        expect(ramp.bend).toBeLessThan(STRAIGHT);
+        expect(ramp.sharpest).toBeGreaterThan(-GRAVITY / (200 / 3.6) ** 2);
+        expect(ramp.nearestRoadblock).toBeGreaterThanOrEqual(100);
       }
     }
   );
