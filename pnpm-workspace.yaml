@@ -27,9 +27,3 @@ minimumReleaseAgeExclude:
   - "@tanstack/start-server-core@1.169.39"
   - "@tanstack/start-storage-context@1.167.36"
   - vite@8.3.2
-
-# Alchemy is installed from its preview registry (commit e354a455 of main) until an
-# npm beta supports stable Effect 4.0.0. Its sibling packages resolve to
-# content-addressed pkg.alchemy.run tarballs, which pnpm treats as exotic
-# subdependencies. Restore the default (true) when Alchemy ships to npm.
-blockExoticSubdeps: false
