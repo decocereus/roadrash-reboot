@@ -19,6 +19,7 @@ export const devRideFrom = (search: string): DevRide => {
   const startAt = Number(flags.get("at") ?? 0);
   const swerveAt = Number(flags.get("swerve") ?? 0);
   const swerveFor = Number(flags.get("swervefor") ?? SWERVE_METRES);
+  const swerveTo = Number(flags.get("swerveto") ?? 1);
   let holdTicks = WATCHING;
 
   const seen = (race: RaceState): boolean => {
@@ -66,7 +67,7 @@ export const devRideFrom = (search: string): DevRide => {
     steer: (race, input) => {
       const [me] = race.riders;
       if (me && input && swerveAt > 0 && me.s > swerveAt) {
-        input.steer = me.s < swerveAt + swerveFor ? 1 : input.steer;
+        input.steer = me.s < swerveAt + swerveFor ? swerveTo : input.steer;
       }
     },
     whenReleased: (resume) => {
