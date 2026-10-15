@@ -47,6 +47,7 @@ const eventKinds = [
   "race",
   "marker",
   "visibility",
+  "overlay",
 ] as const;
 type EventKind = (typeof eventKinds)[number];
 
@@ -112,6 +113,7 @@ export interface Recorder {
   readonly context: (lost: boolean) => void;
   readonly fault: (source: FaultSource, message: string, where: string) => void;
   readonly visibility: (hidden: boolean) => void;
+  readonly overlay: (on: boolean) => void;
   readonly flush: (
     kind: BatchKind,
     session: Session,
@@ -195,6 +197,11 @@ const decoders = {
     sizeEpoch: value(1),
   }),
   marker: ({ stamp, value }) => ({ ...stamp, kind: "marker", tick: value(0) }),
+  overlay: ({ stamp, value }) => ({
+    ...stamp,
+    kind: "overlay",
+    on: value(0) === 1,
+  }),
   race: ({ stamp, value }) => ({
     ...stamp,
     kind: "race",
@@ -555,6 +562,12 @@ export const createRecorder = (): Recorder => {
       }
       values[push("marker")] = tick;
       return true;
+    },
+    overlay(on) {
+      if (!recorder.recording) {
+        return;
+      }
+      values[push("overlay")] = on ? 1 : 0;
     },
     race(stage, tick) {
       if (!recorder.recording) {

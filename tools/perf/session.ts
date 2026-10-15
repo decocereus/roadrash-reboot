@@ -36,6 +36,17 @@ interface Suspect {
   readonly detail: string;
 }
 
+interface Period {
+  readonly batchId: number;
+  readonly kind: string;
+  readonly endsAt: number;
+  readonly frames: number;
+  readonly meanMs: number;
+  readonly lateShare: number;
+  readonly discardedMs: number;
+  readonly overlay: boolean | null;
+}
+
 interface Bucket {
   readonly bucket: string;
   readonly count: number;
@@ -67,6 +78,8 @@ interface SessionSummary {
     readonly nearWorst: string;
   })[];
   readonly races: readonly EventOf<"race">[];
+  readonly overlays: readonly EventOf<"overlay">[];
+  readonly periods: readonly Period[];
   readonly faults: readonly EventOf<"fault">[];
   readonly resizes: Readonly<Record<string, number>>;
   readonly suspects: readonly Suspect[];
@@ -268,6 +281,35 @@ const nearestWorst = (worst: readonly WorstFrame[], at: number): string =>
     .map((frame) => `frame ${frame.frame} ${frame.intervalMs.toFixed(1)} ms`)
     .join("; ");
 
+const LATE_BUCKET = 2;
+
+const meterText = (on: boolean | null): string => {
+  if (on === null) {
+    return "?";
+  }
+  return on ? "on" : "off";
+};
+
+const periodsOf = (
+  batches: readonly Batch[],
+  overlays: readonly EventOf<"overlay">[]
+): Period[] =>
+  batches.map((batch) => {
+    const late = batch.histogram
+      .slice(LATE_BUCKET + 1)
+      .reduce((sum, count) => sum + count, 0);
+    return {
+      batchId: batch.batchId,
+      discardedMs: batch.discardedMs,
+      endsAt: batch.at,
+      frames: batch.frames,
+      kind: batch.kind,
+      lateShare: batch.frames > 0 ? late / batch.frames : 0,
+      meanMs: batch.frames > 0 ? batch.totalMs / batch.frames : 0,
+      overlay: overlays.findLast((event) => event.at <= batch.at)?.on ?? null,
+    };
+  });
+
 const summarise = (
   loaded: Loaded,
   worstLimit: number
@@ -322,6 +364,8 @@ const summarise = (
       nearRung: nearestRung(rungs, marker.at),
       nearWorst: nearestWorst(allWorst, marker.at),
     })),
+    overlays: only(events, "overlay"),
+    periods: periodsOf(loaded.batches, only(events, "overlay")),
     races: only(events, "race"),
     recordedSeconds:
       loaded.batches.reduce((sum, batch) => sum + batch.totalMs, 0) / 1000,
@@ -369,6 +413,13 @@ const printSummary = (summary: SessionSummary, parts: readonly string[]) => {
     `  canvas resizes: ${Object.entries(summary.resizes)
       .map(([source, count]) => `${source} ${count}`)
       .join(", ")}`,
+    "",
+    "Batches (late is the share of frames over 23.33 ms)",
+    ...summary.periods.map(
+      (period) =>
+        `  ${String(period.batchId).padStart(3)} ${period.kind.padEnd(8)} to ${seconds(period.endsAt).padStart(9)}  frames ${String(period.frames).padStart(5)}  mean ${period.meanMs.toFixed(1).padStart(5)} ms  late ${(period.lateShare * 100).toFixed(1).padStart(5)}%  discarded ${period.discardedMs.toFixed(0).padStart(5)} ms  meter ${meterText(period.overlay)}`
+    ),
+    `  frame meter: ${summary.overlays.map((event) => `${event.on ? "on" : "off"} at ${seconds(event.at)}`).join(", ") || "never recorded"}`,
     "",
     "Race markers",
     ...summary.races.map(

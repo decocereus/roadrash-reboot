@@ -481,6 +481,7 @@ export async function createGame(
   let drawnRung = 0;
   let rendering = false;
   let rendererLabel = "";
+  let overlayNoted: boolean | null = null;
 
   let world = createWorld(track);
   pipeline.setLook(world.shading.look);
@@ -1491,6 +1492,13 @@ export async function createGame(
     }
     if (settings.recording) {
       ensureProfiler();
+    }
+    const showing = meter !== null;
+    if (!settings.recording) {
+      overlayNoted = null;
+    } else if (overlayNoted !== showing) {
+      recorder.overlay(showing);
+      overlayNoted = showing;
     }
   };
 

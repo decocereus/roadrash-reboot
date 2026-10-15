@@ -150,6 +150,12 @@ export const visibilityEventSchema = Schema.Struct({
   kind: Schema.Literal("visibility"),
 });
 
+export const overlayEventSchema = Schema.Struct({
+  ...stamp,
+  kind: Schema.Literal("overlay"),
+  on: Schema.Boolean,
+});
+
 export const telemetryEventSchema = Schema.Union([
   governorEventSchema,
   canvasEventSchema,
@@ -160,6 +166,7 @@ export const telemetryEventSchema = Schema.Union([
   raceEventSchema,
   markerEventSchema,
   visibilityEventSchema,
+  overlayEventSchema,
 ]);
 export type TelemetryEvent = typeof telemetryEventSchema.Type;
 
