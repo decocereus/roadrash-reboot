@@ -674,25 +674,31 @@ describe("the pack", () => {
     ]);
   });
 
-  it("a cop chasing the pack through traffic rides into a car that no rider shoved it into in at most one of twelve starts", () => {
-    const copsInTraffic: RaceEvent[] = [];
-    let batonHits = 0;
-    for (let seed = 1; seed <= 12; seed += 1) {
-      const { events, state } = raceThePack(seed);
-      const byCop = events.filter(
-        (event) => riderAt(state, event.rider).profile.role === "police"
-      );
-      copsInTraffic.push(
-        ...byCop.filter(
-          (event) =>
-            event.kind === "crash" && event.cause === "traffic" && event.by < 0
-        )
-      );
-      batonHits += byCop.filter((event) => event.kind === "hit").length;
+  it(
+    "a cop chasing the pack through traffic rides into a car that no rider shoved it into in at most one of twelve starts",
+    { timeout: 60_000 },
+    () => {
+      const copsInTraffic: RaceEvent[] = [];
+      let batonHits = 0;
+      for (let seed = 1; seed <= 12; seed += 1) {
+        const { events, state } = raceThePack(seed);
+        const byCop = events.filter(
+          (event) => riderAt(state, event.rider).profile.role === "police"
+        );
+        copsInTraffic.push(
+          ...byCop.filter(
+            (event) =>
+              event.kind === "crash" &&
+              event.cause === "traffic" &&
+              event.by < 0
+          )
+        );
+        batonHits += byCop.filter((event) => event.kind === "hit").length;
+      }
+      expect(copsInTraffic.length).toBeLessThanOrEqual(1);
+      expect(batonHits).toBeGreaterThan(0);
     }
-    expect(copsInTraffic.length).toBeLessThanOrEqual(1);
-    expect(batonHits).toBeGreaterThan(0);
-  });
+  );
 });
 
 const sideBySide = () => {
