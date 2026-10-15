@@ -8,6 +8,8 @@ import { Schema } from "effect";
 
 import { benchWindow } from "../../apps/web/src/career/bench-window.ts";
 import {
+  allocationProfile,
+  allocationSites,
   clockMark,
   clockMarkMicros,
   cpuProfile,
@@ -19,6 +21,7 @@ import {
   traceEvent,
 } from "./analysis.ts";
 import type {
+  Allocations,
   Hotspots,
   StallEvent,
   TraceEvent,
@@ -33,6 +36,7 @@ const POLL_MS = 40;
 const TIMEOUT_MS = 240_000;
 const TOP_FUNCTIONS = 30;
 const SAMPLING_MICROS = 100;
+const ALLOCATION_SAMPLING_BYTES = 4096;
 const TRACE_CATEGORIES = ["devtools.timeline"];
 const FIRST_RUN_CATEGORIES = ["devtools.timeline", "toplevel"];
 const TASK_EVENT = "ThreadControllerImpl::RunTask";
@@ -93,6 +97,7 @@ interface Options {
   readonly out: string;
   readonly trace: boolean;
   readonly cpuProfile: boolean;
+  readonly allocProfile: boolean;
   readonly saveTrace: boolean;
   readonly shots: readonly number[];
   readonly viewport: Viewport;
@@ -144,6 +149,7 @@ interface RunResult {
   readonly load: number;
   readonly gcEventNames: readonly string[];
   readonly hot: Hotspots | null;
+  readonly allocations: Allocations | null;
   readonly shots: readonly string[];
   readonly late: readonly number[];
   readonly stalls: readonly Stall[];
@@ -176,6 +182,7 @@ const sum = (values: readonly number[]): number =>
 const readOptions = (): Options => {
   const { values } = parseArgs({
     options: {
+      "alloc-profile": { default: false, type: "boolean" },
       "cpu-profile": { default: false, type: "boolean" },
       "first-run": { default: false, type: "boolean" },
       from: { type: "string" },
@@ -201,6 +208,7 @@ const readOptions = (): Options => {
   }
   const firstRun = values["first-run"];
   return {
+    allocProfile: values["alloc-profile"],
     cpuProfile: values["cpu-profile"],
     firstRun,
     from: Number(values.from ?? (firstRun ? 1 : benchWindow.from)),
@@ -444,6 +452,14 @@ const measureOnce = async (
       });
       await page.send("Profiler.start");
     }
+    if (options.allocProfile) {
+      await page.send("HeapProfiler.enable");
+      await page.send("HeapProfiler.startSampling", {
+        includeObjectsCollectedByMajorGC: true,
+        includeObjectsCollectedByMinorGC: true,
+        samplingInterval: ALLOCATION_SAMPLING_BYTES,
+      });
+    }
     const [loadBefore = 0] = loadavg();
     const heapBefore = await page.call("Runtime.getHeapUsage", {}, heapUsage);
     const shots = await shoot(page, options, run, options.shots, deadline);
@@ -451,6 +467,9 @@ const measureOnce = async (
     const heapAfter = await page.call("Runtime.getHeapUsage", {}, heapUsage);
     const profile = options.cpuProfile
       ? await page.call("Profiler.stop", {}, cpuProfile)
+      : null;
+    const allocated = options.allocProfile
+      ? await page.call("HeapProfiler.stopSampling", {}, allocationProfile)
       : null;
     if (options.trace) {
       await stopTrace(page);
@@ -484,6 +503,9 @@ const measureOnce = async (
     );
     return {
       ...summarise(frames, info.parts),
+      allocations: allocated
+        ? await allocationSites(allocated, TOP_FUNCTIONS)
+        : null,
       frames: frames.length,
       gcEventNames: options.trace ? gcNamesSeen(events) : [],
       gpuTimer: info.gpuTimer,
@@ -591,6 +613,16 @@ const printSummary = (options: Options, results: readonly RunResult[]) => {
       for (const each of result.hot.top) {
         console.log(
           `${each.selfMs.toFixed(1).padStart(8)} ms ${(each.share * 100).toFixed(1).padStart(5)}%  ${each.name.padEnd(28)} ${each.where}`
+        );
+      }
+    }
+    if (result.allocations) {
+      console.log(
+        `\nrun ${result.run} allocated ${(result.allocations.bytes / 1e6).toFixed(1)} MB in the window, by site:`
+      );
+      for (const each of result.allocations.top) {
+        console.log(
+          `${(each.bytes / 1e3).toFixed(0).padStart(8)} kB ${(each.share * 100).toFixed(1).padStart(5)}%  ${each.name.padEnd(28)} ${each.where}`
         );
       }
     }

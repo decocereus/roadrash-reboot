@@ -33,6 +33,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 | `--first-run` | off | Start the trace during the countdown and measure from the green light, tick 1, so first-use stalls (shader compiles, texture uploads, the first city chunk of a kind) land in the window. The trace adds the `toplevel` and `gpu` categories so a stall that happens outside JavaScript still shows up, in the GPU process. |
 | `--worst` | 5 | For each run, list this many of the longest frames with the CPU time of each part and the longest trace events on any thread that overlap the frame. |
 | `--cpu-profile` | off | Sample the main thread every 100 µs in the window and list the top self-time functions. |
+| `--alloc-profile` | off | Sample allocations in the window with V8's sampling heap profiler, every 4 kB on average and counting objects the GC has already collected, and list the sites that allocate the most. This is where minor GC pauses come from. |
 | `--save-trace` | off | Write the window's trace as `<label>-run<n>-trace.json`, which the DevTools Performance panel opens. |
 | `--no-trace` | off | Skip the trace, which otherwise runs to count GC pauses and long tasks. |
 | `--shots` | none | Comma-separated ticks to screenshot. |
