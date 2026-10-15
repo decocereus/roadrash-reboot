@@ -131,18 +131,21 @@ const paints = [
   0xe8_e2_d6, 0x2f_6f_d0, 0xc8_32_3c, 0x2f_8f_6b, 0xd8_a0_20, 0x3a_35_50,
 ];
 const BOXY_HEIGHT = 1.8;
+const FLEET_BEHIND = 40;
+const FLEET_MARGIN = 200;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
 const NO_PAINT: Palette = new Map();
 
 interface FleetPart {
   readonly mesh: THREE.InstancedMesh;
   readonly cars: readonly number[];
+  readonly painted: boolean;
 }
 
 export interface Fleet {
   readonly group: THREE.Group;
   place: (track: Track, index: number, s: number) => void;
-  commit: () => void;
+  commit: (centre: number) => void;
   dispose: () => void;
 }
 
@@ -165,7 +168,8 @@ export function createFleet(
   const group = new THREE.Group();
   const parts: FleetPart[] = [];
   const local: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
-  const slotOf: number[] = cars.map(() => 0);
+  const along = new Float64Array(cars.length);
+  const reach = shading.look.fogFar + FLEET_MARGIN;
   const scratch = new THREE.Object3D();
   const color = new THREE.Color();
 
@@ -177,7 +181,7 @@ export function createFleet(
       return;
     }
     const size = sizeOf(primitives);
-    for (const [slot, { car, index }] of members.entries()) {
+    for (const { car, index } of members) {
       scratch.position.set(0, 0, 0);
       scratch.rotation.set(0, Math.PI, 0);
       scratch.scale.set(
@@ -187,7 +191,6 @@ export function createFleet(
       );
       scratch.updateMatrix();
       local[index]?.copy(scratch.matrix);
-      slotOf[index] = slot;
     }
     const indices = members.map(({ index }) => index);
     const body = paintPrimitives(
@@ -201,11 +204,12 @@ export function createFleet(
     const instanced = (
       geometry: THREE.BufferGeometry | null,
       material: THREE.Material,
-      shadows: boolean
-    ): THREE.InstancedMesh | null => {
+      shadows: boolean,
+      painted: boolean
+    ): void => {
       if (!geometry) {
         material.dispose();
-        return null;
+        return;
       }
       const mesh = new THREE.InstancedMesh(geometry, material, members.length);
       mesh.frustumCulled = false;
@@ -213,17 +217,11 @@ export function createFleet(
       mesh.receiveShadow = shadows;
       whiteInstances(mesh);
       group.add(mesh);
-      parts.push({ cars: indices, mesh });
-      return mesh;
+      parts.push({ cars: indices, mesh, painted });
     };
-    const shell = instanced(body.cel, shading.paint(), true);
-    instanced(rest.cel, shading.paint(), true);
-    instanced(rest.glow, shading.glowPaint(), false);
-    if (shell) {
-      for (const [slot, { car }] of members.entries()) {
-        shell.setColorAt(slot, color.setHex(paints[car.paint] ?? 0x88_88_88));
-      }
-    }
+    instanced(body.cel, shading.paint(), true, true);
+    instanced(rest.cel, shading.paint(), true, false);
+    instanced(rest.glow, shading.glowPaint(), false, false);
   };
 
   muster(assets.car, false);
@@ -235,15 +233,32 @@ export function createFleet(
   const placed: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
 
   return {
-    commit() {
+    commit(centre) {
+      const from = centre - FLEET_BEHIND;
+      const to = centre + reach;
       for (const part of parts) {
+        let slot = 0;
         for (const index of part.cars) {
           const matrix = placed[index];
-          if (matrix) {
-            part.mesh.setMatrixAt(slotOf[index] ?? 0, matrix);
+          const s = along[index] ?? Number.NEGATIVE_INFINITY;
+          if (!matrix || s < from || s > to) {
+            continue;
           }
+          part.mesh.setMatrixAt(slot, matrix);
+          if (part.painted) {
+            const paint = cars[index]?.paint ?? 0;
+            part.mesh.setColorAt(
+              slot,
+              color.setHex(paints[paint] ?? 0x88_88_88)
+            );
+          }
+          slot += 1;
         }
+        part.mesh.count = slot;
         part.mesh.instanceMatrix.needsUpdate = true;
+        if (part.painted && part.mesh.instanceColor) {
+          part.mesh.instanceColor.needsUpdate = true;
+        }
       }
     },
     dispose() {
@@ -256,6 +271,7 @@ export function createFleet(
       if (!(car && fit)) {
         return;
       }
+      along[index] = s;
       placeOnGround(track, s, car.x, spot);
       base.position.set(spot.x, spot.y, spot.z);
       const oncoming = car.cruiseSpeed < 0;

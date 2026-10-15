@@ -8,7 +8,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { Shading } from "./cel.ts";
 import { FRONT_GAP } from "./city.ts";
 import { groundLift, lifted, plant, rolling } from "./ground.ts";
-import type { Part, Placement } from "./ground.ts";
+import type { Part, Placement, Stretch } from "./ground.ts";
 import { RED } from "./looks.ts";
 import type { Roadside } from "./looks.ts";
 import { warningSignTexture } from "./textures.ts";
@@ -307,12 +307,21 @@ const laySigns = (
   return boards;
 };
 
-export const buildRoadside = (track: Track, shading: Shading): THREE.Group => {
+export interface RoadsideDressing {
+  readonly group: THREE.Group;
+  readonly stretches: readonly Stretch[];
+}
+
+export const buildRoadside = (
+  track: Track,
+  shading: Shading
+): RoadsideDressing => {
   const { look } = shading;
   const { roadside } = look;
   const random = createRandom(track.plan.seed + SEED_SALT);
   const front = track.vergeHalfWidth + FRONT_GAP;
   const group = new THREE.Group();
+  const stretches: Stretch[] = [];
 
   const banks = layBanks(track, random, roadside);
   const colours = [
@@ -339,6 +348,7 @@ export const buildRoadside = (track: Track, shading: Shading): THREE.Group => {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     group.add(mesh);
+    stretches.push({ from: span[0], object: mesh, to: span[1] });
   }
 
   plant(group, track, layPosts(track, random, front), postParts(shading), true);
@@ -360,5 +370,5 @@ export const buildRoadside = (track: Track, shading: Shading): THREE.Group => {
     laySigns(track, random, front, roadside.signs),
     signParts(shading)
   );
-  return group;
+  return { group, stretches };
 };

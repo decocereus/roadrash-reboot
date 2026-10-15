@@ -14,8 +14,10 @@ import {
   lifted,
   plant,
   rolling,
+  showWithin,
   smoothstep,
 } from "./ground.ts";
+import type { Stretch } from "./ground.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
@@ -29,12 +31,14 @@ import {
 } from "./textures.ts";
 
 const CHUNK_LENGTH = 200;
+const CHUNK_BEHIND = 260;
+const CHUNK_MARGIN = 200;
 const ROAD_STEP = 2;
 const TERRAIN_STEP = 4;
 const TERRAIN_RINGS = [0, 1.5, 4, 9, 20, 45, 90, 160];
 const SKY_RADIUS = 4000;
 const SHADOW_SPAN = 70;
-const SHADOW_MAP = 4096;
+export const SHADOW_MAP = 4096;
 const SHADOW_AHEAD = 42;
 const SHADOW_DISTANCE = 300;
 const SUN_ELEVATION = 0.08;
@@ -336,12 +340,13 @@ function buildMountains(look: Look): THREE.InstancedMesh {
 interface SunRig {
   readonly light: THREE.DirectionalLight;
   follow: (camera: THREE.Camera) => void;
+  setMapSize: (size: number) => void;
 }
 
-function createSunRig(shading: Shading): SunRig {
+function createSunRig(shading: Shading, mapSize: number): SunRig {
   const light = new THREE.DirectionalLight(shading.sun, 1);
   light.castShadow = true;
-  light.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
+  light.shadow.mapSize.set(mapSize, mapSize);
   light.shadow.camera.left = -SHADOW_SPAN;
   light.shadow.camera.right = SHADOW_SPAN;
   light.shadow.camera.top = SHADOW_SPAN;
@@ -352,7 +357,7 @@ function createSunRig(shading: Shading): SunRig {
   light.shadow.normalBias = 0.04;
   const across = new THREE.Vector3(0, 1, 0).cross(shading.key).normalize();
   const upward = shading.key.clone().cross(across).normalize();
-  const texel = (SHADOW_SPAN * 2) / SHADOW_MAP;
+  let texel = (SHADOW_SPAN * 2) / mapSize;
   const forward = new THREE.Vector3();
   const focus = new THREE.Vector3();
   const snapped = new THREE.Vector3();
@@ -374,6 +379,15 @@ function createSunRig(shading: Shading): SunRig {
       light.target.updateMatrixWorld();
     },
     light,
+    setMapSize(size) {
+      if (size === light.shadow.mapSize.x) {
+        return;
+      }
+      light.shadow.mapSize.set(size, size);
+      light.shadow.map?.dispose();
+      light.shadow.map = null;
+      texel = (SHADOW_SPAN * 2) / size;
+    },
   };
 }
 
@@ -381,10 +395,11 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
+  setShadowMap: (size: number) => void;
   dispose: () => void;
 }
 
-export function createWorld(track: Track): World {
+export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   const look = lookOf(track.plan.region);
   const shading = createShading(look);
   const random = createRandom(track.plan.seed + 5);
@@ -392,8 +407,9 @@ export function createWorld(track: Track): World {
   scene.background = new THREE.Color(look.fog);
   scene.fog = new THREE.Fog(look.fog, look.fogNear, look.fogFar);
   scene.add(new THREE.AmbientLight(shading.ambient, 1));
-  const rig = createSunRig(shading);
+  const rig = createSunRig(shading, shadowMap);
   scene.add(rig.light, rig.light.target);
+  const stretches: Stretch[] = [];
 
   const half = track.roadHalfWidth;
   const paved = roadTexture(random, look, track);
@@ -415,11 +431,13 @@ export function createWorld(track: Track): World {
 
   const add = (
     geometry: THREE.BufferGeometry,
-    material: THREE.Material
+    material: THREE.Material,
+    span: readonly [number, number]
   ): void => {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.receiveShadow = true;
     scene.add(mesh);
+    stretches.push({ from: span[0], object: mesh, to: span[1] });
   };
 
   for (let from = track.startS; from < track.endS; from += CHUNK_LENGTH) {
@@ -434,7 +452,8 @@ export function createWorld(track: Track): World {
         ],
         ROAD_TILE_METRES
       ),
-      roadMaterial
+      roadMaterial,
+      span
     );
     for (const side of [-1, 1]) {
       if (city) {
@@ -449,14 +468,16 @@ export function createWorld(track: Track): World {
         ];
         add(
           buildRibbon(track, span, side > 0 ? kerb : kerb.toReversed(), 2),
-          kerbMaterial
+          kerbMaterial,
+          span
         );
         add(
           buildRibbon(track, span, side > 0 ? walk : walk.toReversed(), 2),
-          walkMaterial
+          walkMaterial,
+          span
         );
       } else {
-        add(buildTerrainChunk(track, span, side, look), terrainMaterial);
+        add(buildTerrainChunk(track, span, side, look), terrainMaterial, span);
       }
     }
   }
@@ -470,7 +491,9 @@ export function createWorld(track: Track): World {
   if (city) {
     scene.add(city.group);
   } else {
-    scene.add(buildRoadside(track, shading));
+    const dressing = buildRoadside(track, shading);
+    scene.add(dressing.group);
+    stretches.push(...dressing.stretches);
   }
 
   let lowest = Number.POSITIVE_INFINITY;
@@ -501,13 +524,18 @@ export function createWorld(track: Track): World {
       plain.position.z = camera.position.z;
       sky.position.copy(camera.position);
       backdrop.position.set(camera.position.x, 0, camera.position.z);
-      city?.follow(s, look.fogFar + 200);
+      const reach = look.fogFar + CHUNK_MARGIN;
+      city?.follow(s, reach);
+      showWithin(stretches, s - CHUNK_BEHIND, s + reach);
       camera.updateMatrixWorld();
       camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
       rig.follow(camera);
       shading.aim(camera);
     },
     scene,
+    setShadowMap(size) {
+      rig.setMapSize(size);
+    },
     shading,
   };
 }

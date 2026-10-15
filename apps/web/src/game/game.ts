@@ -48,10 +48,10 @@ import type {
   RacePlan,
 } from "./hud.ts";
 import { createControls } from "./input.ts";
-import { createPipeline } from "./post.ts";
+import { BLOOM_SCALE, createPipeline } from "./post.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, RiderPose, Stance } from "./rider-figure.ts";
-import { createWorld } from "./world.ts";
+import { createWorld, SHADOW_MAP } from "./world.ts";
 
 const COUNTDOWN_SECONDS = 3;
 const HUD_INTERVAL = 1 / 15;
@@ -64,15 +64,23 @@ const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
 const MAX_PIXEL_RATIO = 2;
-const MIN_PIXEL_RATIO = 0.6;
-const PIXEL_RATIO_STEP = 0.15;
+const PIXEL_RATIO_STEP = 0.1;
+const LOWEST_RATIO_SHARE = 0.75;
+const LEAN_SHADOW_MAP = 2048;
+const LEAN_BLOOM_SCALE = 1;
+const BASE_RATE = 60;
 const REFRESH_RATES = [60, 75, 90, 120, 144, 165, 240];
 const REFRESH_SAMPLES = 24;
 const FASTEST_FRAME_SECONDS = 1 / 250;
-const DROPPED_FRAME_FACTOR = 1.5;
-const DROP_AFTER_SLOW_FRAMES = 20;
+const LATE_FRAME_FACTOR = 1.4;
+const LATE_FRAMES_TO_STEP = 24;
+const CALM_FRAME_CREDIT = 0.1;
+const STEP_COOLDOWN_SECONDS = 5;
 const RAISE_AFTER_CALM_SECONDS = 20;
-const RAISES = 3;
+const LONGEST_WAIT_SECONDS = 300;
+const FAST_PACE_AFTER_CALM_SECONDS = 10;
+const FAST_PACE_RETRY_SECONDS = 60;
+const PACE_SLACK = 0.5;
 const WRAP_JUMP = 30;
 const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
@@ -249,6 +257,10 @@ const pinnedPixelRatio = Number(
   new URLSearchParams(globalThis.location.search).get("ratio") ?? 0
 );
 
+const pinnedRefresh = Number(
+  new URLSearchParams(globalThis.location.search).get("hz") ?? 0
+);
+
 const nearestRefresh = (seconds: number): number => {
   const rate = 1 / seconds;
   let best = 60;
@@ -279,6 +291,44 @@ const watchRefresh = (report: (rate: number) => void): void => {
   requestAnimationFrame(sample);
 };
 
+interface Rung {
+  readonly shadowMap: number;
+  readonly bloomScale: number;
+  readonly pixelRatio: number;
+}
+
+const nativePixelRatio = (): number =>
+  Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
+
+const ladderFor = (ceiling: number): readonly Rung[] => {
+  const rungs: Rung[] = [
+    { bloomScale: BLOOM_SCALE, pixelRatio: ceiling, shadowMap: SHADOW_MAP },
+    {
+      bloomScale: BLOOM_SCALE,
+      pixelRatio: ceiling,
+      shadowMap: LEAN_SHADOW_MAP,
+    },
+    {
+      bloomScale: LEAN_BLOOM_SCALE,
+      pixelRatio: ceiling,
+      shadowMap: LEAN_SHADOW_MAP,
+    },
+  ];
+  const floor = ceiling * LOWEST_RATIO_SHARE;
+  for (let step = 1; ; step += 1) {
+    const pixelRatio =
+      Math.round((ceiling - step * PIXEL_RATIO_STEP) * 100) / 100;
+    if (pixelRatio < floor) {
+      return rungs;
+    }
+    rungs.push({
+      bloomScale: LEAN_BLOOM_SCALE,
+      pixelRatio,
+      shadowMap: LEAN_SHADOW_MAP,
+    });
+  }
+};
+
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
@@ -286,10 +336,12 @@ export async function createGame(
   canvas: HTMLCanvasElement,
   events: GameEvents
 ): Promise<GameHandle> {
-  const display = { refresh: 60 };
-  watchRefresh((rate) => {
-    display.refresh = Math.max(display.refresh, rate);
-  });
+  const display = { refresh: pinnedRefresh > 0 ? pinnedRefresh : 60 };
+  if (pinnedRefresh <= 0) {
+    watchRefresh((rate) => {
+      display.refresh = Math.max(display.refresh, rate);
+    });
+  }
   const assets = await loadAssets();
   let roadTurn = firstRoad;
   let track = roadForTurn(roadTurn);
@@ -303,10 +355,10 @@ export async function createGame(
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
-  let pixelRatio =
-    pinnedPixelRatio > 0
-      ? pinnedPixelRatio
-      : Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
+  renderer.info.autoReset = false;
+  let ladder = ladderFor(nativePixelRatio());
+  let rung = 0;
+  let pixelRatio = pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio();
   renderer.setPixelRatio(pixelRatio);
   const pipeline = createPipeline(renderer);
   const meter = wantsFrameMeter() ? createFrameMeter(canvas) : null;
@@ -346,9 +398,16 @@ export async function createGame(
   let accumulator = 0;
   let clockReset = false;
   let hudClock = 0;
-  let slowFrames = 0;
+  let lateFrames = 0;
   let calmSeconds = 0;
-  let raisesLeft = RAISES;
+  let sinceStep = STEP_COOLDOWN_SECONDS;
+  let sinceRaise = Number.POSITIVE_INFINITY;
+  let raiseWait = RAISE_AFTER_CALM_SECONDS;
+  let pace = BASE_RATE;
+  let lateAtPace = 0;
+  let fastRetryIn = 0;
+  let fastRetryWait = FAST_PACE_RETRY_SECONDS;
+  let lastDrawn = Number.NEGATIVE_INFINITY;
   let clock = 0;
 
   const subject: Subject = { air: 0, s: 0, speed: 0, tuck: 0, x: 0 };
@@ -447,7 +506,7 @@ export async function createGame(
     dropViews();
     world.dispose();
     track = next;
-    world = createWorld(track);
+    world = createWorld(track, (ladder[rung] ?? ladder[0])?.shadowMap);
     pipeline.setLook(world.shading.look);
   };
 
@@ -909,7 +968,7 @@ export async function createGame(
       const wrapped = Math.abs(car.s - from) > WRAP_JUMP;
       fleet.place(track, index, wrapped ? car.s : mix(from, car.s, blend));
     }
-    fleet.commit();
+    fleet.commit(subject.s);
 
     chase.update(track, subject, seconds);
     world.follow(chase.camera, subject.s);
@@ -923,38 +982,108 @@ export async function createGame(
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
   };
 
-  const targetRate = (): number =>
-    pixelRatio > 1 ? display.refresh : Math.min(display.refresh, 60);
+  const applyRung = () => {
+    const chosen = ladder[rung] ?? ladder[0];
+    if (!chosen) {
+      return;
+    }
+    world.setShadowMap(chosen.shadowMap);
+    pipeline.setBloomScale(chosen.bloomScale);
+    const resized = chosen.pixelRatio !== pixelRatio;
+    ({ pixelRatio } = chosen);
+    if (resized) {
+      applySize();
+    }
+    sinceStep = 0;
+    lateFrames = 0;
+    calmSeconds = 0;
+  };
+
+  const stepDown = () => {
+    if (rung >= ladder.length - 1) {
+      return;
+    }
+    rung += 1;
+    if (sinceRaise < raiseWait) {
+      raiseWait = Math.min(LONGEST_WAIT_SECONDS, raiseWait * 2);
+    }
+    applyRung();
+  };
+
+  const stepUp = () => {
+    rung -= 1;
+    sinceRaise = 0;
+    applyRung();
+  };
+
+  const slowPace = () => {
+    pace = BASE_RATE;
+    lateAtPace = 0;
+    fastRetryIn = fastRetryWait;
+    fastRetryWait = Math.min(LONGEST_WAIT_SECONDS, fastRetryWait * 2);
+  };
+
+  const skipsVsync = (now: number): boolean =>
+    pinnedPixelRatio <= 0 &&
+    pace < display.refresh &&
+    now - lastDrawn < 1000 / pace - (PACE_SLACK * 1000) / display.refresh;
+
+  const governQuality = (seconds: number) => {
+    const late = seconds > LATE_FRAME_FACTOR / BASE_RATE;
+    if (late) {
+      lateFrames += 1;
+      calmSeconds = 0;
+    } else {
+      lateFrames = Math.max(0, lateFrames - CALM_FRAME_CREDIT);
+      calmSeconds += seconds;
+    }
+    if (lateFrames > LATE_FRAMES_TO_STEP && sinceStep > STEP_COOLDOWN_SECONDS) {
+      stepDown();
+    } else if (rung > 0 && calmSeconds > raiseWait) {
+      stepUp();
+    }
+  };
+
+  const governPace = (seconds: number) => {
+    if (pace > BASE_RATE) {
+      const late = seconds > LATE_FRAME_FACTOR / pace;
+      lateAtPace = late
+        ? lateAtPace + 1
+        : Math.max(0, lateAtPace - CALM_FRAME_CREDIT);
+      if (lateAtPace > LATE_FRAMES_TO_STEP) {
+        slowPace();
+      }
+      return;
+    }
+    fastRetryIn -= seconds;
+    if (
+      display.refresh > BASE_RATE &&
+      rung === 0 &&
+      fastRetryIn <= 0 &&
+      calmSeconds > FAST_PACE_AFTER_CALM_SECONDS
+    ) {
+      pace = display.refresh;
+      lateAtPace = 0;
+    }
+  };
 
   const govern = (seconds: number) => {
-    if (seconds >= FASTEST_FRAME_SECONDS) {
+    if (pinnedRefresh <= 0 && seconds >= FASTEST_FRAME_SECONDS) {
       display.refresh = Math.max(display.refresh, nearestRefresh(seconds));
     }
+    sinceStep += seconds;
+    sinceRaise += seconds;
     if (pinnedPixelRatio > 0) {
       return;
     }
-    const ceiling = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
-    if (seconds > DROPPED_FRAME_FACTOR / targetRate()) {
-      slowFrames += 1;
-      calmSeconds = 0;
-    } else {
-      calmSeconds += seconds;
-      slowFrames = Math.max(0, slowFrames - 0.25);
+    const ceiling = nativePixelRatio();
+    if (ceiling !== ladder[0]?.pixelRatio) {
+      ladder = ladderFor(ceiling);
+      rung = Math.min(rung, ladder.length - 1);
+      applyRung();
     }
-    if (slowFrames > DROP_AFTER_SLOW_FRAMES && pixelRatio > MIN_PIXEL_RATIO) {
-      pixelRatio = Math.max(MIN_PIXEL_RATIO, pixelRatio - PIXEL_RATIO_STEP);
-      applySize();
-      slowFrames = 0;
-    } else if (
-      calmSeconds > RAISE_AFTER_CALM_SECONDS &&
-      raisesLeft > 0 &&
-      pixelRatio < ceiling
-    ) {
-      pixelRatio = Math.min(ceiling, pixelRatio + PIXEL_RATIO_STEP);
-      applySize();
-      raisesLeft -= 1;
-      calmSeconds = 0;
-    }
+    governQuality(seconds);
+    governPace(seconds);
   };
 
   const nearestRacer = (me: RiderState): number => {
@@ -1022,8 +1151,12 @@ export async function createGame(
 
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
+    if (skipsVsync(now)) {
+      return;
+    }
     const seconds = clamp((now - last) / 1000, 0, MAX_FRAME_SECONDS);
     last = now;
+    lastDrawn = now;
     if (halted()) {
       return;
     }
@@ -1052,9 +1185,19 @@ export async function createGame(
       riding ? me.revs : 0,
       riding && me.offRoad
     );
+    renderer.info.reset();
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     govern(seconds);
-    meter?.frame(seconds, pixelRatio, display.refresh);
+    meter?.frame({
+      calls: renderer.info.render.calls,
+      pace,
+      pixelRatio,
+      refresh: display.refresh,
+      rung,
+      rungs: ladder.length,
+      seconds,
+      triangles: renderer.info.render.triangles,
+    });
     noticeLeft -= seconds;
     speechLeft -= seconds;
     hudClock += seconds;

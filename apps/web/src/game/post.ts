@@ -9,7 +9,7 @@ const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
 const BLOOM_RADIUS = 0.5;
 const BLOOM_THRESHOLD = 0.93;
-const BLOOM_SCALE = 2;
+export const BLOOM_SCALE = 2;
 const FRINGE = 0.012;
 const VIGNETTE = 0.42;
 const SAMPLES = 4;
@@ -110,6 +110,7 @@ const byVariantThenMaterial = (
 
 export interface Pipeline {
   setLook: (look: Look) => void;
+  setBloomScale: (scale: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
   dispose: () => void;
@@ -161,6 +162,9 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
 
   uniform(line, "normals").value = normalTarget.texture;
   uniform(line, "depths").value = normalTarget.depthTexture;
+  let bloomScale = BLOOM_SCALE;
+  let cssWidth = 1;
+  let cssHeight = 1;
 
   return {
     dispose() {
@@ -198,15 +202,24 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       grade.render(renderer, inkTarget, inkTarget, 0, false);
     },
     resize(width, height, pixelRatio) {
+      cssWidth = width;
+      cssHeight = height;
       const wide = Math.max(1, Math.floor(width * pixelRatio));
       const tall = Math.max(1, Math.floor(height * pixelRatio));
       normalTarget.setSize(wide, tall);
       sceneTarget.setSize(wide, tall);
       inkTarget.setSize(wide, tall);
-      bloom.setSize(width * BLOOM_SCALE, height * BLOOM_SCALE);
+      bloom.setSize(width * bloomScale, height * bloomScale);
       uniform(line, "resolution").value.set(wide, tall);
       uniform(line, "width").value =
         LINE_WIDTH * Math.max(1, tall / LINE_REFERENCE_HEIGHT);
+    },
+    setBloomScale(scale) {
+      if (scale === bloomScale) {
+        return;
+      }
+      bloomScale = scale;
+      bloom.setSize(cssWidth * bloomScale, cssHeight * bloomScale);
     },
     setLook(look) {
       uniform(line, "ink").value.set(look.ink);

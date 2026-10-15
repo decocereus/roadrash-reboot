@@ -72,6 +72,22 @@ export const lifted = (
   at: readonly [number, number, number]
 ): THREE.BufferGeometry => geometry.translate(...at);
 
+export interface Stretch {
+  readonly object: THREE.Object3D;
+  readonly from: number;
+  readonly to: number;
+}
+
+export const showWithin = (
+  stretches: readonly Stretch[],
+  from: number,
+  to: number
+): void => {
+  for (const stretch of stretches) {
+    stretch.object.visible = stretch.from < to && stretch.to > from;
+  }
+};
+
 export const whiteInstances = (mesh: THREE.InstancedMesh): void => {
   mesh.instanceColor = new THREE.InstancedBufferAttribute(
     new Float32Array(mesh.count * 3).fill(1),

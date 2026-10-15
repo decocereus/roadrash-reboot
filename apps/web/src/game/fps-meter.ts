@@ -1,7 +1,18 @@
 const REPORT_SECONDS = 0.5;
 
+export interface FrameSample {
+  readonly seconds: number;
+  readonly pixelRatio: number;
+  readonly refresh: number;
+  readonly pace: number;
+  readonly rung: number;
+  readonly rungs: number;
+  readonly calls: number;
+  readonly triangles: number;
+}
+
 export interface FrameMeter {
-  frame: (seconds: number, pixelRatio: number, refresh: number) => void;
+  frame: (sample: FrameSample) => void;
   dispose: () => void;
 }
 
@@ -35,7 +46,16 @@ export const createFrameMeter = (beside: Node): FrameMeter => {
     dispose() {
       readout.remove();
     },
-    frame(seconds, pixelRatio, refresh) {
+    frame({
+      seconds,
+      pixelRatio,
+      refresh,
+      pace,
+      rung,
+      rungs,
+      calls,
+      triangles,
+    }) {
       frames += 1;
       elapsed += seconds;
       worst = Math.max(worst, seconds);
@@ -45,7 +65,7 @@ export const createFrameMeter = (beside: Node): FrameMeter => {
       const fps = Math.round(frames / elapsed);
       const mean = ((elapsed / frames) * 1000).toFixed(1);
       const peak = (worst * 1000).toFixed(1);
-      readout.textContent = `${fps} fps  ${mean} ms  worst ${peak} ms\n×${pixelRatio.toFixed(2)}  display ${refresh} Hz`;
+      readout.textContent = `${fps} fps  ${mean} ms  worst ${peak} ms\n×${pixelRatio.toFixed(2)}  rung ${rung}/${rungs - 1}  pace ${pace}  display ${refresh} Hz\n${calls} calls  ${triangles} tris`;
       frames = 0;
       elapsed = 0;
       worst = 0;
