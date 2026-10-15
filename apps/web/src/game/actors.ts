@@ -232,6 +232,27 @@ export function createFleet(
   const world = new THREE.Matrix4();
   const spot: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
   const placed: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
+  const placedAt = new Float64Array(cars.length).fill(Number.NaN);
+  let road: Track | null = null;
+
+  const placeCar = (track: Track, index: number, s: number): void => {
+    const car = cars[index];
+    const fit = local[index];
+    if (!(car && fit)) {
+      return;
+    }
+    placeOnGround(track, s, car.x, spot);
+    base.position.set(spot.x, spot.y, spot.z);
+    const oncoming = car.cruiseSpeed < 0;
+    base.rotation.set(
+      Math.atan(spot.slope) * (oncoming ? -1 : 1),
+      -spot.heading + (oncoming ? Math.PI : 0),
+      0,
+      "YXZ"
+    );
+    base.updateMatrix();
+    placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
+  };
 
   return {
     commit(centre) {
@@ -244,6 +265,10 @@ export function createFleet(
           const s = along[index] ?? Number.NEGATIVE_INFINITY;
           if (!matrix || s < from || s > to) {
             continue;
+          }
+          if (road && placedAt[index] !== s) {
+            placeCar(road, index, s);
+            placedAt[index] = s;
           }
           part.mesh.setMatrixAt(slot, matrix);
           if (part.painted) {
@@ -267,23 +292,8 @@ export function createFleet(
     },
     group,
     place(track, index, s) {
-      const car = cars[index];
-      const fit = local[index];
-      if (!(car && fit)) {
-        return;
-      }
+      road = track;
       along[index] = s;
-      placeOnGround(track, s, car.x, spot);
-      base.position.set(spot.x, spot.y, spot.z);
-      const oncoming = car.cruiseSpeed < 0;
-      base.rotation.set(
-        Math.atan(spot.slope) * (oncoming ? -1 : 1),
-        -spot.heading + (oncoming ? Math.PI : 0),
-        0,
-        "YXZ"
-      );
-      base.updateMatrix();
-      placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
     },
   };
 }
