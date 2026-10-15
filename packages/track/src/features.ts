@@ -235,21 +235,115 @@ export const emptySupport = (): Support => ({
 });
 
 export const nextJumpFrom = (track: Track, s: number): number => {
-  const index = track.featureIndex;
-  const cells = index.offsets.length - 1;
-  for (let cell = cellOf(index, s); cell < cells; cell += 1) {
-    const end = index.offsets[cell + 1] ?? 0;
-    let best = -1;
-    for (let at = index.offsets[cell] ?? 0; at < end; at += 1) {
-      const featureIndex = index.featureIndices[at] ?? 0;
-      const jump = track.features[featureIndex];
-      if (jump && lipOf(jump) >= s && (best < 0 || featureIndex < best)) {
-        best = featureIndex;
-      }
-    }
-    if (best >= 0) {
-      return best;
+  const { features } = track;
+  let low = 0;
+  let high = features.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    const jump = features[middle];
+    if (jump && lipOf(jump) < s) {
+      low = middle + 1;
+    } else {
+      high = middle;
     }
   }
-  return -1;
+  return low < features.length ? low : -1;
 };
+
+export interface Crossing {
+  feature: number;
+  enter: number;
+  leave: number;
+  enterSide: boolean;
+  leaveSide: boolean;
+}
+
+export const emptyCrossing = (): Crossing => ({
+  enter: 0,
+  enterSide: false,
+  feature: -1,
+  leave: 0,
+  leaveSide: false,
+});
+
+const crossJump = (
+  jump: TrackFeature,
+  fromS: number,
+  fromX: number,
+  alongS: number,
+  alongX: number,
+  out: Crossing
+): boolean => {
+  const halfWidth = jump.width / 2;
+  let enterS = Number.NEGATIVE_INFINITY;
+  let leaveS = Number.POSITIVE_INFINITY;
+  if (alongS === 0) {
+    if (fromS < jump.s || fromS > lipOf(jump)) {
+      return false;
+    }
+  } else {
+    const toe = (jump.s - fromS) / alongS;
+    const lip = (lipOf(jump) - fromS) / alongS;
+    enterS = Math.min(toe, lip);
+    leaveS = Math.max(toe, lip);
+  }
+  let enterX = Number.NEGATIVE_INFINITY;
+  let leaveX = Number.POSITIVE_INFINITY;
+  if (alongX === 0) {
+    if (Math.abs(fromX - jump.x) > halfWidth) {
+      return false;
+    }
+  } else {
+    const left = (jump.x - halfWidth - fromX) / alongX;
+    const right = (jump.x + halfWidth - fromX) / alongX;
+    enterX = Math.min(left, right);
+    leaveX = Math.max(left, right);
+  }
+  const enter = Math.max(enterS, enterX);
+  const leave = Math.min(leaveS, leaveX);
+  if (enter > leave || enter > 1 || leave < 0) {
+    return false;
+  }
+  out.enter = enter;
+  out.leave = leave;
+  out.enterSide = enterX > enterS;
+  out.leaveSide = leaveX < leaveS;
+  return true;
+};
+
+export const crossRamps = (
+  track: Track,
+  fromS: number,
+  fromX: number,
+  toS: number,
+  toX: number,
+  out: Crossing
+): Crossing => {
+  out.feature = -1;
+  const first = nextJumpFrom(track, Math.min(fromS, toS));
+  const reach = Math.max(fromS, toS);
+  if (first < 0) {
+    return out;
+  }
+  for (let index = first; index < track.features.length; index += 1) {
+    const jump = track.features[index];
+    if (!jump || jump.s > reach) {
+      break;
+    }
+    if (crossJump(jump, fromS, fromX, toS - fromS, toX - fromX, out)) {
+      out.feature = index;
+      return out;
+    }
+  }
+  return out;
+};
+
+const clampUnit = (value: number): number => Math.min(1, Math.max(0, value));
+
+export const deckHeightOf = (jump: Ramp & Placed, s: number): number => {
+  const u = clampUnit((s - jump.s) / jump.length);
+  return jump.rise * u * u;
+};
+
+export const deckSlopeOf = (jump: Ramp & Placed, s: number): number =>
+  (2 * jump.rise * clampUnit((s - jump.s) / jump.length)) / jump.length;

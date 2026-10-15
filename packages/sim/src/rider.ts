@@ -1,10 +1,14 @@
 import {
+  crossRamps,
+  deckHeightOf,
+  deckSlopeOf,
+  emptyCrossing,
   emptySupport,
   lipOf,
   lipSlopeOf,
   supportAt,
 } from "@racer/track/features";
-import type { Support, TrackFeature } from "@racer/track/features";
+import type { Crossing, Support, TrackFeature } from "@racer/track/features";
 import {
   curvatureAt,
   firstSolidPropFrom,
@@ -243,29 +247,13 @@ export const throwRider = (
 
 const before: Support = emptySupport();
 const under: Support = emptySupport();
+const crossing: Crossing = emptyCrossing();
 
 interface Contact {
   readonly x: number;
   readonly slope: number;
   readonly verticalSpeed: number;
 }
-
-const contactOf = (
-  track: Track,
-  rider: RiderState,
-  from: Readonly<{ s: number; x: number; clearance: number; rise: number }>
-): Contact => {
-  const clearance = rider.air - under.height;
-  const share = clamp(from.clearance / (from.clearance - clearance), 0, 1);
-  const s = from.s + (rider.s - from.s) * share;
-  const x = from.x + (rider.x - from.x) * share;
-  supportAt(track, s, x, before);
-  return {
-    slope: slopeAt(track, s) + before.slope,
-    verticalSpeed: from.rise - GRAVITY * TICK_SECONDS * share,
-    x,
-  };
-};
 
 const land = (
   state: RaceState,
@@ -299,45 +287,25 @@ const land = (
   state.events.push({ airSeconds, impact, kind: "land", rider: riderIndex });
 };
 
-const fly = (
+const glancesOff = (
   state: RaceState,
-  track: Track,
   riderIndex: number,
-  rider: RiderState
-): void => {
-  supportAt(track, rider.s, rider.x, before);
-  const from = {
-    clearance: rider.air - before.height,
-    rise: rider.verticalSpeed,
-    s: rider.s,
-    x: rider.x,
-  };
-  const curvature = curvatureAt(track, rider.s);
-  const forwardRate = forwardRateOf(rider, curvature);
-  const groundBefore = heightAt(track, rider.s);
-  const push = curvePushOf(rider.bike, curvature, rider.speed);
-  rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
-  rider.s += forwardRate * TICK_SECONDS;
-  rider.air +=
-    rider.verticalSpeed * TICK_SECONDS -
-    (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 -
-    (heightAt(track, rider.s) - groundBefore);
-  rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
-  settleVisuals(rider, 0.6);
-  rider.load = 0;
-  rider.airTicks += 1;
-  supportAt(track, rider.s, rider.x, under);
-  if (rider.air > under.height) {
-    return;
+  rider: RiderState,
+  height: number,
+  fromX: number
+): boolean => {
+  if (
+    height > WALL_THROW_HEIGHT &&
+    Math.abs(rider.lateralSpeed) > WALL_THROW_SPEED
+  ) {
+    throwRider(state, riderIndex, "prop", 0.5, 0.7);
+    return false;
   }
-  land(
-    state,
-    track,
-    riderIndex,
-    rider,
-    contactOf(track, rider, from),
-    forwardRate
-  );
+  rider.x = fromX;
+  rider.lateralSpeed = 0;
+  rider.speed *= WALL_SPEED_KEEP;
+  state.events.push({ kind: "glance", rider: riderIndex });
+  return true;
 };
 
 const launchFromLip = (
@@ -356,65 +324,195 @@ const launchFromLip = (
     slopeAt(track, lip) * forwardRate + climb - GRAVITY * seconds;
 };
 
-const fallOffSide = (
-  track: Track,
-  rider: RiderState,
-  height: number,
-  forwardRate: number
-): void => {
-  rider.airborne = true;
-  rider.airTicks = 0;
-  rider.air = height;
-  rider.verticalSpeed = (slopeAt(track, rider.s) + before.slope) * forwardRate;
-};
-
-const hitWall = (
-  state: RaceState,
-  track: Track,
-  riderIndex: number,
-  rider: RiderState,
-  fromX: number
-): void => {
-  if (
-    under.height > WALL_THROW_HEIGHT &&
-    Math.abs(rider.lateralSpeed) > WALL_THROW_SPEED
-  ) {
-    throwRider(state, riderIndex, "prop", 0.5, 0.7);
-    return;
-  }
-  rider.x = fromX;
-  rider.lateralSpeed = 0;
-  rider.speed *= WALL_SPEED_KEEP;
-  supportAt(track, rider.s, rider.x, under);
-  rider.air = under.height;
-  state.events.push({ kind: "glance", rider: riderIndex });
-};
-
 const settleOnSurface = (
   state: RaceState,
   track: Track,
   riderIndex: number,
   rider: RiderState,
+  fromS: number,
   fromX: number,
   forwardRate: number
 ): void => {
-  const deck = track.features[before.feature];
-  if (deck && rider.s > lipOf(deck)) {
-    launchFromLip(track, rider, deck, forwardRate);
+  crossRamps(track, fromS, fromX, rider.s, rider.x, crossing);
+  const jump = track.features[crossing.feature];
+  if (!jump) {
+    rider.air = 0;
     return;
   }
+  const alongS = rider.s - fromS;
+  if (crossing.enter > 0 && crossing.enterSide) {
+    const height = deckHeightOf(jump, fromS + alongS * crossing.enter);
+    if (height > rider.air + DECK_STEP) {
+      if (glancesOff(state, riderIndex, rider, height, fromX)) {
+        rider.air = 0;
+      }
+      return;
+    }
+  }
+  if (crossing.leave >= 1) {
+    rider.air = deckHeightOf(jump, rider.s);
+    return;
+  }
+  if (!crossing.leaveSide && rider.s > lipOf(jump)) {
+    launchFromLip(track, rider, jump, forwardRate);
+    return;
+  }
+  const leftAt = fromS + alongS * crossing.leave;
+  const height = deckHeightOf(jump, leftAt);
+  if (!crossing.leaveSide || height <= DECK_STEP) {
+    rider.air = 0;
+    return;
+  }
+  rider.airborne = true;
+  rider.airTicks = 0;
+  rider.air = height;
+  rider.verticalSpeed =
+    (slopeAt(track, leftAt) + deckSlopeOf(jump, leftAt)) * forwardRate;
+};
+
+const flightOverDeck = { constant: 0, linear: 0, squared: 0 };
+
+const traceOverDeck = (
+  jump: TrackFeature,
+  fromS: number,
+  alongS: number,
+  air: number,
+  rise: number,
+  drop: number
+): void => {
+  const start = (fromS - jump.s) / jump.length;
+  const along = alongS / jump.length;
+  flightOverDeck.squared =
+    -(GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 - jump.rise * along * along;
+  flightOverDeck.linear =
+    rise * TICK_SECONDS - drop - 2 * jump.rise * start * along;
+  flightOverDeck.constant = air - jump.rise * start * start;
+};
+
+const clearanceAt = (share: number): number =>
+  (flightOverDeck.squared * share + flightOverDeck.linear) * share +
+  flightOverDeck.constant;
+
+const firstTouch = (from: number, to: number): number => {
+  if (clearanceAt(from) <= 0) {
+    return from;
+  }
+  if (clearanceAt(to) > 0) {
+    return -1;
+  }
+  const { constant, linear, squared } = flightOverDeck;
+  const discriminant = Math.max(0, linear * linear - 4 * squared * constant);
+  return clamp((-linear - Math.sqrt(discriminant)) / (2 * squared), from, to);
+};
+
+const touchDeck = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState,
+  share: number,
+  fromS: number,
+  fromX: number,
+  rise: number,
+  forwardRate: number
+): void => {
+  const toS = rider.s;
+  const toX = rider.x;
+  const s = fromS + (toS - fromS) * share;
+  const x = fromX + (toX - fromX) * share;
+  rider.s = s;
+  rider.x = x;
+  supportAt(track, s, x, under);
+  land(
+    state,
+    track,
+    riderIndex,
+    rider,
+    {
+      slope: slopeAt(track, s) + under.slope,
+      verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
+      x,
+    },
+    forwardRate
+  );
+  if (rider.mode !== "riding") {
+    return;
+  }
+  rider.s = toS;
+  rider.x = toX;
+  settleOnSurface(state, track, riderIndex, rider, s, x, forwardRate);
+};
+
+const fly = (
+  state: RaceState,
+  track: Track,
+  riderIndex: number,
+  rider: RiderState
+): void => {
+  const fromS = rider.s;
+  const fromX = rider.x;
+  const fromAir = rider.air;
+  const rise = rider.verticalSpeed;
+  const curvature = curvatureAt(track, rider.s);
+  const forwardRate = forwardRateOf(rider, curvature);
+  const groundBefore = heightAt(track, rider.s);
+  const push = curvePushOf(rider.bike, curvature, rider.speed);
+  rider.x += (rider.lateralSpeed - push) * TICK_SECONDS;
+  rider.s += forwardRate * TICK_SECONDS;
+  const drop = heightAt(track, rider.s) - groundBefore;
+  rider.air +=
+    rise * TICK_SECONDS - (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 - drop;
+  rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
+  settleVisuals(rider, 0.6);
+  rider.load = 0;
+  rider.airTicks += 1;
+  crossRamps(track, fromS, fromX, rider.s, rider.x, crossing);
+  const jump = track.features[crossing.feature];
+  if (jump) {
+    const entry = Math.max(0, crossing.enter);
+    traceOverDeck(jump, fromS, rider.s - fromS, fromAir, rise, drop);
+    const intoSide = crossing.enter > 0 && crossing.enterSide;
+    const below = -clearanceAt(entry);
+    if (intoSide && below > DECK_STEP) {
+      if (!glancesOff(state, riderIndex, rider, below, fromX)) {
+        return;
+      }
+    } else {
+      const share = firstTouch(entry, Math.min(1, crossing.leave));
+      if (share >= 0) {
+        touchDeck(
+          state,
+          track,
+          riderIndex,
+          rider,
+          share,
+          fromS,
+          fromX,
+          rise,
+          forwardRate
+        );
+        return;
+      }
+    }
+  }
+  if (rider.air > 0) {
+    return;
+  }
+  const share = clamp(fromAir / (fromAir - rider.air), 0, 1);
+  const contactS = fromS + (rider.s - fromS) * share;
   supportAt(track, rider.s, rider.x, under);
-  const climbing = under.feature >= 0 && under.feature !== before.feature;
-  if (climbing && under.height > rider.air + DECK_STEP) {
-    hitWall(state, track, riderIndex, rider, fromX);
-    return;
-  }
-  const leaving = before.feature >= 0 && under.feature !== before.feature;
-  if (leaving && rider.air > DECK_STEP) {
-    fallOffSide(track, rider, rider.air, forwardRate);
-    return;
-  }
-  rider.air = under.height;
+  land(
+    state,
+    track,
+    riderIndex,
+    rider,
+    {
+      slope: slopeAt(track, contactS),
+      verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
+      x: fromX + (rider.x - fromX) * share,
+    },
+    forwardRate
+  );
 };
 
 const ride = (
@@ -496,12 +594,13 @@ const ride = (
   }
   rider.speed = Math.max(0, rider.speed + acceleration * TICK_SECONDS);
 
+  const fromS = rider.s;
   const fromX = rider.x;
   rider.x +=
     (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   settleVisuals(rider, 1);
-  settleOnSurface(state, track, riderIndex, rider, fromX, forwardRate);
+  settleOnSurface(state, track, riderIndex, rider, fromS, fromX, forwardRate);
 };
 
 const hitProps = (
