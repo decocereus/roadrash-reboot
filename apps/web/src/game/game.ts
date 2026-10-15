@@ -41,6 +41,7 @@ import { loadAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
+import { devRideFrom } from "./dev-ride.ts";
 import { createFrameMeter, wantsFrameMeter } from "./fps-meter.ts";
 import type {
   GameEvents,
@@ -288,15 +289,9 @@ const autopilot =
     new URLSearchParams(globalThis.location.search).has("autopilot")) ||
   benchOf(globalThis.location.search) !== null;
 
-const SWERVE_METRES = 25;
-const devFlags = new URLSearchParams(
-  import.meta.env.DEV ? globalThis.location.search : ""
-);
-const holdOn = devFlags.get("hold");
-const holdDelay = Number(devFlags.get("holdafter") ?? 0);
-const startAt = Number(devFlags.get("at") ?? 0);
-const swerveAt = Number(devFlags.get("swerve") ?? 0);
-const swerveFor = Number(devFlags.get("swervefor") ?? SWERVE_METRES);
+const devRide = import.meta.env.DEV
+  ? devRideFrom(globalThis.location.search)
+  : undefined;
 
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
@@ -637,18 +632,12 @@ export async function createGame(
     dropGeometry(samples);
   };
 
-  const moveTo = (s: number) => {
-    const me = player();
-    me.bodyS += s - me.s;
-    me.s = s;
-  };
-
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
     takeTrack(setup.track);
     race = createRace(setup);
-    if (nextPhase === "countdown" && startAt > 0) {
-      moveTo(startAt);
+    if (nextPhase === "countdown") {
+      devRide?.place(race);
     }
     fleet = createFleet(assets, world.shading, race.cars);
     world.scene.add(fleet.group);
@@ -889,37 +878,19 @@ export async function createGame(
     captureAll("after");
   };
 
-  const swerve = () => {
-    const me = player();
-    const [own] = inputs;
-    if (own && swerveAt > 0 && me.s > swerveAt && me.s < swerveAt + swerveFor) {
-      own.steer = 1;
-    }
-  };
-
-  let holdTicks = -1;
-  const watchHold = () => {
-    const me = player();
-    if (holdTicks === -1) {
-      const seen =
-        holdOn === "air"
-          ? me.airborne && me.airTicks >= holdDelay
-          : holdOn === "at"
-            ? me.s >= holdDelay
-            : race.events.some(
-                (event) => event.kind === holdOn && event.rider === 0
-              );
-      if (seen) {
-        holdTicks = holdOn === "air" || holdOn === "at" ? 0 : holdDelay;
+  const readInputs = () => {
+    for (let index = 0; index < inputs.length; index += 1) {
+      const input = inputs[index];
+      if (!input) {
+        continue;
+      }
+      if (index === 0 && phase !== "attract" && !autopilot) {
+        controls.read(TICK_SECONDS, input);
+      } else {
+        pilotInput(race, track, index, input);
       }
     }
-    if (holdTicks === 0) {
-      frozen = true;
-      holdTicks = -2;
-      Reflect.set(globalThis, "__rushlineHeld", true);
-    } else if (holdTicks > 0) {
-      holdTicks -= 1;
-    }
+    devRide?.steer(race, inputs[0]);
   };
 
   const tick = () => {
@@ -942,18 +913,7 @@ export async function createGame(
       holdStill();
       return;
     }
-    for (let index = 0; index < inputs.length; index += 1) {
-      const input = inputs[index];
-      if (!input) {
-        continue;
-      }
-      if (index === 0 && phase !== "attract" && !autopilot) {
-        controls.read(TICK_SECONDS, input);
-      } else {
-        pilotInput(race, track, index, input);
-      }
-    }
-    swerve();
+    readInputs();
     if (phase === "attract" && attractOver()) {
       loadAttract(true);
       return;
@@ -965,8 +925,8 @@ export async function createGame(
     if (phase !== "attract") {
       react();
     }
-    if (holdOn && phase === "racing") {
-      watchHold();
+    if (phase === "racing" && devRide?.holds(race)) {
+      frozen = true;
     }
     record();
     advanceClock();
@@ -1420,14 +1380,11 @@ export async function createGame(
   };
 
   let last = performance.now();
-  if (holdOn) {
-    Reflect.set(globalThis, "__rushlineRelease", () => {
-      frozen = false;
-      clockReset = true;
-      last = performance.now();
-      Reflect.set(globalThis, "__rushlineHeld", false);
-    });
-  }
+  devRide?.whenReleased(() => {
+    frozen = false;
+    clockReset = true;
+    last = performance.now();
+  });
   renderer.setAnimationLoop((now) => {
     if (skipsVsync(now)) {
       return;
