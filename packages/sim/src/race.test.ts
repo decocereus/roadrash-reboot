@@ -3445,6 +3445,23 @@ describe("jumping", () => {
     expect(fall.rider.air).toBeLessThan(0.25);
   });
 
+  it("a bike that comes down onto a ramp's deck hard at the very end of a tick crashes on the deck instead of sinking through it to the road", () => {
+    const sink = besideRamp(
+      {
+        air: 0.47309638888888766,
+        lateralSpeed: 0,
+        s: 1009.48,
+        speed: 40,
+        verticalSpeed: -9,
+        x: 0,
+      },
+      6
+    );
+    expect(
+      sink.events.map((event) => event.kind === "crash" && event.cause)
+    ).toStrictEqual(["landing"]);
+  });
+
   it("a hard landing on the edge of a ramp off the middle of the road crashes the same as one on a ramp in the middle", () => {
     const alongDeck = 10 / loadingRamp.length;
     const landing = {

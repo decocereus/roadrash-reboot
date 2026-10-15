@@ -67,6 +67,7 @@ const WOBBLE_SWAY = 0.8;
 const WOBBLE_LEAN = 0.35;
 const WOBBLE_GRIP = 0.4;
 const DECK_STEP = 0.1;
+const TOUCH_TOLERANCE = 1e-6;
 const WALL_SPEED_KEEP = 0.98;
 const WALL_THROW_HEIGHT = 0.2;
 const WALL_THROW_SPEED = 1;
@@ -400,10 +401,10 @@ const clearanceAt = (share: number): number =>
   flightOverDeck.constant;
 
 const firstTouch = (from: number, to: number): number => {
-  if (clearanceAt(from) <= 0) {
+  if (clearanceAt(from) <= TOUCH_TOLERANCE) {
     return from;
   }
-  if (clearanceAt(to) > 0) {
+  if (clearanceAt(to) > TOUCH_TOLERANCE) {
     return -1;
   }
   const { constant, linear, squared } = flightOverDeck;
@@ -460,7 +461,8 @@ const fly = (
   const fromS = rider.s;
   const fromX = rider.x;
   const fromAir = rider.air;
-  const fromDeck = fromAir >= supportAt(track, fromS, fromX, under).height;
+  const fromDeck =
+    fromAir + TOUCH_TOLERANCE >= supportAt(track, fromS, fromX, under).height;
   const rise = rider.verticalSpeed;
   const curvature = curvatureAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
@@ -482,7 +484,7 @@ const fly = (
     traceOverDeck(jump, fromS, rider.s - fromS, fromAir, rise, drop);
     const intoSide = crossing.enter >= 0 && crossing.enterSide;
     const below = -clearanceAt(entry);
-    if (below > 0) {
+    if (below > TOUCH_TOLERANCE) {
       if (intoSide && !glancesOff(state, riderIndex, rider, below, fromX)) {
         return;
       }
