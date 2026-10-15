@@ -5,6 +5,40 @@ const SIREN_LOW = 660;
 const SIREN_HIGH = 880;
 const SIREN_STEP = 0.28;
 const RUSH_SPEED = 75;
+const PITCH_STEP = 0.005;
+const GAIN_STEP = 0.002;
+
+type Glide = (target: number, now: number) => void;
+
+const glide = (
+  param: AudioParam,
+  seconds: number,
+  heard: (from: number, to: number) => boolean
+): Glide => {
+  let last = Number.NaN;
+  return (target, now) => {
+    if (!Number.isNaN(last) && !heard(last, target)) {
+      return;
+    }
+    last = target;
+    param.setTargetAtTime(target, now, seconds);
+  };
+};
+
+const pitchMoved = (from: number, to: number): boolean =>
+  Math.abs(to - from) > Math.abs(from) * PITCH_STEP;
+
+const gainMoved = (from: number, to: number): boolean =>
+  Math.abs(to - from) > GAIN_STEP;
+
+interface Glides {
+  readonly engine: Glide;
+  readonly growl: Glide;
+  readonly engineGain: Glide;
+  readonly engineTone: Glide;
+  readonly windGain: Glide;
+  readonly windTone: Glide;
+}
 
 export interface Sound {
   unlock: () => void;
@@ -29,14 +63,9 @@ export interface Sound {
 export function createSound(): Sound {
   let context: AudioContext | undefined;
   let master: GainNode | undefined;
-  let engine: OscillatorNode | undefined;
-  let growl: OscillatorNode | undefined;
-  let engineGain: GainNode | undefined;
-  let engineTone: BiquadFilterNode | undefined;
   let shiftGain: GainNode | undefined;
-  let windGain: GainNode | undefined;
-  let windTone: BiquadFilterNode | undefined;
   let noise: AudioBuffer | undefined;
+  let glides: Glides | undefined;
   let muted = false;
 
   const burst = (
@@ -73,6 +102,7 @@ export function createSound(): Sound {
     void context?.close();
     context = undefined;
     master = undefined;
+    glides = undefined;
   };
 
   const build = () => {
@@ -88,16 +118,16 @@ export function createSound(): Sound {
       samples[index] = Math.random() * 2 - 1;
     }
 
-    engineTone = audio.createBiquadFilter();
+    const engineTone = audio.createBiquadFilter();
     engineTone.type = "lowpass";
     engineTone.frequency.value = 600;
-    engineGain = audio.createGain();
+    const engineGain = audio.createGain();
     engineGain.gain.value = 0.07;
     shiftGain = audio.createGain();
     shiftGain.gain.value = 1;
-    engine = audio.createOscillator();
+    const engine = audio.createOscillator();
     engine.type = "sawtooth";
-    growl = audio.createOscillator();
+    const growl = audio.createOscillator();
     growl.type = "square";
     const growlGain = audio.createGain();
     growlGain.gain.value = 0.5;
@@ -110,13 +140,21 @@ export function createSound(): Sound {
     const wind = audio.createBufferSource();
     wind.buffer = noise;
     wind.loop = true;
-    windTone = audio.createBiquadFilter();
+    const windTone = audio.createBiquadFilter();
     windTone.type = "bandpass";
     windTone.Q.value = 0.5;
-    windGain = audio.createGain();
+    const windGain = audio.createGain();
     windGain.gain.value = 0;
     wind.connect(windTone).connect(windGain).connect(master);
     wind.start();
+    glides = {
+      engine: glide(engine.frequency, 0.03, pitchMoved),
+      engineGain: glide(engineGain.gain, 0.06, gainMoved),
+      engineTone: glide(engineTone.frequency, 0.08, pitchMoved),
+      growl: glide(growl.frequency, 0.03, pitchMoved),
+      windGain: glide(windGain.gain, 0.15, gainMoved),
+      windTone: glide(windTone.frequency, 0.15, pitchMoved),
+    };
   };
 
   return {
@@ -128,34 +166,18 @@ export function createSound(): Sound {
       shutDown();
     },
     drive(speed, throttle, revs, offRoad) {
-      if (!context || !engine || !growl || !engineGain || !engineTone) {
+      if (!context || !glides) {
         return;
       }
       const now = context.currentTime;
       const hertz = IDLE_HERTZ + (REDLINE_HERTZ - IDLE_HERTZ) * revs ** 1.1;
-      engine.frequency.setTargetAtTime(hertz, now, 0.03);
-      growl.frequency.setTargetAtTime(hertz / 2, now, 0.03);
-      engineGain.gain.setTargetAtTime(
-        0.06 + throttle * 0.1 + revs * 0.03,
-        now,
-        0.06
-      );
-      engineTone.frequency.setTargetAtTime(
-        450 + throttle * 1500 + revs * 1200,
-        now,
-        0.08
-      );
+      glides.engine(hertz, now);
+      glides.growl(hertz / 2, now);
+      glides.engineGain(0.06 + throttle * 0.1 + revs * 0.03, now);
+      glides.engineTone(450 + throttle * 1500 + revs * 1200, now);
       const rush = Math.min(1, speed / RUSH_SPEED);
-      windGain?.gain.setTargetAtTime(
-        rush * rush * 0.26 + (offRoad ? 0.12 : 0),
-        now,
-        0.15
-      );
-      windTone?.frequency.setTargetAtTime(
-        offRoad ? 240 : 500 + rush * 1100,
-        now,
-        0.15
-      );
+      glides.windGain(rush * rush * 0.26 + (offRoad ? 0.12 : 0), now);
+      glides.windTone(offRoad ? 240 : 500 + rush * 1100, now);
     },
     hit() {
       burst(260, 0.16, 0.7, 70);
