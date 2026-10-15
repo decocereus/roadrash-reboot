@@ -16,7 +16,7 @@ export interface HazardSize {
 export const hazardSizes = {
   oil: { halfLength: 2.6, halfWidth: 1.1, height: 0 },
   pothole: { halfLength: 0.5, halfWidth: 0.6, height: 0 },
-  rock: { halfLength: 0.45, halfWidth: 0.45, height: 0.6 },
+  rock: { halfLength: 0.45, halfWidth: 0.45, height: 0.45 },
 } as const satisfies Record<HazardKind, HazardSize>;
 
 export interface HazardPlacement {
