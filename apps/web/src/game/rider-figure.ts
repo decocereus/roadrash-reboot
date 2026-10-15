@@ -130,6 +130,7 @@ export interface RiderFigure {
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
+  holdEveryWeapon: () => () => void;
 }
 
 const striking = (pose: RiderPose): boolean =>
@@ -809,6 +810,22 @@ export const createRiderFigure = (
       }
       disposeTree(model);
       skeleton.dispose();
+    },
+    holdEveryWeapon() {
+      for (const [hand, meshes] of held.entries()) {
+        for (const mesh of meshes) {
+          hands[hand]?.add(mesh);
+        }
+      }
+      return () => {
+        for (const meshes of held) {
+          for (const mesh of meshes) {
+            if (mesh !== holding) {
+              mesh.removeFromParent();
+            }
+          }
+        }
+      };
     },
     rest() {
       if (!resting) {

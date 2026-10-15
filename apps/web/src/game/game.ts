@@ -588,10 +588,14 @@ export async function createGame(
     world.follow(chase.camera, player().s);
     const samples = world.samples();
     world.scene.add(samples);
+    const unarm = views.map((view) => view.figure.holdEveryWeapon());
     pipeline.prepare(world.scene);
     const restore = revealAll(world.scene);
     pipeline.render(world.scene, chase.camera);
     restore();
+    for (const each of unarm) {
+      each();
+    }
     world.scene.remove(samples);
     dropGeometry(samples);
   };
