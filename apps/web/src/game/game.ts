@@ -1413,9 +1413,9 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
+    govern(seconds);
     profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
-    govern(seconds);
     meter?.frame({
       calls: renderer.info.render.calls,
       pace,
