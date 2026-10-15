@@ -155,6 +155,22 @@ const put = (
   }
 };
 
+const meshFor = (
+  key: string,
+  geometry: THREE.BufferGeometry,
+  material: THREE.Material
+): THREE.Mesh => {
+  const mesh = new THREE.Mesh(geometry, material);
+  if (key === "cable") {
+    onFxLayer(mesh);
+  } else {
+    const lit = key !== "glow" && key !== "sign";
+    mesh.castShadow = lit;
+    mesh.receiveShadow = lit;
+  }
+  return mesh;
+};
+
 const layBlocks = (track: Track, front: number): Block[] => {
   const blocks: Block[] = [];
   const random = createRandom(track.plan.seed + 77);
@@ -180,6 +196,7 @@ export interface City {
   readonly group: THREE.Group;
   readonly facades: readonly THREE.Material[];
   follow: (s: number, reach: number) => void;
+  samples: () => THREE.Group;
   dispose: () => void;
 }
 
@@ -500,6 +517,31 @@ export const createCity = (track: Track, shading: Shading): City => {
     }
   };
 
+  const sampleOf = (key: string): THREE.BufferGeometry => {
+    const [frame] = atlas.flat;
+    if (key === "sign" && frame) {
+      return framed(1, 1, frame);
+    }
+    if (key === "cable") {
+      const cable = new THREE.TubeGeometry(
+        new THREE.QuadraticBezierCurve3(
+          new THREE.Vector3(-1, 0, 0),
+          new THREE.Vector3(0, -0.5, 0),
+          new THREE.Vector3(1, 0, 0)
+        ),
+        2,
+        0.035,
+        4
+      );
+      cable.deleteAttribute("uv");
+      return cable;
+    }
+    if (key.startsWith("facade") || key.startsWith("shop")) {
+      return walls([1, 1, 1], [1, 1]);
+    }
+    return solid([1, 1, 1], "#ffffff");
+  };
+
   const buildChunk = (index: number): THREE.Group => {
     const from = track.startS + index * CITY_CHUNK;
     const batch: Batch = new Map();
@@ -514,18 +556,10 @@ export const createCity = (track: Track, shading: Shading): City => {
       if (!material) {
         continue;
       }
-      const mesh = new THREE.Mesh(mergeGeometries(geometries), material);
+      chunk.add(meshFor(key, mergeGeometries(geometries), material));
       for (const geometry of geometries) {
         geometry.dispose();
       }
-      if (key === "cable") {
-        onFxLayer(mesh);
-      } else {
-        const lit = key !== "glow" && key !== "sign";
-        mesh.castShadow = lit;
-        mesh.receiveShadow = lit;
-      }
-      chunk.add(mesh);
     }
     return chunk;
   };
@@ -577,5 +611,12 @@ export const createCity = (track: Track, shading: Shading): City => {
       settled = true;
     },
     group,
+    samples() {
+      const samples = new THREE.Group();
+      for (const [key, material] of materials) {
+        samples.add(meshFor(key, sampleOf(key), material));
+      }
+      return samples;
+    },
   };
 };

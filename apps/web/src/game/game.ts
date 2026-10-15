@@ -332,6 +332,37 @@ const ladderFor = (ceiling: number): readonly Rung[] => {
   }
 };
 
+const revealAll = (root: THREE.Object3D): (() => void) => {
+  const hidden: THREE.Object3D[] = [];
+  const culled: THREE.Object3D[] = [];
+  root.traverse((node) => {
+    if (!node.visible) {
+      hidden.push(node);
+      node.visible = true;
+    }
+    if (node.frustumCulled) {
+      culled.push(node);
+      node.frustumCulled = false;
+    }
+  });
+  return () => {
+    for (const node of hidden) {
+      node.visible = false;
+    }
+    for (const node of culled) {
+      node.frustumCulled = true;
+    }
+  };
+};
+
+const dropGeometry = (root: THREE.Object3D): void => {
+  root.traverse((node) => {
+    if (node instanceof THREE.Mesh) {
+      node.geometry.dispose();
+    }
+  });
+};
+
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
@@ -518,6 +549,17 @@ export async function createGame(
     pipeline.setLook(world.shading.look);
   };
 
+  const warmUp = () => {
+    world.follow(chase.camera, player().s);
+    const samples = world.samples();
+    world.scene.add(samples);
+    const restore = revealAll(world.scene);
+    pipeline.render(world.scene, chase.camera);
+    restore();
+    world.scene.remove(samples);
+    dropGeometry(samples);
+  };
+
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
     takeTrack(setup.track);
@@ -543,6 +585,7 @@ export async function createGame(
     tagRider = -1;
     clockReset = true;
     chase.snap();
+    warmUp();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -1160,6 +1203,7 @@ export async function createGame(
   observer.observe(canvas);
   resize();
   buildViews();
+  warmUp();
 
   const advance = (seconds: number): number => {
     if (clockReset) {

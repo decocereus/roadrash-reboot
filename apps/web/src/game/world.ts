@@ -395,6 +395,7 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
+  samples: () => THREE.Group;
   setShadowMap: (size: number) => void;
   dispose: () => void;
 }
@@ -531,6 +532,9 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
       rig.follow(camera);
       shading.aim(camera);
+    },
+    samples() {
+      return city?.samples() ?? new THREE.Group();
     },
     scene,
     setShadowMap(size) {
