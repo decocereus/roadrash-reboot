@@ -9,6 +9,7 @@ import { topSpeedOf } from "./engine.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
 import { HARD_LANDING, towardBike } from "./rider.ts";
 import {
+  BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
   clamp,
   curvePushOf,
@@ -16,7 +17,13 @@ import {
   lateralSpeedLimit,
   PLAYER_RIDER,
 } from "./state.ts";
-import type { BikeSpec, RaceState, RiderInput, RiderState } from "./state.ts";
+import type {
+  BikeSpec,
+  Hazard,
+  RaceState,
+  RiderInput,
+  RiderState,
+} from "./state.ts";
 import { kick, weapons } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
 
@@ -65,6 +72,13 @@ const MISREAD_SLACK = 0.1;
 const MISREAD_DIVE = 5;
 const STRAIGHTEN_SECONDS = 0.6;
 const STRAIGHTEN_SCAN_STEP = 2;
+const HAZARD_SIGHT_SECONDS = 2.35;
+const HAZARD_SIGHT_EXTRA = 15;
+const DODGE_MARGIN = 0.45;
+const DODGE_EDGE = 0.2;
+const HAZARD_MISS_SHARE = 0.4;
+const SLIPPING = 0.2;
+const SLIPPING_STEER = 0.45;
 
 interface Pace {
   readonly cap: number;
@@ -462,6 +476,108 @@ const jumpAim = (
   return clearOfWall(track, jump, rider, aim);
 };
 
+const overlooks = (
+  state: RaceState,
+  rider: RiderState,
+  hazardIndex: number
+): boolean => {
+  if (rider.hazardSeen !== hazardIndex) {
+    rider.hazardSeen = hazardIndex;
+    rider.hazardMissed =
+      roll(state) < (1 - rider.profile.skill) * HAZARD_MISS_SHARE;
+  }
+  return rider.hazardMissed;
+};
+
+const dodgeReach = (hazard: Hazard): number =>
+  hazard.halfWidth + BIKE_HALF_WIDTH + DODGE_MARGIN;
+
+const inTheWay = (rider: RiderState, aim: Aim, hazard: Hazard): boolean => {
+  const reach = dodgeReach(hazard);
+  return (
+    Math.abs(aim.x - hazard.x) < reach ||
+    Math.abs(rider.x - hazard.x) < reach ||
+    between(rider.x, aim.x, hazard.x)
+  );
+};
+
+const metresToContact = (rider: RiderState, hazard: Hazard): number =>
+  hazard.s - hazard.halfLength - BIKE_HALF_LENGTH - rider.s;
+
+const nearestHazard = (
+  state: RaceState,
+  rider: RiderState,
+  aim: Aim
+): number => {
+  const sight = rider.speed * HAZARD_SIGHT_SECONDS + HAZARD_SIGHT_EXTRA;
+  let nearest = -1;
+  let nearestAhead = Number.POSITIVE_INFINITY;
+  for (const [index, hazard] of state.hazards.entries()) {
+    const ahead = metresToContact(rider, hazard);
+    const passed = hazard.s + hazard.halfLength + BIKE_HALF_LENGTH < rider.s;
+    if (
+      !passed &&
+      ahead <= sight &&
+      ahead < nearestAhead &&
+      inTheWay(rider, aim, hazard)
+    ) {
+      nearest = index;
+      nearestAhead = ahead;
+    }
+  }
+  return nearest;
+};
+
+const sideOf = (x: number, hazard: Hazard, fallback: number): number =>
+  Math.sign(x - hazard.x) || fallback;
+
+const lineAround = (
+  track: Track,
+  rider: RiderState,
+  aim: Aim,
+  hazard: Hazard
+): number => {
+  const reach = dodgeReach(hazard);
+  const riderSide = sideOf(rider.x, hazard, sideOf(aim.x, hazard, 1));
+  const aimClear = Math.abs(aim.x - hazard.x) >= reach;
+  const wanted = aimClear ? riderSide : sideOf(aim.x, hazard, riderSide);
+  const room = track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE;
+  const side = Math.abs(hazard.x + wanted * reach) <= room ? wanted : -wanted;
+  return hazard.x + side * reach;
+};
+
+const settledLine = (rider: RiderState): number =>
+  rider.x +
+  (rider.lateralSpeed * Math.abs(rider.lateralSpeed)) /
+    (2 * rider.bike.steerRate);
+
+const hazardAim = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  aim: Aim
+): Aim => {
+  const index = nearestHazard(state, rider, aim);
+  const hazard = state.hazards[index];
+  if (!hazard || overlooks(state, rider, index)) {
+    return aim;
+  }
+  const reach = dodgeReach(hazard);
+  const aimClear = Math.abs(aim.x - hazard.x) >= reach;
+  if (aimClear && !between(rider.x, aim.x, hazard.x)) {
+    return aim;
+  }
+  const x = lineAround(track, rider, aim, hazard);
+  if (hazard.kind !== "oil") {
+    return { speed: aim.speed, x };
+  }
+  const seconds =
+    Math.max(0, metresToContact(rider, hazard)) / Math.max(1, rider.speed);
+  const avoidable =
+    seconds > JUMP_ALIGN_SECONDS + JUMP_ALIGN_PER_METRE * Math.abs(x - rider.x);
+  return { speed: aim.speed, x: avoidable ? x : settledLine(rider) };
+};
+
 const launchesSoon = (track: Track, rider: RiderState): boolean => {
   const reach = rider.speed * STRAIGHTEN_SECONDS;
   const lift = -GRAVITY / (rider.speed * rider.speed);
@@ -589,11 +705,12 @@ const ride = (
     curvatureAt(track, rider.s),
     rider.speed
   );
+  const steerLimit = rider.slip > SLIPPING ? SLIPPING_STEER : 1;
   input.steer = clamp(
     (lateralSpeed + push) /
       Math.max(1, lateralSpeedLimit(rider.bike, rider.speed)),
-    -1,
-    1
+    -steerLimit,
+    steerLimit
   );
 
   const skill = Math.min(1, rider.profile.skill + pace.lift);
@@ -698,14 +815,19 @@ export const pilotInput = (
   const aim = straightened(
     track,
     rider,
-    jumpAim(
+    hazardAim(
       state,
       track,
-      riderIndex,
       rider,
-      police
-        ? copAim(state, track, riderIndex, rider)
-        : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY)
+      jumpAim(
+        state,
+        track,
+        riderIndex,
+        rider,
+        police
+          ? copAim(state, track, riderIndex, rider)
+          : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY)
+      )
     )
   );
   ride(

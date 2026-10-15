@@ -10,6 +10,8 @@ import {
   stepAttack,
   stepRiderContacts,
 } from "./combat.ts";
+import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
+import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
 import { stepRider, throwRider } from "./rider.ts";
@@ -136,6 +138,9 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   finishTick: -1,
   gear: 1,
   grudge: entry.grudge,
+  hazardContact: -1,
+  hazardMissed: false,
+  hazardSeen: -1,
   heading: 0,
   hitStun: 0,
   idleTicks: 0,
@@ -155,6 +160,9 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   revs: 0,
   s: spot.s,
   shiftTicks: 0,
+  slip: 0,
+  slipFrom: -1,
+  slipTicks: 0,
   speed: 0,
   staleBrake: false,
   staleSteer: false,
@@ -296,10 +304,11 @@ export const createRace = (setup: RaceSetup): RaceState => {
     cop.parked = true;
     riders.push(cop);
   }
-  return {
+  const state: RaceState = {
     cars: createTraffic(track, createRandom(seed)),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
+    hazards: [],
     pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
     police: {
       beat: police.beat,
@@ -310,6 +319,8 @@ export const createRace = (setup: RaceSetup): RaceState => {
     riders,
     tick: 0,
   };
+  spawnScheduledHazards(state, track);
+  return state;
 };
 
 export const distanceLeft = (track: Track, rider: RiderState): number =>
@@ -338,6 +349,17 @@ export const standings = (state: RaceState): number[] =>
     })
     .map((entry) => entry.index);
 
+const throwForHazard: ThrowForHazard = (
+  state,
+  riderIndex,
+  cause,
+  bikeKeep,
+  bodyKeep,
+  hazard
+) => {
+  throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, undefined, hazard);
+};
+
 export const stepRace = (
   state: RaceState,
   track: Track,
@@ -347,7 +369,11 @@ export const stepRace = (
   state.tick += 1;
   stepTraffic(state, track);
   for (let index = 0; index < state.riders.length; index += 1) {
+    const rider = state.riders[index];
+    const fromS = rider?.s ?? 0;
+    const fromX = rider?.x ?? 0;
     stepRider(state, track, index, inputs[index] ?? neutralInput);
+    meetHazards(state, index, fromS, fromX, throwForHazard);
   }
   stepRiderContacts(
     state,
