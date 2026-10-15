@@ -10,6 +10,7 @@ import { planFor } from "./flow.ts";
 export type Bench = "stress" | "reference";
 
 const BENCH_SEED = 31;
+const STRESS_SEED = 8;
 const STRESS_COPS = 8;
 const STRESS_SIGHT_RANGE = 250;
 const STRESS_PLAYER_AGGRESSION = 0.8;
@@ -29,7 +30,7 @@ const stressPlan = (): RacePlan => {
     level: 5,
     mode: "quick",
     roadId: "slag-row",
-    seed: BENCH_SEED,
+    seed: STRESS_SEED,
   });
   const { setup } = plan;
   return {

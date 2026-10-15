@@ -21,7 +21,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=1" --label stress-r1 --runs 3
 node tools/perf/measure.ts --url "http://localhost:1352/?stress=reference&ratio=2" --label reference-r2 --runs 3
 node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label profile --runs 1 --cpu-profile --save-trace
-node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label shots --runs 1 --no-trace --shots 2761,2900,3131
+node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label shots --runs 1 --no-trace --shots 2978,3120,3300
 node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label first-run --runs 4 --first-run
 ```
 
@@ -45,9 +45,11 @@ Each run launches `/Applications/Google Chrome.app` with `--headless=new`, a new
 
 ## The page side
 
-`?stress` starts a fixed race as soon as the game loads and puts the player on the pilot: Slag Row at level 5, the full field of fourteen, seed 31, the player on the Ostra Sesta 600 with aggression 0.8, rivals given the most aggression toward the player and a grudge against them, eight police with a 250 m sight range, and pacing of `leadEase` 0.8 and `catchUp` 0.6, which holds the pack around the player. `?stress=reference` is the ordinary Slag Row level 1 race on the starting bike with the same seed. Both are in `apps/web/src/career/bench.ts`.
+`?stress` starts a fixed race as soon as the game loads and puts the player on the pilot: Slag Row at level 5, the full field of fourteen, seed 8, the player on the Ostra Sesta 600 with aggression 0.8, rivals given the most aggression toward the player and a grudge against them, eight police with a 250 m sight range, and pacing of `leadEase` 0.8 and `catchUp` 0.6, which holds the pack around the player. `?stress=reference` is the ordinary Slag Row level 1 race on the starting bike on seed 31. Both are in `apps/web/src/career/bench.ts`.
 
-The window, ticks 2640 to 3240, is ten seconds of race time from the moment the pack wakes the first police officer at 1,500 m. Through it ten or eleven rivals are within 150 m ahead, about thirty-three cars are within the fleet's reach, the officer chases a rival within 25 m of the player, and rivals swing at the player at close range. Tick 2761 shows the officer beside the camera and a rival in front of it.
+The window, ticks 2880 to 3480, is ten seconds of race time from the moment the pack wakes the first police officer, at about 1,430 m. The race depends on the AI pilot in `packages/sim/src/pilot.ts`, so a change to it moves the window. The bench was last re-aimed when the pilot learned to ride ramps: on seed 31 the pack stretched out and the old window was nearly empty road, so the stress seed became 8. Through the window ten or eleven rivals are within 150 m ahead and the player is 11th or 12th of 15, about fifty cars are within the fleet's reach, the one awake officer chases a rival for all of it and closes from 70 m to the player to within 30 m by tick 2950, and rivals swing at the player in short bursts. Tick 2978 shows the officer passing the camera at the right edge with the pack in front.
+
+To find a window again, step `benchPlan("stress")` with `pilotInput` for every rider each tick, as `readInputs` in `apps/web/src/game/game.ts` does, and count rivals within 150 m ahead and the distance to the nearest awake officer per second.
 
 `?prof` records without starting a race, and `?stress` implies it. The frame loop then records, per frame, the CPU time of each part and the draw calls and triangles each pass submits. Where `EXT_disjoint_timer_query_webgl2` is exposed it also times each part on the GPU. Samples sit in preallocated typed arrays and `globalThis.__rushlineProfile` reads them out: `info()` and `window(fromTick, toTick)`. Each frame also keeps three's counts of shader programs, textures, and geometries, and the tool lists the ticks where any of them grew: a program that appears after the green light was compiled on the frame that first drew it, and a texture was uploaded on it. These counts do not depend on how busy the machine is. Each frame also keeps the `performance.now()` it started at; the tool lines that clock up with the trace's through a `console.timeStamp` mark, which is how a worst frame is matched with the trace events that overlap it.
 
