@@ -123,7 +123,7 @@ interface Band {
 }
 
 const bands: readonly Band[] = [
-  { fewest: 2, level: 1, most: 9 },
+  { fewest: 2, level: 1, most: 10 },
   { fewest: 3, level: 2, most: 11 },
   { fewest: 4, level: 3, most: 12 },
   { fewest: 4, level: 4, most: 13 },

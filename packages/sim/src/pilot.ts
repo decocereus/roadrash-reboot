@@ -16,6 +16,7 @@ import {
   GRAVITY,
   lateralSpeedLimit,
   PLAYER_RIDER,
+  TICK_SECONDS,
 } from "./state.ts";
 import type {
   BikeSpec,
@@ -83,6 +84,7 @@ const ROCK_THROUGH_SPEED = 150 / 3.6;
 const ROCK_DODGE_SHARE = 0.85;
 const FLAT_DODGE_SHARE = 0.95;
 const ESCAPE_REACH = 0.1;
+const ESCAPE_MARGIN = 0.1;
 const SLIPPING = 0.2;
 const SLIPPING_STEER = 0.45;
 
@@ -150,6 +152,8 @@ const cornerSpeedLimit = (track: Track, rider: RiderState): number => {
 interface Threat {
   readonly seconds: number;
   readonly speed: number;
+  readonly x: number;
+  readonly halfWidth: number;
 }
 
 interface Obstacle {
@@ -157,6 +161,7 @@ interface Obstacle {
   readonly x: number;
   readonly speed: number;
   readonly halfLength: number;
+  readonly halfWidth: number;
 }
 
 const secondsUntilContact = (rider: RiderState, obstacle: Obstacle): number => {
@@ -185,7 +190,8 @@ const oncomingHorizon = (
 };
 
 const riderObstacle = (other: RiderState): Obstacle => ({
-  halfLength: 1,
+  halfLength: BIKE_HALF_LENGTH,
+  halfWidth: BIKE_HALF_WIDTH,
   s: other.mode === "riding" ? other.s : other.bodyS,
   speed: other.mode === "riding" ? other.speed : 0,
   x: other.mode === "riding" ? other.x : other.bodyX,
@@ -201,7 +207,14 @@ const threatFrom = (
     return undefined;
   }
   const seconds = secondsUntilContact(rider, obstacle);
-  return seconds < horizon ? { seconds, speed: obstacle.speed } : undefined;
+  return seconds < horizon
+    ? {
+        halfWidth: obstacle.halfWidth,
+        seconds,
+        speed: obstacle.speed,
+        x: obstacle.x,
+      }
+    : undefined;
 };
 
 const sooner = (
@@ -216,8 +229,7 @@ const carThreat = (
   laneX: number,
   within: number
 ): Threat | undefined => {
-  let seconds = Number.POSITIVE_INFINITY;
-  let speed = 0;
+  let threat: Threat | undefined;
   for (const car of state.cars) {
     const oncoming = car.cruiseSpeed < 0;
     if (
@@ -229,13 +241,17 @@ const carThreat = (
         ? oncomingHorizon(state, rider, laneX)
         : FOLLOW_SECONDS;
       const contact = secondsUntilContact(rider, car);
-      if (contact < horizon && contact < seconds) {
-        seconds = contact;
-        ({ speed } = car);
+      if (contact < horizon && contact < (threat?.seconds ?? horizon)) {
+        threat = {
+          halfWidth: car.halfWidth,
+          seconds: contact,
+          speed: car.speed,
+          x: car.x,
+        };
       }
     }
   }
-  return seconds < Number.POSITIVE_INFINITY ? { seconds, speed } : undefined;
+  return threat;
 };
 
 const laneThreat = (
@@ -618,16 +634,40 @@ const escapeOf = (
   riderIndex: number,
   rider: RiderState,
   aim: Aim
-): number => {
-  const move = aim.x - rider.x;
-  return Math.abs(move) > ESCAPE_REACH &&
-    laneThreat(state, riderIndex, rider, rider.x)
-    ? move
-    : 0;
-};
+): Threat | undefined =>
+  Math.abs(aim.x - rider.x) > ESCAPE_REACH
+    ? laneThreat(state, riderIndex, rider, rider.x)
+    : undefined;
 
-const keepsEscape = (rider: RiderState, escape: number, x: number): boolean =>
-  (x - rider.x) * Math.sign(escape) >= Math.abs(escape);
+const clearsInTime = (
+  rider: RiderState,
+  threat: Threat | undefined,
+  line: number
+): boolean => {
+  if (!threat) {
+    return true;
+  }
+  const { steerRate } = rider.bike;
+  const limit = Math.min(
+    MAX_LATERAL_SPEED,
+    lateralSpeedLimit(rider.bike, rider.speed)
+  );
+  const turn = steerRate * TICK_SECONDS;
+  let { x, lateralSpeed } = rider;
+  for (let tick = 0; tick * TICK_SECONDS < threat.seconds; tick += 1) {
+    const settling = (lateralSpeed * Math.abs(lateralSpeed)) / (2 * steerRate);
+    const wanted = clamp(
+      (line - x - settling) * LANE_CHANGE_RATE,
+      -limit,
+      limit
+    );
+    lateralSpeed += clamp(wanted - lateralSpeed, -turn, turn);
+    x += lateralSpeed * TICK_SECONDS;
+  }
+  return (
+    Math.abs(x - threat.x) >= threat.halfWidth + BIKE_HALF_WIDTH + ESCAPE_MARGIN
+  );
+};
 
 const throughSpeed = (hazard: Hazard, wanted: number): number =>
   hazard.kind === "rock"
@@ -646,7 +686,7 @@ const rideThrough = (
   rider: RiderState,
   aim: Aim,
   hazard: Hazard,
-  escape: number
+  escape: Threat | undefined
 ): Aim => {
   const straight = settledLine(rider);
   return {
@@ -655,7 +695,7 @@ const rideThrough = (
         ? Math.min(aim.speed, ROCK_THROUGH_SPEED)
         : aim.speed,
     x:
-      keepsEscape(rider, escape, straight) &&
+      clearsInTime(rider, escape, straight) &&
       trafficClear(state, track, riderIndex, rider, straight)
         ? straight
         : aim.x,
@@ -684,7 +724,7 @@ const hazardAim = (
   const consider = (x: number): void => {
     if (
       Math.abs(x) > room ||
-      !keepsEscape(rider, escape, x) ||
+      !clearsInTime(rider, escape, x) ||
       !rampClear(track, rider, aim, hazard, x) ||
       !trafficClear(state, track, riderIndex, rider, x)
     ) {

@@ -3606,16 +3606,19 @@ const rideAt = (
   rider.lateralSpeed = from.lateralSpeed;
   const events: RaceEvent[] = [];
   let shakiest = 0;
+  let highest = 0;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     stepRace(state, road, [
       { ...flatOut, steer: rider.s > steerFrom ? steer : 0 },
     ]);
     events.push(...state.events);
     shakiest = Math.max(shakiest, rider.wobble);
+    highest = Math.max(highest, rider.airborne ? rider.air : 0);
   }
   return {
     crashes: events.flatMap((event) => (event.kind === "crash" ? [event] : [])),
     events,
+    highest,
     rider,
     shakiest,
   };
@@ -3711,30 +3714,38 @@ const slowTruckAt = (state: RaceState, s: number, x: number): void => {
   });
 };
 
-const pilotBehindTruck = (road: Track, truckS = 970) => {
+interface Closing {
+  readonly truckS: number;
+  readonly speed: number;
+}
+
+const closingOnTruck: Closing = { speed: 45, truckS: 970 };
+const fastOnTruck: Closing = { speed: 65, truckS: 980 };
+
+const pilotBehindTruck = (road: Track, closing = closingOnTruck) => {
   const state = field(road, 1, 0, 0);
-  slowTruckAt(state, truckS, 1.8);
+  slowTruckAt(state, closing.truckS, 1.8);
   const rider = player(state);
   rider.s = 920;
   rider.x = 1.8;
-  rider.speed = 45;
-  return pilotFrom(state, road, 4);
+  rider.speed = closing.speed;
+  return pilotFrom(state, road, 6);
 };
 
-const copBehindTruck = (road: Track) => {
+const copBehindTruck = (road: Track, closing = closingOnTruck) => {
   const state = field(road, 1, 0, 1);
-  slowTruckAt(state, 970, 1.8);
+  slowTruckAt(state, closing.truckS, 1.8);
   const cop = riderAt(state, 1);
   cop.parked = false;
   cop.post = 900;
   cop.chase = 0;
   cop.s = 920;
   cop.x = 1.8;
-  cop.speed = 45;
+  cop.speed = closing.speed;
   const target = player(state);
   target.s = 935;
   target.x = -3;
-  target.speed = 45;
+  target.speed = closing.speed;
   const inputs = state.riders.map(() => ({ ...neutralInput }));
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
@@ -3774,11 +3785,6 @@ const rockOn = (road: Track, kmh: number) =>
     0,
     0,
     3
-  );
-
-const airSecondsOf = (events: readonly RaceEvent[]): number[] =>
-  events.flatMap((event) =>
-    event.kind === "land" ? [Math.round(event.airSeconds * 10) / 10] : []
   );
 
 const downed = (events: readonly RaceEvent[]): RaceEvent[] =>
@@ -4075,25 +4081,48 @@ describe("road hazards", () => {
   ] as const)(
     "the pilot escaping a slow truck never weakens the escape to miss a %s in the lane it escapes to",
     (kind, id) => {
+      const nearTruck = { ...closingOnTruck, truckS: 960 };
       expect(
-        downed(pilotBehindTruck(hazardFreeRoad, 960).events)
+        downed(pilotBehindTruck(hazardFreeRoad, nearTruck).events)
       ).toStrictEqual([]);
       const run = pilotBehindTruck(
         roadWith(placedAt(kind, 970, -1.8, id)),
-        960
+        nearTruck
       );
       expect(downed(run.events)).toStrictEqual([]);
     }
   );
 
   it("a rock on a climb throws the bike as high as one on the flat: it rides on at 130 km/h and goes down at 220 km/h", () => {
-    expect(airSecondsOf(rockOn(climbThenFlat, 130).events)).toStrictEqual(
-      airSecondsOf(rockOn(hazardFreeRoad, 130).events)
-    );
+    const flat = rockOn(hazardFreeRoad, 130).highest;
+    expect(flat).toBeGreaterThan(0.2);
+    expect(
+      Math.abs(rockOn(climbThenFlat, 130).highest - flat) / flat
+    ).toBeLessThan(0.02);
     expect(rockOn(climbThenFlat, 130).crashes).toStrictEqual([]);
     expect(
       rockOn(climbThenFlat, 220).crashes.map((crash) => crash.hazard?.id)
     ).toStrictEqual(["boulder"]);
+  });
+
+  it("the pilot escaping a truck straightens short of a rock in its escape path once the line clears the truck", () => {
+    const run = pilotBehindTruck(
+      roadWith(placedAt("rock", 970, -0.6, "beside")),
+      fastOnTruck
+    );
+    expect(effectsOf(run.events)).toStrictEqual([]);
+    expect(downed(run.events)).toStrictEqual([]);
+  });
+
+  it("a pursuing cop escaping a truck straightens short of a rock in its escape path once the line clears the truck", () => {
+    expect(
+      downed(
+        copBehindTruck(
+          roadWith(placedAt("rock", 970, -0.6, "beside")),
+          fastOnTruck
+        )
+      )
+    ).toStrictEqual([]);
   });
 
   it("a pursuing cop never dodges a rock into the back of a slow truck", () => {
