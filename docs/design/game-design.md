@@ -447,6 +447,8 @@ Measured by simulation, with a pilot standing in for the decent player: skill 0.
 
 With 80 starts a rate is good to about 4 or 5 points either way, so the five levels are on their targets and nothing finer can be claimed. `packages/career/src/police.test.ts` runs 40 of those starts a level on every check and fails if a level leaves a band around its target, so a retune shows.
 
+Road hazards (October 16, 2026) changed every race's dice stream, and the test's 40 level-2 starts went from 5 busts to 13. The stand-in was thrown by a hazard in none of them; the busts came from fights and traffic in races that now play out differently. On 80 fresh level-2 starts (seeds 9 to 24) the stand-in was busted 14 times with hazards and 12 times without them, 17.5% against 15%, and over the five levels the test's own starts came to 44 busts with hazards and 43 without. The level-2 band was too tight for 40 starts, so its top is now 13 of 40 instead of 11.
+
 What the measurement found about the dials, in the order they were tried:
 
 - **Cop count** cannot do it alone. One cop per race at every level, with the old rules, still measured 25% at level 1 and over 60% at level 3.
@@ -974,6 +976,7 @@ What one crash takes off a bike that starts at 100, by cause and by the rider's 
 | Hard landing         |  9 (13) |  15 (17) |  23 (26) |  30 (35) |
 | Running into a rider |   9 (8) |  15 (10) |  23 (16) |  30 (21) |
 | Knocked down         |   8 (5) |   14 (7) |  21 (10) |  28 (14) |
+| Thrown by a hazard   |       8 |       14 |       21 |       28 |
 | Leaving the track    |   7 (5) |   11 (7) |  17 (10) |  22 (14) |
 
 A crash at 200 km/h costs about 30 and one at 100 km/h about 15, whatever caused it. Three crashes into traffic at 200 km/h wreck a bike, four knockdowns at that speed do, and at 100 km/h it takes six to eight. A tip-over at walking pace costs about 3. The earlier curve had a floor of half the base figure and a spread of three and a half to one between causes, so one car at 200 km/h took half the bike and a wreck from fights took ten falls. A ride onto the grass that does not end in a fall still costs nothing.
