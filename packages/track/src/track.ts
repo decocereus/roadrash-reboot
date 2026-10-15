@@ -1,5 +1,7 @@
 import { compileFeatures, indexFeatures } from "./features.ts";
 import type { FeatureIndex, FeatureRule, TrackFeature } from "./features.ts";
+import { placeHazards } from "./hazards.ts";
+import type { HazardPlacement } from "./hazards.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
@@ -23,6 +25,7 @@ export interface TrackPlan {
   readonly leadInLength: number;
   readonly runoffLength: number;
   readonly trafficPerKilometre: number;
+  readonly hazardsPerKilometre: number;
   readonly roadblocks: readonly number[];
   readonly sections: readonly TrackSection[];
   readonly features: readonly FeatureRule[];
@@ -59,6 +62,7 @@ export interface Track {
   readonly solidProps: readonly TrackProp[];
   readonly features: readonly TrackFeature[];
   readonly featureIndex: FeatureIndex;
+  readonly hazards: readonly HazardPlacement[];
 }
 
 export interface TrackPoint {
@@ -261,7 +265,7 @@ export const compileTrack = (plan: TrackPlan): Track => {
     roadHalfWidth,
   });
 
-  return {
+  const road = {
     curvature,
     endS,
     featureIndex: indexFeatures(features, startS, endS),
@@ -285,6 +289,7 @@ export const compileTrack = (plan: TrackPlan): Track => {
     worldY,
     worldZ,
   };
+  return { ...road, hazards: placeHazards(road) };
 };
 
 const sampleAt = (track: Track, values: Float64Array, s: number): number => {
