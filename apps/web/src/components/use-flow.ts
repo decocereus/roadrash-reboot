@@ -25,6 +25,7 @@ import {
   storeCareer,
 } from "../career/save.ts";
 import type { SaveState } from "../career/save.ts";
+import { diagnostics } from "../diagnostics/hub.ts";
 import { createHudFeed } from "../game/hud.ts";
 import type {
   GameEvents,
@@ -170,6 +171,7 @@ const useGame = (
       return;
     }
     let disposed = false;
+    diagnostics();
     import("../game/game.ts")
       .then(({ createGame }) =>
         createGame(canvas, {
