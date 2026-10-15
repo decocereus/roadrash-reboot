@@ -21,6 +21,7 @@ import {
 } from "@racer/sim/state";
 import type {
   AttackKind,
+  HazardEffect,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -107,6 +108,9 @@ const SAG_STEP = 1 / 240;
 const MOST_SAG = 0.16;
 const PUFF_AIR_SECONDS = 0.2;
 const PUFF_PER_IMPACT = 0.1;
+const POTHOLE_SAG_KICK = 1.6;
+const HAZARD_PUFF = 0.6;
+const HAZARD_JOLT = { jolt: 0.35, slip: 0.15, stagger: 0.6 } as const;
 const BUMP_PER_IMPACT = 1 / 9;
 const KICK_HOLD_TICKS = 2;
 const KICK_RETRACT_TICKS = 3;
@@ -759,6 +763,9 @@ export async function createGame(
     } else if (event.kind === "glance" || event.kind === "bump") {
       chase.jolt(0.45);
       sound.thump(0.5);
+    } else if (event.kind === "hazard") {
+      chase.jolt(HAZARD_JOLT[event.effect]);
+      sound.thump(HAZARD_JOLT[event.effect]);
     } else if (event.kind === "attack") {
       sound.swing();
     } else if (event.kind === "riderContact") {
@@ -797,6 +804,19 @@ export async function createGame(
     }
   };
 
+  const touchHazard = (
+    effect: HazardEffect,
+    view: RiderView,
+    speed: number,
+    near: boolean
+  ) => {
+    if (effect === "jolt") {
+      view.sagSpeed += POTHOLE_SAG_KICK;
+    } else if (effect === "stagger" && near) {
+      puffs?.burst(view.bike, HAZARD_PUFF, speed);
+    }
+  };
+
   const touchDown = (event: RaceEvent) => {
     const view = views[event.rider];
     const rider = race.riders[event.rider];
@@ -809,8 +829,14 @@ export async function createGame(
       if (near && event.airSeconds > PUFF_AIR_SECONDS) {
         puffs?.burst(view.bike, -event.impact * PUFF_PER_IMPACT, rider.speed);
       }
-    } else if (event.kind === "crash" && event.cause === "landing" && near) {
+    } else if (
+      event.kind === "crash" &&
+      (event.cause === "landing" || event.cause === "hazard") &&
+      near
+    ) {
       puffs?.burst(view.bike, 1, rider.speed);
+    } else if (event.kind === "hazard") {
+      touchHazard(event.effect, view, rider.speed, near);
     }
   };
 
@@ -890,7 +916,7 @@ export async function createGame(
         pilotInput(race, track, index, input);
       }
     }
-    devRide?.steer(race, inputs[0]);
+    devRide?.steer(race, track, inputs[0]);
   };
 
   const tick = () => {
@@ -1179,6 +1205,7 @@ export async function createGame(
 
     chase.update(track, subject, seconds);
     profiler?.lap("camera");
+    world.showHazards(race.hazards, subject.s);
     world.follow(chase.camera, subject.s);
     profiler?.lap("world");
     pipeline.render(world.scene, chase.camera);
