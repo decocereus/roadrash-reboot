@@ -194,10 +194,29 @@ export const indexFeatures = (
   return { ...shell, featureIndices, offsets };
 };
 
+const leftEdgeOf = (jump: TrackFeature): number => jump.x - jump.width / 2;
+
+const rightEdgeOf = (jump: TrackFeature): number => jump.x + jump.width / 2;
+
+const betweenEdges = (jump: TrackFeature, x: number): boolean =>
+  x > leftEdgeOf(jump) && x < rightEdgeOf(jump);
+
 const onDeck = (jump: TrackFeature, s: number, x: number): boolean =>
-  s >= jump.s &&
-  s <= jump.s + jump.length &&
-  Math.abs(x - jump.x) <= jump.width / 2;
+  s >= jump.s && s <= lipOf(jump) && betweenEdges(jump, x);
+
+export const deckSupportOf = (
+  jump: TrackFeature,
+  featureIndex: number,
+  s: number,
+  out: Support
+): Support => {
+  const u = (s - jump.s) / jump.length;
+  out.height = jump.rise * u * u;
+  out.slope = (2 * jump.rise * u) / jump.length;
+  out.slopeRate = (2 * jump.rise) / (jump.length * jump.length);
+  out.feature = featureIndex;
+  return out;
+};
 
 export const supportAt = (
   track: Track,
@@ -216,12 +235,7 @@ export const supportAt = (
     const featureIndex = index.featureIndices[at] ?? 0;
     const jump = track.features[featureIndex];
     if (jump && onDeck(jump, s, x)) {
-      const u = (s - jump.s) / jump.length;
-      out.height = jump.rise * u * u;
-      out.slope = (2 * jump.rise * u) / jump.length;
-      out.slopeRate = (2 * jump.rise) / (jump.length * jump.length);
-      out.feature = featureIndex;
-      return out;
+      return deckSupportOf(jump, featureIndex, s, out);
     }
   }
   return out;
@@ -274,7 +288,6 @@ const crossJump = (
   alongX: number,
   out: Crossing
 ): boolean => {
-  const halfWidth = jump.width / 2;
   let enterS = Number.NEGATIVE_INFINITY;
   let leaveS = Number.POSITIVE_INFINITY;
   if (alongS === 0) {
@@ -290,12 +303,12 @@ const crossJump = (
   let enterX = Number.NEGATIVE_INFINITY;
   let leaveX = Number.POSITIVE_INFINITY;
   if (alongX === 0) {
-    if (Math.abs(fromX - jump.x) > halfWidth) {
+    if (!betweenEdges(jump, fromX)) {
       return false;
     }
   } else {
-    const left = (jump.x - halfWidth - fromX) / alongX;
-    const right = (jump.x + halfWidth - fromX) / alongX;
+    const left = (leftEdgeOf(jump) - fromX) / alongX;
+    const right = (rightEdgeOf(jump) - fromX) / alongX;
     enterX = Math.min(left, right);
     leaveX = Math.max(left, right);
   }

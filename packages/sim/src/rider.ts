@@ -1,6 +1,7 @@
 import {
   crossRamps,
   deckHeightOf,
+  deckSupportOf,
   deckSlopeOf,
   emptyCrossing,
   emptySupport,
@@ -340,7 +341,7 @@ const settleOnSurface = (
     return;
   }
   const alongS = rider.s - fromS;
-  if (crossing.enter > 0 && crossing.enterSide) {
+  if (crossing.enter >= 0 && crossing.enterSide) {
     const height = deckHeightOf(jump, fromS + alongS * crossing.enter);
     if (height > rider.air + DECK_STEP) {
       if (glancesOff(state, riderIndex, rider, height, fromX)) {
@@ -410,6 +411,8 @@ const touchDeck = (
   track: Track,
   riderIndex: number,
   rider: RiderState,
+  jump: TrackFeature,
+  featureIndex: number,
   share: number,
   fromS: number,
   fromX: number,
@@ -422,7 +425,7 @@ const touchDeck = (
   const x = fromX + (toX - fromX) * share;
   rider.s = s;
   rider.x = x;
-  supportAt(track, s, x, under);
+  deckSupportOf(jump, featureIndex, s, under);
   land(
     state,
     track,
@@ -471,7 +474,7 @@ const fly = (
   if (jump) {
     const entry = Math.max(0, crossing.enter);
     traceOverDeck(jump, fromS, rider.s - fromS, fromAir, rise, drop);
-    const intoSide = crossing.enter > 0 && crossing.enterSide;
+    const intoSide = crossing.enter >= 0 && crossing.enterSide;
     const below = -clearanceAt(entry);
     if (intoSide && below > DECK_STEP) {
       if (!glancesOff(state, riderIndex, rider, below, fromX)) {
@@ -485,6 +488,8 @@ const fly = (
           track,
           riderIndex,
           rider,
+          jump,
+          crossing.feature,
           share,
           fromS,
           fromX,

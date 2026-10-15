@@ -3151,6 +3151,10 @@ const rampRoadPlan = {
 } as const;
 const rampRoad = compileTrack(rampRoadPlan);
 const wideRampRoad = compileTrack({ ...rampRoadPlan, lanesEachWay: 2 });
+const offCentreRampRoad = compileTrack({
+  ...rampRoadPlan,
+  features: [{ ...rampRoadPlan.features[0], x: 3.5 }],
+});
 const flatOut: RiderInput = {
   brake: 0,
   kick: false,
@@ -3215,8 +3219,12 @@ interface Placement {
   readonly verticalSpeed?: number;
 }
 
-const besideRamp = (placement: Placement, ticks: number) => {
-  const state = field(rampRoad, 1, 0, 0);
+const besideRamp = (
+  placement: Placement,
+  ticks: number,
+  road: Track = rampRoad
+) => {
+  const state = field(road, 1, 0, 0);
   const rider = player(state);
   rider.s = placement.s;
   rider.x = placement.x;
@@ -3228,10 +3236,10 @@ const besideRamp = (placement: Placement, ticks: number) => {
   const steer = Math.sign(placement.lateralSpeed);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < ticks; tick += 1) {
-    stepRace(state, rampRoad, [{ ...flatOut, steer }]);
+    stepRace(state, road, [{ ...flatOut, steer }]);
     events.push(...state.events);
   }
-  return { events, rider };
+  return { events, rider, state };
 };
 
 const dropOnto = (metres: number): RaceEvent[] => {
@@ -3321,6 +3329,62 @@ describe("jumping", () => {
     expect(
       cut.events.map((event) => event.kind === "crash" && event.cause)
     ).toStrictEqual(["prop"]);
+  });
+
+  it("cutting in from exactly the edge line of a ramp just short of its lip hits the side, the same as cutting in from beside it", () => {
+    const cut = besideRamp(
+      { lateralSpeed: -4, s: 1015.6, speed: 60, x: 0.7 },
+      1
+    );
+    expect(
+      cut.events.map((event) => event.kind === "crash" && event.cause)
+    ).toStrictEqual(["prop"]);
+  });
+
+  it("a bike skimming low from exactly the edge line of a ramp glances off its side instead of popping up onto the deck", () => {
+    const skim = besideRamp(
+      {
+        air: 0.1,
+        lateralSpeed: -0.8,
+        s: 1010,
+        speed: 40,
+        verticalSpeed: 0,
+        x: 0.7,
+      },
+      3
+    );
+    expect(skim.events.map((event) => event.kind)).toStrictEqual(["glance"]);
+    expect(skim.rider.air).toBeLessThan(0.2);
+    expect(skim.rider.x).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it("a rider who glances off a ramp from exactly its edge line and lets go of the bars rides on along its side on the ground", () => {
+    const brush = besideRamp(
+      { lateralSpeed: -0.5, s: 1008, speed: 20, x: 0.7 },
+      1
+    );
+    const events = [
+      ...brush.events,
+      ...hold(brush.state, rampRoad, flatOut, 0.25),
+    ];
+    expect(events.map((event) => event.kind)).toStrictEqual(["glance"]);
+    expect(brush.rider.s).toBeLessThan(1016);
+    expect(brush.rider.air).toBe(0);
+    expect(brush.rider.airborne).toBeFalsy();
+  });
+
+  it("a hard landing on the edge of a ramp off the middle of the road crashes the same as one on a ramp in the middle", () => {
+    const landing = { air: 0.4, s: 1010, speed: 40, verticalSpeed: -10 };
+    const centred = besideRamp({ ...landing, lateralSpeed: -0.8, x: 0.71 }, 3);
+    const offCentre = besideRamp(
+      { ...landing, lateralSpeed: -0.8, x: 4.21 },
+      3,
+      offCentreRampRoad
+    );
+    expect(
+      centred.events.map((event) => event.kind === "crash" && event.cause)
+    ).toStrictEqual(["landing"]);
+    expect(offCentre.events).toStrictEqual(centred.events);
   });
 
   it("a bike coming down onto a ramp just short of its lip touches down on the deck instead of falling through it", () => {
