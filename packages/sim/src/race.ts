@@ -36,6 +36,7 @@ const GRID_ROW_GAP = 7;
 const FIRST_COP_S = 1500;
 const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
+const HAZARD_DICE_SALT = 0x2e_c3;
 const DEFAULT_LEVEL = 3;
 export const MAX_RIVALS = 14;
 
@@ -310,6 +311,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     cars: createTraffic(track, createRandom(seed)),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
+    hazardDice: nextSeed(seed + HAZARD_DICE_SALT),
     hazards: [],
     pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
     police: {

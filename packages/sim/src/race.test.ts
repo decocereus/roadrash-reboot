@@ -3698,6 +3698,67 @@ const leaned = (kmh: number) => {
   ).crashes.map((crash) => crash.hazard?.id);
 };
 
+const slowTruckAt = (state: RaceState, s: number, x: number): void => {
+  state.cars.push({
+    cruiseSpeed: 10,
+    halfLength: 4.2,
+    halfWidth: 1.2,
+    height: 3.1,
+    paint: 1,
+    s,
+    speed: 10,
+    x,
+  });
+};
+
+const pilotBehindTruck = (road: Track) => {
+  const state = field(road, 1, 0, 0);
+  slowTruckAt(state, 970, 1.8);
+  const rider = player(state);
+  rider.s = 920;
+  rider.x = 1.8;
+  rider.speed = 45;
+  return pilotFrom(state, road, 4);
+};
+
+const copBehindTruck = (road: Track) => {
+  const state = field(road, 1, 0, 1);
+  slowTruckAt(state, 970, 1.8);
+  const cop = riderAt(state, 1);
+  cop.parked = false;
+  cop.post = 900;
+  cop.chase = 0;
+  cop.s = 920;
+  cop.x = 1.8;
+  cop.speed = 45;
+  const target = player(state);
+  target.s = 935;
+  target.x = -3;
+  target.speed = 45;
+  const inputs = state.riders.map(() => ({ ...neutralInput }));
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
+    pilotInput(state, road, 1, inputs[1] ?? { ...neutralInput });
+    inputs[0] = { ...neutralInput, throttle: 0.6 };
+    stepRace(state, road, inputs);
+    events.push(...state.events);
+  }
+  return events.filter((event) => event.rider === 1);
+};
+
+const diceAfterPiloting = (road: Track): number => {
+  const state = field(road, 1, 0, 0);
+  const rider = player(state);
+  rider.s = 800;
+  rider.x = 1.8;
+  rider.speed = 170 / KMH;
+  pilotFrom(state, road, 3);
+  return state.dice;
+};
+
+const downed = (events: readonly RaceEvent[]): RaceEvent[] =>
+  events.filter((event) => event.kind === "crash");
+
 const steeringHardInto = (kmh: number) => {
   const speed = kmh / KMH;
   const sideways = lateralSpeedLimit(streetBike, speed);
@@ -3975,6 +4036,21 @@ describe("road hazards", () => {
     ).toStrictEqual([]);
   });
 
+  it("the pilot never dodges a rock into the back of a slow truck", () => {
+    expect(downed(pilotBehindTruck(hazardFreeRoad).events)).toStrictEqual([]);
+    const withRock = pilotBehindTruck(
+      roadWith(placedAt("rock", 1000, 0, "centre"))
+    );
+    expect(downed(withRock.events)).toStrictEqual([]);
+  });
+
+  it("a pursuing cop never dodges a rock into the back of a slow truck", () => {
+    expect(downed(copBehindTruck(hazardFreeRoad))).toStrictEqual([]);
+    expect(
+      downed(copBehindTruck(roadWith(placedAt("rock", 1000, 0, "centre"))))
+    ).toStrictEqual([]);
+  });
+
   it("a rock lying in an oil slick still bumps the bike: every hazard touched acts", () => {
     const run = rideAt(
       roadWith(
@@ -3988,6 +4064,22 @@ describe("road hazards", () => {
     );
     expect(effectsOf(run.events)).toStrictEqual(["slip", "bump"]);
   });
+
+  it.each([5, 20])(
+    "the pilot dodges a rock to the clear side, not into a second rock %i m beyond it",
+    (apart) => {
+      const run = pilotAt(
+        roadWith(
+          placedAt("rock", 1000, 1.8, "first"),
+          placedAt("rock", 1000 + apart, 3.08, "second")
+        ),
+        800,
+        6
+      );
+      expect(effectsOf(run.events)).toStrictEqual([]);
+      expect(downed(run.events)).toStrictEqual([]);
+    }
+  );
 
   it("a bike already steering clear of a rock sideways does not touch it as it passes", () => {
     const run = rideAt(
@@ -4018,5 +4110,9 @@ describe("road hazards", () => {
       flatOut,
     ]);
     expect(state.events.map((event) => event.kind)).toStrictEqual(["land"]);
+  });
+
+  it("a pilot looking at a hazard leaves the dice for jumps and fights untouched", () => {
+    expect(diceAfterPiloting(boulder)).toBe(diceAfterPiloting(hazardFreeRoad));
   });
 });

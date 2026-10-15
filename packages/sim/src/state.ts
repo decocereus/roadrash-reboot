@@ -309,6 +309,7 @@ export interface RaceSetup {
 export interface RaceState {
   tick: number;
   dice: number;
+  hazardDice: number;
   readonly police: PoliceRules;
   readonly pacing: PacingRules;
   readonly riders: RiderState[];
