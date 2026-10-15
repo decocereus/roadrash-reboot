@@ -34,8 +34,8 @@ import * as THREE from "three";
 
 import { benchOf } from "../career/bench.ts";
 import { bikeColour } from "../career/colours.ts";
-import { createBike, createFleet, poseOnTrack } from "./actors.ts";
-import type { BikeModel, Fleet } from "./actors.ts";
+import { createBikes, createFleet, poseOnTrack, reachOf } from "./actors.ts";
+import type { Bikes, Fleet, Reach } from "./actors.ts";
 import { loadAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
@@ -115,7 +115,7 @@ interface Pose {
 }
 
 interface RiderView {
-  readonly bike: BikeModel;
+  readonly bike: THREE.Object3D;
   readonly figure: RiderFigure;
   readonly before: Pose;
   readonly after: Pose;
@@ -382,6 +382,8 @@ export async function createGame(
   world.scene.add(fleet.group);
   let previousCars = new Float64Array(race.cars.length);
   let views: RiderView[] = [];
+  let bikes: Bikes | null = null;
+  let reach: Reach = reachOf(world.shading);
   let inputs: RiderInput[] = [];
 
   let phase: GamePhase = "attract";
@@ -460,11 +462,15 @@ export async function createGame(
 
   const dropViews = () => {
     for (const view of views) {
-      world.scene.remove(view.bike.root, view.figure.root);
-      view.bike.dispose();
+      world.scene.remove(view.figure.root);
       view.figure.dispose();
     }
     views = [];
+    if (bikes) {
+      world.scene.remove(bikes.group);
+      bikes.dispose();
+      bikes = null;
+    }
   };
 
   const dropFleet = () => {
@@ -474,20 +480,26 @@ export async function createGame(
 
   const buildViews = () => {
     dropViews();
+    const fleetOfBikes = createBikes(
+      assets,
+      world.shading,
+      race.riders.map((rider) => ({
+        paint: rider.profile.paint,
+        police: rider.profile.role === "police",
+      }))
+    );
+    bikes = fleetOfBikes;
+    reach = reachOf(world.shading);
+    world.scene.add(fleetOfBikes.group);
     views = race.riders.map((rider, index) => {
-      const bike = createBike(
-        assets,
-        world.shading,
-        rider.profile.paint,
-        rider.profile.role === "police"
-      );
+      const bike = fleetOfBikes.roots[index] ?? new THREE.Object3D();
       const figure = createRiderFigure(
         assets,
         world.shading,
         rider.profile.jacket,
         index
       );
-      world.scene.add(bike.root, figure.root);
+      world.scene.add(figure.root);
       const view: RiderView = {
         after: emptyPose(),
         before: emptyPose(),
@@ -806,8 +818,8 @@ export async function createGame(
       } else if (strike) {
         ({ pose, reach, rise = 0 } = strike);
       }
-      figure.root.position.copy(bike.root.position);
-      figure.root.quaternion.copy(bike.root.quaternion);
+      figure.root.position.copy(bike.position);
+      figure.root.quaternion.copy(bike.quaternion);
       figure.root.translateY(figure.seat.y);
       figure.root.translateZ(figure.seat.z);
       view.tumbleAngle = 0;
@@ -888,7 +900,11 @@ export async function createGame(
     figure.animate(stance, seconds);
   };
 
+  const withinReach = (s: number): boolean =>
+    s >= subject.s - reach.behind && s <= subject.s + reach.ahead;
+
   const drawRider = (
+    index: number,
     rider: RiderState,
     view: RiderView,
     blend: number,
@@ -908,8 +924,11 @@ export async function createGame(
       ? Math.atan2(rider.verticalSpeed, Math.max(rider.speed, 1)) * 0.6
       : 0;
 
-    poseOnTrack(bike.root, track, s, x, air, heading, lean, flightPitch);
-    bike.spin(rider.speed * seconds);
+    poseOnTrack(bike, track, s, x, air, heading, lean, flightPitch);
+    bikes?.spin(index, rider.speed * seconds);
+    if (index === 0 || withinReach(s)) {
+      bikes?.show(index);
+    }
     placeFigure(
       rider,
       view,
@@ -940,7 +959,7 @@ export async function createGame(
       tag.style.visibility = "hidden";
       return;
     }
-    tagPoint.copy(view.bike.root.position);
+    tagPoint.copy(view.bike.position);
     tagPoint.y += TAG_HEIGHT;
     tagPoint.project(chase.camera);
     if (tagPoint.z > 1) {
@@ -955,12 +974,14 @@ export async function createGame(
 
   const draw = (blend: number, seconds: number) => {
     clock += seconds;
-    for (const [index, rider] of race.riders.entries()) {
+    let index = -1;
+    for (const rider of race.riders) {
+      index += 1;
       const view = views[index];
       if (!view) {
         continue;
       }
-      drawRider(rider, view, blend, seconds);
+      drawRider(index, rider, view, blend, seconds);
       if (index === 0) {
         const onBike = placed.seated || placed.s < placed.bodyS;
         subject.s = onBike ? placed.s : placed.bodyS;
@@ -969,6 +990,10 @@ export async function createGame(
         subject.speed = placed.seated ? rider.speed : 0;
         subject.tuck = placed.seated ? rider.tuck : 0;
       }
+    }
+    const [lead] = views;
+    if (bikes && lead) {
+      bikes.commit(lead.bike.position);
     }
     profiler?.lap("riders");
 

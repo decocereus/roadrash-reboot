@@ -79,6 +79,8 @@ const lights: ReadonlyMap<string, readonly [string, number]> = new Map([
   ["light_ind", ["#ff9a1f", 1.6]],
 ]);
 
+export const glows = (slot: string): boolean => lights.has(slot);
+
 const MISSING = "#ff00ff";
 
 export type Palette = ReadonlyMap<string, THREE.ColorRepresentation>;
