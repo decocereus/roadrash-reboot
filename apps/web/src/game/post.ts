@@ -110,6 +110,7 @@ const byVariantThenMaterial = (
   a.z - b.z;
 
 export interface Pipeline {
+  prepare: (scene: THREE.Scene) => void;
   setLook: (look: Look) => void;
   setBloomScale: (scale: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
@@ -125,6 +126,12 @@ export const createPipeline = (
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
   normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
   const normalMaterial = new THREE.MeshNormalMaterial();
+  const instancedDepth = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking,
+  });
+  const skinnedDepth = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking,
+  });
   const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
     samples: SAMPLES,
     type: THREE.HalfFloatType,
@@ -175,11 +182,22 @@ export const createPipeline = (
       normalTarget.depthTexture?.dispose();
       normalTarget.dispose();
       normalMaterial.dispose();
+      instancedDepth.dispose();
+      skinnedDepth.dispose();
       sceneTarget.dispose();
       inkTarget.dispose();
       bloom.dispose();
       line.dispose();
       grade.dispose();
+    },
+    prepare(scene) {
+      scene.traverse((node) => {
+        if (node instanceof THREE.InstancedMesh) {
+          node.customDepthMaterial ??= instancedDepth;
+        } else if (node instanceof THREE.SkinnedMesh) {
+          node.customDepthMaterial ??= skinnedDepth;
+        }
+      });
     },
     render(scene, camera) {
       const { background, fog } = scene;

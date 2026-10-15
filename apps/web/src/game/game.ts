@@ -553,6 +553,7 @@ export async function createGame(
     world.follow(chase.camera, player().s);
     const samples = world.samples();
     world.scene.add(samples);
+    pipeline.prepare(world.scene);
     const restore = revealAll(world.scene);
     pipeline.render(world.scene, chase.camera);
     restore();
