@@ -4,6 +4,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 
 import { seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
+import type { Part } from "./profile.ts";
 
 const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
@@ -116,7 +117,10 @@ export interface Pipeline {
   dispose: () => void;
 }
 
-export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
+export const createPipeline = (
+  renderer: THREE.WebGLRenderer,
+  lap?: (part: Part) => void
+): Pipeline => {
   renderer.setOpaqueSort(byVariantThenMaterial);
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
   normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
@@ -181,6 +185,7 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       const { background, fog } = scene;
       scene.matrixWorldAutoUpdate = false;
       scene.updateMatrixWorld();
+      lap?.("matrices");
       renderer.shadowMap.needsUpdate = true;
       uniform(line, "range").value.set(camera.near, camera.far);
       scene.overrideMaterial = normalMaterial;
@@ -191,15 +196,20 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       renderer.setClearColor(FACING_CAMERA, 1);
       renderer.clear();
       renderer.render(scene, camera);
+      lap?.("normal");
       scene.overrideMaterial = null;
       scene.background = background;
       scene.fog = fog;
       seesFx(camera, true);
       renderer.setRenderTarget(sceneTarget);
       renderer.render(scene, camera);
+      lap?.("main");
       line.render(renderer, inkTarget, sceneTarget, 0, false);
+      lap?.("line");
       bloom.render(renderer, inkTarget, inkTarget, 0, false);
+      lap?.("bloom");
       grade.render(renderer, inkTarget, inkTarget, 0, false);
+      lap?.("grade");
     },
     resize(width, height, pixelRatio) {
       cssWidth = width;

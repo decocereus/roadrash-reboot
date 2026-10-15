@@ -32,6 +32,7 @@ import { roadIds, trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
+import { benchOf } from "../career/bench.ts";
 import { bikeColour } from "../career/colours.ts";
 import { createBike, createFleet, poseOnTrack } from "./actors.ts";
 import type { BikeModel, Fleet } from "./actors.ts";
@@ -49,6 +50,7 @@ import type {
 } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { BLOOM_SCALE, createPipeline } from "./post.ts";
+import { createProfiler, profileModeOf } from "./profile.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, RiderPose, Stance } from "./rider-figure.ts";
 import { createWorld, SHADOW_MAP } from "./world.ts";
@@ -246,8 +248,9 @@ const out = (rider: RiderState): boolean =>
   rider.mode === "busted" || rider.mode === "wrecked";
 
 const autopilot =
-  import.meta.env.DEV &&
-  new URLSearchParams(globalThis.location.search).has("autopilot");
+  (import.meta.env.DEV &&
+    new URLSearchParams(globalThis.location.search).has("autopilot")) ||
+  benchOf(globalThis.location.search) !== null;
 
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
@@ -360,7 +363,12 @@ export async function createGame(
   let rung = 0;
   let pixelRatio = pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio();
   renderer.setPixelRatio(pixelRatio);
-  const pipeline = createPipeline(renderer);
+  const profileMode = profileModeOf(globalThis.location.search);
+  const profiler =
+    profileMode === "off"
+      ? null
+      : createProfiler(renderer, profileMode === "gpu");
+  const pipeline = createPipeline(renderer, profiler?.lap);
   const meter = wantsFrameMeter() ? createFrameMeter(canvas) : null;
 
   let world = createWorld(track);
@@ -962,6 +970,7 @@ export async function createGame(
         subject.tuck = placed.seated ? rider.tuck : 0;
       }
     }
+    profiler?.lap("riders");
 
     for (const [index, car] of race.cars.entries()) {
       const from = previousCars[index] ?? car.s;
@@ -969,9 +978,12 @@ export async function createGame(
       fleet.place(track, index, wrapped ? car.s : mix(from, car.s, blend));
     }
     fleet.commit(subject.s);
+    profiler?.lap("fleet");
 
     chase.update(track, subject, seconds);
+    profiler?.lap("camera");
     world.follow(chase.camera, subject.s);
+    profiler?.lap("world");
     pipeline.render(world.scene, chase.camera);
     placeTag();
   };
@@ -1149,29 +1161,39 @@ export async function createGame(
   resize();
   buildViews();
 
-  let last = performance.now();
-  renderer.setAnimationLoop((now) => {
-    if (skipsVsync(now)) {
-      return;
-    }
-    const seconds = clamp((now - last) / 1000, 0, MAX_FRAME_SECONDS);
-    last = now;
-    lastDrawn = now;
-    if (halted()) {
-      return;
-    }
+  const advance = (seconds: number): number => {
     if (clockReset) {
       accumulator = 0;
       clockReset = false;
     }
     accumulator += seconds;
+    let ticks = 0;
     while (accumulator >= TICK_SECONDS && !halted()) {
       tick();
+      ticks += 1;
       accumulator -= TICK_SECONDS;
       if (clockReset) {
         break;
       }
     }
+    return ticks;
+  };
+
+  let last = performance.now();
+  renderer.setAnimationLoop((now) => {
+    if (skipsVsync(now)) {
+      return;
+    }
+    const interval = now - last;
+    const seconds = clamp(interval / 1000, 0, MAX_FRAME_SECONDS);
+    last = now;
+    lastDrawn = now;
+    if (halted()) {
+      return;
+    }
+    profiler?.start();
+    const ticks = advance(seconds);
+    profiler?.lap("sim");
     const me = player();
     const riding = me.mode === "riding" && phase !== "attract";
     const [own] = inputs;
@@ -1186,6 +1208,7 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
+    profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     govern(seconds);
     meter?.frame({
@@ -1205,6 +1228,13 @@ export async function createGame(
       hudClock = 0;
       report();
     }
+    profiler?.finish({
+      interval,
+      pixelRatio,
+      rung,
+      tick: race.tick,
+      ticks,
+    });
   });
 
   return {
@@ -1218,6 +1248,7 @@ export async function createGame(
       renderer.setAnimationLoop(null);
       observer.disconnect();
       meter?.dispose();
+      profiler?.dispose();
       controls.dispose();
       sound.dispose();
       dropViews();

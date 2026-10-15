@@ -1,0 +1,290 @@
+import { Schema } from "effect";
+
+export const traceEvent = Schema.Struct({
+  args: Schema.optionalKey(
+    Schema.Struct({ name: Schema.optionalKey(Schema.String) })
+  ),
+  dur: Schema.optionalKey(Schema.Number),
+  name: Schema.String,
+  ph: Schema.String,
+  pid: Schema.Number,
+  tid: Schema.Number,
+  ts: Schema.Number,
+});
+
+export type TraceEvent = typeof traceEvent.Type;
+
+const GC_NAMES = new Set(["MinorGC", "MajorGC"]);
+const LONG_TASK_MS = 50;
+const MAIN_THREAD = "CrRendererMain";
+
+export interface PauseSummary {
+  readonly count: number;
+  readonly totalMs: number;
+  readonly maxMs: number;
+}
+
+export interface TraceSummary {
+  readonly minorGc: PauseSummary;
+  readonly majorGc: PauseSummary;
+  readonly longTasks: PauseSummary;
+  readonly longestTaskMs: number;
+  readonly spanMs: number;
+}
+
+const pauses = (durations: readonly number[]): PauseSummary => ({
+  count: durations.length,
+  maxMs: Math.max(0, ...durations),
+  totalMs: durations.reduce((sum, each) => sum + each, 0),
+});
+
+export const summariseTrace = (events: readonly TraceEvent[]): TraceSummary => {
+  const mainThreads = new Set(
+    events
+      .filter(
+        (event) =>
+          event.name === "thread_name" && event.args?.name === MAIN_THREAD
+      )
+      .map((event) => `${event.pid}:${event.tid}`)
+  );
+  const onMain = events.filter(
+    (event) => event.ph === "X" && mainThreads.has(`${event.pid}:${event.tid}`)
+  );
+  const millis = (name: string): number[] =>
+    onMain
+      .filter((event) => event.name === name)
+      .map((event) => (event.dur ?? 0) / 1000);
+  const outermost: number[] = [];
+  let coveredUntil = Number.NEGATIVE_INFINITY;
+  for (const event of onMain.toSorted((a, b) => a.ts - b.ts)) {
+    const end = event.ts + (event.dur ?? 0);
+    if (event.ts >= coveredUntil) {
+      outermost.push((event.dur ?? 0) / 1000);
+      coveredUntil = end;
+    }
+  }
+  const stamps = onMain.map((event) => event.ts);
+  return {
+    longTasks: pauses(outermost.filter((each) => each > LONG_TASK_MS)),
+    longestTaskMs: Math.max(0, ...outermost),
+    majorGc: pauses(millis("MajorGC")),
+    minorGc: pauses(millis("MinorGC")),
+    spanMs:
+      stamps.length > 0
+        ? (Math.max(...stamps) - Math.min(...stamps)) / 1000
+        : 0,
+  };
+};
+
+export const gcNamesSeen = (events: readonly TraceEvent[]): string[] => [
+  ...new Set(
+    events
+      .map((event) => event.name)
+      .filter((name) => GC_NAMES.has(name) || name.includes("GC"))
+  ),
+];
+
+const CallFrame = Schema.Struct({
+  columnNumber: Schema.Number,
+  functionName: Schema.String,
+  lineNumber: Schema.Number,
+  url: Schema.String,
+});
+
+export const cpuProfile = Schema.Struct({
+  profile: Schema.Struct({
+    nodes: Schema.Array(
+      Schema.Struct({ callFrame: CallFrame, id: Schema.Number })
+    ),
+    samples: Schema.Array(Schema.Number),
+    timeDeltas: Schema.Array(Schema.Number),
+  }),
+});
+
+export type CpuProfile = typeof cpuProfile.Type;
+
+const sourceMap = Schema.Struct({
+  mappings: Schema.String,
+  names: Schema.Array(Schema.String),
+  sources: Schema.Array(Schema.String),
+  sourcesContent: Schema.optionalKey(
+    Schema.Array(Schema.NullOr(Schema.String))
+  ),
+});
+
+type SourceMap = typeof sourceMap.Type;
+
+const BASE64 =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const VLQ_BASE = 32;
+
+const decodeVlq = (text: string): number[] => {
+  const values: number[] = [];
+  let value = 0;
+  let scale = 1;
+  for (const char of text) {
+    const digit = BASE64.indexOf(char);
+    value += (digit % VLQ_BASE) * scale;
+    if (digit >= VLQ_BASE) {
+      scale *= VLQ_BASE;
+    } else {
+      const magnitude = Math.floor(value / 2);
+      values.push(value % 2 === 1 ? -magnitude : magnitude);
+      value = 0;
+      scale = 1;
+    }
+  }
+  return values;
+};
+
+interface Segment {
+  readonly column: number;
+  readonly source: number;
+  readonly line: number;
+  readonly sourceColumn: number;
+  readonly name: number;
+}
+
+const segmentsOf = (map: SourceMap): Segment[][] => {
+  const state = { line: 0, name: 0, source: 0, sourceColumn: 0 };
+  return map.mappings.split(";").map((line) => {
+    let column = 0;
+    return line
+      .split(",")
+      .filter((piece) => piece.length > 0)
+      .map((piece) => {
+        const [dColumn = 0, dSource = 0, dLine = 0, dSourceColumn = 0, dName] =
+          decodeVlq(piece);
+        column += dColumn;
+        state.source += dSource;
+        state.line += dLine;
+        state.sourceColumn += dSourceColumn;
+        if (dName !== undefined) {
+          state.name += dName;
+        }
+        return {
+          column,
+          line: state.line,
+          name: dName === undefined ? -1 : state.name,
+          source: state.source,
+          sourceColumn: state.sourceColumn,
+        };
+      });
+  });
+};
+
+interface LoadedMap {
+  readonly map: SourceMap;
+  readonly lines: Segment[][];
+}
+
+const loadMap = async (url: string): Promise<LoadedMap | null> => {
+  try {
+    const response = await fetch(`${url}.map`);
+    if (!response.ok) {
+      return null;
+    }
+    const map = Schema.decodeUnknownSync(sourceMap)(await response.json());
+    return { lines: segmentsOf(map), map };
+  } catch {
+    return null;
+  }
+};
+
+const originalOf = (
+  loaded: LoadedMap,
+  line: number,
+  column: number
+): string | null => {
+  const segments = loaded.lines[line] ?? [];
+  const found = segments.findLast((segment) => segment.column <= column);
+  if (!found) {
+    return null;
+  }
+  const source = (loaded.map.sources[found.source] ?? "?")
+    .replace(/^(?:\.\.\/)+/u, "")
+    .replace(/^node_modules\/\.pnpm\/[^/]+\/node_modules\//u, "");
+  const lines = loaded.map.sourcesContent?.[found.source]?.split("\n") ?? [];
+  const text = lines[found.line]?.trim() ?? "";
+  const name = loaded.map.names[found.name];
+  return `${source}:${found.line + 1}${name ? ` ${name}` : ""}  ${text.slice(0, 70)}`;
+};
+
+export interface HotFunction {
+  readonly selfMs: number;
+  readonly share: number;
+  readonly name: string;
+  readonly where: string;
+}
+
+const IDLE = new Set(["(idle)", "(program)", "(root)"]);
+
+export interface Hotspots {
+  readonly busyMs: number;
+  readonly idleMs: number;
+  readonly programMs: number;
+  readonly top: HotFunction[];
+}
+
+export const hottest = async (
+  profile: CpuProfile,
+  limit: number
+): Promise<Hotspots> => {
+  const byNode = new Map(profile.profile.nodes.map((node) => [node.id, node]));
+  const selfByKey = new Map<string, number>();
+  const frameByKey = new Map<string, typeof CallFrame.Type>();
+  const special = new Map<string, number>();
+  for (const [index, sample] of profile.profile.samples.entries()) {
+    const node = byNode.get(sample);
+    if (!node) {
+      continue;
+    }
+    if (IDLE.has(node.callFrame.functionName)) {
+      const { functionName } = node.callFrame;
+      const micros = profile.profile.timeDeltas[index] ?? 0;
+      special.set(
+        functionName,
+        (special.get(functionName) ?? 0) + micros / 1000
+      );
+      continue;
+    }
+    const { functionName, url, lineNumber, columnNumber } = node.callFrame;
+    const key = `${functionName}|${url}|${lineNumber}|${columnNumber}`;
+    const micros = profile.profile.timeDeltas[index] ?? 0;
+    selfByKey.set(key, (selfByKey.get(key) ?? 0) + micros / 1000);
+    frameByKey.set(key, node.callFrame);
+  }
+  const busyMs = [...selfByKey.values()].reduce((sum, each) => sum + each, 0);
+  const ranked = [...selfByKey.entries()]
+    .toSorted((a, b) => b[1] - a[1])
+    .slice(0, limit);
+  const urls = new Set(
+    ranked.map(([key]) => frameByKey.get(key)?.url ?? "").filter(Boolean)
+  );
+  const maps = new Map(
+    await Promise.all(
+      [...urls].map(async (url) => [url, await loadMap(url)] as const)
+    )
+  );
+  const top = ranked.map(([key, selfMs]) => {
+    const frame = frameByKey.get(key);
+    const loaded = frame ? maps.get(frame.url) : undefined;
+    const original =
+      frame && loaded
+        ? originalOf(loaded, frame.lineNumber, frame.columnNumber)
+        : null;
+    const file = frame?.url.split("/").at(-1) ?? "";
+    return {
+      name: frame?.functionName || "(anonymous)",
+      selfMs,
+      share: busyMs > 0 ? selfMs / busyMs : 0,
+      where: original ?? `${file}:${(frame?.lineNumber ?? 0) + 1}`,
+    };
+  });
+  return {
+    busyMs,
+    idleMs: special.get("(idle)") ?? 0,
+    programMs: special.get("(program)") ?? 0,
+    top,
+  };
+};

@@ -11,3 +11,4 @@ coverage/
 .tanstack/
 .output/
 .wrangler/
+tools/perf/results/
