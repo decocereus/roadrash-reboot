@@ -49,6 +49,12 @@ export interface HazardMarks {
   dispose: () => void;
 }
 
+const CRATE_TURN = 0.15;
+const CRATE_HALF_WIDTH = 0.38;
+const CRATE_HALF_LENGTH = 0.39;
+
+const round = (): number => 1;
+
 const lobe = (angle: number, seed: number): number =>
   0.82 +
   0.12 * Math.sin(angle * 3 + seed) +
@@ -59,7 +65,8 @@ const blob = (
     radius: number,
     colour: (spoke: number) => THREE.Color,
   ])[],
-  seed: number
+  seed: number,
+  outline: (angle: number, seed: number) => number = lobe
 ): THREE.BufferGeometry => {
   const positions: number[] = [0, 0, 0];
   const colours: number[] = [];
@@ -68,7 +75,7 @@ const blob = (
   for (const [radius, colourOf] of rings) {
     for (let spoke = 0; spoke < BLOB_SPOKES; spoke += 1) {
       const angle = (spoke / BLOB_SPOKES) * Math.PI * 2;
-      const reach = radius * lobe(angle, seed);
+      const reach = radius * outline(angle, seed);
       positions.push(Math.cos(angle) * reach, 0, Math.sin(angle) * reach);
       const colour = colourOf(spoke);
       colours.push(colour.r, colour.g, colour.b);
@@ -187,13 +194,13 @@ const pothole = (): THREE.BufferGeometry =>
   stretched(
     blob(
       [
-        [0.7, () => HOLE],
-        [0.84, () => HOLE_WALL],
-        [0.92, () => RIM],
-        [1.05, () => RIM],
-        [1.4, (spoke) => (spoke % 2 === 0 ? HOLE_WALL : RIM)],
+        [0.6, () => HOLE],
+        [0.8, () => HOLE_WALL],
+        [0.9, () => RIM],
+        [1, (spoke) => (spoke % 2 === 0 ? HOLE_WALL : RIM)],
       ],
-      0.4
+      0.4,
+      round
     ),
     "pothole",
     DECAL_LIFT
@@ -223,9 +230,13 @@ const boulder = (): THREE.BufferGeometry => {
 };
 
 const crate = (): THREE.BufferGeometry => {
-  const { halfLength, halfWidth, height } = hazardSizes.rock;
-  const body = new THREE.BoxGeometry(halfWidth * 2, height, halfLength * 1.8)
-    .rotateY(0.35)
+  const { height } = hazardSizes.rock;
+  const body = new THREE.BoxGeometry(
+    CRATE_HALF_WIDTH * 2,
+    height,
+    CRATE_HALF_LENGTH * 2
+  )
+    .rotateY(CRATE_TURN)
     .translate(0, height / 2, 0);
   const colours: number[] = [];
   const { count } = body.getAttribute("position");
@@ -233,10 +244,14 @@ const crate = (): THREE.BufferGeometry => {
     colours.push(CRATE.r, CRATE.g, CRATE.b);
   }
   body.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
-  const straps = [-0.22, 0.22].map((offset) => {
-    const strap = new THREE.BoxGeometry(halfWidth * 2.04, height * 1.02, 0.08)
+  const straps = [-0.2, 0.2].map((offset) => {
+    const strap = new THREE.BoxGeometry(
+      CRATE_HALF_WIDTH * 2.02,
+      height * 1.02,
+      0.08
+    )
       .translate(0, height / 2, offset)
-      .rotateY(0.35);
+      .rotateY(CRATE_TURN);
     const tint: number[] = [];
     for (
       let index = 0;
