@@ -133,6 +133,7 @@ export interface RiderState {
   bumpedBy: number;
   hazardSeen: number;
   hazardMissed: boolean;
+  pilotLine: number;
   jumpSeen: number;
   jumpMisread: boolean;
   offRoad: boolean;

@@ -158,6 +158,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   modeTicks: 0,
   offRoad: false,
   parked: false,
+  pilotLine: Number.NaN,
   post: spot.s,
   profile: entry.profile,
   revs: 0,

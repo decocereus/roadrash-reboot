@@ -245,6 +245,9 @@ const shoveOff = (
   report(state, riderIndex, rider, hazard, "stagger");
 };
 
+export const rockUpsetShare = (speed: number): number =>
+  ROCK_UPSET * (speed / ROCK_UPSET_SPEED) ** 3;
+
 const bumpOver = (
   state: RaceState,
   track: Track,
@@ -254,10 +257,7 @@ const bumpOver = (
   hazard: Hazard
 ): void => {
   const pace = rider.speed;
-  const upset =
-    lateralSpeedLimit(rider.bike, pace) *
-    ROCK_UPSET *
-    (pace / ROCK_UPSET_SPEED) ** 3;
+  const upset = lateralSpeedLimit(rider.bike, pace) * rockUpsetShare(pace);
   const lean =
     Math.sign(rider.lateralSpeed) || Math.sign(rider.x - hazard.x) || 1;
   rider.speed *= 1 - ROCK_LOSS - ROCK_FAST_LOSS * Math.min(1, pace / ROCK_FAST);
