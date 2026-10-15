@@ -4069,6 +4069,23 @@ describe("road hazards", () => {
     expect(downed(withRock.events)).toStrictEqual([]);
   });
 
+  it.each([
+    ["pothole", "rut"],
+    ["oil", "slick"],
+  ] as const)(
+    "the pilot escaping a slow truck never weakens the escape to miss a %s in the lane it escapes to",
+    (kind, id) => {
+      expect(
+        downed(pilotBehindTruck(hazardFreeRoad, 960).events)
+      ).toStrictEqual([]);
+      const run = pilotBehindTruck(
+        roadWith(placedAt(kind, 970, -1.8, id)),
+        960
+      );
+      expect(downed(run.events)).toStrictEqual([]);
+    }
+  );
+
   it("a rock on a climb throws the bike as high as one on the flat: it rides on at 130 km/h and goes down at 220 km/h", () => {
     expect(airSecondsOf(rockOn(climbThenFlat, 130).events)).toStrictEqual(
       airSecondsOf(rockOn(hazardFreeRoad, 130).events)
