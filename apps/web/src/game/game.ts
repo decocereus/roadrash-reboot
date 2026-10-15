@@ -405,7 +405,7 @@ export async function createGame(
   let previousCars = new Float64Array(race.cars.length);
   let views: RiderView[] = [];
   let bikes: Bikes | null = null;
-  let reach: Reach = reachOf(world.shading);
+  let riderReach: Reach = reachOf(world.shading);
   let inputs: RiderInput[] = [];
 
   let phase: GamePhase = "attract";
@@ -512,7 +512,7 @@ export async function createGame(
       }))
     );
     bikes = fleetOfBikes;
-    reach = reachOf(world.shading);
+    riderReach = reachOf(world.shading);
     world.scene.add(fleetOfBikes.group);
     views = race.riders.map((rider, index) => {
       const bike = fleetOfBikes.roots[index] ?? new THREE.Object3D();
@@ -922,7 +922,7 @@ export async function createGame(
   };
 
   const withinReach = (s: number): boolean =>
-    s >= subject.s - reach.behind && s <= subject.s + reach.ahead;
+    s >= subject.s - riderReach.behind && s <= subject.s + riderReach.ahead;
 
   const drawRider = (
     index: number,

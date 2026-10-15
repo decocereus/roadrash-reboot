@@ -142,7 +142,6 @@ const instanced = (
 ): THREE.InstancedMesh => {
   const mesh = new THREE.InstancedMesh(geometry, material, capacity);
   mesh.count = 0;
-  mesh.visible = false;
   mesh.frustumCulled = false;
   mesh.castShadow = shadows;
   mesh.receiveShadow = shadows;
