@@ -129,7 +129,8 @@ export interface RiderState {
   slip: number;
   slipFrom: number;
   slipTicks: number;
-  hazardContact: number;
+  hazardContacts: number[];
+  bumpedBy: number;
   hazardSeen: number;
   hazardMissed: boolean;
   jumpSeen: number;
@@ -176,7 +177,7 @@ export interface Hazard extends HazardTag {
   readonly spawnTick: number;
 }
 
-export type HazardEffect = "slip" | "stagger" | "jolt";
+export type HazardEffect = "slip" | "stagger" | "bump" | "jolt";
 
 export type RaceEvent =
   | {
@@ -208,6 +209,8 @@ export type RaceEvent =
       readonly rider: number;
       readonly impact: number;
       readonly airSeconds: number;
+      readonly s: number;
+      readonly x: number;
     }
   | {
       readonly kind: "nearMiss";

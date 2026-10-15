@@ -110,7 +110,12 @@ const PUFF_AIR_SECONDS = 0.2;
 const PUFF_PER_IMPACT = 0.1;
 const POTHOLE_SAG_KICK = 1.6;
 const HAZARD_PUFF = 0.6;
-const HAZARD_JOLT = { jolt: 0.35, slip: 0.15, stagger: 0.6 } as const;
+const HAZARD_JOLT = {
+  bump: 0.55,
+  jolt: 0.35,
+  slip: 0.15,
+  stagger: 0.6,
+} as const satisfies Record<HazardEffect, number>;
 const BUMP_PER_IMPACT = 1 / 9;
 const KICK_HOLD_TICKS = 2;
 const KICK_RETRACT_TICKS = 3;
@@ -810,9 +815,10 @@ export async function createGame(
     speed: number,
     near: boolean
   ) => {
-    if (effect === "jolt") {
+    if (effect === "jolt" || effect === "bump") {
       view.sagSpeed += POTHOLE_SAG_KICK;
-    } else if (effect === "stagger" && near) {
+    }
+    if ((effect === "stagger" || effect === "bump") && near) {
       puffs?.burst(view.bike, HAZARD_PUFF, speed);
     }
   };

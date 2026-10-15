@@ -1,3 +1,4 @@
+import { hazardSizes } from "@racer/track/hazards";
 import type { HazardPlacement } from "@racer/track/hazards";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -22,6 +23,7 @@ import {
   validateSetup,
 } from "./race.ts";
 import {
+  BIKE_HALF_WIDTH,
   FULL_CONDITION,
   lateralSpeedLimit,
   MAX_STAMINA,
@@ -3696,10 +3698,27 @@ const leaned = (kmh: number) => {
   ).crashes.map((crash) => crash.hazard?.id);
 };
 
+const steeringHardInto = (kmh: number) => {
+  const speed = kmh / KMH;
+  const sideways = lateralSpeedLimit(streetBike, speed);
+  return rideAt(
+    boulder,
+    {
+      lateralSpeed: sideways,
+      s: 996 - 0.6 * speed,
+      speed,
+      x: 1.8 - 0.6 * sideways,
+    },
+    0,
+    1,
+    3
+  );
+};
+
 describe("road hazards", () => {
-  it("a rider who holds a steady line straight over an oil slick at 180 km/h stays up and keeps nearly all their speed", () => {
-    const run = rideAt(slick, atSpeed(180), 0, 0, 2);
-    const smooth = rideAt(hazardFreeRoad, atSpeed(180), 0, 0, 2);
+  it("a rider who holds a steady line straight over an oil slick at 220 km/h stays up and keeps nearly all their speed", () => {
+    const run = rideAt(slick, atSpeed(220), 0, 0, 2);
+    const smooth = rideAt(hazardFreeRoad, atSpeed(220), 0, 0, 2);
     expect(run.crashes).toStrictEqual([]);
     expect(effectsOf(run.events)).toStrictEqual(["slip"]);
     expect(run.rider.speed / smooth.rider.speed).toBeGreaterThan(0.95);
@@ -3720,18 +3739,49 @@ describe("road hazards", () => {
     );
   });
 
-  it("a rock hit at 150 km/h throws the rider and the crash names the rock", () => {
-    const fast = rideAt(boulder, atSpeed(150), 0, 0, 1);
+  it.each([130, 150])(
+    "a rock hit square at %i km/h bumps the bike into the air, and it lands wobbling, slower, and rides on",
+    (kmh) => {
+      const run = rideAt(boulder, atSpeed(kmh), 0, 0, 3);
+      const smooth = rideAt(hazardFreeRoad, atSpeed(kmh), 0, 0, 3);
+      expect({
+        crashes: run.crashes,
+        effects: effectsOf(run.events),
+        mode: run.rider.mode,
+      }).toStrictEqual({ crashes: [], effects: ["bump"], mode: "riding" });
+      const landing = run.events.find((event) => event.kind === "land");
+      expect(landing?.kind === "land" && landing.airSeconds).toBeGreaterThan(
+        0.3
+      );
+      expect(run.shakiest).toBeGreaterThan(0.3);
+      const lost = 1 - run.rider.speed / smooth.rider.speed;
+      expect(lost).toBeGreaterThan(0.05);
+      expect(lost).toBeLessThan(0.25);
+    }
+  );
+
+  it("a rock hit square at 220 km/h launches the bike, and the landing throws the rider with the crash naming the rock", () => {
+    const fast = rideAt(boulder, atSpeed(220), 0, 0, 3);
+    expect(effectsOf(fast.events)).toStrictEqual(["bump"]);
     expect(
       fast.crashes.map((crash) => [crash.cause, crash.hazard?.id])
     ).toStrictEqual([["hazard", "boulder"]]);
+  });
+
+  it("a rock hit at 160 km/h while steering hard throws the rider, though the same rock ridden straight at 160 km/h does not", () => {
+    const hard = steeringHardInto(160);
+    expect(effectsOf(hard.events)).toStrictEqual(["bump"]);
+    expect(hard.crashes.map((crash) => crash.hazard?.id)).toStrictEqual([
+      "boulder",
+    ]);
+    expect(rideAt(boulder, atSpeed(160), 0, 0, 3).crashes).toStrictEqual([]);
   });
 
   it("a rock hit at 30 km/h is a stagger that costs over half the speed, and the rider rides on past it", () => {
     const state = field(boulder, 1, 0, 0);
     const slow = player(state);
     Object.assign(slow, atSpeed(30));
-    const events = hold(state, boulder, { ...flatOut, throttle: 0 }, 1.5);
+    const events = hold(state, boulder, { ...flatOut, throttle: 0 }, 2.5);
     expect(events.filter((event) => event.kind === "crash")).toStrictEqual([]);
     expect(effectsOf(events)).toStrictEqual(["stagger"]);
     const stagger = events.find((event) => event.kind === "hazard");
@@ -3739,18 +3789,31 @@ describe("road hazards", () => {
       (30 / KMH) * 0.5
     );
     expect(slow.mode).toBe("riding");
-    expect(slow.s).toBeGreaterThan(1000);
+    expect(slow.s).toBeGreaterThan(1000 + hazardSizes.rock.halfLength);
   });
 
   it("a rider who passes a rock close at speed gets a near miss naming it, and one who only clips its edge stays up", () => {
-    const close = rideAt(boulder, { ...atSpeed(150), x: 2.95 }, 0, 0, 1);
+    const touching = 1.8 + hazardSizes.rock.halfWidth + BIKE_HALF_WIDTH;
+    const close = rideAt(
+      boulder,
+      { ...atSpeed(150), x: touching + 0.3 },
+      0,
+      0,
+      1
+    );
     expect(close.crashes).toStrictEqual([]);
     expect(
       close.events.flatMap((event) =>
         event.kind === "nearMiss" ? [event.hazard?.id] : []
       )
     ).toStrictEqual(["boulder"]);
-    const clipped = rideAt(boulder, { ...atSpeed(150), x: 2.55 }, 0, 0, 1);
+    const clipped = rideAt(
+      boulder,
+      { ...atSpeed(150), x: touching - 0.08 },
+      0,
+      0,
+      1
+    );
     expect(clipped.crashes).toStrictEqual([]);
     expect(effectsOf(clipped.events)).toStrictEqual(["stagger"]);
   });
@@ -3800,7 +3863,9 @@ describe("road hazards", () => {
     expect(run.events.filter((event) => event.kind === "crash")).toStrictEqual(
       []
     );
-    expect(Math.abs(crossingAt(run.line, 1000) - 1.8)).toBeGreaterThan(0.83);
+    expect(Math.abs(crossingAt(run.line, 1000) - 1.8)).toBeGreaterThan(
+      hazardSizes.rock.halfWidth + BIKE_HALF_WIDTH
+    );
   });
 
   it("the pilot rides round an oil slick it sees in time, and holds a straight line across one it meets too late", () => {
@@ -3838,7 +3903,7 @@ describe("road hazards", () => {
     expect(spawned.line).toStrictEqual(scheduled.line);
   });
 
-  it("riding into a spawned rock names the rock and the command that dropped it", () => {
+  it("crashing over a spawned rock names the rock and the command that dropped it", () => {
     const state = field(hazardFreeRoad, 1, 0, 0);
     spawnRock(state, hazardFreeRoad, {
       command: "cmd-8",
@@ -3849,8 +3914,8 @@ describe("road hazards", () => {
     const rider = player(state);
     rider.s = 960;
     rider.x = 1.8;
-    rider.speed = 40;
-    const struck = hold(state, hazardFreeRoad, flatOut, 1).flatMap((event) =>
+    rider.speed = 230 / KMH;
+    const struck = hold(state, hazardFreeRoad, flatOut, 3).flatMap((event) =>
       event.kind === "crash" ? [event.hazard] : []
     );
     expect(struck).toStrictEqual([
@@ -3908,5 +3973,50 @@ describe("road hazards", () => {
     expect(
       events.filter((event) => event.kind === "crash" && event.rider === 1)
     ).toStrictEqual([]);
+  });
+
+  it("a rock lying in an oil slick still bumps the bike: every hazard touched acts", () => {
+    const run = rideAt(
+      roadWith(
+        placedAt("oil", 999.9, 1.8, "slick"),
+        placedAt("rock", 1000, 1.8, "boulder")
+      ),
+      { lateralSpeed: 0, s: 990, speed: 50, x: 1.8 },
+      0,
+      0,
+      0.5
+    );
+    expect(effectsOf(run.events)).toStrictEqual(["slip", "bump"]);
+  });
+
+  it("a bike already steering clear of a rock sideways does not touch it as it passes", () => {
+    const run = rideAt(
+      roadWith(placedAt("rock", 1000, 0, "boulder")),
+      { lateralSpeed: 4, s: 998.1, speed: 54, x: 0.82 },
+      0,
+      1,
+      0.3
+    );
+    expect(effectsOf(run.events)).toStrictEqual([]);
+  });
+
+  it("a bike landing just past a pothole it flew over does not drop into it", () => {
+    const state = field(
+      roadWith(placedAt("pothole", 996.6, 1.8, "hole")),
+      1,
+      0,
+      0
+    );
+    const rider = player(state);
+    rider.s = 998;
+    rider.x = 1.8;
+    rider.speed = 54;
+    rider.airborne = true;
+    rider.air = 0.1;
+    rider.verticalSpeed = -8;
+    stepRace(state, roadWith(placedAt("pothole", 996.6, 1.8, "hole")), [
+      flatOut,
+    ]);
+    expect(state.events.map((event) => event.kind)).toStrictEqual(["land"]);
   });
 });
