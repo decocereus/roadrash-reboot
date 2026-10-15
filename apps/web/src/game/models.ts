@@ -27,3 +27,9 @@ export const modelBytes = (url: string): Promise<ArrayBuffer> => {
   downloads.set(url, started);
   return started;
 };
+
+export const startModelDownloads = (): void => {
+  for (const url of [bike, car, van, riderA, riderB, riderC]) {
+    modelBytes(url).catch(() => null);
+  }
+};

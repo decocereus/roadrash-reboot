@@ -33,6 +33,7 @@ import type {
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
+import { startModelDownloads } from "../game/models.ts";
 
 export type View =
   | { readonly screen: "title" }
@@ -170,6 +171,7 @@ const useGame = (
       return;
     }
     let disposed = false;
+    startModelDownloads();
     import("../game/game.ts")
       .then(({ createGame }) =>
         createGame(canvas, {
