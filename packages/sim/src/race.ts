@@ -397,6 +397,7 @@ export const stepRace = (
     const touchdown = touchdownOf(state, index, eventsBefore);
     meetHazards(
       state,
+      track,
       index,
       touchdown?.s ?? fromS,
       touchdown?.x ?? fromX,

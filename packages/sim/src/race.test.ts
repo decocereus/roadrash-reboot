@@ -3711,9 +3711,9 @@ const slowTruckAt = (state: RaceState, s: number, x: number): void => {
   });
 };
 
-const pilotBehindTruck = (road: Track) => {
+const pilotBehindTruck = (road: Track, truckS = 970) => {
   const state = field(road, 1, 0, 0);
-  slowTruckAt(state, 970, 1.8);
+  slowTruckAt(state, truckS, 1.8);
   const rider = player(state);
   rider.s = 920;
   rider.x = 1.8;
@@ -3755,6 +3755,31 @@ const diceAfterPiloting = (road: Track): number => {
   pilotFrom(state, road, 3);
   return state.dice;
 };
+
+const climbThenFlat = compileTrack({
+  ...ridgeRoad,
+  features: [],
+  hazardsPerKilometre: 0,
+  sections: [
+    { climb: 100, length: 2000, turnDegrees: 0 },
+    { climb: 0, length: 4000, turnDegrees: 0 },
+  ],
+  trafficPerKilometre: 0,
+});
+
+const rockOn = (road: Track, kmh: number) =>
+  rideAt(
+    { ...road, hazards: [placedAt("rock", 1000, 1.8, "boulder")] },
+    { lateralSpeed: 0, s: 998.5, speed: kmh / KMH, x: 1.8 },
+    0,
+    0,
+    3
+  );
+
+const airSecondsOf = (events: readonly RaceEvent[]): number[] =>
+  events.flatMap((event) =>
+    event.kind === "land" ? [Math.round(event.airSeconds * 10) / 10] : []
+  );
 
 const downed = (events: readonly RaceEvent[]): RaceEvent[] =>
   events.filter((event) => event.kind === "crash");
@@ -4042,6 +4067,16 @@ describe("road hazards", () => {
       roadWith(placedAt("rock", 1000, 0, "centre"))
     );
     expect(downed(withRock.events)).toStrictEqual([]);
+  });
+
+  it("a rock on a climb throws the bike as high as one on the flat: it rides on at 130 km/h and goes down at 220 km/h", () => {
+    expect(airSecondsOf(rockOn(climbThenFlat, 130).events)).toStrictEqual(
+      airSecondsOf(rockOn(hazardFreeRoad, 130).events)
+    );
+    expect(rockOn(climbThenFlat, 130).crashes).toStrictEqual([]);
+    expect(
+      rockOn(climbThenFlat, 220).crashes.map((crash) => crash.hazard?.id)
+    ).toStrictEqual(["boulder"]);
   });
 
   it("a pursuing cop never dodges a rock into the back of a slow truck", () => {
