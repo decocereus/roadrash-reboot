@@ -473,6 +473,9 @@ export async function createGame(
   const qualityAfter: QualityState = emptyQuality();
   let frameId = 0;
   let sizeEpoch = 0;
+  let appliedWidth = -1;
+  let appliedHeight = -1;
+  let appliedRatio = -1;
   let drawnEpoch = 0;
   let drawnFrame = -1;
   let drawnRung = 0;
@@ -1231,6 +1234,9 @@ export async function createGame(
   };
 
   const applySize = (source: ResizeSource) => {
+    appliedWidth = canvas.clientWidth;
+    appliedHeight = canvas.clientHeight;
+    appliedRatio = pixelRatio;
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
@@ -1454,6 +1460,13 @@ export async function createGame(
   };
 
   const resize = () => {
+    if (
+      canvas.clientWidth === appliedWidth &&
+      canvas.clientHeight === appliedHeight &&
+      pixelRatio === appliedRatio
+    ) {
+      return;
+    }
     applySize("observer");
     chase.resize(canvas.clientWidth, canvas.clientHeight);
     if (halted()) {
