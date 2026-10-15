@@ -7,7 +7,7 @@ import { paintPrimitives } from "./assets.ts";
 import type { Assets, Palette, Primitive } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
-import { placeOnGround, whiteInstances } from "./ground.ts";
+import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
@@ -226,6 +226,7 @@ export function createFleet(
 
   muster(assets.car, false);
   muster(assets.van, true);
+  freeze(group);
 
   const base = new THREE.Object3D();
   const world = new THREE.Matrix4();
