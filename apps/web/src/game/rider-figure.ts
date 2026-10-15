@@ -30,6 +30,7 @@ export interface Stance {
   tuck: number;
   lean: number;
   reach: number;
+  rise: number;
   flinch: number;
   flinchSide: number;
 }
@@ -43,6 +44,10 @@ const TUMBLE_HZ = 1.75;
 const FULL_TURN = Math.PI * 2;
 const PITCH_FORWARD = new THREE.Vector3(-1, 0, 0);
 const ROLL = new THREE.Vector3(0, 0, 1);
+const RISE_LIFT = 0.13;
+const RISE_SHIFT = 0.07;
+const RISE_FORWARD = 0.04;
+const REACH_SLACK = 0.002;
 
 interface Turn {
   readonly bone: string;
@@ -80,6 +85,42 @@ const flinchTurns = (side: number): readonly Turn[] => [
   { axis: PITCH_FORWARD, bone: "head", degrees: -10 },
 ];
 
+const risenTurns = (side: number): readonly Turn[] => [
+  { axis: PITCH_FORWARD, bone: "spine_01", degrees: -8 },
+  { axis: PITCH_FORWARD, bone: "spine_02", degrees: -6 },
+  { axis: PITCH_FORWARD, bone: "neck_01", degrees: 6 },
+  { axis: PITCH_FORWARD, bone: "head", degrees: 6 },
+  { axis: ROLL, bone: "pelvis", degrees: 6 * side },
+  { axis: ROLL, bone: "spine_01", degrees: 8 * side },
+  { axis: ROLL, bone: "spine_02", degrees: 7 * side },
+  { axis: ROLL, bone: "spine_03", degrees: 5 * side },
+  { axis: ROLL, bone: "neck_01", degrees: -10 * side },
+  { axis: ROLL, bone: "head", degrees: -10 * side },
+];
+
+const riseOffset = (side: number): THREE.Vector3 =>
+  new THREE.Vector3(side * RISE_SHIFT, RISE_LIFT, -RISE_FORWARD);
+
+interface Limb {
+  readonly upper: string;
+  readonly lower: string;
+  readonly end: string;
+}
+
+const PLANTED: readonly Limb[] = ["_l", "_r"].flatMap((suffix) => [
+  { end: `foot${suffix}`, lower: `calf${suffix}`, upper: `thigh${suffix}` },
+  {
+    end: `hand${suffix}`,
+    lower: `lowerarm${suffix}`,
+    upper: `upperarm${suffix}`,
+  },
+]);
+
+const kickingLeg = (side: number): readonly string[] => {
+  const suffix = side < 0 ? "_l" : "_r";
+  return ["thigh", "calf", "foot", "ball"].map((bone) => `${bone}${suffix}`);
+};
+
 export interface RiderFigure {
   readonly root: THREE.Group;
   readonly seat: THREE.Vector3;
@@ -101,9 +142,6 @@ const sidedName = (left: PoseName, right: PoseName, side: number): PoseName =>
 const strikeName = (pose: RiderPose, side: number): PoseName => {
   if (pose === "punch") {
     return sidedName("punch_l", "punch_r", side);
-  }
-  if (pose === "kick") {
-    return sidedName("kick_l", "kick_r", side);
   }
   if (pose === "windup") {
     return sidedName("windup_l", "windup_r", side);
@@ -224,36 +262,160 @@ const paletteOf = (index: number): Palette => {
   ]);
 };
 
-const turnedFrom = (
-  base: readonly number[],
-  turns: readonly Turn[],
-  root: THREE.Object3D,
-  skeleton: THREE.Skeleton,
-  names: readonly string[],
-  bones: readonly (THREE.Bone | undefined)[]
-): number[] => {
+const turnInWorld = (bone: THREE.Object3D, turn: THREE.Quaternion) => {
+  const world = bone.getWorldQuaternion(new THREE.Quaternion());
+  const parent = new THREE.Quaternion();
+  bone.parent?.getWorldQuaternion(parent);
+  bone.quaternion.copy(parent.invert().multiply(turn.clone().multiply(world)));
+  bone.updateMatrixWorld(true);
+};
+
+const holdInWorld = (bone: THREE.Object3D, world: THREE.Quaternion) => {
+  const parent = new THREE.Quaternion();
+  bone.parent?.getWorldQuaternion(parent);
+  bone.quaternion.copy(parent.invert().multiply(world));
+  bone.updateMatrixWorld(true);
+};
+
+const interiorAngle = (upper: number, lower: number, span: number): number =>
+  Math.acos(
+    THREE.MathUtils.clamp(
+      (upper * upper + lower * lower - span * span) / (2 * upper * lower),
+      -1,
+      1
+    )
+  );
+
+const reachFor = (
+  upper: THREE.Object3D,
+  lower: THREE.Object3D,
+  end: THREE.Object3D,
+  target: THREE.Vector3,
+  facing: THREE.Quaternion
+) => {
+  const joint = upper.getWorldPosition(new THREE.Vector3());
+  const middle = lower.getWorldPosition(new THREE.Vector3());
+  const tip = end.getWorldPosition(new THREE.Vector3());
+  const upperLength = joint.distanceTo(middle);
+  const lowerLength = middle.distanceTo(tip);
+  const span = THREE.MathUtils.clamp(
+    joint.distanceTo(target),
+    Math.abs(upperLength - lowerLength) + REACH_SLACK,
+    upperLength + lowerLength - REACH_SLACK
+  );
+  const opening =
+    interiorAngle(upperLength, lowerLength, span) -
+    interiorAngle(upperLength, lowerLength, joint.distanceTo(tip));
+  const hinge = new THREE.Vector3()
+    .subVectors(middle, joint)
+    .cross(new THREE.Vector3().subVectors(tip, middle))
+    .normalize();
+  const shin = new THREE.Vector3().subVectors(tip, middle);
+  const spanAfter = (angle: number) =>
+    shin.clone().applyAxisAngle(hinge, angle).add(middle).distanceTo(joint);
+  const angle =
+    Math.abs(spanAfter(opening) - span) <= Math.abs(spanAfter(-opening) - span)
+      ? opening
+      : -opening;
+  turnInWorld(lower, new THREE.Quaternion().setFromAxisAngle(hinge, angle));
+  const reached = end.getWorldPosition(new THREE.Vector3()).sub(joint);
+  turnInWorld(
+    upper,
+    new THREE.Quaternion().setFromUnitVectors(
+      reached.normalize(),
+      target.clone().sub(joint).normalize()
+    )
+  );
+  holdInWorld(end, facing);
+};
+
+interface Rig {
+  readonly root: THREE.Object3D;
+  readonly skeleton: THREE.Skeleton;
+  readonly names: readonly string[];
+  readonly bones: readonly (THREE.Bone | undefined)[];
+}
+
+const posed = ({ bones, root }: Rig, pose: readonly number[]) => {
   for (const [index, bone] of bones.entries()) {
-    bone?.quaternion.fromArray(base, index * 4);
+    bone?.quaternion.fromArray(pose, index * 4);
   }
   root.updateMatrixWorld(true);
-  const turned = [...base];
-  const world = new THREE.Quaternion();
-  const parent = new THREE.Quaternion();
-  const turn = new THREE.Quaternion();
-  for (const { axis, bone: name, degrees } of turns) {
-    const bone = skeleton.getBoneByName(name);
-    const index = names.indexOf(name);
-    if (!bone || index === -1) {
-      continue;
-    }
-    bone.getWorldQuaternion(world);
-    bone.parent?.getWorldQuaternion(parent);
-    turn.setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees));
-    bone.quaternion.copy(parent.invert().multiply(turn.multiply(world)));
-    bone.updateMatrixWorld(true);
-    bone.quaternion.toArray(turned, index * 4);
+};
+
+const read = ({ bones }: Rig, into: number[]): number[] => {
+  for (const [index, bone] of bones.entries()) {
+    bone?.quaternion.toArray(into, index * 4);
   }
-  return turned;
+  return into;
+};
+
+const turnedFrom = (
+  rig: Rig,
+  base: readonly number[],
+  turns: readonly Turn[]
+): number[] => {
+  posed(rig, base);
+  for (const { axis, bone: name, degrees } of turns) {
+    const bone = rig.skeleton.getBoneByName(name);
+    if (bone) {
+      turnInWorld(
+        bone,
+        new THREE.Quaternion().setFromAxisAngle(
+          axis,
+          THREE.MathUtils.degToRad(degrees)
+        )
+      );
+    }
+  }
+  return read(rig, [...base]);
+};
+
+const risenFrom = (
+  rig: Rig,
+  seated: readonly number[],
+  side: number
+): number[] => {
+  posed(rig, seated);
+  const lift = riseOffset(side);
+  const grips = PLANTED.flatMap((limb) => {
+    const end = rig.skeleton.getBoneByName(limb.end);
+    return end
+      ? [
+          {
+            facing: end.getWorldQuaternion(new THREE.Quaternion()),
+            limb,
+            target: end.getWorldPosition(new THREE.Vector3()).sub(lift),
+          },
+        ]
+      : [];
+  });
+  turnedFrom(rig, seated, risenTurns(side));
+  for (const { facing, limb, target } of grips) {
+    const upper = rig.skeleton.getBoneByName(limb.upper);
+    const lower = rig.skeleton.getBoneByName(limb.lower);
+    const end = rig.skeleton.getBoneByName(limb.end);
+    if (upper && lower && end) {
+      reachFor(upper, lower, end, target, facing);
+    }
+  }
+  return read(rig, [...seated]);
+};
+
+const kickedFrom = (
+  rig: Rig,
+  risen: readonly number[],
+  kick: readonly number[],
+  side: number
+): number[] => {
+  const kicked = [...risen];
+  for (const name of kickingLeg(side)) {
+    const index = rig.names.indexOf(name);
+    if (index !== -1) {
+      kicked.splice(index * 4, 4, ...kick.slice(index * 4, index * 4 + 4));
+    }
+  }
+  return kicked;
 };
 
 interface Sided<T> {
@@ -267,6 +429,8 @@ interface Riding {
   readonly hang: Sided<number[]>;
   readonly tuckedHang: Sided<number[]>;
   readonly flinch: Sided<number[]>;
+  readonly risen: Sided<number[]>;
+  readonly kicked: Sided<number[]>;
 }
 
 const sideOf = <T>(sided: Sided<T>, side: number): T =>
@@ -317,12 +481,20 @@ export const createRiderFigure = (
   const bones = asset.bones.map((name) => skeleton.getBoneByName(name));
   skeleton.getBoneByName("pelvis")?.position.set(0, 0, 0);
   const seated = asset.poses.get("seated");
-  if (!seated) {
-    throw new Error("The rider model has no seated pose.");
+  const kickLeft = asset.poses.get("kick_l");
+  const kickRight = asset.poses.get("kick_r");
+  if (!(seated && kickLeft && kickRight)) {
+    throw new Error("The rider model has no seated or kick pose.");
   }
+  const rig: Rig = { bones, names: asset.bones, root, skeleton };
   const bake = (base: readonly number[], turns: readonly Turn[]) =>
-    turnedFrom(base, turns, root, skeleton, asset.bones, bones);
+    turnedFrom(rig, base, turns);
   const tucked = bake(seated, TUCK_TURNS);
+  const risen = {
+    left: risenFrom(rig, seated, -1),
+    right: risenFrom(rig, seated, 1),
+  };
+  const lifts = { left: riseOffset(-1), right: riseOffset(1) };
   const riding: Riding = {
     flinch: {
       left: bake(seated, flinchTurns(-1)),
@@ -332,6 +504,11 @@ export const createRiderFigure = (
       left: bake(seated, hangTurns(-1)),
       right: bake(seated, hangTurns(1)),
     },
+    kicked: {
+      left: kickedFrom(rig, risen.left, kickLeft, -1),
+      right: kickedFrom(rig, risen.right, kickRight, 1),
+    },
+    risen,
     seated,
     tucked,
     tuckedHang: {
@@ -376,12 +553,20 @@ export const createRiderFigure = (
   };
   apply();
 
-  const settleBase = ({ flinch, flinchSide, lean, tuck }: Stance) => {
+  const settleBase = ({
+    flinch,
+    flinchSide,
+    lean,
+    rise,
+    side,
+    tuck,
+  }: Stance) => {
     const hang = Math.min(1, Math.abs(lean));
     const hangSide = lean < 0 ? -1 : 1;
     const seatedHang = sideOf(riding.hang, hangSide);
     const tuckedHang = sideOf(riding.tuckedHang, hangSide);
     const flinched = sideOf(riding.flinch, flinchSide);
+    const risenPose = sideOf(riding.risen, side);
     for (let offset = 0; offset < base.length; offset += 4) {
       THREE.Quaternion.slerpFlat(
         upright,
@@ -410,6 +595,17 @@ export const createRiderFigure = (
         offset,
         tuck
       );
+      if (rise > 0) {
+        THREE.Quaternion.slerpFlat(
+          base,
+          offset,
+          base,
+          offset,
+          risenPose,
+          offset,
+          rise
+        );
+      }
       if (flinch > 0) {
         THREE.Quaternion.slerpFlat(
           base,
@@ -433,7 +629,10 @@ export const createRiderFigure = (
     }
     if (striking(pose)) {
       settleBase(stance);
-      const to = asset.poses.get(strikeName(pose, side));
+      const to =
+        pose === "kick"
+          ? sideOf(riding.kicked, side)
+          : asset.poses.get(strikeName(pose, side));
       const from =
         pose === "swing" ? asset.poses.get(strikeName("windup", side)) : base;
       if (!(from && to)) {
@@ -492,6 +691,9 @@ export const createRiderFigure = (
         );
       }
       apply();
+      model.position
+        .copy(sideOf(lifts, stance.side))
+        .multiplyScalar(stance.rise);
       showWeapon(
         stance.pose === "surrender" ? "none" : stance.weapon,
         stance.pose,

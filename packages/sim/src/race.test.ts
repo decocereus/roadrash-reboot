@@ -1364,7 +1364,7 @@ const strikeTiming = (key: "punch" | "kick", pressTicks: readonly number[]) => {
 };
 
 describe("strike timing", () => {
-  it("a punch is fully out 4 ticks after the press and the swing is over at 18; a kick is out at 5 and over at 20", () => {
+  it("a punch is fully out 4 ticks after the press and the swing is over at 18; a kick is out at 4 and over at 15", () => {
     const { me, moose, state } = sideBySide();
     disarm(moose);
     const ends: Record<string, number> = {};
@@ -1388,8 +1388,8 @@ describe("strike timing", () => {
       });
     }
     expect({ ends, lands }).toStrictEqual({
-      ends: { kick: 20, punch: 18 },
-      lands: { kick: 5, punch: 4 },
+      ends: { kick: 15, punch: 18 },
+      lands: { kick: 4, punch: 4 },
     });
   });
 
@@ -1797,7 +1797,7 @@ describe("simultaneous weapon grabs", () => {
     ({ unarmedIndex }) => {
       const after = duel(unarmedIndex, (tick) => ({
         holder: pressing("punch", tick === 0),
-        unarmed: pressing("kick", tick === 2),
+        unarmed: pressing("kick", tick === 3),
       }));
       expect(after).toStrictEqual({
         holder: ["none", 0],

@@ -35,8 +35,8 @@ export const kick: StrikeSpec = {
   reachX: 2.2,
   shove: 3.2,
   steerFactor: 1,
-  strikeTick: 15,
-  ticks: 20,
+  strikeTick: 11,
+  ticks: 15,
 };
 
 export const weapons = {

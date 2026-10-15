@@ -84,6 +84,11 @@ const WINDUP_TICKS = 3;
 const SWING_LEAD_TICKS = 3;
 const HOLD_TICKS = 4;
 const RETURN_TICKS = 5;
+const KICK_RISE_TICKS = 2.5;
+const KICK_HOLD_TICKS = 2;
+const KICK_RETRACT_TICKS = 3;
+const KICK_DROP_FROM = 8;
+const KICK_DROP_TICKS = 5;
 const BUSTED_SECONDS = 0.8;
 const WRECKED_SECONDS = 1.2;
 const ROAD_LEVEL = 1;
@@ -147,6 +152,7 @@ const freshInput = (): RiderInput => ({
 interface StrikeFrame {
   readonly pose: RiderPose;
   readonly reach: number;
+  readonly rise?: number;
 }
 
 const windingUp = (
@@ -164,6 +170,19 @@ const windingUp = (
   return { pose: "swing", reach: (elapsed - lead) / SWING_LEAD_TICKS };
 };
 
+const kickFrame = (elapsed: number, land: number): StrikeFrame | undefined => {
+  const dropped = (elapsed - KICK_DROP_FROM) / KICK_DROP_TICKS;
+  if (dropped >= 1) {
+    return undefined;
+  }
+  const rising = 1 - Math.max(0, 1 - elapsed / KICK_RISE_TICKS) ** 2;
+  const rise = dropped > 0 ? 1 - dropped * dropped : rising;
+  const snap = (elapsed - KICK_RISE_TICKS) / (land - KICK_RISE_TICKS);
+  const retract = (elapsed - land - KICK_HOLD_TICKS) / KICK_RETRACT_TICKS;
+  const reach = clamp(Math.min(snap, 1 - retract), 0, 1);
+  return { pose: "kick", reach, rise };
+};
+
 const flinchOf = (rider: RiderState, subTick: number): number =>
   Math.max(0, rider.hitStun - subTick) / HIT_STUN_TICKS;
 
@@ -177,6 +196,9 @@ const strikeFrame = (
   const strike = strikeOf(rider.attack, rider.weapon);
   const land = strike.ticks - strike.strikeTick;
   const elapsed = strike.ticks - rider.attackTicks + subTick;
+  if (rider.attack === "kick") {
+    return kickFrame(elapsed, land);
+  }
   const out = rider.attack === "swing" ? "swung" : rider.attack;
   if (elapsed < land) {
     return windingUp(rider.attack, elapsed, land);
@@ -336,6 +358,7 @@ export async function createGame(
     lean: 0,
     pose: "seated",
     reach: 0,
+    rise: 0,
     side: 1,
     time: 0,
     tuck: 0,
@@ -706,6 +729,7 @@ export async function createGame(
   ) => {
     let pose: RiderPose = "seated";
     let reach = 0;
+    let rise = 0;
     let time = clock;
     const { figure, bike } = view;
     if (seated) {
@@ -713,7 +737,7 @@ export async function createGame(
       if (rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS) {
         pose = "lift";
       } else if (strike) {
-        ({ pose, reach } = strike);
+        ({ pose, reach, rise = 0 } = strike);
       }
       figure.root.position.copy(bike.root.position);
       figure.root.quaternion.copy(bike.root.quaternion);
@@ -791,6 +815,7 @@ export async function createGame(
     stance.tuck = seated ? rider.tuck : 0;
     stance.lean = seated ? lean / rider.bike.visualLean : 0;
     stance.reach = reach;
+    stance.rise = rise;
     stance.flinch = seated ? flinchOf(rider, subTick) : 0;
     stance.flinchSide = flinchSideOf(rider);
     figure.animate(stance, seconds);
