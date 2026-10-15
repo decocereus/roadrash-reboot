@@ -78,6 +78,17 @@ export interface Stretch {
   readonly to: number;
 }
 
+export const freeze = <Target extends THREE.Object3D>(
+  target: Target
+): Target => {
+  target.updateMatrixWorld(true);
+  target.traverse((node) => {
+    node.matrixAutoUpdate = false;
+    node.matrixWorldAutoUpdate = false;
+  });
+  return target;
+};
+
 export const showWithin = (
   stretches: readonly Stretch[],
   from: number,

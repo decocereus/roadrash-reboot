@@ -6,6 +6,7 @@ import type { RoadId } from "@racer/career/tables";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { benchOf, benchPlan } from "../career/bench.ts";
 import {
   careerEntry,
   careerReport,
@@ -305,7 +306,13 @@ export const useFlow = (): Flow => {
     if (!(ready && game)) {
       return;
     }
-    if (stage === "attract") {
+    const bench = benchOf(globalThis.location.search);
+    if (stage === "attract" && bench) {
+      const plan = benchPlan(bench);
+      pendingRef.current = null;
+      game.startRace(plan);
+      setView({ finish: null, paused: false, plan, screen: "race" });
+    } else if (stage === "attract") {
       game.attract();
     } else if (stage === "menu") {
       game.sleep();

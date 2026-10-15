@@ -2,12 +2,13 @@ import { riderPalette } from "@racer/sim/palette";
 import type { TrafficCar } from "@racer/sim/state";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-import { paintPrimitives } from "./assets.ts";
+import { glows, paintPrimitives } from "./assets.ts";
 import type { Assets, Palette, Primitive } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
-import { placeOnGround, whiteInstances } from "./ground.ts";
+import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
@@ -17,91 +18,307 @@ const WHEELS = [
   ["wheel_f", 0.293, 0.69],
   ["wheel_r", 0.306, -0.69],
 ] as const;
+const MODEL = new THREE.Matrix4().makeRotationY(Math.PI);
+const BEACONS = [
+  [0x2f_6b_ff, -0.07],
+  [0xff_2f_3a, 0.07],
+] as const;
+const BEACON_STRENGTH = 2.4;
+const LIVERY: ReadonlyMap<string, readonly [number, number]> = new Map([
+  ["body", [1, 0]],
+  ["accent", [0, 1]],
+]);
+const LIVERY_SLOTS: Palette = new Map([
+  ["body", "#ffffff"],
+  ["accent", "#ffffff"],
+]);
+const LIVERY_VERTEX = `attribute vec2 livery;
+attribute vec3 instancePaint;
+attribute vec3 instanceTrim;
+`;
+const LIVERY_COLOUR = `#include <color_vertex>
+vColor.xyz = mix(mix(vColor.xyz, instancePaint, livery.x), instanceTrim, livery.y);`;
 
-export interface BikeModel {
-  readonly root: THREE.Group;
-  spin: (distance: number) => void;
+export interface BikeRider {
+  readonly paint: number;
+  readonly police: boolean;
+}
+
+export interface Reach {
+  readonly behind: number;
+  readonly ahead: number;
+}
+
+export interface Bikes {
+  readonly group: THREE.Group;
+  readonly roots: readonly THREE.Object3D[];
+  spin: (index: number, distance: number) => void;
+  show: (index: number) => void;
+  commit: (anchor: THREE.Vector3) => void;
   dispose: () => void;
 }
 
-const lit = <Target extends THREE.Object3D>(target: Target): Target => {
-  target.castShadow = true;
-  target.receiveShadow = true;
-  return target;
+interface Wheel {
+  readonly radius: number;
+  readonly z: number;
+  readonly turns: Float64Array;
+  readonly frame: THREE.Matrix4;
+}
+
+interface BikePart {
+  readonly mesh: THREE.InstancedMesh;
+  readonly wheel: Wheel | null;
+}
+
+export const reachOf = (shading: Shading): Reach => ({
+  ahead: shading.look.fogFar + FLEET_MARGIN,
+  behind: FLEET_BEHIND,
+});
+
+const liveried = (material: THREE.MeshToonMaterial): THREE.MeshToonMaterial => {
+  const cel = material.onBeforeCompile;
+  const key = material.customProgramCacheKey();
+  material.onBeforeCompile = (shader, renderer) => {
+    cel(shader, renderer);
+    shader.vertexShader = `${LIVERY_VERTEX}${shader.vertexShader.replace(
+      "#include <color_vertex>",
+      LIVERY_COLOUR
+    )}`;
+  };
+  material.customProgramCacheKey = () => `${key}-livery`;
+  return material;
 };
 
-const addPainted = (
-  parent: THREE.Object3D,
+const liveryOf = (
   primitives: readonly Primitive[],
-  palette: Palette,
-  shading: Shading,
-  shift: readonly [number, number, number] = [0, 0, 0]
-): void => {
-  const painted = paintPrimitives(primitives, palette);
-  if (painted.cel) {
-    painted.cel.translate(...shift);
-    parent.add(lit(new THREE.Mesh(painted.cel, shading.paint())));
+  vertices: number
+): THREE.BufferAttribute => {
+  const weights = new Float32Array(vertices * 2);
+  let at = 0;
+  for (const primitive of primitives) {
+    if (glows(primitive.slot)) {
+      continue;
+    }
+    const [paint, trim] = LIVERY.get(primitive.slot) ?? [0, 0];
+    const end = at + primitive.geometry.getAttribute("position").count;
+    for (let vertex = at; vertex < end; vertex += 1) {
+      weights[vertex * 2] = paint;
+      weights[vertex * 2 + 1] = trim;
+    }
+    at = end;
   }
-  if (painted.glow) {
-    painted.glow.translate(...shift);
-    parent.add(new THREE.Mesh(painted.glow, shading.glowPaint()));
-  }
+  return new THREE.BufferAttribute(weights, 2);
 };
 
-const beaconLight = (
-  parent: THREE.Object3D,
-  shading: Shading,
-  colour: number,
-  x: number
+const beaconGeometry = (): THREE.BufferGeometry => {
+  const tint = new THREE.Color();
+  const lamps = BEACONS.map(([colour, x]) => {
+    const lamp = new THREE.BoxGeometry(0.1, 0.08, 0.1).translate(
+      x,
+      1.02,
+      -0.92
+    );
+    tint.set(colour).multiplyScalar(BEACON_STRENGTH);
+    const { count } = lamp.getAttribute("position");
+    const colours = new Float32Array(count * 3);
+    for (let vertex = 0; vertex < count; vertex += 1) {
+      tint.toArray(colours, vertex * 3);
+    }
+    lamp.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+    return lamp;
+  });
+  const merged = mergeGeometries(lamps);
+  for (const lamp of lamps) {
+    lamp.dispose();
+  }
+  return merged;
+};
+
+const instanced = (
+  geometry: THREE.BufferGeometry,
+  material: THREE.Material,
+  capacity: number,
+  shadows: boolean
+): THREE.InstancedMesh => {
+  const mesh = new THREE.InstancedMesh(geometry, material, capacity);
+  mesh.count = 0;
+  mesh.frustumCulled = false;
+  mesh.castShadow = shadows;
+  mesh.receiveShadow = shadows;
+  return mesh;
+};
+
+const upload = (
+  attribute: THREE.BufferAttribute,
+  from: number,
+  to: number
 ): void => {
-  const lamp = new THREE.Mesh(
-    new THREE.BoxGeometry(0.1, 0.08, 0.1),
-    shading.glow(colour, 2.4)
+  if (to <= from) {
+    return;
+  }
+  attribute.addUpdateRange(
+    from * attribute.itemSize,
+    (to - from) * attribute.itemSize
   );
-  lamp.position.set(x, 1.02, -0.92);
-  parent.add(lamp);
+  attribute.needsUpdate = true;
 };
 
-export function createBike(
+const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
+  mesh.count = count;
+  mesh.visible = count > 0;
+  mesh.instanceMatrix.clearUpdateRanges();
+  upload(mesh.instanceMatrix, 0, count);
+};
+
+export function createBikes(
   assets: Assets,
   shading: Shading,
-  paintIndex: number,
-  beacon = false
-): BikeModel {
-  const root = new THREE.Group();
-  const model = new THREE.Group();
-  model.rotation.y = Math.PI;
-  root.add(model);
-  const colours = riderPalette[paintIndex];
-  const palette: Palette = new Map<string, THREE.ColorRepresentation>([
-    ["body", colours?.bike ?? DEFAULT_PAINT],
-    ["accent", colours?.trim ?? DARK_TRIM],
-  ]);
-  addPainted(model, assets.bike.get("bike_body") ?? [], palette, shading);
-  const pivots = WHEELS.map(([name, radius, z]) => {
-    const pivot = new THREE.Group();
-    pivot.position.set(0, radius, z);
-    addPainted(pivot, assets.bike.get(name) ?? [], palette, shading, [
-      0,
-      -radius,
-      -z,
-    ]);
-    model.add(pivot);
-    return { pivot, radius };
-  });
-  if (beacon) {
-    beaconLight(model, shading, 0x2f_6b_ff, -0.07);
-    beaconLight(model, shading, 0xff_2f_3a, 0.07);
+  riders: readonly BikeRider[]
+): Bikes {
+  const group = new THREE.Group();
+  const capacity = riders.length;
+  const roots = riders.map(() => new THREE.Object3D());
+  const paint = new THREE.InstancedBufferAttribute(
+    new Float32Array(capacity * 3),
+    3
+  );
+  const trim = new THREE.InstancedBufferAttribute(
+    new Float32Array(capacity * 3),
+    3
+  );
+  const paints = new Float32Array(capacity * 3);
+  const trims = new Float32Array(capacity * 3);
+  const tint = new THREE.Color();
+  for (const [index, rider] of riders.entries()) {
+    const colours = riderPalette[rider.paint];
+    tint.set(colours?.bike ?? DEFAULT_PAINT).toArray(paints, index * 3);
+    tint.set(colours?.trim ?? DARK_TRIM).toArray(trims, index * 3);
+  }
+  const material = liveried(shading.paint());
+  const wheels: Wheel[] = WHEELS.map(([, radius, z]) => ({
+    frame: new THREE.Matrix4(),
+    radius,
+    turns: new Float64Array(capacity),
+    z,
+  }));
+  const parts: BikePart[] = [];
+  const addPart = (name: string, wheel: Wheel | null, shift: THREE.Vector3) => {
+    const primitives = assets.bike.get(name) ?? [];
+    const painted = paintPrimitives(primitives, LIVERY_SLOTS);
+    if (painted.cel) {
+      const geometry = painted.cel.translate(shift.x, shift.y, shift.z);
+      geometry.setAttribute(
+        "livery",
+        liveryOf(primitives, geometry.getAttribute("position").count)
+      );
+      geometry.setAttribute("instancePaint", paint);
+      geometry.setAttribute("instanceTrim", trim);
+      const mesh = instanced(geometry, material, capacity, true);
+      group.add(mesh);
+      parts.push({ mesh, wheel });
+    }
+    if (painted.glow) {
+      const geometry = painted.glow.translate(shift.x, shift.y, shift.z);
+      const mesh = instanced(geometry, shading.glowPaint(), capacity, false);
+      group.add(mesh);
+      parts.push({ mesh, wheel });
+    }
+  };
+  addPart("bike_body", null, new THREE.Vector3());
+  for (const [index, [name, radius, z]] of WHEELS.entries()) {
+    addPart(name, wheels[index] ?? null, new THREE.Vector3(0, -radius, -z));
+  }
+  const police = riders.filter((rider) => rider.police).length;
+  const beacons =
+    police > 0
+      ? instanced(beaconGeometry(), shading.glowPaint(), police, false)
+      : null;
+  if (beacons) {
+    group.add(beacons);
   }
 
+  const shown = new Uint8Array(capacity);
+  const slotRider = new Int32Array(capacity).fill(-1);
+  const frame = new THREE.Matrix4();
+  const pivot = new THREE.Matrix4();
+
+  const recolour = (slot: number, index: number): boolean => {
+    if (slotRider[slot] === index) {
+      return false;
+    }
+    slotRider[slot] = index;
+    paint.setXYZ(
+      slot,
+      paints[index * 3] ?? 1,
+      paints[index * 3 + 1] ?? 1,
+      paints[index * 3 + 2] ?? 1
+    );
+    trim.setXYZ(
+      slot,
+      trims[index * 3] ?? 1,
+      trims[index * 3 + 1] ?? 1,
+      trims[index * 3 + 2] ?? 1
+    );
+    return true;
+  };
+
   return {
-    dispose() {
-      disposeTree(root);
+    commit(anchor) {
+      group.position.copy(anchor);
+      let slot = 0;
+      let cop = 0;
+      let firstRecoloured = capacity;
+      let lastRecoloured = -1;
+      for (let index = 0; index < capacity; index += 1) {
+        const root = roots[index];
+        if (shown[index] === 0 || !root) {
+          continue;
+        }
+        shown[index] = 0;
+        root.updateMatrix();
+        frame.multiplyMatrices(root.matrix, MODEL);
+        frame.elements[12] -= anchor.x;
+        frame.elements[13] -= anchor.y;
+        frame.elements[14] -= anchor.z;
+        for (const wheel of wheels) {
+          pivot.makeRotationX(wheel.turns[index] ?? 0);
+          pivot.setPosition(0, wheel.radius, wheel.z);
+          wheel.frame.multiplyMatrices(frame, pivot);
+        }
+        for (const part of parts) {
+          part.mesh.setMatrixAt(slot, part.wheel?.frame ?? frame);
+        }
+        if (beacons && riders[index]?.police) {
+          beacons.setMatrixAt(cop, frame);
+          cop += 1;
+        }
+        if (recolour(slot, index)) {
+          firstRecoloured = Math.min(firstRecoloured, slot);
+          lastRecoloured = slot;
+        }
+        slot += 1;
+      }
+      for (const { mesh } of parts) {
+        showPrefix(mesh, slot);
+      }
+      if (beacons) {
+        showPrefix(beacons, cop);
+      }
+      upload(paint, firstRecoloured, lastRecoloured + 1);
+      upload(trim, firstRecoloured, lastRecoloured + 1);
     },
-    root,
-    spin(distance) {
-      for (const { pivot, radius } of pivots) {
-        pivot.rotation.x += distance / radius;
+    dispose() {
+      disposeTree(group);
+    },
+    group,
+    roots,
+    show(index) {
+      shown[index] = 1;
+    },
+    spin(index, distance) {
+      for (const wheel of wheels) {
+        wheel.turns[index] =
+          (wheel.turns[index] ?? 0) + distance / wheel.radius;
       }
     },
   };
@@ -226,11 +443,33 @@ export function createFleet(
 
   muster(assets.car, false);
   muster(assets.van, true);
+  freeze(group);
 
   const base = new THREE.Object3D();
   const world = new THREE.Matrix4();
   const spot: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
   const placed: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
+  const placedAt = new Float64Array(cars.length).fill(Number.NaN);
+  let road: Track | null = null;
+
+  const placeCar = (track: Track, index: number, s: number): void => {
+    const car = cars[index];
+    const fit = local[index];
+    if (!(car && fit)) {
+      return;
+    }
+    placeOnGround(track, s, car.x, spot);
+    base.position.set(spot.x, spot.y, spot.z);
+    const oncoming = car.cruiseSpeed < 0;
+    base.rotation.set(
+      Math.atan(spot.slope) * (oncoming ? -1 : 1),
+      -spot.heading + (oncoming ? Math.PI : 0),
+      0,
+      "YXZ"
+    );
+    base.updateMatrix();
+    placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
+  };
 
   return {
     commit(centre) {
@@ -243,6 +482,10 @@ export function createFleet(
           const s = along[index] ?? Number.NEGATIVE_INFINITY;
           if (!matrix || s < from || s > to) {
             continue;
+          }
+          if (road && placedAt[index] !== s) {
+            placeCar(road, index, s);
+            placedAt[index] = s;
           }
           part.mesh.setMatrixAt(slot, matrix);
           if (part.painted) {
@@ -266,23 +509,8 @@ export function createFleet(
     },
     group,
     place(track, index, s) {
-      const car = cars[index];
-      const fit = local[index];
-      if (!(car && fit)) {
-        return;
-      }
+      road = track;
       along[index] = s;
-      placeOnGround(track, s, car.x, spot);
-      base.position.set(spot.x, spot.y, spot.z);
-      const oncoming = car.cruiseSpeed < 0;
-      base.rotation.set(
-        Math.atan(spot.slope) * (oncoming ? -1 : 1),
-        -spot.heading + (oncoming ? Math.PI : 0),
-        0,
-        "YXZ"
-      );
-      base.updateMatrix();
-      placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
     },
   };
 }

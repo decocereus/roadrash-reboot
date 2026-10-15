@@ -32,9 +32,10 @@ import { roadIds, trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
+import { benchOf } from "../career/bench.ts";
 import { bikeColour } from "../career/colours.ts";
-import { createBike, createFleet, poseOnTrack } from "./actors.ts";
-import type { BikeModel, Fleet } from "./actors.ts";
+import { createBikes, createFleet, poseOnTrack, reachOf } from "./actors.ts";
+import type { Bikes, Fleet, Reach } from "./actors.ts";
 import { loadAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
@@ -49,6 +50,7 @@ import type {
 } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { BLOOM_SCALE, createPipeline } from "./post.ts";
+import { createProfiler, profileModeOf } from "./profile.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, RiderPose, Stance } from "./rider-figure.ts";
 import { createWorld, SHADOW_MAP } from "./world.ts";
@@ -113,7 +115,7 @@ interface Pose {
 }
 
 interface RiderView {
-  readonly bike: BikeModel;
+  readonly bike: THREE.Object3D;
   readonly figure: RiderFigure;
   readonly before: Pose;
   readonly after: Pose;
@@ -158,37 +160,58 @@ const freshInput = (): RiderInput => ({
 });
 
 interface StrikeFrame {
-  readonly pose: RiderPose;
-  readonly reach: number;
-  readonly rise?: number;
+  pose: RiderPose;
+  reach: number;
+  rise: number;
 }
+
+const strikeAt = (
+  frame: StrikeFrame,
+  pose: RiderPose,
+  reach: number,
+  rise = 0
+): true => {
+  frame.pose = pose;
+  frame.reach = reach;
+  frame.rise = rise;
+  return true;
+};
 
 const windingUp = (
   attack: AttackKind,
   elapsed: number,
-  land: number
-): StrikeFrame => {
+  land: number,
+  frame: StrikeFrame
+): true => {
   if (attack !== "swing") {
-    return { pose: attack, reach: elapsed / land };
+    return strikeAt(frame, attack, elapsed / land);
   }
   const lead = land - SWING_LEAD_TICKS;
   if (elapsed < lead) {
-    return { pose: "windup", reach: Math.min(1, elapsed / WINDUP_TICKS) };
+    return strikeAt(frame, "windup", Math.min(1, elapsed / WINDUP_TICKS));
   }
-  return { pose: "swing", reach: (elapsed - lead) / SWING_LEAD_TICKS };
+  return strikeAt(frame, "swing", (elapsed - lead) / SWING_LEAD_TICKS);
 };
 
-const kickFrame = (elapsed: number, land: number): StrikeFrame | undefined => {
+const kickFrame = (
+  elapsed: number,
+  land: number,
+  frame: StrikeFrame
+): boolean => {
   const dropped = (elapsed - KICK_DROP_FROM) / KICK_DROP_TICKS;
   if (dropped >= 1) {
-    return undefined;
+    return false;
   }
   const rising = 1 - Math.max(0, 1 - elapsed / KICK_RISE_TICKS) ** 2;
   const rise = dropped > 0 ? 1 - dropped * dropped : rising;
   const snap = (elapsed - KICK_RISE_TICKS) / (land - KICK_RISE_TICKS);
   const retract = (elapsed - land - KICK_HOLD_TICKS) / KICK_RETRACT_TICKS;
-  const reach = clamp(Math.min(snap, 1 - retract), 0, 1);
-  return { pose: "kick", reach, rise };
+  return strikeAt(
+    frame,
+    "kick",
+    clamp(Math.min(snap, 1 - retract), 0, 1),
+    rise
+  );
 };
 
 const flinchOf = (rider: RiderState, subTick: number): number =>
@@ -196,26 +219,27 @@ const flinchOf = (rider: RiderState, subTick: number): number =>
 
 const strikeFrame = (
   rider: RiderState,
-  subTick: number
-): StrikeFrame | undefined => {
+  subTick: number,
+  frame: StrikeFrame
+): boolean => {
   if (rider.attack === "none") {
-    return undefined;
+    return false;
   }
   const strike = strikeOf(rider.attack, rider.weapon);
   const land = strike.ticks - strike.strikeTick;
   const elapsed = strike.ticks - rider.attackTicks + subTick;
   if (rider.attack === "kick") {
-    return kickFrame(elapsed, land);
+    return kickFrame(elapsed, land, frame);
   }
   const out = rider.attack === "swing" ? "swung" : rider.attack;
   if (elapsed < land) {
-    return windingUp(rider.attack, elapsed, land);
+    return windingUp(rider.attack, elapsed, land, frame);
   }
   if (elapsed < land + HOLD_TICKS) {
-    return { pose: out, reach: 1 };
+    return strikeAt(frame, out, 1);
   }
   const back = (elapsed - land - HOLD_TICKS) / RETURN_TICKS;
-  return back < 1 ? { pose: out, reach: 1 - back } : undefined;
+  return back < 1 && strikeAt(frame, out, 1 - back);
 };
 
 const weaponName = (rider: RiderState): string =>
@@ -246,8 +270,9 @@ const out = (rider: RiderState): boolean =>
   rider.mode === "busted" || rider.mode === "wrecked";
 
 const autopilot =
-  import.meta.env.DEV &&
-  new URLSearchParams(globalThis.location.search).has("autopilot");
+  (import.meta.env.DEV &&
+    new URLSearchParams(globalThis.location.search).has("autopilot")) ||
+  benchOf(globalThis.location.search) !== null;
 
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
@@ -329,6 +354,37 @@ const ladderFor = (ceiling: number): readonly Rung[] => {
   }
 };
 
+const revealAll = (root: THREE.Object3D): (() => void) => {
+  const hidden: THREE.Object3D[] = [];
+  const culled: THREE.Object3D[] = [];
+  root.traverse((node) => {
+    if (!node.visible) {
+      hidden.push(node);
+      node.visible = true;
+    }
+    if (node.frustumCulled) {
+      culled.push(node);
+      node.frustumCulled = false;
+    }
+  });
+  return () => {
+    for (const node of hidden) {
+      node.visible = false;
+    }
+    for (const node of culled) {
+      node.frustumCulled = true;
+    }
+  };
+};
+
+const dropGeometry = (root: THREE.Object3D): void => {
+  root.traverse((node) => {
+    if (node instanceof THREE.Mesh) {
+      node.geometry.dispose();
+    }
+  });
+};
+
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
@@ -360,7 +416,12 @@ export async function createGame(
   let rung = 0;
   let pixelRatio = pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio();
   renderer.setPixelRatio(pixelRatio);
-  const pipeline = createPipeline(renderer);
+  const profileMode = profileModeOf(globalThis.location.search);
+  const profiler =
+    profileMode === "off"
+      ? null
+      : createProfiler(renderer, profileMode === "gpu");
+  const pipeline = createPipeline(renderer, profiler?.lap);
   const meter = wantsFrameMeter() ? createFrameMeter(canvas) : null;
 
   let world = createWorld(track);
@@ -374,6 +435,8 @@ export async function createGame(
   world.scene.add(fleet.group);
   let previousCars = new Float64Array(race.cars.length);
   let views: RiderView[] = [];
+  let bikes: Bikes | null = null;
+  let riderReach: Reach = reachOf(world.shading);
   let inputs: RiderInput[] = [];
 
   let phase: GamePhase = "attract";
@@ -423,6 +486,7 @@ export async function createGame(
     tuck: 0,
     weapon: "none",
   };
+  const strike: StrikeFrame = { pose: "seated", reach: 0, rise: 0 };
   let lastGear = 1;
   const placed: Placed = {
     air: 0,
@@ -452,11 +516,15 @@ export async function createGame(
 
   const dropViews = () => {
     for (const view of views) {
-      world.scene.remove(view.bike.root, view.figure.root);
-      view.bike.dispose();
+      world.scene.remove(view.figure.root);
       view.figure.dispose();
     }
     views = [];
+    if (bikes) {
+      world.scene.remove(bikes.group);
+      bikes.dispose();
+      bikes = null;
+    }
   };
 
   const dropFleet = () => {
@@ -466,20 +534,26 @@ export async function createGame(
 
   const buildViews = () => {
     dropViews();
+    const fleetOfBikes = createBikes(
+      assets,
+      world.shading,
+      race.riders.map((rider) => ({
+        paint: rider.profile.paint,
+        police: rider.profile.role === "police",
+      }))
+    );
+    bikes = fleetOfBikes;
+    riderReach = reachOf(world.shading);
+    world.scene.add(fleetOfBikes.group);
     views = race.riders.map((rider, index) => {
-      const bike = createBike(
-        assets,
-        world.shading,
-        rider.profile.paint,
-        rider.profile.role === "police"
-      );
+      const bike = fleetOfBikes.roots[index] ?? new THREE.Object3D();
       const figure = createRiderFigure(
         assets,
         world.shading,
         rider.profile.jacket,
         index
       );
-      world.scene.add(bike.root, figure.root);
+      world.scene.add(figure.root);
       const view: RiderView = {
         after: emptyPose(),
         before: emptyPose(),
@@ -510,6 +584,22 @@ export async function createGame(
     pipeline.setLook(world.shading.look);
   };
 
+  const warmUp = () => {
+    world.follow(chase.camera, player().s);
+    const samples = world.samples();
+    world.scene.add(samples);
+    const unarm = views.map((view) => view.figure.holdEveryWeapon());
+    pipeline.prepare(world.scene);
+    const restore = revealAll(world.scene);
+    pipeline.render(world.scene, chase.camera);
+    restore();
+    for (const each of unarm) {
+      each();
+    }
+    world.scene.remove(samples);
+    dropGeometry(samples);
+  };
+
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
     takeTrack(setup.track);
@@ -535,6 +625,7 @@ export async function createGame(
     tagRider = -1;
     clockReset = true;
     chase.snap();
+    warmUp();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -717,24 +808,26 @@ export async function createGame(
     }
   };
 
-  const holdStill = () => {
-    for (const [index, rider] of race.riders.entries()) {
+  const captureAll = (into: "before" | "after") => {
+    const { riders } = race;
+    for (let index = 0; index < riders.length; index += 1) {
+      const rider = riders[index];
       const view = views[index];
-      if (view) {
-        capture(rider, view.after);
+      if (rider && view) {
+        capture(rider, view[into]);
       }
     }
   };
 
+  const holdStill = () => {
+    captureAll("after");
+  };
+
   const tick = () => {
-    for (const [index, rider] of race.riders.entries()) {
-      const view = views[index];
-      if (view) {
-        capture(rider, view.before);
-      }
-    }
-    for (const [index, car] of race.cars.entries()) {
-      previousCars[index] = car.s;
+    captureAll("before");
+    const { cars } = race;
+    for (let index = 0; index < cars.length; index += 1) {
+      previousCars[index] = cars[index]?.s ?? 0;
     }
     if (holdLeft > 0) {
       holdLeft -= TICK_SECONDS;
@@ -750,7 +843,11 @@ export async function createGame(
       holdStill();
       return;
     }
-    for (const [index, input] of inputs.entries()) {
+    for (let index = 0; index < inputs.length; index += 1) {
+      const input = inputs[index];
+      if (!input) {
+        continue;
+      }
       if (index === 0 && phase !== "attract" && !autopilot) {
         controls.read(TICK_SECONDS, input);
       } else {
@@ -792,14 +889,13 @@ export async function createGame(
     let time = clock;
     const { figure, bike } = view;
     if (seated) {
-      const strike = strikeFrame(rider, subTick);
       if (rider.mode === "mounting" && rider.modeTicks < LIFT_TICKS) {
         pose = "lift";
-      } else if (strike) {
-        ({ pose, reach, rise = 0 } = strike);
+      } else if (strikeFrame(rider, subTick, strike)) {
+        ({ pose, reach, rise } = strike);
       }
-      figure.root.position.copy(bike.root.position);
-      figure.root.quaternion.copy(bike.root.quaternion);
+      figure.root.position.copy(bike.position);
+      figure.root.quaternion.copy(bike.quaternion);
       figure.root.translateY(figure.seat.y);
       figure.root.translateZ(figure.seat.z);
       view.tumbleAngle = 0;
@@ -877,10 +973,13 @@ export async function createGame(
     stance.rise = rise;
     stance.flinch = seated ? flinchOf(rider, subTick) : 0;
     stance.flinchSide = flinchSideOf(rider);
-    figure.animate(stance, seconds);
   };
 
+  const withinReach = (s: number): boolean =>
+    s >= subject.s - riderReach.behind && s <= subject.s + riderReach.ahead;
+
   const drawRider = (
+    index: number,
     rider: RiderState,
     view: RiderView,
     blend: number,
@@ -900,8 +999,11 @@ export async function createGame(
       ? Math.atan2(rider.verticalSpeed, Math.max(rider.speed, 1)) * 0.6
       : 0;
 
-    poseOnTrack(bike.root, track, s, x, air, heading, lean, flightPitch);
-    bike.spin(rider.speed * seconds);
+    poseOnTrack(bike, track, s, x, air, heading, lean, flightPitch);
+    bikes?.spin(index, rider.speed * seconds);
+    if (index === 0 || withinReach(s)) {
+      bikes?.show(index);
+    }
     placeFigure(
       rider,
       view,
@@ -913,6 +1015,11 @@ export async function createGame(
       blend,
       seconds
     );
+    if (index === 0 || withinReach(seated ? s : bodyS)) {
+      view.figure.animate(stance, seconds);
+    } else {
+      view.figure.rest();
+    }
     placed.air = air;
     placed.bodyAir = bodyAir;
     placed.bodyS = bodyS;
@@ -932,7 +1039,7 @@ export async function createGame(
       tag.style.visibility = "hidden";
       return;
     }
-    tagPoint.copy(view.bike.root.position);
+    tagPoint.copy(view.bike.position);
     tagPoint.y += TAG_HEIGHT;
     tagPoint.project(chase.camera);
     if (tagPoint.z > 1) {
@@ -945,33 +1052,53 @@ export async function createGame(
     tag.style.transform = `translate3d(${(across * canvas.clientWidth).toFixed(1)}px, ${(down * canvas.clientHeight).toFixed(1)}px, 0) translate(-50%, -100%)`;
   };
 
+  const followPlayer = (rider: RiderState) => {
+    const onBike = placed.seated || placed.s < placed.bodyS;
+    subject.s = onBike ? placed.s : placed.bodyS;
+    subject.x = onBike ? placed.x : placed.bodyX;
+    subject.air = onBike ? placed.air : Math.min(placed.bodyAir, 2);
+    subject.speed = placed.seated ? rider.speed : 0;
+    subject.tuck = placed.seated ? rider.tuck : 0;
+  };
+
+  const placeFleet = (blend: number) => {
+    const { cars } = race;
+    for (let index = 0; index < cars.length; index += 1) {
+      const s = cars[index]?.s ?? 0;
+      const from = previousCars[index] ?? s;
+      const wrapped = Math.abs(s - from) > WRAP_JUMP;
+      fleet.place(track, index, wrapped ? s : mix(from, s, blend));
+    }
+    fleet.commit(subject.s);
+  };
+
   const draw = (blend: number, seconds: number) => {
     clock += seconds;
-    for (const [index, rider] of race.riders.entries()) {
+    let index = -1;
+    for (const rider of race.riders) {
+      index += 1;
       const view = views[index];
       if (!view) {
         continue;
       }
-      drawRider(rider, view, blend, seconds);
+      drawRider(index, rider, view, blend, seconds);
       if (index === 0) {
-        const onBike = placed.seated || placed.s < placed.bodyS;
-        subject.s = onBike ? placed.s : placed.bodyS;
-        subject.x = onBike ? placed.x : placed.bodyX;
-        subject.air = onBike ? placed.air : Math.min(placed.bodyAir, 2);
-        subject.speed = placed.seated ? rider.speed : 0;
-        subject.tuck = placed.seated ? rider.tuck : 0;
+        followPlayer(rider);
       }
     }
-
-    for (const [index, car] of race.cars.entries()) {
-      const from = previousCars[index] ?? car.s;
-      const wrapped = Math.abs(car.s - from) > WRAP_JUMP;
-      fleet.place(track, index, wrapped ? car.s : mix(from, car.s, blend));
+    const [lead] = views;
+    if (bikes && lead) {
+      bikes.commit(lead.bike.position);
     }
-    fleet.commit(subject.s);
+    profiler?.lap("riders");
+
+    placeFleet(blend);
+    profiler?.lap("fleet");
 
     chase.update(track, subject, seconds);
+    profiler?.lap("camera");
     world.follow(chase.camera, subject.s);
+    profiler?.lap("world");
     pipeline.render(world.scene, chase.camera);
     placeTag();
   };
@@ -1089,8 +1216,10 @@ export async function createGame(
   const nearestRacer = (me: RiderState): number => {
     let best = -1;
     let bestGap = TAG_RANGE;
-    for (const [index, other] of race.riders.entries()) {
-      if (index === 0 || other.profile.role !== "racer" || out(other)) {
+    const { riders } = race;
+    for (let index = 1; index < riders.length; index += 1) {
+      const other = riders[index];
+      if (!other || other.profile.role !== "racer" || out(other)) {
         continue;
       }
       const gap = Math.abs(other.s - me.s) + Math.abs(other.x - me.x);
@@ -1148,30 +1277,41 @@ export async function createGame(
   observer.observe(canvas);
   resize();
   buildViews();
+  warmUp();
+
+  const advance = (seconds: number): number => {
+    if (clockReset) {
+      accumulator = 0;
+      clockReset = false;
+    }
+    accumulator += seconds;
+    let ticks = 0;
+    while (accumulator >= TICK_SECONDS && !halted()) {
+      tick();
+      ticks += 1;
+      accumulator -= TICK_SECONDS;
+      if (clockReset) {
+        break;
+      }
+    }
+    return ticks;
+  };
 
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
     if (skipsVsync(now)) {
       return;
     }
-    const seconds = clamp((now - last) / 1000, 0, MAX_FRAME_SECONDS);
+    const interval = now - last;
+    const seconds = clamp(interval / 1000, 0, MAX_FRAME_SECONDS);
     last = now;
     lastDrawn = now;
     if (halted()) {
       return;
     }
-    if (clockReset) {
-      accumulator = 0;
-      clockReset = false;
-    }
-    accumulator += seconds;
-    while (accumulator >= TICK_SECONDS && !halted()) {
-      tick();
-      accumulator -= TICK_SECONDS;
-      if (clockReset) {
-        break;
-      }
-    }
+    profiler?.start();
+    const ticks = advance(seconds);
+    profiler?.lap("sim");
     const me = player();
     const riding = me.mode === "riding" && phase !== "attract";
     const [own] = inputs;
@@ -1186,6 +1326,7 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
+    profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     govern(seconds);
     meter?.frame({
@@ -1205,6 +1346,13 @@ export async function createGame(
       hudClock = 0;
       report();
     }
+    profiler?.finish({
+      interval,
+      pixelRatio,
+      rung,
+      tick: race.tick,
+      ticks,
+    });
   });
 
   return {
@@ -1218,6 +1366,7 @@ export async function createGame(
       renderer.setAnimationLoop(null);
       observer.disconnect();
       meter?.dispose();
+      profiler?.dispose();
       controls.dispose();
       sound.dispose();
       dropViews();

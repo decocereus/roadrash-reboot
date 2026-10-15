@@ -4,6 +4,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 
 import { seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
+import type { Part } from "./profile.ts";
 
 const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
@@ -91,12 +92,11 @@ const variantOf = (object: THREE.Object3D): number => {
   return object instanceof THREE.SkinnedMesh ? 2 : 0;
 };
 
-const byMaterial = (a: THREE.Material, b: THREE.Material): number => {
-  if (a.uuid === b.uuid) {
-    return 0;
+declare module "three" {
+  interface Material {
+    readonly id: number;
   }
-  return a.uuid < b.uuid ? -1 : 1;
-};
+}
 
 const byVariantThenMaterial = (
   a: THREE.RenderItem,
@@ -105,10 +105,11 @@ const byVariantThenMaterial = (
   a.groupOrder - b.groupOrder ||
   a.renderOrder - b.renderOrder ||
   variantOf(a.object) - variantOf(b.object) ||
-  byMaterial(a.material, b.material) ||
+  a.material.id - b.material.id ||
   a.z - b.z;
 
 export interface Pipeline {
+  prepare: (scene: THREE.Scene) => void;
   setLook: (look: Look) => void;
   setBloomScale: (scale: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
@@ -116,11 +117,20 @@ export interface Pipeline {
   dispose: () => void;
 }
 
-export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
+export const createPipeline = (
+  renderer: THREE.WebGLRenderer,
+  lap?: (part: Part) => void
+): Pipeline => {
   renderer.setOpaqueSort(byVariantThenMaterial);
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
   normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
   const normalMaterial = new THREE.MeshNormalMaterial();
+  const instancedDepth = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking,
+  });
+  const skinnedDepth = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking,
+  });
   const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
     samples: SAMPLES,
     type: THREE.HalfFloatType,
@@ -171,16 +181,28 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       normalTarget.depthTexture?.dispose();
       normalTarget.dispose();
       normalMaterial.dispose();
+      instancedDepth.dispose();
+      skinnedDepth.dispose();
       sceneTarget.dispose();
       inkTarget.dispose();
       bloom.dispose();
       line.dispose();
       grade.dispose();
     },
+    prepare(scene) {
+      scene.traverse((node) => {
+        if (node instanceof THREE.InstancedMesh) {
+          node.customDepthMaterial ??= instancedDepth;
+        } else if (node instanceof THREE.SkinnedMesh) {
+          node.customDepthMaterial ??= skinnedDepth;
+        }
+      });
+    },
     render(scene, camera) {
       const { background, fog } = scene;
       scene.matrixWorldAutoUpdate = false;
       scene.updateMatrixWorld();
+      lap?.("matrices");
       renderer.shadowMap.needsUpdate = true;
       uniform(line, "range").value.set(camera.near, camera.far);
       scene.overrideMaterial = normalMaterial;
@@ -191,15 +213,20 @@ export const createPipeline = (renderer: THREE.WebGLRenderer): Pipeline => {
       renderer.setClearColor(FACING_CAMERA, 1);
       renderer.clear();
       renderer.render(scene, camera);
+      lap?.("normal");
       scene.overrideMaterial = null;
       scene.background = background;
       scene.fog = fog;
       seesFx(camera, true);
       renderer.setRenderTarget(sceneTarget);
       renderer.render(scene, camera);
+      lap?.("main");
       line.render(renderer, inkTarget, sceneTarget, 0, false);
+      lap?.("line");
       bloom.render(renderer, inkTarget, inkTarget, 0, false);
+      lap?.("bloom");
       grade.render(renderer, inkTarget, inkTarget, 0, false);
+      lap?.("grade");
     },
     resize(width, height, pixelRatio) {
       cssWidth = width;
