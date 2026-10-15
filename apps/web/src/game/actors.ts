@@ -148,6 +148,28 @@ const instanced = (
   return mesh;
 };
 
+const upload = (
+  attribute: THREE.BufferAttribute,
+  from: number,
+  to: number
+): void => {
+  if (to <= from) {
+    return;
+  }
+  attribute.addUpdateRange(
+    from * attribute.itemSize,
+    (to - from) * attribute.itemSize
+  );
+  attribute.needsUpdate = true;
+};
+
+const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
+  mesh.count = count;
+  mesh.visible = count > 0;
+  mesh.instanceMatrix.clearUpdateRanges();
+  upload(mesh.instanceMatrix, 0, count);
+};
+
 export function createBikes(
   assets: Assets,
   shading: Shading,
@@ -245,7 +267,8 @@ export function createBikes(
       group.position.copy(anchor);
       let slot = 0;
       let cop = 0;
-      let recoloured = false;
+      let firstRecoloured = capacity;
+      let lastRecoloured = -1;
       for (let index = 0; index < capacity; index += 1) {
         const root = roots[index];
         if (shown[index] === 0 || !root) {
@@ -269,23 +292,20 @@ export function createBikes(
           beacons.setMatrixAt(cop, frame);
           cop += 1;
         }
-        recoloured = recolour(slot, index) || recoloured;
+        if (recolour(slot, index)) {
+          firstRecoloured = Math.min(firstRecoloured, slot);
+          lastRecoloured = slot;
+        }
         slot += 1;
       }
       for (const { mesh } of parts) {
-        mesh.count = slot;
-        mesh.visible = slot > 0;
-        mesh.instanceMatrix.needsUpdate = true;
+        showPrefix(mesh, slot);
       }
       if (beacons) {
-        beacons.count = cop;
-        beacons.visible = cop > 0;
-        beacons.instanceMatrix.needsUpdate = true;
+        showPrefix(beacons, cop);
       }
-      if (recoloured) {
-        paint.needsUpdate = true;
-        trim.needsUpdate = true;
-      }
+      upload(paint, firstRecoloured, lastRecoloured + 1);
+      upload(trim, firstRecoloured, lastRecoloured + 1);
     },
     dispose() {
       disposeTree(group);
