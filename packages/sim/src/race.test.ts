@@ -3717,17 +3717,31 @@ const slowTruckAt = (state: RaceState, s: number, x: number): void => {
 interface Closing {
   readonly truckS: number;
   readonly speed: number;
+  readonly x: number;
 }
 
-const closingOnTruck: Closing = { speed: 45, truckS: 970 };
-const fastOnTruck: Closing = { speed: 65, truckS: 980 };
+const closingOnTruck: Closing = { speed: 45, truckS: 970, x: 1.8 };
+const fastOnTruck: Closing = { speed: 65, truckS: 980, x: 1.8 };
+
+const escapes: readonly (readonly [string, Closing, HazardPlacement])[] = [
+  [
+    "a rock level with the truck",
+    closingOnTruck,
+    placedAt("rock", 970, -0.6, "level"),
+  ],
+  [
+    "a pothole on the line it starts on",
+    { speed: 35, truckS: 960, x: 2.6 },
+    placedAt("pothole", 960, 2.4, "underfoot"),
+  ],
+];
 
 const pilotBehindTruck = (road: Track, closing = closingOnTruck) => {
   const state = field(road, 1, 0, 0);
   slowTruckAt(state, closing.truckS, 1.8);
   const rider = player(state);
   rider.s = 920;
-  rider.x = 1.8;
+  rider.x = closing.x;
   rider.speed = closing.speed;
   return pilotFrom(state, road, 6);
 };
@@ -3740,7 +3754,7 @@ const copBehindTruck = (road: Track, closing = closingOnTruck) => {
   cop.post = 900;
   cop.chase = 0;
   cop.s = 920;
-  cop.x = 1.8;
+  cop.x = closing.x;
   cop.speed = closing.speed;
   const target = player(state);
   target.s = 935;
@@ -4124,6 +4138,28 @@ describe("road hazards", () => {
       )
     ).toStrictEqual([]);
   });
+
+  it.each(escapes)(
+    "the pilot escaping a truck past %s stays up, as it does on a clear road",
+    (_, closing, hazard) => {
+      expect(
+        downed(pilotBehindTruck(hazardFreeRoad, closing).events)
+      ).toStrictEqual([]);
+      expect(
+        downed(pilotBehindTruck(roadWith(hazard), closing).events)
+      ).toStrictEqual([]);
+    }
+  );
+
+  it.each(escapes)(
+    "a pursuing cop escaping a truck past %s stays up, as it does on a clear road",
+    (_, closing, hazard) => {
+      expect(downed(copBehindTruck(hazardFreeRoad, closing))).toStrictEqual([]);
+      expect(downed(copBehindTruck(roadWith(hazard), closing))).toStrictEqual(
+        []
+      );
+    }
+  );
 
   it("a pursuing cop never dodges a rock into the back of a slow truck", () => {
     expect(downed(copBehindTruck(hazardFreeRoad))).toStrictEqual([]);
