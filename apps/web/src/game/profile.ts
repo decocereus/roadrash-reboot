@@ -38,6 +38,7 @@ export interface ProfileFrame {
   readonly tick: number;
   readonly ticks: number;
   readonly interval: number;
+  readonly start: number;
   readonly pixelRatio: number;
   readonly rung: number;
   readonly cpu: readonly number[];
@@ -117,6 +118,7 @@ export const createProfiler = (
   const ticksAt = new Int32Array(CAPACITY);
   const stepped = new Uint8Array(CAPACITY);
   const intervals = new Float32Array(CAPACITY);
+  const starts = new Float64Array(CAPACITY);
   const ratios = new Float32Array(CAPACITY);
   const rungs = new Uint8Array(CAPACITY);
   const gpuSeen = new Uint8Array(CAPACITY);
@@ -250,6 +252,7 @@ export const createProfiler = (
       interval: intervals[at] ?? 0,
       pixelRatio: ratios[at] ?? 0,
       rung: rungs[at] ?? 0,
+      start: starts[at] ?? 0,
       tick: ticksAt[at] ?? 0,
       ticks: stepped[at] ?? 0,
       triangles: read("triangles"),
@@ -318,6 +321,7 @@ export const createProfiler = (
       lastCalls = renderer.info.render.calls;
       lastTriangles = renderer.info.render.triangles;
       mark = performance.now();
+      starts[slot] = mark;
       beginQuery();
     },
   };

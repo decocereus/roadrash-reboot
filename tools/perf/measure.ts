@@ -8,13 +8,22 @@ import { Schema } from "effect";
 
 import { benchWindow } from "../../apps/web/src/career/bench-window.ts";
 import {
+  clockMark,
+  clockMarkMicros,
   cpuProfile,
+  eventsDuring,
   gcNamesSeen,
   hottest,
   summariseTrace,
+  threadNames,
   traceEvent,
 } from "./analysis.ts";
-import type { Hotspots, TraceSummary } from "./analysis.ts";
+import type {
+  Hotspots,
+  StallEvent,
+  TraceEvent,
+  TraceSummary,
+} from "./analysis.ts";
 import { evaluate } from "./cdp.ts";
 import type { Session } from "./cdp.ts";
 import { launch } from "./chrome.ts";
@@ -25,6 +34,13 @@ const TIMEOUT_MS = 240_000;
 const TOP_FUNCTIONS = 30;
 const SAMPLING_MICROS = 100;
 const TRACE_CATEGORIES = ["devtools.timeline"];
+const FIRST_RUN_CATEGORIES = ["devtools.timeline", "toplevel"];
+const TASK_EVENT = "ThreadControllerImpl::RunTask";
+const SHORT_TASK_MICROS = 1000;
+const STALL_EVENTS = 8;
+const COUNTDOWN_PROBE_MS = 300;
+const PART_SHOWN_MS = 0.3;
+const LATE_MS = [20, 33] as const;
 
 const frameSample = Schema.Struct({
   calls: Schema.Array(Schema.Number),
@@ -34,6 +50,7 @@ const frameSample = Schema.Struct({
   interval: Schema.Number,
   pixelRatio: Schema.Number,
   rung: Schema.Number,
+  start: Schema.optionalKey(Schema.Number),
   tick: Schema.Number,
   ticks: Schema.Number,
   triangles: Schema.Array(Schema.Number),
@@ -79,6 +96,8 @@ interface Options {
   readonly saveTrace: boolean;
   readonly shots: readonly number[];
   readonly viewport: Viewport;
+  readonly firstRun: boolean;
+  readonly worst: number;
 }
 
 interface Stats {
@@ -95,6 +114,14 @@ interface PartSummary {
   readonly gpu: Stats | null;
   readonly calls: number;
   readonly triangles: number;
+}
+
+interface Stall {
+  readonly tick: number;
+  readonly interval: number;
+  readonly calls: number;
+  readonly parts: readonly (readonly [string, number])[];
+  readonly events: readonly StallEvent[];
 }
 
 interface RunResult {
@@ -118,6 +145,8 @@ interface RunResult {
   readonly gcEventNames: readonly string[];
   readonly hot: Hotspots | null;
   readonly shots: readonly string[];
+  readonly late: readonly number[];
+  readonly stalls: readonly Stall[];
   readonly samples: readonly Frame[];
 }
 
@@ -148,7 +177,8 @@ const readOptions = (): Options => {
   const { values } = parseArgs({
     options: {
       "cpu-profile": { default: false, type: "boolean" },
-      from: { default: String(benchWindow.from), type: "string" },
+      "first-run": { default: false, type: "boolean" },
+      from: { type: "string" },
       height: { default: "860", type: "string" },
       label: { default: "run", type: "string" },
       "no-trace": { default: false, type: "boolean" },
@@ -161,6 +191,7 @@ const readOptions = (): Options => {
       to: { default: String(benchWindow.to), type: "string" },
       url: { type: "string" },
       width: { default: "1512", type: "string" },
+      worst: { default: "5", type: "string" },
     },
   });
   if (!values.url) {
@@ -168,9 +199,11 @@ const readOptions = (): Options => {
       "Pass --url, for example http://localhost:1352/?stress&ratio=2"
     );
   }
+  const firstRun = values["first-run"];
   return {
     cpuProfile: values["cpu-profile"],
-    from: Number(values.from),
+    firstRun,
+    from: Number(values.from ?? (firstRun ? 1 : benchWindow.from)),
     label: values.label,
     out: values.out,
     port: Number(values.port),
@@ -189,6 +222,7 @@ const readOptions = (): Options => {
       scale: Number(values.scale),
       width: Number(values.width),
     },
+    worst: Number(values.worst),
   };
 };
 
@@ -213,6 +247,29 @@ const waitForTick = async (
   }
   await sleep(POLL_MS);
   return waitForTick(page, tick, deadline);
+};
+
+const waitForCountdown = async (
+  page: Session,
+  deadline: number
+): Promise<void> => {
+  await waitForTick(page, 0, deadline);
+  if ((await currentTick(page)) === 0) {
+    await sleep(COUNTDOWN_PROBE_MS);
+    if ((await currentTick(page)) === 0) {
+      return;
+    }
+  }
+  if (Date.now() > deadline) {
+    throw new Error("The race never held a countdown.");
+  }
+  await sleep(POLL_MS);
+  return waitForCountdown(page, deadline);
+};
+
+const afterGreenLight = (frames: readonly Frame[], from: number): Frame[] => {
+  const lastHeld = frames.findLastIndex((frame) => frame.tick === 0);
+  return frames.slice(lastHeld + 1).filter((frame) => frame.tick >= from);
 };
 
 const shoot = async (
@@ -240,15 +297,30 @@ const shoot = async (
   return [file, ...(await shoot(page, options, run, rest, deadline))];
 };
 
+interface Collected {
+  readonly raw: unknown[];
+  readonly events: TraceEvent[];
+}
+
+const worthKeeping = (event: TraceEvent): boolean =>
+  event.name !== TASK_EVENT || (event.dur ?? 0) >= SHORT_TASK_MICROS;
+
 const startTrace = async (
   page: Session,
-  raw: (typeof collected.Type)["value"][]
+  into: Collected,
+  categories: readonly string[]
 ) => {
   page.on("Tracing.dataCollected", collected, ({ value }) => {
-    raw.push(value);
+    for (const each of value) {
+      const event = decodeEvent(each);
+      if (worthKeeping(event)) {
+        into.raw.push(each);
+        into.events.push(event);
+      }
+    }
   });
   await page.send("Tracing.start", {
-    traceConfig: { includedCategories: TRACE_CATEGORIES },
+    traceConfig: { includedCategories: [...categories] },
     transferMode: "ReportEvents",
   });
 };
@@ -288,6 +360,54 @@ const summarise = (
   };
 };
 
+const stallsOf = (
+  frames: readonly Frame[],
+  partNames: readonly string[],
+  events: readonly TraceEvent[],
+  offsetMicros: number | null,
+  count: number
+): Stall[] => {
+  const threads = threadNames(events);
+  const byNumber = new Map(frames.map((frame) => [frame.frame, frame]));
+  return frames
+    .toSorted((a, b) => b.interval - a.interval)
+    .slice(0, count)
+    .map((late) => {
+      const cause = byNumber.get(late.frame - 1) ?? late;
+      const end = late.start ?? 0;
+      return {
+        calls: sum(cause.calls),
+        events:
+          offsetMicros === null || late.start === undefined
+            ? []
+            : eventsDuring(
+                events,
+                threads,
+                [
+                  offsetMicros + (end - late.interval) * 1000,
+                  offsetMicros + end * 1000,
+                ],
+                STALL_EVENTS
+              ),
+        interval: late.interval,
+        parts: partNames
+          .map((part, index): readonly [string, number] => [
+            part,
+            cause.cpu[index] ?? 0,
+          ])
+          .filter(([, cpu]) => cpu >= PART_SHOWN_MS),
+        tick: cause.tick,
+      };
+    });
+};
+
+const pageClock = (page: Session): Promise<number> =>
+  evaluate(
+    page,
+    `(console.timeStamp(${JSON.stringify(clockMark)}), performance.now())`,
+    Schema.Number
+  );
+
 const measureOnce = async (
   options: Options,
   run: number
@@ -304,11 +424,19 @@ const measureOnce = async (
       width: options.viewport.width,
     });
     await page.send("Page.navigate", { url: options.url });
-    await waitForTick(page, options.from, deadline);
-    const raw: (typeof collected.Type)["value"][] = [];
+    await (options.firstRun
+      ? waitForCountdown(page, deadline)
+      : waitForTick(page, options.from, deadline));
+    const trace: Collected = { events: [], raw: [] };
     if (options.trace) {
-      await startTrace(page, raw);
+      await startTrace(
+        page,
+        trace,
+        options.firstRun ? FIRST_RUN_CATEGORIES : TRACE_CATEGORIES
+      );
     }
+    const pageNow = options.trace ? await pageClock(page) : 0;
+    await waitForTick(page, options.from, deadline);
     if (options.cpuProfile) {
       await page.send("Profiler.enable");
       await page.send("Profiler.setSamplingInterval", {
@@ -327,24 +455,28 @@ const measureOnce = async (
     if (options.trace) {
       await stopTrace(page);
     }
-    const traceEvents = raw.flat();
+    const { events, raw: traceEvents } = trace;
     if (options.saveTrace) {
       await writeFile(
         path.join(options.out, `${options.label}-run${run}-trace.json`),
         JSON.stringify({ traceEvents })
       );
     }
-    const events = traceEvents.map((event) => decodeEvent(event));
+    const marked = clockMarkMicros(events);
+    const offsetMicros = marked === null ? null : marked - pageNow * 1000;
     const info = await evaluate(
       page,
       "globalThis.__rushlineProfile.info()",
       profileInfo
     );
-    const frames = await evaluate(
+    const recorded = await evaluate(
       page,
-      `globalThis.__rushlineProfile.window(${options.from}, ${options.to})`,
+      `globalThis.__rushlineProfile.window(${options.firstRun ? 0 : options.from}, ${options.to})`,
       Schema.Array(frameSample)
     );
+    const frames = options.firstRun
+      ? afterGreenLight(recorded, options.from)
+      : recorded;
     const measured = await evaluate(
       page,
       "({ width: innerWidth, height: innerHeight, ratio: devicePixelRatio })",
@@ -358,6 +490,9 @@ const measureOnce = async (
       heapAfter,
       heapBefore,
       hot: profile ? await hottest(profile, TOP_FUNCTIONS) : null,
+      late: LATE_MS.map(
+        (limit) => frames.filter((frame) => frame.interval > limit).length
+      ),
       load: (loadBefore + (loadavg()[0] ?? 0)) / 2,
       page: measured,
       pixelRatios: [...new Set(frames.map((frame) => frame.pixelRatio))],
@@ -366,6 +501,7 @@ const measureOnce = async (
       rungs: [...new Set(frames.map((frame) => frame.rung))],
       samples: frames,
       shots,
+      stalls: stallsOf(frames, info.parts, events, offsetMicros, options.worst),
       trace: options.trace ? summariseTrace(events) : null,
     };
   } finally {
@@ -381,12 +517,25 @@ const spread = (values: readonly number[]): string =>
 const printRun = (result: RunResult) => {
   const { interval, trace } = result;
   console.log(
-    `run ${result.run}: ${result.frames} frames  ${result.fps.toFixed(1)} fps  frame mean ${interval.mean.toFixed(2)} p50 ${interval.p50.toFixed(2)} p95 ${interval.p95.toFixed(2)} p99 ${interval.p99.toFixed(2)} worst ${interval.max.toFixed(2)} ms  js ${result.jsFrame.mean.toFixed(2)} ms  calls ${result.calls.mean.toFixed(0)}  tris ${(result.triangles.mean / 1e6).toFixed(2)} M  load ${result.load.toFixed(1)}/${cpus().length}`
+    `run ${result.run}: ${result.frames} frames (${LATE_MS.map((limit, index) => `${result.late[index] ?? 0} over ${limit} ms`).join(", ")})  ${result.fps.toFixed(1)} fps  frame mean ${interval.mean.toFixed(2)} p50 ${interval.p50.toFixed(2)} p95 ${interval.p95.toFixed(2)} p99 ${interval.p99.toFixed(2)} worst ${interval.max.toFixed(2)} ms  js ${result.jsFrame.mean.toFixed(2)} ms  calls ${result.calls.mean.toFixed(0)}  tris ${(result.triangles.mean / 1e6).toFixed(2)} M  load ${result.load.toFixed(1)}/${cpus().length}`
   );
   if (trace) {
     console.log(
       `  gc minor ${trace.minorGc.count} (${trace.minorGc.totalMs.toFixed(1)} ms, max ${trace.minorGc.maxMs.toFixed(2)})  major ${trace.majorGc.count} (${trace.majorGc.totalMs.toFixed(1)} ms, max ${trace.majorGc.maxMs.toFixed(2)})  long tasks ${trace.longTasks.count}  longest task ${trace.longestTaskMs.toFixed(1)} ms over ${(trace.spanMs / 1000).toFixed(1)} s`
     );
+  }
+  for (const stall of result.stalls) {
+    const parts = stall.parts
+      .map(([part, cpu]) => `${part} ${cpu.toFixed(1)}`)
+      .join(", ");
+    console.log(
+      `  late frame after tick ${stall.tick}: ${stall.interval.toFixed(1)} ms, the frame before it drew ${stall.calls} calls, js parts: ${parts || "none"}`
+    );
+    for (const event of stall.events) {
+      console.log(
+        `    ${event.ms.toFixed(1).padStart(7)} ms  ${event.thread.padEnd(34)} ${event.name}`
+      );
+    }
   }
 };
 
