@@ -288,6 +288,16 @@ const autopilot =
     new URLSearchParams(globalThis.location.search).has("autopilot")) ||
   benchOf(globalThis.location.search) !== null;
 
+const SWERVE_METRES = 25;
+const devFlags = new URLSearchParams(
+  import.meta.env.DEV ? globalThis.location.search : ""
+);
+const holdOn = devFlags.get("hold");
+const holdDelay = Number(devFlags.get("holdafter") ?? 0);
+const startAt = Number(devFlags.get("at") ?? 0);
+const swerveAt = Number(devFlags.get("swerve") ?? 0);
+const swerveFor = Number(devFlags.get("swervefor") ?? SWERVE_METRES);
+
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
   : 0;
@@ -627,10 +637,19 @@ export async function createGame(
     dropGeometry(samples);
   };
 
+  const moveTo = (s: number) => {
+    const me = player();
+    me.bodyS += s - me.s;
+    me.s = s;
+  };
+
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     dropFleet();
     takeTrack(setup.track);
     race = createRace(setup);
+    if (nextPhase === "countdown" && startAt > 0) {
+      moveTo(startAt);
+    }
     fleet = createFleet(assets, world.shading, race.cars);
     world.scene.add(fleet.group);
     previousCars = new Float64Array(race.cars.length);
@@ -870,6 +889,39 @@ export async function createGame(
     captureAll("after");
   };
 
+  const swerve = () => {
+    const me = player();
+    const [own] = inputs;
+    if (own && swerveAt > 0 && me.s > swerveAt && me.s < swerveAt + swerveFor) {
+      own.steer = 1;
+    }
+  };
+
+  let holdTicks = -1;
+  const watchHold = () => {
+    const me = player();
+    if (holdTicks === -1) {
+      const seen =
+        holdOn === "air"
+          ? me.airborne && me.airTicks >= holdDelay
+          : holdOn === "at"
+            ? me.s >= holdDelay
+            : race.events.some(
+                (event) => event.kind === holdOn && event.rider === 0
+              );
+      if (seen) {
+        holdTicks = holdOn === "air" || holdOn === "at" ? 0 : holdDelay;
+      }
+    }
+    if (holdTicks === 0) {
+      frozen = true;
+      holdTicks = -2;
+      Reflect.set(globalThis, "__rushlineHeld", true);
+    } else if (holdTicks > 0) {
+      holdTicks -= 1;
+    }
+  };
+
   const tick = () => {
     captureAll("before");
     const { cars } = race;
@@ -901,6 +953,7 @@ export async function createGame(
         pilotInput(race, track, index, input);
       }
     }
+    swerve();
     if (phase === "attract" && attractOver()) {
       loadAttract(true);
       return;
@@ -911,6 +964,9 @@ export async function createGame(
     }
     if (phase !== "attract") {
       react();
+    }
+    if (holdOn && phase === "racing") {
+      watchHold();
     }
     record();
     advanceClock();
@@ -1364,6 +1420,14 @@ export async function createGame(
   };
 
   let last = performance.now();
+  if (holdOn) {
+    Reflect.set(globalThis, "__rushlineRelease", () => {
+      frozen = false;
+      clockReset = true;
+      last = performance.now();
+      Reflect.set(globalThis, "__rushlineHeld", false);
+    });
+  }
   renderer.setAnimationLoop((now) => {
     if (skipsVsync(now)) {
       return;
