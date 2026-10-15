@@ -28,6 +28,7 @@ import type {
   RiderState,
 } from "@racer/sim/state";
 import { strikeOf, weapons } from "@racer/sim/weapons";
+import { emptySupport, supportAt } from "@racer/track/features";
 import { roadIds, trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
@@ -51,6 +52,8 @@ import type {
 import { createControls } from "./input.ts";
 import { BLOOM_SCALE, createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
+import { createPuffs } from "./puffs.ts";
+import type { Puffs } from "./puffs.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, RiderPose, Stance } from "./rider-figure.ts";
 import { createWorld, SHADOW_MAP } from "./world.ts";
@@ -95,6 +98,15 @@ const SWING_LEAD_TICKS = 3;
 const HOLD_TICKS = 4;
 const RETURN_TICKS = 5;
 const KICK_RISE_TICKS = 2.5;
+const SAG_PER_IMPACT = 0.45;
+const MOST_SAG_KICK = 3.2;
+const SAG_STIFFNESS = 260;
+const SAG_DAMPING = 16;
+const SAG_STEP = 1 / 240;
+const MOST_SAG = 0.16;
+const PUFF_AIR_SECONDS = 0.2;
+const PUFF_PER_IMPACT = 0.1;
+const BUMP_PER_IMPACT = 1 / 9;
 const KICK_HOLD_TICKS = 2;
 const KICK_RETRACT_TICKS = 3;
 const KICK_DROP_FROM = 8;
@@ -124,6 +136,8 @@ interface RiderView {
   lift: number;
   yaw: number;
   stride: number;
+  sag: number;
+  sagSpeed: number;
 }
 
 const capture = (rider: RiderState, pose: Pose): void => {
@@ -436,6 +450,8 @@ export async function createGame(
   let previousCars = new Float64Array(race.cars.length);
   let views: RiderView[] = [];
   let bikes: Bikes | null = null;
+  let puffs: Puffs | null = null;
+  const deck = emptySupport();
   let riderReach: Reach = reachOf(world.shading);
   let inputs: RiderInput[] = [];
 
@@ -525,6 +541,11 @@ export async function createGame(
       bikes.dispose();
       bikes = null;
     }
+    if (puffs) {
+      world.scene.remove(puffs.group);
+      puffs.dispose();
+      puffs = null;
+    }
   };
 
   const dropFleet = () => {
@@ -545,6 +566,8 @@ export async function createGame(
     bikes = fleetOfBikes;
     riderReach = reachOf(world.shading);
     world.scene.add(fleetOfBikes.group);
+    puffs = createPuffs(world.shading);
+    world.scene.add(puffs.group);
     views = race.riders.map((rider, index) => {
       const bike = fleetOfBikes.roots[index] ?? new THREE.Object3D();
       const figure = createRiderFigure(
@@ -561,6 +584,8 @@ export async function createGame(
         figure,
         lift: figure.standHeight,
         pitch: 0,
+        sag: 0,
+        sagSpeed: 0,
         stride: 0,
         tumbleAngle: 0,
         yaw: 0,
@@ -589,10 +614,12 @@ export async function createGame(
     const samples = world.samples();
     world.scene.add(samples);
     const unarm = views.map((view) => view.figure.holdEveryWeapon());
+    const unprime = puffs?.prime();
     pipeline.prepare(world.scene);
     const restore = revealAll(world.scene);
     pipeline.render(world.scene, chase.camera);
     restore();
+    unprime?.();
     for (const each of unarm) {
       each();
     }
@@ -715,9 +742,12 @@ export async function createGame(
       sound.thump(0.8);
     } else if (event.kind === "nearMiss") {
       sound.whoosh();
-    } else if (event.kind === "land" && event.airSeconds > 0.35) {
-      chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
-      sound.thump(Math.abs(event.impact) / 10);
+    } else if (event.kind === "land") {
+      chase.bump(-event.impact * BUMP_PER_IMPACT);
+      if (event.airSeconds > 0.35) {
+        chase.jolt(Math.min(0.8, Math.abs(event.impact) * 0.07));
+        sound.thump(Math.abs(event.impact) / 10);
+      }
     } else if (event.kind === "glance" || event.kind === "bump") {
       chase.jolt(0.45);
       sound.thump(0.5);
@@ -756,6 +786,23 @@ export async function createGame(
       if (event.by === 0 && event.cause !== "rider") {
         speak(event.rider, "youKnockThemDown");
       }
+    }
+  };
+
+  const touchDown = (event: RaceEvent) => {
+    const view = views[event.rider];
+    const rider = race.riders[event.rider];
+    if (!(view && rider)) {
+      return;
+    }
+    const near = event.rider === 0 || withinReach(rider.s);
+    if (event.kind === "land") {
+      view.sagSpeed += Math.min(MOST_SAG_KICK, -event.impact * SAG_PER_IMPACT);
+      if (near && event.airSeconds > PUFF_AIR_SECONDS) {
+        puffs?.burst(view.bike, -event.impact * PUFF_PER_IMPACT, rider.speed);
+      }
+    } else if (event.kind === "crash" && event.cause === "landing" && near) {
+      puffs?.burst(view.bike, 1, rider.speed);
     }
   };
 
@@ -859,6 +906,9 @@ export async function createGame(
       return;
     }
     stepRace(race, track, inputs);
+    for (const event of race.events) {
+      touchDown(event);
+    }
     if (phase !== "attract") {
       react();
     }
@@ -896,7 +946,7 @@ export async function createGame(
       }
       figure.root.position.copy(bike.position);
       figure.root.quaternion.copy(bike.quaternion);
-      figure.root.translateY(figure.seat.y);
+      figure.root.translateY(figure.seat.y - view.sag);
       figure.root.translateZ(figure.seat.z);
       view.tumbleAngle = 0;
       view.pitch = 0;
@@ -978,6 +1028,19 @@ export async function createGame(
   const withinReach = (s: number): boolean =>
     s >= subject.s - riderReach.behind && s <= subject.s + riderReach.ahead;
 
+  const settleSag = (view: RiderView, seconds: number) => {
+    for (let left = seconds; left > 0; left -= SAG_STEP) {
+      const step = Math.min(SAG_STEP, left);
+      view.sagSpeed -=
+        (SAG_STIFFNESS * view.sag + SAG_DAMPING * view.sagSpeed) * step;
+      view.sag = clamp(
+        view.sag + view.sagSpeed * step,
+        -MOST_SAG / 2,
+        MOST_SAG
+      );
+    }
+  };
+
   const drawRider = (
     index: number,
     rider: RiderState,
@@ -995,12 +1058,14 @@ export async function createGame(
     const bodyX = mix(before.bodyX, after.bodyX, blend);
     const bodyAir = mix(before.bodyAir, after.bodyAir, blend);
     const seated = rider.mode === "riding" || rider.mode === "mounting";
-    const flightPitch = rider.airborne
+    const pitch = rider.airborne
       ? Math.atan2(rider.verticalSpeed, Math.max(rider.speed, 1)) * 0.6
-      : 0;
+      : Math.atan(supportAt(track, s, x, deck).slope);
 
-    poseOnTrack(bike, track, s, x, air, heading, lean, flightPitch);
+    poseOnTrack(bike, track, s, x, air, heading, lean, pitch);
     bikes?.spin(index, rider.speed * seconds);
+    settleSag(view, seconds);
+    bikes?.sag(index, view.sag);
     if (index === 0 || withinReach(s)) {
       bikes?.show(index);
     }
@@ -1090,6 +1155,7 @@ export async function createGame(
     if (bikes && lead) {
       bikes.commit(lead.bike.position);
     }
+    puffs?.update(seconds);
     profiler?.lap("riders");
 
     placeFleet(blend);
