@@ -51,10 +51,10 @@ const THROTTLE_PER_EXCESS = 0.8;
 const PACING_RANGE = 200;
 const JUMP_SIGHT_SECONDS = 3.5;
 const JUMP_SIGHT_EXTRA = 10;
-const JUMP_PULL = 2.6;
+const JUMP_PULL = 3.6;
 const JUMP_ALIGN_SECONDS = 0.5;
 const JUMP_ALIGN_PER_METRE = 0.45;
-const JUMP_LANDING_ROOM = 1;
+const JUMP_LANDING_ROOM = 0.5;
 const JUMP_IMPACT_MARGIN = 0.9;
 const JUMP_LINE_SPREAD = 1.2;
 const JUMP_WALL_CLEARANCE = 1.2;
@@ -357,7 +357,18 @@ const misreads = (
   return rider.jumpMisread;
 };
 
+const roadSide = (
+  track: Track,
+  jump: TrackFeature,
+  side: number,
+  reach: number
+): number =>
+  Math.abs(jump.x + side * reach) > track.roadHalfWidth - BIKE_HALF_WIDTH
+    ? -side
+    : side;
+
 const lineOnto = (
+  track: Track,
   jump: TrackFeature,
   riderIndex: number,
   rider: RiderState,
@@ -374,18 +385,25 @@ const lineOnto = (
       toLip < Math.sqrt((2 * gap) / rider.bike.steerRate) + MISREAD_SLACK;
     return dives
       ? jump.x - Math.sign(across) * MISREAD_DIVE
-      : jump.x + side * (jump.width / 2 + MISREAD_EDGE);
+      : jump.x +
+          roadSide(track, jump, side, jump.width / 2 + MISREAD_EDGE) *
+            (jump.width / 2 + MISREAD_EDGE);
   }
   const spread = (1 - rider.profile.skill) * JUMP_LINE_SPREAD;
   return jump.x + side * Math.min(spread, jump.width / 2 - BIKE_HALF_WIDTH);
 };
 
-const clearOfWall = (jump: TrackFeature, rider: RiderState, aim: Aim): Aim => {
+const clearOfWall = (
+  track: Track,
+  jump: TrackFeature,
+  rider: RiderState,
+  aim: Aim
+): Aim => {
   const wall = jump.width / 2 + JUMP_WALL_CLEARANCE;
   if (Math.abs(aim.x - jump.x) >= wall) {
     return aim;
   }
-  const side = Math.sign(rider.x - jump.x) || 1;
+  const side = roadSide(track, jump, Math.sign(rider.x - jump.x) || 1, wall);
   return { speed: aim.speed, x: jump.x + side * wall };
 };
 
@@ -408,8 +426,8 @@ const jumpAim = (
       return { speed: aim.speed, x: jump.x };
     }
     return rider.jumpSeen === jumpIndex && rider.jumpMisread
-      ? { speed: aim.speed, x: lineOnto(jump, riderIndex, rider, true) }
-      : clearOfWall(jump, rider, aim);
+      ? { speed: aim.speed, x: lineOnto(track, jump, riderIndex, rider, true) }
+      : clearOfWall(track, jump, rider, aim);
   }
   if (toToe > rider.speed * JUMP_SIGHT_SECONDS + JUMP_SIGHT_EXTRA) {
     return aim;
@@ -432,10 +450,16 @@ const jumpAim = (
   if (reachable && landsOnRoad) {
     return {
       speed: Math.min(aim.speed, safeLaunchSpeed(jump)),
-      x: lineOnto(jump, riderIndex, rider, misreads(state, rider, jumpIndex)),
+      x: lineOnto(
+        track,
+        jump,
+        riderIndex,
+        rider,
+        misreads(state, rider, jumpIndex)
+      ),
     };
   }
-  return clearOfWall(jump, rider, aim);
+  return clearOfWall(track, jump, rider, aim);
 };
 
 const launchesSoon = (track: Track, rider: RiderState): boolean => {

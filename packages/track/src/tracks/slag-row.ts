@@ -18,7 +18,7 @@ export const slagRow: TrackPlan = {
       id: "bonded-ramp",
       placement: "fixed",
       s: 7280,
-      x: 0,
+      x: 3.5,
     },
     {
       feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
@@ -26,7 +26,7 @@ export const slagRow: TrackPlan = {
       id: "boulevard-ramp",
       placement: "fixed",
       s: 10_880,
-      x: 0,
+      x: 3.5,
     },
   ],
   id: "slag-row",

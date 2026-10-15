@@ -10,7 +10,7 @@ export const cinderWash: TrackPlan = {
       id: "drive-in-ramp",
       placement: "fixed",
       s: 4250,
-      x: 0,
+      x: 3.8,
     },
     {
       feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },

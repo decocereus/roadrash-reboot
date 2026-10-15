@@ -10,7 +10,7 @@ export const breakwaterRun: TrackPlan = {
       id: "promenade-ramp",
       placement: "fixed",
       s: 4050,
-      x: 0,
+      x: 3.6,
     },
     {
       feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },

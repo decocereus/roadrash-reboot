@@ -10,7 +10,7 @@ export const ridgeRoad: TrackPlan = {
       id: "cable-car-ramp",
       placement: "fixed",
       s: 8290,
-      x: 0,
+      x: 3.8,
     },
   ],
   id: "ridge-road",
