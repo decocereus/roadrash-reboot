@@ -460,10 +460,7 @@ const fly = (
   const fromS = rider.s;
   const fromX = rider.x;
   const fromAir = rider.air;
-  const fromDeck = !belowDeck(
-    supportAt(track, fromS, fromX, under).height,
-    fromAir
-  );
+  const fromDeck = fromAir >= supportAt(track, fromS, fromX, under).height;
   const rise = rider.verticalSpeed;
   const curvature = curvatureAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
@@ -485,8 +482,8 @@ const fly = (
     traceOverDeck(jump, fromS, rider.s - fromS, fromAir, rise, drop);
     const intoSide = crossing.enter >= 0 && crossing.enterSide;
     const below = -clearanceAt(entry);
-    if (intoSide && below > DECK_STEP) {
-      if (!glancesOff(state, riderIndex, rider, below, fromX)) {
+    if (below > 0) {
+      if (intoSide && !glancesOff(state, riderIndex, rider, below, fromX)) {
         return;
       }
     } else {

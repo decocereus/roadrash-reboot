@@ -3428,14 +3428,34 @@ describe("jumping", () => {
     expect(away.rider.air).toBe(0);
   });
 
-  it("a hard landing on the edge of a ramp off the middle of the road crashes the same as one on a ramp in the middle", () => {
-    const landing = { air: 0.4, s: 1010, speed: 40, verticalSpeed: -10 };
-    const centred = besideRamp({ ...landing, lateralSpeed: -0.8, x: 0.71 }, 3);
-    const offCentre = besideRamp(
-      { ...landing, lateralSpeed: -0.8, x: 4.21 },
-      3,
-      offCentreRampRoad
+  it("a bike dropping past a ramp just below its deck, exactly on its edge line, falls on past it instead of being pulled up onto the deck", () => {
+    const fall = besideRamp(
+      {
+        air: 0.25,
+        lateralSpeed: 0,
+        s: 1010,
+        speed: 40,
+        verticalSpeed: -10,
+        x: 0.7,
+      },
+      1
     );
+    expect(fall.events).toStrictEqual([]);
+    expect(fall.rider.airborne).toBeTruthy();
+    expect(fall.rider.air).toBeLessThan(0.25);
+  });
+
+  it("a hard landing on the edge of a ramp off the middle of the road crashes the same as one on a ramp in the middle", () => {
+    const alongDeck = 10 / loadingRamp.length;
+    const landing = {
+      air: loadingRamp.rise * alongDeck * alongDeck,
+      lateralSpeed: -0.8,
+      s: 1010,
+      speed: 40,
+      verticalSpeed: -10,
+    };
+    const centred = besideRamp({ ...landing, x: 0.7 }, 3);
+    const offCentre = besideRamp({ ...landing, x: 4.2 }, 3, offCentreRampRoad);
     expect(
       centred.events.map((event) => event.kind === "crash" && event.cause)
     ).toStrictEqual(["landing"]);
