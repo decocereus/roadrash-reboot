@@ -92,13 +92,6 @@ const variantOf = (object: THREE.Object3D): number => {
   return object instanceof THREE.SkinnedMesh ? 2 : 0;
 };
 
-const byMaterial = (a: THREE.Material, b: THREE.Material): number => {
-  if (a.uuid === b.uuid) {
-    return 0;
-  }
-  return a.uuid < b.uuid ? -1 : 1;
-};
-
 const byVariantThenMaterial = (
   a: THREE.RenderItem,
   b: THREE.RenderItem
@@ -106,7 +99,7 @@ const byVariantThenMaterial = (
   a.groupOrder - b.groupOrder ||
   a.renderOrder - b.renderOrder ||
   variantOf(a.object) - variantOf(b.object) ||
-  byMaterial(a.material, b.material) ||
+  a.material.id - b.material.id ||
   a.z - b.z;
 
 export interface Pipeline {
