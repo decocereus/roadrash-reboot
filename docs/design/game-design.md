@@ -46,7 +46,7 @@ There are five levels. Each level has the same five roads, one per region. A roa
 | Lowtown | Slag Row | 8.50 km | 9.65 km | 10.80 km | 11.95 km | 13.10 km |
 | Stonepeak | Ridge Road | 8.55 km | 9.70 km | 10.85 km | 12.00 km | 13.15 km |
 
-The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. Each level adds 1,150 m to every road; the original's growth per level was not measured. The AI pilot rides a level-1 road in 3 to 3.6 minutes alone on the Wren and in 3.2 to 4.1 minutes in a full field with traffic, and a level-5 race on the Meridian 900 in 5.2 to 7.2 minutes, plus whatever time the player spends lying in the road. A 13.45 km road is 13,931 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
+The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. Each level adds 1,150 m to every road; the original's growth per level was not measured. The AI pilot rides a level-1 road in 2.9 to 3.2 minutes alone on the Wren and in 3.2 to 4.1 minutes in a full field with traffic, and a level-5 race on the Meridian 900 in 5.2 to 7.2 minutes, plus whatever time the player spends lying in the road. A 13.45 km road is 13,931 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
 
 ### The field
 
@@ -475,9 +475,15 @@ With the retune the busts come anywhere on the road, from 1 to 12.6 km, instead 
 
 **The risen kick.** With the kick landing at 4 ticks and its swing over at 15 (section 7), the same 40 starts a level measure 9, 8, 8, 7, and 10 busts of 40 (22.5%, 20%, 20%, 17.5%, 25%), 21% overall, with 2.0, 2.7, 3.1, 3.5, and 3.3 rivals busted a race. Every level is inside its band and no police dial changed, but level 1 sits at the top of its band. A swing of 14 ticks with the same landing measured 10 at level 1, outside the band; the numbers move by a few busts with any change to how long a rider is mid-strike, so the 15-tick swing was kept for the band, not for the feel.
 
+**Late braking (October 16, 2026).** A play test said the AI riders braked far too soon for bends. The pilot now plans its speed along the road from the bike's real brakes, grade, drag and lean, aims at 0.93 to 0.99 of the speed its bike can hold through each bend, and brakes as late as that plan allows (architecture, "Riding model"). On an empty road on the Sesta its speed at a bend's tightest point went from 73%, 82%, and 90% of that hold speed at skills 0.8, 0.9, and 0.99 to 92%, 94%, and 97%, and it starts braking 9 to 14 m before the latest point the brakes allow instead of 65 to 85 m.
+
+The police test's 40 starts a level measure 8, 8, 8, 14, and 11 busts, 49 of 200 or 24.5%, against 5, 6, 13, 11, and 14 before. Level 4 exceeds its old upper band by one bust. On the separate 80 starts per level, seeds 9 to 24, level 4 falls from 35 busts on main to 24 with this pilot. The level-4 test band therefore reaches 14 of 40, while the overall limit stays at 27% and no police dial changes. Trying a 62 m/s pursuit cap made the fixed sample pass at 13 busts but raised the separate sample to 26, so the cap stays at 64 m/s.
+
+Across those 400 separate starts, busts fall from 109 to 95, 27.25% to 23.75%. Busts per level out of 80 are 9, 13, 17, 24, and 32. The winner of a level-1 race is 12 s quicker and of a level-5 race about 30 s quicker. Crashes into scenery fall from 662 to 618, while crashes into traffic rise from 3,164 to 3,272. Rocks throw riders 40 times instead of 26.
+
 Two things the same runs show that are not fixed here:
 
-- **The pilot never wrecks.** No start in 400 ended in a wreck. The stand-in falls about once a race at 100 to 150 km/h, which costs 15% to 20% of the bike (section 14). The economy in section 5 assumes one wreck in eight starts for the decent player, so either a human crashes into traffic far more than the pilot does or that assumption is too high. A play test has to say which.
+- **The pilot rarely wrecks.** One start in 400 ended in a wreck. The stand-in falls about once a race at 100 to 150 km/h, which costs 15% to 20% of the bike (section 14). The economy in section 5 assumes one wreck in eight starts for the decent player, so either a human crashes into traffic far more than the pilot does or that assumption is too high. A play test has to say which.
 - **Cops knock riders down themselves.** At levels 3 to 5 the baton is the most common cause of the fall that ends in a bust. The officer's aggression of 0.9 and the baton's 18 damage were not touched.
 
 ### Roadblocks
