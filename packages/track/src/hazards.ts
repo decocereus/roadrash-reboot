@@ -2,6 +2,7 @@ import { reservationOf } from "./features.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import type { Random } from "./random.ts";
 import { regions } from "./regions.ts";
+import type { HazardMix } from "./regions.ts";
 import type { RoadLevel } from "./road.ts";
 import type { Track } from "./track.ts";
 
@@ -16,65 +17,87 @@ export interface HazardSize {
 export const hazardSizes = {
   oil: { halfLength: 2.6, halfWidth: 1.1, height: 0 },
   pothole: { halfLength: 0.5, halfWidth: 0.6, height: 0 },
-  rock: { halfLength: 0.45, halfWidth: 0.45, height: 0.45 },
+  rock: { halfLength: 0.3, halfWidth: 0.3, height: 0.3 },
 } as const satisfies Record<HazardKind, HazardSize>;
+
+export type HazardSetting = "turnIn" | "apex" | "exit" | "crest" | "traffic";
 
 export interface HazardPlacement {
   readonly id: string;
   readonly kind: HazardKind;
+  readonly setting: HazardSetting;
   readonly fromLevel: RoadLevel;
   readonly s: number;
   readonly x: number;
 }
 
-export const HAZARD_SIGHT = 170;
+export const HAZARD_SIGHT = 25;
 export const HAZARD_START_CLEARANCE = 450;
 export const HAZARD_FINISH_CLEARANCE = 150;
 export const HAZARD_RAMP_CLEARANCE = 30;
-const SIGHT_EYES = [HAZARD_SIGHT, 130, 90, 50] as const;
+const HAZARD_LEAST_GAP = 60;
+const BEND_DEGREES = 20;
 const SIGHT_STEP = 5;
 const EYE_HEIGHT = 1.2;
 const TARGET_HEIGHT = 0.1;
 const SIGHT_GROUND_CLEARANCE = 0.05;
-const HAZARD_SEED_SALT = 0x4a_7d;
+const HAZARD_SEED_SALT = 0x4b_f8;
 const SHORTEST_GAP_SHARE = 0.6;
 const GAP_SPREAD_SHARE = 0.8;
 const SAME_WAY_SHARE = 0.7;
+const SEAM_SHARE = 0.5;
 const EDGE_MARGIN = 0.05;
+const TURN_IN_SHARE = 0.15;
+const EXIT_RUN = 20;
+const CREST_CLIMB = 6;
+const CREST_RUN = 30;
+const SNAP_REACH = 250;
+const APEX_REACH = 0.7;
+const SEAM_SPREAD = 0.9;
 const LANE_SPREAD = {
   oil: 0.5,
   pothole: 0.9,
-  rock: 0,
+  rock: 1.2,
 } as const satisfies Record<HazardKind, number>;
+const SETTING_WEIGHTS = {
+  apex: { oil: 0, pothole: 1, rock: 0 },
+  crest: { oil: 0, pothole: 1, rock: 2 },
+  exit: { oil: 1, pothole: 0, rock: 1 },
+  traffic: { oil: 1, pothole: 1, rock: 1.5 },
+  turnIn: { oil: 1, pothole: 0, rock: 0 },
+} as const satisfies Record<HazardSetting, Record<HazardKind, number>>;
 const LEVEL_SHARES: readonly (readonly [RoadLevel, number])[] = [
-  [1, 0.55],
-  [2, 0.66],
-  [3, 0.77],
-  [4, 0.88],
+  [1, 0.6],
+  [2, 0.7],
+  [3, 0.8],
+  [4, 0.9],
   [5, 1],
 ];
 
 type Road = Omit<Track, "hazards">;
 
+interface Place {
+  readonly s: number;
+  readonly setting: HazardSetting;
+  readonly inside: number;
+}
+
 const levelOf = (roll: number): RoadLevel =>
   LEVEL_SHARES.find(([, share]) => roll < share)?.[0] ?? 5;
 
-const kindOf = (road: Road, roll: number): HazardKind => {
-  const mix = regions[road.plan.region].hazardMix;
-  const total = mix.oil + mix.rock + mix.pothole;
-  if (roll * total < mix.oil) {
+const kindOf = (
+  mix: HazardMix,
+  roll: number,
+  setting: HazardSetting
+): HazardKind => {
+  const weight = SETTING_WEIGHTS[setting];
+  const oil = mix.oil * weight.oil;
+  const rock = mix.rock * weight.rock;
+  const total = oil + rock + mix.pothole * weight.pothole;
+  if (roll * total < oil) {
     return "oil";
   }
-  return roll * total < mix.oil + mix.rock ? "rock" : "pothole";
-};
-
-export const rockLines = (road: Road): readonly number[] => {
-  const edge = road.roadHalfWidth - hazardSizes.rock.halfWidth - EDGE_MARGIN;
-  const dividers =
-    road.plan.lanesEachWay === 2
-      ? [road.plan.laneWidth, -road.plan.laneWidth]
-      : [];
-  return [0, ...dividers, edge, -edge];
+  return roll * total < oil + rock ? "rock" : "pothole";
 };
 
 const laneOf = (road: Road, roll: number): number => {
@@ -88,21 +111,59 @@ const laneOf = (road: Road, roll: number): number => {
   );
 };
 
-const acrossOf = (
+const seamOf = (road: Road, roll: number): number => {
+  const seams = road.plan.lanesEachWay === 2 ? [0, road.plan.laneWidth] : [0];
+  return (
+    seams[Math.min(seams.length - 1, Math.floor(roll * seams.length))] ?? 0
+  );
+};
+
+const sameWayLaneToward = (road: Road, side: number): number =>
+  road.sameWayLanes.toSorted((left, right) => (right - left) * side)[0] ?? 0;
+
+const centreOf = (
   road: Road,
+  place: Place,
   kind: HazardKind,
   laneRoll: number,
   offsetRoll: number
 ): number => {
-  if (kind === "rock") {
-    const lines = rockLines(road);
+  const spread = (offsetRoll * 2 - 1) * LANE_SPREAD[kind];
+  if (place.setting === "apex") {
     return (
-      lines[Math.min(lines.length - 1, Math.floor(laneRoll * lines.length))] ??
-      0
+      sameWayLaneToward(road, place.inside) +
+      place.inside * offsetRoll * APEX_REACH * road.plan.laneWidth
     );
   }
-  const reach = road.roadHalfWidth - hazardSizes[kind].halfWidth - EDGE_MARGIN;
-  const x = laneOf(road, laneRoll) + (offsetRoll * 2 - 1) * LANE_SPREAD[kind];
+  if (place.setting === "turnIn" || place.setting === "exit") {
+    return (
+      sameWayLaneToward(road, -place.inside) -
+      place.inside * offsetRoll * LANE_SPREAD[kind]
+    );
+  }
+  if (place.setting === "crest") {
+    return laneOf(road, laneRoll) + spread;
+  }
+  if (laneRoll < SEAM_SHARE) {
+    return (
+      seamOf(road, laneRoll / SEAM_SHARE) + (offsetRoll * 2 - 1) * SEAM_SPREAD
+    );
+  }
+  return laneOf(road, (laneRoll - SEAM_SHARE) / (1 - SEAM_SHARE)) + spread;
+};
+
+const acrossOf = (
+  road: Road,
+  place: Place,
+  kind: HazardKind,
+  laneRoll: number,
+  offsetRoll: number
+): number => {
+  const reach =
+    road.plan.lanesEachWay * road.plan.laneWidth -
+    hazardSizes[kind].halfWidth -
+    EDGE_MARGIN;
+  const x = centreOf(road, place, kind, laneRoll, offsetRoll);
   return Math.min(reach, Math.max(-reach, x));
 };
 
@@ -153,7 +214,7 @@ const seenFrom = (road: Road, s: number, x: number, distance: number) => {
 };
 
 export const inSight = (road: Road, s: number, x: number): boolean =>
-  SIGHT_EYES.every((distance) => seenFrom(road, s, x, distance));
+  seenFrom(road, s, x, HAZARD_SIGHT);
 
 const clearOfRamps = (road: Road, s: number, halfLength: number): boolean =>
   road.plan.features.every((rule) => {
@@ -164,36 +225,116 @@ const clearOfRamps = (road: Road, s: number, halfLength: number): boolean =>
     );
   });
 
-const fits = (road: Road, kind: HazardKind, s: number, x: number): boolean =>
+const placeable = (
+  road: Road,
+  kind: HazardKind,
+  s: number,
+  x: number
+): boolean =>
   s >= HAZARD_START_CLEARANCE &&
-  s <= road.length - HAZARD_FINISH_CLEARANCE &&
   clearOfRamps(road, s, hazardSizes[kind].halfLength) &&
   inSight(road, s, x);
 
+const placesOf = (road: Road): Place[] => {
+  const places: Place[] = [];
+  const { sections } = road.plan;
+  let from = 0;
+  for (const [index, section] of sections.entries()) {
+    const to = from + section.length;
+    if (Math.abs(section.turnDegrees) >= BEND_DEGREES) {
+      const middle = from + section.length / 2;
+      const inside = Math.sign(sampleOf(road, road.curvature, middle)) || 1;
+      places.push(
+        { inside, s: from + section.length * TURN_IN_SHARE, setting: "turnIn" },
+        { inside, s: middle, setting: "apex" },
+        { inside, s: to + EXIT_RUN, setting: "exit" }
+      );
+    }
+    const next = sections[index + 1];
+    if (section.climb >= CREST_CLIMB && next && next.climb <= 0) {
+      places.push({ inside: 0, s: to + CREST_RUN, setting: "crest" });
+    }
+    from = to;
+  }
+  return places.toSorted((left, right) => left.s - right.s);
+};
+
 const gapOf = (rate: number, random: Random): number =>
   (1000 / rate) * (SHORTEST_GAP_SHARE + GAP_SPREAD_SHARE * random());
+
+const snapTo = (
+  places: readonly Place[],
+  claimed: Set<Place>,
+  s: number,
+  after: number,
+  roll: number
+): Place | undefined => {
+  const reachable = places.filter(
+    (place) =>
+      !claimed.has(place) &&
+      place.s <= s &&
+      place.s >= s - SNAP_REACH &&
+      place.s >= after
+  );
+  return reachable[Math.floor(roll * reachable.length)];
+};
 
 export const placeHazards = (road: Road): HazardPlacement[] => {
   const rate = road.plan.hazardsPerKilometre;
   if (rate <= 0) {
     return [];
   }
+  const mix = regions[road.plan.region].hazardMix;
   const random = createRandom(nextSeed(road.plan.seed + HAZARD_SEED_SALT));
+  const places = placesOf(road);
+  const claimed = new Set<Place>();
   const placed: HazardPlacement[] = [];
   let candidate = 0;
+  let last = Number.NEGATIVE_INFINITY;
   for (
     let s = HAZARD_START_CLEARANCE + gapOf(rate, random) / 2;
     s < road.length;
     s += gapOf(rate, random)
   ) {
     candidate += 1;
-    const kind = kindOf(road, random());
+    const kindRoll = random();
     const laneRoll = random();
     const offsetRoll = random();
     const fromLevel = levelOf(random());
-    const x = acrossOf(road, kind, laneRoll, offsetRoll);
-    if (fromLevel <= road.plan.level && fits(road, kind, s, x)) {
-      placed.push({ fromLevel, id: `hazard-${candidate}`, kind, s, x });
+    const placeRoll = random();
+    const after = last + HAZARD_LEAST_GAP;
+    const snapped = snapTo(places, claimed, s, after, placeRoll);
+    const options: Place[] = [
+      ...(snapped ? [snapped] : []),
+      ...(s >= after ? [{ inside: 0, s, setting: "traffic" } as const] : []),
+    ];
+    const chosen = options
+      .map((place) => {
+        const kind = kindOf(mix, kindRoll, place.setting);
+        return {
+          kind,
+          place,
+          x: acrossOf(road, place, kind, laneRoll, offsetRoll),
+        };
+      })
+      .find(({ kind, place, x }) => placeable(road, kind, place.s, x));
+    if (!chosen) {
+      continue;
+    }
+    claimed.add(chosen.place);
+    last = chosen.place.s;
+    if (
+      fromLevel <= road.plan.level &&
+      chosen.place.s <= road.length - HAZARD_FINISH_CLEARANCE
+    ) {
+      placed.push({
+        fromLevel,
+        id: `hazard-${candidate}`,
+        kind: chosen.kind,
+        s: chosen.place.s,
+        setting: chosen.place.setting,
+        x: chosen.x,
+      });
     }
   }
   return placed;

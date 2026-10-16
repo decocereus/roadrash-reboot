@@ -21,7 +21,7 @@ export const hollowPineRoad: TrackPlan = {
       x: 3.45,
     },
   ],
-  hazardsPerKilometre: 2,
+  hazardsPerKilometre: 1.5,
   id: "hollow-pine-road",
   laneWidth: 3.4,
   lanesEachWay: 1,

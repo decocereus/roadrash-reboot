@@ -46,11 +46,16 @@ import { arm, disarm } from "./weapons.ts";
 const MPH = 2.237;
 const KMH = 3.6;
 const track = compileTrack(ridgeRoad);
-const quietTrack = compileTrack({ ...ridgeRoad, trafficPerKilometre: 0 });
+const quietTrack = compileTrack({
+  ...ridgeRoad,
+  hazardsPerKilometre: 0,
+  trafficPerKilometre: 0,
+});
 const wideTrack = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
 const straight = compileTrack({
   ...ridgeRoad,
   features: [],
+  hazardsPerKilometre: 0,
   sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
   trafficPerKilometre: 0,
 });
@@ -215,6 +220,7 @@ describe("riding", () => {
     const flat = compileTrack({
       ...ridgeRoad,
       features: [],
+      hazardsPerKilometre: 0,
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
@@ -270,6 +276,7 @@ describe("riding", () => {
     const flat = compileTrack({
       ...ridgeRoad,
       features: [],
+      hazardsPerKilometre: 0,
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
@@ -614,6 +621,7 @@ describe("the pack", () => {
     const flat = compileTrack({
       ...ridgeRoad,
       features: [],
+      hazardsPerKilometre: 0,
       sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
       trafficPerKilometre: 0,
     });
@@ -1995,9 +2003,14 @@ describe("the bike catalogue", () => {
   });
 });
 
-const quietSlagRow = compileTrack({ ...slagRow, trafficPerKilometre: 0 });
+const quietSlagRow = compileTrack({
+  ...slagRow,
+  hazardsPerKilometre: 0,
+  trafficPerKilometre: 0,
+});
 const quietHollowPine = compileTrack({
   ...hollowPineRoad,
+  hazardsPerKilometre: 0,
   trafficPerKilometre: 0,
 });
 const HERMITS_BEND_FROM = 6060;
@@ -3150,6 +3163,7 @@ const rampRoadPlan = {
       x: 3.8,
     },
   ],
+  hazardsPerKilometre: 0,
   sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
   trafficPerKilometre: 0,
 } as const;
@@ -3589,7 +3603,7 @@ const placedAt = (
   s: number,
   x: number,
   id: string
-): HazardPlacement => ({ fromLevel: 1, id, kind, s, x });
+): HazardPlacement => ({ fromLevel: 1, id, kind, s, setting: "traffic", x });
 
 const rideAt = (
   road: Track,
@@ -3821,6 +3835,19 @@ const steeringHardInto = (kmh: number) => {
   );
 };
 
+const truckOver = (road: Track) => {
+  const state = field(road, 1, 0, 0);
+  player(state).s = 100;
+  slowTruckAt(state, 950, 1.8);
+  const trace: number[] = [];
+  for (let tick = 0; tick < 35 * TICK_RATE; tick += 1) {
+    stepRace(state, road, [neutralInput]);
+    const [car] = state.cars;
+    trace.push(car?.s ?? Number.NaN, car?.x ?? Number.NaN, car?.speed ?? 0);
+  }
+  return trace;
+};
+
 describe("road hazards", () => {
   it("a rider who holds a steady line straight over an oil slick at 220 km/h stays up and keeps nearly all their speed", () => {
     const run = rideAt(slick, atSpeed(220), 0, 0, 2);
@@ -3837,6 +3864,43 @@ describe("road hazards", () => {
     ).toStrictEqual([["hazard", "slick"]]);
     const slow = rideAt(slick, atSpeed(70), 995, 1, 2);
     expect(slow.crashes).toStrictEqual([]);
+  });
+
+  it.each([
+    ["on the slick", 997],
+    ["just past it", 1004],
+  ])(
+    "a quarter-second tap of the bars %s at 160 km/h does not put the rider down",
+    (_where, tapFrom) => {
+      const state = field(slick, 1, 0, 0);
+      const rider = player(state);
+      rider.s = 960;
+      rider.x = 1.8;
+      rider.speed = 160 / KMH;
+      let tapped = 0;
+      const events: RaceEvent[] = [];
+      for (let tick = 0; tick < 2 * TICK_RATE; tick += 1) {
+        const tapping = rider.s >= tapFrom && tapped < TICK_RATE / 4;
+        tapped += tapping ? 1 : 0;
+        stepRace(state, slick, [{ ...flatOut, steer: tapping ? 1 : 0 }]);
+        events.push(...state.events);
+      }
+      expect(tapped).toBe(TICK_RATE / 4);
+      expect(events.filter((event) => event.kind === "crash")).toStrictEqual(
+        []
+      );
+    }
+  );
+
+  it("a car drives over a rock, an oil slick, and a pothole in its lane exactly as it drives an empty road", () => {
+    const strewn = roadWith(
+      placedAt("rock", 1000, 1.8, "boulder"),
+      placedAt("oil", 1100, 1.8, "slick"),
+      placedAt("pothole", 1200, 1.8, "hole")
+    );
+    const strewnRun = truckOver(strewn);
+    expect(strewnRun.at(-3)).toBeGreaterThan(1250);
+    expect(strewnRun).toStrictEqual(truckOver(hazardFreeRoad));
   });
 
   it("on oil the bars barely bite: half lock moves the bike less than half as far across the road in the next half second", () => {
