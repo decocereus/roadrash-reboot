@@ -35,6 +35,7 @@ const BASE_GAP_SHARE = 0.1;
 const ONE_VSYNC_SPREAD = 1.5;
 const SAME_RATE_SHARE = 0.03;
 const CONFIRMING_READINGS = 2;
+const UNSETTLED_READINGS = 4;
 
 const readingOf = (gaps: readonly number[]): number | null => {
   if (gaps.length < FEWEST_GAPS) {
@@ -60,17 +61,30 @@ export const createRefreshMeter = (initial: number): RefreshMeter => {
   let confirmed = false;
   let candidate = Number.NaN;
   let candidateSeen = 0;
+  const unsettled: number[] = [];
+
+  const adopt = (rate: number) => {
+    confirmed = true;
+    unsettled.length = 0;
+    if (Math.abs(rate - refresh) > refresh * SAME_RATE_SHARE) {
+      refresh = rate;
+    }
+  };
 
   const settle = (reading: number) => {
     const same = Math.abs(reading - candidate) <= reading * SAME_RATE_SHARE;
     candidateSeen = same ? candidateSeen + 1 : 1;
     candidate = reading;
-    if (candidateSeen < CONFIRMING_READINGS) {
+    if (candidateSeen >= CONFIRMING_READINGS) {
+      adopt(reading);
       return;
     }
-    confirmed = true;
-    if (Math.abs(reading - refresh) > refresh * SAME_RATE_SHARE) {
-      refresh = reading;
+    if (confirmed) {
+      return;
+    }
+    unsettled.push(reading);
+    if (unsettled.length >= UNSETTLED_READINGS) {
+      adopt(Math.min(...unsettled));
     }
   };
 

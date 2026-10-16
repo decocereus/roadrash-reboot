@@ -127,33 +127,52 @@ const readScreens = (
   return refresh;
 };
 
-const rideScreens = (screens: readonly (readonly [number, number])[]) => {
+const screenStamps = (screens: readonly (readonly [number, number])[]) => {
+  const stamps: number[] = [];
+  let now = 0;
+  for (const [rate, seconds] of screens) {
+    for (let tick = 0; tick < rate * seconds; tick += 1) {
+      now += 1000 / rate;
+      stamps.push(Math.floor(now + ((tick * 7) % 5) * 0.3));
+    }
+  }
+  return stamps;
+};
+
+const cycleStamps = (cycle: readonly number[], seconds: number) => {
+  const stamps = [0];
+  let now = 0;
+  while (now < seconds * 1000) {
+    for (const gap of cycle) {
+      now += gap;
+      stamps.push(now);
+    }
+  }
+  return stamps;
+};
+
+const rideStamps = (stamps: readonly number[]) => {
   const governor = createGovernor(RUNGS);
   const meter = createRefreshMeter(60);
   const pacer = createPacer();
   const readings = new Set<number>();
-  const changes: GovernReason[] = [];
-  let now = 0;
+  const changes: { at: number; reason: GovernReason }[] = [];
   let drawn = 0;
-  for (const [rate, seconds] of screens) {
-    for (let tick = 0; tick < rate * seconds; tick += 1) {
-      now += 1000 / rate;
-      const at = Math.floor(now + ((tick * 7) % 5) * 0.3);
-      const refresh = meter.tick(at);
-      readings.add(refresh);
-      if (pacer.due(at, refresh, governor.pace)) {
-        const verdict = governor.judge({
-          busyMs: 1,
-          excused: false,
-          refresh,
-          refreshKnown: meter.confirmed,
-          seconds: (at - drawn) / 1000,
-        });
-        drawn = at;
-        if (verdict) {
-          governor.commit(verdict);
-          changes.push(verdict.reason);
-        }
+  for (const at of stamps) {
+    const refresh = meter.tick(at);
+    readings.add(refresh);
+    if (pacer.due(at, refresh, governor.pace)) {
+      const verdict = governor.judge({
+        busyMs: 1,
+        excused: false,
+        refresh,
+        refreshKnown: meter.confirmed,
+        seconds: (at - drawn) / 1000,
+      });
+      drawn = at;
+      if (verdict) {
+        governor.commit(verdict);
+        changes.push({ at: at / 1000, reason: verdict.reason });
       }
     }
   }
@@ -340,20 +359,42 @@ describe("the quality governor", () => {
 
   it("starts at 60 and shrugs off a burst of fast callbacks in the first second", () => {
     expect(
-      rideScreens([
-        [100, 0.25],
-        [60, 10],
-      ])
+      rideStamps(
+        screenStamps([
+          [100, 0.25],
+          [60, 10],
+        ])
+      )
     ).toStrictEqual({ changes: [], confirmed: true, readings: [60] });
   });
 
   it("waits for the screen's rate before judging what players get", () => {
-    expect(rideScreens([[120, 1.9]])).toStrictEqual({
+    expect(rideStamps(screenStamps([[120, 1.9]]))).toStrictEqual({
       changes: [],
       confirmed: false,
       readings: [60],
     });
-    expect(rideScreens([[120, 10]]).changes).toStrictEqual([]);
+    expect(rideStamps(screenStamps([[120, 10]])).changes).toStrictEqual([]);
+  });
+
+  it("still sees slipping when jitter never lets two readings agree", () => {
+    const evenSlip = Array.from({ length: 56 }, (_, gap) =>
+      gap < 48 ? 18 : 17
+    );
+    const unevenSlip = [
+      ...Array.from({ length: 50 }, (_, gap) => (gap % 2 === 0 ? 15 : 23)),
+      16,
+      17,
+      17,
+    ];
+    for (const cycle of [
+      [...evenSlip, ...unevenSlip],
+      [...unevenSlip, ...evenSlip],
+    ]) {
+      const [first] = rideStamps(cycleStamps(cycle, 20)).changes;
+      expect(first?.reason).toBe("under-rate");
+      expect(first?.at).toBeLessThan(8.5);
+    }
   });
 
   it("does not take Safari slipping to 56 fps for a slower screen", () => {
