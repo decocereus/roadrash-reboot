@@ -111,7 +111,7 @@ export function plant(
   track: Track,
   placements: readonly Placement[],
   parts: readonly Part[],
-  mirrored = false
+  turnedOnRight = false
 ): void {
   if (placements.length === 0) {
     for (const part of parts) {
@@ -136,9 +136,9 @@ export function plant(
   for (const [index, placement] of placements.entries()) {
     placeOnGround(track, placement.s, placement.x, point);
     placer.position.set(point.x, point.y, point.z);
-    placer.rotation.set(0, -point.heading, 0);
-    const flip = mirrored && placement.x > 0 ? -1 : 1;
-    placer.scale.set(placement.scale * flip, placement.scale, placement.scale);
+    const turn = turnedOnRight && placement.x > 0 ? Math.PI : 0;
+    placer.rotation.set(0, turn - point.heading, 0);
+    placer.scale.setScalar(placement.scale);
     placer.updateMatrix();
     for (const mesh of meshes) {
       mesh.setMatrixAt(index, placer.matrix);

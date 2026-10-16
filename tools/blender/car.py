@@ -25,9 +25,11 @@ def body():
     st = [(z, [(0, d), (wd * 0.75, d), (wd, d - 0.04), (wm, mid), (wm, sill), (wm - 0.06, bot), (0, bot)]) for z, d, wd, wm, mid, sill, bot in BODY]
     ring_loft(bm, st, "body", seg_mat=lambda j: "dark" if j >= 4 else "body")
     cs = [(z, [(0, t), (wr * 0.85, t), (wr, t - 0.05), (wb, b), (0, b)]) for z, t, wr, wb, b in CABIN]
-    ring_loft(bm, cs[0:2], "glass", cap=False)
+    windscreen = ring_loft(bm, cs[0:2], "glass", cap=False)
     ring_loft(bm, cs[1:3], "body", seg_mat=lambda j: "glass" if j == 2 else "body", cap=False)
-    ring_loft(bm, cs[2:4], "glass", cap=False)
+    rear_window = ring_loft(bm, cs[2:4], "glass", cap=False)
+    for ring in (windscreen[0], rear_window[-1]):
+        bm.faces.new(ring).material_index = MI["body"]
     for s in (-1, 1):
         tube(bm, [(s * 0.80, 0.92, -0.84), (s * 0.615, 1.385, -0.05)], [(0.03, 0.045)], "body", n=4, phase=math.pi / 4)
         tube(bm, [(s * 0.615, 1.385, 0.9), (s * 0.79, 0.95, 1.64)], [(0.03, 0.06)], "body", n=4, phase=math.pi / 4)
