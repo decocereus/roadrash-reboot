@@ -145,7 +145,7 @@ const bucketLabel = (index: number): string => {
 };
 
 const qualityText = (quality: Quality): string =>
-  `rung ${quality.rung} x${quality.pixelRatio.toFixed(2)} bloom ${quality.bloomScale} shadow ${quality.shadowMap}${quality.samples === undefined ? "" : ` msaa ${quality.samples}`} pace ${quality.pace}`;
+  `rung ${quality.rung} x${quality.pixelRatio.toFixed(2)} bloom ${quality.bloomScale} shadow ${quality.shadowMap}${quality.samples === undefined ? "" : ` msaa ${quality.samples}`} pace ${quality.pace}${quality.frameRate === undefined ? "" : ` rate ${quality.frameRate}`}`;
 
 const seconds = (at: number): string => `${(at / 1000).toFixed(2)} s`;
 

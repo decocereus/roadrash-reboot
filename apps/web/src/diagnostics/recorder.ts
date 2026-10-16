@@ -1,5 +1,6 @@
 import {
   faultSources,
+  frameRates,
   governReasons,
   HISTOGRAM_BUCKETS,
   histogramBucket,
@@ -14,6 +15,7 @@ import {
 import type {
   BatchKind,
   FaultSource,
+  FrameRate,
   GovernReason,
   RaceStage,
   ResizeSource,
@@ -30,12 +32,12 @@ import { parts } from "../game/profile.ts";
 import type { ProfileFrame } from "../game/profile.ts";
 
 const EVENT_CAPACITY = 4096;
-const SLOTS = 15;
+const SLOTS = 17;
 const FAULT_CAPACITY = 64;
 const FAULTS_PER_BATCH = 32;
 const EVENTS_PER_BATCH = 256;
 const FROM = 3;
-const TO = 9;
+const TO = 10;
 
 const eventKinds = [
   "governor",
@@ -52,6 +54,7 @@ const eventKinds = [
 type EventKind = (typeof eventKinds)[number];
 
 export interface QualityState {
+  frameRate: FrameRate;
   rung: number;
   pixelRatio: number;
   bloomScale: number;
@@ -62,6 +65,7 @@ export interface QualityState {
 
 export const emptyQuality = (): QualityState => ({
   bloomScale: 0,
+  frameRate: "auto",
   pace: 0,
   pixelRatio: 0,
   rung: 0,
@@ -116,6 +120,7 @@ export interface Recorder {
   readonly fault: (source: FaultSource, message: string, where: string) => void;
   readonly visibility: (hidden: boolean) => void;
   readonly overlay: (on: boolean) => void;
+  readonly quiet: () => boolean;
   readonly flush: (
     kind: BatchKind,
     session: Session,
@@ -317,10 +322,12 @@ export const createRecorder = (): Recorder => {
     values[base + 3] = quality.shadowMap;
     values[base + 4] = quality.pace;
     values[base + 5] = quality.samples;
+    values[base + 6] = frameRates.indexOf(quality.frameRate);
   };
 
   const readQuality = (base: number): Quality => ({
     bloomScale: values[base + 2] ?? 0,
+    frameRate: frameRates[values[base + 6] ?? 0] ?? "auto",
     pace: values[base + 4] ?? 0,
     pixelRatio: values[base + 1] ?? 0,
     rung: values[base] ?? 0,
@@ -573,6 +580,7 @@ export const createRecorder = (): Recorder => {
       }
       values[push("overlay")] = on ? 1 : 0;
     },
+    quiet: () => frameCount === 0 && seq === sentSeq,
     race(stage, tick) {
       if (!recorder.recording) {
         return;

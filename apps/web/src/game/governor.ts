@@ -1,6 +1,7 @@
-import type { GovernReason } from "@racer/telemetry/limits";
+import type { FrameRate, GovernReason } from "@racer/telemetry/limits";
 
 export const BASE_RATE = 60;
+export const HALF_RATE = 30;
 const LATE_FRAME_FACTOR = 1.4;
 const LATE_FRAMES_TO_STEP = 24;
 const CALM_FRAME_CREDIT = 0.1;
@@ -12,6 +13,9 @@ const ROUGH_WINDOWS_TO_STEP = 2;
 const BURST_COOLDOWN_SECONDS = 1;
 const SEVERE_STEP = 2;
 const GPU_BOUND_BUSY_MS = 10;
+const RATE_WINDOW_SECONDS = 2;
+const DELIVERED_SHARE = 0.97;
+const SHORT_WINDOWS_TO_STEP = 2;
 const RAISE_AFTER_CALM_SECONDS = 20;
 const RETRY_AFTER_CALM_SECONDS = 300;
 const RETRIES_PER_RUNG = 1;
@@ -21,7 +25,7 @@ const LONGEST_WAIT_SECONDS = 300;
 
 export interface Verdict {
   readonly reason: GovernReason;
-  readonly rung: number;
+  readonly step: number;
   readonly pace: number;
 }
 
@@ -35,19 +39,22 @@ export interface Frame {
 export interface Governor {
   readonly rung: number;
   readonly pace: number;
+  readonly rate: FrameRate;
   readonly lateCredit: () => number;
   readonly calmSeconds: () => number;
   readonly judge: (frame: Frame) => Verdict | null;
   readonly commit: (verdict: Verdict) => void;
   readonly startAt: (rung: number) => void;
   readonly resize: (rungs: number) => void;
+  readonly setRate: (rate: FrameRate) => void;
 }
 
 export const createGovernor = (rungCount: number): Governor => {
   let rungs = rungCount;
-  let rung = 0;
+  let step = 0;
   let pace = BASE_RATE;
-  let failures = new Uint8Array(rungs);
+  let rate: FrameRate = "auto";
+  let failures = new Uint8Array(rungs + 1);
   let lateFrames = 0;
   let calm = 0;
   let sinceStep = STEP_COOLDOWN_SECONDS;
@@ -56,9 +63,24 @@ export const createGovernor = (rungCount: number): Governor => {
   let windowLate = 0;
   let roughWindows = 0;
   let severe = false;
+  let rateSeconds = 0;
+  let rateFrames = 0;
+  let rateBusyMs = 0;
+  let shortWindows = 0;
   let lateAtPace = 0;
   let fastRetryIn = 0;
   let fastRetryWait = FAST_PACE_RETRY_SECONDS;
+
+  const halved = (): boolean => rate === "30" || step === rungs;
+
+  const currentPace = (): number => {
+    if (halved()) {
+      return HALF_RATE;
+    }
+    return rate === "60" ? BASE_RATE : pace;
+  };
+
+  const lowestStep = (): number => (rate === "auto" ? rungs : rungs - 1);
 
   const settle = () => {
     sinceStep = 0;
@@ -69,9 +91,13 @@ export const createGovernor = (rungCount: number): Governor => {
     windowLate = 0;
     roughWindows = 0;
     severe = false;
+    rateSeconds = 0;
+    rateFrames = 0;
+    rateBusyMs = 0;
+    shortWindows = 0;
   };
 
-  const watchWindow = (seconds: number, late: boolean) => {
+  const watchBursts = (seconds: number, late: boolean) => {
     windowSeconds += seconds;
     windowFrames += 1;
     windowLate += late ? 1 : 0;
@@ -86,10 +112,34 @@ export const createGovernor = (rungCount: number): Governor => {
     windowLate = 0;
   };
 
-  const lower = (reason: GovernReason, by: number): Verdict | null =>
-    rung < rungs - 1
-      ? { pace, reason, rung: Math.min(rungs - 1, rung + by) }
-      : null;
+  const watchRate = (seconds: number, busyMs: number, target: number) => {
+    rateSeconds += seconds;
+    rateFrames += 1;
+    rateBusyMs += busyMs;
+    if (rateSeconds < RATE_WINDOW_SECONDS) {
+      return;
+    }
+    const short = rateFrames < rateSeconds * target * DELIVERED_SHARE;
+    if (short) {
+      calm = 0;
+    }
+    const gpuBound = rateBusyMs / rateFrames < GPU_BOUND_BUSY_MS;
+    shortWindows = short && gpuBound ? shortWindows + 1 : 0;
+    rateSeconds = 0;
+    rateFrames = 0;
+    rateBusyMs = 0;
+  };
+
+  const lower = (reason: GovernReason, by: number): Verdict | null => {
+    const lowest = lowestStep();
+    if (step >= lowest) {
+      return null;
+    }
+    if (step >= rungs - 1) {
+      return { pace, reason: "steady-30", step: lowest };
+    }
+    return { pace, reason, step: Math.min(rungs - 1, step + by) };
+  };
 
   const raiseWait = (into: number): number => {
     const failed = failures[into] ?? 0;
@@ -102,7 +152,8 @@ export const createGovernor = (rungCount: number): Governor => {
   };
 
   const judgeQuality = (seconds: number, busyMs: number): Verdict | null => {
-    const late = seconds > LATE_FRAME_FACTOR / BASE_RATE;
+    const target = Math.min(currentPace(), BASE_RATE);
+    const late = seconds > LATE_FRAME_FACTOR / target;
     if (late) {
       lateFrames += 1;
       calm = 0;
@@ -110,52 +161,59 @@ export const createGovernor = (rungCount: number): Governor => {
       lateFrames = Math.max(0, lateFrames - CALM_FRAME_CREDIT);
       calm += seconds;
     }
-    watchWindow(seconds, late && busyMs < GPU_BOUND_BUSY_MS);
+    watchBursts(seconds, late && busyMs < GPU_BOUND_BUSY_MS);
+    watchRate(seconds, busyMs, target);
     const bursting = severe || roughWindows >= ROUGH_WINDOWS_TO_STEP;
     if (bursting && sinceStep > BURST_COOLDOWN_SECONDS) {
       return lower("late-burst", severe ? SEVERE_STEP : 1);
     }
+    if (shortWindows >= SHORT_WINDOWS_TO_STEP) {
+      return lower("under-rate", 1);
+    }
     if (lateFrames > LATE_FRAMES_TO_STEP && sinceStep > STEP_COOLDOWN_SECONDS) {
       return lower("late-budget", 1);
     }
-    if (rung > 0 && calm > raiseWait(rung - 1)) {
-      const retry = (failures[rung - 1] ?? 0) > 0;
+    if (step > 0 && calm > raiseWait(step - 1)) {
+      const retry = (failures[step - 1] ?? 0) > 0;
       return {
         pace,
         reason: retry ? "calm-retry" : "calm-recovery",
-        rung: rung - 1,
+        step: step - 1,
       };
     }
     return null;
   };
 
   const judgePace = (seconds: number, refresh: number): Verdict | null => {
+    if (rate !== "auto" || halved()) {
+      return null;
+    }
     if (pace > BASE_RATE) {
       const late = seconds > LATE_FRAME_FACTOR / pace;
       lateAtPace = late
         ? lateAtPace + 1
         : Math.max(0, lateAtPace - CALM_FRAME_CREDIT);
       return lateAtPace > LATE_FRAMES_TO_STEP
-        ? { pace: BASE_RATE, reason: "pace-fallback", rung }
+        ? { pace: BASE_RATE, reason: "pace-fallback", step }
         : null;
     }
     fastRetryIn -= seconds;
     return refresh > BASE_RATE &&
-      rung === 0 &&
+      step === 0 &&
       fastRetryIn <= 0 &&
       calm > FAST_PACE_AFTER_CALM_SECONDS
-      ? { pace: refresh, reason: "pace-retry", rung }
+      ? { pace: refresh, reason: "pace-retry", step }
       : null;
   };
 
   return {
     calmSeconds: () => calm,
     commit(verdict) {
-      for (let failed = rung; failed < verdict.rung; failed += 1) {
+      for (let failed = step; failed < verdict.step; failed += 1) {
         failures[failed] = Math.min(255, (failures[failed] ?? 0) + 1);
       }
-      if (verdict.rung !== rung) {
-        ({ rung } = verdict);
+      if (verdict.step !== step) {
+        ({ step } = verdict);
         settle();
       }
       if (verdict.pace < pace) {
@@ -176,20 +234,32 @@ export const createGovernor = (rungCount: number): Governor => {
     },
     lateCredit: () => Math.max(lateFrames, lateAtPace),
     get pace() {
-      return pace;
+      return currentPace();
+    },
+    get rate() {
+      return rate;
     },
     resize(count) {
+      const locked = step === rungs;
       rungs = count;
-      rung = Math.min(rung, rungs - 1);
-      failures = new Uint8Array(rungs);
+      step = locked ? rungs : Math.min(step, rungs - 1);
+      failures = new Uint8Array(rungs + 1);
       settle();
     },
     get rung() {
-      return rung;
+      return Math.min(step, rungs - 1);
+    },
+    setRate(next) {
+      rate = next;
+      step = Math.min(step, lowestStep());
+      if (rate !== "auto") {
+        pace = BASE_RATE;
+      }
+      settle();
     },
     startAt(start) {
-      rung = Math.min(Math.max(0, start), rungs - 1);
-      failures.fill(1, 0, rung);
+      step = Math.min(Math.max(0, start), rungs - 1);
+      failures.fill(1, 0, step);
       settle();
     },
   };

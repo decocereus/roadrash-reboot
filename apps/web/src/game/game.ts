@@ -29,7 +29,11 @@ import type {
   RiderState,
 } from "@racer/sim/state";
 import { strikeOf, weapons } from "@racer/sim/weapons";
-import type { GovernReason, ResizeSource } from "@racer/telemetry/limits";
+import type {
+  FrameRate,
+  GovernReason,
+  ResizeSource,
+} from "@racer/telemetry/limits";
 import { governReasons } from "@racer/telemetry/limits";
 import { emptySupport, supportAt } from "@racer/track/features";
 import { roadIds, trackFor } from "@racer/track/roads";
@@ -1496,6 +1500,7 @@ export async function createGame(
     into.shadowMap = chosen?.shadowMap ?? 0;
     into.samples = chosen?.samples ?? 0;
     into.pace = pace;
+    into.frameRate = governor.rate;
   };
 
   const changeQuality = (reason: GovernReason, change: () => void) => {
@@ -1663,8 +1668,23 @@ export async function createGame(
     rendererLabel = profiler.reader.info().renderer;
   };
 
+  const applyFrameRate = (next: FrameRate) => {
+    if (next === governor.rate) {
+      return;
+    }
+    changeQuality("rate-setting", () => {
+      governor.setRate(next);
+      ({ pace } = governor);
+      if (governor.rung !== rung) {
+        ({ rung } = governor);
+        applyRung("rung");
+      }
+    });
+  };
+
   const applySettings = () => {
     const settings = hub.settings.read();
+    applyFrameRate(settings.frameRate);
     const wantsMeter = meterFlag || settings.overlay;
     if (wantsMeter && !meter) {
       meter = createFrameMeter(canvas, hub.view().session);
