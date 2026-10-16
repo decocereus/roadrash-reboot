@@ -123,6 +123,9 @@ export interface RiderState {
   verticalSpeed: number;
   airborne: boolean;
   airTicks: number;
+  wobble: number;
+  jumpSeen: number;
+  jumpMisread: boolean;
   offRoad: boolean;
   load: number;
   bodyS: number;

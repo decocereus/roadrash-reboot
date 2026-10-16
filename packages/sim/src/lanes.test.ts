@@ -12,6 +12,7 @@ const wide = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
 const straightOf = (lanesEachWay: 1 | 2): Track =>
   compileTrack({
     ...ridgeRoad,
+    features: [],
     lanesEachWay,
     sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
     trafficPerKilometre: 0,

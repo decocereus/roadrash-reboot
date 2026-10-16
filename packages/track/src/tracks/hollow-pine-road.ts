@@ -3,6 +3,24 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const hollowPineRoad: TrackPlan = {
+  features: [
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1 },
+      fromLevel: 1,
+      id: "sawmill-ramp",
+      placement: "fixed",
+      s: 3330,
+      x: 3.45,
+    },
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1 },
+      fromLevel: 1,
+      id: "kiln-ramp",
+      placement: "fixed",
+      s: 7760,
+      x: 3.45,
+    },
+  ],
   id: "hollow-pine-road",
   laneWidth: 3.4,
   lanesEachWay: 1,

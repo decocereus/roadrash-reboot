@@ -139,6 +139,8 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   heading: 0,
   hitStun: 0,
   idleTicks: 0,
+  jumpMisread: false,
+  jumpSeen: -1,
   lastHitBy: -1,
   lastHitTick: 0,
   lateralSpeed: 0,
@@ -165,6 +167,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   weapon: entry.weaponHits > 0 ? entry.profile.weapon : "none",
   weaponAtThrow: "none",
   weaponHits: entry.weaponHits,
+  wobble: 0,
   x: spot.x,
 });
 

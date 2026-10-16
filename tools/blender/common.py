@@ -187,7 +187,7 @@ def render_views(path, views, res=(760, 520)):
 
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODELS = os.path.join(REPO, "apps", "web", "public", "models")
+MODELS = os.path.join(REPO, "tools", "blender", "out")
 PREVIEWS = os.path.join(tempfile.gettempdir(), "rushline-models")
 ARGS = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
 SHOW = "show" in ARGS

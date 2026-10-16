@@ -7,5 +7,10 @@
     "moduleResolution": "Bundler",
     "types": ["node", "@cloudflare/workers-types"]
   },
-  "include": ["alchemy.run.ts", "vitest.config.ts", "tools/perf/**/*.ts"]
+  "include": [
+    "alchemy.run.ts",
+    "vitest.config.ts",
+    "tools/perf/**/*.ts",
+    "tools/blender/**/*.ts"
+  ]
 }

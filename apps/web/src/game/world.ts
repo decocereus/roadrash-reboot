@@ -21,6 +21,7 @@ import {
 import type { Stretch } from "./ground.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
+import { buildRamps } from "./ramps.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import {
   bannerTexture,
@@ -492,6 +493,9 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       )
     )
   );
+  const ramps = buildRamps(track, shading);
+  scene.add(ramps.group);
+  stretches.push(...ramps.stretches);
   if (city) {
     scene.add(freeze(city.group));
   } else {
@@ -531,6 +535,7 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       const reach = look.fogFar + CHUNK_MARGIN;
       city?.follow(s, reach);
       showWithin(stretches, s - CHUNK_BEHIND, s + reach);
+      ramps.clearView(camera.position);
       camera.updateMatrixWorld();
       camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
       rig.follow(camera);

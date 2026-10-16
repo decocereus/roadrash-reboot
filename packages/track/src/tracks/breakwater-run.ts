@@ -3,6 +3,24 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const breakwaterRun: TrackPlan = {
+  features: [
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
+      fromLevel: 1,
+      id: "promenade-ramp",
+      placement: "fixed",
+      s: 4050,
+      x: 3.6,
+    },
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
+      fromLevel: 1,
+      id: "mole-ramp",
+      placement: "fixed",
+      s: 5420,
+      x: 3.6,
+    },
+  ],
   id: "breakwater-run",
   laneWidth: 3.6,
   lanesEachWay: 2,
@@ -28,7 +46,10 @@ export const breakwaterRun: TrackPlan = {
     { climb: -9, length: 100, turnDegrees: 0 },
     { climb: -5, length: 300, turnDegrees: -26 },
     { climb: 0, length: 200, turnDegrees: 30 },
-    { climb: 0, length: 300, turnDegrees: 0 },
+    { climb: 0, length: 120, turnDegrees: 0 },
+    { climb: 1.4, length: 40, turnDegrees: 0 },
+    { climb: -1.4, length: 40, turnDegrees: 0 },
+    { climb: 0, length: 100, turnDegrees: 0 },
     { climb: 0, length: 500, turnDegrees: 0 },
     { climb: 2, length: 260, turnDegrees: 22 },
     { climb: 6, length: 180, turnDegrees: 0 },

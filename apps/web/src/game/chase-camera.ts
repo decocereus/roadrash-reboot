@@ -20,6 +20,10 @@ const REAR_WHEEL_BEHIND = 0.75;
 const SIDEWAYS_FOLLOW = 0.75;
 const AIR_FOLLOW = 0.25;
 const GROUND_CLEARANCE = 0.6;
+const BUMP_KICK = 2.2;
+const BUMP_STIFFNESS = 90;
+const BUMP_DAMPING = 11;
+const BUMP_STEP = 1 / 240;
 
 interface Rig {
   readonly pitch: number;
@@ -56,6 +60,7 @@ export interface ChaseCamera {
   readonly camera: THREE.PerspectiveCamera;
   resize: (width: number, height: number) => void;
   jolt: (strength: number) => void;
+  bump: (strength: number) => void;
   snap: () => void;
   update: (track: Track, subject: Subject, seconds: number) => void;
 }
@@ -76,8 +81,21 @@ export function createChaseCamera(): ChaseCamera {
   let rush = 0;
   let tuck = 0;
   let settled = false;
+  let dip = 0;
+  let dipSpeed = 0;
+
+  const settleDip = (seconds: number) => {
+    for (let left = seconds; left > 0; left -= BUMP_STEP) {
+      const step = Math.min(BUMP_STEP, left);
+      dipSpeed -= (BUMP_STIFFNESS * dip + BUMP_DAMPING * dipSpeed) * step;
+      dip += dipSpeed * step;
+    }
+  };
 
   return {
+    bump(strength) {
+      dipSpeed -= Math.min(1, strength) * BUMP_KICK;
+    },
     camera,
     jolt(strength) {
       shake = Math.min(1.2, shake + strength);
@@ -110,6 +128,7 @@ export function createChaseCamera(): ChaseCamera {
       const floor =
         heightAt(track, subject.s - rig.distance) + GROUND_CLEARANCE;
       shake = Math.max(0, shake - seconds * 2.4);
+      settleDip(seconds);
       const buffet = smoothstep(
         SHAKE_FROM_SPEED,
         SHAKE_FULL_SPEED,
@@ -118,7 +137,7 @@ export function createChaseCamera(): ChaseCamera {
       const tremor = shake * 0.16 + buffet * buffet * SPEED_SHAKE;
       camera.position.set(
         backX + (Math.random() - 0.5) * tremor,
-        Math.max(height, floor) + (Math.random() - 0.5) * tremor,
+        Math.max(height + dip, floor) + (Math.random() - 0.5) * tremor,
         backZ
       );
       camera.rotation.set(-rig.pitch, -point.heading, 0);

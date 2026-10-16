@@ -3,6 +3,32 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
+  features: [
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
+      fromLevel: 1,
+      id: "slipway-ramp",
+      placement: "fixed",
+      s: 4720,
+      x: 3.5,
+    },
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
+      fromLevel: 1,
+      id: "bonded-ramp",
+      placement: "fixed",
+      s: 7280,
+      x: 3.5,
+    },
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
+      fromLevel: 4,
+      id: "boulevard-ramp",
+      placement: "fixed",
+      s: 10_880,
+      x: 3.5,
+    },
+  ],
   id: "slag-row",
   laneWidth: 3.5,
   lanesEachWay: 2,
@@ -30,8 +56,10 @@ export const slagRow: TrackPlan = {
     { climb: -6, length: 80, turnDegrees: 0 },
     { climb: -8, length: 300, turnDegrees: -10 },
     { climb: 0, length: 160, turnDegrees: 90 },
-    { climb: 0, length: 310, turnDegrees: 0 },
-    { climb: 0, length: 400, turnDegrees: 0 },
+    { climb: 0, length: 290, turnDegrees: 0 },
+    { climb: 1.4, length: 38, turnDegrees: 0 },
+    { climb: -1.4, length: 38, turnDegrees: 0 },
+    { climb: 0, length: 344, turnDegrees: 0 },
     { climb: 0, length: 160, turnDegrees: -88 },
     { climb: 0, length: 560, turnDegrees: 0 },
     { climb: 0, length: 160, turnDegrees: 92 },

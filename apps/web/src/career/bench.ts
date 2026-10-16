@@ -1,6 +1,8 @@
 import { STARTING_BIKE } from "@racer/career/tables";
 import { PLAYER_RIDER } from "@racer/sim/state";
 import type { PacingRules } from "@racer/sim/state";
+import { roadLevels } from "@racer/track/road";
+import { roadIds } from "@racer/track/roads";
 
 import type { RacePlan } from "../game/hud.ts";
 import { planFor } from "./flow.ts";
@@ -8,6 +10,7 @@ import { planFor } from "./flow.ts";
 export type Bench = "stress" | "reference";
 
 const BENCH_SEED = 31;
+const STRESS_SEED = 8;
 const STRESS_COPS = 8;
 const STRESS_SIGHT_RANGE = 250;
 const STRESS_PLAYER_AGGRESSION = 0.8;
@@ -27,7 +30,7 @@ const stressPlan = (): RacePlan => {
     level: 5,
     mode: "quick",
     roadId: "slag-row",
-    seed: BENCH_SEED,
+    seed: STRESS_SEED,
   });
   const { setup } = plan;
   return {
@@ -61,3 +64,20 @@ const referencePlan = (): RacePlan =>
 
 export const benchPlan = (bench: Bench): RacePlan =>
   bench === "stress" ? stressPlan() : referencePlan();
+
+export const rideOf = (search: string): RacePlan | null => {
+  const flags = new URLSearchParams(search);
+  const roadId = roadIds.find((id) => id === flags.get("ride"));
+  if (!(import.meta.env.DEV && roadId)) {
+    return null;
+  }
+  const level =
+    roadLevels.find((each) => each === Number(flags.get("level"))) ?? 1;
+  return planFor(null, {
+    bikeId: "ostra-sesta-600",
+    level,
+    mode: "quick",
+    roadId,
+    seed: BENCH_SEED,
+  });
+};

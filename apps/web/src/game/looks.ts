@@ -58,6 +58,7 @@ export interface Look {
   readonly groundNear: string;
   readonly groundFar: string;
   readonly groundPatch: string;
+  readonly dust: string;
   readonly foliage: readonly [string, string];
   readonly trunk: string;
   readonly rock: string;
@@ -74,6 +75,7 @@ const dusk: Look = {
   centre: "#ffc21a",
   clouds: ["#ff9a8a", "#b8366f", "#6a1a66"],
   dark: "#3a2452",
+  dust: "#d9b48c",
   fog: "#f0605e",
   fogFar: 1700,
   fogNear: 160,
@@ -127,6 +129,7 @@ const night: Look = {
   centre: "#ffb000",
   clouds: ["#2a3a8a", "#141c58", "#0a0e36"],
   dark: "#141a4a",
+  dust: "#a3aabe",
   fog: "#1a2166",
   fogFar: 1100,
   fogNear: 90,
@@ -172,6 +175,7 @@ const dawn: Look = {
   centre: "#ffc21a",
   clouds: ["#ffc0a0", "#e0708a", "#8a3a7a"],
   dark: "#3a2452",
+  dust: "#efca9c",
   fog: "#f4a08a",
   fogFar: 2600,
   fogNear: 260,
@@ -220,6 +224,7 @@ const dawn: Look = {
 
 const woods: Look = {
   ...night,
+  dust: "#9c9274",
   fogFar: 620,
   fogNear: 60,
   groundFar: "#123a4a",
@@ -241,6 +246,7 @@ const woods: Look = {
 
 const ridge: Look = {
   ...dusk,
+  dust: "#cbc4aa",
   fogFar: 2200,
   fogNear: 240,
   groundFar: "#5a4a7a",

@@ -53,6 +53,7 @@ export interface Bikes {
   readonly group: THREE.Group;
   readonly roots: readonly THREE.Object3D[];
   spin: (index: number, distance: number) => void;
+  sag: (index: number, metres: number) => void;
   show: (index: number) => void;
   commit: (anchor: THREE.Vector3) => void;
   dispose: () => void;
@@ -239,7 +240,9 @@ export function createBikes(
 
   const shown = new Uint8Array(capacity);
   const slotRider = new Int32Array(capacity).fill(-1);
+  const sags = new Float32Array(capacity);
   const frame = new THREE.Matrix4();
+  const body = new THREE.Matrix4();
   const pivot = new THREE.Matrix4();
 
   const recolour = (slot: number, index: number): boolean => {
@@ -285,11 +288,13 @@ export function createBikes(
           pivot.setPosition(0, wheel.radius, wheel.z);
           wheel.frame.multiplyMatrices(frame, pivot);
         }
+        pivot.makeTranslation(0, -(sags[index] ?? 0), 0);
+        body.multiplyMatrices(frame, pivot);
         for (const part of parts) {
-          part.mesh.setMatrixAt(slot, part.wheel?.frame ?? frame);
+          part.mesh.setMatrixAt(slot, part.wheel?.frame ?? body);
         }
         if (beacons && riders[index]?.police) {
-          beacons.setMatrixAt(cop, frame);
+          beacons.setMatrixAt(cop, body);
           cop += 1;
         }
         if (recolour(slot, index)) {
@@ -312,6 +317,9 @@ export function createBikes(
     },
     group,
     roots,
+    sag(index, metres) {
+      sags[index] = metres;
+    },
     show(index) {
       shown[index] = 1;
     },

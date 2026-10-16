@@ -44,6 +44,7 @@ const TICKS = 60;
 const TRUCE_SECONDS = 3;
 const road = compileTrack({
   ...ridgeRoad,
+  features: [],
   sections: [{ climb: 0, length: 9000, turnDegrees: 0 }],
   trafficPerKilometre: 0,
 });
