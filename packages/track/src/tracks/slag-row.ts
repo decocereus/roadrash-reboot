@@ -29,7 +29,7 @@ export const slagRow: TrackPlan = {
       x: 3.5,
     },
   ],
-  hazardsPerKilometre: 1.5,
+  hazardsPerKilometre: 1,
   id: "slag-row",
   laneWidth: 3.5,
   lanesEachWay: 2,

@@ -21,7 +21,7 @@ export const cinderWash: TrackPlan = {
       x: 3.8,
     },
   ],
-  hazardsPerKilometre: 1.5,
+  hazardsPerKilometre: 1,
   id: "cinder-wash",
   laneWidth: 3.8,
   lanesEachWay: 2,

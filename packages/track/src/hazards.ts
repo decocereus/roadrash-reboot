@@ -41,7 +41,7 @@ const SIGHT_STEP = 5;
 const EYE_HEIGHT = 1.2;
 const TARGET_HEIGHT = 0.1;
 const SIGHT_GROUND_CLEARANCE = 0.05;
-const HAZARD_SEED_SALT = 0x4b_f8;
+const HAZARD_SEED_SALT = 0x4b_c2;
 const SHORTEST_GAP_SHARE = 0.6;
 const GAP_SPREAD_SHARE = 0.8;
 const SAME_WAY_SHARE = 0.7;
@@ -54,6 +54,10 @@ const CREST_RUN = 30;
 const SNAP_REACH = 250;
 const APEX_REACH = 0.7;
 const SEAM_SPREAD = 0.9;
+export const HAZARD_TIGHT_CURVATURE = 0.0015;
+export const HAZARD_GENTLE_CURVATURE = 0.0003;
+const ROCK_LEAD = 10;
+const ROCK_RUNOUT = 40;
 const LANE_SPREAD = {
   oil: 0.5,
   pothole: 0.9,
@@ -76,6 +80,8 @@ const LEVEL_SHARES: readonly (readonly [RoadLevel, number])[] = [
 
 type Road = Omit<Track, "hazards">;
 
+type Bend = "straight" | "gentle" | "tight";
+
 interface Place {
   readonly s: number;
   readonly setting: HazardSetting;
@@ -88,11 +94,12 @@ const levelOf = (roll: number): RoadLevel =>
 const kindOf = (
   mix: HazardMix,
   roll: number,
-  setting: HazardSetting
+  setting: HazardSetting,
+  bend: Bend
 ): HazardKind => {
   const weight = SETTING_WEIGHTS[setting];
   const oil = mix.oil * weight.oil;
-  const rock = mix.rock * weight.rock;
+  const rock = bend === "tight" ? 0 : mix.rock * weight.rock;
   const total = oil + rock + mix.pothole * weight.pothole;
   if (roll * total < oil) {
     return "oil";
@@ -152,10 +159,28 @@ const centreOf = (
   return laneOf(road, (laneRoll - SEAM_SHARE) / (1 - SEAM_SHARE)) + spread;
 };
 
+const laneEdgeOf = (
+  road: Road,
+  kind: HazardKind,
+  x: number,
+  offsetRoll: number
+): number => {
+  const lane =
+    [...road.sameWayLanes, ...road.oncomingLanes].toSorted(
+      (left, right) => Math.abs(left - x) - Math.abs(right - x)
+    )[0] ?? 0;
+  const side = Math.sign(x - lane) || (offsetRoll < SEAM_SHARE ? -1 : 1);
+  return (
+    lane +
+    side * (road.plan.laneWidth / 2 - hazardSizes[kind].halfWidth - EDGE_MARGIN)
+  );
+};
+
 const acrossOf = (
   road: Road,
   place: Place,
   kind: HazardKind,
+  bend: Bend,
   laneRoll: number,
   offsetRoll: number
 ): number => {
@@ -163,7 +188,11 @@ const acrossOf = (
     road.plan.lanesEachWay * road.plan.laneWidth -
     hazardSizes[kind].halfWidth -
     EDGE_MARGIN;
-  const x = centreOf(road, place, kind, laneRoll, offsetRoll);
+  const centre = centreOf(road, place, kind, laneRoll, offsetRoll);
+  const x =
+    kind === "rock" && bend === "gentle"
+      ? laneEdgeOf(road, kind, centre, offsetRoll)
+      : centre;
   return Math.min(reach, Math.max(-reach, x));
 };
 
@@ -215,6 +244,24 @@ const seenFrom = (road: Road, s: number, x: number, distance: number) => {
 
 export const inSight = (road: Road, s: number, x: number): boolean =>
   seenFrom(road, s, x, HAZARD_SIGHT);
+
+const bendAt = (road: Road, s: number): Bend => {
+  let sharpest = 0;
+  for (
+    let along = s - ROCK_LEAD;
+    along <= s + ROCK_RUNOUT;
+    along += SIGHT_STEP
+  ) {
+    sharpest = Math.max(
+      sharpest,
+      Math.abs(sampleOf(road, road.curvature, along))
+    );
+  }
+  if (sharpest >= HAZARD_TIGHT_CURVATURE) {
+    return "tight";
+  }
+  return sharpest >= HAZARD_GENTLE_CURVATURE ? "gentle" : "straight";
+};
 
 const clearOfRamps = (road: Road, s: number, halfLength: number): boolean =>
   road.plan.features.every((rule) => {
@@ -310,11 +357,12 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
     ];
     const chosen = options
       .map((place) => {
-        const kind = kindOf(mix, kindRoll, place.setting);
+        const bend = bendAt(road, place.s);
+        const kind = kindOf(mix, kindRoll, place.setting, bend);
         return {
           kind,
           place,
-          x: acrossOf(road, place, kind, laneRoll, offsetRoll),
+          x: acrossOf(road, place, kind, bend, laneRoll, offsetRoll),
         };
       })
       .find(({ kind, place, x }) => placeable(road, kind, place.s, x));
