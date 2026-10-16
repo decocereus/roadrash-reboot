@@ -5,10 +5,15 @@ import { curvatureAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { grudgeSide, nearestRival } from "./combat.ts";
-import { topSpeedOf } from "./engine.ts";
+import { dragOf, topSpeedOf } from "./engine.ts";
 import { rockUpsetShare } from "./hazards.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
-import { HARD_LANDING, LANDING_SLIP, towardBike } from "./rider.ts";
+import {
+  BRAKE_RESERVE,
+  HARD_LANDING,
+  LANDING_SLIP,
+  towardBike,
+} from "./rider.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -30,7 +35,16 @@ import type {
 import { kick, weapons } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
 
-const CORNER_CONFIDENCE = 0.8;
+const CORNER_MARGIN = 0.99;
+const CORNER_MARGIN_PER_LACK = 0.3;
+const CORNER_SCAN_STEP = 5;
+const CORNER_SCAN_LIMIT = 400;
+const BRAKE_SHARE = 0.9;
+const BRAKE_LAG_SECONDS = 0.15;
+const LIFT_DROP = 0.05;
+const LIFT_SHARE = 0.9;
+const CROSSING_REACH = 1.7;
+const CROSSING_GRIP = 0.75;
 const CREST_MARGIN = 1.15;
 const PLANNED_BRAKING = 6.5;
 const PLANNED_LIFT = 3.5;
@@ -137,30 +151,124 @@ const paceOf = (
   return { cap: Number.POSITIVE_INFINITY, lift: state.pacing.catchUp * share };
 };
 
-const letGoSpeed = (bike: BikeSpec, bend: number): number => {
+const holdingSpeed = (bike: BikeSpec, bend: number, grip: number): number => {
   const push = bend / bike.curvePush;
-  const held = bike.lateralSpeedPerSpeed * CORNER_CONFIDENCE;
-  const grip = bike.lateralSpeed * CORNER_CONFIDENCE;
-  return (held + Math.sqrt(held * held + 4 * push * grip)) / (2 * push);
+  const held = bike.lateralSpeedPerSpeed * grip;
+  return (
+    (held + Math.sqrt(held * held + 4 * push * bike.lateralSpeed * grip)) /
+    (2 * push)
+  );
 };
 
-const cornerSpeedLimit = (track: Track, rider: RiderState): number => {
-  const horizon = (rider.speed * rider.speed) / (2 * PLANNED_BRAKING) + 40;
+const cornerMargin = (skill: number): number =>
+  CORNER_MARGIN - CORNER_MARGIN_PER_LACK * (1 - skill);
+
+const crestSpeedLimit = (track: Track, rider: RiderState): number => {
+  const horizon = (rider.speed * rider.speed) / (2 * PLANNED_LIFT) + 40;
   let limit = Number.POSITIVE_INFINITY;
-  const slowFor = (speed: number, ahead: number, planned: number) => {
-    limit = Math.min(limit, Math.sqrt(speed * speed + 2 * planned * ahead));
-  };
   for (let ahead = 0; ahead < horizon; ahead += SCAN_STEP) {
-    const bend = Math.abs(curvatureAt(track, rider.s + ahead));
-    if (bend > 1e-5) {
-      slowFor(letGoSpeed(rider.bike, bend), ahead, PLANNED_BRAKING);
-    }
     const drop = slopeRateAt(track, rider.s + ahead);
     if (drop < 0) {
-      slowFor(Math.sqrt(-GRAVITY / drop) * CREST_MARGIN, ahead, PLANNED_LIFT);
+      const crest = Math.sqrt(-GRAVITY / drop) * CREST_MARGIN;
+      limit = Math.min(
+        limit,
+        Math.sqrt(crest * crest + 2 * PLANNED_LIFT * ahead)
+      );
     }
   }
   return limit;
+};
+
+const runsWide = (track: Track, rider: RiderState, line: number): boolean => {
+  const { bike, speed } = rider;
+  const push = curvePushOf(bike, curvatureAt(track, rider.s), speed);
+  const outward = -Math.sign(push);
+  const drift = (rider.lateralSpeed - push) * outward;
+  if (drift <= 0) {
+    return false;
+  }
+  const room = Math.max(
+    0,
+    Math.min(
+      track.roadHalfWidth - BIKE_HALF_WIDTH - rider.x * outward,
+      CROSSING_REACH - (rider.x - line) * outward
+    )
+  );
+  return (
+    Math.abs(push) > lateralSpeedLimit(bike, speed) ||
+    drift * drift > 2 * bike.steerRate * room
+  );
+};
+
+interface CornerCall {
+  brake: number;
+  lift: boolean;
+}
+
+const cornerCall: CornerCall = { brake: 0, lift: false };
+
+const callCorners = (
+  track: Track,
+  rider: RiderState,
+  margin: number,
+  line: number
+): CornerCall => {
+  const { bike, speed } = rider;
+  const grip = Math.abs(line - rider.x) > CROSSING_REACH ? CROSSING_GRIP : 1;
+  const lock = clamp(
+    Math.abs(rider.lateralSpeed) / Math.max(1, lateralSpeedLimit(bike, speed)),
+    0,
+    1
+  );
+  const coasting =
+    dragOf(bike, speed, rider.tuck) +
+    bike.engineBraking * Math.min(1, rider.revs) +
+    bike.leanScrub * lock * lock * speed;
+  const braking = bike.brakeDeceleration * (1 - (1 - BRAKE_RESERVE) * lock);
+  const loadAt = (ahead: number): number =>
+    clamp(
+      1 + (slopeRateAt(track, rider.s + ahead) * speed * speed) / GRAVITY,
+      0,
+      1
+    );
+  const capacity = braking * loadAt(0) + coasting;
+  const planned = BRAKE_SHARE * capacity;
+  const lag = speed * BRAKE_LAG_SECONDS;
+  const reach = (speed * speed) / (2 * planned) + lag + CORNER_SCAN_STEP;
+  let brakeNeed = 0;
+  let liftNeed = 0;
+  let room = 0;
+  for (
+    let ahead = 0;
+    room <= reach && ahead <= CORNER_SCAN_LIMIT;
+    ahead += CORNER_SCAN_STEP
+  ) {
+    const bend = Math.abs(curvatureAt(track, rider.s + ahead));
+    const corner =
+      bend > 1e-5
+        ? holdingSpeed(bike, bend, grip) * margin
+        : Number.POSITIVE_INFINITY;
+    if (corner < speed) {
+      const need =
+        (speed * speed - corner * corner) / (2 * Math.max(room - lag, lag));
+      if (corner >= speed * (1 - LIFT_DROP) && need <= coasting) {
+        liftNeed = Math.max(liftNeed, need);
+      } else {
+        brakeNeed = Math.max(brakeNeed, need);
+      }
+    }
+    room +=
+      (CORNER_SCAN_STEP * (braking * loadAt(ahead) + coasting)) / capacity;
+  }
+  const wide = runsWide(track, rider, line);
+  const braked =
+    wide || brakeNeed >= planned || (rider.brake > 0 && brakeNeed > coasting);
+  const asked = wide
+    ? Number.POSITIVE_INFINITY
+    : (brakeNeed - coasting) / Math.max(1, capacity - coasting);
+  cornerCall.brake = braked ? clamp(asked, 0, 1) : 0;
+  cornerCall.lift = braked || liftNeed >= LIFT_SHARE * coasting;
+  return cornerCall;
 };
 
 interface Threat {
@@ -539,31 +647,36 @@ const weigh = (
   }
   horizon = Math.min(FORECAST_SECONDS, horizon);
   const { bike } = rider;
-  const limit = Math.min(
-    MAX_LATERAL_SPEED,
-    lateralSpeedLimit(bike, rider.speed)
-  );
+  const limit = lateralSpeedLimit(bike, rider.speed);
   const turn =
     bike.steerRate *
     weapons[rider.weapon].steerFactor *
     (1 - rider.slip) *
     TICK_SECONDS;
-  let { x } = rider;
-  let lateralSpeed =
-    rider.lateralSpeed -
-    curvePushOf(bike, curvatureAt(track, rider.s), rider.speed);
-  tally(rider, x, 0, lateralSpeed, braking);
+  const pushAt = (seconds: number): number =>
+    curvePushOf(
+      bike,
+      curvatureAt(track, rider.s + rider.speed * seconds),
+      rider.speed
+    );
+  let { x, lateralSpeed } = rider;
+  tally(rider, x, 0, lateralSpeed - pushAt(0), braking);
   for (let tick = 1; tick * TICK_SECONDS <= horizon; tick += 1) {
+    const push = pushAt(tick * TICK_SECONDS);
     const settling =
       (lateralSpeed * Math.abs(lateralSpeed)) / (2 * bike.steerRate);
     const wanted = clamp(
-      (line - x - settling) * LANE_CHANGE_RATE,
+      clamp(
+        (line - x - settling) * LANE_CHANGE_RATE,
+        -MAX_LATERAL_SPEED,
+        MAX_LATERAL_SPEED
+      ) + push,
       -limit,
       limit
     );
     lateralSpeed += clamp(wanted - lateralSpeed, -turn, turn);
-    x += lateralSpeed * TICK_SECONDS;
-    tally(rider, x, tick * TICK_SECONDS, lateralSpeed, braking);
+    x += (lateralSpeed - push) * TICK_SECONDS;
+    tally(rider, x, tick * TICK_SECONDS, lateralSpeed - push, braking);
   }
 };
 
@@ -1023,15 +1136,19 @@ const ride = (
   );
 
   const skill = Math.min(1, rider.profile.skill + pace.lift);
+  const corners = callCorners(track, rider, cornerMargin(skill), aim.x);
   const targetSpeed = Math.min(
     aim.speed,
-    cornerSpeedLimit(track, rider) * skill
+    crestSpeedLimit(track, rider) * skill
   );
   const excess = rider.speed - targetSpeed;
-  input.brake = excess > 1.5 ? clamp(excess / 6, 0.25, 1) : 0;
+  input.brake = Math.max(
+    corners.brake,
+    excess > 1.5 ? clamp(excess / 6, 0.25, 1) : 0
+  );
   const over = Math.max(excess, rider.speed - pace.cap);
   input.throttle =
-    targetSpeed > 0
+    targetSpeed > 0 && !corners.lift
       ? clamp(CRUISE_THROTTLE - over * THROTTLE_PER_EXCESS, 0, 1)
       : 0;
 };

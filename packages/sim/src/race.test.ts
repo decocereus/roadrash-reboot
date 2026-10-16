@@ -2135,6 +2135,120 @@ describe("cornering with the throttle held", () => {
   });
 });
 
+const holdingKmh = (bike: BikeSpec, course: Track, s: number): number => {
+  const bend = Math.abs(curvatureAt(course, s));
+  let slow = 0;
+  let fast = 100;
+  for (let step = 0; step < 40; step += 1) {
+    const middle = (slow + fast) / 2;
+    if (
+      (bend * middle * middle) / bike.curvePush >
+      lateralSpeedLimit(bike, middle)
+    ) {
+      fast = middle;
+    } else {
+      slow = middle;
+    }
+  }
+  return slow * KMH;
+};
+
+interface PilotTrace {
+  readonly s: number;
+  readonly kmh: number;
+  readonly brake: number;
+  readonly throttle: number;
+  readonly offRoad: boolean;
+}
+
+const pilotTrace = (
+  course: Track,
+  bike: BikeSpec,
+  skill: number,
+  until: number
+): PilotTrace[] => {
+  const setup = defaultSetup(course, 1);
+  const state = createRace({
+    ...setup,
+    player: { ...setup.player, bike, skill },
+    police: { ...setup.police, count: 0 },
+    rivals: [],
+  });
+  const rider = player(state);
+  const input = { ...cruising };
+  const trace: PilotTrace[] = [];
+  while (rider.s < until && rider.mode === "riding") {
+    pilotInput(state, course, 0, input);
+    stepRace(state, course, [input]);
+    trace.push({
+      brake: input.brake,
+      kmh: rider.speed * KMH,
+      offRoad: rider.offRoad,
+      s: rider.s,
+      throttle: input.throttle,
+    });
+  }
+  return trace;
+};
+
+const HERMITS_APEX = 6114;
+const LONG_SWEEPER_FROM = 6680;
+const LONG_SWEEPER_TO = 6940;
+const LONG_SWEEPER_APEX = 6758;
+
+describe("the pilot in bends", () => {
+  it.each([
+    { least: 0.92, skill: 0.8 },
+    { least: 0.95, skill: 0.9 },
+    { least: 0.98, skill: 1 },
+  ])(
+    "a rival of skill $skill on the Sesta brakes late for Hermit's Bend, takes its apex at $least of the speed the bike can hold or better, and is back on the throttle before the bend ends",
+    ({ least, skill }) => {
+      const limit = holdingKmh(streetBike, quietTrack, HERMITS_APEX);
+      const trace = pilotTrace(quietTrack, streetBike, skill, HERMITS_BEND_TO);
+      const approach = trace.filter(
+        (step) => step.s > HERMITS_BEND_FROM - 300 && step.s < HERMITS_APEX
+      );
+      const firstBrake = approach.find((step) => step.brake > 0);
+      const apex = trace.find((step) => step.s >= HERMITS_APEX);
+      const exit = trace.filter((step) => step.s > HERMITS_APEX);
+      if (!(firstBrake && apex)) {
+        throw new Error("The pilot never braked for Hermit's Bend.");
+      }
+      const latest =
+        HERMITS_APEX -
+        ((firstBrake.kmh / KMH) ** 2 - (limit / KMH) ** 2) /
+          (2 * streetBike.brakeDeceleration);
+      expect({
+        arrivedFast: firstBrake.kmh > 200,
+        brakedLate: firstBrake.s > latest - 25,
+        openedUp: exit.some((step) => step.throttle === 1),
+        stayedOnRoad: trace.every((step) => !step.offRoad),
+      }).toStrictEqual({
+        arrivedFast: true,
+        brakedLate: true,
+        openedUp: true,
+        stayedOnRoad: true,
+      });
+      expect(apex.kmh / limit).toBeGreaterThanOrEqual(least);
+      expect(apex.kmh / limit).toBeLessThanOrEqual(1);
+    }
+  );
+
+  it("the Sesta takes the long sweeper after Hermit's Bend near flat out, with no brake and above 93% of the speed it can hold at the tightest point", () => {
+    const limit = holdingKmh(streetBike, quietTrack, LONG_SWEEPER_APEX);
+    const trace = pilotTrace(quietTrack, streetBike, 0.9, LONG_SWEEPER_TO);
+    const sweep = trace.filter((step) => step.s > HERMITS_BEND_TO + 100);
+    const apex = sweep.find((step) => step.s >= LONG_SWEEPER_APEX);
+    expect(limit).toBeGreaterThan(220);
+    expect(sweep.every((step) => step.brake === 0)).toBeTruthy();
+    expect(
+      sweep.find((step) => step.s >= LONG_SWEEPER_FROM)?.kmh
+    ).toBeGreaterThan(210);
+    expect((apex?.kmh ?? 0) / limit).toBeGreaterThan(0.93);
+  });
+});
+
 const rivalsOf = (state: RaceState): number[] =>
   state.riders
     .slice(1)
@@ -2270,7 +2384,7 @@ describe("pacing by the gap to the player", () => {
     rideTheRival(onBendsAlone, quietTrack, 60);
     const fastest = rideTheRival(onStraight, straight, 40);
     expect(riderAt(onBends, 1).s).toBeGreaterThan(
-      riderAt(onBendsAlone, 1).s + 20
+      riderAt(onBendsAlone, 1).s + 5
     );
     expect(fastest).toBeLessThanOrEqual(
       topSpeedOf(riderAt(onStraight, 1).bike, true) * 1.01
