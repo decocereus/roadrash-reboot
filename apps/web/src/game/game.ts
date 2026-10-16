@@ -354,6 +354,7 @@ interface Compile {
   readonly load: number;
   readonly done: (current: boolean) => void;
   timer: ReturnType<typeof setTimeout> | undefined;
+  ready: boolean;
 }
 
 interface Rung {
@@ -763,12 +764,12 @@ export async function createGame(
     }
   };
 
-  const finishCompile = (job: Compile) => {
-    if (!compiles.delete(job)) {
+  const markReady = (job: Compile) => {
+    if (job.ready) {
       return;
     }
+    job.ready = true;
     clearTimeout(job.timer);
-    releaseParked();
     if (!alive || job.load !== loads) {
       job.done(false);
       return;
@@ -779,6 +780,14 @@ export async function createGame(
     } finally {
       job.done(true);
     }
+  };
+
+  const finishCompile = (job: Compile) => {
+    if (!compiles.delete(job)) {
+      return;
+    }
+    releaseParked();
+    markReady(job);
   };
 
   const abandonCompiles = () => {
@@ -800,9 +809,14 @@ export async function createGame(
     const unstage = stageEverything();
     const compiled = pipeline.compile(world.scene, chase.camera);
     unstage();
-    const job: Compile = { done: resolve, load: loads, timer: undefined };
+    const job: Compile = {
+      done: resolve,
+      load: loads,
+      ready: false,
+      timer: undefined,
+    };
     job.timer = setTimeout(() => {
-      finishCompile(job);
+      markReady(job);
     }, COMPILE_TIMEOUT_MS);
     compiles.add(job);
     void compiled
