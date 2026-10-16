@@ -20,7 +20,8 @@ export type Notice =
   | "disarmed"
   | "broken"
   | "police"
-  | "lastKm";
+  | "lastKm"
+  | "marked";
 
 export interface HudState {
   readonly phase: GamePhase;
