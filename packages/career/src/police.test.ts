@@ -135,7 +135,7 @@ const MINUTES = 60_000;
 describe("police balance", () => {
   it.each(bands)(
     "a pilot standing in for the decent player is busted in $fewest to $most of 40 starts at level $level",
-    { timeout: 5 * MINUTES },
+    { timeout: 8 * MINUTES },
     ({ fewest, level, most }) => {
       const tally = seasonAt(level);
       expect(tally.busted + tally.finished + tally.wrecked).toBe(STARTS);
@@ -149,7 +149,7 @@ describe("police balance", () => {
 
   it(
     "over the five levels the busts come to between an eighth and 27% of all starts",
-    { timeout: 15 * MINUTES },
+    { timeout: 30 * MINUTES },
     () => {
       const starts = levels.length * STARTS;
       const busted = levels

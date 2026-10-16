@@ -10,6 +10,9 @@ export const MAX_EVENTS = 512;
 export const MAX_PARTS = 32;
 export const MAX_FAULT_TEXT = 240;
 
+export const frameRates = ["auto", "60", "30"] as const;
+export type FrameRate = (typeof frameRates)[number];
+
 export const testDevices = ["air", "pro", "unspecified"] as const;
 export type TestDevice = (typeof testDevices)[number];
 
@@ -19,6 +22,12 @@ export const governReasons = [
   "native-dpr",
   "pace-fallback",
   "pace-retry",
+  "late-burst",
+  "calm-retry",
+  "device-start",
+  "under-rate",
+  "steady-30",
+  "rate-setting",
 ] as const;
 export type GovernReason = (typeof governReasons)[number];
 

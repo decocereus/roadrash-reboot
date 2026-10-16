@@ -3,6 +3,7 @@ import { Schema } from "effect";
 import {
   batchKinds,
   faultSources,
+  frameRates,
   governReasons,
   HISTOGRAM_BUCKETS,
   MAX_EVENTS,
@@ -50,9 +51,11 @@ export type Session = typeof sessionSchema.Type;
 
 export const qualitySchema = Schema.Struct({
   bloomScale: Schema.Finite,
+  frameRate: Schema.optionalKey(Schema.Literals(frameRates)),
   pace: Count,
   pixelRatio: Schema.Finite,
   rung: Count,
+  samples: Schema.optionalKey(Count),
   shadowMap: Count,
 });
 export type Quality = typeof qualitySchema.Type;

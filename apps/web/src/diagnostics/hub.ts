@@ -119,7 +119,7 @@ const createDiagnostics = (): Diagnostics => {
   };
 
   const flush = () => {
-    if (recorder.recording) {
+    if (recorder.recording && !recorder.quiet()) {
       enqueue("periodic", false);
       uploader.drain();
     }

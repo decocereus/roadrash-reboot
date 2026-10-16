@@ -13,7 +13,7 @@ const BLOOM_THRESHOLD = 0.93;
 export const BLOOM_SCALE = 2;
 const FRINGE = 0.012;
 const VIGNETTE = 0.42;
-const SAMPLES = 4;
+export const SAMPLES = 4;
 const FACING_CAMERA = 0x80_80_ff;
 
 const SCREEN_VERTEX =
@@ -108,10 +108,52 @@ const byVariantThenMaterial = (
   a.material.id - b.material.id ||
   a.z - b.z;
 
+export interface Compiling {
+  readonly ready: Promise<null>;
+  readonly stop: () => void;
+}
+
+const PROGRAM_POLL_MS = 10;
+const COMPLETION_STATUS_KHR = 0x91_b1;
+
+const compiled: Compiling = {
+  ready: Promise.resolve(null),
+  stop: () => null,
+};
+
+const watchPrograms = (renderer: THREE.WebGLRenderer): Compiling => {
+  if (!renderer.extensions.has("KHR_parallel_shader_compile")) {
+    return compiled;
+  }
+  const gl = renderer.getContext();
+  const pending = (program: THREE.WebGLProgram): boolean =>
+    program.program instanceof WebGLProgram &&
+    gl.getProgramParameter(program.program, COMPLETION_STATUS_KHR) === false;
+  const { promise, resolve } = Promise.withResolvers<null>();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const check = () => {
+    if (!(renderer.info.programs ?? []).some(pending)) {
+      resolve(null);
+      return;
+    }
+    timer = setTimeout(check, PROGRAM_POLL_MS);
+  };
+  check();
+  return {
+    ready: promise,
+    stop() {
+      clearTimeout(timer);
+      resolve(null);
+    },
+  };
+};
+
 export interface Pipeline {
   prepare: (scene: THREE.Scene) => void;
+  compile: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => Compiling;
   setLook: (look: Look) => void;
   setBloomScale: (scale: number) => void;
+  setSamples: (samples: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
   dispose: () => void;
@@ -177,6 +219,18 @@ export const createPipeline = (
   let cssHeight = 1;
 
   return {
+    compile(scene, camera) {
+      seesFx(camera, true);
+      renderer.setRenderTarget(sceneTarget);
+      try {
+        renderer.compile(scene, camera);
+        return watchPrograms(renderer);
+      } catch {
+        return compiled;
+      } finally {
+        renderer.setRenderTarget(null);
+      }
+    },
     dispose() {
       normalTarget.depthTexture?.dispose();
       normalTarget.dispose();
@@ -252,6 +306,13 @@ export const createPipeline = (
       uniform(line, "ink").value.set(look.ink);
       uniform(grade, "grade").value.set(...look.grade);
       bloom.strength = look.bloom;
+    },
+    setSamples(samples) {
+      if (samples === sceneTarget.samples) {
+        return;
+      }
+      sceneTarget.samples = samples;
+      sceneTarget.dispose();
     },
   };
 };

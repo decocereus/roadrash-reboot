@@ -1,5 +1,5 @@
-import { testDevices } from "@racer/telemetry/limits";
-import type { TestDevice } from "@racer/telemetry/limits";
+import { frameRates, testDevices } from "@racer/telemetry/limits";
+import type { FrameRate, TestDevice } from "@racer/telemetry/limits";
 
 export const SETTINGS_KEY = "rushline.settings.v1";
 
@@ -8,11 +8,13 @@ export interface Settings {
   readonly recording: boolean;
   readonly automaticUpload: boolean;
   readonly device: TestDevice;
+  readonly frameRate: FrameRate;
 }
 
 export const defaultSettings: Settings = {
   automaticUpload: false,
   device: "unspecified",
+  frameRate: "auto",
   overlay: false,
   recording: false,
 };
@@ -28,6 +30,9 @@ export const parseSettings = (text: string | null): Settings => {
       device:
         testDevices.find((device) => device === fields.get("device")) ??
         defaultSettings.device,
+      frameRate:
+        frameRates.find((rate) => rate === fields.get("frameRate")) ??
+        defaultSettings.frameRate,
       overlay: fields.get("overlay") === true,
       recording: fields.get("recording") === true,
     };

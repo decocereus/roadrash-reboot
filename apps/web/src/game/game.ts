@@ -29,7 +29,11 @@ import type {
   RiderState,
 } from "@racer/sim/state";
 import { strikeOf, weapons } from "@racer/sim/weapons";
-import type { GovernReason, ResizeSource } from "@racer/telemetry/limits";
+import type {
+  FrameRate,
+  GovernReason,
+  ResizeSource,
+} from "@racer/telemetry/limits";
 import { governReasons } from "@racer/telemetry/limits";
 import { emptySupport, supportAt } from "@racer/track/features";
 import { roadIds, trackFor } from "@racer/track/roads";
@@ -50,6 +54,8 @@ import type { Subject } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter } from "./fps-meter.ts";
+import { BASE_RATE, createGovernor } from "./governor.ts";
+import type { Verdict } from "./governor.ts";
 import type {
   GameEvents,
   GameHandle,
@@ -58,8 +64,10 @@ import type {
   RacePlan,
 } from "./hud.ts";
 import { createControls } from "./input.ts";
-import { BLOOM_SCALE, createPipeline } from "./post.ts";
-import { createProfiler, profileModeOf } from "./profile.ts";
+import { createPacer, createRefreshMeter } from "./pacer.ts";
+import { BLOOM_SCALE, createPipeline, SAMPLES } from "./post.ts";
+import type { Compiling } from "./post.ts";
+import { createProfiler, profileModeOf, rendererOf } from "./profile.ts";
 import type { FrameEnd, Part, Profiler } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
@@ -77,24 +85,13 @@ const TAG_RANGE = 25;
 const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
+const EXCUSED_FRAMES = 2;
+const COMPILE_TIMEOUT_MS = 5000;
 const MAX_PIXEL_RATIO = 2;
 const PIXEL_RATIO_STEP = 0.1;
 const LOWEST_RATIO_SHARE = 0.75;
 const LEAN_SHADOW_MAP = 2048;
 const LEAN_BLOOM_SCALE = 1;
-const BASE_RATE = 60;
-const REFRESH_RATES = [60, 75, 90, 120, 144, 165, 240];
-const REFRESH_SAMPLES = 24;
-const FASTEST_FRAME_SECONDS = 1 / 250;
-const LATE_FRAME_FACTOR = 1.4;
-const LATE_FRAMES_TO_STEP = 24;
-const CALM_FRAME_CREDIT = 0.1;
-const STEP_COOLDOWN_SECONDS = 5;
-const RAISE_AFTER_CALM_SECONDS = 20;
-const LONGEST_WAIT_SECONDS = 300;
-const FAST_PACE_AFTER_CALM_SECONDS = 10;
-const FAST_PACE_RETRY_SECONDS = 60;
-const PACE_SLACK = 0.5;
 const WRAP_JUMP = 30;
 const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
@@ -318,60 +315,62 @@ const pinnedPixelRatio = Number(
   new URLSearchParams(globalThis.location.search).get("ratio") ?? 0
 );
 
+const pinnedRung = Number(
+  new URLSearchParams(globalThis.location.search).get("rung") ?? -1
+);
+
 const pinnedRefresh = Number(
   new URLSearchParams(globalThis.location.search).get("hz") ?? 0
 );
 
-const nearestRefresh = (seconds: number): number => {
-  const rate = 1 / seconds;
-  let best = 60;
-  for (const candidate of REFRESH_RATES) {
-    if (Math.abs(candidate - rate) < Math.abs(best - rate)) {
-      best = candidate;
-    }
-  }
-  return best;
-};
-
-const watchRefresh = (report: (rate: number) => void): void => {
-  let shortest = Number.POSITIVE_INFINITY;
-  let last = -1;
-  let left = REFRESH_SAMPLES;
-  const sample = (now: number) => {
-    if (last >= 0) {
-      shortest = Math.min(shortest, (now - last) / 1000);
-    }
-    last = now;
-    left -= 1;
-    if (left > 0) {
-      requestAnimationFrame(sample);
-    } else if (shortest >= FASTEST_FRAME_SECONDS) {
-      report(nearestRefresh(shortest));
-    }
-  };
-  requestAnimationFrame(sample);
-};
+interface Compile {
+  readonly load: number;
+  readonly compiling: Compiling;
+  readonly done: (current: boolean) => void;
+  timer: ReturnType<typeof setTimeout> | undefined;
+}
 
 interface Rung {
   readonly shadowMap: number;
   readonly bloomScale: number;
+  readonly samples: number;
   readonly pixelRatio: number;
 }
+
+const MODEST_GPU =
+  /Apple GPU|Apple M\d(?!\d|\s*(?:Pro|Max|Ultra))|Intel|Mali|Adreno|PowerVR/u;
+const MODEST_START_RUNG = 3;
+
+const startRungFor = (gpu: string): number =>
+  MODEST_GPU.test(gpu) ? MODEST_START_RUNG : 0;
 
 const nativePixelRatio = (): number =>
   Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
 
 const ladderFor = (ceiling: number): readonly Rung[] => {
   const rungs: Rung[] = [
-    { bloomScale: BLOOM_SCALE, pixelRatio: ceiling, shadowMap: SHADOW_MAP },
     {
       bloomScale: BLOOM_SCALE,
       pixelRatio: ceiling,
+      samples: SAMPLES,
+      shadowMap: SHADOW_MAP,
+    },
+    {
+      bloomScale: BLOOM_SCALE,
+      pixelRatio: ceiling,
+      samples: SAMPLES,
       shadowMap: LEAN_SHADOW_MAP,
     },
     {
       bloomScale: LEAN_BLOOM_SCALE,
       pixelRatio: ceiling,
+      samples: SAMPLES,
+      shadowMap: LEAN_SHADOW_MAP,
+    },
+    {
+      bloomScale: LEAN_BLOOM_SCALE,
+      pixelRatio: ceiling,
+      samples: 0,
       shadowMap: LEAN_SHADOW_MAP,
     },
   ];
@@ -385,6 +384,7 @@ const ladderFor = (ceiling: number): readonly Rung[] => {
     rungs.push({
       bloomScale: LEAN_BLOOM_SCALE,
       pixelRatio,
+      samples: 0,
       shadowMap: LEAN_SHADOW_MAP,
     });
   }
@@ -429,11 +429,7 @@ export async function createGame(
   events: GameEvents
 ): Promise<GameHandle> {
   const display = { refresh: pinnedRefresh > 0 ? pinnedRefresh : 60 };
-  if (pinnedRefresh <= 0) {
-    watchRefresh((rate) => {
-      display.refresh = Math.max(display.refresh, rate);
-    });
-  }
+
   const assets = await loadAssets();
   let roadTurn = firstRoad;
   let track = roadForTurn(roadTurn);
@@ -449,6 +445,7 @@ export async function createGame(
   renderer.shadowMap.autoUpdate = false;
   renderer.info.autoReset = false;
   let ladder = ladderFor(nativePixelRatio());
+  const governor = createGovernor(ladder.length);
   let rung = 0;
   let pixelRatio = pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio();
   renderer.setPixelRatio(pixelRatio);
@@ -482,6 +479,7 @@ export async function createGame(
   const qualityAfter: QualityState = emptyQuality();
   let frameId = 0;
   let sizeEpoch = 0;
+  let excuseFrames = 0;
   let appliedWidth = -1;
   let appliedHeight = -1;
   let appliedRatio = -1;
@@ -531,16 +529,10 @@ export async function createGame(
   let accumulator = 0;
   let clockReset = false;
   let hudClock = 0;
-  let lateFrames = 0;
-  let calmSeconds = 0;
-  let sinceStep = STEP_COOLDOWN_SECONDS;
-  let sinceRaise = Number.POSITIVE_INFINITY;
-  let raiseWait = RAISE_AFTER_CALM_SECONDS;
   let pace = BASE_RATE;
-  let lateAtPace = 0;
-  let fastRetryIn = 0;
-  let fastRetryWait = FAST_PACE_RETRY_SECONDS;
-  let lastDrawn = Number.NEGATIVE_INFINITY;
+  const pacer = createPacer();
+  const readRefresh = createRefreshMeter(display.refresh);
+  let lastBusyMs = 0;
   let clock = 0;
 
   const subject: Subject = { air: 0, s: 0, speed: 0, tuck: 0, x: 0 };
@@ -652,18 +644,45 @@ export async function createGame(
     plates = race.riders.map((rider) => bikeColour(rider.profile.paint));
   };
 
+  const retire = (): (() => void) => {
+    const { scene } = world;
+    const oldViews = views;
+    const oldBikes = bikes;
+    const oldPuffs = puffs;
+    const oldFleet = fleet;
+    for (const view of oldViews) {
+      scene.remove(view.figure.root);
+    }
+    if (oldBikes) {
+      scene.remove(oldBikes.group);
+    }
+    if (oldPuffs) {
+      scene.remove(oldPuffs.group);
+    }
+    scene.remove(oldFleet.group);
+    views = [];
+    bikes = null;
+    puffs = null;
+    return () => {
+      for (const view of oldViews) {
+        view.figure.dispose();
+      }
+      oldBikes?.dispose();
+      oldPuffs?.dispose();
+      oldFleet.dispose();
+    };
+  };
+
   const takeTrack = (next: Track) => {
     if (next === track) {
       return;
     }
-    dropViews();
-    world.dispose();
     track = next;
     world = createWorld(track, (ladder[rung] ?? ladder[0])?.shadowMap);
     pipeline.setLook(world.shading.look);
   };
 
-  const warmUp = () => {
+  const stageEverything = (): (() => void) => {
     world.follow(chase.camera, player().s);
     const samples = world.samples();
     world.scene.add(samples);
@@ -671,21 +690,92 @@ export async function createGame(
     const unprime = puffs?.prime();
     pipeline.prepare(world.scene);
     const restore = revealAll(world.scene);
-    pipeline.render(world.scene, chase.camera);
-    restore();
-    unprime?.();
-    for (const each of unarm) {
-      each();
-    }
-    world.scene.remove(samples);
-    dropGeometry(samples);
+    return () => {
+      restore();
+      unprime?.();
+      for (const each of unarm) {
+        each();
+      }
+      world.scene.remove(samples);
+      dropGeometry(samples);
+    };
   };
 
-  const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
-    dropFleet();
+  const warmUp = () => {
+    const unstage = stageEverything();
+    pipeline.render(world.scene, chase.camera);
+    unstage();
+  };
+
+  let loads = 0;
+  let warming = false;
+  let alive = true;
+  const compiles = new Set<Compile>();
+  let prepared: RaceSetup | null = null;
+  let preparing: Promise<void> = Promise.resolve();
+
+  const finishCompile = (job: Compile) => {
+    if (!compiles.delete(job)) {
+      return;
+    }
+    clearTimeout(job.timer);
+    job.compiling.stop();
+    if (!alive || job.load !== loads) {
+      job.done(false);
+      return;
+    }
+    warming = false;
+    try {
+      warmUp();
+    } finally {
+      job.done(true);
+    }
+  };
+
+  const abandonCompiles = () => {
+    for (const job of compiles) {
+      finishCompile(job);
+    }
+  };
+
+  const warmNow = () => {
+    loads += 1;
+    abandonCompiles();
+    warming = false;
+    warmUp();
+  };
+
+  const warmSoon = (): Promise<boolean> => {
+    loads += 1;
+    abandonCompiles();
+    warming = true;
+    const { promise, resolve } = Promise.withResolvers<boolean>();
+    const unstage = stageEverything();
+    const compiling = pipeline.compile(world.scene, chase.camera);
+    unstage();
+    const job: Compile = {
+      compiling,
+      done: resolve,
+      load: loads,
+      timer: undefined,
+    };
+    job.timer = setTimeout(() => {
+      finishCompile(job);
+    }, COMPILE_TIMEOUT_MS);
+    compiles.add(job);
+    void compiling.ready.then(() => {
+      finishCompile(job);
+    });
+    return promise;
+  };
+
+  const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
+    const releaseActors = retire();
+    const previous = world;
     takeTrack(setup.track);
+    const replaced = world === previous ? null : previous;
     race = createRace(setup);
-    if (nextPhase === "countdown") {
+    if (forRace) {
       devRide?.place(race);
     }
     fleet = createFleet(assets, world.shading, race.cars);
@@ -695,6 +785,14 @@ export async function createGame(
       previousCars[index] = car.s;
     }
     buildViews();
+    chase.snap();
+    return () => {
+      releaseActors();
+      replaced?.dispose();
+    };
+  };
+
+  const begin = (nextPhase: GamePhase) => {
     phase = nextPhase;
     countdown = nextPhase === "countdown" ? COUNTDOWN_SECONDS : 0;
     settled = null;
@@ -708,8 +806,18 @@ export async function createGame(
     speechLeft = 0;
     tagRider = -1;
     clockReset = true;
-    chase.snap();
-    warmUp();
+  };
+
+  const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
+    prepared = null;
+    const release = build(setup, nextPhase === "countdown");
+    begin(nextPhase);
+    if (nextPhase === "attract") {
+      void warmSoon();
+    } else {
+      warmNow();
+    }
+    release();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -723,12 +831,45 @@ export async function createGame(
     loadRace(defaultSetup(roadForTurn(roadTurn), seed), "attract");
   };
 
+  const showStart = () => {
+    draw(0, 0);
+  };
+
+  const prepare = (next: RacePlan): Promise<void> => {
+    if (prepared === next.setup) {
+      return preparing;
+    }
+    plan = null;
+    log = null;
+    phase = "idle";
+    quiet();
+    const release = build(next.setup, true);
+    prepared = next.setup;
+    begin("idle");
+    preparing = warmSoon().then((current) => {
+      if (current) {
+        showStart();
+      }
+    });
+    release();
+    report();
+    return preparing;
+  };
+
   const startRace = (next: RacePlan) => {
     sound.unlock();
     plan = next;
     log = createRaceLog(next.setup);
     recorder.enterRace();
-    loadRace(next.setup, "countdown");
+    if (prepared === next.setup && phase === "idle") {
+      prepared = null;
+      if (warming) {
+        warmNow();
+      }
+      begin("countdown");
+    } else {
+      loadRace(next.setup, "countdown");
+    }
     recorder.race("start", race.tick);
   };
 
@@ -744,7 +885,7 @@ export async function createGame(
     sound.setMuted(muted);
   };
 
-  const halted = (): boolean => frozen || phase === "idle";
+  const halted = (): boolean => frozen || warming || phase === "idle";
 
   const live = (): boolean =>
     !frozen && (phase === "countdown" || phase === "racing");
@@ -1235,6 +1376,9 @@ export async function createGame(
   };
 
   const draw = (blend: number, seconds: number) => {
+    if (warming) {
+      return;
+    }
     clock += seconds;
     let index = -1;
     for (const rider of race.riders) {
@@ -1275,6 +1419,7 @@ export async function createGame(
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
     sizeEpoch += 1;
+    excuseFrames = EXCUSED_FRAMES;
     recorder.canvas(
       source,
       sizeEpoch,
@@ -1291,13 +1436,15 @@ export async function createGame(
     into.pixelRatio = pixelRatio;
     into.bloomScale = chosen?.bloomScale ?? 0;
     into.shadowMap = chosen?.shadowMap ?? 0;
+    into.samples = chosen?.samples ?? 0;
     into.pace = pace;
+    into.frameRate = governor.rate;
   };
 
   const changeQuality = (reason: GovernReason, change: () => void) => {
     noteQuality(qualityBefore);
-    const lateCredit = Math.max(lateFrames, lateAtPace);
-    const calmMs = calmSeconds * 1000;
+    const lateCredit = governor.lateCredit();
+    const calmMs = governor.calmSeconds() * 1000;
     change();
     noteQuality(qualityAfter);
     recorder.governor(reason, qualityBefore, qualityAfter, lateCredit, calmMs);
@@ -1314,111 +1461,74 @@ export async function createGame(
     }
     world.setShadowMap(chosen.shadowMap);
     pipeline.setBloomScale(chosen.bloomScale);
-    const resized = chosen.pixelRatio !== pixelRatio;
-    ({ pixelRatio } = chosen);
+    pipeline.setSamples(chosen.samples);
+    excuseFrames = EXCUSED_FRAMES;
+    const next = pinnedPixelRatio > 0 ? pinnedPixelRatio : chosen.pixelRatio;
+    const resized = next !== pixelRatio;
+    pixelRatio = next;
     if (resized) {
       applySize(source);
     }
-    sinceStep = 0;
-    lateFrames = 0;
-    calmSeconds = 0;
   };
 
-  const stepDown = () => {
-    if (rung >= ladder.length - 1) {
-      return;
+  const noteRefresh = (now: number) => {
+    if (pinnedRefresh <= 0) {
+      display.refresh = readRefresh(now);
     }
-    changeQuality("late-budget", () => {
-      rung += 1;
-      if (sinceRaise < raiseWait) {
-        raiseWait = Math.min(LONGEST_WAIT_SECONDS, raiseWait * 2);
-      }
-      applyRung("rung");
-    });
-  };
-
-  const stepUp = () => {
-    changeQuality("calm-recovery", () => {
-      rung -= 1;
-      sinceRaise = 0;
-      applyRung("rung");
-    });
-  };
-
-  const slowPace = () => {
-    changeQuality("pace-fallback", () => {
-      pace = BASE_RATE;
-      lateAtPace = 0;
-      fastRetryIn = fastRetryWait;
-      fastRetryWait = Math.min(LONGEST_WAIT_SECONDS, fastRetryWait * 2);
-    });
   };
 
   const skipsVsync = (now: number): boolean =>
-    pinnedPixelRatio <= 0 &&
-    pace < display.refresh &&
-    now - lastDrawn < 1000 / pace - (PACE_SLACK * 1000) / display.refresh;
+    pinnedPixelRatio <= 0 && !pacer.due(now, display.refresh, pace);
 
-  const governQuality = (seconds: number) => {
-    const late = seconds > LATE_FRAME_FACTOR / BASE_RATE;
-    if (late) {
-      lateFrames += 1;
-      calmSeconds = 0;
-    } else {
-      lateFrames = Math.max(0, lateFrames - CALM_FRAME_CREDIT);
-      calmSeconds += seconds;
-    }
-    if (lateFrames > LATE_FRAMES_TO_STEP && sinceStep > STEP_COOLDOWN_SECONDS) {
-      stepDown();
-    } else if (rung > 0 && calmSeconds > raiseWait) {
-      stepUp();
-    }
+  const commitVerdict = (verdict: Verdict) => {
+    changeQuality(verdict.reason, () => {
+      governor.commit(verdict);
+      ({ pace } = governor);
+      if (governor.rung !== rung) {
+        ({ rung } = governor);
+        applyRung("rung");
+      }
+    });
   };
 
-  const governPace = (seconds: number) => {
-    if (pace > BASE_RATE) {
-      const late = seconds > LATE_FRAME_FACTOR / pace;
-      lateAtPace = late
-        ? lateAtPace + 1
-        : Math.max(0, lateAtPace - CALM_FRAME_CREDIT);
-      if (lateAtPace > LATE_FRAMES_TO_STEP) {
-        slowPace();
-      }
+  let renderedLast = false;
+  let pendingQuality: (() => void) | null = null;
+  let pendingRate: FrameRate | null = null;
+
+  const govern = (seconds: number, busyMs: number) => {
+    if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
       return;
     }
-    fastRetryIn -= seconds;
-    if (
-      display.refresh > BASE_RATE &&
-      rung === 0 &&
-      fastRetryIn <= 0 &&
-      calmSeconds > FAST_PACE_AFTER_CALM_SECONDS
-    ) {
-      changeQuality("pace-retry", () => {
-        pace = display.refresh;
-        lateAtPace = 0;
-      });
+    const excused = excuseFrames > 0;
+    if (excused && renderedLast) {
+      excuseFrames -= 1;
     }
-  };
-
-  const govern = (seconds: number) => {
-    if (pinnedRefresh <= 0 && seconds >= FASTEST_FRAME_SECONDS) {
-      display.refresh = Math.max(display.refresh, nearestRefresh(seconds));
-    }
-    sinceStep += seconds;
-    sinceRaise += seconds;
-    if (pinnedPixelRatio > 0) {
+    if (pendingQuality) {
       return;
     }
     const ceiling = nativePixelRatio();
     if (ceiling !== ladder[0]?.pixelRatio) {
-      changeQuality("native-dpr", () => {
-        ladder = ladderFor(ceiling);
-        rung = Math.min(rung, ladder.length - 1);
-        applyRung("ladder");
-      });
+      pendingQuality = () => {
+        changeQuality("native-dpr", () => {
+          ladder = ladderFor(ceiling);
+          governor.resize(ladder.length);
+          ({ rung } = governor);
+          applyRung("ladder");
+        });
+      };
+      return;
     }
-    governQuality(seconds);
-    governPace(seconds);
+    const verdict = governor.judge({
+      busyMs,
+      excused,
+      refresh: display.refresh,
+      seconds,
+    });
+    if (verdict) {
+      pendingQuality = () => {
+        commitVerdict(verdict);
+      };
+    }
   };
 
   const nearestRacer = (me: RiderState): number => {
@@ -1503,7 +1613,7 @@ export async function createGame(
     }
     applySize("observer");
     chase.resize(canvas.clientWidth, canvas.clientHeight);
-    if (halted()) {
+    if (halted() && !warming) {
       world.follow(chase.camera, subject.s);
       present();
     }
@@ -1514,8 +1624,35 @@ export async function createGame(
     rendererLabel = profiler.reader.info().renderer;
   };
 
+  const applyRateSetting = (next: FrameRate) => {
+    changeQuality("rate-setting", () => {
+      governor.setRate(next);
+      ({ pace } = governor);
+      if (governor.rung !== rung) {
+        ({ rung } = governor);
+        applyRung("rung");
+      }
+    });
+  };
+
+  const applyFrameRate = (next: FrameRate) => {
+    pendingRate = next === governor.rate ? null : next;
+  };
+
+  const applyPending = () => {
+    const quality = pendingQuality;
+    const rate = pendingRate;
+    pendingQuality = null;
+    pendingRate = null;
+    quality?.();
+    if (rate) {
+      applyRateSetting(rate);
+    }
+  };
+
   const applySettings = () => {
     const settings = hub.settings.read();
+    applyFrameRate(settings.frameRate);
     const wantsMeter = meterFlag || settings.overlay;
     if (wantsMeter && !meter) {
       meter = createFrameMeter(canvas, hub.view().session);
@@ -1554,8 +1691,23 @@ export async function createGame(
       };
     },
   });
+  const startRung =
+    pinnedRung >= 0 ? pinnedRung : startRungFor(rendererOf(renderer));
+  if (startRung > 0) {
+    changeQuality("device-start", () => {
+      governor.startAt(startRung);
+      ({ rung } = governor);
+      applyRung("rung");
+    });
+  }
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
+  canvas.addEventListener("webglcontextlost", abandonCompiles);
+  const forgetHiddenTime = () => {
+    governor.interrupt();
+    excuseFrames = EXCUSED_FRAMES;
+  };
+  document.addEventListener("visibilitychange", forgetHiddenTime);
   resize();
   buildViews();
   warmUp();
@@ -1584,15 +1736,26 @@ export async function createGame(
     clockReset = true;
     last = performance.now();
   });
+  let lastCallback = Number.NaN;
+  const noteCallback = (now: number) => {
+    noteRefresh(now);
+    const callbackMs = now - lastCallback;
+    lastCallback = now;
+    if (callbackMs >= 0 && !halted()) {
+      govern(clamp(callbackMs / 1000, 0, MAX_FRAME_SECONDS), lastBusyMs);
+    }
+    renderedLast = false;
+  };
   renderer.setAnimationLoop((now) => {
     checkPresented();
+    noteCallback(now);
     if (skipsVsync(now)) {
       return;
     }
+    const entered = performance.now();
     const interval = now - last;
     const seconds = clamp(interval / 1000, 0, MAX_FRAME_SECONDS);
     last = now;
-    lastDrawn = now;
     if (halted()) {
       return;
     }
@@ -1614,9 +1777,10 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
-    govern(seconds);
+    applyPending();
     profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
+    renderedLast = true;
     const discarded = Math.max(0, interval - MAX_FRAME_SECONDS * 1000);
     if (meter) {
       sample.calls = renderer.info.render.calls;
@@ -1653,6 +1817,7 @@ export async function createGame(
     }
     recorder.frame(frameId, interval, discarded);
     frameId += 1;
+    lastBusyMs = performance.now() - entered;
   });
 
   return {
@@ -1663,8 +1828,11 @@ export async function createGame(
       }
     },
     dispose() {
+      alive = false;
       renderer.setAnimationLoop(null);
       observer.disconnect();
+      canvas.removeEventListener("webglcontextlost", abandonCompiles);
+      document.removeEventListener("visibilitychange", forgetHiddenTime);
       unsubscribeSettings();
       unwatchCanvas();
       detachProbe();
@@ -1672,6 +1840,7 @@ export async function createGame(
       profiler?.dispose();
       controls.dispose();
       sound.dispose();
+      abandonCompiles();
       dropViews();
       dropFleet();
       world.dispose();
@@ -1689,6 +1858,7 @@ export async function createGame(
       quiet();
       return true;
     },
+    prepare,
     quit() {
       if (plan && !settled) {
         recorder.race("quit", race.tick);

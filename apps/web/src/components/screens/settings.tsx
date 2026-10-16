@@ -1,5 +1,5 @@
-import { testDevices } from "@racer/telemetry/limits";
-import type { TestDevice } from "@racer/telemetry/limits";
+import { frameRates, testDevices } from "@racer/telemetry/limits";
+import type { FrameRate, TestDevice } from "@racer/telemetry/limits";
 import { Heading } from "@racer/ui/components/heading";
 import { Panel } from "@racer/ui/components/panel";
 import { Screen } from "@racer/ui/components/screen";
@@ -17,7 +17,16 @@ const deviceNames = {
   unspecified: "Not set",
 } as const satisfies Record<TestDevice, string>;
 
+const rateNames = {
+  30: "30",
+  60: "60",
+  auto: "Auto",
+} as const satisfies Record<FrameRate, string>;
+
 const onOff = (on: boolean): string => (on ? "On" : "Off");
+
+const nextRate = (rate: FrameRate): FrameRate =>
+  frameRates[(frameRates.indexOf(rate) + 1) % frameRates.length] ?? "auto";
 
 const nextDevice = (device: TestDevice): TestDevice =>
   testDevices[(testDevices.indexOf(device) + 1) % testDevices.length] ??
@@ -50,6 +59,14 @@ export function SettingsScreen({ onBack }: { readonly onBack: () => void }) {
   useEscape(onBack);
   const reported = reportLine(report);
   const actions: MenuAction[] = [
+    {
+      detail: "Auto lowers detail, then holds a steady 30, when frames slip",
+      id: "frame-rate",
+      label: "Frame rate",
+      run: () =>
+        hub.settings.change({ frameRate: nextRate(settings.frameRate) }),
+      trailing: rateNames[settings.frameRate],
+    },
     {
       detail: "Frame rate, frame times, and quality rung in the corner",
       id: "overlay",
@@ -101,7 +118,7 @@ export function SettingsScreen({ onBack }: { readonly onBack: () => void }) {
           className="w-full"
           label="Settings"
           orientation="vertical"
-          primary="overlay"
+          primary="frame-rate"
           size="md"
         />
         <div className="text-muted mt-auto flex flex-col gap-2 text-sm font-semibold">

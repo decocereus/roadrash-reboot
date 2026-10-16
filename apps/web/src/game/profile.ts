@@ -117,6 +117,9 @@ const contextOf = (renderer: THREE.WebGLRenderer): WebGL2RenderingContext => {
   return gl;
 };
 
+export const rendererOf = (renderer: THREE.WebGLRenderer): string =>
+  rendererName(contextOf(renderer));
+
 export const createProfiler = (
   renderer: THREE.WebGLRenderer,
   timeGpu: boolean
