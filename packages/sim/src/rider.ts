@@ -109,10 +109,10 @@ const SLIP_RECOVERY = 1;
 const SLIP_PUSH = 1;
 const SLIP_BRAKES = 0.7;
 const SLIP_DRIVE = 0.6;
-const SLIDE_SLIP = 0.4;
+const SLIDE_SLIP = 0.5;
 const SLIDE_SPEED = 26;
-const SLIDE_STEER = 0.6;
-const SLIDE_TICKS = 10;
+const SLIDE_STEER = 0.8;
+const SLIDE_TICKS = 18;
 const SLIDE_YAW = 0.22;
 const SLIDE_SWING = 0.35;
 

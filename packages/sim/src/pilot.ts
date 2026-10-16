@@ -115,6 +115,9 @@ const ROCK_LANDING_SHARE = 0.85;
 const LANDING_SEARCH_STEPS = 8;
 const SLIPPING = 0.2;
 const SLIPPING_STEER = 0.45;
+const OIL_BEND_PUSH = 1.2;
+const OIL_RECOVERY_SECONDS = 0.6;
+const OIL_SCAN_STEP = 5;
 
 interface Pace {
   readonly cap: number;
@@ -499,6 +502,7 @@ interface Obstruction {
   readonly reach: number;
   readonly cost: number;
   readonly rock: boolean;
+  readonly oil: boolean;
   readonly curvature: number;
   readonly metres: number;
   readonly traffic: boolean;
@@ -506,6 +510,15 @@ interface Obstruction {
 
 const obstructions: Obstruction[] = [];
 const struck: boolean[] = [];
+
+const oilBendOf = (track: Track, hazard: Hazard, speed: number): number => {
+  const end = hazard.s + hazard.halfLength + speed * OIL_RECOVERY_SECONDS;
+  let bend = 0;
+  for (let s = hazard.s - hazard.halfLength; s <= end; s += OIL_SCAN_STEP) {
+    bend = Math.max(bend, Math.abs(curvatureAt(track, s)));
+  }
+  return bend;
+};
 
 const gatherObstructions = (
   state: RaceState,
@@ -519,9 +532,13 @@ const gatherObstructions = (
     if (hazard) {
       obstructions.push({
         cost: hazardCost(hazard, rider.speed),
-        curvature: curvatureAt(track, hazard.s),
+        curvature:
+          hazard.kind === "oil"
+            ? oilBendOf(track, hazard, rider.speed)
+            : curvatureAt(track, hazard.s),
         end: (hazard.s + hazard.halfLength + BIKE_HALF_LENGTH - rider.s) / pace,
         metres: Math.max(0, metresToContact(rider, hazard)),
+        oil: hazard.kind === "oil",
         reach: contactReach(hazard),
         rock: hazard.kind === "rock",
         start: metresToContact(rider, hazard) / pace,
@@ -541,6 +558,7 @@ const gatherObstructions = (
         curvature: 0,
         end,
         metres: 0,
+        oil: false,
         reach: car.halfWidth + BIKE_HALF_WIDTH,
         rock: false,
         start,
@@ -606,6 +624,22 @@ const landOnRock = (
   toll.speed = Math.min(toll.speed, landing);
 };
 
+const crossOil = (rider: RiderState, obstruction: Obstruction): void => {
+  if (obstruction.curvature <= 0) {
+    return;
+  }
+  const settled = Math.sqrt(
+    (OIL_BEND_PUSH * rider.bike.curvePush) / obstruction.curvature
+  );
+  if (
+    rider.speed ** 2 - settled ** 2 >
+    2 * PLANNED_BRAKING * obstruction.metres
+  ) {
+    toll.cost += CRASH_COST;
+  }
+  toll.speed = Math.min(toll.speed, settled);
+};
+
 const tally = (
   rider: RiderState,
   x: number,
@@ -626,6 +660,9 @@ const tally = (
       if (obstruction.rock) {
         toll.rock = true;
         landOnRock(rider, obstruction, lateralSpeed);
+      }
+      if (obstruction.oil) {
+        crossOil(rider, obstruction);
       }
     }
   }
