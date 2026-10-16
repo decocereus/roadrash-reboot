@@ -101,6 +101,9 @@ const readScreens = (
   let now = 0;
   let refresh = initial;
   for (const [rate, seconds] of screens) {
+    if (now > 0) {
+      meter.screenChanged();
+    }
     for (let tick = 0; tick < rate * seconds; tick += 1) {
       now += 1000 / rate;
       refresh = meter.tick(Math.floor(now + ((tick * 7) % 5) * 0.3));
@@ -121,6 +124,18 @@ const screenStamps = (screens: readonly (readonly [number, number])[]) => {
   return stamps;
 };
 
+const evenStamps = (rates: readonly (readonly [number, number])[]) => {
+  const stamps: number[] = [];
+  let now = 0;
+  for (const [rate, seconds] of rates) {
+    for (let tick = 0; tick < rate * seconds; tick += 1) {
+      now += 1000 / rate;
+      stamps.push(now);
+    }
+  }
+  return stamps;
+};
+
 const cycleStamps = (cycle: readonly number[], seconds: number) => {
   const stamps = [0];
   let now = 0;
@@ -136,11 +151,14 @@ const cycleStamps = (cycle: readonly number[], seconds: number) => {
 interface StampRide {
   readonly pinned?: number;
   readonly rate?: FrameRate;
+  readonly movedAt?: number;
 }
+
+const SCREEN_NOTICED_MS = 500;
 
 const rideStamps = (
   stamps: readonly number[],
-  { pinned, rate = "auto" }: StampRide = {}
+  { pinned, rate = "auto", movedAt }: StampRide = {}
 ) => {
   const governor = createGovernor(RUNGS);
   governor.setRate(rate);
@@ -152,7 +170,15 @@ const rideStamps = (
   let last = Number.NaN;
   let drawn = Number.NaN;
   let refresh = pinned ?? 60;
+  let noticeAt =
+    movedAt === undefined
+      ? Number.POSITIVE_INFINITY
+      : movedAt * 1000 + SCREEN_NOTICED_MS;
   for (const at of stamps) {
+    if (at >= noticeAt) {
+      meter.screenChanged();
+      noticeAt = Number.POSITIVE_INFINITY;
+    }
     refresh = pinned ?? meter.tick(at);
     readings.add(refresh);
     if (!Number.isNaN(last)) {
@@ -258,7 +284,7 @@ describe("the quality governor", () => {
     const sixty = ride(60, () => slipping(), { rate: "60" });
     expect(sixty.some((change) => change.pace === HALF_RATE)).toBeFalsy();
     expect(sixty.at(-1)?.rung).toBe(FLOOR);
-    const thirty = ride(60, () => halfSteady(), { rate: "30" });
+    const thirty = ride(60, () => steady(), { rate: "30" });
     expect(thirty).toStrictEqual([]);
   });
 
@@ -411,7 +437,7 @@ describe("the quality governor", () => {
               [from, movedAt],
               [to, 10],
             ]),
-            { rate }
+            { movedAt, rate }
           );
           expect(moved.changes).toStrictEqual([]);
           expect(moved.refresh).toBe(to);
@@ -426,11 +452,33 @@ describe("the quality governor", () => {
         [144, 10],
         [100, 10],
       ]),
-      { rate: "30" }
+      { movedAt: 10, rate: "30" }
     );
     expect(
       moved.gaps.slice(-230).every((gap) => gap >= 29 && gap <= 31)
     ).toBeTruthy();
+  });
+
+  it("sees a GPU that slows a fast screen's callbacks without taking it for a slower screen", () => {
+    for (const [refresh, slowed] of [
+      [120, 50],
+      [144, 70],
+    ] as const) {
+      const pinned = rideStamps(evenStamps([[slowed, 20]]), {
+        pinned: refresh,
+      });
+      expect(pinned.changes[0]?.reason).toBe("under-rate");
+      expect(pinned.changes[0]?.at).toBeLessThan(6);
+      const learned = rideStamps(
+        evenStamps([
+          [refresh, 5],
+          [slowed, 20],
+        ])
+      );
+      expect(learned.changes[0]?.reason).toBe("under-rate");
+      expect((learned.changes[0]?.at ?? 0) - 5).toBeLessThan(6);
+      expect(learned.refresh).toBe(refresh);
+    }
   });
 
   it("never lowers quality for callbacks that jitter around the screen's rate", () => {

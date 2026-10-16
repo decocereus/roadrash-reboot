@@ -1,7 +1,5 @@
 import type { FrameRate, GovernReason } from "@racer/telemetry/limits";
 
-import { LOWEST_REFRESH, vsyncsSpanned } from "./pacer.ts";
-
 export const BASE_RATE = 60;
 export const HALF_RATE = 30;
 const LATE_FRAME_FACTOR = 1.4;
@@ -70,7 +68,6 @@ export const createGovernor = (rungCount: number): Governor => {
   let severe = false;
   let rateSeconds = 0;
   let rateCallbacks = 0;
-  let rateVsyncs = 0;
   let rateBusyMs = 0;
   let shortWindows = 0;
   let lateAtPace = 0;
@@ -96,7 +93,6 @@ export const createGovernor = (rungCount: number): Governor => {
     severe = false;
     rateSeconds = 0;
     rateCallbacks = 0;
-    rateVsyncs = 0;
     rateBusyMs = 0;
     shortWindows = 0;
   };
@@ -125,16 +121,19 @@ export const createGovernor = (rungCount: number): Governor => {
 
   const watchRate = ({ seconds, busyMs, refresh, refreshKnown }: Frame) => {
     if (!refreshKnown) {
+      rateSeconds = 0;
+      rateCallbacks = 0;
+      rateBusyMs = 0;
+      shortWindows = 0;
       return;
     }
     rateSeconds += seconds;
     rateCallbacks += 1;
-    rateVsyncs += vsyncsSpanned(seconds * 1000, refresh);
     rateBusyMs += busyMs;
     if (rateSeconds < RATE_WINDOW_SECONDS) {
       return;
     }
-    const short = rateVsyncs < rateSeconds * LOWEST_REFRESH * DELIVERED_SHARE;
+    const short = rateCallbacks < rateSeconds * refresh * DELIVERED_SHARE;
     if (short) {
       calm = 0;
     }
@@ -142,7 +141,6 @@ export const createGovernor = (rungCount: number): Governor => {
     shortWindows = short && gpuBound ? shortWindows + 1 : 0;
     rateSeconds = 0;
     rateCallbacks = 0;
-    rateVsyncs = 0;
     rateBusyMs = 0;
   };
 

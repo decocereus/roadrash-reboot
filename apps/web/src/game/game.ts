@@ -55,6 +55,7 @@ import { devRideFrom } from "./dev-ride.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter } from "./fps-meter.ts";
 import { BASE_RATE, createGovernor } from "./governor.ts";
+import type { Verdict } from "./governor.ts";
 import type {
   GameEvents,
   GameHandle,
@@ -85,6 +86,17 @@ const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
 const EXCUSED_FRAMES = 2;
+const SCREEN_CHECK_MS = 1000;
+
+const screenSignature = (): string =>
+  [
+    screen.width,
+    screen.height,
+    screen.availLeft ?? 0,
+    screen.availTop ?? 0,
+    screen.colorDepth,
+    devicePixelRatio,
+  ].join(" ");
 const COMPILE_TIMEOUT_MS = 5000;
 const MAX_PIXEL_RATIO = 2;
 const PIXEL_RATIO_STEP = 0.1;
@@ -1470,8 +1482,24 @@ export async function createGame(
     }
   };
 
+  let screenSeen = screenSignature();
+  let screenCheckedAt = Number.NEGATIVE_INFINITY;
+
+  const noteScreen = (now: number) => {
+    if (now - screenCheckedAt < SCREEN_CHECK_MS) {
+      return;
+    }
+    screenCheckedAt = now;
+    const seen = screenSignature();
+    if (seen !== screenSeen) {
+      screenSeen = seen;
+      refreshMeter.screenChanged();
+    }
+  };
+
   const noteRefresh = (now: number) => {
     if (pinnedRefresh <= 0) {
+      noteScreen(now);
       display.refresh = refreshMeter.tick(now);
     }
   };
@@ -1479,34 +1507,7 @@ export async function createGame(
   const skipsVsync = (now: number): boolean =>
     pinnedPixelRatio <= 0 && !pacer.due(now, display.refresh, pace);
 
-  let renderedLast = false;
-  const govern = (seconds: number, busyMs: number) => {
-    if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
-      return;
-    }
-    const excused = excuseFrames > 0;
-    if (excused && renderedLast) {
-      excuseFrames -= 1;
-    }
-    const ceiling = nativePixelRatio();
-    if (ceiling !== ladder[0]?.pixelRatio) {
-      changeQuality("native-dpr", () => {
-        ladder = ladderFor(ceiling);
-        governor.resize(ladder.length);
-        ({ rung } = governor);
-        applyRung("ladder");
-      });
-    }
-    const verdict = governor.judge({
-      busyMs,
-      excused,
-      refresh: display.refresh,
-      refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,
-      seconds,
-    });
-    if (!verdict) {
-      return;
-    }
+  const commitVerdict = (verdict: Verdict) => {
     changeQuality(verdict.reason, () => {
       governor.commit(verdict);
       ({ pace } = governor);
@@ -1515,6 +1516,52 @@ export async function createGame(
         applyRung("rung");
       }
     });
+  };
+
+  let renderedLast = false;
+  let beforeDraw: (() => void) | null = null;
+
+  const applyBeforeDraw = () => {
+    const change = beforeDraw;
+    beforeDraw = null;
+    change?.();
+  };
+
+  const govern = (seconds: number, busyMs: number) => {
+    if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
+      return;
+    }
+    const excused = excuseFrames > 0;
+    if (excused && renderedLast) {
+      excuseFrames -= 1;
+    }
+    if (beforeDraw) {
+      return;
+    }
+    const ceiling = nativePixelRatio();
+    if (ceiling !== ladder[0]?.pixelRatio) {
+      beforeDraw = () => {
+        changeQuality("native-dpr", () => {
+          ladder = ladderFor(ceiling);
+          governor.resize(ladder.length);
+          ({ rung } = governor);
+          applyRung("ladder");
+        });
+      };
+      return;
+    }
+    const verdict = governor.judge({
+      busyMs,
+      excused,
+      refresh: display.refresh,
+      refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,
+      seconds,
+    });
+    if (verdict) {
+      beforeDraw = () => {
+        commitVerdict(verdict);
+      };
+    }
   };
 
   const nearestRacer = (me: RiderState): number => {
@@ -1610,10 +1657,7 @@ export async function createGame(
     rendererLabel = profiler.reader.info().renderer;
   };
 
-  const applyFrameRate = (next: FrameRate) => {
-    if (next === governor.rate) {
-      return;
-    }
+  const applyRateSetting = (next: FrameRate) => {
     changeQuality("rate-setting", () => {
       governor.setRate(next);
       ({ pace } = governor);
@@ -1622,6 +1666,15 @@ export async function createGame(
         applyRung("rung");
       }
     });
+  };
+
+  const applyFrameRate = (next: FrameRate) => {
+    if (next === governor.rate) {
+      return;
+    }
+    beforeDraw = () => {
+      applyRateSetting(next);
+    };
   };
 
   const applySettings = () => {
@@ -1751,6 +1804,7 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
+    applyBeforeDraw();
     profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     renderedLast = true;
