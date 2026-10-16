@@ -12,6 +12,7 @@ import { billWarning, CONTROLS } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
 import { idleHud } from "../../game/hud.ts";
 import type { HudFeed, RacePlan } from "../../game/hud.ts";
+import { SettingsScreen } from "./settings.tsx";
 import { ActionMenu, useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
@@ -33,10 +34,11 @@ export function PauseScreen({
   readonly onQuit: () => void;
 }) {
   const [asking, setAsking] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
   const racing = plan.mode === "career" && career !== null;
   const bill = racing ? repairBill(career.level, career.bikeId) : 0;
-  useEscape(onResume, !asking);
+  useEscape(onResume, !(asking || adjusting));
   const actions: MenuAction[] = [
     { id: "resume", label: "Resume", run: onResume },
     ...(racing
@@ -48,8 +50,12 @@ export function PauseScreen({
       run: onMute,
       trailing: hud.muted ? "Off" : "On",
     },
+    { id: "settings", label: "Settings", run: () => setAdjusting(true) },
     { id: "quit", label: "Quit race", run: () => setAsking(true) },
   ];
+  if (adjusting) {
+    return <SettingsScreen onBack={() => setAdjusting(false)} />;
+  }
   return (
     <Screen className="bg-ink/60">
       <Panel
