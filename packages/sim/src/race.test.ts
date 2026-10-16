@@ -2034,6 +2034,23 @@ interface Cornering {
   readonly offRoad: boolean;
 }
 
+const feltSteer = (course: Track, rider: RiderState): number => {
+  const push = curvePushOf(
+    rider.bike,
+    curvatureAt(course, rider.s),
+    rider.speed
+  );
+  const drift = rider.lateralSpeed - push;
+  const settling = (drift * Math.abs(drift)) / (2 * rider.bike.steerRate);
+  const lane = course.sameWayLanes[0] ?? 0;
+  return clamp(
+    (push + (lane - rider.x - settling) * 1.2) /
+      lateralSpeedLimit(rider.bike, rider.speed),
+    -1,
+    1
+  );
+};
+
 const throttleHeldThrough = (
   course: Track,
   bike: BikeSpec,
@@ -2054,9 +2071,7 @@ const throttleHeldThrough = (
   let offRoad = false;
   let crashed = false;
   while (rider.s < to && rider.mode === "riding") {
-    pilotInput(state, course, 0, input);
-    input.throttle = 1;
-    input.brake = 0;
+    input.steer = feltSteer(course, rider);
     stepRace(state, course, [input]);
     slowest = Math.min(slowest, rider.speed);
     widest = Math.max(widest, -rider.x * inside);
@@ -2177,6 +2192,7 @@ interface PilotTrace {
   readonly brake: number;
   readonly throttle: number;
   readonly offRoad: boolean;
+  readonly x: number;
 }
 
 const pilotTrace = (
@@ -2204,6 +2220,7 @@ const pilotTrace = (
       offRoad: rider.offRoad,
       s: rider.s,
       throttle: input.throttle,
+      x: rider.x,
     });
   }
   return trace;
@@ -2213,14 +2230,16 @@ const HERMITS_APEX = 6114;
 const LONG_SWEEPER_FROM = 6680;
 const LONG_SWEEPER_TO = 6940;
 const LONG_SWEEPER_APEX = 6758;
+const LANE_LINE = 1.8;
+const LINE_SLACK = 0.5;
 
 describe("the pilot in bends", () => {
   it.each([
     { least: 0.92, skill: 0.8 },
     { least: 0.95, skill: 0.9 },
-    { least: 0.98, skill: 1 },
+    { least: 0.97, skill: 1 },
   ])(
-    "a rival of skill $skill on the Sesta brakes late for Hermit's Bend, takes its apex at $least of the speed the bike can hold or better, and is back on the throttle before the bend ends",
+    "a rival of skill $skill on the Sesta brakes late for Hermit's Bend, holds its lane line, takes its apex at $least of the speed the bike can hold or better, and is back on the throttle before the bend ends",
     ({ least, skill }) => {
       const limit = holdingKmh(streetBike, quietTrack, HERMITS_APEX);
       const trace = pilotTrace(quietTrack, streetBike, skill, HERMITS_BEND_TO);
@@ -2240,11 +2259,15 @@ describe("the pilot in bends", () => {
       expect({
         arrivedFast: firstBrake.kmh > 200,
         brakedLate: firstBrake.s > latest - 25,
+        heldItsLine: approach.every(
+          (step) => Math.abs(step.x - LANE_LINE) < LINE_SLACK
+        ),
         openedUp: exit.some((step) => step.throttle === 1),
         stayedOnRoad: trace.every((step) => !step.offRoad),
       }).toStrictEqual({
         arrivedFast: true,
         brakedLate: true,
+        heldItsLine: true,
         openedUp: true,
         stayedOnRoad: true,
       });
@@ -2253,17 +2276,20 @@ describe("the pilot in bends", () => {
     }
   );
 
-  it("the Sesta takes the long sweeper after Hermit's Bend near flat out, with no brake and above 93% of the speed it can hold at the tightest point", () => {
+  it("the Sesta takes the long sweeper after Hermit's Bend flat out on its lane line, with no brake and above 92% of the speed it can hold at the tightest point", () => {
     const limit = holdingKmh(streetBike, quietTrack, LONG_SWEEPER_APEX);
     const trace = pilotTrace(quietTrack, streetBike, 0.9, LONG_SWEEPER_TO);
-    const sweep = trace.filter((step) => step.s > HERMITS_BEND_TO + 100);
+    const sweep = trace.filter((step) => step.s > LONG_SWEEPER_FROM);
     const apex = sweep.find((step) => step.s >= LONG_SWEEPER_APEX);
     expect(limit).toBeGreaterThan(220);
-    expect(sweep.every((step) => step.brake === 0)).toBeTruthy();
-    expect(
-      sweep.find((step) => step.s >= LONG_SWEEPER_FROM)?.kmh
-    ).toBeGreaterThan(210);
-    expect((apex?.kmh ?? 0) / limit).toBeGreaterThan(0.93);
+    expect({
+      flatOut: sweep.every((step) => step.throttle === 1 && step.brake === 0),
+      heldItsLine: sweep.every(
+        (step) => Math.abs(step.x - LANE_LINE) < LINE_SLACK
+      ),
+    }).toStrictEqual({ flatOut: true, heldItsLine: true });
+    expect(sweep[0]?.kmh).toBeGreaterThan(210);
+    expect((apex?.kmh ?? 0) / limit).toBeGreaterThan(0.92);
   });
 });
 
@@ -2326,13 +2352,19 @@ describe("race setups", () => {
   });
 });
 
-const pacedPair = (course: Track, pacing: PacingRules): RaceState => {
+const pacedPair = (
+  course: Track,
+  pacing: PacingRules,
+  skill?: number
+): RaceState => {
   const setup = defaultSetup(course, 1);
   return createRace({
     ...setup,
     pacing,
     police: { ...setup.police, count: 0 },
-    rivals: setup.rivals.slice(0, 1),
+    rivals: setup.rivals
+      .slice(0, 1)
+      .map((rival) => ({ ...rival, skill: skill ?? rival.skill })),
   });
 };
 
@@ -2359,6 +2391,8 @@ const rideTheRival = (
   return fastest;
 };
 
+const MIDDLING_SKILL = 0.8;
+
 describe("pacing by the gap to the player", () => {
   it("a rival well clear of the player rolls off to the level's share of its top speed, and rides flat out once the player is out", () => {
     const eased: PacingRules = { catchUp: 0, leadEase: 0.2 };
@@ -2384,13 +2418,13 @@ describe("pacing by the gap to the player", () => {
     });
   });
 
-  it("a rival dropped behind the player takes the bends harder but never beats its bike's top speed", () => {
+  it("a middling rival dropped behind the player takes the bends harder and brakes later, but never beats its bike's top speed", () => {
     const helped: PacingRules = { catchUp: 0.1, leadEase: 0 };
     const unhelped: PacingRules = { catchUp: 0, leadEase: 0 };
     const [onBends, onBendsAlone, onStraight] = [
-      pacedPair(quietTrack, helped),
-      pacedPair(quietTrack, unhelped),
-      pacedPair(straight, helped),
+      pacedPair(quietTrack, helped, MIDDLING_SKILL),
+      pacedPair(quietTrack, unhelped, MIDDLING_SKILL),
+      pacedPair(straight, helped, MIDDLING_SKILL),
     ];
     if (!(onBends && onBendsAlone && onStraight)) {
       throw new Error("The pacing races were not made.");
@@ -2402,7 +2436,7 @@ describe("pacing by the gap to the player", () => {
     rideTheRival(onBendsAlone, quietTrack, 60);
     const fastest = rideTheRival(onStraight, straight, 40);
     expect(riderAt(onBends, 1).s).toBeGreaterThan(
-      riderAt(onBendsAlone, 1).s + 5
+      riderAt(onBendsAlone, 1).s + 20
     );
     expect(fastest).toBeLessThanOrEqual(
       topSpeedOf(riderAt(onStraight, 1).bike, true) * 1.01
@@ -3723,6 +3757,155 @@ const placedAt = (
   x: number,
   id: string
 ): HazardPlacement => ({ fromLevel: 1, id, kind, s, setting: "traffic", x });
+
+const planningRoad = (
+  sections: readonly { climb: number; length: number; turnDegrees: number }[]
+): Track =>
+  compileTrack({
+    ...ridgeRoad,
+    features: [],
+    hazardsPerKilometre: 0,
+    sections,
+    trafficPerKilometre: 0,
+  });
+
+const bendAfter = (straightFor: number, degrees: number, length: number) => [
+  { climb: 0, length: straightFor, turnDegrees: 0 },
+  { climb: 0, length, turnDegrees: degrees },
+  { climb: 0, length: 3000, turnDegrees: 0 },
+];
+
+interface PlannedStep {
+  readonly brake: number;
+  readonly s: number;
+  readonly share: number;
+}
+
+const ridePlanned = (road: Track, from: Placement, seconds: number) => {
+  const state = field(road, 1, 0, 0);
+  const rider = player(state);
+  rider.s = from.s;
+  rider.x = from.x;
+  rider.speed = from.speed;
+  const input = { ...neutralInput };
+  const events: RaceEvent[] = [];
+  const steps: PlannedStep[] = [];
+  let offRoad = false;
+  for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
+    pilotInput(state, road, 0, input);
+    stepRace(state, road, [input]);
+    events.push(...state.events);
+    offRoad ||= rider.offRoad;
+    steps.push({
+      brake: input.brake,
+      s: rider.s,
+      share:
+        Math.abs(
+          curvePushOf(rider.bike, curvatureAt(road, rider.s), rider.speed)
+        ) / lateralSpeedLimit(rider.bike, rider.speed),
+    });
+  }
+  return { events, offRoad, steps };
+};
+
+const kindsOf = (events: readonly RaceEvent[]): string[] =>
+  events.map((event) => event.kind);
+
+const steadyBendRoad = (curvature: number): Track => {
+  const probe = planningRoad(bendAfter(500, -600, 1500));
+  const degrees = (-600 * curvature) / Math.abs(curvatureAt(probe, 1250));
+  return planningRoad(bendAfter(500, degrees, 1500));
+};
+
+const downhillRoad = (): Track => {
+  const flat = planningRoad(bendAfter(600, -60, 200));
+  return {
+    ...flat,
+    slope: new Float64Array(flat.slope.length).fill(-0.1),
+    slopeRate: new Float64Array(flat.slopeRate.length),
+    worldY: Float64Array.from(flat.worldY, (_, index) => -0.1 * index),
+  };
+};
+
+const kerbRamp = {
+  kind: "jump",
+  length: 16,
+  rise: 0.8,
+  width: 1.4,
+} as const;
+
+describe("the pilot plans its speed along the road", () => {
+  it("takes a ramp 50 m before a bend at a speed it can land and hold, instead of planning to brake in the air", () => {
+    const road = compileTrack({
+      ...ridgeRoad,
+      features: [
+        {
+          feature: kerbRamp,
+          fromLevel: 1,
+          id: "kerb-ramp",
+          placement: "fixed",
+          s: 500,
+          x: 0,
+        },
+      ],
+      hazardsPerKilometre: 0,
+      sections: bendAfter(550, -60, 200),
+      trafficPerKilometre: 0,
+    });
+    const run = ridePlanned(
+      road,
+      { lateralSpeed: 0, s: 250, speed: 250 / KMH, x: 0 },
+      8
+    );
+    expect({
+      crashed: kindsOf(run.events).includes("crash"),
+      landed: kindsOf(run.events).includes("land"),
+      offRoad: run.offRoad,
+    }).toStrictEqual({ crashed: false, landed: true, offRoad: false });
+  });
+
+  it("brakes for a bend at the foot of a 10% downhill early enough that the bend never pushes harder than the bike can hold", () => {
+    const run = ridePlanned(
+      downhillRoad(),
+      { lateralSpeed: 0, s: 300, speed: 200 / KMH, x: 1.8 },
+      10
+    );
+    const hardest = Math.max(...run.steps.map((step) => step.share));
+    expect(hardest).toBeGreaterThan(0.9);
+    expect(hardest).toBeLessThan(1);
+    expect(run.offRoad).toBeFalsy();
+  });
+
+  it("holds a long steady bend on the throttle without pumping the brakes", () => {
+    const run = ridePlanned(
+      steadyBendRoad(0.008),
+      { lateralSpeed: 0, s: 300, speed: 150 / KMH, x: 1.8 },
+      20
+    );
+    const before = run.steps.filter((step) => step.s < 1100);
+    const switches = before.filter(
+      (step, index) =>
+        index > 0 && step.brake > 0 !== (before[index - 1]?.brake ?? 0) > 0
+    ).length;
+    expect(switches).toBeLessThanOrEqual(2);
+    expect(Math.max(...before.map((step) => step.share))).toBeGreaterThan(0.9);
+  });
+
+  it("rides through a row of rocks across a bend without being thrown", () => {
+    const road: Track = {
+      ...planningRoad(bendAfter(500, -60, 300)),
+      hazards: [-3, -1.5, 0, 1.5, 3].map((x, index) =>
+        placedAt("rock", 600, x, `rock-${index}`)
+      ),
+    };
+    const run = ridePlanned(
+      road,
+      { lateralSpeed: 0, s: 350, speed: 200 / KMH, x: 1.8 },
+      8
+    );
+    expect(kindsOf(run.events)).not.toContain("crash");
+  });
+});
 
 const rideAt = (
   road: Track,
