@@ -1,7 +1,7 @@
 import { roadOpen, roadsFor } from "@racer/career/field";
 import type { CareerState } from "@racer/career/state";
 import { acceptEnvelope, refuseEnvelope } from "@racer/career/story";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
@@ -27,23 +27,42 @@ function PreRace({
   career,
   entry,
   ready,
+  onPrepare,
   onStart,
   onBack,
 }: {
   readonly career: CareerState | null;
   readonly entry: RaceEntry;
   readonly ready: boolean;
+  readonly onPrepare: (plan: RacePlan) => Promise<void>;
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
 }) {
   const [plan] = useState(() => planFor(career, entry));
+  const [prepared, setPrepared] = useState(false);
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    let current = true;
+    void onPrepare(plan)
+      .catch(() => null)
+      .then(() => {
+        if (current) {
+          setPrepared(true);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [ready, plan, onPrepare]);
   return (
     <PreRaceScreen
       career={career}
       onBack={onBack}
       onStart={() => onStart(plan)}
       plan={plan}
-      ready={ready}
+      ready={ready && prepared}
     />
   );
 }
@@ -153,6 +172,7 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
         career={career}
         entry={view.entry}
         onBack={() => flow.go({ mode: view.entry.mode, screen: "routeBoard" })}
+        onPrepare={flow.prepare}
         onStart={flow.start}
         ready={flow.ready}
       />
