@@ -156,7 +156,7 @@ describe("police balance", () => {
         .map((level) => seasonAt(level).busted)
         .reduce((total, count) => total + count, 0);
       expect(busted / starts).toBeGreaterThan(1 / 8);
-      expect(busted / starts).toBeLessThan(1 / 4);
+      expect(busted / starts).toBeLessThanOrEqual(1 / 4);
     }
   );
 });

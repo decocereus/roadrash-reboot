@@ -44,6 +44,11 @@ export interface ProfileFrame {
   readonly geometries: number;
   readonly pixelRatio: number;
   readonly rung: number;
+  readonly drawRung: number;
+  readonly sizeEpoch: number;
+  readonly drawnEpoch: number;
+  readonly discarded: number;
+  readonly race: number;
   readonly cpu: readonly number[];
   readonly gpu: readonly number[] | null;
   readonly calls: readonly number[];
@@ -61,18 +66,25 @@ export interface ProfileInfo {
 export interface ProfileReader {
   readonly info: () => ProfileInfo;
   readonly window: (fromTick: number, toTick: number) => ProfileFrame[];
+  readonly frameAt: (frame: number) => ProfileFrame | null;
 }
 
 export interface FrameEnd {
-  readonly interval: number;
-  readonly tick: number;
-  readonly ticks: number;
-  readonly pixelRatio: number;
-  readonly rung: number;
+  interval: number;
+  tick: number;
+  ticks: number;
+  pixelRatio: number;
+  rung: number;
+  drawRung: number;
+  sizeEpoch: number;
+  drawnEpoch: number;
+  discarded: number;
+  race: number;
 }
 
 export interface Profiler {
-  readonly start: () => void;
+  readonly reader: ProfileReader;
+  readonly start: (frame: number) => void;
   readonly lap: (part: Part) => void;
   readonly finish: (end: FrameEnd) => void;
   readonly dispose: () => void;
@@ -127,6 +139,12 @@ export const createProfiler = (
   const geometries = new Uint16Array(CAPACITY);
   const ratios = new Float32Array(CAPACITY);
   const rungs = new Uint8Array(CAPACITY);
+  const drawRungs = new Uint8Array(CAPACITY);
+  const sizeEpochs = new Uint32Array(CAPACITY);
+  const drawnEpochs = new Uint32Array(CAPACITY);
+  const discards = new Float32Array(CAPACITY);
+  const races = new Uint32Array(CAPACITY);
+  const ids = new Int32Array(CAPACITY).fill(-1);
   const gpuSeen = new Uint8Array(CAPACITY);
   const free: WebGLQuery[] = [];
   const queued: (WebGLQuery | null)[] = Array.from(
@@ -138,6 +156,7 @@ export const createProfiler = (
   let head = 0;
   let tail = 0;
   let frame = 0;
+  let current = 0;
   let slot = 0;
   let mark = 0;
   let lastCalls = 0;
@@ -179,8 +198,8 @@ export const createProfiler = (
       }
       const owner = queuedFrame[at] ?? 0;
       const gpu = columns[queuedPart[at] ?? 0]?.gpu;
-      if (query && gpu && frame - owner < CAPACITY) {
-        const into = owner % CAPACITY;
+      const into = owner % CAPACITY;
+      if (query && gpu && ids[into] === owner) {
         const nanoseconds = Number(
           gl.getQueryParameter(query, gl.QUERY_RESULT)
         );
@@ -206,7 +225,7 @@ export const createProfiler = (
     gl.endQuery(TIME_ELAPSED);
     const at = tail % PENDING_CAPACITY;
     queued[at] = open;
-    queuedFrame[at] = frame;
+    queuedFrame[at] = current;
     queuedPart[at] = part;
     tail += 1;
     open = null;
@@ -253,13 +272,18 @@ export const createProfiler = (
     return {
       calls: read("calls"),
       cpu: read("cpu"),
+      discarded: discards[at] ?? 0,
+      drawRung: drawRungs[at] ?? 0,
+      drawnEpoch: drawnEpochs[at] ?? 0,
       frame: index,
       geometries: geometries[at] ?? 0,
       gpu: gpuSeen[at] ? read("gpu") : null,
       interval: intervals[at] ?? 0,
       pixelRatio: ratios[at] ?? 0,
       programs: programs[at] ?? 0,
+      race: races[at] ?? 0,
       rung: rungs[at] ?? 0,
+      sizeEpoch: sizeEpochs[at] ?? 0,
       start: starts[at] ?? 0,
       textures: textures[at] ?? 0,
       tick: ticksAt[at] ?? 0,
@@ -269,6 +293,8 @@ export const createProfiler = (
   };
 
   const reader: ProfileReader = {
+    frameAt: (index) =>
+      index >= 0 && ids[index % CAPACITY] === index ? frameAt(index) : null,
     info: () => ({
       frames: frame,
       gpuTimer,
@@ -284,7 +310,7 @@ export const createProfiler = (
         index += 1
       ) {
         const at = ticksAt[index % CAPACITY] ?? 0;
-        if (at >= fromTick && at <= toTick) {
+        if (ids[index % CAPACITY] === index && at >= fromTick && at <= toTick) {
           frames.push(frameAt(index));
         }
       }
@@ -313,16 +339,25 @@ export const createProfiler = (
       stepped[slot] = end.ticks;
       ratios[slot] = end.pixelRatio;
       rungs[slot] = end.rung;
+      drawRungs[slot] = end.drawRung;
+      sizeEpochs[slot] = end.sizeEpoch;
+      drawnEpochs[slot] = end.drawnEpoch;
+      discards[slot] = end.discarded;
+      races[slot] = end.race;
+      ids[slot] = current;
       programs[slot] = renderer.info.programs?.length ?? 0;
       textures[slot] = renderer.info.memory.textures;
       geometries[slot] = renderer.info.memory.geometries;
       ({ tick } = end);
-      frame += 1;
+      frame = current + 1;
     },
     lap,
-    start() {
+    reader,
+    start(id) {
       collect();
-      slot = frame % CAPACITY;
+      current = id;
+      slot = id % CAPACITY;
+      ids[slot] = -1;
       for (const column of columns) {
         column.cpu[slot] = 0;
         column.gpu[slot] = 0;

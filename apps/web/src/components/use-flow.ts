@@ -25,6 +25,7 @@ import {
   storeCareer,
 } from "../career/save.ts";
 import type { SaveState } from "../career/save.ts";
+import { diagnostics } from "../diagnostics/hub.ts";
 import { createHudFeed } from "../game/hud.ts";
 import type {
   GameEvents,
@@ -33,6 +34,7 @@ import type {
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
+import { startModelDownloads } from "../game/models.ts";
 
 export type View =
   | { readonly screen: "title" }
@@ -170,6 +172,8 @@ const useGame = (
       return;
     }
     let disposed = false;
+    diagnostics();
+    startModelDownloads();
     import("../game/game.ts")
       .then(({ createGame }) =>
         createGame(canvas, {

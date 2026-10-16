@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import { reservationOf } from "./features.ts";
+import {
+  HAZARD_FINISH_CLEARANCE,
+  HAZARD_RAMP_CLEARANCE,
+  HAZARD_START_CLEARANCE,
+  hazardSizes,
+  inSight,
+} from "./hazards.ts";
 import { nextSeed } from "./random.ts";
 import { roadLevels } from "./road.ts";
 import type { RoadId, RoadLevel } from "./road.ts";
@@ -11,6 +19,7 @@ const GRAVITY = 9.81;
 const STRAIGHT = 1 / 1500;
 const PINNED_RIDGE_LENGTH = 4250;
 const RAMP_RUN_UP = 40;
+const WIDEST_VEHICLE = 1.2;
 
 interface Stretch {
   readonly from: number;
@@ -387,6 +396,88 @@ describe("ramps", () => {
       }
     }
   );
+});
+
+describe("hazards", () => {
+  it.each(design)(
+    "$roadId has a handful of hazards at level 1 and more at every level after",
+    ({ roadId }) => {
+      const counts = everyLevel(
+        (level) => trackFor(roadId, level).hazards.length
+      );
+      expect(counts[0]).toBeGreaterThanOrEqual(3);
+      expect(counts[0]).toBeLessThanOrEqual(7);
+      for (const [index, count] of counts.slice(1).entries()) {
+        expect(count).toBeGreaterThanOrEqual(counts[index] ?? 0);
+      }
+      expect(counts[4]).toBeGreaterThanOrEqual((counts[0] ?? 0) * 2);
+    }
+  );
+
+  it.each(design)(
+    "every hazard on $roadId at level 1 is in the same place at every later level",
+    ({ roadId }) => {
+      const first = trackFor(roadId, 1).hazards;
+      for (const level of roadLevels) {
+        const later = trackFor(roadId, level).hazards;
+        for (const hazard of first) {
+          expect(later).toContainEqual(hazard);
+        }
+      }
+    }
+  );
+
+  it.each(design)(
+    "every hazard on $roadId is on the road, clear of the start, the finish, and every ramp, and can be seen 170 m before it",
+    ({ roadId }) => {
+      for (const level of roadLevels) {
+        const track = trackFor(roadId, level);
+        for (const hazard of track.hazards) {
+          const size = hazardSizes[hazard.kind];
+          expect(Math.abs(hazard.x) + size.halfWidth).toBeLessThanOrEqual(
+            track.roadHalfWidth
+          );
+          expect(hazard.s).toBeGreaterThanOrEqual(HAZARD_START_CLEARANCE);
+          expect(hazard.s).toBeLessThanOrEqual(
+            track.length - HAZARD_FINISH_CLEARANCE
+          );
+          for (const rule of roads[roadId].plan.features) {
+            const [from, to] = reservationOf(rule);
+            const clear =
+              hazard.s + size.halfLength < from - HAZARD_RAMP_CLEARANCE ||
+              hazard.s - size.halfLength > to + HAZARD_RAMP_CLEARANCE;
+            expect(clear).toBeTruthy();
+          }
+          expect(inSight(track, hazard.s, hazard.x)).toBeTruthy();
+          expect(hazard.fromLevel).toBeLessThanOrEqual(level);
+        }
+      }
+    }
+  );
+
+  it.each(design)(
+    "every rock on $roadId stands where no car, van, or truck in a lane can reach it",
+    ({ roadId }) => {
+      const track = trackFor(roadId, 5);
+      const lanes = [...track.sameWayLanes, ...track.oncomingLanes];
+      for (const hazard of track.hazards.filter(
+        (each) => each.kind === "rock"
+      )) {
+        for (const lane of lanes) {
+          expect(Math.abs(hazard.x - lane)).toBeGreaterThanOrEqual(
+            WIDEST_VEHICLE + hazardSizes.rock.halfWidth
+          );
+        }
+      }
+    }
+  );
+
+  it("hazard ids are unique on a road", () => {
+    for (const roadId of roadIds) {
+      const ids = trackFor(roadId, 5).hazards.map((hazard) => hazard.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
 });
 
 describe("the track cache", () => {

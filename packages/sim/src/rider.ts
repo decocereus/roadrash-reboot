@@ -35,6 +35,7 @@ import {
 } from "./state.ts";
 import type {
   CrashCause,
+  HazardTag,
   RaceState,
   RiderInput,
   RiderState,
@@ -104,9 +105,20 @@ const DAMAGE_SPEED = 200 / 3.6;
 const LEAST_DAMAGE = 0.1;
 const MOST_DAMAGE = 1.25;
 const BLAME_TICKS = 60;
+const SLIP_RECOVERY = 1;
+const SLIP_PUSH = 1;
+const SLIP_BRAKES = 0.7;
+const SLIP_DRIVE = 0.6;
+const SLIDE_SLIP = 0.4;
+const SLIDE_SPEED = 26;
+const SLIDE_STEER = 0.6;
+const SLIDE_TICKS = 10;
+const SLIDE_YAW = 0.22;
+const SLIDE_SWING = 0.35;
 
 const damage = {
   combat: 28,
+  hazard: 28,
   landing: 30,
   offTrack: 22,
   prop: 32,
@@ -130,7 +142,7 @@ const standing: RiderInput = {
   throttle: 0,
 };
 
-const forwardRateOf = (rider: RiderState, curvature: number): number =>
+export const forwardRateOf = (rider: RiderState, curvature: number): number =>
   rider.speed / Math.max(0.5, 1 - curvature * rider.x);
 
 const swayOf = (rider: RiderState): number =>
@@ -191,7 +203,8 @@ export const throwRider = (
   cause: CrashCause,
   bikeKeep: number,
   bodyKeep: number,
-  speedAtImpact?: number
+  speedAtImpact?: number,
+  hazard: HazardTag | null = null
 ): void => {
   const rider = state.riders[riderIndex];
   if (!rider) {
@@ -234,11 +247,15 @@ export const throwRider = (
   rider.speed = impactSpeed * bikeKeep;
   rider.airborne = false;
   rider.airTicks = 0;
+  rider.bumpedBy = -1;
   rider.verticalSpeed = 0;
   rider.wobble = 0;
+  rider.slip = 0;
+  rider.slipTicks = 0;
   state.events.push({
     by: blamedFor(state, rider),
     cause,
+    hazard,
     kind: "crash",
     rider: riderIndex,
     speed: struckAt,
@@ -253,6 +270,7 @@ const under: Support = emptySupport();
 const crossing: Crossing = emptyCrossing();
 
 interface Contact {
+  readonly s: number;
   readonly x: number;
   readonly slope: number;
   readonly verticalSpeed: number;
@@ -280,17 +298,34 @@ const land = (
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
   rider.offRoad = Math.abs(contact.x) > track.roadHalfWidth;
+  const bumpedBy = state.hazards[rider.bumpedBy] ?? null;
+  rider.bumpedBy = -1;
   if (
     impact < HARD_LANDING ||
     (judged && (rider.offRoad || slip > LANDING_SLIP))
   ) {
-    throwRider(state, riderIndex, "landing", 0.7, 0.75);
+    throwRider(
+      state,
+      riderIndex,
+      bumpedBy ? "hazard" : "landing",
+      0.7,
+      0.75,
+      undefined,
+      bumpedBy
+    );
     return;
   }
   rider.speed *=
     1 - Math.min(MOST_LANDING_LOSS, -impact * LANDING_LOSS_PER_IMPACT);
   rider.wobble = clamp(-impact * WOBBLE_PER_IMPACT + slip, 0, 1);
-  state.events.push({ airSeconds, impact, kind: "land", rider: riderIndex });
+  state.events.push({
+    airSeconds,
+    impact,
+    kind: "land",
+    rider: riderIndex,
+    s: contact.s,
+    x: contact.x,
+  });
 };
 
 const glancesOff = (
@@ -438,6 +473,7 @@ const touchDeck = (
     riderIndex,
     rider,
     {
+      s,
       slope: slopeAt(track, s) + under.slope,
       verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
       x,
@@ -520,12 +556,39 @@ const fly = (
     riderIndex,
     rider,
     {
+      s: contactS,
       slope: slopeAt(track, contactS),
       verticalSpeed: rise - GRAVITY * TICK_SECONDS * share,
       x: fromX + (rider.x - fromX) * share,
     },
     forwardRate
   );
+};
+
+const losesTheFront = (
+  state: RaceState,
+  riderIndex: number,
+  rider: RiderState,
+  input: RiderInput
+): boolean => {
+  const asking =
+    rider.slip > SLIDE_SLIP &&
+    rider.speed > SLIDE_SPEED &&
+    Math.abs(input.steer) >= SLIDE_STEER;
+  rider.slipTicks = asking ? rider.slipTicks + 1 : 0;
+  if (rider.slipTicks < SLIDE_TICKS) {
+    return false;
+  }
+  throwRider(
+    state,
+    riderIndex,
+    "hazard",
+    0.55,
+    0.65,
+    undefined,
+    state.hazards[rider.slipFrom] ?? null
+  );
+  return true;
 };
 
 const ride = (
@@ -567,6 +630,8 @@ const ride = (
   rider.brake = approach(rider.brake, input.brake, CONTROL_RAMP * TICK_SECONDS);
 
   rider.wobble = Math.max(0, rider.wobble - WOBBLE_DECAY * TICK_SECONDS);
+  rider.slip = Math.max(0, rider.slip - SLIP_RECOVERY * TICK_SECONDS);
+  const grip = 1 - rider.slip;
   const limit =
     lateralSpeedLimit(bike, rider.speed, input.throttle) *
     (1 - (1 - VERGE_STEER) * verge) *
@@ -576,10 +641,14 @@ const ride = (
   rider.lateralSpeed = approach(
     rider.lateralSpeed,
     wantedLateral,
-    bike.steerRate * weapons[rider.weapon].steerFactor * TICK_SECONDS
+    bike.steerRate * weapons[rider.weapon].steerFactor * grip * TICK_SECONDS
   );
   const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
-  const push = curvePushOf(bike, curvature, rider.speed);
+  const push =
+    curvePushOf(bike, curvature, rider.speed) * (1 + SLIP_PUSH * rider.slip);
+  if (losesTheFront(state, riderIndex, rider, input)) {
+    return;
+  }
 
   settleIntoTuck(rider, input, lock);
   const pull = stepDrive(bike, rider, rider.speed, rider.throttle);
@@ -592,16 +661,19 @@ const ride = (
       dragOf(bike, rider.speed, rider.tuck) +
       bike.engineBraking * (1 - rider.throttle) * Math.min(1, rider.revs);
   }
-  acceleration += Math.min(
-    bike.launchAcceleration * Math.min(1, rider.load) * rider.throttle,
-    pull
-  );
+  acceleration +=
+    Math.min(
+      bike.launchAcceleration * Math.min(1, rider.load) * rider.throttle,
+      pull
+    ) *
+    (1 - SLIP_DRIVE * rider.slip);
   acceleration -=
     bike.brakeDeceleration *
     rider.brake *
     (1 - (1 - VERGE_BRAKES) * verge) *
     Math.min(1, rider.load) *
-    (1 - (1 - BRAKE_RESERVE) * lock);
+    (1 - (1 - BRAKE_RESERVE) * lock) *
+    (1 - SLIP_BRAKES * rider.slip);
   if (rider.offRoad) {
     acceleration -= VERGE_DRAG + VERGE_DRAG_PER_SPEED * rider.speed;
   }
@@ -613,6 +685,8 @@ const ride = (
     (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   settleVisuals(rider, 1);
+  rider.heading +=
+    rider.slip * SLIDE_YAW * Math.sin(rider.modeTicks * SLIDE_SWING);
   settleOnSurface(
     state,
     track,
@@ -685,6 +759,7 @@ const hitCar = (
   ) {
     state.events.push({
       closingSpeed: Math.abs(closingSpeed),
+      hazard: null,
       kind: "nearMiss",
       rider: riderIndex,
     });
@@ -941,7 +1016,7 @@ const run = (
   rider.bodyS = clamp(
     rider.bodyS + rider.bodySpeed * TICK_SECONDS,
     Math.min(rider.s, 0),
-    track.length
+    Math.max(rider.s, track.length)
   );
   rider.bodyX = clamp(
     rider.bodyX + rider.bodyLateralSpeed * TICK_SECONDS,

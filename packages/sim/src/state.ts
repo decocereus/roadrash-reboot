@@ -1,3 +1,4 @@
+import type { HazardKind } from "@racer/track/hazards";
 import type { Track } from "@racer/track/track";
 
 export const TICK_RATE = 60;
@@ -81,7 +82,8 @@ export type CrashCause =
   | "offTrack"
   | "landing"
   | "combat"
-  | "rider";
+  | "rider"
+  | "hazard";
 
 export interface RiderState {
   readonly profile: RiderProfile;
@@ -124,6 +126,14 @@ export interface RiderState {
   airborne: boolean;
   airTicks: number;
   wobble: number;
+  slip: number;
+  slipFrom: number;
+  slipTicks: number;
+  hazardContacts: number[];
+  bumpedBy: number;
+  hazardSeen: number;
+  hazardMissed: boolean;
+  pilotLine: number;
   jumpSeen: number;
   jumpMisread: boolean;
   offRoad: boolean;
@@ -153,6 +163,23 @@ export interface TrafficCar {
   readonly paint: number;
 }
 
+export interface HazardTag {
+  readonly id: string;
+  readonly kind: HazardKind;
+  readonly command: string | null;
+}
+
+export interface Hazard extends HazardTag {
+  readonly s: number;
+  readonly x: number;
+  readonly halfLength: number;
+  readonly halfWidth: number;
+  readonly height: number;
+  readonly spawnTick: number;
+}
+
+export type HazardEffect = "slip" | "stagger" | "bump" | "jolt";
+
 export type RaceEvent =
   | {
       readonly kind: "crash";
@@ -160,6 +187,14 @@ export type RaceEvent =
       readonly cause: CrashCause;
       readonly speed: number;
       readonly by: number;
+      readonly hazard: HazardTag | null;
+    }
+  | {
+      readonly kind: "hazard";
+      readonly rider: number;
+      readonly hazard: HazardTag;
+      readonly effect: HazardEffect;
+      readonly speed: number;
     }
   | { readonly kind: "wrecked"; readonly rider: number }
   | {
@@ -175,11 +210,14 @@ export type RaceEvent =
       readonly rider: number;
       readonly impact: number;
       readonly airSeconds: number;
+      readonly s: number;
+      readonly x: number;
     }
   | {
       readonly kind: "nearMiss";
       readonly rider: number;
       readonly closingSpeed: number;
+      readonly hazard: HazardTag | null;
     }
   | { readonly kind: "remount"; readonly rider: number }
   | {
@@ -272,10 +310,12 @@ export interface RaceSetup {
 export interface RaceState {
   tick: number;
   dice: number;
+  hazardDice: number;
   readonly police: PoliceRules;
   readonly pacing: PacingRules;
   readonly riders: RiderState[];
   readonly cars: TrafficCar[];
+  readonly hazards: Hazard[];
   readonly events: RaceEvent[];
 }
 

@@ -11,6 +11,7 @@
     "alchemy.run.ts",
     "vitest.config.ts",
     "tools/perf/**/*.ts",
+    "tools/blender/**/*.ts",
     "tools/verify/**/*.ts"
   ]
 }

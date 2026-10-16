@@ -26,6 +26,7 @@ const noticeText = (hud: HudState): string => {
     disarmed: "Disarmed",
     knockdown: "Down!",
     lastKm: "Last km",
+    marked: "Marked",
     police: "Cop!",
     wipeout: "Wipeout",
   }[hud.notice];

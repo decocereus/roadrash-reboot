@@ -1,3 +1,4 @@
+import type { Hazard } from "@racer/sim/state";
 import { createRandom } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
@@ -19,6 +20,7 @@ import {
   smoothstep,
 } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
+import { createHazardMarks } from "./hazards.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { buildRamps } from "./ramps.ts";
@@ -397,6 +399,7 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
+  showHazards: (hazards: readonly Hazard[], s: number) => void;
   samples: () => THREE.Group;
   setShadowMap: (size: number) => void;
   dispose: () => void;
@@ -496,6 +499,8 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   const ramps = buildRamps(track, shading);
   scene.add(ramps.group);
   stretches.push(...ramps.stretches);
+  const hazards = createHazardMarks(track, shading);
+  scene.add(hazards.group);
   if (city) {
     scene.add(freeze(city.group));
   } else {
@@ -524,6 +529,7 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   return {
     dispose() {
       city?.dispose();
+      hazards.dispose();
       disposeTree(scene);
       rig.light.shadow.map?.dispose();
     },
@@ -549,5 +555,8 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       rig.setMapSize(size);
     },
     shading,
+    showHazards(list, s) {
+      hazards.show(list, s);
+    },
   };
 }

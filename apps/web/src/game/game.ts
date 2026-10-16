@@ -21,6 +21,7 @@ import {
 } from "@racer/sim/state";
 import type {
   AttackKind,
+  HazardEffect,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -28,6 +29,8 @@ import type {
   RiderState,
 } from "@racer/sim/state";
 import { strikeOf, weapons } from "@racer/sim/weapons";
+import type { GovernReason, ResizeSource } from "@racer/telemetry/limits";
+import { governReasons } from "@racer/telemetry/limits";
 import { emptySupport, supportAt } from "@racer/track/features";
 import { roadIds, trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
@@ -35,6 +38,9 @@ import * as THREE from "three";
 
 import { benchOf } from "../career/bench.ts";
 import { bikeColour } from "../career/colours.ts";
+import { diagnostics } from "../diagnostics/hub.ts";
+import { emptyQuality } from "../diagnostics/recorder.ts";
+import type { QualityState } from "../diagnostics/recorder.ts";
 import { createBikes, createFleet, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Fleet, Reach } from "./actors.ts";
 import { loadAssets } from "./assets.ts";
@@ -42,7 +48,8 @@ import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import type { Subject } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
-import { createFrameMeter, wantsFrameMeter } from "./fps-meter.ts";
+import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
+import type { FrameMeter } from "./fps-meter.ts";
 import type {
   GameEvents,
   GameHandle,
@@ -53,6 +60,7 @@ import type {
 import { createControls } from "./input.ts";
 import { BLOOM_SCALE, createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
+import type { FrameEnd, Part, Profiler } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
 import { createRiderFigure } from "./rider-figure.ts";
@@ -107,6 +115,14 @@ const SAG_STEP = 1 / 240;
 const MOST_SAG = 0.16;
 const PUFF_AIR_SECONDS = 0.2;
 const PUFF_PER_IMPACT = 0.1;
+const POTHOLE_SAG_KICK = 1.6;
+const HAZARD_PUFF = 0.6;
+const HAZARD_JOLT = {
+  bump: 0.55,
+  jolt: 0.35,
+  slip: 0.15,
+  stagger: 0.6,
+} as const satisfies Record<HazardEffect, number>;
 const BUMP_PER_IMPACT = 1 / 9;
 const KICK_HOLD_TICKS = 2;
 const KICK_RETRACT_TICKS = 3;
@@ -115,6 +131,7 @@ const KICK_DROP_TICKS = 5;
 const BUSTED_SECONDS = 0.8;
 const WRECKED_SECONDS = 1.2;
 const ROAD_LEVEL = 1;
+const MARKER_KEY = "KeyB";
 
 interface Pose {
   s: number;
@@ -435,13 +452,45 @@ export async function createGame(
   let rung = 0;
   let pixelRatio = pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio();
   renderer.setPixelRatio(pixelRatio);
+  const hub = diagnostics();
+  const { recorder } = hub;
   const profileMode = profileModeOf(globalThis.location.search);
-  const profiler =
+  let profiler: Profiler | null =
     profileMode === "off"
       ? null
       : createProfiler(renderer, profileMode === "gpu");
-  const pipeline = createPipeline(renderer, profiler?.lap);
-  const meter = wantsFrameMeter() ? createFrameMeter(canvas) : null;
+  const lap = (part: Part) => {
+    profiler?.lap(part);
+  };
+  const pipeline = createPipeline(renderer, lap);
+  const meterFlag = wantsFrameMeter();
+  let meter: FrameMeter | null = null;
+  const sample = emptySample();
+  const frameEnd: FrameEnd = {
+    discarded: 0,
+    drawRung: 0,
+    drawnEpoch: 0,
+    interval: 0,
+    pixelRatio: 1,
+    race: 0,
+    rung: 0,
+    sizeEpoch: 0,
+    tick: 0,
+    ticks: 0,
+  };
+  const qualityBefore: QualityState = emptyQuality();
+  const qualityAfter: QualityState = emptyQuality();
+  let frameId = 0;
+  let sizeEpoch = 0;
+  let appliedWidth = -1;
+  let appliedHeight = -1;
+  let appliedRatio = -1;
+  let drawnEpoch = 0;
+  let drawnFrame = -1;
+  let drawnRung = 0;
+  let rendering = false;
+  let rendererLabel = "";
+  let overlayNoted: boolean | null = null;
 
   let world = createWorld(track);
   pipeline.setLook(world.shading.look);
@@ -666,6 +715,7 @@ export async function createGame(
   const loadAttract = (nextRoad: boolean) => {
     plan = null;
     log = null;
+    recorder.leaveRace();
     seed += 1;
     if (nextRoad) {
       roadTurn += 1;
@@ -677,7 +727,9 @@ export async function createGame(
     sound.unlock();
     plan = next;
     log = createRaceLog(next.setup);
+    recorder.enterRace();
     loadRace(next.setup, "countdown");
+    recorder.race("start", race.tick);
   };
 
   const quiet = () => {
@@ -700,6 +752,9 @@ export async function createGame(
   const controls = createControls((code) => {
     if (code === "KeyM") {
       toggleMute();
+    }
+    if (code === MARKER_KEY && live() && recorder.marker(race.tick)) {
+      say("marked");
     }
     if (code === "KeyR" && plan?.mode === "quick" && live()) {
       startRace(plan);
@@ -739,6 +794,7 @@ export async function createGame(
 
   const reactToOwn = (event: RaceEvent) => {
     if (event.kind === "crash") {
+      recorder.race("crash", race.tick);
       chase.jolt(1);
       sound.crash();
       say("wipeout");
@@ -759,6 +815,9 @@ export async function createGame(
     } else if (event.kind === "glance" || event.kind === "bump") {
       chase.jolt(0.45);
       sound.thump(0.5);
+    } else if (event.kind === "hazard") {
+      chase.jolt(HAZARD_JOLT[event.effect]);
+      sound.thump(HAZARD_JOLT[event.effect]);
     } else if (event.kind === "attack") {
       sound.swing();
     } else if (event.kind === "riderContact") {
@@ -797,6 +856,20 @@ export async function createGame(
     }
   };
 
+  const touchHazard = (
+    effect: HazardEffect,
+    view: RiderView,
+    speed: number,
+    near: boolean
+  ) => {
+    if (effect === "jolt" || effect === "bump") {
+      view.sagSpeed += POTHOLE_SAG_KICK;
+    }
+    if ((effect === "stagger" || effect === "bump") && near) {
+      puffs?.burst(view.bike, HAZARD_PUFF, speed);
+    }
+  };
+
   const touchDown = (event: RaceEvent) => {
     const view = views[event.rider];
     const rider = race.riders[event.rider];
@@ -809,8 +882,14 @@ export async function createGame(
       if (near && event.airSeconds > PUFF_AIR_SECONDS) {
         puffs?.burst(view.bike, -event.impact * PUFF_PER_IMPACT, rider.speed);
       }
-    } else if (event.kind === "crash" && event.cause === "landing" && near) {
+    } else if (
+      event.kind === "crash" &&
+      (event.cause === "landing" || event.cause === "hazard") &&
+      near
+    ) {
       puffs?.burst(view.bike, 1, rider.speed);
+    } else if (event.kind === "hazard") {
+      touchHazard(event.effect, view, rider.speed, near);
     }
   };
 
@@ -838,6 +917,7 @@ export async function createGame(
     }
     settled = log.outcome;
     phase = "settled";
+    recorder.race("end", race.tick);
     overLeft = consequenceSeconds(settled);
     events.onSettle(plan, settled);
     if (overLeft <= 0) {
@@ -890,7 +970,7 @@ export async function createGame(
         pilotInput(race, track, index, input);
       }
     }
-    devRide?.steer(race, inputs[0]);
+    devRide?.steer(race, track, inputs[0]);
   };
 
   const tick = () => {
@@ -908,6 +988,7 @@ export async function createGame(
       countdown -= TICK_SECONDS;
       if (countdown <= 0 && plan) {
         phase = "racing";
+        recorder.race("green", race.tick);
         events.onStart(plan);
       }
       holdStill();
@@ -1179,19 +1260,54 @@ export async function createGame(
 
     chase.update(track, subject, seconds);
     profiler?.lap("camera");
+    world.showHazards(race.hazards, subject.s);
     world.follow(chase.camera, subject.s);
     profiler?.lap("world");
-    pipeline.render(world.scene, chase.camera);
+    present();
     placeTag();
   };
 
-  const applySize = () => {
+  const applySize = (source: ResizeSource) => {
+    appliedWidth = canvas.clientWidth;
+    appliedHeight = canvas.clientHeight;
+    appliedRatio = pixelRatio;
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
+    sizeEpoch += 1;
+    recorder.canvas(
+      source,
+      sizeEpoch,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      canvas.width,
+      canvas.height
+    );
   };
 
-  const applyRung = () => {
+  const noteQuality = (into: QualityState) => {
+    const chosen = ladder[rung] ?? ladder[0];
+    into.rung = rung;
+    into.pixelRatio = pixelRatio;
+    into.bloomScale = chosen?.bloomScale ?? 0;
+    into.shadowMap = chosen?.shadowMap ?? 0;
+    into.pace = pace;
+  };
+
+  const changeQuality = (reason: GovernReason, change: () => void) => {
+    noteQuality(qualityBefore);
+    const lateCredit = Math.max(lateFrames, lateAtPace);
+    const calmMs = calmSeconds * 1000;
+    change();
+    noteQuality(qualityAfter);
+    recorder.governor(reason, qualityBefore, qualityAfter, lateCredit, calmMs);
+    sample.changeFrom = qualityBefore.rung;
+    sample.changeTo = qualityAfter.rung;
+    sample.changeReason = governReasons.indexOf(reason);
+    sample.changeAt = performance.now();
+  };
+
+  const applyRung = (source: ResizeSource) => {
     const chosen = ladder[rung] ?? ladder[0];
     if (!chosen) {
       return;
@@ -1201,7 +1317,7 @@ export async function createGame(
     const resized = chosen.pixelRatio !== pixelRatio;
     ({ pixelRatio } = chosen);
     if (resized) {
-      applySize();
+      applySize(source);
     }
     sinceStep = 0;
     lateFrames = 0;
@@ -1212,24 +1328,30 @@ export async function createGame(
     if (rung >= ladder.length - 1) {
       return;
     }
-    rung += 1;
-    if (sinceRaise < raiseWait) {
-      raiseWait = Math.min(LONGEST_WAIT_SECONDS, raiseWait * 2);
-    }
-    applyRung();
+    changeQuality("late-budget", () => {
+      rung += 1;
+      if (sinceRaise < raiseWait) {
+        raiseWait = Math.min(LONGEST_WAIT_SECONDS, raiseWait * 2);
+      }
+      applyRung("rung");
+    });
   };
 
   const stepUp = () => {
-    rung -= 1;
-    sinceRaise = 0;
-    applyRung();
+    changeQuality("calm-recovery", () => {
+      rung -= 1;
+      sinceRaise = 0;
+      applyRung("rung");
+    });
   };
 
   const slowPace = () => {
-    pace = BASE_RATE;
-    lateAtPace = 0;
-    fastRetryIn = fastRetryWait;
-    fastRetryWait = Math.min(LONGEST_WAIT_SECONDS, fastRetryWait * 2);
+    changeQuality("pace-fallback", () => {
+      pace = BASE_RATE;
+      lateAtPace = 0;
+      fastRetryIn = fastRetryWait;
+      fastRetryWait = Math.min(LONGEST_WAIT_SECONDS, fastRetryWait * 2);
+    });
   };
 
   const skipsVsync = (now: number): boolean =>
@@ -1271,8 +1393,10 @@ export async function createGame(
       fastRetryIn <= 0 &&
       calmSeconds > FAST_PACE_AFTER_CALM_SECONDS
     ) {
-      pace = display.refresh;
-      lateAtPace = 0;
+      changeQuality("pace-retry", () => {
+        pace = display.refresh;
+        lateAtPace = 0;
+      });
     }
   };
 
@@ -1287,9 +1411,11 @@ export async function createGame(
     }
     const ceiling = nativePixelRatio();
     if (ceiling !== ladder[0]?.pixelRatio) {
-      ladder = ladderFor(ceiling);
-      rung = Math.min(rung, ladder.length - 1);
-      applyRung();
+      changeQuality("native-dpr", () => {
+        ladder = ladderFor(ceiling);
+        rung = Math.min(rung, ladder.length - 1);
+        applyRung("ladder");
+      });
     }
     governQuality(seconds);
     governPace(seconds);
@@ -1347,14 +1473,87 @@ export async function createGame(
     });
   };
 
+  const present = () => {
+    rendering = true;
+    pipeline.render(world.scene, chase.camera);
+    rendering = false;
+    drawnEpoch = sizeEpoch;
+    drawnFrame = frameId;
+    drawnRung = rung;
+  };
+
+  const checkPresented = () => {
+    if (rendering) {
+      rendering = false;
+      recorder.incompletePass(drawnFrame + 1);
+    }
+    if (drawnFrame >= 0 && drawnEpoch !== sizeEpoch) {
+      recorder.invalidated(drawnFrame, drawnEpoch, sizeEpoch, drawnRung, rung);
+      drawnEpoch = sizeEpoch;
+    }
+  };
+
   const resize = () => {
-    applySize();
+    if (
+      canvas.clientWidth === appliedWidth &&
+      canvas.clientHeight === appliedHeight &&
+      pixelRatio === appliedRatio
+    ) {
+      return;
+    }
+    applySize("observer");
     chase.resize(canvas.clientWidth, canvas.clientHeight);
     if (halted()) {
       world.follow(chase.camera, subject.s);
-      pipeline.render(world.scene, chase.camera);
+      present();
     }
   };
+
+  const ensureProfiler = () => {
+    profiler ??= createProfiler(renderer, profileMode === "gpu");
+    rendererLabel = profiler.reader.info().renderer;
+  };
+
+  const applySettings = () => {
+    const settings = hub.settings.read();
+    const wantsMeter = meterFlag || settings.overlay;
+    if (wantsMeter && !meter) {
+      meter = createFrameMeter(canvas, hub.view().session);
+    } else if (!wantsMeter && meter) {
+      meter.dispose();
+      meter = null;
+    }
+    if (settings.recording) {
+      ensureProfiler();
+    }
+    const showing = meter !== null;
+    if (!settings.recording) {
+      overlayNoted = null;
+    } else if (overlayNoted !== showing) {
+      recorder.overlay(showing);
+      overlayNoted = showing;
+    }
+  };
+
+  const unwatchCanvas = hub.watchCanvas(canvas);
+  const unsubscribeSettings = hub.settings.subscribe(applySettings);
+  applySettings();
+  const detachProbe = hub.attachGame({
+    frameAt: (index) => profiler?.reader.frameAt(index) ?? null,
+    latestFrame: () => frameId - 1,
+    get renderer() {
+      return rendererLabel;
+    },
+    snapshot() {
+      noteQuality(qualityAfter);
+      return {
+        phase,
+        quality: { ...qualityAfter },
+        race: recorder.raceId(),
+        tick: race.tick,
+      };
+    },
+  });
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   resize();
@@ -1386,6 +1585,7 @@ export async function createGame(
     last = performance.now();
   });
   renderer.setAnimationLoop((now) => {
+    checkPresented();
     if (skipsVsync(now)) {
       return;
     }
@@ -1396,7 +1596,8 @@ export async function createGame(
     if (halted()) {
       return;
     }
-    profiler?.start();
+    recorder.beginFrame(frameId);
+    profiler?.start(frameId);
     const ticks = advance(seconds);
     profiler?.lap("sim");
     const me = player();
@@ -1413,19 +1614,23 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
+    govern(seconds);
     profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
-    govern(seconds);
-    meter?.frame({
-      calls: renderer.info.render.calls,
-      pace,
-      pixelRatio,
-      refresh: display.refresh,
-      rung,
-      rungs: ladder.length,
-      seconds,
-      triangles: renderer.info.render.triangles,
-    });
+    const discarded = Math.max(0, interval - MAX_FRAME_SECONDS * 1000);
+    if (meter) {
+      sample.calls = renderer.info.render.calls;
+      sample.discardedMs = discarded;
+      sample.intervalMs = interval;
+      sample.pace = pace;
+      sample.pixelRatio = pixelRatio;
+      sample.recording = recorder.recording;
+      sample.refresh = display.refresh;
+      sample.rung = rung;
+      sample.rungs = ladder.length;
+      sample.triangles = renderer.info.render.triangles;
+      meter.frame(sample);
+    }
     noticeLeft -= seconds;
     speechLeft -= seconds;
     hudClock += seconds;
@@ -1433,13 +1638,21 @@ export async function createGame(
       hudClock = 0;
       report();
     }
-    profiler?.finish({
-      interval,
-      pixelRatio,
-      rung,
-      tick: race.tick,
-      ticks,
-    });
+    if (profiler) {
+      frameEnd.discarded = discarded;
+      frameEnd.drawRung = drawnRung;
+      frameEnd.drawnEpoch = drawnEpoch;
+      frameEnd.interval = interval;
+      frameEnd.pixelRatio = pixelRatio;
+      frameEnd.race = recorder.raceId();
+      frameEnd.rung = rung;
+      frameEnd.sizeEpoch = sizeEpoch;
+      frameEnd.tick = race.tick;
+      frameEnd.ticks = ticks;
+      profiler.finish(frameEnd);
+    }
+    recorder.frame(frameId, interval, discarded);
+    frameId += 1;
   });
 
   return {
@@ -1452,6 +1665,9 @@ export async function createGame(
     dispose() {
       renderer.setAnimationLoop(null);
       observer.disconnect();
+      unsubscribeSettings();
+      unwatchCanvas();
+      detachProbe();
       meter?.dispose();
       profiler?.dispose();
       controls.dispose();
@@ -1474,6 +1690,9 @@ export async function createGame(
       return true;
     },
     quit() {
+      if (plan && !settled) {
+        recorder.race("quit", race.tick);
+      }
       const outcome = plan && log ? outcomeOf(race, plan.setup, log) : null;
       plan = null;
       log = null;

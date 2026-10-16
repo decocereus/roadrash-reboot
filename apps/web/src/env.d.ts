@@ -6,3 +6,7 @@ declare module "cloudflare:workers" {
     interface Env extends WebEnv {}
   }
 }
+
+declare global {
+  const __RUSHLINE_BUILD__: { readonly sha: string; readonly dirty: boolean };
+}

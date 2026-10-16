@@ -86,6 +86,13 @@ const place = (rule: FeatureRule): TrackFeature => {
   };
 };
 
+export const reservationOf = (
+  rule: FeatureRule
+): readonly [from: number, to: number] => {
+  const placed = place(rule);
+  return [placed.fromS, placed.toS];
+};
+
 const checkSize = (rule: FeatureRule, roadHalfWidth: number): void => {
   const { feature } = rule;
   const numbers = [rule.s, rule.x, feature.length, feature.width, feature.rise];
