@@ -110,6 +110,22 @@ const paced = (refresh: number, pace: number) => {
   };
 };
 
+const readScreens = (
+  initial: number,
+  screens: readonly (readonly [number, number])[]
+) => {
+  const meter = createRefreshMeter(initial);
+  let now = 0;
+  let refresh = initial;
+  for (const [rate, seconds] of screens) {
+    for (let tick = 0; tick < rate * seconds; tick += 1) {
+      now += 1000 / rate;
+      refresh = meter.tick(Math.floor(now + ((tick * 7) % 5) * 0.3));
+    }
+  }
+  return refresh;
+};
+
 const steadyFrom = (changes: Change[], rung: number): number =>
   changes.find((change) => change.rung >= rung)?.at ?? Number.POSITIVE_INFINITY;
 
@@ -238,20 +254,6 @@ describe("the quality governor", () => {
     expect(afterMove).toStrictEqual([]);
   });
 
-  it("reads a jittery 120 Hz screen as 120, not 144", () => {
-    const meter = createRefreshMeter();
-    const readings: number[] = [];
-    for (let tick = 0; tick < 600; tick += 1) {
-      const jitter = ((tick * 7) % 5) - 2;
-      const reading = meter.tick((tick * 1000) / 120 + jitter * 0.7);
-      if (reading !== null) {
-        readings.push(reading);
-      }
-    }
-    expect(readings.length).toBeGreaterThan(3);
-    expect(readings.every((rate) => rate === 120)).toBeTruthy();
-  });
-
   it("does not rush the next frame after the browser skips a callback", () => {
     const pacer = createPacer();
     const vsync = 1000 / 120;
@@ -266,5 +268,53 @@ describe("the quality governor", () => {
     }
     const shortest = Math.min(...gaps.slice(1));
     expect(shortest).toBeGreaterThan(4 * vsync - 1);
+  });
+
+  it("reads the screen's refresh from its callbacks, jitter and all", () => {
+    expect(readScreens(60, [[120, 4]])).toBe(120);
+    expect(readScreens(60, [[100, 4]])).toBe(100);
+    expect(
+      readScreens(60, [
+        [144, 3],
+        [75, 3.5],
+      ])
+    ).toBe(75);
+    expect(
+      readScreens(60, [
+        [144, 3],
+        [75, 1.5],
+      ])
+    ).toBe(144);
+  });
+
+  it("does not take Safari slipping to 56 fps for a slower screen", () => {
+    const meter = createRefreshMeter(60);
+    let refresh = 60;
+    for (let frame = 0; frame < 56 * 10; frame += 1) {
+      refresh = meter.tick(Math.floor(frame * 17.7));
+    }
+    expect(refresh).toBe(60);
+  });
+
+  it("holds every third refresh on a 100 Hz screen at 30", () => {
+    const show = paced(100, HALF_RATE);
+    const gaps = Array.from({ length: 40 }, () => show().intervalMs).slice(1);
+    expect(gaps.every((gap) => Math.abs(gap - 30) < 1)).toBeTruthy();
+    expect(ride(60, show, { rate: "30", refresh: 100 })).toStrictEqual([]);
+  });
+
+  it("remembers rungs that failed twice through a pixel-ratio round trip", () => {
+    const governor = createGovernor(RUNGS);
+    const move = (step: number) => {
+      governor.commit({ pace: 60, reason: "late-burst", step });
+    };
+    move(FLOOR);
+    move(FLOOR - 1);
+    move(FLOOR);
+    governor.resize(6);
+    governor.resize(RUNGS);
+    move(FLOOR);
+    expect(governor.rung).toBe(FLOOR);
+    expect(ride(30 * 60, () => SMOOTH, {}, governor)).toStrictEqual([]);
   });
 });

@@ -57,7 +57,8 @@ export const createGovernor = (rungCount: number): Governor => {
   let step = 0;
   let pace = BASE_RATE;
   let rate: FrameRate = "auto";
-  let failures = new Uint8Array(rungs + 1);
+  let failures = new Uint8Array(rungs);
+  let lockFailures = 0;
   let lateFrames = 0;
   let calm = 0;
   let sinceStep = STEP_COOLDOWN_SECONDS;
@@ -148,8 +149,11 @@ export const createGovernor = (rungCount: number): Governor => {
     return { pace, reason, step: Math.min(rungs - 1, step + by) };
   };
 
+  const failuresInto = (into: number): number =>
+    step === rungs ? lockFailures : (failures[into] ?? 0);
+
   const raiseWait = (into: number): number => {
-    const failed = failures[into] ?? 0;
+    const failed = failuresInto(into);
     if (failed === 0) {
       return RAISE_AFTER_CALM_SECONDS;
     }
@@ -185,7 +189,7 @@ export const createGovernor = (rungCount: number): Governor => {
       return lower("late-budget", 1);
     }
     if (step > 0 && calm > raiseWait(step - 1)) {
-      const retry = (failures[step - 1] ?? 0) > 0;
+      const retry = failuresInto(step - 1) > 0;
       return {
         pace,
         reason: retry ? "calm-retry" : "calm-recovery",
@@ -220,7 +224,14 @@ export const createGovernor = (rungCount: number): Governor => {
   return {
     calmSeconds: () => calm,
     commit(verdict) {
-      for (let failed = step; failed < verdict.step; failed += 1) {
+      if (verdict.step === rungs && step < rungs) {
+        lockFailures += 1;
+      }
+      for (
+        let failed = step;
+        failed < Math.min(verdict.step, rungs);
+        failed += 1
+      ) {
         failures[failed] = Math.min(255, (failures[failed] ?? 0) + 1);
       }
       if (verdict.step !== step) {
@@ -255,13 +266,11 @@ export const createGovernor = (rungCount: number): Governor => {
     },
     resize(count) {
       const locked = step === rungs;
-      const kept = new Uint8Array(count + 1);
-      kept.set(failures.subarray(0, Math.min(rungs, count)));
-      kept[count - 1] = Math.max(
-        kept[count - 1] ?? 0,
-        failures[rungs - 1] ?? 0
-      );
-      failures = kept;
+      if (failures.length < count) {
+        const grown = new Uint8Array(count);
+        grown.set(failures);
+        failures = grown;
+      }
       rungs = count;
       step = locked ? rungs : Math.min(step, rungs - 1);
       settle();

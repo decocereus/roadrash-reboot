@@ -322,19 +322,6 @@ const pinnedRefresh = Number(
   new URLSearchParams(globalThis.location.search).get("hz") ?? 0
 );
 
-const watchRefresh = (report: (rate: number) => void): void => {
-  const meter = createRefreshMeter();
-  const sample = (now: number) => {
-    const rate = meter.tick(now);
-    if (rate === null) {
-      requestAnimationFrame(sample);
-    } else {
-      report(rate);
-    }
-  };
-  requestAnimationFrame(sample);
-};
-
 interface Compile {
   readonly load: number;
   readonly compiling: Compiling;
@@ -441,11 +428,7 @@ export async function createGame(
   events: GameEvents
 ): Promise<GameHandle> {
   const display = { refresh: pinnedRefresh > 0 ? pinnedRefresh : 60 };
-  if (pinnedRefresh <= 0) {
-    watchRefresh((rate) => {
-      display.refresh = Math.max(display.refresh, rate);
-    });
-  }
+
   const assets = await loadAssets();
   let roadTurn = firstRoad;
   let track = roadForTurn(roadTurn);
@@ -547,7 +530,7 @@ export async function createGame(
   let hudClock = 0;
   let pace = BASE_RATE;
   const pacer = createPacer();
-  const refreshMeter = createRefreshMeter();
+  const refreshMeter = createRefreshMeter(display.refresh);
   let lastBusyMs = 0;
   let clock = 0;
 
@@ -1488,9 +1471,8 @@ export async function createGame(
   };
 
   const noteRefresh = (now: number) => {
-    const measured = pinnedRefresh > 0 ? null : refreshMeter.tick(now);
-    if (measured !== null) {
-      display.refresh = Math.max(display.refresh, measured);
+    if (pinnedRefresh <= 0) {
+      display.refresh = refreshMeter.tick(now);
     }
   };
 

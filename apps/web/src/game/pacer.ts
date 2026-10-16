@@ -28,41 +28,74 @@ export const createPacer = (): Pacer => {
   };
 };
 
-const REFRESH_RATES = [60, 75, 90, 120, 144, 165, 240];
+const LOWEST_REFRESH = 60;
 const REFRESH_WINDOW_MS = 1000;
+const FEWEST_GAPS = 20;
+const BASE_GAP_SHARE = 0.1;
+const ONE_VSYNC_SPREAD = 1.5;
+const SAME_RATE_SHARE = 0.03;
+const LOWER_READINGS = 2;
 
-export const nearestRefresh = (rate: number): number => {
-  let best = REFRESH_RATES[0] ?? 60;
-  for (const candidate of REFRESH_RATES) {
-    if (Math.abs(candidate - rate) < Math.abs(best - rate)) {
-      best = candidate;
-    }
+const readingOf = (gaps: readonly number[]): number | null => {
+  if (gaps.length < FEWEST_GAPS) {
+    return null;
   }
-  return best;
+  const sorted = gaps.toSorted((a, b) => a - b);
+  const base = sorted[Math.floor(sorted.length * BASE_GAP_SHARE)] ?? 0;
+  const single = sorted.filter((gap) => gap <= base * ONE_VSYNC_SPREAD);
+  const mean = single.reduce((sum, gap) => sum + gap, 0) / single.length;
+  return Math.max(LOWEST_REFRESH, Math.round(1000 / mean));
 };
 
 export interface RefreshMeter {
-  readonly tick: (now: number) => number | null;
+  readonly tick: (now: number) => number;
 }
 
-export const createRefreshMeter = (): RefreshMeter => {
+export const createRefreshMeter = (initial: number): RefreshMeter => {
+  let refresh = initial;
   let start = Number.NaN;
-  let callbacks = 0;
+  let last = Number.NaN;
+  const gaps: number[] = [];
+  let lower = Number.NaN;
+  let lowerSeen = 0;
+
+  const settle = (reading: number) => {
+    if (Math.abs(reading - refresh) <= refresh * SAME_RATE_SHARE) {
+      lowerSeen = 0;
+      return;
+    }
+    if (reading > refresh) {
+      refresh = reading;
+      lowerSeen = 0;
+      return;
+    }
+    const same = Math.abs(reading - lower) <= reading * SAME_RATE_SHARE;
+    lowerSeen = same ? lowerSeen + 1 : 1;
+    lower = reading;
+    if (lowerSeen >= LOWER_READINGS) {
+      refresh = reading;
+      lowerSeen = 0;
+    }
+  };
+
   return {
     tick(now) {
-      if (Number.isNaN(start)) {
+      if (Number.isNaN(last)) {
         start = now;
-        return null;
+      } else {
+        gaps.push(now - last);
       }
-      callbacks += 1;
-      const elapsed = now - start;
-      if (elapsed < REFRESH_WINDOW_MS) {
-        return null;
+      last = now;
+      if (now - start < REFRESH_WINDOW_MS) {
+        return refresh;
       }
-      const rate = (callbacks * 1000) / elapsed;
+      const reading = readingOf(gaps);
+      gaps.length = 0;
       start = now;
-      callbacks = 0;
-      return nearestRefresh(rate);
+      if (reading !== null) {
+        settle(reading);
+      }
+      return refresh;
     },
   };
 };
