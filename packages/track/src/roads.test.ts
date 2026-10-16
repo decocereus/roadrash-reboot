@@ -3,23 +3,25 @@ import { describe, expect, it } from "vitest";
 import { reservationOf } from "./features.ts";
 import {
   HAZARD_FINISH_CLEARANCE,
+  HAZARD_GENTLE_CURVATURE,
   HAZARD_RAMP_CLEARANCE,
   HAZARD_START_CLEARANCE,
+  HAZARD_TIGHT_CURVATURE,
   hazardSizes,
   inSight,
 } from "./hazards.ts";
+import type { HazardKind, HazardSetting } from "./hazards.ts";
 import { nextSeed } from "./random.ts";
 import { roadLevels } from "./road.ts";
 import type { RoadId, RoadLevel } from "./road.ts";
 import { regionOf, roadIds, roads, trackFor } from "./roads.ts";
-import { compileTrack } from "./track.ts";
+import { compileTrack, curvatureAt } from "./track.ts";
 import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 
 const GRAVITY = 9.81;
 const STRAIGHT = 1 / 1500;
 const PINNED_RIDGE_LENGTH = 4250;
 const RAMP_RUN_UP = 40;
-const WIDEST_VEHICLE = 1.2;
 
 interface Stretch {
   readonly from: number;
@@ -187,6 +189,13 @@ const propNumbers = (prop: TrackProp): number[] => [
   prop.radius,
   prop.scale,
 ];
+
+const sharpestNear = (track: Track, s: number): number =>
+  Math.max(
+    ...Array.from({ length: 11 }, (_, step) =>
+      Math.abs(curvatureAt(track, s - 10 + step * 5))
+    )
+  );
 
 const rocksOf = (track: Track): TrackProp[] =>
   track.props.filter((prop) => prop.kind === "rock");
@@ -400,17 +409,34 @@ describe("ramps", () => {
 
 describe("hazards", () => {
   it.each(design)(
-    "$roadId has a handful of hazards at level 1 and more at every level after",
+    "$roadId has a handful of hazards at level 1, at least one an oil slick, and more at every level after",
     ({ roadId }) => {
       const counts = everyLevel(
         (level) => trackFor(roadId, level).hazards.length
       );
-      expect(counts[0]).toBeGreaterThanOrEqual(3);
+      const slicks = trackFor(roadId, 1).hazards.filter(
+        (hazard) => hazard.kind === "oil"
+      );
+      expect(counts[0]).toBeGreaterThanOrEqual(4);
       expect(counts[0]).toBeLessThanOrEqual(7);
+      expect(slicks.length).toBeGreaterThanOrEqual(1);
       for (const [index, count] of counts.slice(1).entries()) {
         expect(count).toBeGreaterThanOrEqual(counts[index] ?? 0);
       }
       expect(counts[4]).toBeGreaterThanOrEqual((counts[0] ?? 0) * 2);
+    }
+  );
+
+  it.each(roadLevels)(
+    "oil is the most common hazard across the roads at level %i",
+    (level) => {
+      const kinds = roadIds.flatMap((roadId) =>
+        trackFor(roadId, level).hazards.map((hazard) => hazard.kind)
+      );
+      const countOf = (kind: HazardKind) =>
+        kinds.filter((each) => each === kind).length;
+      expect(countOf("oil")).toBeGreaterThan(countOf("rock"));
+      expect(countOf("oil")).toBeGreaterThan(countOf("pothole"));
     }
   );
 
@@ -428,7 +454,7 @@ describe("hazards", () => {
   );
 
   it.each(design)(
-    "every hazard on $roadId is on the road, clear of the start, the finish, and every ramp, and can be seen 170 m before it",
+    "every hazard on $roadId is on the road, clear of the start, the finish, and every ramp, and can be seen from 25 m before it",
     ({ roadId }) => {
       for (const level of roadLevels) {
         const track = trackFor(roadId, level);
@@ -456,18 +482,101 @@ describe("hazards", () => {
   );
 
   it.each(design)(
-    "every rock on $roadId stands where no car, van, or truck in a lane can reach it",
+    "every hazard on $roadId lies on the lanes, never on the shoulder",
     ({ roadId }) => {
       const track = trackFor(roadId, 5);
-      const lanes = [...track.sameWayLanes, ...track.oncomingLanes];
-      for (const hazard of track.hazards.filter(
-        (each) => each.kind === "rock"
-      )) {
-        for (const lane of lanes) {
-          expect(Math.abs(hazard.x - lane)).toBeGreaterThanOrEqual(
-            WIDEST_VEHICLE + hazardSizes.rock.halfWidth
-          );
-        }
+      const lanesEdge = track.plan.lanesEachWay * track.plan.laneWidth;
+      for (const hazard of track.hazards) {
+        expect(
+          Math.abs(hazard.x) + hazardSizes[hazard.kind].halfWidth
+        ).toBeLessThanOrEqual(lanesEdge);
+      }
+    }
+  );
+
+  it("rocks are spread across the lanes rather than lined up, and many lie where a bike rides", () => {
+    const rocks = roadIds.flatMap((roadId) =>
+      trackFor(roadId, 5).hazards.flatMap((hazard) =>
+        hazard.kind === "rock" ? [{ hazard, track: trackFor(roadId, 5) }] : []
+      )
+    );
+    const across = new Set(rocks.map(({ hazard }) => hazard.x.toFixed(1)));
+    const inLane = rocks.filter(({ hazard, track }) =>
+      [...track.sameWayLanes, ...track.oncomingLanes].some(
+        (lane) => Math.abs(hazard.x - lane) < 1
+      )
+    );
+    expect(across.size).toBeGreaterThan(rocks.length * 0.75);
+    expect(inLane.length).toBeGreaterThan(rocks.length / 3);
+  });
+
+  it("no rock lies in a tight bend or where a bike that hits it would land in one", () => {
+    const sharpest = roadIds.flatMap((roadId) =>
+      roadLevels.flatMap((level) => {
+        const track = trackFor(roadId, level);
+        return track.hazards
+          .filter((hazard) => hazard.kind === "rock")
+          .map((hazard) => sharpestNear(track, hazard.s));
+      })
+    );
+    expect(Math.max(...sharpest)).toBeLessThan(HAZARD_TIGHT_CURVATURE);
+  });
+
+  it("a rock in a gentle bend lies at the edge of a lane, clear of a bike holding the lane's centre", () => {
+    const gentle = roadIds.flatMap((roadId) => {
+      const track = trackFor(roadId, 5);
+      return track.hazards
+        .filter(
+          (hazard) =>
+            hazard.kind === "rock" &&
+            sharpestNear(track, hazard.s) >= HAZARD_GENTLE_CURVATURE
+        )
+        .map((hazard) =>
+          Math.min(
+            ...[...track.sameWayLanes, ...track.oncomingLanes].map((lane) =>
+              Math.abs(hazard.x - lane)
+            )
+          )
+        );
+    });
+    expect(gentle.length).toBeGreaterThan(0);
+    expect(Math.min(...gentle)).toBeGreaterThan(
+      hazardSizes.rock.halfWidth + 0.38
+    );
+  });
+
+  it("most hazards lie at a bend or over a crest, and the rest on the straights where riders pass traffic", () => {
+    const hazards = roadIds.flatMap((roadId) => trackFor(roadId, 5).hazards);
+    const atBends = hazards.filter((hazard) => hazard.setting !== "traffic");
+    expect(atBends.length).toBeGreaterThan(hazards.length / 2);
+  });
+
+  it.each(design)(
+    "on $roadId a hazard mid-bend is a pothole on the inside line, and one where the bend begins is oil on the outside line",
+    ({ roadId }) => {
+      const track = trackFor(roadId, 5);
+      const across = (setting: HazardSetting) =>
+        track.hazards.flatMap((hazard) => {
+          if (hazard.setting !== setting) {
+            return [];
+          }
+          const inside = Math.sign(curvatureAt(track, hazard.s));
+          const lanes = track.sameWayLanes.map((lane) => lane * inside);
+          return [
+            {
+              innermost: hazard.x * inside - Math.max(...lanes),
+              kind: hazard.kind,
+              outermost: hazard.x * inside - Math.min(...lanes),
+            },
+          ];
+        });
+      for (const apex of across("apex")) {
+        expect(apex.kind).toBe("pothole");
+        expect(apex.innermost).toBeGreaterThanOrEqual(-1e-9);
+      }
+      for (const turnIn of across("turnIn")) {
+        expect(turnIn.kind).toBe("oil");
+        expect(turnIn.outermost).toBeLessThanOrEqual(1e-9);
       }
     }
   );

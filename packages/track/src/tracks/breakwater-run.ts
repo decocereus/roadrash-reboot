@@ -21,7 +21,7 @@ export const breakwaterRun: TrackPlan = {
       x: 3.6,
     },
   ],
-  hazardsPerKilometre: 2,
+  hazardsPerKilometre: 1,
   id: "breakwater-run",
   laneWidth: 3.6,
   lanesEachWay: 2,

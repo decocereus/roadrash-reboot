@@ -9,7 +9,6 @@ import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { whiteInstances } from "./ground.ts";
-import { CYAN, INK, MAGENTA, YELLOW } from "./looks.ts";
 
 const BEHIND = 40;
 const MARGIN = 200;
@@ -18,25 +17,18 @@ const DECAL_LIFT = 0.025;
 const SHEEN_LIFT = 0.03;
 const BLOB_SPOKES = 28;
 const KEY_PRIME = 31;
-const OIL_INK = new THREE.Color("#07060c");
-const OIL_EDGE = new THREE.Color("#1c1828");
-const SHEEN = [CYAN, MAGENTA, YELLOW, CYAN, MAGENTA].map((colour) =>
-  new THREE.Color(colour).multiplyScalar(0.75)
+const OIL_INK = new THREE.Color("#060509");
+const OIL_EDGE = new THREE.Color("#16131c");
+const SHEEN = ["#1d3640", "#33203f", "#2f3420", "#1d3640", "#33203f"].map(
+  (colour) => new THREE.Color(colour)
 );
-const GLINT_CORE = new THREE.Color("#ffffff");
-const GLINT_TIP = new THREE.Color(CYAN);
-const GLINT_POINTS = 4;
-const GLINT_WAIST = 0.18;
-const GLINTS = [
-  [-0.45, 0.5, -1.1, 0.5],
-  [0.5, 0.36, 0.7, 0.36],
-] as const;
-const HOLE = new THREE.Color("#050407");
-const HOLE_WALL = new THREE.Color("#1d1a22");
-const RIM = new THREE.Color("#b9b2a8");
-const CRATE = new THREE.Color("#ff8a1f");
-const STRAP = new THREE.Color(INK);
+const OIL_GLOSS = new THREE.Color("#7d8aa3");
+const HOLE = new THREE.Color("#040306");
+const HOLE_WALL = new THREE.Color("#2a2630");
 const ROCK_SHADOW = new THREE.Color("#000000");
+const GLOSS_LIFT = 0.035;
+const GLOSS_SPOKES = 20;
+const LIP_HEIGHT = 0.05;
 
 interface Part {
   readonly kind: HazardKind;
@@ -49,11 +41,10 @@ export interface HazardMarks {
   dispose: () => void;
 }
 
-const CRATE_TURN = 0.15;
-const CRATE_HALF_WIDTH = 0.38;
-const CRATE_HALF_LENGTH = 0.39;
-
-const round = (): number => 1;
+const jagged = (angle: number, seed: number): number =>
+  0.84 +
+  0.09 * Math.sin(angle * 5 + seed) +
+  0.07 * Math.sign(Math.sin(angle * 11 + seed * 1.7));
 
 const lobe = (angle: number, seed: number): number =>
   0.82 +
@@ -148,31 +139,15 @@ const oilSheen = (): THREE.BufferGeometry => {
   return stretched(sheen, "oil", SHEEN_LIFT);
 };
 
-const glints = (): THREE.BufferGeometry => {
-  const positions: number[] = [];
-  const colours: number[] = [];
+const oilGloss = (): THREE.BufferGeometry => {
+  const positions: number[] = [0, 0, 0];
+  const colours: number[] = [OIL_GLOSS.r, OIL_GLOSS.g, OIL_GLOSS.b];
   const indices: number[] = [];
-  for (const [x, y, z, size] of GLINTS) {
-    const centre = positions.length / 3;
-    positions.push(x, y, z);
-    colours.push(GLINT_CORE.r, GLINT_CORE.g, GLINT_CORE.b);
-    const corners = GLINT_POINTS * 2;
-    for (let corner = 0; corner < corners; corner += 1) {
-      const angle = (corner / corners) * Math.PI * 2;
-      const reach = corner % 2 === 0 ? size : size * GLINT_WAIST;
-      positions.push(
-        x + Math.sin(angle) * reach,
-        y + Math.cos(angle) * reach,
-        z
-      );
-      const colour = corner % 2 === 0 ? GLINT_TIP : GLINT_CORE;
-      colours.push(colour.r, colour.g, colour.b);
-      indices.push(
-        centre,
-        centre + 1 + corner,
-        centre + 1 + ((corner + 1) % corners)
-      );
-    }
+  for (let spoke = 0; spoke < GLOSS_SPOKES; spoke += 1) {
+    const angle = (spoke / GLOSS_SPOKES) * Math.PI * 2;
+    positions.push(Math.cos(angle) * 0.62, 0, Math.sin(angle) * 0.13);
+    colours.push(OIL_INK.r, OIL_INK.g, OIL_INK.b);
+    indices.push(0, 1 + ((spoke + 1) % GLOSS_SPOKES), 1 + spoke);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
@@ -181,30 +156,72 @@ const glints = (): THREE.BufferGeometry => {
   );
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
   geometry.setIndex(indices);
-  return geometry;
+  geometry.computeVertexNormals();
+  return stretched(geometry, "oil", GLOSS_LIFT).translate(0.1, 0, -0.9);
 };
 
-const glintMaterial = (shading: Shading): THREE.MeshBasicMaterial => {
-  const material = shading.glowPaint();
-  material.side = THREE.DoubleSide;
-  return material;
-};
+const farSide = (spoke: number): boolean =>
+  Math.sin((spoke / BLOB_SPOKES) * Math.PI * 2) < 0;
 
-const pothole = (): THREE.BufferGeometry =>
-  stretched(
+const pothole = (road: THREE.Color): THREE.BufferGeometry => {
+  const broken = road.clone().lerp(new THREE.Color("#ffffff"), 0.38);
+  const chipped = road.clone().multiplyScalar(0.6);
+  const wall = road.clone().multiplyScalar(0.75);
+  return stretched(
     blob(
       [
-        [0.6, () => HOLE],
-        [0.8, () => HOLE_WALL],
-        [0.9, () => RIM],
-        [1, (spoke) => (spoke % 2 === 0 ? HOLE_WALL : RIM)],
+        [0.42, () => HOLE],
+        [0.6, (spoke) => (farSide(spoke) ? HOLE_WALL : HOLE)],
+        [0.72, (spoke) => (farSide(spoke) ? wall : HOLE)],
+        [0.8, (spoke) => (farSide(spoke) ? broken : chipped)],
+        [1, (spoke) => (spoke % 3 === 0 ? chipped : broken)],
       ],
       0.4,
-      round
+      jagged
     ),
     "pothole",
     DECAL_LIFT
   );
+};
+
+const potholeLip = (road: THREE.Color): THREE.BufferGeometry => {
+  const broken = road.clone().lerp(new THREE.Color("#ffffff"), 0.3);
+  const positions: number[] = [];
+  const colours: number[] = [];
+  const indices: number[] = [];
+  for (let spoke = 0; spoke < BLOB_SPOKES; spoke += 1) {
+    const angle = (spoke / BLOB_SPOKES) * Math.PI * 2;
+    const edge = jagged(angle, 0.4);
+    const rise = LIP_HEIGHT * (0.6 + 0.4 * Math.abs(Math.sin(angle * 7)));
+    positions.push(
+      Math.cos(angle) * edge * 0.76,
+      rise,
+      Math.sin(angle) * edge * 0.76,
+      Math.cos(angle) * edge,
+      0,
+      Math.sin(angle) * edge
+    );
+    colours.push(broken.r, broken.g, broken.b, broken.r, broken.g, broken.b);
+    const next = (spoke + 1) % BLOB_SPOKES;
+    indices.push(
+      spoke * 2,
+      next * 2,
+      spoke * 2 + 1,
+      next * 2,
+      next * 2 + 1,
+      spoke * 2 + 1
+    );
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return stretched(geometry, "pothole", DECAL_LIFT);
+};
 
 const rockShadow = (): THREE.BufferGeometry => {
   const geometry = new THREE.CircleGeometry(1, 20);
@@ -229,67 +246,6 @@ const boulder = (): THREE.BufferGeometry => {
     .translate(0, height * 0.12, 0);
 };
 
-const crate = (): THREE.BufferGeometry => {
-  const { height } = hazardSizes.rock;
-  const body = new THREE.BoxGeometry(
-    CRATE_HALF_WIDTH * 2,
-    height,
-    CRATE_HALF_LENGTH * 2
-  )
-    .rotateY(CRATE_TURN)
-    .translate(0, height / 2, 0);
-  const colours: number[] = [];
-  const { count } = body.getAttribute("position");
-  for (let index = 0; index < count; index += 1) {
-    colours.push(CRATE.r, CRATE.g, CRATE.b);
-  }
-  body.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
-  const straps = [-0.2, 0.2].map((offset) => {
-    const strap = new THREE.BoxGeometry(
-      CRATE_HALF_WIDTH * 2.02,
-      height * 1.02,
-      0.08
-    )
-      .translate(0, height / 2, offset)
-      .rotateY(CRATE_TURN);
-    const tint: number[] = [];
-    for (
-      let index = 0;
-      index < strap.getAttribute("position").count;
-      index += 1
-    ) {
-      tint.push(STRAP.r, STRAP.g, STRAP.b);
-    }
-    strap.setAttribute("color", new THREE.Float32BufferAttribute(tint, 3));
-    return strap;
-  });
-  return mergeBoxes([body, ...straps]);
-};
-
-const mergeBoxes = (
-  boxes: readonly THREE.BufferGeometry[]
-): THREE.BufferGeometry => {
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const colours: number[] = [];
-  for (const box of boxes) {
-    const flat = box.index ? box.toNonIndexed() : box;
-    positions.push(...flat.getAttribute("position").array);
-    normals.push(...flat.getAttribute("normal").array);
-    colours.push(...flat.getAttribute("color").array);
-    flat.dispose();
-    box.dispose();
-  }
-  const merged = new THREE.BufferGeometry();
-  merged.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-  merged.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-  merged.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
-  return merged;
-};
-
 const decalMaterial = (shading: Shading): THREE.MeshToonMaterial => {
   const material = shading.cel("#ffffff", { vertexColors: true });
   material.polygonOffset = true;
@@ -298,9 +254,8 @@ const decalMaterial = (shading: Shading): THREE.MeshToonMaterial => {
   return material;
 };
 
-const sheenMaterial = (shading: Shading): THREE.MeshBasicMaterial => {
-  const material = shading.glowPaint();
-  material.polygonOffset = true;
+const sheenMaterial = (shading: Shading): THREE.MeshToonMaterial => {
+  const material = decalMaterial(shading);
   material.polygonOffsetFactor = -4;
   material.polygonOffsetUnits = -4;
   return material;
@@ -324,7 +279,6 @@ export function createHazardMarks(track: Track, shading: Shading): HazardMarks {
   const group = new THREE.Group();
   const parts: Part[] = [];
   const reach = shading.look.fogFar + MARGIN;
-  const city = shading.look.kit === "city";
   let capacity = FIRST_CAPACITY;
   let matrices: THREE.Matrix4[] = [];
   let placedS = new Float64Array(0);
@@ -350,19 +304,15 @@ export function createHazardMarks(track: Track, shading: Shading): HazardMarks {
   };
 
   const decal = decalMaterial(shading);
+  const sheen = sheenMaterial(shading);
   add("oil", oilPool(), decal, true);
-  add("oil", oilSheen(), sheenMaterial(shading), true);
-  add("oil", glints(), glintMaterial(shading), true);
-  add("pothole", pothole(), decal, true);
+  add("oil", oilSheen(), sheen, true);
+  add("oil", oilGloss(), sheen, true);
+  const road = new THREE.Color(shading.look.road);
+  add("pothole", pothole(road), decal, true);
+  add("pothole", potholeLip(road), decal, true);
   add("rock", rockShadow(), shadowMaterial(), false);
-  add(
-    "rock",
-    city ? crate() : boulder(),
-    city
-      ? shading.cel("#ffffff", { rim: 0.6, vertexColors: true })
-      : shading.cel(shading.look.rock, { rim: 0.6 }),
-    true
-  );
+  add("rock", boulder(), shading.cel(shading.look.rock, { rim: 0.6 }), true);
 
   const grow = (needed: number) => {
     if (needed <= capacity) {
