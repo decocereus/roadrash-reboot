@@ -287,6 +287,22 @@ describe("the quality governor", () => {
     ).toBe(144);
   });
 
+  it("ignores a quarter-second burst of fast callbacks on a 60 Hz screen", () => {
+    expect(
+      readScreens(60, [
+        [60, 3],
+        [100, 0.25],
+        [60, 1.5],
+      ])
+    ).toBe(60);
+    expect(
+      readScreens(60, [
+        [60, 3],
+        [120, 2.5],
+      ])
+    ).toBe(120);
+  });
+
   it("does not take Safari slipping to 56 fps for a slower screen", () => {
     const meter = createRefreshMeter(60);
     let refresh = 60;
