@@ -39,6 +39,7 @@ import type {
   RiderInput,
   RiderState,
   RivalSetup,
+  TrafficCar,
   WeaponKind,
 } from "./state.ts";
 import { arm, disarm } from "./weapons.ts";
@@ -3771,6 +3772,161 @@ const copBehindTruck = (road: Track, closing = closingOnTruck) => {
   return events.filter((event) => event.rider === 1);
 };
 
+interface TightSpot {
+  readonly road: Track;
+  readonly x: number;
+  readonly speed: number;
+  readonly cars: readonly TrafficCar[];
+}
+
+const truckAt = (s: number, x: number): TrafficCar => ({
+  cruiseSpeed: 10,
+  halfLength: 4.2,
+  halfWidth: 1.2,
+  height: 3.1,
+  paint: 1,
+  s,
+  speed: 10,
+  x,
+});
+
+const sedanComingAt = (s: number, x: number): TrafficCar => ({
+  cruiseSpeed: -25,
+  halfLength: 2.2,
+  halfWidth: 0.92,
+  height: 1.4,
+  paint: 2,
+  s,
+  speed: -25,
+  x,
+});
+
+const cleared = (spot: TightSpot): TightSpot => ({
+  ...spot,
+  road: { ...spot.road, hazards: [] },
+});
+
+const downed = (events: readonly RaceEvent[]): RaceEvent[] =>
+  events.filter((event) => event.kind === "crash");
+
+const pilotThrough = (spot: TightSpot): RaceEvent[] => {
+  const state = field(spot.road, 1, 0, 0);
+  state.cars.push(...spot.cars.map((car) => ({ ...car })));
+  const rider = player(state);
+  rider.s = 920;
+  rider.x = spot.x;
+  rider.speed = spot.speed;
+  return downed(pilotFrom(state, spot.road, 6).events);
+};
+
+const copThrough = (spot: TightSpot): RaceEvent[] => {
+  const state = field(spot.road, 1, 0, 1);
+  state.cars.push(...spot.cars.map((car) => ({ ...car })));
+  const cop = riderAt(state, 1);
+  cop.parked = false;
+  cop.post = 900;
+  cop.chase = 0;
+  cop.s = 920;
+  cop.x = spot.x;
+  cop.speed = spot.speed;
+  const target = player(state);
+  target.s = 935;
+  target.x = -3;
+  target.speed = spot.speed;
+  const inputs = state.riders.map(() => ({ ...neutralInput }));
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < 6 * TICK_RATE; tick += 1) {
+    pilotInput(state, spot.road, 1, inputs[1] ?? { ...neutralInput });
+    inputs[0] = { ...neutralInput, throttle: 0.6 };
+    stepRace(state, spot.road, inputs);
+    events.push(...state.events);
+  }
+  return downed(events.filter((event) => event.rider === 1));
+};
+
+const quarterTurn = compileTrack({
+  ...ridgeRoad,
+  features: [],
+  hazardsPerKilometre: 0,
+  sections: [
+    { climb: 0, length: 800, turnDegrees: 0 },
+    { climb: 0, length: 400, turnDegrees: 90 },
+    { climb: 0, length: 4800, turnDegrees: 0 },
+  ],
+  trafficPerKilometre: 0,
+});
+
+const wideRampAhead = compileTrack({
+  ...ridgeRoad,
+  features: [
+    {
+      feature: { kind: "jump", length: 16, rise: 0.8, width: 3 },
+      fromLevel: 1,
+      id: "wide-ramp",
+      placement: "fixed",
+      s: 1000,
+      x: 1.8,
+    },
+  ],
+  hazardsPerKilometre: 0,
+  sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+  trafficPerKilometre: 0,
+});
+
+const tightSpots: readonly (readonly [string, TightSpot])[] = [
+  [
+    "boxed in by two slow trucks with a rock in the far lane",
+    {
+      cars: [truckAt(970, 1.8), truckAt(995, -1.8)],
+      road: roadWith(placedAt("rock", 950, -1.8, "far")),
+      speed: 45,
+      x: 1.8,
+    },
+  ],
+  [
+    "escaping a truck past a rock and an oil slick",
+    {
+      cars: [truckAt(970, 1.8)],
+      road: roadWith(
+        placedAt("rock", 950, -0.6, "beside"),
+        placedAt("oil", 938, 0.6, "slick")
+      ),
+      speed: 55,
+      x: 1.8,
+    },
+  ],
+  [
+    "in a bend with a rock in its lane",
+    {
+      cars: [],
+      road: { ...quarterTurn, hazards: [placedAt("rock", 1040, -0.6, "bend")] },
+      speed: 35,
+      x: -1.8,
+    },
+  ],
+  [
+    "taking a ramp with a rock past its landing",
+    {
+      cars: [],
+      road: {
+        ...wideRampAhead,
+        hazards: [placedAt("rock", 1110, 1.8, "landing")],
+      },
+      speed: 65,
+      x: 1.8,
+    },
+  ],
+  [
+    "meeting an oncoming car with a rock beside its lane",
+    {
+      cars: [sedanComingAt(1010, -1.8)],
+      road: roadWith(placedAt("rock", 950, -0.6, "inside")),
+      speed: 55,
+      x: -1.8,
+    },
+  ],
+];
+
 const diceAfterPiloting = (road: Track): number => {
   const state = field(road, 1, 0, 0);
   const rider = player(state);
@@ -3800,9 +3956,6 @@ const rockOn = (road: Track, kmh: number) =>
     0,
     3
   );
-
-const downed = (events: readonly RaceEvent[]): RaceEvent[] =>
-  events.filter((event) => event.kind === "crash");
 
 const steeringHardInto = (kmh: number) => {
   const speed = kmh / KMH;
@@ -4158,6 +4311,22 @@ describe("road hazards", () => {
       expect(downed(copBehindTruck(roadWith(hazard), closing))).toStrictEqual(
         []
       );
+    }
+  );
+
+  it.each(tightSpots)(
+    "the pilot %s stays up, as it does with the hazards removed",
+    (_, spot) => {
+      expect(pilotThrough(cleared(spot))).toStrictEqual([]);
+      expect(pilotThrough(spot)).toStrictEqual([]);
+    }
+  );
+
+  it.each(tightSpots)(
+    "a pursuing cop %s stays up, as it does with the hazards removed",
+    (_, spot) => {
+      expect(copThrough(cleared(spot))).toStrictEqual([]);
+      expect(copThrough(spot)).toStrictEqual([]);
     }
   );
 

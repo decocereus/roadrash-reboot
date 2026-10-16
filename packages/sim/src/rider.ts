@@ -34,12 +34,14 @@ import {
   WALKING_PACE,
 } from "./state.ts";
 import type {
+  BikeSpec,
   CrashCause,
   HazardTag,
   RaceState,
   RiderInput,
   RiderState,
   TrafficCar,
+  WeaponKind,
 } from "./state.ts";
 import { disarm, rearm, weapons } from "./weapons.ts";
 
@@ -591,6 +593,65 @@ const losesTheFront = (
   return true;
 };
 
+export interface Motion {
+  readonly bike: BikeSpec;
+  readonly weapon: WeaponKind;
+  readonly hitStun: number;
+  x: number;
+  speed: number;
+  lateralSpeed: number;
+  slip: number;
+  wobble: number;
+}
+
+export const settleGrip = (motion: Motion, seconds: number): void => {
+  motion.wobble = Math.max(0, motion.wobble - WOBBLE_DECAY * seconds);
+  motion.slip = Math.max(0, motion.slip - SLIP_RECOVERY * seconds);
+};
+
+const vergeOf = (track: Track, x: number): number =>
+  clamp((Math.abs(x) - track.roadHalfWidth) / VERGE_BLEND, 0, 1);
+
+export const steerLateral = (
+  track: Track,
+  motion: Motion,
+  steer: number,
+  throttle: number,
+  seconds: number
+): number => {
+  const { bike } = motion;
+  const limit =
+    lateralSpeedLimit(bike, motion.speed, throttle) *
+    (1 - (1 - VERGE_STEER) * vergeOf(track, motion.x)) *
+    (1 - WOBBLE_GRIP * motion.wobble);
+  motion.lateralSpeed = approach(
+    motion.lateralSpeed,
+    steer * limit * (motion.hitStun > 0 ? STUN_STEER : 1),
+    bike.steerRate *
+      weapons[motion.weapon].steerFactor *
+      (1 - motion.slip) *
+      seconds
+  );
+  return limit;
+};
+
+export const driftOf = (motion: Motion, curvature: number): number =>
+  curvePushOf(motion.bike, curvature, motion.speed) *
+  (1 + SLIP_PUSH * motion.slip);
+
+export const lockOf = (motion: Motion, limit: number): number =>
+  clamp(Math.abs(motion.lateralSpeed) / Math.max(1, limit), 0, 1);
+
+export const brakingOf = (
+  motion: Motion,
+  brake: number,
+  lock: number
+): number =>
+  motion.bike.brakeDeceleration *
+  brake *
+  (1 - (1 - BRAKE_RESERVE) * lock) *
+  (1 - SLIP_BRAKES * motion.slip);
+
 const ride = (
   state: RaceState,
   track: Track,
@@ -617,11 +678,7 @@ const ride = (
 
   rider.offRoad = Math.abs(rider.x) > track.roadHalfWidth;
   rider.load = clamp(1 + verticalAcceleration / GRAVITY, 0, 1.8);
-  const verge = clamp(
-    (Math.abs(rider.x) - track.roadHalfWidth) / VERGE_BLEND,
-    0,
-    1
-  );
+  const verge = vergeOf(track, rider.x);
   rider.throttle = approach(
     rider.throttle,
     input.throttle,
@@ -629,23 +686,16 @@ const ride = (
   );
   rider.brake = approach(rider.brake, input.brake, CONTROL_RAMP * TICK_SECONDS);
 
-  rider.wobble = Math.max(0, rider.wobble - WOBBLE_DECAY * TICK_SECONDS);
-  rider.slip = Math.max(0, rider.slip - SLIP_RECOVERY * TICK_SECONDS);
-  const grip = 1 - rider.slip;
-  const limit =
-    lateralSpeedLimit(bike, rider.speed, input.throttle) *
-    (1 - (1 - VERGE_STEER) * verge) *
-    (1 - WOBBLE_GRIP * rider.wobble);
-  const wantedLateral =
-    input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
-  rider.lateralSpeed = approach(
-    rider.lateralSpeed,
-    wantedLateral,
-    bike.steerRate * weapons[rider.weapon].steerFactor * grip * TICK_SECONDS
+  settleGrip(rider, TICK_SECONDS);
+  const limit = steerLateral(
+    track,
+    rider,
+    input.steer,
+    input.throttle,
+    TICK_SECONDS
   );
-  const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
-  const push =
-    curvePushOf(bike, curvature, rider.speed) * (1 + SLIP_PUSH * rider.slip);
+  const lock = lockOf(rider, limit);
+  const push = driftOf(rider, curvature);
   if (losesTheFront(state, riderIndex, rider, input)) {
     return;
   }
@@ -668,12 +718,9 @@ const ride = (
     ) *
     (1 - SLIP_DRIVE * rider.slip);
   acceleration -=
-    bike.brakeDeceleration *
-    rider.brake *
+    brakingOf(rider, rider.brake, lock) *
     (1 - (1 - VERGE_BRAKES) * verge) *
-    Math.min(1, rider.load) *
-    (1 - (1 - BRAKE_RESERVE) * lock) *
-    (1 - SLIP_BRAKES * rider.slip);
+    Math.min(1, rider.load);
   if (rider.offRoad) {
     acceleration -= VERGE_DRAG + VERGE_DRAG_PER_SPEED * rider.speed;
   }
@@ -737,6 +784,21 @@ const wayAround = (rider: RiderState, car: TrafficCar): number => {
   return Math.sign(rider.x - car.x) || -Math.sign(car.x) || 1;
 };
 
+export type CarContact = "clear" | "glance" | "crash" | "bump";
+
+export const carContactOf = (
+  sideGap: number,
+  closingSpeed: number
+): CarContact => {
+  if (sideGap >= 0) {
+    return "clear";
+  }
+  if (-sideGap < GLANCE_OVERLAP) {
+    return "glance";
+  }
+  return Math.abs(closingSpeed) > CRASH_CLOSING_SPEED ? "crash" : "bump";
+};
+
 const hitCar = (
   state: RaceState,
   riderIndex: number,
@@ -765,18 +827,23 @@ const hitCar = (
     });
   }
 
-  if (Math.abs(gapS) >= reachS || sideGap >= 0 || rider.air >= car.height) {
+  const contact = carContactOf(sideGap, closingSpeed);
+  if (
+    Math.abs(gapS) >= reachS ||
+    contact === "clear" ||
+    rider.air >= car.height
+  ) {
     return false;
   }
   const awayFromCar = gapX > 0 ? -1 : 1;
-  if (-sideGap < GLANCE_OVERLAP) {
+  if (contact === "glance") {
     rider.x -= awayFromCar * sideGap;
     rider.lateralSpeed = awayFromCar * 2.5;
     rider.speed *= Math.abs(closingSpeed) > 40 ? 0.85 : 0.94;
     state.events.push({ kind: "glance", rider: riderIndex });
     return false;
   }
-  if (Math.abs(closingSpeed) > CRASH_CLOSING_SPEED) {
+  if (contact === "crash") {
     if (car.speed < 0) {
       throwRider(state, riderIndex, "traffic", 0.1, 0.5);
     } else {

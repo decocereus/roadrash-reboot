@@ -5,6 +5,7 @@ import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { forwardRateOf } from "./rider.ts";
+import type { Motion } from "./rider.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -211,6 +212,11 @@ const report = (
   });
 };
 
+export const greaseOf = (motion: Motion): void => {
+  motion.slip = OIL_SLIP;
+  motion.wobble = Math.max(motion.wobble, OIL_WOBBLE);
+};
+
 const slipOnOil = (
   state: RaceState,
   riderIndex: number,
@@ -218,9 +224,8 @@ const slipOnOil = (
   hazardIndex: number,
   hazard: Hazard
 ): void => {
-  rider.slip = OIL_SLIP;
+  greaseOf(rider);
   rider.slipFrom = hazardIndex;
-  rider.wobble = Math.max(rider.wobble, OIL_WOBBLE);
   report(state, riderIndex, rider, hazard, "slip");
 };
 
