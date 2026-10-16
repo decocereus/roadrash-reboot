@@ -439,6 +439,16 @@ describe("the quality governor", () => {
     expect(Math.max(...moved.gaps.slice(1))).toBeLessThan(45);
   });
 
+  it("keeps an even 30 on a 100 Hz screen whose callbacks jitter by a millisecond", () => {
+    const jitter = Array.from({ length: 10 }, (_, gap) => (gap < 5 ? 9 : 11));
+    const ridden = rideStamps(cycleStamps(jitter, 20), { rate: "30" });
+    expect(ridden.changes).toStrictEqual([]);
+    expect(ridden.readings.at(-1)).toBe(100);
+    expect(
+      ridden.gaps.slice(100).every((gap) => gap >= 27 && gap <= 33)
+    ).toBeTruthy();
+  });
+
   it("still sees slipping when jitter never lets two readings agree", () => {
     const evenSlip = Array.from({ length: 56 }, (_, gap) =>
       gap < 48 ? 18 : 17
