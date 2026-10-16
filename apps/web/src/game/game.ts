@@ -79,6 +79,7 @@ const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
 const RESIZE_GRACE_FRAMES = 2;
+const COMPILE_TIMEOUT_MS = 5000;
 const MAX_PIXEL_RATIO = 2;
 const PIXEL_RATIO_STEP = 0.1;
 const LOWEST_RATIO_SHARE = 0.75;
@@ -348,6 +349,12 @@ const watchRefresh = (report: (rate: number) => void): void => {
   };
   requestAnimationFrame(sample);
 };
+
+interface Compile {
+  readonly load: number;
+  readonly done: (current: boolean) => void;
+  timer: ReturnType<typeof setTimeout> | undefined;
+}
 
 interface Rung {
   readonly shadowMap: number;
@@ -668,7 +675,6 @@ export async function createGame(
 
   const retire = (): (() => void) => {
     const { scene } = world;
-    const oldWorld = world;
     const oldViews = views;
     const oldBikes = bikes;
     const oldPuffs = puffs;
@@ -693,9 +699,6 @@ export async function createGame(
       oldBikes?.dispose();
       oldPuffs?.dispose();
       oldFleet.dispose();
-      if (oldWorld !== world) {
-        oldWorld.dispose();
-      }
     };
   };
 
@@ -736,22 +739,21 @@ export async function createGame(
   let loads = 0;
   let warming = false;
   let alive = true;
-  let compiling = 0;
+  const compiles = new Set<Compile>();
   let parked: (() => void)[] = [];
   let prepared: RaceSetup | null = null;
   let preparing: Promise<void> = Promise.resolve();
 
   const afterCompiles = (cleanup: () => void) => {
-    if (compiling === 0) {
+    if (compiles.size === 0) {
       cleanup();
     } else {
       parked.push(cleanup);
     }
   };
 
-  const compileSettled = () => {
-    compiling -= 1;
-    if (compiling > 0) {
+  const releaseParked = () => {
+    if (compiles.size > 0) {
       return;
     }
     const cleanups = parked;
@@ -761,36 +763,61 @@ export async function createGame(
     }
   };
 
+  const finishCompile = (job: Compile) => {
+    if (!compiles.delete(job)) {
+      return;
+    }
+    clearTimeout(job.timer);
+    releaseParked();
+    if (!alive || job.load !== loads) {
+      job.done(false);
+      return;
+    }
+    warming = false;
+    try {
+      warmUp();
+    } finally {
+      job.done(true);
+    }
+  };
+
+  const abandonCompiles = () => {
+    for (const job of compiles) {
+      finishCompile(job);
+    }
+  };
+
   const warmNow = () => {
     loads += 1;
     warming = false;
     warmUp();
   };
 
-  const warmSoon = async (): Promise<boolean> => {
+  const warmSoon = (): Promise<boolean> => {
     loads += 1;
-    const load = loads;
     warming = true;
-    compiling += 1;
+    const { promise, resolve } = Promise.withResolvers<boolean>();
     const unstage = stageEverything();
     const compiled = pipeline.compile(world.scene, chase.camera);
     unstage();
-    try {
-      await compiled;
-    } finally {
-      compileSettled();
-    }
-    if (!alive || load !== loads) {
-      return false;
-    }
-    warming = false;
-    warmUp();
-    return true;
+    const job: Compile = { done: resolve, load: loads, timer: undefined };
+    job.timer = setTimeout(() => {
+      finishCompile(job);
+    }, COMPILE_TIMEOUT_MS);
+    compiles.add(job);
+    void compiled
+      .catch(() => null)
+      .then(() => {
+        finishCompile(job);
+      });
+    return promise;
   };
 
   const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
-    const release = retire();
+    const releaseActors = retire();
+    const previous = world;
     takeTrack(setup.track);
+    const replaced = world === previous ? null : previous;
     race = createRace(setup);
     if (forRace) {
       devRide?.place(race);
@@ -803,7 +830,10 @@ export async function createGame(
     }
     buildViews();
     chase.snap();
-    return release;
+    return () => {
+      releaseActors();
+      replaced?.dispose();
+    };
   };
 
   const begin = (nextPhase: GamePhase) => {
@@ -1670,6 +1700,7 @@ export async function createGame(
   }
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
+  canvas.addEventListener("webglcontextlost", abandonCompiles);
   resize();
   buildViews();
   warmUp();
@@ -1782,6 +1813,7 @@ export async function createGame(
       alive = false;
       renderer.setAnimationLoop(null);
       observer.disconnect();
+      canvas.removeEventListener("webglcontextlost", abandonCompiles);
       unsubscribeSettings();
       unwatchCanvas();
       detachProbe();

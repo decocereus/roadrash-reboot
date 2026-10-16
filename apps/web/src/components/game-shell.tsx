@@ -45,11 +45,13 @@ function PreRace({
       return;
     }
     let current = true;
-    void onPrepare(plan).then(() => {
-      if (current) {
-        setPrepared(true);
-      }
-    });
+    void onPrepare(plan)
+      .catch(() => null)
+      .then(() => {
+        if (current) {
+          setPrepared(true);
+        }
+      });
     return () => {
       current = false;
     };
