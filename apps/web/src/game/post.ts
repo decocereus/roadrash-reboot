@@ -110,6 +110,10 @@ const byVariantThenMaterial = (
 
 export interface Pipeline {
   prepare: (scene: THREE.Scene) => void;
+  compile: (
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) => Promise<void>;
   setLook: (look: Look) => void;
   setBloomScale: (scale: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
@@ -177,6 +181,13 @@ export const createPipeline = (
   let cssHeight = 1;
 
   return {
+    async compile(scene, camera) {
+      seesFx(camera, true);
+      renderer.setRenderTarget(sceneTarget);
+      const compiled = renderer.compileAsync(scene, camera);
+      renderer.setRenderTarget(null);
+      await compiled;
+    },
     dispose() {
       normalTarget.depthTexture?.dispose();
       normalTarget.dispose();

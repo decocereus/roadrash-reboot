@@ -652,18 +652,49 @@ export async function createGame(
     plates = race.riders.map((rider) => bikeColour(rider.profile.paint));
   };
 
+  const retire = (): (() => void) => {
+    const { scene } = world;
+    const oldWorld = world;
+    const oldViews = views;
+    const oldBikes = bikes;
+    const oldPuffs = puffs;
+    const oldFleet = fleet;
+    for (const view of oldViews) {
+      scene.remove(view.figure.root);
+    }
+    if (oldBikes) {
+      scene.remove(oldBikes.group);
+    }
+    if (oldPuffs) {
+      scene.remove(oldPuffs.group);
+    }
+    scene.remove(oldFleet.group);
+    views = [];
+    bikes = null;
+    puffs = null;
+    return () => {
+      for (const view of oldViews) {
+        view.figure.dispose();
+      }
+      oldBikes?.dispose();
+      oldPuffs?.dispose();
+      oldFleet.dispose();
+      if (oldWorld !== world) {
+        oldWorld.dispose();
+      }
+    };
+  };
+
   const takeTrack = (next: Track) => {
     if (next === track) {
       return;
     }
-    dropViews();
-    world.dispose();
     track = next;
     world = createWorld(track, (ladder[rung] ?? ladder[0])?.shadowMap);
     pipeline.setLook(world.shading.look);
   };
 
-  const warmUp = () => {
+  const stageEverything = (): (() => void) => {
     world.follow(chase.camera, player().s);
     const samples = world.samples();
     world.scene.add(samples);
@@ -671,21 +702,56 @@ export async function createGame(
     const unprime = puffs?.prime();
     pipeline.prepare(world.scene);
     const restore = revealAll(world.scene);
-    pipeline.render(world.scene, chase.camera);
-    restore();
-    unprime?.();
-    for (const each of unarm) {
-      each();
-    }
-    world.scene.remove(samples);
-    dropGeometry(samples);
+    return () => {
+      restore();
+      unprime?.();
+      for (const each of unarm) {
+        each();
+      }
+      world.scene.remove(samples);
+      dropGeometry(samples);
+    };
   };
 
-  const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
-    dropFleet();
+  const warmUp = () => {
+    const unstage = stageEverything();
+    pipeline.render(world.scene, chase.camera);
+    unstage();
+  };
+
+  let loads = 0;
+  let warming = false;
+  let prepared: RaceSetup | null = null;
+
+  const warmNow = () => {
+    loads += 1;
+    warming = false;
+    warmUp();
+  };
+
+  const warmSoon = (then: () => void) => {
+    loads += 1;
+    const load = loads;
+    warming = true;
+    const unstage = stageEverything();
+    const compiled = pipeline.compile(world.scene, chase.camera);
+    unstage();
+    const finish = () => {
+      if (load !== loads) {
+        return;
+      }
+      warming = false;
+      warmUp();
+      then();
+    };
+    void compiled.finally(finish);
+  };
+
+  const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
+    const release = retire();
     takeTrack(setup.track);
     race = createRace(setup);
-    if (nextPhase === "countdown") {
+    if (forRace) {
       devRide?.place(race);
     }
     fleet = createFleet(assets, world.shading, race.cars);
@@ -695,6 +761,11 @@ export async function createGame(
       previousCars[index] = car.s;
     }
     buildViews();
+    chase.snap();
+    return release;
+  };
+
+  const begin = (nextPhase: GamePhase) => {
     phase = nextPhase;
     countdown = nextPhase === "countdown" ? COUNTDOWN_SECONDS : 0;
     settled = null;
@@ -708,8 +779,18 @@ export async function createGame(
     speechLeft = 0;
     tagRider = -1;
     clockReset = true;
-    chase.snap();
-    warmUp();
+  };
+
+  const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
+    prepared = null;
+    const release = build(setup, nextPhase === "countdown");
+    begin(nextPhase);
+    if (nextPhase === "attract") {
+      warmSoon(release);
+      return;
+    }
+    warmNow();
+    release();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -723,12 +804,42 @@ export async function createGame(
     loadRace(defaultSetup(roadForTurn(roadTurn), seed), "attract");
   };
 
+  const showStart = () => {
+    draw(0, 0);
+  };
+
+  const prepare = (next: RacePlan) => {
+    if (prepared === next.setup) {
+      return;
+    }
+    plan = null;
+    log = null;
+    phase = "idle";
+    quiet();
+    const release = build(next.setup, true);
+    prepared = next.setup;
+    begin("idle");
+    warmSoon(() => {
+      release();
+      showStart();
+    });
+    report();
+  };
+
   const startRace = (next: RacePlan) => {
     sound.unlock();
     plan = next;
     log = createRaceLog(next.setup);
     recorder.enterRace();
-    loadRace(next.setup, "countdown");
+    if (prepared === next.setup && phase === "idle") {
+      prepared = null;
+      if (warming) {
+        warmNow();
+      }
+      begin("countdown");
+    } else {
+      loadRace(next.setup, "countdown");
+    }
     recorder.race("start", race.tick);
   };
 
@@ -744,7 +855,7 @@ export async function createGame(
     sound.setMuted(muted);
   };
 
-  const halted = (): boolean => frozen || phase === "idle";
+  const halted = (): boolean => frozen || warming || phase === "idle";
 
   const live = (): boolean =>
     !frozen && (phase === "countdown" || phase === "racing");
@@ -1235,6 +1346,9 @@ export async function createGame(
   };
 
   const draw = (blend: number, seconds: number) => {
+    if (warming) {
+      return;
+    }
     clock += seconds;
     let index = -1;
     for (const rider of race.riders) {
@@ -1689,6 +1803,7 @@ export async function createGame(
       quiet();
       return true;
     },
+    prepare,
     quit() {
       if (plan && !settled) {
         recorder.race("quit", race.tick);
