@@ -13,7 +13,7 @@ export const ridgeRoad: TrackPlan = {
       x: 3.8,
     },
   ],
-  hazardsPerKilometre: 2,
+  hazardsPerKilometre: 1,
   id: "ridge-road",
   laneWidth: 3.6,
   lanesEachWay: 1,
