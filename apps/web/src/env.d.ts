@@ -9,8 +9,4 @@ declare module "cloudflare:workers" {
 
 declare global {
   const __RUSHLINE_BUILD__: { readonly sha: string; readonly dirty: boolean };
-  interface Screen {
-    readonly availLeft?: number;
-    readonly availTop?: number;
-  }
 }

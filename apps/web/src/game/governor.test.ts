@@ -63,7 +63,6 @@ const ride = (
       busyMs: frame.busyMs,
       excused: frame.excused,
       refresh,
-      refreshKnown: true,
       seconds: frame.intervalMs / 1000,
     });
     if (verdict) {
@@ -93,21 +92,11 @@ const slipping = safariClock(17.7);
 const steady = safariClock(VSYNC_MS);
 const halfSteady = safariClock(2 * VSYNC_MS);
 
-const readScreens = (
-  initial: number,
-  screens: readonly (readonly [number, number])[]
-) => {
-  const meter = createRefreshMeter(initial);
-  let now = 0;
-  let refresh = initial;
-  for (const [rate, seconds] of screens) {
-    if (now > 0) {
-      meter.screenChanged();
-    }
-    for (let tick = 0; tick < rate * seconds; tick += 1) {
-      now += 1000 / rate;
-      refresh = meter.tick(Math.floor(now + ((tick * 7) % 5) * 0.3));
-    }
+const readScreens = (screens: readonly (readonly [number, number])[]) => {
+  const readRefresh = createRefreshMeter(60);
+  let refresh = 60;
+  for (const at of screenStamps(screens)) {
+    refresh = readRefresh(at);
   }
   return refresh;
 };
@@ -151,18 +140,15 @@ const cycleStamps = (cycle: readonly number[], seconds: number) => {
 interface StampRide {
   readonly pinned?: number;
   readonly rate?: FrameRate;
-  readonly movedAt?: number;
 }
-
-const SCREEN_NOTICED_MS = 500;
 
 const rideStamps = (
   stamps: readonly number[],
-  { pinned, rate = "auto", movedAt }: StampRide = {}
+  { pinned, rate = "auto" }: StampRide = {}
 ) => {
   const governor = createGovernor(RUNGS);
   governor.setRate(rate);
-  const meter = createRefreshMeter(60);
+  const readRefresh = createRefreshMeter(60);
   const pacer = createPacer();
   const readings = new Set<number>();
   const changes: { at: number; reason: GovernReason }[] = [];
@@ -170,23 +156,14 @@ const rideStamps = (
   let last = Number.NaN;
   let drawn = Number.NaN;
   let refresh = pinned ?? 60;
-  let noticeAt =
-    movedAt === undefined
-      ? Number.POSITIVE_INFINITY
-      : movedAt * 1000 + SCREEN_NOTICED_MS;
   for (const at of stamps) {
-    if (at >= noticeAt) {
-      meter.screenChanged();
-      noticeAt = Number.POSITIVE_INFINITY;
-    }
-    refresh = pinned ?? meter.tick(at);
+    refresh = pinned ?? readRefresh(at);
     readings.add(refresh);
     if (!Number.isNaN(last)) {
       const verdict = governor.judge({
         busyMs: 1,
         excused: false,
         refresh,
-        refreshKnown: pinned !== undefined || meter.confirmed,
         seconds: (at - last) / 1000,
       });
       if (verdict) {
@@ -202,7 +179,6 @@ const rideStamps = (
   }
   return {
     changes,
-    confirmed: meter.confirmed,
     gaps: gaps.slice(1),
     readings: [...readings],
     refresh,
@@ -309,7 +285,6 @@ describe("the quality governor", () => {
         busyMs: shown.busyMs,
         excused: shown.excused,
         refresh: 60,
-        refreshKnown: true,
         seconds: shown.intervalMs / 1000,
       });
     const verdicts = [];
@@ -360,32 +335,21 @@ describe("the quality governor", () => {
   });
 
   it("reads the screen's refresh from its callbacks, jitter and all", () => {
-    expect(readScreens(60, [[120, 4]])).toBe(120);
-    expect(readScreens(60, [[100, 4]])).toBe(100);
-    expect(
-      readScreens(60, [
-        [144, 3],
-        [75, 3.5],
-      ])
-    ).toBe(75);
-    expect(
-      readScreens(60, [
-        [144, 3],
-        [75, 1.5],
-      ])
-    ).toBe(144);
+    expect(readScreens([[120, 4]])).toBe(120);
+    expect(readScreens([[100, 4]])).toBe(100);
+    expect(readScreens([[60, 4]])).toBe(60);
   });
 
   it("ignores a quarter-second burst of fast callbacks on a 60 Hz screen", () => {
     expect(
-      readScreens(60, [
+      readScreens([
         [60, 3],
         [100, 0.25],
         [60, 1.5],
       ])
     ).toBe(60);
     expect(
-      readScreens(60, [
+      readScreens([
         [60, 3],
         [120, 2.5],
       ])
@@ -400,16 +364,18 @@ describe("the quality governor", () => {
           [60, 10],
         ])
       )
-    ).toMatchObject({ changes: [], confirmed: true, readings: [60] });
+    ).toMatchObject({ changes: [], readings: [60] });
   });
 
-  it("waits for the screen's rate before judging what players get", () => {
+  it("never lowers quality while a 120 Hz screen's rate is still being read", () => {
     expect(rideStamps(screenStamps([[120, 1.9]]))).toMatchObject({
       changes: [],
-      confirmed: false,
       readings: [60],
     });
-    expect(rideStamps(screenStamps([[120, 10]])).changes).toStrictEqual([]);
+    expect(rideStamps(screenStamps([[120, 10]]))).toMatchObject({
+      changes: [],
+      refresh: 120,
+    });
   });
 
   it("presents a 120 Hz screen evenly even when its rate reads a little fast", () => {
@@ -421,42 +387,6 @@ describe("the quality governor", () => {
     expect(fast.changes).toStrictEqual([]);
     expect(fast.gaps).toStrictEqual(measured.gaps);
     expect(fast.gaps.every((gap) => gap >= 15 && gap <= 18)).toBeTruthy();
-  });
-
-  it("never lowers quality when the window moves to another screen", () => {
-    for (const [from, to] of [
-      [144, 100],
-      [144, 75],
-      [120, 60],
-      [60, 144],
-    ] as const) {
-      for (const rate of ["30", "60"] as const) {
-        for (const movedAt of [10, 10.25, 10.5, 10.75]) {
-          const moved = rideStamps(
-            screenStamps([
-              [from, movedAt],
-              [to, 10],
-            ]),
-            { movedAt, rate }
-          );
-          expect(moved.changes).toStrictEqual([]);
-          expect(moved.refresh).toBe(to);
-        }
-      }
-    }
-  });
-
-  it("settles on an even 30 within three seconds of a move from 144 to 100 Hz", () => {
-    const moved = rideStamps(
-      screenStamps([
-        [144, 10],
-        [100, 10],
-      ]),
-      { movedAt: 10, rate: "30" }
-    );
-    expect(
-      moved.gaps.slice(-230).every((gap) => gap >= 29 && gap <= 31)
-    ).toBeTruthy();
   });
 
   it("sees a GPU that slows a fast screen's callbacks without taking it for a slower screen", () => {
@@ -524,13 +454,15 @@ describe("the quality governor", () => {
     }
   });
 
-  it("does not take Safari slipping to 56 fps for a slower screen", () => {
-    const meter = createRefreshMeter(60);
-    let refresh = 60;
-    for (let frame = 0; frame < 56 * 10; frame += 1) {
-      refresh = meter.tick(Math.floor(frame * 17.7));
-    }
-    expect(refresh).toBe(60);
+  it("sees callbacks that swing between 48 and 64 a second on a 60 Hz screen", () => {
+    const swinging = Array.from({ length: 10 }, () => [
+      [48, 1] as const,
+      [64, 1] as const,
+    ]).flat();
+    const ridden = rideStamps(evenStamps(swinging));
+    expect(ridden.refresh).toBe(60);
+    expect(ridden.changes[0]?.reason).toBe("under-rate");
+    expect(ridden.changes[0]?.at).toBeLessThan(5);
   });
 
   it("remembers rungs that failed twice through a pixel-ratio round trip", () => {

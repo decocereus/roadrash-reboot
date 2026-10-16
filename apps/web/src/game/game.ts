@@ -86,17 +86,6 @@ const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
 const EXCUSED_FRAMES = 2;
-const SCREEN_CHECK_MS = 1000;
-
-const screenSignature = (): string =>
-  [
-    screen.width,
-    screen.height,
-    screen.availLeft ?? 0,
-    screen.availTop ?? 0,
-    screen.colorDepth,
-    devicePixelRatio,
-  ].join(" ");
 const COMPILE_TIMEOUT_MS = 5000;
 const MAX_PIXEL_RATIO = 2;
 const PIXEL_RATIO_STEP = 0.1;
@@ -542,7 +531,7 @@ export async function createGame(
   let hudClock = 0;
   let pace = BASE_RATE;
   const pacer = createPacer();
-  const refreshMeter = createRefreshMeter(display.refresh);
+  const readRefresh = createRefreshMeter(display.refresh);
   let lastBusyMs = 0;
   let clock = 0;
 
@@ -1482,25 +1471,9 @@ export async function createGame(
     }
   };
 
-  let screenSeen = screenSignature();
-  let screenCheckedAt = Number.NEGATIVE_INFINITY;
-
-  const noteScreen = (now: number) => {
-    if (now - screenCheckedAt < SCREEN_CHECK_MS) {
-      return;
-    }
-    screenCheckedAt = now;
-    const seen = screenSignature();
-    if (seen !== screenSeen) {
-      screenSeen = seen;
-      refreshMeter.screenChanged();
-    }
-  };
-
   const noteRefresh = (now: number) => {
     if (pinnedRefresh <= 0) {
-      noteScreen(now);
-      display.refresh = refreshMeter.tick(now);
+      display.refresh = readRefresh(now);
     }
   };
 
@@ -1519,13 +1492,8 @@ export async function createGame(
   };
 
   let renderedLast = false;
-  let beforeDraw: (() => void) | null = null;
-
-  const applyBeforeDraw = () => {
-    const change = beforeDraw;
-    beforeDraw = null;
-    change?.();
-  };
+  let pendingQuality: (() => void) | null = null;
+  let pendingRate: FrameRate | null = null;
 
   const govern = (seconds: number, busyMs: number) => {
     if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
@@ -1535,12 +1503,12 @@ export async function createGame(
     if (excused && renderedLast) {
       excuseFrames -= 1;
     }
-    if (beforeDraw) {
+    if (pendingQuality) {
       return;
     }
     const ceiling = nativePixelRatio();
     if (ceiling !== ladder[0]?.pixelRatio) {
-      beforeDraw = () => {
+      pendingQuality = () => {
         changeQuality("native-dpr", () => {
           ladder = ladderFor(ceiling);
           governor.resize(ladder.length);
@@ -1554,11 +1522,10 @@ export async function createGame(
       busyMs,
       excused,
       refresh: display.refresh,
-      refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,
       seconds,
     });
     if (verdict) {
-      beforeDraw = () => {
+      pendingQuality = () => {
         commitVerdict(verdict);
       };
     }
@@ -1669,12 +1636,18 @@ export async function createGame(
   };
 
   const applyFrameRate = (next: FrameRate) => {
-    if (next === governor.rate) {
-      return;
+    pendingRate = next === governor.rate ? null : next;
+  };
+
+  const applyPending = () => {
+    const quality = pendingQuality;
+    const rate = pendingRate;
+    pendingQuality = null;
+    pendingRate = null;
+    quality?.();
+    if (rate) {
+      applyRateSetting(rate);
     }
-    beforeDraw = () => {
-      applyRateSetting(next);
-    };
   };
 
   const applySettings = () => {
@@ -1804,7 +1777,7 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
-    applyBeforeDraw();
+    applyPending();
     profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
     renderedLast = true;

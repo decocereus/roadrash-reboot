@@ -33,7 +33,6 @@ export interface Frame {
   readonly seconds: number;
   readonly busyMs: number;
   readonly refresh: number;
-  readonly refreshKnown: boolean;
   readonly excused: boolean;
 }
 
@@ -119,14 +118,7 @@ export const createGovernor = (rungCount: number): Governor => {
     windowLate = 0;
   };
 
-  const watchRate = ({ seconds, busyMs, refresh, refreshKnown }: Frame) => {
-    if (!refreshKnown) {
-      rateSeconds = 0;
-      rateCallbacks = 0;
-      rateBusyMs = 0;
-      shortWindows = 0;
-      return;
-    }
+  const watchRate = ({ seconds, busyMs, refresh }: Frame) => {
     rateSeconds += seconds;
     rateCallbacks += 1;
     rateBusyMs += busyMs;
