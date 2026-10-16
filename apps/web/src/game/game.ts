@@ -63,7 +63,9 @@ import type {
   RacePlan,
 } from "./hud.ts";
 import { createControls } from "./input.ts";
+import { createPacer, createRefreshMeter } from "./pacer.ts";
 import { BLOOM_SCALE, createPipeline, SAMPLES } from "./post.ts";
+import type { Compiling } from "./post.ts";
 import { createProfiler, profileModeOf, rendererOf } from "./profile.ts";
 import type { FrameEnd, Part, Profiler } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
@@ -82,17 +84,13 @@ const TAG_RANGE = 25;
 const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
-const RESIZE_GRACE_FRAMES = 2;
+const EXCUSED_FRAMES = 2;
 const COMPILE_TIMEOUT_MS = 5000;
 const MAX_PIXEL_RATIO = 2;
 const PIXEL_RATIO_STEP = 0.1;
 const LOWEST_RATIO_SHARE = 0.75;
 const LEAN_SHADOW_MAP = 2048;
 const LEAN_BLOOM_SCALE = 1;
-const REFRESH_RATES = [60, 75, 90, 120, 144, 165, 240];
-const REFRESH_SAMPLES = 24;
-const FASTEST_FRAME_SECONDS = 1 / 250;
-const PACE_SLACK = 0.5;
 const WRAP_JUMP = 30;
 const LYING_PITCH = -Math.PI / 2;
 const LYING_HEIGHT = 0.22;
@@ -324,31 +322,14 @@ const pinnedRefresh = Number(
   new URLSearchParams(globalThis.location.search).get("hz") ?? 0
 );
 
-const nearestRefresh = (seconds: number): number => {
-  const rate = 1 / seconds;
-  let best = 60;
-  for (const candidate of REFRESH_RATES) {
-    if (Math.abs(candidate - rate) < Math.abs(best - rate)) {
-      best = candidate;
-    }
-  }
-  return best;
-};
-
 const watchRefresh = (report: (rate: number) => void): void => {
-  let shortest = Number.POSITIVE_INFINITY;
-  let last = -1;
-  let left = REFRESH_SAMPLES;
+  const meter = createRefreshMeter();
   const sample = (now: number) => {
-    if (last >= 0) {
-      shortest = Math.min(shortest, (now - last) / 1000);
-    }
-    last = now;
-    left -= 1;
-    if (left > 0) {
+    const rate = meter.tick(now);
+    if (rate === null) {
       requestAnimationFrame(sample);
-    } else if (shortest >= FASTEST_FRAME_SECONDS) {
-      report(nearestRefresh(shortest));
+    } else {
+      report(rate);
     }
   };
   requestAnimationFrame(sample);
@@ -356,9 +337,9 @@ const watchRefresh = (report: (rate: number) => void): void => {
 
 interface Compile {
   readonly load: number;
+  readonly compiling: Compiling;
   readonly done: (current: boolean) => void;
   timer: ReturnType<typeof setTimeout> | undefined;
-  ready: boolean;
 }
 
 interface Rung {
@@ -514,7 +495,7 @@ export async function createGame(
   const qualityAfter: QualityState = emptyQuality();
   let frameId = 0;
   let sizeEpoch = 0;
-  let resizeGrace = 0;
+  let excuseFrames = 0;
   let appliedWidth = -1;
   let appliedHeight = -1;
   let appliedRatio = -1;
@@ -565,7 +546,8 @@ export async function createGame(
   let clockReset = false;
   let hudClock = 0;
   let pace = BASE_RATE;
-  let lastDrawn = Number.NEGATIVE_INFINITY;
+  const pacer = createPacer();
+  const refreshMeter = createRefreshMeter();
   let lastBusyMs = 0;
   let clock = 0;
 
@@ -745,35 +727,15 @@ export async function createGame(
   let warming = false;
   let alive = true;
   const compiles = new Set<Compile>();
-  let parked: (() => void)[] = [];
   let prepared: RaceSetup | null = null;
   let preparing: Promise<void> = Promise.resolve();
 
-  const afterCompiles = (cleanup: () => void) => {
-    if (compiles.size === 0) {
-      cleanup();
-    } else {
-      parked.push(cleanup);
-    }
-  };
-
-  const releaseParked = () => {
-    if (compiles.size > 0) {
+  const finishCompile = (job: Compile) => {
+    if (!compiles.delete(job)) {
       return;
     }
-    const cleanups = parked;
-    parked = [];
-    for (const cleanup of cleanups) {
-      cleanup();
-    }
-  };
-
-  const markReady = (job: Compile) => {
-    if (job.ready) {
-      return;
-    }
-    job.ready = true;
     clearTimeout(job.timer);
+    job.compiling.stop();
     if (!alive || job.load !== loads) {
       job.done(false);
       return;
@@ -786,14 +748,6 @@ export async function createGame(
     }
   };
 
-  const finishCompile = (job: Compile) => {
-    if (!compiles.delete(job)) {
-      return;
-    }
-    releaseParked();
-    markReady(job);
-  };
-
   const abandonCompiles = () => {
     for (const job of compiles) {
       finishCompile(job);
@@ -802,32 +756,32 @@ export async function createGame(
 
   const warmNow = () => {
     loads += 1;
+    abandonCompiles();
     warming = false;
     warmUp();
   };
 
   const warmSoon = (): Promise<boolean> => {
     loads += 1;
+    abandonCompiles();
     warming = true;
     const { promise, resolve } = Promise.withResolvers<boolean>();
     const unstage = stageEverything();
-    const compiled = pipeline.compile(world.scene, chase.camera);
+    const compiling = pipeline.compile(world.scene, chase.camera);
     unstage();
     const job: Compile = {
+      compiling,
       done: resolve,
       load: loads,
-      ready: false,
       timer: undefined,
     };
     job.timer = setTimeout(() => {
-      markReady(job);
+      finishCompile(job);
     }, COMPILE_TIMEOUT_MS);
     compiles.add(job);
-    void compiled
-      .catch(() => null)
-      .then(() => {
-        finishCompile(job);
-      });
+    void compiling.ready.then(() => {
+      finishCompile(job);
+    });
     return promise;
   };
 
@@ -879,7 +833,7 @@ export async function createGame(
     } else {
       warmNow();
     }
-    afterCompiles(release);
+    release();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -913,7 +867,7 @@ export async function createGame(
         showStart();
       }
     });
-    afterCompiles(release);
+    release();
     report();
     return preparing;
   };
@@ -1481,7 +1435,7 @@ export async function createGame(
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
     sizeEpoch += 1;
-    resizeGrace = RESIZE_GRACE_FRAMES;
+    excuseFrames = EXCUSED_FRAMES;
     recorder.canvas(
       source,
       sizeEpoch,
@@ -1524,7 +1478,7 @@ export async function createGame(
     world.setShadowMap(chosen.shadowMap);
     pipeline.setBloomScale(chosen.bloomScale);
     pipeline.setSamples(chosen.samples);
-    resizeGrace = RESIZE_GRACE_FRAMES;
+    excuseFrames = EXCUSED_FRAMES;
     const next = pinnedPixelRatio > 0 ? pinnedPixelRatio : chosen.pixelRatio;
     const resized = next !== pixelRatio;
     pixelRatio = next;
@@ -1533,20 +1487,22 @@ export async function createGame(
     }
   };
 
+  const noteRefresh = (now: number) => {
+    const measured = pinnedRefresh > 0 ? null : refreshMeter.tick(now);
+    if (measured !== null) {
+      display.refresh = Math.max(display.refresh, measured);
+    }
+  };
+
   const skipsVsync = (now: number): boolean =>
-    pinnedPixelRatio <= 0 &&
-    pace < display.refresh &&
-    now - lastDrawn < 1000 / pace - (PACE_SLACK * 1000) / display.refresh;
+    pinnedPixelRatio <= 0 && !pacer.due(now, display.refresh, pace);
 
   const govern = (seconds: number, busyMs: number) => {
-    if (pinnedRefresh <= 0 && seconds >= FASTEST_FRAME_SECONDS) {
-      display.refresh = Math.max(display.refresh, nearestRefresh(seconds));
-    }
     if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
       return;
     }
-    const resized = resizeGrace > 0;
-    resizeGrace = Math.max(0, resizeGrace - 1);
+    const excused = excuseFrames > 0;
+    excuseFrames = Math.max(0, excuseFrames - 1);
     const ceiling = nativePixelRatio();
     if (ceiling !== ladder[0]?.pixelRatio) {
       changeQuality("native-dpr", () => {
@@ -1558,8 +1514,8 @@ export async function createGame(
     }
     const verdict = governor.judge({
       busyMs,
+      excused,
       refresh: display.refresh,
-      resized,
       seconds,
     });
     if (!verdict) {
@@ -1735,6 +1691,11 @@ export async function createGame(
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   canvas.addEventListener("webglcontextlost", abandonCompiles);
+  const forgetHiddenTime = () => {
+    governor.interrupt();
+    excuseFrames = EXCUSED_FRAMES;
+  };
+  document.addEventListener("visibilitychange", forgetHiddenTime);
   resize();
   buildViews();
   warmUp();
@@ -1765,6 +1726,7 @@ export async function createGame(
   });
   renderer.setAnimationLoop((now) => {
     checkPresented();
+    noteRefresh(now);
     if (skipsVsync(now)) {
       return;
     }
@@ -1772,7 +1734,6 @@ export async function createGame(
     const interval = now - last;
     const seconds = clamp(interval / 1000, 0, MAX_FRAME_SECONDS);
     last = now;
-    lastDrawn = now;
     if (halted()) {
       return;
     }
@@ -1848,6 +1809,7 @@ export async function createGame(
       renderer.setAnimationLoop(null);
       observer.disconnect();
       canvas.removeEventListener("webglcontextlost", abandonCompiles);
+      document.removeEventListener("visibilitychange", forgetHiddenTime);
       unsubscribeSettings();
       unwatchCanvas();
       detachProbe();
@@ -1855,13 +1817,12 @@ export async function createGame(
       profiler?.dispose();
       controls.dispose();
       sound.dispose();
-      afterCompiles(() => {
-        dropViews();
-        dropFleet();
-        world.dispose();
-        pipeline.dispose();
-        renderer.dispose();
-      });
+      abandonCompiles();
+      dropViews();
+      dropFleet();
+      world.dispose();
+      pipeline.dispose();
+      renderer.dispose();
     },
     followRival(element) {
       tag = element;

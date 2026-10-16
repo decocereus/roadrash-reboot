@@ -1,5 +1,7 @@
 import type { FrameRate, GovernReason } from "@racer/telemetry/limits";
 
+import { deliveredRate } from "./pacer.ts";
+
 export const BASE_RATE = 60;
 export const HALF_RATE = 30;
 const LATE_FRAME_FACTOR = 1.4;
@@ -33,7 +35,7 @@ export interface Frame {
   readonly seconds: number;
   readonly busyMs: number;
   readonly refresh: number;
-  readonly resized: boolean;
+  readonly excused: boolean;
 }
 
 export interface Governor {
@@ -47,6 +49,7 @@ export interface Governor {
   readonly startAt: (rung: number) => void;
   readonly resize: (rungs: number) => void;
   readonly setRate: (rate: FrameRate) => void;
+  readonly interrupt: () => void;
 }
 
 export const createGovernor = (rungCount: number): Governor => {
@@ -82,10 +85,7 @@ export const createGovernor = (rungCount: number): Governor => {
 
   const lowestStep = (): number => (rate === "auto" ? rungs : rungs - 1);
 
-  const settle = () => {
-    sinceStep = 0;
-    lateFrames = 0;
-    calm = 0;
+  const forgetWindows = () => {
     windowSeconds = 0;
     windowFrames = 0;
     windowLate = 0;
@@ -95,6 +95,13 @@ export const createGovernor = (rungCount: number): Governor => {
     rateFrames = 0;
     rateBusyMs = 0;
     shortWindows = 0;
+  };
+
+  const settle = () => {
+    sinceStep = 0;
+    lateFrames = 0;
+    calm = 0;
+    forgetWindows();
   };
 
   const watchBursts = (seconds: number, late: boolean) => {
@@ -151,8 +158,12 @@ export const createGovernor = (rungCount: number): Governor => {
       : Number.POSITIVE_INFINITY;
   };
 
-  const judgeQuality = (seconds: number, busyMs: number): Verdict | null => {
-    const target = Math.min(currentPace(), BASE_RATE);
+  const judgeQuality = (
+    seconds: number,
+    busyMs: number,
+    refresh: number
+  ): Verdict | null => {
+    const target = Math.min(deliveredRate(refresh, currentPace()), BASE_RATE);
     const late = seconds > LATE_FRAME_FACTOR / target;
     if (late) {
       lateFrames += 1;
@@ -225,12 +236,15 @@ export const createGovernor = (rungCount: number): Governor => {
         lateAtPace = 0;
       }
     },
-    judge({ seconds, busyMs, refresh, resized }) {
+    interrupt: forgetWindows,
+    judge({ seconds, busyMs, refresh, excused }) {
       sinceStep += seconds;
-      if (resized) {
+      if (excused) {
         return null;
       }
-      return judgeQuality(seconds, busyMs) ?? judgePace(seconds, refresh);
+      return (
+        judgeQuality(seconds, busyMs, refresh) ?? judgePace(seconds, refresh)
+      );
     },
     lateCredit: () => Math.max(lateFrames, lateAtPace),
     get pace() {
@@ -241,9 +255,15 @@ export const createGovernor = (rungCount: number): Governor => {
     },
     resize(count) {
       const locked = step === rungs;
+      const kept = new Uint8Array(count + 1);
+      kept.set(failures.subarray(0, Math.min(rungs, count)));
+      kept[count - 1] = Math.max(
+        kept[count - 1] ?? 0,
+        failures[rungs - 1] ?? 0
+      );
+      failures = kept;
       rungs = count;
       step = locked ? rungs : Math.min(step, rungs - 1);
-      failures = new Uint8Array(rungs + 1);
       settle();
     },
     get rung() {
