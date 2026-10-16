@@ -1014,7 +1014,7 @@ describe("the field", () => {
       fine: 2200,
       officer: { name: "Deputy Wendell Haverty" },
       sightRange: 50,
-      topSpeed: 62,
+      topSpeed: 64,
     });
     expect(
       others.filter((rider) => rider.profile.role === "police")
