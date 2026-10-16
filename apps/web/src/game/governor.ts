@@ -1,6 +1,6 @@
 import type { FrameRate, GovernReason } from "@racer/telemetry/limits";
 
-import { deliveredRate, LOWEST_REFRESH, vsyncsPerFrame } from "./pacer.ts";
+import { deliveredRate, LOWEST_REFRESH } from "./pacer.ts";
 
 export const BASE_RATE = 60;
 export const HALF_RATE = 30;
@@ -37,6 +37,7 @@ export interface Frame {
   readonly refresh: number;
   readonly refreshKnown: boolean;
   readonly vsyncs: number;
+  readonly cadence: number;
   readonly excused: boolean;
 }
 
@@ -71,7 +72,8 @@ export const createGovernor = (rungCount: number): Governor => {
   let severe = false;
   let rateSeconds = 0;
   let rateFrames = 0;
-  let rateVsyncs = 0;
+  let rateExpected = 0;
+  let rateFloor = 0;
   let rateBusyMs = 0;
   let shortWindows = 0;
   let lateAtPace = 0;
@@ -97,7 +99,8 @@ export const createGovernor = (rungCount: number): Governor => {
     severe = false;
     rateSeconds = 0;
     rateFrames = 0;
-    rateVsyncs = 0;
+    rateExpected = 0;
+    rateFloor = 0;
     rateBusyMs = 0;
     shortWindows = 0;
   };
@@ -124,32 +127,29 @@ export const createGovernor = (rungCount: number): Governor => {
     windowLate = 0;
   };
 
-  const expectedFrames = (refresh: number): number => {
-    const seen = Math.max(rateVsyncs, rateSeconds * LOWEST_REFRESH);
-    return Math.min(
-      seen / vsyncsPerFrame(refresh, currentPace()),
-      rateSeconds * BASE_RATE
-    );
-  };
-
   const watchRate = ({
     seconds,
     busyMs,
-    refresh,
     refreshKnown,
     vsyncs,
+    cadence,
   }: Frame) => {
     if (!refreshKnown) {
       return;
     }
     rateSeconds += seconds;
     rateFrames += 1;
-    rateVsyncs += vsyncs;
+    rateExpected += vsyncs / cadence;
+    rateFloor += (seconds * LOWEST_REFRESH) / cadence;
     rateBusyMs += busyMs;
     if (rateSeconds < RATE_WINDOW_SECONDS) {
       return;
     }
-    const short = rateFrames < expectedFrames(refresh) * DELIVERED_SHARE;
+    const expected = Math.min(
+      Math.max(rateExpected, rateFloor),
+      rateSeconds * BASE_RATE
+    );
+    const short = rateFrames < expected * DELIVERED_SHARE;
     if (short) {
       calm = 0;
     }
@@ -157,7 +157,8 @@ export const createGovernor = (rungCount: number): Governor => {
     shortWindows = short && gpuBound ? shortWindows + 1 : 0;
     rateSeconds = 0;
     rateFrames = 0;
-    rateVsyncs = 0;
+    rateExpected = 0;
+    rateFloor = 0;
     rateBusyMs = 0;
   };
 

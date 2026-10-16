@@ -529,7 +529,7 @@ export async function createGame(
   let clockReset = false;
   let hudClock = 0;
   let pace = BASE_RATE;
-  const pacer = createPacer();
+  const pacer = createPacer(pinnedRefresh > 0);
   const refreshMeter = createRefreshMeter(display.refresh);
   let lastBusyMs = 0;
   let clock = 0;
@@ -1502,6 +1502,7 @@ export async function createGame(
     }
     const verdict = governor.judge({
       busyMs,
+      cadence: pacer.cadence,
       excused,
       refresh: display.refresh,
       refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,

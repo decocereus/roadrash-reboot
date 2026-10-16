@@ -1,9 +1,12 @@
 export interface Pacer {
   readonly present: (now: number, refresh: number, pace: number) => number;
+  readonly cadence: number;
 }
 
 export const LOWEST_REFRESH = 60;
 const ONE_VSYNC_SPREAD = 1.5;
+const RECENT_GAPS = 8;
+const STALE_SHARE = 0.1;
 
 export const vsyncsPerFrame = (refresh: number, pace: number): number =>
   Math.max(1, Math.round(refresh / pace));
@@ -16,14 +19,40 @@ const vsyncsSpanned = (gap: number, refresh: number): number => {
   return gap > vsync * ONE_VSYNC_SPREAD ? Math.round(gap / vsync) : 1;
 };
 
-export const createPacer = (): Pacer => {
+const medianOf = (values: readonly number[]): number =>
+  values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
+
+const rateSeen = (recent: readonly number[], refresh: number): number => {
+  const median = medianOf(recent);
+  if (recent.length < RECENT_GAPS || median <= 0) {
+    return refresh;
+  }
+  const observed = Math.round(1000 / median);
+  return Math.abs(observed - refresh) <= refresh * STALE_SHARE
+    ? refresh
+    : observed;
+};
+
+export const createPacer = (pinned = false): Pacer => {
   let last = Number.NaN;
   let waited = 0;
+  let cadence = 1;
+  const recent: number[] = [];
   return {
+    get cadence() {
+      return cadence;
+    },
     present(now, refresh, pace) {
-      waited += Number.isNaN(last) ? 1 : vsyncsSpanned(now - last, refresh);
+      const gap = now - last;
       last = now;
-      if (waited < vsyncsPerFrame(refresh, pace)) {
+      if (!Number.isNaN(gap)) {
+        recent.push(gap);
+        recent.splice(0, recent.length - RECENT_GAPS);
+      }
+      const rate = pinned ? refresh : rateSeen(recent, refresh);
+      cadence = vsyncsPerFrame(rate, pace);
+      waited += Number.isNaN(gap) ? 1 : vsyncsSpanned(gap, rate);
+      if (waited < cadence) {
         return 0;
       }
       const spanned = waited;

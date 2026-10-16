@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { createGovernor, HALF_RATE } from "./governor.ts";
 import type { Governor } from "./governor.ts";
-import { createPacer, createRefreshMeter } from "./pacer.ts";
+import { createPacer, createRefreshMeter, vsyncsPerFrame } from "./pacer.ts";
 
 const RUNGS = 9;
 const FLOOR = RUNGS - 1;
@@ -61,6 +61,7 @@ const ride = (
     at += frame.intervalMs / 1000;
     const verdict = governor.judge({
       busyMs: frame.busyMs,
+      cadence: vsyncsPerFrame(refresh, governor.pace),
       excused: frame.excused,
       refresh,
       refreshKnown: true,
@@ -152,10 +153,19 @@ const cycleStamps = (cycle: readonly number[], seconds: number) => {
   return stamps;
 };
 
-const rideStamps = (stamps: readonly number[], pinned?: number) => {
+interface StampRide {
+  readonly pinned?: number;
+  readonly rate?: FrameRate;
+}
+
+const rideStamps = (
+  stamps: readonly number[],
+  { pinned, rate = "auto" }: StampRide = {}
+) => {
   const governor = createGovernor(RUNGS);
+  governor.setRate(rate);
   const meter = createRefreshMeter(60);
-  const pacer = createPacer();
+  const pacer = createPacer(pinned !== undefined);
   const readings = new Set<number>();
   const changes: { at: number; reason: GovernReason }[] = [];
   const gaps: number[] = [];
@@ -169,6 +179,7 @@ const rideStamps = (stamps: readonly number[], pinned?: number) => {
       gaps.push(gap);
       const verdict = governor.judge({
         busyMs: 1,
+        cadence: pacer.cadence,
         excused: false,
         refresh,
         refreshKnown: pinned !== undefined || meter.confirmed,
@@ -283,6 +294,7 @@ describe("the quality governor", () => {
     const judge = (shown: Shown) =>
       governor.judge({
         busyMs: shown.busyMs,
+        cadence: 1,
         excused: shown.excused,
         refresh: 60,
         refreshKnown: true,
@@ -393,11 +405,38 @@ describe("the quality governor", () => {
     const stamps = Array.from({ length: 120 * 9.5 }, (_, tick) =>
       Math.floor((tick * 1000) / 120 + (tick % 5) * 0.3 + 0.6)
     );
-    const measured = rideStamps(stamps, 120);
-    const fast = rideStamps(stamps, 122);
+    const measured = rideStamps(stamps, { pinned: 120 });
+    const fast = rideStamps(stamps, { pinned: 122 });
     expect(fast.changes).toStrictEqual([]);
     expect(fast.gaps).toStrictEqual(measured.gaps);
     expect(fast.gaps.every((gap) => gap >= 15 && gap <= 18)).toBeTruthy();
+  });
+
+  it("holds 30 through a move from a 144 Hz screen to a 75 Hz one", () => {
+    const moved = rideStamps(
+      screenStamps([
+        [144, 9],
+        [75, 20],
+      ]),
+      { rate: "30" }
+    );
+    expect(moved.changes).toStrictEqual([]);
+    expect(moved.readings.at(-1)).toBe(75);
+  });
+
+  it("holds 30 through a move from a 144 Hz screen to a 100 Hz one", () => {
+    const moved = rideStamps(
+      screenStamps([
+        [144, 10],
+        [100, 10],
+      ]),
+      { rate: "30" }
+    );
+    expect(moved.changes).toStrictEqual([]);
+    expect(
+      moved.gaps.slice(-200).every((gap) => gap >= 29 && gap <= 31)
+    ).toBeTruthy();
+    expect(Math.max(...moved.gaps.slice(1))).toBeLessThan(45);
   });
 
   it("still sees slipping when jitter never lets two readings agree", () => {
