@@ -54,7 +54,6 @@ const quietTrack = compileTrack({
   trafficPerKilometre: 0,
 });
 const wideTrack = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
-const hazardFreeRidge = compileTrack({ ...ridgeRoad, hazardsPerKilometre: 0 });
 const straight = compileTrack({
   ...ridgeRoad,
   features: [],
@@ -601,16 +600,16 @@ describe("a full race", () => {
 const raceIsOver = (rider: RiderState): boolean =>
   rider.finishTick >= 0 || rider.mode === "busted" || rider.mode === "wrecked";
 
-const raceThePack = (seed: number, course: Track = track) => {
-  const state = createRace(defaultSetup(course, seed));
+const raceThePack = (seed: number) => {
+  const state = createRace(defaultSetup(track, seed));
   const racers = state.riders.filter((rider) => rider.profile.role === "racer");
   const inputs = state.riders.map(() => ({ ...cruising }));
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 300 * TICK_RATE; tick += 1) {
     for (const [index, input] of inputs.entries()) {
-      pilotInput(state, course, index, input);
+      pilotInput(state, track, index, input);
     }
-    stepRace(state, course, inputs);
+    stepRace(state, track, inputs);
     events.push(...state.events);
     if (racers.every((rider) => raceIsOver(rider))) {
       break;
@@ -705,7 +704,7 @@ describe("the pack", () => {
       const copsInTraffic: RaceEvent[] = [];
       let batonHits = 0;
       for (let seed = 1; seed <= 12; seed += 1) {
-        const { events, state } = raceThePack(seed, hazardFreeRidge);
+        const { events, state } = raceThePack(seed);
         const byCop = events.filter(
           (event) => riderAt(state, event.rider).profile.role === "police"
         );
@@ -882,33 +881,36 @@ const patrolFrom = (state: RaceState, copIndex: number, s: number) => {
 
 describe("meeting the police", () => {
   it("a cop parked on the verge pulls out after the pack before the player has ridden two kilometres", () => {
-    const state = createRace(defaultSetup(hazardFreeRidge, 4));
+    const state = createRace(defaultSetup(track, 4));
     const cop = riderAt(state, 6);
     expect({
-      offRoad: Math.abs(cop.x) > hazardFreeRidge.roadHalfWidth,
+      offRoad: Math.abs(cop.x) > track.roadHalfWidth,
       s: cop.s,
       speed: cop.speed,
     }).toStrictEqual({ offRoad: true, s: 1500, speed: 0 });
     const inputs = state.riders.map(() => ({ ...cruising }));
-    const pursuits: RaceEvent[] = [];
+    let pursuedAt = Number.POSITIVE_INFINITY;
     let fastestWhileParked = 0;
-    while (player(state).s < 2000 && state.tick < 120 * TICK_RATE) {
+    while (
+      player(state).s < 2000 &&
+      player(state).mode === "riding" &&
+      state.tick < 120 * TICK_RATE
+    ) {
       for (const [index, input] of inputs.entries()) {
-        pilotInput(state, hazardFreeRidge, index, input);
+        pilotInput(state, track, index, input);
       }
-      stepRace(state, hazardFreeRidge, inputs);
-      pursuits.push(
-        ...state.events.filter((event) => event.kind === "pursuit")
-      );
-      if (pursuits.length === 0) {
+      stepRace(state, track, inputs);
+      if (state.events.some((event) => event.kind === "pursuit")) {
+        pursuedAt = Math.min(pursuedAt, player(state).s);
+      }
+      if (pursuedAt === Number.POSITIVE_INFINITY) {
         fastestWhileParked = Math.max(fastestWhileParked, cop.speed);
       }
     }
-    expect(player(state).s).toBeGreaterThanOrEqual(2000);
-    expect(pursuits.length).toBeGreaterThan(0);
+    expect(pursuedAt).toBeLessThan(2000);
     expect({
       fastestWhileParked,
-      onRoad: Math.abs(cop.x) < hazardFreeRidge.roadHalfWidth,
+      onRoad: Math.abs(cop.x) < track.roadHalfWidth,
     }).toStrictEqual({ fastestWhileParked: 0, onRoad: true });
   });
 });
@@ -3693,6 +3695,36 @@ const pilotAt = (road: Track, s: number, seconds: number) => {
   return pilotFrom(state, road, seconds);
 };
 
+const oilyTurnIn = compileTrack({
+  ...ridgeRoad,
+  features: [],
+  hazardsPerKilometre: 0,
+  sections: [
+    { climb: 0, length: 900, turnDegrees: 0 },
+    { climb: 0, length: 180, turnDegrees: -60 },
+    { climb: 0, length: 3000, turnDegrees: 0 },
+  ],
+  trafficPerKilometre: 0,
+});
+
+const throughOilyTurnIn = () => {
+  const road: Track = {
+    ...oilyTurnIn,
+    hazards: [-2.7, -0.9, 0.9, 2.7].map((x, index) =>
+      placedAt("oil", 927, x, `slick-${index}`)
+    ),
+  };
+  const run = pilotAt(road, 700, 10);
+  const slid = run.events.find(
+    (event) => event.kind === "hazard" && event.effect === "slip"
+  );
+  return {
+    crashes: run.events.filter((event) => event.kind === "crash"),
+    kmhOnSlick: slid?.kind === "hazard" ? slid.speed * KMH : 0,
+    widest: Math.max(...run.line.map((point) => point.x)),
+  };
+};
+
 const crossingAt = (line: readonly Trace[], s: number): number =>
   line.find((point) => point.s >= s)?.x ?? Number.NaN;
 
@@ -4074,6 +4106,14 @@ describe("road hazards", () => {
       crashes: [],
       effects: ["bump"],
     });
+  });
+
+  it("the pilot slows for oil across a bend's turn-in and keeps to its own side of the road instead of sliding to the verge at corner speed", () => {
+    const run = throughOilyTurnIn();
+    expect(run.crashes).toStrictEqual([]);
+    expect(run.kmhOnSlick).toBeGreaterThan(50);
+    expect(run.kmhOnSlick).toBeLessThan(100);
+    expect(run.widest).toBeLessThan(ridgeRoad.laneWidth);
   });
 
   it("a bike in the air flies over a rock untouched", () => {
