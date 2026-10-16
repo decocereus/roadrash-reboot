@@ -19,6 +19,9 @@ export const governReasons = [
   "native-dpr",
   "pace-fallback",
   "pace-retry",
+  "late-burst",
+  "calm-retry",
+  "device-start",
 ] as const;
 export type GovernReason = (typeof governReasons)[number];
 

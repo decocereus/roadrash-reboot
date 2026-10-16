@@ -53,6 +53,7 @@ export const qualitySchema = Schema.Struct({
   pace: Count,
   pixelRatio: Schema.Finite,
   rung: Count,
+  samples: Schema.optionalKey(Count),
   shadowMap: Count,
 });
 export type Quality = typeof qualitySchema.Type;

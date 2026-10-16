@@ -30,12 +30,12 @@ import { parts } from "../game/profile.ts";
 import type { ProfileFrame } from "../game/profile.ts";
 
 const EVENT_CAPACITY = 4096;
-const SLOTS = 13;
+const SLOTS = 15;
 const FAULT_CAPACITY = 64;
 const FAULTS_PER_BATCH = 32;
 const EVENTS_PER_BATCH = 256;
 const FROM = 3;
-const TO = 8;
+const TO = 9;
 
 const eventKinds = [
   "governor",
@@ -56,6 +56,7 @@ export interface QualityState {
   pixelRatio: number;
   bloomScale: number;
   shadowMap: number;
+  samples: number;
   pace: number;
 }
 
@@ -64,6 +65,7 @@ export const emptyQuality = (): QualityState => ({
   pace: 0,
   pixelRatio: 0,
   rung: 0,
+  samples: 0,
   shadowMap: 0,
 });
 
@@ -314,6 +316,7 @@ export const createRecorder = (): Recorder => {
     values[base + 2] = quality.bloomScale;
     values[base + 3] = quality.shadowMap;
     values[base + 4] = quality.pace;
+    values[base + 5] = quality.samples;
   };
 
   const readQuality = (base: number): Quality => ({
@@ -321,6 +324,7 @@ export const createRecorder = (): Recorder => {
     pace: values[base + 4] ?? 0,
     pixelRatio: values[base + 1] ?? 0,
     rung: values[base] ?? 0,
+    samples: values[base + 5] ?? 0,
     shadowMap: values[base + 3] ?? 0,
   });
 

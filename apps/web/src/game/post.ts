@@ -13,7 +13,7 @@ const BLOOM_THRESHOLD = 0.93;
 export const BLOOM_SCALE = 2;
 const FRINGE = 0.012;
 const VIGNETTE = 0.42;
-const SAMPLES = 4;
+export const SAMPLES = 4;
 const FACING_CAMERA = 0x80_80_ff;
 
 const SCREEN_VERTEX =
@@ -116,6 +116,7 @@ export interface Pipeline {
   ) => Promise<void>;
   setLook: (look: Look) => void;
   setBloomScale: (scale: number) => void;
+  setSamples: (samples: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
   dispose: () => void;
@@ -263,6 +264,13 @@ export const createPipeline = (
       uniform(line, "ink").value.set(look.ink);
       uniform(grade, "grade").value.set(...look.grade);
       bloom.strength = look.bloom;
+    },
+    setSamples(samples) {
+      if (samples === sceneTarget.samples) {
+        return;
+      }
+      sceneTarget.samples = samples;
+      sceneTarget.dispose();
     },
   };
 };

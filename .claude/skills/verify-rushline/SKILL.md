@@ -115,6 +115,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?prof`, `?prof=gpu` | Record per-frame costs into `__rushlineProfile`; `gpu` adds timer queries ANGLE on Metal answers wrongly. `?stress` implies `?prof`. |
 | `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, rung, pace, refresh, draw calls, triangles. |
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
+| `?rung=<n>` | Pin a rung of the quality ladder: 0 full, 1 shadow 2048, 2 lean bloom, 3 no multisampling, then the pixel ratio in steps of 0.1. The governor stays off. |
 
 Ramps, by kilometre: Breakwater Run 4.05 and 5.42, Cinder Wash 4.25 and 5.30, Hollow Pine Road 3.33 and 7.76, Slag Row 4.72 and 7.28 (and 10.88 from level 4), Ridge Road 8.29. Every ramp sits right of the centre line. Roads end between 8.45 and 9.25 km at level 1 and 1,150 m later per level.
 
