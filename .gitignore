@@ -12,3 +12,4 @@ coverage/
 .output/
 .wrangler/
 tools/perf/results/
+tools/blender/out/

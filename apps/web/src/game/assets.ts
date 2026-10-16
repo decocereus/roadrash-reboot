@@ -1,8 +1,11 @@
 import * as THREE from "three";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { RED } from "./looks.ts";
+import { modelBytes, modelUrls } from "./models.ts";
 
 const POSE_NAMES = [
   "rest",
@@ -147,11 +150,85 @@ export const paintPrimitives = (
 const slotOf = (mesh: THREE.Mesh): string =>
   Array.isArray(mesh.material) ? "" : mesh.material.name;
 
+type Packed = THREE.BufferAttribute | THREE.InterleavedBufferAttribute;
+
+const vector = new THREE.Vector3();
+
+const placedVectors = (
+  source: Packed,
+  place: (each: THREE.Vector3) => THREE.Vector3
+): THREE.BufferAttribute => {
+  const values = new Float32Array(source.count * 3);
+  for (let index = 0; index < source.count; index += 1) {
+    place(vector.fromBufferAttribute(source, index)).toArray(values, index * 3);
+  }
+  return new THREE.BufferAttribute(values, 3);
+};
+
+const unpacked = <Values extends Float32Array | Uint16Array>(
+  source: Packed,
+  values: Values
+): THREE.BufferAttribute => {
+  for (let index = 0; index < source.count; index += 1) {
+    for (let component = 0; component < source.itemSize; component += 1) {
+      values[index * source.itemSize + component] = source.getComponent(
+        index,
+        component
+      );
+    }
+  }
+  return new THREE.BufferAttribute(values, source.itemSize);
+};
+
+const fileSpaceGeometry = (mesh: THREE.Mesh): THREE.BufferGeometry => {
+  const source = mesh.geometry;
+  mesh.updateWorldMatrix(true, false);
+  const placement =
+    mesh instanceof THREE.SkinnedMesh
+      ? new THREE.Matrix4()
+      : mesh.matrixWorld.clone();
+  const turn = new THREE.Matrix3().getNormalMatrix(placement);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setIndex(source.getIndex());
+  geometry.setAttribute(
+    "position",
+    placedVectors(source.getAttribute("position"), (each) =>
+      each.applyMatrix4(placement)
+    )
+  );
+  if (source.hasAttribute("normal")) {
+    geometry.setAttribute(
+      "normal",
+      placedVectors(source.getAttribute("normal"), (each) =>
+        each.applyMatrix3(turn).normalize()
+      )
+    );
+  }
+  if (source.hasAttribute("skinIndex")) {
+    const joints = source.getAttribute("skinIndex");
+    geometry.setAttribute(
+      "skinIndex",
+      unpacked(joints, new Uint16Array(joints.count * joints.itemSize))
+    );
+  }
+  if (source.hasAttribute("skinWeight")) {
+    const weights = source.getAttribute("skinWeight");
+    geometry.setAttribute(
+      "skinWeight",
+      unpacked(weights, new Float32Array(weights.count * weights.itemSize))
+    );
+  }
+  return geometry;
+};
+
 const primitivesOf = (root: THREE.Object3D): Primitive[] => {
   const primitives: Primitive[] = [];
   root.traverse((node) => {
     if (node instanceof THREE.Mesh) {
-      primitives.push({ geometry: node.geometry, slot: slotOf(node) });
+      primitives.push({
+        geometry: fileSpaceGeometry(node),
+        slot: slotOf(node),
+      });
     }
   });
   return primitives;
@@ -193,10 +270,13 @@ const toGame = (root: THREE.Object3D, local: THREE.Vector3): THREE.Vector3 => {
   return placed.set(-placed.x, placed.y, -placed.z);
 };
 
-const loader = new GLTFLoader();
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+
+const parsed = async (url: string): Promise<GLTF> =>
+  loader.parseAsync(await modelBytes(url), "");
 
 const loadRider = async (url: string): Promise<RiderAsset> => {
-  const gltf = await loader.loadAsync(url);
+  const gltf = await parsed(url);
   const [clip] = gltf.animations;
   const rootBone = gltf.scene.getObjectByName("Root");
   if (!(clip && rootBone)) {
@@ -218,7 +298,7 @@ const loadRider = async (url: string): Promise<RiderAsset> => {
 const loadParts = async (
   url: string
 ): Promise<Map<string, readonly Primitive[]>> => {
-  const gltf = await loader.loadAsync(url);
+  const gltf = await parsed(url);
   const parts = new Map<string, readonly Primitive[]>();
   for (const child of gltf.scene.children) {
     parts.set(child.name, primitivesOf(child));
@@ -227,20 +307,21 @@ const loadParts = async (
 };
 
 const loadWhole = async (url: string): Promise<readonly Primitive[]> => {
-  const gltf = await loader.loadAsync(url);
+  const gltf = await parsed(url);
   return primitivesOf(gltf.scene);
 };
 
 let pending: Promise<Assets> | null = null;
 
 const loadAll = async (): Promise<Assets> => {
+  const [buildA, buildB, buildC] = modelUrls.riders;
   const [bike, car, van, riderA, riderB, riderC] = await Promise.all([
-    loadParts("/models/bike.glb"),
-    loadWhole("/models/car.glb"),
-    loadWhole("/models/van.glb"),
-    loadRider("/models/rider_a.glb"),
-    loadRider("/models/rider_b.glb"),
-    loadRider("/models/rider_c.glb"),
+    loadParts(modelUrls.bike),
+    loadWhole(modelUrls.car),
+    loadWhole(modelUrls.van),
+    loadRider(buildA),
+    loadRider(buildB),
+    loadRider(buildC),
     document.fonts.load('800 40px "Saira Extra Condensed"').catch(() => []),
   ]);
   return { bike, car, riders: [riderA, riderB, riderC], van };
