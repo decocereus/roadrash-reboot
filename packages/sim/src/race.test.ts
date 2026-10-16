@@ -3781,12 +3781,18 @@ interface PlannedStep {
   readonly share: number;
 }
 
-const ridePlanned = (road: Track, from: Placement, seconds: number) => {
+const ridePlanned = (
+  road: Track,
+  from: Placement,
+  seconds: number,
+  cars: RaceState["cars"] = []
+) => {
   const state = field(road, 1, 0, 0);
   const rider = player(state);
   rider.s = from.s;
   rider.x = from.x;
   rider.speed = from.speed;
+  state.cars.push(...cars);
   const input = { ...neutralInput };
   const events: RaceEvent[] = [];
   const steps: PlannedStep[] = [];
@@ -3902,6 +3908,62 @@ describe("the pilot plans its speed along the road", () => {
       road,
       { lateralSpeed: 0, s: 350, speed: 200 / KMH, x: 1.8 },
       8
+    );
+    expect(kindsOf(run.events)).not.toContain("crash");
+  });
+
+  it("slows for a bend beyond a blind crest before it takes off, so it lands at a speed it can hold", () => {
+    const road = planningRoad([
+      { climb: 0, length: 400, turnDegrees: 0 },
+      { climb: 15, length: 120, turnDegrees: 0 },
+      { climb: 0, length: 1, turnDegrees: 0 },
+      { climb: 0, length: 150, turnDegrees: -60 },
+      { climb: 0, length: 3000, turnDegrees: 0 },
+    ]);
+    const run = ridePlanned(
+      road,
+      { lateralSpeed: 0, s: 200, speed: 200 / KMH, x: 1.8 },
+      12
+    );
+    expect({
+      crashed: kindsOf(run.events).includes("crash"),
+      landed: kindsOf(run.events).includes("land"),
+      offRoad: run.offRoad,
+    }).toStrictEqual({ crashed: false, landed: true, offRoad: false });
+  });
+
+  it("dodges an oncoming car while slowing for the rocks and oil on the side it dodges to", () => {
+    const road: Track = {
+      ...compileTrack({
+        ...ridgeRoad,
+        features: [],
+        hazardsPerKilometre: 0,
+        lanesEachWay: 2,
+        sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+        trafficPerKilometre: 0,
+      }),
+      hazards: [
+        placedAt("rock", 961, 5.4, "outer-rock"),
+        placedAt("rock", 993, 1.8, "inner-rock"),
+        placedAt("oil", 1019, 1.8, "inner-oil"),
+      ],
+    };
+    const run = ridePlanned(
+      road,
+      { lateralSpeed: 0, s: 900, speed: 69, x: -1.8 },
+      5,
+      [
+        {
+          cruiseSpeed: -17.5,
+          halfLength: 2.2,
+          halfWidth: 0.92,
+          height: 1.45,
+          paint: 2,
+          s: 961,
+          speed: -17.5,
+          x: -1.8,
+        },
+      ]
     );
     expect(kindsOf(run.events)).not.toContain("crash");
   });

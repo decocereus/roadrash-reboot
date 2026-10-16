@@ -7,7 +7,12 @@ import {
 } from "@racer/track/features";
 import type { TrackFeature } from "@racer/track/features";
 import { nextSeed, unitOf } from "@racer/track/random";
-import { curvatureAt, slopeAt, slopeRateAt } from "@racer/track/track";
+import {
+  curvatureAt,
+  heightAt,
+  slopeAt,
+  slopeRateAt,
+} from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { grudgeSide, nearestRival } from "./combat.ts";
@@ -20,6 +25,7 @@ import {
   LANDING_SLIP,
   SLIP_PUSH,
   SLIP_RECOVERY,
+  TAKEOFF_SPEED,
   towardBike,
 } from "./rider.ts";
 import {
@@ -58,6 +64,8 @@ const LEAD_STEPS = 12;
 const LIFT_DROP = 0.05;
 const RESERVE_SHARE = 0.3;
 const LAUNCH_SEARCH_STEPS = 10;
+const CREST_FLIGHT_STEP = 4;
+const LONGEST_CREST_FLIGHT = 200;
 const CREST_MARGIN = 1.15;
 const PLANNED_BRAKING = 6.5;
 const PLANNED_LIFT = 3.5;
@@ -185,26 +193,23 @@ const lockOf = (bike: BikeSpec, lateralSpeed: number, speed: number): number =>
     1
   );
 
-const brakingAt = (
-  track: Track,
+const brakingOn = (
   rider: RiderState,
-  s: number,
+  drop: number,
   speed: number,
   lock: number
 ): number =>
   rider.bike.brakeDeceleration *
   (1 - (1 - BRAKE_RESERVE) * lock) *
-  clamp(1 + (slopeRateAt(track, s) * speed * speed) / GRAVITY, 0, 1);
+  clamp(1 + (drop * speed * speed) / GRAVITY, 0, 1);
 
-const resistanceAt = (
-  track: Track,
+const resistanceOn = (
   rider: RiderState,
-  s: number,
+  slope: number,
   speed: number,
   lock: number
 ): number => {
   const { bike } = rider;
-  const slope = slopeAt(track, s);
   return (
     dragOf(bike, speed, rider.tuck) +
     bike.engineBraking * Math.min(1, rider.revs) +
@@ -230,8 +235,18 @@ const deceleration: Deceleration = {
 const measureDeceleration = (track: Track, rider: RiderState): Deceleration => {
   const { bike, speed } = rider;
   const lock = lockOf(bike, rider.lateralSpeed, speed);
-  deceleration.braking = brakingAt(track, rider, rider.s, speed, lock);
-  deceleration.resisting = resistanceAt(track, rider, rider.s, speed, lock);
+  deceleration.braking = brakingOn(
+    rider,
+    slopeRateAt(track, rider.s),
+    speed,
+    lock
+  );
+  deceleration.resisting = resistanceOn(
+    rider,
+    slopeAt(track, rider.s),
+    speed,
+    lock
+  );
   deceleration.capacity = deceleration.braking + deceleration.resisting;
   deceleration.lag = speed * BRAKE_LAG_SECONDS;
   return deceleration;
@@ -315,6 +330,9 @@ const noSlick: Slick = {
 const ceilings = new Float64Array(CORNER_SCAN_POINTS);
 const braked = new Float64Array(CORNER_SCAN_POINTS);
 const coasted = new Float64Array(CORNER_SCAN_POINTS);
+const bends = new Float64Array(CORNER_SCAN_POINTS);
+const slopes = new Float64Array(CORNER_SCAN_POINTS);
+const drops = new Float64Array(CORNER_SCAN_POINTS);
 const paced = new Float64Array(CORNER_SCAN_POINTS);
 const plan = { count: 0, lowest: Number.POSITIVE_INFINITY, paced: 0 };
 const FORECAST_TICKS = Math.ceil(FORECAST_SECONDS / TICK_SECONDS) + 1;
@@ -341,9 +359,8 @@ const sampleOf = (
 };
 
 const slowedFrom = (
-  track: Track,
   rider: RiderState,
-  s: number,
+  index: number,
   next: number,
   share: number
 ): number => {
@@ -351,15 +368,15 @@ const slowedFrom = (
     return next;
   }
   const { bike } = rider;
-  const bend = Math.abs(curvatureAt(track, s));
   const lock = clamp(
-    curvePushOf(bike, bend, next) / Math.max(1, lateralSpeedLimit(bike, next)),
+    curvePushOf(bike, bends[index] ?? 0, next) /
+      Math.max(1, lateralSpeedLimit(bike, next)),
     0,
     1
   );
   const slowing =
-    share * brakingAt(track, rider, s, next, lock) +
-    resistanceAt(track, rider, s, next, lock);
+    share * brakingOn(rider, drops[index] ?? 0, next, lock) +
+    resistanceOn(rider, slopes[index] ?? 0, next, lock);
   return Math.sqrt(Math.max(0, next * next + 2 * slowing * CORNER_SCAN_STEP));
 };
 
@@ -378,31 +395,89 @@ const rampAhead = (
   return taken && lip >= 0 && lip <= reach ? jump : undefined;
 };
 
+const landsAfterFlight = (
+  track: Track,
+  rider: RiderState,
+  from: number,
+  flight: number,
+  x: number,
+  speed: number,
+  margin: number
+): boolean => {
+  const { bike } = rider;
+  if (speed > sampleOf(braked, plan.count, from + flight - rider.s)) {
+    return false;
+  }
+  const takeoff = curvatureAt(track, from);
+  let bendAcross = 0;
+  for (let s = from; s < from + flight; s += CORNER_SCAN_STEP) {
+    bendAcross += takeoff - curvatureAt(track, s);
+  }
+  const landing = x + (bendAcross * speed * CORNER_SCAN_STEP) / bike.curvePush;
+  return (
+    Math.abs(landing) <= track.roadHalfWidth - JUMP_LANDING_ROOM &&
+    Math.abs(curvePushOf(bike, takeoff, speed)) <=
+      LANDING_SLIP * margin * lateralSpeedLimit(bike, speed)
+  );
+};
+
 const landsFrom = (
   track: Track,
   rider: RiderState,
   jump: TrackFeature,
   speed: number,
   margin: number
-): boolean => {
-  const { bike } = rider;
-  const lip = lipOf(jump);
-  const flight = flatFlightLength(jump, speed);
-  if (speed > sampleOf(braked, plan.count, lip + flight - rider.s)) {
-    return false;
-  }
-  const takeoff = curvatureAt(track, lip);
-  let bendAcross = 0;
-  for (let s = lip; s < lip + flight; s += CORNER_SCAN_STEP) {
-    bendAcross += takeoff - curvatureAt(track, s);
-  }
-  const landing =
-    jump.x + (bendAcross * speed * CORNER_SCAN_STEP) / bike.curvePush;
-  return (
-    Math.abs(landing) <= track.roadHalfWidth - JUMP_LANDING_ROOM &&
-    Math.abs(curvePushOf(bike, takeoff, speed)) <=
-      LANDING_SLIP * margin * lateralSpeedLimit(bike, speed)
+): boolean =>
+  landsAfterFlight(
+    track,
+    rider,
+    lipOf(jump),
+    flatFlightLength(jump, speed),
+    jump.x,
+    speed,
+    margin
   );
+
+const crestTakeoffSpeed = (drop: number): number =>
+  drop < 0
+    ? Math.max(TAKEOFF_SPEED, Math.sqrt(-GRAVITY / drop))
+    : Number.POSITIVE_INFINITY;
+
+const crestFlightLength = (track: Track, from: number, speed: number) => {
+  const start = heightAt(track, from);
+  const rise = slopeAt(track, from);
+  for (
+    let along = CREST_FLIGHT_STEP;
+    along < LONGEST_CREST_FLIGHT;
+    along += CREST_FLIGHT_STEP
+  ) {
+    const height =
+      start + rise * along - (GRAVITY * along * along) / (2 * speed * speed);
+    if (height <= heightAt(track, from + along)) {
+      return along;
+    }
+  }
+  return LONGEST_CREST_FLIGHT;
+};
+
+const crestCeiling = (
+  track: Track,
+  rider: RiderState,
+  index: number,
+  line: number,
+  speed: number,
+  margin: number
+): number => {
+  const takeoff = crestTakeoffSpeed(drops[index] ?? 0);
+  if (speed <= takeoff) {
+    return speed;
+  }
+  const s = rider.s + index * CORNER_SCAN_STEP;
+  const flying = Math.min(speed, FASTEST_LAUNCH);
+  const flight = crestFlightLength(track, s, flying);
+  return landsAfterFlight(track, rider, s, flight, line, flying, margin)
+    ? speed
+    : takeoff;
 };
 
 const safeLaunchSpeed = (jump: TrackFeature): number => {
@@ -463,6 +538,9 @@ const planCorners = (
   for (let index = 0; index < count; index += 1) {
     const ahead = index * CORNER_SCAN_STEP;
     const curve = curvatureAt(track, rider.s + ahead);
+    bends[index] = Math.abs(curve);
+    slopes[index] = slopeAt(track, rider.s + ahead);
+    drops[index] = slopeRateAt(track, rider.s + ahead);
     const grip = ahead <= manoeuvre && asked * curve > 0 ? 1 - reserve : 1;
     const bend = Math.abs(curve);
     const onSlick = ahead + CORNER_SCAN_STEP > slick.metres && ahead < recovery;
@@ -488,23 +566,29 @@ const planCorners = (
       braked[index] = launch;
       coasted[index] = launch;
     } else {
-      const s = rider.s + index * CORNER_SCAN_STEP;
-      braked[index] = Math.min(
+      const grounded = Math.min(
         ceiling,
         slowedFrom(
-          track,
           rider,
-          s,
+          index,
           braked[index + 1] ?? Number.POSITIVE_INFINITY,
           riding.brakeShare
         )
       );
+      const landable = crestCeiling(
+        track,
+        rider,
+        index,
+        line,
+        grounded,
+        margin
+      );
+      braked[index] = landable;
       coasted[index] = Math.min(
-        ceiling,
+        landable,
         slowedFrom(
-          track,
           rider,
-          s,
+          index,
           coasted[index + 1] ?? Number.POSITIVE_INFINITY,
           0
         )
@@ -521,38 +605,6 @@ const planForecast = (track: Track, rider: RiderState): void => {
   planCorners(track, rider, riding.margin, rider.x, noSlick);
   paced.set(braked.subarray(0, plan.count));
   plan.paced = plan.count;
-};
-
-const horizons = { hazard: 0, traffic: 0 };
-
-const withinHorizon = (
-  tick: number,
-  travelled: number,
-  speed: number
-): boolean =>
-  tick * TICK_SECONDS <= FORECAST_SECONDS &&
-  (tick * TICK_SECONDS <= horizons.traffic ||
-    travelled / Math.max(1, speed) <= horizons.hazard);
-
-const planCourse = (track: Track, rider: RiderState): void => {
-  const { bike } = rider;
-  let { speed } = rider;
-  let travelled = 0;
-  for (
-    let tick = 1;
-    tick < FORECAST_TICKS && withinHorizon(tick, travelled, rider.speed);
-    tick += 1
-  ) {
-    speed = Math.min(speed, sampleOf(paced, plan.paced, travelled));
-    travelled += speed * TICK_SECONDS;
-    courseTravelled[tick] = travelled;
-    coursePush[tick] = curvePushOf(
-      bike,
-      curvatureAt(track, rider.s + travelled),
-      speed
-    );
-    courseLimit[tick] = lateralSpeedLimit(bike, speed);
-  }
 };
 
 const steeringPush = (track: Track, rider: RiderState): number => {
@@ -853,6 +905,9 @@ const hazardCost = (hazard: Hazard, speed: number): number => {
 interface Obstruction {
   readonly start: number;
   readonly end: number;
+  readonly ahead: number;
+  readonly along: number;
+  readonly speed: number;
   readonly x: number;
   readonly reach: number;
   readonly cost: number;
@@ -866,15 +921,63 @@ interface Obstruction {
 const obstructions: Obstruction[] = [];
 const struck: boolean[] = [];
 
+const horizons = { hazard: 0 };
+
 const measureHorizons = (): void => {
-  horizons.traffic = 0;
   horizons.hazard = 0;
   for (const obstruction of obstructions) {
-    if (obstruction.traffic) {
-      horizons.traffic = Math.max(horizons.traffic, obstruction.end);
-    } else {
+    if (!obstruction.traffic) {
       horizons.hazard = Math.max(horizons.hazard, obstruction.end);
     }
+  }
+};
+
+const gapTo = (
+  obstruction: Obstruction,
+  seconds: number,
+  travelled: number
+): number => obstruction.ahead + obstruction.speed * seconds - travelled;
+
+const carsAhead = (seconds: number, travelled: number): boolean =>
+  obstructions.some(
+    (obstruction) =>
+      obstruction.traffic &&
+      gapTo(obstruction, seconds, travelled) > -obstruction.along
+  );
+
+const withinHorizon = (
+  tick: number,
+  travelled: number,
+  speed: number,
+  carAhead: boolean
+): boolean =>
+  tick * TICK_SECONDS <= FORECAST_SECONDS &&
+  (carAhead || travelled / Math.max(1, speed) <= horizons.hazard);
+
+const planCourse = (track: Track, rider: RiderState): void => {
+  const { bike } = rider;
+  let { speed } = rider;
+  let travelled = 0;
+  for (
+    let tick = 1;
+    tick < FORECAST_TICKS &&
+    withinHorizon(
+      tick,
+      travelled,
+      rider.speed,
+      carsAhead((tick - 1) * TICK_SECONDS, travelled)
+    );
+    tick += 1
+  ) {
+    speed = Math.min(speed, sampleOf(paced, plan.paced, travelled));
+    travelled += speed * TICK_SECONDS;
+    courseTravelled[tick] = travelled;
+    coursePush[tick] = curvePushOf(
+      bike,
+      curvatureAt(track, rider.s + travelled),
+      speed
+    );
+    courseLimit[tick] = lateralSpeedLimit(bike, speed);
   }
 };
 
@@ -898,6 +1001,8 @@ const gatherObstructions = (
     const hazard = state.hazards[index];
     if (hazard) {
       obstructions.push({
+        ahead: 0,
+        along: 0,
         cost: hazardCost(hazard, rider.speed),
         curvature:
           hazard.kind === "oil"
@@ -908,6 +1013,7 @@ const gatherObstructions = (
         oil: hazard.kind === "oil",
         reach: contactReach(hazard),
         rock: hazard.kind === "rock",
+        speed: 0,
         start: metresToContact(rider, hazard) / pace,
         traffic: false,
         x: hazard.x,
@@ -921,6 +1027,8 @@ const gatherObstructions = (
     const end = (car.s + car.halfLength + BIKE_HALF_LENGTH - rider.s) / closing;
     if (closing > 0 && end >= 0 && start <= FORECAST_SECONDS) {
       obstructions.push({
+        ahead: car.s - rider.s,
+        along: car.halfLength + BIKE_HALF_LENGTH,
         cost: CRASH_COST,
         curvature: 0,
         end,
@@ -928,6 +1036,7 @@ const gatherObstructions = (
         oil: false,
         reach: car.halfWidth + BIKE_HALF_WIDTH,
         rock: false,
+        speed: car.speed,
         start,
         traffic: true,
         x: car.x,
@@ -1019,7 +1128,7 @@ const crossOil = (rider: RiderState, obstruction: Obstruction): void => {
   }
 };
 
-const touched = { oil: false };
+const touched = { carAhead: false, oil: false };
 
 const tally = (
   rider: RiderState,
@@ -1031,18 +1140,19 @@ const tally = (
 ): void => {
   const reached = travelled / Math.max(1, rider.speed);
   touched.oil = false;
+  touched.carAhead = false;
   for (let index = 0; index < obstructions.length; index += 1) {
     const obstruction = obstructions[index];
     if (!obstruction || struck[index]) {
       continue;
     }
-    const at = obstruction.traffic ? seconds : reached;
-    if (
-      !(braking && obstruction.traffic) &&
-      at >= obstruction.start &&
-      at <= obstruction.end &&
-      Math.abs(x - obstruction.x) < obstruction.reach
-    ) {
+    let meets = reached >= obstruction.start && reached <= obstruction.end;
+    if (obstruction.traffic) {
+      const gap = gapTo(obstruction, seconds, travelled);
+      touched.carAhead ||= gap > -obstruction.along;
+      meets = !braking && Math.abs(gap) <= obstruction.along;
+    }
+    if (meets && Math.abs(x - obstruction.x) < obstruction.reach) {
       struck[index] = true;
       toll.cost += obstruction.cost;
       if (obstruction.rock) {
@@ -1083,7 +1193,11 @@ const forecast = (
   if (touched.oil) {
     slip = OIL_SLIP;
   }
-  for (let tick = 1; withinHorizon(tick, travelled, rider.speed); tick += 1) {
+  for (
+    let tick = 1;
+    withinHorizon(tick, travelled, rider.speed, touched.carAhead);
+    tick += 1
+  ) {
     let bendPush = coursePush[tick] ?? 0;
     let grip = courseLimit[tick] ?? 0;
     if (slowsDown) {
