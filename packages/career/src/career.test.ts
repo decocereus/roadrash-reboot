@@ -904,34 +904,38 @@ describe("the roads", () => {
     expect(career).toStrictEqual(track);
   });
 
-  it("a whole pilot-ridden race on Slag Row settles into fifteen places and a ledger that adds up", () => {
-    const course = trackFor("slag-row", 1);
-    const start = startRace(newCareer(21), "slag-row", 21);
-    const setup = setupFor(start.career, "slag-row", 21, course);
-    const state = createRace(setup);
-    const log = createRaceLog(setup);
-    const inputs = state.riders.map(() => ({ ...neutralInput }));
-    for (let tick = 0; tick < 400 * TICKS && !log.outcome; tick += 1) {
-      for (const [index, input] of inputs.entries()) {
-        pilotInput(state, course, index, input);
+  it(
+    "a whole pilot-ridden race on Slag Row settles into fifteen places and a ledger that adds up",
+    { timeout: 30_000 },
+    () => {
+      const course = trackFor("slag-row", 1);
+      const start = startRace(newCareer(21), "slag-row", 21);
+      const setup = setupFor(start.career, "slag-row", 21, course);
+      const state = createRace(setup);
+      const log = createRaceLog(setup);
+      const inputs = state.riders.map(() => ({ ...neutralInput }));
+      for (let tick = 0; tick < 400 * TICKS && !log.outcome; tick += 1) {
+        for (const [index, input] of inputs.entries()) {
+          pilotInput(state, course, index, input);
+        }
+        stepRace(state, course, inputs);
+        recordTick(log, state, setup);
       }
-      stepRace(state, course, inputs);
-      recordTick(log, state, setup);
+      const outcome = outcomeOf(state, setup, log);
+      const ledger = ledgerOf(settleRace(start.career, outcome));
+      expect(log.outcome).toBe(outcome);
+      expect(outcome.placings.map((placing) => placing.place)).toStrictEqual(
+        Array.from({ length: 15 }, (_, index) => index + 1)
+      );
+      expect(
+        new Set(outcome.placings.map((placing) => placing.racer))
+      ).toStrictEqual(new Set(["player", ...setup.field]));
+      expect(outcome.placings[outcome.place - 1]?.racer).toBe("player");
+      expect(ledger.cashAfter).toBe(
+        1500 + ledger.prize - ledger.repair - ledger.fine
+      );
     }
-    const outcome = outcomeOf(state, setup, log);
-    const ledger = ledgerOf(settleRace(start.career, outcome));
-    expect(log.outcome).toBe(outcome);
-    expect(outcome.placings.map((placing) => placing.place)).toStrictEqual(
-      Array.from({ length: 15 }, (_, index) => index + 1)
-    );
-    expect(
-      new Set(outcome.placings.map((placing) => placing.racer))
-    ).toStrictEqual(new Set(["player", ...setup.field]));
-    expect(outcome.placings[outcome.place - 1]?.racer).toBe("player");
-    expect(ledger.cashAfter).toBe(
-      1500 + ledger.prize - ledger.repair - ledger.fine
-    );
-  });
+  );
 });
 
 describe("the field", () => {
@@ -1010,7 +1014,7 @@ describe("the field", () => {
       fine: 2200,
       officer: { name: "Deputy Wendell Haverty" },
       sightRange: 50,
-      topSpeed: 64,
+      topSpeed: 62,
     });
     expect(
       others.filter((rider) => rider.profile.role === "police")

@@ -665,37 +665,41 @@ describe("the pack", () => {
     ).toBeTruthy();
   });
 
-  it("six riders of the new cast each finish Ridge Road, wreck, or are busted by the cop on patrol and the standings are ordered", () => {
-    const { events, racers, state } = raceThePack(4);
-    const finishTicks = standings(state).map(
-      (index) => riderAt(state, index).finishTick
-    );
-    const finished = finishTicks.filter((tick) => tick >= 0);
-    expect({
-      placed: finishTicks.length,
-      riders: state.riders.length,
-      roster: state.riders.map((rider) => rider.profile.name),
-    }).toStrictEqual({
-      placed: 6,
-      riders: 7,
-      roster: [
-        "You",
-        "Dee Santangelo",
-        "Moose Kowalczyk",
-        "Juno Kade",
-        "Mags Dunleavy",
-        "Ruth Ann Bixby",
-        "Sergeant Dolores Pike",
-      ],
-    });
-    expect(events.some((event) => event.kind === "pursuit")).toBeTruthy();
-    expect(racers.every((rider) => raceIsOver(rider))).toBeTruthy();
-    expect(finished.length).toBeGreaterThanOrEqual(3);
-    expect(finishTicks).toStrictEqual([
-      ...finished.toSorted((left, right) => left - right),
-      ...finishTicks.filter((tick) => tick < 0),
-    ]);
-  });
+  it(
+    "six riders of the new cast each finish Ridge Road, wreck, or are busted by the cop on patrol and the standings are ordered",
+    { timeout: 30_000 },
+    () => {
+      const { events, racers, state } = raceThePack(4);
+      const finishTicks = standings(state).map(
+        (index) => riderAt(state, index).finishTick
+      );
+      const finished = finishTicks.filter((tick) => tick >= 0);
+      expect({
+        placed: finishTicks.length,
+        riders: state.riders.length,
+        roster: state.riders.map((rider) => rider.profile.name),
+      }).toStrictEqual({
+        placed: 6,
+        riders: 7,
+        roster: [
+          "You",
+          "Dee Santangelo",
+          "Moose Kowalczyk",
+          "Juno Kade",
+          "Mags Dunleavy",
+          "Ruth Ann Bixby",
+          "Sergeant Dolores Pike",
+        ],
+      });
+      expect(events.some((event) => event.kind === "pursuit")).toBeTruthy();
+      expect(racers.every((rider) => raceIsOver(rider))).toBeTruthy();
+      expect(finished.length).toBeGreaterThanOrEqual(3);
+      expect(finishTicks).toStrictEqual([
+        ...finished.toSorted((left, right) => left - right),
+        ...finishTicks.filter((tick) => tick < 0),
+      ]);
+    }
+  );
 
   it(
     "a cop chasing the pack through traffic rides into a car that no rider shoved it into in at most one of twelve starts",

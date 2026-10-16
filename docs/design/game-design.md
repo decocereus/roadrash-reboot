@@ -413,12 +413,12 @@ Each cop has a **beat**: it gives up the chase that many metres past the spot wh
 | 1 | 1 | 49 m/s (176 km/h) | 40 m | 6,000 m | 0 | $400 |
 | 2 | 2 | 52 m/s (187 km/h) | 40 m | 5,000 m | 0 | $900 |
 | 3 | 3 | 60 m/s (216 km/h) | 45 m | 1,800 m | 1 | $1,500 |
-| 4 | 4 | 64 m/s (230 km/h) | 50 m | 1,500 m | 2 | $2,200 |
+| 4 | 4 | 62 m/s (223 km/h) | 50 m | 1,500 m | 2 | $2,200 |
 | 5 | 5 | 69 m/s (248 km/h) | 60 m | 1,200 m | 3 | $3,000 |
 
 The beats are not in order of level because the police bikes are not equal and the cops are not equally far apart. With the brakes the bikes have had since the handling retune of October 14, 2026, every cop stops inside a body's slide, so a cop riding alongside a rider who falls makes the arrest; the beat is what limits how much road each cop covers. The single level-1 cop holds the longest beat because the decent player on a Wren falls only about once every three races and seldom near it; levels 3 to 5 hold short ones because three to five cops with batons are the fall as well as the arrest. The beats were 3,000, 5,000, 3,000, 1,500, and 2,000 m before that retune and 3,000, 1,200, 1,400, 750, and 700 m when the level-1 roads were 4 km with one lane each way; see "Measured bust rates" for both retunes.
 
-The pursuit top speed always stays below the seated top speed of the bike a decent player rides at that level (Wren 190, Kite 203, Sesta 230, Sette 243, Meridian 253 km/h), by 14, 16, 14, 13, and 5 km/h, and a rider who tucks in gains another 4%, once they have held 120 km/h for a second and a half (section 6, "The tuck"). A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
+The pursuit top speed always stays below the seated top speed of the bike a decent player rides at that level (Wren 190, Kite 203, Sesta 230, Sette 243, Meridian 253 km/h), by 14, 16, 14, 20, and 5 km/h, and a rider who tucks in gains another 4%, once they have held 120 km/h for a second and a half (section 6, "The tuck"). A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
 
 A player who falls a bike behind loses that margin. A Wren at level 2 has 3 km/h on the cops seated and 11 tucked in, and the Gutter Pup (145 km/h) cannot outrun a cop at any level, not even level 1's 176 km/h. The Pup's survival rule is therefore different and should be taught on the repossession notice: **stay on the bike.** A cop can swing a baton at a riding racer but can only bust one who is off the bike, so a Pup rider survives by not crashing and not being knocked down, never by speed.
 

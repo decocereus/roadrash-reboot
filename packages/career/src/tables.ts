@@ -174,7 +174,7 @@ export const policeLevels = {
     bike: "halden-meridian-900",
     count: 4,
     sightRange: 50,
-    topSpeed: 64,
+    topSpeed: 62,
   },
   5: {
     beat: 1200,
