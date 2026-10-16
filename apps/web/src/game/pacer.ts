@@ -1,6 +1,9 @@
 export interface Pacer {
-  readonly due: (now: number, refresh: number, pace: number) => boolean;
+  readonly present: (now: number, refresh: number, pace: number) => number;
 }
+
+export const LOWEST_REFRESH = 60;
+const ONE_VSYNC_SPREAD = 1.5;
 
 export const vsyncsPerFrame = (refresh: number, pace: number): number =>
   Math.max(1, Math.round(refresh / pace));
@@ -8,31 +11,31 @@ export const vsyncsPerFrame = (refresh: number, pace: number): number =>
 export const deliveredRate = (refresh: number, pace: number): number =>
   refresh / vsyncsPerFrame(refresh, pace);
 
+const vsyncsSpanned = (gap: number, refresh: number): number => {
+  const vsync = 1000 / refresh;
+  return gap > vsync * ONE_VSYNC_SPREAD ? Math.round(gap / vsync) : 1;
+};
+
 export const createPacer = (): Pacer => {
-  let next = Number.NEGATIVE_INFINITY;
+  let last = Number.NaN;
+  let waited = 0;
   return {
-    due(now, refresh, pace) {
-      const vsyncs = vsyncsPerFrame(refresh, pace);
-      if (vsyncs === 1) {
-        next = now;
-        return true;
+    present(now, refresh, pace) {
+      waited += Number.isNaN(last) ? 1 : vsyncsSpanned(now - last, refresh);
+      last = now;
+      if (waited < vsyncsPerFrame(refresh, pace)) {
+        return 0;
       }
-      const vsync = 1000 / refresh;
-      if (now < next - vsync / 2) {
-        return false;
-      }
-      const period = vsyncs * vsync;
-      next = now - next > vsync / 2 ? now + period : next + period;
-      return true;
+      const spanned = waited;
+      waited = 0;
+      return spanned;
     },
   };
 };
 
-const LOWEST_REFRESH = 60;
 const REFRESH_WINDOW_MS = 1000;
 const FEWEST_GAPS = 20;
 const BASE_GAP_SHARE = 0.1;
-const ONE_VSYNC_SPREAD = 1.5;
 const SAME_RATE_SHARE = 0.03;
 const CONFIRMING_READINGS = 2;
 const UNSETTLED_READINGS = 4;

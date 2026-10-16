@@ -1476,8 +1476,14 @@ export async function createGame(
     }
   };
 
-  const skipsVsync = (now: number): boolean =>
-    pinnedPixelRatio <= 0 && !pacer.due(now, display.refresh, pace);
+  let frameVsyncs = 1;
+  const skipsVsync = (now: number): boolean => {
+    if (pinnedPixelRatio > 0) {
+      return false;
+    }
+    frameVsyncs = pacer.present(now, display.refresh, pace);
+    return frameVsyncs === 0;
+  };
 
   const govern = (seconds: number, busyMs: number) => {
     if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
@@ -1500,6 +1506,7 @@ export async function createGame(
       refresh: display.refresh,
       refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,
       seconds,
+      vsyncs: frameVsyncs,
     });
     if (!verdict) {
       return;

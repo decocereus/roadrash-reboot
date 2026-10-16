@@ -65,6 +65,7 @@ const ride = (
       refresh,
       refreshKnown: true,
       seconds: frame.intervalMs / 1000,
+      vsyncs: Math.max(1, Math.round((frame.intervalMs * refresh) / 1000)),
     });
     if (verdict) {
       governor.commit(verdict);
@@ -102,7 +103,7 @@ const paced = (refresh: number, pace: number) => {
     for (;;) {
       tick += 1;
       const now = tick * vsync + (tick % 3) * 0.3;
-      if (pacer.due(now, refresh, pace)) {
+      if (pacer.present(now, refresh, pace) > 0) {
         const intervalMs = now - drawn;
         drawn = now;
         return { busyMs: 1, excused: false, intervalMs };
@@ -151,23 +152,28 @@ const cycleStamps = (cycle: readonly number[], seconds: number) => {
   return stamps;
 };
 
-const rideStamps = (stamps: readonly number[]) => {
+const rideStamps = (stamps: readonly number[], pinned?: number) => {
   const governor = createGovernor(RUNGS);
   const meter = createRefreshMeter(60);
   const pacer = createPacer();
   const readings = new Set<number>();
   const changes: { at: number; reason: GovernReason }[] = [];
-  let drawn = 0;
+  const gaps: number[] = [];
+  let drawn = Number.NaN;
   for (const at of stamps) {
-    const refresh = meter.tick(at);
+    const refresh = pinned ?? meter.tick(at);
     readings.add(refresh);
-    if (pacer.due(at, refresh, governor.pace)) {
+    const vsyncs = pacer.present(at, refresh, governor.pace);
+    if (vsyncs > 0) {
+      const gap = Number.isNaN(drawn) ? 0 : at - drawn;
+      gaps.push(gap);
       const verdict = governor.judge({
         busyMs: 1,
         excused: false,
         refresh,
-        refreshKnown: meter.confirmed,
-        seconds: (at - drawn) / 1000,
+        refreshKnown: pinned !== undefined || meter.confirmed,
+        seconds: gap / 1000,
+        vsyncs,
       });
       drawn = at;
       if (verdict) {
@@ -176,7 +182,12 @@ const rideStamps = (stamps: readonly number[]) => {
       }
     }
   }
-  return { changes, confirmed: meter.confirmed, readings: [...readings] };
+  return {
+    changes,
+    confirmed: meter.confirmed,
+    gaps: gaps.slice(1),
+    readings: [...readings],
+  };
 };
 
 const steadyFrom = (changes: Change[], rung: number): number =>
@@ -276,6 +287,7 @@ describe("the quality governor", () => {
         refresh: 60,
         refreshKnown: true,
         seconds: shown.intervalMs / 1000,
+        vsyncs: Math.max(1, Math.round(shown.intervalMs / VSYNC_MS)),
       });
     const verdicts = [];
     for (let at = 0; at < 2.05; at += 0.0177) {
@@ -315,7 +327,7 @@ describe("the quality governor", () => {
     let drawn = 0;
     for (let tick = 1; tick < 200; tick += 1) {
       const now = tick * vsync;
-      if (tick !== 101 && pacer.due(now, 120, HALF_RATE)) {
+      if (tick !== 101 && pacer.present(now, 120, HALF_RATE) > 0) {
         gaps.push(now - drawn);
         drawn = now;
       }
@@ -365,16 +377,27 @@ describe("the quality governor", () => {
           [60, 10],
         ])
       )
-    ).toStrictEqual({ changes: [], confirmed: true, readings: [60] });
+    ).toMatchObject({ changes: [], confirmed: true, readings: [60] });
   });
 
   it("waits for the screen's rate before judging what players get", () => {
-    expect(rideStamps(screenStamps([[120, 1.9]]))).toStrictEqual({
+    expect(rideStamps(screenStamps([[120, 1.9]]))).toMatchObject({
       changes: [],
       confirmed: false,
       readings: [60],
     });
     expect(rideStamps(screenStamps([[120, 10]])).changes).toStrictEqual([]);
+  });
+
+  it("presents a 120 Hz screen evenly even when its rate reads a little fast", () => {
+    const stamps = Array.from({ length: 120 * 9.5 }, (_, tick) =>
+      Math.floor((tick * 1000) / 120 + (tick % 5) * 0.3 + 0.6)
+    );
+    const measured = rideStamps(stamps, 120);
+    const fast = rideStamps(stamps, 122);
+    expect(fast.changes).toStrictEqual([]);
+    expect(fast.gaps).toStrictEqual(measured.gaps);
+    expect(fast.gaps.every((gap) => gap >= 15 && gap <= 18)).toBeTruthy();
   });
 
   it("still sees slipping when jitter never lets two readings agree", () => {
