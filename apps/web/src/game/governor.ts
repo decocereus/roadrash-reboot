@@ -1,6 +1,6 @@
 import type { FrameRate, GovernReason } from "@racer/telemetry/limits";
 
-import { deliveredRate, LOWEST_REFRESH } from "./pacer.ts";
+import { LOWEST_REFRESH, vsyncsSpanned } from "./pacer.ts";
 
 export const BASE_RATE = 60;
 export const HALF_RATE = 30;
@@ -36,8 +36,6 @@ export interface Frame {
   readonly busyMs: number;
   readonly refresh: number;
   readonly refreshKnown: boolean;
-  readonly vsyncs: number;
-  readonly cadence: number;
   readonly excused: boolean;
 }
 
@@ -71,9 +69,8 @@ export const createGovernor = (rungCount: number): Governor => {
   let roughWindows = 0;
   let severe = false;
   let rateSeconds = 0;
-  let rateFrames = 0;
-  let rateExpected = 0;
-  let rateFloor = 0;
+  let rateCallbacks = 0;
+  let rateVsyncs = 0;
   let rateBusyMs = 0;
   let shortWindows = 0;
   let lateAtPace = 0;
@@ -98,9 +95,8 @@ export const createGovernor = (rungCount: number): Governor => {
     roughWindows = 0;
     severe = false;
     rateSeconds = 0;
-    rateFrames = 0;
-    rateExpected = 0;
-    rateFloor = 0;
+    rateCallbacks = 0;
+    rateVsyncs = 0;
     rateBusyMs = 0;
     shortWindows = 0;
   };
@@ -112,9 +108,9 @@ export const createGovernor = (rungCount: number): Governor => {
     forgetWindows();
   };
 
-  const watchBursts = (seconds: number, late: boolean) => {
+  const watchBursts = (seconds: number, frames: number, late: boolean) => {
     windowSeconds += seconds;
-    windowFrames += 1;
+    windowFrames += frames;
     windowLate += late ? 1 : 0;
     if (windowSeconds < BURST_WINDOW_SECONDS) {
       return;
@@ -127,38 +123,26 @@ export const createGovernor = (rungCount: number): Governor => {
     windowLate = 0;
   };
 
-  const watchRate = ({
-    seconds,
-    busyMs,
-    refreshKnown,
-    vsyncs,
-    cadence,
-  }: Frame) => {
+  const watchRate = ({ seconds, busyMs, refresh, refreshKnown }: Frame) => {
     if (!refreshKnown) {
       return;
     }
     rateSeconds += seconds;
-    rateFrames += 1;
-    rateExpected += vsyncs / cadence;
-    rateFloor += (seconds * LOWEST_REFRESH) / cadence;
+    rateCallbacks += 1;
+    rateVsyncs += vsyncsSpanned(seconds * 1000, refresh);
     rateBusyMs += busyMs;
     if (rateSeconds < RATE_WINDOW_SECONDS) {
       return;
     }
-    const expected = Math.min(
-      Math.max(rateExpected, rateFloor),
-      rateSeconds * BASE_RATE
-    );
-    const short = rateFrames < expected * DELIVERED_SHARE;
+    const short = rateVsyncs < rateSeconds * LOWEST_REFRESH * DELIVERED_SHARE;
     if (short) {
       calm = 0;
     }
-    const gpuBound = rateBusyMs / rateFrames < GPU_BOUND_BUSY_MS;
+    const gpuBound = rateBusyMs / rateCallbacks < GPU_BOUND_BUSY_MS;
     shortWindows = short && gpuBound ? shortWindows + 1 : 0;
     rateSeconds = 0;
-    rateFrames = 0;
-    rateExpected = 0;
-    rateFloor = 0;
+    rateCallbacks = 0;
+    rateVsyncs = 0;
     rateBusyMs = 0;
   };
 
@@ -187,17 +171,18 @@ export const createGovernor = (rungCount: number): Governor => {
   };
 
   const judgeQuality = (frame: Frame): Verdict | null => {
-    const { seconds, busyMs, refresh } = frame;
-    const target = Math.min(deliveredRate(refresh, currentPace()), BASE_RATE);
+    const { seconds, busyMs } = frame;
+    const target = Math.min(currentPace(), BASE_RATE);
+    const frames = Math.min(1, seconds * target);
     const late = seconds > LATE_FRAME_FACTOR / target;
     if (late) {
       lateFrames += 1;
       calm = 0;
     } else {
-      lateFrames = Math.max(0, lateFrames - CALM_FRAME_CREDIT);
+      lateFrames = Math.max(0, lateFrames - CALM_FRAME_CREDIT * frames);
       calm += seconds;
     }
-    watchBursts(seconds, late && busyMs < GPU_BOUND_BUSY_MS);
+    watchBursts(seconds, frames, late && busyMs < GPU_BOUND_BUSY_MS);
     watchRate(frame);
     const bursting = severe || roughWindows >= ROUGH_WINDOWS_TO_STEP;
     if (bursting && sinceStep > BURST_COOLDOWN_SECONDS) {

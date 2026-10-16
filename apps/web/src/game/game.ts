@@ -529,7 +529,7 @@ export async function createGame(
   let clockReset = false;
   let hudClock = 0;
   let pace = BASE_RATE;
-  const pacer = createPacer(pinnedRefresh > 0);
+  const pacer = createPacer();
   const refreshMeter = createRefreshMeter(display.refresh);
   let lastBusyMs = 0;
   let clock = 0;
@@ -1476,21 +1476,18 @@ export async function createGame(
     }
   };
 
-  let frameVsyncs = 1;
-  const skipsVsync = (now: number): boolean => {
-    if (pinnedPixelRatio > 0) {
-      return false;
-    }
-    frameVsyncs = pacer.present(now, display.refresh, pace);
-    return frameVsyncs === 0;
-  };
+  const skipsVsync = (now: number): boolean =>
+    pinnedPixelRatio <= 0 && !pacer.due(now, display.refresh, pace);
 
+  let renderedLast = false;
   const govern = (seconds: number, busyMs: number) => {
     if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
       return;
     }
     const excused = excuseFrames > 0;
-    excuseFrames = Math.max(0, excuseFrames - 1);
+    if (excused && renderedLast) {
+      excuseFrames -= 1;
+    }
     const ceiling = nativePixelRatio();
     if (ceiling !== ladder[0]?.pixelRatio) {
       changeQuality("native-dpr", () => {
@@ -1502,12 +1499,10 @@ export async function createGame(
     }
     const verdict = governor.judge({
       busyMs,
-      cadence: pacer.cadence,
       excused,
       refresh: display.refresh,
       refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,
       seconds,
-      vsyncs: frameVsyncs,
     });
     if (!verdict) {
       return;
@@ -1715,9 +1710,19 @@ export async function createGame(
     clockReset = true;
     last = performance.now();
   });
+  let lastCallback = Number.NaN;
+  const noteCallback = (now: number) => {
+    noteRefresh(now);
+    const callbackMs = now - lastCallback;
+    lastCallback = now;
+    if (callbackMs >= 0 && !halted()) {
+      govern(clamp(callbackMs / 1000, 0, MAX_FRAME_SECONDS), lastBusyMs);
+    }
+    renderedLast = false;
+  };
   renderer.setAnimationLoop((now) => {
     checkPresented();
-    noteRefresh(now);
+    noteCallback(now);
     if (skipsVsync(now)) {
       return;
     }
@@ -1746,9 +1751,9 @@ export async function createGame(
       riding && me.offRoad
     );
     renderer.info.reset();
-    govern(seconds, lastBusyMs);
     profiler?.lap("other");
     draw(clamp(accumulator / TICK_SECONDS, 0, 1), seconds);
+    renderedLast = true;
     const discarded = Math.max(0, interval - MAX_FRAME_SECONDS * 1000);
     if (meter) {
       sample.calls = renderer.info.render.calls;

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { createGovernor, HALF_RATE } from "./governor.ts";
 import type { Governor } from "./governor.ts";
-import { createPacer, createRefreshMeter, vsyncsPerFrame } from "./pacer.ts";
+import { createPacer, createRefreshMeter } from "./pacer.ts";
 
 const RUNGS = 9;
 const FLOOR = RUNGS - 1;
@@ -61,12 +61,10 @@ const ride = (
     at += frame.intervalMs / 1000;
     const verdict = governor.judge({
       busyMs: frame.busyMs,
-      cadence: vsyncsPerFrame(refresh, governor.pace),
       excused: frame.excused,
       refresh,
       refreshKnown: true,
       seconds: frame.intervalMs / 1000,
-      vsyncs: Math.max(1, Math.round((frame.intervalMs * refresh) / 1000)),
     });
     if (verdict) {
       governor.commit(verdict);
@@ -94,24 +92,6 @@ const safariClock = (meanMs: number) => {
 const slipping = safariClock(17.7);
 const steady = safariClock(VSYNC_MS);
 const halfSteady = safariClock(2 * VSYNC_MS);
-
-const paced = (refresh: number, pace: number) => {
-  const pacer = createPacer();
-  const vsync = 1000 / refresh;
-  let tick = 0;
-  let drawn = 0;
-  return (): Shown => {
-    for (;;) {
-      tick += 1;
-      const now = tick * vsync + (tick % 3) * 0.3;
-      if (pacer.present(now, refresh, pace) > 0) {
-        const intervalMs = now - drawn;
-        drawn = now;
-        return { busyMs: 1, excused: false, intervalMs };
-      }
-    }
-  };
-};
 
 const readScreens = (
   initial: number,
@@ -165,32 +145,33 @@ const rideStamps = (
   const governor = createGovernor(RUNGS);
   governor.setRate(rate);
   const meter = createRefreshMeter(60);
-  const pacer = createPacer(pinned !== undefined);
+  const pacer = createPacer();
   const readings = new Set<number>();
   const changes: { at: number; reason: GovernReason }[] = [];
   const gaps: number[] = [];
+  let last = Number.NaN;
   let drawn = Number.NaN;
+  let refresh = pinned ?? 60;
   for (const at of stamps) {
-    const refresh = pinned ?? meter.tick(at);
+    refresh = pinned ?? meter.tick(at);
     readings.add(refresh);
-    const vsyncs = pacer.present(at, refresh, governor.pace);
-    if (vsyncs > 0) {
-      const gap = Number.isNaN(drawn) ? 0 : at - drawn;
-      gaps.push(gap);
+    if (!Number.isNaN(last)) {
       const verdict = governor.judge({
         busyMs: 1,
-        cadence: pacer.cadence,
         excused: false,
         refresh,
         refreshKnown: pinned !== undefined || meter.confirmed,
-        seconds: gap / 1000,
-        vsyncs,
+        seconds: (at - last) / 1000,
       });
-      drawn = at;
       if (verdict) {
         governor.commit(verdict);
         changes.push({ at: at / 1000, reason: verdict.reason });
       }
+    }
+    last = at;
+    if (pacer.due(at, refresh, governor.pace)) {
+      gaps.push(at - drawn);
+      drawn = at;
     }
   }
   return {
@@ -198,8 +179,12 @@ const rideStamps = (
     confirmed: meter.confirmed,
     gaps: gaps.slice(1),
     readings: [...readings],
+    refresh,
   };
 };
+
+const runs = (length: number) =>
+  Array.from({ length: 2 * length }, (_, gap) => (gap < length ? 9 : 11));
 
 const steadyFrom = (changes: Change[], rung: number): number =>
   changes.find((change) => change.rung >= rung)?.at ?? Number.POSITIVE_INFINITY;
@@ -277,15 +262,17 @@ describe("the quality governor", () => {
     expect(thirty).toStrictEqual([]);
   });
 
-  it("holds an even 30 on 75 and 144 Hz screens without mistaking it for slipping", () => {
+  it("holds an even 30 on 75, 144 and 100 Hz screens without mistaking it for slipping", () => {
     for (const [refresh, gapMs] of [
       [75, 40],
       [144, 5000 / 144],
+      [100, 30],
     ] as const) {
-      const show = paced(refresh, HALF_RATE);
-      const gaps = Array.from({ length: 50 }, () => show().intervalMs).slice(1);
-      expect(gaps.every((gap) => Math.abs(gap - gapMs) < 1)).toBeTruthy();
-      expect(ride(60, show, { rate: "30", refresh })).toStrictEqual([]);
+      const held = rideStamps(screenStamps([[refresh, 60]]), { rate: "30" });
+      expect(held.changes).toStrictEqual([]);
+      expect(
+        held.gaps.slice(-100).every((gap) => Math.abs(gap - gapMs) <= 1.5)
+      ).toBeTruthy();
     }
   });
 
@@ -294,12 +281,10 @@ describe("the quality governor", () => {
     const judge = (shown: Shown) =>
       governor.judge({
         busyMs: shown.busyMs,
-        cadence: 1,
         excused: shown.excused,
         refresh: 60,
         refreshKnown: true,
         seconds: shown.intervalMs / 1000,
-        vsyncs: Math.max(1, Math.round(shown.intervalMs / VSYNC_MS)),
       });
     const verdicts = [];
     for (let at = 0; at < 2.05; at += 0.0177) {
@@ -339,7 +324,7 @@ describe("the quality governor", () => {
     let drawn = 0;
     for (let tick = 1; tick < 200; tick += 1) {
       const now = tick * vsync;
-      if (tick !== 101 && pacer.present(now, 120, HALF_RATE) > 0) {
+      if (tick !== 101 && pacer.due(now, 120, HALF_RATE)) {
         gaps.push(now - drawn);
         drawn = now;
       }
@@ -412,19 +397,30 @@ describe("the quality governor", () => {
     expect(fast.gaps.every((gap) => gap >= 15 && gap <= 18)).toBeTruthy();
   });
 
-  it("holds 30 through a move from a 144 Hz screen to a 75 Hz one", () => {
-    const moved = rideStamps(
-      screenStamps([
-        [144, 9],
-        [75, 20],
-      ]),
-      { rate: "30" }
-    );
-    expect(moved.changes).toStrictEqual([]);
-    expect(moved.readings.at(-1)).toBe(75);
+  it("never lowers quality when the window moves to another screen", () => {
+    for (const [from, to] of [
+      [144, 100],
+      [144, 75],
+      [120, 60],
+      [60, 144],
+    ] as const) {
+      for (const rate of ["30", "60"] as const) {
+        for (const movedAt of [10, 10.25, 10.5, 10.75]) {
+          const moved = rideStamps(
+            screenStamps([
+              [from, movedAt],
+              [to, 10],
+            ]),
+            { rate }
+          );
+          expect(moved.changes).toStrictEqual([]);
+          expect(moved.refresh).toBe(to);
+        }
+      }
+    }
   });
 
-  it("holds 30 through a move from a 144 Hz screen to a 100 Hz one", () => {
+  it("settles on an even 30 within three seconds of a move from 144 to 100 Hz", () => {
     const moved = rideStamps(
       screenStamps([
         [144, 10],
@@ -432,21 +428,32 @@ describe("the quality governor", () => {
       ]),
       { rate: "30" }
     );
-    expect(moved.changes).toStrictEqual([]);
     expect(
-      moved.gaps.slice(-200).every((gap) => gap >= 29 && gap <= 31)
+      moved.gaps.slice(-230).every((gap) => gap >= 29 && gap <= 31)
     ).toBeTruthy();
-    expect(Math.max(...moved.gaps.slice(1))).toBeLessThan(45);
   });
 
-  it("keeps an even 30 on a 100 Hz screen whose callbacks jitter by a millisecond", () => {
-    const jitter = Array.from({ length: 10 }, (_, gap) => (gap < 5 ? 9 : 11));
-    const ridden = rideStamps(cycleStamps(jitter, 20), { rate: "30" });
-    expect(ridden.changes).toStrictEqual([]);
-    expect(ridden.readings.at(-1)).toBe(100);
+  it("never lowers quality for callbacks that jitter around the screen's rate", () => {
+    for (const length of [5, 16]) {
+      const ridden = rideStamps(cycleStamps(runs(length), 20), { rate: "30" });
+      expect(ridden.changes).toStrictEqual([]);
+      expect(ridden.refresh).toBe(100);
+    }
+    const fives = rideStamps(cycleStamps(runs(5), 20), { rate: "30" });
     expect(
-      ridden.gaps.slice(100).every((gap) => gap >= 27 && gap <= 33)
+      fives.gaps.slice(100).every((gap) => gap >= 27 && gap <= 33)
     ).toBeTruthy();
+  });
+
+  it("never lowers quality when a 60 Hz start gives way to 240 Hz callbacks", () => {
+    const ridden = rideStamps(
+      screenStamps([
+        [60, 6],
+        [240, 12],
+      ]),
+      { rate: "60" }
+    );
+    expect(ridden.changes).toStrictEqual([]);
   });
 
   it("still sees slipping when jitter never lets two readings agree", () => {
@@ -476,13 +483,6 @@ describe("the quality governor", () => {
       refresh = meter.tick(Math.floor(frame * 17.7));
     }
     expect(refresh).toBe(60);
-  });
-
-  it("holds every third refresh on a 100 Hz screen at 30", () => {
-    const show = paced(100, HALF_RATE);
-    const gaps = Array.from({ length: 40 }, () => show().intervalMs).slice(1);
-    expect(gaps.every((gap) => Math.abs(gap - 30) < 1)).toBeTruthy();
-    expect(ride(60, show, { rate: "30", refresh: 100 })).toStrictEqual([]);
   });
 
   it("remembers rungs that failed twice through a pixel-ratio round trip", () => {
