@@ -6,6 +6,8 @@ Lengthened October 14, 2026. The original game's level-1 roads measure 8.0 to 8.
 
 Jumps added October 15, 2026. Three roads gained a hump across the whole road, made by splitting a straight, so no road changed length and no bend moved: **the Pier hump** on Breakwater Run and **the Pressure Ridge** on Cinder Wash launch at 172 km/h, and **the Slag Heap hump** on Slag Row at 163 km/h. Every road gained steel ramps at fixed places: two each on Breakwater Run, Cinder Wash, and Hollow Pine Road, one on Ridge Road, and two on Slag Row with a third from level 4. The section tables of the three roads with a hump are renumbered to match the plans. "Ramps and humps" below says how they are placed, and each road has a table of its ramps. The pilot's times in "Ridden by the pilot" were taken before the jumps.
 
+Hazards added October 16, 2026. Every road has oil slicks, rocks, and potholes on the tarmac, placed from the road's seed by the rules in "Hazards" below: four to six at level 1 and nine to fifteen at level 5. No road changed length and no bend or ramp moved.
+
 All figures were produced by compiling each plan at each level with `compileTrack` and reading the compiled `curvature` and `slopeRate` arrays. A bend's radius is one over its peak curvature, which is `turn / (length × 0.7)` because of the 30% ease in and out. A bend's hold speed is where full steer equals the outward push for that bike's `BikeSpec` in `game-design.md`. The hold speeds quoted in the road sections below are from before the grip retune of October 15, 2026 (`game-design.md`, "Bends and the lean scrub"), which raised every `curvePush` by 30%; multiply them by 1.14 for the current bikes, so a 70 m right angle that held at 97 km/h on a Wren now holds at 112. Since that retune a leaned bike also scrubs its own speed, so "not flat" below no longer means the bend needs the brake: see the paragraph after the table. A crest's launch speed is where `slopeRate × speed²` passes gravity, the condition `rider.ts` uses. No person has ridden the roads yet. The AI pilot finishes every level-1 road on its own without a crash (section "Ridden by the pilot" below), but passing numbers do not show that a road plays well, so each needs a play test.
 
 ## Summary
@@ -99,6 +101,52 @@ Every ramp is placed by the same rules. `compileFeatures` in `features.ts` enfor
 - **It stands off the centre line, where traffic cannot reach it.** On a road with two lanes each way a ramp is 1.4 m wide and centred on the dashed line between the two same-way lanes. On a road with one lane each way it is narrower and stands between the same-way lane and the kerb: 1.2 m wide with its centre 3.8 m out on Ridge Road, 1 m wide and 3.45 m out on Hollow Pine Road. Traffic keeps to the lane centres and never changes lane, so cars and vans clear every ramp; a truck, 2.4 m wide, clears the one-lane ramps and Cinder Wash's but overhangs the edge of a 1.4 m deck by up to 0.1 m on Breakwater Run and 0.15 m on Slag Row, because traffic does not see ramps. Off the centre line the chase camera sees the ramp beside the player's bike from far off instead of behind it, and a rider who does not want the jump rides past it in a lane.
 
 The compiled ramps are indexed in 32 m cells along the road, and the simulation and the renderer both find the deck under a bike with `supportAt(track, s, x, out)`.
+
+## Hazards
+
+A hazard is something lying on the road: an oil slick, a rock (drawn as a fallen crate on the city roads), or a pothole. The track carries a schedule of them, `Track.hazards`, and the race spawns each one into `RaceState.hazards` when it is created, so a hazard is race state, not part of the road's surface. Hazards are good to avoid, not must avoid: none is a crash on contact. Oil is safe straight across at any speed and puts down only a bike steering hard on it; a rock bumps the bike into the air and costs speed, and throws the rider only from about 210 km/h or when the bike is already steering hard; a pothole is a jolt and a wobble. They are drawn at their real size and are not made to stand out, so a rider who sees one late chooses between a quick swerve and riding through. `docs/architecture.md` has the numbers.
+
+| Kind | Footprint | Height | Where it lies across the road |
+| --- | --- | --- | --- |
+| Oil slick | 5.2 × 2.2 m | flat | In a lane, up to 0.5 m off its centre |
+| Rock | 0.9 × 0.9 m | 0.45 m | On a line no traffic touches: the centre line, the dashed line between two same-way or two oncoming lanes, or 0.05 m inside the road edge |
+| Pothole | 1 × 1.2 m | flat | In a lane, up to 0.9 m off its centre, in a wheel track |
+
+`placeHazards` in `packages/track/src/hazards.ts` walks each road from the start with its own seeded stream (the road's seed with a salt), so the hazards do not move when the props or the traffic change. A plan's `hazardsPerKilometre`, 2 on every road, sets the walk: the gap to the next candidate is 0.6 to 1.4 times 500 m. For each candidate the stream draws its kind from the region's `hazardMix`, its line across the road (oil and potholes go in a same-way lane seven times in ten), and the level it appears from: 55% of candidates from level 1 and 11% more from each level after. All four numbers are drawn whether or not the candidate is kept, so a hazard on the part of the road a player already knows is in the same place, with the same id, at every level. A candidate is kept when:
+
+- **It is clear of the start and the finish.** It is at least 450 m past the start line and 150 m before the finish.
+- **It is clear of every ramp.** Its footprint is at least 30 m outside every ramp's reservation, its approach and its landing corridor, including ramps that only appear at a later level, so no hazard sits on a ramp, in its run-up, or where a bike comes down.
+- **It can be seen.** From 170, 130, 90, and 50 m before it, the line from a rider's eye 1.2 m above the road on the hazard's own line to a point 0.1 m above the hazard stays above the road and inside the verges. 170 m is 2.35 s at 260 km/h, faster than every bike but a tucked Anvil or Nera, so no hazard waits just past a blind crest or round a bend the trees or buildings hide. Twisty stretches keep few hazards: Ridge Road has none in its first 4.5 km.
+
+Traffic never changes lane and does not see hazards. Cars drive over oil and potholes, and a truck in any lane clears every rock. The track tests check every rule above at every level, that rocks stand at least 1.65 m from every lane centre, that a level-1 road has three to seven hazards and a level-5 road at least twice as many, and that every level-1 hazard is in the same place at every later level.
+
+| Region       |  Oil | Rock | Pothole |
+| ------------ | ---: | ---: | ------: |
+| Salt Coast   | 0.45 | 0.25 |     0.3 |
+| Cinder Flats | 0.15 | 0.55 |     0.3 |
+| Kettle Woods | 0.15 |  0.5 |    0.35 |
+| Lowtown      | 0.45 | 0.15 |     0.4 |
+| Stonepeak    |  0.2 |  0.5 |     0.3 |
+
+| Road             | Level 1 |   2 |   3 |   4 |   5 |
+| ---------------- | ------: | --: | --: | --: | --: |
+| Breakwater Run   |       5 |   8 |  11 |  14 |  15 |
+| Cinder Wash      |       4 |   6 |   7 |  11 |  12 |
+| Hollow Pine Road |       6 |   7 |   8 |  10 |  13 |
+| Slag Row         |       5 |   8 |   8 |   8 |  11 |
+| Ridge Road       |       4 |   6 |   7 |   8 |   9 |
+
+The level-1 hazards, by id, kind, position along the road, and position across it:
+
+| Road | Hazards at level 1 |
+| --- | --- |
+| Breakwater Run | `hazard-2` pothole at 1,367 m, x 1.82; `hazard-6` pothole at 3,431 m, x 6.30; `hazard-8` rock at 4,363 m, x −7.60; `hazard-11` oil at 5,926 m, x −1.58; `hazard-15` rock at 7,812 m, x 0 |
+| Cinder Wash | `hazard-1` rock at 714 m, x −8.50; `hazard-4` pothole at 2,177 m, x 6.02; `hazard-6` rock at 3,136 m, x 8.50; `hazard-16` rock at 8,257 m, x 0 |
+| Hollow Pine Road | `hazard-3` rock at 1,814 m, x 3.50; `hazard-5` pothole at 2,652 m, x −1.31; `hazard-9` oil at 4,606 m, x 1.37; `hazard-10` pothole at 5,073 m, x 1.70; `hazard-13` pothole at 6,355 m, x 2.21; `hazard-14` rock at 6,681 m, x 0 |
+| Slag Row | `hazard-1` rock at 716 m, x 0; `hazard-6` rock at 3,556 m, x −3.50; `hazard-12` pothole at 6,695 m, x 4.38; `hazard-13` oil at 7,055 m, x 4.94; `hazard-15` oil at 8,339 m, x 1.76 |
+| Ridge Road | `hazard-8` pothole at 4,514 m, x 1.52; `hazard-10` pothole at 5,495 m, x −2.14; `hazard-13` pothole at 6,509 m, x −1.85; `hazard-14` oil at 6,988 m, x 2.18 |
+
+Roadblock spots are not checked against hazards yet; roadblocks are not in the simulation.
 
 ## How levels extend a road
 

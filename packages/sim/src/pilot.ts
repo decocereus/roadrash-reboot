@@ -6,17 +6,27 @@ import type { Track } from "@racer/track/track";
 
 import { grudgeSide, nearestRival } from "./combat.ts";
 import { topSpeedOf } from "./engine.ts";
+import { rockUpsetShare } from "./hazards.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
-import { HARD_LANDING, towardBike } from "./rider.ts";
+import { HARD_LANDING, LANDING_SLIP, towardBike } from "./rider.ts";
 import {
+  BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
   clamp,
   curvePushOf,
   GRAVITY,
   lateralSpeedLimit,
   PLAYER_RIDER,
+  TICK_SECONDS,
 } from "./state.ts";
-import type { BikeSpec, RaceState, RiderInput, RiderState } from "./state.ts";
+import type {
+  BikeSpec,
+  Hazard,
+  RaceState,
+  RiderInput,
+  RiderState,
+  TrafficCar,
+} from "./state.ts";
 import { kick, weapons } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
 
@@ -65,6 +75,32 @@ const MISREAD_SLACK = 0.1;
 const MISREAD_DIVE = 5;
 const STRAIGHTEN_SECONDS = 0.6;
 const STRAIGHTEN_SCAN_STEP = 2;
+const HAZARD_SIGHT_SECONDS = 2.35;
+const HAZARD_SIGHT_EXTRA = 15;
+const DODGE_MARGIN = 0.45;
+const DODGE_EDGE = 0.2;
+const HAZARD_MISS_SHARE = 0.4;
+const ROCK_THROUGH_SPEED = 150 / 3.6;
+const MOVE_COST = 0.05;
+const LANE_RANK_COST = 1;
+const OFF_LANE_COST = 0.2;
+const PURSUIT_COST = -1;
+const HYSTERESIS = 0.15;
+const LINE_MATCH = 0.05;
+const POTHOLE_COST = 0.6;
+const OIL_COST = 1;
+const ROCK_COST = 2;
+const ROCK_COST_PER_SPEED = 2;
+const ROCK_FAST = 55.6;
+const PASS_MARGIN = 0.3;
+const CONTACT_MARGIN = 0.1;
+const FORECAST_SECONDS = 3.5;
+const CRASH_COST = 10;
+const FOLLOW_COST = 5;
+const ROCK_LANDING_SHARE = 0.85;
+const LANDING_SEARCH_STEPS = 8;
+const SLIPPING = 0.2;
+const SLIPPING_STEER = 0.45;
 
 interface Pace {
   readonly cap: number;
@@ -289,12 +325,330 @@ const seamOf = (
   return straddlesCentre ? middle + CENTRE_SEAM_BIAS : middle;
 };
 
-const laneAim = (
+const hazardRoll = (state: RaceState): number => {
+  state.hazardDice = nextSeed(state.hazardDice);
+  return unitOf(state.hazardDice);
+};
+
+const overlooks = (
+  state: RaceState,
+  rider: RiderState,
+  hazardIndex: number
+): boolean => {
+  if (rider.hazardSeen !== hazardIndex) {
+    rider.hazardSeen = hazardIndex;
+    rider.hazardMissed =
+      hazardRoll(state) < (1 - rider.profile.skill) * HAZARD_MISS_SHARE;
+  }
+  return rider.hazardMissed;
+};
+
+const dodgeReach = (hazard: Hazard): number =>
+  hazard.halfWidth + BIKE_HALF_WIDTH + DODGE_MARGIN;
+
+const metresToContact = (rider: RiderState, hazard: Hazard): number =>
+  hazard.s - hazard.halfLength - BIKE_HALF_LENGTH - rider.s;
+
+const sightOf = (rider: RiderState): number =>
+  rider.speed * HAZARD_SIGHT_SECONDS + HAZARD_SIGHT_EXTRA;
+
+const inSight: number[] = [];
+
+const gatherInSight = (state: RaceState, rider: RiderState): void => {
+  inSight.length = 0;
+  const sight = sightOf(rider);
+  let nearest = -1;
+  for (const [index, hazard] of state.hazards.entries()) {
+    const passed = hazard.s + hazard.halfLength + BIKE_HALF_LENGTH < rider.s;
+    const ahead = metresToContact(rider, hazard);
+    if (!passed && ahead <= sight) {
+      inSight.push(index);
+      const closest = state.hazards[nearest];
+      if (!closest || ahead < metresToContact(rider, closest)) {
+        nearest = index;
+      }
+    }
+  }
+  if (nearest >= 0 && overlooks(state, rider, nearest)) {
+    inSight.splice(inSight.indexOf(nearest), 1);
+  }
+};
+
+const contactReach = (hazard: Hazard): number =>
+  hazard.halfWidth + BIKE_HALF_WIDTH + CONTACT_MARGIN;
+
+const hazardCost = (hazard: Hazard, speed: number): number => {
+  if (hazard.kind === "rock") {
+    return ROCK_COST + ROCK_COST_PER_SPEED * (speed / ROCK_FAST) ** 2;
+  }
+  return hazard.kind === "oil" ? OIL_COST : POTHOLE_COST;
+};
+
+interface Obstruction {
+  readonly start: number;
+  readonly end: number;
+  readonly x: number;
+  readonly reach: number;
+  readonly cost: number;
+  readonly rock: boolean;
+  readonly curvature: number;
+  readonly metres: number;
+  readonly traffic: boolean;
+}
+
+const obstructions: Obstruction[] = [];
+const struck: boolean[] = [];
+
+const gatherObstructions = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState
+): void => {
+  obstructions.length = 0;
+  const pace = Math.max(1, rider.speed);
+  for (const index of inSight) {
+    const hazard = state.hazards[index];
+    if (hazard) {
+      obstructions.push({
+        cost: hazardCost(hazard, rider.speed),
+        curvature: curvatureAt(track, hazard.s),
+        end: (hazard.s + hazard.halfLength + BIKE_HALF_LENGTH - rider.s) / pace,
+        metres: Math.max(0, metresToContact(rider, hazard)),
+        reach: contactReach(hazard),
+        rock: hazard.kind === "rock",
+        start: metresToContact(rider, hazard) / pace,
+        traffic: false,
+        x: hazard.x,
+      });
+    }
+  }
+  for (const car of state.cars) {
+    const closing = rider.speed - car.speed;
+    const start =
+      (car.s - car.halfLength - BIKE_HALF_LENGTH - rider.s) / closing;
+    const end = (car.s + car.halfLength + BIKE_HALF_LENGTH - rider.s) / closing;
+    if (closing > 0 && end >= 0 && start <= FORECAST_SECONDS) {
+      obstructions.push({
+        cost: CRASH_COST,
+        curvature: 0,
+        end,
+        metres: 0,
+        reach: car.halfWidth + BIKE_HALF_WIDTH,
+        rock: false,
+        start,
+        traffic: true,
+        x: car.x,
+      });
+    }
+  }
+};
+
+const toll = { cost: 0, rock: false, speed: Number.POSITIVE_INFINITY };
+
+const throwsOnRock = (
+  bike: BikeSpec,
+  lateralSpeed: number,
+  curvature: number,
+  speed: number
+): boolean =>
+  Math.abs(lateralSpeed + curvePushOf(bike, curvature, speed)) /
+    Math.max(1, lateralSpeedLimit(bike, speed)) +
+    rockUpsetShare(speed) >
+  LANDING_SLIP * ROCK_LANDING_SHARE;
+
+const rockLandingSpeed = (
+  bike: BikeSpec,
+  lateralSpeed: number,
+  curvature: number,
+  speed: number
+): number => {
+  if (!throwsOnRock(bike, lateralSpeed, curvature, speed)) {
+    return speed;
+  }
+  let low = 0;
+  let high = speed;
+  for (let step = 0; step < LANDING_SEARCH_STEPS; step += 1) {
+    const middle = (low + high) / 2;
+    if (throwsOnRock(bike, lateralSpeed, curvature, middle)) {
+      high = middle;
+    } else {
+      low = middle;
+    }
+  }
+  return low;
+};
+
+const landOnRock = (
+  rider: RiderState,
+  obstruction: Obstruction,
+  lateralSpeed: number
+): void => {
+  const landing = rockLandingSpeed(
+    rider.bike,
+    lateralSpeed,
+    obstruction.curvature,
+    rider.speed
+  );
+  if (
+    rider.speed ** 2 - landing ** 2 >
+    2 * PLANNED_BRAKING * obstruction.metres
+  ) {
+    toll.cost += CRASH_COST;
+  }
+  toll.speed = Math.min(toll.speed, landing);
+};
+
+const tally = (
+  rider: RiderState,
+  x: number,
+  seconds: number,
+  lateralSpeed: number,
+  braking: boolean
+): void => {
+  for (const [index, obstruction] of obstructions.entries()) {
+    if (
+      !struck[index] &&
+      !(braking && obstruction.traffic) &&
+      seconds >= obstruction.start &&
+      seconds <= obstruction.end &&
+      Math.abs(x - obstruction.x) < obstruction.reach
+    ) {
+      struck[index] = true;
+      toll.cost += obstruction.cost;
+      if (obstruction.rock) {
+        toll.rock = true;
+        landOnRock(rider, obstruction, lateralSpeed);
+      }
+    }
+  }
+};
+
+const weigh = (
+  track: Track,
+  rider: RiderState,
+  line: number,
+  braking: boolean
+): void => {
+  toll.cost = 0;
+  toll.rock = false;
+  toll.speed = Number.POSITIVE_INFINITY;
+  struck.length = 0;
+  let horizon = 0;
+  for (const obstruction of obstructions) {
+    horizon = Math.max(horizon, obstruction.end);
+  }
+  horizon = Math.min(FORECAST_SECONDS, horizon);
+  const { bike } = rider;
+  const limit = Math.min(
+    MAX_LATERAL_SPEED,
+    lateralSpeedLimit(bike, rider.speed)
+  );
+  const turn =
+    bike.steerRate *
+    weapons[rider.weapon].steerFactor *
+    (1 - rider.slip) *
+    TICK_SECONDS;
+  let { x } = rider;
+  let lateralSpeed =
+    rider.lateralSpeed -
+    curvePushOf(bike, curvatureAt(track, rider.s), rider.speed);
+  tally(rider, x, 0, lateralSpeed, braking);
+  for (let tick = 1; tick * TICK_SECONDS <= horizon; tick += 1) {
+    const settling =
+      (lateralSpeed * Math.abs(lateralSpeed)) / (2 * bike.steerRate);
+    const wanted = clamp(
+      (line - x - settling) * LANE_CHANGE_RATE,
+      -limit,
+      limit
+    );
+    lateralSpeed += clamp(wanted - lateralSpeed, -turn, turn);
+    x += lateralSpeed * TICK_SECONDS;
+    tally(rider, x, tick * TICK_SECONDS, lateralSpeed, braking);
+  }
+};
+
+const straddlesRamp = (track: Track, rider: RiderState, x: number): boolean => {
+  const jump = track.features[nextJumpFrom(track, rider.s)];
+  if (!jump || jump.s - rider.s > sightOf(rider)) {
+    return false;
+  }
+  const across = Math.abs(x - jump.x);
+  return (
+    across > jump.width / 2 - BIKE_HALF_WIDTH &&
+    across < jump.width / 2 + JUMP_WALL_CLEARANCE
+  );
+};
+
+const passable = (rider: RiderState, car: TrafficCar): boolean =>
+  car.cruiseSpeed >= 0 &&
+  car.s > rider.s &&
+  car.s - rider.s <= sightOf(rider) &&
+  rider.speed > car.speed;
+
+const offLane: number[] = [];
+
+const offLaneLines = (
+  state: RaceState,
+  rider: RiderState
+): readonly number[] => {
+  offLane.length = 0;
+  for (const index of inSight) {
+    const hazard = state.hazards[index];
+    if (hazard) {
+      const side = Math.sign(rider.x - hazard.x) || 1;
+      offLane.push(
+        hazard.x + side * dodgeReach(hazard),
+        hazard.x - side * dodgeReach(hazard)
+      );
+    }
+  }
+  for (const car of state.cars) {
+    if (passable(rider, car)) {
+      const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
+      offLane.push(car.x + pass, car.x - pass);
+    }
+  }
+  if (Number.isFinite(rider.pilotLine)) {
+    offLane.push(rider.pilotLine);
+  }
+  return offLane;
+};
+
+interface Line extends Aim {
+  readonly cost: number;
+}
+
+const followLine = (
+  rider: RiderState,
+  lanes: readonly number[],
+  threatIn: (index: number) => Threat | undefined
+): Line | undefined => {
+  const current = nearestLaneIndex(lanes, rider.x);
+  const ahead = threatIn(current);
+  const lane = lanes[current];
+  if (
+    !ahead ||
+    lane === undefined ||
+    ahead.seconds * 2 * PLANNED_BRAKING < rider.speed - ahead.speed
+  ) {
+    return undefined;
+  }
+  return {
+    cost: LANE_RANK_COST * current + FOLLOW_COST,
+    speed: Math.max(0, ahead.speed),
+    x: lane,
+  };
+};
+
+const choice = { cost: Number.POSITIVE_INFINITY, speed: 0, x: 0 };
+
+const chooseLine = (
   state: RaceState,
   track: Track,
   riderIndex: number,
   rider: RiderState,
-  cruise: number
+  cruise: number,
+  pursuit?: Aim
 ): Aim => {
   const { oncomingLanes, sameWayLanes } = track;
   const lanes = [...sameWayLanes, ...oncomingLanes];
@@ -318,11 +672,78 @@ const laneAim = (
       const crossed = threatIn(index);
       return crossed !== undefined && crossed.seconds < CROSSING_SECONDS;
     });
+  gatherInSight(state, rider);
+  const kept = rider.pilotLine;
+  const weighing = inSight.length > 0 || Number.isFinite(kept);
+  const room = track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE;
+  choice.cost = Number.POSITIVE_INFINITY;
+  if (weighing) {
+    gatherObstructions(state, track, rider);
+  }
+  const offer = (
+    x: number,
+    speed: number,
+    cost: number,
+    braking: boolean
+  ): void => {
+    let total = cost + MOVE_COST * Math.abs(x - rider.x);
+    let lineSpeed = speed;
+    if (weighing) {
+      weigh(track, rider, x, braking);
+      total += toll.cost;
+      lineSpeed = Math.min(
+        speed,
+        toll.speed,
+        toll.rock ? ROCK_THROUGH_SPEED : Number.POSITIVE_INFINITY
+      );
+      if (Math.abs(x - kept) < LINE_MATCH) {
+        total -= HYSTERESIS;
+      }
+    }
+    if (total < choice.cost) {
+      choice.cost = total;
+      choice.speed = lineSpeed;
+      choice.x = x;
+    }
+  };
+  const offerBetweenLanes = (x: number): void => {
+    if (
+      Math.abs(x) <= room &&
+      !straddlesRamp(track, rider, x) &&
+      !laneThreat(state, riderIndex, rider, x) &&
+      !crossesBlocked(x)
+    ) {
+      offer(
+        x,
+        cruise,
+        LANE_RANK_COST * nearestLaneIndex(lanes, x) + OFF_LANE_COST,
+        false
+      );
+    }
+  };
+  if (pursuit) {
+    offer(pursuit.x, pursuit.speed, PURSUIT_COST, false);
+  }
   for (const [index, lane] of lanes.entries()) {
     if (!threatIn(index) && !crossesBlocked(lane)) {
-      return { speed: cruise, x: lane };
+      offer(lane, cruise, LANE_RANK_COST * index, false);
     }
   }
+  if (weighing) {
+    const follow = followLine(rider, lanes, threatIn);
+    if (follow) {
+      offer(follow.x, follow.speed, follow.cost, true);
+    }
+    for (const x of offLaneLines(state, rider)) {
+      offerBetweenLanes(x);
+    }
+  }
+  if (choice.cost < Number.POSITIVE_INFINITY) {
+    const stays = Math.abs(choice.x - kept) < LINE_MATCH;
+    rider.pilotLine = inSight.length > 0 || stays ? choice.x : Number.NaN;
+    return { speed: choice.speed, x: choice.x };
+  }
+  rider.pilotLine = Number.NaN;
   const current = nearestLaneIndex(lanes, rider.x);
   const neighbour = neighbourOf(lanes, sameWayLanes.length, current);
   const pace = threats[neighbour < sameWayLanes.length ? neighbour : current];
@@ -557,16 +978,20 @@ const copAim = (
     };
   }
   if (!target) {
-    return laneAim(state, track, copIndex, cop, PATROL_SPEED);
+    return chooseLine(state, track, copIndex, cop, PATROL_SPEED);
   }
   const pursuit = pursuitOf(state, cop, target);
-  if (
+  const open =
     pursuit.engaged &&
-    !carOnTheWay(state, track, cop, pursuit.x, pursuit.within)
-  ) {
-    return pursuit;
-  }
-  return laneAim(state, track, copIndex, cop, pursuit.speed);
+    !carOnTheWay(state, track, cop, pursuit.x, pursuit.within);
+  return chooseLine(
+    state,
+    track,
+    copIndex,
+    cop,
+    pursuit.speed,
+    open ? pursuit : undefined
+  );
 };
 
 const ride = (
@@ -589,11 +1014,12 @@ const ride = (
     curvatureAt(track, rider.s),
     rider.speed
   );
+  const steerLimit = rider.slip > SLIPPING ? SLIPPING_STEER : 1;
   input.steer = clamp(
     (lateralSpeed + push) /
       Math.max(1, lateralSpeedLimit(rider.bike, rider.speed)),
-    -1,
-    1
+    -steerLimit,
+    steerLimit
   );
 
   const skill = Math.min(1, rider.profile.skill + pace.lift);
@@ -705,7 +1131,7 @@ export const pilotInput = (
       rider,
       police
         ? copAim(state, track, riderIndex, rider)
-        : laneAim(state, track, riderIndex, rider, Number.POSITIVE_INFINITY)
+        : chooseLine(state, track, riderIndex, rider, Number.POSITIVE_INFINITY)
     )
   );
   ride(

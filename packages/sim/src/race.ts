@@ -10,6 +10,8 @@ import {
   stepAttack,
   stepRiderContacts,
 } from "./combat.ts";
+import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
+import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
 import { stepRider, throwRider } from "./rider.ts";
@@ -19,6 +21,7 @@ import type {
   PacingRules,
   PlayerSetup,
   PoliceSetup,
+  RaceEvent,
   RaceSetup,
   RaceState,
   RiderInput,
@@ -33,6 +36,7 @@ const GRID_ROW_GAP = 7;
 const FIRST_COP_S = 1500;
 const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
+const HAZARD_DICE_SALT = 0x2e_c3;
 const DEFAULT_LEVEL = 3;
 export const MAX_RIVALS = 14;
 
@@ -130,12 +134,16 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   bodyX: spot.x,
   brake: 0,
   bumpLoss: 0,
+  bumpedBy: -1,
   chase: -1,
   condition: FULL_CONDITION,
   crashes: 0,
   finishTick: -1,
   gear: 1,
   grudge: entry.grudge,
+  hazardContacts: [],
+  hazardMissed: false,
+  hazardSeen: -1,
   heading: 0,
   hitStun: 0,
   idleTicks: 0,
@@ -150,11 +158,15 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   modeTicks: 0,
   offRoad: false,
   parked: false,
+  pilotLine: Number.NaN,
   post: spot.s,
   profile: entry.profile,
   revs: 0,
   s: spot.s,
   shiftTicks: 0,
+  slip: 0,
+  slipFrom: -1,
+  slipTicks: 0,
   speed: 0,
   staleBrake: false,
   staleSteer: false,
@@ -296,10 +308,12 @@ export const createRace = (setup: RaceSetup): RaceState => {
     cop.parked = true;
     riders.push(cop);
   }
-  return {
+  const state: RaceState = {
     cars: createTraffic(track, createRandom(seed)),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
+    hazardDice: nextSeed(seed + HAZARD_DICE_SALT),
+    hazards: [],
     pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
     police: {
       beat: police.beat,
@@ -310,6 +324,8 @@ export const createRace = (setup: RaceSetup): RaceState => {
     riders,
     tick: 0,
   };
+  spawnScheduledHazards(state, track);
+  return state;
 };
 
 export const distanceLeft = (track: Track, rider: RiderState): number =>
@@ -338,6 +354,33 @@ export const standings = (state: RaceState): number[] =>
     })
     .map((entry) => entry.index);
 
+const throwForHazard: ThrowForHazard = (
+  state,
+  riderIndex,
+  cause,
+  bikeKeep,
+  bodyKeep,
+  hazard
+) => {
+  throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, undefined, hazard);
+};
+
+type Landing = Extract<RaceEvent, { kind: "land" }>;
+
+const touchdownOf = (
+  state: RaceState,
+  riderIndex: number,
+  from: number
+): Landing | undefined => {
+  for (let index = from; index < state.events.length; index += 1) {
+    const event = state.events[index];
+    if (event?.kind === "land" && event.rider === riderIndex) {
+      return event;
+    }
+  }
+  return undefined;
+};
+
 export const stepRace = (
   state: RaceState,
   track: Track,
@@ -347,7 +390,20 @@ export const stepRace = (
   state.tick += 1;
   stepTraffic(state, track);
   for (let index = 0; index < state.riders.length; index += 1) {
+    const rider = state.riders[index];
+    const fromS = rider?.s ?? 0;
+    const fromX = rider?.x ?? 0;
+    const eventsBefore = state.events.length;
     stepRider(state, track, index, inputs[index] ?? neutralInput);
+    const touchdown = touchdownOf(state, index, eventsBefore);
+    meetHazards(
+      state,
+      track,
+      index,
+      touchdown?.s ?? fromS,
+      touchdown?.x ?? fromX,
+      throwForHazard
+    );
   }
   stepRiderContacts(
     state,
