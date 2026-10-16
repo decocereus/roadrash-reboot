@@ -38,10 +38,11 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 | `--no-trace` | off | Skip the trace, which otherwise runs to count GC pauses and long tasks. |
 | `--shots` | none | Comma-separated ticks to screenshot. |
 | `--port` | 9333 | DevTools port. |
+| `--browser` | `chrome` | `chrome` is headless Google Chrome. `helium` is a windowed Helium, opened behind the other windows with `open -g` so it does not take focus. |
 | `--width`, `--height`, `--scale` | 1512, 860, 2 | Viewport and device scale factor. |
 | `--out` | `tools/perf/results` | Where JSON, traces, and screenshots go. The folder is ignored by git. |
 
-Each run launches `/Applications/Google Chrome.app` with `--headless=new`, a new temporary profile that is deleted afterwards, `--force-device-scale-factor`, `--disable-gpu-vsync --disable-frame-rate-limit` so frames are not capped, and `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`. The summary prints the unmasked renderer string; it should read `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` and never SwiftShader.
+Each run launches `/Applications/Google Chrome.app` with `--headless=new` (or Helium, windowed, with `--browser helium`), a new temporary profile that is deleted afterwards, `--force-device-scale-factor`, `--disable-gpu-vsync --disable-frame-rate-limit` so frames are not capped, and `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`. The summary prints the unmasked renderer string; it should read `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` and never SwiftShader.
 
 ## The page side
 
@@ -68,6 +69,8 @@ To find a window again, step `benchPlan("stress")` with `pilotInput` for every r
 | `line`, `bloom`, `grade` | The outline, bloom, and grade passes |
 
 On ANGLE over Metal the timer queries answer, but the per-pass GPU times they give add up to more than the frame interval, so treat them as unreliable there and compare `?ratio=1` against `?ratio=2` to see fill cost instead.
+
+Headless Chrome is allowed here because the bench measures uncapped frame cost. Verifying how the game looks and plays uses a windowed Helium; see `.claude/skills/verify-rushline/SKILL.md`.
 
 ## Play-test recordings
 
