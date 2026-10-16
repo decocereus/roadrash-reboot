@@ -49,6 +49,7 @@ const readingOf = (gaps: readonly number[]): number | null => {
 
 export interface RefreshMeter {
   readonly tick: (now: number) => number;
+  readonly confirmed: boolean;
 }
 
 export const createRefreshMeter = (initial: number): RefreshMeter => {
@@ -56,30 +57,27 @@ export const createRefreshMeter = (initial: number): RefreshMeter => {
   let start = Number.NaN;
   let last = Number.NaN;
   const gaps: number[] = [];
-  let read = false;
+  let confirmed = false;
   let candidate = Number.NaN;
   let candidateSeen = 0;
 
   const settle = (reading: number) => {
-    if (!read) {
-      read = true;
-      refresh = reading;
-      return;
-    }
-    if (Math.abs(reading - refresh) <= refresh * SAME_RATE_SHARE) {
-      candidateSeen = 0;
-      return;
-    }
     const same = Math.abs(reading - candidate) <= reading * SAME_RATE_SHARE;
     candidateSeen = same ? candidateSeen + 1 : 1;
     candidate = reading;
-    if (candidateSeen >= CONFIRMING_READINGS) {
+    if (candidateSeen < CONFIRMING_READINGS) {
+      return;
+    }
+    confirmed = true;
+    if (Math.abs(reading - refresh) > refresh * SAME_RATE_SHARE) {
       refresh = reading;
-      candidateSeen = 0;
     }
   };
 
   return {
+    get confirmed() {
+      return confirmed;
+    },
     tick(now) {
       if (Number.isNaN(last)) {
         start = now;

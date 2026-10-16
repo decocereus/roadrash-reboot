@@ -63,6 +63,7 @@ const ride = (
       busyMs: frame.busyMs,
       excused: frame.excused,
       refresh,
+      refreshKnown: true,
       seconds: frame.intervalMs / 1000,
     });
     if (verdict) {
@@ -124,6 +125,39 @@ const readScreens = (
     }
   }
   return refresh;
+};
+
+const rideScreens = (screens: readonly (readonly [number, number])[]) => {
+  const governor = createGovernor(RUNGS);
+  const meter = createRefreshMeter(60);
+  const pacer = createPacer();
+  const readings = new Set<number>();
+  const changes: GovernReason[] = [];
+  let now = 0;
+  let drawn = 0;
+  for (const [rate, seconds] of screens) {
+    for (let tick = 0; tick < rate * seconds; tick += 1) {
+      now += 1000 / rate;
+      const at = Math.floor(now + ((tick * 7) % 5) * 0.3);
+      const refresh = meter.tick(at);
+      readings.add(refresh);
+      if (pacer.due(at, refresh, governor.pace)) {
+        const verdict = governor.judge({
+          busyMs: 1,
+          excused: false,
+          refresh,
+          refreshKnown: meter.confirmed,
+          seconds: (at - drawn) / 1000,
+        });
+        drawn = at;
+        if (verdict) {
+          governor.commit(verdict);
+          changes.push(verdict.reason);
+        }
+      }
+    }
+  }
+  return { changes, confirmed: meter.confirmed, readings: [...readings] };
 };
 
 const steadyFrom = (changes: Change[], rung: number): number =>
@@ -221,6 +255,7 @@ describe("the quality governor", () => {
         busyMs: shown.busyMs,
         excused: shown.excused,
         refresh: 60,
+        refreshKnown: true,
         seconds: shown.intervalMs / 1000,
       });
     const verdicts = [];
@@ -301,6 +336,24 @@ describe("the quality governor", () => {
         [120, 2.5],
       ])
     ).toBe(120);
+  });
+
+  it("starts at 60 and shrugs off a burst of fast callbacks in the first second", () => {
+    expect(
+      rideScreens([
+        [100, 0.25],
+        [60, 10],
+      ])
+    ).toStrictEqual({ changes: [], confirmed: true, readings: [60] });
+  });
+
+  it("waits for the screen's rate before judging what players get", () => {
+    expect(rideScreens([[120, 1.9]])).toStrictEqual({
+      changes: [],
+      confirmed: false,
+      readings: [60],
+    });
+    expect(rideScreens([[120, 10]]).changes).toStrictEqual([]);
   });
 
   it("does not take Safari slipping to 56 fps for a slower screen", () => {

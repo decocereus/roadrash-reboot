@@ -35,6 +35,7 @@ export interface Frame {
   readonly seconds: number;
   readonly busyMs: number;
   readonly refresh: number;
+  readonly refreshKnown: boolean;
   readonly excused: boolean;
 }
 
@@ -120,7 +121,15 @@ export const createGovernor = (rungCount: number): Governor => {
     windowLate = 0;
   };
 
-  const watchRate = (seconds: number, busyMs: number, target: number) => {
+  const watchRate = (
+    seconds: number,
+    busyMs: number,
+    target: number,
+    refreshKnown: boolean
+  ) => {
+    if (!refreshKnown) {
+      return;
+    }
     rateSeconds += seconds;
     rateFrames += 1;
     rateBusyMs += busyMs;
@@ -162,11 +171,12 @@ export const createGovernor = (rungCount: number): Governor => {
       : Number.POSITIVE_INFINITY;
   };
 
-  const judgeQuality = (
-    seconds: number,
-    busyMs: number,
-    refresh: number
-  ): Verdict | null => {
+  const judgeQuality = ({
+    seconds,
+    busyMs,
+    refresh,
+    refreshKnown,
+  }: Frame): Verdict | null => {
     const target = Math.min(deliveredRate(refresh, currentPace()), BASE_RATE);
     const late = seconds > LATE_FRAME_FACTOR / target;
     if (late) {
@@ -177,7 +187,7 @@ export const createGovernor = (rungCount: number): Governor => {
       calm += seconds;
     }
     watchBursts(seconds, late && busyMs < GPU_BOUND_BUSY_MS);
-    watchRate(seconds, busyMs, target);
+    watchRate(seconds, busyMs, target, refreshKnown);
     const bursting = severe || roughWindows >= ROUGH_WINDOWS_TO_STEP;
     if (bursting && sinceStep > BURST_COOLDOWN_SECONDS) {
       return lower("late-burst", severe ? SEVERE_STEP : 1);
@@ -248,14 +258,12 @@ export const createGovernor = (rungCount: number): Governor => {
       }
     },
     interrupt: forgetWindows,
-    judge({ seconds, busyMs, refresh, excused }) {
-      sinceStep += seconds;
-      if (excused) {
+    judge(frame) {
+      sinceStep += frame.seconds;
+      if (frame.excused) {
         return null;
       }
-      return (
-        judgeQuality(seconds, busyMs, refresh) ?? judgePace(seconds, refresh)
-      );
+      return judgeQuality(frame) ?? judgePace(frame.seconds, frame.refresh);
     },
     lateCredit: () => Math.max(lateFrames, lateAtPace),
     get pace() {

@@ -1498,6 +1498,7 @@ export async function createGame(
       busyMs,
       excused,
       refresh: display.refresh,
+      refreshKnown: pinnedRefresh > 0 || refreshMeter.confirmed,
       seconds,
     });
     if (!verdict) {
