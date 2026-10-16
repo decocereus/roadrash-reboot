@@ -34,15 +34,25 @@ function PreRace({
   readonly career: CareerState | null;
   readonly entry: RaceEntry;
   readonly ready: boolean;
-  readonly onPrepare: (plan: RacePlan) => void;
+  readonly onPrepare: (plan: RacePlan) => Promise<void>;
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
 }) {
   const [plan] = useState(() => planFor(career, entry));
+  const [prepared, setPrepared] = useState(false);
   useEffect(() => {
-    if (ready) {
-      onPrepare(plan);
+    if (!ready) {
+      return;
     }
+    let current = true;
+    void onPrepare(plan).then(() => {
+      if (current) {
+        setPrepared(true);
+      }
+    });
+    return () => {
+      current = false;
+    };
   }, [ready, plan, onPrepare]);
   return (
     <PreRaceScreen
@@ -50,7 +60,7 @@ function PreRace({
       onBack={onBack}
       onStart={() => onStart(plan)}
       plan={plan}
-      ready={ready}
+      ready={ready && prepared}
     />
   );
 }

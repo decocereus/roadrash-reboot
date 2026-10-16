@@ -25,16 +25,19 @@ export interface Verdict {
   readonly pace: number;
 }
 
+export interface Frame {
+  readonly seconds: number;
+  readonly busyMs: number;
+  readonly refresh: number;
+  readonly resized: boolean;
+}
+
 export interface Governor {
   readonly rung: number;
   readonly pace: number;
   readonly lateCredit: () => number;
   readonly calmSeconds: () => number;
-  readonly judge: (
-    seconds: number,
-    busyMs: number,
-    refresh: number
-  ) => Verdict | null;
+  readonly judge: (frame: Frame) => Verdict | null;
   readonly commit: (verdict: Verdict) => void;
   readonly startAt: (rung: number) => void;
   readonly resize: (rungs: number) => void;
@@ -164,8 +167,11 @@ export const createGovernor = (rungCount: number): Governor => {
         lateAtPace = 0;
       }
     },
-    judge(seconds, busyMs, refresh) {
+    judge({ seconds, busyMs, refresh, resized }) {
       sinceStep += seconds;
+      if (resized) {
+        return null;
+      }
       return judgeQuality(seconds, busyMs) ?? judgePace(seconds, refresh);
     },
     lateCredit: () => Math.max(lateFrames, lateAtPace),

@@ -248,7 +248,7 @@ export interface Flow {
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
   readonly preRace: (mode: RaceMode, roadId: RoadId) => void;
-  readonly prepare: (plan: RacePlan) => void;
+  readonly prepare: (plan: RacePlan) => Promise<void>;
   readonly start: (plan: RacePlan) => void;
   readonly resume: () => void;
   readonly mute: () => void;
@@ -334,9 +334,7 @@ export const useFlow = (): Flow => {
   usePauseKeys(view.screen === "race" && !view.paused && !view.finish, pause);
 
   const prepare = useCallback(
-    (plan: RacePlan) => {
-      gameRef.current?.prepare(plan);
-    },
+    (plan: RacePlan) => gameRef.current?.prepare(plan) ?? Promise.resolve(),
     [gameRef]
   );
 

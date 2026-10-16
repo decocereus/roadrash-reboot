@@ -78,6 +78,7 @@ const TAG_RANGE = 25;
 const TAG_HEIGHT = 2.2;
 const TAG_MARGIN = 0.82;
 const MAX_FRAME_SECONDS = 0.1;
+const RESIZE_GRACE_FRAMES = 2;
 const MAX_PIXEL_RATIO = 2;
 const PIXEL_RATIO_STEP = 0.1;
 const LOWEST_RATIO_SHARE = 0.75;
@@ -501,6 +502,7 @@ export async function createGame(
   const qualityAfter: QualityState = emptyQuality();
   let frameId = 0;
   let sizeEpoch = 0;
+  let resizeGrace = 0;
   let appliedWidth = -1;
   let appliedHeight = -1;
   let appliedRatio = -1;
@@ -733,7 +735,31 @@ export async function createGame(
 
   let loads = 0;
   let warming = false;
+  let alive = true;
+  let compiling = 0;
+  let parked: (() => void)[] = [];
   let prepared: RaceSetup | null = null;
+  let preparing: Promise<void> = Promise.resolve();
+
+  const afterCompiles = (cleanup: () => void) => {
+    if (compiling === 0) {
+      cleanup();
+    } else {
+      parked.push(cleanup);
+    }
+  };
+
+  const compileSettled = () => {
+    compiling -= 1;
+    if (compiling > 0) {
+      return;
+    }
+    const cleanups = parked;
+    parked = [];
+    for (const cleanup of cleanups) {
+      cleanup();
+    }
+  };
 
   const warmNow = () => {
     loads += 1;
@@ -741,22 +767,25 @@ export async function createGame(
     warmUp();
   };
 
-  const warmSoon = (then: () => void) => {
+  const warmSoon = async (): Promise<boolean> => {
     loads += 1;
     const load = loads;
     warming = true;
+    compiling += 1;
     const unstage = stageEverything();
     const compiled = pipeline.compile(world.scene, chase.camera);
     unstage();
-    const finish = () => {
-      if (load !== loads) {
-        return;
-      }
-      warming = false;
-      warmUp();
-      then();
-    };
-    void compiled.finally(finish);
+    try {
+      await compiled;
+    } finally {
+      compileSettled();
+    }
+    if (!alive || load !== loads) {
+      return false;
+    }
+    warming = false;
+    warmUp();
+    return true;
   };
 
   const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
@@ -798,11 +827,11 @@ export async function createGame(
     const release = build(setup, nextPhase === "countdown");
     begin(nextPhase);
     if (nextPhase === "attract") {
-      warmSoon(release);
-      return;
+      void warmSoon();
+    } else {
+      warmNow();
     }
-    warmNow();
-    release();
+    afterCompiles(release);
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -820,9 +849,9 @@ export async function createGame(
     draw(0, 0);
   };
 
-  const prepare = (next: RacePlan) => {
+  const prepare = (next: RacePlan): Promise<void> => {
     if (prepared === next.setup) {
-      return;
+      return preparing;
     }
     plan = null;
     log = null;
@@ -831,11 +860,14 @@ export async function createGame(
     const release = build(next.setup, true);
     prepared = next.setup;
     begin("idle");
-    warmSoon(() => {
-      release();
-      showStart();
+    preparing = warmSoon().then((current) => {
+      if (current) {
+        showStart();
+      }
     });
+    afterCompiles(release);
     report();
+    return preparing;
   };
 
   const startRace = (next: RacePlan) => {
@@ -1401,6 +1433,7 @@ export async function createGame(
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     pipeline.resize(canvas.clientWidth, canvas.clientHeight, pixelRatio);
     sizeEpoch += 1;
+    resizeGrace = RESIZE_GRACE_FRAMES;
     recorder.canvas(
       source,
       sizeEpoch,
@@ -1442,6 +1475,7 @@ export async function createGame(
     world.setShadowMap(chosen.shadowMap);
     pipeline.setBloomScale(chosen.bloomScale);
     pipeline.setSamples(chosen.samples);
+    resizeGrace = RESIZE_GRACE_FRAMES;
     const next = pinnedPixelRatio > 0 ? pinnedPixelRatio : chosen.pixelRatio;
     const resized = next !== pixelRatio;
     pixelRatio = next;
@@ -1462,6 +1496,8 @@ export async function createGame(
     if (pinnedPixelRatio > 0 || pinnedRung >= 0) {
       return;
     }
+    const resized = resizeGrace > 0;
+    resizeGrace = Math.max(0, resizeGrace - 1);
     const ceiling = nativePixelRatio();
     if (ceiling !== ladder[0]?.pixelRatio) {
       changeQuality("native-dpr", () => {
@@ -1471,7 +1507,12 @@ export async function createGame(
         applyRung("ladder");
       });
     }
-    const verdict = governor.judge(seconds, busyMs, display.refresh);
+    const verdict = governor.judge({
+      busyMs,
+      refresh: display.refresh,
+      resized,
+      seconds,
+    });
     if (!verdict) {
       return;
     }
@@ -1567,7 +1608,7 @@ export async function createGame(
     }
     applySize("observer");
     chase.resize(canvas.clientWidth, canvas.clientHeight);
-    if (halted()) {
+    if (halted() && !warming) {
       world.follow(chase.camera, subject.s);
       present();
     }
@@ -1738,6 +1779,7 @@ export async function createGame(
       }
     },
     dispose() {
+      alive = false;
       renderer.setAnimationLoop(null);
       observer.disconnect();
       unsubscribeSettings();
@@ -1747,11 +1789,13 @@ export async function createGame(
       profiler?.dispose();
       controls.dispose();
       sound.dispose();
-      dropViews();
-      dropFleet();
-      world.dispose();
-      pipeline.dispose();
-      renderer.dispose();
+      afterCompiles(() => {
+        dropViews();
+        dropFleet();
+        world.dispose();
+        pipeline.dispose();
+        renderer.dispose();
+      });
     },
     followRival(element) {
       tag = element;

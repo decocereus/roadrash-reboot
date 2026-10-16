@@ -89,7 +89,7 @@ export interface GameEvents {
 export interface GameHandle {
   readonly attract: () => void;
   readonly sleep: () => void;
-  readonly prepare: (plan: RacePlan) => void;
+  readonly prepare: (plan: RacePlan) => Promise<void>;
   readonly startRace: (plan: RacePlan) => void;
   readonly pause: () => boolean;
   readonly resume: () => void;
