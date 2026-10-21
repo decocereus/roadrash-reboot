@@ -2,19 +2,20 @@
 
 Read this file before you write or review code, and review finished code against it before you call the work done. Read [errors.md](errors.md) before you add or change an error, and [observability.md](observability.md) before you add a recorded number, a log line or a profile counter. [architecture.md](architecture.md) says what the game is and how it is built.
 
-Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judgment` marks it for reviewers. `pnpm check:rules` fails when a named check is not an enabled lint rule or a `package.json` script. It also fails when a `rushline/` or `anti-slop/` rule enabled in `oxlint.config.ts` is not named in this file, [errors.md](errors.md) or [observability.md](observability.md). A new rule ships with its row. No rule has an exemption: there are no allowlists, baselines, or per-file disables, and code that breaks a rule is fixed.
+Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judgment` marks it for reviewers. `pnpm check:rules` fails when a named check is not an enabled lint rule or a `package.json` script. It also fails when a `rushline/` or `anti-slop/` rule enabled in `oxlint.config.ts` is not named in this file, [errors.md](errors.md) or [observability.md](observability.md). A new rule ships with its row. No rule has an exemption: there are no allowlists, baselines, or per-file disables, and code that breaks a rule is fixed. The ledger enforces that too. It works out each rule's setting the way oxlint does, preset rules first, then the root rules, then each override in order, and fails when `oxlint.config.ts` sets any rule below `error` in its root rules or in an override, or when a preset override turns off a rule that is otherwise on and no later override for the same files turns it back on. The Ultracite presets turn off `no-empty-function` and `promise/prefer-await-to-then` for test files, so `oxlint.config.ts` turns both back on there. A rule the presets leave off is not part of the standard.
 
 ## The checks
 
-`pnpm check` runs the `check` group of `scripts/verify.ts`: formatting, lint, the lint rule tests, this ledger, CSS comments, types, and tests, in that order, and prints how long each took. `pnpm verify` runs the same group and then the build. Add `--format json` (`node scripts/verify.ts check --format json`) for one JSON report with each check's command, exit code, duration and the tail of its output when it failed. CI runs `pnpm check` and `pnpm build` as separate steps, so the Actions page shows which of the two failed without opening the log.
+`pnpm check` runs the `check` group of `scripts/verify.ts`: formatting, lint, the lint rule tests, this ledger, CSS comments, the TypeScript-only check, types, and tests, in that order, and prints how long each took. `pnpm verify` runs the same group and then the build. Add `--format json` (`node scripts/verify.ts check --format json`) for one JSON report with each check's command, exit code, duration and the tail of its output when it failed. CI runs `pnpm check` and `pnpm build` as separate steps, so the Actions page shows which of the two failed without opening the log. It runs once for each pull request update and once for each push to `main`.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
 | Run `pnpm check` and `pnpm build` after source changes. | `pnpm verify` | Repository | None |
 | Code is formatted by oxfmt. | `pnpm format:check` | Repository | None |
+| Repository code is TypeScript. No tracked or new `.js`, `.mjs`, `.cjs` or `.jsx` file exists. | `pnpm check:typescript-only` | Repository | None |
 | Types check in the root project, `tools/oxlint`, and every workspace package. | `pnpm typecheck` | Repository | None |
-| Every lint plugin rule has valid and invalid cases, and the suite fails when a registered `rushline/` or `anti-slop/` rule has none. | `pnpm lint:rules` | `tools/oxlint` | None |
-| Every rule in these docs names its check, and every enabled project rule has a row. | `pnpm check:rules` | `docs/coding-standards.md`, `docs/errors.md`, `docs/observability.md` | None |
+| Every lint plugin rule has valid and invalid cases, and the suite fails when a registered `rushline/` or `anti-slop/` rule has none. The same suite runs the ledger's regression cases in `scripts/rule-ledger.test.ts`. | `pnpm lint:rules` | `tools/oxlint`, `scripts` | None |
+| Every rule in these docs names its check, every enabled project rule has a row, and `oxlint.config.ts` turns no rule off or below `error` anywhere it applies. | `pnpm check:rules` | `docs/coding-standards.md`, `docs/errors.md`, `docs/observability.md`, `oxlint.config.ts` | None |
 | Look at the running game after any change to `apps/web/src/game` or to handling. Passing tests do not show that it plays well. | judgment | `apps/web/src/game`, `packages/sim` | None |
 
 ## Keep each module to its job
@@ -52,7 +53,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Every promise is awaited, returned, or explicitly discarded with `void`. | `typescript/no-floating-promises` | Repository | None |
 | A value typed `any`, such as the result of `JSON.parse`, is decoded or typed before typed code reads, calls, passes or returns it. | `typescript/no-unsafe-assignment`, `typescript/no-unsafe-argument`, `typescript/no-unsafe-call`, `typescript/no-unsafe-member-access`, `typescript/no-unsafe-return` | Repository | None |
 
-The inherited Ultracite presets run with type information (`options: { typeAware: true }`), so every type-aware rule they turn on is enforced too, such as `typescript/strict-boolean-expressions` and `typescript/no-confusing-void-expression`. Only the rules above are listed, because they state Rushline's own decisions.
+The inherited Ultracite presets run with type information (`options: { typeAware: true }`), so every type-aware rule they turn on is enforced too, such as `typescript/strict-boolean-expressions` and `typescript/no-confusing-void-expression`. Every other rule they turn on is enforced in every file as well, such as `func-style` (functions are `const` arrow functions), `no-use-before-define`, `no-shadow`, `no-nested-ternary` and `promise/prefer-await-to-then`. Only the rules above are listed, because they state Rushline's own decisions.
 
 ## Keep types honest
 

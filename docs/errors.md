@@ -25,7 +25,7 @@ Rushline has three places where a failure reaches someone: the telemetry endpoin
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| A 400 or 413 answer is final: the batch leaves the queue and a report shows `failed`. Any other failed status, or an unreachable collector, keeps the batch and retries after 2 seconds, doubling to at most 60. | judgment | `apps/web/src/diagnostics/uploader.ts` | None |
+| A 400 or 413 answer is final: the batch leaves the queue and a report shows `failed`. Any other failed status, or an unreachable collector, keeps the batch and retries it: the first retry waits 4 seconds, the next ones 8, 16 and 32, and every later one 60. | judgment | `apps/web/src/diagnostics/uploader.ts` | None |
 
 ## The career save
 
