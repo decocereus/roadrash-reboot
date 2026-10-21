@@ -7,6 +7,7 @@
     "build": "pnpm -r --if-present build",
     "check": "node scripts/verify.ts check",
     "check:css-comments": "node scripts/check-css-comments.ts",
+    "check:roots": "node scripts/check-roots.ts",
     "check:rules": "node scripts/check-rules.ts",
     "check:typescript-only": "node scripts/check-typescript-only.ts",
     "dev": "alchemy dev",

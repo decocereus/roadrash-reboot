@@ -23,6 +23,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
 | `alchemy.run.ts` is the Alchemy composition root. `apps/` holds deployable Cloudflare apps, `packages/` holds shared code, and `tools/` holds repository automation. Create apps and packages there instead of new top-level folders. | judgment | Repository | None |
+| No relative import leaves its workspace. A workspace is the folder of the nearest `package.json`. Code another workspace uses is imported by its package name, such as `@racer/telemetry/jsonl-store`, and every workspace declares each package it imports in its own `package.json`, including `@racer/*` workspaces and packages the root already declares. `node:` builtins and the workspace's own name need no declaration. Unused declarations are covered by the `pnpm check:dead` row. | `rushline/workspace-imports` | Repository | None |
 | `packages/sim` owns every game rule. If the game should behave differently, change `packages/sim`. | judgment | `packages/sim` | None |
 | `packages/track` owns the track format, compilation and track data. The simulation and the renderer both read the compiled `Track`. | judgment | `packages/track` | None |
 | `packages/career` owns every career rule: money, levels, the shop, the field draw, rival memory, settlement and the save format. React renders it and never changes a rule. | judgment | `packages/career` | None |
