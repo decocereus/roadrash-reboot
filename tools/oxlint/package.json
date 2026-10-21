@@ -1,0 +1,17 @@
+{
+  "name": "@racer/oxlint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsrs --noEmit"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "1.86.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "oxlint": "1.86.0",
+    "vitest": "5.0.0"
+  }
+}

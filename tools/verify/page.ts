@@ -2,14 +2,18 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
+import {
+  summariseTrace,
+  threadNames,
+  traceEvent,
+} from "@racer/devtools/analysis";
+import type { TraceEvent, TraceSummary } from "@racer/devtools/analysis";
+import { connect, evaluate } from "@racer/devtools/cdp";
+import type { CommandParams, Session } from "@racer/devtools/cdp";
+import { pageTarget } from "@racer/devtools/chrome";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
-import { summariseTrace, threadNames, traceEvent } from "../perf/analysis.ts";
-import type { TraceEvent, TraceSummary } from "../perf/analysis.ts";
-import { connect, evaluate } from "../perf/cdp.ts";
-import type { CommandParams, Session } from "../perf/cdp.ts";
-import { pageTarget } from "../perf/chrome.ts";
 import type { InstanceState } from "./instance.ts";
 
 const POLL_MS = 100;

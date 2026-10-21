@@ -2,14 +2,11 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { createJsonlStore, sessionFile } from "@racer/telemetry/jsonl-store";
 import { HISTOGRAM_BUCKETS, TELEMETRY_VERSION } from "@racer/telemetry/limits";
 import type { Batch } from "@racer/telemetry/schema";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  createJsonlStore,
-  sessionFile,
-} from "../../../../tools/perf/jsonl-store.ts";
 import { ingestTelemetry } from "./telemetry.ts";
 
 const SESSION = "3f0c2a1e-7b6d-4c1a-9e2f-0123456789ab";

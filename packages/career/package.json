@@ -12,5 +12,8 @@
   "dependencies": {
     "@racer/sim": "workspace:*",
     "@racer/track": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "5.0.0"
   }
 }

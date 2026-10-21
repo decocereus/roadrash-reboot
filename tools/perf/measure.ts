@@ -4,9 +4,6 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
-import * as Schema from "effect/Schema";
-
-import { benchWindow } from "../../apps/web/src/career/bench-window.ts";
 import {
   allocationProfile,
   allocationSites,
@@ -19,18 +16,20 @@ import {
   summariseTrace,
   threadNames,
   traceEvent,
-} from "./analysis.ts";
+} from "@racer/devtools/analysis";
 import type {
   Allocations,
   Hotspots,
   StallEvent,
   TraceEvent,
   TraceSummary,
-} from "./analysis.ts";
-import { evaluate } from "./cdp.ts";
-import type { Session } from "./cdp.ts";
-import { browserNamed, launch } from "./chrome.ts";
-import type { BrowserChoice, Viewport } from "./chrome.ts";
+} from "@racer/devtools/analysis";
+import { evaluate } from "@racer/devtools/cdp";
+import type { Session } from "@racer/devtools/cdp";
+import { browserNamed, launch } from "@racer/devtools/chrome";
+import type { BrowserChoice, Viewport } from "@racer/devtools/chrome";
+import { benchWindow } from "@racer/sim/bench-window";
+import * as Schema from "effect/Schema";
 
 const POLL_MS = 40;
 const TIMEOUT_MS = 240_000;

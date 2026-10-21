@@ -3,10 +3,7 @@ import path from "node:path";
 
 import * as Schema from "effect/Schema";
 
-import type {
-  SaveResult,
-  TelemetryStore,
-} from "../../packages/telemetry/src/store.ts";
+import type { SaveResult, TelemetryStore } from "./store.ts";
 
 const storedLine = Schema.Struct({
   batch: Schema.Struct({ batchId: Schema.Number }),

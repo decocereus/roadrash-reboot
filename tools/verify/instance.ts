@@ -12,8 +12,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import * as Schema from "effect/Schema";
-
 import {
   awaitPortClosed,
   browsers,
@@ -21,7 +19,8 @@ import {
   run,
   sharedFlags,
   startInBackground,
-} from "../perf/chrome.ts";
+} from "@racer/devtools/chrome";
+import * as Schema from "effect/Schema";
 
 export const SLOTS = 10;
 export const SERVER_BASE_PORT = 1410;

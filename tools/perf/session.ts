@@ -2,17 +2,16 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import * as Schema from "effect/Schema";
-
-import { HISTOGRAM_EDGES_MS } from "../../packages/telemetry/src/limits.ts";
-import { batchSchema } from "../../packages/telemetry/src/schema.ts";
+import { HISTOGRAM_EDGES_MS } from "@racer/telemetry/limits";
+import { batchSchema } from "@racer/telemetry/schema";
 import type {
   Batch,
   Quality,
   Session,
   TelemetryEvent,
   WorstFrame,
-} from "../../packages/telemetry/src/schema.ts";
+} from "@racer/telemetry/schema";
+import * as Schema from "effect/Schema";
 
 const STALL_MS = 100;
 const NEAR_MS = 2000;

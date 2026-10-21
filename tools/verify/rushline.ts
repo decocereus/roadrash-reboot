@@ -4,11 +4,11 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
+import { connect, evaluate } from "@racer/devtools/cdp";
+import type { Session } from "@racer/devtools/cdp";
+import { listenerOf, pageTarget } from "@racer/devtools/chrome";
 import * as Schema from "effect/Schema";
 
-import { connect, evaluate } from "../perf/cdp.ts";
-import type { Session } from "../perf/cdp.ts";
-import { listenerOf, pageTarget } from "../perf/chrome.ts";
 import {
   SLOTS,
   USER_PORTS,

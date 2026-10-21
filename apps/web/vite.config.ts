@@ -1,14 +1,13 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
+import { createJsonlStore } from "@racer/telemetry/jsonl-store";
 import { provideTelemetryStore } from "@racer/telemetry/store";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import type { Plugin } from "vite";
-
-import { createJsonlStore } from "../../tools/perf/jsonl-store.ts";
 
 const sessionsDirectory = path.resolve(
   import.meta.dirname,
