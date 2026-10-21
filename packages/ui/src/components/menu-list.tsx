@@ -33,12 +33,12 @@ const forwardKeys = {
 
 const ITEM_SELECTOR = '[data-slot="menu-item"]:not(:disabled)';
 
-function targetIndex(
+const targetIndex = (
   key: string,
   orientation: MenuOrientation,
   current: number,
   count: number
-): number {
+): number => {
   if (key === "Home") {
     return 0;
   }
@@ -52,9 +52,9 @@ function targetIndex(
     return current < 0 ? count - 1 : (current - 1 + count) % count;
   }
   return -1;
-}
+};
 
-function MenuList({
+const MenuList = ({
   className,
   label,
   value,
@@ -76,7 +76,7 @@ function MenuList({
   readonly orientation?: MenuOrientation;
   readonly size?: "md" | "sm";
   readonly autoFocus?: boolean;
-}) {
+}) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const [held, setHeld] = useState(defaultValue);
   const current = value ?? held;
@@ -159,9 +159,9 @@ function MenuList({
       </div>
     </MenuContext>
   );
-}
+};
 
-function MenuItem({
+const MenuItem = ({
   className,
   value,
   detail,
@@ -176,7 +176,7 @@ function MenuItem({
   readonly value: string;
   readonly detail?: ReactNode;
   readonly trailing?: ReactNode;
-}) {
+}) => {
   const menu = use(MenuContext);
   if (menu === null) {
     throw new Error("MenuItem must be rendered inside a MenuList");
@@ -238,19 +238,19 @@ function MenuItem({
       )}
     </button>
   );
-}
+};
 
 type MenuStep = -1 | 1;
 
-function stepOf(key: string, orientation: MenuOrientation): MenuStep | 0 {
+const stepOf = (key: string, orientation: MenuOrientation): MenuStep | 0 => {
   const cross = orientation === "vertical" ? "horizontal" : "vertical";
   if (forwardKeys[cross].has(key)) {
     return 1;
   }
   return backKeys[cross].has(key) ? -1 : 0;
-}
+};
 
-function MenuStepper({
+const MenuStepper = ({
   className,
   value,
   label,
@@ -265,7 +265,7 @@ function MenuStepper({
   readonly value: string;
   readonly label: ReactNode;
   readonly onStep: (step: MenuStep) => void;
-}) {
+}) => {
   const menu = use(MenuContext);
   if (menu === null) {
     throw new Error("MenuStepper must be rendered inside a MenuList");
@@ -341,7 +341,7 @@ function MenuStepper({
       </span>
     </button>
   );
-}
+};
 
 export { MenuItem, MenuList, MenuStepper };
 export type { MenuStep };

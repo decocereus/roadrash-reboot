@@ -25,7 +25,7 @@ const panelVariants = cva(
   }
 );
 
-function Panel({
+const Panel = ({
   className,
   tone = "panel",
   padding = "md",
@@ -37,20 +37,18 @@ function Panel({
   VariantProps<typeof panelVariants> & {
     readonly edge?: string | undefined;
     readonly selected?: boolean;
-  }) {
-  return (
-    <div
-      data-slot="panel"
-      data-selected={selected ? "true" : undefined}
-      className={cn(
-        panelVariants({ padding, tone }),
-        edge !== undefined && "border-l-4",
-        className
-      )}
-      style={edge === undefined ? style : { ...style, borderLeftColor: edge }}
-      {...props}
-    />
-  );
-}
+  }) => (
+  <div
+    data-slot="panel"
+    data-selected={selected ? "true" : undefined}
+    className={cn(
+      panelVariants({ padding, tone }),
+      edge !== undefined && "border-l-4",
+      className
+    )}
+    style={edge === undefined ? style : { ...style, borderLeftColor: edge }}
+    {...props}
+  />
+);
 
 export { Panel, panelVariants };

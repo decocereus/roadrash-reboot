@@ -275,7 +275,10 @@ const shadowMaterial = (): THREE.MeshBasicMaterial =>
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const placer = new THREE.Object3D();
 
-export function createHazardMarks(track: Track, shading: Shading): HazardMarks {
+export const createHazardMarks = (
+  track: Track,
+  shading: Shading
+): HazardMarks => {
   const group = new THREE.Group();
   const parts: Part[] = [];
   const reach = shading.look.fogFar + MARGIN;
@@ -406,4 +409,4 @@ export function createHazardMarks(track: Track, shading: Shading): HazardMarks {
       }
     },
   };
-}
+};

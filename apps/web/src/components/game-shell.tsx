@@ -23,7 +23,7 @@ import { WreckedScreen } from "./screens/wrecked.tsx";
 import { afterResults, clubhouse, homeOf, title, useFlow } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
 
-function PreRace({
+const PreRace = ({
   career,
   entry,
   ready,
@@ -37,19 +37,19 @@ function PreRace({
   readonly onPrepare: (plan: RacePlan) => Promise<void>;
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
-}) {
+}) => {
   const [plan] = useState(() => planFor(career, entry));
   const [prepared, setPrepared] = useState(false);
   useEffect(() => {
     let current = true;
+    const prepare = async (): Promise<void> => {
+      await Promise.allSettled([onPrepare(plan)]);
+      if (current) {
+        setPrepared(true);
+      }
+    };
     if (ready) {
-      void onPrepare(plan)
-        .catch(() => null)
-        .then(() => {
-          if (current) {
-            setPrepared(true);
-          }
-        });
+      void prepare();
     }
     return () => {
       current = false;
@@ -66,15 +66,15 @@ function PreRace({
       ready={ready && prepared}
     />
   );
-}
+};
 
-function CareerScreens({
+const CareerScreens = ({
   flow,
   career,
 }: {
   readonly flow: Flow;
   readonly career: CareerState;
-}) {
+}) => {
   const { view } = flow;
   if (view.screen === "clubhouse") {
     return (
@@ -143,7 +143,7 @@ function CareerScreens({
     );
   }
   return null;
-}
+};
 
 const raceAgainOffered = (
   report: RaceReport,
@@ -154,7 +154,7 @@ const raceAgainOffered = (
     afterResults(report) === clubhouse &&
     roadOpen(career, report.roadId));
 
-function MenuScreens({ flow }: { readonly flow: Flow }) {
+const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
   const { view, career } = flow;
   if (view.screen === "title") {
     return (
@@ -254,9 +254,9 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
     );
   }
   return career ? <CareerScreens career={career} flow={flow} /> : null;
-}
+};
 
-function RaceScreens({ flow }: { readonly flow: Flow }) {
+const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
   const { view } = flow;
   if (view.screen !== "race") {
     return null;
@@ -294,9 +294,9 @@ function RaceScreens({ flow }: { readonly flow: Flow }) {
       )}
     </>
   );
-}
+};
 
-export function GameShell() {
+export const GameShell = () => {
   const flow = useFlow();
   return (
     <div className="bg-ink fixed inset-0 overflow-hidden select-none">
@@ -317,4 +317,4 @@ export function GameShell() {
       )}
     </div>
   );
-}
+};

@@ -19,7 +19,7 @@ import {
   weaponLabel,
 } from "../../career/format.ts";
 import type { RacePlan } from "../../game/hud.ts";
-import { ActionMenu, SmallPrint, useEscape } from "./shared.tsx";
+import { ActionMenu, SmallPrint, standingTag, useEscape } from "./shared.tsx";
 
 const carrying = (plan: RacePlan): string => {
   const { weapon, weaponHits } = plan.setup.player;
@@ -31,7 +31,7 @@ const carrying = (plan: RacePlan): string => {
 const kitOf = (bike: string, weapon: string): string =>
   weapon === "" ? shortBike(bike) : `${shortBike(bike)} · ${weapon}`;
 
-export function PreRaceScreen({
+export const PreRaceScreen = ({
   plan,
   career,
   ready,
@@ -43,7 +43,7 @@ export function PreRaceScreen({
   readonly ready: boolean;
   readonly onStart: () => void;
   readonly onBack: () => void;
-}) {
+}) => {
   const { setup } = plan;
   const road = roads[setup.roadId];
   const quick = plan.mode === "quick";
@@ -93,13 +93,7 @@ export function PreRaceScreen({
                   layout="row"
                   name={shortNames[rival]}
                   speaking={speaker?.rival === rival}
-                  tag={
-                    ally
-                      ? "On your side"
-                      : grudge
-                        ? "Holds a grudge"
-                        : undefined
-                  }
+                  tag={standingTag(ally, grudge)}
                 />
               );
             })}
@@ -149,4 +143,4 @@ export function PreRaceScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

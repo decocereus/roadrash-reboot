@@ -17,7 +17,7 @@ const fits = {
   viewport: "fixed inset-0",
 } as const;
 
-function Screen({
+const Screen = ({
   className,
   scene,
   scrim = "none",
@@ -30,69 +30,63 @@ function Screen({
   readonly scrim?: keyof typeof scrims;
   readonly fit?: keyof typeof fits;
   readonly enter?: keyof typeof enters;
-}) {
-  return (
-    <main
-      data-slot="screen"
-      className={cn(
-        "bg-ink text-text font-body text-body isolate overflow-hidden",
-        fits[fit],
-        enters[enter],
-        className
-      )}
-      {...props}
-    >
-      {scene !== undefined && (
-        <div data-slot="screen-scene" className="absolute inset-0 -z-20">
-          {scene}
-        </div>
-      )}
-      {scrim !== "none" && (
-        <div
-          aria-hidden
-          data-slot="screen-scrim"
-          className={cn(
-            "pointer-events-none absolute inset-0 -z-10",
-            scrims[scrim]
-          )}
-        />
-      )}
-      <div
-        data-slot="screen-content"
-        className="relative flex size-full flex-col"
-      >
-        {children}
+}) => (
+  <main
+    data-slot="screen"
+    className={cn(
+      "bg-ink text-text font-body text-body isolate overflow-hidden",
+      fits[fit],
+      enters[enter],
+      className
+    )}
+    {...props}
+  >
+    {scene !== undefined && (
+      <div data-slot="screen-scene" className="absolute inset-0 -z-20">
+        {scene}
       </div>
-    </main>
-  );
-}
+    )}
+    {scrim !== "none" && (
+      <div
+        aria-hidden
+        data-slot="screen-scrim"
+        className={cn(
+          "pointer-events-none absolute inset-0 -z-10",
+          scrims[scrim]
+        )}
+      />
+    )}
+    <div
+      data-slot="screen-content"
+      className="relative flex size-full flex-col"
+    >
+      {children}
+    </div>
+  </main>
+);
 
-function ScreenStrip({
+const ScreenStrip = ({
   className,
   edge = "top",
   ...props
-}: ComponentProps<"div"> & { readonly edge?: "top" | "bottom" }) {
-  return (
-    <div
-      data-slot="screen-strip"
-      data-edge={edge}
-      className={cn(
-        "border-line bg-ink/80 px-gutter min-h-strip flex shrink-0 flex-wrap items-center justify-between gap-x-8 gap-y-2 py-3 data-[edge=bottom]:border-t-2 data-[edge=top]:border-b-2",
-        className
-      )}
-      {...props}
-    />
-  );
-}
+}: ComponentProps<"div"> & { readonly edge?: "top" | "bottom" }) => (
+  <div
+    data-slot="screen-strip"
+    data-edge={edge}
+    className={cn(
+      "border-line bg-ink/80 px-gutter min-h-strip flex shrink-0 flex-wrap items-center justify-between gap-x-8 gap-y-2 py-3 data-[edge=bottom]:border-t-2 data-[edge=top]:border-b-2",
+      className
+    )}
+    {...props}
+  />
+);
 
-function ScreenBody({ className, ...props }: ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="screen-body"
-      className={cn("px-gutter min-h-0 flex-1 py-6", className)}
-      {...props}
-    />
-  );
-}
+const ScreenBody = ({ className, ...props }: ComponentProps<"div">) => (
+  <div
+    data-slot="screen-body"
+    className={cn("px-gutter min-h-0 flex-1 py-6", className)}
+    {...props}
+  />
+);
 
 export { Screen, ScreenBody, ScreenStrip };

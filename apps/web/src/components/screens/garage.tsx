@@ -61,7 +61,7 @@ const markOf = (row: ShopRow): string | undefined => {
   return row.refusal === "locked" ? "🔒" : undefined;
 };
 
-export function GarageScreen({
+export const GarageScreen = ({
   career,
   onTrade,
   onBack,
@@ -69,7 +69,7 @@ export function GarageScreen({
   readonly career: CareerState;
   readonly onTrade: (career: CareerState) => void;
   readonly onBack: () => void;
-}) {
+}) => {
   const [bikeId, setBikeId] = useState<BikeId>(career.bikeId);
   const [asking, setAsking] = useState<Asking>("nothing");
   const [said, setSaid] = useState("");
@@ -298,4 +298,4 @@ export function GarageScreen({
       )}
     </Screen>
   );
-}
+};

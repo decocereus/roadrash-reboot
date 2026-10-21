@@ -90,23 +90,11 @@ export const createUploader = (): Uploader => {
   const sendable = (): Entry | undefined =>
     queue.find((entry) => automatic || entry.forced);
 
-  const scheduleRetry = (attempts: number) => {
-    if (retryTimer !== null) {
-      return;
-    }
-    const wait = Math.min(LONGEST_RETRY_MS, FIRST_RETRY_MS * 2 ** attempts);
-    retryTimer = setTimeout(() => {
-      retryTimer = null;
-      drain();
-    }, wait);
-  };
-
   const settle = (entry: Entry, delivery: Delivery): boolean => {
     const reportId = entry.batch.reportId ?? "";
     if (delivery.kind === "retry") {
       entry.attempts += 1;
       setReport(entry, { reason: delivery.reason, reportId, state: "queued" });
-      scheduleRetry(entry.attempts);
       return false;
     }
     queue.splice(queue.indexOf(entry), 1);
@@ -120,7 +108,7 @@ export const createUploader = (): Uploader => {
     return true;
   };
 
-  const drain = () => {
+  const send = async (): Promise<void> => {
     if (sending || retryTimer !== null) {
       return;
     }
@@ -129,12 +117,19 @@ export const createUploader = (): Uploader => {
       return;
     }
     sending = true;
-    void deliver(entry).then((delivery) => {
-      sending = false;
-      if (settle(entry, delivery)) {
-        drain();
-      }
-    });
+    const delivery = await deliver(entry);
+    sending = false;
+    if (settle(entry, delivery)) {
+      await send();
+      return;
+    }
+    retryTimer = setTimeout(
+      () => {
+        retryTimer = null;
+        void send();
+      },
+      Math.min(LONGEST_RETRY_MS, FIRST_RETRY_MS * 2 ** entry.attempts)
+    );
   };
 
   return {
@@ -146,7 +141,9 @@ export const createUploader = (): Uploader => {
         );
       }
     },
-    drain,
+    drain() {
+      void send();
+    },
     droppedBatches: () => dropped,
     enqueue(outgoing, forced) {
       if (queue.length >= QUEUE_CAPACITY) {

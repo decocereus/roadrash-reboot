@@ -597,13 +597,15 @@ export const createCity = (track: Track, shading: Shading): City => {
     return { batch: new Map(), chunk, index, raised: 0 };
   };
 
+  const buildFor = (index: number): Build | null => {
+    if (building?.index === index) {
+      return building;
+    }
+    return chunks[index] ? null : startBuild(index);
+  };
+
   const finish = (index: number): void => {
-    const build =
-      building?.index === index
-        ? building
-        : chunks[index]
-          ? null
-          : startBuild(index);
+    const build = buildFor(index);
     if (!build) {
       return;
     }

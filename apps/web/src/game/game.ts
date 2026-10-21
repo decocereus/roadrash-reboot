@@ -425,10 +425,10 @@ const dropGeometry = (root: THREE.Object3D): void => {
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
-export async function createGame(
+export const createGame = async (
   canvas: HTMLCanvasElement,
   events: GameEvents
-): Promise<GameHandle> {
+): Promise<GameHandle> => {
   const display = { refresh: pinnedRefresh > 0 ? pinnedRefresh : 60 };
 
   const assets = await loadAssets();
@@ -733,6 +733,11 @@ export async function createGame(
     }
   };
 
+  const finishWhenReady = async (job: Compile): Promise<void> => {
+    await job.compiling.ready;
+    finishCompile(job);
+  };
+
   const abandonCompiles = () => {
     for (const job of compiles) {
       finishCompile(job);
@@ -764,9 +769,7 @@ export async function createGame(
       finishCompile(job);
     }, COMPILE_TIMEOUT_MS);
     compiles.add(job);
-    void compiling.ready.then(() => {
-      finishCompile(job);
-    });
+    void finishWhenReady(job);
     return await promise;
   };
 
@@ -831,33 +834,6 @@ export async function createGame(
     }
     loadRace(defaultSetup(roadForTurn(roadTurn), seed), "attract");
   };
-
-  const showStart = () => {
-    draw(0, 0);
-  };
-
-  const prepare = async (next: RacePlan): Promise<void> => {
-    if (prepared === next.setup) {
-      await preparing;
-      return;
-    }
-    plan = null;
-    log = null;
-    phase = "idle";
-    quiet();
-    const release = build(next.setup, true);
-    prepared = next.setup;
-    begin("idle");
-    preparing = warmSoon().then((current) => {
-      if (current) {
-        showStart();
-      }
-    });
-    release();
-    report();
-    await preparing;
-  };
-
   const startRace = (next: RacePlan) => {
     sound.unlock();
     plan = next;
@@ -1012,6 +988,8 @@ export async function createGame(
       puffs?.burst(view.bike, HAZARD_PUFF, speed);
     }
   };
+  const withinReach = (s: number): boolean =>
+    s >= subject.s - riderReach.behind && s <= subject.s + riderReach.ahead;
 
   const touchDown = (event: RaceEvent) => {
     const view = views[event.rider];
@@ -1223,14 +1201,14 @@ export async function createGame(
       view.lift = figure.standHeight;
       poseOnTrack(figure.root, track, bodyS, bodyX, view.lift, view.yaw, 0, 0);
     } else {
-      const pace =
+      const runPace =
         Math.hypot(rider.bodySpeed, rider.bodyLateralSpeed) / RUN_SPEED;
-      const moving = pace > WALKING / RUN_SPEED;
+      const moving = runPace > WALKING / RUN_SPEED;
       pose = moving ? "run" : "stand";
       time = view.stride;
-      view.stride += pace * seconds;
-      const rise = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
-      const eased = rise * rise * (3 - 2 * rise);
+      view.stride += runPace * seconds;
+      const standUp = Math.min(1, rider.modeTicks / TICK_RATE / RISE_SECONDS);
+      const eased = standUp * standUp * (3 - 2 * standUp);
       view.pitch = LYING_PITCH * (1 - eased);
       const bob = moving
         ? Math.abs(Math.sin(view.stride * Math.PI * 2 * RUN_HZ)) * 0.05
@@ -1239,7 +1217,7 @@ export async function createGame(
         LYING_HEIGHT + (figure.standHeight - LYING_HEIGHT) * eased + bob;
       if (moving) {
         view.yaw = Math.atan2(rider.bodyLateralSpeed, rider.bodySpeed);
-      } else if (rise >= 0.5 && rise < 1) {
+      } else if (standUp >= 0.5 && standUp < 1) {
         view.yaw = Math.atan2(rider.x - rider.bodyX, rider.s - rider.bodyS);
       }
       poseOnTrack(
@@ -1264,10 +1242,6 @@ export async function createGame(
     stance.flinch = seated ? flinchOf(rider, subTick) : 0;
     stance.flinchSide = flinchSideOf(rider);
   };
-
-  const withinReach = (s: number): boolean =>
-    s >= subject.s - riderReach.behind && s <= subject.s + riderReach.ahead;
-
   const settleSag = (view: RiderView, seconds: number) => {
     for (let left = seconds; left > 0; left -= SAG_STEP) {
       const step = Math.min(SAG_STEP, left);
@@ -1375,6 +1349,14 @@ export async function createGame(
       fleet.place(track, index, wrapped ? s : mix(from, s, blend));
     }
     fleet.commit(subject.s);
+  };
+  const present = () => {
+    rendering = true;
+    pipeline.render(world.scene, chase.camera);
+    rendering = false;
+    drawnEpoch = sizeEpoch;
+    drawnFrame = frameId;
+    drawnRung = rung;
   };
 
   const draw = (blend: number, seconds: number) => {
@@ -1584,16 +1566,6 @@ export async function createGame(
       weaponName: weaponName(me),
     });
   };
-
-  const present = () => {
-    rendering = true;
-    pipeline.render(world.scene, chase.camera);
-    rendering = false;
-    drawnEpoch = sizeEpoch;
-    drawnFrame = frameId;
-    drawnRung = rung;
-  };
-
   const checkPresented = () => {
     if (rendering) {
       rendering = false;
@@ -1822,6 +1794,30 @@ export async function createGame(
     lastBusyMs = performance.now() - entered;
   });
 
+  const showStartWhenWarm = async (): Promise<void> => {
+    if (await warmSoon()) {
+      draw(0, 0);
+    }
+  };
+
+  const prepare = async (next: RacePlan): Promise<void> => {
+    if (prepared === next.setup) {
+      await preparing;
+      return;
+    }
+    plan = null;
+    log = null;
+    phase = "idle";
+    quiet();
+    const release = build(next.setup, true);
+    prepared = next.setup;
+    begin("idle");
+    preparing = showStartWhenWarm();
+    release();
+    report();
+    await preparing;
+  };
+
   return {
     attract() {
       if (phase !== "attract") {
@@ -1900,4 +1896,4 @@ export async function createGame(
       report();
     },
   };
-}
+};

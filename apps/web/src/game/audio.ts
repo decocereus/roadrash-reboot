@@ -60,7 +60,7 @@ export interface Sound {
   dispose: () => void;
 }
 
-export function createSound(): Sound {
+export const createSound = (): Sound => {
   let context: AudioContext | undefined;
   let master: GainNode | undefined;
   let shiftGain: GainNode | undefined;
@@ -253,4 +253,4 @@ export function createSound(): Sound {
       burst(1400, 0.35, 0.5, 260);
     },
   };
-}
+};

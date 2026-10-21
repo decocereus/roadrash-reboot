@@ -16,13 +16,13 @@ import { ActionMenu } from "./shared.tsx";
 
 const tilts = [-5, 3, -2, 4, -3] as const;
 
-export function LevelUpScreen({
+export const LevelUpScreen = ({
   levelUp,
   onDone,
 }: {
   readonly levelUp: LevelUp;
   readonly onDone: () => void;
-}) {
+}) => {
   const { level, bikes } = levelUp;
   return (
     <Screen enter="fade">
@@ -102,4 +102,4 @@ export function LevelUpScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

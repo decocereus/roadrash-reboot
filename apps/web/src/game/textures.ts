@@ -413,9 +413,9 @@ const glazedBay = (
 };
 
 export const shopTexture = (random: Random, look: Look): Lit => {
-  const colour = sheet(1024, 288);
+  const colourSheet = sheet(1024, 288);
   const light = sheet(1024, 288);
-  const paint = colour.context;
+  const paint = colourSheet.context;
   const glow = light.context;
   paint.fillStyle = look.dark;
   paint.fillRect(0, 0, 1024, 288);
@@ -461,7 +461,7 @@ export const shopTexture = (random: Random, look: Look): Lit => {
   paint.fillRect(0, SHOP_BOTTOM, 1024, 288 - SHOP_BOTTOM);
   return {
     glow: textureOf(light.canvas, true),
-    map: textureOf(colour.canvas, true),
+    map: textureOf(colourSheet.canvas, true),
   };
 };
 

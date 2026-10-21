@@ -24,6 +24,8 @@ const BEACONS = [
   [0xff_2f_3a, 0.07],
 ] as const;
 const BEACON_STRENGTH = 2.4;
+const FLEET_BEHIND = 40;
+const FLEET_MARGIN = 200;
 const LIVERY: ReadonlyMap<string, readonly [number, number]> = new Map([
   ["body", [1, 0]],
   ["accent", [0, 1]],
@@ -171,11 +173,11 @@ const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
   upload(mesh.instanceMatrix, 0, count);
 };
 
-export function createBikes(
+export const createBikes = (
   assets: Assets,
   shading: Shading,
   riders: readonly BikeRider[]
-): Bikes {
+): Bikes => {
   const group = new THREE.Group();
   const capacity = riders.length;
   const roots = riders.map(() => new THREE.Object3D());
@@ -330,9 +332,9 @@ export function createBikes(
       }
     },
   };
-}
+};
 
-export function poseOnTrack(
+export const poseOnTrack = (
   target: THREE.Object3D,
   track: Track,
   s: number,
@@ -341,7 +343,7 @@ export function poseOnTrack(
   yaw: number,
   roll: number,
   pitch: number
-): void {
+): void => {
   placeOnGround(track, s, x, point);
   target.position.set(point.x, point.y + lift, point.z);
   target.rotation.set(
@@ -350,14 +352,12 @@ export function poseOnTrack(
     -roll,
     "YXZ"
   );
-}
+};
 
 const paints = [
   0xe8_e2_d6, 0x2f_6f_d0, 0xc8_32_3c, 0x2f_8f_6b, 0xd8_a0_20, 0x3a_35_50,
 ];
 const BOXY_HEIGHT = 1.8;
-const FLEET_BEHIND = 40;
-const FLEET_MARGIN = 200;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
 const NO_PAINT: Palette = new Map();
 
@@ -385,11 +385,11 @@ const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
   return bounds.getSize(new THREE.Vector3());
 };
 
-export function createFleet(
+export const createFleet = (
   assets: Assets,
   shading: Shading,
   cars: readonly TrafficCar[]
-): Fleet {
+): Fleet => {
   const group = new THREE.Group();
   const parts: FleetPart[] = [];
   const local: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
@@ -426,7 +426,7 @@ export function createFleet(
       primitives.filter((primitive) => primitive.slot !== "body"),
       NO_PAINT
     );
-    const instanced = (
+    const addPart = (
       geometry: THREE.BufferGeometry | null,
       material: THREE.Material,
       shadows: boolean,
@@ -444,9 +444,9 @@ export function createFleet(
       group.add(mesh);
       parts.push({ cars: indices, mesh, painted });
     };
-    instanced(body.cel, shading.paint(), true, true);
-    instanced(rest.cel, shading.paint(), true, false);
-    instanced(rest.glow, shading.glowPaint(), false, false);
+    addPart(body.cel, shading.paint(), true, true);
+    addPart(rest.cel, shading.paint(), true, false);
+    addPart(rest.glow, shading.glowPaint(), false, false);
   };
 
   muster(assets.car, false);
@@ -521,4 +521,4 @@ export function createFleet(
       along[index] = s;
     },
   };
-}
+};

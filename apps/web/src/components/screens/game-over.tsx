@@ -21,13 +21,13 @@ const bestBike = (garage: readonly BikeId[]): string => {
   return best === undefined ? "" : bikeName(best);
 };
 
-function Record({
+const Record = ({
   career,
   money,
 }: {
   readonly career: CareerState;
   readonly money: boolean;
-}) {
+}) => {
   const { record } = career;
   return (
     <Panel className="grid w-[26rem] max-w-full grid-cols-2 gap-x-8 gap-y-4">
@@ -59,9 +59,9 @@ function Record({
       )}
     </Panel>
   );
-}
+};
 
-export function GameOverScreen({
+export const GameOverScreen = ({
   career,
   onNewCareer,
   onTitle,
@@ -69,7 +69,7 @@ export function GameOverScreen({
   readonly career: CareerState;
   readonly onNewCareer: () => void;
   readonly onTitle: () => void;
-}) {
+}) => {
   useEscape(onTitle);
   return (
     <Screen className="[animation-duration:600ms]" enter="fade">
@@ -96,15 +96,15 @@ export function GameOverScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};
 
-export function EndingScreen({
+export const EndingScreen = ({
   career,
   onTitle,
 }: {
   readonly career: CareerState;
   readonly onTitle: () => void;
-}) {
+}) => {
   const ending = career.story.ending ? endings[career.story.ending] : null;
   useEscape(onTitle);
   return (
@@ -129,4 +129,4 @@ export function EndingScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

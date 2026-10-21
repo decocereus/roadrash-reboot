@@ -3,7 +3,7 @@ import { Paper, PaperLine } from "@racer/ui/components/paper";
 import { cn } from "@racer/ui/utils";
 import type { ComponentProps } from "react";
 
-function Ticket({
+const Ticket = ({
   className,
   location,
   offence,
@@ -23,50 +23,46 @@ function Ticket({
   readonly warning?: string | undefined;
   readonly serial?: string | undefined;
   readonly tilt?: number;
-}) {
-  return (
-    <Paper
-      data-slot="ticket"
-      className={cn("w-80 max-w-full", className)}
-      tilt={tilt}
-      torn
-      {...props}
-    >
-      <div className="border-blue flex items-end justify-between border-b-4 pb-1">
-        <p className="font-display tracking-display text-blue text-4xl leading-none font-extrabold uppercase">
-          Citation
-        </p>
-        {serial !== undefined && (
-          <p className="numeric text-ink/60 text-xs font-semibold">
-            No. {serial}
-          </p>
-        )}
-      </div>
-      <p className="text-label mt-3 font-semibold uppercase">{location}</p>
-      <p className="mt-1 text-sm leading-snug font-semibold text-pretty uppercase">
-        {offence}
+}) => (
+  <Paper
+    data-slot="ticket"
+    className={cn("w-80 max-w-full", className)}
+    tilt={tilt}
+    torn
+    {...props}
+  >
+    <div className="border-blue flex items-end justify-between border-b-4 pb-1">
+      <p className="font-display tracking-display text-blue text-4xl leading-none font-extrabold uppercase">
+        Citation
       </p>
-      <div className="mt-4 flex flex-col gap-2">
-        <PaperLine label="Fine">{formatMoney(fine)}</PaperLine>
-        <PaperLine
-          className={cashAfter < 0 ? "text-red" : undefined}
-          label={cashAfter < 0 ? "You owe" : "Cash after"}
-        >
-          {formatMoney(Math.abs(cashAfter))}
-        </PaperLine>
-      </div>
-      {confiscated !== undefined && (
-        <p className="border-ink/25 mt-3 border-t-2 border-dashed pt-2 text-xs font-semibold uppercase">
-          {confiscated}
+      {serial !== undefined && (
+        <p className="numeric text-ink/60 text-xs font-semibold">
+          No. {serial}
         </p>
       )}
-      {warning !== undefined && (
-        <p className="text-red mt-2 text-sm font-semibold uppercase">
-          {warning}
-        </p>
-      )}
-    </Paper>
-  );
-}
+    </div>
+    <p className="text-label mt-3 font-semibold uppercase">{location}</p>
+    <p className="mt-1 text-sm leading-snug font-semibold text-pretty uppercase">
+      {offence}
+    </p>
+    <div className="mt-4 flex flex-col gap-2">
+      <PaperLine label="Fine">{formatMoney(fine)}</PaperLine>
+      <PaperLine
+        className={cashAfter < 0 ? "text-red" : undefined}
+        label={cashAfter < 0 ? "You owe" : "Cash after"}
+      >
+        {formatMoney(Math.abs(cashAfter))}
+      </PaperLine>
+    </div>
+    {confiscated !== undefined && (
+      <p className="border-ink/25 mt-3 border-t-2 border-dashed pt-2 text-xs font-semibold uppercase">
+        {confiscated}
+      </p>
+    )}
+    {warning !== undefined && (
+      <p className="text-red mt-2 text-sm font-semibold uppercase">{warning}</p>
+    )}
+  </Paper>
+);
 
 export { Ticket };

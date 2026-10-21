@@ -11,7 +11,7 @@ export interface MenuAction {
   readonly run?: (() => void) | undefined;
 }
 
-export function ActionMenu({
+export const ActionMenu = ({
   label,
   actions,
   primary,
@@ -29,34 +29,32 @@ export function ActionMenu({
   readonly autoFocus?: boolean;
   readonly className?: string | undefined;
   readonly onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
-}) {
-  return (
-    <MenuList
-      autoFocus={autoFocus}
-      className={className}
-      defaultValue={primary}
-      label={label}
-      onKeyDown={onKeyDown}
-      onSelect={(id) => actions.find((action) => action.id === id)?.run?.()}
-      orientation={orientation}
-      size={size}
-    >
-      {actions.map((action) => (
-        <MenuItem
-          detail={action.detail}
-          disabled={action.disabled === true}
-          key={action.id}
-          trailing={action.trailing}
-          value={action.id}
-        >
-          {action.label}
-        </MenuItem>
-      ))}
-    </MenuList>
-  );
-}
+}) => (
+  <MenuList
+    autoFocus={autoFocus}
+    className={className}
+    defaultValue={primary}
+    label={label}
+    onKeyDown={onKeyDown}
+    onSelect={(id) => actions.find((action) => action.id === id)?.run?.()}
+    orientation={orientation}
+    size={size}
+  >
+    {actions.map((action) => (
+      <MenuItem
+        detail={action.detail}
+        disabled={action.disabled === true}
+        key={action.id}
+        trailing={action.trailing}
+        value={action.id}
+      >
+        {action.label}
+      </MenuItem>
+    ))}
+  </MenuList>
+);
 
-export function useEscape(run: () => void, enabled = true): void {
+export const useEscape = (run: () => void, enabled = true): void => {
   const latest = useRef(run);
   useEffect(() => {
     latest.current = run;
@@ -75,18 +73,29 @@ export function useEscape(run: () => void, enabled = true): void {
       window.removeEventListener("keydown", pressed);
     };
   }, [enabled]);
-}
+};
 
-export function SmallPrint({ children }: { readonly children: ReactNode }) {
-  return (
-    <p className="text-label text-muted font-semibold uppercase">{children}</p>
-  );
-}
+export const SmallPrint = ({ children }: { readonly children: ReactNode }) => (
+  <p className="text-label text-muted font-semibold uppercase">{children}</p>
+);
 
 const stepKeys = {
   back: new Set(["ArrowLeft", "a", "A"]),
   forward: new Set(["ArrowRight", "d", "D"]),
 } as const;
+
+export const standingTag = (
+  ally: boolean,
+  grudge: boolean
+): string | undefined => {
+  if (ally) {
+    return "On your side";
+  }
+  if (grudge) {
+    return "Holds a grudge";
+  }
+  return undefined;
+};
 
 export const sidewaysStep = (key: string): -1 | 0 | 1 => {
   if (stepKeys.forward.has(key)) {

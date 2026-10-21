@@ -32,21 +32,6 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
-export const Route = createFileRoute("/kit")({
-  beforeLoad: () => {
-    if (!import.meta.env.DEV) {
-      notFound({ throw: true });
-    }
-  },
-  component: KitPage,
-  head: () => ({
-    meta: [
-      { title: "Rushline UI kit" },
-      { content: "noindex", name: "robots" },
-    ],
-  }),
-});
-
 const interfaceSwatches = [
   { name: "ink", swatch: "bg-ink" },
   { name: "panel", swatch: "bg-panel" },
@@ -261,93 +246,87 @@ const garageMenu = [
   { label: "Halden Meridian 900", mark: "🔒", value: "meridian" },
 ] as const;
 
-function Section({
+const Section = ({
   title,
   children,
 }: {
   readonly title: string;
   readonly children: ReactNode;
-}) {
-  return (
-    <section className="border-line border-t-2 py-10">
-      <Heading as="h2" className="mb-6" size="md" tone="muted">
-        {title}
-      </Heading>
-      {children}
-    </section>
-  );
-}
+}) => (
+  <section className="border-line border-t-2 py-10">
+    <Heading as="h2" className="mb-6" size="md" tone="muted">
+      {title}
+    </Heading>
+    {children}
+  </section>
+);
 
-function Swatch({
+const Swatch = ({
   name,
   swatch,
 }: {
   readonly name: string;
   readonly swatch: string;
-}) {
-  return (
-    <li className="flex items-center gap-3">
-      <span className={`border-line size-8 shrink-0 border-2 ${swatch}`} />
-      <span className="font-body text-label text-muted font-semibold uppercase">
-        {name}
-      </span>
-    </li>
-  );
-}
+}) => (
+  <li className="flex items-center gap-3">
+    <span className={`border-line size-8 shrink-0 border-2 ${swatch}`} />
+    <span className="font-body text-label text-muted font-semibold uppercase">
+      {name}
+    </span>
+  </li>
+);
 
-function Tokens() {
-  return (
-    <Section title="Palette and type">
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-        {interfaceSwatches.map((entry) => (
-          <Swatch key={entry.name} name={entry.name} swatch={entry.swatch} />
-        ))}
-      </ul>
-      <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {roads.map((entry) => (
-          <li key={entry.region}>
-            <p className="font-body text-label text-muted font-semibold uppercase">
-              {entry.regionName}
-            </p>
-            <div className="border-line mt-2 flex h-8 border-2">
-              {entry.swatches.map((swatch) => (
-                <span className={`flex-1 ${swatch}`} key={swatch} />
-              ))}
-            </div>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-10 grid gap-8 lg:grid-cols-3">
-        <div>
-          <p className="font-display tracking-display text-heading font-extrabold uppercase">
-            Saira 800
+const Tokens = () => (
+  <Section title="Palette and type">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+      {interfaceSwatches.map((entry) => (
+        <Swatch key={entry.name} name={entry.name} swatch={entry.swatch} />
+      ))}
+    </ul>
+    <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {roads.map((entry) => (
+        <li key={entry.region}>
+          <p className="font-body text-label text-muted font-semibold uppercase">
+            {entry.regionName}
           </p>
-          <p className="font-display tracking-display text-name font-bold uppercase">
-            Saira Extra Condensed 700 · 0123456789
-          </p>
-        </div>
-        <div>
-          <p className="font-body text-body">
-            Inter 400. Two lanes and a lot of nothing, then a right angle.
-          </p>
-          <p className="font-body text-quote mt-2 font-semibold">
-            “Inter 600. Stay out of my lane.”
-          </p>
-          <p className="font-body text-label text-muted mt-2 font-semibold uppercase">
-            Label · 13 px capitals
-          </p>
-        </div>
-        <div>
-          <p className="font-stencil tracking-display text-heading font-extrabold uppercase">
-            Stencil 800
-          </p>
-        </div>
+          <div className="border-line mt-2 flex h-8 border-2">
+            {entry.swatches.map((swatch) => (
+              <span className={`flex-1 ${swatch}`} key={swatch} />
+            ))}
+          </div>
+        </li>
+      ))}
+    </ul>
+    <div className="mt-10 grid gap-8 lg:grid-cols-3">
+      <div>
+        <p className="font-display tracking-display text-heading font-extrabold uppercase">
+          Saira 800
+        </p>
+        <p className="font-display tracking-display text-name font-bold uppercase">
+          Saira Extra Condensed 700 · 0123456789
+        </p>
       </div>
-    </Section>
-  );
-}
+      <div>
+        <p className="font-body text-body">
+          Inter 400. Two lanes and a lot of nothing, then a right angle.
+        </p>
+        <p className="font-body text-quote mt-2 font-semibold">
+          “Inter 600. Stay out of my lane.”
+        </p>
+        <p className="font-body text-label text-muted mt-2 font-semibold uppercase">
+          Label · 13 px capitals
+        </p>
+      </div>
+      <div>
+        <p className="font-stencil tracking-display text-heading font-extrabold uppercase">
+          Stencil 800
+        </p>
+      </div>
+    </div>
+  </Section>
+);
 
-function ScreenDemo() {
+const ScreenDemo = () => {
   const [chosen, setChosen] = useState("nothing yet");
   return (
     <Section title="Screen, MenuList, Stat">
@@ -414,93 +393,83 @@ function ScreenDemo() {
       </div>
     </Section>
   );
-}
+};
 
-function Words() {
-  return (
-    <Section title="Heading, Stencil, Panel">
-      <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-        <Heading size="xl">Garage</Heading>
-        <Heading>Route board</Heading>
-        <Heading size="md" tone="text">
-          Moose Kowalczyk
+const Words = () => (
+  <Section title="Heading, Stencil, Panel">
+    <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
+      <Heading size="xl">Garage</Heading>
+      <Heading>Route board</Heading>
+      <Heading size="md" tone="text">
+        Moose Kowalczyk
+      </Heading>
+      <Heading size="sm" tone="yellow">
+        Featherweight
+      </Heading>
+    </div>
+    <div className="mt-10 flex flex-wrap items-center gap-x-14 gap-y-10">
+      <Stencil rotate={-4}>Wrecked</Stencil>
+      <Stencil rotate={3} tone="police">
+        Busted
+      </Stencil>
+      <Stencil framed rotate={-8} size="lg" tone="yellow">
+        Qualified
+      </Stencil>
+      <Stencil size="lg" tone="text">
+        Winner
+      </Stencil>
+      <Stencil framed rotate={6} size="md" tone="green">
+        Finished
+      </Stencil>
+    </div>
+    <div className="mt-10 grid gap-6 md:grid-cols-4">
+      <Panel>Panel</Panel>
+      <Panel tone="raised">Raised</Panel>
+      <Panel selected>Selected</Panel>
+      <Panel edge={moose.bike} padding="sm" tone="plate">
+        <Heading as="p" size="sm" tone="text">
+          Moose
         </Heading>
-        <Heading size="sm" tone="yellow">
-          Featherweight
-        </Heading>
-      </div>
-      <div className="mt-10 flex flex-wrap items-center gap-x-14 gap-y-10">
-        <Stencil rotate={-4}>Wrecked</Stencil>
-        <Stencil rotate={3} tone="police">
-          Busted
-        </Stencil>
-        <Stencil framed rotate={-8} size="lg" tone="yellow">
-          Qualified
-        </Stencil>
-        <Stencil size="lg" tone="text">
-          Winner
-        </Stencil>
-        <Stencil framed rotate={6} size="md" tone="green">
-          Finished
-        </Stencil>
-      </div>
-      <div className="mt-10 grid gap-6 md:grid-cols-4">
-        <Panel>Panel</Panel>
-        <Panel tone="raised">Raised</Panel>
-        <Panel selected>Selected</Panel>
-        <Panel edge={moose.bike} padding="sm" tone="plate">
-          <Heading as="p" size="sm" tone="text">
-            Moose
-          </Heading>
-          <Bar className="mt-2" label="Moose stamina" value={62} />
-        </Panel>
-      </div>
-    </Section>
-  );
-}
+        <Bar className="mt-2" label="Moose stamina" value={62} />
+      </Panel>
+    </div>
+  </Section>
+);
 
-function Meters() {
-  return (
-    <Section title="Bar, Stat, Money">
-      <div className="grid gap-10 md:grid-cols-3">
-        <div className="flex flex-col gap-4">
-          <Bar label="Stamina, full" value={88} />
-          <Bar label="Stamina, under 50" value={41} />
-          <Bar label="Stamina, under 25" value={17} />
-          <Bar align="right" label="Rival stamina" value={70} />
-        </div>
-        <div className="flex flex-col gap-4">
-          <Bar label="Bike, sound" size="sm" tone="condition" value={92} />
-          <Bar label="Bike, worn" size="sm" tone="condition" value={38} />
-          <Bar label="Bike, failing" size="sm" tone="condition" value={12} />
-          <Bar
-            label="Top speed"
-            mark={0.58}
-            max={1}
-            tone="plain"
-            value={0.66}
-          />
-          <Pips label="Club hits left" max={8} value={5} />
-          <Pips label="Pipe hits left" max={3} value={0} />
-        </div>
-        <div className="flex flex-col gap-4">
-          <Stat label="Speed" size="lg" value="187" />
-          <Stat label="Top speed" layout="row" size="sm" value="190 km/h" />
-          <div className="font-body flex flex-wrap gap-x-6 gap-y-1 font-semibold">
-            <Money amount={1600} kind="flow" />
-            <Money amount={-900} kind="flow" />
-            <Money amount={0} kind="flow" />
-            <Money amount={3200} kind="balance" />
-            <Money amount={-750} kind="balance" />
-            <Money amount={5000} />
-          </div>
+const Meters = () => (
+  <Section title="Bar, Stat, Money">
+    <div className="grid gap-10 md:grid-cols-3">
+      <div className="flex flex-col gap-4">
+        <Bar label="Stamina, full" value={88} />
+        <Bar label="Stamina, under 50" value={41} />
+        <Bar label="Stamina, under 25" value={17} />
+        <Bar align="right" label="Rival stamina" value={70} />
+      </div>
+      <div className="flex flex-col gap-4">
+        <Bar label="Bike, sound" size="sm" tone="condition" value={92} />
+        <Bar label="Bike, worn" size="sm" tone="condition" value={38} />
+        <Bar label="Bike, failing" size="sm" tone="condition" value={12} />
+        <Bar label="Top speed" mark={0.58} max={1} tone="plain" value={0.66} />
+        <Pips label="Club hits left" max={8} value={5} />
+        <Pips label="Pipe hits left" max={3} value={0} />
+      </div>
+      <div className="flex flex-col gap-4">
+        <Stat label="Speed" size="lg" value="187" />
+        <Stat label="Top speed" layout="row" size="sm" value="190 km/h" />
+        <div className="font-body flex flex-wrap gap-x-6 gap-y-1 font-semibold">
+          <Money amount={1600} kind="flow" />
+          <Money amount={-900} kind="flow" />
+          <Money amount={0} kind="flow" />
+          <Money amount={3200} kind="balance" />
+          <Money amount={-750} kind="balance" />
+          <Money amount={5000} />
         </div>
       </div>
-    </Section>
-  );
-}
+    </div>
+  </Section>
+);
 
-function Board() {
+const Board = () => {
   const [selected, setSelected] = useState<SceneRegion>("lowtown");
   return (
     <Section title="CorkBoard, Postcard, CorkNote">
@@ -570,132 +539,128 @@ function Board() {
       </CorkBoard>
     </Section>
   );
-}
+};
 
-function Bills() {
-  return (
-    <Section title="Ticket, Invoice, Ledger">
-      <div className="flex flex-wrap items-start gap-12">
-        <Ticket
-          cashAfter={1700}
-          confiscated="Also confiscated: one club."
-          fine={1500}
-          location="Slag Row, km 3.1"
-          offence="Racing on a public road. Also, falling off on one."
-          serial="04417"
-        />
-        <Invoice
-          amount={450}
-          cashAfter={-250}
-          detail="Level 2 · Featherweight"
-          fullAmount={900}
-          item="Repair, Halden Kite 500"
-          note="Half, thanks to our sponsor"
-          warning="This bill takes the Halden Kite 500."
-        />
-        <Panel className="w-96 max-w-full">
-          <Ledger>
-            <LedgerRow amount={1600} label="Prize, 2nd" />
-            <LedgerRow amount={-900} label="Repairs" />
-            <LedgerRow
-              amount={0}
-              label="Fines"
-              note="Nobody caught you this time."
-            />
-            <LedgerTotal amount={3200} label="Cash" />
-          </Ledger>
-        </Panel>
-      </div>
-    </Section>
-  );
-}
-
-function Riders() {
-  return (
-    <Section title="RiderCard, RiderRow, BikeCard">
-      <div className="flex flex-wrap items-start gap-8">
-        <RiderCard
-          aggression={0.8}
-          colours={moose}
-          grid={2}
-          home="Cinder Flats"
-          line="Last time you made me fall down. I've been thinking about it in the bath."
-          name="Moose Kowalczyk"
-          skill={0.62}
-          tag="Holds a grudge"
-        />
-        <RiderCard
-          aggression={0.5}
-          colours={you}
-          grid={8}
-          home="The Lowside"
-          name="You"
-          skill={0.5}
-          you
-        />
-        <BikeCard
-          bikeClass="Featherweight"
-          name="Halden Kite 500"
-          note="A wreck at Level 2 costs $900 on this bike."
-          pitch="The Wren with more lungs. Still turns before you finish deciding to."
-          price={5000}
-          stats={kiteStats}
-        />
-        <BikeCard
-          bikeClass="Heavyweight"
-          locked="Arrives at level 4"
-          name="Halden Meridian 900"
-          price={18_500}
-          stats={kiteStats.map((stat) => ({
-            label: stat.label,
-            value: 1 - stat.value / 2,
-          }))}
-        />
-      </div>
-      <div className="mt-10 grid max-w-3xl grid-cols-2 gap-3">
-        <RiderCard
-          colours={moose}
-          grid={2}
-          home="Halden Kite 500 · Club"
-          layout="row"
-          name="Moose Kowalczyk"
-          speaking
-          tag="Holds a grudge"
-        />
-        <RiderCard
-          colours={you}
-          grid={8}
-          home="Halden Wren 400 · Fists"
-          layout="row"
-          name="You"
-          you
-        />
-      </div>
-      <Panel className="mt-10 max-w-3xl">
-        <RiderRows>
-          {standings.map((row, index) => (
-            <RiderRow
-              bike={row.bike}
-              colour={row.colour}
-              key={row.name}
-              name={row.name}
-              note={row.note}
-              place={index + 1}
-              prize={row.prize}
-              result={row.result}
-              you={row.name === "You"}
-            />
-          ))}
-        </RiderRows>
+const Bills = () => (
+  <Section title="Ticket, Invoice, Ledger">
+    <div className="flex flex-wrap items-start gap-12">
+      <Ticket
+        cashAfter={1700}
+        confiscated="Also confiscated: one club."
+        fine={1500}
+        location="Slag Row, km 3.1"
+        offence="Racing on a public road. Also, falling off on one."
+        serial="04417"
+      />
+      <Invoice
+        amount={450}
+        cashAfter={-250}
+        detail="Level 2 · Featherweight"
+        fullAmount={900}
+        item="Repair, Halden Kite 500"
+        note="Half, thanks to our sponsor"
+        warning="This bill takes the Halden Kite 500."
+      />
+      <Panel className="w-96 max-w-full">
+        <Ledger>
+          <LedgerRow amount={1600} label="Prize, 2nd" />
+          <LedgerRow amount={-900} label="Repairs" />
+          <LedgerRow
+            amount={0}
+            label="Fines"
+            note="Nobody caught you this time."
+          />
+          <LedgerTotal amount={3200} label="Cash" />
+        </Ledger>
       </Panel>
-    </Section>
-  );
-}
+    </div>
+  </Section>
+);
+
+const Riders = () => (
+  <Section title="RiderCard, RiderRow, BikeCard">
+    <div className="flex flex-wrap items-start gap-8">
+      <RiderCard
+        aggression={0.8}
+        colours={moose}
+        grid={2}
+        home="Cinder Flats"
+        line="Last time you made me fall down. I've been thinking about it in the bath."
+        name="Moose Kowalczyk"
+        skill={0.62}
+        tag="Holds a grudge"
+      />
+      <RiderCard
+        aggression={0.5}
+        colours={you}
+        grid={8}
+        home="The Lowside"
+        name="You"
+        skill={0.5}
+        you
+      />
+      <BikeCard
+        bikeClass="Featherweight"
+        name="Halden Kite 500"
+        note="A wreck at Level 2 costs $900 on this bike."
+        pitch="The Wren with more lungs. Still turns before you finish deciding to."
+        price={5000}
+        stats={kiteStats}
+      />
+      <BikeCard
+        bikeClass="Heavyweight"
+        locked="Arrives at level 4"
+        name="Halden Meridian 900"
+        price={18_500}
+        stats={kiteStats.map((stat) => ({
+          label: stat.label,
+          value: 1 - stat.value / 2,
+        }))}
+      />
+    </div>
+    <div className="mt-10 grid max-w-3xl grid-cols-2 gap-3">
+      <RiderCard
+        colours={moose}
+        grid={2}
+        home="Halden Kite 500 · Club"
+        layout="row"
+        name="Moose Kowalczyk"
+        speaking
+        tag="Holds a grudge"
+      />
+      <RiderCard
+        colours={you}
+        grid={8}
+        home="Halden Wren 400 · Fists"
+        layout="row"
+        name="You"
+        you
+      />
+    </div>
+    <Panel className="mt-10 max-w-3xl">
+      <RiderRows>
+        {standings.map((row, index) => (
+          <RiderRow
+            bike={row.bike}
+            colour={row.colour}
+            key={row.name}
+            name={row.name}
+            note={row.note}
+            place={index + 1}
+            prize={row.prize}
+            result={row.result}
+            you={row.name === "You"}
+          />
+        ))}
+      </RiderRows>
+    </Panel>
+  </Section>
+);
 
 const sampleBikes = ["Halden Wren 400", "Halden Kite 500", "Ostra Sesta 600"];
 const LAST_LEVEL = 5;
 
-function Garage() {
+const Garage = () => {
   const [level, setLevel] = useState(2);
   const [bike, setBike] = useState(0);
   return (
@@ -747,9 +712,9 @@ function Garage() {
       </div>
     </Section>
   );
-}
+};
 
-function Asking() {
+const Asking = () => {
   const [answer, setAnswer] = useState("not asked");
   const [open, setOpen] = useState(true);
   return (
@@ -795,71 +760,80 @@ function Asking() {
       </div>
     </Section>
   );
-}
+};
 
-function Hud() {
-  return (
-    <Section title="HUD utilities">
-      <div className="border-line bg-muted relative flex h-40 items-center justify-around border-2">
-        <p className="font-display tracking-display hud-ink text-hud font-extrabold uppercase">
-          3rd <span className="text-name">/ 8</span>
-        </p>
-        <p className="font-display tracking-display flash-hold hud-ink text-hud font-extrabold uppercase">
-          2nd
-        </p>
-        <p className="font-display tracking-display cop-blink text-name bg-ink/85 px-4 py-1 font-extrabold uppercase">
-          ▲ Cop 40 m ▲
-        </p>
-      </div>
-      <p className="text-muted mt-3 max-w-2xl text-sm">
-        hud-ink outlines text over the road. flash-hold shows yellow for half a
-        second when it mounts. cop-blink is the one blinking element.
+const Hud = () => (
+  <Section title="HUD utilities">
+    <div className="border-line bg-muted relative flex h-40 items-center justify-around border-2">
+      <p className="font-display tracking-display hud-ink text-hud font-extrabold uppercase">
+        3rd <span className="text-name">/ 8</span>
       </p>
-    </Section>
-  );
-}
-
-function Notices() {
-  return (
-    <Section title="Notice, Toast, AdSlot">
-      <div className="bg-asphalt border-line relative h-56 border-2">
-        <Notice>Got the club</Notice>
-        <div className="absolute bottom-4 left-4 flex flex-col gap-2">
-          <Toast tone="green">Dee joined.</Toast>
-          <Toast tone="red">
-            Lyle lost connection. The bike rides on autopilot.
-          </Toast>
-        </div>
-      </div>
-      <div className="mt-10 flex flex-wrap items-start gap-8">
-        <AdSlot />
-        <AdSlot format="rectangle" />
-      </div>
-    </Section>
-  );
-}
-
-function KitPage() {
-  return (
-    <div className="bg-ink text-text font-body text-body px-gutter min-h-screen py-10">
-      <Heading as="h1">UI kit</Heading>
-      <p className="text-muted mt-2 max-w-2xl">
-        Every piece the career screens are built from, once, with sample data.
-        This page only exists in development.
+      <p className="font-display tracking-display flash-hold hud-ink text-hud font-extrabold uppercase">
+        2nd
       </p>
-      <div className="mt-10">
-        <Tokens />
-        <ScreenDemo />
-        <Words />
-        <Meters />
-        <Board />
-        <Bills />
-        <Riders />
-        <Garage />
-        <Asking />
-        <Hud />
-        <Notices />
+      <p className="font-display tracking-display cop-blink text-name bg-ink/85 px-4 py-1 font-extrabold uppercase">
+        ▲ Cop 40 m ▲
+      </p>
+    </div>
+    <p className="text-muted mt-3 max-w-2xl text-sm">
+      hud-ink outlines text over the road. flash-hold shows yellow for half a
+      second when it mounts. cop-blink is the one blinking element.
+    </p>
+  </Section>
+);
+
+const Notices = () => (
+  <Section title="Notice, Toast, AdSlot">
+    <div className="bg-asphalt border-line relative h-56 border-2">
+      <Notice>Got the club</Notice>
+      <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+        <Toast tone="green">Dee joined.</Toast>
+        <Toast tone="red">
+          Lyle lost connection. The bike rides on autopilot.
+        </Toast>
       </div>
     </div>
-  );
-}
+    <div className="mt-10 flex flex-wrap items-start gap-8">
+      <AdSlot />
+      <AdSlot format="rectangle" />
+    </div>
+  </Section>
+);
+
+const KitPage = () => (
+  <div className="bg-ink text-text font-body text-body px-gutter min-h-screen py-10">
+    <Heading as="h1">UI kit</Heading>
+    <p className="text-muted mt-2 max-w-2xl">
+      Every piece the career screens are built from, once, with sample data.
+      This page only exists in development.
+    </p>
+    <div className="mt-10">
+      <Tokens />
+      <ScreenDemo />
+      <Words />
+      <Meters />
+      <Board />
+      <Bills />
+      <Riders />
+      <Garage />
+      <Asking />
+      <Hud />
+      <Notices />
+    </div>
+  </div>
+);
+
+export const Route = createFileRoute("/kit")({
+  beforeLoad: () => {
+    if (!import.meta.env.DEV) {
+      notFound({ throw: true });
+    }
+  },
+  component: KitPage,
+  head: () => ({
+    meta: [
+      { title: "Rushline UI kit" },
+      { content: "noindex", name: "robots" },
+    ],
+  }),
+});

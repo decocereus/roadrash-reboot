@@ -213,7 +213,7 @@ const createSparks = (shading: Shading) => {
   return { mesh, particles, settle };
 };
 
-export function createPuffs(shading: Shading): Puffs {
+export const createPuffs = (shading: Shading): Puffs => {
   const group = new THREE.Group();
   const dust = createDust(shading.look.dust);
   const sparks = createSparks(shading);
@@ -286,4 +286,4 @@ export function createPuffs(shading: Shading): Puffs {
       live = dust.settle(seconds) + sparks.settle(seconds) > 0;
     },
   };
-}
+};

@@ -16,7 +16,7 @@ import { SettingsScreen } from "./settings.tsx";
 import { ActionMenu, useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
-export function PauseScreen({
+export const PauseScreen = ({
   plan,
   career,
   feed,
@@ -32,7 +32,7 @@ export function PauseScreen({
   readonly onRestart: () => void;
   readonly onMute: () => void;
   readonly onQuit: () => void;
-}) {
+}) => {
   const [asking, setAsking] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
@@ -135,4 +135,4 @@ export function PauseScreen({
       )}
     </Screen>
   );
-}
+};

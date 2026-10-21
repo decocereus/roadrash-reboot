@@ -17,22 +17,13 @@ export default defineConfig({
   options: { typeAware: true },
   overrides: [
     {
-      files: ["alchemy.run.ts"],
+      files: [
+        "**/*.{test,spec,test-d,spec-d}.{ts,tsx,js,jsx}",
+        "**/__tests__/**/*.{ts,tsx,js,jsx}",
+      ],
       rules: {
-        "func-names": "off",
-        "max-classes-per-file": "off",
-      },
-    },
-    {
-      files: ["apps/web/**/*.{ts,tsx}", "packages/ui/**/*.{ts,tsx}"],
-      rules: {
-        "func-style": "off",
-        "no-await-in-loop": "off",
-        "no-nested-ternary": "off",
-        "no-shadow": "off",
-        "no-use-before-define": "off",
-        "promise/prefer-await-to-callbacks": "off",
-        "promise/prefer-await-to-then": "off",
+        "no-empty-function": "error",
+        "promise/prefer-await-to-then": "error",
       },
     },
   ],

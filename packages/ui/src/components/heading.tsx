@@ -29,7 +29,7 @@ const headingVariants = cva(
   }
 );
 
-function Heading({
+const Heading = ({
   as: Tag = "h2",
   className,
   size = "lg",
@@ -38,14 +38,12 @@ function Heading({
 }: ComponentProps<"h2"> &
   VariantProps<typeof headingVariants> & {
     readonly as?: "h1" | "h2" | "h3" | "h4" | "p" | "span";
-  }) {
-  return (
-    <Tag
-      data-slot="heading"
-      className={cn(headingVariants({ size, tone }), className)}
-      {...props}
-    />
-  );
-}
+  }) => (
+  <Tag
+    data-slot="heading"
+    className={cn(headingVariants({ size, tone }), className)}
+    {...props}
+  />
+);
 
 export { Heading, headingVariants };

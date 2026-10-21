@@ -14,18 +14,17 @@ const heights = {
 
 type BarLevel = "high" | "mid" | "low";
 
-function barLevel(ratio: number): BarLevel {
+const barLevel = (ratio: number): BarLevel => {
   if (ratio >= 0.5) {
     return "high";
   }
   return ratio >= 0.25 ? "mid" : "low";
-}
+};
 
-function ratioOf(value: number, max: number): number {
-  return max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
-}
+const ratioOf = (value: number, max: number): number =>
+  max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
 
-function Bar({
+const Bar = ({
   className,
   value,
   max = 100,
@@ -43,7 +42,7 @@ function Bar({
   readonly align?: "left" | "right";
   readonly mark?: number | undefined;
   readonly label: string;
-}) {
+}) => {
   const ratio = ratioOf(value, max);
   const level = barLevel(ratio);
   return (
@@ -82,9 +81,9 @@ function Bar({
       )}
     </div>
   );
-}
+};
 
-function Pips({
+const Pips = ({
   className,
   value,
   max,
@@ -94,7 +93,7 @@ function Pips({
   readonly value: number;
   readonly max: number;
   readonly label: string;
-}) {
+}) => {
   const left = Math.min(max, Math.max(0, Math.round(value)));
   return (
     <div
@@ -117,6 +116,6 @@ function Pips({
       ))}
     </div>
   );
-}
+};
 
 export { Bar, Pips };

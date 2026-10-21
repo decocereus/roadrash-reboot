@@ -56,12 +56,12 @@ const placer = new THREE.Object3D();
 
 type Rail = readonly [offset: number, lift: number, u: number];
 
-function buildRibbon(
+const buildRibbon = (
   track: Track,
   span: readonly [number, number],
   rails: readonly Rail[],
   tile: number
-): THREE.BufferGeometry {
+): THREE.BufferGeometry => {
   const [from, to] = span;
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -92,14 +92,14 @@ function buildRibbon(
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
-}
+};
 
-function terrainColor(
+const terrainColor = (
   look: Look,
   ring: number,
   worldX: number,
   worldZ: number
-): THREE.Color {
+): THREE.Color => {
   if (ring <= 1) {
     return tint.set(look.walk);
   }
@@ -108,14 +108,14 @@ function terrainColor(
     .set(look.groundNear)
     .lerp(new THREE.Color(look.groundFar), smoothstep((ring - 2) / 5))
     .lerp(new THREE.Color(look.groundPatch), patch * 0.35);
-}
+};
 
-function buildTerrainChunk(
+const buildTerrainChunk = (
   track: Track,
   span: readonly [number, number],
   side: number,
   look: Look
-): THREE.BufferGeometry {
+): THREE.BufferGeometry => {
   const [from, to] = span;
   const positions: number[] = [];
   const colors: number[] = [];
@@ -156,14 +156,14 @@ function buildTerrainChunk(
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
-}
+};
 
-function buildGate(
+const buildGate = (
   track: Track,
   s: number,
   label: string,
   shading: Shading
-): THREE.Group {
+): THREE.Group => {
   const gate = new THREE.Group();
   const span = track.roadHalfWidth * 2 + 3;
   const steel = shading.cel(POLE, { rim: 0.6 });
@@ -186,13 +186,13 @@ function buildGate(
   gate.position.set(point.x, point.y, point.z);
   gate.rotation.set(0, -point.heading, 0);
   return gate;
-}
+};
 
-function buildScenery(
+const buildScenery = (
   track: Track,
   shading: Shading,
   limit: number
-): THREE.Group {
+): THREE.Group => {
   const { look } = shading;
   const scenery = new THREE.Group();
   const city = look.kit === "city";
@@ -293,9 +293,9 @@ function buildScenery(
   scenery.add(buildGate(track, 0, "START", shading));
   scenery.add(buildGate(track, track.length, "FINISH", shading));
   return scenery;
-}
+};
 
-function buildSky(look: Look, shading: Shading, seed: number): THREE.Mesh {
+const buildSky = (look: Look, shading: Shading, seed: number): THREE.Mesh => {
   const mark =
     look.sun === null
       ? MOON_BEARING.clone()
@@ -316,9 +316,9 @@ function buildSky(look: Look, shading: Shading, seed: number): THREE.Mesh {
   );
   sky.renderOrder = -2;
   return onFxLayer(sky);
-}
+};
 
-function buildMountains(look: Look): THREE.InstancedMesh {
+const buildMountains = (look: Look): THREE.InstancedMesh => {
   const count = 44;
   const mountains = new THREE.InstancedMesh(
     new THREE.ConeGeometry(1, 1, 5),
@@ -340,7 +340,7 @@ function buildMountains(look: Look): THREE.InstancedMesh {
   }
   mountains.frustumCulled = false;
   return onFxLayer(mountains);
-}
+};
 
 interface SunRig {
   readonly light: THREE.DirectionalLight;
@@ -348,7 +348,7 @@ interface SunRig {
   setMapSize: (size: number) => void;
 }
 
-function createSunRig(shading: Shading, mapSize: number): SunRig {
+const createSunRig = (shading: Shading, mapSize: number): SunRig => {
   const light = new THREE.DirectionalLight(shading.sun, 1);
   light.castShadow = true;
   light.shadow.mapSize.set(mapSize, mapSize);
@@ -394,7 +394,7 @@ function createSunRig(shading: Shading, mapSize: number): SunRig {
       texel = (SHADOW_SPAN * 2) / size;
     },
   };
-}
+};
 
 export interface World {
   readonly scene: THREE.Scene;
@@ -406,7 +406,7 @@ export interface World {
   dispose: () => void;
 }
 
-export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
+export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const look = lookOf(track.plan.region);
   const shading = createShading(look);
   const random = createRandom(track.plan.seed + 5);
@@ -560,4 +560,4 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       hazards.show(list, s);
     },
   };
-}
+};

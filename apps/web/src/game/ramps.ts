@@ -152,7 +152,7 @@ const corners = [
   new THREE.Vector3(),
   new THREE.Vector3(),
 ];
-const across = new THREE.Vector3();
+const edgeVector = new THREE.Vector3();
 const along = new THREE.Vector3();
 const normal = new THREE.Vector3();
 const FRONT = [0, 1, 2, 0, 2, 3] as const;
@@ -187,9 +187,9 @@ const shade = (
   if (!(a && b && c)) {
     return;
   }
-  across.subVectors(b, a);
+  edgeVector.subVectors(b, a);
   along.subVectors(c, a);
-  normal.crossVectors(across, along);
+  normal.crossVectors(edgeVector, along);
   for (const index of normal.dot(outward) >= 0 ? FRONT : BACK) {
     const corner = corners[index];
     if (corner) {
@@ -878,7 +878,7 @@ const shadowMaterial = (): THREE.MeshBasicMaterial => {
   return material;
 };
 
-export function buildRamps(track: Track, shading: Shading): Ramps {
+export const buildRamps = (track: Track, shading: Shading): Ramps => {
   const group = new THREE.Group();
   const stretches: Stretch[] = [];
   const beacons: Beacon[] = [];
@@ -917,4 +917,4 @@ export function buildRamps(track: Track, shading: Shading): Ramps {
     );
   }
   return { clearView, group, stretches };
-}
+};

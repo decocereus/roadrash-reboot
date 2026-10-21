@@ -23,13 +23,13 @@ const warningOf = (report: RaceReport): string | undefined => {
     : undefined;
 };
 
-export function BustedScreen({
+export const BustedScreen = ({
   report,
   onPay,
 }: {
   readonly report: RaceReport;
   readonly onPay: () => void;
-}) {
+}) => {
   const { bust } = report.summary;
   if (!(bust && report.ledger)) {
     return null;
@@ -83,4 +83,4 @@ export function BustedScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

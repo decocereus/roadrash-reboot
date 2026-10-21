@@ -2,16 +2,16 @@ import * as THREE from "three";
 
 import { isMesh } from "./meshes.ts";
 
-function disposeMaterial(material: THREE.Material): void {
+const disposeMaterial = (material: THREE.Material): void => {
   for (const value of Object.values(material)) {
     if (value instanceof THREE.Texture) {
       value.dispose();
     }
   }
   material.dispose();
-}
+};
 
-export function disposeTree(root: THREE.Object3D): void {
+export const disposeTree = (root: THREE.Object3D): void => {
   root.traverse((node) => {
     if (node instanceof THREE.InstancedMesh) {
       node.dispose();
@@ -26,4 +26,4 @@ export function disposeTree(root: THREE.Object3D): void {
       }
     }
   });
-}
+};

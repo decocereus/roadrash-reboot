@@ -42,7 +42,7 @@ export interface Controls {
   dispose: () => void;
 }
 
-export function createControls(onCommand: (code: string) => void): Controls {
+export const createControls = (onCommand: (code: string) => void): Controls => {
   const held = new Set<string>();
   let steer = 0;
 
@@ -97,4 +97,4 @@ export function createControls(onCommand: (code: string) => void): Controls {
         (pad?.buttons[1]?.pressed ?? false);
     },
   };
-}
+};

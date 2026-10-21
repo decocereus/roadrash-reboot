@@ -70,7 +70,7 @@ const smoothstep = (edge0: number, edge1: number, value: number): number => {
   return t * t * (3 - 2 * t);
 };
 
-export function createChaseCamera(): ChaseCamera {
+export const createChaseCamera = (): ChaseCamera => {
   const rig = frameRig();
   const camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.3, 6000);
   camera.rotation.order = "YXZ";
@@ -144,4 +144,4 @@ export function createChaseCamera(): ChaseCamera {
       settled = true;
     },
   };
-}
+};

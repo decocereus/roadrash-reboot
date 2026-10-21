@@ -9,57 +9,53 @@ interface RiderColours {
   readonly helmet: string;
 }
 
-function RiderPortrait({
+const RiderPortrait = ({
   className,
   colours,
   ...props
 }: Omit<ComponentProps<"div">, "children"> & {
   readonly colours: RiderColours;
-}) {
-  return (
+}) => (
+  <div
+    aria-hidden
+    data-slot="rider-portrait"
+    className={cn(
+      "border-ink relative h-24 overflow-hidden border-b-2",
+      className
+    )}
+    style={{ backgroundColor: colours.bike }}
+    {...props}
+  >
+    <div className="absolute inset-0 bg-linear-to-t from-black/35 to-transparent" />
     <div
-      aria-hidden
-      data-slot="rider-portrait"
-      className={cn(
-        "border-ink relative h-24 overflow-hidden border-b-2",
-        className
-      )}
-      style={{ backgroundColor: colours.bike }}
-      {...props}
+      className="border-ink absolute bottom-0 left-1/2 h-[42%] w-[46%] -translate-x-1/2 rounded-t-[40%] border-2 border-b-0"
+      style={{ backgroundColor: colours.jacket }}
+    />
+    <div
+      className="border-ink absolute bottom-[34%] left-1/2 aspect-square h-[46%] -translate-x-1/2 overflow-hidden rounded-full border-2"
+      style={{ backgroundColor: colours.helmet }}
     >
-      <div className="absolute inset-0 bg-linear-to-t from-black/35 to-transparent" />
-      <div
-        className="border-ink absolute bottom-0 left-1/2 h-[42%] w-[46%] -translate-x-1/2 rounded-t-[40%] border-2 border-b-0"
-        style={{ backgroundColor: colours.jacket }}
-      />
-      <div
-        className="border-ink absolute bottom-[34%] left-1/2 aspect-square h-[46%] -translate-x-1/2 overflow-hidden rounded-full border-2"
-        style={{ backgroundColor: colours.helmet }}
-      >
-        <div className="bg-ink absolute inset-x-0 top-[36%] h-[26%]" />
-      </div>
+      <div className="bg-ink absolute inset-x-0 top-[36%] h-[26%]" />
     </div>
-  );
-}
+  </div>
+);
 
-function RiderTrait({
+const RiderTrait = ({
   label,
   value,
 }: {
   readonly label: string;
   readonly value: number;
-}) {
-  return (
-    <>
-      <span className="font-body text-label text-muted font-semibold uppercase">
-        {label}
-      </span>
-      <Bar label={label} max={1} size="sm" tone="plain" value={value} />
-    </>
-  );
-}
+}) => (
+  <>
+    <span className="font-body text-label text-muted font-semibold uppercase">
+      {label}
+    </span>
+    <Bar label={label} max={1} size="sm" tone="plain" value={value} />
+  </>
+);
 
-function RiderCard({
+const RiderCard = ({
   className,
   name,
   home,
@@ -85,7 +81,7 @@ function RiderCard({
   readonly you?: boolean;
   readonly speaking?: boolean;
   readonly layout?: "card" | "row";
-}) {
+}) => {
   if (layout === "row") {
     return (
       <article
@@ -173,19 +169,17 @@ function RiderCard({
       </div>
     </article>
   );
-}
+};
 
-function RiderRows({ className, ...props }: ComponentProps<"ol">) {
-  return (
-    <ol
-      data-slot="rider-rows"
-      className={cn("flex flex-col", className)}
-      {...props}
-    />
-  );
-}
+const RiderRows = ({ className, ...props }: ComponentProps<"ol">) => (
+  <ol
+    data-slot="rider-rows"
+    className={cn("flex flex-col", className)}
+    {...props}
+  />
+);
 
-function RiderRow({
+const RiderRow = ({
   className,
   place,
   name,
@@ -205,46 +199,44 @@ function RiderRow({
   readonly colour: string;
   readonly note?: string | undefined;
   readonly you?: boolean;
-}) {
-  return (
-    <li
-      data-slot="rider-row"
-      data-you={you ? "" : undefined}
-      className={cn(
-        "border-line text-text data-you:text-yellow grid grid-cols-[2ch_0.75rem_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(7ch,auto)_minmax(6ch,auto)] items-baseline gap-x-3 border-b-2 py-2",
-        className
-      )}
-      {...props}
-    >
-      <span className="font-display numeric text-name leading-none font-extrabold">
-        {place}
+}) => (
+  <li
+    data-slot="rider-row"
+    data-you={you ? "" : undefined}
+    className={cn(
+      "border-line text-text data-you:text-yellow grid grid-cols-[2ch_0.75rem_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(7ch,auto)_minmax(6ch,auto)] items-baseline gap-x-3 border-b-2 py-2",
+      className
+    )}
+    {...props}
+  >
+    <span className="font-display numeric text-name leading-none font-extrabold">
+      {place}
+    </span>
+    <span
+      aria-hidden
+      data-slot="rider-chip"
+      className="ring-line size-3 self-center ring-2"
+      style={{ backgroundColor: colour }}
+    />
+    <span className="font-display tracking-display text-name truncate leading-none font-bold uppercase">
+      {name}
+    </span>
+    <span className="font-body text-muted truncate text-sm">{bike}</span>
+    <span className="font-body numeric text-right text-sm font-semibold">
+      {result}
+    </span>
+    {prize === undefined ? (
+      <span />
+    ) : (
+      <Money amount={prize} className="font-body text-right text-sm" />
+    )}
+    {note !== undefined && (
+      <span className="font-body text-muted col-span-4 col-start-3 pt-1 text-xs">
+        ▸ {note}
       </span>
-      <span
-        aria-hidden
-        data-slot="rider-chip"
-        className="ring-line size-3 self-center ring-2"
-        style={{ backgroundColor: colour }}
-      />
-      <span className="font-display tracking-display text-name truncate leading-none font-bold uppercase">
-        {name}
-      </span>
-      <span className="font-body text-muted truncate text-sm">{bike}</span>
-      <span className="font-body numeric text-right text-sm font-semibold">
-        {result}
-      </span>
-      {prize === undefined ? (
-        <span />
-      ) : (
-        <Money amount={prize} className="font-body text-right text-sm" />
-      )}
-      {note !== undefined && (
-        <span className="font-body text-muted col-span-4 col-start-3 pt-1 text-xs">
-          ▸ {note}
-        </span>
-      )}
-    </li>
-  );
-}
+    )}
+  </li>
+);
 
 export { RiderCard, RiderPortrait, RiderRow, RiderRows };
 export type { RiderColours };

@@ -24,13 +24,13 @@ const wheelLine = (report: RaceReport): string => {
   return winner ? `${shortNames[winner.rival]} by a wheel` : "";
 };
 
-export function FinishBanner({
+export const FinishBanner = ({
   report,
   onContinue,
 }: {
   readonly report: RaceReport;
   readonly onContinue: () => void;
-}) {
+}) => {
   const [offered, setOffered] = useState(false);
   useEffect(() => {
     const offer = window.setTimeout(() => {
@@ -77,4 +77,4 @@ export function FinishBanner({
       )}
     </Screen>
   );
-}
+};

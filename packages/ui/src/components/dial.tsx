@@ -43,7 +43,7 @@ const tickOpacity = (index: number, lit: boolean): number => {
   return index >= REDLINE_FROM ? 0.6 : 0.3;
 };
 
-function Dial({
+const Dial = ({
   className,
   value,
   max,
@@ -63,7 +63,7 @@ function Dial({
   readonly field: number;
   readonly progress: number;
   readonly gear?: number;
-}) {
+}) => {
   const ratio = ratioOf(value, max);
   const shown = Math.round(value);
   return (
@@ -200,6 +200,6 @@ function Dial({
       </text>
     </svg>
   );
-}
+};
 
 export { Dial };

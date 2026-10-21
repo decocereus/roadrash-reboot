@@ -9,6 +9,33 @@ import type { ReactNode } from "react";
 
 import stylesUrl from "../styles.css?url";
 
+const Document = ({ children }: Readonly<{ children: ReactNode }>) => (
+  <html className="dark" lang="en">
+    <head>
+      <HeadContent />
+    </head>
+    <body>
+      {children}
+      <Scripts />
+    </body>
+  </html>
+);
+
+const NotFound = () => (
+  <div className="px-8 py-16">
+    <h1 className="text-lg font-semibold">Page not found</h1>
+    <Link className="text-primary mt-2 inline-block text-sm" to="/">
+      Back to the road
+    </Link>
+  </div>
+);
+
+const RootComponent = () => (
+  <Document>
+    <Outlet />
+  </Document>
+);
+
 export const Route = createRootRoute({
   component: RootComponent,
   head: () => ({
@@ -28,36 +55,3 @@ export const Route = createRootRoute({
   }),
   notFoundComponent: NotFound,
 });
-
-function RootComponent() {
-  return (
-    <Document>
-      <Outlet />
-    </Document>
-  );
-}
-
-function Document({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <html className="dark" lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
-function NotFound() {
-  return (
-    <div className="px-8 py-16">
-      <h1 className="text-lg font-semibold">Page not found</h1>
-      <Link className="text-primary mt-2 inline-block text-sm" to="/">
-        Back to the road
-      </Link>
-    </div>
-  );
-}

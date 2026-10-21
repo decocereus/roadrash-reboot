@@ -29,7 +29,9 @@ export const modelBytes = async (url: string): Promise<ArrayBuffer> => {
 };
 
 export const startModelDownloads = (): void => {
-  for (const url of [bike, car, van, riderA, riderB, riderC]) {
-    modelBytes(url).catch(() => null);
-  }
+  void Promise.allSettled(
+    [bike, car, van, riderA, riderB, riderC].map(
+      async (url) => await modelBytes(url)
+    )
+  );
 };

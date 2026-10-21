@@ -53,7 +53,7 @@ const useDiagnosticsView = (): DiagnosticsView => {
   return useSyncExternalStore(hub.subscribe, hub.view, hub.view);
 };
 
-export function SettingsScreen({ onBack }: { readonly onBack: () => void }) {
+export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
   const hub = diagnostics();
   const { settings, report, queued, session } = useDiagnosticsView();
   useEscape(onBack);
@@ -136,4 +136,4 @@ export function SettingsScreen({ onBack }: { readonly onBack: () => void }) {
       </Panel>
     </Screen>
   );
-}
+};
