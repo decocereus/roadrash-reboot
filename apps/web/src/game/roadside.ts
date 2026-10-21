@@ -11,7 +11,7 @@ import { groundLift, lifted, plant, rolling } from "./ground.ts";
 import type { Part, Placement, Stretch } from "./ground.ts";
 import { RED } from "./looks.ts";
 import type { Roadside } from "./looks.ts";
-import { warningSignTexture } from "./textures.ts";
+import { warningSignTexture } from "./sign-textures.ts";
 
 const CHUNK_LENGTH = 200;
 const BANK_STEP = 2;

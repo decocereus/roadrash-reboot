@@ -7,10 +7,13 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
+import { facadeTexture } from "./facade-texture.ts";
 import { CYAN, MAGENTA, ORANGE, RED, YELLOW } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
-import { facadeTexture, pick, shopTexture, signAtlas } from "./textures.ts";
-import type { SignFrame } from "./textures.ts";
+import { shopTexture } from "./shop-texture.ts";
+import { signAtlas } from "./sign-atlas.ts";
+import type { SignFrame } from "./sign-atlas.ts";
+import { pick } from "./texture-canvas.ts";
 
 const CITY_CHUNK = 200;
 export const FRONT_GAP = 1.2;

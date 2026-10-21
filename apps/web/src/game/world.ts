@@ -24,15 +24,10 @@ import { createHazardMarks } from "./hazards.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { buildRamps } from "./ramps.ts";
+import { paveTexture, ROAD_TILE_METRES, roadTexture } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
-import {
-  bannerTexture,
-  chevronTexture,
-  paveTexture,
-  ROAD_TILE_METRES,
-  roadTexture,
-  skyTexture,
-} from "./textures.ts";
+import { bannerTexture, chevronTexture } from "./sign-textures.ts";
+import { skyTexture } from "./sky-texture.ts";
 
 const CHUNK_LENGTH = 200;
 const CHUNK_BEHIND = 260;
