@@ -13,7 +13,7 @@ Everything below goes through one helper, `rv`. Run it from the root of the chec
 .claude/skills/verify-rushline/scripts/rv help
 ```
 
-`rv` is a thin wrapper over `node tools/verify/rushline.ts`. The TypeScript lives in `tools/verify/` so the repo's lint and typecheck cover it. It reuses `tools/perf/cdp.ts`, `tools/perf/chrome.ts`, and `tools/perf/analysis.ts`.
+`rv` is a thin wrapper over `node tools/verify/rushline.ts`. The TypeScript lives in `tools/verify/` so the repo's lint and typecheck cover it. It reuses `@racer/devtools`: `packages/devtools/src/cdp.ts`, `chrome.ts`, and `analysis.ts`, which `tools/perf` uses too.
 
 ## Rules that are not negotiable
 
@@ -158,7 +158,7 @@ It stops the watcher, Helium, and the server it started (checking each PID first
 
 Run these after every source change, as AGENTS.md requires:
 
-- `pnpm check`: oxfmt, oxlint with the anti-slop rules, `tsrs` for the root and every package, then Vitest. The tests in `packages/sim` pin the feel (acceleration, braking distance, bend push, which bend cannot be taken flat out, when the crest launches). When a tuning change breaks one, decide whether the feel or the test is wrong and say which in the commit.
+- `pnpm check`: oxfmt, oxlint with the anti-slop and rushline rules, the rule tests and ledger, `check:roots`, `check:dead` (knip), `tsrs` for the root and every workspace, then Vitest. The tests in `packages/sim` pin the feel (acceleration, braking distance, bend push, which bend cannot be taken flat out, when the crest launches). When a tuning change breaks one, decide whether the feel or the test is wrong and say which in the commit.
 - `pnpm build`: the production build of every package.
 
 ### The perf A/B

@@ -19,7 +19,7 @@ Rushline has three places where a failure reaches someone: the telemetry endpoin
 | Every refusal tag has exactly one status. `statusOf` is typed with `satisfies Record<Refusal["_tag"], number>`, so a new tag fails the typecheck until it gets one. | `pnpm typecheck` | `apps/web/src/server/telemetry.ts` | None |
 | A failure at a boundary, reading the body or saving the batch, is caught with `Effect.tryPromise` and mapped to a tag. `ingestTelemetry` always answers with a JSON body and never throws. | judgment | `apps/web/src/server/telemetry.ts` | None |
 | A refusal body carries only its tag and the facts in the table above, and free text is cut to 600 characters. | judgment | `apps/web/src/server/telemetry.ts` | None |
-| A batch the store has already saved is acknowledged with `duplicate: true`, not refused, so a retried upload is safe. | `pnpm test` | `apps/web/src/server/telemetry.ts`, `tools/perf/jsonl-store.ts` | None |
+| A batch the store has already saved is acknowledged with `duplicate: true`, not refused, so a retried upload is safe. | `pnpm test` | `apps/web/src/server/telemetry.ts`, `packages/telemetry/src/jsonl-store.ts` | None |
 
 ## The uploader
 

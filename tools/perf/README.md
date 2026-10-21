@@ -29,7 +29,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 | --- | --- | --- |
 | `--url` | required | Page to load. Pin the ratio with `?ratio=` so the governor's 60 Hz pacing does not hide the headroom. A browser that reports a modest GPU starts without multisampling; add `&rung=0` to measure full quality there, or `&rung=3` to measure the multisampling-off rung anywhere. |
 | `--runs` | 3 | Fresh browser per run; the summary shows the mean and the spread across runs. |
-| `--from`, `--to` | the bench window | Tick range measured, inclusive. The default comes from `benchWindow` in `apps/web/src/career/bench-window.ts`. |
+| `--from`, `--to` | the bench window | Tick range measured, inclusive. The default comes from `benchWindow` in `packages/sim/src/bench-window.ts`. |
 | `--first-run` | off | Start the trace during the countdown and measure from the green light, tick 1, so first-use stalls (shader compiles, texture uploads, the first city chunk of a kind) land in the window. The trace adds the `toplevel` and `gpu` categories so a stall that happens outside JavaScript still shows up, in the GPU process. |
 | `--worst` | 5 | For each run, list this many of the longest frames with the CPU time of each part and the longest trace events on any thread that overlap the frame. |
 | `--cpu-profile` | off | Sample the main thread every 100 µs in the window and list the top self-time functions. |
