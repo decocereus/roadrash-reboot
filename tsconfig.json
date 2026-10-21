@@ -9,6 +9,7 @@
   },
   "include": [
     "alchemy.run.ts",
+    "scripts/**/*.ts",
     "vitest.config.ts",
     "tools/perf/**/*.ts",
     "tools/blender/**/*.ts",

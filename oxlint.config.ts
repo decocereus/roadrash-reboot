@@ -5,14 +5,16 @@ import vitest from "ultracite/oxlint/vitest";
 export default defineConfig({
   extends: [core, vitest],
   ignorePatterns: [
-    ...core.ignorePatterns,
+    ...(core.ignorePatterns ?? []),
     "**/dist/**",
     "**/routeTree.gen.ts",
     "tools/oxlint/anti-slop/**",
   ],
   jsPlugins: [
     { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },
+    { name: "rushline", specifier: "./tools/oxlint/rushline/index.ts" },
   ],
+  options: { typeAware: true },
   overrides: [
     {
       files: ["alchemy.run.ts"],
@@ -50,5 +52,21 @@ export default defineConfig({
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
     "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        paths: [
+          {
+            message:
+              "Import Effect by module path, such as effect/Effect or effect/Schema.",
+            name: "effect",
+          },
+        ],
+      },
+    ],
+    "rushline/no-comments": "error",
+    "rushline/require-suppression-reason": "error",
+    "rushline/safety-verified-by": "error",
+    "typescript/no-floating-promises": "error",
   },
 });

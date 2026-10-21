@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r --if-present build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check": "node scripts/verify.ts check",
+    "check:css-comments": "node scripts/check-css-comments.ts",
+    "check:rules": "node scripts/check-rules.ts",
     "dev": "alchemy dev",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
+    "lint:rules": "vitest run --config tools/oxlint/vitest.config.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && pnpm -r --if-present typecheck"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tools/oxlint && pnpm -r --if-present typecheck",
+    "verify": "node scripts/verify.ts"
   },
   "dependencies": {
     "effect": "4.0.0"
@@ -28,6 +32,8 @@
     "meshoptimizer": "1.3.0",
     "oxfmt": "0.67.0",
     "oxlint": "1.86.0",
+    "oxlint-tsgolint": "7.0.2004",
+    "postcss": "8.5.29",
     "typescript": "7.0.2",
     "ultracite": "7.10.8",
     "vitest": "5.0.0"
