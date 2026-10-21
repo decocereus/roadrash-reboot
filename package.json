@@ -10,6 +10,7 @@
     "check:dead": "knip --no-progress",
     "check:roots": "node scripts/check-roots.ts",
     "check:rules": "node scripts/check-rules.ts",
+    "check:save-format": "node scripts/check-save-format.ts",
     "check:size": "node scripts/check-size.ts",
     "check:typescript-only": "node scripts/check-typescript-only.ts",
     "dev": "alchemy dev",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260918.1",
     "@effect/platform-node": "4.0.0",
+    "@racer/career": "workspace:*",
     "@types/node": "26.4.1",
     "alchemy": "2.0.0-beta.83",
     "knip": "6.41.0",

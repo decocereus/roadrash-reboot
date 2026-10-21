@@ -1,120 +1,72 @@
-import { weapons } from "@racer/sim/weapons";
+import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
 
-import { checkActiveRace, checkRaceNumbers, clash } from "./save-invariants.ts";
-import {
-  activeRaceOf,
-  anySeed,
-  balance,
-  bikeOf,
-  careerRecordOf,
-  flagOf,
-  isRecord,
-  lastResultOf,
-  levelOf,
-  listOf,
-  memoryOf,
-  noteOf,
-  numberOf,
-  qualifiedOf,
-  recordOf,
-  seasonEntryOf,
-  storyOf,
-  weaponOf,
-  wholeOf,
-} from "./save-schema.ts";
-import type {
-  Field,
-  Json,
-  JsonRecord,
-  Reader,
-  SaveError,
-} from "./save-schema.ts";
-import { BOARD_NOTES, byRacer, byRival, SAVE_VERSION } from "./state.ts";
+import { problemOf } from "./save-invariants.ts";
+import { firstField, issuePaths } from "./save-issues.ts";
+import { EncodedSaveSchema, SaveSourceSchema } from "./save-schema.ts";
+import type { SaveError } from "./save-schema.ts";
+import { SAVE_VERSION } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { byLevel, catalogue } from "./tables.ts";
 
 export type SaveResult =
   | { readonly ok: true; readonly career: CareerState }
   | { readonly ok: false; readonly error: SaveError };
 
-const careerOf = (reader: Reader, save: JsonRecord): CareerState => {
-  const weapon = weaponOf(reader, save.weapon, "weapon");
-  const qualified = recordOf(reader, save.qualified, "qualified");
-  const season = recordOf(reader, save.season, "season");
-  const memory = recordOf(reader, save.memory, "memory");
-  const garage = listOf(reader, save.garage, "garage", catalogue.length).map(
-    (bike, index) => bikeOf(reader, bike, `garage.${index}`)
-  );
-  const bikeId = bikeOf(reader, save.bikeId, "bikeId");
-  const career: CareerState = {
-    activeRace: activeRaceOf(reader, save.activeRace),
-    bikeId,
-    board: listOf(reader, save.board, "board", BOARD_NOTES).map((note, index) =>
-      noteOf(reader, note, `board.${index}`)
-    ),
-    cash: wholeOf(reader, save.cash, "cash", balance),
-    gameOver: flagOf(reader, save.gameOver, "gameOver"),
-    garage,
-    lastResult: lastResultOf(reader, save.lastResult),
-    level: levelOf(reader, save.level, "level"),
-    memory: byRival((rival) =>
-      memoryOf(reader, memory[rival], `memory.${rival}`)
-    ),
-    qualified: byLevel((level) =>
-      qualifiedOf(reader, qualified[level], `qualified.${level}`)
-    ),
-    record: careerRecordOf(reader, save.record),
-    season: byRacer((racer) =>
-      seasonEntryOf(reader, season[racer], `season.${racer}`)
-    ),
-    seed: numberOf(reader, save.seed, "seed", anySeed),
-    story: storyOf(reader, save.story),
-    version: SAVE_VERSION,
-    weapon,
-    weaponHits: wholeOf(reader, save.weaponHits, "weaponHits", {
-      maximum: weapon === "none" ? 0 : weapons[weapon].hits,
-      minimum: weapon === "none" ? 0 : 1,
-    }),
-  };
-  if (!garage.includes(bikeId)) {
-    clash(reader, "garage");
-  }
-  checkActiveRace(reader, career);
-  checkRaceNumbers(reader, career);
-  return career;
+const RawSave = Schema.Record(Schema.String, Schema.Unknown);
+
+const decodeText = Schema.decodeUnknownResult(Schema.fromJsonString(RawSave));
+const decodeSave = Schema.decodeUnknownResult(EncodedSaveSchema, {
+  errors: "all",
+});
+const decodeSources = Schema.decodeUnknownResult(SaveSourceSchema, {
+  errors: "all",
+});
+
+const refused = (kind: SaveError["kind"], field: string): SaveResult => ({
+  error: { field, kind },
+  ok: false,
+});
+
+const loaded = (career: CareerState): SaveResult => {
+  const problem = problemOf(career);
+  return problem === null
+    ? { career, ok: true }
+    : { error: problem, ok: false };
 };
 
-export const serialiseCareer = (career: CareerState): string =>
-  JSON.stringify(career);
-
-const parseJson: (text: string) => Json = JSON.parse;
-
-const jsonOf = (text: string): Field => {
-  try {
-    return parseJson(text);
-  } catch {
-    return undefined;
-  }
+const currentSave = (save: typeof RawSave.Type): SaveResult => {
+  const sources = Result.match(decodeSources(save), {
+    onFailure: issuePaths,
+    onSuccess: () => [],
+  });
+  return Result.match(decodeSave(save), {
+    onFailure: (error) =>
+      refused("invalid", firstField([...issuePaths(error), ...sources])),
+    onSuccess: (career) =>
+      sources.length > 0
+        ? refused("invalid", firstField(sources))
+        : loaded(career),
+  });
 };
 
-const decode = (text: string): SaveResult => {
-  const save = jsonOf(text);
-  if (!isRecord(save)) {
-    return { error: { field: "", kind: "notJson" }, ok: false };
-  }
-  if (save.version !== SAVE_VERSION) {
-    return { error: { field: "version", kind: "wrongVersion" }, ok: false };
-  }
-  const reader: Reader = { problems: [] };
-  const career = careerOf(reader, save);
-  const [error] = reader.problems;
-  return error === undefined ? { career, ok: true } : { error, ok: false };
+const decode = (text: string): SaveResult =>
+  Result.match(decodeText(text), {
+    onFailure: () => refused("notJson", ""),
+    onSuccess: (save) =>
+      save.version === SAVE_VERSION
+        ? currentSave(save)
+        : refused("wrongVersion", "version"),
+  });
+
+export const serialiseCareer = (career: CareerState): string => {
+  const save: typeof EncodedSaveSchema.Type = career;
+  return JSON.stringify(save);
 };
 
 export const parseCareer = (text: string): SaveResult => {
   try {
     return decode(text);
   } catch {
-    return { error: { field: "", kind: "invalid" }, ok: false };
+    return refused("invalid", "");
   }
 };

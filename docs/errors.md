@@ -34,6 +34,9 @@ Rushline has three places where a failure reaches someone: the telemetry endpoin
 
 ## The career save
 
+`parseCareer` (`packages/career/src/save.ts`) decodes the text with Effect Schema: first a JSON object, then its `version`, then `EncodedSaveSchema` with every failure collected, then the plain checks in `save-invariants.ts`. `save-issues.ts` turns the collected failures into the one field the version 2 reader reported, so the title's corrupt panel names the same field. `pnpm check:save-format` keeps the encoded save tied to `SAVE_VERSION` ([coding-standards.md](coding-standards.md)).
+
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| `parseCareer` never throws. It returns `{ ok: false, error }` with a `kind` of `notJson`, `wrongVersion`, `invalid` or `inconsistent` and the `field` that failed, and a save from another version is refused rather than migrated. | `pnpm test` | `packages/career/src/save.ts`, `packages/career/src/save-schema.ts`, `packages/career/src/save-invariants.ts` | None |
+| `parseCareer` never throws. It returns `{ ok: false, error }` with a `kind` of `notJson`, `wrongVersion`, `invalid` or `inconsistent` and the `field` that failed, and a save from another version is refused rather than migrated. | `pnpm test` | `packages/career/src/save.ts`, `packages/career/src/save-*.ts` | None |
+| A save with several faults is refused at one field, in the version 2 reader's order: the version; then `weapon`, the `qualified`, `season` and `memory` containers, `garage` and `bikeId`; then the other fields in key order, with `activeRace.started` first and an unknown road or racer key before the known ones; then `weaponHits` against the weapon held; then the contradictions. An unknown road or racer key is refused by name, and any other unknown field is dropped. | `pnpm test` | `packages/career/src/save-issues.ts`, `packages/career/src/save-schema.ts`, `packages/career/src/save-invariants.ts` | None |

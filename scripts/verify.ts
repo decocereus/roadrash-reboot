@@ -33,6 +33,11 @@ const checks: readonly Check[] = [
   },
   { command: ["pnpm", "check:roots"], name: "roots", quick: true },
   { command: ["pnpm", "check:size"], name: "source size", quick: true },
+  {
+    command: ["pnpm", "check:save-format"],
+    name: "save format",
+    quick: true,
+  },
   { command: ["pnpm", "check:dead"], name: "dead code", quick: true },
   { command: ["pnpm", "typecheck"], name: "typecheck", quick: true },
   { command: ["pnpm", "test"], name: "tests", quick: true },

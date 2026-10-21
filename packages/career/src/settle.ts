@@ -65,7 +65,7 @@ export interface LevelUp {
   readonly bikes: readonly BikeId[];
 }
 
-export interface Repossession {
+interface Repossession {
   readonly bikeId: BikeId;
   readonly tradeIn: number;
 }

@@ -14,6 +14,12 @@ const effectFiles = [
   "apps/web/src/diagnostics/uploader.ts",
   "apps/web/src/diagnostics/uploader-runtime.ts",
   "apps/web/src/diagnostics/upload/**/*.ts",
+  "packages/career/src/save.ts",
+  "packages/career/src/save-schema.ts",
+  "packages/career/src/save-values.ts",
+  "packages/career/src/save-result-schema.ts",
+  "packages/career/src/save-issues.ts",
+  "packages/career/src/save-invariants.ts",
 ];
 
 const orchestrationFiles = [
@@ -28,6 +34,12 @@ const orchestrationFiles = [
   "apps/web/src/diagnostics/uploader.ts",
   "apps/web/src/diagnostics/uploader-runtime.ts",
   "apps/web/src/diagnostics/upload/**/*.ts",
+  "packages/career/src/save.ts",
+  "packages/career/src/save-schema.ts",
+  "packages/career/src/save-values.ts",
+  "packages/career/src/save-result-schema.ts",
+  "packages/career/src/save-issues.ts",
+  "packages/career/src/save-invariants.ts",
 ];
 
 const libraryFiles = [
@@ -38,6 +50,12 @@ const libraryFiles = [
   "packages/telemetry/src/**/*.ts",
   "apps/web/src/diagnostics/uploader.ts",
   "apps/web/src/diagnostics/upload/**/*.ts",
+  "packages/career/src/save.ts",
+  "packages/career/src/save-schema.ts",
+  "packages/career/src/save-values.ts",
+  "packages/career/src/save-result-schema.ts",
+  "packages/career/src/save-issues.ts",
+  "packages/career/src/save-invariants.ts",
 ];
 
 export default defineConfig({
