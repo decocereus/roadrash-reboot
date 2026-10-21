@@ -2,6 +2,28 @@ import { defineConfig } from "oxlint";
 import core from "ultracite/oxlint/core";
 import vitest from "ultracite/oxlint/vitest";
 
+const effectFiles = [
+  "tools/perf/*.ts",
+  "tools/perf/src/**/*.ts",
+  "tools/verify/*.ts",
+  "tools/verify/src/**/*.ts",
+  "packages/devtools/src/**/*.ts",
+];
+
+const orchestrationFiles = [
+  "tools/perf/*.ts",
+  "tools/perf/src/**/*.ts",
+  "tools/verify/*.ts",
+  "tools/verify/src/**/*.ts",
+  "packages/devtools/src/*.ts",
+];
+
+const libraryFiles = [
+  "tools/perf/src/**/*.ts",
+  "tools/verify/src/**/*.ts",
+  "packages/devtools/src/**/*.ts",
+];
+
 export default defineConfig({
   extends: [core, vitest],
   ignorePatterns: [
@@ -24,6 +46,33 @@ export default defineConfig({
       rules: {
         "no-empty-function": "error",
         "promise/prefer-await-to-then": "error",
+      },
+    },
+    {
+      files: effectFiles,
+      rules: {
+        "rushline/no-floating-effect": "error",
+        "rushline/no-inline-schema-compile": "error",
+        "rushline/no-manual-effect-error-tag": "error",
+        "rushline/no-manual-tag-comparison": "error",
+        "rushline/no-manual-tagged-construction": "error",
+        "rushline/no-promise": "error",
+        "rushline/no-swallowed-failure": "error",
+        "rushline/prefer-catch-tags": "error",
+        "rushline/prefer-effect-fn": "error",
+        "rushline/prefer-effect-match": "error",
+        "rushline/require-wrapped-cause": "error",
+      },
+    },
+    {
+      files: orchestrationFiles,
+      rules: { "rushline/no-node-io": "error" },
+    },
+    {
+      files: libraryFiles,
+      rules: {
+        "rushline/no-effect-runtime": "error",
+        "rushline/no-service-constructor-imports": "error",
       },
     },
   ],

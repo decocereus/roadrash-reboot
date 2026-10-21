@@ -57,6 +57,31 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 
 The inherited Ultracite presets run with type information (`options: { typeAware: true }`), so every type-aware rule they turn on is enforced too, such as `typescript/strict-boolean-expressions` and `typescript/no-confusing-void-expression`. Every other rule they turn on is enforced in every file as well, such as `func-style` (functions are `const` arrow functions), `no-use-before-define`, `no-shadow`, `no-nested-ternary` and `promise/prefer-await-to-then`. Only the rules above are listed, because they state Rushline's own decisions.
 
+The tool rules below apply to three file lists, each defined once in `oxlint.config.ts`:
+
+- `effectFiles`: the entries and `src/` folders of `tools/perf` and `tools/verify` (`tools/perf/*.ts`, `tools/perf/src/**/*.ts`, `tools/verify/*.ts`, `tools/verify/src/**/*.ts`), and `packages/devtools/src/**/*.ts`.
+- `orchestrationFiles`: the same files without `packages/devtools/src/node/`. That folder holds the one Node adapter, `detached-process.ts`, which starts the detached server and watcher with their log file inherited as stdout and stderr, because the platform process API cannot pass a file descriptor. New orchestration never goes there.
+- `libraryFiles`: `tools/perf/src`, `tools/verify/src` and `packages/devtools/src`, without the entries. Only `tools/perf/measure.ts`, `tools/perf/session.ts` and `tools/verify/rushline.ts` run an Effect.
+
+Tool tests live in each workspace's `test/` folder, outside these lists, and every other rule in this file still applies to them. The rules match names and syntax. They do not follow types or data flow, so a review still checks what they cannot see, such as a service method whose Effect is dropped.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| No `async` function, `Promise` or `PromiseLike` type, `.then`, `new Promise`, `Promise.*` call or top-level `await`, except inside an `Effect.promise` or `Effect.tryPromise` thunk. A Promise API is wrapped once with `Effect.tryPromise`. | `rushline/no-promise` | `effectFiles` | None |
+| No import, re-export, `require` or dynamic import of `fs` or `child_process`, with or without `node:` and with any subpath. Files go through the `FileSystem` service, short commands through `ChildProcessSpawner`, and detached children through the Node adapter. | `rushline/no-node-io` | `orchestrationFiles` | None |
+| No runner whose name starts with `runPromise`, `runSync`, `runFork`, `runCallback` or `runMain`, no `ManagedRuntime` or `NodeRuntime`, and no import from `effect/Runtime`, `effect/ManagedRuntime` or `@effect/platform-node/NodeRuntime`. Library code returns Effects, and the entries run them. | `rushline/no-effect-runtime` | `libraryFiles` | None |
+| An Effect built from the imported `Effect` module is yielded, returned or composed, never left as a statement. The rule sees `Effect.*` calls and their `.pipe` chains, not a service method that returns an Effect. | `rushline/no-floating-effect` | `effectFiles` | None |
+| An exported operation or a service `.of` method built directly from `Effect.gen` is a named `Effect.fn`. A private generator may stay `Effect.gen`. | `rushline/prefer-effect-fn` | `effectFiles` | None |
+| Consecutive `Effect.catchTag` steps on different tags in one call are one `Effect.catchTags`. | `rushline/prefer-catch-tags` | `effectFiles` | None |
+| A Schema decoder, encoder or guard over a static schema is built once at module scope, never inside a function on every call. A schema built from a function's parameters is not static, so it is compiled where it arrives. | `rushline/no-inline-schema-compile` | `effectFiles` | None |
+| An `Effect.mapError` handler, or the `catch` of `Effect.try` or `Effect.tryPromise`, uses the failure it receives, normally as the new error's `cause`, or comes right after an `Effect.tapError`, `tapCause` or `tapErrorCause` that uses it. The rule checks that the failure is referenced, not that it reaches `cause`. | `rushline/require-wrapped-cause` | `effectFiles` | None |
+| No `Effect.ignore`, `Effect.ignoreLogged` or `Effect.orDie`. Propagate the typed error, turn an expected absence into an outcome with `catchTag` or `catchReason`, and record a failed cleanup as a cleanup outcome. | `rushline/no-swallowed-failure` | `effectFiles` | None |
+| Inside an `Effect.catch`, `catchAll` or `catchIf` handler, do not compare or switch on `_tag` or `reason._tag`. Use `Effect.catchTag`, `catchTags`, `catchReason` or `catchReasons`. | `rushline/no-manual-effect-error-tag` | `effectFiles` | None |
+| Do not compare `_tag` with a string or switch on `_tag`. Use the `Option` helpers, `Match.tag` or `Predicate.isTagged`. | `rushline/no-manual-tag-comparison` | `effectFiles` | None |
+| Do not write an object literal with a string `_tag`. Build a tagged value with its constructor, such as a `Schema.TaggedError` class. | `rushline/no-manual-tagged-construction` | `effectFiles` | None |
+| Do not import a named `make<Name>` export from a relative path or an `@racer/` workspace. Import the service tag or its Layer and yield the service. | `rushline/no-service-constructor-imports` | `libraryFiles` | None |
+| A chain of ternaries that compares one value with literals is a `Match`. | `rushline/prefer-effect-match` | `effectFiles` | None |
+
 ## Keep types honest
 
 | Rule | Check | Scope | Exemption |
