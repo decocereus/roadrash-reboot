@@ -1,0 +1,60 @@
+2 session(s) in tools/perf/test/fixtures/sessions
+  5a1b2c3d-0000-4000-8000-000000000002  pro          dd6216e   2026-10-19T08:00:05.000Z  batches 1  frames 300  markers 0  suspects 0
+  3f0c2a1e-7b4d-4c1a-9e2f-5d6a7b8c9d01  air          c5be184+  2026-10-20T10:00:25.400Z  batches 4  frames 900  markers 1  suspects 6
+
+Session 3f0c2a1e-7b4d-4c1a-9e2f-5d6a7b8c9d01
+  build c5be184 (dirty)  device air  ratio x2  screen 1440x900
+  renderer ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)
+  received 2026-10-20T10:00:05.100Z .. 2026-10-20T10:00:25.400Z
+  batches 4 of 5; missing 3; duplicate lines 1; unreadable 2
+  reports 3f0c2a1e-1
+  dropped: batches 1, events 6, faults 1
+  frames 900 over 15.0 s; simulation time discarded 50 ms
+
+Frame intervals
+     <=8.33 ms       1    0.1%  
+    <=16.67 ms     700   77.8%  #######################################
+    <=23.33 ms     110   12.2%  ######
+    <=33.33 ms      50    5.6%  ###
+       <=50 ms      20    2.2%  #
+      <=100 ms      11    1.2%  #
+      <=250 ms       7    0.8%  
+     <=1000 ms       1    0.1%  
+      >1000 ms       0    0.0%  
+
+Quality timeline
+     3.50 s  frame 210  late-budget   rung 0 x2.00 bloom 0.5 shadow 2048 msaa 4 pace 1 rate auto  ->  rung 1 x2.00 bloom 0.5 shadow 2048 pace 1 rate auto  late 3.5 calm 0.0 s
+    11.50 s  frame 690  calm-recovery rung 1 x2.00 bloom 0.5 shadow 2048 pace 1  ->  rung 0 x2.00 bloom 0.5 shadow 2048 pace 1  late 0.0 calm 8.0 s
+  canvas resizes: rung 1, observer 1
+
+Batches (late is the share of frames over 23.33 ms)
+    0 periodic to    5.00 s  frames   300  mean  16.7 ms  late   6.7%  discarded    13 ms  meter on
+    1 report   to   10.00 s  frames   300  mean  16.7 ms  late  16.3%  discarded    13 ms  meter on
+    2 periodic to   15.00 s  frames   300  mean  16.7 ms  late   6.7%  discarded    13 ms  meter off
+    4 final    to   25.00 s  frames     0  mean   0.0 ms  late   0.0%  discarded    13 ms  meter off
+  frame meter: on at 0.10 s, off at 12.00 s
+
+Race markers
+     0.20 s  race 1  start at tick 0
+     3.20 s  race 1  green at tick 180
+    21.00 s  race 1  end at tick 2500
+
+Report markers
+     6.00 s  race 1 tick 700 frame 360  slow: frame 365 260.5 ms
+
+Worst 4 frames
+  frame    365   260.5 ms  at 6.08 s  race 1 tick 730  rung 2->1 x1.75  render 5.5, riders 3.4, world 2.2, sim 1.2
+  frame    211   140.3 ms  at 3.51 s  race 1 tick 422  rung 1->2 x2.00  render 5.5, riders 3.4, world 2.2, sim 1.2
+  frame    600   101.0 ms  at 10.00 s  race 1 tick 1200  rung 1->2 x2.00  render 0.6, world 0.4, fleet 0.3, riders 0.2
+  frame    150    45.5 ms  at 2.50 s  race 1 tick 300  rung 1->2 x2.00  render 5.5, riders 3.4, world 2.2, sim 1.2
+
+Faults
+  11.00 s  error  TypeError: x is undefined  game/frame.ts:42
+
+Black-frame suspects
+  1. [resize-after-draw] 3.51 s  frame 211 drew canvas generation 1 at rung 0; a rung resize to 2880x1720 (generation 2, rung 1) cleared it before it was presented
+  2. [context-lost] 6.10 s  WebGL context lost after frame 366
+  3. [incomplete-final-pass] 6.15 s  frame 369 started its render passes and never finished them
+  4. [stall] 3.51 s  frame 211 took 140.3 ms beside governor, canvas
+  5. [stall] 6.08 s  frame 365 took 260.5 ms
+  6. [stall] 10.00 s  frame 600 took 101.0 ms

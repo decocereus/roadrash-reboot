@@ -6,6 +6,7 @@ export default defineConfig({
       "apps/**/*.test.{ts,tsx}",
       "packages/**/*.test.{ts,tsx}",
       "scripts/**/*.test.ts",
+      "tools/{perf,verify}/test/**/*.test.ts",
     ],
     maxWorkers: 2,
   },

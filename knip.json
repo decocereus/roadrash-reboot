@@ -32,13 +32,13 @@
       "typescript": true
     },
     "tools/perf": {
-      "entry": ["measure.ts", "session.ts"],
-      "project": ["*.ts"],
+      "entry": ["measure.ts", "session.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
       "typescript": true
     },
     "tools/verify": {
-      "entry": ["rushline.ts"],
-      "project": ["*.ts"],
+      "entry": ["rushline.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
       "typescript": true
     }
   }

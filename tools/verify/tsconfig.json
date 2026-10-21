@@ -7,5 +7,5 @@
     "moduleResolution": "Bundler",
     "types": ["node"]
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"]
 }

@@ -1,0 +1,1 @@
+No sessions in tools/perf/test/fixtures/no-such-dir.

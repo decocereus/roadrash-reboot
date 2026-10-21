@@ -1,0 +1,530 @@
+[
+  {
+    "batches": {
+      "duplicateLines": 0,
+      "highest": 0,
+      "missing": [],
+      "received": 1,
+      "reports": [],
+      "unreadableLines": 0
+    },
+    "devices": [
+      "pro"
+    ],
+    "discardedMs": 12.5,
+    "dropped": {
+      "batches": 0,
+      "events": 0,
+      "faults": 0
+    },
+    "faults": [],
+    "firstReceived": "2026-10-19T08:00:05.000Z",
+    "frames": 300,
+    "histogram": [
+      {
+        "bucket": "<=8.33",
+        "count": 300,
+        "share": 1
+      },
+      {
+        "bucket": "<=16.67",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": "<=23.33",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": "<=33.33",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": "<=50",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": "<=100",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": "<=250",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": "<=1000",
+        "count": 0,
+        "share": 0
+      },
+      {
+        "bucket": ">1000",
+        "count": 0,
+        "share": 0
+      }
+    ],
+    "lastReceived": "2026-10-19T08:00:05.000Z",
+    "markers": [],
+    "overlays": [],
+    "periods": [
+      {
+        "batchId": 0,
+        "discardedMs": 12.5,
+        "endsAt": 5000,
+        "frames": 300,
+        "kind": "periodic",
+        "lateShare": 0,
+        "meanMs": 16.666666666666668,
+        "overlay": null
+      }
+    ],
+    "races": [],
+    "recordedSeconds": 5,
+    "resizes": {},
+    "rungs": [],
+    "session": {
+      "build": {
+        "dirty": false,
+        "sha": "dd6216e"
+      },
+      "device": "pro",
+      "pixelRatio": 1.5,
+      "renderer": "",
+      "screenHeight": 982,
+      "screenWidth": 1512,
+      "sessionId": "5a1b2c3d-0000-4000-8000-000000000002",
+      "startedAt": "2026-10-19T08:00:00.000Z",
+      "userAgent": "Mozilla/5.0"
+    },
+    "suspects": [],
+    "worst": []
+  },
+  {
+    "batches": {
+      "duplicateLines": 1,
+      "highest": 4,
+      "missing": [
+        3
+      ],
+      "received": 4,
+      "reports": [
+        "3f0c2a1e-1"
+      ],
+      "unreadableLines": 2
+    },
+    "devices": [
+      "air"
+    ],
+    "discardedMs": 50,
+    "dropped": {
+      "batches": 1,
+      "events": 6,
+      "faults": 1
+    },
+    "faults": [
+      {
+        "at": 11000,
+        "frame": 660,
+        "race": 1,
+        "seq": 11,
+        "kind": "fault",
+        "message": "TypeError: x is undefined",
+        "source": "error",
+        "where": "game/frame.ts:42"
+      }
+    ],
+    "firstReceived": "2026-10-20T10:00:05.100Z",
+    "frames": 900,
+    "histogram": [
+      {
+        "bucket": "<=8.33",
+        "count": 1,
+        "share": 0.0011111111111111111
+      },
+      {
+        "bucket": "<=16.67",
+        "count": 700,
+        "share": 0.7777777777777778
+      },
+      {
+        "bucket": "<=23.33",
+        "count": 110,
+        "share": 0.12222222222222222
+      },
+      {
+        "bucket": "<=33.33",
+        "count": 50,
+        "share": 0.05555555555555555
+      },
+      {
+        "bucket": "<=50",
+        "count": 20,
+        "share": 0.022222222222222223
+      },
+      {
+        "bucket": "<=100",
+        "count": 11,
+        "share": 0.012222222222222223
+      },
+      {
+        "bucket": "<=250",
+        "count": 7,
+        "share": 0.0077777777777777776
+      },
+      {
+        "bucket": "<=1000",
+        "count": 1,
+        "share": 0.0011111111111111111
+      },
+      {
+        "bucket": ">1000",
+        "count": 0,
+        "share": 0
+      }
+    ],
+    "lastReceived": "2026-10-20T10:00:25.400Z",
+    "markers": [
+      {
+        "at": 6000,
+        "frame": 360,
+        "race": 1,
+        "seq": 6,
+        "kind": "marker",
+        "tick": 700,
+        "nearRung": "",
+        "nearWorst": "frame 365 260.5 ms"
+      }
+    ],
+    "overlays": [
+      {
+        "at": 100,
+        "frame": 5,
+        "race": 0,
+        "seq": 0,
+        "kind": "overlay",
+        "on": true
+      },
+      {
+        "at": 12000,
+        "frame": 720,
+        "race": 1,
+        "seq": 13,
+        "kind": "overlay",
+        "on": false
+      }
+    ],
+    "periods": [
+      {
+        "batchId": 0,
+        "discardedMs": 12.5,
+        "endsAt": 5000,
+        "frames": 300,
+        "kind": "periodic",
+        "lateShare": 0.06666666666666667,
+        "meanMs": 16.666666666666668,
+        "overlay": true
+      },
+      {
+        "batchId": 1,
+        "discardedMs": 12.5,
+        "endsAt": 10000,
+        "frames": 300,
+        "kind": "report",
+        "lateShare": 0.16333333333333333,
+        "meanMs": 16.666666666666668,
+        "overlay": true
+      },
+      {
+        "batchId": 2,
+        "discardedMs": 12.5,
+        "endsAt": 15000,
+        "frames": 300,
+        "kind": "periodic",
+        "lateShare": 0.06666666666666667,
+        "meanMs": 16.666666666666668,
+        "overlay": false
+      },
+      {
+        "batchId": 4,
+        "discardedMs": 12.5,
+        "endsAt": 25000,
+        "frames": 0,
+        "kind": "final",
+        "lateShare": 0,
+        "meanMs": 0,
+        "overlay": false
+      }
+    ],
+    "races": [
+      {
+        "at": 200,
+        "frame": 10,
+        "race": 1,
+        "seq": 1,
+        "kind": "race",
+        "stage": "start",
+        "tick": 0
+      },
+      {
+        "at": 3200,
+        "frame": 190,
+        "race": 1,
+        "seq": 2,
+        "kind": "race",
+        "stage": "green",
+        "tick": 180
+      },
+      {
+        "at": 21000,
+        "frame": 1260,
+        "race": 1,
+        "seq": 14,
+        "kind": "race",
+        "stage": "end",
+        "tick": 2500
+      }
+    ],
+    "recordedSeconds": 15,
+    "resizes": {
+      "rung": 1,
+      "observer": 1
+    },
+    "rungs": [
+      {
+        "at": 3500,
+        "frame": 210,
+        "race": 1,
+        "seq": 3,
+        "calmMs": 0,
+        "from": {
+          "bloomScale": 0.5,
+          "frameRate": "auto",
+          "pace": 1,
+          "pixelRatio": 2,
+          "rung": 0,
+          "samples": 4,
+          "shadowMap": 2048
+        },
+        "kind": "governor",
+        "lateCredit": 3.5,
+        "reason": "late-budget",
+        "to": {
+          "bloomScale": 0.5,
+          "frameRate": "auto",
+          "pace": 1,
+          "pixelRatio": 2,
+          "rung": 1,
+          "shadowMap": 2048
+        }
+      },
+      {
+        "at": 11500,
+        "frame": 690,
+        "race": 1,
+        "seq": 12,
+        "calmMs": 8000,
+        "from": {
+          "bloomScale": 0.5,
+          "pace": 1,
+          "pixelRatio": 2,
+          "rung": 1,
+          "shadowMap": 2048
+        },
+        "kind": "governor",
+        "lateCredit": 0,
+        "reason": "calm-recovery",
+        "to": {
+          "bloomScale": 0.5,
+          "pace": 1,
+          "pixelRatio": 2,
+          "rung": 0,
+          "shadowMap": 2048
+        }
+      }
+    ],
+    "session": {
+      "build": {
+        "dirty": true,
+        "sha": "c5be184"
+      },
+      "device": "air",
+      "pixelRatio": 2,
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+      "screenHeight": 900,
+      "screenWidth": 1440,
+      "sessionId": "3f0c2a1e-7b4d-4c1a-9e2f-5d6a7b8c9d01",
+      "startedAt": "2026-10-20T10:00:00.000Z",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+    },
+    "suspects": [
+      {
+        "at": 3512,
+        "detail": "frame 211 drew canvas generation 1 at rung 0; a rung resize to 2880x1720 (generation 2, rung 1) cleared it before it was presented",
+        "frame": 211,
+        "kind": "resize-after-draw",
+        "score": 100
+      },
+      {
+        "at": 6100,
+        "detail": "WebGL context lost after frame 366",
+        "frame": 366,
+        "kind": "context-lost",
+        "score": 90
+      },
+      {
+        "at": 6150,
+        "detail": "frame 369 started its render passes and never finished them",
+        "frame": 369,
+        "kind": "incomplete-final-pass",
+        "score": 70
+      },
+      {
+        "at": 3511,
+        "detail": "frame 211 took 140.3 ms beside governor, canvas",
+        "frame": 211,
+        "kind": "stall",
+        "score": 30
+      },
+      {
+        "at": 6080,
+        "detail": "frame 365 took 260.5 ms",
+        "frame": 365,
+        "kind": "stall",
+        "score": 10
+      },
+      {
+        "at": 10000,
+        "detail": "frame 600 took 101.0 ms",
+        "frame": 600,
+        "kind": "stall",
+        "score": 10
+      }
+    ],
+    "worst": [
+      {
+        "at": 6080,
+        "calls": [
+          10,
+          20,
+          30,
+          0,
+          5,
+          40
+        ],
+        "cpu": [
+          1.2,
+          3.4,
+          0.6,
+          0.1,
+          2.2,
+          5.5
+        ],
+        "discardedMs": 0,
+        "drawRung": 2,
+        "drawnEpoch": 2,
+        "frame": 365,
+        "intervalMs": 260.5,
+        "nextRung": 1,
+        "pixelRatio": 1.75,
+        "race": 1,
+        "sizeEpoch": 2,
+        "tick": 730,
+        "ticks": 2
+      },
+      {
+        "at": 3511,
+        "calls": [
+          10,
+          20,
+          30,
+          0,
+          5,
+          40
+        ],
+        "cpu": [
+          1.2,
+          3.4,
+          0.6,
+          0.1,
+          2.2,
+          5.5
+        ],
+        "discardedMs": 0,
+        "drawRung": 1,
+        "drawnEpoch": 2,
+        "frame": 211,
+        "intervalMs": 140.25,
+        "nextRung": 2,
+        "pixelRatio": 2,
+        "race": 1,
+        "sizeEpoch": 2,
+        "tick": 422,
+        "ticks": 2
+      },
+      {
+        "at": 10000,
+        "calls": [
+          10,
+          20,
+          30,
+          0,
+          5,
+          40
+        ],
+        "cpu": [
+          0.1,
+          0.2,
+          0.3,
+          0.05,
+          0.4,
+          0.6
+        ],
+        "discardedMs": 0,
+        "drawRung": 1,
+        "drawnEpoch": 2,
+        "frame": 600,
+        "intervalMs": 101,
+        "nextRung": 2,
+        "pixelRatio": 2,
+        "race": 1,
+        "sizeEpoch": 2,
+        "tick": 1200,
+        "ticks": 2
+      },
+      {
+        "at": 2500,
+        "calls": [
+          10,
+          20,
+          30,
+          0,
+          5,
+          40
+        ],
+        "cpu": [
+          1.2,
+          3.4,
+          0.6,
+          0.1,
+          2.2,
+          5.5
+        ],
+        "discardedMs": 0,
+        "drawRung": 1,
+        "drawnEpoch": 2,
+        "frame": 150,
+        "intervalMs": 45.5,
+        "nextRung": 2,
+        "pixelRatio": 2,
+        "race": 1,
+        "sizeEpoch": 2,
+        "tick": 300,
+        "ticks": 2
+      }
+    ]
+  }
+]

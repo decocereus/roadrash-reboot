@@ -2,28 +2,8 @@ import { once } from "node:events";
 
 import * as Schema from "effect/Schema";
 
-const envelope = Schema.Struct({
-  error: Schema.optionalKey(Schema.Struct({ message: Schema.String })),
-  id: Schema.optionalKey(Schema.Number),
-  method: Schema.optionalKey(Schema.String),
-  params: Schema.optionalKey(Schema.Unknown),
-  result: Schema.optionalKey(Schema.Unknown),
-});
-
-const decodeEnvelope = Schema.decodeUnknownSync(envelope);
-
-type Envelope = typeof envelope.Type;
-
-type ParamValue =
-  | string
-  | number
-  | boolean
-  | readonly ParamValue[]
-  | CommandParams;
-
-export interface CommandParams {
-  readonly [name: string]: ParamValue;
-}
+import { decodeEnvelope, evaluated } from "./cdp-protocol.ts";
+import type { CommandParams, Envelope } from "./cdp-protocol.ts";
 
 interface Waiting {
   readonly settle: (message: Envelope) => void;
@@ -112,18 +92,6 @@ export const connect = async (url: string): Promise<Session> => {
     },
   };
 };
-
-const evaluated = Schema.Struct({
-  exceptionDetails: Schema.optionalKey(
-    Schema.Struct({
-      exception: Schema.optionalKey(
-        Schema.Struct({ description: Schema.optionalKey(Schema.String) })
-      ),
-      text: Schema.String,
-    })
-  ),
-  result: Schema.Struct({ value: Schema.optionalKey(Schema.Unknown) }),
-});
 
 export const evaluate = async <T>(
   session: Session,

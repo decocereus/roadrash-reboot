@@ -1,16 +1,15 @@
 import { spawn } from "node:child_process";
-import type { SpawnOptionsWithoutStdio } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { text } from "node:stream/consumers";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import * as Schema from "effect/Schema";
 
 import { connect } from "./cdp.ts";
 import type { Session } from "./cdp.ts";
+import { listenerOf, run } from "./process.ts";
 
 export type BrowserName = "chrome" | "helium";
 
@@ -46,28 +45,6 @@ export const browserNamed = (name: string): BrowserChoice => {
 
 const STARTUP_ATTEMPTS = 150;
 const STARTUP_POLL_MS = 100;
-
-export interface CommandOutput {
-  readonly stderr: string;
-  readonly stdout: string;
-}
-
-export const run = async (
-  file: string,
-  args: readonly string[],
-  options: SpawnOptionsWithoutStdio = {}
-): Promise<CommandOutput> => {
-  const child = spawn(file, args, options);
-  const [stdout, stderr] = await Promise.all([
-    text(child.stdout),
-    text(child.stderr),
-    once(child, "close"),
-  ]);
-  if (child.exitCode !== 0) {
-    throw new Error(`Command failed: ${[file, ...args].join(" ")}\n${stderr}`);
-  }
-  return { stderr, stdout };
-};
 
 export interface Viewport {
   readonly width: number;
@@ -152,21 +129,6 @@ const portAnswers = async (port: number): Promise<boolean> => {
     return true;
   } catch {
     return false;
-  }
-};
-
-export const listenerOf = async (port: number): Promise<number | null> => {
-  try {
-    const { stdout } = await run("lsof", [
-      "-nP",
-      "-t",
-      `-iTCP:${port}`,
-      "-sTCP:LISTEN",
-    ]);
-    const [first] = stdout.split("\n").filter(Boolean).map(Number);
-    return first ?? null;
-  } catch {
-    return null;
   }
 };
 
