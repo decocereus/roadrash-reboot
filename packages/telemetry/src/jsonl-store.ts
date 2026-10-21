@@ -1,65 +1,106 @@
-import { appendFile, mkdir, readFile } from "node:fs/promises";
-import path from "node:path";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Layer from "effect/Layer";
+import * as Path from "effect/Path";
+import * as Semaphore from "effect/Semaphore";
 
-import * as Schema from "effect/Schema";
+import { decodeStoredLineEffect } from "./schema.ts";
+import type { Batch } from "./schema.ts";
+import { TelemetryStoreError } from "./store-error.ts";
+import { TelemetryStore } from "./store.ts";
 
-import type { SaveResult, TelemetryStore } from "./store.ts";
-
-const storedLine = Schema.Struct({
-  batch: Schema.Struct({ batchId: Schema.Number }),
-});
-
-const decodeStored = Schema.decodeUnknownOption(
-  Schema.fromJsonString(storedLine)
-);
-
-export const sessionFile = (directory: string, sessionId: string): string =>
-  path.join(directory, `${sessionId}.jsonl`);
-
-const storedIds = async (file: string): Promise<Set<number>> => {
-  const ids = new Set<number>();
-  const text = await readFile(file, "utf-8").catch(() => "");
-  for (const line of text.split("\n")) {
-    const stored = decodeStored(line);
-    if (stored._tag === "Some") {
-      ids.add(stored.value.batch.batchId);
-    }
-  }
-  return ids;
-};
-
-export const createJsonlStore = (directory: string): TelemetryStore => {
+export const jsonlStoreLayer = (
+  directory: string
+): Layer.Layer<TelemetryStore, never, FileSystem.FileSystem | Path.Path> => {
   const known = new Map<string, Set<number>>();
-  let writing: Promise<null> = Promise.resolve(null);
+  const gate = Semaphore.makeUnsafe(1);
 
-  const save = async (
-    sessionId: string,
-    batchId: number,
-    line: string
-  ): Promise<SaveResult> => {
-    const file = sessionFile(directory, sessionId);
-    const ids = known.get(sessionId) ?? (await storedIds(file));
-    known.set(sessionId, ids);
-    if (ids.has(batchId)) {
-      return "duplicate";
-    }
-    await mkdir(directory, { recursive: true });
-    await appendFile(file, `${line}\n`, "utf-8");
-    ids.add(batchId);
-    return "saved";
-  };
+  return Layer.effect(TelemetryStore)(
+    Effect.gen(function* makeJsonlStore() {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
 
-  return {
-    async save(batch, line) {
-      const previous = writing;
-      const turn = Promise.withResolvers<null>();
-      writing = turn.promise;
-      await previous;
-      try {
-        return await save(batch.session.sessionId, batch.batchId, line);
-      } finally {
-        turn.resolve(null);
-      }
-    },
-  };
+      const readIds = Effect.fn("telemetry.store.readIds")(function* readIds(
+        file: string
+      ) {
+        const text = yield* fs.readFileString(file, "utf-8").pipe(
+          Effect.catchReason("PlatformError", "NotFound", () =>
+            Effect.succeed("")
+          ),
+          Effect.mapError(
+            (cause) =>
+              new TelemetryStoreError({ cause, operation: "read", path: file })
+          )
+        );
+        const ids = new Set<number>();
+        for (const [index, line] of text.split("\n").entries()) {
+          if (line.trim() !== "") {
+            const stored = yield* decodeStoredLineEffect(line).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new TelemetryStoreError({
+                    cause,
+                    line: index + 1,
+                    operation: "decode",
+                    path: file,
+                  })
+              )
+            );
+            ids.add(stored.batch.batchId);
+          }
+        }
+        return ids;
+      });
+
+      const append = (
+        file: string,
+        line: string,
+        ids: Set<number>,
+        id: number
+      ) =>
+        fs.writeFileString(file, `${line}\n`, { flag: "a" }).pipe(
+          Effect.mapError(
+            (cause) =>
+              new TelemetryStoreError({
+                cause,
+                operation: "append",
+                path: file,
+              })
+          ),
+          Effect.andThen(
+            Effect.sync(() => {
+              ids.add(id);
+            })
+          ),
+          Effect.uninterruptible
+        );
+
+      const save = Effect.fn("telemetry.store.save")(
+        function* save(batch: Batch, line: string) {
+          const { sessionId } = batch.session;
+          const file = path.join(directory, `${sessionId}.jsonl`);
+          const ids = known.get(sessionId) ?? (yield* readIds(file));
+          known.set(sessionId, ids);
+          if (ids.has(batch.batchId)) {
+            return "duplicate";
+          }
+          yield* fs.makeDirectory(directory, { recursive: true }).pipe(
+            Effect.mapError(
+              (cause) =>
+                new TelemetryStoreError({
+                  cause,
+                  operation: "mkdir",
+                  path: directory,
+                })
+            )
+          );
+          yield* append(file, line, ids, batch.batchId);
+          return "saved";
+        },
+        (saving) => gate.withPermit(saving)
+      );
+
+      return TelemetryStore.of({ save });
+    })
+  );
 };

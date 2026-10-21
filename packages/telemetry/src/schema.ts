@@ -208,3 +208,12 @@ const ackSchema = Schema.Struct({
 export type Ack = typeof ackSchema.Type;
 
 export const decodeBatchEffect = Schema.decodeUnknownEffect(batchSchema);
+
+const storedLineSchema = Schema.Struct({
+  batch: batchSchema,
+  receivedAt: Schema.String,
+});
+
+export const decodeStoredLineEffect = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(storedLineSchema)
+);

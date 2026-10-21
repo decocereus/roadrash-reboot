@@ -1,13 +1,17 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
-import { createJsonlStore } from "@racer/telemetry/jsonl-store";
-import { provideTelemetryStore } from "@racer/telemetry/store";
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import * as NodePath from "@effect/platform-node/NodePath";
+import { jsonlStoreLayer } from "@racer/telemetry/jsonl-store";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import * as Layer from "effect/Layer";
 import { defineConfig } from "vite";
 import type { Plugin } from "vite";
+
+import { installLocalTelemetry } from "./src/server/telemetry-local.ts";
 
 const sessionsDirectory = path.resolve(
   import.meta.dirname,
@@ -31,7 +35,11 @@ const buildIdentity = () => ({
 });
 
 const provideLocalStore = () => {
-  provideTelemetryStore(createJsonlStore(sessionsDirectory));
+  installLocalTelemetry(
+    jsonlStoreLayer(sessionsDirectory).pipe(
+      Layer.provide(Layer.mergeAll(NodeFileSystem.layer, NodePath.layer))
+    )
+  );
 };
 
 const localTelemetry = (): Plugin => ({
