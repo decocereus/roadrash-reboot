@@ -1,0 +1,315 @@
+import { pilotInput } from "@racer/sim/pilot";
+import { createRace, neutralInput, stepRace } from "@racer/sim/race";
+import { arm } from "@racer/sim/weapons";
+import { roadAtLevel } from "@racer/track/road";
+import { regionOf, roads as roadPlans, trackFor } from "@racer/track/roads";
+import { describe, expect, it } from "vitest";
+
+import {
+  TICKS,
+  enter,
+  flatOut,
+  getArrested,
+  knockDown,
+  ledgerOf,
+  ride,
+  riderOf,
+  road,
+  settle,
+  sprint,
+} from "./career-fixtures.ts";
+import { setupFor } from "./field.ts";
+import { bustedLine, officerLines, preRaceLine, rivalLines } from "./lines.ts";
+import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
+import { parseCareer, serialiseCareer } from "./save.ts";
+import { seasonBoard } from "./season.ts";
+import { quitRace, resumeCareer, settleRace, startRace } from "./settle.ts";
+import { newCareer } from "./state.ts";
+import type { CareerState } from "./state.ts";
+import { LEFT_RACE_NOTE, storyBeat } from "./story.ts";
+import { levels, roadList } from "./tables.ts";
+
+const topPoints = (career: CareerState): number[] =>
+  seasonBoard(career)
+    .map((row) => row.points)
+    .slice(0, 8);
+
+describe("leaving a race", () => {
+  it("a reload in the middle of a race settles it as a wreck once and only once", () => {
+    const racing = enter(newCareer(3), "ridge-road").career;
+    const saved = parseCareer(serialiseCareer(racing));
+    if (!saved.ok) {
+      throw new Error(`The save did not load: ${saved.error.field}.`);
+    }
+    const first = resumeCareer(saved.career);
+    const reloaded = parseCareer(serialiseCareer(first.career));
+    if (!reloaded.ok) {
+      throw new Error(`The save did not load: ${reloaded.error.field}.`);
+    }
+    const second = resumeCareer(reloaded.career);
+    expect(ledgerOf(first)).toMatchObject({
+      cashAfter: 1100,
+      prize: 0,
+      repair: 400,
+      result: "quit",
+    });
+    expect([
+      first.career.activeRace,
+      storyBeat(first.career).leftRaceNote,
+      second.ledger,
+      second.career.cash,
+      second.career.record.wrecks,
+    ]).toStrictEqual([null, LEFT_RACE_NOTE, null, 1100, 1]);
+    expect(second.career.board).toStrictEqual([{ kind: "leftRace" }]);
+  });
+
+  it("a race that has settled cannot be settled again with the same result", () => {
+    const race = enter(newCareer(3), "slag-row");
+    sprint(race, 1);
+    const outcome = outcomeOf(race.state, race.setup, race.log);
+    const once = settleRace(race.career, outcome);
+    const twice = settleRace(once.career, outcome);
+    expect([once.career.cash, once.settled]).toStrictEqual([3000, true]);
+    expect(twice).toStrictEqual({
+      career: once.career,
+      ledger: null,
+      reason: "noActiveRace",
+      settled: false,
+    });
+  });
+
+  it("a result from an earlier race cannot settle a later one on the same road with the same seed", () => {
+    const first = enter(newCareer(3), "slag-row", 7);
+    sprint(first, 1);
+    const won = outcomeOf(first.state, first.setup, first.log);
+    const paid = settleRace(first.career, won);
+    const second = enter(paid.career, "slag-row", 7);
+    const replayed = settleRace(second.career, won);
+    sprint(second, 1);
+    const repeat = settle(second);
+    expect([first.setup.seed, won.raceId]).toStrictEqual([
+      second.setup.seed,
+      1,
+    ]);
+    expect(replayed).toStrictEqual({
+      career: second.career,
+      ledger: null,
+      reason: "wrongRace",
+      settled: false,
+    });
+    expect([
+      paid.career.cash,
+      replayed.career.cash,
+      replayed.career.activeRace?.raceId,
+      repeat.career.cash,
+    ]).toStrictEqual([3000, 3000, 2, 3750]);
+  });
+
+  it("quitting from the pause menu costs the repair bill and still scores the riders left racing", () => {
+    const race = enter(newCareer(3), "slag-row");
+    ride(race, 5, () => race.state.riders.map(() => flatOut));
+    const outcome = outcomeOf(race.state, race.setup, race.log);
+    const settled = quitRace(race.career, outcome);
+    const board = seasonBoard(settled.career);
+    expect([
+      outcome.result,
+      outcome.place,
+      outcome.placings.length,
+    ]).toStrictEqual(["quit", 15, 15]);
+    expect(ledgerOf(settled)).toMatchObject({ cashAfter: 1100, repair: 400 });
+    expect(board.map((row) => row.points).slice(0, 8)).toStrictEqual([
+      15, 14, 13, 12, 11, 10, 9, 8,
+    ]);
+    expect(settled.career.season.player.points).toBe(0);
+  });
+
+  it("quitting after a fight still scores the season and the rival remembers the fight, and a reload remembers nothing", () => {
+    const race = enter(newCareer(3), "slag-row");
+    knockDown(race, "dee-santangelo", 1);
+    ride(race, 2, () => race.state.riders.map(() => flatOut));
+    const quit = quitRace(
+      race.career,
+      outcomeOf(race.state, race.setup, race.log)
+    );
+    const reloaded = resumeCareer(race.career);
+    expect([ledgerOf(quit), ledgerOf(reloaded)]).toMatchObject([
+      { cashAfter: 1100, prize: 0, repair: 400, result: "quit" },
+      { cashAfter: 1100, prize: 0, repair: 400, result: "quit" },
+    ]);
+    expect([topPoints(quit.career), topPoints(reloaded.career)]).toStrictEqual([
+      [15, 14, 13, 12, 11, 10, 9, 8],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+    ]);
+    expect([
+      quit.career.memory["dee-santangelo"].knockedDownByPlayer,
+      quit.career.record.knockdowns,
+      quit.career.board[0]?.kind,
+      reloaded.career.memory["dee-santangelo"].knockedDownByPlayer,
+      reloaded.career.record.knockdowns,
+      reloaded.career.board[0]?.kind,
+    ]).toStrictEqual([1, 1, "wentDown", 0, 0, "leftRace"]);
+    expect(
+      preRaceLine(quit.career, setupFor(quit.career, "slag-row", 8, road))
+    ).toStrictEqual({
+      rival: "dee-santangelo",
+      text: rivalLines["dee-santangelo"].grudgeTaunt,
+    });
+  });
+
+  it("nothing that happens after the player finishes changes the result", () => {
+    const race = enter(newCareer(3), "slag-row");
+    sprint(race, 2);
+    const settledAt = outcomeOf(race.state, race.setup, race.log);
+    for (let tick = 0; tick < 20 * TICKS; tick += 1) {
+      stepRace(
+        race.state,
+        road,
+        race.state.riders.map(() => flatOut)
+      );
+      recordTick(race.log, race.state, race.setup);
+    }
+    expect(outcomeOf(race.state, race.setup, race.log)).toBe(settledAt);
+    expect(settledAt.placings.map((placing) => placing.fate)).toStrictEqual([
+      "finished",
+      "finished",
+      ...Array.from({ length: 13 }, () => "racing"),
+    ]);
+  });
+});
+
+describe("the roads", () => {
+  it("the career's road table agrees with the track package on every length, region, and name", () => {
+    const career = roadList.flatMap((entry) =>
+      levels.map((level) => [
+        entry.id,
+        entry.name,
+        entry.region,
+        entry.lengths[level],
+      ])
+    );
+    const track = roadList.flatMap((entry) =>
+      levels.map((level) => [
+        entry.id,
+        roadPlans[entry.id].plan.name,
+        regionOf(entry.id),
+        roadAtLevel(roadPlans[entry.id], level).sections.reduce(
+          (total, section) => total + section.length,
+          0
+        ),
+      ])
+    );
+    expect(career).toStrictEqual(track);
+  });
+
+  it(
+    "a whole pilot-ridden race on Slag Row settles into fifteen places and a ledger that adds up",
+    { timeout: 30_000 },
+    () => {
+      const course = trackFor("slag-row", 1);
+      const start = startRace(newCareer(21), "slag-row", 21);
+      const setup = setupFor(start.career, "slag-row", 21, course);
+      const state = createRace(setup);
+      const log = createRaceLog(setup);
+      const inputs = state.riders.map(() => ({ ...neutralInput }));
+      for (let tick = 0; tick < 400 * TICKS && !log.outcome; tick += 1) {
+        for (const [index, input] of inputs.entries()) {
+          pilotInput(state, course, index, input);
+        }
+        stepRace(state, course, inputs);
+        recordTick(log, state, setup);
+      }
+      const outcome = outcomeOf(state, setup, log);
+      const ledger = ledgerOf(settleRace(start.career, outcome));
+      expect(log.outcome).toBe(outcome);
+      expect(outcome.placings.map((placing) => placing.place)).toStrictEqual(
+        Array.from({ length: 15 }, (_, index) => index + 1)
+      );
+      expect(
+        new Set(outcome.placings.map((placing) => placing.racer))
+      ).toStrictEqual(new Set(["player", ...setup.field]));
+      expect(outcome.placings[outcome.place - 1]?.racer).toBe("player");
+      expect(ledger.cashAfter).toBe(
+        1500 + ledger.prize - ledger.repair - ledger.fine
+      );
+    }
+  );
+});
+
+describe("a bust", () => {
+  it("records the fine, the officer, where it happened, and the weapon held when the rider was thrown", () => {
+    const race = enter(newCareer(2), "hollow-pine-road");
+    arm(riderOf(race, "player"), "chain");
+    getArrested(race);
+    const outcome = outcomeOf(race.state, race.setup, race.log);
+    const settled = settleRace(race.career, outcome);
+    expect(outcome).toMatchObject({
+      arrest: {
+        fine: 400,
+        officer: "wendell-haverty",
+        weapon: "chain",
+      },
+      place: 15,
+      result: "busted",
+    });
+    expect(outcome.arrest?.km).toBeCloseTo(0.2, 1);
+    expect({
+      bust: settled.career.lastResult?.summary.bust,
+      busts: settled.career.record.busts,
+      weapon: settled.career.weapon,
+    }).toStrictEqual({
+      bust: {
+        fine: 400,
+        km: outcome.arrest?.km,
+        line: bustedLine("wendell-haverty", race.setup.seed),
+        officer: "wendell-haverty",
+        officerName: "Deputy Wendell Haverty",
+        weapon: "chain",
+      },
+      busts: 1,
+      weapon: "none",
+    });
+    expect(ledgerOf(settled)).toMatchObject({
+      cashAfter: 1100,
+      fine: 400,
+      prize: 0,
+      qualified: false,
+    });
+    expect(officerLines["wendell-haverty"]).toContain(
+      bustedLine("wendell-haverty", race.setup.seed)
+    );
+  });
+
+  it("the ticket names the spot on the road where the rider lay, not the verge they were moved to", () => {
+    const race = enter(newCareer(2), "hollow-pine-road");
+    const player = riderOf(race, "player");
+    let lay = { s: player.bodyS, x: player.bodyX };
+    const copIndex = race.setup.field.length + 1;
+    const cop = race.state.riders[copIndex];
+    const inputs = race.state.riders.map(() => ({ ...neutralInput }));
+    const copInput = inputs[copIndex];
+    if (!(cop && copInput)) {
+      throw new Error("The race has no cop.");
+    }
+    cop.parked = false;
+    cop.s = 150;
+    cop.x = road.plan.laneWidth / 2;
+    cop.speed = 22;
+    player.s = 200;
+    player.speed = 15;
+    player.stamina = 0;
+    for (let tick = 0; tick < 30 * TICKS && !race.log.outcome; tick += 1) {
+      lay = { s: player.bodyS, x: player.bodyX };
+      pilotInput(race.state, road, copIndex, copInput);
+      stepRace(race.state, road, inputs);
+      recordTick(race.log, race.state, race.setup);
+    }
+    const { arrest, km } = outcomeOf(race.state, race.setup, race.log);
+    expect(Math.abs((arrest?.km ?? 0) * 1000 - lay.s)).toBeLessThan(0.2);
+    expect(Math.abs((arrest?.x ?? 9) - lay.x)).toBeLessThan(0.2);
+    expect(km).toBe(arrest?.km);
+    expect([
+      Math.abs(arrest?.x ?? 9) < road.roadHalfWidth,
+      Math.abs(player.bodyX) > road.roadHalfWidth,
+    ]).toStrictEqual([true, true]);
+  });
+});
