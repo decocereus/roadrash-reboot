@@ -98,11 +98,11 @@ export const noEffectRuntimeRule = defineRule({
   meta: {
     docs: {
       description:
-        "Disallow running Effects or building runtimes, NodeRuntime included, outside the tool entry points.",
+        "Disallow running Effects or building runtimes, NodeRuntime included, outside entry points.",
     },
     messages: {
       runtime:
-        "`{{name}}` runs an Effect outside an entry point. Return the Effect and let `tools/perf/measure.ts`, `tools/perf/session.ts`, `tools/verify/rushline.ts` or a test run it.",
+        "`{{name}}` runs an Effect outside an entry point. Return the Effect and let an entry run it: a tool entry such as `tools/verify/rushline.ts`, the `/api/telemetry` route, the browser uploader entry `uploader-runtime.ts`, or a test.",
       runtimeModule:
         "`{{source}}` builds a runtime. Library code returns Effects and leaves running them to the entry points.",
     },

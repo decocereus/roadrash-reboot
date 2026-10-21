@@ -8,6 +8,12 @@ const effectFiles = [
   "tools/verify/*.ts",
   "tools/verify/src/**/*.ts",
   "packages/devtools/src/**/*.ts",
+  "apps/web/src/server/**/*.ts",
+  "apps/web/src/routes/api/telemetry.ts",
+  "packages/telemetry/src/**/*.ts",
+  "apps/web/src/diagnostics/uploader.ts",
+  "apps/web/src/diagnostics/uploader-runtime.ts",
+  "apps/web/src/diagnostics/upload/**/*.ts",
 ];
 
 const orchestrationFiles = [
@@ -16,12 +22,22 @@ const orchestrationFiles = [
   "tools/verify/*.ts",
   "tools/verify/src/**/*.ts",
   "packages/devtools/src/*.ts",
+  "apps/web/src/server/**/*.ts",
+  "apps/web/src/routes/api/telemetry.ts",
+  "packages/telemetry/src/**/*.ts",
+  "apps/web/src/diagnostics/uploader.ts",
+  "apps/web/src/diagnostics/uploader-runtime.ts",
+  "apps/web/src/diagnostics/upload/**/*.ts",
 ];
 
 const libraryFiles = [
   "tools/perf/src/**/*.ts",
   "tools/verify/src/**/*.ts",
   "packages/devtools/src/**/*.ts",
+  "apps/web/src/server/**/*.ts",
+  "packages/telemetry/src/**/*.ts",
+  "apps/web/src/diagnostics/uploader.ts",
+  "apps/web/src/diagnostics/upload/**/*.ts",
 ];
 
 export default defineConfig({
