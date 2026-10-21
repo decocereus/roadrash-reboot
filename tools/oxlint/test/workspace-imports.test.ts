@@ -5,12 +5,13 @@ const fixtures = "tools/oxlint/test/fixtures";
 const inA = `${fixtures}/ws-a/src/a.ts`;
 const inB = `${fixtures}/ws-b/src/b.ts`;
 const inRoot = `${fixtures}/scripts/run.ts`;
+const intoB = "../../ws-b/src/b.ts";
 const crossesIntoB = [
   {
     data: {
       from: `${fixtures}/ws-a`,
       manifest: `${fixtures}/ws-a/package.json`,
-      source: "../../ws-b/src/b.ts",
+      source: intoB,
       target: "@fixture/ws-b",
       to: `${fixtures}/ws-b`,
     },
@@ -21,27 +22,27 @@ const crossesIntoB = [
 runRule("rushline/workspace-imports", workspaceImportsRule, {
   invalid: [
     {
-      code: "import { b } from '../../ws-b/src/b.ts';",
+      code: `import { b } from '${intoB}';`,
       errors: crossesIntoB,
       filename: inA,
     },
     {
-      code: "import type { B } from '../../ws-b/src/b.ts';",
+      code: `import type { B } from '${intoB}';`,
       errors: crossesIntoB,
       filename: inA,
     },
     {
-      code: "export { b } from '../../ws-b/src/b.ts';",
+      code: `export { b } from '${intoB}';`,
       errors: crossesIntoB,
       filename: inA,
     },
     {
-      code: "export * from '../../ws-b/src/b.ts';",
+      code: `export * from '${intoB}';`,
       errors: crossesIntoB,
       filename: inA,
     },
     {
-      code: "const b = import('../../ws-b/src/b.ts');",
+      code: `const b = import('${intoB}');`,
       errors: crossesIntoB,
       filename: inA,
     },
