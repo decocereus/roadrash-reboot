@@ -11,6 +11,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
+import { heldFor } from "./page.ts";
 import { VerificationError } from "./verification-error.ts";
 
 const TOP_THREADS = 10;
@@ -80,13 +81,14 @@ export const trace = Effect.fn("rv.trace")(function* trace(
     raw.push(...value);
   });
   const complete = yield* page.once("Tracing.tracingComplete", Schema.Unknown);
-  yield* page.send("Tracing.start", {
-    traceConfig: { includedCategories: [...TRACE_CATEGORIES] },
-    transferMode: "ReportEvents",
-  });
-  yield* Effect.sleep(seconds * 1000);
-  yield* page.send("Tracing.end");
-  yield* complete;
+  yield* heldFor(
+    page.send("Tracing.start", {
+      traceConfig: { includedCategories: [...TRACE_CATEGORIES] },
+      transferMode: "ReportEvents",
+    }),
+    seconds * 1000,
+    page.send("Tracing.end").pipe(Effect.andThen(complete))
+  );
   yield* fs.writeFileString(file, JSON.stringify({ traceEvents: raw }));
   const events = raw.flatMap((each) => Option.toArray(decodeEvent(each)));
   const result: TraceResult = {

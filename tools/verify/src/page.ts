@@ -1,6 +1,7 @@
 import { connect, evaluate } from "@racer/devtools/cdp";
 import type { Session } from "@racer/devtools/cdp";
 import { pageTarget } from "@racer/devtools/chrome";
+import { released } from "@racer/devtools/cleanup";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -44,6 +45,20 @@ export const withPage = <A, E, R>(
   state: InstanceState,
   act: (page: Session) => Effect.Effect<A, E, R>
 ) => Effect.scoped(Effect.flatMap(attach(state), act));
+
+export const heldFor = <A, E1, R1, B, E2, R2>(
+  start: Effect.Effect<A, E1, R1>,
+  ms: number,
+  stop: Effect.Effect<B, E2, R2>
+) =>
+  Effect.uninterruptibleMask((restore) =>
+    start.pipe(
+      Effect.andThen(
+        restore(Effect.sleep(ms)).pipe(Effect.onInterrupt(() => released(stop)))
+      ),
+      Effect.andThen(stop)
+    )
+  );
 
 export const waitFor = Effect.fn("rv.waitFor")(function* waitFor(
   page: Session,

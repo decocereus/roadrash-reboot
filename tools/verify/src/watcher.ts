@@ -15,7 +15,6 @@ import type { CommandContext } from "./context.ts";
 import { Evidence, consoleFile } from "./evidence.ts";
 import { startWatcher } from "./instance.ts";
 import { throttle } from "./profile.ts";
-import { SlotStore } from "./state.ts";
 import type { InstanceState } from "./state.ts";
 import { VerificationError } from "./verification-error.ts";
 
@@ -156,10 +155,7 @@ const watcherAttached = Effect.fnUntraced(function* watcherAttached(
 
 export const launchWatcher = Effect.fn("rv.launchWatcher")(
   function* launchWatcher(state: InstanceState, script: string) {
-    const slots = yield* SlotStore;
-    const next = yield* Effect.uninterruptible(
-      startWatcher(state, script).pipe(Effect.tap(slots.writeState))
-    );
+    const next = yield* startWatcher(state, script);
     if (!(yield* watcherAttached(next))) {
       return yield* new VerificationError({
         message: `The console watcher did not attach; read ${path.join(state.evidence, "watch.log")}.`,

@@ -9,6 +9,8 @@ import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 
+import { heldFor } from "./page.ts";
+
 const SCREENCAST_QUALITY = 70;
 
 const SCREENCAST_WIDTH = 1512;
@@ -194,17 +196,22 @@ export const screencast = Effect.fn("rv.screencast")(function* screencast(
     )
   );
   yield* page.send("Page.enable");
-  yield* page.send("Page.startScreencast", {
-    everyNthFrame: everyNth,
-    format: "jpeg",
-    maxHeight: SCREENCAST_HEIGHT,
-    maxWidth: SCREENCAST_WIDTH,
-    quality: SCREENCAST_QUALITY,
-  });
-  yield* Effect.sleep(seconds * 1000);
-  yield* page.send("Page.stopScreencast");
-  yield* Queue.end(frames);
-  yield* Fiber.join(writer);
+  yield* heldFor(
+    page.send("Page.startScreencast", {
+      everyNthFrame: everyNth,
+      format: "jpeg",
+      maxHeight: SCREENCAST_HEIGHT,
+      maxWidth: SCREENCAST_WIDTH,
+      quality: SCREENCAST_QUALITY,
+    }),
+    seconds * 1000,
+    page
+      .send("Page.stopScreencast")
+      .pipe(
+        Effect.andThen(Queue.end(frames)),
+        Effect.andThen(Fiber.join(writer))
+      )
+  );
   yield* fs.writeFileString(
     path.join(dir, "frames.json"),
     JSON.stringify({ everyNth, seconds, timestamps: stamps }, null, 1)

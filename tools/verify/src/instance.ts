@@ -7,6 +7,7 @@ import {
   startInBackground,
   stopProfileBrowser,
 } from "@racer/devtools/chrome";
+import { released } from "@racer/devtools/cleanup";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -21,6 +22,10 @@ import { VerificationError } from "./verification-error.ts";
 const POLL_MS = 200;
 
 const SERVER_ATTEMPTS = 300;
+
+const SERVER_COMMAND = "vite.js";
+
+const WATCHER_COMMAND = "rushline.ts";
 
 export const git = Effect.fn("rv.git")(function* git(
   cwd: string,
@@ -140,11 +145,20 @@ const awaitServer = Effect.fnUntraced(function* awaitServer(url: string) {
   }
 });
 
+const persistStarted = (pid: number, command: string, next: InstanceState) =>
+  SlotStore.use((slots) => slots.writeState(next)).pipe(
+    Effect.onError(() =>
+      released(
+        ToolProcesses.use((processes) => processes.stopOwned(pid, command))
+      )
+    ),
+    Effect.as(next)
+  );
+
 export const startServer = Effect.fn("rv.startServer")(function* startServer(
   state: InstanceState
 ) {
   const processes = yield* ToolProcesses;
-  const slots = yield* SlotStore;
   const next = yield* Effect.uninterruptible(
     processes
       .startDetached(
@@ -154,8 +168,9 @@ export const startServer = Effect.fn("rv.startServer")(function* startServer(
         devEnv()
       )
       .pipe(
-        Effect.map((pid): InstanceState => ({ ...state, serverPid: pid })),
-        Effect.tap(slots.writeState)
+        Effect.flatMap((pid) =>
+          persistStarted(pid, SERVER_COMMAND, { ...state, serverPid: pid })
+        )
       )
   );
   yield* awaitServer(state.serverUrl);
@@ -194,14 +209,20 @@ export const startWatcher = Effect.fn("rv.startWatcher")(function* startWatcher(
   script: string
 ) {
   const processes = yield* ToolProcesses;
-  const pid = yield* processes.startDetached(
-    [script, "watch", "--run", state.run],
-    state.checkout,
-    path.join(state.evidence, "watch.log"),
-    devEnv()
+  return yield* Effect.uninterruptible(
+    processes
+      .startDetached(
+        [script, "watch", "--run", state.run],
+        state.checkout,
+        path.join(state.evidence, "watch.log"),
+        devEnv()
+      )
+      .pipe(
+        Effect.flatMap((pid) =>
+          persistStarted(pid, WATCHER_COMMAND, { ...state, watcherPid: pid })
+        )
+      )
   );
-  const watching: InstanceState = { ...state, watcherPid: pid };
-  return watching;
 });
 
 export const stopServer = Effect.fn("rv.stopServer")(function* stopServer(
@@ -211,7 +232,7 @@ export const stopServer = Effect.fn("rv.stopServer")(function* stopServer(
     return "external server left running";
   }
   const processes = yield* ToolProcesses;
-  const result = yield* processes.stopOwned(state.serverPid, "vite.js");
+  const result = yield* processes.stopOwned(state.serverPid, SERVER_COMMAND);
   yield* awaitPortClosed(serverPortOf(state.slot));
   return result;
 });
@@ -230,7 +251,7 @@ export const stopBrowser = Effect.fn("rv.stopBrowser")(function* stopBrowser(
 
 export const stopWatcher = (state: InstanceState) =>
   ToolProcesses.use((processes) =>
-    processes.stopOwned(state.watcherPid, "rushline.ts")
+    processes.stopOwned(state.watcherPid, WATCHER_COMMAND)
   );
 
 export const newestSourceChange = Effect.fn("rv.newestSourceChange")(

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { attempt } from "@racer/devtools/cleanup";
+import { attempt, cleanupFailed, released } from "@racer/devtools/cleanup";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -70,13 +70,10 @@ const teardown = Effect.fnUntraced(function* teardown(
     ["helium", stopBrowser(state)],
     ["server", stopServer(state)],
   ] as const;
-  let complete = true;
   for (const [label, stop] of stages) {
     const stopped = yield* attempt(stop);
     if (Option.isSome(stopped)) {
       yield* print(`${label}: ${stopped.value}`);
-    } else {
-      complete = false;
     }
   }
   const removals = [
@@ -87,9 +84,9 @@ const teardown = Effect.fnUntraced(function* teardown(
     slots.releaseClaim(state),
   ];
   for (const removal of removals) {
-    complete = Option.isSome(yield* attempt(removal)) && complete;
+    yield* released(removal);
   }
-  if (!complete) {
+  if (yield* cleanupFailed) {
     return;
   }
   const left = yield* fs

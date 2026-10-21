@@ -79,8 +79,8 @@ interface LoadedMap {
   readonly lines: Segment[][];
 }
 
-export const loadMap = (url: string) =>
-  Effect.gen(function* fetchSourceMap() {
+export const loadMap = Effect.fn("sourceMap.loadMap")(
+  function* loadMap(url: string) {
     const response = yield* HttpClient.get(`${url}.map`);
     if (response.status < 200 || response.status >= 300) {
       return null;
@@ -88,7 +88,9 @@ export const loadMap = (url: string) =>
     const map = yield* decodeSourceMap(yield* response.json);
     const loaded: LoadedMap = { lines: segmentsOf(map), map };
     return loaded;
-  }).pipe(Effect.orElseSucceed((): LoadedMap | null => null));
+  },
+  Effect.orElseSucceed((): LoadedMap | null => null)
+);
 
 export const originalOf = (
   loaded: LoadedMap,

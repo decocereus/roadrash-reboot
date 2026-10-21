@@ -28,6 +28,10 @@ export const released = <A, E, R>(
 ): Effect.Effect<void, never, R | CleanupOutcomes> =>
   Effect.asVoid(attempt(step));
 
+export const cleanupFailed = CleanupOutcomes.use((outcomes) =>
+  Ref.get(outcomes).pipe(Effect.map((failed) => failed.length > 0))
+);
+
 const describe = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
 
