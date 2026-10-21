@@ -506,8 +506,10 @@ const drawSign = (
   context.textBaseline = "middle";
   const write = () => {
     if (upright) {
-      for (const [index, letter] of [...text].entries()) {
+      let index = 0;
+      for (const letter of text) {
         context.fillText(letter, 64, 76 + index * LETTER_HEIGHT);
+        index += 1;
       }
     } else {
       context.fillText(text, width / 2, 86);
@@ -776,7 +778,25 @@ export const skyTexture = (
   context.fillRect(0, horizon, SKY_WIDTH, horizon);
   const sunX = sunAt[0] * SKY_WIDTH;
   const sunY = sunAt[1] * SKY_HEIGHT;
-  if (look.sun) {
+  if (look.sun === null) {
+    for (let star = 0; star < 1400; star += 1) {
+      context.fillStyle = `rgba(255,255,255,${0.2 + random() * 0.7})`;
+      context.fillRect(
+        random() * SKY_WIDTH,
+        random() * horizon * 0.9,
+        1 + random() * 2,
+        1 + random() * 2
+      );
+    }
+    context.fillStyle = "#eef0ff";
+    context.beginPath();
+    context.arc(sunX, sunY, 44, 0, FULL_TURN);
+    context.fill();
+    context.fillStyle = look.sky[3]?.[1] ?? "#000";
+    context.beginPath();
+    context.arc(sunX + 22, sunY - 10, 40, 0, FULL_TURN);
+    context.fill();
+  } else {
     for (const shift of [-SKY_WIDTH, 0, SKY_WIDTH]) {
       const halo = context.createRadialGradient(
         sunX + shift,
@@ -795,24 +815,6 @@ export const skyTexture = (
       context.arc(sunX + shift, sunY, 64, 0, FULL_TURN);
       context.fill();
     }
-  } else {
-    for (let star = 0; star < 1400; star += 1) {
-      context.fillStyle = `rgba(255,255,255,${0.2 + random() * 0.7})`;
-      context.fillRect(
-        random() * SKY_WIDTH,
-        random() * horizon * 0.9,
-        1 + random() * 2,
-        1 + random() * 2
-      );
-    }
-    context.fillStyle = "#eef0ff";
-    context.beginPath();
-    context.arc(sunX, sunY, 44, 0, FULL_TURN);
-    context.fill();
-    context.fillStyle = look.sky[3]?.[1] ?? "#000";
-    context.beginPath();
-    context.arc(sunX + 22, sunY - 10, 40, 0, FULL_TURN);
-    context.fill();
   }
   for (let cloud = 0; cloud < 16; cloud += 1) {
     drawCloud(context, look, [

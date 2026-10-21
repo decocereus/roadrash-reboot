@@ -5,6 +5,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { RED } from "./looks.ts";
+import { isMesh } from "./meshes.ts";
 import { modelBytes, modelUrls } from "./models.ts";
 
 const POSE_NAMES = [
@@ -165,9 +166,9 @@ const placedVectors = (
   return new THREE.BufferAttribute(values, 3);
 };
 
-const unpacked = <Values extends Float32Array | Uint16Array>(
+const unpacked = (
   source: Packed,
-  values: Values
+  values: Float32Array | Uint16Array
 ): THREE.BufferAttribute => {
   for (let index = 0; index < source.count; index += 1) {
     for (let component = 0; component < source.itemSize; component += 1) {
@@ -224,7 +225,7 @@ const fileSpaceGeometry = (mesh: THREE.Mesh): THREE.BufferGeometry => {
 const primitivesOf = (root: THREE.Object3D): Primitive[] => {
   const primitives: Primitive[] = [];
   root.traverse((node) => {
-    if (node instanceof THREE.Mesh) {
+    if (isMesh(node)) {
       primitives.push({
         geometry: fileSpaceGeometry(node),
         slot: slotOf(node),
@@ -273,7 +274,7 @@ const toGame = (root: THREE.Object3D, local: THREE.Vector3): THREE.Vector3 => {
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 const parsed = async (url: string): Promise<GLTF> =>
-  loader.parseAsync(await modelBytes(url), "");
+  await loader.parseAsync(await modelBytes(url), "");
 
 const loadRider = async (url: string): Promise<RiderAsset> => {
   const gltf = await parsed(url);
@@ -327,7 +328,7 @@ const loadAll = async (): Promise<Assets> => {
   return { bike, car, riders: [riderA, riderB, riderC], van };
 };
 
-export const loadAssets = (): Promise<Assets> => {
+export const loadAssets = async (): Promise<Assets> => {
   pending ??= loadAll();
-  return pending;
+  return await pending;
 };

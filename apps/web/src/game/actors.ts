@@ -77,7 +77,7 @@ export const reachOf = (shading: Shading): Reach => ({
 });
 
 const liveried = (material: THREE.MeshToonMaterial): THREE.MeshToonMaterial => {
-  const cel = material.onBeforeCompile;
+  const cel = material.onBeforeCompile.bind(material);
   const key = material.customProgramCacheKey();
   material.onBeforeCompile = (shader, renderer) => {
     cel(shader, renderer);
@@ -293,7 +293,7 @@ export function createBikes(
         for (const part of parts) {
           part.mesh.setMatrixAt(slot, part.wheel?.frame ?? body);
         }
-        if (beacons && riders[index]?.police) {
+        if (beacons && riders[index]?.police === true) {
           beacons.setMatrixAt(cop, body);
           cop += 1;
         }

@@ -1,4 +1,4 @@
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import {
   mkdir,
   open,
@@ -11,19 +11,17 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { promisify } from "node:util";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import {
   awaitPortClosed,
   browsers,
   listenerOf,
+  run,
   sharedFlags,
   startInBackground,
 } from "../perf/chrome.ts";
-
-const run = promisify(execFile);
 
 export const SLOTS = 10;
 export const SERVER_BASE_PORT = 1410;
@@ -34,7 +32,6 @@ export const VIEWPORT = { height: 860, scale: 2, width: 1512 } as const;
 const POLL_MS = 200;
 const SERVER_ATTEMPTS = 300;
 const STOP_ATTEMPTS = 50;
-const BUILD_BUFFER = 64 * 1024 * 1024;
 
 export const stateDir = path.join(tmpdir(), "rushline-verify");
 
@@ -84,8 +81,8 @@ export const git = async (
   return stdout.trim();
 };
 
-export const checkoutRoot = (): Promise<string> =>
-  git(process.cwd(), ["rev-parse", "--show-toplevel"]);
+export const checkoutRoot = async (): Promise<string> =>
+  await git(process.cwd(), ["rev-parse", "--show-toplevel"]);
 
 export const evidenceRoot = async (checkout: string): Promise<string> => {
   const common = await git(checkout, [
@@ -111,11 +108,11 @@ export const writeState = async (state: InstanceState): Promise<void> => {
 };
 
 const slotOfRun = (runId: string): number => {
-  const match = /-s(?<slot>\d)$/u.exec(runId);
-  if (!match?.groups?.slot) {
+  const slot = /-s(?<slot>\d)$/u.exec(runId)?.groups?.slot;
+  if (slot === undefined || slot === "") {
     throw new Error(`${runId} is not a run id; rv up prints one.`);
   }
-  return Number(match.groups.slot);
+  return Number(slot);
 };
 
 export const stateOfRun = async (runId: string): Promise<InstanceState> => {
@@ -208,7 +205,7 @@ export const claimSlot = async (
   if ((await slotFree(slot)) && (await claim(state))) {
     return state;
   }
-  return claimSlot(rest, draft);
+  return await claimSlot(rest, draft);
 };
 
 const vitePath = (checkout: string): string =>
@@ -240,7 +237,7 @@ export const build = async (state: InstanceState): Promise<InstanceState> => {
       buildDir,
       "--emptyOutDir",
     ],
-    { cwd: webDir(state.checkout), env: devEnv(), maxBuffer: BUILD_BUFFER }
+    { cwd: webDir(state.checkout), env: devEnv() }
   );
   await writeFile(
     path.join(state.evidence, "build.log"),
@@ -289,7 +286,7 @@ const awaitServer = async (url: string, attempt: number): Promise<void> => {
     throw new Error(`The server at ${url} never served the Rushline page.`);
   }
   await sleep(POLL_MS);
-  return awaitServer(url, attempt + 1);
+  await awaitServer(url, attempt + 1);
 };
 
 const spawnLogged = async (
@@ -369,7 +366,7 @@ const awaitGone = async (pid: number, attempt: number): Promise<boolean> => {
     return false;
   }
   await sleep(POLL_MS);
-  return awaitGone(pid, attempt + 1);
+  return await awaitGone(pid, attempt + 1);
 };
 
 export const stopOwned = async (
@@ -406,8 +403,8 @@ export const stopBrowser = async (state: InstanceState): Promise<string> => {
   return result;
 };
 
-export const stopWatcher = (state: InstanceState): Promise<string> =>
-  stopOwned(state.watcherPid, "rushline.ts");
+export const stopWatcher = async (state: InstanceState): Promise<string> =>
+  await stopOwned(state.watcherPid, "rushline.ts");
 
 export const newestSourceChange = async (checkout: string): Promise<number> => {
   const roots = ["apps/web/src", "apps/web/public", "packages"].map((each) =>

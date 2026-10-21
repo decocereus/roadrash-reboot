@@ -35,7 +35,7 @@ import type { ReactNode } from "react";
 export const Route = createFileRoute("/kit")({
   beforeLoad: () => {
     if (!import.meta.env.DEV) {
-      throw notFound();
+      notFound({ throw: true });
     }
   },
   component: KitPage,
@@ -511,7 +511,9 @@ function Board() {
               aria-pressed={entry.region === selected}
               className="rounded-sm"
               key={entry.region}
-              onClick={() => setSelected(entry.region)}
+              onClick={() => {
+                setSelected(entry.region);
+              }}
               type="button"
             >
               <Postcard
@@ -703,18 +705,20 @@ function Garage() {
           <MenuList defaultValue="level" label="Single race" size="sm">
             <MenuStepper
               label="Level"
-              onStep={(step) =>
-                setLevel(Math.min(LAST_LEVEL, Math.max(1, level + step)))
-              }
+              onStep={(step) => {
+                setLevel(Math.min(LAST_LEVEL, Math.max(1, level + step)));
+              }}
               value="level"
             >
               {level}
             </MenuStepper>
             <MenuStepper
               label="Bike"
-              onStep={(step) =>
-                setBike((bike + step + sampleBikes.length) % sampleBikes.length)
-              }
+              onStep={(step) => {
+                setBike(
+                  (bike + step + sampleBikes.length) % sampleBikes.length
+                );
+              }}
               value="bike"
             >
               {sampleBikes[bike]}
@@ -756,7 +760,9 @@ function Asking() {
             <p className="text-muted">Answer: {answer}</p>
             <MenuList
               label="Confirm demo"
-              onSelect={() => setOpen(true)}
+              onSelect={() => {
+                setOpen(true);
+              }}
               orientation="horizontal"
               size="sm"
             >

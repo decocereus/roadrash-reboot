@@ -170,7 +170,9 @@ export function RouteBoardScreen({
             <RoadCard
               key={each.road.id}
               mode={mode}
-              onPick={() => onPick({ ...pick, roadId: each.road.id })}
+              onPick={() => {
+                onPick({ ...pick, roadId: each.road.id });
+              }}
               selected={each.road.id === status.road.id}
               status={each}
               tilt={tilts[index] ?? 0}
@@ -209,9 +211,12 @@ export function RouteBoardScreen({
             {quick && (
               <MenuStepper
                 label="Level"
-                onStep={(step) =>
-                  onPick({ ...pick, level: stepped(reached, pick.level, step) })
-                }
+                onStep={(step) => {
+                  onPick({
+                    ...pick,
+                    level: stepped(reached, pick.level, step),
+                  });
+                }}
                 value="level"
               >
                 {pick.level}
@@ -220,9 +225,12 @@ export function RouteBoardScreen({
             {quick && (
               <MenuStepper
                 label="Bike"
-                onStep={(step) =>
-                  onPick({ ...pick, bikeId: stepped(owned, pick.bikeId, step) })
-                }
+                onStep={(step) => {
+                  onPick({
+                    ...pick,
+                    bikeId: stepped(owned, pick.bikeId, step),
+                  });
+                }}
                 value="bike"
               >
                 {bikeName(pick.bikeId)}

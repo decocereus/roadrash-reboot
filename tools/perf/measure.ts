@@ -4,7 +4,7 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import { benchWindow } from "../../apps/web/src/career/bench-window.ts";
 import {
@@ -232,7 +232,7 @@ const readOptions = (): Options => {
       worst: { default: "5", type: "string" },
     },
   });
-  if (!values.url) {
+  if (values.url === undefined || values.url === "") {
     throw new Error(
       "Pass --url, for example http://localhost:1352/?stress&ratio=2"
     );
@@ -266,8 +266,8 @@ const readOptions = (): Options => {
   };
 };
 
-const currentTick = (page: Session): Promise<number> =>
-  evaluate(
+const currentTick = async (page: Session): Promise<number> =>
+  await evaluate(
     page,
     "globalThis.__rushlineProfile ? globalThis.__rushlineProfile.info().tick : -1",
     Schema.Number
@@ -286,7 +286,7 @@ const waitForTick = async (
     throw new Error(`The race never reached tick ${tick}; it is at ${now}.`);
   }
   await sleep(POLL_MS);
-  return waitForTick(page, tick, deadline);
+  return await waitForTick(page, tick, deadline);
 };
 
 const waitForCountdown = async (
@@ -304,7 +304,7 @@ const waitForCountdown = async (
     throw new Error("The race never held a countdown.");
   }
   await sleep(POLL_MS);
-  return waitForCountdown(page, deadline);
+  await waitForCountdown(page, deadline);
 };
 
 const afterGreenLight = (frames: readonly Frame[], from: number): Frame[] => {
@@ -333,7 +333,7 @@ const shoot = async (
     options.out,
     `${options.label}-run${run}-tick${reached}.png`
   );
-  await writeFile(file, Buffer.from(data, "base64"));
+  await writeFile(file, data, { encoding: "base64" });
   return [file, ...(await shoot(page, options, run, rest, deadline))];
 };
 
@@ -367,7 +367,9 @@ const startTrace = async (
 
 const stopTrace = async (page: Session) => {
   const { promise: complete, resolve } = Promise.withResolvers<boolean>();
-  page.on("Tracing.tracingComplete", Schema.Unknown, () => resolve(true));
+  page.on("Tracing.tracingComplete", Schema.Unknown, () => {
+    resolve(true);
+  });
   await page.send("Tracing.end");
   await complete;
 };
@@ -441,8 +443,8 @@ const stallsOf = (
     });
 };
 
-const pageClock = (page: Session): Promise<number> =>
-  evaluate(
+const pageClock = async (page: Session): Promise<number> =>
+  await evaluate(
     page,
     `(console.timeStamp(${JSON.stringify(clockMark)}), performance.now())`,
     Schema.Number
@@ -678,7 +680,7 @@ const runAll = async (
   }
   const result = await measureOnce(options, run);
   printRun(result);
-  return runAll(options, run + 1, [...done, result]);
+  return await runAll(options, run + 1, [...done, result]);
 };
 
 const main = async () => {

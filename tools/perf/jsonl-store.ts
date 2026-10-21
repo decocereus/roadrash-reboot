@@ -1,7 +1,7 @@
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import type {
   SaveResult,

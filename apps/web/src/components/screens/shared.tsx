@@ -62,16 +62,15 @@ export function useEscape(run: () => void, enabled = true): void {
     latest.current = run;
   }, [run]);
   useEffect(() => {
-    if (!enabled) {
-      return;
-    }
     const pressed = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape" && !event.repeat) {
         event.preventDefault();
         latest.current();
       }
     };
-    window.addEventListener("keydown", pressed);
+    if (enabled) {
+      window.addEventListener("keydown", pressed);
+    }
     return () => {
       window.removeEventListener("keydown", pressed);
     };

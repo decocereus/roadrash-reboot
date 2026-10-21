@@ -7,6 +7,7 @@ import { paintPrimitives } from "./assets.ts";
 import type { Assets, Palette, PoseName, RiderAsset } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
+import { isSkinnedMesh } from "./meshes.ts";
 
 export type RiderPose =
   | "seated"
@@ -523,7 +524,7 @@ export const createRiderFigure = (
 
   const skinned: THREE.SkinnedMesh[] = [];
   model.traverse((node) => {
-    if (node instanceof THREE.SkinnedMesh) {
+    if (isSkinnedMesh(node)) {
       skinned.push(node);
     }
   });

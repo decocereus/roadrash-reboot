@@ -41,17 +41,16 @@ function PreRace({
   const [plan] = useState(() => planFor(career, entry));
   const [prepared, setPrepared] = useState(false);
   useEffect(() => {
-    if (!ready) {
-      return;
-    }
     let current = true;
-    void onPrepare(plan)
-      .catch(() => null)
-      .then(() => {
-        if (current) {
-          setPrepared(true);
-        }
-      });
+    if (ready) {
+      void onPrepare(plan)
+        .catch(() => null)
+        .then(() => {
+          if (current) {
+            setPrepared(true);
+          }
+        });
+    }
     return () => {
       current = false;
     };
@@ -60,7 +59,9 @@ function PreRace({
     <PreRaceScreen
       career={career}
       onBack={onBack}
-      onStart={() => onStart(plan)}
+      onStart={() => {
+        onStart(plan);
+      }}
       plan={plan}
       ready={ready && prepared}
     />
@@ -79,10 +80,12 @@ function CareerScreens({
     return (
       <ClubhouseScreen
         career={career}
-        onEnvelope={(take) =>
-          flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career))
-        }
-        onGarage={() => flow.go({ screen: "garage" })}
+        onEnvelope={(take) => {
+          flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
+        }}
+        onGarage={() => {
+          flow.go({ screen: "garage" });
+        }}
         onRouteBoard={() => {
           flow.setPick({
             ...flow.pick,
@@ -90,7 +93,9 @@ function CareerScreens({
           });
           flow.go({ mode: "career", screen: "routeBoard" });
         }}
-        onTitle={() => flow.go(title)}
+        onTitle={() => {
+          flow.go(title);
+        }}
       />
     );
   }
@@ -98,7 +103,9 @@ function CareerScreens({
     return (
       <GarageScreen
         career={career}
-        onBack={() => flow.go(clubhouse)}
+        onBack={() => {
+          flow.go(clubhouse);
+        }}
         onTrade={flow.commit}
       />
     );
@@ -107,20 +114,31 @@ function CareerScreens({
     return (
       <WreckedScreen
         career={career}
-        onPay={() => flow.payRepair(view.outcome)}
+        onPay={() => {
+          flow.payRepair(view.outcome);
+        }}
         outcome={view.outcome}
       />
     );
   }
   if (view.screen === "ending") {
-    return <EndingScreen career={career} onTitle={() => flow.go(title)} />;
+    return (
+      <EndingScreen
+        career={career}
+        onTitle={() => {
+          flow.go(title);
+        }}
+      />
+    );
   }
   if (view.screen === "gameOver") {
     return (
       <GameOverScreen
         career={career}
         onNewCareer={flow.newCareer}
-        onTitle={() => flow.go(title)}
+        onTitle={() => {
+          flow.go(title);
+        }}
       />
     );
   }
@@ -142,25 +160,41 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
     return (
       <TitleScreen
         failure={flow.failure}
-        onContinue={() => career && flow.go(homeOf(career))}
+        onContinue={() => {
+          if (career) {
+            flow.go(homeOf(career));
+          }
+        }}
         onNewCareer={flow.newCareer}
-        onQuickRace={() => flow.go({ mode: "quick", screen: "routeBoard" })}
+        onQuickRace={() => {
+          flow.go({ mode: "quick", screen: "routeBoard" });
+        }}
         onStartOver={flow.eraseSave}
         save={flow.save}
       />
     );
   }
   if (view.screen === "intro") {
-    return <IntroScreen onDone={() => flow.go(clubhouse)} />;
+    return (
+      <IntroScreen
+        onDone={() => {
+          flow.go(clubhouse);
+        }}
+      />
+    );
   }
   if (view.screen === "routeBoard") {
     return (
       <RouteBoardScreen
         career={career}
         mode={view.mode}
-        onBack={() => flow.go(view.mode === "career" ? clubhouse : title)}
+        onBack={() => {
+          flow.go(view.mode === "career" ? clubhouse : title);
+        }}
         onPick={flow.setPick}
-        onRace={() => flow.preRace(view.mode, flow.pick.roadId)}
+        onRace={() => {
+          flow.preRace(view.mode, flow.pick.roadId);
+        }}
         pick={flow.pick}
         ready={flow.ready}
       />
@@ -171,7 +205,9 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
       <PreRace
         career={career}
         entry={view.entry}
-        onBack={() => flow.go({ mode: view.entry.mode, screen: "routeBoard" })}
+        onBack={() => {
+          flow.go({ mode: view.entry.mode, screen: "routeBoard" });
+        }}
         onPrepare={flow.prepare}
         onStart={flow.start}
         ready={flow.ready}
@@ -181,7 +217,9 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
   if (view.screen === "busted") {
     return (
       <BustedScreen
-        onPay={() => flow.go({ report: view.report, screen: "results" })}
+        onPay={() => {
+          flow.go({ report: view.report, screen: "results" });
+        }}
         report={view.report}
       />
     );
@@ -190,8 +228,12 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
     return (
       <ResultsScreen
         canRaceAgain={raceAgainOffered(view.report, career)}
-        onContinue={() => flow.go(afterResults(view.report))}
-        onRaceAgain={() => flow.preRace(view.report.mode, view.report.roadId)}
+        onContinue={() => {
+          flow.go(afterResults(view.report));
+        }}
+        onRaceAgain={() => {
+          flow.preRace(view.report.mode, view.report.roadId);
+        }}
         repeatRun={
           view.report.ledger !== null &&
           career?.qualified[career.level][view.report.roadId] !== undefined
@@ -205,7 +247,9 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
     return (
       <LevelUpScreen
         levelUp={view.report.ledger.levelUp}
-        onDone={() => flow.go(clubhouse)}
+        onDone={() => {
+          flow.go(clubhouse);
+        }}
       />
     );
   }
@@ -227,7 +271,9 @@ function RaceScreens({ flow }: { readonly flow: Flow }) {
       />
       {finish && (
         <FinishBanner
-          onContinue={() => flow.go({ report: finish, screen: "results" })}
+          onContinue={() => {
+            flow.go({ report: finish, screen: "results" });
+          }}
           report={finish}
         />
       )}
@@ -236,8 +282,12 @@ function RaceScreens({ flow }: { readonly flow: Flow }) {
           career={flow.career}
           feed={flow.feed}
           onMute={flow.mute}
-          onQuit={() => flow.quit(view.plan)}
-          onRestart={() => flow.start(view.plan)}
+          onQuit={() => {
+            flow.quit(view.plan);
+          }}
+          onRestart={() => {
+            flow.start(view.plan);
+          }}
           onResume={flow.resume}
           plan={view.plan}
         />

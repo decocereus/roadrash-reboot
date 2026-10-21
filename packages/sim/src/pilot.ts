@@ -1143,7 +1143,7 @@ const tally = (
   touched.carAhead = false;
   for (let index = 0; index < obstructions.length; index += 1) {
     const obstruction = obstructions[index];
-    if (!obstruction || struck[index]) {
+    if (!obstruction || struck[index] === true) {
       continue;
     }
     let meets = reached >= obstruction.start && reached <= obstruction.end;
@@ -1373,7 +1373,7 @@ const chooseLine = (
   const threats: (Threat | undefined)[] = [];
   const checked: boolean[] = [];
   const threatIn = (index: number): Threat | undefined => {
-    if (!checked[index]) {
+    if (checked[index] !== true) {
       checked[index] = true;
       threats[index] = laneThreat(state, riderIndex, rider, lanes[index] ?? 0);
     }
@@ -1689,7 +1689,7 @@ const copAim = (
     return { speed: 0, x: cop.x };
   }
   const target = state.riders[cop.chase];
-  const offDuty = !(target || onBeat(state, cop));
+  const offDuty = target === undefined && !onBeat(state, cop);
   if (offDuty || cop.s > track.length - PATROL_END_MARGIN) {
     const offRoad = cop.x > track.roadHalfWidth + BIKE_HALF_WIDTH;
     return {

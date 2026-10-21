@@ -120,7 +120,7 @@ const isRecord = (value: Field): value is JsonRecord =>
   Object(value) === value && !Array.isArray(value);
 
 const isText = (value: Field): value is string =>
-  Object(value) !== value && value === String(value);
+  !isRecord(value) && !Array.isArray(value) && value === String(value);
 
 interface Reader {
   readonly problems: SaveError[];
@@ -723,10 +723,11 @@ const careerOf = (reader: Reader, save: JsonRecord): CareerState => {
 export const serialiseCareer = (career: CareerState): string =>
   JSON.stringify(career);
 
+const parseJson: (text: string) => Json = JSON.parse;
+
 const jsonOf = (text: string): Field => {
   try {
-    const parsed: Json = JSON.parse(text);
-    return parsed;
+    return parseJson(text);
   } catch {
     return undefined;
   }

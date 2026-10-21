@@ -50,11 +50,29 @@ export function PauseScreen({
       run: onMute,
       trailing: hud.muted ? "Off" : "On",
     },
-    { id: "settings", label: "Settings", run: () => setAdjusting(true) },
-    { id: "quit", label: "Quit race", run: () => setAsking(true) },
+    {
+      id: "settings",
+      label: "Settings",
+      run: () => {
+        setAdjusting(true);
+      },
+    },
+    {
+      id: "quit",
+      label: "Quit race",
+      run: () => {
+        setAsking(true);
+      },
+    },
   ];
   if (adjusting) {
-    return <SettingsScreen onBack={() => setAdjusting(false)} />;
+    return (
+      <SettingsScreen
+        onBack={() => {
+          setAdjusting(false);
+        }}
+      />
+    );
   }
   return (
     <Screen className="bg-ink/60">
@@ -87,7 +105,9 @@ export function PauseScreen({
         <Confirm
           defaultValue="keep"
           label="Quit race"
-          onDismiss={() => setAsking(false)}
+          onDismiss={() => {
+            setAsking(false);
+          }}
           onSelect={(value) => {
             setAsking(false);
             if (value === "quit") {

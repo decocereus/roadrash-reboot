@@ -85,6 +85,18 @@ const uniform = (pass: ShaderPass, name: string): THREE.IUniform => {
   return found;
 };
 
+const uniformValue = <Value>(
+  pass: ShaderPass,
+  name: string,
+  kind: abstract new (...args: never[]) => Value
+): Value => {
+  const value: unknown = uniform(pass, name).value;
+  if (!(value instanceof kind)) {
+    throw new TypeError(`The uniform ${name} holds the wrong kind of value.`);
+  }
+  return value;
+};
+
 const variantOf = (object: THREE.Object3D): number => {
   if (object instanceof THREE.InstancedMesh) {
     return 1;
@@ -110,7 +122,7 @@ const byVariantThenMaterial = (
 
 export interface Compiling {
   readonly ready: Promise<null>;
-  readonly stop: () => void;
+  readonly stop?: () => void;
 }
 
 const PROGRAM_POLL_MS = 10;
@@ -118,7 +130,6 @@ const COMPLETION_STATUS_KHR = 0x91_b1;
 
 const compiled: Compiling = {
   ready: Promise.resolve(null),
-  stop: () => null,
 };
 
 const watchPrograms = (renderer: THREE.WebGLRenderer): Compiling => {
@@ -258,7 +269,7 @@ export const createPipeline = (
       scene.updateMatrixWorld();
       lap?.("matrices");
       renderer.shadowMap.needsUpdate = true;
-      uniform(line, "range").value.set(camera.near, camera.far);
+      uniformValue(line, "range", THREE.Vector2).set(camera.near, camera.far);
       scene.overrideMaterial = normalMaterial;
       scene.background = null;
       scene.fog = null;
@@ -291,7 +302,7 @@ export const createPipeline = (
       sceneTarget.setSize(wide, tall);
       inkTarget.setSize(wide, tall);
       bloom.setSize(width * bloomScale, height * bloomScale);
-      uniform(line, "resolution").value.set(wide, tall);
+      uniformValue(line, "resolution", THREE.Vector2).set(wide, tall);
       uniform(line, "width").value =
         LINE_WIDTH * Math.max(1, tall / LINE_REFERENCE_HEIGHT);
     },
@@ -303,8 +314,8 @@ export const createPipeline = (
       bloom.setSize(cssWidth * bloomScale, cssHeight * bloomScale);
     },
     setLook(look) {
-      uniform(line, "ink").value.set(look.ink);
-      uniform(grade, "grade").value.set(...look.grade);
+      uniformValue(line, "ink", THREE.Color).set(look.ink);
+      uniformValue(grade, "grade", THREE.Vector3).set(...look.grade);
       bloom.strength = look.bloom;
     },
     setSamples(samples) {

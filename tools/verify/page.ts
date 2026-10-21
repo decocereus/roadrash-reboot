@@ -2,7 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { Option, Schema } from "effect";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 
 import { summariseTrace, threadNames, traceEvent } from "../perf/analysis.ts";
 import type { TraceEvent, TraceSummary } from "../perf/analysis.ts";
@@ -37,12 +38,12 @@ export const attach = async (state: InstanceState): Promise<Session> => {
   const socket =
     (await pageTarget(state.devtoolsPort, origin)) ??
     (await pageTarget(state.devtoolsPort, "http"));
-  if (!socket) {
+  if (socket === undefined || socket === "") {
     throw new Error(
       `No page in the run's browser on DevTools port ${state.devtoolsPort}. Run rv doctor.`
     );
   }
-  return connect(socket);
+  return await connect(socket);
 };
 
 export const waitFor = async (
@@ -62,7 +63,7 @@ export const waitFor = async (
     throw new Error(`Timed out waiting for ${expression}`);
   }
   await sleep(POLL_MS);
-  return waitFor(page, expression, deadline);
+  return await waitFor(page, expression, deadline);
 };
 
 export const navigate = async (
@@ -109,7 +110,7 @@ export const keyOf = (code: string): KeySpec => {
     return named;
   }
   const letter = /^Key(?<letter>[A-Z])$/u.exec(code)?.groups?.letter;
-  if (letter) {
+  if (letter !== undefined) {
     return {
       key: letter.toLowerCase(),
       keyCode: letter.codePointAt(0) ?? 0,
@@ -118,7 +119,7 @@ export const keyOf = (code: string): KeySpec => {
     };
   }
   const digit = /^Digit(?<digit>\d)$/u.exec(code)?.groups?.digit;
-  if (digit) {
+  if (digit !== undefined) {
     return {
       key: digit,
       keyCode: digit.codePointAt(0) ?? 0,
@@ -165,15 +166,15 @@ export const press = async (
 ): Promise<void> => {
   const specs = codes.map((code) => [code, keyOf(code)] as const);
   await Promise.all(
-    specs.map(([code, spec]) =>
-      page.send("Input.dispatchKeyEvent", keyDown(code, spec))
-    )
+    specs.map(async ([code, spec]) => {
+      await page.send("Input.dispatchKeyEvent", keyDown(code, spec));
+    })
   );
   await sleep(holdMs);
   await Promise.all(
-    specs.map(([code, spec]) =>
-      page.send("Input.dispatchKeyEvent", keyUp(code, spec))
-    )
+    specs.map(async ([code, spec]) => {
+      await page.send("Input.dispatchKeyEvent", keyUp(code, spec));
+    })
   );
 };
 
@@ -213,9 +214,10 @@ export const click = async (
 ): Promise<string> => {
   const target = await evaluate(page, findControl(text, within), clickTarget);
   if (target.error !== undefined || target.x === undefined) {
-    const seen = target.seen?.length
-      ? `; on screen: ${target.seen.join(" | ")}`
-      : "";
+    const seen =
+      target.seen !== undefined && target.seen.length > 0
+        ? `; on screen: ${target.seen.join(" | ")}`
+        : "";
     throw new Error(`${target.error ?? "no target"}${seen}`);
   }
   const at = { x: target.x, y: target.y ?? 0 };
@@ -248,7 +250,7 @@ export const screenshot = async (
     { format: "png" },
     captured
   );
-  await writeFile(file, Buffer.from(data, "base64"));
+  await writeFile(file, data, { encoding: "base64" });
   return file;
 };
 
@@ -279,6 +281,13 @@ const axTree = Schema.Struct({
 
 type AxNode = (typeof axTree.Type)["nodes"][number];
 
+const isText = Schema.is(Schema.String);
+
+const axText = (field: AxNode["role"]): string => {
+  const value = field?.value;
+  return isText(value) ? value : "";
+};
+
 const QUIET_ROLES = new Set([
   "generic",
   "none",
@@ -297,8 +306,8 @@ const STATE_PROPERTIES = new Set([
 ]);
 
 const describeNode = (node: AxNode): string => {
-  const role = String(node.role?.value ?? "");
-  const name = String(node.name?.value ?? "").trim();
+  const role = axText(node.role);
+  const name = axText(node.name).trim();
   const flags = (node.properties ?? [])
     .filter(
       (each) =>
@@ -325,8 +334,8 @@ export const ariaSnapshot = async (
   const byId = new Map(nodes.map((node) => [node.nodeId, node]));
   const lines: string[] = [];
   const walk = (node: AxNode, depth: number, named: string) => {
-    const role = String(node.role?.value ?? "");
-    const name = String(node.name?.value ?? "").trim();
+    const role = axText(node.role);
+    const name = axText(node.name).trim();
     const repeated = role === "StaticText" && named.includes(name);
     const shown = !(node.ignored || QUIET_ROLES.has(role) || repeated);
     if (shown) {
@@ -374,7 +383,8 @@ export const screencast = async (
     writes.push(
       writeFile(
         path.join(dir, `frame-${String(index).padStart(4, "0")}.jpg`),
-        Buffer.from(frame.data, "base64")
+        frame.data,
+        { encoding: "base64" }
       )
     );
     void page.send("Page.screencastFrameAck", { sessionId: frame.sessionId });
@@ -461,7 +471,9 @@ export const trace = async (
     raw.push(...value);
   });
   const { promise: complete, resolve } = Promise.withResolvers<boolean>();
-  page.on("Tracing.tracingComplete", Schema.Unknown, () => resolve(true));
+  page.on("Tracing.tracingComplete", Schema.Unknown, () => {
+    resolve(true);
+  });
   await page.send("Tracing.start", {
     traceConfig: { includedCategories: [...TRACE_CATEGORIES] },
     transferMode: "ReportEvents",

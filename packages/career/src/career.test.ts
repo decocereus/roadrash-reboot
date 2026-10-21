@@ -1329,20 +1329,28 @@ describe("a bust", () => {
     expect(outcome).toMatchObject({
       arrest: {
         fine: 400,
-        km: expect.closeTo(0.2, 1),
         officer: "wendell-haverty",
         weapon: "chain",
       },
       place: 15,
       result: "busted",
     });
-    expect(settled.career.lastResult?.summary.bust).toStrictEqual({
-      fine: 400,
-      km: outcome.arrest?.km,
-      line: bustedLine("wendell-haverty", race.setup.seed),
-      officer: "wendell-haverty",
-      officerName: "Deputy Wendell Haverty",
-      weapon: "chain",
+    expect(outcome.arrest?.km).toBeCloseTo(0.2, 1);
+    expect({
+      bust: settled.career.lastResult?.summary.bust,
+      busts: settled.career.record.busts,
+      weapon: settled.career.weapon,
+    }).toStrictEqual({
+      bust: {
+        fine: 400,
+        km: outcome.arrest?.km,
+        line: bustedLine("wendell-haverty", race.setup.seed),
+        officer: "wendell-haverty",
+        officerName: "Deputy Wendell Haverty",
+        weapon: "chain",
+      },
+      busts: 1,
+      weapon: "none",
     });
     expect(ledgerOf(settled)).toMatchObject({
       cashAfter: 1100,
@@ -1350,10 +1358,6 @@ describe("a bust", () => {
       prize: 0,
       qualified: false,
     });
-    expect([settled.career.weapon, settled.career.record.busts]).toStrictEqual([
-      "none",
-      1,
-    ]);
     expect(officerLines["wendell-haverty"]).toContain(
       bustedLine("wendell-haverty", race.setup.seed)
     );
@@ -1520,8 +1524,10 @@ const withField = (node: Json, path: readonly string[], value: Json): Json => {
   return { ...node, [key]: withField(node[key] ?? null, rest, value) };
 };
 
+const parseJson: (text: string) => Json = JSON.parse;
+
 const corrupted = (career: CareerState, path: string, value: Json): string => {
-  const save: Json = JSON.parse(serialiseCareer(career));
+  const save = parseJson(serialiseCareer(career));
   return JSON.stringify(withField(save, path.split("."), value));
 };
 

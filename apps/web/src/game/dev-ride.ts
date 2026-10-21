@@ -92,7 +92,7 @@ export const devRideFrom = (search: string): DevRide => {
 
   return {
     holds: (race) => {
-      if (!holdOn || holdTicks === SETTLED) {
+      if (holdOn === null || holdOn === "" || holdTicks === SETTLED) {
         return false;
       }
       if (holdTicks === WATCHING && seen(race)) {
@@ -146,7 +146,7 @@ export const devRideFrom = (search: string): DevRide => {
       }
     },
     whenReleased: (resume) => {
-      if (!holdOn) {
+      if (holdOn === null || holdOn === "") {
         return;
       }
       Reflect.set(globalThis, "__rushlineRelease", () => {

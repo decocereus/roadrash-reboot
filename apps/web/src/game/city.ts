@@ -8,6 +8,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { CYAN, MAGENTA, ORANGE, RED, YELLOW } from "./looks.ts";
+import { isMesh } from "./meshes.ts";
 import { facadeTexture, pick, shopTexture, signAtlas } from "./textures.ts";
 import type { SignFrame } from "./textures.ts";
 
@@ -559,7 +560,7 @@ export const createCity = (track: Track, shading: Shading): City => {
 
   const mergeOne = (build: Build): void => {
     const next = build.batch.entries().next();
-    if (next.done) {
+    if (next.done === true) {
       return;
     }
     const [key, geometries] = next.value;
@@ -629,7 +630,7 @@ export const createCity = (track: Track, shading: Shading): City => {
     }
     group.remove(chunk);
     chunk.traverse((node) => {
-      if (node instanceof THREE.Mesh) {
+      if (isMesh(node)) {
         node.geometry.dispose();
       }
     });

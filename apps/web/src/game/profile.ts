@@ -189,7 +189,7 @@ export const createProfiler = (
     if (!gpuTimer) {
       return;
     }
-    if (gl.getParameter(GPU_DISJOINT)) {
+    if (gl.getParameter(GPU_DISJOINT) === true) {
       releaseAll();
       return;
     }
@@ -280,7 +280,7 @@ export const createProfiler = (
       drawnEpoch: drawnEpochs[at] ?? 0,
       frame: index,
       geometries: geometries[at] ?? 0,
-      gpu: gpuSeen[at] ? read("gpu") : null,
+      gpu: (gpuSeen[at] ?? 0) === 0 ? null : read("gpu"),
       interval: intervals[at] ?? 0,
       pixelRatio: ratios[at] ?? 0,
       programs: programs[at] ?? 0,

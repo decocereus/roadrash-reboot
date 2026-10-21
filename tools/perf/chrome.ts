@@ -1,12 +1,13 @@
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
+import type { SpawnOptionsWithoutStdio } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { text } from "node:stream/consumers";
 import { setTimeout as sleep } from "node:timers/promises";
-import { promisify } from "node:util";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import { connect } from "./cdp.ts";
 import type { Session } from "./cdp.ts";
@@ -46,7 +47,27 @@ export const browserNamed = (name: string): BrowserChoice => {
 const STARTUP_ATTEMPTS = 150;
 const STARTUP_POLL_MS = 100;
 
-const run = promisify(execFile);
+export interface CommandOutput {
+  readonly stderr: string;
+  readonly stdout: string;
+}
+
+export const run = async (
+  file: string,
+  args: readonly string[],
+  options: SpawnOptionsWithoutStdio = {}
+): Promise<CommandOutput> => {
+  const child = spawn(file, args, options);
+  const [stdout, stderr] = await Promise.all([
+    text(child.stdout),
+    text(child.stderr),
+    once(child, "close"),
+  ]);
+  if (child.exitCode !== 0) {
+    throw new Error(`Command failed: ${[file, ...args].join(" ")}\n${stderr}`);
+  }
+  return { stderr, stdout };
+};
 
 export interface Viewport {
   readonly width: number;
@@ -122,7 +143,7 @@ const pageSocket = async (port: number, attempt: number): Promise<string> => {
   }
   await sleep(STARTUP_POLL_MS);
   const page = await pageTarget(port);
-  return page ?? pageSocket(port, attempt + 1);
+  return page ?? (await pageSocket(port, attempt + 1));
 };
 
 export const portAnswers = async (port: number): Promise<boolean> => {
@@ -161,7 +182,7 @@ const awaitListener = async (
     return pid;
   }
   await sleep(STARTUP_POLL_MS);
-  return awaitListener(port, attempt + 1);
+  return await awaitListener(port, attempt + 1);
 };
 
 export const awaitPortClosed = async (
@@ -175,7 +196,7 @@ export const awaitPortClosed = async (
     return false;
   }
   await sleep(STARTUP_POLL_MS);
-  return awaitPortClosed(port, attempt + 1);
+  return await awaitPortClosed(port, attempt + 1);
 };
 
 export const startInBackground = async (
@@ -184,7 +205,7 @@ export const startInBackground = async (
   port: number
 ): Promise<number> => {
   await run("open", ["-g", "-n", "-a", browser.app, "--args", ...flags]);
-  return awaitListener(port, 0);
+  return await awaitListener(port, 0);
 };
 
 const launchHeadless = (

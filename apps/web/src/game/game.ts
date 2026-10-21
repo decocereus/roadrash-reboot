@@ -64,6 +64,7 @@ import type {
   RacePlan,
 } from "./hud.ts";
 import { createControls } from "./input.ts";
+import { isMesh } from "./meshes.ts";
 import { createPacer, createRefreshMeter } from "./pacer.ts";
 import { BLOOM_SCALE, createPipeline, SAMPLES } from "./post.ts";
 import type { Compiling } from "./post.ts";
@@ -415,7 +416,7 @@ const revealAll = (root: THREE.Object3D): (() => void) => {
 
 const dropGeometry = (root: THREE.Object3D): void => {
   root.traverse((node) => {
-    if (node instanceof THREE.Mesh) {
+    if (isMesh(node)) {
       node.geometry.dispose();
     }
   });
@@ -719,7 +720,7 @@ export async function createGame(
       return;
     }
     clearTimeout(job.timer);
-    job.compiling.stop();
+    job.compiling.stop?.();
     if (!alive || job.load !== loads) {
       job.done(false);
       return;
@@ -745,7 +746,7 @@ export async function createGame(
     warmUp();
   };
 
-  const warmSoon = (): Promise<boolean> => {
+  const warmSoon = async (): Promise<boolean> => {
     loads += 1;
     abandonCompiles();
     warming = true;
@@ -766,7 +767,7 @@ export async function createGame(
     void compiling.ready.then(() => {
       finishCompile(job);
     });
-    return promise;
+    return await promise;
   };
 
   const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
@@ -835,9 +836,10 @@ export async function createGame(
     draw(0, 0);
   };
 
-  const prepare = (next: RacePlan): Promise<void> => {
+  const prepare = async (next: RacePlan): Promise<void> => {
     if (prepared === next.setup) {
-      return preparing;
+      await preparing;
+      return;
     }
     plan = null;
     log = null;
@@ -853,7 +855,7 @@ export async function createGame(
     });
     release();
     report();
-    return preparing;
+    await preparing;
   };
 
   const startRace = (next: RacePlan) => {
@@ -1147,7 +1149,7 @@ export async function createGame(
     if (phase !== "attract") {
       react();
     }
-    if (phase === "racing" && devRide?.holds(race)) {
+    if (phase === "racing" && devRide?.holds(race) === true) {
       frozen = true;
     }
     record();

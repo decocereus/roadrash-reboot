@@ -77,7 +77,9 @@ export function createControls(onCommand: (code: string) => void): Controls {
       window.removeEventListener("blur", clear);
     },
     read(seconds, input) {
-      const pad = navigator.getGamepads().find((each) => each?.connected);
+      const pad = navigator
+        .getGamepads()
+        .find((each) => each?.connected === true);
       steer = nextSteer(steer, pad?.axes[0] ?? 0, keySteer(), seconds);
       input.steer = steer;
       input.throttle = Math.max(

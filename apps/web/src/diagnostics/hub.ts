@@ -157,7 +157,13 @@ const createDiagnostics = (): Diagnostics => {
   window.addEventListener(
     "unhandledrejection",
     (event: PromiseRejectionEvent) => {
-      fault("rejection", messageOf(event.reason), "");
+      fault(
+        "rejection",
+        messageOf(
+          event.reason instanceof Error ? event.reason : String(event.reason)
+        ),
+        ""
+      );
     }
   );
   document.addEventListener("visibilitychange", () => {

@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import { HISTOGRAM_EDGES_MS } from "../../packages/telemetry/src/limits.ts";
 import { batchSchema } from "../../packages/telemetry/src/schema.ts";
@@ -467,7 +467,12 @@ const files = names
 const loaded = await Promise.all(files.map(loadSession));
 const worstLimit = Number(options.worst);
 const summaries = loaded
-  .filter((each) => !options.session || each.id.startsWith(options.session))
+  .filter(
+    (each) =>
+      options.session === undefined ||
+      options.session === "" ||
+      each.id.startsWith(options.session)
+  )
   .map((each) => ({
     parts: each.batches.at(-1)?.parts ?? [],
     summary: summarise(each, worstLimit),
@@ -475,7 +480,9 @@ const summaries = loaded
   .filter(
     (each): each is { parts: string[]; summary: SessionSummary } =>
       each.summary !== null &&
-      (!options.device || each.summary.devices.includes(options.device))
+      (options.device === undefined ||
+        options.device === "" ||
+        each.summary.devices.includes(options.device))
   )
   .toSorted((left, right) =>
     left.summary.lastReceived.localeCompare(right.summary.lastReceived)

@@ -33,7 +33,9 @@ export function FinishBanner({
 }) {
   const [offered, setOffered] = useState(false);
   useEffect(() => {
-    const offer = window.setTimeout(() => setOffered(true), CONTINUE_AFTER);
+    const offer = window.setTimeout(() => {
+      setOffered(true);
+    }, CONTINUE_AFTER);
     const leave = window.setTimeout(onContinue, MOVE_ON_AFTER);
     return () => {
       window.clearTimeout(offer);

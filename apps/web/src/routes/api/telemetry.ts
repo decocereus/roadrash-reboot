@@ -6,7 +6,8 @@ import { ingestTelemetry } from "../../server/telemetry.ts";
 export const Route = createFileRoute("/api/telemetry")({
   server: {
     handlers: {
-      POST: ({ request }) => ingestTelemetry(request, telemetryStore()),
+      POST: async ({ request }) =>
+        await ingestTelemetry(request, telemetryStore()),
     },
   },
 });

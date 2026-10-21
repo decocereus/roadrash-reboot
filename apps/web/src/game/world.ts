@@ -296,11 +296,12 @@ function buildScenery(
 }
 
 function buildSky(look: Look, shading: Shading, seed: number): THREE.Mesh {
-  const mark = look.sun
-    ? shading.key.clone().setY(0).normalize()
-    : MOON_BEARING.clone();
+  const mark =
+    look.sun === null
+      ? MOON_BEARING.clone()
+      : shading.key.clone().setY(0).normalize();
   const turn = Math.atan2(mark.z, -mark.x) / (Math.PI * 2);
-  const elevation = look.sun ? SUN_ELEVATION : MOON_ELEVATION;
+  const elevation = look.sun === null ? MOON_ELEVATION : SUN_ELEVATION;
   const sky = new THREE.Mesh(
     new THREE.SphereGeometry(SKY_RADIUS, 48, 24),
     new THREE.MeshBasicMaterial({

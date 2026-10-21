@@ -168,35 +168,34 @@ const useGame = (
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
     let disposed = false;
-    diagnostics();
-    startModelDownloads();
-    import("../game/game.ts")
-      .then(({ createGame }) =>
-        createGame(canvas, {
+    const load = async (target: HTMLCanvasElement) => {
+      try {
+        const { createGame } = await import("../game/game.ts");
+        const game = await createGame(target, {
           onHud: (hud) => eventsRef.current?.onHud(hud),
           onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
           onSettle: (plan, outcome) =>
             eventsRef.current?.onSettle(plan, outcome),
           onStart: (plan) => eventsRef.current?.onStart(plan),
-        })
-      )
-      .then((game) => {
+        });
         if (disposed) {
           game.dispose();
           return;
         }
         gameRef.current = game;
         setReady(true);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!disposed) {
           setFailure(error instanceof Error ? error.message : String(error));
         }
-      });
+      }
+    };
+    if (canvas) {
+      diagnostics();
+      startModelDownloads();
+      void load(canvas);
+    }
     return () => {
       disposed = true;
       gameRef.current?.dispose();
@@ -209,9 +208,6 @@ const useGame = (
 
 const usePauseKeys = (racing: boolean, pause: () => void): void => {
   useEffect(() => {
-    if (!racing) {
-      return;
-    }
     const pressed = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !event.repeat) {
         event.preventDefault();
@@ -223,8 +219,10 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
         pause();
       }
     };
-    window.addEventListener("keydown", pressed);
-    document.addEventListener("visibilitychange", hidden);
+    if (racing) {
+      window.addEventListener("keydown", pressed);
+      document.addEventListener("visibilitychange", hidden);
+    }
     return () => {
       window.removeEventListener("keydown", pressed);
       document.removeEventListener("visibilitychange", hidden);
@@ -325,7 +323,7 @@ export const useFlow = (): Flow => {
   }, [gameRef, ready, stage]);
 
   const pause = useCallback(() => {
-    if (gameRef.current?.pause()) {
+    if (gameRef.current?.pause() === true) {
       setView((current) =>
         current.screen === "race" ? { ...current, paused: true } : current
       );
@@ -334,7 +332,9 @@ export const useFlow = (): Flow => {
   usePauseKeys(view.screen === "race" && !view.paused && !view.finish, pause);
 
   const prepare = useCallback(
-    (plan: RacePlan) => gameRef.current?.prepare(plan) ?? Promise.resolve(),
+    async (plan: RacePlan) => {
+      await gameRef.current?.prepare(plan);
+    },
     [gameRef]
   );
 

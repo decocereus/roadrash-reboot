@@ -44,7 +44,13 @@ export function IntroScreen({ onDone }: { readonly onDone: () => void }) {
             {
               id: "next",
               label: last ? "To the Lowside" : "Next",
-              run: () => (last ? onDone() : setShown(shown + 1)),
+              run: () => {
+                if (last) {
+                  onDone();
+                } else {
+                  setShown(shown + 1);
+                }
+              },
             },
           ]}
           label="Introduction"

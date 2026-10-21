@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 export const traceEvent = Schema.Struct({
   args: Schema.optionalKey(
@@ -16,6 +16,8 @@ export const traceEvent = Schema.Struct({
 });
 
 export type TraceEvent = typeof traceEvent.Type;
+
+const isText = Schema.is(Schema.String);
 
 const GC_NAMES = new Set(["MinorGC", "MajorGC"]);
 const CLOCK_MARK = "rushline-clock";
@@ -97,15 +99,17 @@ export const threadNames = (
   const processes = new Map<number, string>();
   for (const event of events) {
     if (event.name === "process_name") {
-      processes.set(event.pid, String(event.args?.name ?? event.pid));
+      const name = event.args?.name;
+      processes.set(event.pid, isText(name) ? name : String(event.pid));
     }
   }
   const threads = new Map<string, string>();
   for (const event of events) {
     if (event.name === "thread_name") {
+      const name = event.args?.name;
       threads.set(
         `${event.pid}:${event.tid}`,
-        `${processes.get(event.pid) ?? event.pid}/${String(event.args?.name ?? event.tid)}`
+        `${processes.get(event.pid) ?? event.pid}/${isText(name) ? name : String(event.tid)}`
       );
     }
   }
@@ -283,7 +287,7 @@ const originalOf = (
   const lines = loaded.map.sourcesContent?.[found.source]?.split("\n") ?? [];
   const text = lines[found.line]?.trim() ?? "";
   const name = loaded.map.names[found.name];
-  return `${source}:${found.line + 1}${name ? ` ${name}` : ""}  ${text.slice(0, 70)}`;
+  return `${source}:${found.line + 1}${name !== undefined && name !== "" ? ` ${name}` : ""}  ${text.slice(0, 70)}`;
 };
 
 export interface HotFunction {
@@ -351,7 +355,10 @@ export const hottest = async (
         : null;
     const file = frame?.url.split("/").at(-1) ?? "";
     return {
-      name: frame?.functionName || "(anonymous)",
+      name:
+        frame === undefined || frame.functionName === ""
+          ? "(anonymous)"
+          : frame.functionName,
       selfMs,
       share: busyMs > 0 ? selfMs / busyMs : 0,
       where: original ?? `${file}:${(frame?.lineNumber ?? 0) + 1}`,

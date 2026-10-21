@@ -2,7 +2,8 @@ import { MAX_REQUEST_BYTES } from "@racer/telemetry/limits";
 import { decodeBatchEffect } from "@racer/telemetry/schema";
 import type { Ack } from "@racer/telemetry/schema";
 import type { TelemetryStore } from "@racer/telemetry/store";
-import { Effect } from "effect";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 
 type Refusal =
   | { readonly _tag: "TooLarge"; readonly bytes: number }
@@ -12,6 +13,10 @@ type Refusal =
   | { readonly _tag: "StoreFailed"; readonly issue: string };
 
 const ISSUE_LENGTH = 600;
+
+const decodeJson = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(Schema.Unknown)
+);
 
 const statusOf = {
   Invalid: 400,
@@ -40,7 +45,7 @@ const readBody = (request: Request) =>
     }
     const text = yield* Effect.tryPromise({
       catch: (): Refusal => ({ _tag: "NotJson" }),
-      try: () => request.text(),
+      try: async () => await request.text(),
     });
     const bytes = new TextEncoder().encode(text).length;
     if (bytes > MAX_REQUEST_BYTES) {
@@ -55,10 +60,9 @@ const ingest = (request: Request, store: TelemetryStore | null) =>
       return yield* Effect.fail<Refusal>({ _tag: "NoStore" });
     }
     const text = yield* readBody(request);
-    const value = yield* Effect.try({
-      catch: (): Refusal => ({ _tag: "NotJson" }),
-      try: () => JSON.parse(text),
-    });
+    const value = yield* decodeJson(text).pipe(
+      Effect.mapError((): Refusal => ({ _tag: "NotJson" }))
+    );
     const batch = yield* decodeBatchEffect(value).pipe(
       Effect.mapError((error): Refusal => ({
         _tag: "Invalid",
@@ -74,7 +78,7 @@ const ingest = (request: Request, store: TelemetryStore | null) =>
         _tag: "StoreFailed",
         issue: String(error).slice(0, ISSUE_LENGTH),
       }),
-      try: () => store.save(batch, line),
+      try: async () => await store.save(batch, line),
     });
     const ack: Ack = {
       batchId: batch.batchId,
@@ -84,11 +88,11 @@ const ingest = (request: Request, store: TelemetryStore | null) =>
     return ack;
   });
 
-export const ingestTelemetry = (
+export const ingestTelemetry = async (
   request: Request,
   store: TelemetryStore | null
 ): Promise<Response> =>
-  Effect.runPromise(
+  await Effect.runPromise(
     ingest(request, store).pipe(
       Effect.match({
         onFailure: (refusal) => reply(statusOf[refusal._tag], refusal),

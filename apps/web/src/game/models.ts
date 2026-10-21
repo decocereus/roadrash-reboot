@@ -19,13 +19,13 @@ const download = async (url: string): Promise<ArrayBuffer> => {
   if (!response.ok) {
     throw new Error(`The model ${url} answered ${response.status}.`);
   }
-  return response.arrayBuffer();
+  return await response.arrayBuffer();
 };
 
-export const modelBytes = (url: string): Promise<ArrayBuffer> => {
+export const modelBytes = async (url: string): Promise<ArrayBuffer> => {
   const started = downloads.get(url) ?? download(url);
   downloads.set(url, started);
-  return started;
+  return await started;
 };
 
 export const startModelDownloads = (): void => {

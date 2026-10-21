@@ -63,36 +63,44 @@ export function SettingsScreen({ onBack }: { readonly onBack: () => void }) {
       detail: "Auto lowers detail, then holds a steady 30, when frames slip",
       id: "frame-rate",
       label: "Frame rate",
-      run: () =>
-        hub.settings.change({ frameRate: nextRate(settings.frameRate) }),
+      run: () => {
+        hub.settings.change({ frameRate: nextRate(settings.frameRate) });
+      },
       trailing: rateNames[settings.frameRate],
     },
     {
       detail: "Frame rate, frame times, and quality rung in the corner",
       id: "overlay",
       label: "Frame meter",
-      run: () => hub.settings.change({ overlay: !settings.overlay }),
+      run: () => {
+        hub.settings.change({ overlay: !settings.overlay });
+      },
       trailing: onOff(settings.overlay),
     },
     {
       detail: "Keeps frame times, quality changes, and errors from this tab",
       id: "recording",
       label: "Recording",
-      run: () => hub.settings.change({ recording: !settings.recording }),
+      run: () => {
+        hub.settings.change({ recording: !settings.recording });
+      },
       trailing: onOff(settings.recording),
     },
     {
       detail: "Sends the recording to the play server every 30 seconds",
       id: "upload",
       label: "Automatic upload",
-      run: () =>
-        hub.settings.change({ automaticUpload: !settings.automaticUpload }),
+      run: () => {
+        hub.settings.change({ automaticUpload: !settings.automaticUpload });
+      },
       trailing: onOff(settings.automaticUpload),
     },
     {
       id: "device",
       label: "Test device",
-      run: () => hub.settings.change({ device: nextDevice(settings.device) }),
+      run: () => {
+        hub.settings.change({ device: nextDevice(settings.device) });
+      },
       trailing: deviceNames[settings.device],
     },
     {

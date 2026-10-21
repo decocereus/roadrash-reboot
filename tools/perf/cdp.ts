@@ -1,6 +1,6 @@
 import { once } from "node:events";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 const envelope = Schema.Struct({
   error: Schema.optionalKey(Schema.Struct({ message: Schema.String })),
@@ -70,7 +70,7 @@ export const connect = async (url: string): Promise<Session> => {
     waiting.clear();
   });
 
-  const request = (
+  const request = async (
     method: string,
     params: CommandParams
   ): Promise<Envelope> => {
@@ -88,7 +88,7 @@ export const connect = async (url: string): Promise<Session> => {
       },
     });
     socket.send(JSON.stringify({ id, method, params }));
-    return promise;
+    return await promise;
   };
 
   return {
@@ -102,7 +102,9 @@ export const connect = async (url: string): Promise<Session> => {
     on(method, schema, listener) {
       const decode = Schema.decodeUnknownSync(schema);
       const list = listeners.get(method) ?? [];
-      list.push((message) => listener(decode(message.params)));
+      list.push((message) => {
+        listener(decode(message.params));
+      });
       listeners.set(method, list);
     },
     async send(method, params = {}) {

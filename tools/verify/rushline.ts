@@ -4,7 +4,7 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import { connect, evaluate } from "../perf/cdp.ts";
 import type { Session } from "../perf/cdp.ts";
@@ -88,11 +88,11 @@ const print = (line: string) => {
   process.stdout.write(`${line}\n`);
 };
 
-const requireRun = (): Promise<InstanceState> => {
-  if (!values.run) {
+const requireRun = async (): Promise<InstanceState> => {
+  if (values.run === undefined || values.run === "") {
     throw new Error("Pass --run <id>; rv up prints it.");
   }
-  return stateOfRun(values.run);
+  return await stateOfRun(values.run);
 };
 
 const journal = async (state: InstanceState, result: string) => {
@@ -160,7 +160,7 @@ const navigated = Schema.Struct({
 const watch = async () => {
   const state = await requireRun();
   const socket = await pageTarget(state.devtoolsPort, "http");
-  if (!socket) {
+  if (socket === undefined || socket === "") {
     throw new Error("The watcher found no page to attach to.");
   }
   const page = await connect(socket);
@@ -196,7 +196,7 @@ const watch = async () => {
     write(
       `log:${entry.source}`,
       entry.level,
-      `${entry.text}${entry.url ? ` (${entry.url})` : ""}`
+      `${entry.text}${entry.url !== undefined && entry.url !== "" ? ` (${entry.url})` : ""}`
     );
   });
   page.on("Page.frameNavigated", navigated, ({ frame }) => {
@@ -230,7 +230,7 @@ const watcherAttached = async (
     return false;
   }
   await sleep(WATCH_POLL_MS);
-  return watcherAttached(state, attempt + 1);
+  return await watcherAttached(state, attempt + 1);
 };
 
 const launchWatcher = async (state: InstanceState): Promise<InstanceState> => {
@@ -245,7 +245,7 @@ const launchWatcher = async (state: InstanceState): Promise<InstanceState> => {
 };
 
 const serverModeOf = (): ServerMode => {
-  if (values.server) {
+  if (values.server !== undefined && values.server !== "") {
     return "external";
   }
   return values.dev ? "dev" : "preview";
@@ -268,7 +268,7 @@ const teardown = async (state: InstanceState) => {
   print(`helium: ${await stopBrowser(state)}`);
   print(`server: ${await stopServer(state)}`);
   await rm(state.profile, { force: true, recursive: true });
-  if (state.buildDir) {
+  if (state.buildDir !== null && state.buildDir !== "") {
     await rm(state.buildDir, { force: true, recursive: true });
   }
   await rm(statePath(state.slot), { force: true });
@@ -281,7 +281,7 @@ const bringUp = async (state: InstanceState, mode: ServerMode) => {
   await mkdir(state.evidence, { recursive: true });
   await mkdir(state.profile, { recursive: true });
   const built = mode === "preview" ? await build(state) : state;
-  if (built.builtFrom) {
+  if (built.builtFrom !== null && built.builtFrom !== "") {
     print(`built ${built.builtFrom} into ${built.buildDir}`);
   }
   const served = mode === "external" ? built : await startServer(built);
@@ -305,12 +305,12 @@ const bringUp = async (state: InstanceState, mode: ServerMode) => {
 };
 
 const up = async () => {
-  if (values.server) {
+  if (values.server !== undefined && values.server !== "") {
     checkExternal(values.server);
   }
   await ensureStateDir();
   const reclaimed = await Promise.all(
-    Array.from({ length: SLOTS }, (_, slot) => reclaimStale(slot))
+    Array.from({ length: SLOTS }, async (_, slot) => await reclaimStale(slot))
   );
   for (const each of reclaimed.filter(Boolean)) {
     print(`reclaimed stale slot of run ${each}; none of its processes lived`);
@@ -449,12 +449,14 @@ const doctor = async () => {
     process.exitCode = 1;
     return;
   }
-  const facts = await withPage(state, (page) =>
-    evaluate(
-      page,
-      `(() => { const gl = document.createElement("canvas").getContext("webgl2"); const info = gl && gl.getExtension("WEBGL_debug_renderer_info"); return { gl: gl ? String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER)) : "no WebGL 2", href: location.href, profiled: Boolean(globalThis.__rushlineProfile), title: document.title, visibility: document.visibilityState }; })()`,
-      pageFacts
-    )
+  const facts = await withPage(
+    state,
+    async (page) =>
+      await evaluate(
+        page,
+        `(() => { const gl = document.createElement("canvas").getContext("webgl2"); const info = gl && gl.getExtension("WEBGL_debug_renderer_info"); return { gl: gl ? String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER)) : "no WebGL 2", href: location.href, profiled: Boolean(globalThis.__rushlineProfile), title: document.title, visibility: document.visibilityState }; })()`,
+        pageFacts
+      )
   );
   results.push(
     check(
@@ -491,7 +493,7 @@ const doctor = async () => {
 
 const listSlots = async () => {
   const states = await Promise.all(
-    Array.from({ length: SLOTS }, (_, slot) => readState(slot))
+    Array.from({ length: SLOTS }, async (_, slot) => await readState(slot))
   );
   const held = states.filter((each) => each !== null);
   if (held.length === 0) {
@@ -515,7 +517,7 @@ const openPage = async () => {
   const result = await withPage(state, async (page) => {
     await navigate(page, url.href, deadline());
     const loaded = Date.now() - started;
-    if (values.until) {
+    if (values.until !== undefined && values.until !== "") {
       await waitFor(page, expressionFor(values.until), deadline());
       return `loaded in ${loaded} ms; ${values.until} after ${Date.now() - started} ms`;
     }
@@ -528,12 +530,14 @@ const openPage = async () => {
 const jsCommand = async () => {
   const state = await requireRun();
   const expression = rest.join(" ");
-  const value = await withPage(state, (page) =>
-    evaluate(
-      page,
-      `(async () => JSON.stringify(await (${expression})) ?? "undefined")()`,
-      Schema.String
-    )
+  const value = await withPage(
+    state,
+    async (page) =>
+      await evaluate(
+        page,
+        `(async () => JSON.stringify(await (${expression})) ?? "undefined")()`,
+        Schema.String
+      )
   );
   print(value);
   await journal(state, value.slice(0, 2000));
@@ -543,8 +547,9 @@ const waitCommand = async () => {
   const state = await requireRun();
   const expression = expressionFor(rest.join(" "));
   const started = Date.now();
-  const value = await withPage(state, (page) =>
-    waitFor(page, expression, deadline())
+  const value = await withPage(
+    state,
+    async (page) => await waitFor(page, expression, deadline())
   );
   const result = `${value} after ${Date.now() - started} ms`;
   print(result);
@@ -554,7 +559,9 @@ const waitCommand = async () => {
 const pressCommand = async () => {
   const state = await requireRun();
   const hold = Number(values.hold);
-  await withPage(state, (page) => press(page, rest, hold));
+  await withPage(state, async (page) => {
+    await press(page, rest, hold);
+  });
   const result = `pressed ${rest.join("+")} for ${hold} ms`;
   print(result);
   await journal(state, result);
@@ -562,8 +569,9 @@ const pressCommand = async () => {
 
 const clickCommand = async () => {
   const state = await requireRun();
-  const label = await withPage(state, (page) =>
-    click(page, rest.join(" "), values.within)
+  const label = await withPage(
+    state,
+    async (page) => await click(page, rest.join(" "), values.within)
   );
   const result = `clicked ${label}`;
   print(result);
@@ -573,7 +581,7 @@ const clickCommand = async () => {
 const shotCommand = async () => {
   const state = await requireRun();
   const file = evidenceFile(state, `${rest[0] ?? ""}.png`);
-  await withPage(state, (page) => screenshot(page, file));
+  await withPage(state, async (page) => await screenshot(page, file));
   print(file);
   await journal(state, file);
 };
@@ -581,7 +589,10 @@ const shotCommand = async () => {
 const ariaCommand = async () => {
   const state = await requireRun();
   const file = evidenceFile(state, `${rest[0] ?? ""}.aria.txt`);
-  const lines = await withPage(state, (page) => ariaSnapshot(page, file));
+  const lines = await withPage(
+    state,
+    async (page) => await ariaSnapshot(page, file)
+  );
   print(`${file} (${lines} nodes)`);
   print(await readFile(file, "utf-8"));
   await journal(state, file);
@@ -590,8 +601,10 @@ const ariaCommand = async () => {
 const screencastCommand = async () => {
   const state = await requireRun();
   const dir = evidenceFile(state, rest[0] ?? "");
-  const cast = await withPage(state, (page) =>
-    screencast(page, dir, Number(values.seconds), Number(values.every))
+  const cast = await withPage(
+    state,
+    async (page) =>
+      await screencast(page, dir, Number(values.seconds), Number(values.every))
   );
   const result = `${cast.frames} frames in ${cast.seconds} s (${(cast.frames / cast.seconds).toFixed(1)} per s) in ${cast.dir}`;
   print(result);
@@ -601,8 +614,9 @@ const screencastCommand = async () => {
 const traceCommand = async () => {
   const state = await requireRun();
   const file = evidenceFile(state, `${rest[0] ?? ""}.trace.json`);
-  const traced = await withPage(state, (page) =>
-    trace(page, file, Number(values.seconds))
+  const traced = await withPage(
+    state,
+    async (page) => await trace(page, file, Number(values.seconds))
   );
   const { summary } = traced;
   print(
@@ -620,8 +634,9 @@ const traceCommand = async () => {
 const sampleCommand = async () => {
   const state = await requireRun();
   const file = evidenceFile(state, `${rest[0] ?? ""}.sample.json`);
-  const sampled = await withPage(state, (page) =>
-    sample(page, Number(values.seconds))
+  const sampled = await withPage(
+    state,
+    async (page) => await sample(page, Number(values.seconds))
   );
   const { interval } = sampled;
   const result = `ticks ${sampled.fromTick}-${sampled.toTick}: ${sampled.frames} frames, ${sampled.fps.toFixed(1)} fps, frame p50 ${interval.p50.toFixed(1)} p95 ${interval.p95.toFixed(1)} p99 ${interval.p99.toFixed(1)} worst ${interval.max.toFixed(1)} ms, late ${JSON.stringify(sampled.late)}, js ${sampled.jsFrame.mean.toFixed(2)} ms/frame, ${sampled.calls.toFixed(0)} calls, ratio ${sampled.pixelRatios.join(",")}, rung ${sampled.rungs.join(",")}, cpu x${state.cpu}, network ${state.network}`;

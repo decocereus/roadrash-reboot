@@ -2411,15 +2411,12 @@ describe("pacing by the gap to the player", () => {
     }
     player(playerOut).mode = "busted";
     const top = topSpeedOf(riderAt(paced, 1).bike);
-    expect({
-      busted: rideTheRival(playerOut, straight, 40) / top,
-      free: rideTheRival(unpaced, straight, 40) / top,
-      paced: rideTheRival(paced, straight, 40) / top,
-    }).toStrictEqual({
-      busted: expect.closeTo(1, 1),
-      free: expect.closeTo(1, 1),
-      paced: expect.closeTo(0.82, 1),
-    });
+    const bustedShare = rideTheRival(playerOut, straight, 40) / top;
+    const freeShare = rideTheRival(unpaced, straight, 40) / top;
+    const pacedShare = rideTheRival(paced, straight, 40) / top;
+    expect(bustedShare).toBeCloseTo(1, 1);
+    expect(freeShare).toBeCloseTo(1, 1);
+    expect(pacedShare).toBeCloseTo(0.82, 1);
   });
 
   it("a middling rival dropped behind the player takes the bends harder and brakes later, but never beats its bike's top speed", () => {
@@ -2430,9 +2427,6 @@ describe("pacing by the gap to the player", () => {
       pacedPair(quietTrack, unhelped, MIDDLING_SKILL),
       pacedPair(straight, helped, MIDDLING_SKILL),
     ];
-    if (!(onBends && onBendsAlone && onStraight)) {
-      throw new Error("The pacing races were not made.");
-    }
     for (const state of [onBends, onBendsAlone, onStraight]) {
       player(state).s = 2000;
     }

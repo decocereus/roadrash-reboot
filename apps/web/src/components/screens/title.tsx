@@ -94,16 +94,30 @@ export function TitleScreen({
       label: "Multiplayer",
       trailing: SOON,
     },
-    { id: "settings", label: "Settings", run: () => setAdjusting(true) },
+    {
+      id: "settings",
+      label: "Settings",
+      run: () => {
+        setAdjusting(true);
+      },
+    },
   ];
   const career: MenuAction[] =
     save.status === "ready"
-      ? careerActions(save.career, onContinue, () => setAsking(true))
+      ? careerActions(save.career, onContinue, () => {
+          setAsking(true);
+        })
       : save.status === "corrupt"
         ? [{ id: "continue", label: "Start over", run: onStartOver }]
         : [{ id: "continue", label: "Career", run: onNewCareer }];
   if (adjusting) {
-    return <SettingsScreen onBack={() => setAdjusting(false)} />;
+    return (
+      <SettingsScreen
+        onBack={() => {
+          setAdjusting(false);
+        }}
+      />
+    );
   }
   return (
     <Screen className="bg-transparent" enter="fade" scrim="soft">
@@ -140,7 +154,9 @@ export function TitleScreen({
         <Confirm
           defaultValue="keep"
           label="Start over"
-          onDismiss={() => setAsking(false)}
+          onDismiss={() => {
+            setAsking(false);
+          }}
           onSelect={(value) => {
             setAsking(false);
             if (value === "erase") {

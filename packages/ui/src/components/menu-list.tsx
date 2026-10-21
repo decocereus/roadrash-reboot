@@ -285,7 +285,9 @@ function MenuStepper({
         menu.size === "md" ? "text-name" : "text-body leading-tight",
         className
       )}
-      onClick={() => onStep(1)}
+      onClick={() => {
+        onStep(1);
+      }}
       onFocus={(event) => {
         onFocus?.(event);
         menu.choose(value);

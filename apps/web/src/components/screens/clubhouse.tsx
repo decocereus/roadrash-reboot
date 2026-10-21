@@ -159,7 +159,9 @@ export function ClubhouseScreen({
             {beat.envelopeOpen && (
               <button
                 className="rounded-sm"
-                onClick={() => setEnvelope(true)}
+                onClick={() => {
+                  setEnvelope(true);
+                }}
                 type="button"
               >
                 <CorkNote
@@ -291,7 +293,9 @@ export function ClubhouseScreen({
         <Confirm
           defaultValue="leave"
           label="The envelope"
-          onDismiss={() => setEnvelope(false)}
+          onDismiss={() => {
+            setEnvelope(false);
+          }}
           onSelect={(value) => {
             setEnvelope(false);
             onEnvelope(value === "take");
