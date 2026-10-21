@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 
 import * as Schema from "effect/Schema";
-import type { DummyRule, OxlintConfig } from "oxlint";
 
 import config from "../oxlint.config.ts";
+import { ruleLedger } from "./rule-ledger.ts";
 
 const ruleDocs = [
   "docs/coding-standards.md",
@@ -22,26 +22,15 @@ const scripts = new Set(
   Object.keys(manifest(readFileSync("package.json", "utf-8")).scripts)
 );
 
-const isEnabled = (setting: DummyRule | undefined) =>
-  setting === "error" || (Array.isArray(setting) && setting[0] === "error");
-
-const rulesOf = (layer: OxlintConfig) => [
-  layer.rules ?? {},
-  ...(layer.overrides ?? []).map((override) => override.rules ?? {}),
-];
-
-const enabledRules = new Set(
-  [...(config.extends ?? []).flatMap(rulesOf), ...rulesOf(config)]
-    .flatMap((rules) => Object.entries(rules))
-    .filter(([, setting]) => isEnabled(setting))
-    .map(([rule]) => rule)
-);
+const { enabled: enabledRules, exemptions } = ruleLedger(config);
 
 const ruleHeader =
   /^\|\s*Rule\s*\|\s*Check\s*\|\s*Scope\s*\|\s*Exemption\s*\|$/u;
 const checkCell = /^\|[^|]*\|\s*(?<check>[^|]+?)\s*\|/u;
 
-const problems: string[] = [];
+const problems = exemptions.map(
+  (exemption) => `oxlint.config.ts: ${exemption}; fix the code instead`
+);
 const named = new Set<string>();
 let rows = 0;
 
