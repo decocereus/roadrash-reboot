@@ -1,6 +1,6 @@
 # Frame measurement
 
-`measure.ts` drives headless Chrome over the DevTools protocol, waits for a tick window in a race, and prints frame times, the cost of each part of the frame, draw calls, triangles, GC pauses, long tasks, and the WebGL renderer. It uses Node's built-in WebSocket and fetch, and `effect/Schema` from the root dependencies to decode what Chrome sends back. It adds no dependencies.
+`measure.ts` drives headless Chrome over the DevTools protocol, waits for a tick window in a race, and prints frame times, the cost of each part of the frame, draw calls, triangles, GC pauses, long tasks, and the WebGL renderer. The entry reads the flags with `src/measure-options.ts` and runs `src/measure.ts` on Effect. `src/measure-page.ts` waits for ticks, takes the screenshots and runs the trace, `src/measure-model.ts` decodes the page's samples and works out the summary, and `src/measure-report.ts` prints it. `@racer/devtools` launches the browser and owns the DevTools session, `@effect/platform-node` supplies the HTTP client, the WebSocket and the file system, and `effect/Schema` decodes what Chrome sends back.
 
 ## Serve the production build
 
@@ -42,7 +42,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 | `--width`, `--height`, `--scale` | 1512, 860, 2 | Viewport and device scale factor. |
 | `--out` | `tools/perf/results` | Where JSON, traces, and screenshots go. The folder is ignored by git. |
 
-Each run launches `/Applications/Google Chrome.app` with `--headless=new` (or Helium, windowed, with `--browser helium`), a new temporary profile that is deleted afterwards, `--force-device-scale-factor`, `--disable-gpu-vsync --disable-frame-rate-limit` so frames are not capped, and `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`. The summary prints the unmasked renderer string; it should read `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` and never SwiftShader.
+Each run launches `/Applications/Google Chrome.app` with `--headless=new` (or Helium, windowed, with `--browser helium`), a new temporary profile that is deleted when the run ends, fails or is interrupted, `--force-device-scale-factor`, `--disable-gpu-vsync --disable-frame-rate-limit` so frames are not capped, and `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`. The summary prints the unmasked renderer string; it should read `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` and never SwiftShader.
 
 ## The page side
 
@@ -89,6 +89,8 @@ In the game, Settings (from the title or the pause menu) turns on the frame mete
 With recording on, every 30 seconds the page turns its rings into one batch of at most 48 KiB: the frame-interval histogram (8.33, 16.67, 23.33, 33.33, 50, 100, 250, and 1000 ms edges plus overflow), the 32 slowest frames with each part's CPU time, and the events since the last batch. Events are governor changes with the quality before and after and the reason, canvas resizes with their size generation, frames whose drawing a resize cleared before it was presented, unfinished render passes, WebGL context loss, errors with query strings stripped, visibility changes, race start, green, end, crash and quit, and report markers. Batches are numbered per session, sent oldest first, removed only once the collector acknowledges them, retried with backoff, and deduplicated by session and batch number on the server. The queue holds 24 batches and counts what it drops.
 
 ### Read a session
+
+`session.ts` runs `src/session.ts`, which reads the flags and loads the JSONL files. `src/session-summary.ts` works out each summary and `src/session-report.ts` prints it.
 
 ```sh
 node tools/perf/session.ts --dir tools/perf/results/sessions
