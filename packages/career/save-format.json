@@ -1,8 +1,69 @@
 {
   "versions": [
     {
+      "catalogues": {
+        "Bike": [
+          "brack-anvil-1100",
+          "brack-stoker-800",
+          "gutter-pup-250",
+          "halden-kite-500",
+          "halden-meridian-900",
+          "halden-wren-400",
+          "ostra-nera-1000",
+          "ostra-sesta-600",
+          "ostra-sette-750"
+        ],
+        "Level": [1, 2, 3, 4, 5],
+        "Officer": ["dolores-pike", "wendell-haverty"],
+        "Racer": [
+          "agnes-mulcahy",
+          "benny-okafor",
+          "coach-dale-hutto",
+          "dee-santangelo",
+          "felix-aurand",
+          "gus-abernathy",
+          "hollis-thorne",
+          "ines-marchetti",
+          "juno-kade",
+          "lyle-gorski",
+          "mags-dunleavy",
+          "moose-kowalczyk",
+          "orrin-blackwell",
+          "player",
+          "ruth-ann-bixby",
+          "tristan-lux",
+          "wanda-pruitt"
+        ],
+        "Rival": [
+          "agnes-mulcahy",
+          "benny-okafor",
+          "coach-dale-hutto",
+          "dee-santangelo",
+          "felix-aurand",
+          "gus-abernathy",
+          "hollis-thorne",
+          "ines-marchetti",
+          "juno-kade",
+          "lyle-gorski",
+          "mags-dunleavy",
+          "moose-kowalczyk",
+          "orrin-blackwell",
+          "ruth-ann-bixby",
+          "tristan-lux",
+          "wanda-pruitt"
+        ],
+        "Road": [
+          "breakwater-run",
+          "cinder-wash",
+          "hollow-pine-road",
+          "ridge-road",
+          "slag-row"
+        ],
+        "Weapon": ["baton", "chain", "club", "crowbar", "cue", "none", "sign"]
+      },
       "fingerprint": "85048134d378298e38b16035d306e692aa5ab9625507ddefae21d009d6e19883",
-      "version": 2
+      "version": 2,
+      "wireFingerprint": "bc473f979e4f6a49517d2ae3157e352194ca3e064671a877b0d05e33a80984b0"
     }
   ]
 }
