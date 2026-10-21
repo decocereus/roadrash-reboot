@@ -20,6 +20,9 @@ const effectFiles = [
   "packages/career/src/save-result-schema.ts",
   "packages/career/src/save-issues.ts",
   "packages/career/src/save-invariants.ts",
+  "apps/web/src/career/save.ts",
+  "apps/web/src/career/save-storage.ts",
+  "apps/web/src/career/save-storage-error.ts",
 ];
 
 const orchestrationFiles = [
@@ -40,6 +43,9 @@ const orchestrationFiles = [
   "packages/career/src/save-result-schema.ts",
   "packages/career/src/save-issues.ts",
   "packages/career/src/save-invariants.ts",
+  "apps/web/src/career/save.ts",
+  "apps/web/src/career/save-storage.ts",
+  "apps/web/src/career/save-storage-error.ts",
 ];
 
 const libraryFiles = [
@@ -56,6 +62,8 @@ const libraryFiles = [
   "packages/career/src/save-result-schema.ts",
   "packages/career/src/save-issues.ts",
   "packages/career/src/save-invariants.ts",
+  "apps/web/src/career/save-storage.ts",
+  "apps/web/src/career/save-storage-error.ts",
 ];
 
 export default defineConfig({

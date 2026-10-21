@@ -102,7 +102,7 @@ export const noEffectRuntimeRule = defineRule({
     },
     messages: {
       runtime:
-        "`{{name}}` runs an Effect outside an entry point. Return the Effect and let an entry run it: a tool entry such as `tools/verify/rushline.ts`, the `/api/telemetry` route, the browser uploader entry `uploader-runtime.ts`, or a test.",
+        "`{{name}}` runs an Effect outside an entry point. Return the Effect and let an entry run it: a tool entry such as `tools/verify/rushline.ts`, the `/api/telemetry` route, the browser uploader entry `uploader-runtime.ts`, the browser save entry `apps/web/src/career/save.ts`, or a test.",
       runtimeModule:
         "`{{source}}` builds a runtime. Library code returns Effects and leaves running them to the entry points.",
     },

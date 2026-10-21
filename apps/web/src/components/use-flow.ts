@@ -18,13 +18,14 @@ import type { QuickPick, RaceEntry, RaceReport } from "../career/flow.ts";
 import {
   browserStorage,
   careerSeedFrom,
+  commitCareer,
   freshCareer,
   loadCareer,
   randomUnit,
+  saveStateOf,
   startOver,
-  storeCareer,
 } from "../career/save.ts";
-import type { SaveState } from "../career/save.ts";
+import type { CareerLoad, Reset, SaveState } from "../career/save.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { createHudFeed } from "../game/hud.ts";
 import type {
@@ -113,21 +114,22 @@ interface Save {
 
 const useSave = (): Save => {
   const careerRef = useRef<CareerState | null>(null);
+  const seenRef = useRef<CareerLoad | Reset | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
   const [unsaved, setUnsaved] = useState(false);
 
   useEffect(() => {
-    const storage = browserStorage();
-    const loaded = storage ? loadCareer(storage) : null;
-    careerRef.current = loaded?.status === "ready" ? loaded.career : null;
-    setSave(loaded ?? { status: "empty" });
+    const loaded = loadCareer(browserStorage);
+    seenRef.current = loaded;
+    careerRef.current = loaded.status === "ready" ? loaded.career : null;
+    setSave(saveStateOf(loaded));
   }, []);
 
   const commit = useCallback((career: CareerState) => {
     careerRef.current = career;
     setSave({ career, leftRace: null, status: "ready" });
-    const storage = browserStorage();
-    setUnsaved(!(storage && storeCareer(storage, career)));
+    const stored = commitCareer(seenRef.current, browserStorage, career);
+    setUnsaved(stored.status !== "saved");
   }, []);
 
   const settle = useCallback(
@@ -142,8 +144,9 @@ const useSave = (): Save => {
   );
 
   const eraseSave = useCallback(() => {
-    const storage = browserStorage();
-    if (storage && startOver(storage)) {
+    const reset = startOver(browserStorage);
+    if (reset.status === "reset") {
+      seenRef.current = reset;
       careerRef.current = null;
       setSave({ status: "empty" });
     }

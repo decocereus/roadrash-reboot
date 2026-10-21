@@ -4,77 +4,179 @@ import { resumeCareer } from "@racer/career/settle";
 import type { Ledger } from "@racer/career/settle";
 import { newCareer } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
+import * as Effect from "effect/Effect";
+import * as Result from "effect/Result";
+
+import type { SaveStorageFailed } from "./save-storage-error.ts";
+import {
+  acquireStorage,
+  backUpItem,
+  readItem,
+  removeItem,
+  writeItem,
+} from "./save-storage.ts";
+import type { SaveStorage } from "./save-storage.ts";
 
 export const SAVE_KEY = "rushline.career";
 export const BACKUP_KEY = "rushline.career.backup";
 
 const SEED_RANGE = 2 ** 32;
 
-export interface SaveStorage {
-  readonly getItem: (key: string) => string | null;
-  readonly setItem: (key: string, value: string) => void;
-  readonly removeItem: (key: string) => void;
+const failedStatus = {
+  acquire: "unavailable",
+  backup: "writeFailed",
+  read: "readFailed",
+  remove: "writeFailed",
+  write: "writeFailed",
+} as const;
+
+export interface StorageFailure {
+  readonly status: (typeof failedStatus)[SaveStorageFailed["operation"]];
+  readonly failure: SaveStorageFailed;
 }
 
-export type LoadedSave =
+type Persistence =
+  | { readonly status: "unchanged" }
+  | { readonly status: "saved" }
+  | StorageFailure;
+
+export type CareerLoad =
+  | { readonly status: "absent" }
+  | { readonly status: "corrupt"; readonly error: SaveError }
+  | {
+      readonly status: "ready";
+      readonly career: CareerState;
+      readonly leftRace: Ledger | null;
+      readonly persistence: Persistence;
+    }
+  | StorageFailure;
+
+export type Stored =
+  | { readonly status: "saved" }
+  | { readonly status: "blocked" }
+  | StorageFailure;
+
+export type Reset = { readonly status: "reset" } | StorageFailure;
+
+export type SaveState =
   | { readonly status: "empty" }
   | {
       readonly status: "ready";
       readonly career: CareerState;
       readonly leftRace: Ledger | null;
     }
-  | { readonly status: "corrupt"; readonly error: SaveError };
+  | { readonly status: "corrupt"; readonly error: SaveError }
+  | { readonly status: "loading" };
 
-export type SaveState = LoadedSave | { readonly status: "loading" };
+const saved = { status: "saved" } as const;
 
-const readText = (storage: SaveStorage, key: string): string | null => {
-  try {
-    return storage.getItem(key);
-  } catch {
-    return null;
-  }
-};
+const failureOf = (failure: SaveStorageFailed): StorageFailure => ({
+  failure,
+  status: failedStatus[failure.operation],
+});
 
-export const storeCareer = (
+const outcomeOf = <Outcome>(
+  effect: Effect.Effect<Outcome, SaveStorageFailed>
+): Outcome | StorageFailure =>
+  Result.match(Effect.runSync(Effect.result(effect)), {
+    onFailure: failureOf,
+    onSuccess: (outcome) => outcome,
+  });
+
+const writeCareer = (storage: SaveStorage, career: CareerState) =>
+  writeItem(storage, SAVE_KEY, () => serialiseCareer(career));
+
+const resumed = Effect.fn("career.save.resume")(function* resumed(
   storage: SaveStorage,
   career: CareerState
-): boolean => {
-  try {
-    storage.setItem(SAVE_KEY, serialiseCareer(career));
-    return true;
-  } catch {
-    return false;
+) {
+  const settlement = resumeCareer(career);
+  if (!settlement.settled) {
+    return {
+      career,
+      leftRace: null,
+      persistence: { status: "unchanged" },
+      status: "ready",
+    } satisfies CareerLoad;
   }
-};
+  const written = yield* Effect.result(writeCareer(storage, settlement.career));
+  return {
+    career: settlement.career,
+    leftRace: settlement.ledger,
+    persistence: Result.match(written, {
+      onFailure: failureOf,
+      onSuccess: (): Persistence => saved,
+    }),
+    status: "ready",
+  } satisfies CareerLoad;
+});
 
-export const loadCareer = (storage: SaveStorage): LoadedSave => {
-  const text = readText(storage, SAVE_KEY);
+const loaded = Effect.fn("career.save.load")(function* loaded(
+  open: () => SaveStorage
+) {
+  const storage = yield* acquireStorage(open);
+  const text = yield* readItem(storage, SAVE_KEY);
   if (text === null) {
-    return { status: "empty" };
+    return { status: "absent" } satisfies CareerLoad;
   }
   const parsed = parseCareer(text);
   if (!parsed.ok) {
-    return { error: parsed.error, status: "corrupt" };
+    return { error: parsed.error, status: "corrupt" } satisfies CareerLoad;
   }
-  const resumed = resumeCareer(parsed.career);
-  if (!resumed.settled) {
-    return { career: parsed.career, leftRace: null, status: "ready" };
-  }
-  storeCareer(storage, resumed.career);
-  return { career: resumed.career, leftRace: resumed.ledger, status: "ready" };
-};
+  return yield* resumed(storage, parsed.career);
+});
 
-export const startOver = (storage: SaveStorage): boolean => {
-  const text = readText(storage, SAVE_KEY);
-  try {
-    if (text !== null) {
-      storage.setItem(BACKUP_KEY, text);
-    }
-    storage.removeItem(SAVE_KEY);
-    return true;
-  } catch {
-    return false;
+const cleared = Effect.fn("career.save.clear")(function* cleared(
+  open: () => SaveStorage
+) {
+  const storage = yield* acquireStorage(open);
+  const text = yield* readItem(storage, SAVE_KEY);
+  if (text !== null) {
+    yield* backUpItem(storage, BACKUP_KEY, text);
   }
+  yield* removeItem(storage, SAVE_KEY);
+  return { status: "reset" } satisfies Reset;
+});
+
+export const loadCareer = (open: () => SaveStorage): CareerLoad =>
+  outcomeOf(loaded(open));
+
+export const storeCareer = (
+  open: () => SaveStorage,
+  career: CareerState
+): Stored =>
+  outcomeOf(
+    Effect.as(
+      Effect.flatMap(acquireStorage(open), (storage) =>
+        writeCareer(storage, career)
+      ),
+      saved
+    )
+  );
+
+export const startOver = (open: () => SaveStorage): Reset =>
+  outcomeOf(cleared(open));
+
+export const writesAllowed = (seen: CareerLoad | Reset | null): boolean =>
+  seen !== null &&
+  seen.status !== "unavailable" &&
+  seen.status !== "readFailed";
+
+export const commitCareer = (
+  seen: CareerLoad | Reset | null,
+  open: () => SaveStorage,
+  career: CareerState
+): Stored =>
+  writesAllowed(seen) ? storeCareer(open, career) : { status: "blocked" };
+
+export const saveStateOf = (load: CareerLoad): SaveState => {
+  if (load.status === "ready") {
+    return { career: load.career, leftRace: load.leftRace, status: "ready" };
+  }
+  if (load.status === "corrupt") {
+    return load;
+  }
+  return { status: "empty" };
 };
 
 export const careerSeedFrom = (unit: number): number =>
@@ -83,13 +185,7 @@ export const careerSeedFrom = (unit: number): number =>
 export const freshCareer = (unit: number): CareerState =>
   newCareer(careerSeedFrom(unit));
 
-export const browserStorage = (): SaveStorage | null => {
-  try {
-    return globalThis.localStorage;
-  } catch {
-    return null;
-  }
-};
+export const browserStorage = (): SaveStorage => globalThis.localStorage;
 
 export const randomUnit = (): number => {
   const [word] = crypto.getRandomValues(new Uint32Array(1));

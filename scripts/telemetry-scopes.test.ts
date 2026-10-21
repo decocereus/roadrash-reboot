@@ -47,6 +47,7 @@ describe("Effect boundary scopes", () => {
     "apps/web/src/routes/api/telemetry.ts",
     "apps/web/src/diagnostics/uploader-runtime.ts",
     "tools/verify/rushline.ts",
+    "apps/web/src/career/save.ts",
   ])("give the entry %s every rule but the library ones", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual(entryRules);
   });
@@ -66,6 +67,7 @@ describe("Effect boundary scopes", () => {
     "tools/verify/src/state.ts",
     "packages/career/src/save.ts",
     "packages/career/src/save-issues.ts",
+    "apps/web/src/career/save-storage.ts",
   ])("give the library %s all fourteen rules", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual(libraryRules);
   });
@@ -82,6 +84,7 @@ describe("Effect boundary scopes", () => {
     "packages/sim/src/race.ts",
     "packages/career/src/save-roundtrip.test.ts",
     "packages/career/src/settle.ts",
+    "apps/web/src/career/save.test.ts",
   ])("leave %s outside the boundary rules", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual([]);
   });
