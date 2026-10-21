@@ -158,7 +158,7 @@ It stops the watcher, Helium, and the server it started (checking each PID first
 
 Run these after every source change, as AGENTS.md requires:
 
-- `pnpm check`: oxfmt, oxlint with the anti-slop rules, `tsc` for the root and every package, then Vitest. The tests in `packages/sim` pin the feel (acceleration, braking distance, bend push, which bend cannot be taken flat out, when the crest launches). When a tuning change breaks one, decide whether the feel or the test is wrong and say which in the commit.
+- `pnpm check`: oxfmt, oxlint with the anti-slop rules, `tsrs` for the root and every package, then Vitest. The tests in `packages/sim` pin the feel (acceleration, braking distance, bend push, which bend cannot be taken flat out, when the crest launches). When a tuning change breaks one, decide whether the feel or the test is wrong and say which in the commit.
 - `pnpm build`: the production build of every package.
 
 ### The perf A/B

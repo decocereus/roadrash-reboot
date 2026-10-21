@@ -13,7 +13,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Run `pnpm check` and `pnpm build` after source changes. | `pnpm verify` | Repository | None |
 | Code is formatted by oxfmt. | `pnpm format:check` | Repository | None |
 | Repository code is TypeScript. No tracked or new `.js`, `.mjs`, `.cjs` or `.jsx` file exists. | `pnpm check:typescript-only` | Repository | None |
-| Types check in the root project, `tools/oxlint`, and every workspace package. | `pnpm typecheck` | Repository | None |
+| Types check in the root project, `tools/oxlint`, and every workspace package. The checker is tsrs, the Rust port of the TypeScript 7 compiler, pinned to an exact version. | `pnpm typecheck` | Repository | None |
 | Every lint plugin rule has valid and invalid cases, and the suite fails when a registered `rushline/` or `anti-slop/` rule has none. The same suite runs the ledger's regression cases in `scripts/rule-ledger.test.ts`. | `pnpm lint:rules` | `tools/oxlint`, `scripts` | None |
 | Every rule in these docs names its check, every enabled project rule has a row, and `oxlint.config.ts` turns no rule off or below `error` anywhere it applies. | `pnpm check:rules` | `docs/coding-standards.md`, `docs/errors.md`, `docs/observability.md`, `oxlint.config.ts` | None |
 | Look at the running game after any change to `apps/web/src/game` or to handling. Passing tests do not show that it plays well. | judgment | `apps/web/src/game`, `packages/sim` | None |

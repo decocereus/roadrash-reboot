@@ -18,7 +18,7 @@ The art direction is cel-shaded cyberpunk anime: two flat tones, ink outlines, n
 | Simulation | Plain TypeScript in `packages/sim`, fixed 60 Hz, running in the browser |
 | Server runtime | Effect 4.0.0 on Workers, when a server feature exists |
 | Multiplayer (later) | One Durable Object per race running the same simulation |
-| Tooling | pnpm, TypeScript 7, Oxlint with the anti-slop rules, Oxfmt through Ultracite, Vitest |
+| Tooling | pnpm, TypeScript 7 checked by tsrs, Oxlint with the anti-slop rules, Oxfmt through Ultracite, Vitest |
 
 There is no API Worker or database yet, because nothing needs one. Leaderboards, accounts, and multiplayer bring them back.
 
