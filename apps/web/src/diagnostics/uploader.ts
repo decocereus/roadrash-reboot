@@ -1,11 +1,9 @@
+import { UPLOAD_QUEUE_CAPACITY } from "@racer/telemetry/limits";
 import type { Batch } from "@racer/telemetry/schema";
 
 import type { Outgoing } from "./recorder.ts";
 
-const ENDPOINT = "/api/telemetry";
-const QUEUE_CAPACITY = 24;
-const FIRST_RETRY_MS = 2000;
-const LONGEST_RETRY_MS = 60_000;
+export const UPLOAD_ENDPOINT = "/api/telemetry";
 
 export type ReportStatus =
   | { readonly state: "idle" }
@@ -22,17 +20,22 @@ export type ReportStatus =
       readonly reason: string;
     };
 
-interface Entry {
+export interface Entry {
   readonly batch: Batch;
   readonly body: string;
   forced: boolean;
   attempts: number;
 }
 
-type Delivery =
+export type Delivery =
   | { readonly kind: "saved" }
   | { readonly kind: "rejected"; readonly reason: string }
   | { readonly kind: "retry"; readonly reason: string };
+
+export interface UploadQueue {
+  readonly next: () => Entry | undefined;
+  readonly settle: (entry: Entry, delivery: Delivery) => boolean;
+}
 
 export interface Uploader {
   readonly enqueue: (outgoing: Outgoing, forced: boolean) => void;
@@ -46,32 +49,13 @@ export interface Uploader {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
-const deliver = async (entry: Entry): Promise<Delivery> => {
-  try {
-    const response = await fetch(ENDPOINT, {
-      body: entry.body,
-      headers: { "content-type": "application/json" },
-      method: "POST",
-    });
-    if (response.ok) {
-      return { kind: "saved" };
-    }
-    const reason = `collector answered ${response.status}`;
-    return response.status === 400 || response.status === 413
-      ? { kind: "rejected", reason }
-      : { kind: "retry", reason };
-  } catch {
-    return { kind: "retry", reason: "collector unreachable" };
-  }
-};
-
-export const createUploader = (): Uploader => {
+export const createUploader = (
+  requestDelivery: (queue: UploadQueue) => void
+): Uploader => {
   const queue: Entry[] = [];
   const listeners = new Set<() => void>();
   let automatic = false;
   let dropped = 0;
-  let sending = false;
-  let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let report: ReportStatus = { state: "idle" };
 
   const notify = () => {
@@ -91,13 +75,17 @@ export const createUploader = (): Uploader => {
     queue.find((entry) => automatic || entry.forced);
 
   const settle = (entry: Entry, delivery: Delivery): boolean => {
+    const index = queue.indexOf(entry);
+    if (index === -1) {
+      return false;
+    }
     const reportId = entry.batch.reportId ?? "";
     if (delivery.kind === "retry") {
       entry.attempts += 1;
       setReport(entry, { reason: delivery.reason, reportId, state: "queued" });
-      return false;
+      return true;
     }
-    queue.splice(queue.indexOf(entry), 1);
+    queue.splice(index, 1);
     setReport(
       entry,
       delivery.kind === "saved"
@@ -105,48 +93,28 @@ export const createUploader = (): Uploader => {
         : { reason: delivery.reason, reportId, state: "failed" }
     );
     notify();
-    return true;
+    return false;
   };
 
-  const send = async (): Promise<void> => {
-    if (sending || retryTimer !== null) {
-      return;
-    }
-    const entry = sendable();
-    if (!entry) {
-      return;
-    }
-    sending = true;
-    const delivery = await deliver(entry);
-    sending = false;
-    if (settle(entry, delivery)) {
-      await send();
-      return;
-    }
-    retryTimer = setTimeout(
-      () => {
-        retryTimer = null;
-        void send();
-      },
-      Math.min(LONGEST_RETRY_MS, FIRST_RETRY_MS * 2 ** entry.attempts)
-    );
-  };
+  const port: UploadQueue = { next: sendable, settle };
 
   return {
     beacon() {
       for (const entry of queue.filter((each) => automatic || each.forced)) {
         navigator.sendBeacon(
-          ENDPOINT,
+          UPLOAD_ENDPOINT,
           new Blob([entry.body], { type: "application/json" })
         );
       }
     },
     drain() {
-      void send();
+      if (sendable() !== undefined) {
+        requestDelivery(port);
+      }
     },
     droppedBatches: () => dropped,
     enqueue(outgoing, forced) {
-      if (queue.length >= QUEUE_CAPACITY) {
+      if (queue.length >= UPLOAD_QUEUE_CAPACITY) {
         const oldest = queue.findIndex(
           (entry) => entry.batch.reportId === null
         );

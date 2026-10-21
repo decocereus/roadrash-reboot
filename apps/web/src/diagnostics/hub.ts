@@ -11,8 +11,9 @@ import { createRecorder } from "./recorder.ts";
 import type { Recorder } from "./recorder.ts";
 import { createSettingsStore } from "./settings.ts";
 import type { Settings, SettingsStore } from "./settings.ts";
+import type { UploadRuntime } from "./uploader-runtime.ts";
 import { createUploader } from "./uploader.ts";
-import type { ReportStatus } from "./uploader.ts";
+import type { ReportStatus, UploadQueue } from "./uploader.ts";
 
 const FLUSH_MS = 30_000;
 const USER_AGENT_LENGTH = 240;
@@ -77,10 +78,39 @@ const messageOf = (reason: Error | string | number | boolean | null): string =>
     ? `${reason.name}: ${reason.message}`
     : String(reason);
 
+const lazyDelivery = (): ((queue: UploadQueue) => void) => {
+  let runtime: UploadRuntime | null = null;
+  let loading = false;
+
+  const load = async (queue: UploadQueue): Promise<void> => {
+    loading = true;
+    try {
+      const loaded = await import("./uploader-runtime.ts");
+      runtime = loaded.browserUploadRuntime();
+      runtime.drain(queue);
+    } catch {
+      const entry = queue.next();
+      if (entry !== undefined) {
+        queue.settle(entry, { kind: "retry", reason: "collector unreachable" });
+      }
+    } finally {
+      loading = false;
+    }
+  };
+
+  return (queue) => {
+    if (runtime !== null) {
+      runtime.drain(queue);
+    } else if (!loading) {
+      void load(queue);
+    }
+  };
+};
+
 const createDiagnostics = (): Diagnostics => {
   const settings = createSettingsStore();
   const recorder = createRecorder();
-  const uploader = createUploader();
+  const uploader = createUploader(lazyDelivery());
   const sessionId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
   const listeners = new Set<() => void>();

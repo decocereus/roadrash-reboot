@@ -209,6 +209,8 @@ export type Ack = typeof ackSchema.Type;
 
 export const decodeBatchEffect = Schema.decodeUnknownEffect(batchSchema);
 
+export const decodeAckEffect = Schema.decodeUnknownEffect(ackSchema);
+
 const storedLineSchema = Schema.Struct({
   batch: batchSchema,
   receivedAt: Schema.String,
