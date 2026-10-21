@@ -8,7 +8,7 @@ import { bikeName, kmMark, weaponLabel } from "./format.ts";
 
 const INCIDENT_LINES = 2;
 
-export const racerName = (racer: RacerId): string =>
+const racerName = (racer: RacerId): string =>
   racer === "player" ? "You" : shortNames[racer];
 
 export const boardNote = (note: BoardNote): string => {

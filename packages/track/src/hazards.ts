@@ -31,7 +31,7 @@ export interface HazardPlacement {
   readonly x: number;
 }
 
-export const HAZARD_SIGHT = 25;
+const HAZARD_SIGHT = 25;
 export const HAZARD_START_CLEARANCE = 450;
 export const HAZARD_FINISH_CLEARANCE = 150;
 export const HAZARD_RAMP_CLEARANCE = 30;

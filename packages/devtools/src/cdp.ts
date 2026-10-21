@@ -14,7 +14,7 @@ const decodeEnvelope = Schema.decodeUnknownSync(envelope);
 
 type Envelope = typeof envelope.Type;
 
-export type ParamValue =
+type ParamValue =
   | string
   | number
   | boolean

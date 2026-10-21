@@ -49,7 +49,7 @@ const FLAT_CLEARANCE = 0.05;
 const NEAR_MISS_GAP = 0.8;
 const NEAR_MISS_SPEED = 20;
 
-export interface HazardSpot {
+interface HazardSpot {
   readonly id: string;
   readonly s: number;
   readonly x: number;
@@ -124,7 +124,7 @@ export const spawnRock: SpawnHazard = (state, track, spot) =>
 export const spawnPothole: SpawnHazard = (state, track, spot) =>
   spawn(state, track, "pothole", spot);
 
-export const hazardSpawners = {
+const hazardSpawners = {
   oil: spawnOil,
   pothole: spawnPothole,
   rock: spawnRock,

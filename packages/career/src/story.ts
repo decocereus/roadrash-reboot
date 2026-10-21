@@ -62,7 +62,7 @@ export interface StoryBeat {
   readonly endingChapter: StoryChapter | null;
 }
 
-export const envelopeOpen = (career: CareerState): boolean =>
+const envelopeOpen = (career: CareerState): boolean =>
   career.level === ENVELOPE_LEVEL &&
   career.story.envelope === "offered" &&
   !career.gameOver &&

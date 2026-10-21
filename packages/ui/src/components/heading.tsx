@@ -46,4 +46,4 @@ const Heading = ({
   />
 );
 
-export { Heading, headingVariants };
+export { Heading };

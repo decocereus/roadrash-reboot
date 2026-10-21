@@ -4,7 +4,7 @@ export interface Pacer {
 
 const ONE_VSYNC_SPREAD = 1.5;
 
-export const vsyncsPerFrame = (refresh: number, pace: number): number =>
+const vsyncsPerFrame = (refresh: number, pace: number): number =>
   Math.max(1, Math.round(refresh / pace));
 
 const vsyncsSpanned = (gap: number, refresh: number): number => {

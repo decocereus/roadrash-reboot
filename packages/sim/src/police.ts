@@ -5,11 +5,11 @@ import type { RaceState, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
 export const PATROL_SPEED = 22;
-export const BODY_RANGE = 60;
-export const WAKE_RANGE = 35;
+const BODY_RANGE = 60;
+const WAKE_RANGE = 35;
 const LOSE_RANGE = 120;
-export const BUST_REACH = 4;
-export const BUST_DELAY_TICKS = 30;
+const BUST_REACH = 4;
+const BUST_DELAY_TICKS = 30;
 export const PULL_OVER = 1.1;
 
 export const isDown = (rider: RiderState): boolean =>

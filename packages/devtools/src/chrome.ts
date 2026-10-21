@@ -106,7 +106,7 @@ export const sharedFlags = (
   "--disable-backgrounding-occluded-windows",
 ];
 
-export const chromeFlags = (
+const chromeFlags = (
   port: number,
   profile: string,
   viewport: Viewport,
@@ -146,7 +146,7 @@ const pageSocket = async (port: number, attempt: number): Promise<string> => {
   return page ?? (await pageSocket(port, attempt + 1));
 };
 
-export const portAnswers = async (port: number): Promise<boolean> => {
+const portAnswers = async (port: number): Promise<boolean> => {
   try {
     await fetch(`http://127.0.0.1:${port}/json/version`);
     return true;

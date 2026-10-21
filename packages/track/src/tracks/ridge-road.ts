@@ -73,7 +73,7 @@ export const ridgeRoad: TrackPlan = {
   vergeWidth: 9,
 };
 
-export const ridgeRoadLevel2 = block([
+const ridgeRoadLevel2 = block([
   [180, -34, 6],
   [140, 0, 9],
   [160, 70, 4],
@@ -82,7 +82,7 @@ export const ridgeRoadLevel2 = block([
   [410, 0, 2],
 ]);
 
-export const ridgeRoadLevel3 = block([
+const ridgeRoadLevel3 = block([
   [225, 30, 8],
   [120, 0, 6],
   [95, 0, -8],
@@ -92,7 +92,7 @@ export const ridgeRoadLevel3 = block([
   [150, 0, -4],
 ]);
 
-export const ridgeRoadLevel4 = block([
+const ridgeRoadLevel4 = block([
   [300, 0, -12],
   [140, -96, -3],
   [200, 0, 5],
@@ -102,7 +102,7 @@ export const ridgeRoadLevel4 = block([
   [140, 0, 0],
 ]);
 
-export const ridgeRoadLevel5 = block([
+const ridgeRoadLevel5 = block([
   [180, 40, 10],
   [150, -76, 6],
   [100, 0, 8],

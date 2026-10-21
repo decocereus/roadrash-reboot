@@ -91,7 +91,7 @@ export const grudgeSide = (
   return reaches(rider, target, side, strike) ? side : 0;
 };
 
-export const strikeTarget = (
+const strikeTarget = (
   state: RaceState,
   riderIndex: number,
   side: number,
@@ -104,7 +104,7 @@ export const strikeTarget = (
   return nearestRival(state, riderIndex, side, strike);
 };
 
-export const rivalSide = (
+const rivalSide = (
   state: RaceState,
   riderIndex: number,
   strike: StrikeSpec = punch

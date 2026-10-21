@@ -54,4 +54,4 @@ const Stencil = ({
   />
 );
 
-export { Stencil, stencilVariants };
+export { Stencil };

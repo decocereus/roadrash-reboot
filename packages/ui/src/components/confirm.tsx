@@ -86,4 +86,3 @@ const Confirm = ({
 };
 
 export { Confirm };
-export type { ConfirmOption };

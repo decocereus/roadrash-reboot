@@ -22,7 +22,7 @@ const SCREENCAST_WIDTH = 1512;
 const SCREENCAST_HEIGHT = 860;
 const TOP_THREADS = 10;
 
-export const readySignals = new Map([
+const readySignals = new Map([
   ["held", "globalThis.__rushlineHeld === true"],
   [
     "race",
@@ -108,7 +108,7 @@ const namedKeys = new Map<string, KeySpec>([
   ["Tab", { key: "Tab", keyCode: 9, location: 0, text: "" }],
 ]);
 
-export const keyOf = (code: string): KeySpec => {
+const keyOf = (code: string): KeySpec => {
   const named = namedKeys.get(code);
   if (named) {
     return named;
@@ -411,7 +411,7 @@ export const screencast = async (
   return { dir, frames: stamps.length, seconds };
 };
 
-export const TRACE_CATEGORIES = [
+const TRACE_CATEGORIES = [
   "devtools.timeline",
   "disabled-by-default-devtools.timeline",
   "disabled-by-default-devtools.timeline.frame",
@@ -425,7 +425,7 @@ export const TRACE_CATEGORIES = [
 
 const collectedChunk = Schema.Struct({ value: Schema.Array(Schema.Unknown) });
 
-export interface ThreadLoad {
+interface ThreadLoad {
   readonly thread: string;
   readonly busyMs: number;
 }
@@ -511,7 +511,7 @@ const frameSample = Schema.Struct({
   tick: Schema.Number,
 });
 
-export interface Stats {
+interface Stats {
   readonly mean: number;
   readonly p50: number;
   readonly p95: number;

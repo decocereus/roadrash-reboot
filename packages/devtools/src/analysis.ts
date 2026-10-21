@@ -25,7 +25,7 @@ const STALL_EVENT_MICROS = 1000;
 const LONG_TASK_MS = 50;
 const MAIN_THREAD = "CrRendererMain";
 
-export interface PauseSummary {
+interface PauseSummary {
   readonly count: number;
   readonly totalMs: number;
   readonly maxMs: number;
@@ -290,7 +290,7 @@ const originalOf = (
   return `${source}:${found.line + 1}${name !== undefined && name !== "" ? ` ${name}` : ""}  ${text.slice(0, 70)}`;
 };
 
-export interface HotFunction {
+interface HotFunction {
   readonly selfMs: number;
   readonly share: number;
   readonly name: string;
@@ -372,7 +372,7 @@ export const hottest = async (
   };
 };
 
-export interface AllocationNode {
+interface AllocationNode {
   readonly callFrame: typeof CallFrame.Type;
   readonly selfSize: number;
   readonly children: readonly AllocationNode[];
@@ -392,7 +392,7 @@ export const allocationProfile = Schema.Struct({
 
 export type AllocationProfile = typeof allocationProfile.Type;
 
-export interface AllocationSite {
+interface AllocationSite {
   readonly bytes: number;
   readonly share: number;
   readonly name: string;

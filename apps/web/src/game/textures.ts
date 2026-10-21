@@ -9,7 +9,7 @@ const FONT = '800 104px "Saira Extra Condensed", Impact, sans-serif';
 const SHOP_FONT = '800 44px "Saira Extra Condensed", Impact, sans-serif';
 const FULL_TURN = Math.PI * 2;
 
-export const SIGN_WORDS = [
+const SIGN_WORDS = [
   "VOLT",
   "KIRO",
   "HALDEN",

@@ -11,7 +11,6 @@ export type Level = RoadLevel;
 
 export const levels: readonly Level[] = [1, 2, 3, 4, 5];
 
-export const FIRST_LEVEL: Level = 1;
 export const LAST_LEVEL: Level = 5;
 
 export const levelAfter = (level: Level): Level =>
@@ -102,9 +101,9 @@ export const STARTING_CASH = 1500;
 export const STARTING_BIKE: BikeId = "halden-wren-400";
 export const REPOSSESSION_BIKE: BikeId = "gutter-pup-250";
 export const REPOSSESSION_CREDIT_LIMIT = 750;
-export const TRADE_IN_RATE = 0.6;
-export const CREDIT_RATE = 0.5;
-export const REPEAT_RATE = 0.5;
+const TRADE_IN_RATE = 0.6;
+const CREDIT_RATE = 0.5;
+const REPEAT_RATE = 0.5;
 export const AD_REPAIR_RATE = 0.5;
 
 const levelOnePrizes = [
@@ -113,11 +112,11 @@ const levelOnePrizes = [
 
 const PRIZE_MULTIPLIER = { 1: 1, 2: 1.6, 3: 2.4, 4: 3.4, 5: 4.6 } as const;
 
-export const prizes = byLevel((level) =>
+const prizes = byLevel((level) =>
   levelOnePrizes.map((prize) => Math.round(prize * PRIZE_MULTIPLIER[level]))
 );
 
-export const repairBase = {
+const repairBase = {
   1: 400,
   2: 700,
   3: 1100,
@@ -125,7 +124,7 @@ export const repairBase = {
   5: 2200,
 } as const satisfies Record<Level, number>;
 
-export const repairMultiplier = {
+const repairMultiplier = {
   featherweight: 1,
   heavyweight: 2,
   middleweight: 1.5,

@@ -344,4 +344,3 @@ const MenuStepper = ({
 };
 
 export { MenuItem, MenuList, MenuStepper };
-export type { MenuStep };

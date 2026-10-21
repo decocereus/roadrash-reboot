@@ -40,7 +40,7 @@ export interface CareerRaceSetup extends RaceSetup {
 const races = (rival: RivalId, level: Level): boolean =>
   level >= rivals[rival].racesFrom;
 
-export const homeRiders = (roadId: RoadId, level: Level): readonly RivalId[] =>
+const homeRiders = (roadId: RoadId, level: Level): readonly RivalId[] =>
   cast
     .filter((rival) => rival.home === roads[roadId].region)
     .map((rival) => (races(rival.id, level) ? rival.id : CHAMPION_STAND_IN));

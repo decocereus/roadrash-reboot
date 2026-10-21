@@ -172,7 +172,7 @@ export interface CareerState {
   readonly gameOver: boolean;
 }
 
-export const blankMemory: RivalMemory = {
+const blankMemory: RivalMemory = {
   aggressionBonus: 0,
   beatPlayerByAWheel: 0,
   busted: 0,

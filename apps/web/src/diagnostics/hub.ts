@@ -17,14 +17,14 @@ import type { ReportStatus } from "./uploader.ts";
 const FLUSH_MS = 30_000;
 const USER_AGENT_LENGTH = 240;
 
-export interface GameSnapshot {
+interface GameSnapshot {
   readonly phase: string;
   readonly race: number;
   readonly tick: number;
   readonly quality: Quality;
 }
 
-export interface GameProbe {
+interface GameProbe {
   readonly renderer: string;
   readonly snapshot: () => GameSnapshot;
   readonly frameAt: (frame: number) => ProfileFrame | null;
@@ -38,14 +38,14 @@ export interface DiagnosticsView {
   readonly session: string;
 }
 
-export interface DiagnosticsSnapshot extends GameSnapshot {
+interface DiagnosticsSnapshot extends GameSnapshot {
   readonly recording: boolean;
   readonly contextLost: boolean;
   readonly queuedBatches: number;
   readonly droppedRecords: number;
 }
 
-export interface DiagnosticsReader {
+interface DiagnosticsReader {
   readonly info: () => Session;
   readonly snapshot: () => DiagnosticsSnapshot | null;
   readonly frames: (afterFrame: number, limit: number) => ProfileFrame[];

@@ -5,7 +5,6 @@ export const CYAN = "#19e6ff";
 export const MAGENTA = "#ff2bd6";
 export const RED = "#ff2e3d";
 export const ORANGE = "#ff7a1a";
-export const INK = "#0a0810";
 
 export type Kit = "city" | "open";
 

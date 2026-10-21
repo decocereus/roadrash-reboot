@@ -12,7 +12,6 @@ export type RoadLevel = 1 | 2 | 3 | 4 | 5;
 export const roadLevels: readonly RoadLevel[] = [1, 2, 3, 4, 5];
 
 export const LEVEL_EXTENSION = 1150;
-export const FIRST_ROADBLOCK_LEVEL: RoadLevel = 3;
 
 export type SectionRow = readonly [
   length: number,
@@ -22,7 +21,7 @@ export type SectionRow = readonly [
 
 export type Block = readonly TrackSection[];
 
-export interface RoadblockSpot {
+interface RoadblockSpot {
   readonly s: number;
   readonly fromLevel: RoadLevel;
 }

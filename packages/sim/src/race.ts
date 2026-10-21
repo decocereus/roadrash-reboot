@@ -38,7 +38,7 @@ const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const HAZARD_DICE_SALT = 0x2e_c3;
 const DEFAULT_LEVEL = 3;
-export const MAX_RIVALS = 14;
+const MAX_RIVALS = 14;
 
 export const neutralInput: RiderInput = {
   brake: 0,
@@ -70,7 +70,7 @@ export const defaultPolice: PoliceSetup = {
   topSpeed: 48,
 };
 
-export const defaultPacing: PacingRules = {
+const defaultPacing: PacingRules = {
   catchUp: 0.06,
   leadEase: 0.18,
 };
@@ -239,7 +239,7 @@ export const validateSetup = (setup: RaceSetup): SetupError[] => [
   ...missingBikes(setup),
 ];
 
-export const describeSetupError = (error: SetupError): string => {
+const describeSetupError = (error: SetupError): string => {
   if (error.kind === "tooManyRivals") {
     return `A race takes at most ${MAX_RIVALS} rivals, and this one has ${error.count}.`;
   }

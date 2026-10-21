@@ -55,7 +55,7 @@ export interface ProfileFrame {
   readonly triangles: readonly number[];
 }
 
-export interface ProfileInfo {
+interface ProfileInfo {
   readonly parts: readonly Part[];
   readonly renderer: string;
   readonly gpuTimer: boolean;
@@ -63,7 +63,7 @@ export interface ProfileInfo {
   readonly tick: number;
 }
 
-export interface ProfileReader {
+interface ProfileReader {
   readonly info: () => ProfileInfo;
   readonly window: (fromTick: number, toTick: number) => ProfileFrame[];
   readonly frameAt: (frame: number) => ProfileFrame | null;

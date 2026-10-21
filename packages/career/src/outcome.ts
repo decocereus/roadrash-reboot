@@ -51,7 +51,7 @@ export interface RivalIncidents {
   readonly lostToPlayerByAWheel: boolean;
 }
 
-export interface Arrest {
+interface Arrest {
   readonly officer: OfficerId;
   readonly fine: number;
   readonly km: number;

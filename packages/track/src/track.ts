@@ -316,7 +316,7 @@ export const slopeAt = (track: Track, s: number): number =>
 export const slopeRateAt = (track: Track, s: number): number =>
   sampleAt(track, track.slopeRate, s);
 
-export const headingAt = (track: Track, s: number): number =>
+const headingAt = (track: Track, s: number): number =>
   sampleAt(track, track.heading, s);
 
 export const placeOnTrack = (

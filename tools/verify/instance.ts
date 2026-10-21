@@ -23,21 +23,21 @@ import {
 import * as Schema from "effect/Schema";
 
 export const SLOTS = 10;
-export const SERVER_BASE_PORT = 1410;
-export const DEVTOOLS_BASE_PORT = 9410;
+const SERVER_BASE_PORT = 1410;
+const DEVTOOLS_BASE_PORT = 9410;
 export const USER_PORTS: ReadonlySet<number> = new Set([1350, 1351]);
-export const VIEWPORT = { height: 860, scale: 2, width: 1512 } as const;
+const VIEWPORT = { height: 860, scale: 2, width: 1512 } as const;
 
 const POLL_MS = 200;
 const SERVER_ATTEMPTS = 300;
 const STOP_ATTEMPTS = 50;
 
-export const stateDir = path.join(tmpdir(), "rushline-verify");
+const stateDir = path.join(tmpdir(), "rushline-verify");
 
-export const serverModes = ["preview", "dev", "external"] as const;
+const serverModes = ["preview", "dev", "external"] as const;
 export type ServerMode = (typeof serverModes)[number];
 
-export const instanceState = Schema.Struct({
+const instanceState = Schema.Struct({
   browserPid: Schema.NullOr(Schema.Number),
   buildDir: Schema.NullOr(Schema.String),
   builtAt: Schema.NullOr(Schema.Number),
@@ -136,7 +136,7 @@ export const alive = (pid: number | null): boolean => {
   }
 };
 
-export const commandOf = async (pid: number): Promise<string> => {
+const commandOf = async (pid: number): Promise<string> => {
   try {
     const { stdout } = await run("ps", ["-o", "command=", "-p", String(pid)]);
     return stdout.trim();
@@ -212,7 +212,7 @@ const vitePath = (checkout: string): string =>
 
 const webDir = (checkout: string): string => path.join(checkout, "apps/web");
 
-export const buildDirFor = (checkout: string, slot: number): string =>
+const buildDirFor = (checkout: string, slot: number): string =>
   path.join(webDir(checkout), "node_modules/.rushline-verify", `slot-${slot}`);
 
 const devEnv = (): NodeJS.ProcessEnv => ({
@@ -368,7 +368,7 @@ const awaitGone = async (pid: number, attempt: number): Promise<boolean> => {
   return await awaitGone(pid, attempt + 1);
 };
 
-export const stopOwned = async (
+const stopOwned = async (
   pid: number | null,
   expect: string
 ): Promise<string> => {

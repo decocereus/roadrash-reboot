@@ -3,7 +3,7 @@ import { racerIds } from "./state.ts";
 import type { CareerState, RacerId, SeasonEntry } from "./state.ts";
 import { FIELD_SIZE } from "./tables.ts";
 
-export const pointsFor = (placing: Placing): number =>
+const pointsFor = (placing: Placing): number =>
   placing.fate === "busted" || placing.fate === "wrecked"
     ? 0
     : Math.max(0, FIELD_SIZE + 1 - placing.place);

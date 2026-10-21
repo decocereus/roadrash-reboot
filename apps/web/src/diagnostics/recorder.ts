@@ -73,7 +73,7 @@ export const emptyQuality = (): QualityState => ({
   shadowMap: 0,
 });
 
-export type FrameLookup = (frame: number) => ProfileFrame | null;
+type FrameLookup = (frame: number) => ProfileFrame | null;
 
 export interface Outgoing {
   readonly batch: Batch;

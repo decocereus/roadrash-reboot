@@ -2,7 +2,7 @@ import { block } from "../road.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
-export const cinderWash: TrackPlan = {
+const cinderWash: TrackPlan = {
   features: [
     {
       feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },
@@ -83,7 +83,7 @@ export const cinderWash: TrackPlan = {
   vergeWidth: 14,
 };
 
-export const cinderWashLevel2 = block([
+const cinderWashLevel2 = block([
   [420, 0, 0],
   [60, 0, -3.5],
   [60, 0, 3.5],
@@ -92,7 +92,7 @@ export const cinderWashLevel2 = block([
   [150, 0, 0],
 ]);
 
-export const cinderWashLevel3 = block([
+const cinderWashLevel3 = block([
   [560, 0, -2],
   [220, -110, 4],
   [130, 0, 6],
@@ -101,7 +101,7 @@ export const cinderWashLevel3 = block([
   [60, 0, 0],
 ]);
 
-export const cinderWashLevel4 = block([
+const cinderWashLevel4 = block([
   [330, 18, -10],
   [65, 0, -3],
   [65, 0, 3],
@@ -112,7 +112,7 @@ export const cinderWashLevel4 = block([
   [180, 0, 0],
 ]);
 
-export const cinderWashLevel5 = block([
+const cinderWashLevel5 = block([
   [380, 0, 0],
   [180, 130, 8],
   [160, 0, 10],

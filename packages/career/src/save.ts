@@ -58,11 +58,7 @@ interface JsonRecord {
 
 type Field = Json | undefined;
 
-export type SaveErrorKind =
-  | "notJson"
-  | "wrongVersion"
-  | "invalid"
-  | "inconsistent";
+type SaveErrorKind = "notJson" | "wrongVersion" | "invalid" | "inconsistent";
 
 export interface SaveError {
   readonly kind: SaveErrorKind;

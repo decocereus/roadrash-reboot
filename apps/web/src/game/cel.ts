@@ -22,7 +22,7 @@ const CEL_FRAGMENT = `
   #endif
   #include <opaque_fragment>`;
 
-export interface CelOptions {
+interface CelOptions {
   readonly rim?: number;
   readonly map?: THREE.Texture;
   readonly emissiveMap?: THREE.Texture;

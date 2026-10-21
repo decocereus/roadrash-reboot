@@ -12,7 +12,7 @@ import { isMesh } from "./meshes.ts";
 import { facadeTexture, pick, shopTexture, signAtlas } from "./textures.ts";
 import type { SignFrame } from "./textures.ts";
 
-export const CITY_CHUNK = 200;
+const CITY_CHUNK = 200;
 export const FRONT_GAP = 1.2;
 export const KERB_HEIGHT = 0.14;
 

@@ -29,7 +29,7 @@ export interface Verdict {
   readonly pace: number;
 }
 
-export interface Frame {
+interface Frame {
   readonly seconds: number;
   readonly busyMs: number;
   readonly refresh: number;
