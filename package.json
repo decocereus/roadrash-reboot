@@ -8,6 +8,7 @@
     "check": "node scripts/verify.ts check",
     "check:css-comments": "node scripts/check-css-comments.ts",
     "check:rules": "node scripts/check-rules.ts",
+    "check:typescript-only": "node scripts/check-typescript-only.ts",
     "dev": "alchemy dev",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",

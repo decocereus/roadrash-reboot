@@ -26,6 +26,11 @@ const checks: readonly Check[] = [
     name: "css comments",
     quick: true,
   },
+  {
+    command: ["pnpm", "check:typescript-only"],
+    name: "typescript only",
+    quick: true,
+  },
   { command: ["pnpm", "typecheck"], name: "typecheck", quick: true },
   { command: ["pnpm", "test"], name: "tests", quick: true },
   { command: ["pnpm", "build"], name: "build", quick: false },
