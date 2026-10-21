@@ -14,7 +14,8 @@ import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
-import { stepRider, throwRider } from "./rider.ts";
+import { throwRider } from "./rider-crash.ts";
+import { stepRider } from "./rider.ts";
 import { FULL_CONDITION, MAX_STAMINA } from "./state.ts";
 import type {
   BikeSpec,

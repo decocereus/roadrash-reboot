@@ -21,13 +21,12 @@ import { OIL_SLIP, rockUpsetShare } from "./hazards.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
 import {
   BRAKE_RESERVE,
-  HARD_LANDING,
-  LANDING_SLIP,
   SLIP_PUSH,
   SLIP_RECOVERY,
   TAKEOFF_SPEED,
-  towardBike,
-} from "./rider.ts";
+} from "./rider-drive.ts";
+import { HARD_LANDING, LANDING_SLIP } from "./rider-flight.ts";
+import { towardBike } from "./rider-recovery.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,

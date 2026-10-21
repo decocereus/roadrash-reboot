@@ -11,7 +11,7 @@ import {
   standings,
   stepRace,
 } from "@racer/sim/race";
-import { RUN_SPEED } from "@racer/sim/rider";
+import { RUN_SPEED } from "@racer/sim/rider-recovery";
 import {
   clamp,
   FULL_CONDITION,

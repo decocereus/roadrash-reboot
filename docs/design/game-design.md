@@ -332,7 +332,7 @@ Rivals ride these same specs. Each rider needs their own `BikeSpec`; section 14 
 
 ### The tuck
 
-The tuck is the rider settling in, and it is where the top speeds marked "tucked" come from. The rule, in `packages/sim/src/rider.ts`:
+The tuck is the rider settling in, and it is where the top speeds marked "tucked" come from. The rule, in `packages/sim/src/rider-drive.ts`:
 
 - **Settling in takes speed and time.** The rider has to hold the throttle past 0.8 with no brake, less than 0.3 of steering lock, on the road, above **120 km/h**, for **1.5 s** (90 ticks). Then the tuck eases in over about a second. On the Wren that is 120 km/h at about 5.5 s off the line and a full tuck at about 8 s; nothing happens in the first seconds of a race or below cruising speed.
 - **Steering does not sit the rider up.** A settled rider stays settled through bends and through a lifted throttle. Only a brake past half, a strike, a hit, a crash, leaving the road, or dropping below **95 km/h** brings the rider up, at once, and the next tuck needs a fresh 1.5 s.
@@ -343,7 +343,7 @@ Before October 15 the tuck came in at 72 km/h after 0.6 s and any steering dropp
 
 ### Bends and the lean scrub
 
-Retuned October 15, 2026, after the play test: "when turning corners we don't decelerate enough and that causes crashes and makes me brake, like that should still happen, but it should not be this extreme." The bikes had been made 20% faster the evening before and the grip had not followed, so the push in a bend, which grows with the square of the speed, was 44% harder at the top of each bike than when the grip was fitted, and a bike kept its full speed in a bend because steering cost only a flat 1.5 m/s² at full lock. The rule in `packages/sim/src/rider.ts`:
+Retuned October 15, 2026, after the play test: "when turning corners we don't decelerate enough and that causes crashes and makes me brake, like that should still happen, but it should not be this extreme." The bikes had been made 20% faster the evening before and the grip had not followed, so the push in a bend, which grows with the square of the speed, was 44% harder at the top of each bike than when the grip was fitted, and a bike kept its full speed in a bend because steering cost only a flat 1.5 m/s² at full lock. The rule in `packages/sim/src/rider-drive.ts`:
 
 - **Leaning scrubs speed.** Every second the bike loses `leanScrub × lock² × speed`, throttle held or not. `lock` is the share of the bike's sideways speed it is using, so a sweeper at a quarter lock costs a sixteenth of what full lock costs. On the Wren at 190 km/h full lock costs 10.6 m/s², about 38 km/h a second, which is more than the brake gives at full lock (35% of 23 m/s²). The brake is still three times stronger on the straight before the bend, so the quick way through a tight corner is still to brake first.
 - **The grip is retuned for the fast lineup.** Every `curvePush` is 1.3 times the October 14 value. The hold speed on a 73 m right angle on the Wren went from 97 to 112 km/h and on the Switchback from 137 to 158.
@@ -949,7 +949,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 
 | # | Change | What it is | Release |
 | --: | --- | --- | --- |
-| 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and `rider.ts`, `pilot.ts`, and the renderer read it from the rider. | First career release |
+| 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and the riding step, the pilot, and the renderer read it from the rider. | First career release |
 | 2 | Selected cast | `createRace` takes the list of rival profiles for this race. The earlier placeholder names are replaced by the cast; "Viper" in particular is the name of a rider in the original game (section 15). | First career release |
 | 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. The posts come from the track: the first at `FIRST_COP_S` (1,500 m), the last `LAST_COP_BEFORE_FINISH` (1,000 m) before the finish, the rest evenly between. | Built |
 | 4 | Bike condition and the wreck | A `condition` value from 100 on each rider. Each crash takes the damage its cause costs at 200 km/h (traffic 34, prop 32, landing 30, rider 30, combat 28, off-track 22), scaled by the rider's speed at impact over 200 km/h and held between 0.1 and 1.25. At zero the rider enters the `wrecked` mode, which ends their race like a bust without a fine. Three or four hard crashes wreck a bike. The table below gives the cost by speed. | Built, retuned |

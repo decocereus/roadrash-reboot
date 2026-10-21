@@ -4,7 +4,7 @@ import type { HazardKind } from "@racer/track/hazards";
 import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { forwardRateOf } from "./rider.ts";
+import { forwardRateOf } from "./rider-flight.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
