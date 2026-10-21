@@ -1,9 +1,12 @@
-import { setTimeout as sleep } from "node:timers/promises";
-
 import { evaluate } from "@racer/devtools/cdp";
 import type { Session } from "@racer/devtools/cdp";
 import type { CommandParams } from "@racer/devtools/cdp-protocol";
+import { released } from "@racer/devtools/cleanup";
+import { UsageError } from "@racer/devtools/usage-error";
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+
+import { VerificationError } from "./verification-error.ts";
 
 interface KeySpec {
   readonly key: string;
@@ -25,7 +28,7 @@ const namedKeys = new Map<string, KeySpec>([
   ["Tab", { key: "Tab", keyCode: 9, location: 0, text: "" }],
 ]);
 
-const keyOf = (code: string): KeySpec => {
+const keySpecOf = (code: string): KeySpec | null => {
   const named = namedKeys.get(code);
   if (named) {
     return named;
@@ -48,9 +51,18 @@ const keyOf = (code: string): KeySpec => {
       text: digit,
     };
   }
-  throw new Error(
-    `Unknown key code ${code}. Use KeyboardEvent.code names: ArrowUp, KeyJ, Space, ShiftLeft, Escape.`
-  );
+  return null;
+};
+
+const keyOf = (code: string) => {
+  const spec = keySpecOf(code);
+  return spec === null
+    ? Effect.fail(
+        new UsageError({
+          message: `Unknown key code ${code}. Use KeyboardEvent.code names: ArrowUp, KeyJ, Space, ShiftLeft, Escape.`,
+        })
+      )
+    : Effect.succeed([code, spec] as const);
 };
 
 const keyDown = (code: string, spec: KeySpec): CommandParams => {
@@ -80,24 +92,30 @@ const keyUp = (code: string, spec: KeySpec): CommandParams => ({
   windowsVirtualKeyCode: spec.keyCode,
 });
 
-export const press = async (
+export const press = Effect.fn("rv.press")(function* press(
   page: Session,
   codes: readonly string[],
   holdMs: number
-): Promise<void> => {
-  const specs = codes.map((code) => [code, keyOf(code)] as const);
-  await Promise.all(
-    specs.map(async ([code, spec]) => {
-      await page.send("Input.dispatchKeyEvent", keyDown(code, spec));
-    })
+) {
+  const specs = yield* Effect.all(codes.map((code) => keyOf(code)));
+  const send = (params: (code: string, spec: KeySpec) => CommandParams) =>
+    Effect.all(
+      specs.map(([code, spec]) =>
+        page.send("Input.dispatchKeyEvent", params(code, spec))
+      ),
+      { concurrency: "unbounded", discard: true }
+    );
+  yield* Effect.uninterruptibleMask((restore) =>
+    send(keyDown).pipe(
+      Effect.andThen(
+        restore(Effect.sleep(holdMs)).pipe(
+          Effect.onInterrupt(() => released(send(keyUp)))
+        )
+      )
+    )
   );
-  await sleep(holdMs);
-  await Promise.all(
-    specs.map(async ([code, spec]) => {
-      await page.send("Input.dispatchKeyEvent", keyUp(code, spec));
-    })
-  );
-};
+  yield* send(keyUp);
+});
 
 const clickTarget = Schema.Struct({
   error: Schema.optionalKey(Schema.String),
@@ -128,29 +146,32 @@ const findControl = (text: string, within: string): string => `(() => {
   return { label: lines(found).join(" / "), x, y };
 })()`;
 
-export const click = async (
+export const click = Effect.fn("rv.click")(function* click(
   page: Session,
   text: string,
   within: string
-): Promise<string> => {
-  const target = await evaluate(page, findControl(text, within), clickTarget);
+) {
+  const target = yield* evaluate(page, findControl(text, within), clickTarget);
   if (target.error !== undefined || target.x === undefined) {
     const seen =
       target.seen !== undefined && target.seen.length > 0
         ? `; on screen: ${target.seen.join(" | ")}`
         : "";
-    throw new Error(`${target.error ?? "no target"}${seen}`);
+    return yield* new VerificationError({
+      message: `${target.error ?? "no target"}${seen}`,
+      operation: "click",
+    });
   }
   const at = { x: target.x, y: target.y ?? 0 };
-  await page.send("Input.dispatchMouseEvent", { ...at, type: "mouseMoved" });
-  await page.send("Input.dispatchMouseEvent", {
+  yield* page.send("Input.dispatchMouseEvent", { ...at, type: "mouseMoved" });
+  yield* page.send("Input.dispatchMouseEvent", {
     ...at,
     button: "left",
     buttons: 1,
     clickCount: 1,
     type: "mousePressed",
   });
-  await page.send("Input.dispatchMouseEvent", {
+  yield* page.send("Input.dispatchMouseEvent", {
     ...at,
     button: "left",
     buttons: 0,
@@ -158,4 +179,4 @@ export const click = async (
     type: "mouseReleased",
   });
   return target.label ?? text;
-};
+});

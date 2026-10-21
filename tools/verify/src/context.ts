@@ -1,13 +1,17 @@
 import { parseArgs } from "node:util";
 
-import { stateOfRun } from "./state.ts";
-import type { InstanceState } from "./state.ts";
+import { UsageError } from "@racer/devtools/usage-error";
+import * as Clock from "effect/Clock";
+import * as Effect from "effect/Effect";
+
+import { SlotStore } from "./state.ts";
 
 const DEFAULT_TIMEOUT_S = 60;
 
-const print = (line: string) => {
-  process.stdout.write(`${line}\n`);
-};
+const print = (line: string) =>
+  Effect.sync(() => {
+    process.stdout.write(`${line}\n`);
+  });
 
 export const readCommandLine = (script: string) => {
   const { positionals, values } = parseArgs({
@@ -33,19 +37,24 @@ export const readCommandLine = (script: string) => {
 
   const [command = "help", ...rest] = positionals;
 
-  const deadline = (): number => Date.now() + Number(values.timeout) * 1000;
+  const deadline = Clock.currentTimeMillis.pipe(
+    Effect.map((now) => now + Number(values.timeout) * 1000)
+  );
 
   return { command, deadline, print, rest, script, values };
 };
 
 export type CommandContext = ReturnType<typeof readCommandLine>;
 
-export const requireRun = async (
+export const requireRun = Effect.fn("rv.requireRun")(function* requireRun(
   context: CommandContext
-): Promise<InstanceState> => {
+) {
   const { values } = context;
   if (values.run === undefined || values.run === "") {
-    throw new Error("Pass --run <id>; rv up prints it.");
+    return yield* new UsageError({
+      message: "Pass --run <id>; rv up prints it.",
+    });
   }
-  return await stateOfRun(values.run);
-};
+  const slots = yield* SlotStore;
+  return yield* slots.stateOfRun(values.run);
+});

@@ -1,6 +1,3 @@
-import { writeFile } from "node:fs/promises";
-import { setTimeout as sleep } from "node:timers/promises";
-
 import {
   summariseTrace,
   threadNames,
@@ -9,8 +6,12 @@ import {
 import type { TraceEvent, TraceSummary } from "@racer/devtools/analysis";
 import { evaluate } from "@racer/devtools/cdp";
 import type { Session } from "@racer/devtools/cdp";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+
+import { VerificationError } from "./verification-error.ts";
 
 const TOP_THREADS = 10;
 
@@ -33,7 +34,7 @@ interface ThreadLoad {
   readonly busyMs: number;
 }
 
-export interface TraceResult {
+interface TraceResult {
   readonly file: string;
   readonly events: number;
   readonly summary: TraceSummary;
@@ -68,35 +69,34 @@ const busiestThreads = (events: readonly TraceEvent[]): ThreadLoad[] => {
 
 const decodeEvent = Schema.decodeUnknownOption(traceEvent);
 
-export const trace = async (
+export const trace = Effect.fn("rv.trace")(function* trace(
   page: Session,
   file: string,
   seconds: number
-): Promise<TraceResult> => {
+) {
+  const fs = yield* FileSystem.FileSystem;
   const raw: unknown[] = [];
-  page.on("Tracing.dataCollected", collectedChunk, ({ value }) => {
+  yield* page.on("Tracing.dataCollected", collectedChunk, ({ value }) => {
     raw.push(...value);
   });
-  const { promise: complete, resolve } = Promise.withResolvers<boolean>();
-  page.on("Tracing.tracingComplete", Schema.Unknown, () => {
-    resolve(true);
-  });
-  await page.send("Tracing.start", {
+  const complete = yield* page.once("Tracing.tracingComplete", Schema.Unknown);
+  yield* page.send("Tracing.start", {
     traceConfig: { includedCategories: [...TRACE_CATEGORIES] },
     transferMode: "ReportEvents",
   });
-  await sleep(seconds * 1000);
-  await page.send("Tracing.end");
-  await complete;
-  await writeFile(file, JSON.stringify({ traceEvents: raw }));
+  yield* Effect.sleep(seconds * 1000);
+  yield* page.send("Tracing.end");
+  yield* complete;
+  yield* fs.writeFileString(file, JSON.stringify({ traceEvents: raw }));
   const events = raw.flatMap((each) => Option.toArray(decodeEvent(each)));
-  return {
+  const result: TraceResult = {
     events: raw.length,
     file,
     summary: summariseTrace(events),
     threads: busiestThreads(events),
   };
-};
+  return result;
+});
 
 const profileInfo = Schema.Struct({
   gpuTimer: Schema.Boolean,
@@ -140,7 +140,7 @@ const statsOf = (values: readonly number[]): Stats => {
 
 const LATE_MS = [20, 33] as const;
 
-export interface Sample {
+interface Sample {
   readonly renderer: string;
   readonly fromTick: number;
   readonly toTick: number;
@@ -154,27 +154,29 @@ export interface Sample {
   readonly rungs: readonly number[];
 }
 
-export const sample = async (
+export const sample = Effect.fn("rv.sample")(function* sample(
   page: Session,
   seconds: number
-): Promise<Sample> => {
+) {
   const read =
     "globalThis.__rushlineProfile ? globalThis.__rushlineProfile.info() : null";
-  const before = await evaluate(page, read, Schema.NullOr(profileInfo));
+  const before = yield* evaluate(page, read, Schema.NullOr(profileInfo));
   if (!before) {
-    throw new Error(
-      "The page has no frame recorder. Open it with &prof (or ?stress) and sample again."
-    );
+    return yield* new VerificationError({
+      message:
+        "The page has no frame recorder. Open it with &prof (or ?stress) and sample again.",
+      operation: "sample",
+    });
   }
-  await sleep(seconds * 1000);
-  const after = await evaluate(page, read, profileInfo);
-  const frames = await evaluate(
+  yield* Effect.sleep(seconds * 1000);
+  const after = yield* evaluate(page, read, profileInfo);
+  const frames = yield* evaluate(
     page,
     `globalThis.__rushlineProfile.window(${before.tick + 1}, ${after.tick})`,
     Schema.Array(frameSample)
   );
   const interval = statsOf(frames.map((frame) => frame.interval));
-  return {
+  const sampled: Sample = {
     calls: statsOf(
       frames.map((frame) => frame.calls.reduce((sum, each) => sum + each, 0))
     ).mean,
@@ -196,7 +198,8 @@ export const sample = async (
     rungs: [...new Set(frames.map((frame) => frame.rung))],
     toTick: after.tick,
   };
-};
+  return sampled;
+});
 
 export interface NetworkProfile {
   readonly latency: number;
@@ -233,21 +236,21 @@ export const networkProfiles = new Map<string, NetworkProfile>([
   ],
 ]);
 
-export const throttle = async (
+export const throttle = Effect.fn("rv.throttle")(function* throttle(
   page: Session,
   cpu: number,
   network: string
-): Promise<void> => {
-  await page.send("Emulation.setCPUThrottlingRate", { rate: cpu });
+) {
+  yield* page.send("Emulation.setCPUThrottlingRate", { rate: cpu });
   const profile = networkProfiles.get(network);
   if (!profile) {
     return;
   }
-  await page.send("Network.enable");
-  await page.send("Network.emulateNetworkConditions", {
+  yield* page.send("Network.enable");
+  yield* page.send("Network.emulateNetworkConditions", {
     downloadThroughput: profile.downloadThroughput,
     latency: profile.latency,
     offline: false,
     uploadThroughput: profile.uploadThroughput,
   });
-};
+});

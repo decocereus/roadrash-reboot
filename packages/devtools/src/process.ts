@@ -1,8 +1,16 @@
-import { spawn } from "node:child_process";
-import type { SpawnOptionsWithoutStdio } from "node:child_process";
-import { once } from "node:events";
-import { text } from "node:stream/consumers";
-import { setTimeout as sleep } from "node:timers/promises";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Layer from "effect/Layer";
+import type * as PlatformError from "effect/PlatformError";
+import * as ChildProcess from "effect/process/ChildProcess";
+import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
+import * as Schema from "effect/Schema";
+import type * as Scope from "effect/Scope";
+import * as Stream from "effect/Stream";
+
+import { DetachedProcesses } from "./node/detached-process.ts";
+import { ProcessError } from "./process-error.ts";
 
 const POLL_MS = 200;
 const STOP_ATTEMPTS = 50;
@@ -12,37 +20,15 @@ export interface CommandOutput {
   readonly stdout: string;
 }
 
-export const run = async (
-  file: string,
-  args: readonly string[],
-  options: SpawnOptionsWithoutStdio = {}
-): Promise<CommandOutput> => {
-  const child = spawn(file, args, options);
-  const [stdout, stderr] = await Promise.all([
-    text(child.stdout),
-    text(child.stderr),
-    once(child, "close"),
-  ]);
-  if (child.exitCode !== 0) {
-    throw new Error(`Command failed: ${[file, ...args].join(" ")}\n${stderr}`);
-  }
-  return { stderr, stdout };
-};
+export interface RunOptions {
+  readonly cwd?: string;
+  readonly env?: NodeJS.ProcessEnv;
+}
 
-export const listenerOf = async (port: number): Promise<number | null> => {
-  try {
-    const { stdout } = await run("lsof", [
-      "-nP",
-      "-t",
-      `-iTCP:${port}`,
-      "-sTCP:LISTEN",
-    ]);
-    const [first] = stdout.split("\n").filter(Boolean).map(Number);
-    return first ?? null;
-  } catch {
-    return null;
-  }
-};
+export interface ListedProcess {
+  readonly pid: number;
+  readonly command: string;
+}
 
 export const alive = (pid: number | null): boolean => {
   if (pid === null) {
@@ -56,41 +42,219 @@ export const alive = (pid: number | null): boolean => {
   }
 };
 
-const commandOf = async (pid: number): Promise<string> => {
-  try {
-    const { stdout } = await run("ps", ["-o", "command=", "-p", String(pid)]);
-    return stdout.trim();
-  } catch {
-    return "";
-  }
-};
+const isMissingProcess = Schema.is(
+  Schema.Struct({ code: Schema.Literal("ESRCH") })
+);
 
-const awaitGone = async (pid: number, attempt: number): Promise<boolean> => {
-  if (!alive(pid)) {
-    return true;
-  }
-  if (attempt >= STOP_ATTEMPTS) {
-    return false;
-  }
-  await sleep(POLL_MS);
-  return await awaitGone(pid, attempt + 1);
-};
+const signal = (pid: number, name: NodeJS.Signals) =>
+  Effect.try({
+    catch: (cause) =>
+      new ProcessError({
+        cause,
+        message: `Could not send ${name} to pid ${pid}.`,
+        operation: "signal",
+        pid,
+      }),
+    try: () => process.kill(pid, name),
+  }).pipe(
+    Effect.catchIf(
+      (error) => isMissingProcess(error.cause),
+      () => Effect.succeed(false)
+    )
+  );
 
-export const stopOwned = async (
-  pid: number | null,
-  expect: string
-): Promise<string> => {
-  if (pid === null || !alive(pid)) {
-    return "already gone";
+const awaitGone = Effect.fnUntraced(function* awaitGone(pid: number) {
+  let attempt = 0;
+  while (alive(pid)) {
+    if (attempt >= STOP_ATTEMPTS) {
+      return false;
+    }
+    yield* Effect.sleep(POLL_MS);
+    attempt += 1;
   }
-  const command = await commandOf(pid);
-  if (!command.includes(expect)) {
-    return `left alone: pid ${pid} is now "${command.slice(0, 80)}", not ours`;
+  return true;
+});
+
+const collected = (
+  stream: Stream.Stream<Uint8Array, PlatformError.PlatformError>
+) => Stream.mkString(Stream.decodeText(stream));
+
+const listedLine = /^\s*(?<pid>\d+)\s(?<command>.*)$/u;
+
+export class ToolProcesses extends Context.Service<
+  ToolProcesses,
+  {
+    readonly run: (
+      file: string,
+      args: readonly string[],
+      options?: RunOptions
+    ) => Effect.Effect<CommandOutput, ProcessError>;
+    readonly spawnScoped: (
+      file: string,
+      args: readonly string[]
+    ) => Effect.Effect<number, ProcessError, Scope.Scope>;
+    readonly startDetached: (
+      args: readonly string[],
+      cwd: string,
+      log: string,
+      env: NodeJS.ProcessEnv
+    ) => Effect.Effect<number, ProcessError>;
+    readonly listenerOf: (port: number) => Effect.Effect<number | null>;
+    readonly commandOf: (pid: number) => Effect.Effect<string>;
+    readonly listed: Effect.Effect<readonly ListedProcess[], ProcessError>;
+    readonly stopOwned: (
+      pid: number | null,
+      expect: string
+    ) => Effect.Effect<string, ProcessError>;
   }
-  process.kill(pid, "SIGTERM");
-  if (await awaitGone(pid, 0)) {
-    return `stopped pid ${pid}`;
-  }
-  process.kill(pid, "SIGKILL");
-  return `killed pid ${pid} after SIGTERM timed out`;
-};
+>()("@racer/devtools/ToolProcesses") {
+  static readonly layer = Layer.effect(ToolProcesses)(
+    Effect.gen(function* makeToolProcesses() {
+      const spawner = yield* ChildProcessSpawner;
+      const detached = yield* DetachedProcesses;
+
+      const run = Effect.fn("ToolProcesses.run")(function* run(
+        file: string,
+        args: readonly string[],
+        options: RunOptions = {}
+      ) {
+        const shown = [file, ...args].join(" ");
+        const handle = yield* spawner
+          .spawn(
+            ChildProcess.make(file, [...args], {
+              cwd: options.cwd,
+              env: options.env,
+              stdin: "ignore",
+            })
+          )
+          .pipe(
+            Effect.mapError(
+              (cause) =>
+                new ProcessError({
+                  cause,
+                  executable: file,
+                  message: `Could not start ${shown}: ${cause.message}`,
+                  operation: "run",
+                })
+            )
+          );
+        const [stdout, stderr, exit] = yield* Effect.all(
+          [
+            collected(handle.stdout),
+            collected(handle.stderr),
+            Effect.exit(handle.exitCode),
+          ],
+          { concurrency: "unbounded" }
+        ).pipe(
+          Effect.mapError(
+            (cause) =>
+              new ProcessError({
+                cause,
+                executable: file,
+                message: `Could not read the output of ${shown}: ${cause.message}`,
+                operation: "run",
+                pid: handle.pid,
+              })
+          )
+        );
+        if (Exit.isFailure(exit) || exit.value !== 0) {
+          return yield* new ProcessError({
+            cause: exit,
+            executable: file,
+            message: `Command failed: ${shown}\n${stderr}`,
+            operation: "run",
+            pid: handle.pid,
+          });
+        }
+        return { stderr, stdout };
+      }, Effect.scoped);
+
+      const spawnScoped = Effect.fn("ToolProcesses.spawnScoped")(
+        function* spawnScoped(file: string, args: readonly string[]) {
+          const handle = yield* spawner
+            .spawn(
+              ChildProcess.make(file, [...args], {
+                stderr: "ignore",
+                stdin: "ignore",
+                stdout: "ignore",
+              })
+            )
+            .pipe(
+              Effect.mapError(
+                (cause) =>
+                  new ProcessError({
+                    cause,
+                    executable: file,
+                    message: `Could not start ${file}: ${cause.message}`,
+                    operation: "spawn",
+                  })
+              )
+            );
+          return handle.pid;
+        }
+      );
+
+      const listenerOf = (port: number) =>
+        run("lsof", ["-nP", "-t", `-iTCP:${port}`, "-sTCP:LISTEN"]).pipe(
+          Effect.map(({ stdout }) => {
+            const [first] = stdout.split("\n").filter(Boolean).map(Number);
+            return first ?? null;
+          }),
+          Effect.catchTag("ProcessError", () => Effect.succeed(null))
+        );
+
+      const commandOf = (pid: number) =>
+        run("ps", ["-o", "command=", "-p", String(pid)]).pipe(
+          Effect.map(({ stdout }) => stdout.trim()),
+          Effect.catchTag("ProcessError", () => Effect.succeed(""))
+        );
+
+      const listed = run("ps", ["-axo", "pid=,command="]).pipe(
+        Effect.map(({ stdout }) =>
+          stdout.split("\n").flatMap((line) => {
+            const groups = listedLine.exec(line)?.groups;
+            return groups?.pid === undefined || groups.command === undefined
+              ? []
+              : [{ command: groups.command, pid: Number(groups.pid) }];
+          })
+        )
+      );
+
+      const stopOwned = Effect.fn("ToolProcesses.stopOwned")(
+        function* stopOwned(pid: number | null, expect: string) {
+          if (pid === null || !alive(pid)) {
+            return "already gone";
+          }
+          const command = yield* commandOf(pid);
+          if (!command.includes(expect)) {
+            return `left alone: pid ${pid} is now "${command.slice(0, 80)}", not ours`;
+          }
+          if (!(yield* signal(pid, "SIGTERM"))) {
+            return "already gone";
+          }
+          if (yield* awaitGone(pid)) {
+            return `stopped pid ${pid}`;
+          }
+          const now = yield* commandOf(pid);
+          if (!now.includes(expect)) {
+            return alive(pid)
+              ? `left alone: pid ${pid} is now "${now.slice(0, 80)}", not ours`
+              : `stopped pid ${pid}`;
+          }
+          yield* signal(pid, "SIGKILL");
+          return `killed pid ${pid} after SIGTERM timed out`;
+        }
+      );
+
+      return ToolProcesses.of({
+        commandOf,
+        listed,
+        listenerOf,
+        run,
+        spawnScoped,
+        startDetached: detached.spawnLogged,
+        stopOwned,
+      });
+    })
+  );
+}

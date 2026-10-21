@@ -1,3 +1,4 @@
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
 import { loadMap, originalOf } from "./source-maps.ts";
@@ -37,10 +38,18 @@ export interface Hotspots {
   readonly top: HotFunction[];
 }
 
-export const hottest = async (
+const mapsFor = (urls: ReadonlySet<string>) =>
+  Effect.all(
+    [...urls].map((url) =>
+      Effect.map(loadMap(url), (loaded) => [url, loaded] as const)
+    ),
+    { concurrency: "unbounded" }
+  ).pipe(Effect.map((entries) => new Map(entries)));
+
+export const hottest = Effect.fn("profiles.hottest")(function* hottest(
   profile: CpuProfile,
   limit: number
-): Promise<Hotspots> => {
+) {
   const byNode = new Map(profile.profile.nodes.map((node) => [node.id, node]));
   const selfByKey = new Map<string, number>();
   const frameByKey = new Map<string, typeof CallFrame.Type>();
@@ -72,11 +81,7 @@ export const hottest = async (
   const urls = new Set(
     ranked.map(([key]) => frameByKey.get(key)?.url ?? "").filter(Boolean)
   );
-  const maps = new Map(
-    await Promise.all(
-      [...urls].map(async (url) => [url, await loadMap(url)] as const)
-    )
-  );
+  const maps = yield* mapsFor(urls);
   const top = ranked.map(([key, selfMs]) => {
     const frame = frameByKey.get(key);
     const loaded = frame ? maps.get(frame.url) : undefined;
@@ -95,13 +100,14 @@ export const hottest = async (
       where: original ?? `${file}:${(frame?.lineNumber ?? 0) + 1}`,
     };
   });
-  return {
+  const hotspots: Hotspots = {
     busyMs,
     idleMs: special.get("(idle)") ?? 0,
     programMs: special.get("(program)") ?? 0,
     top,
   };
-};
+  return hotspots;
+});
 
 interface AllocationNode {
   readonly callFrame: typeof CallFrame.Type;
@@ -167,42 +173,41 @@ const gatherAllocations = (
   }
 };
 
-export const allocationSites = async (
-  profile: AllocationProfile,
-  limit: number
-): Promise<Allocations> => {
-  const sites = new Map<string, SiteTotal>();
-  gatherAllocations(
-    profile.profile.head,
-    profile.profile.head.callFrame,
-    sites
-  );
-  const bytes = [...sites.values()].reduce((sum, each) => sum + each.bytes, 0);
-  const ranked = [...sites.values()]
-    .toSorted((a, b) => b.bytes - a.bytes)
-    .slice(0, limit);
-  const urls = new Set(ranked.map(({ frame }) => frame.url).filter(Boolean));
-  const maps = new Map(
-    await Promise.all(
-      [...urls].map(async (url) => [url, await loadMap(url)] as const)
-    )
-  );
-  return {
-    bytes,
-    top: ranked.map((site) => {
-      const { frame } = site;
-      const loaded = maps.get(frame.url);
-      const original = loaded
-        ? originalOf(loaded, frame.lineNumber, frame.columnNumber)
-        : null;
-      return {
-        bytes: site.bytes,
-        name: frame.functionName || "(anonymous)",
-        share: bytes > 0 ? site.bytes / bytes : 0,
-        where:
-          original ??
-          `${frame.url.split("/").at(-1) ?? ""}:${frame.lineNumber + 1}`,
-      };
-    }),
-  };
-};
+export const allocationSites = Effect.fn("profiles.allocationSites")(
+  function* allocationSites(profile: AllocationProfile, limit: number) {
+    const sites = new Map<string, SiteTotal>();
+    gatherAllocations(
+      profile.profile.head,
+      profile.profile.head.callFrame,
+      sites
+    );
+    const bytes = [...sites.values()].reduce(
+      (sum, each) => sum + each.bytes,
+      0
+    );
+    const ranked = [...sites.values()]
+      .toSorted((a, b) => b.bytes - a.bytes)
+      .slice(0, limit);
+    const urls = new Set(ranked.map(({ frame }) => frame.url).filter(Boolean));
+    const maps = yield* mapsFor(urls);
+    const allocations: Allocations = {
+      bytes,
+      top: ranked.map((site) => {
+        const { frame } = site;
+        const loaded = maps.get(frame.url);
+        const original = loaded
+          ? originalOf(loaded, frame.lineNumber, frame.columnNumber)
+          : null;
+        return {
+          bytes: site.bytes,
+          name: frame.functionName || "(anonymous)",
+          share: bytes > 0 ? site.bytes / bytes : 0,
+          where:
+            original ??
+            `${frame.url.split("/").at(-1) ?? ""}:${frame.lineNumber + 1}`,
+        };
+      }),
+    };
+    return allocations;
+  }
+);

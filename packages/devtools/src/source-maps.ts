@@ -1,3 +1,5 @@
+import * as Effect from "effect/Effect";
+import * as HttpClient from "effect/http/HttpClient";
 import * as Schema from "effect/Schema";
 
 const sourceMap = Schema.Struct({
@@ -10,6 +12,8 @@ const sourceMap = Schema.Struct({
 });
 
 type SourceMap = typeof sourceMap.Type;
+
+const decodeSourceMap = Schema.decodeUnknownEffect(sourceMap);
 
 const BASE64 =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -75,18 +79,16 @@ interface LoadedMap {
   readonly lines: Segment[][];
 }
 
-export const loadMap = async (url: string): Promise<LoadedMap | null> => {
-  try {
-    const response = await fetch(`${url}.map`);
-    if (!response.ok) {
+export const loadMap = (url: string) =>
+  Effect.gen(function* fetchSourceMap() {
+    const response = yield* HttpClient.get(`${url}.map`);
+    if (response.status < 200 || response.status >= 300) {
       return null;
     }
-    const map = Schema.decodeUnknownSync(sourceMap)(await response.json());
-    return { lines: segmentsOf(map), map };
-  } catch {
-    return null;
-  }
-};
+    const map = yield* decodeSourceMap(yield* response.json);
+    const loaded: LoadedMap = { lines: segmentsOf(map), map };
+    return loaded;
+  }).pipe(Effect.orElseSucceed((): LoadedMap | null => null));
 
 export const originalOf = (
   loaded: LoadedMap,

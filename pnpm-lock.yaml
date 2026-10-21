@@ -242,6 +242,9 @@ importers:
 
   tools/perf:
     dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0
+        version: 4.0.0(effect@4.0.0)(redis@6.3.0)
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
@@ -264,6 +267,9 @@ importers:
 
   tools/verify:
     dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0
+        version: 4.0.0(effect@4.0.0)(redis@6.3.0)
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools

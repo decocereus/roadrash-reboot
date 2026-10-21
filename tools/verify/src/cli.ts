@@ -1,3 +1,12 @@
+import { runCommand } from "@racer/devtools/cleanup";
+import type { CleanupOutcomes } from "@racer/devtools/cleanup";
+import type { ToolProcesses } from "@racer/devtools/process";
+import type * as Effect from "effect/Effect";
+import type * as FileSystem from "effect/FileSystem";
+import type * as HttpClient from "effect/http/HttpClient";
+import type * as Scope from "effect/Scope";
+import type * as Socket from "effect/socket/Socket";
+
 import {
   ariaCommand,
   clickCommand,
@@ -17,7 +26,9 @@ import {
 import { readCommandLine } from "./context.ts";
 import type { CommandContext } from "./context.ts";
 import { doctor } from "./doctor.ts";
+import type { Evidence } from "./evidence.ts";
 import { down, up } from "./lifecycle.ts";
+import type { SlotStore } from "./state.ts";
 import { watch } from "./watcher.ts";
 
 const HELP = `rv: drive a Rushline verification instance in a windowed Helium over DevTools
@@ -41,7 +52,22 @@ const HELP = `rv: drive a Rushline verification instance in a windowed Helium ov
   rv rebuild    --run <id>
   rv down       --run <id>`;
 
-const commands = new Map<string, (context: CommandContext) => Promise<void>>([
+type Handler = (
+  context: CommandContext
+) => Effect.Effect<
+  void,
+  unknown,
+  | CleanupOutcomes
+  | Evidence
+  | FileSystem.FileSystem
+  | HttpClient.HttpClient
+  | Scope.Scope
+  | SlotStore
+  | Socket.WebSocketConstructor
+  | ToolProcesses
+>;
+
+const commands = new Map<string, Handler>([
   ["aria", ariaCommand],
   ["click", clickCommand],
   ["console", consoleCommand],
@@ -62,20 +88,10 @@ const commands = new Map<string, (context: CommandContext) => Promise<void>>([
   ["watch", watch],
 ]);
 
-export const main = async (script: string): Promise<void> => {
+export const main = (script: string) => {
   const context = readCommandLine(script);
-  const { command, print } = context;
-  const chosen = commands.get(command);
-  if (chosen) {
-    try {
-      await chosen(context);
-    } catch (error) {
-      process.stderr.write(
-        `rv ${command}: ${error instanceof Error ? error.message : String(error)}\n`
-      );
-      process.exitCode = 1;
-    }
-  } else {
-    print(HELP);
-  }
+  const chosen = commands.get(context.command);
+  return chosen
+    ? runCommand(chosen(context), `rv ${context.command}: `)
+    : context.print(HELP);
 };

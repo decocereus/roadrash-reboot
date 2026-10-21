@@ -1,49 +1,57 @@
-import { readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { setTimeout as sleep } from "node:timers/promises";
 
 import {
   awaitPortClosed,
   browsers,
   sharedFlags,
   startInBackground,
+  stopProfileBrowser,
 } from "@racer/devtools/chrome";
-import { spawnLogged } from "@racer/devtools/node/detached-process";
-import { listenerOf, run, stopOwned } from "@racer/devtools/process";
+import { ToolProcesses } from "@racer/devtools/process";
+import * as Clock from "effect/Clock";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as HttpClient from "effect/http/HttpClient";
+import * as Option from "effect/Option";
 
-import { VIEWPORT, serverPortOf, writeState } from "./state.ts";
+import { SlotStore, VIEWPORT, serverPortOf } from "./state.ts";
 import type { InstanceState } from "./state.ts";
+import { VerificationError } from "./verification-error.ts";
 
 const POLL_MS = 200;
 
 const SERVER_ATTEMPTS = 300;
 
-export const git = async (
+export const git = Effect.fn("rv.git")(function* git(
   cwd: string,
   args: readonly string[]
-): Promise<string> => {
-  const { stdout } = await run("git", [...args], { cwd });
+) {
+  const processes = yield* ToolProcesses;
+  const { stdout } = yield* processes.run("git", args, { cwd });
   return stdout.trim();
-};
+});
 
-export const checkoutRoot = async (): Promise<string> =>
-  await git(process.cwd(), ["rev-parse", "--show-toplevel"]);
+export const checkoutRoot = Effect.suspend(() =>
+  git(process.cwd(), ["rev-parse", "--show-toplevel"])
+);
 
-export const evidenceRoot = async (checkout: string): Promise<string> => {
-  const common = await git(checkout, [
+export const evidenceRoot = Effect.fn("rv.evidenceRoot")(function* evidenceRoot(
+  checkout: string
+) {
+  const common = yield* git(checkout, [
     "rev-parse",
     "--path-format=absolute",
     "--git-common-dir",
   ]);
   return path.join(path.dirname(common), "tools/perf/results/verify");
-};
+});
 
 const vitePath = (checkout: string): string =>
   path.join(checkout, "apps/web/node_modules/vite/bin/vite.js");
 
 const webDir = (checkout: string): string => path.join(checkout, "apps/web");
 
-const buildDirFor = (checkout: string, slot: number): string =>
+export const buildDirFor = (checkout: string, slot: number): string =>
   path.join(webDir(checkout), "node_modules/.rushline-verify", `slot-${slot}`);
 
 const devEnv = (): NodeJS.ProcessEnv => ({
@@ -51,12 +59,16 @@ const devEnv = (): NodeJS.ProcessEnv => ({
   NODE_ENV: "development",
 });
 
-export const build = async (state: InstanceState): Promise<InstanceState> => {
+export const build = Effect.fn("rv.build")(function* build(
+  state: InstanceState
+) {
+  const processes = yield* ToolProcesses;
+  const fs = yield* FileSystem.FileSystem;
   const buildDir = buildDirFor(state.checkout, state.slot);
-  const sha = await git(state.checkout, ["rev-parse", "--short", "HEAD"]);
-  const dirty = await git(state.checkout, ["status", "--porcelain"]);
-  const builtAt = Date.now();
-  const output = await run(
+  const sha = yield* git(state.checkout, ["rev-parse", "--short", "HEAD"]);
+  const dirty = yield* git(state.checkout, ["status", "--porcelain"]);
+  const builtAt = yield* Clock.currentTimeMillis;
+  const output = yield* processes.run(
     process.execPath,
     [
       vitePath(state.checkout),
@@ -69,17 +81,18 @@ export const build = async (state: InstanceState): Promise<InstanceState> => {
     ],
     { cwd: webDir(state.checkout), env: devEnv() }
   );
-  await writeFile(
+  yield* fs.writeFileString(
     path.join(state.evidence, "build.log"),
     `${output.stdout}\n${output.stderr}`
   );
-  return {
+  const built: InstanceState = {
     ...state,
     buildDir,
     builtAt,
     builtFrom: dirty === "" ? sha : `${sha}+uncommitted`,
   };
-};
+  return built;
+});
 
 const serverArgs = (state: InstanceState): string[] => {
   const port = String(serverPortOf(state.slot));
@@ -98,113 +111,155 @@ const serverArgs = (state: InstanceState): string[] => {
   ];
 };
 
-export const serverAnswers = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url);
-    const body = await response.text();
-    return response.ok && body.includes("<title>Rushline</title>");
-  } catch {
-    return false;
-  }
-};
-
-const awaitServer = async (url: string, attempt: number): Promise<void> => {
-  if (await serverAnswers(url)) {
-    return;
-  }
-  if (attempt >= SERVER_ATTEMPTS) {
-    throw new Error(`The server at ${url} never served the Rushline page.`);
-  }
-  await sleep(POLL_MS);
-  await awaitServer(url, attempt + 1);
-};
-
-export const startServer = async (
-  state: InstanceState
-): Promise<InstanceState> => {
-  const pid = await spawnLogged(
-    serverArgs(state),
-    webDir(state.checkout),
-    path.join(state.evidence, "server.log"),
-    devEnv()
+export const serverAnswers = (url: string) =>
+  HttpClient.get(url).pipe(
+    Effect.flatMap((response) =>
+      response.text.pipe(
+        Effect.map(
+          (body) =>
+            response.status >= 200 &&
+            response.status < 300 &&
+            body.includes("<title>Rushline</title>")
+        )
+      )
+    ),
+    Effect.orElseSucceed(() => false)
   );
-  const next = { ...state, serverPid: pid };
-  await writeState(next);
-  await awaitServer(state.serverUrl, 0);
-  const listener = await listenerOf(serverPortOf(state.slot));
-  if (listener !== pid) {
-    throw new Error(
-      `Port ${serverPortOf(state.slot)} is held by pid ${listener}, not the server this run started (${pid}).`
-    );
+
+const awaitServer = Effect.fnUntraced(function* awaitServer(url: string) {
+  let attempt = 0;
+  while (!(yield* serverAnswers(url))) {
+    if (attempt >= SERVER_ATTEMPTS) {
+      yield* new VerificationError({
+        message: `The server at ${url} never served the Rushline page.`,
+        operation: "serve",
+      });
+    }
+    yield* Effect.sleep(POLL_MS);
+    attempt += 1;
+  }
+});
+
+export const startServer = Effect.fn("rv.startServer")(function* startServer(
+  state: InstanceState
+) {
+  const processes = yield* ToolProcesses;
+  const slots = yield* SlotStore;
+  const next = yield* Effect.uninterruptible(
+    processes
+      .startDetached(
+        serverArgs(state),
+        webDir(state.checkout),
+        path.join(state.evidence, "server.log"),
+        devEnv()
+      )
+      .pipe(
+        Effect.map((pid): InstanceState => ({ ...state, serverPid: pid })),
+        Effect.tap(slots.writeState)
+      )
+  );
+  yield* awaitServer(state.serverUrl);
+  const listener = yield* processes.listenerOf(serverPortOf(state.slot));
+  if (listener !== next.serverPid) {
+    return yield* new VerificationError({
+      message: `Port ${serverPortOf(state.slot)} is held by pid ${listener}, not the server this run started (${next.serverPid}).`,
+      operation: "serve",
+      run: state.run,
+    });
   }
   return next;
-};
+});
 
-export const startBrowser = async (
+export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
   state: InstanceState,
   url: string
-): Promise<InstanceState> => {
+) {
   const flags = [
     ...sharedFlags(state.devtoolsPort, state.profile, VIEWPORT),
     ...(state.sound ? [] : ["--mute-audio"]),
     url,
   ];
-  const pid = await startInBackground(
+  const pid = yield* startInBackground(
     browsers.helium,
     flags,
-    state.devtoolsPort
+    state.devtoolsPort,
+    state.profile
   );
-  return { ...state, browserPid: pid };
-};
+  const started: InstanceState = { ...state, browserPid: pid };
+  return started;
+});
 
-export const startWatcher = async (
+export const startWatcher = Effect.fn("rv.startWatcher")(function* startWatcher(
   state: InstanceState,
   script: string
-): Promise<InstanceState> => {
-  const pid = await spawnLogged(
+) {
+  const processes = yield* ToolProcesses;
+  const pid = yield* processes.startDetached(
     [script, "watch", "--run", state.run],
     state.checkout,
     path.join(state.evidence, "watch.log"),
     devEnv()
   );
-  return { ...state, watcherPid: pid };
-};
+  const watching: InstanceState = { ...state, watcherPid: pid };
+  return watching;
+});
 
-export const stopServer = async (state: InstanceState): Promise<string> => {
+export const stopServer = Effect.fn("rv.stopServer")(function* stopServer(
+  state: InstanceState
+) {
   if (state.serverMode === "external") {
     return "external server left running";
   }
-  const result = await stopOwned(state.serverPid, "vite.js");
-  await awaitPortClosed(serverPortOf(state.slot));
+  const processes = yield* ToolProcesses;
+  const result = yield* processes.stopOwned(state.serverPid, "vite.js");
+  yield* awaitPortClosed(serverPortOf(state.slot));
   return result;
-};
+});
 
-export const stopBrowser = async (state: InstanceState): Promise<string> => {
-  const result = await stopOwned(state.browserPid, "Helium");
-  await awaitPortClosed(state.devtoolsPort);
+export const stopBrowser = Effect.fn("rv.stopBrowser")(function* stopBrowser(
+  state: InstanceState
+) {
+  const processes = yield* ToolProcesses;
+  const result =
+    state.browserPid === null
+      ? yield* stopProfileBrowser(state.profile)
+      : yield* processes.stopOwned(state.browserPid, "Helium");
+  yield* awaitPortClosed(state.devtoolsPort);
   return result;
-};
+});
 
-export const stopWatcher = async (state: InstanceState): Promise<string> =>
-  await stopOwned(state.watcherPid, "rushline.ts");
+export const stopWatcher = (state: InstanceState) =>
+  ToolProcesses.use((processes) =>
+    processes.stopOwned(state.watcherPid, "rushline.ts")
+  );
 
-export const newestSourceChange = async (checkout: string): Promise<number> => {
-  const roots = ["apps/web/src", "apps/web/public", "packages"].map((each) =>
-    path.join(checkout, each)
-  );
-  const listed = await Promise.all(
-    roots.map(async (root) => {
-      const names = await readdir(root, { recursive: true });
-      return names
-        .filter((name) => !name.includes("node_modules"))
-        .map((name) => path.join(root, name));
-    })
-  );
-  const times = await Promise.all(
-    listed.flat().map(async (file) => {
-      const info = await stat(file);
-      return info.mtimeMs;
-    })
-  );
-  return Math.max(0, ...times);
-};
+export const newestSourceChange = Effect.fn("rv.newestSourceChange")(
+  function* newestSourceChange(checkout: string) {
+    const fs = yield* FileSystem.FileSystem;
+    const roots = ["apps/web/src", "apps/web/public", "packages"].map((each) =>
+      path.join(checkout, each)
+    );
+    const listed = yield* Effect.all(
+      roots.map((root) =>
+        Effect.map(fs.readDirectory(root, { recursive: true }), (names) =>
+          names
+            .filter((name) => !name.includes("node_modules"))
+            .map((name) => path.join(root, name))
+        )
+      ),
+      { concurrency: "unbounded" }
+    );
+    const times = yield* Effect.all(
+      listed.flat().map((file) =>
+        Effect.map(fs.stat(file), (info) =>
+          Option.match(info.mtime, {
+            onNone: () => 0,
+            onSome: (mtime) => mtime.getTime(),
+          })
+        )
+      ),
+      { concurrency: "unbounded" }
+    );
+    return Math.max(0, ...times);
+  }
+);

@@ -8,7 +8,9 @@ const envelope = Schema.Struct({
   result: Schema.optionalKey(Schema.Unknown),
 });
 
-export const decodeEnvelope = Schema.decodeUnknownSync(envelope);
+export const decodeMessage = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(envelope)
+);
 
 export type Envelope = typeof envelope.Type;
 

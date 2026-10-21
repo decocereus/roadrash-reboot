@@ -1,9 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { setTimeout as sleep } from "node:timers/promises";
 
 import type { Session } from "@racer/devtools/cdp";
+import type * as Cause from "effect/Cause";
+import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
+import * as FileSystem from "effect/FileSystem";
+import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
+import * as Stream from "effect/Stream";
 
 const SCREENCAST_QUALITY = 70;
 
@@ -13,18 +17,19 @@ const SCREENCAST_HEIGHT = 860;
 
 const captured = Schema.Struct({ data: Schema.String });
 
-export const screenshot = async (
+export const screenshot = Effect.fn("rv.screenshot")(function* screenshot(
   page: Session,
   file: string
-): Promise<string> => {
-  const { data } = await page.call(
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const { data } = yield* page.call(
     "Page.captureScreenshot",
     { format: "png" },
     captured
   );
-  await writeFile(file, data, { encoding: "base64" });
+  yield* fs.writeFile(file, Buffer.from(data, "base64"));
   return file;
-};
+});
 
 const axValue = Schema.optionalKey(
   Schema.Struct({ value: Schema.optionalKey(Schema.Unknown) })
@@ -97,12 +102,13 @@ const describeNode = (node: AxNode): string => {
     .join(" ");
 };
 
-export const ariaSnapshot = async (
+export const ariaSnapshot = Effect.fn("rv.ariaSnapshot")(function* ariaSnapshot(
   page: Session,
   file: string
-): Promise<number> => {
-  await page.send("Accessibility.enable");
-  const { nodes } = await page.call("Accessibility.getFullAXTree", {}, axTree);
+) {
+  const fs = yield* FileSystem.FileSystem;
+  yield* page.send("Accessibility.enable");
+  const { nodes } = yield* page.call("Accessibility.getFullAXTree", {}, axTree);
   const byId = new Map(nodes.map((node) => [node.nodeId, node]));
   const lines: string[] = [];
   const walk = (node: AxNode, depth: number, named: string) => {
@@ -124,9 +130,9 @@ export const ariaSnapshot = async (
   if (root) {
     walk(root, 0, "");
   }
-  await writeFile(file, `${lines.join("\n")}\n`);
+  yield* fs.writeFileString(file, `${lines.join("\n")}\n`);
   return lines.length;
-};
+});
 
 const screencastFrame = Schema.Struct({
   data: Schema.String,
@@ -134,47 +140,75 @@ const screencastFrame = Schema.Struct({
   sessionId: Schema.Number,
 });
 
-export interface Screencast {
+interface Screencast {
   readonly frames: number;
   readonly seconds: number;
   readonly dir: string;
 }
 
-export const screencast = async (
+interface Frame {
+  readonly data: string;
+  readonly index: number;
+  readonly sessionId: number;
+}
+
+export const screencast = Effect.fn("rv.screencast")(function* screencast(
   page: Session,
   dir: string,
   seconds: number,
   everyNth: number
-): Promise<Screencast> => {
-  await mkdir(dir, { recursive: true });
-  const writes: Promise<void>[] = [];
+) {
+  const fs = yield* FileSystem.FileSystem;
+  yield* fs.makeDirectory(dir, { recursive: true });
   const stamps: number[] = [];
-  page.on("Page.screencastFrame", screencastFrame, (frame) => {
-    const index = stamps.length;
-    stamps.push(frame.metadata.timestamp ?? 0);
-    writes.push(
-      writeFile(
-        path.join(dir, `frame-${String(index).padStart(4, "0")}.jpg`),
-        frame.data,
-        { encoding: "base64" }
-      )
-    );
-    void page.send("Page.screencastFrameAck", { sessionId: frame.sessionId });
+  const frames = yield* Queue.make<Frame, Cause.Done>();
+  yield* page.on("Page.screencastFrame", screencastFrame, (frame) => {
+    const accepted = Queue.offerUnsafe(frames, {
+      data: frame.data,
+      index: stamps.length,
+      sessionId: frame.sessionId,
+    });
+    if (accepted) {
+      stamps.push(frame.metadata.timestamp ?? 0);
+    }
   });
-  await page.send("Page.enable");
-  await page.send("Page.startScreencast", {
+  const writer = yield* Effect.forkScoped(
+    Stream.fromQueue(frames).pipe(
+      Stream.runForEach((frame) =>
+        Effect.all(
+          [
+            fs.writeFile(
+              path.join(
+                dir,
+                `frame-${String(frame.index).padStart(4, "0")}.jpg`
+              ),
+              Buffer.from(frame.data, "base64")
+            ),
+            page.send("Page.screencastFrameAck", {
+              sessionId: frame.sessionId,
+            }),
+          ],
+          { concurrency: "unbounded", discard: true }
+        )
+      )
+    )
+  );
+  yield* page.send("Page.enable");
+  yield* page.send("Page.startScreencast", {
     everyNthFrame: everyNth,
     format: "jpeg",
     maxHeight: SCREENCAST_HEIGHT,
     maxWidth: SCREENCAST_WIDTH,
     quality: SCREENCAST_QUALITY,
   });
-  await sleep(seconds * 1000);
-  await page.send("Page.stopScreencast");
-  await Promise.all(writes);
-  await writeFile(
+  yield* Effect.sleep(seconds * 1000);
+  yield* page.send("Page.stopScreencast");
+  yield* Queue.end(frames);
+  yield* Fiber.join(writer);
+  yield* fs.writeFileString(
     path.join(dir, "frames.json"),
     JSON.stringify({ everyNth, seconds, timestamps: stamps }, null, 1)
   );
-  return { dir, frames: stamps.length, seconds };
-};
+  const cast: Screencast = { dir, frames: stamps.length, seconds };
+  return cast;
+});

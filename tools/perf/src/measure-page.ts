@@ -1,11 +1,13 @@
-import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { setTimeout as sleep } from "node:timers/promises";
 
 import { clockMark, traceEvent } from "@racer/devtools/analysis";
 import type { TraceEvent } from "@racer/devtools/analysis";
+import { BrowserError } from "@racer/devtools/browser-error";
 import { evaluate } from "@racer/devtools/cdp";
 import type { Session } from "@racer/devtools/cdp";
+import * as Clock from "effect/Clock";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
 import type { Options } from "./measure-options.ts";
@@ -28,71 +30,78 @@ const decodeEvent = Schema.decodeUnknownSync(traceEvent);
 
 const screenshot = Schema.Struct({ data: Schema.String });
 
-const currentTick = async (page: Session): Promise<number> =>
-  await evaluate(
+const currentTick = (page: Session) =>
+  evaluate(
     page,
     "globalThis.__rushlineProfile ? globalThis.__rushlineProfile.info().tick : -1",
     Schema.Number
   );
 
-export const waitForTick = async (
-  page: Session,
-  tick: number,
-  deadline: number
-): Promise<number> => {
-  const now = await currentTick(page);
-  if (now >= tick) {
+const pastDeadline = (deadline: number) =>
+  Clock.currentTimeMillis.pipe(Effect.map((now) => now > deadline));
+
+export const waitForTick = Effect.fn("measure.waitForTick")(
+  function* waitForTick(page: Session, tick: number, deadline: number) {
+    let now = yield* currentTick(page);
+    while (now < tick) {
+      if (yield* pastDeadline(deadline)) {
+        return yield* new BrowserError({
+          message: `The race never reached tick ${tick}; it is at ${now}.`,
+          operation: "wait",
+        });
+      }
+      yield* Effect.sleep(POLL_MS);
+      now = yield* currentTick(page);
+    }
     return now;
   }
-  if (Date.now() > deadline) {
-    throw new Error(`The race never reached tick ${tick}; it is at ${now}.`);
-  }
-  await sleep(POLL_MS);
-  return await waitForTick(page, tick, deadline);
-};
+);
 
-export const waitForCountdown = async (
-  page: Session,
-  deadline: number
-): Promise<void> => {
-  await waitForTick(page, 0, deadline);
-  if ((await currentTick(page)) === 0) {
-    await sleep(COUNTDOWN_PROBE_MS);
-    if ((await currentTick(page)) === 0) {
-      return;
+export const waitForCountdown = Effect.fn("measure.waitForCountdown")(
+  function* waitForCountdown(page: Session, deadline: number) {
+    for (;;) {
+      yield* waitForTick(page, 0, deadline);
+      if ((yield* currentTick(page)) === 0) {
+        yield* Effect.sleep(COUNTDOWN_PROBE_MS);
+        if ((yield* currentTick(page)) === 0) {
+          return;
+        }
+      }
+      if (yield* pastDeadline(deadline)) {
+        yield* new BrowserError({
+          message: "The race never held a countdown.",
+          operation: "wait",
+        });
+      }
+      yield* Effect.sleep(POLL_MS);
     }
   }
-  if (Date.now() > deadline) {
-    throw new Error("The race never held a countdown.");
-  }
-  await sleep(POLL_MS);
-  await waitForCountdown(page, deadline);
-};
+);
 
-export const shoot = async (
+export const shoot = Effect.fn("measure.shoot")(function* shoot(
   page: Session,
   options: Options,
   run: number,
-  ticks: readonly number[],
   deadline: number
-): Promise<string[]> => {
-  const [next, ...rest] = ticks;
-  if (next === undefined) {
-    return [];
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const files: string[] = [];
+  for (const tick of options.shots) {
+    const reached = yield* waitForTick(page, tick, deadline);
+    const { data } = yield* page.call(
+      "Page.captureScreenshot",
+      { format: "png" },
+      screenshot
+    );
+    const file = path.join(
+      options.out,
+      `${options.label}-run${run}-tick${reached}.png`
+    );
+    yield* fs.writeFile(file, Buffer.from(data, "base64"));
+    files.push(file);
   }
-  const reached = await waitForTick(page, next, deadline);
-  const { data } = await page.call(
-    "Page.captureScreenshot",
-    { format: "png" },
-    screenshot
-  );
-  const file = path.join(
-    options.out,
-    `${options.label}-run${run}-tick${reached}.png`
-  );
-  await writeFile(file, data, { encoding: "base64" });
-  return [file, ...(await shoot(page, options, run, rest, deadline))];
-};
+  return files;
+});
 
 export interface Collected {
   readonly raw: unknown[];
@@ -102,12 +111,12 @@ export interface Collected {
 const worthKeeping = (event: TraceEvent): boolean =>
   event.name !== TASK_EVENT || (event.dur ?? 0) >= SHORT_TASK_MICROS;
 
-export const startTrace = async (
+export const startTrace = Effect.fn("measure.startTrace")(function* startTrace(
   page: Session,
   into: Collected,
   categories: readonly string[]
-) => {
-  page.on("Tracing.dataCollected", collected, ({ value }) => {
+) {
+  yield* page.on("Tracing.dataCollected", collected, ({ value }) => {
     for (const each of value) {
       const event = decodeEvent(each);
       if (worthKeeping(event)) {
@@ -116,23 +125,22 @@ export const startTrace = async (
       }
     }
   });
-  await page.send("Tracing.start", {
+  yield* page.send("Tracing.start", {
     traceConfig: { includedCategories: [...categories] },
     transferMode: "ReportEvents",
   });
-};
+});
 
-export const stopTrace = async (page: Session) => {
-  const { promise: complete, resolve } = Promise.withResolvers<boolean>();
-  page.on("Tracing.tracingComplete", Schema.Unknown, () => {
-    resolve(true);
-  });
-  await page.send("Tracing.end");
-  await complete;
-};
+export const stopTrace = Effect.fn("measure.stopTrace")(function* stopTrace(
+  page: Session
+) {
+  const complete = yield* page.once("Tracing.tracingComplete", Schema.Unknown);
+  yield* page.send("Tracing.end");
+  yield* complete;
+});
 
-export const pageClock = async (page: Session): Promise<number> =>
-  await evaluate(
+export const pageClock = (page: Session) =>
+  evaluate(
     page,
     `(console.timeStamp(${JSON.stringify(clockMark)}), performance.now())`,
     Schema.Number
