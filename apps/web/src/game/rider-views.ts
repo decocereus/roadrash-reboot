@@ -21,10 +21,11 @@ import type { Bikes, Fleet, Reach } from "./actors.ts";
 import type { Assets } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
+import type { RiderPose } from "./figure-pose.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
 import { createRiderFigure } from "./rider-figure.ts";
-import type { RiderFigure, RiderPose, Stance } from "./rider-figure.ts";
+import type { RiderFigure, Stance } from "./rider-figure.ts";
 import type { World } from "./world.ts";
 
 const WRAP_JUMP = 30;
