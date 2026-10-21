@@ -137,6 +137,8 @@ The track tests compile every road at every level. They check the lengths, the l
 | `memory.ts`, `season.ts` | Rival memory and the season board |
 | `shop.ts`, `story.ts`, `lines.ts` | The garage, the story beats and the envelope, and every line the cast and the officers say |
 | `save.ts` | `serialiseCareer` and `parseCareer` |
+| `save-schema.ts` | `SaveError` and the reader for each field of a save, which checks its kind and range |
+| `save-invariants.ts` | The checks that a save agrees with itself: the active race against the career, and every race number against the count of starts |
 
 A career race runs like this. `setupFor(career, roadId, seed, track)` draws the fourteen rivals, puts each on their bike and weapon for the level, sets grudges and aggression bonuses from memory, and adds the level's police and pacing. `startRace` writes the active-race record and clears the last result. The simulation clears its events every tick, so the runner calls `recordTick(log, state, setup)` after each `stepRace`. The log counts knockdowns, stolen weapons, hits, and busts, with the tick and the kilometre of each, and freezes the result at the tick the player's `finish`, `busted`, or `wrecked` event fires. Nothing after that tick changes it. The arrest's position and the confiscated weapon come from the `busted` event. `outcomeOf` returns the frozen result, or a quit if the player has not settled yet. `settleRace(career, outcome)` applies it once: prize with the repeat-run rule, repair or fine, the envelope, the debt check with repossession and game over, qualification, level-up, the ending, season points, memory, and the carried weapon. It clears the active-race record in the same step and returns a `Ledger` for Results.
 

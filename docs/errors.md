@@ -31,4 +31,4 @@ Rushline has three places where a failure reaches someone: the telemetry endpoin
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| `parseCareer` never throws. It returns `{ ok: false, error }` with a `kind` of `notJson`, `wrongVersion`, `invalid` or `inconsistent` and the `field` that failed, and a save from another version is refused rather than migrated. | `pnpm test` | `packages/career/src/save.ts` | None |
+| `parseCareer` never throws. It returns `{ ok: false, error }` with a `kind` of `notJson`, `wrongVersion`, `invalid` or `inconsistent` and the `field` that failed, and a save from another version is refused rather than migrated. | `pnpm test` | `packages/career/src/save.ts`, `packages/career/src/save-schema.ts`, `packages/career/src/save-invariants.ts` | None |

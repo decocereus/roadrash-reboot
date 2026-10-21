@@ -1,4 +1,4 @@
-import type { SaveError } from "@racer/career/save";
+import type { SaveError } from "@racer/career/save-schema";
 import type { CareerState } from "@racer/career/state";
 import { Confirm } from "@racer/ui/components/confirm";
 import { formatMoney } from "@racer/ui/components/money";

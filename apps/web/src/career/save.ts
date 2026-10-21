@@ -1,5 +1,5 @@
 import { parseCareer, serialiseCareer } from "@racer/career/save";
-import type { SaveError } from "@racer/career/save";
+import type { SaveError } from "@racer/career/save-schema";
 import { resumeCareer } from "@racer/career/settle";
 import type { Ledger } from "@racer/career/settle";
 import { newCareer } from "@racer/career/state";
