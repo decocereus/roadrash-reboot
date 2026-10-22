@@ -180,6 +180,7 @@ const collect = ({ window }: Scenario) => `(() => {
     frames: globalThis.__rushlineProfile.window(${window.from}, ${window.to}),
     longTasks: tasks.store,
     rows: bench.window(${window.from}, ${window.to}),
+    viewport: { dpr: devicePixelRatio, height: innerHeight, width: innerWidth },
     visibility: document.visibilityState,
   };
 })()`;
@@ -432,6 +433,19 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     ),
   };
   yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
+  if (
+    page.A.width !== page.B.width ||
+    page.A.height !== page.B.height ||
+    page.A.dpr !== page.B.dpr
+  ) {
+    return {
+      code: 1,
+      lines: [
+        `FAIL viewport A=${page.A.width}x${page.A.height}@${page.A.dpr} B=${page.B.width}x${page.B.height}@${page.B.dpr}: restart the run whose window was resized`,
+        `evidence ${dir}`,
+      ],
+    };
+  }
   yield* warm(options.runs.A);
   yield* warm(options.runs.B);
   const samples: GpuSample[] = [];

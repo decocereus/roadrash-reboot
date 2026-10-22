@@ -14,12 +14,14 @@ interface Playback {
   readonly interval: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
+  readonly viewport: GpuSample["capture"]["viewport"];
 }
 
 const steady: Playback = {
   discardedAt: -1,
   interval: () => 16.7,
   longTasks: [],
+  viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
 const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
@@ -68,6 +70,7 @@ const sampleOf = (
         (_, index) => START_MS + index * SLOT
       ),
     },
+    viewport: playback.viewport,
     visibility: "visible",
   },
   consoleErrors: 0,
@@ -184,5 +187,22 @@ describe("gpu frame lane", () => {
         line.includes("pack-riding-v1 frame.interval.p95")
       )
     ).toContain("A/B=2 (<= 1.15)");
+  });
+
+  it("fails a campaign whose windows differ in size", () => {
+    const evaluation = evaluateGpu(
+      campaign((scenario, side) =>
+        isPack(scenario) && side === "B"
+          ? { ...steady, viewport: { ...steady.viewport, height: 836 } }
+          : steady
+      )
+    );
+    expect(failing(evaluation.lines)).toContain(
+      "FAIL gpu pack-riding-v1 side=B pack-riding-v1-pair0-B.json viewport=1504x836@2 expected=1504x790@2 like pack-riding-v1-pair0-A.json"
+    );
+    expect(failing(evaluation.lines)).toContain(
+      "FAIL gpu pack-riding-v1 frame.interval.p95 [gpu-helium-metal] missing measurement"
+    );
+    expect(evaluation.ok).toBeFalsy();
   });
 });

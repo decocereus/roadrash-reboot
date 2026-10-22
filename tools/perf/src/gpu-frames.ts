@@ -92,6 +92,11 @@ export const pageCapture = Schema.Struct({
     ...workloadRows.fields,
     times: Schema.Array(Schema.Number),
   }),
+  viewport: Schema.Struct({
+    dpr: Schema.Number,
+    height: Schema.Number,
+    width: Schema.Number,
+  }),
   visibility: Schema.String,
 });
 
@@ -334,12 +339,25 @@ const capLimits: Limit[] = capRows.map(({ environment, kind, scenario }) => ({
   value: kind.cap,
 }));
 
+const viewportText = ({ viewport }: GpuSample["capture"]): string =>
+  `${viewport.width}x${viewport.height}@${viewport.dpr}`;
+
 const scenarioResult = (scenario: Scenario, mine: readonly GpuSample[]) => {
   const failures = mine.flatMap((sample) =>
     sampleProblems(scenario, sample).map(
       (problem) =>
         `FAIL workload ${scenario.id} side=${sample.side} ${sample.file} ${problem}`
     )
+  );
+  const [first] = mine;
+  const expected = first ? viewportText(first.capture) : "";
+  failures.push(
+    ...mine
+      .filter((sample) => viewportText(sample.capture) !== expected)
+      .map(
+        (sample) =>
+          `FAIL gpu ${scenario.id} side=${sample.side} ${sample.file} viewport=${viewportText(sample.capture)} expected=${expected} like ${first?.file ?? "the first sample"}`
+      )
   );
   const a = byPair(mine, "A");
   const b = byPair(mine, "B");

@@ -96,7 +96,7 @@ For each side, the lane:
 2. Warms each scenario once, to tick 120.
 3. Runs five pairs per scenario, alternating which side goes first. Only the measured side renders; the other waits on `/kit`. Each sample opens a fresh race at `?stress&rung=0` or `?stress=reference&rung=0` (pixel ratio 2, governor off, pacer on), installs a buffered long-task observer before the window starts, waits for the window's last tick, and reads the benchmark rows, the frame records and the long tasks.
 
-A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, rung, pixel ratio or size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error.
+A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, rung, pixel ratio or size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error. Every sample must also have the same page size and device pixel ratio. The lane stops before warming up if A's and B's windows already differ, which happens when a window is resized; restart that run.
 
 | Metric | Cap | Paired B/A |
 | --- | --- | --- |
