@@ -15,6 +15,8 @@ import {
   riding,
   sampleOf,
 } from "./pilot-corners.ts";
+import { FORECAST_SECONDS, FORECAST_TICKS } from "./pilot-history.ts";
+import type { PilotHistory } from "./pilot-history.ts";
 import { SLIP_PUSH, SLIP_RECOVERY } from "./rider-drive.ts";
 import { LANDING_SLIP } from "./rider-flight.ts";
 import {
@@ -39,7 +41,6 @@ const ROCK_COST = 2;
 const ROCK_COST_PER_SPEED = 2;
 const ROCK_FAST = 55.6;
 const CONTACT_MARGIN = 0.1;
-const FORECAST_SECONDS = 3.5;
 const CRASH_COST = 10;
 const ROCK_LANDING_SHARE = 0.85;
 const LANDING_SEARCH_STEPS = 8;
@@ -47,11 +48,6 @@ export const SLIPPING = 0.2;
 export const SLIPPING_STEER = 0.45;
 const OIL_BEND_PUSH = 1.2;
 const OIL_SCAN_STEP = 5;
-
-const FORECAST_TICKS = Math.ceil(FORECAST_SECONDS / TICK_SECONDS) + 1;
-const courseTravelled = new Float64Array(FORECAST_TICKS);
-const coursePush = new Float64Array(FORECAST_TICKS);
-const courseLimit = new Float64Array(FORECAST_TICKS);
 
 const hazardRoll = (state: RaceState): number => {
   state.hazardDice = nextSeed(state.hazardDice);
@@ -164,7 +160,11 @@ const withinHorizon = (
   tick * TICK_SECONDS <= FORECAST_SECONDS &&
   (carAhead || travelled / Math.max(1, speed) <= horizons.hazard);
 
-export const planCourse = (track: Track, rider: RiderState): void => {
+export const planCourse = (
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState
+): void => {
   const { bike } = rider;
   let { speed } = rider;
   let travelled = 0;
@@ -181,13 +181,13 @@ export const planCourse = (track: Track, rider: RiderState): void => {
   ) {
     speed = Math.min(speed, sampleOf(paced, plan.paced, travelled));
     travelled += speed * TICK_SECONDS;
-    courseTravelled[tick] = travelled;
-    coursePush[tick] = curvePushOf(
+    history.courseTravelled[tick] = travelled;
+    history.coursePush[tick] = curvePushOf(
       bike,
       curvatureAt(track, rider.s + travelled),
       speed
     );
-    courseLimit[tick] = lateralSpeedLimit(bike, speed);
+    history.courseLimit[tick] = lateralSpeedLimit(bike, speed);
   }
 };
 
@@ -378,6 +378,7 @@ const tally = (
 };
 
 const forecast = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   line: number,
@@ -408,8 +409,8 @@ const forecast = (
     withinHorizon(tick, travelled, rider.speed, touched.carAhead);
     tick += 1
   ) {
-    let bendPush = coursePush[tick] ?? 0;
-    let grip = courseLimit[tick] ?? 0;
+    let bendPush = history.coursePush[tick] ?? 0;
+    let grip = history.courseLimit[tick] ?? 0;
     if (slowsDown) {
       speed = Math.min(
         speed,
@@ -426,7 +427,7 @@ const forecast = (
       );
       grip = lateralSpeedLimit(bike, speed);
     } else {
-      travelled = courseTravelled[tick] ?? travelled;
+      travelled = history.courseTravelled[tick] ?? travelled;
     }
     const push = bendPush * (1 + SLIP_PUSH * slip);
     const limit = grip * (slip > SLIPPING ? SLIPPING_STEER : 1);
@@ -460,6 +461,7 @@ const forecast = (
 };
 
 export const weigh = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   line: number,
@@ -472,6 +474,7 @@ export const weigh = (
   toll.speed = Number.POSITIVE_INFINITY;
   toll.speedMetres = Number.POSITIVE_INFINITY;
   forecast(
+    history,
     track,
     rider,
     line,
@@ -485,6 +488,6 @@ export const weigh = (
     const slowAt =
       slowTo === toll.slickSpeed ? toll.slickMetres : toll.speedMetres;
     toll.cost = 0;
-    forecast(track, rider, line, braking, slowTo, slowAt);
+    forecast(history, track, rider, line, braking, slowTo, slowAt);
   }
 };

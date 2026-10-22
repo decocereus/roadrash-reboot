@@ -15,6 +15,8 @@ import {
 import type { Track } from "@racer/track/track";
 
 import { dragOf } from "./engine.ts";
+import { CORNER_SCAN_POINTS } from "./pilot-history.ts";
+import type { PilotHistory } from "./pilot-history.ts";
 import { BRAKE_RESERVE, TAKEOFF_SPEED } from "./rider-drive.ts";
 import { HARD_LANDING, LANDING_SLIP } from "./rider-flight.ts";
 import {
@@ -30,7 +32,6 @@ import { weapons } from "./weapons.ts";
 export const CORNER_MARGIN = 0.99;
 const CORNER_MARGIN_PER_LACK = 0.3;
 const CORNER_SCAN_STEP = 5;
-const CORNER_SCAN_POINTS = 121;
 const SCAN_BRAKING_SHARE = 0.5;
 const MIN_BEND = 1e-5;
 export const BRAKE_SHARE = 0.9;
@@ -208,7 +209,6 @@ const noSlick: Slick = {
 };
 
 const ceilings = new Float64Array(CORNER_SCAN_POINTS);
-const braked = new Float64Array(CORNER_SCAN_POINTS);
 const coasted = new Float64Array(CORNER_SCAN_POINTS);
 const bends = new Float64Array(CORNER_SCAN_POINTS);
 const slopes = new Float64Array(CORNER_SCAN_POINTS);
@@ -272,6 +272,7 @@ const rampAhead = (
 };
 
 const landsAfterFlight = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   from: number,
@@ -281,7 +282,7 @@ const landsAfterFlight = (
   margin: number
 ): boolean => {
   const { bike } = rider;
-  if (speed > sampleOf(braked, plan.count, from + flight - rider.s)) {
+  if (speed > sampleOf(history.braked, plan.count, from + flight - rider.s)) {
     return false;
   }
   const takeoff = curvatureAt(track, from);
@@ -298,6 +299,7 @@ const landsAfterFlight = (
 };
 
 const landsFrom = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   jump: TrackFeature,
@@ -305,6 +307,7 @@ const landsFrom = (
   margin: number
 ): boolean =>
   landsAfterFlight(
+    history,
     track,
     rider,
     lipOf(jump),
@@ -337,6 +340,7 @@ const crestFlightLength = (track: Track, from: number, speed: number) => {
 };
 
 const crestCeiling = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   index: number,
@@ -351,7 +355,16 @@ const crestCeiling = (
   const s = rider.s + index * CORNER_SCAN_STEP;
   const flying = Math.min(speed, FASTEST_LAUNCH);
   const flight = crestFlightLength(track, s, flying);
-  return landsAfterFlight(track, rider, s, flight, line, flying, margin)
+  return landsAfterFlight(
+    history,
+    track,
+    rider,
+    s,
+    flight,
+    line,
+    flying,
+    margin
+  )
     ? speed
     : takeoff;
 };
@@ -365,6 +378,7 @@ export const safeLaunchSpeed = (jump: TrackFeature): number => {
 };
 
 const launchSpeed = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   jump: TrackFeature,
@@ -374,7 +388,7 @@ const launchSpeed = (
   let high = FASTEST_LAUNCH;
   for (let step = 0; step < LAUNCH_SEARCH_STEPS; step += 1) {
     const middle = (low + high) / 2;
-    if (landsFrom(track, rider, jump, middle, margin)) {
+    if (landsFrom(history, track, rider, jump, middle, margin)) {
       low = middle;
     } else {
       high = middle;
@@ -384,6 +398,7 @@ const launchSpeed = (
 };
 
 const planCorners = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   margin: number,
@@ -429,6 +444,7 @@ const planCorners = (
     ceilings[index] = ceiling;
     plan.lowest = Math.min(plan.lowest, ceiling);
   }
+  const { braked } = history;
   const last = count - 1;
   braked[last] = ceilings[last] ?? Number.POSITIVE_INFINITY;
   coasted[last] = braked[last] ?? Number.POSITIVE_INFINITY;
@@ -438,7 +454,10 @@ const planCorners = (
   for (let index = last - 1; index >= 0; index -= 1) {
     const ceiling = ceilings[index] ?? Number.POSITIVE_INFINITY;
     if (jump && index === lipIndex) {
-      const launch = Math.min(ceiling, launchSpeed(track, rider, jump, margin));
+      const launch = Math.min(
+        ceiling,
+        launchSpeed(history, track, rider, jump, margin)
+      );
       braked[index] = launch;
       coasted[index] = launch;
     } else {
@@ -452,6 +471,7 @@ const planCorners = (
         )
       );
       const landable = crestCeiling(
+        history,
         track,
         rider,
         index,
@@ -473,17 +493,25 @@ const planCorners = (
   }
 };
 
-export const planForecast = (track: Track, rider: RiderState): void => {
+export const planForecast = (
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState
+): void => {
   if (rider.airborne) {
     plan.paced = 0;
     return;
   }
-  planCorners(track, rider, riding.margin, rider.x, noSlick);
-  paced.set(braked.subarray(0, plan.count));
+  planCorners(history, track, rider, riding.margin, rider.x, noSlick);
+  paced.set(history.braked.subarray(0, plan.count));
   plan.paced = plan.count;
 };
 
-export const steeringPush = (track: Track, rider: RiderState): number => {
+export const steeringPush = (
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState
+): number => {
   const { bike, speed } = rider;
   const rate = bike.steerRate * weapons[rider.weapon].steerFactor;
   const now = curvePushOf(bike, curvatureAt(track, rider.s), speed);
@@ -494,7 +522,10 @@ export const steeringPush = (track: Track, rider: RiderState): number => {
   for (let step = 1; step <= LEAD_STEPS; step += 1) {
     const seconds = (horizon * step) / LEAD_STEPS;
     const ahead = speed * seconds;
-    const planned = Math.min(speed, sampleOf(braked, plan.count, ahead));
+    const planned = Math.min(
+      speed,
+      sampleOf(history.braked, plan.count, ahead)
+    );
     const push = clamp(
       curvePushOf(bike, curvatureAt(track, rider.s + ahead), planned),
       -limit,
@@ -519,6 +550,7 @@ const cornerCall: CornerCall = {
 };
 
 export const callCorners = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   margin: number,
@@ -533,11 +565,15 @@ export const callCorners = (
     return cornerCall;
   }
   const { speed } = rider;
-  planCorners(track, rider, margin, line, slick);
+  planCorners(history, track, rider, margin, line, slick);
   const { braking, resisting } = measureDeceleration(track, rider);
   const ahead = speed * BRAKE_LAG_SECONDS * (1 - rider.brake);
-  const target = sampleOf(braked, plan.count, ahead);
-  const further = sampleOf(braked, plan.count, ahead + CORNER_SCAN_STEP);
+  const target = sampleOf(history.braked, plan.count, ahead);
+  const further = sampleOf(
+    history.braked,
+    plan.count,
+    ahead + CORNER_SCAN_STEP
+  );
   const excess = speed - target;
   const slope = Number.isFinite(further)
     ? Math.max(

@@ -20,6 +20,7 @@ import {
   toll,
   weigh,
 } from "./pilot-forecast.ts";
+import type { PilotHistory } from "./pilot-history.ts";
 import { BIKE_HALF_WIDTH } from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
@@ -293,6 +294,7 @@ const choice = {
 };
 
 export const chooseLine = (
+  history: PilotHistory,
   state: RaceState,
   track: Track,
   riderIndex: number,
@@ -329,10 +331,10 @@ export const chooseLine = (
   choice.cost = Number.POSITIVE_INFINITY;
   if (weighing) {
     measureDeceleration(track, rider);
-    planForecast(track, rider);
+    planForecast(history, track, rider);
     gatherObstructions(state, track, rider);
     measureHorizons();
-    planCourse(track, rider);
+    planCourse(history, track, rider);
   }
   const offer = (
     x: number,
@@ -345,7 +347,7 @@ export const chooseLine = (
     toll.slickMetres = Number.POSITIVE_INFINITY;
     toll.slickSpeed = Number.POSITIVE_INFINITY;
     if (weighing) {
-      weigh(track, rider, x, braking);
+      weigh(history, track, rider, x, braking);
       total += toll.cost;
       lineSpeed = Math.min(
         speed,

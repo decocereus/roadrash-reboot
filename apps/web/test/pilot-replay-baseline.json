@@ -1,0 +1,80 @@
+{
+  "provenance": {
+    "recordedAt": [
+      "10f26fafa7f2e3e841efffe8040ff0eae3294ad5",
+      "28351e58f515858a200130c5b9d159d526d6384b"
+    ],
+    "recordedWith": "the step 3 pilot replay harness, which apps/web/test/pilot-replay.ts promotes with the same output",
+    "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text",
+    "ticks": 7200,
+    "window": {
+      "from": 2880,
+      "to": 3480
+    }
+  },
+  "solo": [
+    {
+      "id": "ridge-road/level5/seed1",
+      "ticks": 7200,
+      "full": "9ccfc46f063f3696df576d9ea79109ea89e13516bf4b99e87c04ec398d99161a",
+      "final": "fd37e49ef0d29553507ce33d6b6ea42879a1d822f20dd58b4eda1be945e39a0e",
+      "window": "f66901458993e1badefc958846088f0f8fedbeb6410c34e57737e5e0be0e5fc5"
+    },
+    {
+      "id": "ridge-road/level5/seed5",
+      "ticks": 7200,
+      "full": "c25105cfc9fc2eada49b6be6755a2f3abeb6e767937a104e0ec2352ef019d883",
+      "final": "12d64128991c8ff7ee43b1189b68710a5d8d7b8083c101bfafc8a7947a08defa",
+      "window": "f5dcff3ab6bcba85b8df841a17602c9977696d1f8683cd7b79a94b4d96ae54e8"
+    },
+    {
+      "id": "ridge-road/level5/seed9",
+      "ticks": 7200,
+      "full": "264905a90ed891fb3e3944984cbe0508ea4809ae93a3d9695b08e1ce970ec0f5",
+      "final": "b62a6949fbf1d3b52a11d205303fd785bac6246fb264a24fd1f96e94fee42bc8",
+      "window": "24e1e35719d0a8b5d3185a8b75c1c49c987da18feb3ff5dedb600f0adcfd0a14"
+    },
+    {
+      "id": "ridge-road/level5/seed31",
+      "ticks": 7200,
+      "full": "b7d3955d885c5b9dc3aedcac3b89861bc1f64fea0db87c4042cc4d2999de349a",
+      "final": "ffaa8ebabd570670815eba7774cb04b7c57173b09e75c4fab360d3b0c1e99171",
+      "window": "a38abc3d6162d8ddad34f87d14f5de0589d55fb15bccbe002046c416bf6b23ad"
+    },
+    {
+      "id": "slag-row/level5/seed1",
+      "ticks": 7200,
+      "full": "abd22f0d715799830254185f29025d34b7cf09821e4d8984b82ae6dfd9505173",
+      "final": "8410ebefeb34fd2572e48c16659aa591afc702bc501ccc519ab62b1ceb1e6667",
+      "window": "4eabdaf77d3a8a7ff8e040c5996404f96ecf3dedabecd4743af071805fab72cd"
+    },
+    {
+      "id": "slag-row/level5/seed5",
+      "ticks": 7200,
+      "full": "a6b0a8d2a63e1bca6d915e0f3f385be5ee024bc80b7bd44cb1e66c2350a11d68",
+      "final": "e29116939974876977126bd6e74baac2210a287c1c9af872e39e6240e2a7418c",
+      "window": "a7aae9b36ce41c73d1d4acc5a8dba81953a78330b97450d6caaa5439f91eae3c"
+    },
+    {
+      "id": "slag-row/level5/seed9",
+      "ticks": 7200,
+      "full": "ef93bc402d3f66db750a70f015919e58fcb0f91a2918938ec074001f2ea4b8a1",
+      "final": "e43d4ec86c537c93915c9c5877b4d7452f34c4c7c57ba2f2791d3df71ff1ee3d",
+      "window": "c75a9f34fef4492cf6d5f80cecdcbb86de78ec50db073b05c805fc9ac1d6c292"
+    },
+    {
+      "id": "slag-row/level5/seed31",
+      "ticks": 7200,
+      "full": "a6dd58d0e065a8fea15b49ad051e5a8192ac8132867b8ccf5b18056c05850ab4",
+      "final": "3f8d81e37fc0ba96e5db35b2ecf421d095e738880faa5fc3cac9b1d88db0065d",
+      "window": "fe9086be2919a1d4b8f1b633900c487b737824dfde0ca2072b6e5700ffcd90ca"
+    },
+    {
+      "id": "stress/seed8",
+      "ticks": 7200,
+      "full": "4b288519a2a585155b07e1499b765368803765a89dcb10462956adf8ee7896d1",
+      "final": "5e7d7171917aa515e6e4e959728d65070fccb995deeb45a87b0bfd43fc30862d",
+      "window": "796d2480d7c2d63106687ec46327e3b27ed91da7946209f62dc298b542746290"
+    }
+  ]
+}

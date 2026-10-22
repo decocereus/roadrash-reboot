@@ -13,6 +13,7 @@ import {
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
+import { pilotHistoryOf } from "./pilot-history.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
@@ -326,6 +327,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     tick: 0,
   };
   spawnScheduledHazards(state, track);
+  pilotHistoryOf(state);
   return state;
 };
 
