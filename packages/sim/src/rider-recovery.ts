@@ -1,3 +1,4 @@
+import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
 import { pullOver } from "./police.ts";
@@ -174,7 +175,7 @@ const comeToRest = (track: Track, rider: RiderState): void => {
 };
 
 const atTheBike = (rider: RiderState): boolean =>
-  Math.hypot(rider.s - rider.bodyS, rider.x - rider.bodyX) < MOUNT_REACH;
+  hypot2(rider.s - rider.bodyS, rider.x - rider.bodyX) < MOUNT_REACH;
 
 interface Stride {
   readonly along: number;
@@ -184,7 +185,7 @@ interface Stride {
 export const towardBike = (rider: RiderState): Stride => {
   const gapS = rider.s - rider.bodyS;
   const gapX = rider.x - rider.bodyX;
-  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
+  const distance = Math.max(1e-6, hypot2(gapS, gapX));
   return { across: gapX / distance, along: gapS / distance };
 };
 
@@ -229,7 +230,7 @@ const run = (
     return;
   }
   const { across, along } = strideOf(rider, input);
-  const effort = Math.max(1, Math.hypot(along, across));
+  const effort = Math.max(1, hypot2(along, across));
   const step = RUN_ACCELERATION * TICK_SECONDS;
   rider.bodySpeed = approach(
     rider.bodySpeed,

@@ -1,3 +1,4 @@
+import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
 import type { RaceView } from "./race-view.ts";
@@ -152,7 +153,7 @@ export const chaserDistance = (state: RaceView, riderIndex: number): number => {
   let nearest = -1;
   for (const cop of state.riders) {
     if (rider && cop.profile.role === "police" && cop.chase === riderIndex) {
-      const distance = Math.hypot(rider.bodyS - cop.s, rider.bodyX - cop.x);
+      const distance = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
       nearest = nearest < 0 ? distance : Math.min(nearest, distance);
     }
   }
@@ -169,7 +170,7 @@ const catchDowned = (
     return;
   }
   for (const [index, rider] of state.riders.entries()) {
-    const reach = Math.hypot(rider.bodyS - cop.s, rider.bodyX - cop.x);
+    const reach = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
     if (wanted(rider) && arrestable(rider) && reach < BUST_REACH) {
       bust(state, track, index, copIndex);
     }

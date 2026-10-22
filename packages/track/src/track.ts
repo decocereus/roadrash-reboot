@@ -2,6 +2,7 @@ import { compileFeatures, indexFeatures } from "./features.ts";
 import type { FeatureIndex, FeatureRule, TrackFeature } from "./features.ts";
 import { placeHazards } from "./hazards.ts";
 import type { HazardPlacement } from "./hazards.ts";
+import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
@@ -119,7 +120,7 @@ const scatterProps = (
     curvature[Math.round(s - startS)] ?? 0;
 
   for (let s = startS; s < endS; s += 6) {
-    const grove = 0.55 + 0.4 * Math.sin(s / 140) * Math.sin(s / 53 + 1.7);
+    const grove = 0.55 + 0.4 * sin(s / 140) * sin(s / 53 + 1.7);
     for (const side of [-1, 1]) {
       if (random() < grove * mix.tree) {
         const spread = random();
@@ -218,17 +219,17 @@ export const compileTrack = (plan: TrackPlan): Track => {
           (turn / (section.length * (1 - CURVE_RAMP))) * curveWeight(progress);
         worldY[index] =
           sectionBaseHeight +
-          (section.climb * (1 - Math.cos(Math.PI * progress))) / 2;
+          (section.climb * (1 - cos(Math.PI * progress))) / 2;
         slope[index] =
           ((section.climb / section.length) *
             Math.PI *
-            Math.sin(Math.PI * progress)) /
+            sin(Math.PI * progress)) /
           2;
         slopeRate[index] =
           ((section.climb / (section.length * section.length)) *
             Math.PI *
             Math.PI *
-            Math.cos(Math.PI * progress)) /
+            cos(Math.PI * progress)) /
           2;
       }
     } else if (s >= length) {
@@ -249,8 +250,8 @@ export const compileTrack = (plan: TrackPlan): Track => {
     const nextHeading = previousHeading + meanCurvature;
     const midHeading = (previousHeading + nextHeading) / 2;
     heading[index] = nextHeading;
-    worldX[index] = (worldX[previous] ?? 0) + Math.sin(midHeading);
-    worldZ[index] = (worldZ[previous] ?? 0) - Math.cos(midHeading);
+    worldX[index] = (worldX[previous] ?? 0) + sin(midHeading);
+    worldZ[index] = (worldZ[previous] ?? 0) - cos(midHeading);
   }
   for (let index = startIndex - 1; index >= 0; index -= 1) {
     worldZ[index] = (worldZ[index + 1] ?? 0) + 1;
@@ -328,9 +329,9 @@ export const placeOnTrack = (
   const heading = headingAt(track, s);
   point.heading = heading;
   point.slope = slopeAt(track, s);
-  point.x = sampleAt(track, track.worldX, s) + Math.cos(heading) * x;
+  point.x = sampleAt(track, track.worldX, s) + cos(heading) * x;
   point.y = heightAt(track, s);
-  point.z = sampleAt(track, track.worldZ, s) + Math.sin(heading) * x;
+  point.z = sampleAt(track, track.worldZ, s) + sin(heading) * x;
 };
 
 export const firstSolidPropFrom = (track: Track, s: number): number => {

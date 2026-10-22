@@ -87,6 +87,17 @@ describe("deterministic scopes", () => {
     );
   });
 
+  it("keep every owned math module in the deterministic core", () => {
+    const owned = files.filter(
+      (file) =>
+        file.startsWith("packages/track/src/math") && !file.endsWith(".test.ts")
+    );
+    expect(owned).toContain("packages/track/src/math.ts");
+    expect(
+      owned.filter((file) => !deterministicFiles.includes(file))
+    ).toStrictEqual([]);
+  });
+
   it("give the save codecs the Effect library rules and the career rules none", () => {
     const effectRule = "rushline/no-effect-runtime";
     expect(
