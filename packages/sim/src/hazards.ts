@@ -245,8 +245,10 @@ const shoveOff = (
   report(state, riderIndex, rider, hazard, "stagger");
 };
 
-export const rockUpsetShare = (speed: number): number =>
-  ROCK_UPSET * (speed / ROCK_UPSET_SPEED) ** 3;
+export const rockUpsetShare = (speed: number): number => {
+  const ratio = speed / ROCK_UPSET_SPEED;
+  return ROCK_UPSET * (ratio * ratio * ratio);
+};
 
 const bumpOver = (
   state: RaceState,
