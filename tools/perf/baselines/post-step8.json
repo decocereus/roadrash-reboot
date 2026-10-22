@@ -218,6 +218,70 @@
       "value": 937780
     },
     {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 2857.8052806298924
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1303.9378839545036
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 0.8403428734310313
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1.2557802419196575
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 0.9069557625477754
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1.4108116460622624
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 559902.0965058237
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1119282.9683860233
+    },
+    {
       "environment": "gpu-helium-metal",
       "metric": "frame.interval.p50",
       "scenario": "reference-v1",
@@ -415,6 +479,37 @@
       "sides": {
         "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
         "B": "edb664a9120e82a3079bd2063a5794306600c1fe (dirty)"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 10.805418000000031 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[]",
+        "harnessDigest": "470ed1b8208c2f86ad43f110f3f5a46dae793f794cb41f1e015e28cc630293b0",
+        "memoryBytes": "16766414848",
+        "node": "v24.21.0",
+        "platform": "linux",
+        "sideASourceDigest": "dca0f63e70d727a428cb10b5bae75a84b97859cd5ac95f0b8231d6934778b4aa",
+        "sideBSourceDigest": "a63be277ba7a072a45f1da2385dbbd7ad71a33dc0b7a99863136fafabb09a3aa",
+        "v8": "13.6.233.17-node.53",
+        "wallMs": "{\"build\":5584,\"materialize\":6976,\"node\":123191,\"total\":136071}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor, 4 vCPU, 16 GiB",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04 version 20261012.334.1",
+        "pnpm": "11.21.0",
+        "ci": "GitHub Actions run 39829450534, job 120001394207 (perf), workflow .github/workflows/quality.yml, pull_request event on PR #29",
+        "checkout": "0d6e03c, the pull request merge of a93ebee83f902f878172e691503d627561fad5f5 into 0ec9290cdaabab8f708057f3ab1bc8d6c11b858d",
+        "command": "node tools/perf/gate.ts baseline --baseline-ref fd677a71c74167dc049a2bcf232f26f8f9abda86 --lanes node,build",
+        "artifact": "perf-results"
+      },
+      "id": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
+        "B": "0d6e03c8ba42f037c14db3213d1337fa346b8ff5"
       }
     },
     {
