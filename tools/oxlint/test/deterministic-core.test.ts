@@ -13,6 +13,7 @@ const core = [
   "packages/sim/src/pilot.ts",
   "packages/sim/src/race.ts",
   "packages/sim/src/state.ts",
+  "packages/track/src/math.ts",
   "packages/track/src/random.ts",
   "packages/track/src/track.ts",
   "packages/track/src/tracks/ridge-road.ts",
@@ -28,6 +29,44 @@ const once = (messageId: string, data?: Readonly<Record<string, string>>) => [
 const outward = (source: string) => ({
   code: `import { x } from "${source}";`,
   errors: once("outward", { source }),
+  ...inRace,
+});
+
+const unlisted = [
+  "acos",
+  "acosh",
+  "asin",
+  "asinh",
+  "atan",
+  "atan2",
+  "atanh",
+  "cbrt",
+  "cos",
+  "cosh",
+  "exp",
+  "expm1",
+  "f16round",
+  "hypot",
+  "log",
+  "log10",
+  "log1p",
+  "log2",
+  "pow",
+  "sin",
+  "sinh",
+  "tan",
+  "tanh",
+];
+
+const approximate = (code: string, name: string) => ({
+  code,
+  errors: once("mathApproximate", { name }),
+  ...inRace,
+});
+
+const exponent = (code: string) => ({
+  code,
+  errors: once("exponentiation"),
   ...inRace,
 });
 
@@ -142,6 +181,60 @@ runRule("rushline/deterministic-core", deterministicCoreRule, {
     {
       code: "const random = Math.random;\nexport const roll = () => random();",
       errors: once("mathRandom"),
+      ...inRace,
+    },
+    ...unlisted.map((name) =>
+      approximate(`export const f = (x: number) => Math.${name}(x, 1);`, name)
+    ),
+    approximate('export const f = (x: number) => Math["cos"](x);', "cos"),
+    approximate("export const f = (x: number) => Math?.sin?.(x);", "sin"),
+    approximate(
+      "const wave = Math.sin;\nexport const f = (x: number) => wave(x);",
+      "sin"
+    ),
+    approximate(
+      "export const f = (x: number) => Math.sin.call(null, x);",
+      "sin"
+    ),
+    approximate('export const f = Math["atan2"].bind(null);', "atan2"),
+    approximate(
+      "export const f = (x: number) => Math.sqrt(x) + Math.hypot(x, 1);",
+      "hypot"
+    ),
+    exponent("export const f = (x: number) => x ** 2;"),
+    exponent("export const MODULUS = 2 ** 32;"),
+    exponent("export const f = (x: number, y: number) => x ** y;"),
+    exponent(
+      "export const f = (x: number) => {\n  let y = x;\n  y **= 2;\n  return y;\n};"
+    ),
+    {
+      code: "const { sin } = Math;\nexport const f = (x: number) => sin(x);",
+      errors: once("mathEscape"),
+      ...inRace,
+    },
+    {
+      code: "const { cos: wave } = Math;\nexport const f = (x: number) => wave(x);",
+      errors: once("mathEscape"),
+      ...inRace,
+    },
+    {
+      code: "const M = Math;\nexport const f = (x: number) => M.sin(x);",
+      errors: once("mathEscape"),
+      ...inRace,
+    },
+    {
+      code: "export const f = (consume: (m: unknown) => number) => consume(Math);",
+      errors: once("mathEscape"),
+      ...inRace,
+    },
+    {
+      code: 'export const f = (x: number) => Math["s" + "in"](x);',
+      errors: once("mathEscape"),
+      ...inRace,
+    },
+    {
+      code: "export const f = (x: number) => globalThis.Math.sin(x);",
+      errors: once("ambient", { name: "globalThis" }),
       ...inRace,
     },
     {
@@ -286,6 +379,22 @@ runRule("rushline/deterministic-core", deterministicCoreRule, {
     },
     {
       code: 'export const f = (a: number) => Math.min(a, Math.imul(a, 3), Math["abs"](a));',
+      ...inRace,
+    },
+    {
+      code: "export const f = (a: number) => [Math.abs(a), Math.ceil(a), Math.clz32(a), Math.floor(a), Math.fround(a), Math.max(a, 1), Math.round(a), Math.sign(a), Math.sqrt(a), Math.trunc(a), Math.E, Math.LN10, Math.LN2, Math.LOG10E, Math.LOG2E, Math.PI, Math.SQRT1_2, Math.SQRT2];",
+      ...inRace,
+    },
+    {
+      code: "export const cube = (x: number) => 0.4 * (x * x * x);\nexport const label = () => 'Math.sin(x) ** 2'.length;",
+      ...inRace,
+    },
+    {
+      code: 'import { atan, cos, hypot2, sin } from "@racer/track/math";\nexport const f = (x: number) => sin(x) + cos(x) + atan(x) + hypot2(x, 1);',
+      ...inRace,
+    },
+    {
+      code: "export const f = (x: number) => {\n  const Math = { sin: (v: number) => v / 2 };\n  return Math.sin(x);\n};",
       ...inRace,
     },
     {
