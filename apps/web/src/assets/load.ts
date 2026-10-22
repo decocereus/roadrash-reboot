@@ -41,21 +41,24 @@ const requestFailed = (url: string) => (cause: unknown) =>
 
 const download = Effect.fn("assets.download")(function* download(url: string) {
   const transport = yield* ModelTransport;
-  const response = yield* Effect.tryPromise({
+  const answer = yield* Effect.tryPromise({
     catch: requestFailed(url),
-    try: async (signal) => await transport.fetch(url, { signal }),
+    try: async (signal) => {
+      const response = await transport.fetch(url, { signal });
+      return {
+        bytes: response.ok ? await response.arrayBuffer() : null,
+        status: response.status,
+      };
+    },
   });
-  if (!response.ok) {
+  if (answer.bytes === null) {
     return yield* new ModelResponseRejected({
-      message: `The model ${url} answered ${response.status}.`,
-      status: response.status,
+      message: `The model ${url} answered ${answer.status}.`,
+      status: answer.status,
       url,
     });
   }
-  return yield* Effect.tryPromise({
-    catch: requestFailed(url),
-    try: async () => await response.arrayBuffer(),
-  });
+  return answer.bytes;
 });
 
 const retryable = (

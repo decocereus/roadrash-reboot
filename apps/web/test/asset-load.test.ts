@@ -334,6 +334,42 @@ describe("asset loading through the Effect boundary", () => {
     expect(mounted.settled).toHaveLength(1);
   });
 
+  it("aborts a body that is still downloading through the signal its fetch received", async () => {
+    const reading = Promise.withResolvers<null>();
+    const received: AbortSignal[] = [];
+    const transport: Transport = {
+      fetch: async (url, init) => {
+        if (url !== urls.bike) {
+          return await bytesOf(url)();
+        }
+        if (init.signal) {
+          received.push(init.signal);
+        }
+        const body = new ReadableStream<Uint8Array>({
+          pull: () => {
+            reading.resolve(null);
+          },
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]));
+          },
+        });
+        return await Promise.resolve(new Response(body));
+      },
+    };
+    const runtime = createAssetRuntime(
+      { fonts: readyFonts, transport },
+      new Map(),
+      urls
+    );
+    const mounted = mount(runtime, parsingOf().parsers);
+    await reading.promise;
+    mounted.abort();
+    await expect(mounted.outcome).resolves.toStrictEqual({
+      kind: "interrupted",
+    });
+    expect(received.map((signal) => signal.aborted)).toStrictEqual([true]);
+  });
+
   it("releases a decode that finishes after the mount was aborted, and it never commits", async () => {
     const late = Promise.withResolvers<null>();
     const parsing = parsingOf(

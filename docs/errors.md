@@ -56,11 +56,11 @@ The browser save, `apps/web/src/career/save.ts`, runs each storage step with `Ef
 | `ModelDecodeFailed` | Never | The parser rejected the bytes. The title shows the parser's message, such as `The rider model <url> has no poses.` |
 | `FontReadinessFailed` | Never | Nothing. The game starts with the fonts the page has, and the bridge records the message as a recorder fault from `fonts`, which keeps it only while a race is recording. |
 
-Only a completed download enters the page's byte cache, keyed by the model's fingerprinted URL, so a failure leaves nothing behind and the next mount fetches again. Decoded models belong to one mount. They are released once, when the game is disposed, when the mount is aborted, or when another model of the same mount fails; a parse that finishes after the mount ended is released as it arrives. A remount parses the cached bytes again.
+Only a completed download enters the page's byte cache, keyed by the model's fingerprinted URL. A failed download or a rejected answer caches nothing, so the next mount fetches that model again. The bytes enter the cache before they are parsed, so a parse failure keeps them but no decoded model, and a later mount parses them again without fetching. Decoded models belong to one mount. They are released once, when the game is disposed, when the mount is aborted, or when another model of the same mount fails; a parse that finishes after the mount ended is released as it arrives. A remount parses the cached bytes again.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| Only completed bytes are cached. A failed download, answer or parse caches nothing, and decoded models belong to one mount and are released once when it ends. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
+| Only a completed download enters the byte cache. A failed download or answer caches nothing, so the next mount fetches again. A parse failure keeps the completed bytes but no decoded model, so a later mount parses them again without fetching. Decoded models belong to one mount and are released once when it ends. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Only a transport or body-read failure or a 5xx answer is retried, once, through `Effect.retry`. A 4xx answer, a parser rejection, a font failure and an interruption are not retried. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Each asset failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. A rejected HTTP status has nothing thrown to keep. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/assets` | None |
 
