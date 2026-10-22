@@ -24,7 +24,11 @@ There is no API Worker or database yet, because nothing needs one. Leaderboards,
 
 ## Riding model
 
-`packages/sim` owns every rule. It has no DOM, Three.js, clock, or unseeded randomness, so the same inputs always produce the same race. State is plain data that `stepRace` advances by exactly 1/60 second.
+`packages/sim` owns every rule. It has no DOM, Three.js, clock, or unseeded randomness, so the same inputs always produce the same race. State is plain data that `stepRace` advances by exactly 1/60 second. `rushline/deterministic-core` holds the simulation, the track package and the career rules to that: they import only each other and read no clock, entropy, host or loader.
+
+Each race owns everything that carries over from one tick to the next. The pilot's braking envelope and forecast course live in a `PilotHistory` that `pilot-history.ts` keys by the race's state, so two races in one page, one after another or side by side, never read each other's memory. `apps/web/test/pilot-replay.test.ts` replays nine level-5 races for 7,200 ticks each, alone and interleaved, against hashes recorded before the change.
+
+The browser holds a race through `RaceRun` (`race-run.ts`): a readonly `RaceView` of the race itself, its step and pilot, and the four commands in `commands.ts` that the dev ride's `?at`, `?kmh`, `?hazard` and `?clear` use to place the player and move traffic. Nothing in `apps/web` writes race state directly.
 
 A rider lives in track space: distance along the road `s`, lateral offset `x` in metres, speed, and lateral speed. The bike is not a rigid body. The model is the smallest one that produces the behaviour we want, and it steers the way the Road Rash games did:
 

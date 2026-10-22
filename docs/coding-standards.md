@@ -38,14 +38,19 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| No DOM, no Three.js, no `Math.random` and no clock. State is plain data, and `stepRace` advances it by one 1/60 second tick. | judgment | `packages/sim`, `packages/track`, `packages/career` | None |
-| Randomness comes from the seeded generator in `packages/track`. | judgment | `packages/sim`, `packages/track`, `packages/career` | None |
+| The simulation, track and career rule modules import only each other, and every import and re-export resolves to one of them. They read no clock, no unseeded randomness, no browser or Node state, and no Effect, Three.js or loader. State is plain data, and `stepRace` advances it by one 1/60 second tick. | `rushline/deterministic-core` | `deterministicFiles` in `oxlint.config.ts`: the sim, track and career rule modules | None |
+| Randomness comes from the seeded generator in `packages/track/src/random.ts`, and each consumer keeps its seed in state. The lint rule rejects ambient entropy and imports from outside the core; whether hand-written arithmetic is a second generator is for review. | `rushline/deterministic-core`, judgment | `deterministicFiles` | None |
+| The named tick, frame, planner and input bodies build no function, object, array, rest or spread container, `new` instance or `subarray` view directly. This covers the body's own syntax, not the functions it calls, so it is not an allocation budget. | `rushline/no-hot-allocation` | `hotBodies` in `oxlint.config.ts` | None |
+| Every sim, track and career module has exactly one role: deterministic rules and data, save codec, or test. The save codecs are the career's I/O boundary and get the Effect rules. Every listed hot body exists, once. | `pnpm test`, `pnpm lint:rules` | `scripts/deterministic-scopes.test.ts`, `rushline/no-hot-allocation` | None |
+| Each race owns its mutable pilot memory. Module-level buffers hold only scratch that each plan overwrites before reading, so one race can never read another's history. | `pnpm test` | `apps/web/test/pilot-replay.test.ts` | None |
+| The browser reads a race through the deeply readonly `RaceView`, the race itself and not a copy, and changes it only through `RaceRun` and the commands in `packages/sim/src/commands.ts`. | `pnpm typecheck`, `pnpm test` | `packages/sim/src/race-view.ts`, `race-run.ts`, `apps/web/src/game`, `packages/career/src/outcome.ts` | None |
+| Fixed ticks, held and repeated keys, replays of the same inputs and races run side by side match tick for tick, and render quality, pixel ratio, pacing, sound and the profiler never change a tick. | `pnpm test` | `apps/web/test/fixed-tick.test.ts`, `input.test.ts`, `pilot-replay.test.ts`, `render-quality.test.ts` | None |
 
 ## Tune the numbers before the model
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| A bike's handling is its `BikeSpec`. Change numbers there before changing the model. | judgment | `packages/sim` | None |
+| A bike's handling is its `BikeSpec`. Change numbers there before changing the model. [handling-matrix.md](handling-matrix.md) lists what each field means, what reads it and which test pins it. | judgment | `packages/sim` | None |
 | The tests in `packages/sim` pin the feel: acceleration, braking distance, how hard a bend pushes, which bend cannot be taken flat out, when the crest launches. When a tuning change breaks one, decide whether the feel or the test is wrong, and say which in the commit. | judgment | `packages/sim` | None |
 
 ## Use Effect only at the edges

@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import type { OxlintOverride } from "oxlint";
 import { describe, expect, it } from "vitest";
 
 import config from "../oxlint.config.ts";
@@ -90,9 +91,14 @@ describe("Effect boundary scopes", () => {
   });
 
   it("never sets a rule below error in an override", () => {
-    const settings = (config.overrides ?? []).flatMap((override) =>
-      Object.values(override.rules ?? {})
+    const overrides: readonly OxlintOverride[] = config.overrides ?? [];
+    const severities = overrides.flatMap((override) =>
+      Object.values(override.rules ?? {}).map((setting) =>
+        Array.isArray(setting) ? setting[0] : setting
+      )
     );
-    expect(settings.filter((setting) => setting !== "error")).toStrictEqual([]);
+    expect(severities.filter((severity) => severity !== "error")).toStrictEqual(
+      []
+    );
   });
 });
