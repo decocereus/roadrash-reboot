@@ -15,6 +15,8 @@ Everything below goes through one helper, `rv`. Run it from the root of the chec
 
 `rv` is a thin wrapper over `node tools/verify/rushline.ts`. The TypeScript lives in `tools/verify/` so the repo's lint and typecheck cover it. It reuses `@racer/devtools`: `packages/devtools/src/cdp.ts`, `chrome.ts`, and `analysis.ts`, which `tools/perf` uses too.
 
+If `rv` itself takes many seconds to start, run `node tools/verify/rushline.ts` with the same arguments. On 2026-10-22 macOS took about 35 seconds to execute each script marked `com.apple.provenance`, the `rv` script and every `node_modules/.bin` shim among them, while `node` started at once.
+
 ## Rules that are not negotiable
 
 - **Ports 1350 and 1351 belong to the user.** `pnpm dev` (alchemy dev, Vite with hot reload) runs on 1350 and the user's built play server runs on 1351 (`NODE_ENV=development vite build --mode development`, then `vite preview --mode development --host 127.0.0.1 --port 1351`). Since 2026-10-16 the user's tunnel URL `https://e9043c829ff09a21.e6iaysyqomua.opentunnel.xyz` points at 1351, so restarting or rebuilding it breaks what the user is sharing. Never start, stop, rebuild, reload, or drive 1350, 1351, or the tunnel unless the user tells you to. `rv` refuses the two ports unless you pass `--user-asked`.
