@@ -1,3 +1,4 @@
+import { TICK_SECONDS } from "@racer/sim/state";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { createHost, VSYNC_MS } from "./hosts.ts";
@@ -26,13 +27,34 @@ const rideThrough = (
   return host;
 };
 
-const sharedTicks = (host: Host, reference: Host) => {
+const acceptedTicks = (host: Host): number =>
+  host.frame.last / 1000 / TICK_SECONDS;
+
+const expectProgress = (host: Host) => {
+  const ticks = host.digests.length;
+  const accepted = acceptedTicks(host);
+  expect(ticks, "completed ticks").toBeGreaterThanOrEqual(LEAST_TICKS);
+  expect(ticks, "completed ticks for the accepted time").toBeGreaterThanOrEqual(
+    accepted - 1
+  );
+  expect(ticks, "completed ticks for the accepted time").toBeLessThanOrEqual(
+    accepted
+  );
+};
+
+type Callbacks = "reference" | "own";
+
+const expectSameRace = (host: Host, reference: Host, callbacks: Callbacks) => {
+  expectProgress(host);
+  if (callbacks === "reference") {
+    expect(host.digests, "completed ticks against the reference").toHaveLength(
+      reference.digests.length
+    );
+  }
   const length = Math.min(host.digests.length, reference.digests.length);
-  return {
-    length,
-    reference: reference.digests.slice(0, length),
-    ridden: host.digests.slice(0, length),
-  };
+  expect(host.digests.slice(0, length)).toStrictEqual(
+    reference.digests.slice(0, length)
+  );
 };
 
 describe("render quality never changes the race", () => {
@@ -43,7 +65,7 @@ describe("render quality never changes the race", () => {
   }, QUALITY_TIMEOUT_MS);
 
   it("the reference ride steps one tick per 60 Hz frame", () => {
-    expect(reference.digests.length).toBeGreaterThanOrEqual(LEAST_TICKS);
+    expectProgress(reference);
     expect(reference.quality.rung).toBe(0);
     expect(reference.seen.presents).toBeGreaterThan(LEAST_TICKS);
   });
@@ -52,12 +74,10 @@ describe("render quality never changes the race", () => {
     "a low rung renders less and rides the same ticks",
     () => {
       const low = rideThrough({ pinnedRung: 3 }, callbacksEvery(VSYNC_MS));
-      const shared = sharedTicks(low, reference);
       expect(low.quality.rung).toBe(3);
       expect(low.seen.samples).toContain(0);
       expect(low.seen.shadowMaps).toContain(2048);
-      expect(shared.length).toBeGreaterThanOrEqual(LEAST_TICKS);
-      expect(shared.ridden).toStrictEqual(shared.reference);
+      expectSameRace(low, reference, "reference");
     },
     QUALITY_TIMEOUT_MS
   );
@@ -66,11 +86,9 @@ describe("render quality never changes the race", () => {
     "slow frames step the governor down and ride the same ticks",
     () => {
       const slow = rideThrough({}, callbacksEvery(VSYNC_MS * 2));
-      const shared = sharedTicks(slow, reference);
       expect(slow.quality.rung).toBeGreaterThan(0);
       expect(slow.seen.shadowMaps.length).toBeGreaterThan(0);
-      expect(shared.length).toBeGreaterThanOrEqual(LEAST_TICKS);
-      expect(shared.ridden).toStrictEqual(shared.reference);
+      expectSameRace(slow, reference, "own");
     },
     QUALITY_TIMEOUT_MS
   );
@@ -100,12 +118,8 @@ describe("render quality never changes the race", () => {
         "1280x720@1",
         "800x600@1",
       ]);
-      expect(sharedTicks(sharp, reference).ridden).toStrictEqual(
-        sharedTicks(sharp, reference).reference
-      );
-      expect(sharedTicks(changed, reference).ridden).toStrictEqual(
-        sharedTicks(changed, reference).reference
-      );
+      expectSameRace(sharp, reference, "reference");
+      expectSameRace(changed, reference, "reference");
     },
     QUALITY_TIMEOUT_MS
   );
@@ -117,11 +131,10 @@ describe("render quality never changes the race", () => {
         { dpr: 2, pinnedRung: 5 },
         callbacksEvery(VSYNC_MS)
       );
-      const shared = sharedTicks(pinned, reference);
       expect(pinned.quality.pixelRatio).toBe(1.8);
       expect(pinned.seen.pixelRatios).toStrictEqual([2, 1.8]);
       expect(pinned.seen.sizes).toStrictEqual(["1280x720"]);
-      expect(shared.ridden).toStrictEqual(shared.reference);
+      expectSameRace(pinned, reference, "reference");
     },
     QUALITY_TIMEOUT_MS
   );
@@ -141,12 +154,8 @@ describe("render quality never changes the race", () => {
       expect(thirty.seen.presents).toBeLessThan(reference.seen.presents * 0.55);
       expect(fortyFive.seen.presents).toBeGreaterThan(260);
       expect(fortyFive.seen.presents).toBeLessThan(280);
-      expect(sharedTicks(thirty, reference).ridden).toStrictEqual(
-        sharedTicks(thirty, reference).reference
-      );
-      expect(sharedTicks(fortyFive, reference).ridden).toStrictEqual(
-        sharedTicks(fortyFive, reference).reference
-      );
+      expectSameRace(thirty, reference, "own");
+      expectSameRace(fortyFive, reference, "own");
     },
     QUALITY_TIMEOUT_MS
   );
@@ -158,12 +167,10 @@ describe("render quality never changes the race", () => {
         { profiled: true, sounded: true },
         callbacksEvery(VSYNC_MS)
       );
-      const shared = sharedTicks(heard, reference);
       expect(heard.seen.drives).toBeGreaterThan(LEAST_TICKS);
       expect(heard.seen.profiled).toBeGreaterThan(LEAST_TICKS);
       expect(reference.seen.drives).toBe(0);
-      expect(shared.length).toBeGreaterThanOrEqual(LEAST_TICKS);
-      expect(shared.ridden).toStrictEqual(shared.reference);
+      expectSameRace(heard, reference, "reference");
     },
     QUALITY_TIMEOUT_MS
   );
