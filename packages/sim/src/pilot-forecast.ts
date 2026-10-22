@@ -103,7 +103,8 @@ const contactReach = (hazard: Hazard): number =>
 
 const hazardCost = (hazard: Hazard, speed: number): number => {
   if (hazard.kind === "rock") {
-    return ROCK_COST + ROCK_COST_PER_SPEED * (speed / ROCK_FAST) ** 2;
+    const ratio = speed / ROCK_FAST;
+    return ROCK_COST + ROCK_COST_PER_SPEED * (ratio * ratio);
   }
   return hazard.kind === "oil" ? OIL_COST : POTHOLE_COST;
 };
@@ -314,7 +315,7 @@ const landOnRock = (
     rider.speed
   );
   if (
-    rider.speed ** 2 - landing ** 2 >
+    rider.speed * rider.speed - landing * landing >
     2 * PLANNED_BRAKING * obstruction.metres
   ) {
     toll.cost += CRASH_COST;

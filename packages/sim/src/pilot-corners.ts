@@ -6,6 +6,7 @@ import {
   nextJumpFrom,
 } from "@racer/track/features";
 import type { TrackFeature } from "@racer/track/features";
+import { hypot2 } from "@racer/track/math";
 import {
   curvatureAt,
   heightAt,
@@ -93,7 +94,7 @@ const resistanceOn = (
     dragOf(bike, speed, rider.tuck) +
     bike.engineBraking * Math.min(1, rider.revs) +
     bike.leanScrub * lock * lock * speed +
-    (GRAVITY * slope) / Math.hypot(1, slope)
+    (GRAVITY * slope) / hypot2(1, slope)
   );
 };
 

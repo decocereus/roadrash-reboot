@@ -21,8 +21,10 @@ export interface Drive {
   shiftTicks: number;
 }
 
-const torqueAt = (revs: number): number =>
-  Math.max(TORQUE_FLOOR, 1 - TORQUE_FALL * (revs - TORQUE_PEAK_REVS) ** 2);
+const torqueAt = (revs: number): number => {
+  const delta = revs - TORQUE_PEAK_REVS;
+  return Math.max(TORQUE_FLOOR, 1 - TORQUE_FALL * (delta * delta));
+};
 
 const peakPower = (): number => {
   let peak = 0;

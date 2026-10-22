@@ -1,10 +1,7 @@
 {
   "provenance": {
-    "recordedAt": [
-      "10f26fafa7f2e3e841efffe8040ff0eae3294ad5",
-      "28351e58f515858a200130c5b9d159d526d6384b"
-    ],
-    "recordedWith": "the step 3 pilot replay harness, which apps/web/test/pilot-replay.ts promotes with the same output",
+    "recordedAt": ["fa51109ead345c7e02cc7b5529c153c0cace768c"],
+    "recordedWith": "the owned-math commit on top of recordedAt, which moves the sim and track onto sin, cos, atan and hypot2 from @racer/track/math, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1 and reproduced on darwin-x64 Node v24.22.1 under Rosetta",
     "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text",
     "ticks": 7200,
     "window": {
@@ -16,65 +13,65 @@
     {
       "id": "ridge-road/level5/seed1",
       "ticks": 7200,
-      "full": "9ccfc46f063f3696df576d9ea79109ea89e13516bf4b99e87c04ec398d99161a",
-      "final": "fd37e49ef0d29553507ce33d6b6ea42879a1d822f20dd58b4eda1be945e39a0e",
-      "window": "f66901458993e1badefc958846088f0f8fedbeb6410c34e57737e5e0be0e5fc5"
+      "full": "a725f8b7a2fec004bc1034ebc47341238e908f7011d9e93521b8eebd237b822f",
+      "final": "8c63cc8a56a166fa5e4559fed95870d0eec4e15d1e8fe3b494a3c1793d58621c",
+      "window": "e5ae0fb32c8ba800290158d861c563a63b64acc3baea5a7d19212a53048c6417"
     },
     {
       "id": "ridge-road/level5/seed5",
       "ticks": 7200,
-      "full": "c25105cfc9fc2eada49b6be6755a2f3abeb6e767937a104e0ec2352ef019d883",
+      "full": "05b40e4c6ceada7311ab5143c49026c9d27fed5a0e6badebd746fca33cebc47e",
       "final": "12d64128991c8ff7ee43b1189b68710a5d8d7b8083c101bfafc8a7947a08defa",
-      "window": "f5dcff3ab6bcba85b8df841a17602c9977696d1f8683cd7b79a94b4d96ae54e8"
+      "window": "e2aec9721a2a80d96247ce3014d0e91c393d93fda469fc218e8bcaa4bdda07c6"
     },
     {
       "id": "ridge-road/level5/seed9",
       "ticks": 7200,
-      "full": "264905a90ed891fb3e3944984cbe0508ea4809ae93a3d9695b08e1ce970ec0f5",
+      "full": "ade57c060e2708cf30997fda5e78f70703c032bc2c2618e575d1531f0c500de1",
       "final": "b62a6949fbf1d3b52a11d205303fd785bac6246fb264a24fd1f96e94fee42bc8",
-      "window": "24e1e35719d0a8b5d3185a8b75c1c49c987da18feb3ff5dedb600f0adcfd0a14"
+      "window": "67c9de102820f2ad55b507374d847b2da81089577a57d231078055afc5a21d3c"
     },
     {
       "id": "ridge-road/level5/seed31",
       "ticks": 7200,
-      "full": "b7d3955d885c5b9dc3aedcac3b89861bc1f64fea0db87c4042cc4d2999de349a",
-      "final": "ffaa8ebabd570670815eba7774cb04b7c57173b09e75c4fab360d3b0c1e99171",
-      "window": "a38abc3d6162d8ddad34f87d14f5de0589d55fb15bccbe002046c416bf6b23ad"
+      "full": "516290701704588765885fc5c172317235c62d1dbef56c20c8dba78ae58a273a",
+      "final": "663a26074e2b01a3a2652586d247097ddf0b27ced0d5f62f9f720580f0da0486",
+      "window": "a7b96958d9c7a3a85901acbf74c8266862bd2577dfb4fb942d086d4416735e51"
     },
     {
       "id": "slag-row/level5/seed1",
       "ticks": 7200,
-      "full": "abd22f0d715799830254185f29025d34b7cf09821e4d8984b82ae6dfd9505173",
+      "full": "16be10400fc05f728753ee8fe1e5b773d6e61f21d59a02395c581da016220624",
       "final": "8410ebefeb34fd2572e48c16659aa591afc702bc501ccc519ab62b1ceb1e6667",
-      "window": "4eabdaf77d3a8a7ff8e040c5996404f96ecf3dedabecd4743af071805fab72cd"
+      "window": "591235b4ad4565825696e51ac773731ff626cacc6eac9d9513de4c8a703336ba"
     },
     {
       "id": "slag-row/level5/seed5",
       "ticks": 7200,
-      "full": "a6b0a8d2a63e1bca6d915e0f3f385be5ee024bc80b7bd44cb1e66c2350a11d68",
+      "full": "b1ddaf1c20917cbdbb8ce74a4f8d36d577e074b0456585ca52eb5582b7b68551",
       "final": "e29116939974876977126bd6e74baac2210a287c1c9af872e39e6240e2a7418c",
-      "window": "a7aae9b36ce41c73d1d4acc5a8dba81953a78330b97450d6caaa5439f91eae3c"
+      "window": "9250b6b5b41a202debb6db51abea3e0af4fcdaff5b470ce0cb3c649d25d0e701"
     },
     {
       "id": "slag-row/level5/seed9",
       "ticks": 7200,
-      "full": "ef93bc402d3f66db750a70f015919e58fcb0f91a2918938ec074001f2ea4b8a1",
+      "full": "6336845591ccd4942dfdacdb1a140cc626b9fe488df783b31f59f12ef5259766",
       "final": "e43d4ec86c537c93915c9c5877b4d7452f34c4c7c57ba2f2791d3df71ff1ee3d",
-      "window": "c75a9f34fef4492cf6d5f80cecdcbb86de78ec50db073b05c805fc9ac1d6c292"
+      "window": "9aaf3a2a69affae3427026fc202d134e6d4fa3a84380508081096d6a61dff2e1"
     },
     {
       "id": "slag-row/level5/seed31",
       "ticks": 7200,
-      "full": "a6dd58d0e065a8fea15b49ad051e5a8192ac8132867b8ccf5b18056c05850ab4",
+      "full": "927aaeae9008aca32a39b82e57d99cc9a49dbf321fc881522eda039ebfaaf8c7",
       "final": "3f8d81e37fc0ba96e5db35b2ecf421d095e738880faa5fc3cac9b1d88db0065d",
-      "window": "fe9086be2919a1d4b8f1b633900c487b737824dfde0ca2072b6e5700ffcd90ca"
+      "window": "32100e5b34d980f32b169170c95662ed0fe27d8d526998379fb6ecfa65695161"
     },
     {
       "id": "stress/seed8",
       "ticks": 7200,
-      "full": "4b288519a2a585155b07e1499b765368803765a89dcb10462956adf8ee7896d1",
+      "full": "0d1e8dc850bbbc6ce02b975c69df67531a45fee21d53785cd33ed015c87c7f0d",
       "final": "5e7d7171917aa515e6e4e959728d65070fccb995deeb45a87b0bfd43fc30862d",
-      "window": "796d2480d7c2d63106687ec46327e3b27ed91da7946209f62dc298b542746290"
+      "window": "225f04269e8d054885d3e602fc8961d0137f965bec02e94d0ede24730c4ffb19"
     }
   ]
 }

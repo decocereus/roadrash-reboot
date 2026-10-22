@@ -11,6 +11,7 @@ import {
   supportAt,
 } from "@racer/track/features";
 import type { Crossing, Support, TrackFeature } from "@racer/track/features";
+import { atan, sin } from "@racer/track/math";
 import { curvatureAt, heightAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
@@ -40,7 +41,7 @@ export const forwardRateOf = (rider: RiderState, curvature: number): number =>
   rider.speed / Math.max(0.5, 1 - curvature * rider.x);
 
 export const swayOf = (rider: RiderState): number =>
-  rider.wobble * Math.sin(rider.wobble * WOBBLE_TURNS);
+  rider.wobble * sin(rider.wobble * WOBBLE_TURNS);
 
 export const settleVisuals = (rider: RiderState, authority: number): void => {
   const limit = Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
@@ -48,8 +49,7 @@ export const settleVisuals = (rider: RiderState, authority: number): void => {
     (clamp(rider.lateralSpeed / limit, -1, 1) * authority +
       swayOf(rider) * WOBBLE_LEAN) *
     rider.bike.visualLean;
-  rider.heading =
-    Math.atan2(rider.lateralSpeed, Math.max(rider.speed, 6)) * 0.5;
+  rider.heading = atan(rider.lateralSpeed / Math.max(rider.speed, 6)) * 0.5;
 };
 
 const under: Support = emptySupport();

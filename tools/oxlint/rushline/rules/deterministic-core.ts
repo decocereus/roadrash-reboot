@@ -89,6 +89,29 @@ const ambient = new Set([
   "window",
 ]);
 
+const exactMath = new Set([
+  "E",
+  "LN10",
+  "LN2",
+  "LOG10E",
+  "LOG2E",
+  "PI",
+  "SQRT1_2",
+  "SQRT2",
+  "abs",
+  "ceil",
+  "clz32",
+  "floor",
+  "fround",
+  "imul",
+  "max",
+  "min",
+  "round",
+  "sign",
+  "sqrt",
+  "trunc",
+]);
+
 const slashed = (file: string): string => file.split(path.sep).join("/");
 
 const supportedExports = (exports: Readonly<Record<string, string>>) =>
@@ -167,10 +190,26 @@ export const deterministicCoreRule = defineRule({
         context.report({ messageId: "mathEscape", node: parent });
       } else if (key === "random") {
         context.report({ messageId: "mathRandom", node: parent });
+      } else if (!exactMath.has(key)) {
+        context.report({
+          data: { name: key },
+          messageId: "mathApproximate",
+          node: parent,
+        });
       }
     };
 
     return {
+      AssignmentExpression(node) {
+        if (node.operator === "**=") {
+          context.report({ messageId: "exponentiation", node });
+        }
+      },
+      BinaryExpression(node) {
+        if (node.operator === "**") {
+          context.report({ messageId: "exponentiation", node });
+        }
+      },
       ExportAllDeclaration(node) {
         checkEdge(node, node.source.value);
       },
@@ -225,19 +264,23 @@ export const deterministicCoreRule = defineRule({
   meta: {
     docs: {
       description:
-        "Keep the simulation, track and career rules deterministic: they import only other deterministic modules and reach no clock, entropy, host or loader.",
+        "Keep the simulation, track and career rules deterministic: they import only other deterministic modules, reach no clock, entropy, host or loader, and use only the exact members of Math.",
     },
     messages: {
       ambient:
         "`{{name}}` reaches outside the race. Deterministic modules get time, randomness and host state only as arguments.",
       dynamicImport:
         "Deterministic modules load nothing at run time. Import the module statically.",
+      exponentiation:
+        "`**` is not exact, so another CPU or engine may round it differently. Write an integer power as a multiplication or a literal, or use a function from `@racer/track/math`.",
       importEquals:
         "`import = require` loads a module outside the deterministic graph. Use a static import of a deterministic module.",
       importMeta:
         "`import.meta` reads the host. Deterministic modules take what they need as arguments.",
+      mathApproximate:
+        "`Math.{{name}}` is not one of the exact Math members this rule allows. Approximated members can round differently on another CPU or engine, so use `sin`, `cos`, `atan` or `hypot2` from `@racer/track/math`, or exact arithmetic.",
       mathEscape:
-        "Use Math only as `Math.name(...)`. Passing, aliasing or indexing Math with a computed key lets `Math.random` escape this check.",
+        "Use Math only through a statically named exact member, as `Math.name(...)`. Passing, aliasing, destructuring or indexing Math with a computed key hides which member runs. Trigonometry comes from `@racer/track/math`.",
       mathRandom:
         "`Math.random` is unseeded. Draw from the seeded generator in `@racer/track/random`.",
       outsideCore:
