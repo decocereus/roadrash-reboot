@@ -105,6 +105,21 @@ runRule("rushline/deterministic-core", deterministicCoreRule, {
       ...inRace,
     },
     {
+      code: 'export const currentDateText = (): string => new Intl.DateTimeFormat("en").format();',
+      errors: once("ambient", { name: "Intl" }),
+      ...inRace,
+    },
+    {
+      code: 'const { DateTimeFormat } = Intl;\nexport const today = () => new DateTimeFormat("en").format();',
+      errors: once("ambient", { name: "Intl" }),
+      ...inRace,
+    },
+    {
+      code: 'const I = Intl;\nexport const zone = () => new I.DateTimeFormat("en").resolvedOptions().timeZone;',
+      errors: once("ambient", { name: "Intl" }),
+      ...inRace,
+    },
+    {
       code: "export const t = performance.now();",
       errors: once("ambient", { name: "performance" }),
       ...inRace,
@@ -275,6 +290,10 @@ runRule("rushline/deterministic-core", deterministicCoreRule, {
     },
     {
       code: "export const f = (Date: number, performance: number) => {\n  const Math = { random: () => 4 };\n  const o = { window: 1, document: 'clock' };\n  return Date + performance + Math.random() + o.window + 'Date.now()'.length;\n};",
+      ...inRace,
+    },
+    {
+      code: "export const label = (lap: number) => {\n  const Intl = { DateTimeFormat: (n: number) => 'lap ' + n };\n  return Intl.DateTimeFormat(lap);\n};",
       ...inRace,
     },
     {

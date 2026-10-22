@@ -42,6 +42,7 @@ const ambient = new Set([
   "Headers",
   "Image",
   "ImageData",
+  "Intl",
   "KeyboardEvent",
   "Location",
   "MessageChannel",
