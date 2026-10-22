@@ -22,6 +22,7 @@ import {
 import type { GameEvents, GameHandle, GamePhase, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
+import { rendererOf } from "./profile.ts";
 import { bindQuality, createQuality } from "./quality-ladder.ts";
 import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
 import { bindCast, createCast } from "./rider-views.ts";
@@ -117,11 +118,11 @@ export const createGame = async (
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.info.autoReset = false;
-  const quality = createQuality(renderer, {
-    pinnedPixelRatio,
-    pinnedRefresh,
-    pinnedRung,
-  });
+  const quality = createQuality(
+    renderer,
+    { pinnedPixelRatio, pinnedRefresh, pinnedRung },
+    () => window.devicePixelRatio
+  );
   const hub = diagnostics();
   const { recorder } = hub;
   const frame = createFrameLoop(renderer);
@@ -372,6 +373,7 @@ export const createGame = async (
     halted,
     pipeline,
     quality,
+    readGpu: () => rendererOf(renderer),
     recorder,
     renderer,
     stage,

@@ -503,7 +503,10 @@ export const planForecast = (
     return;
   }
   planCorners(history, track, rider, riding.margin, rider.x, noSlick);
-  paced.set(history.braked.subarray(0, plan.count));
+  const { braked } = history;
+  for (let index = 0; index < plan.count; index += 1) {
+    paced[index] = braked[index] ?? 0;
+  }
   plan.paced = plan.count;
 };
 

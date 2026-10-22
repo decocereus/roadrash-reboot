@@ -409,13 +409,7 @@ export const stepRace = (
       throwForHazard
     );
   }
-  stepRiderContacts(
-    state,
-    track,
-    (riderIndex, cause, bikeKeep, bodyKeep, speedAtImpact) => {
-      throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, speedAtImpact);
-    }
-  );
+  stepRiderContacts(state, track, throwRider);
   coolDown(state);
   landStrikes(state);
   for (let index = 0; index < state.riders.length; index += 1) {

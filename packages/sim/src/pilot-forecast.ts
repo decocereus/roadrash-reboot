@@ -144,12 +144,17 @@ const gapTo = (
   travelled: number
 ): number => obstruction.ahead + obstruction.speed * seconds - travelled;
 
-const carsAhead = (seconds: number, travelled: number): boolean =>
-  obstructions.some(
-    (obstruction) =>
+const carsAhead = (seconds: number, travelled: number): boolean => {
+  for (const obstruction of obstructions) {
+    if (
       obstruction.traffic &&
       gapTo(obstruction, seconds, travelled) > -obstruction.along
-  );
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
 
 const withinHorizon = (
   tick: number,

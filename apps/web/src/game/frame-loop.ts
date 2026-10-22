@@ -6,6 +6,7 @@ import type * as THREE from "three";
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Sound } from "./audio.ts";
+import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
 import type { GamePhase } from "./hud.ts";
@@ -38,41 +39,49 @@ export interface FrameLoop {
   lastCallback: number;
 }
 
+export const frameLoopOf = (
+  profileMode: ProfileMode,
+  profiler: Profiler | null,
+  meterFlag: boolean
+): FrameLoop => ({
+  accumulator: 0,
+  clockReset: false,
+  frameEnd: {
+    discarded: 0,
+    drawRung: 0,
+    drawnEpoch: 0,
+    interval: 0,
+    pixelRatio: 1,
+    race: 0,
+    rung: 0,
+    sizeEpoch: 0,
+    tick: 0,
+    ticks: 0,
+  },
+  frameId: 0,
+  hudClock: 0,
+  last: 0,
+  lastBusyMs: 0,
+  lastCallback: Number.NaN,
+  lastGear: 1,
+  meter: null,
+  meterFlag,
+  overlayNoted: null,
+  profileMode,
+  profiler,
+  rendererLabel: "",
+  sample: emptySample(),
+});
+
 export const createFrameLoop = (renderer: THREE.WebGLRenderer): FrameLoop => {
   const profileMode = profileModeOf(globalThis.location.search);
-  const profiler: Profiler | null =
+  return frameLoopOf(
+    profileMode,
     profileMode === "off"
       ? null
-      : createProfiler(renderer, profileMode === "gpu");
-  return {
-    accumulator: 0,
-    clockReset: false,
-    frameEnd: {
-      discarded: 0,
-      drawRung: 0,
-      drawnEpoch: 0,
-      interval: 0,
-      pixelRatio: 1,
-      race: 0,
-      rung: 0,
-      sizeEpoch: 0,
-      tick: 0,
-      ticks: 0,
-    },
-    frameId: 0,
-    hudClock: 0,
-    last: 0,
-    lastBusyMs: 0,
-    lastCallback: Number.NaN,
-    lastGear: 1,
-    meter: null,
-    meterFlag: wantsFrameMeter(),
-    overlayNoted: null,
-    profileMode,
-    profiler,
-    rendererLabel: "",
-    sample: emptySample(),
-  };
+      : createProfiler(renderer, profileMode === "gpu"),
+    wantsFrameMeter()
+  );
 };
 
 export const lapOf = (frame: FrameLoop) => (part: Part) => {
@@ -124,6 +133,14 @@ export const bindSettings = ({
   };
 };
 
+export interface FrameRenderer {
+  readonly info: {
+    readonly render: { readonly calls: number; readonly triangles: number };
+    readonly reset: () => void;
+  };
+  readonly setAnimationLoop: (callback: ((now: number) => void) | null) => void;
+}
+
 interface LoopParts {
   readonly applyPending: () => void;
   readonly cast: Pick<Cast, "inputs">;
@@ -136,12 +153,15 @@ interface LoopParts {
   readonly noteRefresh: (now: number) => void;
   readonly player: () => RiderView;
   readonly quality: Quality;
-  readonly recorder: Recorder;
-  readonly renderer: THREE.WebGLRenderer;
+  readonly recorder: Pick<
+    Recorder,
+    "beginFrame" | "frame" | "raceId" | "recording"
+  >;
+  readonly renderer: FrameRenderer;
   readonly report: () => void;
   readonly session: { readonly phase: GamePhase; readonly holdLeft: number };
   readonly skipsVsync: (now: number) => boolean;
-  readonly sound: Sound;
+  readonly sound: Pick<Sound, "drive" | "shift">;
   readonly stage: Pick<Stage, "race">;
   readonly tick: () => void;
 }
@@ -169,23 +189,7 @@ export const installFrameLoop = ({
 }: LoopParts): void => {
   const { frameEnd, sample } = frame;
 
-  const advance = (seconds: number): number => {
-    if (frame.clockReset) {
-      frame.accumulator = 0;
-      frame.clockReset = false;
-    }
-    frame.accumulator += seconds;
-    let ticks = 0;
-    while (frame.accumulator >= TICK_SECONDS && !halted()) {
-      tick();
-      ticks += 1;
-      frame.accumulator -= TICK_SECONDS;
-      if (frame.clockReset) {
-        break;
-      }
-    }
-    return ticks;
-  };
+  const advance = createFixedTick(frame, halted, tick);
 
   const noteCallback = (now: number) => {
     noteRefresh(now);

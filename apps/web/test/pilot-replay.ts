@@ -4,6 +4,7 @@ import type { Hash } from "node:crypto";
 import type { RoadId } from "@racer/career/tables";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
+import type { RaceView } from "@racer/sim/race-view";
 import type {
   RaceSetup,
   RaceState,
@@ -100,13 +101,18 @@ const encodeAt = (holder: readonly unknown[], at: number): string => {
   return text;
 };
 
-const raceText = (state: RaceState): string => encodeAt([state], 0);
+const raceText = (state: RaceView): string => encodeAt([state], 0);
 
-const frameText = (state: RaceState, inputs: readonly RiderInput[]): string =>
+const frameText = (state: RaceView, inputs: readonly RiderInput[]): string =>
   encodeAt([[state, inputs]], 0);
 
 const digest = (text: string): string =>
   createHash("sha256").update(text, "utf16le").digest("hex");
+
+export const frameDigest = (
+  state: RaceView,
+  inputs: readonly RiderInput[]
+): string => digest(frameText(state, inputs));
 
 export interface Run {
   readonly id: string;
