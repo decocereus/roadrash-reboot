@@ -5,142 +5,315 @@ import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
+import * as Schema from "effect/Schema";
 
+import { budgetProblems, budgetsFile } from "./budgets.ts";
+import { buildSide } from "./build.ts";
+import { ConfigInvalid } from "./config-invalid.ts";
 import {
-  candidatesOf,
-  observeRace,
-  scenarioHash,
-  scenarios,
-  SEARCH_TICKS,
-  WINDOW_TICKS,
-  workloadDigestOf,
-} from "./scenarios.ts";
-import type { Candidate, Scenario, WorkloadRows } from "./scenarios.ts";
+  evaluateBaseline,
+  evaluateGate,
+  lanesOf,
+  portableLanes,
+  samplesRecord,
+} from "./evaluate.ts";
+import type { Evaluation, Samples } from "./evaluate.ts";
+import { nodeLane } from "./node-lane.ts";
+import type { NodeLane } from "./node-lane.ts";
+import { sha256Of } from "./result.ts";
+import { scenarioHash, scenarios } from "./scenarios.ts";
+import { selectWindows } from "./select.ts";
+import {
+  currentSide,
+  identityOf,
+  materializedSide,
+  revisionOf,
+} from "./sides.ts";
 
-interface SelectOptions {
-  readonly kind: "select";
-  readonly out: string;
-}
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
+const DEFAULT_BUDGETS = path.join(REPO_ROOT, "tools/perf/budgets.json");
+const DEFAULT_OUT = path.join(REPO_ROOT, "tools/perf/results");
 
-const USAGE = "Usage: node tools/perf/gate.ts --select-window [--out <dir>]";
+const USAGE = `Usage:
+  node tools/perf/gate.ts [--baseline-ref <rev>] [--budgets <file>] [--lanes node,build] [--out <dir>]
+  node tools/perf/gate.ts baseline [--baseline-ref <rev>] [--lanes node,build] [--out <dir>]
+  node tools/perf/gate.ts --evaluate <samples.json> [--budgets <file>]
+  node tools/perf/gate.ts --select-window [--out <dir>]`;
+
+type GateOptions =
+  | { readonly kind: "select"; readonly out: string }
+  | {
+      readonly kind: "evaluate";
+      readonly samples: string;
+      readonly budgets: string;
+    }
+  | {
+      readonly kind: "measure";
+      readonly mode: Samples["mode"];
+      readonly ref: string | undefined;
+      readonly budgets: string;
+      readonly lanes: Samples["lanes"];
+      readonly out: string;
+    };
+
+const usage = (message: string) =>
+  new UsageError({ message: `${message}\n${USAGE}` });
 
 const readGateOptions = (args: readonly string[]) =>
   Effect.try({
     catch: (cause) =>
-      new UsageError({
-        message: `${cause instanceof Error ? cause.message : String(cause)}\n${USAGE}`,
-      }),
+      usage(cause instanceof Error ? cause.message : String(cause)),
     try: () =>
       parseArgs({
+        allowPositionals: true,
         args: [...args],
         options: {
-          out: { default: "tools/perf/results", type: "string" },
+          "baseline-ref": { type: "string" },
+          budgets: { default: DEFAULT_BUDGETS, type: "string" },
+          evaluate: { type: "string" },
+          lanes: { default: portableLanes.join(","), type: "string" },
+          out: { default: DEFAULT_OUT, type: "string" },
           "select-window": { default: false, type: "boolean" },
         },
-      }).values,
+      }),
   }).pipe(
-    Effect.flatMap((values) =>
-      values["select-window"]
-        ? Effect.succeed<SelectOptions>({ kind: "select", out: values.out })
-        : Effect.fail(new UsageError({ message: USAGE }))
+    Effect.flatMap(
+      ({ positionals, values }): Effect.Effect<GateOptions, UsageError> => {
+        const [command, ...rest] = positionals;
+        const lanes = lanesOf(values.lanes);
+        if (
+          rest.length > 0 ||
+          (command !== undefined && command !== "baseline")
+        ) {
+          return Effect.fail(
+            usage(`Unknown argument ${positionals.join(" ")}`)
+          );
+        }
+        if (values["select-window"]) {
+          return Effect.succeed({ kind: "select", out: values.out });
+        }
+        if (values.evaluate !== undefined) {
+          return Effect.succeed({
+            budgets: values.budgets,
+            kind: "evaluate",
+            samples: values.evaluate,
+          });
+        }
+        if (!lanes) {
+          return Effect.fail(usage(`Unknown lanes ${values.lanes}`));
+        }
+        return Effect.succeed({
+          budgets: values.budgets,
+          kind: "measure",
+          lanes,
+          mode: command === "baseline" ? "baseline" : "gate",
+          out: values.out,
+          ref: values["baseline-ref"],
+        });
+      }
     )
   );
 
-const slice = (rows: WorkloadRows, from: number): WorkloadRows => {
-  const start = rows.ticks.indexOf(from);
-  const end = start + WINDOW_TICKS;
-  return {
-    ahead: rows.ahead.slice(start, end),
-    modes: rows.modes.slice(start, end),
-    speeds: rows.speeds.slice(start, end),
-    ticks: rows.ticks.slice(start, end),
-  };
-};
+const decodeBudgets = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(budgetsFile)
+);
 
-interface Selection {
-  readonly scenario: Scenario["id"];
-  readonly scenarioHash: string;
-  readonly racers: number;
-  readonly police: number;
-  readonly observedTicks: number;
-  readonly candidates: readonly Candidate[];
-  readonly chosen: Candidate | null;
-  readonly rows: WorkloadRows | null;
-  readonly workloadDigest: string | null;
-  readonly matchesRegistry: boolean;
-}
+const decodeSamples = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(samplesRecord)
+);
 
-const selectFor = (scenario: Scenario): Selection => {
-  const observed = observeRace(scenario.bench, SEARCH_TICKS);
-  const candidates = candidatesOf(observed.rows, scenario.floor);
-  const [chosen = null] = candidates;
-  const rows = chosen ? slice(observed.rows, chosen.from) : null;
-  const workloadDigest = rows ? workloadDigestOf(rows) : null;
-  return {
-    candidates,
-    chosen,
-    matchesRegistry:
-      chosen !== null &&
-      observed.racers === scenario.racers &&
-      observed.police === scenario.police &&
-      chosen.from === scenario.window.from &&
-      chosen.to === scenario.window.to &&
-      chosen.min === scenario.band.min &&
-      chosen.max === scenario.band.max &&
-      chosen.total === scenario.band.total &&
-      chosen.minSpeed === scenario.minSpeed &&
-      workloadDigest === scenario.workloadDigest,
-    observedTicks: observed.rows.ticks.length,
-    police: observed.police,
-    racers: observed.racers,
-    rows,
-    scenario: scenario.id,
-    scenarioHash: scenarioHash(scenario),
-    workloadDigest,
-  };
-};
-
-const selectionLine = (selection: Selection): string => {
-  const { chosen } = selection;
-  if (!chosen) {
-    return `FAIL select ${selection.scenario} no eligible ${WINDOW_TICKS}-tick window in ${selection.observedTicks} ticks`;
+const readBudgets = Effect.fnUntraced(function* readBudgets(file: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const text = yield* fs
+    .readFileString(file)
+    .pipe(
+      Effect.mapError(
+        (cause) => new ConfigInvalid({ cause, message: `Cannot read ${file}.` })
+      )
+    );
+  const budgets = yield* decodeBudgets(text).pipe(
+    Effect.mapError(
+      (cause) =>
+        new ConfigInvalid({ cause, message: `${file} is not a budgets file.` })
+    )
+  );
+  const problems = budgetProblems(budgets);
+  if (problems.length > 0) {
+    return yield* new ConfigInvalid({
+      message: `${file} is incomplete:\n${problems.join("\n")}`,
+    });
   }
-  const status = selection.matchesRegistry ? "ok  " : "FAIL";
-  const note = selection.matchesRegistry ? "" : " (differs from the registry)";
-  return `${status} select ${selection.scenario} from=${chosen.from} to=${chosen.to} ahead=${chosen.min}..${chosen.max} total=${chosen.total} minSpeed=${chosen.minSpeed} racers=${selection.racers} police=${selection.police} digest=${selection.workloadDigest ?? ""} candidates=${selection.candidates.length} scenario=${selection.scenarioHash.slice(0, 12)}${note}`;
-};
+  return { budgets, sha256: sha256Of(text) };
+});
 
-const select = Effect.fn("gate.select")(function* select(
-  options: SelectOptions
+const say = (line: string) =>
+  Effect.sync(() => {
+    process.stderr.write(`${line}\n`);
+  });
+
+const stampOf = (ms: number): string =>
+  new Date(ms).toISOString().replaceAll(/[:.]/gu, "-");
+
+const timed = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* timedEffect() {
+    const started = yield* Clock.currentTimeMillis;
+    const value = yield* effect;
+    return { ms: (yield* Clock.currentTimeMillis) - started, value };
+  });
+
+const measure = Effect.fn("gate.measure")(function* measure(
+  options: Extract<GateOptions, { kind: "measure" }>
 ) {
   const fs = yield* FileSystem.FileSystem;
-  const selections = scenarios.map(selectFor);
-  const dir = path.join(
-    options.out,
-    `selection-${yield* Clock.currentTimeMillis}`
+  const approved =
+    options.mode === "gate" ? yield* readBudgets(options.budgets) : null;
+  const startedAt = yield* Clock.currentTimeMillis;
+  const B = yield* currentSide(REPO_ROOT);
+  const ref = options.ref ?? approved?.budgets.baseline.revision ?? "HEAD";
+  const revision = yield* revisionOf(REPO_ROOT, ref);
+  const comparisonId = `${options.mode}-${stampOf(startedAt)}-${revision.slice(0, 7)}-${B.revision.slice(0, 7)}`;
+  const dir = path.join(options.out, comparisonId);
+  yield* fs.makeDirectory(path.join(dir, "node"), { recursive: true });
+  yield* say(
+    `perf ${options.mode} ${comparisonId}: A=${revision} B=${B.revision}${B.dirty ? " (dirty)" : ""}`
   );
-  yield* fs.makeDirectory(dir, { recursive: true });
-  const file = path.join(dir, "selection.json");
-  yield* fs.writeFileString(file, JSON.stringify({ selections }, null, 1));
-  yield* Effect.sync(() => {
-    process.stdout.write("MEASUREMENT ONLY: window selection\n");
-    for (const selection of selections) {
-      process.stdout.write(`${selectionLine(selection)}\n`);
+  const clone = yield* timed(materializedSide(B, revision));
+  const A = clone.value.side;
+  yield* say(`A cloned in ${clone.ms} ms, ${clone.value.diskKilobytes} KiB`);
+  const sides = { A: yield* identityOf(A), B: yield* identityOf(B) };
+  const samplesFile = path.join(dir, "samples.json");
+  let samples: Samples = {
+    build: null,
+    comparisonId,
+    lanes: [],
+    mode: options.mode,
+    node: [],
+    sides,
+    version: 1,
+  };
+  const save = (next: Samples) =>
+    fs.writeFileString(samplesFile, JSON.stringify(next)).pipe(Effect.as(next));
+  let nodeMs = 0;
+  let buildMs = 0;
+  if (options.lanes.includes("node")) {
+    const startedNode = yield* Clock.currentTimeMillis;
+    const node: NodeLane[] = [];
+    for (const scenario of scenarios) {
+      node.push(yield* nodeLane(scenario, { A, B }, path.join(dir, "node")));
+      yield* say(`node ${scenario.id} measured`);
     }
-    process.stdout.write(`evidence ${file}\n`);
-    if (!selections.every((selection) => selection.matchesRegistry)) {
-      process.exitCode = 1;
-    }
-  });
+    nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
+    samples = yield* save({ ...samples, lanes: ["node"], node });
+  }
+  if (options.lanes.includes("build")) {
+    const ran = yield* timed(
+      Effect.all({ A: buildSide(A, dir), B: buildSide(B, dir) })
+    );
+    buildMs = ran.ms;
+    samples = yield* save({
+      ...samples,
+      build: ran.value,
+      lanes: [...samples.lanes, "build"],
+    });
+  }
+  samples = yield* save(samples);
+  const evaluation: Evaluation & { readonly proposal?: unknown } = approved
+    ? evaluateGate(samples, approved.budgets)
+    : evaluateBaseline(samples);
+  const wallMs = {
+    build: buildMs,
+    materialize: clone.ms,
+    node: nodeMs,
+    total: (yield* Clock.currentTimeMillis) - startedAt,
+  };
+  const resultFile = path.join(dir, "result.json");
+  const samplesText = yield* fs.readFileString(samplesFile);
+  yield* fs.writeFileString(
+    resultFile,
+    JSON.stringify(
+      {
+        budgets: approved
+          ? {
+              file: path.relative(REPO_ROOT, options.budgets),
+              sha256: approved.sha256,
+            }
+          : null,
+        cloneKilobytes: clone.value.diskKilobytes,
+        comparisonId,
+        environment: evaluation.environment,
+        files: [{ file: "samples.json", sha256: sha256Of(samplesText) }],
+        lanes: samples.lanes,
+        lines: evaluation.lines,
+        mode: options.mode,
+        observations: evaluation.observations,
+        ok: evaluation.ok,
+        proposal: evaluation.proposal ?? null,
+        scenarios: scenarios.map((scenario) => ({
+          hash: scenarioHash(scenario),
+          id: scenario.id,
+        })),
+        sides,
+        version: 1,
+        wallMs,
+      },
+      null,
+      1
+    )
+  );
+  const verdict = approved
+    ? `${evaluation.ok ? "PASS" : "FAIL"} perf gate ${comparisonId}`
+    : `MEASUREMENT ONLY ${evaluation.ok ? "complete" : "FAILED"} ${comparisonId}`;
+  return {
+    code: evaluation.ok ? 0 : 1,
+    lines: [...evaluation.lines, `evidence ${resultFile}`, verdict],
+  };
 });
+
+const evaluateFile = Effect.fn("gate.evaluate")(function* evaluateFile(
+  options: Extract<GateOptions, { kind: "evaluate" }>
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const { budgets } = yield* readBudgets(options.budgets);
+  const samples = yield* fs.readFileString(options.samples).pipe(
+    Effect.flatMap(decodeSamples),
+    Effect.mapError(
+      (cause) =>
+        new ConfigInvalid({
+          cause,
+          message: `${options.samples} is not a perf samples file.`,
+        })
+    )
+  );
+  const evaluation = evaluateGate(samples, budgets);
+  return {
+    code: evaluation.ok ? 0 : 1,
+    lines: [
+      ...evaluation.lines,
+      `${evaluation.ok ? "PASS" : "FAIL"} perf evaluate ${samples.comparisonId}`,
+    ],
+  };
+});
+
+const run = (options: GateOptions) => {
+  if (options.kind === "select") {
+    return selectWindows(options.out);
+  }
+  return options.kind === "evaluate" ? evaluateFile(options) : measure(options);
+};
 
 export const main = (args: readonly string[]) =>
   readGateOptions(args).pipe(
-    Effect.flatMap(select),
-    Effect.catchTag("UsageError", (usage) =>
+    Effect.flatMap(run),
+    Effect.catchTags({
+      ConfigInvalid: (invalid: ConfigInvalid) =>
+        Effect.succeed({ code: 2, lines: [`CONFIG ${invalid.message}`] }),
+      UsageError: (invalid: UsageError) =>
+        Effect.succeed({ code: 2, lines: [invalid.message] }),
+    }),
+    Effect.flatMap(({ code, lines }) =>
       Effect.sync(() => {
-        process.stderr.write(`${usage.message}\n`);
-        process.exitCode = 2;
+        process.stdout.write(`${lines.join("\n")}\n`);
+        process.exitCode = code;
       })
     )
   );

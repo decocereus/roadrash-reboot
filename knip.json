@@ -43,7 +43,13 @@
       "typescript": true
     },
     "tools/perf": {
-      "entry": ["gate.ts", "measure.ts", "session.ts", "test/**/*.test.ts"],
+      "entry": [
+        "gate.ts",
+        "measure.ts",
+        "node.ts",
+        "session.ts",
+        "test/**/*.test.ts"
+      ],
       "project": ["**/*.ts"],
       "typescript": true
     },

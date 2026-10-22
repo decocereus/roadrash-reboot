@@ -50,3 +50,18 @@ export const digestOf = (...values: readonly unknown[]): string => {
   feed(hash, [values], 0);
   return hash.digest("hex");
 };
+
+export const quantile = (sorted: readonly number[], share: number): number =>
+  sorted.length === 0
+    ? Number.NaN
+    : (sorted[Math.min(sorted.length - 1, Math.floor(share * sorted.length))] ??
+      Number.NaN);
+
+export const median = (values: readonly number[]): number =>
+  quantile(
+    values.toSorted((left, right) => left - right),
+    0.5
+  );
+
+export const sha256Of = (data: string | Uint8Array): string =>
+  createHash("sha256").update(data).digest("hex");

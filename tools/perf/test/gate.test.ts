@@ -9,18 +9,12 @@ import {
   validateWorkload,
   WINDOW_TICKS,
   workloadDigestOf,
+  workloadRows,
 } from "../src/scenarios.ts";
 import type { WorkloadRows } from "../src/scenarios.ts";
 
 const decodeRows = Schema.decodeUnknownSync(
-  Schema.fromJsonString(
-    Schema.Struct({
-      ahead: Schema.Array(Schema.Number),
-      modes: Schema.Array(Schema.String),
-      speeds: Schema.Array(Schema.Number),
-      ticks: Schema.Array(Schema.Number),
-    })
-  )
+  Schema.fromJsonString(workloadRows)
 );
 
 const captured: WorkloadRows = decodeRows(

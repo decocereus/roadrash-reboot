@@ -14,6 +14,7 @@ import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
+import * as Schema from "effect/Schema";
 
 import { digestOf } from "./result.ts";
 
@@ -89,12 +90,14 @@ export const scenarios: readonly Scenario[] = [
   },
 ];
 
-export interface WorkloadRows {
-  readonly ticks: readonly number[];
-  readonly modes: readonly string[];
-  readonly speeds: readonly number[];
-  readonly ahead: readonly number[];
-}
+export const workloadRows = Schema.Struct({
+  ahead: Schema.Array(Schema.Number),
+  modes: Schema.Array(Schema.String),
+  speeds: Schema.Array(Schema.Number),
+  ticks: Schema.Array(Schema.Number),
+});
+
+export type WorkloadRows = typeof workloadRows.Type;
 
 interface WorkloadProblem {
   readonly tick: number;
@@ -179,7 +182,7 @@ interface BenchRun {
   readonly step: () => void;
 }
 
-const benchRun = (bench: Bench): BenchRun => {
+export const benchRun = (bench: Bench): BenchRun => {
   const run = createRaceRun(benchSetup(bench));
   const inputs: RiderInput[] = run.view.riders.map(() => ({
     ...neutralInput,
@@ -208,7 +211,10 @@ const raceOver = (race: RaceView): boolean => {
   );
 };
 
-const rowsOf = (columns: WorkloadColumns, count: number): WorkloadRows => {
+export const rowsOf = (
+  columns: WorkloadColumns,
+  count: number
+): WorkloadRows => {
   const ticks: number[] = [];
   const modes: string[] = [];
   const speeds: number[] = [];
