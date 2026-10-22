@@ -1,5 +1,5 @@
 import { trackFor } from "@racer/track/roads";
-import type * as THREE from "three";
+import * as THREE from "three";
 
 import { browserAssetRuntime } from "../src/asset-runtime.ts";
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
@@ -8,6 +8,7 @@ import type { AcquiredAssets } from "../src/game/assets.ts";
 import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { assetParsers, createGame, createRenderer } from "../src/game/game.ts";
 import type { GameHandle, RacePlan } from "../src/game/hud.ts";
+import { isMesh, isPoints } from "../src/game/meshes.ts";
 import { createPipeline } from "../src/game/post.ts";
 import type { PrepareOutcome } from "../src/game/preparation.ts";
 import { createQuality } from "../src/game/quality-ladder.ts";
@@ -120,6 +121,8 @@ const kindOf = async (
 
 interface CapturedRenderer {
   renderer: THREE.WebGLRenderer | null;
+  scene: THREE.Scene | null;
+  failNextDraw: boolean;
 }
 
 const planOf = (roadId: QuickPick["roadId"]): RacePlan =>
@@ -147,6 +150,69 @@ const trackProof = async (game: GameHandle, renderer: THREE.WebGLRenderer) => {
     warmedPrograms: programsOf(renderer),
     warming,
   };
+};
+
+type Released = THREE.EventDispatcher<{ dispose: object }>;
+
+const releasesOf = (owned: ReadonlySet<Released>) => {
+  const released = new Set<Released>();
+  for (const each of owned) {
+    each.addEventListener("dispose", () => {
+      released.add(each);
+    });
+  }
+  return { owned: owned.size, released };
+};
+
+const watchScene = (scene: THREE.Scene) => {
+  const geometries = new Set<Released>();
+  const materials = new Set<Released>();
+  scene.traverse((node) => {
+    if (isMesh(node) || isPoints(node)) {
+      geometries.add(node.geometry);
+      for (const material of [node.material].flat()) {
+        materials.add(material);
+      }
+    }
+  });
+  const watched = [releasesOf(geometries), releasesOf(materials)] as const;
+  return () =>
+    watched.map(({ owned, released }) => ({ owned, released: released.size }));
+};
+
+const thrownBy = (run: () => void): string => {
+  try {
+    run();
+    return "nothing";
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+};
+
+const failedReload = async (
+  game: GameHandle,
+  held: CapturedRenderer,
+  roadId: QuickPick["roadId"]
+) => {
+  const prepared = await kindOf(game.prepare(planOf(ROAD_A)));
+  const { scene } = held;
+  if (!scene) {
+    throw new Error("The game has not drawn its world.");
+  }
+  const settled = watchScene(scene);
+  held.failNextDraw = true;
+  const error = thrownBy(() => {
+    game.startRace(planOf(roadId));
+  });
+  held.failNextDraw = false;
+  const [geometries, materials] = settled();
+  return { error, geometries, materials, prepared, roadId };
+};
+
+const retirementProof = async (game: GameHandle, held: CapturedRenderer) => {
+  const sameRoad = await failedReload(game, held, ROAD_A);
+  const newRoad = await failedReload(game, held, ROAD_B);
+  return { newRoad, sameRoad };
 };
 
 const qualityProof = () => {
@@ -280,7 +346,11 @@ export const run = async () => {
   const hud = { publications: 0 };
   const canvas = proofCanvas();
   const acquired = await acquire(notes);
-  const held: CapturedRenderer = { renderer: null };
+  const held: CapturedRenderer = {
+    failNextDraw: false,
+    renderer: null,
+    scene: null,
+  };
   const game = createGame(
     canvas,
     {
@@ -300,6 +370,17 @@ export const run = async () => {
     acquired,
     (target) => {
       const renderer = createRenderer(target);
+      const draw = renderer.render.bind(renderer);
+      renderer.render = (scene, camera) => {
+        if (held.failNextDraw) {
+          held.failNextDraw = false;
+          throw new Error("The proof failed this draw.");
+        }
+        if (scene instanceof THREE.Scene) {
+          held.scene = scene;
+        }
+        draw(scene, camera);
+      };
       held.renderer = renderer;
       return renderer;
     }
@@ -311,6 +392,7 @@ export const run = async () => {
   const tracks = await trackProof(game, renderer);
   const quality = qualityProof();
   const loss = await lossProof(game, renderer, canvas, tracks.warmed);
+  const retirement = await retirementProof(game, held);
   const beforeDispose = countsOf(renderer);
   game.dispose();
   const afterDispose = countsOf(renderer);
@@ -328,6 +410,7 @@ export const run = async () => {
     loss,
     notes,
     quality,
+    retirement,
     tracks,
   };
 };

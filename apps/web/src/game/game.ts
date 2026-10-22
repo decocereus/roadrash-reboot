@@ -246,13 +246,16 @@ const startGame = (
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     session.prepared = null;
     const release = build(setup, nextPhase === "countdown");
-    begin(nextPhase);
-    if (nextPhase === "attract") {
-      void warmSoon();
-    } else {
-      warmNow();
+    try {
+      begin(nextPhase);
+      if (nextPhase === "attract") {
+        void warmSoon();
+      } else {
+        warmNow();
+      }
+    } finally {
+      release();
     }
-    release();
   };
 
   const loadAttract = (nextRoad: boolean) => {

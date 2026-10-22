@@ -249,6 +249,7 @@ export const createPipeline = (
       sceneTarget.dispose();
       inkTarget.dispose();
       bloom.dispose();
+      bloom.materialHighPassFilter.dispose();
       line.dispose();
       grade.dispose();
     },
