@@ -94,19 +94,6 @@ const riderObstacle = (other: RiderState): Obstacle => ({
   x: other.mode === "riding" ? other.x : other.bodyX,
 });
 
-const threatFrom = (
-  rider: RiderState,
-  laneX: number,
-  obstacle: Obstacle,
-  horizon: number
-): Threat | undefined => {
-  if (Math.abs(obstacle.x - laneX) >= LANE_REACH) {
-    return undefined;
-  }
-  const seconds = secondsUntilContact(rider, obstacle);
-  return seconds < horizon ? { seconds, speed: obstacle.speed } : undefined;
-};
-
 const sooner = (
   first: Threat | undefined,
   second: Threat | undefined
@@ -141,19 +128,77 @@ export const carThreat = (
   return seconds < Number.POSITIVE_INFINITY ? { seconds, speed } : undefined;
 };
 
-const laneThreat = (
+const LONGEST_CAR_HORIZON = Math.max(
+  FOLLOW_SECONDS,
+  ONCOMING_SECONDS,
+  ONCOMING_ENTRY_SECONDS,
+  START_ONCOMING_ENTRY_SECONDS
+);
+
+interface Sighting extends Threat {
+  readonly x: number;
+}
+
+interface CarSighting extends Sighting {
+  readonly oncoming: boolean;
+}
+
+const carsInReach: CarSighting[] = [];
+const ridersInReach: Sighting[] = [];
+
+const gatherInReach = (
   state: RaceState,
   riderIndex: number,
+  rider: RiderState
+): void => {
+  carsInReach.length = 0;
+  for (const car of state.cars) {
+    if (rider.speed > car.speed) {
+      const seconds = secondsUntilContact(rider, car);
+      if (seconds < LONGEST_CAR_HORIZON) {
+        carsInReach.push({
+          oncoming: car.cruiseSpeed < 0,
+          seconds,
+          speed: car.speed,
+          x: car.x,
+        });
+      }
+    }
+  }
+  ridersInReach.length = 0;
+  for (const [index, other] of state.riders.entries()) {
+    if (index !== riderIndex && other.mode !== "wrecked") {
+      const obstacle = riderObstacle(other);
+      const seconds = secondsUntilContact(rider, obstacle);
+      if (seconds < RIDER_FOLLOW_SECONDS) {
+        ridersInReach.push({ seconds, speed: obstacle.speed, x: obstacle.x });
+      }
+    }
+  }
+};
+
+const laneThreat = (
+  state: RaceState,
   rider: RiderState,
   laneX: number
 ): Threat | undefined => {
-  let threat = carThreat(state, rider, laneX, Number.POSITIVE_INFINITY);
-  for (const [index, other] of state.riders.entries()) {
-    if (index !== riderIndex && other.mode !== "wrecked") {
-      threat = sooner(
-        threat,
-        threatFrom(rider, laneX, riderObstacle(other), RIDER_FOLLOW_SECONDS)
-      );
+  let seconds = Number.POSITIVE_INFINITY;
+  let speed = 0;
+  for (const car of carsInReach) {
+    if (Math.abs(car.x - laneX) < LANE_REACH) {
+      const horizon = car.oncoming
+        ? oncomingHorizon(state, rider, laneX)
+        : FOLLOW_SECONDS;
+      if (car.seconds < horizon && car.seconds < seconds) {
+        ({ seconds, speed } = car);
+      }
+    }
+  }
+  let threat: Threat | undefined =
+    seconds < Number.POSITIVE_INFINITY ? { seconds, speed } : undefined;
+  for (const sighting of ridersInReach) {
+    if (Math.abs(sighting.x - laneX) < LANE_REACH) {
+      threat = sooner(threat, sighting);
     }
   }
   return threat;
@@ -309,7 +354,7 @@ export const chooseLine = (
   const threatIn = (index: number): Threat | undefined => {
     if (checked[index] !== true) {
       checked[index] = true;
-      threats[index] = laneThreat(state, riderIndex, rider, lanes[index] ?? 0);
+      threats[index] = laneThreat(state, rider, lanes[index] ?? 0);
     }
     return threats[index];
   };
@@ -324,6 +369,7 @@ export const chooseLine = (
       const crossed = threatIn(index);
       return crossed !== undefined && crossed.seconds < CROSSING_SECONDS;
     });
+  gatherInReach(state, riderIndex, rider);
   gatherInSight(state, rider);
   const kept = rider.pilotLine;
   const weighing = inSight.length > 0 || Number.isFinite(kept);
@@ -370,7 +416,7 @@ export const chooseLine = (
     if (
       Math.abs(x) <= room &&
       !straddlesRamp(track, rider, x) &&
-      !laneThreat(state, riderIndex, rider, x) &&
+      !laneThreat(state, rider, x) &&
       !crossesBlocked(x)
     ) {
       offer(
