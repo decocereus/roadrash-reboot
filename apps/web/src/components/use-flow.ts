@@ -168,24 +168,31 @@ const useGame = (
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    let disposed = false;
+    const mount = new AbortController();
     const load = async (target: HTMLCanvasElement) => {
       try {
-        const game = await bootGame(target, {
-          onHud: (hud) => eventsRef.current?.onHud(hud),
-          onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
-          onSettle: (plan, outcome) =>
-            eventsRef.current?.onSettle(plan, outcome),
-          onStart: (plan) => eventsRef.current?.onStart(plan),
-        });
-        if (disposed) {
+        const game = await bootGame(
+          target,
+          {
+            onHud: (hud) => eventsRef.current?.onHud(hud),
+            onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
+            onSettle: (plan, outcome) =>
+              eventsRef.current?.onSettle(plan, outcome),
+            onStart: (plan) => eventsRef.current?.onStart(plan),
+          },
+          mount.signal
+        );
+        if (game === null) {
+          return;
+        }
+        if (mount.signal.aborted) {
           game.dispose();
           return;
         }
         gameRef.current = game;
         setReady(true);
       } catch (error) {
-        if (!disposed) {
+        if (!mount.signal.aborted) {
           setFailure(error instanceof Error ? error.message : String(error));
         }
       }
@@ -195,9 +202,9 @@ const useGame = (
       void load(canvas);
     }
     return () => {
-      disposed = true;
       gameRef.current?.dispose();
       gameRef.current = null;
+      mount.abort();
     };
   }, [canvasRef, eventsRef]);
 

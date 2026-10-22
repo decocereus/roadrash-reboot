@@ -1,6 +1,6 @@
 # Errors
 
-Rushline has three places where a failure reaches someone: the telemetry endpoint, the browser's uploader, and the career save. Read this file before you add or change one of them. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+Rushline has four places where a failure reaches someone: the telemetry endpoint, the browser's uploader, the career save, and the game's asset loading. Read this file before you add or change one of them. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
 
 ## The telemetry endpoint
 
@@ -44,3 +44,22 @@ The browser save, `apps/web/src/career/save.ts`, runs each storage step with `Ef
 | A save with several faults is refused at one field, in the version 2 reader's order: the version; then `weapon`, the `qualified`, `season` and `memory` containers, `garage` and `bikeId`; then the other fields in key order, with `activeRace.started` first and an unknown road or racer key before the known ones; then `weaponHits` against the weapon held; then the contradictions. An unknown road or racer key is refused by name, and any other unknown field is dropped. | `pnpm test` | `packages/career/src/save-issues.ts`, `packages/career/src/save-schema.ts`, `packages/career/src/save-invariants.ts` | None |
 | The browser save keeps four outcomes apart: no save, storage the browser denies (`unavailable`), a failed read (`readFailed`) and a failed write (`writeFailed`), each with the original failure as its `cause`. A race left by a reload is charged once, and a failed save of that charge stays `writeFailed`, never `saved`. | `pnpm test` | `apps/web/src/career/save*.ts`, `apps/web/src/components/use-flow.ts` | None |
 | Starting over reads the save, copies its exact text to `rushline.career.backup`, then removes it, and clears the career only after the removal succeeds. A failed read, backup or removal leaves the save in place. Every career change is written, even after the first read failed, so a new career can overwrite a save that could not be read; that unread text has no backup, because it could not be read. The unsaved banner shows only when the write itself fails. | `pnpm test` | `apps/web/src/career/save*.ts`, `apps/web/src/components/use-flow.ts` | None |
+
+## Asset loading
+
+`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader that forks an Effect. It downloads the six models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the title screen shows after "Could not start the game:", as before.
+
+| Tag | Retried | What the player sees |
+| --- | --- | --- |
+| `ModelRequestFailed` | Once | The fetch or the body read failed. The title shows the browser's message. |
+| `ModelResponseRejected` | Once for a 5xx answer, never for a 4xx | The title shows `The model <url> answered <status>.` |
+| `ModelDecodeFailed` | Never | The parser rejected the bytes. The title shows the parser's message, such as `The rider model <url> has no poses.` |
+| `FontReadinessFailed` | Never | Nothing. The game starts with the fonts the page has, and the bridge records the message as a recorder fault from `fonts`, which keeps it only while a race is recording. |
+
+Only a completed download enters the page's byte cache, keyed by the model's fingerprinted URL, so a failure leaves nothing behind and the next mount fetches again. Decoded models belong to one mount. They are released once, when the game is disposed, when the mount is aborted, or when another model of the same mount fails; a parse that finishes after the mount ended is released as it arrives. A remount parses the cached bytes again.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| Only completed bytes are cached. A failed download, answer or parse caches nothing, and decoded models belong to one mount and are released once when it ends. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
+| Only a transport or body-read failure or a 5xx answer is retried, once, through `Effect.retry`. A 4xx answer, a parser rejection, a font failure and an interruption are not retried. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
+| Each asset failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. A rejected HTTP status has nothing thrown to keep. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/assets` | None |

@@ -100,6 +100,12 @@ const effectFiles = [
   "apps/web/src/career/save.ts",
   "apps/web/src/career/save-storage.ts",
   "apps/web/src/career/save-storage-error.ts",
+  "apps/web/src/asset-runtime.ts",
+  "apps/web/src/assets/load.ts",
+  "apps/web/src/assets/model-request-failed.ts",
+  "apps/web/src/assets/model-response-rejected.ts",
+  "apps/web/src/assets/model-decode-failed.ts",
+  "apps/web/src/assets/font-readiness-failed.ts",
 ];
 
 const libraryFiles = [
@@ -113,6 +119,11 @@ const libraryFiles = [
   ...careerCodecFiles,
   "apps/web/src/career/save-storage.ts",
   "apps/web/src/career/save-storage-error.ts",
+  "apps/web/src/assets/load.ts",
+  "apps/web/src/assets/model-request-failed.ts",
+  "apps/web/src/assets/model-response-rejected.ts",
+  "apps/web/src/assets/model-decode-failed.ts",
+  "apps/web/src/assets/font-readiness-failed.ts",
 ];
 
 export default defineConfig({

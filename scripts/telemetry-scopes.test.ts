@@ -49,6 +49,7 @@ describe("Effect boundary scopes", () => {
     "apps/web/src/diagnostics/uploader-runtime.ts",
     "tools/verify/rushline.ts",
     "apps/web/src/career/save.ts",
+    "apps/web/src/asset-runtime.ts",
   ])("give the entry %s every rule but the library ones", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual(entryRules);
   });
@@ -71,6 +72,11 @@ describe("Effect boundary scopes", () => {
     "packages/career/src/save.ts",
     "packages/career/src/save-issues.ts",
     "apps/web/src/career/save-storage.ts",
+    "apps/web/src/assets/load.ts",
+    "apps/web/src/assets/model-request-failed.ts",
+    "apps/web/src/assets/model-response-rejected.ts",
+    "apps/web/src/assets/model-decode-failed.ts",
+    "apps/web/src/assets/font-readiness-failed.ts",
   ])("give the library %s all fourteen rules", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual(libraryRules);
   });
@@ -88,6 +94,13 @@ describe("Effect boundary scopes", () => {
     "packages/career/src/save-roundtrip.test.ts",
     "packages/career/src/settle.ts",
     "apps/web/src/career/save.test.ts",
+    "apps/web/src/asset-load.ts",
+    "apps/web/src/assets/model-urls.ts",
+    "apps/web/src/game/assets.ts",
+    "apps/web/src/game/game.ts",
+    "apps/web/src/game/frame-loop.ts",
+    "apps/web/src/hud-feed.ts",
+    "apps/web/test/asset-load.test.ts",
   ])("leave %s outside the boundary rules", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual([]);
   });

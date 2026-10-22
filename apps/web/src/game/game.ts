@@ -9,7 +9,7 @@ import * as THREE from "three";
 
 import { benchOf } from "../career/bench.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
-import { loadAssets } from "./assets.ts";
+import type { AcquiredAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
@@ -87,11 +87,14 @@ const pinnedRefresh = Number(
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
-export const createGame = async (
+export { assetParsers } from "./assets.ts";
+
+export const createGame = (
   canvas: HTMLCanvasElement,
-  events: GameEvents
-): Promise<GameHandle> => {
-  const assets = await loadAssets();
+  events: GameEvents,
+  acquired: AcquiredAssets
+): GameHandle => {
+  const { assets } = acquired;
   const session: Session = {
     countdown: 0,
     frozen: false,
@@ -531,6 +534,7 @@ export const createGame = async (
       stage.world.dispose();
       pipeline.dispose();
       renderer.dispose();
+      acquired.release();
     },
     followRival(element) {
       feedback.tag = element;
