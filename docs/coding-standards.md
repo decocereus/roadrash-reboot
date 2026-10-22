@@ -46,6 +46,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Each race owns its mutable pilot memory. Module-level buffers hold only scratch that each plan overwrites before reading, so one race can never read another's history. | `pnpm test` | `apps/web/test/pilot-replay.test.ts` | None |
 | The browser reads a race through the deeply readonly `RaceView`, the race itself and not a copy, and changes it only through `RaceRun` and the commands in `packages/sim/src/commands.ts`. | `pnpm typecheck`, `pnpm test` | `packages/sim/src/race-view.ts`, `race-run.ts`, `apps/web/src/game`, `packages/career/src/outcome.ts` | None |
 | Fixed ticks, held and repeated keys, replays of the same inputs and races run side by side match tick for tick, and render quality, pixel ratio, pacing, sound and the profiler never change a tick. | `pnpm test` | `apps/web/test/fixed-tick.test.ts`, `input.test.ts`, `pilot-replay.test.ts`, `render-quality.test.ts` | None |
+| The HUD publishes one regular snapshot each time 1/15 s of processed frame time builds up: each rendered frame adds its clamped seconds, a total of 1/15 s or more publishes once and resets to zero, and the remainder is dropped. Halted frames add nothing. A race being prepared, the attract loop, a quit, sleep or mute publishes at once, apart from that clock. | `pnpm test` | `apps/web/src/game/hud-cadence.ts`, `apps/web/test/hud-cadence.test.ts` | None |
 
 ## Tune the numbers before the model
 
