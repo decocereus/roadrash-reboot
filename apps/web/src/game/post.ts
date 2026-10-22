@@ -236,8 +236,6 @@ export const createPipeline = (
       try {
         renderer.compile(scene, camera);
         return watchPrograms(renderer);
-      } catch {
-        return compiled;
       } finally {
         renderer.setRenderTarget(null);
       }

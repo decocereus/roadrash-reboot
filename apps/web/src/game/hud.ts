@@ -2,6 +2,8 @@ import type { CareerRaceSetup } from "@racer/career/field";
 import type { RaceOutcome } from "@racer/career/outcome";
 import type { BikeId } from "@racer/sim/bikes";
 
+import type { PrepareOutcome } from "./preparation.ts";
+
 export type GamePhase = "attract" | "idle" | "countdown" | "racing" | "settled";
 
 export type RaceMode = "career" | "quick";
@@ -61,7 +63,7 @@ export interface GameEvents {
 export interface GameHandle {
   readonly attract: () => void;
   readonly sleep: () => void;
-  readonly prepare: (plan: RacePlan) => Promise<void>;
+  readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly startRace: (plan: RacePlan) => void;
   readonly pause: () => boolean;
   readonly resume: () => void;

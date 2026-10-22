@@ -11,9 +11,9 @@ const hotBodies = {
     ["installFrameLoop", "setAnimationLoop()"],
   ],
   "apps/web/src/game/game.ts": [
-    ["createGame", "readInputs"],
-    ["createGame", "tick"],
-    ["createGame", "draw"],
+    ["startGame", "readInputs"],
+    ["startGame", "tick"],
+    ["startGame", "draw"],
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],

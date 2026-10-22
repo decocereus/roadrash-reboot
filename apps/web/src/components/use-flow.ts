@@ -34,6 +34,7 @@ import type {
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
+import type { PrepareOutcome } from "../game/preparation.ts";
 import { createHudFeed } from "../hud-feed.ts";
 import type { HudFeed } from "../hud-feed.ts";
 
@@ -251,7 +252,7 @@ export interface Flow {
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
   readonly preRace: (mode: RaceMode, roadId: RoadId) => void;
-  readonly prepare: (plan: RacePlan) => Promise<void>;
+  readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly start: (plan: RacePlan) => void;
   readonly resume: () => void;
   readonly mute: () => void;
@@ -337,8 +338,18 @@ export const useFlow = (): Flow => {
   usePauseKeys(view.screen === "race" && !view.paused && !view.finish, pause);
 
   const prepare = useCallback(
-    async (plan: RacePlan) => {
-      await gameRef.current?.prepare(plan);
+    async (plan: RacePlan): Promise<PrepareOutcome> => {
+      const game = gameRef.current;
+      if (!game) {
+        return { kind: "cancelled" };
+      }
+      try {
+        return await game.prepare(plan);
+      } catch (error) {
+        const cause = error instanceof Error ? error : new Error(String(error));
+        diagnostics().recorder.fault("error", cause.message, "prepare build");
+        return { cause, kind: "failed", stage: "build" };
+      }
     },
     [gameRef]
   );

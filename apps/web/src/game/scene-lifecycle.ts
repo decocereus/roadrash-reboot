@@ -4,59 +4,21 @@ import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import type { RaceSetup } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
-import type * as THREE from "three";
 
 import { createFleet } from "./actors.ts";
 import type { Fleet } from "./actors.ts";
 import type { Assets } from "./assets.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import type { DevRide } from "./dev-ride.ts";
-import { isMesh } from "./meshes.ts";
-import type { Compiling, Pipeline } from "./post.ts";
+import type { Pipeline } from "./post.ts";
+import { createPreparation } from "./preparation.ts";
+import type { Clock, PrepareOutcome } from "./preparation.ts";
 import type { Quality } from "./quality-ladder.ts";
 import type { Cast } from "./rider-views.ts";
+import { stageEverything, warmStaged } from "./staging.ts";
+import type { Staged } from "./staging.ts";
 import { createWorld } from "./world.ts";
 import type { World } from "./world.ts";
-
-const COMPILE_TIMEOUT_MS = 5000;
-
-interface Compile {
-  readonly load: number;
-  readonly compiling: Compiling;
-  readonly done: (current: boolean) => void;
-  timer: ReturnType<typeof setTimeout> | undefined;
-}
-
-const revealAll = (root: THREE.Object3D): (() => void) => {
-  const hidden: THREE.Object3D[] = [];
-  const culled: THREE.Object3D[] = [];
-  root.traverse((node) => {
-    if (!node.visible) {
-      hidden.push(node);
-      node.visible = true;
-    }
-    if (node.frustumCulled) {
-      culled.push(node);
-      node.frustumCulled = false;
-    }
-  });
-  return () => {
-    for (const node of hidden) {
-      node.visible = false;
-    }
-    for (const node of culled) {
-      node.frustumCulled = true;
-    }
-  };
-};
-
-const dropGeometry = (root: THREE.Object3D): void => {
-  root.traverse((node) => {
-    if (isMesh(node)) {
-      node.geometry.dispose();
-    }
-  });
-};
 
 export interface Stage {
   track: Track;
@@ -64,10 +26,7 @@ export interface Stage {
   race: RaceRun;
   fleet: Fleet;
   previousCars: Float64Array;
-  loads: number;
   warming: boolean;
-  alive: boolean;
-  readonly compiles: Set<Compile>;
 }
 
 export const createStage = (
@@ -78,10 +37,7 @@ export const createStage = (
   const world = createWorld(track);
   const race = createRaceRun(defaultSetup(track, seed));
   return {
-    alive: true,
-    compiles: new Set<Compile>(),
     fleet: createFleet(assets, world.shading, race.view.cars),
-    loads: 0,
     previousCars: new Float64Array(race.view.cars.length),
     race,
     track,
@@ -95,6 +51,7 @@ interface StageParts {
   readonly buildViews: () => void;
   readonly cast: Pick<Cast, "bikes" | "puffs" | "views">;
   readonly chase: ChaseCamera;
+  readonly clock: Clock;
   readonly devRide: DevRide | undefined;
   readonly pipeline: Pipeline;
   readonly quality: Pick<Quality, "ladder" | "rung">;
@@ -106,13 +63,12 @@ export const bindStage = ({
   buildViews,
   cast,
   chase,
+  clock,
   devRide,
   pipeline,
   quality,
   stage,
 }: StageParts) => {
-  const { compiles } = stage;
-
   const player = (): RiderView => {
     const [rider] = stage.race.view.riders;
     if (!rider) {
@@ -162,87 +118,54 @@ export const bindStage = ({
     pipeline.setLook(stage.world.shading.look);
   };
 
-  const stageEverything = (): (() => void) => {
-    stage.world.follow(chase.camera, player().s);
-    const samples = stage.world.samples();
-    stage.world.scene.add(samples);
-    const unarm = cast.views.map((view) => view.figure.holdEveryWeapon());
-    const unprime = cast.puffs?.prime();
-    pipeline.prepare(stage.world.scene);
-    const restore = revealAll(stage.world.scene);
-    return () => {
-      restore();
-      unprime?.();
-      for (const each of unarm) {
-        each();
-      }
-      stage.world.scene.remove(samples);
-      dropGeometry(samples);
-    };
-  };
+  const staged = (): Staged => ({
+    at: player().s,
+    camera: chase.camera,
+    figures: cast.views.map((view) => view.figure),
+    prepare: pipeline.prepare,
+    puffs: cast.puffs,
+    world: stage.world,
+  });
 
   const warmUp = () => {
-    const unstage = stageEverything();
-    pipeline.render(stage.world.scene, chase.camera);
-    unstage();
+    warmStaged(staged(), () => {
+      pipeline.render(stage.world.scene, chase.camera);
+    });
   };
 
-  const finishCompile = (job: Compile) => {
-    if (!compiles.delete(job)) {
-      return;
-    }
-    clearTimeout(job.timer);
-    job.compiling.stop?.();
-    if (!stage.alive || job.load !== stage.loads) {
-      job.done(false);
-      return;
-    }
-    stage.warming = false;
-    try {
+  const preparation = createPreparation({
+    clock,
+    compile: () => {
+      const unstage = stageEverything(staged());
+      try {
+        return pipeline.compile(stage.world.scene, chase.camera);
+      } finally {
+        unstage();
+      }
+    },
+    warm: () => {
+      stage.warming = false;
       warmUp();
-    } finally {
-      job.done(true);
-    }
-  };
-
-  const finishWhenReady = async (job: Compile): Promise<void> => {
-    await job.compiling.ready;
-    finishCompile(job);
-  };
-
-  const abandonCompiles = () => {
-    for (const job of compiles) {
-      finishCompile(job);
-    }
-  };
+    },
+  });
 
   const warmNow = () => {
-    stage.loads += 1;
-    abandonCompiles();
     stage.warming = false;
-    warmUp();
+    preparation.warmNow();
   };
 
-  const warmSoon = async (): Promise<boolean> => {
-    stage.loads += 1;
-    abandonCompiles();
+  const warmSoon = async (): Promise<PrepareOutcome> => {
     stage.warming = true;
-    const { promise, resolve } = Promise.withResolvers<boolean>();
-    const unstage = stageEverything();
-    const compiling = pipeline.compile(stage.world.scene, chase.camera);
-    unstage();
-    const job: Compile = {
-      compiling,
-      done: resolve,
-      load: stage.loads,
-      timer: undefined,
-    };
-    job.timer = setTimeout(() => {
-      finishCompile(job);
-    }, COMPILE_TIMEOUT_MS);
-    compiles.add(job);
-    void finishWhenReady(job);
-    return await promise;
+    const outcome = await preparation.prepare();
+    if (outcome.kind === "lost") {
+      stage.warming = false;
+    }
+    return outcome;
+  };
+
+  const loseContext = () => {
+    preparation.lose();
+    stage.warming = false;
   };
 
   const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
@@ -269,5 +192,14 @@ export const bindStage = ({
     };
   };
 
-  return { abandonCompiles, build, player, warmNow, warmSoon, warmUp };
+  return {
+    build,
+    cancelPreparation: preparation.cancel,
+    loseContext,
+    player,
+    restoreContext: preparation.restore,
+    warmNow,
+    warmSoon,
+    warmUp,
+  };
 };

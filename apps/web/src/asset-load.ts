@@ -73,10 +73,5 @@ export const bootGame = async (
     acquired.release();
     return null;
   }
-  try {
-    return createGame(canvas, events, acquired);
-  } catch (error) {
-    acquired.release();
-    throw error;
-  }
+  return createGame(canvas, events, acquired);
 };

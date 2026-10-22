@@ -63,3 +63,21 @@ Only a completed download enters the page's byte cache, keyed by the model's fin
 | Only completed bytes are cached. A failed download, answer or parse caches nothing, and decoded models belong to one mount and are released once when it ends. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Only a transport or body-read failure or a 5xx answer is retried, once, through `Effect.retry`. A 4xx answer, a parser rejection, a font failure and an interruption are not retried. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Each asset failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. A rejected HTTP status has nothing thrown to keep. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/assets` | None |
+
+## Shader preparation
+
+`createPreparation` in `apps/web/src/game/preparation.ts` turns a race's shader preparation into a typed outcome instead of a rejection, and the pre-race screen handles every outcome the way it handled a finished preparation before: Start enables. Nothing new is shown to the player.
+
+| Outcome | When | What happens |
+| --- | --- | --- |
+| `ready` | Every program compiled. | The game warms up and draws the start grid. |
+| `timedOut` | The compile was still pending after five seconds. | The game warms up anyway, so the first frame may stall. |
+| `failed`, stage `build` | Building the race threw. | The flow records a recorder fault from `prepare build` with the error's message. |
+| `failed`, stage `compile` | `compile` threw. | The game warms up anyway and records a fault from `prepare compile`. |
+| `failed`, stage `warm` | The warm-up draw threw. | Staging is put back and the game records a fault from `prepare warm`. |
+| `lost` | The WebGL context was lost before or during the compile. | Nothing warms while the context is lost. The race stays as it is. |
+| `cancelled` | A newer preparation or the unmount replaced this one. | Nothing. The newer preparation decides. |
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| A thrown build, compile or warm-up becomes a `failed` outcome that keeps the thrown error as its `cause` and names its stage, and the game records it as a recorder fault from `prepare <stage>`. No preparation rejects, and none changes what the pre-race screen shows. | `pnpm test` | `apps/web/src/game/preparation.ts`, `apps/web/test/preparation.test.ts` | None |

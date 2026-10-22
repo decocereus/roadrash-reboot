@@ -33,6 +33,14 @@ export const textureOf = (
   return texture;
 };
 
+export const owned = <Owned extends THREE.Texture>(
+  textures: Set<THREE.Texture>,
+  texture: Owned
+): Owned => {
+  textures.add(texture);
+  return texture;
+};
+
 export const pick = <Item>(random: Random, items: readonly Item[]): Item => {
   const item = items[Math.floor(random() * items.length)] ?? items[0];
   if (item === undefined) {

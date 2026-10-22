@@ -101,6 +101,11 @@ describe("Effect boundary scopes", () => {
     "apps/web/src/game/frame-loop.ts",
     "apps/web/src/hud-feed.ts",
     "apps/web/test/asset-load.test.ts",
+    "apps/web/src/game/preparation.ts",
+    "apps/web/src/game/staging.ts",
+    "apps/web/test/preparation.test.ts",
+    "apps/web/test/renderer-lifecycle.test.ts",
+    "apps/web/test/renderer-lifecycle.ts",
   ])("leave %s outside the boundary rules", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual([]);
   });
