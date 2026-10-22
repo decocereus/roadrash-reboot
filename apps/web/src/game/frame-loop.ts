@@ -5,13 +5,14 @@ import type * as THREE from "three";
 
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
+import type { Part } from "../profile-parts.ts";
 import type { Sound } from "./audio.ts";
 import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
 import type { GamePhase } from "./hud.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
-import type { FrameEnd, Part, ProfileMode, Profiler } from "./profile.ts";
+import type { FrameEnd, ProfileMode, Profiler } from "./profile.ts";
 import type { Quality } from "./quality-ladder.ts";
 import type { Feedback } from "./race-feedback.ts";
 import type { Cast } from "./rider-views.ts";

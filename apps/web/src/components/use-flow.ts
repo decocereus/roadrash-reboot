@@ -6,6 +6,7 @@ import type { RoadId } from "@racer/career/tables";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { bootGame } from "../asset-load.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
 import {
   careerEntry,
@@ -27,15 +28,14 @@ import {
 } from "../career/save.ts";
 import type { SaveState } from "../career/save.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
-import { createHudFeed } from "../game/hud.ts";
 import type {
   GameEvents,
   GameHandle,
-  HudFeed,
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
-import { startModelDownloads } from "../game/models.ts";
+import { createHudFeed } from "../hud-feed.ts";
+import type { HudFeed } from "../hud-feed.ts";
 
 export type View =
   | { readonly screen: "title" }
@@ -171,8 +171,7 @@ const useGame = (
     let disposed = false;
     const load = async (target: HTMLCanvasElement) => {
       try {
-        const { createGame } = await import("../game/game.ts");
-        const game = await createGame(target, {
+        const game = await bootGame(target, {
           onHud: (hud) => eventsRef.current?.onHud(hud),
           onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
           onSettle: (plan, outcome) =>
@@ -193,7 +192,6 @@ const useGame = (
     };
     if (canvas) {
       diagnostics();
-      startModelDownloads();
       void load(canvas);
     }
     return () => {

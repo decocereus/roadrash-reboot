@@ -8,6 +8,7 @@
     "check": "node scripts/verify.ts check",
     "check:css-comments": "node scripts/check-css-comments.ts",
     "check:dead": "knip --no-progress",
+    "check:renderer-imports": "node scripts/check-renderer-imports.ts",
     "check:roots": "node scripts/check-roots.ts",
     "check:rules": "node scripts/check-rules.ts",
     "check:save-format": "node scripts/check-save-format.ts",
@@ -39,6 +40,7 @@
     "postcss": "8.5.29",
     "tsrs": "0.18.0-ts7.1.0-dev.20260929",
     "ultracite": "7.10.8",
+    "vite": "8.3.2",
     "vitest": "5.0.0"
   },
   "engines": {

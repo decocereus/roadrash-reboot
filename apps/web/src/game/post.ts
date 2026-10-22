@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
+import type { Part } from "../profile-parts.ts";
 import { seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
-import type { Part } from "./profile.ts";
 
 const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
