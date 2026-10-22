@@ -12,11 +12,15 @@
       {
         "file": "tools/perf/baselines/post-step8.gpu-helium-metal.json.gz",
         "sha256": "2b07ac4795bec3f3a2b9eadcdb7ba058ac66860534faa81e1f6650b45ad7e3ea"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.worker.json.gz",
+        "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
       }
     ],
     "revision": "fd677a71c74167dc049a2bcf232f26f8f9abda86",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "3a52570f2c0518c5dd6d9ca3c67673ae6235acc9206ee5e3d01f9509fe825e4b"
+    "summarySha256": "2eaefc5697c5de7ba91be85ab0bf1d8d7296f67a10c22e78d1940ad451dbafe7"
   },
   "limits": [
     {
@@ -224,27 +228,27 @@
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)), from side A's build in a clean /tmp clone, which matches CI; a srvx installed outside the repo makes this Mac's main checkout leave srvx external (owner decision pending)",
-      "value": 60497,
-      "baseline": 56401,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)), from side A's build in a clean /tmp clone, counting every server chunk the Worker entry reaches through static and dynamic imports",
+      "value": 264455,
+      "baseline": 259269,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)), from side A's build in a clean /tmp clone, which matches CI; a srvx installed outside the repo makes this Mac's main checkout leave srvx external (owner decision pending)",
-      "value": 250280,
-      "baseline": 245372,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline)), from side A's build in a clean /tmp clone, counting every server chunk the Worker entry reaches through static and dynamic imports",
+      "value": 1057245,
+      "baseline": 1036514,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
       "unit": "B"
     },
     {

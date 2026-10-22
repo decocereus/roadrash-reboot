@@ -13,7 +13,7 @@ import type { BuildRecord } from "../src/build.ts";
 import { evaluateGate } from "../src/evaluate.ts";
 import type { Samples } from "../src/evaluate.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
-import { fixtureBuild } from "./fixture-build.ts";
+import { fixtureBuild, plainFixture } from "./fixture-build.ts";
 import type { FixtureOptions } from "./fixture-build.ts";
 import {
   ALLOCATED_PER_TICK,
@@ -190,14 +190,8 @@ describe("perf gate red cases", () => {
   });
 
   it("fails a GLB that grows by one byte through the real byte accounting", async () => {
-    const before = await accounted("A", {
-      bikeExtraBytes: 0,
-      missingEdge: false,
-    });
-    const after = await accounted("B", {
-      bikeExtraBytes: 1,
-      missingEdge: false,
-    });
+    const before = await accounted("A", plainFixture);
+    const after = await accounted("B", { ...plainFixture, bikeExtraBytes: 1 });
     const approved = syntheticBudgets({ A: before, B: before });
     const samples = samplesOf("glb", steadyLanes(steady), {
       A: before,
@@ -212,11 +206,32 @@ describe("perf gate red cases", () => {
     expect(entry.stdout).toContain("FAIL build - assets.glb.total");
   });
 
-  it("counts shared route files once", async () => {
-    const record = await accounted("A", {
-      bikeExtraBytes: 0,
-      missingEdge: false,
+  it("fails a server module that the Worker imports dynamically when it grows", async () => {
+    const before = await accounted("A", plainFixture);
+    const after = await accounted("B", {
+      ...plainFixture,
+      routerExtraBytes: 4097,
     });
+    const approved = syntheticBudgets({ A: before, B: before });
+    const samples = samplesOf("worker", steadyLanes(steady), {
+      A: before,
+      B: after,
+    });
+    expect(failing(evaluateGate(samples, approved).lines)).toStrictEqual([
+      "FAIL build - bytes.worker.raw [build] observed=8797 B limit <= 8796 B delta=+4097 B A=4700 files=3 new=[]",
+    ]);
+    const entry = throughEntry(samples, approved);
+    expect(entry.status).toBe(1);
+    expect(entry.stdout).toContain("FAIL build - bytes.worker.raw");
+    expect(after.closures.worker.files).toStrictEqual([
+      "server/assets/limits.js",
+      "server/assets/router.js",
+      "server/server.js",
+    ]);
+  });
+
+  it("counts shared route files once", async () => {
+    const record = await accounted("A", plainFixture);
     expect(record.problems).toStrictEqual([]);
     expect(record.closures.root.files).toStrictEqual([
       "client/assets/invoice.js",
@@ -236,19 +251,13 @@ describe("perf gate red cases", () => {
       kit: 8700,
       root: 9000,
       uploaderIncremental: 400,
-      worker: 3200,
+      worker: 3000 + 200 + 1500,
     });
   });
 
   it("fails a route closure with a missing edge", async () => {
-    const record = await accounted("A", {
-      bikeExtraBytes: 0,
-      missingEdge: false,
-    });
-    const broken = await accounted("B", {
-      bikeExtraBytes: 0,
-      missingEdge: true,
-    });
+    const record = await accounted("A", plainFixture);
+    const broken = await accounted("B", { ...plainFixture, missingEdge: true });
     expect(broken.problems).toStrictEqual([
       "The client manifest has no chunk _missing",
     ]);

@@ -22,10 +22,19 @@ const clientFiles = {
   "assets/uploader-runtime.js": 400,
 };
 
+const ROUTER_BYTES = 1500;
+
 export interface FixtureOptions {
   readonly bikeExtraBytes: number;
   readonly missingEdge: boolean;
+  readonly routerExtraBytes: number;
 }
+
+export const plainFixture: FixtureOptions = {
+  bikeExtraBytes: 0,
+  missingEdge: false,
+  routerExtraBytes: 0,
+};
 
 const write = (file: string, content: string | Uint8Array): void => {
   mkdirSync(path.dirname(file), { recursive: true });
@@ -107,6 +116,10 @@ export const fixtureBuild = (
   write(path.join(out, "server/server.js"), "s".repeat(3000));
   write(path.join(out, "server/assets/limits.js"), "l".repeat(200));
   write(
+    path.join(out, "server/assets/router.js"),
+    "r".repeat(ROUTER_BYTES + options.routerExtraBytes)
+  );
+  write(
     path.join(out, `server/assets/start-manifest-${name}.js`),
     startManifest
   );
@@ -115,10 +128,12 @@ export const fixtureBuild = (
     JSON.stringify({
       _limits: { file: "assets/limits.js" },
       "server-entry.ts": {
+        dynamicImports: ["src/router.tsx"],
         file: "server.js",
         imports: ["_limits"],
         isEntry: true,
       },
+      "src/router.tsx": { file: "assets/router.js", imports: ["_limits"] },
       "tanstack-start-manifest:v": {
         file: `assets/start-manifest-${name}.js`,
       },

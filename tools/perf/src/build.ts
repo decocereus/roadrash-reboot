@@ -33,6 +33,7 @@ export const glbNames = [
 const manifestChunk = Schema.Struct({
   assets: Schema.optionalKey(Schema.Array(Schema.String)),
   css: Schema.optionalKey(Schema.Array(Schema.String)),
+  dynamicImports: Schema.optionalKey(Schema.Array(Schema.String)),
   file: Schema.String,
   imports: Schema.optionalKey(Schema.Array(Schema.String)),
   isEntry: Schema.optionalKey(Schema.Boolean),
@@ -119,10 +120,18 @@ const sha256 = (bytes: Uint8Array): string =>
 const invalid = (message: string) => (cause: unknown) =>
   new MeasurementFailed({ cause, lane: "build", message });
 
+interface WalkRule {
+  readonly attached: boolean;
+  readonly dynamic: boolean;
+}
+
+const routeWalk: WalkRule = { attached: true, dynamic: false };
+const workerWalk: WalkRule = { attached: false, dynamic: true };
+
 const walk = (
   manifest: ViteManifest,
   keys: readonly string[],
-  attached: boolean
+  rule: WalkRule
 ) => {
   const files = new Set<string>();
   const missing: string[] = [];
@@ -138,12 +147,15 @@ const walk = (
       return;
     }
     files.add(chunk.file);
-    if (attached) {
+    if (rule.attached) {
       for (const file of [...(chunk.css ?? []), ...(chunk.assets ?? [])]) {
         files.add(file);
       }
     }
-    for (const next of chunk.imports ?? []) {
+    for (const next of [
+      ...(chunk.imports ?? []),
+      ...(rule.dynamic ? (chunk.dynamicImports ?? []) : []),
+    ]) {
       visit(next);
     }
   };
@@ -359,7 +371,7 @@ export const accountBuild = Effect.fn("build.account")(function* accountBuild(
     .map((each) => each.file.slice("client/".length));
   const rootKeys = clientKeys(start.root, "__root__");
   const closure = (keys: readonly string[], extra: readonly string[] = []) => {
-    const walked = walk(client, keys, true);
+    const walked = walk(client, keys, routeWalk);
     for (const key of walked.missing) {
       problems.push(`The client manifest has no chunk ${key}`);
     }
@@ -388,7 +400,7 @@ export const accountBuild = Effect.fn("build.account")(function* accountBuild(
   const worker = walk(
     server,
     serverEntries.map(([key]) => key),
-    false
+    workerWalk
   );
   for (const key of worker.missing) {
     problems.push(`The server manifest has no chunk ${key}`);

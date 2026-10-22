@@ -134,16 +134,16 @@
       "metric": "bytes.worker.raw",
       "scenario": null,
       "side": "A",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
-      "value": 245372
+      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "value": 1036514
     },
     {
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "scenario": null,
       "side": "A",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
-      "value": 56401
+      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "value": 259269
     },
     {
       "environment": "build",
@@ -533,6 +533,35 @@
       "sides": {
         "A": "edb664a9120e82a3079bd2063a5794306600c1fe (rv 20261022-225828-s0)",
         "B": "edb664a9120e82a3079bd2063a5794306600c1fe (rv 20261022-225837-s1)"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "workerClosure": "every chunk the server entry reaches through imports and dynamicImports in the server .vite/manifest.json, JavaScript only, each file once",
+        "builtA": "{\"client\":[2800331,1382122],\"game\":[2779703,1375102],\"gameIncremental\":[1691905,794226],\"kit\":[839448,495240],\"root\":[1087798,580876],\"uploaderIncremental\":[3444,1728],\"worker\":[1036514,259269]}",
+        "builtB": "{\"client\":[2800331,1382127],\"game\":[2779703,1375106],\"gameIncremental\":[1691905,794229],\"kit\":[839448,495244],\"root\":[1087798,580877],\"uploaderIncremental\":[3444,1729],\"worker\":[1036544,259279]}",
+        "workerFilesA": "14",
+        "artifactDigestA": "2cf2b8b967a564e375fa7353785b4c77e86f3b5f8d0fb7ec7aa30d0607de1976",
+        "artifactDigestB": "de47201b763d89655ee01e2eb65776274293e7603efeea8fb407c44a6e64b27f",
+        "sameAsFirstRun": "side A's 51 payloads match baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a side A byte for byte except server/assets/_tanstack-start-manifest_v-CpUmFl2O.js and server/server.js (the Start manifest chunk's name hash differs between clones, and server.js imports it by name); raw sizes are equal, 1036514 B over the same Worker files",
+        "cloneKiB": "1921256",
+        "harnessDigest": "c5e982c2178f8a9dc9c48e173de5db89722e8e8d8f217d624c487dbe879342ee",
+        "lockfileSha256": "05cfeda878a63533b87f203028c102597758518a4479d1ebc1ee8dbf9fa5ee77",
+        "machine": "Mac16,8",
+        "node": "v24.22.1",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "37616089933002666046538e964c5033f34edffcf827313961dd8984f3cf08a8",
+        "sideBSourceDigest": "c1806b1eef2bd96e44f0b663018906c18a31474791c870c40f5b3bf196d929db",
+        "wallMs": "{\"build\":3731,\"materialize\":15446,\"node\":0,\"total\":19283}"
+      },
+      "id": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "lanes": ["build"],
+      "sides": {
+        "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
+        "B": "29f83004e8f78849fb56fb7f8378323a3cb9d6da (dirty)"
       }
     }
   ],
