@@ -58,7 +58,7 @@ Start with coverage: received and missing batches, duplicate and unreadable line
 - Every `worst` entry: interval, `ticks`, `discardedMs`, race and tick, `cpu` and `calls`, `drawRung` and `nextRung`, pixel ratio, `drawnEpoch` and `sizeEpoch`.
 - Every fault: source, message, `where`, frame, race and `seq`. A fault has no tick; do not borrow one from a nearby frame.
 - Every suspect and the raw events behind it, and the governor, canvas, race, marker, visibility and overlay events.
-- The histogram and the per-batch periods. A batch's `quality` is its state when it was sent, and `pace` is the frame rate the pacer aimed for. When a batch's `totalMs` divided by 1000 / `pace` comes within a slot of its `frames`, it missed no slot, and its retained samples are only its longest on-pace intervals. Split a batch where a governor event changed the pace.
+- The histogram and the per-batch periods. A batch's `quality` is its state when it was sent, and `pace` is the frame rate the pacer aimed for. Compare a batch's `totalMs` divided by 1000 / `pace` with its `frames` as a check on its average cadence. Agreement does not prove that it missed no slot or that every retained sample was on pace, because fast intervals can offset slow ones; inspect the retained intervals and the histogram separately. Split a batch where a governor event changed the pace.
 
 Name the `cpu` and `calls` indices from the `parts` array of the batch that holds the frame. The JSON summary leaves `parts` out, and the text output names the top four parts with the last batch's layout. An older recording can differ from today's `apps/web/src/profile-parts.ts`; read the batch, do not relabel from source.
 
