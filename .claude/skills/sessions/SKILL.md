@@ -20,20 +20,20 @@ session ID, report ID, device or build
 1. Read `docs/observability.md` and `docs/errors.md`. `packages/telemetry/src/schema.ts` and `limits.ts` define the format. `tools/perf/budgets.json` holds the frame budgets; link to it and do not copy its numbers. Its frame rows are judged by `pnpm perf:gpu`, which runs the benchmark races in two Helium windows on this Mac's GPU. A session is not that run, so it cannot pass or fail one of those limits. Say so rather than report a result.
 2. Accept a full session UUID, a report ID, a device, a build or a directory. The default directory is `tools/perf/results/sessions/`. `session_id` is the full UUID, which is the filename without `.jsonl`. A report ID is the session's first eight characters, a dash and the batch number (`reportIdOf` in `limits.ts`); find its file with `rg` first. Exactly one file should hold the UUID.
 3. Find the file with the listing commands, then snapshot it before you read it in detail. The collector may still be appending, and the reader loads every JSONL in `--dir` before it filters, so copy only the files you want into a new directory, make them read-only, and record the path, bytes, SHA-256 of the copy and the original, and the time. Never move, repair or truncate an original.
-4. Confirm the identity: the JSON holds exactly one session, its `sessionId` matches the filename, every line carries the same `batch.session` (the reader reports the last batch's), and you have the build SHA and dirty flag, device, renderer, pixel ratio, `startedAt` and received range. `--session` is a filename prefix filter, not an exact lookup.
+4. Confirm the identity: the JSON holds exactly one session, its `sessionId` matches the filename, every line carries the same `batch.session` (the reader reports the last batch's), and you have the build SHA and dirty flag, device, renderer, pixel ratio, `startedAt` and received range. Leave `userAgent` out of your notes; it identifies the tester's browser. `--session` is a filename prefix filter, not an exact lookup.
 
 ```sh
 source_dir=tools/perf/results/sessions
 session_id=<full UUID>
 rg --files "$source_dir" -g '*.jsonl'
 node tools/perf/session.ts --dir "$source_dir"
-rg -l --fixed-strings "$report_id" "$source_dir" -g '*.jsonl'
+[ -n "${report_id:-}" ] && rg -l --fixed-strings "$report_id" "$source_dir" -g '*.jsonl'
 rg -l --fixed-strings "$session_id" "$source_dir" -g '*.jsonl'
 session_dir=$(mktemp -d /tmp/rushline-session.XXXXXX)
 scratch=$(mktemp -d /tmp/rushline-session-notes.XXXXXX)
 cp "$source_dir/$session_id.jsonl" "$session_dir/"
 chmod a-w "$session_dir"/*.jsonl
-shasum -a 256 "$source_dir/$session_id.jsonl" "$session_dir"/*.jsonl && wc -c "$session_dir"/*.jsonl && date -u +%FT%TZ
+shasum -a 256 "$source_dir/$session_id.jsonl" "$session_dir"/*.jsonl && wc -c "$source_dir/$session_id.jsonl" "$session_dir"/*.jsonl && date -u +%FT%TZ
 node tools/perf/session.ts --dir "$session_dir" --session "$session_id"
 node tools/perf/session.ts --dir "$session_dir" --session "$session_id" --worst 9007199254740991 --json > "$scratch/session.json"
 jq -R -c 'try (fromjson | .batch.session // empty) catch empty' "$session_dir/$session_id.jsonl" | sort -u | wc -l
