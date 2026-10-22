@@ -10,14 +10,12 @@ import type { SaveStorage } from "./save-storage.ts";
 import {
   BACKUP_KEY,
   careerSeedFrom,
-  commitCareer,
   freshCareer,
   loadCareer,
   SAVE_KEY,
   saveStateOf,
   startOver,
   storeCareer,
-  writesAllowed,
 } from "./save.ts";
 
 type Failing = "get" | "set" | "backup" | "remove";
@@ -276,7 +274,7 @@ describe("the browser save", () => {
     if (first.status !== "ready") {
       throw new Error("The career did not load.");
     }
-    expect(commitCareer(first, opened(storage), first.career)).toStrictEqual({
+    expect(storeCareer(opened(storage), first.career)).toStrictEqual({
       status: "saved",
     });
     expect(loadCareer(opened(storage))).toStrictEqual({
@@ -287,42 +285,31 @@ describe("the browser save", () => {
     });
   });
 
-  it("does not let a new career overwrite a save it could not read until a start over succeeds", () => {
+  it("saves a new career over a save it could not read, and reports only a refused write", () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, "the unread save");
     storage.failing = "get";
     const unread = loadCareer(opened(storage));
+    const career = freshCareer(0.6);
+    const stored = storeCareer(opened(storage), career);
+    storage.failing = "set";
+    const refused = storeCareer(opened(storage), { ...career, cash: 9000 });
     storage.failing = null;
-    storage.calls.length = 0;
-    const blocked = commitCareer(unread, opened(storage), freshCareer(0.6));
-    const callsWhenBlocked = [...storage.calls];
-    storage.failing = "backup";
-    const refused = startOver(opened(storage));
-    storage.failing = null;
-    const stillBlocked = commitCareer(
-      unread,
-      opened(storage),
-      freshCareer(0.6)
-    );
-    const reset = startOver(opened(storage));
     expect({
-      backup: storage.items.get(BACKUP_KEY),
-      blocked,
-      callsWhenBlocked,
-      locked: writesAllowed(loadCareer(lockedAway)),
-      refused: refused.status,
-      stillBlocked,
-      unread: writesAllowed(unread),
-      written: commitCareer(reset, opened(storage), freshCareer(0.6)),
+      loaded: loadCareer(opened(storage)),
+      refused,
+      stored,
+      unread: unread.status,
     }).toStrictEqual({
-      backup: "the unread save",
-      blocked: { status: "blocked" },
-      callsWhenBlocked: [],
-      locked: false,
-      refused: "writeFailed",
-      stillBlocked: { status: "blocked" },
-      unread: false,
-      written: { status: "saved" },
+      loaded: {
+        career,
+        leftRace: null,
+        persistence: { status: "unchanged" },
+        status: "ready",
+      },
+      refused: { ...failed("write"), status: "writeFailed" },
+      stored: { status: "saved" },
+      unread: "readFailed",
     });
   });
 
