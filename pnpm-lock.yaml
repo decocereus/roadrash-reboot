@@ -263,6 +263,9 @@ importers:
       '@effect/platform-node':
         specifier: 4.0.0
         version: 4.0.0(effect@4.0.0)(redis@6.3.0)
+      '@racer/career':
+        specifier: workspace:*
+        version: link:../../packages/career
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
