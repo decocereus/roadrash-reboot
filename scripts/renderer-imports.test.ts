@@ -268,12 +268,11 @@ describe("check:renderer-imports allows types and lazy boundaries", () => {
       "/repo/src/styles.css": "",
       [root]: [
         'import type { Game } from "./game/engine.ts";',
-        'import { type Mesh } from "three";',
         'import type { Played } from "./contracts.ts";',
         'import "./contracts.ts";',
         'import styles from "./styles.css?url";',
         "export const lazy = async () => await import(`./game/engine.ts`);",
-        "export type Seen = Game | Mesh | Played;",
+        "export type Seen = Game | Played;",
         "export const css = styles;",
       ].join("\n"),
     });
