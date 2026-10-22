@@ -1,17 +1,29 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
+import { budgetsFile } from "../src/budgets.ts";
 import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
 import type { GpuSample } from "../src/gpu-frames.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
 import type { Scenario } from "../src/scenarios.ts";
 import { validRows } from "./red-cases.ts";
 
+const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
+  readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8")
+);
+
 const SLOT = 1000 / 60;
+const MAIN_CALLS = 130;
+const DRAWN_CALLS = 350;
 const START_MS = 5000;
 const RACE = 1;
 
 interface Playback {
   readonly interval: (index: number) => number;
+  readonly extraCalls: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
   readonly viewport: GpuSample["capture"]["viewport"];
@@ -19,13 +31,28 @@ interface Playback {
 
 const steady: Playback = {
   discardedAt: -1,
+  extraCalls: () => 0,
   interval: () => 16.7,
   longTasks: [],
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
 const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
-  calls: [0, 0, 0, 0, 0, 0, 0, 130, 70, 135, 1, 13, 1],
+  calls: [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    MAIN_CALLS + playback.extraCalls(index),
+    70,
+    135,
+    1,
+    13,
+    1,
+  ],
   cpu: [1, 0.2, 1, 0.5, 0.1, 0.4, 0.3, 0.6, 0.4, 0.5, 0.1, 0.1, 0.1],
   discarded: index === playback.discardedAt ? 40 : 0,
   drawRung: 0,
@@ -41,7 +68,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
   textures: 30,
   tick: scenario.window.from + index,
   ticks: 1,
-  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 900_000, 1_000_000, 1, 13, 1],
+  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 900_000, 800_000, 1, 13, 1],
 });
 
 const sampleOf = (
@@ -103,7 +130,10 @@ const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
 
 describe("gpu frame lane", () => {
   it("passes a steady 60 Hz campaign against the owner caps", () => {
-    const evaluation = evaluateGpu(campaign(() => steady));
+    const evaluation = evaluateGpu(
+      campaign(() => steady),
+      limits
+    );
     expect(failing(evaluation.lines)).toStrictEqual([]);
     expect(evaluation.ok).toBeTruthy();
     expect(
@@ -121,7 +151,8 @@ describe("gpu frame lane", () => {
         isPack(scenario) && side === "B"
           ? { ...steady, discardedAt: 9 }
           : steady
-      )
+      ),
+      limits
     );
     const from = packRiding?.window.from ?? 0;
     expect(failing(evaluation.lines)).toContain(
@@ -149,7 +180,8 @@ describe("gpu frame lane", () => {
               ],
             }
           : steady
-      )
+      ),
+      limits
     );
     const blocking = evaluation.observations.find(
       (each) =>
@@ -173,7 +205,8 @@ describe("gpu frame lane", () => {
     const evaluation = evaluateGpu(
       campaign((scenario, side) =>
         isPack(scenario) && side === "B" ? slower : steady
-      )
+      ),
+      limits
     );
     expect(
       failing(evaluation.lines).map((line) => line.split(" observed=")[0])
@@ -195,7 +228,8 @@ describe("gpu frame lane", () => {
         isPack(scenario) && side === "B"
           ? { ...steady, viewport: { ...steady.viewport, height: 836 } }
           : steady
-      )
+      ),
+      limits
     );
     expect(failing(evaluation.lines)).toContain(
       "FAIL gpu pack-riding-v1 side=B pack-riding-v1-pair0-B.json viewport=1504x836@2 expected=1504x790@2 like pack-riding-v1-pair0-A.json"
@@ -203,6 +237,32 @@ describe("gpu frame lane", () => {
     expect(failing(evaluation.lines)).toContain(
       "FAIL gpu pack-riding-v1 frame.interval.p95 [gpu-helium-metal] missing measurement"
     );
+    expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a pack window that draws more calls than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.metric === "render.calls.max" && each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error("budgets.json has no pack-riding draw-call budget.");
+    }
+    const over = budget.value + 1;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side) =>
+        isPack(scenario) && side === "B"
+          ? {
+              ...steady,
+              extraCalls: (index) => (index === 9 ? over - DRAWN_CALLS : 0),
+            }
+          : steady
+      ),
+      limits
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      `FAIL gpu pack-riding-v1 render.calls.max [gpu-helium-metal] observed=${over} calls limit <= ${budget.value} calls A=${DRAWN_CALLS.toPrecision(5)}`,
+    ]);
     expect(evaluation.ok).toBeFalsy();
   });
 });

@@ -114,7 +114,10 @@ export const evaluateGate = (
   };
 };
 
-const profileOf = (lanes: readonly NodeLane[]): NodeProfile | null => {
+const profileOf = (
+  lanes: readonly NodeLane[],
+  source: string
+): NodeProfile | null => {
   const calibrations = lanes.flatMap((lane) => lane.calibrations);
   const [first] = calibrations;
   if (!first) {
@@ -140,6 +143,7 @@ const profileOf = (lanes: readonly NodeLane[]): NodeProfile | null => {
       version: CALIBRATION_VERSION,
     },
     platform: first.record.runtime.platform,
+    source,
   };
 };
 
@@ -193,13 +197,17 @@ export interface BaselineEvaluation extends Evaluation {
 }
 
 export const evaluateBaseline = (samples: Samples): BaselineEvaluation => {
-  const profile = profileOf(samples.node);
+  const profile = profileOf(samples.node, samples.comparisonId);
   const [first] = samples.node.flatMap((lane) => lane.calibrations);
   const profiles: Record<string, NodeProfile> =
     profile && first ? { [nodeEnvironment(first.record)]: profile } : {};
   const observed = observe(samples, profiles);
   const required = requiredRows(samples.lanes, [observed.environment]);
-  const limits = proposeLimits(observed.observations, required);
+  const limits = proposeLimits(
+    observed.observations,
+    required,
+    samples.comparisonId
+  );
   const incomplete = incompleteLine(samples);
   const lines = [
     "MEASUREMENT ONLY: baseline proposal, not a gate result",

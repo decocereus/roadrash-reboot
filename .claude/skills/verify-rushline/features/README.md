@@ -43,4 +43,4 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): ramps, time in the air, landings, and landing dust.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
-- [Frame rate and load](./frame-rate.md): the stress race, frame sampling, throttled play, traces, first load on a slow network, and the perf A/B.
+- [Frame rate and load](./frame-rate.md): the stress race, frame sampling, throttled play, traces, first load on a slow network, the perf gate on the GPU, and the measure.ts A/B.

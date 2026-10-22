@@ -42,7 +42,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: node tools/perf/gate.ts baseline --lanes node,build
+      - run: node tools/perf/gate.ts baseline --baseline-ref fd677a71c74167dc049a2bcf232f26f8f9abda86 --lanes node,build
       - uses: actions/upload-artifact@v4
         if: always()
         with:

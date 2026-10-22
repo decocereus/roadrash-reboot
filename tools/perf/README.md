@@ -1,8 +1,58 @@
-# Frame measurement
+# Performance
+
+`tools/perf` holds the perf gate, which holds tick cost, allocations, bytes, frame pacing and render counts to `budgets.json`, the frame bench `measure.ts`, and the play-test session reader `session.ts`.
+
+## The perf gate
+
+| Command | What it checks | Where it runs |
+| --- | --- | --- |
+| `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI check job |
+| `pnpm perf` | The Node lane (throughput, tick p95 and p99, allocated bytes per tick) and the build lane (route, game, Worker and client bytes, and the six GLBs), side A against side B in one run. | `pnpm verify` and the CI `perf` job |
+| `pnpm perf:gpu` | Frame pacing and render counts (draw calls, triangles, shader programs and textures) in two windowed Helium runs on this Mac's GPU. | Locally, by hand. CI never runs it. |
+
+Render counts are checked only by `pnpm perf:gpu`, on this Mac. CI has no GPU, and on a software renderer (SwiftShader) the pack scene draws about one frame a second, too slow to fill a measured window, so there is no CI count lane. A change that adds draw calls, triangles, programs or textures passes CI and fails `pnpm perf:gpu`, so run the GPU lane before you merge a change to the renderer, the scene or the assets.
+
+### Budgets and the baseline
+
+`budgets.json` has one row per metric, scenario and environment. Each row gives the limit, its direction and unit, the paired B/A margin if there is one, the baseline value it came from, the derivation, and the id of the run that measured the baseline. The environments are the Node runner (`node-darwin-arm64` for this Mac, `node-linux-x64` for CI), `build` for bytes, which do not depend on the machine, and `gpu-helium-metal` for the GPU lane. Each Node environment also has a calibration profile: `c0`, the median time of the fixed calibration workload on that runner, and the run that measured it.
+
+| Metric | Limit | Paired B/A |
+| --- | --- | --- |
+| `sim.ticksPerSecond` | at least 0.90 x the calibrated baseline median | at least 0.90 |
+| `sim.tick.p95`, `sim.tick.p99` | at most 1.15 and 1.20 x the calibrated baseline median | at most 1.15, 1.20 |
+| `sim.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | at most 1.10 |
+| `bytes.*.raw`, `bytes.*.gzip` | the baseline plus 4,096 B or 2%, whichever is larger | none |
+| `assets.glb.*` | the baseline size exactly | none |
+| `render.calls.max`, `render.triangles.max` | ceil(1.05 x the largest frame in any baseline window, either side) | none |
+| `render.programs.max`, `render.textures.max` | the largest baseline count plus one | none |
+| `frame.interval.*`, `frame.missedFraction`, `main.longTask.*` | the owner's caps, in the GPU lane's table below | at most 1.10 / 1.15 / 1.20 for p50 / p95 / p99 |
+
+`baselines/post-step8.json` is the baseline summary. It holds the revisions, the harness digest, each scenario's hash and window, each run's identity (machine, runtime, browser and display), every observed value a limit came from, and the track compile time, which is recorded and has no budget. The raw samples sit beside it as gzipped JSON, which `gunzip -c` reads. `budgets.json` names the summary and each raw file with its SHA-256. `pnpm check:perf` fails when a hash, a scenario hash, a required row, or a limit's baseline value does not match.
+
+Nothing rewrites the budgets. To measure a new baseline, run `node tools/perf/gate.ts baseline --baseline-ref <rev>` on this Mac and in the CI perf job, and run `pnpm perf:gpu`. Then update `budgets.json`, the summary, the raw files and their hashes together, and explain each changed limit in the pull request.
+
+### Scenarios
+
+`src/scenarios.ts` registers two 601-tick windows. On every tick the player must be riding at 20 m/s or more, with the pinned number of rivals within 150 m ahead, and the rival total must match exactly. An emptier window or a crash fails before any timing is judged.
+
+- `reference-v1` is Slag Row level 1 on seed 31 with the starting bike, ticks 1727 to 2327, with 10 rivals ahead on every tick.
+- `pack-riding-v1` is the `?stress` race, Slag Row level 5 on seed 8 with eight police, ticks 2165 to 2765, with 11 to 13 rivals ahead. Despite its name, the player trails the pack in this window: 14th of 15, with the counted rivals in a cluster 100 to 150 m ahead.
+
+`node tools/perf/gate.ts --select-window` replays both races and checks that the registered windows are still the ones the fixed selection rule picks.
+
+### `pnpm perf`
+
+Side A is a `/tmp` clone of the revision that `budgets.json` names, installed offline, with the current harness copied over it. `--baseline-ref <rev>` picks another revision. Side B is this checkout. The clone is deleted when the run ends. For each scenario, the Node lane runs one validation pass per side, five timing pairs in alternating order with six calibration blocks around them, and three allocation pairs, each in a fresh child process. The build lane runs a fresh production build of each side.
+
+Exit 0 means every required metric passed. Exit 1 is a budget, workload, measurement or evidence failure, and exit 2 is a bad flag, budgets file or baseline ref. Evidence goes to `results/<comparison id>/`. `--lanes node` or `--lanes build` runs part of the gate, prints `INCOMPLETE` and exits 1. `--evaluate <samples.json>` judges saved samples again.
+
+CI runs `pnpm perf` in the `perf` job of `.github/workflows/quality.yml`, on `ubuntu-24.04`, beside the check job and with a 15-minute timeout. It uploads `tools/perf/results` as the `perf-results` artifact even when it fails. The CI runner is judged against its own Node profile, `node-linux-x64`, and the same byte budgets as this Mac.
+
+## Frame measurement
 
 `measure.ts` drives headless Chrome over the DevTools protocol, waits for a tick window in a race, and prints frame times, the cost of each part of the frame, draw calls, triangles, GC pauses, long tasks, and the WebGL renderer. The entry reads the flags with `src/measure-options.ts` and runs `src/measure.ts` on Effect. `src/measure-page.ts` waits for ticks, takes the screenshots and runs the trace, `src/measure-model.ts` decodes the page's samples and works out the summary, and `src/measure-report.ts` prints it. `@racer/devtools` launches the browser and owns the DevTools session, `@effect/platform-node` supplies the HTTP client, the WebSocket and the file system, and `effect/Schema` decodes what Chrome sends back.
 
-## Serve the production build
+### Serve the production build
 
 Ports 1350 and 1351 belong to the play server. Use 1352 or higher.
 
@@ -14,7 +64,7 @@ pnpm exec vite preview --port 1352 --strictPort
 
 `--sourcemap` only adds `.map` files and a trailing comment to each chunk, so the code that runs is the production bundle. The maps let a CPU profile name functions by source file and line. Stop the server by port when you are done: `lsof -ti tcp:1352 | xargs kill`.
 
-## Run
+### Run
 
 ```sh
 node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label stress-r2 --runs 3
@@ -29,7 +79,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 | --- | --- | --- |
 | `--url` | required | Page to load. Pin the ratio with `?ratio=` so the governor's 60 Hz pacing does not hide the headroom. A browser that reports a modest GPU starts without multisampling; add `&rung=0` to measure full quality there, or `&rung=3` to measure the multisampling-off rung anywhere. |
 | `--runs` | 3 | Fresh browser per run; the summary shows the mean and the spread across runs. |
-| `--from`, `--to` | the bench window | Tick range measured, inclusive. The default comes from `benchWindow` in `packages/sim/src/bench-window.ts`. |
+| `--from`, `--to` | the bench window | Tick range measured, inclusive. The default is `benchWindows.stress` in `packages/sim/src/bench-window.ts`, the `pack-riding-v1` window. |
 | `--first-run` | off | Start the trace during the countdown and measure from the green light, tick 1, so first-use stalls (shader compiles, texture uploads, the first city chunk of a kind) land in the window. The trace adds the `toplevel` and `gpu` categories so a stall that happens outside JavaScript still shows up, in the GPU process. |
 | `--worst` | 5 | For each run, list this many of the longest frames with the CPU time of each part and the longest trace events on any thread that overlap the frame. |
 | `--cpu-profile` | off | Sample the main thread every 100 µs in the window and list the top self-time functions. |
@@ -44,13 +94,11 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 
 Each run launches `/Applications/Google Chrome.app` with `--headless=new` (or Helium, windowed, with `--browser helium`), a new temporary profile that is deleted when the run ends, fails or is interrupted, `--force-device-scale-factor`, `--disable-gpu-vsync --disable-frame-rate-limit` so frames are not capped, and `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`. The summary prints the unmasked renderer string; it should read `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` and never SwiftShader.
 
-## The page side
+### The page side
 
-`?stress` starts a fixed race as soon as the game loads and puts the player on the pilot: Slag Row at level 5, the full field of fourteen, seed 8, the player on the Ostra Sesta 600 with aggression 0.8, rivals given the most aggression toward the player and a grudge against them, eight police with a 250 m sight range, and pacing of `leadEase` 0.8 and `catchUp` 0.6, which holds the pack around the player. `?stress=reference` is the ordinary Slag Row level 1 race on the starting bike on seed 31. Both are in `apps/web/src/career/bench.ts`.
+`?stress` starts a fixed race as soon as the game loads and puts the player on the pilot: Slag Row at level 5, the full field of fourteen, seed 8, the player on the Ostra Sesta 600 with aggression 0.8, rivals given the most aggression toward the player and a grudge against them, eight police with a 250 m sight range, and pacing of `leadEase` 0.8 and `catchUp` 0.6, which holds the pack around the player. `?stress=reference` is the ordinary Slag Row level 1 race on the starting bike on seed 31. `packages/career/src/bench.ts` builds both setups, and `apps/web/src/career/bench.ts` reads the URL.
 
-The window, ticks 2880 to 3480, is ten seconds of race time that opens with the player at about 1,510 m. The race depends on the AI pilot in `packages/sim/src/pilot.ts` and the `pilot-*.ts` files beside it, so a change to them moves the window. The bench was last re-aimed when the pilot learned to ride ramps: on seed 31 the pack stretched out and the old window was nearly empty road, so the stress seed became 8. A replay of the window on October 21, 2026, sampling all 601 ticks, measured this workload. Between 3 and 10 rivals are within 150 m ahead of the player, 7.0 on average, and the player is 7th to 11th of 15. 31 to 33 cars are within the fleet's reach, which is Lowtown's 1,100 m fog plus 200 m ahead and 40 m behind. The nearest police rider is between 0 and 64 m away, 35 m on average. The player is off the bike for most of the window: riding for 218 ticks, thrown for 252, lying for 30, and running back to the bike for 101. The window therefore measures a crash and the recovery inside the pack, not ten seconds of riding in it.
-
-To find a window again, step `benchPlan("stress")` with `pilotInput` for every rider each tick, as `readInputs` in `apps/web/src/game/game.ts` does, and count rivals within 150 m ahead and the distance to the nearest awake officer per second.
+By default `measure.ts` measures `benchWindows.stress` from `packages/sim/src/bench-window.ts`, ticks 2165 to 2765, which is the perf gate's `pack-riding-v1` window. The player rides through the whole window at 35 m/s or more in 14th of 15, with 11 to 13 rivals within 150 m ahead, in a cluster 100 to 150 m up the road. The race depends on the AI pilot in `packages/sim/src/pilot.ts` and the `pilot-*.ts` files beside it, so a change to them can move or empty the window. `pnpm perf` then fails the workload check, and `node tools/perf/gate.ts --select-window` lists the eligible windows. Until October 22, 2026 the window was ticks 2880 to 3480, where the player crashed and spent 383 of the 601 ticks off the bike.
 
 `?prof` records without starting a race, and `?stress` implies it. The frame loop then records, per frame, the CPU time of each part and the draw calls and triangles each pass submits. Where `EXT_disjoint_timer_query_webgl2` is exposed it also times each part on the GPU. Samples sit in preallocated typed arrays and `globalThis.__rushlineProfile` reads them out: `info()` and `window(fromTick, toTick)`. Each frame also keeps three's counts of shader programs, textures, and geometries, and the tool lists the ticks where any of them grew: a program that appears after the green light was compiled on the frame that first drew it, and a texture was uploaded on it. These counts do not depend on how busy the machine is. Each frame also keeps the `performance.now()` it started at; the tool lines that clock up with the trace's through a `console.timeStamp` mark, which is how a worst frame is matched with the trace events that overlap it.
 
@@ -74,7 +122,7 @@ Headless Chrome is allowed here because the bench measures uncapped frame cost. 
 
 ## Real-GPU frame lane
 
-`pnpm perf:gpu` measures frame pacing the way a player sees it: in two windowed Helium runs that `rv` owns, at normal vsync, on this Mac's GPU. CI does not run it. Side A is a `/tmp` clone at the baseline revision, never a worktree. Side B is this checkout.
+`pnpm perf:gpu` measures frame pacing the way a player sees it, and the render counts, in two windowed Helium runs that `rv` owns, at normal vsync, on this Mac's GPU. CI does not run it. Side A is a `/tmp` clone at the baseline revision, never a worktree. Side B is this checkout. Every limit comes from `budgets.json`, environment `gpu-helium-metal`, and the lane exits 2 when that file is incomplete.
 
 ```sh
 git clone --no-hardlinks . /tmp/rushline-perf-gpu-a
@@ -98,16 +146,18 @@ For each side, the lane:
 
 A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, rung, pixel ratio or size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error. Every sample must also have the same page size and device pixel ratio. The lane stops before warming up if A's and B's windows already differ, which happens when a window is resized; restart that run.
 
-| Metric | Cap | Paired B/A |
+| Metric | Limit | Paired B/A |
 | --- | --- | --- |
-| `frame.interval.p50` / `p95` / `p99` | 17.5 / 20 / 33.334 ms | 1.10 / 1.15 / 1.20 |
-| `frame.missedFraction` | 0.01 | none |
-| `main.longTask.count` | 0 | none |
-| `main.longTask.blockingMs` | 0 ms | none |
+| `frame.interval.p50` / `p95` / `p99` | 17.5 / 20 / 33.334 ms, the owner's caps | 1.10 / 1.15 / 1.20 |
+| `frame.missedFraction` | 0.01, the owner's cap | none |
+| `main.longTask.count` | 0, the owner's cap | none |
+| `main.longTask.blockingMs` | 0 ms, the owner's cap | none |
+| `render.calls.max`, `render.triangles.max` | per scenario, ceil(1.05 x the baseline maximum) | none |
+| `render.programs.max`, `render.textures.max` | per scenario, the baseline maximum + 1 | none |
 
-The interval percentiles and the missed fraction pool every frame of B's five windows, and the long-task values sum them. The paired ratio is the median of the five per-pair ratios. A missed slot is `max(0, round(interval / 16.667 ms) - 1)`, and the missed fraction is missed slots over frames plus missed slots. A long task counts when it overlaps the window. Its blocking time is the part after its first 50 ms, clipped to the window. The lane also prints each side's peak draw calls, triangles, programs and textures, as information.
+The interval percentiles and the missed fraction pool every frame of B's five windows, and the long-task values sum them. The paired ratio is the median of the five per-pair ratios. A missed slot is `max(0, round(interval / 16.667 ms) - 1)`, and the missed fraction is missed slots over frames plus missed slots. A long task counts when it overlaps the window. Its blocking time is the part after its first 50 ms, clipped to the window. A frame's draw calls and triangles are the sum of its passes, and each count metric is the largest frame in any of B's windows. Programs and textures are three's live counts on that frame. The lane also prints both sides' peaks, worst frame and frame CPU time.
 
-Evidence goes to `tools/perf/results/gpu-<time>-<A>-<B>/`: every raw page capture, `samples.json`, both doctor outputs before and after, and `result.json` with the display facts, sides, order, observations and file hashes.
+Evidence goes to `tools/perf/results/gpu-<time>-<A>-<B>/`: every raw page capture, `samples.json`, both doctor outputs before and after, and `result.json` with the budgets file and its hash, the display facts, sides, order, observations and file hashes.
 
 ## Play-test recordings
 

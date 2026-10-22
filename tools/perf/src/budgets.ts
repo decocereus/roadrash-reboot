@@ -3,7 +3,9 @@ import * as Schema from "effect/Schema";
 import { glbNames } from "./build.ts";
 import { scenarios } from "./scenarios.ts";
 
-export type Lane = "node" | "build" | "headless" | "gpu";
+export type Lane = "node" | "build" | "gpu";
+
+export const GPU_ENVIRONMENT = "gpu-helium-metal";
 
 export interface MetricKind {
   readonly metric: string;
@@ -59,7 +61,37 @@ const buildKinds: readonly MetricKind[] = [
   unit: "B",
 }));
 
-export const metricKinds: readonly MetricKind[] = [...nodeKinds, ...buildKinds];
+const gpuKind = (
+  metric: string,
+  unit: string,
+  paired: number | null
+): MetricKind => ({
+  direction: "max",
+  lane: "gpu",
+  metric,
+  paired,
+  perScenario: true,
+  unit,
+});
+
+const gpuKinds: readonly MetricKind[] = [
+  gpuKind("frame.interval.p50", "ms", 1.1),
+  gpuKind("frame.interval.p95", "ms", 1.15),
+  gpuKind("frame.interval.p99", "ms", 1.2),
+  gpuKind("frame.missedFraction", "share", null),
+  gpuKind("main.longTask.count", "tasks", null),
+  gpuKind("main.longTask.blockingMs", "ms", null),
+  gpuKind("render.calls.max", "calls", null),
+  gpuKind("render.triangles.max", "triangles", null),
+  gpuKind("render.programs.max", "programs", null),
+  gpuKind("render.textures.max", "textures", null),
+];
+
+export const metricKinds: readonly MetricKind[] = [
+  ...nodeKinds,
+  ...buildKinds,
+  ...gpuKinds,
+];
 
 const nodeProfile = Schema.Struct({
   arch: Schema.String,
@@ -73,17 +105,20 @@ const nodeProfile = Schema.Struct({
     version: Schema.Number,
   }),
   platform: Schema.String,
+  source: Schema.String,
 });
 
 export type NodeProfile = typeof nodeProfile.Type;
 
 const limitRow = Schema.Struct({
   baseline: Schema.Number,
+  derivation: Schema.String,
   direction: Schema.Literals(["min", "max"]),
   environment: Schema.String,
   metric: Schema.String,
   paired: Schema.NullOr(Schema.Number),
   scenario: Schema.NullOr(Schema.String),
+  source: Schema.String,
   unit: Schema.String,
   value: Schema.Number,
 });
@@ -92,9 +127,10 @@ export type Limit = typeof limitRow.Type;
 
 export const budgetsFile = Schema.Struct({
   baseline: Schema.Struct({
+    raw: Schema.Array(
+      Schema.Struct({ file: Schema.String, sha256: Schema.String })
+    ),
     revision: Schema.String,
-    samples: Schema.String,
-    samplesSha256: Schema.String,
     summary: Schema.String,
     summarySha256: Schema.String,
   }),
@@ -124,6 +160,16 @@ export interface Verdict {
   readonly text: string;
 }
 
+const environmentsOf = (
+  lane: Lane,
+  nodeEnvironments: readonly string[]
+): readonly string[] => {
+  if (lane === "node") {
+    return nodeEnvironments;
+  }
+  return lane === "gpu" ? [GPU_ENVIRONMENT] : [lane];
+};
+
 export const requiredRows = (
   lanes: readonly Lane[],
   nodeEnvironments: readonly string[]
@@ -131,11 +177,10 @@ export const requiredRows = (
   metricKinds
     .filter((kind) => lanes.includes(kind.lane))
     .flatMap((kind) =>
-      (kind.lane === "node" ? nodeEnvironments : [kind.lane]).flatMap(
-        (environment) =>
-          (kind.perScenario ? scenarios.map((each) => each.id) : [null]).map(
-            (scenario) => ({ environment, kind, scenario })
-          )
+      environmentsOf(kind.lane, nodeEnvironments).flatMap((environment) =>
+        (kind.perScenario ? scenarios.map((each) => each.id) : [null]).map(
+          (scenario) => ({ environment, kind, scenario })
+        )
       )
     );
 
@@ -158,7 +203,7 @@ export const budgetProblems = (budgets: Budgets): string[] => {
     seen.set(key, limit);
   }
   const required = requiredRows(
-    ["node", "build", "headless", "gpu"],
+    ["node", "build", "gpu"],
     Object.keys(budgets.nodeProfiles).toSorted()
   );
   const wanted = new Set(
@@ -263,19 +308,30 @@ export const judge = (
     };
   });
 
-const proposed = (kind: MetricKind, baseline: number): number => {
+const proposed = (kind: MetricKind, baseline: number) => {
   if (kind.metric.startsWith("assets.glb.")) {
-    return baseline;
+    return { derivation: "exact baseline", value: baseline };
   }
   if (kind.lane === "build") {
-    return baseline + Math.max(4096, Math.ceil(0.02 * baseline));
+    return {
+      derivation: "baseline + max(4096, ceil(0.02 x baseline))",
+      value: baseline + Math.max(4096, Math.ceil(0.02 * baseline)),
+    };
   }
-  return baseline * (kind.paired ?? 1);
+  const factor = kind.paired ?? 1;
+  return {
+    derivation:
+      kind.metric === "sim.allocatedBytesPerTick"
+        ? `${factor} x baseline median, uncalibrated`
+        : `${factor} x calibrated baseline median`,
+    value: baseline * factor,
+  };
 };
 
 export const proposeLimits = (
   observations: readonly Observation[],
-  required: ReturnType<typeof requiredRows>
+  required: ReturnType<typeof requiredRows>,
+  source: string
 ): Limit[] =>
   required.flatMap(({ environment, kind, scenario }) => {
     const observed = observations.find(
@@ -287,14 +343,15 @@ export const proposeLimits = (
     return observed
       ? [
           {
+            ...proposed(kind, observed.value),
             baseline: observed.value,
             direction: kind.direction,
             environment,
             metric: kind.metric,
             paired: kind.paired,
             scenario,
+            source,
             unit: kind.unit,
-            value: proposed(kind, observed.value),
           },
         ]
       : [];

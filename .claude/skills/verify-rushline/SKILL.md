@@ -1,6 +1,6 @@
 ---
 name: verify-rushline
-description: Launch and drive Rushline, the Three.js motorcycle combat racer in apps/web, in a windowed Helium over Chrome DevTools to prove a change works the way a player sees it - menus, races, jumps, career money, frame rate. Use after any change to apps/web, packages/sim, packages/track, packages/career, or packages/ui, when asked to run, screenshot, play-test, or profile the game, or when tests pass but nobody has looked at the game. Also lists the non-browser proofs (pnpm check, pnpm build, the perf A/B).
+description: Launch and drive Rushline, the Three.js motorcycle combat racer in apps/web, in a windowed Helium over Chrome DevTools to prove a change works the way a player sees it - menus, races, jumps, career money, frame rate. Use after any change to apps/web, packages/sim, packages/track, packages/career, or packages/ui, when asked to run, screenshot, play-test, or profile the game, or when tests pass but nobody has looked at the game. Also lists the non-browser proofs (pnpm check, pnpm build, the perf gate).
 ---
 
 # Verify Rushline
@@ -162,10 +162,20 @@ Run these after every source change, as AGENTS.md requires:
 
 - `pnpm check`: oxfmt, oxlint with the anti-slop and rushline rules, the rule tests and ledger, `check:roots`, `check:dead` (knip), `tsrs` for the root and every workspace, then Vitest. The tests in `packages/sim` pin the feel (acceleration, braking distance, bend push, which bend cannot be taken flat out, when the crest launches). When a tuning change breaks one, decide whether the feel or the test is wrong and say which in the commit.
 - `pnpm build`: the production build of every package.
+- `pnpm perf`: the perf gate's Node and build lanes, side A (a `/tmp` clone at the baseline revision in `tools/perf/budgets.json`) against this checkout. It fails on throughput, tick p95 or p99, allocations per tick, bundle or Worker bytes, or a GLB over budget, or on a window whose workload changed. `pnpm verify` runs it after the build, and so does CI's `perf` job. `pnpm check:perf` only checks the budgets file and baseline, in about a second.
 
-### The perf A/B
+### The perf gate on the GPU
 
-`tools/perf/measure.ts` measures a fixed tick window of the `?stress` race and is the number to quote for a performance change. Read `tools/perf/README.md`. It still launches headless Chrome by default, which is allowed for this bench because it measures uncapped frame cost, not how the game looks; pass `--browser helium` to run the same bench in a windowed Helium. To compare a change:
+`pnpm perf:gpu` is the only check of frame pacing and render counts (draw calls, triangles, shader programs and textures). CI has no GPU and no count lane, so run it yourself after a change to the renderer, the scene, the assets, or anything in the frame loop, and before you call the change done. It drives two `rv` runs, side A from a `/tmp` clone at the baseline revision and side B from this checkout, and judges five alternating pairs per scenario against `tools/perf/budgets.json`. `tools/perf/README.md`, "Real-GPU frame lane", has the commands. Before it starts:
+
+1. Check `ps` for other agents' heavy `node`, `vitest`, `vite` or `pnpm` processes and wait for a quiet machine.
+2. Start both runs with `rv up --slot <n> --path /kit`, run `rv doctor` on both, and leave both windows alone: a resized window changes the page size, and the lane refuses the campaign.
+3. Do not change display settings. The lane sets the game's own frame rate to 60, which a 120 Hz display draws on every second vsync.
+4. Afterwards `rv down` both runs and delete the `/tmp` clone.
+
+### Frame cost with measure.ts
+
+`tools/perf/measure.ts` measures uncapped frame cost on the `pack-riding-v1` window of the `?stress` race, which is useful while you work on a change but is not a gate. Read `tools/perf/README.md`. It launches headless Chrome by default, which is allowed for this bench because it measures uncapped frame cost, not how the game looks; pass `--browser helium` to run the same bench in a windowed Helium. To compare a change:
 
 1. Build and serve each side from its own checkout on its own port: an `rv up` slot works (`rv up --path "/?stress&ratio=2"` in the baseline checkout and again in the changed one), or follow the README's `vite build --sourcemap` and `vite preview --port <free port>`.
 2. Pin the pixel ratio with `?ratio=2`, so the governor's pacing does not hide headroom.

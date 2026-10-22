@@ -7,7 +7,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
-import { budgetProblems, budgetsFile } from "./budgets.ts";
+import { checkApproved, readBudgets } from "./approved.ts";
 import { buildSide } from "./build.ts";
 import { ConfigInvalid } from "./config-invalid.ts";
 import {
@@ -36,12 +36,14 @@ const DEFAULT_OUT = path.join(REPO_ROOT, "tools/perf/results");
 
 const USAGE = `Usage:
   node tools/perf/gate.ts [--baseline-ref <rev>] [--budgets <file>] [--lanes node,build] [--out <dir>]
+  node tools/perf/gate.ts --check [--budgets <file>]
   node tools/perf/gate.ts baseline [--baseline-ref <rev>] [--lanes node,build] [--out <dir>]
   node tools/perf/gate.ts --evaluate <samples.json> [--budgets <file>]
   node tools/perf/gate.ts --select-window [--out <dir>]`;
 
 type GateOptions =
   | { readonly kind: "select"; readonly out: string }
+  | { readonly kind: "check"; readonly budgets: string }
   | {
       readonly kind: "evaluate";
       readonly samples: string;
@@ -66,10 +68,11 @@ const readGateOptions = (args: readonly string[]) =>
     try: () =>
       parseArgs({
         allowPositionals: true,
-        args: [...args],
+        args: args[0] === "--" ? args.slice(1) : [...args],
         options: {
           "baseline-ref": { type: "string" },
           budgets: { default: DEFAULT_BUDGETS, type: "string" },
+          check: { default: false, type: "boolean" },
           evaluate: { type: "string" },
           lanes: { default: portableLanes.join(","), type: "string" },
           out: { default: DEFAULT_OUT, type: "string" },
@@ -91,6 +94,9 @@ const readGateOptions = (args: readonly string[]) =>
         }
         if (values["select-window"]) {
           return Effect.succeed({ kind: "select", out: values.out });
+        }
+        if (values.check) {
+          return Effect.succeed({ budgets: values.budgets, kind: "check" });
         }
         if (values.evaluate !== undefined) {
           return Effect.succeed({
@@ -114,37 +120,9 @@ const readGateOptions = (args: readonly string[]) =>
     )
   );
 
-const decodeBudgets = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(budgetsFile)
-);
-
 const decodeSamples = Schema.decodeUnknownEffect(
   Schema.fromJsonString(samplesRecord)
 );
-
-const readBudgets = Effect.fnUntraced(function* readBudgets(file: string) {
-  const fs = yield* FileSystem.FileSystem;
-  const text = yield* fs
-    .readFileString(file)
-    .pipe(
-      Effect.mapError(
-        (cause) => new ConfigInvalid({ cause, message: `Cannot read ${file}.` })
-      )
-    );
-  const budgets = yield* decodeBudgets(text).pipe(
-    Effect.mapError(
-      (cause) =>
-        new ConfigInvalid({ cause, message: `${file} is not a budgets file.` })
-    )
-  );
-  const problems = budgetProblems(budgets);
-  if (problems.length > 0) {
-    return yield* new ConfigInvalid({
-      message: `${file} is incomplete:\n${problems.join("\n")}`,
-    });
-  }
-  return { budgets, sha256: sha256Of(text) };
-});
 
 const say = (line: string) =>
   Effect.sync(() => {
@@ -297,6 +275,11 @@ const evaluateFile = Effect.fn("gate.evaluate")(function* evaluateFile(
 const run = (options: GateOptions) => {
   if (options.kind === "select") {
     return selectWindows(options.out);
+  }
+  if (options.kind === "check") {
+    return checkApproved(REPO_ROOT, options.budgets).pipe(
+      Effect.map((lines) => ({ code: 0, lines }))
+    );
   }
   return options.kind === "evaluate" ? evaluateFile(options) : measure(options);
 };

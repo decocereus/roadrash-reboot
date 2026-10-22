@@ -1,4 +1,5 @@
-import type { Budgets } from "../src/budgets.ts";
+import { requiredRows } from "../src/budgets.ts";
+import type { Budgets, Limit } from "../src/budgets.ts";
 import { glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
 import { evaluateBaseline } from "../src/evaluate.ts";
@@ -204,6 +205,20 @@ export const BIKE_BYTES = 122_108;
 export const steadyLanes = (slowdown: Slowdown): NodeLane[] =>
   scenarios.map((scenario) => syntheticLane(scenario, slowdown));
 
+const unusedGpuLimits = (): Limit[] =>
+  requiredRows(["gpu"], []).map(({ environment, kind, scenario }) => ({
+    baseline: 0,
+    derivation: "synthetic",
+    direction: kind.direction,
+    environment,
+    metric: kind.metric,
+    paired: kind.paired,
+    scenario,
+    source: "synthetic",
+    unit: kind.unit,
+    value: 0,
+  }));
+
 export const syntheticBudgets = (build: {
   readonly A: BuildRecord;
   readonly B: BuildRecord;
@@ -214,13 +229,12 @@ export const syntheticBudgets = (build: {
   });
   return {
     baseline: {
+      raw: [],
       revision: "synthetic",
-      samples: "samples.json",
-      samplesSha256: "0",
-      summary: "result.json",
+      summary: "summary.json",
       summarySha256: "0",
     },
-    limits: proposal.limits,
+    limits: [...proposal.limits, ...unusedGpuLimits()],
     nodeProfiles: proposal.nodeProfiles,
     version: 1,
   };

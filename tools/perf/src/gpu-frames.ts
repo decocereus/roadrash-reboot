@@ -1,6 +1,11 @@
 import * as Schema from "effect/Schema";
 
-import { judge } from "./budgets.ts";
+import {
+  GPU_ENVIRONMENT,
+  judge,
+  metricKinds,
+  requiredRows,
+} from "./budgets.ts";
 import type { Limit, MetricKind, Observation } from "./budgets.ts";
 import { median, quantile } from "./result.ts";
 import {
@@ -12,40 +17,13 @@ import {
 import type { Scenario } from "./scenarios.ts";
 
 export const GPU_PAIRS = 5;
-export const GPU_ENVIRONMENT = "gpu-helium-metal";
 export const FRAME_RATE = "60";
 
 const SLOT_MS = 1000 / 60;
 const MIN_FRAMES = 120;
 const LONG_TASK_MS = 50;
 
-interface GpuCap extends MetricKind {
-  readonly cap: number;
-}
-
-const gpuCap = (
-  metric: string,
-  unit: string,
-  cap: number,
-  paired: number | null
-): GpuCap => ({
-  cap,
-  direction: "max",
-  lane: "gpu",
-  metric,
-  paired,
-  perScenario: true,
-  unit,
-});
-
-const gpuCaps: readonly GpuCap[] = [
-  gpuCap("frame.interval.p50", "ms", 17.5, 1.1),
-  gpuCap("frame.interval.p95", "ms", 20, 1.15),
-  gpuCap("frame.interval.p99", "ms", 33.334, 1.2),
-  gpuCap("frame.missedFraction", "share", 0.01, null),
-  gpuCap("main.longTask.count", "tasks", 0, null),
-  gpuCap("main.longTask.blockingMs", "ms", 0, null),
-];
+const gpuKinds = metricKinds.filter((kind) => kind.lane === "gpu");
 
 const gpuFrame = Schema.Struct({
   calls: Schema.Array(Schema.Number),
@@ -260,7 +238,26 @@ const shares = {
   "frame.interval.p99": 0.99,
 } as const;
 
+const frameReaders = {
+  "render.calls.max": (frame: GpuFrame) => total(frame.calls),
+  "render.programs.max": (frame: GpuFrame) => frame.programs,
+  "render.textures.max": (frame: GpuFrame) => frame.textures,
+  "render.triangles.max": (frame: GpuFrame) => total(frame.triangles),
+};
+
+const peakOf = (
+  samples: readonly GpuSample[],
+  read: (frame: GpuFrame) => number
+): number =>
+  Math.max(...samples.flatMap((sample) => sample.capture.frames.map(read)));
+
+const isCount = (metric: string): metric is keyof typeof frameReaders =>
+  Object.hasOwn(frameReaders, metric);
+
 const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
+  if (isCount(metric)) {
+    return peakOf(samples, frameReaders[metric]);
+  }
   if (metric === "frame.missedFraction") {
     return missedFractionOf(samples);
   }
@@ -280,7 +277,7 @@ const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
 };
 
 const pairedOf = (
-  kind: GpuCap,
+  kind: MetricKind,
   a: readonly GpuSample[],
   b: readonly GpuSample[]
 ): number | null =>
@@ -303,41 +300,21 @@ const byPair = (
     .toSorted((left, right) => left.pair - right.pair);
 
 const countsOf = (samples: readonly GpuSample[]) => {
-  const frames = samples.flatMap((sample) => sample.capture.frames);
-  const peak = (read: (frame: GpuFrame) => number): number =>
-    Math.max(...frames.map(read));
-  const cpu = frames
-    .map((frame) => total(frame.cpu))
+  const cpu = samples
+    .flatMap((sample) => sample.capture.frames.map((frame) => total(frame.cpu)))
     .toSorted((left, right) => left - right);
   return {
-    calls: peak((frame) => total(frame.calls)),
+    calls: valueOf("render.calls.max", samples),
     cpuP50: quantile(cpu, 0.5),
     cpuP95: quantile(cpu, 0.95),
-    programs: peak((frame) => frame.programs),
-    textures: peak((frame) => frame.textures),
-    triangles: peak((frame) => total(frame.triangles)),
-    worstMs: peak((frame) => frame.interval),
+    programs: valueOf("render.programs.max", samples),
+    textures: valueOf("render.textures.max", samples),
+    triangles: valueOf("render.triangles.max", samples),
+    worstMs: peakOf(samples, (frame) => frame.interval),
   };
 };
 
-const capRows = scenarios.flatMap((scenario) =>
-  gpuCaps.map((kind) => ({
-    environment: GPU_ENVIRONMENT,
-    kind,
-    scenario: scenario.id,
-  }))
-);
-
-const capLimits: Limit[] = capRows.map(({ environment, kind, scenario }) => ({
-  baseline: kind.cap,
-  direction: kind.direction,
-  environment,
-  metric: kind.metric,
-  paired: kind.paired,
-  scenario,
-  unit: kind.unit,
-  value: kind.cap,
-}));
+const gpuRows = requiredRows(["gpu"], []);
 
 const viewportText = ({ viewport }: GpuSample["capture"]): string =>
   `${viewport.width}x${viewport.height}@${viewport.dpr}`;
@@ -369,7 +346,7 @@ const scenarioResult = (scenario: Scenario, mine: readonly GpuSample[]) => {
   if (failures.length > 0) {
     return { counts: null, failures, observations: [] };
   }
-  const observations = gpuCaps.map((kind): Observation => ({
+  const observations = gpuKinds.map((kind): Observation => ({
     environment: GPU_ENVIRONMENT,
     lane: "gpu",
     metric: kind.metric,
@@ -388,7 +365,10 @@ const scenarioResult = (scenario: Scenario, mine: readonly GpuSample[]) => {
 const peaksText = (peaks: ReturnType<typeof countsOf>): string =>
   `calls=${peaks.calls} triangles=${peaks.triangles} programs=${peaks.programs} textures=${peaks.textures} worst=${peaks.worstMs.toFixed(1)} ms frame cpu p50=${peaks.cpuP50.toFixed(2)} p95=${peaks.cpuP95.toFixed(2)} ms`;
 
-export const evaluateGpu = (samples: readonly GpuSample[]) => {
+export const evaluateGpu = (
+  samples: readonly GpuSample[],
+  limits: readonly Limit[]
+) => {
   const results = scenarios.map((scenario) => ({
     scenario: scenario.id,
     ...scenarioResult(
@@ -398,7 +378,7 @@ export const evaluateGpu = (samples: readonly GpuSample[]) => {
   }));
   const failures = results.flatMap((each) => each.failures);
   const observations = results.flatMap((each) => each.observations);
-  const verdicts = judge(capLimits, observations, capRows);
+  const verdicts = judge(limits, observations, gpuRows);
   const counts = results.map(({ counts: peaks, scenario }) => ({
     peaks,
     scenario,

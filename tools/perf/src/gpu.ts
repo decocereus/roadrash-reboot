@@ -8,11 +8,12 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
-import { ConfigInvalid } from "./config-invalid.ts";
+import { readBudgets } from "./approved.ts";
+import { GPU_ENVIRONMENT } from "./budgets.ts";
+import type { ConfigInvalid } from "./config-invalid.ts";
 import {
   evaluateGpu,
   FRAME_RATE,
-  GPU_ENVIRONMENT,
   GPU_PAIRS,
   pageCapture,
 } from "./gpu-frames.ts";
@@ -128,12 +129,6 @@ const decodeFacts = Schema.decodeUnknownEffect(
   Schema.fromJsonString(pageFacts)
 );
 
-const decodeRevision = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(
-    Schema.Struct({ baseline: Schema.Struct({ revision: Schema.String }) })
-  )
-);
-
 const PREPARE = `(async () => {
   const stored = JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}");
   localStorage.setItem("${SETTINGS_KEY}", JSON.stringify({ ...stored, frameRate: "${FRAME_RATE}" }));
@@ -237,34 +232,6 @@ const checkoutOf = (listed: string, run: string): string | null =>
     .find((line) => line.includes(` run ${run} `))
     ?.split(" from ")
     .at(-1) ?? null;
-
-const baselineRevision = Effect.fnUntraced(function* baselineRevision(
-  options: GpuOptions
-) {
-  if (options.ref !== undefined) {
-    return yield* revisionOf(REPO_ROOT, options.ref);
-  }
-  const fs = yield* FileSystem.FileSystem;
-  const text = yield* fs.readFileString(options.budgets).pipe(
-    Effect.mapError(
-      (cause) =>
-        new ConfigInvalid({
-          cause,
-          message: `Pass --baseline-ref, or approve ${options.budgets} first.`,
-        })
-    )
-  );
-  const budgets = yield* decodeRevision(text).pipe(
-    Effect.mapError(
-      (cause) =>
-        new ConfigInvalid({
-          cause,
-          message: `${options.budgets} names no baseline revision.`,
-        })
-    )
-  );
-  return yield* revisionOf(REPO_ROOT, budgets.baseline.revision);
-});
 
 const checkedSides = Effect.fnUntraced(function* checkedSides(
   options: GpuOptions,
@@ -407,7 +374,11 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
   const startedAt = yield* Clock.currentTimeMillis;
-  const revision = yield* baselineRevision(options);
+  const approved = yield* readBudgets(options.budgets);
+  const revision = yield* revisionOf(
+    REPO_ROOT,
+    options.ref ?? approved.budgets.baseline.revision
+  );
   const sides = yield* checkedSides(options, revision);
   const comparisonId = `gpu-${stampOf(startedAt)}-${revision.slice(0, 7)}-${sides.B.revision.slice(0, 7)}`;
   const dir = path.join(options.out, comparisonId);
@@ -470,7 +441,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     }
   }
   const after = yield* doctorAll(options, dir, "doctor-after");
-  const evaluation = evaluateGpu(samples);
+  const evaluation = evaluateGpu(samples, approved.budgets.limits);
   const files = yield* Effect.all(
     samples.map((sample) =>
       fs
@@ -487,6 +458,10 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     resultFile,
     JSON.stringify(
       {
+        budgets: {
+          file: path.relative(REPO_ROOT, options.budgets),
+          sha256: approved.sha256,
+        },
         comparisonId,
         counts: evaluation.counts,
         display: {
