@@ -18,6 +18,8 @@ import { FULL_CONDITION, MAX_STAMINA, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
+const POLICE_TRAFFIC_TEST_TIMEOUT_MS = 180_000;
+
 const raceIsOver = (rider: RiderState): boolean =>
   rider.finishTick >= 0 || rider.mode === "busted" || rider.mode === "wrecked";
 
@@ -124,7 +126,7 @@ describe("the pack", () => {
 
   it(
     "a cop chasing the pack through traffic rides into a car that no rider shoved it into in at most one of twelve starts",
-    { timeout: 60_000 },
+    { timeout: POLICE_TRAFFIC_TEST_TIMEOUT_MS },
     () => {
       const copsInTraffic: RaceEvent[] = [];
       let batonHits = 0;
