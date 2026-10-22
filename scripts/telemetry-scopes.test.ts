@@ -66,6 +66,8 @@ describe("Effect boundary scopes", () => {
     "apps/web/src/diagnostics/upload/worker.ts",
     "apps/web/src/diagnostics/upload/later.ts",
     "tools/verify/src/state.ts",
+    "packages/devtools/src/process.ts",
+    "packages/devtools/src/node/spawn.ts",
     "packages/career/src/save.ts",
     "packages/career/src/save-issues.ts",
     "apps/web/src/career/save-storage.ts",

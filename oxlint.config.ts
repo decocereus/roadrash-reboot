@@ -102,24 +102,6 @@ const effectFiles = [
   "apps/web/src/career/save-storage-error.ts",
 ];
 
-const orchestrationFiles = [
-  "tools/perf/*.ts",
-  "tools/perf/src/**/*.ts",
-  "tools/verify/*.ts",
-  "tools/verify/src/**/*.ts",
-  "packages/devtools/src/*.ts",
-  "apps/web/src/server/**/*.ts",
-  "apps/web/src/routes/api/telemetry.ts",
-  "packages/telemetry/src/**/*.ts",
-  "apps/web/src/diagnostics/uploader.ts",
-  "apps/web/src/diagnostics/uploader-runtime.ts",
-  "apps/web/src/diagnostics/upload/**/*.ts",
-  ...careerCodecFiles,
-  "apps/web/src/career/save.ts",
-  "apps/web/src/career/save-storage.ts",
-  "apps/web/src/career/save-storage-error.ts",
-];
-
 const libraryFiles = [
   "tools/perf/src/**/*.ts",
   "tools/verify/src/**/*.ts",
@@ -165,6 +147,7 @@ export default defineConfig({
         "rushline/no-manual-effect-error-tag": "error",
         "rushline/no-manual-tag-comparison": "error",
         "rushline/no-manual-tagged-construction": "error",
+        "rushline/no-node-io": "error",
         "rushline/no-promise": "error",
         "rushline/no-swallowed-failure": "error",
         "rushline/prefer-catch-tags": "error",
@@ -172,10 +155,6 @@ export default defineConfig({
         "rushline/prefer-effect-match": "error",
         "rushline/require-wrapped-cause": "error",
       },
-    },
-    {
-      files: orchestrationFiles,
-      rules: { "rushline/no-node-io": "error" },
     },
     {
       files: libraryFiles,
