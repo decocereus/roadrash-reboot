@@ -1,7 +1,6 @@
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
-import { pilotInput } from "@racer/sim/pilot";
-import { defaultSetup, distanceLeft, stepRace } from "@racer/sim/race";
+import { defaultSetup, distanceLeft } from "@racer/sim/race";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RaceSetup } from "@racer/sim/state";
 import { roadIds, trackFor } from "@racer/track/roads";
@@ -231,7 +230,7 @@ export const createGame = async (
     } else {
       loadRace(next.setup, "countdown");
     }
-    recorder.race("start", stage.race.tick);
+    recorder.race("start", stage.race.view.tick);
   };
 
   const halted = (): boolean =>
@@ -245,7 +244,11 @@ export const createGame = async (
     if (code === "KeyM") {
       toggleMute();
     }
-    if (code === MARKER_KEY && live() && recorder.marker(stage.race.tick)) {
+    if (
+      code === MARKER_KEY &&
+      live() &&
+      recorder.marker(stage.race.view.tick)
+    ) {
       say("marked");
     }
     if (code === "KeyR" && session.plan?.mode === "quick" && live()) {
@@ -259,13 +262,13 @@ export const createGame = async (
     if (!(session.plan && session.log) || session.settled) {
       return;
     }
-    recordTick(session.log, stage.race, session.plan.setup);
+    recordTick(session.log, stage.race.view, session.plan.setup);
     if (!session.log.outcome) {
       return;
     }
     session.settled = session.log.outcome;
     session.phase = "settled";
-    recorder.race("end", stage.race.tick);
+    recorder.race("end", stage.race.view.tick);
     session.overLeft = consequenceSeconds(session.settled);
     events.onSettle(session.plan, session.settled);
     if (session.overLeft <= 0) {
@@ -300,15 +303,15 @@ export const createGame = async (
       if (index === 0 && session.phase !== "attract" && !autopilot) {
         controls.read(TICK_SECONDS, input);
       } else {
-        pilotInput(stage.race, stage.track, index, input);
+        stage.race.pilot(index, input);
       }
     }
-    devRide?.steer(stage.race, stage.track, cast.inputs[0]);
+    devRide?.steer(stage.race.view, stage.track, cast.inputs[0]);
   };
 
   const tick = () => {
     captureAll("before");
-    const { cars } = stage.race;
+    const { cars } = stage.race.view;
     for (let index = 0; index < cars.length; index += 1) {
       stage.previousCars[index] = cars[index]?.s ?? 0;
     }
@@ -321,7 +324,7 @@ export const createGame = async (
       session.countdown -= TICK_SECONDS;
       if (session.countdown <= 0 && session.plan) {
         session.phase = "racing";
-        recorder.race("green", stage.race.tick);
+        recorder.race("green", stage.race.view.tick);
         events.onStart(session.plan);
       }
       holdStill();
@@ -332,14 +335,17 @@ export const createGame = async (
       loadAttract(true);
       return;
     }
-    stepRace(stage.race, stage.track, cast.inputs);
-    for (const event of stage.race.events) {
+    stage.race.step(cast.inputs);
+    for (const event of stage.race.view.events) {
       touchDown(event);
     }
     if (session.phase !== "attract") {
       react();
     }
-    if (session.phase === "racing" && devRide?.holds(stage.race) === true) {
+    if (
+      session.phase === "racing" &&
+      devRide?.holds(stage.race.view) === true
+    ) {
       session.frozen = true;
     }
     record();
@@ -378,7 +384,7 @@ export const createGame = async (
     }
     cast.clock += seconds;
     let index = -1;
-    for (const rider of stage.race.riders) {
+    for (const rider of stage.race.view.riders) {
       index += 1;
       const view = cast.views[index];
       if (!view) {
@@ -401,7 +407,7 @@ export const createGame = async (
 
     chase.update(stage.track, cast.subject, seconds);
     frame.profiler?.lap("camera");
-    stage.world.showHazards(stage.race.hazards, cast.subject.s);
+    stage.world.showHazards(stage.race.view.hazards, cast.subject.s);
     stage.world.follow(chase.camera, cast.subject.s);
     frame.profiler?.lap("world");
     present();
@@ -432,7 +438,7 @@ export const createGame = async (
         phase: session.phase,
         quality: { ...quality.qualityAfter },
         race: recorder.raceId(),
-        tick: stage.race.tick,
+        tick: stage.race.view.tick,
       };
     },
   });
@@ -538,11 +544,11 @@ export const createGame = async (
     prepare,
     quit() {
       if (session.plan && !session.settled) {
-        recorder.race("quit", stage.race.tick);
+        recorder.race("quit", stage.race.view.tick);
       }
       const outcome =
         session.plan && session.log
-          ? outcomeOf(stage.race, session.plan.setup, session.log)
+          ? outcomeOf(stage.race.view, session.plan.setup, session.log)
           : null;
       session.plan = null;
       session.log = null;

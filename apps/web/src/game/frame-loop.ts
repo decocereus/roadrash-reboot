@@ -1,5 +1,5 @@
+import type { RiderView } from "@racer/sim/race-view";
 import { clamp, TICK_SECONDS } from "@racer/sim/state";
-import type { RiderState } from "@racer/sim/state";
 import type { FrameRate } from "@racer/telemetry/limits";
 import type * as THREE from "three";
 
@@ -134,7 +134,7 @@ interface LoopParts {
   readonly govern: (seconds: number, busyMs: number) => void;
   readonly halted: () => boolean;
   readonly noteRefresh: (now: number) => void;
-  readonly player: () => RiderState;
+  readonly player: () => RiderView;
   readonly quality: Quality;
   readonly recorder: Recorder;
   readonly renderer: THREE.WebGLRenderer;
@@ -263,7 +263,7 @@ export const installFrameLoop = ({
       frameEnd.race = recorder.raceId();
       frameEnd.rung = quality.rung;
       frameEnd.sizeEpoch = quality.sizeEpoch;
-      frameEnd.tick = stage.race.tick;
+      frameEnd.tick = stage.race.view.tick;
       frameEnd.ticks = ticks;
       frame.profiler.finish(frameEnd);
     }

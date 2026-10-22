@@ -2,8 +2,9 @@ import { rivalLines } from "@racer/career/lines";
 import type { RaceOutcome } from "@racer/career/outcome";
 import { chaserDistance } from "@racer/sim/police";
 import { distanceLeft, standings } from "@racer/sim/race";
+import type { RiderView } from "@racer/sim/race-view";
 import { clamp, FULL_CONDITION, MAX_STAMINA } from "@racer/sim/state";
-import type { HazardEffect, RaceEvent, RiderState } from "@racer/sim/state";
+import type { HazardEffect, RaceEvent } from "@racer/sim/state";
 import { weapons } from "@racer/sim/weapons";
 import * as THREE from "three";
 
@@ -27,13 +28,13 @@ const HAZARD_JOLT = {
 } as const satisfies Record<HazardEffect, number>;
 const BUMP_PER_IMPACT = 1 / 9;
 
-const weaponName = (rider: RiderState): string =>
+const weaponName = (rider: RiderView): string =>
   rider.weapon === "none" ? "" : weapons[rider.weapon].name;
 
-const weaponCapacity = (rider: RiderState): number =>
+const weaponCapacity = (rider: RiderView): number =>
   rider.weapon === "none" ? 0 : weapons[rider.weapon].hits;
 
-export const out = (rider: RiderState): boolean =>
+export const out = (rider: RiderView): boolean =>
   rider.mode === "busted" || rider.mode === "wrecked";
 
 export interface Feedback {
@@ -76,7 +77,7 @@ interface FeedbackParts {
   readonly chase: ChaseCamera;
   readonly events: GameEvents;
   readonly feedback: Feedback;
-  readonly player: () => RiderState;
+  readonly player: () => RiderView;
   readonly recorder: Recorder;
   readonly session: FeedbackSession;
   readonly sound: Sound;
@@ -126,7 +127,7 @@ export const bindFeedback = ({
   const reactToHit = (attacker: number, target: number, armed: boolean) => {
     if (attacker === 0) {
       strikeSound(armed);
-      const victim = stage.race.riders[target];
+      const victim = stage.race.view.riders[target];
       if (victim && victim.stamina <= 0) {
         say("knockdown");
       }
@@ -148,7 +149,7 @@ export const bindFeedback = ({
 
   const reactToOwn = (event: RaceEvent) => {
     if (event.kind === "crash") {
-      recorder.race("crash", stage.race.tick);
+      recorder.race("crash", stage.race.view.tick);
       chase.jolt(1);
       sound.crash();
       say("wipeout");
@@ -196,7 +197,7 @@ export const bindFeedback = ({
       sound.siren();
       say("police");
     } else if (event.kind === "crash") {
-      const fallen = stage.race.riders[event.rider];
+      const fallen = stage.race.view.riders[event.rider];
       if (
         event.cause === "combat" &&
         fallen &&
@@ -211,7 +212,7 @@ export const bindFeedback = ({
   };
 
   const react = () => {
-    for (const event of stage.race.events) {
+    for (const event of stage.race.view.events) {
       if (event.kind === "hit") {
         reactToHit(event.rider, event.target, event.weapon !== "none");
       } else if (event.rider === 0) {
@@ -244,10 +245,10 @@ export const bindFeedback = ({
     feedback.tag.style.transform = `translate3d(${(across * canvas.clientWidth).toFixed(1)}px, ${(down * canvas.clientHeight).toFixed(1)}px, 0) translate(-50%, -100%)`;
   };
 
-  const nearestRacer = (me: RiderState): number => {
+  const nearestRacer = (me: RiderView): number => {
     let best = -1;
     let bestGap = TAG_RANGE;
-    const { riders } = stage.race;
+    const { riders } = stage.race.view;
     for (let index = 1; index < riders.length; index += 1) {
       const other = riders[index];
       if (!other || other.profile.role !== "racer" || out(other)) {
@@ -264,15 +265,17 @@ export const bindFeedback = ({
 
   const report = () => {
     const me = player();
-    const order = standings(stage.race);
+    const order = standings(stage.race.view);
     feedback.tagRider =
       feedback.speechLeft > 0 ? feedback.speechRider : nearestRacer(me);
     const rival =
-      feedback.tagRider >= 0 ? stage.race.riders[feedback.tagRider] : undefined;
+      feedback.tagRider >= 0
+        ? stage.race.view.riders[feedback.tagRider]
+        : undefined;
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
-      copDistance: chaserDistance(stage.race, 0),
+      copDistance: chaserDistance(stage.race.view, 0),
       countdown: Math.max(
         0,
         Math.ceil(session.holdLeft > 0 ? session.holdLeft : session.countdown)

@@ -15,6 +15,7 @@ import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
 import { pilotHistoryOf } from "./pilot-history.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
+import type { RaceView, RiderView } from "./race-view.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
 import { FULL_CONDITION, MAX_STAMINA } from "./state.ts";
@@ -331,17 +332,17 @@ export const createRace = (setup: RaceSetup): RaceState => {
   return state;
 };
 
-export const distanceLeft = (track: Track, rider: RiderState): number =>
+export const distanceLeft = (track: Track, rider: RiderView): number =>
   Math.max(0, track.length - rider.bodyS);
 
-const standingGroup = (rider: RiderState): number => {
+const standingGroup = (rider: RiderView): number => {
   if (rider.finishTick >= 0) {
     return 0;
   }
   return rider.mode === "busted" || rider.mode === "wrecked" ? 2 : 1;
 };
 
-export const standings = (state: RaceState): number[] =>
+export const standings = (state: RaceView): number[] =>
   state.riders
     .map((rider, index) => ({ index, rider }))
     .filter((entry) => entry.rider.profile.role === "racer")

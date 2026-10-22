@@ -1,13 +1,9 @@
 import { officerFor } from "@racer/sim/cast";
 import type { OfficerId, RivalId } from "@racer/sim/cast";
 import { distanceLeft, standings } from "@racer/sim/race";
+import type { RaceView, RiderView } from "@racer/sim/race-view";
 import { PLAYER_RIDER } from "@racer/sim/state";
-import type {
-  RaceEvent,
-  RaceState,
-  RiderState,
-  WeaponKind,
-} from "@racer/sim/state";
+import type { RaceEvent, WeaponKind } from "@racer/sim/state";
 
 import type { CareerRaceSetup } from "./field.ts";
 import type { ActiveRace, RacerId } from "./state.ts";
@@ -120,7 +116,7 @@ const kmOf = (metres: number): number => Math.max(0, metres) / METRES_PER_KM;
 
 type Bust = RaceEvent & { readonly kind: "busted" };
 
-const bustOf = (state: RaceState, riderIndex: number): Bust | undefined => {
+const bustOf = (state: RaceView, riderIndex: number): Bust | undefined => {
   for (const event of state.events) {
     if (event.kind === "busted" && event.rider === riderIndex) {
       return event;
@@ -129,12 +125,12 @@ const bustOf = (state: RaceState, riderIndex: number): Bust | undefined => {
   return undefined;
 };
 
-const bodyOf = (state: RaceState, riderIndex: number): number =>
+const bodyOf = (state: RaceView, riderIndex: number): number =>
   bustOf(state, riderIndex)?.s ?? state.riders[riderIndex]?.bodyS ?? 0;
 
 const noteCrash = (
   log: RaceLog,
-  state: RaceState,
+  state: RaceView,
   event: RaceEvent & { readonly kind: "crash" }
 ): void => {
   if (event.cause === "rider") {
@@ -155,7 +151,7 @@ const noteCrash = (
   }
 };
 
-const noteEvent = (log: RaceLog, state: RaceState, event: RaceEvent): void => {
+const noteEvent = (log: RaceLog, state: RaceView, event: RaceEvent): void => {
   if (event.kind === "crash") {
     noteCrash(log, state, event);
     return;
@@ -205,7 +201,7 @@ const terminalOf = (events: readonly RaceEvent[]): RaceResult | null => {
   return null;
 };
 
-const fateOf = (rider: RiderState): Fate => {
+const fateOf = (rider: RiderView): Fate => {
   if (rider.finishTick >= 0) {
     return "finished";
   }
@@ -214,10 +210,10 @@ const fateOf = (rider: RiderState): Fate => {
     : "racing";
 };
 
-const isOut = (rider: RiderState | undefined): boolean =>
+const isOut = (rider: RiderView | undefined): boolean =>
   rider?.mode === "busted" || rider?.mode === "wrecked";
 
-const orderOf = (state: RaceState, result: RaceResult): number[] => {
+const orderOf = (state: RaceView, result: RaceResult): number[] => {
   const order = standings(state);
   const player = state.riders[PLAYER_RIDER];
   if (result !== "quit" || !player) {
@@ -232,12 +228,12 @@ const orderOf = (state: RaceState, result: RaceResult): number[] => {
   return [...others.slice(0, slot), PLAYER_RIDER, ...others.slice(slot)];
 };
 
-const beatByAWheel = (player: RiderState, rival: RiderState): boolean =>
+const beatByAWheel = (player: RiderView, rival: RiderView): boolean =>
   player.finishTick >= 0 &&
   rival.finishTick >= 0 &&
   player.finishTick - rival.finishTick <= WHEEL_TICKS;
 
-const lostByAWheel = (player: RiderState, rival: RiderState): boolean => {
+const lostByAWheel = (player: RiderView, rival: RiderView): boolean => {
   if (player.finishTick < 0) {
     return false;
   }
@@ -247,7 +243,7 @@ const lostByAWheel = (player: RiderState, rival: RiderState): boolean => {
   return rival.mode === "riding" && player.s - rival.s <= WHEEL_METRES;
 };
 
-const arrestOf = (state: RaceState, setup: CareerRaceSetup): Arrest | null => {
+const arrestOf = (state: RaceView, setup: CareerRaceSetup): Arrest | null => {
   const bust = bustOf(state, PLAYER_RIDER);
   return bust
     ? {
@@ -262,7 +258,7 @@ const arrestOf = (state: RaceState, setup: CareerRaceSetup): Arrest | null => {
 
 const classify = (
   log: RaceLog,
-  state: RaceState,
+  state: RaceView,
   setup: CareerRaceSetup,
   result: RaceResult
 ): RaceOutcome => {
@@ -324,7 +320,7 @@ const classify = (
 
 export const recordTick = (
   log: RaceLog,
-  state: RaceState,
+  state: RaceView,
   setup: CareerRaceSetup
 ): void => {
   if (log.outcome) {
@@ -340,7 +336,7 @@ export const recordTick = (
 };
 
 export const outcomeOf = (
-  state: RaceState,
+  state: RaceView,
   setup: CareerRaceSetup,
   log: RaceLog
 ): RaceOutcome => log.outcome ?? classify(log, state, setup, "quit");

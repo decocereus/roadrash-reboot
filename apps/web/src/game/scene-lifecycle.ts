@@ -1,5 +1,8 @@
-import { createRace, defaultSetup } from "@racer/sim/race";
-import type { RaceSetup, RaceState, RiderState } from "@racer/sim/state";
+import { defaultSetup } from "@racer/sim/race";
+import { createRaceRun } from "@racer/sim/race-run";
+import type { RaceRun } from "@racer/sim/race-run";
+import type { RiderView } from "@racer/sim/race-view";
+import type { RaceSetup } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 import type * as THREE from "three";
 
@@ -58,7 +61,7 @@ const dropGeometry = (root: THREE.Object3D): void => {
 export interface Stage {
   track: Track;
   world: World;
-  race: RaceState;
+  race: RaceRun;
   fleet: Fleet;
   previousCars: Float64Array;
   loads: number;
@@ -73,13 +76,13 @@ export const createStage = (
   seed: number
 ): Stage => {
   const world = createWorld(track);
-  const race = createRace(defaultSetup(track, seed));
+  const race = createRaceRun(defaultSetup(track, seed));
   return {
     alive: true,
     compiles: new Set<Compile>(),
-    fleet: createFleet(assets, world.shading, race.cars),
+    fleet: createFleet(assets, world.shading, race.view.cars),
     loads: 0,
-    previousCars: new Float64Array(race.cars.length),
+    previousCars: new Float64Array(race.view.cars.length),
     race,
     track,
     warming: false,
@@ -110,8 +113,8 @@ export const bindStage = ({
 }: StageParts) => {
   const { compiles } = stage;
 
-  const player = (): RiderState => {
-    const [rider] = stage.race.riders;
+  const player = (): RiderView => {
+    const [rider] = stage.race.view.riders;
     if (!rider) {
       throw new Error("The race has no rider.");
     }
@@ -247,14 +250,15 @@ export const bindStage = ({
     const previous = stage.world;
     takeTrack(setup.track);
     const replaced = stage.world === previous ? null : previous;
-    stage.race = createRace(setup);
+    stage.race = createRaceRun(setup);
     if (forRace) {
       devRide?.place(stage.race);
     }
-    stage.fleet = createFleet(assets, stage.world.shading, stage.race.cars);
+    const { cars } = stage.race.view;
+    stage.fleet = createFleet(assets, stage.world.shading, cars);
     stage.world.scene.add(stage.fleet.group);
-    stage.previousCars = new Float64Array(stage.race.cars.length);
-    for (const [index, car] of stage.race.cars.entries()) {
+    stage.previousCars = new Float64Array(cars.length);
+    for (const [index, car] of cars.entries()) {
       stage.previousCars[index] = car.s;
     }
     buildViews();
