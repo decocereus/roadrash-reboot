@@ -111,12 +111,16 @@ const sampleOf = (
 });
 
 const campaign = (
-  playbackOf: (scenario: Scenario, side: GpuSample["side"]) => Playback
+  playbackOf: (
+    scenario: Scenario,
+    side: GpuSample["side"],
+    pair: number
+  ) => Playback
 ): GpuSample[] =>
   scenarios.flatMap((scenario) =>
     Array.from({ length: GPU_PAIRS }, (_, pair) =>
       (["A", "B"] as const).map((side) =>
-        sampleOf(scenario, side, pair, playbackOf(scenario, side))
+        sampleOf(scenario, side, pair, playbackOf(scenario, side, pair))
       )
     ).flat()
   );
@@ -141,7 +145,7 @@ describe("gpu frame lane", () => {
         line.includes("pack-riding-v1 frame.interval.p95")
       )
     ).toBe(
-      "ok   gpu pack-riding-v1 frame.interval.p95 [gpu-helium-metal] observed=16.700 ms limit <= 20 ms A/B=1 (<= 1.15) A=16.700"
+      "ok   gpu pack-riding-v1 frame.interval.p95 [gpu-helium-metal] observed=16.700 ms limit <= 20 ms A/B=1 (<= 1.15) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)"
     );
   });
 
@@ -220,6 +224,24 @@ describe("gpu frame lane", () => {
         line.includes("pack-riding-v1 frame.interval.p95")
       )
     ).toContain("A/B=2 (<= 1.15)");
+  });
+
+  it("fails one bad B window that four steady windows would hide", () => {
+    const stalled: Playback = {
+      ...steady,
+      interval: (index) => (index >= 200 && index < 220 ? 33.4 : 16.7),
+    };
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) =>
+        isPack(scenario) && side === "B" && pair === 0 ? stalled : steady
+      ),
+      limits
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      "FAIL gpu pack-riding-v1 frame.interval.p99 [gpu-helium-metal] observed=33.400 ms limit <= 33.334 ms A/B=1 (<= 1.2) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+      "FAIL gpu pack-riding-v1 frame.missedFraction [gpu-helium-metal] observed=0.032206 share limit <= 0.010000 share A=0.0000 (worst of 5 windows; pooled B=0.0066116 A=0.0000)",
+    ]);
+    expect(evaluation.ok).toBeFalsy();
   });
 
   it("fails a campaign whose windows differ in size", () => {

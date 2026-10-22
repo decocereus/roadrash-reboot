@@ -238,6 +238,13 @@ const shares = {
   "frame.interval.p99": 0.99,
 } as const;
 
+const judgedPerWindow: ReadonlySet<string> = new Set([
+  "frame.interval.p50",
+  "frame.interval.p95",
+  "frame.interval.p99",
+  "frame.missedFraction",
+]);
+
 const frameReaders = {
   "render.calls.max": (frame: GpuFrame) => total(frame.calls),
   "render.programs.max": (frame: GpuFrame) => frame.programs,
@@ -290,6 +297,39 @@ const pairedOf = (
             valueOf(kind.metric, a.slice(index, index + 1))
         )
       );
+
+const observationOf = (
+  scenario: Scenario,
+  kind: MetricKind,
+  a: readonly GpuSample[],
+  b: readonly GpuSample[]
+): Observation => {
+  const runs = {
+    a: a.map((each) => valueOf(kind.metric, [each])),
+    b: b.map((each) => valueOf(kind.metric, [each])),
+  };
+  const pooled = { a: valueOf(kind.metric, a), b: valueOf(kind.metric, b) };
+  const observed = {
+    environment: GPU_ENVIRONMENT,
+    lane: "gpu",
+    metric: kind.metric,
+    paired: pairedOf(kind, a, b),
+    runs,
+    scenario: scenario.id,
+  } as const;
+  if (!judgedPerWindow.has(kind.metric)) {
+    return {
+      ...observed,
+      note: `A=${pooled.a.toPrecision(5)}`,
+      value: pooled.b,
+    };
+  }
+  return {
+    ...observed,
+    note: `A=${Math.max(...runs.a).toPrecision(5)} (worst of ${b.length} windows; pooled B=${pooled.b.toPrecision(5)} A=${pooled.a.toPrecision(5)})`,
+    value: Math.max(...runs.b),
+  };
+};
 
 const byPair = (
   samples: readonly GpuSample[],
@@ -346,19 +386,9 @@ const scenarioResult = (scenario: Scenario, mine: readonly GpuSample[]) => {
   if (failures.length > 0) {
     return { counts: null, failures, observations: [] };
   }
-  const observations = gpuKinds.map((kind): Observation => ({
-    environment: GPU_ENVIRONMENT,
-    lane: "gpu",
-    metric: kind.metric,
-    note: `A=${valueOf(kind.metric, a).toPrecision(5)}`,
-    paired: pairedOf(kind, a, b),
-    runs: {
-      a: a.map((each) => valueOf(kind.metric, [each])),
-      b: b.map((each) => valueOf(kind.metric, [each])),
-    },
-    scenario: scenario.id,
-    value: valueOf(kind.metric, b),
-  }));
+  const observations = gpuKinds.map((kind) =>
+    observationOf(scenario, kind, a, b)
+  );
   return { counts: { A: countsOf(a), B: countsOf(b) }, failures, observations };
 };
 

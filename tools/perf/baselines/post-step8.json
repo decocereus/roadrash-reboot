@@ -303,7 +303,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
-      "value": 17
+      "value": 17.5
     },
     {
       "environment": "gpu-helium-metal",
@@ -311,7 +311,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
-      "value": 16.899999618530273
+      "value": 17
     },
     {
       "environment": "gpu-helium-metal",
@@ -319,7 +319,7 @@
       "scenario": "reference-v1",
       "side": "B",
       "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
-      "value": 18.100000381469727
+      "value": 18.200000762939453
     },
     {
       "environment": "gpu-helium-metal",
@@ -327,7 +327,7 @@
       "scenario": "pack-riding-v1",
       "side": "B",
       "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
-      "value": 18
+      "value": 18.100000381469727
     },
     {
       "environment": "gpu-helium-metal",

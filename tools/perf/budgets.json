@@ -20,7 +20,7 @@
     ],
     "revision": "fd677a71c74167dc049a2bcf232f26f8f9abda86",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "2eaefc5697c5de7ba91be85ab0bf1d8d7296f67a10c22e78d1940ad451dbafe7"
+    "summarySha256": "3f09f19fb8b103695ecde71bb740005be8caac9952d95ab86b91ca87e22bc4d2"
   },
   "limits": [
     {
@@ -276,7 +276,7 @@
       "value": 17.5
     },
     {
-      "baseline": 16.899999618530273,
+      "baseline": 17,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
@@ -288,7 +288,7 @@
       "value": 20
     },
     {
-      "baseline": 17,
+      "baseline": 17.5,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
@@ -300,7 +300,7 @@
       "value": 20
     },
     {
-      "baseline": 18,
+      "baseline": 18.100000381469727,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
@@ -312,7 +312,7 @@
       "value": 33.334
     },
     {
-      "baseline": 18.100000381469727,
+      "baseline": 18.200000762939453,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
