@@ -72,6 +72,43 @@ On ANGLE over Metal the timer queries answer, but the per-pass GPU times they gi
 
 Headless Chrome is allowed here because the bench measures uncapped frame cost. Verifying how the game looks and plays uses a windowed Helium; see `.claude/skills/verify-rushline/SKILL.md`.
 
+## Real-GPU frame lane
+
+`pnpm perf:gpu` measures frame pacing the way a player sees it: in two windowed Helium runs that `rv` owns, at normal vsync, on this Mac's GPU. CI does not run it. Side A is a `/tmp` clone at the baseline revision, never a worktree. Side B is this checkout.
+
+```sh
+git clone --no-hardlinks . /tmp/rushline-perf-gpu-a
+git -C /tmp/rushline-perf-gpu-a checkout --detach <baseline revision>
+(cd /tmp/rushline-perf-gpu-a && pnpm install --offline --frozen-lockfile)
+(cd /tmp/rushline-perf-gpu-a && node tools/verify/rushline.ts up --slot 0 --path /kit)
+node tools/verify/rushline.ts up --slot 1 --path /kit
+pnpm perf:gpu --a <A run> --b <B run> --baseline-ref <baseline revision>
+node tools/verify/rushline.ts down --run <A run>
+node tools/verify/rushline.ts down --run <B run>
+rm -rf /tmp/rushline-perf-gpu-a
+```
+
+Without `--baseline-ref`, A must serve the revision named in `tools/perf/budgets.json`. The lane refuses runs that serve another revision or another checkout. It also requires every `rv doctor` check except console errors, because `/kit` logs a hydration error on load (a `<div>` inside a `<p>`). Instead, the lane counts console errors during each race and fails on any.
+
+For each side, the lane:
+
+1. Sets the game's own frame-rate setting to 60 in `localStorage` and measures the page's `requestAnimationFrame` rate. On a 120 Hz display the game then draws every second vsync. The lane never changes display settings.
+2. Warms each scenario once, to tick 120.
+3. Runs five pairs per scenario, alternating which side goes first. Only the measured side renders; the other waits on `/kit`. Each sample opens a fresh race at `?stress&rung=0` or `?stress=reference&rung=0` (pixel ratio 2, governor off, pacer on), installs a buffered long-task observer before the window starts, waits for the window's last tick, and reads the benchmark rows, the frame records and the long tasks.
+
+A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, rung, pixel ratio or size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error.
+
+| Metric | Cap | Paired B/A |
+| --- | --- | --- |
+| `frame.interval.p50` / `p95` / `p99` | 17.5 / 20 / 33.334 ms | 1.10 / 1.15 / 1.20 |
+| `frame.missedFraction` | 0.01 | none |
+| `main.longTask.count` | 0 | none |
+| `main.longTask.blockingMs` | 0 ms | none |
+
+The interval percentiles and the missed fraction pool every frame of B's five windows, and the long-task values sum them. The paired ratio is the median of the five per-pair ratios. A missed slot is `max(0, round(interval / 16.667 ms) - 1)`, and the missed fraction is missed slots over frames plus missed slots. A long task counts when it overlaps the window. Its blocking time is the part after its first 50 ms, clipped to the window. The lane also prints each side's peak draw calls, triangles, programs and textures, as information.
+
+Evidence goes to `tools/perf/results/gpu-<time>-<A>-<B>/`: every raw page capture, `samples.json`, both doctor outputs before and after, and `result.json` with the display facts, sides, order, observations and file hashes.
+
 ## Play-test recordings
 
 A play test on another machine, such as the MacBook Air reaching this Mac through a tunnel, records into the same build it plays. The play server is the development-mode build served by `vite preview`:

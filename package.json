@@ -20,6 +20,7 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
     "lint:rules": "vitest run --config tools/oxlint/vitest.config.ts && vitest run scripts",
+    "perf:gpu": "node tools/perf/gpu.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
     "verify": "node scripts/verify.ts"

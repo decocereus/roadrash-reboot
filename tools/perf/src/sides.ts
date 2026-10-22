@@ -109,6 +109,8 @@ const describe = Effect.fnUntraced(function* describe(
 
 export const currentSide = (root: string) => describe("B", root);
 
+export const checkoutAt = (root: string) => describe("A", root);
+
 const harnessDigest = Effect.fnUntraced(function* harnessDigest(root: string) {
   const fs = yield* FileSystem.FileSystem;
   const sources = yield* fs.readDirectory(path.join(root, HARNESS_DIRECTORY));

@@ -5,7 +5,7 @@ export class MeasurementFailed extends TaggedErrorClass<MeasurementFailed>()(
   "MeasurementFailed",
   {
     cause: Schema.optionalKey(Schema.Defect()),
-    lane: Schema.Literals(["node", "build"]),
+    lane: Schema.Literals(["node", "build", "gpu"]),
     message: Schema.String,
   }
 ) {}
