@@ -6,7 +6,7 @@
 
 | Command | What it checks | Where it runs |
 | --- | --- | --- |
-| `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI check job |
+| `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI static job |
 | `pnpm perf` | The Node lane (throughput, tick p95 and p99, allocated bytes per tick) and the build lane (route, game, Worker and client bytes, and the six GLBs), side A against side B in one run. | `pnpm verify` and the CI `perf` job |
 | `pnpm perf:gpu` | Frame pacing and render counts (draw calls, triangles, shader programs and textures) in two windowed Helium runs on this Mac's GPU. | Locally, by hand. CI never runs it. |
 
@@ -42,11 +42,11 @@ Nothing rewrites the budgets. To measure a new baseline, run `node tools/perf/ga
 
 ### `pnpm perf`
 
-Side A is a `/tmp` clone of the revision that `budgets.json` names, installed offline, with the current harness copied over it. `--baseline-ref <rev>` picks another revision. Side B is this checkout. The clone is deleted when the run ends. For each scenario, the Node lane runs one validation pass per side, five timing pairs in alternating order with six calibration blocks around them, and three allocation pairs, each in a fresh child process. The build lane runs a fresh production build of each side. A route's bytes are the root's and the route's Start preloads and every chunk they import statically, with their CSS and assets, plus every stylesheet. The Worker's bytes are every server chunk the entry reaches through static or dynamic imports, each file once, because the entry loads the router, the Start setup and every route on demand. A manifest edge to a chunk that does not exist fails the lane.
+Side A is a `/tmp` clone of the revision that `budgets.json` names, installed with `pnpm install --prefer-offline --frozen-lockfile`, with the current harness copied over it. It installs from the local store and fetches only what the store and metadata cache lack: when side B's lockfile differs from side A's, pnpm's supply-chain check has to verify A's lockfile, and that needs registry metadata that a fully offline install cannot fetch. `--baseline-ref <rev>` picks another revision. Side B is this checkout. The clone is deleted when the run ends. For each scenario, the Node lane runs one validation pass per side, five timing pairs in alternating order with six calibration blocks around them, and three allocation pairs, each in a fresh child process. The build lane runs a fresh production build of each side. A route's bytes are the root's and the route's Start preloads and every chunk they import statically, with their CSS and assets, plus every stylesheet. The Worker's bytes are every server chunk the entry reaches through static or dynamic imports, each file once, because the entry loads the router, the Start setup and every route on demand. A manifest edge to a chunk that does not exist fails the lane.
 
 Exit 0 means every required metric passed. Exit 1 is a budget, workload, measurement or evidence failure, and exit 2 is a bad flag, budgets file or baseline ref. Evidence goes to `results/<comparison id>/`. `--lanes node` or `--lanes build` runs part of the gate, prints `INCOMPLETE` and exits 1. `--evaluate <samples.json>` judges saved samples again.
 
-CI runs `pnpm perf` in the `perf` job of `.github/workflows/quality.yml`, on `ubuntu-24.04`, beside the check job and with a 15-minute timeout. It uploads `tools/perf/results` as the `perf-results` artifact even when it fails. The CI runner is judged against its own Node profile, `node-linux-x64`, and the same byte budgets as this Mac.
+CI runs `pnpm perf` in the `perf` job of `.github/workflows/quality.yml`, on `ubuntu-24.04`, beside the static and test jobs and with a 15-minute timeout. It uploads `tools/perf/results` as the `perf-results` artifact even when it fails. The CI runner is judged against its own Node profile, `node-linux-x64`, and the same byte budgets as this Mac.
 
 ## Frame measurement
 
@@ -127,7 +127,7 @@ Headless Chrome is allowed here because the bench measures uncapped frame cost. 
 ```sh
 git clone --no-hardlinks . /tmp/rushline-perf-gpu-a
 git -C /tmp/rushline-perf-gpu-a checkout --detach <baseline revision>
-(cd /tmp/rushline-perf-gpu-a && pnpm install --offline --frozen-lockfile)
+(cd /tmp/rushline-perf-gpu-a && pnpm install --prefer-offline --frozen-lockfile)
 (cd /tmp/rushline-perf-gpu-a && node tools/verify/rushline.ts up --slot 0 --path /kit)
 node tools/verify/rushline.ts up --slot 1 --path /kit
 pnpm perf:gpu --a <A run> --b <B run> --baseline-ref <baseline revision>
