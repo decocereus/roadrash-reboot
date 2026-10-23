@@ -1,5 +1,5 @@
 import type { Random } from "@racer/track/random";
-import type { Track } from "@racer/track/track";
+import type { LaneCentres, Track } from "@racer/track/track";
 
 import { approach, BIKE_HALF_LENGTH, TICK_SECONDS } from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
@@ -37,15 +37,14 @@ const pickBody = (roll: number): Body => {
 };
 
 const laneFor = (
-  lanes: readonly number[],
+  lanes: LaneCentres,
   cruiseSpeed: number,
   random: Random
 ): number => {
-  const inner = lanes[0] ?? 0;
-  const outer = lanes.at(-1) ?? inner;
   if (lanes.length === 1) {
-    return inner;
+    return lanes[0];
   }
+  const [inner, outer] = lanes;
   const favoured = Math.abs(cruiseSpeed) < SLOW_CRUISE ? outer : inner;
   const other = favoured === outer ? inner : outer;
   return random() < FAVOURED_LANE_SHARE ? favoured : other;

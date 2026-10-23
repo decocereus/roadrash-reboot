@@ -38,7 +38,7 @@ const peakPower = (): number => {
 const POWER_NORM = peakPower();
 
 const gearTop = (bike: BikeSpec, gear: number): number =>
-  bike.gears[gear - 1] ?? bike.gears.at(-1) ?? 1;
+  bike.gears[gear - 1] ?? bike.gears[0];
 
 const topGearOf = (bike: BikeSpec): number => bike.gears.length;
 

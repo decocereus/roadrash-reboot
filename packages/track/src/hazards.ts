@@ -115,7 +115,8 @@ const laneOf = (road: Road, roll: number): number => {
     ? roll / SAME_WAY_SHARE
     : (roll - SAME_WAY_SHARE) / (1 - SAME_WAY_SHARE);
   return (
-    lanes[Math.min(lanes.length - 1, Math.floor(share * lanes.length))] ?? 0
+    lanes[Math.min(lanes.length - 1, Math.floor(share * lanes.length))] ??
+    lanes[0]
   );
 };
 
@@ -127,7 +128,8 @@ const seamOf = (road: Road, roll: number): number => {
 };
 
 const sameWayLaneToward = (road: Road, side: number): number =>
-  road.sameWayLanes.toSorted((left, right) => (right - left) * side)[0] ?? 0;
+  road.sameWayLanes.toSorted((left, right) => (right - left) * side)[0] ??
+  road.sameWayLanes[0];
 
 const centreOf = (
   road: Road,
@@ -169,7 +171,7 @@ const laneEdgeOf = (
   const lane =
     [...road.sameWayLanes, ...road.oncomingLanes].toSorted(
       (left, right) => Math.abs(left - x) - Math.abs(right - x)
-    )[0] ?? 0;
+    )[0] ?? road.sameWayLanes[0];
   const side = Math.sign(x - lane) || (offsetRoll < SEAM_SHARE ? -1 : 1);
   return (
     lane +

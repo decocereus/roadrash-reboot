@@ -19,7 +19,7 @@ export interface BikeSpec {
   readonly price: number;
   readonly launchAcceleration: number;
   readonly powerPerMass: number;
-  readonly gears: readonly number[];
+  readonly gears: readonly [number, ...number[]];
   readonly dragFactor: number;
   readonly rollingDeceleration: number;
   readonly engineBraking: number;

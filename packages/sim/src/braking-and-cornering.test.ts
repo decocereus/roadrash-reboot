@@ -160,7 +160,7 @@ const feltSteer = (course: Track, rider: RiderState): number => {
   );
   const drift = rider.lateralSpeed - push;
   const settling = (drift * Math.abs(drift)) / (2 * rider.bike.steerRate);
-  const lane = course.sameWayLanes[0] ?? 0;
+  const [lane] = course.sameWayLanes;
   return clamp(
     (push + (lane - rider.x - settling) * 1.2) /
       lateralSpeedLimit(rider.bike, rider.speed),

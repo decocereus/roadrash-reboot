@@ -186,19 +186,21 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   x: spot.x,
 });
 
-const gridColumns = (track: Track): readonly number[] => [
+type GridColumns = readonly [number, ...number[]];
+
+const gridColumns = (track: Track): GridColumns => [
   ...track.sameWayLanes,
   ...track.oncomingLanes,
 ];
 
-const gridSpot = (columns: readonly number[], slot: number): GridSpot => ({
+const gridSpot = (columns: GridColumns, slot: number): GridSpot => ({
   s: GRID_S - Math.floor(slot / columns.length) * GRID_ROW_GAP,
-  x: columns[slot % columns.length] ?? 0,
+  x: columns[slot % columns.length] ?? columns[0],
 });
 
-const lastRow = (columns: readonly number[], rivalCount: number): GridSpot => ({
+const lastRow = (columns: GridColumns, rivalCount: number): GridSpot => ({
   s: GRID_S - Math.ceil(rivalCount / columns.length) * GRID_ROW_GAP,
-  x: columns[0] ?? 0,
+  x: columns[0],
 });
 
 const freshHits = (profile: RiderProfile): number =>

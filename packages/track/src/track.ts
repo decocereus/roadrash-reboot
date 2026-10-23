@@ -42,6 +42,8 @@ export interface TrackProp {
   readonly scale: number;
 }
 
+export type LaneCentres = readonly [number] | readonly [number, number];
+
 export interface Track {
   readonly plan: TrackPlan;
   readonly length: number;
@@ -49,8 +51,8 @@ export interface Track {
   readonly endS: number;
   readonly roadHalfWidth: number;
   readonly vergeHalfWidth: number;
-  readonly sameWayLanes: readonly number[];
-  readonly oncomingLanes: readonly number[];
+  readonly sameWayLanes: LaneCentres;
+  readonly oncomingLanes: LaneCentres;
   readonly sampleCount: number;
   readonly worldX: Float64Array;
   readonly worldY: Float64Array;
@@ -86,13 +88,13 @@ const smoothstep = (value: number): number => {
 const roadHalfWidthOf = (plan: TrackPlan): number =>
   plan.lanesEachWay * plan.laneWidth + plan.shoulderWidth;
 
-const laneCentres = (plan: TrackPlan, side: number): number[] => {
-  const centres: number[] = [];
-  for (let lane = 0; lane < plan.lanesEachWay; lane += 1) {
-    centres.push(side * (lane + 0.5) * plan.laneWidth);
-  }
-  return centres;
-};
+const laneCentre = (plan: TrackPlan, side: number, lane: number): number =>
+  side * (lane + 0.5) * plan.laneWidth;
+
+const laneCentres = (plan: TrackPlan, side: number): LaneCentres =>
+  plan.lanesEachWay === 2
+    ? [laneCentre(plan, side, 0), laneCentre(plan, side, 1)]
+    : [laneCentre(plan, side, 0)];
 
 const curveWeight = (progress: number): number => {
   if (progress < CURVE_RAMP) {
