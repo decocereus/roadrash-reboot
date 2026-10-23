@@ -1,6 +1,5 @@
 import type { CareerState } from "@racer/career/state";
 import { Confirm } from "@racer/ui/components/confirm";
-import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useState } from "react";
@@ -11,16 +10,12 @@ import { bikeName } from "../../career/format.ts";
 import type { SaveState } from "../../career/save.ts";
 import { BarHeader, BarStrip } from "./bar-chrome.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
-import { RuledSheet } from "./clubhouse-wall.tsx";
+import { PinnedList } from "./pinned-list.tsx";
 import { SettingsScreen } from "./settings.tsx";
 import { useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
-const NO_DETAIL = "\u00A0";
 const BACKDROP = { h: 941, w: 1672, x: 0, y: 0 } as const;
-const SHEET = { h: 691, w: 470, x: 36, y: 110 } as const;
-const SHEET_TITLE = { h: 56, w: 400, x: 70, y: 146 } as const;
-const SHEET_ROWS = { h: 475, w: 404, x: 84, y: 258 } as const;
 const NOTE = { h: 270, w: 456, x: 560, y: 150 } as const;
 const NOTE_TEXT = { h: 175, w: 264, x: 595, y: 204 } as const;
 
@@ -98,48 +93,6 @@ const Alert = ({
   );
 };
 
-const PinnedList = ({
-  actions,
-  autoFocus,
-}: {
-  readonly actions: readonly MenuAction[];
-  readonly autoFocus: boolean;
-}) => (
-  <section aria-label="Back room list">
-    <RuledSheet box={SHEET} scale={0.75} />
-    <h1
-      className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black uppercase"
-      style={{ ...place(SHEET_TITLE), fontSize: stagePx(38) }}
-    >
-      Back room
-    </h1>
-    <MenuList
-      autoFocus={autoFocus}
-      className="grid -rotate-[0.4deg] content-start items-end gap-0"
-      defaultValue="continue"
-      label="Back room"
-      onSelect={(id) => actions.find((action) => action.id === id)?.run?.()}
-      size="sm"
-      style={{
-        ...place(SHEET_ROWS),
-        fontSize: stagePx(26),
-        gridAutoRows: stagePx(67.8),
-      }}
-    >
-      {actions.map((action) => (
-        <MenuItem
-          className="text-ink data-selected:text-ink data-selected:bg-neon-yellow/85 [&_[data-slot=menu-detail]]:text-ink/60 w-full items-start rounded-none py-0 !text-[1em] leading-[0.9] tracking-normal [&_[data-slot=menu-detail]]:mt-[0.45em] [&_[data-slot=menu-detail]]:text-[0.62em] [&_[data-slot=menu-detail]]:leading-none"
-          detail={action.detail ?? NO_DETAIL}
-          key={action.id}
-          value={action.id}
-        >
-          {action.label}
-        </MenuItem>
-      ))}
-    </MenuList>
-  </section>
-);
-
 export const BackRoomScreen = ({
   save,
   failure,
@@ -195,7 +148,13 @@ export const BackRoomScreen = ({
         />
         <BarHeader career={save.status === "ready" ? save.career : null} />
         {save.status !== "loading" && (
-          <PinnedList actions={[...career, ...quick]} autoFocus={!adjusting} />
+          <PinnedList
+            actions={[...career, ...quick]}
+            autoFocus={!adjusting}
+            label="Back room"
+            primary="continue"
+            title="Back room"
+          />
         )}
         <Alert failure={failure} save={save} />
         <BarStrip>

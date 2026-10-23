@@ -29,6 +29,7 @@ import cinderWashFlyer from "./clubhouse/flyers/cinder-wash.webp?url";
 import hollowPineRoadFlyer from "./clubhouse/flyers/hollow-pine-road.webp?url";
 import ridgeRoadFlyer from "./clubhouse/flyers/ridge-road.webp?url";
 import slagRowFlyer from "./clubhouse/flyers/slag-row.webp?url";
+import gameOverBackdropPlate from "./clubhouse/game-over/backdrop.webp?url";
 import garageBackdropPlate from "./clubhouse/garage/backdrop.webp?url";
 import garageMechanicFigure from "./clubhouse/garage/mechanic.webp?url";
 import noteCyanPlate from "./clubhouse/note-cyan.webp?url";
@@ -101,6 +102,10 @@ export const officerFigures = {
 
 export const backRoomPlates = {
   backdrop: backRoomBackdropPlate,
+} as const;
+
+export const gameOverPlates = {
+  backdrop: gameOverBackdropPlate,
 } as const;
 
 export const garagePlates = {

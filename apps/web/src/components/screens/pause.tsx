@@ -2,9 +2,7 @@ import { billConsequence } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { repairBill } from "@racer/career/tables";
 import { Confirm } from "@racer/ui/components/confirm";
-import { Heading } from "@racer/ui/components/heading";
 import { formatMoney } from "@racer/ui/components/money";
-import { Panel } from "@racer/ui/components/panel";
 import { Screen } from "@racer/ui/components/screen";
 import { useState, useSyncExternalStore } from "react";
 
@@ -13,8 +11,11 @@ import { bikeName } from "../../career/format.ts";
 import type { RacePlan } from "../../game/hud.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
+import { BarStrip } from "./bar-chrome.tsx";
+import { Stage, stagePx } from "./clubhouse-stage.tsx";
+import { PinnedList } from "./pinned-list.tsx";
 import { SettingsScreen } from "./settings.tsx";
-import { ActionMenu, useEscape } from "./shared.tsx";
+import { useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
 export const PauseScreen = ({
@@ -66,42 +67,40 @@ export const PauseScreen = ({
       },
     },
   ];
-  if (adjusting) {
-    return (
-      <SettingsScreen
-        onBack={() => {
-          setAdjusting(false);
-        }}
-      />
-    );
-  }
   return (
-    <Screen className="bg-ink/60">
-      <Panel
-        className="p-gutter flex h-full w-[min(26rem,36vw)] flex-col gap-6 border-y-0 border-l-0"
-        inert={asking ? true : undefined}
-        padding="none"
-      >
-        <Heading as="h1">Paused</Heading>
-        <ActionMenu
+    <Screen className="bg-ink/60 flex">
+      <Stage inert={asking || adjusting ? true : undefined}>
+        <PinnedList
           actions={actions}
-          className="w-full"
+          autoFocus={!adjusting}
           label="Pause"
-          orientation="vertical"
           primary="resume"
-          size="md"
+          title="Paused"
         />
-        <div className="text-muted mt-auto flex flex-col gap-2 text-sm font-semibold">
-          <p>{CONTROLS} · M to mute</p>
-          {racing ? (
-            <p>
-              Leaving or reloading the page during a race counts as a wreck too.
-            </p>
-          ) : (
-            <p>R restarts a single race.</p>
-          )}
-        </div>
-      </Panel>
+        <BarStrip>
+          <p
+            className="text-paper/60 tracking-wide"
+            style={{ fontSize: stagePx(22) }}
+          >
+            {CONTROLS} · M to mute
+          </p>
+          <p
+            className="text-paper/60 tracking-wide"
+            style={{ fontSize: stagePx(22) }}
+          >
+            {racing
+              ? "Leaving or reloading the page counts as a wreck too"
+              : "R restarts a single race"}
+          </p>
+        </BarStrip>
+      </Stage>
+      {adjusting && (
+        <SettingsScreen
+          onBack={() => {
+            setAdjusting(false);
+          }}
+        />
+      )}
       {asking && (
         <Confirm
           defaultValue="keep"

@@ -334,25 +334,25 @@ There is no display ad slot since Results moved into the bar. If one comes back,
 
 The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `New at the garage: {bikes}.` when the level unlocks bikes, signed `V.`. The status strip shows the new level name.
 
-**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the board with the final Polaroids, three lines of text from `game-design.md` section 11 for the ending earned, the season's record (races, wins, knockdowns, busts, money earned), and `BACK ROOM`.
+**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the bar with the stool empty: the ending's name on the tape of the ruled paper with its text from `game-design.md` section 11 written on the lines, a `SEASON OVER` stamp, the season's record (level, races and wins, knockdowns, busts, money earned) on the cyan note, and `BACK ROOM`.
 
 ## 12. Game Over
 
 **Purpose.** End the career clearly and without cruelty.
 
-**Layout.** The Lowside car park at night, empty except for the Gutter Pup on a tow hook. Heading in the stencil face. A typed card from Vic. The season record under it.
+**Layout.** A painted stage: the Lowside car park at night in the rain, a tow truck hauling the Gutter Pup off on its hook, the bar's back door under pink neon. The bar header runs along the top. The card is written on the ruled paper pinned to the dark wall on the left, titled `BROKE` on its tape. The season record is on the cyan note, bottom right. The buttons are in the bottom strip with `The Lowside car park, after closing` at the right.
 
 **Text.**
 
 - Heading: `BROKE`
-- Vic's card: `You owe more than a Gutter Pup is worth, which is saying something. We're done. V.`
+- The card: `You owe more than a Gutter Pup is worth, which is saying something. We're done.`
 - Record: `REACHED LEVEL {n}` · `{races} RACES · {wins} WINS` · `KNOCKED DOWN {k} RIDERS` · `BUSTED {b} TIMES` · `BEST BIKE: {bike}`
 
-**Buttons.** `NEW CAREER` (primary), `TITLE`. There is no `RACE AGAIN`, no continue, and no ad offer.
+**Buttons.** `NEW CAREER` (primary), `BACK ROOM`. There is no `RACE AGAIN`, no continue, and no ad offer.
 
 **In.** From Results, slow fade (600 ms). Also straight from the Back Room or a page load whenever the save is marked over.
 
-**Out.** `NEW CAREER` replaces the save and plays the new-career intro. `TITLE` leaves the finished career in the save, where it can only reopen this screen.
+**Out.** `NEW CAREER` replaces the save and plays the new-career intro. `BACK ROOM` leaves the finished career in the save, where it can only reopen this screen.
 
 **Persistence.** The career is marked over in the same save write that settles the last race, before Results is drawn. Reloading the page on Results or here cannot bring the career back, and no route from a finished career leads to the Route Board, the Garage, or a race.
 
@@ -389,14 +389,14 @@ The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `Ne
 
 **Purpose.** Stop a single-player race, change volume, or give up.
 
-**Layout.** The race view freezes and dims to 40%. A narrow panel on the left third, styled as a torn piece of the corkboard. The road is still visible on the right.
+**Layout.** The race view freezes and dims. The menu is the ruled paper list pinned on the left, titled `PAUSED` on its tape, the same list as the Back Room. The road is still visible on the right. The bottom strip holds the controls and, in Career, the line about leaving the page; Settings opens as its panel over the paused race.
 
 **Text.**
 
 - Heading: `PAUSED`
-- Items: `RESUME` · `RESTART RACE` (Single Race only) · `MUSIC VOLUME` · `EFFECTS VOLUME` · `CONTROLS` · `QUIT RACE`
+- Items: `RESUME` · `RESTART RACE` (Single Race only) · `SOUND` with `ON` / `OFF` · `SETTINGS` · `QUIT RACE`
 - Quit confirm in Career: `Quit this race? It counts as a wreck: no prize, and a ${repair} repair bill.` Buttons `QUIT AND PAY` / `KEEP RACING`. When the bill would pass the credit limit, a red line is added: `THIS BILL TAKES THE {bike}.` or `THIS BILL ENDS THE CAREER.`
-- Small print under the items in Career: `Leaving or reloading the page during a race counts as a wreck too.`
+- Bottom strip: `Arrows to steer · Space to punch · Shift to kick · M to mute`, and at the right in Career `Leaving or reloading the page counts as a wreck too`, in Single Race `R restarts a single race`.
 - Quit confirm in Single Race: `Quit this race?` Buttons `QUIT` / `KEEP RACING`.
 - In multiplayer the race does not pause. Escape opens the same panel over the live race with the heading `MENU`, without `RESTART RACE`, and with `LEAVE RACE` in place of `QUIT RACE`: `Leave? Your bike rides on autopilot and you're scored as LEFT.`
 
