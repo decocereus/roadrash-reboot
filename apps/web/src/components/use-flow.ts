@@ -6,6 +6,7 @@ import type { RoadId } from "@racer/career/tables";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { bootGame } from "../asset-load.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
 import {
   careerEntry,
@@ -27,15 +28,15 @@ import {
 } from "../career/save.ts";
 import type { SaveState } from "../career/save.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
-import { createHudFeed } from "../game/hud.ts";
 import type {
   GameEvents,
   GameHandle,
-  HudFeed,
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
-import { startModelDownloads } from "../game/models.ts";
+import type { PrepareOutcome } from "../game/preparation.ts";
+import { createHudFeed } from "../hud-feed.ts";
+import type { HudFeed } from "../hud-feed.ts";
 
 export type View =
   | { readonly screen: "title" }
@@ -168,38 +169,43 @@ const useGame = (
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    let disposed = false;
+    const mount = new AbortController();
     const load = async (target: HTMLCanvasElement) => {
       try {
-        const { createGame } = await import("../game/game.ts");
-        const game = await createGame(target, {
-          onHud: (hud) => eventsRef.current?.onHud(hud),
-          onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
-          onSettle: (plan, outcome) =>
-            eventsRef.current?.onSettle(plan, outcome),
-          onStart: (plan) => eventsRef.current?.onStart(plan),
-        });
-        if (disposed) {
+        const game = await bootGame(
+          target,
+          {
+            onHud: (hud) => eventsRef.current?.onHud(hud),
+            onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
+            onSettle: (plan, outcome) =>
+              eventsRef.current?.onSettle(plan, outcome),
+            onStart: (plan) => eventsRef.current?.onStart(plan),
+          },
+          mount.signal
+        );
+        if (game === null) {
+          return;
+        }
+        if (mount.signal.aborted) {
           game.dispose();
           return;
         }
         gameRef.current = game;
         setReady(true);
       } catch (error) {
-        if (!disposed) {
+        if (!mount.signal.aborted) {
           setFailure(error instanceof Error ? error.message : String(error));
         }
       }
     };
     if (canvas) {
       diagnostics();
-      startModelDownloads();
       void load(canvas);
     }
     return () => {
-      disposed = true;
       gameRef.current?.dispose();
       gameRef.current = null;
+      mount.abort();
     };
   }, [canvasRef, eventsRef]);
 
@@ -246,7 +252,7 @@ export interface Flow {
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
   readonly preRace: (mode: RaceMode, roadId: RoadId) => void;
-  readonly prepare: (plan: RacePlan) => Promise<void>;
+  readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly start: (plan: RacePlan) => void;
   readonly resume: () => void;
   readonly mute: () => void;
@@ -332,8 +338,18 @@ export const useFlow = (): Flow => {
   usePauseKeys(view.screen === "race" && !view.paused && !view.finish, pause);
 
   const prepare = useCallback(
-    async (plan: RacePlan) => {
-      await gameRef.current?.prepare(plan);
+    async (plan: RacePlan): Promise<PrepareOutcome> => {
+      const game = gameRef.current;
+      if (!game) {
+        return { kind: "cancelled" };
+      }
+      try {
+        return await game.prepare(plan);
+      } catch (error) {
+        const cause = error instanceof Error ? error : new Error(String(error));
+        diagnostics().recorder.fault("error", cause.message, "prepare build");
+        return { cause, kind: "failed", stage: "build" };
+      }
     },
     [gameRef]
   );

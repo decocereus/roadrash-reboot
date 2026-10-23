@@ -47,6 +47,7 @@ export interface Shading {
   ) => THREE.MeshBasicMaterial;
   glowPaint: () => THREE.MeshBasicMaterial;
   aim: (camera: THREE.Camera) => void;
+  dispose: () => void;
 }
 
 const createRamp = (): THREE.DataTexture => {
@@ -132,6 +133,9 @@ export const createShading = (look: Look): Shading => {
     cel(colour, options = {}) {
       const { rim = 0, ...parameters } = options;
       return build({ color: colour, ...parameters }, rim, false);
+    },
+    dispose() {
+      ramp.dispose();
     },
     glow(colour, strength = 1.6) {
       return new THREE.MeshBasicMaterial({

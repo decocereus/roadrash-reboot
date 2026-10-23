@@ -48,71 +48,163 @@ export const replayCases: readonly ReplayCase[] = [
 const numberBuffer = new ArrayBuffer(8);
 const numberBits = new DataView(numberBuffer);
 const numberBytes = new Uint8Array(numberBuffer);
-const hexOf = Array.from({ length: 256 }, (_, byte) =>
-  byte.toString(16).padStart(2, "0")
+const hexUnits = Uint16Array.from(
+  { length: 512 },
+  (_, at) =>
+    Math.floor(at / 2)
+      .toString(16)
+      .padStart(2, "0")
+      .codePointAt(at % 2) ?? 0
 );
+const NUMBER_UNIT = "n".codePointAt(0) ?? 0;
+const SUPPLEMENTARY = 0x1_00_00;
+const HIGH_SURROGATE = 0xd8_00;
+const SURROGATE_SPAN = 0x4_00;
 
-const numberText = (value: number): string => {
-  numberBits.setFloat64(0, value, true);
-  let text = "n";
-  for (const byte of numberBytes) {
-    text += hexOf[byte] ?? "";
-  }
-  return text;
+const codeUnitAt = (value: string, at: number): number => {
+  const point = value.codePointAt(at) ?? 0;
+  return point < SUPPLEMENTARY
+    ? point
+    : HIGH_SURROGATE + Math.floor((point - SUPPLEMENTARY) / SURROGATE_SPAN);
 };
 
-const encodeAt = (holder: readonly unknown[], at: number): string => {
+const text = { length: 0, units: new Uint16Array(131_072) };
+
+const reserve = (count: number): void => {
+  if (text.length + count > text.units.length) {
+    const grown = new Uint16Array(2 * (text.length + count));
+    grown.set(text.units.subarray(0, text.length));
+    text.units = grown;
+  }
+};
+
+const writeString = (value: string): void => {
+  reserve(value.length);
+  for (let at = 0; at < value.length; at += 1) {
+    text.units[text.length + at] = codeUnitAt(value, at);
+  }
+  text.length += value.length;
+};
+
+const writeCount = (tag: string, count: number): void => {
+  writeString(tag);
+  writeString(String(count));
+  writeString(":");
+};
+
+const textUnits = new Map<string, Uint16Array>();
+
+const writeText = (value: string): void => {
+  let units = textUnits.get(value);
+  if (!units) {
+    const encoding = `s${value.length}:${value}`;
+    units = Uint16Array.from({ length: encoding.length }, (_, at) =>
+      codeUnitAt(encoding, at)
+    );
+    textUnits.set(value, units);
+  }
+  reserve(units.length);
+  text.units.set(units, text.length);
+  text.length += units.length;
+};
+
+interface SortedKeys {
+  readonly keys: readonly string[];
+  readonly sorted: readonly string[];
+  readonly from: readonly number[];
+}
+
+const sortedKeys = (keys: readonly string[]): SortedKeys => {
+  const sorted = keys.toSorted();
+  return { from: sorted.map((key) => keys.indexOf(key)), keys, sorted };
+};
+
+const sortedKeysOf = new WeakMap<WeakKey, SortedKeys>();
+
+const sameKeys = (
+  known: SortedKeys | undefined,
+  keys: readonly string[]
+): known is SortedKeys =>
+  known !== undefined &&
+  known.keys.length === keys.length &&
+  known.keys.every((key, index) => key === keys[index]);
+
+const writeNumber = (value: number): void => {
+  numberBits.setFloat64(0, value, true);
+  reserve(1 + 2 * numberBytes.length);
+  text.units[text.length] = NUMBER_UNIT;
+  let at = text.length + 1;
+  for (const byte of numberBytes) {
+    text.units[at] = hexUnits[2 * byte] ?? 0;
+    text.units[at + 1] = hexUnits[2 * byte + 1] ?? 0;
+    at += 2;
+  }
+  text.length = at;
+};
+
+const writeAt = (holder: readonly unknown[], at: number): void => {
   const value = holder[at];
   if (Predicate.isNumber(value)) {
-    return numberText(value);
-  }
-  if (Predicate.isString(value)) {
-    return `s${value.length}:${value}`;
-  }
-  if (Predicate.isBoolean(value)) {
-    return value ? "t" : "f";
-  }
-  if (Predicate.isNull(value)) {
-    return "z";
-  }
-  if (Predicate.isUndefined(value)) {
-    return "u";
-  }
-  if (Array.isArray(value)) {
+    writeNumber(value);
+  } else if (Predicate.isString(value)) {
+    writeText(value);
+  } else if (Predicate.isBoolean(value)) {
+    writeString(value ? "t" : "f");
+  } else if (Predicate.isNull(value)) {
+    writeString("z");
+  } else if (Predicate.isUndefined(value)) {
+    writeString("u");
+  } else if (Array.isArray(value)) {
     const items: readonly unknown[] = value;
-    let text = `a${items.length}:`;
+    writeCount("a", items.length);
     for (let index = 0; index < items.length; index += 1) {
-      text += index in items ? encodeAt(items, index) : "h";
+      if (index in items) {
+        writeAt(items, index);
+      } else {
+        writeString("h");
+      }
     }
-    return text;
-  }
-  if (
-    !Predicate.isReadonlyObject(value) ||
-    Object.getPrototypeOf(value) !== Object.prototype
+  } else if (
+    Predicate.isReadonlyObject(value) &&
+    Object.getPrototypeOf(value) === Object.prototype
   ) {
+    const keys = Object.keys(value);
+    const values = Object.values(value);
+    const known = sortedKeysOf.get(value);
+    const order = sameKeys(known, keys) ? known : sortedKeys(keys);
+    if (order !== known) {
+      sortedKeysOf.set(value, order);
+    }
+    writeCount("o", order.sorted.length);
+    for (const [index, key] of order.sorted.entries()) {
+      writeText(key);
+      writeAt(values, order.from[index] ?? 0);
+    }
+  } else {
     throw new Error("The replay serializer reads plain data only.");
   }
-  const keys = Object.keys(value).toSorted();
-  const values = keys.map((key) => value[key]);
-  let text = `o${keys.length}:`;
-  for (const [index, key] of keys.entries()) {
-    text += `s${key.length}:${key}${encodeAt(values, index)}`;
-  }
-  return text;
 };
 
-const raceText = (state: RaceView): string => encodeAt([state], 0);
+const encoded = (holder: readonly unknown[]): Uint8Array => {
+  text.length = 0;
+  writeAt(holder, 0);
+  return new Uint8Array(text.units.buffer, 0, 2 * text.length);
+};
 
-const frameText = (state: RaceView, inputs: readonly RiderInput[]): string =>
-  encodeAt([[state, inputs]], 0);
+const raceBytes = (state: RaceView): Uint8Array => encoded([state]);
 
-const digest = (text: string): string =>
-  createHash("sha256").update(text, "utf16le").digest("hex");
+const frameBytes = (
+  state: RaceView,
+  inputs: readonly RiderInput[]
+): Uint8Array => encoded([[state, inputs]]);
+
+const digest = (bytes: Uint8Array): string =>
+  createHash("sha256").update(bytes).digest("hex");
 
 export const frameDigest = (
   state: RaceView,
   inputs: readonly RiderInput[]
-): string => digest(frameText(state, inputs));
+): string => digest(frameBytes(state, inputs));
 
 export interface Run {
   readonly id: string;
@@ -139,7 +231,7 @@ const piloted: InputProducer = (run) => {
 const open = (id: string, setup: RaceSetup): Run => {
   const state = createRace(setup);
   const full = createHash("sha256");
-  full.update(raceText(state), "utf16le");
+  full.update(raceBytes(state));
   return {
     frames: [],
     full,
@@ -201,11 +293,11 @@ const advance = (run: Run, produce: InputProducer = piloted): void => {
   produce(run);
   stepRace(run.state, run.track, run.inputs);
   inspect(run);
-  const frame = frameText(run.state, run.inputs);
-  run.full.update(frame, "utf16le");
+  const frame = frameBytes(run.state, run.inputs);
+  run.full.update(frame);
   run.frames.push(digest(frame));
   if (run.state.tick >= WINDOW.from && run.state.tick <= WINDOW.to) {
-    run.window.update(frame, "utf16le");
+    run.window.update(frame);
   }
 };
 
@@ -229,7 +321,7 @@ export interface Replay {
 }
 
 export const close = (run: Run): Replay => ({
-  final: digest(raceText(run.state)),
+  final: digest(raceBytes(run.state)),
   full: run.full.digest("hex"),
   id: run.id,
   ticks: run.state.tick,

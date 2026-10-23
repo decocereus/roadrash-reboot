@@ -6,7 +6,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 
 ## The checks
 
-`pnpm check` runs the `check` group of `scripts/verify.ts`: formatting, lint, the lint rule tests, this ledger, CSS comments, the TypeScript-only check, the repository roots, source size, the save format, dead code, types, and tests, in that order, and prints how long each took. `pnpm verify` runs the same group and then the build. Add `--format json` (`node scripts/verify.ts check --format json`) for one JSON report with each check's command, exit code, duration and the tail of its output when it failed. CI runs `pnpm check` and `pnpm build` as separate steps, so the Actions page shows which of the two failed without opening the log. It runs once for each pull request update and once for each push to `main`.
+`pnpm check` runs the `check` group of `scripts/verify.ts`: formatting, lint, the lint rule tests, this ledger, CSS comments, the TypeScript-only check, the repository roots, the renderer imports, source size, the save format, dead code, the perf budgets, types, and tests, in that order, and prints how long each took. `pnpm verify` runs the same group, then the build, then the perf gate, `pnpm perf`. Add `--format json` (`node scripts/verify.ts check --format json`) for one JSON report with each check's command, exit code, duration and the tail of its output when it failed. `node scripts/verify.ts static` runs the group without the tests. CI runs four jobs side by side, once for each pull request update and once for each push to `main`. The `static` job runs `node scripts/verify.ts static` and then `pnpm build` as separate steps, so the Actions page shows which of the two failed without opening the log. `tests (police)` runs the police balance test, `pnpm test --project police`, on a runner of its own, because its 200 races fill every core. `tests (!police)` runs every other test, so the two test jobs together run what `pnpm test` runs. The `perf` job runs `pnpm perf`. Nothing in CI runs `pnpm perf:gpu`, which needs this Mac's GPU; [observability.md](observability.md) lists what each perf command checks.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
@@ -31,7 +31,10 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | `packages/career` owns every career rule: money, levels, the shop, the field draw, rival memory, settlement and the save format. React renders it and never changes a rule. | judgment | `packages/career` | None |
 | Within one `SAVE_VERSION` the encoded career save keeps its structure: its field names, which fields are required or optional, nullability, types, structural literals such as board-note kinds, results and endings, and fixed bounds. `scripts/save-wire.ts` reduces the JSON Schema Effect generates to that structure and refuses any construct it cannot read, so a change in how Effect writes the schema needs adapter support, not a new version. The seven catalogues (bikes, roads, levels, racers, rivals, weapons, officers) only grow: `packages/career/save-format.json` lists each version's IDs, the schema and the registry list the same IDs, and an ID any committed registry listed is never removed. Adding a bike, road, weapon or officer needs no new version. A new rival or level adds a required `memory`, `season` or `qualified` row, so it changes the structure. A changed structure needs a new `SAVE_VERSION`, agreed with the owner. A committed `fingerprint` or `wireFingerprint` is never rewritten or removed. | `pnpm check:save-format` | `packages/career/src/save*.ts`, `packages/career/save-format.json` | None |
 | `apps/web/src/game` owns rendering, audio, input and the frame loop. It reads simulation state and never changes a rule. | judgment | `apps/web/src/game` | None |
+| Each game releases what it made exactly once, in reverse order, through the owner list in `createGame`, on dispose or when construction throws partway, and a second dispose does nothing. A world owns its scene, textures, shadow map and cel ramp; actors and figures share that ramp and never release it. `disposeTree` releases each shared geometry, material, instanced mesh and point cloud once and leaves textures to their owners. Warm-up puts back everything it staged, even when the draw or the setup throws. | `pnpm test` | `apps/web/src/game`, `apps/web/test/renderer-lifecycle.test.ts` | None |
+| Each shader preparation ends in exactly one outcome: `ready`, `timedOut`, `failed` with its stage and cause, `lost` or `cancelled`. It leaves no deadline or poll behind, only the newest preparation warms, nothing warms while the WebGL context is lost, and a late ready after a timeout, a replacement or an unmount does nothing. | `pnpm test` | `apps/web/src/game/preparation.ts`, `apps/web/test/preparation.test.ts` | None |
 | React renders menus and the HUD, does no per-frame work, and loads the game module with a dynamic import. | judgment | `apps/web/src/components`, `apps/web/src/routes` | None |
+| No static value import from React reaches `apps/web/src/game` or the `three` package; React imports their types with `import type` and loads the game through the literal dynamic imports in `apps/web/src/asset-load.ts`. The check starts at every `apps/web/src/**/*.tsx` file, resolves each import with the client build's Vite resolver, and follows value imports, value re-exports, side-effect imports and CommonJS `require` through every module, first-party or installed, before tree shaking. It judges a module by its real path, or by the package that owns it, and prints the chain of imports, with line numbers, to each crossing. An import it cannot resolve, a file it cannot parse, or a dynamic import of a computed specifier is an error. | `pnpm check:renderer-imports` | `apps/web/src/**/*.tsx` and every module they import statically | None |
 | `packages/ui` owns the shadcn components and global styles. | judgment | `packages/ui` | None |
 
 ## Keep the simulation deterministic
@@ -46,6 +49,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Each race owns its mutable pilot memory. Module-level buffers hold only scratch that each plan overwrites before reading, so one race can never read another's history. | `pnpm test` | `apps/web/test/pilot-replay.test.ts` | None |
 | The browser reads a race through the deeply readonly `RaceView`, the race itself and not a copy, and changes it only through `RaceRun` and the commands in `packages/sim/src/commands.ts`. | `pnpm typecheck`, `pnpm test` | `packages/sim/src/race-view.ts`, `race-run.ts`, `apps/web/src/game`, `packages/career/src/outcome.ts` | None |
 | Fixed ticks, held and repeated keys, replays of the same inputs and races run side by side match tick for tick, and render quality, pixel ratio, pacing, sound and the profiler never change a tick. | `pnpm test` | `apps/web/test/fixed-tick.test.ts`, `input.test.ts`, `pilot-replay.test.ts`, `render-quality.test.ts` | None |
+| The HUD publishes one regular snapshot each time 1/15 s of processed frame time builds up: each rendered frame adds its clamped seconds, a total of 1/15 s or more publishes once and resets to zero, and the remainder is dropped. Halted frames add nothing. A race being prepared, the attract loop, a quit, sleep or mute publishes at once, apart from that clock. | `pnpm test` | `apps/web/src/game/hud-cadence.ts`, `apps/web/test/hud-cadence.test.ts` | None |
 
 ## Tune the numbers before the model
 
@@ -58,20 +62,21 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| Effect runs at network, storage, process and error boundaries: the telemetry server, `packages/telemetry`, the browser's telemetry delivery (`apps/web/src/diagnostics/upload` and `uploader-runtime.ts`, loaded on demand), `packages/devtools` (launching Chrome or Helium, the CDP client and trace analysis, which `tools/perf` and `tools/verify` share), `tools/perf`, `tools/verify`, the career save codec and the browser save (`apps/web/src/career/save.ts` and its storage modules). The simulation, track, career rules, renderer and React are plain functions. | judgment | Repository | None |
+| Effect runs at network, storage, process and error boundaries: the telemetry server, `packages/telemetry`, the browser's telemetry delivery (`apps/web/src/diagnostics/upload` and `uploader-runtime.ts`, loaded on demand), `packages/devtools` (launching Chrome or Helium, the CDP client and trace analysis, which `tools/perf` and `tools/verify` share), `tools/perf`, `tools/verify`, the career save codec, the browser save (`apps/web/src/career/save.ts` and its storage modules) and the game's model downloads (`apps/web/src/asset-runtime.ts` and `apps/web/src/assets`, loaded on demand). The simulation, track, career rules, renderer and React are plain functions. | judgment | Repository | None |
 | Import Effect by module path, such as `effect/Effect` or `effect/Schema`, never from the `effect` root. | `no-restricted-imports` | Repository | None |
 | Every promise is awaited, returned, or explicitly discarded with `void`. | `typescript/no-floating-promises` | Repository | None |
 | Look up an Effect API in the installed source first: `node_modules/effect/src` and the package's `exports`, then `node_modules/@effect/platform-node/src`, then Alchemy's own source, such as `alchemy/src/Runtime.ts`, for what its wrappers do. Use the pinned Effect checkout only when you need code or tests that the package does not ship. `pnpm effect:reference` creates it at `.references/effect`, at commit `67ba4e46a11ccda0b6761578bfd22c04ae00167d`, which is Effect 4.0.0, the version the root `package.json` pins. On every run it checks that the installed Effect matches the root pin, that `.references/effect` is ignored and untracked, and that an existing checkout is clean, at that commit and at that version. It never fetches into, resets or cleans an existing checkout: a mismatch is an error that leaves the checkout as it is. It is not part of `pnpm check`, the build or CI, and it uses the network only when the checkout is missing. Do not copy API examples from the Effect website, which may describe another version. | `pnpm effect:reference` | Development setup | None |
 | A value typed `any`, such as the result of `JSON.parse`, is decoded or typed before typed code reads, calls, passes or returns it. | `typescript/no-unsafe-assignment`, `typescript/no-unsafe-argument`, `typescript/no-unsafe-call`, `typescript/no-unsafe-member-access`, `typescript/no-unsafe-return` | Repository | None |
+| Durable Object code follows [durable-object-http.md](durable-object-http.md): each object is an Effect HTTP API reached through `fetch`, never Alchemy RPC; an instance is keyed by its canonical race ID; and stubs and generated clients are built inside each invocation and stay private to the client. No Durable Object exists yet, so the conventions come before the code. | judgment | Multiplayer, when it starts | None |
 
 The inherited Ultracite presets run with type information (`options: { typeAware: true }`), so every type-aware rule they turn on is enforced too, such as `typescript/strict-boolean-expressions` and `typescript/no-confusing-void-expression`. Every other rule they turn on is enforced in every file as well, such as `func-style` (functions are `const` arrow functions), `no-use-before-define`, `no-shadow`, `no-nested-ternary` and `promise/prefer-await-to-then`. Only the rules above are listed, because they state Rushline's own decisions.
 
 The boundary rules below apply to two file lists, each defined once in `oxlint.config.ts`:
 
-- `effectFiles`: the entries and `src/` folders of `tools/perf` and `tools/verify` (`tools/perf/*.ts`, `tools/perf/src/**/*.ts`, `tools/verify/*.ts`, `tools/verify/src/**/*.ts`), `packages/devtools/src/**/*.ts`, and the telemetry boundary: `apps/web/src/server/**/*.ts`, the route `apps/web/src/routes/api/telemetry.ts`, `packages/telemetry/src/**/*.ts`, the queue `apps/web/src/diagnostics/uploader.ts`, the browser entry `apps/web/src/diagnostics/uploader-runtime.ts` and `apps/web/src/diagnostics/upload/**/*.ts`; and the save codec, `save.ts` and the `save-*.ts` modules in `packages/career/src`, without their tests, and the browser save: the entry `apps/web/src/career/save.ts`, `save-storage.ts` and `save-storage-error.ts`.
-- `libraryFiles`: the same files without the entries. Only the entries run an Effect: `tools/perf/measure.ts`, `tools/perf/session.ts`, `tools/verify/rushline.ts`, the telemetry route, `uploader-runtime.ts` and the browser save entry `apps/web/src/career/save.ts`, which runs each storage step synchronously.
+- `effectFiles`: the entries and `src/` folders of `tools/perf` and `tools/verify` (`tools/perf/*.ts`, `tools/perf/src/**/*.ts`, `tools/verify/*.ts`, `tools/verify/src/**/*.ts`), `packages/devtools/src/**/*.ts`, and the telemetry boundary: `apps/web/src/server/**/*.ts`, the route `apps/web/src/routes/api/telemetry.ts`, `packages/telemetry/src/**/*.ts`, the queue `apps/web/src/diagnostics/uploader.ts`, the browser entry `apps/web/src/diagnostics/uploader-runtime.ts` and `apps/web/src/diagnostics/upload/**/*.ts`; and the save codec, `save.ts` and the `save-*.ts` modules in `packages/career/src`, without their tests, the browser save: the entry `apps/web/src/career/save.ts`, `save-storage.ts` and `save-storage-error.ts`; and the asset loading: the entry `apps/web/src/asset-runtime.ts`, `apps/web/src/assets/load.ts` and its four error modules, `model-request-failed.ts`, `model-response-rejected.ts`, `model-decode-failed.ts` and `font-readiness-failed.ts`.
+- `libraryFiles`: the same files without the entries. Only the entries run an Effect: `tools/perf/measure.ts`, `tools/perf/session.ts`, `tools/verify/rushline.ts`, the telemetry route, `uploader-runtime.ts`, the browser save entry `apps/web/src/career/save.ts`, which runs each storage step synchronously, and `asset-runtime.ts`.
 
-The diagnostics hub, the recorder, React and `vite.config.ts` stay outside these lists. Tests live in each workspace's `test/` folder, outside them too, and every other rule in this file still applies to them. `scripts/telemetry-scopes.test.ts` checks which of these rules reach sample paths of each role. The rules match names and syntax. They do not follow types or data flow, so a review still checks what they cannot see, such as a service method whose Effect is dropped.
+The diagnostics hub, the recorder, React, `vite.config.ts`, the plain boot bridge `apps/web/src/asset-load.ts`, `apps/web/src/assets/model-urls.ts` and the game stay outside these lists. Tests live in each workspace's `test/` folder, outside them too, and every other rule in this file still applies to them. `scripts/telemetry-scopes.test.ts` checks which of these rules reach sample paths of each role. The rules match names and syntax. They do not follow types or data flow, so a review still checks what they cannot see, such as a service method whose Effect is dropped.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
@@ -89,6 +94,49 @@ The diagnostics hub, the recorder, React and `vite.config.ts` stay outside these
 | Do not write an object literal with a string `_tag`. Build a tagged value with its constructor, such as a `Schema.TaggedError` class. | `rushline/no-manual-tagged-construction` | `effectFiles` | None |
 | Do not import a named `make<Name>` export from a relative path or an `@racer/` workspace. Import the service tag or its Layer and yield the service. | `rushline/no-service-constructor-imports` | `libraryFiles` | None |
 | A chain of ternaries that compares one value with literals is a `Match`. | `rushline/prefer-effect-match` | `effectFiles` | None |
+| Sequence dependent Effect steps, branches, loops and named intermediate results in a generator: a named `Effect.fn` for an exported operation or service method, `Effect.gen` for private construction. Use `.pipe` for one plain transformation and for policy around an operation: error translation, recovery, retry, timeout, tracing, a permit or scope, and providing services. [Sequencing and composition](#sequencing-and-composition) shows each case in Rushline's code. | judgment | `effectFiles` | None |
+
+### Sequencing and composition
+
+`ingest` in `apps/web/src/server/telemetry.ts` is a generator because each step needs an earlier result: it gets the store, reads the body, decodes it twice, reads the clock and saves. A `.pipe` on one yielded step translates that step's failure and stays local to it:
+
+```ts
+export const ingest = Effect.fn("telemetry.ingest")(function* ingest(
+  request: Request
+) {
+  const store = yield* TelemetryStore;
+  const text = yield* readBody(request);
+  const value = yield* decodeJson(text).pipe(
+    Effect.mapError((cause) => new NotJson({ cause }))
+  );
+  const batch = yield* decodeBatchEffect(value).pipe(
+    Effect.mapError((cause) => new Invalid({ cause }))
+  );
+  const receivedAt = DateTime.formatIso(
+    DateTime.makeUnsafe(yield* Clock.currentTimeMillis)
+  );
+  const saved = yield* store
+    .save(batch, JSON.stringify({ batch, receivedAt }))
+    .pipe(Effect.mapError((cause) => new StoreFailed({ cause })));
+  const ack: Ack = {
+    batchId: batch.batchId,
+    duplicate: saved === "duplicate",
+    sessionId: batch.session.sessionId,
+  };
+  return ack;
+});
+```
+
+One transformation stays a pipe, as `pastDeadline` in `tools/perf/src/measure-page.ts` does:
+
+```ts
+const pastDeadline = (deadline: number) =>
+  Clock.currentTimeMillis.pipe(Effect.map((now) => now > deadline));
+```
+
+Policy that wraps the whole operation goes after the generator, in `Effect.fn`'s combinator arguments, not in a wrapper function. `deliver` in `apps/web/src/diagnostics/upload/delivery.ts` branches on the status and checks the acknowledgement inside its generator, then passes `Effect.catchTag("UploadFailure", …)` to turn an `UploadFailure` from any step into a retry. `save` in `packages/telemetry/src/jsonl-store.ts` passes `(saving) => gate.withPermit(saving)` the same way. In the same file `jsonlStoreLayer` builds the service with a private `Effect.gen` inside `Layer.effect`; that is construction, not an operation.
+
+When a chain of `map`, `flatMap` or `andThen` carries earlier results into later steps, write a generator so the dependencies show. A pipe that starts branching on outcomes or running further Effects belongs in the surrounding generator. Do not turn one clear transformation into a generator, and do not count combinators.
 
 ## Keep types honest
 
@@ -122,3 +170,4 @@ The diagnostics hub, the recorder, React and `vite.config.ts` stay outside these
 | Test behaviour a player would notice, through `createRace` and `stepRace`. Do not write unit tests for helpers. | judgment | `packages/sim`, `packages/career`, `packages/track` | None |
 | Do not mock modules. Replace a dependency through a real interface. | `anti-slop/no-module-mocking` | Repository | None |
 | Tests pass. | `pnpm test` | Repository | None |
+| After a change to what the game creates or releases, run `apps/web/test/renderer-lifecycle.ts` in an `rv up --dev` slot at `/kit?prof` with `rv js 'import("/test/renderer-lifecycle.ts").then((m) => m.run())'`. Its geometry, texture and program counts must return to their warmed values after each track change (A, B, A) and each quality change (lowest rung, top rung, lowest rung), with no upward trend, and three real `WEBGL_lose_context` cycles must end `lost` and then prepare `ready` again. A reload whose warm-up draw throws must still release the retired actors, and the retired world as well when the road changes. | judgment | `apps/web/test/renderer-lifecycle.ts` | None |

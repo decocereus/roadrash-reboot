@@ -4,6 +4,7 @@ import vitest from "ultracite/oxlint/vitest";
 
 export const deterministicFiles = [
   "packages/sim/src/bench-window.ts",
+  "packages/sim/src/bench-workload.ts",
   "packages/sim/src/bikes.ts",
   "packages/sim/src/cast.ts",
   "packages/sim/src/combat.ts",
@@ -49,6 +50,7 @@ export const deterministicFiles = [
   "packages/track/src/tracks/hollow-pine-road.ts",
   "packages/track/src/tracks/ridge-road.ts",
   "packages/track/src/tracks/slag-row.ts",
+  "packages/career/src/bench.ts",
   "packages/career/src/field.ts",
   "packages/career/src/lines.ts",
   "packages/career/src/memory.ts",
@@ -72,17 +74,19 @@ export const careerCodecFiles = [
 ];
 
 export const hotBodies = {
+  "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "noteCallback"],
     ["installFrameLoop", "setAnimationLoop()"],
   ],
   "apps/web/src/game/game.ts": [
-    ["createGame", "readInputs"],
-    ["createGame", "tick"],
-    ["createGame", "draw"],
+    ["startGame", "readInputs"],
+    ["startGame", "tick"],
+    ["startGame", "draw"],
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
+  "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [["carsAhead"]],
   "packages/sim/src/pilot.ts": [["pilotInput"]],
@@ -105,6 +109,12 @@ const effectFiles = [
   "apps/web/src/career/save.ts",
   "apps/web/src/career/save-storage.ts",
   "apps/web/src/career/save-storage-error.ts",
+  "apps/web/src/asset-runtime.ts",
+  "apps/web/src/assets/load.ts",
+  "apps/web/src/assets/model-request-failed.ts",
+  "apps/web/src/assets/model-response-rejected.ts",
+  "apps/web/src/assets/model-decode-failed.ts",
+  "apps/web/src/assets/font-readiness-failed.ts",
 ];
 
 const libraryFiles = [
@@ -118,6 +128,11 @@ const libraryFiles = [
   ...careerCodecFiles,
   "apps/web/src/career/save-storage.ts",
   "apps/web/src/career/save-storage-error.ts",
+  "apps/web/src/assets/load.ts",
+  "apps/web/src/assets/model-request-failed.ts",
+  "apps/web/src/assets/model-response-rejected.ts",
+  "apps/web/src/assets/model-decode-failed.ts",
+  "apps/web/src/assets/font-readiness-failed.ts",
 ];
 
 export default defineConfig({

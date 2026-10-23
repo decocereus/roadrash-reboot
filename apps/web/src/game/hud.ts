@@ -2,6 +2,8 @@ import type { CareerRaceSetup } from "@racer/career/field";
 import type { RaceOutcome } from "@racer/career/outcome";
 import type { BikeId } from "@racer/sim/bikes";
 
+import type { PrepareOutcome } from "./preparation.ts";
+
 export type GamePhase = "attract" | "idle" | "countdown" | "racing" | "settled";
 
 export type RaceMode = "career" | "quick";
@@ -51,34 +53,6 @@ export interface HudState {
   readonly roadLength: number;
 }
 
-export const idleHud: HudState = {
-  bikeName: "",
-  condition: 1,
-  copDistance: -1,
-  countdown: 0,
-  distanceLeft: 0,
-  gear: 1,
-  muted: false,
-  notice: "",
-  noticeDetail: "",
-  offBike: false,
-  phase: "attract",
-  position: 1,
-  progress: 0,
-  riderCount: 1,
-  rivalColour: "",
-  rivalName: "",
-  rivalStamina: 0,
-  roadLength: 0,
-  roadName: "",
-  speech: "",
-  speedKmh: 0,
-  stamina: 1,
-  weaponCapacity: 0,
-  weaponHits: 0,
-  weaponName: "",
-};
-
 export interface GameEvents {
   readonly onHud: (hud: HudState) => void;
   readonly onStart: (plan: RacePlan) => void;
@@ -89,7 +63,7 @@ export interface GameEvents {
 export interface GameHandle {
   readonly attract: () => void;
   readonly sleep: () => void;
-  readonly prepare: (plan: RacePlan) => Promise<void>;
+  readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly startRace: (plan: RacePlan) => void;
   readonly pause: () => boolean;
   readonly resume: () => void;
@@ -98,29 +72,3 @@ export interface GameHandle {
   readonly followRival: (tag: HTMLElement | null) => void;
   readonly dispose: () => void;
 }
-
-export interface HudFeed {
-  readonly read: () => HudState;
-  readonly write: (hud: HudState) => void;
-  readonly subscribe: (listener: () => void) => () => void;
-}
-
-export const createHudFeed = (): HudFeed => {
-  let current = idleHud;
-  const listeners = new Set<() => void>();
-  return {
-    read: () => current,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-    write(hud) {
-      current = hud;
-      for (const listener of listeners) {
-        listener();
-      }
-    },
-  };
-};
