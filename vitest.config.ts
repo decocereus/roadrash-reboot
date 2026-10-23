@@ -6,14 +6,16 @@ const viteTests = [
   "apps/web/test/asset-load.test.ts",
   "apps/web/test/renderer-lifecycle.test.ts",
 ];
+const policeTest = "packages/career/src/police.test.ts";
+const nativeImports = { nodeLoader: false, viteModuleRunner: false };
 
 export default defineConfig({
   test: {
     projects: [
       {
         test: {
-          exclude: [...configDefaults.exclude, ...viteTests],
-          experimental: { nodeLoader: false, viteModuleRunner: false },
+          exclude: [...configDefaults.exclude, ...viteTests, policeTest],
+          experimental: nativeImports,
           include: [
             "apps/**/*.test.ts",
             "packages/**/*.test.ts",
@@ -21,6 +23,13 @@ export default defineConfig({
             "tools/{perf,verify}/test/**/*.test.ts",
           ],
           name: "node",
+        },
+      },
+      {
+        test: {
+          experimental: nativeImports,
+          include: [policeTest],
+          name: "police",
         },
       },
       { test: { include: viteTests, name: "vite" } },

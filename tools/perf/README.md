@@ -6,7 +6,7 @@
 
 | Command | What it checks | Where it runs |
 | --- | --- | --- |
-| `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI check job |
+| `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI static job |
 | `pnpm perf` | The Node lane (throughput, tick p95 and p99, allocated bytes per tick) and the build lane (route, game, Worker and client bytes, and the six GLBs), side A against side B in one run. | `pnpm verify` and the CI `perf` job |
 | `pnpm perf:gpu` | Frame pacing and render counts (draw calls, triangles, shader programs and textures) in two windowed Helium runs on this Mac's GPU. | Locally, by hand. CI never runs it. |
 
@@ -46,7 +46,7 @@ Side A is a `/tmp` clone of the revision that `budgets.json` names, installed of
 
 Exit 0 means every required metric passed. Exit 1 is a budget, workload, measurement or evidence failure, and exit 2 is a bad flag, budgets file or baseline ref. Evidence goes to `results/<comparison id>/`. `--lanes node` or `--lanes build` runs part of the gate, prints `INCOMPLETE` and exits 1. `--evaluate <samples.json>` judges saved samples again.
 
-CI runs `pnpm perf` in the `perf` job of `.github/workflows/quality.yml`, on `ubuntu-24.04`, beside the check job and with a 15-minute timeout. It uploads `tools/perf/results` as the `perf-results` artifact even when it fails. The CI runner is judged against its own Node profile, `node-linux-x64`, and the same byte budgets as this Mac.
+CI runs `pnpm perf` in the `perf` job of `.github/workflows/quality.yml`, on `ubuntu-24.04`, beside the static and test jobs and with a 15-minute timeout. It uploads `tools/perf/results` as the `perf-results` artifact even when it fails. The CI runner is judged against its own Node profile, `node-linux-x64`, and the same byte budgets as this Mac.
 
 ## Frame measurement
 
