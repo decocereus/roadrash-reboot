@@ -1,6 +1,7 @@
 import type { Track } from "@racer/track/track";
 
 import { PLANNED_BRAKING } from "./pilot-corners.ts";
+import type { PilotHistory } from "./pilot-history.ts";
 import { between, carThreat, chooseLine } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
@@ -70,6 +71,7 @@ const carOnTheWay = (
 };
 
 export const copAim = (
+  history: PilotHistory,
   state: RaceState,
   track: Track,
   copIndex: number,
@@ -88,13 +90,14 @@ export const copAim = (
     };
   }
   if (!target) {
-    return chooseLine(state, track, copIndex, cop, PATROL_SPEED);
+    return chooseLine(history, state, track, copIndex, cop, PATROL_SPEED);
   }
   const pursuit = pursuitOf(state, cop, target);
   const open =
     pursuit.engaged &&
     !carOnTheWay(state, track, cop, pursuit.x, pursuit.within);
   return chooseLine(
+    history,
     state,
     track,
     copIndex,

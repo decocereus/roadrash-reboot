@@ -1,53 +1,66 @@
+import { weapons } from "@racer/sim/weapons";
+
 import { memoryRows } from "./memory.ts";
-import type { Reader } from "./save-schema.ts";
+import type { SaveError } from "./save-schema.ts";
 import { racerIds, rivalIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
 
-export const clash = (reader: Reader, field: string): void => {
-  reader.problems.push({ field, kind: "inconsistent" });
+const holdsWeapon = (career: CareerState): boolean => {
+  const { weapon, weaponHits } = career;
+  if (weapon === "none") {
+    return weaponHits === 0;
+  }
+  return weaponHits >= 1 && weaponHits <= weapons[weapon].hits;
 };
 
-export const checkActiveRace = (reader: Reader, career: CareerState): void => {
+const activeRaceClash = (career: CareerState): string | null => {
   const race = career.activeRace;
-  if (!race) {
-    return;
+  if (race === null) {
+    return null;
   }
-  if (race.level !== career.level) {
-    clash(reader, "activeRace.level");
-  }
-  if (race.bikeId !== career.bikeId) {
-    clash(reader, "activeRace.bikeId");
-  }
-  if (race.raceId !== career.record.starts) {
-    clash(reader, "activeRace.raceId");
-  }
-  if (career.gameOver) {
-    clash(reader, "gameOver");
-  }
-  if (career.lastResult) {
-    clash(reader, "lastResult");
-  }
+  const clashes: readonly (readonly [string, boolean])[] = [
+    ["activeRace.level", race.level !== career.level],
+    ["activeRace.bikeId", race.bikeId !== career.bikeId],
+    ["activeRace.raceId", race.raceId !== career.record.starts],
+    ["gameOver", career.gameOver],
+    ["lastResult", career.lastResult !== null],
+  ];
+  return clashes.find(([, clash]) => clash)?.[0] ?? null;
 };
 
-export const checkRaceNumbers = (reader: Reader, career: CareerState): void => {
+const raceNumberClash = (career: CareerState): string | null => {
   const { starts } = career.record;
   if (career.lastResult && career.lastResult.summary.raceId !== starts) {
-    clash(reader, "lastResult.summary.raceId");
+    return "lastResult.summary.raceId";
   }
   for (const racer of racerIds) {
     for (const other of racerIds) {
       if ((career.season[racer].lastAhead[other] ?? 0) > starts) {
-        clash(reader, `season.${racer}.lastAhead.${other}`);
+        return `season.${racer}.lastAhead.${other}`;
       }
     }
   }
-  for (const rival of rivalIds) {
-    const remembered = career.memory[rival];
-    if (
-      remembered.sharedRace > starts ||
-      memoryRows.some((row) => remembered[row] > remembered.sharedRace)
-    ) {
-      clash(reader, `memory.${rival}`);
-    }
+  const remembered = rivalIds.find((rival) => {
+    const memory = career.memory[rival];
+    return (
+      memory.sharedRace > starts ||
+      memoryRows.some((row) => memory[row] > memory.sharedRace)
+    );
+  });
+  return remembered === undefined ? null : `memory.${remembered}`;
+};
+
+const clashOf = (career: CareerState): string | null => {
+  if (!career.garage.includes(career.bikeId)) {
+    return "garage";
   }
+  return activeRaceClash(career) ?? raceNumberClash(career);
+};
+
+export const problemOf = (career: CareerState): SaveError | null => {
+  if (!holdsWeapon(career)) {
+    return { field: "weaponHits", kind: "invalid" };
+  }
+  const field = clashOf(career);
+  return field === null ? null : { field, kind: "inconsistent" };
 };

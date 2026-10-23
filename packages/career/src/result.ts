@@ -25,7 +25,7 @@ export interface BustDetails {
   readonly fine: number;
 }
 
-export interface WreckDetails {
+interface WreckDetails {
   readonly bikeId: BikeId;
   readonly km: number;
 }

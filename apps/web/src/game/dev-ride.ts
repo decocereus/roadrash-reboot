@@ -1,10 +1,12 @@
-import { clamp, curvePushOf, lateralSpeedLimit } from "@racer/sim/state";
-import type {
-  Hazard,
-  RaceState,
-  RiderInput,
-  RiderState,
+import type { RaceRun } from "@racer/sim/race-run";
+import type { RaceView, RiderView } from "@racer/sim/race-view";
+import {
+  clamp,
+  curvePushOf,
+  lateralSpeedLimit,
+  PLAYER_RIDER,
 } from "@racer/sim/state";
+import type { Hazard, RiderInput } from "@racer/sim/state";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
@@ -13,22 +15,7 @@ const HAZARD_LEAD = 150;
 const KMH = 3.6;
 const LINE_PULL = 1.2;
 const LINE_SWAY = 3;
-const CLEAR_BEHIND = 60;
-const CLEAR_AHEAD = 400;
-const CLEAR_TO = 700;
-const CLEAR_GAP = 35;
-
-const clearTraffic = (race: RaceState, from: number, to: number): void => {
-  let moved = 0;
-  for (const car of race.cars) {
-    if (car.s > from - CLEAR_BEHIND && car.s < to + CLEAR_AHEAD) {
-      car.s = to + CLEAR_TO + moved * CLEAR_GAP;
-      moved += 1;
-    }
-  }
-};
-
-const holdLine = (track: Track, me: RiderState, lineX: number): number => {
+const holdLine = (track: Track, me: RiderView, lineX: number): number => {
   const wanted = clamp((lineX - me.x) * LINE_PULL, -LINE_SWAY, LINE_SWAY);
   const push = curvePushOf(me.bike, curvatureAt(track, me.s), me.speed);
   return clamp(
@@ -39,13 +26,13 @@ const holdLine = (track: Track, me: RiderState, lineX: number): number => {
 };
 
 export interface DevRide {
-  readonly place: (race: RaceState) => void;
+  readonly place: (run: RaceRun) => void;
   readonly steer: (
-    race: RaceState,
+    race: RaceView,
     track: Track,
     input: RiderInput | undefined
   ) => void;
-  readonly holds: (race: RaceState) => boolean;
+  readonly holds: (race: RaceView) => boolean;
   readonly whenReleased: (resume: () => void) => void;
 }
 
@@ -67,10 +54,10 @@ export const devRideFrom = (search: string): DevRide => {
   const clear = flags.has("clear");
   let holdTicks = WATCHING;
 
-  const target = (race: RaceState): Hazard | undefined =>
+  const target = (race: RaceView): Hazard | undefined =>
     race.hazards.find((hazard) => hazard.id === hazardId);
 
-  const seen = (race: RaceState): boolean => {
+  const seen = (race: RaceView): boolean => {
     const [me] = race.riders;
     if (!me) {
       return false;
@@ -111,27 +98,24 @@ export const devRideFrom = (search: string): DevRide => {
       }
       return false;
     },
-    place: (race) => {
-      const [me] = race.riders;
-      if (!me) {
+    place: (run) => {
+      if (!run.view.riders[PLAYER_RIDER]) {
         return;
       }
-      const hazard = target(race);
+      const hazard = target(run.view);
       const s = hazard ? hazard.s - hazardLead : startAt;
       if (s <= 0) {
         return;
       }
-      me.bodyS += s - me.s;
-      me.s = s;
+      run.placeRiderAt(PLAYER_RIDER, s);
       if (hazard) {
-        me.x = hazard.x;
-        me.bodyX = hazard.x;
+        run.placeRiderAcross(PLAYER_RIDER, hazard.x);
       }
       if (startKmh > 0) {
-        me.speed = startKmh / KMH;
+        run.setRiderSpeed(PLAYER_RIDER, startKmh / KMH);
       }
       if (clear) {
-        clearTraffic(race, s, hazard?.s ?? s);
+        run.relocateTraffic(s, hazard?.s ?? s);
       }
     },
     steer: (race, track, input) => {

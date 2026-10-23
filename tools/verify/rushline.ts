@@ -4,7 +4,6 @@ import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient";
 import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeSocket from "@effect/platform-node/NodeSocket";
-import { DetachedProcesses } from "@racer/devtools/node/detached-process";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -16,7 +15,6 @@ import { SlotStore } from "./src/state.ts";
 const SCRIPT = import.meta.filename;
 
 const processes = ToolProcesses.layer.pipe(
-  Layer.provide(DetachedProcesses.layer),
   Layer.provide(NodeChildProcessSpawner.layer)
 );
 

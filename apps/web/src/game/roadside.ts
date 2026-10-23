@@ -12,6 +12,7 @@ import type { Part, Placement, Stretch } from "./ground.ts";
 import { RED } from "./looks.ts";
 import type { Roadside } from "./looks.ts";
 import { warningSignTexture } from "./sign-textures.ts";
+import { owned } from "./texture-canvas.ts";
 
 const CHUNK_LENGTH = 200;
 const BANK_STEP = 2;
@@ -82,7 +83,7 @@ const postParts = (shading: Shading): Part[] => [
   },
 ];
 
-const signParts = (shading: Shading): Part[] => [
+const signParts = (shading: Shading, textures: Set<THREE.Texture>): Part[] => [
   {
     geometry: lifted(
       new THREE.CylinderGeometry(0.05, 0.05, 2.3, 6),
@@ -96,7 +97,7 @@ const signParts = (shading: Shading): Part[] => [
       [0, 2.5, 0]
     ),
     material: new THREE.MeshBasicMaterial({
-      map: warningSignTexture(),
+      map: owned(textures, warningSignTexture()),
       side: THREE.DoubleSide,
     }),
   },
@@ -314,7 +315,8 @@ export interface RoadsideDressing {
 
 export const buildRoadside = (
   track: Track,
-  shading: Shading
+  shading: Shading,
+  textures: Set<THREE.Texture>
 ): RoadsideDressing => {
   const { look } = shading;
   const { roadside } = look;
@@ -368,7 +370,7 @@ export const buildRoadside = (
     group,
     track,
     laySigns(track, random, front, roadside.signs),
-    signParts(shading)
+    signParts(shading, textures)
   );
   return { group, stretches };
 };

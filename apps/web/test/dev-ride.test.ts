@@ -1,0 +1,69 @@
+import { defaultSetup } from "@racer/sim/race";
+import { createRaceRun } from "@racer/sim/race-run";
+import type { RaceRun } from "@racer/sim/race-run";
+import { trackFor } from "@racer/track/roads";
+import { describe, expect, it } from "vitest";
+
+import { devRideFrom } from "../src/game/dev-ride.ts";
+
+const freshRun = (): RaceRun =>
+  createRaceRun(defaultSetup(trackFor("ridge-road", 1), 3));
+
+const playerOf = (run: RaceRun) => {
+  const [me] = run.view.riders;
+  if (!me) {
+    throw new Error("The race has no rider.");
+  }
+  return me;
+};
+
+describe("dev ride placement", () => {
+  it("at and kmh move the player and its body along the road and set its speed, keeping its line", () => {
+    const run = freshRun();
+    const me = playerOf(run);
+    const { bodyS, s, x } = me;
+    devRideFrom("?at=600&kmh=90").place(run);
+    expect(me.s).toBe(600);
+    expect(me.bodyS).toBe(bodyS + 600 - s);
+    expect(me.x).toBe(x);
+    expect(me.speed).toBe(25);
+  });
+
+  it("kmh alone changes nothing while the start is not past the line", () => {
+    const run = freshRun();
+    const before = structuredClone(run.view);
+    devRideFrom("?kmh=90&clear").place(run);
+    expect(run.view).toStrictEqual(before);
+  });
+
+  it("hazard puts the player on the hazard's line a lead before it, and leaves its speed alone", () => {
+    const run = freshRun();
+    const [hazard] = run.view.hazards;
+    if (!hazard) {
+      throw new Error("The road has no hazard.");
+    }
+    const me = playerOf(run);
+    const { speed } = me;
+    devRideFrom(`?hazard=${hazard.id}&before=150`).place(run);
+    expect(me.s).toBe(hazard.s - 150);
+    expect(me.x).toBe(hazard.x);
+    expect(me.bodyX).toBe(hazard.x);
+    expect(me.speed).toBe(speed);
+  });
+
+  it("clear moves the cars near the start to gaps past it and leaves the rest", () => {
+    const run = freshRun();
+    const before = run.view.cars.map((car) => car.s);
+    devRideFrom("?at=600&clear").place(run);
+    let moved = 0;
+    const expected = before.map((s) => {
+      if (s > 540 && s < 1000) {
+        moved += 1;
+        return 1300 + (moved - 1) * 35;
+      }
+      return s;
+    });
+    expect(moved).toBeGreaterThan(0);
+    expect(run.view.cars.map((car) => car.s)).toStrictEqual(expected);
+  });
+});

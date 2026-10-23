@@ -1,0 +1,600 @@
+{
+  "harnessDigest": "470ed1b8208c2f86ad43f110f3f5a46dae793f794cb41f1e015e28cc630293b0",
+  "observations": [
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 7279.837120546515
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 3169.0167651921597
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 0.3350184699911499
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 0.5130714187436436
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 0.37003639431286056
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 0.5715988732229338
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 557963.1547420966
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 1113405.9500831948
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 1087798
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 580874
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 839448
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 495241
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 2779703
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 1375100
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 1691905
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 794226
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "value": 1036514
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "value": 259269
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 2800331
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 1382120
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.bike",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 122108
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.car",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 53048
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_a",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 238128
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_b",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 238876
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_c",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 237836
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.van",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 47784
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "value": 937780
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 2857.8052806298924
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1303.9378839545036
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 0.8403428734310313
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1.2557802419196575
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 0.9069557625477754
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1.4108116460622624
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 559902.0965058237
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "value": 1119282.9683860233
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 17.5
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 17
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 18.200000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 18.100000381469727
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.count",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.count",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.calls.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 460
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.calls.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 513
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.triangles.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 2789749
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.triangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 3217443
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 42
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 42
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 71
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "value": 78
+    }
+  ],
+  "revisions": {
+    "parent": "0ec9290cdaabab8f708057f3ab1bc8d6c11b858d",
+    "instrumented": "fd677a71c74167dc049a2bcf232f26f8f9abda86"
+  },
+  "runs": [
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 8.063916999999975 ms",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[]",
+        "harnessDigest": "470ed1b8208c2f86ad43f110f3f5a46dae793f794cb41f1e015e28cc630293b0",
+        "memoryBytes": "25769803776",
+        "node": "v24.22.1",
+        "platform": "darwin",
+        "sideASourceDigest": "dca0f63e70d727a428cb10b5bae75a84b97859cd5ac95f0b8231d6934778b4aa",
+        "sideBSourceDigest": "ef77109e81f842928e9d63507ee7ff01ab7098e422aefbfe695e8bd61b8b56a0",
+        "v8": "13.6.233.17-node.58",
+        "wallMs": "{\"build\":3750,\"materialize\":15588,\"node\":48000,\"total\":67514}",
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"client\":[2800331,1382122],\"game\":[2779703,1375102],\"gameIncremental\":[1691905,794226],\"kit\":[839448,495240],\"root\":[1087798,580876],\"uploaderIncremental\":[3444,1728],\"worker\":[245372,56401]}",
+        "cloneKiB": "1920104",
+        "lockfileSha256": "05cfeda878a63533b87f203028c102597758518a4479d1ebc1ee8dbf9fa5ee77",
+        "machine": "Mac16,8",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "versions": "vite 8.3.2, @tanstack/react-start 1.168.60, three 0.180.0, react 19.2.8, effect 4.0.0",
+        "artifactDigestA": "6b00f5c188d71406893664ec39c9ef1fa382e7e58dab614f0d0e00ee121b44a2",
+        "artifactDigestB": "c45adbfff54391d573ad6f738cca71c475e65636e91774236a0ae5117b3753b6"
+      },
+      "id": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
+        "B": "edb664a9120e82a3079bd2063a5794306600c1fe (dirty)"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 10.805418000000031 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[]",
+        "harnessDigest": "470ed1b8208c2f86ad43f110f3f5a46dae793f794cb41f1e015e28cc630293b0",
+        "memoryBytes": "16766414848",
+        "node": "v24.21.0",
+        "platform": "linux",
+        "sideASourceDigest": "dca0f63e70d727a428cb10b5bae75a84b97859cd5ac95f0b8231d6934778b4aa",
+        "sideBSourceDigest": "a63be277ba7a072a45f1da2385dbbd7ad71a33dc0b7a99863136fafabb09a3aa",
+        "v8": "13.6.233.17-node.53",
+        "wallMs": "{\"build\":5584,\"materialize\":6976,\"node\":123191,\"total\":136071}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor, 4 vCPU, 16 GiB",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04 version 20261012.334.1",
+        "pnpm": "11.21.0",
+        "ci": "GitHub Actions run 39829450534, job 120001394207 (perf), workflow .github/workflows/quality.yml, pull_request event on PR #29",
+        "checkout": "0d6e03c, the pull request merge of a93ebee83f902f878172e691503d627561fad5f5 into 0ec9290cdaabab8f708057f3ab1bc8d6c11b858d",
+        "command": "node tools/perf/gate.ts baseline --baseline-ref fd677a71c74167dc049a2bcf232f26f8f9abda86 --lanes node,build",
+        "artifact": "perf-results"
+      },
+      "id": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
+        "B": "0d6e03c8ba42f037c14db3213d1337fa346b8ff5"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.6.2 (25G83)",
+        "power": "AC power",
+        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
+        "browser": "Helium 0.19.2.1 (Chromium 155.0.8059.39), windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1504x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "971197",
+        "order": "reference-v1 pair0 A, reference-v1 pair0 B, pack-riding-v1 pair0 B, pack-riding-v1 pair0 A, reference-v1 pair1 B, reference-v1 pair1 A, pack-riding-v1 pair1 A, pack-riding-v1 pair1 B, reference-v1 pair2 A, reference-v1 pair2 B, pack-riding-v1 pair2 B, pack-riding-v1 pair2 A, reference-v1 pair3 B, reference-v1 pair3 A, pack-riding-v1 pair3 A, pack-riding-v1 pair3 B, reference-v1 pair4 A, reference-v1 pair4 B, pack-riding-v1 pair4 B, pack-riding-v1 pair4 A"
+      },
+      "id": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "edb664a9120e82a3079bd2063a5794306600c1fe (rv 20261022-225828-s0)",
+        "B": "edb664a9120e82a3079bd2063a5794306600c1fe (rv 20261022-225837-s1)"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "workerClosure": "every chunk the server entry reaches through imports and dynamicImports in the server .vite/manifest.json, JavaScript only, each file once",
+        "builtA": "{\"client\":[2800331,1382122],\"game\":[2779703,1375102],\"gameIncremental\":[1691905,794226],\"kit\":[839448,495240],\"root\":[1087798,580876],\"uploaderIncremental\":[3444,1728],\"worker\":[1036514,259269]}",
+        "builtB": "{\"client\":[2800331,1382127],\"game\":[2779703,1375106],\"gameIncremental\":[1691905,794229],\"kit\":[839448,495244],\"root\":[1087798,580877],\"uploaderIncremental\":[3444,1729],\"worker\":[1036544,259279]}",
+        "workerFilesA": "14",
+        "artifactDigestA": "2cf2b8b967a564e375fa7353785b4c77e86f3b5f8d0fb7ec7aa30d0607de1976",
+        "artifactDigestB": "de47201b763d89655ee01e2eb65776274293e7603efeea8fb407c44a6e64b27f",
+        "sameAsFirstRun": "side A's 51 payloads match baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a side A byte for byte except server/assets/_tanstack-start-manifest_v-CpUmFl2O.js and server/server.js (the Start manifest chunk's name hash differs between clones, and server.js imports it by name); raw sizes are equal, 1036514 B over the same Worker files",
+        "cloneKiB": "1921256",
+        "harnessDigest": "c5e982c2178f8a9dc9c48e173de5db89722e8e8d8f217d624c487dbe879342ee",
+        "lockfileSha256": "05cfeda878a63533b87f203028c102597758518a4479d1ebc1ee8dbf9fa5ee77",
+        "machine": "Mac16,8",
+        "node": "v24.22.1",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "37616089933002666046538e964c5033f34edffcf827313961dd8984f3cf08a8",
+        "sideBSourceDigest": "c1806b1eef2bd96e44f0b663018906c18a31474791c870c40f5b3bf196d929db",
+        "wallMs": "{\"build\":3731,\"materialize\":15446,\"node\":0,\"total\":19283}"
+      },
+      "id": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "lanes": ["build"],
+      "sides": {
+        "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
+        "B": "29f83004e8f78849fb56fb7f8378323a3cb9d6da (dirty)"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "hash": "a3c3eacff3f9961cc112e46f62c197e310d3326d4bd2573cc6cd0609f185bb8b",
+      "id": "reference-v1",
+      "police": 1,
+      "race": "slag-row level 1, seed 31, halden-wren-400",
+      "racers": 15,
+      "window": {
+        "from": 1727,
+        "to": 2327
+      },
+      "workloadDigest": "7b5107a7be04ad2a05dd03176c529d24b63f231d3579a62a57c19beeab844497"
+    },
+    {
+      "hash": "6dcdebec5e39ea7abe5123ca4d4c1e47a42954db267196a950f7bb041e19a0ba",
+      "id": "pack-riding-v1",
+      "police": 8,
+      "race": "slag-row level 5, seed 8, ostra-sesta-600",
+      "racers": 15,
+      "window": {
+        "from": 2165,
+        "to": 2765
+      },
+      "workloadDigest": "ac96a3731ddb956b4e167e91650023b167ae1ab1943f433b8ee5f92248abeb1c"
+    }
+  ],
+  "trackCompile": {
+    "method": "compileTrack(roadAtLevel(road, level)) for the 5 roads x 5 levels, cold, in a fresh Node 24.22.1 process on this Mac; median of five processes (43.7, 44.2, 44.3, 44.4, 45.5 ms). Recorded, not budgeted.",
+    "ms": 44.33,
+    "tracks": 25
+  },
+  "version": 1
+}

@@ -10,7 +10,8 @@
       "entry": [
         "src/routes/**/*.{ts,tsx}",
         "src/**/*.test.ts",
-        "test/**/*.test.ts"
+        "test/**/*.test.ts",
+        "test/renderer-lifecycle.ts"
       ],
       "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
       "typescript": true
@@ -42,7 +43,13 @@
       "typescript": true
     },
     "tools/perf": {
-      "entry": ["measure.ts", "session.ts", "test/**/*.test.ts"],
+      "entry": [
+        "gate.ts",
+        "measure.ts",
+        "node.ts",
+        "session.ts",
+        "test/**/*.test.ts"
+      ],
       "project": ["**/*.ts"],
       "typescript": true
     },

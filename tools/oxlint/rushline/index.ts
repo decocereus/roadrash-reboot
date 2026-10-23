@@ -1,8 +1,10 @@
 import { definePlugin } from "@oxlint/plugins";
 
+import { deterministicCoreRule } from "./rules/deterministic-core.ts";
 import { noCommentsRule } from "./rules/no-comments.ts";
 import { noEffectRuntimeRule } from "./rules/no-effect-runtime.ts";
 import { noFloatingEffectRule } from "./rules/no-floating-effect.ts";
+import { noHotAllocationRule } from "./rules/no-hot-allocation.ts";
 import { noInlineSchemaCompileRule } from "./rules/no-inline-schema-compile.ts";
 import { noManualEffectErrorTagRule } from "./rules/no-manual-effect-error-tag.ts";
 import { noManualTagComparisonRule } from "./rules/no-manual-tag-comparison.ts";
@@ -22,9 +24,11 @@ import { workspaceImportsRule } from "./rules/workspace-imports.ts";
 const rushlinePlugin = definePlugin({
   meta: { name: "rushline" },
   rules: {
+    "deterministic-core": deterministicCoreRule,
     "no-comments": noCommentsRule,
     "no-effect-runtime": noEffectRuntimeRule,
     "no-floating-effect": noFloatingEffectRule,
+    "no-hot-allocation": noHotAllocationRule,
     "no-inline-schema-compile": noInlineSchemaCompileRule,
     "no-manual-effect-error-tag": noManualEffectErrorTagRule,
     "no-manual-tag-comparison": noManualTagComparisonRule,

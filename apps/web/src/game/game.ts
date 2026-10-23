@@ -1,7 +1,6 @@
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
-import { pilotInput } from "@racer/sim/pilot";
-import { defaultSetup, distanceLeft, stepRace } from "@racer/sim/race";
+import { defaultSetup, distanceLeft } from "@racer/sim/race";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RaceSetup } from "@racer/sim/state";
 import { roadIds, trackFor } from "@racer/track/roads";
@@ -10,8 +9,9 @@ import * as THREE from "three";
 
 import { benchOf } from "../career/bench.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
-import { loadAssets } from "./assets.ts";
+import type { AcquiredAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
+import { createBenchProfile } from "./bench-profile.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
 import {
@@ -23,6 +23,9 @@ import {
 import type { GameEvents, GameHandle, GamePhase, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
+import { nativeClock } from "./preparation.ts";
+import type { PrepareOutcome } from "./preparation.ts";
+import { rendererOf } from "./profile.ts";
 import { bindQuality, createQuality } from "./quality-ladder.ts";
 import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
 import { bindCast, createCast } from "./rider-views.ts";
@@ -49,7 +52,7 @@ interface Session {
   countdown: number;
   lastStretchSaid: boolean;
   prepared: RaceSetup | null;
-  preparing: Promise<void>;
+  preparing: Promise<PrepareOutcome>;
 }
 
 const consequenceSeconds = (outcome: RaceOutcome): number => {
@@ -87,26 +90,13 @@ const pinnedRefresh = Number(
 const roadForTurn = (turn: number): Track =>
   trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
 
-export const createGame = async (
-  canvas: HTMLCanvasElement,
-  events: GameEvents
-): Promise<GameHandle> => {
-  const assets = await loadAssets();
-  const session: Session = {
-    countdown: 0,
-    frozen: false,
-    holdLeft: 0,
-    lastStretchSaid: false,
-    log: null,
-    overLeft: 0,
-    phase: "attract",
-    plan: null,
-    prepared: null,
-    preparing: Promise.resolve(),
-    roadTurn: firstRoad,
-    seed: 1,
-    settled: null,
-  };
+export { assetParsers } from "./assets.ts";
+
+const notPrepared: PrepareOutcome = { kind: "cancelled" };
+
+export const createRenderer = (
+  canvas: HTMLCanvasElement
+): THREE.WebGLRenderer => {
   const renderer = new THREE.WebGLRenderer({
     antialias: false,
     canvas,
@@ -118,26 +108,81 @@ export const createGame = async (
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.info.autoReset = false;
-  const quality = createQuality(renderer, {
-    pinnedPixelRatio,
-    pinnedRefresh,
-    pinnedRung,
+  return renderer;
+};
+
+const releaseAll = (owners: (() => void)[]): void => {
+  for (const release of owners.splice(0).toReversed()) {
+    release();
+  }
+};
+
+const startGame = (
+  canvas: HTMLCanvasElement,
+  events: GameEvents,
+  assets: AcquiredAssets["assets"],
+  makeRenderer: (canvas: HTMLCanvasElement) => THREE.WebGLRenderer,
+  owners: (() => void)[]
+): GameHandle => {
+  const session: Session = {
+    countdown: 0,
+    frozen: false,
+    holdLeft: 0,
+    lastStretchSaid: false,
+    log: null,
+    overLeft: 0,
+    phase: "attract",
+    plan: null,
+    prepared: null,
+    preparing: Promise.resolve(notPrepared),
+    roadTurn: firstRoad,
+    seed: 1,
+    settled: null,
+  };
+  const renderer = makeRenderer(canvas);
+  owners.push(() => {
+    renderer.dispose();
   });
+  const quality = createQuality(
+    renderer,
+    { pinnedPixelRatio, pinnedRefresh, pinnedRung },
+    () => window.devicePixelRatio
+  );
   const hub = diagnostics();
   const { recorder } = hub;
   const frame = createFrameLoop(renderer);
+  owners.push(() => {
+    frame.meter?.dispose();
+    frame.profiler?.dispose();
+  });
+  const bench = createBenchProfile(
+    benchOf(globalThis.location.search),
+    recorder.raceId
+  );
+  owners.push(() => {
+    bench?.dispose();
+  });
   const lap = lapOf(frame);
   const pipeline = createPipeline(renderer, lap);
+  owners.push(() => {
+    pipeline.dispose();
+  });
 
   const stage = createStage(
     assets,
     roadForTurn(session.roadTurn),
     session.seed
   );
+  owners.push(() => {
+    stage.world.dispose();
+  });
   pipeline.setLook(stage.world.shading.look);
   stage.world.scene.add(stage.fleet.group);
   const chase = createChaseCamera();
   const sound = createSound();
+  owners.push(() => {
+    sound.dispose();
+  });
   const cast = createCast(stage.world.shading);
   const feedback = createFeedback();
 
@@ -152,17 +197,31 @@ export const createGame = async (
     placeFleet,
     touchDown,
   } = bindCast({ assets, cast, stage });
-  const { abandonCompiles, build, player, warmNow, warmSoon, warmUp } =
-    bindStage({
-      assets,
-      buildViews,
-      cast,
-      chase,
-      devRide,
-      pipeline,
-      quality,
-      stage,
-    });
+  owners.push(() => {
+    dropViews();
+    dropFleet();
+  });
+  const {
+    build,
+    cancelPreparation,
+    loseContext,
+    player,
+    restoreContext,
+    warmNow,
+    warmSoon,
+    warmUp,
+  } = bindStage({
+    assets,
+    buildViews,
+    cast,
+    chase,
+    clock: nativeClock,
+    devRide,
+    pipeline,
+    quality,
+    stage,
+  });
+  owners.push(cancelPreparation);
   const { placeTag, quiet, react, report, say, toggleMute } = bindFeedback({
     canvas,
     cast,
@@ -195,13 +254,16 @@ export const createGame = async (
   const loadRace = (setup: RaceSetup, nextPhase: GamePhase) => {
     session.prepared = null;
     const release = build(setup, nextPhase === "countdown");
-    begin(nextPhase);
-    if (nextPhase === "attract") {
-      void warmSoon();
-    } else {
-      warmNow();
+    try {
+      begin(nextPhase);
+      if (nextPhase === "attract") {
+        void warmSoon();
+      } else {
+        warmNow();
+      }
+    } finally {
+      release();
     }
-    release();
   };
 
   const loadAttract = (nextRoad: boolean) => {
@@ -231,7 +293,7 @@ export const createGame = async (
     } else {
       loadRace(next.setup, "countdown");
     }
-    recorder.race("start", stage.race.tick);
+    recorder.race("start", stage.race.view.tick);
   };
 
   const halted = (): boolean =>
@@ -245,12 +307,19 @@ export const createGame = async (
     if (code === "KeyM") {
       toggleMute();
     }
-    if (code === MARKER_KEY && live() && recorder.marker(stage.race.tick)) {
+    if (
+      code === MARKER_KEY &&
+      live() &&
+      recorder.marker(stage.race.view.tick)
+    ) {
       say("marked");
     }
     if (code === "KeyR" && session.plan?.mode === "quick" && live()) {
       startRace(session.plan);
     }
+  });
+  owners.push(() => {
+    controls.dispose();
   });
 
   const attractOver = (): boolean => player().finishTick >= 0 || out(player());
@@ -259,13 +328,13 @@ export const createGame = async (
     if (!(session.plan && session.log) || session.settled) {
       return;
     }
-    recordTick(session.log, stage.race, session.plan.setup);
+    recordTick(session.log, stage.race.view, session.plan.setup);
     if (!session.log.outcome) {
       return;
     }
     session.settled = session.log.outcome;
     session.phase = "settled";
-    recorder.race("end", stage.race.tick);
+    recorder.race("end", stage.race.view.tick);
     session.overLeft = consequenceSeconds(session.settled);
     events.onSettle(session.plan, session.settled);
     if (session.overLeft <= 0) {
@@ -300,15 +369,15 @@ export const createGame = async (
       if (index === 0 && session.phase !== "attract" && !autopilot) {
         controls.read(TICK_SECONDS, input);
       } else {
-        pilotInput(stage.race, stage.track, index, input);
+        stage.race.pilot(index, input);
       }
     }
-    devRide?.steer(stage.race, stage.track, cast.inputs[0]);
+    devRide?.steer(stage.race.view, stage.track, cast.inputs[0]);
   };
 
   const tick = () => {
     captureAll("before");
-    const { cars } = stage.race;
+    const { cars } = stage.race.view;
     for (let index = 0; index < cars.length; index += 1) {
       stage.previousCars[index] = cars[index]?.s ?? 0;
     }
@@ -321,7 +390,7 @@ export const createGame = async (
       session.countdown -= TICK_SECONDS;
       if (session.countdown <= 0 && session.plan) {
         session.phase = "racing";
-        recorder.race("green", stage.race.tick);
+        recorder.race("green", stage.race.view.tick);
         events.onStart(session.plan);
       }
       holdStill();
@@ -332,14 +401,18 @@ export const createGame = async (
       loadAttract(true);
       return;
     }
-    stepRace(stage.race, stage.track, cast.inputs);
-    for (const event of stage.race.events) {
+    stage.race.step(cast.inputs);
+    bench?.record(stage.race.view);
+    for (const event of stage.race.view.events) {
       touchDown(event);
     }
     if (session.phase !== "attract") {
       react();
     }
-    if (session.phase === "racing" && devRide?.holds(stage.race) === true) {
+    if (
+      session.phase === "racing" &&
+      devRide?.holds(stage.race.view) === true
+    ) {
       session.frozen = true;
     }
     record();
@@ -366,6 +439,7 @@ export const createGame = async (
     halted,
     pipeline,
     quality,
+    readGpu: () => rendererOf(renderer),
     recorder,
     renderer,
     stage,
@@ -378,7 +452,7 @@ export const createGame = async (
     }
     cast.clock += seconds;
     let index = -1;
-    for (const rider of stage.race.riders) {
+    for (const rider of stage.race.view.riders) {
       index += 1;
       const view = cast.views[index];
       if (!view) {
@@ -401,7 +475,7 @@ export const createGame = async (
 
     chase.update(stage.track, cast.subject, seconds);
     frame.profiler?.lap("camera");
-    stage.world.showHazards(stage.race.hazards, cast.subject.s);
+    stage.world.showHazards(stage.race.view.hazards, cast.subject.s);
     stage.world.follow(chase.camera, cast.subject.s);
     frame.profiler?.lap("world");
     present();
@@ -417,8 +491,7 @@ export const createGame = async (
     renderer,
   });
 
-  const unwatchCanvas = hub.watchCanvas(canvas);
-  const unsubscribeSettings = hub.settings.subscribe(applySettings);
+  owners.push(hub.watchCanvas(canvas), hub.settings.subscribe(applySettings));
   applySettings();
   const detachProbe = hub.attachGame({
     frameAt: (index) => frame.profiler?.reader.frameAt(index) ?? null,
@@ -432,15 +505,23 @@ export const createGame = async (
         phase: session.phase,
         quality: { ...quality.qualityAfter },
         race: recorder.raceId(),
-        tick: stage.race.tick,
+        tick: stage.race.view.tick,
       };
     },
   });
+  owners.push(detachProbe);
   applyDeviceStart();
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
-  canvas.addEventListener("webglcontextlost", abandonCompiles);
+  canvas.addEventListener("webglcontextlost", loseContext);
+  canvas.addEventListener("webglcontextrestored", restoreContext);
   document.addEventListener("visibilitychange", forgetHiddenTime);
+  owners.push(() => {
+    observer.disconnect();
+    canvas.removeEventListener("webglcontextlost", loseContext);
+    canvas.removeEventListener("webglcontextrestored", restoreContext);
+    document.removeEventListener("visibilitychange", forgetHiddenTime);
+  });
   resize();
   buildViews();
   warmUp();
@@ -472,17 +553,21 @@ export const createGame = async (
     stage,
     tick,
   });
+  owners.push(() => {
+    renderer.setAnimationLoop(null);
+  });
 
-  const showStartWhenWarm = async (): Promise<void> => {
-    if (await warmSoon()) {
+  const showStartWhenWarm = async (): Promise<PrepareOutcome> => {
+    const outcome = await warmSoon();
+    if (outcome.kind !== "cancelled" && outcome.kind !== "lost") {
       draw(0, 0);
     }
+    return outcome;
   };
 
-  const prepare = async (next: RacePlan): Promise<void> => {
+  const prepare = async (next: RacePlan): Promise<PrepareOutcome> => {
     if (session.prepared === next.setup) {
-      await session.preparing;
-      return;
+      return await session.preparing;
     }
     session.plan = null;
     session.log = null;
@@ -494,7 +579,15 @@ export const createGame = async (
     session.preparing = showStartWhenWarm();
     release();
     report();
-    await session.preparing;
+    const outcome = await session.preparing;
+    if (outcome.kind === "failed") {
+      recorder.fault(
+        "error",
+        outcome.cause.message,
+        `prepare ${outcome.stage}`
+      );
+    }
+    return outcome;
   };
 
   return {
@@ -505,24 +598,7 @@ export const createGame = async (
       }
     },
     dispose() {
-      stage.alive = false;
-      renderer.setAnimationLoop(null);
-      observer.disconnect();
-      canvas.removeEventListener("webglcontextlost", abandonCompiles);
-      document.removeEventListener("visibilitychange", forgetHiddenTime);
-      unsubscribeSettings();
-      unwatchCanvas();
-      detachProbe();
-      frame.meter?.dispose();
-      frame.profiler?.dispose();
-      controls.dispose();
-      sound.dispose();
-      abandonCompiles();
-      dropViews();
-      dropFleet();
-      stage.world.dispose();
-      pipeline.dispose();
-      renderer.dispose();
+      releaseAll(owners);
     },
     followRival(element) {
       feedback.tag = element;
@@ -538,11 +614,11 @@ export const createGame = async (
     prepare,
     quit() {
       if (session.plan && !session.settled) {
-        recorder.race("quit", stage.race.tick);
+        recorder.race("quit", stage.race.view.tick);
       }
       const outcome =
         session.plan && session.log
-          ? outcomeOf(stage.race, session.plan.setup, session.log)
+          ? outcomeOf(stage.race.view, session.plan.setup, session.log)
           : null;
       session.plan = null;
       session.log = null;
@@ -578,4 +654,19 @@ export const createGame = async (
       report();
     },
   };
+};
+
+export const createGame = (
+  canvas: HTMLCanvasElement,
+  events: GameEvents,
+  acquired: AcquiredAssets,
+  makeRenderer = createRenderer
+): GameHandle => {
+  const owners = [acquired.release];
+  try {
+    return startGame(canvas, events, acquired.assets, makeRenderer, owners);
+  } catch (error) {
+    releaseAll(owners);
+    throw error;
+  }
 };

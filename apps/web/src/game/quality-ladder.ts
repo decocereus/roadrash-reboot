@@ -4,7 +4,6 @@ import type {
   ResizeSource,
 } from "@racer/telemetry/limits";
 import { governReasons } from "@racer/telemetry/limits";
-import type * as THREE from "three";
 
 import { emptyQuality } from "../diagnostics/recorder.ts";
 import type { QualityState, Recorder } from "../diagnostics/recorder.ts";
@@ -16,7 +15,6 @@ import { createPacer, createRefreshMeter } from "./pacer.ts";
 import type { Pacer } from "./pacer.ts";
 import { BLOOM_SCALE, SAMPLES } from "./post.ts";
 import type { Pipeline } from "./post.ts";
-import { rendererOf } from "./profile.ts";
 import { SHADOW_MAP } from "./world.ts";
 import type { World } from "./world.ts";
 
@@ -41,8 +39,8 @@ const MODEST_START_RUNG = 3;
 const startRungFor = (gpu: string): number =>
   MODEST_GPU.test(gpu) ? MODEST_START_RUNG : 0;
 
-const nativePixelRatio = (): number =>
-  Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
+const nativePixelRatio = (readDpr: () => number): number =>
+  Math.min(readDpr(), MAX_PIXEL_RATIO);
 
 const ladderFor = (ceiling: number): readonly Rung[] => {
   const rungs: Rung[] = [
@@ -93,6 +91,15 @@ interface Pins {
   readonly pinnedRung: number;
 }
 
+export interface QualityRenderer {
+  readonly setPixelRatio: (ratio: number) => void;
+  readonly setSize: (
+    width: number,
+    height: number,
+    updateStyle?: boolean
+  ) => void;
+}
+
 export interface Quality extends Pins {
   readonly display: { refresh: number };
   ladder: readonly Rung[];
@@ -112,6 +119,7 @@ export interface Quality extends Pins {
   rendering: boolean;
   pace: number;
   readonly pacer: Pacer;
+  readonly readDpr: () => number;
   readonly readRefresh: (now: number) => number;
   renderedLast: boolean;
   pendingQuality: (() => void) | null;
@@ -119,14 +127,15 @@ export interface Quality extends Pins {
 }
 
 export const createQuality = (
-  renderer: THREE.WebGLRenderer,
-  { pinnedPixelRatio, pinnedRefresh, pinnedRung }: Pins
+  renderer: Pick<QualityRenderer, "setPixelRatio">,
+  { pinnedPixelRatio, pinnedRefresh, pinnedRung }: Pins,
+  readDpr: () => number
 ): Quality => {
   const display = { refresh: pinnedRefresh > 0 ? pinnedRefresh : 60 };
-  const ladder = ladderFor(nativePixelRatio());
+  const ladder = ladderFor(nativePixelRatio(readDpr));
   const governor = createGovernor(ladder.length);
   const pixelRatio =
-    pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio();
+    pinnedPixelRatio > 0 ? pinnedPixelRatio : nativePixelRatio(readDpr);
   renderer.setPixelRatio(pixelRatio);
   return {
     appliedHeight: -1,
@@ -149,6 +158,7 @@ export const createQuality = (
     pixelRatio,
     qualityAfter: emptyQuality(),
     qualityBefore: emptyQuality(),
+    readDpr,
     readRefresh: createRefreshMeter(display.refresh),
     renderedLast: false,
     rendering: false,
@@ -158,15 +168,28 @@ export const createQuality = (
 };
 
 interface QualityParts {
-  readonly canvas: HTMLCanvasElement;
-  readonly chase: ChaseCamera;
+  readonly canvas: Pick<
+    HTMLCanvasElement,
+    "clientHeight" | "clientWidth" | "height" | "width"
+  >;
+  readonly chase: Pick<ChaseCamera, "camera" | "resize">;
   readonly frame: { readonly frameId: number; readonly sample: FrameSample };
   readonly halted: () => boolean;
-  readonly pipeline: Pipeline;
+  readonly pipeline: Pick<
+    Pipeline,
+    "render" | "resize" | "setBloomScale" | "setSamples"
+  >;
   readonly quality: Quality;
-  readonly recorder: Recorder;
-  readonly renderer: THREE.WebGLRenderer;
-  readonly stage: { readonly world: World; readonly warming: boolean };
+  readonly readGpu: () => string;
+  readonly recorder: Pick<
+    Recorder,
+    "canvas" | "governor" | "incompletePass" | "invalidated"
+  >;
+  readonly renderer: QualityRenderer;
+  readonly stage: {
+    readonly world: Pick<World, "follow" | "scene" | "setShadowMap">;
+    readonly warming: boolean;
+  };
   readonly subject: Subject;
 }
 
@@ -177,6 +200,7 @@ export const bindQuality = ({
   halted,
   pipeline,
   quality,
+  readGpu,
   recorder,
   renderer,
   stage,
@@ -299,7 +323,7 @@ export const bindQuality = ({
     if (quality.pendingQuality) {
       return;
     }
-    const ceiling = nativePixelRatio();
+    const ceiling = nativePixelRatio(quality.readDpr);
     if (ceiling !== quality.ladder[0]?.pixelRatio) {
       quality.pendingQuality = () => {
         changeQuality("native-dpr", () => {
@@ -384,8 +408,7 @@ export const bindQuality = ({
   };
 
   const applyDeviceStart = () => {
-    const startRung =
-      pinnedRung >= 0 ? pinnedRung : startRungFor(rendererOf(renderer));
+    const startRung = pinnedRung >= 0 ? pinnedRung : startRungFor(readGpu());
     if (startRung > 0) {
       changeQuality("device-start", () => {
         governor.startAt(startRung);

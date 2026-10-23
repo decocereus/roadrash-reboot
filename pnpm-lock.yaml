@@ -18,6 +18,9 @@ importers:
       '@effect/platform-node':
         specifier: 4.0.0
         version: 4.0.0(effect@4.0.0)(redis@6.3.0)
+      '@racer/career':
+        specifier: workspace:*
+        version: link:packages/career
       '@types/node':
         specifier: 26.4.1
         version: 26.4.1
@@ -45,6 +48,9 @@ importers:
       ultracite:
         specifier: 7.10.8
         version: 7.10.8(oxfmt@0.67.0)(oxlint@1.86.0(oxlint-tsgolint@7.0.2004))
+      vite:
+        specifier: 8.3.2
+        version: 8.3.2(@types/node@26.4.1)(jiti@2.7.0)(yaml@2.9.1)
       vitest:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(jiti@2.7.0)(yaml@2.9.1))
@@ -124,6 +130,9 @@ importers:
       '@racer/track':
         specifier: workspace:*
         version: link:../track
+      effect:
+        specifier: 4.0.0
+        version: 4.0.0
     devDependencies:
       vitest:
         specifier: 5.0.0
@@ -254,6 +263,9 @@ importers:
       '@effect/platform-node':
         specifier: 4.0.0
         version: 4.0.0(effect@4.0.0)(redis@6.3.0)
+      '@racer/career':
+        specifier: workspace:*
+        version: link:../../packages/career
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
