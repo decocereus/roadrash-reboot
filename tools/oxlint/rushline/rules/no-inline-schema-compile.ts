@@ -1,6 +1,7 @@
 import { defineRule } from "@oxlint/plugins";
-import type { ESTree, Scope } from "@oxlint/plugins";
+import type { ESTree } from "@oxlint/plugins";
 
+import { variableNamed } from "../bindings.ts";
 import { namespaceNames } from "../effect-names.ts";
 import { memberName } from "../property-name.ts";
 
@@ -50,17 +51,15 @@ export const noInlineSchemaCompileRule = defineRule({
   create(context) {
     const isStatic = (node: ESTree.Node) =>
       identifiersIn(node).every((identifier) => {
-        const name = context.sourceCode.getText(identifier);
-        for (
-          let scope: Scope | null = context.sourceCode.getScope(identifier);
-          scope !== null;
-          scope = scope.upper
-        ) {
-          if (scope.set.has(name)) {
-            return scope.type === "module" || scope.type === "global";
-          }
-        }
-        return true;
+        const variable = variableNamed(
+          context.sourceCode.getScope(identifier),
+          context.sourceCode.getText(identifier)
+        );
+        return (
+          variable === null ||
+          variable.scope.type === "module" ||
+          variable.scope.type === "global"
+        );
       });
     const schemaNames = new Set<string>();
     const raw = (node: ESTree.Node) => context.sourceCode.getText(node);

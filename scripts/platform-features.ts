@@ -64,6 +64,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     docs: [
       "docs/architecture.md#browser-client",
       "docs/coding-standards.md#keep-each-module-to-its-job",
+      "docs/coding-standards.md#upload-and-sort-only-what-the-frame-needs",
       "docs/errors.md#shader-preparation",
     ],
     id: "renderer-core",

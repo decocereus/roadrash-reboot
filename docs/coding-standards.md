@@ -55,6 +55,14 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Fixed ticks, held and repeated keys, replays of the same inputs and races run side by side match tick for tick, and render quality, pixel ratio, pacing, sound and the profiler never change a tick. | `pnpm test` | `apps/web/test/fixed-tick.test.ts`, `input.test.ts`, `pilot-replay.test.ts`, `render-quality.test.ts` | None |
 | The HUD publishes one regular snapshot each time 1/15 s of processed frame time builds up: each rendered frame adds its clamped seconds, a total of 1/15 s or more publishes once and resets to zero, and the remainder is dropped. Halted frames add nothing. A race being prepared, the attract loop, a quit, sleep or mute publishes at once, apart from that clock. | `pnpm test` | `apps/web/src/game/hud-cadence.ts`, `apps/web/test/hud-cadence.test.ts` | None |
 
+## Upload and sort only what the frame needs
+
+The renderer runs these paths every frame, so a cost that scales with a buffer's capacity or with each comparison shows up in the frame time. Each rule here was fixed once and then came back.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| Game code marks a buffer attribute for upload with `uploadSpan` in `apps/web/src/game/uploads.ts`, passing the span of items that changed or are drawn. It skips an empty span, counts the range in scalar components rather than items, folds any range the renderer has not yet consumed into one, and sets `needsUpdate`. An attribute that has never been drawn needs no mark, because three's first upload sends the whole array. Bikes uploaded their whole instance buffers every frame until `23f110a`, and the traffic fleet then did the same with its matrices and colours. The lint rule requires every assignment to `needsUpdate` on a buffer attribute, other than `= false`, to come right after an `addUpdateRange` call on the same receiver in the same block. It recognises a buffer attribute by syntax: `.instanceMatrix`, `.instanceColor`, any member of `.attributes`, a `getAttribute(…)` result, a binding initialised with `new` of `BufferAttribute`, `InstancedBufferAttribute` or a typed subclass such as `Float32BufferAttribute`, a binding initialised with any of these, and a binding or parameter annotated with one of those classes. Materials, textures, render targets and the shadow map are none of these. The rule cannot see an attribute reached another way, such as through an object field, a destructured binding, a loop variable or a function's result, or an upload forced through `version`; review checks those. | `rushline/ranged-buffer-upload` | `apps/web/src/game/**/*.ts` | None |
+
 ## Tune the numbers before the model
 
 | Rule | Check | Scope | Exemption |

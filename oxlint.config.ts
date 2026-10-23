@@ -202,6 +202,10 @@ export default defineConfig({
       files: entriesLoopFiles,
       rules: { "rushline/no-entries-loop": "error" },
     },
+    {
+      files: ["apps/web/src/game/**/*.ts"],
+      rules: { "rushline/ranged-buffer-upload": "error" },
+    },
   ],
   rules: {
     "anti-slop/no-chained-type-assertions": "error",

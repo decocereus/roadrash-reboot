@@ -585,7 +585,7 @@ Test files: none
 
 - Id: `renderer-core`
 - Start: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/scene-lifecycle.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
+- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job), [docs/coding-standards.md#upload-and-sort-only-what-the-frame-needs](coding-standards.md#upload-and-sort-only-what-the-frame-needs), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `bytes.game.gzip`, `bytes.game.raw`, `bytes.game.incremental.gzip`, `bytes.game.incremental.raw`, `render.programs.max`
 - Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/hosts.ts`
@@ -979,6 +979,7 @@ Source files:
 - `tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts`
 - `tools/oxlint/anti-slop/shared/dictionary-types.ts`
 - `tools/oxlint/anti-slop/shared/reflect-method.ts`
+- `tools/oxlint/rushline/bindings.ts`
 - `tools/oxlint/rushline/effect-names.ts`
 - `tools/oxlint/rushline/index.ts`
 - `tools/oxlint/rushline/notes.ts`
@@ -1001,6 +1002,7 @@ Source files:
 - `tools/oxlint/rushline/rules/prefer-catch-tags.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-fn.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-match.ts`
+- `tools/oxlint/rushline/rules/ranged-buffer-upload.ts`
 - `tools/oxlint/rushline/rules/require-nul-file-list.ts`
 - `tools/oxlint/rushline/rules/require-suppression-reason.ts`
 - `tools/oxlint/rushline/rules/require-wrapped-cause.ts`
@@ -1028,6 +1030,7 @@ Test files:
 - `tools/oxlint/test/no-discarded-exit.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
+- `tools/oxlint/test/ranged-buffer-upload.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`
 - `tools/oxlint/test/setup.ts`
