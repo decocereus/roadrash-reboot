@@ -22,6 +22,7 @@ import { isInstancedMesh } from "../src/game/meshes.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import { stageEverything, warmStaged } from "../src/game/staging.ts";
 import type { Staged } from "../src/game/staging.ts";
+import { uploadSpan } from "../src/game/uploads.ts";
 
 const repository = path.join(import.meta.dirname, "../../..");
 
@@ -148,6 +149,19 @@ const coloursOf = (
   return mesh.instanceColor;
 };
 
+const componentsChanged = (
+  before: readonly number[],
+  after: THREE.TypedArray
+): number[] => {
+  const changed: number[] = [];
+  for (let component = 0; component < after.length; component += 1) {
+    if (before[component] !== after[component]) {
+      changed.push(component);
+    }
+  }
+  return changed;
+};
+
 const drawnOf = (mesh: THREE.InstancedMesh) => ({
   colours: coloursOf(mesh).array.slice(0, mesh.count * 3),
   matrices: mesh.instanceMatrix.array.slice(0, mesh.count * 16),
@@ -182,13 +196,51 @@ describe("traffic instance uploads", () => {
     shading.dispose();
   });
 
-  it("keeps each car's paint and place in its slot as cars cull in and out", async () => {
+  it("keeps each car's paint and place in its slot as cars cull in and out and uploads the slots that changed car", async () => {
     const shading = createShading(lookOf(track.plan.region));
     const assets = await pinnedAssets();
     const race = createRaceRun(defaultSetup(track, 3));
     const riding = placedFleet(assets, shading, race.view.cars);
     riding.commit(0);
+    const consumed = instancedIn(riding.group).map((mesh) => {
+      const colours = coloursOf(mesh);
+      colours.clearUpdateRanges();
+      return {
+        before: [...colours.array],
+        colours,
+        mesh,
+        version: colours.version,
+      };
+    });
     riding.commit(1000);
+    const repainted = consumed
+      .map(({ before, colours, mesh, version }) => {
+        const changed = componentsChanged(before, colours.array);
+        return {
+          changed: changed.length,
+          covered: changed.every((component) =>
+            colours.updateRanges.some(
+              (range) =>
+                component >= range.start &&
+                component < range.start + range.count
+            )
+          ),
+          drawn: colours.updateRanges.every(
+            (range) => range.start + range.count <= mesh.count * 3
+          ),
+          newer: colours.version > version,
+        };
+      })
+      .filter(({ changed }) => changed > 0);
+    expect(repainted).not.toHaveLength(0);
+    expect(repainted).toStrictEqual(
+      repainted.map(({ changed }) => ({
+        changed,
+        covered: true,
+        drawn: true,
+        newer: true,
+      }))
+    );
     const fresh = placedFleet(assets, shading, race.view.cars);
     fresh.commit(1000);
     expect(instancedIn(riding.group).map(drawnOf)).toStrictEqual(
@@ -197,6 +249,55 @@ describe("traffic instance uploads", () => {
     riding.dispose();
     fresh.dispose();
     shading.dispose();
+  });
+});
+
+const scheduled = (attribute: THREE.BufferAttribute) => ({
+  ranges: attribute.updateRanges,
+  version: attribute.version,
+});
+
+describe("buffer attribute uploads", () => {
+  it("merges disjoint spans marked before the renderer consumes them into one covering range", () => {
+    const colours = new THREE.BufferAttribute(new Float32Array(10 * 3), 3);
+    uploadSpan(colours, 1, 2);
+    uploadSpan(colours, 6, 8);
+    expect(scheduled(colours)).toStrictEqual({
+      ranges: [{ count: 21, start: 3 }],
+      version: 2,
+    });
+  });
+
+  it("keeps a larger pending prefix when a smaller one follows it", () => {
+    const matrices = new THREE.BufferAttribute(new Float32Array(10 * 16), 16);
+    uploadSpan(matrices, 0, 8);
+    uploadSpan(matrices, 0, 3);
+    expect(scheduled(matrices)).toStrictEqual({
+      ranges: [{ count: 128, start: 0 }],
+      version: 2,
+    });
+  });
+
+  it("leaves pending ranges and the version alone for an empty span", () => {
+    const colours = new THREE.BufferAttribute(new Float32Array(10 * 3), 3);
+    uploadSpan(colours, 2, 4);
+    uploadSpan(colours, 5, 5);
+    uploadSpan(colours, 7, 3);
+    expect(scheduled(colours)).toStrictEqual({
+      ranges: [{ count: 6, start: 6 }],
+      version: 1,
+    });
+  });
+
+  it("starts a fresh range once the renderer has consumed the last one", () => {
+    const colours = new THREE.BufferAttribute(new Float32Array(10 * 3), 3);
+    uploadSpan(colours, 0, 8);
+    colours.clearUpdateRanges();
+    uploadSpan(colours, 5, 6);
+    expect(scheduled(colours)).toStrictEqual({
+      ranges: [{ count: 3, start: 15 }],
+      version: 2,
+    });
   });
 });
 
