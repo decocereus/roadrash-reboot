@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { streetBike } from "./bikes.ts";
 import { pilotInput } from "./pilot.ts";
 import {
   brawl,
@@ -122,7 +123,85 @@ const duel = (
   };
 };
 
+const kickedFromBothSides = (firstX: number, secondX: number) => {
+  const setup = defaultSetup(straight, 1);
+  const state = createRace({
+    ...setup,
+    police: { ...setup.police, count: 0 },
+    rivals: setup.rivals
+      .slice(0, 2)
+      .map((rival) => ({ ...rival, bike: streetBike })),
+  });
+  const holder = player(state);
+  const first = riderAt(state, 1);
+  const second = riderAt(state, 2);
+  arm(holder, "chain");
+  disarm(first);
+  disarm(second);
+  for (const rider of state.riders) {
+    rider.s = 50;
+    rider.speed = 30;
+  }
+  const events: RaceEvent[] = [];
+  for (let tick = 0; tick < TICK_RATE; tick += 1) {
+    holder.x = 0;
+    first.x = firstX;
+    second.x = secondX;
+    first.s = holder.s;
+    second.s = holder.s;
+    const kick = pressing("kick", tick === 0);
+    stepRace(state, straight, [cruising, kick, kick]);
+    events.push(...state.events);
+  }
+  return {
+    hits: events.flatMap((event) =>
+      event.kind === "hit" ? [[event.rider, event.target]] : []
+    ),
+    taken: events.filter((event) => event.kind === "weaponTaken"),
+    weapons: state.riders.map((rider) => [rider.weapon, rider.weaponHits]),
+  };
+};
+
 describe("simultaneous weapon grabs", () => {
+  it.each([
+    {
+      firstX: -1.6,
+      secondX: 1,
+      taker: 2,
+      weapons: [
+        ["none", 0],
+        ["none", 0],
+        ["chain", 8],
+      ],
+      who: "the nearer, though listed later",
+    },
+    {
+      firstX: -1.2,
+      secondX: 1.2,
+      taker: 1,
+      weapons: [
+        ["none", 0],
+        ["chain", 8],
+        ["none", 0],
+      ],
+      who: "the one listed first, when both are as near",
+    },
+  ])(
+    "two unarmed riders who kick a chain holder from either side on the same tick leave the chain with $who",
+    ({ firstX, secondX, taker, weapons }) => {
+      expect(kickedFromBothSides(firstX, secondX)).toStrictEqual({
+        hits: [
+          [1, 0],
+          [2, 0],
+        ],
+        taken: [
+          { kind: "weaponTaken", rider: taker, target: 0, weapon: "chain" },
+        ],
+        weapons,
+      });
+    }
+  );
+
   it.each([{ unarmedIndex: 0 }, { unarmedIndex: 1 }])(
     "an unarmed rider and a chain holder who kick each other on the same tick leave the chain with the unarmed one (unarmed is rider $unarmedIndex)",
     ({ unarmedIndex }) => {

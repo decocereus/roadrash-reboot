@@ -5,6 +5,7 @@ import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
+import { spawnRock } from "./hazards.ts";
 import { pilotInput } from "./pilot.ts";
 import {
   KMH,
@@ -22,7 +23,7 @@ import {
   slowTruckAt,
 } from "./race-fixtures.ts";
 import type { Trace } from "./race-fixtures.ts";
-import { neutralInput, stepRace } from "./race.ts";
+import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { BIKE_HALF_WIDTH, TICK_RATE } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
@@ -129,6 +130,41 @@ const diceAfterPiloting = (road: Track): number => {
 
 const downed = (events: readonly RaceEvent[]): RaceEvent[] =>
   events.filter((event) => event.kind === "crash");
+
+const OVERLOOKING_SEED = 10;
+
+const rockDroppedPastOverlookedPothole = () => {
+  const road = roadWith(
+    placedAt("rock", 1020, -1.8, "beyond"),
+    placedAt("pothole", 1000, -1.8, "unseen")
+  );
+  const setup = defaultSetup(road, OVERLOOKING_SEED);
+  const state = createRace({
+    ...setup,
+    player: { ...setup.player, skill: 0.8 },
+    police: { ...setup.police, count: 0 },
+    rivals: [],
+  });
+  const rider = player(state);
+  rider.s = 900;
+  rider.x = 1.8;
+  rider.speed = 170 / KMH;
+  let overlooked = "";
+  const run = pilotFrom(state, road, 4, (tick) => {
+    if (tick === TICK_RATE / 2) {
+      overlooked = rider.hazardMissed
+        ? (state.hazards[rider.hazardSeen]?.id ?? "")
+        : "";
+      spawnRock(state, road, {
+        command: "cmd-9",
+        id: "dropped",
+        s: 1010,
+        x: 1.8,
+      });
+    }
+  });
+  return { ...run, overlooked };
+};
 
 describe("road hazards", () => {
   it("the pilot slows for oil across a bend's turn-in and keeps to its own side of the road instead of sliding to the verge at corner speed", () => {
@@ -250,6 +286,18 @@ describe("road hazards", () => {
       expect(downed(run.events)).toStrictEqual([]);
     }
   );
+
+  it("a pilot who overlooks the nearest pothole still rides round a rock dropped in its lane between the pothole and a rock it already sees", () => {
+    const run = rockDroppedPastOverlookedPothole();
+    expect({
+      crashes: downed(run.events),
+      effects: effectsOf(run.events),
+      overlooked: run.overlooked,
+    }).toStrictEqual({ crashes: [], effects: [], overlooked: "unseen" });
+    expect(Math.abs(crossingAt(run.line, 1010) - 1.8)).toBeGreaterThan(
+      hazardSizes.rock.halfWidth + BIKE_HALF_WIDTH
+    );
+  });
 
   it("a pilot looking at a hazard leaves the dice for jumps and fights untouched", () => {
     expect(diceAfterPiloting(boulder)).toBe(diceAfterPiloting(hazardFreeRoad));
