@@ -330,6 +330,17 @@ const followLine = (
   };
 };
 
+interface Weighed {
+  readonly x: number;
+  readonly braking: boolean;
+  readonly cost: number;
+  readonly rock: boolean;
+  readonly slickMetres: number;
+  readonly slickSpeed: number;
+  readonly speed: number;
+  readonly speedMetres: number;
+}
+
 const choice = {
   cost: Number.POSITIVE_INFINITY,
   slickMetres: Number.POSITIVE_INFINITY,
@@ -382,6 +393,23 @@ export const chooseLine = (
     measureHorizons();
     planCourse(history, track, rider);
   }
+  const weighed: Weighed[] = [];
+  const weighOnce = (x: number, braking: boolean): void => {
+    const known = weighed.find(
+      (line) => Object.is(line.x, x) && line.braking === braking
+    );
+    if (known) {
+      toll.cost = known.cost;
+      toll.rock = known.rock;
+      toll.slickMetres = known.slickMetres;
+      toll.slickSpeed = known.slickSpeed;
+      toll.speed = known.speed;
+      toll.speedMetres = known.speedMetres;
+    } else {
+      weigh(history, track, rider, x, braking);
+      weighed.push({ ...toll, braking, x });
+    }
+  };
   const offer = (
     x: number,
     speed: number,
@@ -393,7 +421,7 @@ export const chooseLine = (
     toll.slickMetres = Number.POSITIVE_INFINITY;
     toll.slickSpeed = Number.POSITIVE_INFINITY;
     if (weighing) {
-      weigh(history, track, rider, x, braking);
+      weighOnce(x, braking);
       total += toll.cost;
       lineSpeed = Math.min(
         speed,
