@@ -3,7 +3,8 @@ import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
 import { defaultSetup, distanceLeft } from "@racer/sim/race";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RaceSetup } from "@racer/sim/state";
-import { roadIds, trackFor } from "@racer/track/roads";
+import { roadIds } from "@racer/track/road";
+import { trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 

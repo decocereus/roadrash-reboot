@@ -168,6 +168,7 @@ When a chain of `map`, `flatMap` or `andThen` carries earlier results into later
 | No `Reflect.get` or `Reflect.apply`. Use typed property access and direct calls. | `anti-slop/no-reflect-get`, `anti-slop/no-reflect-apply` | Repository | None |
 | No conditional spread of an empty object to omit a field. | `anti-slop/no-conditional-empty-object-spread` | Repository | None |
 | No symbol name contains `shape`. Name the thing the value is. | `anti-slop/no-shape-in-symbol-names` | Repository | None |
+| A finite set of values is written once, as an `as const` tuple in the module that owns it. Its union is `(typeof values)[number]`, and a schema for it is built from the same tuple, as `weaponKinds` in `packages/sim/src/state.ts` feeds both `WeaponKind` and the save's `Weapon` schema. A deliberate subset of a domain, such as the rivals in `defaultSetup`, keeps its `readonly T[]` annotation. | judgment | Repository | None |
 
 ## Write no comments
 

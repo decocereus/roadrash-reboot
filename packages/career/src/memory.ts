@@ -15,18 +15,7 @@ const GRUDGE_STARTS = 0.15;
 const GRUDGE_ENDS = 0.05;
 const HUNDREDTHS = 100;
 
-export type MemoryRow =
-  | "weaponTakenByPlayer"
-  | "knockedDownByPlayer"
-  | "lostToPlayerByAWheel"
-  | "bustedNearPlayer"
-  | "busted"
-  | "knockedPlayerDown"
-  | "tookPlayerWeapon"
-  | "beatPlayerByAWheel"
-  | "outrunUntouched";
-
-export const memoryRows: readonly MemoryRow[] = [
+export const memoryRows = [
   "weaponTakenByPlayer",
   "knockedDownByPlayer",
   "lostToPlayerByAWheel",
@@ -36,7 +25,9 @@ export const memoryRows: readonly MemoryRow[] = [
   "tookPlayerWeapon",
   "beatPlayerByAWheel",
   "outrunUntouched",
-];
+] as const;
+
+type MemoryRow = (typeof memoryRows)[number];
 
 const grudgeRows: ReadonlySet<MemoryRow> = new Set([
   "weaponTakenByPlayer",

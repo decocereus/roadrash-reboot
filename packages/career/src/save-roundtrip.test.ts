@@ -1,3 +1,4 @@
+import { bikeIds } from "@racer/sim/bikes";
 import { weapons } from "@racer/sim/weapons";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
@@ -6,7 +7,6 @@ import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { catalogue } from "./tables.ts";
 
 type Json = Schema.MutableJson;
 
@@ -235,8 +235,8 @@ describe("the save", () => {
       verdictOn(
         corrupted(good, "lastResult.summary.rows.0.name", "a".repeat(301))
       ),
-      verdictOn(corrupted(good, "garage", [...catalogue])),
-      verdictOn(corrupted(good, "garage", [...catalogue, good.bikeId])),
+      verdictOn(corrupted(good, "garage", [...bikeIds])),
+      verdictOn(corrupted(good, "garage", [...bikeIds, good.bikeId])),
       verdictOn(corrupted(good, "board", [left, left, left])),
       verdictOn(corrupted(good, "board", [left, left, left, left])),
     ]).toStrictEqual([

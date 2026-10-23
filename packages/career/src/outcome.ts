@@ -15,11 +15,17 @@ const WHEEL_METRES = 25;
 const BLAME_METRES = 100;
 const METRES_PER_KM = 1000;
 
-export type RaceResult = "finished" | "busted" | "wrecked" | "quit";
+export const raceResults = ["finished", "busted", "wrecked", "quit"] as const;
 
-export type Fate = "finished" | "racing" | "busted" | "wrecked";
+export type RaceResult = (typeof raceResults)[number];
 
-export type BustWitness = "none" | "near" | "far";
+export const fates = ["finished", "racing", "busted", "wrecked"] as const;
+
+type Fate = (typeof fates)[number];
+
+export const witnesses = ["none", "near", "far"] as const;
+
+type BustWitness = (typeof witnesses)[number];
 
 export interface Placing {
   readonly racer: RacerId;

@@ -7,23 +7,26 @@ import type { RiderProfile, RivalSetup, WeaponKind } from "./state.ts";
 
 export type { RegionId } from "@racer/track/regions";
 
-export type RivalId =
-  | "juno-kade"
-  | "ruth-ann-bixby"
-  | "dee-santangelo"
-  | "ines-marchetti"
-  | "mags-dunleavy"
-  | "lyle-gorski"
-  | "tristan-lux"
-  | "coach-dale-hutto"
-  | "moose-kowalczyk"
-  | "gus-abernathy"
-  | "benny-okafor"
-  | "wanda-pruitt"
-  | "orrin-blackwell"
-  | "agnes-mulcahy"
-  | "hollis-thorne"
-  | "felix-aurand";
+export const rivalIds = [
+  "juno-kade",
+  "ruth-ann-bixby",
+  "dee-santangelo",
+  "ines-marchetti",
+  "mags-dunleavy",
+  "lyle-gorski",
+  "tristan-lux",
+  "coach-dale-hutto",
+  "moose-kowalczyk",
+  "gus-abernathy",
+  "benny-okafor",
+  "wanda-pruitt",
+  "orrin-blackwell",
+  "agnes-mulcahy",
+  "hollis-thorne",
+  "felix-aurand",
+] as const;
+
+export type RivalId = (typeof rivalIds)[number];
 
 const LEVEL_COUNT = 5;
 const CLUB_LEVEL = 4;
@@ -395,7 +398,9 @@ export const rivalAt = (rival: Rival, level: number): RivalSetup => ({
   weapon: weaponAt(rival, level),
 });
 
-export type OfficerId = "dolores-pike" | "wendell-haverty";
+export const officerIds = ["dolores-pike", "wendell-haverty"] as const;
+
+export type OfficerId = (typeof officerIds)[number];
 
 export interface Officer {
   readonly id: OfficerId;

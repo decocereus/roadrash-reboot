@@ -1,8 +1,9 @@
+import { rivalIds } from "@racer/sim/cast";
 import { weapons } from "@racer/sim/weapons";
 
 import { memoryRows } from "./memory.ts";
 import type { SaveError } from "./save-schema.ts";
-import { racerIds, rivalIds } from "./state.ts";
+import { racerIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
 
 const holdsWeapon = (career: CareerState): boolean => {
