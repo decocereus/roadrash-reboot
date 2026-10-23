@@ -169,6 +169,7 @@ When a chain of `map`, `flatMap` or `andThen` carries earlier results into later
 | No conditional spread of an empty object to omit a field. | `anti-slop/no-conditional-empty-object-spread` | Repository | None |
 | No symbol name contains `shape`. Name the thing the value is. | `anti-slop/no-shape-in-symbol-names` | Repository | None |
 | A finite set of values is written once, as an `as const` tuple in the module that owns it. Its union is `(typeof values)[number]`, and a schema for it is built from the same tuple, as `weaponKinds` in `packages/sim/src/state.ts` feeds both `WeaponKind` and the save's `Weapon` schema. A deliberate subset of a domain, such as the rivals in `defaultSetup`, keeps its `readonly T[]` annotation. | judgment | Repository | None |
+| An operation that must decide what every variant of a union means, such as `boardNote`, `weaponMesh` or a rival memory's bonus, is an exhaustive `switch` with no catch-all default. Every variant has its own `case`, including the ones that do nothing or give zero, and the `default` that `default-case` asks for returns the narrowed value `satisfies never`. A new variant is then a type error and a `typescript/switch-exhaustiveness-check` error until it has a case. A handler that reacts to only some variants, such as a sound for some race events, is not such an operation. | `typescript/switch-exhaustiveness-check`, judgment | Repository | None |
 
 ## Write no comments
 
