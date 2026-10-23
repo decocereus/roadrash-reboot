@@ -2,7 +2,7 @@ import { connect, evaluate } from "@racer/devtools/cdp";
 import type { Session } from "@racer/devtools/cdp";
 import { pageTarget } from "@racer/devtools/chrome";
 import { released } from "@racer/devtools/cleanup";
-import * as Clock from "effect/Clock";
+import { byDeadline } from "@racer/devtools/deadline";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
@@ -60,10 +60,9 @@ export const heldFor = <A, E1, R1, B, E2, R2>(
     )
   );
 
-export const waitFor = Effect.fn("rv.waitFor")(function* waitFor(
+const truthy = Effect.fnUntraced(function* truthy(
   page: Session,
-  expression: string,
-  deadline: number
+  expression: string
 ) {
   for (;;) {
     const value = yield* evaluate(
@@ -74,14 +73,25 @@ export const waitFor = Effect.fn("rv.waitFor")(function* waitFor(
     if (value !== "") {
       return value;
     }
-    if ((yield* Clock.currentTimeMillis) > deadline) {
-      return yield* new VerificationError({
-        message: `Timed out waiting for ${expression}`,
-        operation: "wait",
-      });
-    }
     yield* Effect.sleep(POLL_MS);
   }
+});
+
+export const waitFor = Effect.fn("rv.waitFor")(function* waitFor(
+  page: Session,
+  expression: string,
+  deadline: number
+) {
+  return yield* truthy(page, expression).pipe(
+    byDeadline(
+      deadline,
+      () =>
+        new VerificationError({
+          message: `Timed out waiting for ${expression}`,
+          operation: "wait",
+        })
+    )
+  );
 });
 
 export const navigate = Effect.fn("rv.navigate")(function* navigate(

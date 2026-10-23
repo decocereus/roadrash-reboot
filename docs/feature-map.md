@@ -836,6 +836,7 @@ Source files:
 - `packages/devtools/src/cdp.ts`
 - `packages/devtools/src/chrome.ts`
 - `packages/devtools/src/cleanup.ts`
+- `packages/devtools/src/deadline.ts`
 - `packages/devtools/src/process-error.ts`
 - `packages/devtools/src/process.ts`
 - `packages/devtools/src/profiles.ts`
@@ -878,6 +879,7 @@ Test files:
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`
+- `tools/verify/test/wait-deadline.test.ts`
 
 ### Perf gate and frame bench
 
@@ -888,7 +890,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -925,6 +927,7 @@ Test files:
 - `tools/perf/test/fixture-build.ts`
 - `tools/perf/test/gate.test.ts`
 - `tools/perf/test/gpu.test.ts`
+- `tools/perf/test/measure-page.test.ts`
 - `tools/perf/test/red-cases.ts`
 
 ### Lint plugins

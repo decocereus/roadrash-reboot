@@ -5,7 +5,7 @@ import type { TraceEvent } from "@racer/devtools/analysis";
 import { BrowserError } from "@racer/devtools/browser-error";
 import { evaluate } from "@racer/devtools/cdp";
 import type { Session } from "@racer/devtools/cdp";
-import * as Clock from "effect/Clock";
+import { byDeadline } from "@racer/devtools/deadline";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
@@ -37,44 +37,54 @@ const currentTick = (page: Session) =>
     Schema.Number
   );
 
-const pastDeadline = (deadline: number) =>
-  Clock.currentTimeMillis.pipe(Effect.map((now) => now > deadline));
-
 export const waitForTick = Effect.fn("measure.waitForTick")(
   function* waitForTick(page: Session, tick: number, deadline: number) {
-    let now = yield* currentTick(page);
-    while (now < tick) {
-      if (yield* pastDeadline(deadline)) {
-        return yield* new BrowserError({
-          message: `The race never reached tick ${tick}; it is at ${now}.`,
-          operation: "wait",
-        });
-      }
-      yield* Effect.sleep(POLL_MS);
+    let now = -1;
+    const reached = Effect.gen(function* reached() {
       now = yield* currentTick(page);
-    }
-    return now;
+      while (now < tick) {
+        yield* Effect.sleep(POLL_MS);
+        now = yield* currentTick(page);
+      }
+      return now;
+    });
+    return yield* reached.pipe(
+      byDeadline(
+        deadline,
+        () =>
+          new BrowserError({
+            message: `The race never reached tick ${tick}; it is at ${now}.`,
+            operation: "wait",
+          })
+      )
+    );
   }
 );
 
+const heldCountdown = Effect.fnUntraced(function* heldCountdown(page: Session) {
+  for (;;) {
+    if ((yield* currentTick(page)) === 0) {
+      yield* Effect.sleep(COUNTDOWN_PROBE_MS);
+      if ((yield* currentTick(page)) === 0) {
+        return;
+      }
+    }
+    yield* Effect.sleep(POLL_MS);
+  }
+});
+
 export const waitForCountdown = Effect.fn("measure.waitForCountdown")(
   function* waitForCountdown(page: Session, deadline: number) {
-    for (;;) {
-      yield* waitForTick(page, 0, deadline);
-      if ((yield* currentTick(page)) === 0) {
-        yield* Effect.sleep(COUNTDOWN_PROBE_MS);
-        if ((yield* currentTick(page)) === 0) {
-          return;
-        }
-      }
-      if (yield* pastDeadline(deadline)) {
-        yield* new BrowserError({
-          message: "The race never held a countdown.",
-          operation: "wait",
-        });
-      }
-      yield* Effect.sleep(POLL_MS);
-    }
+    yield* heldCountdown(page).pipe(
+      byDeadline(
+        deadline,
+        () =>
+          new BrowserError({
+            message: "The race never held a countdown.",
+            operation: "wait",
+          })
+      )
+    );
   }
 );
 

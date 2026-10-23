@@ -79,6 +79,7 @@ The renderer runs these paths every frame, so a cost that scales with a buffer's
 | Import Effect by module path, such as `effect/Effect` or `effect/Schema`, never from the `effect` root. | `no-restricted-imports` | Repository | None |
 | Every promise is awaited, returned, or explicitly discarded with `void`. | `typescript/no-floating-promises` | Repository | None |
 | Code that waits for a worker or child process to exit reads the exit code and fails when it is not 0. A worker can finish its writes and still exit 1, so a test that only waits passes when every worker fails. The rule reports a call to `once` from `node:events`, under any import name or as `.once` on its namespace or default import, whose second argument is the literal `"exit"` and whose result is discarded: the call, optional or not, or its `await` is a statement or is under `void`. It does not check the receiver's type or what is done with a bound result. | `rushline/no-discarded-exit` | Repository, tests included | None |
+| A wait that polls the page until a deadline stops at that deadline even when the page never answers a call, as a hung or crashed tab does. It runs its whole poll, calls and sleeps, under `byDeadline` from `@racer/devtools/deadline`, which interrupts the outstanding call when the time left runs out and fails with the tool's own error, `VerificationError` in `rv` and `BrowserError` in the perf bench. A deadline compared only between calls never fires while a call is pending. | `pnpm test` | `tools/verify/src/page.ts`, `tools/perf/src/measure-page.ts`, `tools/verify/test/wait-deadline.test.ts`, `tools/perf/test/measure-page.test.ts` | None |
 | Look up an Effect API in the installed source first: `node_modules/effect/src` and the package's `exports`, then `node_modules/@effect/platform-node/src`, then Alchemy's own source, such as `alchemy/src/Runtime.ts`, for what its wrappers do. Use the pinned Effect checkout only when you need code or tests that the package does not ship. `pnpm effect:reference` creates it at `.references/effect`, at commit `67ba4e46a11ccda0b6761578bfd22c04ae00167d`, which is Effect 4.0.0, the version the root `package.json` pins. On every run it checks that the installed Effect matches the root pin, that `.references/effect` is ignored and untracked, and that an existing checkout is clean, at that commit and at that version. It never fetches into, resets or cleans an existing checkout: a mismatch is an error that leaves the checkout as it is. It is not part of `pnpm check`, the build or CI, and it uses the network only when the checkout is missing. Do not copy API examples from the Effect website, which may describe another version. | `pnpm effect:reference` | Development setup | None |
 | A value typed `any`, such as the result of `JSON.parse`, is decoded or typed before typed code reads, calls, passes or returns it. | `typescript/no-unsafe-assignment`, `typescript/no-unsafe-argument`, `typescript/no-unsafe-call`, `typescript/no-unsafe-member-access`, `typescript/no-unsafe-return` | Repository | None |
 | Durable Object code follows [durable-object-http.md](durable-object-http.md): each object is an Effect HTTP API reached through `fetch`, never Alchemy RPC; an instance is keyed by its canonical race ID; and stubs and generated clients are built inside each invocation and stay private to the client. No Durable Object exists yet, so the conventions come before the code. | judgment | Multiplayer, when it starts | None |
@@ -141,11 +142,12 @@ export const ingest = Effect.fn("telemetry.ingest")(function* ingest(
 });
 ```
 
-One transformation stays a pipe, as `pastDeadline` in `tools/perf/src/measure-page.ts` does:
+One transformation stays a pipe, as `deadline` in `tools/verify/src/context.ts` does:
 
 ```ts
-const pastDeadline = (deadline: number) =>
-  Clock.currentTimeMillis.pipe(Effect.map((now) => now > deadline));
+const deadline = Clock.currentTimeMillis.pipe(
+  Effect.map((now) => now + Number(values.timeout) * 1000)
+);
 ```
 
 Policy that wraps the whole operation goes after the generator, in `Effect.fn`'s combinator arguments, not in a wrapper function. `deliver` in `apps/web/src/diagnostics/upload/delivery.ts` branches on the status and checks the acknowledgement inside its generator, then passes `Effect.catchTag("UploadFailure", …)` to turn an `UploadFailure` from any step into a retry. `save` in `packages/telemetry/src/jsonl-store.ts` passes `(saving) => gate.withPermit(saving)` the same way. In the same file `jsonlStoreLayer` builds the service with a private `Effect.gen` inside `Layer.effect`; that is construction, not an operation.
