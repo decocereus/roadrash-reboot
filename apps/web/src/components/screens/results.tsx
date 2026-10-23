@@ -10,7 +10,7 @@ import { Screen } from "@racer/ui/components/screen";
 import { cn } from "@racer/ui/utils";
 import type { ReactNode } from "react";
 
-import { plates } from "../../assets/clubhouse-art.ts";
+import { figures, officerFigures, plates } from "../../assets/clubhouse-art.ts";
 import { magsLine, shortNames } from "../../career/copy.ts";
 import type { RaceReport } from "../../career/flow.ts";
 import {
@@ -178,7 +178,7 @@ const verdictOf = ({ ledger, summary, result }: RaceReport): string => {
       bust.weapon === "none"
         ? ""
         : ` · Took your ${weaponLabel(bust.weapon).toLowerCase()}`;
-    return `${bust.officerName}, km ${bust.km.toFixed(1)}${taken}`;
+    return `Km ${bust.km.toFixed(1)}${taken}`;
   }
   if (wreck) {
     return result === "quit"
@@ -320,10 +320,6 @@ const noteOf = (report: RaceReport, riding: BikeId): Note | null => {
   if (warning !== null) {
     return { text: warning, warning: true };
   }
-  const { bust } = report.summary;
-  if (bust) {
-    return { text: `“${bust.line}”`, warning: false };
-  }
   return report.ledger
     ? null
     : { text: "Nothing is written to the career.", warning: false };
@@ -351,12 +347,19 @@ const MagentaNote = ({ note: { text, warning } }: { readonly note: Note }) => (
 
 const speakerOf = (
   report: RaceReport
-): { readonly rider: RivalId; readonly speech: Speech } | null => {
-  if (report.ledger && report.summary.wreck) {
+): { readonly figure: string; readonly speech: Speech } | null => {
+  const { bust, wreck, raceId, rows } = report.summary;
+  if (bust) {
     return {
-      rider: MAGS,
+      figure: officerFigures[bust.officer],
+      speech: { line: bust.line, name: bust.officerName, tag: "Booked you" },
+    };
+  }
+  if (report.ledger && wreck) {
+    return {
+      figure: figures[MAGS],
       speech: {
-        line: magsLine(report.summary.raceId),
+        line: magsLine(raceId),
         name: rivals[MAGS].name,
         tag: "Fixes the bikes",
       },
@@ -366,9 +369,9 @@ const speakerOf = (
   if (!line) {
     return null;
   }
-  const row = report.summary.rows.find((each) => each.racer === line.rival);
+  const row = rows.find((each) => each.racer === line.rival);
   return {
-    rider: line.rival,
+    figure: figures[line.rival],
     speech: {
       line: line.text,
       name: rivals[line.rival].name,
@@ -420,7 +423,7 @@ export const ResultsScreen = ({
     >
       <Stage>
         <BarBackdrop clock={clock} />
-        <BarSeats rider={speaker?.rider ?? null} />
+        <BarSeats figure={speaker?.figure ?? null} />
         {speaker && <SpeechSticker speech={speaker.speech} />}
         <BarHeader career={career} />
         <RaceSheet report={report} />

@@ -1,9 +1,8 @@
-import type { RivalId } from "@racer/sim/cast";
 import { cn } from "@racer/ui/utils";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
-import { figures, plates } from "../../assets/clubhouse-art.ts";
+import { plates } from "../../assets/clubhouse-art.ts";
 import { Plate, place, stagePx } from "./clubhouse-stage.tsx";
 
 const BACKDROP = { h: 941, w: 610, x: 0, y: 0 } as const;
@@ -64,15 +63,10 @@ export const BarLight = ({ clock }: { readonly clock: string }) => (
   </div>
 );
 
-export const BarSeats = ({ rider }: { readonly rider: RivalId | null }) => (
+export const BarSeats = ({ figure }: { readonly figure: string | null }) => (
   <div aria-hidden className="absolute inset-0">
-    {rider !== null && (
-      <Plate
-        box={FRONT_SEAT}
-        className="seat-in"
-        key={rider}
-        src={figures[rider]}
-      />
+    {figure !== null && (
+      <Plate box={FRONT_SEAT} className="seat-in" key={figure} src={figure} />
     )}
     <Plate box={COUNTER} src={plates.counter} />
     <Plate box={STOOL} src={plates.stool} />
