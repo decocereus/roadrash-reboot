@@ -55,6 +55,15 @@ const longTask = Schema.Struct({
 
 type LongTask = typeof longTask.Type;
 
+const rideFrame = Schema.Struct({
+  frame: Schema.Number,
+  programs: Schema.Number,
+  textures: Schema.Number,
+  tick: Schema.Number,
+});
+
+type RideFrame = typeof rideFrame.Type;
+
 export const pageCapture = Schema.Struct({
   bench: Schema.Struct({
     bench: Schema.String,
@@ -66,6 +75,7 @@ export const pageCapture = Schema.Struct({
   frameRate: Schema.NullOr(Schema.String),
   frames: Schema.Array(gpuFrame),
   longTasks: Schema.Array(longTask),
+  ride: Schema.Array(rideFrame),
   rows: Schema.Struct({
     ...workloadRows.fields,
     times: Schema.Array(Schema.Number),
@@ -190,6 +200,60 @@ const sampleProblems = (scenario: Scenario, sample: GpuSample): string[] => {
     problems.push(bad);
   }
   return problems;
+};
+
+const firstUseResources = ["programs", "textures"] as const;
+
+const SHOWN_STEPS = 12;
+
+const growthOf = (
+  ride: readonly RideFrame[],
+  start: RideFrame,
+  resource: (typeof firstUseResources)[number]
+): string[] => {
+  const steps = ride.flatMap((frame, index) => {
+    const before = ride[index - 1]?.[resource] ?? frame[resource];
+    return frame[resource] > before
+      ? [
+          `+${frame[resource] - before} at frame=${frame.frame} tick=${frame.tick}`,
+        ]
+      : [];
+  });
+  if (steps.length === 0) {
+    return [];
+  }
+  const more =
+    steps.length > SHOWN_STEPS ? `, ${steps.length - SHOWN_STEPS} more` : "";
+  return [
+    `${resource} created after warm-up (${start[resource]} on the first race frame): ${steps.slice(0, SHOWN_STEPS).join(", ")}${more}`,
+  ];
+};
+
+const firstUseProblems = ({ ride }: GpuSample["capture"]): string[] => {
+  const [start] = ride;
+  if (start?.tick !== 0) {
+    return [`race frames start at tick=${start?.tick ?? "none"} expected=0`];
+  }
+  return firstUseResources.flatMap((resource) =>
+    growthOf(ride, start, resource)
+  );
+};
+
+const firstUseOf = (samples: readonly GpuSample[]) => {
+  const raced = samples.filter((sample) => sample.side === "B");
+  const failures = raced.flatMap((sample) =>
+    firstUseProblems(sample.capture).map(
+      (problem) =>
+        `FAIL first-use ${sample.scenario} side=B ${sample.file} ${problem}`
+    )
+  );
+  const held =
+    raced.length > 0 && failures.length === 0
+      ? [
+          `ok   first-use side=B created no shader program or texture after the first race frame in ${raced.length} races`,
+        ]
+      : [];
+  return { failures, held };
 };
 
 const missedSlots = (interval: number): number =>
@@ -406,7 +470,11 @@ export const evaluateGpu = (
       samples.filter((sample) => sample.scenario === scenario.id)
     ),
   }));
-  const failures = results.flatMap((each) => each.failures);
+  const firstUse = firstUseOf(samples);
+  const failures = [
+    ...results.flatMap((each) => each.failures),
+    ...firstUse.failures,
+  ];
   const observations = results.flatMap((each) => each.observations);
   const verdicts = judge(limits, observations, gpuRows);
   const counts = results.map(({ counts: peaks, scenario }) => ({
@@ -418,6 +486,7 @@ export const evaluateGpu = (
     lines: [
       ...failures,
       ...verdicts.map((verdict) => verdict.text),
+      ...firstUse.held,
       ...counts.flatMap(({ peaks, scenario }) =>
         peaks
           ? [

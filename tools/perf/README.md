@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI static job |
 | `pnpm perf` | The Node lane (throughput, tick p95 and p99, allocated bytes per tick) and the build lane (route, game, Worker and client bytes, and the six GLBs), side A against side B in one run. | `pnpm verify` and the CI `perf` job |
-| `pnpm perf:gpu` | Frame pacing and render counts (draw calls, triangles, shader programs and textures) in two windowed Helium runs on this Mac's GPU. | Locally, by hand. CI never runs it. |
+| `pnpm perf:gpu` | Frame pacing, render counts (draw calls, triangles, shader programs and textures), and shader programs or textures first created mid-race, in two windowed Helium runs on this Mac's GPU. | Locally, by hand. CI never runs it. |
 
 Render counts are checked only by `pnpm perf:gpu`, on this Mac. CI has no GPU, and on a software renderer (SwiftShader) the pack scene draws about one frame a second, too slow to fill a measured window, so there is no CI count lane. A change that adds draw calls, triangles, programs or textures passes CI and fails `pnpm perf:gpu`, so run the GPU lane before you merge a change to the renderer, the scene or the assets.
 
@@ -142,9 +142,21 @@ For each side, the lane:
 
 1. Sets the game's own frame-rate setting to 60 in `localStorage` and measures the page's `requestAnimationFrame` rate. On a 120 Hz display the game then draws every second vsync. The lane never changes display settings.
 2. Warms each scenario once, to tick 120.
-3. Runs five pairs per scenario, alternating which side goes first. Only the measured side renders; the other waits on `/kit`. Each sample opens a fresh race at `?stress&rung=0` or `?stress=reference&rung=0` (pixel ratio 2, governor off, pacer on), installs a buffered long-task observer before the window starts, waits for the window's last tick, and reads the benchmark rows, the frame records and the long tasks.
+3. Runs five pairs per scenario, alternating which side goes first. Only the measured side renders; the other waits on `/kit`. Each sample opens a fresh race at `?stress&rung=0` or `?stress=reference&rung=0` (pixel ratio 2, governor off, pacer on), installs a buffered long-task observer before the window starts, waits for the window's last tick, and reads the benchmark rows, the frame records, the long tasks, and the program and texture counts of every frame since the race's first.
 
 A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, rung, pixel ratio or size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error. Every sample must also have the same page size and device pixel ratio. The lane stops before warming up if A's and B's windows already differ, which happens when a window is resized; restart that run.
+
+Each of B's races must also create no shader program and upload no texture after its first frame. The lane reads three's live program and texture counts on every frame of the race, from the first countdown frame to the window's last tick. A count that rises from one frame to the next means that frame compiled a program or uploaded a texture, work that can stall it, as it did for 125 ms at tick 268 before `ba109d2`. The lane fails with the resource, its count on the first frame, and the frame and tick of each rise:
+
+```text
+FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair0-B.json programs created after warm-up (39 on the first race frame): +1 at frame=756 tick=440
+```
+
+Fix it by staging what that frame first drew in `apps/web/src/game/staging.ts`, so warm-up draws it before the green light. Comparing each frame with the one before also catches a program released and compiled again, which leaves the total unchanged. When every race holds, the lane prints `ok   first-use side=B created no shader program or texture after the first race frame in 10 races`. These counts do not depend on how busy the machine is, so this check holds on a loaded machine even when the timing limits do not. It has three limits:
+
+- The first race frame is the reference, so a resource first drawn on it, at the start grid, counts as warmed.
+- Geometries are not checked, because city chunks stream in and hazard pools grow during a race by design. A geometry uploaded on first use, as each weapon's was before `8f6ebfe`, is for review.
+- Side A is not judged, because it is the baseline revision.
 
 | Metric | Limit | Paired B/A |
 | --- | --- | --- |

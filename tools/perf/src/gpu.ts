@@ -169,11 +169,17 @@ const collect = ({ window }: Scenario) => `(() => {
   }
   tasks.observer.disconnect();
   const bench = globalThis.__rushlineBench;
+  const info = bench.info();
+  const profile = globalThis.__rushlineProfile;
   return {
-    bench: bench.info(),
+    bench: info,
     frameRate: JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}").frameRate ?? null,
-    frames: globalThis.__rushlineProfile.window(${window.from}, ${window.to}),
+    frames: profile.window(${window.from}, ${window.to}),
     longTasks: tasks.store,
+    ride: profile
+      .window(0, ${window.to})
+      .filter((frame) => frame.race === info.race)
+      .map(({ frame, programs, textures, tick }) => ({ frame, programs, textures, tick })),
     rows: bench.window(${window.from}, ${window.to}),
     viewport: { dpr: devicePixelRatio, height: innerHeight, width: innerWidth },
     visibility: document.visibilityState,

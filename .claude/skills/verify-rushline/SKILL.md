@@ -167,7 +167,7 @@ Run these after every source change, as AGENTS.md requires:
 
 ### The perf gate on the GPU
 
-`pnpm perf:gpu` is the only check of frame pacing and render counts (draw calls, triangles, shader programs and textures). CI has no GPU and no count lane, so run it yourself after a change to the renderer, the scene, the assets, or anything in the frame loop, and before you call the change done. It drives two `rv` runs, side A from a `/tmp` clone at the baseline revision and side B from this checkout, and judges five alternating pairs per scenario against `tools/perf/budgets.json`. `tools/perf/README.md`, "Real-GPU frame lane", has the commands. Before it starts:
+`pnpm perf:gpu` is the only check of frame pacing and render counts (draw calls, triangles, shader programs and textures), and the only check that warm-up covers what a race draws: it fails `first-use` when a frame of one of B's races after the first compiles a shader program or uploads a texture, and names the frame and tick. CI has no GPU and no count lane, so run it yourself after a change to the renderer, the scene, the assets, or anything in the frame loop, and before you call the change done. It drives two `rv` runs, side A from a `/tmp` clone at the baseline revision and side B from this checkout, and judges five alternating pairs per scenario against `tools/perf/budgets.json`. `tools/perf/README.md`, "Real-GPU frame lane", has the commands. Before it starts:
 
 1. Check `ps` for other agents' heavy `node`, `vitest`, `vite` or `pnpm` processes and wait for a quiet machine.
 2. Start both runs with `rv up --slot <n> --path /kit`, run `rv doctor` on both, and leave both windows alone: a resized window changes the page size, and the lane refuses the campaign.

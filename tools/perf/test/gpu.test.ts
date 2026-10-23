@@ -21,19 +21,33 @@ const DRAWN_CALLS = 350;
 const START_MS = 5000;
 const RACE = 1;
 
+type Ride = GpuSample["capture"]["ride"];
+
 interface Playback {
   readonly interval: (index: number) => number;
   readonly extraCalls: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
   readonly viewport: GpuSample["capture"]["viewport"];
+  readonly ride: Ride;
 }
+
+const RIDE_STEP = 300;
+
+const rideOf = (programsAt: (index: number) => number): Ride =>
+  Array.from({ length: 10 }, (_, index) => ({
+    frame: 20 + index * RIDE_STEP,
+    programs: programsAt(index),
+    textures: 30,
+    tick: index * RIDE_STEP,
+  }));
 
 const steady: Playback = {
   discardedAt: -1,
   extraCalls: () => 0,
   interval: () => 16.7,
   longTasks: [],
+  ride: rideOf(() => 40),
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
@@ -90,6 +104,7 @@ const sampleOf = (
       frameOf(scenario, playback, index)
     ),
     longTasks: playback.longTasks,
+    ride: playback.ride,
     rows: {
       ...validRows(scenario),
       times: Array.from(
@@ -140,6 +155,9 @@ describe("gpu frame lane", () => {
     );
     expect(failing(evaluation.lines)).toStrictEqual([]);
     expect(evaluation.ok).toBeTruthy();
+    expect(evaluation.lines).toContain(
+      `ok   first-use side=B created no shader program or texture after the first race frame in ${2 * GPU_PAIRS} races`
+    );
     expect(
       evaluation.lines.find((line) =>
         line.includes("pack-riding-v1 frame.interval.p95")
@@ -286,5 +304,45 @@ describe("gpu frame lane", () => {
       `FAIL gpu pack-riding-v1 render.calls.max [gpu-helium-metal] observed=${over} calls limit <= ${budget.value} calls A=${DRAWN_CALLS.toPrecision(5)}`,
     ]);
     expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a B race that creates a program or texture after its first frame", () => {
+    const replaced = rideOf((index) => [40, 40, 39, 40][index] ?? 41);
+    const uploaded = steady.ride.map((frame, index) =>
+      index >= 4 ? { ...frame, textures: 32 } : frame
+    );
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) => {
+        if (side === "A" || (isPack(scenario) && pair === 0)) {
+          return { ...steady, ride: replaced };
+        }
+        return scenario.id === reference?.id && pair === 3
+          ? { ...steady, ride: uploaded }
+          : steady;
+      }),
+      limits
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      "FAIL first-use reference-v1 side=B reference-v1-pair3-B.json textures created after warm-up (30 on the first race frame): +2 at frame=1220 tick=1200",
+      "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair0-B.json programs created after warm-up (40 on the first race frame): +1 at frame=920 tick=900, +1 at frame=1220 tick=1200",
+    ]);
+    expect(
+      evaluation.lines.some((line) => line.startsWith("ok   first-use"))
+    ).toBeFalsy();
+    expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a B race whose frames do not start at the countdown", () => {
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) =>
+        isPack(scenario) && side === "B" && pair === 1
+          ? { ...steady, ride: [] }
+          : steady
+      ),
+      limits
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair1-B.json race frames start at tick=none expected=0",
+    ]);
   });
 });
