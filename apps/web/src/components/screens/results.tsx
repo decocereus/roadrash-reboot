@@ -10,7 +10,7 @@ import { Screen } from "@racer/ui/components/screen";
 import { cn } from "@racer/ui/utils";
 import type { ReactNode } from "react";
 
-import { plates } from "../../assets/clubhouse-art.ts";
+import { figures, officerFigures, plates } from "../../assets/clubhouse-art.ts";
 import { magsLine, shortNames } from "../../career/copy.ts";
 import type { RaceReport } from "../../career/flow.ts";
 import {
@@ -32,9 +32,8 @@ import {
 } from "./clubhouse-bar.tsx";
 import type { Speech } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
-import { stampStyle } from "./clubhouse-wall.tsx";
+import { RuledSheet, stampStyle } from "./clubhouse-wall.tsx";
 
-const SHEET_SCALE = 0.7;
 const SHEET = { h: 740, w: 570, x: 548, y: 104 } as const;
 const SHEET_TITLE = { h: 62, w: 470, x: 590, y: 136 } as const;
 const SHEET_ROWS = { h: 475, w: 512, x: 566, y: 248 } as const;
@@ -48,23 +47,6 @@ const ROWS = 15;
 const MAGS: RivalId = "mags-dunleavy";
 const NOTE_LONG = 90;
 const NOTE_LONGER = 150;
-
-const sheetBorder = (
-  top: number,
-  right: number,
-  bottom: number,
-  left: number
-) =>
-  [top, right, bottom, left]
-    .map((edge) => stagePx(edge * SHEET_SCALE))
-    .join(" ");
-
-const sheetStyle = {
-  ...place(SHEET),
-  borderImage: `url(${plates.standings}) 297 50 445 80 fill / ${sheetBorder(297, 50, 445, 80)} stretch round`,
-  borderStyle: "solid",
-  borderWidth: sheetBorder(297, 50, 445, 80),
-};
 
 const gapFrom = (rows: readonly ResultRow[]): number => {
   if (rows.some((row) => row.fate === "finished")) {
@@ -100,7 +82,7 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
   const paid = report.ledger !== null;
   return (
     <section aria-label="Race result">
-      <div aria-hidden style={sheetStyle} />
+      <RuledSheet box={SHEET} scale={0.7} />
       <h2
         className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black whitespace-nowrap uppercase"
         style={{ ...place(SHEET_TITLE), fontSize: stagePx(36) }}
@@ -178,7 +160,7 @@ const verdictOf = ({ ledger, summary, result }: RaceReport): string => {
       bust.weapon === "none"
         ? ""
         : ` · Took your ${weaponLabel(bust.weapon).toLowerCase()}`;
-    return `${bust.officerName}, km ${bust.km.toFixed(1)}${taken}`;
+    return `Km ${bust.km.toFixed(1)}${taken}`;
   }
   if (wreck) {
     return result === "quit"
@@ -320,10 +302,6 @@ const noteOf = (report: RaceReport, riding: BikeId): Note | null => {
   if (warning !== null) {
     return { text: warning, warning: true };
   }
-  const { bust } = report.summary;
-  if (bust) {
-    return { text: `“${bust.line}”`, warning: false };
-  }
   return report.ledger
     ? null
     : { text: "Nothing is written to the career.", warning: false };
@@ -351,12 +329,19 @@ const MagentaNote = ({ note: { text, warning } }: { readonly note: Note }) => (
 
 const speakerOf = (
   report: RaceReport
-): { readonly rider: RivalId; readonly speech: Speech } | null => {
-  if (report.ledger && report.summary.wreck) {
+): { readonly figure: string; readonly speech: Speech } | null => {
+  const { bust, wreck, raceId, rows } = report.summary;
+  if (bust) {
     return {
-      rider: MAGS,
+      figure: officerFigures[bust.officer],
+      speech: { line: bust.line, name: bust.officerName, tag: "Booked you" },
+    };
+  }
+  if (report.ledger && wreck) {
+    return {
+      figure: figures[MAGS],
       speech: {
-        line: magsLine(report.summary.raceId),
+        line: magsLine(raceId),
         name: rivals[MAGS].name,
         tag: "Fixes the bikes",
       },
@@ -366,9 +351,9 @@ const speakerOf = (
   if (!line) {
     return null;
   }
-  const row = report.summary.rows.find((each) => each.racer === line.rival);
+  const row = rows.find((each) => each.racer === line.rival);
   return {
-    rider: line.rival,
+    figure: figures[line.rival],
     speech: {
       line: line.text,
       name: rivals[line.rival].name,
@@ -420,7 +405,7 @@ export const ResultsScreen = ({
     >
       <Stage>
         <BarBackdrop clock={clock} />
-        <BarSeats rider={speaker?.rider ?? null} />
+        <BarSeats figure={speaker?.figure ?? null} />
         {speaker && <SpeechSticker speech={speaker.speech} />}
         <BarHeader career={career} />
         <RaceSheet report={report} />

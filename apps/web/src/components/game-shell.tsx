@@ -190,7 +190,6 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
     return (
       <RouteBoardScreen
         career={career}
-        mode="quick"
         onBack={() => {
           flow.go(backRoom);
         }}

@@ -3,6 +3,7 @@ import { debtOf } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { formatMoney } from "@racer/ui/components/money";
+import { cn } from "@racer/ui/utils";
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { plates } from "../../assets/clubhouse-art.ts";
@@ -77,10 +78,29 @@ export const BarHeader = ({
   </>
 );
 
+export const BarStrip = ({
+  opaque = false,
+  children,
+}: {
+  readonly opaque?: boolean;
+  readonly children: ReactNode;
+}) => (
+  <nav
+    className={cn(
+      "font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase",
+      opaque ? "bg-ink" : "bg-ink/90"
+    )}
+    style={{ ...place(NAV), fontSize: stagePx(33) }}
+  >
+    {children}
+  </nav>
+);
+
 export interface BarAction {
   readonly id: string;
   readonly label: ReactNode;
   readonly run: () => void;
+  readonly disabled?: boolean;
 }
 
 export const BarNav = ({
@@ -88,20 +108,19 @@ export const BarNav = ({
   actions,
   primary,
   onKeyDown,
+  autoFocus = true,
   children,
 }: {
   readonly label: string;
   readonly actions: readonly BarAction[];
   readonly primary: string;
   readonly onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  readonly autoFocus?: boolean;
   readonly children?: ReactNode;
 }) => (
-  <nav
-    className="bg-ink/90 font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase"
-    style={{ ...place(NAV), fontSize: stagePx(33) }}
-  >
+  <BarStrip>
     <MenuList
-      autoFocus
+      autoFocus={autoFocus}
       className="flex-nowrap gap-x-[2.4cqw]"
       defaultValue={primary}
       label={label}
@@ -112,7 +131,8 @@ export const BarNav = ({
     >
       {actions.map((action) => (
         <MenuItem
-          className="data-selected:text-neon-yellow data-selected:outline-neon-yellow px-[0.4em] !text-[1em] data-selected:outline-2"
+          className="data-selected:text-neon-yellow data-selected:outline-neon-yellow disabled:text-paper/35 px-[0.4em] !text-[1em] data-selected:outline-2"
+          disabled={action.disabled}
           key={action.id}
           value={action.id}
         >
@@ -121,5 +141,5 @@ export const BarNav = ({
       ))}
     </MenuList>
     {children}
-  </nav>
+  </BarStrip>
 );

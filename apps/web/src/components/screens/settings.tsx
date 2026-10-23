@@ -1,14 +1,15 @@
 import { frameRates, testDevices } from "@racer/telemetry/limits";
 import type { FrameRate, TestDevice } from "@racer/telemetry/limits";
-import { Heading } from "@racer/ui/components/heading";
-import { Panel } from "@racer/ui/components/panel";
 import { Screen } from "@racer/ui/components/screen";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { diagnostics } from "../../diagnostics/hub.ts";
 import type { DiagnosticsView } from "../../diagnostics/hub.ts";
 import type { ReportStatus } from "../../diagnostics/uploader.ts";
-import { ActionMenu, useEscape } from "./shared.tsx";
+import { BarStrip } from "./bar-chrome.tsx";
+import { Stage, stagePx } from "./clubhouse-stage.tsx";
+import { PinnedList } from "./pinned-list.tsx";
+import { useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
 const deviceNames = {
@@ -56,6 +57,7 @@ const useDiagnosticsView = (): DiagnosticsView => {
 export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
   const hub = diagnostics();
   const { settings, report, queued, session } = useDiagnosticsView();
+  const [focused, setFocused] = useState("frame-rate");
   useEscape(onBack);
   const reported = reportLine(report);
   const actions: MenuAction[] = [
@@ -114,26 +116,35 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
     },
     { id: "back", label: "Back", run: onBack },
   ];
+  const hint = actions.find((action) => action.id === focused)?.detail;
   return (
-    <Screen className="bg-ink/60">
-      <Panel
-        className="p-gutter flex h-full w-[min(30rem,40vw)] flex-col gap-6 border-y-0 border-l-0"
-        padding="none"
-      >
-        <Heading as="h1">Settings</Heading>
-        <ActionMenu
+    <Screen className="bg-ink/60 flex">
+      <Stage>
+        <PinnedList
           actions={actions}
-          className="w-full"
+          autoFocus
+          compact
           label="Settings"
-          orientation="vertical"
+          left={560}
+          onFocusItem={setFocused}
           primary="frame-rate"
-          size="md"
+          title="Settings"
         />
-        <div className="text-muted mt-auto flex flex-col gap-2 text-sm font-semibold">
-          <p>B while riding marks the moment in the recording.</p>
-          <p>Session {session}</p>
-        </div>
-      </Panel>
+        <BarStrip opaque>
+          <p
+            className="text-paper/75 tracking-wide"
+            style={{ fontSize: stagePx(20) }}
+          >
+            {hint ?? ""}
+          </p>
+          <p
+            className="text-paper/50 tracking-wide"
+            style={{ fontSize: stagePx(18) }}
+          >
+            B while riding marks the moment · Session {session}
+          </p>
+        </BarStrip>
+      </Stage>
     </Screen>
   );
 };

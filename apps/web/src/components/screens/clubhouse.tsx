@@ -12,7 +12,7 @@ import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useEffect, useMemo, useState } from "react";
 
-import { flyers, plates } from "../../assets/clubhouse-art.ts";
+import { figures, flyers, plates } from "../../assets/clubhouse-art.ts";
 import {
   barCast,
   firstRoad,
@@ -267,7 +267,7 @@ export const ClubhouseScreen = ({
     >
       <Stage inert={envelope ? true : undefined}>
         <BarBackdrop clock={clock} />
-        <BarSeats rider={vic ? null : bar.boss} />
+        <BarSeats figure={vic ? null : figures[bar.boss]} />
         <SpeechSticker speech={speech} />
         <BarHeader career={career} />
         <Standings

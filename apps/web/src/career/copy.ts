@@ -30,10 +30,6 @@ export const roadDescriptions = {
     "Two lanes and a lot of nothing, then a right angle. Rail tracks, an underpass, a drawbridge, and more traffic than anywhere else.",
 } as const satisfies Record<RoadId, string>;
 
-export const REPEAT_RUN =
-  "Already qualified. A repeat run pays half for the top 3 and nothing below. Fines and repairs are full price.";
-export const FINALE_LOCK = "The Long Ridge · Qualify the other four first";
-
 export const classNames = {
   featherweight: "Featherweight",
   heavyweight: "Heavyweight",

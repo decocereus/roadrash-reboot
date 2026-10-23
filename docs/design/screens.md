@@ -41,14 +41,13 @@ A promotion returns to the bar, where Vic says the level's line. A damaged save 
 
 **Boot.** On page load the screen shows the wordmark `RUSHLINE` and `Race. Fight. Pay for it.` while the save is read and the bar's art for the first road decodes, so the bar appears whole. With no save a new career begins and the bar opens. With a save it opens the bar, or Game Over or the ending when the career is over. A damaged save opens the Back Room. A `?ride=` or `?bench=` URL starts that race instead.
 
-**Back Room.** Reached from the bar's menu or Escape, and from Game Over and the ending. Heading `BACK ROOM`. Items: `BACK TO THE BAR` with `Level {level} · ${cash} · {bike}` (or `CAREER OVER` / `See the record`, `SEASON OVER` / `See the ending`), `NEW CAREER`, `SINGLE RACE` with `Any road, no money at stake`, `SETTINGS`. Escape returns to the bar.
+**Back Room.** Reached from the bar's menu or Escape, and from Game Over and the ending. A painted room on the bar's stage: the office behind the bar where the races are run, with a desk under a green lamp, a rotary phone, the cash box, three CRTs showing night races, a locker, and the door to the bar spilling neon. The bar header runs along the top. The menu is a ruled paper list pinned to the left wall, titled `BACK ROOM` on its tape, two ruled lines per item. Items: `BACK TO THE BAR` with `Level {level} · ${cash} · {bike}` (or `CAREER OVER` / `See the record`, `SEASON OVER` / `See the ending`), `NEW CAREER`, `SINGLE RACE` with `Any road, no money at stake`, `SETTINGS`. Escape returns to the bar.
 
 - New career confirm, when a save exists: `Start over? Your Level {level} career will be erased.` Buttons `ERASE AND START` / `KEEP IT`.
-- Damaged save, in a red-edged panel above the menu (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
+- Damaged save, on the pink note on the wall (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
 - When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
-- Small print: `Arrows to steer · Space to punch · Shift to kick`
-
-The Back Room is drawn plainly for now; its painted room is still to come.
+- Bottom strip: `Arrows to steer · Space to punch · Shift to kick`
+- Settings is a second ruled sheet pinned beside the list, one line per setting, with the highlighted setting's explanation in an opaque bottom strip and `B while riding marks the moment · Session {id}` at its right. It opens the same way over Pause.
 
 **Interrupted careers.** When the save holds an active-race record, the page was left during a race. Loading the career settles that race as a wreck, once, before any screen is drawn, and then opens the bar with Vic's note on the wall, or Game Over if the bill ended the career.
 
@@ -93,90 +92,80 @@ The Back Room is drawn plainly for now; its painted room is still to come.
 
 ## 3. Route Board
 
-**Purpose.** Single Race only: pick a road, a level, and a bike. Career races pick their road on the bar's flyer. The career parts of this section describe the screen before October 23, 2026.
+**Purpose.** Single Race only: pick a road, a level, and a bike. Career races pick their road on the bar's flyer.
 
-**Layout.** A corkboard filling the screen. Five postcards pinned at slight angles in a loose row across the middle, each a flat illustration of the region in its palette. The selected card lifts, straightens, and grows. Left column under the heading: the selected road's description. Bottom strip: road facts and the race button. A qualified road has a red rubber stamp across its card.
+**Layout.** The Back Room's painted room. The ruled paper list on the left wall, titled `SINGLE RACE` on its tape, holds three steppers and two buttons. The chosen road's flyer is pinned on the right; a click on it shows the next road. The road's facts are on the cyan note over the desk and its description on the pink note under the flyer. The bar header runs along the top.
 
 **Text.**
 
-- Heading: `ROUTE BOARD`
-- Sub-heading: `LEVEL {n} · QUALIFY ALL FIVE · TOP 3 COUNTS`
-- Card captions: `BREAKWATER RUN` / `Salt Coast`, `CINDER WASH` / `Cinder Flats`, `HOLLOW PINE ROAD` / `Kettle Woods`, `SLAG ROW` / `Lowtown`, `RIDGE ROAD` / `Stonepeak`
-- Stamp on a qualified card: `QUALIFIED · {place}` (for example `QUALIFIED · 2ND`)
-- Under the description of a qualified road: `ALREADY QUALIFIED. A REPEAT RUN PAYS HALF FOR THE TOP 3 AND NOTHING BELOW. FINES AND REPAIRS ARE FULL PRICE.`
-- Lock on the level-5 Ridge Road card until the other four level-5 roads are qualified: `THE LONG RIDGE · QUALIFY THE OTHER FOUR FIRST`. Once open it stays open until the player finishes it in the top three; a quit, wreck, bust, or lower place leaves it open for another try.
+- Steppers: `ROAD ◄ {road} ►`, `LEVEL ◄ {n} ►`, `BIKE ◄ {bike} ►`. Levels run up to the career's level (1 with no career); bikes are the ones in the career's garage.
+- Buttons: `RACE` with `Loading the road` under it while the road loads, `BACK`.
+- Facts note: `LENGTH {km} KM` · `TRAFFIC {LIGHT|STEADY|HEAVY}` · `POLICE {n}` · `HOME OF {rivals}`.
 - Descriptions:
   - Breakwater Run: `Harbour to pier along the seawall. One long bend by the water, one tunnel, and a kink at the tunnel mouth that nobody sees coming twice.`
   - Cinder Wash: `Dead straight across the dry lake, three washes, the last of which throws you in the air, then a hairpin up the mesa at the end of the fastest straight in the game.`
   - Hollow Pine Road: `Narrow, dark, and never straight for long. The trees are close and the crests hide the bends.`
   - Slag Row: `Two lanes and a lot of nothing, then a right angle. Rail tracks, an underpass, a drawbridge, and more traffic than anywhere else.`
   - Ridge Road: `The home road. Ten bends and two crests on the way up to the lookout.`
-- Facts strip: `LENGTH {km} KM` · `TRAFFIC {LIGHT|STEADY|HEAVY}` · `POLICE {n}` · `PRIZE FOR 1ST ${prize}` · `HOME OF {rival} AND {rival}`. On a qualified road the prize shown is the halved one.
-- Home riders are the road's two home rivals. The one exception is Ridge Road at level 1, which reads `HOME OF COACH AND RUTH ANN` because Juno does not race at level 1.
-- Dee's tip, from level 3, once roadblocks ship: `✉ Dee: roadblock at {km} km.`
-- Single Race adds two selectors above the facts strip: `LEVEL ◄ {n} ►` and `BIKE ◄ {bike} ►`. Its sub-heading reads `SINGLE RACE · NO MONEY · NOTHING TO QUALIFY`, and its cards carry no stamps, no lock, no prize, and no repeat-run line.
+- Bottom strip: `No money · Nothing to qualify` and `Left and right change the road, level, and bike`.
 
-**Buttons.** `RACE` (primary), `BACK`. Left and right move between cards.
+**Buttons.** `RACE` (primary), `BACK`. Left and right on a stepper change its value.
 
-**In.** From the Back Room. The cards drop onto the board one after another, 60 ms apart.
+**In.** From the Back Room.
 
 **Out.** `RACE` goes to the ride-out card. `BACK` goes to the Back Room.
 
-**Data.** Level; for each road its plan at this level (length, `trafficPerKilometre`), police count from the level table, qualified flag and best place, home rivals, first roadblock distance if Dee's tip is active. Every road has two lanes, so no lane count is shown. Traffic label: under 6 per km is LIGHT, 6 to 9 STEADY, 10 or more HEAVY.
+**Data.** Level; for each road its plan at this level (length, `trafficPerKilometre`), police count from the level table, and home rivals. Traffic label: under 6 per km is LIGHT, 6 to 9 STEADY, 10 or more HEAVY.
 
 ## 4. Garage
 
 **Purpose.** Buy and sell bikes. Make the trade-off between classes readable without a manual.
 
-**Layout.** The garage next to the Lowside: concrete floor, roller door, one bike on a stand under a work light. The bike is the largest thing on screen and slowly turns. Left column: the catalogue as a list grouped by class. Right column: the selected bike's numbers as bars, with a ghost bar for the bike the player owns. Bottom strip: money and the buy button.
+**Layout.** Its own room, the garage next to the Lowside, painted like the bar: a stage of plates over a backdrop of the roller door open on the wet street, a pegboard on the left, a workbench on the right, and an empty stand under a work light. The selected bike is the live 3D bike model from the race, in its showroom paint, turning on the stand. The mechanic stands at the bench on the right with a speech sticker, which says the bike's pitch. The bar header (wordmark, badge, status strip) runs across the top. The price list is the ruled standings paper on the left, grouped by class, with the class note written on the paper below it. The bike's name, class and price sit over the stand, with the five bars in an ink strip under them. The bottom strip holds the buttons and the money.
 
 ```
 +------------------------------------------------------------------------------+
-| GARAGE                                              CASH $4,900  TRADE $1,800|
+| THE LOWSIDE [badge] | LEVEL 2 · ... | ROADS 1/3 | CASH $4,900 | HALDEN WREN  |
 +--------------------+-----------------------------------+---------------------+
-| FEATHERWEIGHT      |                                   | HALDEN KITE 500     |
-|   Gutter Pup 250   |                                   | FEATHERWEIGHT       |
-|   Halden Wren 400 ●|          [ bike, turning ]        |                     |
-| ► Halden Kite 500  |                                   | TOP SPEED  170 km/h |
-| MIDDLEWEIGHT       |                                   | ▓▓▓▓▓▓▓▓░░░░ ┆      |
-|   Ostra Sesta 600  |                                   | LAUNCH     6.0 s    |
-|   Ostra Sette 750  |                                   | ▓▓▓▓▓▓▓░░░░░ ┆      |
-|   Brack Stoker 800 |                                   | STEERING            |
-| HEAVYWEIGHT        |                                   | ▓▓▓▓▓▓▓▓▓░░░   ┆    |
-|   Meridian 900   🔒|  "The Wren with more lungs.       | BEND GRIP           |
-|   Brack Anvil    🔒|   Still turns before you finish   | ▓▓▓▓▓▓▓▓▓░░░    ┆   |
-|   Ostra Nera     🔒|   deciding to."                   | BRAKES              |
-|                    |                                   | ▓▓▓▓▓▓▓▓░░░░ ┆      |
+|    FOR SALE        | HALDEN KITE 500                   |  .-------------.    |
+| FEATHERWEIGHT      | FEATHERWEIGHT · $5,000            | ( The Wren with )   |
+|  Gutter Pup  $900  | TOP SPEED  ▓▓▓▓▓▓▓▓░░┆  170 km/h  | ( more lungs... )   |
+|  Halden Wren Yours | LAUNCH     ▓▓▓▓▓▓▓░░░┆  6.0 s     |  '---- THE MECHANIC |
+|  Halden Kite $5,000| STEERING   ▓▓▓▓▓▓▓▓▓░  ┆          |                     |
+| MIDDLEWEIGHT       | BEND GRIP  ▓▓▓▓▓▓▓▓▓░   ┆         |   [ the mechanic ]  |
+|  ...               | BRAKES     ▓▓▓▓▓▓▓▓░░┆            |                     |
+| HEAVYWEIGHT        | A wreck at level 2 costs $...     |                     |
+|  Meridian  Level 3 |        [ bike turning on stand ]  |                     |
+|  (class note)      |                                   |                     |
 +--------------------+-----------------------------------+---------------------+
-| PRICE $5,000   YOU HAVE $6,700 WITH TRADE-IN   LEFT AFTER $1,700    ► BUY    |
+| [BUY] SELL  BACK    PRICE $5,000  WITH TRADE-IN $6,700  LEFT $1,700 |
 +------------------------------------------------------------------------------+
 ```
 
 **Text.**
 
-- Heading: `GARAGE`
-- Top right: `CASH ${cash}` · `TRADE ${trade-in}`
+- Price list title: `FOR SALE`. The status strip is the bar's.
 - Class headers: `FEATHERWEIGHT`, `MIDDLEWEIGHT`, `HEAVYWEIGHT`
-- Class notes, shown when a header is selected:
+- Class notes, for the selected bike's class, written under the list:
   - Featherweight: `Light and quick to turn. Bends barely move them. They run out of speed early.`
   - Middleweight: `The all-rounders. Fast enough that some bends need the brakes.`
   - Heavyweight: `Fastest in a straight line. Bends push them wide and they are slow to answer.`
-- Owned marker `●` and label `YOURS`. Lock `🔒` with `ARRIVES AT LEVEL {n}`.
+- Each row's tag: the price, `YOURS` on the owned bike, or `LEVEL {n}` on a locked one.
 - Bars: `TOP SPEED {km/h}`, `LAUNCH {0 to 100 time} s`, `STEERING`, `BEND GRIP`, `BRAKES`. The dotted mark on each bar is the owned bike.
-- The pitch line from the catalogue, in quotes, under the bike.
-- Bottom strip: `PRICE ${price}` · `YOU HAVE ${cash + trade} WITH TRADE-IN` · `LEFT AFTER ${remainder}`
+- The pitch line from the catalogue, in the mechanic's speech sticker. After a buy or a sale the sticker says the line below instead, until another bike is picked. The name tape reads `THE MECHANIC`.
+- Bottom strip, right of the buttons: `PRICE ${price}` · `WITH TRADE-IN ${cash + trade}` · `LEFT AFTER ${remainder}`
 - When too expensive: `SHORT BY ${amount}` in red, and the buy button is dimmed.
 - When in debt: `THE GARAGE DOESN'T SELL TO PEOPLE WHO OWE VIC MONEY. YOU CAN STILL SELL.`
 - Buy confirm: `Trade your {owned} for the {new}? You'll have ${remainder} left.` Buttons `DO IT` / `NOT YET`.
 - After buying: `It's yours. Try not to bend it.`
 - Why the selected bike cannot be bought, beside the price: `Yours.`, `Arrives at level {n}.`, `Short by ${amount}.`, or the debt line above.
-- Sell confirm: `Sell the {owned} for ${trade-in}? You'll ride the Gutter Pup and have ${cash + trade}.` Buttons `SELL IT` / `KEEP IT`, with `KEEP IT` selected. The `SELL` button carries the second line `{owned} for ${trade-in}`, or `Nobody wants the Gutter Pup.` when it is dimmed.
+- Sell confirm: `Sell the {owned} for ${trade-in}? You'll ride the Gutter Pup and have ${cash + trade}.` Buttons `SELL IT` / `KEEP IT`, with `KEEP IT` selected. The `SELL` button is dimmed on the Gutter Pup.
 - After selling: `Sold. You ride the Gutter Pup now.`
 - Repair bill reminder under the bars: `A wreck at Level {n} costs ${repair} on this bike.`
 
 **Buttons.** `BUY` (primary), `SELL`, `BACK`. Up and down move through the catalogue.
 
-**In.** From the Clubhouse. The roller door lifts (the screen wipes upward, 250 ms).
+**In.** From the Clubhouse, with a fade.
 
 **Out.** `BACK` to the Clubhouse.
 
@@ -287,7 +276,7 @@ The rewarded ad that halves the bill is not built. When it is, it belongs on Res
 
 ## 9. Busted
 
-Folded into Results on October 23, 2026. Results stamps `BUSTED`, puts the fine on the ledger, and names the officer, the km, and any confiscated weapon under the stamp: `{officer}, KM {km} · TOOK YOUR {WEAPON}`. The officer's line goes on the pink note unless a debt warning needs it. The officer is the one who patrols the road: `SERGEANT DOLORES PIKE` on Breakwater Run, Cinder Wash, and Ridge Road; `DEPUTY WENDELL HAVERTY` on Slag Row and Hollow Pine Road. The cut to Results comes 0.8 s after the `busted` event, so the player sees the cop arrive.
+Folded into Results on October 23, 2026. Results stamps `BUSTED`, puts the fine on the ledger, and puts the km and any confiscated weapon under the stamp: `KM {km} · TOOK YOUR {WEAPON}`. The arresting officer takes the stool with one of their lines in the speech sticker and `BOOKED YOU` on the tape. The officer is the one who patrols the road: `SERGEANT DOLORES PIKE` on Breakwater Run, Cinder Wash, and Ridge Road; `DEPUTY WENDELL HAVERTY` on Slag Row and Hollow Pine Road. Both are drawn as fan-service pin-ups in uniform, in the same figure framing as the riders. The cut to Results comes 0.8 s after the `busted` event, so the player sees the cop arrive.
 
 The arrest record comes from the race runner, because the sim's own state no longer holds it by the time Results draws: the road; the km, taken from the body's `s` at the `busted` event; and the weapon the player held on the tick before the throw that put them on the ground.
 
@@ -295,12 +284,12 @@ The arrest record comes from the race runner, because the sim's own state no lon
 
 **Purpose.** The reckoning: place, qualification, money in, money out, cash now, and what the rivals made of it.
 
-**Layout.** Results happens in the bar, on the same 1672 × 941 stage as the Clubhouse, with the same header, status strip (now showing the new cash), and bottom strip. The left half is the bar: the rival with the post-race line sits on the stool, with the line in the speech sticker and their name and finishing place on yellow tape. After a wreck or a quit Mags takes the stool instead. The wall on the right shows:
+**Layout.** Results happens in the bar, on the same 1672 × 941 stage as the Clubhouse, with the same header, status strip (now showing the new cash), and bottom strip. The left half is the bar: the rival with the post-race line sits on the stool, with the line in the speech sticker and their name and finishing place on yellow tape. After a bust the arresting officer takes the stool, and after a wreck or a quit Mags does. The wall on the right shows:
 
 - **The race sheet:** the standings paper, stretched to fifteen ruled lines (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
-- **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 5 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the officer line above.
+- **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 5 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the bust line above.
 - **The ledger** on the cyan note.
-- **The pink note,** only when there is something to say: the career-over line, the repossession, the debt warning, or the officer's line, in that order.
+- **The pink note,** only when there is something to say: the career-over line, the repossession, or the debt warning, in that order.
 
 There is no display ad slot since Results moved into the bar. If one comes back, it should be a bill on the wall rather than a box.
 
@@ -339,25 +328,25 @@ There is no display ad slot since Results moved into the bar. If one comes back,
 
 The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `New at the garage: {bikes}.` when the level unlocks bikes, signed `V.`. The status strip shows the new level name.
 
-**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the board with the final Polaroids, three lines of text from `game-design.md` section 11 for the ending earned, the season's record (races, wins, knockdowns, busts, money earned), and `BACK ROOM`.
+**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the bar with the stool empty: the ending's name on the tape of the ruled paper with its text from `game-design.md` section 11 written on the lines, a `SEASON OVER` stamp, the season's record (level, races and wins, knockdowns, busts, money earned) on the cyan note, and `BACK ROOM`.
 
 ## 12. Game Over
 
 **Purpose.** End the career clearly and without cruelty.
 
-**Layout.** The Lowside car park at night, empty except for the Gutter Pup on a tow hook. Heading in the stencil face. A typed card from Vic. The season record under it.
+**Layout.** A painted stage: the Lowside car park at night in the rain, a tow truck hauling the Gutter Pup off on its hook, the bar's back door under pink neon. The bar header runs along the top. The card is written on the ruled paper pinned to the dark wall on the left, titled `BROKE` on its tape. The season record is on the cyan note, bottom right. The buttons are in the bottom strip with `The Lowside car park, after closing` at the right.
 
 **Text.**
 
 - Heading: `BROKE`
-- Vic's card: `You owe more than a Gutter Pup is worth, which is saying something. We're done. V.`
+- The card: `You owe more than a Gutter Pup is worth, which is saying something. We're done.`
 - Record: `REACHED LEVEL {n}` · `{races} RACES · {wins} WINS` · `KNOCKED DOWN {k} RIDERS` · `BUSTED {b} TIMES` · `BEST BIKE: {bike}`
 
-**Buttons.** `NEW CAREER` (primary), `TITLE`. There is no `RACE AGAIN`, no continue, and no ad offer.
+**Buttons.** `NEW CAREER` (primary), `BACK ROOM`. There is no `RACE AGAIN`, no continue, and no ad offer.
 
 **In.** From Results, slow fade (600 ms). Also straight from the Back Room or a page load whenever the save is marked over.
 
-**Out.** `NEW CAREER` replaces the save and plays the new-career intro. `TITLE` leaves the finished career in the save, where it can only reopen this screen.
+**Out.** `NEW CAREER` replaces the save and plays the new-career intro. `BACK ROOM` leaves the finished career in the save, where it can only reopen this screen.
 
 **Persistence.** The career is marked over in the same save write that settles the last race, before Results is drawn. Reloading the page on Results or here cannot bring the career back, and no route from a finished career leads to the Route Board, the Garage, or a race.
 
@@ -394,14 +383,14 @@ The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `Ne
 
 **Purpose.** Stop a single-player race, change volume, or give up.
 
-**Layout.** The race view freezes and dims to 40%. A narrow panel on the left third, styled as a torn piece of the corkboard. The road is still visible on the right.
+**Layout.** The race view freezes and dims. The menu is the ruled paper list pinned on the left, titled `PAUSED` on its tape, the same list as the Back Room. The road is still visible on the right. The bottom strip holds the controls and, in Career, the line about leaving the page; Settings pins its sheet beside the list, as in the Back Room.
 
 **Text.**
 
 - Heading: `PAUSED`
-- Items: `RESUME` · `RESTART RACE` (Single Race only) · `MUSIC VOLUME` · `EFFECTS VOLUME` · `CONTROLS` · `QUIT RACE`
+- Items: `RESUME` · `RESTART RACE` (Single Race only) · `SOUND` with `ON` / `OFF` · `SETTINGS` · `QUIT RACE`
 - Quit confirm in Career: `Quit this race? It counts as a wreck: no prize, and a ${repair} repair bill.` Buttons `QUIT AND PAY` / `KEEP RACING`. When the bill would pass the credit limit, a red line is added: `THIS BILL TAKES THE {bike}.` or `THIS BILL ENDS THE CAREER.`
-- Small print under the items in Career: `Leaving or reloading the page during a race counts as a wreck too.`
+- Bottom strip: `Arrows to steer · Space to punch · Shift to kick · M to mute`, and at the right in Career `Leaving or reloading the page counts as a wreck too`, in Single Race `R restarts a single race`.
 - Quit confirm in Single Race: `Quit this race?` Buttons `QUIT` / `KEEP RACING`.
 - In multiplayer the race does not pause. Escape opens the same panel over the live race with the heading `MENU`, without `RESTART RACE`, and with `LEAVE RACE` in place of `QUIT RACE`: `Leave? Your bike rides on autopilot and you're scored as LEFT.`
 

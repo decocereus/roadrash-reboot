@@ -2,17 +2,20 @@ import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import type * as Scope from "effect/Scope";
 
-import type { AssetRequest } from "./asset-load.ts";
+import type { AssetRequest, BikeRequest, LoadRequest } from "./asset-load.ts";
 import {
   AssetDecoder,
   FontReadiness,
   loadAssets,
+  loadBike,
   ModelTransport,
 } from "./assets/load.ts";
 import type { ByteCache, Fonts, Transport } from "./assets/load.ts";
 import { modelUrls } from "./assets/model-urls.ts";
 import type { ModelUrls } from "./assets/model-urls.ts";
+import type { AssetParsers } from "./game/assets.ts";
 
 interface AssetServices {
   readonly fonts: Fonts;
@@ -21,7 +24,10 @@ interface AssetServices {
 
 interface AssetRuntime {
   readonly mount: (request: AssetRequest) => void;
+  readonly mountBike: (request: BikeRequest) => void;
 }
+
+type Needs = AssetParsers | Fonts | Scope.Scope | Transport;
 
 const errorOf = (cause: unknown): Error =>
   cause instanceof Error ? cause : new Error(String(cause));
@@ -37,17 +43,17 @@ export const createAssetRuntime = (
     )
   );
 
-  const mount = (request: AssetRequest): void => {
+  const hold = <Value, Failure>(
+    loading: Effect.Effect<Value, Failure, Needs>,
+    request: LoadRequest<Value>
+  ): void => {
     let loaded = false;
     const owned = Effect.gen(function* holdAssets() {
-      const { assets, fontFallback } = yield* loadAssets(cache, urls);
+      const value = yield* loading;
       const self = yield* Effect.fiber;
       yield* Effect.sync(() => {
         loaded = true;
-        if (fontFallback !== null) {
-          request.fontFallback(fontFallback);
-        }
-        request.loaded(assets, () => {
+        request.loaded(value, () => {
           self.interruptUnsafe();
         });
       });
@@ -70,7 +76,23 @@ export const createAssetRuntime = (
     });
   };
 
-  return { mount };
+  const mount = (request: AssetRequest): void => {
+    hold(loadAssets(cache, urls), {
+      ...request,
+      loaded: ({ assets, fontFallback }, release) => {
+        if (fontFallback !== null) {
+          request.fontFallback(fontFallback);
+        }
+        request.loaded(assets, release);
+      },
+    });
+  };
+
+  const mountBike = (request: BikeRequest): void => {
+    hold(loadBike(cache, urls), request);
+  };
+
+  return { mount, mountBike };
 };
 
 const pageCache: ByteCache = new Map();

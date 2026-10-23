@@ -1,6 +1,7 @@
 import type { RoadId } from "@racer/career/tables";
-import type { RivalId } from "@racer/sim/cast";
+import type { OfficerId, RivalId } from "@racer/sim/cast";
 
+import backRoomBackdropPlate from "./clubhouse/back-room/backdrop.webp?url";
 import badgePlate from "./clubhouse/badge.webp?url";
 import counterPlate from "./clubhouse/bar/counter.webp?url";
 import duskPlate from "./clubhouse/bar/dusk.webp?url";
@@ -28,8 +29,13 @@ import cinderWashFlyer from "./clubhouse/flyers/cinder-wash.webp?url";
 import hollowPineRoadFlyer from "./clubhouse/flyers/hollow-pine-road.webp?url";
 import ridgeRoadFlyer from "./clubhouse/flyers/ridge-road.webp?url";
 import slagRowFlyer from "./clubhouse/flyers/slag-row.webp?url";
+import gameOverBackdropPlate from "./clubhouse/game-over/backdrop.webp?url";
+import garageBackdropPlate from "./clubhouse/garage/backdrop.webp?url";
+import garageMechanicFigure from "./clubhouse/garage/mechanic.webp?url";
 import noteCyanPlate from "./clubhouse/note-cyan.webp?url";
 import noteMagentaPlate from "./clubhouse/note-magenta.webp?url";
+import doloresPikeFigure from "./clubhouse/officers/dolores-pike.webp?url";
+import wendellHavertyFigure from "./clubhouse/officers/wendell-haverty.webp?url";
 import agnesMulcahyFigure from "./clubhouse/rivals/agnes-mulcahy.webp?url";
 import bennyOkaforFigure from "./clubhouse/rivals/benny-okafor.webp?url";
 import coachDaleHuttoFigure from "./clubhouse/rivals/coach-dale-hutto.webp?url";
@@ -88,6 +94,24 @@ export const figures = {
   "tristan-lux": tristanLuxFigure,
   "wanda-pruitt": wandaPruittFigure,
 } as const satisfies Record<RivalId, string>;
+
+export const officerFigures = {
+  "dolores-pike": doloresPikeFigure,
+  "wendell-haverty": wendellHavertyFigure,
+} as const satisfies Record<OfficerId, string>;
+
+export const backRoomPlates = {
+  backdrop: backRoomBackdropPlate,
+} as const;
+
+export const gameOverPlates = {
+  backdrop: gameOverBackdropPlate,
+} as const;
+
+export const garagePlates = {
+  backdrop: garageBackdropPlate,
+  mechanic: garageMechanicFigure,
+} as const;
 
 export const bills = {
   "agnes-mulcahy": agnesMulcahyBill,
