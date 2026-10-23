@@ -47,7 +47,7 @@ A promotion returns to the bar, where Vic says the level's line. A damaged save 
 - Damaged save, on the pink note on the wall (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
 - When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
 - Bottom strip: `Arrows to steer · Space to punch · Shift to kick`
-- Settings opens as a panel over the room.
+- Settings is a second ruled sheet pinned beside the list, one line per setting, with the highlighted setting's explanation in an opaque bottom strip and `B while riding marks the moment · Session {id}` at its right. It opens the same way over Pause.
 
 **Interrupted careers.** When the save holds an active-race record, the page was left during a race. Loading the career settles that race as a wreck, once, before any screen is drawn, and then opens the bar with Vic's note on the wall, or Game Over if the bill ended the career.
 
@@ -92,36 +92,30 @@ A promotion returns to the bar, where Vic says the level's line. A damaged save 
 
 ## 3. Route Board
 
-**Purpose.** Single Race only: pick a road, a level, and a bike. Career races pick their road on the bar's flyer. The career parts of this section describe the screen before October 23, 2026.
+**Purpose.** Single Race only: pick a road, a level, and a bike. Career races pick their road on the bar's flyer.
 
-**Layout.** A corkboard filling the screen. Five postcards pinned at slight angles in a loose row across the middle, each a flat illustration of the region in its palette. The selected card lifts, straightens, and grows. Left column under the heading: the selected road's description. Bottom strip: road facts and the race button. A qualified road has a red rubber stamp across its card.
+**Layout.** The Back Room's painted room. The ruled paper list on the left wall, titled `SINGLE RACE` on its tape, holds three steppers and two buttons. The chosen road's flyer is pinned on the right; a click on it shows the next road. The road's facts are on the cyan note over the desk and its description on the pink note under the flyer. The bar header runs along the top.
 
 **Text.**
 
-- Heading: `ROUTE BOARD`
-- Sub-heading: `LEVEL {n} · QUALIFY ALL FIVE · TOP 3 COUNTS`
-- Card captions: `BREAKWATER RUN` / `Salt Coast`, `CINDER WASH` / `Cinder Flats`, `HOLLOW PINE ROAD` / `Kettle Woods`, `SLAG ROW` / `Lowtown`, `RIDGE ROAD` / `Stonepeak`
-- Stamp on a qualified card: `QUALIFIED · {place}` (for example `QUALIFIED · 2ND`)
-- Under the description of a qualified road: `ALREADY QUALIFIED. A REPEAT RUN PAYS HALF FOR THE TOP 3 AND NOTHING BELOW. FINES AND REPAIRS ARE FULL PRICE.`
-- Lock on the level-5 Ridge Road card until the other four level-5 roads are qualified: `THE LONG RIDGE · QUALIFY THE OTHER FOUR FIRST`. Once open it stays open until the player finishes it in the top three; a quit, wreck, bust, or lower place leaves it open for another try.
+- Steppers: `ROAD ◄ {road} ►`, `LEVEL ◄ {n} ►`, `BIKE ◄ {bike} ►`. Levels run up to the career's level (1 with no career); bikes are the ones in the career's garage.
+- Buttons: `RACE` with `Loading the road` under it while the road loads, `BACK`.
+- Facts note: `LENGTH {km} KM` · `TRAFFIC {LIGHT|STEADY|HEAVY}` · `POLICE {n}` · `HOME OF {rivals}`.
 - Descriptions:
   - Breakwater Run: `Harbour to pier along the seawall. One long bend by the water, one tunnel, and a kink at the tunnel mouth that nobody sees coming twice.`
   - Cinder Wash: `Dead straight across the dry lake, three washes, the last of which throws you in the air, then a hairpin up the mesa at the end of the fastest straight in the game.`
   - Hollow Pine Road: `Narrow, dark, and never straight for long. The trees are close and the crests hide the bends.`
   - Slag Row: `Two lanes and a lot of nothing, then a right angle. Rail tracks, an underpass, a drawbridge, and more traffic than anywhere else.`
   - Ridge Road: `The home road. Ten bends and two crests on the way up to the lookout.`
-- Facts strip: `LENGTH {km} KM` · `TRAFFIC {LIGHT|STEADY|HEAVY}` · `POLICE {n}` · `PRIZE FOR 1ST ${prize}` · `HOME OF {rival} AND {rival}`. On a qualified road the prize shown is the halved one.
-- Home riders are the road's two home rivals. The one exception is Ridge Road at level 1, which reads `HOME OF COACH AND RUTH ANN` because Juno does not race at level 1.
-- Dee's tip, from level 3, once roadblocks ship: `✉ Dee: roadblock at {km} km.`
-- Single Race adds two selectors above the facts strip: `LEVEL ◄ {n} ►` and `BIKE ◄ {bike} ►`. Its sub-heading reads `SINGLE RACE · NO MONEY · NOTHING TO QUALIFY`, and its cards carry no stamps, no lock, no prize, and no repeat-run line.
+- Bottom strip: `No money · Nothing to qualify` and `Left and right change the road, level, and bike`.
 
-**Buttons.** `RACE` (primary), `BACK`. Left and right move between cards.
+**Buttons.** `RACE` (primary), `BACK`. Left and right on a stepper change its value.
 
-**In.** From the Back Room. The cards drop onto the board one after another, 60 ms apart.
+**In.** From the Back Room.
 
 **Out.** `RACE` goes to the ride-out card. `BACK` goes to the Back Room.
 
-**Data.** Level; for each road its plan at this level (length, `trafficPerKilometre`), police count from the level table, qualified flag and best place, home rivals, first roadblock distance if Dee's tip is active. Every road has two lanes, so no lane count is shown. Traffic label: under 6 per km is LIGHT, 6 to 9 STEADY, 10 or more HEAVY.
+**Data.** Level; for each road its plan at this level (length, `trafficPerKilometre`), police count from the level table, and home rivals. Traffic label: under 6 per km is LIGHT, 6 to 9 STEADY, 10 or more HEAVY.
 
 ## 4. Garage
 
@@ -389,7 +383,7 @@ The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `Ne
 
 **Purpose.** Stop a single-player race, change volume, or give up.
 
-**Layout.** The race view freezes and dims. The menu is the ruled paper list pinned on the left, titled `PAUSED` on its tape, the same list as the Back Room. The road is still visible on the right. The bottom strip holds the controls and, in Career, the line about leaving the page; Settings opens as its panel over the paused race.
+**Layout.** The race view freezes and dims. The menu is the ruled paper list pinned on the left, titled `PAUSED` on its tape, the same list as the Back Room. The road is still visible on the right. The bottom strip holds the controls and, in Career, the line about leaving the page; Settings pins its sheet beside the list, as in the Back Room.
 
 **Text.**
 

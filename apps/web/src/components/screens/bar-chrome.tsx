@@ -3,6 +3,7 @@ import { debtOf } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { formatMoney } from "@racer/ui/components/money";
+import { cn } from "@racer/ui/utils";
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { plates } from "../../assets/clubhouse-art.ts";
@@ -77,9 +78,18 @@ export const BarHeader = ({
   </>
 );
 
-export const BarStrip = ({ children }: { readonly children: ReactNode }) => (
+export const BarStrip = ({
+  opaque = false,
+  children,
+}: {
+  readonly opaque?: boolean;
+  readonly children: ReactNode;
+}) => (
   <nav
-    className="bg-ink/90 font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase"
+    className={cn(
+      "font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase",
+      opaque ? "bg-ink" : "bg-ink/90"
+    )}
     style={{ ...place(NAV), fontSize: stagePx(33) }}
   >
     {children}

@@ -75,15 +75,6 @@ export const useEscape = (run: () => void, enabled = true): void => {
   }, [enabled]);
 };
 
-export const SmallPrint = ({ children }: { readonly children: ReactNode }) => (
-  <p className="text-label text-muted font-semibold uppercase">{children}</p>
-);
-
-const stepKeys = {
-  back: new Set(["ArrowLeft", "a", "A"]),
-  forward: new Set(["ArrowRight", "d", "D"]),
-} as const;
-
 export const standingTag = (
   ally: boolean,
   grudge: boolean
@@ -95,13 +86,6 @@ export const standingTag = (
     return "Holds a grudge";
   }
   return undefined;
-};
-
-export const sidewaysStep = (key: string): -1 | 0 | 1 => {
-  if (stepKeys.forward.has(key)) {
-    return 1;
-  }
-  return stepKeys.back.has(key) ? -1 : 0;
 };
 
 export const stepped = <Item,>(
