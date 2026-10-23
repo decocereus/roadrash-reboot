@@ -405,6 +405,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "scripts/check-typescript-only.ts",
       "scripts/feature-map*.ts",
       "scripts/*features.ts",
+      "scripts/git-files.ts",
       "scripts/node-error.ts",
       "scripts/postcss-tokenize.d.ts",
       "scripts/renderer-imports*.ts",

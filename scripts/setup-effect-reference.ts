@@ -12,6 +12,7 @@ import process from "node:process";
 
 import * as Schema from "effect/Schema";
 
+import { repositoryFiles } from "./git-files.ts";
 import { hasCode } from "./node-error.ts";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -45,9 +46,9 @@ if (project.dependencies.effect !== installed.version) {
     `Install the project's pinned Effect version first: expected ${project.dependencies.effect}, found ${installed.version}.`
   );
 }
-if (git(["ls-files", "--", ".references/effect"]) !== "") {
+if (repositoryFiles(root, [".references/effect"]).length > 0) {
   throw new Error(
-    "Effect source is tracked by Rushline. Remove it from the index before continuing."
+    "Effect source at .references/effect is tracked by Rushline or not ignored. Remove it from the index and ignore .references/ before continuing."
   );
 }
 git(["check-ignore", "-q", ".references/effect/"]);

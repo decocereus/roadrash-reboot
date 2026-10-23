@@ -1,6 +1,7 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import process from "node:process";
+
+import { repositoryFiles } from "./git-files.ts";
 
 const roots = new Set(["apps", "packages", "tools", "scripts", "docs"]);
 const workspaceParents = new Set(["apps", "packages", "tools"]);
@@ -14,13 +15,7 @@ const workspaceGlobs = (
   .map((line) => line.replace(/^[ \t]+- /u, "").trim())
   .filter((glob) => glob !== "");
 
-const files = execFileSync(
-  "git",
-  ["ls-files", "--cached", "--others", "--exclude-standard"],
-  { encoding: "utf-8" }
-)
-  .split("\n")
-  .filter((file) => file !== "");
+const files = repositoryFiles(".");
 
 const fileSet = new Set(files);
 

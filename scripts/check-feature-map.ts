@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import process from "node:process";
 
@@ -8,12 +7,12 @@ import {
   BUDGETS,
   docFilesOf,
   featureMapProblems,
-  LIST_FILES,
   MAP,
   RECIPES,
   sourceFilesOf,
 } from "./feature-map.ts";
 import { features } from "./features.ts";
+import { repositoryFiles } from "./git-files.ts";
 
 const decodeBudgets = Schema.decodeUnknownSync(
   Schema.fromJsonString(
@@ -26,10 +25,7 @@ const decodeBudgets = Schema.decodeUnknownSync(
 const textOf = (file: string) =>
   existsSync(file) ? readFileSync(file, "utf-8") : null;
 
-const files = sourceFilesOf(
-  execFileSync("git", LIST_FILES, { encoding: "utf-8" }),
-  existsSync
-);
+const files = sourceFilesOf(repositoryFiles("."));
 
 const docs = new Map<string, string>();
 for (const file of docFilesOf(features)) {

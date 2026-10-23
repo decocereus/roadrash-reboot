@@ -1,19 +1,11 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import process from "node:process";
 
-import {
-  LIST_FILES,
-  MAP,
-  renderFeatureMap,
-  sourceFilesOf,
-} from "./feature-map.ts";
+import { MAP, renderFeatureMap, sourceFilesOf } from "./feature-map.ts";
 import { features } from "./features.ts";
+import { repositoryFiles } from "./git-files.ts";
 
-const files = sourceFilesOf(
-  execFileSync("git", LIST_FILES, { encoding: "utf-8" }),
-  existsSync
-);
+const files = sourceFilesOf(repositoryFiles("."));
 
 writeFileSync(MAP, renderFeatureMap(features, files));
 process.stdout.write(

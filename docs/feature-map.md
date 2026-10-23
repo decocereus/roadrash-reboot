@@ -998,6 +998,7 @@ Source files:
 - `tools/oxlint/rushline/rules/prefer-catch-tags.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-fn.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-match.ts`
+- `tools/oxlint/rushline/rules/require-nul-file-list.ts`
 - `tools/oxlint/rushline/rules/require-suppression-reason.ts`
 - `tools/oxlint/rushline/rules/require-wrapped-cause.ts`
 - `tools/oxlint/rushline/rules/safety-verified-by.ts`
@@ -1023,6 +1024,7 @@ Test files:
 - `tools/oxlint/test/effect-tags.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
+- `tools/oxlint/test/require-nul-file-list.test.ts`
 - `tools/oxlint/test/setup.ts`
 - `tools/oxlint/test/small-rules.test.ts`
 - `tools/oxlint/test/suppressions.test.ts`
@@ -1039,7 +1041,7 @@ Test files:
 - Docs: [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: none yet
 - Perf: none yet
-- Owns: `scripts/verify.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/setup-effect-reference.ts`, `scripts/write-feature-map.ts`
+- Owns: `scripts/verify.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/setup-effect-reference.ts`, `scripts/write-feature-map.ts`
 
 Source files:
 
@@ -1052,6 +1054,7 @@ Source files:
 - `scripts/check-typescript-only.ts`
 - `scripts/feature-map.ts`
 - `scripts/features.ts`
+- `scripts/git-files.ts`
 - `scripts/node-error.ts`
 - `scripts/platform-features.ts`
 - `scripts/player-features.ts`

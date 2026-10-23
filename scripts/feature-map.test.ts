@@ -246,42 +246,23 @@ describe("the generated map", () => {
 });
 
 describe("source files", () => {
-  it("are the existing TS, TSX, CSS and SQL files under the four roots", () => {
-    const listed = [
-      "scripts/verify.ts",
-      "apps/web/src/styles.css",
-      "apps/web/src/routes/kit.tsx",
-      "packages/telemetry/schema.sql",
-      "tools/perf/budgets.json",
-      "docs/feature-map.md",
-      "alchemy.run.ts",
-      "packages/sim/src/deleted.ts",
-      "",
-    ].join("\0");
+  it("are the TS, TSX, CSS and SQL files under the four roots", () => {
     expect(
-      sourceFilesOf(listed, (file) => file !== "packages/sim/src/deleted.ts")
+      sourceFilesOf([
+        "scripts/verify.ts",
+        "apps/web/src/styles.css",
+        "apps/web/src/routes/kit.tsx",
+        "packages/telemetry/schema.sql",
+        "tools/perf/budgets.json",
+        "docs/feature-map.md",
+        "alchemy.run.ts",
+        " packages/ui/src/padded.ts",
+      ])
     ).toStrictEqual([
       "apps/web/src/routes/kit.tsx",
       "apps/web/src/styles.css",
       "packages/telemetry/schema.sql",
       "scripts/verify.ts",
-    ]);
-  });
-
-  it("keep non-ASCII names and whitespace exactly as git ls-files -z lists them", () => {
-    const listed = [
-      "apps/web/src/café.ts",
-      "apps/web/src/menu bar.tsx",
-      " packages/ui/src/padded.ts",
-      "apps/web/src/tab\there.ts",
-      'apps/web/src/"quoted".ts',
-      "",
-    ].join("\0");
-    expect(sourceFilesOf(listed, () => true)).toStrictEqual([
-      'apps/web/src/"quoted".ts',
-      "apps/web/src/café.ts",
-      "apps/web/src/menu bar.tsx",
-      "apps/web/src/tab\there.ts",
     ]);
   });
 });

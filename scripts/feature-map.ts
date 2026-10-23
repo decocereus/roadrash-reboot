@@ -47,25 +47,12 @@ const kinds = [
   { heading: "Platform", kind: "platform" },
 ] as const;
 
-export const LIST_FILES = [
-  "ls-files",
-  "-z",
-  "--cached",
-  "--others",
-  "--exclude-standard",
-];
-
-export const sourceFilesOf = (
-  listed: string,
-  exists: (file: string) => boolean
-): string[] =>
-  (listed.endsWith("\0") ? listed.slice(0, -1) : listed)
-    .split("\0")
+export const sourceFilesOf = (files: readonly string[]): string[] =>
+  files
     .filter(
       (file) =>
         sourceRoots.some((root) => file.startsWith(root)) &&
-        sourceFile.test(file) &&
-        exists(file)
+        sourceFile.test(file)
     )
     .toSorted();
 

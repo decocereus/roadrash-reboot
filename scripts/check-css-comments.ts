@@ -1,17 +1,12 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import process from "node:process";
 
 import { Input } from "postcss";
 import tokenizer from "postcss/lib/tokenize";
 
-const files = execFileSync(
-  "git",
-  ["ls-files", "--cached", "--others", "--exclude-standard", "*.css"],
-  { encoding: "utf-8" }
-)
-  .split("\n")
-  .filter((file) => file !== "");
+import { repositoryFiles } from "./git-files.ts";
+
+const files = repositoryFiles(".", ["*.css"]);
 
 const commentsIn = (file: string) => {
   const input = new Input(readFileSync(file, "utf-8"), { from: file });

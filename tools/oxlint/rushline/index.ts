@@ -16,6 +16,7 @@ import { noSwallowedFailureRule } from "./rules/no-swallowed-failure.ts";
 import { preferCatchTagsRule } from "./rules/prefer-catch-tags.ts";
 import { preferEffectFnRule } from "./rules/prefer-effect-fn.ts";
 import { preferEffectMatchRule } from "./rules/prefer-effect-match.ts";
+import { requireNulFileListRule } from "./rules/require-nul-file-list.ts";
 import { requireSuppressionReasonRule } from "./rules/require-suppression-reason.ts";
 import { requireWrappedCauseRule } from "./rules/require-wrapped-cause.ts";
 import { safetyVerifiedByRule } from "./rules/safety-verified-by.ts";
@@ -40,6 +41,7 @@ const rushlinePlugin = definePlugin({
     "prefer-catch-tags": preferCatchTagsRule,
     "prefer-effect-fn": preferEffectFnRule,
     "prefer-effect-match": preferEffectMatchRule,
+    "require-nul-file-list": requireNulFileListRule,
     "require-suppression-reason": requireSuppressionReasonRule,
     "require-wrapped-cause": requireWrappedCauseRule,
     "safety-verified-by": safetyVerifiedByRule,
