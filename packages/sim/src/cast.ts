@@ -25,7 +25,7 @@ export type RivalId =
   | "hollis-thorne"
   | "felix-aurand";
 
-export const LEVEL_COUNT = 5;
+const LEVEL_COUNT = 5;
 const CLUB_LEVEL = 4;
 const CLUB_AGGRESSION = 0.5;
 

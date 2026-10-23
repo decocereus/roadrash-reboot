@@ -91,16 +91,6 @@ const safariClock = (meanMs: number) => {
 const slipping = safariClock(17.7);
 const steady = safariClock(VSYNC_MS);
 const halfSteady = safariClock(2 * VSYNC_MS);
-
-const readScreens = (screens: readonly (readonly [number, number])[]) => {
-  const readRefresh = createRefreshMeter(60);
-  let refresh = 60;
-  for (const at of screenStamps(screens)) {
-    refresh = readRefresh(at);
-  }
-  return refresh;
-};
-
 const screenStamps = (screens: readonly (readonly [number, number])[]) => {
   const stamps: number[] = [];
   let now = 0;
@@ -113,6 +103,14 @@ const screenStamps = (screens: readonly (readonly [number, number])[]) => {
   return stamps;
 };
 
+const readScreens = (screens: readonly (readonly [number, number])[]) => {
+  const readRefresh = createRefreshMeter(60);
+  let refresh = 60;
+  for (const at of screenStamps(screens)) {
+    refresh = readRefresh(at);
+  }
+  return refresh;
+};
 const evenStamps = (rates: readonly (readonly [number, number])[]) => {
   const stamps: number[] = [];
   let now = 0;

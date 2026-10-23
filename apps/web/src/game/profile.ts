@@ -1,22 +1,7 @@
 import type * as THREE from "three";
 
-export const parts = [
-  "sim",
-  "other",
-  "riders",
-  "fleet",
-  "camera",
-  "world",
-  "matrices",
-  "normal",
-  "shadow",
-  "main",
-  "line",
-  "bloom",
-  "grade",
-] as const;
-
-export type Part = (typeof parts)[number];
+import { parts } from "../profile-parts.ts";
+import type { Part } from "../profile-parts.ts";
 
 const CAPACITY = 32_768;
 const PENDING_CAPACITY = 1024;
@@ -55,7 +40,7 @@ export interface ProfileFrame {
   readonly triangles: readonly number[];
 }
 
-export interface ProfileInfo {
+interface ProfileInfo {
   readonly parts: readonly Part[];
   readonly renderer: string;
   readonly gpuTimer: boolean;
@@ -63,7 +48,7 @@ export interface ProfileInfo {
   readonly tick: number;
 }
 
-export interface ProfileReader {
+interface ProfileReader {
   readonly info: () => ProfileInfo;
   readonly window: (fromTick: number, toTick: number) => ProfileFrame[];
   readonly frameAt: (frame: number) => ProfileFrame | null;
@@ -189,7 +174,7 @@ export const createProfiler = (
     if (!gpuTimer) {
       return;
     }
-    if (gl.getParameter(GPU_DISJOINT)) {
+    if (gl.getParameter(GPU_DISJOINT) === true) {
       releaseAll();
       return;
     }
@@ -280,7 +265,7 @@ export const createProfiler = (
       drawnEpoch: drawnEpochs[at] ?? 0,
       frame: index,
       geometries: geometries[at] ?? 0,
-      gpu: gpuSeen[at] ? read("gpu") : null,
+      gpu: (gpuSeen[at] ?? 0) === 0 ? null : read("gpu"),
       interval: intervals[at] ?? 0,
       pixelRatio: ratios[at] ?? 0,
       programs: programs[at] ?? 0,

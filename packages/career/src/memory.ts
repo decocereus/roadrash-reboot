@@ -127,7 +127,7 @@ export const remember = (
   };
 };
 
-export const strongestRow = (memory: RivalMemory): MemoryRow | null =>
+const strongestRow = (memory: RivalMemory): MemoryRow | null =>
   memory.sharedRace === 0
     ? null
     : (memoryRows.find((row) => memory[row] === memory.sharedRace) ?? null);

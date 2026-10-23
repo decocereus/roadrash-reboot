@@ -43,4 +43,4 @@ Preconditions:
 - `?autopilot` takes the player's inputs away; do not combine it with `rv press` and expect the keys to count. `?swerve` still overrides the pilot's steering.
 - `?hold` fires once per page load. Reopen the page to catch the moment again.
 - `?at` also moves the player in every later race the page starts, including career races.
-- The pack and the fights depend on the AI pilot; a recipe that relies on a rival being alongside at a given second can drift when `packages/sim/src/pilot.ts` changes. Check the screenshot, not just the command.
+- The pack and the fights depend on the AI pilot; a recipe that relies on a rival being alongside at a given second can drift when `packages/sim/src/pilot.ts` or a `pilot-*.ts` file beside it changes. Check the screenshot, not just the command.

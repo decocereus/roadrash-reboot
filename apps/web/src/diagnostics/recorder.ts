@@ -28,8 +28,8 @@ import type {
   WorstFrame,
 } from "@racer/telemetry/schema";
 
-import { parts } from "../game/profile.ts";
 import type { ProfileFrame } from "../game/profile.ts";
+import { parts } from "../profile-parts.ts";
 
 const EVENT_CAPACITY = 4096;
 const SLOTS = 17;
@@ -73,7 +73,7 @@ export const emptyQuality = (): QualityState => ({
   shadowMap: 0,
 });
 
-export type FrameLookup = (frame: number) => ProfileFrame | null;
+type FrameLookup = (frame: number) => ProfileFrame | null;
 
 export interface Outgoing {
   readonly batch: Batch;

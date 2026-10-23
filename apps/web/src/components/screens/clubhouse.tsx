@@ -32,7 +32,7 @@ import {
 import { careerEntry, planFor } from "../../career/flow.ts";
 import { bikeName } from "../../career/format.ts";
 import { boardNote, signedByVic } from "../../career/notes.ts";
-import { ActionMenu, useEscape } from "./shared.tsx";
+import { ActionMenu, standingTag, useEscape } from "./shared.tsx";
 
 const POLAROIDS = 3;
 const tilts = [-3, 2, -1.5, 3] as const;
@@ -47,7 +47,7 @@ const polaroidRows = (career: CareerState): readonly BoardRow[] => {
   return mine && !top.includes(mine) ? [...top, mine] : top;
 };
 
-function Polaroid({
+const Polaroid = ({
   row,
   career,
   tilt,
@@ -55,7 +55,7 @@ function Polaroid({
   readonly row: BoardRow;
   readonly career: CareerState;
   readonly tilt: number;
-}) {
+}) => {
   const you = row.racer === "player";
   const profile = row.racer === "player" ? defaultPlayer : rivals[row.racer];
   const caption = you
@@ -76,9 +76,9 @@ function Polaroid({
       title={row.racer === "player" ? "You" : shortNames[row.racer]}
     />
   );
-}
+};
 
-export function ClubhouseScreen({
+export const ClubhouseScreen = ({
   career,
   onRouteBoard,
   onGarage,
@@ -90,7 +90,7 @@ export function ClubhouseScreen({
   readonly onGarage: () => void;
   readonly onTitle: () => void;
   readonly onEnvelope: (take: boolean) => void;
-}) {
+}) => {
   const [envelope, setEnvelope] = useState(false);
   const board = roadsFor(career);
   const beat = storyBeat(career);
@@ -159,7 +159,9 @@ export function ClubhouseScreen({
             {beat.envelopeOpen && (
               <button
                 className="rounded-sm"
-                onClick={() => setEnvelope(true)}
+                onClick={() => {
+                  setEnvelope(true);
+                }}
                 type="button"
               >
                 <CorkNote
@@ -204,13 +206,7 @@ export function ClubhouseScreen({
               line={speaker.text}
               name={rival.name}
               skill={rival.skill}
-              tag={
-                ally
-                  ? "On your side"
-                  : career.memory[rival.id].grudge
-                    ? "Holds a grudge"
-                    : undefined
-              }
+              tag={standingTag(ally, career.memory[rival.id].grudge)}
             />
           ) : (
             <Panel>Nobody is at the bar.</Panel>
@@ -291,7 +287,9 @@ export function ClubhouseScreen({
         <Confirm
           defaultValue="leave"
           label="The envelope"
-          onDismiss={() => setEnvelope(false)}
+          onDismiss={() => {
+            setEnvelope(false);
+          }}
           onSelect={(value) => {
             setEnvelope(false);
             onEnvelope(value === "take");
@@ -307,4 +305,4 @@ export function ClubhouseScreen({
       )}
     </Screen>
   );
-}
+};

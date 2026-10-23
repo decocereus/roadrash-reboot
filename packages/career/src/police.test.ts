@@ -1,86 +1,42 @@
-import type { BikeId } from "@racer/sim/bikes";
-import { pilotInput } from "@racer/sim/pilot";
-import { createRace, neutralInput, stepRace } from "@racer/sim/race";
-import { PLAYER_RIDER, TICK_RATE } from "@racer/sim/state";
-import type { RaceState } from "@racer/sim/state";
-import { roadIds, trackFor } from "@racer/track/roads";
-import { describe, expect, it } from "vitest";
+import { once } from "node:events";
+import { availableParallelism } from "node:os";
+import { Worker } from "node:worker_threads";
 
-import { setupFor } from "./field.ts";
-import { newCareer } from "./state.ts";
+import { beforeAll, describe, expect, it } from "vitest";
+
+import {
+  policeStarts,
+  ridesIn,
+  SEASON_SLOTS,
+  STARTS,
+} from "./police-fixtures.ts";
+import type { PoliceRide } from "./police-fixtures.ts";
 import { levels, RIVALS_PER_RACE } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import type { Level } from "./tables.ts";
 
-const decentBikes = {
-  1: "halden-wren-400",
-  2: "halden-kite-500",
-  3: "ostra-sesta-600",
-  4: "ostra-sette-750",
-  5: "halden-meridian-900",
-} as const satisfies Record<Level, BikeId>;
-
-const DECENT_SKILL = 0.9;
-const DECENT_AGGRESSION = 0.5;
-const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
-const SEED_STEP = 7919;
-const RACE_LIMIT_SECONDS = 600;
-const STARTS = roadIds.length * SEEDS.length;
-
-type Ending = "finished" | "busted" | "wrecked" | "unsettled";
-
-const endingOf = (state: RaceState): Ending => {
-  const player = state.riders[PLAYER_RIDER];
-  if (!player) {
-    throw new Error("The race has no player.");
-  }
-  if (player.finishTick >= 0) {
-    return "finished";
-  }
-  if (player.mode === "busted" || player.mode === "wrecked") {
-    return player.mode;
-  }
-  return "unsettled";
-};
-
-const rivalsBustedIn = (state: RaceState): number =>
-  state.riders.filter(
-    (rider, index) =>
-      index !== PLAYER_RIDER &&
-      rider.profile.role === "racer" &&
-      rider.mode === "busted"
-  ).length;
-
-const start = (level: Level, roadId: RoadId, seed: number) => {
-  const track = trackFor(roadId, level);
-  const bikeId = decentBikes[level];
-  const setup = setupFor(
-    { ...newCareer(seed), bikeId, garage: [bikeId], level },
-    roadId,
-    seed * SEED_STEP + level,
-    track
+const rideSeason = async (): Promise<readonly PoliceRide[]> => {
+  const season = new Int32Array(
+    new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * SEASON_SLOTS)
   );
-  const state = createRace({
-    ...setup,
-    player: {
-      ...setup.player,
-      aggression: DECENT_AGGRESSION,
-      skill: DECENT_SKILL,
-    },
-  });
-  const inputs = state.riders.map(() => ({ ...neutralInput }));
-  let ending = endingOf(state);
-  for (
-    let tick = 0;
-    tick < RACE_LIMIT_SECONDS * TICK_RATE && ending === "unsettled";
-    tick += 1
-  ) {
-    for (const [index, input] of inputs.entries()) {
-      pilotInput(state, track, index, input);
-    }
-    stepRace(state, track, inputs);
-    ending = endingOf(state);
-  }
-  return { ending, rivalsBusted: rivalsBustedIn(state) };
+  await Promise.all(
+    Array.from(
+      { length: Math.min(availableParallelism(), policeStarts.length) },
+      async () => {
+        const worker = new Worker(
+          new URL("police-worker.ts", import.meta.url),
+          {
+            workerData: season.buffer,
+          }
+        );
+        const exit: unknown[] = await once(worker, "exit");
+        const [code] = exit;
+        if (code !== 0) {
+          throw new Error(`A police worker exited with code ${String(code)}.`);
+        }
+      }
+    )
+  );
+  return ridesIn(season);
 };
 
 interface Tally {
@@ -91,13 +47,7 @@ interface Tally {
   rivalsBusted: number;
 }
 
-const measured = new Map<Level, Tally>();
-
-const seasonAt = (level: Level): Tally => {
-  const known = measured.get(level);
-  if (known) {
-    return known;
-  }
+const tallyOf = (season: readonly PoliceRide[], level: Level): Tally => {
   const tally: Tally = {
     busted: 0,
     finished: 0,
@@ -105,14 +55,12 @@ const seasonAt = (level: Level): Tally => {
     unsettled: 0,
     wrecked: 0,
   };
-  for (const roadId of roadIds) {
-    for (const seed of SEEDS) {
-      const race = start(level, roadId, seed);
+  for (const race of season) {
+    if (race.level === level) {
       tally[race.ending] += 1;
       tally.rivalsBusted += race.rivalsBusted;
     }
   }
-  measured.set(level, tally);
   return tally;
 };
 
@@ -133,11 +81,16 @@ const bands: readonly Band[] = [
 const MINUTES = 60_000;
 
 describe("police balance", () => {
+  let season: readonly PoliceRide[] = [];
+
+  beforeAll(async () => {
+    season = await rideSeason();
+  }, 15 * MINUTES);
+
   it.each(bands)(
     "a pilot standing in for the decent player is busted in $fewest to $most of 40 starts at level $level",
-    { timeout: 8 * MINUTES },
     ({ fewest, level, most }) => {
-      const tally = seasonAt(level);
+      const tally = tallyOf(season, level);
       expect(tally.busted + tally.finished + tally.wrecked).toBe(STARTS);
       expect(tally.busted).toBeGreaterThanOrEqual(fewest);
       expect(tally.busted).toBeLessThanOrEqual(most);
@@ -147,16 +100,12 @@ describe("police balance", () => {
     }
   );
 
-  it(
-    "over the five levels the busts come to between an eighth and 27% of all starts",
-    { timeout: 30 * MINUTES },
-    () => {
-      const starts = levels.length * STARTS;
-      const busted = levels
-        .map((level) => seasonAt(level).busted)
-        .reduce((total, count) => total + count, 0);
-      expect(busted / starts).toBeGreaterThan(1 / 8);
-      expect(busted / starts).toBeLessThanOrEqual(0.27);
-    }
-  );
+  it("over the five levels the busts come to between an eighth and 27% of all starts", () => {
+    const starts = levels.length * STARTS;
+    const busted = levels
+      .map((level) => tallyOf(season, level).busted)
+      .reduce((total, count) => total + count, 0);
+    expect(busted / starts).toBeGreaterThan(1 / 8);
+    expect(busted / starts).toBeLessThanOrEqual(0.27);
+  });
 });

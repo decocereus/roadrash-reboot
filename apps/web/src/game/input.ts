@@ -20,6 +20,55 @@ const handled = new Set([
   "ShiftRight",
 ]);
 
+export interface KeyEvent {
+  readonly code: string;
+  readonly repeat: boolean;
+  readonly preventDefault: () => void;
+}
+
+interface PadButton {
+  readonly pressed: boolean;
+  readonly value: number;
+}
+
+export interface Pad {
+  readonly axes: readonly number[];
+  readonly buttons: readonly PadButton[];
+  readonly connected: boolean;
+}
+
+export interface InputHost {
+  readonly listen: (
+    press: (event: KeyEvent) => void,
+    release: (event: KeyEvent) => void,
+    blur: () => void
+  ) => () => void;
+  readonly pads: () => readonly (Pad | null)[];
+}
+
+const browserHost: InputHost = {
+  listen(press, release, blur) {
+    window.addEventListener("keydown", press);
+    window.addEventListener("keyup", release);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", press);
+      window.removeEventListener("keyup", release);
+      window.removeEventListener("blur", blur);
+    };
+  },
+  pads: () => navigator.getGamepads(),
+};
+
+const firstConnected = (pads: readonly (Pad | null)[]): Pad | null => {
+  for (const pad of pads) {
+    if (pad?.connected === true) {
+      return pad;
+    }
+  }
+  return null;
+};
+
 const nextSteer = (
   current: number,
   stick: number,
@@ -42,11 +91,14 @@ export interface Controls {
   dispose: () => void;
 }
 
-export function createControls(onCommand: (code: string) => void): Controls {
+export const createControls = (
+  onCommand: (code: string) => void,
+  host: InputHost = browserHost
+): Controls => {
   const held = new Set<string>();
   let steer = 0;
 
-  const press = (event: KeyboardEvent) => {
+  const press = (event: KeyEvent) => {
     if (handled.has(event.code)) {
       event.preventDefault();
     }
@@ -55,15 +107,13 @@ export function createControls(onCommand: (code: string) => void): Controls {
       onCommand(event.code);
     }
   };
-  const release = (event: KeyboardEvent) => {
+  const release = (event: KeyEvent) => {
     held.delete(event.code);
   };
   const clear = () => {
     held.clear();
   };
-  window.addEventListener("keydown", press);
-  window.addEventListener("keyup", release);
-  window.addEventListener("blur", clear);
+  const unlisten = host.listen(press, release, clear);
 
   const down = (...codes: string[]): boolean =>
     codes.some((code) => held.has(code));
@@ -72,12 +122,10 @@ export function createControls(onCommand: (code: string) => void): Controls {
 
   return {
     dispose() {
-      window.removeEventListener("keydown", press);
-      window.removeEventListener("keyup", release);
-      window.removeEventListener("blur", clear);
+      unlisten();
     },
     read(seconds, input) {
-      const pad = navigator.getGamepads().find((each) => each?.connected);
+      const pad = firstConnected(host.pads());
       steer = nextSteer(steer, pad?.axes[0] ?? 0, keySteer(), seconds);
       input.steer = steer;
       input.throttle = Math.max(
@@ -95,4 +143,4 @@ export function createControls(onCommand: (code: string) => void): Controls {
         (pad?.buttons[1]?.pressed ?? false);
     },
   };
-}
+};

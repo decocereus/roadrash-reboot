@@ -1,0 +1,62 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["alchemy.run.ts", "scripts/*.ts"],
+      "project": ["*.ts", "scripts/**/*.ts"],
+      "typescript": true
+    },
+    "apps/web": {
+      "entry": [
+        "src/routes/**/*.{ts,tsx}",
+        "src/**/*.test.ts",
+        "test/**/*.test.ts",
+        "test/renderer-lifecycle.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
+      "typescript": true
+    },
+    "packages/*": {
+      "includeEntryExports": true,
+      "project": ["src/**/*.ts"],
+      "typescript": true
+    },
+    "packages/telemetry": {
+      "entry": ["test/**/*.test.ts"],
+      "includeEntryExports": true,
+      "project": ["src/**/*.ts", "test/**/*.ts"],
+      "typescript": true
+    },
+    "packages/ui": {
+      "includeEntryExports": true,
+      "project": ["src/**/*.{ts,tsx,css}"],
+      "typescript": true
+    },
+    "tools/blender": {
+      "entry": ["*.ts"],
+      "project": ["*.ts"],
+      "typescript": true
+    },
+    "tools/oxlint": {
+      "entry": ["anti-slop/index.ts", "rushline/index.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
+    },
+    "tools/perf": {
+      "entry": [
+        "gate.ts",
+        "measure.ts",
+        "node.ts",
+        "session.ts",
+        "test/**/*.test.ts"
+      ],
+      "project": ["**/*.ts"],
+      "typescript": true
+    },
+    "tools/verify": {
+      "entry": ["rushline.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
+    }
+  }
+}

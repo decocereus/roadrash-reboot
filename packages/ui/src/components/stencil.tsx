@@ -34,7 +34,7 @@ const stencilVariants = cva(
   }
 );
 
-function Stencil({
+const Stencil = ({
   className,
   size = "xl",
   tone = "red",
@@ -45,15 +45,13 @@ function Stencil({
 }: ComponentProps<"span"> &
   VariantProps<typeof stencilVariants> & {
     readonly rotate?: number;
-  }) {
-  return (
-    <span
-      data-slot="stencil"
-      className={cn(stencilVariants({ framed, size, tone }), className)}
-      style={{ ...style, rotate: `${rotate}deg` }}
-      {...props}
-    />
-  );
-}
+  }) => (
+  <span
+    data-slot="stencil"
+    className={cn(stencilVariants({ framed, size, tone }), className)}
+    style={{ ...style, rotate: `${rotate}deg` }}
+    {...props}
+  />
+);
 
-export { Stencil, stencilVariants };
+export { Stencil };

@@ -1,0 +1,20 @@
+rv: drive a Rushline verification instance in a windowed Helium over DevTools
+
+  rv up [--dev] [--path /?ride=...] [--slot n] [--cpu n] [--network fast4g|slow4g|3g] [--sound]
+  rv up --server http://127.0.0.1:1351/ --user-asked     only when the user said to drive their server
+  rv list
+  rv doctor     --run <id>
+  rv open       --run <id> /?ride=slag-row&autopilot&prof [--until title|race|held|<js>]
+  rv js         --run <id> <js expression>
+  rv wait       --run <id> title|race|held|<js> [--timeout s]
+  rv press      --run <id> ArrowUp KeyJ [--hold ms]
+  rv click      --run <id> <visible label> [--within <aria-label>]
+  rv shot       --run <id> <name>
+  rv aria       --run <id> <name>
+  rv screencast --run <id> <name> [--seconds s] [--every n]
+  rv trace      --run <id> <name> [--seconds s]
+  rv sample     --run <id> <name> [--seconds s]
+  rv throttle   --run <id> [--cpu n] [--network off|fast4g|slow4g|3g]
+  rv console    --run <id> [errors]
+  rv rebuild    --run <id>
+  rv down       --run <id>

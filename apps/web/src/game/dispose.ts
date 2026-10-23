@@ -1,27 +1,25 @@
-import * as THREE from "three";
+import type * as THREE from "three";
 
-function disposeMaterial(material: THREE.Material): void {
-  for (const value of Object.values(material)) {
-    if (value instanceof THREE.Texture) {
-      value.dispose();
-    }
-  }
-  material.dispose();
-}
+import { isInstancedMesh, isMesh, isPoints } from "./meshes.ts";
 
-export function disposeTree(root: THREE.Object3D): void {
+export const disposeTree = (root: THREE.Object3D): void => {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
   root.traverse((node) => {
-    if (node instanceof THREE.InstancedMesh) {
+    if (isInstancedMesh(node)) {
       node.dispose();
     }
-    if (node instanceof THREE.Mesh) {
-      node.geometry.dispose();
-      const materials = Array.isArray(node.material)
-        ? node.material
-        : [node.material];
-      for (const material of materials) {
-        disposeMaterial(material);
+    if (isMesh(node) || isPoints(node)) {
+      geometries.add(node.geometry);
+      for (const material of [node.material].flat()) {
+        materials.add(material);
       }
     }
   });
-}
+  for (const geometry of geometries) {
+    geometry.dispose();
+  }
+  for (const material of materials) {
+    material.dispose();
+  }
+};

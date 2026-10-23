@@ -81,7 +81,7 @@ export const hollowPineRoad: TrackPlan = {
   vergeWidth: 5,
 };
 
-export const hollowPineRoadLevel2 = block([
+const hollowPineRoadLevel2 = block([
   [200, -36, 2],
   [150, 40, 2],
   [120, 0, 6],
@@ -91,7 +91,7 @@ export const hollowPineRoadLevel2 = block([
   [190, 0, 0],
 ]);
 
-export const hollowPineRoadLevel3 = block([
+const hollowPineRoadLevel3 = block([
   [160, 52, 0],
   [140, -52, 0],
   [110, 0, 5],
@@ -100,7 +100,7 @@ export const hollowPineRoadLevel3 = block([
   [475, 0, -6],
 ]);
 
-export const hollowPineRoadLevel4 = block([
+const hollowPineRoadLevel4 = block([
   [200, -24, 8],
   [100, 0, 6],
   [95, 0, -8],
@@ -109,7 +109,7 @@ export const hollowPineRoadLevel4 = block([
   [485, 0, -2],
 ]);
 
-export const hollowPineRoadLevel5 = block([
+const hollowPineRoadLevel5 = block([
   [160, 46, -4],
   [140, -58, -2],
   [420, 0, 6],

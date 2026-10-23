@@ -5,7 +5,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { RED } from "./looks.ts";
-import { modelBytes, modelUrls } from "./models.ts";
+import { isMesh, isSkinnedMesh } from "./meshes.ts";
 
 const POSE_NAMES = [
   "rest",
@@ -165,9 +165,9 @@ const placedVectors = (
   return new THREE.BufferAttribute(values, 3);
 };
 
-const unpacked = <Values extends Float32Array | Uint16Array>(
+const unpacked = (
   source: Packed,
-  values: Values
+  values: Float32Array | Uint16Array
 ): THREE.BufferAttribute => {
   for (let index = 0; index < source.count; index += 1) {
     for (let component = 0; component < source.itemSize; component += 1) {
@@ -224,7 +224,7 @@ const fileSpaceGeometry = (mesh: THREE.Mesh): THREE.BufferGeometry => {
 const primitivesOf = (root: THREE.Object3D): Primitive[] => {
   const primitives: Primitive[] = [];
   root.traverse((node) => {
-    if (node instanceof THREE.Mesh) {
+    if (isMesh(node)) {
       primitives.push({
         geometry: fileSpaceGeometry(node),
         slot: slotOf(node),
@@ -270,64 +270,101 @@ const toGame = (root: THREE.Object3D, local: THREE.Vector3): THREE.Vector3 => {
   return placed.set(-placed.x, placed.y, -placed.z);
 };
 
+export interface Decoded<Value> {
+  readonly value: Value;
+  readonly release: () => void;
+}
+
+export type Parse<Value> = (
+  bytes: ArrayBuffer,
+  url: string
+) => Promise<Decoded<Value>>;
+
+type BikeParts = ReadonlyMap<string, readonly Primitive[]>;
+
+export interface AssetParsers {
+  readonly parts: Parse<BikeParts>;
+  readonly whole: Parse<readonly Primitive[]>;
+  readonly rider: Parse<RiderAsset>;
+}
+
+export interface AcquiredAssets {
+  readonly assets: Assets;
+  readonly release: () => void;
+}
+
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
-const parsed = async (url: string): Promise<GLTF> =>
-  loader.parseAsync(await modelBytes(url), "");
+const releaseOf =
+  (root: THREE.Object3D, made: readonly Primitive[]) => (): void => {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    root.traverse((node) => {
+      if (isSkinnedMesh(node)) {
+        node.skeleton.dispose();
+      }
+      if (isMesh(node)) {
+        geometries.add(node.geometry);
+        for (const material of [node.material].flat()) {
+          materials.add(material);
+        }
+      }
+    });
+    for (const primitive of made) {
+      geometries.add(primitive.geometry);
+    }
+    for (const geometry of geometries) {
+      geometry.dispose();
+    }
+    for (const material of materials) {
+      material.dispose();
+    }
+  };
 
-const loadRider = async (url: string): Promise<RiderAsset> => {
-  const gltf = await parsed(url);
+const decoded = <Value>(
+  root: THREE.Object3D,
+  made: readonly Primitive[],
+  value: Value
+): Decoded<Value> => ({ release: releaseOf(root, made), value });
+
+const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
+  await loader.parseAsync(bytes, "");
+
+const rider: Parse<RiderAsset> = async (bytes, url) => {
+  const gltf = await parsed(bytes);
   const [clip] = gltf.animations;
   const rootBone = gltf.scene.getObjectByName("Root");
   if (!(clip && rootBone)) {
+    releaseOf(gltf.scene, [])();
     throw new Error(`The rider model ${url} has no poses.`);
   }
   const { bones, pelvis, poses } = samplePoses(clip);
   const seat = toGame(rootBone, pelvis.get("seated") ?? new THREE.Vector3());
   const stand = toGame(rootBone, pelvis.get("rest") ?? new THREE.Vector3());
-  return {
+  const primitives = primitivesOf(gltf.scene);
+  return decoded(gltf.scene, primitives, {
     bones,
     poses,
-    primitives: primitivesOf(gltf.scene),
+    primitives,
     scene: gltf.scene,
     seat,
     standHeight: stand.y,
-  };
+  });
 };
 
-const loadParts = async (
-  url: string
-): Promise<Map<string, readonly Primitive[]>> => {
-  const gltf = await parsed(url);
-  const parts = new Map<string, readonly Primitive[]>();
+const parts: Parse<BikeParts> = async (bytes) => {
+  const gltf = await parsed(bytes);
+  const byName = new Map<string, readonly Primitive[]>();
   for (const child of gltf.scene.children) {
-    parts.set(child.name, primitivesOf(child));
+    byName.set(child.name, primitivesOf(child));
   }
-  return parts;
+  return decoded(gltf.scene, [...byName.values()].flat(), byName);
 };
 
-const loadWhole = async (url: string): Promise<readonly Primitive[]> => {
-  const gltf = await parsed(url);
-  return primitivesOf(gltf.scene);
+const whole: Parse<readonly Primitive[]> = async (bytes) => {
+  const gltf = await parsed(bytes);
+  const primitives = primitivesOf(gltf.scene);
+  return decoded(gltf.scene, primitives, primitives);
 };
 
-let pending: Promise<Assets> | null = null;
-
-const loadAll = async (): Promise<Assets> => {
-  const [buildA, buildB, buildC] = modelUrls.riders;
-  const [bike, car, van, riderA, riderB, riderC] = await Promise.all([
-    loadParts(modelUrls.bike),
-    loadWhole(modelUrls.car),
-    loadWhole(modelUrls.van),
-    loadRider(buildA),
-    loadRider(buildB),
-    loadRider(buildC),
-    document.fonts.load('800 40px "Saira Extra Condensed"').catch(() => []),
-  ]);
-  return { bike, car, riders: [riderA, riderB, riderC], van };
-};
-
-export const loadAssets = (): Promise<Assets> => {
-  pending ??= loadAll();
-  return pending;
-};
+export const assetParsers: AssetParsers = { parts, rider, whole };

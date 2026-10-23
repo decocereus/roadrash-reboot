@@ -7,9 +7,14 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsrs --noEmit"
   },
   "dependencies": {
     "effect": "4.0.0"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "4.0.0",
+    "@types/node": "26.4.1",
+    "vitest": "5.0.0"
   }
 }

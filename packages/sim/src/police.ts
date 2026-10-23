@@ -1,15 +1,17 @@
+import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
+import type { RaceView } from "./race-view.ts";
 import { BIKE_HALF_LENGTH } from "./state.ts";
 import type { RaceState, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
 export const PATROL_SPEED = 22;
-export const BODY_RANGE = 60;
-export const WAKE_RANGE = 35;
+const BODY_RANGE = 60;
+const WAKE_RANGE = 35;
 const LOSE_RANGE = 120;
-export const BUST_REACH = 4;
-export const BUST_DELAY_TICKS = 30;
+const BUST_REACH = 4;
+const BUST_DELAY_TICKS = 30;
 export const PULL_OVER = 1.1;
 
 export const isDown = (rider: RiderState): boolean =>
@@ -146,15 +148,12 @@ const bust = (
   pullOver(track, rider);
 };
 
-export const chaserDistance = (
-  state: RaceState,
-  riderIndex: number
-): number => {
+export const chaserDistance = (state: RaceView, riderIndex: number): number => {
   const rider = state.riders[riderIndex];
   let nearest = -1;
   for (const cop of state.riders) {
     if (rider && cop.profile.role === "police" && cop.chase === riderIndex) {
-      const distance = Math.hypot(rider.bodyS - cop.s, rider.bodyX - cop.x);
+      const distance = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
       nearest = nearest < 0 ? distance : Math.min(nearest, distance);
     }
   }
@@ -171,7 +170,7 @@ const catchDowned = (
     return;
   }
   for (const [index, rider] of state.riders.entries()) {
-    const reach = Math.hypot(rider.bodyS - cop.s, rider.bodyX - cop.x);
+    const reach = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
     if (wanted(rider) && arrestable(rider) && reach < BUST_REACH) {
       bust(state, track, index, copIndex);
     }

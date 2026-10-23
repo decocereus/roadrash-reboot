@@ -13,8 +13,11 @@ import {
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
+import { pilotHistoryOf } from "./pilot-history.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
-import { stepRider, throwRider } from "./rider.ts";
+import type { RaceView, RiderView } from "./race-view.ts";
+import { throwRider } from "./rider-crash.ts";
+import { stepRider } from "./rider.ts";
 import { FULL_CONDITION, MAX_STAMINA } from "./state.ts";
 import type {
   BikeSpec,
@@ -38,7 +41,7 @@ const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const HAZARD_DICE_SALT = 0x2e_c3;
 const DEFAULT_LEVEL = 3;
-export const MAX_RIVALS = 14;
+const MAX_RIVALS = 14;
 
 export const neutralInput: RiderInput = {
   brake: 0,
@@ -70,7 +73,7 @@ export const defaultPolice: PoliceSetup = {
   topSpeed: 48,
 };
 
-export const defaultPacing: PacingRules = {
+const defaultPacing: PacingRules = {
   catchUp: 0.06,
   leadEase: 0.18,
 };
@@ -239,7 +242,7 @@ export const validateSetup = (setup: RaceSetup): SetupError[] => [
   ...missingBikes(setup),
 ];
 
-export const describeSetupError = (error: SetupError): string => {
+const describeSetupError = (error: SetupError): string => {
   if (error.kind === "tooManyRivals") {
     return `A race takes at most ${MAX_RIVALS} rivals, and this one has ${error.count}.`;
   }
@@ -325,20 +328,21 @@ export const createRace = (setup: RaceSetup): RaceState => {
     tick: 0,
   };
   spawnScheduledHazards(state, track);
+  pilotHistoryOf(state);
   return state;
 };
 
-export const distanceLeft = (track: Track, rider: RiderState): number =>
+export const distanceLeft = (track: Track, rider: RiderView): number =>
   Math.max(0, track.length - rider.bodyS);
 
-const standingGroup = (rider: RiderState): number => {
+const standingGroup = (rider: RiderView): number => {
   if (rider.finishTick >= 0) {
     return 0;
   }
   return rider.mode === "busted" || rider.mode === "wrecked" ? 2 : 1;
 };
 
-export const standings = (state: RaceState): number[] =>
+export const standings = (state: RaceView): number[] =>
   state.riders
     .map((rider, index) => ({ index, rider }))
     .filter((entry) => entry.rider.profile.role === "racer")
@@ -405,13 +409,7 @@ export const stepRace = (
       throwForHazard
     );
   }
-  stepRiderContacts(
-    state,
-    track,
-    (riderIndex, cause, bikeKeep, bodyKeep, speedAtImpact) => {
-      throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, speedAtImpact);
-    }
-  );
+  stepRiderContacts(state, track, throwRider);
   coolDown(state);
   landStrikes(state);
   for (let index = 0; index < state.riders.length; index += 1) {

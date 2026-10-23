@@ -91,7 +91,7 @@ export const grudgeSide = (
   return reaches(rider, target, side, strike) ? side : 0;
 };
 
-export const strikeTarget = (
+const strikeTarget = (
   state: RaceState,
   riderIndex: number,
   side: number,
@@ -104,7 +104,7 @@ export const strikeTarget = (
   return nearestRival(state, riderIndex, side, strike);
 };
 
-export const rivalSide = (
+const rivalSide = (
   state: RaceState,
   riderIndex: number,
   strike: StrikeSpec = punch
@@ -367,6 +367,7 @@ export const stepAttack = (
 };
 
 export type ThrowRider = (
+  state: RaceState,
   riderIndex: number,
   cause: "rider",
   bikeKeep: number,
@@ -546,7 +547,7 @@ const settle = (
   if (jolt.struckGap < Number.POSITIVE_INFINITY) {
     const speedAtImpact = rider.speed;
     rider.speed = jolt.struckSpeed * 0.9;
-    throwRider(index, "rider", 0.4, 0.6, speedAtImpact);
+    throwRider(state, index, "rider", 0.4, 0.6, speedAtImpact);
     return;
   }
   const speedLoss = jolt.speedLoss + bumpLossOf(rider, jolt.shoved);

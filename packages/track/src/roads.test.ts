@@ -135,7 +135,8 @@ const lowestLaunchKmh = (track: Track, skipped?: Stretch): number => {
   let sharpest = 0;
   for (const [index, rate] of track.slopeRate.entries()) {
     const s = track.startS + index;
-    const inSkipped = skipped && s >= skipped.from && s <= skipped.to;
+    const inSkipped =
+      skipped !== undefined && s >= skipped.from && s <= skipped.to;
     if (!inSkipped) {
       sharpest = Math.min(sharpest, rate);
     }

@@ -1,4 +1,4 @@
-import type { SaveError } from "@racer/career/save";
+import type { SaveError } from "@racer/career/save-schema";
 import type { CareerState } from "@racer/career/state";
 import { Confirm } from "@racer/ui/components/confirm";
 import { formatMoney } from "@racer/ui/components/money";
@@ -54,22 +54,20 @@ const careerActions = (
   ];
 };
 
-function CorruptSave({ error }: { readonly error: SaveError }) {
-  return (
-    <Panel className="mb-4 max-w-md" edge="var(--red)" role="alert">
-      <p className="font-semibold">
-        {saveErrors[error.kind]}
-        {error.field === "" ? "." : ` (${error.field}).`}
-      </p>
-      <p className="text-muted mt-1 text-sm">
-        Save error: {error.kind}. Start over keeps the old save in the browser
-        under a backup key and begins a new career.
-      </p>
-    </Panel>
-  );
-}
+const CorruptSave = ({ error }: { readonly error: SaveError }) => (
+  <Panel className="mb-4 max-w-md" edge="var(--red)" role="alert">
+    <p className="font-semibold">
+      {saveErrors[error.kind]}
+      {error.field === "" ? "." : ` (${error.field}).`}
+    </p>
+    <p className="text-muted mt-1 text-sm">
+      Save error: {error.kind}. Start over keeps the old save in the browser
+      under a backup key and begins a new career.
+    </p>
+  </Panel>
+);
 
-export function TitleScreen({
+export const TitleScreen = ({
   save,
   failure,
   onContinue,
@@ -83,7 +81,7 @@ export function TitleScreen({
   readonly onNewCareer: () => void;
   readonly onQuickRace: () => void;
   readonly onStartOver: () => void;
-}) {
+}) => {
   const [asking, setAsking] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const quick: MenuAction[] = [
@@ -94,16 +92,34 @@ export function TitleScreen({
       label: "Multiplayer",
       trailing: SOON,
     },
-    { id: "settings", label: "Settings", run: () => setAdjusting(true) },
+    {
+      id: "settings",
+      label: "Settings",
+      run: () => {
+        setAdjusting(true);
+      },
+    },
   ];
-  const career: MenuAction[] =
-    save.status === "ready"
-      ? careerActions(save.career, onContinue, () => setAsking(true))
-      : save.status === "corrupt"
-        ? [{ id: "continue", label: "Start over", run: onStartOver }]
-        : [{ id: "continue", label: "Career", run: onNewCareer }];
+  const careerMenu = (): MenuAction[] => {
+    if (save.status === "ready") {
+      return careerActions(save.career, onContinue, () => {
+        setAsking(true);
+      });
+    }
+    if (save.status === "corrupt") {
+      return [{ id: "continue", label: "Start over", run: onStartOver }];
+    }
+    return [{ id: "continue", label: "Career", run: onNewCareer }];
+  };
+  const career = careerMenu();
   if (adjusting) {
-    return <SettingsScreen onBack={() => setAdjusting(false)} />;
+    return (
+      <SettingsScreen
+        onBack={() => {
+          setAdjusting(false);
+        }}
+      />
+    );
   }
   return (
     <Screen className="bg-transparent" enter="fade" scrim="soft">
@@ -140,7 +156,9 @@ export function TitleScreen({
         <Confirm
           defaultValue="keep"
           label="Start over"
-          onDismiss={() => setAsking(false)}
+          onDismiss={() => {
+            setAsking(false);
+          }}
           onSelect={(value) => {
             setAsking(false);
             if (value === "erase") {
@@ -157,4 +175,4 @@ export function TitleScreen({
       )}
     </Screen>
   );
-}
+};

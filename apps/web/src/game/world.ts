@@ -24,15 +24,11 @@ import { createHazardMarks } from "./hazards.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { buildRamps } from "./ramps.ts";
+import { paveTexture, ROAD_TILE_METRES, roadTexture } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
-import {
-  bannerTexture,
-  chevronTexture,
-  paveTexture,
-  ROAD_TILE_METRES,
-  roadTexture,
-  skyTexture,
-} from "./textures.ts";
+import { bannerTexture, chevronTexture } from "./sign-textures.ts";
+import { skyTexture } from "./sky-texture.ts";
+import { owned } from "./texture-canvas.ts";
 
 const CHUNK_LENGTH = 200;
 const CHUNK_BEHIND = 260;
@@ -56,12 +52,12 @@ const placer = new THREE.Object3D();
 
 type Rail = readonly [offset: number, lift: number, u: number];
 
-function buildRibbon(
+const buildRibbon = (
   track: Track,
   span: readonly [number, number],
   rails: readonly Rail[],
   tile: number
-): THREE.BufferGeometry {
+): THREE.BufferGeometry => {
   const [from, to] = span;
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -92,14 +88,14 @@ function buildRibbon(
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
-}
+};
 
-function terrainColor(
+const terrainColor = (
   look: Look,
   ring: number,
   worldX: number,
   worldZ: number
-): THREE.Color {
+): THREE.Color => {
   if (ring <= 1) {
     return tint.set(look.walk);
   }
@@ -108,14 +104,14 @@ function terrainColor(
     .set(look.groundNear)
     .lerp(new THREE.Color(look.groundFar), smoothstep((ring - 2) / 5))
     .lerp(new THREE.Color(look.groundPatch), patch * 0.35);
-}
+};
 
-function buildTerrainChunk(
+const buildTerrainChunk = (
   track: Track,
   span: readonly [number, number],
   side: number,
   look: Look
-): THREE.BufferGeometry {
+): THREE.BufferGeometry => {
   const [from, to] = span;
   const positions: number[] = [];
   const colors: number[] = [];
@@ -156,14 +152,15 @@ function buildTerrainChunk(
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
-}
+};
 
-function buildGate(
+const buildGate = (
   track: Track,
   s: number,
   label: string,
-  shading: Shading
-): THREE.Group {
+  shading: Shading,
+  textures: Set<THREE.Texture>
+): THREE.Group => {
   const gate = new THREE.Group();
   const span = track.roadHalfWidth * 2 + 3;
   const steel = shading.cel(POLE, { rim: 0.6 });
@@ -177,7 +174,7 @@ function buildGate(
     new THREE.BoxGeometry(span, 1.3, 0.3),
     new THREE.MeshBasicMaterial({
       color: new THREE.Color("#ffffff").multiplyScalar(1.4),
-      map: bannerTexture(label),
+      map: owned(textures, bannerTexture(label)),
     })
   );
   banner.position.set(0, 6.4, 0);
@@ -186,13 +183,14 @@ function buildGate(
   gate.position.set(point.x, point.y, point.z);
   gate.rotation.set(0, -point.heading, 0);
   return gate;
-}
+};
 
-function buildScenery(
+const buildScenery = (
   track: Track,
   shading: Shading,
-  limit: number
-): THREE.Group {
+  limit: number,
+  textures: Set<THREE.Texture>
+): THREE.Group => {
   const { look } = shading;
   const scenery = new THREE.Group();
   const city = look.kit === "city";
@@ -260,7 +258,7 @@ function buildScenery(
       {
         geometry: lifted(new THREE.PlaneGeometry(1.2, 0.9), [0, 1.6, 0]),
         material: new THREE.MeshBasicMaterial({
-          map: chevronTexture(),
+          map: owned(textures, chevronTexture()),
           side: THREE.DoubleSide,
         }),
       },
@@ -290,34 +288,43 @@ function buildScenery(
         ]
       : boulderParts(shading)
   );
-  scenery.add(buildGate(track, 0, "START", shading));
-  scenery.add(buildGate(track, track.length, "FINISH", shading));
+  scenery.add(buildGate(track, 0, "START", shading, textures));
+  scenery.add(buildGate(track, track.length, "FINISH", shading, textures));
   return scenery;
-}
+};
 
-function buildSky(look: Look, shading: Shading, seed: number): THREE.Mesh {
-  const mark = look.sun
-    ? shading.key.clone().setY(0).normalize()
-    : MOON_BEARING.clone();
+const buildSky = (
+  look: Look,
+  shading: Shading,
+  seed: number,
+  textures: Set<THREE.Texture>
+): THREE.Mesh => {
+  const mark =
+    look.sun === null
+      ? MOON_BEARING.clone()
+      : shading.key.clone().setY(0).normalize();
   const turn = Math.atan2(mark.z, -mark.x) / (Math.PI * 2);
-  const elevation = look.sun ? SUN_ELEVATION : MOON_ELEVATION;
+  const elevation = look.sun === null ? MOON_ELEVATION : SUN_ELEVATION;
   const sky = new THREE.Mesh(
     new THREE.SphereGeometry(SKY_RADIUS, 48, 24),
     new THREE.MeshBasicMaterial({
       depthWrite: false,
       fog: false,
-      map: skyTexture(createRandom(seed), look, [
-        ((turn % 1) + 1) % 1,
-        0.5 - elevation / Math.PI,
-      ]),
+      map: owned(
+        textures,
+        skyTexture(createRandom(seed), look, [
+          ((turn % 1) + 1) % 1,
+          0.5 - elevation / Math.PI,
+        ])
+      ),
       side: THREE.BackSide,
     })
   );
   sky.renderOrder = -2;
   return onFxLayer(sky);
-}
+};
 
-function buildMountains(look: Look): THREE.InstancedMesh {
+const buildMountains = (look: Look): THREE.InstancedMesh => {
   const count = 44;
   const mountains = new THREE.InstancedMesh(
     new THREE.ConeGeometry(1, 1, 5),
@@ -339,7 +346,7 @@ function buildMountains(look: Look): THREE.InstancedMesh {
   }
   mountains.frustumCulled = false;
   return onFxLayer(mountains);
-}
+};
 
 interface SunRig {
   readonly light: THREE.DirectionalLight;
@@ -347,7 +354,7 @@ interface SunRig {
   setMapSize: (size: number) => void;
 }
 
-function createSunRig(shading: Shading, mapSize: number): SunRig {
+const createSunRig = (shading: Shading, mapSize: number): SunRig => {
   const light = new THREE.DirectionalLight(shading.sun, 1);
   light.castShadow = true;
   light.shadow.mapSize.set(mapSize, mapSize);
@@ -393,7 +400,7 @@ function createSunRig(shading: Shading, mapSize: number): SunRig {
       texel = (SHADOW_SPAN * 2) / size;
     },
   };
-}
+};
 
 export interface World {
   readonly scene: THREE.Scene;
@@ -405,7 +412,7 @@ export interface World {
   dispose: () => void;
 }
 
-export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
+export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const look = lookOf(track.plan.region);
   const shading = createShading(look);
   const random = createRandom(track.plan.seed + 5);
@@ -418,7 +425,9 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   const stretches: Stretch[] = [];
 
   const half = track.roadHalfWidth;
+  const textures = new Set<THREE.Texture>();
   const paved = roadTexture(random, look, track);
+  textures.add(paved.map).add(paved.glow);
   const roadMaterial = shading.cel("#ffffff", {
     emissiveIntensity: 0.9,
     emissiveMap: paved.glow,
@@ -430,7 +439,7 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   const city: City | null =
     look.kit === "city" ? createCity(track, shading) : null;
   const edge = track.vergeHalfWidth + FRONT_GAP + 0.6;
-  const walkTexture = paveTexture(look);
+  const walkTexture = owned(textures, paveTexture(look));
   const walkMaterial = shading.cel("#ffffff", { map: walkTexture });
   const kerbMaterial = shading.cel(look.kerb);
   const terrainMaterial = shading.cel("#ffffff", { vertexColors: true });
@@ -492,7 +501,8 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       buildScenery(
         track,
         shading,
-        city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY
+        city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY,
+        textures
       )
     )
   );
@@ -504,7 +514,7 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   if (city) {
     scene.add(freeze(city.group));
   } else {
-    const dressing = buildRoadside(track, shading);
+    const dressing = buildRoadside(track, shading, textures);
     scene.add(freeze(dressing.group));
     stretches.push(...dressing.stretches);
   }
@@ -521,16 +531,21 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
   );
   plain.rotation.x = -Math.PI / 2;
   plain.position.y = lowest - 24;
-  const sky = buildSky(look, shading, track.plan.seed + 3);
+  const sky = buildSky(look, shading, track.plan.seed + 3, textures);
   const backdrop = buildMountains(look);
   backdrop.visible = !city;
   scene.add(plain, sky, backdrop);
 
   return {
     dispose() {
+      city?.group.removeFromParent();
       city?.dispose();
       hazards.dispose();
       disposeTree(scene);
+      for (const texture of textures) {
+        texture.dispose();
+      }
+      shading.dispose();
       rig.light.shadow.map?.dispose();
     },
     follow(camera, s) {
@@ -559,4 +574,4 @@ export function createWorld(track: Track, shadowMap = SHADOW_MAP): World {
       hazards.show(list, s);
     },
   };
-}
+};

@@ -1,0 +1,14 @@
+{
+  "name": "@fixture/ws-a",
+  "private": true,
+  "dependencies": {
+    "@fixture/ws-b": "workspace:*",
+    "fixture-lib": "1.0.0"
+  },
+  "devDependencies": {
+    "fixture-dev": "1.0.0"
+  },
+  "peerDependencies": {
+    "fixture-peer": "1.0.0"
+  }
+}

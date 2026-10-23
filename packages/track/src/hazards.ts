@@ -1,4 +1,5 @@
 import { reservationOf } from "./features.ts";
+import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import type { Random } from "./random.ts";
 import { regions } from "./regions.ts";
@@ -31,7 +32,7 @@ export interface HazardPlacement {
   readonly x: number;
 }
 
-export const HAZARD_SIGHT = 25;
+const HAZARD_SIGHT = 25;
 export const HAZARD_START_CLEARANCE = 450;
 export const HAZARD_FINISH_CLEARANCE = 150;
 export const HAZARD_RAMP_CLEARANCE = 30;
@@ -211,9 +212,9 @@ interface Spot {
 
 const spotOf = (road: Road, s: number, x: number, lift: number, out: Spot) => {
   const heading = sampleOf(road, road.heading, s);
-  out.x = sampleOf(road, road.worldX, s) + Math.cos(heading) * x;
+  out.x = sampleOf(road, road.worldX, s) + cos(heading) * x;
   out.y = sampleOf(road, road.worldY, s) + lift;
-  out.z = sampleOf(road, road.worldZ, s) + Math.sin(heading) * x;
+  out.z = sampleOf(road, road.worldZ, s) + sin(heading) * x;
 };
 
 const eye: Spot = { x: 0, y: 0, z: 0 };
@@ -232,8 +233,8 @@ const seenFrom = (road: Road, s: number, x: number, distance: number) => {
     const chordY = eye.y + (target.y - eye.y) * share;
     const chordZ = eye.z + (target.z - eye.z) * share;
     const across =
-      (chordX - sampleOf(road, road.worldX, along)) * Math.cos(heading) +
-      (chordZ - sampleOf(road, road.worldZ, along)) * Math.sin(heading);
+      (chordX - sampleOf(road, road.worldX, along)) * cos(heading) +
+      (chordZ - sampleOf(road, road.worldZ, along)) * sin(heading);
     const ground = sampleOf(road, road.worldY, along) + SIGHT_GROUND_CLEARANCE;
     if (Math.abs(across) > road.vergeHalfWidth || chordY < ground) {
       return false;

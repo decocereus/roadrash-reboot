@@ -61,7 +61,7 @@ export const BOUGHT = "It's yours. Try not to bend it.";
 export const SOLD = "Sold. You ride the Gutter Pup now.";
 export const NOBODY_WANTS_THE_PUP = "Nobody wants the Gutter Pup.";
 
-export const magsLines = [
+const magsLines = [
   "I can fix it. I can't fix how you ride it.",
   "I've seen worse. On fire, mostly.",
   "Sweetheart, the front wheel was in a different lane.",

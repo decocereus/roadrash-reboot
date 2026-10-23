@@ -7,15 +7,13 @@ export class Web extends Cloudflare.Website.Vite<Web>()("Web", {
   rootDir: `${import.meta.dirname}/apps/web`,
 }) {}
 
-export type WebEnv = Cloudflare.InferEnv<typeof Web>;
-
 export default Alchemy.Stack(
   "Rushline",
   {
     providers: Cloudflare.providers(),
     state: Alchemy.localState(),
   },
-  Effect.gen(function* () {
+  Effect.gen(function* rushline() {
     const web = yield* Web;
 
     return {

@@ -11,7 +11,7 @@ import { billWarning, classNames, magsLine } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
 import { ActionMenu, SmallPrint } from "./shared.tsx";
 
-export function WreckedScreen({
+export const WreckedScreen = ({
   career,
   outcome,
   onPay,
@@ -19,7 +19,7 @@ export function WreckedScreen({
   readonly career: CareerState;
   readonly outcome: RaceOutcome;
   readonly onPay: () => void;
-}) {
+}) => {
   const bill = repairBill(outcome.level, career.bikeId);
   const bike = bikeName(career.bikeId);
   return (
@@ -55,4 +55,4 @@ export function WreckedScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

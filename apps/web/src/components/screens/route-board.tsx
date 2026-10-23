@@ -20,6 +20,7 @@ import { RegionScene } from "@racer/ui/components/region-scene";
 import { Screen, ScreenBody, ScreenStrip } from "@racer/ui/components/screen";
 import { Stat } from "@racer/ui/components/stat";
 import { Stencil } from "@racer/ui/components/stencil";
+import type { ReactNode } from "react";
 
 import {
   FINALE_LOCK,
@@ -48,7 +49,25 @@ const trafficOf = (roadId: RoadId, level: Level): string => {
 const homeOf = (status: RoadStatus): string =>
   status.home.map((rival) => shortNames[rival]).join(" and ");
 
-function RoadCard({
+const roadStamp = (status: RoadStatus, career: boolean): ReactNode => {
+  if (career && status.qualified) {
+    return (
+      <Stencil framed rotate={-12} size="md">
+        Qualified · {ordinal(status.bestPlace)}
+      </Stencil>
+    );
+  }
+  if (career && !status.open) {
+    return (
+      <Stencil framed rotate={-8} size="md" tone="ink">
+        Locked
+      </Stencil>
+    );
+  }
+  return undefined;
+};
+
+const RoadCard = ({
   status,
   mode,
   tilt,
@@ -60,7 +79,7 @@ function RoadCard({
   readonly tilt: number;
   readonly selected: boolean;
   readonly onPick: () => void;
-}) {
+}) => {
   const career = mode === "career";
   return (
     <button
@@ -75,48 +94,36 @@ function RoadCard({
         className="w-[min(13rem,17vw)]"
         scene={<RegionScene region={status.road.region} />}
         selected={selected}
-        stamp={
-          career && status.qualified ? (
-            <Stencil framed rotate={-12} size="md">
-              Qualified · {ordinal(status.bestPlace)}
-            </Stencil>
-          ) : career && !status.open ? (
-            <Stencil framed rotate={-8} size="md" tone="ink">
-              Locked
-            </Stencil>
-          ) : undefined
-        }
+        stamp={roadStamp(status, career)}
         tilt={tilt}
         title={status.road.name}
       />
     </button>
   );
-}
+};
 
-function RoadNotes({
+const RoadNotes = ({
   status,
   mode,
 }: {
   readonly status: RoadStatus;
   readonly mode: RaceMode;
-}) {
-  return (
-    <Panel className="flex flex-col gap-2">
-      <Heading as="h2" size="md" tone="text">
-        {status.road.name}
-      </Heading>
-      <p className="text-pretty">{roadDescriptions[status.road.id]}</p>
-      {mode === "career" && status.qualified && (
-        <SmallPrint>{REPEAT_RUN}</SmallPrint>
-      )}
-      {mode === "career" && !status.open && (
-        <p className="text-label text-red font-semibold uppercase">
-          {FINALE_LOCK}
-        </p>
-      )}
-    </Panel>
-  );
-}
+}) => (
+  <Panel className="flex flex-col gap-2">
+    <Heading as="h2" size="md" tone="text">
+      {status.road.name}
+    </Heading>
+    <p className="text-pretty">{roadDescriptions[status.road.id]}</p>
+    {mode === "career" && status.qualified && (
+      <SmallPrint>{REPEAT_RUN}</SmallPrint>
+    )}
+    {mode === "career" && !status.open && (
+      <p className="text-label text-red font-semibold uppercase">
+        {FINALE_LOCK}
+      </p>
+    )}
+  </Panel>
+);
 
 const boardFor = (
   mode: RaceMode,
@@ -125,7 +132,7 @@ const boardFor = (
 ): RoadBoard =>
   roadsFor(mode === "career" && career ? career : practiceCareer(pick, 0));
 
-export function RouteBoardScreen({
+export const RouteBoardScreen = ({
   mode,
   career,
   pick,
@@ -141,7 +148,7 @@ export function RouteBoardScreen({
   readonly onPick: (pick: QuickPick) => void;
   readonly onRace: () => void;
   readonly onBack: () => void;
-}) {
+}) => {
   const board = boardFor(mode, career, pick);
   const roadIds = board.roads.map((status) => status.road.id);
   const status =
@@ -170,7 +177,9 @@ export function RouteBoardScreen({
             <RoadCard
               key={each.road.id}
               mode={mode}
-              onPick={() => onPick({ ...pick, roadId: each.road.id })}
+              onPick={() => {
+                onPick({ ...pick, roadId: each.road.id });
+              }}
               selected={each.road.id === status.road.id}
               status={each}
               tilt={tilts[index] ?? 0}
@@ -209,9 +218,12 @@ export function RouteBoardScreen({
             {quick && (
               <MenuStepper
                 label="Level"
-                onStep={(step) =>
-                  onPick({ ...pick, level: stepped(reached, pick.level, step) })
-                }
+                onStep={(step) => {
+                  onPick({
+                    ...pick,
+                    level: stepped(reached, pick.level, step),
+                  });
+                }}
                 value="level"
               >
                 {pick.level}
@@ -220,9 +232,12 @@ export function RouteBoardScreen({
             {quick && (
               <MenuStepper
                 label="Bike"
-                onStep={(step) =>
-                  onPick({ ...pick, bikeId: stepped(owned, pick.bikeId, step) })
-                }
+                onStep={(step) => {
+                  onPick({
+                    ...pick,
+                    bikeId: stepped(owned, pick.bikeId, step),
+                  });
+                }}
                 value="bike"
               >
                 {bikeName(pick.bikeId)}
@@ -263,4 +278,4 @@ export function RouteBoardScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

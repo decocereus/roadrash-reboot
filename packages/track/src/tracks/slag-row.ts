@@ -85,7 +85,7 @@ export const slagRow: TrackPlan = {
   vergeWidth: 6,
 };
 
-export const slagRowLevel2 = block([
+const slagRowLevel2 = block([
   [290, 0, 0],
   [150, -90, 0],
   [260, 0, -4],
@@ -95,7 +95,7 @@ export const slagRowLevel2 = block([
   [180, 0, 0],
 ]);
 
-export const slagRowLevel3 = block([
+const slagRowLevel3 = block([
   [220, 0, 6],
   [80, 0, 4],
   [90, 0, -7],
@@ -104,7 +104,7 @@ export const slagRowLevel3 = block([
   [400, 0, 0],
 ]);
 
-export const slagRowLevel4 = block([
+const slagRowLevel4 = block([
   [340, 0, 0],
   [130, -88, 0],
   [160, 50, 0],
@@ -114,7 +114,7 @@ export const slagRowLevel4 = block([
   [140, 0, 0],
 ]);
 
-export const slagRowLevel5 = block([
+const slagRowLevel5 = block([
   [300, 0, 8],
   [90, 0, 5],
   [100, 0, -9],

@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 import {
   batchKinds,
@@ -24,19 +24,18 @@ const text = (longest: number) =>
 const listOf = <S extends Schema.Constraint>(item: S, longest: number) =>
   Schema.Array(item).check(Schema.isMaxLength(longest));
 
-export const testDeviceSchema = Schema.Literals(testDevices);
+const testDeviceSchema = Schema.Literals(testDevices);
 
-export const sessionIdSchema = Schema.String.check(
+const sessionIdSchema = Schema.String.check(
   Schema.isPattern(/^[0-9a-f][0-9a-f-]{7,63}$/u)
 );
 
-export const buildSchema = Schema.Struct({
+const buildSchema = Schema.Struct({
   dirty: Schema.Boolean,
   sha: text(64),
 });
-export type Build = typeof buildSchema.Type;
 
-export const sessionSchema = Schema.Struct({
+const sessionSchema = Schema.Struct({
   build: buildSchema,
   device: testDeviceSchema,
   pixelRatio: Schema.Finite,
@@ -49,7 +48,7 @@ export const sessionSchema = Schema.Struct({
 });
 export type Session = typeof sessionSchema.Type;
 
-export const qualitySchema = Schema.Struct({
+const qualitySchema = Schema.Struct({
   bloomScale: Schema.Finite,
   frameRate: Schema.optionalKey(Schema.Literals(frameRates)),
   pace: Count,
@@ -60,7 +59,7 @@ export const qualitySchema = Schema.Struct({
 });
 export type Quality = typeof qualitySchema.Type;
 
-export const worstFrameSchema = Schema.Struct({
+const worstFrameSchema = Schema.Struct({
   at: Milliseconds,
   calls: listOf(Count, MAX_PARTS),
   cpu: listOf(Schema.Finite, MAX_PARTS),
@@ -85,7 +84,7 @@ const stamp = {
   seq: Count,
 };
 
-export const governorEventSchema = Schema.Struct({
+const governorEventSchema = Schema.Struct({
   ...stamp,
   calmMs: Milliseconds,
   from: qualitySchema,
@@ -95,7 +94,7 @@ export const governorEventSchema = Schema.Struct({
   to: qualitySchema,
 });
 
-export const canvasEventSchema = Schema.Struct({
+const canvasEventSchema = Schema.Struct({
   ...stamp,
   bufferHeight: Count,
   bufferWidth: Count,
@@ -106,7 +105,7 @@ export const canvasEventSchema = Schema.Struct({
   source: Schema.Literals(resizeSources),
 });
 
-export const invalidatedEventSchema = Schema.Struct({
+const invalidatedEventSchema = Schema.Struct({
   ...stamp,
   drawRung: Count,
   drawnEpoch: Count,
@@ -115,18 +114,18 @@ export const invalidatedEventSchema = Schema.Struct({
   sizeEpoch: Count,
 });
 
-export const incompletePassEventSchema = Schema.Struct({
+const incompletePassEventSchema = Schema.Struct({
   ...stamp,
   kind: Schema.Literal("incomplete-pass"),
 });
 
-export const contextEventSchema = Schema.Struct({
+const contextEventSchema = Schema.Struct({
   ...stamp,
   kind: Schema.Literal("context"),
   lost: Schema.Boolean,
 });
 
-export const faultEventSchema = Schema.Struct({
+const faultEventSchema = Schema.Struct({
   ...stamp,
   kind: Schema.Literal("fault"),
   message: text(MAX_FAULT_TEXT),
@@ -134,32 +133,32 @@ export const faultEventSchema = Schema.Struct({
   where: text(MAX_FAULT_TEXT),
 });
 
-export const raceEventSchema = Schema.Struct({
+const raceEventSchema = Schema.Struct({
   ...stamp,
   kind: Schema.Literal("race"),
   stage: Schema.Literals(raceStages),
   tick: Count,
 });
 
-export const markerEventSchema = Schema.Struct({
+const markerEventSchema = Schema.Struct({
   ...stamp,
   kind: Schema.Literal("marker"),
   tick: Count,
 });
 
-export const visibilityEventSchema = Schema.Struct({
+const visibilityEventSchema = Schema.Struct({
   ...stamp,
   hidden: Schema.Boolean,
   kind: Schema.Literal("visibility"),
 });
 
-export const overlayEventSchema = Schema.Struct({
+const overlayEventSchema = Schema.Struct({
   ...stamp,
   kind: Schema.Literal("overlay"),
   on: Schema.Boolean,
 });
 
-export const telemetryEventSchema = Schema.Union([
+const telemetryEventSchema = Schema.Union([
   governorEventSchema,
   canvasEventSchema,
   invalidatedEventSchema,
@@ -173,12 +172,11 @@ export const telemetryEventSchema = Schema.Union([
 ]);
 export type TelemetryEvent = typeof telemetryEventSchema.Type;
 
-export const droppedSchema = Schema.Struct({
+const droppedSchema = Schema.Struct({
   batches: Count,
   events: Count,
   faults: Count,
 });
-export type Dropped = typeof droppedSchema.Type;
 
 export const batchSchema = Schema.Struct({
   at: Milliseconds,
@@ -202,12 +200,22 @@ export const batchSchema = Schema.Struct({
 });
 export type Batch = typeof batchSchema.Type;
 
-export const ackSchema = Schema.Struct({
+const ackSchema = Schema.Struct({
   batchId: Count,
   duplicate: Schema.Boolean,
   sessionId: sessionIdSchema,
 });
 export type Ack = typeof ackSchema.Type;
 
-export const decodeBatch = Schema.decodeUnknownExit(batchSchema);
 export const decodeBatchEffect = Schema.decodeUnknownEffect(batchSchema);
+
+export const decodeAckEffect = Schema.decodeUnknownEffect(ackSchema);
+
+const storedLineSchema = Schema.Struct({
+  batch: batchSchema,
+  receivedAt: Schema.String,
+});
+
+export const decodeStoredLineEffect = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(storedLineSchema)
+);

@@ -7,9 +7,12 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsrs --noEmit"
   },
   "dependencies": {
     "@racer/track": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "5.0.0"
   }
 }

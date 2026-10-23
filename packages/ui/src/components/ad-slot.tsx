@@ -6,7 +6,7 @@ const formats = {
   rectangle: { box: "aspect-300/250 w-[300px]", name: "300 × 250" },
 } as const;
 
-function AdSlot({
+const AdSlot = ({
   className,
   format = "leaderboard",
   label = "Advertisement",
@@ -14,23 +14,21 @@ function AdSlot({
 }: Omit<ComponentProps<"aside">, "children"> & {
   readonly format?: keyof typeof formats;
   readonly label?: string;
-}) {
-  return (
-    <aside
-      data-slot="ad-slot"
-      data-format={format}
-      aria-label={label}
-      className={cn(
-        "border-line text-muted font-body text-label bg-panel/60 flex max-w-full flex-col items-center justify-center gap-1 border-2 border-dashed font-semibold uppercase",
-        formats[format].box,
-        className
-      )}
-      {...props}
-    >
-      <span>{label}</span>
-      <span className="numeric font-normal">{formats[format].name}</span>
-    </aside>
-  );
-}
+}) => (
+  <aside
+    data-slot="ad-slot"
+    data-format={format}
+    aria-label={label}
+    className={cn(
+      "border-line text-muted font-body text-label bg-panel/60 flex max-w-full flex-col items-center justify-center gap-1 border-2 border-dashed font-semibold uppercase",
+      formats[format].box,
+      className
+    )}
+    {...props}
+  >
+    <span>{label}</span>
+    <span className="numeric font-normal">{formats[format].name}</span>
+  </aside>
+);
 
 export { AdSlot };

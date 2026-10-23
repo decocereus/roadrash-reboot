@@ -1,0 +1,218 @@
+import { readFileSync } from "node:fs";
+
+import { TICK_SECONDS } from "@racer/sim/state";
+import type { RiderInput } from "@racer/sim/state";
+import * as Schema from "effect/Schema";
+import { beforeAll, describe, expect, it } from "vitest";
+
+import { createControls } from "../src/game/input.ts";
+import { createKeyboard } from "./hosts.ts";
+import type { Keyboard } from "./hosts.ts";
+import {
+  close,
+  firstDifferentTick,
+  openCase,
+  replayCases,
+  replayMatrix,
+  ride,
+  TICKS,
+  WINDOW,
+} from "./pilot-replay.ts";
+import type { Matrix, Run } from "./pilot-replay.ts";
+
+const MATRIX_TIMEOUT_MS = 900_000;
+const RACE_TIMEOUT_MS = 120_000;
+
+const decodeBaseline = Schema.decodeUnknownSync(
+  Schema.fromJsonString(
+    Schema.Struct({
+      provenance: Schema.Struct({
+        ticks: Schema.Number,
+        window: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
+      }),
+      solo: Schema.Array(
+        Schema.Struct({
+          final: Schema.String,
+          full: Schema.String,
+          id: Schema.String,
+          ticks: Schema.Number,
+          window: Schema.String,
+        })
+      ),
+    })
+  )
+);
+
+const baseline = decodeBaseline(
+  readFileSync(new URL("pilot-replay-baseline.json", import.meta.url), "utf-8")
+);
+
+const slagRow = replayCases.find(({ id }) => id === "slag-row/level5/seed5");
+
+const TRACE_TICKS = 600;
+
+const keyScript: readonly (readonly [number, (keys: Keyboard) => void])[] = [
+  [
+    0,
+    (keys) => {
+      keys.press("ArrowUp");
+    },
+  ],
+  [
+    90,
+    (keys) => {
+      keys.press("ArrowRight");
+    },
+  ],
+  [
+    130,
+    (keys) => {
+      keys.release("ArrowRight");
+    },
+  ],
+  [
+    180,
+    (keys) => {
+      keys.press("Space");
+    },
+  ],
+  [
+    200,
+    (keys) => {
+      keys.release("Space");
+    },
+  ],
+  [
+    240,
+    (keys) => {
+      keys.press("KeyA");
+    },
+  ],
+  [
+    300,
+    (keys) => {
+      keys.blur();
+    },
+  ],
+  [
+    330,
+    (keys) => {
+      keys.press("ArrowUp");
+    },
+  ],
+  [
+    420,
+    (keys) => {
+      keys.press("ShiftLeft");
+    },
+  ],
+  [
+    430,
+    (keys) => {
+      keys.release("ShiftLeft");
+    },
+  ],
+  [
+    480,
+    (keys) => {
+      keys.press("ArrowDown");
+    },
+  ],
+];
+
+const recordControls = (recorded: RiderInput[]) => {
+  const keys = createKeyboard();
+  const controls = createControls((code) => {
+    keys.commands.push(code);
+  }, keys.host);
+  return (run: Run) => {
+    for (const [tick, act] of keyScript) {
+      if (tick === run.state.tick) {
+        act(keys);
+      }
+    }
+    const [input] = run.inputs;
+    if (input) {
+      controls.read(TICK_SECONDS, input);
+      recorded.push({ ...input });
+    }
+  };
+};
+
+const playBack = (recorded: readonly RiderInput[]) => (run: Run) => {
+  const [input] = run.inputs;
+  const next = recorded[run.state.tick];
+  if (input && next) {
+    Object.assign(input, next);
+  }
+};
+
+describe("pilot replays over 7,200 ticks", () => {
+  let matrix: Matrix;
+
+  beforeAll(() => {
+    matrix = replayMatrix(TICKS);
+  }, MATRIX_TIMEOUT_MS);
+
+  it("replay the step 3 baseline's ticks and window", () => {
+    expect(baseline.provenance).toStrictEqual({ ticks: TICKS, window: WINDOW });
+  });
+
+  it("nine solo races match their step 3 baseline hashes", () => {
+    expect(matrix.solo).toStrictEqual(baseline.solo);
+  });
+
+  it("each race run beside the other eight matches its solo run on every tick", () => {
+    expect(matrix.divergences).toStrictEqual(
+      replayCases.map(({ id }) => ({ firstDifferentTick: null, id }))
+    );
+    expect(matrix.interleaved).toStrictEqual(matrix.solo);
+  });
+
+  it(
+    "a second Slag Row race with the same setup in the same process matches its solo run",
+    () => {
+      if (!slagRow) {
+        throw new Error("The replay cases have no Slag Row seed 5 race.");
+      }
+      const again = ride(openCase(slagRow), TICKS);
+      expect(
+        firstDifferentTick(
+          again.frames,
+          matrix.soloFrames.get(slagRow.id) ?? []
+        )
+      ).toBeNull();
+      expect(close(again)).toStrictEqual(
+        matrix.solo.find(({ id }) => id === slagRow.id)
+      );
+    },
+    RACE_TIMEOUT_MS
+  );
+
+  it(
+    "a controls-driven input trace replays tick for tick in a fresh race",
+    () => {
+      if (!slagRow) {
+        throw new Error("The replay cases have no Slag Row seed 5 race.");
+      }
+      const recorded: RiderInput[] = [];
+      const original = ride(
+        openCase(slagRow),
+        TRACE_TICKS,
+        recordControls(recorded)
+      );
+      const replayed = ride(openCase(slagRow), TRACE_TICKS, playBack(recorded));
+      expect(recorded).toHaveLength(TRACE_TICKS);
+      expect(new Set(recorded.map(({ steer }) => steer)).size).toBeGreaterThan(
+        3
+      );
+      expect(replayed.frames).toStrictEqual(original.frames);
+      expect(close(replayed)).toStrictEqual(close(original));
+    },
+    RACE_TIMEOUT_MS
+  );
+
+  it("keep every rider's motion finite and every rider in a known mode", () => {
+    expect(matrix.problems).toStrictEqual([]);
+  });
+});

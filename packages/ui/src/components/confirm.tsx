@@ -9,7 +9,7 @@ interface ConfirmOption {
   readonly label: string;
 }
 
-function Confirm({
+const Confirm = ({
   className,
   label,
   warning,
@@ -27,7 +27,7 @@ function Confirm({
   readonly onSelect: (value: string) => void;
   readonly onDismiss: () => void;
   readonly children: ReactNode;
-}) {
+}) => {
   const [held] = useState<{ opener: Element | null }>(() => ({ opener: null }));
   useLayoutEffect(() => {
     held.opener ??= document.activeElement;
@@ -83,7 +83,6 @@ function Confirm({
       </Panel>
     </div>
   );
-}
+};
 
 export { Confirm };
-export type { ConfirmOption };

@@ -8,7 +8,7 @@ export interface Ramp {
   readonly rise: number;
 }
 
-export type FeatureSpec = Ramp;
+type FeatureSpec = Ramp;
 
 export interface FeatureRule {
   readonly placement: "fixed";
@@ -43,9 +43,9 @@ export interface Support {
   feature: number;
 }
 
-export const FEATURE_CELL_LENGTH = 32;
-export const START_CLEARANCE = 300;
-export const JUMP_APPROACH = 80;
+const FEATURE_CELL_LENGTH = 32;
+const START_CLEARANCE = 300;
+const JUMP_APPROACH = 80;
 export const FASTEST_LAUNCH = 85;
 const LANDING_MARGIN = 25;
 const GRAVITY = 9.81;
@@ -61,7 +61,7 @@ export const flatFlightLength = (jump: Ramp, speed: number): number => {
   return speed * seconds;
 };
 
-export const landingCorridorOf = (jump: Ramp): number =>
+const landingCorridorOf = (jump: Ramp): number =>
   flatFlightLength(jump, FASTEST_LAUNCH) + LANDING_MARGIN;
 
 export interface FeatureBounds {

@@ -2,11 +2,11 @@ import { clamp, TICK_SECONDS } from "./state.ts";
 import type { BikeSpec } from "./state.ts";
 
 export const CONTROL_RAMP = 4;
-export const SHIFT_UP_REVS = 0.96;
-export const SHIFT_DOWN_REVS = 0.58;
-export const SHIFT_TICKS = 8;
-export const CLUTCH_REVS = 0.5;
-export const TUCK_DRAG_CUT = 0.14;
+const SHIFT_UP_REVS = 0.96;
+const SHIFT_DOWN_REVS = 0.58;
+const SHIFT_TICKS = 8;
+const CLUTCH_REVS = 0.5;
+const TUCK_DRAG_CUT = 0.14;
 const TORQUE_PEAK_REVS = 0.72;
 const TORQUE_FALL = 3.57;
 const TORQUE_FLOOR = 0.45;
@@ -21,8 +21,10 @@ export interface Drive {
   shiftTicks: number;
 }
 
-export const torqueAt = (revs: number): number =>
-  Math.max(TORQUE_FLOOR, 1 - TORQUE_FALL * (revs - TORQUE_PEAK_REVS) ** 2);
+const torqueAt = (revs: number): number => {
+  const delta = revs - TORQUE_PEAK_REVS;
+  return Math.max(TORQUE_FLOOR, 1 - TORQUE_FALL * (delta * delta));
+};
 
 const peakPower = (): number => {
   let peak = 0;
@@ -38,13 +40,9 @@ const POWER_NORM = peakPower();
 const gearTop = (bike: BikeSpec, gear: number): number =>
   bike.gears[gear - 1] ?? bike.gears.at(-1) ?? 1;
 
-export const topGearOf = (bike: BikeSpec): number => bike.gears.length;
+const topGearOf = (bike: BikeSpec): number => bike.gears.length;
 
-export const gearFor = (
-  bike: BikeSpec,
-  gear: number,
-  speed: number
-): number => {
+const gearFor = (bike: BikeSpec, gear: number, speed: number): number => {
   const revs = speed / gearTop(bike, gear);
   if (revs > SHIFT_UP_REVS && gear < bike.gears.length) {
     return gear + 1;
@@ -55,7 +53,7 @@ export const gearFor = (
   return gear;
 };
 
-export const thrustOf = (
+const thrustOf = (
   bike: BikeSpec,
   gear: number,
   speed: number,

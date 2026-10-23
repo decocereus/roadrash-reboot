@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
 import type { RacePlan } from "../game/hud.ts";
+import type { PrepareOutcome } from "../game/preparation.ts";
 import { BustedScreen } from "./screens/busted.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
@@ -23,7 +24,7 @@ import { WreckedScreen } from "./screens/wrecked.tsx";
 import { afterResults, clubhouse, homeOf, title, useFlow } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
 
-function PreRace({
+const PreRace = ({
   career,
   entry,
   ready,
@@ -34,24 +35,23 @@ function PreRace({
   readonly career: CareerState | null;
   readonly entry: RaceEntry;
   readonly ready: boolean;
-  readonly onPrepare: (plan: RacePlan) => Promise<void>;
+  readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
-}) {
+}) => {
   const [plan] = useState(() => planFor(career, entry));
   const [prepared, setPrepared] = useState(false);
   useEffect(() => {
-    if (!ready) {
-      return;
-    }
     let current = true;
-    void onPrepare(plan)
-      .catch(() => null)
-      .then(() => {
-        if (current) {
-          setPrepared(true);
-        }
-      });
+    const prepare = async (): Promise<void> => {
+      const outcome = await onPrepare(plan);
+      if (current && outcome.kind !== "cancelled") {
+        setPrepared(true);
+      }
+    };
+    if (ready) {
+      void prepare();
+    }
     return () => {
       current = false;
     };
@@ -60,29 +60,33 @@ function PreRace({
     <PreRaceScreen
       career={career}
       onBack={onBack}
-      onStart={() => onStart(plan)}
+      onStart={() => {
+        onStart(plan);
+      }}
       plan={plan}
       ready={ready && prepared}
     />
   );
-}
+};
 
-function CareerScreens({
+const CareerScreens = ({
   flow,
   career,
 }: {
   readonly flow: Flow;
   readonly career: CareerState;
-}) {
+}) => {
   const { view } = flow;
   if (view.screen === "clubhouse") {
     return (
       <ClubhouseScreen
         career={career}
-        onEnvelope={(take) =>
-          flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career))
-        }
-        onGarage={() => flow.go({ screen: "garage" })}
+        onEnvelope={(take) => {
+          flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
+        }}
+        onGarage={() => {
+          flow.go({ screen: "garage" });
+        }}
         onRouteBoard={() => {
           flow.setPick({
             ...flow.pick,
@@ -90,7 +94,9 @@ function CareerScreens({
           });
           flow.go({ mode: "career", screen: "routeBoard" });
         }}
-        onTitle={() => flow.go(title)}
+        onTitle={() => {
+          flow.go(title);
+        }}
       />
     );
   }
@@ -98,7 +104,9 @@ function CareerScreens({
     return (
       <GarageScreen
         career={career}
-        onBack={() => flow.go(clubhouse)}
+        onBack={() => {
+          flow.go(clubhouse);
+        }}
         onTrade={flow.commit}
       />
     );
@@ -107,25 +115,36 @@ function CareerScreens({
     return (
       <WreckedScreen
         career={career}
-        onPay={() => flow.payRepair(view.outcome)}
+        onPay={() => {
+          flow.payRepair(view.outcome);
+        }}
         outcome={view.outcome}
       />
     );
   }
   if (view.screen === "ending") {
-    return <EndingScreen career={career} onTitle={() => flow.go(title)} />;
+    return (
+      <EndingScreen
+        career={career}
+        onTitle={() => {
+          flow.go(title);
+        }}
+      />
+    );
   }
   if (view.screen === "gameOver") {
     return (
       <GameOverScreen
         career={career}
         onNewCareer={flow.newCareer}
-        onTitle={() => flow.go(title)}
+        onTitle={() => {
+          flow.go(title);
+        }}
       />
     );
   }
   return null;
-}
+};
 
 const raceAgainOffered = (
   report: RaceReport,
@@ -136,31 +155,47 @@ const raceAgainOffered = (
     afterResults(report) === clubhouse &&
     roadOpen(career, report.roadId));
 
-function MenuScreens({ flow }: { readonly flow: Flow }) {
+const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
   const { view, career } = flow;
   if (view.screen === "title") {
     return (
       <TitleScreen
         failure={flow.failure}
-        onContinue={() => career && flow.go(homeOf(career))}
+        onContinue={() => {
+          if (career) {
+            flow.go(homeOf(career));
+          }
+        }}
         onNewCareer={flow.newCareer}
-        onQuickRace={() => flow.go({ mode: "quick", screen: "routeBoard" })}
+        onQuickRace={() => {
+          flow.go({ mode: "quick", screen: "routeBoard" });
+        }}
         onStartOver={flow.eraseSave}
         save={flow.save}
       />
     );
   }
   if (view.screen === "intro") {
-    return <IntroScreen onDone={() => flow.go(clubhouse)} />;
+    return (
+      <IntroScreen
+        onDone={() => {
+          flow.go(clubhouse);
+        }}
+      />
+    );
   }
   if (view.screen === "routeBoard") {
     return (
       <RouteBoardScreen
         career={career}
         mode={view.mode}
-        onBack={() => flow.go(view.mode === "career" ? clubhouse : title)}
+        onBack={() => {
+          flow.go(view.mode === "career" ? clubhouse : title);
+        }}
         onPick={flow.setPick}
-        onRace={() => flow.preRace(view.mode, flow.pick.roadId)}
+        onRace={() => {
+          flow.preRace(view.mode, flow.pick.roadId);
+        }}
         pick={flow.pick}
         ready={flow.ready}
       />
@@ -171,7 +206,9 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
       <PreRace
         career={career}
         entry={view.entry}
-        onBack={() => flow.go({ mode: view.entry.mode, screen: "routeBoard" })}
+        onBack={() => {
+          flow.go({ mode: view.entry.mode, screen: "routeBoard" });
+        }}
         onPrepare={flow.prepare}
         onStart={flow.start}
         ready={flow.ready}
@@ -181,7 +218,9 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
   if (view.screen === "busted") {
     return (
       <BustedScreen
-        onPay={() => flow.go({ report: view.report, screen: "results" })}
+        onPay={() => {
+          flow.go({ report: view.report, screen: "results" });
+        }}
         report={view.report}
       />
     );
@@ -190,8 +229,12 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
     return (
       <ResultsScreen
         canRaceAgain={raceAgainOffered(view.report, career)}
-        onContinue={() => flow.go(afterResults(view.report))}
-        onRaceAgain={() => flow.preRace(view.report.mode, view.report.roadId)}
+        onContinue={() => {
+          flow.go(afterResults(view.report));
+        }}
+        onRaceAgain={() => {
+          flow.preRace(view.report.mode, view.report.roadId);
+        }}
         repeatRun={
           view.report.ledger !== null &&
           career?.qualified[career.level][view.report.roadId] !== undefined
@@ -205,14 +248,16 @@ function MenuScreens({ flow }: { readonly flow: Flow }) {
     return (
       <LevelUpScreen
         levelUp={view.report.ledger.levelUp}
-        onDone={() => flow.go(clubhouse)}
+        onDone={() => {
+          flow.go(clubhouse);
+        }}
       />
     );
   }
   return career ? <CareerScreens career={career} flow={flow} /> : null;
-}
+};
 
-function RaceScreens({ flow }: { readonly flow: Flow }) {
+const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
   const { view } = flow;
   if (view.screen !== "race") {
     return null;
@@ -227,7 +272,9 @@ function RaceScreens({ flow }: { readonly flow: Flow }) {
       />
       {finish && (
         <FinishBanner
-          onContinue={() => flow.go({ report: finish, screen: "results" })}
+          onContinue={() => {
+            flow.go({ report: finish, screen: "results" });
+          }}
           report={finish}
         />
       )}
@@ -236,17 +283,21 @@ function RaceScreens({ flow }: { readonly flow: Flow }) {
           career={flow.career}
           feed={flow.feed}
           onMute={flow.mute}
-          onQuit={() => flow.quit(view.plan)}
-          onRestart={() => flow.start(view.plan)}
+          onQuit={() => {
+            flow.quit(view.plan);
+          }}
+          onRestart={() => {
+            flow.start(view.plan);
+          }}
           onResume={flow.resume}
           plan={view.plan}
         />
       )}
     </>
   );
-}
+};
 
-export function GameShell() {
+export const GameShell = () => {
   const flow = useFlow();
   return (
     <div className="bg-ink fixed inset-0 overflow-hidden select-none">
@@ -267,4 +318,4 @@ export function GameShell() {
       )}
     </div>
   );
-}
+};

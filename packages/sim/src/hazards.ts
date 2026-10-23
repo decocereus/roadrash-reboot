@@ -4,7 +4,7 @@ import type { HazardKind } from "@racer/track/hazards";
 import { curvatureAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
-import { forwardRateOf } from "./rider.ts";
+import { forwardRateOf } from "./rider-flight.ts";
 import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
@@ -49,7 +49,7 @@ const FLAT_CLEARANCE = 0.05;
 const NEAR_MISS_GAP = 0.8;
 const NEAR_MISS_SPEED = 20;
 
-export interface HazardSpot {
+interface HazardSpot {
   readonly id: string;
   readonly s: number;
   readonly x: number;
@@ -124,7 +124,7 @@ export const spawnRock: SpawnHazard = (state, track, spot) =>
 export const spawnPothole: SpawnHazard = (state, track, spot) =>
   spawn(state, track, "pothole", spot);
 
-export const hazardSpawners = {
+const hazardSpawners = {
   oil: spawnOil,
   pothole: spawnPothole,
   rock: spawnRock,
@@ -245,8 +245,10 @@ const shoveOff = (
   report(state, riderIndex, rider, hazard, "stagger");
 };
 
-export const rockUpsetShare = (speed: number): number =>
-  ROCK_UPSET * (speed / ROCK_UPSET_SPEED) ** 3;
+export const rockUpsetShare = (speed: number): number => {
+  const ratio = speed / ROCK_UPSET_SPEED;
+  return ROCK_UPSET * (ratio * ratio * ratio);
+};
 
 const bumpOver = (
   state: RaceState,

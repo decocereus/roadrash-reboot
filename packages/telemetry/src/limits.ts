@@ -57,3 +57,7 @@ export const shortSession = (sessionId: string): string =>
 
 export const reportIdOf = (sessionId: string, batchId: number): string =>
   `${shortSession(sessionId)}-${batchId}`;
+
+export const UPLOAD_QUEUE_CAPACITY = 24;
+export const FIRST_RETRY_MS = 2000;
+export const LONGEST_RETRY_MS = 60_000;

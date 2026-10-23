@@ -61,7 +61,7 @@ const markOf = (row: ShopRow): string | undefined => {
   return row.refusal === "locked" ? "🔒" : undefined;
 };
 
-export function GarageScreen({
+export const GarageScreen = ({
   career,
   onTrade,
   onBack,
@@ -69,7 +69,7 @@ export function GarageScreen({
   readonly career: CareerState;
   readonly onTrade: (career: CareerState) => void;
   readonly onBack: () => void;
-}) {
+}) => {
   const [bikeId, setBikeId] = useState<BikeId>(career.bikeId);
   const [asking, setAsking] = useState<Asking>("nothing");
   const [said, setSaid] = useState("");
@@ -239,7 +239,9 @@ export function GarageScreen({
               disabled: row.refusal !== null,
               id: "buy",
               label: "Buy",
-              run: () => tryBuy(row),
+              run: () => {
+                tryBuy(row);
+              },
             },
           ]}
           autoFocus={false}
@@ -251,7 +253,9 @@ export function GarageScreen({
         <Confirm
           defaultValue="yes"
           label="Buy"
-          onDismiss={() => setAsking("nothing")}
+          onDismiss={() => {
+            setAsking("nothing");
+          }}
           onSelect={(value) => {
             setAsking("nothing");
             if (value === "yes") {
@@ -272,7 +276,9 @@ export function GarageScreen({
         <Confirm
           defaultValue="no"
           label="Sell"
-          onDismiss={() => setAsking("nothing")}
+          onDismiss={() => {
+            setAsking("nothing");
+          }}
           onSelect={(value) => {
             setAsking("nothing");
             if (value === "yes") {
@@ -292,4 +298,4 @@ export function GarageScreen({
       )}
     </Screen>
   );
-}
+};

@@ -7,11 +7,15 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
+import { facadeTexture } from "./facade-texture.ts";
 import { CYAN, MAGENTA, ORANGE, RED, YELLOW } from "./looks.ts";
-import { facadeTexture, pick, shopTexture, signAtlas } from "./textures.ts";
-import type { SignFrame } from "./textures.ts";
+import { isMesh } from "./meshes.ts";
+import { shopTexture } from "./shop-texture.ts";
+import { signAtlas } from "./sign-atlas.ts";
+import type { SignFrame } from "./sign-atlas.ts";
+import { pick } from "./texture-canvas.ts";
 
-export const CITY_CHUNK = 200;
+const CITY_CHUNK = 200;
 export const FRONT_GAP = 1.2;
 export const KERB_HEIGHT = 0.14;
 
@@ -559,7 +563,7 @@ export const createCity = (track: Track, shading: Shading): City => {
 
   const mergeOne = (build: Build): void => {
     const next = build.batch.entries().next();
-    if (next.done) {
+    if (next.done === true) {
       return;
     }
     const [key, geometries] = next.value;
@@ -596,13 +600,15 @@ export const createCity = (track: Track, shading: Shading): City => {
     return { batch: new Map(), chunk, index, raised: 0 };
   };
 
+  const buildFor = (index: number): Build | null => {
+    if (building?.index === index) {
+      return building;
+    }
+    return chunks[index] ? null : startBuild(index);
+  };
+
   const finish = (index: number): void => {
-    const build =
-      building?.index === index
-        ? building
-        : chunks[index]
-          ? null
-          : startBuild(index);
+    const build = buildFor(index);
     if (!build) {
       return;
     }
@@ -629,7 +635,7 @@ export const createCity = (track: Track, shading: Shading): City => {
     }
     group.remove(chunk);
     chunk.traverse((node) => {
-      if (node instanceof THREE.Mesh) {
+      if (isMesh(node)) {
         node.geometry.dispose();
       }
     });

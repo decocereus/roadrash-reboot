@@ -48,11 +48,7 @@ import {
 } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
-export type StartRefusal =
-  | "gameOver"
-  | "seasonOver"
-  | "raceActive"
-  | "roadClosed";
+type StartRefusal = "gameOver" | "seasonOver" | "raceActive" | "roadClosed";
 
 export type StartResult =
   | { readonly started: true; readonly career: CareerState }
@@ -69,7 +65,7 @@ export interface LevelUp {
   readonly bikes: readonly BikeId[];
 }
 
-export interface Repossession {
+interface Repossession {
   readonly bikeId: BikeId;
   readonly tradeIn: number;
 }
@@ -96,7 +92,7 @@ export interface Ledger {
   readonly line: RivalLine | null;
 }
 
-export type SettleRefusal = "noActiveRace" | "gameOver" | "wrongRace";
+type SettleRefusal = "noActiveRace" | "gameOver" | "wrongRace";
 
 export type Settlement =
   | {

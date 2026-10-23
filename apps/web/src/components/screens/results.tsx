@@ -81,13 +81,13 @@ const repossessionText = (ledger: RaceLedger): string | null => {
   return `The garage took the ${bikeName(bikeId)}. ${settled} You ride the Gutter Pup now. It can't outrun a cop. Stay on it.`;
 };
 
-function Money({
+const Money = ({
   ledger,
   riding,
 }: {
   readonly ledger: RaceLedger;
   readonly riding: BikeId;
-}) {
+}) => {
   const debt = Math.max(0, -ledger.cashAfter);
   const taken = repossessionText(ledger);
   return (
@@ -133,9 +133,9 @@ function Money({
       )}
     </Panel>
   );
-}
+};
 
-export function ResultsScreen({
+export const ResultsScreen = ({
   report,
   riding,
   canRaceAgain,
@@ -149,7 +149,7 @@ export function ResultsScreen({
   readonly repeatRun: boolean;
   readonly onContinue: () => void;
   readonly onRaceAgain: () => void;
-}) {
+}) => {
   const { rows } = report.summary;
   const reference = gapFrom(rows);
   const notes = incidentLines(report.summary.incidents);
@@ -244,4 +244,4 @@ export function ResultsScreen({
       </ScreenStrip>
     </Screen>
   );
-}
+};

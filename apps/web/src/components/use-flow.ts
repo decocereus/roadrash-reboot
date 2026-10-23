@@ -6,6 +6,7 @@ import type { RoadId } from "@racer/career/tables";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { bootGame } from "../asset-load.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
 import {
   careerEntry,
@@ -21,20 +22,21 @@ import {
   freshCareer,
   loadCareer,
   randomUnit,
+  saveStateOf,
   startOver,
   storeCareer,
 } from "../career/save.ts";
 import type { SaveState } from "../career/save.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
-import { createHudFeed } from "../game/hud.ts";
 import type {
   GameEvents,
   GameHandle,
-  HudFeed,
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
-import { startModelDownloads } from "../game/models.ts";
+import type { PrepareOutcome } from "../game/preparation.ts";
+import { createHudFeed } from "../hud-feed.ts";
+import type { HudFeed } from "../hud-feed.ts";
 
 export type View =
   | { readonly screen: "title" }
@@ -117,17 +119,16 @@ const useSave = (): Save => {
   const [unsaved, setUnsaved] = useState(false);
 
   useEffect(() => {
-    const storage = browserStorage();
-    const loaded = storage ? loadCareer(storage) : null;
-    careerRef.current = loaded?.status === "ready" ? loaded.career : null;
-    setSave(loaded ?? { status: "empty" });
+    const loaded = loadCareer(browserStorage);
+    careerRef.current = loaded.status === "ready" ? loaded.career : null;
+    setSave(saveStateOf(loaded));
   }, []);
 
   const commit = useCallback((career: CareerState) => {
     careerRef.current = career;
     setSave({ career, leftRace: null, status: "ready" });
-    const storage = browserStorage();
-    setUnsaved(!(storage && storeCareer(storage, career)));
+    const stored = storeCareer(browserStorage, career);
+    setUnsaved(stored.status !== "saved");
   }, []);
 
   const settle = useCallback(
@@ -142,8 +143,8 @@ const useSave = (): Save => {
   );
 
   const eraseSave = useCallback(() => {
-    const storage = browserStorage();
-    if (storage && startOver(storage)) {
+    const reset = startOver(browserStorage);
+    if (reset.status === "reset") {
       careerRef.current = null;
       setSave({ status: "empty" });
     }
@@ -168,39 +169,43 @@ const useGame = (
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-    let disposed = false;
-    diagnostics();
-    startModelDownloads();
-    import("../game/game.ts")
-      .then(({ createGame }) =>
-        createGame(canvas, {
-          onHud: (hud) => eventsRef.current?.onHud(hud),
-          onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
-          onSettle: (plan, outcome) =>
-            eventsRef.current?.onSettle(plan, outcome),
-          onStart: (plan) => eventsRef.current?.onStart(plan),
-        })
-      )
-      .then((game) => {
-        if (disposed) {
+    const mount = new AbortController();
+    const load = async (target: HTMLCanvasElement) => {
+      try {
+        const game = await bootGame(
+          target,
+          {
+            onHud: (hud) => eventsRef.current?.onHud(hud),
+            onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
+            onSettle: (plan, outcome) =>
+              eventsRef.current?.onSettle(plan, outcome),
+            onStart: (plan) => eventsRef.current?.onStart(plan),
+          },
+          mount.signal
+        );
+        if (game === null) {
+          return;
+        }
+        if (mount.signal.aborted) {
           game.dispose();
           return;
         }
         gameRef.current = game;
         setReady(true);
-      })
-      .catch((error) => {
-        if (!disposed) {
+      } catch (error) {
+        if (!mount.signal.aborted) {
           setFailure(error instanceof Error ? error.message : String(error));
         }
-      });
+      }
+    };
+    if (canvas) {
+      diagnostics();
+      void load(canvas);
+    }
     return () => {
-      disposed = true;
       gameRef.current?.dispose();
       gameRef.current = null;
+      mount.abort();
     };
   }, [canvasRef, eventsRef]);
 
@@ -209,9 +214,6 @@ const useGame = (
 
 const usePauseKeys = (racing: boolean, pause: () => void): void => {
   useEffect(() => {
-    if (!racing) {
-      return;
-    }
     const pressed = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !event.repeat) {
         event.preventDefault();
@@ -223,8 +225,10 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
         pause();
       }
     };
-    window.addEventListener("keydown", pressed);
-    document.addEventListener("visibilitychange", hidden);
+    if (racing) {
+      window.addEventListener("keydown", pressed);
+      document.addEventListener("visibilitychange", hidden);
+    }
     return () => {
       window.removeEventListener("keydown", pressed);
       document.removeEventListener("visibilitychange", hidden);
@@ -248,7 +252,7 @@ export interface Flow {
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
   readonly preRace: (mode: RaceMode, roadId: RoadId) => void;
-  readonly prepare: (plan: RacePlan) => Promise<void>;
+  readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly start: (plan: RacePlan) => void;
   readonly resume: () => void;
   readonly mute: () => void;
@@ -325,7 +329,7 @@ export const useFlow = (): Flow => {
   }, [gameRef, ready, stage]);
 
   const pause = useCallback(() => {
-    if (gameRef.current?.pause()) {
+    if (gameRef.current?.pause() === true) {
       setView((current) =>
         current.screen === "race" ? { ...current, paused: true } : current
       );
@@ -334,7 +338,19 @@ export const useFlow = (): Flow => {
   usePauseKeys(view.screen === "race" && !view.paused && !view.finish, pause);
 
   const prepare = useCallback(
-    (plan: RacePlan) => gameRef.current?.prepare(plan) ?? Promise.resolve(),
+    async (plan: RacePlan): Promise<PrepareOutcome> => {
+      const game = gameRef.current;
+      if (!game) {
+        return { kind: "cancelled" };
+      }
+      try {
+        return await game.prepare(plan);
+      } catch (error) {
+        const cause = error instanceof Error ? error : new Error(String(error));
+        diagnostics().recorder.fault("error", cause.message, "prepare build");
+        return { cause, kind: "failed", stage: "build" };
+      }
+    },
     [gameRef]
   );
 

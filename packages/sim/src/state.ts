@@ -6,7 +6,7 @@ export const TICK_SECONDS = 1 / TICK_RATE;
 export const GRAVITY = 9.81;
 export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
-export const MIN_STEER_SPEED = 12;
+const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
 export const PLAYER_RIDER = 0;
 
@@ -51,7 +51,7 @@ export type WeaponKind =
   | "cue"
   | "sign";
 
-export type RiderRole = "racer" | "police";
+type RiderRole = "racer" | "police";
 
 export interface RiderProfile {
   readonly name: string;
@@ -67,7 +67,7 @@ export const MAX_STAMINA = 100;
 
 export const FULL_CONDITION = 100;
 
-export type RiderMode =
+type RiderMode =
   | "riding"
   | "thrown"
   | "lying"
@@ -266,7 +266,7 @@ export type RaceEvent =
     }
   | { readonly kind: "finish"; readonly rider: number; readonly tick: number };
 
-export interface PoliceRules {
+interface PoliceRules {
   readonly topSpeed: number;
   readonly sightRange: number;
   readonly beat: number;
@@ -295,7 +295,7 @@ export interface PoliceSetup extends PoliceRules {
   readonly bike: BikeSpec;
 }
 
-export type GridOrder = "playerLast" | "playerFirst";
+type GridOrder = "playerLast" | "playerFirst";
 
 export interface RaceSetup {
   readonly track: Track;

@@ -9,7 +9,7 @@ import { ActionMenu, SmallPrint, useEscape } from "./shared.tsx";
 const tilts = [-2, 1.5, -1] as const;
 const pins = ["red", "yellow", "blue"] as const;
 
-export function IntroScreen({ onDone }: { readonly onDone: () => void }) {
+export const IntroScreen = ({ onDone }: { readonly onDone: () => void }) => {
   const [shown, setShown] = useState(1);
   const last = shown >= introCards.length;
   useEscape(onDone);
@@ -44,7 +44,13 @@ export function IntroScreen({ onDone }: { readonly onDone: () => void }) {
             {
               id: "next",
               label: last ? "To the Lowside" : "Next",
-              run: () => (last ? onDone() : setShown(shown + 1)),
+              run: () => {
+                if (last) {
+                  onDone();
+                } else {
+                  setShown(shown + 1);
+                }
+              },
             },
           ]}
           label="Introduction"
@@ -53,4 +59,4 @@ export function IntroScreen({ onDone }: { readonly onDone: () => void }) {
       </ScreenStrip>
     </Screen>
   );
-}
+};

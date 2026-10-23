@@ -17,7 +17,7 @@ const tones = {
   yellow: "text-yellow",
 } as const;
 
-function Stat({
+const Stat = ({
   className,
   label,
   value,
@@ -33,41 +33,39 @@ function Stat({
   readonly tone?: keyof typeof tones;
   readonly align?: "left" | "right";
   readonly layout?: "stack" | "row";
-}) {
-  return (
-    <div
-      data-slot="stat"
+}) => (
+  <div
+    data-slot="stat"
+    className={cn(
+      "flex",
+      layout === "row"
+        ? "items-baseline justify-between gap-4"
+        : "flex-col gap-1",
+      layout === "stack" && align === "right" && "items-end text-right",
+      className
+    )}
+    {...props}
+  >
+    <span
+      data-slot="stat-label"
       className={cn(
-        "flex",
-        layout === "row"
-          ? "items-baseline justify-between gap-4"
-          : "flex-col gap-1",
-        layout === "stack" && align === "right" && "items-end text-right",
-        className
+        "font-body text-label font-semibold uppercase",
+        tone === "ink" ? "text-ink/70" : "text-muted"
       )}
-      {...props}
     >
-      <span
-        data-slot="stat-label"
-        className={cn(
-          "font-body text-label font-semibold uppercase",
-          tone === "ink" ? "text-ink/70" : "text-muted"
-        )}
-      >
-        {label}
-      </span>
-      <span
-        data-slot="stat-value"
-        className={cn(
-          "font-display tracking-display numeric uppercase",
-          sizes[size],
-          tones[tone]
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
+      {label}
+    </span>
+    <span
+      data-slot="stat-value"
+      className={cn(
+        "font-display tracking-display numeric uppercase",
+        sizes[size],
+        tones[tone]
+      )}
+    >
+      {value}
+    </span>
+  </div>
+);
 
 export { Stat };

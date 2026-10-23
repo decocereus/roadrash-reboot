@@ -2,7 +2,7 @@ import { block } from "../road.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
-export const breakwaterRun: TrackPlan = {
+const breakwaterRun: TrackPlan = {
   features: [
     {
       feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
@@ -76,7 +76,7 @@ export const breakwaterRun: TrackPlan = {
   vergeWidth: 7,
 };
 
-export const breakwaterRunLevel2 = block([
+const breakwaterRunLevel2 = block([
   [220, -20, 0],
   [180, 0, 4],
   [160, 62, 2],
@@ -85,7 +85,7 @@ export const breakwaterRunLevel2 = block([
   [170, 0, 0],
 ]);
 
-export const breakwaterRunLevel3 = block([
+const breakwaterRunLevel3 = block([
   [320, 44, 6],
   [120, 0, 7],
   [100, 0, -9],
@@ -94,7 +94,7 @@ export const breakwaterRunLevel3 = block([
   [170, 0, 0],
 ]);
 
-export const breakwaterRunLevel4 = block([
+const breakwaterRunLevel4 = block([
   [500, -36, 0],
   [160, 0, 0],
   [130, 84, 3],
@@ -102,7 +102,7 @@ export const breakwaterRunLevel4 = block([
   [200, 0, -6],
 ]);
 
-export const breakwaterRunLevel5 = block([
+const breakwaterRunLevel5 = block([
   [200, 0, 10],
   [90, 0, 5],
   [100, 0, -8],

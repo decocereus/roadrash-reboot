@@ -5,7 +5,7 @@ export type RegionId =
   | "lowtown"
   | "stonepeak";
 
-export interface PropMix {
+interface PropMix {
   readonly tree: number;
   readonly pole: number;
   readonly rock: number;

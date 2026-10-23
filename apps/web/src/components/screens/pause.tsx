@@ -10,13 +10,14 @@ import { useState, useSyncExternalStore } from "react";
 
 import { billWarning, CONTROLS } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
-import { idleHud } from "../../game/hud.ts";
-import type { HudFeed, RacePlan } from "../../game/hud.ts";
+import type { RacePlan } from "../../game/hud.ts";
+import { idleHud } from "../../hud-feed.ts";
+import type { HudFeed } from "../../hud-feed.ts";
 import { SettingsScreen } from "./settings.tsx";
 import { ActionMenu, useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
-export function PauseScreen({
+export const PauseScreen = ({
   plan,
   career,
   feed,
@@ -32,7 +33,7 @@ export function PauseScreen({
   readonly onRestart: () => void;
   readonly onMute: () => void;
   readonly onQuit: () => void;
-}) {
+}) => {
   const [asking, setAsking] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
@@ -50,11 +51,29 @@ export function PauseScreen({
       run: onMute,
       trailing: hud.muted ? "Off" : "On",
     },
-    { id: "settings", label: "Settings", run: () => setAdjusting(true) },
-    { id: "quit", label: "Quit race", run: () => setAsking(true) },
+    {
+      id: "settings",
+      label: "Settings",
+      run: () => {
+        setAdjusting(true);
+      },
+    },
+    {
+      id: "quit",
+      label: "Quit race",
+      run: () => {
+        setAsking(true);
+      },
+    },
   ];
   if (adjusting) {
-    return <SettingsScreen onBack={() => setAdjusting(false)} />;
+    return (
+      <SettingsScreen
+        onBack={() => {
+          setAdjusting(false);
+        }}
+      />
+    );
   }
   return (
     <Screen className="bg-ink/60">
@@ -87,7 +106,9 @@ export function PauseScreen({
         <Confirm
           defaultValue="keep"
           label="Quit race"
-          onDismiss={() => setAsking(false)}
+          onDismiss={() => {
+            setAsking(false);
+          }}
           onSelect={(value) => {
             setAsking(false);
             if (value === "quit") {
@@ -115,4 +136,4 @@ export function PauseScreen({
       )}
     </Screen>
   );
-}
+};
