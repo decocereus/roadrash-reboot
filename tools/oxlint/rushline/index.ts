@@ -15,6 +15,7 @@ import { noNodeIoRule } from "./rules/no-node-io.ts";
 import { noPromiseRule } from "./rules/no-promise.ts";
 import { noServiceConstructorImportsRule } from "./rules/no-service-constructor-imports.ts";
 import { noSwallowedFailureRule } from "./rules/no-swallowed-failure.ts";
+import { numericDrawSortRule } from "./rules/numeric-draw-sort.ts";
 import { preferCatchTagsRule } from "./rules/prefer-catch-tags.ts";
 import { preferEffectFnRule } from "./rules/prefer-effect-fn.ts";
 import { preferEffectMatchRule } from "./rules/prefer-effect-match.ts";
@@ -43,6 +44,7 @@ const rushlinePlugin = definePlugin({
     "no-promise": noPromiseRule,
     "no-service-constructor-imports": noServiceConstructorImportsRule,
     "no-swallowed-failure": noSwallowedFailureRule,
+    "numeric-draw-sort": numericDrawSortRule,
     "prefer-catch-tags": preferCatchTagsRule,
     "prefer-effect-fn": preferEffectFnRule,
     "prefer-effect-match": preferEffectMatchRule,

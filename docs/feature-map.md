@@ -999,6 +999,7 @@ Source files:
 - `tools/oxlint/rushline/rules/no-promise.ts`
 - `tools/oxlint/rushline/rules/no-service-constructor-imports.ts`
 - `tools/oxlint/rushline/rules/no-swallowed-failure.ts`
+- `tools/oxlint/rushline/rules/numeric-draw-sort.ts`
 - `tools/oxlint/rushline/rules/prefer-catch-tags.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-fn.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-match.ts`
@@ -1030,6 +1031,7 @@ Test files:
 - `tools/oxlint/test/no-discarded-exit.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
+- `tools/oxlint/test/numeric-draw-sort.test.ts`
 - `tools/oxlint/test/ranged-buffer-upload.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`

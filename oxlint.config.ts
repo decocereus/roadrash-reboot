@@ -204,7 +204,10 @@ export default defineConfig({
     },
     {
       files: ["apps/web/src/game/**/*.ts"],
-      rules: { "rushline/ranged-buffer-upload": "error" },
+      rules: {
+        "rushline/numeric-draw-sort": "error",
+        "rushline/ranged-buffer-upload": "error",
+      },
     },
   ],
   rules: {
