@@ -41,6 +41,11 @@ const checks: readonly Check[] = [
   },
   { command: ["pnpm", "check:size"], name: "source size", stage: "static" },
   {
+    command: ["pnpm", "check:feature-map"],
+    name: "feature map",
+    stage: "static",
+  },
+  {
     command: ["pnpm", "check:save-format"],
     name: "save format",
     stage: "static",
