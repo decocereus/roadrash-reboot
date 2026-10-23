@@ -15,7 +15,6 @@
     "effect": "4.0.0"
   },
   "devDependencies": {
-    "@types/node": "26.4.1",
     "vitest": "5.0.0"
   }
 }
