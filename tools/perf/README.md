@@ -42,7 +42,7 @@ Nothing rewrites the budgets. To measure a new baseline, run `node tools/perf/ga
 
 ### `pnpm perf`
 
-Side A is a `/tmp` clone of the revision that `budgets.json` names, installed offline, with the current harness copied over it. `--baseline-ref <rev>` picks another revision. Side B is this checkout. The clone is deleted when the run ends. For each scenario, the Node lane runs one validation pass per side, five timing pairs in alternating order with six calibration blocks around them, and three allocation pairs, each in a fresh child process. The build lane runs a fresh production build of each side. A route's bytes are the root's and the route's Start preloads and every chunk they import statically, with their CSS and assets, plus every stylesheet. The Worker's bytes are every server chunk the entry reaches through static or dynamic imports, each file once, because the entry loads the router, the Start setup and every route on demand. A manifest edge to a chunk that does not exist fails the lane.
+Side A is a `/tmp` clone of the revision that `budgets.json` names, installed with `pnpm install --prefer-offline --frozen-lockfile`, with the current harness copied over it. It installs from the local store and fetches only what the store and metadata cache lack: when side B's lockfile differs from side A's, pnpm's supply-chain check has to verify A's lockfile, and that needs registry metadata that a fully offline install cannot fetch. `--baseline-ref <rev>` picks another revision. Side B is this checkout. The clone is deleted when the run ends. For each scenario, the Node lane runs one validation pass per side, five timing pairs in alternating order with six calibration blocks around them, and three allocation pairs, each in a fresh child process. The build lane runs a fresh production build of each side. A route's bytes are the root's and the route's Start preloads and every chunk they import statically, with their CSS and assets, plus every stylesheet. The Worker's bytes are every server chunk the entry reaches through static or dynamic imports, each file once, because the entry loads the router, the Start setup and every route on demand. A manifest edge to a chunk that does not exist fails the lane.
 
 Exit 0 means every required metric passed. Exit 1 is a budget, workload, measurement or evidence failure, and exit 2 is a bad flag, budgets file or baseline ref. Evidence goes to `results/<comparison id>/`. `--lanes node` or `--lanes build` runs part of the gate, prints `INCOMPLETE` and exits 1. `--evaluate <samples.json>` judges saved samples again.
 
@@ -127,7 +127,7 @@ Headless Chrome is allowed here because the bench measures uncapped frame cost. 
 ```sh
 git clone --no-hardlinks . /tmp/rushline-perf-gpu-a
 git -C /tmp/rushline-perf-gpu-a checkout --detach <baseline revision>
-(cd /tmp/rushline-perf-gpu-a && pnpm install --offline --frozen-lockfile)
+(cd /tmp/rushline-perf-gpu-a && pnpm install --prefer-offline --frozen-lockfile)
 (cd /tmp/rushline-perf-gpu-a && node tools/verify/rushline.ts up --slot 0 --path /kit)
 node tools/verify/rushline.ts up --slot 1 --path /kit
 pnpm perf:gpu --a <A run> --b <B run> --baseline-ref <baseline revision>
