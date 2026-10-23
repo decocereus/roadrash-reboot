@@ -17,6 +17,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Every lint plugin rule has valid and invalid cases, and the suite fails when a registered `rushline/` or `anti-slop/` rule has none. The same suite runs the ledger's regression cases in `scripts/rule-ledger.test.ts`. | `pnpm lint:rules` | `tools/oxlint`, `scripts` | None |
 | Every rule in these docs names its check, every enabled project rule has a row, and `oxlint.config.ts` turns no rule off or below `error` anywhere it applies. | `pnpm check:rules` | `docs/coding-standards.md`, `docs/errors.md`, `docs/observability.md`, `oxlint.config.ts` | None |
 | Look at the running game after any change to `apps/web/src/game` or to handling. Passing tests do not show that it plays well. | judgment | `apps/web/src/game`, `packages/sim` | None |
+| Every change lands with the way its author proved it works: a test, a script in `tools/`, or a feature file in `.claude/skills/verify-rushline/features`. A new subsystem, such as the server, a multiplayer room, sign-in, or the store, ships with its own way to verify it, so the next agent can check it without asking. | judgment | Repository | None |
 
 ## Keep each module to its job
 
