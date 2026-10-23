@@ -136,7 +136,7 @@ The track tests compile every road at every level. They check the lengths, the l
 | --- | --- |
 | `tables.ts` | The numbers from `docs/design/game-design.md`: prizes, repairs, fines, police per level, shop stock, road lengths, trade-in and credit rates |
 | `state.ts` | `CareerState` and `newCareer` |
-| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open |
+| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open; `practiceCareer` and `practiceSetup`, the fresh career and setup of a quick race or a benchmark on a picked bike and level |
 | `outcome.ts` | The race log and `outcomeOf` |
 | `settle.ts` | `startRace`, `settleRace`, `quitRace`, `resumeCareer`, and the `Ledger` |
 | `result.ts` | `LastResult`: the stored summary of the last settled race |

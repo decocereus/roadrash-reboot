@@ -23,7 +23,7 @@ import {
   takeWeaponFrom,
 } from "./career-fixtures.ts";
 import type { Entered } from "./career-fixtures.ts";
-import { fieldFor, roadsFor, setupFor } from "./field.ts";
+import { fieldFor, practiceSetup, roadsFor, setupFor } from "./field.ts";
 import { preRaceLine, rivalLines } from "./lines.ts";
 import { outcomeOf, recordTick } from "./outcome.ts";
 import { quitRace, resumeCareer } from "./settle.ts";
@@ -199,6 +199,30 @@ describe("the field", () => {
         .every((rider) => rider.s > (player?.s ?? 0))
     ).toBeTruthy();
     expect(player?.bike).toBe(bikes["halden-wren-400"]);
+  });
+
+  it("a quick race puts the player on the picked bike at the picked level, empty-handed, against a fresh field with no grudges", () => {
+    const setup = practiceSetup(
+      {
+        bikeId: "ostra-sesta-600",
+        level: 4,
+        roadId: "hollow-pine-road",
+        seed: 3,
+      },
+      road
+    );
+    const [player] = createRace(setup).riders;
+    expect(player?.bike).toBe(bikes["ostra-sesta-600"]);
+    expect(player?.weapon).toBe("none");
+    expect([setup.level, setup.raceId, setup.police.count]).toStrictEqual([
+      4,
+      1,
+      policeLevels[4].count,
+    ]);
+    expect(setup.field).toStrictEqual(fieldFor("hollow-pine-road", 4, 3));
+    expect(
+      setup.rivals.map((rival) => [rival.aggressionBoost, rival.grudge])
+    ).toStrictEqual(setup.rivals.map(() => [0, undefined]));
   });
 
   it("Juno rides the Long Ridge at an aggression of 0.9 and anywhere else at her own", () => {
