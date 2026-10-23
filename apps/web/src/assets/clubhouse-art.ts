@@ -1,6 +1,7 @@
 import type { RoadId } from "@racer/career/tables";
 import type { OfficerId, RivalId } from "@racer/sim/cast";
 
+import backRoomBackdropPlate from "./clubhouse/back-room/backdrop.webp?url";
 import badgePlate from "./clubhouse/badge.webp?url";
 import counterPlate from "./clubhouse/bar/counter.webp?url";
 import duskPlate from "./clubhouse/bar/dusk.webp?url";
@@ -97,6 +98,10 @@ export const officerFigures = {
   "dolores-pike": doloresPikeFigure,
   "wendell-haverty": wendellHavertyFigure,
 } as const satisfies Record<OfficerId, string>;
+
+export const backRoomPlates = {
+  backdrop: backRoomBackdropPlate,
+} as const;
 
 export const garagePlates = {
   backdrop: garageBackdropPlate,

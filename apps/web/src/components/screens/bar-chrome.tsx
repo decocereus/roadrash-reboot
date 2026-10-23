@@ -77,6 +77,15 @@ export const BarHeader = ({
   </>
 );
 
+export const BarStrip = ({ children }: { readonly children: ReactNode }) => (
+  <nav
+    className="bg-ink/90 font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase"
+    style={{ ...place(NAV), fontSize: stagePx(33) }}
+  >
+    {children}
+  </nav>
+);
+
 export interface BarAction {
   readonly id: string;
   readonly label: ReactNode;
@@ -99,10 +108,7 @@ export const BarNav = ({
   readonly autoFocus?: boolean;
   readonly children?: ReactNode;
 }) => (
-  <nav
-    className="bg-ink/90 font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase"
-    style={{ ...place(NAV), fontSize: stagePx(33) }}
-  >
+  <BarStrip>
     <MenuList
       autoFocus={autoFocus}
       className="flex-nowrap gap-x-[2.4cqw]"
@@ -125,5 +131,5 @@ export const BarNav = ({
       ))}
     </MenuList>
     {children}
-  </nav>
+  </BarStrip>
 );

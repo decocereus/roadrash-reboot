@@ -41,14 +41,13 @@ A promotion returns to the bar, where Vic says the level's line. A damaged save 
 
 **Boot.** On page load the screen shows the wordmark `RUSHLINE` and `Race. Fight. Pay for it.` while the save is read and the bar's art for the first road decodes, so the bar appears whole. With no save a new career begins and the bar opens. With a save it opens the bar, or Game Over or the ending when the career is over. A damaged save opens the Back Room. A `?ride=` or `?bench=` URL starts that race instead.
 
-**Back Room.** Reached from the bar's menu or Escape, and from Game Over and the ending. Heading `BACK ROOM`. Items: `BACK TO THE BAR` with `Level {level} · ${cash} · {bike}` (or `CAREER OVER` / `See the record`, `SEASON OVER` / `See the ending`), `NEW CAREER`, `SINGLE RACE` with `Any road, no money at stake`, `SETTINGS`. Escape returns to the bar.
+**Back Room.** Reached from the bar's menu or Escape, and from Game Over and the ending. A painted room on the bar's stage: the office behind the bar where the races are run, with a desk under a green lamp, a rotary phone, the cash box, three CRTs showing night races, a locker, and the door to the bar spilling neon. The bar header runs along the top. The menu is a ruled paper list pinned to the left wall, titled `BACK ROOM` on its tape, two ruled lines per item. Items: `BACK TO THE BAR` with `Level {level} · ${cash} · {bike}` (or `CAREER OVER` / `See the record`, `SEASON OVER` / `See the ending`), `NEW CAREER`, `SINGLE RACE` with `Any road, no money at stake`, `SETTINGS`. Escape returns to the bar.
 
 - New career confirm, when a save exists: `Start over? Your Level {level} career will be erased.` Buttons `ERASE AND START` / `KEEP IT`.
-- Damaged save, in a red-edged panel above the menu (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
+- Damaged save, on the pink note on the wall (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
 - When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
-- Small print: `Arrows to steer · Space to punch · Shift to kick`
-
-The Back Room is drawn plainly for now; its painted room is still to come.
+- Bottom strip: `Arrows to steer · Space to punch · Shift to kick`
+- Settings opens as a panel over the room.
 
 **Interrupted careers.** When the save holds an active-race record, the page was left during a race. Loading the career settles that race as a wreck, once, before any screen is drawn, and then opens the bar with Vic's note on the wall, or Game Over if the bill ended the career.
 
