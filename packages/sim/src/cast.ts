@@ -353,24 +353,7 @@ export const rivals = {
   },
 } as const satisfies Record<RivalId, Rival>;
 
-export const cast: readonly Rival[] = [
-  rivals["juno-kade"],
-  rivals["ruth-ann-bixby"],
-  rivals["dee-santangelo"],
-  rivals["ines-marchetti"],
-  rivals["mags-dunleavy"],
-  rivals["lyle-gorski"],
-  rivals["tristan-lux"],
-  rivals["coach-dale-hutto"],
-  rivals["moose-kowalczyk"],
-  rivals["gus-abernathy"],
-  rivals["benny-okafor"],
-  rivals["wanda-pruitt"],
-  rivals["orrin-blackwell"],
-  rivals["agnes-mulcahy"],
-  rivals["hollis-thorne"],
-  rivals["felix-aurand"],
-];
+export const cast: readonly Rival[] = rivalIds.map((id) => rivals[id]);
 
 const levelOf = (level: number): number =>
   Math.min(LEVEL_COUNT, Math.max(1, Math.round(level)));
