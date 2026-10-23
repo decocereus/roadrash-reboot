@@ -2,7 +2,7 @@ Generated from `scripts/features.ts` by `pnpm feature-map`. Do not edit this fil
 
 # Feature map
 
-Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `scripts/` belongs to exactly one entry below. Find the entry for the behaviour you are changing, read its start files and docs, and prove the change with its verify recipes and perf budgets. Test files are named `*.test.ts` or sit in a `test/` folder. `pnpm check:feature-map` fails when a file has no owner or two, or when this file is out of date.
+Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `scripts/` belongs to exactly one entry below. Find the entry for the behaviour you are changing, read its start files and docs, and prove the change with its verify recipes and perf budgets. Test files are named `*.test.ts` or sit in a `test/` folder. A directory one feature owns whole, such as the screens, is claimed by directory, and a file whose name starts with its feature's name, such as `pilot-lines.ts`, is claimed by that prefix. Any other new file has no owner until you add it to an entry. `pnpm check:feature-map` fails when a file has no owner or two, or when this file is out of date.
 
 ## Index
 
@@ -319,7 +319,7 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/*.ts`, `apps/web/src/components/*.tsx`, `apps/web/src/assets/*-art.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -418,7 +418,7 @@ The road, terrain, sky, city blocks, signs and roadside props drawn from the com
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: none yet
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/*-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`
 
 Source files:
 

@@ -17,7 +17,7 @@ The code is the record of how this repository does things. The next agent copies
 - Delete before you add. Remove dead code, one-caller wrappers and stale fallbacks first, then build on what is left. Fix what a player, a caller or a check can actually hit, and add no fallback for a state the types already rule out.
 - Fix the root cause. Reproduce the bug, find why it happens, and fix that. The regression test must fail when the old defect is put back in the layer where it lived, not in a helper beside it.
 - Prove each change the way a player or a caller meets it, with the feature's verify recipes and perf budgets from the map. A new subsystem, such as a server route, a multiplayer room, sign-in or the store, ships with its own way to verify it. If it runs every frame or every tick, it also ships with a budget in `tools/perf/budgets.json`.
-- Measure performance instead of guessing. Run `pnpm perf` before and after a change to a hot path, and use the frame profiles in `docs/observability.md`.
+- Measure performance instead of guessing. Run `pnpm perf` before and after a change to the simulation or the build. Run `pnpm perf:gpu` before and after a change to the renderer, the scene or assets, because only it measures frame times and render counts. `docs/observability.md` says what each one checks and how to read a frame profile.
 - Run parallel work in separate git worktrees, one lane per set of packages. Remove each worktree and its build output when its pull request merges or closes. Never leave files staged in a checkout another agent shares.
 
 ## Verification

@@ -7,6 +7,7 @@ import {
   sourceFilesOf,
 } from "./feature-map.ts";
 import type { FeatureEntry, Repository } from "./feature-map.ts";
+import { features } from "./features.ts";
 
 const hazards: FeatureEntry = {
   docs: ["docs/architecture.md#hazards-as-race-state"],
@@ -282,5 +283,27 @@ describe("source files", () => {
       "apps/web/src/menu bar.tsx",
       "apps/web/src/tab\there.ts",
     ]);
+  });
+});
+
+describe("the repository's manifest", () => {
+  it("leaves a new file in a flat directory without an owner until someone adds it", () => {
+    const newFiles = [
+      "apps/web/src/components/consent-banner.tsx",
+      "apps/web/src/components/session.ts",
+      "apps/web/src/game/car-texture.ts",
+      "apps/web/src/game/showroom.ts",
+      "packages/sim/src/junctions.ts",
+      "packages/career/src/sponsors.ts",
+      "apps/web/src/server/accounts.ts",
+    ];
+    const problems = problemsOf(features, { files: newFiles });
+    expect(
+      newFiles.filter((file) =>
+        problems.some((problem) =>
+          problem.startsWith(`${file}: no entry in scripts/*features.ts owns`)
+        )
+      )
+    ).toStrictEqual(newFiles);
   });
 });
