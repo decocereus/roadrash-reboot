@@ -319,7 +319,7 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -333,6 +333,7 @@ Source files:
 - `apps/web/src/components/game-shell.tsx`
 - `apps/web/src/components/screens/back-room.tsx`
 - `apps/web/src/components/screens/bar-chrome.tsx`
+- `apps/web/src/components/screens/bike-stand.tsx`
 - `apps/web/src/components/screens/boot.tsx`
 - `apps/web/src/components/screens/clubhouse-bar.tsx`
 - `apps/web/src/components/screens/clubhouse-stage.tsx`
@@ -342,6 +343,7 @@ Source files:
 - `apps/web/src/components/screens/game-over.tsx`
 - `apps/web/src/components/screens/garage.tsx`
 - `apps/web/src/components/screens/pause.tsx`
+- `apps/web/src/components/screens/pinned-list.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
 - `apps/web/src/components/screens/results.tsx`
 - `apps/web/src/components/screens/ride-out.tsx`
@@ -349,6 +351,7 @@ Source files:
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
 - `apps/web/src/components/use-flow.ts`
+- `apps/web/src/game/showroom.ts`
 - `apps/web/src/styles.css`
 
 Test files: none

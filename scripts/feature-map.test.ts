@@ -273,7 +273,7 @@ describe("the repository's manifest", () => {
       "apps/web/src/components/consent-banner.tsx",
       "apps/web/src/components/session.ts",
       "apps/web/src/game/car-texture.ts",
-      "apps/web/src/game/showroom.ts",
+      "apps/web/src/game/paint-booth.ts",
       "packages/sim/src/junctions.ts",
       "packages/career/src/sponsors.ts",
       "apps/web/src/server/accounts.ts",

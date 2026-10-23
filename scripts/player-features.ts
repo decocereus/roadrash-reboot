@@ -282,6 +282,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/game-shell.tsx",
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/assets/*-art.ts",
+      "apps/web/src/game/showroom.ts",
       "apps/web/src/styles.css",
       "apps/web/src/career/bar.ts",
       "apps/web/src/career/bike-stats.ts",
