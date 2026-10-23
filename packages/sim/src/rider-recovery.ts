@@ -140,8 +140,10 @@ const hitOnFoot = (
       return true;
     }
   }
-  for (const [index, other] of state.riders.entries()) {
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const other = state.riders[index];
     if (
+      other &&
       index !== riderIndex &&
       other.mode === "riding" &&
       other.speed > WALKING_PACE &&

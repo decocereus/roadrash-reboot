@@ -122,7 +122,11 @@ const buildTerrainChunk = (
     const bend = track.curvature[Math.round(s - track.startS)] ?? 0;
     const inside = side * bend > 0;
     const reach = inside ? 0.8 / Math.abs(bend) : Number.POSITIVE_INFINITY;
-    for (const [ring, offset] of TERRAIN_RINGS.entries()) {
+    for (let ring = 0; ring < TERRAIN_RINGS.length; ring += 1) {
+      const offset = TERRAIN_RINGS[ring];
+      if (offset === undefined) {
+        continue;
+      }
       const distance = Math.min(offset, reach);
       placeOnTrack(track, s, side * (track.roadHalfWidth + distance), point);
       const lift = groundLift("open", distance, point.x, point.z);

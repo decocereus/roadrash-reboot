@@ -322,7 +322,11 @@ export const createHazardMarks = (
       return;
     }
     capacity = Math.max(needed, capacity * 2);
-    for (const [index, part] of parts.entries()) {
+    for (let index = 0; index < parts.length; index += 1) {
+      const part = parts[index];
+      if (!part) {
+        continue;
+      }
       const { geometry, material } = part.mesh;
       const mesh = new THREE.InstancedMesh(geometry, material, capacity);
       mesh.frustumCulled = false;
@@ -376,8 +380,9 @@ export const createHazardMarks = (
       }
       grow(hazards.length);
       let key = hazards.length;
-      for (const [index, hazard] of hazards.entries()) {
-        if (hazard.s > centre - BEHIND && hazard.s < centre + reach) {
+      for (let index = 0; index < hazards.length; index += 1) {
+        const hazard = hazards[index];
+        if (hazard && hazard.s > centre - BEHIND && hazard.s < centre + reach) {
           matrixOf(index, hazard);
           key = Math.imul(key, KEY_PRIME) + index + 1;
         }
@@ -389,10 +394,11 @@ export const createHazardMarks = (
       moved = false;
       for (const part of parts) {
         let slot = 0;
-        for (const [index, hazard] of hazards.entries()) {
+        for (let index = 0; index < hazards.length; index += 1) {
+          const hazard = hazards[index];
           const matrix = matrices[index];
           if (
-            hazard.kind === part.kind &&
+            hazard?.kind === part.kind &&
             matrix &&
             hazard.s > centre - BEHIND &&
             hazard.s < centre + reach

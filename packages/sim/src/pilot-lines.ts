@@ -166,8 +166,9 @@ const gatherInReach = (
     }
   }
   ridersInReach.length = 0;
-  for (const [index, other] of state.riders.entries()) {
-    if (index !== riderIndex && other.mode !== "wrecked") {
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const other = state.riders[index];
+    if (other && index !== riderIndex && other.mode !== "wrecked") {
       const obstacle = riderObstacle(other);
       const seconds = secondsUntilContact(rider, obstacle);
       if (seconds < RIDER_FOLLOW_SECONDS) {
@@ -211,8 +212,12 @@ export interface Aim {
 
 const nearestLaneIndex = (lanes: readonly number[], x: number): number => {
   let nearest = 0;
-  for (const [index, lane] of lanes.entries()) {
-    if (Math.abs(lane - x) < Math.abs((lanes[nearest] ?? 0) - x)) {
+  for (let index = 0; index < lanes.length; index += 1) {
+    const lane = lanes[index];
+    if (
+      lane !== undefined &&
+      Math.abs(lane - x) < Math.abs((lanes[nearest] ?? 0) - x)
+    ) {
       nearest = index;
     }
   }
@@ -226,8 +231,9 @@ const neighbourOf = (
 ): number => {
   const here = lanes[current] ?? 0;
   let neighbour = current;
-  for (const [index, lane] of lanes.entries()) {
-    if (index === current) {
+  for (let index = 0; index < lanes.length; index += 1) {
+    const lane = lanes[index];
+    if (index === current || lane === undefined) {
       continue;
     }
     const apart = Math.abs(lane - here);
@@ -458,8 +464,9 @@ export const chooseLine = (
   if (pursuit) {
     offer(pursuit.x, pursuit.speed, PURSUIT_COST, false);
   }
-  for (const [index, lane] of lanes.entries()) {
-    if (!threatIn(index) && !crossesBlocked(lane)) {
+  for (let index = 0; index < lanes.length; index += 1) {
+    const lane = lanes[index];
+    if (lane !== undefined && !threatIn(index) && !crossesBlocked(lane)) {
       offer(lane, cruise, LANE_RANK_COST * index, false);
     }
   }

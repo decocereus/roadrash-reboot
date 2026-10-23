@@ -280,7 +280,11 @@ export const createRace = (setup: RaceSetup): RaceState => {
       playerLast ? lastRow(columns, field.length) : gridSpot(columns, 0)
     ),
   ];
-  for (const [index, rival] of field.entries()) {
+  for (let index = 0; index < field.length; index += 1) {
+    const rival = field[index];
+    if (!rival) {
+      continue;
+    }
     riders.push(
       createRider(
         {

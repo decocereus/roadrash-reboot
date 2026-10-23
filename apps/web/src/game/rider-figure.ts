@@ -355,7 +355,11 @@ export const createRiderFigure = (
       skeleton.dispose();
     },
     holdEveryWeapon() {
-      for (const [hand, meshes] of held.entries()) {
+      for (let hand = 0; hand < held.length; hand += 1) {
+        const meshes = held[hand];
+        if (!meshes) {
+          continue;
+        }
         for (const mesh of meshes) {
           hands[hand]?.add(mesh);
         }

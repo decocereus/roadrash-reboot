@@ -50,8 +50,9 @@ const stillChasing = (cop: RiderState, rider: RiderState): boolean => {
 const pickTarget = (state: RaceState, cop: RiderState): number => {
   let best = -1;
   let bestScore = Number.POSITIVE_INFINITY;
-  for (const [index, rider] of state.riders.entries()) {
-    if (!wanted(rider)) {
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const rider = state.riders[index];
+    if (!rider || !wanted(rider)) {
       continue;
     }
     let score = Number.POSITIVE_INFINITY;
@@ -169,7 +170,11 @@ const catchDowned = (
   if (cop.mode !== "riding" || cop.airborne) {
     return;
   }
-  for (const [index, rider] of state.riders.entries()) {
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const rider = state.riders[index];
+    if (!rider) {
+      continue;
+    }
     const reach = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
     if (wanted(rider) && arrestable(rider) && reach < BUST_REACH) {
       bust(state, track, index, copIndex);
@@ -178,8 +183,9 @@ const catchDowned = (
 };
 
 export const stepPolice = (state: RaceState, track: Track): void => {
-  for (const [index, cop] of state.riders.entries()) {
-    if (cop.profile.role === "police") {
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const cop = state.riders[index];
+    if (cop?.profile.role === "police") {
       updateChase(state, index, cop);
       catchDowned(state, track, index, cop);
     }

@@ -45,8 +45,12 @@ export const reachOfPoses = (
   };
   for (const pose of poses) {
     posed(rig, pose);
-    for (const [index, bone] of body.skeleton.bones.entries()) {
-      enclose(bone, radii[index] ?? 0);
+    const { bones } = body.skeleton;
+    for (let index = 0; index < bones.length; index += 1) {
+      const bone = bones[index];
+      if (bone) {
+        enclose(bone, radii[index] ?? 0);
+      }
     }
     for (const hand of hands) {
       if (hand) {

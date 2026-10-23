@@ -192,7 +192,11 @@ export const createBikes = (
   const paints = new Float32Array(capacity * 3);
   const trims = new Float32Array(capacity * 3);
   const tint = new THREE.Color();
-  for (const [index, rider] of riders.entries()) {
+  for (let index = 0; index < riders.length; index += 1) {
+    const rider = riders[index];
+    if (!rider) {
+      continue;
+    }
     const colours = riderPalette[rider.paint];
     tint.set(colours?.bike ?? DEFAULT_PAINT).toArray(paints, index * 3);
     tint.set(colours?.trim ?? DARK_TRIM).toArray(trims, index * 3);
@@ -228,7 +232,12 @@ export const createBikes = (
     }
   };
   addPart("bike_body", null, new THREE.Vector3());
-  for (const [index, [name, radius, z]] of WHEELS.entries()) {
+  for (let index = 0; index < WHEELS.length; index += 1) {
+    const wheel = WHEELS[index];
+    if (!wheel) {
+      continue;
+    }
+    const [name, radius, z] = wheel;
     addPart(name, wheels[index] ?? null, new THREE.Vector3(0, -radius, -z));
   }
   const police = riders.filter((rider) => rider.police).length;
