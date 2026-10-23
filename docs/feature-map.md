@@ -984,6 +984,7 @@ Source files:
 - `tools/oxlint/rushline/property-name.ts`
 - `tools/oxlint/rushline/rules/deterministic-core.ts`
 - `tools/oxlint/rushline/rules/no-comments.ts`
+- `tools/oxlint/rushline/rules/no-discarded-exit.ts`
 - `tools/oxlint/rushline/rules/no-effect-runtime.ts`
 - `tools/oxlint/rushline/rules/no-floating-effect.ts`
 - `tools/oxlint/rushline/rules/no-hot-allocation.ts`
@@ -1022,6 +1023,7 @@ Test files:
 - `tools/oxlint/test/effect-services.test.ts`
 - `tools/oxlint/test/effect-style.test.ts`
 - `tools/oxlint/test/effect-tags.test.ts`
+- `tools/oxlint/test/no-discarded-exit.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`

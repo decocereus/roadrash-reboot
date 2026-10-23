@@ -223,6 +223,7 @@ export default defineConfig({
       },
     ],
     "rushline/no-comments": "error",
+    "rushline/no-discarded-exit": "error",
     "rushline/require-nul-file-list": "error",
     "rushline/require-suppression-reason": "error",
     "rushline/safety-verified-by": "error",
