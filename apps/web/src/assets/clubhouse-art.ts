@@ -6,6 +6,7 @@ import counterPlate from "./clubhouse/bar/counter.webp?url";
 import duskPlate from "./clubhouse/bar/dusk.webp?url";
 import nightPlate from "./clubhouse/bar/night.webp?url";
 import raysPlate from "./clubhouse/bar/rays.webp?url";
+import stoolPlate from "./clubhouse/bar/stool.webp?url";
 import agnesMulcahyBill from "./clubhouse/bills/agnes-mulcahy.webp?url";
 import bennyOkaforBill from "./clubhouse/bills/benny-okafor.webp?url";
 import coachDaleHuttoBill from "./clubhouse/bills/coach-dale-hutto.webp?url";
@@ -65,6 +66,7 @@ export const plates = {
   rays: raysPlate,
   speech: speechPlate,
   standings: standingsPlate,
+  stool: stoolPlate,
   wall: wallPlate,
 } as const;
 

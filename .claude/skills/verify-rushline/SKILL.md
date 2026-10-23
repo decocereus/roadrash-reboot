@@ -44,7 +44,7 @@ Options:
 
 | Flag | Meaning |
 | --- | --- |
-| `--path "/?..."` | First page to open. Default `/`, the title screen. |
+| `--path "/?..."` | First page to open. Default `/`, the Lowside bar. |
 | `--dev` | Run the Vite dev server instead of a build. Hot reload, no rebuild step, slower first load (about 20 s to a race). Use it while iterating; use the default build for the final proof. |
 | `--cpu n`, `--network fast4g\|slow4g\|3g` | Start throttled. |
 | `--slot n` | Ask for a particular slot; fails if it is taken. |
@@ -77,8 +77,8 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 
 | Command | What it does |
 | --- | --- |
-| `rv open --run <id> "/?flags" [--until title\|race\|held\|<js>]` | Navigate the page, wait for load, then optionally until a signal. Prints both times. `title` is the title menu, `race` is the race HUD's speed meter, `held` is a `?hold=` freeze. |
-| `rv click --run <id> "<label>" [--within "<aria-label>"]` | Click the visible control whose text reads the label (case does not matter; menus render upper case). `--within` scopes to the element with that `aria-label`: a menu (`Title menu`, `Route board`, `Pre-race`, `Pause`, `Finish`, `Results`, `Clubhouse`, `Garage`, `Catalogue`, `Introduction`) or a confirm dialog (`Quit race`, `Buy`, `Sell`, `Start over`, `The envelope`). It fails if the control is disabled, hidden under an `inert` overlay, or covered at its centre, and lists what is on screen. |
+| `rv open --run <id> "/?flags" [--until bar\|race\|held\|<js>]` | Navigate the page, wait for load, then optionally until a signal. Prints both times. `bar` is the Lowside's menu, `race` is the race HUD's speed meter, `held` is a `?hold=` freeze. |
+| `rv click --run <id> "<label>" [--within "<aria-label>"]` | Click the visible control whose text reads the label (case does not matter; menus render upper case). `--within` scopes to the element with that `aria-label`: a menu (`Clubhouse`, `Back room`, `Route board`, `Pause`, `Finish`, `Results`, `Garage`, `Catalogue`) or a confirm dialog (`Quit race`, `Buy`, `Sell`, `Start over`, `The envelope`). It fails if the control is disabled, hidden under an `inert` overlay, or covered at its centre, and lists what is on screen. |
 | `rv press --run <id> ArrowUp KeyJ [--hold ms]` | Hold the keys together for `--hold` ms (default 120), then release. Uses `KeyboardEvent.code` names. |
 | `rv wait --run <id> <signal or js> [--timeout s]` | Poll until the expression is truthy. Default timeout 60 s. |
 | `rv js --run <id> '<expression>'` | `Runtime.evaluate` with promises awaited; prints the JSON value. |
@@ -112,7 +112,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including ramps. |
 | `?swerve=<m>&swervefor=<m>&swerveto=<-1..1>` (DEV) | After `swerve` metres, force the steer to `swerveto` (default 1, right) for `swervefor` metres (default 25). |
 | `?hold=air\|at\|<event>&holdafter=<n>` (DEV) | Freeze the race: `air` after n ticks airborne, `at` at n metres, or n ticks after the player's event of that kind (`land`, `crash`, `remount`, `finish`, `hit`, `busted`, ...). Fires once per page load. |
-| `?road=<n>` (DEV) | Which road the title's attract race shows first. |
+| `?road=<n>` (DEV) | Which road the hidden attract race loads first while the game boots. |
 | `?stress`, `?stress=reference` | The fixed benchmark races from `apps/web/src/career/bench.ts`, on the pilot, in any build. |
 | `?prof`, `?prof=gpu` | Record per-frame costs into `__rushlineProfile`; `gpu` adds timer queries ANGLE on Metal answers wrongly. `?stress` implies `?prof`. |
 | `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, rung, pace, refresh, draw calls, triangles. |

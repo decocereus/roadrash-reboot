@@ -69,13 +69,6 @@
   }
 }
 
-@keyframes seat-out {
-  to {
-    opacity: 0;
-    transform: translateX(-4%);
-  }
-}
-
 @utility bar-dusk {
   animation: bar-dusk 150s linear both;
 }
@@ -107,8 +100,4 @@
 
 @utility seat-in {
   animation: seat-in 700ms var(--ease-out-quint) both;
-}
-
-@utility seat-out {
-  animation: seat-out 700ms ease-in both;
 }

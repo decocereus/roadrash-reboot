@@ -11,8 +11,6 @@ export type RoadLevel = 1 | 2 | 3 | 4 | 5;
 
 export const roadLevels: readonly RoadLevel[] = [1, 2, 3, 4, 5];
 
-export const LEVEL_EXTENSION = 1150;
-
 export type SectionRow = readonly [
   length: number,
   turnDegrees: number,

@@ -47,7 +47,7 @@ The browser save, `apps/web/src/career/save.ts`, runs each storage step with `Ef
 
 ## Asset loading
 
-`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader that forks an Effect. It downloads the six models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the title screen shows after "Could not start the game:", as before.
+`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader that forks an Effect. It downloads the six models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
 
 | Tag | Retried | What the player sees |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ Only a completed download enters the page's byte cache, keyed by the model's fin
 
 ## Shader preparation
 
-`createPreparation` in `apps/web/src/game/preparation.ts` turns a race's shader preparation into a typed outcome instead of a rejection, and the pre-race screen handles every outcome the way it handled a finished preparation before: Start enables. Nothing new is shown to the player.
+`createPreparation` in `apps/web/src/game/preparation.ts` turns a race's shader preparation into a typed outcome instead of a rejection, and the ride-out card handles every outcome the way it handled a finished preparation before: the race starts. Nothing new is shown to the player.
 
 | Outcome | When | What happens |
 | --- | --- | --- |

@@ -591,12 +591,6 @@ const startGame = (
   };
 
   return {
-    attract() {
-      if (session.phase !== "attract") {
-        loadAttract(false);
-        report();
-      }
-    },
     dispose() {
       releaseAll(owners);
     },

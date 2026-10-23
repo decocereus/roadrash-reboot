@@ -1,33 +1,42 @@
-import { roadOpen, roadsFor } from "@racer/career/field";
+import { roadOpen } from "@racer/career/field";
 import type { CareerState } from "@racer/career/state";
 import { acceptEnvelope, refuseEnvelope } from "@racer/career/story";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
+import { BackRoomScreen } from "./screens/back-room.tsx";
+import { BootScreen } from "./screens/boot.tsx";
 import { BustedScreen } from "./screens/busted.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
 import { EndingScreen, GameOverScreen } from "./screens/game-over.tsx";
 import { GarageScreen } from "./screens/garage.tsx";
-import { IntroScreen } from "./screens/intro.tsx";
-import { LevelUpScreen } from "./screens/level-up.tsx";
 import { PauseScreen } from "./screens/pause.tsx";
-import { PreRaceScreen } from "./screens/pre-race.tsx";
 import { RaceHud } from "./screens/race-hud.tsx";
 import { ResultsScreen } from "./screens/results.tsx";
+import { RideOutScreen } from "./screens/ride-out.tsx";
 import { RouteBoardScreen } from "./screens/route-board.tsx";
-import { TitleScreen } from "./screens/title.tsx";
 import { WreckedScreen } from "./screens/wrecked.tsx";
-import { afterResults, clubhouse, homeOf, title, useFlow } from "./use-flow.ts";
+import {
+  afterResults,
+  backRoom,
+  clubhouse,
+  homeOf,
+  singleRace,
+  useFlow,
+} from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
 
-const PreRace = ({
+const DWELL_MS = 2200;
+
+const RideOut = ({
   career,
   entry,
   ready,
+  failure,
   onPrepare,
   onStart,
   onBack,
@@ -35,12 +44,29 @@ const PreRace = ({
   readonly career: CareerState | null;
   readonly entry: RaceEntry;
   readonly ready: boolean;
+  readonly failure: string;
   readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
 }) => {
   const [plan] = useState(() => planFor(career, entry));
   const [prepared, setPrepared] = useState(false);
+  const [dwelt, setDwelt] = useState(false);
+  const started = useRef(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDwelt(true);
+    }, DWELL_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+  useEffect(() => {
+    if (prepared && dwelt && !started.current) {
+      started.current = true;
+      onStart(plan);
+    }
+  }, [prepared, dwelt, plan, onStart]);
   useEffect(() => {
     let current = true;
     const prepare = async (): Promise<void> => {
@@ -57,12 +83,10 @@ const PreRace = ({
     };
   }, [ready, plan, onPrepare]);
   return (
-    <PreRaceScreen
+    <RideOutScreen
       career={career}
+      failure={failure}
       onBack={onBack}
-      onStart={() => {
-        onStart(plan);
-      }}
       plan={plan}
       ready={ready && prepared}
     />
@@ -81,22 +105,19 @@ const CareerScreens = ({
     return (
       <ClubhouseScreen
         career={career}
+        onBackRoom={() => {
+          flow.go(backRoom);
+        }}
         onEnvelope={(take) => {
           flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
         }}
         onGarage={() => {
           flow.go({ screen: "garage" });
         }}
-        onRouteBoard={() => {
-          flow.setPick({
-            ...flow.pick,
-            roadId: roadsFor(career).next ?? flow.pick.roadId,
-          });
-          flow.go({ mode: "career", screen: "routeBoard" });
+        onRide={(roadId) => {
+          flow.rideOut("career", roadId);
         }}
-        onTitle={() => {
-          flow.go(title);
-        }}
+        promotion={view.promotion}
       />
     );
   }
@@ -126,8 +147,8 @@ const CareerScreens = ({
     return (
       <EndingScreen
         career={career}
-        onTitle={() => {
-          flow.go(title);
+        onBackRoom={() => {
+          flow.go(backRoom);
         }}
       />
     );
@@ -136,10 +157,10 @@ const CareerScreens = ({
     return (
       <GameOverScreen
         career={career}
-        onNewCareer={flow.newCareer}
-        onTitle={() => {
-          flow.go(title);
+        onBackRoom={() => {
+          flow.go(backRoom);
         }}
+        onNewCareer={flow.newCareer}
       />
     );
   }
@@ -157,9 +178,12 @@ const raceAgainOffered = (
 
 const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
   const { view, career } = flow;
-  if (view.screen === "title") {
+  if (view.screen === "boot") {
+    return <BootScreen />;
+  }
+  if (view.screen === "backRoom") {
     return (
-      <TitleScreen
+      <BackRoomScreen
         failure={flow.failure}
         onContinue={() => {
           if (career) {
@@ -168,19 +192,10 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         }}
         onNewCareer={flow.newCareer}
         onQuickRace={() => {
-          flow.go({ mode: "quick", screen: "routeBoard" });
+          flow.go(singleRace);
         }}
         onStartOver={flow.eraseSave}
         save={flow.save}
-      />
-    );
-  }
-  if (view.screen === "intro") {
-    return (
-      <IntroScreen
-        onDone={() => {
-          flow.go(clubhouse);
-        }}
       />
     );
   }
@@ -188,26 +203,27 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
     return (
       <RouteBoardScreen
         career={career}
-        mode={view.mode}
+        mode="quick"
         onBack={() => {
-          flow.go(view.mode === "career" ? clubhouse : title);
+          flow.go(backRoom);
         }}
         onPick={flow.setPick}
         onRace={() => {
-          flow.preRace(view.mode, flow.pick.roadId);
+          flow.rideOut("quick", flow.pick.roadId);
         }}
         pick={flow.pick}
         ready={flow.ready}
       />
     );
   }
-  if (view.screen === "preRace") {
+  if (view.screen === "rideOut") {
     return (
-      <PreRace
+      <RideOut
         career={career}
+        failure={flow.failure}
         entry={view.entry}
         onBack={() => {
-          flow.go({ mode: view.entry.mode, screen: "routeBoard" });
+          flow.go(view.entry.mode === "career" ? clubhouse : singleRace);
         }}
         onPrepare={flow.prepare}
         onStart={flow.start}
@@ -233,7 +249,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           flow.go(afterResults(view.report));
         }}
         onRaceAgain={() => {
-          flow.preRace(view.report.mode, view.report.roadId);
+          flow.rideOut(view.report.mode, view.report.roadId);
         }}
         repeatRun={
           view.report.ledger !== null &&
@@ -241,16 +257,6 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         }
         report={view.report}
         riding={career?.bikeId ?? flow.pick.bikeId}
-      />
-    );
-  }
-  if (view.screen === "levelUp" && view.report.ledger?.levelUp) {
-    return (
-      <LevelUpScreen
-        levelUp={view.report.ledger.levelUp}
-        onDone={() => {
-          flow.go(clubhouse);
-        }}
       />
     );
   }

@@ -12,14 +12,14 @@ import { VerificationError } from "./verification-error.ts";
 const POLL_MS = 100;
 
 const readySignals = new Map([
+  [
+    "bar",
+    "document.querySelector('[role=menu][aria-label=\"Clubhouse\"]') !== null",
+  ],
   ["held", "globalThis.__rushlineHeld === true"],
   [
     "race",
     "document.querySelector('[role=meter][aria-label=\"Speed\"]') !== null",
-  ],
-  [
-    "title",
-    "document.querySelector('[role=menu][aria-label=\"Title menu\"]') !== null",
   ],
 ]);
 

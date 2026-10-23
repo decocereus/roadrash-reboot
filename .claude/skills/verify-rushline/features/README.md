@@ -39,7 +39,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 
 ## Features
 
-- [Title menu and single race](./title-and-single-race.md): the title screen, route board, pre-race, starting, pausing, restarting, and quitting a single race.
+- [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): ramps, time in the air, landings, and landing dust.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.

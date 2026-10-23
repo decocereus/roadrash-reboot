@@ -4,9 +4,9 @@ rv: drive a Rushline verification instance in a windowed Helium over DevTools
   rv up --server http://127.0.0.1:1351/ --user-asked     only when the user said to drive their server
   rv list
   rv doctor     --run <id>
-  rv open       --run <id> /?ride=slag-row&autopilot&prof [--until title|race|held|<js>]
+  rv open       --run <id> /?ride=slag-row&autopilot&prof [--until bar|race|held|<js>]
   rv js         --run <id> <js expression>
-  rv wait       --run <id> title|race|held|<js> [--timeout s]
+  rv wait       --run <id> bar|race|held|<js> [--timeout s]
   rv press      --run <id> ArrowUp KeyJ [--hold ms]
   rv click      --run <id> <visible label> [--within <aria-label>]
   rv shot       --run <id> <name>

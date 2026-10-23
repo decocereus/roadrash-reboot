@@ -1,23 +1,35 @@
-import { roadBoss, roadsFor } from "@racer/career/field";
-import { preRaceLine } from "@racer/career/lines";
+import { roadsFor } from "@racer/career/field";
 import { seasonBoard } from "@racer/career/season";
+import type { LevelUp } from "@racer/career/settle";
 import { creditLimit, debtOf } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { ENVELOPE_NOTE, storyBeat } from "@racer/career/story";
-import { ALLY, FINALE_ROAD, roads } from "@racer/career/tables";
+import { ALLY, policeLevels, roads } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
 import { rivals } from "@racer/sim/cast";
 import { Confirm } from "@racer/ui/components/confirm";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { bills, flyers, plates, stickers } from "../../assets/clubhouse-art.ts";
-import { ENVELOPE_INSIDE, levelName } from "../../career/copy.ts";
-import { careerEntry, planFor } from "../../career/flow.ts";
-import { bikeName } from "../../career/format.ts";
+import { flyers, plates } from "../../assets/clubhouse-art.ts";
+import {
+  barCast,
+  firstRoad,
+  openRoads,
+  preload,
+  roadPlates,
+} from "../../career/bar.ts";
+import {
+  ENVELOPE_INSIDE,
+  firstPrize,
+  introCards,
+  levelName,
+  vicCard,
+} from "../../career/copy.ts";
+import { bikeName, ordinal } from "../../career/format.ts";
 import { boardNote, signedByVic } from "../../career/notes.ts";
 import {
   BarBackdrop,
@@ -26,16 +38,31 @@ import {
   SpeechSticker,
   useBarClock,
 } from "./clubhouse-bar.tsx";
+import type { Speech } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
 import { Standings, WallNotes, WallPosters } from "./clubhouse-wall.tsx";
 import type { WallNote } from "./clubhouse-wall.tsx";
-import { standingTag, useEscape } from "./shared.tsx";
+import { standingTag, stepped, useEscape } from "./shared.tsx";
 
 const WORDMARK = { h: 106, w: 405, x: 30, y: 16 } as const;
 const BADGE = { h: 98, w: 82, x: 438, y: 24 } as const;
 const STATUS = { h: 63, w: 1127, x: 522, y: 33 } as const;
 const NAV = { h: 71, w: 1672, x: 0, y: 854 } as const;
-const SOON = "Soon";
+const VIC = "Vic Lomax";
+
+const roadKeys = {
+  back: new Set(["ArrowUp", "w", "W"]),
+  forward: new Set(["ArrowDown", "s", "S"]),
+} as const;
+
+const roadStep = (key: string): -1 | 0 | 1 => {
+  if (roadKeys.forward.has(key)) {
+    return 1;
+  }
+  return roadKeys.back.has(key) ? -1 : 0;
+};
+
+const heard = new Set<string>();
 
 const StatusItem = ({
   label,
@@ -52,12 +79,24 @@ const StatusItem = ({
   </p>
 );
 
+const promotionNote = ({ level, bikes }: LevelUp): WallNote => {
+  const delivery =
+    bikes.length === 0
+      ? ""
+      : ` New at the garage: ${bikes.map((bikeId) => bikeName(bikeId)).join(", ")}.`;
+  return {
+    signature: "V.",
+    text: `Level ${level}. ${policeLevels[level].count} cops. 1st pays ${formatMoney(firstPrize(level))}.${delivery}`,
+  };
+};
+
 const notesFor = (
   career: CareerState,
+  promotion: LevelUp | undefined,
   openEnvelope: () => void
 ): readonly WallNote[] => {
   const debt = debtOf(career);
-  const notes: WallNote[] = [];
+  const notes: WallNote[] = promotion ? [promotionNote(promotion)] : [];
   if (debt > 0) {
     notes.push({
       text: `You owe ${formatMoney(debt)}. Prize money pays it first. Limit ${formatMoney(creditLimit(career))}.`,
@@ -120,22 +159,59 @@ const StatusStrip = ({
   </div>
 );
 
-const ClubhouseNav = ({
+const RoadPicker = ({
   roadName,
-  onRouteBoard,
-  onGarage,
-  onTitle,
+  onStep,
 }: {
   readonly roadName: string;
-  readonly onRouteBoard: () => void;
+  readonly onStep: (step: -1 | 1) => void;
+}) => (
+  <p className="text-paper/70 flex items-center gap-[0.5em] whitespace-nowrap">
+    <button
+      aria-label="Previous road"
+      className="hover:text-neon-yellow px-[0.2em]"
+      onClick={() => {
+        onStep(-1);
+      }}
+      tabIndex={-1}
+      type="button"
+    >
+      ◀
+    </button>
+    <span className="text-neon-yellow min-w-[8.5em] text-center">
+      {roadName}
+    </span>
+    <button
+      aria-label="Next road"
+      className="hover:text-neon-yellow px-[0.2em]"
+      onClick={() => {
+        onStep(1);
+      }}
+      tabIndex={-1}
+      type="button"
+    >
+      ▶
+    </button>
+  </p>
+);
+
+const ClubhouseNav = ({
+  roadName,
+  onStep,
+  onRide,
+  onGarage,
+  onBackRoom,
+}: {
+  readonly roadName: string;
+  readonly onStep: (step: -1 | 1) => void;
+  readonly onRide: () => void;
   readonly onGarage: () => void;
-  readonly onTitle: () => void;
+  readonly onBackRoom: () => void;
 }) => {
   const items = [
-    { id: "route-board", label: "Route board", run: onRouteBoard },
+    { id: "ride", label: "Ride", run: onRide },
     { id: "garage", label: "Garage", run: onGarage },
-    { id: "back-room", label: "Back room", run: undefined },
-    { id: "title", label: "Title", run: onTitle },
+    { id: "back-room", label: "Back room", run: onBackRoom },
   ];
   return (
     <nav
@@ -145,82 +221,119 @@ const ClubhouseNav = ({
       <MenuList
         autoFocus
         className="flex-nowrap gap-x-[2.4cqw]"
-        defaultValue="route-board"
+        defaultValue="ride"
         label="Clubhouse"
-        onSelect={(id) => items.find((item) => item.id === id)?.run?.()}
+        onKeyDown={(event) => {
+          const step = roadStep(event.key);
+          if (step !== 0) {
+            event.preventDefault();
+            onStep(step);
+          }
+        }}
+        onSelect={(id) => items.find((item) => item.id === id)?.run()}
         orientation="horizontal"
         size="sm"
       >
         {items.map((item) => (
           <MenuItem
             className="data-selected:text-neon-yellow data-selected:outline-neon-yellow px-[0.4em] !text-[1em] data-selected:outline-2"
-            disabled={item.run === undefined}
             key={item.id}
-            trailing={item.run === undefined ? SOON : undefined}
             value={item.id}
           >
             {item.label}
           </MenuItem>
         ))}
       </MenuList>
-      <p className="text-paper/70 whitespace-nowrap">
-        Next: <span className="text-neon-yellow">{roadName}</span>
-      </p>
+      <RoadPicker onStep={onStep} roadName={roadName} />
     </nav>
   );
 };
 
-const useBarCast = (career: CareerState, roadId: RoadId) => {
-  const setup = useMemo(
-    () => planFor(career, careerEntry(career, roadId)).setup,
-    [career, roadId]
-  );
-  const speaker = useMemo(() => preRaceLine(career, setup), [career, setup]);
-  const boss = roadBoss(career, roadId);
-  const regulars = useMemo(() => {
-    const others = setup.field.filter(
-      (rider) => rider !== speaker?.rival && rider !== boss
-    );
-    return boss === speaker?.rival ? others : [boss, ...others];
-  }, [setup, speaker, boss]);
-  const visit = career.record.starts;
+const vicLines = (
+  career: CareerState,
+  promotion: LevelUp | undefined
+): readonly string[] => {
+  if (promotion) {
+    return [vicCard(promotion.level)];
+  }
+  return career.record.starts === 0 ? introCards : [];
+};
+
+const useVic = (lines: readonly string[]): Speech | null => {
+  const [, setListened] = useState(0);
+  const index = lines.findIndex((line) => !heard.has(line));
+  const line = lines[index];
+  if (line === undefined) {
+    return null;
+  }
   return {
-    billRider: regulars[visit % Math.max(1, regulars.length)] ?? boss,
-    boss,
-    regulars,
-    speaker,
-    sticker: stickers[visit % stickers.length] ?? plates.badge,
+    line,
+    name: VIC,
+    next: () => {
+      heard.add(line);
+      setListened((count) => count + 1);
+    },
+    tag: lines.length > 1 ? `${index + 1} / ${lines.length}` : undefined,
   };
+};
+
+const useRoad = (career: CareerState) => {
+  const open = openRoads(career);
+  const [picked, setPicked] = useState(() => firstRoad(career));
+  const roadId = open.includes(picked) ? picked : firstRoad(career);
+  useEffect(() => {
+    void preload(roadPlates(career));
+  }, [career]);
+  return {
+    roadId,
+    step: (step: -1 | 1) => {
+      setPicked(stepped(open, roadId, step));
+    },
+  };
+};
+
+const qualifiedStamp = (
+  career: CareerState,
+  roadId: RoadId
+): string | undefined => {
+  const status = roadsFor(career).roads.find((each) => each.road.id === roadId);
+  return status?.qualified === true
+    ? `Qualified ${ordinal(status.bestPlace)}`
+    : undefined;
 };
 
 export const ClubhouseScreen = ({
   career,
-  onRouteBoard,
+  promotion,
+  onRide,
   onGarage,
-  onTitle,
+  onBackRoom,
   onEnvelope,
 }: {
   readonly career: CareerState;
-  readonly onRouteBoard: () => void;
+  readonly promotion: LevelUp | undefined;
+  readonly onRide: (roadId: RoadId) => void;
   readonly onGarage: () => void;
-  readonly onTitle: () => void;
+  readonly onBackRoom: () => void;
   readonly onEnvelope: (take: boolean) => void;
 }) => {
   const [envelope, setEnvelope] = useState(false);
   const clock = useBarClock();
   const board = roadsFor(career);
-  const roadId =
-    board.next ??
-    board.roads.find((status) => status.open)?.road.id ??
-    FINALE_ROAD;
+  const { roadId, step } = useRoad(career);
   const road = roads[roadId];
-  const { billRider, boss, regulars, speaker, sticker } = useBarCast(
-    career,
-    roadId
-  );
-  const rival = speaker === null ? null : rivals[speaker.rival];
-  const ally = rival?.id === ALLY && storyBeat(career).deeAlly;
-  useEscape(onTitle, !envelope);
+  const bar = useMemo(() => barCast(career, roadId), [career, roadId]);
+  const rival = rivals[bar.boss];
+  const ally = rival.id === ALLY && storyBeat(career).deeAlly;
+  const vic = useVic(vicLines(career, promotion));
+  const speech: Speech = vic ?? {
+    line: bar.line.text,
+    name: rival.name,
+    tag:
+      standingTag(ally, career.memory[rival.id].grudge) ??
+      `Boss of ${road.name}`,
+  };
+  useEscape(onBackRoom, !envelope);
   return (
     <Screen
       className="flex"
@@ -232,19 +345,8 @@ export const ClubhouseScreen = ({
     >
       <Stage inert={envelope ? true : undefined}>
         <BarBackdrop clock={clock} />
-        <BarSeats
-          boss={boss}
-          regulars={regulars}
-          roadName={road.name}
-          speaker={speaker?.rival ?? null}
-        />
-        {speaker !== null && rival !== null && (
-          <SpeechSticker
-            line={speaker.text}
-            name={rival.name}
-            tag={standingTag(ally, career.memory[rival.id].grudge)}
-          />
-        )}
+        <BarSeats rider={vic ? null : bar.boss} />
+        <SpeechSticker speech={speech} />
         <h1
           className="font-stencil text-paper flex items-center leading-none font-black whitespace-nowrap uppercase drop-shadow-[0_0.06em_0_rgb(0_0_0/60%)]"
           style={{ ...place(WORDMARK), fontSize: stagePx(84) }}
@@ -262,21 +364,28 @@ export const ClubhouseScreen = ({
           rows={seasonBoard(career)}
         />
         <WallNotes
-          notes={notesFor(career, () => {
+          notes={notesFor(career, promotion, () => {
             setEnvelope(true);
           })}
         />
         <WallPosters
-          bill={bills[billRider]}
+          bill={bar.bill}
           flyer={flyers[roadId]}
+          onFlyer={() => {
+            step(1);
+          }}
           roadName={road.name}
-          sticker={sticker}
+          stamp={qualifiedStamp(career, roadId)}
+          sticker={bar.sticker}
         />
         <BarLight clock={clock} />
         <ClubhouseNav
+          onBackRoom={onBackRoom}
           onGarage={onGarage}
-          onRouteBoard={onRouteBoard}
-          onTitle={onTitle}
+          onRide={() => {
+            onRide(roadId);
+          }}
+          onStep={step}
           roadName={road.name}
         />
       </Stage>

@@ -16,7 +16,7 @@ In a race the player rides a motorcycle down a point-to-point road through traff
 
 ## How to get to it (user POV)
 
-- Start any race: Single race, a career race, or the attract race behind the title (which the player does not control).
+- Start any race: Single race, a career race, or a `?ride=` race.
 - Hold the arrow keys or WASD; Space or J punches, Shift or K kicks.
 - A gamepad's left stick steers, triggers throttle and brake, and face buttons punch and kick.
 

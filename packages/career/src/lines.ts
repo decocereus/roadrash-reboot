@@ -223,6 +223,16 @@ export interface RivalLine {
   readonly text: string;
 }
 
+export const tauntFrom = (career: CareerState, rival: RivalId): RivalLine => {
+  const lines = rivalLines[rival];
+  return {
+    rival,
+    text: holdsItAgainstPlayer(career.memory[rival])
+      ? lines.grudgeTaunt
+      : lines.taunt,
+  };
+};
+
 export const preRaceLine = (
   career: CareerState,
   setup: CareerRaceSetup
@@ -236,16 +246,7 @@ export const preRaceLine = (
           Math.abs(career.memory[left].aggressionBonus)
       : strength;
   });
-  if (speaker === undefined) {
-    return null;
-  }
-  const lines = rivalLines[speaker];
-  return {
-    rival: speaker,
-    text: holdsItAgainstPlayer(career.memory[speaker])
-      ? lines.grudgeTaunt
-      : lines.taunt,
-  };
+  return speaker === undefined ? null : tauntFrom(career, speaker);
 };
 
 export const resultLine = (outcome: RaceOutcome): RivalLine | null => {

@@ -195,7 +195,7 @@ Every display face is set in capitals with 0.02 em tracking. Money, times, speed
 
 Every screen fills the viewport. A screen can draw a scene behind its content (the attract race or a region scene) with a soft diagonal scrim from the lower left, or a heavy flat one. Content sits between an optional top strip and an optional bottom strip: each strip is at least the strip height, ink at 80% opacity, with a 2 px line border on the side that faces the body. The top strip carries status (level, roads qualified, cash); the bottom strip carries navigation and the Enter hint. Body content sits inside the gutter.
 
-The title screen keeps the centre clear so the road stays visible: the wordmark and tagline at the top left, the menu as a vertical list at the bottom left, one line of small print at the bottom right.
+There is no title screen. The game loads on the wordmark and tagline, centred, then opens the Clubhouse. The Back Room keeps the old title layout for now: the heading at the top left, the menu as a vertical list at the bottom left, one line of small print at the bottom right.
 
 Spacing is the Tailwind 4 px step plus three fluid tokens that scale with the shorter side of the screen: panel padding, the screen gutter, and the strip height. There are no breakpoints; type and spacing scale with `vmin` from a 1280 × 720 design size. The game targets desktop browsers.
 
@@ -231,7 +231,7 @@ The actions on every screen. There are no filled buttons on game screens.
 - **Focus-visible:** a 2 px yellow outline 2 px out, which frames the item as a box (as on KEEP RACING in the confirm dialog).
 - **Disabled:** muted, unselectable, with `SOON` as the second line when the screen has not shipped.
 - **Stepper:** a label in Inter, then ◄ value ►, where the arrows turn yellow when the row is selected. Left and right step the value.
-- **Navigation:** arrows or WASD move, Home and End jump, Enter confirms, Escape goes back. A list can run vertically (the title menu) or horizontally (the bottom strip, the confirm dialog).
+- **Navigation:** arrows or WASD move, Home and End jump, Enter confirms, Escape goes back. A list can run vertically (the Back Room) or horizontally (the bottom strip, the confirm dialog).
 - **Motion:** colour changes over 100 ms. Nothing slides.
 
 ### Panels
@@ -274,9 +274,10 @@ The whole race HUD in one dial. A 240° ring of 48 ticks that light neon yellow 
 The Clubhouse (`apps/web/src/components/screens/clubhouse.tsx`) is one 1672 × 941 stage, scaled to fit the viewport and letterboxed on the wall texture. Every piece sits at its box from the approved comp, and its type is sized in container units, so the composition holds at any size. The painted art is WebP in `apps/web/src/assets/clubhouse`, named in `clubhouse-art.ts`; text is code.
 
 - **The bar** (left): a night painting, a dusk painting, and a light layer of sun rays. Time spent in the bar runs a 150 s time-lapse in CSS: the rays fade first, then dusk crossfades to night and the neon flickers on. The clock carries across visits within a session; reduced motion shows the night bar.
-- **Two stools.** The front stool holds the rival who speaks the pre-race line, under the counter-and-stool layer, with the line on the speech sticker. The back stool, smaller and darker, starts with the next road's boss (`roadBoss`: the home rider with the most season wins) under a yellow tape tag, then the rest of the field takes turns every 20 s. Each of the 16 rivals has a figure at the same framing so any of them can take either stool.
-- **The wall** (right): the standings sheet, two note stickers (debt, the envelope, and board notes, newest first), a bill and a sticker that change each race (one bill per rival, drawn from the next race's field), and the next road's flyer, one per road.
-- **Navigation** sits in the bottom strip: Route board (primary, outlined in neon yellow), Garage, Back room (soon), and Title, with the next road at the right.
+- **The stool.** It holds the boss of the chosen road (`roadBoss`: the home rider with the most season wins), drawn under the counter and the stool plates so every rider sits on the seat. The boss's taunt is on the speech sticker, with their name and `Boss of {road}` on yellow tape below it. Before a career's first race, and after a promotion, the stool is empty and Vic speaks from behind the bar, one line per click. Each of the 16 rivals has a figure at the same framing, hips at the right of the cut-out, so any of them fits the stool.
+- **The wall** (right): the standings sheet with each row sitting on its ruled lines, two note stickers (a promotion, debt, the envelope, and board notes, newest first), a bill and a sticker that change each race (one bill per rival), and the chosen road's flyer, one per road, with a `QUALIFIED {place}` stamp on a qualified road. A click on the flyer shows the next open road.
+- **Navigation** sits in the bottom strip: Ride (primary, outlined in neon yellow), Garage, and Back room, with the road picker `◄ {road} ►` at the right. Up and Down change the road from anywhere in the menu.
+- **Loading.** The bar's plates for the first road decode before it is shown, and the flyers and bosses of the other open roads load behind it, so it never draws piece by piece.
 
 ### Confirm
 

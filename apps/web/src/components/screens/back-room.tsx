@@ -7,14 +7,13 @@ import { Screen, ScreenBody } from "@racer/ui/components/screen";
 import { Stencil } from "@racer/ui/components/stencil";
 import { useState } from "react";
 
-import { CONTROLS, saveErrors, TAGLINE, WORDMARK } from "../../career/copy.ts";
+import { plates } from "../../assets/clubhouse-art.ts";
+import { CONTROLS, saveErrors } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
 import type { SaveState } from "../../career/save.ts";
 import { SettingsScreen } from "./settings.tsx";
-import { ActionMenu, SmallPrint } from "./shared.tsx";
+import { ActionMenu, SmallPrint, useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
-
-const SOON = "Soon";
 
 const careerActions = (
   career: CareerState,
@@ -47,7 +46,7 @@ const careerActions = (
     {
       detail: `Level ${career.level} · ${formatMoney(career.cash)} · ${bikeName(career.bikeId)}`,
       id: "continue",
-      label: "Continue career",
+      label: "Back to the bar",
       run: onContinue,
     },
     { id: "new", label: "New career", run: askNew },
@@ -67,7 +66,7 @@ const CorruptSave = ({ error }: { readonly error: SaveError }) => (
   </Panel>
 );
 
-export const TitleScreen = ({
+export const BackRoomScreen = ({
   save,
   failure,
   onContinue,
@@ -85,12 +84,11 @@ export const TitleScreen = ({
   const [asking, setAsking] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const quick: MenuAction[] = [
-    { id: "quick", label: "Single race", run: onQuickRace },
     {
-      disabled: true,
-      id: "multiplayer",
-      label: "Multiplayer",
-      trailing: SOON,
+      detail: "Any road, no money at stake",
+      id: "quick",
+      label: "Single race",
+      run: onQuickRace,
     },
     {
       id: "settings",
@@ -112,6 +110,7 @@ export const TitleScreen = ({
     return [{ id: "continue", label: "Career", run: onNewCareer }];
   };
   const career = careerMenu();
+  useEscape(onContinue, save.status === "ready" && !(asking || adjusting));
   if (adjusting) {
     return (
       <SettingsScreen
@@ -122,14 +121,23 @@ export const TitleScreen = ({
     );
   }
   return (
-    <Screen className="bg-transparent" enter="fade" scrim="soft">
+    <Screen
+      className="bg-ink"
+      enter="fade"
+      style={{
+        backgroundImage: `linear-gradient(rgb(14 15 18 / 82%), rgb(14 15 18 / 82%)), url(${plates.wall})`,
+        backgroundSize: "60vw auto",
+      }}
+    >
       <ScreenBody
         className="flex flex-col justify-between"
         inert={asking ? true : undefined}
       >
         <div>
-          <Stencil tone="text">{WORDMARK}</Stencil>
-          <p className="text-quote mt-2 font-semibold">{TAGLINE}</p>
+          <Stencil tone="text">Back room</Stencil>
+          <p className="text-quote mt-2 font-semibold">
+            Vic Lomax runs the races from in here.
+          </p>
         </div>
         <div className="flex items-end justify-between gap-8">
           <div>
@@ -142,7 +150,7 @@ export const TitleScreen = ({
             {save.status !== "loading" && (
               <ActionMenu
                 actions={[...career, ...quick]}
-                label="Title menu"
+                label="Back room"
                 orientation="vertical"
                 primary="continue"
                 size="md"

@@ -42,7 +42,7 @@ Road Rash's riding and picture composition (a camera that faces along the road, 
 
 - RUSHLINE is the working title. The name will probably change before launch, so nothing should be built that depends on it. LOWSIDE has been proposed. The Lowside is also the bar where the career lives.
 - The look accepted on October 13, 2026 is the base: cel-shaded cyberpunk anime with Cyberpunk: Edgerunners as the reference, realistic proportions for the world, bikes, and riders, and a palette of yellow, cyan, magenta, and red on near-black. Details are in `docs/design/art-direction.md`. Rejected: retro low resolution, blocky or toy-like stand-ins, and coloured afterimages on turns.
-- The tagline on the title screen is `Race. Fight. Pay for it.`
+- The tagline on the loading screen is `Race. Fight. Pay for it.`
 
 ## Evidence on Hand
 

@@ -1,12 +1,13 @@
 import type { RaceOutcome } from "@racer/career/outcome";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
-import type { Settlement } from "@racer/career/settle";
+import type { LevelUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { bootGame } from "../asset-load.ts";
+import { barCast, barPlates, firstRoad, preload } from "../career/bar.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
 import {
   careerEntry,
@@ -39,12 +40,12 @@ import { createHudFeed } from "../hud-feed.ts";
 import type { HudFeed } from "../hud-feed.ts";
 
 export type View =
-  | { readonly screen: "title" }
-  | { readonly screen: "intro" }
-  | { readonly screen: "clubhouse" }
-  | { readonly screen: "routeBoard"; readonly mode: RaceMode }
+  | { readonly screen: "boot" }
+  | { readonly screen: "clubhouse"; readonly promotion?: LevelUp }
+  | { readonly screen: "backRoom" }
+  | { readonly screen: "routeBoard" }
   | { readonly screen: "garage" }
-  | { readonly screen: "preRace"; readonly entry: RaceEntry }
+  | { readonly screen: "rideOut"; readonly entry: RaceEntry }
   | {
       readonly screen: "race";
       readonly plan: RacePlan;
@@ -54,14 +55,12 @@ export type View =
   | { readonly screen: "wrecked"; readonly outcome: RaceOutcome }
   | { readonly screen: "busted"; readonly report: RaceReport }
   | { readonly screen: "results"; readonly report: RaceReport }
-  | { readonly screen: "levelUp"; readonly report: RaceReport }
   | { readonly screen: "ending" }
   | { readonly screen: "gameOver" };
 
-export const title: View = { screen: "title" };
 export const clubhouse: View = { screen: "clubhouse" };
-
-const routeBoard = (mode: RaceMode): View => ({ mode, screen: "routeBoard" });
+export const backRoom: View = { screen: "backRoom" };
+export const singleRace: View = { screen: "routeBoard" };
 
 export const homeOf = (career: CareerState): View => {
   if (career.gameOver) {
@@ -72,7 +71,7 @@ export const homeOf = (career: CareerState): View => {
 
 export const afterResults = (report: RaceReport): View => {
   if (!report.ledger) {
-    return routeBoard("quick");
+    return singleRace;
   }
   if (report.ledger.gameOver) {
     return { screen: "gameOver" };
@@ -80,12 +79,14 @@ export const afterResults = (report: RaceReport): View => {
   if (report.ledger.ending !== null) {
     return { screen: "ending" };
   }
-  return report.ledger.levelUp ? { report, screen: "levelUp" } : clubhouse;
+  return report.ledger.levelUp
+    ? { promotion: report.ledger.levelUp, screen: "clubhouse" }
+    : clubhouse;
 };
 
-const stageOf = (view: View): "attract" | "race" | "menu" => {
-  if (view.screen === "title") {
-    return "attract";
+const stageOf = (view: View): "boot" | "race" | "menu" => {
+  if (view.screen === "boot") {
+    return "boot";
   }
   return view.screen === "race" ? "race" : "menu";
 };
@@ -99,9 +100,58 @@ const afterConsequence = (
     return { outcome, screen: "wrecked" };
   }
   if (!report) {
-    return plan.mode === "career" ? clubhouse : routeBoard("quick");
+    return plan.mode === "career" ? clubhouse : singleRace;
   }
   return { report, screen: plan.mode === "career" ? "busted" : "results" };
+};
+
+const urlRide = (): RacePlan | null => {
+  const bench = benchOf(globalThis.location.search);
+  return bench ? benchPlan(bench) : rideOf(globalThis.location.search);
+};
+
+const entrance = async (
+  save: SaveState,
+  begin: (career: CareerState) => void
+): Promise<View | null> => {
+  if (save.status === "loading") {
+    return null;
+  }
+  if (save.status === "corrupt") {
+    return backRoom;
+  }
+  if (save.status === "empty") {
+    begin(freshCareer(randomUnit()));
+    return null;
+  }
+  const home = homeOf(save.career);
+  if (home.screen === "clubhouse") {
+    await preload(barPlates(barCast(save.career, firstRoad(save.career))));
+  }
+  return home;
+};
+
+const useBoot = (
+  booting: boolean,
+  save: SaveState,
+  begin: (career: CareerState) => void,
+  go: (view: View) => void
+): void => {
+  useEffect(() => {
+    const entering = new AbortController();
+    const enter = async () => {
+      const next = await entrance(save, begin);
+      if (next && !entering.signal.aborted) {
+        go(next);
+      }
+    };
+    if (booting && urlRide() === null) {
+      void enter();
+    }
+    return () => {
+      entering.abort();
+    };
+  }, [booting, save, begin, go]);
 };
 
 interface Save {
@@ -251,7 +301,7 @@ export interface Flow {
   readonly commit: (career: CareerState) => void;
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
-  readonly preRace: (mode: RaceMode, roadId: RoadId) => void;
+  readonly rideOut: (mode: RaceMode, roadId: RoadId) => void;
   readonly prepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly start: (plan: RacePlan) => void;
   readonly resume: () => void;
@@ -266,11 +316,12 @@ export const useFlow = (): Flow => {
   const eventsRef = useRef<GameEvents | null>(null);
   const pendingRef = useRef<RaceReport | null>(null);
   const [feed] = useState(createHudFeed);
-  const [view, setView] = useState<View>(title);
+  const [view, setView] = useState<View>({ screen: "boot" });
   const [pick, setPick] = useState<QuickPick>(firstQuickPick);
   const { careerRef, commit, eraseSave, save, settle, unsaved } = useSave();
   const { failure, gameRef, ready } = useGame(canvasRef, eventsRef);
   const career = save.status === "ready" ? save.career : null;
+  useBoot(view.screen === "boot", save, commit, setView);
 
   useEffect(() => {
     eventsRef.current = {
@@ -315,15 +366,12 @@ export const useFlow = (): Flow => {
     if (!(ready && game)) {
       return;
     }
-    const bench = benchOf(globalThis.location.search);
-    const plan = bench ? benchPlan(bench) : rideOf(globalThis.location.search);
-    if (stage === "attract" && plan) {
+    const plan = stage === "boot" ? urlRide() : null;
+    if (plan) {
       pendingRef.current = null;
       game.startRace(plan);
       setView({ finish: null, paused: false, plan, screen: "race" });
-    } else if (stage === "attract") {
-      game.attract();
-    } else if (stage === "menu") {
+    } else if (stage !== "race") {
       game.sleep();
     }
   }, [gameRef, ready, stage]);
@@ -373,7 +421,7 @@ export const useFlow = (): Flow => {
     mute: () => gameRef.current?.toggleMute(),
     newCareer() {
       commit(freshCareer(randomUnit()));
-      setView({ screen: "intro" });
+      setView(clubhouse);
     },
     payRepair(outcome) {
       const report = career
@@ -382,13 +430,6 @@ export const useFlow = (): Flow => {
       setView(report ? { report, screen: "results" } : clubhouse);
     },
     pick,
-    preRace(mode, roadId) {
-      const entry =
-        mode === "career" && career
-          ? careerEntry(career, roadId)
-          : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
-      setView({ entry, screen: "preRace" });
-    },
     prepare,
     quit(plan) {
       const outcome = gameRef.current?.quit() ?? null;
@@ -399,7 +440,7 @@ export const useFlow = (): Flow => {
       if (report) {
         setView({ report, screen: "results" });
       } else {
-        setView(plan.mode === "career" ? clubhouse : routeBoard("quick"));
+        setView(plan.mode === "career" ? clubhouse : singleRace);
       }
     },
     ready,
@@ -408,6 +449,13 @@ export const useFlow = (): Flow => {
       setView((current) =>
         current.screen === "race" ? { ...current, paused: false } : current
       );
+    },
+    rideOut(mode, roadId) {
+      const entry =
+        mode === "career" && career
+          ? careerEntry(career, roadId)
+          : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
+      setView({ entry, screen: "rideOut" });
     },
     save,
     setPick,

@@ -64,13 +64,13 @@ const Record = ({
 export const GameOverScreen = ({
   career,
   onNewCareer,
-  onTitle,
+  onBackRoom,
 }: {
   readonly career: CareerState;
   readonly onNewCareer: () => void;
-  readonly onTitle: () => void;
+  readonly onBackRoom: () => void;
 }) => {
-  useEscape(onTitle);
+  useEscape(onBackRoom);
   return (
     <Screen className="[animation-duration:600ms]" enter="fade">
       <ScreenBody className="flex flex-col justify-center gap-8">
@@ -86,7 +86,7 @@ export const GameOverScreen = ({
         <SmallPrint>The Lowside car park, after closing</SmallPrint>
         <ActionMenu
           actions={[
-            { id: "title", label: "Title", run: onTitle },
+            { id: "back-room", label: "Back room", run: onBackRoom },
             { id: "new", label: "New career", run: onNewCareer },
           ]}
           className="gap-x-12"
@@ -100,13 +100,13 @@ export const GameOverScreen = ({
 
 export const EndingScreen = ({
   career,
-  onTitle,
+  onBackRoom,
 }: {
   readonly career: CareerState;
-  readonly onTitle: () => void;
+  readonly onBackRoom: () => void;
 }) => {
   const ending = career.story.ending ? endings[career.story.ending] : null;
-  useEscape(onTitle);
+  useEscape(onBackRoom);
   return (
     <Screen enter="fade">
       <ScreenStrip>
@@ -122,9 +122,9 @@ export const EndingScreen = ({
       <ScreenStrip edge="bottom">
         <span />
         <ActionMenu
-          actions={[{ id: "title", label: "Back to title", run: onTitle }]}
+          actions={[{ id: "back-room", label: "Back room", run: onBackRoom }]}
           label="Ending"
-          primary="title"
+          primary="back-room"
         />
       </ScreenStrip>
     </Screen>

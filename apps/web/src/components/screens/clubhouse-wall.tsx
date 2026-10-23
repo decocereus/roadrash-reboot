@@ -6,10 +6,10 @@ import { shortNames } from "../../career/copy.ts";
 import { Plate, place, stagePx } from "./clubhouse-stage.tsx";
 
 const STANDINGS = { h: 366, w: 279, x: 557, y: 100 } as const;
-const STANDINGS_TITLE = { h: 71, w: 223, x: 582, y: 120 } as const;
-const STANDINGS_ROWS = { h: 275, w: 225, x: 584, y: 178 } as const;
+const STANDINGS_TITLE = { h: 50, w: 242, x: 579, y: 132 } as const;
+const STANDINGS_ROWS = { h: 212, w: 238, x: 568, y: 195 } as const;
 const NOTE_CYAN = { h: 200, w: 278, x: 630, y: 405 } as const;
-const NOTE_CYAN_TEXT = { h: 114, w: 158, x: 653, y: 457 } as const;
+const NOTE_CYAN_TEXT = { h: 98, w: 134, x: 668, y: 465 } as const;
 const NOTE_MAGENTA = { h: 192, w: 325, x: 655, y: 565 } as const;
 const NOTE_MAGENTA_TEXT = { h: 125, w: 190, x: 680, y: 604 } as const;
 const BILL = { h: 250, w: 124, x: 828, y: 150 } as const;
@@ -45,35 +45,34 @@ export const Standings = ({
     <section aria-label="Season standings">
       <Plate box={STANDINGS} src={plates.standings} />
       <h2
-        className="font-display text-ink flex -rotate-3 items-center justify-center leading-none font-black uppercase"
+        className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black uppercase"
         style={{ ...place(STANDINGS_TITLE), fontSize: stagePx(34) }}
       >
         Season standings
       </h2>
       <ol
-        className="font-display text-ink grid -rotate-1 grid-rows-5 font-bold uppercase"
-        style={{ ...place(STANDINGS_ROWS), fontSize: stagePx(28) }}
+        className="font-display text-ink grid -rotate-[0.6deg] grid-rows-5 font-bold uppercase"
+        style={{ ...place(STANDINGS_ROWS), fontSize: stagePx(24) }}
       >
         {shown.map((row) => {
           const you = row.racer === "player";
           return (
-            <li
-              className={cn(
-                "grid grid-cols-[1.2em_1fr_auto] items-center leading-none",
-                you && "bg-neon-yellow/85 -mx-[0.15em] my-[0.12em] px-[0.15em]"
-              )}
-              key={row.racer}
-            >
-              <span className="numeric">{row.rank}</span>
-              <span className="flex flex-col">
-                <span>{you ? "You" : shortNames[row.racer]}</span>
-                {you && (
-                  <span className="text-[0.55em] tracking-wide">
-                    {playerCaption}
-                  </span>
+            <li className="grid grid-rows-2" key={row.racer}>
+              <span
+                className={cn(
+                  "grid grid-cols-[1em_1fr_auto] items-end gap-x-[0.4em] pr-[0.2em] leading-[0.8]",
+                  you && "bg-neon-yellow/85"
                 )}
+              >
+                <span className="numeric text-center">{row.rank}</span>
+                <span>{you ? "You" : shortNames[row.racer]}</span>
+                <span className="numeric">{row.points}</span>
               </span>
-              <span className="numeric">{row.points}</span>
+              {you && (
+                <span className="pl-[2.6em] text-[0.55em] tracking-wide">
+                  {playerCaption}
+                </span>
+              )}
             </li>
           );
         })}
@@ -108,9 +107,9 @@ const noteSlots = [
   {
     box: NOTE_CYAN,
     ink: "text-neon-cyan -rotate-4 focus-visible:outline-neon-cyan",
-    long: 22,
+    long: 20,
     plate: plates.noteCyan,
-    short: 31,
+    short: 26,
     text: NOTE_CYAN_TEXT,
   },
   {
@@ -156,22 +155,43 @@ export const WallPosters = ({
   sticker,
   flyer,
   roadName,
+  stamp,
+  onFlyer,
 }: {
   readonly bill: string;
   readonly sticker: string;
   readonly flyer: string;
   readonly roadName: string;
+  readonly stamp: string | undefined;
+  readonly onFlyer: () => void;
 }) => (
   <>
     <Plate box={BILL} src={bill} />
     <Plate box={STICKER} src={sticker} />
-    <img
-      alt={`Next race: ${roadName}`}
-      className="pointer-events-none object-contain select-none"
-      decoding="async"
-      draggable={false}
-      src={flyer}
+    <button
+      aria-label={`Next race: ${roadName}. Show another road`}
+      className="cursor-pointer"
+      onClick={onFlyer}
       style={place(FLYER)}
-    />
+      tabIndex={-1}
+      type="button"
+    >
+      <img
+        alt=""
+        className="seat-in pointer-events-none size-full object-contain select-none"
+        decoding="async"
+        draggable={false}
+        key={flyer}
+        src={flyer}
+      />
+      {stamp !== undefined && (
+        <span
+          className="font-stencil text-neon-red border-neon-red bg-ink/75 absolute top-[54%] left-[9%] -rotate-12 border-[0.12em] px-[0.3em] leading-none whitespace-nowrap uppercase"
+          style={{ fontSize: stagePx(44) }}
+        >
+          {stamp}
+        </span>
+      )}
+    </button>
   </>
 );

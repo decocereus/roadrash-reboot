@@ -937,7 +937,7 @@ There is no interstitial between races. An earlier draft had one after Results; 
 
 - During a race, the countdown, the pause menu, or the Finish screen.
 - As a full-screen interstitial anywhere.
-- On the Title screen before the first race of a session.
+- In the bar before the first race of a session.
 - Over the Busted or Wrecked consequence itself; the player sees what happened and what it cost before any offer.
 - As a way to undo a Game Over, skip a qualification, or reduce a police fine. Fines are the cost of getting caught; buying them down with attention would make the police meaningless.
 - In the Multiplayer lobby countdown or between multiplayer races while other players wait.

@@ -14,85 +14,49 @@ React renders every screen here. The race view is the Three.js canvas with the H
 - Text strings below are final copy unless marked as a template. `{braces}` mark values filled from state.
 - Only one interface element blinks: the police warning on the HUD. Every other element that changes state changes colour and holds it. Lights in the world, such as a police light bar, are scenery and not covered by this rule.
 - "Settlement" is the moment a race's result becomes final, defined in `game-design.md` section 4. No screen after a race shows a number that settlement did not produce.
-- The "Single Race menu" is the Route Board opened from Title in Single Race mode.
+- The "Single Race menu" is the Route Board opened from the Back Room.
 
 ## Flow
 
+Restructured on October 23, 2026. The Lowside bar is the first screen and the hub; the title, the intro cards, the pre-race screen, and the level-up screen were cut, and the route board serves Single Race only.
+
 ```
-Title
- ├─ Career ──────────► Clubhouse ◄──────────────────────────────┐
- │                      ├─ Route Board ─► Pre-race ─► Race       │
- │                      ├─ Garage                      │         │
- │                      └─ Back Room (options)         ├─ Pause  │
- │                                                     ▼         │
- │                                    Finish │ Wrecked │ Busted  │
- │                                                     ▼         │
- │                                                  Results      │
- │                                                     ├─ Level Up ─┤
- │                                                     ├─ Game Over ─► Title
- │                                                     └────────────┘
- ├─ Single Race ─► Route Board ─► Pre-race ─► Race ─► Results ─► Route Board
- ├─ Multiplayer ─► Lobby ─► Race ─► Results ─► Lobby
- └─ Back Room
+Load (wordmark while the bar's art decodes)
+ └─► The Lowside (bar) ◄────────────────────────────────────────┐
+      ├─ Ride (road picked on the flyer) ─► Ride-out ─► Race      │
+      ├─ Garage                                     │             │
+      └─ Back Room                                  ├─ Pause      │
+          ├─ Settings                               ▼             │
+          ├─ New career                Finish │ Wrecked │ Busted  │
+          └─ Single Race ─► Route Board ─► Ride-out ─► Race       │
+                              ▲                    ▼              │
+                              └──────────────── Results ──────────┤
+                                                   ├─ Game Over ─► Back Room
+                                                   └─ Ending ──► Back Room
 ```
 
-## 1. Title
+A promotion returns to the bar, where Vic says the level's line. A damaged save opens the Back Room.
 
-**Purpose.** Say what the game is in one look and get the player riding within two inputs.
+## 1. Boot and the Back Room
 
-**Layout.** The attract race runs full screen behind everything: the AI pilot riding Ridge Road, as the current build does. Top left, the wordmark, large. Bottom left, the menu as a vertical list. Bottom right, one line of small print. Nothing in the centre; the road stays visible.
+**Boot.** On page load the screen shows the wordmark `RUSHLINE` and `Race. Fight. Pay for it.` while the save is read and the bar's art for the first road decodes, so the bar appears whole. With no save a new career begins and the bar opens. With a save it opens the bar, or Game Over or the ending when the career is over. A damaged save opens the Back Room. A `?ride=` or `?bench=` URL starts that race instead.
 
-**Text.**
+**Back Room.** Reached from the bar's menu or Escape, and from Game Over and the ending. Heading `BACK ROOM`. Items: `BACK TO THE BAR` with `Level {level} · ${cash} · {bike}` (or `CAREER OVER` / `See the record`, `SEASON OVER` / `See the ending`), `NEW CAREER`, `SINGLE RACE` with `Any road, no money at stake`, `SETTINGS`. Escape returns to the bar.
 
-- Wordmark: `LOWSIDE` (or `RUSHLINE`)
-- Under the wordmark: `Race. Fight. Pay for it.`
-- Menu: `CAREER` · `SINGLE RACE` · `MULTIPLAYER` · `BACK ROOM`
-- If a save exists, the first item reads `CONTINUE CAREER` with a second line `Level {level} · ${cash} · {bike}`, and `NEW CAREER` appears below it.
-- Small print: `Arrows to steer · Space to punch · Shift to kick`
 - New career confirm, when a save exists: `Start over? Your Level {level} career will be erased.` Buttons `ERASE AND START` / `KEEP IT`.
-- An entry whose screen has not shipped is dimmed, cannot be selected, and carries the second line `SOON`.
-- After the ending, the first item reads `SEASON OVER` with the second line `See the ending`.
 - Damaged save, in a red-edged panel above the menu (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
 - When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
+- Small print: `Arrows to steer · Space to punch · Shift to kick`
 
-**Buttons.** The four menu items. Enter on the selected one.
+The Back Room is drawn plainly for now; its painted room is still to come.
 
-**In.** Page load, fade from black in 400 ms. From Game Over or the Back Room.
-
-**Out.** Career goes to the Clubhouse (a new career plays the three-card intro first: "You've got $1,500, a Halden Wren, and nobody knows your name." / "Top three on all five roads and you move up." / "Don't go broke."). Single Race goes to the Single Race menu. Multiplayer goes to the Lobby.
-
-**Interrupted and finished careers.** When the save holds an active-race record, the page was left during a race. Loading the career settles that race as a wreck, once, before any screen is drawn, and then opens the Clubhouse with Vic's note on the board, or Game Over if the bill ended the career. When the save is marked over, the first menu item reads `CAREER OVER` with the second line `See the record`, and it opens Game Over.
-
-**Data.** Whether a save exists; its level, cash, and bike name; whether it holds an active-race record; whether it is marked over.
+**Interrupted careers.** When the save holds an active-race record, the page was left during a race. Loading the career settles that race as a wreck, once, before any screen is drawn, and then opens the bar with Vic's note on the wall, or Game Over if the bill ended the career.
 
 ## 2. Clubhouse
 
 **Purpose.** The hub. Shows where the player stands (cash, level, roads qualified), what the rivals think, and the way to everything else.
 
-**Layout.** A wide interior of the Lowside. Left third: the corkboard, the largest object, with Polaroids and notes, and one poster pinned at its lower edge, which is the Clubhouse's ad slot. Centre: the bar, with one rival sitting at it who has something to say. Right third: the door to the garage and, behind a bead curtain, the back room. Top strip: the player's status. Bottom strip: the navigation.
-
-```
-+------------------------------------------------------------------------------+
-| THE LOWSIDE                      LEVEL 2 · THE ENVELOPE        CASH  $3,200  |
-|                                  ROADS 3 / 5 QUALIFIED        HALDEN KITE 500|
-+----------------------------+--------------------------+----------------------+
-|  THE BOARD                 |                          |                      |
-|  +------+ +------+ +------+|        [ rival portrait ]|   [ garage door ]    |
-|  | JUNO | | RUTH | | YOU  ||          MOOSE           |    GARAGE            |
-|  +------+ +------+ +------+|                          |                      |
-|  +---------------------+   |  "Last time you made me  |                      |
-|  | MOOSE WANTS HIS     |   |   fall down. I've been   |   [ bead curtain ]   |
-|  | CLUB BACK.          |   |   thinking about it in   |    BACK ROOM         |
-|  +---------------------+   |   the bath."             |                      |
-|  +---------------------+   |                          |                      |
-|  | PHOTO FINISH: YOU BY|   |  ✉ Dee: you again. stay  |                      |
-|  | A WHEEL OVER INES   |   |    out of my lane.       |                      |
-|  +---------------------+   |                          |                      |
-|  [ poster: ad ]            |                          |                      |
-+----------------------------+--------------------------+----------------------+
-|  ► ROUTE BOARD        GARAGE        BACK ROOM                 NEXT: SLAG ROW |
-+------------------------------------------------------------------------------+
-```
+**Layout.** A fixed 1672×941 stage, scaled to the window. Left: the bar at dusk turning to night, one rider on the stool with the speech sticker, the wordmark and badge above. Centre: the season standings sheet, two note stickers, a rider's bill, and a sticker. Right: the flyer of the chosen road. Top strip: the player's status. Bottom strip: the navigation and the road picker. `DESIGN.md` describes the plates and slots.
 
 **Text.**
 
@@ -112,25 +76,24 @@ Title
   - `ROADBLOCKS START THIS WEEK. RIDE ACCORDINGLY. V.` (when roadblocks ship)
   - `YOU LEFT A RACE. THE BIKE DIDN'T MAKE IT HOME. V.` (after a race settled on reload)
   - `THE GARAGE TOOK THE {bike}. YOU RIDE THE GUTTER PUP NOW. STAY ON IT.` (after a repossession)
-- The rival at the bar: the one with the strongest memory of the last race. Shows their name and the pre-race line chosen by the memory rules.
+- The rider on the stool: the boss of the chosen road, the home rider with the most season wins. Their name and `BOSS OF {road}` (or `HOLDS A GRUDGE` / `ON YOUR SIDE`) sit on yellow tape under the speech sticker, with their taunt, or their grudge taunt when they hold one against the player.
+- Vic, before the first race of a career: `You've got $1,500, a Halden Wren, and nobody knows your name.` / `Top three on all five roads and you move up.` / `Don't go broke.`, one line per click on the speech sticker, tagged `{n} / 3`, with the stool empty. Each line plays once per page load.
 - Text message line (template): `✉ {Rival}: {message}`. Shown when the story has one for this point.
-- Navigation: `ROUTE BOARD` · `GARAGE` · `BACK ROOM` and, right aligned, `NEXT: {road}` naming the first unqualified road.
+- Navigation: `RIDE` · `GARAGE` · `BACK ROOM` and, right aligned, the road picker `◄ {road} ►`. It opens on the first unqualified road and steps through the open roads with Up and Down, its arrows, or a click on the flyer. A qualified road's flyer carries the stamp `QUALIFIED {place}`.
 - When in debt: a red strip under the status, `YOU OWE ${debt}. PRIZE MONEY PAYS IT FIRST. LIMIT ${limit}.`
 - Envelope (level 2 only, once): a manila envelope pinned to the board. Selecting it opens a card: `Breakwater Run. Behind the boy. V.` / `$1,500 inside.` Buttons `TAKE IT` / `LEAVE IT`.
 
-**Buttons.** `ROUTE BOARD` (primary), `GARAGE`, `BACK ROOM`. The board notes and the envelope are selectable. Escape returns to Title.
+**Buttons.** `RIDE` (primary), `GARAGE`, `BACK ROOM`. The envelope note is selectable. Escape opens the Back Room.
 
-**In.** From Title, Results, Level Up, Garage, Back Room. Cross-fade.
+**In.** From boot, Results, Garage, Back Room. Cross-fade.
 
-**Out.** To Route Board, Garage, Back Room, Title.
+**Out.** `RIDE` goes to the ride-out card for the chosen road. Also to Garage and Back Room.
 
 **Data.** Career state: cash, level, qualified roads, bike, season points for the ten rivals and the player, rival memory (which rival to seat at the bar and which line), story flags, board notes generated from the last settled race's incidents.
 
-**Back Room.** The options screen, drawn as a store room behind the curtain with a jukebox and a fuse box. Heading `BACK ROOM`. Items: `MUSIC VOLUME`, `EFFECTS VOLUME`, `JUKEBOX` (pick the menu track), `CONTROLS` (shows the bindings), `GRAPHICS` (`AUTO`, `SHARP`, `FAST`), `REDUCE CAMERA SHAKE` (on/off), `ERASE CAREER`. Button `BACK`. It reads and writes local settings only.
-
 ## 3. Route Board
 
-**Purpose.** Pick the next road. Show each road's character, length at this level, and whether it is qualified.
+**Purpose.** Single Race only: pick a road, a level, and a bike. Career races pick their road on the bar's flyer. The career parts of this section describe the screen before October 23, 2026.
 
 **Layout.** A corkboard filling the screen. Five postcards pinned at slight angles in a loose row across the middle, each a flat illustration of the region in its palette. The selected card lifts, straightens, and grows. Left column under the heading: the selected road's description. Bottom strip: road facts and the race button. A qualified road has a red rubber stamp across its card.
 
@@ -155,9 +118,9 @@ Title
 
 **Buttons.** `RACE` (primary), `BACK`. Left and right move between cards.
 
-**In.** From Clubhouse (or Title in Single Race). The cards drop onto the board one after another, 60 ms apart.
+**In.** From the Back Room. The cards drop onto the board one after another, 60 ms apart.
 
-**Out.** `RACE` goes to Pre-race. `BACK` goes to the Clubhouse, or to Title in Single Race.
+**Out.** `RACE` goes to the ride-out card. `BACK` goes to the Back Room.
 
 **Data.** Level; for each road its plan at this level (length, `trafficPerKilometre`), police count from the level table, qualified flag and best place, home rivals, first roadblock distance if Dee's tip is active. Every road has two lanes, so no lane count is shown. Traffic label: under 6 per km is LIGHT, 6 to 9 STEADY, 10 or more HEAVY.
 
@@ -221,48 +184,15 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Data.** Catalogue (name, class, price, pitch, `BikeSpec`), unlock level per bike, owned bike, cash, trade-in (60% of the owned bike's price), debt. The bars are computed from the `BikeSpec`: top speed from power and drag; launch from the 0 to 100 km/h time; steering from `steerRate` and `lateralSpeed`; bend grip from `curvePush`, where a larger `curvePush` is a longer bar because the bike is pushed out less; brakes from `brakeDeceleration`. The Gutter Pup is the one Featherweight with a short steering bar.
 
-## 5. Pre-race
+## 5. Ride-out
 
-**Purpose.** Show who is on the grid, let one rival talk, and start the race.
+**Purpose.** Show who is on the grid while the road loads, then start. It has no buttons.
 
-**Layout.** Left half: the road's postcard, large, with its name and facts. Right half: the grid as two columns of four rider cards, in grid order, each a portrait in the rider's colours with name, bike, and weapon icon. One card is enlarged: the rival with the strongest memory of the player, with their taunt in a speech panel under the grid. The player's card is outlined in yellow. Bottom strip: what the player is riding and carrying.
+**Layout.** Left: the road's flyer. Right: `LEVEL {n} · TOP 3 QUALIFIES` (or `SINGLE RACE`), the road name in the stencil face, `{km} KM · {cops} COPS`, the grid as a list of fifteen rows (slot, name, bike and weapon, `HOLDS A GRUDGE` or `ON YOUR SIDE`), `YOU` last on a yellow bar, the rival with the strongest memory and their taunt, and the status `LOADING THE ROAD`, then `RIDE`.
 
-```
-+------------------------------------------------------------------------------+
-| SLAG ROW · LEVEL 2                                   5.15 KM · 2 COPS · TOP 3|
-+--------------------------------------+---------------------------------------+
-|                                      |  1 [##] DEE         2 [##] MOOSE      |
-|                                      |    Sesta 600 ⛓       Kite 500 ▬       |
-|        [ postcard: Slag Row ]        |  3 [##] JUNO        4 [##] LYLE       |
-|                                      |    Sesta 600          Kite 500 ╱      |
-|                                      |  5 [##] INES        6 [##] COACH      |
-|                                      |    Sesta 600          Kite 500 ─      |
-|  Two lanes and a lot of nothing,     |  7 [##] GUS         8 [YOU]           |
-|  then a right angle.                 |    Wren 400           Kite 500        |
-|                                      +---------------------------------------+
-|                                      | MOOSE: "Last time you made me fall    |
-|                                      | down. I've been thinking about it in  |
-|                                      | the bath."                            |
-+--------------------------------------+---------------------------------------+
-| YOU: HALDEN KITE 500 · CARRYING: CLUB (4 HITS LEFT)                 ► START  |
-+------------------------------------------------------------------------------+
-```
+**In.** From the bar's `RIDE`, the route board's `RACE`, or Results' `RACE AGAIN`.
 
-**Text.**
-
-- Heading: `{ROAD} · LEVEL {n}`
-- Facts: `{km} KM · {cops} COPS · TOP 3 QUALIFIES` (level 1 with one cop reads `1 COP`)
-- Rider cards: grid number, first name in capitals, bike short name, weapon icon if armed.
-- Small tag on a card when the memory rules set a grudge: `HOLDS A GRUDGE`. On Dee from level 3: `ON YOUR SIDE`.
-- Speech panel: `{RIVAL}: "{taunt}"`
-- Bottom strip: `YOU: {bike}` · `CARRYING: {weapon} ({hits} HITS LEFT)` or `CARRYING: NOTHING`
-- Countdown, over the race view after `START`: `3` `2` `1` `GO`
-
-**Buttons.** `START` (primary), `BACK` (returns to the Route Board; the field is kept for that road until the race is run).
-
-**In.** From the Route Board, the postcard slides left and the grid cards deal in.
-
-**Out.** `START` fades to the race view with the riders on the grid and plays the countdown. In a career race the active-race record is written to the save when the countdown ends. From that tick, leaving the page counts as a wreck.
+**Out.** The race starts on its own once the road is prepared and the card has shown for 2.2 s. Escape goes back to the bar, or to the route board in Single Race. In a career race the active-race record is written to the save when the countdown ends. From that tick, leaving the page counts as a wreck.
 
 **Grid order.** The player starts in slot 15, at the back, so every race opens with a pack to ride through. Rivals fill slots 1 to 14 in an order drawn from the race seed, across every lane of the road in rows 7 m apart (`game-design.md` section 9).
 
@@ -433,42 +363,30 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 - Repossession notice, when debt passed the bike's credit limit: `THE GARAGE TOOK THE {bike}. IT SOLD FOR ${trade-in}, PAID WHAT YOU OWED, AND LEFT YOU ${cash}. YOU RIDE THE GUTTER PUP NOW. IT CAN'T OUTRUN A COP. STAY ON IT.` If the sale did not cover the debt the middle sentence reads `IT SOLD FOR ${trade-in}. YOU STILL OWE ${debt}.`
 - Career over, when the player is on the Pup (before or after a repossession) and still owes more than $750: `YOU OWE ${debt} ON A GUTTER PUP. VIC WANTS A WORD.`
 
-**Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to Pre-race). `RACE AGAIN` is not shown when the career is over, when this race qualified the fifth road, or when the finale was just finished in the top three. On a road that this race qualified, it carries the small print `REPEAT RUN: HALF PAY`.
+**Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to the ride-out card). `RACE AGAIN` is not shown when the career is over, when this race qualified the fifth road, or when the finale was just finished in the top three. On a road that this race qualified, it carries the small print `REPEAT RUN: HALF PAY`.
 
 **In.** From Finish, Wrecked, or Busted, and from a career quit. Never before the settlement write. The rows count in from fifteenth to first, 80 ms apart; the ledger adds up after them.
 
-**Out.** `CONTINUE` goes to Game Over if the debt check ended the career, to the ending if the player finished the finale in the top three, to Level Up if this race qualified the fifth road of levels 1 to 4, and otherwise to the Clubhouse. There is no interstitial ad on the way. A reload on this screen opens the Clubhouse, or Game Over if the career is over, because everything shown here is already in the save.
+**Out.** `CONTINUE` goes to Game Over if the debt check ended the career, to the ending if the player finished the finale in the top three, to the bar with Vic's promotion line if this race qualified the fifth road of levels 1 to 4, and otherwise to the Clubhouse. There is no interstitial ad on the way. A reload on this screen opens the Clubhouse, or Game Over if the career is over, because everything shown here is already in the save.
 
 **Single Race.** No ledger, no prize column, no qualification, and no stamps: the outcome reads `{place}` alone and the right column shows only the rival's line. `CONTINUE` goes back to the Single Race menu and `RACE AGAIN` restarts the same road. Nothing is written to the career.
 
 **Data.** The settled result: places, each rider's finish tick or distance behind at the settlement tick, modes, the prize paid (full, half, or none), the bill, any repossession, cash before and after, qualified count, incidents from the race's events up to the settlement tick, and the post-race line chosen by the memory rules.
 
-## 11. Level Up
+## 11. Promotion
 
-**Purpose.** Mark the promotion briefly and say what is new.
+**Purpose.** Mark the promotion briefly and say what is new, in the bar.
 
-**Layout.** The corkboard, close up. The five postcards, each with its `QUALIFIED` stamp, slide together into a stack. The player's Polaroid moves up one row. A typed card from Vic lists what is new. One screen, no ceremony.
+**In the bar.** After a race that qualifies the fifth road of levels 1 to 4, Continue on Results returns to the bar. The stool is empty and Vic speaks the level's line in the speech sticker until it is clicked:
 
-**Text.**
+- Level 2: `Longer roads. Two cops. Bigger purses. The garage got a delivery.`
+- Level 3: `Longer again. Three cops, and the new ones are quicker.`
+- Level 4: `Four cops. Everyone's armed now. Try to keep up.`
+- Level 5: `Five roads left. The Ridge is last. She'll be waiting.`
 
-- Heading: `LEVEL {n}`
-- Level name under it: `THE ENVELOPE`, `DEE'S TIP`, `THE BADGE`, `THE LONG RIDGE`
-- Vic's card, by level reached:
-  - Level 2: `Longer roads. Two cops. Bigger purses. The garage got a delivery. V.`
-  - Level 3: `Longer again. Three cops and they've started parking across the road. V.` Until roadblocks ship, the alternate copy is `Longer again. Three cops, and the new ones are quicker. V.`
-  - Level 4: `Four cops. Everyone's armed now. Try to keep up. V.`
-  - Level 5: `Five roads left. The Ridge is last. She'll be waiting. V.`
-- List: `ROADS +1.15 KM` · `POLICE {n}` · `1ST PLACE NOW PAYS ${prize}` · `NEW AT THE GARAGE: {bikes}`
+The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `New at the garage: {bikes}.` when the level unlocks bikes, signed `V.`. The status strip shows the new level name.
 
-**Buttons.** `BACK TO THE LOWSIDE` (primary).
-
-**In.** From Results. The stamps land one at a time with a thump.
-
-**Out.** To the Clubhouse, where the level's story screen plays.
-
-**Data.** New level, its police count, first prize, the bikes it unlocks.
-
-**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the board with the final Polaroids, three lines of text from `game-design.md` section 11 for the ending earned, the season's record (races, wins, knockdowns, busts, money earned), and `BACK TO TITLE`.
+**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the board with the final Polaroids, three lines of text from `game-design.md` section 11 for the ending earned, the season's record (races, wins, knockdowns, busts, money earned), and `BACK ROOM`.
 
 ## 12. Game Over
 
@@ -484,7 +402,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Buttons.** `NEW CAREER` (primary), `TITLE`. There is no `RACE AGAIN`, no continue, and no ad offer.
 
-**In.** From Results, slow fade (600 ms). Also straight from Title or a page load whenever the save is marked over.
+**In.** From Results, slow fade (600 ms). Also straight from the Back Room or a page load whenever the save is marked over.
 
 **Out.** `NEW CAREER` replaces the save and plays the new-career intro. `TITLE` leaves the finished career in the save, where it can only reopen this screen.
 
@@ -513,7 +431,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Buttons.** `READY` / `NOT READY` (primary for players), `START` (host), `LEAVE`.
 
-**In.** From Title, or straight from an invite link.
+**In.** From the bar once it ships, or straight from an invite link.
 
 **Out.** To the race when the Durable Object sends the start message. After Results, back here with the same room.
 
