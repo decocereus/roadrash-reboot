@@ -5,7 +5,9 @@ import { TAGLINE, WORDMARK } from "../../career/copy.ts";
 
 export const BootScreen = () => (
   <Screen className="bg-ink flex flex-col items-center justify-center gap-3">
-    <Stencil tone="text">{WORDMARK}</Stencil>
-    <p className="text-quote text-muted font-semibold">{TAGLINE}</p>
+    <Stencil>{WORDMARK}</Stencil>
+    <p className="font-display text-quote text-paper/60 font-bold tracking-wide uppercase">
+      {TAGLINE}
+    </p>
   </Screen>
 );

@@ -18,7 +18,7 @@ import {
 } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
 import type { StageBox } from "./clubhouse-stage.tsx";
-import { RuledSheet, stampStyle } from "./clubhouse-wall.tsx";
+import { stampStyle, WrittenSheet } from "./clubhouse-wall.tsx";
 import { useEscape } from "./shared.tsx";
 
 const BACKDROP = { h: 941, w: 1672, x: 0, y: 0 } as const;
@@ -27,12 +27,6 @@ const BROKE_RECORD = { h: 302, w: 420, x: 1230, y: 540 } as const;
 const ENDING_SHEET = { h: 740, w: 570, x: 548, y: 104 } as const;
 const ENDING_STAMP = { h: 146, w: 500, x: 1146, y: 104 } as const;
 const ENDING_RECORD = { h: 403, w: 560, x: 1100, y: 262 } as const;
-
-const FIRST_LINE = 206;
-const LINE_GAP = 45.2;
-const MARGIN = 73;
-const RIGHT_EDGE = 50;
-const SETTLE = 7;
 
 const bestBike = (garage: readonly BikeId[]): string => {
   const [best] = garage.toSorted(
@@ -43,51 +37,6 @@ const bestBike = (garage: readonly BikeId[]): string => {
 
 const plural = (count: number, one: string, many: string): string =>
   `${count} ${count === 1 ? one : many}`;
-
-const WrittenSheet = ({
-  box,
-  scale,
-  title,
-  text,
-}: {
-  readonly box: StageBox;
-  readonly scale: number;
-  readonly title: string;
-  readonly text: string;
-}) => {
-  const gap = LINE_GAP * scale;
-  const left = box.x + MARGIN * scale + 14;
-  const top = box.y + FIRST_LINE * scale + SETTLE;
-  return (
-    <section aria-label={title}>
-      <RuledSheet box={box} scale={scale} />
-      <h1
-        className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black uppercase"
-        style={{
-          ...place({ h: 58, w: box.w - 90, x: box.x + 40, y: box.y + 34 }),
-          fontSize: stagePx(38),
-        }}
-      >
-        {title}
-      </h1>
-      <p
-        className="font-display text-ink/85 -rotate-[0.4deg] font-bold"
-        style={{
-          ...place({
-            h: box.h * 0.6,
-            w: box.x + box.w - RIGHT_EDGE * scale - 20 - left,
-            x: left,
-            y: top,
-          }),
-          fontSize: stagePx(gap * 0.72),
-          lineHeight: stagePx(gap),
-        }}
-      >
-        {text}
-      </p>
-    </section>
-  );
-};
 
 const RecordLine = ({
   label,

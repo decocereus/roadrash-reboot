@@ -339,6 +339,7 @@ Source files:
 - `apps/web/src/components/screens/clubhouse-stage.tsx`
 - `apps/web/src/components/screens/clubhouse-wall.tsx`
 - `apps/web/src/components/screens/clubhouse.tsx`
+- `apps/web/src/components/screens/confirm.tsx`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/game-over.tsx`
 - `apps/web/src/components/screens/garage.tsx`
@@ -772,41 +773,16 @@ The shared components and global styles in `packages/ui`, and the `/kit` page th
 
 Source files:
 
-- `apps/web/src/components/kit/asking.tsx`
-- `apps/web/src/components/kit/bills.tsx`
-- `apps/web/src/components/kit/board.tsx`
-- `apps/web/src/components/kit/fixtures.ts`
-- `apps/web/src/components/kit/garage.tsx`
-- `apps/web/src/components/kit/hud.tsx`
-- `apps/web/src/components/kit/meters.tsx`
-- `apps/web/src/components/kit/notices.tsx`
-- `apps/web/src/components/kit/riders.tsx`
-- `apps/web/src/components/kit/screen-demo.tsx`
-- `apps/web/src/components/kit/section.tsx`
-- `apps/web/src/components/kit/tokens.tsx`
-- `apps/web/src/components/kit/words.tsx`
+- `apps/web/src/components/kit/kit-board.tsx`
+- `apps/web/src/components/kit/paper-boards.tsx`
+- `apps/web/src/components/kit/race-board.tsx`
 - `apps/web/src/routes/kit.tsx`
-- `packages/ui/src/components/ad-slot.tsx`
-- `packages/ui/src/components/bar.tsx`
-- `packages/ui/src/components/bike-card.tsx`
-- `packages/ui/src/components/confirm.tsx`
-- `packages/ui/src/components/cork-note.tsx`
 - `packages/ui/src/components/dial.tsx`
-- `packages/ui/src/components/heading.tsx`
-- `packages/ui/src/components/invoice.tsx`
-- `packages/ui/src/components/ledger.tsx`
 - `packages/ui/src/components/menu-list.tsx`
 - `packages/ui/src/components/money.tsx`
 - `packages/ui/src/components/notice.tsx`
-- `packages/ui/src/components/panel.tsx`
-- `packages/ui/src/components/paper.tsx`
-- `packages/ui/src/components/postcard.tsx`
-- `packages/ui/src/components/region-scene.tsx`
-- `packages/ui/src/components/rider-card.tsx`
 - `packages/ui/src/components/screen.tsx`
-- `packages/ui/src/components/stat.tsx`
 - `packages/ui/src/components/stencil.tsx`
-- `packages/ui/src/components/ticket.tsx`
 - `packages/ui/src/styles/globals.css`
 - `packages/ui/src/utils.ts`
 

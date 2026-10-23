@@ -1,7 +1,6 @@
 import { billConsequence } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { repairBill } from "@racer/career/tables";
-import { Confirm } from "@racer/ui/components/confirm";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useState, useSyncExternalStore } from "react";
@@ -13,6 +12,7 @@ import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
 import { BarStrip } from "./bar-chrome.tsx";
 import { Stage, stagePx } from "./clubhouse-stage.tsx";
+import { Confirm } from "./confirm.tsx";
 import { PinnedList } from "./pinned-list.tsx";
 import { SettingsScreen } from "./settings.tsx";
 import { useEscape } from "./shared.tsx";
