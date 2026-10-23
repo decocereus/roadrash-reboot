@@ -1,0 +1,468 @@
+import type { FeatureEntry } from "./feature-map.ts";
+
+const simTick = [
+  "sim.ticksPerSecond",
+  "sim.tick.p95",
+  "sim.tick.p99",
+  "sim.allocatedBytesPerTick",
+];
+
+const sceneCounts = [
+  "render.calls.max",
+  "render.triangles.max",
+  "render.textures.max",
+];
+
+export const playerFeatures: readonly FeatureEntry[] = [
+  {
+    docs: [
+      "docs/architecture.md#riding-model",
+      "docs/handling-matrix.md#fields",
+      "docs/design/game-design.md#6-bike-catalogue",
+    ],
+    id: "riding",
+    kind: "feature",
+    owns: [
+      "packages/sim/src/rider.ts",
+      "packages/sim/src/rider-drive.ts",
+      "packages/sim/src/engine.ts",
+      "packages/sim/src/bikes.ts",
+      "packages/sim/src/riding.test.ts",
+      "packages/sim/src/braking-and-cornering.test.ts",
+      "packages/sim/src/engine-and-tuck.test.ts",
+      "apps/web/src/game/input.ts",
+      "apps/web/test/input.test.ts",
+    ],
+    perf: simTick,
+    start: [
+      "packages/sim/src/rider-drive.ts",
+      "packages/sim/src/engine.ts",
+      "apps/web/src/game/input.ts",
+    ],
+    summary:
+      "How the bike answers the keys and the gamepad: throttle, brakes, steering, the push of a bend, grass, gears and the tuck, with each bike's numbers in its `BikeSpec`.",
+    title: "Riding, handling and controls",
+    verify: ["riding-and-fighting.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#riding-model",
+      "docs/design/game-design.md#condition-by-speed",
+      "docs/design/game-design.md#the-fall-by-speed",
+    ],
+    id: "crashes",
+    kind: "feature",
+    owns: [
+      "packages/sim/src/rider-crash.ts",
+      "packages/sim/src/rider-collisions.ts",
+      "packages/sim/src/rider-recovery.ts",
+      "packages/sim/src/crash-and-recovery.test.ts",
+      "packages/sim/src/on-foot.test.ts",
+    ],
+    perf: simTick,
+    start: [
+      "packages/sim/src/rider-collisions.ts",
+      "packages/sim/src/rider-crash.ts",
+      "packages/sim/src/rider-recovery.ts",
+    ],
+    summary:
+      "Hitting a car, a prop or another rider, the throw and the slide, bike condition, and the run back to the bike on foot until the rider remounts.",
+    title: "Crashes and getting back on",
+    verify: ["riding-and-fighting.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#riding-model",
+      "docs/design/tracks.md#the-crest-rule",
+      "docs/design/tracks.md#ramps-and-humps",
+    ],
+    id: "jumps",
+    kind: "feature",
+    owns: [
+      "packages/track/src/features.ts",
+      "packages/sim/src/rider-flight.ts",
+      "packages/sim/src/jumps.test.ts",
+      "apps/web/src/game/ramp*.ts",
+      "apps/web/src/game/puffs.ts",
+    ],
+    perf: simTick,
+    start: [
+      "packages/track/src/features.ts",
+      "packages/sim/src/rider-flight.ts",
+      "apps/web/src/game/ramps.ts",
+    ],
+    summary:
+      "Ramps placed on the road, crests that launch the bike, flight, judged landings, and the ramp models and the landing dust and sparks drawn for them.",
+    title: "Jumps, ramps and landings",
+    verify: ["jumps.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#hazards-as-race-state",
+      "docs/design/tracks.md#hazards",
+      "docs/design/tracks.md#where-hazards-lie",
+    ],
+    id: "hazards",
+    kind: "feature",
+    owns: [
+      "packages/track/src/hazards.ts",
+      "packages/sim/src/hazard*.ts",
+      "apps/web/src/game/hazards.ts",
+    ],
+    perf: simTick,
+    start: [
+      "packages/track/src/hazards.ts",
+      "packages/sim/src/hazards.ts",
+      "apps/web/src/game/hazards.ts",
+    ],
+    summary:
+      "Oil slicks, rocks and potholes: where the track schedules them, what touching one does to a bike by speed and lean, and how each is drawn.",
+    title: "Road hazards",
+    verify: [],
+  },
+  {
+    docs: ["docs/architecture.md#tracks"],
+    id: "traffic",
+    kind: "feature",
+    owns: ["packages/sim/src/traffic.ts", "packages/sim/src/lanes.test.ts"],
+    perf: simTick,
+    start: ["packages/sim/src/traffic.ts"],
+    summary:
+      "Same-way and oncoming cars in every lane, spawned from each road's traffic density and kept clear of the start; the cars are drawn by `createFleet` in the riders-on-screen entry.",
+    title: "Traffic",
+    verify: [],
+  },
+  {
+    docs: [
+      "docs/architecture.md#riding-model",
+      "docs/design/game-design.md#7-weapons",
+    ],
+    id: "combat",
+    kind: "feature",
+    owns: [
+      "packages/sim/src/combat.ts",
+      "packages/sim/src/weapons.ts",
+      "packages/sim/src/combat.test.ts",
+      "packages/sim/src/weapons-and-grudges.test.ts",
+    ],
+    perf: simTick,
+    start: ["packages/sim/src/combat.ts", "packages/sim/src/weapons.ts"],
+    summary:
+      "Punches, kicks and weapon swings: reach, timing, damage, shove and stun, stealing a weapon with a kick, and grudges between riders.",
+    title: "Fighting and weapons",
+    verify: ["riding-and-fighting.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#riding-model",
+      "docs/design/game-design.md#8-police",
+    ],
+    id: "police",
+    kind: "feature",
+    owns: ["packages/sim/src/police*.ts", "packages/career/src/police*.ts"],
+    perf: simTick,
+    start: ["packages/sim/src/police.ts"],
+    summary:
+      "Parked cops along the road, the chase, the bust window and the arrest, with the measured bust rates that the career's police balance test holds.",
+    title: "Police and busts",
+    verify: ["riding-and-fighting.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#riding-model",
+      "docs/design/game-design.md#pilot-rules-two-riders-need",
+    ],
+    id: "pilot",
+    kind: "feature",
+    owns: ["packages/sim/src/pilot*.ts", "apps/web/test/pilot-replay*.ts"],
+    perf: simTick,
+    start: [
+      "packages/sim/src/pilot.ts",
+      "packages/sim/src/pilot-corners.ts",
+      "packages/sim/src/pilot-lines.ts",
+    ],
+    summary:
+      "The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, with its memory kept per race.",
+    title: "AI riders (the pilot)",
+    verify: [],
+  },
+  {
+    docs: [
+      "docs/architecture.md#race-setup-and-cast",
+      "docs/design/game-design.md#9-rival-cast",
+      "docs/design/game-design.md#10-memory",
+    ],
+    id: "rivals",
+    kind: "feature",
+    owns: [
+      "packages/sim/src/cast.ts",
+      "packages/sim/src/palette.ts",
+      "packages/career/src/field.ts",
+      "packages/career/src/memory.ts",
+      "packages/career/src/lines.ts",
+      "packages/career/src/field-and-rivals.test.ts",
+    ],
+    perf: [],
+    start: [
+      "packages/sim/src/cast.ts",
+      "packages/career/src/field.ts",
+      "packages/career/src/lines.ts",
+    ],
+    summary:
+      "The sixteen rivals and two officers, their colours, who is drawn into a career race and on which bike, what each rival remembers, and every line the cast says.",
+    title: "Rivals, the field and their lines",
+    verify: ["career.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#career",
+      "docs/design/game-design.md#5-economy",
+    ],
+    id: "career-money",
+    kind: "feature",
+    owns: [
+      "packages/career/src/tables.ts",
+      "packages/career/src/shop.ts",
+      "packages/career/src/settle.ts",
+      "packages/career/src/outcome.ts",
+      "packages/career/src/result.ts",
+      "packages/career/src/economy-and-shop.test.ts",
+      "packages/career/src/debt-and-repair.test.ts",
+      "packages/career/src/settlement.test.ts",
+      "packages/career/src/last-result.test.ts",
+    ],
+    perf: [],
+    start: [
+      "packages/career/src/settle.ts",
+      "packages/career/src/tables.ts",
+      "packages/career/src/shop.ts",
+    ],
+    summary:
+      "Prizes, repair bills, fines, debt and the rewarded ad, buying and selling bikes, and how a finished, wrecked, busted or quit race is settled into the ledger.",
+    title: "Career money and settlement",
+    verify: ["career.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#career",
+      "docs/design/game-design.md#4-career-structure",
+      "docs/design/game-design.md#11-story",
+    ],
+    id: "career-progression",
+    kind: "feature",
+    owns: [
+      "packages/career/src/state.ts",
+      "packages/career/src/season.ts",
+      "packages/career/src/story.ts",
+      "packages/career/src/career-fixtures.ts",
+      "packages/career/src/progression-and-story.test.ts",
+      "packages/career/src/season.test.ts",
+    ],
+    perf: [],
+    start: [
+      "packages/career/src/state.ts",
+      "packages/career/src/story.ts",
+      "packages/career/src/season.ts",
+    ],
+    summary:
+      "The career state itself, levels, qualification and promotion, the season board, the story beats, the envelope and the endings.",
+    title: "Career levels, season and story",
+    verify: ["career.md"],
+  },
+  {
+    docs: [
+      "docs/design/screens.md#flow",
+      "docs/design/game-design.md#3-modes",
+      "DESIGN.md#components",
+    ],
+    id: "menus",
+    kind: "feature",
+    owns: [
+      "apps/web/src/components/screens/**",
+      "apps/web/src/components/game-shell.tsx",
+      "apps/web/src/components/use-flow.ts",
+      "apps/web/src/assets/*-art.ts",
+      "apps/web/src/game/showroom.ts",
+      "apps/web/src/styles.css",
+      "apps/web/src/career/bar.ts",
+      "apps/web/src/career/bike-stats.ts",
+      "apps/web/src/career/copy.ts",
+      "apps/web/src/career/flow.ts",
+      "apps/web/src/career/format.ts",
+      "apps/web/src/career/notes.ts",
+    ],
+    perf: ["bytes.route.root.gzip", "bytes.route.root.raw"],
+    start: [
+      "apps/web/src/components/use-flow.ts",
+      "apps/web/src/components/game-shell.tsx",
+      "apps/web/src/career/flow.ts",
+    ],
+    summary:
+      "Every screen React draws around a race, from the bar and the back room to the garage, the ride-out card, pause and results, with the screen flow, the menu art and the copy.",
+    title: "Menus and screens",
+    verify: ["single-race.md", "career.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#browser-client",
+      "docs/design/screens.md#6-race-hud",
+      "docs/design/art-direction.md#hud-style",
+      "DESIGN.md#speedometer",
+    ],
+    id: "hud",
+    kind: "feature",
+    owns: [
+      "apps/web/src/game/hud*.ts",
+      "apps/web/src/game/race-feedback.ts",
+      "apps/web/src/hud-feed.ts",
+      "apps/web/test/hud-cadence.test.ts",
+    ],
+    perf: [],
+    start: [
+      "apps/web/src/game/hud.ts",
+      "apps/web/src/game/race-feedback.ts",
+      "apps/web/src/hud-feed.ts",
+    ],
+    summary:
+      "The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, rival speech and the cop warning; the React HUD screen sits with the menus.",
+    title: "Race HUD, notices and speech",
+    verify: ["riding-and-fighting.md", "single-race.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#browser-client",
+      "docs/design/art-direction.md#camera-rules",
+    ],
+    id: "camera",
+    kind: "feature",
+    owns: ["apps/web/src/game/chase-camera.ts"],
+    perf: [],
+    start: ["apps/web/src/game/chase-camera.ts"],
+    summary:
+      "The chase camera behind the player's bike: its framing along the road, the field of view that widens with speed, the buffet, and the drop when the rider tucks.",
+    title: "Chase camera",
+    verify: [],
+  },
+  {
+    docs: [
+      "docs/architecture.md#browser-client",
+      "docs/design/art-direction.md#audio-direction",
+    ],
+    id: "audio",
+    kind: "feature",
+    owns: ["apps/web/src/game/audio.ts"],
+    perf: [],
+    start: ["apps/web/src/game/audio.ts"],
+    summary:
+      "The synthesized engine note that follows the simulation's revs and dips at each upshift, and the race's one-shot sounds, such as swings, hits, crashes and the siren.",
+    title: "Engine and race sound",
+    verify: [],
+  },
+  {
+    docs: [
+      "docs/architecture.md#browser-client",
+      "docs/design/art-direction.md#palette",
+      "docs/design/art-direction.md#regions",
+    ],
+    id: "world",
+    kind: "feature",
+    owns: [
+      "apps/web/src/game/world.ts",
+      "apps/web/src/game/city.ts",
+      "apps/web/src/game/ground.ts",
+      "apps/web/src/game/roadside.ts",
+      "apps/web/src/game/looks.ts",
+      "apps/web/src/game/facade-texture.ts",
+      "apps/web/src/game/road-texture.ts",
+      "apps/web/src/game/shop-texture.ts",
+      "apps/web/src/game/sky-texture.ts",
+      "apps/web/src/game/sign-*.ts",
+      "apps/web/src/game/texture-canvas.ts",
+    ],
+    perf: sceneCounts,
+    start: [
+      "apps/web/src/game/world.ts",
+      "apps/web/src/game/looks.ts",
+      "apps/web/src/game/city.ts",
+    ],
+    summary:
+      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player.",
+    title: "Roads, cities and scenery on screen",
+    verify: [],
+  },
+  {
+    docs: [
+      "docs/architecture.md#browser-client",
+      "docs/design/art-direction.md#riders-and-bikes",
+    ],
+    id: "riders-on-screen",
+    kind: "feature",
+    owns: [
+      "apps/web/src/game/actors.ts",
+      "apps/web/src/game/rider-*.ts",
+      "apps/web/src/game/figure-*.ts",
+      "apps/web/src/career/colours.ts",
+    ],
+    perf: sceneCounts,
+    start: [
+      "apps/web/src/game/rider-views.ts",
+      "apps/web/src/game/rider-figure.ts",
+      "apps/web/src/game/actors.ts",
+    ],
+    summary:
+      "The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, and the instanced fleet of cars.",
+    title: "Riders, bikes and cars on screen",
+    verify: ["riding-and-fighting.md"],
+  },
+  {
+    docs: ["docs/architecture.md#tracks", "docs/design/tracks.md#summary"],
+    id: "roads",
+    kind: "feature",
+    owns: [
+      "packages/track/src/tracks/**",
+      "packages/track/src/regions.ts",
+      "packages/track/src/roads.test.ts",
+    ],
+    perf: [],
+    start: [
+      "packages/track/src/tracks/slag-row.ts",
+      "packages/track/src/regions.ts",
+    ],
+    summary:
+      "The five roads and their regions: each road's sections, crests, ramps, roadblock spots and the blocks that levels 2 to 5 add.",
+    title: "The five roads",
+    verify: [],
+  },
+  {
+    docs: [
+      "docs/architecture.md#browser-client",
+      "docs/observability.md#frame-profiles",
+    ],
+    id: "frame-pacing",
+    kind: "feature",
+    owns: [
+      "apps/web/src/game/governor*.ts",
+      "apps/web/src/game/pacer.ts",
+      "apps/web/src/game/quality-ladder.ts",
+      "apps/web/src/game/fps-meter.ts",
+      "apps/web/test/render-quality.test.ts",
+    ],
+    perf: [
+      "frame.interval.p50",
+      "frame.interval.p95",
+      "frame.interval.p99",
+      "frame.missedFraction",
+      "main.longTask.blockingMs",
+      "main.longTask.count",
+    ],
+    start: [
+      "apps/web/src/game/governor.ts",
+      "apps/web/src/game/pacer.ts",
+      "apps/web/src/game/quality-ladder.ts",
+    ],
+    summary:
+      "Holding 60 frames a second: the pacer, the governor that judges late frames, the quality rungs it steps down, the frame-rate setting and the `?fps` overlay.",
+    title: "Frame rate and quality",
+    verify: ["frame-rate.md"],
+  },
+];

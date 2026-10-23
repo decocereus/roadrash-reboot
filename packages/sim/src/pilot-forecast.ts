@@ -82,7 +82,11 @@ export const gatherInSight = (state: RaceState, rider: RiderState): void => {
   inSight.length = 0;
   const sight = sightOf(rider);
   let nearest = -1;
-  for (const [index, hazard] of state.hazards.entries()) {
+  for (let index = 0; index < state.hazards.length; index += 1) {
+    const hazard = state.hazards[index];
+    if (!hazard) {
+      continue;
+    }
     const passed = hazard.s + hazard.halfLength + BIKE_HALF_LENGTH < rider.s;
     const ahead = metresToContact(rider, hazard);
     if (!passed && ahead <= sight) {

@@ -1,10 +1,9 @@
-import { bikes } from "@racer/sim/bikes";
+import { bikeIds, bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import type { BikeClass } from "@racer/sim/state";
 
 import type { CareerState } from "./state.ts";
 import {
-  catalogue,
   repairBill,
   REPOSSESSION_BIKE,
   stockLevel,
@@ -49,7 +48,7 @@ const refusalOf = (career: CareerState, bikeId: BikeId): BuyRefusal | null => {
 };
 
 export const shopStock = (career: CareerState): readonly ShopRow[] =>
-  catalogue.map((bikeId) => ({
+  bikeIds.map((bikeId) => ({
     arrivesAt: stockLevel[bikeId],
     bikeClass: bikes[bikeId].bikeClass,
     bikeId,

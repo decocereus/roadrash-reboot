@@ -1,11 +1,11 @@
-import { setupFor } from "@racer/career/field";
+import { practiceSetup, setupFor } from "@racer/career/field";
 import { resultLine } from "@racer/career/lines";
 import type { RivalLine } from "@racer/career/lines";
 import type { RaceOutcome, RaceResult } from "@racer/career/outcome";
 import { summaryOf } from "@racer/career/result";
 import type { LastResult, RaceSummary } from "@racer/career/result";
 import type { Ledger } from "@racer/career/settle";
-import { newCareer, nextRaceSeed } from "@racer/career/state";
+import { nextRaceSeed } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { STARTING_BIKE } from "@racer/career/tables";
 import type { Level, RoadId } from "@racer/career/tables";
@@ -62,34 +62,22 @@ export const quickEntry = (pick: QuickPick, seed: number): RaceEntry => ({
   seed,
 });
 
-export const practiceCareer = (
-  pick: Pick<QuickPick, "level" | "bikeId">,
-  seed: number
-): CareerState => ({
-  ...newCareer(seed),
-  bikeId: pick.bikeId,
-  garage: [pick.bikeId],
-  level: pick.level,
-});
-
 export const planFor = (
   career: CareerState | null,
   entry: RaceEntry
 ): RacePlan => {
-  const rider =
-    entry.mode === "career" && career
-      ? career
-      : practiceCareer(entry, entry.seed);
-  return {
-    bikeId: rider.bikeId,
-    mode: entry.mode,
-    setup: setupFor(
-      rider,
-      entry.roadId,
-      entry.seed,
-      trackFor(entry.roadId, entry.level)
-    ),
-  };
+  const track = trackFor(entry.roadId, entry.level);
+  return entry.mode === "career" && career
+    ? {
+        bikeId: career.bikeId,
+        mode: entry.mode,
+        setup: setupFor(career, entry.roadId, entry.seed, track),
+      }
+    : {
+        bikeId: entry.bikeId,
+        mode: entry.mode,
+        setup: practiceSetup(entry, track),
+      };
 };
 
 export const careerReport = (last: LastResult): RaceReport => ({

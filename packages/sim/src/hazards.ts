@@ -360,7 +360,11 @@ const gatherTouched = (
 ): void => {
   touchedIndex.length = 0;
   touchedShare.length = 0;
-  for (const [index, hazard] of state.hazards.entries()) {
+  for (let index = 0; index < state.hazards.length; index += 1) {
+    const hazard = state.hazards[index];
+    if (!hazard) {
+      continue;
+    }
     const share = clearsHazard(rider, hazard)
       ? -1
       : entryShare(hazard, fromS, fromX, rider);
@@ -433,8 +437,9 @@ export const meetHazards = (
   for (let slot = 0; slot < resolved; slot += 1) {
     contacts.push(touchedIndex[slot] ?? -1);
   }
-  for (const [index, hazard] of state.hazards.entries()) {
-    if (!contacts.includes(index)) {
+  for (let index = 0; index < state.hazards.length; index += 1) {
+    const hazard = state.hazards[index];
+    if (hazard && !contacts.includes(index)) {
       passesClose(state, riderIndex, rider, fromS, hazard);
     }
   }

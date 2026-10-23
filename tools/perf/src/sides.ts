@@ -47,10 +47,26 @@ const HARNESS_DIRECTORY = "tools/perf/src";
 
 const CLONE_PARENT = "/tmp";
 
-const git = (root: string, args: readonly string[]) =>
+const gitOutput = (root: string, args: readonly string[]) =>
   ToolProcesses.use((processes) =>
     processes.run("git", ["-C", root, ...args])
-  ).pipe(Effect.map((output) => output.stdout.trim()));
+  ).pipe(Effect.map((output) => output.stdout));
+
+const git = (root: string, args: readonly string[]) =>
+  gitOutput(root, args).pipe(Effect.map((stdout) => stdout.trim()));
+
+const sourceFilesAt = (root: string) =>
+  gitOutput(root, [
+    "ls-files",
+    "-z",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "--",
+    ...SOURCE_PATHS,
+  ]).pipe(
+    Effect.map((stdout) => stdout.split("\0").filter((file) => file !== ""))
+  );
 
 const filesDigest = Effect.fnUntraced(function* filesDigest(
   root: string,
@@ -72,9 +88,6 @@ const filesDigest = Effect.fnUntraced(function* filesDigest(
   return { digest: hash.digest("hex"), files: counted };
 });
 
-const listed = (text: string): string[] =>
-  text.split("\n").filter((line) => line !== "");
-
 const describe = Effect.fnUntraced(function* describe(
   name: SideName,
   root: string
@@ -86,16 +99,7 @@ const describe = Effect.fnUntraced(function* describe(
     "--",
     ...SOURCE_PATHS,
   ]);
-  const files = listed(
-    yield* git(root, [
-      "ls-files",
-      "-co",
-      "--exclude-standard",
-      "--",
-      ...SOURCE_PATHS,
-    ])
-  );
-  const source = yield* filesDigest(root, files);
+  const source = yield* filesDigest(root, yield* sourceFilesAt(root));
   const side: Side = {
     dirty: status !== "",
     name,

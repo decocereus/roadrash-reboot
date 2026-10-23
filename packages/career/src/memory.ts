@@ -15,18 +15,7 @@ const GRUDGE_STARTS = 0.15;
 const GRUDGE_ENDS = 0.05;
 const HUNDREDTHS = 100;
 
-export type MemoryRow =
-  | "weaponTakenByPlayer"
-  | "knockedDownByPlayer"
-  | "lostToPlayerByAWheel"
-  | "bustedNearPlayer"
-  | "busted"
-  | "knockedPlayerDown"
-  | "tookPlayerWeapon"
-  | "beatPlayerByAWheel"
-  | "outrunUntouched";
-
-export const memoryRows: readonly MemoryRow[] = [
+export const memoryRows = [
   "weaponTakenByPlayer",
   "knockedDownByPlayer",
   "lostToPlayerByAWheel",
@@ -36,7 +25,9 @@ export const memoryRows: readonly MemoryRow[] = [
   "tookPlayerWeapon",
   "beatPlayerByAWheel",
   "outrunUntouched",
-];
+] as const;
+
+type MemoryRow = (typeof memoryRows)[number];
 
 const grudgeRows: ReadonlySet<MemoryRow> = new Set([
   "weaponTakenByPlayer",
@@ -46,25 +37,37 @@ const grudgeRows: ReadonlySet<MemoryRow> = new Set([
 ]);
 
 const bonusOf = (row: MemoryRow, incidents: RivalIncidents): number => {
-  if (row === "weaponTakenByPlayer") {
-    return STOLEN_WEAPON_BONUS;
+  switch (row) {
+    case "weaponTakenByPlayer": {
+      return STOLEN_WEAPON_BONUS;
+    }
+    case "knockedDownByPlayer": {
+      return Math.min(
+        KNOCKDOWN_BONUS_CAP,
+        KNOCKDOWN_BONUS * incidents.knockedDownByPlayer
+      );
+    }
+    case "lostToPlayerByAWheel": {
+      return WHEEL_BONUS;
+    }
+    case "bustedNearPlayer": {
+      return BLAMED_BUST_BONUS;
+    }
+    case "knockedPlayerDown": {
+      return SATISFIED_BONUS;
+    }
+    case "outrunUntouched": {
+      return RESPECT_BONUS;
+    }
+    case "busted":
+    case "tookPlayerWeapon":
+    case "beatPlayerByAWheel": {
+      return 0;
+    }
+    default: {
+      return row satisfies never;
+    }
   }
-  if (row === "knockedDownByPlayer") {
-    return Math.min(
-      KNOCKDOWN_BONUS_CAP,
-      KNOCKDOWN_BONUS * incidents.knockedDownByPlayer
-    );
-  }
-  if (row === "lostToPlayerByAWheel") {
-    return WHEEL_BONUS;
-  }
-  if (row === "bustedNearPlayer") {
-    return BLAMED_BUST_BONUS;
-  }
-  if (row === "knockedPlayerDown") {
-    return SATISFIED_BONUS;
-  }
-  return row === "outrunUntouched" ? RESPECT_BONUS : 0;
 };
 
 const happened = (

@@ -242,7 +242,11 @@ const samplePoses = (clip: THREE.AnimationClip) => {
   const poses = new Map<PoseName, number[]>();
   const pelvis = new Map<PoseName, THREE.Vector3>();
   const moved = clip.tracks.find((track) => track.name === "pelvis.position");
-  for (const [frame, name] of POSE_NAMES.entries()) {
+  for (let frame = 0; frame < POSE_NAMES.length; frame += 1) {
+    const name = POSE_NAMES[frame];
+    if (name === undefined) {
+      continue;
+    }
     const pose: number[] = [];
     for (const track of turns) {
       const key = Math.min(frame, track.times.length - 1);

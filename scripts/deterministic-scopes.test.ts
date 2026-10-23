@@ -124,6 +124,18 @@ describe("deterministic scopes", () => {
     ).toStrictEqual([]);
   });
 
+  it("put no-entries-loop on every sim module and every renderer module", () => {
+    const loopFiles = [
+      ...sourcesUnder("packages/sim/src"),
+      ...sourcesUnder("apps/web/src/game"),
+    ].filter((file) => !rolesOf(file).includes("test"));
+    expect(
+      loopFiles.filter(
+        (file) => settingsFor(file).get("rushline/no-entries-loop") !== "error"
+      )
+    ).toStrictEqual([]);
+  });
+
   it("resolve every core package's modules through its ./* export", () => {
     expect(
       corePackages.map(

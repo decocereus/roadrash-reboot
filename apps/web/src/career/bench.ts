@@ -1,7 +1,6 @@
 import { benchRaces, benchSetup } from "@racer/career/bench";
 import type { Bench } from "@racer/career/bench";
-import { roadLevels } from "@racer/track/road";
-import { roadIds } from "@racer/track/roads";
+import { roadIds, roadLevels } from "@racer/track/road";
 
 import type { RacePlan } from "../game/hud.ts";
 import { planFor } from "./flow.ts";

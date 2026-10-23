@@ -1,4 +1,5 @@
 import { bikes } from "@racer/sim/bikes";
+import type { BikeId } from "@racer/sim/bikes";
 import { cast, rivalAt, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { defaultPlayer } from "@racer/sim/race";
@@ -8,7 +9,7 @@ import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
-import { nextRaceId, qualifiedCount } from "./state.ts";
+import { newCareer, nextRaceId, qualifiedCount } from "./state.ts";
 import type { CareerState, RivalMemory } from "./state.ts";
 import {
   ALLY,
@@ -138,6 +139,29 @@ export const setupFor = (
     track,
   };
 };
+
+export interface PracticeRace {
+  readonly roadId: RoadId;
+  readonly level: Level;
+  readonly bikeId: BikeId;
+  readonly seed: number;
+}
+
+export const practiceCareer = (
+  pick: Pick<PracticeRace, "bikeId" | "level">,
+  seed: number
+): CareerState => ({
+  ...newCareer(seed),
+  bikeId: pick.bikeId,
+  garage: [pick.bikeId],
+  level: pick.level,
+});
+
+export const practiceSetup = (
+  race: PracticeRace,
+  track: Track
+): CareerRaceSetup =>
+  setupFor(practiceCareer(race, race.seed), race.roadId, race.seed, track);
 
 export interface RoadStatus {
   readonly road: Road;

@@ -1,15 +1,18 @@
 import type { BikeSpec } from "./state.ts";
 
-export type BikeId =
-  | "gutter-pup-250"
-  | "halden-wren-400"
-  | "halden-kite-500"
-  | "ostra-sesta-600"
-  | "ostra-sette-750"
-  | "brack-stoker-800"
-  | "halden-meridian-900"
-  | "brack-anvil-1100"
-  | "ostra-nera-1000";
+export const bikeIds = [
+  "gutter-pup-250",
+  "halden-wren-400",
+  "halden-kite-500",
+  "ostra-sesta-600",
+  "ostra-sette-750",
+  "brack-stoker-800",
+  "halden-meridian-900",
+  "brack-anvil-1100",
+  "ostra-nera-1000",
+] as const;
+
+export type BikeId = (typeof bikeIds)[number];
 
 export const bikes = {
   "brack-anvil-1100": {

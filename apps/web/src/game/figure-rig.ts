@@ -25,15 +25,15 @@ export interface Rig {
 }
 
 export const posed = ({ bones, root }: Rig, pose: readonly number[]) => {
-  for (const [index, bone] of bones.entries()) {
-    bone?.quaternion.fromArray(pose, index * 4);
+  for (let index = 0; index < bones.length; index += 1) {
+    bones[index]?.quaternion.fromArray(pose, index * 4);
   }
   root.updateMatrixWorld(true);
 };
 
 export const read = ({ bones }: Rig, into: number[]): number[] => {
-  for (const [index, bone] of bones.entries()) {
-    bone?.quaternion.toArray(into, index * 4);
+  for (let index = 0; index < bones.length; index += 1) {
+    bones[index]?.quaternion.toArray(into, index * 4);
   }
   return into;
 };

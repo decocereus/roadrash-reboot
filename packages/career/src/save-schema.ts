@@ -1,3 +1,4 @@
+import { bikeIds } from "@racer/sim/bikes";
 import * as Schema from "effect/Schema";
 
 import { LastResultSchema } from "./save-result-schema.ts";
@@ -22,7 +23,7 @@ import {
   Weapon,
 } from "./save-values.ts";
 import { BOARD_NOTES, byRacer, byRival, SAVE_VERSION } from "./state.ts";
-import { byLevel, catalogue, FIELD_SIZE, RIVALS_PER_RACE } from "./tables.ts";
+import { byLevel, FIELD_SIZE, RIVALS_PER_RACE } from "./tables.ts";
 
 type SaveErrorKind = "notJson" | "wrongVersion" | "invalid" | "inconsistent";
 
@@ -120,7 +121,7 @@ export const EncodedSaveSchema = Schema.Struct({
   board: Schema.Array(BoardNote).check(Schema.isMaxLength(BOARD_NOTES)),
   cash: Balance,
   gameOver: Schema.Boolean,
-  garage: Schema.Array(Bike).check(Schema.isMaxLength(catalogue.length)),
+  garage: Schema.Array(Bike).check(Schema.isMaxLength(bikeIds.length)),
   lastResult: Schema.NullOr(LastResultSchema),
   level: Level,
   memory: Schema.Struct(byRival(() => RivalMemory)),
@@ -146,12 +147,12 @@ const sourceKeys = (keys: typeof Road | typeof Racer) =>
 
 export const SaveSourceSchema = Schema.Struct({
   board: sourceList(BOARD_NOTES),
-  garage: sourceList(catalogue.length),
+  garage: sourceList(bikeIds.length),
   lastResult: Schema.NullOr(
     Schema.Struct({
       ledger: Schema.Struct({
         levelUp: Schema.NullOr(
-          Schema.Struct({ bikes: sourceList(catalogue.length) })
+          Schema.Struct({ bikes: sourceList(bikeIds.length) })
         ),
       }),
       summary: Schema.Struct({

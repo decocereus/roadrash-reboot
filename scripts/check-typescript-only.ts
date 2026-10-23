@@ -1,22 +1,8 @@
-import { execFileSync } from "node:child_process";
 import process from "node:process";
 
-const javascript = execFileSync(
-  "git",
-  [
-    "ls-files",
-    "--cached",
-    "--others",
-    "--exclude-standard",
-    "*.js",
-    "*.mjs",
-    "*.cjs",
-    "*.jsx",
-  ],
-  { encoding: "utf-8" }
-)
-  .split("\n")
-  .filter((file) => file !== "");
+import { repositoryFiles } from "./git-files.ts";
+
+const javascript = repositoryFiles(".", ["*.js", "*.mjs", "*.cjs", "*.jsx"]);
 
 if (javascript.length > 0) {
   process.stderr.write(

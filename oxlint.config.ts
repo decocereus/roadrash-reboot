@@ -93,6 +93,11 @@ export const hotBodies = {
   "packages/sim/src/race.ts": [["stepRace"]],
 };
 
+const entriesLoopFiles = [
+  ...deterministicFiles.filter((file) => file.startsWith("packages/sim/src/")),
+  "apps/web/src/game/**/*.ts",
+];
+
 const effectFiles = [
   "tools/perf/*.ts",
   "tools/perf/src/**/*.ts",
@@ -193,6 +198,17 @@ export default defineConfig({
       files: Object.keys(hotBodies),
       rules: { "rushline/no-hot-allocation": ["error", { bodies: hotBodies }] },
     },
+    {
+      files: entriesLoopFiles,
+      rules: { "rushline/no-entries-loop": "error" },
+    },
+    {
+      files: ["apps/web/src/game/**/*.ts"],
+      rules: {
+        "rushline/numeric-draw-sort": "error",
+        "rushline/ranged-buffer-upload": "error",
+      },
+    },
   ],
   rules: {
     "anti-slop/no-chained-type-assertions": "error",
@@ -223,6 +239,8 @@ export default defineConfig({
       },
     ],
     "rushline/no-comments": "error",
+    "rushline/no-discarded-exit": "error",
+    "rushline/require-nul-file-list": "error",
     "rushline/require-suppression-reason": "error",
     "rushline/safety-verified-by": "error",
     "rushline/workspace-imports": "error",

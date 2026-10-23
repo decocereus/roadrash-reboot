@@ -1,4 +1,4 @@
-import { roadsFor } from "@racer/career/field";
+import { practiceCareer, roadsFor } from "@racer/career/field";
 import type { RoadStatus } from "@racer/career/field";
 import type { CareerState } from "@racer/career/state";
 import { levels } from "@racer/career/tables";
@@ -10,7 +10,6 @@ import { Screen } from "@racer/ui/components/screen";
 
 import { backRoomPlates, flyers, plates } from "../../assets/clubhouse-art.ts";
 import { roadDescriptions, shortNames } from "../../career/copy.ts";
-import { practiceCareer } from "../../career/flow.ts";
 import type { QuickPick } from "../../career/flow.ts";
 import { bikeName, kilometres } from "../../career/format.ts";
 import { BarHeader, BarStrip } from "./bar-chrome.tsx";

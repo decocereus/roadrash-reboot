@@ -4,7 +4,7 @@ Agreed October 6, 2026. This replaces the first prototype, a server-driven lane 
 
 ## Product
 
-An original motorcycle combat racer for desktop browsers, in the spirit of the mid-1990s Road Rash games: fast point-to-point road races, oncoming traffic, fights between riders, and crashes that throw you off the bike. Single-player comes first. The name, tracks, bikes, riders, art, and audio are our own; RUSHLINE is the working title. "Road Rash" is an Electronic Arts trademark and nothing of theirs is used.
+An original motorcycle combat racer for desktop browsers, in the spirit of the mid-1990s Road Rash games: fast point-to-point road races, oncoming traffic, fights between riders, and crashes that throw you off the bike. It launches free, with the career, single races, and multiplayer together. The world is a near-future version of the real one: illegal road races streamed around the world, through real cities with a cyberpunk twist, against parodies of real celebrities. The name, tracks, bikes, riders, art, and audio are our own; LOWSIDE is the working name and the code still says Rushline. "Road Rash" is an Electronic Arts trademark and nothing of theirs is used. `PRODUCT.md` and section 0 of `docs/design/game-design.md` have the launch direction agreed on October 23, 2026.
 
 The art direction is cel-shaded cyberpunk anime: two flat tones, ink outlines, neon signs, and a palette of yellow, cyan, magenta, and red on near-black. Proportions are realistic, for the world, the bikes, and the riders. The look was accepted on October 13, 2026 as the base to build on. Colours, faces, and outfits get refined after the rest of the game exists.
 
@@ -17,10 +17,12 @@ The art direction is cel-shaded cyberpunk anime: two flat tones, ink outlines, n
 | Rendering | Three.js on WebGL 2 |
 | Simulation | Plain TypeScript in `packages/sim`, fixed 60 Hz, running in the browser |
 | Server runtime | Effect 4.0.0 on Workers, when a server feature exists |
-| Multiplayer (later) | One Durable Object per race running the same simulation |
+| Multiplayer | One Durable Object per race running the same simulation |
+| Accounts | Sign-in with Discord, Google, or an emailed link; no passwords |
+| Payments | Polar or Dodo Payments, both merchants of record; not chosen |
 | Tooling | pnpm, TypeScript 7 checked by tsrs, Oxlint with the anti-slop rules, Oxfmt through Ultracite, Vitest |
 
-There is no API Worker or database yet, because nothing needs one. Leaderboards, accounts, and multiplayer bring them back.
+There is no API Worker or database yet. Accounts, saves on the server, multiplayer, the store, and billboard view counts bring them in before launch. Where the database is hosted is decided on cost and is open; Cloudflare D1 is not assumed. A guest's career stays in the browser, and signing in moves it to the server.
 
 ## Riding model
 
@@ -90,7 +92,7 @@ This is the surface the race director builds on. A director command stamped with
 
 `defaultSetup(track, seed)` is the race the tests and the attract race use: the player on the Sesta, five rivals on their level-3 bikes, one cop at 48 m/s with a 40 m sight range, a 1,500 m beat, and a $1,500 fine, level-3 pacing, and the player last on the grid.
 
-`cast.ts` holds the sixteen rivals and the two officers from the design: name, skill, aggression, home region, the weapon they carry and the level they carry it from, a bike for each of the five levels, and their colours. `rivalAt(rival, level)` turns one into a setup entry. From level 4 an unarmed rival with aggression of 0.5 or more starts with a club. Their lines, the field draw, and everything else about the career live in `packages/career`.
+`cast.ts` holds the sixteen rivals and the two officers from the design: name, skill, aggression, home region, the weapon they carry and the level they carry it from, a bike for each of the five levels, and their colours. `rivalAt(rival, level)` turns one into a setup entry. From level 4 an unarmed rival with aggression of 0.5 or more starts with a club. Their lines, the field draw, and everything else about the career live in `packages/career`. For launch, six parody celebrities and ordinary riders replace the sixteen, and the current rules for skill, aggression, weapons, and grudges become their templates (section 0 of `docs/design/game-design.md`).
 
 A profile's `paint` and `jacket` are indices into the eighteen entries of `palette.ts`, which gives the bike, jacket, and helmet colour for each rider and a trim colour where there is one: the gold stripe on Juno Kade and the blue panels on the white police bikes.
 
@@ -100,7 +102,7 @@ A profile's `paint` and `jacket` are indices into the eighteen entries of `palet
 
 A plan also says how many lanes the road has each way, `lanesEachWay`, 1 or 2, and how wide a lane is. The road's half width is `lanesEachWay × laneWidth + shoulderWidth`; the compiled `Track` lists the lane centres as `sameWayLanes` and `oncomingLanes`, positive x for the race's direction and negative for oncoming, each from the centre line outward. Traffic spawns in every lane, the plan's `trafficPerKilometre` cars per direction shared between that direction's lanes, and the slower cars favour the outer lane. The start is kept clear: no same-way car spawns between 70 m before the line and 260 m past it, and no oncoming car between 70 m before and 300 m past, so the oncoming lanes the grid stands in meet their first car once the pack is moving. Riding, props, the police verge, and the renderer all read the half width, so a wider road is wider everywhere.
 
-There are five roads, one per region. Breakwater Run, Cinder Wash, and Slag Row have two lanes each way; Hollow Pine Road and Ridge Road have one. `docs/design/tracks.md` has their sections and the reasoning.
+There are five roads, one per region. Breakwater Run, Cinder Wash, and Slag Row have two lanes each way; Hollow Pine Road and Ridge Road have one. `docs/design/tracks.md` has their sections and the reasoning. For launch, three of these shapes become real cities: Slag Row becomes Madrid, Breakwater Run becomes Mumbai, and Ridge Road becomes a Bay Area mountain road. Cinder Wash and Hollow Pine Road stay in the code until later cities replace them.
 
 | Road | id | Region | Level 1 | Level 5 | Lowest launch |
 | --- | --- | --- | --: | --: | --: |
@@ -118,7 +120,7 @@ A plan also lists `features`, things placed on the road. The only kind is a fixe
 
 A plan's `hazardsPerKilometre` places oil slicks, rocks, and potholes from the road's seed: `placeHazards` in `hazards.ts` fills `Track.hazards` with `HazardPlacement`s (a stable id such as `hazard-7`, the kind, the level it appears from, `s`, and `x`), and `hazardSizes` gives each kind's footprint and height. Each placement also names its setting: where a bend turns in, its apex, its exit, just over a crest, or a straight where riders pass traffic. The schedule is stable across levels, keeps hazards off the start, the finish, and every ramp's reservation, keeps every hazard on the lanes, and only checks that a hazard can be seen from 25 m, so it is never hidden until it is under the wheel. No rock lies where the road from 10 m before it to 40 m past it curves at 0.0015 or more, and a rock where it curves more gently lies at a lane's edge, clear of a bike on the lane's centre. Traffic ignores hazards: cars drive over them unchanged, and only riders meet them. Test plans set `hazardsPerKilometre` to 0. `docs/design/tracks.md` has the rules and every road's hazards.
 
-`roads.ts` is the registry: `roads`, `roadIds` in career order, `regionOf(roadId)`, and `trackFor(roadId, level)`, which compiles each road and level once and returns the same `Track` afterwards.
+`road.ts` lists `roadIds` in career order and `roadLevels`, and `RoadId` and `RoadLevel` are taken from those two tuples. `roads.ts` is the registry: `roads`, `regionOf(roadId)`, and `trackFor(roadId, level)`, which compiles each road and level once and returns the same `Track` afterwards.
 
 `regions.ts` holds each region's name and prop mix. The prop mix weights trees, poles, rocks, and chevrons in the scatter, so Kettle Woods is dense with trees and has no poles and Cinder Flats is nearly bare. A region's colours and light are the renderer's business and live in `apps/web/src/game/looks.ts`. The renderer decides what a prop looks like per kit: a tree is a round street tree in a city and a pine on open ground, and a rock is a barrier block in a city. Rocks are scattered from their own seeded stream, so the scenery of the part of a road the player already knows is the same at every level.
 
@@ -134,7 +136,7 @@ The track tests compile every road at every level. They check the lengths, the l
 | --- | --- |
 | `tables.ts` | The numbers from `docs/design/game-design.md`: prizes, repairs, fines, police per level, shop stock, road lengths, trade-in and credit rates |
 | `state.ts` | `CareerState` and `newCareer` |
-| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open |
+| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open; `practiceCareer` and `practiceSetup`, the fresh career and setup of a quick race or a benchmark on a picked bike and level |
 | `outcome.ts` | The race log and `outcomeOf` |
 | `settle.ts` | `startRace`, `settleRace`, `quitRace`, `resumeCareer`, and the `Ledger` |
 | `result.ts` | `LastResult`: the stored summary of the last settled race |
@@ -205,18 +207,45 @@ The target is 60 frames per second on an integrated-graphics laptop.
 
 ## Build order
 
-| Step | Delivers | Status |
+### What is built
+
+| Step | Delivered |
+| --- | --- |
+| 1 | Faceless-style workspace |
+| 2 | Riding greybox: physics, Ridge Road, traffic, crashes, AI pilot, placeholder models, audio |
+| 3 | Combat, weapons, a pack of rival riders, police |
+| 4 | Art so far: the cel renderer, the five looks, the city and open kits, one bike, three rigged riders, a car, and a van |
+| 5 | Career so far: the bikes, the sixteen-rider cast, race setups, condition and wrecks, grudges, the five roads, the career rules, the lines, the save format, the screens, and the browser save |
+| — | Jumps, static hazards (oil, rocks, potholes), the performance pass and gate, play-test recording, and the code rules in [coding-standards.md](coding-standards.md) |
+
+### Launch
+
+Agreed October 23, 2026. Launch needs three finished cities, all six parody celebrities, multiplayer, payments, and sign-in. There is no date. More cities and celebrities come in updates after launch.
+
+The work runs in parallel lanes. Each lane works in its own git worktree, owns its own packages, and removes the worktree when its work is merged. Every change that edits `RaceState` or `stepRace` stays in the sim lane, one step at a time, because those changes cannot be merged side by side. The screens lane goes first, so every later lane builds on one design language.
+
+| Lane | Owns | Work, in order |
 | --- | --- | --- |
-| 1 | Faceless-style workspace | Done |
-| 2 | Riding greybox: physics, Ridge Road, traffic, crashes, AI pilot, placeholder models, audio | Done |
-| 3 | Combat, weapons, a pack of rival riders, police | Done |
-| 4 | Art: rigged bike and rider, vehicles, environment kit | In progress: the cel renderer, the five looks, the city and open kits, one bike, three rigged riders, a car, and a van are in. More bikes, the cast's faces and outfits, a truck, region set pieces, and the menus in this style are next. |
-| 5 | Career: more tracks, levels, money, bike shop, characters, story | In progress: the simulation has the bikes, the cast, race setups, condition and wrecks, the two new weapons, and grudges. `packages/track` has the five roads. `packages/career` has the career rules, the lines, and the save format. The screens and the save adapter in the web app are next. |
-| 6 | Multiplayer on the same simulation, then ads |  |
+| Screens | `apps/web/src/components`, `packages/ui` | The bar-first flow and the neon restyle (in progress); later the sign-in, account, and store screens, and the page that tells a phone visitor to open the game on a desktop |
+| Story | `packages/career` text, `docs/design` | A story bible draft that the owner rewrites; then the text in the bar, the results, and the race events |
+| Art | `tools/blender`, `apps/web/src/game/models` | Check the commercial licence of each 3D generator; a Ronaldo-parody head as the test, which passes only if the owner recognises him at a glance; the other heads, outfits, and ordinary riders; six bikes with parody brands and their skins; landmark kits per city; pedestrians with walk and fall animations |
+| Roads | `packages/track/src/tracks`, `apps/web/src/game` kits | Madrid on the Slag Row shape, Mumbai on the Breakwater Run shape, and the Bay Area on the Ridge Road shape |
+| Sim | `packages/sim`, `packages/track` format, `packages/career` rules | The field size and the number of levels as settings; the multiplayer groundwork (a stable id per rider, input validation, events copied out every tick, a deterministic snapshot and hash); the race director; pedestrians; junctions with red lights; the bike tiers, the three-level career, and an economy for ten riders |
+| Online | the server, `apps/web/src/routes/api` | The database host; sign-in; saves on the server, with a guest's career moved over at sign-in; multiplayer rooms and Quick Race; the cosmetics store; the billboard schedule and view counts |
+| Launch | everything | A legal review of the cast, the bike brands, the store, and the generated assets; a performance pass on all three cities with full fields; a closed beta in the owner's Discord; deploy |
 
-Step 2 is finished when a person riding Ridge Road alone wants another run. That is a play test, not an automated one.
+Each milestone is a play test by the owner:
 
-Blender 5.2 with the MPFB add-on is needed from step 4. The scripts in `tools/blender` model the bike and vehicles from code, take the rider's body from MPFB, pose it, and export GLB.
+1. **Madrid slice.** Madrid's road and landmarks, the Ronaldo and Mbappé parodies, ordinary riders, pedestrians, junctions, and the race director, inside the new menus, with placeholder lines.
+2. **Mumbai**, with the Ranveer Singh and Jenner parodies.
+3. **Bay Area**, with the Musk and Altman parodies. All six celebrities are in.
+4. **Multiplayer**: a race with a few friends, signed in.
+5. **Closed beta**, with the store and the billboards live.
+6. **Launch.**
+
+Every change is held to [coding-standards.md](coding-standards.md) and passes `pnpm verify`, and it lands with the way its author proved it works. A new subsystem, such as the server, a multiplayer room, sign-in, or the store, brings its own way to verify it, so the next agent can check it without asking.
+
+Blender 5.2 with the MPFB add-on builds the models. The scripts in `tools/blender` model the bike and vehicles from code, take the rider's body from MPFB, pose it, and export GLB. For launch, heads, outfits, and landmark props are generated with Hunyuan3D or Hyper3D Rodin through the Blender MCP, then cut down, rigged, and given the cel materials by the same scripts.
 
 ## Local development
 

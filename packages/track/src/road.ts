@@ -1,15 +1,18 @@
 import type { TrackPlan, TrackSection } from "./track.ts";
 
-export type RoadId =
-  | "breakwater-run"
-  | "cinder-wash"
-  | "hollow-pine-road"
-  | "slag-row"
-  | "ridge-road";
+export const roadIds = [
+  "breakwater-run",
+  "cinder-wash",
+  "hollow-pine-road",
+  "slag-row",
+  "ridge-road",
+] as const;
 
-export type RoadLevel = 1 | 2 | 3 | 4 | 5;
+export type RoadId = (typeof roadIds)[number];
 
-export const roadLevels: readonly RoadLevel[] = [1, 2, 3, 4, 5];
+export const roadLevels = [1, 2, 3, 4, 5] as const;
+
+export type RoadLevel = (typeof roadLevels)[number];
 
 export type SectionRow = readonly [
   length: number,

@@ -19,7 +19,7 @@ export interface BikeSpec {
   readonly price: number;
   readonly launchAcceleration: number;
   readonly powerPerMass: number;
-  readonly gears: readonly number[];
+  readonly gears: readonly [number, ...number[]];
   readonly dragFactor: number;
   readonly rollingDeceleration: number;
   readonly engineBraking: number;
@@ -42,14 +42,17 @@ export interface RiderInput {
 
 export type AttackKind = "punch" | "kick" | "swing";
 
-export type WeaponKind =
-  | "none"
-  | "club"
-  | "chain"
-  | "crowbar"
-  | "baton"
-  | "cue"
-  | "sign";
+export const weaponKinds = [
+  "none",
+  "club",
+  "chain",
+  "crowbar",
+  "baton",
+  "cue",
+  "sign",
+] as const;
+
+export type WeaponKind = (typeof weaponKinds)[number];
 
 type RiderRole = "racer" | "police";
 

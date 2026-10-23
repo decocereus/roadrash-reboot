@@ -1,3 +1,4 @@
+import { bikeIds } from "@racer/sim/bikes";
 import * as Schema from "effect/Schema";
 
 import {
@@ -24,7 +25,7 @@ import {
   Weapon,
   Witness,
 } from "./save-values.ts";
-import { catalogue, FIELD_SIZE, RIVALS_PER_RACE } from "./tables.ts";
+import { FIELD_SIZE, RIVALS_PER_RACE } from "./tables.ts";
 
 const Row = Schema.Struct({
   bikeId: Bike,
@@ -76,7 +77,7 @@ const Summary = Schema.Struct({
 });
 
 const LevelUp = Schema.Struct({
-  bikes: Schema.Array(Bike).check(Schema.isMaxLength(catalogue.length)),
+  bikes: Schema.Array(Bike).check(Schema.isMaxLength(bikeIds.length)),
   level: Level,
 });
 

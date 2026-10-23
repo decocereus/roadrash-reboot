@@ -17,14 +17,6 @@ export const roads = {
   "slag-row": slagRowRoad,
 } as const satisfies Record<RoadId, Road>;
 
-export const roadIds: readonly RoadId[] = [
-  "breakwater-run",
-  "cinder-wash",
-  "hollow-pine-road",
-  "slag-row",
-  "ridge-road",
-];
-
 export const regionOf = (roadId: RoadId): RegionId => roads[roadId].plan.region;
 
 const createTrackCache = (): ((roadId: RoadId, level: RoadLevel) => Track) => {

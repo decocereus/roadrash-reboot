@@ -1,4 +1,5 @@
 import type { BikeId } from "@racer/sim/bikes";
+import { rivalIds } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import type { WeaponKind } from "@racer/sim/state";
 import { nextSeed } from "@racer/track/random";
@@ -15,28 +16,9 @@ import type { Level, RoadId } from "./tables.ts";
 
 export const SAVE_VERSION = 2;
 
-export type RacerId = RivalId | "player";
+export const racerIds = ["player", ...rivalIds] as const;
 
-export const rivalIds: readonly RivalId[] = [
-  "juno-kade",
-  "ruth-ann-bixby",
-  "dee-santangelo",
-  "ines-marchetti",
-  "mags-dunleavy",
-  "lyle-gorski",
-  "tristan-lux",
-  "coach-dale-hutto",
-  "moose-kowalczyk",
-  "gus-abernathy",
-  "benny-okafor",
-  "wanda-pruitt",
-  "orrin-blackwell",
-  "agnes-mulcahy",
-  "hollis-thorne",
-  "felix-aurand",
-];
-
-export const racerIds: readonly RacerId[] = ["player", ...rivalIds];
+export type RacerId = (typeof racerIds)[number];
 
 export const byRival = <Value>(make: (rival: RivalId) => Value) => ({
   "agnes-mulcahy": make("agnes-mulcahy"),
@@ -95,9 +77,13 @@ export interface RivalMemory {
   readonly outrunUntouched: number;
 }
 
-export type EnvelopeFlag = "unseen" | "offered" | "taken" | "refused";
+export const envelopeFlags = ["unseen", "offered", "taken", "refused"] as const;
 
-export type EndingId = "clean-crown" | "bought-crown" | "runner-up";
+export type EnvelopeFlag = (typeof envelopeFlags)[number];
+
+export const endingIds = ["clean-crown", "bought-crown", "runner-up"] as const;
+
+export type EndingId = (typeof endingIds)[number];
 
 export interface StoryFlags {
   readonly envelope: EnvelopeFlag;

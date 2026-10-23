@@ -62,8 +62,14 @@ export const nearestRival = (
   }
   let best = -1;
   let bestGap = Number.POSITIVE_INFINITY;
-  for (const [index, other] of state.riders.entries()) {
-    if (index === riderIndex || !canFight(other) || allies(rider, other)) {
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const other = state.riders[index];
+    if (
+      !other ||
+      index === riderIndex ||
+      !canFight(other) ||
+      allies(rider, other)
+    ) {
       continue;
     }
     if (reaches(rider, other, side, strike)) {
@@ -264,7 +270,8 @@ const pickThieves = (
   strikes: readonly (Strike | undefined)[]
 ): (Strike | undefined)[] => {
   const thieves = new Map<number, number>();
-  for (const [index, strike] of strikes.entries()) {
+  for (let index = 0; index < strikes.length; index += 1) {
+    const strike = strikes[index];
     if (covets(state, index, strike)) {
       const rival = thieves.get(strike.target) ?? -1;
       const rivalStrike = strikes[rival];
@@ -287,7 +294,8 @@ const wearWeapons = (
   state: RaceState,
   strikes: readonly (Strike | undefined)[]
 ): void => {
-  for (const [index, strike] of strikes.entries()) {
+  for (let index = 0; index < strikes.length; index += 1) {
+    const strike = strikes[index];
     const rider = state.riders[index];
     if (rider && strike && strike.weapon !== "none") {
       rider.weaponHits -= 1;
@@ -311,7 +319,9 @@ export const coolDown = (state: RaceState): void => {
 };
 
 export const landStrikes = (state: RaceState): void => {
-  for (const [index, strike] of settleStrikes(state).entries()) {
+  const strikes = settleStrikes(state);
+  for (let index = 0; index < strikes.length; index += 1) {
+    const strike = strikes[index];
     if (strike) {
       landHit(state, index, strike);
     }
@@ -565,7 +575,11 @@ export const stepRiderContacts = (
   const parties = state.riders.flatMap((rider, index): Party[] =>
     canFight(rider) ? [{ index, jolt: untouched(), rider }] : []
   );
-  for (const [position, left] of parties.entries()) {
+  for (let position = 0; position < parties.length; position += 1) {
+    const left = parties[position];
+    if (!left) {
+      continue;
+    }
     for (const right of parties.slice(position + 1)) {
       meet(state, left, right);
     }

@@ -12,9 +12,9 @@ import {
 } from "./hazards.ts";
 import type { HazardKind, HazardSetting } from "./hazards.ts";
 import { nextSeed } from "./random.ts";
-import { roadLevels } from "./road.ts";
+import { roadIds, roadLevels } from "./road.ts";
 import type { RoadId, RoadLevel } from "./road.ts";
-import { regionOf, roadIds, roads, trackFor } from "./roads.ts";
+import { regionOf, roads, trackFor } from "./roads.ts";
 import { compileTrack, curvatureAt } from "./track.ts";
 import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 

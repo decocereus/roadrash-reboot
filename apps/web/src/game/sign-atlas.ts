@@ -103,7 +103,11 @@ export const signAtlas = (random: Random): SignAtlas => {
     v: 1 - (box[1] + box[3]) / ATLAS_SIZE,
     wide: box[2] / ATLAS_SIZE,
   });
-  for (const [index, word] of SIGN_WORDS.entries()) {
+  for (let index = 0; index < SIGN_WORDS.length; index += 1) {
+    const word = SIGN_WORDS[index];
+    if (word === undefined) {
+      continue;
+    }
     const colour = pick(random, SIGN_COLOURS);
     const height = word.length * LETTER_HEIGHT + 40;
     const box = [

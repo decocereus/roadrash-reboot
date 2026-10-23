@@ -82,6 +82,36 @@ describe("check:size", () => {
     );
   });
 
+  it("fails oversized files named with non-ASCII characters, quotes, tabs or outer spaces", () => {
+    const names = [
+      "app/café.ts",
+      'app/quoted"file.ts',
+      "app/tab\there.ts",
+      "app/ leading.ts",
+      " root.ts",
+      "app/trailing .tsx",
+    ];
+    const dir = repository(
+      Object.fromEntries(names.map((name) => [name, over]))
+    );
+    track(dir, names.slice(0, 3));
+    const result = checkSize(dir);
+    expect(result.status).toBe(1);
+    expect(
+      result.stderr
+        .split("\n")
+        .filter((line) => line !== "")
+        .toSorted((left, right) => left.localeCompare(right))
+    ).toStrictEqual(
+      names
+        .map(
+          (name) =>
+            `${name} has 20001 characters. A source file may have at most 20000; split it.`
+        )
+        .toSorted((left, right) => left.localeCompare(right))
+    );
+  });
+
   it("passes 20,000 characters, ignored output and a tracked file deleted from disk", () => {
     const dir = repository({
       ".gitignore": "out/\n",

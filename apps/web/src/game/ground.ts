@@ -130,7 +130,11 @@ export const plant = (
     group.add(mesh);
     return mesh;
   });
-  for (const [index, placement] of placements.entries()) {
+  for (let index = 0; index < placements.length; index += 1) {
+    const placement = placements[index];
+    if (!placement) {
+      continue;
+    }
     placeOnGround(track, placement.s, placement.x, point);
     placer.position.set(point.x, point.y, point.z);
     const turn = turnedOnRight && placement.x > 0 ? Math.PI : 0;
@@ -142,7 +146,6 @@ export const plant = (
     }
   }
   for (const mesh of meshes) {
-    mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
   }
 };

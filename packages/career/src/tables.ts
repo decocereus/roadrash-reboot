@@ -1,15 +1,16 @@
-import { bikes } from "@racer/sim/bikes";
+import { bikeIds, bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { officerFor } from "@racer/sim/cast";
 import type { RegionId, RivalId } from "@racer/sim/cast";
 import type { BikeClass, PacingRules, PoliceSetup } from "@racer/sim/state";
+import { roadIds, roadLevels } from "@racer/track/road";
 import type { RoadId, RoadLevel } from "@racer/track/road";
 
 export type { RoadId } from "@racer/track/road";
 
 export type Level = RoadLevel;
 
-export const levels: readonly Level[] = [1, 2, 3, 4, 5];
+export const levels = roadLevels;
 
 export const LAST_LEVEL: Level = 5;
 
@@ -70,13 +71,7 @@ export const roads = {
   },
 } as const satisfies Record<RoadId, Road>;
 
-export const roadList: readonly Road[] = [
-  roads["breakwater-run"],
-  roads["cinder-wash"],
-  roads["hollow-pine-road"],
-  roads["slag-row"],
-  roads["ridge-road"],
-];
+export const roadList: readonly Road[] = roadIds.map((roadId) => roads[roadId]);
 
 export const FINALE_ROAD: RoadId = "ridge-road";
 export const ENVELOPE_ROAD: RoadId = "breakwater-run";
@@ -192,18 +187,6 @@ export const pacingLevels = {
   5: { catchUp: 0.04, leadEase: 0.14 },
 } as const satisfies Record<Level, PacingRules>;
 
-export const catalogue: readonly BikeId[] = [
-  "gutter-pup-250",
-  "halden-wren-400",
-  "halden-kite-500",
-  "ostra-sesta-600",
-  "ostra-sette-750",
-  "brack-stoker-800",
-  "halden-meridian-900",
-  "brack-anvil-1100",
-  "ostra-nera-1000",
-];
-
 export const stockLevel = {
   "brack-anvil-1100": 4,
   "brack-stoker-800": 2,
@@ -217,7 +200,7 @@ export const stockLevel = {
 } as const satisfies Record<BikeId, Level>;
 
 export const stockArrivingAt = (level: Level): readonly BikeId[] =>
-  catalogue.filter((bikeId) => stockLevel[bikeId] === level);
+  bikeIds.filter((bikeId) => stockLevel[bikeId] === level);
 
 export const prizeFor = (level: Level, place: number): number =>
   prizes[level][place - 1] ?? 0;

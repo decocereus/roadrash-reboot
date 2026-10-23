@@ -110,6 +110,10 @@ Handwriting on the board (Vic's notes, the marker on Polaroids) is drawn as part
 
 ## Riders and bikes
 
+### Launch cast and bikes
+
+Agreed October 23, 2026 (`game-design.md` section 0). The six launch celebrities are caricatures: the face and build exaggerated until the person is recognisable at a glance, drawn in the same two tones and ink lines as the rest of the world, never a likeness traced from a photo. Their outfits carry their memes. The bikes parody real makers' shapes under invented brands with no logos; the starter, mid-tier, and litre tiers map roughly onto the three silhouettes below, and the near-future prototypes at the top may break them. Heads, outfits, and landmark props are generated with Hunyuan3D or Hyper3D Rodin and finished in Blender to the budget below. The first test is the Ronaldo parody's head, which passes only if the owner recognises him at a glance.
+
 ### Budget and build
 
 About 900 triangles for a rider, 1,200 for a bike, 500 for a car, and 20 to 200 for a prop. One material per rider and one per bike, coloured by vertex colour and instance colour. Riders share one rig (hips, spine, head, two-bone arms and legs) so every animation works on everyone. Character differences are attached parts: hat brim, veil strip, delivery box, camera, vest, beard, sign.
@@ -139,6 +143,8 @@ Each weapon is a distinct shape and colour so the player knows what a rival hold
 ## Regions
 
 Each region is a kit: a ground treatment, a near prop set scattered by `scatterProps`, a far backdrop, and set pieces placed at the road's signature moments from `tracks.md`. The compiler today scatters trees, poles, rocks, and chevrons for every road; a `kit` field on `TrackPlan` selects the set below. The kits come after the first career release (`game-design.md` section 14). Until then every road uses today's scatter with its own palette, sky, and fog from this document.
+
+For launch the regions become real cities: Madrid on Slag Row's road, Mumbai on Breakwater Run's, and the Bay Area on Ridge Road's (`game-design.md` section 0). Each needs a landmark kit of buildings and set pieces that parody the real ones rather than copy them. The region notes below describe the current build.
 
 Every road is two lanes, one each way, with the same centre and edge lines. Regions differ in lane width, shoulder, verge, and what stands beside the road, not in lane count.
 

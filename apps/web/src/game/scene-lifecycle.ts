@@ -181,8 +181,8 @@ export const bindStage = ({
     stage.fleet = createFleet(assets, stage.world.shading, cars);
     stage.world.scene.add(stage.fleet.group);
     stage.previousCars = new Float64Array(cars.length);
-    for (const [index, car] of cars.entries()) {
-      stage.previousCars[index] = car.s;
+    for (let index = 0; index < cars.length; index += 1) {
+      stage.previousCars[index] = cars[index]?.s ?? 0;
     }
     buildViews();
     chase.snap();

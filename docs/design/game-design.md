@@ -1,8 +1,34 @@
 # Game design
 
-Drafted October 10, 2026. This document describes the game that steps 5 and 6 of `docs/architecture.md` build: the career, money, bikes, weapons, police, cast, story, multiplayer, and ads. The companion documents are `screens.md` (every screen), `art-direction.md` (look and sound), and `tracks.md` (the five roads as `TrackPlan` data). All numbers in the four documents are the same numbers; if one changes, change it everywhere.
+Drafted October 10, 2026. This document describes the game: the career, money, bikes, weapons, police, cast, story, multiplayer, and ads. Section 0 is the launch direction agreed on October 23, 2026. Where a later section disagrees with it, section 0 is the target, and the later section describes the current build until that part is rebuilt. The companion documents are `screens.md` (every screen), `art-direction.md` (look and sound), and `tracks.md` (the five roads as `TrackPlan` data). All numbers in the four documents are the same numbers; if one changes, change it everywhere.
 
 Every name, line, road, and bike here is original. Section 15 lists the checks against the original games' names.
+
+## 0. Launch direction
+
+Agreed with the owner on October 23, 2026. `docs/architecture.md` has the lanes and milestones that build it.
+
+- **Launch.** Free, on the game's own site, desktop only, spread by clips. Launch needs three finished cities, all six celebrities, multiplayer, payments, and sign-in. There is no date. More cities and celebrities come in updates.
+- **Audience.** People who played Road Rash and want a game with the same mechanics.
+- **World.** A near-future version of the real one. Illegal road races are streamed around the world, and people watch them and bet on them inside the story. The streets have ordinary pedestrians. The police are a company's private security, the junction lights are its "smart city" system, and cops react to a rider who runs a red light.
+- **Race director.** Code that decides which obstacles appear where and how they move. It is not a character in the story.
+- **Cast.** Parodies of real celebrities, six at launch: Elon Musk, Sam Altman, Kylie Jenner, Ranveer Singh, Cristiano Ronaldo, and Kylian Mbappé. Each gets a parody name and a recognisable caricature, never a real name, photo, or exact likeness. Each one's personality comes from the public memes about them: Ronaldo as a vain, beloved superhero with something rotten underneath, after the memes comparing him to Homelander, without that character's name or costume; Mbappé after the memes of him as a dictator; Musk and Altman with their feud. Ordinary riders fill the rest of the field. Section 9's sixteen rivals stay in the build until the new cast lands, and their skill, aggression, weapons, and grudges are the templates for it.
+- **The player.** Your own rider, an unknown climbing the league, with the celebrities as named rivals. Each celebrity's story plays out as a scene inside the career. Beating a celebrity in their story moment unlocks them for single races and multiplayer.
+- **Cities.** Each launch city hosts a pair of celebrities on an existing road shape. Landmarks are parodied, not copied.
+
+| City | Road shape | Celebrities | The road |
+| --- | --- | --- | --- |
+| Madrid | Slag Row, city | Ronaldo and Mbappé | Real Madrid's old king against its new one. Pedestrians and red-light junctions go here first. |
+| Mumbai | Breakwater Run, coast | Ranveer Singh and Jenner | Marine Drive, a sea-link bridge, and monsoon nights in the wet night look. Their rivalry is invented. |
+| Bay Area | Ridge Road, mountain | Musk and Altman | A parody of Skyline Boulevard, the motorcycle road along the hills above Silicon Valley. |
+
+- **Career.** Three levels across the three cities: nine qualifying races and a finale. Ten riders a race. The number of levels and the field size are settings that the career and multiplayer read, so changing either means re-measuring the economy, bust rates, road lengths, and bikes by level, not rewriting code. Sections 4, 5, and 8 describe the current five levels and fifteen riders.
+- **Bikes.** Parodies of real bikes (Ducati, Kawasaki Ninja, Aprilia, Yamaha, and so on) under parody brands with no logos, and near-future prototypes at the top, each from a celebrity's company. Three tiers after the real-world convention: starter (400 cc and up), mid-tier (600 cc and up), and litre (1000 cc and up). Six bikes at launch, two per tier. Section 6 has the current catalogue.
+- **Money.** Sponsors buy billboards along the roads, and players buy cosmetics: character skins and bike skins at listed prices. Nothing sold changes speed or handling, there are no random loot boxes, and bikes are earned with prize money, never bought. Section 13 has the billboard rules. Payments go through Polar or Dodo Payments, not yet chosen.
+- **Accounts.** Anyone can play, and start a career, as a guest, and a guest's career saves in the browser. Signing in, with Discord, Google, or an emailed link, adds saving across devices and is required to buy something or to race online.
+- **Multiplayer.** Rooms joined with a code, and a public Quick Race. Section 12.
+- **Story.** Section 11.
+- **Legal.** A lawyer reviews the cast, the bike brands, the store, and the licences of the generated 3D assets before launch. Section 15 has the parody rules.
 
 ## 1. Title
 
@@ -12,7 +38,7 @@ Every name, line, road, and bike here is original. Section 15 lists the checks a
 | **SHOULDER CHECK** | The road shoulder plus the hit you give a rival. It describes the game in two words and is a little funny. | Long for a logo; reads as a hockey term to some players. |
 | **HARD SHOULDER** | British road term with a fighting edge. | Less clear to American players; a common phrase that may already be taken by other media. |
 
-Recommendation: **LOWSIDE**. If the search finds a conflict, keep **RUSHLINE**, which the code and docs already use. The rest of this document says "the game" so either name drops in.
+Decided October 23, 2026: **LOWSIDE** is the working name, and it may still change with the story. It needs a trademark and store-name search before launch. The code still says Rushline, and the rest of this document says "the game" so either name drops in.
 
 ## 2. Pillars
 
@@ -22,17 +48,19 @@ Recommendation: **LOWSIDE**. If the search finds a conflict, keep **RUSHLINE**, 
 
 **Money that matters.** Prize money is the only way to a faster bike. Fines and repair bills come out of the same purse. Going broke is possible and has a clear rule. The player always knows what the next bike costs and how far away it is.
 
-**A cast that remembers.** Ten named rivals race the whole season. Each remembers what happened in the last race with you: who knocked whom down, who stole what, who won by a wheel. Their lines and their aggression toward you change because of it.
+**A cast that remembers.** The named rivals race the whole season. Each remembers what happened in the last race with you: who knocked whom down, who stole what, who won by a wheel. Their lines and their aggression toward you change because of it.
 
 ## 3. Modes
 
-**Career** is the main game: five levels, five roads, money, the bike shop, the cast, and the story. It saves to the browser after every race.
+**Career** is the main game: your own rider, money, the bike shop, the cast, and the story. The current build has five levels on five roads; launch has three levels across three cities and a finale (section 0). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
 
 **Single Race** picks any road at any level the player has reached in a career (all of level 1 is open from the start), any bike in the catalogue the player has ever owned, and a random field. There is no qualification and no money: no prize, no fine, no repair bill, and nothing is written to the career. Results go back to the Single Race menu. It is the quick session and the place to learn a road.
 
-**Multiplayer** comes after the career, in step 6. Two to eight players race on the same deterministic simulation run in a Cloudflare Durable Object, with AI rivals filling the rest of the fifteen grid slots. Section 12 describes it.
+**Multiplayer** ships at launch. Two to eight signed-in players race on the same deterministic simulation run in a Cloudflare Durable Object, with AI rivals filling the rest of the grid. Section 12 describes it.
 
 ## 4. Career structure
+
+For launch the career becomes three levels across the three cities, nine qualifying races and a finale, with ten riders a race (section 0). The tables and numbers below describe the current build, five levels on five roads with fifteen riders, and are re-measured for the launch shape.
 
 ### Levels and roads
 
@@ -271,6 +299,8 @@ The decent player's level 1, start by start.
 At the start of level 2 the Wren trades in for $1,800, giving $6,700 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,700, or stay on the Wren with $4,900 in hand and aim straight for the Sesta 600, which two level-2 thirds ($2,240) would then pay for. With the Kite and $1,700, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, a level-2 cop (187 km/h) is nearly as fast as the bike (190 km/h, 198 tucked in). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
 
 ## 6. Bike catalogue
+
+For launch the catalogue becomes parodies of real bikes and near-future prototypes in three tiers: starter (400 cc and up), mid-tier (600 cc and up), and litre (1000 cc and up), six bikes at launch (section 0). The current bikes already sit roughly in those tiers: the Wren and the Kite are starter bikes, the 600 to 800 cc bikes are mid-tier, and the 1000 and 1100 cc bikes are litre bikes. The 250 cc Gutter Pup and the 900 cc Meridian fall outside them. The tuned handling carries over to the new bikes.
 
 ### Classes
 
@@ -514,6 +544,8 @@ Deputy Haverty's lines:
 3. "I'm supposed to read you your rights, but I left them in my other pants."
 
 ## 9. Rival cast
+
+For launch, six parody celebrities and ordinary riders replace this cast (section 0). Its skill, aggression, weapons, and grudges are the templates for them, and it stays in the build until the new cast lands.
 
 ### Summary
 
@@ -864,31 +896,23 @@ Rules:
 
 ## 11. Story
 
-The story is told in short screens between races: the clubhouse corkboard, text messages from rivals, and a line or two from the promoter. Nothing longer than a phone screen. It can be skipped and does not gate play, except for the level-5 finale.
+The Vic Lomax story that stood here was retired on October 23, 2026. Its text is still in `packages/career/src/story.ts` and in the bar's lines until the new story replaces it. Treat both as placeholders and build nothing new on them.
 
-**The Lowside** is a bar under the Lowtown freeway. **Vic Lomax** runs the races out of the back room: he sets the purses, takes a cut, pins the results to the corkboard, and is friendly in the way a man is friendly when you owe him money.
+The new story is drafted as a short story bible, which the owner rewrites in their own voice. What is decided:
 
-**Level 1: New Meat.** You roll into the Lowside car park on a Halden Wren with $1,500 and no reputation. Vic pins a Polaroid of you to the board under "NEW MEAT" and tells you the deal: top three on all five roads and you move up. Juno Kade is at the bar and does not look up. Moose introduces himself and apologises in advance. Texts arrive from numbers you never gave out ("Dee: are you the one with the red bike. you're in my lane"). When you qualify the last road, Vic moves your Polaroid up a row and writes "KID CAN RIDE" under it. Juno looks up.
+- **The league.** Illegal road races are streamed around the world, touring real cities. Viewers watch and bet on them inside the story; the game itself sells only cosmetics (section 0).
+- **The player** is an unknown rider on a cheap bike, climbing the league. The career is that rise, across three levels and a finale.
+- **The celebrities** each have a story moment on their home road, built from their public memes, and each pair's feud plays out in races the player rides in: Musk and Altman in the Bay Area, Ronaldo and Mbappé in Madrid, and Ranveer Singh and Jenner in Mumbai. Beating a celebrity in their story moment unlocks them for single races and multiplayer.
+- **The Lowside** stays the bar where riders wait between races, and the hub of the menus. Where it sits on a world tour is for the story bible.
+- **The limits.** Jokes come from public, well-known memes. The parodies never claim real crimes or private facts about the real people (section 15).
 
-**Level 2: The Envelope.** Tristan's sponsor wants a win on his home road, and Vic wants the sponsor. There is an envelope on the corkboard with your name on it and $1,500 inside; the note says "Breakwater Run. Behind the boy. V." Taking it is optional and is the only branch in the story. If you take it and beat Tristan anyway, Vic takes back $2,000 and pins a photo of your bike with a red X on it. If you leave it, the envelope is gone the next morning and Vic is very pleasant to you, which is worse. Juno races for the first time and says nothing to you at all.
-
-**Level 3: Dee's Tip.** Dee wins a race on her home road and Vic pays her half, with a "processing fee" for the rest. She sits at your table and stops pretending to dislike you. From now on, before each race, she texts where the first roadblock will be ("cop van at 2.15 on slag row. same as always. vic knows. vic ALWAYS knows"), and she does not attack you on the road. Police roadblocks start this level, and the board fills up with tickets from riders who did not get a text.
-
-**Level 4: The Badge.** Lyle, drunk and furious, tells you what he was really fired for: he wrote up Sergeant Pike for taking money from Vic, and the report vanished. Now the cops seem to know which riders Vic likes, and you are not one of them. Coach Dale tries to sell you tape seven. Someone writes your name in marker over the top of Juno's spot on the board; Juno crosses it out, then, after you beat her once, leaves it there. She says your name for the first time.
-
-**Level 5: The Long Ridge.** The last race of the season is Ridge Road at full length, 13.15 km, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.
-
-**Ending: Clean Crown.** You win the Long Ridge and never took the envelope. Sergeant Pike, who has read the room, busts Vic in the Lowside car park instead of you. Deputy Haverty asks Vic to hold still for a photo. Your Polaroid goes at the top of the board, Juno buys the first round, and Dee delivers a pizza nobody ordered.
-
-**Ending: Bought Crown.** You win the Long Ridge but took the envelope at level 2. Vic hands you the purse and a contract: next season you ride for him. Your Polaroid goes at the top of the board, pinned through Vic's business card. Juno does not buy a round. This is the hook for a second season.
-
-**Ending: Runner-up.** You qualify the Long Ridge but do not win it. Juno keeps the crown, sits down next to you, and says, "Next year." The board shows her Polaroid on top and yours right under it, and that is the first time anyone has put a picture there.
+Still for the story bible: the six parody names, the league's arc, one scene or line for each of the nine races, the bar's lines, and the ending.
 
 ## 12. Multiplayer
 
 ### What it is
 
-Two to eight players race one road at one level on the same simulation. The other grid slots are filled by rivals from the cast, so every race has fifteen riders and the same police and traffic as the career. The pacing rule in section 9 reads the gap to rider 0, so in a multiplayer race it would pace the rivals around the host's slot; a fairer rule for several humans (the gap to the nearest human, or no pacing at all) is a lobby setting to decide when multiplayer is built. There is no money; the reward is the result and, later, a leaderboard. Each player picks a bike from the full catalogue in the lobby, so a lobby can agree on "Featherweights only" or let anyone ride the Nera.
+Two to eight signed-in players race one road at one level on the same simulation. Rivals fill the other grid slots, so every race has the career's field: ten riders at launch, read from the same setting. Players arrive two ways. A host creates a private room and shares its short code. Quick Race drops a player into the next open public room, which starts about 15 seconds later with however many humans have joined, so a race always starts. Ranked matchmaking waits until enough people play to fill it. A player can ride any celebrity they have unlocked, in any skin they own. There is no money; the reward is the result and, later, a leaderboard. The pacing rule in section 9 reads the gap to rider 0, so in a multiplayer race it would pace the rivals around the host's slot; a fairer rule for several humans (the gap to the nearest human, or no pacing at all) is decided when multiplayer is built. Each player picks a bike from the full catalogue in the lobby, so a lobby can agree on one tier or let anyone ride a litre bike.
 
 ### How it runs
 
@@ -925,7 +949,7 @@ The game is free and ad-funded, so ads exist, but they never touch the riding or
 
 **Where an ad can live:**
 
-There are three placements and no others.
+There are three placements here, and the sponsor billboards below are the fourth. There are no others.
 
 - **Results screen:** no display ad since Results moved into the bar (October 23, 2026). If one returns, it is a bill on the wall, never covering the placings, money, or buttons.
 - **Clubhouse board,** one small static slot styled as a poster pinned beside the corkboard, out of the way of every button.
@@ -935,13 +959,23 @@ There is no interstitial between races. An earlier draft had one after Results; 
 
 **Where an ad must never appear:**
 
-- During a race, the countdown, the pause menu, or the Finish screen.
+- During a race, except the sponsor billboards at the kerb (below), or in the countdown, the pause menu, or the Finish screen.
 - As a full-screen interstitial anywhere.
 - In the bar before the first race of a session.
 - Over the Busted or Wrecked consequence itself; the player sees what happened and what it cost before any offer.
 - As a way to undo a Game Over, skip a qualification, or reduce a police fine. Fines are the cost of getting caught; buying them down with attention would make the police meaningless.
 - In the Multiplayer lobby countdown or between multiplayer races while other players wait.
 - Anywhere for players who have paid to remove ads, if that option is added.
+
+### Sponsor billboards and the store
+
+Launch money comes from sponsor billboards and cosmetics (section 0). Whether the placements above ship at launch is not decided.
+
+- **Billboards** are a fourth placement, the only ad seen during a race. They are scenery at the kerb, drawn like every other sign in the city and open kits, never an overlay, and never on the road. The track format lists each road's billboard slots.
+- **Selling them.** At launch the owner sells slots to sponsors directly and bills them by card invoice. A schedule file says which slot shows which sponsor's art on which dates. A self-serve booking platform comes only if sponsors ask for one.
+- **Proof.** From the first day the game counts, for each billboard, how many riders pass it and how long it is on screen, so a sponsor can be shown what they bought.
+- **Unsold slots** show parody ads for made-up brands that mock real ones, so a slot never looks empty.
+- **The store** sells character skins and bike skins at listed prices, to signed-in players only. Nothing sold changes speed or handling, and there are no random loot boxes.
 
 ## 14. What the simulation needs
 
@@ -1025,3 +1059,12 @@ Checked against every name in the research note and the 25 reference captures:
 - **Lines.** Every line was written for this cast. None quotes or paraphrases a line visible in the captures or quoted in the research note.
 - **Weapons.** Club, chain, crowbar, and baton are generic objects already in the game. The pool cue and stop sign do not appear in the reference weapon lists; the reference spray, prod, and oil weapons were deliberately avoided.
 - **Title.** LOWSIDE, SHOULDER CHECK, and HARD SHOULDER do not contain "Road" or "Rash". A trademark search is still needed.
+
+The launch cast and bikes add checks against the real world, decided on October 23, 2026:
+
+- **Real people.** Each celebrity is a parody: a twisted name on an exaggerated caricature, with the memes as their personality. No real name, photo, voice, or exact likeness is used. Games that transformed a real person have won when sued (Lohan v. Take-Two, 2018; Noriega v. Activision, 2014), and a game that copied one closely lost (Hart v. Electronic Arts, 2013). A paid skin of a real person is the most exposed thing the game could sell, which is why the store sells only parodies.
+- **Claims.** Jokes come from public, well-known memes. No line claims a real crime or a private fact about the real person.
+- **Borrowed fiction.** A meme that leans on someone else's character is used for its idea only. Ronaldo's superhero parody takes nothing from Homelander or _The Boys_, which belong to Amazon: no name, costume, or logo.
+- **Brands.** Bikes parody real makers under invented brand names, with no logos or badges, as GTA does with its cars. Real landmarks are parodied, not copied.
+- **Generated art.** Each 3D generator's licence for commercial use is checked before its output ships.
+- **Review.** A lawyer reviews the cast, the brands, the store, and the generated assets before launch.

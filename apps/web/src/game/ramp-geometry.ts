@@ -67,9 +67,10 @@ const shade = (
   outward: THREE.Vector3,
   paint: (index: number) => void
 ): void => {
-  for (const [index, corner] of face.entries()) {
+  for (let index = 0; index < face.length; index += 1) {
+    const corner = face[index];
     const target = corners[index];
-    if (target) {
+    if (corner && target) {
       place(track, corner, target);
     }
   }

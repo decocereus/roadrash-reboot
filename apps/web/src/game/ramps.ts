@@ -104,7 +104,11 @@ export const buildRamps = (track: Track, shading: Shading): Ramps => {
     shade: shadowMaterial(),
   };
   const firstChevron = Math.max(...CHEVRON_GAPS) + CHEVRON_DEPTH + CHEVRON_BAR;
-  for (const [index, jump] of track.features.entries()) {
+  for (let index = 0; index < track.features.length; index += 1) {
+    const jump = track.features[index];
+    if (!jump) {
+      continue;
+    }
     const ramp = rampOf(track, jump, index);
     const { body, beacons: lit } = buildRamp(ramp, materials);
     beacons.push(...lit);
