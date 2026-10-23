@@ -5,16 +5,19 @@ The game paces itself at 60 frames per second at the screen's native pixel ratio
 ## Sub-features
 
 - `fps-overlay` shows fps, frame time, worst frame, pixel ratio, rung, pace, refresh, draw calls, and triangles with `?fps`.
+- `frame-rate-setting` is Settings → Frame rate, which cycles 60, 30 and Auto.
 - `stress-race` starts the fixed worst-case race on the pilot as soon as the page loads.
 - `frame-sample` reads per-frame interval, CPU per part, draw calls, and rung from the frame recorder.
 - `throttled-play` shows how the game paces and which quality rungs it takes with the main thread slowed.
 - `trace` records main-thread, compositor, and GPU-process work for a few seconds.
 - `first-load` measures time to the title or to a race on a throttled network.
-- `perf-ab` compares two builds on the bench window with `tools/perf/measure.ts`.
+- `perf-gpu` is the perf gate's GPU lane, `pnpm perf:gpu`: frame pacing and render counts against `tools/perf/budgets.json`, side A against side B in two `rv` runs. It is the only check of draw calls, triangles, programs and textures.
+- `perf-ab` compares the uncapped frame cost of two builds on the bench window with `tools/perf/measure.ts`.
 
 ## How to get to it (user POV)
 
 - A player sees frame rate only as smoothness. Add `?fps` to any URL for the overlay.
+- Settings, from the title or the pause menu, has Frame rate: 60, 30, or Auto (the default), which lowers detail and then holds 30 when frames slip.
 - `?stress` and `?stress=reference` work in every build; `&ratio=2` pins the pixel ratio.
 
 ## Driving it with rv
@@ -25,15 +28,19 @@ Preconditions:
 - Note the machine load (`uptime`); other agents' work moves these numbers.
 
 - **Overlay.** Run `rv open --run <run> "/?stress&ratio=2&fps" --until race` and `rv shot --run <run> fps-overlay`. The top-left readout shows fps, ms, worst, `×2.00`, the rung, pace, the display's Hz, calls, and tris.
+- **Frame-rate setting.** In a race past its countdown, run `rv press --run <run> Escape`, `rv click --run <run> Settings --within Pause` and `rv click --run <run> "Frame rate" --within Settings`; from Auto, each click steps to 60, then 30, then Auto again. Then `rv click --run <run> Back --within Settings`, `rv click --run <run> Resume --within Pause`, ride for two seconds, and read `rv js --run <run> 'globalThis.__rushlineDiagnostics.snapshot().quality'`: `frameRate` and `pace` read `"60"` and 60, or `"30"` and 30. `rv sample` then reports 60.0 or 30.0 fps while the race clock still runs 60 ticks a second.
 - **Sample.** Run `rv wait --run <run> 'globalThis.__rushlineProfile.info().tick > 600' --timeout 120` and `rv sample --run <run> stress --seconds 6`. The line reports frames, fps, p50/p95/p99/worst frame interval, frames over 20 and 33 ms, JS ms per frame, calls, ratio, and rung, and `stress.sample.json` holds the same. On the M4 Pro the stress race runs near 60 fps with a few frames over 20 ms; a build reads lower on `--dev`.
 - **Throttled.** Run `rv throttle --run <run> --cpu 4`, `rv sample --run <run> stress-cpu4 --seconds 6`, then `rv throttle --run <run> --cpu 1`. Expect roughly twice the JS per frame and the rung climbing as the governor sheds quality; the sample records `cpu x4`.
 - **Trace.** Run `rv trace --run <run> stress --seconds 5`. The summary lists long tasks, GC pauses, and the busiest threads (`Renderer/CrRendererMain`, `GPU Process/CrGpuMain`, `GPU Process/VizCompositorThread`); open `stress.trace.json` in the DevTools Performance panel for detail.
 - **First load.** Run `rv throttle --run <run> --network slow4g`, then `rv open --run <run> / --until title` and `rv open --run <run> "/?ride=ridge-road" --until race`. Each prints load time and time to the signal. Clear with `rv throttle --run <run> --network off`.
-- **Perf A/B.** Follow "The perf A/B" in `SKILL.md`: one server per side, `?stress&ratio=2`, `node tools/perf/measure.ts --url ... --label <side> --runs 1 --port <free port>` alternated A, B, A, B at least five times each, then compare means and spread.
+- **Perf gate on the GPU.** Follow "The perf gate on the GPU" in `SKILL.md`: a quiet machine, `rv up --slot 0 --path /kit` in a `/tmp` clone at the baseline revision and `rv up --slot 1 --path /kit` here, then `pnpm perf:gpu --a <A run> --b <B run>`. It ends with `PASS perf gpu <id>` or a `FAIL` row per metric, including `render.calls.max`, `render.triangles.max`, `render.programs.max` and `render.textures.max`. `rv down` both runs and delete the clone afterwards.
+- **Perf A/B.** Follow "Frame cost with measure.ts" in `SKILL.md`: one server per side, `?stress&ratio=2`, `node tools/perf/measure.ts --url ... --label <side> --runs 1 --port <free port>` alternated A, B, A, B at least five times each, then compare means and spread.
 
 ## Gotchas
 
-- `rv sample` measures whatever ticks pass while it waits; it is not the bench window. For a number to quote, use `measure.ts`, which waits for ticks 2880-3480 of the stress race.
+- A frame-rate change applies on the next rendered frame. While the pause menu is up the snapshot still shows the old rate; resume before you read it.
+- A normal single race on the M4 Pro holds rung 0 even at `--cpu 4`; use the stress race to see the governor step down (it went from rung 0 to rung 1, shadow map 4096 to 2048, on 2026-10-22).
+- `rv sample` measures whatever ticks pass while it waits; it is not the bench window. For a number to quote, use `pnpm perf:gpu` or `measure.ts`, which wait for ticks 2165-2765 of the stress race. In that window the player trails the pack in 14th of 15, with the rivals 100 to 150 m ahead.
 - The governor moves the rung and pixel ratio unless `?ratio=` pins them; compare runs only at the same ratio.
 - CPU throttling slows the main thread only. The GPU runs at full speed, so GPU-bound passes look better than they would on an Air; compare `?ratio=1` with `?ratio=2` to see fill cost.
 - Throttling lives in the console watcher. If `rv doctor` shows the watcher dead, the throttling is gone too.

@@ -80,6 +80,12 @@ describe("road hazards", () => {
     expect(
       spawnRock(state, rampRoad, { ...spot, id: "c", x: 4.4 })
     ).toBeUndefined();
+    hold(state, rampRoad, neutralInput, 1);
+    expect(
+      state.hazards
+        .filter((hazard) => ["a", "b", "c"].includes(hazard.id))
+        .map(({ id, kind, s, x }) => ({ id, kind, s, x }))
+    ).toStrictEqual([{ id: "a", kind: "pothole", s: 1500, x: 0 }]);
   });
 
   it("a cop chasing the player rides round a rock spawned in its path", () => {

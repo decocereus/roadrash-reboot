@@ -7,13 +7,24 @@
       "typescript": true
     },
     "apps/web": {
-      "entry": ["src/routes/**/*.{ts,tsx}", "src/**/*.test.ts"],
-      "project": ["src/**/*.{ts,tsx,css}"],
+      "entry": [
+        "src/routes/**/*.{ts,tsx}",
+        "src/**/*.test.ts",
+        "test/**/*.test.ts",
+        "test/renderer-lifecycle.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
       "typescript": true
     },
     "packages/*": {
       "includeEntryExports": true,
       "project": ["src/**/*.ts"],
+      "typescript": true
+    },
+    "packages/telemetry": {
+      "entry": ["test/**/*.test.ts"],
+      "includeEntryExports": true,
+      "project": ["src/**/*.ts", "test/**/*.ts"],
       "typescript": true
     },
     "packages/ui": {
@@ -32,7 +43,13 @@
       "typescript": true
     },
     "tools/perf": {
-      "entry": ["measure.ts", "session.ts", "test/**/*.test.ts"],
+      "entry": [
+        "gate.ts",
+        "measure.ts",
+        "node.ts",
+        "session.ts",
+        "test/**/*.test.ts"
+      ],
       "project": ["**/*.ts"],
       "typescript": true
     },

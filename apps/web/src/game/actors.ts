@@ -1,5 +1,5 @@
 import { riderPalette } from "@racer/sim/palette";
-import type { TrafficCar } from "@racer/sim/state";
+import type { TrafficView } from "@racer/sim/race-view";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -388,7 +388,7 @@ const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
 export const createFleet = (
   assets: Assets,
   shading: Shading,
-  cars: readonly TrafficCar[]
+  cars: readonly TrafficView[]
 ): Fleet => {
   const group = new THREE.Group();
   const parts: FleetPart[] = [];

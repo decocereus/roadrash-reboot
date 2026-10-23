@@ -1,22 +1,24 @@
+import type { RiderView } from "@racer/sim/race-view";
 import { clamp, TICK_SECONDS } from "@racer/sim/state";
-import type { RiderState } from "@racer/sim/state";
 import type { FrameRate } from "@racer/telemetry/limits";
 import type * as THREE from "three";
 
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
+import type { Part } from "../profile-parts.ts";
 import type { Sound } from "./audio.ts";
+import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
+import { advanceHud } from "./hud-cadence.ts";
 import type { GamePhase } from "./hud.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
-import type { FrameEnd, Part, ProfileMode, Profiler } from "./profile.ts";
+import type { FrameEnd, ProfileMode, Profiler } from "./profile.ts";
 import type { Quality } from "./quality-ladder.ts";
 import type { Feedback } from "./race-feedback.ts";
 import type { Cast } from "./rider-views.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
-const HUD_INTERVAL = 1 / 15;
 const MAX_FRAME_SECONDS = 0.1;
 
 export interface FrameLoop {
@@ -38,41 +40,49 @@ export interface FrameLoop {
   lastCallback: number;
 }
 
+export const frameLoopOf = (
+  profileMode: ProfileMode,
+  profiler: Profiler | null,
+  meterFlag: boolean
+): FrameLoop => ({
+  accumulator: 0,
+  clockReset: false,
+  frameEnd: {
+    discarded: 0,
+    drawRung: 0,
+    drawnEpoch: 0,
+    interval: 0,
+    pixelRatio: 1,
+    race: 0,
+    rung: 0,
+    sizeEpoch: 0,
+    tick: 0,
+    ticks: 0,
+  },
+  frameId: 0,
+  hudClock: 0,
+  last: 0,
+  lastBusyMs: 0,
+  lastCallback: Number.NaN,
+  lastGear: 1,
+  meter: null,
+  meterFlag,
+  overlayNoted: null,
+  profileMode,
+  profiler,
+  rendererLabel: "",
+  sample: emptySample(),
+});
+
 export const createFrameLoop = (renderer: THREE.WebGLRenderer): FrameLoop => {
   const profileMode = profileModeOf(globalThis.location.search);
-  const profiler: Profiler | null =
+  return frameLoopOf(
+    profileMode,
     profileMode === "off"
       ? null
-      : createProfiler(renderer, profileMode === "gpu");
-  return {
-    accumulator: 0,
-    clockReset: false,
-    frameEnd: {
-      discarded: 0,
-      drawRung: 0,
-      drawnEpoch: 0,
-      interval: 0,
-      pixelRatio: 1,
-      race: 0,
-      rung: 0,
-      sizeEpoch: 0,
-      tick: 0,
-      ticks: 0,
-    },
-    frameId: 0,
-    hudClock: 0,
-    last: 0,
-    lastBusyMs: 0,
-    lastCallback: Number.NaN,
-    lastGear: 1,
-    meter: null,
-    meterFlag: wantsFrameMeter(),
-    overlayNoted: null,
-    profileMode,
-    profiler,
-    rendererLabel: "",
-    sample: emptySample(),
-  };
+      : createProfiler(renderer, profileMode === "gpu"),
+    wantsFrameMeter()
+  );
 };
 
 export const lapOf = (frame: FrameLoop) => (part: Part) => {
@@ -124,6 +134,14 @@ export const bindSettings = ({
   };
 };
 
+export interface FrameRenderer {
+  readonly info: {
+    readonly render: { readonly calls: number; readonly triangles: number };
+    readonly reset: () => void;
+  };
+  readonly setAnimationLoop: (callback: ((now: number) => void) | null) => void;
+}
+
 interface LoopParts {
   readonly applyPending: () => void;
   readonly cast: Pick<Cast, "inputs">;
@@ -134,14 +152,17 @@ interface LoopParts {
   readonly govern: (seconds: number, busyMs: number) => void;
   readonly halted: () => boolean;
   readonly noteRefresh: (now: number) => void;
-  readonly player: () => RiderState;
+  readonly player: () => RiderView;
   readonly quality: Quality;
-  readonly recorder: Recorder;
-  readonly renderer: THREE.WebGLRenderer;
+  readonly recorder: Pick<
+    Recorder,
+    "beginFrame" | "frame" | "raceId" | "recording"
+  >;
+  readonly renderer: FrameRenderer;
   readonly report: () => void;
   readonly session: { readonly phase: GamePhase; readonly holdLeft: number };
   readonly skipsVsync: (now: number) => boolean;
-  readonly sound: Sound;
+  readonly sound: Pick<Sound, "drive" | "shift">;
   readonly stage: Pick<Stage, "race">;
   readonly tick: () => void;
 }
@@ -169,23 +190,7 @@ export const installFrameLoop = ({
 }: LoopParts): void => {
   const { frameEnd, sample } = frame;
 
-  const advance = (seconds: number): number => {
-    if (frame.clockReset) {
-      frame.accumulator = 0;
-      frame.clockReset = false;
-    }
-    frame.accumulator += seconds;
-    let ticks = 0;
-    while (frame.accumulator >= TICK_SECONDS && !halted()) {
-      tick();
-      ticks += 1;
-      frame.accumulator -= TICK_SECONDS;
-      if (frame.clockReset) {
-        break;
-      }
-    }
-    return ticks;
-  };
+  const advance = createFixedTick(frame, halted, tick);
 
   const noteCallback = (now: number) => {
     noteRefresh(now);
@@ -249,11 +254,7 @@ export const installFrameLoop = ({
     }
     feedback.noticeLeft -= seconds;
     feedback.speechLeft -= seconds;
-    frame.hudClock += seconds;
-    if (frame.hudClock >= HUD_INTERVAL) {
-      frame.hudClock = 0;
-      report();
-    }
+    advanceHud(frame, seconds, report);
     if (frame.profiler) {
       frameEnd.discarded = discarded;
       frameEnd.drawRung = quality.drawnRung;
@@ -263,7 +264,7 @@ export const installFrameLoop = ({
       frameEnd.race = recorder.raceId();
       frameEnd.rung = quality.rung;
       frameEnd.sizeEpoch = quality.sizeEpoch;
-      frameEnd.tick = stage.race.tick;
+      frameEnd.tick = stage.race.view.tick;
       frameEnd.ticks = ticks;
       frame.profiler.finish(frameEnd);
     }

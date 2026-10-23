@@ -1,13 +1,13 @@
 import { HIT_STUN_TICKS } from "@racer/sim/combat";
+import type { RaceRun } from "@racer/sim/race-run";
+import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
 import { clamp, TICK_RATE } from "@racer/sim/state";
 import type {
   AttackKind,
   HazardEffect,
   RaceEvent,
-  RaceState,
   RiderInput,
-  RiderState,
 } from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
 import { emptySupport, supportAt } from "@racer/track/features";
@@ -66,7 +66,7 @@ interface Pose {
   bodyAir: number;
 }
 
-interface RiderView {
+interface RiderActor {
   readonly bike: THREE.Object3D;
   readonly figure: RiderFigure;
   readonly before: Pose;
@@ -80,7 +80,7 @@ interface RiderView {
   sagSpeed: number;
 }
 
-const capture = (rider: RiderState, pose: Pose): void => {
+const capture = (rider: RiderView, pose: Pose): void => {
   pose.s = rider.s;
   pose.x = rider.x;
   pose.heading = rider.heading;
@@ -168,11 +168,11 @@ const kickFrame = (
   );
 };
 
-const flinchOf = (rider: RiderState, subTick: number): number =>
+const flinchOf = (rider: RiderView, subTick: number): number =>
   Math.max(0, rider.hitStun - subTick) / HIT_STUN_TICKS;
 
 const strikeFrame = (
-  rider: RiderState,
+  rider: RiderView,
   subTick: number,
   frame: StrikeFrame
 ): boolean => {
@@ -196,7 +196,7 @@ const strikeFrame = (
   return back < 1 && strikeAt(frame, out, 1 - back);
 };
 
-const settleSag = (view: RiderView, seconds: number) => {
+const settleSag = (view: RiderActor, seconds: number) => {
   for (let left = seconds; left > 0; left -= SAG_STEP) {
     const step = Math.min(SAG_STEP, left);
     view.sagSpeed -=
@@ -217,7 +217,7 @@ interface Placed {
 }
 
 export interface Cast {
-  views: RiderView[];
+  views: RiderActor[];
   bikes: Bikes | null;
   puffs: Puffs | null;
   readonly deck: Support;
@@ -267,7 +267,7 @@ export const createCast = (shading: Shading): Cast => ({
 });
 
 interface CastStage {
-  readonly race: RaceState;
+  readonly race: Pick<RaceRun, "view">;
   readonly track: Track;
   readonly world: World;
   readonly fleet: Fleet;
@@ -311,7 +311,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     const fleetOfBikes = createBikes(
       assets,
       stage.world.shading,
-      stage.race.riders.map((rider) => ({
+      stage.race.view.riders.map((rider) => ({
         paint: rider.profile.paint,
         police: rider.profile.role === "police",
       }))
@@ -321,7 +321,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     stage.world.scene.add(fleetOfBikes.group);
     cast.puffs = createPuffs(stage.world.shading);
     stage.world.scene.add(cast.puffs.group);
-    cast.views = stage.race.riders.map((rider, index) => {
+    cast.views = stage.race.view.riders.map((rider, index) => {
       const bike = fleetOfBikes.roots[index] ?? new THREE.Object3D();
       const figure = createRiderFigure(
         assets,
@@ -330,7 +330,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         index
       );
       stage.world.scene.add(figure.root);
-      const view: RiderView = {
+      const view: RiderActor = {
         after: emptyPose(),
         before: emptyPose(),
         bike,
@@ -347,15 +347,15 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       capture(rider, view.after);
       return view;
     });
-    cast.inputs = stage.race.riders.map(() => freshInput());
-    cast.plates = stage.race.riders.map((rider) =>
+    cast.inputs = stage.race.view.riders.map(() => freshInput());
+    cast.plates = stage.race.view.riders.map((rider) =>
       bikeColour(rider.profile.paint)
     );
   };
 
   const touchHazard = (
     effect: HazardEffect,
-    view: RiderView,
+    view: RiderActor,
     speed: number,
     near: boolean
   ) => {
@@ -372,7 +372,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
 
   const touchDown = (event: RaceEvent) => {
     const view = cast.views[event.rider];
-    const rider = stage.race.riders[event.rider];
+    const rider = stage.race.view.riders[event.rider];
     if (!(view && rider)) {
       return;
     }
@@ -398,7 +398,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   const captureAll = (into: "before" | "after") => {
-    const { riders } = stage.race;
+    const { riders } = stage.race.view;
     for (let index = 0; index < riders.length; index += 1) {
       const rider = riders[index];
       const view = cast.views[index];
@@ -412,14 +412,14 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     captureAll("after");
   };
 
-  const flinchSideOf = (rider: RiderState): number => {
-    const hitter = stage.race.riders[rider.lastHitBy];
+  const flinchSideOf = (rider: RiderView): number => {
+    const hitter = stage.race.view.riders[rider.lastHitBy];
     return hitter ? Math.sign(rider.x - hitter.x) || 1 : 1;
   };
 
   const placeFigure = (
-    rider: RiderState,
-    view: RiderView,
+    rider: RiderView,
+    view: RiderActor,
     seated: boolean,
     bodyS: number,
     bodyX: number,
@@ -531,8 +531,8 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
 
   const drawRider = (
     index: number,
-    rider: RiderState,
-    view: RiderView,
+    rider: RiderView,
+    view: RiderActor,
     blend: number,
     seconds: number
   ) => {
@@ -583,7 +583,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     placed.x = x;
   };
 
-  const followPlayer = (rider: RiderState) => {
+  const followPlayer = (rider: RiderView) => {
     const onBike = placed.seated || placed.s < placed.bodyS;
     subject.s = onBike ? placed.s : placed.bodyS;
     subject.x = onBike ? placed.x : placed.bodyX;
@@ -593,7 +593,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   const placeFleet = (blend: number) => {
-    const { cars } = stage.race;
+    const { cars } = stage.race.view;
     for (let index = 0; index < cars.length; index += 1) {
       const s = cars[index]?.s ?? 0;
       const from = stage.previousCars[index] ?? s;

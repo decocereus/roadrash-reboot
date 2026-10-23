@@ -9,11 +9,11 @@ import * as Schema from "effect/Schema";
 import type * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 
-import { DetachedProcesses } from "./node/detached-process.ts";
 import { ProcessError } from "./process-error.ts";
 
 const POLL_MS = 200;
 const STOP_ATTEMPTS = 50;
+const LOGGED_EXEC = 'log=$1; shift; exec "$@" >>"$log" 2>&1';
 
 export interface CommandOutput {
   readonly stderr: string;
@@ -111,7 +111,6 @@ export class ToolProcesses extends Context.Service<
   static readonly layer = Layer.effect(ToolProcesses)(
     Effect.gen(function* makeToolProcesses() {
       const spawner = yield* ChildProcessSpawner;
-      const detached = yield* DetachedProcesses;
 
       const run = Effect.fn("ToolProcesses.run")(function* run(
         file: string,
@@ -194,6 +193,53 @@ export class ToolProcesses extends Context.Service<
         }
       );
 
+      const startDetached = Effect.fn("ToolProcesses.startDetached")(
+        function* startDetached(
+          args: readonly string[],
+          cwd: string,
+          log: string,
+          env: NodeJS.ProcessEnv
+        ) {
+          return yield* spawner
+            .spawn(
+              ChildProcess.make(
+                "/bin/sh",
+                [
+                  "-c",
+                  LOGGED_EXEC,
+                  "rushline-detached",
+                  log,
+                  process.execPath,
+                  ...args,
+                ],
+                {
+                  cwd,
+                  detached: true,
+                  env,
+                  extendEnv: false,
+                  stderr: "ignore",
+                  stdin: "ignore",
+                  stdout: "ignore",
+                }
+              )
+            )
+            .pipe(
+              Effect.tap((handle) => handle.unref),
+              Effect.map((handle) => handle.pid),
+              Effect.mapError(
+                (cause) =>
+                  new ProcessError({
+                    cause,
+                    executable: process.execPath,
+                    message: `Could not start ${args.join(" ")}: ${cause.message}`,
+                    operation: "spawn",
+                  })
+              )
+            );
+        },
+        Effect.scoped
+      );
+
       const listenerOf = (port: number) =>
         run("lsof", ["-nP", "-t", `-iTCP:${port}`, "-sTCP:LISTEN"]).pipe(
           Effect.map(({ stdout }) => {
@@ -252,7 +298,7 @@ export class ToolProcesses extends Context.Service<
         listenerOf,
         run,
         spawnScoped,
-        startDetached: detached.spawnLogged,
+        startDetached,
         stopOwned,
       });
     })

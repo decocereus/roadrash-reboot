@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
 import type { RacePlan } from "../game/hud.ts";
+import type { PrepareOutcome } from "../game/preparation.ts";
 import { BustedScreen } from "./screens/busted.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
@@ -34,7 +35,7 @@ const PreRace = ({
   readonly career: CareerState | null;
   readonly entry: RaceEntry;
   readonly ready: boolean;
-  readonly onPrepare: (plan: RacePlan) => Promise<void>;
+  readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
 }) => {
@@ -43,8 +44,8 @@ const PreRace = ({
   useEffect(() => {
     let current = true;
     const prepare = async (): Promise<void> => {
-      await Promise.allSettled([onPrepare(plan)]);
-      if (current) {
+      const outcome = await onPrepare(plan);
+      if (current && outcome.kind !== "cancelled") {
         setPrepared(true);
       }
     };

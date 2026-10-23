@@ -1,5 +1,6 @@
 import { emptySupport, supportAt } from "@racer/track/features";
 import type { Support } from "@racer/track/features";
+import { hypot2, sin } from "@racer/track/math";
 import { curvatureAt, slopeAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
@@ -177,7 +178,7 @@ export const ride = (
   const pull = stepDrive(bike, rider, rider.speed, rider.throttle);
 
   let acceleration =
-    -(GRAVITY * slope) / Math.hypot(1, slope) -
+    -(GRAVITY * slope) / hypot2(1, slope) -
     bike.leanScrub * lock * lock * rider.speed;
   if (rider.speed > 0) {
     acceleration -=
@@ -208,8 +209,7 @@ export const ride = (
     (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   settleVisuals(rider, 1);
-  rider.heading +=
-    rider.slip * SLIDE_YAW * Math.sin(rider.modeTicks * SLIDE_SWING);
+  rider.heading += rider.slip * SLIDE_YAW * sin(rider.modeTicks * SLIDE_SWING);
   settleOnSurface(
     state,
     track,
