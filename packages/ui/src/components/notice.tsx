@@ -1,13 +1,6 @@
 import { cn } from "@racer/ui/utils";
 import type { ComponentProps } from "react";
 
-const toastEdges = {
-  blue: "border-l-blue",
-  green: "border-l-green",
-  red: "border-l-red",
-  yellow: "border-l-yellow",
-} as const;
-
 const Notice = ({ className, ...props }: ComponentProps<"p">) => (
   <p
     data-slot="notice"
@@ -20,21 +13,4 @@ const Notice = ({ className, ...props }: ComponentProps<"p">) => (
   />
 );
 
-const Toast = ({
-  className,
-  tone = "yellow",
-  ...props
-}: ComponentProps<"p"> & { readonly tone?: keyof typeof toastEdges }) => (
-  <p
-    data-slot="toast"
-    role="status"
-    className={cn(
-      "bg-panel/85 text-text notice-in font-body w-fit max-w-sm border-l-4 px-4 py-2 text-sm font-semibold shadow-[0_6px_14px_rgb(0_0_0/40%)] backdrop-blur-sm",
-      toastEdges[tone],
-      className
-    )}
-    {...props}
-  />
-);
-
-export { Notice, Toast };
+export { Notice };

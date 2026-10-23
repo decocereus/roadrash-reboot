@@ -4,6 +4,8 @@ Drafted October 10, 2026. The look and sound of the game: palette, type, HUD, mo
 
 Superseded in part on October 13, 2026. The race view is now cel-shaded cyberpunk anime, as `docs/architecture.md` describes under Product and Browser client. The principles of flat matte low-poly shading, the palette, the HUD style, and the region kits below describe the earlier direction and no longer bind the race view. The readability rules, camera rules, and audio direction still hold.
 
+Superseded for the interface on October 23, 2026. The menus are painted rooms with ruled paper and neon ink, and `DESIGN.md` is the source for the interface palette, type, and components. The interface palette below is kept as history.
+
 The reference captures were studied for composition only: a large rider low in the frame, a high horizon, bright riders on a grey road, orange headings on dark menus, and consequences shown as a character's reaction. Nothing here copies a screen, a portrait, a logo, or a layout.
 
 ## Principles

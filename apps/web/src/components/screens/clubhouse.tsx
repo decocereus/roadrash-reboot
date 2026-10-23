@@ -7,7 +7,6 @@ import { ENVELOPE_NOTE, storyBeat } from "@racer/career/story";
 import { ALLY, policeLevels, roads } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
 import { rivals } from "@racer/sim/cast";
-import { Confirm } from "@racer/ui/components/confirm";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useEffect, useMemo, useState } from "react";
@@ -40,6 +39,7 @@ import type { Speech } from "./clubhouse-bar.tsx";
 import { Stage } from "./clubhouse-stage.tsx";
 import { Standings, WallNotes, WallPosters } from "./clubhouse-wall.tsx";
 import type { WallNote } from "./clubhouse-wall.tsx";
+import { Confirm } from "./confirm.tsx";
 import { standingTag, stepped, useEscape } from "./shared.tsx";
 
 const VIC = "Vic Lomax";

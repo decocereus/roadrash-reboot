@@ -47,13 +47,13 @@ export const FinishBanner = ({
   return (
     <Screen className="bg-transparent">
       <div className="absolute inset-x-0 top-[12%] flex flex-col items-center gap-2 text-center">
-        <Stencil className="hud-ink" tone="text">
+        <Stencil className="hud-ink">
           {report.place === 1 ? "Winner" : "Finished"}
         </Stencil>
         <p className="font-display tracking-display text-hud hud-ink numeric font-extrabold uppercase">
           {ordinal(report.place)}
           {report.mode === "career" && (
-            <span className={qualified ? "text-yellow" : "text-text"}>
+            <span className={qualified ? "text-neon-yellow" : "text-text"}>
               {qualified ? " · Qualified" : " · Not this time"}
             </span>
           )}

@@ -12,7 +12,6 @@ import type { CareerState } from "@racer/career/state";
 import { tradeInOf } from "@racer/career/tables";
 import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
-import { Confirm } from "@racer/ui/components/confirm";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
@@ -35,6 +34,7 @@ import { BikeStand } from "./bike-stand.tsx";
 import { SpeechSticker } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
 import { RuledSheet } from "./clubhouse-wall.tsx";
+import { Confirm } from "./confirm.tsx";
 import { useEscape } from "./shared.tsx";
 
 const BACKDROP = { h: 941, w: 1672, x: 0, y: 0 } as const;

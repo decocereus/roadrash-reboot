@@ -1,6 +1,12 @@
 import { launchSecondsOf, topSpeedOf } from "@racer/sim/engine";
 import type { BikeSpec } from "@racer/sim/state";
-import type { BikeStat } from "@racer/ui/components/bike-card";
+
+export interface BikeStat {
+  readonly label: string;
+  readonly value: number;
+  readonly baseline?: number | undefined;
+  readonly reading?: string | undefined;
+}
 
 const KMH = 3.6;
 const FASTEST = 290 / KMH;

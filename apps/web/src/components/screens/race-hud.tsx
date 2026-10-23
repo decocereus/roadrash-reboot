@@ -1,10 +1,9 @@
 import { Dial } from "@racer/ui/components/dial";
-import { Heading } from "@racer/ui/components/heading";
 import { Notice } from "@racer/ui/components/notice";
-import { Panel } from "@racer/ui/components/panel";
 import { Screen } from "@racer/ui/components/screen";
 import { useSyncExternalStore } from "react";
 
+import { plates } from "../../assets/clubhouse-art.ts";
 import { ordinal } from "../../career/format.ts";
 import type { HudState } from "../../game/hud.ts";
 import { idleHud } from "../../hud-feed.ts";
@@ -54,12 +53,23 @@ const RivalTag = ({
     ref={tagRef}
   >
     {hud.rivalName !== "" && hud.speech !== "" && (
-      <Panel className="w-72" edge={hud.rivalColour} padding="sm" tone="plate">
-        <Heading as="p" size="sm" tone="text">
+      <figure className="relative m-0 aspect-[266/191] w-64">
+        <img
+          alt=""
+          className="absolute inset-0 size-full"
+          decoding="async"
+          src={plates.speech}
+        />
+        <blockquote className="font-display text-ink absolute inset-x-[10%] top-[12%] flex h-[46%] -rotate-2 items-center justify-center text-center text-2xl leading-[1.05] font-bold text-balance">
+          {hud.speech}
+        </blockquote>
+        <figcaption
+          className="font-display text-ink bg-neon-yellow absolute top-[78%] left-[40%] -rotate-3 border-l-[0.35em] px-[0.4em] py-[0.15em] text-base leading-none font-bold tracking-wide uppercase"
+          style={{ borderColor: hud.rivalColour }}
+        >
           {hud.rivalName}
-        </Heading>
-        <p className="mt-1 text-sm font-semibold text-pretty">“{hud.speech}”</p>
-      </Panel>
+        </figcaption>
+      </figure>
     )}
   </div>
 );

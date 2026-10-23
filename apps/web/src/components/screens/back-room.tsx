@@ -1,5 +1,4 @@
 import type { CareerState } from "@racer/career/state";
-import { Confirm } from "@racer/ui/components/confirm";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useState } from "react";
@@ -10,6 +9,7 @@ import { bikeName } from "../../career/format.ts";
 import type { SaveState } from "../../career/save.ts";
 import { BarHeader, BarStrip } from "./bar-chrome.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
+import { Confirm } from "./confirm.tsx";
 import { PinnedList } from "./pinned-list.tsx";
 import { SettingsScreen } from "./settings.tsx";
 import { useEscape } from "./shared.tsx";

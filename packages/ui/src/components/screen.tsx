@@ -65,28 +65,4 @@ const Screen = ({
   </main>
 );
 
-const ScreenStrip = ({
-  className,
-  edge = "top",
-  ...props
-}: ComponentProps<"div"> & { readonly edge?: "top" | "bottom" }) => (
-  <div
-    data-slot="screen-strip"
-    data-edge={edge}
-    className={cn(
-      "border-line bg-ink/80 px-gutter min-h-strip flex shrink-0 flex-wrap items-center justify-between gap-x-8 gap-y-2 py-3 data-[edge=bottom]:border-t-2 data-[edge=top]:border-b-2",
-      className
-    )}
-    {...props}
-  />
-);
-
-const ScreenBody = ({ className, ...props }: ComponentProps<"div">) => (
-  <div
-    data-slot="screen-body"
-    className={cn("px-gutter min-h-0 flex-1 py-6", className)}
-    {...props}
-  />
-);
-
-export { Screen, ScreenBody, ScreenStrip };
+export { Screen };
