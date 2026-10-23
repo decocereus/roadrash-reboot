@@ -176,7 +176,7 @@ export const materializedSide = Effect.fn("sides.materialize")(
     yield* git(root, ["checkout", "--quiet", "--detach", revision]);
     yield* processes.run(
       "pnpm",
-      ["install", "--offline", "--frozen-lockfile", "--reporter=silent"],
+      ["install", "--prefer-offline", "--frozen-lockfile", "--reporter=silent"],
       { cwd: root }
     );
     yield* overlayHarness(current.root, root);
