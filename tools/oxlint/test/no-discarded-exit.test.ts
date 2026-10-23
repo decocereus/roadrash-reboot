@@ -45,11 +45,25 @@ runRule("rushline/no-discarded-exit", noDiscardedExitRule, {
       code: "import events from 'node:events'; void events['once'](worker, 'exit');",
       errors: discarded,
     },
+    {
+      code: "import { once } from 'node:events'; await once?.(worker, 'exit');",
+      errors: discarded,
+    },
+    {
+      code: "import * as events from 'node:events'; await events?.once(worker, 'exit');",
+      errors: discarded,
+    },
+    {
+      code: "import * as events from 'node:events'; void events.once?.(worker, 'exit');",
+      errors: discarded,
+    },
   ],
   valid: [
     "import { once } from 'node:events'; const exit: unknown[] = await once(worker, 'exit'); const [code] = exit; if (code !== 0) { throw new Error(String(code)); }",
     "import { once as exited } from 'node:events'; const [code] = await exited(worker, 'exit');",
     "import * as events from 'node:events'; const [code] = await events.once(worker, 'exit');",
+    "import * as events from 'node:events'; const [code] = await events?.once(worker, 'exit');",
+    "import { once } from 'node:events'; const stop = async (once) => { await once?.(worker, 'exit'); };",
     "import { once } from 'node:events'; const stop = async (once) => { await once(worker, 'exit'); };",
     "import { once } from 'node:events'; const stop = async () => { const once = wait; await once(worker, 'exit'); };",
     "import { once } from 'node:events'; await once(worker, 'online'); await once(server, 'listening');",

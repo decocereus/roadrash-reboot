@@ -4,7 +4,8 @@ import type { ESTree } from "@oxlint/plugins";
 import { literalText, memberName, moduleName } from "../property-name.ts";
 
 const discarded = (call: ESTree.CallExpression) => {
-  const result = call.parent.type === "AwaitExpression" ? call.parent : call;
+  const value = call.parent.type === "ChainExpression" ? call.parent : call;
+  const result = value.parent.type === "AwaitExpression" ? value.parent : value;
   const { parent } = result;
   return (
     parent.type === "ExpressionStatement" ||
