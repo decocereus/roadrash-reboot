@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 
 import { browserNamed } from "@racer/devtools/chrome";
 import type { BrowserChoice, Viewport } from "@racer/devtools/chrome";
-import { benchWindow } from "@racer/sim/bench-window";
+import { benchWindows } from "@racer/sim/bench-window";
 
 export interface Options {
   readonly url: string;
@@ -40,7 +40,7 @@ export const readOptions = (): Options => {
       "save-trace": { default: false, type: "boolean" },
       scale: { default: "2", type: "string" },
       shots: { default: "", type: "string" },
-      to: { default: String(benchWindow.to), type: "string" },
+      to: { default: String(benchWindows.stress.to), type: "string" },
       url: { type: "string" },
       width: { default: "1512", type: "string" },
       worst: { default: "5", type: "string" },
@@ -57,7 +57,7 @@ export const readOptions = (): Options => {
     browser: browserNamed(values.browser),
     cpuProfile: values["cpu-profile"],
     firstRun,
-    from: Number(values.from ?? (firstRun ? 1 : benchWindow.from)),
+    from: Number(values.from ?? (firstRun ? 1 : benchWindows.stress.from)),
     label: values.label,
     out: values.out,
     port: Number(values.port),

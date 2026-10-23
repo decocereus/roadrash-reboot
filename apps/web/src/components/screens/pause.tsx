@@ -10,8 +10,9 @@ import { useState, useSyncExternalStore } from "react";
 
 import { billWarning, CONTROLS } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
-import { idleHud } from "../../game/hud.ts";
-import type { HudFeed, RacePlan } from "../../game/hud.ts";
+import type { RacePlan } from "../../game/hud.ts";
+import { idleHud } from "../../hud-feed.ts";
+import type { HudFeed } from "../../hud-feed.ts";
 import { SettingsScreen } from "./settings.tsx";
 import { ActionMenu, useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";

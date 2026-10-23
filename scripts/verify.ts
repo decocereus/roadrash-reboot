@@ -1,10 +1,12 @@
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 
+type Stage = "static" | "tests" | "release";
+
 interface Check {
   readonly command: readonly [string, ...string[]];
   readonly name: string;
-  readonly quick: boolean;
+  readonly stage: Stage;
 }
 
 interface CheckResult {
@@ -17,40 +19,57 @@ interface CheckResult {
 }
 
 const checks: readonly Check[] = [
-  { command: ["pnpm", "format:check"], name: "format", quick: true },
-  { command: ["pnpm", "lint"], name: "lint", quick: true },
-  { command: ["pnpm", "lint:rules"], name: "lint rules", quick: true },
-  { command: ["pnpm", "check:rules"], name: "rules", quick: true },
+  { command: ["pnpm", "format:check"], name: "format", stage: "static" },
+  { command: ["pnpm", "lint"], name: "lint", stage: "static" },
+  { command: ["pnpm", "lint:rules"], name: "lint rules", stage: "static" },
+  { command: ["pnpm", "check:rules"], name: "rules", stage: "static" },
   {
     command: ["pnpm", "check:css-comments"],
     name: "css comments",
-    quick: true,
+    stage: "static",
   },
   {
     command: ["pnpm", "check:typescript-only"],
     name: "typescript only",
-    quick: true,
+    stage: "static",
   },
-  { command: ["pnpm", "check:roots"], name: "roots", quick: true },
-  { command: ["pnpm", "check:size"], name: "source size", quick: true },
+  { command: ["pnpm", "check:roots"], name: "roots", stage: "static" },
+  {
+    command: ["pnpm", "check:renderer-imports"],
+    name: "renderer imports",
+    stage: "static",
+  },
+  { command: ["pnpm", "check:size"], name: "source size", stage: "static" },
   {
     command: ["pnpm", "check:save-format"],
     name: "save format",
-    quick: true,
+    stage: "static",
   },
-  { command: ["pnpm", "check:dead"], name: "dead code", quick: true },
-  { command: ["pnpm", "typecheck"], name: "typecheck", quick: true },
-  { command: ["pnpm", "test"], name: "tests", quick: true },
-  { command: ["pnpm", "build"], name: "build", quick: false },
+  { command: ["pnpm", "check:dead"], name: "dead code", stage: "static" },
+  { command: ["pnpm", "check:perf"], name: "perf budgets", stage: "static" },
+  { command: ["pnpm", "typecheck"], name: "typecheck", stage: "static" },
+  { command: ["pnpm", "test"], name: "tests", stage: "tests" },
+  { command: ["pnpm", "build"], name: "build", stage: "release" },
+  { command: ["pnpm", "perf"], name: "perf", stage: "release" },
 ];
 
 const args = process.argv.slice(2);
 const formatAt = args.indexOf("--format");
 const asJson = formatAt !== -1 && args[formatAt + 1] === "json";
-const quickOnly = args.includes("check");
 const outputTail = 4000;
 
-const selected = checks.filter((check) => check.quick || !quickOnly);
+const stagesOf = (requested: readonly string[]): readonly Stage[] => {
+  if (requested.includes("static")) {
+    return ["static"];
+  }
+  if (requested.includes("check")) {
+    return ["static", "tests"];
+  }
+  return ["static", "tests", "release"];
+};
+
+const stages = stagesOf(args);
+const selected = checks.filter((check) => stages.includes(check.stage));
 
 const runCheck = (check: Check): CheckResult => {
   const started = Date.now();

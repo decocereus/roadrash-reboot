@@ -5,19 +5,20 @@ import type * as THREE from "three";
 
 import type { Diagnostics } from "../diagnostics/hub.ts";
 import type { Recorder } from "../diagnostics/recorder.ts";
+import type { Part } from "../profile-parts.ts";
 import type { Sound } from "./audio.ts";
 import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
+import { advanceHud } from "./hud-cadence.ts";
 import type { GamePhase } from "./hud.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
-import type { FrameEnd, Part, ProfileMode, Profiler } from "./profile.ts";
+import type { FrameEnd, ProfileMode, Profiler } from "./profile.ts";
 import type { Quality } from "./quality-ladder.ts";
 import type { Feedback } from "./race-feedback.ts";
 import type { Cast } from "./rider-views.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
-const HUD_INTERVAL = 1 / 15;
 const MAX_FRAME_SECONDS = 0.1;
 
 export interface FrameLoop {
@@ -253,11 +254,7 @@ export const installFrameLoop = ({
     }
     feedback.noticeLeft -= seconds;
     feedback.speechLeft -= seconds;
-    frame.hudClock += seconds;
-    if (frame.hudClock >= HUD_INTERVAL) {
-      frame.hudClock = 0;
-      report();
-    }
+    advanceHud(frame, seconds, report);
     if (frame.profiler) {
       frameEnd.discarded = discarded;
       frameEnd.drawRung = quality.drawnRung;

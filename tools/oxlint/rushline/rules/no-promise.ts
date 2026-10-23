@@ -119,7 +119,7 @@ export const noPromiseRule = defineRule({
     },
     messages: {
       promise:
-        "{{what}} is Promise code. Return an Effect; wrap a third-party Promise in `Effect.tryPromise` or the Node adapter.",
+        "{{what}} is Promise code. Return an Effect; wrap a third-party Promise in `Effect.tryPromise`.",
     },
     type: "problem",
   },

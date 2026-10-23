@@ -44,6 +44,7 @@ interface Seen {
   pixelRatios: number[];
   presents: number;
   profiled: number;
+  reports: number;
   resizes: string[];
   samples: number[];
   shadowMaps: number[];
@@ -148,6 +149,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     pixelRatios: [],
     presents: 0,
     profiled: 0,
+    reports: 0,
     resizes: [],
     samples: [],
     shadowMaps: [],
@@ -259,7 +261,9 @@ export const createHost = (options: HostOptions = {}): Host => {
     quality,
     recorder,
     renderer,
-    report: note,
+    report: () => {
+      seen.reports += 1;
+    },
     session: { holdLeft: 0, phase: "racing" },
     skipsVsync: bound.skipsVsync,
     sound: options.sounded === true ? heardSound(seen) : quietSound(seen),

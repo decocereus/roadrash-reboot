@@ -1,22 +1,7 @@
 import type * as THREE from "three";
 
-export const parts = [
-  "sim",
-  "other",
-  "riders",
-  "fleet",
-  "camera",
-  "world",
-  "matrices",
-  "normal",
-  "shadow",
-  "main",
-  "line",
-  "bloom",
-  "grade",
-] as const;
-
-export type Part = (typeof parts)[number];
+import { parts } from "../profile-parts.ts";
+import type { Part } from "../profile-parts.ts";
 
 const CAPACITY = 32_768;
 const PENDING_CAPACITY = 1024;

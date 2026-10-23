@@ -5,17 +5,19 @@ import { noHotAllocationRule } from "../rushline/rules/no-hot-allocation.ts";
 import { runRule } from "./cases.ts";
 
 const hotBodies = {
+  "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "noteCallback"],
     ["installFrameLoop", "setAnimationLoop()"],
   ],
   "apps/web/src/game/game.ts": [
-    ["createGame", "readInputs"],
-    ["createGame", "tick"],
-    ["createGame", "draw"],
+    ["startGame", "readInputs"],
+    ["startGame", "tick"],
+    ["startGame", "draw"],
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
+  "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [["carsAhead"]],
   "packages/sim/src/pilot.ts": [["pilotInput"]],

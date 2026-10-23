@@ -28,6 +28,7 @@ import { paveTexture, ROAD_TILE_METRES, roadTexture } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
 import { skyTexture } from "./sky-texture.ts";
+import { owned } from "./texture-canvas.ts";
 
 const CHUNK_LENGTH = 200;
 const CHUNK_BEHIND = 260;
@@ -157,7 +158,8 @@ const buildGate = (
   track: Track,
   s: number,
   label: string,
-  shading: Shading
+  shading: Shading,
+  textures: Set<THREE.Texture>
 ): THREE.Group => {
   const gate = new THREE.Group();
   const span = track.roadHalfWidth * 2 + 3;
@@ -172,7 +174,7 @@ const buildGate = (
     new THREE.BoxGeometry(span, 1.3, 0.3),
     new THREE.MeshBasicMaterial({
       color: new THREE.Color("#ffffff").multiplyScalar(1.4),
-      map: bannerTexture(label),
+      map: owned(textures, bannerTexture(label)),
     })
   );
   banner.position.set(0, 6.4, 0);
@@ -186,7 +188,8 @@ const buildGate = (
 const buildScenery = (
   track: Track,
   shading: Shading,
-  limit: number
+  limit: number,
+  textures: Set<THREE.Texture>
 ): THREE.Group => {
   const { look } = shading;
   const scenery = new THREE.Group();
@@ -255,7 +258,7 @@ const buildScenery = (
       {
         geometry: lifted(new THREE.PlaneGeometry(1.2, 0.9), [0, 1.6, 0]),
         material: new THREE.MeshBasicMaterial({
-          map: chevronTexture(),
+          map: owned(textures, chevronTexture()),
           side: THREE.DoubleSide,
         }),
       },
@@ -285,12 +288,17 @@ const buildScenery = (
         ]
       : boulderParts(shading)
   );
-  scenery.add(buildGate(track, 0, "START", shading));
-  scenery.add(buildGate(track, track.length, "FINISH", shading));
+  scenery.add(buildGate(track, 0, "START", shading, textures));
+  scenery.add(buildGate(track, track.length, "FINISH", shading, textures));
   return scenery;
 };
 
-const buildSky = (look: Look, shading: Shading, seed: number): THREE.Mesh => {
+const buildSky = (
+  look: Look,
+  shading: Shading,
+  seed: number,
+  textures: Set<THREE.Texture>
+): THREE.Mesh => {
   const mark =
     look.sun === null
       ? MOON_BEARING.clone()
@@ -302,10 +310,13 @@ const buildSky = (look: Look, shading: Shading, seed: number): THREE.Mesh => {
     new THREE.MeshBasicMaterial({
       depthWrite: false,
       fog: false,
-      map: skyTexture(createRandom(seed), look, [
-        ((turn % 1) + 1) % 1,
-        0.5 - elevation / Math.PI,
-      ]),
+      map: owned(
+        textures,
+        skyTexture(createRandom(seed), look, [
+          ((turn % 1) + 1) % 1,
+          0.5 - elevation / Math.PI,
+        ])
+      ),
       side: THREE.BackSide,
     })
   );
@@ -414,7 +425,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const stretches: Stretch[] = [];
 
   const half = track.roadHalfWidth;
+  const textures = new Set<THREE.Texture>();
   const paved = roadTexture(random, look, track);
+  textures.add(paved.map).add(paved.glow);
   const roadMaterial = shading.cel("#ffffff", {
     emissiveIntensity: 0.9,
     emissiveMap: paved.glow,
@@ -426,7 +439,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const city: City | null =
     look.kit === "city" ? createCity(track, shading) : null;
   const edge = track.vergeHalfWidth + FRONT_GAP + 0.6;
-  const walkTexture = paveTexture(look);
+  const walkTexture = owned(textures, paveTexture(look));
   const walkMaterial = shading.cel("#ffffff", { map: walkTexture });
   const kerbMaterial = shading.cel(look.kerb);
   const terrainMaterial = shading.cel("#ffffff", { vertexColors: true });
@@ -488,7 +501,8 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
       buildScenery(
         track,
         shading,
-        city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY
+        city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY,
+        textures
       )
     )
   );
@@ -500,7 +514,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   if (city) {
     scene.add(freeze(city.group));
   } else {
-    const dressing = buildRoadside(track, shading);
+    const dressing = buildRoadside(track, shading, textures);
     scene.add(freeze(dressing.group));
     stretches.push(...dressing.stretches);
   }
@@ -517,16 +531,21 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   );
   plain.rotation.x = -Math.PI / 2;
   plain.position.y = lowest - 24;
-  const sky = buildSky(look, shading, track.plan.seed + 3);
+  const sky = buildSky(look, shading, track.plan.seed + 3, textures);
   const backdrop = buildMountains(look);
   backdrop.visible = !city;
   scene.add(plain, sky, backdrop);
 
   return {
     dispose() {
+      city?.group.removeFromParent();
       city?.dispose();
       hazards.dispose();
       disposeTree(scene);
+      for (const texture of textures) {
+        texture.dispose();
+      }
+      shading.dispose();
       rig.light.shadow.map?.dispose();
     },
     follow(camera, s) {
