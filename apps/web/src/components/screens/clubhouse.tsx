@@ -1,81 +1,196 @@
-import { roadsFor } from "@racer/career/field";
+import { roadBoss, roadsFor } from "@racer/career/field";
 import { preRaceLine } from "@racer/career/lines";
 import { seasonBoard } from "@racer/career/season";
-import type { BoardRow } from "@racer/career/season";
 import { creditLimit, debtOf } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { ENVELOPE_NOTE, storyBeat } from "@racer/career/story";
-import { ALLY, roadList, roads, tradeInOf } from "@racer/career/tables";
-import { bikes } from "@racer/sim/bikes";
+import { ALLY, FINALE_ROAD, roads } from "@racer/career/tables";
+import type { RoadId } from "@racer/career/tables";
 import { rivals } from "@racer/sim/cast";
-import { defaultPlayer } from "@racer/sim/race";
-import { regions } from "@racer/track/regions";
-import { AdSlot } from "@racer/ui/components/ad-slot";
 import { Confirm } from "@racer/ui/components/confirm";
-import { CorkBoard, CorkNote } from "@racer/ui/components/cork-note";
-import { Heading } from "@racer/ui/components/heading";
-import { formatMoney, Money } from "@racer/ui/components/money";
-import { Panel } from "@racer/ui/components/panel";
-import { Postcard } from "@racer/ui/components/postcard";
-import { RiderCard, RiderPortrait } from "@racer/ui/components/rider-card";
-import { Screen, ScreenBody, ScreenStrip } from "@racer/ui/components/screen";
-import { Stat } from "@racer/ui/components/stat";
+import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
+import { formatMoney } from "@racer/ui/components/money";
+import { Screen } from "@racer/ui/components/screen";
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 
-import { riderColours } from "../../career/colours.ts";
-import {
-  classNames,
-  ENVELOPE_INSIDE,
-  levelName,
-  shortNames,
-} from "../../career/copy.ts";
+import { bills, flyers, plates, stickers } from "../../assets/clubhouse-art.ts";
+import { ENVELOPE_INSIDE, levelName } from "../../career/copy.ts";
 import { careerEntry, planFor } from "../../career/flow.ts";
 import { bikeName } from "../../career/format.ts";
 import { boardNote, signedByVic } from "../../career/notes.ts";
-import { ActionMenu, standingTag, useEscape } from "./shared.tsx";
+import {
+  BarBackdrop,
+  BarLight,
+  BarSeats,
+  SpeechSticker,
+  useBarClock,
+} from "./clubhouse-bar.tsx";
+import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
+import { Standings, WallNotes, WallPosters } from "./clubhouse-wall.tsx";
+import type { WallNote } from "./clubhouse-wall.tsx";
+import { standingTag, useEscape } from "./shared.tsx";
 
-const POLAROIDS = 3;
-const tilts = [-3, 2, -1.5, 3] as const;
-const noteTilts = [-1.5, 1.5, -0.5] as const;
-const notePins = ["red", "blue", "green"] as const;
+const WORDMARK = { h: 106, w: 405, x: 30, y: 16 } as const;
+const BADGE = { h: 98, w: 82, x: 438, y: 24 } as const;
+const STATUS = { h: 63, w: 1127, x: 522, y: 33 } as const;
+const NAV = { h: 71, w: 1672, x: 0, y: 854 } as const;
 const SOON = "Soon";
 
-const polaroidRows = (career: CareerState): readonly BoardRow[] => {
-  const rows = seasonBoard(career);
-  const top = rows.slice(0, POLAROIDS);
-  const mine = rows.find((row) => row.racer === "player");
-  return mine && !top.includes(mine) ? [...top, mine] : top;
+const StatusItem = ({
+  label,
+  children,
+  tone,
+}: {
+  readonly label: ReactNode;
+  readonly children: ReactNode;
+  readonly tone: string;
+}) => (
+  <p className="flex items-baseline gap-[0.35em] whitespace-nowrap">
+    <span className={tone}>{label}</span>
+    <span>{children}</span>
+  </p>
+);
+
+const notesFor = (
+  career: CareerState,
+  openEnvelope: () => void
+): readonly WallNote[] => {
+  const debt = debtOf(career);
+  const notes: WallNote[] = [];
+  if (debt > 0) {
+    notes.push({
+      text: `You owe ${formatMoney(debt)}. Prize money pays it first. Limit ${formatMoney(creditLimit(career))}.`,
+    });
+  }
+  if (storyBeat(career).envelopeOpen) {
+    notes.push({
+      open: openEnvelope,
+      signature: "Open it",
+      text: "An envelope with your name on it.",
+    });
+  }
+  for (const note of career.board) {
+    notes.push({
+      signature: signedByVic(note) ? "V." : undefined,
+      text: boardNote(note),
+    });
+  }
+  if (notes.length === 0) {
+    notes.push({
+      signature: "V.",
+      text: "Top three on all five roads and you move up.",
+    });
+  }
+  return notes;
 };
 
-const Polaroid = ({
-  row,
+const StatusStrip = ({
   career,
-  tilt,
+  qualified,
+  roadCount,
 }: {
-  readonly row: BoardRow;
   readonly career: CareerState;
-  readonly tilt: number;
+  readonly qualified: number;
+  readonly roadCount: number;
+}) => (
+  <div
+    className="bg-ink/85 font-display text-paper flex items-center justify-around border-y border-white/10 font-bold tracking-wide uppercase"
+    style={{ ...place(STATUS), fontSize: stagePx(27) }}
+  >
+    <StatusItem label={`Level ${career.level} ·`} tone="text-neon-cyan">
+      {levelName(career.level)}
+    </StatusItem>
+    <StatusItem label="Roads" tone="text-neon-yellow">
+      <span className="text-neon-yellow">
+        {qualified} / {roadCount} qualified
+      </span>
+    </StatusItem>
+    <StatusItem
+      label={debtOf(career) > 0 ? "Owed" : "Cash"}
+      tone="text-paper/75"
+    >
+      <span className="text-neon-red numeric">
+        {formatMoney(Math.abs(career.cash))}
+      </span>
+    </StatusItem>
+    <p className="text-neon-yellow whitespace-nowrap">
+      {bikeName(career.bikeId)}
+    </p>
+  </div>
+);
+
+const ClubhouseNav = ({
+  roadName,
+  onRouteBoard,
+  onGarage,
+  onTitle,
+}: {
+  readonly roadName: string;
+  readonly onRouteBoard: () => void;
+  readonly onGarage: () => void;
+  readonly onTitle: () => void;
 }) => {
-  const you = row.racer === "player";
-  const profile = row.racer === "player" ? defaultPlayer : rivals[row.racer];
-  const caption = you
-    ? `${row.points} · ${career.level === 1 ? "New meat" : "Kid can ride"}`
-    : `${row.points}`;
+  const items = [
+    { id: "route-board", label: "Route board", run: onRouteBoard },
+    { id: "garage", label: "Garage", run: onGarage },
+    { id: "back-room", label: "Back room", run: undefined },
+    { id: "title", label: "Title", run: onTitle },
+  ];
   return (
-    <Postcard
-      caption={caption}
-      pin={you ? "yellow" : "red"}
-      scene={
-        <RiderPortrait
-          className="h-full border-b-0"
-          colours={riderColours(profile)}
-        />
-      }
-      size="xs"
-      tilt={tilt}
-      title={row.racer === "player" ? "You" : shortNames[row.racer]}
-    />
+    <nav
+      className="bg-ink/90 font-display flex items-center justify-between border-y border-white/10 px-[3.6cqw] font-bold uppercase"
+      style={{ ...place(NAV), fontSize: stagePx(33) }}
+    >
+      <MenuList
+        autoFocus
+        className="flex-nowrap gap-x-[2.4cqw]"
+        defaultValue="route-board"
+        label="Clubhouse"
+        onSelect={(id) => items.find((item) => item.id === id)?.run?.()}
+        orientation="horizontal"
+        size="sm"
+      >
+        {items.map((item) => (
+          <MenuItem
+            className="data-selected:text-neon-yellow data-selected:outline-neon-yellow px-[0.4em] !text-[1em] data-selected:outline-2"
+            disabled={item.run === undefined}
+            key={item.id}
+            trailing={item.run === undefined ? SOON : undefined}
+            value={item.id}
+          >
+            {item.label}
+          </MenuItem>
+        ))}
+      </MenuList>
+      <p className="text-paper/70 whitespace-nowrap">
+        Next: <span className="text-neon-yellow">{roadName}</span>
+      </p>
+    </nav>
   );
+};
+
+const useBarCast = (career: CareerState, roadId: RoadId) => {
+  const setup = useMemo(
+    () => planFor(career, careerEntry(career, roadId)).setup,
+    [career, roadId]
+  );
+  const speaker = useMemo(() => preRaceLine(career, setup), [career, setup]);
+  const boss = roadBoss(career, roadId);
+  const regulars = useMemo(() => {
+    const others = setup.field.filter(
+      (rider) => rider !== speaker?.rival && rider !== boss
+    );
+    return boss === speaker?.rival ? others : [boss, ...others];
+  }, [setup, speaker, boss]);
+  const visit = career.record.starts;
+  return {
+    billRider: regulars[visit % Math.max(1, regulars.length)] ?? boss,
+    boss,
+    regulars,
+    speaker,
+    sticker: stickers[visit % stickers.length] ?? plates.badge,
+  };
 };
 
 export const ClubhouseScreen = ({
@@ -92,197 +207,79 @@ export const ClubhouseScreen = ({
   readonly onEnvelope: (take: boolean) => void;
 }) => {
   const [envelope, setEnvelope] = useState(false);
+  const clock = useBarClock();
   const board = roadsFor(career);
-  const beat = storyBeat(career);
-  const debt = debtOf(career);
-  const nextRoad =
-    board.next ?? board.roads.find((status) => status.open)?.road.id;
-  const speaker = useMemo(() => {
-    const roadId = nextRoad ?? roadList[0]?.id;
-    return roadId === undefined
-      ? null
-      : preRaceLine(career, planFor(career, careerEntry(career, roadId)).setup);
-  }, [career, nextRoad]);
-  const rival = speaker ? rivals[speaker.rival] : null;
-  const ally = rival?.id === ALLY && beat.deeAlly;
+  const roadId =
+    board.next ??
+    board.roads.find((status) => status.open)?.road.id ??
+    FINALE_ROAD;
+  const road = roads[roadId];
+  const { billRider, boss, regulars, speaker, sticker } = useBarCast(
+    career,
+    roadId
+  );
+  const rival = speaker === null ? null : rivals[speaker.rival];
+  const ally = rival?.id === ALLY && storyBeat(career).deeAlly;
   useEscape(onTitle, !envelope);
   return (
-    <Screen enter="fade">
-      <ScreenStrip>
-        <Heading as="h1">The Lowside</Heading>
-        <div className="flex flex-wrap gap-x-10 gap-y-2">
-          <Stat
-            label={`Level ${career.level}`}
-            size="sm"
-            value={levelName(career.level)}
-          />
-          <Stat
-            label="Roads"
-            size="sm"
-            value={`${board.qualifiedCount} / ${board.roads.length} qualified`}
-          />
-          <Stat label="Bike" size="sm" value={bikeName(career.bikeId)} />
-          <Stat
-            align="right"
-            label={debt > 0 ? "Owed" : "Cash"}
-            size="sm"
-            tone={debt > 0 ? "red" : "green"}
-            value={formatMoney(Math.abs(career.cash))}
-          />
-        </div>
-      </ScreenStrip>
-      {debt > 0 && (
-        <p className="bg-red/15 text-red px-gutter text-label py-2 font-semibold uppercase">
-          You owe {formatMoney(debt)}. Prize money pays it first. Limit{" "}
-          {formatMoney(creditLimit(career))}.
-        </p>
-      )}
-      <ScreenBody
-        className="grid grid-cols-[1.7fr_1fr_0.8fr] gap-6 overflow-y-auto"
-        inert={envelope ? true : undefined}
-      >
-        <CorkBoard className="flex flex-col gap-5 p-5">
-          <Heading as="h2" size="sm" tone="ink">
-            The board
-          </Heading>
-          <div className="flex flex-wrap gap-4">
-            {polaroidRows(career).map((row, index) => (
-              <Polaroid
-                career={career}
-                key={row.racer}
-                row={row}
-                tilt={tilts[index] ?? 0}
-              />
-            ))}
-          </div>
-          <div className="flex flex-wrap items-start gap-5">
-            {beat.envelopeOpen && (
-              <button
-                className="rounded-sm"
-                onClick={() => {
-                  setEnvelope(true);
-                }}
-                type="button"
-              >
-                <CorkNote
-                  hand="typed"
-                  pin="yellow"
-                  signature="Open it"
-                  tilt={2}
-                >
-                  An envelope with your name on it.
-                </CorkNote>
-              </button>
-            )}
-            {career.board.map((note, index) => (
-              <CorkNote
-                hand={signedByVic(note) ? "typed" : "marker"}
-                key={`${note.kind}-${index}`}
-                pin={notePins[index] ?? "red"}
-                signature={signedByVic(note) ? "V." : undefined}
-                tilt={noteTilts[index] ?? 0}
-              >
-                {boardNote(note)}
-              </CorkNote>
-            ))}
-            {career.board.length === 0 && !beat.envelopeOpen && (
-              <CorkNote hand="typed" pin="green" signature="V." tilt={-1}>
-                Top three on all five roads and you move up.
-              </CorkNote>
-            )}
-          </div>
-          <AdSlot className="mt-auto" label="Poster · advertisement" />
-        </CorkBoard>
-        <div className="flex flex-col gap-3">
-          <Heading as="h2" size="sm" tone="muted">
-            At the bar
-          </Heading>
-          {rival && speaker ? (
-            <RiderCard
-              aggression={rival.aggression}
-              className="w-full"
-              colours={riderColours(rival)}
-              home={regions[rival.home].name}
-              line={speaker.text}
-              name={rival.name}
-              skill={rival.skill}
-              tag={standingTag(ally, career.memory[rival.id].grudge)}
-            />
-          ) : (
-            <Panel>Nobody is at the bar.</Panel>
-          )}
-        </div>
-        <div className="flex flex-col gap-3">
-          <Heading as="h2" size="sm" tone="muted">
-            Out back
-          </Heading>
-          <Panel className="flex flex-col gap-3">
-            <Stat
-              label={classNames[bikes[career.bikeId].bikeClass]}
-              size="sm"
-              value={bikeName(career.bikeId)}
-            />
-            <Stat
-              label="Trade-in"
-              layout="row"
-              size="sm"
-              value={<Money amount={tradeInOf(career.bikeId)} />}
-            />
-            <Stat
-              label="Credit limit"
-              layout="row"
-              size="sm"
-              value={<Money amount={creditLimit(career)} />}
-            />
-          </Panel>
-          <Panel className="flex flex-col gap-3">
-            <Stat
-              label="Races"
-              layout="row"
-              size="sm"
-              value={career.record.starts}
-            />
-            <Stat
-              label="Wins"
-              layout="row"
-              size="sm"
-              value={career.record.wins}
-            />
-            <Stat
-              label="Knockdowns"
-              layout="row"
-              size="sm"
-              value={career.record.knockdowns}
-            />
-          </Panel>
-        </div>
-      </ScreenBody>
-      <ScreenStrip edge="bottom" inert={envelope ? true : undefined}>
-        <ActionMenu
-          actions={[
-            { id: "title", label: "Title", run: onTitle },
-            { id: "garage", label: "Garage", run: onGarage },
-            {
-              disabled: true,
-              id: "back-room",
-              label: "Back room",
-              trailing: SOON,
-            },
-            {
-              detail:
-                nextRoad === undefined
-                  ? undefined
-                  : `Next: ${roads[nextRoad].name}`,
-              id: "route-board",
-              label: "Route board",
-              run: onRouteBoard,
-            },
-          ]}
-          className="w-full justify-between"
-          label="Clubhouse"
-          primary="route-board"
+    <Screen
+      className="flex"
+      enter="fade"
+      style={{
+        backgroundImage: `url(${plates.wall})`,
+        backgroundSize: "60vw auto",
+      }}
+    >
+      <Stage inert={envelope ? true : undefined}>
+        <BarBackdrop clock={clock} />
+        <BarSeats
+          boss={boss}
+          regulars={regulars}
+          roadName={road.name}
+          speaker={speaker?.rival ?? null}
         />
-      </ScreenStrip>
+        {speaker !== null && rival !== null && (
+          <SpeechSticker
+            line={speaker.text}
+            name={rival.name}
+            tag={standingTag(ally, career.memory[rival.id].grudge)}
+          />
+        )}
+        <h1
+          className="font-stencil text-paper flex items-center leading-none font-black whitespace-nowrap uppercase drop-shadow-[0_0.06em_0_rgb(0_0_0/60%)]"
+          style={{ ...place(WORDMARK), fontSize: stagePx(84) }}
+        >
+          The Lowside
+        </h1>
+        <Plate box={BADGE} src={plates.badge} />
+        <StatusStrip
+          career={career}
+          qualified={board.qualifiedCount}
+          roadCount={board.roads.length}
+        />
+        <Standings
+          playerCaption={career.level === 1 ? "New meat" : "Kid can ride"}
+          rows={seasonBoard(career)}
+        />
+        <WallNotes
+          notes={notesFor(career, () => {
+            setEnvelope(true);
+          })}
+        />
+        <WallPosters
+          bill={bills[billRider]}
+          flyer={flyers[roadId]}
+          roadName={road.name}
+          sticker={sticker}
+        />
+        <BarLight clock={clock} />
+        <ClubhouseNav
+          onGarage={onGarage}
+          onRouteBoard={onRouteBoard}
+          onTitle={onTitle}
+          roadName={road.name}
+        />
+      </Stage>
       {envelope && (
         <Confirm
           defaultValue="leave"

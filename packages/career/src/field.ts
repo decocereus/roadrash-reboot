@@ -170,6 +170,17 @@ export const finaleOpen = (career: CareerState): boolean =>
 export const roadOpen = (career: CareerState, roadId: RoadId): boolean =>
   !isFinale(roadId, career.level) || finaleOpen(career);
 
+export const roadBoss = (career: CareerState, roadId: RoadId): RivalId => {
+  const { season } = career;
+  const [boss] = homeRiders(roadId, career.level).toSorted(
+    (left, right) =>
+      season[right].wins - season[left].wins ||
+      season[right].points - season[left].points ||
+      rivals[right].skill - rivals[left].skill
+  );
+  return boss ?? CHAMPION_STAND_IN;
+};
+
 export const roadsFor = (career: CareerState): RoadBoard => {
   const { level } = career;
   const qualified = career.qualified[level];

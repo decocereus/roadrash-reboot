@@ -110,7 +110,7 @@ components:
 
 Between races the player stands in the Lowside, the bar where the career lives, and every screen is something pinned to its wall: a cork board of Polaroids and marker notes, a police citation, a repair invoice, a stencilled verdict stamped across the frame. The interface is a set of physical objects on an ink-black room, not a settings app. Condensed capitals name things, Inter carries what people say and what things cost, and paper, cork, and tape give the grit. The race view stays clean: the road is the brightest idea on screen and the only interface on it is one small speedometer.
 
-The system has two palettes, and DESIGN.md records both as they stand. The menu kit (ink, orange, yellow, cork, paper) was drawn on October 10, 2026, before the race view moved to cel-shaded cyberpunk anime on October 13. The speedometer and the 3D world already use the newer neon palette (yellow, cyan, red on near-black). `docs/architecture.md` lists restyling the menus to match the cyberpunk world as the next art step. That restyle is pending and not decided here: until it is designed, new menu work extends the kit below, and new race-view work uses the neon palette.
+The system has two palettes, and DESIGN.md records both as they stand. The menu kit (ink, orange, yellow, cork, paper) was drawn on October 10, 2026, before the race view moved to cel-shaded cyberpunk anime on October 13. The speedometer and the 3D world already use the newer neon palette (yellow, cyan, red on near-black). `docs/architecture.md` lists restyling the menus to match the cyberpunk world as the next art step. The Clubhouse was restyled first, on October 23, 2026, as a paste-up wall in painted anime art and the neon palette (see Clubhouse below). The other menu screens still use the kit below until each is restyled the same way; new race-view work uses the neon palette.
 
 Density is low. A screen has one orange heading, one primary action bottom right on Enter, and Back bottom left on Escape. Text scales with the shorter side of the screen, designed at 1280 × 720.
 
@@ -140,7 +140,7 @@ Warm white on near-black, one hot accent per screen, a selection yellow, and mon
 
 ### Tertiary: race view
 
-These live in the speedometer (`packages/ui/src/components/dial.tsx`) and match the cyberpunk 3D world. They are hard-coded in the dial today rather than exposed as CSS custom properties.
+These live in the speedometer (`packages/ui/src/components/dial.tsx`) and match the cyberpunk 3D world. The dial hard-codes them; the Clubhouse reads them as Tailwind colours from `apps/web/src/styles.css` (`neon-yellow`, `neon-cyan`, `neon-red`, and `neon-magenta`, `#ff2fb5`, for magenta ink).
 
 - **Neon Yellow** (`neon-yellow`): lit speed ticks, the gear numeral, the place plate under the dial.
 - **Neon Cyan** (`neon-cyan`): the progress arc along the road and the left half of the speed number's split.
@@ -269,6 +269,15 @@ The whole race HUD in one dial. A 240° ring of 48 ticks that light neon yellow 
 - **Cop warning:** the only blinking element in the interface, alternating police blue and red twice a second on an ink plate.
 - **Toast:** a panel-coloured strip at 85% with a 4 px left edge in green, red, yellow, or blue, Inter 600, and a small shadow.
 
+### Clubhouse
+
+The Clubhouse (`apps/web/src/components/screens/clubhouse.tsx`) is one 1672 × 941 stage, scaled to fit the viewport and letterboxed on the wall texture. Every piece sits at its box from the approved comp, and its type is sized in container units, so the composition holds at any size. The painted art is WebP in `apps/web/src/assets/clubhouse`, named in `clubhouse-art.ts`; text is code.
+
+- **The bar** (left): a night painting, a dusk painting, and a light layer of sun rays. Time spent in the bar runs a 150 s time-lapse in CSS: the rays fade first, then dusk crossfades to night and the neon flickers on. The clock carries across visits within a session; reduced motion shows the night bar.
+- **Two stools.** The front stool holds the rival who speaks the pre-race line, under the counter-and-stool layer, with the line on the speech sticker. The back stool, smaller and darker, starts with the next road's boss (`roadBoss`: the home rider with the most season wins) under a yellow tape tag, then the rest of the field takes turns every 20 s. Each of the 16 rivals has a figure at the same framing so any of them can take either stool.
+- **The wall** (right): the standings sheet, two note stickers (debt, the envelope, and board notes, newest first), a bill and a sticker that change each race (one bill per rival, drawn from the next race's field), and the next road's flyer, one per road.
+- **Navigation** sits in the bottom strip: Route board (primary, outlined in neon yellow), Garage, Back room (soon), and Title, with the next road at the right.
+
 ### Confirm
 
 A raised panel 34 rem wide in the centre of a dimmed screen: the question in quote size, any consequence as a red label in capitals, and a horizontal menu with the safe choice first and selected.
@@ -284,7 +293,8 @@ A raised panel 34 rem wide in the centre of a dimmed screen: the question in quo
 - **Do** set rival lines in Inter 600 inside quotation marks.
 - **Do** cross-fade menu screens in 180 ms and cut hard into Wrecked and Busted.
 - **Do** honour reduced motion: transitions and animations collapse to nothing, and the notice entrance is removed.
-- **Do** use the neon palette for anything drawn over the race, and the menu kit for anything between races, until the menu restyle is designed.
+- **Do** use the neon palette for anything drawn over the race and on restyled screens, and the menu kit on screens not yet restyled.
+- **Do** keep painted material in plates and text in code: names, numbers, lines, and notes are live text set over the art, never painted into it.
 
 ### Don't:
 

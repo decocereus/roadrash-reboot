@@ -7,6 +7,7 @@ import {
   sprint,
   wreckTimes,
 } from "./career-fixtures.ts";
+import { roadBoss } from "./field.ts";
 import { seasonBoard } from "./season.ts";
 import { newCareer, nextRaceSeed } from "./state.ts";
 
@@ -22,6 +23,16 @@ describe("the season board", () => {
       { points: 29, racer: "moose-kowalczyk", rank: 2, wins: 1 },
       { points: 26, racer: "player", rank: 3, wins: 0 },
     ]);
+  });
+});
+
+describe("the bar", () => {
+  it("the home rider with the most wins on the season holds the road, the best rider until someone wins", () => {
+    const career = newCareer(4);
+    expect(roadBoss(career, "slag-row")).toBe("dee-santangelo");
+    const race = enter(career, "slag-row", 1);
+    sprint(race, 3, ["moose-kowalczyk"]);
+    expect(roadBoss(settle(race).career, "slag-row")).toBe("moose-kowalczyk");
   });
 });
 

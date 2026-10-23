@@ -16,3 +16,5 @@ tools/perf/results/
 tools/blender/out/
 .claude/*
 !.claude/skills/
+apps/web/.impeccable/
+apps/web/assets/

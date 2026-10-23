@@ -720,7 +720,7 @@ Visual: soft round build, sits back on the bike. Blue polo shirt over a back pro
 
 Moose moved pianos for twenty years and has carried more weight up stairs than anyone on the circuit has lifted. His mother gave him the club.
 
-Visual: the widest rider in the field. Brown quilted vest over a plain shirt, bare forearms, a full beard under an open-face helmet. The club rests on his shoulder like a tool he is taking to a job.
+Visual: broad, heavy shoulders and tattooed arms. A blond mullet with a shaved side, a scar over one eyebrow, hoop earrings, a sleeveless black vest with the Lowside skull on the back, fingerless gloves and a wallet chain. The club rests on his shoulder like a tool he is taking to a job.
 
 - Taunt: "Hello. I'm going to hit you with this club. I wanted to say hello first."
 - Grudge taunt: "Last time you made me fall down. I've been thinking about it in the bath."
