@@ -1,13 +1,38 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
+
+const viteTests = [
+  "apps/**/*.test.tsx",
+  "packages/**/*.test.tsx",
+  "apps/web/test/asset-load.test.ts",
+  "apps/web/test/renderer-lifecycle.test.ts",
+];
+const policeTest = "packages/career/src/police.test.ts";
+const nativeImports = { nodeLoader: false, viteModuleRunner: false };
 
 export default defineConfig({
   test: {
-    include: [
-      "apps/**/*.test.{ts,tsx}",
-      "packages/**/*.test.{ts,tsx}",
-      "scripts/**/*.test.ts",
-      "tools/{perf,verify}/test/**/*.test.ts",
+    projects: [
+      {
+        test: {
+          exclude: [...configDefaults.exclude, ...viteTests, policeTest],
+          experimental: nativeImports,
+          include: [
+            "apps/**/*.test.ts",
+            "packages/**/*.test.ts",
+            "scripts/**/*.test.ts",
+            "tools/{perf,verify}/test/**/*.test.ts",
+          ],
+          name: "node",
+        },
+      },
+      {
+        test: {
+          experimental: nativeImports,
+          include: [policeTest],
+          name: "police",
+        },
+      },
+      { test: { include: viteTests, name: "vite" } },
     ],
-    maxWorkers: 2,
   },
 });

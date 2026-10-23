@@ -8,6 +8,8 @@
     "check": "node scripts/verify.ts check",
     "check:css-comments": "node scripts/check-css-comments.ts",
     "check:dead": "knip --no-progress",
+    "check:perf": "node tools/perf/gate.ts --check",
+    "check:renderer-imports": "node scripts/check-renderer-imports.ts",
     "check:roots": "node scripts/check-roots.ts",
     "check:rules": "node scripts/check-rules.ts",
     "check:save-format": "node scripts/check-save-format.ts",
@@ -19,6 +21,8 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
     "lint:rules": "vitest run --config tools/oxlint/vitest.config.ts && vitest run scripts",
+    "perf": "node tools/perf/gate.ts",
+    "perf:gpu": "node tools/perf/gpu.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
     "verify": "node scripts/verify.ts"
@@ -39,6 +43,7 @@
     "postcss": "8.5.29",
     "tsrs": "0.18.0-ts7.1.0-dev.20260929",
     "ultracite": "7.10.8",
+    "vite": "8.3.2",
     "vitest": "5.0.0"
   },
   "engines": {

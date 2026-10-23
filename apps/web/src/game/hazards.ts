@@ -360,9 +360,7 @@ export const createHazardMarks = (
 
   return {
     dispose() {
-      for (const part of parts) {
-        part.mesh.dispose();
-      }
+      group.removeFromParent();
       disposeTree(group);
     },
     group,

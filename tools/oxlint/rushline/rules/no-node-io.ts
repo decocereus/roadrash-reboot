@@ -49,7 +49,7 @@ export const noNodeIoRule = defineRule({
     },
     messages: {
       nodeIo:
-        "`{{source}}` is direct Node I/O. Use an Effect platform service, or move the call into the Node adapter in `packages/devtools/src/node/`.",
+        "`{{source}}` is direct Node I/O. Use an Effect platform service: `FileSystem` for files, `ChildProcessSpawner` for processes.",
     },
     type: "problem",
   },

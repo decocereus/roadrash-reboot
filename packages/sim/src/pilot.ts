@@ -14,6 +14,8 @@ import {
   steeringPush,
 } from "./pilot-corners.ts";
 import { SLIPPING, SLIPPING_STEER } from "./pilot-forecast.ts";
+import { pilotHistoryOf } from "./pilot-history.ts";
+import type { PilotHistory } from "./pilot-history.ts";
 import { jumpAim, straightened } from "./pilot-jumps.ts";
 import { chooseLine, slickAhead } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
@@ -69,14 +71,22 @@ const roll = (state: RaceState): number => {
 };
 
 const ride = (
+  history: PilotHistory,
   track: Track,
   rider: RiderState,
   aim: Aim,
   pace: Pace,
   input: RiderInput
 ): void => {
-  const corners = callCorners(track, rider, riding.margin, aim.x, slickAhead);
-  const push = steeringPush(track, rider);
+  const corners = callCorners(
+    history,
+    track,
+    rider,
+    riding.margin,
+    aim.x,
+    slickAhead
+  );
+  const push = steeringPush(history, track, rider);
   const lateralSpeed = askedLateral(track, rider, aim.x);
   const steerLimit = rider.slip > SLIPPING ? SLIPPING_STEER : 1;
   input.steer = clamp(
@@ -132,6 +142,7 @@ export const pilotInput = (
     walkToBike(rider, input);
     return;
   }
+  const history = pilotHistoryOf(state);
   const police = rider.profile.role === "police";
   const pace = police ? freePace : paceOf(state, riderIndex, rider);
   riding.margin = Math.min(
@@ -150,11 +161,18 @@ export const pilotInput = (
       riderIndex,
       rider,
       police
-        ? copAim(state, track, riderIndex, rider)
-        : chooseLine(state, track, riderIndex, rider, Number.POSITIVE_INFINITY),
+        ? copAim(history, state, track, riderIndex, rider)
+        : chooseLine(
+            history,
+            state,
+            track,
+            riderIndex,
+            rider,
+            Number.POSITIVE_INFINITY
+          ),
       roll
     )
   );
-  ride(track, rider, aim, pace, input);
+  ride(history, track, rider, aim, pace, input);
   fight(state, riderIndex, rider, input, roll);
 };

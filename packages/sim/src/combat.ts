@@ -367,6 +367,7 @@ export const stepAttack = (
 };
 
 export type ThrowRider = (
+  state: RaceState,
   riderIndex: number,
   cause: "rider",
   bikeKeep: number,
@@ -546,7 +547,7 @@ const settle = (
   if (jolt.struckGap < Number.POSITIVE_INFINITY) {
     const speedAtImpact = rider.speed;
     rider.speed = jolt.struckSpeed * 0.9;
-    throwRider(index, "rider", 0.4, 0.6, speedAtImpact);
+    throwRider(state, index, "rider", 0.4, 0.6, speedAtImpact);
     return;
   }
   const speedLoss = jolt.speedLoss + bumpLossOf(rider, jolt.shoved);

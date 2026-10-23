@@ -1,6 +1,6 @@
 export type Random = () => number;
 
-const MODULUS = 2 ** 32;
+const MODULUS = 4_294_967_296;
 const MULTIPLIER = 1_664_525;
 const INCREMENT = 1_013_904_223;
 

@@ -52,4 +52,5 @@ export default defineConfig({
   build: { rolldownOptions: { external: [/^cloudflare:/u] } },
   define: { __RUSHLINE_BUILD__: JSON.stringify(buildIdentity()) },
   plugins: [tailwindcss(), tanstackStart(), viteReact(), localTelemetry()],
+  ssr: { noExternal: ["srvx"] },
 });

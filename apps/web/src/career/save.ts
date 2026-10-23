@@ -51,10 +51,7 @@ export type CareerLoad =
     }
   | StorageFailure;
 
-export type Stored =
-  | { readonly status: "saved" }
-  | { readonly status: "blocked" }
-  | StorageFailure;
+export type Stored = { readonly status: "saved" } | StorageFailure;
 
 export type Reset = { readonly status: "reset" } | StorageFailure;
 
@@ -156,18 +153,6 @@ export const storeCareer = (
 
 export const startOver = (open: () => SaveStorage): Reset =>
   outcomeOf(cleared(open));
-
-export const writesAllowed = (seen: CareerLoad | Reset | null): boolean =>
-  seen !== null &&
-  seen.status !== "unavailable" &&
-  seen.status !== "readFailed";
-
-export const commitCareer = (
-  seen: CareerLoad | Reset | null,
-  open: () => SaveStorage,
-  career: CareerState
-): Stored =>
-  writesAllowed(seen) ? storeCareer(open, career) : { status: "blocked" };
 
 export const saveStateOf = (load: CareerLoad): SaveState => {
   if (load.status === "ready") {

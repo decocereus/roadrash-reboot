@@ -6,8 +6,9 @@ import { Screen } from "@racer/ui/components/screen";
 import { useSyncExternalStore } from "react";
 
 import { ordinal } from "../../career/format.ts";
-import { idleHud } from "../../game/hud.ts";
-import type { HudFeed, HudState } from "../../game/hud.ts";
+import type { HudState } from "../../game/hud.ts";
+import { idleHud } from "../../hud-feed.ts";
+import type { HudFeed } from "../../hud-feed.ts";
 
 const COP_ON_YOU = 15;
 const DIAL_TOP_KMH = 300;
