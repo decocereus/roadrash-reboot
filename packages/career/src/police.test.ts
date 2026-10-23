@@ -28,7 +28,11 @@ const rideSeason = async (): Promise<readonly PoliceRide[]> => {
             workerData: season.buffer,
           }
         );
-        await once(worker, "exit");
+        const exit: unknown[] = await once(worker, "exit");
+        const [code] = exit;
+        if (code !== 0) {
+          throw new Error(`A police worker exited with code ${String(code)}.`);
+        }
       }
     )
   );
