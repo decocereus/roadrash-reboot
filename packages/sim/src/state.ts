@@ -322,6 +322,21 @@ export interface RaceState {
   readonly events: RaceEvent[];
 }
 
+export const raceOwned = <Owned>(
+  create: () => Owned
+): ((state: RaceState) => Owned) => {
+  const owned = new WeakMap<RaceState, Owned>();
+  return (state) => {
+    const known = owned.get(state);
+    if (known !== undefined) {
+      return known;
+    }
+    const made = create();
+    owned.set(state, made);
+    return made;
+  };
+};
+
 export const clamp = (
   value: number,
   minimum: number,

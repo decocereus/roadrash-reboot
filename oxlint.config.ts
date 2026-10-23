@@ -91,6 +91,15 @@ export const hotBodies = {
   "packages/sim/src/pilot-forecast.ts": [["carsAhead"]],
   "packages/sim/src/pilot.ts": [["pilotInput"]],
   "packages/sim/src/race.ts": [["stepRace"]],
+  "packages/sim/src/traffic.ts": [
+    ["stepTraffic"],
+    ["gatherLane"],
+    ["followLane"],
+    ["yieldTo"],
+    ["firstPast"],
+    ["gapToRider"],
+    ["laneIndexOf"],
+  ],
 };
 
 const entriesLoopFiles = [
