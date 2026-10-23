@@ -21,7 +21,7 @@ const DRAWN_CALLS = 350;
 const START_MS = 5000;
 const RACE = 1;
 
-type Ride = GpuSample["capture"]["ride"];
+type Ride = Extract<GpuSample, { side: "B" }>["capture"]["ride"];
 
 interface Playback {
   readonly interval: (index: number) => number;
@@ -34,11 +34,13 @@ interface Playback {
 
 const RIDE_STEP = 300;
 
-const rideOf = (programsAt: (index: number) => number): Ride =>
+const rideOf = (
+  programsAt: (index: number) => number,
+  texturesAt: (index: number) => number
+): Ride =>
   Array.from({ length: 10 }, (_, index) => ({
+    created: { programs: programsAt(index), textures: texturesAt(index) },
     frame: 20 + index * RIDE_STEP,
-    programs: programsAt(index),
-    textures: 30,
     tick: index * RIDE_STEP,
   }));
 
@@ -47,7 +49,10 @@ const steady: Playback = {
   extraCalls: () => 0,
   interval: () => 16.7,
   longTasks: [],
-  ride: rideOf(() => 40),
+  ride: rideOf(
+    () => 40,
+    () => 30
+  ),
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
@@ -90,8 +95,8 @@ const sampleOf = (
   side: GpuSample["side"],
   pair: number,
   playback: Playback
-): GpuSample => ({
-  capture: {
+): GpuSample => {
+  const capture = {
     bench: {
       bench: scenario.bench,
       overflowed: false,
@@ -104,7 +109,6 @@ const sampleOf = (
       frameOf(scenario, playback, index)
     ),
     longTasks: playback.longTasks,
-    ride: playback.ride,
     rows: {
       ...validRows(scenario),
       times: Array.from(
@@ -114,16 +118,20 @@ const sampleOf = (
     },
     viewport: playback.viewport,
     visibility: "visible",
-  },
-  consoleErrors: 0,
-  file: `${scenario.id}-pair${pair}-${side}.json`,
-  installed: { tick: 6, visibility: "visible" },
-  pair,
-  position: side === "A" ? 0 : 1,
-  run: side === "A" ? "run-a-s0" : "run-b-s1",
-  scenario: scenario.id,
-  side,
-});
+  };
+  const fields = {
+    consoleErrors: 0,
+    file: `${scenario.id}-pair${pair}-${side}.json`,
+    installed: { tick: 6, visibility: "visible" },
+    pair,
+    position: side === "A" ? 0 : 1,
+    run: side === "A" ? "run-a-s0" : "run-b-s1",
+    scenario: scenario.id,
+  };
+  return side === "A"
+    ? { ...fields, capture, side }
+    : { ...fields, capture: { ...capture, ride: playback.ride }, side };
+};
 
 const campaign = (
   playbackOf: (
@@ -156,7 +164,7 @@ describe("gpu frame lane", () => {
     expect(failing(evaluation.lines)).toStrictEqual([]);
     expect(evaluation.ok).toBeTruthy();
     expect(evaluation.lines).toContain(
-      `ok   first-use side=B created no shader program or texture after the first race frame in ${2 * GPU_PAIRS} races`
+      `ok   first-use side=B created no shader program or texture after the first race frame in ${2 * GPU_PAIRS} races of reference-v1 and pack-riding-v1; what only other roads or untriggered effects draw is unchecked`
     );
     expect(
       evaluation.lines.find((line) =>
@@ -307,29 +315,55 @@ describe("gpu frame lane", () => {
   });
 
   it("fails a B race that creates a program or texture after its first frame", () => {
-    const replaced = rideOf((index) => [40, 40, 39, 40][index] ?? 41);
-    const uploaded = steady.ride.map((frame, index) =>
-      index >= 4 ? { ...frame, textures: 32 } : frame
+    const compiled = rideOf(
+      (index) => (index < 3 ? 40 : 41) + (index < 6 ? 0 : 1),
+      () => 30
+    );
+    const uploaded = rideOf(
+      () => 40,
+      (index) => (index < 4 ? 30 : 32)
     );
     const evaluation = evaluateGpu(
       campaign((scenario, side, pair) => {
-        if (side === "A" || (isPack(scenario) && pair === 0)) {
-          return { ...steady, ride: replaced };
+        if (side === "B" && isPack(scenario) && pair === 0) {
+          return { ...steady, ride: compiled };
         }
-        return scenario.id === reference?.id && pair === 3
+        return side === "B" && scenario.id === reference?.id && pair === 3
           ? { ...steady, ride: uploaded }
           : steady;
       }),
       limits
     );
     expect(failing(evaluation.lines)).toStrictEqual([
-      "FAIL first-use reference-v1 side=B reference-v1-pair3-B.json textures created after warm-up (30 on the first race frame): +2 at frame=1220 tick=1200",
-      "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair0-B.json programs created after warm-up (40 on the first race frame): +1 at frame=920 tick=900, +1 at frame=1220 tick=1200",
+      "FAIL first-use reference-v1 side=B reference-v1-pair3-B.json textures created after the first race frame: 2 (+2 at frame=1220 tick=1200)",
+      "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair0-B.json programs created after the first race frame: 2 (+1 at frame=920 tick=900, +1 at frame=1820 tick=1800)",
     ]);
     expect(
       evaluation.lines.some((line) => line.startsWith("ok   first-use"))
     ).toBeFalsy();
     expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a texture replaced within one frame, which leaves the live count flat", () => {
+    const replaced = rideOf(
+      () => 40,
+      (index) => (index < 8 ? 30 : 31)
+    );
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) =>
+        isPack(scenario) && side === "B" && pair === 2
+          ? { ...steady, ride: replaced }
+          : steady
+      ),
+      limits
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([
+      "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair2-B.json textures created after the first race frame: 1 (+1 at frame=2420 tick=2400)",
+    ]);
+    expect(
+      evaluation.counts.find(({ scenario }) => scenario === packRiding?.id)
+        ?.peaks?.B.textures
+    ).toBe(30);
   });
 
   it("fails a B race whose frames do not start at the countdown", () => {

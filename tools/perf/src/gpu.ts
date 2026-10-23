@@ -16,6 +16,7 @@ import {
   FRAME_RATE,
   GPU_PAIRS,
   pageCapture,
+  racedCapture,
 } from "./gpu-frames.ts";
 import type { GpuSample } from "./gpu-frames.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
@@ -117,6 +118,10 @@ const decodeCapture = Schema.decodeUnknownEffect(
   Schema.fromJsonString(pageCapture)
 );
 
+const decodeRaced = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(racedCapture)
+);
+
 const pageFacts = Schema.Struct({
   dpr: Schema.Number,
   frameRate: Schema.NullOr(Schema.String),
@@ -162,7 +167,13 @@ const INSTALL = `(() => {
   return { tick: globalThis.__rushlineBench.info().lastTick, visibility: document.visibilityState };
 })()`;
 
-const collect = ({ window }: Scenario) => `(() => {
+const rideTo = (to: number) => `
+    ride: profile
+      .window(0, ${to})
+      .filter((frame) => frame.race === info.race)
+      .map(({ created, frame, tick }) => ({ created, frame, tick })),`;
+
+const collect = ({ window }: Scenario, side: SideName) => `(() => {
   const tasks = globalThis.__perfLongTasks;
   for (const entry of tasks.observer.takeRecords()) {
     tasks.store.push({ duration: entry.duration, name: entry.name, start: entry.startTime });
@@ -175,11 +186,7 @@ const collect = ({ window }: Scenario) => `(() => {
     bench: info,
     frameRate: JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}").frameRate ?? null,
     frames: profile.window(${window.from}, ${window.to}),
-    longTasks: tasks.store,
-    ride: profile
-      .window(0, ${window.to})
-      .filter((frame) => frame.race === info.race)
-      .map(({ frame, programs, textures, tick }) => ({ frame, programs, textures, tick })),
+    longTasks: tasks.store,${side === "B" ? rideTo(window.to) : ""}
     rows: bench.window(${window.from}, ${window.to}),
     viewport: { dpr: devicePixelRatio, height: innerHeight, width: innerWidth },
     visibility: document.visibilityState,
@@ -319,23 +326,33 @@ const sampleOnce = Effect.fnUntraced(function* sampleOnce(
     "--timeout",
     String(WINDOW_TIMEOUT_S),
   ]);
-  const text = yield* rv(["js", "--run", run, collect(scenario)]);
+  const text = yield* rv(["js", "--run", run, collect(scenario, where.side)]);
   const errorsAfter = yield* consoleErrors(run);
   yield* rv(["open", "--run", run, PARK]);
   const file = `${scenario.id}-pair${where.pair}-${where.side}.json`;
   yield* fs.writeFileString(path.join(dir, "gpu", file), text);
-  const capture = yield* decodeCapture(text).pipe(
-    Effect.mapError(failed(`${file} is not a frame capture`))
-  );
-  const sample: GpuSample = {
-    ...where,
-    capture,
+  const fields = {
     consoleErrors: errorsAfter - errorsBefore,
     file,
     installed,
+    pair: where.pair,
+    position: where.position,
     run,
     scenario: scenario.id,
   };
+  const notCapture = failed(`${file} is not a frame capture`);
+  const sample: GpuSample =
+    where.side === "A"
+      ? {
+          ...fields,
+          capture: yield* decodeCapture(text).pipe(Effect.mapError(notCapture)),
+          side: "A",
+        }
+      : {
+          ...fields,
+          capture: yield* decodeRaced(text).pipe(Effect.mapError(notCapture)),
+          side: "B",
+        };
   return sample;
 });
 

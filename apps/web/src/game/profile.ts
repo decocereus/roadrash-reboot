@@ -18,6 +18,11 @@ interface PartColumns {
   readonly triangles: Uint32Array;
 }
 
+interface Created {
+  programs: number;
+  textures: number;
+}
+
 export interface ProfileFrame {
   readonly frame: number;
   readonly tick: number;
@@ -27,6 +32,7 @@ export interface ProfileFrame {
   readonly programs: number;
   readonly textures: number;
   readonly geometries: number;
+  readonly created: Readonly<Created>;
   readonly pixelRatio: number;
   readonly rung: number;
   readonly drawRung: number;
@@ -125,6 +131,8 @@ export const createProfiler = (
   const programs = new Uint16Array(CAPACITY);
   const textures = new Uint16Array(CAPACITY);
   const geometries = new Uint16Array(CAPACITY);
+  const createdPrograms = new Uint32Array(CAPACITY);
+  const createdTextures = new Uint32Array(CAPACITY);
   const ratios = new Float32Array(CAPACITY);
   const rungs = new Uint8Array(CAPACITY);
   const drawRungs = new Uint8Array(CAPACITY);
@@ -241,6 +249,18 @@ export const createProfiler = (
     mark = performance.now();
   };
 
+  const created: Created = { programs: 0, textures: 0 };
+  const createProgram = gl.createProgram.bind(gl);
+  const createTexture = gl.createTexture.bind(gl);
+  gl.createProgram = () => {
+    created.programs += 1;
+    return createProgram();
+  };
+  gl.createTexture = () => {
+    created.textures += 1;
+    return createTexture();
+  };
+
   const { shadowMap } = renderer;
   const renderShadows = shadowMap.render.bind(shadowMap);
   shadowMap.render = (lights, scene, camera) => {
@@ -260,6 +280,10 @@ export const createProfiler = (
     return {
       calls: read("calls"),
       cpu: read("cpu"),
+      created: {
+        programs: createdPrograms[at] ?? 0,
+        textures: createdTextures[at] ?? 0,
+      },
       discarded: discards[at] ?? 0,
       drawRung: drawRungs[at] ?? 0,
       drawnEpoch: drawnEpochs[at] ?? 0,
@@ -310,6 +334,8 @@ export const createProfiler = (
   return {
     dispose() {
       shadowMap.render = renderShadows;
+      gl.createProgram = createProgram;
+      gl.createTexture = createTexture;
       if (open) {
         gl.endQuery(TIME_ELAPSED);
         free.push(open);
@@ -336,6 +362,8 @@ export const createProfiler = (
       programs[slot] = renderer.info.programs?.length ?? 0;
       textures[slot] = renderer.info.memory.textures;
       geometries[slot] = renderer.info.memory.geometries;
+      createdPrograms[slot] = created.programs;
+      createdTextures[slot] = created.textures;
       ({ tick } = end);
       frame = current + 1;
     },
