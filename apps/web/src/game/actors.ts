@@ -9,6 +9,7 @@ import type { Assets, Palette, Primitive } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
+import { uploadSpan } from "./uploads.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
@@ -151,26 +152,10 @@ const instanced = (
   return mesh;
 };
 
-const upload = (
-  attribute: THREE.BufferAttribute,
-  from: number,
-  to: number
-): void => {
-  if (to <= from) {
-    return;
-  }
-  attribute.addUpdateRange(
-    from * attribute.itemSize,
-    (to - from) * attribute.itemSize
-  );
-  attribute.needsUpdate = true;
-};
-
 const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
   mesh.count = count;
   mesh.visible = count > 0;
-  mesh.instanceMatrix.clearUpdateRanges();
-  upload(mesh.instanceMatrix, 0, count);
+  uploadSpan(mesh.instanceMatrix, 0, count);
 };
 
 export const createBikes = (
@@ -320,8 +305,8 @@ export const createBikes = (
       if (beacons) {
         showPrefix(beacons, cop);
       }
-      upload(paint, firstRecoloured, lastRecoloured + 1);
-      upload(trim, firstRecoloured, lastRecoloured + 1);
+      uploadSpan(paint, firstRecoloured, lastRecoloured + 1);
+      uploadSpan(trim, firstRecoloured, lastRecoloured + 1);
     },
     dispose() {
       disposeTree(group);
@@ -373,7 +358,7 @@ const NO_PAINT: Palette = new Map();
 interface FleetPart {
   readonly mesh: THREE.InstancedMesh;
   readonly cars: readonly number[];
-  readonly painted: boolean;
+  readonly slotCar: Int32Array | null;
 }
 
 export interface Fleet {
@@ -451,7 +436,11 @@ export const createFleet = (
       mesh.receiveShadow = shadows;
       whiteInstances(mesh);
       group.add(mesh);
-      parts.push({ cars: indices, mesh, painted });
+      parts.push({
+        cars: indices,
+        mesh,
+        slotCar: painted ? new Int32Array(members.length).fill(-1) : null,
+      });
     };
     addPart(body.cel, shading.paint(), true, true);
     addPart(rest.cel, shading.paint(), true, false);
@@ -488,12 +477,24 @@ export const createFleet = (
     placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
   };
 
+  const recolour = (part: FleetPart, slot: number, index: number): boolean => {
+    if (!part.slotCar || part.slotCar[slot] === index) {
+      return false;
+    }
+    part.slotCar[slot] = index;
+    const paint = cars[index]?.paint ?? 0;
+    part.mesh.setColorAt(slot, color.setHex(paints[paint] ?? 0x88_88_88));
+    return true;
+  };
+
   return {
     commit(centre) {
       const from = centre - FLEET_BEHIND;
       const to = centre + reach;
       for (const part of parts) {
         let slot = 0;
+        let firstRecoloured = part.cars.length;
+        let lastRecoloured = -1;
         for (const index of part.cars) {
           const matrix = placed[index];
           const s = along[index] ?? Number.NEGATIVE_INFINITY;
@@ -505,19 +506,20 @@ export const createFleet = (
             placedAt[index] = s;
           }
           part.mesh.setMatrixAt(slot, matrix);
-          if (part.painted) {
-            const paint = cars[index]?.paint ?? 0;
-            part.mesh.setColorAt(
-              slot,
-              color.setHex(paints[paint] ?? 0x88_88_88)
-            );
+          if (recolour(part, slot, index)) {
+            firstRecoloured = Math.min(firstRecoloured, slot);
+            lastRecoloured = slot;
           }
           slot += 1;
         }
         part.mesh.count = slot;
-        part.mesh.instanceMatrix.needsUpdate = true;
-        if (part.painted && part.mesh.instanceColor) {
-          part.mesh.instanceColor.needsUpdate = true;
+        uploadSpan(part.mesh.instanceMatrix, 0, slot);
+        if (part.mesh.instanceColor) {
+          uploadSpan(
+            part.mesh.instanceColor,
+            firstRecoloured,
+            lastRecoloured + 1
+          );
         }
       }
     },

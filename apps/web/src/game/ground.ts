@@ -146,7 +146,6 @@ export const plant = (
     }
   }
   for (const mesh of meshes) {
-    mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
   }
 };

@@ -9,6 +9,7 @@ import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { whiteInstances } from "./ground.ts";
+import { uploadSpan } from "./uploads.ts";
 
 const BEHIND = 40;
 const MARGIN = 200;
@@ -409,7 +410,7 @@ export const createHazardMarks = (
         }
         part.mesh.count = slot;
         part.mesh.visible = slot > 0;
-        part.mesh.instanceMatrix.needsUpdate = true;
+        uploadSpan(part.mesh.instanceMatrix, 0, slot);
       }
     },
   };

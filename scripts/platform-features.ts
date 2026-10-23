@@ -79,6 +79,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/cel.ts",
       "apps/web/src/game/dispose.ts",
       "apps/web/src/game/meshes.ts",
+      "apps/web/src/game/uploads.ts",
       "apps/web/test/fixed-tick.test.ts",
       "apps/web/test/preparation.test.ts",
       "apps/web/test/renderer-lifecycle*.ts",
@@ -97,7 +98,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/scene-lifecycle.ts",
     ],
     summary:
-      "`createGame` and its owner list, the frame loop and fixed 60 Hz tick, loading a race and preparing its shaders, warm-up, the cel materials, the post chain and disposal.",
+      "`createGame` and its owner list, the frame loop and fixed 60 Hz tick, loading a race and preparing its shaders, warm-up, the cel materials, buffer uploads, the post chain and disposal.",
     title: "Renderer core and frame loop",
     verify: ["single-race.md"],
   },

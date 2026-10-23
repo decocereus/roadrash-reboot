@@ -581,14 +581,14 @@ Test files: none
 
 ### Renderer core and frame loop
 
-`createGame` and its owner list, the frame loop and fixed 60 Hz tick, loading a race and preparing its shaders, warm-up, the cel materials, the post chain and disposal.
+`createGame` and its owner list, the frame loop and fixed 60 Hz tick, loading a race and preparing its shaders, warm-up, the cel materials, buffer uploads, the post chain and disposal.
 
 - Id: `renderer-core`
 - Start: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/scene-lifecycle.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `bytes.game.gzip`, `bytes.game.raw`, `bytes.game.incremental.gzip`, `bytes.game.incremental.raw`, `render.programs.max`
-- Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/hosts.ts`
+- Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/hosts.ts`
 
 Source files:
 
@@ -602,6 +602,7 @@ Source files:
 - `apps/web/src/game/preparation.ts`
 - `apps/web/src/game/scene-lifecycle.ts`
 - `apps/web/src/game/staging.ts`
+- `apps/web/src/game/uploads.ts`
 
 Test files:
 

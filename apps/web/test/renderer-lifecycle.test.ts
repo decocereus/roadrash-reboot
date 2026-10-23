@@ -3,15 +3,18 @@ import path from "node:path";
 
 import { defaultSetup } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
+import type { TrafficView } from "@racer/sim/race-view";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
 import { createFleet } from "../src/game/actors.ts";
+import type { Fleet } from "../src/game/actors.ts";
 import { assetParsers } from "../src/game/assets.ts";
 import type { Assets } from "../src/game/assets.ts";
 import { createShading } from "../src/game/cel.ts";
+import type { Shading } from "../src/game/cel.ts";
 import { disposeTree } from "../src/game/dispose.ts";
 import { createHazardMarks } from "../src/game/hazards.ts";
 import { lookOf } from "../src/game/looks.ts";
@@ -62,6 +65,16 @@ const rampOf = (material: THREE.Material): THREE.Texture => {
 
 const track = trackFor("cinder-wash", 1);
 
+const instancedIn = (root: THREE.Object3D): THREE.InstancedMesh[] => {
+  const meshes: THREE.InstancedMesh[] = [];
+  root.traverse((node) => {
+    if (isInstancedMesh(node)) {
+      meshes.push(node);
+    }
+  });
+  return meshes;
+};
+
 describe("renderer resource owners", () => {
   it("releases each shared geometry, material, instanced mesh and point cloud once and leaves textures to their owners", () => {
     const geometry = new THREE.BoxGeometry();
@@ -103,12 +116,7 @@ describe("renderer resource owners", () => {
     const scene = new THREE.Scene();
     const marks = createHazardMarks(track, shading);
     scene.add(marks.group);
-    const meshes: THREE.InstancedMesh[] = [];
-    marks.group.traverse((node) => {
-      if (isInstancedMesh(node)) {
-        meshes.push(node);
-      }
-    });
+    const meshes = instancedIn(marks.group);
     expect(meshes.length).toBeGreaterThan(0);
     const seen = meshes.map(counted);
     marks.dispose();
@@ -116,6 +124,79 @@ describe("renderer resource owners", () => {
       attached: scene.children.includes(marks.group),
       releases: seen.map((each) => each.count),
     }).toStrictEqual({ attached: false, releases: meshes.map(() => 1) });
+  });
+});
+
+const placedFleet = (
+  assets: Assets,
+  shading: Shading,
+  cars: readonly TrafficView[]
+): Fleet => {
+  const fleet = createFleet(assets, shading, cars);
+  for (let index = 0; index < cars.length; index += 1) {
+    fleet.place(track, index, cars[index]?.s ?? 0);
+  }
+  return fleet;
+};
+
+const coloursOf = (
+  mesh: THREE.InstancedMesh
+): THREE.InstancedBufferAttribute => {
+  if (!mesh.instanceColor) {
+    throw new Error("The fleet mesh has no instance colours.");
+  }
+  return mesh.instanceColor;
+};
+
+const drawnOf = (mesh: THREE.InstancedMesh) => ({
+  colours: coloursOf(mesh).array.slice(0, mesh.count * 3),
+  matrices: mesh.instanceMatrix.array.slice(0, mesh.count * 16),
+});
+
+describe("traffic instance uploads", () => {
+  it("uploads only the drawn prefix of each fleet mesh and no colours for slots that keep their car", async () => {
+    const shading = createShading(lookOf(track.plan.region));
+    const assets = await pinnedAssets();
+    const race = createRaceRun(defaultSetup(track, 3));
+    const fleet = placedFleet(assets, shading, race.view.cars);
+    const meshes = instancedIn(fleet.group);
+    fleet.commit(0);
+    expect(
+      meshes.map((mesh) => ({
+        culled: mesh.count > 0 && mesh.count < mesh.instanceMatrix.count,
+        ranges: mesh.instanceMatrix.updateRanges,
+      }))
+    ).toStrictEqual(
+      meshes.map((mesh) => ({
+        culled: true,
+        ranges: [{ count: mesh.count * 16, start: 0 }],
+      }))
+    );
+    const painted = meshes.map((mesh) => coloursOf(mesh).version);
+    expect(painted.filter((version) => version > 0)).not.toHaveLength(0);
+    fleet.commit(1);
+    expect(meshes.map((mesh) => coloursOf(mesh).version)).toStrictEqual(
+      painted
+    );
+    fleet.dispose();
+    shading.dispose();
+  });
+
+  it("keeps each car's paint and place in its slot as cars cull in and out", async () => {
+    const shading = createShading(lookOf(track.plan.region));
+    const assets = await pinnedAssets();
+    const race = createRaceRun(defaultSetup(track, 3));
+    const riding = placedFleet(assets, shading, race.view.cars);
+    riding.commit(0);
+    riding.commit(1000);
+    const fresh = placedFleet(assets, shading, race.view.cars);
+    fresh.commit(1000);
+    expect(instancedIn(riding.group).map(drawnOf)).toStrictEqual(
+      instancedIn(fresh.group).map(drawnOf)
+    );
+    riding.dispose();
+    fresh.dispose();
+    shading.dispose();
   });
 });
 

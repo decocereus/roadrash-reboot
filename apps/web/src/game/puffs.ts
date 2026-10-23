@@ -4,6 +4,7 @@ import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { YELLOW } from "./looks.ts";
+import { uploadSpan } from "./uploads.ts";
 
 const DUST_POOL = 72;
 const SPARK_POOL = 64;
@@ -162,11 +163,9 @@ const createDust = (colour: THREE.ColorRepresentation) => {
       shown += 1;
     }
     geometry.setDrawRange(0, shown);
-    if (shown > 0) {
-      position.needsUpdate = true;
-      size.needsUpdate = true;
-      alpha.needsUpdate = true;
-    }
+    uploadSpan(position, 0, shown);
+    uploadSpan(size, 0, shown);
+    uploadSpan(alpha, 0, shown);
     return shown;
   };
   return { particles, points, settle };
@@ -205,9 +204,7 @@ const createSparks = (shading: Shading) => {
       shown += 1;
     }
     mesh.count = shown;
-    if (shown > 0) {
-      mesh.instanceMatrix.needsUpdate = true;
-    }
+    uploadSpan(mesh.instanceMatrix, 0, shown);
     return shown;
   };
   return { mesh, particles, settle };
