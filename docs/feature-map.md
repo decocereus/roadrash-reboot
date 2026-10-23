@@ -131,7 +131,7 @@ Oil slicks, rocks and potholes: where the track schedules them, what touching on
 - Id: `hazards`
 - Start: `packages/track/src/hazards.ts`, `packages/sim/src/hazards.ts`, `apps/web/src/game/hazards.ts`
 - Docs: [docs/architecture.md#hazards-as-race-state](architecture.md#hazards-as-race-state), [docs/design/tracks.md#hazards](design/tracks.md#hazards), [docs/design/tracks.md#where-hazards-lie](design/tracks.md#where-hazards-lie)
-- Verify: none yet
+- Verify: [hazards.md](../.claude/skills/verify-rushline/features/hazards.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/track/src/hazards.ts`, `packages/sim/src/hazard*.ts`, `apps/web/src/game/hazards.ts`
 

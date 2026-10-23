@@ -42,5 +42,6 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): ramps, time in the air, landings, and landing dust.
+- [Road hazards](./hazards.md): where oil, rocks, and potholes lie, how each draws, what contact costs by speed, what missing one costs, and the frame rate with them on screen.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
 - [Frame rate and load](./frame-rate.md): the stress race, frame sampling, throttled play, traces, first load on a slow network, the perf gate on the GPU, and the measure.ts A/B.

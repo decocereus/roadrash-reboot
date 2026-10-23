@@ -110,8 +110,9 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, level 1 to 5. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including ramps. |
+| `?hazard=<id>&before=<m>` (DEV) | Put the player on that road hazard's line, `before` metres (default 150) ahead of it. Ids are per road (`hazard-3` on Breakwater Run), listed by the node command in `features/hazards.md`. With `?kmh=<n>` for the starting speed, `?straight` to hold that line at full throttle, and `?clear` to move traffic out of the way. |
 | `?swerve=<m>&swervefor=<m>&swerveto=<-1..1>` (DEV) | After `swerve` metres, force the steer to `swerveto` (default 1, right) for `swervefor` metres (default 25). |
-| `?hold=air\|at\|<event>&holdafter=<n>` (DEV) | Freeze the race: `air` after n ticks airborne, `at` at n metres, or n ticks after the player's event of that kind (`land`, `crash`, `remount`, `finish`, `hit`, `busted`, ...). Fires once per page load. |
+| `?hold=air\|at\|near\|<event>&holdafter=<n>` (DEV) | Freeze the race: `air` after n ticks airborne, `at` at n metres, `near` when the `?hazard=` hazard is n metres ahead, or n ticks after the player's event of that kind (`land`, `crash`, `remount`, `finish`, `hit`, `hazard`, `nearMiss`, `busted`, ...). Fires once per page load. |
 | `?road=<n>` (DEV) | Which road the hidden attract race loads first while the game boots. |
 | `?stress`, `?stress=reference` | The fixed benchmark races from `apps/web/src/career/bench.ts`, on the pilot, in any build. |
 | `?prof`, `?prof=gpu` | Record per-frame costs into `__rushlineProfile`; `gpu` adds timer queries ANGLE on Metal answers wrongly. `?stress` implies `?prof`. |

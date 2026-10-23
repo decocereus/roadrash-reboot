@@ -118,7 +118,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     summary:
       "Oil slicks, rocks and potholes: where the track schedules them, what touching one does to a bike by speed and lean, and how each is drawn.",
     title: "Road hazards",
-    verify: [],
+    verify: ["hazards.md"],
   },
   {
     docs: ["docs/architecture.md#tracks"],
