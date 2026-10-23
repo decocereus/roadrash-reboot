@@ -14,6 +14,8 @@ const corePackages = ["packages/career", "packages/sim", "packages/track"];
 
 const testFixtures = new Set([
   "packages/career/src/career-fixtures.ts",
+  "packages/career/src/police-fixtures.ts",
+  "packages/career/src/police-worker.ts",
   "packages/sim/src/race-fixtures.ts",
 ]);
 

@@ -6,7 +6,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 
 ## The checks
 
-`pnpm check` runs the `check` group of `scripts/verify.ts`: formatting, lint, the lint rule tests, this ledger, CSS comments, the TypeScript-only check, the repository roots, the renderer imports, source size, the save format, dead code, types, and tests, in that order, and prints how long each took. `pnpm verify` runs the same group and then the build. Add `--format json` (`node scripts/verify.ts check --format json`) for one JSON report with each check's command, exit code, duration and the tail of its output when it failed. CI runs `pnpm check` and `pnpm build` as separate steps, so the Actions page shows which of the two failed without opening the log. It runs once for each pull request update and once for each push to `main`.
+`pnpm check` runs the `check` group of `scripts/verify.ts`: formatting, lint, the lint rule tests, this ledger, CSS comments, the TypeScript-only check, the repository roots, the renderer imports, source size, the save format, dead code, the perf budgets, types, and tests, in that order, and prints how long each took. `pnpm verify` runs the same group, then the build, then the perf gate, `pnpm perf`. Add `--format json` (`node scripts/verify.ts check --format json`) for one JSON report with each check's command, exit code, duration and the tail of its output when it failed. `node scripts/verify.ts static` runs the group without the tests. CI runs four jobs side by side, once for each pull request update and once for each push to `main`. The `static` job runs `node scripts/verify.ts static` and then `pnpm build` as separate steps, so the Actions page shows which of the two failed without opening the log. `tests (police)` runs the police balance test, `pnpm test --project police`, on a runner of its own, because its 200 races fill every core. `tests (!police)` runs every other test, so the two test jobs together run what `pnpm test` runs. The `perf` job runs `pnpm perf`. Nothing in CI runs `pnpm perf:gpu`, which needs this Mac's GPU; [observability.md](observability.md) lists what each perf command checks.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
@@ -67,6 +67,7 @@ Every rule names its check. A lint rule or a `pnpm` script enforces it, or `judg
 | Every promise is awaited, returned, or explicitly discarded with `void`. | `typescript/no-floating-promises` | Repository | None |
 | Look up an Effect API in the installed source first: `node_modules/effect/src` and the package's `exports`, then `node_modules/@effect/platform-node/src`, then Alchemy's own source, such as `alchemy/src/Runtime.ts`, for what its wrappers do. Use the pinned Effect checkout only when you need code or tests that the package does not ship. `pnpm effect:reference` creates it at `.references/effect`, at commit `67ba4e46a11ccda0b6761578bfd22c04ae00167d`, which is Effect 4.0.0, the version the root `package.json` pins. On every run it checks that the installed Effect matches the root pin, that `.references/effect` is ignored and untracked, and that an existing checkout is clean, at that commit and at that version. It never fetches into, resets or cleans an existing checkout: a mismatch is an error that leaves the checkout as it is. It is not part of `pnpm check`, the build or CI, and it uses the network only when the checkout is missing. Do not copy API examples from the Effect website, which may describe another version. | `pnpm effect:reference` | Development setup | None |
 | A value typed `any`, such as the result of `JSON.parse`, is decoded or typed before typed code reads, calls, passes or returns it. | `typescript/no-unsafe-assignment`, `typescript/no-unsafe-argument`, `typescript/no-unsafe-call`, `typescript/no-unsafe-member-access`, `typescript/no-unsafe-return` | Repository | None |
+| Durable Object code follows [durable-object-http.md](durable-object-http.md): each object is an Effect HTTP API reached through `fetch`, never Alchemy RPC; an instance is keyed by its canonical race ID; and stubs and generated clients are built inside each invocation and stay private to the client. No Durable Object exists yet, so the conventions come before the code. | judgment | Multiplayer, when it starts | None |
 
 The inherited Ultracite presets run with type information (`options: { typeAware: true }`), so every type-aware rule they turn on is enforced too, such as `typescript/strict-boolean-expressions` and `typescript/no-confusing-void-expression`. Every other rule they turn on is enforced in every file as well, such as `func-style` (functions are `const` arrow functions), `no-use-before-define`, `no-shadow`, `no-nested-ternary` and `promise/prefer-await-to-then`. Only the rules above are listed, because they state Rushline's own decisions.
 
@@ -93,6 +94,49 @@ The diagnostics hub, the recorder, React, `vite.config.ts`, the plain boot bridg
 | Do not write an object literal with a string `_tag`. Build a tagged value with its constructor, such as a `Schema.TaggedError` class. | `rushline/no-manual-tagged-construction` | `effectFiles` | None |
 | Do not import a named `make<Name>` export from a relative path or an `@racer/` workspace. Import the service tag or its Layer and yield the service. | `rushline/no-service-constructor-imports` | `libraryFiles` | None |
 | A chain of ternaries that compares one value with literals is a `Match`. | `rushline/prefer-effect-match` | `effectFiles` | None |
+| Sequence dependent Effect steps, branches, loops and named intermediate results in a generator: a named `Effect.fn` for an exported operation or service method, `Effect.gen` for private construction. Use `.pipe` for one plain transformation and for policy around an operation: error translation, recovery, retry, timeout, tracing, a permit or scope, and providing services. [Sequencing and composition](#sequencing-and-composition) shows each case in Rushline's code. | judgment | `effectFiles` | None |
+
+### Sequencing and composition
+
+`ingest` in `apps/web/src/server/telemetry.ts` is a generator because each step needs an earlier result: it gets the store, reads the body, decodes it twice, reads the clock and saves. A `.pipe` on one yielded step translates that step's failure and stays local to it:
+
+```ts
+export const ingest = Effect.fn("telemetry.ingest")(function* ingest(
+  request: Request
+) {
+  const store = yield* TelemetryStore;
+  const text = yield* readBody(request);
+  const value = yield* decodeJson(text).pipe(
+    Effect.mapError((cause) => new NotJson({ cause }))
+  );
+  const batch = yield* decodeBatchEffect(value).pipe(
+    Effect.mapError((cause) => new Invalid({ cause }))
+  );
+  const receivedAt = DateTime.formatIso(
+    DateTime.makeUnsafe(yield* Clock.currentTimeMillis)
+  );
+  const saved = yield* store
+    .save(batch, JSON.stringify({ batch, receivedAt }))
+    .pipe(Effect.mapError((cause) => new StoreFailed({ cause })));
+  const ack: Ack = {
+    batchId: batch.batchId,
+    duplicate: saved === "duplicate",
+    sessionId: batch.session.sessionId,
+  };
+  return ack;
+});
+```
+
+One transformation stays a pipe, as `pastDeadline` in `tools/perf/src/measure-page.ts` does:
+
+```ts
+const pastDeadline = (deadline: number) =>
+  Clock.currentTimeMillis.pipe(Effect.map((now) => now > deadline));
+```
+
+Policy that wraps the whole operation goes after the generator, in `Effect.fn`'s combinator arguments, not in a wrapper function. `deliver` in `apps/web/src/diagnostics/upload/delivery.ts` branches on the status and checks the acknowledgement inside its generator, then passes `Effect.catchTag("UploadFailure", …)` to turn an `UploadFailure` from any step into a retry. `save` in `packages/telemetry/src/jsonl-store.ts` passes `(saving) => gate.withPermit(saving)` the same way. In the same file `jsonlStoreLayer` builds the service with a private `Effect.gen` inside `Layer.effect`; that is construction, not an operation.
+
+When a chain of `map`, `flatMap` or `andThen` carries earlier results into later steps, write a generator so the dependencies show. A pipe that starts branching on outcomes or running further Effects belongs in the surrounding generator. Do not turn one clear transformation into a generator, and do not count combinators.
 
 ## Keep types honest
 

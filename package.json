@@ -8,6 +8,7 @@
     "check": "node scripts/verify.ts check",
     "check:css-comments": "node scripts/check-css-comments.ts",
     "check:dead": "knip --no-progress",
+    "check:perf": "node tools/perf/gate.ts --check",
     "check:renderer-imports": "node scripts/check-renderer-imports.ts",
     "check:roots": "node scripts/check-roots.ts",
     "check:rules": "node scripts/check-rules.ts",
@@ -20,6 +21,8 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
     "lint:rules": "vitest run --config tools/oxlint/vitest.config.ts && vitest run scripts",
+    "perf": "node tools/perf/gate.ts",
+    "perf:gpu": "node tools/perf/gpu.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
     "verify": "node scripts/verify.ts"

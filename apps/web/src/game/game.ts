@@ -11,6 +11,7 @@ import { benchOf } from "../career/bench.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { AcquiredAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
+import { createBenchProfile } from "./bench-profile.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
 import {
@@ -153,6 +154,13 @@ const startGame = (
   owners.push(() => {
     frame.meter?.dispose();
     frame.profiler?.dispose();
+  });
+  const bench = createBenchProfile(
+    benchOf(globalThis.location.search),
+    recorder.raceId
+  );
+  owners.push(() => {
+    bench?.dispose();
   });
   const lap = lapOf(frame);
   const pipeline = createPipeline(renderer, lap);
@@ -394,6 +402,7 @@ const startGame = (
       return;
     }
     stage.race.step(cast.inputs);
+    bench?.record(stage.race.view);
     for (const event of stage.race.view.events) {
       touchDown(event);
     }
