@@ -1,0 +1,491 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T09:55:02.715Z",
+  "title": "Design System: Rushline",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(16.9% 0.006 271)",
+        "tonalRamp": [
+          "oklch(15% 0.006 271)",
+          "oklch(25% 0.006 271)",
+          "oklch(35% 0.006 271)",
+          "oklch(45% 0.006 271)",
+          "oklch(55% 0.006 271)",
+          "oklch(65% 0.006 271)",
+          "oklch(80% 0.006 271)",
+          "oklch(95% 0.006 271)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "oklch(21.4% 0.012 270.8)",
+        "tonalRamp": [
+          "oklch(15% 0.012 270.8)",
+          "oklch(25% 0.012 270.8)",
+          "oklch(35% 0.012 270.8)",
+          "oklch(45% 0.012 270.8)",
+          "oklch(55% 0.012 270.8)",
+          "oklch(65% 0.012 270.8)",
+          "oklch(80% 0.012 270.8)",
+          "oklch(95% 0.012 270.8)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "canonical": "oklch(26.5% 0.016 269.1)",
+        "tonalRamp": [
+          "oklch(15% 0.016 269.1)",
+          "oklch(25% 0.016 269.1)",
+          "oklch(35% 0.016 269.1)",
+          "oklch(45% 0.016 269.1)",
+          "oklch(55% 0.016 269.1)",
+          "oklch(65% 0.016 269.1)",
+          "oklch(80% 0.016 269.1)",
+          "oklch(95% 0.016 269.1)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "oklch(31.7% 0.019 268.1)",
+        "tonalRamp": [
+          "oklch(15% 0.019 268.1)",
+          "oklch(25% 0.019 268.1)",
+          "oklch(35% 0.019 268.1)",
+          "oklch(45% 0.019 268.1)",
+          "oklch(55% 0.019 268.1)",
+          "oklch(65% 0.019 268.1)",
+          "oklch(80% 0.019 268.1)",
+          "oklch(95% 0.019 268.1)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Warm White",
+        "canonical": "oklch(95% 0.011 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.011 84.6)",
+          "oklch(25% 0.011 84.6)",
+          "oklch(35% 0.011 84.6)",
+          "oklch(45% 0.011 84.6)",
+          "oklch(55% 0.011 84.6)",
+          "oklch(65% 0.011 84.6)",
+          "oklch(80% 0.011 84.6)",
+          "oklch(95% 0.011 84.6)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "oklch(68.9% 0.013 286.1)",
+        "tonalRamp": [
+          "oklch(15% 0.013 286.1)",
+          "oklch(25% 0.013 286.1)",
+          "oklch(35% 0.013 286.1)",
+          "oklch(45% 0.013 286.1)",
+          "oklch(55% 0.013 286.1)",
+          "oklch(65% 0.013 286.1)",
+          "oklch(80% 0.013 286.1)",
+          "oklch(95% 0.013 286.1)"
+        ]
+      },
+      "orange": {
+        "role": "primary",
+        "displayName": "Lowside Orange",
+        "canonical": "oklch(70.2% 0.199 43)",
+        "tonalRamp": [
+          "oklch(15% 0.109 43)",
+          "oklch(25% 0.129 43)",
+          "oklch(35% 0.149 43)",
+          "oklch(45% 0.169 43)",
+          "oklch(55% 0.189 43)",
+          "oklch(65% 0.199 43)",
+          "oklch(80% 0.199 43)",
+          "oklch(95% 0.169 43)"
+        ]
+      },
+      "yellow": {
+        "role": "primary",
+        "displayName": "Selection Yellow",
+        "canonical": "oklch(85.3% 0.163 85.2)",
+        "tonalRamp": [
+          "oklch(15% 0.068 85.2)",
+          "oklch(25% 0.085 85.2)",
+          "oklch(35% 0.101 85.2)",
+          "oklch(45% 0.117 85.2)",
+          "oklch(55% 0.133 85.2)",
+          "oklch(65% 0.15 85.2)",
+          "oklch(80% 0.163 85.2)",
+          "oklch(95% 0.163 85.2)"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Debt Red",
+        "canonical": "oklch(60.1% 0.216 28)",
+        "tonalRamp": [
+          "oklch(15% 0.139 28)",
+          "oklch(25% 0.16 28)",
+          "oklch(35% 0.182 28)",
+          "oklch(45% 0.203 28)",
+          "oklch(55% 0.216 28)",
+          "oklch(65% 0.216 28)",
+          "oklch(80% 0.193 28)",
+          "oklch(95% 0.161 28)"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Money-In Green",
+        "canonical": "oklch(76.7% 0.177 146.1)",
+        "tonalRamp": [
+          "oklch(15% 0.088 146.1)",
+          "oklch(25% 0.105 146.1)",
+          "oklch(35% 0.123 146.1)",
+          "oklch(45% 0.141 146.1)",
+          "oklch(55% 0.158 146.1)",
+          "oklch(65% 0.176 146.1)",
+          "oklch(80% 0.177 146.1)",
+          "oklch(95% 0.164 146.1)"
+        ]
+      },
+      "blue": {
+        "role": "secondary",
+        "displayName": "Police Blue",
+        "canonical": "oklch(58.1% 0.229 263.9)",
+        "tonalRamp": [
+          "oklch(15% 0.15 263.9)",
+          "oklch(25% 0.173 263.9)",
+          "oklch(35% 0.196 263.9)",
+          "oklch(45% 0.219 263.9)",
+          "oklch(55% 0.229 263.9)",
+          "oklch(65% 0.229 263.9)",
+          "oklch(80% 0.199 263.9)",
+          "oklch(95% 0.164 263.9)"
+        ]
+      },
+      "cork": {
+        "role": "neutral",
+        "displayName": "Cork",
+        "canonical": "oklch(54.7% 0.066 69.8)",
+        "tonalRamp": [
+          "oklch(15% 0.06 69.8)",
+          "oklch(25% 0.066 69.8)",
+          "oklch(35% 0.066 69.8)",
+          "oklch(45% 0.066 69.8)",
+          "oklch(55% 0.066 69.8)",
+          "oklch(65% 0.066 69.8)",
+          "oklch(80% 0.066 69.8)",
+          "oklch(95% 0.06 69.8)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(92.1% 0.028 86.6)",
+        "tonalRamp": [
+          "oklch(15% 0.027 86.6)",
+          "oklch(25% 0.028 86.6)",
+          "oklch(35% 0.028 86.6)",
+          "oklch(45% 0.028 86.6)",
+          "oklch(55% 0.028 86.6)",
+          "oklch(65% 0.028 86.6)",
+          "oklch(80% 0.028 86.6)",
+          "oklch(95% 0.028 86.6)"
+        ]
+      },
+      "polaroid": {
+        "role": "neutral",
+        "displayName": "Polaroid",
+        "canonical": "oklch(96.5% 0.013 86.8)",
+        "tonalRamp": [
+          "oklch(15% 0.013 86.8)",
+          "oklch(25% 0.013 86.8)",
+          "oklch(35% 0.013 86.8)",
+          "oklch(45% 0.013 86.8)",
+          "oklch(55% 0.013 86.8)",
+          "oklch(65% 0.013 86.8)",
+          "oklch(80% 0.013 86.8)",
+          "oklch(95% 0.013 86.8)"
+        ]
+      },
+      "neon-yellow": {
+        "role": "tertiary",
+        "displayName": "Neon Yellow",
+        "canonical": "oklch(93.9% 0.176 104.1)",
+        "tonalRamp": [
+          "oklch(15% 0.057 104.1)",
+          "oklch(25% 0.075 104.1)",
+          "oklch(35% 0.092 104.1)",
+          "oklch(45% 0.11 104.1)",
+          "oklch(55% 0.128 104.1)",
+          "oklch(65% 0.145 104.1)",
+          "oklch(80% 0.172 104.1)",
+          "oklch(95% 0.176 104.1)"
+        ]
+      },
+      "neon-cyan": {
+        "role": "tertiary",
+        "displayName": "Neon Cyan",
+        "canonical": "oklch(84.8% 0.144 208.9)",
+        "tonalRamp": [
+          "oklch(15% 0.063 208.9)",
+          "oklch(25% 0.078 208.9)",
+          "oklch(35% 0.092 208.9)",
+          "oklch(45% 0.106 208.9)",
+          "oklch(55% 0.121 208.9)",
+          "oklch(65% 0.135 208.9)",
+          "oklch(80% 0.144 208.9)",
+          "oklch(95% 0.144 208.9)"
+        ]
+      },
+      "neon-red": {
+        "role": "tertiary",
+        "displayName": "Neon Red",
+        "canonical": "oklch(64.7% 0.239 24.3)",
+        "tonalRamp": [
+          "oklch(15% 0.14 24.3)",
+          "oklch(25% 0.164 24.3)",
+          "oklch(35% 0.188 24.3)",
+          "oklch(45% 0.212 24.3)",
+          "oklch(55% 0.236 24.3)",
+          "oklch(65% 0.239 24.3)",
+          "oklch(80% 0.222 24.3)",
+          "oklch(95% 0.187 24.3)"
+        ]
+      },
+      "neon-ink": {
+        "role": "tertiary",
+        "displayName": "Neon Ink",
+        "canonical": "oklch(14.2% 0.018 296.1)",
+        "tonalRamp": [
+          "oklch(15% 0.018 296.1)",
+          "oklch(25% 0.018 296.1)",
+          "oklch(35% 0.018 296.1)",
+          "oklch(45% 0.018 296.1)",
+          "oklch(55% 0.018 296.1)",
+          "oklch(65% 0.018 296.1)",
+          "oklch(80% 0.018 296.1)",
+          "oklch(95% 0.018 296.1)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "outcome": {
+        "displayName": "Outcome",
+        "purpose": "Stencilled verdicts and the wordmark only."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "HUD numerals and the Notice word."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The one orange heading on each screen."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Menu items, rider and bike names, ledger totals."
+      },
+      "quote": {
+        "displayName": "Quote",
+        "purpose": "Rival lines in quotation marks, never italic; confirm questions."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptions and notes."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Capitalised stat names, ledger rows, strip captions."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper-lift",
+        "value": "drop-shadow(0 6px 10px rgb(0 0 0 / 45%))",
+        "purpose": "Notes, invoices, citations, Polaroids."
+      },
+      {
+        "name": "pin",
+        "value": "0 2px 2px rgb(0 0 0 / 45%), inset -1px -2px 0 rgb(0 0 0 / 25%), inset 1px 1px 0 rgb(255 255 255 / 45%)",
+        "purpose": "The pin holding paper to cork."
+      },
+      {
+        "name": "board-recess",
+        "value": "inset 0 0 40px rgb(0 0 0 / 35%)",
+        "purpose": "The cork board."
+      },
+      {
+        "name": "toast",
+        "value": "0 6px 14px rgb(0 0 0 / 40%)",
+        "purpose": "Toasts over the race."
+      },
+      {
+        "name": "hud-ink",
+        "value": "-2px 0 #0e0f12, 2px 0 #0e0f12, 0 -2px #0e0f12, 0 2px #0e0f12, 0 4px 10px rgb(0 0 0 / 45%)",
+        "purpose": "Text-shadow outline for HUD text over the road."
+      }
+    ],
+    "motion": [
+      {
+        "name": "screen-in",
+        "value": "180ms ease-out (opacity from 0)",
+        "purpose": "Cross-fade between menu screens."
+      },
+      {
+        "name": "notice-in",
+        "value": "180ms cubic-bezier(0.22, 1, 0.36, 1) (from translateY 8px, scale 0.96)",
+        "purpose": "Notice words and toasts entering."
+      },
+      {
+        "name": "flash-hold",
+        "value": "500ms steps(1, end)",
+        "purpose": "A changed HUD value shows yellow for half a second, then holds."
+      },
+      {
+        "name": "cop-blink",
+        "value": "500ms steps(1, end) infinite",
+        "purpose": "The cop warning, the only blinking element."
+      },
+      {
+        "name": "menu-colour",
+        "value": "100ms",
+        "purpose": "Menu item colour change on selection."
+      },
+      {
+        "name": "ease-out-quint",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Default entrance easing."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Menu Item",
+      "kind": "nav",
+      "refersTo": "menu-item",
+      "description": "Every action on a game screen: condensed capitals, yellow with a pointer when selected.",
+      "html": "<div class=\"ds-menu\" role=\"menu\"><button class=\"ds-menu-item\" data-selected=\"true\"><span class=\"ds-ptr\">▸</span><span>Continue career<span class=\"ds-detail\">Level 2 · $3,200 · Halden Kite 500</span></span></button><button class=\"ds-menu-item\"><span class=\"ds-ptr\">▸</span><span>Single race</span></button><button class=\"ds-menu-item\" disabled><span class=\"ds-ptr\">▸</span><span>Multiplayer<span class=\"ds-detail\">SOON</span></span></button></div>",
+      "css": ".ds-menu { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; background: var(--ink, #0e0f12); padding: 16px; } .ds-menu-item { font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; display: flex; gap: 0.4em; align-items: flex-start; background: none; border: 0; border-radius: 2.4px; padding: 2px 8px 2px 0; color: var(--text, #f2eee6); font-weight: 700; font-size: 28px; line-height: 1; text-align: left; cursor: pointer; transition: color 100ms; } .ds-menu-item .ds-ptr { visibility: hidden; } .ds-menu-item[data-selected] , .ds-menu-item:hover { color: var(--yellow, #ffc531); } .ds-menu-item[data-selected] .ds-ptr, .ds-menu-item:hover .ds-ptr { visibility: visible; } .ds-menu-item:focus-visible { outline: 2px solid var(--yellow, #ffc531); outline-offset: 2px; } .ds-menu-item:disabled { color: var(--muted, #9a9aa3); cursor: default; } .ds-detail { font-family: Inter, ui-sans-serif, system-ui, sans-serif; display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: none; color: var(--muted, #9a9aa3); margin-top: 2px; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat bordered surface; selection is a yellow outline, an optional left edge carries a rider colour.",
+      "html": "<div class=\"ds-row\"><div class=\"ds-panel\">Panel</div><div class=\"ds-panel ds-raised\">Raised</div><div class=\"ds-panel ds-raised\" data-selected=\"true\">Selected</div><div class=\"ds-panel ds-edge\">Moose</div></div>",
+      "css": ".ds-row { display: flex; gap: 16px; background: var(--ink, #0e0f12); padding: 16px; } .ds-panel { font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: var(--panel, #17191f); color: var(--text, #f2eee6); border: 2px solid var(--line, #2e323c); padding: 16px; min-width: 120px; } .ds-raised { background: var(--raised, #22252d); } .ds-panel[data-selected] { outline: 2px solid var(--yellow, #ffc531); outline-offset: 2px; } .ds-edge { border-left: 4px solid #c2521f; }"
+    },
+    {
+      "name": "Pinned Note",
+      "kind": "custom",
+      "refersTo": "paper-note",
+      "description": "Paper pinned to the cork board, tilted, in marker capitals.",
+      "html": "<div class=\"ds-cork\"><div class=\"ds-note\"><span class=\"ds-pin\"></span><p>Moose wants his club back.</p></div></div>",
+      "css": ".ds-cork { background-color: #8a6a45; background-image: radial-gradient(circle at 20% 30%, rgb(0 0 0 / 16%) 0 1px, transparent 1.5px), radial-gradient(circle at 70% 60%, rgb(255 255 255 / 10%) 0 1px, transparent 1.5px); background-size: 13px 13px, 19px 19px; border: 4px solid rgb(14 15 18 / 60%); box-shadow: inset 0 0 40px rgb(0 0 0 / 35%); padding: 32px; } .ds-note { position: relative; width: fit-content; max-width: 280px; background: var(--paper, #ede4d0); color: var(--ink, #0e0f12); padding: 28px 16px 16px; rotate: -1.5deg; filter: drop-shadow(0 6px 10px rgb(0 0 0 / 45%)); } .ds-note p { font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; margin: 0; font-weight: 700; font-size: 26px; line-height: 1; } .ds-pin { position: absolute; top: 8px; left: 50%; translate: -50% 0; width: 12px; height: 12px; border-radius: 50%; background: var(--red, #e5312b); box-shadow: 0 2px 2px rgb(0 0 0 / 45%), inset -1px -2px 0 rgb(0 0 0 / 25%), inset 1px 1px 0 rgb(255 255 255 / 45%); }"
+    },
+    {
+      "name": "Stencil Verdict",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Outcome words only, sprayed on at an angle.",
+      "html": "<div class=\"ds-verdicts\"><span class=\"ds-stencil ds-wrecked\">Wrecked</span><span class=\"ds-stencil ds-busted\">Busted</span><span class=\"ds-stencil ds-framed\">Qualified</span></div>",
+      "css": ".ds-verdicts { display: flex; gap: 32px; align-items: center; background: var(--ink, #0e0f12); padding: 24px; } .ds-stencil { font-family: 'Big Shoulders Stencil Display', 'Saira Extra Condensed', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; font-size: 64px; line-height: 0.85; display: inline-block; } .ds-wrecked { color: var(--red, #e5312b); rotate: -4deg; } .ds-busted { color: var(--blue, #2f6bff); text-shadow: 0.045em 0.045em 0 var(--red, #e5312b); rotate: 3deg; } .ds-framed { color: var(--yellow, #ffc531); font-size: 40px; border: 0.09em solid currentColor; padding: 0.14em 0.28em 0.08em; opacity: 0.9; rotate: -6deg; }"
+    },
+    {
+      "name": "Ledger",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Post-race money on a panel, coloured by direction, tabular numerals.",
+      "html": "<div class=\"ds-ledger\"><div class=\"ds-lrow\"><span>Prize, 2nd</span><span class=\"ds-in\">+ $1,600</span></div><div class=\"ds-lrow\"><span>Repairs</span><span class=\"ds-out\">− $900</span></div><div class=\"ds-lrow\"><span>Fines<small>Nobody caught you this time.</small></span><span class=\"ds-zero\">$0</span></div><div class=\"ds-lrow ds-total\"><span>Cash</span><span>$3,200</span></div></div>",
+      "css": ".ds-ledger { font-family: Inter, ui-sans-serif, system-ui, sans-serif; width: 320px; display: flex; flex-direction: column; gap: 8px; background: var(--panel, #17191f); color: var(--text, #f2eee6); border: 2px solid var(--line, #2e323c); padding: 16px; } .ds-lrow { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; } .ds-lrow small { display: block; color: var(--muted, #9a9aa3); font-weight: 400; letter-spacing: normal; text-transform: none; } .ds-lrow > span:last-child { font-size: 18px; letter-spacing: normal; font-variant-numeric: tabular-nums; } .ds-in { color: var(--green, #5bd06a); } .ds-out { color: var(--red, #e5312b); } .ds-zero { color: var(--muted, #9a9aa3); } .ds-total { font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; border-top: 2px dotted var(--line, #2e323c); padding-top: 8px; font-size: 26px; }"
+    },
+    {
+      "name": "Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Status strip over the race with a coloured left edge.",
+      "html": "<div class=\"ds-toasts\"><p class=\"ds-toast\" style=\"border-left-color:#5bd06a\">Dee joined.</p><p class=\"ds-toast\" style=\"border-left-color:#e5312b\">Lyle lost connection. The bike rides on autopilot.</p></div>",
+      "css": ".ds-toasts { display: flex; flex-direction: column; gap: 8px; background: #3a3c40; padding: 16px; } .ds-toast { font-family: Inter, ui-sans-serif, system-ui, sans-serif; margin: 0; width: fit-content; max-width: 24rem; background: rgb(23 25 31 / 85%); color: var(--text, #f2eee6); border-left: 4px solid; padding: 8px 16px; font-size: 14px; font-weight: 600; box-shadow: 0 6px 14px rgb(0 0 0 / 40%); backdrop-filter: blur(4px); }"
+    },
+    {
+      "name": "Cop Warning",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The only blinking element: police blue and red, twice a second.",
+      "html": "<p class=\"ds-cop\">▲ Cop 40 m ▲</p>",
+      "css": "@keyframes ds-cop-blink { 0%, 49.9% { color: #2f6bff; } 50%, 100% { color: #e5312b; } } .ds-cop { font-family: 'Saira Extra Condensed', 'Arial Narrow', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; width: fit-content; margin: 0; background: rgb(14 15 18 / 85%); padding: 4px 16px; font-weight: 800; font-size: 28px; font-variant-numeric: tabular-nums; animation: ds-cop-blink 500ms steps(1, end) infinite; } @media (prefers-reduced-motion: reduce) { .ds-cop { animation: none; color: #e5312b; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lowside Wall",
+    "overview": "Between races the player stands in the Lowside, the bar where the career lives, and every screen is something pinned to its wall: a cork board of Polaroids and marker notes, a police citation, a repair invoice, a stencilled verdict stamped across the frame. The interface is a set of physical objects on an ink-black room, not a settings app. Condensed capitals name things, Inter carries what people say and what things cost, and paper, cork, and tape give the grit. The race view stays clean: the road is the brightest idea on screen and the only interface on it is one small speedometer.\n\nThe system has two palettes, and DESIGN.md records both as they stand. The menu kit (ink, orange, yellow, cork, paper) was drawn on October 10, 2026, before the race view moved to cel-shaded cyberpunk anime on October 13. The speedometer and the 3D world already use the newer neon palette (yellow, cyan, red on near-black). `docs/architecture.md` lists restyling the menus to match the cyberpunk world as the next art step. That restyle is pending and not decided here: until it is designed, new menu work extends the kit below, and new race-view work uses the neon palette.\n\nDensity is low. A screen has one orange heading, one primary action bottom right on Enter, and Back bottom left on Escape. Text scales with the shorter side of the screen, designed at 1280 × 720.",
+    "keyCharacteristics": [
+      "Ink-black screens with paper, cork, and Polaroid objects that carry the grit.",
+      "Condensed capitals for names and actions, Inter for speech and money, stencil only for outcomes.",
+      "Yellow means \"where you are\", orange means \"what this is called\".",
+      "Flat panels with 2 px borders; depth comes from paper lifting off the wall, not from cards floating.",
+      "Keyboard first: a ▸ pointer and yellow text mark the selection, never a filled button.",
+      "In the race, one speedometer and nothing else that persists."
+    ],
+    "rules": [
+      {
+        "name": "The Name and Place Rule",
+        "body": "Orange is for what a thing is called; yellow is for where you are. Never swap them, and never use either for decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Dark Ground Rule",
+        "body": "Orange and yellow never sit on a light background. On paper and Polaroids, text is ink, money out is red, and the citation is blue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ledger Colour Rule",
+        "body": "Money coming in is green with `+`, money going out is red with `−`, a zero is muted, and a balance is warm white unless it is negative.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stencil Is a Verdict Rule",
+        "body": "The stencil face appears only when the game hands down an outcome, plus the wordmark. A heading, a label, or a button never uses it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Digits Rule",
+        "body": "A number that changes while the player watches uses tabular numerals, so a rising speed or a counting ledger never shifts the layout.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Lifts, Panels Don't Rule",
+        "body": "Only objects that exist in the bar (paper, Polaroids, pins) cast shadows. A panel that gains a shadow has become a floating card; give it a border instead.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do give each screen exactly one orange heading, one primary action bottom right on Enter, and Back bottom left on Escape.",
+      "Do mark the current choice with yellow text and the ▸ pointer, and make everything reachable from the keyboard.",
+      "Do make screens outside the race into objects in the bar: the board, a Polaroid, a ticket, an invoice. Options live in the back room, not a generic settings page.",
+      "Do colour every amount by the Ledger Colour Rule and set it in tabular numerals with `+` or `−`.",
+      "Do set rival lines in Inter 600 inside quotation marks.",
+      "Do cross-fade menu screens in 180 ms and cut hard into Wrecked and Busted.",
+      "Do honour reduced motion: transitions and animations collapse to nothing, and the notice entrance is removed.",
+      "Do use the neon palette for anything drawn over the race, and the menu kit for anything between races, until the menu restyle is designed."
+    ],
+    "donts": [
+      "Don't add health, stamina, or bike condition bars to the race HUD. The speedometer carries speed, gear, place, and progress; the rider and the bike show damage themselves.",
+      "Don't make a second element blink. The cop warning is the only one; every other change of state changes colour and holds it.",
+      "Don't put orange or yellow on paper, polaroid, or any light background.",
+      "Don't use the stencil face for anything but outcomes and the wordmark.",
+      "Don't use the shadcn filled button on game screens; actions are menu items.",
+      "Don't give panels shadows or rounded corners above 4 px.",
+      "Don't set rival lines in italics.",
+      "Don't reach for retro low resolution, dithering, or blocky, toy-like stand-ins, and don't add coloured afterimages to turning riders. The user rejected all of them."
+    ]
+  }
+}
