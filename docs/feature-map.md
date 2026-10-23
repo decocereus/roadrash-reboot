@@ -986,6 +986,7 @@ Source files:
 - `tools/oxlint/rushline/rules/no-comments.ts`
 - `tools/oxlint/rushline/rules/no-discarded-exit.ts`
 - `tools/oxlint/rushline/rules/no-effect-runtime.ts`
+- `tools/oxlint/rushline/rules/no-entries-loop.ts`
 - `tools/oxlint/rushline/rules/no-floating-effect.ts`
 - `tools/oxlint/rushline/rules/no-hot-allocation.ts`
 - `tools/oxlint/rushline/rules/no-inline-schema-compile.ts`
@@ -1024,6 +1025,7 @@ Test files:
 - `tools/oxlint/test/effect-style.test.ts`
 - `tools/oxlint/test/effect-tags.test.ts`
 - `tools/oxlint/test/no-discarded-exit.test.ts`
+- `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`

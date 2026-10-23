@@ -4,6 +4,7 @@ import { deterministicCoreRule } from "./rules/deterministic-core.ts";
 import { noCommentsRule } from "./rules/no-comments.ts";
 import { noDiscardedExitRule } from "./rules/no-discarded-exit.ts";
 import { noEffectRuntimeRule } from "./rules/no-effect-runtime.ts";
+import { noEntriesLoopRule } from "./rules/no-entries-loop.ts";
 import { noFloatingEffectRule } from "./rules/no-floating-effect.ts";
 import { noHotAllocationRule } from "./rules/no-hot-allocation.ts";
 import { noInlineSchemaCompileRule } from "./rules/no-inline-schema-compile.ts";
@@ -30,6 +31,7 @@ const rushlinePlugin = definePlugin({
     "no-comments": noCommentsRule,
     "no-discarded-exit": noDiscardedExitRule,
     "no-effect-runtime": noEffectRuntimeRule,
+    "no-entries-loop": noEntriesLoopRule,
     "no-floating-effect": noFloatingEffectRule,
     "no-hot-allocation": noHotAllocationRule,
     "no-inline-schema-compile": noInlineSchemaCompileRule,
