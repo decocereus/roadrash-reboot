@@ -87,6 +87,14 @@ export const hotBodies = {
   ],
   "apps/web/src/game/input.ts": [["createControls", "read"]],
   "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
+  "packages/sim/src/combat.ts": [
+    ["pickThieves"],
+    ["settleStrikes"],
+    ["landStrikes"],
+    ["resetJolt"],
+    ["joinParty"],
+    ["stepRiderContacts"],
+  ],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [
     ["gatherInSight"],

@@ -4,6 +4,7 @@ import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
   clamp,
+  raceOwned,
   TICK_SECONDS,
 } from "./state.ts";
 import type {
@@ -154,8 +155,22 @@ interface Strike {
   readonly side: number;
   readonly target: number;
   readonly weapon: WeaponKind;
-  readonly takesWeapon: boolean;
+  takesWeapon: boolean;
 }
+
+interface Melee {
+  readonly parties: Party[];
+  partyCount: number;
+  readonly strikes: (Strike | undefined)[];
+  readonly thieves: number[];
+}
+
+const meleeOf = raceOwned((): Melee => ({
+  parties: [],
+  partyCount: 0,
+  strikes: [],
+  thieves: [],
+}));
 
 const finishSwing = (
   state: RaceState,
@@ -265,29 +280,30 @@ const covets = (
   state.riders[riderIndex]?.weapon === "none" &&
   (state.riders[strike.target]?.weaponHits ?? 0) > 0;
 
-const pickThieves = (
-  state: RaceState,
-  strikes: readonly (Strike | undefined)[]
-): (Strike | undefined)[] => {
-  const thieves = new Map<number, number>();
+const pickThieves = (state: RaceState, melee: Melee): void => {
+  const { strikes, thieves } = melee;
+  for (let index = 0; index < state.riders.length; index += 1) {
+    thieves[index] = -1;
+  }
   for (let index = 0; index < strikes.length; index += 1) {
     const strike = strikes[index];
     if (covets(state, index, strike)) {
-      const rival = thieves.get(strike.target) ?? -1;
+      const rival = thieves[strike.target] ?? -1;
       const rivalStrike = strikes[rival];
       if (
         !rivalStrike ||
         reachTo(state, index, strike) < reachTo(state, rival, rivalStrike)
       ) {
-        thieves.set(strike.target, index);
+        thieves[strike.target] = index;
       }
     }
   }
-  return strikes.map((strike, index) =>
-    strike && thieves.get(strike.target) === index
-      ? { ...strike, takesWeapon: true }
-      : strike
-  );
+  for (let index = 0; index < strikes.length; index += 1) {
+    const strike = strikes[index];
+    if (strike && thieves[strike.target] === index) {
+      strike.takesWeapon = true;
+    }
+  }
 };
 
 const wearWeapons = (
@@ -303,12 +319,19 @@ const wearWeapons = (
   }
 };
 
-const settleStrikes = (state: RaceState): (Strike | undefined)[] => {
-  const strikes = state.riders.map((rider, index) =>
-    aimStrike(state, index, rider)
-  );
+const settleStrikes = (
+  state: RaceState,
+  melee: Melee
+): readonly (Strike | undefined)[] => {
+  const { strikes } = melee;
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const rider = state.riders[index];
+    strikes[index] = rider ? aimStrike(state, index, rider) : undefined;
+  }
+  strikes.length = state.riders.length;
   wearWeapons(state, strikes);
-  return pickThieves(state, strikes);
+  pickThieves(state, melee);
+  return strikes;
 };
 
 export const coolDown = (state: RaceState): void => {
@@ -319,7 +342,7 @@ export const coolDown = (state: RaceState): void => {
 };
 
 export const landStrikes = (state: RaceState): void => {
-  const strikes = settleStrikes(state);
+  const strikes = settleStrikes(state, meleeOf(state));
   for (let index = 0; index < strikes.length; index += 1) {
     const strike = strikes[index];
     if (strike) {
@@ -401,12 +424,12 @@ interface Jolt {
 }
 
 interface Party {
-  readonly index: number;
-  readonly rider: RiderState;
+  index: number;
+  rider: RiderState;
   readonly jolt: Jolt;
 }
 
-const untouched = (): Jolt => ({
+const untouched: Readonly<Jolt> = {
   behind: Number.POSITIVE_INFINITY,
   nudge: 0,
   shift: 0,
@@ -419,7 +442,40 @@ const untouched = (): Jolt => ({
   struckSpeed: 0,
   touchedBy: -1,
   touchedGap: Number.POSITIVE_INFINITY,
+};
+
+const resetJolt = (jolt: Jolt): void => {
+  jolt.behind = untouched.behind;
+  jolt.nudge = untouched.nudge;
+  jolt.shift = untouched.shift;
+  jolt.shove = untouched.shove;
+  jolt.shoved = untouched.shoved;
+  jolt.speedCap = untouched.speedCap;
+  jolt.speedGain = untouched.speedGain;
+  jolt.speedLoss = untouched.speedLoss;
+  jolt.struckGap = untouched.struckGap;
+  jolt.struckSpeed = untouched.struckSpeed;
+  jolt.touchedBy = untouched.touchedBy;
+  jolt.touchedGap = untouched.touchedGap;
+};
+
+const createParty = (index: number, rider: RiderState): Party => ({
+  index,
+  jolt: { ...untouched },
+  rider,
 });
+
+const joinParty = (melee: Melee, index: number, rider: RiderState): void => {
+  const party = melee.parties[melee.partyCount];
+  if (party) {
+    party.index = index;
+    party.rider = rider;
+    resetJolt(party.jolt);
+  } else {
+    melee.parties[melee.partyCount] = createParty(index, rider);
+  }
+  melee.partyCount += 1;
+};
 
 const touch = (party: Party, other: Party): void => {
   const gap =
@@ -572,20 +628,29 @@ export const stepRiderContacts = (
   track: Track,
   throwRider: ThrowRider
 ): void => {
-  const parties = state.riders.flatMap((rider, index): Party[] =>
-    canFight(rider) ? [{ index, jolt: untouched(), rider }] : []
-  );
-  for (let position = 0; position < parties.length; position += 1) {
-    const left = parties[position];
-    if (!left) {
-      continue;
-    }
-    for (const right of parties.slice(position + 1)) {
-      meet(state, left, right);
+  const melee = meleeOf(state);
+  const { parties } = melee;
+  melee.partyCount = 0;
+  for (let index = 0; index < state.riders.length; index += 1) {
+    const rider = state.riders[index];
+    if (rider && canFight(rider)) {
+      joinParty(melee, index, rider);
     }
   }
-  for (const party of parties) {
-    settle(state, party, throwRider);
+  for (let position = 0; position < melee.partyCount; position += 1) {
+    const left = parties[position];
+    for (let other = position + 1; other < melee.partyCount; other += 1) {
+      const right = parties[other];
+      if (left && right) {
+        meet(state, left, right);
+      }
+    }
+  }
+  for (let position = 0; position < melee.partyCount; position += 1) {
+    const party = parties[position];
+    if (party) {
+      settle(state, party, throwRider);
+    }
   }
   for (const rider of state.riders) {
     rider.x = clamp(rider.x, -track.vergeHalfWidth, track.vergeHalfWidth);
