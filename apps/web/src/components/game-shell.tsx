@@ -9,7 +9,6 @@ import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen } from "./screens/boot.tsx";
-import { BustedScreen } from "./screens/busted.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
 import { EndingScreen, GameOverScreen } from "./screens/game-over.tsx";
@@ -19,7 +18,6 @@ import { RaceHud } from "./screens/race-hud.tsx";
 import { ResultsScreen } from "./screens/results.tsx";
 import { RideOutScreen } from "./screens/ride-out.tsx";
 import { RouteBoardScreen } from "./screens/route-board.tsx";
-import { WreckedScreen } from "./screens/wrecked.tsx";
 import {
   afterResults,
   backRoom,
@@ -132,17 +130,6 @@ const CareerScreens = ({
       />
     );
   }
-  if (view.screen === "wrecked") {
-    return (
-      <WreckedScreen
-        career={career}
-        onPay={() => {
-          flow.payRepair(view.outcome);
-        }}
-        outcome={view.outcome}
-      />
-    );
-  }
   if (view.screen === "ending") {
     return (
       <EndingScreen
@@ -231,20 +218,11 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
       />
     );
   }
-  if (view.screen === "busted") {
-    return (
-      <BustedScreen
-        onPay={() => {
-          flow.go({ report: view.report, screen: "results" });
-        }}
-        report={view.report}
-      />
-    );
-  }
   if (view.screen === "results") {
     return (
       <ResultsScreen
         canRaceAgain={raceAgainOffered(view.report, career)}
+        career={career}
         onContinue={() => {
           flow.go(afterResults(view.report));
         }}

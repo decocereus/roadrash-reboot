@@ -256,7 +256,7 @@ The post-race money table, on a panel: label rows in capitals with amounts align
 
 ### Stencil verdicts
 
-`WRECKED` in red, `BUSTED` in blue with a red offset, `QUALIFIED` framed in yellow, `FINISHED` framed in green, `WINNER` in warm white. Set slightly rotated, like spray paint on the wall. The consequence screens (Wrecked, Busted) cut in hard with no fade.
+On Results the verdict is a stencil stamp framed in its colour and rotated like a paste-up: the place in neon yellow, `WRECKED`, `QUIT`, and `BUSTED` in neon red.
 
 ### Speedometer
 
@@ -277,6 +277,7 @@ The Clubhouse (`apps/web/src/components/screens/clubhouse.tsx`) is one 1672 × 9
 - **The stool.** It holds the boss of the chosen road (`roadBoss`: the home rider with the most season wins), drawn under the counter and the stool plates so every rider sits on the seat. The boss's taunt is on the speech sticker, with their name and `Boss of {road}` on yellow tape below it. Before a career's first race, and after a promotion, the stool is empty and Vic speaks from behind the bar, one line per click. Each of the 16 rivals has a figure at the same framing, hips at the right of the cut-out, so any of them fits the stool.
 - **The wall** (right): the standings sheet with each row sitting on its ruled lines, two note stickers (a promotion, debt, the envelope, and board notes, newest first), a bill and a sticker that change each race (one bill per rival), and the chosen road's flyer, one per road, with a `QUALIFIED {place}` stamp on a qualified road. A click on the flyer shows the next open road.
 - **Navigation** sits in the bottom strip: Ride (primary, outlined in neon yellow), Garage, and Back room, with the road picker `◄ {road} ►` at the right. Up and Down change the road from anywhere in the menu.
+- **Results** (`results.tsx`) is the same stage after a race. The rival with the post-race line takes the stool (Mags after a wreck), and the wall shows the race sheet, a verdict stamp, the ledger on the cyan note, and any warning on the pink note. The race sheet is the standings plate as a CSS border image whose middle repeats one ruled gap, so it holds fifteen rows without new art.
 - **Loading.** The bar's plates for the first road decode before it is shown, and the flyers and bosses of the other open roads load behind it, so it never draws piece by piece.
 
 ### Confirm
@@ -292,7 +293,7 @@ A raised panel 34 rem wide in the centre of a dimmed screen: the question in quo
 - **Do** make screens outside the race into objects in the bar: the board, a Polaroid, a ticket, an invoice. Options live in the back room, not a generic settings page.
 - **Do** colour every amount by the Ledger Colour Rule and set it in tabular numerals with `+` or `−`.
 - **Do** set rival lines in Inter 600 inside quotation marks.
-- **Do** cross-fade menu screens in 180 ms and cut hard into Wrecked and Busted.
+- **Do** cross-fade menu screens in 180 ms.
 - **Do** honour reduced motion: transitions and animations collapse to nothing, and the notice entrance is removed.
 - **Do** use the neon palette for anything drawn over the race and on restyled screens, and the menu kit on screens not yet restyled.
 - **Do** keep painted material in plates and text in code: names, numbers, lines, and notes are live text set over the art, never painted into it.

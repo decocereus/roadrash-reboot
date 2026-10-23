@@ -25,6 +25,9 @@ export interface WallNote {
   readonly open?: (() => void) | undefined;
 }
 
+export const stampStyle =
+  "font-stencil border-[0.12em] px-[0.3em] leading-none whitespace-nowrap uppercase";
+
 const fitted = (text: string, short: number, long: number): string =>
   stagePx(text.length > LONG_NOTE ? long : short);
 
@@ -186,7 +189,10 @@ export const WallPosters = ({
       />
       {stamp !== undefined && (
         <span
-          className="font-stencil text-neon-red border-neon-red bg-ink/75 absolute top-[54%] left-[9%] -rotate-12 border-[0.12em] px-[0.3em] leading-none whitespace-nowrap uppercase"
+          className={cn(
+            stampStyle,
+            "text-neon-red border-neon-red bg-ink/75 absolute top-[54%] left-[9%] -rotate-12"
+          )}
           style={{ fontSize: stagePx(44) }}
         >
           {stamp}

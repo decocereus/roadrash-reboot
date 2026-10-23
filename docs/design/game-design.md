@@ -107,17 +107,17 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 **What becomes final.** Places, prize money, qualification, season points, the carried weapon, and rival memory (section 10) are computed once from the state and events up to the settlement tick. A rival's bust or crash after the player has settled is not remembered.
 
-**The bill and the write.** A fine is fixed at settlement. A repair bill is fixed when the player leaves the Wrecked screen, which is the only place the rewarded ad is offered, so the bill is either the full amount or half of it. Then the debt check above runs, and the result, the bill, any repossession, and the end of the career are written to the save in one step. For a finish or a bust that write happens at the settlement tick. For a wreck it happens when the player leaves the Wrecked screen. A quit goes straight to Results at the full bill with no ad offer.
+**The bill and the write.** A fine and a repair bill are both fixed at settlement, at the full amount. Then the debt check above runs, and the result, the bill, any repossession, and the end of the career are written to the save in one step, at the settlement tick for a finish, a bust, or a wreck. A quit settles at the tick of the quit. The rewarded ad that halves a repair bill is not built; when it is, a wreck's write has to wait for the player's choice on Results.
 
 **Margins.** A rival ahead of the player beat them "by a wheel" if they finished 30 ticks (0.5 s) or less before the player. A rival behind the player lost "by a wheel" if they were riding and 25 m or less behind when the player crossed the line. Results shows a time for every rider who finished by the settlement tick and a gap in metres for every rider who had not.
 
 **When Results opens.** After a finish, the Finish screen plays its animation and then opens Results. After a bust or wreck, the consequence screen comes first. Results never opens before the write and never shows a number the write did not store.
 
-**The active-race record.** When a career race starts (the tick the countdown ends), the save gets an active-race record: road, level, seed, and the bike ridden. The write that stores the result removes it. If the career loads and finds an active-race record, the page was refreshed, closed, or crashed during a race or on the Wrecked screen. That race is settled as a wreck: no prize, the level's repair bill for that bike, then the debt check above. The record is removed in the same write, so the charge happens exactly once however many times the page is reloaded. The Clubhouse then shows a note from Vic: "You left a race. The bike didn't make it home. V." The rewarded ad is not offered for this bill.
+**The active-race record.** When a career race starts (the tick the countdown ends), the save gets an active-race record: road, level, seed, and the bike ridden. The write that stores the result removes it. If the career loads and finds an active-race record, the page was refreshed, closed, or crashed during a race. That race is settled as a wreck: no prize, the level's repair bill for that bike, then the debt check above. The record is removed in the same write, so the charge happens exactly once however many times the page is reloaded. The Clubhouse then shows a note from Vic: "You left a race. The bike didn't make it home. V." The rewarded ad is not offered for this bill.
 
 **Game over is written at once.** If the debt check ends the career, the save is marked over in that same write, before Results or Game Over is shown. A reload at that point opens Game Over, not the Clubhouse. `RACE AGAIN` is not offered on Results when the career is over.
 
-**What the Busted screen needs.** A racer is only busted while off the bike, and a thrown rider has already dropped their weapon, so the sim's state at the `busted` event no longer holds either fact the ticket prints. The runner records the weapon the player held on the tick before the throw that led to the bust, and the arrest position (road, and the body's distance along it in km) at the `busted` event, before the sim moves the rider and bike onto the verge.
+**What Results needs for a bust.** A racer is only busted while off the bike, and a thrown rider has already dropped their weapon, so the sim's state at the `busted` event no longer holds either fact the ticket prints. The runner records the weapon the player held on the tick before the throw that led to the bust, and the arrest position (road, and the body's distance along it in km) at the `busted` event, before the sim moves the rider and bike onto the verge.
 
 **Season standings.** Every settled career race scores points for all sixteen rivals and the player: 15 for 1st, 14 for 2nd, down to 1 for 15th. A busted or wrecked rider scores 0 for that race, and so does a rival who was not in that race's field. The Clubhouse board ranks by total points. Ties go to the rider with more wins, then to the rider who most recently placed better than the other in a race they shared.
 
@@ -395,7 +395,7 @@ The sim already has the loop; the career adds what happens afterwards.
 1. An unarmed rider kicks an armed one and takes the weapon (`weaponTaken`). This includes police: kicking a cop takes the baton.
 2. A thrown rider drops whatever they hold, and it is gone.
 3. A weapon breaks after its hit count (`weaponBroken`).
-4. **New:** a weapon the player still holds at the finish line carries into the next race with the hits it has left. A busted or wrecked player has nothing to carry, because a racer is only busted while off the bike and a thrown rider has already dropped the weapon (rule 2). The Busted screen still names it as confiscated (section 4, "Settlement and persistence").
+4. **New:** a weapon the player still holds at the finish line carries into the next race with the hits it has left. A busted or wrecked player has nothing to carry, because a racer is only busted while off the bike and a thrown rider has already dropped the weapon (rule 2). Results still names it as confiscated (section 4, "Settlement and persistence").
 5. **New:** the rival it was stolen from starts the next race with a fresh one, holds a grudge (section 10), and the clubhouse board posts about it.
 
 The loop that results: arrive unarmed, find the armed rider, line up a kick, keep the weapon alive to the finish, and come back next race to someone who wants it back.
@@ -494,7 +494,7 @@ From level 3, Dee's tip (section 11) shows the first roadblock's distance on the
 
 ### Busted
 
-A bust ends the race. The rider is placed after all finishers, gets no prize, pays the level's fine, and carries no weapon into the next race. If the fine takes cash below zero, the debt rules in section 4 apply. The Busted screen shows the officer who patrols that road and one of their lines. It prints the arrest position and the confiscated weapon from the record described in section 4, "Settlement and persistence".
+A bust ends the race. The rider is placed after all finishers, gets no prize, pays the level's fine, and carries no weapon into the next race. If the fine takes cash below zero, the debt rules in section 4 apply. Results stamps the bust and shows the officer who patrols that road and one of their lines. It prints the arrest position and the confiscated weapon from the record described in section 4, "Settlement and persistence".
 
 | Officer | Who they are |
 | --- | --- |
@@ -927,9 +927,9 @@ The game is free and ad-funded, so ads exist, but they never touch the riding or
 
 There are three placements and no others.
 
-- **Results screen,** in a fixed slot below the standings, at most one display ad per results screen, never covering the placings, money, or buttons. This is the only ad slot inside the race loop.
+- **Results screen:** no display ad since Results moved into the bar (October 23, 2026). If one returns, it is a bill on the wall, never covering the placings, money, or buttons.
 - **Clubhouse board,** one small static slot styled as a poster pinned beside the corkboard, out of the way of every button.
-- **Rewarded ad for a repair discount,** offered on the Wrecked screen only: "Watch an ad, pay half the repair bill." Optional, once per wreck, and the bill is shown in full first. The halved bill is applied before the debt check (section 4), so the ad can be the difference between keeping a bike and losing it. It is not offered for a quit or for a race settled after a reload.
+- **Rewarded ad for a repair discount** (not built), offered on Results after a wreck only: "Watch an ad, pay half the repair bill." Optional, once per wreck, and the bill is shown in full first. The halved bill is applied before the debt check (section 4), so the ad can be the difference between keeping a bike and losing it. It is not offered for a quit or for a race settled after a reload.
 
 There is no interstitial between races. An earlier draft had one after Results; it was removed so that the Results slot is the only ad shown unasked between pressing Start and being back in the Clubhouse.
 
@@ -958,7 +958,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 7 | Grudge targeting | The pilot's attack choice takes a preferred target, and its aggression can differ for that target. | First career release |
 | 8 | Pilot rules for Juno and Ruth Ann | Juno: retaliation only, attacking only a rider who hit her in the last 10 s. Ruth Ann: kicks preferred. Section 9 gives both rules. They can be two flags on the profile. | First career release |
 | 9 | HUD data | Bike condition, distance to the nearest chasing cop, and distance remaining. | First career release |
-| 10 | Detail for the Busted screen | The player's `crash` event carries the weapon dropped, and the `busted` event carries the body's `s`, both read before the sim clears or moves them (section 4). | First career release |
+| 10 | Detail for a bust on Results | The player's `crash` event carries the weapon dropped, and the `busted` event carries the body's `s`, both read before the sim clears or moves them (section 4). | First career release |
 | 11 | Career rules | Money, level, qualified roads, repeat-run pay, owned bike, carried weapon, rival memory, season points, story flags, settlement, the active-race record, and the debt check are plain data advanced by plain functions. They are rules, so they live in a deterministic package (a new `packages/career`, or a `career` module in `packages/sim`), not in React. | First career release |
 | 12 | Paint palette | `paint` stays an index, but into a palette of eighteen rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | First career release |
 | 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |

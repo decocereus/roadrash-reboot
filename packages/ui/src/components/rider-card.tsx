@@ -238,5 +238,5 @@ const RiderRow = ({
   </li>
 );
 
-export { RiderCard, RiderPortrait, RiderRow, RiderRows };
+export { RiderCard, RiderRow, RiderRows };
 export type { RiderColours };

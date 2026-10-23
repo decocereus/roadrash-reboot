@@ -1,4 +1,3 @@
-import type { RaceOutcome } from "@racer/career/outcome";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { LevelUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
@@ -52,8 +51,6 @@ export type View =
       readonly paused: boolean;
       readonly finish: RaceReport | null;
     }
-  | { readonly screen: "wrecked"; readonly outcome: RaceOutcome }
-  | { readonly screen: "busted"; readonly report: RaceReport }
   | { readonly screen: "results"; readonly report: RaceReport }
   | { readonly screen: "ending" }
   | { readonly screen: "gameOver" };
@@ -91,18 +88,11 @@ const stageOf = (view: View): "boot" | "race" | "menu" => {
   return view.screen === "race" ? "race" : "menu";
 };
 
-const afterConsequence = (
-  plan: RacePlan,
-  outcome: RaceOutcome,
-  report: RaceReport | null
-): View => {
-  if (plan.mode === "career" && outcome.result === "wrecked") {
-    return { outcome, screen: "wrecked" };
+const afterConsequence = (plan: RacePlan, report: RaceReport | null): View => {
+  if (report) {
+    return { report, screen: "results" };
   }
-  if (!report) {
-    return plan.mode === "career" ? clubhouse : singleRace;
-  }
-  return { report, screen: plan.mode === "career" ? "busted" : "results" };
+  return plan.mode === "career" ? clubhouse : singleRace;
 };
 
 const urlRide = (): RacePlan | null => {
@@ -307,7 +297,6 @@ export interface Flow {
   readonly resume: () => void;
   readonly mute: () => void;
   readonly quit: (plan: RacePlan) => void;
-  readonly payRepair: (outcome: RaceOutcome) => void;
   readonly followRival: (tag: HTMLDivElement | null) => void;
 }
 
@@ -328,7 +317,7 @@ export const useFlow = (): Flow => {
       onHud: feed.write,
       onOver(plan, outcome) {
         if (outcome.result !== "finished") {
-          setView(afterConsequence(plan, outcome, pendingRef.current));
+          setView(afterConsequence(plan, pendingRef.current));
           pendingRef.current = null;
         }
       },
@@ -337,7 +326,7 @@ export const useFlow = (): Flow => {
         let report: RaceReport | null = null;
         if (plan.mode === "quick") {
           report = quickReport(plan, outcome);
-        } else if (racer && outcome.result !== "wrecked") {
+        } else if (racer) {
           report = settle(settleRace(racer, outcome));
         }
         pendingRef.current = report;
@@ -422,12 +411,6 @@ export const useFlow = (): Flow => {
     newCareer() {
       commit(freshCareer(randomUnit()));
       setView(clubhouse);
-    },
-    payRepair(outcome) {
-      const report = career
-        ? settle(settleRace(career, outcome, "full"))
-        : null;
-      setView(report ? { report, screen: "results" } : clubhouse);
     },
     pick,
     prepare,

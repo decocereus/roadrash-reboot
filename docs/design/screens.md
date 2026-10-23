@@ -27,7 +27,7 @@ Load (wordmark while the bar's art decodes)
       ├─ Garage                                     │             │
       └─ Back Room                                  ├─ Pause      │
           ├─ Settings                               ▼             │
-          ├─ New career                Finish │ Wrecked │ Busted  │
+          ├─ New career                Finish, wreck, bust, quit │
           └─ Single Race ─► Route Board ─► Ride-out ─► Race       │
                               ▲                    ▼              │
                               └──────────────── Results ──────────┤
@@ -35,7 +35,7 @@ Load (wordmark while the bar's art decodes)
                                                    └─ Ending ──► Back Room
 ```
 
-A promotion returns to the bar, where Vic says the level's line. A damaged save opens the Back Room.
+A promotion returns to the bar, where Vic says the level's line. A damaged save opens the Back Room. A wreck or a bust no longer has its own screen; Results shows it as a stamp.
 
 ## 1. Boot and the Back Room
 
@@ -277,99 +277,52 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 ## 8. Wrecked
 
-**Purpose.** Show that the bike is finished for this race, and what it costs, before anything else.
+Folded into Results on October 23, 2026. A wreck settles at the tick of the `wrecked` event at the full repair bill, like a bust, and the race cuts to Results 1.2 s after the crash so the player sees it land. Results stamps `WRECKED`, puts the repair on the ledger, and seats Mags on the stool with one of her lines:
 
-**Layout.** Hard cut to a full-screen illustrated panel: the garage floor, the player's bike in pieces in the player's paint, and Mags crouched beside it with a crowbar and a toothpick (she does the repairs). Heading low and left in the stencil face. The bill is a paper invoice pinned bottom right.
+- `"I can fix it. I can't fix how you ride it."`
+- `"I've seen worse. On fire, mostly."`
+- `"Sweetheart, the front wheel was in a different lane."`
 
-**Text.**
-
-- Heading: `WRECKED`
-- Mags, one of:
-  - `"I can fix it. I can't fix how you ride it."`
-  - `"I've seen worse. On fire, mostly."`
-  - `"Sweetheart, the front wheel was in a different lane."`
-- Invoice: `REPAIR, {bike}` / `LEVEL {n} · {class}` / `${repair}` / `CASH AFTER ${cash}` (or `YOU OWE ${debt}` in red)
-- Rewarded ad offer, if available: `WATCH AN AD, PAY HALF: ${half}`
-- When the full bill would pass the credit limit: `THIS BILL TAKES THE {bike}.` in red under the invoice, or `THIS BILL ENDS THE CAREER.` on the Gutter Pup. The line is recomputed for the halved bill, so the player can see when the ad saves the bike.
-
-**Buttons.** `PAY UP` (primary). `WATCH AN AD, PAY HALF` when offered. The offer appears once per wreck and only on this screen.
-
-**In.** Hard cut from the race 1.2 s after the wrecking crash, so the player sees the crash land. The race settled at the tick of the `wrecked` event: places, prizes, and rival memory are already final. The screen is not shown for a quit or for a race settled after a reload; both go to the full bill with no offer.
-
-**Out.** Leaving the screen fixes the bill at the full amount or half of it. The debt check then runs on that bill (repossession, then game over), and the result is written to the save in one step. Fade to Results. If the page is closed while this screen is up, the active-race record is still in the save, so the next load charges the full bill once.
-
-**Data.** Bike and class, level, repair bill from the table, cash before and after for both the full and the halved bill, debt and credit limit.
+The rewarded ad that halves the bill is not built. When it is, it belongs on Results after a wreck, and the wreck's settlement has to wait for the player's choice again.
 
 ## 9. Busted
 
-**Purpose.** Show the arrest, the officer, and the fine.
+Folded into Results on October 23, 2026. Results stamps `BUSTED`, puts the fine on the ledger, and names the officer, the km, and any confiscated weapon under the stamp: `{officer}, KM {km} · TOOK YOUR {WEAPON}`. The officer's line goes on the pink note unless a debt warning needs it. The officer is the one who patrols the road: `SERGEANT DOLORES PIKE` on Breakwater Run, Cinder Wash, and Ridge Road; `DEPUTY WENDELL HAVERTY` on Slag Row and Hollow Pine Road. The cut to Results comes 0.8 s after the `busted` event, so the player sees the cop arrive.
 
-**Layout.** Hard cut to a dark blue panel lit from one side by alternating red and blue. Left third: the officer's portrait, chest up. Right two thirds: the heading, the officer's name and line, and below it a ticket torn from a pad with the fine.
-
-**Text.**
-
-- Heading: `BUSTED`
-- Officer: the one who patrols the road. `SERGEANT DOLORES PIKE` on Breakwater Run, Cinder Wash, and Ridge Road; `DEPUTY WENDELL HAVERTY` on Slag Row and Hollow Pine Road. One of their three lines from `game-design.md`.
-- Ticket: `CITATION` / `{road}, KM {km}` / `RACING ON A PUBLIC ROAD. ALSO, FALLING OFF ON ONE.` / `FINE ${fine}` / `CASH AFTER ${cash}` (or `YOU OWE ${debt}`)
-- If the player was carrying a weapon when they were thrown: `ALSO CONFISCATED: ONE {WEAPON}.`
-- When the fine passes the credit limit: `THIS FINE TAKES THE {bike}.` in red, or `THIS FINE ENDS THE CAREER.` on the Gutter Pup.
-
-**Buttons.** `PAY THE FINE` (primary). There is no ad offer; fines are never reduced.
-
-**In.** Hard cut 0.8 s after the `busted` event, so the player sees the cop arrive. The race settled at the tick of that event, and the fine, the debt check, and the result were written to the save then.
-
-**Out.** Fade to Results.
-
-**Data.** The arrest record kept by the race runner, because the sim's own state no longer holds it by the time this screen draws: the road; the km, taken from the body's `s` at the `busted` event before the sim moves the rider and bike onto the verge; and the weapon the player held on the tick before the throw that put them on the ground, since a thrown rider drops the weapon at once. Also the `busted` event (cop index, fine), which officer patrols the road, and cash before and after.
+The arrest record comes from the race runner, because the sim's own state no longer holds it by the time Results draws: the road; the km, taken from the body's `s` at the `busted` event; and the weapon the player held on the tick before the throw that put them on the ground.
 
 ## 10. Results
 
 **Purpose.** The reckoning: place, qualification, money in, money out, cash now, and what the rivals made of it.
 
-**Layout.** Heading and outcome across the top. Left: the standings as fifteen rows. Right: the money as a short ledger, and under it one rival's post-race line. Bottom: the ad slot, then the buttons. The ad slot is the only one inside the race loop; the other two placements in the game are the poster on the Clubhouse board and the rewarded repair discount on the Wrecked screen.
+**Layout.** Results happens in the bar, on the same 1672 × 941 stage as the Clubhouse, with the same header, status strip (now showing the new cash), and bottom strip. The left half is the bar: the rival with the post-race line sits on the stool, with the line in the speech sticker and their name and finishing place on yellow tape. After a wreck or a quit Mags takes the stool instead. The wall on the right shows:
 
-```
-+------------------------------------------------------------------------------+
-| RESULTS · SLAG ROW · LEVEL 2                        2ND · QUALIFIED          |
-+------------------------------------------+-----------------------------------+
-|  1  DEE      Sesta 600   2:04.3  $2,400  |  PRIZE, 2ND            + $1,600   |
-|  2  YOU      Kite 500    2:04.6  $1,600  |  REPAIRS                    $0    |
-|  3  JUNO     Sesta 600   + 38 m  $1,120  |  FINES                      $0    |
-|  4  LYLE     Kite 500   + 210 m    $640  |  ------------------------------   |
-|  5  INES     Sesta 600  + 260 m    $400  |  CASH                    $3,200   |
-|  6  COACH    Kite 500   + 540 m    $240  |                                   |
-|  7  GUS      Wren 400   + 910 m    $160  |  DEE: "Thirty minutes or less.    |
-|  8  MOOSE    Kite 500    BUSTED     $0   |  You took thirty-one."            |
-|     ▸ you knocked Moose down at 3.1 km   |                                   |
-+------------------------------------------+-----------------------------------+
-| [ ad slot ]                                                                  |
-+------------------------------------------------------------------------------+
-| RACE AGAIN                                                      ► CONTINUE   |
-+------------------------------------------------------------------------------+
-```
+- **The race sheet:** the standings paper, stretched to fifteen ruled lines (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
+- **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 5 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the officer line above.
+- **The ledger** on the cyan note.
+- **The pink note,** only when there is something to say: the career-over line, the repossession, the debt warning, or the officer's line, in that order.
+
+There is no display ad slot since Results moved into the bar. If one comes back, it should be a bill on the wall rather than a box.
 
 **Text.**
 
-- Heading: `RESULTS · {ROAD} · LEVEL {n}`
-- Outcome: `{place} · QUALIFIED`, `{place} · NOT QUALIFIED`, `WRECKED`, or `BUSTED`
+- Sheet title: `{ROAD} · LEVEL {n}`
 - Rows: place, name, bike, result, prize. The result is a time as `m:ss.t` for a rider who had finished by the settlement tick, `+ {m} m` (distance behind the player, or behind the leader on the road if the player did not finish) for a rider still racing at that tick, or `BUSTED`, `WRECKED`, or `LEFT` (multiplayer). Rivals' prizes are shown for flavour and follow the settled places.
-- Incident line under a rival's row, at most two on the screen (templates): `you knocked {Rival} down at {km} km` · `{Rival} knocked you down at {km} km` · `you took {Rival}'s {weapon}` · `by a wheel`
+- Incident note after a rider's name, in red, at most two on the sheet (templates): `you knocked {Rival} down at {km} km` · `{Rival} knocked you down at {km} km` · `you took {Rival}'s {weapon}` · `by a wheel`
 - Ledger: `PRIZE, {place}` · `REPAIRS` · `FINES` · `VIC'S ENVELOPE` (only when it applies) · `CASH` (or `OWED`)
-- On a road that was already qualified the prize line reads `PRIZE, {place} · REPEAT RUN, HALF PAY` for places 1 to 3 and `REPEAT RUN · NO PAY BELOW 3RD` with `$0` for places 4 to 15.
-- After the rewarded ad the repair line reads `REPAIRS · HALF, THANKS TO OUR SPONSOR`.
-- Under the ledger when a road qualifies: `{q} / 5 ROADS QUALIFIED`
-- Rival line: `{RIVAL}: "{post-race line}"`, from the rival who finished directly ahead of the player, or directly behind if the player won.
+- On a road that was already qualified the prize line reads `PRIZE · HALF, REPEAT RUN` for places 1 to 3 and `REPEAT RUN · NO PAY` with `$0` for places 4 to 15.
+- Rival line in the speech sticker, from the rival who finished directly ahead of the player, or directly behind if the player won.
 - Debt warning: `YOU OWE ${debt}. LIMIT ${limit}. PAST THAT, THE GARAGE TAKES THE BIKE.`
 - Repossession notice, when debt passed the bike's credit limit: `THE GARAGE TOOK THE {bike}. IT SOLD FOR ${trade-in}, PAID WHAT YOU OWED, AND LEFT YOU ${cash}. YOU RIDE THE GUTTER PUP NOW. IT CAN'T OUTRUN A COP. STAY ON IT.` If the sale did not cover the debt the middle sentence reads `IT SOLD FOR ${trade-in}. YOU STILL OWE ${debt}.`
 - Career over, when the player is on the Pup (before or after a repossession) and still owes more than $750: `YOU OWE ${debt} ON A GUTTER PUP. VIC WANTS A WORD.`
 
-**Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to the ride-out card). `RACE AGAIN` is not shown when the career is over, when this race qualified the fifth road, or when the finale was just finished in the top three. On a road that this race qualified, it carries the small print `REPEAT RUN: HALF PAY`.
+**Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to the ride-out card). `RACE AGAIN` is not shown when the career is over, when this race qualified the fifth road, or when the finale was just finished in the top three. On a road that is already qualified it reads `RACE AGAIN · HALF PAY`.
 
-**In.** From Finish, Wrecked, or Busted, and from a career quit. Never before the settlement write. The rows count in from fifteenth to first, 80 ms apart; the ledger adds up after them.
+**In.** From Finish, from the race after a wreck or a bust, and from a career quit. Never before the settlement write.
 
 **Out.** `CONTINUE` goes to Game Over if the debt check ended the career, to the ending if the player finished the finale in the top three, to the bar with Vic's promotion line if this race qualified the fifth road of levels 1 to 4, and otherwise to the Clubhouse. There is no interstitial ad on the way. A reload on this screen opens the Clubhouse, or Game Over if the career is over, because everything shown here is already in the save.
 
-**Single Race.** No ledger, no prize column, no qualification, and no stamps: the outcome reads `{place}` alone and the right column shows only the rival's line. `CONTINUE` goes back to the Single Race menu and `RACE AGAIN` restarts the same road. Nothing is written to the career.
+**Single Race.** No status strip, ledger, prize column, or qualification. The stamp reads the place with `SINGLE RACE` under it, and the pink note says nothing is written to the career. `CONTINUE` goes back to the Single Race menu and `RACE AGAIN` restarts the same road. Nothing is written to the career.
 
 **Data.** The settled result: places, each rider's finish tick or distance behind at the settlement tick, modes, the prize paid (full, half, or none), the bill, any repossession, cash before and after, qualified count, incidents from the race's events up to the settlement tick, and the post-race line chosen by the memory rules.
 
@@ -456,7 +409,7 @@ The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `Ne
 
 **In.** Escape during a race. Also when the tab loses focus in single player.
 
-**Out.** `RESUME` returns after a `3 2 1` count so the player can get their hands back. Quitting a career race settles it as a wreck at the tick of the quit and goes straight to Results at the full bill, with no Wrecked screen and no ad offer. Quitting a Single Race goes back to the Single Race menu and records nothing.
+**Out.** `RESUME` returns after a `3 2 1` count so the player can get their hands back. Quitting a career race settles it as a wreck at the tick of the quit and goes straight to Results at the full bill, stamped `QUIT`. Quitting a Single Race goes back to the Single Race menu and records nothing.
 
 **Data.** Settings, mode, the repair bill a quit would cost, and whether that bill would pass the credit limit.
 

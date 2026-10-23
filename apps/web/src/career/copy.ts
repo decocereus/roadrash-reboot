@@ -70,8 +70,6 @@ const magsLines = [
 export const magsLine = (raceId: number): string =>
   magsLines[Math.abs(raceId) % magsLines.length] ?? magsLines[0];
 
-export const OFFENCE = "Racing on a public road. Also, falling off on one.";
-
 const vicCards = {
   1: "Top three on all five roads and you move up. Don't go broke. V.",
   2: "Longer roads. Two cops. Bigger purses. The garage got a delivery. V.",
