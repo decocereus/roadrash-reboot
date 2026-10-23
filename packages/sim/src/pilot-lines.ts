@@ -9,19 +9,24 @@ import {
 } from "./pilot-corners.ts";
 import type { Slick } from "./pilot-corners.ts";
 import {
+  createOutlook,
   dodgeReach,
   gatherInSight,
   gatherObstructions,
-  inSight,
   measureHorizons,
   planCourse,
   ROCK_THROUGH_SPEED,
   sightOf,
-  toll,
   weigh,
 } from "./pilot-forecast.ts";
+import type { Outlook, Toll } from "./pilot-forecast.ts";
 import type { PilotHistory } from "./pilot-history.ts";
-import { BIKE_HALF_WIDTH } from "./state.ts";
+import {
+  BIKE_HALF_LENGTH,
+  BIKE_HALF_WIDTH,
+  raceOwned,
+  slotOf,
+} from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const FOLLOW_SECONDS = 2.4;
@@ -51,21 +56,19 @@ export const slickAhead: Slick = {
 };
 
 interface Threat {
-  readonly seconds: number;
-  readonly speed: number;
+  seconds: number;
+  speed: number;
 }
 
-interface Obstacle {
-  readonly s: number;
-  readonly x: number;
-  readonly speed: number;
-  readonly halfLength: number;
-}
-
-const secondsUntilContact = (rider: RiderState, obstacle: Obstacle): number => {
-  const gap = obstacle.s - rider.s - obstacle.halfLength - 1;
-  const closingSpeed = rider.speed - obstacle.speed;
-  if (gap < -2 * obstacle.halfLength - 2) {
+const secondsUntilContact = (
+  rider: RiderState,
+  s: number,
+  speed: number,
+  halfLength: number
+): number => {
+  const gap = s - rider.s - halfLength - 1;
+  const closingSpeed = rider.speed - speed;
+  if (gap < -2 * halfLength - 2) {
     return Number.POSITIVE_INFINITY;
   }
   if (gap <= 0) {
@@ -87,19 +90,6 @@ const oncomingHorizon = (
     : ONCOMING_ENTRY_SECONDS;
 };
 
-const riderObstacle = (other: RiderState): Obstacle => ({
-  halfLength: 1,
-  s: other.mode === "riding" ? other.s : other.bodyS,
-  speed: other.mode === "riding" ? other.speed : 0,
-  x: other.mode === "riding" ? other.x : other.bodyX,
-});
-
-const sooner = (
-  first: Threat | undefined,
-  second: Threat | undefined
-): Threat | undefined =>
-  first && (!second || first.seconds <= second.seconds) ? first : second;
-
 export const carThreat = (
   state: RaceState,
   rider: RiderState,
@@ -118,7 +108,12 @@ export const carThreat = (
       const horizon = oncoming
         ? oncomingHorizon(state, rider, laneX)
         : FOLLOW_SECONDS;
-      const contact = secondsUntilContact(rider, car);
+      const contact = secondsUntilContact(
+        rider,
+        car.s,
+        car.speed,
+        car.halfLength
+      );
       if (contact < horizon && contact < seconds) {
         seconds = contact;
         ({ speed } = car);
@@ -136,79 +131,209 @@ const LONGEST_CAR_HORIZON = Math.max(
 );
 
 interface Sighting extends Threat {
-  readonly x: number;
+  x: number;
 }
 
 interface CarSighting extends Sighting {
-  readonly oncoming: boolean;
+  oncoming: boolean;
 }
 
-const carsInReach: CarSighting[] = [];
-const ridersInReach: Sighting[] = [];
+export interface Aim {
+  readonly speed: number;
+  readonly x: number;
+}
+
+interface Weighed extends Toll {
+  x: number;
+  braking: boolean;
+}
+
+interface LinePlan {
+  readonly outlook: Outlook;
+  readonly cars: CarSighting[];
+  carCount: number;
+  readonly riders: Sighting[];
+  riderCount: number;
+  readonly lanes: number[];
+  readonly threats: Threat[];
+  readonly found: Threat;
+  readonly offLane: number[];
+  offLaneCount: number;
+  readonly weighed: Weighed[];
+  weighedCount: number;
+  weighing: boolean;
+  readonly choice: {
+    cost: number;
+    slickMetres: number;
+    slickSpeed: number;
+    speed: number;
+    x: number;
+  };
+  readonly aim: { speed: number; x: number };
+}
+
+const createThreat = (): Threat => ({
+  seconds: Number.POSITIVE_INFINITY,
+  speed: 0,
+});
+
+const createCarSighting = (): CarSighting => ({
+  oncoming: false,
+  seconds: 0,
+  speed: 0,
+  x: 0,
+});
+
+const createSighting = (): Sighting => ({ seconds: 0, speed: 0, x: 0 });
+
+const createWeighed = (): Weighed => ({
+  braking: false,
+  cost: 0,
+  rock: false,
+  slickMetres: Number.POSITIVE_INFINITY,
+  slickSpeed: Number.POSITIVE_INFINITY,
+  speed: Number.POSITIVE_INFINITY,
+  speedMetres: Number.POSITIVE_INFINITY,
+  x: 0,
+});
+
+const linePlanOf = raceOwned((): LinePlan => ({
+  aim: { speed: 0, x: 0 },
+  carCount: 0,
+  cars: [],
+  choice: {
+    cost: Number.POSITIVE_INFINITY,
+    slickMetres: Number.POSITIVE_INFINITY,
+    slickSpeed: Number.POSITIVE_INFINITY,
+    speed: 0,
+    x: 0,
+  },
+  found: createThreat(),
+  lanes: [],
+  offLane: [],
+  offLaneCount: 0,
+  outlook: createOutlook(),
+  riderCount: 0,
+  riders: [],
+  threats: [],
+  weighed: [],
+  weighedCount: 0,
+  weighing: false,
+}));
 
 const gatherInReach = (
+  plan: LinePlan,
   state: RaceState,
   riderIndex: number,
   rider: RiderState
 ): void => {
-  carsInReach.length = 0;
+  plan.carCount = 0;
   for (const car of state.cars) {
     if (rider.speed > car.speed) {
-      const seconds = secondsUntilContact(rider, car);
+      const seconds = secondsUntilContact(
+        rider,
+        car.s,
+        car.speed,
+        car.halfLength
+      );
       if (seconds < LONGEST_CAR_HORIZON) {
-        carsInReach.push({
-          oncoming: car.cruiseSpeed < 0,
-          seconds,
-          speed: car.speed,
-          x: car.x,
-        });
+        const sighting = slotOf(plan.cars, plan.carCount, createCarSighting);
+        plan.carCount += 1;
+        sighting.oncoming = car.cruiseSpeed < 0;
+        sighting.seconds = seconds;
+        sighting.speed = car.speed;
+        sighting.x = car.x;
       }
     }
   }
-  ridersInReach.length = 0;
+  plan.riderCount = 0;
   for (let index = 0; index < state.riders.length; index += 1) {
     const other = state.riders[index];
     if (other && index !== riderIndex && other.mode !== "wrecked") {
-      const obstacle = riderObstacle(other);
-      const seconds = secondsUntilContact(rider, obstacle);
+      const riding = other.mode === "riding";
+      const speed = riding ? other.speed : 0;
+      const seconds = secondsUntilContact(
+        rider,
+        riding ? other.s : other.bodyS,
+        speed,
+        BIKE_HALF_LENGTH
+      );
       if (seconds < RIDER_FOLLOW_SECONDS) {
-        ridersInReach.push({ seconds, speed: obstacle.speed, x: obstacle.x });
+        const sighting = slotOf(plan.riders, plan.riderCount, createSighting);
+        plan.riderCount += 1;
+        sighting.seconds = seconds;
+        sighting.speed = speed;
+        sighting.x = riding ? other.x : other.bodyX;
       }
     }
   }
 };
 
 const laneThreat = (
+  plan: LinePlan,
   state: RaceState,
   rider: RiderState,
-  laneX: number
-): Threat | undefined => {
-  let seconds = Number.POSITIVE_INFINITY;
-  let speed = 0;
-  for (const car of carsInReach) {
-    if (Math.abs(car.x - laneX) < LANE_REACH) {
+  laneX: number,
+  threat: Threat
+): void => {
+  threat.seconds = Number.POSITIVE_INFINITY;
+  threat.speed = 0;
+  for (let index = 0; index < plan.carCount; index += 1) {
+    const car = plan.cars[index];
+    if (car && Math.abs(car.x - laneX) < LANE_REACH) {
       const horizon = car.oncoming
         ? oncomingHorizon(state, rider, laneX)
         : FOLLOW_SECONDS;
-      if (car.seconds < horizon && car.seconds < seconds) {
-        ({ seconds, speed } = car);
+      if (car.seconds < horizon && car.seconds < threat.seconds) {
+        threat.seconds = car.seconds;
+        threat.speed = car.speed;
       }
     }
   }
-  let threat: Threat | undefined =
-    seconds < Number.POSITIVE_INFINITY ? { seconds, speed } : undefined;
-  for (const sighting of ridersInReach) {
-    if (Math.abs(sighting.x - laneX) < LANE_REACH) {
-      threat = sooner(threat, sighting);
+  for (let index = 0; index < plan.riderCount; index += 1) {
+    const sighting = plan.riders[index];
+    if (
+      sighting &&
+      Math.abs(sighting.x - laneX) < LANE_REACH &&
+      sighting.seconds < threat.seconds
+    ) {
+      threat.seconds = sighting.seconds;
+      threat.speed = sighting.speed;
     }
   }
-  return threat;
 };
 
-export interface Aim {
-  readonly speed: number;
-  readonly x: number;
-}
+const threatened = (threat: Threat | undefined): threat is Threat =>
+  threat !== undefined && threat.seconds < Number.POSITIVE_INFINITY;
+
+const fillLanes = (plan: LinePlan, track: Track): void => {
+  const { lanes } = plan;
+  const { oncomingLanes, sameWayLanes } = track;
+  for (let index = 0; index < sameWayLanes.length; index += 1) {
+    lanes[index] = sameWayLanes[index] ?? 0;
+  }
+  for (let index = 0; index < oncomingLanes.length; index += 1) {
+    lanes[sameWayLanes.length + index] = oncomingLanes[index] ?? 0;
+  }
+  lanes.length = sameWayLanes.length + oncomingLanes.length;
+};
+
+const gatherLaneThreats = (
+  plan: LinePlan,
+  state: RaceState,
+  rider: RiderState
+): void => {
+  const { lanes, threats } = plan;
+  for (let index = 0; index < lanes.length; index += 1) {
+    laneThreat(
+      plan,
+      state,
+      rider,
+      lanes[index] ?? 0,
+      slotOf(threats, index, createThreat)
+    );
+  }
+};
 
 const nearestLaneIndex = (lanes: readonly number[], x: number): number => {
   let nearest = 0;
@@ -281,78 +406,183 @@ const passable = (rider: RiderState, car: TrafficCar): boolean =>
   car.s - rider.s <= sightOf(rider) &&
   rider.speed > car.speed;
 
-const offLane: number[] = [];
-
 const offLaneLines = (
+  plan: LinePlan,
   state: RaceState,
   rider: RiderState
-): readonly number[] => {
-  offLane.length = 0;
-  for (const index of inSight) {
-    const hazard = state.hazards[index];
+): void => {
+  const { offLane, outlook } = plan;
+  let count = 0;
+  for (let place = 0; place < outlook.sighted; place += 1) {
+    const hazard = state.hazards[outlook.inSight[place] ?? -1];
     if (hazard) {
       const side = Math.sign(rider.x - hazard.x) || 1;
-      offLane.push(
-        hazard.x + side * dodgeReach(hazard),
-        hazard.x - side * dodgeReach(hazard)
-      );
+      offLane[count] = hazard.x + side * dodgeReach(hazard);
+      offLane[count + 1] = hazard.x - side * dodgeReach(hazard);
+      count += 2;
     }
   }
   for (const car of state.cars) {
     if (passable(rider, car)) {
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
-      offLane.push(car.x + pass, car.x - pass);
+      offLane[count] = car.x + pass;
+      offLane[count + 1] = car.x - pass;
+      count += 2;
     }
   }
   if (Number.isFinite(rider.pilotLine)) {
-    offLane.push(rider.pilotLine);
+    offLane[count] = rider.pilotLine;
+    count += 1;
   }
-  return offLane;
+  plan.offLaneCount = count;
 };
 
-interface Line extends Aim {
-  readonly cost: number;
-}
-
-const followLine = (
+const crossesBlocked = (
+  plan: LinePlan,
   rider: RiderState,
-  lanes: readonly number[],
-  threatIn: (index: number) => Threat | undefined
-): Line | undefined => {
+  target: number
+): boolean => {
+  const { lanes, threats } = plan;
+  for (let index = 0; index < lanes.length; index += 1) {
+    const lane = lanes[index] ?? 0;
+    if (
+      between(rider.x, target, lane) &&
+      Math.abs(lane - rider.x) >= OWN_LANE_REACH &&
+      (threats[index]?.seconds ?? Number.POSITIVE_INFINITY) < CROSSING_SECONDS
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const weighOnce = (
+  plan: LinePlan,
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState,
+  x: number,
+  braking: boolean
+): void => {
+  const { outlook, weighed } = plan;
+  const { toll } = outlook;
+  for (let index = 0; index < plan.weighedCount; index += 1) {
+    const known = weighed[index];
+    if (known && Object.is(known.x, x) && known.braking === braking) {
+      toll.cost = known.cost;
+      toll.rock = known.rock;
+      toll.slickMetres = known.slickMetres;
+      toll.slickSpeed = known.slickSpeed;
+      toll.speed = known.speed;
+      toll.speedMetres = known.speedMetres;
+      return;
+    }
+  }
+  weigh(history, outlook, track, rider, x, braking);
+  const line = slotOf(weighed, plan.weighedCount, createWeighed);
+  plan.weighedCount += 1;
+  line.braking = braking;
+  line.cost = toll.cost;
+  line.rock = toll.rock;
+  line.slickMetres = toll.slickMetres;
+  line.slickSpeed = toll.slickSpeed;
+  line.speed = toll.speed;
+  line.speedMetres = toll.speedMetres;
+  line.x = x;
+};
+
+const offer = (
+  plan: LinePlan,
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState,
+  x: number,
+  speed: number,
+  cost: number,
+  braking: boolean
+): void => {
+  const { choice, outlook } = plan;
+  const { toll } = outlook;
+  let total = cost + MOVE_COST * Math.abs(x - rider.x);
+  let lineSpeed = speed;
+  toll.slickMetres = Number.POSITIVE_INFINITY;
+  toll.slickSpeed = Number.POSITIVE_INFINITY;
+  if (plan.weighing) {
+    weighOnce(plan, history, track, rider, x, braking);
+    total += toll.cost;
+    lineSpeed = Math.min(
+      speed,
+      toll.speed,
+      toll.rock ? ROCK_THROUGH_SPEED : Number.POSITIVE_INFINITY
+    );
+    if (Math.abs(x - rider.pilotLine) < LINE_MATCH) {
+      total -= HYSTERESIS;
+    }
+  }
+  if (total < choice.cost) {
+    choice.cost = total;
+    choice.slickMetres = toll.slickMetres;
+    choice.slickSpeed = toll.slickSpeed;
+    choice.speed = lineSpeed;
+    choice.x = x;
+  }
+};
+
+const offerFollow = (
+  plan: LinePlan,
+  history: PilotHistory,
+  track: Track,
+  rider: RiderState
+): void => {
+  const { lanes } = plan;
   const current = nearestLaneIndex(lanes, rider.x);
-  const ahead = threatIn(current);
+  const ahead = plan.threats[current];
   const lane = lanes[current];
   if (
-    !ahead ||
-    lane === undefined ||
-    ahead.seconds * 2 * PLANNED_BRAKING < rider.speed - ahead.speed
+    threatened(ahead) &&
+    lane !== undefined &&
+    !(ahead.seconds * 2 * PLANNED_BRAKING < rider.speed - ahead.speed)
   ) {
-    return undefined;
+    offer(
+      plan,
+      history,
+      track,
+      rider,
+      lane,
+      Math.max(0, ahead.speed),
+      LANE_RANK_COST * current + FOLLOW_COST,
+      true
+    );
   }
-  return {
-    cost: LANE_RANK_COST * current + FOLLOW_COST,
-    speed: Math.max(0, ahead.speed),
-    x: lane,
-  };
 };
 
-interface Weighed {
-  readonly x: number;
-  readonly braking: boolean;
-  readonly cost: number;
-  readonly rock: boolean;
-  readonly slickMetres: number;
-  readonly slickSpeed: number;
-  readonly speed: number;
-  readonly speedMetres: number;
-}
-
-const choice = {
-  cost: Number.POSITIVE_INFINITY,
-  slickMetres: Number.POSITIVE_INFINITY,
-  slickSpeed: Number.POSITIVE_INFINITY,
-  speed: 0,
-  x: 0,
+const offerBetweenLanes = (
+  plan: LinePlan,
+  history: PilotHistory,
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  x: number,
+  cruise: number
+): void => {
+  if (
+    Math.abs(x) <= track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE &&
+    !straddlesRamp(track, rider, x)
+  ) {
+    laneThreat(plan, state, rider, x, plan.found);
+    if (!threatened(plan.found) && !crossesBlocked(plan, rider, x)) {
+      offer(
+        plan,
+        history,
+        track,
+        rider,
+        x,
+        cruise,
+        LANE_RANK_COST * nearestLaneIndex(plan.lanes, x) + OFF_LANE_COST,
+        false
+      );
+    }
+  }
 };
 
 export const chooseLine = (
@@ -364,134 +594,84 @@ export const chooseLine = (
   cruise: number,
   pursuit?: Aim
 ): Aim => {
-  const { oncomingLanes, sameWayLanes } = track;
-  const lanes = [...sameWayLanes, ...oncomingLanes];
-  const threats: (Threat | undefined)[] = [];
-  const checked: boolean[] = [];
-  const threatIn = (index: number): Threat | undefined => {
-    if (checked[index] !== true) {
-      checked[index] = true;
-      threats[index] = laneThreat(state, rider, lanes[index] ?? 0);
-    }
-    return threats[index];
-  };
-  const crossesBlocked = (target: number): boolean =>
-    lanes.some((lane, index) => {
-      if (
-        !between(rider.x, target, lane) ||
-        Math.abs(lane - rider.x) < OWN_LANE_REACH
-      ) {
-        return false;
-      }
-      const crossed = threatIn(index);
-      return crossed !== undefined && crossed.seconds < CROSSING_SECONDS;
-    });
-  gatherInReach(state, riderIndex, rider);
-  gatherInSight(state, rider);
+  const plan = linePlanOf(state);
+  const { aim, choice, lanes, outlook, threats } = plan;
+  const sameWayCount = track.sameWayLanes.length;
+  fillLanes(plan, track);
+  gatherInReach(plan, state, riderIndex, rider);
+  gatherLaneThreats(plan, state, rider);
+  gatherInSight(outlook, state, rider);
   const kept = rider.pilotLine;
-  const weighing = inSight.length > 0 || Number.isFinite(kept);
-  const room = track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE;
+  plan.weighing = outlook.sighted > 0 || Number.isFinite(kept);
+  plan.weighedCount = 0;
   choice.cost = Number.POSITIVE_INFINITY;
-  if (weighing) {
+  if (plan.weighing) {
     measureDeceleration(track, rider);
     planForecast(history, track, rider);
-    gatherObstructions(state, track, rider);
-    measureHorizons();
-    planCourse(history, track, rider);
+    gatherObstructions(outlook, state, track, rider);
+    measureHorizons(outlook);
+    planCourse(history, outlook, track, rider);
   }
-  const weighed: Weighed[] = [];
-  const weighOnce = (x: number, braking: boolean): void => {
-    const known = weighed.find(
-      (line) => Object.is(line.x, x) && line.braking === braking
-    );
-    if (known) {
-      toll.cost = known.cost;
-      toll.rock = known.rock;
-      toll.slickMetres = known.slickMetres;
-      toll.slickSpeed = known.slickSpeed;
-      toll.speed = known.speed;
-      toll.speedMetres = known.speedMetres;
-    } else {
-      weigh(history, track, rider, x, braking);
-      weighed.push({ ...toll, braking, x });
-    }
-  };
-  const offer = (
-    x: number,
-    speed: number,
-    cost: number,
-    braking: boolean
-  ): void => {
-    let total = cost + MOVE_COST * Math.abs(x - rider.x);
-    let lineSpeed = speed;
-    toll.slickMetres = Number.POSITIVE_INFINITY;
-    toll.slickSpeed = Number.POSITIVE_INFINITY;
-    if (weighing) {
-      weighOnce(x, braking);
-      total += toll.cost;
-      lineSpeed = Math.min(
-        speed,
-        toll.speed,
-        toll.rock ? ROCK_THROUGH_SPEED : Number.POSITIVE_INFINITY
-      );
-      if (Math.abs(x - kept) < LINE_MATCH) {
-        total -= HYSTERESIS;
-      }
-    }
-    if (total < choice.cost) {
-      choice.cost = total;
-      choice.slickMetres = toll.slickMetres;
-      choice.slickSpeed = toll.slickSpeed;
-      choice.speed = lineSpeed;
-      choice.x = x;
-    }
-  };
-  const offerBetweenLanes = (x: number): void => {
-    if (
-      Math.abs(x) <= room &&
-      !straddlesRamp(track, rider, x) &&
-      !laneThreat(state, rider, x) &&
-      !crossesBlocked(x)
-    ) {
-      offer(
-        x,
-        cruise,
-        LANE_RANK_COST * nearestLaneIndex(lanes, x) + OFF_LANE_COST,
-        false
-      );
-    }
-  };
   if (pursuit) {
-    offer(pursuit.x, pursuit.speed, PURSUIT_COST, false);
+    offer(
+      plan,
+      history,
+      track,
+      rider,
+      pursuit.x,
+      pursuit.speed,
+      PURSUIT_COST,
+      false
+    );
   }
   for (let index = 0; index < lanes.length; index += 1) {
     const lane = lanes[index];
-    if (lane !== undefined && !threatIn(index) && !crossesBlocked(lane)) {
-      offer(lane, cruise, LANE_RANK_COST * index, false);
+    if (
+      lane !== undefined &&
+      !threatened(threats[index]) &&
+      !crossesBlocked(plan, rider, lane)
+    ) {
+      offer(
+        plan,
+        history,
+        track,
+        rider,
+        lane,
+        cruise,
+        LANE_RANK_COST * index,
+        false
+      );
     }
   }
-  if (weighing) {
-    const follow = followLine(rider, lanes, threatIn);
-    if (follow) {
-      offer(follow.x, follow.speed, follow.cost, true);
-    }
-    for (const x of offLaneLines(state, rider)) {
-      offerBetweenLanes(x);
+  if (plan.weighing) {
+    offerFollow(plan, history, track, rider);
+    offLaneLines(plan, state, rider);
+    for (let index = 0; index < plan.offLaneCount; index += 1) {
+      offerBetweenLanes(
+        plan,
+        history,
+        state,
+        track,
+        rider,
+        plan.offLane[index] ?? 0,
+        cruise
+      );
     }
   }
   if (choice.cost < Number.POSITIVE_INFINITY) {
     const stays = Math.abs(choice.x - kept) < LINE_MATCH;
-    rider.pilotLine = inSight.length > 0 || stays ? choice.x : Number.NaN;
+    rider.pilotLine = outlook.sighted > 0 || stays ? choice.x : Number.NaN;
     slickAhead.metres = choice.slickMetres;
     slickAhead.speed = choice.slickSpeed;
-    return { speed: choice.speed, x: choice.x };
+    aim.speed = choice.speed;
+    aim.x = choice.x;
+    return aim;
   }
   rider.pilotLine = Number.NaN;
   const current = nearestLaneIndex(lanes, rider.x);
-  const neighbour = neighbourOf(lanes, sameWayLanes.length, current);
-  const pace = threats[neighbour < sameWayLanes.length ? neighbour : current];
-  return {
-    speed: Math.min(cruise, Math.max(0, pace?.speed ?? 0) + SPLITTING_SPEED),
-    x: seamOf(lanes, sameWayLanes.length, current, neighbour),
-  };
+  const neighbour = neighbourOf(lanes, sameWayCount, current);
+  const pace = threats[neighbour < sameWayCount ? neighbour : current];
+  aim.speed = Math.min(cruise, Math.max(0, pace?.speed ?? 0) + SPLITTING_SPEED);
+  aim.x = seamOf(lanes, sameWayCount, current, neighbour);
+  return aim;
 };

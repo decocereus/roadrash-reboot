@@ -25,6 +25,7 @@ import {
   clamp,
   curvePushOf,
   lateralSpeedLimit,
+  slotOf,
   TICK_SECONDS,
 } from "./state.ts";
 import type { BikeSpec, Hazard, RaceState, RiderState } from "./state.ts";
@@ -76,10 +77,98 @@ const metresToContact = (rider: RiderState, hazard: Hazard): number =>
 export const sightOf = (rider: RiderState): number =>
   rider.speed * HAZARD_SIGHT_SECONDS + HAZARD_SIGHT_EXTRA;
 
-export const inSight: number[] = [];
+interface Obstruction {
+  start: number;
+  end: number;
+  ahead: number;
+  along: number;
+  speed: number;
+  x: number;
+  reach: number;
+  cost: number;
+  rock: boolean;
+  oil: boolean;
+  curvature: number;
+  metres: number;
+  traffic: boolean;
+  struck: boolean;
+}
 
-export const gatherInSight = (state: RaceState, rider: RiderState): void => {
-  inSight.length = 0;
+export interface Toll {
+  cost: number;
+  rock: boolean;
+  slickMetres: number;
+  slickSpeed: number;
+  speed: number;
+  speedMetres: number;
+}
+
+export interface Outlook {
+  readonly inSight: number[];
+  sighted: number;
+  readonly obstructions: Obstruction[];
+  obstructed: number;
+  hazardHorizon: number;
+  touchedOil: boolean;
+  carAhead: boolean;
+  readonly toll: Toll;
+}
+
+export const createOutlook = (): Outlook => ({
+  carAhead: false,
+  hazardHorizon: 0,
+  inSight: [],
+  obstructed: 0,
+  obstructions: [],
+  sighted: 0,
+  toll: {
+    cost: 0,
+    rock: false,
+    slickMetres: Number.POSITIVE_INFINITY,
+    slickSpeed: Number.POSITIVE_INFINITY,
+    speed: Number.POSITIVE_INFINITY,
+    speedMetres: Number.POSITIVE_INFINITY,
+  },
+  touchedOil: false,
+});
+
+const createObstruction = (): Obstruction => ({
+  ahead: 0,
+  along: 0,
+  cost: 0,
+  curvature: 0,
+  end: 0,
+  metres: 0,
+  oil: false,
+  reach: 0,
+  rock: false,
+  speed: 0,
+  start: 0,
+  struck: false,
+  traffic: false,
+  x: 0,
+});
+
+const overlook = (outlook: Outlook, hazardIndex: number): void => {
+  const { inSight } = outlook;
+  let kept = 0;
+  for (let place = 0; place < outlook.sighted; place += 1) {
+    const index = inSight[place] ?? -1;
+    if (index !== hazardIndex) {
+      inSight[kept] = index;
+      kept += 1;
+    }
+  }
+  outlook.sighted = kept;
+};
+
+export const gatherInSight = (
+  outlook: Outlook,
+  state: RaceState,
+  rider: RiderState
+): void => {
+  const { inSight } = outlook;
+  outlook.sighted = 0;
   const sight = sightOf(rider);
   let nearest = -1;
   for (let index = 0; index < state.hazards.length; index += 1) {
@@ -90,7 +179,8 @@ export const gatherInSight = (state: RaceState, rider: RiderState): void => {
     const passed = hazard.s + hazard.halfLength + BIKE_HALF_LENGTH < rider.s;
     const ahead = metresToContact(rider, hazard);
     if (!passed && ahead <= sight) {
-      inSight.push(index);
+      inSight[outlook.sighted] = index;
+      outlook.sighted += 1;
       const closest = state.hazards[nearest];
       if (!closest || ahead < metresToContact(rider, closest)) {
         nearest = index;
@@ -98,7 +188,7 @@ export const gatherInSight = (state: RaceState, rider: RiderState): void => {
     }
   }
   if (nearest >= 0 && overlooks(state, rider, nearest)) {
-    inSight.splice(inSight.indexOf(nearest), 1);
+    overlook(outlook, nearest);
   }
 };
 
@@ -113,32 +203,13 @@ const hazardCost = (hazard: Hazard, speed: number): number => {
   return hazard.kind === "oil" ? OIL_COST : POTHOLE_COST;
 };
 
-interface Obstruction {
-  readonly start: number;
-  readonly end: number;
-  readonly ahead: number;
-  readonly along: number;
-  readonly speed: number;
-  readonly x: number;
-  readonly reach: number;
-  readonly cost: number;
-  readonly rock: boolean;
-  readonly oil: boolean;
-  readonly curvature: number;
-  readonly metres: number;
-  readonly traffic: boolean;
-}
-
-const obstructions: Obstruction[] = [];
-const struck: boolean[] = [];
-
-const horizons = { hazard: 0 };
-
-export const measureHorizons = (): void => {
-  horizons.hazard = 0;
-  for (const obstruction of obstructions) {
-    if (!obstruction.traffic) {
-      horizons.hazard = Math.max(horizons.hazard, obstruction.end);
+export const measureHorizons = (outlook: Outlook): void => {
+  const { obstructions } = outlook;
+  outlook.hazardHorizon = 0;
+  for (let index = 0; index < outlook.obstructed; index += 1) {
+    const obstruction = obstructions[index];
+    if (obstruction && !obstruction.traffic) {
+      outlook.hazardHorizon = Math.max(outlook.hazardHorizon, obstruction.end);
     }
   }
 };
@@ -149,10 +220,16 @@ const gapTo = (
   travelled: number
 ): number => obstruction.ahead + obstruction.speed * seconds - travelled;
 
-const carsAhead = (seconds: number, travelled: number): boolean => {
-  for (const obstruction of obstructions) {
+const carsAhead = (
+  outlook: Outlook,
+  seconds: number,
+  travelled: number
+): boolean => {
+  const { obstructions } = outlook;
+  for (let index = 0; index < outlook.obstructed; index += 1) {
+    const obstruction = obstructions[index];
     if (
-      obstruction.traffic &&
+      obstruction?.traffic === true &&
       gapTo(obstruction, seconds, travelled) > -obstruction.along
     ) {
       return true;
@@ -162,16 +239,18 @@ const carsAhead = (seconds: number, travelled: number): boolean => {
 };
 
 const withinHorizon = (
+  outlook: Outlook,
   tick: number,
   travelled: number,
   speed: number,
   carAhead: boolean
 ): boolean =>
   tick * TICK_SECONDS <= FORECAST_SECONDS &&
-  (carAhead || travelled / Math.max(1, speed) <= horizons.hazard);
+  (carAhead || travelled / Math.max(1, speed) <= outlook.hazardHorizon);
 
 export const planCourse = (
   history: PilotHistory,
+  outlook: Outlook,
   track: Track,
   rider: RiderState
 ): void => {
@@ -182,10 +261,11 @@ export const planCourse = (
     let tick = 1;
     tick < FORECAST_TICKS &&
     withinHorizon(
+      outlook,
       tick,
       travelled,
       rider.speed,
-      carsAhead((tick - 1) * TICK_SECONDS, travelled)
+      carsAhead(outlook, (tick - 1) * TICK_SECONDS, travelled)
     );
     tick += 1
   ) {
@@ -210,34 +290,46 @@ const oilBendOf = (track: Track, hazard: Hazard, speed: number): number => {
   return bend;
 };
 
+const nextObstruction = (outlook: Outlook): Obstruction => {
+  const obstruction = slotOf(
+    outlook.obstructions,
+    outlook.obstructed,
+    createObstruction
+  );
+  outlook.obstructed += 1;
+  return obstruction;
+};
+
 export const gatherObstructions = (
+  outlook: Outlook,
   state: RaceState,
   track: Track,
   rider: RiderState
 ): void => {
-  obstructions.length = 0;
+  const { inSight } = outlook;
+  outlook.obstructed = 0;
   const pace = Math.max(1, rider.speed);
-  for (const index of inSight) {
-    const hazard = state.hazards[index];
+  for (let place = 0; place < outlook.sighted; place += 1) {
+    const hazard = state.hazards[inSight[place] ?? -1];
     if (hazard) {
-      obstructions.push({
-        ahead: 0,
-        along: 0,
-        cost: hazardCost(hazard, rider.speed),
-        curvature:
-          hazard.kind === "oil"
-            ? oilBendOf(track, hazard, rider.speed)
-            : curvatureAt(track, hazard.s),
-        end: (hazard.s + hazard.halfLength + BIKE_HALF_LENGTH - rider.s) / pace,
-        metres: Math.max(0, metresToContact(rider, hazard)),
-        oil: hazard.kind === "oil",
-        reach: contactReach(hazard),
-        rock: hazard.kind === "rock",
-        speed: 0,
-        start: metresToContact(rider, hazard) / pace,
-        traffic: false,
-        x: hazard.x,
-      });
+      const obstruction = nextObstruction(outlook);
+      obstruction.ahead = 0;
+      obstruction.along = 0;
+      obstruction.cost = hazardCost(hazard, rider.speed);
+      obstruction.curvature =
+        hazard.kind === "oil"
+          ? oilBendOf(track, hazard, rider.speed)
+          : curvatureAt(track, hazard.s);
+      obstruction.end =
+        (hazard.s + hazard.halfLength + BIKE_HALF_LENGTH - rider.s) / pace;
+      obstruction.metres = Math.max(0, metresToContact(rider, hazard));
+      obstruction.oil = hazard.kind === "oil";
+      obstruction.reach = contactReach(hazard);
+      obstruction.rock = hazard.kind === "rock";
+      obstruction.speed = 0;
+      obstruction.start = metresToContact(rider, hazard) / pace;
+      obstruction.traffic = false;
+      obstruction.x = hazard.x;
     }
   }
   for (const car of state.cars) {
@@ -246,32 +338,22 @@ export const gatherObstructions = (
       (car.s - car.halfLength - BIKE_HALF_LENGTH - rider.s) / closing;
     const end = (car.s + car.halfLength + BIKE_HALF_LENGTH - rider.s) / closing;
     if (closing > 0 && end >= 0 && start <= FORECAST_SECONDS) {
-      obstructions.push({
-        ahead: car.s - rider.s,
-        along: car.halfLength + BIKE_HALF_LENGTH,
-        cost: CRASH_COST,
-        curvature: 0,
-        end,
-        metres: 0,
-        oil: false,
-        reach: car.halfWidth + BIKE_HALF_WIDTH,
-        rock: false,
-        speed: car.speed,
-        start,
-        traffic: true,
-        x: car.x,
-      });
+      const obstruction = nextObstruction(outlook);
+      obstruction.ahead = car.s - rider.s;
+      obstruction.along = car.halfLength + BIKE_HALF_LENGTH;
+      obstruction.cost = CRASH_COST;
+      obstruction.curvature = 0;
+      obstruction.end = end;
+      obstruction.metres = 0;
+      obstruction.oil = false;
+      obstruction.reach = car.halfWidth + BIKE_HALF_WIDTH;
+      obstruction.rock = false;
+      obstruction.speed = car.speed;
+      obstruction.start = start;
+      obstruction.traffic = true;
+      obstruction.x = car.x;
     }
   }
-};
-
-export const toll = {
-  cost: 0,
-  rock: false,
-  slickMetres: Number.POSITIVE_INFINITY,
-  slickSpeed: Number.POSITIVE_INFINITY,
-  speed: Number.POSITIVE_INFINITY,
-  speedMetres: Number.POSITIVE_INFINITY,
 };
 
 const throwsOnRock = (
@@ -308,6 +390,7 @@ const rockLandingSpeed = (
 };
 
 const landOnRock = (
+  toll: Toll,
   rider: RiderState,
   obstruction: Obstruction,
   lateralSpeed: number
@@ -328,7 +411,11 @@ const landOnRock = (
   toll.speedMetres = Math.min(toll.speedMetres, obstruction.metres);
 };
 
-const crossOil = (rider: RiderState, obstruction: Obstruction): void => {
+const crossOil = (
+  toll: Toll,
+  rider: RiderState,
+  obstruction: Obstruction
+): void => {
   if (obstruction.curvature <= 0) {
     return;
   }
@@ -348,9 +435,8 @@ const crossOil = (rider: RiderState, obstruction: Obstruction): void => {
   }
 };
 
-const touched = { carAhead: false, oil: false };
-
 const tally = (
+  outlook: Outlook,
   rider: RiderState,
   x: number,
   seconds: number,
@@ -358,30 +444,31 @@ const tally = (
   lateralSpeed: number,
   braking: boolean
 ): void => {
+  const { obstructions, toll } = outlook;
   const reached = travelled / Math.max(1, rider.speed);
-  touched.oil = false;
-  touched.carAhead = false;
-  for (let index = 0; index < obstructions.length; index += 1) {
+  outlook.touchedOil = false;
+  outlook.carAhead = false;
+  for (let index = 0; index < outlook.obstructed; index += 1) {
     const obstruction = obstructions[index];
-    if (!obstruction || struck[index] === true) {
+    if (!obstruction || obstruction.struck) {
       continue;
     }
     let meets = reached >= obstruction.start && reached <= obstruction.end;
     if (obstruction.traffic) {
       const gap = gapTo(obstruction, seconds, travelled);
-      touched.carAhead ||= gap > -obstruction.along;
+      outlook.carAhead ||= gap > -obstruction.along;
       meets = !braking && Math.abs(gap) <= obstruction.along;
     }
     if (meets && Math.abs(x - obstruction.x) < obstruction.reach) {
-      struck[index] = true;
+      obstruction.struck = true;
       toll.cost += obstruction.cost;
       if (obstruction.rock) {
         toll.rock = true;
-        landOnRock(rider, obstruction, lateralSpeed);
+        landOnRock(toll, rider, obstruction, lateralSpeed);
       }
       if (obstruction.oil) {
-        touched.oil = true;
-        crossOil(rider, obstruction);
+        outlook.touchedOil = true;
+        crossOil(toll, rider, obstruction);
       }
     }
   }
@@ -389,6 +476,7 @@ const tally = (
 
 const forecast = (
   history: PilotHistory,
+  outlook: Outlook,
   track: Track,
   rider: RiderState,
   line: number,
@@ -402,8 +490,14 @@ const forecast = (
   const slowsDown = Number.isFinite(slowTo);
   let { lateralSpeed, slip, speed, x } = rider;
   let travelled = 0;
-  struck.length = 0;
+  for (let index = 0; index < outlook.obstructed; index += 1) {
+    const obstruction = outlook.obstructions[index];
+    if (obstruction) {
+      obstruction.struck = false;
+    }
+  }
   tally(
+    outlook,
     rider,
     x,
     0,
@@ -411,12 +505,12 @@ const forecast = (
     lateralSpeed - curvePushOf(bike, curvatureAt(track, rider.s), speed),
     braking
   );
-  if (touched.oil) {
+  if (outlook.touchedOil) {
     slip = OIL_SLIP;
   }
   for (
     let tick = 1;
-    withinHorizon(tick, travelled, rider.speed, touched.carAhead);
+    withinHorizon(outlook, tick, travelled, rider.speed, outlook.carAhead);
     tick += 1
   ) {
     let bendPush = history.coursePush[tick] ?? 0;
@@ -457,6 +551,7 @@ const forecast = (
     x += (lateralSpeed - push) * TICK_SECONDS;
     slip = Math.max(0, slip - SLIP_RECOVERY * TICK_SECONDS);
     tally(
+      outlook,
       rider,
       x,
       tick * TICK_SECONDS,
@@ -464,7 +559,7 @@ const forecast = (
       lateralSpeed - push,
       braking
     );
-    if (touched.oil) {
+    if (outlook.touchedOil) {
       slip = OIL_SLIP;
     }
   }
@@ -472,11 +567,13 @@ const forecast = (
 
 export const weigh = (
   history: PilotHistory,
+  outlook: Outlook,
   track: Track,
   rider: RiderState,
   line: number,
   braking: boolean
 ): void => {
+  const { toll } = outlook;
   toll.cost = 0;
   toll.rock = false;
   toll.slickMetres = Number.POSITIVE_INFINITY;
@@ -485,6 +582,7 @@ export const weigh = (
   toll.speedMetres = Number.POSITIVE_INFINITY;
   forecast(
     history,
+    outlook,
     track,
     rider,
     line,
@@ -498,6 +596,6 @@ export const weigh = (
     const slowAt =
       slowTo === toll.slickSpeed ? toll.slickMetres : toll.speedMetres;
     toll.cost = 0;
-    forecast(history, track, rider, line, braking, slowTo, slowAt);
+    forecast(history, outlook, track, rider, line, braking, slowTo, slowAt);
   }
 };

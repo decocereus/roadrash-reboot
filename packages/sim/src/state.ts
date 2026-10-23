@@ -337,6 +337,20 @@ export const raceOwned = <Owned>(
   };
 };
 
+export const slotOf = <Slot>(
+  slots: Slot[],
+  index: number,
+  create: () => Slot
+): Slot => {
+  const known = slots[index];
+  if (known !== undefined) {
+    return known;
+  }
+  const made = create();
+  slots[index] = made;
+  return made;
+};
+
 export const clamp = (
   value: number,
   minimum: number,
