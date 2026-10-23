@@ -4,6 +4,7 @@ import { cn } from "@racer/ui/utils";
 import { plates } from "../../assets/clubhouse-art.ts";
 import { shortNames } from "../../career/copy.ts";
 import { Plate, place, stagePx } from "./clubhouse-stage.tsx";
+import type { StageBox } from "./clubhouse-stage.tsx";
 
 const STANDINGS = { h: 366, w: 279, x: 557, y: 100 } as const;
 const STANDINGS_TITLE = { h: 50, w: 242, x: 579, y: 132 } as const;
@@ -18,6 +19,29 @@ const FLYER = { h: 758, w: 709, x: 963, y: 93 } as const;
 
 const ROWS = 5;
 const LONG_NOTE = 30;
+
+const SHEET_SLICE = [297, 50, 445, 80] as const;
+
+export const RuledSheet = ({
+  box,
+  scale,
+}: {
+  readonly box: StageBox;
+  readonly scale: number;
+}) => {
+  const widths = SHEET_SLICE.map((edge) => stagePx(edge * scale)).join(" ");
+  return (
+    <div
+      aria-hidden
+      style={{
+        ...place(box),
+        borderImage: `url(${plates.standings}) ${SHEET_SLICE.join(" ")} fill / ${widths} stretch round`,
+        borderStyle: "solid",
+        borderWidth: widths,
+      }}
+    />
+  );
+};
 
 export interface WallNote {
   readonly text: string;

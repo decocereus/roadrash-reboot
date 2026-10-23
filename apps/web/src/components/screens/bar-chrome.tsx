@@ -81,6 +81,7 @@ export interface BarAction {
   readonly id: string;
   readonly label: ReactNode;
   readonly run: () => void;
+  readonly disabled?: boolean;
 }
 
 export const BarNav = ({
@@ -88,12 +89,14 @@ export const BarNav = ({
   actions,
   primary,
   onKeyDown,
+  autoFocus = true,
   children,
 }: {
   readonly label: string;
   readonly actions: readonly BarAction[];
   readonly primary: string;
   readonly onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  readonly autoFocus?: boolean;
   readonly children?: ReactNode;
 }) => (
   <nav
@@ -101,7 +104,7 @@ export const BarNav = ({
     style={{ ...place(NAV), fontSize: stagePx(33) }}
   >
     <MenuList
-      autoFocus
+      autoFocus={autoFocus}
       className="flex-nowrap gap-x-[2.4cqw]"
       defaultValue={primary}
       label={label}
@@ -112,7 +115,8 @@ export const BarNav = ({
     >
       {actions.map((action) => (
         <MenuItem
-          className="data-selected:text-neon-yellow data-selected:outline-neon-yellow px-[0.4em] !text-[1em] data-selected:outline-2"
+          className="data-selected:text-neon-yellow data-selected:outline-neon-yellow disabled:text-paper/35 px-[0.4em] !text-[1em] data-selected:outline-2"
+          disabled={action.disabled}
           key={action.id}
           value={action.id}
         >

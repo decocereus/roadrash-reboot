@@ -128,55 +128,51 @@ The Back Room is drawn plainly for now; its painted room is still to come.
 
 **Purpose.** Buy and sell bikes. Make the trade-off between classes readable without a manual.
 
-**Layout.** The garage next to the Lowside: concrete floor, roller door, one bike on a stand under a work light. The bike is the largest thing on screen and slowly turns. Left column: the catalogue as a list grouped by class. Right column: the selected bike's numbers as bars, with a ghost bar for the bike the player owns. Bottom strip: money and the buy button.
+**Layout.** Its own room, the garage next to the Lowside, painted like the bar: a stage of plates over a backdrop of the roller door open on the wet street, a pegboard on the left, a workbench on the right, and an empty stand under a work light. The selected bike is the live 3D bike model from the race, in its showroom paint, turning on the stand. The mechanic stands at the bench on the right with a speech sticker, which says the bike's pitch. The bar header (wordmark, badge, status strip) runs across the top. The price list is the ruled standings paper on the left, grouped by class, with the class note written on the paper below it. The bike's name, class and price sit over the stand, with the five bars in an ink strip under them. The bottom strip holds the buttons and the money.
 
 ```
 +------------------------------------------------------------------------------+
-| GARAGE                                              CASH $4,900  TRADE $1,800|
+| THE LOWSIDE [badge] | LEVEL 2 · ... | ROADS 1/3 | CASH $4,900 | HALDEN WREN  |
 +--------------------+-----------------------------------+---------------------+
-| FEATHERWEIGHT      |                                   | HALDEN KITE 500     |
-|   Gutter Pup 250   |                                   | FEATHERWEIGHT       |
-|   Halden Wren 400 ●|          [ bike, turning ]        |                     |
-| ► Halden Kite 500  |                                   | TOP SPEED  170 km/h |
-| MIDDLEWEIGHT       |                                   | ▓▓▓▓▓▓▓▓░░░░ ┆      |
-|   Ostra Sesta 600  |                                   | LAUNCH     6.0 s    |
-|   Ostra Sette 750  |                                   | ▓▓▓▓▓▓▓░░░░░ ┆      |
-|   Brack Stoker 800 |                                   | STEERING            |
-| HEAVYWEIGHT        |                                   | ▓▓▓▓▓▓▓▓▓░░░   ┆    |
-|   Meridian 900   🔒|  "The Wren with more lungs.       | BEND GRIP           |
-|   Brack Anvil    🔒|   Still turns before you finish   | ▓▓▓▓▓▓▓▓▓░░░    ┆   |
-|   Ostra Nera     🔒|   deciding to."                   | BRAKES              |
-|                    |                                   | ▓▓▓▓▓▓▓▓░░░░ ┆      |
+|    FOR SALE        | HALDEN KITE 500                   |  .-------------.    |
+| FEATHERWEIGHT      | FEATHERWEIGHT · $5,000            | ( The Wren with )   |
+|  Gutter Pup  $900  | TOP SPEED  ▓▓▓▓▓▓▓▓░░┆  170 km/h  | ( more lungs... )   |
+|  Halden Wren Yours | LAUNCH     ▓▓▓▓▓▓▓░░░┆  6.0 s     |  '---- THE MECHANIC |
+|  Halden Kite $5,000| STEERING   ▓▓▓▓▓▓▓▓▓░  ┆          |                     |
+| MIDDLEWEIGHT       | BEND GRIP  ▓▓▓▓▓▓▓▓▓░   ┆         |   [ the mechanic ]  |
+|  ...               | BRAKES     ▓▓▓▓▓▓▓▓░░┆            |                     |
+| HEAVYWEIGHT        | A wreck at level 2 costs $...     |                     |
+|  Meridian  Level 3 |        [ bike turning on stand ]  |                     |
+|  (class note)      |                                   |                     |
 +--------------------+-----------------------------------+---------------------+
-| PRICE $5,000   YOU HAVE $6,700 WITH TRADE-IN   LEFT AFTER $1,700    ► BUY    |
+| [BUY] SELL  BACK    PRICE $5,000  WITH TRADE-IN $6,700  LEFT $1,700 |
 +------------------------------------------------------------------------------+
 ```
 
 **Text.**
 
-- Heading: `GARAGE`
-- Top right: `CASH ${cash}` · `TRADE ${trade-in}`
+- Price list title: `FOR SALE`. The status strip is the bar's.
 - Class headers: `FEATHERWEIGHT`, `MIDDLEWEIGHT`, `HEAVYWEIGHT`
-- Class notes, shown when a header is selected:
+- Class notes, for the selected bike's class, written under the list:
   - Featherweight: `Light and quick to turn. Bends barely move them. They run out of speed early.`
   - Middleweight: `The all-rounders. Fast enough that some bends need the brakes.`
   - Heavyweight: `Fastest in a straight line. Bends push them wide and they are slow to answer.`
-- Owned marker `●` and label `YOURS`. Lock `🔒` with `ARRIVES AT LEVEL {n}`.
+- Each row's tag: the price, `YOURS` on the owned bike, or `LEVEL {n}` on a locked one.
 - Bars: `TOP SPEED {km/h}`, `LAUNCH {0 to 100 time} s`, `STEERING`, `BEND GRIP`, `BRAKES`. The dotted mark on each bar is the owned bike.
-- The pitch line from the catalogue, in quotes, under the bike.
-- Bottom strip: `PRICE ${price}` · `YOU HAVE ${cash + trade} WITH TRADE-IN` · `LEFT AFTER ${remainder}`
+- The pitch line from the catalogue, in the mechanic's speech sticker. After a buy or a sale the sticker says the line below instead, until another bike is picked. The name tape reads `THE MECHANIC`.
+- Bottom strip, right of the buttons: `PRICE ${price}` · `WITH TRADE-IN ${cash + trade}` · `LEFT AFTER ${remainder}`
 - When too expensive: `SHORT BY ${amount}` in red, and the buy button is dimmed.
 - When in debt: `THE GARAGE DOESN'T SELL TO PEOPLE WHO OWE VIC MONEY. YOU CAN STILL SELL.`
 - Buy confirm: `Trade your {owned} for the {new}? You'll have ${remainder} left.` Buttons `DO IT` / `NOT YET`.
 - After buying: `It's yours. Try not to bend it.`
 - Why the selected bike cannot be bought, beside the price: `Yours.`, `Arrives at level {n}.`, `Short by ${amount}.`, or the debt line above.
-- Sell confirm: `Sell the {owned} for ${trade-in}? You'll ride the Gutter Pup and have ${cash + trade}.` Buttons `SELL IT` / `KEEP IT`, with `KEEP IT` selected. The `SELL` button carries the second line `{owned} for ${trade-in}`, or `Nobody wants the Gutter Pup.` when it is dimmed.
+- Sell confirm: `Sell the {owned} for ${trade-in}? You'll ride the Gutter Pup and have ${cash + trade}.` Buttons `SELL IT` / `KEEP IT`, with `KEEP IT` selected. The `SELL` button is dimmed on the Gutter Pup.
 - After selling: `Sold. You ride the Gutter Pup now.`
 - Repair bill reminder under the bars: `A wreck at Level {n} costs ${repair} on this bike.`
 
 **Buttons.** `BUY` (primary), `SELL`, `BACK`. Up and down move through the catalogue.
 
-**In.** From the Clubhouse. The roller door lifts (the screen wipes upward, 250 ms).
+**In.** From the Clubhouse, with a fade.
 
 **Out.** `BACK` to the Clubhouse.
 

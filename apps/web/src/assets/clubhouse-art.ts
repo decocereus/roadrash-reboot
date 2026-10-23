@@ -28,6 +28,8 @@ import cinderWashFlyer from "./clubhouse/flyers/cinder-wash.webp?url";
 import hollowPineRoadFlyer from "./clubhouse/flyers/hollow-pine-road.webp?url";
 import ridgeRoadFlyer from "./clubhouse/flyers/ridge-road.webp?url";
 import slagRowFlyer from "./clubhouse/flyers/slag-row.webp?url";
+import garageBackdropPlate from "./clubhouse/garage/backdrop.webp?url";
+import garageMechanicFigure from "./clubhouse/garage/mechanic.webp?url";
 import noteCyanPlate from "./clubhouse/note-cyan.webp?url";
 import noteMagentaPlate from "./clubhouse/note-magenta.webp?url";
 import doloresPikeFigure from "./clubhouse/officers/dolores-pike.webp?url";
@@ -95,6 +97,11 @@ export const officerFigures = {
   "dolores-pike": doloresPikeFigure,
   "wendell-haverty": wendellHavertyFigure,
 } as const satisfies Record<OfficerId, string>;
+
+export const garagePlates = {
+  backdrop: garageBackdropPlate,
+  mechanic: garageMechanicFigure,
+} as const;
 
 export const bills = {
   "agnes-mulcahy": agnesMulcahyBill,

@@ -32,9 +32,8 @@ import {
 } from "./clubhouse-bar.tsx";
 import type { Speech } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
-import { stampStyle } from "./clubhouse-wall.tsx";
+import { RuledSheet, stampStyle } from "./clubhouse-wall.tsx";
 
-const SHEET_SCALE = 0.7;
 const SHEET = { h: 740, w: 570, x: 548, y: 104 } as const;
 const SHEET_TITLE = { h: 62, w: 470, x: 590, y: 136 } as const;
 const SHEET_ROWS = { h: 475, w: 512, x: 566, y: 248 } as const;
@@ -48,23 +47,6 @@ const ROWS = 15;
 const MAGS: RivalId = "mags-dunleavy";
 const NOTE_LONG = 90;
 const NOTE_LONGER = 150;
-
-const sheetBorder = (
-  top: number,
-  right: number,
-  bottom: number,
-  left: number
-) =>
-  [top, right, bottom, left]
-    .map((edge) => stagePx(edge * SHEET_SCALE))
-    .join(" ");
-
-const sheetStyle = {
-  ...place(SHEET),
-  borderImage: `url(${plates.standings}) 297 50 445 80 fill / ${sheetBorder(297, 50, 445, 80)} stretch round`,
-  borderStyle: "solid",
-  borderWidth: sheetBorder(297, 50, 445, 80),
-};
 
 const gapFrom = (rows: readonly ResultRow[]): number => {
   if (rows.some((row) => row.fate === "finished")) {
@@ -100,7 +82,7 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
   const paid = report.ledger !== null;
   return (
     <section aria-label="Race result">
-      <div aria-hidden style={sheetStyle} />
+      <RuledSheet box={SHEET} scale={0.7} />
       <h2
         className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black whitespace-nowrap uppercase"
         style={{ ...place(SHEET_TITLE), fontSize: stagePx(36) }}

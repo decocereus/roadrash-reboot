@@ -53,7 +53,7 @@ void main() {
   float crease = smoothstep(0.55, 1.0, length(facing(a) - facing(b)) + length(facing(c) - facing(d)));
   float fade = 1.0 - smoothstep(60.0, 420.0, nearest);
   float edge = max(outline * mix(0.35, 1.0, fade), crease * fade * 0.85);
-  gl_FragColor = vec4(mix(colour.rgb, ink, edge), 1.0);
+  gl_FragColor = vec4(mix(colour.rgb, ink, edge), min(max(colour.a, edge), 1.0));
 }`;
 
 const GRADE_FRAGMENT = `
@@ -73,7 +73,7 @@ void main() {
   );
   colour *= grade;
   colour *= 1.0 - vignette * smoothstep(0.16, 0.62, radius);
-  gl_FragColor = vec4(colour, 1.0);
+  gl_FragColor = vec4(colour, min(texture2D(tDiffuse, vUv).a, 1.0));
   #include <colorspace_fragment>
 }`;
 
@@ -222,9 +222,15 @@ export const createPipeline = (
     vertexShader: SCREEN_VERTEX,
   });
   grade.renderToScreen = true;
+  bloom.blendMaterial.blending = THREE.CustomBlending;
+  bloom.blendMaterial.blendSrc = THREE.SrcAlphaFactor;
+  bloom.blendMaterial.blendDst = THREE.OneFactor;
+  bloom.blendMaterial.blendSrcAlpha = THREE.ZeroFactor;
+  bloom.blendMaterial.blendDstAlpha = THREE.OneFactor;
 
   uniform(line, "normals").value = normalTarget.texture;
   uniform(line, "depths").value = normalTarget.depthTexture;
+  const clearColour = new THREE.Color();
   let bloomScale = BLOOM_SCALE;
   let cssWidth = 1;
   let cssHeight = 1;
@@ -273,10 +279,13 @@ export const createPipeline = (
       scene.background = null;
       scene.fog = null;
       seesFx(camera, false);
+      renderer.getClearColor(clearColour);
+      const clearAlpha = renderer.getClearAlpha();
       renderer.setRenderTarget(normalTarget);
       renderer.setClearColor(FACING_CAMERA, 1);
       renderer.clear();
       renderer.render(scene, camera);
+      renderer.setClearColor(clearColour, clearAlpha);
       lap?.("normal");
       scene.overrideMaterial = null;
       scene.background = background;

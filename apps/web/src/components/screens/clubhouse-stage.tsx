@@ -41,7 +41,7 @@ export const Plate = ({
 }: {
   readonly src: string;
   readonly box: StageBox;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly style?: CSSProperties;
 }) => (
   <img

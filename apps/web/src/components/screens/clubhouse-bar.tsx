@@ -4,16 +4,19 @@ import type { CSSProperties } from "react";
 
 import { plates } from "../../assets/clubhouse-art.ts";
 import { Plate, place, stagePx } from "./clubhouse-stage.tsx";
+import type { StageBox } from "./clubhouse-stage.tsx";
 
 const BACKDROP = { h: 941, w: 610, x: 0, y: 0 } as const;
 const FRONT_SEAT = { h: 577, w: 512, x: 0, y: 278 } as const;
 const COUNTER = { h: 148, w: 512, x: 0, y: 620 } as const;
 const STOOL = { h: 87, w: 290, x: 280, y: 768 } as const;
-const SPEECH = { h: 191, w: 266, x: 194, y: 136 } as const;
-const SPEECH_TEXT = { h: 88, w: 224, x: 222, y: 160 } as const;
-const SPEECH_NAME = { h: 33, w: 147, x: 305, y: 288 } as const;
+const SPEECH = { h: 191, w: 266 } as const;
+const SPEECH_TEXT = { h: 88, w: 224, x: 28, y: 24 } as const;
+const SPEECH_NAME = { h: 33, w: 147, x: 111, y: 152 } as const;
+const BAR_SPEECH = { x: 194, y: 136 } as const;
 
 const LONG_LINE = 60;
+const LONGER_LINE = 90;
 const MS_PER_SECOND = 1000;
 
 let secondsInBar = 0;
@@ -80,18 +83,47 @@ export interface Speech {
   readonly next?: (() => void) | undefined;
 }
 
+const speechSize = (line: string): number => {
+  if (line.length > LONGER_LINE) {
+    return 18;
+  }
+  return line.length > LONG_LINE ? 21 : 25;
+};
+
 const speechText =
   "font-display text-ink flex -rotate-2 items-center justify-center text-center leading-[1.05] font-bold text-balance";
 
-export const SpeechSticker = ({ speech }: { readonly speech: Speech }) => {
+const inside = (
+  at: { readonly x: number; readonly y: number },
+  part: StageBox,
+  flip: boolean
+): StageBox => ({
+  ...part,
+  x: at.x + (flip ? SPEECH.w - part.x - part.w : part.x),
+  y: at.y + part.y,
+});
+
+export const SpeechSticker = ({
+  speech,
+  at = BAR_SPEECH,
+  flip = false,
+}: {
+  readonly speech: Speech;
+  readonly at?: { readonly x: number; readonly y: number };
+  readonly flip?: boolean;
+}) => {
   const { line, name, tag, next } = speech;
   const style = {
-    ...place(SPEECH_TEXT),
-    fontSize: stagePx(line.length > LONG_LINE ? 21 : 25),
+    ...place(inside(at, SPEECH_TEXT, flip)),
+    fontSize: stagePx(speechSize(line)),
   };
   return (
     <figure className="m-0">
-      <Plate box={SPEECH} src={plates.speech} />
+      <Plate
+        box={{ ...SPEECH, ...at }}
+        className={flip ? "-scale-x-100" : undefined}
+        src={plates.speech}
+      />
       {next === undefined ? (
         <blockquote className={speechText} style={style}>
           {line}
@@ -109,7 +141,7 @@ export const SpeechSticker = ({ speech }: { readonly speech: Speech }) => {
       <figcaption
         className="font-display text-ink bg-neon-yellow flex -rotate-3 flex-col px-[0.4em] py-[0.2em] leading-none font-bold tracking-wide uppercase"
         style={{
-          ...place(SPEECH_NAME),
+          ...place(inside(at, SPEECH_NAME, flip)),
           fontSize: stagePx(16),
           height: "auto",
           width: "fit-content",

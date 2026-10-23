@@ -174,7 +174,7 @@ const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
 };
 
 export const createBikes = (
-  assets: Assets,
+  assets: Pick<Assets, "bike">,
   shading: Shading,
   riders: readonly BikeRider[]
 ): Bikes => {

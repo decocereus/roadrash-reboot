@@ -125,6 +125,13 @@ interface Loaded {
   readonly fontFallback: FontReadinessFailed | null;
 }
 
+export const loadBike = Effect.fn("assets.loadBike")(function* loadBike(
+  cache: ByteCache,
+  urls: ModelUrls
+) {
+  return yield* model(cache, urls.bike, bikeParts);
+});
+
 export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
   cache: ByteCache,
   urls: ModelUrls
