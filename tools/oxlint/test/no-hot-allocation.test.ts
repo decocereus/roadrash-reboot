@@ -20,7 +20,7 @@ const hotBodies = {
   "packages/sim/src/bench-workload.ts": [["observeWorkload"], ["racersAhead"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [["carsAhead"]],
-  "packages/sim/src/pilot.ts": [["pilotInput"]],
+  "packages/sim/src/pilot.ts": [["pilotRider"]],
   "packages/sim/src/race.ts": [["stepRace"]],
 };
 

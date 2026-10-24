@@ -4,7 +4,6 @@ import {
   BIKE_HALF_LENGTH,
   BIKE_HALF_WIDTH,
   clamp,
-  raceOwned,
   riderOf,
   TICK_SECONDS,
 } from "./state.ts";
@@ -152,12 +151,12 @@ interface Melee {
   readonly thieves: (Strike | undefined)[];
 }
 
-const meleeOf = raceOwned((): Melee => ({
+const meleeScratch: Melee = {
   parties: [],
   partyCount: 0,
   strikes: [],
   thieves: [],
-}));
+};
 
 const finishSwing = (state: RaceState, rider: RiderState): void => {
   rider.attack = "none";
@@ -295,7 +294,7 @@ export const coolDown = (state: RaceState): void => {
 };
 
 export const landStrikes = (state: RaceState): void => {
-  const strikes = settleStrikes(state, meleeOf(state));
+  const strikes = settleStrikes(state, meleeScratch);
   for (const strike of strikes) {
     if (strike) {
       landHit(state, strike);
@@ -572,24 +571,27 @@ export const stepRiderContacts = (
   track: Track,
   throwRider: ThrowRider
 ): void => {
-  const melee = meleeOf(state);
-  const { parties } = melee;
-  melee.partyCount = 0;
+  const { parties } = meleeScratch;
+  meleeScratch.partyCount = 0;
   for (const rider of state.riders) {
     if (canFight(rider)) {
-      joinParty(melee, rider);
+      joinParty(meleeScratch, rider);
     }
   }
-  for (let position = 0; position < melee.partyCount; position += 1) {
+  for (let position = 0; position < meleeScratch.partyCount; position += 1) {
     const left = parties[position];
-    for (let other = position + 1; other < melee.partyCount; other += 1) {
+    for (
+      let other = position + 1;
+      other < meleeScratch.partyCount;
+      other += 1
+    ) {
       const right = parties[other];
       if (left && right) {
         meet(state, left, right);
       }
     }
   }
-  for (let position = 0; position < melee.partyCount; position += 1) {
+  for (let position = 0; position < meleeScratch.partyCount; position += 1) {
     const party = parties[position];
     if (party) {
       settle(state, party, throwRider);

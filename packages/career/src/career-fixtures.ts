@@ -1,9 +1,10 @@
 import type { BikeId } from "@racer/sim/bikes";
 import type { RivalId } from "@racer/sim/cast";
-import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
+import { frameOf, scripted } from "@racer/sim/race-fixtures";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type {
+  InputFrame,
   RaceState,
   RiderId,
   RiderInput,
@@ -63,7 +64,7 @@ export const enter = (
     log: createRaceLog(setup),
     rules,
     setup,
-    state: createRace(setup),
+    state: scripted(createRace(setup)),
   };
 };
 
@@ -102,13 +103,19 @@ const copIn = (race: Entered): RiderState => {
 export const ride = (
   race: Entered,
   seconds: number,
-  inputsAt: (tick: number) => readonly RiderInput[]
+  framesAt: (tick: number) => InputFrame
 ): void => {
   for (let tick = 0; tick < seconds * TICKS && !race.log.outcome; tick += 1) {
-    stepRace(race.state, road, inputsAt(tick));
+    stepRace(race.state, road, framesAt(tick));
     recordTick(race.log, race.state, race.setup);
   }
 };
+
+export const everyRider = (race: Entered, input: RiderInput): InputFrame =>
+  frameOf(
+    race.state,
+    ...race.state.riders.map((rider) => [rider.id, input] as const)
+  );
 
 export const settle = (race: Entered): Settlement =>
   settleRace(
@@ -134,21 +141,21 @@ export const sprint = (
     ...leaders,
     ...race.setup.field.filter((rival) => !leaders.includes(rival)),
   ];
-  const inputs = race.state.riders.map(() => neutralInput);
-  inputs[0] = flatOut;
+  const controls: (readonly [RiderId, RiderInput])[] = [
+    [PLAYER_RIDER, flatOut],
+  ];
   for (const [slot, rival] of order.entries()) {
     const rider = racerIn(race, rival);
     const ahead = slot < place - 1;
     rider.s = ahead ? road.length - 40 - slot * 12 : 100 + slot * 10;
     rider.speed = ahead ? 40 : 0;
-    inputs[race.setup.field.indexOf(rival) + 1] = ahead
-      ? flatOut
-      : neutralInput;
+    controls.push([rider.id, ahead ? flatOut : neutralInput]);
   }
   const player = racerIn(race, "player");
   player.s = road.length - playerGap;
   player.speed = 40;
-  ride(race, 30, () => inputs);
+  const frame = frameOf(race.state, ...controls);
+  ride(race, 30, () => frame);
 };
 
 export const crashOut = (race: Entered): void => {
@@ -156,7 +163,11 @@ export const crashOut = (race: Entered): void => {
   player.s = 300;
   player.speed = 30;
   player.condition = 1;
-  ride(race, 20, () => [{ ...flatOut, steer: 1, throttle: 0.5 }]);
+  const frame = frameOf(race.state, [
+    PLAYER_RIDER,
+    { ...flatOut, steer: 1, throttle: 0.5 },
+  ]);
+  ride(race, 20, () => frame);
 };
 
 export const getArrested = (
@@ -171,20 +182,19 @@ export const getArrested = (
   cop.speed = 22;
   arrested.s = 200;
   arrested.speed = 15;
-  const inputs = race.state.riders.map(() => ({ ...neutralInput }));
-  ride(race, 1 / TICKS, () => inputs);
+  const still = frameOf(race.state);
+  ride(race, 1 / TICKS, () => still);
   arrested.stamina = 0;
+  cop.controller = "pilot";
+  const chased = frameOf(race.state);
   for (
     let tick = 0;
     tick < 30 * TICKS && arrested.mode !== "busted";
     tick += 1
   ) {
-    const copInput = inputs[cop.id];
-    if (copInput) {
-      pilotInput(race.state, road, cop, copInput);
-    }
-    ride(race, 1 / TICKS, () => inputs);
+    ride(race, 1 / TICKS, () => chased);
   }
+  cop.controller = "human";
   cop.parked = true;
   cop.speed = 0;
   cop.s = road.length / 2;
@@ -219,16 +229,21 @@ export const knockDown = (
     }
     downs += wasRiding && !riding ? 1 : 0;
     wasRiding = riding;
-    const inputs = race.state.riders.map(() => neutralInput);
-    inputs[me.id] = { ...idle, punch: riding && tick % 40 === 0 };
-    const theirInput = { ...idle };
-    if (!riding) {
-      pilotInput(race.state, road, them, theirInput);
-    }
-    inputs[them.id] = theirInput;
-    stepRace(race.state, road, inputs);
+    them.controller = riding ? "human" : "pilot";
+    const punch: readonly [RiderId, RiderInput] = [
+      me.id,
+      { ...idle, punch: riding && tick % 40 === 0 },
+    ];
+    stepRace(
+      race.state,
+      road,
+      riding
+        ? frameOf(race.state, punch, [them.id, idle])
+        : frameOf(race.state, punch)
+    );
     recordTick(race.log, race.state, race.setup);
   }
+  them.controller = "human";
 };
 
 export const rivalIn = (setup: CareerRaceSetup, rival: RivalId) =>
@@ -247,10 +262,15 @@ export const takeWeaponFrom = (race: Entered, rival: RivalId): void => {
     me.x = 0.3;
     them.x = 1.8;
     them.s = me.s;
-    const inputs = race.state.riders.map(() => neutralInput);
-    inputs[me.id] = { ...idle, kick: tick === 0 };
-    inputs[them.id] = idle;
-    stepRace(race.state, road, inputs);
+    stepRace(
+      race.state,
+      road,
+      frameOf(
+        race.state,
+        [me.id, { ...idle, kick: tick === 0 }],
+        [them.id, idle]
+      )
+    );
     recordTick(race.log, race.state, race.setup);
   }
 };

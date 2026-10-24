@@ -14,15 +14,18 @@ import {
   steeringPush,
 } from "./pilot-corners.ts";
 import { SLIPPING, SLIPPING_STEER } from "./pilot-forecast.ts";
-import { pilotHistoryOf } from "./pilot-history.ts";
-import type { PilotHistory } from "./pilot-history.ts";
 import { jumpAim, straightened } from "./pilot-jumps.ts";
 import { chooseLine, slickAhead } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { copAim } from "./pilot-police.ts";
 import { towardBike } from "./rider-recovery.ts";
 import { clamp, lateralSpeedLimit, PLAYER_RIDER, riderOf } from "./state.ts";
-import type { RaceState, RiderInput, RiderState } from "./state.ts";
+import type {
+  PilotHistory,
+  RaceState,
+  RiderInput,
+  RiderState,
+} from "./state.ts";
 
 const MOST_BRAKE_SHARE = 0.98;
 const CORNER_THROTTLE_GAIN = 4;
@@ -124,17 +127,17 @@ const walkToBike = (rider: RiderState, input: RiderInput): void => {
   input.kick = false;
 };
 
-export const pilotInput = (
+export const pilotRider = (
   state: RaceState,
   track: Track,
-  rider: RiderState,
-  input: RiderInput
+  rider: RiderState
 ): void => {
+  const { input } = rider;
   if (rider.mode !== "riding") {
     walkToBike(rider, input);
     return;
   }
-  const history = pilotHistoryOf(state);
+  const history = state.pilot;
   const police = rider.profile.role === "police";
   const pace = police ? freePace : paceOf(state, rider);
   riding.margin = Math.min(

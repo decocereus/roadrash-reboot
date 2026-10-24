@@ -1,8 +1,8 @@
 {
   "provenance": {
-    "recordedAt": ["b094142dd114e8272fadcde5032c6ada87ecb2fd"],
-    "recordedWith": "the stable rider id change on top of recordedAt, which gives every rider its RiderId and writes null for a missing rider reference, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1. Before it was recorded, the same nine races serialised with each rider's id left out and -1 written for every null rider reference reproduced the earlier baseline, recorded at fa51109ead345c7e02cc7b5529c153c0cace768c with the owned-math commit, hash for hash, alone and interleaved",
-    "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text",
+    "recordedAt": ["9126e0dae787872a70a307fb6d4212fe7309c0c6"],
+    "recordedWith": "the pilot-in-tick change on top of recordedAt, which gives every rider a controller and its own input and keeps the pilot history in RaceState, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1. Before it was recorded, the same nine races serialised without the pilot history and each rider's controller and input, with the riders' inputs written beside the state as before, reproduced the earlier baseline, recorded at b094142dd114e8272fadcde5032c6ada87ecb2fd with the stable rider id change, hash for hash, alone and interleaved",
+    "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text, Float64Array as a counted run of numbers",
     "ticks": 7200,
     "window": {
       "from": 2880,
@@ -13,65 +13,65 @@
     {
       "id": "ridge-road/level5/seed1",
       "ticks": 7200,
-      "full": "af7b0506916bf3b8a75a4b1f8d43150e4aba2071fa054ab11941922add859592",
-      "final": "6c9a64d7d50b5e4ab800125190dfc87f2018b0d6c83752233eb4f085b27cd325",
-      "window": "003e5d3f7da0195f8279a2713bd69297a6f2009233826b03a8354a0cb31d0aaf"
+      "full": "d5ad1e6203cdea10a69d0d6a0e61728093cc9bb1f417a283caa5780090b28098",
+      "final": "0f19ea3950a880078a101d11a3d85b266360d18d932f7af93d0295d2d3a34187",
+      "window": "03c5d2d3dbdd517dbc0e565b86bd8f3a1b8fed186dddaa09527288e8106b0a6e"
     },
     {
       "id": "ridge-road/level5/seed5",
       "ticks": 7200,
-      "full": "02e4e049ea794e2762ace883a4db72a2d983e9ca2c573987a1ae3a3ffe3427c8",
-      "final": "6501c1e0fe841bfd0bd5884caee4a126088feaae9c1918c4d0701b959d4e9be8",
-      "window": "6e927b97a609611bb44ee88fff098262bdb6f55fcb555be882b33fc09f0441eb"
+      "full": "77c3ab3e5ed6f622755af0ba7095514954971cfdbe3e1c16ef46e5d64de2c3b8",
+      "final": "05b070f963c5c77a0cef36780a9b03fe0f72781845bafddcc9c5a5dfbfe73e3b",
+      "window": "c2268b279c9cd3dcc3e5f7ebb8753d85d3797cf7d68e1833161d95675c40c27a"
     },
     {
       "id": "ridge-road/level5/seed9",
       "ticks": 7200,
-      "full": "7d149d02ea867b548dcf2ad50098bad36679b74c0db7dd116efae4c49ac01a7c",
-      "final": "b289224b7fa171d6c3fe1492df03a6b7818b1ba01af1bdbd07b07fe7861ec0b4",
-      "window": "c524f48972a19e700bd59b40e47870f2404e3bcd1223da1437ec22dc26226237"
+      "full": "11053fac4a611dad08ed7d81a692b4e126bbd821dd1d8258ee58db45280b4f2a",
+      "final": "14619b7dbcb48b42646479e09cb61aef5501a94d26feda0c482dea9c874e9f74",
+      "window": "42b67246b564b15f842329d2f99413f8ecbc1c9b8e9bc721ad8f891a818be85d"
     },
     {
       "id": "ridge-road/level5/seed31",
       "ticks": 7200,
-      "full": "9d37996b20368993100a2b2c60dca7e62d39d5f70d3801c516b0f8b359c23bf2",
-      "final": "0d668a28f075d01101a5002836658ff5588225f68f8d12e86e78539e56a09bbb",
-      "window": "a31b1fee5410f9ef61ed8a2cec233585a04e30429d5f2f5fc75fae3f7f18f698"
+      "full": "2cb52dbc30d135f2fe02d231823f55ab297d1477a0ae930d941c5430df66b2bb",
+      "final": "d9c5d11718ca4c6a318483b9af7324142cdb4ad57a76a29f1a8f7c42ceda0400",
+      "window": "6fdbf8f18bfd9949076314cecd294e4cfb56269e91850a6055f5b3a6a628ae89"
     },
     {
       "id": "slag-row/level5/seed1",
       "ticks": 7200,
-      "full": "6b94846060750e6658bdb635d2b93e8430dc2c809d5cf02f1b78d7ab2701e9de",
-      "final": "c5d9f731a859a295f257aab2f0bd33c6a94f137d985cc3e5f684e58d480bfbb3",
-      "window": "c5ca73636b58eb922834e66b516cf918beeaaf9da0643b62de30b4259dd67515"
+      "full": "80185c147ba0dad1b3d7caf9e92e476d84b2ff009215f2861eae5ccb3e5e8ca8",
+      "final": "f6d5aeb6bff68a25a7e98c32b395ee893ee6ca43ff5c0cd6195988f4dccbf0fe",
+      "window": "cf10219f7167d1c9417e9ac2a765e50d44b79881b3714bf16463c28da63cbf4f"
     },
     {
       "id": "slag-row/level5/seed5",
       "ticks": 7200,
-      "full": "2d6b578cc6c5ff4de11c67492208a53c41b5c66447c837b539981aa56275cbd3",
-      "final": "a5b14d932ba15c96f5de73e67cff9fbb7e6e7e901b7acc84bf05182b33fa2faa",
-      "window": "873152f687e2a6423e29016087ffeb10658453a0c2392a5fcc61d9d9c62b2a41"
+      "full": "f405e36bfcc90c2cd9805836ace803d286b1e724162766c318367ab88ad330ca",
+      "final": "84b7bfc3aa3c989d960157f2222b671e9bf81f8409b2f9d82a2dd3a218078db7",
+      "window": "5a8be41ab9256aa63287178cdeafc3e42b93bffe693a3d73283b040160c9b96d"
     },
     {
       "id": "slag-row/level5/seed9",
       "ticks": 7200,
-      "full": "c11b21a02519931ba5047cba1fab3ad28d93735158dea225c49ad16a663ce9ff",
-      "final": "a85d602e61c14c9a7a72d9e86d959ebd10422c1004d645cbbbb5d4e77fc52574",
-      "window": "0530c6ced34d2389b550d4508c3817cf7719d94042a2161970e3bfc540badde0"
+      "full": "4f0ef332dad0be35e10c564a4e46a5a89070af887fcf239920b9d0ec45254a15",
+      "final": "623a364b8596bb9eb1661a687f87d25d6b0f383c743b2ed94bb805c3c0b38b1a",
+      "window": "8d8f4ef0bb75df2007a044587b834a674da8a6f1c91a16f7a90b4771296b2c00"
     },
     {
       "id": "slag-row/level5/seed31",
       "ticks": 7200,
-      "full": "89a2eba920783d8de6e68e623ae6c381c1a3941a2ac1d478f6b5c0025ed4597a",
-      "final": "05f605fb6e0b3f24f210c817c1dcd2bc882cb5e9ea696696c5af882b0b0982c4",
-      "window": "e5c5fcd6dbb4c89095c5a380f0aceb0bd51098f444390f0a369a63a905eeef76"
+      "full": "07beb6f9260c7505363c9e3cc56734cd98945512e5eaa88e3020dee31ecfe07f",
+      "final": "607c161b3aab6d4ca1e912d8c55df364478542dbe80202e3eb85242b86564af2",
+      "window": "2caa0d35efe95f7ba9c63dc32c131ab16d3db3db87f70d14df41ad60289dd366"
     },
     {
       "id": "stress/seed8",
       "ticks": 7200,
-      "full": "806ba1e5e6443ecf1b0d367685e9cbdab6fb8e6bbf73607ff77a10243ca42002",
-      "final": "44d6b42cbc91be8d74fa575002b5a0dba2d97e3ca49201a6208688e1f885eb1c",
-      "window": "3c3074adeb9a17676505c35e9ecbeda0695a48fef8930aca3c375d9dddd9916d"
+      "full": "96bb195a5e4c213be716753b1e7cc7441adce1e30ab6c36c72f322236f132cb7",
+      "final": "b7f3662237da8d6b671ec901790db5891453ba9cd2271b522a44fe701321fefa",
+      "window": "f69cb7eb59139b4956a44216f01375fbf2117aa43f2b9eea55f574fc6f5fef0c"
     }
   ]
 }

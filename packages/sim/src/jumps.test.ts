@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   field,
   flatOut,
+  frameOf,
   hold,
   loadingRamp,
   player,
@@ -14,7 +15,7 @@ import {
 } from "./race-fixtures.ts";
 import type { Placement } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { lateralSpeedLimit, TICK_RATE } from "./state.ts";
+import { PLAYER_RIDER, TICK_RATE, lateralSpeedLimit } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
 const wideRampRoad = compileTrack({ ...rampRoadPlan, lanesEachWay: 2 });
@@ -45,7 +46,11 @@ const jumpFrom = (
   let speedAfter = 0;
   for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
     const { airborne: flying, speed: pace } = rider;
-    stepRace(state, road, [{ ...flatOut, steer: Math.sign(steering) }]);
+    stepRace(
+      state,
+      road,
+      frameOf(state, [PLAYER_RIDER, { ...flatOut, steer: Math.sign(steering) }])
+    );
     events.push(...state.events);
     if (!flying && rider.airborne && takeoff < 0) {
       takeoff = rider.s;
@@ -88,7 +93,11 @@ const besideRamp = (
   const steer = placement.steer ?? Math.sign(placement.lateralSpeed);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < ticks; tick += 1) {
-    stepRace(state, road, [{ ...flatOut, steer }]);
+    stepRace(
+      state,
+      road,
+      frameOf(state, [PLAYER_RIDER, { ...flatOut, steer }])
+    );
     events.push(...state.events);
   }
   return { events, rider, state };
@@ -113,7 +122,11 @@ const overSlagRowHump = (speed: number, throttle: number): RaceEvent[] => {
   rider.speed = speed;
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 4 * TICK_RATE && rider.s < 4300; tick += 1) {
-    stepRace(state, quietSlagRow, [{ ...flatOut, throttle }]);
+    stepRace(
+      state,
+      quietSlagRow,
+      frameOf(state, [PLAYER_RIDER, { ...flatOut, throttle }])
+    );
     events.push(...state.events);
   }
   return events;

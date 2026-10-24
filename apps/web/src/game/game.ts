@@ -1,8 +1,8 @@
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
-import { defaultSetup, distanceLeft } from "@racer/sim/race";
-import { PLAYER_RIDER, riderOf, TICK_SECONDS } from "@racer/sim/state";
-import type { RaceSetup } from "@racer/sim/state";
+import { defaultSetup, distanceLeft, neutralInput } from "@racer/sim/race";
+import { PLAYER_RIDER, TICK_SECONDS } from "@racer/sim/state";
+import type { InputFrame, RaceSetup, RiderInput } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
@@ -213,6 +213,7 @@ const startGame = (
     warmUp,
   } = bindStage({
     assets,
+    autopilot,
     buildViews,
     cast,
     chase,
@@ -361,27 +362,18 @@ const startGame = (
     }
   };
 
+  const playerInput: RiderInput = { ...neutralInput };
+  const playerFrame: InputFrame = new Map([[PLAYER_RIDER, playerInput]]);
+  const pilotFrame: InputFrame = new Map();
+
+  const frameOf = (): InputFrame =>
+    player().controller === "human" ? playerFrame : pilotFrame;
+
   const readInputs = () => {
-    for (const rider of stage.race.view.riders) {
-      const input = riderOf(cast.inputs, rider.id);
-      if (!input) {
-        continue;
-      }
-      if (
-        rider.id === PLAYER_RIDER &&
-        session.phase !== "attract" &&
-        !autopilot
-      ) {
-        controls.read(TICK_SECONDS, input);
-      } else {
-        stage.race.pilot(rider.id, input);
-      }
+    if (frameOf() === playerFrame) {
+      controls.read(TICK_SECONDS, playerInput);
+      devRide?.steer(stage.race.view, stage.track, playerInput);
     }
-    devRide?.steer(
-      stage.race.view,
-      stage.track,
-      riderOf(cast.inputs, PLAYER_RIDER)
-    );
   };
 
   const tick = () => {
@@ -410,7 +402,7 @@ const startGame = (
       loadAttract(true);
       return;
     }
-    stage.race.step(cast.inputs);
+    stage.race.step(frameOf());
     bench?.record(stage.race.view);
     for (const event of stage.race.view.events) {
       touchDown(event);
@@ -543,7 +535,6 @@ const startGame = (
   });
   installFrameLoop({
     applyPending,
-    cast,
     checkPresented,
     draw,
     feedback,

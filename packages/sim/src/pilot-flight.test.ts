@@ -1,18 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
-import { pilotInput } from "./pilot.ts";
 import {
   KMH,
   alone,
-  cruising,
   field,
-  pilotAll,
+  frameOf,
+  piloted,
   player,
   quietTrack,
   rampRoad,
 } from "./race-fixtures.ts";
-import { neutralInput, stepRace } from "./race.ts";
+import { stepRace } from "./race.ts";
 import { TICK_RATE, riderOf } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
@@ -23,12 +22,11 @@ describe("gears and the tuck", () => {
     rider.s = 1900;
     rider.speed = 70;
     rider.gear = 6;
-    const input = { ...cruising, throttle: 0 };
+    rider.controller = "pilot";
     const events: RaceEvent[] = [];
     let launchSpeed = 0;
     for (let tick = 0; tick < 12 * TICK_RATE; tick += 1) {
-      pilotInput(state, quietTrack, rider, input);
-      stepRace(state, quietTrack, [input]);
+      stepRace(state, quietTrack, frameOf(state));
       if (rider.airborne && launchSpeed === 0) {
         launchSpeed = rider.speed;
       }
@@ -47,12 +45,10 @@ describe("jumping", () => {
     let passed = 0;
     let downAtRamp = 0;
     for (let seed = 1; seed <= 24; seed += 1) {
-      const state = field(rampRoad, seed, 6, 0);
-      const inputs = state.riders.map(() => ({ ...neutralInput }));
+      const state = piloted(field(rampRoad, seed, 6, 0));
       for (let tick = 0; tick < 60 * TICK_RATE; tick += 1) {
-        pilotAll(state, rampRoad, inputs);
         const before = state.riders.map((rider) => rider.s);
-        stepRace(state, rampRoad, inputs);
+        stepRace(state, rampRoad, frameOf(state));
         for (const rider of state.riders) {
           if ((before[rider.id] ?? 0) <= 1016 && rider.s > 1016) {
             passed += 1;

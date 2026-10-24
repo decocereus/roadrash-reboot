@@ -212,7 +212,7 @@ Test files:
 
 ### AI riders (the pilot)
 
-The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, with its memory kept per race.
+The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, planned inside the tick from the race's own state.
 
 - Id: `pilot`
 - Start: `packages/sim/src/pilot.ts`, `packages/sim/src/pilot-corners.ts`, `packages/sim/src/pilot-lines.ts`

@@ -4,14 +4,15 @@ import { hollowPineRoad } from "@racer/track/tracks/hollow-pine-road";
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
-import { pilotInput } from "./pilot.ts";
+import { pilotRider } from "./pilot.ts";
 import {
-  HERMITS_BEND_FROM,
-  HERMITS_BEND_TO,
-  KMH,
   alone,
   cruising,
+  frameOf,
+  HERMITS_BEND_FROM,
+  HERMITS_BEND_TO,
   hold,
+  KMH,
   player,
   quietSlagRow,
   quietTrack,
@@ -19,7 +20,13 @@ import {
   towardTheBike,
 } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { clamp, curvePushOf, lateralSpeedLimit, TICK_RATE } from "./state.ts";
+import {
+  PLAYER_RIDER,
+  TICK_RATE,
+  clamp,
+  curvePushOf,
+  lateralSpeedLimit,
+} from "./state.ts";
 import type { BikeSpec, RiderState } from "./state.ts";
 
 const SWITCHBACK_FROM = 1670;
@@ -40,13 +47,18 @@ const pushedWideInSwitchback = (bike: BikeSpec, kmh?: number): boolean => {
     const inBend = rider.s > SWITCHBACK_FROM;
     const turningIn = rider.s > SWITCHBACK_FROM - TURN_IN_BEFORE;
     const inside = Math.sign(curvatureAt(quietTrack, SWITCHBACK_FROM + 60));
-    stepRace(state, quietTrack, [
-      towardTheBike(rider, {
-        ...cruising,
-        steer: turningIn ? inside : 0,
-        throttle: 1,
-      }),
-    ]);
+    stepRace(
+      state,
+      quietTrack,
+      frameOf(state, [
+        PLAYER_RIDER,
+        towardTheBike(rider, {
+          ...cruising,
+          steer: turningIn ? inside : 0,
+          throttle: 1,
+        }),
+      ])
+    );
     if (inBend) {
       widest = Math.max(widest, -rider.x * inside);
     }
@@ -190,7 +202,7 @@ const throttleHeldThrough = (
   let crashed = false;
   while (rider.s < to && rider.mode === "riding") {
     input.steer = feltSteer(course, rider);
-    stepRace(state, course, [input]);
+    stepRace(state, course, frameOf(state, [PLAYER_RIDER, input]));
     slowest = Math.min(slowest, rider.speed);
     widest = Math.max(widest, -rider.x * inside);
     offRoad ||= rider.offRoad;
@@ -213,7 +225,11 @@ const lockedFor = (bike: BikeSpec, steer: number, seconds: number) => {
   rider.gear = bike.gears.length;
   let moved = 0;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [{ ...cruising, steer, throttle: 0 }]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [PLAYER_RIDER, { ...cruising, steer, throttle: 0 }])
+    );
     moved += rider.x;
     rider.x = 0;
   }
@@ -253,10 +269,12 @@ describe("cornering with the throttle held", () => {
     rider.gear = 6;
     const input = { ...cruising, throttle: 0 };
     while (rider.s < DRY_DOCK_CORNER_TO && rider.mode === "riding") {
-      pilotInput(state, quietSlagRow, rider, input);
-      input.throttle = rider.speed * KMH > 110 ? 0 : 1;
-      input.brake = 0;
-      stepRace(state, quietSlagRow, [input]);
+      pilotRider(state, quietSlagRow, rider);
+      Object.assign(input, rider.input, {
+        brake: 0,
+        throttle: rider.speed * KMH > 110 ? 0 : 1,
+      });
+      stepRace(state, quietSlagRow, frameOf(state, [PLAYER_RIDER, input]));
       expect(rider.offRoad).toBeFalsy();
     }
     expect(rider.mode).toBe("riding");

@@ -1,5 +1,6 @@
-import { pilotInput } from "@racer/sim/pilot";
-import { createRace, neutralInput, stepRace } from "@racer/sim/race";
+import { createRace, stepRace } from "@racer/sim/race";
+import { frameOf } from "@racer/sim/race-fixtures";
+import type { InputFrame } from "@racer/sim/state";
 import { arm } from "@racer/sim/weapons";
 import { roadAtLevel } from "@racer/track/road";
 import { regionOf, roads as roadPlans, trackFor } from "@racer/track/roads";
@@ -9,6 +10,7 @@ import { recordedRules } from "./bench.ts";
 import {
   TICKS,
   enter,
+  everyRider,
   flatOut,
   getArrested,
   knockDown,
@@ -108,7 +110,8 @@ describe("leaving a race", () => {
 
   it("quitting from the pause menu costs the repair bill and still scores the riders left racing", () => {
     const race = enter(newCareer(3), "slag-row");
-    ride(race, 5, () => race.state.riders.map(() => flatOut));
+    const frame = everyRider(race, flatOut);
+    ride(race, 5, () => frame);
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const settled = quitRace(recordedRules, race.career, outcome);
     const board = seasonBoard(settled.career);
@@ -127,7 +130,8 @@ describe("leaving a race", () => {
   it("quitting after a fight still scores the season and the rival remembers the fight, and a reload remembers nothing", () => {
     const race = enter(newCareer(3), "slag-row");
     knockDown(race, "dee-santangelo", 1);
-    ride(race, 2, () => race.state.riders.map(() => flatOut));
+    const frame = everyRider(race, flatOut);
+    ride(race, 2, () => frame);
     const quit = quitRace(
       recordedRules,
       race.career,
@@ -165,12 +169,9 @@ describe("leaving a race", () => {
     const race = enter(newCareer(3), "slag-row");
     sprint(race, 2);
     const settledAt = outcomeOf(race.state, race.setup, race.log);
+    const frame = everyRider(race, flatOut);
     for (let tick = 0; tick < 20 * TICKS; tick += 1) {
-      stepRace(
-        race.state,
-        road,
-        race.state.riders.map(() => flatOut)
-      );
+      stepRace(race.state, road, frame);
       recordTick(race.log, race.state, race.setup);
     }
     expect(outcomeOf(race.state, race.setup, race.log)).toBe(settledAt);
@@ -219,17 +220,14 @@ describe("the roads", () => {
         21,
         course
       );
-      const state = createRace(setup);
+      const state = createRace({
+        ...setup,
+        player: { ...setup.player, controller: "pilot" },
+      });
       const log = createRaceLog(setup);
-      const inputs = state.riders.map(() => ({ ...neutralInput }));
+      const frame: InputFrame = new Map();
       for (let tick = 0; tick < 400 * TICKS && !log.outcome; tick += 1) {
-        for (const rider of state.riders) {
-          const input = inputs[rider.id];
-          if (input) {
-            pilotInput(state, course, rider, input);
-          }
-        }
-        stepRace(state, course, inputs);
+        stepRace(state, course, frame);
         recordTick(log, state, setup);
       }
       const outcome = outcomeOf(state, setup, log);
@@ -300,11 +298,11 @@ describe("a bust", () => {
     const cop = race.state.riders.find(
       (rider) => rider.profile.role === "police"
     );
-    const inputs = race.state.riders.map(() => ({ ...neutralInput }));
-    const copInput = cop && inputs[cop.id];
-    if (!(cop && copInput)) {
+    if (!cop) {
       throw new Error("The race has no cop.");
     }
+    cop.controller = "pilot";
+    const frame = frameOf(race.state);
     cop.parked = false;
     cop.s = 150;
     cop.x = road.plan.laneWidth / 2;
@@ -314,8 +312,7 @@ describe("a bust", () => {
     player.stamina = 0;
     for (let tick = 0; tick < 30 * TICKS && !race.log.outcome; tick += 1) {
       lay = { s: player.bodyS, x: player.bodyX };
-      pilotInput(race.state, road, cop, copInput);
-      stepRace(race.state, road, inputs);
+      stepRace(race.state, road, frame);
       recordTick(race.log, race.state, race.setup);
     }
     const { arrest, km } = outcomeOf(race.state, race.setup, race.log);

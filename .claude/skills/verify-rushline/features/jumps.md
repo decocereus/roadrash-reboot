@@ -31,7 +31,7 @@ Preconditions:
 ## Gotchas
 
 - `?hold=air` counts ticks airborne and fires once per page; `holdafter=20` is a third of a second.
-- With `?autopilot` the pilot chooses whether to take the ramp, and a pilot that misreads a ramp rides past it. If `held` never comes, take the screenshot anyway and check where the bike went; to force the line, use the keyboard instead of the pilot, or add `&swerve=<metres>&swerveto=<steer>` before the ramp.
+- With `?autopilot` the pilot chooses whether to take the ramp, and a pilot that misreads a ramp rides past it. If `held` never comes, take the screenshot anyway and check where the bike went; to force the line, drop `?autopilot` and ride with the keyboard, or with `&straight&swerve=<metres>&swerveto=<steer>` before the ramp.
 - `?at` skips the approach, so the race clock starts near the ramp with the pack far behind.
 - Open findings from October 16, 2026 at `646f678`, with and without `?at`: the approach frame at 3,920 m showed no ramp, lamp posts, sign, or chevrons in front of the bike, although the bike launched and landed with dust and sparks; and in the held air frame and the first half second of the landing screencast the airborne bike is small and far ahead of the chase camera, which catches up to its usual framing about a second after touchdown. Look at both screenshots before calling ramps or the camera right.
 - Screencast frames show motion; use `rv sample` with `&prof` for frame times.

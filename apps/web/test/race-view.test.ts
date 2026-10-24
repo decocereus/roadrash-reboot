@@ -6,6 +6,7 @@ import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type {
   BikeSpec,
   Hazard,
+  InputFrame,
   RaceEvent,
   RaceState,
   RiderId,
@@ -16,17 +17,11 @@ import { trackFor } from "@racer/track/roads";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 const ride = (run: RaceRun, ticks: number): void => {
-  const inputs = run.view.riders.map(() => ({ ...neutralInput }));
+  const frame: InputFrame = new Map([
+    [PLAYER_RIDER, { ...neutralInput, throttle: 1 }],
+  ]);
   for (let tick = 0; tick < ticks; tick += 1) {
-    for (const rider of run.view.riders) {
-      const input = inputs[rider.id];
-      if (input && rider.id === PLAYER_RIDER) {
-        input.throttle = 1;
-      } else if (input) {
-        run.pilot(rider.id, input);
-      }
-    }
-    run.step(inputs);
+    run.step(frame);
   }
 };
 

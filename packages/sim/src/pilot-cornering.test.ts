@@ -7,13 +7,12 @@ import { describe, expect, it } from "vitest";
 
 import { streetBike } from "./bikes.ts";
 import { topSpeedOf } from "./engine.ts";
-import { pilotInput } from "./pilot.ts";
 import {
   HERMITS_BEND_FROM,
   HERMITS_BEND_TO,
   KMH,
-  cruising,
   field,
+  frameOf,
   placedAt,
   player,
   quietTrack,
@@ -21,15 +20,9 @@ import {
   straight,
 } from "./race-fixtures.ts";
 import type { Placement } from "./race-fixtures.ts";
-import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
+import { createRace, defaultSetup, stepRace } from "./race.ts";
 import { curvePushOf, lateralSpeedLimit, TICK_RATE } from "./state.ts";
-import type {
-  BikeSpec,
-  PacingRules,
-  RaceEvent,
-  RaceState,
-  RiderInput,
-} from "./state.ts";
+import type { BikeSpec, PacingRules, RaceEvent, RaceState } from "./state.ts";
 
 const holdingKmh = (bike: BikeSpec, course: Track, s: number): number => {
   const bend = Math.abs(curvatureAt(course, s));
@@ -67,22 +60,20 @@ const pilotTrace = (
   const setup = defaultSetup(course, 1);
   const state = createRace({
     ...setup,
-    player: { ...setup.player, bike, skill },
+    player: { ...setup.player, bike, controller: "pilot", skill },
     police: { ...setup.police, count: 0 },
     rivals: [],
   });
   const rider = player(state);
-  const input = { ...cruising };
   const trace: PilotTrace[] = [];
   while (rider.s < until && rider.mode === "riding") {
-    pilotInput(state, course, rider, input);
-    stepRace(state, course, [input]);
+    stepRace(state, course, frameOf(state));
     trace.push({
-      brake: input.brake,
+      brake: rider.input.brake,
       kmh: rider.speed * KMH,
       offRoad: rider.offRoad,
       s: rider.s,
-      throttle: input.throttle,
+      throttle: rider.input.throttle,
       x: rider.x,
     });
   }
@@ -177,26 +168,15 @@ const pacedPair = (
   });
 };
 
-const riderInputAt = (inputs: RiderInput[], index: number): RiderInput => {
-  const input = inputs[index];
-  if (!input) {
-    throw new Error(`The race has no input ${index}.`);
-  }
-  return input;
-};
-
 const rideTheRival = (
   state: RaceState,
   course: Track,
   seconds: number
 ): number => {
   const rival = rivalNamed(state, "dee-santangelo");
-  const inputs = state.riders.map(() => ({ ...neutralInput }));
-  const input = riderInputAt(inputs, rival.id);
   let fastest = 0;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    pilotInput(state, course, rival, input);
-    stepRace(state, course, inputs);
+    stepRace(state, course, frameOf(state));
     fastest = Math.max(fastest, rival.speed);
   }
   return fastest;
@@ -287,17 +267,16 @@ const ridePlanned = (
   rider.x = from.x;
   rider.speed = from.speed;
   state.cars.push(...cars);
-  const input = { ...neutralInput };
+  rider.controller = "pilot";
   const events: RaceEvent[] = [];
   const steps: PlannedStep[] = [];
   let offRoad = false;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    pilotInput(state, road, rider, input);
-    stepRace(state, road, [input]);
+    stepRace(state, road, frameOf(state));
     events.push(...state.events);
     offRoad ||= rider.offRoad;
     steps.push({
-      brake: input.brake,
+      brake: rider.input.brake,
       s: rider.s,
       share:
         Math.abs(

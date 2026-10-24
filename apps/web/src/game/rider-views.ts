@@ -3,12 +3,7 @@ import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
 import { clamp, PLAYER_RIDER, riderOf, TICK_RATE } from "@racer/sim/state";
-import type {
-  AttackKind,
-  HazardEffect,
-  RaceEvent,
-  RiderInput,
-} from "@racer/sim/state";
+import type { AttackKind, HazardEffect, RaceEvent } from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
 import { emptySupport, supportAt } from "@racer/track/features";
 import type { Support } from "@racer/track/features";
@@ -105,14 +100,6 @@ const emptyPose = (): Pose => ({
 
 const mix = (from: number, to: number, blend: number): number =>
   from + (to - from) * blend;
-
-const freshInput = (): RiderInput => ({
-  brake: 0,
-  kick: false,
-  punch: false,
-  steer: 0,
-  throttle: 0,
-});
 
 interface StrikeFrame {
   pose: RiderPose;
@@ -223,7 +210,6 @@ export interface Cast {
   puffs: Puffs | null;
   readonly deck: Support;
   riderReach: Reach;
-  inputs: RiderInput[];
   plates: string[];
   clock: number;
   readonly subject: Subject;
@@ -236,7 +222,6 @@ export const createCast = (shading: Shading): Cast => ({
   bikes: null,
   clock: 0,
   deck: emptySupport(),
-  inputs: [],
   placed: {
     air: 0,
     bodyAir: 0,
@@ -350,7 +335,6 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       capture(rider, view.after);
       return view;
     });
-    cast.inputs = stage.race.view.riders.map(() => freshInput());
     cast.plates = stage.race.view.riders.map((rider) =>
       bikeColour(rider.profile.paint)
     );

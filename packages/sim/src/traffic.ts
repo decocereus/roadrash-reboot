@@ -1,12 +1,7 @@
 import type { Random } from "@racer/track/random";
 import type { LaneCentres, Track } from "@racer/track/track";
 
-import {
-  approach,
-  BIKE_HALF_LENGTH,
-  raceOwned,
-  TICK_SECONDS,
-} from "./state.ts";
+import { approach, BIKE_HALF_LENGTH, TICK_SECONDS } from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const CLEAR_START_FROM = -70;
@@ -123,12 +118,12 @@ interface Flow {
   readonly lane: Lane;
 }
 
-const flowOf = raceOwned((): Flow => ({
+const trafficFlow: Flow = {
   lane: { along: [], count: 0, direction: 1, longest: 0, order: [] },
   lastS: [],
   lastSpeed: [],
   target: [],
-}));
+};
 
 const laneIndexOf = (track: Track, car: TrafficCar): number =>
   Math.min(
@@ -249,8 +244,7 @@ const yieldTo = (
 
 export const stepTraffic = (state: RaceState, track: Track): void => {
   const { cars, riders } = state;
-  const flow = flowOf(state);
-  const { lastS, lastSpeed, target } = flow;
+  const { lastS, lastSpeed, target } = trafficFlow;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
     if (car) {
@@ -265,12 +259,12 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
       laneIndex < track.plan.lanesEachWay;
       laneIndex += 1
     ) {
-      gatherLane(track, cars, flow, direction, laneIndex);
-      followLane(cars, flow);
+      gatherLane(track, cars, trafficFlow, direction, laneIndex);
+      followLane(cars, trafficFlow);
       for (const rider of riders) {
-        yieldTo(cars, flow, rider, rider.s);
+        yieldTo(cars, trafficFlow, rider, rider.s);
         if (rider.bodyS !== rider.s) {
-          yieldTo(cars, flow, rider, rider.bodyS);
+          yieldTo(cars, trafficFlow, rider, rider.bodyS);
         }
       }
     }

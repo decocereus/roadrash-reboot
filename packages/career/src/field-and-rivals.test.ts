@@ -1,8 +1,8 @@
 import { bikes } from "@racer/sim/bikes";
 import { bikeAt, rivalIds, rivals, weaponAt } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
-import { pilotInput } from "@racer/sim/pilot";
-import { createRace, neutralInput, stepRace } from "@racer/sim/race";
+import { createRace, stepRace } from "@racer/sim/race";
+import { frameOf, scripted } from "@racer/sim/race-fixtures";
 import { MAX_STAMINA, PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
@@ -38,16 +38,14 @@ const TRUCE_SECONDS = 3;
 const photoFinishOver = (race: Entered, rival: RivalId): void => {
   const chaser = racerIn(race, rival);
   const me = racerIn(race, "player");
-  const inputs = race.state.riders.map(() => neutralInput);
-  inputs[0] = flatOut;
-  inputs[race.setup.field.indexOf(rival) + 1] = flatOut;
+  const frame = frameOf(race.state, [me.id, flatOut], [chaser.id, flatOut]);
   me.s = road.length - 60;
   me.x = 1.8;
   me.speed = 40;
   chaser.s = road.length - 72;
   chaser.x = -1.8;
   chaser.speed = 40;
-  ride(race, 10, () => inputs);
+  ride(race, 10, () => frame);
 };
 
 const ATTACK_SEEDS = Array.from({ length: 40 }, (_, index) => index + 1);
@@ -62,16 +60,16 @@ const attacksOnThePlayer = (
   let attacks = 0;
   for (const seed of ATTACK_SEEDS) {
     const setup = setupFor(recordedRules, career, roadId, seed, road);
-    const state = createRace(setup);
-    const inputs = state.riders.map(() => ({ ...neutralInput }));
+    const state = scripted(createRace(setup));
     const me = riderOf(state.riders, PLAYER_RIDER);
     const them = state.riders.find(
       (rider) => rider.profile.name === rivals[rival].name
     );
-    const input = them ? inputs[them.id] : undefined;
-    if (!(input && me && them)) {
+    if (!(me && them)) {
       throw new Error(`${rival} is not in the race with seed ${seed}.`);
     }
+    them.controller = "pilot";
+    const frame = frameOf(state);
     for (const rider of state.riders) {
       if (rider !== me && rider.profile.role === "racer") {
         rider.s = 400;
@@ -89,8 +87,7 @@ const attacksOnThePlayer = (
       them.s = 50;
       them.x = 1.8;
       them.speed = 30;
-      pilotInput(state, road, them, input);
-      stepRace(state, road, inputs);
+      stepRace(state, road, frame);
       attacks += state.events.filter(
         (event) => event.kind === "attack" && event.rider === them.id
       ).length;
@@ -413,8 +410,6 @@ describe("memory", () => {
     const race = enter(newCareer(2), "slag-row");
     const me = racerIn(race, "player");
     const dee = racerIn(race, "dee-santangelo");
-    const inputs = race.state.riders.map(() => neutralInput);
-    inputs[me.id] = idle;
     let struck = false;
     for (let tick = 0; tick < TICKS && !struck; tick += 1) {
       me.s = 2000;
@@ -423,8 +418,15 @@ describe("memory", () => {
       dee.s = 2000;
       dee.x = 1.8;
       dee.speed = 30;
-      inputs[dee.id] = { ...idle, punch: tick === 0 };
-      stepRace(race.state, road, inputs);
+      stepRace(
+        race.state,
+        road,
+        frameOf(
+          race.state,
+          [me.id, idle],
+          [dee.id, { ...idle, punch: tick === 0 }]
+        )
+      );
       recordTick(race.log, race.state, race.setup);
       struck = race.state.events.some(
         (event) => event.kind === "hit" && event.target === me.id
@@ -441,8 +443,9 @@ describe("memory", () => {
       x: me.x,
     });
     const crashes: string[] = [];
+    const frame = frameOf(race.state, [me.id, idle], [dee.id, idle]);
     for (let tick = 0; tick < TICKS; tick += 1) {
-      stepRace(race.state, road, inputs);
+      stepRace(race.state, road, frame);
       recordTick(race.log, race.state, race.setup);
       crashes.push(
         ...race.state.events.flatMap((event) =>
@@ -476,10 +479,6 @@ describe("memory", () => {
     if (!(clear && close)) {
       throw new Error("The field is short.");
     }
-    const inputs = race.state.riders.map(() => neutralInput);
-    inputs[0] = flatOut;
-    inputs[1] = flatOut;
-    inputs[2] = flatOut;
     const placed = [
       [racerIn(race, clear), 10],
       [racerIn(race, close), 70],
@@ -489,7 +488,11 @@ describe("memory", () => {
       rider.s = road.length - short;
       rider.speed = 40;
     }
-    ride(race, 10, () => inputs);
+    const frame = frameOf(
+      race.state,
+      ...placed.map(([rider]) => [rider.id, flatOut] as const)
+    );
+    ride(race, 10, () => frame);
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const { career } = settle(race);
     const finishOf = (racer: RivalId | "player") =>

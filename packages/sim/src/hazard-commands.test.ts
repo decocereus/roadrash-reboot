@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { spawnOil, spawnPothole, spawnRock } from "./hazards.ts";
-import { pilotInput } from "./pilot.ts";
 import {
   KMH,
   field,
   flatOut,
+  frameOf,
   hazardFreeRoad,
   hold,
   pilotAt,
@@ -105,15 +105,14 @@ describe("road hazards", () => {
       s: 900,
       x: 1.8,
     });
-    const inputs = state.riders.map(() => ({ ...neutralInput }));
+    cop.controller = "pilot";
     const events: RaceEvent[] = [];
     for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-      const copInput = inputs[cop.id];
-      if (copInput) {
-        pilotInput(state, hazardFreeRoad, cop, copInput);
-      }
-      inputs[me.id] = { ...neutralInput, throttle: 0.6 };
-      stepRace(state, hazardFreeRoad, inputs);
+      stepRace(
+        state,
+        hazardFreeRoad,
+        frameOf(state, [me.id, { ...neutralInput, throttle: 0.6 }])
+      );
       events.push(...state.events);
     }
     expect(cop.s).toBeGreaterThan(1000);

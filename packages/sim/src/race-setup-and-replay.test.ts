@@ -5,16 +5,17 @@ import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
 import { cast, rivalAt, rivals } from "./cast.ts";
-import { pilotInput } from "./pilot.ts";
 import {
   brawl,
   cruising,
   field,
-  pilotAll,
+  frameOf,
+  piloted,
   player,
   pressing,
   quietTrack,
   rivalNamed,
+  scripted,
   straight,
   track,
 } from "./race-fixtures.ts";
@@ -33,11 +34,11 @@ import {
   TICK_RATE,
 } from "./state.ts";
 import type {
+  InputFrame,
   RaceEvent,
   RaceSetup,
   RaceState,
   RiderId,
-  RiderInput,
   RivalSetup,
 } from "./state.ts";
 import { disarm } from "./weapons.ts";
@@ -49,17 +50,11 @@ const pilotUntilFinish = (
   course: Track,
   limitSeconds: number
 ) => {
-  const input: RiderInput = {
-    brake: 0,
-    kick: false,
-    punch: false,
-    steer: 0,
-    throttle: 0,
-  };
+  player(state).controller = "pilot";
+  const frame = frameOf(state);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < limitSeconds * TICK_RATE; tick += 1) {
-    pilotInput(state, course, player(state), input);
-    stepRace(state, course, [input]);
+    stepRace(state, course, frame);
     events.push(...state.events);
     if (player(state).finishTick >= 0) {
       break;
@@ -97,14 +92,13 @@ describe("a full race", () => {
 });
 
 const pilotPack = (states: readonly RaceState[], seconds: number) => {
-  const inputs = states.map((state) =>
-    state.riders.map(() => ({ ...cruising }))
-  );
+  const races = states.map((state) => ({
+    frame: frameOf(piloted(state)),
+    state,
+  }));
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    for (const [raceIndex, state] of states.entries()) {
-      const each = inputs[raceIndex] ?? [];
-      pilotAll(state, track, each);
-      stepRace(state, track, each);
+    for (const { frame, state } of races) {
+      stepRace(state, track, frame);
     }
   }
 };
@@ -229,10 +223,9 @@ describe("rider ids", () => {
       ...setup.rivals.map((rival) => rival.name),
     ]);
     const seated = [...state.riders];
-    const inputs = state.riders.map(() => ({ ...cruising }));
+    const frame = frameOf(piloted(state));
     for (let tick = 0; tick < 60 * TICK_RATE; tick += 1) {
-      pilotAll(state, track, inputs);
-      stepRace(state, track, inputs);
+      stepRace(state, track, frame);
     }
     expect(state.riders.map((rider) => rider.id)).toStrictEqual(ids);
     for (const rider of state.riders) {
@@ -255,15 +248,18 @@ describe("the grid", () => {
 
   it("the player starts with the weapon and the hits left that the setup carries over", () => {
     const setup = defaultSetup(straight, 1);
-    const state = createRace({
-      ...setup,
-      player: { ...setup.player, weapon: "chain", weaponHits: 3 },
-      police: { ...setup.police, count: 0 },
-      rivals: setup.rivals.slice(0, 2),
-    });
+    const state = scripted(
+      createRace({
+        ...setup,
+        player: { ...setup.player, weapon: "chain", weaponHits: 3 },
+        police: { ...setup.police, count: 0 },
+        rivals: setup.rivals.slice(0, 2),
+      })
+    );
     const me = player(state);
     const moose = rivalNamed(state, "moose-kowalczyk");
-    rivalNamed(state, "dee-santangelo").s = 900;
+    const dee = rivalNamed(state, "dee-santangelo");
+    dee.s = 900;
     disarm(moose);
     for (const rider of [me, moose]) {
       rider.s = 50;
@@ -272,7 +268,12 @@ describe("the grid", () => {
     expect([me.weapon, me.weaponHits]).toStrictEqual(["chain", 3]);
     const events = brawl(state, 8, () => {
       moose.stamina = MAX_STAMINA;
-      return [pressing("punch", true), cruising, cruising];
+      return frameOf(
+        state,
+        [me.id, pressing("punch", true)],
+        [dee.id, cruising],
+        [moose.id, cruising]
+      );
     });
     expect(
       events.filter((event) => event.kind === "hit" && event.weapon === "chain")
@@ -294,18 +295,13 @@ const fullGrid = (course: Track, seed: number): RaceState => {
 };
 
 const launch = (state: RaceState, course: Track, seconds: number) => {
-  const inputs = state.riders.map(() => ({ ...neutralInput }));
+  const frame = frameOf(state, [
+    PLAYER_RIDER,
+    { ...neutralInput, throttle: 1 },
+  ]);
   const crashes: { rider: RiderId; tick: number }[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    for (const rider of state.riders) {
-      const input = inputs[rider.id];
-      if (input && rider.id === PLAYER_RIDER) {
-        Object.assign(input, { ...neutralInput, throttle: 1 });
-      } else if (input) {
-        pilotInput(state, course, rider, input);
-      }
-    }
-    stepRace(state, course, inputs);
+    stepRace(state, course, frame);
     crashes.push(
       ...state.events.flatMap((event) =>
         event.kind === "crash" ? [{ rider: event.rider, tick }] : []
@@ -353,5 +349,67 @@ describe("the start", () => {
     }
     expect(me.speed).toBeGreaterThan(10);
     expect(me.speed - ahead.speed).toBeLessThan(4);
+  });
+});
+
+const stepWith = (state: RaceState, frame: InputFrame) => (): void => {
+  stepRace(state, straight, frame);
+};
+
+describe("the input frame", () => {
+  it("a frame without a control for a human rider is rejected before the tick moves", () => {
+    const state = field(straight, 1, 1, 0);
+    const dee = rivalNamed(state, "dee-santangelo");
+    expect(stepWith(state, new Map([[PLAYER_RIDER, cruising]]))).toThrow(
+      `Rider ${dee.id} is ridden by a human and has no control in the frame.`
+    );
+    expect(state.tick).toBe(0);
+  });
+
+  it("a frame with a control for a pilot rider is rejected", () => {
+    const state = field(straight, 1, 1, 0);
+    const dee = rivalNamed(state, "dee-santangelo");
+    dee.controller = "pilot";
+    expect(
+      stepWith(
+        state,
+        new Map([
+          [PLAYER_RIDER, cruising],
+          [dee.id, cruising],
+        ])
+      )
+    ).toThrow(
+      `Rider ${dee.id} is ridden by the pilot and has a control in the frame.`
+    );
+  });
+
+  it("a frame with a control for a rider who is not in the race is rejected", () => {
+    const state = field(straight, 1, 0, 0);
+    const stranger = rivalNamed(field(straight, 1, 1, 0), "dee-santangelo").id;
+    expect(
+      stepWith(
+        state,
+        new Map([
+          [PLAYER_RIDER, cruising],
+          [stranger, cruising],
+        ])
+      )
+    ).toThrow(
+      `The frame has a control for rider ${stranger}, who is not in the race.`
+    );
+  });
+
+  it("a player the setup gives to the pilot rides with an empty frame", () => {
+    const setup = defaultSetup(quietTrack, 1);
+    const state = createRace({
+      ...setup,
+      player: { ...setup.player, controller: "pilot" },
+    });
+    const start = player(state).s;
+    for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+      stepRace(state, quietTrack, new Map());
+    }
+    expect(player(state).speed).toBeGreaterThan(20);
+    expect(player(state).s - start).toBeGreaterThan(200);
   });
 });

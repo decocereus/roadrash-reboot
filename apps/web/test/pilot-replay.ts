@@ -3,10 +3,12 @@ import type { Hash } from "node:crypto";
 
 import { recordedRules } from "@racer/career/bench";
 import type { RoadId } from "@racer/career/tables";
-import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
 import type { RaceView } from "@racer/sim/race-view";
+import { PLAYER_RIDER } from "@racer/sim/state";
 import type {
+  Controller,
+  InputFrame,
   RaceSetup,
   RaceState,
   RiderInput,
@@ -155,6 +157,11 @@ const writeAt = (holder: readonly unknown[], at: number): void => {
     writeString("z");
   } else if (Predicate.isUndefined(value)) {
     writeString("u");
+  } else if (value instanceof Float64Array) {
+    writeCount("f", value.length);
+    for (const number of value) {
+      writeNumber(number);
+    }
   } else if (Array.isArray(value)) {
     const items: readonly unknown[] = value;
     writeCount("a", items.length);
@@ -194,24 +201,18 @@ const encoded = (holder: readonly unknown[]): Uint8Array => {
 
 const raceBytes = (state: RaceView): Uint8Array => encoded([state]);
 
-const frameBytes = (
-  state: RaceView,
-  inputs: readonly RiderInput[]
-): Uint8Array => encoded([[state, inputs]]);
-
 const digest = (bytes: Uint8Array): string =>
   createHash("sha256").update(bytes).digest("hex");
 
-export const frameDigest = (
-  state: RaceView,
-  inputs: readonly RiderInput[]
-): string => digest(frameBytes(state, inputs));
+export const frameDigest = (state: RaceView): string =>
+  digest(raceBytes(state));
 
 export interface Run {
   readonly id: string;
   readonly state: RaceState;
   readonly track: Track;
-  readonly inputs: readonly RiderInput[];
+  readonly controls: RiderInput;
+  readonly frame: InputFrame;
   readonly full: Hash;
   readonly window: Hash;
   readonly frames: string[];
@@ -220,24 +221,20 @@ export interface Run {
 
 export type InputProducer = (run: Run) => void;
 
-const piloted: InputProducer = (run) => {
-  for (const rider of run.state.riders) {
-    const input = run.inputs[rider.id];
-    if (input) {
-      pilotInput(run.state, run.track, rider, input);
-    }
-  }
-};
-
-const open = (id: string, setup: RaceSetup): Run => {
-  const state = createRace(setup);
+const open = (id: string, setup: RaceSetup, controller: Controller): Run => {
+  const state = createRace({
+    ...setup,
+    player: { ...setup.player, controller },
+  });
   const full = createHash("sha256");
   full.update(raceBytes(state));
+  const controls = { ...neutralInput };
   return {
+    controls,
+    frame: new Map(controller === "human" ? [[PLAYER_RIDER, controls]] : []),
     frames: [],
     full,
     id,
-    inputs: state.riders.map(() => ({ ...neutralInput })),
     problems: [],
     state,
     track: setup.track,
@@ -245,8 +242,20 @@ const open = (id: string, setup: RaceSetup): Run => {
   };
 };
 
-export const openCase = (replay: ReplayCase): Run =>
-  open(replay.id, replay.setup());
+export const openCase = (
+  replay: ReplayCase,
+  controller: Controller = "pilot"
+): Run => open(replay.id, replay.setup(), controller);
+
+const restoredFrom = (run: Run): Run => {
+  const controls = { ...run.controls };
+  return {
+    ...run,
+    controls,
+    frame: new Map([...run.frame.keys()].map((id) => [id, controls])),
+    state: structuredClone(run.state),
+  };
+};
 
 const motion = [
   "s",
@@ -290,11 +299,11 @@ const inspect = (run: Run): void => {
   }
 };
 
-const advance = (run: Run, produce: InputProducer = piloted): void => {
-  produce(run);
-  stepRace(run.state, run.track, run.inputs);
+const advance = (run: Run, produce?: InputProducer): void => {
+  produce?.(run);
+  stepRace(run.state, run.track, run.frame);
   inspect(run);
-  const frame = frameBytes(run.state, run.inputs);
+  const frame = raceBytes(run.state);
   run.full.update(frame);
   run.frames.push(digest(frame));
   if (run.state.tick >= WINDOW.from && run.state.tick <= WINDOW.to) {
@@ -302,15 +311,29 @@ const advance = (run: Run, produce: InputProducer = piloted): void => {
   }
 };
 
-export const ride = (
-  run: Run,
-  ticks: number,
-  produce: InputProducer = piloted
-): Run => {
+export const ride = (run: Run, ticks: number, produce?: InputProducer): Run => {
   for (let tick = 0; tick < ticks; tick += 1) {
     advance(run, produce);
   }
   return run;
+};
+
+const RESTORE_EVERY = 600;
+
+const rideTogether = (
+  ticks: number,
+  restore: (run: Run) => Run = (run) => run
+): readonly Run[] => {
+  let runs = replayCases.map((replay) => openCase(replay));
+  for (let tick = 0; tick < ticks; tick += 1) {
+    if (tick % RESTORE_EVERY === 0) {
+      runs = runs.map(restore);
+    }
+    for (const run of runs) {
+      advance(run);
+    }
+  }
+  return runs;
 };
 
 export interface Replay {
@@ -347,17 +370,14 @@ export interface Matrix {
   readonly soloFrames: ReadonlyMap<string, readonly string[]>;
   readonly interleaved: readonly Replay[];
   readonly divergences: readonly Divergence[];
+  readonly restored: readonly Divergence[];
   readonly problems: readonly string[];
 }
 
 export const replayMatrix = (ticks: number): Matrix => {
   const solo = replayCases.map((replay) => ride(openCase(replay), ticks));
-  const together = replayCases.map(openCase);
-  for (let tick = 0; tick < ticks; tick += 1) {
-    for (const run of together) {
-      advance(run);
-    }
-  }
+  const together = rideTogether(ticks);
+  const restored = rideTogether(WINDOW.to, restoredFrom);
   return {
     divergences: together.map((run, index) => ({
       firstDifferentTick: firstDifferentTick(
@@ -367,7 +387,16 @@ export const replayMatrix = (ticks: number): Matrix => {
       id: run.id,
     })),
     interleaved: together.map(close),
-    problems: [...solo, ...together].flatMap((run) => run.problems),
+    problems: [...solo, ...together, ...restored].flatMap(
+      (run) => run.problems
+    ),
+    restored: restored.map((run, index) => ({
+      firstDifferentTick: firstDifferentTick(
+        run.frames,
+        solo[index]?.frames ?? []
+      ),
+      id: run.id,
+    })),
     solo: solo.map(close),
     soloFrames: new Map(solo.map((run) => [run.id, run.frames])),
   };

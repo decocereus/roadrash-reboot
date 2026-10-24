@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { streetBike } from "./bikes.ts";
-import { pilotInput } from "./pilot.ts";
 import {
   brawl,
   cruising,
   field,
+  fightFrame,
+  frameOf,
   hold,
   player,
   pressing,
   rivalNamed,
+  scripted,
   sideBySide,
   straight,
 } from "./race-fixtures.ts";
@@ -27,17 +29,13 @@ import { arm, disarm } from "./weapons.ts";
 describe("weapons", () => {
   it("a club swing drains far more stamina than a punch", () => {
     const punched = sideBySide();
-    brawl(punched.state, 1, (tick) => [
-      pressing("punch", tick === 0),
-      cruising,
-      cruising,
-    ]);
+    brawl(punched.state, 1, (tick) =>
+      fightFrame(punched.state, pressing("punch", tick === 0), cruising)
+    );
     const clubbed = sideBySide();
-    const events = brawl(clubbed.state, 1, (tick) => [
-      cruising,
-      cruising,
-      pressing("punch", tick === 0),
-    ]);
+    const events = brawl(clubbed.state, 1, (tick) =>
+      fightFrame(clubbed.state, cruising, pressing("punch", tick === 0))
+    );
     const fist = MAX_STAMINA - punched.moose.stamina;
     const club = MAX_STAMINA - clubbed.me.stamina;
     expect(fist).toBeGreaterThan(0);
@@ -56,7 +54,7 @@ describe("weapons", () => {
     expect(moose.weapon).toBe("club");
     const events = brawl(state, 14, () => {
       me.stamina = MAX_STAMINA;
-      return [cruising, cruising, pressing("punch", true)];
+      return fightFrame(state, cruising, pressing("punch", true));
     });
     const clubHits = events.filter(
       (event) => event.kind === "hit" && event.weapon === "club"
@@ -74,11 +72,15 @@ describe("weapons", () => {
   it("a kick that lands on an armed rival takes the weapon", () => {
     const { moose, me, state } = sideBySide();
     expect(me.weapon).toBe("none");
-    const events = brawl(state, 2, (tick) => [
-      tick < 60 ? pressing("kick", tick === 0) : pressing("punch", tick === 60),
-      cruising,
-      cruising,
-    ]);
+    const events = brawl(state, 2, (tick) =>
+      fightFrame(
+        state,
+        tick < 60
+          ? pressing("kick", tick === 0)
+          : pressing("punch", tick === 60),
+        cruising
+      )
+    );
     expect(events).toContainEqual({
       kind: "weaponTaken",
       rider: me.id,
@@ -122,9 +124,7 @@ const duel = (
     stepRace(
       state,
       straight,
-      unarmedSeat === "player"
-        ? [inputs.unarmed, inputs.holder]
-        : [inputs.holder, inputs.unarmed]
+      frameOf(state, [unarmed.id, inputs.unarmed], [holder.id, inputs.holder])
     );
   }
   return {
@@ -135,13 +135,15 @@ const duel = (
 
 const kickedFromBothSides = (firstX: number, secondX: number) => {
   const setup = defaultSetup(straight, 1);
-  const state = createRace({
-    ...setup,
-    police: { ...setup.police, count: 0 },
-    rivals: setup.rivals
-      .slice(0, 2)
-      .map((rival) => ({ ...rival, bike: streetBike })),
-  });
+  const state = scripted(
+    createRace({
+      ...setup,
+      police: { ...setup.police, count: 0 },
+      rivals: setup.rivals
+        .slice(0, 2)
+        .map((rival) => ({ ...rival, bike: streetBike })),
+    })
+  );
   const holder = player(state);
   const first = rivalNamed(state, "dee-santangelo");
   const second = rivalNamed(state, "moose-kowalczyk");
@@ -160,7 +162,11 @@ const kickedFromBothSides = (firstX: number, secondX: number) => {
     first.s = holder.s;
     second.s = holder.s;
     const kick = pressing("kick", tick === 0);
-    stepRace(state, straight, [cruising, kick, kick]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [holder.id, cruising], [first.id, kick], [second.id, kick])
+    );
     events.push(...state.events);
   }
   const seatOf = (id: RiderId) => {
@@ -270,7 +276,6 @@ describe("armed rivals", () => {
     const holder = rivalNamed(state, "dee-santangelo");
     state.tick = 10 * TICK_RATE;
     const me = player(state);
-    const rivalInput = { ...cruising };
     const events: RaceEvent[] = [];
     for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
       for (const rider of state.riders) {
@@ -279,8 +284,7 @@ describe("armed rivals", () => {
       }
       me.x = -1;
       holder.x = 1.8;
-      pilotInput(state, straight, holder, rivalInput);
-      stepRace(state, straight, [cruising, rivalInput]);
+      stepRace(state, straight, frameOf(state, [me.id, cruising]));
       events.push(...state.events);
     }
     expect(holder.weapon).toBe("chain");
@@ -311,11 +315,11 @@ const reaches = (weapon: WeaponKind, across = 2.8): boolean => {
     me.x = -1;
     moose.x = across - 1;
     moose.s = me.s;
-    stepRace(state, straight, [
-      cruising,
-      cruising,
-      pressing("punch", tick === 0),
-    ]);
+    stepRace(
+      state,
+      straight,
+      fightFrame(state, cruising, pressing("punch", tick === 0))
+    );
     events.push(...state.events);
   }
   return events.some((event) => event.kind === "hit");
@@ -330,7 +334,7 @@ const ticksBetweenHits = (weapon: WeaponKind): number => {
     if (state.events.some((event) => event.kind === "hit")) {
       landedAt.push(state.tick);
     }
-    return [cruising, cruising, pressing("punch", true)];
+    return fightFrame(state, cruising, pressing("punch", true));
   });
   const [first = 0, second = 0] = landedAt;
   return second - first;
@@ -339,11 +343,9 @@ const ticksBetweenHits = (weapon: WeaponKind): number => {
 const staminaLostTo = (weapon: "sign" | "club"): number => {
   const { moose, me, state } = sideBySide();
   arm(moose, weapon);
-  brawl(state, 1, (tick) => [
-    cruising,
-    cruising,
-    pressing("punch", tick === 0),
-  ]);
+  brawl(state, 1, (tick) =>
+    fightFrame(state, cruising, pressing("punch", tick === 0))
+  );
   return MAX_STAMINA - me.stamina;
 };
 
@@ -356,11 +358,11 @@ const ticksToLand = (weapon: WeaponKind, steer: number): number => {
   for (let tick = 0; tick < TICK_RATE; tick += 1) {
     moose.x = 1.8;
     moose.s = me.s;
-    stepRace(state, straight, [
-      { ...cruising, steer },
-      cruising,
-      pressing("punch", tick === 0),
-    ]);
+    stepRace(
+      state,
+      straight,
+      fightFrame(state, { ...cruising, steer }, pressing("punch", tick === 0))
+    );
     for (const event of state.events) {
       if (event.kind === "attack" && event.rider === moose.id) {
         pressed = state.tick;
@@ -388,7 +390,7 @@ describe("the new weapons", () => {
     arm(moose, "cue");
     const events = brawl(state, 10, () => {
       me.stamina = MAX_STAMINA;
-      return [cruising, cruising, pressing("punch", true)];
+      return fightFrame(state, cruising, pressing("punch", true));
     });
     expect(
       events.filter((event) => event.kind === "hit" && event.weapon === "cue")
@@ -445,15 +447,22 @@ const hitsByTheRival = (
   if (!other) {
     throw new Error("The default field has no second rival.");
   }
-  const state = createRace({
-    ...setup,
-    police: { ...setup.police, count: 0 },
-    rivals: [rival, other],
-  });
+  const state = scripted(
+    createRace({
+      ...setup,
+      police: { ...setup.police, count: 0 },
+      rivals: [rival, other],
+    })
+  );
   state.tick = 10 * TICK_RATE;
   const striker = rivalNamed(state, "dee-santangelo");
+  striker.controller = "pilot";
   const bystander = rivalNamed(state, "moose-kowalczyk");
-  const rivalInput = { ...cruising };
+  const frame = frameOf(
+    state,
+    [PLAYER_RIDER, cruising],
+    [bystander.id, cruising]
+  );
   const targets: RiderId[] = [];
   for (let tick = 0; tick < 6 * TICK_RATE; tick += 1) {
     for (const rider of state.riders) {
@@ -464,8 +473,7 @@ const hitsByTheRival = (
     player(state).x = playerAcross;
     striker.x = 0;
     bystander.x = bystanderAcross;
-    pilotInput(state, straight, striker, rivalInput);
-    stepRace(state, straight, [cruising, rivalInput, cruising]);
+    stepRace(state, straight, frame);
     targets.push(
       ...state.events.flatMap((event) =>
         event.kind === "hit" && event.rider === striker.id ? [event.target] : []

@@ -374,7 +374,7 @@ runRule("rushline/deterministic-core", deterministicCoreRule, {
       ...inRace,
     },
     {
-      code: 'export { pilotInput } from "./pilot.ts";\nexport type { RaceState } from "./state.ts";',
+      code: 'export { pilotRider } from "./pilot.ts";\nexport type { RaceState } from "./state.ts";',
       ...inRace,
     },
     {

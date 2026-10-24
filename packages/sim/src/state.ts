@@ -55,6 +55,12 @@ export interface RiderInput {
   kick: boolean;
 }
 
+const controllers = ["human", "pilot"] as const;
+
+export type Controller = (typeof controllers)[number];
+
+export type InputFrame = ReadonlyMap<RiderId, Readonly<RiderInput>>;
+
 export type AttackKind = "punch" | "kick" | "swing";
 
 export const weaponKinds = [
@@ -105,6 +111,8 @@ export type CrashCause =
 
 export interface RiderState {
   readonly id: RiderId;
+  controller: Controller;
+  readonly input: RiderInput;
   readonly profile: RiderProfile;
   readonly bike: BikeSpec;
   readonly grudge: RiderId | null;
@@ -300,12 +308,14 @@ export interface PacingRules {
 export interface PlayerSetup extends RiderProfile {
   readonly bike: BikeSpec;
   readonly weaponHits: number;
+  readonly controller?: Controller;
 }
 
 export interface RivalSetup extends RiderProfile {
   readonly bike: BikeSpec;
   readonly grudge?: RiderId;
   readonly aggressionBoost?: number;
+  readonly controller?: Controller;
 }
 
 export interface PoliceSetup extends PoliceRules {
@@ -326,10 +336,18 @@ export interface RaceSetup {
   readonly gridOrder: GridOrder;
 }
 
+export interface PilotHistory {
+  readonly braked: Float64Array;
+  readonly courseTravelled: Float64Array;
+  readonly coursePush: Float64Array;
+  readonly courseLimit: Float64Array;
+}
+
 export interface RaceState {
   tick: number;
   dice: number;
   hazardDice: number;
+  readonly pilot: PilotHistory;
   readonly police: PoliceRules;
   readonly pacing: PacingRules;
   readonly riders: readonly RiderState[];
@@ -356,21 +374,6 @@ export const riderOf = <Entry>(
   perRider: readonly Entry[],
   id: RiderId | null
 ): Entry | undefined => (id === null ? undefined : perRider[id]);
-
-export const raceOwned = <Owned>(
-  create: () => Owned
-): ((state: RaceState) => Owned) => {
-  const owned = new WeakMap<RaceState, Owned>();
-  return (state) => {
-    const known = owned.get(state);
-    if (known !== undefined) {
-      return known;
-    }
-    const made = create();
-    owned.set(state, made);
-    return made;
-  };
-};
 
 export const slotOf = <Slot>(
   slots: Slot[],

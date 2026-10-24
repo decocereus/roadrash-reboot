@@ -9,6 +9,7 @@ import {
 import {
   field,
   flatOut,
+  frameOf,
   hazardFreeRoad,
   hold,
   KMH,
@@ -16,7 +17,7 @@ import {
   rivalNamed,
   slowTruckAt,
 } from "./race-fixtures.ts";
-import { neutralInput, stepRace } from "./race.ts";
+import { stepRace } from "./race.ts";
 
 describe("dev ride placement", () => {
   it("moving the player along the road carries its body the same distance, and the race rides on from there", () => {
@@ -43,7 +44,7 @@ describe("dev ride placement", () => {
     expect(me.bodyX).toBe(1.8);
     expect(me.lateralSpeed).toBe(0.4);
     expect(me.s).toBe(600);
-    stepRace(state, hazardFreeRoad, [neutralInput]);
+    stepRace(state, hazardFreeRoad, frameOf(state));
     expect(me.x).toBeCloseTo(1.8, 1);
   });
 
@@ -66,7 +67,7 @@ describe("dev ride placement", () => {
     expect(state.cars.map((car) => car.s)).toStrictEqual([
       440, 1700, 1735, 1400, 1770,
     ]);
-    stepRace(state, hazardFreeRoad, [neutralInput]);
+    stepRace(state, hazardFreeRoad, frameOf(state));
     const placed = [440, 1700, 1735, 1400, 1770];
     for (const [index, car] of state.cars.entries()) {
       expect(car.s).toBeGreaterThan(placed[index] ?? 0);

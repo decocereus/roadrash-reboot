@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { pilotInput } from "./pilot.ts";
 import { chaserDistance, PATROL_SPEED } from "./police.ts";
 import {
   cruising,
   field,
+  frameOf,
   onlyCop,
   patrolFrom,
-  pilotAll,
+  piloted,
   player,
   riderAt,
+  scripted,
   straight,
   towardTheBike,
   track,
@@ -21,20 +22,19 @@ import {
   standings,
   stepRace,
 } from "./race.ts";
-import { MAX_STAMINA, TICK_RATE, rosterOf } from "./state.ts";
+import { MAX_STAMINA, PLAYER_RIDER, TICK_RATE, rosterOf } from "./state.ts";
 import type { PoliceSetup, RaceEvent, RiderInput } from "./state.ts";
 import { arm } from "./weapons.ts";
 
 describe("meeting the police", () => {
   it("a cop parked on the verge pulls out after the pack before the player has ridden two kilometres", () => {
-    const state = createRace(defaultSetup(track, 4));
+    const state = piloted(createRace(defaultSetup(track, 4)));
     const cop = onlyCop(state);
     expect({
       offRoad: Math.abs(cop.x) > track.roadHalfWidth,
       s: cop.s,
       speed: cop.speed,
     }).toStrictEqual({ offRoad: true, s: 1500, speed: 0 });
-    const inputs = state.riders.map(() => ({ ...cruising }));
     let pursuedAt = Number.POSITIVE_INFINITY;
     let fastestWhileParked = 0;
     while (
@@ -42,8 +42,7 @@ describe("meeting the police", () => {
       player(state).mode === "riding" &&
       state.tick < 120 * TICK_RATE
     ) {
-      pilotAll(state, track, inputs);
-      stepRace(state, track, inputs);
+      stepRace(state, track, frameOf(state));
       if (state.events.some((event) => event.kind === "pursuit")) {
         pursuedAt = Math.min(pursuedAt, player(state).s);
       }
@@ -65,7 +64,7 @@ const crashNearCop = (
   seconds = 15
 ) => {
   const setup = { ...defaultSetup(straight, 1), police, rivals: [] };
-  const state = createRace(setup);
+  const state = scripted(createRace(setup));
   const [firstCop] = rosterOf(setup).police;
   if (firstCop === undefined) {
     throw new Error("The setup seats no cop.");
@@ -75,12 +74,15 @@ const crashNearCop = (
   me.s = 200;
   me.speed = 15;
   me.stamina = 0;
-  const copInput = { ...cruising };
+  cop.controller = "pilot";
   const flatOut = { ...cruising, throttle: 1 };
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    pilotInput(state, straight, cop, copInput);
-    stepRace(state, straight, [towardTheBike(me, flatOut), copInput]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [me.id, towardTheBike(me, flatOut)])
+    );
     events.push(...state.events);
   }
   return { cop, events, me, state };
@@ -109,18 +111,16 @@ describe("police", () => {
   it("the arrest is reported where the body lay and with the weapon the rider was thrown with", () => {
     const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
     const me = player(state);
-    const cop = patrolFrom(onlyCop(state), 150);
+    patrolFrom(onlyCop(state), 150);
     me.s = 200;
     me.speed = 15;
     me.stamina = 0;
     arm(me, "chain");
-    const copInput = { ...cruising };
     let body = { s: me.bodyS, x: me.bodyX };
     let arrest: RaceEvent | undefined;
     while (!arrest && state.tick < 15 * TICK_RATE) {
       body = { s: me.bodyS, x: me.bodyX };
-      pilotInput(state, straight, cop, copInput);
-      stepRace(state, straight, [cruising, copInput]);
+      stepRace(state, straight, frameOf(state, [me.id, cruising]));
       arrest = state.events.find((event) => event.kind === "busted");
     }
     if (arrest?.kind !== "busted") {
@@ -163,12 +163,14 @@ const knockedOffBeside = (speed: number) => {
   me.x = 0;
   me.speed = speed;
   me.stamina = 0;
-  const copInput = { ...cruising };
   const flatOut = { ...cruising, throttle: 1 };
   let ticksToArrest = -1;
   for (let tick = 0; tick < 15 * TICK_RATE; tick += 1) {
-    pilotInput(state, straight, cop, copInput);
-    stepRace(state, straight, [towardTheBike(me, flatOut), copInput]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [me.id, towardTheBike(me, flatOut)])
+    );
     if (state.events.some((event) => event.kind === "busted")) {
       ticksToArrest = tick;
     }
@@ -187,14 +189,12 @@ const patrolWithBeat = (beat: number) => {
   const post = cop.s;
   me.s = post - 10;
   me.x = -1.8;
-  const copInput = { ...cruising };
   let chased = false;
   for (let tick = 0; tick < 40 * TICK_RATE; tick += 1) {
     me.speed = 30;
     me.x = -1.8;
     me.stamina = MAX_STAMINA;
-    pilotInput(state, straight, cop, copInput);
-    stepRace(state, straight, [cruising, copInput]);
+    stepRace(state, straight, frameOf(state, [me.id, cruising]));
     chased ||= chaserDistance(state, me.id) >= 0;
   }
   return {
@@ -248,11 +248,10 @@ describe("the end of a patrol", () => {
       throw new Error("The race has no traffic going the cop's way.");
     }
     follower.s = cop.s - 40;
-    const copInput = { ...cruising };
+    cop.controller = "pilot";
     let slowest = follower.speed;
     for (let tick = 0; tick < 12 * TICK_RATE; tick += 1) {
-      pilotInput(state, track, cop, copInput);
-      stepRace(state, track, [parked, copInput]);
+      stepRace(state, track, frameOf(state, [PLAYER_RIDER, parked]));
       slowest = Math.min(slowest, follower.speed);
     }
     expect(cop.mode).toBe("riding");
@@ -271,15 +270,13 @@ const chase = (police: PoliceSetup, lead: number, quarrySpeed: number) => {
   });
   const me = player(state);
   const cop = patrolFrom(onlyCop(state), 100);
-  const copInput = { ...cruising };
   let pursued = false;
   let fastest = 0;
   for (let tick = 0; tick < 12 * TICK_RATE; tick += 1) {
     me.s = cop.s + lead;
     me.x = -1.8;
     me.speed = quarrySpeed;
-    pilotInput(state, straight, cop, copInput);
-    stepRace(state, straight, [cruising, copInput]);
+    stepRace(state, straight, frameOf(state, [me.id, cruising]));
     pursued ||= state.events.some((event) => event.kind === "pursuit");
     fastest = Math.max(fastest, cop.speed);
   }
@@ -298,12 +295,10 @@ const rideToBody = (police: PoliceSetup) => {
   me.s = 190;
   me.speed = 15;
   me.stamina = 0;
-  const copInput = { ...cruising };
   let fastest = 0;
   let ticksAfterTheBody = 0;
   for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
-    pilotInput(state, straight, cop, copInput);
-    stepRace(state, straight, [cruising, copInput]);
+    stepRace(state, straight, frameOf(state, [me.id, cruising]));
     if (cop.chase === me.id && me.mode !== "riding") {
       fastest = Math.max(fastest, cop.speed);
       ticksAfterTheBody += 1;

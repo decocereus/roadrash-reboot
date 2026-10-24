@@ -3,15 +3,16 @@ import { describe, expect, it } from "vitest";
 import { bikes } from "./bikes.ts";
 import { topSpeedOf } from "./engine.ts";
 import {
-  KMH,
   alone,
   cruising,
+  frameOf,
   hold,
+  KMH,
   player,
   straight,
 } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { TICK_RATE } from "./state.ts";
+import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
 import type { BikeSpec } from "./state.ts";
 
 const gearTrace = (bike: BikeSpec, seconds: number) => {
@@ -19,7 +20,11 @@ const gearTrace = (bike: BikeSpec, seconds: number) => {
   const rider = player(state);
   const trace: { gear: number; revs: number; speed: number }[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [{ ...cruising, throttle: 1 }]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [PLAYER_RIDER, { ...cruising, throttle: 1 }])
+    );
     trace.push({ gear: rider.gear, revs: rider.revs, speed: rider.speed });
   }
   return trace;
@@ -97,7 +102,7 @@ describe("gears and the tuck", () => {
     const atThreeSeconds = { speed: rider.speed * KMH, tuck: rider.tuck };
     let tuckedEarly = false;
     while (rider.speed * KMH <= 120) {
-      stepRace(state, straight, [fullThrottle]);
+      stepRace(state, straight, frameOf(state, [PLAYER_RIDER, fullThrottle]));
       tuckedEarly ||= rider.tuck > 0;
     }
     hold(state, straight, fullThrottle, 1.4);

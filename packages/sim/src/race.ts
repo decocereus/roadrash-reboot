@@ -13,14 +13,17 @@ import {
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
-import { pilotHistoryOf } from "./pilot-history.ts";
+import { createPilotHistory } from "./pilot-history.ts";
+import { pilotRider } from "./pilot.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
 import type { RaceView, RiderView } from "./race-view.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
-import { FULL_CONDITION, MAX_STAMINA, rosterOf } from "./state.ts";
+import { FULL_CONDITION, MAX_STAMINA, riderOf, rosterOf } from "./state.ts";
 import type {
   BikeSpec,
+  Controller,
+  InputFrame,
   PacingRules,
   PlayerSetup,
   PoliceSetup,
@@ -110,6 +113,7 @@ const profileOf = (entrant: RiderProfile): RiderProfile => ({
 
 interface Entry {
   readonly id: RiderId;
+  readonly controller: Controller;
   readonly profile: RiderProfile;
   readonly bike: BikeSpec;
   readonly weaponHits: number;
@@ -143,6 +147,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   bumpedBy: -1,
   chase: null,
   condition: FULL_CONDITION,
+  controller: entry.controller,
   crashes: 0,
   finishTick: -1,
   gear: 1,
@@ -154,6 +159,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   hitStun: 0,
   id: entry.id,
   idleTicks: 0,
+  input: { ...neutralInput },
   jumpMisread: false,
   jumpSeen: -1,
   lastHitBy: null,
@@ -304,6 +310,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
       {
         aggressionBoost: 0,
         bike: player.bike,
+        controller: player.controller ?? "human",
         grudge: null,
         id: roster.player,
         profile: profileOf(player),
@@ -323,6 +330,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
         {
           aggressionBoost: rival.aggressionBoost ?? 0,
           bike: rival.bike,
+          controller: rival.controller ?? "pilot",
           grudge: rival.grudge ?? null,
           id,
           profile: profileOf(rival),
@@ -341,6 +349,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
       {
         aggressionBoost: 0,
         bike: police.bike,
+        controller: "pilot",
         grudge: null,
         id,
         profile: police.officer,
@@ -361,6 +370,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     hazardDice: nextSeed(seed + HAZARD_DICE_SALT),
     hazards: [],
     pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
+    pilot: createPilotHistory(),
     police: {
       beat: police.beat,
       fine: police.fine,
@@ -371,7 +381,6 @@ export const createRace = (setup: RaceSetup): RaceState => {
     tick: 0,
   };
   spawnScheduledHazards(state, track);
-  pilotHistoryOf(state);
   return state;
 };
 
@@ -427,23 +436,117 @@ const touchdownOf = (
   return undefined;
 };
 
+type FrameProblem =
+  | { readonly kind: "missingControl"; readonly rider: RiderId }
+  | { readonly kind: "pilotControl"; readonly rider: RiderId }
+  | { readonly kind: "unknownRider"; readonly rider: RiderId };
+
+const frameFits = (state: RaceState, frame: InputFrame): boolean => {
+  let humans = 0;
+  for (const rider of state.riders) {
+    const controlled = frame.has(rider.id);
+    if (rider.controller === "human") {
+      if (!controlled) {
+        return false;
+      }
+      humans += 1;
+    } else if (controlled) {
+      return false;
+    }
+  }
+  return humans === frame.size;
+};
+
+const frameProblems = (state: RaceState, frame: InputFrame): FrameProblem[] => [
+  ...state.riders
+    .filter((rider) => (rider.controller === "human") !== frame.has(rider.id))
+    .map((rider): FrameProblem => ({
+      kind: rider.controller === "human" ? "missingControl" : "pilotControl",
+      rider: rider.id,
+    })),
+  ...[...frame.keys()]
+    .filter((id) => !riderOf(state.riders, id))
+    .map((id): FrameProblem => ({ kind: "unknownRider", rider: id })),
+];
+
+const describeFrameProblem = (problem: FrameProblem): string => {
+  switch (problem.kind) {
+    case "missingControl": {
+      return `Rider ${problem.rider} is ridden by a human and has no control in the frame.`;
+    }
+    case "pilotControl": {
+      return `Rider ${problem.rider} is ridden by the pilot and has a control in the frame.`;
+    }
+    case "unknownRider": {
+      return `The frame has a control for rider ${problem.rider}, who is not in the race.`;
+    }
+    default: {
+      return problem satisfies never;
+    }
+  }
+};
+
+const checkFrame = (state: RaceState, frame: InputFrame): void => {
+  if (!frameFits(state, frame)) {
+    throw new Error(
+      frameProblems(state, frame).map(describeFrameProblem).join(" ")
+    );
+  }
+};
+
+const takeControl = (
+  rider: RiderState,
+  control: Readonly<RiderInput>
+): void => {
+  const { input } = rider;
+  input.steer = control.steer;
+  input.throttle = control.throttle;
+  input.brake = control.brake;
+  input.punch = control.punch;
+  input.kick = control.kick;
+};
+
+const controlRider = (
+  state: RaceState,
+  track: Track,
+  frame: InputFrame,
+  rider: RiderState
+): void => {
+  switch (rider.controller) {
+    case "human": {
+      const control = frame.get(rider.id);
+      if (control) {
+        takeControl(rider, control);
+      }
+      return;
+    }
+    case "pilot": {
+      pilotRider(state, track, rider);
+      return;
+    }
+    default: {
+      return rider.controller satisfies never;
+    }
+  }
+};
+
 export const stepRace = (
   state: RaceState,
   track: Track,
-  inputs: readonly RiderInput[]
+  frame: InputFrame
 ): void => {
+  checkFrame(state, frame);
+  for (const rider of state.riders) {
+    controlRider(state, track, frame, rider);
+  }
   state.events.length = 0;
   state.tick += 1;
   stepTraffic(state, track);
-  for (let index = 0; index < state.riders.length; index += 1) {
-    const rider = state.riders[index];
-    if (!rider) {
-      continue;
-    }
+  for (const rider of state.riders) {
     const fromS = rider.s;
     const fromX = rider.x;
     const eventsBefore = state.events.length;
-    stepRider(state, track, rider, inputs[index] ?? neutralInput);
+    stepRider(state, track, rider, rider.input);
     const touchdown = touchdownOf(state, rider, eventsBefore);
     meetHazards(
       state,
@@ -457,11 +560,8 @@ export const stepRace = (
   stepRiderContacts(state, track, throwRider);
   coolDown(state);
   landStrikes(state);
-  for (let index = 0; index < state.riders.length; index += 1) {
-    const rider = state.riders[index];
-    if (rider) {
-      stepAttack(state, rider, inputs[index] ?? neutralInput);
-    }
+  for (const rider of state.riders) {
+    stepAttack(state, rider, rider.input);
   }
   stepPolice(state, track);
 };

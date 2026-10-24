@@ -17,7 +17,6 @@ import type { Track } from "@racer/track/track";
 
 import { dragOf } from "./engine.ts";
 import { CORNER_SCAN_POINTS } from "./pilot-history.ts";
-import type { PilotHistory } from "./pilot-history.ts";
 import { BRAKE_RESERVE, TAKEOFF_SPEED } from "./rider-drive.ts";
 import { HARD_LANDING, LANDING_SLIP } from "./rider-flight.ts";
 import {
@@ -27,7 +26,7 @@ import {
   GRAVITY,
   lateralSpeedLimit,
 } from "./state.ts";
-import type { BikeSpec, RiderState } from "./state.ts";
+import type { BikeSpec, PilotHistory, RiderState } from "./state.ts";
 import { weapons } from "./weapons.ts";
 
 export const CORNER_MARGIN = 0.99;

@@ -1016,7 +1016,7 @@ Race rules belong to the server and are never player settings. Field size, level
 - **The room is the authority.** One Durable Object per race steps the simulation at 60 Hz, and its result is the result.
 - **Clients predict.** Each client steps the whole race ahead with its own input and a guess at everyone else's. When the room's confirmed inputs differ, it rewinds up to 16 ticks and replays them. Inputs travel at 60 Hz in both directions, and the rate is a server setting.
 - **Inputs.** The room sets a deadline for each tick. A late input is replaced by a neutral one, never by a held punch or kick. The room acknowledges the input it used, and a client that predicted another corrects. An input packs steer, throttle, and brake as 8 bits each with the buttons, four bytes, plus tick, sequence, and version headers. Inputs name riders by a stable id, not by array position.
-- **Bots.** A bot's input comes from `pilotInput`. The pilot keeps history and changes state outside `stepRace`, so the pilot and the step become one simulation operation before a room runs them.
+- **Bots.** A bot's input comes from the pilot inside `stepRace`, which plans every pilot-controlled rider from `RaceState` alone, so the server and every client run the same pilot phase and a bot's inputs never go on the wire.
 - **Checks.** The room and each client hash confirmed ticks. A mismatch reveals a fault but does not make the code safe. Agreement rests on the simulation's own trig, the enforced math whitelist, and a cross-engine test of recorded inputs.
 
 ### Disconnects and lost rooms

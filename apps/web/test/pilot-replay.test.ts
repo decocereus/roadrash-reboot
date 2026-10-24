@@ -131,19 +131,15 @@ const recordControls = (recorded: RiderInput[]) => {
         act(keys);
       }
     }
-    const [input] = run.inputs;
-    if (input) {
-      controls.read(TICK_SECONDS, input);
-      recorded.push({ ...input });
-    }
+    controls.read(TICK_SECONDS, run.controls);
+    recorded.push({ ...run.controls });
   };
 };
 
 const playBack = (recorded: readonly RiderInput[]) => (run: Run) => {
-  const [input] = run.inputs;
   const next = recorded[run.state.tick];
-  if (input && next) {
-    Object.assign(input, next);
+  if (next) {
+    Object.assign(run.controls, next);
   }
 };
 
@@ -197,11 +193,15 @@ describe("pilot replays over 7,200 ticks", () => {
       }
       const recorded: RiderInput[] = [];
       const original = ride(
-        openCase(slagRow),
+        openCase(slagRow, "human"),
         TRACE_TICKS,
         recordControls(recorded)
       );
-      const replayed = ride(openCase(slagRow), TRACE_TICKS, playBack(recorded));
+      const replayed = ride(
+        openCase(slagRow, "human"),
+        TRACE_TICKS,
+        playBack(recorded)
+      );
       expect(recorded).toHaveLength(TRACE_TICKS);
       expect(new Set(recorded.map(({ steer }) => steer)).size).toBeGreaterThan(
         3
@@ -211,6 +211,12 @@ describe("pilot replays over 7,200 ticks", () => {
     },
     RACE_TIMEOUT_MS
   );
+
+  it("each race rebuilt from a deep copy of its state every 600 ticks matches its solo run on every tick", () => {
+    expect(matrix.restored).toStrictEqual(
+      replayCases.map(({ id }) => ({ firstDifferentTick: null, id }))
+    );
+  });
 
   it("keep every rider's motion finite and every rider in a known mode", () => {
     expect(matrix.problems).toStrictEqual([]);
