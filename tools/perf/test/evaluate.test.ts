@@ -8,12 +8,12 @@ import * as Effect from "effect/Effect";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { Budgets } from "../src/budgets.ts";
-import { accountBuild } from "../src/build.ts";
+import { accountBuild, glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
 import { evaluateGate } from "../src/evaluate.ts";
 import type { Samples } from "../src/evaluate.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
-import { fixtureBuild, plainFixture } from "./fixture-build.ts";
+import { fixtureBuild, GLB_BYTES, plainFixture } from "./fixture-build.ts";
 import type { FixtureOptions } from "./fixture-build.ts";
 import {
   ALLOCATED_PER_TICK,
@@ -64,6 +64,8 @@ const accounted = async (
 };
 
 const steady = { runner: 1, sim: 1 };
+const glbTotal = glbNames.length * GLB_BYTES;
+const ATLAS_WITH_MIPS = 5_592_404;
 const [reference, packRiding] = scenarios;
 const middle = Math.floor(WINDOW_TICKS / 2);
 
@@ -199,7 +201,7 @@ describe("perf gate red cases", () => {
     });
     expect(failing(evaluateGate(samples, approved).lines)).toStrictEqual([
       "FAIL build - assets.glb.bike [build] observed=65 B limit <= 64 B delta=+1 B A=64",
-      "FAIL build - assets.glb.total [build] observed=577 B limit <= 576 B delta=+1 B A=576",
+      `FAIL build - assets.glb.total [build] observed=${glbTotal + 1} B limit <= ${glbTotal} B delta=+1 B A=${glbTotal}`,
     ]);
     const entry = throughEntry(samples, approved);
     expect(entry.status).toBe(1);
@@ -223,7 +225,32 @@ describe("perf gate red cases", () => {
       missingGlb: "seraph",
     });
     expect(unlisted.problems).toContain(
-      "GLB inventory is bike, car, ghost, oni, rider_a, rider_b, rider_c, van; expected bike, car, ghost, oni, rider_a, rider_b, rider_c, seraph, van"
+      `GLB inventory is ${glbNames.filter((name) => name !== "seraph").join(", ")}; expected ${glbNames.join(", ")}`
+    );
+  });
+
+  it("budgets a texture as its decoded RGBA mip chain and fails one that grows", async () => {
+    const before = await accounted("A", plainFixture);
+    const after = await accounted("B", { ...plainFixture, atlas: "webp" });
+    const approved = syntheticBudgets({ A: before, B: before });
+    const samples = samplesOf("texture", steadyLanes(steady), {
+      A: before,
+      B: after,
+    });
+    expect(
+      failing(evaluateGate(samples, approved).lines).filter((line) =>
+        line.includes("assets.texture.total")
+      )
+    ).toStrictEqual([
+      `FAIL build - assets.texture.total [build] observed=${ATLAS_WITH_MIPS} B limit <= 0 B delta=+${ATLAS_WITH_MIPS} B A=0`,
+    ]);
+  });
+
+  it("refuses to measure a texture that compress does not write", async () => {
+    await expect(
+      accounted("B", { ...plainFixture, atlas: "png" })
+    ).rejects.toThrow(
+      "GLB rider_kylie embeds a texture that is not lossless WebP"
     );
   });
 
@@ -268,7 +295,7 @@ describe("perf gate red cases", () => {
       uploaderIncremental: record.closures.uploaderIncremental.raw,
       worker: record.closures.worker.raw,
     }).toStrictEqual({
-      gameIncremental: 5000 + 300 + 9 * 64,
+      gameIncremental: 5000 + 300 + glbTotal,
       kit: 8700,
       root: 9000,
       uploaderIncremental: 400,

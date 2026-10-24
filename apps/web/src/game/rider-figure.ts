@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
 import { paintPrimitives } from "./assets.ts";
-import type { Assets, RiderAsset } from "./assets.ts";
+import type { RiderAsset } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
@@ -20,7 +20,7 @@ import {
   turnedFrom,
 } from "./figure-pose.ts";
 import type { RiderPose, Riding, Sided, Turn } from "./figure-pose.ts";
-import { bodyFor, paletteOf, PosedSkeleton } from "./figure-rig.ts";
+import { paletteOf, PosedSkeleton } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
 import { weaponKinds, weaponMesh } from "./figure-weapons.ts";
 import { isSkinnedMesh } from "./meshes.ts";
@@ -53,12 +53,10 @@ export interface RiderFigure {
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
 
 export const createRiderFigure = (
-  assets: Assets,
+  asset: RiderAsset,
   shading: Shading,
-  jacketIndex: number,
-  build: number
+  jacketIndex: number
 ): RiderFigure => {
-  const asset = bodyFor(assets, build);
   const root = new THREE.Group();
   const model = cloneRig(asset.scene);
   model.rotation.y = Math.PI;

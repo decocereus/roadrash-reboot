@@ -5,6 +5,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { BikeModelId } from "./bike-models.ts";
+import type { CelebrityId } from "./figure-wear.ts";
 import { RED } from "./looks.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 
@@ -55,6 +56,7 @@ export interface Assets {
   readonly car: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
+  readonly celebrities: Readonly<Record<CelebrityId, RiderAsset>>;
 }
 
 const fixedColours: ReadonlyMap<string, string> = new Map([
@@ -110,14 +112,7 @@ const coloured = (
   const source = primitive.geometry;
   const geometry = new THREE.BufferGeometry();
   geometry.setIndex(source.getIndex());
-  for (const name of [
-    "position",
-    "normal",
-    "uv",
-    ATLAS,
-    "skinIndex",
-    "skinWeight",
-  ]) {
+  for (const name of ["position", "normal", "uv", "skinIndex", "skinWeight"]) {
     if (source.hasAttribute(name)) {
       geometry.setAttribute(name, source.getAttribute(name));
     }
@@ -398,23 +393,6 @@ const atlasesOf = (root: THREE.Object3D): THREE.Texture[] => {
   return [...atlases];
 };
 
-const sampleAtlas = ({ geometry, slot }: Primitive): void => {
-  const { count } = geometry.getAttribute("position");
-  if (!geometry.hasAttribute("uv")) {
-    geometry.setAttribute(
-      "uv",
-      new THREE.BufferAttribute(new Float32Array(count * 2), 2)
-    );
-  }
-  geometry.setAttribute(
-    ATLAS,
-    new THREE.BufferAttribute(
-      new Float32Array(count).fill(slot === ATLAS ? 1 : 0),
-      1
-    )
-  );
-};
-
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const gltf = await parsed(bytes);
   const [clip] = gltf.animations;
@@ -435,10 +413,11 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
     );
   }
   const [atlas = null] = atlases;
-  if (atlas) {
-    for (const primitive of primitives) {
-      sampleAtlas(primitive);
-    }
+  if (atlas && primitives.some(({ slot }) => slot !== ATLAS)) {
+    releaseOf(gltf.scene, primitives)();
+    throw new Error(
+      `The rider model ${url} paints some parts from colour slots; a textured rider paints every part from its atlas.`
+    );
   }
   return decoded(gltf.scene, primitives, {
     atlas,

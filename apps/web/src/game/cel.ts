@@ -22,29 +22,6 @@ const CEL_FRAGMENT = `
   #endif
   #include <opaque_fragment>`;
 
-const PAINTED_VERTEX = `attribute float gloss;varying float vGloss;
-#ifdef USE_MAP
-attribute float atlas;varying float vAtlas;
-#endif
-`;
-
-const PAINTED_BEGIN_VERTEX = `#include <begin_vertex>
-vGloss = gloss;
-#ifdef USE_MAP
-vAtlas = atlas;
-#endif`;
-
-const PAINTED_FRAGMENT = `#define PAINTED
-varying float vGloss;
-#ifdef USE_MAP
-varying float vAtlas;
-#endif
-`;
-
-const ATLAS_FRAGMENT = `#ifdef USE_MAP
-  diffuseColor.rgb *= mix(vec3(1.0), texture2D(map, vMapUv).rgb, vAtlas);
-#endif`;
-
 interface CelOptions {
   readonly rim?: number;
   readonly map?: THREE.Texture;
@@ -63,7 +40,7 @@ export interface Shading {
     colour: THREE.ColorRepresentation,
     options?: CelOptions
   ) => THREE.MeshToonMaterial;
-  paint: (atlas?: THREE.Texture | null) => THREE.MeshToonMaterial;
+  paint: (atlas: THREE.Texture | null) => THREE.MeshToonMaterial;
   glow: (
     colour: THREE.ColorRepresentation,
     strength?: number
@@ -132,16 +109,12 @@ export const createShading = (look: Look): Shading => {
       shader.uniforms.keyDirection = keyDirection;
       shader.uniforms.rimStrength = { value: rim };
       if (painted) {
-        shader.vertexShader = `${PAINTED_VERTEX}${shader.vertexShader.replace(
+        shader.vertexShader = `attribute float gloss;varying float vGloss;\n${shader.vertexShader.replace(
           "#include <begin_vertex>",
-          PAINTED_BEGIN_VERTEX
+          "#include <begin_vertex>\nvGloss = gloss;"
         )}`;
-        shader.fragmentShader = shader.fragmentShader.replace(
-          "#include <map_fragment>",
-          ATLAS_FRAGMENT
-        );
       }
-      shader.fragmentShader = `${painted ? PAINTED_FRAGMENT : ""}${CEL_UNIFORMS}${shader.fragmentShader.replace(
+      shader.fragmentShader = `${painted ? "#define PAINTED\nvarying float vGloss;\n" : ""}${CEL_UNIFORMS}${shader.fragmentShader.replace(
         "#include <opaque_fragment>",
         CEL_FRAGMENT
       )}`;
@@ -174,7 +147,7 @@ export const createShading = (look: Look): Shading => {
     },
     key,
     look,
-    paint(atlas = null) {
+    paint(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true);
     },
     sun,

@@ -1,6 +1,12 @@
 import * as Schema from "effect/Schema";
 
-import { judge, metricKinds, proposeLimits, requiredRows } from "./budgets.ts";
+import {
+  exactMetric,
+  judge,
+  metricKinds,
+  proposeLimits,
+  requiredRows,
+} from "./budgets.ts";
 import type { Budgets, Limit, NodeProfile, Observation } from "./budgets.ts";
 import { buildRecord, buildVerdicts } from "./build.ts";
 import { nodeEnvironment, nodeLaneRecord, nodeVerdicts } from "./node-lane.ts";
@@ -155,7 +161,7 @@ const allowance = (observation: Observation): number | null => {
     return null;
   }
   if (kind.lane === "build") {
-    return kind.metric.startsWith("assets.glb.")
+    return exactMetric(kind.metric)
       ? 0
       : Math.max(
           BYTE_MARGIN.floor,

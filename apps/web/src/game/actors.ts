@@ -197,7 +197,7 @@ export const createBikes = (
     store(paints, index, colours?.bike ?? DEFAULT_PAINT);
     store(trims, index, colours?.trim ?? DARK_TRIM);
   }
-  const material = liveried(shading.paint());
+  const material = liveried(shading.paint(null));
   const wheels: Wheel[] = WHEELS.map(([, radius, z]) => ({
     frame: new THREE.Matrix4(),
     radius,
@@ -496,8 +496,8 @@ export const createFleet = (
         slotCar: painted ? new Int32Array(members.length).fill(-1) : null,
       });
     };
-    addPart(body.cel, shading.paint(), true, true);
-    addPart(rest.cel, shading.paint(), true, false);
+    addPart(body.cel, shading.paint(null), true, true);
+    addPart(rest.cel, shading.paint(null), true, false);
     addPart(rest.glow, shading.glowPaint(), false, false);
   };
 

@@ -15,6 +15,7 @@ import { createSound } from "./audio.ts";
 import { createBenchProfile } from "./bench-profile.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
+import { wearingFrom, wearingNothing } from "./figure-wear.ts";
 import {
   bindSettings,
   createFrameLoop,
@@ -71,6 +72,10 @@ const autopilot =
 const devRide = import.meta.env.DEV
   ? devRideFrom(globalThis.location.search)
   : undefined;
+
+const wearing = import.meta.env.DEV
+  ? wearingFrom(globalThis.location.search)
+  : wearingNothing;
 
 const firstRoad = import.meta.env.DEV
   ? Number(new URLSearchParams(globalThis.location.search).get("road") ?? 0)
@@ -197,7 +202,7 @@ const startGame = (
     holdStill,
     placeFleet,
     touchDown,
-  } = bindCast({ assets, cast, stage });
+  } = bindCast({ assets, cast, stage, wearing });
   owners.push(() => {
     dropViews();
     dropFleet();
