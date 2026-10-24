@@ -29,7 +29,11 @@ const urls: ModelUrls = {
     seraph: "/models/seraph.glb",
   },
   car: "/models/car.glb",
-  riders: ["/models/rider_a.glb", "/models/rider_b.glb", "/models/rider_c.glb"],
+  figures: [
+    "/models/rider_a.glb",
+    "/models/rider_b.glb",
+    "/models/rider_c.glb",
+  ],
   van: "/models/van.glb",
 };
 
@@ -38,7 +42,7 @@ const everyUrl = [
   ...Object.values(urls.bikes),
   urls.car,
   urls.van,
-  ...urls.riders,
+  ...urls.figures,
 ].toSorted();
 
 type Answer = () => Promise<Response>;
@@ -236,11 +240,11 @@ describe("asset loading through the Effect boundary", () => {
     expect({
       bikes: Object.keys(outcome.assets.bikes).toSorted(),
       fetched: [...fetches.calls.keys()].toSorted(),
-      riders: outcome.assets.riders.length,
+      figures: outcome.assets.figures.length,
     }).toStrictEqual({
       bikes: ["classic", "ghost", "oni", "seraph"],
       fetched: everyUrl,
-      riders: 3,
+      figures: 3,
     });
     await nextTurn();
     expect(totalOf(parsing.releases)).toBe(0);
@@ -411,8 +415,8 @@ describe("asset loading through the Effect boundary", () => {
     const late = Promise.withResolvers<null>();
     const parsing = parsingOf(
       new Map<string, readonly Decode[]>([
-        [urls.riders[2], [async () => await late.promise]],
-        [urls.riders[1], [broken]],
+        [urls.figures[2], [async () => await late.promise]],
+        [urls.figures[1], [broken]],
       ])
     );
     const mounted = mount(runtimeOf(fetchesOf(), new Map()), parsing.parsers);
@@ -425,7 +429,7 @@ describe("asset loading through the Effect boundary", () => {
       "The rider model has no poses."
     );
     expect({
-      broken: parsing.releases.has(urls.riders[1]),
+      broken: parsing.releases.has(urls.figures[1]),
       counts: [...parsing.releases.values()],
     }).toStrictEqual({ broken: false, counts: [1, 1, 1, 1, 1, 1, 1, 1] });
   });
@@ -529,7 +533,7 @@ const summary = (assets: Assets) => ({
     seraph: partsSummary(assets.bikes.seraph),
   },
   car: assets.car.map(primitiveSummary),
-  riders: assets.riders.map(riderSummary),
+  figures: assets.figures.map(riderSummary),
   van: assets.van.map(primitiveSummary),
 });
 

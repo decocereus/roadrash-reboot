@@ -1,20 +1,8 @@
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree, Scope } from "@oxlint/plugins";
 
+import { enclosingFunction } from "../functions.ts";
 import { memberName } from "../property-name.ts";
-
-const enclosingFunction = (node: ESTree.Node): ESTree.Node | null => {
-  for (let current = node.parent; current !== null; current = current.parent) {
-    if (
-      current.type === "ArrowFunctionExpression" ||
-      current.type === "FunctionDeclaration" ||
-      current.type === "FunctionExpression"
-    ) {
-      return current;
-    }
-  }
-  return null;
-};
 
 export const noEntriesLoopRule = defineRule({
   create(context) {

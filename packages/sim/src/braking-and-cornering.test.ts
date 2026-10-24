@@ -253,7 +253,7 @@ describe("cornering with the throttle held", () => {
     rider.gear = 6;
     const input = { ...cruising, throttle: 0 };
     while (rider.s < DRY_DOCK_CORNER_TO && rider.mode === "riding") {
-      pilotInput(state, quietSlagRow, 0, input);
+      pilotInput(state, quietSlagRow, rider, input);
       input.throttle = rider.speed * KMH > 110 ? 0 : 1;
       input.brake = 0;
       stepRace(state, quietSlagRow, [input]);

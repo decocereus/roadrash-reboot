@@ -21,7 +21,7 @@ import { chooseLine, slickAhead } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { copAim } from "./pilot-police.ts";
 import { towardBike } from "./rider-recovery.ts";
-import { clamp, lateralSpeedLimit, PLAYER_RIDER } from "./state.ts";
+import { clamp, lateralSpeedLimit, PLAYER_RIDER, riderOf } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 
 const MOST_BRAKE_SHARE = 0.98;
@@ -40,14 +40,10 @@ const freePace: Pace = { cap: Number.POSITIVE_INFINITY, lift: 0 };
 const stillRacing = (rider: RiderState): boolean =>
   rider.finishTick < 0 && rider.mode !== "busted" && rider.mode !== "wrecked";
 
-const paceOf = (
-  state: RaceState,
-  riderIndex: number,
-  rider: RiderState
-): Pace => {
-  const player = state.riders[PLAYER_RIDER];
+const paceOf = (state: RaceState, rider: RiderState): Pace => {
+  const player = riderOf(state.riders, PLAYER_RIDER);
   if (
-    riderIndex === PLAYER_RIDER ||
+    rider.id === PLAYER_RIDER ||
     !player ||
     !stillRacing(player) ||
     !stillRacing(rider)
@@ -131,20 +127,16 @@ const walkToBike = (rider: RiderState, input: RiderInput): void => {
 export const pilotInput = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
+  rider: RiderState,
   input: RiderInput
 ): void => {
-  const rider = state.riders[riderIndex];
-  if (!rider) {
-    return;
-  }
   if (rider.mode !== "riding") {
     walkToBike(rider, input);
     return;
   }
   const history = pilotHistoryOf(state);
   const police = rider.profile.role === "police";
-  const pace = police ? freePace : paceOf(state, riderIndex, rider);
+  const pace = police ? freePace : paceOf(state, rider);
   riding.margin = Math.min(
     CORNER_MARGIN,
     cornerMargin(rider.profile.skill) + pace.lift
@@ -158,21 +150,13 @@ export const pilotInput = (
     jumpAim(
       state,
       track,
-      riderIndex,
       rider,
       police
-        ? copAim(history, state, track, riderIndex, rider)
-        : chooseLine(
-            history,
-            state,
-            track,
-            riderIndex,
-            rider,
-            Number.POSITIVE_INFINITY
-          ),
+        ? copAim(history, state, track, rider)
+        : chooseLine(history, state, track, rider, Number.POSITIVE_INFINITY),
       roll
     )
   );
   ride(history, track, rider, aim, pace, input);
-  fight(state, riderIndex, rider, input, roll);
+  fight(state, rider, input, roll);
 };

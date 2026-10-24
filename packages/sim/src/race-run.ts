@@ -7,15 +7,16 @@ import {
 import { pilotInput } from "./pilot.ts";
 import type { RaceView } from "./race-view.ts";
 import { createRace, stepRace } from "./race.ts";
-import type { RaceSetup, RiderInput } from "./state.ts";
+import { riderOf } from "./state.ts";
+import type { RaceSetup, RiderId, RiderInput } from "./state.ts";
 
 export interface RaceRun {
   readonly view: RaceView;
   readonly step: (inputs: readonly RiderInput[]) => void;
-  readonly pilot: (riderIndex: number, input: RiderInput) => void;
-  readonly placeRiderAt: (riderIndex: number, s: number) => void;
-  readonly placeRiderAcross: (riderIndex: number, x: number) => void;
-  readonly setRiderSpeed: (riderIndex: number, speed: number) => void;
+  readonly pilot: (id: RiderId, input: RiderInput) => void;
+  readonly placeRiderAt: (id: RiderId, s: number) => void;
+  readonly placeRiderAcross: (id: RiderId, x: number) => void;
+  readonly setRiderSpeed: (id: RiderId, speed: number) => void;
   readonly relocateTraffic: (from: number, to: number) => void;
 }
 
@@ -23,20 +24,23 @@ export const createRaceRun = (setup: RaceSetup): RaceRun => {
   const state = createRace(setup);
   const { track } = setup;
   return {
-    pilot: (riderIndex, input) => {
-      pilotInput(state, track, riderIndex, input);
+    pilot: (id, input) => {
+      const rider = riderOf(state.riders, id);
+      if (rider) {
+        pilotInput(state, track, rider, input);
+      }
     },
-    placeRiderAcross: (riderIndex, x) => {
-      placeRiderAcross(state, riderIndex, x);
+    placeRiderAcross: (id, x) => {
+      placeRiderAcross(state, id, x);
     },
-    placeRiderAt: (riderIndex, s) => {
-      placeRiderAt(state, riderIndex, s);
+    placeRiderAt: (id, s) => {
+      placeRiderAt(state, id, s);
     },
     relocateTraffic: (from, to) => {
       relocateTraffic(state, from, to);
     },
-    setRiderSpeed: (riderIndex, speed) => {
-      setRiderSpeed(state, riderIndex, speed);
+    setRiderSpeed: (id, speed) => {
+      setRiderSpeed(state, id, speed);
     },
     step: (inputs) => {
       stepRace(state, track, inputs);

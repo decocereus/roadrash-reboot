@@ -14,7 +14,7 @@ import {
   knockDown,
   ledgerOf,
   ride,
-  riderOf,
+  racerIn,
   road,
   settle,
   sprint,
@@ -223,8 +223,11 @@ describe("the roads", () => {
       const log = createRaceLog(setup);
       const inputs = state.riders.map(() => ({ ...neutralInput }));
       for (let tick = 0; tick < 400 * TICKS && !log.outcome; tick += 1) {
-        for (const [index, input] of inputs.entries()) {
-          pilotInput(state, course, index, input);
+        for (const rider of state.riders) {
+          const input = inputs[rider.id];
+          if (input) {
+            pilotInput(state, course, rider, input);
+          }
         }
         stepRace(state, course, inputs);
         recordTick(log, state, setup);
@@ -249,7 +252,7 @@ describe("the roads", () => {
 describe("a bust", () => {
   it("records the fine, the officer, where it happened, and the weapon held when the rider was thrown", () => {
     const race = enter(newCareer(2), "hollow-pine-road");
-    arm(riderOf(race, "player"), "chain");
+    arm(racerIn(race, "player"), "chain");
     getArrested(race);
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const settled = settleRace(recordedRules, race.career, outcome);
@@ -292,12 +295,13 @@ describe("a bust", () => {
 
   it("the ticket names the spot on the road where the rider lay, not the verge they were moved to", () => {
     const race = enter(newCareer(2), "hollow-pine-road");
-    const player = riderOf(race, "player");
+    const player = racerIn(race, "player");
     let lay = { s: player.bodyS, x: player.bodyX };
-    const copIndex = race.setup.field.length + 1;
-    const cop = race.state.riders[copIndex];
+    const cop = race.state.riders.find(
+      (rider) => rider.profile.role === "police"
+    );
     const inputs = race.state.riders.map(() => ({ ...neutralInput }));
-    const copInput = inputs[copIndex];
+    const copInput = cop && inputs[cop.id];
     if (!(cop && copInput)) {
       throw new Error("The race has no cop.");
     }
@@ -310,7 +314,7 @@ describe("a bust", () => {
     player.stamina = 0;
     for (let tick = 0; tick < 30 * TICKS && !race.log.outcome; tick += 1) {
       lay = { s: player.bodyS, x: player.bodyX };
-      pilotInput(race.state, road, copIndex, copInput);
+      pilotInput(race.state, road, cop, copInput);
       stepRace(race.state, road, inputs);
       recordTick(race.log, race.state, race.setup);
     }

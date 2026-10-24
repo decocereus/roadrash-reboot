@@ -1,5 +1,5 @@
 import type { RaceView, RiderView } from "./race-view.ts";
-import { PLAYER_RIDER } from "./state.ts";
+import { PLAYER_RIDER, riderOf } from "./state.ts";
 
 export const RIVALS_AHEAD_METRES = 150;
 
@@ -50,7 +50,7 @@ export const observeWorkload = (
   into: WorkloadColumns,
   at: number
 ): void => {
-  const player = race.riders[PLAYER_RIDER];
+  const player = riderOf(race.riders, PLAYER_RIDER);
   into.ticks[at] = race.tick;
   if (!player) {
     into.modes[at] = NO_PLAYER_MODE;

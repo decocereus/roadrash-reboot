@@ -300,6 +300,7 @@ export default defineConfig({
     "rushline/no-discarded-exit": "error",
     "rushline/require-nul-file-list": "error",
     "rushline/require-suppression-reason": "error",
+    "rushline/rider-by-id": "error",
     "rushline/safety-verified-by": "error",
     "rushline/workspace-imports": "error",
     "typescript/no-floating-promises": "error",

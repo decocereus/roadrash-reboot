@@ -181,14 +181,21 @@ export const createBikes = (
   const paints = new Float32Array(capacity * 3);
   const trims = new Float32Array(capacity * 3);
   const tint = new THREE.Color();
+  const store = (
+    into: Float32Array,
+    slot: number,
+    colour: THREE.ColorRepresentation
+  ): void => {
+    tint.set(colour).toArray(into, slot * 3);
+  };
   for (let index = 0; index < riders.length; index += 1) {
     const rider = riders[index];
     if (!rider) {
       continue;
     }
     const colours = riderPalette[rider.paint];
-    tint.set(colours?.bike ?? DEFAULT_PAINT).toArray(paints, index * 3);
-    tint.set(colours?.trim ?? DARK_TRIM).toArray(trims, index * 3);
+    store(paints, index, colours?.bike ?? DEFAULT_PAINT);
+    store(trims, index, colours?.trim ?? DARK_TRIM);
   }
   const material = liveried(shading.paint());
   const wheels: Wheel[] = WHEELS.map(([, radius, z]) => ({

@@ -68,7 +68,6 @@ export const belowDeck = (deckHeight: number, air: number): boolean =>
 const land = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState,
   contact: Contact,
   forwardRate: number
@@ -92,7 +91,7 @@ const land = (
   ) {
     throwRider(
       state,
-      riderIndex,
+      rider,
       bumpedBy ? "hazard" : "landing",
       0.7,
       0.75,
@@ -108,7 +107,7 @@ const land = (
     airSeconds,
     impact,
     kind: "land",
-    rider: riderIndex,
+    rider: rider.id,
     s: contact.s,
     x: contact.x,
   });
@@ -133,7 +132,6 @@ const launchFromLip = (
 export const settleOnSurface = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState,
   fromS: number,
   fromX: number,
@@ -150,7 +148,7 @@ export const settleOnSurface = (
   if (crossing.enter >= 0 && crossing.enterSide) {
     const height = deckHeightOf(jump, fromS + alongS * crossing.enter);
     if (height > rider.air + DECK_STEP) {
-      if (glancesOff(state, riderIndex, rider, height, fromX)) {
+      if (glancesOff(state, rider, height, fromX)) {
         rider.air = 0;
       }
       return;
@@ -215,7 +213,6 @@ const firstTouch = (from: number, to: number): number => {
 const touchDeck = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState,
   jump: TrackFeature,
   featureIndex: number,
@@ -235,7 +232,6 @@ const touchDeck = (
   land(
     state,
     track,
-    riderIndex,
     rider,
     {
       s,
@@ -250,13 +246,12 @@ const touchDeck = (
   }
   rider.s = toS;
   rider.x = toX;
-  settleOnSurface(state, track, riderIndex, rider, s, x, true, forwardRate);
+  settleOnSurface(state, track, rider, s, x, true, forwardRate);
 };
 
 export const fly = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState
 ): void => {
   const fromS = rider.s;
@@ -286,7 +281,7 @@ export const fly = (
     const intoSide = crossing.enter >= 0 && crossing.enterSide;
     const below = -clearanceAt(entry);
     if (below > TOUCH_TOLERANCE) {
-      if (intoSide && !glancesOff(state, riderIndex, rider, below, fromX)) {
+      if (intoSide && !glancesOff(state, rider, below, fromX)) {
         return;
       }
     } else {
@@ -295,7 +290,6 @@ export const fly = (
         touchDeck(
           state,
           track,
-          riderIndex,
           rider,
           jump,
           crossing.feature,
@@ -318,7 +312,6 @@ export const fly = (
   land(
     state,
     track,
-    riderIndex,
     rider,
     {
       s: contactS,

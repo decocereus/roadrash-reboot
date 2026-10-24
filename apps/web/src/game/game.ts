@@ -1,7 +1,7 @@
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
 import { defaultSetup, distanceLeft } from "@racer/sim/race";
-import { TICK_SECONDS } from "@racer/sim/state";
+import { PLAYER_RIDER, riderOf, TICK_SECONDS } from "@racer/sim/state";
 import type { RaceSetup } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
@@ -248,7 +248,7 @@ const startGame = (
     feedback.noticeLeft = 0;
     feedback.speech = "";
     feedback.speechLeft = 0;
-    feedback.tagRider = -1;
+    feedback.tagRider = null;
     frame.clockReset = true;
   };
 
@@ -362,18 +362,26 @@ const startGame = (
   };
 
   const readInputs = () => {
-    for (let index = 0; index < cast.inputs.length; index += 1) {
-      const input = cast.inputs[index];
+    for (const rider of stage.race.view.riders) {
+      const input = riderOf(cast.inputs, rider.id);
       if (!input) {
         continue;
       }
-      if (index === 0 && session.phase !== "attract" && !autopilot) {
+      if (
+        rider.id === PLAYER_RIDER &&
+        session.phase !== "attract" &&
+        !autopilot
+      ) {
         controls.read(TICK_SECONDS, input);
       } else {
-        stage.race.pilot(index, input);
+        stage.race.pilot(rider.id, input);
       }
     }
-    devRide?.steer(stage.race.view, stage.track, cast.inputs[0]);
+    devRide?.steer(
+      stage.race.view,
+      stage.track,
+      riderOf(cast.inputs, PLAYER_RIDER)
+    );
   };
 
   const tick = () => {

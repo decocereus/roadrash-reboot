@@ -3,12 +3,15 @@ import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
-import { pilotInput } from "./pilot.ts";
+import type { RivalId } from "./cast.ts";
 import {
   brawl,
   cruising,
   field,
+  pilotAll,
+  player,
   pressing,
+  rivalNamed,
   riderAt,
   sideBySide,
   straight,
@@ -30,9 +33,7 @@ const raceThePack = (seed: number) => {
   const inputs = state.riders.map(() => ({ ...cruising }));
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 300 * TICK_RATE; tick += 1) {
-    for (const [index, input] of inputs.entries()) {
-      pilotInput(state, track, index, input);
-    }
+    pilotAll(state, track, inputs);
     stepRace(state, track, inputs);
     events.push(...state.events);
     if (racers.every((rider) => raceIsOver(rider))) {
@@ -52,10 +53,8 @@ describe("the pack", () => {
       trafficPerKilometre: 0,
     });
     const state = field(flat, 1, 1, 0);
-    const [me, rival] = state.riders;
-    if (!(me && rival)) {
-      throw new Error("The race needs a rival.");
-    }
+    const me = player(state);
+    const rival = rivalNamed(state, "dee-santangelo");
     rival.s = 50;
     rival.x = 1.8;
     rival.speed = 30;
@@ -95,7 +94,7 @@ describe("the pack", () => {
     () => {
       const { events, racers, state } = raceThePack(4);
       const finishTicks = standings(state).map(
-        (index) => riderAt(state, index).finishTick
+        (id) => riderAt(state, id).finishTick
       );
       const finished = finishTicks.filter((tick) => tick >= 0);
       expect({
@@ -141,7 +140,7 @@ describe("the pack", () => {
             (event) =>
               event.kind === "crash" &&
               event.cause === "traffic" &&
-              event.by < 0
+              event.by === null
           )
         );
         batonHits += byCop.filter((event) => event.kind === "hit").length;
@@ -169,14 +168,14 @@ const column = (riderCount: number) => {
   return state;
 };
 
-const pileup = (movingIndex: number) => {
+const pileup = (movingRival: RivalId, stoppedRival: RivalId) => {
   const state = column(3);
-  const rear = riderAt(state, 0);
+  const rear = player(state);
   rear.speed = 50;
-  const moving = riderAt(state, movingIndex);
+  const moving = rivalNamed(state, movingRival);
   moving.s = 101.8;
   moving.x = -0.3;
-  const stopped = riderAt(state, 3 - movingIndex);
+  const stopped = rivalNamed(state, stoppedRival);
   stopped.s = 102.5;
   stopped.x = 0.3;
   stopped.speed = 0;
@@ -199,8 +198,8 @@ const ride = <Sample>(
 
 const rearEndAt = (closing: number) => {
   const state = column(2);
-  const rear = riderAt(state, 0);
-  const ahead = riderAt(state, 1);
+  const rear = player(state);
+  const ahead = rivalNamed(state, "dee-santangelo");
   rear.s = ahead.s - 2.6;
   rear.speed = 30 + closing;
   ahead.speed = 30;
@@ -216,14 +215,18 @@ const rearEndAt = (closing: number) => {
 
 describe("rider contact", () => {
   it.each([
-    { front: 1, rear: 0 },
-    { front: 0, rear: 1 },
-  ])(
+    { front: "rival", rear: "player" },
+    { front: "player", rear: "rival" },
+  ] as const)(
     "a rider who runs into the back of another stays behind ($rear into $front)",
     ({ front, rear }) => {
       const state = column(2);
-      const behind = riderAt(state, rear);
-      const ahead = riderAt(state, front);
+      const seats = {
+        player: player(state),
+        rival: rivalNamed(state, "dee-santangelo"),
+      };
+      const behind = seats[rear];
+      const ahead = seats[front];
       behind.s = ahead.s - 1.5;
       behind.speed = 34;
       const gaps = ride(state, 1, () => ahead.s - behind.s);
@@ -255,14 +258,14 @@ describe("rider contact", () => {
 
   it("a rider who runs into a stopped bike at 60 m/s takes the damage of a 60 m/s crash", () => {
     const state = column(2);
-    const rear = riderAt(state, 0);
-    const ahead = riderAt(state, 1);
+    const rear = player(state);
+    const ahead = rivalNamed(state, "dee-santangelo");
     rear.s = ahead.s - 2.6;
     rear.speed = 60;
     ahead.speed = 0;
     const crashes = ride(state, 0.1, (events) =>
       events.flatMap((event) =>
-        event.kind === "crash" && event.rider === 0 ? [event.speed] : []
+        event.kind === "crash" && event.rider === rear.id ? [event.speed] : []
       )
     ).flat();
     expect(crashes).toHaveLength(1);
@@ -284,15 +287,15 @@ describe("rider contact", () => {
     "a rider closing at $speed m/s from $back m behind a stopped bike, $across m across, is thrown off the back of it and not shoved past",
     ({ across, back, speed }) => {
       const state = column(2);
-      const rear = riderAt(state, 0);
-      const ahead = riderAt(state, 1);
+      const rear = player(state);
+      const ahead = rivalNamed(state, "dee-santangelo");
       rear.s = ahead.s - back;
       rear.x = across;
       rear.speed = speed;
       ahead.speed = 0;
       const events = ride(state, 0.2, (tick) =>
         tick.flatMap((event) => {
-          if (event.kind === "crash" && event.rider === 0) {
+          if (event.kind === "crash" && event.rider === rear.id) {
             return [event.cause];
           }
           return event.kind === "riderContact" ? ["shove"] : [];
@@ -307,8 +310,8 @@ describe("rider contact", () => {
 
   it("a rider who drifts across into a slower bike alongside is shoved and keeps riding", () => {
     const state = column(2);
-    const passing = riderAt(state, 0);
-    const slower = riderAt(state, 1);
+    const passing = player(state);
+    const slower = rivalNamed(state, "dee-santangelo");
     passing.s = slower.s - 1;
     passing.x = 0.9;
     passing.speed = 42;
@@ -325,10 +328,9 @@ describe("rider contact", () => {
 
   it("a rider squeezed from both sides for a second loses between a sixth and a third of their speed, not all of it", () => {
     const state = column(3);
-    const [me, left, right] = [0, 1, 2].map((index) => riderAt(state, index));
-    if (!(me && left && right)) {
-      throw new Error("The column has fewer than three riders.");
-    }
+    const me = player(state);
+    const left = rivalNamed(state, "dee-santangelo");
+    const right = rivalNamed(state, "moose-kowalczyk");
     left.x = -0.9;
     right.x = 0.9;
     for (const rider of state.riders) {
@@ -357,8 +359,8 @@ describe("rider contact", () => {
 
   it("two bikes that lean on each other from a standstill both pull away", () => {
     const state = column(2);
-    const behind = riderAt(state, 0);
-    const ahead = riderAt(state, 1);
+    const behind = player(state);
+    const ahead = rivalNamed(state, "dee-santangelo");
     behind.s = ahead.s - 1.975;
     behind.x = 0.43;
     ahead.x = -0.43;
@@ -376,12 +378,15 @@ describe("rider contact", () => {
   });
 
   it("a pileup throws each rider at most once a tick", () => {
-    const { rear, state, stopped } = pileup(1);
+    const { rear, state, stopped } = pileup(
+      "dee-santangelo",
+      "moose-kowalczyk"
+    );
     const crashes = ride(state, 0.5, (events) =>
       state.riders.map(
-        (_, index) =>
+        (rider) =>
           events.filter(
-            (event) => event.kind === "crash" && event.rider === index
+            (event) => event.kind === "crash" && event.rider === rider.id
           ).length
       )
     ).flat();
@@ -391,11 +396,18 @@ describe("rider contact", () => {
   });
 
   it("a pileup launches the rear rider and leaves the two in front the same whichever of them is listed first", () => {
-    const [first, swapped] = [1, 2].map((movingIndex) => {
-      const { moving, rear, state, stopped } = pileup(movingIndex);
+    const orders = [
+      ["dee-santangelo", "moose-kowalczyk"],
+      ["moose-kowalczyk", "dee-santangelo"],
+    ] as const;
+    const [first, swapped] = orders.map(([movingRival, stoppedRival]) => {
+      const { moving, rear, state, stopped } = pileup(
+        movingRival,
+        stoppedRival
+      );
       const launches = ride(state, 0.5, (events) =>
         events.flatMap((event) =>
-          event.kind === "crash" && event.rider === 0 ? [event.speed] : []
+          event.kind === "crash" && event.rider === rear.id ? [event.speed] : []
         )
       ).flat();
       return {
@@ -420,10 +432,10 @@ const strikeTiming = (key: "punch" | "kick", pressTicks: readonly number[]) => {
   brawl(state, 1.5, (tick) => {
     moose.stamina = MAX_STAMINA;
     for (const event of state.events) {
-      if (event.kind === "hit" && event.rider === 0) {
+      if (event.kind === "hit" && event.rider === me.id) {
         landed.push(tick - 1);
       }
-      if (event.kind === "attack" && event.rider === 0) {
+      if (event.kind === "attack" && event.rider === me.id) {
         started.push(tick - 1);
       }
     }
@@ -446,10 +458,10 @@ describe("strike timing", () => {
       let pressed = -1;
       brawl(state, 1, (tick) => {
         for (const event of state.events) {
-          if (event.kind === "attack" && event.rider === 0) {
+          if (event.kind === "attack" && event.rider === me.id) {
             pressed = state.tick;
           }
-          if (event.kind === "hit" && event.rider === 0) {
+          if (event.kind === "hit" && event.rider === me.id) {
             lands[key] = state.tick - pressed;
           }
         }
@@ -496,7 +508,7 @@ describe("strike timing", () => {
     const started: string[] = [];
     brawl(state, 1, (tick) => {
       for (const event of state.events) {
-        if (event.kind === "attack" && event.rider === 0) {
+        if (event.kind === "attack" && event.rider === me.id) {
           started.push(`${event.attack}@${state.tick - 1}`);
         }
       }
@@ -525,15 +537,15 @@ describe("simultaneous strikes", () => {
     expect(hits).toContainEqual({
       attack: "punch",
       kind: "hit",
-      rider: 0,
-      target: 2,
+      rider: me.id,
+      target: moose.id,
       weapon: "none",
     });
     expect(hits).toContainEqual({
       attack: "punch",
       kind: "hit",
-      rider: 2,
-      target: 0,
+      rider: moose.id,
+      target: me.id,
       weapon: "none",
     });
     expect(me.stamina).toBe(moose.stamina);

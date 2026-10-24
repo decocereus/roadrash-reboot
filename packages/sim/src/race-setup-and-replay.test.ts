@@ -10,10 +10,11 @@ import {
   brawl,
   cruising,
   field,
+  pilotAll,
   player,
   pressing,
   quietTrack,
-  riderAt,
+  rivalNamed,
   straight,
   track,
 } from "./race-fixtures.ts";
@@ -24,11 +25,18 @@ import {
   stepRace,
   validateSetup,
 } from "./race.ts";
-import { MAX_STAMINA, TICK_RATE } from "./state.ts";
+import {
+  MAX_STAMINA,
+  PLAYER_RIDER,
+  riderOf,
+  rosterOf,
+  TICK_RATE,
+} from "./state.ts";
 import type {
   RaceEvent,
   RaceSetup,
   RaceState,
+  RiderId,
   RiderInput,
   RivalSetup,
 } from "./state.ts";
@@ -50,7 +58,7 @@ const pilotUntilFinish = (
   };
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < limitSeconds * TICK_RATE; tick += 1) {
-    pilotInput(state, course, 0, input);
+    pilotInput(state, course, player(state), input);
     stepRace(state, course, [input]);
     events.push(...state.events);
     if (player(state).finishTick >= 0) {
@@ -95,9 +103,7 @@ const pilotPack = (states: readonly RaceState[], seconds: number) => {
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     for (const [raceIndex, state] of states.entries()) {
       const each = inputs[raceIndex] ?? [];
-      for (const [index, input] of each.entries()) {
-        pilotInput(state, track, index, input);
-      }
+      pilotAll(state, track, each);
       stepRace(state, track, each);
     }
   }
@@ -120,8 +126,9 @@ describe("replays", () => {
 
 const rivalsOf = (state: RaceState): number[] =>
   state.riders
-    .slice(1)
-    .filter((rider) => rider.profile.role === "racer")
+    .filter(
+      (rider) => rider.id !== PLAYER_RIDER && rider.profile.role === "racer"
+    )
     .map((rider) => rider.s);
 
 const everyRival = Object.values(rivals).map((rival) => rivalAt(rival, 3));
@@ -175,6 +182,63 @@ describe("race setups", () => {
       `A race takes at most 14 rivals, and this one has 16. ${dee.name} is on the grid more than once.`
     );
   });
+
+  it("a grudge against the rival itself or against a cop is rejected, and one against another racer is not", () => {
+    const [dee, moose] = everyRival;
+    if (!(dee && moose)) {
+      throw new Error("The cast has fewer than two rivals.");
+    }
+    const base = setupWith([dee, moose]);
+    const {
+      police: [cop],
+      rivals: [deeId, mooseId],
+    } = rosterOf(base);
+    if (!(cop !== undefined && deeId !== undefined && mooseId !== undefined)) {
+      throw new Error("The roster has no cop or fewer than two rivals.");
+    }
+    const grudging = (deeGrudge: RiderId, mooseGrudge: RiderId) =>
+      setupWith([
+        { ...dee, grudge: deeGrudge },
+        { ...moose, grudge: mooseGrudge },
+      ]);
+    expect(validateSetup(grudging(deeId, cop))).toStrictEqual([
+      { kind: "strayGrudge", rider: dee.name },
+      { kind: "strayGrudge", rider: moose.name },
+    ]);
+    expect(validateSetup(grudging(mooseId, PLAYER_RIDER))).toStrictEqual([]);
+    expect(() => createRace(grudging(deeId, PLAYER_RIDER))).toThrow(dee.name);
+  });
+});
+
+describe("rider ids", () => {
+  it("every rider gets its id once, the player, the rivals in setup order and then the police, and keeps its place all race", () => {
+    const setup = defaultSetup(track, 4);
+    const state = createRace(setup);
+    const { player: me, police, rivals: rivalIds } = rosterOf(setup);
+    const ids = state.riders.map((rider) => rider.id);
+    expect(ids).toStrictEqual([me, ...rivalIds, ...police]);
+    expect(new Set(ids).size).toBe(
+      1 + setup.rivals.length + setup.police.count
+    );
+    expect(
+      state.riders
+        .filter((rider) => rider.profile.role === "racer")
+        .map((rider) => rider.profile.name)
+    ).toStrictEqual([
+      setup.player.name,
+      ...setup.rivals.map((rival) => rival.name),
+    ]);
+    const seated = [...state.riders];
+    const inputs = state.riders.map(() => ({ ...cruising }));
+    for (let tick = 0; tick < 60 * TICK_RATE; tick += 1) {
+      pilotAll(state, track, inputs);
+      stepRace(state, track, inputs);
+    }
+    expect(state.riders.map((rider) => rider.id)).toStrictEqual(ids);
+    for (const rider of state.riders) {
+      expect(riderOf(seated, rider.id)).toBe(rider);
+    }
+  });
 });
 
 describe("the grid", () => {
@@ -197,9 +261,9 @@ describe("the grid", () => {
       police: { ...setup.police, count: 0 },
       rivals: setup.rivals.slice(0, 2),
     });
-    const me = riderAt(state, 0);
-    const moose = riderAt(state, 2);
-    riderAt(state, 1).s = 900;
+    const me = player(state);
+    const moose = rivalNamed(state, "moose-kowalczyk");
+    rivalNamed(state, "dee-santangelo").s = 900;
     disarm(moose);
     for (const rider of [me, moose]) {
       rider.s = 50;
@@ -231,13 +295,14 @@ const fullGrid = (course: Track, seed: number): RaceState => {
 
 const launch = (state: RaceState, course: Track, seconds: number) => {
   const inputs = state.riders.map(() => ({ ...neutralInput }));
-  const crashes: { rider: number; tick: number }[] = [];
+  const crashes: { rider: RiderId; tick: number }[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    for (const [index, input] of inputs.entries()) {
-      if (index === 0) {
+    for (const rider of state.riders) {
+      const input = inputs[rider.id];
+      if (input && rider.id === PLAYER_RIDER) {
         Object.assign(input, { ...neutralInput, throttle: 1 });
-      } else {
-        pilotInput(state, course, index, input);
+      } else if (input) {
+        pilotInput(state, course, rider, input);
       }
     }
     stepRace(state, course, inputs);
@@ -260,7 +325,9 @@ describe("the start", () => {
       for (const seed of [1, 2, 3]) {
         const state = fullGrid(course, seed);
         const crashes = launch(state, course, 10);
-        expect(crashes.filter((crash) => crash.rider === 0)).toStrictEqual([]);
+        expect(
+          crashes.filter((crash) => crash.rider === PLAYER_RIDER)
+        ).toStrictEqual([]);
         expect(
           crashes.filter((crash) => crash.tick < 3 * TICK_RATE)
         ).toStrictEqual([]);
@@ -274,7 +341,6 @@ describe("the start", () => {
     const me = player(state);
     launch(state, wideTrack, 3);
     const [ahead] = state.riders
-      .slice(1)
       .filter(
         (rider) =>
           rider.profile.role === "racer" &&

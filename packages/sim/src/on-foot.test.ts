@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import { pilotInput } from "./pilot.ts";
 import {
   KMH,
+  onlyCop,
   cruising,
   field,
   patrolFrom,
-  riderAt,
+  player,
+  rivalNamed,
   straight,
   towardTheBike,
 } from "./race-fixtures.ts";
@@ -16,8 +18,8 @@ import type { RaceEvent, RaceState, RiderInput, RiderState } from "./state.ts";
 
 const knockedOffAndRunning = () => {
   const state = field(straight, 1, 1, 0);
-  const me = riderAt(state, 0);
-  const rival = riderAt(state, 1);
+  const me = player(state);
+  const rival = rivalNamed(state, "dee-santangelo");
   rival.s = 900;
   me.s = 100;
   me.x = -1.8;
@@ -73,7 +75,7 @@ describe("knocked down on foot", () => {
       cruising,
     ]);
     expect(events).toContainEqual(
-      expect.objectContaining({ by: -1, kind: "knockedDown", rider: 0 })
+      expect.objectContaining({ by: null, kind: "knockedDown", rider: me.id })
     );
     expect({
       crashed: events.some((event) => event.kind === "crash"),
@@ -91,9 +93,13 @@ describe("knocked down on foot", () => {
     rival.speed = 25;
     const { events } = untilOnFeetAgain(state, me, [neutralInput, cruising]);
     expect(events).toContainEqual(
-      expect.objectContaining({ by: 1, kind: "knockedDown", rider: 0 })
+      expect.objectContaining({
+        by: rival.id,
+        kind: "knockedDown",
+        rider: me.id,
+      })
     );
-    expect(events).toContainEqual({ kind: "bump", rider: 1 });
+    expect(events).toContainEqual({ kind: "bump", rider: rival.id });
     expect(rival.mode).toBe("riding");
     expect(rival.speed).toBeGreaterThan(18);
     expect(me.lastHitBy).toBe(1);
@@ -112,8 +118,8 @@ const awayFromTheBike = (rider: RiderState): RiderInput => {
 
 const thrownWhileHolding = (held: RiderInput) => {
   const state = field(straight, 1, 1, 0);
-  const me = riderAt(state, 0);
-  const rival = riderAt(state, 1);
+  const me = player(state);
+  const rival = rivalNamed(state, "dee-santangelo");
   rival.s = 900;
   me.s = 100;
   me.x = -1.8;
@@ -223,8 +229,8 @@ describe("on foot", () => {
 
   it("a rival knocked off runs back to their bike and remounts on their own", () => {
     const state = field(straight, 1, 1, 0);
-    const me = riderAt(state, 0);
-    const rival = riderAt(state, 1);
+    const me = player(state);
+    const rival = rivalNamed(state, "dee-santangelo");
     me.s = 900;
     rival.s = 100;
     rival.speed = 20;
@@ -233,7 +239,7 @@ describe("on foot", () => {
     const events: RaceEvent[] = [];
     const modes: string[] = [];
     for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-      pilotInput(state, straight, 1, rivalInput);
+      pilotInput(state, straight, rival, rivalInput);
       stepRace(state, straight, [neutralInput, rivalInput]);
       events.push(...state.events);
       if (modes.at(-1) !== rival.mode) {
@@ -247,14 +253,14 @@ describe("on foot", () => {
       "mounting",
       "riding",
     ]);
-    expect(events).toContainEqual({ kind: "remount", rider: 1 });
+    expect(events).toContainEqual({ kind: "remount", rider: rival.id });
     expect(rival.speed).toBeGreaterThan(5);
   });
 
   it("a cop reaching a rider who is standing on foot arrests them", () => {
     const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
-    const me = riderAt(state, 0);
-    patrolFrom(state, 1, 100);
+    const me = player(state);
+    const cop = patrolFrom(onlyCop(state), 100);
     me.s = 200;
     me.speed = 10;
     me.stamina = 0;
@@ -265,7 +271,7 @@ describe("on foot", () => {
       tick < 15 * TICK_RATE && me.mode !== "busted";
       tick += 1
     ) {
-      pilotInput(state, straight, 1, copInput);
+      pilotInput(state, straight, cop, copInput);
       stepRace(state, straight, [neutralInput, copInput]);
       events.push(...state.events);
     }

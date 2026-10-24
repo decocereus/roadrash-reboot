@@ -5,6 +5,7 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { pilotInput } from "./pilot.ts";
+import { player, rivalNamed } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput, TrafficCar } from "./state.ts";
@@ -38,14 +39,6 @@ const field = (course: Track, seed: number, rivalCount: number): RaceState => {
   });
 };
 
-const riderAt = (state: RaceState, index: number) => {
-  const rider = state.riders[index];
-  if (!rider) {
-    throw new Error(`The race has no rider ${index}.`);
-  }
-  return rider;
-};
-
 const slowCar = (s: number, x: number): TrafficCar => ({
   cruiseSpeed: 15,
   halfLength: 2.2,
@@ -72,7 +65,7 @@ const meanCruise = (cars: readonly TrafficCar[], x: number): number => {
 
 const rivalPasses = (course: Track, blockers: readonly TrafficCar[]) => {
   const state = field(course, 1, 1);
-  const rival = riderAt(state, 1);
+  const rival = rivalNamed(state, "dee-santangelo");
   rival.s = 100;
   rival.x = 1.8;
   rival.speed = 30;
@@ -82,9 +75,9 @@ const rivalPasses = (course: Track, blockers: readonly TrafficCar[]) => {
   let leftmost = rival.x;
   let rightmost = rival.x;
   for (let tick = 0; tick < 8 * TICK_RATE; tick += 1) {
-    pilotInput(state, course, 1, input);
+    pilotInput(state, course, rival, input);
     stepRace(state, course, [neutralInput, input]);
-    events.push(...state.events.filter((event) => event.rider === 1));
+    events.push(...state.events.filter((event) => event.rider === rival.id));
     leftmost = Math.min(leftmost, rival.x);
     rightmost = Math.max(rightmost, rival.x);
   }
@@ -99,7 +92,7 @@ const rivalPasses = (course: Track, blockers: readonly TrafficCar[]) => {
 
 const onRoadAt = (course: Track, x: number) => {
   const state = field(course, 1, 0);
-  const me = riderAt(state, 0);
+  const me = player(state);
   me.s = 100;
   me.x = x;
   me.speed = 40;
@@ -164,7 +157,7 @@ describe("a road with two lanes each way", () => {
     expect(lanesUsed(racers.map((rider) => slowCar(0, rider.x)))).toStrictEqual(
       [-5.4, -1.8, 1.8, 5.4]
     );
-    const me = riderAt(state, 0);
+    const me = player(state);
     expect(me.x).toBe(1.8);
     expect(
       racers.every((rider) => rider === me || rider.s > me.s)
