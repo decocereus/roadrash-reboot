@@ -1032,6 +1032,7 @@ Source files:
 - `tools/oxlint/anti-slop/shared/reflect-method.ts`
 - `tools/oxlint/rushline/bindings.ts`
 - `tools/oxlint/rushline/effect-names.ts`
+- `tools/oxlint/rushline/functions.ts`
 - `tools/oxlint/rushline/index.ts`
 - `tools/oxlint/rushline/notes.ts`
 - `tools/oxlint/rushline/property-name.ts`
@@ -1058,6 +1059,7 @@ Source files:
 - `tools/oxlint/rushline/rules/require-nul-file-list.ts`
 - `tools/oxlint/rushline/rules/require-suppression-reason.ts`
 - `tools/oxlint/rushline/rules/require-wrapped-cause.ts`
+- `tools/oxlint/rushline/rules/rider-by-id.ts`
 - `tools/oxlint/rushline/rules/safety-verified-by.ts`
 - `tools/oxlint/rushline/rules/workspace-imports.ts`
 - `tools/oxlint/rushline/tagged-values.ts`
@@ -1086,6 +1088,7 @@ Test files:
 - `tools/oxlint/test/ranged-buffer-upload.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`
+- `tools/oxlint/test/rider-by-id.test.ts`
 - `tools/oxlint/test/setup.ts`
 - `tools/oxlint/test/small-rules.test.ts`
 - `tools/oxlint/test/suppressions.test.ts`

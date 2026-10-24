@@ -1,17 +1,12 @@
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree } from "@oxlint/plugins";
 
+import { enclosingFunction, isFunction } from "../functions.ts";
+import type { FunctionNode } from "../functions.ts";
 import { memberName } from "../property-name.ts";
 
 const promiseTypes = new Set(["Promise", "PromiseLike"]);
 const boundaryMethods = new Set(["promise", "tryPromise"]);
-
-type FunctionNode = ESTree.ArrowFunctionExpression | ESTree.Function;
-
-const isFunction = (node: ESTree.Node): node is FunctionNode =>
-  node.type === "ArrowFunctionExpression" ||
-  node.type === "FunctionDeclaration" ||
-  node.type === "FunctionExpression";
 
 const isBoundaryCall = (node: ESTree.Node) =>
   node.type === "CallExpression" &&
@@ -45,17 +40,6 @@ const insideBoundary = (node: ESTree.Node) => {
   return false;
 };
 
-const insideFunction = (node: ESTree.Node) => {
-  let current: ESTree.Node | null = node.parent;
-  while (current !== null && current.type !== "Program") {
-    if (isFunction(current)) {
-      return true;
-    }
-    current = current.parent;
-  }
-  return false;
-};
-
 export const noPromiseRule = defineRule({
   create(context) {
     const raw = (node: ESTree.Node) => context.sourceCode.getText(node);
@@ -72,7 +56,7 @@ export const noPromiseRule = defineRule({
     return {
       ArrowFunctionExpression: checkFunction,
       AwaitExpression(node) {
-        if (!insideFunction(node)) {
+        if (enclosingFunction(node) === null) {
           report(node, "A top-level await");
         }
       },

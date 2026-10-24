@@ -147,7 +147,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
   cache: ByteCache,
   urls: ModelUrls
 ) {
-  const [buildA, buildB, buildC] = urls.riders;
+  const [buildA, buildB, buildC] = urls.figures;
   const [bikes, car, van, riderA, riderB, riderC, fontFallback] =
     yield* Effect.all(
       [
@@ -162,7 +162,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       { concurrency: "unbounded" }
     );
   const loaded: Loaded = {
-    assets: { bikes, car, riders: [riderA, riderB, riderC], van },
+    assets: { bikes, car, figures: [riderA, riderB, riderC], van },
     fontFallback,
   };
   return loaded;

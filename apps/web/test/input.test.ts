@@ -1,7 +1,7 @@
 import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { straight } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
-import { PLAYER_RIDER, TICK_SECONDS } from "@racer/sim/state";
+import { PLAYER_RIDER, riderOf, TICK_SECONDS } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
@@ -176,7 +176,7 @@ describe("controls in a real race", () => {
         run.step(inputs);
       }
     };
-    const player = () => run.view.riders[PLAYER_RIDER];
+    const player = () => riderOf(run.view.riders, PLAYER_RIDER);
     const start = player()?.s ?? 0;
     keyboard.press("ArrowUp");
     ride(240);

@@ -1,7 +1,7 @@
 import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
-import { PLAYER_RIDER } from "@racer/sim/state";
+import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
 import type { FrameRate } from "@racer/telemetry/limits";
 import { trackFor } from "@racer/track/roads";
@@ -121,12 +121,12 @@ export const createTicker = (): Ticker => {
   const inputs = run.view.riders.map(() => ({ ...neutralInput }));
   const digests: string[] = [];
   const tick = () => {
-    for (let index = 0; index < inputs.length; index += 1) {
-      const input = inputs[index];
-      if (input && index === PLAYER_RIDER) {
+    for (const rider of run.view.riders) {
+      const input = inputs[rider.id];
+      if (input && rider.id === PLAYER_RIDER) {
         scriptedInput(run.view.tick, input);
       } else if (input) {
-        run.pilot(index, input);
+        run.pilot(rider.id, input);
       }
     }
     run.step(inputs);
@@ -137,7 +137,7 @@ export const createTicker = (): Ticker => {
 
 export const createHost = (options: HostOptions = {}): Host => {
   const { digests, inputs, run, tick } = createTicker();
-  const [player] = run.view.riders;
+  const player = riderOf(run.view.riders, PLAYER_RIDER);
   if (!player) {
     throw new Error("The race has no player.");
   }

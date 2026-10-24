@@ -10,7 +10,7 @@ import {
   player,
   pressing,
   quietTrack,
-  riderAt,
+  rivalIn,
   sideBySide,
   straight,
   towardTheBike,
@@ -173,8 +173,8 @@ describe("crashing", () => {
 describe("recovering", () => {
   it("a rider punched onto the outside grass of a bend at 80 km/h rolls off and steers back onto the road within two seconds", () => {
     const state = field(quietTrack, 1, 1, 0);
-    const me = riderAt(state, 0);
-    const rival = riderAt(state, 1);
+    const me = player(state);
+    const rival = rivalIn(state);
     me.s = 1550;
     me.speed = 22;
     rival.speed = 22;
@@ -251,7 +251,7 @@ const oncomingCar = (state: RaceState): void => {
 
 const knockedOffAt = (kmh: number): number => {
   const state = field(straight, 1, 0, 0);
-  const me = riderAt(state, 0);
+  const me = player(state);
   me.s = 100;
   me.speed = kmh / KMH;
   me.stamina = 0;
@@ -261,7 +261,7 @@ const knockedOffAt = (kmh: number): number => {
 
 const headOnAt = (kmh: number): number => {
   const state = field(straight, 1, 0, 0);
-  const me = riderAt(state, 0);
+  const me = player(state);
   me.s = 100;
   oncomingCar(state);
   headOn(state, me, kmh / KMH, 8);
@@ -270,7 +270,7 @@ const headOnAt = (kmh: number): number => {
 
 const crashesToWreck = (crash: (state: RaceState) => void): number => {
   const state = field(straight, 1, 0, 0);
-  const me = riderAt(state, 0);
+  const me = player(state);
   me.s = 100;
   oncomingCar(state);
   while (me.mode !== "wrecked" && me.crashes < 20) {
@@ -280,7 +280,7 @@ const crashesToWreck = (crash: (state: RaceState) => void): number => {
 };
 
 const knockOffAndRemount = (state: RaceState, kmh: number): void => {
-  const me = riderAt(state, 0);
+  const me = player(state);
   me.speed = kmh / KMH;
   me.stamina = 0;
   const [car] = state.cars;
@@ -317,10 +317,10 @@ describe("bike condition", () => {
         knockOffAndRemount(state, 200);
       }),
       trafficAt160: crashesToWreck((state) => {
-        headOn(state, riderAt(state, 0), 160 / KMH, 8);
+        headOn(state, player(state), 160 / KMH, 8);
       }),
       trafficAt200: crashesToWreck((state) => {
-        headOn(state, riderAt(state, 0), 200 / KMH, 8);
+        headOn(state, player(state), 200 / KMH, 8);
       }),
     }).toStrictEqual({
       knockdownsAt100: 8,
@@ -332,8 +332,8 @@ describe("bike condition", () => {
 
   it("three hard traffic crashes wreck the bike and the rider is placed after everyone else", () => {
     const state = field(straight, 1, 2, 0);
-    const me = riderAt(state, 0);
-    const finisher = riderAt(state, 1);
+    const me = player(state);
+    const finisher = rivalIn(state);
     finisher.s = straight.length - 20;
     finisher.speed = 30;
     me.s = 100;
@@ -359,12 +359,16 @@ describe("bike condition", () => {
       mode: me.mode,
       offTheRoad: Math.abs(me.x) > straight.roadHalfWidth,
     }).toStrictEqual({ finished: true, mode: "wrecked", offTheRoad: true });
-    expect(standings(state)).toStrictEqual([1, 2, 0]);
+    expect(standings(state)).toStrictEqual([
+      finisher.id,
+      rivalIn(state, 1).id,
+      me.id,
+    ]);
   });
 
   it("the traffic drives on past a wreck that has come to rest", () => {
     const state = field(straight, 1, 0, 0);
-    const me = riderAt(state, 0);
+    const me = player(state);
     me.s = 100;
     me.condition = 1;
     state.cars.push({
@@ -385,7 +389,7 @@ describe("bike condition", () => {
   });
 });
 
-const knockedOffTrack = (ticksAfterPunch: number): RaceEvent[] => {
+const knockedOffTrack = (ticksAfterPunch: number) => {
   const { moose, me, state } = sideBySide();
   const crashes: RaceEvent[] = [];
   let punchedAt = -1;
@@ -406,21 +410,23 @@ const knockedOffTrack = (ticksAfterPunch: number): RaceEvent[] => {
     }
     crashes.push(...state.events.filter((event) => event.kind === "crash"));
   }
-  return crashes;
+  return { crashes, me, moose };
 };
 
 describe("crash attribution", () => {
   it("a crash within a second of a punch names the rider who threw it, and a later one names nobody", () => {
-    expect(knockedOffTrack(60)).toMatchObject([
-      { by: 0, cause: "offTrack", rider: 2 },
+    const early = knockedOffTrack(60);
+    expect(early.crashes).toMatchObject([
+      { by: early.me.id, cause: "offTrack", rider: early.moose.id },
     ]);
-    expect(knockedOffTrack(61)).toMatchObject([
-      { by: -1, cause: "offTrack", rider: 2 },
+    const late = knockedOffTrack(61);
+    expect(late.crashes).toMatchObject([
+      { by: null, cause: "offTrack", rider: late.moose.id },
     ]);
   });
 
   it("a rider knocked down by punches is put down to the puncher, and a rider who falls alone to nobody", () => {
-    const { moose, state } = sideBySide();
+    const { me, moose, state } = sideBySide();
     moose.stamina = 10;
     const fight = brawl(state, 1, (tick) => [
       pressing("punch", tick === 0),
@@ -428,7 +434,7 @@ describe("crash attribution", () => {
       cruising,
     ]);
     expect(fight.filter((event) => event.kind === "crash")).toMatchObject([
-      { by: 0, cause: "combat", rider: 2 },
+      { by: me.id, cause: "combat", rider: moose.id },
     ]);
 
     const solo = field(quietTrack, 1, 0, 0);
@@ -436,7 +442,7 @@ describe("crash attribution", () => {
     player(solo).speed = 30;
     const fall = hold(solo, quietTrack, { ...cruising, steer: 1 }, 6);
     expect(fall.filter((event) => event.kind === "crash")).toMatchObject([
-      { by: -1, rider: 0 },
+      { by: null, rider: player(solo).id },
     ]);
   });
 });

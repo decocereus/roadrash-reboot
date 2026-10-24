@@ -13,6 +13,7 @@ import {
   hold,
   KMH,
   player,
+  rivalIn,
   slowTruckAt,
 } from "./race-fixtures.ts";
 import { neutralInput, stepRace } from "./race.ts";
@@ -23,7 +24,7 @@ describe("dev ride placement", () => {
     const me = player(state);
     me.bodyS = me.s + 3;
     const { x, speed } = me;
-    placeRiderAt(state, 0, 600);
+    placeRiderAt(state, me.id, 600);
     expect(me.s).toBe(600);
     expect(me.bodyS).toBe(603);
     expect(me.x).toBe(x);
@@ -35,9 +36,9 @@ describe("dev ride placement", () => {
   it("setting the player across the road puts bike and body on that line and leaves its sideways motion alone", () => {
     const state = field(hazardFreeRoad, 1, 0, 0);
     const me = player(state);
-    placeRiderAt(state, 0, 600);
+    placeRiderAt(state, me.id, 600);
     me.lateralSpeed = 0.4;
-    placeRiderAcross(state, 0, 1.8);
+    placeRiderAcross(state, me.id, 1.8);
     expect(me.x).toBe(1.8);
     expect(me.bodyX).toBe(1.8);
     expect(me.lateralSpeed).toBe(0.4);
@@ -49,8 +50,8 @@ describe("dev ride placement", () => {
   it("setting the player's speed sends it down the road at that speed", () => {
     const state = field(hazardFreeRoad, 1, 0, 0);
     const me = player(state);
-    placeRiderAt(state, 0, 600);
-    setRiderSpeed(state, 0, 90 / KMH);
+    placeRiderAt(state, me.id, 600);
+    setRiderSpeed(state, me.id, 90 / KMH);
     expect(me.speed).toBe(25);
     hold(state, hazardFreeRoad, flatOut, 1);
     expect(me.s - 600).toBeGreaterThan(24);
@@ -74,10 +75,11 @@ describe("dev ride placement", () => {
 
   it("a placement for a rider the race does not have changes nothing", () => {
     const state = field(hazardFreeRoad, 1, 0, 0);
+    const stranger = rivalIn(field(hazardFreeRoad, 1, 1, 0)).id;
     const before = JSON.stringify(state);
-    placeRiderAt(state, 7, 500);
-    placeRiderAcross(state, 7, 1);
-    setRiderSpeed(state, 7, 30);
+    placeRiderAt(state, stranger, 500);
+    placeRiderAcross(state, stranger, 1);
+    setRiderSpeed(state, stranger, 30);
     expect(JSON.stringify(state)).toBe(before);
   });
 });

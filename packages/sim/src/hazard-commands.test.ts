@@ -11,9 +11,9 @@ import {
   pilotAt,
   pilotFrom,
   placedAt,
+  copIn,
   player,
   rampRoad,
-  riderAt,
   roadWith,
 } from "./race-fixtures.ts";
 import { neutralInput, stepRace } from "./race.ts";
@@ -90,7 +90,7 @@ describe("road hazards", () => {
 
   it("a cop chasing the player rides round a rock spawned in its path", () => {
     const state = field(hazardFreeRoad, 1, 0, 1);
-    const cop = riderAt(state, 1);
+    const cop = copIn(state);
     cop.parked = false;
     cop.s = 700;
     cop.x = 1.8;
@@ -108,18 +108,17 @@ describe("road hazards", () => {
     const inputs = state.riders.map(() => ({ ...neutralInput }));
     const events: RaceEvent[] = [];
     for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-      for (const [index, input] of inputs.entries()) {
-        if (index > 0) {
-          pilotInput(state, hazardFreeRoad, index, input);
-        }
+      const copInput = inputs[cop.id];
+      if (copInput) {
+        pilotInput(state, hazardFreeRoad, cop, copInput);
       }
-      inputs[0] = { ...neutralInput, throttle: 0.6 };
+      inputs[me.id] = { ...neutralInput, throttle: 0.6 };
       stepRace(state, hazardFreeRoad, inputs);
       events.push(...state.events);
     }
     expect(cop.s).toBeGreaterThan(1000);
     expect(
-      events.filter((event) => event.kind === "crash" && event.rider === 1)
+      events.filter((event) => event.kind === "crash" && event.rider === cop.id)
     ).toStrictEqual([]);
   });
 });

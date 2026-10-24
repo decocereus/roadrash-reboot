@@ -2,6 +2,7 @@ import { defaultSetup } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
+import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type { RaceSetup } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 
@@ -70,9 +71,9 @@ export const bindStage = ({
   stage,
 }: StageParts) => {
   const player = (): RiderView => {
-    const [rider] = stage.race.view.riders;
+    const rider = riderOf(stage.race.view.riders, PLAYER_RIDER);
     if (!rider) {
-      throw new Error("The race has no rider.");
+      throw new Error("The race has no player.");
     }
     return rider;
   };

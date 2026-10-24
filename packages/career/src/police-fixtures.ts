@@ -1,7 +1,7 @@
 import type { BikeId } from "@racer/sim/bikes";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
-import { PLAYER_RIDER, TICK_RATE } from "@racer/sim/state";
+import { PLAYER_RIDER, TICK_RATE, riderOf } from "@racer/sim/state";
 import type { RaceState } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
@@ -47,7 +47,7 @@ export const policeStarts: readonly PoliceStart[] = levels.flatMap((level) =>
 );
 
 const endingOf = (state: RaceState): Ending => {
-  const player = state.riders[PLAYER_RIDER];
+  const player = riderOf(state.riders, PLAYER_RIDER);
   if (!player) {
     throw new Error("The race has no player.");
   }
@@ -62,8 +62,8 @@ const endingOf = (state: RaceState): Ending => {
 
 const rivalsBustedIn = (state: RaceState): number =>
   state.riders.filter(
-    (rider, index) =>
-      index !== PLAYER_RIDER &&
+    (rider) =>
+      rider.id !== PLAYER_RIDER &&
       rider.profile.role === "racer" &&
       rider.mode === "busted"
   ).length;
@@ -93,8 +93,11 @@ const ridePolice = ({ level, roadId, seed }: PoliceStart): PoliceRide => {
     tick < RACE_LIMIT_SECONDS * TICK_RATE && ending === "unsettled";
     tick += 1
   ) {
-    for (const [index, input] of inputs.entries()) {
-      pilotInput(state, track, index, input);
+    for (const rider of state.riders) {
+      const input = inputs[rider.id];
+      if (input) {
+        pilotInput(state, track, rider, input);
+      }
     }
     stepRace(state, track, inputs);
     ending = endingOf(state);

@@ -18,7 +18,7 @@ import { PULL_OVER, stepPolice } from "./police.ts";
 import type { RaceView, RiderView } from "./race-view.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
-import { FULL_CONDITION, MAX_STAMINA } from "./state.ts";
+import { FULL_CONDITION, MAX_STAMINA, rosterOf } from "./state.ts";
 import type {
   BikeSpec,
   PacingRules,
@@ -27,6 +27,7 @@ import type {
   RaceEvent,
   RaceSetup,
   RaceState,
+  RiderId,
   RiderInput,
   RiderProfile,
   RiderState,
@@ -108,10 +109,11 @@ const profileOf = (entrant: RiderProfile): RiderProfile => ({
 });
 
 interface Entry {
+  readonly id: RiderId;
   readonly profile: RiderProfile;
   readonly bike: BikeSpec;
   readonly weaponHits: number;
-  readonly grudge: number;
+  readonly grudge: RiderId | null;
   readonly aggressionBoost: number;
 }
 
@@ -139,7 +141,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   brake: 0,
   bumpLoss: 0,
   bumpedBy: -1,
-  chase: -1,
+  chase: null,
   condition: FULL_CONDITION,
   crashes: 0,
   finishTick: -1,
@@ -150,10 +152,11 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   hazardSeen: -1,
   heading: 0,
   hitStun: 0,
+  id: entry.id,
   idleTicks: 0,
   jumpMisread: false,
   jumpSeen: -1,
-  lastHitBy: -1,
+  lastHitBy: null,
   lastHitTick: 0,
   lateralSpeed: 0,
   lean: 0,
@@ -216,7 +219,8 @@ const copPost = (track: Track, index: number, count: number): number => {
 export type SetupError =
   | { readonly kind: "tooManyRivals"; readonly count: number }
   | { readonly kind: "duplicateRival"; readonly name: string }
-  | { readonly kind: "missingBike"; readonly rider: string };
+  | { readonly kind: "missingBike"; readonly rider: string }
+  | { readonly kind: "strayGrudge"; readonly rider: string };
 
 const missingBikes = (setup: RaceSetup): SetupError[] => {
   const entrants: readonly { name: string; bike: BikeSpec | undefined }[] = [
@@ -237,22 +241,45 @@ const duplicateRivals = (setup: RaceSetup): SetupError[] => {
   return [...repeated].map((name) => ({ kind: "duplicateRival", name }));
 };
 
+const strayGrudges = (setup: RaceSetup): SetupError[] => {
+  const roster = rosterOf(setup);
+  const racers = new Set([roster.player, ...roster.rivals]);
+  return setup.rivals
+    .filter(
+      (rival, at) =>
+        rival.grudge !== undefined &&
+        (rival.grudge === roster.rivals[at] || !racers.has(rival.grudge))
+    )
+    .map((rival) => ({ kind: "strayGrudge", rider: rival.name }));
+};
+
 export const validateSetup = (setup: RaceSetup): SetupError[] => [
   ...(setup.rivals.length > MOST_RIVALS
     ? [{ count: setup.rivals.length, kind: "tooManyRivals" } as const]
     : []),
   ...duplicateRivals(setup),
   ...missingBikes(setup),
+  ...strayGrudges(setup),
 ];
 
 const describeSetupError = (error: SetupError): string => {
-  if (error.kind === "tooManyRivals") {
-    return `A race takes at most ${MOST_RIVALS} rivals, and this one has ${error.count}.`;
+  switch (error.kind) {
+    case "tooManyRivals": {
+      return `A race takes at most ${MOST_RIVALS} rivals, and this one has ${error.count}.`;
+    }
+    case "duplicateRival": {
+      return `${error.name} is on the grid more than once.`;
+    }
+    case "missingBike": {
+      return `${error.rider} has no bike.`;
+    }
+    case "strayGrudge": {
+      return `${error.rider} holds a grudge against a rider who is not another racer in this race.`;
+    }
+    default: {
+      return error satisfies never;
+    }
   }
-  if (error.kind === "duplicateRival") {
-    return `${error.name} is on the grid more than once.`;
-  }
-  return `${error.rider} has no bike.`;
 };
 
 export const createRace = (setup: RaceSetup): RaceState => {
@@ -271,12 +298,14 @@ export const createRace = (setup: RaceSetup): RaceState => {
   } = setup;
   const columns = gridColumns(track);
   const playerLast = gridOrder === "playerLast";
+  const roster = rosterOf(setup);
   const riders = [
     createRider(
       {
         aggressionBoost: 0,
         bike: player.bike,
-        grudge: -1,
+        grudge: null,
+        id: roster.player,
         profile: profileOf(player),
         weaponHits: player.weapon === "none" ? 0 : player.weaponHits,
       },
@@ -285,7 +314,8 @@ export const createRace = (setup: RaceSetup): RaceState => {
   ];
   for (let index = 0; index < field.length; index += 1) {
     const rival = field[index];
-    if (!rival) {
+    const id = roster.rivals[index];
+    if (!rival || id === undefined) {
       continue;
     }
     riders.push(
@@ -293,7 +323,8 @@ export const createRace = (setup: RaceSetup): RaceState => {
         {
           aggressionBoost: rival.aggressionBoost ?? 0,
           bike: rival.bike,
-          grudge: rival.grudge ?? -1,
+          grudge: rival.grudge ?? null,
+          id,
           profile: profileOf(rival),
           weaponHits: freshHits(rival),
         },
@@ -302,11 +333,16 @@ export const createRace = (setup: RaceSetup): RaceState => {
     );
   }
   for (let index = 0; index < police.count; index += 1) {
+    const id = roster.police[index];
+    if (id === undefined) {
+      continue;
+    }
     const cop = createRider(
       {
         aggressionBoost: 0,
         bike: police.bike,
-        grudge: -1,
+        grudge: null,
+        id,
         profile: police.officer,
         weaponHits: freshHits(police.officer),
       },
@@ -349,43 +385,42 @@ const standingGroup = (rider: RiderView): number => {
   return rider.mode === "busted" || rider.mode === "wrecked" ? 2 : 1;
 };
 
-export const standings = (state: RaceView): number[] =>
+export const standings = (state: RaceView): RiderId[] =>
   state.riders
-    .map((rider, index) => ({ index, rider }))
-    .filter((entry) => entry.rider.profile.role === "racer")
+    .filter((rider) => rider.profile.role === "racer")
     .toSorted((left, right) => {
-      const group = standingGroup(left.rider) - standingGroup(right.rider);
+      const group = standingGroup(left) - standingGroup(right);
       if (group !== 0) {
         return group;
       }
-      if (left.rider.finishTick >= 0) {
-        return left.rider.finishTick - right.rider.finishTick;
+      if (left.finishTick >= 0) {
+        return left.finishTick - right.finishTick;
       }
-      return right.rider.bodyS - left.rider.bodyS;
+      return right.bodyS - left.bodyS;
     })
-    .map((entry) => entry.index);
+    .map((rider) => rider.id);
 
 const throwForHazard: ThrowForHazard = (
   state,
-  riderIndex,
+  rider,
   cause,
   bikeKeep,
   bodyKeep,
   hazard
 ) => {
-  throwRider(state, riderIndex, cause, bikeKeep, bodyKeep, undefined, hazard);
+  throwRider(state, rider, cause, bikeKeep, bodyKeep, undefined, hazard);
 };
 
 type Landing = Extract<RaceEvent, { kind: "land" }>;
 
 const touchdownOf = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   from: number
 ): Landing | undefined => {
   for (let index = from; index < state.events.length; index += 1) {
     const event = state.events[index];
-    if (event?.kind === "land" && event.rider === riderIndex) {
+    if (event?.kind === "land" && event.rider === rider.id) {
       return event;
     }
   }
@@ -402,15 +437,18 @@ export const stepRace = (
   stepTraffic(state, track);
   for (let index = 0; index < state.riders.length; index += 1) {
     const rider = state.riders[index];
-    const fromS = rider?.s ?? 0;
-    const fromX = rider?.x ?? 0;
+    if (!rider) {
+      continue;
+    }
+    const fromS = rider.s;
+    const fromX = rider.x;
     const eventsBefore = state.events.length;
-    stepRider(state, track, index, inputs[index] ?? neutralInput);
-    const touchdown = touchdownOf(state, index, eventsBefore);
+    stepRider(state, track, rider, inputs[index] ?? neutralInput);
+    const touchdown = touchdownOf(state, rider, eventsBefore);
     meetHazards(
       state,
       track,
-      index,
+      rider,
       touchdown?.s ?? fromS,
       touchdown?.x ?? fromX,
       throwForHazard
@@ -420,7 +458,10 @@ export const stepRace = (
   coolDown(state);
   landStrikes(state);
   for (let index = 0; index < state.riders.length; index += 1) {
-    stepAttack(state, index, inputs[index] ?? neutralInput);
+    const rider = state.riders[index];
+    if (rider) {
+      stepAttack(state, rider, inputs[index] ?? neutralInput);
+    }
   }
   stepPolice(state, track);
 };

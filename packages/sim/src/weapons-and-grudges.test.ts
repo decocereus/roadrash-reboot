@@ -9,13 +9,19 @@ import {
   hold,
   player,
   pressing,
-  riderAt,
+  rivalIn,
   sideBySide,
   straight,
 } from "./race-fixtures.ts";
 import { createRace, defaultSetup, stepRace } from "./race.ts";
-import { MAX_STAMINA, TICK_RATE } from "./state.ts";
-import type { RaceEvent, RiderInput, RivalSetup, WeaponKind } from "./state.ts";
+import { MAX_STAMINA, PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import type {
+  RaceEvent,
+  RiderId,
+  RiderInput,
+  RivalSetup,
+  WeaponKind,
+} from "./state.ts";
 import { arm, disarm } from "./weapons.ts";
 
 describe("weapons", () => {
@@ -39,8 +45,8 @@ describe("weapons", () => {
     expect(events).toContainEqual({
       attack: "swing",
       kind: "hit",
-      rider: 2,
-      target: 0,
+      rider: clubbed.moose.id,
+      target: clubbed.me.id,
       weapon: "club",
     });
   });
@@ -58,7 +64,7 @@ describe("weapons", () => {
     expect(clubHits).toHaveLength(6);
     expect(events).toContainEqual({
       kind: "weaponBroken",
-      rider: 2,
+      rider: moose.id,
       weapon: "club",
     });
     expect(moose.weapon).toBe("none");
@@ -75,16 +81,16 @@ describe("weapons", () => {
     ]);
     expect(events).toContainEqual({
       kind: "weaponTaken",
-      rider: 0,
-      target: 2,
+      rider: me.id,
+      target: moose.id,
       weapon: "club",
     });
     expect([me.weapon, moose.weapon]).toStrictEqual(["club", "none"]);
     expect(events).toContainEqual({
       attack: "swing",
       kind: "hit",
-      rider: 0,
-      target: 2,
+      rider: me.id,
+      target: moose.id,
       weapon: "club",
     });
     expect(me.weaponHits).toBe(5);
@@ -92,12 +98,13 @@ describe("weapons", () => {
 });
 
 const duel = (
-  unarmedIndex: number,
+  unarmedSeat: "player" | "rival",
   inputsAt: (tick: number) => { unarmed: RiderInput; holder: RiderInput }
 ) => {
   const state = field(straight, 1, 1, 0);
-  const unarmed = riderAt(state, unarmedIndex);
-  const holder = riderAt(state, 1 - unarmedIndex);
+  const seats = { player: player(state), rival: rivalIn(state) };
+  const unarmed = seats[unarmedSeat];
+  const holder = seats[unarmedSeat === "player" ? "rival" : "player"];
   disarm(unarmed);
   arm(holder, "chain");
   for (const rider of state.riders) {
@@ -112,7 +119,7 @@ const duel = (
     stepRace(
       state,
       straight,
-      unarmedIndex === 0
+      unarmedSeat === "player"
         ? [inputs.unarmed, inputs.holder]
         : [inputs.holder, inputs.unarmed]
     );
@@ -133,8 +140,8 @@ const kickedFromBothSides = (firstX: number, secondX: number) => {
       .map((rival) => ({ ...rival, bike: streetBike })),
   });
   const holder = player(state);
-  const first = riderAt(state, 1);
-  const second = riderAt(state, 2);
+  const first = rivalIn(state);
+  const second = rivalIn(state, 1);
   arm(holder, "chain");
   disarm(first);
   disarm(second);
@@ -153,11 +160,27 @@ const kickedFromBothSides = (firstX: number, secondX: number) => {
     stepRace(state, straight, [cruising, kick, kick]);
     events.push(...state.events);
   }
+  const seatOf = (id: RiderId) => {
+    if (id === first.id) {
+      return "first";
+    }
+    return id === second.id ? "second" : "holder";
+  };
   return {
     hits: events.flatMap((event) =>
-      event.kind === "hit" ? [[event.rider, event.target]] : []
+      event.kind === "hit" ? [[seatOf(event.rider), seatOf(event.target)]] : []
     ),
-    taken: events.filter((event) => event.kind === "weaponTaken"),
+    taken: events.flatMap((event) =>
+      event.kind === "weaponTaken"
+        ? [
+            {
+              rider: seatOf(event.rider),
+              target: seatOf(event.target),
+              weapon: event.weapon,
+            },
+          ]
+        : []
+    ),
     weapons: state.riders.map((rider) => [rider.weapon, rider.weaponHits]),
   };
 };
@@ -167,7 +190,7 @@ describe("simultaneous weapon grabs", () => {
     {
       firstX: -1.6,
       secondX: 1,
-      taker: 2,
+      taker: "second",
       weapons: [
         ["none", 0],
         ["none", 0],
@@ -178,7 +201,7 @@ describe("simultaneous weapon grabs", () => {
     {
       firstX: -1.2,
       secondX: 1.2,
-      taker: 1,
+      taker: "first",
       weapons: [
         ["none", 0],
         ["chain", 8],
@@ -191,21 +214,19 @@ describe("simultaneous weapon grabs", () => {
     ({ firstX, secondX, taker, weapons }) => {
       expect(kickedFromBothSides(firstX, secondX)).toStrictEqual({
         hits: [
-          [1, 0],
-          [2, 0],
+          ["first", "holder"],
+          ["second", "holder"],
         ],
-        taken: [
-          { kind: "weaponTaken", rider: taker, target: 0, weapon: "chain" },
-        ],
+        taken: [{ rider: taker, target: "holder", weapon: "chain" }],
         weapons,
       });
     }
   );
 
-  it.each([{ unarmedIndex: 0 }, { unarmedIndex: 1 }])(
-    "an unarmed rider and a chain holder who kick each other on the same tick leave the chain with the unarmed one (unarmed is rider $unarmedIndex)",
-    ({ unarmedIndex }) => {
-      const after = duel(unarmedIndex, (tick) => ({
+  it.each([{ unarmed: "player" }, { unarmed: "rival" }] as const)(
+    "an unarmed rider and a chain holder who kick each other on the same tick leave the chain with the unarmed one (unarmed is the $unarmed)",
+    ({ unarmed }) => {
+      const after = duel(unarmed, (tick) => ({
         holder: pressing("kick", tick === 0),
         unarmed: pressing("kick", tick === 0),
       }));
@@ -216,10 +237,10 @@ describe("simultaneous weapon grabs", () => {
     }
   );
 
-  it.each([{ unarmedIndex: 0 }, { unarmedIndex: 1 }])(
-    "a chain that lands on the tick it is kicked away has one hit fewer (unarmed is rider $unarmedIndex)",
-    ({ unarmedIndex }) => {
-      const after = duel(unarmedIndex, (tick) => ({
+  it.each([{ unarmed: "player" }, { unarmed: "rival" }] as const)(
+    "a chain that lands on the tick it is kicked away has one hit fewer (unarmed is the $unarmed)",
+    ({ unarmed }) => {
+      const after = duel(unarmed, (tick) => ({
         holder: pressing("punch", tick === 0),
         unarmed: pressing("kick", tick === 3),
       }));
@@ -233,12 +254,19 @@ describe("simultaneous weapon grabs", () => {
 
 describe("armed rivals", () => {
   it("a chain holder at full aggression swings at a rider 2.8 m across within five seconds", () => {
-    const state = field(straight, 1, 1, 0);
-    const dee = riderAt(state, 1);
-    const rival = { ...dee, profile: { ...dee.profile, aggression: 1 } };
-    state.riders[1] = rival;
+    const setup = defaultSetup(straight, 1);
+    const [dee] = setup.rivals;
+    if (!dee) {
+      throw new Error("The default field has no rival.");
+    }
+    const state = createRace({
+      ...setup,
+      police: { ...setup.police, count: 0 },
+      rivals: [{ ...dee, aggression: 1 }],
+    });
+    const holder = rivalIn(state);
     state.tick = 10 * TICK_RATE;
-    const me = riderAt(state, 0);
+    const me = player(state);
     const rivalInput = { ...cruising };
     const events: RaceEvent[] = [];
     for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
@@ -247,17 +275,17 @@ describe("armed rivals", () => {
         rider.speed = 30;
       }
       me.x = -1;
-      rival.x = 1.8;
-      pilotInput(state, straight, 1, rivalInput);
+      holder.x = 1.8;
+      pilotInput(state, straight, holder, rivalInput);
       stepRace(state, straight, [cruising, rivalInput]);
       events.push(...state.events);
     }
-    expect(rival.weapon).toBe("chain");
+    expect(holder.weapon).toBe("chain");
     expect(events).toContainEqual({
       attack: "swing",
       kind: "hit",
-      rider: 1,
-      target: 0,
+      rider: holder.id,
+      target: me.id,
       weapon: "chain",
     });
   });
@@ -273,13 +301,13 @@ const steerAway = (weapon: "none" | "sign", seconds: number): number => {
 };
 
 const reaches = (weapon: WeaponKind, across = 2.8): boolean => {
-  const { moose, state } = sideBySide();
+  const { me, moose, state } = sideBySide();
   arm(moose, weapon);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < TICK_RATE; tick += 1) {
-    riderAt(state, 0).x = -1;
+    me.x = -1;
     moose.x = across - 1;
-    moose.s = riderAt(state, 0).s;
+    moose.s = me.s;
     stepRace(state, straight, [
       cruising,
       cruising,
@@ -331,10 +359,10 @@ const ticksToLand = (weapon: WeaponKind, steer: number): number => {
       pressing("punch", tick === 0),
     ]);
     for (const event of state.events) {
-      if (event.kind === "attack" && event.rider === 2) {
+      if (event.kind === "attack" && event.rider === moose.id) {
         pressed = state.tick;
       }
-      if (event.kind === "hit" && event.rider === 2) {
+      if (event.kind === "hit" && event.rider === moose.id) {
         landed = state.tick;
       }
     }
@@ -364,7 +392,7 @@ describe("the new weapons", () => {
     ).toHaveLength(3);
     expect(events).toContainEqual({
       kind: "weaponBroken",
-      rider: 2,
+      rider: moose.id,
       weapon: "cue",
     });
     expect(moose.weapon).toBe("none");
@@ -402,6 +430,8 @@ describe("the new weapons", () => {
   });
 });
 
+const BYSTANDER = rivalIn(field(straight, 1, 2, 0), 1).id;
+
 const hitsByTheRival = (
   rival: RivalSetup,
   bystanderAcross: number,
@@ -418,22 +448,24 @@ const hitsByTheRival = (
     rivals: [rival, other],
   });
   state.tick = 10 * TICK_RATE;
+  const striker = rivalIn(state);
+  const bystander = rivalIn(state, 1);
   const rivalInput = { ...cruising };
-  const targets: number[] = [];
+  const targets: RiderId[] = [];
   for (let tick = 0; tick < 6 * TICK_RATE; tick += 1) {
     for (const rider of state.riders) {
       rider.s = 50;
       rider.speed = 30;
       rider.stamina = MAX_STAMINA;
     }
-    riderAt(state, 0).x = playerAcross;
-    riderAt(state, 1).x = 0;
-    riderAt(state, 2).x = bystanderAcross;
-    pilotInput(state, straight, 1, rivalInput);
+    player(state).x = playerAcross;
+    striker.x = 0;
+    bystander.x = bystanderAcross;
+    pilotInput(state, straight, striker, rivalInput);
     stepRace(state, straight, [cruising, rivalInput, cruising]);
     targets.push(
       ...state.events.flatMap((event) =>
-        event.kind === "hit" && event.rider === 1 ? [event.target] : []
+        event.kind === "hit" && event.rider === striker.id ? [event.target] : []
       )
     );
   }
@@ -447,10 +479,13 @@ describe("grudges", () => {
       throw new Error("The default field has no rival.");
     }
     const impartial = hitsByTheRival({ ...dee, aggression: 1 }, 2);
-    const grudging = hitsByTheRival({ ...dee, aggression: 1, grudge: 2 }, 2);
-    expect(impartial[0]).toBe(0);
+    const grudging = hitsByTheRival(
+      { ...dee, aggression: 1, grudge: BYSTANDER },
+      2
+    );
+    expect(impartial[0]).toBe(PLAYER_RIDER);
     expect(grudging.length).toBeGreaterThan(0);
-    expect(new Set(grudging)).toStrictEqual(new Set([2]));
+    expect(new Set(grudging)).toStrictEqual(new Set([BYSTANDER]));
   });
 
   it("a rival who is otherwise peaceful attacks the player it has a score to settle with, and nobody else", () => {
@@ -461,7 +496,7 @@ describe("grudges", () => {
     const sore = { ...dee, aggression: 0, aggressionBoost: 1 };
     const alongside = hitsByTheRival(sore, 2);
     expect(alongside.length).toBeGreaterThan(0);
-    expect(new Set(alongside)).toStrictEqual(new Set([0]));
+    expect(new Set(alongside)).toStrictEqual(new Set([PLAYER_RIDER]));
     expect(hitsByTheRival(sore, 2, -12)).toStrictEqual([]);
   });
 
@@ -474,7 +509,7 @@ describe("grudges", () => {
     const others = hitsByTheRival(friendly, 2, -12);
     expect(hitsByTheRival(friendly, 12)).toStrictEqual([]);
     expect(others.length).toBeGreaterThan(0);
-    expect(new Set(others)).toStrictEqual(new Set([2]));
+    expect(new Set(others)).toStrictEqual(new Set([BYSTANDER]));
   });
 
   it("a grudge picks the target and leaves the rival's aggression toward that rider as it was", () => {
@@ -482,7 +517,12 @@ describe("grudges", () => {
     if (!dee) {
       throw new Error("The default field has no rival.");
     }
-    const peaceful = { ...dee, aggression: 0, aggressionBoost: 1, grudge: 2 };
+    const peaceful = {
+      ...dee,
+      aggression: 0,
+      aggressionBoost: 1,
+      grudge: BYSTANDER,
+    };
     expect(hitsByTheRival(peaceful, 2, -12)).toStrictEqual([]);
   });
 });

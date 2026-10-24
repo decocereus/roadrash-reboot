@@ -3,7 +3,7 @@ import { bikeAt, rivals, weaponAt } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
-import { MAX_STAMINA } from "@racer/sim/state";
+import { MAX_STAMINA, PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { recordedRules } from "./bench.ts";
@@ -16,7 +16,7 @@ import {
   knockDown,
   ledgerOf,
   ride,
-  riderOf,
+  racerIn,
   rivalIn,
   road,
   settle,
@@ -36,8 +36,8 @@ import type { Level, RoadId } from "./tables.ts";
 const TRUCE_SECONDS = 3;
 
 const photoFinishOver = (race: Entered, rival: RivalId): void => {
-  const chaser = riderOf(race, rival);
-  const me = riderOf(race, "player");
+  const chaser = racerIn(race, rival);
+  const me = racerIn(race, "player");
   const inputs = race.state.riders.map(() => neutralInput);
   inputs[0] = flatOut;
   inputs[race.setup.field.indexOf(rival) + 1] = flatOut;
@@ -63,17 +63,17 @@ const attacksOnThePlayer = (
   for (const seed of ATTACK_SEEDS) {
     const setup = setupFor(recordedRules, career, roadId, seed, road);
     const state = createRace(setup);
-    const index = setup.field.indexOf(rival) + 1;
     const inputs = state.riders.map(() => ({ ...neutralInput }));
-    const input = inputs[index];
-    const [me] = state.riders;
-    const them = state.riders[index];
+    const me = riderOf(state.riders, PLAYER_RIDER);
+    const them = state.riders.find(
+      (rider) => rider.profile.name === rivals[rival].name
+    );
+    const input = them ? inputs[them.id] : undefined;
     if (!(input && me && them)) {
       throw new Error(`${rival} is not in the race with seed ${seed}.`);
     }
-    for (const other of setup.field) {
-      const rider = state.riders[setup.field.indexOf(other) + 1];
-      if (rider) {
+    for (const rider of state.riders) {
+      if (rider !== me && rider.profile.role === "racer") {
         rider.s = 400;
       }
     }
@@ -89,10 +89,10 @@ const attacksOnThePlayer = (
       them.s = 50;
       them.x = 1.8;
       them.speed = 30;
-      pilotInput(state, road, index, input);
+      pilotInput(state, road, them, input);
       stepRace(state, road, inputs);
       attacks += state.events.filter(
-        (event) => event.kind === "attack" && event.rider === index
+        (event) => event.kind === "attack" && event.rider === them.id
       ).length;
     }
   }
@@ -179,7 +179,8 @@ describe("the field", () => {
       road
     );
     const state = createRace(setup);
-    const [player, ...others] = state.riders;
+    const player = riderOf(state.riders, PLAYER_RIDER);
+    const others = state.riders.filter((rider) => rider !== player);
     expect(
       setup.rivals.map((rival) => [rival.name, rival.bike.id, rival.weapon])
     ).toStrictEqual(
@@ -219,7 +220,7 @@ describe("the field", () => {
       },
       road
     );
-    const [player] = createRace(setup).riders;
+    const player = riderOf(createRace(setup).riders, PLAYER_RIDER);
     expect(player?.bike).toBe(bikes["ostra-sesta-600"]);
     expect(player?.weapon).toBe("none");
     expect([setup.level, setup.raceId, setup.police.count]).toStrictEqual([
@@ -245,7 +246,7 @@ describe("the field", () => {
 
 const afterMooseIsBusted = (playerAhead: number) => {
   const race = enter(newCareer(2), "slag-row");
-  riderOf(race, "player").s = 200 + playerAhead;
+  racerIn(race, "player").s = 200 + playerAhead;
   getArrested(race, "moose-kowalczyk");
   sprint(race, 1);
   const { career } = settle(race);
@@ -388,11 +389,10 @@ describe("memory", () => {
 
   it("a rival who punches the player into a car is put down for the knockdown, with the kilometre it happened at", () => {
     const race = enter(newCareer(2), "slag-row");
-    const me = riderOf(race, "player");
-    const dee = riderOf(race, "dee-santangelo");
-    const deeIndex = race.setup.field.indexOf("dee-santangelo") + 1;
+    const me = racerIn(race, "player");
+    const dee = racerIn(race, "dee-santangelo");
     const inputs = race.state.riders.map(() => neutralInput);
-    inputs[0] = idle;
+    inputs[me.id] = idle;
     let struck = false;
     for (let tick = 0; tick < TICKS && !struck; tick += 1) {
       me.s = 2000;
@@ -401,11 +401,11 @@ describe("memory", () => {
       dee.s = 2000;
       dee.x = 1.8;
       dee.speed = 30;
-      inputs[deeIndex] = { ...idle, punch: tick === 0 };
+      inputs[dee.id] = { ...idle, punch: tick === 0 };
       stepRace(race.state, road, inputs);
       recordTick(race.log, race.state, race.setup);
       struck = race.state.events.some(
-        (event) => event.kind === "hit" && event.target === 0
+        (event) => event.kind === "hit" && event.target === me.id
       );
     }
     race.state.cars.push({
@@ -424,7 +424,7 @@ describe("memory", () => {
       recordTick(race.log, race.state, race.setup);
       crashes.push(
         ...race.state.events.flatMap((event) =>
-          event.kind === "crash" && event.rider === 0 ? [event.cause] : []
+          event.kind === "crash" && event.rider === me.id ? [event.cause] : []
         )
       );
     }
@@ -459,9 +459,9 @@ describe("memory", () => {
     inputs[1] = flatOut;
     inputs[2] = flatOut;
     const placed = [
-      [riderOf(race, clear), 10],
-      [riderOf(race, close), 70],
-      [riderOf(race, "player"), 82],
+      [racerIn(race, clear), 10],
+      [racerIn(race, close), 70],
+      [racerIn(race, "player"), 82],
     ] as const;
     for (const [rider, short] of placed) {
       rider.s = road.length - short;

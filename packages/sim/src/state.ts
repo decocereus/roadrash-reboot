@@ -8,7 +8,22 @@ export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
 const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
-export const PLAYER_RIDER = 0;
+
+declare const riderIdBrand: unique symbol;
+
+export type RiderId = number & { readonly [riderIdBrand]: true };
+
+const isRiderId = (slot: number): slot is RiderId =>
+  Number.isSafeInteger(slot) && slot >= 0;
+
+const riderIdAt = (slot: number): RiderId => {
+  if (!isRiderId(slot)) {
+    throw new RangeError(`No rider sits in slot ${slot}.`);
+  }
+  return slot;
+};
+
+export const PLAYER_RIDER = riderIdAt(0);
 
 export type BikeClass = "featherweight" | "middleweight" | "heavyweight";
 
@@ -89,15 +104,16 @@ export type CrashCause =
   | "hazard";
 
 export interface RiderState {
+  readonly id: RiderId;
   readonly profile: RiderProfile;
   readonly bike: BikeSpec;
-  readonly grudge: number;
+  readonly grudge: RiderId | null;
   readonly aggressionBoost: number;
   mode: RiderMode;
   modeTicks: number;
   stamina: number;
   condition: number;
-  lastHitBy: number;
+  lastHitBy: RiderId | null;
   lastHitTick: number;
   bumpLoss: number;
   attack: AttackKind | "none";
@@ -108,7 +124,7 @@ export interface RiderState {
   weapon: WeaponKind;
   weaponHits: number;
   weaponAtThrow: WeaponKind;
-  chase: number;
+  chase: RiderId | null;
   parked: boolean;
   post: number;
   s: number;
@@ -186,31 +202,31 @@ export type HazardEffect = "slip" | "stagger" | "bump" | "jolt";
 export type RaceEvent =
   | {
       readonly kind: "crash";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly cause: CrashCause;
       readonly speed: number;
-      readonly by: number;
+      readonly by: RiderId | null;
       readonly hazard: HazardTag | null;
     }
   | {
       readonly kind: "hazard";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly hazard: HazardTag;
       readonly effect: HazardEffect;
       readonly speed: number;
     }
-  | { readonly kind: "wrecked"; readonly rider: number }
+  | { readonly kind: "wrecked"; readonly rider: RiderId }
   | {
       readonly kind: "knockedDown";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly speed: number;
-      readonly by: number;
+      readonly by: RiderId | null;
     }
-  | { readonly kind: "glance"; readonly rider: number }
-  | { readonly kind: "bump"; readonly rider: number }
+  | { readonly kind: "glance"; readonly rider: RiderId }
+  | { readonly kind: "bump"; readonly rider: RiderId }
   | {
       readonly kind: "land";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly impact: number;
       readonly airSeconds: number;
       readonly s: number;
@@ -218,45 +234,45 @@ export type RaceEvent =
     }
   | {
       readonly kind: "nearMiss";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly closingSpeed: number;
       readonly hazard: HazardTag | null;
     }
-  | { readonly kind: "remount"; readonly rider: number }
+  | { readonly kind: "remount"; readonly rider: RiderId }
   | {
       readonly kind: "attack";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly attack: AttackKind;
       readonly weapon: WeaponKind;
       readonly side: number;
     }
   | {
       readonly kind: "hit";
-      readonly rider: number;
-      readonly target: number;
+      readonly rider: RiderId;
+      readonly target: RiderId;
       readonly attack: AttackKind;
       readonly weapon: WeaponKind;
     }
   | {
       readonly kind: "weaponTaken";
-      readonly rider: number;
-      readonly target: number;
+      readonly rider: RiderId;
+      readonly target: RiderId;
       readonly weapon: WeaponKind;
     }
   | {
       readonly kind: "weaponBroken";
-      readonly rider: number;
+      readonly rider: RiderId;
       readonly weapon: WeaponKind;
     }
   | {
       readonly kind: "pursuit";
-      readonly rider: number;
-      readonly target: number;
+      readonly rider: RiderId;
+      readonly target: RiderId;
     }
   | {
       readonly kind: "busted";
-      readonly rider: number;
-      readonly cop: number;
+      readonly rider: RiderId;
+      readonly cop: RiderId;
       readonly fine: number;
       readonly s: number;
       readonly x: number;
@@ -264,10 +280,10 @@ export type RaceEvent =
     }
   | {
       readonly kind: "riderContact";
-      readonly rider: number;
-      readonly other: number;
+      readonly rider: RiderId;
+      readonly other: RiderId;
     }
-  | { readonly kind: "finish"; readonly rider: number; readonly tick: number };
+  | { readonly kind: "finish"; readonly rider: RiderId; readonly tick: number };
 
 interface PoliceRules {
   readonly topSpeed: number;
@@ -288,7 +304,7 @@ export interface PlayerSetup extends RiderProfile {
 
 export interface RivalSetup extends RiderProfile {
   readonly bike: BikeSpec;
-  readonly grudge?: number;
+  readonly grudge?: RiderId;
   readonly aggressionBoost?: number;
 }
 
@@ -316,11 +332,30 @@ export interface RaceState {
   hazardDice: number;
   readonly police: PoliceRules;
   readonly pacing: PacingRules;
-  readonly riders: RiderState[];
+  readonly riders: readonly RiderState[];
   readonly cars: TrafficCar[];
   readonly hazards: Hazard[];
   readonly events: RaceEvent[];
 }
+
+export interface Roster {
+  readonly player: RiderId;
+  readonly rivals: readonly RiderId[];
+  readonly police: readonly RiderId[];
+}
+
+export const rosterOf = (setup: RaceSetup): Roster => ({
+  player: PLAYER_RIDER,
+  police: Array.from({ length: setup.police.count }, (_, at) =>
+    riderIdAt(1 + setup.rivals.length + at)
+  ),
+  rivals: setup.rivals.map((_, at) => riderIdAt(1 + at)),
+});
+
+export const riderOf = <Entry>(
+  perRider: readonly Entry[],
+  id: RiderId | null
+): Entry | undefined => (id === null ? undefined : perRider[id]);
 
 export const raceOwned = <Owned>(
   create: () => Owned

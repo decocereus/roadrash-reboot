@@ -8,12 +8,14 @@ import { slagRow } from "@racer/track/tracks/slag-row";
 import { pilotInput } from "./pilot.ts";
 import { PATROL_SPEED } from "./police.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
-import { TICK_RATE } from "./state.ts";
+import { PLAYER_RIDER, TICK_RATE, riderOf } from "./state.ts";
 import type {
   BikeSpec,
   RaceEvent,
   RaceState,
   RiderInput,
+  RiderId,
+  RiderProfile,
   RiderState,
 } from "./state.ts";
 
@@ -57,21 +59,35 @@ export const cruising: RiderInput = {
   throttle: 0.5,
 };
 
-export const riderAt = (state: RaceState, index: number) => {
-  const rider = state.riders[index];
+export const riderAt = (state: RaceState, id: RiderId) => {
+  const rider = riderOf(state.riders, id);
   if (!rider) {
-    throw new Error(`The race has no rider ${index}.`);
+    throw new Error(`The race has no rider ${id}.`);
   }
   return rider;
 };
 
-export const player = (state: RaceState) => {
-  const [rider] = state.riders;
+export const player = (state: RaceState) => riderAt(state, PLAYER_RIDER);
+
+const nthOf = (
+  state: RaceState,
+  role: RiderProfile["role"],
+  place: number
+): RiderState => {
+  const rider = state.riders.filter(
+    (entrant) => entrant.id !== PLAYER_RIDER && entrant.profile.role === role
+  )[place];
   if (!rider) {
-    throw new Error("The race has no rider.");
+    throw new Error(`The race has no ${role} at place ${place}.`);
   }
   return rider;
 };
+
+export const rivalIn = (state: RaceState, place = 0) =>
+  nthOf(state, "racer", place);
+
+export const copIn = (state: RaceState, place = 0) =>
+  nthOf(state, "police", place);
 
 export const hold = (
   state: RaceState,
@@ -117,9 +133,9 @@ export const alone = (course: Track, bike: BikeSpec): RaceState => {
 
 export const sideBySide = () => {
   const state = field(straight, 1, 2, 0);
-  riderAt(state, 1).s = 900;
-  const me = riderAt(state, 0);
-  const moose = riderAt(state, 2);
+  rivalIn(state).s = 900;
+  const me = player(state);
+  const moose = rivalIn(state, 1);
   for (const rider of [me, moose]) {
     rider.s = 50;
     rider.speed = 30;
@@ -132,8 +148,8 @@ export const brawl = (
   seconds: number,
   inputsAt: (tick: number) => readonly RiderInput[]
 ): RaceEvent[] => {
-  const me = riderAt(state, 0);
-  const moose = riderAt(state, 2);
+  const me = player(state);
+  const moose = rivalIn(state, 1);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     me.x = 0.3;
@@ -153,8 +169,7 @@ export const pressing = (
   [key]: pressed,
 });
 
-export const patrolFrom = (state: RaceState, copIndex: number, s: number) => {
-  const cop = riderAt(state, copIndex);
+export const patrolFrom = (cop: RiderState, s: number) => {
   cop.parked = false;
   cop.s = s;
   cop.x = track.plan.laneWidth / 2;
@@ -257,6 +272,19 @@ export interface Trace {
   readonly x: number;
 }
 
+export const pilotAll = (
+  state: RaceState,
+  road: Track,
+  inputs: readonly RiderInput[]
+): void => {
+  for (const rider of state.riders) {
+    const input = inputs[rider.id];
+    if (input) {
+      pilotInput(state, road, rider, input);
+    }
+  }
+};
+
 export const pilotFrom = (
   state: RaceState,
   road: Track,
@@ -270,7 +298,7 @@ export const pilotFrom = (
   const slippingSteer: number[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     beforeTick?.(tick);
-    pilotInput(state, road, 0, input);
+    pilotInput(state, road, rider, input);
     stepRace(state, road, [input]);
     events.push(...state.events);
     line.push({ s: rider.s, x: rider.x });

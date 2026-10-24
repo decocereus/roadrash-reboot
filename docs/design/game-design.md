@@ -933,10 +933,11 @@ When a player drops, their rider stays and a bot rides it under an "AUTO" tag. A
 - Determinism, from no clock, no unseeded randomness, a fixed tick, the AI's dice in `RaceState`, its own trig, and a math whitelist.
 - A bike on each rider, set from the race setup.
 - Race rules passed in by the caller, with only the ceiling of 15 racers in the simulation.
+- A stable `RiderId` for every rider, given once when the race is built, with the rider array in a fixed order for the whole race. Grudges, chases, `lastHitBy`, events and results name riders by id, and `null` means no rider.
 
 ### What it lacks
 
-- **Stable rider ids.** Riders are array indices. Inputs, events, and results need an id per rider that survives any change to the array.
+- **Ids in the input frame.** `stepRace` still takes one input per array slot. Each slot's id equals its place, so a room can address a seat today, and the tick operation can take inputs keyed by id when it lands.
 - **Input validation and the codec.** `stepRace` trusts its inputs. The room clamps and quantizes them and drops inputs for ticks already stepped before they reach the simulation.
 - **One tick operation.** The pilot and `stepRace` as one call, so a bot's tick is the same everywhere.
 - **Event copying.** `state.events` is cleared at the start of every step, so the runner copies events out each tick for the renderer and the room.
