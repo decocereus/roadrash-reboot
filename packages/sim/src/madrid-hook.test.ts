@@ -26,7 +26,7 @@ describe("the Casa de Campo hook", () => {
       const input = { ...cruising };
       let offRoad = false;
       for (let tick = 0; tick < LAP_LIMIT && rider.finishTick < 0; tick += 1) {
-        pilotInput(race, quietHook, 0, input);
+        pilotInput(race, quietHook, rider, input);
         stepRace(race, quietHook, [input]);
         offRoad ||= rider.offRoad;
       }

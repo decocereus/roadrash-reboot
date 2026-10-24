@@ -6,6 +6,7 @@ import {
   neutralInput,
   stepRace,
 } from "@racer/sim/race";
+import { player } from "@racer/sim/race-fixtures";
 import { TICK_RATE } from "@racer/sim/state";
 import { roadAtLevel, roadIds } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
@@ -78,10 +79,7 @@ const steadinessOn = (
     police: { ...setup.police, count: 0 },
     rivals: [],
   });
-  const [rider] = race.riders;
-  if (!rider) {
-    throw new Error("The race has no rider.");
-  }
+  const rider = player(race);
   const input = { ...neutralInput };
   const chase = createChaseCamera();
   const subject = { air: 0, s: 0, speed: 0, tuck: 0, x: 0 };
@@ -89,7 +87,7 @@ const steadinessOn = (
   const yaws: number[] = [];
   const straight: boolean[] = [];
   for (let tick = 0; tick < RIDE_LIMIT && rider.finishTick < 0; tick += 1) {
-    pilotInput(race, track, 0, input);
+    pilotInput(race, track, rider, input);
     stepRace(race, track, [input]);
     subject.s = rider.s;
     subject.x = rider.x;
