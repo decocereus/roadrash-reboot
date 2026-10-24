@@ -1,3 +1,5 @@
+import { sampleAlignment } from "./alignment.ts";
+import type { Alignment, Centreline } from "./alignment.ts";
 import { compileFeatures, indexFeatures } from "./features.ts";
 import type { FeatureIndex, FeatureRule, TrackFeature } from "./features.ts";
 import { placeHazards } from "./hazards.ts";
@@ -7,13 +9,7 @@ import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
 
-export interface TrackSection {
-  readonly length: number;
-  readonly turnDegrees: number;
-  readonly climb: number;
-}
-
-export interface TrackPlan {
+export interface TrackPlan extends Alignment {
   readonly id: string;
   readonly name: string;
   readonly region: RegionId;
@@ -23,12 +19,9 @@ export interface TrackPlan {
   readonly laneWidth: number;
   readonly shoulderWidth: number;
   readonly vergeWidth: number;
-  readonly leadInLength: number;
-  readonly runoffLength: number;
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
   readonly roadblocks: readonly number[];
-  readonly sections: readonly TrackSection[];
   readonly features: readonly FeatureRule[];
 }
 
@@ -44,23 +37,12 @@ export interface TrackProp {
 
 export type LaneCentres = readonly [number] | readonly [number, number];
 
-export interface Track {
+export interface Track extends Centreline {
   readonly plan: TrackPlan;
-  readonly length: number;
-  readonly startS: number;
-  readonly endS: number;
   readonly roadHalfWidth: number;
   readonly vergeHalfWidth: number;
   readonly sameWayLanes: LaneCentres;
   readonly oncomingLanes: LaneCentres;
-  readonly sampleCount: number;
-  readonly worldX: Float64Array;
-  readonly worldY: Float64Array;
-  readonly worldZ: Float64Array;
-  readonly heading: Float64Array;
-  readonly curvature: Float64Array;
-  readonly slope: Float64Array;
-  readonly slopeRate: Float64Array;
   readonly props: readonly TrackProp[];
   readonly solidProps: readonly TrackProp[];
   readonly features: readonly TrackFeature[];
@@ -76,14 +58,8 @@ export interface TrackPoint {
   slope: number;
 }
 
-const CURVE_RAMP = 0.3;
 const SHARP_CURVATURE = 1 / 420;
 const ROCK_SEED_SALT = 0x70_c5;
-
-const smoothstep = (value: number): number => {
-  const clamped = Math.min(1, Math.max(0, value));
-  return clamped * clamped * (3 - 2 * clamped);
-};
 
 const roadHalfWidthOf = (plan: TrackPlan): number =>
   plan.lanesEachWay * plan.laneWidth + plan.shoulderWidth;
@@ -95,16 +71,6 @@ const laneCentres = (plan: TrackPlan, side: number): LaneCentres =>
   plan.lanesEachWay === 2
     ? [laneCentre(plan, side, 0), laneCentre(plan, side, 1)]
     : [laneCentre(plan, side, 0)];
-
-const curveWeight = (progress: number): number => {
-  if (progress < CURVE_RAMP) {
-    return smoothstep(progress / CURVE_RAMP);
-  }
-  if (progress > 1 - CURVE_RAMP) {
-    return smoothstep((1 - progress) / CURVE_RAMP);
-  }
-  return 1;
-};
 
 const scatterProps = (
   plan: TrackPlan,
@@ -186,80 +152,9 @@ const scatterProps = (
 };
 
 export const compileTrack = (plan: TrackPlan): Track => {
-  let length = 0;
-  for (const section of plan.sections) {
-    length += section.length;
-  }
-  const startS = -plan.leadInLength;
-  const endS = length + plan.runoffLength;
-  const sampleCount = Math.round(endS - startS) + 1;
-  const worldX = new Float64Array(sampleCount);
-  const worldY = new Float64Array(sampleCount);
-  const worldZ = new Float64Array(sampleCount);
-  const heading = new Float64Array(sampleCount);
-  const curvature = new Float64Array(sampleCount);
-  const slope = new Float64Array(sampleCount);
-  const slopeRate = new Float64Array(sampleCount);
-
-  let sectionIndex = 0;
-  let sectionStart = 0;
-  let sectionBaseHeight = 0;
-  for (let index = 0; index < sampleCount; index += 1) {
-    const s = startS + index;
-    if (s >= 0 && s < length) {
-      let section = plan.sections[sectionIndex];
-      while (section && s >= sectionStart + section.length) {
-        sectionStart += section.length;
-        sectionBaseHeight += section.climb;
-        sectionIndex += 1;
-        section = plan.sections[sectionIndex];
-      }
-      if (section) {
-        const progress = (s - sectionStart) / section.length;
-        const turn = (section.turnDegrees * Math.PI) / 180;
-        curvature[index] =
-          (turn / (section.length * (1 - CURVE_RAMP))) * curveWeight(progress);
-        worldY[index] =
-          sectionBaseHeight +
-          (section.climb * (1 - cos(Math.PI * progress))) / 2;
-        slope[index] =
-          ((section.climb / section.length) *
-            Math.PI *
-            sin(Math.PI * progress)) /
-          2;
-        slopeRate[index] =
-          ((section.climb / (section.length * section.length)) *
-            Math.PI *
-            Math.PI *
-            cos(Math.PI * progress)) /
-          2;
-      }
-    } else if (s >= length) {
-      let finalHeight = 0;
-      for (const section of plan.sections) {
-        finalHeight += section.climb;
-      }
-      worldY[index] = finalHeight;
-    }
-  }
-
-  const startIndex = plan.leadInLength;
-  for (let index = startIndex + 1; index < sampleCount; index += 1) {
-    const previous = index - 1;
-    const meanCurvature =
-      ((curvature[previous] ?? 0) + (curvature[index] ?? 0)) / 2;
-    const previousHeading = heading[previous] ?? 0;
-    const nextHeading = previousHeading + meanCurvature;
-    const midHeading = (previousHeading + nextHeading) / 2;
-    heading[index] = nextHeading;
-    worldX[index] = (worldX[previous] ?? 0) + sin(midHeading);
-    worldZ[index] = (worldZ[previous] ?? 0) - cos(midHeading);
-  }
-  for (let index = startIndex - 1; index >= 0; index -= 1) {
-    worldZ[index] = (worldZ[index + 1] ?? 0) + 1;
-  }
-
-  const props = scatterProps(plan, length, curvature);
+  const centreline = sampleAlignment(plan);
+  const { endS, length, startS } = centreline;
+  const props = scatterProps(plan, length, centreline.curvature);
   const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
   const features = compileFeatures(plan.features, {
@@ -269,28 +164,18 @@ export const compileTrack = (plan: TrackPlan): Track => {
   });
 
   const road = {
-    curvature,
-    endS,
+    ...centreline,
     featureIndex: indexFeatures(features, startS, endS),
     features,
-    heading,
-    length,
     oncomingLanes: laneCentres(plan, -1),
     plan,
     props,
     roadHalfWidth,
     sameWayLanes: laneCentres(plan, 1),
-    sampleCount,
-    slope,
-    slopeRate,
     solidProps: props.filter(
       (prop) => prop.radius > 0 && Math.abs(prop.x) < vergeHalfWidth + 1
     ),
-    startS,
     vergeHalfWidth,
-    worldX,
-    worldY,
-    worldZ,
   };
   return { ...road, hazards: placeHazards(road) };
 };

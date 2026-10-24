@@ -4,6 +4,7 @@ import type { RivalLine } from "@racer/career/lines";
 import type { RaceOutcome, RaceResult } from "@racer/career/outcome";
 import { summaryOf } from "@racer/career/result";
 import type { LastResult, RaceSummary } from "@racer/career/result";
+import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import { nextRaceSeed } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
@@ -63,6 +64,7 @@ export const quickEntry = (pick: QuickPick, seed: number): RaceEntry => ({
 });
 
 export const planFor = (
+  rules: RaceRules,
   career: CareerState | null,
   entry: RaceEntry
 ): RacePlan => {
@@ -71,12 +73,12 @@ export const planFor = (
     ? {
         bikeId: career.bikeId,
         mode: entry.mode,
-        setup: setupFor(career, entry.roadId, entry.seed, track),
+        setup: setupFor(rules, career, entry.roadId, entry.seed, track),
       }
     : {
         bikeId: entry.bikeId,
         mode: entry.mode,
-        setup: practiceSetup(entry, track),
+        setup: practiceSetup(rules, entry, track),
       };
 };
 

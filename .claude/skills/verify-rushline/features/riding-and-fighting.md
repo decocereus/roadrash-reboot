@@ -1,6 +1,6 @@
 # Riding and fighting
 
-In a race the player rides a motorcycle down a point-to-point road through traffic with fourteen rivals and the police. The chase camera sits behind the bike; the only HUD is the speedometer with gear, place, and a progress arc. The player punches and kicks riders alongside, crashes when they hit traffic or the roadside, runs back to the bike and gets on again, gets warned when a cop is near, and finishes at the end of the road.
+In a race the player rides a motorcycle down a point-to-point road through traffic with the rivals the race rules seat, nine at the served field of ten, and the police. The chase camera sits behind the bike; the only HUD is the speedometer with gear, place, and a progress arc. The player punches and kicks riders alongside, crashes when they hit traffic or the roadside, runs back to the bike and gets on again, gets warned when a cop is near, and finishes at the end of the road.
 
 ## Sub-features
 

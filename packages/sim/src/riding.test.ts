@@ -1,3 +1,4 @@
+import { eased } from "@racer/track/alignment";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
@@ -64,7 +65,7 @@ describe("riding", () => {
       ...ridgeRoad,
       features: [],
       hazardsPerKilometre: 0,
-      sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+      pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,
     });
     const sprint = field(flat, 1, 0, 0);
@@ -120,7 +121,7 @@ describe("riding", () => {
       ...ridgeRoad,
       features: [],
       hazardsPerKilometre: 0,
-      sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+      pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,
     });
     const state = field(flat, 1, 0, 0);

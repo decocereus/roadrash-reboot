@@ -618,7 +618,7 @@
   ],
   "scenarios": [
     {
-      "hash": "a3c3eacff3f9961cc112e46f62c197e310d3326d4bd2573cc6cd0609f185bb8b",
+      "hash": "85fb0ea42afbd76ef3988905bb255974a9cb1bb679859443b4fcdfa3bc1f3097",
       "id": "reference-v1",
       "police": 1,
       "race": "slag-row level 1, seed 31, halden-wren-400",
@@ -630,7 +630,7 @@
       "workloadDigest": "7b5107a7be04ad2a05dd03176c529d24b63f231d3579a62a57c19beeab844497"
     },
     {
-      "hash": "6dcdebec5e39ea7abe5123ca4d4c1e47a42954db267196a950f7bb041e19a0ba",
+      "hash": "f24eea6a20910dd3c6d7d857154055020fafe7453316a17d55fcb0dbef154e10",
       "id": "pack-riding-v1",
       "police": 8,
       "race": "slag-row level 5, seed 8, ostra-sesta-600",

@@ -3,6 +3,7 @@ import { weapons } from "@racer/sim/weapons";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { newCareer } from "./state.ts";
@@ -68,12 +69,12 @@ const missing = (career: CareerState, path: string): string =>
   );
 
 const verdictOn = (save: string): string => {
-  const result = parseCareer(save);
+  const result = parseCareer(recordedRules, save);
   return result.ok ? "loaded" : `${result.error.kind}:${result.error.field}`;
 };
 
 const rereadOf = (save: string): string => {
-  const result = parseCareer(save);
+  const result = parseCareer(recordedRules, save);
   return result.ok ? serialiseCareer(result.career) : verdictOn(save);
 };
 
@@ -111,7 +112,9 @@ const versionTwoBytes = [
 describe("the save", () => {
   it("a career round-trips through its save text", () => {
     expect(
-      careers.map((career) => parseCareer(serialiseCareer(career)))
+      careers.map((career) =>
+        parseCareer(recordedRules, serialiseCareer(career))
+      )
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 

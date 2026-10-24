@@ -1,3 +1,4 @@
+import { eased } from "@racer/track/alignment";
 import type { HazardPlacement } from "@racer/track/hazards";
 import { compileTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -30,7 +31,7 @@ export const straight = compileTrack({
   ...ridgeRoad,
   features: [],
   hazardsPerKilometre: 0,
-  sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+  pieces: eased([[6000, 0, 0]]),
   trafficPerKilometre: 0,
 });
 
@@ -199,7 +200,7 @@ export const rampRoadPlan = {
     },
   ],
   hazardsPerKilometre: 0,
-  sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+  pieces: eased([[6000, 0, 0]]),
   trafficPerKilometre: 0,
 } as const;
 
@@ -228,7 +229,7 @@ export const hazardFreeRoad = compileTrack({
   ...ridgeRoad,
   features: [],
   hazardsPerKilometre: 0,
-  sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+  pieces: eased([[6000, 0, 0]]),
   trafficPerKilometre: 0,
 });
 

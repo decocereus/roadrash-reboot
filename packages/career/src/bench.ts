@@ -4,9 +4,16 @@ import { trackFor } from "@racer/track/roads";
 
 import { practiceSetup } from "./field.ts";
 import type { CareerRaceSetup, PracticeRace } from "./field.ts";
+import type { RaceRules } from "./rules.ts";
 import { STARTING_BIKE } from "./tables.ts";
 
 export type Bench = "stress" | "reference";
+
+export const recordedRules: RaceRules = {
+  fieldSize: 15,
+  levelCount: 5,
+  police: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },
+};
 
 export const benchRaces = {
   reference: {
@@ -29,7 +36,7 @@ const STRESS_PLAYER_AGGRESSION = 0.8;
 const STRESS_PACING: PacingRules = { catchUp: 0.6, leadEase: 0.8 };
 
 const benchRaceSetup = (race: PracticeRace): CareerRaceSetup =>
-  practiceSetup(race, trackFor(race.roadId, race.level));
+  practiceSetup(recordedRules, race, trackFor(race.roadId, race.level));
 
 const stressSetup = (): CareerRaceSetup => {
   const setup = benchRaceSetup(benchRaces.stress);

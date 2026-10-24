@@ -3,6 +3,29 @@ import type { FeatureEntry } from "./feature-map.ts";
 export const platformFeatures: readonly FeatureEntry[] = [
   {
     docs: [
+      "docs/madrid-corridor.md#route-and-coordinates",
+      "docs/madrid-corridor.md#fitting-track-pieces",
+    ],
+    id: "madrid-corridor",
+    kind: "platform",
+    owns: [
+      "tools/madrid/**",
+      "packages/track/src/madrid-*.ts",
+      "apps/web/src/routes/credits.tsx",
+    ],
+    perf: [],
+    start: [
+      "tools/madrid/generate.ts",
+      "packages/track/src/madrid-corridor.ts",
+      "apps/web/src/routes/credits.tsx",
+    ],
+    summary:
+      "Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit, and the public data credits page. The corridor is not wired into a track or the renderer.",
+    title: "Madrid corridor and data credits",
+    verify: ["credits.md"],
+  },
+  {
+    docs: [
       "docs/architecture.md#race-setup-and-cast",
       "docs/coding-standards.md#keep-the-simulation-deterministic",
     ],
@@ -49,14 +72,19 @@ export const platformFeatures: readonly FeatureEntry[] = [
     id: "track-compiler",
     kind: "platform",
     owns: [
+      "packages/track/src/alignment*.ts",
       "packages/track/src/track.ts",
       "packages/track/src/road.ts",
       "packages/track/src/roads.ts",
     ],
     perf: [],
-    start: ["packages/track/src/track.ts", "packages/track/src/roads.ts"],
+    start: [
+      "packages/track/src/alignment.ts",
+      "packages/track/src/track.ts",
+      "packages/track/src/roads.ts",
+    ],
     summary:
-      "Compiling a `TrackPlan` into the `Track` the simulation and renderer share: curvature, height, lanes and scattered props, the plan for each level, and the `trackFor` registry.",
+      "Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, lanes and scattered props, the plan for each level, and the `trackFor` registry.",
     title: "Track compiler",
     verify: [],
   },
@@ -180,6 +208,32 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "Writing and reading the career save: the versioned schema and its checks, the browser's `localStorage` save and backup, and the check that holds the saved structure within one `SAVE_VERSION`.",
     title: "Career save",
     verify: ["career.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#career",
+      "docs/errors.md#race-rules",
+      "docs/design/game-design.md#12-multiplayer",
+    ],
+    id: "race-rules",
+    kind: "platform",
+    owns: [
+      "packages/career/src/rules*.ts",
+      "apps/web/src/server/race-rules.ts",
+      "apps/web/src/routes/api/race-rules.ts",
+      "apps/web/src/rules/**",
+      "apps/web/test/race-rules.test.ts",
+    ],
+    perf: [],
+    start: [
+      "apps/web/src/server/race-rules.ts",
+      "packages/career/src/rules.ts",
+      "apps/web/src/rules/load.ts",
+    ],
+    summary:
+      "The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.",
+    title: "Race rules",
+    verify: ["race-rules.md"],
   },
   {
     docs: [

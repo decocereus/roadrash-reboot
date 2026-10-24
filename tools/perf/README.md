@@ -38,6 +38,8 @@ Nothing rewrites the budgets. To measure a new baseline, run `node tools/perf/ga
 - `reference-v1` is Slag Row level 1 on seed 31 with the starting bike, ticks 1727 to 2327, with 10 rivals ahead on every tick.
 - `pack-riding-v1` is the `?stress` race, Slag Row level 5 on seed 8 with eight police, ticks 2165 to 2765, with 11 to 13 rivals ahead. Despite its name, the player trails the pack in this window: 14th of 15, with the counted rivals in a cluster 100 to 150 m ahead.
 
+Each scenario's hash covers its window, its race setup and the road it runs on. The road enters as the compiled track: the sampled centreline with every zero counted as +0, the lanes, props, ramps and hazards, and the plan's race settings. How the plan writes its geometry stays out, so a change to the track format that compiles the same road keeps the hash, and side A at an older revision still matches side B. Every side reports its own hash, and a side whose hash differs from the registry's fails before any timing is judged.
+
 `node tools/perf/gate.ts --select-window` replays both races and checks that the registered windows are still the ones the fixed selection rule picks.
 
 ### `pnpm perf`
