@@ -24,3 +24,13 @@ The code is the record of how this repository does things. The next agent copies
 
 - Run `pnpm check` and `pnpm build` after source changes, or `pnpm verify` for both.
 - Look at the running game after any change to `apps/web/src/game` or to handling. Passing tests do not show that it plays well.
+
+## Agent skills
+
+Vendored, reviewed third-party agent skills live in `.claude/skills/<name>/` (one copy) and reach Codex through the `.agents/skills/<name>` symlinks, because Codex scans `.agents/skills/` from the working directory up to the repository root (OpenAI's Codex documentation, developers.openai.com/codex/build-skills). Claude Code reads them from `.claude/skills/`, where the repo's own skills (`verify-rushline`, `sessions`) also live. Each vendored skill carries a `LICENSE` and a `PROVENANCE.md` with its source URL, source commit, cuts, edits and the security review. Treat them as reviewed data and never run their setups or installers from anywhere else.
+
+Use them when the work matches:
+
+- Blender character work under `tools/blender/`: `blender-core` (router and bpy patterns), `blender-character-rigging`, `blender-asset-qa` (the delivery gate), `blender-game-optimization`, `blender-export-pipelines`, `blender-facial-shapekeys`, and `scenario-blender-expert` (execution protocol and review loop), `scenario-blender-rigging`, `scenario-blender-retopology`, `scenario-blender-export`, `scenario-blender-uv-baking` (numeric weight, retopo and export gates).
+- Three.js work in `apps/web/src/game`: `threejs-materials`, `threejs-loaders`, `threejs-animation`, `threejs-asset-pipeline`, `threejs-performance`, `threejs-shaders`.
+- GLB audit and compression questions around `tools/blender/compress.ts`: `glb-web-export`.
