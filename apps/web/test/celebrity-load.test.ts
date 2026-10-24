@@ -163,6 +163,13 @@ describe("celebrity models load per race", () => {
     });
   });
 
+  it("gives a race that names no celebrity no dressing once the game goes", async () => {
+    const { wardrobe } = wardrobeOf(served);
+    const loading = wardrobe.dress(wearing(""));
+    wardrobe.dispose();
+    await expect(loading).resolves.toBeNull();
+  });
+
   it("fails the race's dressing when a celebrity cannot load, and the next race fetches it again", async () => {
     const refusals = { left: 1 };
     const { tally, wardrobe } = wardrobeOf(async (url) => {

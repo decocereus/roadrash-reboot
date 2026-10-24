@@ -25,9 +25,14 @@ export const createWardrobe = (load: LoadCelebrity): Wardrobe => {
   ): Promise<Decoded<RiderAsset> | null> => {
     try {
       const decoded = await load(id, mount.signal);
-      if (decoded !== null && !mount.signal.aborted) {
-        held.set(id, decoded);
+      if (decoded === null) {
+        return null;
       }
+      if (mount.signal.aborted) {
+        decoded.release();
+        return null;
+      }
+      held.set(id, decoded);
       return decoded;
     } catch (error) {
       loads.delete(id);
@@ -56,9 +61,12 @@ export const createWardrobe = (load: LoadCelebrity): Wardrobe => {
         rider,
       }))
     );
+    if (mount.signal.aborted) {
+      return null;
+    }
     const dressing = new Map<RiderId, RiderAsset>();
     for (const { decoded, rider } of fitted) {
-      if (decoded === null || mount.signal.aborted) {
+      if (decoded === null) {
         return null;
       }
       dressing.set(rider, decoded.value);

@@ -9,7 +9,7 @@ import type { QuickPick } from "../src/career/flow.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
 import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { assetParsers, createGame, createRenderer } from "../src/game/game.ts";
-import type { GameHandle, RacePlan } from "../src/game/hud.ts";
+import type { GameHandle, HudState, RacePlan } from "../src/game/hud.ts";
 import { isMesh, isPoints } from "../src/game/meshes.ts";
 import { createPipeline } from "../src/game/post.ts";
 import type { PrepareOutcome } from "../src/game/preparation.ts";
@@ -23,6 +23,7 @@ const SEED = 31;
 const WARM_CYCLES = 2;
 const COMPARED_CYCLES = 5;
 const EVENT_DEADLINE_MS = 10_000;
+const COUNTDOWN_FRAMES = 60;
 const ROAD_A: QuickPick["roadId"] = "cinder-wash";
 const ROAD_B: QuickPick["roadId"] = "slag-row";
 
@@ -132,6 +133,10 @@ interface CapturedRenderer {
   failNextDraw: boolean;
 }
 
+interface Seen {
+  hud: HudState | null;
+}
+
 const planOf = (roadId: QuickPick["roadId"]): RacePlan =>
   planFor(recordedRules, null, quickEntry({ ...firstQuickPick, roadId }, SEED));
 
@@ -187,15 +192,6 @@ const watchScene = (scene: THREE.Scene) => {
     watched.map(({ owned, released }) => ({ owned, released: released.size }));
 };
 
-const thrownBy = (run: () => void): string => {
-  try {
-    run();
-    return "nothing";
-  } catch (error) {
-    return error instanceof Error ? error.message : String(error);
-  }
-};
-
 const failedReload = async (
   game: GameHandle,
   held: CapturedRenderer,
@@ -208,11 +204,13 @@ const failedReload = async (
   }
   const settled = watchScene(scene);
   held.failNextDraw = true;
-  const error = thrownBy(() => {
-    game.startRace(planOf(roadId));
-  });
+  const reload = await game.prepare(planOf(roadId));
   held.failNextDraw = false;
   const [geometries, materials] = settled();
+  const error =
+    reload.kind === "failed"
+      ? `${reload.stage}: ${reload.cause.message}`
+      : reload.kind;
   return { error, geometries, materials, prepared, roadId };
 };
 
@@ -220,6 +218,39 @@ const retirementProof = async (game: GameHandle, held: CapturedRenderer) => {
   const sameRoad = await failedReload(game, held, ROAD_A);
   const newRoad = await failedReload(game, held, ROAD_B);
   return { newRoad, sameRoad };
+};
+
+const nextFrame = async (): Promise<number> => {
+  const { promise, resolve } = Promise.withResolvers<number>();
+  requestAnimationFrame(resolve);
+  return await promise;
+};
+
+const framesUntil = async (
+  done: () => boolean,
+  left: number
+): Promise<boolean> => {
+  if (done() || left === 0) {
+    return done();
+  }
+  await nextFrame();
+  return await framesUntil(done, left - 1);
+};
+
+const startDuringPreparation = async (game: GameHandle, seen: Seen) => {
+  await kindOf(game.prepare(planOf(ROAD_A)));
+  const before = seen.hud?.roadName ?? "";
+  const plan = planOf(ROAD_B);
+  const preparing = kindOf(game.prepare(plan));
+  game.startRace(plan);
+  const outcome = await preparing;
+  await framesUntil(() => seen.hud?.phase === "countdown", COUNTDOWN_FRAMES);
+  return {
+    before,
+    outcome,
+    phase: seen.hud?.phase ?? null,
+    roadName: seen.hud?.roadName ?? "",
+  };
 };
 
 const qualityProof = () => {
@@ -351,6 +382,7 @@ const lossProof = async (
 export const run = async () => {
   const notes: string[] = [];
   const hud = { publications: 0 };
+  const seen: Seen = { hud: null };
   const canvas = proofCanvas();
   const acquired = await acquire(notes);
   const held: CapturedRenderer = {
@@ -361,8 +393,9 @@ export const run = async () => {
   const game = createGame(
     canvas,
     {
-      onHud: () => {
+      onHud: (state) => {
         hud.publications += 1;
+        seen.hud = state;
       },
       onOver: () => {
         notes.push("over");
@@ -400,6 +433,7 @@ export const run = async () => {
   const quality = qualityProof();
   const loss = await lossProof(game, renderer, canvas, tracks.warmed);
   const retirement = await retirementProof(game, held);
+  const startedDuringPreparation = await startDuringPreparation(game, seen);
   const beforeDispose = countsOf(renderer);
   game.dispose();
   const afterDispose = countsOf(renderer);
@@ -418,6 +452,7 @@ export const run = async () => {
     notes,
     quality,
     retirement,
+    startedDuringPreparation,
     tracks,
   };
 };

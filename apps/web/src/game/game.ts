@@ -43,6 +43,10 @@ const WRECKED_SECONDS = 1.2;
 const ROAD_LEVEL = 1;
 const MARKER_KEY = "KeyB";
 
+type Prepared =
+  | { readonly kind: "dressing"; readonly setup: RaceSetup }
+  | { readonly kind: "built"; readonly setup: RaceSetup };
+
 interface Session {
   roadTurn: number;
   seed: number;
@@ -55,7 +59,7 @@ interface Session {
   holdLeft: number;
   countdown: number;
   lastStretchSaid: boolean;
-  prepared: RaceSetup | null;
+  prepared: Prepared | null;
   preparing: Promise<PrepareOutcome>;
   dressing: Dressing;
 }
@@ -577,18 +581,24 @@ const startGame = (
     return outcome;
   };
 
+  const dressingFor = (setup: RaceSetup): boolean =>
+    session.prepared?.kind === "dressing" && session.prepared.setup === setup;
+
+  const builtFor = (setup: RaceSetup): boolean =>
+    session.prepared?.kind === "built" && session.prepared.setup === setup;
+
   const buildPrepared = async (setup: RaceSetup): Promise<PrepareOutcome> => {
     let dressing: Dressing | null;
     try {
       dressing = await wardrobe.dress(wornBy(wearing, setup));
     } catch (error) {
-      if (session.prepared !== setup) {
+      if (!dressingFor(setup)) {
         return notPrepared;
       }
       session.prepared = null;
       return { cause: errorOf(error), kind: "failed", stage: "dress" };
     }
-    if (dressing === null || session.prepared !== setup) {
+    if (dressing === null || !dressingFor(setup)) {
       return notPrepared;
     }
     let release: () => void;
@@ -598,6 +608,7 @@ const startGame = (
       session.prepared = null;
       return { cause: errorOf(error), kind: "failed", stage: "build" };
     }
+    session.prepared = { kind: "built", setup };
     session.dressing = dressing;
     begin("idle");
     const warming = showStartWhenWarm();
@@ -608,14 +619,14 @@ const startGame = (
   };
 
   const prepare = async (next: RacePlan): Promise<PrepareOutcome> => {
-    if (session.prepared === next.setup) {
+    if (session.prepared?.setup === next.setup) {
       return await session.preparing;
     }
     session.plan = null;
     session.log = null;
     session.phase = "idle";
     quiet();
-    session.prepared = next.setup;
+    session.prepared = { kind: "dressing", setup: next.setup };
     session.preparing = buildPrepared(next.setup);
     const outcome = await session.preparing;
     if (outcome.kind === "failed") {
@@ -630,14 +641,14 @@ const startGame = (
 
   const startWhenPrepared = async (next: RacePlan): Promise<void> => {
     const outcome = await prepare(next);
-    if (outcome.kind !== "cancelled" && session.prepared === next.setup) {
+    if (outcome.kind !== "cancelled" && builtFor(next.setup)) {
       go(next);
     }
   };
 
   const startRace = (next: RacePlan) => {
     sound.unlock();
-    if (session.prepared === next.setup && session.phase === "idle") {
+    if (builtFor(next.setup) && session.phase === "idle") {
       if (stage.warming) {
         warmNow();
       }
