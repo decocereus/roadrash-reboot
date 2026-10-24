@@ -94,6 +94,7 @@ export const careerReport = (last: LastResult): RaceReport => ({
 });
 
 export const quickReport = (
+  rules: RaceRules,
   plan: RacePlan,
   outcome: RaceOutcome
 ): RaceReport => ({
@@ -105,6 +106,7 @@ export const quickReport = (
   result: outcome.result,
   roadId: outcome.roadId,
   summary: summaryOf(
+    rules,
     {
       bikeId: plan.bikeId,
       level: outcome.level,

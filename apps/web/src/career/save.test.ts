@@ -247,7 +247,7 @@ describe("the browser save", () => {
     const career = midRace(freshCareer(0.75));
     storeCareer(opened(storage), career);
     const first = loadCareer(recordedRules, opened(storage));
-    const bill = repairBill(career.level, career.bikeId);
+    const bill = repairBill(recordedRules, career.level, career.bikeId);
     expect(first).toMatchObject({
       career: { activeRace: null, cash: career.cash - bill },
       leftRace: { repair: bill, result: "quit" },
@@ -269,7 +269,7 @@ describe("the browser save", () => {
     const racing = storage.items.get(SAVE_KEY);
     storage.failing = "set";
     const first = loadCareer(recordedRules, opened(storage));
-    const bill = repairBill(career.level, career.bikeId);
+    const bill = repairBill(recordedRules, career.level, career.bikeId);
     expect(first).toMatchObject({
       career: { activeRace: null, cash: career.cash - bill },
       leftRace: { repair: bill, result: "quit" },

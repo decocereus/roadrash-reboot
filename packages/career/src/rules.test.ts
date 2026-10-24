@@ -1,24 +1,30 @@
+import { bikeIds } from "@racer/sim/bikes";
 import { describe, expect, it } from "vitest";
 
 import { recordedRules } from "./bench.ts";
 import {
   decent,
+  decentSeason,
   enter,
   ledgerOf,
   play,
   playAll,
+  road,
   seasonAt,
+  seasonsOf,
   settle,
   sprint,
+  weakSeason,
 } from "./career-fixtures.ts";
-import { fieldFor, roadsFor } from "./field.ts";
+import { fieldFor, roadsFor, setupFor } from "./field.ts";
 import { levelAfter, levelsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { startRace } from "./settle.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { roadList } from "./tables.ts";
+import { chapterOf } from "./story.ts";
+import { policeFor, prizeFor, roadList, stockArrivingAt } from "./tables.ts";
 
 const served: RaceRules = { ...recordedRules, fieldSize: 10, levelCount: 3 };
 
@@ -81,5 +87,77 @@ describe("ten racers over three levels", () => {
       true,
       { error: { field: "level", kind: "invalid" }, ok: false },
     ]);
+  });
+
+  it("stocks every bike at some level and puts every bike under some rival", () => {
+    const ridden = new Set(
+      levelsOf(served).flatMap((level) =>
+        roadList.flatMap((entry) =>
+          [1, 2, 3, 4].flatMap((seed) =>
+            setupFor(
+              served,
+              { ...newCareer(seed), level },
+              entry.id,
+              seed,
+              road
+            ).rivals.map((rival) => rival.bike.id)
+          )
+        )
+      )
+    );
+    expect(
+      levelsOf(served).map((level) => stockArrivingAt(served, level))
+    ).toStrictEqual([
+      [
+        "gutter-pup-250",
+        "halden-wren-400",
+        "halden-kite-500",
+        "ostra-sesta-600",
+      ],
+      ["ostra-sette-750", "brack-stoker-800", "halden-meridian-900"],
+      ["brack-anvil-1100", "ostra-nera-1000"],
+    ]);
+    expect(bikeIds.filter((bikeId) => !ridden.has(bikeId))).toStrictEqual([]);
+  });
+
+  it("pays each level for the two rungs of bike it climbs, and bills it at the rung its field rides", () => {
+    expect(
+      levelsOf(served).map((level) => [
+        [1, 2, 3, 10].map((place) => prizeFor(served, level, place)),
+        policeFor(served, level, "lowtown").fine,
+      ])
+    ).toStrictEqual([
+      [[3000, 2000, 1400, 60], 400],
+      [[7200, 4800, 3360, 144], 1500],
+      [[13_800, 9200, 6440, 276], 3000],
+    ]);
+    expect(prizeFor(recordedRules, 5, 1)).toBe(6900);
+  });
+
+  it("lets the decent and the weak player buy one bike a level, the Sesta and then the Meridian", () => {
+    const purchases = ["ostra-sesta-600", "halden-meridian-900"] as const;
+    const cash = (steps: typeof decentSeason) =>
+      seasonsOf(steps, purchases, served).map((season) => [
+        season.end.bikeId,
+        season.start.cash,
+        season.end.cash,
+      ]);
+    expect(cash(decentSeason)).toStrictEqual([
+      ["halden-wren-400", 1500, 9100],
+      ["ostra-sesta-600", 2900, 19_910],
+      ["halden-meridian-900", 6210, 37_450],
+    ]);
+    expect(cash(weakSeason)).toStrictEqual([
+      ["halden-wren-400", 1500, 8700],
+      ["ostra-sesta-600", 2500, 18_400],
+      ["halden-meridian-900", 4700, 32_700],
+    ]);
+  });
+
+  it("folds the last two chapters into level 3, the Long Ridge", () => {
+    expect(
+      levelsOf(served).map((level) => chapterOf(served, level).name)
+    ).toStrictEqual(["New Meat", "Dee's Tip", "The Long Ridge"]);
+    expect(chapterOf(served, 3).note).toContain("Ridge Road");
   });
 });

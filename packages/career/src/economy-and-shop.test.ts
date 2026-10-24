@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   decent,
   ledgerOf,
@@ -73,7 +74,9 @@ describe("the economy", () => {
       [10_400, 22_200],
     ]);
     const last = seasonAt(weak, 5);
-    expect(canBuy(seasonAt(weak, 4).end, "halden-meridian-900")).toBeFalsy();
+    expect(
+      canBuy(recordedRules, seasonAt(weak, 4).end, "halden-meridian-900")
+    ).toBeFalsy();
     expect([last.end.bikeId, last.end.story.ending]).toStrictEqual([
       "ostra-sette-750",
       "runner-up",
@@ -128,7 +131,11 @@ describe("the economy", () => {
     const bust = ledgerOf(
       play(qualified, { ends: "busted", roadId: "slag-row" })
     );
-    const onSesta = buyBike({ ...qualified, cash: 9000 }, "ostra-sesta-600");
+    const onSesta = buyBike(
+      recordedRules,
+      { ...qualified, cash: 9000 },
+      "ostra-sesta-600"
+    );
     const wreck = ledgerOf(
       play(onSesta, { ends: "wrecked", roadId: "slag-row" })
     );

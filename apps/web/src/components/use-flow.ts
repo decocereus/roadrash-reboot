@@ -365,8 +365,8 @@ export const useFlow = (): Flow => {
       onSettle(plan, outcome) {
         const racer = careerRef.current;
         let report: RaceReport | null = null;
-        if (plan.mode === "quick") {
-          report = quickReport(plan, outcome);
+        if (rules && plan.mode === "quick") {
+          report = quickReport(rules, plan, outcome);
         } else if (racer && rules) {
           report = settle(settleRace(rules, racer, outcome));
         }

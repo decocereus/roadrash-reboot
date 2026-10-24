@@ -309,7 +309,7 @@ There is no display ad slot since Results moved into the bar. If one comes back,
 
 **In.** From Finish, from the race after a wreck or a bust, and from a career quit. Never before the settlement write.
 
-**Out.** `CONTINUE` goes to Game Over if the debt check ended the career, to the ending if the player finished the finale in the top three, to the bar with Vic's promotion line if this race qualified the fifth road of levels 1 to 4, and otherwise to the Clubhouse. There is no interstitial ad on the way. A reload on this screen opens the Clubhouse, or Game Over if the career is over, because everything shown here is already in the save.
+**Out.** `CONTINUE` goes to Game Over if the debt check ended the career, to the ending if the player finished the finale in the top three, to the bar with Vic's promotion line if this race qualified the fifth road of any level but the last, and otherwise to the Clubhouse. There is no interstitial ad on the way. A reload on this screen opens the Clubhouse, or Game Over if the career is over, because everything shown here is already in the save.
 
 **Single Race.** No status strip, ledger, prize column, or qualification. The stamp reads the place with `SINGLE RACE` under it, and the pink note says nothing is written to the career. `CONTINUE` goes back to the Single Race menu and `RACE AGAIN` restarts the same road. Nothing is written to the career.
 
@@ -319,16 +319,18 @@ There is no display ad slot since Results moved into the bar. If one comes back,
 
 **Purpose.** Mark the promotion briefly and say what is new, in the bar.
 
-**In the bar.** After a race that qualifies the fifth road of levels 1 to 4, Continue on Results returns to the bar. The stool is empty and Vic speaks the level's line in the speech sticker until it is clicked:
+**In the bar.** After a race that qualifies the fifth road of any level but the last, Continue on Results returns to the bar. The stool is empty and Vic speaks the level's line in the speech sticker until it is clicked. Each rung (`game-design.md` section 4) has a line, and a level speaks the lines of the rungs it takes in, in order:
 
-- Level 2: `Longer roads. Two cops. Bigger purses. The garage got a delivery.`
-- Level 3: `Longer again. Three cops, and the new ones are quicker.`
-- Level 4: `Four cops. Everyone's armed now. Try to keep up.`
-- Level 5: `Five roads left. The Ridge is last. She'll be waiting.`
+- Rung 2: `Longer roads and bigger purses. The garage got a delivery.`
+- Rung 3: `The new cops are quicker.`
+- Rung 4: `Everyone's armed now. Try to keep up.`
+- Rung 5: `Five roads left. The Ridge is last. She'll be waiting.`
+
+At three levels, level 2 speaks the rung 2 and 3 lines and level 3 the rung 4 and 5 lines, so the last promotion always names the finale. The lines leave the cop count to the wall note, which reads the served rules.
 
 The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `New at the garage: {bikes}.` when the level unlocks bikes, signed `V.`. The status strip shows the new level name.
 
-**Endings.** After a level-5 Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the bar with the stool empty: the ending's name on the tape of the ruled paper with its text from `game-design.md` section 11 written on the lines, a `SEASON OVER` stamp, the season's record (level, races and wins, knockdowns, busts, money earned) on the cyan note, and `BACK ROOM`.
+**Endings.** After a last-level Ridge Road race that the player finishes in the top three, this screen is replaced by the ending. A quit, wreck, bust, or lower place in the finale is an ordinary result that returns to the Clubhouse with the finale still open. The ending is the bar with the stool empty: the ending's name on the tape of the ruled paper with its text from `game-design.md` section 11 written on the lines, a `SEASON OVER` stamp, the season's record (level, races and wins, knockdowns, busts, money earned) on the cyan note, and `BACK ROOM`.
 
 ## 12. Game Over
 
@@ -356,14 +358,14 @@ The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `Ne
 
 **Purpose.** Gather two to eight players, let each pick a bike, and start.
 
-**Layout.** The Lowside car park. Eight parking bays in a row across the middle, each either a player's bike in their paint with their name above it or an AI rival's bike with an `AI` tag. A bay with no player always holds an AI rival, and seven more AI rivals wait beyond the bays, so the grid always holds the field the server's race rules set. Top left: the room code. Left column: the host's race settings. Right column: the local player's bike picker, a compact version of the Garage bars. Bottom strip: ready state.
+**Layout.** The Lowside car park. Eight parking bays in a row across the middle, each holding a rider's bike in their paint with their name above it. A bay no player has taken holds a bot, drawn exactly like a player's bay, because bots present as human (`game-design.md` section 12). More bots wait beyond the bays, so the grid always holds the field the server's race rules set. Top left: the room code. Left column: the host's race settings. Right column: the local player's bike picker, a compact version of the Garage bars. Bottom strip: ready state.
 
 **Text.**
 
 - Heading: `CAR PARK`
 - Room: `ROOM {CODE}` · `COPY INVITE LINK`
-- Bays: `{player name}` with `READY` or `PICKING`, or `{Rival} · AI` with the small print `JOIN TO TAKE THIS BAY`
-- Host settings: `ROAD ◄ {road} ►` · `LEVEL ◄ {n} ►` · `BIKES ◄ ANY | FEATHERWEIGHT | MIDDLEWEIGHT | HEAVYWEIGHT ►`. There is no setting for AI riders or the field size. Every race has the field the server's race rules set, and AI rivals fill whatever the players do not.
+- Bays: `{rider name}` with `READY` or `PICKING`. A bot's bay reads like any other.
+- Host settings: `ROAD ◄ {road} ►` · `LEVEL ◄ {n} ►` · `BIKES ◄ ANY | FEATHERWEIGHT | MIDDLEWEIGHT | HEAVYWEIGHT ►`. There is no setting for bots or the field size. Every race has the field the server's race rules set, and bots fill whatever the players do not.
 - Non-hosts see the same settings read-only with `{host} IS PICKING THE ROAD`.
 - Bike picker: `YOUR BIKE ◄ {bike} ►` · `PAINT ◄ ► `
 - Bottom strip: `{ready} / {players} READY` and, for the host, `START` (enabled when everyone is ready and at least two players are present).

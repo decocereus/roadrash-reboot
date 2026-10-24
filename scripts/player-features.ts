@@ -287,6 +287,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/career/bar.ts",
       "apps/web/src/career/bike-stats.ts",
       "apps/web/src/career/copy.ts",
+      "apps/web/src/career/copy.test.ts",
       "apps/web/src/career/flow.ts",
       "apps/web/src/career/format.ts",
       "apps/web/src/career/notes.ts",
