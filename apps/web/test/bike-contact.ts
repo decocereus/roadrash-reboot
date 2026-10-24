@@ -30,6 +30,10 @@ const views = {
     eye: new THREE.Vector3(-2.6, 1.5, -3.4),
     target: new THREE.Vector3(0, 0.78, 0),
   },
+  grips: {
+    eye: new THREE.Vector3(-1.2, 1.6, -1.7),
+    target: new THREE.Vector3(0, 1.05, -0.18),
+  },
   portrait: {
     eye: new THREE.Vector3(-1.5, 1.6, -2.3),
     target: new THREE.Vector3(0, 1.15, 0.05),

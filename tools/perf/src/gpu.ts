@@ -187,6 +187,7 @@ const collect = ({ window }: Scenario, side: SideName) => `(() => {
     frameRate: JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}").frameRate ?? null,
     frames: profile.window(${window.from}, ${window.to}),
     longTasks: tasks.store,${side === "B" ? rideTo(window.to) : ""}
+    parts: profile.info().parts,
     rows: bench.window(${window.from}, ${window.to}),
     viewport: { dpr: devicePixelRatio, height: innerHeight, width: innerWidth },
     visibility: document.visibilityState,

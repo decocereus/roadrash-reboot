@@ -488,6 +488,22 @@
       "side": "A",
       "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
       "value": 11184808
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "riders.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
+      "value": 0.5
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "riders.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
+      "value": 0.3999999761581421
     }
   ],
   "revisions": {
@@ -665,6 +681,30 @@
       "sides": {
         "A": "c943fead285dff6662467ae03ce287068d415a5c",
         "B": "c943fead285dff6662467ae03ce287068d415a5c"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.6.2 (25G83)",
+        "power": "AC power",
+        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
+        "browser": "Helium 0.20.1.1, windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1283x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "970786",
+        "order": "reference-v1 pair0 A, reference-v1 pair0 B, pack-riding-v1 pair0 B, pack-riding-v1 pair0 A, reference-v1 pair1 B, reference-v1 pair1 A, pack-riding-v1 pair1 A, pack-riding-v1 pair1 B, reference-v1 pair2 A, reference-v1 pair2 B, pack-riding-v1 pair2 B, pack-riding-v1 pair2 A, reference-v1 pair3 B, reference-v1 pair3 A, pack-riding-v1 pair3 A, pack-riding-v1 pair3 B, reference-v1 pair4 A, reference-v1 pair4 B, pack-riding-v1 pair4 B, pack-riding-v1 pair4 A",
+        "sourceDigestB": "75f606a81d411840b78360557226513fb551ceb3d6e11b2c97beb3e6f3c01a75"
+      },
+      "id": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b8705dd02aec5220687a005768b98529cddd00d0 (rv 20261025-003939-s0)",
+        "B": "b8705dd02aec5220687a005768b98529cddd00d0 with the fig-1 planted-hands change, uncommitted (rv 20261025-003944-s1)"
       }
     }
   ],
