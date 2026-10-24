@@ -1,3 +1,4 @@
+import { eased } from "@racer/track/alignment";
 import { hazardSizes } from "@racer/track/hazards";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -99,11 +100,11 @@ const gentleBend = compileTrack({
   ...ridgeRoad,
   features: [],
   hazardsPerKilometre: 0,
-  sections: [
-    { climb: 0, length: 600, turnDegrees: 0 },
-    { climb: 0, length: 600, turnDegrees: 34 },
-    { climb: 0, length: 3000, turnDegrees: 0 },
-  ],
+  pieces: eased([
+    [600, 0, 0],
+    [600, 34, 0],
+    [3000, 0, 0],
+  ]),
   trafficPerKilometre: 0,
 });
 
@@ -145,10 +146,10 @@ const climbThenFlat = compileTrack({
   ...ridgeRoad,
   features: [],
   hazardsPerKilometre: 0,
-  sections: [
-    { climb: 100, length: 2000, turnDegrees: 0 },
-    { climb: 0, length: 4000, turnDegrees: 0 },
-  ],
+  pieces: eased([
+    [2000, 0, 100],
+    [4000, 0, 0],
+  ]),
   trafficPerKilometre: 0,
 });
 

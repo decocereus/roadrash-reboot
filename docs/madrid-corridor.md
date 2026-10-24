@@ -14,7 +14,7 @@ The centreline measures 8,702.7 m after rounding coordinates to 0.1 m. It has 16
 
 Coordinates are metres in EPSG:25830, translated by `origin`, the easting and northing pair `[437000, 4473000]`. Add that origin to a position to recover the source projection. Street `startM`, `endM`, junction and landmark `atM`, and elevation `atM` measure distance along the ordered centreline. City, park and old-city zones are authored subdivisions, not municipal classifications.
 
-This file does not change `TrackPlan` and is not imported by the game or renderer. Only the source notices are imported by `/credits`.
+This file is not imported by the game or renderer, and no `TrackPlan` is built from it yet. Only the source notices are imported by `/credits`.
 
 ## Inputs and licences
 
@@ -33,6 +33,65 @@ This file does not change `TrackPlan` and is not imported by the game or rendere
 The attribution wording and modification notices live in `packages/track/src/madrid-sources.ts`. `/credits` displays all of them. The complete CDLA Permissive 2.0 agreement ships beside the corridor and at `/licenses/cdla-permissive-2.0.txt`; a test keeps those copies identical. The preview also shows the source notices. The full agreement must accompany any redistribution of the processed footprints.
 
 No geometry or other data was imported from OpenStreetMap, Overture, Google or the prior OSM research exports. Only the coordinator's named street sequence guided selection. All source geometry comes directly from the providers listed above.
+
+## Fitting track pieces
+
+`pnpm madrid:fit` fits track pieces to the corridor centreline and prints how closely the fitted road follows the street. It writes the pieces to `tools/madrid/.cache/fits.json`. `--interval from:to` picks stretches in metres of chainage and defaults to `600:1600`. `--min-radius` sets the limits to try and defaults to none, 60, 120 and 265 m. The whole corridor is always fitted too.
+
+`fitPolyline` in `tools/madrid/src/fit.ts` takes a polyline in corridor metres and a minimum radius. It returns a start pose and 25 m pieces whose curvature changes linearly between knots, so the road is a chain of clothoids. It also returns the RMS, 95th percentile and largest distance from the street, the tightest radius, the street chainage where the limit held a knot at full lock, and each street point's distance from the fitted road. The fit is a bounded least-squares solve with a light penalty on curvature changes. It first matches points at equal arclength, then settles each street point on its nearest point of the fitted road in order. It trims the road to where the street ends and repeats until the length stops changing. Fitted roads are horizontal only, so every grade is 0, and the start pose uses the corridor's translated coordinates. A fit of the whole corridor at 60 m takes about 40 s.
+
+Fits on the pinned corridor, all distances in metres:
+
+| Stretch | Radius limit | RMS | 95th percentile | Max | Tightest radius | Fitted length (street) |
+| --- | --: | --: | --: | --: | --: | --: |
+| Whole corridor | none | 0.9 | 2.0 | 10.3 | 5.6 | 8,689 (8,703) |
+| Whole corridor | 60 | 5.8 | 13.0 | 39.6 | 60.0 | 8,559 |
+| Whole corridor | 120 | 17.9 | 45.7 | 79.9 | 120.0 | 8,565 |
+| Whole corridor | 265 | 54.2 | 132.0 | 157.5 | 265.0 | 8,066 |
+| 0.60 to 1.60 km | none | 0.1 | 0.3 | 0.7 | 44.4 | 1,000 (1,000) |
+| 0.60 to 1.60 km | 60 | 0.2 | 0.4 | 1.0 | 60.0 | 1,000 |
+| 0.60 to 1.60 km | 120 | 0.4 | 1.0 | 2.4 | 120.0 | 999 |
+| 0.60 to 1.60 km | 265 | 1.4 | 3.4 | 5.7 | 265.0 | 997 |
+
+Without a limit the fit follows the street within 2 m for 95% of its length, but its tightest bend is 5.6 m. The IGN centreline turns far tighter than a bike can ride: −142° within 40 m at Cuesta de San Vicente, a 91° turn within 25 m in the park, and four right angles in a row at Ronda de Segovia and Puerta de Toledo.
+
+### The 60 m limit
+
+Use a 60 m minimum radius. No Madrid bend can hold 200 km/h, so the limit comes from the bends the game already asks riders to take. Every existing road reaches a bend of 55.5 to 66.8 m by level 5, and Cinder Wash and Slag Row have bends of 67 and 70 m at level 1. A Sesta holds 88 km/h at 60 m with full steer and a Wren 101 km/h. A bike at 200 km/h brakes for it, as it does for the right angles on Slag Row. 60 m is also the bottom of the launch research's 60 to 120 m band for a major junction turn, below which a forced turn is a flagged exception.
+
+The larger limits leave the street. Holding 200 km/h at full lock on a Sesta needs 265 m, and that road leaves the street by up to 158 m, through buildings. At 120 m it leaves the street by up to 80 m. At 60 m the 95th percentile is 13.0 m, and the test interval on Alcalá and Gran Vía stays within 1 m.
+
+Whole corridor at 60 m, where the limit moved the road more than 1 m further from the street than the unlimited fit:
+
+| Street chainage | Street | Max distance | Unlimited fit |
+| --- | --- | --: | --: |
+| 0 to 230 | Alcalá · Puerta de Alcalá to Cibeles | 9.5 | 2.9 |
+| 1,502 to 1,576 | Gran Vía | 2.2 | 0.7 |
+| 2,258 to 2,306 | Plaza de España | 1.5 | 0.3 |
+| 2,407 to 2,456 | Cuesta de San Vicente | 1.2 | 0.1 |
+| 2,507 to 2,629 | Cuesta de San Vicente | 2.3 | 0.8 |
+| 2,730 to 2,779 | Cuesta de San Vicente | 1.4 | 0.1 |
+| 2,830 to 2,878 | Cuesta de San Vicente | 1.2 | 0.2 |
+| 2,904 to 3,101 | Cuesta de San Vicente | 19.3 | 10.3 |
+| 3,227 to 3,609 | Puente del Rey · Embarcadero · lake edge | 7.0 | 3.4 |
+| 3,660 to 3,808 | Puente del Rey · Embarcadero · lake edge | 1.8 | 0.3 |
+| 3,834 to 3,908 | Puente del Rey · Embarcadero · lake edge | 1.4 | 0.2 |
+| 3,934 to 4,645 | Puente del Rey · Embarcadero · lake edge | 16.7 | 3.3 |
+| 4,846 to 4,944 | Paseo Puerta del Ángel | 1.7 | 0.6 |
+| 5,125 to 5,225 | Paseo de Extremadura | 3.4 | 2.3 |
+| 6,000 to 6,386 | Calle de Segovia | 21.6 | 4.9 |
+| 6,487 to 6,560 | Ronda de Segovia | 1.5 | 0.4 |
+| 7,086 to 7,615 | Ronda de Segovia | 39.6 | 3.8 |
+| 7,816 to 7,967 | Gran Vía de San Francisco | 3.2 | 1.3 |
+
+Five places leave the street by more than 9 m: the Cibeles turn, the Cuesta de San Vicente hairpin, the park, the turn onto Calle de Segovia and the Puerta de Toledo sequence. The greybox needs an authored race line inside the paved area at each of them, or a junction the rider slows for.
+
+### What a playable road still needs
+
+- Paved widths. `pavedWidthM` is null, and the fit measures distance from the centreline, not whether the road stays on tarmac.
+- Bridge-deck heights for Puente del Rey, Puente de Segovia and Viaducto de Segovia, and a vertical fit from them. The ground grid passes under the bridges, so the fitter leaves every grade at 0.
+- Hazard places from curvature. `placeHazards` finds bends from pieces that turn 20° or more, and a fitted 25 m piece rarely does.
+- A start height and an origin. The start pose has no height, and corridor coordinates are kilometres from the game's origin.
 
 ## Measurement limits
 
