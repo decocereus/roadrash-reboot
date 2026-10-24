@@ -157,7 +157,7 @@ grep -rn "useGLTF\|<Gltf" src/
 grep -rn "meshoptDecoderLocation\|ktx2TranscoderLocation\|dracoDecoderLocation" src/
 
 # what the asset actually demands
-npx @gltf-transform/cli inspect model.glb   # read the extensionsRequired row
+gltf-transform inspect model.glb   # read the extensionsRequired row
 ```
 
 If the asset lists an extension the app never wires up, the load fails at runtime — usually as an exception, sometimes as silently missing geometry or black textures.

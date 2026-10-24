@@ -2,7 +2,7 @@
 name: glb-web-export
 description: Audit a .glb or .gltf and make it small, correct, and fast to load in a browser, with a measured before/after report. Use when a model is "too big" or "slow to load", when the user asks to "optimize this GLB", "compress this glTF", or "export for web", or when they mention Draco, meshopt, gltfpack, KTX2, Basis, texture VRAM, draw calls, or a Blender / CAD / photogrammetry / Pascal export headed for Three.js, React Three Fiber (drei useGLTF), Babylon.js, or model-viewer. Covers inspection, spec validation, geometry and texture compression, scene-graph cleanup, and the correctness checks (metres, Y-up, node names, animations, PBR fidelity, alpha modes, vertex colors) that must not regress. Not for editing or modelling geometry, authoring or laying out a scene, generating 3D from text or images, converting from FBX/OBJ/CAD, or debugging a runtime frame rate that has nothing to do with asset size.
 license: MIT
-compatibility: Node.js 18+ with npx. Uses @gltf-transform/cli (inspect, validate, dedup, prune, weld, quantize, instance, flatten, join, draco, meshopt, resize, webp, etc1s, uastc). Optionally uses a native gltfpack binary for meshopt plus KTX2/WebP in one pass, and the KTX-Software `ktx` CLI on PATH, which the etc1s and uastc commands shell out to. In this repo the meshopt step is `tools/blender/compress.ts`; the audit scripts were not vendored (the repo tracks no .mjs files), so measure with `inspect` and `validate`.
+compatibility: Node.js 18+. Uses a provisioned, pinned @gltf-transform/cli@4.5.0 (inspect, validate, dedup, prune, weld, quantize, instance, flatten, join, draco, meshopt, resize, webp, etc1s, uastc). Optionally uses a native gltfpack binary for meshopt plus KTX2/WebP in one pass, and the KTX-Software `ktx` CLI on PATH, which the etc1s and uastc commands shell out to. In this repo the meshopt step is `tools/blender/compress.ts`; the audit scripts were not vendored (the repo tracks no .mjs files), so measure with `inspect` and `validate`.
 metadata:
   author: pascalorg
   version: "1.0.0"
@@ -37,6 +37,10 @@ The deliverable is not a smaller file. It is **a smaller file plus a report that
 
 Never skip step 1. An optimization with no measured before is a guess.
 
+## Tools (read first)
+
+The commands were measured with `@gltf-transform/cli@4.5.0`; the binary is `gltf-transform`. Nothing here installs anything: provision that pinned version once in your environment (a devDependency or a global install you chose deliberately) and run the commands below as shown. If `gltf-transform` is missing, stop and report the missing prerequisite — do not run plain `npx <pkg> ...`, which fetches and executes whatever is in the registry today.
+
 ---
 
 ## 1. Measure
@@ -47,18 +51,17 @@ Keep the original. Every command below writes a new file; never optimize in plac
 cp model.glb model.original.glb
 ```
 
-Check the tool versions rather than assuming (package names and versions move):
+Check the tool versions rather than assuming (upstream measured 4.5.0; versions move, and the versions exist locally already if the tools are provisioned):
 
 ```bash
-npm view @gltf-transform/cli version
-npm view gltfpack version
+gltf-transform --version
 ```
 
 Inspect, then validate against the spec:
 
 ```bash
-npx @gltf-transform/cli inspect model.glb
-npx @gltf-transform/cli validate model.glb
+gltf-transform inspect model.glb
+gltf-transform validate model.glb
 ```
 
 `inspect` gives resolution and `gpuSize` per texture, per-mesh vertex/triangle counts, and the extension list. `validate` runs the Khronos validator (the `gltf-validator` npm package is a **library with no CLI** — `npx gltf-validator` fails with "could not determine executable to run"; `gltf-transform validate` wraps it, verified with `@gltf-transform/cli@4.5.0` bundling `gltf-validator@2.0.0-dev.3.10`).
@@ -66,7 +69,7 @@ npx @gltf-transform/cli validate model.glb
 Then capture the numbers you will be judged on:
 
 ```bash
-npx @gltf-transform/cli inspect model.glb
+gltf-transform inspect model.glb
 # size and transfer size, if you want them:
 stat -f %z model.glb
 brotli -q 11 -c model.glb | wc -c
@@ -127,12 +130,12 @@ Two pipelines. Start with the first.
 Keeps the scene graph and every node name an app might look up.
 
 ```bash
-npx @gltf-transform/cli dedup  model.glb  s1.glb
-npx @gltf-transform/cli prune  s1.glb     s2.glb          # add --keep-leaves to keep empty helper nodes
-npx @gltf-transform/cli weld   s2.glb     s3.glb
-npx @gltf-transform/cli resize s3.glb     s4.glb --width 1024 --height 1024
-npx @gltf-transform/cli etc1s  s4.glb     s5.glb --quality 128   # or: webp s4.glb s5.glb --quality 85
-npx @gltf-transform/cli meshopt s5.glb    model.web.glb --level high
+gltf-transform dedup  model.glb  s1.glb
+gltf-transform prune  s1.glb     s2.glb          # add --keep-leaves to keep empty helper nodes
+gltf-transform weld   s2.glb     s3.glb
+gltf-transform resize s3.glb     s4.glb --width 1024 --height 1024
+gltf-transform etc1s  s4.glb     s5.glb --quality 128   # or: webp s4.glb s5.glb --quality 85
+gltf-transform meshopt s5.glb    model.web.glb --level high
 ```
 
 ### Draw-call reduction (opt in)
@@ -140,7 +143,7 @@ npx @gltf-transform/cli meshopt s5.glb    model.web.glb --level high
 Add before the compression step, only if the app does not resolve nodes by name:
 
 ```bash
-npx @gltf-transform/cli instance s3.glb s3b.glb --min 5
+gltf-transform instance s3.glb s3b.glb --min 5
 ```
 
 ### One-liner
@@ -148,7 +151,7 @@ npx @gltf-transform/cli instance s3.glb s3b.glb --min 5
 `optimize` bundles the above but its defaults are aggressive — it runs `simplify`, `palette`, `flatten` and `join`. On the fixture it dropped 15 of 16 named nodes and changed the triangle count (7,056 → 6,740). Use it only when the asset is a static prop with no app-visible structure:
 
 ```bash
-npx @gltf-transform/cli optimize model.glb model.web.glb \
+gltf-transform optimize model.glb model.web.glb \
   --compress meshopt --texture-compress ktx2 --texture-size 1024
 ```
 

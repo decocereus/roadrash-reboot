@@ -36,7 +36,7 @@ Never assume a generated or edited mesh is correct. Check it with numbers, then 
 | `duplicate_verts` | unwelded seams | `remove_doubles(threshold=1e-4)` (Merge by Distance); check UV seams after |
 | `ngons` | faces with >4 sides | triangulate/quadrangulate locally; n-gons are fine only on flat hard-surface faces that never deform |
 | unapplied/negative scale | object transform | `transform_apply(rotation=True, scale=True)`; negative scale flips normals on export |
-| `uv_maps: 0` / zero-area UV / overlap | missing or bad unwrap | unwrap it; in this repo `scenario-blender-uv-baking` covers UV work |
+| `uv_maps: 0` / zero-area UV / overlap | missing or bad unwrap | unwrap it; this repo vendors no UV specialist, so unwrap by hand or with bpy |
 | unweighted / >4 influences | skinning | `blender-character-rigging` (`bind_mesh.py` cleans to 4 influences and normalizes) |
 | `ground_z` ≠ 0 | asset floats or sinks | move the origin to the bottom and set z = 0 (props) |
 

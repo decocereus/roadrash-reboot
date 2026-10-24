@@ -2,7 +2,7 @@
 
 Run this against every output before reporting a win. Anything you cannot check, say you did not check — do not assume it survived.
 
-The upstream audit script (`bash scripts/glb-audit.sh before.glb after.glb`, not vendored — this repo tracks no `.mjs` files) covered items 1, 2, 4, 5, 6 and 9 automatically and printed a `regressions` array. Without it, cover them from `npx @gltf-transform/cli inspect` diffs and the commands in `commands.md`. The rest need eyes or the app.
+The upstream audit script (`bash scripts/glb-audit.sh before.glb after.glb`, not vendored — this repo tracks no `.mjs` files) covered items 1, 2, 4, 5, 6 and 9 automatically and printed a `regressions` array. Without it, cover them with `inspect` diffs and the commands in `commands.md` — except the world-space bounds check in item 1 and the automated lost-node accounting in item 2, which the script handled by walking node transforms; state them as unverified in the report if you cannot reproduce that check another way. The rest need eyes or the app. Where a checkbox names an audit-script output (`worldBounds.sizeMeters`, `namedNodesLost`), it is listed against its source.
 
 ---
 
@@ -10,15 +10,15 @@ The upstream audit script (`bash scripts/glb-audit.sh before.glb after.glb`, not
 
 glTF's linear unit is the metre and +Y is up — "The units for all linear distances are meters", "glTF defines +Y as up; the front side of a glTF asset faces +Z, the left side of a glTF asset faces +X", "glTF uses a right-handed coordinate system" (glTF 2.0 Specification, _Coordinate System and Units_, https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/Specification.adoc, fetched 2026-09-11).
 
-- [ ] `worldBounds.sizeMeters` identical before and after
+- [ ] World-space size identical before and after — the upstream audit computed `worldBounds.sizeMeters` by applying node transforms; without it this stays **unverified** unless you reproduce that walk yourself (record `gltf-transform inspect`'s accessor-local bounds as not sufficient, per the trap below)
 - [ ] The dimensions match reality: a door ≈ 2.0 m tall, a chair ≈ 0.45 m seat height. A 1000× or 0.01× value means the source exporter used centimetres or inches
 - [ ] Up axis unchanged. A Z-up source (most CAD, some Blender setups) must be rotated at export, not "fixed" in the optimizer
 
-**Trap:** do not read `gltf-transform inspect`'s `bboxMin`/`bboxMax` columns to check this. After `quantize`, `meshopt` or `draco`, positions are stored as normalized integers with the factor pushed onto the node transform, so `inspect` reports accessor-local bounds. Measured on the fixture: `inspect` went from `-2.2, 0, -1.6 → 2.2, 1, 1.6` to `-1, -1, -1 → 1, 1, 1`, while the true world-space size stayed `4.4 × 1 × 3.2 m`. The audit script applies the node transforms, so its numbers are the ones to trust.
+**Trap:** do not read `inspect`'s `bboxMin`/`bboxMax` columns to check this. After `quantize`, `meshopt` or `draco`, positions are stored as normalized integers with the factor pushed onto the node transform, so `inspect` reports accessor-local bounds. Measured on the fixture: `inspect` went from `-2.2, 0, -1.6 → 2.2, 1, 1.6` to `-1, -1, -1 → 1, 1, 1`, while the true world-space size stayed `4.4 × 1 × 3.2 m`. The upstream audit applied the node transforms, which is why its numbers were trustworthy; with the script cut, the honest report says "world-space size unverified".
 
 ## 2. Node names and hierarchy
 
-- [ ] `namedNodesLost` is empty, **or** every lost name is one the app provably never resolves
+- [ ] No named nodes lost, or every lost name is one the app provably never resolves. Count the names in `inspect` after each pass; `namedNodesLost`, the exact list the audit reported, came from the cut script
 - [ ] Names the app looks up by string (`scene.getObjectByName(...)`, drei `nodes.Foo`, a click-target map, an animation target) are all still present
 - [ ] Parent/child relationships the app relies on are intact if it walks the graph
 

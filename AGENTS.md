@@ -31,6 +31,6 @@ Vendored, reviewed third-party agent skills live in `.claude/skills/<name>/` (on
 
 Use them when the work matches:
 
-- Blender character work under `tools/blender/`: `blender-core` (router and bpy patterns), `blender-character-rigging`, `blender-asset-qa` (the delivery gate), `blender-game-optimization`, `blender-export-pipelines`, `blender-facial-shapekeys`, and `scenario-blender-expert` (execution protocol and review loop), `scenario-blender-rigging`, `scenario-blender-retopology`, `scenario-blender-export`, `scenario-blender-uv-baking` (numeric weight, retopo and export gates).
+- Blender character work under `tools/blender/`: `blender-core` (router and bpy patterns), `blender-character-rigging`, `blender-asset-qa` (the delivery gate), `blender-game-optimization`, `blender-export-pipelines` and `blender-facial-shapekeys`. The scenario-labs/skills blender collection was reviewed and deliberately not vendored: scenario-labs is MIT, but most of its Blender material is a port, by a Scenario employee, of edemaistre/blender-expert-skills, which has no licence, and there is no confirmation that the grant covers the ported files, so re-vendoring it needs a demonstrated right first.
 - Three.js work in `apps/web/src/game`: `threejs-materials`, `threejs-loaders`, `threejs-animation`, `threejs-asset-pipeline`, `threejs-performance`, `threejs-shaders`.
 - GLB audit and compression questions around `tools/blender/compress.ts`: `glb-web-export`.

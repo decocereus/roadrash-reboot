@@ -22,7 +22,7 @@ The execution model is in `blender-core`. The body rig is in `blender-character-
 
 ## Procedure (blendshapes)
 
-1. The head mesh needs clean loops around the eyes and mouth (in this repo `scenario-blender-uv-baking` and `scenario-blender-retopology` cover UV and retopo), with eyes, teeth and tongue as separate objects parented or weighted to bones.
+1. The head mesh needs clean loops around the eyes and mouth (this repo vendors no UV or retopology specialist, so do UV and retopo by hand or with bpy), with eyes, teeth and tongue as separate objects parented or weighted to bones.
 2. `scripts/shapekeys.py -- --mesh Head --create arkit` (or `--create visemes` for the 15 Oculus visemes) creates empty, correctly named keys.
 3. Sculpt each key (live: sculpt mode on the active key, `use_shape_key_edit_mode`). Symmetric expressions can be sculpted once, then `--split eyeBlink` gives `eyeBlinkLeft/Right` with a soft blend across X=0 (`--falloff` m).
 4. `--mirror browDownLeft` builds `browDownRight` (topology-independent mirror).

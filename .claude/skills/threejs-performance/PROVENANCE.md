@@ -18,9 +18,9 @@
 
 ## Review (untrusted-data review before vendoring)
 
-- Network calls, telemetry: none. This skill is one markdown file of web-platform knowledge with no scripts.
+- Network calls, telemetry: nothing to scan for code: this skill is one markdown file of web-platform knowledge with no scripts. Its text keeps ordinary web examples (threejs-loaders shows a browser `fetch("model.glb")`); those are documentation, not scripts this change executes.
 - Writes outside the repo: none.
 - Subprocess: none.
 - Obfuscated code: none.
-- Prompt injection: none found.
+- Prompt injection: scoped text scans over this folder found no instruction overrides, credential extraction or exfiltration directives.
 - Claims: previously checked by the research unit against three.js behaviour (DataTexture gradient maps, SkeletonUtils.clone, bounding-sphere culling of animated skinned meshes, setMeshoptDecoder, weld before simplify, meshopt last). Not rerun here.

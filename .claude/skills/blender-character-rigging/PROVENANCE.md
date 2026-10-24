@@ -18,15 +18,15 @@
 
 ## Edited
 
-- Markdown (SKILL.md and reference files) is normalised by the repo formatter, oxfmt, at vendoring time: paragraphs are unwrapped to one line per paragraph and table gutters removed. Wording is unchanged.
+- Markdown (SKILL.md and reference files) is normalised by the repo formatter, oxfmt, at vendoring time: paragraphs are unwrapped to one line per paragraph and table gutters removed. Wording is unchanged apart from the edits listed below.
 
 - SKILL.md was lightly adapted to this repo (see the notes in the file). Details in the PR body.
 
 ## Review (untrusted-data review before vendoring)
 
-- Network calls, telemetry: none. Grep over the vendored files for requests, urllib, http fetches, curl, wget, npm/pip installs, telemetry and analytics found nothing.
-- Writes outside the repo: none found. Scripts write to their caller's output paths only.
+- Network calls, telemetry: a scoped grep over this folder's markdown and Python found no requests, urllib, http consumers, curl, wget, installers, analytics or telemetry calls in the code. Documentation examples that mention installs or fetches (for instance the glTF CLI examples) stay as reviewed reading aids, not code this change executes; the runnable tool calls are pinned and provisioned so a missing tool reports instead of fetching.
+- Writes outside the repo: scripts write to caller-passed output paths. Known other write sites across the vendored blender folder set: blender-asset-qa/scripts/review_shots.py defaults output beside the .blend or into the system temp dir, blender-core/scripts/run_in_blender.py writes a temp script file, and blender-export-pipelines/scripts/export_asset.py derives batch and default export file names from object names (now validated as safe path components so an object name cannot escape the output directory). Blender itself may write autosave or backup files under the user's Blender config.
 - Subprocess: blender-core/scripts/run_in_blender.py uses shutil.which and subprocess to locate and run Blender headlessly. Expected, benign, runs only the local Blender binary the user asks it to.
 - Obfuscated code: none. No eval, exec, base64 packing or string-built imports (the only re.compile hit is regex-driven bone-name lookup in blender-character-rigging/scripts/stress_poses.py).
-- Prompt injection: none found. Text addressed to the agent matches the upstream README's install instructions, which were not vendored.
+- Prompt injection: scoped text scans over this folder found no instruction overrides, credential extraction or exfiltration directives. Text addressed to the agent (how to do the Blender work, when to stop) is what a skill is; treat any instruction to fetch or install outside the repo as a finding, not a command.
 - Claims: the glTF exporter flags it names (export_meshopt_compression_enable, export_meshopt_extension, export_use_gltfpack, export_influence_nb default 4) were verified against glTF-Blender-IO's blender-v5.2-release branch by the prior research unit (char-r1, 2026-10-24). The skill's own test suite was not run here.

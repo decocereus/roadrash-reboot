@@ -12,12 +12,10 @@ Every flag below was taken from the CLI's own `--help`/`-h` output and exercised
 | `gltfpack` (native, macOS arm64) | `1.2` | `zeux/meshoptimizer` release `v1.2` (published 2026-06-30); `gltfpack -v` → `gltfpack 1.2` |
 | KTX-Software | `4.4.2` | release `v4.4.2` (published 2025-10-04); `ktx --version` → `ktx version: v4.4.2` |
 
-Re-check before relying on any version-sensitive detail:
+Re-check before relying on any version-sensitive detail (locally; never query a registry from a skill):
 
 ```bash
-npm view @gltf-transform/cli version
-npm view gltfpack version
-npx @gltf-transform/cli --version
+gltf-transform --version
 gltfpack -v
 ktx --version
 ```
@@ -26,7 +24,7 @@ ktx --version
 
 ## Package names — read this first
 
-- `@gltf-transform/cli` is the CLI. Run it via `npx @gltf-transform/cli <command>`, or install it (`npm install --global @gltf-transform/cli`, per https://gltf-transform.dev/cli, fetched 2026-09-11). The installed binary is named `gltf-transform`.
+- `@gltf-transform/cli` is the CLI; its installed binary is named `gltf-transform` (per https://gltf-transform.dev/cli, fetched 2026-09-11). Run it from a provisioned pinned install (`@gltf-transform/cli@4.5.0` was measured upstream). Never let bare `npx <pkg>` fetch and execute an unreviewed version — if the tool is missing, stop and report it.
 - **`gltf-validator` on npm has no `bin`.** `npx gltf-validator --help` fails with `npm error could not determine executable to run`. Use `gltf-transform validate`, which wraps the same library.
 - `gltfpack` on npm works for geometry only. Per its own README (https://github.com/zeux/meshoptimizer/blob/master/gltf/README.md, fetched 2026-09-11): "Native binaries are recommended over npm since they can work with larger files, run faster, and support texture compression." Confirmed empirically — see the errors at the bottom of this file.
 - `gltf-pipeline` (`4.3.1`) is the Cesium tool. It also does Draco, but is not covered here.

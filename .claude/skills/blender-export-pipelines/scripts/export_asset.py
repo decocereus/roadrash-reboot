@@ -21,6 +21,16 @@ from mathutils import Vector
 sys.path.insert(0, os.path.dirname(__file__))
 import _bpyx as bx  # noqa: E402
 
+
+def _safe_stem(name):
+    """An object name is scene data, not a caller-chosen path. Keep it a safe file-name
+    component so a name like '../outside' can never send an export outside the
+    caller's chosen output directory."""
+    if not name or name in (".", "..") or os.sep in name or (os.altsep and os.altsep in name):
+        raise ValueError(f"unusable export file name derived from object name: {name!r}")
+    return name
+
+
 FBX_BASE = dict(use_selection=True, object_types={"MESH", "ARMATURE", "EMPTY"}, use_mesh_modifiers=True,
                 mesh_smooth_type="FACE", add_leaf_bones=False, use_armature_deform_only=True,
                 armature_nodetype="NULL", use_triangles=True, use_tspace=True, use_custom_props=False,
@@ -130,7 +140,7 @@ def run(preset="gltf", objects=None, collection=None, out="", batch=False, no_an
              if o.type == "MESH" and fmt == "fbx" and kw.get("use_tspace") and not kw.get("use_triangles")
              and any(len(p.vertices) > 4 for p in o.data.polygons)]
     out = bpy.path.abspath(out) if out else os.path.join(
-        os.path.dirname(bpy.data.filepath) or os.getcwd(), "export", f"{obs[0].name}{EXT[fmt]}")
+        os.path.dirname(bpy.data.filepath) or os.getcwd(), "export", f"{_safe_stem(obs[0].name)}{EXT[fmt]}")
     if fmt == "usd" and not out.endswith((".usd", ".usda", ".usdc", ".usdz")):
         out += ".usdz"
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -139,7 +149,7 @@ def run(preset="gltf", objects=None, collection=None, out="", batch=False, no_an
         roots = [o for o in obs if o.parent is None or o.parent not in obs]
         for r in roots:
             members = [r] + [c for c in r.children_recursive if c in obs]
-            jobs.append((os.path.join(os.path.dirname(out), f"{r.name}{EXT[fmt]}"), members, r))
+            jobs.append((os.path.join(os.path.dirname(out), f"{_safe_stem(r.name)}{EXT[fmt]}"), members, r))
     else:
         jobs.append((out, obs, None))
     files = []

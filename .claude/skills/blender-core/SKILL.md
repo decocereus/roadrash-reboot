@@ -14,29 +14,13 @@ metadata:
 
 | Task | Skill |
 | --- | --- |
-| Units, collections, naming, linking, asset libraries | `blender-scene-setup` |
-| Hard-surface modeling, bevels, booleans, normals | `blender-hardsurface-modeling` |
-| Sculpting, multires, remesh | `blender-sculpting` |
-| Retopology, UV unwrap, texel density | `blender-retopology-uv` |
-| PBR materials, color spaces, texture sets | `blender-pbr-materials` |
-| Baking high→low maps (normal, AO, curvature, ...) | `blender-texture-baking` |
-| Geometry Nodes, procedural modeling | `blender-geometry-nodes` |
 | Body rigging, Rigify, weight painting | `blender-character-rigging` |
 | Face rig, shape keys, ARKit, visemes | `blender-facial-shapekeys` |
-| Keyframes, actions, NLA, baking, root motion | `blender-animation` |
 | Poly budgets, LODs, draw calls, cleanup | `blender-game-optimization` |
 | Export: glTF/FBX/USD to Roblox, Unity, Unreal, Godot, web | `blender-export-pipelines` |
-| Cycles/EEVEE settings, compositor, batch render | `blender-rendering` |
-| Lighting, HDRI, camera, turntable | `blender-lighting-lookdev` |
-| Time of day, night, sunset, fog, mood (cyberpunk, horror...) | `blender-time-of-day` |
-| Rain, snow, wet surfaces, puddles, lightning, dust/embers | `blender-weather-fx` |
-| Cloth, rigid body, fluids, hair, GN physics | `blender-simulation` |
-| Writing add-ons / extensions | `blender-addon-development` |
-| Batch/headless pipelines, file conversion | `blender-pipeline-automation` |
 | Checking a mesh/asset before delivery (always) | `blender-asset-qa` |
-| End-to-end playbooks (prop, character, Roblox, product shot) | `blender-workflow-recipes` |
 
-This repo vendors only `blender-core` (this file), `blender-character-rigging`, `blender-facial-shapekeys`, `blender-export-pipelines`, `blender-asset-qa` and `blender-game-optimization`. The other routes fall back to this file's Execute, Rules and Verify sections; if a specialist is needed and missing, say so and work from these rules.
+Upstream EL4CTEO/blender-skills also has scene-setup, hardsurface-modeling, sculpting, retopology-uv, pbr-materials, texture-baking, geometry-nodes, animation, rendering, lighting-lookdev, time-of-day, weather-fx, simulation, addon-development, pipeline-automation and workflow-recipes specialists; none are vendored here. For a task they cover, work from this file's Execute, Rules and Verify sections and say so in the result.
 
 ## Execute
 

@@ -1,6 +1,11 @@
+# Note on this file: the upstream repository (https://github.com/pascalorg/skills at
+# commit 7be87e9292e12fe412d1eb8582fd95fdbd151325) states "MIT" in its README's
+# License section and carries no LICENSE file. This notice preserves that
+# declaration with the standard MIT text and the upstream author as rights holder.
+
 MIT License
 
-Copyright (c) 2026 Scenario Inc.
+Copyright (c) 2026 Pascal (pascalorg)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
