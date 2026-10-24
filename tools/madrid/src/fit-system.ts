@@ -395,11 +395,12 @@ export const normalEquations = (
 const heldAtBound = (
   gradient: Float64Array,
   knots: Float64Array,
-  bound: number
+  bounds: Float64Array
 ): Float64Array => {
   const fixed = new Float64Array(gradient.length).fill(Number.NaN);
   for (let column = 3; column < gradient.length; column += 1) {
     const value = knots[column - 2] ?? 0;
+    const bound = bounds[column - 2] ?? 0;
     const pull = gradient[column] ?? 0;
     if (
       (value >= bound - BOUND_TOLERANCE && pull < 0) ||
@@ -469,7 +470,7 @@ const clipAtBound = (
   step: Float64Array,
   free: readonly number[],
   knots: Float64Array,
-  bound: number,
+  bounds: Float64Array,
   fixed: Float64Array
 ): boolean => {
   let clipped = false;
@@ -478,6 +479,7 @@ const clipAtBound = (
       continue;
     }
     const value = knots[column - 2] ?? 0;
+    const bound = bounds[column - 2] ?? 0;
     const next = value + (step[column] ?? 0);
     if (Math.abs(next) > bound) {
       fixed[column] = Math.sign(next) * bound - value;
@@ -490,10 +492,10 @@ const clipAtBound = (
 export const boundedStep = (
   system: NormalEquations,
   knots: Float64Array,
-  bound: number,
+  bounds: Float64Array,
   damping: number
 ): Float64Array => {
-  const fixed = heldAtBound(system.gradient, knots, bound);
+  const fixed = heldAtBound(system.gradient, knots, bounds);
   for (;;) {
     const free = freeColumns(fixed);
     const reduced = reducedSystem(system, fixed, free, damping);
@@ -506,7 +508,7 @@ export const boundedStep = (
         free.length
       )
     );
-    if (!clipAtBound(step, free, knots, bound, fixed)) {
+    if (!clipAtBound(step, free, knots, bounds, fixed)) {
       return step;
     }
   }

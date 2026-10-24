@@ -9,6 +9,23 @@ import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
 
+export type GroundPoint = readonly [x: number, z: number];
+
+export interface SceneryBlock {
+  readonly height: number;
+  readonly ring: readonly GroundPoint[];
+}
+
+export interface Lake {
+  readonly level: number;
+  readonly ring: readonly GroundPoint[];
+}
+
+export interface Scenery {
+  readonly blocks: readonly SceneryBlock[];
+  readonly lake: Lake;
+}
+
 export interface TrackPlan extends Alignment {
   readonly id: string;
   readonly name: string;
@@ -23,6 +40,7 @@ export interface TrackPlan extends Alignment {
   readonly hazardsPerKilometre: number;
   readonly roadblocks: readonly number[];
   readonly features: readonly FeatureRule[];
+  readonly scenery?: Scenery;
 }
 
 export type TrackPropKind = "tree" | "pole" | "chevron" | "rock" | "gate";

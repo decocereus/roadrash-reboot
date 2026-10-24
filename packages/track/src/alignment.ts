@@ -18,6 +18,12 @@ export type TrackPieces = readonly [TrackPiece, ...TrackPiece[]];
 
 type SectionRow = readonly [length: number, turnDegrees: number, climb: number];
 
+type ClothoidRow = readonly [
+  length: number,
+  endCurvature: number,
+  endGrade: number,
+];
+
 export interface Alignment {
   readonly start: TrackStart;
   readonly pieces: TrackPieces;
@@ -79,6 +85,23 @@ export const eased = ([first, ...rest]: readonly [
   SectionRow,
   ...SectionRow[],
 ]): TrackPieces => [easedPiece(first), ...rest.map(easedPiece)];
+
+const clothoidPiece = ([
+  length,
+  endCurvature,
+  endGrade,
+]: ClothoidRow): TrackPiece => ({
+  easedClimb: 0,
+  easedTurn: 0,
+  endCurvature,
+  endGrade,
+  length,
+});
+
+export const clothoids = ([first, ...rest]: readonly [
+  ClothoidRow,
+  ...ClothoidRow[],
+]): TrackPieces => [clothoidPiece(first), ...rest.map(clothoidPiece)];
 
 export const pieceSpans = (pieces: TrackPieces): PieceSpan[] => {
   const spans: PieceSpan[] = [];

@@ -50,6 +50,7 @@ export const deterministicFiles = [
   "packages/track/src/tracks/breakwater-run.ts",
   "packages/track/src/tracks/cinder-wash.ts",
   "packages/track/src/tracks/hollow-pine-road.ts",
+  "packages/track/src/tracks/madrid-hook.ts",
   "packages/track/src/tracks/ridge-road.ts",
   "packages/track/src/tracks/slag-row.ts",
   "packages/career/src/bench.ts",

@@ -111,6 +111,7 @@ const main = Effect.gen(function* main() {
       fit: fitPolyline(polyline, {
         minRadiusM,
         pieceLengthM: PIECE_LENGTH,
+        slowPlaces: [],
         smoothing: SMOOTHING,
       }),
       minRadiusM,

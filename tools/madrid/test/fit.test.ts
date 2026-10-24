@@ -26,7 +26,7 @@ const piece = (length: number, endCurvature: number): TrackPiece => ({
   length,
 });
 
-const options = { pieceLengthM: 25, smoothing: 1000 };
+const options = { pieceLengthM: 25, slowPlaces: [], smoothing: 1000 };
 
 describe("fitting pieces to a street", () => {
   it("fits a road laid from pieces back onto itself, start and all", () => {
