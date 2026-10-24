@@ -124,6 +124,11 @@ const substitute = (
   return solution;
 };
 
+export const solveSymmetric = (
+  matrix: Float64Array,
+  rhs: Float64Array
+): Float64Array => substitute(factorise(matrix, rhs.length), rhs, rhs.length);
+
 const firstRowFrom = (projection: Projection, sample: number): number => {
   let low = 0;
   let high = projection.segment.length;

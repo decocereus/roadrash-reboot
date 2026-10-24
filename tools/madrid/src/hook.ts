@@ -8,8 +8,15 @@ import type {
 import type { CorridorData, Position } from "@racer/track/madrid-schema";
 import type { GroundPoint, SceneryBlock } from "@racer/track/track";
 
+import { solveSymmetric } from "./fit-system.ts";
 import { fitPolyline } from "./fit.ts";
-import { between, corridorLine, inside, nearest, pointAlong } from "./geometry.ts";
+import {
+  between,
+  corridorLine,
+  inside,
+  nearest,
+  pointAlong,
+} from "./geometry.ts";
 
 export interface HookPlace {
   readonly name: string;
@@ -98,49 +105,6 @@ const nearestSample = (line: Centreline, x: number, z: number): number => {
   return bestAt;
 };
 
-const solveDense = (matrix: Float64Array, rhs: Float64Array): Float64Array => {
-  const size = rhs.length;
-  const a = Float64Array.from(matrix);
-  const b = Float64Array.from(rhs);
-  for (let column = 0; column < size; column += 1) {
-    let pivot = column;
-    for (let row = column + 1; row < size; row += 1) {
-      if (
-        Math.abs(a[row * size + column] ?? 0) >
-        Math.abs(a[pivot * size + column] ?? 0)
-      ) {
-        pivot = row;
-      }
-    }
-    for (let index = 0; index < size; index += 1) {
-      const held = a[column * size + index] ?? 0;
-      a[column * size + index] = a[pivot * size + index] ?? 0;
-      a[pivot * size + index] = held;
-    }
-    const heldB = b[column] ?? 0;
-    b[column] = b[pivot] ?? 0;
-    b[pivot] = heldB;
-    const lead = a[column * size + column] ?? 1;
-    for (let row = column + 1; row < size; row += 1) {
-      const factor = (a[row * size + column] ?? 0) / lead;
-      for (let index = column; index < size; index += 1) {
-        a[row * size + index] =
-          (a[row * size + index] ?? 0) - factor * (a[column * size + index] ?? 0);
-      }
-      b[row] = (b[row] ?? 0) - factor * (b[column] ?? 0);
-    }
-  }
-  const solved = new Float64Array(size);
-  for (let row = size - 1; row >= 0; row -= 1) {
-    let value = b[row] ?? 0;
-    for (let index = row + 1; index < size; index += 1) {
-      value -= (a[row * size + index] ?? 0) * (solved[index] ?? 0);
-    }
-    solved[row] = value / (a[row * size + row] ?? 1);
-  }
-  return solved;
-};
-
 interface Grades {
   readonly knots: Float64Array;
   readonly offset: number;
@@ -177,25 +141,36 @@ const heightRow = (
   return row;
 };
 
-const fitGrades = (
-  knotS: Float64Array,
-  samples: readonly { readonly s: number; readonly groundM: number }[],
-  smoothing: number
-): Grades => {
-  const unknowns = knotS.length - 1;
-  const normal = new Float64Array(unknowns * unknowns);
-  const rhs = new Float64Array(unknowns);
-  const rows = samples.map((sample) => heightRow(knotS, sample.s, unknowns));
+interface GradeSample {
+  readonly s: number;
+  readonly groundM: number;
+}
+
+const addSamples = (
+  normal: Float64Array,
+  rhs: Float64Array,
+  rows: readonly Float64Array[],
+  samples: readonly GradeSample[]
+): void => {
+  const unknowns = rhs.length;
   for (const [index, row] of rows.entries()) {
     const target = samples[index]?.groundM ?? 0;
     for (let a = 0; a < unknowns; a += 1) {
-      rhs[a] = (rhs[a] ?? 0) + (row[a] ?? 0) * target;
+      const weight = row[a] ?? 0;
+      rhs[a] = (rhs[a] ?? 0) + weight * target;
       for (let b = 0; b < unknowns; b += 1) {
         normal[a * unknowns + b] =
-          (normal[a * unknowns + b] ?? 0) + (row[a] ?? 0) * (row[b] ?? 0);
+          (normal[a * unknowns + b] ?? 0) + weight * (row[b] ?? 0);
       }
     }
   }
+};
+
+const addGradeSmoothing = (
+  normal: Float64Array,
+  unknowns: number,
+  smoothing: number
+): void => {
   const grades = unknowns - 1;
   for (let knot = 0; knot <= grades; knot += 1) {
     const columns = [knot - 1, knot].filter(
@@ -208,17 +183,18 @@ const fitGrades = (
       }
     }
   }
-  const solved = solveDense(normal, rhs);
-  const knots = new Float64Array(knotS.length);
-  for (let knot = 1; knot < knotS.length - 1; knot += 1) {
-    knots[knot] = solved[knot - 1] ?? 0;
-  }
-  const offset = solved[unknowns - 1] ?? 0;
+};
+
+const missesOf = (
+  rows: readonly Float64Array[],
+  samples: readonly GradeSample[],
+  solved: Float64Array
+): Pick<Grades, "maxM" | "rmsM"> => {
   let squares = 0;
   let worst = 0;
   for (const [index, row] of rows.entries()) {
     let height = 0;
-    for (let a = 0; a < unknowns; a += 1) {
+    for (let a = 0; a < solved.length; a += 1) {
       height += (row[a] ?? 0) * (solved[a] ?? 0);
     }
     const miss = Math.abs(height - (samples[index]?.groundM ?? 0));
@@ -226,10 +202,31 @@ const fitGrades = (
     worst = Math.max(worst, miss);
   }
   return {
-    knots,
     maxM: worst,
-    offset,
     rmsM: Math.sqrt(squares / Math.max(1, samples.length)),
+  };
+};
+
+const fitGrades = (
+  knotS: Float64Array,
+  samples: readonly GradeSample[],
+  smoothing: number
+): Grades => {
+  const unknowns = knotS.length - 1;
+  const normal = new Float64Array(unknowns * unknowns);
+  const rhs = new Float64Array(unknowns);
+  const rows = samples.map((sample) => heightRow(knotS, sample.s, unknowns));
+  addSamples(normal, rhs, rows, samples);
+  addGradeSmoothing(normal, unknowns, smoothing);
+  const solved = solveSymmetric(normal, rhs);
+  const knots = new Float64Array(knotS.length);
+  for (let knot = 1; knot < knotS.length - 1; knot += 1) {
+    knots[knot] = solved[knot - 1] ?? 0;
+  }
+  return {
+    knots,
+    offset: solved[unknowns - 1] ?? 0,
+    ...missesOf(rows, samples, solved),
   };
 };
 
@@ -283,21 +280,18 @@ export const buildHook = (
   }
   const samples = data.elevation
     .filter(
-      (sample) =>
-        sample.atM >= settings.fromM && sample.atM <= settings.toM
+      (sample) => sample.atM >= settings.fromM && sample.atM <= settings.toM
     )
     .map((sample) => {
       const [x, y] = pointAlong(corridor, sample.atM);
       return { groundM: sample.groundM, s: nearestSample(horizontal, x, -y) };
     });
   const grades = fitGrades(knotS, samples, settings.gradeSmoothing);
-  const pieces = fit.pieces.map(
-    (piece, index): TrackPiece => ({
-      ...piece,
-      endCurvature: Number(piece.endCurvature.toFixed(6)),
-      endGrade: Number((grades.knots[index + 1] ?? 0).toFixed(5)),
-    })
-  );
+  const pieces = fit.pieces.map((piece, index): TrackPiece => ({
+    ...piece,
+    endCurvature: Number(piece.endCurvature.toFixed(6)),
+    endGrade: Number((grades.knots[index + 1] ?? 0).toFixed(5)),
+  }));
   const [firstPiece, ...laterPieces] = pieces;
   if (!firstPiece) {
     throw new Error("The hook fit returned no pieces.");
@@ -383,15 +377,15 @@ export const buildHook = (
       maxM: fit.error.maxM,
       outsidePlacesM: Math.max(
         0,
-        ...settings.places
-          .map((place, index) => [
+        ...[
+          ...settings.places.map((place, index) => [
             (settings.places[index - 1]?.toM ?? settings.fromM) + 40,
             place.fromM - 40,
-          ])
-          .concat([[(settings.places.at(-1)?.toM ?? 0) + 40, settings.toM]])
-          .map(([from = 0, to = 0]) =>
-            worstOver(fit.deviationM, from - settings.fromM, to - settings.fromM)
-          )
+          ]),
+          [(settings.places.at(-1)?.toM ?? 0) + 40, settings.toM],
+        ].map(([from = 0, to = 0]) =>
+          worstOver(fit.deviationM, from - settings.fromM, to - settings.fromM)
+        )
       ),
       p95M: fit.error.p95M,
       places: settings.places.map((place) => ({

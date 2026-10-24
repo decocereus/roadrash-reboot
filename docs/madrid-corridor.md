@@ -38,7 +38,7 @@ No geometry or other data was imported from OpenStreetMap, Overture, Google or t
 
 `pnpm madrid:fit` fits track pieces to the corridor centreline and prints how closely the fitted road follows the street. It writes the pieces to `tools/madrid/.cache/fits.json`. `--interval from:to` picks stretches in metres of chainage and defaults to `600:1600`. `--min-radius` sets the limits to try and defaults to none, 60, 120 and 265 m. The whole corridor is always fitted too.
 
-`fitPolyline` in `tools/madrid/src/fit.ts` takes a polyline in corridor metres and a minimum radius. It returns a start pose and 25 m pieces whose curvature changes linearly between knots, so the road is a chain of clothoids. It also returns the RMS, 95th percentile and largest distance from the street, the tightest radius, the street chainage where the limit held a knot at full lock, and each street point's distance from the fitted road. The fit is a bounded least-squares solve with a light penalty on curvature changes. It first matches points at equal arclength, then settles each street point on its nearest point of the fitted road in order. It trims the road to where the street ends and repeats until the length stops changing. Fitted roads are horizontal only, so every grade is 0, and the start pose uses the corridor's translated coordinates. A fit of the whole corridor at 60 m takes about 40 s.
+`fitPolyline` in `tools/madrid/src/fit.ts` takes a polyline in corridor metres, a minimum radius and a list of slow places. A slow place lowers the radius limit between two chainages of the polyline, for a bend the rider brakes for or a junction. It returns a start pose and 25 m pieces whose curvature changes linearly between knots, so the road is a chain of clothoids. It also returns the RMS, 95th percentile and largest distance from the street, the tightest radius, the street chainage where the limit held a knot at full lock, and each street point's distance from the fitted road. The fit is a bounded least-squares solve with a light penalty on curvature changes. It first matches points at equal arclength, then settles each street point on its nearest point of the fitted road in order. It trims the road to where the street ends and repeats until the length stops changing. Fitted roads are horizontal only, so every grade is 0, and the start pose uses the corridor's translated coordinates. A fit of the whole corridor at 60 m takes about 40 s.
 
 Fits on the pinned corridor, all distances in metres:
 
@@ -90,8 +90,34 @@ Five places leave the street by more than 9 m: the Cibeles turn, the Cuesta de S
 
 - Paved widths. `pavedWidthM` is null, and the fit measures distance from the centreline, not whether the road stays on tarmac.
 - Bridge-deck heights for Puente del Rey, Puente de Segovia and Viaducto de Segovia, and a vertical fit from them. The ground grid passes under the bridges, so the fitter leaves every grade at 0.
-- Hazard places from curvature. `placeHazards` finds bends from pieces that turn 20° or more, and a fitted 25 m piece rarely does.
-- A start height and an origin. The start pose has no height, and corridor coordinates are kilometres from the game's origin.
+- Hazard places from curvature. `placeHazards` finds bends from pieces that turn 20° or more, and a fitted 25 m piece at 60 m rarely does. The hook's slow places turn 22° to 57° per piece, so the hook needs no new rule.
+- A start height and an origin for each stretch. The hook settles both for itself.
+
+## Casa de Campo hook
+
+`pnpm madrid:hook` builds a greybox of the hook, chainage 3,600 to 4,650 m: Paseo del Embarcadero along the lake, the S-bend by the boathouse, then Glorieta de los Patines. `tools/madrid/src/hook.ts` fits the street, fits the grade, keeps the blocks and places the lake. `tools/madrid/hook.ts` writes `packages/track/src/tracks/madrid-hook.ts` and prints the numbers below. The plan is not a career road. It rides at `/?ride=madrid-hook` in a development build, with `&bike=` and `&with=alone|field|traffic`; [the hook recipe](../.claude/skills/verify-rushline/features/madrid-hook.md) drives it.
+
+The line is fitted at 60 m with two slow places. The fitted road runs 1,044 m against 1,050 m of street, RMS 1.2 m, 95th percentile 2.8 m, largest 6.9 m from the street. Outside the slow places it stays within 0.4 m.
+
+| Place | Chainage | Radius | Largest distance | 60 m line | Choice |
+| --- | --- | --: | --: | --: | --- |
+| Embarcadero S-bend by the boathouse | 4,030 to 4,230 | 35 m | 3.0 m | 14.6 m | A slow bend the rider brakes for |
+| Glorieta de los Patines | 4,380 to 4,620 | 25 m | 6.9 m | 18.9 m | A junction the rider slows for, through the roundabout's east side |
+
+At 60 m both places cut through the trees beside the street. That would be an invented road, so neither gets an authored line off the paving. The S-bend keeps to the paved Paseo at 35 m. Patines is a roundabout, and at 25 m the line keeps to its eastern carriageway, within 7 m of the IGN centreline, on paving the orthophoto shows.
+
+The grade comes from the corridor's MDT05 samples between the two chainages, fitted by least squares on the 25 m knots with a penalty on grade change, starting and ending level. There is no bridge on the hook, because the Puente del Rey envelope ends at 3,435 m. The fit misses the ground by RMS 0.2 m, largest 0.6 m. The steepest grade is 7.5% and the sharpest change 2.92 per mille per metre. The road starts at 581.8 m above sea level, which is y 0. The origin is the street's first point, rounded, at corridor 1,444, 1,465, so the start pose sits within a few metres of the game origin.
+
+The scene is a greybox. `apps/web/src/game/greybox.ts` draws it when a plan carries `scenery`, instead of the open terrain and roadside, because the hook doubles back and terrain built along the road would cross itself. The ground is a world-space grid that follows the nearest road height and falls to the lake. The 48 blocks are the corridor footprints within 180 m of the street that stay clear of the verge, at their estimated heights; one more was dropped. The lake was traced by eye from the IGN PNOA orthophoto as 208 points. Its level sits 1.5 m below the nearest road point, which is 13.3 m from the shore. Trees are procedural, placed on a jittered grid clear of the verge, the lake and the blocks. Props are chevrons only.
+
+The pilot's lap, level 1, seed 31, from `createRace` and confirmed in Helium at the same points:
+
+| Bike | Company | Lap | Slowest in the S-bend | Slowest at Patines | Below 60 km/h |
+| --- | --- | --: | --: | --: | --: |
+| Ostra Sesta 600 | alone | 37.5 s | 59 km/h | 52 km/h | 3.0 s |
+| Halden Wren 400 | alone | 36.2 s | 68 km/h | 57 km/h | 0.7 s |
+
+The Sesta rides Patines under 60 km/h for 3 s. That is the junction doing its job, and the reason to look again if the hook is meant to flow.
 
 ## Measurement limits
 

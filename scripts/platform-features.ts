@@ -5,24 +5,27 @@ export const platformFeatures: readonly FeatureEntry[] = [
     docs: [
       "docs/madrid-corridor.md#route-and-coordinates",
       "docs/madrid-corridor.md#fitting-track-pieces",
+      "docs/madrid-corridor.md#casa-de-campo-hook",
     ],
     id: "madrid-corridor",
     kind: "platform",
     owns: [
       "tools/madrid/**",
       "packages/track/src/madrid-*.ts",
+      "packages/sim/src/madrid-hook.test.ts",
       "apps/web/src/routes/credits.tsx",
     ],
     perf: [],
     start: [
       "tools/madrid/generate.ts",
+      "tools/madrid/hook.ts",
       "packages/track/src/madrid-corridor.ts",
       "apps/web/src/routes/credits.tsx",
     ],
     summary:
-      "Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit, and the public data credits page. The corridor is not wired into a track or the renderer.",
+      "Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit with slower places, the generator that writes the Casa de Campo hook plan with its grade, blocks and lake, and the public data credits page. Only the hook rides, through a development URL.",
     title: "Madrid corridor and data credits",
-    verify: ["credits.md"],
+    verify: ["credits.md", "madrid-hook.md"],
   },
   {
     docs: [

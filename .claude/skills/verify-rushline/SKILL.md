@@ -107,7 +107,8 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 
 | Flag | Effect |
 | --- | --- |
-| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, level 1 to 5. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`. |
+| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, level 1 to 5. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`, and `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`. |
+| `?bike=<bikeId>&with=alone\|field\|traffic` (DEV) | With `?ride`: the player's bike (ids in `packages/sim/src/bikes.ts`), and who rides along. `alone` drops rivals, police and traffic, `field` drops traffic, `traffic` is the full race and the default. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including ramps. |
 | `?hazard=<id>&before=<m>` (DEV) | Put the player on that road hazard's line, `before` metres (default 150) ahead of it. Ids are per road (`hazard-3` on Breakwater Run), listed by the node command in `features/hazards.md`. With `?kmh=<n>` for the starting speed, `?straight` to hold that line at full throttle, and `?clear` to move traffic out of the way. |
