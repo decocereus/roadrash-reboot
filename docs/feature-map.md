@@ -619,7 +619,7 @@ Test files:
 
 ### Model and font loading
 
-Booting the game module with a dynamic import, downloading and decoding the six models, waiting for fonts, and the typed failures of each step.
+Booting the game module with a dynamic import, downloading and decoding the nine models, waiting for fonts, and the typed failures of each step.
 
 - Id: `asset-loading`
 - Start: `apps/web/src/asset-load.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/game/assets.ts`

@@ -125,7 +125,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/assets.ts",
     ],
     summary:
-      "Booting the game module with a dynamic import, downloading and decoding the six models, waiting for fonts, and the typed failures of each step.",
+      "Booting the game module with a dynamic import, downloading and decoding the nine models, waiting for fonts, and the typed failures of each step.",
     title: "Model and font loading",
     verify: ["frame-rate.md"],
   },

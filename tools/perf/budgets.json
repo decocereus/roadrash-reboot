@@ -16,11 +16,15 @@
       {
         "file": "tools/perf/baselines/post-step8.worker.json.gz",
         "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.bikes.json.gz",
+        "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
       }
     ],
     "revision": "fd677a71c74167dc049a2bcf232f26f8f9abda86",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "3f09f19fb8b103695ecde71bb740005be8caac9952d95ab86b91ca87e22bc4d2"
+    "summarySha256": "307e1fbbe5007e43cdc5b85d6a1a847bfa691789c4d6add5ab89dd33a2f779ff"
   },
   "limits": [
     {
@@ -45,6 +49,30 @@
       "paired": null,
       "scenario": null,
       "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 116948,
+      "baseline": 116948,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.ghost",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 126272,
+      "baseline": 126272,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.oni",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
       "unit": "B"
     },
     {
@@ -81,6 +109,18 @@
       "paired": null,
       "scenario": null,
       "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 118884,
+      "baseline": 118884,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.seraph",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
       "unit": "B"
     },
     {
