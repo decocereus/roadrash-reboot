@@ -3,6 +3,7 @@ import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
+import type { RivalId } from "./cast.ts";
 import {
   brawl,
   cruising,
@@ -10,7 +11,7 @@ import {
   pilotAll,
   player,
   pressing,
-  rivalIn,
+  rivalNamed,
   riderAt,
   sideBySide,
   straight,
@@ -53,7 +54,7 @@ describe("the pack", () => {
     });
     const state = field(flat, 1, 1, 0);
     const me = player(state);
-    const rival = rivalIn(state);
+    const rival = rivalNamed(state, "dee-santangelo");
     rival.s = 50;
     rival.x = 1.8;
     rival.speed = 30;
@@ -167,14 +168,14 @@ const column = (riderCount: number) => {
   return state;
 };
 
-const pileup = (movingPlace: number) => {
+const pileup = (movingRival: RivalId, stoppedRival: RivalId) => {
   const state = column(3);
   const rear = player(state);
   rear.speed = 50;
-  const moving = rivalIn(state, movingPlace);
+  const moving = rivalNamed(state, movingRival);
   moving.s = 101.8;
   moving.x = -0.3;
-  const stopped = rivalIn(state, 1 - movingPlace);
+  const stopped = rivalNamed(state, stoppedRival);
   stopped.s = 102.5;
   stopped.x = 0.3;
   stopped.speed = 0;
@@ -198,7 +199,7 @@ const ride = <Sample>(
 const rearEndAt = (closing: number) => {
   const state = column(2);
   const rear = player(state);
-  const ahead = rivalIn(state);
+  const ahead = rivalNamed(state, "dee-santangelo");
   rear.s = ahead.s - 2.6;
   rear.speed = 30 + closing;
   ahead.speed = 30;
@@ -220,7 +221,10 @@ describe("rider contact", () => {
     "a rider who runs into the back of another stays behind ($rear into $front)",
     ({ front, rear }) => {
       const state = column(2);
-      const seats = { player: player(state), rival: rivalIn(state) };
+      const seats = {
+        player: player(state),
+        rival: rivalNamed(state, "dee-santangelo"),
+      };
       const behind = seats[rear];
       const ahead = seats[front];
       behind.s = ahead.s - 1.5;
@@ -255,7 +259,7 @@ describe("rider contact", () => {
   it("a rider who runs into a stopped bike at 60 m/s takes the damage of a 60 m/s crash", () => {
     const state = column(2);
     const rear = player(state);
-    const ahead = rivalIn(state);
+    const ahead = rivalNamed(state, "dee-santangelo");
     rear.s = ahead.s - 2.6;
     rear.speed = 60;
     ahead.speed = 0;
@@ -284,7 +288,7 @@ describe("rider contact", () => {
     ({ across, back, speed }) => {
       const state = column(2);
       const rear = player(state);
-      const ahead = rivalIn(state);
+      const ahead = rivalNamed(state, "dee-santangelo");
       rear.s = ahead.s - back;
       rear.x = across;
       rear.speed = speed;
@@ -307,7 +311,7 @@ describe("rider contact", () => {
   it("a rider who drifts across into a slower bike alongside is shoved and keeps riding", () => {
     const state = column(2);
     const passing = player(state);
-    const slower = rivalIn(state);
+    const slower = rivalNamed(state, "dee-santangelo");
     passing.s = slower.s - 1;
     passing.x = 0.9;
     passing.speed = 42;
@@ -325,8 +329,8 @@ describe("rider contact", () => {
   it("a rider squeezed from both sides for a second loses between a sixth and a third of their speed, not all of it", () => {
     const state = column(3);
     const me = player(state);
-    const left = rivalIn(state);
-    const right = rivalIn(state, 1);
+    const left = rivalNamed(state, "dee-santangelo");
+    const right = rivalNamed(state, "moose-kowalczyk");
     left.x = -0.9;
     right.x = 0.9;
     for (const rider of state.riders) {
@@ -356,7 +360,7 @@ describe("rider contact", () => {
   it("two bikes that lean on each other from a standstill both pull away", () => {
     const state = column(2);
     const behind = player(state);
-    const ahead = rivalIn(state);
+    const ahead = rivalNamed(state, "dee-santangelo");
     behind.s = ahead.s - 1.975;
     behind.x = 0.43;
     ahead.x = -0.43;
@@ -374,7 +378,10 @@ describe("rider contact", () => {
   });
 
   it("a pileup throws each rider at most once a tick", () => {
-    const { rear, state, stopped } = pileup(0);
+    const { rear, state, stopped } = pileup(
+      "dee-santangelo",
+      "moose-kowalczyk"
+    );
     const crashes = ride(state, 0.5, (events) =>
       state.riders.map(
         (rider) =>
@@ -389,8 +396,15 @@ describe("rider contact", () => {
   });
 
   it("a pileup launches the rear rider and leaves the two in front the same whichever of them is listed first", () => {
-    const [first, swapped] = [0, 1].map((movingPlace) => {
-      const { moving, rear, state, stopped } = pileup(movingPlace);
+    const orders = [
+      ["dee-santangelo", "moose-kowalczyk"],
+      ["moose-kowalczyk", "dee-santangelo"],
+    ] as const;
+    const [first, swapped] = orders.map(([movingRival, stoppedRival]) => {
+      const { moving, rear, state, stopped } = pileup(
+        movingRival,
+        stoppedRival
+      );
       const launches = ride(state, 0.5, (events) =>
         events.flatMap((event) =>
           event.kind === "crash" && event.rider === rear.id ? [event.speed] : []

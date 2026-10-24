@@ -5,6 +5,8 @@ import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { slagRow } from "@racer/track/tracks/slag-row";
 
+import { rivals } from "./cast.ts";
+import type { RivalId } from "./cast.ts";
 import { pilotInput } from "./pilot.ts";
 import { PATROL_SPEED } from "./police.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
@@ -15,7 +17,6 @@ import type {
   RaceState,
   RiderInput,
   RiderId,
-  RiderProfile,
   RiderState,
 } from "./state.ts";
 
@@ -69,25 +70,28 @@ export const riderAt = (state: RaceState, id: RiderId) => {
 
 export const player = (state: RaceState) => riderAt(state, PLAYER_RIDER);
 
-const nthOf = (
-  state: RaceState,
-  role: RiderProfile["role"],
-  place: number
-): RiderState => {
-  const rider = state.riders.filter(
-    (entrant) => entrant.id !== PLAYER_RIDER && entrant.profile.role === role
-  )[place];
-  if (!rider) {
-    throw new Error(`The race has no ${role} at place ${place}.`);
+export const rivalNamed = (state: RaceState, who: RivalId): RiderState => {
+  const { name } = rivals[who];
+  const rival = state.riders.find(
+    (rider) => rider.profile.role === "racer" && rider.profile.name === name
+  );
+  if (!rival) {
+    throw new Error(`${name} is not in the race.`);
   }
-  return rider;
+  return rival;
 };
 
-export const rivalIn = (state: RaceState, place = 0) =>
-  nthOf(state, "racer", place);
-
-export const copIn = (state: RaceState, place = 0) =>
-  nthOf(state, "police", place);
+export const onlyCop = (state: RaceState): RiderState => {
+  const [cop, ...others] = state.riders.filter(
+    (rider) => rider.profile.role === "police"
+  );
+  if (!cop || others.length > 0) {
+    throw new Error(
+      `The race has ${others.length + (cop ? 1 : 0)} cops, not one.`
+    );
+  }
+  return cop;
+};
 
 export const hold = (
   state: RaceState,
@@ -133,9 +137,9 @@ export const alone = (course: Track, bike: BikeSpec): RaceState => {
 
 export const sideBySide = () => {
   const state = field(straight, 1, 2, 0);
-  rivalIn(state).s = 900;
+  rivalNamed(state, "dee-santangelo").s = 900;
   const me = player(state);
-  const moose = rivalIn(state, 1);
+  const moose = rivalNamed(state, "moose-kowalczyk");
   for (const rider of [me, moose]) {
     rider.s = 50;
     rider.speed = 30;
@@ -149,7 +153,7 @@ export const brawl = (
   inputsAt: (tick: number) => readonly RiderInput[]
 ): RaceEvent[] => {
   const me = player(state);
-  const moose = rivalIn(state, 1);
+  const moose = rivalNamed(state, "moose-kowalczyk");
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     me.x = 0.3;

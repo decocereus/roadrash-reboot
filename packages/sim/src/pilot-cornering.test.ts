@@ -17,7 +17,7 @@ import {
   placedAt,
   player,
   quietTrack,
-  rivalIn,
+  rivalNamed,
   straight,
 } from "./race-fixtures.ts";
 import type { Placement } from "./race-fixtures.ts";
@@ -190,7 +190,7 @@ const rideTheRival = (
   course: Track,
   seconds: number
 ): number => {
-  const rival = rivalIn(state);
+  const rival = rivalNamed(state, "dee-santangelo");
   const inputs = state.riders.map(() => ({ ...neutralInput }));
   const input = riderInputAt(inputs, rival.id);
   let fastest = 0;
@@ -210,14 +210,14 @@ describe("pacing by the gap to the player", () => {
     const free: PacingRules = { catchUp: 0, leadEase: 0 };
     const [paced, unpaced, playerOut] = [easing, free, easing].map((pacing) => {
       const state = pacedPair(straight, pacing);
-      rivalIn(state).s = 400;
+      rivalNamed(state, "dee-santangelo").s = 400;
       return state;
     });
     if (!(paced && unpaced && playerOut)) {
       throw new Error("The pacing races were not made.");
     }
     player(playerOut).mode = "busted";
-    const top = topSpeedOf(rivalIn(paced).bike);
+    const top = topSpeedOf(rivalNamed(paced, "dee-santangelo").bike);
     const bustedShare = rideTheRival(playerOut, straight, 40) / top;
     const freeShare = rideTheRival(unpaced, straight, 40) / top;
     const pacedShare = rideTheRival(paced, straight, 40) / top;
@@ -240,9 +240,11 @@ describe("pacing by the gap to the player", () => {
     rideTheRival(onBends, quietTrack, 60);
     rideTheRival(onBendsAlone, quietTrack, 60);
     const fastest = rideTheRival(onStraight, straight, 40);
-    expect(rivalIn(onBends).s).toBeGreaterThan(rivalIn(onBendsAlone).s + 20);
+    expect(rivalNamed(onBends, "dee-santangelo").s).toBeGreaterThan(
+      rivalNamed(onBendsAlone, "dee-santangelo").s + 20
+    );
     expect(fastest).toBeLessThanOrEqual(
-      topSpeedOf(rivalIn(onStraight).bike, true) * 1.01
+      topSpeedOf(rivalNamed(onStraight, "dee-santangelo").bike, true) * 1.01
     );
   });
 });

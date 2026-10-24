@@ -17,7 +17,7 @@ import {
   pilotAt,
   pilotFrom,
   placedAt,
-  copIn,
+  onlyCop,
   player,
   roadWith,
   slick,
@@ -98,7 +98,7 @@ const copBehindTruck = (road: Track, closing = closingOnTruck) => {
   const state = field(road, 1, 0, 1);
   slowTruckAt(state, closing.truckS, 1.8);
   const target = player(state);
-  const cop = copIn(state);
+  const cop = onlyCop(state);
   cop.parked = false;
   cop.post = 900;
   cop.chase = target.id;

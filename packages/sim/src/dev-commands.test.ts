@@ -13,7 +13,7 @@ import {
   hold,
   KMH,
   player,
-  rivalIn,
+  rivalNamed,
   slowTruckAt,
 } from "./race-fixtures.ts";
 import { neutralInput, stepRace } from "./race.ts";
@@ -75,7 +75,10 @@ describe("dev ride placement", () => {
 
   it("a placement for a rider the race does not have changes nothing", () => {
     const state = field(hazardFreeRoad, 1, 0, 0);
-    const stranger = rivalIn(field(hazardFreeRoad, 1, 1, 0)).id;
+    const stranger = rivalNamed(
+      field(hazardFreeRoad, 1, 1, 0),
+      "dee-santangelo"
+    ).id;
     const before = JSON.stringify(state);
     placeRiderAt(state, stranger, 500);
     placeRiderAcross(state, stranger, 1);

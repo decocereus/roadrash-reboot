@@ -9,7 +9,7 @@ import {
   hold,
   player,
   pressing,
-  rivalIn,
+  rivalNamed,
   sideBySide,
   straight,
 } from "./race-fixtures.ts";
@@ -102,7 +102,10 @@ const duel = (
   inputsAt: (tick: number) => { unarmed: RiderInput; holder: RiderInput }
 ) => {
   const state = field(straight, 1, 1, 0);
-  const seats = { player: player(state), rival: rivalIn(state) };
+  const seats = {
+    player: player(state),
+    rival: rivalNamed(state, "dee-santangelo"),
+  };
   const unarmed = seats[unarmedSeat];
   const holder = seats[unarmedSeat === "player" ? "rival" : "player"];
   disarm(unarmed);
@@ -140,8 +143,8 @@ const kickedFromBothSides = (firstX: number, secondX: number) => {
       .map((rival) => ({ ...rival, bike: streetBike })),
   });
   const holder = player(state);
-  const first = rivalIn(state);
-  const second = rivalIn(state, 1);
+  const first = rivalNamed(state, "dee-santangelo");
+  const second = rivalNamed(state, "moose-kowalczyk");
   arm(holder, "chain");
   disarm(first);
   disarm(second);
@@ -264,7 +267,7 @@ describe("armed rivals", () => {
       police: { ...setup.police, count: 0 },
       rivals: [{ ...dee, aggression: 1 }],
     });
-    const holder = rivalIn(state);
+    const holder = rivalNamed(state, "dee-santangelo");
     state.tick = 10 * TICK_RATE;
     const me = player(state);
     const rivalInput = { ...cruising };
@@ -430,7 +433,7 @@ describe("the new weapons", () => {
   });
 });
 
-const BYSTANDER = rivalIn(field(straight, 1, 2, 0), 1).id;
+const BYSTANDER = rivalNamed(field(straight, 1, 2, 0), "moose-kowalczyk").id;
 
 const hitsByTheRival = (
   rival: RivalSetup,
@@ -448,8 +451,8 @@ const hitsByTheRival = (
     rivals: [rival, other],
   });
   state.tick = 10 * TICK_RATE;
-  const striker = rivalIn(state);
-  const bystander = rivalIn(state, 1);
+  const striker = rivalNamed(state, "dee-santangelo");
+  const bystander = rivalNamed(state, "moose-kowalczyk");
   const rivalInput = { ...cruising };
   const targets: RiderId[] = [];
   for (let tick = 0; tick < 6 * TICK_RATE; tick += 1) {

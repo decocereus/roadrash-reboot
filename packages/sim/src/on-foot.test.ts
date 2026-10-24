@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import { pilotInput } from "./pilot.ts";
 import {
   KMH,
-  copIn,
+  onlyCop,
   cruising,
   field,
   patrolFrom,
   player,
-  rivalIn,
+  rivalNamed,
   straight,
   towardTheBike,
 } from "./race-fixtures.ts";
@@ -19,7 +19,7 @@ import type { RaceEvent, RaceState, RiderInput, RiderState } from "./state.ts";
 const knockedOffAndRunning = () => {
   const state = field(straight, 1, 1, 0);
   const me = player(state);
-  const rival = rivalIn(state);
+  const rival = rivalNamed(state, "dee-santangelo");
   rival.s = 900;
   me.s = 100;
   me.x = -1.8;
@@ -119,7 +119,7 @@ const awayFromTheBike = (rider: RiderState): RiderInput => {
 const thrownWhileHolding = (held: RiderInput) => {
   const state = field(straight, 1, 1, 0);
   const me = player(state);
-  const rival = rivalIn(state);
+  const rival = rivalNamed(state, "dee-santangelo");
   rival.s = 900;
   me.s = 100;
   me.x = -1.8;
@@ -230,7 +230,7 @@ describe("on foot", () => {
   it("a rival knocked off runs back to their bike and remounts on their own", () => {
     const state = field(straight, 1, 1, 0);
     const me = player(state);
-    const rival = rivalIn(state);
+    const rival = rivalNamed(state, "dee-santangelo");
     me.s = 900;
     rival.s = 100;
     rival.speed = 20;
@@ -260,7 +260,7 @@ describe("on foot", () => {
   it("a cop reaching a rider who is standing on foot arrests them", () => {
     const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
     const me = player(state);
-    const cop = patrolFrom(copIn(state), 100);
+    const cop = patrolFrom(onlyCop(state), 100);
     me.s = 200;
     me.speed = 10;
     me.stamina = 0;

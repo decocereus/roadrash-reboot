@@ -5,10 +5,11 @@ import { chaserDistance, PATROL_SPEED } from "./police.ts";
 import {
   cruising,
   field,
-  copIn,
+  onlyCop,
   patrolFrom,
   pilotAll,
   player,
+  riderAt,
   straight,
   towardTheBike,
   track,
@@ -20,14 +21,14 @@ import {
   standings,
   stepRace,
 } from "./race.ts";
-import { MAX_STAMINA, TICK_RATE } from "./state.ts";
+import { MAX_STAMINA, TICK_RATE, rosterOf } from "./state.ts";
 import type { PoliceSetup, RaceEvent, RiderInput } from "./state.ts";
 import { arm } from "./weapons.ts";
 
 describe("meeting the police", () => {
   it("a cop parked on the verge pulls out after the pack before the player has ridden two kilometres", () => {
     const state = createRace(defaultSetup(track, 4));
-    const cop = copIn(state);
+    const cop = onlyCop(state);
     expect({
       offRoad: Math.abs(cop.x) > track.roadHalfWidth,
       s: cop.s,
@@ -63,13 +64,14 @@ const crashNearCop = (
   police: PoliceSetup = defaultPolice,
   seconds = 15
 ) => {
-  const state = createRace({
-    ...defaultSetup(straight, 1),
-    police,
-    rivals: [],
-  });
+  const setup = { ...defaultSetup(straight, 1), police, rivals: [] };
+  const state = createRace(setup);
+  const [firstCop] = rosterOf(setup).police;
+  if (firstCop === undefined) {
+    throw new Error("The setup seats no cop.");
+  }
   const me = player(state);
-  const cop = patrolFrom(copIn(state), copS);
+  const cop = patrolFrom(riderAt(state, firstCop), copS);
   me.s = 200;
   me.speed = 15;
   me.stamina = 0;
@@ -107,7 +109,7 @@ describe("police", () => {
   it("the arrest is reported where the body lay and with the weapon the rider was thrown with", () => {
     const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
     const me = player(state);
-    const cop = patrolFrom(copIn(state), 150);
+    const cop = patrolFrom(onlyCop(state), 150);
     me.s = 200;
     me.speed = 15;
     me.stamina = 0;
@@ -155,7 +157,7 @@ describe("police", () => {
 const knockedOffBeside = (speed: number) => {
   const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
   const me = player(state);
-  const cop = patrolFrom(copIn(state), 200);
+  const cop = patrolFrom(onlyCop(state), 200);
   cop.speed = speed;
   me.s = 200;
   me.x = 0;
@@ -181,7 +183,7 @@ const patrolWithBeat = (beat: number) => {
     rivals: [],
   });
   const me = player(state);
-  const cop = copIn(state);
+  const cop = onlyCop(state);
   const post = cop.s;
   me.s = post - 10;
   me.x = -1.8;
@@ -239,7 +241,7 @@ const parked: RiderInput = { ...cruising, brake: 1, throttle: 0 };
 describe("the end of a patrol", () => {
   it("a cop that reaches the end of the track pulls off the road and the traffic behind it drives on", () => {
     const state = field(track, 7, 0, 1);
-    const cop = patrolFrom(copIn(state), track.length - 79);
+    const cop = patrolFrom(onlyCop(state), track.length - 79);
     cop.speed = 3;
     const follower = state.cars.find((car) => car.speed > 0);
     if (!follower) {
@@ -268,7 +270,7 @@ const chase = (police: PoliceSetup, lead: number, quarrySpeed: number) => {
     rivals: [],
   });
   const me = player(state);
-  const cop = patrolFrom(copIn(state), 100);
+  const cop = patrolFrom(onlyCop(state), 100);
   const copInput = { ...cruising };
   let pursued = false;
   let fastest = 0;
@@ -291,7 +293,7 @@ const rideToBody = (police: PoliceSetup) => {
     rivals: [],
   });
   const me = player(state);
-  const cop = patrolFrom(copIn(state), 150);
+  const cop = patrolFrom(onlyCop(state), 150);
   cop.speed = 0;
   me.s = 190;
   me.speed = 15;

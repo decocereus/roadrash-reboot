@@ -56,16 +56,41 @@ runRule("rushline/rider-by-id", riderByIdRule, {
       errors: [{ messageId: "callbackIndex" }],
     },
     {
-      code: "const mine = events.filter((event) => event.rider === 0);",
-      errors: [{ messageId: "literal" }],
+      code: 'import type { RaceEvent } from "@racer/sim/state";\nconst mine = events.filter((event: RaceEvent) => event.rider === 0);',
+      errors: [{ line: 2, messageId: "literal" }],
     },
     {
       code: "if (event.by < 0) {\n  use(event);\n}",
       errors: [{ messageId: "literal" }],
+      filename: "packages/sim/src/blame.ts",
     },
     {
-      code: "const chasing = -1 !== cop.chase;",
-      errors: [{ messageId: "literal" }],
+      code: 'import { PLAYER_RIDER } from "@racer/sim/state";\nconst chasing = -1 !== cop.chase;',
+      errors: [{ line: 2, messageId: "literal" }],
+    },
+    {
+      code: "const seat = (rider: Rider, index: number) => index;\nexport const slots = (state: State) => state.riders.map(seat);",
+      errors: [{ line: 2, messageId: "callbackIndex" }],
+    },
+    {
+      code: 'import { seat } from "./seat.ts";\nexport const slots = (state: State) => state.riders.map(seat);',
+      errors: [{ line: 2, messageId: "callbackHidden" }],
+    },
+    {
+      code: "const slots = state.riders.map(seats.of);",
+      errors: [{ messageId: "callbackHidden" }],
+    },
+    {
+      code: "export const slotOf = (riders: readonly Rider[], wanted: Rider) => {\n  for (let index = 0; index < riders.length; index += 1) {\n    if (riders[index] === wanted) {\n      return index;\n    }\n  }\n  return null;\n};",
+      errors: [{ line: 4, messageId: "counterEscapes" }],
+    },
+    {
+      code: "for (let at = 0; at < riders.length; at += 1) {\n  use(riders[at], at);\n}",
+      errors: [{ line: 2, messageId: "counterEscapes" }],
+    },
+    {
+      code: "for (let at = 0; at < riders.length; at += 1) {\n  slots.push(riders[at] && at * 3);\n}",
+      errors: [{ line: 2, messageId: "counterEscapes" }],
     },
   ],
   valid: [
@@ -84,5 +109,10 @@ runRule("rushline/rider-by-id", riderByIdRule, {
     "const fresh = rider.finishTick >= 0;",
     "const odd = rider.id % 2 === 0;",
     'const same = event.kind === "crash";',
+    "const fresh = (message: { id: number }) => message.id === 0;",
+    'const racing = (rider: Rider) => rider.mode === "riding";\nconst live = state.riders.filter(racing);',
+    "function speedOf(rider: Rider) {\n  return rider.speed;\n}\nconst speeds = riders.map(speedOf);",
+    "const paint = (rider: Rider, slot: number) => use(rider, slot);\nfor (let index = 0; index < riders.length; index += 1) {\n  paint(riders[index], index);\n  colours[index * 3 + 1] = tint.g;\n}",
+    "for (let a = 0; a < riders.length; a += 1) {\n  for (let b = a + 1; b < riders.length; b += 1) {\n    touch(riders[a], riders[b]);\n  }\n}",
   ],
 });

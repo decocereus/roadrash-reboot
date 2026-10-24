@@ -14,7 +14,7 @@ import {
   player,
   pressing,
   quietTrack,
-  rivalIn,
+  rivalNamed,
   straight,
   track,
 } from "./race-fixtures.ts";
@@ -262,8 +262,8 @@ describe("the grid", () => {
       rivals: setup.rivals.slice(0, 2),
     });
     const me = player(state);
-    const moose = rivalIn(state, 1);
-    rivalIn(state).s = 900;
+    const moose = rivalNamed(state, "moose-kowalczyk");
+    rivalNamed(state, "dee-santangelo").s = 900;
     disarm(moose);
     for (const rider of [me, moose]) {
       rider.s = 50;

@@ -11,7 +11,7 @@ import {
   pilotAt,
   pilotFrom,
   placedAt,
-  copIn,
+  onlyCop,
   player,
   rampRoad,
   roadWith,
@@ -90,7 +90,7 @@ describe("road hazards", () => {
 
   it("a cop chasing the player rides round a rock spawned in its path", () => {
     const state = field(hazardFreeRoad, 1, 0, 1);
-    const cop = copIn(state);
+    const cop = onlyCop(state);
     cop.parked = false;
     cop.s = 700;
     cop.x = 1.8;

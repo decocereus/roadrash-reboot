@@ -5,7 +5,7 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { pilotInput } from "./pilot.ts";
-import { player, rivalIn } from "./race-fixtures.ts";
+import { player, rivalNamed } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput, TrafficCar } from "./state.ts";
@@ -65,7 +65,7 @@ const meanCruise = (cars: readonly TrafficCar[], x: number): number => {
 
 const rivalPasses = (course: Track, blockers: readonly TrafficCar[]) => {
   const state = field(course, 1, 1);
-  const rival = rivalIn(state);
+  const rival = rivalNamed(state, "dee-santangelo");
   rival.s = 100;
   rival.x = 1.8;
   rival.speed = 30;

@@ -10,7 +10,7 @@ import {
   player,
   pressing,
   quietTrack,
-  rivalIn,
+  rivalNamed,
   sideBySide,
   straight,
   towardTheBike,
@@ -174,7 +174,7 @@ describe("recovering", () => {
   it("a rider punched onto the outside grass of a bend at 80 km/h rolls off and steers back onto the road within two seconds", () => {
     const state = field(quietTrack, 1, 1, 0);
     const me = player(state);
-    const rival = rivalIn(state);
+    const rival = rivalNamed(state, "dee-santangelo");
     me.s = 1550;
     me.speed = 22;
     rival.speed = 22;
@@ -333,7 +333,7 @@ describe("bike condition", () => {
   it("three hard traffic crashes wreck the bike and the rider is placed after everyone else", () => {
     const state = field(straight, 1, 2, 0);
     const me = player(state);
-    const finisher = rivalIn(state);
+    const finisher = rivalNamed(state, "dee-santangelo");
     finisher.s = straight.length - 20;
     finisher.speed = 30;
     me.s = 100;
@@ -361,7 +361,7 @@ describe("bike condition", () => {
     }).toStrictEqual({ finished: true, mode: "wrecked", offTheRoad: true });
     expect(standings(state)).toStrictEqual([
       finisher.id,
-      rivalIn(state, 1).id,
+      rivalNamed(state, "moose-kowalczyk").id,
       me.id,
     ]);
   });
