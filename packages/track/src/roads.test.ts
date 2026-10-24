@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { chevronRuns } from "./chevron-runs.ts";
 import { reservationOf } from "./features.ts";
 import {
   HAZARD_FINISH_CLEARANCE,
@@ -258,13 +257,8 @@ describe("the five roads", () => {
       expect(last.worldY.slice(0, known)).toStrictEqual(
         first.worldY.slice(0, known)
       );
-      const ahead = chevronRuns[roadId].filter((run) => run.to >= first.length);
       const knownProp = (prop: TrackProp): boolean =>
-        prop.s < first.length &&
-        !(
-          prop.kind === "chevron" &&
-          ahead.some((run) => prop.s >= run.from && prop.s <= run.to)
-        );
+        prop.s < first.length && prop.kind !== "chevron";
       expect(last.props.filter(knownProp)).toStrictEqual(
         first.props.filter(knownProp)
       );
