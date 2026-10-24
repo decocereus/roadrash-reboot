@@ -19,7 +19,6 @@ export const platformFeatures: readonly FeatureEntry[] = [
     start: [
       "tools/madrid/generate.ts",
       "tools/madrid/hook.ts",
-      "packages/track/src/madrid-corridor.ts",
       "apps/web/src/routes/credits.tsx",
     ],
     summary:

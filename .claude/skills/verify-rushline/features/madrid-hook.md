@@ -5,8 +5,8 @@ A greybox of the Madrid corridor's Casa de Campo hook: Paseo del Embarcadero alo
 ## Sub-features
 
 - `alone`: the player only, no rivals, no police, no traffic.
-- `field`: the practice field and police at the chosen level, no traffic.
-- `traffic`: the field, police and the hook's traffic.
+- `field`: the practice field at the chosen level, no traffic.
+- `traffic`: the field and the hook's traffic.
 - `sbend`: the Embarcadero S-bend, 430 to 630 m, built to a 35 m radius.
 - `patines`: Glorieta de los Patines, 780 to 1,020 m, a junction built to a 25 m radius that the rider slows for.
 - `scenery`: world-space ground, 48 grey blocks from the footprints, the traced lake and trees.
@@ -23,12 +23,13 @@ Preconditions: a slot from `rv up` on this checkout and a passing `rv doctor`.
 - Freeze in the S-bend: `rv open --run <run> "/?ride=madrid-hook&bike=ostra-sesta-600&with=alone&autopilot&hold=at&holdafter=532" --until held`, then `rv js --run <run> 'document.querySelector("[role=meter][aria-label=Speed]").getAttribute("aria-valuenow")'` and `rv shot --run <run> sbend`. The Sesta reads about 59 km/h, the lake lies to the right.
 - Freeze at Patines: the same with `holdafter=853`. The Sesta reads about 52 km/h, the Wren about 57.
 - Ride with the field or with traffic: swap `with=alone` for `with=field` or `with=traffic`. The grid fills with rivals; traffic adds cars in both lanes.
-- Measure a lap: `rv open --run <run> "/?ride=madrid-hook&bike=ostra-sesta-600&with=alone&autopilot&prof" --until race`, `rv sample --run <run> hook-lap --seconds 30`, then `rv wait --run <run> 'document.querySelector("[aria-label=Finish]") !== null' --timeout 90` and `rv js --run <run> 'document.querySelector("[aria-label=Finish]").innerText'`. The pilot finishes alone on the Sesta in about 37.5 s and on the Wren in about 36.2 s.
+- Measure a lap: `rv open --run <run> "/?ride=madrid-hook&bike=ostra-sesta-600&with=alone&autopilot&prof" --until race`, `rv sample --run <run> hook-lap --seconds 30`, then `rv wait --run <run> 'document.querySelector("[aria-label=Finish]") !== null' --timeout 90` for the finish. The finish menu shows no time. The headless pilot on the same seed finishes alone on the Sesta in 37.5 s and on the Wren in 36.2 s, and the Helium speeds at both places match it.
 - Read the fitted numbers without a browser: `pnpm madrid:hook` regenerates `packages/track/src/tracks/madrid-hook.ts` and prints the distance from the street, the grade fit, the blocks kept and the lake clearance. A clean `git diff` after it proves the plan matches its inputs.
 
 ## Gotchas
 
 - The hook borrows Slag Row's road id for the field draw, the police officer and the result, so the ride-out card and the results screen say Slag Row. The track, length and lap time are the hook's.
+- Police posts start at 1,500 m, past the hook's finish at 1,044 m, so no cop rides on the hook in any mode.
 - The race starts within 80 m of the game origin and ends 200 m past the street's end at 4,650 m. Hazards keep the 450 m start clearance, so level 1 shows one pothole, on the Patines approach.
 - Tree positions are procedural, not surveyed. Blocks take the corridor's estimated heights.
 - `?hold=at` freezes on the first tick past the distance, so speeds read a few km/h either side of the slowest point.

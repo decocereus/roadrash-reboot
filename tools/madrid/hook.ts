@@ -57,7 +57,9 @@ const settings: HookSettings = {
 const points = (ring: readonly (readonly [number, number])[]): string =>
   `[${ring.map(([x, z]) => `[${x}, ${z}]`).join(", ")}]`;
 
-const moduleOf = (hook: Hook): string => `import { clothoids } from "../alignment.ts";
+const moduleOf = (
+  hook: Hook
+): string => `import { clothoids } from "../alignment.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const madridHook: TrackPlan = {

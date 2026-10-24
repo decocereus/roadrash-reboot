@@ -117,6 +117,8 @@ The pilot's lap, level 1, seed 31, from `createRace` and confirmed in Helium at 
 | Ostra Sesta 600 | alone | 37.5 s | 59 km/h | 52 km/h | 3.0 s |
 | Halden Wren 400 | alone | 36.2 s | 68 km/h | 57 km/h | 0.7 s |
 
+Police posts start at 1,500 m, past the hook's finish, so no cop rides on the hook.
+
 The Sesta rides Patines under 60 km/h for 3 s. That is the junction doing its job, and the reason to look again if the hook is meant to flow.
 
 ## Measurement limits

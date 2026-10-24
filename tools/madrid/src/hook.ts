@@ -18,7 +18,7 @@ import {
   pointAlong,
 } from "./geometry.ts";
 
-export interface HookPlace {
+interface HookPlace {
   readonly name: string;
   readonly fromM: number;
   readonly toM: number;
@@ -40,12 +40,12 @@ export interface HookSettings {
   readonly lakeDropM: number;
 }
 
-export interface PlaceDistance {
+interface PlaceDistance {
   readonly place: HookPlace;
   readonly maxM: number;
 }
 
-export interface HookReport {
+interface HookReport {
   readonly maxM: number;
   readonly p95M: number;
   readonly rmsM: number;

@@ -15,7 +15,7 @@ import {
 } from "./fit-system.ts";
 import type { Grid, Model, Projection, Source } from "./fit-system.ts";
 
-export interface SlowPlace {
+interface SlowPlace {
   readonly fromM: number;
   readonly toM: number;
   readonly minRadiusM: number;
