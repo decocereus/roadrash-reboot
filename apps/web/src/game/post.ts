@@ -5,6 +5,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import type { Part } from "../profile-parts.ts";
 import { seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
+import { isMesh } from "./meshes.ts";
 
 const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
@@ -104,6 +105,11 @@ const variantOf = (object: THREE.Object3D): number => {
   return object instanceof THREE.SkinnedMesh ? 2 : 0;
 };
 
+const sideDrawn = (object: THREE.Object3D): THREE.Side =>
+  isMesh(object) && object.material instanceof THREE.Material
+    ? object.material.side
+    : THREE.FrontSide;
+
 declare module "three" {
   interface Material {
     readonly id: number;
@@ -178,6 +184,19 @@ export const createPipeline = (
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
   normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
   const normalMaterial = new THREE.MeshNormalMaterial();
+  normalMaterial.onBeforeRender = (
+    _renderer,
+    _scene,
+    _camera,
+    _geometry,
+    object
+  ) => {
+    const side = sideDrawn(object);
+    if (side !== normalMaterial.side) {
+      normalMaterial.side = side;
+      normalMaterial.needsUpdate = true;
+    }
+  };
   const instancedDepth = new THREE.MeshDepthMaterial({
     depthPacking: THREE.RGBADepthPacking,
   });
