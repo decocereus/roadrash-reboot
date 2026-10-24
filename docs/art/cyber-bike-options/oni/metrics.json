@@ -1,0 +1,18 @@
+{
+  "id": "oni",
+  "name": "Vanta Oni X",
+  "reference": "Kawasaki Ninja H2",
+  "body": "303949",
+  "accent": "EAFF38",
+  "number": "03",
+  "description": "Broad armoured face, one continuous visor light, a low slab screen and a vented jaw.",
+  "triangles": 14426,
+  "parts": {
+    "bike_body": 9072,
+    "wheel_f": 2892,
+    "wheel_r": 2462
+  },
+  "glbBytes": 468744,
+  "textures": 0,
+  "wheelbaseMetres": 1.38
+}

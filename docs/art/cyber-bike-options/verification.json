@@ -1,0 +1,67 @@
+{
+  "revision": "front-v2",
+  "assets": [
+    {
+      "id": "seraph",
+      "triangles": 13644,
+      "glbBytes": 432980,
+      "sha256": "c8c1c53974eea8d5993ab1110ae0efc51f7a833e0eb4ac9c29a816204cafa8a3",
+      "embeddedViewerMatchesExport": true,
+      "geometryChecks": "triangle ceiling, finite positions and nonzero areas passed",
+      "neutralFront": "seraph/front-detail-neutral.png",
+      "gameParser": "passed",
+      "frontInGameRenderer": "visually inspected",
+      "windscreen": {
+        "widthMetres": 0.389,
+        "topMetres": 1.105
+      }
+    },
+    {
+      "id": "ghost",
+      "triangles": 13400,
+      "glbBytes": 425740,
+      "sha256": "529b18cc6cb02a1d7c0cfd4e10b353774e505a673d4c4aa409dcda342730a722",
+      "embeddedViewerMatchesExport": true,
+      "geometryChecks": "triangle ceiling, finite positions and nonzero areas passed",
+      "neutralFront": "ghost/front-detail-neutral.png",
+      "gameParser": "passed",
+      "frontInGameRenderer": "visually inspected",
+      "windscreen": {
+        "widthMetres": 0.199,
+        "topMetres": 1.29
+      }
+    },
+    {
+      "id": "oni",
+      "triangles": 14426,
+      "glbBytes": 468744,
+      "sha256": "46fd2b1b3f5bc21321c0d32095c697fafe9fbf0393ded06776d78fbe649e2755",
+      "embeddedViewerMatchesExport": true,
+      "geometryChecks": "triangle ceiling, finite positions and nonzero areas passed",
+      "neutralFront": "oni/front-detail-neutral.png",
+      "gameParser": "passed",
+      "frontInGameRenderer": "visually inspected",
+      "windscreen": {
+        "widthMetres": 0.49,
+        "topMetres": 1.12
+      }
+    }
+  ],
+  "previousRaceEvidence": "in-game.png and verification-v1.json describe the prior fronts; current front changes are candidates, not a shipped replacement.",
+  "browser": {
+    "allThreeReady": true,
+    "consoleErrors": 0,
+    "renderer": "ANGLE Metal on Apple M4 Pro"
+  },
+  "frontComparison": {
+    "camera": "identical position and orthographic scale",
+    "coloured": "front-detail.png",
+    "neutral": "front-detail-neutral.png",
+    "previousSources": "front-v1-source.zip"
+  },
+  "checks": {
+    "repository": "All 15 checks passed in 146.9 seconds",
+    "productionBuild": "Passed using an isolated output directory",
+    "featureMap": "passed"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "assets": [
+    {
+      "id": "seraph",
+      "triangles": 13804,
+      "glbBytes": 436776,
+      "sha256": "2543e3bcce54d36e37ad5dc35ec98c13908345063248d5451696451f0279c99b",
+      "embeddedViewerMatchesExport": true,
+      "textures": 0,
+      "race": {
+        "prepared": "ready",
+        "speedKmh": ">90",
+        "road": "Breakwater Run",
+        "screenshot": "seraph/in-game.png",
+        "note": "Race geometry checked before the final emissive-face winding correction; dimensions and triangles unchanged."
+      },
+      "finalParser": "passed",
+      "finalLightFaceCulling": "visually checked"
+    },
+    {
+      "id": "ghost",
+      "triangles": 13850,
+      "glbBytes": 439460,
+      "sha256": "3780ec6573f22a5b822ac7a54c5d65c075393348085309cb88ae741e71b5ce6c",
+      "embeddedViewerMatchesExport": true,
+      "textures": 0,
+      "race": {
+        "prepared": "ready",
+        "speedKmh": ">90",
+        "road": "Breakwater Run",
+        "screenshot": "ghost/in-game.png",
+        "note": "Race geometry checked before the final emissive-face winding correction; dimensions and triangles unchanged."
+      },
+      "finalParser": "passed",
+      "finalLightFaceCulling": "visually checked"
+    },
+    {
+      "id": "oni",
+      "triangles": 14474,
+      "glbBytes": 468328,
+      "sha256": "6d89cd7b1f0160feda6a2bc5ef77a4cf905a05d9b09167f924322f0d897c4e2b",
+      "embeddedViewerMatchesExport": true,
+      "textures": 0,
+      "race": {
+        "prepared": "ready",
+        "speedKmh": ">90",
+        "road": "Breakwater Run",
+        "screenshot": "oni/in-game.png",
+        "note": "Race geometry checked before the final emissive-face winding correction; dimensions and triangles unchanged."
+      },
+      "finalParser": "passed",
+      "finalLightFaceCulling": "visually checked"
+    }
+  ],
+  "repositoryChecks": "All 15 checks passed in 123.4 seconds",
+  "productionBuild": "Passed into isolated node_modules/.cyber-study-build",
+  "viewerControls": [
+    "model selection",
+    "camera presets",
+    "neutral paint",
+    "wireframe",
+    "turntable",
+    "wheel spin"
+  ],
+  "gpu": "Apple M4 Pro via ANGLE Metal",
+  "shipping": "Candidates only. No production asset replacement or GPU performance approval.",
+  "finalBrowser": {
+    "consoleErrors": 0,
+    "allThreeParsersReady": true,
+    "gpu": "Apple M4 Pro via ANGLE Metal"
+  }
+}

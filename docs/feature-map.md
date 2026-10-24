@@ -645,11 +645,11 @@ Test files:
 
 ### Blender model pipeline
 
-The Blender scripts that model the bike, the car, the van and the rigged riders, and the compression step that writes the shipped GLBs.
+The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that writes the shipped GLBs.
 
 - Id: `blender-tools`
 - Start: `tools/blender/compress.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
+- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build), [docs/art/wren-400-study/README.md#contract](art/wren-400-study/README.md#contract), [docs/art/cyber-bike-options/README.md#files-and-contract](art/cyber-bike-options/README.md#files-and-contract)
 - Verify: none yet
 - Perf: `assets.glb.bike`, `assets.glb.car`, `assets.glb.rider_a`, `assets.glb.rider_b`, `assets.glb.rider_c`, `assets.glb.van`, `assets.glb.total`
 - Owns: `tools/blender/**`

@@ -133,6 +133,8 @@ export const platformFeatures: readonly FeatureEntry[] = [
     docs: [
       "docs/architecture.md#browser-client",
       "docs/design/art-direction.md#budget-and-build",
+      "docs/art/wren-400-study/README.md#contract",
+      "docs/art/cyber-bike-options/README.md#files-and-contract",
     ],
     id: "blender-tools",
     kind: "platform",
@@ -148,7 +150,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     ],
     start: ["tools/blender/compress.ts"],
     summary:
-      "The Blender scripts that model the bike, the car, the van and the rigged riders, and the compression step that writes the shipped GLBs.",
+      "The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that writes the shipped GLBs.",
     title: "Blender model pipeline",
     verify: [],
   },

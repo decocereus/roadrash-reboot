@@ -1,0 +1,18 @@
+{
+  "id": "ghost",
+  "name": "Kairo Ghost R",
+  "reference": "Yamaha YZF-R1",
+  "body": "E9F2F5",
+  "accent": "1CDDF0",
+  "number": "02",
+  "description": "Narrow spear nose, vertical lamps, a tall blade screen and upright canards.",
+  "triangles": 13400,
+  "parts": {
+    "bike_body": 7938,
+    "wheel_f": 2946,
+    "wheel_r": 2516
+  },
+  "glbBytes": 425740,
+  "textures": 0,
+  "wheelbaseMetres": 1.38
+}

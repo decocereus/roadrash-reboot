@@ -1,0 +1,36 @@
+{
+  "blender": "5.2.2 LTS",
+  "triangles": 1188,
+  "glbBytes": 56852,
+  "glbSha256": "d98f31609729fc1839279e5a3131464916b333b26dce71996c84791158fffb2a",
+  "gameParser": {
+    "status": "passed",
+    "parts": ["bike_body", "wheel_f", "wheel_r"],
+    "triangles": [692, 248, 248]
+  },
+  "race": {
+    "prepared": "ready",
+    "road": "Breakwater Run",
+    "speedKmh": 159.34016741310947,
+    "scene": "existing game with candidate bike supplied through asset parser",
+    "screenshot": "in-game.png",
+    "consoleErrors": 0,
+    "gpu": "Apple M4 Pro via ANGLE Metal"
+  },
+  "viewer": {
+    "offlineModelMatchesGlb": true,
+    "ready": true,
+    "recolour": true,
+    "wireframe": true,
+    "wheelSpin": true,
+    "turntable": true,
+    "consoleErrors": 0
+  },
+  "shipping": "Candidate only. Shipped assets unchanged. Paired GPU performance gate not run.",
+  "repositoryChecks": {
+    "check": "All 15 checks passed in 125.5 seconds",
+    "build": "pnpm --filter @racer/web build --outDir node_modules/.wren-study-build passed",
+    "featureMap": "regenerated and checked",
+    "blenderGeometry": "triangle limit, finite coordinates and triangle areas passed"
+  }
+}

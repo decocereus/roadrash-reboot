@@ -1,0 +1,11 @@
+{
+  "triangles": 1188,
+  "parts": {
+    "bike_body": 692,
+    "wheel_f": 248,
+    "wheel_r": 248
+  },
+  "wheelbase_m": 1.38,
+  "textures": 0,
+  "purpose": "Standalone candidate; shipped bike unchanged"
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "seraph",
+    "name": "Ostra Seraph RR",
+    "reference": "Aprilia RSV4",
+    "body": "FF294C",
+    "accent": "22E5FF",
+    "number": "01",
+    "description": "Low split nose, widely spaced horizontal lamps, a short wraparound screen and stacked wings.",
+    "triangles": 13644,
+    "parts": {
+      "bike_body": 8280,
+      "wheel_f": 2897,
+      "wheel_r": 2467
+    },
+    "glbBytes": 432980,
+    "textures": 0,
+    "wheelbaseMetres": 1.38
+  },
+  {
+    "id": "ghost",
+    "name": "Kairo Ghost R",
+    "reference": "Yamaha YZF-R1",
+    "body": "E9F2F5",
+    "accent": "1CDDF0",
+    "number": "02",
+    "description": "Narrow spear nose, vertical lamps, a tall blade screen and upright canards.",
+    "triangles": 13400,
+    "parts": {
+      "bike_body": 7938,
+      "wheel_f": 2946,
+      "wheel_r": 2516
+    },
+    "glbBytes": 425740,
+    "textures": 0,
+    "wheelbaseMetres": 1.38
+  },
+  {
+    "id": "oni",
+    "name": "Vanta Oni X",
+    "reference": "Kawasaki Ninja H2",
+    "body": "303949",
+    "accent": "EAFF38",
+    "number": "03",
+    "description": "Broad armoured face, one continuous visor light, a low slab screen and a vented jaw.",
+    "triangles": 14426,
+    "parts": {
+      "bike_body": 9072,
+      "wheel_f": 2892,
+      "wheel_r": 2462
+    },
+    "glbBytes": 468744,
+    "textures": 0,
+    "wheelbaseMetres": 1.38
+  }
+]

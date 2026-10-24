@@ -1,0 +1,18 @@
+{
+  "id": "seraph",
+  "name": "Ostra Seraph RR",
+  "reference": "Aprilia RSV4",
+  "body": "FF294C",
+  "accent": "22E5FF",
+  "number": "01",
+  "description": "Low split nose, widely spaced horizontal lamps, a short wraparound screen and stacked wings.",
+  "triangles": 13644,
+  "parts": {
+    "bike_body": 8280,
+    "wheel_f": 2897,
+    "wheel_r": 2467
+  },
+  "glbBytes": 432980,
+  "textures": 0,
+  "wheelbaseMetres": 1.38
+}
