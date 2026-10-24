@@ -118,7 +118,7 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
   textures: 30,
   tick: scenario.window.from + index,
   ticks: 1,
-  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 900_000, 800_000, 1, 13, 1],
+  triangles: [0, 0, 0, 0, 0, 0, 0, 1_000_000, 700_000, 600_000, 1, 13, 1],
 });
 
 const sampleOf = (

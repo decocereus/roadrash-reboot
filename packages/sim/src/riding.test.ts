@@ -1,4 +1,4 @@
-import { eased } from "@racer/track/alignment";
+import { clothoids, eased } from "@racer/track/alignment";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
@@ -16,9 +16,23 @@ import {
   straight,
 } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import { lateralSpeedLimit, PLAYER_RIDER, TICK_RATE } from "./state.ts";
 
 const MPH = 2.237;
+
+const arcOf = (curvature: number) =>
+  compileTrack({
+    ...ridgeRoad,
+    chevrons: [],
+    features: [],
+    hazardsPerKilometre: 0,
+    pieces: clothoids([
+      [40, curvature, 0],
+      [600, curvature, 0],
+      [40, 0, 0],
+    ]),
+    trafficPerKilometre: 0,
+  });
 
 const brakeIntoBend = (brake: number) => {
   const state = field(quietTrack, 1, 0, 0);
@@ -64,6 +78,7 @@ describe("riding", () => {
 
     const flat = compileTrack({
       ...ridgeRoad,
+      chevrons: [],
       features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
@@ -120,6 +135,7 @@ describe("riding", () => {
   it("stops from 200 km/h in about 55 metres", () => {
     const flat = compileTrack({
       ...ridgeRoad,
+      chevrons: [],
       features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
@@ -140,7 +156,7 @@ describe("riding", () => {
     expect(rider.s - from).toBeGreaterThan(45);
   });
 
-  it("a curve pushes a rider who does not steer to the outside", () => {
+  it("centred bars hold the opening bend at 144 km/h, where it asks a third of lock", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
@@ -152,23 +168,44 @@ describe("riding", () => {
       { brake: 0, kick: false, punch: false, steer: 0, throttle: 0.6 },
       2.5
     );
-    expect(rider.x).toBeLessThan(-1.5);
+    expect(Math.abs(rider.x)).toBeLessThan(0.5);
   });
 
-  it("a third of lock holds the opening bend at 144 km/h", () => {
+  it("the opening bend pushes a rider who does not steer to the outside at 190 km/h, where it asks half of lock", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
     rider.x = 0;
-    rider.speed = 40;
+    rider.speed = 190 / 3.6;
     hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0.3, throttle: 0.6 },
+      { brake: 0, kick: false, punch: false, steer: 0, throttle: 1 },
       2.5
     );
-    expect(Math.abs(rider.x)).toBeLessThan(1.5);
+    expect(rider.x).toBeLessThan(-1.5);
   });
+
+  it.each([
+    [1 / 474, -1],
+    [1 / 474, 1],
+    [-1 / 474, -1],
+    [-1 / 474, 1],
+  ] as const)(
+    "in a bend of curvature %d at 144 km/h, full lock at %d still reaches the bike's whole sideways speed",
+    (curvature, steer) => {
+      const arc = arcOf(curvature);
+      const state = alone(arc, streetBike);
+      const rider = player(state);
+      rider.s = 200;
+      rider.x = -3 * steer;
+      rider.speed = 40;
+      hold(state, arc, { ...cruising, steer, throttle: 0.6 }, 1.2);
+      expect(
+        rider.lateralSpeed / lateralSpeedLimit(rider.bike, rider.speed)
+      ).toBeCloseTo(steer, 2);
+    }
+  );
 
   it("the bars take most of a second to reach full lock, so a lane change takes over a second", () => {
     const state = alone(straight, streetBike);

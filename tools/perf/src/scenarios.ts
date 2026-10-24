@@ -9,12 +9,10 @@ import {
   workloadModes,
 } from "@racer/sim/bench-workload";
 import type { WorkloadColumns } from "@racer/sim/bench-workload";
-import { neutralInput } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
-import type { RaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
 import { PLAYER_RIDER, TICK_SECONDS } from "@racer/sim/state";
-import type { InputFrame, RaceSetup, RiderInput } from "@racer/sim/state";
+import type { InputFrame, RaceSetup } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
 import { digestOf } from "./result.ts";
@@ -64,30 +62,30 @@ const quality: Quality = {
 
 export const scenarios: readonly Scenario[] = [
   {
-    band: { max: 10, min: 10, total: 6010 },
+    band: { max: 11, min: 9, total: 5796 },
     bench: "reference",
     floor: 0,
     id: "reference-v1",
-    minSpeed: 23.992932993980144,
+    minSpeed: 21.840483763318808,
     police: 1,
     quality,
     racers: 15,
     window: benchWindows.reference,
     workloadDigest:
-      "7b5107a7be04ad2a05dd03176c529d24b63f231d3579a62a57c19beeab844497",
+      "81524702669a82811ec3adeeefc66a60429d9fc3bd630fd6bd6de4f69161edec",
   },
   {
-    band: { max: 13, min: 11, total: 7395 },
+    band: { max: 13, min: 10, total: 7370 },
     bench: "stress",
     floor: 6,
     id: "pack-riding-v1",
-    minSpeed: 35.08969553929572,
+    minSpeed: 43.07578124462869,
     police: 8,
     quality,
     racers: 15,
     window: benchWindows.stress,
     workloadDigest:
-      "ac96a3731ddb956b4e167e91650023b167ae1ab1943f433b8ee5f92248abeb1c",
+      "86b63e62efec65ef2b7de9659bcd9b3534ad4ca66aa89df2aac705bb524a6f2a",
   },
 ];
 
@@ -165,7 +163,7 @@ type Track = RaceSetup["track"];
 
 type RaceSettings = Omit<
   Track["plan"],
-  "leadInLength" | "pieces" | "runoffLength" | "scenery" | "start"
+  "chevrons" | "leadInLength" | "pieces" | "runoffLength" | "scenery" | "start"
 >;
 
 interface RaceTrack extends Omit<Track, "plan"> {
@@ -226,40 +224,19 @@ interface BenchRun {
   readonly step: () => void;
 }
 
-interface LegacyRun {
-  readonly view: RaceView;
-  readonly pilot: (slot: number, input: RiderInput) => void;
-  readonly step: (inputs: readonly RiderInput[]) => void;
-}
-
-const stepperOf = (run: RaceRun | LegacyRun): (() => void) => {
-  if ("pilot" in run) {
-    const inputs: RiderInput[] = run.view.riders.map(() => ({
-      ...neutralInput,
-    }));
-    return () => {
-      for (let slot = 0; slot < inputs.length; slot += 1) {
-        const input = inputs[slot];
-        if (input) {
-          run.pilot(slot, input);
-        }
-      }
-      run.step(inputs);
-    };
-  }
-  const frame: InputFrame = new Map();
-  return () => {
-    run.step(frame);
-  };
-};
-
 export const benchRun = (bench: Bench): BenchRun => {
   const setup = benchSetup(bench);
   const run = createRaceRun({
     ...setup,
     player: { ...setup.player, controller: "pilot" },
   });
-  return { step: stepperOf(run), view: run.view };
+  const frame: InputFrame = new Map();
+  return {
+    step: () => {
+      run.step(frame);
+    },
+    view: run.view,
+  };
 };
 
 const raceOver = (race: RaceView): boolean =>

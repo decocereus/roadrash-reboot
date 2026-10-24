@@ -1,7 +1,7 @@
 {
   "provenance": {
-    "recordedAt": ["9126e0dae787872a70a307fb6d4212fe7309c0c6"],
-    "recordedWith": "the pilot-in-tick change on top of recordedAt, which gives every rider a controller and its own input and keeps the pilot history in RaceState, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1. Before it was recorded, the same nine races serialised without the pilot history and each rider's controller and input, with the riders' inputs written beside the state as before, reproduced the earlier baseline, recorded at b094142dd114e8272fadcde5032c6ada87ecb2fd with the stable rider id change, hash for hash, alone and interleaved",
+    "recordedAt": ["5680bfcc1be8921a1979ad1d0c43a744e95ede81"],
+    "recordedWith": "the settled lean, full lock either way and the riding-speed chevrons at recordedAt, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1. Before it was recorded, the same code with the settled lean set to zero reproduced the earlier baseline, recorded at 9126e0dae787872a70a307fb6d4212fe7309c0c6 with the pilot-in-tick change, hash for hash in seven of the nine races; ridge-road/level5/seed1 and seed9 differ only because a rider meets a chevron board that moved. With the lean on, all nine change, because the pilot's steer now rides on the settled lean. Over 120 paired races to the finish (Ridge Road and Slag Row level 5, both signed bikes, seeds 1 to 30), every 90% bootstrap interval for the change sits inside its tolerance: winner time within 1.5%, total crashes within 5%, finishers within half a rider, the player's crashes within 0.3 and the player's place within one place a race",
     "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text, Float64Array as a counted run of numbers",
     "ticks": 7200,
     "window": {
@@ -13,65 +13,65 @@
     {
       "id": "ridge-road/level5/seed1",
       "ticks": 7200,
-      "full": "d5ad1e6203cdea10a69d0d6a0e61728093cc9bb1f417a283caa5780090b28098",
-      "final": "0f19ea3950a880078a101d11a3d85b266360d18d932f7af93d0295d2d3a34187",
-      "window": "03c5d2d3dbdd517dbc0e565b86bd8f3a1b8fed186dddaa09527288e8106b0a6e"
+      "full": "c3da0d22aa85b9c3aa091d1778aeb921176121516f5bb3c85229aaf0369df135",
+      "final": "3d17ec44e894efa3c3a45ec94aa0c53924574ee9b30a2a4e23f9471c28ba3c59",
+      "window": "6f4fe289c0192461e62288d8fffe81ee7f7ac5d97c5cb51e785d28285567671c"
     },
     {
       "id": "ridge-road/level5/seed5",
       "ticks": 7200,
-      "full": "77c3ab3e5ed6f622755af0ba7095514954971cfdbe3e1c16ef46e5d64de2c3b8",
-      "final": "05b070f963c5c77a0cef36780a9b03fe0f72781845bafddcc9c5a5dfbfe73e3b",
-      "window": "c2268b279c9cd3dcc3e5f7ebb8753d85d3797cf7d68e1833161d95675c40c27a"
+      "full": "bb0022de635725a607a2477904be8959b6ff158f6e610b38ec0a3b37d874b7c7",
+      "final": "2f73b4519466605ee506945e20be5d16b67db9e9944a470b54c7874db642861e",
+      "window": "acb66692a3fb35e41333f43a45a894ab0d9b8ec90bc0306d07eaf7fe9f1d684c"
     },
     {
       "id": "ridge-road/level5/seed9",
       "ticks": 7200,
-      "full": "11053fac4a611dad08ed7d81a692b4e126bbd821dd1d8258ee58db45280b4f2a",
-      "final": "14619b7dbcb48b42646479e09cb61aef5501a94d26feda0c482dea9c874e9f74",
-      "window": "42b67246b564b15f842329d2f99413f8ecbc1c9b8e9bc721ad8f891a818be85d"
+      "full": "b7234dcf0ba1584c1499b061d2ad331e76052f5c190e6d9ea92a8b9ff0cefb5f",
+      "final": "04c45c7383928a6b4d4f30e37ad9ef6b6b878000526b9d7d160e23acb1b3cee4",
+      "window": "5f69b17c330e4e9e22f207a891434878391391b0706271d31302551ef8b6ddde"
     },
     {
       "id": "ridge-road/level5/seed31",
       "ticks": 7200,
-      "full": "2cb52dbc30d135f2fe02d231823f55ab297d1477a0ae930d941c5430df66b2bb",
-      "final": "d9c5d11718ca4c6a318483b9af7324142cdb4ad57a76a29f1a8f7c42ceda0400",
-      "window": "6fdbf8f18bfd9949076314cecd294e4cfb56269e91850a6055f5b3a6a628ae89"
+      "full": "9ee3652fc68a69d977386a4e73f1a84ae77aec32a74514940bdf9c240b98b76c",
+      "final": "023b3a1d4eb274903e3bad1da96aaa31e6908f602e32c16cbc05be7880c77335",
+      "window": "bac00c5527f49994f9c48a9814cdf93d691175e724973770e33369805f318182"
     },
     {
       "id": "slag-row/level5/seed1",
       "ticks": 7200,
-      "full": "80185c147ba0dad1b3d7caf9e92e476d84b2ff009215f2861eae5ccb3e5e8ca8",
-      "final": "f6d5aeb6bff68a25a7e98c32b395ee893ee6ca43ff5c0cd6195988f4dccbf0fe",
-      "window": "cf10219f7167d1c9417e9ac2a765e50d44b79881b3714bf16463c28da63cbf4f"
+      "full": "0d3ee1c0ab8ac5c0e31ffdae0fd3eac015a45af31fc6d28a8a15c11c57adf825",
+      "final": "db98264a76581d35ada3bf1bbc66bb5522d37b9aa10f9c41f5908ec2f032cbf2",
+      "window": "73b5420ec7a1fe75a56f065895fd92521648a1ef7f024b9c1953ea12758238a0"
     },
     {
       "id": "slag-row/level5/seed5",
       "ticks": 7200,
-      "full": "f405e36bfcc90c2cd9805836ace803d286b1e724162766c318367ab88ad330ca",
-      "final": "84b7bfc3aa3c989d960157f2222b671e9bf81f8409b2f9d82a2dd3a218078db7",
-      "window": "5a8be41ab9256aa63287178cdeafc3e42b93bffe693a3d73283b040160c9b96d"
+      "full": "dff58839f4fbcd33d5493504756ce8f4a50924437a1bfcec015475abce815155",
+      "final": "4cdfdf9d2d03e203219e1de2d4098c515a88585c1dc2771a32e5fd57101b9c01",
+      "window": "47362da4f717cb9c3bcbe1d8c2156b239dda3fd20a79ab3f37a9a0fcbe8bc8d7"
     },
     {
       "id": "slag-row/level5/seed9",
       "ticks": 7200,
-      "full": "4f0ef332dad0be35e10c564a4e46a5a89070af887fcf239920b9d0ec45254a15",
-      "final": "623a364b8596bb9eb1661a687f87d25d6b0f383c743b2ed94bb805c3c0b38b1a",
-      "window": "8d8f4ef0bb75df2007a044587b834a674da8a6f1c91a16f7a90b4771296b2c00"
+      "full": "81658c34e010d9d242fd8b200eb089d0e87383642182f9c362326f364b9e747c",
+      "final": "fcc82a2abd92b95e87cc2f2ec0e925752acfd3b99f4f0a84125eec1af7a1806e",
+      "window": "c29c77db56362d7f72a321a76c58894f03bd3cbcf11ca2330026780728961e02"
     },
     {
       "id": "slag-row/level5/seed31",
       "ticks": 7200,
-      "full": "07beb6f9260c7505363c9e3cc56734cd98945512e5eaa88e3020dee31ecfe07f",
-      "final": "607c161b3aab6d4ca1e912d8c55df364478542dbe80202e3eb85242b86564af2",
-      "window": "2caa0d35efe95f7ba9c63dc32c131ab16d3db3db87f70d14df41ad60289dd366"
+      "full": "cd93e8eb91fb0e415237bd45705662a1161d49e20ca39fcb8bd43d5b3f815e94",
+      "final": "263582fee87769b9bc3d1ffa3477df3e9272839667327364a0c72aaa8bb3615e",
+      "window": "8576e0eb621f5f531defb0d660b6b016b3a5e8ccd3a976fcd6cdec02c93dc838"
     },
     {
       "id": "stress/seed8",
       "ticks": 7200,
-      "full": "96bb195a5e4c213be716753b1e7cc7441adce1e30ab6c36c72f322236f132cb7",
-      "final": "b7f3662237da8d6b671ec901790db5891453ba9cd2271b522a44fe701321fefa",
-      "window": "f69cb7eb59139b4956a44216f01375fbf2117aa43f2b9eea55f574fc6f5fef0c"
+      "full": "d85a341a25b197b04c63b2b6a50b7667a8e96e2d4e21c88a834671ffad2fd6b8",
+      "final": "172ca1aad56a22d44fa6f9f02da9f165ab1fe08637b1d58a80bfb5768719bb06",
+      "window": "42cacdb85f2600792cc6a1def27cea08fe8104da695ba934ffc73a3d68bc60c9"
     }
   ]
 }

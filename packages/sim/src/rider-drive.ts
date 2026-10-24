@@ -19,6 +19,7 @@ import {
   clamp,
   curvePushOf,
   GRAVITY,
+  lateralFor,
   lateralSpeedLimit,
   TICK_SECONDS,
 } from "./state.ts";
@@ -158,16 +159,20 @@ export const ride = (
     lateralSpeedLimit(bike, rider.speed, input.throttle) *
     (1 - (1 - VERGE_STEER) * verge) *
     (1 - WOBBLE_GRIP * rider.wobble);
-  const wantedLateral =
-    input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
+  const bendPush = curvePushOf(bike, curvature, rider.speed);
+  const wantedLateral = lateralFor(
+    input.steer,
+    bendPush,
+    limit,
+    rider.hitStun > 0 ? STUN_STEER : 1
+  );
   rider.lateralSpeed = approach(
     rider.lateralSpeed,
     wantedLateral,
     bike.steerRate * weapons[rider.weapon].steerFactor * grip * TICK_SECONDS
   );
   const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
-  const push =
-    curvePushOf(bike, curvature, rider.speed) * (1 + SLIP_PUSH * rider.slip);
+  const push = bendPush * (1 + SLIP_PUSH * rider.slip);
   if (losesTheFront(state, rider, input)) {
     return;
   }

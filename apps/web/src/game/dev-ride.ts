@@ -3,9 +3,9 @@ import type { RaceView, RiderView } from "@racer/sim/race-view";
 import {
   clamp,
   curvePushOf,
-  lateralSpeedLimit,
   PLAYER_RIDER,
   riderOf,
+  steerFor,
 } from "@racer/sim/state";
 import type { Hazard, RiderInput } from "@racer/sim/state";
 import { curvatureAt } from "@racer/track/track";
@@ -18,9 +18,14 @@ const LINE_PULL = 1.2;
 const LINE_SWAY = 3;
 const holdLine = (track: Track, me: RiderView, lineX: number): number => {
   const wanted = clamp((lineX - me.x) * LINE_PULL, -LINE_SWAY, LINE_SWAY);
-  const push = curvePushOf(me.bike, curvatureAt(track, me.s), me.speed);
+  const curvature = curvatureAt(track, me.s);
   return clamp(
-    (wanted + push) / Math.max(1, lateralSpeedLimit(me.bike, me.speed)),
+    steerFor(
+      me.bike,
+      curvature,
+      me.speed,
+      wanted + curvePushOf(me.bike, curvature, me.speed)
+    ),
     -1,
     1
   );

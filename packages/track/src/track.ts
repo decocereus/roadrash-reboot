@@ -28,6 +28,7 @@ export interface Scenery {
 
 export interface TrackPlan extends Alignment {
   readonly id: string;
+  readonly chevrons: readonly ChevronRun[];
   readonly name: string;
   readonly region: RegionId;
   readonly level: number;
@@ -41,6 +42,12 @@ export interface TrackPlan extends Alignment {
   readonly roadblocks: readonly number[];
   readonly features: readonly FeatureRule[];
   readonly scenery?: Scenery;
+}
+
+export interface ChevronRun {
+  readonly from: number;
+  readonly to: number;
+  readonly side: -1 | 1;
 }
 
 export type TrackPropKind = "tree" | "pole" | "chevron" | "rock" | "gate";
@@ -76,7 +83,6 @@ export interface TrackPoint {
   slope: number;
 }
 
-const SHARP_CURVATURE = 1 / 420;
 const ROCK_SEED_SALT = 0x70_c5;
 
 const roadHalfWidthOf = (plan: TrackPlan): number =>
@@ -90,11 +96,7 @@ const laneCentres = (plan: TrackPlan, side: number): LaneCentres =>
     ? [laneCentre(plan, side, 0), laneCentre(plan, side, 1)]
     : [laneCentre(plan, side, 0)];
 
-const scatterProps = (
-  plan: TrackPlan,
-  length: number,
-  curvature: Float64Array
-): TrackProp[] => {
+const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
   const props: TrackProp[] = [];
   const mix = regions[plan.region].propMix;
   const random = createRandom(plan.seed);
@@ -102,8 +104,6 @@ const scatterProps = (
   const roadHalfWidth = roadHalfWidthOf(plan);
   const startS = -plan.leadInLength;
   const endS = length + plan.runoffLength;
-  const curvatureNear = (s: number): number =>
-    curvature[Math.round(s - startS)] ?? 0;
 
   for (let s = startS; s < endS; s += 6) {
     const grove = 0.55 + 0.4 * sin(s / 140) * sin(s / 53 + 1.7);
@@ -134,15 +134,14 @@ const scatterProps = (
   }
 
   if (mix.chevron > 0) {
-    for (let s = 40; s < length; s += 18 / mix.chevron) {
-      const bend = curvatureNear(s);
-      if (Math.abs(bend) > SHARP_CURVATURE) {
+    for (const run of plan.chevrons.filter((each) => each.to < length)) {
+      for (let s = run.from; s <= run.to; s += 18 / mix.chevron) {
         props.push({
           kind: "chevron",
           radius: 0.2,
           s,
           scale: 1,
-          x: -Math.sign(bend) * (roadHalfWidth + 1.8),
+          x: run.side * (roadHalfWidth + 1.8),
         });
       }
     }
@@ -172,7 +171,7 @@ const scatterProps = (
 export const compileTrack = (plan: TrackPlan): Track => {
   const centreline = sampleAlignment(plan);
   const { endS, length, startS } = centreline;
-  const props = scatterProps(plan, length, centreline.curvature);
+  const props = scatterProps(plan, length);
   const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
   const features = compileFeatures(plan.features, {

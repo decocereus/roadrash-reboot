@@ -44,13 +44,13 @@ describe("pack-riding workload validation", () => {
   it("rejects a tick with fewer rivals ahead than the pinned band", () => {
     const rows = {
       ...captured,
-      ahead: changedAt(captured.ahead, middle, 10),
+      ahead: changedAt(captured.ahead, middle, 9),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "10",
-      expected: "11..13 rivals",
+      actual: "9",
+      expected: "10..13 rivals",
       field: "ahead",
-      tick: 2165 + middle,
+      tick: 2107 + middle,
     });
   });
 
@@ -63,7 +63,7 @@ describe("pack-riding workload validation", () => {
       actual: "thrown",
       expected: "riding",
       field: "mode",
-      tick: 2165 + middle,
+      tick: 2107 + middle,
     });
   });
 
@@ -75,10 +75,10 @@ describe("pack-riding workload validation", () => {
       ticks: without(captured.ticks, middle),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: String(2165 + middle + 1),
-      expected: String(2165 + middle),
+      actual: String(2107 + middle + 1),
+      expected: String(2107 + middle),
       field: "tick",
-      tick: 2165 + middle,
+      tick: 2107 + middle,
     });
   });
 
@@ -86,10 +86,10 @@ describe("pack-riding workload validation", () => {
     const at = captured.ahead.indexOf(13);
     const rows = { ...captured, ahead: changedAt(captured.ahead, at, 12) };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "7394",
-      expected: "7395",
+      actual: "7369",
+      expected: "7370",
       field: "total",
-      tick: 2765,
+      tick: 2707,
     });
   });
 });

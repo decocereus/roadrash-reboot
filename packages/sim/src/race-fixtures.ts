@@ -32,6 +32,7 @@ export const quietTrack = compileTrack({
 
 export const straight = compileTrack({
   ...ridgeRoad,
+  chevrons: [],
   features: [],
   hazardsPerKilometre: 0,
   pieces: eased([[6000, 0, 0]]),
@@ -239,6 +240,7 @@ export const loadingRamp = {
 
 export const rampRoadPlan = {
   ...ridgeRoad,
+  chevrons: [],
   features: [
     {
       feature: loadingRamp,
@@ -285,6 +287,7 @@ export interface Placement {
 
 export const hazardFreeRoad = compileTrack({
   ...ridgeRoad,
+  chevrons: [],
   features: [],
   hazardsPerKilometre: 0,
   pieces: eased([[6000, 0, 0]]),
