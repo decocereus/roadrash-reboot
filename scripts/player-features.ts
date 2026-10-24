@@ -412,7 +412,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/figure-*.ts",
       "apps/web/src/career/colours.ts",
     ],
-    perf: sceneCounts,
+    perf: [...sceneCounts, "riders.cpu.p95"],
     start: [
       "apps/web/src/game/rider-views.ts",
       "apps/web/src/game/rider-figure.ts",

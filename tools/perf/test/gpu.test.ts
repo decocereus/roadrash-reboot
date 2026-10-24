@@ -20,12 +20,28 @@ const MAIN_CALLS = 130;
 const DRAWN_CALLS = 350;
 const START_MS = 5000;
 const RACE = 1;
+const PARTS = [
+  "sim",
+  "other",
+  "riders",
+  "fleet",
+  "camera",
+  "world",
+  "matrices",
+  "normal",
+  "shadow",
+  "main",
+  "line",
+  "bloom",
+  "grade",
+];
 
 type Ride = Extract<GpuSample, { side: "B" }>["capture"]["ride"];
 
 interface Playback {
   readonly interval: (index: number) => number;
   readonly extraCalls: (index: number) => number;
+  readonly riders: (index: number) => number;
   readonly longTasks: GpuSample["capture"]["longTasks"];
   readonly discardedAt: number;
   readonly viewport: GpuSample["capture"]["viewport"];
@@ -53,6 +69,7 @@ const steady: Playback = {
     () => 40,
     () => 30
   ),
+  riders: () => 0.2,
   viewport: { dpr: 2, height: 790, width: 1504 },
 };
 
@@ -72,7 +89,21 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     13,
     1,
   ],
-  cpu: [1, 0.2, 1, 0.5, 0.1, 0.4, 0.3, 0.6, 0.4, 0.5, 0.1, 0.1, 0.1],
+  cpu: [
+    1,
+    0.2,
+    playback.riders(index),
+    0.5,
+    0.1,
+    0.4,
+    0.3,
+    0.6,
+    0.4,
+    0.5,
+    0.1,
+    0.1,
+    0.1,
+  ],
   discarded: index === playback.discardedAt ? 40 : 0,
   drawRung: 0,
   drawnEpoch: 1,
@@ -109,6 +140,7 @@ const sampleOf = (
       frameOf(scenario, playback, index)
     ),
     longTasks: playback.longTasks,
+    parts: PARTS,
     rows: {
       ...validRows(scenario),
       times: Array.from(
@@ -310,6 +342,31 @@ describe("gpu frame lane", () => {
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       `FAIL gpu pack-riding-v1 render.calls.max [gpu-helium-metal] observed=${over} calls limit <= ${budget.value} calls A=${DRAWN_CALLS.toPrecision(5)}`,
+    ]);
+    expect(evaluation.ok).toBeFalsy();
+  });
+
+  it("fails a B window whose riders take longer than the committed budget", () => {
+    const budget = limits.find(
+      (each) =>
+        each.metric === "riders.cpu.p95" && each.scenario === packRiding?.id
+    );
+    if (!budget) {
+      throw new Error("budgets.json has no pack-riding riders budget.");
+    }
+    const slow = budget.value * 2;
+    const evaluation = evaluateGpu(
+      campaign((scenario, side, pair) =>
+        isPack(scenario) && side === "B" && pair === 0
+          ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
+          : steady
+      ),
+      limits
+    );
+    expect(
+      failing(evaluation.lines).map((line) => line.split(" observed=")[0])
+    ).toStrictEqual([
+      "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-helium-metal]",
     ]);
     expect(evaluation.ok).toBeFalsy();
   });
