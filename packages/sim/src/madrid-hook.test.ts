@@ -3,8 +3,7 @@ import { madridHook } from "@racer/track/tracks/madrid-hook";
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
-import { pilotInput } from "./pilot.ts";
-import { cruising, player } from "./race-fixtures.ts";
+import { player } from "./race-fixtures.ts";
 import { createRace, defaultSetup, stepRace } from "./race.ts";
 import { TICK_RATE } from "./state.ts";
 
@@ -18,16 +17,14 @@ describe("the Casa de Campo hook", () => {
       const setup = defaultSetup(quietHook, 31);
       const race = createRace({
         ...setup,
-        player: { ...setup.player, bike: bikes[bikeId] },
+        player: { ...setup.player, bike: bikes[bikeId], controller: "pilot" },
         police: { ...setup.police, count: 0 },
         rivals: [],
       });
       const rider = player(race);
-      const input = { ...cruising };
       let offRoad = false;
       for (let tick = 0; tick < LAP_LIMIT && rider.finishTick < 0; tick += 1) {
-        pilotInput(race, quietHook, rider, input);
-        stepRace(race, quietHook, [input]);
+        stepRace(race, quietHook, new Map());
         offRoad ||= rider.offRoad;
       }
       expect({
