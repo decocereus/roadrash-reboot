@@ -19,3 +19,6 @@ tools/blender/out/
 apps/web/.impeccable/
 apps/web/assets/
 tools/madrid/.cache/
+
+__pycache__/
+*.pyc
