@@ -380,13 +380,43 @@ const addSmoothing = (
   }
 };
 
+const addBendSmoothing = (
+  { gradient, matrix }: NormalEquations,
+  knotValues: Float64Array,
+  smoothing: number
+): void => {
+  const unknowns = gradient.length;
+  const knots = knotValues.length;
+  for (let knot = 2; knot < knots - 2; knot += 1) {
+    const columns = [knot - 1, knot, knot + 1].map((value) => value + 2);
+    const weights = [1, -2, 1];
+    for (let a = 0; a < 3; a += 1) {
+      const columnA = columns[a] ?? 0;
+      gradient[columnA] =
+        (gradient[columnA] ?? 0) +
+        smoothing *
+          (weights[a] ?? 0) *
+          ((knotValues[knot - 1] ?? 0) -
+            2 * (knotValues[knot] ?? 0) +
+            (knotValues[knot + 1] ?? 0));
+      for (let b = 0; b < 3; b += 1) {
+        const columnB = columns[b] ?? 0;
+        matrix[columnA * unknowns + columnB] =
+          (matrix[columnA * unknowns + columnB] ?? 0) +
+          smoothing * (weights[a] ?? 0) * (weights[b] ?? 0);
+      }
+    }
+  }
+};
+
 export const normalEquations = (
   grid: Grid,
   source: Source,
   line: Centreline,
   projection: Projection,
   model: Model,
-  smoothing: number
+  smoothing: number,
+  bendSmoothing: number
 ): NormalEquations => {
   const columns = columnsOf(grid, line, projection);
   const features = rowFeatures(line, projection);
@@ -394,6 +424,7 @@ export const normalEquations = (
   addNearBlock(system, columns, features, projection.residual);
   addStartPin(system, startGap(source, line));
   addSmoothing(system, model.knots, smoothing);
+  addBendSmoothing(system, model.knots, bendSmoothing);
   return system;
 };
 

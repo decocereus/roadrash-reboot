@@ -549,10 +549,13 @@ Source files:
 - `tools/madrid/src/fit-system.ts`
 - `tools/madrid/src/fit.ts`
 - `tools/madrid/src/geometry.ts`
+- `tools/madrid/src/grade.ts`
 - `tools/madrid/src/hook.ts`
 - `tools/madrid/src/preview.ts`
 - `tools/madrid/src/roads.ts`
 - `tools/madrid/src/schema.ts`
+- `tools/madrid/src/smoothness.ts`
+- `tools/madrid/steady.ts`
 
 Test files:
 

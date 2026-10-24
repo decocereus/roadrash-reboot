@@ -28,7 +28,6 @@ const options = parseArgs({
   },
 }).values;
 const PIECE_LENGTH = 25;
-const SMOOTHING = 1000;
 const FORCED_MARGIN = 1;
 
 interface Stretch {
@@ -112,7 +111,6 @@ const main = Effect.gen(function* main() {
         minRadiusM,
         pieceLengthM: PIECE_LENGTH,
         slowPlaces: [],
-        smoothing: SMOOTHING,
       }),
       minRadiusM,
     }));

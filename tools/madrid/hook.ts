@@ -28,7 +28,6 @@ const VERGE_WIDTH = 5;
 
 const settings: HookSettings = {
   fromM: 3600,
-  gradeSmoothing: 400,
   lakeDropM: 1.5,
   leadInLength: 80,
   minRadiusM: 60,
@@ -49,7 +48,6 @@ const settings: HookSettings = {
   ],
   runoffLength: 200,
   sceneReachM: 180,
-  smoothing: 1000,
   toM: 4650,
   vergeHalfWidthM: LANE_WIDTH + SHOULDER_WIDTH + VERGE_WIDTH,
 };
@@ -120,6 +118,7 @@ const main = Effect.gen(function* main() {
     [
       `Street ${settings.fromM} to ${settings.toM} m: ${report.streetLengthM.toFixed(0)} m of street, ${report.lengthM.toFixed(0)} m of road, tightest radius ${metres(report.tightestRadiusM)}`,
       `Distance from the street: RMS ${metres(report.rmsM)}, 95th percentile ${metres(report.p95M)}, largest ${metres(report.maxM)}, largest outside the slow places ${metres(report.outsidePlacesM)}`,
+      `Smoothness: ${report.curvatureFlipsPerKilometre.toFixed(1)} curvature sign flips per kilometre, largest grade step ${(report.largestGradeStep * 100).toFixed(1)}%`,
       ...report.places.map(
         ({ maxM, place }) =>
           `  ${place.name} (${place.fromM} to ${place.toM} m, ${place.minRadiusM} m radius): largest ${metres(maxM)}`
