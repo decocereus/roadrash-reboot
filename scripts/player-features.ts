@@ -400,6 +400,8 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/game/actors.ts",
+      "apps/web/src/game/bike-models.ts",
+      "apps/web/test/bike-contact.ts",
       "apps/web/src/game/rider-*.ts",
       "apps/web/src/game/figure-*.ts",
       "apps/web/src/career/colours.ts",
@@ -411,7 +413,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/actors.ts",
     ],
     summary:
-      "The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, and the instanced fleet of cars.",
+      "The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, each maker's bike model, and the instanced fleet of cars.",
     title: "Riders, bikes and cars on screen",
     verify: ["riding-and-fighting.md"],
   },

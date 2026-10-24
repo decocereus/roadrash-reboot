@@ -9,10 +9,11 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
-import { createFleet } from "../src/game/actors.ts";
+import { createBikes, createFleet } from "../src/game/actors.ts";
 import type { Fleet } from "../src/game/actors.ts";
-import { assetParsers } from "../src/game/assets.ts";
-import type { Assets } from "../src/game/assets.ts";
+import { assetParsers, glows } from "../src/game/assets.ts";
+import type { Assets, BikeParts } from "../src/game/assets.ts";
+import { bikeModelFor, bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import type { Shading } from "../src/game/cel.ts";
 import { disposeTree } from "../src/game/dispose.ts";
@@ -33,8 +34,12 @@ const bytesOf = (url: string): ArrayBuffer => {
 
 const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.riders;
-  const [bike, car, van, a, b, c] = await Promise.all([
-    assetParsers.parts(bytesOf(modelUrls.bike), modelUrls.bike),
+  const { classic, ghost, oni, seraph } = modelUrls.bikes;
+  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c] = await Promise.all([
+    assetParsers.parts(bytesOf(classic), classic),
+    assetParsers.parts(bytesOf(ghost), ghost),
+    assetParsers.parts(bytesOf(oni), oni),
+    assetParsers.parts(bytesOf(seraph), seraph),
     assetParsers.whole(bytesOf(modelUrls.car), modelUrls.car),
     assetParsers.whole(bytesOf(modelUrls.van), modelUrls.van),
     assetParsers.rider(bytesOf(riderA), riderA),
@@ -42,7 +47,12 @@ const pinnedAssets = async (): Promise<Assets> => {
     assetParsers.rider(bytesOf(riderC), riderC),
   ]);
   return {
-    bike: bike.value,
+    bikes: {
+      classic: bikeA.value,
+      ghost: bikeB.value,
+      oni: bikeC.value,
+      seraph: bikeD.value,
+    },
     car: car.value,
     riders: [a.value, b.value, c.value],
     van: van.value,
@@ -165,6 +175,60 @@ const componentsChanged = (
 const drawnOf = (mesh: THREE.InstancedMesh) => ({
   colours: coloursOf(mesh).array.slice(0, mesh.count * 3),
   matrices: mesh.instanceMatrix.array.slice(0, mesh.count * 16),
+});
+
+const bodyVertices = (bike: BikeParts): number =>
+  (bike.get("bike_body") ?? [])
+    .filter((primitive) => !glows(primitive.slot))
+    .reduce(
+      (total, primitive) =>
+        total + primitive.geometry.getAttribute("position").count,
+      0
+    );
+
+describe("bike models", () => {
+  it("draws each rider's bike with the model of its maker", async () => {
+    const assets = await pinnedAssets();
+    const shading = createShading(lookOf(track.plan.region));
+    const field = [
+      "ostra-sesta-600",
+      "halden-wren-400",
+      "brack-anvil-1100",
+      "gutter-pup-250",
+      "ostra-nera-1000",
+      "halden-meridian-900",
+    ];
+    const bikes = createBikes(
+      assets,
+      shading,
+      field.map((bikeId) => ({
+        model: bikeModelFor(bikeId),
+        paint: 0,
+        police: false,
+      }))
+    );
+    for (const [index] of field.entries()) {
+      bikes.show(index);
+    }
+    bikes.commit(new THREE.Vector3());
+    const modelOfBody = new Map(
+      bikeModelIds.map((model) => [bodyVertices(assets.bikes[model]), model])
+    );
+    const drawn = instancedIn(bikes.group).flatMap((mesh) => {
+      const model = modelOfBody.get(
+        mesh.geometry.getAttribute("position").count
+      );
+      return model === undefined ? [] : [[model, mesh.count]];
+    });
+    expect(Object.fromEntries(drawn)).toStrictEqual({
+      classic: 1,
+      ghost: 2,
+      oni: 1,
+      seraph: 2,
+    });
+    bikes.dispose();
+    shading.dispose();
+  });
 });
 
 describe("traffic instance uploads", () => {

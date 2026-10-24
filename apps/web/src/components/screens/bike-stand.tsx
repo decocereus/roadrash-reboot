@@ -1,3 +1,4 @@
+import type { BikeId } from "@racer/sim/bikes";
 import { cn } from "@racer/ui/utils";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -7,15 +8,21 @@ import { diagnostics } from "../../diagnostics/hub.ts";
 import type { Showroom } from "../../game/showroom.ts";
 
 interface BikeStandProps {
+  readonly bikeId: BikeId;
   readonly paint: number;
   readonly className?: string;
   readonly style?: CSSProperties;
 }
 
-export const BikeStand = ({ paint, className, style }: BikeStandProps) => {
+export const BikeStand = ({
+  bikeId,
+  paint,
+  className,
+  style,
+}: BikeStandProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const roomRef = useRef<Showroom | null>(null);
-  const paintRef = useRef(paint);
+  const shownRef = useRef({ bikeId, paint });
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -31,7 +38,7 @@ export const BikeStand = ({ paint, className, style }: BikeStandProps) => {
           room.dispose();
           return;
         }
-        room.show(paintRef.current);
+        room.show(shownRef.current.bikeId, shownRef.current.paint);
         roomRef.current = room;
       } catch (error) {
         if (mount.signal.aborted) {
@@ -56,9 +63,9 @@ export const BikeStand = ({ paint, className, style }: BikeStandProps) => {
   }, []);
 
   useEffect(() => {
-    paintRef.current = paint;
-    roomRef.current?.show(paint);
-  }, [paint]);
+    shownRef.current = { bikeId, paint };
+    roomRef.current?.show(bikeId, paint);
+  }, [bikeId, paint]);
 
   if (failed) {
     return null;

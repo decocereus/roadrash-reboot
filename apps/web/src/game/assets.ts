@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
+import type { BikeModelId } from "./bike-models.ts";
 import { RED } from "./looks.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 
@@ -44,8 +45,10 @@ export interface RiderAsset {
   readonly standHeight: number;
 }
 
+export type BikeParts = ReadonlyMap<string, readonly Primitive[]>;
+
 export interface Assets {
-  readonly bike: ReadonlyMap<string, readonly Primitive[]>;
+  readonly bikes: Readonly<Record<BikeModelId, BikeParts>>;
   readonly car: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly riders: readonly RiderAsset[];
@@ -283,8 +286,6 @@ export type Parse<Value> = (
   bytes: ArrayBuffer,
   url: string
 ) => Promise<Decoded<Value>>;
-
-type BikeParts = ReadonlyMap<string, readonly Primitive[]>;
 
 export interface AssetParsers {
   readonly parts: Parse<BikeParts>;
