@@ -38,6 +38,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Model and font loading](#model-and-font-loading): `asset-loading`
 - [Blender model pipeline](#blender-model-pipeline): `blender-tools`
 - [Career save](#career-save): `save-format`
+- [Race rules](#race-rules): `race-rules`
 - [Play-test telemetry](#play-test-telemetry): `telemetry`
 - [Web app shell and routes](#web-app-shell-and-routes): `web-app`
 - [UI kit and the /kit page](#ui-kit-and-the-kit-page): `ui-kit`
@@ -728,6 +729,33 @@ Test files:
 - `apps/web/src/career/save.test.ts`
 - `packages/career/src/save-roundtrip.test.ts`
 - `scripts/check-save-format.test.ts`
+
+### Race rules
+
+The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.
+
+- Id: `race-rules`
+- Start: `apps/web/src/server/race-rules.ts`, `packages/career/src/rules.ts`, `apps/web/src/rules/load.ts`
+- Docs: [docs/architecture.md#career](architecture.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Verify: [race-rules.md](../.claude/skills/verify-rushline/features/race-rules.md)
+- Perf: none yet
+- Owns: `packages/career/src/rules*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
+
+Source files:
+
+- `apps/web/src/routes/api/race-rules.ts`
+- `apps/web/src/rules/load.ts`
+- `apps/web/src/rules/rules-decode-failed.ts`
+- `apps/web/src/rules/rules-request-failed.ts`
+- `apps/web/src/rules/rules-response-rejected.ts`
+- `apps/web/src/server/race-rules.ts`
+- `packages/career/src/rules-schema.ts`
+- `packages/career/src/rules.ts`
+
+Test files:
+
+- `apps/web/test/race-rules.test.ts`
+- `packages/career/src/rules.test.ts`
 
 ### Play-test telemetry
 

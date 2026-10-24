@@ -104,7 +104,7 @@ export const rivalLines = {
     grudgeTaunt:
       "You touched me last time. I wrote it down. I don't write things down.",
     knocksYouDown: "Stay there. It suits you.",
-    taunt: "There are fourteen people on this grid. I counted you as a maybe.",
+    taunt: "I counted everyone on this grid. You came out as a maybe.",
     youBeatThem:
       "Enjoy it. Frame something. I'll be back to normal by Thursday.",
     youKnockThemDown:

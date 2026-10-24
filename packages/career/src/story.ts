@@ -1,4 +1,3 @@
-import { finaleOpen } from "./field.ts";
 import type { CareerState, EndingId, EnvelopeFlag } from "./state.ts";
 import { ENVELOPE_LEVEL, ENVELOPE_PAYMENT } from "./tables.ts";
 import type { Level } from "./tables.ts";
@@ -75,7 +74,7 @@ export const storyBeat = (career: CareerState): StoryBeat => ({
   endingChapter: career.story.ending ? endings[career.story.ending] : null,
   envelope: career.story.envelope,
   envelopeOpen: envelopeOpen(career),
-  finaleOpen: finaleOpen(career),
+  finaleOpen: career.story.finaleUnlocked,
   leftRaceNote: career.story.leftRace ? LEFT_RACE_NOTE : null,
   level: career.level,
 });

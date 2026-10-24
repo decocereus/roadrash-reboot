@@ -208,6 +208,32 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
+      "docs/architecture.md#career",
+      "docs/errors.md#race-rules",
+      "docs/design/game-design.md#12-multiplayer",
+    ],
+    id: "race-rules",
+    kind: "platform",
+    owns: [
+      "packages/career/src/rules*.ts",
+      "apps/web/src/server/race-rules.ts",
+      "apps/web/src/routes/api/race-rules.ts",
+      "apps/web/src/rules/**",
+      "apps/web/test/race-rules.test.ts",
+    ],
+    perf: [],
+    start: [
+      "apps/web/src/server/race-rules.ts",
+      "packages/career/src/rules.ts",
+      "apps/web/src/rules/load.ts",
+    ],
+    summary:
+      "The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.",
+    title: "Race rules",
+    verify: ["race-rules.md"],
+  },
+  {
+    docs: [
       "docs/observability.md#play-test-telemetry",
       "docs/errors.md#the-telemetry-endpoint",
       "docs/errors.md#the-uploader",

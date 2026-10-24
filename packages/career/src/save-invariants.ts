@@ -2,6 +2,7 @@ import { rivalIds } from "@racer/sim/cast";
 import { weapons } from "@racer/sim/weapons";
 
 import { memoryRows } from "./memory.ts";
+import type { RaceRules } from "./rules.ts";
 import type { SaveError } from "./save-schema.ts";
 import { racerIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
@@ -58,7 +59,13 @@ const clashOf = (career: CareerState): string | null => {
   return activeRaceClash(career) ?? raceNumberClash(career);
 };
 
-export const problemOf = (career: CareerState): SaveError | null => {
+export const problemOf = (
+  career: CareerState,
+  rules: RaceRules
+): SaveError | null => {
+  if (career.level > rules.levelCount) {
+    return { field: "level", kind: "invalid" };
+  }
   if (!holdsWeapon(career)) {
     return { field: "weaponHits", kind: "invalid" };
   }

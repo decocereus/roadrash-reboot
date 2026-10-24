@@ -1,4 +1,5 @@
 import { bikeIds } from "@racer/sim/bikes";
+import { MOST_RACERS } from "@racer/sim/race";
 import * as Schema from "effect/Schema";
 
 import { LastResultSchema } from "./save-result-schema.ts";
@@ -23,7 +24,7 @@ import {
   Weapon,
 } from "./save-values.ts";
 import { BOARD_NOTES, byRacer, byRival, SAVE_VERSION } from "./state.ts";
-import { byLevel, FIELD_SIZE, RIVALS_PER_RACE } from "./tables.ts";
+import { byLevel } from "./tables.ts";
 
 type SaveErrorKind = "notJson" | "wrongVersion" | "invalid" | "inconsistent";
 
@@ -156,8 +157,8 @@ export const SaveSourceSchema = Schema.Struct({
         ),
       }),
       summary: Schema.Struct({
-        incidents: sourceList(RIVALS_PER_RACE),
-        rows: sourceList(FIELD_SIZE),
+        incidents: sourceList(MOST_RACERS - 1),
+        rows: sourceList(MOST_RACERS),
       }),
     })
   ),

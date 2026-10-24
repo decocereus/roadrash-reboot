@@ -41,7 +41,8 @@ const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const HAZARD_DICE_SALT = 0x2e_c3;
 const DEFAULT_LEVEL = 3;
-const MAX_RIVALS = 14;
+export const MOST_RACERS = 15;
+const MOST_RIVALS = MOST_RACERS - 1;
 
 export const neutralInput: RiderInput = {
   brake: 0,
@@ -237,7 +238,7 @@ const duplicateRivals = (setup: RaceSetup): SetupError[] => {
 };
 
 export const validateSetup = (setup: RaceSetup): SetupError[] => [
-  ...(setup.rivals.length > MAX_RIVALS
+  ...(setup.rivals.length > MOST_RIVALS
     ? [{ count: setup.rivals.length, kind: "tooManyRivals" } as const]
     : []),
   ...duplicateRivals(setup),
@@ -246,7 +247,7 @@ export const validateSetup = (setup: RaceSetup): SetupError[] => [
 
 const describeSetupError = (error: SetupError): string => {
   if (error.kind === "tooManyRivals") {
-    return `A race takes at most ${MAX_RIVALS} rivals, and this one has ${error.count}.`;
+    return `A race takes at most ${MOST_RIVALS} rivals, and this one has ${error.count}.`;
   }
   if (error.kind === "duplicateRival") {
     return `${error.name} is on the grid more than once.`;

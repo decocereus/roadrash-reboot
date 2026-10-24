@@ -22,7 +22,7 @@ Agreed with the owner on October 23, 2026. `docs/architecture.md` has the lanes 
 | Mumbai | Breakwater Run, coast | Ranveer Singh and Jenner | Marine Drive, a sea-link bridge, and monsoon nights in the wet night look. Their rivalry is invented. |
 | Bay Area | Ridge Road, mountain | Musk and Altman | A parody of Skyline Boulevard, the motorcycle road along the hills above Silicon Valley. |
 
-- **Career.** Three levels across the three cities: nine qualifying races and a finale. Ten riders a race. The number of levels and the field size are settings that the career and multiplayer read, so changing either means re-measuring the economy, bust rates, road lengths, and bikes by level, not rewriting code. Sections 4, 5, and 8 describe the current five levels and fifteen riders.
+- **Career.** Three levels across the three cities: nine qualifying races and a finale. Ten riders a race. The number of levels and the field size come from the race rules the server serves (section 12), so changing either means re-measuring the economy, bust rates, road lengths, and bikes by level, not rewriting code. Sections 4, 5, and 8 were measured with five levels and fifteen riders.
 - **Bikes.** Parodies of real bikes (Ducati, Kawasaki Ninja, Aprilia, Yamaha, and so on) under parody brands with no logos, and near-future prototypes at the top, each from a celebrity's company. Three tiers after the real-world convention: starter (400 cc and up), mid-tier (600 cc and up), and litre (1000 cc and up). Six bikes at launch, two per tier. Section 6 has the current catalogue.
 - **Money.** Sponsors buy billboards along the roads, and players buy cosmetics: character skins and bike skins at listed prices. Nothing sold changes speed or handling, there are no random loot boxes, and bikes are earned with prize money, never bought. Section 13 has the billboard rules. Payments go through Polar or Dodo Payments, not yet chosen.
 - **Accounts.** Anyone can play, and start a career, as a guest, and a guest's career saves in the browser. Signing in, with Discord, Google, or an emailed link, adds saving across devices and is required to buy something or to race online.
@@ -52,7 +52,7 @@ Decided October 23, 2026: **LOWSIDE** is the working name, and it may still chan
 
 ## 3. Modes
 
-**Career** is the main game: your own rider, money, the bike shop, the cast, and the story. The current build has five levels on five roads; launch has three levels across three cities and a finale (section 0). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
+**Career** is the main game: your own rider, money, the bike shop, the cast, and the story. The server's race rules set three levels on the current five roads; launch has three levels across three cities and a finale (section 0). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
 
 **Single Race** picks any road at any level the player has reached in a career (all of level 1 is open from the start), any bike in the catalogue the player has ever owned, and a random field. There is no qualification and no money: no prize, no fine, no repair bill, and nothing is written to the career. Results go back to the Single Race menu. It is the quick session and the place to learn a road.
 
@@ -60,7 +60,7 @@ Decided October 23, 2026: **LOWSIDE** is the working name, and it may still chan
 
 ## 4. Career structure
 
-For launch the career becomes three levels across the three cities, nine qualifying races and a finale, with ten riders a race (section 0). The tables and numbers below describe the current build, five levels on five roads with fifteen riders, and are re-measured for the launch shape.
+For launch the career becomes three levels across the three cities, nine qualifying races and a finale, with ten riders a race (section 0). The tables and numbers below were measured with five levels on five roads and fifteen riders, the rules the replay fixtures still record. The server now serves ten riders and three levels, and the tables are re-measured for that shape.
 
 ### Levels and roads
 
@@ -78,7 +78,7 @@ The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to
 
 ### The field
 
-Every race has **15 racers: the player and 14 rivals**, the original's field. The reasons:
+The measured field is **15 racers: the player and 14 rivals**, the original's field. The reasons it was chosen:
 
 - Fifteen riders is what the original put on the road, and the pack is the game: with fourteen rivals the player is never alone for long, and there is always someone to pass or to fend off.
 - Fourteen rivals out of a cast of sixteen means every rival is in nearly every race, so the memory system sees each rider often; the draw changes which two sit out.
@@ -634,7 +634,7 @@ Juno grew up above her father's tyre shop on the Ridge and learned to ride on th
 
 Visual: tall and narrow, upright on the bike. Black one-piece leathers with a single gold stripe from collar to boot. Black helmet, dark visor, gold stripe continued over the crown. The cleanest silhouette in the field: no fringe, no patches, nothing loose.
 
-- Taunt: "There are fourteen people on this grid. I counted you as a maybe."
+- Taunt: "I counted everyone on this grid. You came out as a maybe."
 - Grudge taunt: "You touched me last time. I wrote it down. I don't write things down."
 - She beat you: "Good effort. I mean that the way people say it to children."
 - You beat her: "Enjoy it. Frame something. I'll be back to normal by Thursday."
@@ -912,36 +912,37 @@ Still for the story bible: the six parody names, the league's arc, one scene or 
 
 ### What it is
 
-Two to eight signed-in players race one road at one level on the same simulation. Rivals fill the other grid slots, so every race has the career's field: ten riders at launch, read from the same setting. Players arrive two ways. A host creates a private room and shares its short code. Quick Race drops a player into the next open public room, which starts about 15 seconds later with however many humans have joined, so a race always starts. Ranked matchmaking waits until enough people play to fill it. A player can ride any celebrity they have unlocked, in any skin they own. There is no money; the reward is the result and, later, a leaderboard. The pacing rule in section 9 reads the gap to rider 0, so in a multiplayer race it would pace the rivals around the host's slot; a fairer rule for several humans (the gap to the nearest human, or no pacing at all) is decided when multiplayer is built. Each player picks a bike from the full catalogue in the lobby, so a lobby can agree on one tier or let anyone ride a litre bike.
+Two to eight signed-in players race one road at one level. Bots fill the other seats, so every race has the field the server's race rules set, ten racers at launch. Police and traffic are extra actors in the simulation, so the humans in a room, the racers, and the actors stepped are three different counts. A host creates a private room and shares its short code. A private room admits anyone and shows each player's connection. Quick Race puts the player in a public lobby, where bots fill the empty seats and present as human, so a race starts however few people are playing. A public room targets an 80 ms round trip and admits no one above 100 ms. Ranked matchmaking waits until enough people play to fill it. A player rides any celebrity they have unlocked, in any skin they own, on a bike from the full catalogue, and the bike is locked when the race starts. There is no money; the reward is the result and, later, a leaderboard. There is no pacing in multiplayer, because the rule in section 9 reads the gap to rider 0 and would favour one seat.
+
+Race rules belong to the server and are never player settings. Field size, level count, and police per level are one `RaceRules` record in `apps/web/src/server/race-rules.ts`, served at `/api/race-rules`. The browser reads it once at boot, and the career and race setup take it as input.
 
 ### How it runs
 
-One Durable Object per race holds the room, collects inputs, and runs `stepRace` itself as the authority. Clients run the same `stepRace` locally.
+- **The room is the authority.** One Durable Object per race steps the simulation at 60 Hz, and its result is the result.
+- **Clients predict.** Each client steps the whole race ahead with its own input and a guess at everyone else's. When the room's confirmed inputs differ, it rewinds up to 16 ticks and replays them. Inputs travel at 60 Hz in both directions, and the rate is a server setting.
+- **Inputs.** The room sets a deadline for each tick. A late input is replaced by a neutral one, never by a held punch or kick. The room acknowledges the input it used, and a client that predicted another corrects. An input packs steer, throttle, and brake as 8 bits each with the buttons, four bytes, plus tick, sequence, and version headers. Inputs name riders by a stable id, not by array position.
+- **Bots.** A bot's input comes from `pilotInput`. The pilot keeps history and changes state outside `stepRace`, so the pilot and the step become one simulation operation before a room runs them.
+- **Checks.** The room and each client hash confirmed ticks. A mismatch reveals a fault but does not make the code safe. Agreement rests on the simulation's own trig, the enforced math whitelist, and a cross-engine test of recorded inputs.
 
-- **Lobby.** The host creates a room and gets a short code. Players join, pick a bike and paint, and ready up. The host picks road, level, and seed. The Durable Object sends a start message with the seed, the grid order, each rider's `BikeSpec` name and profile, and a start tick.
-- **Lockstep at 60 Hz with input delay.** Each client samples its input every tick and sends it tagged for `currentTick + delay`. The default delay is 4 ticks (67 ms); the Durable Object raises it to as much as 8 ticks (133 ms) for a room with a slow player. The Durable Object collects inputs for tick N; if a player's input has not arrived by its deadline, it reuses that player's last input. It then broadcasts the input frame for tick N, and every client steps tick N with exactly those inputs. Inputs are five values (steer, throttle, brake, punch, kick) and pack into two bytes, so a frame for fifteen riders is small.
-- **Desync check.** Every 60 ticks the Durable Object and each client hash the race state. A client whose hash differs asks for a snapshot and rejoins from it.
-- **AI fill.** AI slots are driven by `pilotInput` on every client; it reads `RaceState` and uses the dice in it, so it is deterministic and needs no network input.
+### Disconnects and lost rooms
 
-### Disconnects
-
-When a player drops, their rider is not removed. The Durable Object switches that slot to `pilotInput`, and every client shows the rider's tag with a grey "AUTO" label and a toast: "Moose lost connection. The bike rides on autopilot." If the player returns within 30 seconds they get a snapshot and take the bars back at the next tick; their tag returns to normal. After 30 seconds the slot stays AI until the finish, and the results list the rider as "left" after the finishers. The host leaving does not end the race; the Durable Object owns it.
+When a player drops, their rider stays and a bot rides it under an "AUTO" tag. A player who comes back proves their seat lease, gets a snapshot of the room's version, catches up, and takes the bars back at a tick the room schedules. After 30 seconds the seat stays a bot until the finish, and the results list the rider as "left". If the room itself dies mid-race, the race is cancelled with no result and everyone moves to a fresh room from the line.
 
 ### What the sim already supports
 
-- Determinism: no clock, no unseeded randomness, a fixed tick, and the AI's dice in `RaceState`.
-- An `inputs` array indexed by rider, which is exactly a lockstep frame.
-- Plain-data state that can be serialised for a snapshot or hashed.
-- `pilotInput` for AI fill and disconnects.
+- Determinism, from no clock, no unseeded randomness, a fixed tick, the AI's dice in `RaceState`, its own trig, and a math whitelist.
+- A bike on each rider, set from the race setup.
+- Race rules passed in by the caller, with only the ceiling of 15 racers in the simulation.
 
 ### What it lacks
 
-- **Per-rider ids.** Riders are array indices. Multiplayer needs a stable id per rider so input frames, events, and results cannot be misattributed if the array ever changes.
-- **Per-rider bikes.** Each rider needs their own `BikeSpec` (item 1 in section 14, also needed for the career).
-- **Input validation.** `stepRace` trusts its inputs. The Durable Object must clamp steer to −1..1, throttle and brake to 0..1, and drop inputs for ticks already stepped, before they reach the sim.
-- **Event copying.** `state.events` is cleared at the start of every step. The client renderer and the Durable Object both need the events after each tick (for audio, HUD notices, results, and memory), so the runner must copy them out each tick rather than read them later.
-- **Snapshot and hash.** A function that serialises `RaceState` and one that hashes it, both deterministic.
-- **Floating-point agreement.** All clients run the same JavaScript, which keeps `Math.sqrt` and the trig in the sim consistent across V8 builds in practice. The hash check above is the safety net.
+- **Stable rider ids.** Riders are array indices. Inputs, events, and results need an id per rider that survives any change to the array.
+- **Input validation and the codec.** `stepRace` trusts its inputs. The room clamps and quantizes them and drops inputs for ticks already stepped before they reach the simulation.
+- **One tick operation.** The pilot and `stepRace` as one call, so a bot's tick is the same everywhere.
+- **Event copying.** `state.events` is cleared at the start of every step, so the runner copies events out each tick for the renderer and the room.
+- **Snapshot and hash.** An explicit codec, because `RaceState` can hold NaN, Infinity, and pilot history that JSON loses, and a test that a restored race steps exactly like the original.
+- **Room lifecycle.** Who writes the result and how it is written once, pinning a race to the deploy it started on, backpressure, version mismatch, and abuse limits.
+- **Scale gates.** CPU per room, bytes and messages per second, region placement, admission, and cost, measured before public rooms open.
 
 ## 13. Ads
 
@@ -983,7 +984,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 
 | # | Change | What it is | Release |
 | --: | --- | --- | --- |
-| 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and the riding step, the pilot, and the renderer read it from the rider. | First career release |
+| 1 | Per-rider `BikeSpec` | The bike belongs to each rider, not to `RaceState`, and the riding step, the pilot, and the renderer read it from the rider. | Built |
 | 2 | Selected cast | `createRace` takes the list of rival profiles for this race. The earlier placeholder names are replaced by the cast; "Viper" in particular is the name of a rider in the original game (section 15). | First career release |
 | 3 | Per-race police settings | Cop count, pursuit top speed, sight range, beat, and fine are race inputs. The posts come from the track: the first at `FIRST_COP_S` (1,500 m), the last `LAST_COP_BEFORE_FINISH` (1,000 m) before the finish, the rest evenly between. | Built |
 | 4 | Bike condition and the wreck | A `condition` value from 100 on each rider. Each crash takes the damage its cause costs at 200 km/h (traffic 34, prop 32, landing 30, rider 30, combat 28, off-track 22), scaled by the rider's speed at impact over 200 km/h and held between 0.1 and 1.25. At zero the rider enters the `wrecked` mode, which ends their race like a bust without a fine. Three or four hard crashes wreck a bike. The table below gives the cost by speed. | Built, retuned |
@@ -998,7 +999,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |
 | 14 | Side-contact cap | The cap on speed lost to side contact described in section 9: 0.9 m/s a tick and 6 m/s in any second, kept as `bumpLoss` on the rider. | Built |
 | 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 62, `strikeTick` 32. |
-| 16 | Last-slot grid start | The player starts in the last grid slot, behind the fourteen rivals, in rows 7 m apart across every lane: four abreast on a road with two lanes each way, two abreast on a one-lane road. | Built and measured (section 9). |
+| 16 | Last-slot grid start | The player starts in the last grid slot, behind every rival, in rows 7 m apart across every lane: four abreast on a road with two lanes each way, two abreast on a one-lane road. | Built and measured (section 9). |
 | 22 | Pacing by the gap to the player | `RaceSetup.pacing` carries `leadEase` and `catchUp`; the pilot caps a leading rival's throttle and lifts a dropped rival's corner skill by the gap to rider 0 (section 9). | Built |
 | 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8 at the spots in `tracks.md`. | Later |
 | 18 | Region scenery kits | A `kit` field on `TrackPlan` so `scatterProps` places palms, cacti, streetlights, or pines instead of the same trees everywhere. | Later |
@@ -1007,6 +1008,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 21 | Rear-end by the last tick | Rider contact is classified by where the two bikes were a tick earlier. Clear along the road and overlapping across it means the rider behind ran in: a rear-end, which throws them above a closing speed of 18 m/s and below it is a bump that drops them to the speed of the bike ahead and shunts that bike on by 30% of the closing speed, up to 5.4 m/s. Clear across and overlapping along is a side shove. If both gaps closed in the same tick, the one that closed last decides. Before this a rider closing fast enough to overlap more than 0.86 m in a tick was shoved aside and rode through; until October 14, 2026 the throw line was 9 m/s, which threw a player who held the throttle off the grid into the pack in most starts. | Built |
 | 23 | The start | The pilot does not steer into a bike alongside, so the grid gets away in its lanes; it enters an oncoming lane only when the nearest oncoming car is more than 8 s of closing away, 12 s in the first 10 s of a race, and leaves one when a car is within 4.5 s; and oncoming traffic spawns no nearer than 300 m past the line. On foot, a control held through the fall is dead until released, and a rider left alone for 4 s walks back to the bike. Measured in section 9. | Built |
 | 24 | Road hazards | Oil slicks, small rocks 0.3 m high, and potholes lie on the road at their real size and are not made to stand out: no glow, no markers. They lie where they change the riding, by the rules in `tracks.md`: oil where a bend turns in and at bend exits, a pothole on the inside line mid-bend, rocks at exits, over crests, and on the straights where riders pass traffic, never in a tight bend or where a bike that hits one would land in one, and in a gentle bend only at the edge of a lane, all on the lanes and none on the shoulder. A hazard need only be visible from 25 m, so one round a blind bend is part of the game. Traffic drives over every hazard unchanged; only riders meet them. They are good to avoid, not must avoid: none is a crash on contact. Oil takes the grip: straight across is safe at any speed, and so is a quick tap of the bars, but holding them hard over (0.8 or more for 0.3 s) on it or just past it above 94 km/h puts the rider down. Before October 16, 2026 the threshold was 0.6 for 10 ticks with the danger lasting 0.45 s past the slick, so a keyboard rider tapping a key on the slick for a quarter of a second went down nearly every time; the play test read that as "the sparkly thing always crashes me". A rock bumps the bike into the air and costs 6 to 16% of the speed: below 50 km/h it is a stagger, from 130 to 180 km/h straight on the bike lands wobbling and rides on, and from about 210 km/h, or steering hard from much lower, it lands sideways and the rider is thrown. A pothole is a jolt that costs 3 to 6% of the speed and a wobble, and throws only a bike leaned hard over (past 85% of its steering limit) above 175 km/h; ridden straight it never throws. Until October 16, 2026 that threshold was 198 km/h; the user lowered it to 175 so a pothole taken flat out in a corner is a real risk. Pilots and cops slow for oil in a bend so the slide stays inside their lane, and ride round it when a lane is free. Pilots and cops choose one line with hazards and traffic in the same scoring: traffic, a ramp's side, and the road edge rule a line out, a hazard on it is a cost (a rock most, then oil, then a pothole), and they keep the line they chose rather than flip sides mid-move. A bump beats a truck, so when the only lines clear of traffic cross a hazard they ride through it, easing to 150 km/h for a rock. `docs/architecture.md` has the numbers. | Built |
+| 25 | Server-owned race rules | Field size, level count, and police per level come from one `RaceRules` record that the server serves and the career and race setup take as input. The simulation keeps only the ceiling, `MOST_RACERS` (15). | Built |
 
 ### Condition by speed
 

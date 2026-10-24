@@ -1,12 +1,11 @@
 import type { Placing } from "./outcome.ts";
 import { racerIds } from "./state.ts";
 import type { CareerState, RacerId, SeasonEntry } from "./state.ts";
-import { FIELD_SIZE } from "./tables.ts";
 
-const pointsFor = (placing: Placing): number =>
+const pointsFor = (placing: Placing, racers: number): number =>
   placing.fate === "busted" || placing.fate === "wrecked"
     ? 0
-    : Math.max(0, FIELD_SIZE + 1 - placing.place);
+    : Math.max(0, racers + 1 - placing.place);
 
 export const scoreRace = (
   season: Record<RacerId, SeasonEntry>,
@@ -24,9 +23,12 @@ export const scoreRace = (
     }
     scored[placing.racer] = {
       lastAhead,
-      points: entry.points + pointsFor(placing),
+      points: entry.points + pointsFor(placing, placings.length),
       wins:
-        entry.wins + (placing.place === 1 && pointsFor(placing) > 0 ? 1 : 0),
+        entry.wins +
+        (placing.place === 1 && pointsFor(placing, placings.length) > 0
+          ? 1
+          : 0),
     };
   }
   return scored;

@@ -1,6 +1,6 @@
-import { roadsFor } from "@racer/career/field";
-import { debtOf } from "@racer/career/state";
+import { debtOf, qualifiedCount } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
+import { roadList } from "@racer/career/tables";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { formatMoney } from "@racer/ui/components/money";
 import { cn } from "@racer/ui/utils";
@@ -31,35 +31,33 @@ const StatusItem = ({
   </p>
 );
 
-const StatusStrip = ({ career }: { readonly career: CareerState }) => {
-  const board = roadsFor(career);
-  return (
-    <div
-      className="bg-ink/85 font-display text-paper flex items-center justify-around border-y border-white/10 font-bold tracking-wide uppercase"
-      style={{ ...place(STATUS), fontSize: stagePx(27) }}
+const StatusStrip = ({ career }: { readonly career: CareerState }) => (
+  <div
+    className="bg-ink/85 font-display text-paper flex items-center justify-around border-y border-white/10 font-bold tracking-wide uppercase"
+    style={{ ...place(STATUS), fontSize: stagePx(27) }}
+  >
+    <StatusItem label={`Level ${career.level} ·`} tone="text-neon-cyan">
+      {levelName(career.level)}
+    </StatusItem>
+    <StatusItem label="Roads" tone="text-neon-yellow">
+      <span className="text-neon-yellow">
+        {qualifiedCount(career.qualified[career.level])} / {roadList.length}{" "}
+        qualified
+      </span>
+    </StatusItem>
+    <StatusItem
+      label={debtOf(career) > 0 ? "Owed" : "Cash"}
+      tone="text-paper/75"
     >
-      <StatusItem label={`Level ${career.level} ·`} tone="text-neon-cyan">
-        {levelName(career.level)}
-      </StatusItem>
-      <StatusItem label="Roads" tone="text-neon-yellow">
-        <span className="text-neon-yellow">
-          {board.qualifiedCount} / {board.roads.length} qualified
-        </span>
-      </StatusItem>
-      <StatusItem
-        label={debtOf(career) > 0 ? "Owed" : "Cash"}
-        tone="text-paper/75"
-      >
-        <span className="text-neon-red numeric">
-          {formatMoney(Math.abs(career.cash))}
-        </span>
-      </StatusItem>
-      <p className="text-neon-yellow whitespace-nowrap">
-        {bikeName(career.bikeId)}
-      </p>
-    </div>
-  );
-};
+      <span className="text-neon-red numeric">
+        {formatMoney(Math.abs(career.cash))}
+      </span>
+    </StatusItem>
+    <p className="text-neon-yellow whitespace-nowrap">
+      {bikeName(career.bikeId)}
+    </p>
+  </div>
+);
 
 export const BarHeader = ({
   career,

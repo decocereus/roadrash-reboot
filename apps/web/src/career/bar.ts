@@ -1,6 +1,7 @@
 import { roadBoss, roadsFor } from "@racer/career/field";
 import { tauntFrom } from "@racer/career/lines";
 import type { RivalLine } from "@racer/career/lines";
+import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { FINALE_ROAD } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
@@ -23,13 +24,16 @@ export interface BarCast {
   readonly sticker: string;
 }
 
-export const openRoads = (career: CareerState): readonly RoadId[] =>
-  roadsFor(career)
+export const openRoads = (
+  rules: RaceRules,
+  career: CareerState
+): readonly RoadId[] =>
+  roadsFor(rules, career)
     .roads.filter((status) => status.open)
     .map((status) => status.road.id);
 
-export const firstRoad = (career: CareerState): RoadId =>
-  roadsFor(career).next ?? openRoads(career)[0] ?? FINALE_ROAD;
+export const firstRoad = (rules: RaceRules, career: CareerState): RoadId =>
+  roadsFor(rules, career).next ?? openRoads(rules, career)[0] ?? FINALE_ROAD;
 
 const billRider = (career: CareerState, boss: RivalId): RivalId => {
   const others = cast.filter((rival) => rival.id !== boss);
@@ -69,8 +73,11 @@ export const barPlates = (bar: BarCast): readonly string[] => [
   bar.sticker,
 ];
 
-export const roadPlates = (career: CareerState): readonly string[] =>
-  openRoads(career).flatMap((roadId) => [
+export const roadPlates = (
+  rules: RaceRules,
+  career: CareerState
+): readonly string[] =>
+  openRoads(rules, career).flatMap((roadId) => [
     flyers[roadId],
     figures[roadBoss(career, roadId)],
   ]);

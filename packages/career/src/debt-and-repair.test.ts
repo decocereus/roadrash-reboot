@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   crashOut,
   enter,
@@ -55,7 +56,7 @@ describe("going broke", () => {
       [-700, false],
       [-1100, true],
     ]);
-    expect(startRace(over, "slag-row", 1)).toMatchObject({
+    expect(startRace(recordedRules, over, "slag-row", 1)).toMatchObject({
       reason: "gameOver",
       started: false,
     });
@@ -88,8 +89,10 @@ describe("the rewarded ad", () => {
     const race = enter(inDebt, "slag-row");
     crashOut(race);
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const full = ledgerOf(settleRace(race.career, outcome));
-    const half = ledgerOf(settleRace(race.career, outcome, "half"));
+    const full = ledgerOf(settleRace(recordedRules, race.career, outcome));
+    const half = ledgerOf(
+      settleRace(recordedRules, race.career, outcome, "half")
+    );
     expect(outcome.result).toBe("wrecked");
     expect([
       full.repair,
@@ -105,10 +108,12 @@ describe("the rewarded ad", () => {
   });
 
   it("is not offered for a quit, so the bill stays whole", () => {
-    const start = startRace(newCareer(1), "slag-row", 1);
+    const start = startRace(recordedRules, newCareer(1), "slag-row", 1);
     const race = enter(newCareer(1), "slag-row", 1);
     const quit = outcomeOf(race.state, race.setup, race.log);
-    expect(ledgerOf(settleRace(start.career, quit, "half"))).toMatchObject({
+    expect(
+      ledgerOf(settleRace(recordedRules, start.career, quit, "half"))
+    ).toMatchObject({
       repair: 400,
       repairHalved: false,
       result: "quit",

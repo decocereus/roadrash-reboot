@@ -1,4 +1,5 @@
 import type { RegionId } from "@racer/track/regions";
+import type { RoadLevel } from "@racer/track/road";
 
 import { bikes } from "./bikes.ts";
 import type { BikeId } from "./bikes.ts";
@@ -28,7 +29,6 @@ export const rivalIds = [
 
 export type RivalId = (typeof rivalIds)[number];
 
-const LEVEL_COUNT = 5;
 const CLUB_LEVEL = 4;
 const CLUB_AGGRESSION = 0.5;
 
@@ -355,10 +355,7 @@ export const rivals = {
 
 export const cast: readonly Rival[] = rivalIds.map((id) => rivals[id]);
 
-const levelOf = (level: number): number =>
-  Math.min(LEVEL_COUNT, Math.max(1, Math.round(level)));
-
-export const weaponAt = (rival: Rival, level: number): WeaponKind => {
+export const weaponAt = (rival: Rival, level: RoadLevel): WeaponKind => {
   if (rival.weapon !== "none" && level >= rival.armedFrom) {
     return rival.weapon;
   }
@@ -367,10 +364,10 @@ export const weaponAt = (rival: Rival, level: number): WeaponKind => {
     : "none";
 };
 
-export const bikeAt = (rival: Rival, level: number): BikeId =>
-  rival.bikes[levelOf(level) - 1] ?? rival.bikes[0];
+export const bikeAt = (rival: Rival, level: RoadLevel): BikeId =>
+  rival.bikes[level - 1] ?? rival.bikes[0];
 
-export const rivalAt = (rival: Rival, level: number): RivalSetup => ({
+export const rivalAt = (rival: Rival, level: RoadLevel): RivalSetup => ({
   aggression: rival.aggression,
   bike: bikes[bikeAt(rival, level)],
   jacket: rival.jacket,

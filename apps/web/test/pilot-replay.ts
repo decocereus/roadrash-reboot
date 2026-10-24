@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Hash } from "node:crypto";
 
+import { recordedRules } from "@racer/career/bench";
 import type { RoadId } from "@racer/career/tables";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
@@ -28,7 +29,7 @@ export interface ReplayCase {
 const quickRace = (roadId: RoadId, seed: number): ReplayCase => ({
   id: `${roadId}/level5/seed${seed}`,
   setup: () =>
-    planFor(null, {
+    planFor(recordedRules, null, {
       bikeId: "ostra-sesta-600",
       level: 5,
       mode: "quick",
