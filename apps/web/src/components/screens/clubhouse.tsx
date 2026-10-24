@@ -102,7 +102,10 @@ const notesFor = (
   if (notes.length === 0) {
     notes.push({
       signature: "V.",
-      text: "Top three on all five roads and you move up.",
+      text:
+        career.level === rules.levelCount
+          ? "The Ridge is last. She'll be waiting."
+          : "Top three on all five roads and you move up.",
     });
   }
   return notes;

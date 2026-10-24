@@ -286,7 +286,7 @@ The arrest record comes from the race runner, because the sim's own state no lon
 
 **Layout.** Results happens in the bar, on the same 1672 × 941 stage as the Clubhouse, with the same header, status strip (now showing the new cash), and bottom strip. The left half is the bar: the rival with the post-race line sits on the stool, with the line in the speech sticker and their name and finishing place on yellow tape. After a bust the arresting officer takes the stool, and after a wreck or a quit Mags does. The wall on the right shows:
 
-- **The race sheet:** the standings paper, stretched to one ruled line per racer (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
+- **The race sheet:** the standings paper, stretched to fifteen ruled lines, the most a race seats (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
 - **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 5 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the bust line above.
 - **The ledger** on the cyan note.
 - **The pink note,** only when there is something to say: the career-over line, the repossession, or the debt warning, in that order.
