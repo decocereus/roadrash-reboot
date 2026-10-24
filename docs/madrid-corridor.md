@@ -45,9 +45,9 @@ Fits on the pinned corridor, all distances in metres:
 | Stretch | Radius limit | RMS | 95th percentile | Max | Tightest radius | Fitted length (street) |
 | --- | --: | --: | --: | --: | --: | --: |
 | Whole corridor | none | 0.9 | 2.0 | 10.3 | 5.6 | 8,689 (8,703) |
-| Whole corridor | 60 | 5.7 | 12.5 | 39.6 | 60.0 | 8,559 |
+| Whole corridor | 60 | 5.8 | 13.0 | 39.6 | 60.0 | 8,559 |
 | Whole corridor | 120 | 17.9 | 45.7 | 79.9 | 120.0 | 8,565 |
-| Whole corridor | 265 | 54.2 | 131.9 | 157.5 | 265.0 | 8,066 |
+| Whole corridor | 265 | 54.2 | 132.0 | 157.5 | 265.0 | 8,066 |
 | 0.60 to 1.60 km | none | 0.1 | 0.3 | 0.7 | 44.4 | 1,000 (1,000) |
 | 0.60 to 1.60 km | 60 | 0.2 | 0.4 | 1.0 | 60.0 | 1,000 |
 | 0.60 to 1.60 km | 120 | 0.4 | 1.0 | 2.4 | 120.0 | 999 |
@@ -59,7 +59,7 @@ Without a limit the fit follows the street within 2 m for 95% of its length, but
 
 Use a 60 m minimum radius. No Madrid bend can hold 200 km/h, so the limit comes from the bends the game already asks riders to take. Every existing road reaches a bend of 55.5 to 66.8 m by level 5, and Cinder Wash and Slag Row have bends of 67 and 70 m at level 1. A Sesta holds 88 km/h at 60 m with full steer and a Wren 101 km/h. A bike at 200 km/h brakes for it, as it does for the right angles on Slag Row. 60 m is also the bottom of the launch research's 60 to 120 m band for a major junction turn, below which a forced turn is a flagged exception.
 
-The larger limits leave the street. Holding 200 km/h at full lock on a Sesta needs 265 m, and that road leaves the street by up to 158 m, through buildings. At 120 m it leaves the street by up to 80 m. At 60 m the 95th percentile is 12.5 m, and the test interval on Alcalá and Gran Vía stays within 1 m.
+The larger limits leave the street. Holding 200 km/h at full lock on a Sesta needs 265 m, and that road leaves the street by up to 158 m, through buildings. At 120 m it leaves the street by up to 80 m. At 60 m the 95th percentile is 13.0 m, and the test interval on Alcalá and Gran Vía stays within 1 m.
 
 Whole corridor at 60 m, where the limit moved the road more than 1 m further from the street than the unlimited fit:
 

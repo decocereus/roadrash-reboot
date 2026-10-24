@@ -86,6 +86,42 @@ describe("fitting pieces to a street", () => {
     expect(held.error.maxM).toBe(span?.maxErrorM);
   });
 
+  it("measures how far the street runs past the end of the road, not only across it", () => {
+    const fit = fitPolyline(
+      [
+        [0, 0],
+        [0, 100.4],
+      ],
+      { ...options, minRadiusM: 60 }
+    );
+    expect(fit.lengthM).toBe(100);
+    expect(fit.error.maxM).toBeCloseTo(0.4, 3);
+  });
+
+  it("returns the road its numbers describe when the length never settles", () => {
+    const fit = fitPolyline(
+      [
+        [0, 0],
+        [0, 300],
+        [20, 300],
+        [20, 0],
+      ],
+      { ...options, minRadiusM: 265 }
+    );
+    const road = sampleAlignment({
+      leadInLength: 0,
+      pieces: fit.pieces,
+      runoffLength: 0,
+      start: fit.start,
+    });
+    let tightest = 0;
+    for (const value of road.curvature) {
+      tightest = Math.max(tightest, Math.abs(value));
+    }
+    expect(road).toHaveLength(fit.lengthM);
+    expect(1 / tightest).toBe(fit.minRadiusM);
+  });
+
   it("matches the documented fit of the Madrid test interval at the 60 m limit", () => {
     const fit = fitPolyline(between(corridorLine(corridor), 600, 1600), {
       ...options,

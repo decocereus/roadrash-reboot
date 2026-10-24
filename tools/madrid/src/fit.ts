@@ -443,25 +443,21 @@ const forcedSpans = (
   });
 };
 
-export const fitPolyline = (
-  line: readonly Position[],
-  options: FitOptions
-): Fit => {
-  const source = resample(line);
-  const bound = 1 / options.minRadiusM;
-  let grid = gridOf(Math.round(source.lengthM), options.pieceLengthM);
-  const free = solve(
-    source,
-    grid,
-    initialModel(source, grid),
-    options,
-    Number.POSITIVE_INFINITY,
-    alongArc,
-    SETTLE_ITERATIONS
-  );
-  let model = clampKeepingTurn(free.model, bound);
-  let solved = free;
-  for (let cycle = 0; cycle < MAX_CYCLES; cycle += 1) {
+interface Settled {
+  readonly grid: Grid;
+  readonly solved: Solved;
+}
+
+const settle = (
+  source: Source,
+  whole: Grid,
+  first: Model,
+  options: FitOptions,
+  bound: number
+): Settled => {
+  let grid = whole;
+  let model = first;
+  for (let cycle = 1; ; cycle += 1) {
     const held = solve(
       source,
       grid,
@@ -471,7 +467,7 @@ export const fitPolyline = (
       alongArc,
       WARM_ITERATIONS
     );
-    solved = solve(
+    const solved = solve(
       source,
       grid,
       held.model,
@@ -481,13 +477,52 @@ export const fitPolyline = (
       SETTLE_ITERATIONS
     );
     const reach = Math.round(reachOf(source, solved));
-    if (reach === Math.round(grid.knotS.at(-1) ?? 0)) {
-      break;
+    if (cycle === MAX_CYCLES || reach === Math.round(grid.knotS.at(-1) ?? 0)) {
+      return { grid, solved };
     }
     grid = gridOf(reach, options.pieceLengthM);
     model = regrid(solved, grid);
   }
-  const deviationM = Float64Array.from(solved.projection.residual, Math.abs);
+};
+
+const distancesOf = (
+  source: Source,
+  { line, projection }: Solved
+): Float64Array =>
+  Float64Array.from(source.x, (x, index) => {
+    const at = projection.segment[index] ?? 0;
+    const share = projection.share[index] ?? 0;
+    const roadX =
+      (line.worldX[at] ?? 0) * (1 - share) + (line.worldX[at + 1] ?? 0) * share;
+    const roadZ =
+      (line.worldZ[at] ?? 0) * (1 - share) + (line.worldZ[at + 1] ?? 0) * share;
+    return Math.hypot(roadX - x, roadZ - (source.z[index] ?? 0));
+  });
+
+export const fitPolyline = (
+  line: readonly Position[],
+  options: FitOptions
+): Fit => {
+  const source = resample(line);
+  const bound = 1 / options.minRadiusM;
+  const whole = gridOf(Math.round(source.lengthM), options.pieceLengthM);
+  const free = solve(
+    source,
+    whole,
+    initialModel(source, whole),
+    options,
+    Number.POSITIVE_INFINITY,
+    alongArc,
+    SETTLE_ITERATIONS
+  );
+  const { grid, solved } = settle(
+    source,
+    whole,
+    clampKeepingTurn(free.model, bound),
+    options,
+    bound
+  );
+  const deviationM = distancesOf(source, solved);
   const sorted = deviationM.toSorted();
   let squares = 0;
   for (const value of deviationM) {
