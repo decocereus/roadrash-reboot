@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as KitRouteImport } from './routes/kit'
 import { Route as ApiTelemetryRouteImport } from './routes/api/telemetry'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreditsRoute = CreditsRouteImport.update({
+  id: '/credits',
+  path: '/credits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KitRoute = KitRouteImport.update({
@@ -31,30 +37,34 @@ const ApiTelemetryRoute = ApiTelemetryRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/api/telemetry': typeof ApiTelemetryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/api/telemetry': typeof ApiTelemetryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/api/telemetry': typeof ApiTelemetryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/kit' | '/api/telemetry'
+  fullPaths: '/' | '/credits' | '/kit' | '/api/telemetry'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/kit' | '/api/telemetry'
-  id: '__root__' | '/' | '/kit' | '/api/telemetry'
+  to: '/' | '/credits' | '/kit' | '/api/telemetry'
+  id: '__root__' | '/' | '/credits' | '/kit' | '/api/telemetry'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreditsRoute: typeof CreditsRoute
   KitRoute: typeof KitRoute
   ApiTelemetryRoute: typeof ApiTelemetryRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/credits': {
+      id: '/credits'
+      path: '/credits'
+      fullPath: '/credits'
+      preLoaderRoute: typeof CreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kit': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreditsRoute: CreditsRoute,
   KitRoute: KitRoute,
   ApiTelemetryRoute: ApiTelemetryRoute,
 }

@@ -33,8 +33,10 @@ export const deterministicFiles = [
   "packages/sim/src/state.ts",
   "packages/sim/src/traffic.ts",
   "packages/sim/src/weapons.ts",
+  "packages/track/src/alignment.ts",
   "packages/track/src/features.ts",
   "packages/track/src/hazards.ts",
+  "packages/track/src/madrid-sources.ts",
   "packages/track/src/math-atan.ts",
   "packages/track/src/math-kernels.ts",
   "packages/track/src/math-reduction.ts",
@@ -64,7 +66,9 @@ export const deterministicFiles = [
   "packages/career/src/tables.ts",
 ];
 
-export const careerCodecFiles = [
+export const codecFiles = [
+  "packages/track/src/madrid-schema.ts",
+  "packages/track/src/madrid-corridor.ts",
   "packages/career/src/save.ts",
   "packages/career/src/save-schema.ts",
   "packages/career/src/save-values.ts",
@@ -140,6 +144,8 @@ const entriesLoopFiles = [
 ];
 
 const effectFiles = [
+  "tools/madrid/*.ts",
+  "tools/madrid/src/**/*.ts",
   "tools/perf/*.ts",
   "tools/perf/src/**/*.ts",
   "tools/verify/*.ts",
@@ -151,7 +157,7 @@ const effectFiles = [
   "apps/web/src/diagnostics/uploader.ts",
   "apps/web/src/diagnostics/uploader-runtime.ts",
   "apps/web/src/diagnostics/upload/**/*.ts",
-  ...careerCodecFiles,
+  ...codecFiles,
   "apps/web/src/career/save.ts",
   "apps/web/src/career/save-storage.ts",
   "apps/web/src/career/save-storage-error.ts",
@@ -164,6 +170,7 @@ const effectFiles = [
 ];
 
 const libraryFiles = [
+  "tools/madrid/src/**/*.ts",
   "tools/perf/src/**/*.ts",
   "tools/verify/src/**/*.ts",
   "packages/devtools/src/**/*.ts",
@@ -171,7 +178,7 @@ const libraryFiles = [
   "packages/telemetry/src/**/*.ts",
   "apps/web/src/diagnostics/uploader.ts",
   "apps/web/src/diagnostics/upload/**/*.ts",
-  ...careerCodecFiles,
+  ...codecFiles,
   "apps/web/src/career/save-storage.ts",
   "apps/web/src/career/save-storage-error.ts",
   "apps/web/src/assets/load.ts",
