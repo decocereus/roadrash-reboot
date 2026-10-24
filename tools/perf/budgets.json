@@ -6,14 +6,6 @@
         "sha256": "8001c17c091cba4095859bc247bcadec523f1d41dde51948f992a41c070da4b1"
       },
       {
-        "file": "tools/perf/baselines/post-step8.node-linux-x64.json.gz",
-        "sha256": "e1213905898fa5e56caf20498f285d8ff2d620a0aebda540da733190729ee5a0"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.gpu-helium-metal.json.gz",
-        "sha256": "2b07ac4795bec3f3a2b9eadcdb7ba058ac66860534faa81e1f6650b45ad7e3ea"
-      },
-      {
         "file": "tools/perf/baselines/post-step8.worker.json.gz",
         "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
       },
@@ -28,11 +20,23 @@
       {
         "file": "tools/perf/baselines/post-step8.riders.json.gz",
         "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.centred-bars.node-darwin-arm64.json.gz",
+        "sha256": "8e15bfbc3e9db44c854967087b630cbc9e951511e1a4420490188e022f37ab95"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.centred-bars.node-linux-x64.json.gz",
+        "sha256": "89667aa76c6aee37ad497e757225fb6fb6a4c0313504422da58e831f8eb8d544"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.centred-bars.gpu-helium-metal.json.gz",
+        "sha256": "eb2b696aa6810b5bacdc51fe9032eb4acb0c431abb8cc35a48bdd98ad022f92a"
       }
     ],
-    "revision": "fd677a71c74167dc049a2bcf232f26f8f9abda86",
+    "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "52c3e6a1c0e3d9a0193b847b827e3e0123cde060e8e6286200db1ab9a32ec0ac"
+    "summarySha256": "d29179c0874e8eca74abdbcd2d4f5c1311713521d9a1d5196fad4e964d13f0e5"
   },
   "limits": [
     {
@@ -343,7 +347,7 @@
       "metric": "frame.interval.p50",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 17.5
     },
@@ -355,7 +359,7 @@
       "metric": "frame.interval.p50",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 17.5
     },
@@ -367,43 +371,43 @@
       "metric": "frame.interval.p95",
       "paired": 1.15,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 20
     },
     {
-      "baseline": 17.5,
+      "baseline": 17.100000381469727,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "frame.interval.p95",
       "paired": 1.15,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 20
     },
     {
-      "baseline": 18.100000381469727,
+      "baseline": 18,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "frame.interval.p99",
       "paired": 1.2,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 33.334
     },
     {
-      "baseline": 18.200000762939453,
+      "baseline": 18,
       "derivation": "owner cap",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "frame.interval.p99",
       "paired": 1.2,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 33.334
     },
@@ -415,7 +419,7 @@
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "share",
       "value": 0.01
     },
@@ -427,7 +431,7 @@
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "share",
       "value": 0.01
     },
@@ -439,7 +443,7 @@
       "metric": "main.longTask.blockingMs",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 0
     },
@@ -451,7 +455,7 @@
       "metric": "main.longTask.blockingMs",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "ms",
       "value": 0
     },
@@ -463,7 +467,7 @@
       "metric": "main.longTask.count",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "tasks",
       "value": 0
     },
@@ -475,57 +479,57 @@
       "metric": "main.longTask.count",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "tasks",
       "value": 0
     },
     {
-      "baseline": 513,
+      "baseline": 534,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.calls.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "calls",
-      "value": 539
+      "value": 561
     },
     {
-      "baseline": 460,
+      "baseline": 430,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.calls.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "calls",
-      "value": 483
+      "value": 452
     },
     {
-      "baseline": 42,
+      "baseline": 43,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "programs",
-      "value": 43
+      "value": 44
     },
     {
-      "baseline": 42,
+      "baseline": 43,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "programs",
-      "value": 43
+      "value": 44
     },
     {
       "baseline": 78,
@@ -535,7 +539,7 @@
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "textures",
       "value": 79
     },
@@ -547,33 +551,33 @@
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "textures",
       "value": 72
     },
     {
-      "baseline": 3217443,
+      "baseline": 3002895,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.triangles.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "triangles",
-      "value": 3378316
+      "value": 3153040
     },
     {
-      "baseline": 2789749,
+      "baseline": 2357079,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.triangles.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
+      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "unit": "triangles",
-      "value": 2929237
+      "value": 2474933
     },
     {
       "baseline": 0.3999999761581421,
@@ -601,194 +605,194 @@
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 1224746.5450915142,
-      "baseline": 1113405.9500831948,
+      "value": 115620.74009983362,
+      "baseline": 105109.76372712146,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 613759.4702163063,
-      "baseline": 557963.1547420966,
+      "value": 42375.47021630616,
+      "baseline": 38523.15474209651,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "B"
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.5900321315551901,
-      "baseline": 0.5130714187436436,
+      "value": 0.37425183091652586,
+      "baseline": 0.3254363747100225,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.tick.p95",
       "paired": 1.15,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "ms"
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.38527124048982236,
-      "baseline": 0.3350184699911499,
+      "value": 0.2139270127708226,
+      "baseline": 0.18602348936593271,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.tick.p95",
       "paired": 1.15,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "ms"
     },
     {
       "derivation": "1.2 x calibrated baseline median",
-      "value": 0.6859186478675205,
-      "baseline": 0.5715988732229338,
+      "value": 0.46667621421040467,
+      "baseline": 0.38889684517533724,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.tick.p99",
       "paired": 1.2,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "ms"
     },
     {
       "derivation": "1.2 x calibrated baseline median",
-      "value": 0.44404367317543264,
-      "baseline": 0.37003639431286056,
+      "value": 0.24557361515262677,
+      "baseline": 0.20464467929385566,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "sim.tick.p99",
       "paired": 1.2,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "ms"
     },
     {
       "derivation": "0.9 x calibrated baseline median",
-      "value": 2852.115088672944,
-      "baseline": 3169.0167651921597,
+      "value": 4599.501440077162,
+      "baseline": 5110.5571556412915,
       "direction": "min",
       "environment": "node-darwin-arm64",
       "metric": "sim.ticksPerSecond",
       "paired": 0.9,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "ticks/s"
     },
     {
       "derivation": "0.9 x calibrated baseline median",
-      "value": 6551.853408491863,
-      "baseline": 7279.837120546515,
+      "value": 9421.397874882567,
+      "baseline": 10468.21986098063,
       "direction": "min",
       "environment": "node-darwin-arm64",
       "metric": "sim.ticksPerSecond",
       "paired": 0.9,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
       "unit": "ticks/s"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 1231211.2652246258,
-      "baseline": 1119282.9683860233,
+      "value": 116565.19534109818,
+      "baseline": 105968.35940099834,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 615892.3061564061,
-      "baseline": 559902.0965058237,
+      "value": 42407.200000000004,
+      "baseline": 38552,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.allocatedBytesPerTick",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "B"
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 1.4441472782076061,
-      "baseline": 1.2557802419196575,
+      "value": 0.8794915403166496,
+      "baseline": 0.7647752524492606,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.tick.p95",
       "paired": 1.15,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "ms"
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.966394304445686,
-      "baseline": 0.8403428734310313,
+      "value": 0.5100527244899099,
+      "baseline": 0.44352410825209565,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.tick.p95",
       "paired": 1.15,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "ms"
     },
     {
       "derivation": "1.2 x calibrated baseline median",
-      "value": 1.6929739752747148,
-      "baseline": 1.4108116460622624,
+      "value": 1.0541746733300856,
+      "baseline": 0.8784788944417381,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.tick.p99",
       "paired": 1.2,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "ms"
     },
     {
       "derivation": "1.2 x calibrated baseline median",
-      "value": 1.0883469150573304,
-      "baseline": 0.9069557625477754,
+      "value": 0.5736184201389082,
+      "baseline": 0.4780153501157568,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "sim.tick.p99",
       "paired": 1.2,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "ms"
     },
     {
       "derivation": "0.9 x calibrated baseline median",
-      "value": 1173.5440955590532,
-      "baseline": 1303.9378839545036,
+      "value": 1985.4462772976765,
+      "baseline": 2206.0514192196406,
       "direction": "min",
       "environment": "node-linux-x64",
       "metric": "sim.ticksPerSecond",
       "paired": 0.9,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "ticks/s"
     },
     {
       "derivation": "0.9 x calibrated baseline median",
-      "value": 2572.0247525669033,
-      "baseline": 2857.8052806298924,
+      "value": 3916.515430750079,
+      "baseline": 4351.683811944532,
       "direction": "min",
       "environment": "node-linux-x64",
       "metric": "sim.ticksPerSecond",
       "paired": 0.9,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c",
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
       "unit": "ticks/s"
     }
   ],
@@ -799,13 +803,13 @@
         "checksum": 1059875404,
         "maxDrift": 0.1,
         "maxScale": 2,
-        "median": 8.063916999999975,
+        "median": 7.924874999999986,
         "minScale": 0.5,
         "rounds": 10,
         "version": 1
       },
       "platform": "darwin",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a"
+      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a"
     },
     "node-linux-x64": {
       "arch": "x64",
@@ -813,13 +817,13 @@
         "checksum": 1059875404,
         "maxDrift": 0.1,
         "maxScale": 2,
-        "median": 10.805418000000031,
+        "median": 9.014231000000109,
         "minScale": 0.5,
         "rounds": 10,
         "version": 1
       },
       "platform": "linux",
-      "source": "baseline-2026-10-22T18-13-59-847Z-fd677a7-0d6e03c"
+      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79"
     }
   },
   "version": 1

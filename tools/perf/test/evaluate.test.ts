@@ -101,7 +101,9 @@ describe("perf gate red cases", () => {
     const rows = validRows(packRiding);
     const thinner = {
       ...rows,
-      ahead: rows.ahead.map((each, index) => (index === middle ? 10 : each)),
+      ahead: rows.ahead.map((each, index) =>
+        index === middle ? packRiding.band.min - 1 : each
+      ),
     };
     const thrown = {
       ...rows,
@@ -111,7 +113,10 @@ describe("perf gate red cases", () => {
     };
     const tick = packRiding.window.from + middle;
     for (const [bad, shown] of [
-      [thinner, `tick=${tick} ahead=10 expected=11..13 rivals`],
+      [
+        thinner,
+        `tick=${tick} ahead=${packRiding.band.min - 1} expected=${packRiding.band.min}..${packRiding.band.max} rivals`,
+      ],
       [thrown, `tick=${tick} mode=thrown expected=riding`],
     ] as const) {
       const samples = samplesOf(
