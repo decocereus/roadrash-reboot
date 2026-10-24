@@ -60,7 +60,7 @@ describe("going broke", () => {
       reason: "gameOver",
       started: false,
     });
-    expect(canBuy(over, "gutter-pup-250")).toBeFalsy();
+    expect(canBuy(recordedRules, over, "gutter-pup-250")).toBeFalsy();
   });
 
   it("a Wren rider $800 in debt who wrecks at level 5 loses the bike and the career in one step", () => {
@@ -77,8 +77,8 @@ describe("going broke", () => {
   it("the garage does not sell to a player in debt, but the player can sell down to the Pup", () => {
     const inDebt = lastOf(wreckTimes(newCareer(1), 4)).career;
     const sold = sellBike(inDebt);
-    expect(canBuy(inDebt, "gutter-pup-250")).toBeFalsy();
-    expect(buyBike(inDebt, "gutter-pup-250")).toBe(inDebt);
+    expect(canBuy(recordedRules, inDebt, "gutter-pup-250")).toBeFalsy();
+    expect(buyBike(recordedRules, inDebt, "gutter-pup-250")).toBe(inDebt);
     expect([sold.cash, sold.bikeId]).toStrictEqual([1700, "gutter-pup-250"]);
   });
 });

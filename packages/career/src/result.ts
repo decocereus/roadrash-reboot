@@ -6,6 +6,8 @@ import type { WeaponKind } from "@racer/sim/state";
 
 import { bustedLine } from "./lines.ts";
 import type { Placing, RaceOutcome, RivalIncidents } from "./outcome.ts";
+import { rungsOf } from "./rules.ts";
+import type { RaceRules } from "./rules.ts";
 import type { Ledger } from "./settle.ts";
 import type { ActiveRace } from "./state.ts";
 import { prizeFor } from "./tables.ts";
@@ -45,6 +47,7 @@ export interface LastResult {
 }
 
 const rowOf = (
+  rules: RaceRules,
   race: ActiveRace,
   placing: Placing,
   playerPrize: number
@@ -61,9 +64,9 @@ const rowOf = (
   const out = placing.fate === "busted" || placing.fate === "wrecked";
   return {
     ...placing,
-    bikeId: bikeAt(rival, race.level),
+    bikeId: bikeAt(rival, rungsOf(rules, race.level).highest),
     name: rival.name,
-    prize: out ? 0 : prizeFor(race.level, placing.place),
+    prize: out ? 0 : prizeFor(rules, race.level, placing.place),
   };
 };
 
@@ -80,6 +83,7 @@ const bustOf = (outcome: RaceOutcome): BustDetails | null =>
     : null;
 
 export const summaryOf = (
+  rules: RaceRules,
   race: ActiveRace,
   outcome: RaceOutcome,
   playerPrize: number
@@ -87,7 +91,9 @@ export const summaryOf = (
   bust: bustOf(outcome),
   incidents: outcome.incidents,
   raceId: race.raceId,
-  rows: outcome.placings.map((placing) => rowOf(race, placing, playerPrize)),
+  rows: outcome.placings.map((placing) =>
+    rowOf(rules, race, placing, playerPrize)
+  ),
   tick: outcome.tick,
   wreck:
     outcome.result === "wrecked" || outcome.result === "quit"

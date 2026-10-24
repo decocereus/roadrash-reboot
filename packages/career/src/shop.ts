@@ -2,11 +2,12 @@ import { bikeIds, bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import type { BikeClass } from "@racer/sim/state";
 
+import type { RaceRules } from "./rules.ts";
 import type { CareerState } from "./state.ts";
 import {
+  arrivalOf,
   repairBill,
   REPOSSESSION_BIKE,
-  stockLevel,
   tradeInOf,
 } from "./tables.ts";
 import type { Level } from "./tables.ts";
@@ -31,14 +32,18 @@ export const spendingPower = (career: CareerState): number =>
 const shopClosed = (career: CareerState): boolean =>
   career.gameOver || career.activeRace !== null;
 
-const refusalOf = (career: CareerState, bikeId: BikeId): BuyRefusal | null => {
+const refusalOf = (
+  rules: RaceRules,
+  career: CareerState,
+  bikeId: BikeId
+): BuyRefusal | null => {
   if (shopClosed(career)) {
     return "closed";
   }
   if (bikeId === career.bikeId) {
     return "owned";
   }
-  if (stockLevel[bikeId] > career.level) {
+  if (arrivalOf(rules, bikeId) > career.level) {
     return "locked";
   }
   if (career.cash < 0) {
@@ -47,21 +52,27 @@ const refusalOf = (career: CareerState, bikeId: BikeId): BuyRefusal | null => {
   return spendingPower(career) < bikes[bikeId].price ? "short" : null;
 };
 
-export const shopStock = (career: CareerState): readonly ShopRow[] =>
+export const shopStock = (
+  rules: RaceRules,
+  career: CareerState
+): readonly ShopRow[] =>
   bikeIds.map((bikeId) => ({
-    arrivesAt: stockLevel[bikeId],
+    arrivesAt: arrivalOf(rules, bikeId),
     bikeClass: bikes[bikeId].bikeClass,
     bikeId,
     leftAfter: spendingPower(career) - bikes[bikeId].price,
     name: bikes[bikeId].name,
     owned: bikeId === career.bikeId,
     price: bikes[bikeId].price,
-    refusal: refusalOf(career, bikeId),
-    repair: repairBill(career.level, bikeId),
+    refusal: refusalOf(rules, career, bikeId),
+    repair: repairBill(rules, career.level, bikeId),
   }));
 
-export const canBuy = (career: CareerState, bikeId: BikeId): boolean =>
-  refusalOf(career, bikeId) === null;
+export const canBuy = (
+  rules: RaceRules,
+  career: CareerState,
+  bikeId: BikeId
+): boolean => refusalOf(rules, career, bikeId) === null;
 
 const riding = (career: CareerState, bikeId: BikeId): CareerState => ({
   ...career,
@@ -71,8 +82,12 @@ const riding = (career: CareerState, bikeId: BikeId): CareerState => ({
     : [...career.garage, bikeId],
 });
 
-export const buyBike = (career: CareerState, bikeId: BikeId): CareerState =>
-  canBuy(career, bikeId)
+export const buyBike = (
+  rules: RaceRules,
+  career: CareerState,
+  bikeId: BikeId
+): CareerState =>
+  canBuy(rules, career, bikeId)
     ? riding(
         { ...career, cash: spendingPower(career) - bikes[bikeId].price },
         bikeId
