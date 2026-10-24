@@ -97,6 +97,15 @@ export const createAssetRuntime = (
 
 const pageCache: ByteCache = new Map();
 
+const dressed = (urls: ModelUrls, search: string): ModelUrls => {
+  const figure = new URLSearchParams(search).get("figure");
+  if (figure === null) {
+    return urls;
+  }
+  const [, buildB, buildC] = urls.riders;
+  return { ...urls, riders: [figure, buildB, buildC] };
+};
+
 export const browserAssetRuntime = (): AssetRuntime =>
   createAssetRuntime(
     {
@@ -104,5 +113,7 @@ export const browserAssetRuntime = (): AssetRuntime =>
       transport: { fetch: globalThis.fetch.bind(globalThis) },
     },
     pageCache,
-    modelUrls
+    import.meta.env.DEV
+      ? dressed(modelUrls, globalThis.location.search)
+      : modelUrls
   );

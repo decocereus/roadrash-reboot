@@ -39,6 +39,7 @@ export interface Primitive {
 export interface RiderAsset {
   readonly scene: THREE.Object3D;
   readonly primitives: readonly Primitive[];
+  readonly atlas: THREE.Texture | null;
   readonly bones: readonly string[];
   readonly poses: ReadonlyMap<PoseName, number[]>;
   readonly seat: THREE.Vector3;
@@ -46,6 +47,8 @@ export interface RiderAsset {
 }
 
 export type BikeParts = ReadonlyMap<string, readonly Primitive[]>;
+
+const ATLAS = "atlas";
 
 export interface Assets {
   readonly bikes: Readonly<Record<BikeModelId, BikeParts>>;
@@ -66,6 +69,7 @@ const fixedColours: ReadonlyMap<string, string> = new Map([
   ["boot", "#15121c"],
   ["armour", "#231d30"],
   ["visor", "#0f1c33"],
+  [ATLAS, "#ffffff"],
 ]);
 
 const glossOf: ReadonlyMap<string, number> = new Map([
@@ -106,7 +110,14 @@ const coloured = (
   const source = primitive.geometry;
   const geometry = new THREE.BufferGeometry();
   geometry.setIndex(source.getIndex());
-  for (const name of ["position", "normal", "skinIndex", "skinWeight"]) {
+  for (const name of [
+    "position",
+    "normal",
+    "uv",
+    ATLAS,
+    "skinIndex",
+    "skinWeight",
+  ]) {
     if (source.hasAttribute(name)) {
       geometry.setAttribute(name, source.getAttribute(name));
     }
@@ -150,8 +161,15 @@ export const paintPrimitives = (
   };
 };
 
-const slotOf = (mesh: THREE.Mesh): string =>
-  Array.isArray(mesh.material) ? "" : mesh.material.name;
+const atlasOf = (material: THREE.Material): THREE.Texture | null =>
+  material instanceof THREE.MeshStandardMaterial ? material.map : null;
+
+const slotOf = (mesh: THREE.Mesh): string => {
+  if (Array.isArray(mesh.material)) {
+    return "";
+  }
+  return atlasOf(mesh.material) ? ATLAS : mesh.material.name;
+};
 
 type Packed = THREE.BufferAttribute | THREE.InterleavedBufferAttribute;
 
@@ -183,13 +201,26 @@ const unpacked = (
   return new THREE.BufferAttribute(values, source.itemSize);
 };
 
-const fileSpaceGeometry = (mesh: THREE.Mesh): THREE.BufferGeometry => {
-  const source = mesh.geometry;
-  mesh.updateWorldMatrix(true, false);
-  const placement =
-    mesh instanceof THREE.SkinnedMesh
-      ? new THREE.Matrix4()
-      : mesh.matrixWorld.clone();
+const sharedBind = (
+  mesh: THREE.SkinnedMesh,
+  first: THREE.SkinnedMesh
+): THREE.Matrix4 => {
+  const [own] = mesh.skeleton.boneInverses;
+  const [shared] = first.skeleton.boneInverses;
+  if (!(own && shared)) {
+    throw new Error("A skinned mesh in the rider model has no joints.");
+  }
+  return new THREE.Matrix4()
+    .copy(first.bindMatrixInverse)
+    .multiply(shared.clone().invert())
+    .multiply(own)
+    .multiply(mesh.bindMatrix);
+};
+
+const fileSpaceGeometry = (
+  source: THREE.BufferGeometry,
+  placement: THREE.Matrix4
+): THREE.BufferGeometry => {
   const turn = new THREE.Matrix3().getNormalMatrix(placement);
   const geometry = new THREE.BufferGeometry();
   geometry.setIndex(source.getIndex());
@@ -205,6 +236,13 @@ const fileSpaceGeometry = (mesh: THREE.Mesh): THREE.BufferGeometry => {
       placedVectors(source.getAttribute("normal"), (each) =>
         each.applyMatrix3(turn).normalize()
       )
+    );
+  }
+  if (source.hasAttribute("uv")) {
+    const uv = source.getAttribute("uv");
+    geometry.setAttribute(
+      "uv",
+      unpacked(uv, new Float32Array(uv.count * uv.itemSize))
     );
   }
   if (source.hasAttribute("skinIndex")) {
@@ -226,13 +264,22 @@ const fileSpaceGeometry = (mesh: THREE.Mesh): THREE.BufferGeometry => {
 
 const primitivesOf = (root: THREE.Object3D): Primitive[] => {
   const primitives: Primitive[] = [];
+  let first: THREE.SkinnedMesh | null = null;
   root.traverse((node) => {
-    if (isMesh(node)) {
-      primitives.push({
-        geometry: fileSpaceGeometry(node),
-        slot: slotOf(node),
-      });
+    if (!isMesh(node)) {
+      return;
     }
+    node.updateWorldMatrix(true, false);
+    let placement = node.matrixWorld.clone();
+    if (isSkinnedMesh(node)) {
+      first ??= node;
+      placement =
+        node === first ? new THREE.Matrix4() : sharedBind(node, first);
+    }
+    primitives.push({
+      geometry: fileSpaceGeometry(node.geometry, placement),
+      slot: slotOf(node),
+    });
   });
   return primitives;
 };
@@ -322,6 +369,7 @@ const releaseOf =
       geometry.dispose();
     }
     for (const material of materials) {
+      atlasOf(material)?.dispose();
       material.dispose();
     }
   };
@@ -335,6 +383,38 @@ const decoded = <Value>(
 const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
   await loader.parseAsync(bytes, "");
 
+const atlasesOf = (root: THREE.Object3D): THREE.Texture[] => {
+  const atlases = new Set<THREE.Texture>();
+  root.traverse((node) => {
+    if (isMesh(node)) {
+      for (const material of [node.material].flat()) {
+        const atlas = atlasOf(material);
+        if (atlas) {
+          atlases.add(atlas);
+        }
+      }
+    }
+  });
+  return [...atlases];
+};
+
+const sampleAtlas = ({ geometry, slot }: Primitive): void => {
+  const { count } = geometry.getAttribute("position");
+  if (!geometry.hasAttribute("uv")) {
+    geometry.setAttribute(
+      "uv",
+      new THREE.BufferAttribute(new Float32Array(count * 2), 2)
+    );
+  }
+  geometry.setAttribute(
+    ATLAS,
+    new THREE.BufferAttribute(
+      new Float32Array(count).fill(slot === ATLAS ? 1 : 0),
+      1
+    )
+  );
+};
+
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const gltf = await parsed(bytes);
   const [clip] = gltf.animations;
@@ -347,7 +427,21 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
   const seat = toGame(rootBone, pelvis.get("seated") ?? new THREE.Vector3());
   const stand = toGame(rootBone, pelvis.get("rest") ?? new THREE.Vector3());
   const primitives = primitivesOf(gltf.scene);
+  const atlases = atlasesOf(gltf.scene);
+  if (atlases.length > 1) {
+    releaseOf(gltf.scene, primitives)();
+    throw new Error(
+      `The rider model ${url} paints from ${atlases.length} atlases; a rider has one.`
+    );
+  }
+  const [atlas = null] = atlases;
+  if (atlas) {
+    for (const primitive of primitives) {
+      sampleAtlas(primitive);
+    }
+  }
   return decoded(gltf.scene, primitives, {
+    atlas,
     bones,
     poses,
     primitives,

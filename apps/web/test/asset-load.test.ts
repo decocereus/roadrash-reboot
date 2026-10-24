@@ -150,6 +150,7 @@ interface Parsing {
 }
 
 const fakeRider = (): RiderAsset => ({
+  atlas: null,
   bones: [],
   poses: new Map(),
   primitives: [],

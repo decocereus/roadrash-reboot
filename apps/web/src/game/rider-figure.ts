@@ -79,7 +79,7 @@ export const createRiderFigure = (
     first.skeleton.bones,
     first.skeleton.boneInverses
   );
-  const body = new THREE.SkinnedMesh(painted.cel, shading.paint());
+  const body = new THREE.SkinnedMesh(painted.cel, shading.paint(asset.atlas));
   body.castShadow = true;
   body.receiveShadow = true;
   first.parent?.add(body);
