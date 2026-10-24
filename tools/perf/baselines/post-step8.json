@@ -178,30 +178,6 @@
       "value": 118884
     },
     {
-      "environment": "build",
-      "metric": "assets.glb.rider_kylie",
-      "scenario": null,
-      "side": "A",
-      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
-      "value": 343368
-    },
-    {
-      "environment": "build",
-      "metric": "assets.glb.rider_ronaldo",
-      "scenario": null,
-      "side": "A",
-      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
-      "value": 311148
-    },
-    {
-      "environment": "build",
-      "metric": "assets.texture.total",
-      "scenario": null,
-      "side": "A",
-      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
-      "value": 11184808
-    },
-    {
       "environment": "gpu-helium-metal",
       "metric": "riders.cpu.p95",
       "scenario": "reference-v1",
@@ -504,6 +480,62 @@
       "side": "A+B",
       "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
       "value": 78
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_altman",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 347996
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_kylie",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 344904
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_mbappe",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 236968
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_musk",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 261240
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_ranveer",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 302744
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_ronaldo",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 316580
+    },
+    {
+      "environment": "build",
+      "metric": "assets.texture.total",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "value": 33554424
     }
   ],
   "revisions": {
@@ -605,28 +637,28 @@
       "environment": "build",
       "facts": {
         "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
-        "glbA": "{\"bike\":122108,\"car\":53048,\"ghost\":116948,\"oni\":126272,\"rider_a\":238128,\"rider_b\":238876,\"rider_c\":237836,\"rider_kylie\":343368,\"rider_ronaldo\":311148,\"seraph\":118884,\"van\":47784}",
-        "textureBytesA": "{\"rider_kylie\":5592404,\"rider_ronaldo\":5592404}",
-        "builtA": "{\"client\":[14020300,12229823],\"game\":[13999131,12220321],\"gameIncremental\":[2722888,1440126],\"kit\":[11108906,10723849],\"root\":[11276243,10780195],\"uploaderIncremental\":[3413,1726],\"worker\":[1071785,277692]}",
-        "builtB": "{\"client\":[14020300,12229820],\"game\":[13999131,12220321],\"gameIncremental\":[2722888,1440127],\"kit\":[11108906,10723846],\"root\":[11276243,10780194],\"uploaderIncremental\":[3413,1726],\"worker\":[1071799,277695]}",
-        "artifactDigestA": "8a7c28ec637914c2af7457d88889e93c4c63fc8a8339c1e46239b44b59b359eb",
-        "artifactDigestB": "2fdd8998e9f80367c870516a0aa286a5d843a2c073bd30677e4d32bf92bb5d7c",
-        "cloneKiB": "2300744",
-        "harnessDigest": "eaf68afbc5cafaaabdc303b6db0ac3b2bca04bd97a897456aa3b1aaeb8b642cd",
-        "lockfileSha256": "c17072ada1c7235d2910c14d02abdbc045e559180f4d557f980e7c0fecf3ac59",
+        "glbA": "{\"bike\":122108,\"car\":53048,\"ghost\":116948,\"oni\":126272,\"rider_a\":238128,\"rider_altman\":347996,\"rider_b\":238876,\"rider_c\":237836,\"rider_kylie\":344904,\"rider_mbappe\":236968,\"rider_musk\":261240,\"rider_ranveer\":302744,\"rider_ronaldo\":316580,\"seraph\":118884,\"van\":47784}",
+        "textureBytesA": "{\"rider_altman\":5592404,\"rider_kylie\":5592404,\"rider_mbappe\":5592404,\"rider_musk\":5592404,\"rider_ranveer\":5592404,\"rider_ronaldo\":5592404}",
+        "builtA": "{\"client\":[15183186,13126829],\"game\":[15162017,13117327],\"gameIncremental\":[3864184,2329107],\"kit\":[11130367,10731810],\"root\":[11297833,10788220],\"worker\":[1085016,280372]}",
+        "builtB": "{\"client\":[15183186,13126829],\"game\":[15162017,13117327],\"gameIncremental\":[3864184,2329107],\"kit\":[11130367,10731810],\"root\":[11297833,10788220],\"worker\":[1085032,280376]}",
+        "artifactDigestA": "acfdb908b6bdd0a2286f9fa9bfc77c5b544744ec5542f2a1ded49397fd9b310e",
+        "artifactDigestB": "58a27bbba91a12504701fb6e44a2ea21c1376e1e0062d9cce40b1f046a52b7d0",
+        "cloneKiB": "2310004",
+        "harnessDigest": "85e9e9e3af2f303177a9cd79badca969ddd2cca741113e71a1338e22477ea934",
+        "lockfileSha256": "a407941d76ce22da749faf0550b7b2008712b0809e86e07f85456656247134f0",
         "machine": "Mac16,8",
         "node": "v24.22.1",
         "os": "macOS 26.6.2 (25G83)",
         "pnpm": "11.21.0",
-        "sideASourceDigest": "5cea7b63b895fddb05b605f6f9a4ed15ec0dbea6b42ee7d7778e9620aad1c106",
-        "sideBSourceDigest": "5cea7b63b895fddb05b605f6f9a4ed15ec0dbea6b42ee7d7778e9620aad1c106",
-        "wallMs": "{\"build\":4698,\"materialize\":14109,\"node\":0,\"total\":18958}"
+        "sideASourceDigest": "9650b477b56f027c7d10206dbf963beb9ca553ea7995c83ea4076b065d231c45",
+        "sideBSourceDigest": "9650b477b56f027c7d10206dbf963beb9ca553ea7995c83ea4076b065d231c45",
+        "wallMs": "{\"build\":4147,\"materialize\":12388,\"node\":0,\"total\":16674}"
       },
-      "id": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "id": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "lanes": ["build"],
       "sides": {
-        "A": "c943fead285dff6662467ae03ce287068d415a5c",
-        "B": "c943fead285dff6662467ae03ce287068d415a5c"
+        "A": "6011594136d79e153d28a3689ed5575634cc1a6b",
+        "B": "6011594136d79e153d28a3689ed5575634cc1a6b"
       }
     },
     {

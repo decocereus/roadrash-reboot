@@ -14,8 +14,8 @@
         "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
       },
       {
-        "file": "tools/perf/baselines/post-step8.celebrities.json.gz",
-        "sha256": "6c4e2ed8db757b225d6869a97a7661a08f97b76f263168bb3ed14cecfe8ee9ad"
+        "file": "tools/perf/baselines/post-step8.six-celebrities.json.gz",
+        "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
       },
       {
         "file": "tools/perf/baselines/post-step8.riders.json.gz",
@@ -36,7 +36,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "d29179c0874e8eca74abdbcd2d4f5c1311713521d9a1d5196fad4e964d13f0e5"
+    "summarySha256": "2d56e4b39c7a947ee7a3e25532de60c3cf7b3b1aba8a064ce2f979b17236958d"
   },
   "limits": [
     {
@@ -101,6 +101,18 @@
     },
     {
       "derivation": "exact baseline",
+      "value": 347996,
+      "baseline": 347996,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_altman",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
       "value": 238876,
       "baseline": 238876,
       "direction": "max",
@@ -125,26 +137,62 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 343368,
-      "baseline": 343368,
+      "value": 344904,
+      "baseline": 344904,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.rider_kylie",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 311148,
-      "baseline": 311148,
+      "value": 236968,
+      "baseline": 236968,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_mbappe",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 261240,
+      "baseline": 261240,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_musk",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 302744,
+      "baseline": 302744,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_ranveer",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 316580,
+      "baseline": 316580,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.rider_ronaldo",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "unit": "B"
     },
     {
@@ -185,14 +233,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 11184808,
-      "baseline": 11184808,
+      "value": 33554424,
+      "baseline": 33554424,
       "direction": "max",
       "environment": "build",
       "metric": "assets.texture.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "unit": "B"
     },
     {
