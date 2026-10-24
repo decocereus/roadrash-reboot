@@ -450,7 +450,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
 
 Source files:
 
@@ -466,7 +466,9 @@ Source files:
 - `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-views.ts`
 
-Test files: none
+Test files:
+
+- `apps/web/test/bike-contact.ts`
 
 ### The five roads
 

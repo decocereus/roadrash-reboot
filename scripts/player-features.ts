@@ -400,6 +400,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/game/actors.ts",
       "apps/web/src/game/bike-models.ts",
+      "apps/web/test/bike-contact.ts",
       "apps/web/src/game/rider-*.ts",
       "apps/web/src/game/figure-*.ts",
       "apps/web/src/career/colours.ts",

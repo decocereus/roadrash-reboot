@@ -11,6 +11,7 @@
         "src/routes/**/*.{ts,tsx}",
         "src/**/*.test.ts",
         "test/**/*.test.ts",
+        "test/bike-contact.ts",
         "test/renderer-lifecycle.ts"
       ],
       "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
