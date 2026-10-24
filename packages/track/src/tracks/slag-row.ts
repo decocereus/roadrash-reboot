@@ -1,4 +1,4 @@
-import { block } from "../road.ts";
+import { eased } from "../alignment.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
@@ -36,56 +36,57 @@ export const slagRow: TrackPlan = {
   leadInLength: 80,
   level: 1,
   name: "Slag Row",
+  pieces: eased([
+    [320, 0, 0],
+    [160, 88, 0],
+    [480, 0, 0],
+    [30, 0, 1],
+    [30, 0, -1],
+    [440, -20, 0],
+    [120, 0, -5],
+    [120, 0, 5],
+    [160, -90, 0],
+    [560, 0, 2],
+    [200, 46, 0],
+    [150, -46, 0],
+    [300, 0, 10],
+    [80, 0, 4],
+    [80, 0, -6],
+    [300, -10, -8],
+    [160, 90, 0],
+    [290, 0, 0],
+    [38, 0, 1.4],
+    [38, 0, -1.4],
+    [344, 0, 0],
+    [160, -88, 0],
+    [560, 0, 0],
+    [160, 92, 0],
+    [330, 0, 2],
+    [180, 40, 0],
+    [160, -40, 0],
+    [260, 0, 8],
+    [85, 0, 4],
+    [85, 0, -6],
+    [300, -12, -6],
+    [300, 0, 0],
+    [160, -90, 0],
+    [400, 0, 0],
+    [200, 30, 0],
+    [240, 0, 0],
+    [160, 88, 0],
+    [360, 0, 0],
+  ]),
   region: "lowtown",
   roadblocks: [],
   runoffLength: 400,
-  sections: [
-    { climb: 0, length: 320, turnDegrees: 0 },
-    { climb: 0, length: 160, turnDegrees: 88 },
-    { climb: 0, length: 480, turnDegrees: 0 },
-    { climb: 1, length: 30, turnDegrees: 0 },
-    { climb: -1, length: 30, turnDegrees: 0 },
-    { climb: 0, length: 440, turnDegrees: -20 },
-    { climb: -5, length: 120, turnDegrees: 0 },
-    { climb: 5, length: 120, turnDegrees: 0 },
-    { climb: 0, length: 160, turnDegrees: -90 },
-    { climb: 2, length: 560, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: 46 },
-    { climb: 0, length: 150, turnDegrees: -46 },
-    { climb: 10, length: 300, turnDegrees: 0 },
-    { climb: 4, length: 80, turnDegrees: 0 },
-    { climb: -6, length: 80, turnDegrees: 0 },
-    { climb: -8, length: 300, turnDegrees: -10 },
-    { climb: 0, length: 160, turnDegrees: 90 },
-    { climb: 0, length: 290, turnDegrees: 0 },
-    { climb: 1.4, length: 38, turnDegrees: 0 },
-    { climb: -1.4, length: 38, turnDegrees: 0 },
-    { climb: 0, length: 344, turnDegrees: 0 },
-    { climb: 0, length: 160, turnDegrees: -88 },
-    { climb: 0, length: 560, turnDegrees: 0 },
-    { climb: 0, length: 160, turnDegrees: 92 },
-    { climb: 2, length: 330, turnDegrees: 0 },
-    { climb: 0, length: 180, turnDegrees: 40 },
-    { climb: 0, length: 160, turnDegrees: -40 },
-    { climb: 8, length: 260, turnDegrees: 0 },
-    { climb: 4, length: 85, turnDegrees: 0 },
-    { climb: -6, length: 85, turnDegrees: 0 },
-    { climb: -6, length: 300, turnDegrees: -12 },
-    { climb: 0, length: 300, turnDegrees: 0 },
-    { climb: 0, length: 160, turnDegrees: -90 },
-    { climb: 0, length: 400, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: 30 },
-    { climb: 0, length: 240, turnDegrees: 0 },
-    { climb: 0, length: 160, turnDegrees: 88 },
-    { climb: 0, length: 360, turnDegrees: 0 },
-  ],
   seed: 0x5a_9c_33,
   shoulderWidth: 0.5,
+  start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 8,
   vergeWidth: 6,
 };
 
-const slagRowLevel2 = block([
+const slagRowLevel2 = eased([
   [290, 0, 0],
   [150, -90, 0],
   [260, 0, -4],
@@ -95,7 +96,7 @@ const slagRowLevel2 = block([
   [180, 0, 0],
 ]);
 
-const slagRowLevel3 = block([
+const slagRowLevel3 = eased([
   [220, 0, 6],
   [80, 0, 4],
   [90, 0, -7],
@@ -104,7 +105,7 @@ const slagRowLevel3 = block([
   [400, 0, 0],
 ]);
 
-const slagRowLevel4 = block([
+const slagRowLevel4 = eased([
   [340, 0, 0],
   [130, -88, 0],
   [160, 50, 0],
@@ -114,7 +115,7 @@ const slagRowLevel4 = block([
   [140, 0, 0],
 ]);
 
-const slagRowLevel5 = block([
+const slagRowLevel5 = eased([
   [300, 0, 8],
   [90, 0, 5],
   [100, 0, -9],

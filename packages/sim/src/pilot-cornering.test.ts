@@ -1,3 +1,5 @@
+import { eased } from "@racer/track/alignment";
+import type { TrackPieces } from "@racer/track/alignment";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
@@ -202,9 +204,9 @@ const MIDDLING_SKILL = 0.8;
 
 describe("pacing by the gap to the player", () => {
   it("a rival well clear of the player rolls off to the level's share of its top speed, and rides flat out once the player is out", () => {
-    const eased: PacingRules = { catchUp: 0, leadEase: 0.2 };
+    const easing: PacingRules = { catchUp: 0, leadEase: 0.2 };
     const free: PacingRules = { catchUp: 0, leadEase: 0 };
-    const [paced, unpaced, playerOut] = [eased, free, eased].map((pacing) => {
+    const [paced, unpaced, playerOut] = [easing, free, easing].map((pacing) => {
       const state = pacedPair(straight, pacing);
       riderAt(state, 1).s = 400;
       return state;
@@ -245,22 +247,25 @@ describe("pacing by the gap to the player", () => {
   });
 });
 
-const planningRoad = (
-  sections: readonly { climb: number; length: number; turnDegrees: number }[]
-): Track =>
+const planningRoad = (pieces: TrackPieces): Track =>
   compileTrack({
     ...ridgeRoad,
     features: [],
     hazardsPerKilometre: 0,
-    sections,
+    pieces,
     trafficPerKilometre: 0,
   });
 
-const bendAfter = (straightFor: number, degrees: number, length: number) => [
-  { climb: 0, length: straightFor, turnDegrees: 0 },
-  { climb: 0, length, turnDegrees: degrees },
-  { climb: 0, length: 3000, turnDegrees: 0 },
-];
+const bendAfter = (
+  straightFor: number,
+  degrees: number,
+  length: number
+): TrackPieces =>
+  eased([
+    [straightFor, 0, 0],
+    [length, degrees, 0],
+    [3000, 0, 0],
+  ]);
 
 interface PlannedStep {
   readonly brake: number;
@@ -342,7 +347,7 @@ describe("the pilot plans its speed along the road", () => {
         },
       ],
       hazardsPerKilometre: 0,
-      sections: bendAfter(550, -60, 200),
+      pieces: bendAfter(550, -60, 200),
       trafficPerKilometre: 0,
     });
     const run = ridePlanned(
@@ -400,13 +405,15 @@ describe("the pilot plans its speed along the road", () => {
   });
 
   it("slows for a bend beyond a blind crest before it takes off, so it lands at a speed it can hold", () => {
-    const road = planningRoad([
-      { climb: 0, length: 400, turnDegrees: 0 },
-      { climb: 15, length: 120, turnDegrees: 0 },
-      { climb: 0, length: 1, turnDegrees: 0 },
-      { climb: 0, length: 150, turnDegrees: -60 },
-      { climb: 0, length: 3000, turnDegrees: 0 },
-    ]);
+    const road = planningRoad(
+      eased([
+        [400, 0, 0],
+        [120, 0, 15],
+        [1, 0, 0],
+        [150, -60, 0],
+        [3000, 0, 0],
+      ])
+    );
     const run = ridePlanned(
       road,
       { lateralSpeed: 0, s: 200, speed: 200 / KMH, x: 1.8 },
@@ -426,7 +433,7 @@ describe("the pilot plans its speed along the road", () => {
         features: [],
         hazardsPerKilometre: 0,
         lanesEachWay: 2,
-        sections: [{ climb: 0, length: 6000, turnDegrees: 0 }],
+        pieces: eased([[6000, 0, 0]]),
         trafficPerKilometre: 0,
       }),
       hazards: [

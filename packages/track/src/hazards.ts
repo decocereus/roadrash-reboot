@@ -1,3 +1,4 @@
+import { pieceSpans } from "./alignment.ts";
 import { reservationOf } from "./features.ts";
 import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
@@ -37,7 +38,7 @@ export const HAZARD_START_CLEARANCE = 450;
 export const HAZARD_FINISH_CLEARANCE = 150;
 export const HAZARD_RAMP_CLEARANCE = 30;
 const HAZARD_LEAST_GAP = 60;
-const BEND_DEGREES = 20;
+const BEND_TURN = (20 * Math.PI) / 180;
 const SIGHT_STEP = 5;
 const EYE_HEIGHT = 1.2;
 const TARGET_HEIGHT = 0.1;
@@ -287,24 +288,22 @@ const placeable = (
 
 const placesOf = (road: Road): Place[] => {
   const places: Place[] = [];
-  const { sections } = road.plan;
-  let from = 0;
-  for (const [index, section] of sections.entries()) {
-    const to = from + section.length;
-    if (Math.abs(section.turnDegrees) >= BEND_DEGREES) {
-      const middle = from + section.length / 2;
+  const spans = pieceSpans(road.plan.pieces);
+  for (const [index, span] of spans.entries()) {
+    const { from, piece, to } = span;
+    if (Math.abs(span.turn) >= BEND_TURN) {
+      const middle = from + piece.length / 2;
       const inside = Math.sign(sampleOf(road, road.curvature, middle)) || 1;
       places.push(
-        { inside, s: from + section.length * TURN_IN_SHARE, setting: "turnIn" },
+        { inside, s: from + piece.length * TURN_IN_SHARE, setting: "turnIn" },
         { inside, s: middle, setting: "apex" },
         { inside, s: to + EXIT_RUN, setting: "exit" }
       );
     }
-    const next = sections[index + 1];
-    if (section.climb >= CREST_CLIMB && next && next.climb <= 0) {
+    const next = spans[index + 1];
+    if (span.climb >= CREST_CLIMB && next && next.climb <= 0) {
       places.push({ inside: 0, s: to + CREST_RUN, setting: "crest" });
     }
-    from = to;
   }
   return places.toSorted((left, right) => left.s - right.s);
 };

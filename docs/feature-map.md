@@ -30,6 +30,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 
 ### Platform
 
+- [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
 - [Track compiler](#track-compiler): `track-compiler`
@@ -517,6 +518,40 @@ Test files:
 
 ## Platform
 
+### Madrid corridor and data credits
+
+Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit, and the public data credits page. The corridor is not wired into a track or the renderer.
+
+- Id: `madrid-corridor`
+- Start: `tools/madrid/generate.ts`, `packages/track/src/madrid-corridor.ts`, `apps/web/src/routes/credits.tsx`
+- Docs: [docs/madrid-corridor.md#route-and-coordinates](madrid-corridor.md#route-and-coordinates), [docs/madrid-corridor.md#fitting-track-pieces](madrid-corridor.md#fitting-track-pieces)
+- Verify: [credits.md](../.claude/skills/verify-rushline/features/credits.md)
+- Perf: none yet
+- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `apps/web/src/routes/credits.tsx`
+
+Source files:
+
+- `apps/web/src/routes/credits.tsx`
+- `packages/track/src/madrid-corridor.ts`
+- `packages/track/src/madrid-schema.ts`
+- `packages/track/src/madrid-sources.ts`
+- `tools/madrid/fit.ts`
+- `tools/madrid/generate.ts`
+- `tools/madrid/src/acquire.ts`
+- `tools/madrid/src/context.ts`
+- `tools/madrid/src/elevation.ts`
+- `tools/madrid/src/fit-system.ts`
+- `tools/madrid/src/fit.ts`
+- `tools/madrid/src/geometry.ts`
+- `tools/madrid/src/preview.ts`
+- `tools/madrid/src/roads.ts`
+- `tools/madrid/src/schema.ts`
+
+Test files:
+
+- `tools/madrid/test/corridor.test.ts`
+- `tools/madrid/test/fit.test.ts`
+
 ### Race simulation core
 
 `createRace` and `stepRace`, the plain-data `RaceState`, race setups and their validation, and the readonly `RaceView` and `RaceRun` the browser holds a race through.
@@ -567,22 +602,25 @@ Test files:
 
 ### Track compiler
 
-Compiling a `TrackPlan` into the `Track` the simulation and renderer share: curvature, height, lanes and scattered props, the plan for each level, and the `trackFor` registry.
+Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, lanes and scattered props, the plan for each level, and the `trackFor` registry.
 
 - Id: `track-compiler`
-- Start: `packages/track/src/track.ts`, `packages/track/src/roads.ts`
+- Start: `packages/track/src/alignment.ts`, `packages/track/src/track.ts`, `packages/track/src/roads.ts`
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
 - Verify: none yet
 - Perf: none yet
-- Owns: `packages/track/src/track.ts`, `packages/track/src/road.ts`, `packages/track/src/roads.ts`
+- Owns: `packages/track/src/alignment*.ts`, `packages/track/src/track.ts`, `packages/track/src/road.ts`, `packages/track/src/roads.ts`
 
 Source files:
 
+- `packages/track/src/alignment.ts`
 - `packages/track/src/road.ts`
 - `packages/track/src/roads.ts`
 - `packages/track/src/track.ts`
 
-Test files: none
+Test files:
+
+- `packages/track/src/alignment.test.ts`
 
 ### Renderer core and frame loop
 

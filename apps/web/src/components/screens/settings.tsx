@@ -143,6 +143,15 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
           >
             B while riding marks the moment · Session {session}
           </p>
+          <a
+            className="text-paper/75 underline underline-offset-4"
+            href="/credits"
+            rel="noopener noreferrer"
+            style={{ fontSize: stagePx(20) }}
+            target="_blank"
+          >
+            Data credits (new tab)
+          </a>
         </BarStrip>
       </Stage>
     </Screen>

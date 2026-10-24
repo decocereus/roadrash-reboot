@@ -13,7 +13,7 @@ import { neutralInput } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
 import { TICK_SECONDS } from "@racer/sim/state";
-import type { RiderInput } from "@racer/sim/state";
+import type { RaceSetup, RiderInput } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
 import { digestOf } from "./result.ts";
@@ -157,15 +157,58 @@ export const validateWorkload = (
 export const workloadDigestOf = (rows: WorkloadRows): string =>
   digestOf(rows.ticks, rows.modes, rows.ahead);
 
+const withoutSignedZero = (values: Float64Array): Float64Array =>
+  Float64Array.from(values, (value) => value + 0);
+
+type Track = RaceSetup["track"];
+
+type RaceSettings = Omit<
+  Track["plan"],
+  "leadInLength" | "pieces" | "runoffLength" | "start"
+>;
+
+interface RaceTrack extends Omit<Track, "plan"> {
+  readonly plan: RaceSettings;
+}
+
+const raceSettings = (plan: Track["plan"]): RaceSettings => ({
+  features: plan.features,
+  hazardsPerKilometre: plan.hazardsPerKilometre,
+  id: plan.id,
+  laneWidth: plan.laneWidth,
+  lanesEachWay: plan.lanesEachWay,
+  level: plan.level,
+  name: plan.name,
+  region: plan.region,
+  roadblocks: plan.roadblocks,
+  seed: plan.seed,
+  shoulderWidth: plan.shoulderWidth,
+  trafficPerKilometre: plan.trafficPerKilometre,
+  vergeWidth: plan.vergeWidth,
+});
+
+const raceTrack = (track: Track): RaceTrack => ({
+  ...track,
+  curvature: withoutSignedZero(track.curvature),
+  heading: withoutSignedZero(track.heading),
+  plan: raceSettings(track.plan),
+  slope: withoutSignedZero(track.slope),
+  slopeRate: withoutSignedZero(track.slopeRate),
+  worldX: withoutSignedZero(track.worldX),
+  worldY: withoutSignedZero(track.worldY),
+  worldZ: withoutSignedZero(track.worldZ),
+});
+
 export const scenarioHash = (scenario: Scenario): string => {
   const setup = benchSetup(scenario.bench);
+  const track = raceTrack(setup.track);
   return digestOf({
     control: "pilot every rider in index order, then one step",
     race: benchRaces[scenario.bench],
     scenario,
-    setup: digestOf(setup),
+    setup: digestOf({ ...setup, track }),
     tickSeconds: TICK_SECONDS,
-    track: digestOf(setup.track),
+    track: digestOf(track),
     validator: {
       aheadMetres: RIVALS_AHEAD_METRES,
       search: SEARCH_TICKS,

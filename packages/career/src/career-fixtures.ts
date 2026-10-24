@@ -3,6 +3,7 @@ import type { RivalId } from "@racer/sim/cast";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
 import type { RaceState, RiderInput, RiderState } from "@racer/sim/state";
+import { eased } from "@racer/track/alignment";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 
@@ -25,7 +26,7 @@ export const TICKS = 60;
 export const road = compileTrack({
   ...ridgeRoad,
   features: [],
-  sections: [{ climb: 0, length: 9000, turnDegrees: 0 }],
+  pieces: eased([[9000, 0, 0]]),
   trafficPerKilometre: 0,
 });
 

@@ -1,0 +1,104 @@
+[
+  {
+    "file": "roads",
+    "source": "ign-roads",
+    "url": "https://servicios.idee.es/wfs-inspire/transportes?service=WFS&request=GetFeature&version=2.0.0&typeNames=tn-ro%3ARoadLink&srsName=EPSG%3A25830&bbox=-3.745%2C40.400%2C-3.680%2C40.426%2Curn%3Aogc%3Adef%3Acrs%3AOGC%3A1.3%3ACRS84&count=10000",
+    "sha256": "5b31770a6168a3b4988469a4eeb6c17050a668d32ebc119ab3880c102a49e7f4"
+  },
+  {
+    "file": "elev",
+    "source": "ign-elevation",
+    "url": "https://servicios.idee.es/wcs-inspire/mdt?service=WCS&version=1.0.0&request=GetCoverage&coverage=Elevacion25830_5&crs=EPSG%3A25830&bbox=436000%2C4471500%2C443000%2C4476500&width=1400&height=1000&format=ArcGrid",
+    "sha256": "9852435002b55956354be14c979900312e7ba0e632eb74fae97c5b3ca0001255"
+  },
+  {
+    "file": "widths",
+    "source": "madrid-widths",
+    "url": "https://sigma.madrid.es/hosted/rest/services/CARTOGRAFIA/ANCHO_MEDIO_VIARIO/MapServer/0/query?where=1%3D1&geometry=-3.745%2C40.400%2C-3.680%2C40.426&geometryType=esriGeometryEnvelope&inSR=4326&outSR=25830&outFields=%2A&f=geojson&orderByFields=OBJECTID_1&resultRecordCount=10000",
+    "sha256": "62eba37c78e325b71d4b5d060babc3d2fa078aad19d3c6c85b263a1bb552f145"
+  },
+  {
+    "file": "buildings.gz",
+    "source": "microsoft-buildings",
+    "url": "https://bfppub.z5.web.core.windows.net/2026-08-13/global-buildings.geojsonl/RegionName=Spain/quadkey=033111012/part-00079-110f5303-ff85-4c71-a2bf-c6070024fec8.c000.csv.gz",
+    "sha256": "14cbab95898f56e88da54e3a3fe275973ba4ea41d5feb1aa94aae360691b8ff6"
+  },
+  {
+    "file": "signals-csv",
+    "source": "madrid-signals",
+    "url": "https://datos.madrid.es/dataset/202539-0-semaforos-avisadores/resource/202539-2-semaforos-avisadores-csv/download/avisadores_acusticos_entidad_09-2026.csv",
+    "sha256": "06456744d5a224f25e5c2ef190cd3301da1c7bd0c2c27c4dd87a8964fa9cad53"
+  },
+  {
+    "file": "Q1140634.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q1140634.json?revision=2552056160",
+    "sha256": "f6b977e76e7cb2fd952f41da6506062f7d8576f6997f2621125a6776f0cca267"
+  },
+  {
+    "file": "Q171517.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q171517.json?revision=2532756690",
+    "sha256": "bf04f854d9ce93471a60293f64738eda649e0130e4aba5ec8328246b34f35fa5"
+  },
+  {
+    "file": "Q1849031.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q1849031.json?revision=2411968257",
+    "sha256": "d4129b87a5ca371b1c5a97dc1b19ef9847b18bba9795619d2cf40ab18593e858"
+  },
+  {
+    "file": "Q2092717.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q2092717.json?revision=2558484044",
+    "sha256": "9061c7117d4939ac9d1ecc63013a3087d4ab8250a44cc1637e2db51b5098d2fa"
+  },
+  {
+    "file": "Q2473884.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q2473884.json?revision=2464837181",
+    "sha256": "ce849d8a3c0e2d18f0164377b2e0b31ab0132d6de41c8b48494ea70540e76e61"
+  },
+  {
+    "file": "Q2657591.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q2657591.json?revision=2472456525",
+    "sha256": "e789d8339a87af217fb679e3497113bff1b96fcf511cdfd75e45746ba6766233"
+  },
+  {
+    "file": "Q2838423.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q2838423.json?revision=2541732222",
+    "sha256": "34118703e9a89cb22180089c4c8ca7187d4fc71aa7d0c46093fc24d57f0a1dab"
+  },
+  {
+    "file": "Q465250.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q465250.json?revision=2485958879",
+    "sha256": "005d1d87a05f298dc4605d3482f5e24bdec6aef964b8863a60fb3e358f46e387"
+  },
+  {
+    "file": "Q6091607.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q6091607.json?revision=2154893752",
+    "sha256": "65effc0432c04d7e0299de840f8f85f26707f412f065bbf2ac78a89b09e8cab2"
+  },
+  {
+    "file": "Q849711.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q849711.json?revision=2516689356",
+    "sha256": "ca4add49dd4194cce231a5ce7d7cd15aaf1742dfde523afd589559534445fc8e"
+  },
+  {
+    "file": "Q8771987.json",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q8771987.json?revision=2464837302",
+    "sha256": "3d291a5061597501f8d5a3b166c8bb53c57bad392ceada27623ae0fc0f271487"
+  },
+  {
+    "file": "Q6160850.json",
+    "sha256": "edba023ef0e79dee6ff6e18c8323507222fdbca2910a336d538c5c93f5ca9ddd",
+    "source": "wikidata-landmarks",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q6160850.json?revision=2317743693"
+  }
+]

@@ -39,6 +39,8 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 
 ## Features
 
+- [Data credits](./credits.md): Settings link, source notices and the full building data licence.
+
 - [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): ramps, time in the air, landings, and landing dust.

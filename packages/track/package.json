@@ -9,6 +9,9 @@
   "scripts": {
     "typecheck": "tsrs --noEmit"
   },
+  "dependencies": {
+    "effect": "4.0.0"
+  },
   "devDependencies": {
     "vitest": "5.0.0"
   }

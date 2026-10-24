@@ -1,4 +1,4 @@
-import { block } from "../road.ts";
+import { eased } from "../alignment.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
@@ -28,60 +28,61 @@ export const hollowPineRoad: TrackPlan = {
   leadInLength: 80,
   level: 1,
   name: "Hollow Pine Road",
+  pieces: eased([
+    [260, 0, 0],
+    [200, -20, 0],
+    [180, 30, 3],
+    [180, -34, 3],
+    [140, 0, 6],
+    [100, 0, -6],
+    [160, 44, -3],
+    [120, -40, 0],
+    [120, 38, 0],
+    [340, 0, -8],
+    [220, -60, -4],
+    [160, 0, 4],
+    [90, 0, 5],
+    [90, 0, -6],
+    [300, 32, -2],
+    [200, -28, 0],
+    [220, 0, 0],
+    [140, 64, 0],
+    [380, 0, 0],
+    [200, -26, 0],
+    [180, 0, -4],
+    [160, 48, -3],
+    [140, -44, -2],
+    [200, 0, 2],
+    [260, 18, 6],
+    [100, 0, 4],
+    [100, 0, -6],
+    [220, -30, -4],
+    [140, 52, 0],
+    [350, 0, -6],
+    [190, -66, -4],
+    [220, 24, 0],
+    [260, -36, 3],
+    [140, 0, 5],
+    [100, 0, -7],
+    [220, 30, -3],
+    [140, -58, 0],
+    [160, 50, 0],
+    [240, 0, 0],
+    [200, -28, 0],
+    [150, 66, 0],
+    [380, 0, 0],
+  ]),
   region: "kettle-woods",
   roadblocks: [],
   runoffLength: 400,
-  sections: [
-    { climb: 0, length: 260, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: -20 },
-    { climb: 3, length: 180, turnDegrees: 30 },
-    { climb: 3, length: 180, turnDegrees: -34 },
-    { climb: 6, length: 140, turnDegrees: 0 },
-    { climb: -6, length: 100, turnDegrees: 0 },
-    { climb: -3, length: 160, turnDegrees: 44 },
-    { climb: 0, length: 120, turnDegrees: -40 },
-    { climb: 0, length: 120, turnDegrees: 38 },
-    { climb: -8, length: 340, turnDegrees: 0 },
-    { climb: -4, length: 220, turnDegrees: -60 },
-    { climb: 4, length: 160, turnDegrees: 0 },
-    { climb: 5, length: 90, turnDegrees: 0 },
-    { climb: -6, length: 90, turnDegrees: 0 },
-    { climb: -2, length: 300, turnDegrees: 32 },
-    { climb: 0, length: 200, turnDegrees: -28 },
-    { climb: 0, length: 220, turnDegrees: 0 },
-    { climb: 0, length: 140, turnDegrees: 64 },
-    { climb: 0, length: 380, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: -26 },
-    { climb: -4, length: 180, turnDegrees: 0 },
-    { climb: -3, length: 160, turnDegrees: 48 },
-    { climb: -2, length: 140, turnDegrees: -44 },
-    { climb: 2, length: 200, turnDegrees: 0 },
-    { climb: 6, length: 260, turnDegrees: 18 },
-    { climb: 4, length: 100, turnDegrees: 0 },
-    { climb: -6, length: 100, turnDegrees: 0 },
-    { climb: -4, length: 220, turnDegrees: -30 },
-    { climb: 0, length: 140, turnDegrees: 52 },
-    { climb: -6, length: 350, turnDegrees: 0 },
-    { climb: -4, length: 190, turnDegrees: -66 },
-    { climb: 0, length: 220, turnDegrees: 24 },
-    { climb: 3, length: 260, turnDegrees: -36 },
-    { climb: 5, length: 140, turnDegrees: 0 },
-    { climb: -7, length: 100, turnDegrees: 0 },
-    { climb: -3, length: 220, turnDegrees: 30 },
-    { climb: 0, length: 140, turnDegrees: -58 },
-    { climb: 0, length: 160, turnDegrees: 50 },
-    { climb: 0, length: 240, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: -28 },
-    { climb: 0, length: 150, turnDegrees: 66 },
-    { climb: 0, length: 380, turnDegrees: 0 },
-  ],
   seed: 0x4f_17_e2,
   shoulderWidth: 0.6,
+  start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 6,
   vergeWidth: 5,
 };
 
-const hollowPineRoadLevel2 = block([
+const hollowPineRoadLevel2 = eased([
   [200, -36, 2],
   [150, 40, 2],
   [120, 0, 6],
@@ -91,7 +92,7 @@ const hollowPineRoadLevel2 = block([
   [190, 0, 0],
 ]);
 
-const hollowPineRoadLevel3 = block([
+const hollowPineRoadLevel3 = eased([
   [160, 52, 0],
   [140, -52, 0],
   [110, 0, 5],
@@ -100,7 +101,7 @@ const hollowPineRoadLevel3 = block([
   [475, 0, -6],
 ]);
 
-const hollowPineRoadLevel4 = block([
+const hollowPineRoadLevel4 = eased([
   [200, -24, 8],
   [100, 0, 6],
   [95, 0, -8],
@@ -109,7 +110,7 @@ const hollowPineRoadLevel4 = block([
   [485, 0, -2],
 ]);
 
-const hollowPineRoadLevel5 = block([
+const hollowPineRoadLevel5 = eased([
   [160, 46, -4],
   [140, -58, -2],
   [420, 0, 6],

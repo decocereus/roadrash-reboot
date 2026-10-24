@@ -27,7 +27,9 @@
     "perf:gpu": "node tools/perf/gpu.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
-    "verify": "node scripts/verify.ts"
+    "verify": "node scripts/verify.ts",
+    "madrid": "node tools/madrid/generate.ts",
+    "madrid:fit": "node tools/madrid/fit.ts"
   },
   "dependencies": {
     "effect": "4.0.0"

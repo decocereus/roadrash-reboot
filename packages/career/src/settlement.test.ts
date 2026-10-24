@@ -197,8 +197,8 @@ describe("the roads", () => {
         entry.id,
         roadPlans[entry.id].plan.name,
         regionOf(entry.id),
-        roadAtLevel(roadPlans[entry.id], level).sections.reduce(
-          (total, section) => total + section.length,
+        roadAtLevel(roadPlans[entry.id], level).pieces.reduce(
+          (total, piece) => total + piece.length,
           0
         ),
       ])
