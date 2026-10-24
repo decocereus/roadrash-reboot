@@ -22,8 +22,12 @@ const STRAIGHT_REACH_M = 50;
 const STRAIGHT_TURN = 0.05;
 const STRAIGHT_CURVATURE = 1 / 100;
 const WOBBLE_REACH = TICK_RATE / 2;
+const RIDE_LIMIT = TICK_RATE * 400;
+const LEAST_STRAIGHT_SECONDS = 3;
 
 interface Steadiness {
+  readonly finished: boolean;
+  readonly straightSeconds: number;
   readonly heightAcceleration: number;
   readonly yawWobble: number;
 }
@@ -51,7 +55,7 @@ const isStraight = (track: Track, s: number): boolean => {
 const wobble = (values: readonly number[], keep: readonly boolean[]) => {
   const kept: number[] = [];
   for (let at = WOBBLE_REACH; at < values.length - WOBBLE_REACH; at += 1) {
-    if (keep[at]) {
+    if (keep[at] === true) {
       let sum = 0;
       for (let near = at - WOBBLE_REACH; near <= at + WOBBLE_REACH; near += 1) {
         sum += values[near] ?? 0;
@@ -84,7 +88,7 @@ const steadinessOn = (
   const heights: number[] = [];
   const yaws: number[] = [];
   const straight: boolean[] = [];
-  for (let tick = 0; rider.finishTick < 0; tick += 1) {
+  for (let tick = 0; tick < RIDE_LIMIT && rider.finishTick < 0; tick += 1) {
     pilotInput(race, track, 0, input);
     stepRace(race, track, [input]);
     subject.s = rider.s;
@@ -105,26 +109,28 @@ const steadinessOn = (
     const height =
       (heights[at + 1] ?? 0) - 2 * (heights[at] ?? 0) + (heights[at - 1] ?? 0);
     const yaw = (yaws[at + 1] ?? 0) - 2 * (yaws[at] ?? 0) + (yaws[at - 1] ?? 0);
-    if (straight[at]) {
+    if (straight[at] === true) {
       heightAccelerations.push(height / SECONDS ** 2);
     }
     yawAccelerations.push(yaw / SECONDS ** 2);
   }
   return {
+    finished: rider.finishTick >= 0,
     heightAcceleration: rms(heightAccelerations),
+    straightSeconds: heightAccelerations.length * SECONDS,
     yawWobble: wobble(yawAccelerations, straight.slice(1, -1)),
   };
 };
 
-beforeAll(() => {
-  vi.spyOn(Math, "random").mockReturnValue(0.5);
-});
-
-afterAll(() => {
-  vi.restoreAllMocks();
-});
-
 describe("the chase camera on the Casa de Campo hook", () => {
+  beforeAll(() => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+
   it.each(["ostra-sesta-600", "halden-wren-400"] as const)(
     "holds as steady on the straights as on the shakiest existing road, on the %s",
     (bikeId) => {
@@ -132,6 +138,12 @@ describe("the chase camera on the Casa de Campo hook", () => {
         steadinessOn(roadAtLevel(roads[roadId], 1), bikeId)
       );
       const hook = steadinessOn(madridHook, bikeId);
+      for (const ride of [...existing, hook]) {
+        expect(ride.finished).toBeTruthy();
+        expect(ride.straightSeconds).toBeGreaterThanOrEqual(
+          LEAST_STRAIGHT_SECONDS
+        );
+      }
       expect(hook.heightAcceleration).toBeLessThanOrEqual(
         Math.max(...existing.map((road) => road.heightAcceleration))
       );

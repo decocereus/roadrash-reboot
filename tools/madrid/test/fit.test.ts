@@ -194,8 +194,8 @@ describe("fitting pieces to a street", () => {
     const road = sampleAlignment({
       leadInLength: 0,
       pieces: [
-        piece(25, 0),
-        ...Array.from(grades.knots.subarray(1), (endGrade) => ({
+        { ...piece(25, 0), endGrade: grades.knots[1] ?? 0 },
+        ...Array.from(grades.knots.subarray(2), (endGrade) => ({
           ...piece(25, 0),
           endGrade,
         })),
@@ -203,6 +203,7 @@ describe("fitting pieces to a street", () => {
       runoffLength: 0,
       start: { heading: 0, x: 0, z: 0 },
     });
+    expect(road).toHaveLength(knotS.at(-1) ?? 0);
     expect(gradeChangeFlipsPerKilometre(road)).toBeLessThanOrEqual(
       smoothRoad.gradeChangeFlipsPerKilometre
     );

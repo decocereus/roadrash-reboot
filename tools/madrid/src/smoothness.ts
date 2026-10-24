@@ -32,8 +32,10 @@ export const curvatureFlipsPerKilometre = (line: Centreline): number =>
 export const gradeChangeFlipsPerKilometre = (line: Centreline): number =>
   flipsPerKilometre(line.slopeRate, LEVEL_GRADE_CHANGE, line.length);
 
-export const sharpestGradeChange = (line: Centreline): number =>
-  line.slopeRate.reduce(
-    (sharpest, rate) => Math.max(sharpest, Math.abs(rate)),
-    0
-  );
+export const sharpestGradeChange = (line: Centreline): number => {
+  let sharpest = 0;
+  for (const rate of line.slopeRate) {
+    sharpest = Math.max(sharpest, Math.abs(rate));
+  }
+  return sharpest;
+};
