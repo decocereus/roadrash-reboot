@@ -3,7 +3,7 @@ import path from "node:path";
 import { setImmediate as nextTurn } from "node:timers/promises";
 
 import * as THREE from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { AssetRequest } from "../src/asset-load.ts";
 import { createAssetRuntime } from "../src/asset-runtime.ts";
@@ -29,6 +29,10 @@ const urls: ModelUrls = {
     seraph: "/models/seraph.glb",
   },
   car: "/models/car.glb",
+  celebrities: {
+    kylie: "/models/rider_kylie.glb",
+    ronaldo: "/models/rider_ronaldo.glb",
+  },
   figures: [
     "/models/rider_a.glb",
     "/models/rider_b.glb",
@@ -43,7 +47,9 @@ const everyUrl = [
   urls.car,
   urls.van,
   ...urls.figures,
+  ...Object.values(urls.celebrities),
 ].toSorted();
+const onceEach = everyUrl.map(() => 1);
 
 type Answer = () => Promise<Response>;
 
@@ -154,6 +160,7 @@ interface Parsing {
 }
 
 const fakeRider = (): RiderAsset => ({
+  atlas: null,
   bones: [],
   poses: new Map(),
   primitives: [],
@@ -232,17 +239,19 @@ const until = async (test: () => boolean): Promise<void> => {
 };
 
 describe("asset loading through the Effect boundary", () => {
-  it("loads nine models and keeps them until the owner releases them, once each", async () => {
+  it("loads every model and keeps them until the owner releases them, once each", async () => {
     const fetches = fetchesOf();
     const parsing = parsingOf();
     const mounted = mount(runtimeOf(fetches, new Map()), parsing.parsers);
     const outcome = await loadedOf(mounted);
     expect({
       bikes: Object.keys(outcome.assets.bikes).toSorted(),
+      celebrities: Object.keys(outcome.assets.celebrities).toSorted(),
       fetched: [...fetches.calls.keys()].toSorted(),
       figures: outcome.assets.figures.length,
     }).toStrictEqual({
       bikes: ["classic", "ghost", "oni", "seraph"],
+      celebrities: ["kylie", "ronaldo"],
       fetched: everyUrl,
       figures: 3,
     });
@@ -252,9 +261,7 @@ describe("asset loading through the Effect boundary", () => {
     outcome.release();
     mounted.abort();
     await nextTurn();
-    expect([...parsing.releases.values()]).toStrictEqual([
-      1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]);
+    expect([...parsing.releases.values()]).toStrictEqual(onceEach);
     expect({
       fallbacks: mounted.fallbacks,
       settled: mounted.settled.length,
@@ -331,7 +338,11 @@ describe("asset loading through the Effect boundary", () => {
       decodes: next.decodes.get(urls.car),
       fetched: totalOf(fetches.calls),
       kind: second.kind,
-    }).toStrictEqual({ decodes: 1, fetched: 9, kind: "loaded" });
+    }).toStrictEqual({
+      decodes: 1,
+      fetched: everyUrl.length,
+      kind: "loaded",
+    });
   });
 
   it("aborts a pending fetch through its real signal and reports only the interruption", async () => {
@@ -398,7 +409,7 @@ describe("asset loading through the Effect boundary", () => {
       new Map([[urls.van, [async () => await late.promise]]])
     );
     const mounted = mount(runtimeOf(fetchesOf(), new Map()), parsing.parsers);
-    await until(() => parsing.decodes.size === 9);
+    await until(() => parsing.decodes.size === everyUrl.length);
     mounted.abort();
     await nextTurn();
     expect(mounted.settled).toStrictEqual([]);
@@ -406,9 +417,7 @@ describe("asset loading through the Effect boundary", () => {
     await expect(mounted.outcome).resolves.toStrictEqual({
       kind: "interrupted",
     });
-    expect([...parsing.releases.values()]).toStrictEqual([
-      1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]);
+    expect([...parsing.releases.values()]).toStrictEqual(onceEach);
   });
 
   it("releases every finished sibling and the late one when one model fails", async () => {
@@ -420,7 +429,7 @@ describe("asset loading through the Effect boundary", () => {
       ])
     );
     const mounted = mount(runtimeOf(fetchesOf(), new Map()), parsing.parsers);
-    await until(() => parsing.decodes.size === 9);
+    await until(() => parsing.decodes.size === everyUrl.length);
     await nextTurn();
     late.resolve(null);
     const outcome = await mounted.outcome;
@@ -431,7 +440,7 @@ describe("asset loading through the Effect boundary", () => {
     expect({
       broken: parsing.releases.has(urls.figures[1]),
       counts: [...parsing.releases.values()],
-    }).toStrictEqual({ broken: false, counts: [1, 1, 1, 1, 1, 1, 1, 1] });
+    }).toStrictEqual({ broken: false, counts: onceEach.slice(1) });
   });
 
   it("keeps loading when the display font fails and hands its cause to the boundary", async () => {
@@ -474,9 +483,7 @@ describe("asset loading through the Effect boundary", () => {
     });
     await done.promise;
     await nextTurn();
-    expect([...parsing.releases.values()]).toStrictEqual([
-      1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]);
+    expect([...parsing.releases.values()]).toStrictEqual(onceEach);
   });
 });
 
@@ -506,6 +513,7 @@ const riderSummary = (rider: RiderAsset) => {
     nodes += 1;
   });
   return {
+    atlas: rider.atlas?.colorSpace ?? null,
     bones: rider.bones,
     nodes,
     poses: [...rider.poses].map(([name, pose]) => ({
@@ -533,6 +541,10 @@ const summary = (assets: Assets) => ({
     seraph: partsSummary(assets.bikes.seraph),
   },
   car: assets.car.map(primitiveSummary),
+  celebrities: {
+    kylie: riderSummary(assets.celebrities.kylie),
+    ronaldo: riderSummary(assets.celebrities.ronaldo),
+  },
   figures: assets.figures.map(riderSummary),
   van: assets.van.map(primitiveSummary),
 });
@@ -547,7 +559,7 @@ const pinned: Transport = {
 };
 
 describe("the real parser on the pinned models", () => {
-  it("decodes the same assets as before the Effect boundary and releases their geometry", async () => {
+  it("decodes the same assets as before the Effect boundary and releases their geometry and atlases", async () => {
     const runtime = createAssetRuntime(
       { fonts: readyFonts, transport: pinned },
       new Map(),
@@ -561,8 +573,25 @@ describe("the real parser on the pinned models", () => {
         released.push(primitive.slot);
       });
     }
+    const freed: string[] = [];
+    for (const [name, { atlas }] of Object.entries(
+      outcome.assets.celebrities
+    )) {
+      atlas?.addEventListener("dispose", () => {
+        freed.push(name);
+      });
+    }
+    const closes = vi.spyOn(ImageBitmap.prototype, "close");
     outcome.release();
     await nextTurn();
-    expect(released).toStrictEqual(outcome.assets.car.map((each) => each.slot));
+    const closed = Object.values(outcome.assets.celebrities).map(
+      ({ atlas }) =>
+        closes.mock.contexts.filter((bitmap) => bitmap === atlas?.image).length
+    );
+    expect({ closed, freed: freed.toSorted(), released }).toStrictEqual({
+      closed: [1, 1],
+      freed: ["kylie", "ronaldo"],
+      released: outcome.assets.car.map((each) => each.slot),
+    });
   });
 });

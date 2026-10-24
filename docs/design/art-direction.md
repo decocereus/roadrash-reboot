@@ -118,7 +118,21 @@ Agreed October 23, 2026 (`game-design.md` section 0). The six launch celebrities
 
 ### Budget and build
 
-About 900 triangles for a rider, 1,200 for a bike, 500 for a car, and 20 to 200 for a prop. One material per rider and one per bike, coloured by vertex colour and instance colour. Riders share one rig (hips, spine, head, two-bone arms and legs) so every animation works on everyone. Character differences are attached parts: hat brim, veil strip, delivery box, camera, vest, beard, sign.
+About 1,200 triangles for a bike, 500 for a car, and 20 to 200 for a prop. One material per bike, coloured by vertex colour and instance colour. Every rider shares one 53-joint skeleton and one set of poses, so every animation works on everyone, and draws as one skinned mesh.
+
+A generic rider is one of three builds coloured through the material slots `suit`, `suit2`, `helmet` and `helmet2`, which the race tints with each rider's palette. A celebrity rider is painted instead. It has up to 31,500 triangles and one material shared by the body and the helmet, which is a separate mesh bound only to the head. That material samples one 1024 × 1024 sRGB albedo atlas through `TEXCOORD_0`. The atlas holds material colours and drawn ink only, with no baked light, normal map or face texture, because the renderer adds the cel bands, gloss, rim and outline. Every part of a celebrity paints from the atlas, and the loader refuses a rider that mixes atlas parts and colour slots.
+
+The Blender master and the PNG atlas stay with the art. Export the rider to `tools/blender/out/rider_<name>.glb`, then `node tools/blender/compress.ts` writes the shipped model with the atlas as lossless WebP. The art is flat colour with crisp ink, which lossless WebP keeps exactly and smaller than the alternatives. Kylie's atlas is 81,840 B, against 97,225 B for the PNG master, 108 KB for WebP at quality 90 (43.7 dB), 105 KB for KTX2 ETC1S (38.4 dB) and 252 KB for KTX2 UASTC, and WebP needs no Basis transcoder. On the GPU an atlas decodes to RGBA8 with its mip chain, 5,592,404 B, about 4.9 MB more than an ETC1S atlas would take.
+
+| Budget | Measured | Gate |
+| --- | --- | --- |
+| Kylie GLB with its atlas | 343,368 B, 18,415 triangles | `assets.glb.rider_kylie`, exact |
+| Ronaldo GLB with its atlas | 311,148 B, 18,067 triangles | `assets.glb.rider_ronaldo`, exact |
+| Texture memory of every shipped atlas | 11,184,808 B | `assets.texture.total`, exact |
+| Draw calls per rider | one skinned mesh, textured or not | `apps/web/test/renderer-lifecycle.test.ts` |
+| Shader programs | one more, the painted cel material with a map, compiled in warm-up when a race shows a celebrity | none yet, because the `?stress` race shows no celebrity |
+
+A new celebrity adds its own exact GLB row and raises `assets.texture.total` by one atlas, both from a build-lane baseline run.
 
 ### Rider silhouette
 

@@ -5,7 +5,9 @@ import { glbNames } from "../src/build.ts";
 import type { GlbName } from "../src/build.ts";
 import type { Side } from "../src/sides.ts";
 
-const GLB_BYTES = 64;
+export const GLB_BYTES = 64;
+const ATLAS_SIDE = 1024;
+const VP8L_SIZE_SPAN = 2 ** 14;
 
 const ROUTE_CHUNK = "src/routes/index.tsx?tsr-split=component";
 const KIT_CHUNK = "src/routes/kit.tsx?tsr-split=component";
@@ -26,6 +28,7 @@ const clientFiles = {
 const ROUTER_BYTES = 1500;
 
 export interface FixtureOptions {
+  readonly atlas: "webp" | "png" | null;
   readonly bikeExtraBytes: number;
   readonly missingGlb: GlbName | null;
   readonly missingEdge: boolean;
@@ -33,6 +36,7 @@ export interface FixtureOptions {
 }
 
 export const plainFixture: FixtureOptions = {
+  atlas: null,
   bikeExtraBytes: 0,
   missingEdge: false,
   missingGlb: null,
@@ -95,6 +99,50 @@ const startManifest = `export const tsrStartManifest = () => ({
 });
 `;
 
+const ascii = (text: string): Uint8Array => new TextEncoder().encode(text);
+
+const atlasImage = (format: "webp" | "png"): Uint8Array => {
+  const image = new Uint8Array(32);
+  const view = new DataView(image.buffer);
+  if (format === "png") {
+    image.set(ascii("\u0089PNG\r\n\u001A\n"));
+    return image;
+  }
+  image.set(ascii("RIFF"));
+  image.set(ascii("WEBPVP8L"), 8);
+  image[20] = 0x2f;
+  view.setUint32(21, ATLAS_SIDE - 1 + (ATLAS_SIDE - 1) * VP8L_SIZE_SPAN, true);
+  return image;
+};
+
+const glbOf = (size: number, atlas: FixtureOptions["atlas"]): Uint8Array => {
+  const image = atlas === null ? null : atlasImage(atlas);
+  const gltf =
+    image === null
+      ? { asset: { version: "2.0" } }
+      : {
+          asset: { version: "2.0" },
+          bufferViews: [{ buffer: 0, byteLength: image.length }],
+          images: [{ bufferView: 0, mimeType: `image/${atlas}` }],
+        };
+  const binBytes = image === null ? 0 : 8 + image.length;
+  const json = ascii(JSON.stringify(gltf).padEnd(size - 20 - binBytes, " "));
+  const bytes = new Uint8Array(20 + json.length + binBytes);
+  const view = new DataView(bytes.buffer);
+  bytes.set(ascii("glTF"));
+  view.setUint32(4, 2, true);
+  view.setUint32(8, bytes.length, true);
+  view.setUint32(12, json.length, true);
+  bytes.set(ascii("JSON"), 16);
+  bytes.set(json, 20);
+  if (image !== null) {
+    view.setUint32(20 + json.length, image.length, true);
+    bytes.set(ascii("BIN\u0000"), 24 + json.length);
+    bytes.set(image, 28 + json.length);
+  }
+  return bytes;
+};
+
 export const fixtureBuild = (
   dir: string,
   name: Side["name"],
@@ -103,9 +151,10 @@ export const fixtureBuild = (
   const root = path.join(dir, `side-${name}`);
   const out = path.join(dir, `out-${name}`);
   for (const glb of glbNames.filter((each) => each !== options.missingGlb)) {
-    const bytes = new Uint8Array(
-      GLB_BYTES + (glb === "bike" ? options.bikeExtraBytes : 0)
-    ).fill(glb.length);
+    const bytes = glbOf(
+      GLB_BYTES + (glb === "bike" ? options.bikeExtraBytes : 0),
+      glb === "rider_kylie" ? options.atlas : null
+    );
     write(path.join(root, "apps/web/src/game/models", `${glb}.glb`), bytes);
     write(path.join(out, "client/assets", `${glb}.glb`), bytes);
   }

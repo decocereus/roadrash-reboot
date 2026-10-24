@@ -40,7 +40,7 @@ export interface Shading {
     colour: THREE.ColorRepresentation,
     options?: CelOptions
   ) => THREE.MeshToonMaterial;
-  paint: () => THREE.MeshToonMaterial;
+  paint: (atlas: THREE.Texture | null) => THREE.MeshToonMaterial;
   glow: (
     colour: THREE.ColorRepresentation,
     strength?: number
@@ -147,8 +147,8 @@ export const createShading = (look: Look): Shading => {
     },
     key,
     look,
-    paint() {
-      return build({ vertexColors: true }, 1, true);
+    paint(atlas) {
+      return build({ map: atlas, vertexColors: true }, 1, true);
     },
     sun,
   };

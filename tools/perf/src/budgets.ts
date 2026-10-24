@@ -52,6 +52,7 @@ const buildKinds: readonly MetricKind[] = [
   ),
   ...glbNames.map((name) => `assets.glb.${name}`),
   "assets.glb.total",
+  "assets.texture.total",
 ].map((metric) => ({
   direction: "max",
   lane: "build",
@@ -308,8 +309,11 @@ export const judge = (
     };
   });
 
+export const exactMetric = (metric: string): boolean =>
+  metric.startsWith("assets.");
+
 const proposed = (kind: MetricKind, baseline: number) => {
-  if (kind.metric.startsWith("assets.glb.")) {
+  if (exactMetric(kind.metric)) {
     return { derivation: "exact baseline", value: baseline };
   }
   if (kind.lane === "build") {
