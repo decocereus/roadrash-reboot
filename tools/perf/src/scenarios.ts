@@ -11,9 +11,10 @@ import {
 import type { WorkloadColumns } from "@racer/sim/bench-workload";
 import { neutralInput } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
+import type { RaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
 import { PLAYER_RIDER, TICK_SECONDS } from "@racer/sim/state";
-import type { RaceSetup, RiderId, RiderInput } from "@racer/sim/state";
+import type { InputFrame, RaceSetup, RiderInput } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
 import { digestOf } from "./result.ts";
@@ -225,26 +226,40 @@ interface BenchRun {
   readonly step: () => void;
 }
 
-const seatedAt = (slot: number): slot is RiderId =>
-  Number.isSafeInteger(slot) && slot >= 0;
+interface LegacyRun {
+  readonly view: RaceView;
+  readonly pilot: (slot: number, input: RiderInput) => void;
+  readonly step: (inputs: readonly RiderInput[]) => void;
+}
 
-export const benchRun = (bench: Bench): BenchRun => {
-  const run = createRaceRun(benchSetup(bench));
-  const inputs: RiderInput[] = run.view.riders.map(() => ({
-    ...neutralInput,
-  }));
-  return {
-    step: () => {
-      for (let index = 0; index < inputs.length; index += 1) {
-        const input = inputs[index];
-        if (input && seatedAt(index)) {
-          run.pilot(index, input);
+const stepperOf = (run: RaceRun | LegacyRun): (() => void) => {
+  if ("pilot" in run) {
+    const inputs: RiderInput[] = run.view.riders.map(() => ({
+      ...neutralInput,
+    }));
+    return () => {
+      for (let slot = 0; slot < inputs.length; slot += 1) {
+        const input = inputs[slot];
+        if (input) {
+          run.pilot(slot, input);
         }
       }
       run.step(inputs);
-    },
-    view: run.view,
+    };
+  }
+  const frame: InputFrame = new Map();
+  return () => {
+    run.step(frame);
   };
+};
+
+export const benchRun = (bench: Bench): BenchRun => {
+  const setup = benchSetup(bench);
+  const run = createRaceRun({
+    ...setup,
+    player: { ...setup.player, controller: "pilot" },
+  });
+  return { step: stepperOf(run), view: run.view };
 };
 
 const raceOver = (race: RaceView): boolean =>

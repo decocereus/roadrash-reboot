@@ -4,10 +4,9 @@ import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
-import { pilotInput } from "./pilot.ts";
-import { player, rivalNamed } from "./race-fixtures.ts";
-import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
-import { TICK_RATE } from "./state.ts";
+import { frameOf, player, rivalNamed } from "./race-fixtures.ts";
+import { createRace, defaultSetup, stepRace } from "./race.ts";
+import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput, TrafficCar } from "./state.ts";
 
 const wide = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
@@ -70,13 +69,11 @@ const rivalPasses = (course: Track, blockers: readonly TrafficCar[]) => {
   rival.x = 1.8;
   rival.speed = 30;
   state.cars.push(...blockers);
-  const input: RiderInput = { ...neutralInput };
   const events: RaceEvent[] = [];
   let leftmost = rival.x;
   let rightmost = rival.x;
   for (let tick = 0; tick < 8 * TICK_RATE; tick += 1) {
-    pilotInput(state, course, rival, input);
-    stepRace(state, course, [neutralInput, input]);
+    stepRace(state, course, frameOf(state));
     events.push(...state.events.filter((event) => event.rider === rival.id));
     leftmost = Math.min(leftmost, rival.x);
     rightmost = Math.max(rightmost, rival.x);
@@ -97,7 +94,7 @@ const onRoadAt = (course: Track, x: number) => {
   me.x = x;
   me.speed = 40;
   for (let tick = 0; tick < TICK_RATE; tick += 1) {
-    stepRace(state, course, [cruising]);
+    stepRace(state, course, frameOf(state, [PLAYER_RIDER, cruising]));
   }
   return { onRoad: !me.offRoad, speed: me.speed };
 };
@@ -113,7 +110,7 @@ describe("a road with two lanes each way", () => {
       meanCruise(state.cars, -1.8)
     );
     for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-      stepRace(state, wide, [neutralInput]);
+      stepRace(state, wide, frameOf(state));
     }
     const moving = state.cars.filter((car) => car.speed !== 0);
     expect(moving.length).toBeGreaterThan(state.cars.length / 2);

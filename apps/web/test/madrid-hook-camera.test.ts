@@ -1,11 +1,5 @@
 import { bikes } from "@racer/sim/bikes";
-import { pilotInput } from "@racer/sim/pilot";
-import {
-  createRace,
-  defaultSetup,
-  neutralInput,
-  stepRace,
-} from "@racer/sim/race";
+import { createRace, defaultSetup, stepRace } from "@racer/sim/race";
 import { player } from "@racer/sim/race-fixtures";
 import { TICK_RATE } from "@racer/sim/state";
 import { roadAtLevel, roadIds } from "@racer/track/road";
@@ -75,20 +69,18 @@ const steadinessOn = (
   const setup = defaultSetup(track, 31);
   const race = createRace({
     ...setup,
-    player: { ...setup.player, bike: bikes[bikeId] },
+    player: { ...setup.player, bike: bikes[bikeId], controller: "pilot" },
     police: { ...setup.police, count: 0 },
     rivals: [],
   });
   const rider = player(race);
-  const input = { ...neutralInput };
   const chase = createChaseCamera();
   const subject = { air: 0, s: 0, speed: 0, tuck: 0, x: 0 };
   const heights: number[] = [];
   const yaws: number[] = [];
   const straight: boolean[] = [];
   for (let tick = 0; tick < RIDE_LIMIT && rider.finishTick < 0; tick += 1) {
-    pilotInput(race, track, rider, input);
-    stepRace(race, track, [input]);
+    stepRace(race, track, new Map());
     subject.s = rider.s;
     subject.x = rider.x;
     subject.air = rider.air;

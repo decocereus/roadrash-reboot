@@ -182,7 +182,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/pilot-lines.ts",
     ],
     summary:
-      "The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, with its memory kept per race.",
+      "The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, planned inside the tick from the race's own state.",
     title: "AI riders (the pilot)",
     verify: [],
   },

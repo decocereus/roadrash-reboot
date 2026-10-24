@@ -13,6 +13,7 @@ import {
   effectsOf,
   field,
   flatOut,
+  frameOf,
   hazardFreeRoad,
   hold,
   placedAt,
@@ -22,13 +23,14 @@ import {
   slowTruckAt,
 } from "./race-fixtures.ts";
 import type { Placement } from "./race-fixtures.ts";
-import { neutralInput, stepRace } from "./race.ts";
+import { stepRace } from "./race.ts";
 import {
   BIKE_HALF_WIDTH,
+  PLAYER_RIDER,
+  TICK_RATE,
   clamp,
   curvePushOf,
   lateralSpeedLimit,
-  TICK_RATE,
 } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
@@ -49,9 +51,14 @@ const rideAt = (
   let shakiest = 0;
   let highest = 0;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, road, [
-      { ...flatOut, steer: rider.s > steerFrom ? steer : 0 },
-    ]);
+    stepRace(
+      state,
+      road,
+      frameOf(state, [
+        PLAYER_RIDER,
+        { ...flatOut, steer: rider.s > steerFrom ? steer : 0 },
+      ])
+    );
     events.push(...state.events);
     shakiest = Math.max(shakiest, rider.wobble);
     highest = Math.max(highest, rider.airborne ? rider.air : 0);
@@ -131,9 +138,14 @@ const throughGentleBend = (kmh: number, rockX: number) => {
       -1,
       1
     );
-    stepRace(state, road, [
-      { ...cruising, steer, throttle: rider.speed < kmh / KMH ? 1 : 0 },
-    ]);
+    stepRace(
+      state,
+      road,
+      frameOf(state, [
+        PLAYER_RIDER,
+        { ...cruising, steer, throttle: rider.speed < kmh / KMH ? 1 : 0 },
+      ])
+    );
     events.push(...state.events);
   }
   return {
@@ -185,7 +197,7 @@ const truckOver = (road: Track) => {
   slowTruckAt(state, 950, 1.8);
   const trace: number[] = [];
   for (let tick = 0; tick < 35 * TICK_RATE; tick += 1) {
-    stepRace(state, road, [neutralInput]);
+    stepRace(state, road, frameOf(state));
     const [car] = state.cars;
     trace.push(car?.s ?? Number.NaN, car?.x ?? Number.NaN, car?.speed ?? 0);
   }
@@ -226,7 +238,11 @@ describe("road hazards", () => {
       for (let tick = 0; tick < 2 * TICK_RATE; tick += 1) {
         const tapping = rider.s >= tapFrom && tapped < TICK_RATE / 4;
         tapped += tapping ? 1 : 0;
-        stepRace(state, slick, [{ ...flatOut, steer: tapping ? 1 : 0 }]);
+        stepRace(
+          state,
+          slick,
+          frameOf(state, [PLAYER_RIDER, { ...flatOut, steer: tapping ? 1 : 0 }])
+        );
         events.push(...state.events);
       }
       expect(tapped).toBe(TICK_RATE / 4);
@@ -439,9 +455,11 @@ describe("road hazards", () => {
     rider.airborne = true;
     rider.air = 0.1;
     rider.verticalSpeed = -8;
-    stepRace(state, roadWith(placedAt("pothole", 996.6, 1.8, "hole")), [
-      flatOut,
-    ]);
+    stepRace(
+      state,
+      roadWith(placedAt("pothole", 996.6, 1.8, "hole")),
+      frameOf(state, [PLAYER_RIDER, flatOut])
+    );
     expect(state.events.map((event) => event.kind)).toStrictEqual(["land"]);
   });
 });

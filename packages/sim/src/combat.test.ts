@@ -8,11 +8,14 @@ import {
   brawl,
   cruising,
   field,
-  pilotAll,
+  fightFrame,
+  frameOf,
+  piloted,
   player,
   pressing,
-  rivalNamed,
   riderAt,
+  rivalNamed,
+  scripted,
   sideBySide,
   straight,
   track,
@@ -28,13 +31,12 @@ const raceIsOver = (rider: RiderState): boolean =>
   rider.finishTick >= 0 || rider.mode === "busted" || rider.mode === "wrecked";
 
 const raceThePack = (seed: number) => {
-  const state = createRace(defaultSetup(track, seed));
+  const state = piloted(createRace(defaultSetup(track, seed)));
   const racers = state.riders.filter((rider) => rider.profile.role === "racer");
-  const inputs = state.riders.map(() => ({ ...cruising }));
+  const frame = frameOf(state);
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 300 * TICK_RATE; tick += 1) {
-    pilotAll(state, track, inputs);
-    stepRace(state, track, inputs);
+    stepRace(state, track, frame);
     events.push(...state.events);
     if (racers.every((rider) => raceIsOver(rider))) {
       break;
@@ -71,7 +73,11 @@ describe("the pack", () => {
     const events: RaceEvent[] = [];
     for (let tick = 0; tick < 8 * TICK_RATE; tick += 1) {
       const punching = { ...idle, punch: tick % 20 === 0 };
-      stepRace(state, flat, [punching, idle]);
+      stepRace(
+        state,
+        flat,
+        frameOf(state, [me.id, punching], [rival.id, idle])
+      );
       events.push(...state.events);
       me.x = 0.3;
       me.s = rival.s;
@@ -153,13 +159,15 @@ describe("the pack", () => {
 
 const column = (riderCount: number) => {
   const setup = defaultSetup(straight, 1);
-  const state = createRace({
-    ...setup,
-    police: { ...setup.police, count: 0 },
-    rivals: setup.rivals
-      .slice(0, riderCount - 1)
-      .map((rival) => ({ ...rival, bike: setup.player.bike })),
-  });
+  const state = scripted(
+    createRace({
+      ...setup,
+      police: { ...setup.police, count: 0 },
+      rivals: setup.rivals
+        .slice(0, riderCount - 1)
+        .map((rival) => ({ ...rival, bike: setup.player.bike })),
+    })
+  );
   for (const rider of state.riders) {
     rider.s = 100;
     rider.x = 0;
@@ -187,10 +195,13 @@ const ride = <Sample>(
   seconds: number,
   sample: (events: readonly RaceEvent[]) => Sample
 ): Sample[] => {
-  const inputs = state.riders.map(() => cruising);
+  const frame = frameOf(
+    state,
+    ...state.riders.map((rider) => [rider.id, cruising] as const)
+  );
   const samples: Sample[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, straight, inputs);
+    stepRace(state, straight, frame);
     samples.push(sample(state.events));
   }
   return samples;
@@ -342,11 +353,16 @@ describe("rider contact", () => {
       me.x = 0;
       left.x = -0.7;
       right.x = 0.7;
-      stepRace(state, straight, [
-        flatOut,
-        { ...flatOut, steer: 1 },
-        { ...flatOut, steer: -1 },
-      ]);
+      stepRace(
+        state,
+        straight,
+        frameOf(
+          state,
+          [me.id, flatOut],
+          [left.id, { ...flatOut, steer: 1 }],
+          [right.id, { ...flatOut, steer: -1 }]
+        )
+      );
       contacts += state.events.filter(
         (event) => event.kind === "riderContact"
       ).length;
@@ -368,10 +384,15 @@ describe("rider contact", () => {
     ahead.speed = 0;
     const flatOut = { ...cruising, throttle: 1 };
     for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
-      stepRace(state, straight, [
-        { ...flatOut, steer: -0.5 },
-        { ...flatOut, steer: 0.5 },
-      ]);
+      stepRace(
+        state,
+        straight,
+        frameOf(
+          state,
+          [behind.id, { ...flatOut, steer: -0.5 }],
+          [ahead.id, { ...flatOut, steer: 0.5 }]
+        )
+      );
     }
     expect(behind.speed).toBeGreaterThan(8);
     expect(ahead.speed).toBeGreaterThan(8);
@@ -442,7 +463,11 @@ const strikeTiming = (key: "punch" | "kick", pressTicks: readonly number[]) => {
     if (tick > 0 && tick <= 34 && me.attack === "none") {
       neutralTicks += 1;
     }
-    return [pressing(key, pressTicks.includes(tick)), cruising, cruising];
+    return fightFrame(
+      state,
+      pressing(key, pressTicks.includes(tick)),
+      cruising
+    );
   });
   return { landed, neutralTicks, started };
 };
@@ -468,7 +493,7 @@ describe("strike timing", () => {
         if (pressed >= 0 && me.attack === "none" && ends[key] === undefined) {
           ends[key] = state.tick - pressed;
         }
-        return [pressing(key, tick === 0), cruising, cruising];
+        return fightFrame(state, pressing(key, tick === 0), cruising);
       });
     }
     expect({ ends, lands }).toStrictEqual({
@@ -512,11 +537,11 @@ describe("strike timing", () => {
           started.push(`${event.attack}@${state.tick - 1}`);
         }
       }
-      return [
+      return fightFrame(
+        state,
         { ...cruising, kick: tick === 16, punch: tick === 0 },
-        cruising,
-        cruising,
-      ];
+        cruising
+      );
     });
     expect(started).toStrictEqual(["punch@0"]);
     expect(me.attack).toBe("none");
@@ -528,11 +553,13 @@ describe("simultaneous strikes", () => {
     const { moose, me, state } = sideBySide();
     moose.weapon = "none";
     moose.weaponHits = 0;
-    const events = brawl(state, 1, (tick) => [
-      pressing("punch", tick === 0),
-      cruising,
-      pressing("punch", tick === 0),
-    ]);
+    const events = brawl(state, 1, (tick) =>
+      fightFrame(
+        state,
+        pressing("punch", tick === 0),
+        pressing("punch", tick === 0)
+      )
+    );
     const hits = events.filter((event) => event.kind === "hit");
     expect(hits).toContainEqual({
       attack: "punch",
@@ -558,11 +585,11 @@ describe("simultaneous strikes", () => {
     const stuns: number[][] = [];
     brawl(state, 0.5, (tick) => {
       stuns.push([me.hitStun, moose.hitStun]);
-      return [
+      return fightFrame(
+        state,
         pressing("punch", tick === 0),
-        cruising,
-        pressing("punch", tick === 0),
-      ];
+        pressing("punch", tick === 0)
+      );
     });
     expect(Math.max(...stuns.flat())).toBe(10);
     expect(stuns.filter(([mine, theirs]) => mine !== theirs)).toStrictEqual([]);

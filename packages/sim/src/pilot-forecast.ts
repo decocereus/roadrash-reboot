@@ -16,7 +16,6 @@ import {
   sampleOf,
 } from "./pilot-corners.ts";
 import { FORECAST_SECONDS, FORECAST_TICKS } from "./pilot-history.ts";
-import type { PilotHistory } from "./pilot-history.ts";
 import { SLIP_PUSH, SLIP_RECOVERY } from "./rider-drive.ts";
 import { LANDING_SLIP } from "./rider-flight.ts";
 import {
@@ -28,7 +27,13 @@ import {
   slotOf,
   TICK_SECONDS,
 } from "./state.ts";
-import type { BikeSpec, Hazard, RaceState, RiderState } from "./state.ts";
+import type {
+  BikeSpec,
+  Hazard,
+  PilotHistory,
+  RaceState,
+  RiderState,
+} from "./state.ts";
 import { weapons } from "./weapons.ts";
 
 const HAZARD_SIGHT_SECONDS = 2.35;

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { pilotInput } from "./pilot.ts";
 import {
   KMH,
   onlyCop,
   cruising,
   field,
+  frameOf,
   patrolFrom,
   player,
   rivalNamed,
@@ -14,7 +14,13 @@ import {
 } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { TICK_RATE } from "./state.ts";
-import type { RaceEvent, RaceState, RiderInput, RiderState } from "./state.ts";
+import type {
+  InputFrame,
+  RaceEvent,
+  RaceState,
+  RiderInput,
+  RiderState,
+} from "./state.ts";
 
 const knockedOffAndRunning = () => {
   const state = field(straight, 1, 1, 0);
@@ -30,7 +36,7 @@ const knockedOffAndRunning = () => {
     tick < 10 * TICK_RATE && me.mode !== "running";
     tick += 1
   ) {
-    stepRace(state, straight, [neutralInput, cruising]);
+    stepRace(state, straight, frameOf(state, [rival.id, cruising]));
   }
   expect(me.mode).toBe("running");
   return { me, rival, state };
@@ -39,12 +45,12 @@ const knockedOffAndRunning = () => {
 const untilOnFeetAgain = (
   state: RaceState,
   me: RiderState,
-  inputs: readonly RiderInput[]
+  frame: InputFrame
 ) => {
   const events: RaceEvent[] = [];
   let ticksDown = -1;
   for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-    stepRace(state, straight, inputs);
+    stepRace(state, straight, frame);
     events.push(...state.events);
     if (ticksDown < 0 && me.mode === "thrown") {
       ticksDown = 0;
@@ -59,7 +65,7 @@ const untilOnFeetAgain = (
 
 describe("knocked down on foot", () => {
   it("a rider running back to the bike who is hit by a car goes down again and is back on their feet about two seconds later", () => {
-    const { me, state } = knockedOffAndRunning();
+    const { me, rival, state } = knockedOffAndRunning();
     state.cars.push({
       cruiseSpeed: 20,
       halfLength: 2.2,
@@ -70,10 +76,11 @@ describe("knocked down on foot", () => {
       speed: 20,
       x: me.bodyX,
     });
-    const { events, ticksDown } = untilOnFeetAgain(state, me, [
-      neutralInput,
-      cruising,
-    ]);
+    const { events, ticksDown } = untilOnFeetAgain(
+      state,
+      me,
+      frameOf(state, [rival.id, cruising])
+    );
     expect(events).toContainEqual(
       expect.objectContaining({ by: null, kind: "knockedDown", rider: me.id })
     );
@@ -91,7 +98,11 @@ describe("knocked down on foot", () => {
     rival.s = me.bodyS - 1.5;
     rival.x = me.bodyX;
     rival.speed = 25;
-    const { events } = untilOnFeetAgain(state, me, [neutralInput, cruising]);
+    const { events } = untilOnFeetAgain(
+      state,
+      me,
+      frameOf(state, [rival.id, cruising])
+    );
     expect(events).toContainEqual(
       expect.objectContaining({
         by: rival.id,
@@ -130,7 +141,11 @@ const thrownWhileHolding = (held: RiderInput) => {
     tick < 10 * TICK_RATE && me.mode !== "running";
     tick += 1
   ) {
-    stepRace(state, straight, [held, cruising]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [me.id, held], [rival.id, cruising])
+    );
   }
   expect(me.mode).toBe("running");
   return { me, state };
@@ -146,7 +161,15 @@ const onFoot = (
   const bike = { s: me.s, x: me.x };
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [inputFor(me), cruising]);
+    stepRace(
+      state,
+      straight,
+      frameOf(
+        state,
+        [me.id, inputFor(me)],
+        [rivalNamed(state, "dee-santangelo").id, cruising]
+      )
+    );
     events.push(...state.events);
   }
   const gap = (s: number, x: number) => Math.hypot(bike.s - s, bike.x - x);
@@ -235,12 +258,11 @@ describe("on foot", () => {
     rival.s = 100;
     rival.speed = 20;
     rival.stamina = 0;
-    const rivalInput = { ...cruising };
+    rival.controller = "pilot";
     const events: RaceEvent[] = [];
     const modes: string[] = [];
     for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-      pilotInput(state, straight, rival, rivalInput);
-      stepRace(state, straight, [neutralInput, rivalInput]);
+      stepRace(state, straight, frameOf(state));
       events.push(...state.events);
       if (modes.at(-1) !== rival.mode) {
         modes.push(rival.mode);
@@ -260,19 +282,17 @@ describe("on foot", () => {
   it("a cop reaching a rider who is standing on foot arrests them", () => {
     const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
     const me = player(state);
-    const cop = patrolFrom(onlyCop(state), 100);
+    patrolFrom(onlyCop(state), 100);
     me.s = 200;
     me.speed = 10;
     me.stamina = 0;
-    const copInput = { ...cruising };
     const events: RaceEvent[] = [];
     for (
       let tick = 0;
       tick < 15 * TICK_RATE && me.mode !== "busted";
       tick += 1
     ) {
-      pilotInput(state, straight, cop, copInput);
-      stepRace(state, straight, [neutralInput, copInput]);
+      stepRace(state, straight, frameOf(state));
       events.push(...state.events);
     }
     expect(events.map((event) => event.kind)).not.toContain("remount");

@@ -7,12 +7,12 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { spawnRock } from "./hazards.ts";
-import { pilotInput } from "./pilot.ts";
 import {
   KMH,
   boulder,
   effectsOf,
   field,
+  frameOf,
   hazardFreeRoad,
   pilotAt,
   pilotFrom,
@@ -108,12 +108,14 @@ const copBehindTruck = (road: Track, closing = closingOnTruck) => {
   target.s = 935;
   target.x = -3;
   target.speed = closing.speed;
-  const inputs = state.riders.map(() => ({ ...neutralInput }));
+  cop.controller = "pilot";
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
-    pilotInput(state, road, cop, inputs[cop.id] ?? { ...neutralInput });
-    inputs[target.id] = { ...neutralInput, throttle: 0.6 };
-    stepRace(state, road, inputs);
+    stepRace(
+      state,
+      road,
+      frameOf(state, [target.id, { ...neutralInput, throttle: 0.6 }])
+    );
     events.push(...state.events);
   }
   return events.filter((event) => event.rider === cop.id);

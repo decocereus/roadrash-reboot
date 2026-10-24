@@ -3,7 +3,7 @@ import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
-import type { RaceSetup } from "@racer/sim/state";
+import type { Controller, RaceSetup } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 
 import { createFleet } from "./actors.ts";
@@ -30,13 +30,18 @@ export interface Stage {
   warming: boolean;
 }
 
+const ridden = (setup: RaceSetup, controller: Controller): RaceSetup => ({
+  ...setup,
+  player: { ...setup.player, controller },
+});
+
 export const createStage = (
   assets: Assets,
   track: Track,
   seed: number
 ): Stage => {
   const world = createWorld(track);
-  const race = createRaceRun(defaultSetup(track, seed));
+  const race = createRaceRun(ridden(defaultSetup(track, seed), "pilot"));
   return {
     fleet: createFleet(assets, world.shading, race.view.cars),
     previousCars: new Float64Array(race.view.cars.length),
@@ -49,6 +54,7 @@ export const createStage = (
 
 interface StageParts {
   readonly assets: Assets;
+  readonly autopilot: boolean;
   readonly buildViews: () => void;
   readonly cast: Pick<Cast, "bikes" | "puffs" | "views">;
   readonly chase: ChaseCamera;
@@ -61,6 +67,7 @@ interface StageParts {
 
 export const bindStage = ({
   assets,
+  autopilot,
   buildViews,
   cast,
   chase,
@@ -174,7 +181,9 @@ export const bindStage = ({
     const previous = stage.world;
     takeTrack(setup.track);
     const replaced = stage.world === previous ? null : previous;
-    stage.race = createRaceRun(setup);
+    stage.race = createRaceRun(
+      ridden(setup, forRace && !autopilot ? "human" : "pilot")
+    );
     if (forRace) {
       devRide?.place(stage.race);
     }

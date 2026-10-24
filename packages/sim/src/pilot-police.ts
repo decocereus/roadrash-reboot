@@ -1,12 +1,11 @@
 import type { Track } from "@racer/track/track";
 
 import { PLANNED_BRAKING } from "./pilot-corners.ts";
-import type { PilotHistory } from "./pilot-history.ts";
 import { between, carThreat, chooseLine } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
 import { BIKE_HALF_WIDTH, clamp, riderOf } from "./state.ts";
-import type { RaceState, RiderState } from "./state.ts";
+import type { PilotHistory, RaceState, RiderState } from "./state.ts";
 
 const CATCH_UP_RATE = 0.8;
 const ALONGSIDE = 1.5;

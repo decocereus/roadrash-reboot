@@ -16,7 +16,6 @@ import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd, ProfileMode, Profiler } from "./profile.ts";
 import type { Quality } from "./quality-ladder.ts";
 import type { Feedback } from "./race-feedback.ts";
-import type { Cast } from "./rider-views.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 const MAX_FRAME_SECONDS = 0.1;
@@ -144,7 +143,6 @@ export interface FrameRenderer {
 
 interface LoopParts {
   readonly applyPending: () => void;
-  readonly cast: Pick<Cast, "inputs">;
   readonly checkPresented: () => void;
   readonly draw: (blend: number, seconds: number) => void;
   readonly feedback: Pick<Feedback, "noticeLeft" | "speechLeft">;
@@ -169,7 +167,6 @@ interface LoopParts {
 
 export const installFrameLoop = ({
   applyPending,
-  cast,
   checkPresented,
   draw,
   feedback,
@@ -220,7 +217,6 @@ export const installFrameLoop = ({
     frame.profiler?.lap("sim");
     const me = player();
     const riding = me.mode === "riding" && session.phase !== "attract";
-    const [own] = cast.inputs;
     if (riding && me.gear > frame.lastGear) {
       sound.shift();
     }
@@ -228,7 +224,7 @@ export const installFrameLoop = ({
     sound.drive(
       riding ? me.speed : 0,
       riding && session.phase === "racing" && session.holdLeft <= 0
-        ? (own?.throttle ?? 0)
+        ? me.input.throttle
         : 0,
       riding ? me.revs : 0,
       riding && me.offRoad

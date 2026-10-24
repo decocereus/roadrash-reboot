@@ -83,11 +83,7 @@ describe("dev race plans", () => {
     const track = trackFor(plan.setup.roadId, plan.setup.level);
     const state = createRace(plan.setup);
     const log = createRaceLog(plan.setup);
-    stepRace(
-      state,
-      track,
-      state.riders.map(() => neutralInput)
-    );
+    stepRace(state, track, new Map([[PLAYER_RIDER, neutralInput]]));
     recordTick(log, state, plan.setup);
     const report = quickReport(plan, outcomeOf(state, plan.setup, log));
     const ridden = new Map(

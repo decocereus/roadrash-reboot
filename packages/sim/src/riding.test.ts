@@ -5,17 +5,18 @@ import { describe, expect, it } from "vitest";
 
 import { bikes, streetBike } from "./bikes.ts";
 import {
-  KMH,
   alone,
   cruising,
   field,
+  frameOf,
   hold,
+  KMH,
   player,
   quietTrack,
   straight,
 } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { TICK_RATE } from "./state.ts";
+import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
 
 const MPH = 2.237;
 
@@ -26,7 +27,7 @@ const brakeIntoBend = (brake: number) => {
   rider.speed = 44;
   const input = { brake, kick: false, punch: false, steer: -1, throttle: 0 };
   for (let tick = 0; tick < 6 * TICK_RATE && rider.speed > 30; tick += 1) {
-    stepRace(state, quietTrack, [input]);
+    stepRace(state, quietTrack, frameOf(state, [PLAYER_RIDER, input]));
   }
   return { distance: rider.s - 1520, mode: rider.mode };
 };

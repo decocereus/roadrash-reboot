@@ -20,14 +20,13 @@ import {
   weigh,
 } from "./pilot-forecast.ts";
 import type { Outlook, Toll } from "./pilot-forecast.ts";
-import type { PilotHistory } from "./pilot-history.ts";
-import {
-  BIKE_HALF_LENGTH,
-  BIKE_HALF_WIDTH,
-  raceOwned,
-  slotOf,
+import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, slotOf } from "./state.ts";
+import type {
+  PilotHistory,
+  RaceState,
+  RiderState,
+  TrafficCar,
 } from "./state.ts";
-import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const FOLLOW_SECONDS = 2.4;
 const ONCOMING_SECONDS = 4.5;
@@ -197,7 +196,7 @@ const createWeighed = (): Weighed => ({
   x: 0,
 });
 
-const linePlanOf = raceOwned((): LinePlan => ({
+const linePlan: LinePlan = {
   aim: { speed: 0, x: 0 },
   carCount: 0,
   cars: [],
@@ -219,7 +218,7 @@ const linePlanOf = raceOwned((): LinePlan => ({
   weighed: [],
   weighedCount: 0,
   weighing: false,
-}));
+};
 
 const gatherInReach = (
   plan: LinePlan,
@@ -591,18 +590,17 @@ export const chooseLine = (
   cruise: number,
   pursuit?: Aim
 ): Aim => {
-  const plan = linePlanOf(state);
-  const { aim, choice, lanes, outlook, threats } = plan;
+  const { aim, choice, lanes, outlook, threats } = linePlan;
   const sameWayCount = track.sameWayLanes.length;
-  fillLanes(plan, track);
-  gatherInReach(plan, state, rider);
-  gatherLaneThreats(plan, state, rider);
+  fillLanes(linePlan, track);
+  gatherInReach(linePlan, state, rider);
+  gatherLaneThreats(linePlan, state, rider);
   gatherInSight(outlook, state, rider);
   const kept = rider.pilotLine;
-  plan.weighing = outlook.sighted > 0 || Number.isFinite(kept);
-  plan.weighedCount = 0;
+  linePlan.weighing = outlook.sighted > 0 || Number.isFinite(kept);
+  linePlan.weighedCount = 0;
   choice.cost = Number.POSITIVE_INFINITY;
-  if (plan.weighing) {
+  if (linePlan.weighing) {
     measureDeceleration(track, rider);
     planForecast(history, track, rider);
     gatherObstructions(outlook, state, track, rider);
@@ -611,7 +609,7 @@ export const chooseLine = (
   }
   if (pursuit) {
     offer(
-      plan,
+      linePlan,
       history,
       track,
       rider,
@@ -626,10 +624,10 @@ export const chooseLine = (
     if (
       lane !== undefined &&
       !threatened(threats[index]) &&
-      !crossesBlocked(plan, rider, lane)
+      !crossesBlocked(linePlan, rider, lane)
     ) {
       offer(
-        plan,
+        linePlan,
         history,
         track,
         rider,
@@ -640,17 +638,17 @@ export const chooseLine = (
       );
     }
   }
-  if (plan.weighing) {
-    offerFollow(plan, history, track, rider);
-    offLaneLines(plan, state, rider);
-    for (let index = 0; index < plan.offLaneCount; index += 1) {
+  if (linePlan.weighing) {
+    offerFollow(linePlan, history, track, rider);
+    offLaneLines(linePlan, state, rider);
+    for (let index = 0; index < linePlan.offLaneCount; index += 1) {
       offerBetweenLanes(
-        plan,
+        linePlan,
         history,
         state,
         track,
         rider,
-        plan.offLane[index] ?? 0,
+        linePlan.offLane[index] ?? 0,
         cruise
       );
     }

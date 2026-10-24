@@ -128,7 +128,7 @@ export const hotBodies = {
     ["offLaneLines"],
     ["offerBetweenLanes"],
   ],
-  "packages/sim/src/pilot.ts": [["pilotInput"]],
+  "packages/sim/src/pilot.ts": [["pilotRider"]],
   "packages/sim/src/race.ts": [["stepRace"]],
   "packages/sim/src/traffic.ts": [
     ["stepTraffic"],

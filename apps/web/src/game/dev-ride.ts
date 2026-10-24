@@ -28,11 +28,7 @@ const holdLine = (track: Track, me: RiderView, lineX: number): number => {
 
 export interface DevRide {
   readonly place: (run: RaceRun) => void;
-  readonly steer: (
-    race: RaceView,
-    track: Track,
-    input: RiderInput | undefined
-  ) => void;
+  readonly steer: (race: RaceView, track: Track, input: RiderInput) => void;
   readonly holds: (race: RaceView) => boolean;
   readonly whenReleased: (resume: () => void) => void;
 }
@@ -121,12 +117,12 @@ export const devRideFrom = (search: string): DevRide => {
     },
     steer: (race, track, input) => {
       const me = riderOf(race.riders, PLAYER_RIDER);
-      if (me && input && straight) {
+      if (me && straight) {
         input.steer = holdLine(track, me, target(race)?.x ?? me.x);
         input.throttle = 1;
         input.brake = 0;
       }
-      if (me && input && swerveAt > 0 && me.s > swerveAt) {
+      if (me && swerveAt > 0 && me.s > swerveAt) {
         input.steer = me.s < swerveAt + swerveFor ? swerveTo : input.steer;
       }
     },

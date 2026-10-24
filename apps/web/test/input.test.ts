@@ -2,7 +2,7 @@ import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { straight } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf, TICK_SECONDS } from "@racer/sim/state";
-import type { RiderInput } from "@racer/sim/state";
+import type { InputFrame, RiderInput } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createControls } from "../src/game/input.ts";
@@ -166,14 +166,12 @@ describe("controls in a real race", () => {
   it("throttle moves the player, the brake slows it and a punch starts one attack", () => {
     const { controls, keyboard } = setUp();
     const run = soloRun();
-    const inputs = run.view.riders.map(() => ({ ...neutralInput }));
+    const input: RiderInput = { ...neutralInput };
+    const frame: InputFrame = new Map([[PLAYER_RIDER, input]]);
     const ride = (ticks: number) => {
       for (let tick = 0; tick < ticks; tick += 1) {
-        const input = inputs[PLAYER_RIDER];
-        if (input) {
-          controls.read(TICK_SECONDS, input);
-        }
-        run.step(inputs);
+        controls.read(TICK_SECONDS, input);
+        run.step(frame);
       }
     };
     const player = () => riderOf(run.view.riders, PLAYER_RIDER);

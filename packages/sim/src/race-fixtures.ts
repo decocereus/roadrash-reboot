@@ -7,12 +7,12 @@ import { slagRow } from "@racer/track/tracks/slag-row";
 
 import { rivals } from "./cast.ts";
 import type { RivalId } from "./cast.ts";
-import { pilotInput } from "./pilot.ts";
 import { PATROL_SPEED } from "./police.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { PLAYER_RIDER, TICK_RATE, riderOf } from "./state.ts";
 import type {
   BikeSpec,
+  InputFrame,
   RaceEvent,
   RaceState,
   RiderInput,
@@ -38,6 +38,31 @@ export const straight = compileTrack({
   trafficPerKilometre: 0,
 });
 
+export const scripted = (state: RaceState): RaceState => {
+  for (const rider of state.riders) {
+    rider.controller = "human";
+  }
+  return state;
+};
+
+export const piloted = (state: RaceState): RaceState => {
+  for (const rider of state.riders) {
+    rider.controller = "pilot";
+  }
+  return state;
+};
+
+export const frameOf = (
+  state: RaceState,
+  ...controls: readonly (readonly [RiderId, RiderInput])[]
+): InputFrame =>
+  new Map([
+    ...state.riders.flatMap((rider) =>
+      rider.controller === "human" ? [[rider.id, neutralInput] as const] : []
+    ),
+    ...controls,
+  ]);
+
 export const field = (
   course: Track,
   seed: number,
@@ -45,11 +70,13 @@ export const field = (
   copCount: number
 ): RaceState => {
   const setup = defaultSetup(course, seed);
-  return createRace({
-    ...setup,
-    police: { ...setup.police, count: copCount },
-    rivals: setup.rivals.slice(0, rivalCount),
-  });
+  return scripted(
+    createRace({
+      ...setup,
+      police: { ...setup.police, count: copCount },
+      rivals: setup.rivals.slice(0, rivalCount),
+    })
+  );
 };
 
 export const cruising: RiderInput = {
@@ -101,7 +128,7 @@ export const hold = (
 ): RaceEvent[] => {
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, course, [input]);
+    stepRace(state, course, frameOf(state, [PLAYER_RIDER, input]));
     events.push(...state.events);
   }
   return events;
@@ -150,7 +177,7 @@ export const sideBySide = () => {
 export const brawl = (
   state: RaceState,
   seconds: number,
-  inputsAt: (tick: number) => readonly RiderInput[]
+  framesAt: (tick: number) => InputFrame
 ): RaceEvent[] => {
   const me = player(state);
   const moose = rivalNamed(state, "moose-kowalczyk");
@@ -159,11 +186,23 @@ export const brawl = (
     me.x = 0.3;
     moose.x = 1.8;
     moose.s = me.s;
-    stepRace(state, straight, inputsAt(tick));
+    stepRace(state, straight, framesAt(tick));
     events.push(...state.events);
   }
   return events;
 };
+
+export const fightFrame = (
+  state: RaceState,
+  mine: RiderInput,
+  moose: RiderInput
+): InputFrame =>
+  frameOf(
+    state,
+    [PLAYER_RIDER, mine],
+    [rivalNamed(state, "dee-santangelo").id, cruising],
+    [rivalNamed(state, "moose-kowalczyk").id, moose]
+  );
 
 export const pressing = (
   key: "punch" | "kick",
@@ -276,19 +315,6 @@ export interface Trace {
   readonly x: number;
 }
 
-export const pilotAll = (
-  state: RaceState,
-  road: Track,
-  inputs: readonly RiderInput[]
-): void => {
-  for (const rider of state.riders) {
-    const input = inputs[rider.id];
-    if (input) {
-      pilotInput(state, road, rider, input);
-    }
-  }
-};
-
 export const pilotFrom = (
   state: RaceState,
   road: Track,
@@ -296,18 +322,17 @@ export const pilotFrom = (
   beforeTick?: (tick: number) => void
 ) => {
   const rider = player(state);
-  const input = { ...neutralInput };
+  rider.controller = "pilot";
   const events: RaceEvent[] = [];
   const line: Trace[] = [];
   const slippingSteer: number[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
     beforeTick?.(tick);
-    pilotInput(state, road, rider, input);
-    stepRace(state, road, [input]);
+    stepRace(state, road, frameOf(state));
     events.push(...state.events);
     line.push({ s: rider.s, x: rider.x });
     if (rider.slip > 0) {
-      slippingSteer.push(Math.abs(input.steer));
+      slippingSteer.push(Math.abs(rider.input.steer));
     }
   }
   return { events, line, rider, slippingSteer };

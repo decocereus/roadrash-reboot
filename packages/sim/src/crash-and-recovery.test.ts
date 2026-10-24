@@ -6,6 +6,8 @@ import {
   brawl,
   cruising,
   field,
+  fightFrame,
+  frameOf,
   hold,
   player,
   pressing,
@@ -17,7 +19,7 @@ import {
   track,
 } from "./race-fixtures.ts";
 import { neutralInput, standings, stepRace } from "./race.ts";
-import { FULL_CONDITION, TICK_RATE } from "./state.ts";
+import { FULL_CONDITION, PLAYER_RIDER, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput, RiderState } from "./state.ts";
 
 const holdAndRunBack = (
@@ -28,7 +30,11 @@ const holdAndRunBack = (
 ): RaceEvent[] => {
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    stepRace(state, course, [towardTheBike(player(state), input)]);
+    stepRace(
+      state,
+      course,
+      frameOf(state, [PLAYER_RIDER, towardTheBike(player(state), input)])
+    );
     events.push(...state.events);
   }
   return events;
@@ -52,7 +58,11 @@ const crashIntoPole = (kmh: number) => {
   let onFeetSeconds = -1;
   let remountSeconds = -1;
   for (let tick = 0; tick < 20 * TICK_RATE && remountSeconds < 0; tick += 1) {
-    stepRace(state, quietTrack, [towardTheBike(rider, neutralInput)]);
+    stepRace(
+      state,
+      quietTrack,
+      frameOf(state, [PLAYER_RIDER, towardTheBike(rider, neutralInput)])
+    );
     if (order.at(-1) !== rider.mode) {
       order.push(rider.mode);
     }
@@ -157,9 +167,18 @@ describe("crashing", () => {
     let stoppedTicks = 0;
     let longestStop = 0;
     for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
-      stepRace(state, straight, [
-        { ...cruising, steer: me.x < 0 ? 1 : 0, throttle: 1 },
-      ]);
+      stepRace(
+        state,
+        straight,
+        frameOf(state, [
+          PLAYER_RIDER,
+          {
+            ...cruising,
+            steer: me.x < 0 ? 1 : 0,
+            throttle: 1,
+          },
+        ])
+      );
       stoppedTicks =
         me.mode === "riding" && me.speed < 0.5 ? stoppedTicks + 1 : 0;
       longestStop = Math.max(longestStop, stoppedTicks);
@@ -193,7 +212,15 @@ describe("recovering", () => {
         punched < 0
           ? { ...cruising, punch: true, throttle: 0.6 }
           : { ...cruising, brake: 1, throttle: 0 };
-      stepRace(state, quietTrack, [punched < 0 ? cruising : back, rivalInput]);
+      stepRace(
+        state,
+        quietTrack,
+        frameOf(
+          state,
+          [me.id, punched < 0 ? cruising : back],
+          [rival.id, rivalInput]
+        )
+      );
       if (punched < 0 && state.events.some((event) => event.kind === "hit")) {
         punched = tick;
       }
@@ -224,9 +251,14 @@ const headOn = (
   rider.speed = speed;
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 30 * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [
-      towardTheBike(rider, { ...cruising, throttle: 1 }),
-    ]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [
+        rider.id,
+        towardTheBike(rider, { ...cruising, throttle: 1 }),
+      ])
+    );
     events.push(...state.events);
     const down = events.some((event) => event.kind === "crash");
     if (down && (rider.mode === "riding" || rider.parked)) {
@@ -255,7 +287,7 @@ const knockedOffAt = (kmh: number): number => {
   me.s = 100;
   me.speed = kmh / KMH;
   me.stamina = 0;
-  stepRace(state, straight, [cruising]);
+  stepRace(state, straight, frameOf(state, [PLAYER_RIDER, cruising]));
   return FULL_CONDITION - me.condition;
 };
 
@@ -288,7 +320,11 @@ const knockOffAndRemount = (state: RaceState, kmh: number): void => {
     car.s = me.s - 400;
   }
   for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
-    stepRace(state, straight, [towardTheBike(me, cruising)]);
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [PLAYER_RIDER, towardTheBike(me, cruising)])
+    );
     if (me.mode === "riding" || me.mode === "wrecked") {
       break;
     }
@@ -400,11 +436,11 @@ const knockedOffTrack = (ticksAfterPunch: number) => {
       punchedAt >= 0 && state.tick + 1 === punchedAt + ticksAfterPunch
         ? straight.vergeHalfWidth + 1
         : 1.8;
-    stepRace(state, straight, [
-      pressing("punch", tick === 0),
-      cruising,
-      cruising,
-    ]);
+    stepRace(
+      state,
+      straight,
+      fightFrame(state, pressing("punch", tick === 0), cruising)
+    );
     if (state.events.some((event) => event.kind === "hit")) {
       punchedAt = state.tick;
     }
@@ -428,11 +464,9 @@ describe("crash attribution", () => {
   it("a rider knocked down by punches is put down to the puncher, and a rider who falls alone to nobody", () => {
     const { me, moose, state } = sideBySide();
     moose.stamina = 10;
-    const fight = brawl(state, 1, (tick) => [
-      pressing("punch", tick === 0),
-      cruising,
-      cruising,
-    ]);
+    const fight = brawl(state, 1, (tick) =>
+      fightFrame(state, pressing("punch", tick === 0), cruising)
+    );
     expect(fight.filter((event) => event.kind === "crash")).toMatchObject([
       { by: me.id, cause: "combat", rider: moose.id },
     ]);

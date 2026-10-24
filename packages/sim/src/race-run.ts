@@ -4,16 +4,13 @@ import {
   relocateTraffic,
   setRiderSpeed,
 } from "./commands.ts";
-import { pilotInput } from "./pilot.ts";
 import type { RaceView } from "./race-view.ts";
 import { createRace, stepRace } from "./race.ts";
-import { riderOf } from "./state.ts";
-import type { RaceSetup, RiderId, RiderInput } from "./state.ts";
+import type { InputFrame, RaceSetup, RiderId } from "./state.ts";
 
 export interface RaceRun {
   readonly view: RaceView;
-  readonly step: (inputs: readonly RiderInput[]) => void;
-  readonly pilot: (id: RiderId, input: RiderInput) => void;
+  readonly step: (frame: InputFrame) => void;
   readonly placeRiderAt: (id: RiderId, s: number) => void;
   readonly placeRiderAcross: (id: RiderId, x: number) => void;
   readonly setRiderSpeed: (id: RiderId, speed: number) => void;
@@ -24,12 +21,6 @@ export const createRaceRun = (setup: RaceSetup): RaceRun => {
   const state = createRace(setup);
   const { track } = setup;
   return {
-    pilot: (id, input) => {
-      const rider = riderOf(state.riders, id);
-      if (rider) {
-        pilotInput(state, track, rider, input);
-      }
-    },
     placeRiderAcross: (id, x) => {
       placeRiderAcross(state, id, x);
     },
@@ -42,8 +33,8 @@ export const createRaceRun = (setup: RaceSetup): RaceRun => {
     setRiderSpeed: (id, speed) => {
       setRiderSpeed(state, id, speed);
     },
-    step: (inputs) => {
-      stepRace(state, track, inputs);
+    step: (frame) => {
+      stepRace(state, track, frame);
     },
     view: state,
   };

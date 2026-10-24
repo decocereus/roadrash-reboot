@@ -2,7 +2,7 @@ import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
-import type { RiderInput } from "@racer/sim/state";
+import type { InputFrame, RiderInput } from "@racer/sim/state";
 import type { FrameRate } from "@racer/telemetry/limits";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
@@ -111,32 +111,25 @@ const heardSound = (seen: Seen) => ({
 
 interface Ticker {
   readonly digests: string[];
-  readonly inputs: RiderInput[];
   readonly run: RaceRun;
   readonly tick: () => void;
 }
 
 export const createTicker = (): Ticker => {
   const run = createRaceRun(defaultSetup(trackFor("ridge-road", 1), 7));
-  const inputs = run.view.riders.map(() => ({ ...neutralInput }));
+  const input: RiderInput = { ...neutralInput };
+  const frame: InputFrame = new Map([[PLAYER_RIDER, input]]);
   const digests: string[] = [];
   const tick = () => {
-    for (const rider of run.view.riders) {
-      const input = inputs[rider.id];
-      if (input && rider.id === PLAYER_RIDER) {
-        scriptedInput(run.view.tick, input);
-      } else if (input) {
-        run.pilot(rider.id, input);
-      }
-    }
-    run.step(inputs);
-    digests.push(frameDigest(run.view, inputs));
+    scriptedInput(run.view.tick, input);
+    run.step(frame);
+    digests.push(frameDigest(run.view));
   };
-  return { digests, inputs, run, tick };
+  return { digests, run, tick };
 };
 
 export const createHost = (options: HostOptions = {}): Host => {
-  const { digests, inputs, run, tick } = createTicker();
+  const { digests, run, tick } = createTicker();
   const player = riderOf(run.view.riders, PLAYER_RIDER);
   if (!player) {
     throw new Error("The race has no player.");
@@ -247,7 +240,6 @@ export const createHost = (options: HostOptions = {}): Host => {
   bound.resize();
   installFrameLoop({
     applyPending: bound.applyPending,
-    cast: { inputs },
     checkPresented: bound.checkPresented,
     draw: () => {
       bound.present();
