@@ -1,4 +1,5 @@
 export type RegionId =
+  | "casa-de-campo"
   | "salt-coast"
   | "cinder-flats"
   | "kettle-woods"
@@ -26,6 +27,12 @@ export interface Region {
 }
 
 export const regions = {
+  "casa-de-campo": {
+    hazardMix: { oil: 0.6, pothole: 0.2, rock: 0.2 },
+    id: "casa-de-campo",
+    name: "Casa de Campo",
+    propMix: { chevron: 1, pole: 0, rock: 0, tree: 0 },
+  },
   "cinder-flats": {
     hazardMix: { oil: 0.6, pothole: 0.15, rock: 0.25 },
     id: "cinder-flats",

@@ -5,10 +5,20 @@ import { sampleAlignment } from "@racer/track/alignment";
 import type { TrackPiece } from "@racer/track/alignment";
 import { readCorridor } from "@racer/track/madrid-corridor";
 import type { Position } from "@racer/track/madrid-schema";
+import { roadAtLevel, roadIds, roadLevels } from "@racer/track/road";
+import { roads } from "@racer/track/roads";
+import { compileTrack } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
 
 import { fitPolyline } from "../src/fit.ts";
 import { between, corridorLine } from "../src/geometry.ts";
+import { fitGrades } from "../src/grade.ts";
+import {
+  curvatureFlipsPerKilometre,
+  gradeChangeFlipsPerKilometre,
+  sharpestGradeChange,
+  smoothRoad,
+} from "../src/smoothness.ts";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const corridor = readCorridor(
@@ -26,7 +36,7 @@ const piece = (length: number, endCurvature: number): TrackPiece => ({
   length,
 });
 
-const options = { pieceLengthM: 25, smoothing: 1000 };
+const options = { pieceLengthM: 25, slowPlaces: [] };
 
 describe("fitting pieces to a street", () => {
   it("fits a road laid from pieces back onto itself, start and all", () => {
@@ -51,11 +61,11 @@ describe("fitting pieces to a street", () => {
       -(road.worldZ[index] ?? 0),
     ]);
     const fit = fitPolyline(line, { ...options, minRadiusM: 0 });
-    expect(fit.error.maxM).toBeLessThan(0.05);
+    expect(fit.error.maxM).toBeLessThan(0.3);
     expect(fit.lengthM).toBe(700);
-    expect(fit.minRadiusM).toBeCloseTo(120, -1);
+    expect(fit.minRadiusM).toBeGreaterThan(110);
     expect({
-      heading: Number(fit.start.heading.toFixed(3)),
+      heading: Number(fit.start.heading.toFixed(2)),
       x: Number(fit.start.x.toFixed(1)),
       z: Number(fit.start.z.toFixed(1)),
     }).toStrictEqual(start);
@@ -132,6 +142,74 @@ describe("fitting pieces to a street", () => {
       p95M: Number(fit.error.p95M.toFixed(1)),
       rmsM: Number(fit.error.rmsM.toFixed(1)),
       tightestM: Number(fit.minRadiusM.toFixed(1)),
-    }).toStrictEqual({ maxM: 1, p95M: 0.4, rmsM: 0.2, tightestM: 60 });
+    }).toStrictEqual({ maxM: 1.8, p95M: 1, rmsM: 0.4, tightestM: 72.9 });
+  });
+
+  it("holds every existing road to the smoothness limits", () => {
+    for (const roadId of roadIds) {
+      for (const level of roadLevels) {
+        const track = compileTrack(roadAtLevel(roads[roadId], level));
+        expect(curvatureFlipsPerKilometre(track)).toBeLessThanOrEqual(
+          smoothRoad.curvatureFlipsPerKilometre
+        );
+        expect(gradeChangeFlipsPerKilometre(track)).toBeLessThanOrEqual(
+          smoothRoad.gradeChangeFlipsPerKilometre
+        );
+        expect(sharpestGradeChange(track)).toBeLessThanOrEqual(
+          smoothRoad.gradeChangePerMetre
+        );
+      }
+    }
+  });
+
+  it("fits a noisy straight street inside the smoothness limits", () => {
+    const street: Position[] = Array.from({ length: 51 }, (_, index) => [
+      0.5 * Math.sin(index * 2.4),
+      index * 20,
+    ]);
+    const fit = fitPolyline(street, { ...options, minRadiusM: 60 });
+    const road = sampleAlignment({
+      leadInLength: 0,
+      pieces: fit.pieces,
+      runoffLength: 0,
+      start: fit.start,
+    });
+    expect(curvatureFlipsPerKilometre(road)).toBeLessThanOrEqual(
+      smoothRoad.curvatureFlipsPerKilometre
+    );
+    expect(fit.error.maxM).toBeLessThan(0.6);
+  });
+
+  it("fits a noisy climb inside the smoothness limits", () => {
+    const knotS = Float64Array.from({ length: 41 }, (_, knot) => knot * 25);
+    const samples = Array.from({ length: 101 }, (_, index) => {
+      const s = index * 10;
+      return {
+        groundM:
+          0.04 * s + 0.4 * Math.sin(index * 2.4) + 0.2 * Math.sin(index * 0.9),
+        s,
+      };
+    });
+    const grades = fitGrades({ knotS, samples });
+    const road = sampleAlignment({
+      leadInLength: 0,
+      pieces: [
+        { ...piece(25, 0), endGrade: grades.knots[1] ?? 0 },
+        ...Array.from(grades.knots.subarray(2), (endGrade) => ({
+          ...piece(25, 0),
+          endGrade,
+        })),
+      ],
+      runoffLength: 0,
+      start: { heading: 0, x: 0, z: 0 },
+    });
+    expect(road).toHaveLength(knotS.at(-1) ?? 0);
+    expect(gradeChangeFlipsPerKilometre(road)).toBeLessThanOrEqual(
+      smoothRoad.gradeChangeFlipsPerKilometre
+    );
+    expect(sharpestGradeChange(road)).toBeLessThanOrEqual(
+      smoothRoad.gradeChangePerMetre
+    );
+    expect(grades.rmsM).toBeLessThan(0.5);
   });
 });

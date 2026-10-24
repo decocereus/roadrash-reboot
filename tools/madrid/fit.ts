@@ -28,7 +28,6 @@ const options = parseArgs({
   },
 }).values;
 const PIECE_LENGTH = 25;
-const SMOOTHING = 1000;
 const FORCED_MARGIN = 1;
 
 interface Stretch {
@@ -111,7 +110,7 @@ const main = Effect.gen(function* main() {
       fit: fitPolyline(polyline, {
         minRadiusM,
         pieceLengthM: PIECE_LENGTH,
-        smoothing: SMOOTHING,
+        slowPlaces: [],
       }),
       minRadiusM,
     }));

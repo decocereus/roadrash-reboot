@@ -164,7 +164,7 @@ type Track = RaceSetup["track"];
 
 type RaceSettings = Omit<
   Track["plan"],
-  "leadInLength" | "pieces" | "runoffLength" | "start"
+  "leadInLength" | "pieces" | "runoffLength" | "scenery" | "start"
 >;
 
 interface RaceTrack extends Omit<Track, "plan"> {
