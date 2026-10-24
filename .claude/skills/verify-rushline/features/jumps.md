@@ -26,7 +26,7 @@ Preconditions:
 - **Air.** Run `rv open --run <run> "/?ride=breakwater-run&at=3700&autopilot&prof&hold=air&holdafter=20" --until race`, `rv wait --run <run> held --timeout 90`, `rv js --run <run> '({ tick: globalThis.__rushlineProfile.info().tick, speed: document.querySelector("[role=meter][aria-label=Speed]").getAttribute("aria-valuenow") })'`, `rv shot --run <run> ramp-air`. `__rushlineHeld` is true a third of a second into the air, at about tick 643, and the speed reads 208 km/h. The frame should show the bike in the air where the chase camera usually frames it; see Gotchas.
 - **Landing.** Run `rv js --run <run> 'globalThis.__rushlineRelease()'` and at once `rv screencast --run <run> ramp-landing --seconds 3`. The frames show the bike coming down, dust in the road's colour, and the dust gone within half a second. About 180 frames over 3 seconds; look at several, not just the first.
 - **Landing moment.** Run `rv open --run <run> "/?ride=breakwater-run&at=3700&autopilot&prof&hold=land&holdafter=2" --until race`, `rv wait --run <run> held --timeout 90`, `rv shot --run <run> ramp-land`. The frozen frame shows the bike back on the road at about 200 km/h with a pale dust puff and yellow spark streaks at the rear wheel.
-- **Every road.** Repeat Air with `ride=` and `at=` about 350 m before each ramp listed above, for example `ride=slag-row&level=4&at=10530` for the 10.88 km ramp.
+- **Every road.** Repeat Air with `ride=` and `at=` about 350 m before each ramp listed above, for example `ride=slag-row&at=6930` for the 7.28 km ramp. The 10.88 km ramp is only on level-4 roads, so `ride=slag-row&level=4&at=10530` reaches it only when `apps/web/src/server/race-rules.ts` serves four or more levels.
 
 ## Gotchas
 

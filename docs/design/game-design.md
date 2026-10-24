@@ -70,6 +70,7 @@ The five columns of the career tables are **rungs**. A career with five levels g
 - Everything the field brings reads that rung. That covers rival bikes and weapons, pacing, the police and their fine, and the repair bill.
 - A level also takes in the rungs between its field's rung and the one below. At three levels the bikes, story chapters and Vic's cards of rungs 2 and 3 arrive at level 2, and those of rungs 4 and 5 at level 3. Dee turns ally at the level whose field rides rung 3 or higher.
 - Prizes are the rung's prizes times the number of rungs the level climbs to the next one: two at three levels and one at five. One level now has to pay for two steps of bike (section 5).
+- Which bikes the rivals ride depends on the count. At three levels all nine are under some rival. At two levels the fields ride rungs 1 and 5 and nobody rides the Sesta, because Juno, its only rung-1 rider, sits out level 1.
 - Road lengths, traffic and roadblock spots still follow the career level, so level 3's roads are the level-3 roads in the table below. Whether the last level should run the level-5 roads is open.
 
 ### Levels and roads

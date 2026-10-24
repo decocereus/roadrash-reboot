@@ -1,7 +1,8 @@
-import { benchRaces, benchSetup } from "@racer/career/bench";
+import { benchRaces, benchSetup, recordedRules } from "@racer/career/bench";
 import type { Bench } from "@racer/career/bench";
 import type { RaceRules } from "@racer/career/rules";
-import { roadIds, roadLevels } from "@racer/track/road";
+import { levelsOf } from "@racer/career/rules";
+import { roadIds } from "@racer/track/road";
 
 import type { RacePlan } from "../game/hud.ts";
 import { planFor } from "./flow.ts";
@@ -19,6 +20,7 @@ export const benchOf = (search: string): Bench | null => {
 export const benchPlan = (bench: Bench): RacePlan => ({
   bikeId: benchRaces[bench].bikeId,
   mode: "quick",
+  rules: recordedRules,
   setup: benchSetup(bench),
 });
 
@@ -29,7 +31,7 @@ export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
     return null;
   }
   const level =
-    roadLevels.find((each) => each === Number(flags.get("level"))) ?? 1;
+    levelsOf(rules).find((each) => each === Number(flags.get("level"))) ?? 1;
   return planFor(rules, null, {
     bikeId: "ostra-sesta-600",
     level,

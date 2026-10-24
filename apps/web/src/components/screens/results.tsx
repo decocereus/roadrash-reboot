@@ -81,15 +81,9 @@ const sheetOf = (lines: number) => ({
   sheet: { h: SHEET_MARGINS + lines * ROW_HEIGHT, w: 570, x: 548, y: 104 },
 });
 
-const RaceSheet = ({
-  report,
-  fieldSize,
-}: {
-  readonly report: RaceReport;
-  readonly fieldSize: number;
-}) => {
+const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
   const { rows } = report.summary;
-  const lines = Math.max(fieldSize, PLATE_LINES);
+  const lines = Math.max(rows.length, PLATE_LINES);
   const boxes = sheetOf(lines);
   const reference = gapFrom(rows);
   const notes = incidentLines(report.summary.incidents);
@@ -424,7 +418,7 @@ export const ResultsScreen = ({
         <BarSeats figure={speaker?.figure ?? null} />
         {speaker && <SpeechSticker speech={speaker.speech} />}
         <BarHeader standing={career ? { career, rules } : null} />
-        <RaceSheet fieldSize={rules.fieldSize} report={report} />
+        <RaceSheet report={report} />
         <Outcome report={report} />
         {report.ledger && <Takings ledger={report.ledger} />}
         {note !== null && <MagentaNote note={note} />}

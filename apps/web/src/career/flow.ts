@@ -73,11 +73,13 @@ export const planFor = (
     ? {
         bikeId: career.bikeId,
         mode: entry.mode,
+        rules,
         setup: setupFor(rules, career, entry.roadId, entry.seed, track),
       }
     : {
         bikeId: entry.bikeId,
         mode: entry.mode,
+        rules,
         setup: practiceSetup(rules, entry, track),
       };
 };
@@ -94,7 +96,6 @@ export const careerReport = (last: LastResult): RaceReport => ({
 });
 
 export const quickReport = (
-  rules: RaceRules,
   plan: RacePlan,
   outcome: RaceOutcome
 ): RaceReport => ({
@@ -106,7 +107,7 @@ export const quickReport = (
   result: outcome.result,
   roadId: outcome.roadId,
   summary: summaryOf(
-    rules,
+    plan.rules,
     {
       bikeId: plan.bikeId,
       level: outcome.level,
