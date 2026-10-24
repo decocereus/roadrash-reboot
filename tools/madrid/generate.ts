@@ -1,15 +1,19 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import * as NodeChildProcessSpawner from "@effect/platform-node/NodeChildProcessSpawner";
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import { readCorridor } from "@racer/track/madrid-corridor";
 import { Corridor } from "@racer/track/madrid-schema";
 import { madridSources } from "@racer/track/madrid-sources";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
+import * as Layer from "effect/Layer";
+import * as ChildProcess from "effect/process/ChildProcess";
+import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 import * as Schema from "effect/Schema";
-import { format } from "oxfmt";
 
 import { acquire } from "./src/acquire.ts";
 import { buildBuildings, buildLandmark, buildSignals } from "./src/context.ts";
@@ -86,21 +90,26 @@ const main = Effect.gen(function* main() {
   const target = path.join(root, "packages/track/data");
   yield* fs.writeFileString(path.join(target, "madrid-corridor.json"), output);
   const schemaFile = path.join(target, "madrid-corridor.schema.json");
-  const formatted = yield* Effect.promise(
-    async () =>
-      await format(
-        schemaFile,
-        JSON.stringify({
-          $schema: "https://json-schema.org/draft/2020-12/schema",
-          ...schema.schema,
-          $defs: schema.definitions,
-        })
-      )
+  yield* fs.writeFileString(
+    schemaFile,
+    JSON.stringify({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      ...schema.schema,
+      $defs: schema.definitions,
+    })
   );
-  if (formatted.errors.length > 0) {
-    yield* Effect.fail(new Error("Could not format generated JSON Schema"));
+  const spawner = yield* ChildProcessSpawner;
+  const exitCode = yield* spawner.exitCode(
+    ChildProcess.make("pnpm", ["exec", "oxfmt", schemaFile], {
+      cwd: root,
+      stderr: "inherit",
+      stdin: "ignore",
+      stdout: "inherit",
+    })
+  );
+  if (exitCode !== 0) {
+    yield* Effect.fail(new Error(`Schema formatter exited ${exitCode}`));
   }
-  yield* fs.writeFileString(schemaFile, formatted.code);
   const font = yield* fs.readFile(
     path.join(
       root,
@@ -131,4 +140,7 @@ const main = Effect.gen(function* main() {
   console.log(`Preview: ${options.preview}`);
 });
 
-NodeRuntime.runMain(main.pipe(Effect.provide(NodeFileSystem.layer)));
+const services = NodeChildProcessSpawner.layer.pipe(
+  Layer.provideMerge(Layer.mergeAll(NodeFileSystem.layer, NodePath.layer))
+);
+NodeRuntime.runMain(main.pipe(Effect.provide(services)));

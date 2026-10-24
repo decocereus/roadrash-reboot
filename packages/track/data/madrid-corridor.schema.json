@@ -30,7 +30,9 @@
               },
               {
                 "type": "object",
-                "properties": { "kind": { "type": "string", "enum": ["unavailable"] } },
+                "properties": {
+                  "kind": { "type": "string", "enum": ["unavailable"] }
+                },
                 "required": ["kind"],
                 "additionalProperties": true
               }
@@ -157,7 +159,14 @@
           "revision": { "type": "integer" },
           "wikidata": { "type": "string", "pattern": "^Q[0-9]+$" }
         },
-        "required": ["atM", "distanceM", "name", "position", "revision", "wikidata"],
+        "required": [
+          "atM",
+          "distanceM",
+          "name",
+          "position",
+          "revision",
+          "wikidata"
+        ],
         "additionalProperties": true
       }
     },
@@ -255,14 +264,20 @@
                   "type": "object",
                   "properties": {
                     "bridge": {
-                      "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                      "anyOf": [
+                        { "type": "string", "pattern": "^Q[0-9]+$" },
+                        { "type": "null" }
+                      ]
                     },
                     "centreline": {
                       "type": "array",
                       "prefixItems": [
                         {
                           "type": "array",
-                          "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                          "prefixItems": [
+                            { "type": "number" },
+                            { "type": "number" }
+                          ],
                           "maxItems": 2,
                           "minItems": 2
                         }
@@ -270,7 +285,10 @@
                       "minItems": 1,
                       "items": {
                         "type": "array",
-                        "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                        "prefixItems": [
+                          { "type": "number" },
+                          { "type": "number" }
+                        ],
                         "maxItems": 2,
                         "minItems": 2
                       },
@@ -315,14 +333,20 @@
                 "type": "object",
                 "properties": {
                   "bridge": {
-                    "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                    "anyOf": [
+                      { "type": "string", "pattern": "^Q[0-9]+$" },
+                      { "type": "null" }
+                    ]
                   },
                   "centreline": {
                     "type": "array",
                     "prefixItems": [
                       {
                         "type": "array",
-                        "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                        "prefixItems": [
+                          { "type": "number" },
+                          { "type": "number" }
+                        ],
                         "maxItems": 2,
                         "minItems": 2
                       }
@@ -330,7 +354,10 @@
                     "minItems": 1,
                     "items": {
                       "type": "array",
-                      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                      "prefixItems": [
+                        { "type": "number" },
+                        { "type": "number" }
+                      ],
                       "maxItems": 2,
                       "minItems": 2
                     },
@@ -390,14 +417,20 @@
                 "type": "object",
                 "properties": {
                   "bridge": {
-                    "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                    "anyOf": [
+                      { "type": "string", "pattern": "^Q[0-9]+$" },
+                      { "type": "null" }
+                    ]
                   },
                   "centreline": {
                     "type": "array",
                     "prefixItems": [
                       {
                         "type": "array",
-                        "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                        "prefixItems": [
+                          { "type": "number" },
+                          { "type": "number" }
+                        ],
                         "maxItems": 2,
                         "minItems": 2
                       }
@@ -405,7 +438,10 @@
                     "minItems": 1,
                     "items": {
                       "type": "array",
-                      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                      "prefixItems": [
+                        { "type": "number" },
+                        { "type": "number" }
+                      ],
                       "maxItems": 2,
                       "minItems": 2
                     },
@@ -450,14 +486,20 @@
               "type": "object",
               "properties": {
                 "bridge": {
-                  "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                  "anyOf": [
+                    { "type": "string", "pattern": "^Q[0-9]+$" },
+                    { "type": "null" }
+                  ]
                 },
                 "centreline": {
                   "type": "array",
                   "prefixItems": [
                     {
                       "type": "array",
-                      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                      "prefixItems": [
+                        { "type": "number" },
+                        { "type": "number" }
+                      ],
                       "maxItems": 2,
                       "minItems": 2
                     }

@@ -264,9 +264,6 @@ importers:
       '@types/node':
         specifier: 26.4.1
         version: 26.4.1
-      oxfmt:
-        specifier: 0.67.0
-        version: 0.67.0
       vitest:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(jiti@2.7.0)(yaml@2.9.1))
