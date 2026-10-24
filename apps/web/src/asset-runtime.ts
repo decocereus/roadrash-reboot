@@ -4,27 +4,35 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import type * as Scope from "effect/Scope";
 
-import type { AssetRequest, BikesRequest, LoadRequest } from "./asset-load.ts";
+import type {
+  AssetRequest,
+  BikesRequest,
+  CelebrityRequest,
+  LoadRequest,
+} from "./asset-load.ts";
 import {
   AssetDecoder,
   FontReadiness,
   loadAssets,
   loadBikes,
+  loadCelebrity,
   ModelTransport,
 } from "./assets/load.ts";
 import type { ByteCache, Fonts, Transport } from "./assets/load.ts";
 import { modelUrls } from "./assets/model-urls.ts";
 import type { ModelUrls } from "./assets/model-urls.ts";
 import type { AssetParsers } from "./game/assets.ts";
+import type { CelebrityId } from "./game/figure-wear.ts";
 
 interface AssetServices {
   readonly fonts: Fonts;
   readonly transport: Transport;
 }
 
-interface AssetRuntime {
+export interface AssetRuntime {
   readonly mount: (request: AssetRequest) => void;
   readonly mountBikes: (request: BikesRequest) => void;
+  readonly mountCelebrity: (id: CelebrityId, request: CelebrityRequest) => void;
 }
 
 type Needs = AssetParsers | Fonts | Scope.Scope | Transport;
@@ -92,7 +100,11 @@ export const createAssetRuntime = (
     hold(loadBikes(cache, urls), request);
   };
 
-  return { mount, mountBikes };
+  const mountCelebrity = (id: CelebrityId, request: CelebrityRequest): void => {
+    hold(loadCelebrity(cache, urls.celebrities[id]), request);
+  };
+
+  return { mount, mountBikes, mountCelebrity };
 };
 
 const pageCache: ByteCache = new Map();

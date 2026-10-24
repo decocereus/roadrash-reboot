@@ -1,3 +1,5 @@
+import { celebrityIds } from "@racer/web/figure-wear";
+
 import type { FeatureEntry } from "./feature-map.ts";
 
 export const platformFeatures: readonly FeatureEntry[] = [
@@ -149,6 +151,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/assets/font-readiness-failed.ts",
       "apps/web/src/game/assets.ts",
       "apps/web/test/asset-load.test.ts",
+      "apps/web/test/celebrity-load.test.ts",
       "apps/web/test/node-images.ts",
     ],
     perf: [],
@@ -158,7 +161,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/assets.ts",
     ],
     summary:
-      "Booting the game module with a dynamic import, downloading and decoding the eleven models, waiting for fonts, and the typed failures of each step.",
+      "Booting the game module with a dynamic import, downloading and decoding the nine boot models, loading each celebrity's model when a race dresses a rider in it, waiting for fonts, and the typed failures of each step.",
     title: "Model and font loading",
     verify: ["frame-rate.md"],
   },
@@ -180,8 +183,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "assets.glb.rider_a",
       "assets.glb.rider_b",
       "assets.glb.rider_c",
-      "assets.glb.rider_kylie",
-      "assets.glb.rider_ronaldo",
+      ...celebrityIds.map((id) => `assets.glb.rider_${id}`),
       "assets.glb.seraph",
       "assets.glb.van",
       "assets.glb.total",

@@ -419,7 +419,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/actors.ts",
     ],
     summary:
-      "The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, the painted celebrity figures and the `?as` and `?against` flags that dress riders in them, each maker's bike model, and the instanced fleet of cars.",
+      "The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, the painted celebrity figures, the `?as` and `?against` flags that dress riders in them and the wardrobe that holds the celebrity figures the race on screen wears, each maker's bike model, and the instanced fleet of cars.",
     title: "Riders, bikes and cars on screen",
     verify: ["riding-and-fighting.md"],
   },

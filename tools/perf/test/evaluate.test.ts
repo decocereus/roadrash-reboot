@@ -224,8 +224,9 @@ describe("perf gate red cases", () => {
       ...plainFixture,
       missingGlb: "seraph",
     });
+    const inventory = [...glbNames].toSorted();
     expect(unlisted.problems).toContain(
-      `GLB inventory is ${glbNames.filter((name) => name !== "seraph").join(", ")}; expected ${glbNames.join(", ")}`
+      `GLB inventory is ${inventory.filter((name) => name !== "seraph").join(", ")}; expected ${inventory.join(", ")}`
     );
   });
 

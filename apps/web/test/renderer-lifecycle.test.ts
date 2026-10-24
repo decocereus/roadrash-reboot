@@ -12,12 +12,13 @@ import { modelUrls } from "../src/assets/model-urls.ts";
 import { createBikes, createFleet } from "../src/game/actors.ts";
 import type { Fleet } from "../src/game/actors.ts";
 import { assetParsers, glows } from "../src/game/assets.ts";
-import type { Assets, BikeParts } from "../src/game/assets.ts";
+import type { Assets, BikeParts, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelFor, bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import type { Shading } from "../src/game/cel.ts";
 import { disposeTree } from "../src/game/dispose.ts";
 import { bodyFor } from "../src/game/figure-rig.ts";
+import { celebrityIds } from "../src/game/figure-wear.ts";
 import { createHazardMarks } from "../src/game/hazards.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh, isMesh, isSkinnedMesh } from "../src/game/meshes.ts";
@@ -37,21 +38,17 @@ const bytesOf = (url: string): ArrayBuffer => {
 const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.figures;
   const { classic, ghost, oni, seraph } = modelUrls.bikes;
-  const { kylie, ronaldo } = modelUrls.celebrities;
-  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c, d, e] =
-    await Promise.all([
-      assetParsers.parts(bytesOf(classic), classic),
-      assetParsers.parts(bytesOf(ghost), ghost),
-      assetParsers.parts(bytesOf(oni), oni),
-      assetParsers.parts(bytesOf(seraph), seraph),
-      assetParsers.whole(bytesOf(modelUrls.car), modelUrls.car),
-      assetParsers.whole(bytesOf(modelUrls.van), modelUrls.van),
-      assetParsers.rider(bytesOf(riderA), riderA),
-      assetParsers.rider(bytesOf(riderB), riderB),
-      assetParsers.rider(bytesOf(riderC), riderC),
-      assetParsers.rider(bytesOf(kylie), kylie),
-      assetParsers.rider(bytesOf(ronaldo), ronaldo),
-    ]);
+  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c] = await Promise.all([
+    assetParsers.parts(bytesOf(classic), classic),
+    assetParsers.parts(bytesOf(ghost), ghost),
+    assetParsers.parts(bytesOf(oni), oni),
+    assetParsers.parts(bytesOf(seraph), seraph),
+    assetParsers.whole(bytesOf(modelUrls.car), modelUrls.car),
+    assetParsers.whole(bytesOf(modelUrls.van), modelUrls.van),
+    assetParsers.rider(bytesOf(riderA), riderA),
+    assetParsers.rider(bytesOf(riderB), riderB),
+    assetParsers.rider(bytesOf(riderC), riderC),
+  ]);
   return {
     bikes: {
       classic: bikeA.value,
@@ -60,11 +57,19 @@ const pinnedAssets = async (): Promise<Assets> => {
       seraph: bikeD.value,
     },
     car: car.value,
-    celebrities: { kylie: d.value, ronaldo: e.value },
     figures: [a.value, b.value, c.value],
     van: van.value,
   };
 };
+
+const pinnedCelebrities = async (): Promise<RiderAsset[]> =>
+  await Promise.all(
+    celebrityIds.map(async (id) => {
+      const url = modelUrls.celebrities[id];
+      const { value } = await assetParsers.rider(bytesOf(url), url);
+      return value;
+    })
+  );
 
 const counted = (target: THREE.EventDispatcher<{ dispose: object }>) => {
   const seen = { count: 0 };
@@ -222,11 +227,8 @@ describe("rider figures", () => {
   it("draws every rider as one skinned mesh and paints only a celebrity from its atlas", async () => {
     const shading = createShading(lookOf(track.plan.region));
     const assets = await pinnedAssets();
-    const bodies = [
-      bodyFor(assets, 0),
-      assets.celebrities.kylie,
-      assets.celebrities.ronaldo,
-    ];
+    const celebrities = await pinnedCelebrities();
+    const bodies = [bodyFor(assets, 0), ...celebrities];
     const drawn = bodies.map((asset) => {
       const figure = createRiderFigure(asset, shading, 0);
       const atlas = mapOf(skinnedOf(figure.root));
@@ -236,15 +238,14 @@ describe("rider figures", () => {
     expect(drawn).toStrictEqual(bodies.map((asset) => asset.atlas));
     expect(drawn.map((atlas) => atlas === null)).toStrictEqual([
       true,
-      false,
-      false,
+      ...celebrities.map(() => false),
     ]);
   });
 
   it("keeps a celebrity's helmet on the head it was modelled on", async () => {
     const shading = createShading(lookOf(track.plan.region));
-    const assets = await pinnedAssets();
-    const reaches = Object.values(assets.celebrities).map((asset) => {
+    const celebrities = await pinnedCelebrities();
+    const reaches = celebrities.map((asset) => {
       const figure = createRiderFigure(asset, shading, 0);
       figure.root.updateMatrixWorld(true);
       const body = skinnedOf(figure.root);

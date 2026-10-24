@@ -2,6 +2,7 @@ import { recordedRules } from "@racer/career/bench";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
 
+import { celebrityLoader } from "../src/asset-load.ts";
 import { browserAssetRuntime } from "../src/asset-runtime.ts";
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
 import type { QuickPick } from "../src/career/flow.ts";
@@ -96,7 +97,12 @@ const nextEvent = async (target: EventTarget, type: string): Promise<null> => {
 
 const acquire = async (notes: string[]): Promise<AcquiredAssets> => {
   const { promise, reject, resolve } = Promise.withResolvers<AcquiredAssets>();
-  browserAssetRuntime().mount({
+  const runtime = browserAssetRuntime();
+  const loadCelebrity = celebrityLoader(
+    runtime.mountCelebrity,
+    Promise.resolve({ assetParsers })
+  );
+  runtime.mount({
     failed: reject,
     fontFallback: (error) => {
       notes.push(`fonts: ${error.message}`);
@@ -105,7 +111,7 @@ const acquire = async (notes: string[]): Promise<AcquiredAssets> => {
       reject(new Error("The asset load was interrupted."));
     },
     loaded: (assets, release) => {
-      resolve({ assets, release });
+      resolve({ assets, loadCelebrity, release });
     },
     parsers: assetParsers,
     signal: new AbortController().signal,

@@ -56,7 +56,6 @@ export interface Assets {
   readonly car: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
-  readonly celebrities: Readonly<Record<CelebrityId, RiderAsset>>;
 }
 
 const fixedColours: ReadonlyMap<string, string> = new Map([
@@ -335,9 +334,15 @@ export interface AssetParsers {
   readonly rider: Parse<RiderAsset>;
 }
 
+export type LoadCelebrity = (
+  id: CelebrityId,
+  signal: AbortSignal
+) => Promise<Decoded<RiderAsset> | null>;
+
 export interface AcquiredAssets {
   readonly assets: Assets;
   readonly release: () => void;
+  readonly loadCelebrity: LoadCelebrity;
 }
 
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);

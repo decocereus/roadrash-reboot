@@ -12,6 +12,7 @@
     "@racer/devtools": "workspace:*",
     "@racer/sim": "workspace:*",
     "@racer/telemetry": "workspace:*",
+    "@racer/web": "workspace:*",
     "effect": "4.0.0"
   },
   "devDependencies": {

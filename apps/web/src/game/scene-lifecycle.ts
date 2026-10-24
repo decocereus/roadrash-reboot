@@ -11,6 +11,7 @@ import type { Fleet } from "./actors.ts";
 import type { Assets } from "./assets.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import type { DevRide } from "./dev-ride.ts";
+import type { Dressing } from "./figure-wardrobe.ts";
 import type { Pipeline } from "./post.ts";
 import { createPreparation } from "./preparation.ts";
 import type { Clock, PrepareOutcome } from "./preparation.ts";
@@ -55,7 +56,7 @@ export const createStage = (
 interface StageParts {
   readonly assets: Assets;
   readonly autopilot: boolean;
-  readonly buildViews: () => void;
+  readonly buildViews: (dressing: Dressing) => void;
   readonly cast: Pick<Cast, "bikes" | "puffs" | "views">;
   readonly chase: ChaseCamera;
   readonly clock: Clock;
@@ -176,7 +177,11 @@ export const bindStage = ({
     stage.warming = false;
   };
 
-  const build = (setup: RaceSetup, forRace: boolean): (() => void) => {
+  const build = (
+    setup: RaceSetup,
+    dressing: Dressing,
+    forRace: boolean
+  ): (() => void) => {
     const releaseActors = retire();
     const previous = stage.world;
     takeTrack(setup.track);
@@ -194,7 +199,7 @@ export const bindStage = ({
     for (let index = 0; index < cars.length; index += 1) {
       stage.previousCars[index] = cars[index]?.s ?? 0;
     }
-    buildViews();
+    buildViews(dressing);
     chase.snap();
     return () => {
       releaseActors();

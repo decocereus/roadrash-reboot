@@ -7,7 +7,7 @@
 | Command | What it checks | Where it runs |
 | --- | --- | --- |
 | `pnpm check:perf` | `budgets.json` and the baseline in `baselines/` against their schema, the scenario registry and each other. It measures nothing and takes about a second. | `pnpm check`, so also the CI static job |
-| `pnpm perf` | The Node lane (throughput, tick p95 and p99, allocated bytes per tick) and the build lane (route, game, Worker and client bytes, the eleven GLBs and the decoded size of their textures), side A against side B in one run. | `pnpm verify` and the CI `perf` job |
+| `pnpm perf` | The Node lane (throughput, tick p95 and p99, allocated bytes per tick) and the build lane (route, game, Worker and client bytes, the fifteen GLBs and the decoded size of their textures), side A against side B in one run. | `pnpm verify` and the CI `perf` job |
 | `pnpm perf:gpu` | Frame pacing, render counts (draw calls, triangles, shader programs and textures), and shader programs or textures first created mid-race in the two Slag Row scenarios, in two windowed Helium runs on this Mac's GPU. | Locally, by hand. CI never runs it. |
 
 Render counts are checked only by `pnpm perf:gpu`, on this Mac. CI has no GPU, and on a software renderer (SwiftShader) the pack scene draws about one frame a second, too slow to fill a measured window, so there is no CI count lane. A change that adds draw calls, triangles, programs or textures passes CI and fails `pnpm perf:gpu`, so run the GPU lane before you merge a change to the renderer, the scene or the assets.
