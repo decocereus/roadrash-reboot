@@ -199,11 +199,32 @@ describe("perf gate red cases", () => {
     });
     expect(failing(evaluateGate(samples, approved).lines)).toStrictEqual([
       "FAIL build - assets.glb.bike [build] observed=65 B limit <= 64 B delta=+1 B A=64",
-      "FAIL build - assets.glb.total [build] observed=385 B limit <= 384 B delta=+1 B A=384",
+      "FAIL build - assets.glb.total [build] observed=577 B limit <= 576 B delta=+1 B A=576",
     ]);
     const entry = throughEntry(samples, approved);
     expect(entry.status).toBe(1);
     expect(entry.stdout).toContain("FAIL build - assets.glb.total");
+  });
+
+  it("measures a model that side A predates without failing side A's inventory", async () => {
+    const before = await accounted("A", {
+      ...plainFixture,
+      missingGlb: "seraph",
+    });
+    const after = await accounted("B", plainFixture);
+    const approved = syntheticBudgets({ A: after, B: after });
+    const samples = samplesOf("glb", steadyLanes(steady), {
+      A: before,
+      B: after,
+    });
+    expect(failing(evaluateGate(samples, approved).lines)).toStrictEqual([]);
+    const unlisted = await accounted("B", {
+      ...plainFixture,
+      missingGlb: "seraph",
+    });
+    expect(unlisted.problems).toContain(
+      "GLB inventory is bike, car, ghost, oni, rider_a, rider_b, rider_c, van; expected bike, car, ghost, oni, rider_a, rider_b, rider_c, seraph, van"
+    );
   });
 
   it("fails a server module that the Worker imports dynamically when it grows", async () => {
@@ -247,7 +268,7 @@ describe("perf gate red cases", () => {
       uploaderIncremental: record.closures.uploaderIncremental.raw,
       worker: record.closures.worker.raw,
     }).toStrictEqual({
-      gameIncremental: 5000 + 300 + 6 * 64,
+      gameIncremental: 5000 + 300 + 9 * 64,
       kit: 8700,
       root: 9000,
       uploaderIncremental: 400,

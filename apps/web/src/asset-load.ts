@@ -21,7 +21,7 @@ export interface AssetRequest extends LoadRequest<Assets> {
   readonly fontFallback: (error: Error) => void;
 }
 
-export type BikeRequest = LoadRequest<Assets["bike"]>;
+export type BikesRequest = LoadRequest<Assets["bikes"]>;
 
 interface ParserModule {
   readonly assetParsers: AssetParsers;
@@ -82,16 +82,16 @@ const acquire = async (
   return assets && { assets: assets.value, release: assets.release };
 };
 
-const acquireBike = async (
+const acquireBikes = async (
   showroom: Promise<ParserModule>,
   signal: AbortSignal
-): Promise<Decoded<Assets["bike"]> | null> => {
+): Promise<Decoded<Assets["bikes"]> | null> => {
   const { browserAssetRuntime } = await import("./asset-runtime.ts");
   if (signal.aborted) {
     return null;
   }
-  return await held<Assets["bike"]>(signal, showroom, (request) => {
-    browserAssetRuntime().mountBike(request);
+  return await held<Assets["bikes"]>(signal, showroom, (request) => {
+    browserAssetRuntime().mountBikes(request);
   });
 };
 
@@ -120,16 +120,16 @@ export const openShowroom = async (
   signal: AbortSignal
 ): Promise<Showroom | null> => {
   const showroom = import("./game/showroom.ts");
-  const [bike, { createShowroom }] = await Promise.all([
-    acquireBike(showroom, signal),
+  const [bikes, { createShowroom }] = await Promise.all([
+    acquireBikes(showroom, signal),
     showroom,
   ]);
-  if (bike === null) {
+  if (bikes === null) {
     return null;
   }
   if (signal.aborted) {
-    bike.release();
+    bikes.release();
     return null;
   }
-  return createShowroom(canvas, bike);
+  return createShowroom(canvas, bikes);
 };

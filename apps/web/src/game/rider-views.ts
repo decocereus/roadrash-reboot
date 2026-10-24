@@ -19,6 +19,7 @@ import { bikeColour } from "../career/colours.ts";
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Fleet, Reach } from "./actors.ts";
 import type { Assets } from "./assets.ts";
+import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
 import type { RiderPose } from "./figure-pose.ts";
@@ -312,6 +313,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       assets,
       stage.world.shading,
       stage.race.view.riders.map((rider) => ({
+        model: bikeModelFor(rider.bike.id),
         paint: rider.profile.paint,
         police: rider.profile.role === "police",
       }))

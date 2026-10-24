@@ -445,19 +445,20 @@ Test files: none
 
 ### Riders, bikes and cars on screen
 
-The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, and the instanced fleet of cars.
+The riders, bikes and traffic cars drawn from the race each frame: placement on the road, poses, punches and kicks, falls, weapons in hand, each maker's bike model, and the instanced fleet of cars.
 
 - Id: `riders-on-screen`
 - Start: `apps/web/src/game/rider-views.ts`, `apps/web/src/game/rider-figure.ts`, `apps/web/src/game/actors.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
 
 Source files:
 
 - `apps/web/src/career/colours.ts`
 - `apps/web/src/game/actors.ts`
+- `apps/web/src/game/bike-models.ts`
 - `apps/web/src/game/figure-bounds.ts`
 - `apps/web/src/game/figure-cycle.ts`
 - `apps/web/src/game/figure-ik.ts`
@@ -467,7 +468,9 @@ Source files:
 - `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-views.ts`
 
-Test files: none
+Test files:
+
+- `apps/web/test/bike-contact.ts`
 
 ### The five roads
 
@@ -657,7 +660,7 @@ Test files:
 
 ### Model and font loading
 
-Booting the game module with a dynamic import, downloading and decoding the six models, waiting for fonts, and the typed failures of each step.
+Booting the game module with a dynamic import, downloading and decoding the nine models, waiting for fonts, and the typed failures of each step.
 
 - Id: `asset-loading`
 - Start: `apps/web/src/asset-load.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/game/assets.ts`
@@ -690,7 +693,7 @@ The Blender scripts for the shipped models, the Wren and cyber sport-bike studie
 - Start: `tools/blender/compress.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build), [docs/art/wren-400-study/README.md#contract](art/wren-400-study/README.md#contract), [docs/art/cyber-bike-options/README.md#files-and-contract](art/cyber-bike-options/README.md#files-and-contract)
 - Verify: none yet
-- Perf: `assets.glb.bike`, `assets.glb.car`, `assets.glb.rider_a`, `assets.glb.rider_b`, `assets.glb.rider_c`, `assets.glb.van`, `assets.glb.total`
+- Perf: `assets.glb.bike`, `assets.glb.car`, `assets.glb.ghost`, `assets.glb.oni`, `assets.glb.rider_a`, `assets.glb.rider_b`, `assets.glb.rider_c`, `assets.glb.seraph`, `assets.glb.van`, `assets.glb.total`
 - Owns: `tools/blender/**`
 
 Source files:

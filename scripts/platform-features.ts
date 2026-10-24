@@ -153,7 +153,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/assets.ts",
     ],
     summary:
-      "Booting the game module with a dynamic import, downloading and decoding the six models, waiting for fonts, and the typed failures of each step.",
+      "Booting the game module with a dynamic import, downloading and decoding the nine models, waiting for fonts, and the typed failures of each step.",
     title: "Model and font loading",
     verify: ["frame-rate.md"],
   },
@@ -170,9 +170,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
     perf: [
       "assets.glb.bike",
       "assets.glb.car",
+      "assets.glb.ghost",
+      "assets.glb.oni",
       "assets.glb.rider_a",
       "assets.glb.rider_b",
       "assets.glb.rider_c",
+      "assets.glb.seraph",
       "assets.glb.van",
       "assets.glb.total",
     ],

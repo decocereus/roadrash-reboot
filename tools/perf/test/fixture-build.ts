@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { glbNames } from "../src/build.ts";
+import type { GlbName } from "../src/build.ts";
 import type { Side } from "../src/sides.ts";
 
 const GLB_BYTES = 64;
@@ -26,6 +27,7 @@ const ROUTER_BYTES = 1500;
 
 export interface FixtureOptions {
   readonly bikeExtraBytes: number;
+  readonly missingGlb: GlbName | null;
   readonly missingEdge: boolean;
   readonly routerExtraBytes: number;
 }
@@ -33,6 +35,7 @@ export interface FixtureOptions {
 export const plainFixture: FixtureOptions = {
   bikeExtraBytes: 0,
   missingEdge: false,
+  missingGlb: null,
   routerExtraBytes: 0,
 };
 
@@ -99,7 +102,7 @@ export const fixtureBuild = (
 ) => {
   const root = path.join(dir, `side-${name}`);
   const out = path.join(dir, `out-${name}`);
-  for (const glb of glbNames) {
+  for (const glb of glbNames.filter((each) => each !== options.missingGlb)) {
     const bytes = new Uint8Array(
       GLB_BYTES + (glb === "bike" ? options.bikeExtraBytes : 0)
     ).fill(glb.length);
