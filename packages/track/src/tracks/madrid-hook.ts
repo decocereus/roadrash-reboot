@@ -1,7 +1,9 @@
 import { clothoids } from "../alignment.ts";
+import { chevronRuns } from "../chevron-runs.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const madridHook: TrackPlan = {
+  chevrons: chevronRuns["madrid-hook"],
   features: [],
   hazardsPerKilometre: 2,
   id: "madrid-hook",

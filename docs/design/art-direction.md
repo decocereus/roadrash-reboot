@@ -162,7 +162,7 @@ Each weapon is a distinct shape and colour so the player knows what a rival hold
 
 ## Regions
 
-Each region is a kit: a ground treatment, a near prop set scattered by `scatterProps`, a far backdrop, and set pieces placed at the road's signature moments from `tracks.md`. The compiler today scatters trees, poles, rocks, and chevrons for every road; a `kit` field on `TrackPlan` selects the set below. The kits come after the first career release (`game-design.md` section 14). Until then every road uses today's scatter with its own palette, sky, and fog from this document.
+Each region is a kit: a ground treatment, a near prop set scattered by `scatterProps`, a far backdrop, and set pieces placed at the road's signature moments from `tracks.md`. The compiler today scatters trees, poles, and rocks for every road and stands chevrons before the bends a rider has to brake for; a `kit` field on `TrackPlan` selects the set below. The kits come after the first career release (`game-design.md` section 14). Until then every road uses today's scatter with its own palette, sky, and fog from this document.
 
 For launch the regions become real cities: Madrid on Slag Row's road, Mumbai on Breakwater Run's, and the Bay Area on Ridge Road's (`game-design.md` section 0). Each needs a landmark kit of buildings and set pieces that parody the real ones rather than copy them. The region notes below describe the current build.
 

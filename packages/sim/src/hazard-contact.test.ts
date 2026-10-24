@@ -31,6 +31,7 @@ import {
   clamp,
   curvePushOf,
   lateralSpeedLimit,
+  steerFor,
 } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
@@ -105,6 +106,7 @@ const leaned = (kmh: number) => {
 
 const gentleBend = compileTrack({
   ...ridgeRoad,
+  chevrons: [],
   features: [],
   hazardsPerKilometre: 0,
   pieces: eased([
@@ -127,14 +129,14 @@ const throughGentleBend = (kmh: number, rockX: number) => {
   rider.speed = kmh / KMH;
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 3 * TICK_RATE; tick += 1) {
-    const push = curvePushOf(
-      rider.bike,
-      curvatureAt(road, rider.s),
-      rider.speed
-    );
+    const curvature = curvatureAt(road, rider.s);
     const steer = clamp(
-      ((1.8 - rider.x) * 1.2 + push) /
-        lateralSpeedLimit(rider.bike, rider.speed),
+      steerFor(
+        rider.bike,
+        curvature,
+        rider.speed,
+        (1.8 - rider.x) * 1.2 + curvePushOf(rider.bike, curvature, rider.speed)
+      ),
       -1,
       1
     );
@@ -156,6 +158,7 @@ const throughGentleBend = (kmh: number, rockX: number) => {
 
 const climbThenFlat = compileTrack({
   ...ridgeRoad,
+  chevrons: [],
   features: [],
   hazardsPerKilometre: 0,
   pieces: eased([

@@ -257,8 +257,10 @@ describe("the five roads", () => {
       expect(last.worldY.slice(0, known)).toStrictEqual(
         first.worldY.slice(0, known)
       );
-      expect(last.props.filter((prop) => prop.s < first.length)).toStrictEqual(
-        first.props.filter((prop) => prop.s < first.length)
+      const knownProp = (prop: TrackProp): boolean =>
+        prop.s < first.length && prop.kind !== "chevron";
+      expect(last.props.filter(knownProp)).toStrictEqual(
+        first.props.filter(knownProp)
       );
     }
   );
@@ -287,7 +289,7 @@ describe("the five roads", () => {
       curvature: "becd6387",
       height: "bdd0d924",
       line: "cbabb60b",
-      props: "ef5015ad",
+      props: "a50b5fda",
       rocks: "0356dee5",
       slopeRate: "1656c28f",
     });

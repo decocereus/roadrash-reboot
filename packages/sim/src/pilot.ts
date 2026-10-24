@@ -1,4 +1,5 @@
 import { nextSeed, unitOf } from "@racer/track/random";
+import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { topSpeedOf } from "./engine.ts";
@@ -19,7 +20,7 @@ import { chooseLine, slickAhead } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { copAim } from "./pilot-police.ts";
 import { towardBike } from "./rider-recovery.ts";
-import { clamp, lateralSpeedLimit, PLAYER_RIDER, riderOf } from "./state.ts";
+import { clamp, PLAYER_RIDER, riderOf, steerFor } from "./state.ts";
 import type {
   PilotHistory,
   RaceState,
@@ -89,8 +90,12 @@ const ride = (
   const lateralSpeed = askedLateral(track, rider, aim.x);
   const steerLimit = rider.slip > SLIPPING ? SLIPPING_STEER : 1;
   input.steer = clamp(
-    (lateralSpeed + push) /
-      Math.max(1, lateralSpeedLimit(rider.bike, rider.speed)),
+    steerFor(
+      rider.bike,
+      curvatureAt(track, rider.s),
+      rider.speed,
+      lateralSpeed + push
+    ),
     -steerLimit,
     steerLimit
   );

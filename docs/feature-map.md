@@ -484,17 +484,19 @@ Test files:
 
 ### The five roads
 
-The five roads and their regions: each road's sections, crests, ramps, roadblock spots and the blocks that levels 2 to 5 add. Also the generated Casa de Campo hook, a development-only greybox outside the career.
+The five roads and their regions: each road's sections, crests, ramps, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the generated Casa de Campo hook, a development-only greybox outside the career.
 
 - Id: `roads`
-- Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`
+- Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#summary](design/tracks.md#summary)
 - Verify: none yet
 - Perf: none yet
-- Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`
+- Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`
 
 Source files:
 
+- `packages/sim/src/corner-warnings.ts`
+- `packages/track/src/chevron-runs.ts`
 - `packages/track/src/regions.ts`
 - `packages/track/src/tracks/breakwater-run.ts`
 - `packages/track/src/tracks/cinder-wash.ts`
@@ -505,6 +507,7 @@ Source files:
 
 Test files:
 
+- `packages/sim/src/corner-warnings.test.ts`
 - `packages/track/src/roads.test.ts`
 
 ### Frame rate and quality

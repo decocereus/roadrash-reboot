@@ -25,7 +25,7 @@ import {
   TICK_RATE,
   clamp,
   curvePushOf,
-  lateralSpeedLimit,
+  steerFor,
 } from "./state.ts";
 import type { BikeSpec, RiderState } from "./state.ts";
 
@@ -165,17 +165,18 @@ interface Cornering {
 }
 
 const feltSteer = (course: Track, rider: RiderState): number => {
-  const push = curvePushOf(
-    rider.bike,
-    curvatureAt(course, rider.s),
-    rider.speed
-  );
+  const curvature = curvatureAt(course, rider.s);
+  const push = curvePushOf(rider.bike, curvature, rider.speed);
   const drift = rider.lateralSpeed - push;
   const settling = (drift * Math.abs(drift)) / (2 * rider.bike.steerRate);
   const [lane] = course.sameWayLanes;
   return clamp(
-    (push + (lane - rider.x - settling) * 1.2) /
-      lateralSpeedLimit(rider.bike, rider.speed),
+    steerFor(
+      rider.bike,
+      curvature,
+      rider.speed,
+      push + (lane - rider.x - settling) * 1.2
+    ),
     -1,
     1
   );
