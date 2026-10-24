@@ -162,7 +162,9 @@ const useRules = (): RulesLoad | null => {
   useEffect(
     () =>
       loadRaceRules(
-        { fetch: async (url) => await globalThis.fetch(url) },
+        {
+          fetch: async (url, signal) => await globalThis.fetch(url, { signal }),
+        },
         setRules
       ),
     []

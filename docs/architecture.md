@@ -136,7 +136,7 @@ The track tests compile every road at every level. They check the lengths, the l
 | --- | --- |
 | `tables.ts` | The numbers from `docs/design/game-design.md`: prizes, repairs, fines, police speed, sight and beat per level, shop stock, road lengths, trade-in and credit rates |
 | `rules.ts` | `RaceRules`, the field size, level count, and police count per level that a career and a race are set up under, with `levelsOf` and `levelAfter` |
-| `rules-schema.ts` | `RaceRulesSchema`, the reader for served rules, which holds the field between the smallest that seats every road's home riders and `MOST_RACERS` |
+| `rules-schema.ts` | `RaceRulesSchema`, the reader for served rules, which holds the field between the smallest that seats every road's home riders and `MOST_RACERS`, and the level count at or above the level Juno first races, so the finale always has its champion |
 | `state.ts` | `CareerState` and `newCareer` |
 | `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open; `practiceCareer` and `practiceSetup`, the fresh career and setup of a quick race or a benchmark on a picked bike and level |
 | `outcome.ts` | The race log and `outcomeOf` |

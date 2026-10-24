@@ -61,6 +61,8 @@ const shuffled = <Item>(items: readonly Item[], random: Random): Item[] => {
 export const fewestRacers =
   1 + Math.max(...roadList.map((road) => homeRiders(road.id, 1).length));
 
+export const fewestLevels = rivals[CHAMPION].racesFrom;
+
 export const fieldFor = (
   rules: RaceRules,
   roadId: RoadId,

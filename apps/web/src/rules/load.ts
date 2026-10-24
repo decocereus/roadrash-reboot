@@ -10,7 +10,10 @@ import { RulesResponseRejected } from "./rules-response-rejected.ts";
 export const RULES_PATH = "/api/race-rules";
 
 export interface RulesTransport {
-  readonly fetch: (url: string) => ReturnType<typeof globalThis.fetch>;
+  readonly fetch: (
+    url: string,
+    signal: AbortSignal
+  ) => ReturnType<typeof globalThis.fetch>;
 }
 
 type RulesFailure =
@@ -35,8 +38,8 @@ const fetchRules = Effect.fn("rules.load")(function* fetchRules(
   const answer = yield* Effect.tryPromise({
     catch: (cause) =>
       new RulesRequestFailed({ cause, message: messageOf(cause) }),
-    try: async () => {
-      const response = await transport.fetch(RULES_PATH);
+    try: async (signal) => {
+      const response = await transport.fetch(RULES_PATH, signal);
       return {
         status: response.status,
         text: response.ok ? await response.text() : null,

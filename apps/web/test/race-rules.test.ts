@@ -58,6 +58,15 @@ describe("loading the race rules", () => {
           Response.json({ fieldSize: 40, levelCount: 3, police: {} })
         )
       ),
+      loaded(
+        answering(() =>
+          Response.json({
+            fieldSize: 10,
+            levelCount: 1,
+            police: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },
+          })
+        )
+      ),
     ]);
     expect(loads.map(failureOf)).toStrictEqual([
       { message: "offline", tag: "RulesRequestFailed" },
@@ -65,6 +74,7 @@ describe("loading the race rules", () => {
         message: "The race rules answered 503.",
         tag: "RulesResponseRejected",
       },
+      { message: "The race rules did not decode.", tag: "RulesDecodeFailed" },
       { message: "The race rules did not decode.", tag: "RulesDecodeFailed" },
       { message: "The race rules did not decode.", tag: "RulesDecodeFailed" },
     ]);
