@@ -1,4 +1,4 @@
-import { eased } from "@racer/track/alignment";
+import { clothoids, eased } from "@racer/track/alignment";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
@@ -16,9 +16,23 @@ import {
   straight,
 } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import { lateralSpeedLimit, PLAYER_RIDER, TICK_RATE } from "./state.ts";
 
 const MPH = 2.237;
+
+const arcOf = (curvature: number) =>
+  compileTrack({
+    ...ridgeRoad,
+    chevrons: [],
+    features: [],
+    hazardsPerKilometre: 0,
+    pieces: clothoids([
+      [40, curvature, 0],
+      [600, curvature, 0],
+      [40, 0, 0],
+    ]),
+    trafficPerKilometre: 0,
+  });
 
 const brakeIntoBend = (brake: number) => {
   const state = field(quietTrack, 1, 0, 0);
@@ -171,6 +185,27 @@ describe("riding", () => {
     );
     expect(rider.x).toBeLessThan(-1.5);
   });
+
+  it.each([
+    [1 / 474, -1],
+    [1 / 474, 1],
+    [-1 / 474, -1],
+    [-1 / 474, 1],
+  ] as const)(
+    "in a bend of curvature %d at 144 km/h, full lock at %d still reaches the bike's whole sideways speed",
+    (curvature, steer) => {
+      const arc = arcOf(curvature);
+      const state = alone(arc, streetBike);
+      const rider = player(state);
+      rider.s = 200;
+      rider.x = -3 * steer;
+      rider.speed = 40;
+      hold(state, arc, { ...cruising, steer, throttle: 0.6 }, 1.2);
+      expect(
+        rider.lateralSpeed / lateralSpeedLimit(rider.bike, rider.speed)
+      ).toBeCloseTo(steer, 2);
+    }
+  );
 
   it("the bars take most of a second to reach full lock, so a lane change takes over a second", () => {
     const state = alone(straight, streetBike);

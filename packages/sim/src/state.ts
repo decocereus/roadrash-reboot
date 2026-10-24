@@ -425,13 +425,17 @@ export const curvePushOf = (
   speed: number
 ): number => (curvature * speed * speed) / bike.curvePush;
 
-export const settledLean = (
-  bike: BikeSpec,
-  curvature: number,
-  speed: number
+const settledLean = (push: number, limit: number): number =>
+  clamp(push, -SETTLED_LEAN * limit, SETTLED_LEAN * limit);
+
+export const lateralFor = (
+  steer: number,
+  push: number,
+  limit: number,
+  share: number
 ): number => {
-  const most = SETTLED_LEAN * lateralSpeedLimit(bike, speed);
-  return clamp(curvePushOf(bike, curvature, speed), -most, most);
+  const lean = settledLean(push, limit);
+  return lean + steer * (limit - Math.sign(steer) * lean) * share;
 };
 
 export const steerFor = (
@@ -439,6 +443,9 @@ export const steerFor = (
   curvature: number,
   speed: number,
   lateralSpeed: number
-): number =>
-  (lateralSpeed - settledLean(bike, curvature, speed)) /
-  Math.max(1, lateralSpeedLimit(bike, speed));
+): number => {
+  const limit = Math.max(1, lateralSpeedLimit(bike, speed));
+  const lean = settledLean(curvePushOf(bike, curvature, speed), limit);
+  const swing = lateralSpeed - lean;
+  return swing / (limit - Math.sign(swing) * lean);
+};

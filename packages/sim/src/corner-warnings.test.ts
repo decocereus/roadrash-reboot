@@ -32,6 +32,24 @@ const quietHook = compileTrack({
 });
 
 const RIDE_LIMIT = TICK_RATE * 60;
+const BOARD_GAP = 18;
+
+const boardsOf = (track: Track) =>
+  track.props.filter((prop) => prop.kind === "chevron");
+
+const firstBoardOf = (
+  boards: readonly number[],
+  s: number
+): number | undefined => {
+  let at = boards.findLastIndex((board) => board <= s);
+  if (at < 0 || s - (boards[at] ?? 0) > BOARD_GAP) {
+    return undefined;
+  }
+  while (at > 0 && (boards[at] ?? 0) - (boards[at - 1] ?? 0) <= BOARD_GAP) {
+    at -= 1;
+  }
+  return boards[at];
+};
 
 const metres = (value: number): string =>
   value < 10_000
@@ -65,7 +83,7 @@ ${tableOf()}} as const satisfies Record<RoadId | "madrid-hook", readonly Chevron
 const brakeFromChevron = (
   track: Track,
   bike: BikeSpec,
-  run: ChevronRun,
+  from: number,
   zone: BrakingZone
 ) => {
   const setup = defaultSetup(track, 31);
@@ -76,15 +94,15 @@ const brakeFromChevron = (
     rivals: [],
   });
   const rider = player(race);
-  rider.s = run.from;
-  rider.bodyS = run.from;
+  rider.s = from;
+  rider.bodyS = from;
   rider.x = 0;
   rider.bodyX = 0;
   rider.speed = zone.approach;
   rider.throttle = 1;
   const input: RiderInput = { ...neutralInput, throttle: 1 };
   const frame = new Map([[PLAYER_RIDER, input]]);
-  const reacted = run.from + zone.approach * 0.25;
+  const reacted = from + zone.approach * 0.25;
   let offRoad = false;
   for (
     let tick = 0;
@@ -130,32 +148,40 @@ describe("corner warnings", () => {
     }
   );
 
-  it("the chevrons on the hook stand where the runs say", () => {
-    const boards = hook.props.filter((prop) => prop.kind === "chevron");
-    expect(boards.map((board) => board.s).slice(0, 1)).toStrictEqual(
-      chevronRuns["madrid-hook"].slice(0, 1).map((run) => run.from)
+  it("every chevron run on the hook has boards from its start to its end, on its side", () => {
+    const boards = boardsOf(hook);
+    const runs = chevronRuns["madrid-hook"];
+    const coverOf = (run: ChevronRun) => {
+      const along = boards.filter(
+        (board) => board.s >= run.from && board.s <= run.to
+      );
+      const stops = [...along.map((board) => board.s), run.to];
+      return {
+        from: along[0]?.s,
+        onItsSide: along.every((board) => Math.sign(board.x) === run.side),
+        spaced: stops.every((s, at) => s - (stops[at - 1] ?? s) <= BOARD_GAP),
+      };
+    };
+    expect(runs.map(coverOf)).toStrictEqual(
+      runs.map((run) => ({ from: run.from, onItsSide: true, spaced: true }))
     );
     expect(
       boards.every((board) =>
-        chevronRuns["madrid-hook"].some(
-          (run) =>
-            board.s >= run.from &&
-            board.s <= run.to &&
-            Math.sign(board.x) === run.side
-        )
+        runs.some((run) => board.s >= run.from && board.s <= run.to)
       )
     ).toBeTruthy();
   });
 
   it.each(signedFor.map((bike) => [bike.name, bike] as const))(
-    "a %s rider who brakes at the hook's first chevron of a warned bend makes the bend",
+    "a %s rider who brakes at the first board before each of the hook's warned bends makes the bend",
     (_name, bike) => {
       const warned = brakingZonesOf(quietHook, bike).filter(isWarned);
+      const boards = boardsOf(quietHook).map((board) => board.s);
       const rides = warned.map((zone) => {
-        const run = chevronRuns["madrid-hook"].find(
-          (each) => each.from <= zone.start && each.to >= zone.start
-        );
-        return run && brakeFromChevron(quietHook, bike, run, zone);
+        const from = firstBoardOf(boards, zone.start);
+        return from === undefined
+          ? undefined
+          : brakeFromChevron(quietHook, bike, from, zone);
       });
       expect(warned.length).toBeGreaterThan(0);
       expect(rides).toStrictEqual(

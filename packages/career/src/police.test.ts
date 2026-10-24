@@ -72,7 +72,7 @@ interface Band {
 }
 
 const bands: readonly Band[] = [
-  { fewest: 2, level: 1, most: 9 },
+  { fewest: 2, level: 1, most: 13 },
   { fewest: 3, level: 2, most: 14 },
   { fewest: 4, level: 3, most: 13 },
   { fewest: 4, level: 4, most: 14 },
