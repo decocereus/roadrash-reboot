@@ -1,3 +1,4 @@
+import { recordedRules } from "@racer/career/bench";
 import { serialiseCareer } from "@racer/career/save";
 import { startRace } from "@racer/career/settle";
 import { nextRaceSeed } from "@racer/career/state";
@@ -79,7 +80,12 @@ const lockedAway = (): SaveStorage => {
 };
 
 const midRace = (career: CareerState): CareerState => {
-  const started = startRace(career, "slag-row", nextRaceSeed(career));
+  const started = startRace(
+    recordedRules,
+    career,
+    "slag-row",
+    nextRaceSeed(career)
+  );
   if (!started.started) {
     throw new Error(`The race did not start: ${started.reason}`);
   }
@@ -99,7 +105,7 @@ const failed = (operation: SaveStorageFailed["operation"]) => {
 
 describe("the browser save", () => {
   it("has no career before the first one is written", () => {
-    expect(loadCareer(opened(memoryStorage()))).toStrictEqual({
+    expect(loadCareer(recordedRules, opened(memoryStorage()))).toStrictEqual({
       status: "absent",
     });
   });
@@ -112,7 +118,7 @@ describe("the browser save", () => {
     });
     expect([...storage.items.keys()]).toStrictEqual([SAVE_KEY]);
     expect(storage.calls).toStrictEqual([`set ${SAVE_KEY}`]);
-    expect(loadCareer(opened(storage))).toStrictEqual({
+    expect(loadCareer(recordedRules, opened(storage))).toStrictEqual({
       career,
       leftRace: null,
       persistence: { status: "unchanged" },
@@ -123,7 +129,7 @@ describe("the browser save", () => {
   it("reports what is wrong with a save it cannot read", () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, "not a save");
-    expect(loadCareer(opened(storage))).toStrictEqual({
+    expect(loadCareer(recordedRules, opened(storage))).toStrictEqual({
       error: { field: "", kind: "notJson" },
       status: "corrupt",
     });
@@ -131,7 +137,7 @@ describe("the browser save", () => {
       SAVE_KEY,
       serialiseCareer({ ...freshCareer(0.5), garage: [] })
     );
-    expect(loadCareer(opened(storage))).toMatchObject({
+    expect(loadCareer(recordedRules, opened(storage))).toMatchObject({
       error: { kind: "inconsistent" },
       status: "corrupt",
     });
@@ -141,8 +147,8 @@ describe("the browser save", () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, serialiseCareer(freshCareer(0.3)));
     storage.failing = "get";
-    const unreadable = loadCareer(opened(storage));
-    const locked = loadCareer(lockedAway);
+    const unreadable = loadCareer(recordedRules, opened(storage));
+    const locked = loadCareer(recordedRules, lockedAway);
     expect([unreadable, locked]).toStrictEqual([
       { ...failed("read"), status: "readFailed" },
       { ...failed("acquire"), status: "unavailable" },
@@ -179,7 +185,9 @@ describe("the browser save", () => {
       `remove ${SAVE_KEY}`,
     ]);
     expect(storage.getItem(BACKUP_KEY)).toBe("not a save");
-    expect(loadCareer(opened(storage))).toStrictEqual({ status: "absent" });
+    expect(loadCareer(recordedRules, opened(storage))).toStrictEqual({
+      status: "absent",
+    });
   });
 
   it("never removes the save when starting over fails to read it, back it up or remove it", () => {
@@ -238,7 +246,7 @@ describe("the browser save", () => {
     const storage = memoryStorage();
     const career = midRace(freshCareer(0.75));
     storeCareer(opened(storage), career);
-    const first = loadCareer(opened(storage));
+    const first = loadCareer(recordedRules, opened(storage));
     const bill = repairBill(career.level, career.bikeId);
     expect(first).toMatchObject({
       career: { activeRace: null, cash: career.cash - bill },
@@ -246,7 +254,7 @@ describe("the browser save", () => {
       persistence: { status: "saved" },
       status: "ready",
     });
-    expect(loadCareer(opened(storage))).toMatchObject({
+    expect(loadCareer(recordedRules, opened(storage))).toMatchObject({
       career: { activeRace: null, cash: career.cash - bill },
       leftRace: null,
       persistence: { status: "unchanged" },
@@ -260,7 +268,7 @@ describe("the browser save", () => {
     storeCareer(opened(storage), career);
     const racing = storage.items.get(SAVE_KEY);
     storage.failing = "set";
-    const first = loadCareer(opened(storage));
+    const first = loadCareer(recordedRules, opened(storage));
     const bill = repairBill(career.level, career.bikeId);
     expect(first).toMatchObject({
       career: { activeRace: null, cash: career.cash - bill },
@@ -277,7 +285,7 @@ describe("the browser save", () => {
     expect(storeCareer(opened(storage), first.career)).toStrictEqual({
       status: "saved",
     });
-    expect(loadCareer(opened(storage))).toStrictEqual({
+    expect(loadCareer(recordedRules, opened(storage))).toStrictEqual({
       career: first.career,
       leftRace: null,
       persistence: { status: "unchanged" },
@@ -289,14 +297,14 @@ describe("the browser save", () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, "the unread save");
     storage.failing = "get";
-    const unread = loadCareer(opened(storage));
+    const unread = loadCareer(recordedRules, opened(storage));
     const career = freshCareer(0.6);
     const stored = storeCareer(opened(storage), career);
     storage.failing = "set";
     const refused = storeCareer(opened(storage), { ...career, cash: 9000 });
     storage.failing = null;
     expect({
-      loaded: loadCareer(opened(storage)),
+      loaded: loadCareer(recordedRules, opened(storage)),
       refused,
       stored,
       unread: unread.status,
@@ -349,7 +357,7 @@ describe("race seeds", () => {
     const storage = memoryStorage();
     const career = { ...midRace(freshCareer(0.4)), activeRace: null };
     storeCareer(opened(storage), career);
-    const loaded = loadCareer(opened(storage));
+    const loaded = loadCareer(recordedRules, opened(storage));
     expect(loaded.status === "ready" && nextRaceSeed(loaded.career)).toBe(
       nextRaceSeed(career)
     );

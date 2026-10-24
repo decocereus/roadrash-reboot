@@ -9,6 +9,7 @@ import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
+import type { RaceRules } from "./rules.ts";
 import { newCareer, nextRaceId, qualifiedCount } from "./state.ts";
 import type { CareerState, RivalMemory } from "./state.ts";
 import {
@@ -17,13 +18,10 @@ import {
   CHAMPION_STAND_IN,
   FINALE_AGGRESSION,
   FINALE_ROAD,
-  LAST_LEVEL,
   pacingLevels,
   policeFor,
-  policeLevels,
   prizeFor,
   repeatPrizeFor,
-  RIVALS_PER_RACE,
   roadList,
   roads,
 } from "./tables.ts";
@@ -60,7 +58,11 @@ const shuffled = <Item>(items: readonly Item[], random: Random): Item[] => {
   return order;
 };
 
+export const fewestRacers =
+  1 + Math.max(...roadList.map((road) => homeRiders(road.id, 1).length));
+
 export const fieldFor = (
+  rules: RaceRules,
   roadId: RoadId,
   level: Level,
   seed: number
@@ -72,16 +74,24 @@ export const fieldFor = (
     .filter((rival) => races(rival, level) && !home.includes(rival));
   const drawn = shuffled(others, random).slice(
     0,
-    RIVALS_PER_RACE - home.length
+    rules.fieldSize - 1 - home.length
   );
   return shuffled([...home, ...drawn], random);
 };
 
-export const isFinale = (roadId: RoadId, level: Level): boolean =>
-  roadId === FINALE_ROAD && level === LAST_LEVEL;
+export const isFinale = (
+  rules: RaceRules,
+  roadId: RoadId,
+  level: Level
+): boolean => roadId === FINALE_ROAD && level === rules.levelCount;
 
-const aggressionOf = (rival: RivalId, roadId: RoadId, level: Level): number =>
-  rival === CHAMPION && isFinale(roadId, level)
+const aggressionOf = (
+  rules: RaceRules,
+  rival: RivalId,
+  roadId: RoadId,
+  level: Level
+): number =>
+  rival === CHAMPION && isFinale(rules, roadId, level)
     ? FINALE_AGGRESSION
     : rivals[rival].aggression;
 
@@ -104,13 +114,14 @@ const withMemory = (
 };
 
 export const setupFor = (
+  rules: RaceRules,
   career: CareerState,
   roadId: RoadId,
   seed: number,
   track: Track
 ): CareerRaceSetup => {
   const { level } = career;
-  const field = fieldFor(roadId, level, seed);
+  const field = fieldFor(rules, roadId, level, seed);
   return {
     field,
     gridOrder: "playerLast",
@@ -122,13 +133,13 @@ export const setupFor = (
       weapon: career.weapon,
       weaponHits: career.weaponHits,
     },
-    police: policeFor(level, roads[roadId].region),
+    police: policeFor(rules, level, roads[roadId].region),
     raceId: career.activeRace?.raceId ?? nextRaceId(career),
     rivals: field.map((rival) =>
       withMemory(
         {
           ...rivalAt(rivals[rival], level),
-          aggression: aggressionOf(rival, roadId, level),
+          aggression: aggressionOf(rules, rival, roadId, level),
         },
         career.memory[rival],
         rival === ALLY && career.story.deeAlly
@@ -158,10 +169,17 @@ export const practiceCareer = (
 });
 
 export const practiceSetup = (
+  rules: RaceRules,
   race: PracticeRace,
   track: Track
 ): CareerRaceSetup =>
-  setupFor(practiceCareer(race, race.seed), race.roadId, race.seed, track);
+  setupFor(
+    rules,
+    practiceCareer(race, race.seed),
+    race.roadId,
+    race.seed,
+    track
+  );
 
 export interface RoadStatus {
   readonly road: Road;
@@ -183,16 +201,20 @@ export interface RoadBoard {
   readonly roads: readonly RoadStatus[];
 }
 
-export const finaleOpen = (career: CareerState): boolean =>
-  career.level === LAST_LEVEL &&
+export const finaleOpen = (rules: RaceRules, career: CareerState): boolean =>
+  career.level === rules.levelCount &&
   roadList.every(
     (road) =>
       road.id === FINALE_ROAD ||
-      career.qualified[LAST_LEVEL][road.id] !== undefined
+      career.qualified[rules.levelCount][road.id] !== undefined
   );
 
-export const roadOpen = (career: CareerState, roadId: RoadId): boolean =>
-  !isFinale(roadId, career.level) || finaleOpen(career);
+export const roadOpen = (
+  rules: RaceRules,
+  career: CareerState,
+  roadId: RoadId
+): boolean =>
+  !isFinale(rules, roadId, career.level) || finaleOpen(rules, career);
 
 export const roadBoss = (career: CareerState, roadId: RoadId): RivalId => {
   const { season } = career;
@@ -205,25 +227,25 @@ export const roadBoss = (career: CareerState, roadId: RoadId): RivalId => {
   return boss ?? CHAMPION_STAND_IN;
 };
 
-export const roadsFor = (career: CareerState): RoadBoard => {
+export const roadsFor = (rules: RaceRules, career: CareerState): RoadBoard => {
   const { level } = career;
   const qualified = career.qualified[level];
   const statuses = roadList.map((road) => ({
     bestPlace: qualified[road.id] ?? 0,
-    cops: policeLevels[level].count,
-    finale: isFinale(road.id, level),
+    cops: rules.police[level],
+    finale: isFinale(rules, road.id, level),
     firstPrize:
       qualified[road.id] === undefined
         ? prizeFor(level, 1)
         : repeatPrizeFor(level, 1),
     home: homeRiders(road.id, level),
     lengthMetres: road.lengths[level],
-    open: roadOpen(career, road.id),
+    open: roadOpen(rules, career, road.id),
     qualified: qualified[road.id] !== undefined,
     road,
   }));
   return {
-    finaleOpen: finaleOpen(career),
+    finaleOpen: finaleOpen(rules, career),
     level,
     next:
       statuses.find((status) => status.open && !status.qualified)?.road.id ??

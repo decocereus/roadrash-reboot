@@ -6,8 +6,9 @@ import { PLAYER_RIDER } from "@racer/sim/state";
 import type { RaceEvent, WeaponKind } from "@racer/sim/state";
 
 import type { CareerRaceSetup } from "./field.ts";
+import type { RaceRules } from "./rules.ts";
 import type { ActiveRace, RacerId } from "./state.ts";
-import { FIELD_SIZE, roads } from "./tables.ts";
+import { roads } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
 const WHEEL_TICKS = 30;
@@ -312,7 +313,7 @@ const classify = (
     incidents,
     km: kmOf(bodyOf(state, PLAYER_RIDER)),
     level: setup.level,
-    place: playerSpot === -1 ? FIELD_SIZE : playerSpot + 1,
+    place: playerSpot === -1 ? setup.field.length + 1 : playerSpot + 1,
     placings,
     raceId: log.raceId,
     result,
@@ -347,13 +348,16 @@ export const outcomeOf = (
   log: RaceLog
 ): RaceOutcome => log.outcome ?? classify(log, state, setup, "quit");
 
-export const abandonedOutcome = (race: ActiveRace): RaceOutcome => ({
+export const abandonedOutcome = (
+  rules: RaceRules,
+  race: ActiveRace
+): RaceOutcome => ({
   arrest: null,
   finishTick: -1,
   incidents: [],
   km: 0,
   level: race.level,
-  place: FIELD_SIZE,
+  place: rules.fieldSize,
   placings: [],
   raceId: race.raceId,
   result: "quit",

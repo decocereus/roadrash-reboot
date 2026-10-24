@@ -1,3 +1,4 @@
+import type { RaceRules } from "@racer/career/rules";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { LevelUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
@@ -37,6 +38,8 @@ import type {
 import type { PrepareOutcome } from "../game/preparation.ts";
 import { createHudFeed } from "../hud-feed.ts";
 import type { HudFeed } from "../hud-feed.ts";
+import { loadRaceRules } from "../rules/load.ts";
+import type { RulesLoad } from "../rules/load.ts";
 
 export type View =
   | { readonly screen: "boot" }
@@ -95,16 +98,20 @@ const afterConsequence = (plan: RacePlan, report: RaceReport | null): View => {
   return plan.mode === "career" ? clubhouse : singleRace;
 };
 
-const urlRide = (): RacePlan | null => {
+const urlRide = (rules: RaceRules): RacePlan | null => {
   const bench = benchOf(globalThis.location.search);
-  return bench ? benchPlan(bench) : rideOf(globalThis.location.search);
+  return bench ? benchPlan(bench) : rideOf(rules, globalThis.location.search);
 };
 
 const entrance = async (
+  rules: RulesLoad | null,
   save: SaveState,
   begin: (career: CareerState) => void
 ): Promise<View | null> => {
-  if (save.status === "loading") {
+  if (rules?.status === "failed") {
+    return backRoom;
+  }
+  if (rules === null || save.status === "loading") {
     return null;
   }
   if (save.status === "corrupt") {
@@ -116,13 +123,16 @@ const entrance = async (
   }
   const home = homeOf(save.career);
   if (home.screen === "clubhouse") {
-    await preload(barPlates(barCast(save.career, firstRoad(save.career))));
+    await preload(
+      barPlates(barCast(save.career, firstRoad(rules.rules, save.career)))
+    );
   }
   return home;
 };
 
 const useBoot = (
   booting: boolean,
+  rules: RulesLoad | null,
   save: SaveState,
   begin: (career: CareerState) => void,
   go: (view: View) => void
@@ -130,18 +140,34 @@ const useBoot = (
   useEffect(() => {
     const entering = new AbortController();
     const enter = async () => {
-      const next = await entrance(save, begin);
+      const next = await entrance(rules, save, begin);
       if (next && !entering.signal.aborted) {
         go(next);
       }
     };
-    if (booting && urlRide() === null) {
+    if (
+      booting &&
+      !(rules?.status === "ready" && urlRide(rules.rules) !== null)
+    ) {
       void enter();
     }
     return () => {
       entering.abort();
     };
-  }, [booting, save, begin, go]);
+  }, [booting, rules, save, begin, go]);
+};
+
+const useRules = (): RulesLoad | null => {
+  const [rules, setRules] = useState<RulesLoad | null>(null);
+  useEffect(
+    () =>
+      loadRaceRules(
+        { fetch: async (url) => await globalThis.fetch(url) },
+        setRules
+      ),
+    []
+  );
+  return rules;
 };
 
 interface Save {
@@ -153,16 +179,19 @@ interface Save {
   readonly eraseSave: () => void;
 }
 
-const useSave = (): Save => {
+const useSave = (rules: RaceRules | null): Save => {
   const careerRef = useRef<CareerState | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
   const [unsaved, setUnsaved] = useState(false);
 
   useEffect(() => {
-    const loaded = loadCareer(browserStorage);
+    if (rules === null) {
+      return;
+    }
+    const loaded = loadCareer(rules, browserStorage);
     careerRef.current = loaded.status === "ready" ? loaded.career : null;
     setSave(saveStateOf(loaded));
-  }, []);
+  }, [rules]);
 
   const commit = useCallback((career: CareerState) => {
     careerRef.current = career;
@@ -278,6 +307,7 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
 
 export interface Flow {
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
+  readonly rules: RaceRules | null;
   readonly view: View;
   readonly save: SaveState;
   readonly career: CareerState | null;
@@ -307,10 +337,19 @@ export const useFlow = (): Flow => {
   const [feed] = useState(createHudFeed);
   const [view, setView] = useState<View>({ screen: "boot" });
   const [pick, setPick] = useState<QuickPick>(firstQuickPick);
-  const { careerRef, commit, eraseSave, save, settle, unsaved } = useSave();
-  const { failure, gameRef, ready } = useGame(canvasRef, eventsRef);
+  const rulesLoad = useRules();
+  const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
+  const { careerRef, commit, eraseSave, save, settle, unsaved } =
+    useSave(rules);
+  const {
+    failure: gameFailure,
+    gameRef,
+    ready,
+  } = useGame(canvasRef, eventsRef);
+  const failure =
+    rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
-  useBoot(view.screen === "boot", save, commit, setView);
+  useBoot(view.screen === "boot", rulesLoad, save, commit, setView);
 
   useEffect(() => {
     eventsRef.current = {
@@ -326,8 +365,8 @@ export const useFlow = (): Flow => {
         let report: RaceReport | null = null;
         if (plan.mode === "quick") {
           report = quickReport(plan, outcome);
-        } else if (racer) {
-          report = settle(settleRace(racer, outcome));
+        } else if (racer && rules) {
+          report = settle(settleRace(rules, racer, outcome));
         }
         pendingRef.current = report;
         if (outcome.result === "finished" && report) {
@@ -336,10 +375,15 @@ export const useFlow = (): Flow => {
       },
       onStart(plan) {
         const racer = careerRef.current;
-        if (plan.mode !== "career" || !racer) {
+        if (plan.mode !== "career" || !racer || !rules) {
           return;
         }
-        const started = startRace(racer, plan.setup.roadId, plan.setup.seed);
+        const started = startRace(
+          rules,
+          racer,
+          plan.setup.roadId,
+          plan.setup.seed
+        );
         if (started.started) {
           commit(started.career);
         } else {
@@ -347,15 +391,15 @@ export const useFlow = (): Flow => {
         }
       },
     };
-  }, [careerRef, commit, feed, settle]);
+  }, [careerRef, commit, feed, rules, settle]);
 
   const stage = stageOf(view);
   useEffect(() => {
     const game = gameRef.current;
-    if (!(ready && game)) {
+    if (!(ready && game && rules)) {
       return;
     }
-    const plan = stage === "boot" ? urlRide() : null;
+    const plan = stage === "boot" ? urlRide(rules) : null;
     if (plan) {
       pendingRef.current = null;
       game.startRace(plan);
@@ -363,7 +407,7 @@ export const useFlow = (): Flow => {
     } else if (stage !== "race") {
       game.sleep();
     }
-  }, [gameRef, ready, stage]);
+  }, [gameRef, ready, rules, stage]);
 
   const pause = useCallback(() => {
     if (gameRef.current?.pause() === true) {
@@ -417,8 +461,8 @@ export const useFlow = (): Flow => {
     quit(plan) {
       const outcome = gameRef.current?.quit() ?? null;
       const report =
-        plan.mode === "career" && career && outcome
-          ? settle(quitRace(career, outcome))
+        plan.mode === "career" && career && outcome && rules
+          ? settle(quitRace(rules, career, outcome))
           : null;
       if (report) {
         setView({ report, screen: "results" });
@@ -440,6 +484,7 @@ export const useFlow = (): Flow => {
           : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
       setView({ entry, screen: "rideOut" });
     },
+    rules,
     save,
     setPick,
     start(plan) {

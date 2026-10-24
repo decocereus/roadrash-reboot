@@ -6,10 +6,12 @@ import type { RaceState, RiderInput, RiderState } from "@racer/sim/state";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 
+import { recordedRules } from "./bench.ts";
 import { setupFor } from "./field.ts";
 import type { CareerRaceSetup } from "./field.ts";
 import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
 import type { RaceLog } from "./outcome.ts";
+import type { RaceRules } from "./rules.ts";
 import { quitRace, settleRace, startRace } from "./settle.ts";
 import type { Ledger, Settlement } from "./settle.ts";
 import { buyBike } from "./shop.ts";
@@ -30,6 +32,7 @@ export const road = compileTrack({
 export const flatOut: RiderInput = { ...neutralInput, throttle: 1 };
 
 export interface Entered {
+  readonly rules: RaceRules;
   readonly career: CareerState;
   readonly setup: CareerRaceSetup;
   readonly state: RaceState;
@@ -39,16 +42,18 @@ export interface Entered {
 export const enter = (
   career: CareerState,
   roadId: RoadId,
-  seed = 7
+  seed = 7,
+  rules = recordedRules
 ): Entered => {
-  const start = startRace(career, roadId, seed);
+  const start = startRace(rules, career, roadId, seed);
   if (!start.started) {
     throw new Error(`The race did not start: ${start.reason}.`);
   }
-  const setup = setupFor(start.career, roadId, seed, road);
+  const setup = setupFor(rules, start.career, roadId, seed, road);
   return {
     career: start.career,
     log: createRaceLog(setup),
+    rules,
     setup,
     state: createRace(setup),
   };
@@ -80,7 +85,11 @@ export const ride = (
 };
 
 export const settle = (race: Entered): Settlement =>
-  settleRace(race.career, outcomeOf(race.state, race.setup, race.log));
+  settleRace(
+    race.rules,
+    race.career,
+    outcomeOf(race.state, race.setup, race.log)
+  );
 
 export const ledgerOf = (settlement: Settlement): Ledger => {
   if (!settlement.ledger) {
@@ -229,8 +238,13 @@ type Step =
   | { readonly roadId: RoadId; readonly place: number }
   | { readonly roadId: RoadId; readonly ends: "busted" | "wrecked" };
 
-export const play = (career: CareerState, step: Step, seed = 7): Settlement => {
-  const race = enter(career, step.roadId, seed);
+export const play = (
+  career: CareerState,
+  step: Step,
+  seed = 7,
+  rules = recordedRules
+): Settlement => {
+  const race = enter(career, step.roadId, seed, rules);
   if ("place" in step) {
     sprint(race, step.place);
   } else if (step.ends === "busted") {
@@ -243,11 +257,12 @@ export const play = (career: CareerState, step: Step, seed = 7): Settlement => {
 
 export const playAll = (
   career: CareerState,
-  steps: readonly Step[]
+  steps: readonly Step[],
+  rules = recordedRules
 ): CareerState => {
   let current = career;
   for (const [index, step] of steps.entries()) {
-    current = play(current, step, index + 1).career;
+    current = play(current, step, index + 1, rules).career;
   }
   return current;
 };
@@ -323,6 +338,7 @@ export const wreckTimes = (
   for (let wreck = 0; wreck < times; wreck += 1) {
     const race = enter(current, "slag-row", wreck + 1);
     const settlement = quitRace(
+      race.rules,
       race.career,
       outcomeOf(race.state, race.setup, race.log)
     );

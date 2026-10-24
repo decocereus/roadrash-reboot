@@ -1,10 +1,11 @@
 import { roadsFor } from "@racer/career/field";
+import type { RaceRules } from "@racer/career/rules";
 import { seasonBoard } from "@racer/career/season";
 import type { LevelUp } from "@racer/career/settle";
 import { creditLimit, debtOf } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { ENVELOPE_NOTE, storyBeat } from "@racer/career/story";
-import { ALLY, policeLevels, roads } from "@racer/career/tables";
+import { ALLY, roads } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
 import { rivals } from "@racer/sim/cast";
 import { formatMoney } from "@racer/ui/components/money";
@@ -58,24 +59,28 @@ const roadStep = (key: string): -1 | 0 | 1 => {
 
 const heard = new Set<string>();
 
-const promotionNote = ({ level, bikes }: LevelUp): WallNote => {
+const promotionNote = (
+  rules: RaceRules,
+  { level, bikes }: LevelUp
+): WallNote => {
   const delivery =
     bikes.length === 0
       ? ""
       : ` New at the garage: ${bikes.map((bikeId) => bikeName(bikeId)).join(", ")}.`;
   return {
     signature: "V.",
-    text: `Level ${level}. ${policeLevels[level].count} cops. 1st pays ${formatMoney(firstPrize(level))}.${delivery}`,
+    text: `Level ${level}. ${rules.police[level]} cops. 1st pays ${formatMoney(firstPrize(level))}.${delivery}`,
   };
 };
 
 const notesFor = (
+  rules: RaceRules,
   career: CareerState,
   promotion: LevelUp | undefined,
   openEnvelope: () => void
 ): readonly WallNote[] => {
   const debt = debtOf(career);
-  const notes: WallNote[] = promotion ? [promotionNote(promotion)] : [];
+  const notes: WallNote[] = promotion ? [promotionNote(rules, promotion)] : [];
   if (debt > 0) {
     notes.push({
       text: `You owe ${formatMoney(debt)}. Prize money pays it first. Limit ${formatMoney(creditLimit(career))}.`,
@@ -200,13 +205,13 @@ const useVic = (lines: readonly string[]): Speech | null => {
   };
 };
 
-const useRoad = (career: CareerState) => {
-  const open = openRoads(career);
-  const [picked, setPicked] = useState(() => firstRoad(career));
-  const roadId = open.includes(picked) ? picked : firstRoad(career);
+const useRoad = (rules: RaceRules, career: CareerState) => {
+  const open = openRoads(rules, career);
+  const [picked, setPicked] = useState(() => firstRoad(rules, career));
+  const roadId = open.includes(picked) ? picked : firstRoad(rules, career);
   useEffect(() => {
-    void preload(roadPlates(career));
-  }, [career]);
+    void preload(roadPlates(rules, career));
+  }, [rules, career]);
   return {
     roadId,
     step: (step: -1 | 1) => {
@@ -216,16 +221,20 @@ const useRoad = (career: CareerState) => {
 };
 
 const qualifiedStamp = (
+  rules: RaceRules,
   career: CareerState,
   roadId: RoadId
 ): string | undefined => {
-  const status = roadsFor(career).roads.find((each) => each.road.id === roadId);
+  const status = roadsFor(rules, career).roads.find(
+    (each) => each.road.id === roadId
+  );
   return status?.qualified === true
     ? `Qualified ${ordinal(status.bestPlace)}`
     : undefined;
 };
 
 export const ClubhouseScreen = ({
+  rules,
   career,
   promotion,
   onRide,
@@ -233,6 +242,7 @@ export const ClubhouseScreen = ({
   onBackRoom,
   onEnvelope,
 }: {
+  readonly rules: RaceRules;
   readonly career: CareerState;
   readonly promotion: LevelUp | undefined;
   readonly onRide: (roadId: RoadId) => void;
@@ -242,7 +252,7 @@ export const ClubhouseScreen = ({
 }) => {
   const [envelope, setEnvelope] = useState(false);
   const clock = useBarClock();
-  const { roadId, step } = useRoad(career);
+  const { roadId, step } = useRoad(rules, career);
   const road = roads[roadId];
   const bar = useMemo(() => barCast(career, roadId), [career, roadId]);
   const rival = rivals[bar.boss];
@@ -275,7 +285,7 @@ export const ClubhouseScreen = ({
           rows={seasonBoard(career)}
         />
         <WallNotes
-          notes={notesFor(career, promotion, () => {
+          notes={notesFor(rules, career, promotion, () => {
             setEnvelope(true);
           })}
         />
@@ -286,7 +296,7 @@ export const ClubhouseScreen = ({
             step(1);
           }}
           roadName={road.name}
-          stamp={qualifiedStamp(career, roadId)}
+          stamp={qualifiedStamp(rules, career, roadId)}
           sticker={bar.sticker}
         />
         <BarLight clock={clock} />

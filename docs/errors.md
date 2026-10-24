@@ -45,9 +45,25 @@ The browser save, `apps/web/src/career/save.ts`, runs each storage step with `Ef
 | The browser save keeps four outcomes apart: no save, storage the browser denies (`unavailable`), a failed read (`readFailed`) and a failed write (`writeFailed`), each with the original failure as its `cause`. A race left by a reload is charged once, and a failed save of that charge stays `writeFailed`, never `saved`. | `pnpm test` | `apps/web/src/career/save*.ts`, `apps/web/src/components/use-flow.ts` | None |
 | Starting over reads the save, copies its exact text to `rushline.career.backup`, then removes it, and clears the career only after the removal succeeds. A failed read, backup or removal leaves the save in place. Every career change is written, even after the first read failed, so a new career can overwrite a save that could not be read; that unread text has no backup, because it could not be read. The unsaved banner shows only when the write itself fails. | `pnpm test` | `apps/web/src/career/save*.ts`, `apps/web/src/components/use-flow.ts` | None |
 
+## Race rules
+
+The server serves the race rules at `GET /api/race-rules` from `apps/web/src/server/race-rules.ts`, as JSON with `cache-control: no-store`. The browser asks once at boot. `loadRaceRules` in `apps/web/src/rules/load.ts` forks the request with `Effect.runFork`, decodes the answer with `RaceRulesSchema`, and hands `use-flow.ts` a ready rules record or a failure. Unmounting interrupts the request. Nothing is retried. The career save waits for the rules, and a failure sends the player to the Back Room, which shows "Could not start the game:" and the message.
+
+| Tag | What the player sees |
+| --- | --- |
+| `RulesRequestFailed` | The fetch or the body read failed. The Back Room shows the browser's message. |
+| `RulesResponseRejected` | The Back Room shows `The race rules answered <status>.` |
+| `RulesDecodeFailed` | The answer was not JSON or broke the schema, such as a field above 15 racers. The Back Room shows `The race rules did not decode.` |
+
+A save whose level is above the served level count is refused as `invalid` at `level`, so the Back Room's corrupt panel names that field.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| The route serves rules that `RaceRulesSchema` accepts, uncached. Each load failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. | `pnpm test`, `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/test/race-rules.test.ts`, `apps/web/src/rules` | None |
+
 ## Asset loading
 
-`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader that forks an Effect. It downloads the six models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
+`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the six models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
 
 | Tag | Retried | What the player sees |
 | --- | --- | --- |

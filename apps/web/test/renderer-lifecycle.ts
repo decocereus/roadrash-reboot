@@ -1,3 +1,4 @@
+import { recordedRules } from "@racer/career/bench";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
 
@@ -126,7 +127,7 @@ interface CapturedRenderer {
 }
 
 const planOf = (roadId: QuickPick["roadId"]): RacePlan =>
-  planFor(null, quickEntry({ ...firstQuickPick, roadId }, SEED));
+  planFor(recordedRules, null, quickEntry({ ...firstQuickPick, roadId }, SEED));
 
 const trackProof = async (game: GameHandle, renderer: THREE.WebGLRenderer) => {
   const outcomes: PrepareOutcome["kind"][] = [];

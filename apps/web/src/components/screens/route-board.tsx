@@ -1,5 +1,6 @@
 import { practiceCareer, roadsFor } from "@racer/career/field";
 import type { RoadStatus } from "@racer/career/field";
+import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { levels } from "@racer/career/tables";
 import type { Level, RoadId } from "@racer/career/tables";
@@ -73,6 +74,7 @@ const RoadFacts = ({
 );
 
 export const RouteBoardScreen = ({
+  rules,
   career,
   pick,
   ready,
@@ -80,6 +82,7 @@ export const RouteBoardScreen = ({
   onRace,
   onBack,
 }: {
+  readonly rules: RaceRules;
   readonly career: CareerState | null;
   readonly pick: QuickPick;
   readonly ready: boolean;
@@ -87,7 +90,7 @@ export const RouteBoardScreen = ({
   readonly onRace: () => void;
   readonly onBack: () => void;
 }) => {
-  const board = roadsFor(practiceCareer(pick, 0));
+  const board = roadsFor(rules, practiceCareer(pick, 0));
   const roadIds = board.roads.map((status) => status.road.id);
   const status =
     board.roads.find((each) => each.road.id === pick.roadId) ?? board.roads[0];

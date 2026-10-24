@@ -3,19 +3,15 @@ import type { BikeId } from "@racer/sim/bikes";
 import { officerFor } from "@racer/sim/cast";
 import type { RegionId, RivalId } from "@racer/sim/cast";
 import type { BikeClass, PacingRules, PoliceSetup } from "@racer/sim/state";
-import { roadIds, roadLevels } from "@racer/track/road";
+import { roadIds } from "@racer/track/road";
 import type { RoadId, RoadLevel } from "@racer/track/road";
 
+import type { RaceRules } from "./rules.ts";
+
 export type { RoadId } from "@racer/track/road";
+export { roadLevels as levels } from "@racer/track/road";
 
 export type Level = RoadLevel;
-
-export const levels = roadLevels;
-
-export const LAST_LEVEL: Level = 5;
-
-export const levelAfter = (level: Level): Level =>
-  levels.find((candidate) => candidate === level + 1) ?? LAST_LEVEL;
 
 export const byLevel = <Value>(make: (level: Level) => Value) => ({
   1: make(1),
@@ -88,8 +84,6 @@ export const CHAMPION: RivalId = "juno-kade";
 export const CHAMPION_STAND_IN: RivalId = "ruth-ann-bixby";
 export const FINALE_AGGRESSION = 0.9;
 
-export const RIVALS_PER_RACE = 14;
-export const FIELD_SIZE = RIVALS_PER_RACE + 1;
 export const QUALIFYING_PLACE = 3;
 
 export const STARTING_CASH = 1500;
@@ -133,47 +127,41 @@ export const fines = {
   5: 3000,
 } as const satisfies Record<Level, number>;
 
-export interface PoliceLevel {
-  readonly count: number;
+interface PoliceLevel {
   readonly topSpeed: number;
   readonly sightRange: number;
   readonly beat: number;
   readonly bike: BikeId;
 }
 
-export const policeLevels = {
+const policeLevels = {
   1: {
     beat: 6000,
     bike: "ostra-sesta-600",
-    count: 1,
     sightRange: 40,
     topSpeed: 49,
   },
   2: {
     beat: 5000,
     bike: "ostra-sesta-600",
-    count: 2,
     sightRange: 40,
     topSpeed: 52,
   },
   3: {
     beat: 1800,
     bike: "ostra-sesta-600",
-    count: 3,
     sightRange: 45,
     topSpeed: 60,
   },
   4: {
     beat: 1500,
     bike: "halden-meridian-900",
-    count: 4,
     sightRange: 50,
     topSpeed: 64,
   },
   5: {
     beat: 1200,
     bike: "ostra-nera-1000",
-    count: 5,
     sightRange: 60,
     topSpeed: 69,
   },
@@ -221,10 +209,14 @@ export const creditLimitOf = (bikeId: BikeId): number =>
     ? REPOSSESSION_CREDIT_LIMIT
     : Math.round(tradeInOf(bikeId) * CREDIT_RATE);
 
-export const policeFor = (level: Level, region: RegionId): PoliceSetup => ({
+export const policeFor = (
+  rules: RaceRules,
+  level: Level,
+  region: RegionId
+): PoliceSetup => ({
   beat: policeLevels[level].beat,
   bike: bikes[policeLevels[level].bike],
-  count: policeLevels[level].count,
+  count: rules.police[level],
   fine: fines[level],
   officer: officerFor(region).profile,
   sightRange: policeLevels[level].sightRange,

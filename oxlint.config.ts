@@ -56,6 +56,7 @@ export const deterministicFiles = [
   "packages/career/src/memory.ts",
   "packages/career/src/outcome.ts",
   "packages/career/src/result.ts",
+  "packages/career/src/rules.ts",
   "packages/career/src/season.ts",
   "packages/career/src/settle.ts",
   "packages/career/src/shop.ts",
@@ -71,6 +72,7 @@ export const careerCodecFiles = [
   "packages/career/src/save-result-schema.ts",
   "packages/career/src/save-issues.ts",
   "packages/career/src/save-invariants.ts",
+  "packages/career/src/rules-schema.ts",
 ];
 
 export const hotBodies = {
@@ -161,6 +163,10 @@ const effectFiles = [
   "apps/web/src/assets/model-response-rejected.ts",
   "apps/web/src/assets/model-decode-failed.ts",
   "apps/web/src/assets/font-readiness-failed.ts",
+  "apps/web/src/rules/load.ts",
+  "apps/web/src/rules/rules-request-failed.ts",
+  "apps/web/src/rules/rules-response-rejected.ts",
+  "apps/web/src/rules/rules-decode-failed.ts",
 ];
 
 const libraryFiles = [
@@ -179,6 +185,9 @@ const libraryFiles = [
   "apps/web/src/assets/model-response-rejected.ts",
   "apps/web/src/assets/model-decode-failed.ts",
   "apps/web/src/assets/font-readiness-failed.ts",
+  "apps/web/src/rules/rules-request-failed.ts",
+  "apps/web/src/rules/rules-response-rejected.ts",
+  "apps/web/src/rules/rules-decode-failed.ts",
 ];
 
 export default defineConfig({

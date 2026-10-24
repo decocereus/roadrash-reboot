@@ -4,6 +4,7 @@ import { Worker } from "node:worker_threads";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   policeStarts,
   ridesIn,
@@ -11,7 +12,7 @@ import {
   STARTS,
 } from "./police-fixtures.ts";
 import type { PoliceRide } from "./police-fixtures.ts";
-import { levels, RIVALS_PER_RACE } from "./tables.ts";
+import { levels } from "./tables.ts";
 import type { Level } from "./tables.ts";
 
 const rideSeason = async (): Promise<readonly PoliceRide[]> => {
@@ -95,7 +96,7 @@ describe("police balance", () => {
       expect(tally.busted).toBeGreaterThanOrEqual(fewest);
       expect(tally.busted).toBeLessThanOrEqual(most);
       expect(tally.rivalsBusted / STARTS).toBeLessThan(
-        (2.5 * RIVALS_PER_RACE) / 7
+        (2.5 * (recordedRules.fieldSize - 1)) / 7
       );
     }
   );
