@@ -3,6 +3,7 @@ import { definePlugin } from "@oxlint/plugins";
 import { deterministicCoreRule } from "./rules/deterministic-core.ts";
 import { noCommentsRule } from "./rules/no-comments.ts";
 import { noDiscardedExitRule } from "./rules/no-discarded-exit.ts";
+import { noDistanceHideRule } from "./rules/no-distance-hide.ts";
 import { noEffectRuntimeRule } from "./rules/no-effect-runtime.ts";
 import { noEntriesLoopRule } from "./rules/no-entries-loop.ts";
 import { noFloatingEffectRule } from "./rules/no-floating-effect.ts";
@@ -33,6 +34,7 @@ const rushlinePlugin = definePlugin({
     "deterministic-core": deterministicCoreRule,
     "no-comments": noCommentsRule,
     "no-discarded-exit": noDiscardedExitRule,
+    "no-distance-hide": noDistanceHideRule,
     "no-effect-runtime": noEffectRuntimeRule,
     "no-entries-loop": noEntriesLoopRule,
     "no-floating-effect": noFloatingEffectRule,

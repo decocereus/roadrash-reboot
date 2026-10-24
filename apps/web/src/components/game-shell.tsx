@@ -129,6 +129,7 @@ const CareerScreens = ({
     return (
       <GarageScreen
         career={career}
+        rules={rules}
         onBack={() => {
           flow.go(clubhouse);
         }}
@@ -140,6 +141,7 @@ const CareerScreens = ({
     return (
       <EndingScreen
         career={career}
+        rules={rules}
         onBackRoom={() => {
           flow.go(backRoom);
         }}
@@ -150,6 +152,7 @@ const CareerScreens = ({
     return (
       <GameOverScreen
         career={career}
+        rules={rules}
         onBackRoom={() => {
           flow.go(backRoom);
         }}
@@ -189,6 +192,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           flow.go(singleRace);
         }}
         onStartOver={flow.eraseSave}
+        rules={rules}
         save={flow.save}
       />
     );
@@ -246,6 +250,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         }
         report={view.report}
         riding={career?.bikeId ?? flow.pick.bikeId}
+        rules={rules}
       />
     );
   }
@@ -288,6 +293,7 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
           }}
           onResume={flow.resume}
           plan={view.plan}
+          rules={flow.rules}
         />
       )}
     </>

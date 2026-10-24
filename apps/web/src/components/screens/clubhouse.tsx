@@ -69,7 +69,7 @@ const promotionNote = (
       : ` New at the garage: ${bikes.map((bikeId) => bikeName(bikeId)).join(", ")}.`;
   return {
     signature: "V.",
-    text: `Level ${level}. ${rules.police[level]} cops. 1st pays ${formatMoney(firstPrize(level))}.${delivery}`,
+    text: `Level ${level}. ${rules.police[level]} cops. 1st pays ${formatMoney(firstPrize(rules, level))}.${delivery}`,
   };
 };
 
@@ -181,11 +181,12 @@ const ClubhouseNav = ({
 );
 
 const vicLines = (
+  rules: RaceRules,
   career: CareerState,
   promotion: LevelUp | undefined
 ): readonly string[] => {
   if (promotion) {
-    return [vicCard(promotion.level)];
+    return [vicCard(rules, promotion.level)];
   }
   return career.record.starts === 0 ? introCards : [];
 };
@@ -260,7 +261,7 @@ export const ClubhouseScreen = ({
   const bar = useMemo(() => barCast(career, roadId), [career, roadId]);
   const rival = rivals[bar.boss];
   const ally = rival.id === ALLY && storyBeat(career).deeAlly;
-  const vic = useVic(vicLines(career, promotion));
+  const vic = useVic(vicLines(rules, career, promotion));
   const speech: Speech = vic ?? {
     line: bar.line.text,
     name: rival.name,
@@ -282,7 +283,7 @@ export const ClubhouseScreen = ({
         <BarBackdrop clock={clock} />
         <BarSeats figure={vic ? null : figures[bar.boss]} />
         <SpeechSticker speech={speech} />
-        <BarHeader career={career} />
+        <BarHeader standing={{ career, rules }} />
         <Standings
           playerCaption={career.level === 1 ? "New meat" : "Kid can ride"}
           rows={seasonBoard(career)}

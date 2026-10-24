@@ -7,6 +7,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { Shading } from "./cel.ts";
 import { FRONT_GAP } from "./city.ts";
+import type { Clearance } from "./clearance.ts";
 import { groundLift, lifted, plant, rolling } from "./ground.ts";
 import type { Part, Placement, Stretch } from "./ground.ts";
 import { RED } from "./looks.ts";
@@ -316,7 +317,8 @@ export interface RoadsideDressing {
 export const buildRoadside = (
   track: Track,
   shading: Shading,
-  textures: Set<THREE.Texture>
+  textures: Set<THREE.Texture>,
+  clearance: Clearance
 ): RoadsideDressing => {
   const { look } = shading;
   const { roadside } = look;
@@ -353,20 +355,30 @@ export const buildRoadside = (
     stretches.push({ from: span[0], object: mesh, to: span[1] });
   }
 
-  plant(group, track, layPosts(track, random, front), postParts(shading), true);
   plant(
+    clearance,
+    group,
+    track,
+    layPosts(track, random, front),
+    postParts(shading),
+    true
+  );
+  plant(
+    clearance,
     group,
     track,
     layTreeline(track, random, front, roadside.treeline),
     pineParts(shading)
   );
   plant(
+    clearance,
     group,
     track,
     layBoulders(track, random, front, roadside.boulders),
     boulderParts(shading)
   );
   plant(
+    clearance,
     group,
     track,
     laySigns(track, random, front, roadside.signs),

@@ -51,11 +51,7 @@ export const emptySheet = (alphas = false): Sheet => ({
   positions: [],
 });
 
-export const place = (
-  track: Track,
-  corner: Corner,
-  target: THREE.Vector3
-): void => {
+const place = (track: Track, corner: Corner, target: THREE.Vector3): void => {
   placeOnTrack(track, corner[0], corner[1], point);
   target.set(point.x, point.y + corner[2], point.z);
 };

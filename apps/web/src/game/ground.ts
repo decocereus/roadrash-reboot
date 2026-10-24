@@ -3,6 +3,7 @@ import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 
 import { KERB_HEIGHT } from "./city.ts";
+import type { Clearance } from "./clearance.ts";
 import { lookOf } from "./looks.ts";
 import type { Kit } from "./looks.ts";
 
@@ -104,6 +105,7 @@ export const whiteInstances = (mesh: THREE.InstancedMesh): void => {
 };
 
 export const plant = (
+  clearance: Clearance,
   group: THREE.Group,
   track: Track,
   placements: readonly Placement[],
@@ -144,6 +146,7 @@ export const plant = (
     for (const mesh of meshes) {
       mesh.setMatrixAt(index, placer.matrix);
     }
+    clearance.addInstance(meshes, index, placer.matrix);
   }
   for (const mesh of meshes) {
     mesh.computeBoundingSphere();

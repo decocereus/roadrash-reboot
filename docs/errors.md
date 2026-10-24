@@ -55,7 +55,7 @@ The server serves the race rules at `GET /api/race-rules` from `apps/web/src/ser
 | `RulesResponseRejected` | The Back Room shows `The race rules answered <status>.` |
 | `RulesDecodeFailed` | The answer was not JSON or broke the schema, such as a field above 15 racers. The Back Room shows `The race rules did not decode.` |
 
-A save whose level is above the served level count is refused as `invalid` at `level`, so the Back Room's corrupt panel names that field.
+A save whose level is above the served level count is refused as `invalid` at `level`, so the Back Room's corrupt panel names that field. Fewer levels need no new `SAVE_VERSION`: the save keeps a `qualified` row for each of the five levels the format lists, and a career with three levels leaves rows 4 and 5 empty. A level-4 or level-5 save from the five-level rules stays refused rather than moved down a level.
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |

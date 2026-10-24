@@ -8,6 +8,8 @@ import { createShading, onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { createCity, FRONT_GAP, KERB_HEIGHT } from "./city.ts";
 import type { City } from "./city.ts";
+import { createClearance } from "./clearance.ts";
+import type { Clearance } from "./clearance.ts";
 import { disposeTree } from "./dispose.ts";
 import {
   freeze,
@@ -163,17 +165,19 @@ const buildGate = (
   s: number,
   label: string,
   shading: Shading,
-  textures: Set<THREE.Texture>
+  textures: Set<THREE.Texture>,
+  clearance: Clearance
 ): THREE.Group => {
   const gate = new THREE.Group();
   const span = track.roadHalfWidth * 2 + 3;
   const steel = shading.cel(POLE, { rim: 0.6 });
-  for (const side of [-1, 1]) {
+  const posts = [-1, 1].map((side) => {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, 7, 0.4), steel);
     post.position.set((side * span) / 2, 3.5, 0);
     post.castShadow = true;
     gate.add(post);
-  }
+    return post;
+  });
   const banner = new THREE.Mesh(
     new THREE.BoxGeometry(span, 1.3, 0.3),
     new THREE.MeshBasicMaterial({
@@ -186,6 +190,9 @@ const buildGate = (
   placeOnTrack(track, s, 0, point);
   gate.position.set(point.x, point.y, point.z);
   gate.rotation.set(0, -point.heading, 0);
+  for (const post of posts) {
+    clearance.addObject(post);
+  }
   return gate;
 };
 
@@ -193,7 +200,8 @@ const buildScenery = (
   track: Track,
   shading: Shading,
   limit: number,
-  textures: Set<THREE.Texture>
+  textures: Set<THREE.Texture>,
+  clearance: Clearance
 ): THREE.Group => {
   const { look } = shading;
   const scenery = new THREE.Group();
@@ -204,6 +212,7 @@ const buildScenery = (
     );
 
   plant(
+    clearance,
     scenery,
     track,
     ofKind("tree"),
@@ -230,7 +239,7 @@ const buildScenery = (
         ]
       : pineParts(shading)
   );
-  plant(scenery, track, ofKind("pole"), [
+  plant(clearance, scenery, track, ofKind("pole"), [
     {
       geometry: lifted(
         new THREE.CylinderGeometry(0.08, 0.13, 9.2, 8),
@@ -248,6 +257,7 @@ const buildScenery = (
     },
   ]);
   plant(
+    clearance,
     scenery,
     track,
     ofKind("chevron"),
@@ -270,6 +280,7 @@ const buildScenery = (
     true
   );
   plant(
+    clearance,
     scenery,
     track,
     ofKind("rock"),
@@ -292,8 +303,10 @@ const buildScenery = (
         ]
       : boulderParts(shading)
   );
-  scenery.add(buildGate(track, 0, "START", shading, textures));
-  scenery.add(buildGate(track, track.length, "FINISH", shading, textures));
+  scenery.add(
+    buildGate(track, 0, "START", shading, textures, clearance),
+    buildGate(track, track.length, "FINISH", shading, textures, clearance)
+  );
   return scenery;
 };
 
@@ -427,6 +440,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const rig = createSunRig(shading, shadowMap);
   scene.add(rig.light, rig.light.target);
   const stretches: Stretch[] = [];
+  const clearance = createClearance();
 
   const half = track.roadHalfWidth;
   const textures = new Set<THREE.Texture>();
@@ -506,11 +520,12 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
         track,
         shading,
         city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY,
-        textures
+        textures,
+        clearance
       )
     )
   );
-  const ramps = buildRamps(track, shading);
+  const ramps = buildRamps(track, shading, clearance);
   scene.add(ramps.group);
   stretches.push(...ramps.stretches);
   const hazards = createHazardMarks(track, shading);
@@ -518,7 +533,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   if (city) {
     scene.add(freeze(city.group));
   } else {
-    const dressing = buildRoadside(track, shading, textures);
+    const dressing = buildRoadside(track, shading, textures, clearance);
     scene.add(freeze(dressing.group));
     stretches.push(...dressing.stretches);
   }
@@ -560,7 +575,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
       const reach = look.fogFar + CHUNK_MARGIN;
       city?.follow(s, reach);
       showWithin(stretches, s - CHUNK_BEHIND, s + reach);
-      ramps.clearView(camera.position);
+      clearance.follow(camera.position);
       camera.updateMatrixWorld();
       camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
       rig.follow(camera);

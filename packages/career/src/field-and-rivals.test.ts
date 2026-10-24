@@ -1,5 +1,5 @@
 import { bikes } from "@racer/sim/bikes";
-import { bikeAt, rivals, weaponAt } from "@racer/sim/cast";
+import { bikeAt, rivalIds, rivals, weaponAt } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
@@ -343,6 +343,28 @@ describe("memory", () => {
     expect(
       again.setup.field.map((rival) => twice.memory[rival].aggressionBonus)
     ).toStrictEqual(Array.from({ length: 14 }, () => -0.05));
+  });
+
+  it("a rival who sits a race out cools off by the same fade and keeps a grudge until it drops below 0.05", () => {
+    const fresh = newCareer(2);
+    const memory = { ...fresh.memory };
+    for (const rival of rivalIds) {
+      memory[rival] = { ...memory[rival], aggressionBonus: 0.15, grudge: true };
+    }
+    const race = enter({ ...fresh, memory }, "slag-row");
+    sprint(race, 1);
+    const { career } = settle(race);
+    const satOut = rivalIds.filter(
+      (rival) => !race.setup.field.includes(rival)
+    );
+    expect(satOut).toHaveLength(2);
+    expect(satOut.map((rival) => career.memory[rival])).toStrictEqual(
+      satOut.map((rival) => ({
+        ...memory[rival],
+        aggressionBonus: 0.1,
+        grudge: true,
+      }))
+    );
   });
 
   it("a win by a wheel is remembered and pinned to the board", () => {

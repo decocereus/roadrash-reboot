@@ -18,13 +18,14 @@ import { setupFor } from "./field.ts";
 import type { CareerRaceSetup } from "./field.ts";
 import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
 import type { RaceLog } from "./outcome.ts";
+import { levelsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { quitRace, settleRace, startRace } from "./settle.ts";
 import type { Ledger, Settlement } from "./settle.ts";
 import { buyBike } from "./shop.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { levels, roadList } from "./tables.ts";
+import { roadList } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
 export const TICKS = 60;
@@ -287,7 +288,7 @@ export const playAll = (
   return current;
 };
 
-const decentSeason: readonly Step[] = [
+export const decentSeason: readonly Step[] = [
   { place: 3, roadId: "slag-row" },
   { place: 4, roadId: "breakwater-run" },
   { place: 3, roadId: "breakwater-run" },
@@ -313,17 +314,18 @@ export interface Season {
   readonly end: CareerState;
 }
 
-const seasonsOf = (
+export const seasonsOf = (
   steps: readonly Step[],
-  purchases: readonly BikeId[]
+  purchases: readonly BikeId[],
+  rules = recordedRules
 ): readonly Season[] => {
   const seasons: Season[] = [];
   let career = newCareer(11);
-  for (const level of levels) {
-    const end = playAll(career, steps);
+  for (const level of levelsOf(rules)) {
+    const end = playAll(career, steps, rules);
     seasons.push({ end, level, start: career });
     const next = purchases[level - 1];
-    career = next ? buyBike(end, next) : end;
+    career = next ? buyBike(rules, end, next) : end;
   }
   return seasons;
 };

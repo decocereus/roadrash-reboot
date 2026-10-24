@@ -1,3 +1,4 @@
+import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { endings } from "@racer/career/story";
 import { bikes } from "@racer/sim/bikes";
@@ -101,10 +102,12 @@ const RecordNote = ({
 
 export const GameOverScreen = ({
   career,
+  rules,
   onNewCareer,
   onBackRoom,
 }: {
   readonly career: CareerState;
+  readonly rules: RaceRules;
   readonly onNewCareer: () => void;
   readonly onBackRoom: () => void;
 }) => {
@@ -117,7 +120,7 @@ export const GameOverScreen = ({
           className="object-cover"
           src={gameOverPlates.backdrop}
         />
-        <BarHeader career={career} />
+        <BarHeader standing={{ career, rules }} />
         <WrittenSheet
           box={BROKE_SHEET}
           scale={0.75}
@@ -147,9 +150,11 @@ export const GameOverScreen = ({
 
 export const EndingScreen = ({
   career,
+  rules,
   onBackRoom,
 }: {
   readonly career: CareerState;
+  readonly rules: RaceRules;
   readonly onBackRoom: () => void;
 }) => {
   const clock = useBarClock();
@@ -167,7 +172,7 @@ export const EndingScreen = ({
       <Stage>
         <BarBackdrop clock={clock} />
         <BarSeats figure={null} />
-        <BarHeader career={career} />
+        <BarHeader standing={{ career, rules }} />
         <WrittenSheet
           box={ENDING_SHEET}
           scale={0.7}

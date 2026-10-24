@@ -1,3 +1,4 @@
+import type { RaceRules } from "@racer/career/rules";
 import { billConsequence } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { repairBill } from "@racer/career/tables";
@@ -21,6 +22,7 @@ import type { MenuAction } from "./shared.tsx";
 export const PauseScreen = ({
   plan,
   career,
+  rules,
   feed,
   onResume,
   onRestart,
@@ -29,6 +31,7 @@ export const PauseScreen = ({
 }: {
   readonly plan: RacePlan;
   readonly career: CareerState | null;
+  readonly rules: RaceRules | null;
   readonly feed: HudFeed;
   readonly onResume: () => void;
   readonly onRestart: () => void;
@@ -38,8 +41,8 @@ export const PauseScreen = ({
   const [asking, setAsking] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
-  const racing = plan.mode === "career" && career !== null;
-  const bill = racing ? repairBill(career.level, career.bikeId) : 0;
+  const racing = plan.mode === "career" && career !== null && rules !== null;
+  const bill = racing ? repairBill(rules, career.level, career.bikeId) : 0;
   useEscape(onResume, !(asking || adjusting));
   const actions: MenuAction[] = [
     { id: "resume", label: "Resume", run: onResume },

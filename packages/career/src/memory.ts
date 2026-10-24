@@ -106,6 +106,15 @@ const grudgeAt = (bonus: number, held: boolean): boolean => {
   return bonus < GRUDGE_ENDS ? false : held;
 };
 
+export const sitOut = (memory: RivalMemory): RivalMemory => {
+  const aggressionBonus = tidy(fade(memory.aggressionBonus));
+  return {
+    ...memory,
+    aggressionBonus,
+    grudge: grudgeAt(aggressionBonus, memory.grudge),
+  };
+};
+
 export const remember = (
   memory: RivalMemory,
   incidents: RivalIncidents,

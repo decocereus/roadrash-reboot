@@ -1,4 +1,5 @@
 import type { ResultRow } from "@racer/career/result";
+import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { creditLimitOf, roads } from "@racer/career/tables";
@@ -34,16 +35,16 @@ import type { Speech } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
 import { RuledSheet, stampStyle } from "./clubhouse-wall.tsx";
 
-const SHEET = { h: 740, w: 570, x: 548, y: 104 } as const;
 const SHEET_TITLE = { h: 62, w: 470, x: 590, y: 136 } as const;
-const SHEET_ROWS = { h: 475, w: 512, x: 566, y: 248 } as const;
+const SHEET_MARGINS = 265;
+const ROW_HEIGHT = 31.67;
+const PLATE_LINES = 8;
 const OUTCOME = { h: 146, w: 500, x: 1146, y: 104 } as const;
 const LEDGER = { h: 403, w: 560, x: 1100, y: 262 } as const;
 const LEDGER_TEXT = { h: 250, w: 280, x: 1162, y: 334 } as const;
 const NOTE = { h: 270, w: 456, x: 1166, y: 610 } as const;
 const NOTE_TEXT = { h: 175, w: 264, x: 1201, y: 664 } as const;
 
-const ROWS = 15;
 const MAGS: RivalId = "mags-dunleavy";
 const NOTE_LONG = 90;
 const NOTE_LONGER = 150;
@@ -75,14 +76,21 @@ const resultOf = (row: ResultRow, reference: number): ReactNode => {
   return row.fate === "busted" ? "Busted" : "Wrecked";
 };
 
+const sheetOf = (lines: number) => ({
+  rows: { h: lines * ROW_HEIGHT, w: 512, x: 566, y: 248 },
+  sheet: { h: SHEET_MARGINS + lines * ROW_HEIGHT, w: 570, x: 548, y: 104 },
+});
+
 const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
   const { rows } = report.summary;
+  const lines = Math.max(rows.length, PLATE_LINES);
+  const boxes = sheetOf(lines);
   const reference = gapFrom(rows);
   const notes = incidentLines(report.summary.incidents);
   const paid = report.ledger !== null;
   return (
     <section aria-label="Race result">
-      <RuledSheet box={SHEET} scale={0.7} />
+      <RuledSheet box={boxes.sheet} scale={0.7} />
       <h2
         className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black whitespace-nowrap uppercase"
         style={{ ...place(SHEET_TITLE), fontSize: stagePx(36) }}
@@ -92,7 +100,7 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
       {rows.length === 0 ? (
         <p
           className="font-display text-ink font-bold uppercase"
-          style={{ ...place(SHEET_ROWS), fontSize: stagePx(24) }}
+          style={{ ...place(boxes.rows), fontSize: stagePx(24) }}
         >
           You left before the race was run. Nobody was classified.
         </p>
@@ -100,9 +108,9 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
         <ol
           className="font-display text-ink grid -rotate-[0.4deg] font-bold uppercase"
           style={{
-            ...place(SHEET_ROWS),
+            ...place(boxes.rows),
             fontSize: stagePx(21),
-            gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+            gridTemplateRows: `repeat(${lines}, 1fr)`,
           }}
         >
           {rows.map((row) => {
@@ -365,6 +373,7 @@ const speakerOf = (
 export const ResultsScreen = ({
   report,
   career,
+  rules,
   riding,
   canRaceAgain,
   repeatRun,
@@ -373,6 +382,7 @@ export const ResultsScreen = ({
 }: {
   readonly report: RaceReport;
   readonly career: CareerState | null;
+  readonly rules: RaceRules;
   readonly riding: BikeId;
   readonly canRaceAgain: boolean;
   readonly repeatRun: boolean;
@@ -407,7 +417,7 @@ export const ResultsScreen = ({
         <BarBackdrop clock={clock} />
         <BarSeats figure={speaker?.figure ?? null} />
         {speaker && <SpeechSticker speech={speaker.speech} />}
-        <BarHeader career={career} />
+        <BarHeader standing={career ? { career, rules } : null} />
         <RaceSheet report={report} />
         <Outcome report={report} />
         {report.ledger && <Takings ledger={report.ledger} />}
