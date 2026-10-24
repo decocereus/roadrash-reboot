@@ -13,7 +13,9 @@ const decodeOptions = Schema.decodeUnknownSync(
 const decodeManifest = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({
-      exports: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+      exports: Schema.optionalKey(
+        Schema.Record(Schema.String, Schema.NullOr(Schema.String))
+      ),
       name: Schema.optionalKey(Schema.String),
     })
   )
@@ -114,8 +116,18 @@ const exactMath = new Set([
 
 const slashed = (file: string): string => file.split(path.sep).join("/");
 
-const supportedExports = (exports: Readonly<Record<string, string>>) =>
-  Object.keys(exports).length === 1 && exports["./*"] === "./src/*.ts";
+type Exports = Readonly<Record<string, string | null>>;
+
+const supportedExports = (exports: Exports) =>
+  exports["./*"] === "./src/*.ts" &&
+  Object.keys(exports).every((key) => key === "./*" || exports[key] === null);
+
+const blockedExport = (exports: Exports, entry: string) =>
+  Object.keys(exports).some((key) =>
+    key.endsWith("*")
+      ? key !== "./*" && `./${entry}`.startsWith(key.slice(0, -1))
+      : key === `./${entry}`
+  );
 
 const staticKey = (node: ESTree.MemberExpression): string | null => {
   if (!node.computed && node.property.type === "Identifier") {
@@ -153,7 +165,8 @@ export const deterministicCoreRule = defineRule({
       if (
         manifest.name !== `@racer/${name}` ||
         !manifest.exports ||
-        !supportedExports(manifest.exports)
+        !supportedExports(manifest.exports) ||
+        blockedExport(manifest.exports, entry)
       ) {
         return null;
       }

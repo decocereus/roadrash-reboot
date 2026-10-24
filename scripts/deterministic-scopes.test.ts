@@ -21,7 +21,9 @@ const testFixtures = new Set([
 
 const decodeManifest = Schema.decodeUnknownSync(
   Schema.fromJsonString(
-    Schema.Struct({ exports: Schema.Record(Schema.String, Schema.String) })
+    Schema.Struct({
+      exports: Schema.Record(Schema.String, Schema.NullOr(Schema.String)),
+    })
   )
 );
 
@@ -134,12 +136,21 @@ describe("deterministic scopes", () => {
     ).toStrictEqual([]);
   });
 
-  it("resolve every core package's modules through its ./* export", () => {
+  it("resolve every core package's modules through its ./* export, and only block subpaths beside it", () => {
     expect(
-      corePackages.map(
-        (dir) =>
-          decodeManifest(readFileSync(`${dir}/package.json`, "utf-8")).exports
-      )
-    ).toStrictEqual(corePackages.map(() => ({ "./*": "./src/*.ts" })));
+      corePackages.map((dir) => {
+        const { exports } = decodeManifest(
+          readFileSync(`${dir}/package.json`, "utf-8")
+        );
+        return {
+          open: Object.keys(exports).filter(
+            (key) => key !== "./*" && exports[key] !== null
+          ),
+          wildcard: exports["./*"],
+        };
+      })
+    ).toStrictEqual(
+      corePackages.map(() => ({ open: [], wildcard: "./src/*.ts" }))
+    );
   });
 });

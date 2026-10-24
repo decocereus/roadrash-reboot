@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*.ts",
+    "./pilot": null,
+    "./pilot-*": null
   },
   "scripts": {
     "typecheck": "tsrs --noEmit"

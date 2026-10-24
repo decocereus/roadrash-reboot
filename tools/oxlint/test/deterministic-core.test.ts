@@ -351,6 +351,16 @@ runRule("rushline/deterministic-core", deterministicCoreRule, {
       ...inRace,
     },
     {
+      code: 'import { pilotRider } from "@racer/sim/pilot";\nexport const p = pilotRider;',
+      errors: once("unresolved", { source: "@racer/sim/pilot" }),
+      ...inSettle,
+    },
+    {
+      code: 'import { chooseLine } from "@racer/sim/pilot-lines";\nexport const c = chooseLine;',
+      errors: once("unresolved", { source: "@racer/sim/pilot-lines" }),
+      ...inSettle,
+    },
+    {
       code: 'import type { SaveText } from "./save-schema.ts";\nexport type S = SaveText;',
       errors: once("outsideCore", {
         source: "./save-schema.ts",
