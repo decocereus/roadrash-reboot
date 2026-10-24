@@ -2,7 +2,7 @@ import type { RiderView } from "@racer/sim/race-view";
 import { PLAYER_RIDER } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 
-export const celebrityIds = ["kylie", "ronaldo"] as const;
+const celebrityIds = ["kylie", "ronaldo"] as const;
 
 export type CelebrityId = (typeof celebrityIds)[number];
 
