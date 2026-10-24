@@ -5,6 +5,7 @@ import * as THREE from "three";
 
 import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
+import type { Clearance } from "./clearance.ts";
 import { freeze } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
 import { buildAccents, buildDeck, buildEdges } from "./ramp-deck.ts";
@@ -18,7 +19,6 @@ import {
 import { emptySheet, facingAt, geometryOf } from "./ramp-geometry.ts";
 import type { Lift, Ramp } from "./ramp-geometry.ts";
 import {
-  BEACON_CLEARANCE,
   BEACON_OUT,
   buildBeacon,
   buildChevrons,
@@ -28,7 +28,6 @@ import {
   CHEVRON_GAPS,
   SIGN_BEFORE,
 } from "./ramp-markers.ts";
-import type { Beacon } from "./ramp-markers.ts";
 import { meshesOf, shadowMaterial } from "./ramp-materials.ts";
 import type { Materials } from "./ramp-materials.ts";
 
@@ -38,12 +37,6 @@ const SHOWN_AFTER = 2;
 export interface Ramps {
   readonly group: THREE.Group;
   readonly stretches: readonly Stretch[];
-  readonly clearView: (eye: THREE.Vector3) => void;
-}
-
-interface BuiltRamp {
-  readonly body: THREE.Group;
-  readonly beacons: readonly Beacon[];
 }
 
 const support = emptySupport();
@@ -64,7 +57,11 @@ const rampOf = (track: Track, jump: TrackFeature, index: number): Ramp => {
   };
 };
 
-const buildRamp = (ramp: Ramp, materials: Materials): BuiltRamp => {
+const buildRamp = (
+  ramp: Ramp,
+  materials: Materials,
+  clearance: Clearance
+): THREE.Group => {
   const solid = emptySheet();
   const glow = emptySheet();
   const shadow = emptySheet(true);
@@ -78,25 +75,23 @@ const buildRamp = (ramp: Ramp, materials: Materials): BuiltRamp => {
   buildShadow(ramp, shadow);
   const body = meshesOf(solid, glow, materials);
   body.add(onFxLayer(new THREE.Mesh(geometryOf(shadow), materials.shade)));
-  const beacons = [ramp.left - BEACON_OUT, ramp.right + BEACON_OUT].map((x) =>
-    buildBeacon(ramp, x, materials)
-  );
-  body.add(...beacons.map((beacon) => beacon.object));
-  return { beacons, body: freeze(body) };
+  for (const x of [ramp.left - BEACON_OUT, ramp.right + BEACON_OUT]) {
+    const beacon = buildBeacon(ramp, x, materials);
+    body.add(beacon);
+    clearance.addObject(beacon);
+  }
+  return freeze(body);
 };
 
-export const buildRamps = (track: Track, shading: Shading): Ramps => {
+export const buildRamps = (
+  track: Track,
+  shading: Shading,
+  clearance: Clearance
+): Ramps => {
   const group = new THREE.Group();
   const stretches: Stretch[] = [];
-  const beacons: Beacon[] = [];
-  const clearView = (eye: THREE.Vector3): void => {
-    for (const { object, foot } of beacons) {
-      object.visible =
-        Math.hypot(eye.x - foot.x, eye.z - foot.z) > BEACON_CLEARANCE;
-    }
-  };
   if (track.features.length === 0) {
-    return { clearView, group, stretches };
+    return { group, stretches };
   }
   const materials: Materials = {
     cel: shading.cel("#ffffff", { rim: 0, vertexColors: true }),
@@ -110,9 +105,9 @@ export const buildRamps = (track: Track, shading: Shading): Ramps => {
       continue;
     }
     const ramp = rampOf(track, jump, index);
-    const { body, beacons: lit } = buildRamp(ramp, materials);
-    beacons.push(...lit);
+    const body = buildRamp(ramp, materials, clearance);
     const warning = buildWarning(ramp, materials);
+    clearance.addObject(warning);
     group.add(body, warning);
     stretches.push(
       {
@@ -127,5 +122,5 @@ export const buildRamps = (track: Track, shading: Shading): Ramps => {
       }
     );
   }
-  return { clearView, group, stretches };
+  return { group, stretches };
 };

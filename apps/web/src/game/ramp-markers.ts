@@ -1,15 +1,8 @@
 import { lipOf } from "@racer/track/features";
-import * as THREE from "three";
+import type * as THREE from "three";
 
 import { freeze } from "./ground.ts";
-import {
-  emptySheet,
-  facingAt,
-  place,
-  prism,
-  quad,
-  UP,
-} from "./ramp-geometry.ts";
+import { emptySheet, facingAt, prism, quad, UP } from "./ramp-geometry.ts";
 import type { Face, Ramp, Sheet } from "./ramp-geometry.ts";
 import {
   CHEVRON,
@@ -64,12 +57,6 @@ const BEACON_BACK = 0.35;
 const BEACON_BAND = 0.4;
 const LAMP_HALF = 0.17;
 const LAMP_HEIGHT = 0.34;
-export const BEACON_CLEARANCE = 3;
-
-export interface Beacon {
-  readonly object: THREE.Object3D;
-  readonly foot: THREE.Vector3;
-}
 
 export const buildChevrons = (ramp: Ramp, glow: Sheet): void => {
   const { track, jump } = ramp;
@@ -175,7 +162,7 @@ export const buildBeacon = (
   ramp: Ramp,
   x: number,
   materials: Materials
-): Beacon => {
+): THREE.Group => {
   const solid = emptySheet();
   const glow = emptySheet();
   const s = lipOf(ramp.jump) - BEACON_BACK;
@@ -210,9 +197,7 @@ export const buildBeacon = (
     },
     true
   );
-  const foot = new THREE.Vector3();
-  place(ramp.track, [s, x, 0], foot);
-  return { foot, object: meshesOf(solid, glow, materials) };
+  return meshesOf(solid, glow, materials);
 };
 
 export const buildWarning = (ramp: Ramp, materials: Materials): THREE.Group => {

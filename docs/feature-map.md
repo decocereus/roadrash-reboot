@@ -388,7 +388,7 @@ The chase camera behind the player's bike: its framing along the road, the field
 - Id: `camera`
 - Start: `apps/web/src/game/chase-camera.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#camera-rules](design/art-direction.md#camera-rules)
-- Verify: none yet
+- Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: none yet
 - Owns: `apps/web/src/game/chase-camera.ts`
 
@@ -417,18 +417,19 @@ Test files: none
 
 ### Roads, cities and scenery on screen
 
-The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player.
+The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it.
 
 - Id: `world`
 - Start: `apps/web/src/game/world.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/city.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
-- Verify: none yet
+- Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
 
 Source files:
 
 - `apps/web/src/game/city.ts`
+- `apps/web/src/game/clearance.ts`
 - `apps/web/src/game/facade-texture.ts`
 - `apps/web/src/game/ground.ts`
 - `apps/web/src/game/looks.ts`
@@ -441,7 +442,9 @@ Source files:
 - `apps/web/src/game/texture-canvas.ts`
 - `apps/web/src/game/world.ts`
 
-Test files: none
+Test files:
+
+- `apps/web/test/roadside-clearance.test.ts`
 
 ### Riders, bikes and cars on screen
 
@@ -634,7 +637,7 @@ Test files:
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job), [docs/coding-standards.md#upload-and-sort-only-what-the-frame-needs](coding-standards.md#upload-and-sort-only-what-the-frame-needs), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `bytes.game.gzip`, `bytes.game.raw`, `bytes.game.incremental.gzip`, `bytes.game.incremental.raw`, `render.programs.max`
-- Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/hosts.ts`
+- Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/outline-sides.ts`, `apps/web/test/hosts.ts`
 
 Source files:
 
@@ -654,6 +657,7 @@ Test files:
 
 - `apps/web/test/fixed-tick.test.ts`
 - `apps/web/test/hosts.ts`
+- `apps/web/test/outline-sides.ts`
 - `apps/web/test/preparation.test.ts`
 - `apps/web/test/renderer-lifecycle.test.ts`
 - `apps/web/test/renderer-lifecycle.ts`
@@ -1038,6 +1042,7 @@ Source files:
 - `tools/oxlint/rushline/rules/deterministic-core.ts`
 - `tools/oxlint/rushline/rules/no-comments.ts`
 - `tools/oxlint/rushline/rules/no-discarded-exit.ts`
+- `tools/oxlint/rushline/rules/no-distance-hide.ts`
 - `tools/oxlint/rushline/rules/no-effect-runtime.ts`
 - `tools/oxlint/rushline/rules/no-entries-loop.ts`
 - `tools/oxlint/rushline/rules/no-floating-effect.ts`
@@ -1080,6 +1085,7 @@ Test files:
 - `tools/oxlint/test/effect-style.test.ts`
 - `tools/oxlint/test/effect-tags.test.ts`
 - `tools/oxlint/test/no-discarded-exit.test.ts`
+- `tools/oxlint/test/no-distance-hide.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/numeric-draw-sort.test.ts`
