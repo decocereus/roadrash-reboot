@@ -136,15 +136,6 @@ const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
     { concurrency: "unbounded" }
   );
 
-const celebrityModels = (cache: ByteCache, { celebrities }: ModelUrls) =>
-  Effect.all(
-    {
-      kylie: model(cache, celebrities.kylie, riderModel),
-      ronaldo: model(cache, celebrities.ronaldo, riderModel),
-    },
-    { concurrency: "unbounded" }
-  );
-
 export const loadBikes = Effect.fn("assets.loadBikes")(function* loadBikes(
   cache: ByteCache,
   urls: ModelUrls
@@ -152,12 +143,18 @@ export const loadBikes = Effect.fn("assets.loadBikes")(function* loadBikes(
   return yield* bikeModels(cache, urls);
 });
 
+export const loadCelebrity = Effect.fn("assets.loadCelebrity")(
+  function* loadCelebrity(cache: ByteCache, url: string) {
+    return yield* model(cache, url, riderModel);
+  }
+);
+
 export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
   cache: ByteCache,
   urls: ModelUrls
 ) {
   const [buildA, buildB, buildC] = urls.figures;
-  const [bikes, car, van, riderA, riderB, riderC, celebrities, fontFallback] =
+  const [bikes, car, van, riderA, riderB, riderC, fontFallback] =
     yield* Effect.all(
       [
         bikeModels(cache, urls),
@@ -166,7 +163,6 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
         model(cache, buildA, riderModel),
         model(cache, buildB, riderModel),
         model(cache, buildC, riderModel),
-        celebrityModels(cache, urls),
         displayFont,
       ],
       { concurrency: "unbounded" }
@@ -175,7 +171,6 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
     assets: {
       bikes,
       car,
-      celebrities,
       figures: [riderA, riderB, riderC],
       van,
     },

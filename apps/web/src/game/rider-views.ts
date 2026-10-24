@@ -19,8 +19,7 @@ import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
 import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor } from "./figure-rig.ts";
-import { wornBy } from "./figure-wear.ts";
-import type { Wearing } from "./figure-wear.ts";
+import type { Dressing } from "./figure-wardrobe.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
 import { createRiderFigure } from "./rider-figure.ts";
@@ -267,10 +266,9 @@ interface CastParts {
   readonly assets: Assets;
   readonly cast: Cast;
   readonly stage: CastStage;
-  readonly wearing: Wearing;
 }
 
-export const bindCast = ({ assets, cast, stage, wearing }: CastParts) => {
+export const bindCast = ({ assets, cast, stage }: CastParts) => {
   const { deck, placed, stance, strike, subject } = cast;
 
   const dropViews = () => {
@@ -296,7 +294,7 @@ export const bindCast = ({ assets, cast, stage, wearing }: CastParts) => {
     stage.fleet.dispose();
   };
 
-  const buildViews = () => {
+  const buildViews = (dressing: Dressing) => {
     dropViews();
     const fleetOfBikes = createBikes(
       assets,
@@ -312,15 +310,11 @@ export const bindCast = ({ assets, cast, stage, wearing }: CastParts) => {
     stage.world.scene.add(fleetOfBikes.group);
     cast.puffs = createPuffs(stage.world.shading);
     stage.world.scene.add(cast.puffs.group);
-    const worn = wornBy(wearing, stage.race.view.riders);
     cast.views = stage.race.view.riders.map((rider) => {
       const bike =
         riderOf(fleetOfBikes.roots, rider.id) ?? new THREE.Object3D();
-      const celebrity = worn.get(rider.id);
       const figure = createRiderFigure(
-        celebrity === undefined
-          ? bodyFor(assets, rider.id)
-          : assets.celebrities[celebrity],
+        dressing.get(rider.id) ?? bodyFor(assets, rider.id),
         stage.world.shading,
         rider.profile.jacket
       );

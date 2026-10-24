@@ -1,8 +1,14 @@
-import type { RiderView } from "@racer/sim/race-view";
-import { PLAYER_RIDER } from "@racer/sim/state";
-import type { RiderId } from "@racer/sim/state";
+import { PLAYER_RIDER, rosterOf } from "@racer/sim/state";
+import type { RaceSetup, RiderId } from "@racer/sim/state";
 
-const celebrityIds = ["kylie", "ronaldo"] as const;
+export const celebrityIds = [
+  "kylie",
+  "ronaldo",
+  "mbappe",
+  "musk",
+  "altman",
+  "ranveer",
+] as const;
 
 export type CelebrityId = (typeof celebrityIds)[number];
 
@@ -27,22 +33,19 @@ export const wearingFrom = (search: string): Wearing => {
 
 export const wornBy = (
   { against, as }: Wearing,
-  riders: readonly RiderView[]
+  setup: RaceSetup
 ): ReadonlyMap<RiderId, CelebrityId> => {
   const worn = new Map<RiderId, CelebrityId>();
   if (as !== null) {
     worn.set(PLAYER_RIDER, as);
   }
   const waiting = [...against];
-  for (const rider of riders) {
-    if (rider.id === PLAYER_RIDER || rider.profile.role !== "racer") {
-      continue;
-    }
+  for (const rival of rosterOf(setup).rivals) {
     const celebrity = waiting.shift();
     if (celebrity === undefined) {
       break;
     }
-    worn.set(rider.id, celebrity);
+    worn.set(rival, celebrity);
   }
   return worn;
 };

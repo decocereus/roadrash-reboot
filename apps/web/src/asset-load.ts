@@ -1,9 +1,12 @@
+import type { AssetRuntime } from "./asset-runtime.ts";
 import { diagnostics } from "./diagnostics/hub.ts";
 import type {
   AcquiredAssets,
   AssetParsers,
   Assets,
   Decoded,
+  LoadCelebrity,
+  RiderAsset,
 } from "./game/assets.ts";
 import type * as Game from "./game/game.ts";
 import type { GameEvents, GameHandle } from "./game/hud.ts";
@@ -22,6 +25,8 @@ export interface AssetRequest extends LoadRequest<Assets> {
 }
 
 export type BikesRequest = LoadRequest<Assets["bikes"]>;
+
+export type CelebrityRequest = LoadRequest<RiderAsset>;
 
 interface ParserModule {
   readonly assetParsers: AssetParsers;
@@ -63,6 +68,16 @@ const held = async <Value>(
   return await promise;
 };
 
+export const celebrityLoader =
+  (
+    mountCelebrity: AssetRuntime["mountCelebrity"],
+    module: Promise<ParserModule>
+  ): LoadCelebrity =>
+  async (id, signal) =>
+    await held<RiderAsset>(signal, module, (request) => {
+      mountCelebrity(id, request);
+    });
+
 const acquire = async (
   game: Promise<typeof Game>,
   signal: AbortSignal
@@ -71,15 +86,22 @@ const acquire = async (
   if (signal.aborted) {
     return null;
   }
+  const runtime = browserAssetRuntime();
   const assets = await held<Assets>(signal, game, (request) => {
-    browserAssetRuntime().mount({
+    runtime.mount({
       ...request,
       fontFallback: (error) => {
         diagnostics().recorder.fault("error", error.message, "fonts");
       },
     });
   });
-  return assets && { assets: assets.value, release: assets.release };
+  return (
+    assets && {
+      assets: assets.value,
+      loadCelebrity: celebrityLoader(runtime.mountCelebrity, game),
+      release: assets.release,
+    }
+  );
 };
 
 const acquireBikes = async (

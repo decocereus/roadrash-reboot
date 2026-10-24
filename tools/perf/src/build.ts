@@ -5,6 +5,7 @@ import { gzipSync } from "node:zlib";
 
 import { released } from "@racer/devtools/cleanup";
 import { ToolProcesses } from "@racer/devtools/process";
+import { celebrityIds } from "@racer/web/figure-wear";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -35,10 +36,9 @@ export const glbNames = [
   "rider_a",
   "rider_b",
   "rider_c",
-  "rider_kylie",
-  "rider_ronaldo",
   "seraph",
   "van",
+  ...celebrityIds.map((id) => `rider_${id}` as const),
 ] as const;
 
 export type GlbName = (typeof glbNames)[number];
@@ -360,12 +360,10 @@ const glbInventory = Effect.fnUntraced(function* glbInventory(
     .filter((file) => file.endsWith(".glb"))
     .map((file) => file.slice(0, -".glb".length))
     .toSorted();
-  if (
-    side.name === "B" &&
-    sourceNames.join(",") !== [...glbNames].toSorted().join(",")
-  ) {
+  const expected = [...glbNames].toSorted();
+  if (side.name === "B" && sourceNames.join(",") !== expected.join(",")) {
     problems.push(
-      `GLB inventory is ${sourceNames.join(", ")}; expected ${glbNames.join(", ")}`
+      `GLB inventory is ${sourceNames.join(", ")}; expected ${expected.join(", ")}`
     );
   }
   const records: GlbRecord[] = [];

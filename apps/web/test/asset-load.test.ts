@@ -5,6 +5,7 @@ import { setImmediate as nextTurn } from "node:timers/promises";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
+import { celebrityLoader } from "../src/asset-load.ts";
 import type { AssetRequest } from "../src/asset-load.ts";
 import { createAssetRuntime } from "../src/asset-runtime.ts";
 import type { ByteCache, Fonts, Transport } from "../src/assets/load.ts";
@@ -19,6 +20,8 @@ import type {
   Primitive,
   RiderAsset,
 } from "../src/game/assets.ts";
+import { celebrityIds } from "../src/game/figure-wear.ts";
+import type { CelebrityId } from "../src/game/figure-wear.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
 
 const urls: ModelUrls = {
@@ -29,10 +32,7 @@ const urls: ModelUrls = {
     seraph: "/models/seraph.glb",
   },
   car: "/models/car.glb",
-  celebrities: {
-    kylie: "/models/rider_kylie.glb",
-    ronaldo: "/models/rider_ronaldo.glb",
-  },
+  celebrities: modelUrls.celebrities,
   figures: [
     "/models/rider_a.glb",
     "/models/rider_b.glb",
@@ -47,7 +47,6 @@ const everyUrl = [
   urls.car,
   urls.van,
   ...urls.figures,
-  ...Object.values(urls.celebrities),
 ].toSorted();
 const onceEach = everyUrl.map(() => 1);
 
@@ -246,12 +245,10 @@ describe("asset loading through the Effect boundary", () => {
     const outcome = await loadedOf(mounted);
     expect({
       bikes: Object.keys(outcome.assets.bikes).toSorted(),
-      celebrities: Object.keys(outcome.assets.celebrities).toSorted(),
       fetched: [...fetches.calls.keys()].toSorted(),
       figures: outcome.assets.figures.length,
     }).toStrictEqual({
       bikes: ["classic", "ghost", "oni", "seraph"],
-      celebrities: ["kylie", "ronaldo"],
       fetched: everyUrl,
       figures: 3,
     });
@@ -533,7 +530,12 @@ const partsSummary = (parts: BikeParts) =>
     primitives: primitives.map(primitiveSummary),
   }));
 
-const summary = (assets: Assets) => ({
+interface Worn {
+  readonly id: CelebrityId;
+  readonly value: RiderAsset;
+}
+
+const summary = (assets: Assets, celebrities: readonly Worn[]) => ({
   bikes: {
     classic: partsSummary(assets.bikes.classic),
     ghost: partsSummary(assets.bikes.ghost),
@@ -541,10 +543,9 @@ const summary = (assets: Assets) => ({
     seraph: partsSummary(assets.bikes.seraph),
   },
   car: assets.car.map(primitiveSummary),
-  celebrities: {
-    kylie: riderSummary(assets.celebrities.kylie),
-    ronaldo: riderSummary(assets.celebrities.ronaldo),
-  },
+  celebrities: Object.fromEntries(
+    celebrities.map(({ id, value }) => [id, riderSummary(value)])
+  ),
   figures: assets.figures.map(riderSummary),
   van: assets.van.map(primitiveSummary),
 });
@@ -566,31 +567,53 @@ describe("the real parser on the pinned models", () => {
       modelUrls
     );
     const outcome = await loadedOf(mount(runtime, assetParsers));
-    expect(summary(outcome.assets)).toStrictEqual(characterization);
+    const load = celebrityLoader(
+      runtime.mountCelebrity,
+      Promise.resolve({ assetParsers })
+    );
+    const celebrities = await Promise.all(
+      celebrityIds.map(async (id) => {
+        const decoded = await load(id, new AbortController().signal);
+        if (!decoded) {
+          throw new Error(`The ${id} load was interrupted.`);
+        }
+        return { id, ...decoded };
+      })
+    );
+    const worn = celebrities.map(({ value }) => value);
+    expect(summary(outcome.assets, celebrities)).toStrictEqual(
+      characterization
+    );
     const released: string[] = [];
     for (const primitive of outcome.assets.car) {
       primitive.geometry.addEventListener("dispose", () => {
         released.push(primitive.slot);
       });
     }
-    const freed: string[] = [];
-    for (const [name, { atlas }] of Object.entries(
-      outcome.assets.celebrities
-    )) {
-      atlas?.addEventListener("dispose", () => {
-        freed.push(name);
+    const freed = worn.map((rider) => {
+      const seen = { count: 0 };
+      rider.atlas?.addEventListener("dispose", () => {
+        seen.count += 1;
       });
-    }
+      return seen;
+    });
     const closes = vi.spyOn(ImageBitmap.prototype, "close");
     outcome.release();
+    for (const celebrity of celebrities) {
+      celebrity.release();
+    }
     await nextTurn();
-    const closed = Object.values(outcome.assets.celebrities).map(
+    const closed = worn.map(
       ({ atlas }) =>
         closes.mock.contexts.filter((bitmap) => bitmap === atlas?.image).length
     );
-    expect({ closed, freed: freed.toSorted(), released }).toStrictEqual({
-      closed: [1, 1],
-      freed: ["kylie", "ronaldo"],
+    expect({
+      closed,
+      freed: freed.map(({ count }) => count),
+      released,
+    }).toStrictEqual({
+      closed: worn.map(() => 1),
+      freed: worn.map(() => 1),
       released: outcome.assets.car.map((each) => each.slot),
     });
   });

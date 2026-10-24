@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { celebrityLoader } from "../src/asset-load.ts";
 import { browserAssetRuntime } from "../src/asset-runtime.ts";
 import { createBikes } from "../src/game/actors.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
@@ -74,8 +75,11 @@ const stanceOf = (pose: Pose): Stance => ({
   ...pose.stance,
 });
 
-const acquire = async (notes: string[]): Promise<AcquiredAssets> => {
-  const { promise, reject, resolve } = Promise.withResolvers<AcquiredAssets>();
+const acquire = async (
+  notes: string[]
+): Promise<Pick<AcquiredAssets, "assets" | "release">> => {
+  const { promise, reject, resolve } =
+    Promise.withResolvers<Pick<AcquiredAssets, "assets" | "release">>();
   browserAssetRuntime().mount({
     failed: reject,
     fontFallback: (error) => {
@@ -126,6 +130,13 @@ export const run = async (
 ) => {
   const notes: string[] = [];
   const { assets, release } = await acquire(notes);
+  const worn =
+    celebrity === null
+      ? null
+      : await celebrityLoader(
+          browserAssetRuntime().mountCelebrity,
+          Promise.resolve({ assetParsers })
+        )(celebrity, new AbortController().signal);
   const renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.setPixelRatio(PIXEL_RATIO);
   renderer.setSize(CELL_WIDTH, CELL_HEIGHT, false);
@@ -142,7 +153,7 @@ export const run = async (
     bikeModelIds.map((model) => ({ model, paint: 2, police: false }))
   );
   const figure = createRiderFigure(
-    celebrity === null ? bodyFor(assets, build) : assets.celebrities[celebrity],
+    worn?.value ?? bodyFor(assets, build),
     shading,
     0
   );
@@ -237,6 +248,7 @@ export const run = async (
     shading.dispose();
     pipeline.dispose();
     renderer.dispose();
+    worn?.release();
     release();
   }
 };

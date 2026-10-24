@@ -39,6 +39,7 @@
     "@cloudflare/workers-types": "5.20260918.1",
     "@effect/platform-node": "4.0.0",
     "@racer/career": "workspace:*",
+    "@racer/web": "workspace:*",
     "@types/node": "26.4.1",
     "alchemy": "2.0.0-beta.83",
     "knip": "6.41.0",

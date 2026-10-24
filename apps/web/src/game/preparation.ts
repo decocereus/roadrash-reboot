@@ -7,7 +7,7 @@ export type PrepareOutcome =
   | { readonly kind: "timedOut" }
   | {
       readonly kind: "failed";
-      readonly stage: "build" | "compile" | "warm";
+      readonly stage: "dress" | "build" | "compile" | "warm";
       readonly cause: Error;
     }
   | { readonly kind: "lost" }

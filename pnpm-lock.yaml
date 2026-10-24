@@ -21,6 +21,9 @@ importers:
       '@racer/career':
         specifier: workspace:*
         version: link:packages/career
+      '@racer/web':
+        specifier: workspace:*
+        version: link:apps/web
       '@types/node':
         specifier: 26.4.1
         version: 26.4.1
@@ -307,6 +310,9 @@ importers:
       '@racer/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
+      '@racer/web':
+        specifier: workspace:*
+        version: link:../../apps/web
       effect:
         specifier: 4.0.0
         version: 4.0.0

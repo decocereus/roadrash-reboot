@@ -4,6 +4,7 @@ const viteTests = [
   "apps/**/*.test.tsx",
   "packages/**/*.test.tsx",
   "apps/web/test/asset-load.test.ts",
+  "apps/web/test/celebrity-load.test.ts",
   "apps/web/test/planted-hands.test.ts",
   "apps/web/test/renderer-lifecycle.test.ts",
 ];
