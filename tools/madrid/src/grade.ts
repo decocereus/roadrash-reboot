@@ -15,7 +15,6 @@ export interface Grades {
   readonly offset: number;
   readonly rmsM: number;
   readonly maxM: number;
-  readonly maxStepPerMetre: number;
 }
 
 const SLOPE_SMOOTHING = 2000;
@@ -122,17 +121,10 @@ export const fitGrades = ({ knotS, samples }: GradeOptions): Grades => {
   for (let knot = 1; knot < knotS.length - 1; knot += 1) {
     knots[knot] = solved[knot - 1] ?? 0;
   }
-  let maxStepPerMetre = 0;
-  for (let knot = 1; knot < knotS.length; knot += 1) {
-    const length = (knotS[knot] ?? 0) - (knotS[knot - 1] ?? 0);
-    const step = (knots[knot] ?? 0) - (knots[knot - 1] ?? 0);
-    maxStepPerMetre = Math.max(maxStepPerMetre, Math.abs(step) / length);
-  }
   const misses = missesOf(rows, samples, solved);
   return {
     knots,
     maxM: misses.maxM,
-    maxStepPerMetre,
     offset: solved[unknowns - 1] ?? 0,
     rmsM: misses.rmsM,
   };

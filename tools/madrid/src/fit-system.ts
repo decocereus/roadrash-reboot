@@ -355,55 +355,38 @@ const addStartPin = (
   gradient[1] = (gradient[1] ?? 0) + START_WEIGHT * gz;
 };
 
+export const roughnessOf = (
+  knotValues: Float64Array,
+  smoothing: Float64Array
+): number => {
+  let total = 0;
+  for (let knot = 1; knot < knotValues.length; knot += 1) {
+    const change = (knotValues[knot] ?? 0) - (knotValues[knot - 1] ?? 0);
+    total += (smoothing[knot] ?? 0) * change * change;
+  }
+  return total;
+};
+
 const addSmoothing = (
   { gradient, matrix }: NormalEquations,
   knotValues: Float64Array,
-  smoothing: number
+  smoothing: Float64Array
 ): void => {
   const unknowns = gradient.length;
-  const knots = knotValues.length;
-  for (let knot = 1; knot < knots - 1; knot += 1) {
-    const column = 2 + knot;
-    const value = knotValues[knot] ?? 0;
-    gradient[column] =
-      (gradient[column] ?? 0) +
-      smoothing *
-        (2 * value - (knotValues[knot - 1] ?? 0) - (knotValues[knot + 1] ?? 0));
-    matrix[column * unknowns + column] =
-      (matrix[column * unknowns + column] ?? 0) + 2 * smoothing;
-    if (knot + 1 < knots - 1) {
-      matrix[column * unknowns + column + 1] =
-        (matrix[column * unknowns + column + 1] ?? 0) - smoothing;
-      matrix[(column + 1) * unknowns + column] =
-        (matrix[(column + 1) * unknowns + column] ?? 0) - smoothing;
-    }
-  }
-};
-
-const addBendSmoothing = (
-  { gradient, matrix }: NormalEquations,
-  knotValues: Float64Array,
-  smoothing: number
-): void => {
-  const unknowns = gradient.length;
-  const knots = knotValues.length;
-  for (let knot = 2; knot < knots - 2; knot += 1) {
-    const columns = [knot - 1, knot, knot + 1].map((value) => value + 2);
-    const weights = [1, -2, 1];
-    for (let a = 0; a < 3; a += 1) {
-      const columnA = columns[a] ?? 0;
-      gradient[columnA] =
-        (gradient[columnA] ?? 0) +
-        smoothing *
-          (weights[a] ?? 0) *
-          ((knotValues[knot - 1] ?? 0) -
-            2 * (knotValues[knot] ?? 0) +
-            (knotValues[knot + 1] ?? 0));
-      for (let b = 0; b < 3; b += 1) {
-        const columnB = columns[b] ?? 0;
-        matrix[columnA * unknowns + columnB] =
-          (matrix[columnA * unknowns + columnB] ?? 0) +
-          smoothing * (weights[a] ?? 0) * (weights[b] ?? 0);
+  const last = knotValues.length - 1;
+  for (let knot = 1; knot <= last; knot += 1) {
+    const weight = smoothing[knot] ?? 0;
+    const change = (knotValues[knot] ?? 0) - (knotValues[knot - 1] ?? 0);
+    const columns = [
+      [knot - 1, -1],
+      [knot, 1],
+    ].filter(([at = 0]) => at >= 1 && at < last);
+    for (const [at = 0, sign = 0] of columns) {
+      gradient[2 + at] = (gradient[2 + at] ?? 0) + sign * weight * change;
+      for (const [other = 0, otherSign = 0] of columns) {
+        matrix[(2 + at) * unknowns + 2 + other] =
+          (matrix[(2 + at) * unknowns + 2 + other] ?? 0) +
+          sign * otherSign * weight;
       }
     }
   }
@@ -415,8 +398,7 @@ export const normalEquations = (
   line: Centreline,
   projection: Projection,
   model: Model,
-  smoothing: number,
-  bendSmoothing: number
+  smoothing: Float64Array
 ): NormalEquations => {
   const columns = columnsOf(grid, line, projection);
   const features = rowFeatures(line, projection);
@@ -424,7 +406,6 @@ export const normalEquations = (
   addNearBlock(system, columns, features, projection.residual);
   addStartPin(system, startGap(source, line));
   addSmoothing(system, model.knots, smoothing);
-  addBendSmoothing(system, model.knots, bendSmoothing);
   return system;
 };
 

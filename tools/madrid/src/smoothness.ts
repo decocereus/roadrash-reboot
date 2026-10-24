@@ -1,34 +1,39 @@
-const NOISE = 1e-4;
+import type { Centreline } from "@racer/track/alignment";
 
-const signChanges = (values: Iterable<number>): number => {
-  let changes = 0;
-  let last = 0;
-  for (const value of values) {
-    if (Math.abs(value) < NOISE) {
-      continue;
-    }
-    const sign = Math.sign(value);
-    if (last !== 0 && sign !== last) {
-      changes += 1;
-    }
-    last = sign;
-  }
-  return changes;
-};
+export const smoothRoad = {
+  curvatureFlipsPerKilometre: 3,
+  gradeChangeFlipsPerKilometre: 7,
+  gradeChangePerMetre: 0.006,
+} as const;
 
-export const signChangesPerKilometre = (
-  values: Iterable<number>,
+const STRAIGHT_CURVATURE = 1 / 1000;
+const LEVEL_GRADE_CHANGE = 1 / 10_000;
+
+const flipsPerKilometre = (
+  values: Float64Array,
+  quiet: number,
   lengthM: number
-): number => (lengthM > 0 ? (signChanges(values) * 1000) / lengthM : 0);
-
-export const maxStep = (values: Iterable<number>): number => {
-  let worst = 0;
-  let last = Number.NaN;
+): number => {
+  let flips = 0;
+  let side = 0;
   for (const value of values) {
-    if (!Number.isNaN(last)) {
-      worst = Math.max(worst, Math.abs(value - last));
+    if (Math.abs(value) >= quiet) {
+      const sign = Math.sign(value);
+      flips += side !== 0 && sign !== side ? 1 : 0;
+      side = sign;
     }
-    last = value;
   }
-  return worst;
+  return (flips * 1000) / lengthM;
 };
+
+export const curvatureFlipsPerKilometre = (line: Centreline): number =>
+  flipsPerKilometre(line.curvature, STRAIGHT_CURVATURE, line.length);
+
+export const gradeChangeFlipsPerKilometre = (line: Centreline): number =>
+  flipsPerKilometre(line.slopeRate, LEVEL_GRADE_CHANGE, line.length);
+
+export const sharpestGradeChange = (line: Centreline): number =>
+  line.slopeRate.reduce(
+    (sharpest, rate) => Math.max(sharpest, Math.abs(rate)),
+    0
+  );

@@ -11,6 +11,7 @@ import {
   BOUND_TOLERANCE,
   boundedStep,
   normalEquations,
+  roughnessOf,
   startGap,
 } from "./fit-system.ts";
 import type { Grid, Model, Projection, Source } from "./fit-system.ts";
@@ -55,55 +56,12 @@ const WARM_ITERATIONS = 40;
 const SETTLE_ITERATIONS = 200;
 const MAX_CYCLES = 8;
 const SETTLED = 1e-7;
-const SOURCE_SMOOTHING_M = 30;
-const SOURCE_SHIFT_M = 1;
-const CURVATURE_SMOOTHING = 100_000;
-const CURVATURE_BEND_SMOOTHING = 200_000;
+const SMOOTHING = 3_000_000;
+const TOP_SPEED = 50;
+const CORNERING = 8;
+const STREET_REACH_M = 25;
 
-const extend = (values: Float64Array, index: number): number => {
-  const last = values.length - 1;
-  if (index < 0) {
-    return 2 * (values[0] ?? 0) - (values[Math.min(last, -index)] ?? 0);
-  }
-  if (index > last) {
-    return (
-      2 * (values[last] ?? 0) - (values[Math.max(0, 2 * last - index)] ?? 0)
-    );
-  }
-  return values[index] ?? 0;
-};
-
-const smoothSource = (
-  x: Float64Array,
-  z: Float64Array,
-  smoothingM: number
-): void => {
-  const reach = Math.round(smoothingM);
-  if (reach < 1) {
-    return;
-  }
-  const rawX = Float64Array.from(x);
-  const rawZ = Float64Array.from(z);
-  for (let index = 1; index < x.length - 1; index += 1) {
-    let weight = 0;
-    let sumX = 0;
-    let sumZ = 0;
-    for (let offset = -reach; offset <= reach; offset += 1) {
-      const share = reach + 1 - Math.abs(offset);
-      weight += share;
-      sumX += extend(rawX, index + offset) * share;
-      sumZ += extend(rawZ, index + offset) * share;
-    }
-    const shiftX = sumX / weight - (rawX[index] ?? 0);
-    const shiftZ = sumZ / weight - (rawZ[index] ?? 0);
-    const shift = Math.hypot(shiftX, shiftZ);
-    const scale = shift > SOURCE_SHIFT_M ? SOURCE_SHIFT_M / shift : 1;
-    x[index] = (rawX[index] ?? 0) + shiftX * scale;
-    z[index] = (rawZ[index] ?? 0) + shiftZ * scale;
-  }
-};
-
-const resample = (line: readonly Position[], smoothingM: number): Source => {
+const resample = (line: readonly Position[]): Source => {
   const cumulative = [0];
   for (let index = 1; index < line.length; index += 1) {
     const a = line[index - 1];
@@ -138,7 +96,6 @@ const resample = (line: readonly Position[], smoothingM: number): Source => {
     z[index] = -(a[1] + (b[1] - a[1]) * share);
     atM[index] = at;
   }
-  smoothSource(x, z, smoothingM);
   return { atM, lengthM, x, z };
 };
 
@@ -172,6 +129,48 @@ const boundsOf = (
       ({ fromM, toM }) => atM >= fromM && atM <= toM
     );
     return curvatureLimit(place?.minRadiusM ?? options.minRadiusM);
+  });
+};
+
+const headingsOf = (source: Source): number[] => {
+  const headings: number[] = [];
+  for (let index = 1; index < source.x.length; index += 1) {
+    const dx = (source.x[index] ?? 0) - (source.x[index - 1] ?? 0);
+    const dz = (source.z[index] ?? 0) - (source.z[index - 1] ?? 0);
+    const raw = Math.atan2(dx, -dz);
+    const previous = headings.at(-1) ?? raw;
+    headings.push(
+      raw + 2 * Math.PI * Math.round((previous - raw) / (2 * Math.PI))
+    );
+  }
+  return headings;
+};
+
+const smoothingOf = (
+  grid: Grid,
+  source: Source,
+  bounds: Float64Array
+): Float64Array => {
+  const headings = headingsOf(source);
+  const last = headings.length - 1;
+  const roadLength = grid.knotS.at(-1) ?? 1;
+  return Float64Array.from(grid.knotS, (knotS, knot) => {
+    const middle = (knotS + (grid.knotS[knot - 1] ?? knotS)) / 2;
+    const atM = Math.round((middle / roadLength) * source.lengthM);
+    const from = Math.max(0, atM - STREET_REACH_M);
+    const to = Math.min(last, atM + STREET_REACH_M);
+    let turned = 0;
+    for (let at = from + 1; at <= to; at += 1) {
+      turned += Math.abs((headings[at] ?? 0) - (headings[at - 1] ?? 0));
+    }
+    const streetCurvature = turned / Math.max(1, to - from);
+    const curvature = Math.min(
+      streetCurvature,
+      bounds[knot] ?? Number.POSITIVE_INFINITY,
+      bounds[knot - 1] ?? Number.POSITIVE_INFINITY
+    );
+    const speedSquared = Math.min(TOP_SPEED * TOP_SPEED, CORNERING / curvature);
+    return SMOOTHING * (speedSquared / (TOP_SPEED * TOP_SPEED)) ** 2;
   });
 };
 
@@ -279,45 +278,19 @@ const alongArc = (source: Source, line: Centreline): Projection => {
 
 type Correspond = (source: Source, line: Centreline) => Projection;
 
-const roughness = (knots: Float64Array): number => {
-  let total = 0;
-  for (let index = 1; index < knots.length; index += 1) {
-    const change = (knots[index] ?? 0) - (knots[index - 1] ?? 0);
-    total += change * change;
-  }
-  return total;
-};
-
-const bendOf = (knots: Float64Array): number => {
-  let total = 0;
-  for (let index = 2; index < knots.length - 2; index += 1) {
-    const bend =
-      (knots[index - 1] ?? 0) -
-      2 * (knots[index] ?? 0) +
-      (knots[index + 1] ?? 0);
-    total += bend * bend;
-  }
-  return total;
-};
-
 const costOf = (
   source: Source,
   line: Centreline,
   projection: Projection,
-  model: Model
+  model: Model,
+  smoothing: Float64Array
 ): number => {
   let total = 0;
   for (const value of projection.residual) {
     total += value * value;
   }
   const [gx, gz] = startGap(source, line);
-  return (
-    total +
-    gx * gx +
-    gz * gz +
-    CURVATURE_SMOOTHING * roughness(model.knots) +
-    CURVATURE_BEND_SMOOTHING * bendOf(model.knots)
-  );
+  return total + gx * gx + gz * gz + roughnessOf(model.knots, smoothing);
 };
 
 const advance = (model: Model, step: Float64Array): Model => {
@@ -336,16 +309,7 @@ const advance = (model: Model, step: Float64Array): Model => {
 };
 
 const initialModel = (source: Source, grid: Grid): Model => {
-  const headings: number[] = [];
-  for (let index = 1; index < source.x.length; index += 1) {
-    const dx = (source.x[index] ?? 0) - (source.x[index - 1] ?? 0);
-    const dz = (source.z[index] ?? 0) - (source.z[index - 1] ?? 0);
-    const raw = Math.atan2(dx, -dz);
-    const previous = headings.at(-1) ?? raw;
-    headings.push(
-      raw + 2 * Math.PI * Math.round((previous - raw) / (2 * Math.PI))
-    );
-  }
+  const headings = headingsOf(source);
   const headingAt = (s: number): number => {
     const index = Math.min(headings.length - 1, Math.max(0, Math.round(s)));
     return headings[index] ?? 0;
@@ -399,13 +363,14 @@ const solve = (
   grid: Grid,
   first: Model,
   bounds: Float64Array,
+  smoothing: Float64Array,
   correspond: Correspond,
   limit: number
 ): Solved => {
   let model = first;
   let line = centrelineOf(grid, model);
   let projection = correspond(source, line);
-  let cost = costOf(source, line, projection, model);
+  let cost = costOf(source, line, projection, model, smoothing);
   let damping = 1e-3;
   for (let iteration = 0; iteration < limit; iteration += 1) {
     const system = normalEquations(
@@ -414,8 +379,7 @@ const solve = (
       line,
       projection,
       model,
-      CURVATURE_SMOOTHING,
-      CURVATURE_BEND_SMOOTHING
+      smoothing
     );
     let accepted = false;
     while (!accepted && damping < 1e12) {
@@ -425,7 +389,13 @@ const solve = (
       );
       const nextLine = centrelineOf(grid, next);
       const nextProjection = correspond(source, nextLine);
-      const nextCost = costOf(source, nextLine, nextProjection, next);
+      const nextCost = costOf(
+        source,
+        nextLine,
+        nextProjection,
+        next,
+        smoothing
+      );
       if (nextCost < cost) {
         accepted = true;
         const settled = (cost - nextCost) / cost < SETTLED;
@@ -544,11 +514,13 @@ const settle = (
   let model = first;
   for (let cycle = 1; ; cycle += 1) {
     const bounds = boundsOf(grid, source, options);
+    const smoothing = smoothingOf(grid, source, bounds);
     const held = solve(
       source,
       grid,
       clampKeepingTurn(model, bounds),
       bounds,
+      smoothing,
       alongArc,
       WARM_ITERATIONS
     );
@@ -557,6 +529,7 @@ const settle = (
       grid,
       held.model,
       bounds,
+      smoothing,
       project,
       SETTLE_ITERATIONS
     );
@@ -587,19 +560,23 @@ export const fitPolyline = (
   line: readonly Position[],
   options: FitOptions
 ): Fit => {
-  const raw = resample(line, 0);
-  const source = resample(line, SOURCE_SMOOTHING_M);
+  const source = resample(line);
   const whole = gridOf(Math.round(source.lengthM), options.pieceLengthM);
   const free = solve(
     source,
     whole,
     initialModel(source, whole),
     new Float64Array(whole.knotS.length).fill(Number.POSITIVE_INFINITY),
+    smoothingOf(
+      whole,
+      source,
+      new Float64Array(whole.knotS.length).fill(Number.POSITIVE_INFINITY)
+    ),
     alongArc,
     SETTLE_ITERATIONS
   );
   const { bounds, grid, solved } = settle(source, whole, free.model, options);
-  const deviationM = distancesOf(raw, solved);
+  const deviationM = distancesOf(source, solved);
   const sorted = deviationM.toSorted();
   let squares = 0;
   for (const value of deviationM) {
@@ -616,11 +593,11 @@ export const fitPolyline = (
       p95M: percentile(sorted, 0.95),
       rmsM: Math.sqrt(squares / deviationM.length),
     },
-    forced: forcedSpans(raw, grid, solved, deviationM, bounds),
+    forced: forcedSpans(source, grid, solved, deviationM, bounds),
     lengthM: solved.line.length,
     minRadiusM: 1 / tightest,
     pieces: piecesOf(grid, solved.model.knots),
-    sourceLengthM: raw.lengthM,
+    sourceLengthM: source.lengthM,
     start: solved.model.start,
   };
 };

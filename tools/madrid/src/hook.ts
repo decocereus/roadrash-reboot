@@ -17,7 +17,11 @@ import {
   pointAlong,
 } from "./geometry.ts";
 import { fitGrades } from "./grade.ts";
-import { maxStep, signChangesPerKilometre } from "./smoothness.ts";
+import {
+  curvatureFlipsPerKilometre,
+  gradeChangeFlipsPerKilometre,
+  sharpestGradeChange,
+} from "./smoothness.ts";
 
 interface HookPlace {
   readonly name: string;
@@ -57,8 +61,8 @@ interface HookReport {
   readonly heightMaxM: number;
   readonly steepestGrade: number;
   readonly sharpestGradeChange: number;
-  readonly largestGradeStep: number;
   readonly curvatureFlipsPerKilometre: number;
+  readonly gradeChangeFlipsPerKilometre: number;
   readonly lakeClearanceM: number;
   readonly keptBlocks: number;
   readonly droppedBlocks: number;
@@ -237,16 +241,13 @@ export const buildHook = (
     origin,
     pieces: [firstPiece, ...laterPieces],
     report: {
-      curvatureFlipsPerKilometre: signChangesPerKilometre(
-        pieces.map((piece) => piece.endCurvature),
-        fit.lengthM
-      ),
+      curvatureFlipsPerKilometre: curvatureFlipsPerKilometre(road),
       droppedBlocks: candidates.length - blocks.length,
+      gradeChangeFlipsPerKilometre: gradeChangeFlipsPerKilometre(road),
       heightMaxM: grades.maxM,
       heightRmsM: grades.rmsM,
       keptBlocks: blocks.length,
       lakeClearanceM: lakeGap,
-      largestGradeStep: maxStep(pieces.map((piece) => piece.endGrade)),
       lengthM: fit.lengthM,
       maxM: fit.error.maxM,
       outsidePlacesM: Math.max(
@@ -271,7 +272,7 @@ export const buildHook = (
         place,
       })),
       rmsM: fit.error.rmsM,
-      sharpestGradeChange: grades.maxStepPerMetre,
+      sharpestGradeChange: sharpestGradeChange(road),
       steepestGrade,
       streetLengthM: fit.sourceLengthM,
       tightestRadiusM: fit.minRadiusM,

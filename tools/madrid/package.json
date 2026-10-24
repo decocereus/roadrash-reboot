@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "@effect/platform-node": "4.0.0",
-    "@racer/sim": "workspace:*",
     "@racer/track": "workspace:*",
     "csv-parse": "6.1.0",
     "effect": "4.0.0",

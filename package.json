@@ -30,8 +30,7 @@
     "verify": "node scripts/verify.ts",
     "madrid": "node tools/madrid/generate.ts",
     "madrid:fit": "node tools/madrid/fit.ts",
-    "madrid:hook": "node tools/madrid/hook.ts",
-    "madrid:steady": "node tools/madrid/steady.ts"
+    "madrid:hook": "node tools/madrid/hook.ts"
   },
   "dependencies": {
     "effect": "4.0.0"

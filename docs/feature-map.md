@@ -537,7 +537,7 @@ Pinned, permissively licensed Madrid source data, the offline corridor generator
 - Docs: [docs/madrid-corridor.md#route-and-coordinates](madrid-corridor.md#route-and-coordinates), [docs/madrid-corridor.md#fitting-track-pieces](madrid-corridor.md#fitting-track-pieces), [docs/madrid-corridor.md#casa-de-campo-hook](madrid-corridor.md#casa-de-campo-hook)
 - Verify: [credits.md](../.claude/skills/verify-rushline/features/credits.md), [madrid-hook.md](../.claude/skills/verify-rushline/features/madrid-hook.md)
 - Perf: none yet
-- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `packages/sim/src/madrid-hook.test.ts`, `apps/web/src/routes/credits.tsx`
+- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `packages/sim/src/madrid-hook.test.ts`, `apps/web/test/madrid-hook-camera.test.ts`, `apps/web/src/routes/credits.tsx`
 
 Source files:
 
@@ -560,10 +560,10 @@ Source files:
 - `tools/madrid/src/roads.ts`
 - `tools/madrid/src/schema.ts`
 - `tools/madrid/src/smoothness.ts`
-- `tools/madrid/steady.ts`
 
 Test files:
 
+- `apps/web/test/madrid-hook-camera.test.ts`
 - `packages/sim/src/madrid-hook.test.ts`
 - `tools/madrid/test/corridor.test.ts`
 - `tools/madrid/test/fit.test.ts`

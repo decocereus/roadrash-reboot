@@ -118,7 +118,7 @@ const main = Effect.gen(function* main() {
     [
       `Street ${settings.fromM} to ${settings.toM} m: ${report.streetLengthM.toFixed(0)} m of street, ${report.lengthM.toFixed(0)} m of road, tightest radius ${metres(report.tightestRadiusM)}`,
       `Distance from the street: RMS ${metres(report.rmsM)}, 95th percentile ${metres(report.p95M)}, largest ${metres(report.maxM)}, largest outside the slow places ${metres(report.outsidePlacesM)}`,
-      `Smoothness: ${report.curvatureFlipsPerKilometre.toFixed(1)} curvature sign flips per kilometre, largest grade step ${(report.largestGradeStep * 100).toFixed(1)}%`,
+      `Smoothness: ${report.curvatureFlipsPerKilometre.toFixed(1)} curvature and ${report.gradeChangeFlipsPerKilometre.toFixed(1)} grade change sign flips per kilometre`,
       ...report.places.map(
         ({ maxM, place }) =>
           `  ${place.name} (${place.fromM} to ${place.toM} m, ${place.minRadiusM} m radius): largest ${metres(maxM)}`
