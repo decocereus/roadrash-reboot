@@ -2,10 +2,11 @@ import { mkdir, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { Logger, NodeIO } from "@gltf-transform/core";
-import type { Document } from "@gltf-transform/core";
+import type { Document, Primitive } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import { meshopt, prune } from "@gltf-transform/functions";
+import { meshopt, prune, textureCompress } from "@gltf-transform/functions";
 import { MeshoptDecoder, MeshoptEncoder } from "meshoptimizer";
+import sharp from "sharp";
 
 const RAW = path.join(import.meta.dirname, "out");
 const SHIPPED = path.join(
@@ -18,6 +19,7 @@ const SHIPPED = path.join(
   "game",
   "models"
 );
+const ATLAS_SIZE = 1024;
 
 const READ_ATTRIBUTES = new Set([
   "POSITION",
@@ -29,14 +31,31 @@ const READ_ATTRIBUTES = new Set([
 const keepsChannel = (target: string | null, bone: string | undefined) =>
   target === "rotation" || (target === "translation" && bone === "pelvis");
 
+const reads = (primitive: Primitive, semantic: string): boolean =>
+  READ_ATTRIBUTES.has(semantic) ||
+  (semantic === "TEXCOORD_0" &&
+    (primitive.getMaterial()?.getBaseColorTexture() ?? null) !== null);
+
 const dropUnread = (document: Document): void => {
   for (const mesh of document.getRoot().listMeshes()) {
     for (const primitive of mesh.listPrimitives()) {
       for (const semantic of primitive.listSemantics()) {
-        if (!READ_ATTRIBUTES.has(semantic)) {
+        if (!reads(primitive, semantic)) {
           primitive.setAttribute(semantic, null);
         }
       }
+    }
+  }
+  for (const material of document.getRoot().listMaterials()) {
+    material
+      .setNormalTexture(null)
+      .setOcclusionTexture(null)
+      .setEmissiveTexture(null)
+      .setMetallicRoughnessTexture(null);
+  }
+  for (const extension of document.getRoot().listExtensionsUsed()) {
+    if (extension.extensionName.startsWith("KHR_materials_")) {
+      extension.dispose();
     }
   }
   for (const animation of document.getRoot().listAnimations()) {
@@ -70,6 +89,13 @@ const compress = async (name: string): Promise<string> => {
   dropUnread(document);
   await document.transform(
     prune(),
+    textureCompress({
+      effort: 100,
+      encoder: sharp,
+      lossless: true,
+      resize: [ATLAS_SIZE, ATLAS_SIZE],
+      targetFormat: "webp",
+    }),
     meshopt({ encoder: MeshoptEncoder, level: "high" })
   );
   await io.write(target, document);

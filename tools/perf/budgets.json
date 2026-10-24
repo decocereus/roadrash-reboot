@@ -20,11 +20,15 @@
       {
         "file": "tools/perf/baselines/post-step8.bikes.json.gz",
         "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.celebrities.json.gz",
+        "sha256": "6c4e2ed8db757b225d6869a97a7661a08f97b76f263168bb3ed14cecfe8ee9ad"
       }
     ],
     "revision": "fd677a71c74167dc049a2bcf232f26f8f9abda86",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "7ce11e3a706ba50e60ddb86a1ada567a5eed64d933092801cfb7a439d85b05a2"
+    "summarySha256": "90281f71daba5484b5a35e96320a7787131e9ab969f46761d3c412c32542842e"
   },
   "limits": [
     {
@@ -113,6 +117,30 @@
     },
     {
       "derivation": "exact baseline",
+      "value": 343368,
+      "baseline": 343368,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_kylie",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 311148,
+      "baseline": 311148,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.rider_ronaldo",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
       "value": 118884,
       "baseline": 118884,
       "direction": "max",
@@ -145,6 +173,18 @@
       "paired": null,
       "scenario": null,
       "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 11184808,
+      "baseline": 11184808,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.texture.total",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
       "unit": "B"
     },
     {

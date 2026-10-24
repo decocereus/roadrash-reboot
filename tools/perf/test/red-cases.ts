@@ -172,6 +172,7 @@ export const syntheticBuild = (
     name,
     raw: name === "bike" ? bikeBytes : CLOSURE_BYTES,
     sha256: name,
+    textureBytes: 0,
   })),
   payloads: [],
   problems: [],

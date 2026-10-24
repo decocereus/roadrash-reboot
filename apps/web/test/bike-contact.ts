@@ -5,6 +5,8 @@ import { createBikes } from "../src/game/actors.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
+import { bodyFor } from "../src/game/figure-rig.ts";
+import type { CelebrityId } from "../src/game/figure-wear.ts";
 import { assetParsers } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
@@ -20,9 +22,22 @@ const SETTLE_STEPS = 8;
 const CONTACT_BONES = ["hand_l", "hand_r", "foot_l", "foot_r", "ball_l"];
 
 const views = {
-  detail: new THREE.Vector3(2.2, 0.72, -0.05),
-  front: new THREE.Vector3(-2.6, 1.5, -3.4),
-  side: new THREE.Vector3(4.4, 0.9, 0),
+  detail: {
+    eye: new THREE.Vector3(2.2, 0.72, -0.05),
+    target: new THREE.Vector3(0, 0.7, -0.05),
+  },
+  front: {
+    eye: new THREE.Vector3(-2.6, 1.5, -3.4),
+    target: new THREE.Vector3(0, 0.78, 0),
+  },
+  portrait: {
+    eye: new THREE.Vector3(-1.5, 1.6, -2.3),
+    target: new THREE.Vector3(0, 1.15, 0.05),
+  },
+  side: {
+    eye: new THREE.Vector3(4.4, 0.9, 0),
+    target: new THREE.Vector3(0, 0.78, 0),
+  },
 } as const;
 
 type View = keyof typeof views;
@@ -100,7 +115,11 @@ const inBikeSpace = (bike: THREE.Object3D, world: THREE.Vector3) => {
   );
 };
 
-export const run = async (view: View, build = 0) => {
+export const run = async (
+  view: View,
+  build = 0,
+  celebrity: CelebrityId | null = null
+) => {
   const notes: string[] = [];
   const { assets, release } = await acquire(notes);
   const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -118,7 +137,11 @@ export const run = async (view: View, build = 0) => {
     shading,
     bikeModelIds.map((model) => ({ model, paint: 2, police: false }))
   );
-  const figure = createRiderFigure(assets, shading, 0, build);
+  const figure = createRiderFigure(
+    celebrity === null ? bodyFor(assets, build) : assets.celebrities[celebrity],
+    shading,
+    0
+  );
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#2a2433");
   const light = new THREE.DirectionalLight(shading.sun, 1);
@@ -138,12 +161,8 @@ export const run = async (view: View, build = 0) => {
       0.1,
       40
     );
-    camera.position.copy(views[view]);
-    camera.lookAt(
-      0,
-      view === "detail" ? 0.7 : 0.78,
-      view === "detail" ? -0.05 : 0
-    );
+    camera.position.copy(views[view].eye);
+    camera.lookAt(views[view].target);
     camera.updateMatrixWorld();
     shading.aim(camera);
     const sheet = sheetCanvas();
@@ -199,7 +218,14 @@ export const run = async (view: View, build = 0) => {
         }
       }
     }
-    return { build, contacts, notes, seat: figure.seat.toArray(), view };
+    return {
+      build,
+      celebrity,
+      contacts,
+      notes,
+      seat: figure.seat.toArray(),
+      view,
+    };
   } finally {
     light.dispose();
     figure.dispose();

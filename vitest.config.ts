@@ -32,7 +32,13 @@ export default defineConfig({
           name: "police",
         },
       },
-      { test: { include: viteTests, name: "vite" } },
+      {
+        test: {
+          include: viteTests,
+          name: "vite",
+          setupFiles: ["apps/web/test/node-images.ts"],
+        },
+      },
     ],
   },
 });
