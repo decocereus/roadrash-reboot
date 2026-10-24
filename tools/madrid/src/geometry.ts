@@ -1,4 +1,4 @@
-import type { Position } from "@racer/track/madrid-schema";
+import type { CorridorData, Position } from "@racer/track/madrid-schema";
 import proj4 from "proj4";
 
 export const origin: Position = [437_000, 4_473_000];
@@ -157,4 +157,38 @@ export const pointAlong = (
     previous = current;
   }
   return previous;
+};
+
+export const corridorLine = (data: CorridorData): [Position, ...Position[]] => {
+  const [firstStreet, ...laterStreets] = data.streets;
+  const [firstLink, ...laterLinks] = firstStreet.links;
+  const line: [Position, ...Position[]] = [...firstLink.centreline];
+  for (const link of [
+    ...laterLinks,
+    ...laterStreets.flatMap((street) => street.links),
+  ]) {
+    line.push(...link.centreline.slice(1));
+  }
+  return line;
+};
+
+export const between = (
+  line: readonly [Position, ...Position[]],
+  fromM: number,
+  toM: number
+): [Position, ...Position[]] => {
+  const result: [Position, ...Position[]] = [pointAlong(line, fromM)];
+  let atM = 0;
+  for (let index = 1; index < line.length; index += 1) {
+    const a = line[index - 1];
+    const b = line[index];
+    if (a && b) {
+      atM += distance(a, b);
+      if (atM > fromM && atM < toM) {
+        result.push(b);
+      }
+    }
+  }
+  result.push(pointAlong(line, toM));
+  return result;
 };
