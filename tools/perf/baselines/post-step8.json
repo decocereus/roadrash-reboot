@@ -464,6 +464,30 @@
       "side": "A",
       "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
       "value": 118884
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_kylie",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "value": 343368
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_ronaldo",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "value": 311148
+    },
+    {
+      "environment": "build",
+      "metric": "assets.texture.total",
+      "scenario": null,
+      "side": "A",
+      "source": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "value": 11184808
     }
   ],
   "revisions": {
@@ -613,6 +637,34 @@
       "sides": {
         "A": "6e6ea5a56ee61b2a4b28aa160b458fdca9146bbe",
         "B": "6e6ea5a56ee61b2a4b28aa160b458fdca9146bbe"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "glbA": "{\"bike\":122108,\"car\":53048,\"ghost\":116948,\"oni\":126272,\"rider_a\":238128,\"rider_b\":238876,\"rider_c\":237836,\"rider_kylie\":343368,\"rider_ronaldo\":311148,\"seraph\":118884,\"van\":47784}",
+        "textureBytesA": "{\"rider_kylie\":5592404,\"rider_ronaldo\":5592404}",
+        "builtA": "{\"client\":[14020300,12229823],\"game\":[13999131,12220321],\"gameIncremental\":[2722888,1440126],\"kit\":[11108906,10723849],\"root\":[11276243,10780195],\"uploaderIncremental\":[3413,1726],\"worker\":[1071785,277692]}",
+        "builtB": "{\"client\":[14020300,12229820],\"game\":[13999131,12220321],\"gameIncremental\":[2722888,1440127],\"kit\":[11108906,10723846],\"root\":[11276243,10780194],\"uploaderIncremental\":[3413,1726],\"worker\":[1071799,277695]}",
+        "artifactDigestA": "8a7c28ec637914c2af7457d88889e93c4c63fc8a8339c1e46239b44b59b359eb",
+        "artifactDigestB": "2fdd8998e9f80367c870516a0aa286a5d843a2c073bd30677e4d32bf92bb5d7c",
+        "cloneKiB": "2300744",
+        "harnessDigest": "eaf68afbc5cafaaabdc303b6db0ac3b2bca04bd97a897456aa3b1aaeb8b642cd",
+        "lockfileSha256": "c17072ada1c7235d2910c14d02abdbc045e559180f4d557f980e7c0fecf3ac59",
+        "machine": "Mac16,8",
+        "node": "v24.22.1",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "5cea7b63b895fddb05b605f6f9a4ed15ec0dbea6b42ee7d7778e9620aad1c106",
+        "sideBSourceDigest": "5cea7b63b895fddb05b605f6f9a4ed15ec0dbea6b42ee7d7778e9620aad1c106",
+        "wallMs": "{\"build\":4698,\"materialize\":14109,\"node\":0,\"total\":18958}"
+      },
+      "id": "baseline-2026-10-24T17-14-50-360Z-c943fea-c943fea",
+      "lanes": ["build"],
+      "sides": {
+        "A": "c943fead285dff6662467ae03ce287068d415a5c",
+        "B": "c943fead285dff6662467ae03ce287068d415a5c"
       }
     }
   ],

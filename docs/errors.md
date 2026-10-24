@@ -63,7 +63,7 @@ A save whose level is above the served level count is refused as `invalid` at `l
 
 ## Asset loading
 
-`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the nine models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
+`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the eleven models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
 
 | Tag | Retried | What the player sees |
 | --- | --- | --- |

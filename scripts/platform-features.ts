@@ -149,6 +149,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/assets/font-readiness-failed.ts",
       "apps/web/src/game/assets.ts",
       "apps/web/test/asset-load.test.ts",
+      "apps/web/test/node-images.ts",
     ],
     perf: [],
     start: [
@@ -157,7 +158,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/assets.ts",
     ],
     summary:
-      "Booting the game module with a dynamic import, downloading and decoding the nine models, waiting for fonts, and the typed failures of each step.",
+      "Booting the game module with a dynamic import, downloading and decoding the eleven models, waiting for fonts, and the typed failures of each step.",
     title: "Model and font loading",
     verify: ["frame-rate.md"],
   },
@@ -179,9 +180,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "assets.glb.rider_a",
       "assets.glb.rider_b",
       "assets.glb.rider_c",
+      "assets.glb.rider_kylie",
+      "assets.glb.rider_ronaldo",
       "assets.glb.seraph",
       "assets.glb.van",
       "assets.glb.total",
+      "assets.texture.total",
     ],
     start: ["tools/blender/compress.ts"],
     summary:
@@ -350,7 +354,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/profile.ts",
     ],
     summary:
-      "The URL flags that skip the menus and stage a moment (`?ride`, `?at`, `?kmh`, `?hazard`, `?clear`, `?hold`, `?swerve`), the `?stress` race and its measured windows, and the `?prof` frame profiler.",
+      "The URL flags that skip the menus and stage a moment (`?ride`, `?at`, `?kmh`, `?hazard`, `?clear`, `?hold`, `?swerve`), the `?stress` race and its measured windows, and the `?prof` frame profiler. The `?as` and `?against` celebrity flags live with the riders in `figure-wear.ts`.",
     title: "Dev URL flags, the stress race and the profiler",
     verify: ["frame-rate.md"],
   },
