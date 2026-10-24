@@ -63,6 +63,19 @@ export const madridSources = [
   },
   {
     attribution:
+      "CC BY 4.0 scne.es. Lake outline traced from PNOA orthophotography, service snapshot 24/10/2026.",
+    changes:
+      "The Casa de Campo lake shoreline was traced by eye from the orthophoto as a 208-point outline in local metres. No imagery is included.",
+    date: "2026-10-24 service snapshot; PNOA máxima actualidad",
+    id: "ign-orthophoto",
+    licence: "CC BY 4.0",
+    licenceUrl:
+      "https://www.ign.es/resources/licencia/Condiciones_licenciaUso_IGN.pdf",
+    name: "IGN · PNOA orthophoto",
+    url: "https://www.ign.es/wms-inspire/pnoa-ma?service=WMS&request=GetCapabilities",
+  },
+  {
+    attribution:
       "Microsoft Global ML Building Footprints, release 2026-08-13, Spain tile 033111012.",
     changes:
       "Footprints were clipped to the corridor, simplified and rounded. Available Microsoft heights are machine estimates. Missing heights remain unavailable.",

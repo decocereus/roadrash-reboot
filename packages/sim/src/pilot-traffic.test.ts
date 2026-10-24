@@ -17,8 +17,8 @@ import {
   pilotAt,
   pilotFrom,
   placedAt,
+  onlyCop,
   player,
-  riderAt,
   roadWith,
   slick,
   slowTruckAt,
@@ -97,26 +97,26 @@ const pilotBehindTruck = (road: Track, closing = closingOnTruck) => {
 const copBehindTruck = (road: Track, closing = closingOnTruck) => {
   const state = field(road, 1, 0, 1);
   slowTruckAt(state, closing.truckS, 1.8);
-  const cop = riderAt(state, 1);
+  const target = player(state);
+  const cop = onlyCop(state);
   cop.parked = false;
   cop.post = 900;
-  cop.chase = 0;
+  cop.chase = target.id;
   cop.s = 920;
   cop.x = closing.x;
   cop.speed = closing.speed;
-  const target = player(state);
   target.s = 935;
   target.x = -3;
   target.speed = closing.speed;
   const inputs = state.riders.map(() => ({ ...neutralInput }));
   const events: RaceEvent[] = [];
   for (let tick = 0; tick < 4 * TICK_RATE; tick += 1) {
-    pilotInput(state, road, 1, inputs[1] ?? { ...neutralInput });
-    inputs[0] = { ...neutralInput, throttle: 0.6 };
+    pilotInput(state, road, cop, inputs[cop.id] ?? { ...neutralInput });
+    inputs[target.id] = { ...neutralInput, throttle: 0.6 };
     stepRace(state, road, inputs);
     events.push(...state.events);
   }
-  return events.filter((event) => event.rider === 1);
+  return events.filter((event) => event.rider === cop.id);
 };
 
 const diceAfterPiloting = (road: Track): number => {

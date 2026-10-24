@@ -24,6 +24,7 @@ import { rangedBufferUploadRule } from "./rules/ranged-buffer-upload.ts";
 import { requireNulFileListRule } from "./rules/require-nul-file-list.ts";
 import { requireSuppressionReasonRule } from "./rules/require-suppression-reason.ts";
 import { requireWrappedCauseRule } from "./rules/require-wrapped-cause.ts";
+import { riderByIdRule } from "./rules/rider-by-id.ts";
 import { safetyVerifiedByRule } from "./rules/safety-verified-by.ts";
 import { workspaceImportsRule } from "./rules/workspace-imports.ts";
 
@@ -54,6 +55,7 @@ const rushlinePlugin = definePlugin({
     "require-nul-file-list": requireNulFileListRule,
     "require-suppression-reason": requireSuppressionReasonRule,
     "require-wrapped-cause": requireWrappedCauseRule,
+    "rider-by-id": riderByIdRule,
     "safety-verified-by": safetyVerifiedByRule,
     "workspace-imports": workspaceImportsRule,
   },

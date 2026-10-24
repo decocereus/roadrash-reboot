@@ -38,60 +38,96 @@ No geometry or other data was imported from OpenStreetMap, Overture, Google or t
 
 `pnpm madrid:fit` fits track pieces to the corridor centreline and prints how closely the fitted road follows the street. It writes the pieces to `tools/madrid/.cache/fits.json`. `--interval from:to` picks stretches in metres of chainage and defaults to `600:1600`. `--min-radius` sets the limits to try and defaults to none, 60, 120 and 265 m. The whole corridor is always fitted too.
 
-`fitPolyline` in `tools/madrid/src/fit.ts` takes a polyline in corridor metres and a minimum radius. It returns a start pose and 25 m pieces whose curvature changes linearly between knots, so the road is a chain of clothoids. It also returns the RMS, 95th percentile and largest distance from the street, the tightest radius, the street chainage where the limit held a knot at full lock, and each street point's distance from the fitted road. The fit is a bounded least-squares solve with a light penalty on curvature changes. It first matches points at equal arclength, then settles each street point on its nearest point of the fitted road in order. It trims the road to where the street ends and repeats until the length stops changing. Fitted roads are horizontal only, so every grade is 0, and the start pose uses the corridor's translated coordinates. A fit of the whole corridor at 60 m takes about 40 s.
+`fitPolyline` in `tools/madrid/src/fit.ts` takes a polyline in corridor metres, a minimum radius and a list of slow places. A slow place lowers the radius limit between two chainages of the polyline, for a bend the rider brakes for or a junction. It returns a start pose and 25 m pieces whose curvature changes linearly between knots, so the road is a chain of clothoids. It also returns the RMS, 95th percentile and largest distance from the street, the tightest radius, the street chainage where the limit held a knot at full lock, and each street point's distance from the fitted road. The fit is a bounded least-squares solve with a penalty on each change of curvature between knots. It first matches points at equal arclength, then settles each street point on its nearest point of the fitted road in order. It trims the road to where the street ends and repeats until the length stops changing. Fitted roads are horizontal only, so every grade is 0, and the start pose uses the corridor's translated coordinates. A fit of the whole corridor at 60 m takes about 40 s.
+
+The penalty stands for what the rider feels. A change of curvature turns the chase camera's heading faster or slower, and that yaw acceleration grows with the square of the speed. So each change is weighed by the fourth power of the speed a bike takes that stretch at, relative to 50 m/s. The speed comes from the street's own curvature, the mean turn of its heading over 50 m, or from the radius limit where the limit is tighter, at 8 m/s² of cornering. On a straight the street's vertex noise would otherwise make the road weave from piece to piece at top speed, and the full weight stops it. A slow bend gets a light weight and keeps its shape. The centreline's vertices sit 12 to 29 m apart with about half a metre of jitter, so before this weighting the fit changed the sign of its curvature 16 to 20 times a kilometre on straight streets.
+
+`tools/madrid/src/smoothness.ts` holds the limits that every existing road meets at every level. Curvature changes sign at most 3 times a kilometre, counting only bends tighter than a 1 km radius. The change of grade changes sign at most 7 times a kilometre, counting only crests and dips tighter than a 10 km radius. Grade changes by at most 6 per mille per metre. `tools/madrid/test/fit.test.ts` holds a noisy straight street and a noisy climb to the same limits, and both tests fail on the uniform light penalty the fitter used before.
 
 Fits on the pinned corridor, all distances in metres:
 
 | Stretch | Radius limit | RMS | 95th percentile | Max | Tightest radius | Fitted length (street) |
 | --- | --: | --: | --: | --: | --: | --: |
-| Whole corridor | none | 0.9 | 2.0 | 10.3 | 5.6 | 8,689 (8,703) |
-| Whole corridor | 60 | 5.8 | 13.0 | 39.6 | 60.0 | 8,559 |
-| Whole corridor | 120 | 17.9 | 45.7 | 79.9 | 120.0 | 8,565 |
-| Whole corridor | 265 | 54.2 | 132.0 | 157.5 | 265.0 | 8,066 |
-| 0.60 to 1.60 km | none | 0.1 | 0.3 | 0.7 | 44.4 | 1,000 (1,000) |
-| 0.60 to 1.60 km | 60 | 0.2 | 0.4 | 1.0 | 60.0 | 1,000 |
-| 0.60 to 1.60 km | 120 | 0.4 | 1.0 | 2.4 | 120.0 | 999 |
-| 0.60 to 1.60 km | 265 | 1.4 | 3.4 | 5.7 | 265.0 | 997 |
+| Whole corridor | none | 1.3 | 2.5 | 17.3 | 9.2 | 8,683 (8,703) |
+| Whole corridor | 60 | 5.8 | 12.9 | 39.2 | 60.0 | 8,508 |
+| Whole corridor | 120 | 18.1 | 45.3 | 80.6 | 120.0 | 8,616 |
+| Whole corridor | 265 | 54.2 | 132.1 | 155.5 | 265.0 | 8,093 |
+| 0.60 to 1.60 km | none | 0.4 | 1.0 | 1.8 | 72.9 | 999 (1,000) |
+| 0.60 to 1.60 km | 60 | 0.4 | 1.0 | 1.8 | 72.9 | 999 |
+| 0.60 to 1.60 km | 120 | 0.5 | 1.1 | 2.9 | 120.0 | 998 |
+| 0.60 to 1.60 km | 265 | 1.4 | 3.5 | 5.7 | 265.0 | 997 |
 
-Without a limit the fit follows the street within 2 m for 95% of its length, but its tightest bend is 5.6 m. The IGN centreline turns far tighter than a bike can ride: −142° within 40 m at Cuesta de San Vicente, a 91° turn within 25 m in the park, and four right angles in a row at Ronda de Segovia and Puerta de Toledo.
+Without a limit the fit keeps within 2.5 m of the street for 95% of its length, but it rounds the sharpest turns. Its tightest bend is 9.2 m, and it misses the street by up to 17.3 m there. The IGN centreline turns far tighter than a bike can ride: −142° within 40 m at Cuesta de San Vicente, a 91° turn within 25 m in the park, and four right angles in a row at Ronda de Segovia and Puerta de Toledo.
 
 ### The 60 m limit
 
 Use a 60 m minimum radius. No Madrid bend can hold 200 km/h, so the limit comes from the bends the game already asks riders to take. Every existing road reaches a bend of 55.5 to 66.8 m by level 5, and Cinder Wash and Slag Row have bends of 67 and 70 m at level 1. A Sesta holds 88 km/h at 60 m with full steer and a Wren 101 km/h. A bike at 200 km/h brakes for it, as it does for the right angles on Slag Row. 60 m is also the bottom of the launch research's 60 to 120 m band for a major junction turn, below which a forced turn is a flagged exception.
 
-The larger limits leave the street. Holding 200 km/h at full lock on a Sesta needs 265 m, and that road leaves the street by up to 158 m, through buildings. At 120 m it leaves the street by up to 80 m. At 60 m the 95th percentile is 13.0 m, and the test interval on Alcalá and Gran Vía stays within 1 m.
+The larger limits leave the street. Holding 200 km/h at full lock on a Sesta needs 265 m, and that road leaves the street by up to 158 m, through buildings. At 120 m it leaves the street by up to 80 m. At 60 m the 95th percentile is 12.9 m, and the test interval on Alcalá and Gran Vía stays within 1.8 m.
 
 Whole corridor at 60 m, where the limit moved the road more than 1 m further from the street than the unlimited fit:
 
 | Street chainage | Street | Max distance | Unlimited fit |
 | --- | --- | --: | --: |
-| 0 to 230 | Alcalá · Puerta de Alcalá to Cibeles | 9.5 | 2.9 |
-| 1,502 to 1,576 | Gran Vía | 2.2 | 0.7 |
-| 2,258 to 2,306 | Plaza de España | 1.5 | 0.3 |
-| 2,407 to 2,456 | Cuesta de San Vicente | 1.2 | 0.1 |
-| 2,507 to 2,629 | Cuesta de San Vicente | 2.3 | 0.8 |
-| 2,730 to 2,779 | Cuesta de San Vicente | 1.4 | 0.1 |
-| 2,830 to 2,878 | Cuesta de San Vicente | 1.2 | 0.2 |
-| 2,904 to 3,101 | Cuesta de San Vicente | 19.3 | 10.3 |
-| 3,227 to 3,609 | Puente del Rey · Embarcadero · lake edge | 7.0 | 3.4 |
-| 3,660 to 3,808 | Puente del Rey · Embarcadero · lake edge | 1.8 | 0.3 |
-| 3,834 to 3,908 | Puente del Rey · Embarcadero · lake edge | 1.4 | 0.2 |
-| 3,934 to 4,645 | Puente del Rey · Embarcadero · lake edge | 16.7 | 3.3 |
-| 4,846 to 4,944 | Paseo Puerta del Ángel | 1.7 | 0.6 |
-| 5,125 to 5,225 | Paseo de Extremadura | 3.4 | 2.3 |
-| 6,000 to 6,386 | Calle de Segovia | 21.6 | 4.9 |
-| 6,487 to 6,560 | Ronda de Segovia | 1.5 | 0.4 |
-| 7,086 to 7,615 | Ronda de Segovia | 39.6 | 3.8 |
-| 7,816 to 7,967 | Gran Vía de San Francisco | 3.2 | 1.3 |
+| 0 to 109 | Alcalá · Puerta de Alcalá to Cibeles | 9.8 | 3.2 |
+| 2,921 to 3,055 | Cuesta de San Vicente | 20.1 | 17.3 |
+| 3,320 to 3,426 | Puente del Rey · Embarcadero · lake edge | 5.8 | 3.3 |
+| 4,006 to 4,249 | Embarcadero S-bend by the boathouse | 13.1 | 2.0 |
+| 4,378 to 4,602 | Glorieta de los Patines | 17.8 | 4.7 |
+| 5,135 to 5,211 | Paseo de Extremadura | 5.0 | 3.6 |
+| 6,114 to 6,279 | Calle de Segovia | 23.0 | 6.9 |
+| 6,806 to 6,856 | Ronda de Segovia | 3.2 | 1.8 |
+| 7,157 to 7,564 | Ronda de Segovia | 39.2 | 7.7 |
+| 7,866 to 7,917 | Gran Vía de San Francisco | 3.9 | 2.7 |
 
-Five places leave the street by more than 9 m: the Cibeles turn, the Cuesta de San Vicente hairpin, the park, the turn onto Calle de Segovia and the Puerta de Toledo sequence. The greybox needs an authored race line inside the paved area at each of them, or a junction the rider slows for.
+Six places leave the street by more than 9 m: the corridor's first 109 m from Puerta de Alcalá, the Cuesta de San Vicente hairpin, the S-bend and Patines in the park, the turn onto Calle de Segovia and the Puerta de Toledo sequence. The first is new with the speed-weighted penalty. The street circles Puerta de Alcalá and turns 83° in its first 64 m. The 60 m limit holds the road at full lock there, and even a bend at the limit now carries about a hundred times the old penalty, so the road runs up to 9.8 m off the street. The greybox needs an authored race line inside the paved area at each of them, or a junction the rider slows for.
 
 ### What a playable road still needs
 
 - Paved widths. `pavedWidthM` is null, and the fit measures distance from the centreline, not whether the road stays on tarmac.
 - Bridge-deck heights for Puente del Rey, Puente de Segovia and Viaducto de Segovia, and a vertical fit from them. The ground grid passes under the bridges, so the fitter leaves every grade at 0.
-- Hazard places from curvature. `placeHazards` finds bends from pieces that turn 20° or more, and a fitted 25 m piece rarely does.
-- A start height and an origin. The start pose has no height, and corridor coordinates are kilometres from the game's origin.
+- Hazard places from curvature. `placeHazards` finds bends from pieces that turn 20° or more, and a fitted 25 m piece at 60 m rarely does. The hook's slow places turn 22° to 57° per piece, so the hook needs no new rule.
+- A start height and an origin for each stretch. The hook settles both for itself.
+
+## Casa de Campo hook
+
+`pnpm madrid:hook` builds a greybox of the hook, chainage 3,600 to 4,650 m: Paseo del Embarcadero along the lake, the S-bend by the boathouse, then Glorieta de los Patines. `tools/madrid/src/hook.ts` fits the street, fits the grade, keeps the blocks and places the lake. `tools/madrid/hook.ts` writes `packages/track/src/tracks/madrid-hook.ts` and prints the numbers below. The plan is not a career road. It rides at `/?ride=madrid-hook` in a development build, with `&bike=` and `&with=alone|field|traffic`; [the hook recipe](../.claude/skills/verify-rushline/features/madrid-hook.md) drives it.
+
+The line is fitted at 60 m with two slow places. The fitted road runs 1,039 m against 1,050 m of street, RMS 1.3 m, 95th percentile 2.9 m, largest 7.6 m from the street. Outside the slow places it stays within 0.9 m. Curvature changes sign 5.8 times per kilometre, each time where the street turns. Those are the Paseo's two gentle bends, the way into the S-bend and its middle, Patines' wide entry and the turn itself. The change of grade changes sign 2.9 times per kilometre.
+
+| Place | Chainage | Radius | Largest distance | 60 m line | Choice |
+| --- | --- | --: | --: | --: | --- |
+| Embarcadero S-bend by the boathouse | 4,030 to 4,230 | 35 m | 3.5 m | 14.8 m | A slow bend the rider brakes for |
+| Glorieta de los Patines | 4,380 to 4,620 | 25 m | 7.6 m | 19.0 m | A junction the rider slows for, through the roundabout's east side |
+
+At 60 m both places cut through the trees beside the street. That would be an invented road, so neither gets an authored line off the paving. The S-bend keeps to the paved Paseo at 35 m. Patines is a roundabout, and at 25 m the line keeps to its eastern carriageway, within 7.6 m of the IGN centreline, on paving the orthophoto shows.
+
+The grade comes from the corridor's MDT05 samples between the two chainages, fitted by least squares on the 25 m knots with a penalty on grade change, starting and ending level. There is no bridge on the hook, because the Puente del Rey envelope ends at 3,435 m. The fit misses the ground by RMS 0.3 m, largest 0.8 m. The steepest grade is 7.9% and the sharpest change 2.72 per mille per metre. The road starts at 581.8 m above sea level, which is y 0. The origin is the street's first point, rounded, at corridor 1,444, 1,465, so the start pose sits within a few metres of the game origin. The last piece is 14 m long because the plan ends level.
+
+The scene is a greybox. `apps/web/src/game/greybox.ts` draws it when a plan carries `scenery`, instead of the open terrain and roadside, because the hook doubles back and terrain built along the road would cross itself. The ground is a world-space grid that follows the nearest road height and falls to the lake. The 48 blocks are the corridor footprints within 180 m of the street that stay clear of the verge, at their estimated heights; one more was dropped. The lake was traced by eye from the IGN PNOA orthophoto as 208 points. Its level sits 1.5 m below the nearest road point, which is 14.6 m from the shore. Trees are procedural, placed on a jittered grid clear of the verge, the lake and the blocks. Props are chevrons only.
+
+The pilot's lap, level 1, seed 31, from `createRace` and confirmed in Helium at the same points:
+
+| Bike | Company | Lap | Slowest in the S-bend | Slowest at Patines | Below 60 km/h |
+| --- | --- | --: | --: | --: | --: |
+| Ostra Sesta 600 | alone | 35.1 s | 60 km/h | 54 km/h | 2.4 s |
+| Halden Wren 400 | alone | 35.0 s | 68 km/h | 61 km/h | 0.0 s |
+
+Police posts start at 1,500 m, past the hook's finish, so no cop rides on the hook.
+
+The Sesta rides Patines under 60 km/h for 2.4 s. That is the junction doing its job, and the reason to look again if the hook is meant to flow.
+
+`apps/web/test/madrid-hook-camera.test.ts` rides the pilot alone on every road at level 1 and drives the real chase camera at the simulation's 60 ticks a second. It holds the hook's straights to the shakiest existing road's on both bikes. A straight is road whose heading nets under 0.05 rad over 100 m with no bend tighter than 100 m in it, so a weave still counts as straight. Yaw wobble is the camera's yaw acceleration less its own one-second average, so a weave stays in and a bend the road eases into drops out. On the Sesta, in m/s² and rad/s²:
+
+| Road | Height acceleration on straights | Yaw wobble on straights |
+| --- | --: | --: |
+| Hook as map-3 fitted it | 0.78 | 0.216 |
+| Hook now | 0.74 | 0.015 |
+| Slag Row | 3.49 | 0.008 |
+| Ridge Road | 3.72 | 0.016 |
+| Hollow Pine Road | 3.18 | 0.024 |
+
+The hook's grade was gentler than every existing road's before the change, and stays so. Its yaw on straights now sits inside the existing roads' range of 0.006 to 0.024. Its yaw rate on straights stays higher than theirs, 0.020 rad/s against 0.002 to 0.005, because the Paseo curves gently at a radius of 500 m to 1 km where the authored roads run dead straight. That is the street's shape, not a shake.
 
 ## Measurement limits
 

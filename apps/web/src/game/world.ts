@@ -11,6 +11,7 @@ import type { City } from "./city.ts";
 import { createClearance } from "./clearance.ts";
 import type { Clearance } from "./clearance.ts";
 import { disposeTree } from "./dispose.ts";
+import { buildGreybox } from "./greybox.ts";
 import {
   freeze,
   groundLift,
@@ -461,6 +462,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const walkMaterial = shading.cel("#ffffff", { map: walkTexture });
   const kerbMaterial = shading.cel(look.kerb);
   const terrainMaterial = shading.cel("#ffffff", { vertexColors: true });
+  const { scenery } = track.plan;
+  const vergeMaterial = scenery ? shading.cel(look.groundNear) : null;
+  const verge = track.vergeHalfWidth;
 
   const add = (
     geometry: THREE.BufferGeometry,
@@ -509,6 +513,22 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
           walkMaterial,
           span
         );
+      } else if (vergeMaterial) {
+        const shoulder: Rail[] = [
+          [side * half, 0, 0],
+          [side * verge, 0, 0],
+          [side * (verge + 3), -0.3, 0],
+        ];
+        add(
+          buildRibbon(
+            track,
+            span,
+            side > 0 ? shoulder : shoulder.toReversed(),
+            2
+          ),
+          vergeMaterial,
+          span
+        );
       } else {
         add(buildTerrainChunk(track, span, side, look), terrainMaterial, span);
       }
@@ -532,6 +552,8 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   scene.add(hazards.group);
   if (city) {
     scene.add(freeze(city.group));
+  } else if (scenery) {
+    scene.add(freeze(buildGreybox(track, scenery, shading)));
   } else {
     const dressing = buildRoadside(track, shading, textures, clearance);
     scene.add(freeze(dressing.group));

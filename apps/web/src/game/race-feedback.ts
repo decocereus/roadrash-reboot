@@ -1,17 +1,24 @@
 import { rivalLines } from "@racer/career/lines";
-import type { RaceOutcome } from "@racer/career/outcome";
+import { rivalOf } from "@racer/career/outcome";
+import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
 import { chaserDistance } from "@racer/sim/police";
 import { distanceLeft, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
-import { clamp, FULL_CONDITION, MAX_STAMINA } from "@racer/sim/state";
-import type { HazardEffect, RaceEvent } from "@racer/sim/state";
+import {
+  clamp,
+  FULL_CONDITION,
+  MAX_STAMINA,
+  PLAYER_RIDER,
+  riderOf,
+} from "@racer/sim/state";
+import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import { weapons } from "@racer/sim/weapons";
 import * as THREE from "three";
 
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Sound } from "./audio.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
-import type { GameEvents, GamePhase, Notice, RacePlan } from "./hud.ts";
+import type { GameEvents, GamePhase, Notice } from "./hud.ts";
 import type { Cast } from "./rider-views.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
@@ -42,9 +49,9 @@ export interface Feedback {
   noticeDetail: string;
   noticeLeft: number;
   speech: string;
-  speechRider: number;
+  speechRider: RiderId | null;
   speechLeft: number;
-  tagRider: number;
+  tagRider: RiderId | null;
   tag: HTMLElement | null;
   muted: boolean;
   readonly tagPoint: THREE.Vector3;
@@ -57,15 +64,15 @@ export const createFeedback = (): Feedback => ({
   noticeLeft: 0,
   speech: "",
   speechLeft: 0,
-  speechRider: -1,
+  speechRider: null,
   tag: null,
   tagPoint: new THREE.Vector3(),
-  tagRider: -1,
+  tagRider: null,
 });
 
 interface FeedbackSession {
   readonly phase: GamePhase;
-  readonly plan: RacePlan | null;
+  readonly log: RaceLog | null;
   readonly settled: RaceOutcome | null;
   readonly holdLeft: number;
   readonly countdown: number;
@@ -124,21 +131,24 @@ export const bindFeedback = ({
     }
   };
 
-  const reactToHit = (attacker: number, target: number, armed: boolean) => {
-    if (attacker === 0) {
+  const reactToHit = (attacker: RiderId, target: RiderId, armed: boolean) => {
+    if (attacker === PLAYER_RIDER) {
       strikeSound(armed);
-      const victim = stage.race.view.riders[target];
+      const victim = riderOf(stage.race.view.riders, target);
       if (victim && victim.stamina <= 0) {
         say("knockdown");
       }
-    } else if (target === 0) {
+    } else if (target === PLAYER_RIDER) {
       strikeSound(armed);
       chase.jolt(armed ? 0.8 : 0.5);
     }
   };
 
-  const speak = (rider: number, line: "knocksYouDown" | "youKnockThemDown") => {
-    const rival = session.plan?.setup.field[rider - 1];
+  const speak = (
+    rider: RiderId | null,
+    line: "knocksYouDown" | "youKnockThemDown"
+  ) => {
+    const rival = session.log ? rivalOf(session.log, rider) : undefined;
     if (rival === undefined) {
       return;
     }
@@ -188,16 +198,16 @@ export const bindFeedback = ({
   };
 
   const reactToOthers = (event: RaceEvent) => {
-    if (event.kind === "riderContact" && event.other === 0) {
+    if (event.kind === "riderContact" && event.other === PLAYER_RIDER) {
       chase.jolt(0.3);
       sound.thump(0.35);
-    } else if (event.kind === "weaponTaken" && event.target === 0) {
+    } else if (event.kind === "weaponTaken" && event.target === PLAYER_RIDER) {
       say("disarmed");
-    } else if (event.kind === "pursuit" && event.target === 0) {
+    } else if (event.kind === "pursuit" && event.target === PLAYER_RIDER) {
       sound.siren();
       say("police");
     } else if (event.kind === "crash") {
-      const fallen = stage.race.view.riders[event.rider];
+      const fallen = riderOf(stage.race.view.riders, event.rider);
       if (
         event.cause === "combat" &&
         fallen &&
@@ -205,7 +215,7 @@ export const bindFeedback = ({
       ) {
         sound.thump(0.6);
       }
-      if (event.by === 0 && event.cause !== "rider") {
+      if (event.by === PLAYER_RIDER && event.cause !== "rider") {
         speak(event.rider, "youKnockThemDown");
       }
     }
@@ -215,7 +225,7 @@ export const bindFeedback = ({
     for (const event of stage.race.view.events) {
       if (event.kind === "hit") {
         reactToHit(event.rider, event.target, event.weapon !== "none");
-      } else if (event.rider === 0) {
+      } else if (event.rider === PLAYER_RIDER) {
         reactToOwn(event);
       } else {
         reactToOthers(event);
@@ -227,7 +237,7 @@ export const bindFeedback = ({
     if (!feedback.tag) {
       return;
     }
-    const view = cast.views[feedback.tagRider];
+    const view = riderOf(cast.views, feedback.tagRider);
     if (!view || session.phase === "attract" || session.phase === "idle") {
       feedback.tag.style.visibility = "hidden";
       return;
@@ -245,19 +255,21 @@ export const bindFeedback = ({
     feedback.tag.style.transform = `translate3d(${(across * canvas.clientWidth).toFixed(1)}px, ${(down * canvas.clientHeight).toFixed(1)}px, 0) translate(-50%, -100%)`;
   };
 
-  const nearestRacer = (me: RiderView): number => {
-    let best = -1;
+  const nearestRacer = (me: RiderView): RiderId | null => {
+    let best: RiderId | null = null;
     let bestGap = TAG_RANGE;
-    const { riders } = stage.race.view;
-    for (let index = 1; index < riders.length; index += 1) {
-      const other = riders[index];
-      if (!other || other.profile.role !== "racer" || out(other)) {
+    for (const other of stage.race.view.riders) {
+      if (
+        other.id === PLAYER_RIDER ||
+        other.profile.role !== "racer" ||
+        out(other)
+      ) {
         continue;
       }
       const gap = Math.abs(other.s - me.s) + Math.abs(other.x - me.x);
       if (gap < bestGap) {
         bestGap = gap;
-        best = index;
+        best = other.id;
       }
     }
     return best;
@@ -268,14 +280,11 @@ export const bindFeedback = ({
     const order = standings(stage.race.view);
     feedback.tagRider =
       feedback.speechLeft > 0 ? feedback.speechRider : nearestRacer(me);
-    const rival =
-      feedback.tagRider >= 0
-        ? stage.race.view.riders[feedback.tagRider]
-        : undefined;
+    const rival = riderOf(stage.race.view.riders, feedback.tagRider);
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
-      copDistance: chaserDistance(stage.race.view, 0),
+      copDistance: chaserDistance(stage.race.view, PLAYER_RIDER),
       countdown: Math.max(
         0,
         Math.ceil(session.holdLeft > 0 ? session.holdLeft : session.countdown)
@@ -287,10 +296,10 @@ export const bindFeedback = ({
       noticeDetail: feedback.noticeDetail,
       offBike: me.mode !== "riding",
       phase: session.phase,
-      position: session.settled?.place ?? order.indexOf(0) + 1,
+      position: session.settled?.place ?? order.indexOf(PLAYER_RIDER) + 1,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
       riderCount: order.length,
-      rivalColour: cast.plates[feedback.tagRider] ?? "",
+      rivalColour: riderOf(cast.plates, feedback.tagRider) ?? "",
       rivalName: rival?.profile.name ?? "",
       rivalStamina: rival ? rival.stamina / MAX_STAMINA : 0,
       roadLength: stage.track.length,

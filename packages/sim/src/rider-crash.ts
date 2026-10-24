@@ -1,4 +1,10 @@
-import type { CrashCause, HazardTag, RaceState, RiderState } from "./state.ts";
+import type {
+  CrashCause,
+  HazardTag,
+  RaceState,
+  RiderId,
+  RiderState,
+} from "./state.ts";
 import { clamp } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
@@ -17,27 +23,21 @@ const damage = {
   traffic: 34,
 } as const satisfies Record<CrashCause, number>;
 
-const blamedFor = (state: RaceState, rider: RiderState): number =>
-  rider.lastHitBy >= 0 && state.tick - rider.lastHitTick <= BLAME_TICKS
-    ? rider.lastHitBy
-    : -1;
+const blamedFor = (state: RaceState, rider: RiderState): RiderId | null =>
+  state.tick - rider.lastHitTick <= BLAME_TICKS ? rider.lastHitBy : null;
 
 const takesDamage = (rider: RiderState): boolean =>
   rider.profile.role === "racer" && rider.finishTick < 0;
 
 export const throwRider = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   cause: CrashCause,
   bikeKeep: number,
   bodyKeep: number,
   speedAtImpact?: number,
   hazard: HazardTag | null = null
 ): void => {
-  const rider = state.riders[riderIndex];
-  if (!rider) {
-    return;
-  }
   const impactSpeed = rider.speed;
   const struckAt = speedAtImpact ?? impactSpeed;
   if (takesDamage(rider)) {
@@ -52,7 +52,7 @@ export const throwRider = (
   rider.mode = wrecked ? "wrecked" : "thrown";
   rider.weaponAtThrow = rider.weapon;
   disarm(rider);
-  rider.chase = -1;
+  rider.chase = null;
   rider.parked = false;
   rider.attack = "none";
   rider.attackTicks = 0;
@@ -85,10 +85,10 @@ export const throwRider = (
     cause,
     hazard,
     kind: "crash",
-    rider: riderIndex,
+    rider: rider.id,
     speed: struckAt,
   });
   if (wrecked) {
-    state.events.push({ kind: "wrecked", rider: riderIndex });
+    state.events.push({ kind: "wrecked", rider: rider.id });
   }
 };

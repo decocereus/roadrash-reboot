@@ -221,10 +221,10 @@ export interface Run {
 export type InputProducer = (run: Run) => void;
 
 const piloted: InputProducer = (run) => {
-  for (let index = 0; index < run.inputs.length; index += 1) {
-    const input = run.inputs[index];
+  for (const rider of run.state.riders) {
+    const input = run.inputs[rider.id];
     if (input) {
-      pilotInput(run.state, run.track, index, input);
+      pilotInput(run.state, run.track, rider, input);
     }
   }
 };
@@ -274,17 +274,17 @@ const modes = {
 } satisfies Record<RiderState["mode"], true>;
 
 const inspect = (run: Run): void => {
-  for (const [index, rider] of run.state.riders.entries()) {
+  for (const rider of run.state.riders) {
     for (const field of motion) {
       if (!Number.isFinite(rider[field])) {
         run.problems.push(
-          `${run.id} tick ${run.state.tick}: rider ${index} has ${field} ${rider[field]}`
+          `${run.id} tick ${run.state.tick}: rider ${rider.id} has ${field} ${rider[field]}`
         );
       }
     }
     if (!Object.hasOwn(modes, rider.mode)) {
       run.problems.push(
-        `${run.id} tick ${run.state.tick}: rider ${index} is in mode ${rider.mode}`
+        `${run.id} tick ${run.state.tick}: rider ${rider.id} is in mode ${rider.mode}`
       );
     }
   }

@@ -5,7 +5,7 @@ import type { PilotHistory } from "./pilot-history.ts";
 import { between, carThreat, chooseLine } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { isDown, onBeat, PATROL_SPEED, PULL_OVER } from "./police.ts";
-import { BIKE_HALF_WIDTH, clamp } from "./state.ts";
+import { BIKE_HALF_WIDTH, clamp, riderOf } from "./state.ts";
 import type { RaceState, RiderState } from "./state.ts";
 
 const CATCH_UP_RATE = 0.8;
@@ -74,13 +74,12 @@ export const copAim = (
   history: PilotHistory,
   state: RaceState,
   track: Track,
-  copIndex: number,
   cop: RiderState
 ): Aim => {
   if (cop.parked) {
     return { speed: 0, x: cop.x };
   }
-  const target = state.riders[cop.chase];
+  const target = riderOf(state.riders, cop.chase);
   const offDuty = target === undefined && !onBeat(state, cop);
   if (offDuty || cop.s > track.length - PATROL_END_MARGIN) {
     const offRoad = cop.x > track.roadHalfWidth + BIKE_HALF_WIDTH;
@@ -90,7 +89,7 @@ export const copAim = (
     };
   }
   if (!target) {
-    return chooseLine(history, state, track, copIndex, cop, PATROL_SPEED);
+    return chooseLine(history, state, track, cop, PATROL_SPEED);
   }
   const pursuit = pursuitOf(state, cop, target);
   const open =
@@ -100,7 +99,6 @@ export const copAim = (
     history,
     state,
     track,
-    copIndex,
     cop,
     pursuit.speed,
     open ? pursuit : undefined

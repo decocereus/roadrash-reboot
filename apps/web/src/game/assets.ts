@@ -54,7 +54,7 @@ export interface Assets {
   readonly bikes: Readonly<Record<BikeModelId, BikeParts>>;
   readonly car: readonly Primitive[];
   readonly van: readonly Primitive[];
-  readonly riders: readonly RiderAsset[];
+  readonly figures: readonly RiderAsset[];
 }
 
 const fixedColours: ReadonlyMap<string, string> = new Map([

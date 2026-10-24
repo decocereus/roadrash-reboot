@@ -7,12 +7,13 @@ import {
   alone,
   cruising,
   field,
+  pilotAll,
   player,
   quietTrack,
   rampRoad,
 } from "./race-fixtures.ts";
 import { neutralInput, stepRace } from "./race.ts";
-import { TICK_RATE } from "./state.ts";
+import { TICK_RATE, riderOf } from "./state.ts";
 import type { RaceEvent } from "./state.ts";
 
 describe("gears and the tuck", () => {
@@ -26,7 +27,7 @@ describe("gears and the tuck", () => {
     const events: RaceEvent[] = [];
     let launchSpeed = 0;
     for (let tick = 0; tick < 12 * TICK_RATE; tick += 1) {
-      pilotInput(state, quietTrack, 0, input);
+      pilotInput(state, quietTrack, rider, input);
       stepRace(state, quietTrack, [input]);
       if (rider.airborne && launchSpeed === 0) {
         launchSpeed = rider.speed;
@@ -49,20 +50,20 @@ describe("jumping", () => {
       const state = field(rampRoad, seed, 6, 0);
       const inputs = state.riders.map(() => ({ ...neutralInput }));
       for (let tick = 0; tick < 60 * TICK_RATE; tick += 1) {
-        for (const [index, input] of inputs.entries()) {
-          pilotInput(state, rampRoad, index, input);
-        }
+        pilotAll(state, rampRoad, inputs);
         const before = state.riders.map((rider) => rider.s);
         stepRace(state, rampRoad, inputs);
-        for (const [index, rider] of state.riders.entries()) {
-          if ((before[index] ?? 0) <= 1016 && rider.s > 1016) {
+        for (const rider of state.riders) {
+          if ((before[rider.id] ?? 0) <= 1016 && rider.s > 1016) {
             passed += 1;
             jumped += rider.airborne ? 1 : 0;
           }
         }
         for (const event of state.events) {
           const crashed =
-            event.kind === "crash" ? state.riders[event.rider] : undefined;
+            event.kind === "crash"
+              ? riderOf(state.riders, event.rider)
+              : undefined;
           if (crashed && crashed.s > 990 && crashed.s < 1100) {
             downAtRamp += 1;
           }

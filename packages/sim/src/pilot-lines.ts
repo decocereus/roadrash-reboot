@@ -152,8 +152,8 @@ interface LinePlan {
   readonly outlook: Outlook;
   readonly cars: CarSighting[];
   carCount: number;
-  readonly riders: Sighting[];
-  riderCount: number;
+  readonly others: Sighting[];
+  otherCount: number;
   readonly lanes: number[];
   readonly threats: Threat[];
   readonly found: Threat;
@@ -212,9 +212,9 @@ const linePlanOf = raceOwned((): LinePlan => ({
   lanes: [],
   offLane: [],
   offLaneCount: 0,
+  otherCount: 0,
+  others: [],
   outlook: createOutlook(),
-  riderCount: 0,
-  riders: [],
   threats: [],
   weighed: [],
   weighedCount: 0,
@@ -224,7 +224,6 @@ const linePlanOf = raceOwned((): LinePlan => ({
 const gatherInReach = (
   plan: LinePlan,
   state: RaceState,
-  riderIndex: number,
   rider: RiderState
 ): void => {
   plan.carCount = 0;
@@ -246,10 +245,9 @@ const gatherInReach = (
       }
     }
   }
-  plan.riderCount = 0;
-  for (let index = 0; index < state.riders.length; index += 1) {
-    const other = state.riders[index];
-    if (other && index !== riderIndex && other.mode !== "wrecked") {
+  plan.otherCount = 0;
+  for (const other of state.riders) {
+    if (other !== rider && other.mode !== "wrecked") {
       const riding = other.mode === "riding";
       const speed = riding ? other.speed : 0;
       const seconds = secondsUntilContact(
@@ -259,8 +257,8 @@ const gatherInReach = (
         BIKE_HALF_LENGTH
       );
       if (seconds < RIDER_FOLLOW_SECONDS) {
-        const sighting = slotOf(plan.riders, plan.riderCount, createSighting);
-        plan.riderCount += 1;
+        const sighting = slotOf(plan.others, plan.otherCount, createSighting);
+        plan.otherCount += 1;
         sighting.seconds = seconds;
         sighting.speed = speed;
         sighting.x = riding ? other.x : other.bodyX;
@@ -290,8 +288,8 @@ const laneThreat = (
       }
     }
   }
-  for (let index = 0; index < plan.riderCount; index += 1) {
-    const sighting = plan.riders[index];
+  for (let index = 0; index < plan.otherCount; index += 1) {
+    const sighting = plan.others[index];
     if (
       sighting &&
       Math.abs(sighting.x - laneX) < LANE_REACH &&
@@ -589,7 +587,6 @@ export const chooseLine = (
   history: PilotHistory,
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState,
   cruise: number,
   pursuit?: Aim
@@ -598,7 +595,7 @@ export const chooseLine = (
   const { aim, choice, lanes, outlook, threats } = plan;
   const sameWayCount = track.sameWayLanes.length;
   fillLanes(plan, track);
-  gatherInReach(plan, state, riderIndex, rider);
+  gatherInReach(plan, state, rider);
   gatherLaneThreats(plan, state, rider);
   gatherInSight(outlook, state, rider);
   const kept = rider.pilotLine;

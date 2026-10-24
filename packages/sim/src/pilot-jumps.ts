@@ -52,11 +52,10 @@ const roadSide = (
 const lineOnto = (
   track: Track,
   jump: TrackFeature,
-  riderIndex: number,
   rider: RiderState,
   misread: boolean
 ): number => {
-  const side = riderIndex % 2 === 0 ? 1 : -1;
+  const side = rider.id % 2 === 0 ? 1 : -1;
   if (misread) {
     const across = rider.x - jump.x;
     const gap = Math.abs(across) - jump.width / 2;
@@ -92,7 +91,6 @@ const clearOfWall = (
 export const jumpAim = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState,
   aim: Aim,
   roll: (state: RaceState) => number
@@ -109,7 +107,7 @@ export const jumpAim = (
       return { speed: aim.speed, x: jump.x };
     }
     return rider.jumpSeen === jumpIndex && rider.jumpMisread
-      ? { speed: aim.speed, x: lineOnto(track, jump, riderIndex, rider, true) }
+      ? { speed: aim.speed, x: lineOnto(track, jump, rider, true) }
       : clearOfWall(track, jump, rider, aim);
   }
   if (toToe > rider.speed * JUMP_SIGHT_SECONDS + JUMP_SIGHT_EXTRA) {
@@ -133,13 +131,7 @@ export const jumpAim = (
   if (reachable && landsOnRoad) {
     return {
       speed: Math.min(aim.speed, safeLaunchSpeed(jump)),
-      x: lineOnto(
-        track,
-        jump,
-        riderIndex,
-        rider,
-        misreads(state, rider, jumpIndex, roll)
-      ),
+      x: lineOnto(track, jump, rider, misreads(state, rider, jumpIndex, roll)),
     };
   }
   return clearOfWall(track, jump, rider, aim);

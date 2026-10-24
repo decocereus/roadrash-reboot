@@ -91,7 +91,6 @@ const before: Support = emptySupport();
 
 const losesTheFront = (
   state: RaceState,
-  riderIndex: number,
   rider: RiderState,
   input: RiderInput
 ): boolean => {
@@ -105,7 +104,7 @@ const losesTheFront = (
   }
   throwRider(
     state,
-    riderIndex,
+    rider,
     "hazard",
     0.55,
     0.65,
@@ -118,7 +117,6 @@ const losesTheFront = (
 export const ride = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState,
   input: RiderInput
 ): void => {
@@ -135,7 +133,7 @@ export const ride = (
   if (verticalAcceleration < -GRAVITY && rider.speed > TAKEOFF_SPEED) {
     rider.airborne = true;
     rider.verticalSpeed = slope * forwardRate;
-    fly(state, track, riderIndex, rider);
+    fly(state, track, rider);
     return;
   }
 
@@ -170,7 +168,7 @@ export const ride = (
   const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
   const push =
     curvePushOf(bike, curvature, rider.speed) * (1 + SLIP_PUSH * rider.slip);
-  if (losesTheFront(state, riderIndex, rider, input)) {
+  if (losesTheFront(state, rider, input)) {
     return;
   }
 
@@ -213,7 +211,6 @@ export const ride = (
   settleOnSurface(
     state,
     track,
-    riderIndex,
     rider,
     fromS,
     fromX,

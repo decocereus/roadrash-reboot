@@ -24,7 +24,6 @@ const STEERING_AWAY = 0.5;
 
 export const glancesOff = (
   state: RaceState,
-  riderIndex: number,
   rider: RiderState,
   height: number,
   fromX: number
@@ -33,20 +32,19 @@ export const glancesOff = (
     height > WALL_THROW_HEIGHT &&
     Math.abs(rider.lateralSpeed) > WALL_THROW_SPEED
   ) {
-    throwRider(state, riderIndex, "prop", 0.5, 0.7);
+    throwRider(state, rider, "prop", 0.5, 0.7);
     return false;
   }
   rider.x = fromX;
   rider.lateralSpeed = 0;
   rider.speed *= WALL_SPEED_KEEP;
-  state.events.push({ kind: "glance", rider: riderIndex });
+  state.events.push({ kind: "glance", rider: rider.id });
   return true;
 };
 
 export const hitProps = (
   state: RaceState,
   track: Track,
-  riderIndex: number,
   rider: RiderState
 ): boolean => {
   const props = track.solidProps;
@@ -64,7 +62,7 @@ export const hitProps = (
       Math.abs(prop.x - rider.x) < prop.radius + BIKE_HALF_WIDTH;
     if (touching && rider.air < CLEARANCE_OVER_PROPS) {
       if (rider.speed > PROP_CRASH_SPEED) {
-        throwRider(state, riderIndex, "prop", 0.15, 0.5);
+        throwRider(state, rider, "prop", 0.15, 0.5);
         return true;
       }
       rider.x -= Math.sign(prop.x) * 0.06;
@@ -83,7 +81,6 @@ const wayAround = (rider: RiderState, car: TrafficCar): number => {
 
 export const hitCar = (
   state: RaceState,
-  riderIndex: number,
   rider: RiderState,
   car: TrafficCar
 ): boolean => {
@@ -105,7 +102,7 @@ export const hitCar = (
       closingSpeed: Math.abs(closingSpeed),
       hazard: null,
       kind: "nearMiss",
-      rider: riderIndex,
+      rider: rider.id,
     });
   }
 
@@ -117,14 +114,14 @@ export const hitCar = (
     rider.x -= awayFromCar * sideGap;
     rider.lateralSpeed = awayFromCar * 2.5;
     rider.speed *= Math.abs(closingSpeed) > 40 ? 0.85 : 0.94;
-    state.events.push({ kind: "glance", rider: riderIndex });
+    state.events.push({ kind: "glance", rider: rider.id });
     return false;
   }
   if (Math.abs(closingSpeed) > CRASH_CLOSING_SPEED) {
     if (car.speed < 0) {
-      throwRider(state, riderIndex, "traffic", 0.1, 0.5);
+      throwRider(state, rider, "traffic", 0.1, 0.5);
     } else {
-      throwRider(state, riderIndex, "traffic", 0.45, 0.6);
+      throwRider(state, rider, "traffic", 0.45, 0.6);
     }
     return true;
   }
@@ -142,6 +139,6 @@ export const hitCar = (
   } else {
     rider.speed = Math.max(rider.speed, car.speed + 1);
   }
-  state.events.push({ kind: "bump", rider: riderIndex });
+  state.events.push({ kind: "bump", rider: rider.id });
   return false;
 };

@@ -419,20 +419,21 @@ Test files: none
 
 ### Roads, cities and scenery on screen
 
-The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it.
+The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground, grey blocks, a flat lake and simple trees.
 
 - Id: `world`
 - Start: `apps/web/src/game/world.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/city.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
 
 Source files:
 
 - `apps/web/src/game/city.ts`
 - `apps/web/src/game/clearance.ts`
 - `apps/web/src/game/facade-texture.ts`
+- `apps/web/src/game/greybox.ts`
 - `apps/web/src/game/ground.ts`
 - `apps/web/src/game/looks.ts`
 - `apps/web/src/game/road-texture.ts`
@@ -479,7 +480,7 @@ Test files:
 
 ### The five roads
 
-The five roads and their regions: each road's sections, crests, ramps, roadblock spots and the blocks that levels 2 to 5 add.
+The five roads and their regions: each road's sections, crests, ramps, roadblock spots and the blocks that levels 2 to 5 add. Also the generated Casa de Campo hook, a development-only greybox outside the career.
 
 - Id: `roads`
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`
@@ -494,6 +495,7 @@ Source files:
 - `packages/track/src/tracks/breakwater-run.ts`
 - `packages/track/src/tracks/cinder-wash.ts`
 - `packages/track/src/tracks/hollow-pine-road.ts`
+- `packages/track/src/tracks/madrid-hook.ts`
 - `packages/track/src/tracks/ridge-road.ts`
 - `packages/track/src/tracks/slag-row.ts`
 
@@ -528,14 +530,14 @@ Test files:
 
 ### Madrid corridor and data credits
 
-Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit, and the public data credits page. The corridor is not wired into a track or the renderer.
+Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit with slower places, the generator that writes the Casa de Campo hook plan with its grade, blocks and lake, and the public data credits page. Only the hook rides, through a development URL.
 
 - Id: `madrid-corridor`
-- Start: `tools/madrid/generate.ts`, `packages/track/src/madrid-corridor.ts`, `apps/web/src/routes/credits.tsx`
-- Docs: [docs/madrid-corridor.md#route-and-coordinates](madrid-corridor.md#route-and-coordinates), [docs/madrid-corridor.md#fitting-track-pieces](madrid-corridor.md#fitting-track-pieces)
-- Verify: [credits.md](../.claude/skills/verify-rushline/features/credits.md)
+- Start: `tools/madrid/generate.ts`, `tools/madrid/hook.ts`, `apps/web/src/routes/credits.tsx`
+- Docs: [docs/madrid-corridor.md#route-and-coordinates](madrid-corridor.md#route-and-coordinates), [docs/madrid-corridor.md#fitting-track-pieces](madrid-corridor.md#fitting-track-pieces), [docs/madrid-corridor.md#casa-de-campo-hook](madrid-corridor.md#casa-de-campo-hook)
+- Verify: [credits.md](../.claude/skills/verify-rushline/features/credits.md), [madrid-hook.md](../.claude/skills/verify-rushline/features/madrid-hook.md)
 - Perf: none yet
-- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `apps/web/src/routes/credits.tsx`
+- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `packages/sim/src/madrid-hook.test.ts`, `apps/web/test/madrid-hook-camera.test.ts`, `apps/web/src/routes/credits.tsx`
 
 Source files:
 
@@ -545,18 +547,24 @@ Source files:
 - `packages/track/src/madrid-sources.ts`
 - `tools/madrid/fit.ts`
 - `tools/madrid/generate.ts`
+- `tools/madrid/hook.ts`
 - `tools/madrid/src/acquire.ts`
 - `tools/madrid/src/context.ts`
 - `tools/madrid/src/elevation.ts`
 - `tools/madrid/src/fit-system.ts`
 - `tools/madrid/src/fit.ts`
 - `tools/madrid/src/geometry.ts`
+- `tools/madrid/src/grade.ts`
+- `tools/madrid/src/hook.ts`
 - `tools/madrid/src/preview.ts`
 - `tools/madrid/src/roads.ts`
 - `tools/madrid/src/schema.ts`
+- `tools/madrid/src/smoothness.ts`
 
 Test files:
 
+- `apps/web/test/madrid-hook-camera.test.ts`
+- `packages/sim/src/madrid-hook.test.ts`
 - `tools/madrid/test/corridor.test.ts`
 - `tools/madrid/test/fit.test.ts`
 
@@ -1038,6 +1046,7 @@ Source files:
 - `tools/oxlint/anti-slop/shared/reflect-method.ts`
 - `tools/oxlint/rushline/bindings.ts`
 - `tools/oxlint/rushline/effect-names.ts`
+- `tools/oxlint/rushline/functions.ts`
 - `tools/oxlint/rushline/index.ts`
 - `tools/oxlint/rushline/notes.ts`
 - `tools/oxlint/rushline/property-name.ts`
@@ -1065,6 +1074,7 @@ Source files:
 - `tools/oxlint/rushline/rules/require-nul-file-list.ts`
 - `tools/oxlint/rushline/rules/require-suppression-reason.ts`
 - `tools/oxlint/rushline/rules/require-wrapped-cause.ts`
+- `tools/oxlint/rushline/rules/rider-by-id.ts`
 - `tools/oxlint/rushline/rules/safety-verified-by.ts`
 - `tools/oxlint/rushline/rules/workspace-imports.ts`
 - `tools/oxlint/rushline/tagged-values.ts`
@@ -1094,6 +1104,7 @@ Test files:
 - `tools/oxlint/test/ranged-buffer-upload.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`
+- `tools/oxlint/test/rider-by-id.test.ts`
 - `tools/oxlint/test/setup.ts`
 - `tools/oxlint/test/small-rules.test.ts`
 - `tools/oxlint/test/suppressions.test.ts`

@@ -12,8 +12,8 @@ import type { WorkloadColumns } from "@racer/sim/bench-workload";
 import { neutralInput } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
-import { TICK_SECONDS } from "@racer/sim/state";
-import type { RaceSetup, RiderInput } from "@racer/sim/state";
+import { PLAYER_RIDER, TICK_SECONDS } from "@racer/sim/state";
+import type { RaceSetup, RiderId, RiderInput } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
 import { digestOf } from "./result.ts";
@@ -164,7 +164,7 @@ type Track = RaceSetup["track"];
 
 type RaceSettings = Omit<
   Track["plan"],
-  "leadInLength" | "pieces" | "runoffLength" | "start"
+  "leadInLength" | "pieces" | "runoffLength" | "scenery" | "start"
 >;
 
 interface RaceTrack extends Omit<Track, "plan"> {
@@ -225,6 +225,9 @@ interface BenchRun {
   readonly step: () => void;
 }
 
+const seatedAt = (slot: number): slot is RiderId =>
+  Number.isSafeInteger(slot) && slot >= 0;
+
 export const benchRun = (bench: Bench): BenchRun => {
   const run = createRaceRun(benchSetup(bench));
   const inputs: RiderInput[] = run.view.riders.map(() => ({
@@ -234,7 +237,7 @@ export const benchRun = (bench: Bench): BenchRun => {
     step: () => {
       for (let index = 0; index < inputs.length; index += 1) {
         const input = inputs[index];
-        if (input) {
+        if (input && seatedAt(index)) {
           run.pilot(index, input);
         }
       }
@@ -244,15 +247,14 @@ export const benchRun = (bench: Bench): BenchRun => {
   };
 };
 
-const raceOver = (race: RaceView): boolean => {
-  const [player] = race.riders;
-  return (
-    !player ||
-    player.finishTick >= 0 ||
-    player.mode === "busted" ||
-    player.mode === "wrecked"
+const raceOver = (race: RaceView): boolean =>
+  race.events.some(
+    (event) =>
+      event.rider === PLAYER_RIDER &&
+      (event.kind === "finish" ||
+        event.kind === "busted" ||
+        event.kind === "wrecked")
   );
-};
 
 export const rowsOf = (
   columns: WorkloadColumns,

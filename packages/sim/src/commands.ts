@@ -1,4 +1,5 @@
-import type { RaceState } from "./state.ts";
+import { riderOf } from "./state.ts";
+import type { RaceState, RiderId } from "./state.ts";
 
 const CLEAR_BEHIND = 60;
 const CLEAR_AHEAD = 400;
@@ -21,10 +22,10 @@ export const relocateTraffic = (
 
 export const placeRiderAt = (
   state: RaceState,
-  riderIndex: number,
+  id: RiderId,
   s: number
 ): void => {
-  const rider = state.riders[riderIndex];
+  const rider = riderOf(state.riders, id);
   if (!rider) {
     return;
   }
@@ -34,10 +35,10 @@ export const placeRiderAt = (
 
 export const placeRiderAcross = (
   state: RaceState,
-  riderIndex: number,
+  id: RiderId,
   x: number
 ): void => {
-  const rider = state.riders[riderIndex];
+  const rider = riderOf(state.riders, id);
   if (!rider) {
     return;
   }
@@ -47,10 +48,10 @@ export const placeRiderAcross = (
 
 export const setRiderSpeed = (
   state: RaceState,
-  riderIndex: number,
+  id: RiderId,
   speed: number
 ): void => {
-  const rider = state.riders[riderIndex];
+  const rider = riderOf(state.riders, id);
   if (rider) {
     rider.speed = speed;
   }

@@ -1,5 +1,5 @@
 import { grudgeSide, nearestRival } from "./combat.ts";
-import { PLAYER_RIDER } from "./state.ts";
+import { PLAYER_RIDER, riderOf } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 import { kick, weapons } from "./weapons.ts";
 import type { StrikeSpec } from "./weapons.ts";
@@ -9,34 +9,27 @@ const TRUCE_TICKS = 420;
 
 const rivalWithin = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   strike: StrikeSpec
-): RiderState | undefined => {
-  if (grudgeSide(state, riderIndex, strike) !== 0) {
-    return state.riders[state.riders[riderIndex]?.grudge ?? -1];
-  }
-  const left = nearestRival(state, riderIndex, -1, strike);
-  return state.riders[
-    left >= 0 ? left : nearestRival(state, riderIndex, 1, strike)
-  ];
-};
+): RiderState | undefined =>
+  grudgeSide(state, rider, strike) === 0
+    ? (nearestRival(state, rider, -1, strike) ??
+      nearestRival(state, rider, 1, strike))
+    : riderOf(state.riders, rider.grudge);
 
 const aggressionToward = (
-  state: RaceState,
   rider: RiderState,
   target: RiderState | undefined
 ): number => {
   if (!target) {
     return 0;
   }
-  const boost =
-    target === state.riders[PLAYER_RIDER] ? rider.aggressionBoost : 0;
+  const boost = target.id === PLAYER_RIDER ? rider.aggressionBoost : 0;
   return rider.profile.aggression + boost;
 };
 
 export const fight = (
   state: RaceState,
-  riderIndex: number,
   rider: RiderState,
   input: RiderInput,
   roll: (state: RaceState) => number
@@ -46,9 +39,9 @@ export const fight = (
   if (state.tick <= TRUCE_TICKS || rider.attackCooldown > 0) {
     return;
   }
-  const inHandReach = rivalWithin(state, riderIndex, weapons[rider.weapon]);
-  const inKickReach = rivalWithin(state, riderIndex, kick);
-  const aggression = aggressionToward(state, rider, inHandReach ?? inKickReach);
+  const inHandReach = rivalWithin(state, rider, weapons[rider.weapon]);
+  const inKickReach = rivalWithin(state, rider, kick);
+  const aggression = aggressionToward(rider, inHandReach ?? inKickReach);
   if (aggression <= 0) {
     return;
   }

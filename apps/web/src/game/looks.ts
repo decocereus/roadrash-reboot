@@ -262,7 +262,21 @@ const ridge: Look = {
   },
 };
 
+const park: Look = {
+  ...ridge,
+  dust: "#b8b094",
+  fogFar: 1500,
+  fogNear: 200,
+  foliage: ["#3f7a4e", "#5a9a5a"],
+  groundFar: "#4a6a5a",
+  groundNear: "#6a8a5e",
+  groundPatch: "#8aa060",
+  roadside: bare,
+  trunk: "#5a4038",
+};
+
 const looks = {
+  "casa-de-campo": park,
   "cinder-flats": dawn,
   "kettle-woods": woods,
   lowtown: night,

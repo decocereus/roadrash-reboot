@@ -124,6 +124,11 @@ const substitute = (
   return solution;
 };
 
+export const solveSymmetric = (
+  matrix: Float64Array,
+  rhs: Float64Array
+): Float64Array => substitute(factorise(matrix, rhs.length), rhs, rhs.length);
+
 const firstRowFrom = (projection: Projection, sample: number): number => {
   let low = 0;
   let high = projection.segment.length;
@@ -350,27 +355,39 @@ const addStartPin = (
   gradient[1] = (gradient[1] ?? 0) + START_WEIGHT * gz;
 };
 
+export const roughnessOf = (
+  knotValues: Float64Array,
+  smoothing: Float64Array
+): number => {
+  let total = 0;
+  for (let knot = 1; knot < knotValues.length; knot += 1) {
+    const change = (knotValues[knot] ?? 0) - (knotValues[knot - 1] ?? 0);
+    total += (smoothing[knot] ?? 0) * change * change;
+  }
+  return total;
+};
+
 const addSmoothing = (
   { gradient, matrix }: NormalEquations,
   knotValues: Float64Array,
-  smoothing: number
+  smoothing: Float64Array
 ): void => {
   const unknowns = gradient.length;
-  const knots = knotValues.length;
-  for (let knot = 1; knot < knots - 1; knot += 1) {
-    const column = 2 + knot;
-    const value = knotValues[knot] ?? 0;
-    gradient[column] =
-      (gradient[column] ?? 0) +
-      smoothing *
-        (2 * value - (knotValues[knot - 1] ?? 0) - (knotValues[knot + 1] ?? 0));
-    matrix[column * unknowns + column] =
-      (matrix[column * unknowns + column] ?? 0) + 2 * smoothing;
-    if (knot + 1 < knots - 1) {
-      matrix[column * unknowns + column + 1] =
-        (matrix[column * unknowns + column + 1] ?? 0) - smoothing;
-      matrix[(column + 1) * unknowns + column] =
-        (matrix[(column + 1) * unknowns + column] ?? 0) - smoothing;
+  const last = knotValues.length - 1;
+  for (let knot = 1; knot <= last; knot += 1) {
+    const weight = smoothing[knot] ?? 0;
+    const change = (knotValues[knot] ?? 0) - (knotValues[knot - 1] ?? 0);
+    const columns = [
+      [knot - 1, -1],
+      [knot, 1],
+    ].filter(([at = 0]) => at >= 1 && at < last);
+    for (const [at = 0, sign = 0] of columns) {
+      gradient[2 + at] = (gradient[2 + at] ?? 0) + sign * weight * change;
+      for (const [other = 0, otherSign = 0] of columns) {
+        matrix[(2 + at) * unknowns + 2 + other] =
+          (matrix[(2 + at) * unknowns + 2 + other] ?? 0) +
+          sign * otherSign * weight;
+      }
     }
   }
 };
@@ -381,7 +398,7 @@ export const normalEquations = (
   line: Centreline,
   projection: Projection,
   model: Model,
-  smoothing: number
+  smoothing: Float64Array
 ): NormalEquations => {
   const columns = columnsOf(grid, line, projection);
   const features = rowFeatures(line, projection);
@@ -395,11 +412,12 @@ export const normalEquations = (
 const heldAtBound = (
   gradient: Float64Array,
   knots: Float64Array,
-  bound: number
+  bounds: Float64Array
 ): Float64Array => {
   const fixed = new Float64Array(gradient.length).fill(Number.NaN);
   for (let column = 3; column < gradient.length; column += 1) {
     const value = knots[column - 2] ?? 0;
+    const bound = bounds[column - 2] ?? 0;
     const pull = gradient[column] ?? 0;
     if (
       (value >= bound - BOUND_TOLERANCE && pull < 0) ||
@@ -469,7 +487,7 @@ const clipAtBound = (
   step: Float64Array,
   free: readonly number[],
   knots: Float64Array,
-  bound: number,
+  bounds: Float64Array,
   fixed: Float64Array
 ): boolean => {
   let clipped = false;
@@ -478,6 +496,7 @@ const clipAtBound = (
       continue;
     }
     const value = knots[column - 2] ?? 0;
+    const bound = bounds[column - 2] ?? 0;
     const next = value + (step[column] ?? 0);
     if (Math.abs(next) > bound) {
       fixed[column] = Math.sign(next) * bound - value;
@@ -490,10 +509,10 @@ const clipAtBound = (
 export const boundedStep = (
   system: NormalEquations,
   knots: Float64Array,
-  bound: number,
+  bounds: Float64Array,
   damping: number
 ): Float64Array => {
-  const fixed = heldAtBound(system.gradient, knots, bound);
+  const fixed = heldAtBound(system.gradient, knots, bounds);
   for (;;) {
     const free = freeColumns(fixed);
     const reduced = reducedSystem(system, fixed, free, damping);
@@ -506,7 +525,7 @@ export const boundedStep = (
         free.length
       )
     );
-    if (!clipAtBound(step, free, knots, bound, fixed)) {
+    if (!clipAtBound(step, free, knots, bounds, fixed)) {
       return step;
     }
   }

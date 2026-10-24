@@ -17,7 +17,7 @@ import {
   placedAt,
   player,
   quietTrack,
-  riderAt,
+  rivalNamed,
   straight,
 } from "./race-fixtures.ts";
 import type { Placement } from "./race-fixtures.ts";
@@ -75,7 +75,7 @@ const pilotTrace = (
   const input = { ...cruising };
   const trace: PilotTrace[] = [];
   while (rider.s < until && rider.mode === "riding") {
-    pilotInput(state, course, 0, input);
+    pilotInput(state, course, rider, input);
     stepRace(state, course, [input]);
     trace.push({
       brake: input.brake,
@@ -190,12 +190,14 @@ const rideTheRival = (
   course: Track,
   seconds: number
 ): number => {
+  const rival = rivalNamed(state, "dee-santangelo");
   const inputs = state.riders.map(() => ({ ...neutralInput }));
+  const input = riderInputAt(inputs, rival.id);
   let fastest = 0;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    pilotInput(state, course, 1, riderInputAt(inputs, 1));
+    pilotInput(state, course, rival, input);
     stepRace(state, course, inputs);
-    fastest = Math.max(fastest, riderAt(state, 1).speed);
+    fastest = Math.max(fastest, rival.speed);
   }
   return fastest;
 };
@@ -208,14 +210,14 @@ describe("pacing by the gap to the player", () => {
     const free: PacingRules = { catchUp: 0, leadEase: 0 };
     const [paced, unpaced, playerOut] = [easing, free, easing].map((pacing) => {
       const state = pacedPair(straight, pacing);
-      riderAt(state, 1).s = 400;
+      rivalNamed(state, "dee-santangelo").s = 400;
       return state;
     });
     if (!(paced && unpaced && playerOut)) {
       throw new Error("The pacing races were not made.");
     }
     player(playerOut).mode = "busted";
-    const top = topSpeedOf(riderAt(paced, 1).bike);
+    const top = topSpeedOf(rivalNamed(paced, "dee-santangelo").bike);
     const bustedShare = rideTheRival(playerOut, straight, 40) / top;
     const freeShare = rideTheRival(unpaced, straight, 40) / top;
     const pacedShare = rideTheRival(paced, straight, 40) / top;
@@ -238,11 +240,11 @@ describe("pacing by the gap to the player", () => {
     rideTheRival(onBends, quietTrack, 60);
     rideTheRival(onBendsAlone, quietTrack, 60);
     const fastest = rideTheRival(onStraight, straight, 40);
-    expect(riderAt(onBends, 1).s).toBeGreaterThan(
-      riderAt(onBendsAlone, 1).s + 20
+    expect(rivalNamed(onBends, "dee-santangelo").s).toBeGreaterThan(
+      rivalNamed(onBendsAlone, "dee-santangelo").s + 20
     );
     expect(fastest).toBeLessThanOrEqual(
-      topSpeedOf(riderAt(onStraight, 1).bike, true) * 1.01
+      topSpeedOf(rivalNamed(onStraight, "dee-santangelo").bike, true) * 1.01
     );
   });
 });
@@ -290,7 +292,7 @@ const ridePlanned = (
   const steps: PlannedStep[] = [];
   let offRoad = false;
   for (let tick = 0; tick < seconds * TICK_RATE; tick += 1) {
-    pilotInput(state, road, 0, input);
+    pilotInput(state, road, rider, input);
     stepRace(state, road, [input]);
     events.push(...state.events);
     offRoad ||= rider.offRoad;
