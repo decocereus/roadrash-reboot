@@ -30,6 +30,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 
 ### Platform
 
+- [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
 - [Track compiler](#track-compiler): `track-compiler`
@@ -515,6 +516,36 @@ Test files:
 - `apps/web/test/render-quality.test.ts`
 
 ## Platform
+
+### Madrid corridor and data credits
+
+Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks and the public data credits page. The corridor is not wired into a track or the renderer.
+
+- Id: `madrid-corridor`
+- Start: `tools/madrid/generate.ts`, `packages/track/src/madrid-corridor.ts`, `apps/web/src/routes/credits.tsx`
+- Docs: [docs/madrid-corridor.md#route-and-coordinates](madrid-corridor.md#route-and-coordinates)
+- Verify: [credits.md](../.claude/skills/verify-rushline/features/credits.md)
+- Perf: none yet
+- Owns: `tools/madrid/**`, `packages/track/src/madrid-*.ts`, `apps/web/src/routes/credits.tsx`
+
+Source files:
+
+- `apps/web/src/routes/credits.tsx`
+- `packages/track/src/madrid-corridor.ts`
+- `packages/track/src/madrid-schema.ts`
+- `packages/track/src/madrid-sources.ts`
+- `tools/madrid/generate.ts`
+- `tools/madrid/src/acquire.ts`
+- `tools/madrid/src/context.ts`
+- `tools/madrid/src/elevation.ts`
+- `tools/madrid/src/geometry.ts`
+- `tools/madrid/src/preview.ts`
+- `tools/madrid/src/roads.ts`
+- `tools/madrid/src/schema.ts`
+
+Test files:
+
+- `tools/madrid/test/corridor.test.ts`
 
 ### Race simulation core
 

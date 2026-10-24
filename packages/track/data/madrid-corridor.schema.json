@@ -1,0 +1,535 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "bufferM": { "type": "number", "minimum": 0 },
+    "buildings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": { "type": "string", "enum": ["estimated"] },
+                  "metres": { "type": "number", "minimum": 0 }
+                },
+                "required": ["kind", "metres"],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": { "type": "string", "enum": ["measured"] },
+                  "metres": { "type": "number", "minimum": 0 }
+                },
+                "required": ["kind", "metres"],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": { "kind": { "type": "string", "enum": ["unavailable"] } },
+                "required": ["kind"],
+                "additionalProperties": true
+              }
+            ]
+          },
+          "id": { "type": "string" },
+          "rings": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                  "maxItems": 2,
+                  "minItems": 2
+                },
+                "minItems": 4
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                "maxItems": 2,
+                "minItems": 2
+              },
+              "minItems": 4
+            }
+          }
+        },
+        "required": ["height", "id", "rings"],
+        "additionalProperties": true
+      }
+    },
+    "crs": { "type": "string", "enum": ["EPSG:25830"] },
+    "elevation": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "properties": {
+            "atM": { "type": "number", "minimum": 0 },
+            "groundM": { "type": "number" }
+          },
+          "required": ["atM", "groundM"],
+          "additionalProperties": true
+        }
+      ],
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "atM": { "type": "number", "minimum": 0 },
+          "groundM": { "type": "number" }
+        },
+        "required": ["atM", "groundM"],
+        "additionalProperties": true
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "properties": {
+            "file": { "type": "string" },
+            "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "source": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["file", "sha256", "source", "url"],
+          "additionalProperties": true
+        }
+      ],
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "source": { "type": "string" },
+          "url": { "type": "string" }
+        },
+        "required": ["file", "sha256", "source", "url"],
+        "additionalProperties": true
+      }
+    },
+    "junctions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "atM": { "type": "number", "minimum": 0 },
+          "degree": { "type": "integer", "minimum": 3 },
+          "id": { "type": "string" },
+          "position": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }],
+            "maxItems": 2,
+            "minItems": 2
+          }
+        },
+        "required": ["atM", "degree", "id", "position"],
+        "additionalProperties": true
+      }
+    },
+    "landmarks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "atM": { "type": "number", "minimum": 0 },
+          "distanceM": { "type": "number", "minimum": 0 },
+          "name": { "type": "string" },
+          "position": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }],
+            "maxItems": 2,
+            "minItems": 2
+          },
+          "revision": { "type": "integer" },
+          "wikidata": { "type": "string", "pattern": "^Q[0-9]+$" }
+        },
+        "required": ["atM", "distanceM", "name", "position", "revision", "wikidata"],
+        "additionalProperties": true
+      }
+    },
+    "lengthM": { "type": "number", "minimum": 0 },
+    "origin": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "maxItems": 2,
+      "minItems": 2
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "atM": { "type": "number", "minimum": 0 },
+          "crossingId": { "type": "integer" },
+          "id": { "type": "integer" },
+          "position": {
+            "type": "array",
+            "prefixItems": [{ "type": "number" }, { "type": "number" }],
+            "maxItems": 2,
+            "minItems": 2
+          }
+        },
+        "required": ["atM", "crossingId", "id", "position"],
+        "additionalProperties": true
+      }
+    },
+    "sources": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "properties": {
+            "attribution": { "type": "string" },
+            "changes": { "type": "string" },
+            "date": { "type": "string" },
+            "id": { "type": "string" },
+            "licence": { "type": "string" },
+            "licenceUrl": { "type": "string" },
+            "name": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": [
+            "attribution",
+            "changes",
+            "date",
+            "id",
+            "licence",
+            "licenceUrl",
+            "name",
+            "url"
+          ],
+          "additionalProperties": true
+        }
+      ],
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "attribution": { "type": "string" },
+          "changes": { "type": "string" },
+          "date": { "type": "string" },
+          "id": { "type": "string" },
+          "licence": { "type": "string" },
+          "licenceUrl": { "type": "string" },
+          "name": { "type": "string" },
+          "url": { "type": "string" }
+        },
+        "required": [
+          "attribution",
+          "changes",
+          "date",
+          "id",
+          "licence",
+          "licenceUrl",
+          "name",
+          "url"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "streets": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "properties": {
+            "endM": { "type": "number", "minimum": 0 },
+            "links": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "bridge": {
+                      "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                    },
+                    "centreline": {
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "type": "array",
+                          "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                          "maxItems": 2,
+                          "minItems": 2
+                        }
+                      ],
+                      "minItems": 1,
+                      "items": {
+                        "type": "array",
+                        "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                        "maxItems": 2,
+                        "minItems": 2
+                      },
+                      "allOf": [{ "minItems": 2 }]
+                    },
+                    "fictitious": { "type": "boolean" },
+                    "from": { "type": "string" },
+                    "id": { "type": "string" },
+                    "pavedWidthM": { "type": "null" },
+                    "streetAreaWidthEstimate": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "integer" },
+                            "metres": { "type": "number", "minimum": 0 },
+                            "name": { "type": "string" }
+                          },
+                          "required": ["id", "metres", "name"],
+                          "additionalProperties": true
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "to": { "type": "string" }
+                  },
+                  "required": [
+                    "bridge",
+                    "centreline",
+                    "fictitious",
+                    "from",
+                    "id",
+                    "pavedWidthM",
+                    "streetAreaWidthEstimate",
+                    "to"
+                  ],
+                  "additionalProperties": true
+                }
+              ],
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bridge": {
+                    "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                  },
+                  "centreline": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "array",
+                        "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    ],
+                    "minItems": 1,
+                    "items": {
+                      "type": "array",
+                      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "allOf": [{ "minItems": 2 }]
+                  },
+                  "fictitious": { "type": "boolean" },
+                  "from": { "type": "string" },
+                  "id": { "type": "string" },
+                  "pavedWidthM": { "type": "null" },
+                  "streetAreaWidthEstimate": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "metres": { "type": "number", "minimum": 0 },
+                          "name": { "type": "string" }
+                        },
+                        "required": ["id", "metres", "name"],
+                        "additionalProperties": true
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "to": { "type": "string" }
+                },
+                "required": [
+                  "bridge",
+                  "centreline",
+                  "fictitious",
+                  "from",
+                  "id",
+                  "pavedWidthM",
+                  "streetAreaWidthEstimate",
+                  "to"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "name": { "type": "string" },
+            "startM": { "type": "number", "minimum": 0 },
+            "zone": { "type": "string", "enum": ["city", "park", "old-city"] }
+          },
+          "required": ["endM", "links", "name", "startM", "zone"],
+          "additionalProperties": true
+        }
+      ],
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "endM": { "type": "number", "minimum": 0 },
+          "links": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "object",
+                "properties": {
+                  "bridge": {
+                    "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                  },
+                  "centreline": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "array",
+                        "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    ],
+                    "minItems": 1,
+                    "items": {
+                      "type": "array",
+                      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "allOf": [{ "minItems": 2 }]
+                  },
+                  "fictitious": { "type": "boolean" },
+                  "from": { "type": "string" },
+                  "id": { "type": "string" },
+                  "pavedWidthM": { "type": "null" },
+                  "streetAreaWidthEstimate": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "metres": { "type": "number", "minimum": 0 },
+                          "name": { "type": "string" }
+                        },
+                        "required": ["id", "metres", "name"],
+                        "additionalProperties": true
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "to": { "type": "string" }
+                },
+                "required": [
+                  "bridge",
+                  "centreline",
+                  "fictitious",
+                  "from",
+                  "id",
+                  "pavedWidthM",
+                  "streetAreaWidthEstimate",
+                  "to"
+                ],
+                "additionalProperties": true
+              }
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "bridge": {
+                  "anyOf": [{ "type": "string", "pattern": "^Q[0-9]+$" }, { "type": "null" }]
+                },
+                "centreline": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "array",
+                      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                      "maxItems": 2,
+                      "minItems": 2
+                    }
+                  ],
+                  "minItems": 1,
+                  "items": {
+                    "type": "array",
+                    "prefixItems": [{ "type": "number" }, { "type": "number" }],
+                    "maxItems": 2,
+                    "minItems": 2
+                  },
+                  "allOf": [{ "minItems": 2 }]
+                },
+                "fictitious": { "type": "boolean" },
+                "from": { "type": "string" },
+                "id": { "type": "string" },
+                "pavedWidthM": { "type": "null" },
+                "streetAreaWidthEstimate": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "metres": { "type": "number", "minimum": 0 },
+                        "name": { "type": "string" }
+                      },
+                      "required": ["id", "metres", "name"],
+                      "additionalProperties": true
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "to": { "type": "string" }
+              },
+              "required": [
+                "bridge",
+                "centreline",
+                "fictitious",
+                "from",
+                "id",
+                "pavedWidthM",
+                "streetAreaWidthEstimate",
+                "to"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "name": { "type": "string" },
+          "startM": { "type": "number", "minimum": 0 },
+          "zone": { "type": "string", "enum": ["city", "park", "old-city"] }
+        },
+        "required": ["endM", "links", "name", "startM", "zone"],
+        "additionalProperties": true
+      }
+    },
+    "version": { "type": "number", "enum": [1] }
+  },
+  "required": [
+    "bufferM",
+    "buildings",
+    "crs",
+    "elevation",
+    "inputs",
+    "junctions",
+    "landmarks",
+    "lengthM",
+    "origin",
+    "signals",
+    "sources",
+    "streets",
+    "version"
+  ],
+  "additionalProperties": true,
+  "$defs": {}
+}

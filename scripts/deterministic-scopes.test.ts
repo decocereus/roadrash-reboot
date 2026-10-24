@@ -5,7 +5,7 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import config, {
-  careerCodecFiles,
+  codecFiles,
   deterministicFiles,
   hotBodies,
 } from "../oxlint.config.ts";
@@ -46,7 +46,7 @@ const settingsFor = (file: string): Map<string, unknown> => {
 
 const rolesOf = (file: string): string[] => [
   ...(deterministicFiles.includes(file) ? ["deterministic"] : []),
-  ...(careerCodecFiles.includes(file) ? ["save codec"] : []),
+  ...(codecFiles.includes(file) ? ["data codec"] : []),
   ...(file.endsWith(".test.ts") || testFixtures.has(file) ? ["test"] : []),
 ];
 
@@ -65,7 +65,7 @@ describe("deterministic scopes", () => {
     expect(
       [
         ...deterministicFiles,
-        ...careerCodecFiles,
+        ...codecFiles,
         ...testFixtures,
         ...Object.keys(hotBodies),
       ].filter((file) => !existsSync(file))
@@ -100,12 +100,10 @@ describe("deterministic scopes", () => {
     ).toStrictEqual([]);
   });
 
-  it("give the save codecs the Effect library rules and the career rules none", () => {
+  it("give the data codecs the Effect library rules and the deterministic rules none", () => {
     const effectRule = "rushline/no-effect-runtime";
     expect(
-      careerCodecFiles.filter(
-        (file) => settingsFor(file).get(effectRule) !== "error"
-      )
+      codecFiles.filter((file) => settingsFor(file).get(effectRule) !== "error")
     ).toStrictEqual([]);
     expect(
       deterministicFiles.filter((file) => settingsFor(file).has(effectRule))

@@ -20,7 +20,7 @@ export default defineConfig({
             "apps/**/*.test.ts",
             "packages/**/*.test.ts",
             "scripts/**/*.test.ts",
-            "tools/{perf,verify}/test/**/*.test.ts",
+            "tools/{perf,verify,madrid}/test/**/*.test.ts",
           ],
           name: "node",
         },

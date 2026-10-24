@@ -1,0 +1,308 @@
+[
+  {
+    "name": "Alcalá · Puerta de Alcalá to Cibeles",
+    "zone": "city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_5420882",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790051657",
+      "TN-RO_ROADLINK_VIAL_TR280790155883",
+      "TN-RO_ROADLINK_VIAL_TR280790083199",
+      "TN-RO_ROADLINK_VIAL_TR280790022315"
+    ],
+    "widthNames": ["Calle de Alcalá", "Plaza de la Independencia"],
+    "bridges": []
+  },
+  {
+    "name": "Alcalá · Cibeles to Metrópolis",
+    "zone": "city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_950973",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790000795",
+      "TN-RO_ROADLINK_VIAL_TR280790042802",
+      "TN-RO_ROADLINK_VIAL_TR280790006629",
+      "TN-RO_ROADLINK_VIAL_TR280790073431",
+      "TN-RO_ROADLINK_VIAL_TR280790112430",
+      "TN-RO_ROADLINK_VIAL_TR280790104745",
+      "TN-RO_ROADLINK_VIAL_TR280790100782",
+      "TN-RO_ROADLINK_VIAL_TR280790017900",
+      "TN-RO_ROADLINK_VIAL_TR280790054194"
+    ],
+    "widthNames": ["Calle de Alcalá", "Plaza de Cibeles"],
+    "bridges": []
+  },
+  {
+    "name": "Gran Vía",
+    "zone": "city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_2860094",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790066616",
+      "TN-RO_ROADLINK_VIAL_TR280790081126",
+      "TN-RO_ROADLINK_VIAL_TR280790118783",
+      "TN-RO_ROADLINK_VIAL_TR280790117469",
+      "TN-RO_ROADLINK_VIAL_TR280790072640",
+      "TN-RO_ROADLINK_VIAL_TR280790077625",
+      "TN-RO_ROADLINK_VIAL_TR280790147528",
+      "TN-RO_ROADLINK_VIAL_TR280790038794",
+      "TN-RO_ROADLINK_VIAL_TR280790147138",
+      "TN-RO_ROADLINK_VIAL_TR280790164985",
+      "TN-RO_ROADLINK_VIAL_TR280790154015",
+      "TN-RO_ROADLINK_VIAL_TR280790069981",
+      "TN-RO_ROADLINK_VIAL_TR280790098049",
+      "TN-RO_ROADLINK_VIAL_TR280790133714",
+      "TN-RO_ROADLINK_VIAL_TR280790175103",
+      "TN-RO_ROADLINK_VIAL_TR280790163312",
+      "TN-RO_ROADLINK_VIAL_TR280790004063",
+      "TN-RO_ROADLINK_VIAL_TR280790163835",
+      "TN-RO_ROADLINK_VIAL_TR280790050197",
+      "TN-RO_ROADLINK_VIAL_TR280790004566",
+      "TN-RO_ROADLINK_VIAL_TR280790113873",
+      "TN-RO_ROADLINK_VIAL_TR280790149611"
+    ],
+    "widthNames": ["Calle  Gran Vía"],
+    "bridges": []
+  },
+  {
+    "name": "Plaza de España",
+    "zone": "city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_2274283",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790043571",
+      "TN-RO_ROADLINK_VIAL_TR280790042475",
+      "TN-RO_ROADLINK_VIAL_TR280790190990",
+      "TN-RO_ROADLINK_VIAL_TR280790000727"
+    ],
+    "widthNames": ["Plaza de España", "Calle de Bailén"],
+    "bridges": []
+  },
+  {
+    "name": "Cuesta de San Vicente",
+    "zone": "city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_4606230",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790190567",
+      "TN-RO_ROADLINK_VIAL_TR280790176562",
+      "TN-RO_ROADLINK_VIAL_TR280790190565",
+      "TN-RO_ROADLINK_VIAL_TR280790057721",
+      "TN-RO_ROADLINK_VIAL_TR280790046326",
+      "TN-RO_ROADLINK_VIAL_TR280790190366"
+    ],
+    "widthNames": ["Cuesta de San Vicente", "Glorieta de San Vicente"],
+    "bridges": []
+  },
+  {
+    "name": "San Vicente · Puente del Rey approach",
+    "zone": "city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_33687",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790112234",
+      "TN-RO_ROADLINK_VIAL_TR280790258536",
+      "TN-RO_ROADLINK_VIAL_TR280790032623",
+      "TN-RO_ROADLINK_VIAL_TR280790191695",
+      "TN-RO_ROADLINK_VIAL_TR280790000637"
+    ],
+    "widthNames": ["Glorieta de San Vicente"],
+    "bridges": [
+      {
+        "links": ["TN-RO_ROADLINK_VIAL_TR280790000637"],
+        "wikidata": "Q6091607"
+      }
+    ]
+  },
+  {
+    "name": "Puente del Rey · Embarcadero · lake edge",
+    "zone": "park",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_4056900",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790191696",
+      "TN-RO_ROADLINK_VIAL_TR280790029372",
+      "TN-RO_ROADLINK_VIAL_TR280790029370",
+      "TN-RO_ROADLINK_VIAL_TR280790157848",
+      "TN-RO_ROADLINK_VIAL_TR280790161536"
+    ],
+    "widthNames": ["Paseo del Embarcadero"],
+    "bridges": [
+      {
+        "links": [
+          "TN-RO_ROADLINK_VIAL_TR280790191696",
+          "TN-RO_ROADLINK_VIAL_TR280790029372",
+          "TN-RO_ROADLINK_VIAL_TR280790029370"
+        ],
+        "wikidata": "Q6091607"
+      }
+    ]
+  },
+  {
+    "name": "Glorieta de los Patines",
+    "zone": "park",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_947162",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790104913",
+      "TN-RO_ROADLINK_VIAL_TR280790077439"
+    ],
+    "widthNames": ["Glorieta de los Patines"],
+    "bridges": []
+  },
+  {
+    "name": "Paseo Puerta del Ángel",
+    "zone": "park",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_2356022",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790146914",
+      "TN-RO_ROADLINK_VIAL_TR280790004177",
+      "TN-RO_ROADLINK_VIAL_TR280790136785",
+      "TN-RO_ROADLINK_VIAL_TR280790119465",
+      "TN-RO_ROADLINK_VIAL_TR280790120280",
+      "TN-RO_ROADLINK_VIAL_TR280790066025",
+      "TN-RO_ROADLINK_VIAL_TR280790188012",
+      "TN-RO_ROADLINK_VIAL_TR280790188014"
+    ],
+    "widthNames": ["Paseo de la Puerta del Ángel"],
+    "bridges": []
+  },
+  {
+    "name": "Paseo de Extremadura",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_949896",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790028120",
+      "TN-RO_ROADLINK_VIAL_TR280790054231",
+      "TN-RO_ROADLINK_VIAL_TR280790008014",
+      "TN-RO_ROADLINK_VIAL_TR280790171217",
+      "TN-RO_ROADLINK_VIAL_TR280790142074",
+      "TN-RO_ROADLINK_VIAL_TR280790006333",
+      "TN-RO_ROADLINK_VIAL_TR280790095396",
+      "TN-RO_ROADLINK_VIAL_TR280790160309",
+      "TN-RO_ROADLINK_VIAL_TR280790031644",
+      "TN-RO_ROADLINK_VIAL_TR280790122252",
+      "TN-RO_ROADLINK_VIAL_TR280790182682"
+    ],
+    "widthNames": ["Paseo de Extremadura", "Plaza de la Puerta del Ángel"],
+    "bridges": []
+  },
+  {
+    "name": "Puente de Segovia",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_954931",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790140777",
+      "TN-RO_ROADLINK_VIAL_TR280790002208",
+      "TN-RO_ROADLINK_VIAL_TR280790148876",
+      "TN-RO_ROADLINK_VIAL_TR280790190376",
+      "TN-RO_ROADLINK_VIAL_TR280790000035",
+      "TN-RO_ROADLINK_VIAL_TR280790190377",
+      "TN-RO_ROADLINK_VIAL_TR280790190378",
+      "TN-RO_ROADLINK_VIAL_TR280790190379"
+    ],
+    "widthNames": [
+      "Puente de Segovia",
+      "Glorieta del Puente de Segovia",
+      "Calle de Segovia",
+      "Paseo de la Virgen del Puerto"
+    ],
+    "bridges": [
+      {
+        "links": [
+          "TN-RO_ROADLINK_VIAL_TR280790000035",
+          "TN-RO_ROADLINK_VIAL_TR280790190377"
+        ],
+        "wikidata": "Q2838423"
+      }
+    ]
+  },
+  {
+    "name": "Calle de Segovia",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_33682",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790022977",
+      "TN-RO_ROADLINK_VIAL_TR280790049340",
+      "TN-RO_ROADLINK_VIAL_TR280790003181",
+      "TN-RO_ROADLINK_VIAL_TR280790101054",
+      "TN-RO_ROADLINK_VIAL_TR280790129804"
+    ],
+    "widthNames": ["Calle de Segovia"],
+    "bridges": []
+  },
+  {
+    "name": "Ronda de Segovia",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_953909",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790079373",
+      "TN-RO_ROADLINK_VIAL_TR280790084243",
+      "TN-RO_ROADLINK_VIAL_TR280790074988",
+      "TN-RO_ROADLINK_VIAL_TR280790165247",
+      "TN-RO_ROADLINK_VIAL_TR280790118639",
+      "TN-RO_ROADLINK_VIAL_TR280790101774",
+      "TN-RO_ROADLINK_VIAL_TR280790107259",
+      "TN-RO_ROADLINK_VIAL_TR280790107260",
+      "TN-RO_ROADLINK_VIAL_TR280790018269",
+      "TN-RO_ROADLINK_VIAL_TR280790074688",
+      "TN-RO_ROADLINK_VIAL_TR280790191034",
+      "TN-RO_ROADLINK_VIAL_TR280790088512",
+      "TN-RO_ROADLINK_VIAL_TR280790041881"
+    ],
+    "widthNames": ["Ronda de Segovia", "Ronda de Toledo"],
+    "bridges": []
+  },
+  {
+    "name": "Puerta de Toledo",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_3092240",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790147174",
+      "TN-RO_ROADLINK_VIAL_TR280790146928",
+      "TN-RO_ROADLINK_VIAL_TR280790107407",
+      "TN-RO_ROADLINK_VIAL_TR280790174484",
+      "TN-RO_ROADLINK_VIAL_TR280790079158"
+    ],
+    "widthNames": ["Glorieta de la Puerta de Toledo", "Calle de Toledo"],
+    "bridges": []
+  },
+  {
+    "name": "Gran Vía de San Francisco",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_3013967",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790184757",
+      "TN-RO_ROADLINK_VIAL_TR280790033828",
+      "TN-RO_ROADLINK_VIAL_TR280790044610",
+      "TN-RO_ROADLINK_VIAL_TR280790042595"
+    ],
+    "widthNames": [
+      "Avenida de la Gran Vía de San Francisco",
+      "Plaza de San Francisco"
+    ],
+    "bridges": []
+  },
+  {
+    "name": "Bailén · palace frontage",
+    "zone": "old-city",
+    "startNode": "TN-RO_ROADNODE_VIAL_N_950408",
+    "links": [
+      "TN-RO_ROADLINK_VIAL_TR280790041874",
+      "TN-RO_ROADLINK_VIAL_TR280790166934",
+      "TN-RO_ROADLINK_VIAL_TR280790022455",
+      "TN-RO_ROADLINK_VIAL_TR280790037660",
+      "TN-RO_ROADLINK_VIAL_TR280790191279",
+      "TN-RO_ROADLINK_VIAL_TR280790000238",
+      "TN-RO_ROADLINK_VIAL_TR280790191272",
+      "TN-RO_ROADLINK_VIAL_TR280790146555",
+      "TN-RO_ROADLINK_VIAL_TR280790139629",
+      "TN-RO_ROADLINK_VIAL_TR280790191277",
+      "TN-RO_ROADLINK_VIAL_TR280790143282",
+      "TN-RO_ROADLINK_VIAL_TR280790171408"
+    ],
+    "widthNames": ["Calle de Bailén"],
+    "bridges": [
+      {
+        "links": [
+          "TN-RO_ROADLINK_VIAL_TR280790191279",
+          "TN-RO_ROADLINK_VIAL_TR280790000238",
+          "TN-RO_ROADLINK_VIAL_TR280790191272"
+        ],
+        "wikidata": "Q6160850"
+      }
+    ]
+  }
+]

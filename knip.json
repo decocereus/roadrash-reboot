@@ -57,6 +57,11 @@
       "entry": ["rushline.ts", "test/**/*.test.ts"],
       "project": ["**/*.ts"],
       "typescript": true
+    },
+    "tools/madrid": {
+      "entry": ["generate.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
     }
   }
 }
