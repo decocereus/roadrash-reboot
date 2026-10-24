@@ -177,7 +177,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Purpose.** Show who is on the grid while the road loads, then start. It has no buttons.
 
-**Layout.** Left: the road's flyer. Right: `LEVEL {n} · TOP 3 QUALIFIES` (or `SINGLE RACE`), the road name in the stencil face, `{km} KM · {cops} COPS`, the grid as a list of fifteen rows (slot, name, bike and weapon, `HOLDS A GRUDGE` or `ON YOUR SIDE`), `YOU` last on a yellow bar, the rival with the strongest memory and their taunt, and the status `LOADING THE ROAD`, then `RIDE`.
+**Layout.** Left: the road's flyer. Right: `LEVEL {n} · TOP 3 QUALIFIES` (or `SINGLE RACE`), the road name in the stencil face, `{km} KM · {cops} COPS`, the grid as one row per racer (slot, name, bike and weapon, `HOLDS A GRUDGE` or `ON YOUR SIDE`), `YOU` last on a yellow bar, the rival with the strongest memory and their taunt, and the status `LOADING THE ROAD`, then `RIDE`.
 
 **In.** From the bar's `RIDE`, the route board's `RACE`, or Results' `RACE AGAIN`.
 
@@ -187,7 +187,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **The field.** The road's two home riders and five drawn from the rest of the cast. At level 1 Juno is never drawn, and Ridge Road's home riders are Coach and Ruth Ann.
 
-**Data.** The compiled track's name and length, police count, the fourteen drawn rivals and their grid slots, each rider's profile (name, paint, weapon) and bike for this level, memory record (grudge flag, chosen taunt), the player's bike and carried weapon.
+**Data.** The compiled track's name and length, police count, the drawn rivals and their grid slots, each rider's profile (name, paint, weapon) and bike for this level, memory record (grudge flag, chosen taunt), the player's bike and carried weapon.
 
 ## 6. Race HUD
 
@@ -286,7 +286,7 @@ The arrest record comes from the race runner, because the sim's own state no lon
 
 **Layout.** Results happens in the bar, on the same 1672 × 941 stage as the Clubhouse, with the same header, status strip (now showing the new cash), and bottom strip. The left half is the bar: the rival with the post-race line sits on the stool, with the line in the speech sticker and their name and finishing place on yellow tape. After a bust the arresting officer takes the stool, and after a wreck or a quit Mags does. The wall on the right shows:
 
-- **The race sheet:** the standings paper, stretched to fifteen ruled lines (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
+- **The race sheet:** the standings paper, stretched to fifteen ruled lines, the most a race seats (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
 - **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 5 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the bust line above.
 - **The ledger** on the cyan note.
 - **The pink note,** only when there is something to say: the career-over line, the repossession, or the debt warning, in that order.
@@ -356,14 +356,14 @@ The first wall note reads `Level {n}. {cops} cops. 1st pays ${prize}.`, with `Ne
 
 **Purpose.** Gather two to eight players, let each pick a bike, and start.
 
-**Layout.** The Lowside car park. Eight parking bays in a row across the middle, each either a player's bike in their paint with their name above it or an AI rival's bike with an `AI` tag. A bay with no player always holds an AI rival, and seven more AI rivals wait beyond the bays, so the grid is always fifteen. Top left: the room code. Left column: the host's race settings. Right column: the local player's bike picker, a compact version of the Garage bars. Bottom strip: ready state.
+**Layout.** The Lowside car park. Eight parking bays in a row across the middle, each either a player's bike in their paint with their name above it or an AI rival's bike with an `AI` tag. A bay with no player always holds an AI rival, and seven more AI rivals wait beyond the bays, so the grid always holds the field the server's race rules set. Top left: the room code. Left column: the host's race settings. Right column: the local player's bike picker, a compact version of the Garage bars. Bottom strip: ready state.
 
 **Text.**
 
 - Heading: `CAR PARK`
 - Room: `ROOM {CODE}` · `COPY INVITE LINK`
 - Bays: `{player name}` with `READY` or `PICKING`, or `{Rival} · AI` with the small print `JOIN TO TAKE THIS BAY`
-- Host settings: `ROAD ◄ {road} ►` · `LEVEL ◄ {n} ►` · `BIKES ◄ ANY | FEATHERWEIGHT | MIDDLEWEIGHT | HEAVYWEIGHT ►`. There is no setting for AI riders: every race has fifteen riders, and AI rivals fill whatever the players do not.
+- Host settings: `ROAD ◄ {road} ►` · `LEVEL ◄ {n} ►` · `BIKES ◄ ANY | FEATHERWEIGHT | MIDDLEWEIGHT | HEAVYWEIGHT ►`. There is no setting for AI riders or the field size. Every race has the field the server's race rules set, and AI rivals fill whatever the players do not.
 - Non-hosts see the same settings read-only with `{host} IS PICKING THE ROAD`.
 - Bike picker: `YOUR BIKE ◄ {bike} ►` · `PAINT ◄ ► `
 - Bottom strip: `{ready} / {players} READY` and, for the host, `START` (enabled when everyone is ready and at least two players are present).

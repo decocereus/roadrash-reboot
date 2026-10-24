@@ -2,6 +2,7 @@ import { bikeAt, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   crashOut,
   enter,
@@ -24,7 +25,7 @@ import type { CareerState } from "./state.ts";
 import { roadList } from "./tables.ts";
 
 const loaded = (career: CareerState): CareerState => {
-  const save = parseCareer(serialiseCareer(career));
+  const save = parseCareer(recordedRules, serialiseCareer(career));
   if (!save.ok) {
     throw new Error(`The save did not load: ${save.error.field}.`);
   }
@@ -109,7 +110,7 @@ describe("the last result", () => {
     const broke = lastOf(
       wreckTimes(lastOf(wreckTimes(newCareer(1), 4)).career, 3)
     );
-    const next = startRace(promoted.career, "slag-row", 3);
+    const next = startRace(recordedRules, promoted.career, "slag-row", 3);
     expect(km).toBeGreaterThan(0.3);
     expect(loaded(wrecked.career).lastResult).toMatchObject({
       ledger: { repair: 400, result: "wrecked" },

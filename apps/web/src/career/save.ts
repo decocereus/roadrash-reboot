@@ -1,3 +1,4 @@
+import type { RaceRules } from "@racer/career/rules";
 import { parseCareer, serialiseCareer } from "@racer/career/save";
 import type { SaveError } from "@racer/career/save-schema";
 import { resumeCareer } from "@racer/career/settle";
@@ -84,10 +85,11 @@ const writeCareer = (storage: SaveStorage, career: CareerState) =>
   writeItem(storage, SAVE_KEY, () => serialiseCareer(career));
 
 const resumed = Effect.fn("career.save.resume")(function* resumed(
+  rules: RaceRules,
   storage: SaveStorage,
   career: CareerState
 ) {
-  const settlement = resumeCareer(career);
+  const settlement = resumeCareer(rules, career);
   if (!settlement.settled) {
     return {
       career,
@@ -109,6 +111,7 @@ const resumed = Effect.fn("career.save.resume")(function* resumed(
 });
 
 const loaded = Effect.fn("career.save.load")(function* loaded(
+  rules: RaceRules,
   open: () => SaveStorage
 ) {
   const storage = yield* acquireStorage(open);
@@ -116,11 +119,11 @@ const loaded = Effect.fn("career.save.load")(function* loaded(
   if (text === null) {
     return { status: "absent" } satisfies CareerLoad;
   }
-  const parsed = parseCareer(text);
+  const parsed = parseCareer(rules, text);
   if (!parsed.ok) {
     return { error: parsed.error, status: "corrupt" } satisfies CareerLoad;
   }
-  return yield* resumed(storage, parsed.career);
+  return yield* resumed(rules, storage, parsed.career);
 });
 
 const cleared = Effect.fn("career.save.clear")(function* cleared(
@@ -135,8 +138,10 @@ const cleared = Effect.fn("career.save.clear")(function* cleared(
   return { status: "reset" } satisfies Reset;
 });
 
-export const loadCareer = (open: () => SaveStorage): CareerLoad =>
-  outcomeOf(loaded(open));
+export const loadCareer = (
+  rules: RaceRules,
+  open: () => SaveStorage
+): CareerLoad => outcomeOf(loaded(rules, open));
 
 export const storeCareer = (
   open: () => SaveStorage,

@@ -6,6 +6,7 @@ import { createRace, neutralInput, stepRace } from "@racer/sim/race";
 import { MAX_STAMINA } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   TICKS,
   enter,
@@ -29,7 +30,7 @@ import { outcomeOf, recordTick } from "./outcome.ts";
 import { quitRace, resumeCareer } from "./settle.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { levels, policeLevels, roadList } from "./tables.ts";
+import { levels, roadList } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
 const TRUCE_SECONDS = 3;
@@ -60,7 +61,7 @@ const attacksOnThePlayer = (
 ): number => {
   let attacks = 0;
   for (const seed of ATTACK_SEEDS) {
-    const setup = setupFor(career, roadId, seed, road);
+    const setup = setupFor(recordedRules, career, roadId, seed, road);
     const state = createRace(setup);
     const index = setup.field.indexOf(rival) + 1;
     const inputs = state.riders.map(() => ({ ...neutralInput }));
@@ -106,24 +107,24 @@ const atLevel = (level: Level): CareerState => ({
 const junoAggression = (roadId: RoadId): number | undefined => {
   const seed =
     Array.from({ length: 40 }, (_, index) => index + 1).find((candidate) =>
-      fieldFor(roadId, 5, candidate).includes("juno-kade")
+      fieldFor(recordedRules, roadId, 5, candidate).includes("juno-kade")
     ) ?? 0;
-  const setup = setupFor(atLevel(5), roadId, seed, road);
+  const setup = setupFor(recordedRules, atLevel(5), roadId, seed, road);
   return setup.rivals[setup.field.indexOf("juno-kade")]?.aggression;
 };
 
 describe("the field", () => {
-  it("always has fourteen different rivals with the road's home riders among them", () => {
+  it("always fills the field with different rivals, the road's home riders among them", () => {
     const problems: string[] = [];
     for (const level of levels) {
       for (const entry of roadList) {
         for (let seed = 1; seed <= 40; seed += 1) {
-          const field = fieldFor(entry.id, level, seed);
-          const home = roadsFor(atLevel(level)).roads.find(
+          const field = fieldFor(recordedRules, entry.id, level, seed);
+          const home = roadsFor(recordedRules, atLevel(level)).roads.find(
             (status) => status.road.id === entry.id
           )?.home;
           if (
-            new Set(field).size !== 14 ||
+            new Set(field).size !== recordedRules.fieldSize - 1 ||
             !home ||
             home.length < 3 ||
             !home.every((rival) => field.includes(rival))
@@ -139,10 +140,10 @@ describe("the field", () => {
   it("never draws Juno at level 1, where Ruth Ann stands in on Ridge Road, and always draws her on Ridge Road from level 2", () => {
     const seeds = Array.from({ length: 60 }, (_, seed) => seed + 1);
     const levelOne = roadList.flatMap((entry) =>
-      seeds.flatMap((seed) => fieldFor(entry.id, 1, seed))
+      seeds.flatMap((seed) => fieldFor(recordedRules, entry.id, 1, seed))
     );
     const ridge = (level: Level) =>
-      seeds.map((seed) => fieldFor("ridge-road", level, seed));
+      seeds.map((seed) => fieldFor(recordedRules, "ridge-road", level, seed));
     expect(levelOne).not.toContain("juno-kade");
     expect(
       ridge(1).every(
@@ -160,17 +161,23 @@ describe("the field", () => {
   it("draws a different mix from a different seed and the same mix from the same seed", () => {
     const fields = new Set(
       Array.from({ length: 20 }, (_, seed) =>
-        [...fieldFor("slag-row", 2, seed)].toSorted().join(",")
+        [...fieldFor(recordedRules, "slag-row", 2, seed)].toSorted().join(",")
       )
     );
     expect(fields.size).toBeGreaterThan(5);
-    expect(fieldFor("slag-row", 2, 9)).toStrictEqual(
-      fieldFor("slag-row", 2, 9)
+    expect(fieldFor(recordedRules, "slag-row", 2, 9)).toStrictEqual(
+      fieldFor(recordedRules, "slag-row", 2, 9)
     );
   });
 
   it("puts every rival on their bike and weapon for the level, the level's police on the road, and the player last on the grid", () => {
-    const setup = setupFor(atLevel(4), "hollow-pine-road", 3, road);
+    const setup = setupFor(
+      recordedRules,
+      atLevel(4),
+      "hollow-pine-road",
+      3,
+      road
+    );
     const state = createRace(setup);
     const [player, ...others] = state.riders;
     expect(
@@ -192,7 +199,7 @@ describe("the field", () => {
     });
     expect(
       others.filter((rider) => rider.profile.role === "police")
-    ).toHaveLength(policeLevels[4].count);
+    ).toHaveLength(recordedRules.police[4]);
     expect(
       others
         .filter((rider) => rider.profile.role === "racer")
@@ -203,6 +210,7 @@ describe("the field", () => {
 
   it("a quick race puts the player on the picked bike at the picked level, empty-handed, against a fresh field with no grudges", () => {
     const setup = practiceSetup(
+      recordedRules,
       {
         bikeId: "ostra-sesta-600",
         level: 4,
@@ -217,9 +225,11 @@ describe("the field", () => {
     expect([setup.level, setup.raceId, setup.police.count]).toStrictEqual([
       4,
       1,
-      policeLevels[4].count,
+      recordedRules.police[4],
     ]);
-    expect(setup.field).toStrictEqual(fieldFor("hollow-pine-road", 4, 3));
+    expect(setup.field).toStrictEqual(
+      fieldFor(recordedRules, "hollow-pine-road", 4, 3)
+    );
     expect(
       setup.rivals.map((rival) => [rival.aggressionBoost, rival.grudge])
     ).toStrictEqual(setup.rivals.map(() => [0, undefined]));
@@ -241,7 +251,10 @@ const afterMooseIsBusted = (playerAhead: number) => {
   const { career } = settle(race);
   return {
     blamed: career.memory["moose-kowalczyk"].bustedNearPlayer,
-    line: preRaceLine(career, setupFor(career, "slag-row", 8, road)),
+    line: preRaceLine(
+      career,
+      setupFor(recordedRules, career, "slag-row", 8, road)
+    ),
     note: career.board.find((note) => note.kind === "busted"),
     unblamed: career.memory["moose-kowalczyk"].busted,
   };
@@ -253,7 +266,7 @@ describe("memory", () => {
     knockDown(race, "dee-santangelo", 2);
     sprint(race, 1);
     const settled = settle(race);
-    const next = setupFor(settled.career, "slag-row", 8, road);
+    const next = setupFor(recordedRules, settled.career, "slag-row", 8, road);
     expect(settled.career.memory["dee-santangelo"]).toMatchObject({
       aggressionBonus: 0.2,
       grudge: true,
@@ -298,16 +311,21 @@ describe("memory", () => {
         attacksOnThePlayer(respectful, "tristan-lux", "breakwater-run")
       ).toBeLessThan(usual);
       expect([
-        rivalIn(setupFor(sore, "breakwater-run", 8, road), "tristan-lux")
-          ?.grudge,
-        preRaceLine(sore, setupFor(sore, "breakwater-run", 8, road))?.text,
+        rivalIn(
+          setupFor(recordedRules, sore, "breakwater-run", 8, road),
+          "tristan-lux"
+        )?.grudge,
+        preRaceLine(
+          sore,
+          setupFor(recordedRules, sore, "breakwater-run", 8, road)
+        )?.text,
       ]).toStrictEqual([undefined, rivalLines["tristan-lux"].grudgeTaunt]);
     }
   );
 
   it("a rival the player beat cleanly cools off, however often, and one with no memory opens with the default taunt", () => {
     const fresh = newCareer(2);
-    const first = setupFor(fresh, "slag-row", 7, road);
+    const first = setupFor(recordedRules, fresh, "slag-row", 7, road);
     const race = enter(fresh, "slag-row");
     sprint(race, 1);
     const { career } = settle(race);
@@ -350,7 +368,7 @@ describe("memory", () => {
     takeWeaponFrom(race, "moose-kowalczyk");
     sprint(race, 1);
     const { career } = settle(race);
-    const next = setupFor(career, "cinder-wash", 4, road);
+    const next = setupFor(recordedRules, career, "cinder-wash", 4, road);
     expect([career.weapon, career.weaponHits]).toStrictEqual(["club", 6]);
     expect([next.player.weapon, next.player.weaponHits]).toStrictEqual([
       "club",
@@ -411,7 +429,7 @@ describe("memory", () => {
       );
     }
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const { career } = quitRace(race.career, outcome);
+    const { career } = quitRace(recordedRules, race.career, outcome);
     const incidents = outcome.incidents.find(
       (incident) => incident.rival === "dee-santangelo"
     );
@@ -495,7 +513,10 @@ describe("memory", () => {
   });
 
   it("the board keeps the three newest notes with the newest first", () => {
-    const left = resumeCareer(enter(newCareer(2), "slag-row").career).career;
+    const left = resumeCareer(
+      recordedRules,
+      enter(newCareer(2), "slag-row").career
+    ).career;
     const race = enter(left, "slag-row");
     const third = race.setup.field.find(
       (rival) => rival !== "moose-kowalczyk" && rival !== "dee-santangelo"

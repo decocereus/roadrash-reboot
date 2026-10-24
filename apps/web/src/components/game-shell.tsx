@@ -1,4 +1,5 @@
 import { roadOpen } from "@racer/career/field";
+import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { acceptEnvelope, refuseEnvelope } from "@racer/career/story";
 import { useEffect, useRef, useState } from "react";
@@ -31,6 +32,7 @@ import type { Flow } from "./use-flow.ts";
 const DWELL_MS = 2200;
 
 const RideOut = ({
+  rules,
   career,
   entry,
   ready,
@@ -39,6 +41,7 @@ const RideOut = ({
   onStart,
   onBack,
 }: {
+  readonly rules: RaceRules;
   readonly career: CareerState | null;
   readonly entry: RaceEntry;
   readonly ready: boolean;
@@ -47,7 +50,7 @@ const RideOut = ({
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
 }) => {
-  const [plan] = useState(() => planFor(career, entry));
+  const [plan] = useState(() => planFor(rules, career, entry));
   const [prepared, setPrepared] = useState(false);
   const [dwelt, setDwelt] = useState(false);
   const started = useRef(false);
@@ -93,9 +96,11 @@ const RideOut = ({
 
 const CareerScreens = ({
   flow,
+  rules,
   career,
 }: {
   readonly flow: Flow;
+  readonly rules: RaceRules;
   readonly career: CareerState;
 }) => {
   const { view } = flow;
@@ -116,6 +121,7 @@ const CareerScreens = ({
           flow.rideOut("career", roadId);
         }}
         promotion={view.promotion}
+        rules={rules}
       />
     );
   }
@@ -155,16 +161,17 @@ const CareerScreens = ({
 };
 
 const raceAgainOffered = (
+  rules: RaceRules,
   report: RaceReport,
   career: CareerState | null
 ): boolean =>
   report.ledger === null ||
   (career !== null &&
     afterResults(report) === clubhouse &&
-    roadOpen(career, report.roadId));
+    roadOpen(rules, career, report.roadId));
 
 const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
-  const { view, career } = flow;
+  const { view, career, rules } = flow;
   if (view.screen === "boot") {
     return <BootScreen />;
   }
@@ -186,6 +193,9 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
       />
     );
   }
+  if (!rules) {
+    return null;
+  }
   if (view.screen === "routeBoard") {
     return (
       <RouteBoardScreen
@@ -199,6 +209,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         }}
         pick={flow.pick}
         ready={flow.ready}
+        rules={rules}
       />
     );
   }
@@ -214,13 +225,14 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         onPrepare={flow.prepare}
         onStart={flow.start}
         ready={flow.ready}
+        rules={rules}
       />
     );
   }
   if (view.screen === "results") {
     return (
       <ResultsScreen
-        canRaceAgain={raceAgainOffered(view.report, career)}
+        canRaceAgain={raceAgainOffered(rules, view.report, career)}
         career={career}
         onContinue={() => {
           flow.go(afterResults(view.report));
@@ -237,7 +249,9 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
       />
     );
   }
-  return career ? <CareerScreens career={career} flow={flow} /> : null;
+  return career ? (
+    <CareerScreens career={career} flow={flow} rules={rules} />
+  ) : null;
 };
 
 const RaceScreens = ({ flow }: { readonly flow: Flow }) => {

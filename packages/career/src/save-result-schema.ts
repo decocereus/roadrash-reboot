@@ -1,4 +1,5 @@
 import { bikeIds } from "@racer/sim/bikes";
+import { MOST_RACERS } from "@racer/sim/race";
 import * as Schema from "effect/Schema";
 
 import {
@@ -25,7 +26,6 @@ import {
   Weapon,
   Witness,
 } from "./save-values.ts";
-import { FIELD_SIZE, RIVALS_PER_RACE } from "./tables.ts";
 
 const Row = Schema.Struct({
   bikeId: Bike,
@@ -69,9 +69,9 @@ const Wreck = Schema.Struct({ bikeId: Bike, km: Kilometres });
 
 const Summary = Schema.Struct({
   bust: Schema.NullOr(Bust),
-  incidents: Schema.Array(Incidents).check(Schema.isMaxLength(RIVALS_PER_RACE)),
+  incidents: Schema.Array(Incidents).check(Schema.isMaxLength(MOST_RACERS - 1)),
   raceId: RaceNumber,
-  rows: Schema.Array(Row).check(Schema.isMaxLength(FIELD_SIZE)),
+  rows: Schema.Array(Row).check(Schema.isMaxLength(MOST_RACERS)),
   tick: RaceTick,
   wreck: Schema.NullOr(Wreck),
 });

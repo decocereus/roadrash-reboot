@@ -6,6 +6,7 @@ import type { RaceState } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 
+import { recordedRules } from "./bench.ts";
 import { setupFor } from "./field.ts";
 import { newCareer } from "./state.ts";
 import { levels } from "./tables.ts";
@@ -71,6 +72,7 @@ const ridePolice = ({ level, roadId, seed }: PoliceStart): PoliceRide => {
   const track = trackFor(roadId, level);
   const bikeId = decentBikes[level];
   const setup = setupFor(
+    recordedRules,
     { ...newCareer(seed), bikeId, garage: [bikeId], level },
     roadId,
     seed * SEED_STEP + level,

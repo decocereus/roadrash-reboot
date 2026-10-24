@@ -153,7 +153,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/assets.ts",
     ],
     summary:
-      "Booting the game module with a dynamic import, downloading and decoding the six models, waiting for fonts, and the typed failures of each step.",
+      "Booting the game module with a dynamic import, downloading and decoding the nine models, waiting for fonts, and the typed failures of each step.",
     title: "Model and font loading",
     verify: ["frame-rate.md"],
   },
@@ -170,9 +170,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
     perf: [
       "assets.glb.bike",
       "assets.glb.car",
+      "assets.glb.ghost",
+      "assets.glb.oni",
       "assets.glb.rider_a",
       "assets.glb.rider_b",
       "assets.glb.rider_c",
+      "assets.glb.seraph",
       "assets.glb.van",
       "assets.glb.total",
     ],
@@ -205,6 +208,32 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "Writing and reading the career save: the versioned schema and its checks, the browser's `localStorage` save and backup, and the check that holds the saved structure within one `SAVE_VERSION`.",
     title: "Career save",
     verify: ["career.md"],
+  },
+  {
+    docs: [
+      "docs/architecture.md#career",
+      "docs/errors.md#race-rules",
+      "docs/design/game-design.md#12-multiplayer",
+    ],
+    id: "race-rules",
+    kind: "platform",
+    owns: [
+      "packages/career/src/rules*.ts",
+      "apps/web/src/server/race-rules.ts",
+      "apps/web/src/routes/api/race-rules.ts",
+      "apps/web/src/rules/**",
+      "apps/web/test/race-rules.test.ts",
+    ],
+    perf: [],
+    start: [
+      "apps/web/src/server/race-rules.ts",
+      "packages/career/src/rules.ts",
+      "apps/web/src/rules/load.ts",
+    ],
+    summary:
+      "The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.",
+    title: "Race rules",
+    verify: ["race-rules.md"],
   },
   {
     docs: [

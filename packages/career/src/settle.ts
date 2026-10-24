@@ -12,6 +12,8 @@ import type {
   RivalIncidents,
 } from "./outcome.ts";
 import { summaryOf } from "./result.ts";
+import { levelAfter } from "./rules.ts";
+import type { RaceRules } from "./rules.ts";
 import { scoreRace } from "./season.ts";
 import { BOARD_NOTES, nextRaceId, qualifiedCount } from "./state.ts";
 import type {
@@ -34,8 +36,6 @@ import {
   ENVELOPE_RIVAL,
   ENVELOPE_ROAD,
   fines,
-  LAST_LEVEL,
-  levelAfter,
   prizeFor,
   QUALIFYING_PLACE,
   repairBill,
@@ -108,6 +108,7 @@ export type Settlement =
     };
 
 const startRefusal = (
+  rules: RaceRules,
   career: CareerState,
   roadId: RoadId
 ): StartRefusal | null => {
@@ -120,15 +121,16 @@ const startRefusal = (
   if (career.activeRace) {
     return "raceActive";
   }
-  return roadOpen(career, roadId) ? null : "roadClosed";
+  return roadOpen(rules, career, roadId) ? null : "roadClosed";
 };
 
 export const startRace = (
+  rules: RaceRules,
   career: CareerState,
   roadId: RoadId,
   seed: number
 ): StartResult => {
-  const reason = startRefusal(career, roadId);
+  const reason = startRefusal(rules, career, roadId);
   if (reason) {
     return { career, reason, started: false };
   }
@@ -381,6 +383,7 @@ const endingOf = (career: CareerState, outcome: RaceOutcome): EndingId => {
 };
 
 const progressOf = (
+  rules: RaceRules,
   career: CareerState,
   race: ActiveRace,
   outcome: RaceOutcome,
@@ -397,16 +400,17 @@ const progressOf = (
       }
     : career.qualified[level];
   const newlyQualified = qualifies && bestPlace === undefined;
+  const next = levelAfter(rules, level);
   const promoted =
+    next !== null &&
     newlyQualified &&
     !gameOver &&
-    level !== LAST_LEVEL &&
     roadList.every((road) => roads[road.id] !== undefined);
-  const nextLevel = promoted ? levelAfter(level) : level;
+  const nextLevel = promoted ? next : level;
   const crowned =
     qualifies &&
     !gameOver &&
-    isFinale(roadId, level) &&
+    isFinale(rules, roadId, level) &&
     career.story.ending === null;
   return {
     arrivals: promoted ? stockArrivingAt(nextLevel) : [],
@@ -480,6 +484,7 @@ const refused = (career: CareerState, reason: SettleRefusal): Settlement => ({
 });
 
 export const settleRace = (
+  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome,
   offer: RepairOffer = "full"
@@ -499,7 +504,7 @@ export const settleRace = (
     career.cash + bill.prize - bill.repair - bill.fine + bill.envelope,
     career.bikeId
   );
-  const progress = progressOf(career, race, outcome, debt.gameOver);
+  const progress = progressOf(rules, career, race, outcome, debt.gameOver);
   const settled: CareerState = {
     ...career,
     ...carried(outcome),
@@ -548,7 +553,7 @@ export const settleRace = (
     career: {
       ...settled,
       lastResult: { ledger, summary: summaryOf(race, outcome, bill.prize) },
-      story: { ...settled.story, finaleUnlocked: finaleOpen(settled) },
+      story: { ...settled.story, finaleUnlocked: finaleOpen(rules, settled) },
     },
     ledger,
     settled: true,
@@ -556,15 +561,23 @@ export const settleRace = (
 };
 
 export const quitRace = (
+  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome
-): Settlement => settleRace(career, outcome);
+): Settlement => settleRace(rules, career, outcome);
 
-export const resumeCareer = (save: CareerState): Settlement => {
+export const resumeCareer = (
+  rules: RaceRules,
+  save: CareerState
+): Settlement => {
   if (!save.activeRace) {
     return refused(save, "noActiveRace");
   }
-  const settlement = settleRace(save, abandonedOutcome(save.activeRace));
+  const settlement = settleRace(
+    rules,
+    save,
+    abandonedOutcome(rules, save.activeRace)
+  );
   if (!settlement.settled) {
     return settlement;
   }

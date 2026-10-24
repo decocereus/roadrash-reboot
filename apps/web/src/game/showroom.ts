@@ -1,8 +1,11 @@
+import type { BikeId } from "@racer/sim/bikes";
 import { PLAYER_COLOURS, riderPalette } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import { createBikes } from "./actors.ts";
-import type { Assets, Decoded } from "./assets.ts";
+import type { Assets, BikeParts, Decoded } from "./assets.ts";
+import { bikeModelIds, bikeModelOf } from "./bike-models.ts";
+import type { BikeModelId } from "./bike-models.ts";
 import { createShading } from "./cel.ts";
 import { lookOf } from "./looks.ts";
 import { createPipeline } from "./post.ts";
@@ -27,7 +30,7 @@ const SHADOW_MAP = 1024;
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
 export interface Showroom {
-  show: (paint: number) => void;
+  show: (bikeId: BikeId, paint: number) => void;
   dispose: () => void;
 }
 
@@ -37,7 +40,7 @@ interface Footprint {
   readonly height: number;
 }
 
-const footprintOf = (bike: Assets["bike"]): Footprint => {
+const footprintOf = (bike: BikeParts): Footprint => {
   const bounds = new THREE.Box3();
   for (const primitive of [...bike.values()].flat()) {
     primitive.geometry.computeBoundingBox();
@@ -74,9 +77,12 @@ const releaseAll = (owners: (() => void)[]): void => {
 const paintOf = (paint: number): number =>
   riderPalette[paint] === undefined ? PLAYER_COLOURS : paint;
 
+const standOf = (model: BikeModelId, paint: number): number =>
+  bikeModelIds.indexOf(model) * riderPalette.length + paint;
+
 const openRoom = (
   canvas: HTMLCanvasElement,
-  bike: Assets["bike"],
+  bikes: Assets["bikes"],
   owners: (() => void)[]
 ): Showroom => {
   const renderer = new THREE.WebGLRenderer({
@@ -105,13 +111,15 @@ const openRoom = (
   owners.push(() => {
     shading.dispose();
   });
-  const bikes = createBikes(
-    { bike },
+  const stands = createBikes(
+    { bikes },
     shading,
-    riderPalette.map((_, paint) => ({ paint, police: false }))
+    bikeModelIds.flatMap((model) =>
+      riderPalette.map((_, paint) => ({ model, paint, police: false }))
+    )
   );
   owners.push(() => {
-    bikes.dispose();
+    stands.dispose();
   });
 
   const scene = new THREE.Scene();
@@ -131,12 +139,19 @@ const openRoom = (
   light.shadow.bias = -0.0008;
   light.shadow.normalBias = 0.02;
   light.position.copy(shading.key).multiplyScalar(SHADOW_DISTANCE);
-  scene.add(light, light.target, bikes.group);
+  scene.add(light, light.target, stands.group);
   pipeline.prepare(scene);
 
-  const footprint = footprintOf(bike);
+  const footprints = {
+    classic: footprintOf(bikes.classic),
+    ghost: footprintOf(bikes.ghost),
+    oni: footprintOf(bikes.oni),
+    seraph: footprintOf(bikes.seraph),
+  } satisfies Record<BikeModelId, Footprint>;
+  let model: BikeModelId = "classic";
+  let footprint = footprints[model];
   const camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.1, 40);
-  const aim = new THREE.Vector3(0, footprint.height * AIM_HEIGHT, 0);
+  const aim = new THREE.Vector3();
   const anchor = new THREE.Vector3();
   const spot = new THREE.Vector3();
   const motion = globalThis.matchMedia(REDUCED_MOTION);
@@ -151,7 +166,8 @@ const openRoom = (
   let open = true;
 
   const draw = (): void => {
-    const root = bikes.roots[paint];
+    const stand = standOf(model, paint);
+    const root = stands.roots[stand];
     if (!root) {
       return;
     }
@@ -160,8 +176,8 @@ const openRoom = (
       .copy(footprint.centre)
       .applyAxisAngle(THREE.Object3D.DEFAULT_UP, root.rotation.y);
     root.position.set(spot.x, 0, spot.z);
-    bikes.show(paint);
-    bikes.commit(anchor);
+    stands.show(stand);
+    stands.commit(anchor);
     shading.aim(camera);
     pipeline.render(scene, camera);
   };
@@ -188,6 +204,19 @@ const openRoom = (
     }
   };
 
+  const fitCamera = (): void => {
+    aim.set(0, footprint.height * AIM_HEIGHT, 0);
+    const distance = distanceToFit(footprint, camera);
+    camera.position.set(
+      Math.sin(bearing) * distance,
+      SEAT_HEIGHT,
+      Math.cos(bearing) * distance
+    );
+    camera.lookAt(aim);
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+  };
+
   const resize = (): void => {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -199,15 +228,7 @@ const openRoom = (
     renderer.setSize(width, height, false);
     pipeline.resize(width, height, ratio);
     camera.aspect = width / height;
-    const distance = distanceToFit(footprint, camera);
-    camera.position.set(
-      Math.sin(bearing) * distance,
-      SEAT_HEIGHT,
-      Math.cos(bearing) * distance
-    );
-    camera.lookAt(aim);
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld();
+    fitCamera();
     wake();
   };
 
@@ -244,8 +265,11 @@ const openRoom = (
     dispose() {
       releaseAll(owners);
     },
-    show(next) {
+    show(bikeId, next) {
+      model = bikeModelOf[bikeId];
+      footprint = footprints[model];
       paint = paintOf(next);
+      fitCamera();
       wake();
     },
   };
@@ -253,11 +277,11 @@ const openRoom = (
 
 export const createShowroom = (
   canvas: HTMLCanvasElement,
-  bike: Decoded<Assets["bike"]>
+  bikes: Decoded<Assets["bikes"]>
 ): Showroom => {
-  const owners = [bike.release];
+  const owners = [bikes.release];
   try {
-    return openRoom(canvas, bike.value, owners);
+    return openRoom(canvas, bikes.value, owners);
   } catch (error) {
     releaseAll(owners);
     throw error;

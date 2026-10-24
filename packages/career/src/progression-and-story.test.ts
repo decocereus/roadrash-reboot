@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   decent,
   enter,
@@ -34,7 +35,10 @@ describe("moving up", () => {
     const lockedAfter = shopStock(fifth.career)
       .filter((row) => row.refusal === "locked")
       .map((row) => row.bikeId);
-    expect([four.level, roadsFor(four).qualifiedCount]).toStrictEqual([1, 4]);
+    expect([
+      four.level,
+      roadsFor(recordedRules, four).qualifiedCount,
+    ]).toStrictEqual([1, 4]);
     expect(ledgerOf(fifth)).toMatchObject({
       levelUp: {
         bikes: ["ostra-sette-750", "brack-stoker-800"],
@@ -49,7 +53,7 @@ describe("moving up", () => {
       "brack-anvil-1100",
       "ostra-nera-1000",
     ]);
-    expect(roadsFor(fifth.career)).toMatchObject({
+    expect(roadsFor(recordedRules, fifth.career)).toMatchObject({
       level: 2,
       next: "breakwater-run",
       qualifiedCount: 0,
@@ -66,24 +70,24 @@ describe("moving up", () => {
     const fourth = play(four, { place: 4, roadId: "ridge-road" });
     const won = play(fourth.career, { place: 1, roadId: "ridge-road" });
     expect([
-      roadsFor(three).finaleOpen,
+      roadsFor(recordedRules, three).finaleOpen,
       three.story.finaleUnlocked,
     ]).toStrictEqual([false, false]);
-    expect(startRace(three, "ridge-road", 1)).toMatchObject({
+    expect(startRace(recordedRules, three, "ridge-road", 1)).toMatchObject({
       reason: "roadClosed",
       started: false,
     });
     expect([
-      roadsFor(four).finaleOpen,
+      roadsFor(recordedRules, four).finaleOpen,
       four.story.finaleUnlocked,
     ]).toStrictEqual([true, true]);
     expect([
       ledgerOf(fourth).ending,
-      roadsFor(fourth.career).finaleOpen,
+      roadsFor(recordedRules, fourth.career).finaleOpen,
       ledgerOf(won).ending,
       won.career.level,
     ]).toStrictEqual([null, true, "clean-crown", 5]);
-    expect(startRace(won.career, "slag-row", 1)).toMatchObject({
+    expect(startRace(recordedRules, won.career, "slag-row", 1)).toMatchObject({
       reason: "seasonOver",
       started: false,
     });
@@ -141,7 +145,10 @@ describe("the story", () => {
       grudge: 0,
     });
     expect(
-      rivalIn(setupFor(career, "slag-row", 3, road), "dee-santangelo")
+      rivalIn(
+        setupFor(recordedRules, career, "slag-row", 3, road),
+        "dee-santangelo"
+      )
     ).toMatchObject({ aggressionBoost: 0.2, grudge: 0 });
   });
 

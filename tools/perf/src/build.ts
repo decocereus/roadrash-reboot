@@ -24,11 +24,16 @@ const MODELS = "apps/web/src/game/models";
 export const glbNames = [
   "bike",
   "car",
+  "ghost",
+  "oni",
   "rider_a",
   "rider_b",
   "rider_c",
+  "seraph",
   "van",
 ] as const;
+
+export type GlbName = (typeof glbNames)[number];
 
 const manifestChunk = Schema.Struct({
   assets: Schema.optionalKey(Schema.Array(Schema.String)),
@@ -264,7 +269,10 @@ const glbInventory = Effect.fnUntraced(function* glbInventory(
     .filter((file) => file.endsWith(".glb"))
     .map((file) => file.slice(0, -".glb".length))
     .toSorted();
-  if (sourceNames.join(",") !== [...glbNames].toSorted().join(",")) {
+  if (
+    side.name === "B" &&
+    sourceNames.join(",") !== [...glbNames].toSorted().join(",")
+  ) {
     problems.push(
       `GLB inventory is ${sourceNames.join(", ")}; expected ${glbNames.join(", ")}`
     );

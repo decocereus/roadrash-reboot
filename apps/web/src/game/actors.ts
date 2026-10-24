@@ -5,7 +5,8 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { glows, paintPrimitives } from "./assets.ts";
-import type { Assets, Palette, Primitive } from "./assets.ts";
+import type { Assets, BikeParts, Palette, Primitive } from "./assets.ts";
+import type { BikeModelId } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
@@ -43,6 +44,7 @@ const LIVERY_COLOUR = `#include <color_vertex>
 vColor.xyz = mix(mix(vColor.xyz, instancePaint, livery.x), instanceTrim, livery.y);`;
 
 export interface BikeRider {
+  readonly model: BikeModelId;
   readonly paint: number;
   readonly police: boolean;
 }
@@ -72,6 +74,16 @@ interface Wheel {
 interface BikePart {
   readonly mesh: THREE.InstancedMesh;
   readonly wheel: Wheel | null;
+}
+
+interface ModelFleet {
+  readonly parts: readonly BikePart[];
+  readonly paint: THREE.InstancedBufferAttribute;
+  readonly trim: THREE.InstancedBufferAttribute;
+  readonly slotRider: Int32Array;
+  count: number;
+  firstRecoloured: number;
+  lastRecoloured: number;
 }
 
 export const reachOf = (shading: Shading): Reach => ({
@@ -159,21 +171,13 @@ const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
 };
 
 export const createBikes = (
-  assets: Pick<Assets, "bike">,
+  assets: Pick<Assets, "bikes">,
   shading: Shading,
   riders: readonly BikeRider[]
 ): Bikes => {
   const group = new THREE.Group();
   const capacity = riders.length;
   const roots = riders.map(() => new THREE.Object3D());
-  const paint = new THREE.InstancedBufferAttribute(
-    new Float32Array(capacity * 3),
-    3
-  );
-  const trim = new THREE.InstancedBufferAttribute(
-    new Float32Array(capacity * 3),
-    3
-  );
   const paints = new Float32Array(capacity * 3);
   const trims = new Float32Array(capacity * 3);
   const tint = new THREE.Color();
@@ -193,38 +197,75 @@ export const createBikes = (
     turns: new Float64Array(capacity),
     z,
   }));
-  const parts: BikePart[] = [];
-  const addPart = (name: string, wheel: Wheel | null, shift: THREE.Vector3) => {
-    const primitives = assets.bike.get(name) ?? [];
-    const painted = paintPrimitives(primitives, LIVERY_SLOTS);
-    if (painted.cel) {
-      const geometry = painted.cel.translate(shift.x, shift.y, shift.z);
-      geometry.setAttribute(
-        "livery",
-        liveryOf(primitives, geometry.getAttribute("position").count)
-      );
-      geometry.setAttribute("instancePaint", paint);
-      geometry.setAttribute("instanceTrim", trim);
-      const mesh = instanced(geometry, material, capacity, true);
-      group.add(mesh);
-      parts.push({ mesh, wheel });
+
+  const modelFleet = (bike: BikeParts, seats: number): ModelFleet => {
+    const paint = new THREE.InstancedBufferAttribute(
+      new Float32Array(seats * 3),
+      3
+    );
+    const trim = new THREE.InstancedBufferAttribute(
+      new Float32Array(seats * 3),
+      3
+    );
+    const parts: BikePart[] = [];
+    const addPart = (
+      name: string,
+      wheel: Wheel | null,
+      shift: THREE.Vector3
+    ) => {
+      const primitives = bike.get(name) ?? [];
+      const painted = paintPrimitives(primitives, LIVERY_SLOTS);
+      if (painted.cel) {
+        const geometry = painted.cel.translate(shift.x, shift.y, shift.z);
+        geometry.setAttribute(
+          "livery",
+          liveryOf(primitives, geometry.getAttribute("position").count)
+        );
+        geometry.setAttribute("instancePaint", paint);
+        geometry.setAttribute("instanceTrim", trim);
+        const mesh = instanced(geometry, material, seats, true);
+        group.add(mesh);
+        parts.push({ mesh, wheel });
+      }
+      if (painted.glow) {
+        const geometry = painted.glow.translate(shift.x, shift.y, shift.z);
+        const mesh = instanced(geometry, shading.glowPaint(), seats, false);
+        group.add(mesh);
+        parts.push({ mesh, wheel });
+      }
+    };
+    addPart("bike_body", null, new THREE.Vector3());
+    for (let index = 0; index < WHEELS.length; index += 1) {
+      const wheel = WHEELS[index];
+      if (!wheel) {
+        continue;
+      }
+      const [name, radius, z] = wheel;
+      addPart(name, wheels[index] ?? null, new THREE.Vector3(0, -radius, -z));
     }
-    if (painted.glow) {
-      const geometry = painted.glow.translate(shift.x, shift.y, shift.z);
-      const mesh = instanced(geometry, shading.glowPaint(), capacity, false);
-      group.add(mesh);
-      parts.push({ mesh, wheel });
-    }
+    return {
+      count: 0,
+      firstRecoloured: seats,
+      lastRecoloured: -1,
+      paint,
+      parts,
+      slotRider: new Int32Array(seats).fill(-1),
+      trim,
+    };
   };
-  addPart("bike_body", null, new THREE.Vector3());
-  for (let index = 0; index < WHEELS.length; index += 1) {
-    const wheel = WHEELS[index];
-    if (!wheel) {
-      continue;
+
+  const fleetByModel = new Map<BikeModelId, ModelFleet>();
+  const fleetOf = riders.map((rider) => {
+    const known = fleetByModel.get(rider.model);
+    if (known) {
+      return known;
     }
-    const [name, radius, z] = wheel;
-    addPart(name, wheels[index] ?? null, new THREE.Vector3(0, -radius, -z));
-  }
+    const seats = riders.filter((each) => each.model === rider.model).length;
+    const fleet = modelFleet(assets.bikes[rider.model], seats);
+    fleetByModel.set(rider.model, fleet);
+    return fleet;
+  });
+  const fleets = [...fleetByModel.values()];
   const police = riders.filter((rider) => rider.police).length;
   const beacons =
     police > 0
@@ -235,42 +276,45 @@ export const createBikes = (
   }
 
   const shown = new Uint8Array(capacity);
-  const slotRider = new Int32Array(capacity).fill(-1);
   const sags = new Float32Array(capacity);
   const frame = new THREE.Matrix4();
   const body = new THREE.Matrix4();
   const pivot = new THREE.Matrix4();
 
-  const recolour = (slot: number, index: number): boolean => {
-    if (slotRider[slot] === index) {
-      return false;
+  const recolour = (fleet: ModelFleet, slot: number, index: number): void => {
+    if (fleet.slotRider[slot] === index) {
+      return;
     }
-    slotRider[slot] = index;
-    paint.setXYZ(
+    fleet.slotRider[slot] = index;
+    fleet.firstRecoloured = Math.min(fleet.firstRecoloured, slot);
+    fleet.lastRecoloured = slot;
+    fleet.paint.setXYZ(
       slot,
       paints[index * 3] ?? 1,
       paints[index * 3 + 1] ?? 1,
       paints[index * 3 + 2] ?? 1
     );
-    trim.setXYZ(
+    fleet.trim.setXYZ(
       slot,
       trims[index * 3] ?? 1,
       trims[index * 3 + 1] ?? 1,
       trims[index * 3 + 2] ?? 1
     );
-    return true;
   };
 
   return {
     commit(anchor) {
       group.position.copy(anchor);
-      let slot = 0;
       let cop = 0;
-      let firstRecoloured = capacity;
-      let lastRecoloured = -1;
+      for (const fleet of fleets) {
+        fleet.count = 0;
+        fleet.firstRecoloured = fleet.slotRider.length;
+        fleet.lastRecoloured = -1;
+      }
       for (let index = 0; index < capacity; index += 1) {
         const root = roots[index];
-        if (shown[index] === 0 || !root) {
+        const fleet = fleetOf[index];
+        if (shown[index] === 0 || !root || !fleet) {
           continue;
         }
         shown[index] = 0;
@@ -286,27 +330,30 @@ export const createBikes = (
         }
         pivot.makeTranslation(0, -(sags[index] ?? 0), 0);
         body.multiplyMatrices(frame, pivot);
-        for (const part of parts) {
-          part.mesh.setMatrixAt(slot, part.wheel?.frame ?? body);
+        for (const part of fleet.parts) {
+          part.mesh.setMatrixAt(fleet.count, part.wheel?.frame ?? body);
         }
         if (beacons && riders[index]?.police === true) {
           beacons.setMatrixAt(cop, body);
           cop += 1;
         }
-        if (recolour(slot, index)) {
-          firstRecoloured = Math.min(firstRecoloured, slot);
-          lastRecoloured = slot;
-        }
-        slot += 1;
+        recolour(fleet, fleet.count, index);
+        fleet.count += 1;
       }
-      for (const { mesh } of parts) {
-        showPrefix(mesh, slot);
+      for (const fleet of fleets) {
+        for (const { mesh } of fleet.parts) {
+          showPrefix(mesh, fleet.count);
+        }
+        uploadSpan(
+          fleet.paint,
+          fleet.firstRecoloured,
+          fleet.lastRecoloured + 1
+        );
+        uploadSpan(fleet.trim, fleet.firstRecoloured, fleet.lastRecoloured + 1);
       }
       if (beacons) {
         showPrefix(beacons, cop);
       }
-      uploadSpan(paint, firstRecoloured, lastRecoloured + 1);
-      uploadSpan(trim, firstRecoloured, lastRecoloured + 1);
     },
     dispose() {
       disposeTree(group);

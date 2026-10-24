@@ -14,6 +14,7 @@ import { assetParsers } from "../src/game/assets.ts";
 import type {
   AssetParsers,
   Assets,
+  BikeParts,
   Decoded,
   Primitive,
   RiderAsset,
@@ -21,13 +22,24 @@ import type {
 import characterization from "./asset-characterization.json" with { type: "json" };
 
 const urls: ModelUrls = {
-  bike: "/models/bike.glb",
+  bikes: {
+    classic: "/models/bike.glb",
+    ghost: "/models/ghost.glb",
+    oni: "/models/oni.glb",
+    seraph: "/models/seraph.glb",
+  },
   car: "/models/car.glb",
   riders: ["/models/rider_a.glb", "/models/rider_b.glb", "/models/rider_c.glb"],
   van: "/models/van.glb",
 };
 
-const everyUrl = [urls.bike, urls.car, urls.van, ...urls.riders].toSorted();
+const bikeUrl = urls.bikes.classic;
+const everyUrl = [
+  ...Object.values(urls.bikes),
+  urls.car,
+  urls.van,
+  ...urls.riders,
+].toSorted();
 
 type Answer = () => Promise<Response>;
 
@@ -216,23 +228,29 @@ const until = async (test: () => boolean): Promise<void> => {
 };
 
 describe("asset loading through the Effect boundary", () => {
-  it("loads six models and keeps them until the owner releases them, once each", async () => {
+  it("loads nine models and keeps them until the owner releases them, once each", async () => {
     const fetches = fetchesOf();
     const parsing = parsingOf();
     const mounted = mount(runtimeOf(fetches, new Map()), parsing.parsers);
     const outcome = await loadedOf(mounted);
     expect({
-      bike: outcome.assets.bike instanceof Map,
+      bikes: Object.keys(outcome.assets.bikes).toSorted(),
       fetched: [...fetches.calls.keys()].toSorted(),
       riders: outcome.assets.riders.length,
-    }).toStrictEqual({ bike: true, fetched: everyUrl, riders: 3 });
+    }).toStrictEqual({
+      bikes: ["classic", "ghost", "oni", "seraph"],
+      fetched: everyUrl,
+      riders: 3,
+    });
     await nextTurn();
     expect(totalOf(parsing.releases)).toBe(0);
     outcome.release();
     outcome.release();
     mounted.abort();
     await nextTurn();
-    expect([...parsing.releases.values()]).toStrictEqual([1, 1, 1, 1, 1, 1]);
+    expect([...parsing.releases.values()]).toStrictEqual([
+      1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]);
     expect({
       fallbacks: mounted.fallbacks,
       settled: mounted.settled.length,
@@ -243,7 +261,7 @@ describe("asset loading through the Effect boundary", () => {
     const cache: ByteCache = new Map();
     const fetches = fetchesOf(
       new Map([
-        [urls.bike, [failing("The network is down.")]],
+        [bikeUrl, [failing("The network is down.")]],
         [urls.car, [status(503)]],
         [urls.van, [brokenBody]],
       ])
@@ -251,7 +269,7 @@ describe("asset loading through the Effect boundary", () => {
     const mounted = mount(runtimeOf(fetches, cache), parsingOf().parsers);
     await expect(mounted.outcome).resolves.toHaveProperty("kind", "loaded");
     expect(
-      [urls.bike, urls.car, urls.van].map((url) => fetches.calls.get(url))
+      [bikeUrl, urls.car, urls.van].map((url) => fetches.calls.get(url))
     ).toStrictEqual([2, 2, 2]);
     expect(new TextDecoder().decode(cache.get(urls.car))).toBe(urls.car);
     expect([...cache.keys()].toSorted()).toStrictEqual(everyUrl);
@@ -271,7 +289,7 @@ describe("asset loading through the Effect boundary", () => {
     const second = mount(runtime, parsingOf().parsers);
     await expect(second.outcome).resolves.toHaveProperty("kind", "loaded");
     expect({
-      bike: fetches.calls.get(urls.bike),
+      bike: fetches.calls.get(bikeUrl),
       van: fetches.calls.get(urls.van),
     }).toStrictEqual({ bike: 1, van: 3 });
   });
@@ -309,25 +327,25 @@ describe("asset loading through the Effect boundary", () => {
       decodes: next.decodes.get(urls.car),
       fetched: totalOf(fetches.calls),
       kind: second.kind,
-    }).toStrictEqual({ decodes: 1, fetched: 6, kind: "loaded" });
+    }).toStrictEqual({ decodes: 1, fetched: 9, kind: "loaded" });
   });
 
   it("aborts a pending fetch through its real signal and reports only the interruption", async () => {
     const pending = Promise.withResolvers<Response>();
     const fetches = fetchesOf(
-      new Map([[urls.bike, [async () => await pending.promise]]])
+      new Map([[bikeUrl, [async () => await pending.promise]]])
     );
     const parsing = parsingOf();
     const mounted = mount(runtimeOf(fetches, new Map()), parsing.parsers);
-    await until(() => fetches.calls.has(urls.bike));
+    await until(() => fetches.calls.has(bikeUrl));
     mounted.abort();
     await expect(mounted.outcome).resolves.toStrictEqual({
       kind: "interrupted",
     });
     expect(fetches.signals.some((signal) => signal.aborted)).toBeTruthy();
     expect({
-      bikeDecoded: parsing.decodes.has(urls.bike),
-      calls: fetches.calls.get(urls.bike),
+      bikeDecoded: parsing.decodes.has(bikeUrl),
+      calls: fetches.calls.get(bikeUrl),
       unreleased: totalOf(parsing.decodes) - totalOf(parsing.releases),
     }).toStrictEqual({ bikeDecoded: false, calls: 1, unreleased: 0 });
     await nextTurn();
@@ -339,7 +357,7 @@ describe("asset loading through the Effect boundary", () => {
     const received: AbortSignal[] = [];
     const transport: Transport = {
       fetch: async (url, init) => {
-        if (url !== urls.bike) {
+        if (url !== bikeUrl) {
           return await bytesOf(url)();
         }
         if (init.signal) {
@@ -376,7 +394,7 @@ describe("asset loading through the Effect boundary", () => {
       new Map([[urls.van, [async () => await late.promise]]])
     );
     const mounted = mount(runtimeOf(fetchesOf(), new Map()), parsing.parsers);
-    await until(() => parsing.decodes.size === 6);
+    await until(() => parsing.decodes.size === 9);
     mounted.abort();
     await nextTurn();
     expect(mounted.settled).toStrictEqual([]);
@@ -384,7 +402,9 @@ describe("asset loading through the Effect boundary", () => {
     await expect(mounted.outcome).resolves.toStrictEqual({
       kind: "interrupted",
     });
-    expect([...parsing.releases.values()]).toStrictEqual([1, 1, 1, 1, 1, 1]);
+    expect([...parsing.releases.values()]).toStrictEqual([
+      1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]);
   });
 
   it("releases every finished sibling and the late one when one model fails", async () => {
@@ -396,7 +416,7 @@ describe("asset loading through the Effect boundary", () => {
       ])
     );
     const mounted = mount(runtimeOf(fetchesOf(), new Map()), parsing.parsers);
-    await until(() => parsing.decodes.size === 6);
+    await until(() => parsing.decodes.size === 9);
     await nextTurn();
     late.resolve(null);
     const outcome = await mounted.outcome;
@@ -407,7 +427,7 @@ describe("asset loading through the Effect boundary", () => {
     expect({
       broken: parsing.releases.has(urls.riders[1]),
       counts: [...parsing.releases.values()],
-    }).toStrictEqual({ broken: false, counts: [1, 1, 1, 1, 1] });
+    }).toStrictEqual({ broken: false, counts: [1, 1, 1, 1, 1, 1, 1, 1] });
   });
 
   it("keeps loading when the display font fails and hands its cause to the boundary", async () => {
@@ -450,7 +470,9 @@ describe("asset loading through the Effect boundary", () => {
     });
     await done.promise;
     await nextTurn();
-    expect([...parsing.releases.values()]).toStrictEqual([1, 1, 1, 1, 1, 1]);
+    expect([...parsing.releases.values()]).toStrictEqual([
+      1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]);
   });
 });
 
@@ -493,11 +515,19 @@ const riderSummary = (rider: RiderAsset) => {
   };
 };
 
-const summary = (assets: Assets) => ({
-  bike: [...assets.bike].map(([name, primitives]) => ({
+const partsSummary = (parts: BikeParts) =>
+  [...parts].map(([name, primitives]) => ({
     name,
     primitives: primitives.map(primitiveSummary),
-  })),
+  }));
+
+const summary = (assets: Assets) => ({
+  bikes: {
+    classic: partsSummary(assets.bikes.classic),
+    ghost: partsSummary(assets.bikes.ghost),
+    oni: partsSummary(assets.bikes.oni),
+    seraph: partsSummary(assets.bikes.seraph),
+  },
   car: assets.car.map(primitiveSummary),
   riders: assets.riders.map(riderSummary),
   van: assets.van.map(primitiveSummary),
