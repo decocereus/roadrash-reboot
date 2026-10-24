@@ -1,5 +1,7 @@
+import { rungsOf, rungsWithin } from "@racer/career/rules";
+import type { RaceRules } from "@racer/career/rules";
 import type { BillConsequence } from "@racer/career/settle";
-import { chapters } from "@racer/career/story";
+import { chapterOf } from "@racer/career/story";
 import { prizeFor } from "@racer/career/tables";
 import type { Level, RoadId } from "@racer/career/tables";
 import type { RivalId } from "@racer/sim/cast";
@@ -15,7 +17,8 @@ export const introCards = [
   "Don't go broke.",
 ] as const;
 
-export const levelName = (level: Level): string => chapters[level].name;
+export const levelName = (rules: RaceRules, level: Level): string =>
+  chapterOf(rules, level).name;
 
 export const roadDescriptions = {
   "breakwater-run":
@@ -67,19 +70,20 @@ export const magsLine = (raceId: number): string =>
   magsLines[Math.abs(raceId) % magsLines.length] ?? magsLines[0];
 
 const vicCards = {
-  1: "Top three on all five roads and you move up. Don't go broke. V.",
-  2: "Longer roads. Two cops. Bigger purses. The garage got a delivery. V.",
-  3: "Longer again. Three cops, and the new ones are quicker. V.",
-  4: "Four cops. Everyone's armed now. Try to keep up. V.",
-  5: "Five roads left. The Ridge is last. She'll be waiting. V.",
+  1: "Top three on all five roads and you move up. Don't go broke.",
+  2: "Longer roads and bigger purses. The garage got a delivery.",
+  3: "The new cops are quicker.",
+  4: "Everyone's armed now. Try to keep up.",
+  5: "Five roads left. The Ridge is last. She'll be waiting.",
 } as const satisfies Record<Level, string>;
 
-const SIGNATURE = " V.";
+export const vicCard = (rules: RaceRules, level: Level): string =>
+  rungsWithin(rungsOf(rules, level))
+    .map((rung) => vicCards[rung])
+    .join(" ");
 
-export const vicCard = (level: Level): string =>
-  vicCards[level].slice(0, -SIGNATURE.length);
-
-export const firstPrize = (level: Level): number => prizeFor(level, 1);
+export const firstPrize = (rules: RaceRules, level: Level): number =>
+  prizeFor(rules, level, 1);
 
 export const BROKE_CARD =
   "You owe more than a Gutter Pup is worth, which is saying something. We're done.";

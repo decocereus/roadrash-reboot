@@ -6,6 +6,7 @@ import type { BikeClass, PacingRules, PoliceSetup } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import type { RoadId, RoadLevel } from "@racer/track/road";
 
+import { climbOf, levelReaching, rungsOf, rungsWithin } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 
 export type { RoadId } from "@racer/track/road";
@@ -77,7 +78,7 @@ export const ENVELOPE_PAYMENT = 1500;
 export const ENVELOPE_CLAWBACK = 2000;
 
 export const ALLY: RivalId = "dee-santangelo";
-export const ALLY_LEVEL: Level = 3;
+export const ALLY_RUNG: Level = 3;
 export const ALLY_BREAKING_KNOCKDOWNS = 2;
 
 export const CHAMPION: RivalId = "juno-kade";
@@ -119,7 +120,7 @@ const repairMultiplier = {
   middleweight: 1.5,
 } as const satisfies Record<BikeClass, number>;
 
-export const fines = {
+const fines = {
   1: 400,
   2: 900,
   3: 1500,
@@ -167,7 +168,7 @@ const policeLevels = {
   },
 } as const satisfies Record<Level, PoliceLevel>;
 
-export const pacingLevels = {
+const pacingLevels = {
   1: { catchUp: 0.08, leadEase: 0.22 },
   2: { catchUp: 0.07, leadEase: 0.2 },
   3: { catchUp: 0.06, leadEase: 0.18 },
@@ -175,7 +176,7 @@ export const pacingLevels = {
   5: { catchUp: 0.04, leadEase: 0.14 },
 } as const satisfies Record<Level, PacingRules>;
 
-export const stockLevel = {
+const stockLevel = {
   "brack-anvil-1100": 4,
   "brack-stoker-800": 2,
   "gutter-pup-250": 1,
@@ -187,17 +188,47 @@ export const stockLevel = {
   "ostra-sette-750": 2,
 } as const satisfies Record<BikeId, Level>;
 
-export const stockArrivingAt = (level: Level): readonly BikeId[] =>
-  bikeIds.filter((bikeId) => stockLevel[bikeId] === level);
+const fieldRung = (rules: RaceRules, level: Level): Level =>
+  rungsOf(rules, level).highest;
 
-export const prizeFor = (level: Level, place: number): number =>
-  prizes[level][place - 1] ?? 0;
+export const pacingFor = (rules: RaceRules, level: Level): PacingRules =>
+  pacingLevels[fieldRung(rules, level)];
 
-export const repeatPrizeFor = (level: Level, place: number): number =>
-  place <= QUALIFYING_PLACE ? prizeFor(level, place) * REPEAT_RATE : 0;
+export const arrivalOf = (rules: RaceRules, bikeId: BikeId): Level =>
+  levelReaching(rules, stockLevel[bikeId]);
 
-export const repairBill = (level: Level, bikeId: BikeId): number =>
-  repairBase[level] * repairMultiplier[bikes[bikeId].bikeClass];
+export const stockArrivingAt = (
+  rules: RaceRules,
+  level: Level
+): readonly BikeId[] => {
+  const arriving = rungsWithin(rungsOf(rules, level));
+  return bikeIds.filter((bikeId) => arriving.includes(stockLevel[bikeId]));
+};
+
+export const prizeFor = (
+  rules: RaceRules,
+  level: Level,
+  place: number
+): number =>
+  (prizes[fieldRung(rules, level)][place - 1] ?? 0) * climbOf(rules, level);
+
+export const repeatPrizeFor = (
+  rules: RaceRules,
+  level: Level,
+  place: number
+): number =>
+  place <= QUALIFYING_PLACE ? prizeFor(rules, level, place) * REPEAT_RATE : 0;
+
+export const repairBill = (
+  rules: RaceRules,
+  level: Level,
+  bikeId: BikeId
+): number =>
+  repairBase[fieldRung(rules, level)] *
+  repairMultiplier[bikes[bikeId].bikeClass];
+
+export const fineFor = (rules: RaceRules, level: Level): number =>
+  fines[fieldRung(rules, level)];
 
 export const tradeInOf = (bikeId: BikeId): number =>
   bikeId === REPOSSESSION_BIKE
@@ -213,12 +244,15 @@ export const policeFor = (
   rules: RaceRules,
   level: Level,
   region: RegionId
-): PoliceSetup => ({
-  beat: policeLevels[level].beat,
-  bike: bikes[policeLevels[level].bike],
-  count: rules.police[level],
-  fine: fines[level],
-  officer: officerFor(region).profile,
-  sightRange: policeLevels[level].sightRange,
-  topSpeed: policeLevels[level].topSpeed,
-});
+): PoliceSetup => {
+  const police = policeLevels[fieldRung(rules, level)];
+  return {
+    beat: police.beat,
+    bike: bikes[police.bike],
+    count: rules.police[level],
+    fine: fineFor(rules, level),
+    officer: officerFor(region).profile,
+    sightRange: police.sightRange,
+    topSpeed: police.topSpeed,
+  };
+};

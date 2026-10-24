@@ -13,7 +13,7 @@ Oil slicks, small rocks, and potholes lie on the road, mostly where a rider is s
 
 ## How to get to it (user POV)
 
-- Ride any road at level 1 to 5. Level 1 has four to seven hazards per road; later levels add more, and every hazard from a lower level is in the same place with the same id.
+- Ride any road at any level the served rules hold. Level 1 has four to seven hazards per road; later levels add more, and every hazard from a lower level is in the same place with the same id.
 - Breakwater Run's first hazard is a rock at 920 m. Its first oil slick is at 3,145 m, in the outer lane at the turn-in of a bend.
 - Cut a bend close and the apex pothole is there; run wide on the exit and an oil slick or a rock is there.
 

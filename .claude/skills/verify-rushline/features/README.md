@@ -45,6 +45,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): ramps, time in the air, landings, and landing dust.
+- [Roadside clearance](./roadside-clearance.md): signs, trees, posts and ramp beacons that give way to the chase camera on the shoulder, and signs that never show what stands behind them.
 - [Road hazards](./hazards.md): where oil, rocks, and potholes lie, how each draws, what contact costs by speed, what missing one costs, and the frame rate with them on screen.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
 - [Race rules](./race-rules.md): the served field size and level count, a ten-racer grid, a three-level career, and the save a level above them refused.

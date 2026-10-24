@@ -287,6 +287,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/career/bar.ts",
       "apps/web/src/career/bike-stats.ts",
       "apps/web/src/career/copy.ts",
+      "apps/web/src/career/copy.test.ts",
       "apps/web/src/career/flow.ts",
       "apps/web/src/career/format.ts",
       "apps/web/src/career/notes.ts",
@@ -341,7 +342,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     summary:
       "The chase camera behind the player's bike: its framing along the road, the field of view that widens with speed, the buffet, and the drop when the rider tucks.",
     title: "Chase camera",
-    verify: [],
+    verify: ["roadside-clearance.md"],
   },
   {
     docs: [
@@ -369,6 +370,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/game/world.ts",
       "apps/web/src/game/city.ts",
+      "apps/web/src/game/clearance.ts",
       "apps/web/src/game/ground.ts",
       "apps/web/src/game/greybox.ts",
       "apps/web/src/game/roadside.ts",
@@ -379,6 +381,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/sky-texture.ts",
       "apps/web/src/game/sign-*.ts",
       "apps/web/src/game/texture-canvas.ts",
+      "apps/web/test/roadside-clearance.test.ts",
     ],
     perf: sceneCounts,
     start: [
@@ -387,9 +390,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/city.ts",
     ],
     summary:
-      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player. A plan that carries its own scenery gets a greybox instead: world-space ground, grey blocks, a flat lake and simple trees.",
+      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground, grey blocks, a flat lake and simple trees.",
     title: "Roads, cities and scenery on screen",
-    verify: [],
+    verify: ["roadside-clearance.md"],
   },
   {
     docs: [

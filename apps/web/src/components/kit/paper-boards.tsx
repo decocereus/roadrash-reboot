@@ -1,3 +1,4 @@
+import { recordedRules } from "@racer/career/bench";
 import { practiceCareer } from "@racer/career/field";
 import { seasonBoard } from "@racer/career/season";
 import { cn } from "@racer/ui/utils";
@@ -34,7 +35,7 @@ export const ChromeBoard = () => {
       note="Every bar-side screen: the header, a pinned list on the left, a written sheet, and the strip along the bottom. The pinned list takes steppers, details, and a compact one-line mode."
       title="Bar chrome and sheets"
     >
-      <BarHeader career={career} />
+      <BarHeader standing={{ career, rules: recordedRules }} />
       <PinnedList
         actions={[
           {
@@ -167,7 +168,7 @@ export const ConfirmBoard = () => {
       note="Confirm pins a ruled slip over the dimmed room. Escape or the safe choice closes it, and focus goes back to the opener."
       title="Confirm"
     >
-      <BarHeader career={career} />
+      <BarHeader standing={{ career, rules: recordedRules }} />
       <BarStrip>
         <button
           className="font-display text-neon-yellow cursor-pointer uppercase"

@@ -1,9 +1,10 @@
-import { benchRaces, benchSetup } from "@racer/career/bench";
+import { benchRaces, benchSetup, recordedRules } from "@racer/career/bench";
 import type { Bench } from "@racer/career/bench";
 import { practiceSetup } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
+import { levelsOf } from "@racer/career/rules";
 import { bikeIds } from "@racer/sim/bikes";
-import { roadAtLevel, roadIds, roadLevels } from "@racer/track/road";
+import { roadAtLevel, roadIds } from "@racer/track/road";
 import type { RoadId, RoadLevel } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
@@ -27,6 +28,7 @@ export const benchOf = (search: string): Bench | null => {
 export const benchPlan = (bench: Bench): RacePlan => ({
   bikeId: benchRaces[bench].bikeId,
   mode: "quick",
+  rules: recordedRules,
   setup: benchSetup(bench),
 });
 
@@ -47,7 +49,7 @@ export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
   }
   const flags = new URLSearchParams(search);
   const level =
-    roadLevels.find((each) => each === Number(flags.get("level"))) ?? 1;
+    levelsOf(rules).find((each) => each === Number(flags.get("level"))) ?? 1;
   const road = rideRoad(flags.get("ride"), level);
   if (!road) {
     return null;
@@ -67,6 +69,7 @@ export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
   return {
     bikeId,
     mode: "quick",
+    rules,
     setup:
       company === "alone"
         ? {

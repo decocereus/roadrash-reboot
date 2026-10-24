@@ -1,3 +1,5 @@
+import { rungsOf, rungsWithin } from "./rules.ts";
+import type { RaceRules } from "./rules.ts";
 import type { CareerState, EndingId, EnvelopeFlag } from "./state.ts";
 import { ENVELOPE_LEVEL, ENVELOPE_PAYMENT } from "./tables.ts";
 import type { Level } from "./tables.ts";
@@ -7,7 +9,7 @@ export interface StoryChapter {
   readonly note: string;
 }
 
-export const chapters = {
+const chapters = {
   1: {
     name: "New Meat",
     note: 'You roll into the Lowside car park on a Halden Wren with $1,500 and no reputation. Vic pins a Polaroid of you to the board under "NEW MEAT" and tells you the deal: top three on all five roads and you move up. Juno Kade is at the bar and does not look up. Moose introduces himself and apologises in advance. Texts arrive from numbers you never gave out ("Dee: are you the one with the red bike. you\'re in my lane"). When you qualify the last road, Vic moves your Polaroid up a row and writes "KID CAN RIDE" under it. Juno looks up.',
@@ -26,7 +28,7 @@ export const chapters = {
   },
   5: {
     name: "The Long Ridge",
-    note: "The last race of the season is Ridge Road at full length, 13.15 km, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.",
+    note: "The last race of the season is Ridge Road, and it opens only when you have qualified the other four roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.",
   },
 } as const satisfies Record<Level, StoryChapter>;
 
@@ -45,13 +47,22 @@ export const endings = {
   },
 } as const satisfies Record<EndingId, StoryChapter>;
 
+export const chapterOf = (rules: RaceRules, level: Level): StoryChapter => {
+  const rungs = rungsOf(rules, level);
+  return {
+    name: chapters[rungs.highest].name,
+    note: rungsWithin(rungs)
+      .map((rung) => chapters[rung].note)
+      .join(" "),
+  };
+};
+
 export const ENVELOPE_NOTE = "Breakwater Run. Behind the boy. V.";
 export const LEFT_RACE_NOTE =
   "You left a race. The bike didn't make it home. V.";
 
 export interface StoryBeat {
   readonly level: Level;
-  readonly chapter: StoryChapter;
   readonly envelope: EnvelopeFlag;
   readonly envelopeOpen: boolean;
   readonly deeAlly: boolean;
@@ -68,7 +79,6 @@ const envelopeOpen = (career: CareerState): boolean =>
   career.activeRace === null;
 
 export const storyBeat = (career: CareerState): StoryBeat => ({
-  chapter: chapters[career.level],
   deeAlly: career.story.deeAlly,
   ending: career.story.ending,
   endingChapter: career.story.ending ? endings[career.story.ending] : null,

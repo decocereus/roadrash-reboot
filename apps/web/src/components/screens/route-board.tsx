@@ -111,7 +111,7 @@ export const RouteBoardScreen = ({
           className="object-cover"
           src={backRoomPlates.backdrop}
         />
-        <BarHeader career={career} />
+        <BarHeader standing={career ? { career, rules } : null} />
         <button
           aria-label={`${status.road.name}. Show another road`}
           className="cursor-pointer"

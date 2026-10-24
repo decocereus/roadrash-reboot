@@ -1,3 +1,4 @@
+import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
@@ -95,6 +96,7 @@ const Alert = ({
 
 export const BackRoomScreen = ({
   save,
+  rules,
   failure,
   onContinue,
   onNewCareer,
@@ -102,6 +104,7 @@ export const BackRoomScreen = ({
   onStartOver,
 }: {
   readonly save: SaveState;
+  readonly rules: RaceRules | null;
   readonly failure: string;
   readonly onContinue: () => void;
   readonly onNewCareer: () => void;
@@ -146,7 +149,13 @@ export const BackRoomScreen = ({
           className="object-cover"
           src={backRoomPlates.backdrop}
         />
-        <BarHeader career={save.status === "ready" ? save.career : null} />
+        <BarHeader
+          standing={
+            save.status === "ready" && rules
+              ? { career: save.career, rules }
+              : null
+          }
+        />
         {save.status !== "loading" && (
           <PinnedList
             actions={[...career, ...quick]}

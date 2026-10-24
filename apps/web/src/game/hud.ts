@@ -1,5 +1,6 @@
 import type { CareerRaceSetup } from "@racer/career/field";
 import type { RaceOutcome } from "@racer/career/outcome";
+import type { RaceRules } from "@racer/career/rules";
 import type { BikeId } from "@racer/sim/bikes";
 
 import type { PrepareOutcome } from "./preparation.ts";
@@ -11,6 +12,7 @@ export type RaceMode = "career" | "quick";
 export interface RacePlan {
   readonly mode: RaceMode;
   readonly bikeId: BikeId;
+  readonly rules: RaceRules;
   readonly setup: CareerRaceSetup;
 }
 

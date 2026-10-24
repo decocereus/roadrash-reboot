@@ -1,9 +1,10 @@
 import type { BikeId } from "@racer/sim/bikes";
+import { rivalIds } from "@racer/sim/cast";
 
 import { finaleOpen, isFinale, roadOpen } from "./field.ts";
 import { resultLine } from "./lines.ts";
 import type { RivalLine } from "./lines.ts";
-import { remember } from "./memory.ts";
+import { remember, sitOut } from "./memory.ts";
 import { abandonedOutcome } from "./outcome.ts";
 import type {
   Placing,
@@ -12,7 +13,7 @@ import type {
   RivalIncidents,
 } from "./outcome.ts";
 import { summaryOf } from "./result.ts";
-import { levelAfter } from "./rules.ts";
+import { levelAfter, rungsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { scoreRace } from "./season.ts";
 import { BOARD_NOTES, nextRaceId, qualifiedCount } from "./state.ts";
@@ -29,13 +30,13 @@ import {
   AD_REPAIR_RATE,
   ALLY,
   ALLY_BREAKING_KNOCKDOWNS,
-  ALLY_LEVEL,
+  ALLY_RUNG,
   creditLimitOf,
   ENVELOPE_CLAWBACK,
   ENVELOPE_LEVEL,
   ENVELOPE_RIVAL,
   ENVELOPE_ROAD,
-  fines,
+  fineFor,
   prizeFor,
   QUALIFYING_PLACE,
   repairBill,
@@ -215,17 +216,16 @@ const envelopeDue = (career: CareerState, outcome: RaceOutcome): boolean =>
   placeOf(outcome, ENVELOPE_RIVAL) > outcome.place;
 
 const repairOf = (
+  rules: RaceRules,
   race: ActiveRace,
   outcome: RaceOutcome,
   offer: RepairOffer
 ): number => {
+  const full = repairBill(rules, race.level, race.bikeId);
   if (outcome.result === "wrecked") {
-    return (
-      repairBill(race.level, race.bikeId) *
-      (offer === "half" ? AD_REPAIR_RATE : 1)
-    );
+    return full * (offer === "half" ? AD_REPAIR_RATE : 1);
   }
-  return outcome.result === "quit" ? repairBill(race.level, race.bikeId) : 0;
+  return outcome.result === "quit" ? full : 0;
 };
 
 interface DatedNote {
@@ -234,6 +234,7 @@ interface DatedNote {
 }
 
 const datedNotes = (
+  rules: RaceRules,
   outcome: RaceOutcome,
   incident: RivalIncidents
 ): DatedNote[] => {
@@ -269,7 +270,7 @@ const datedNotes = (
   }
   if (incident.busted !== "none") {
     notes.push({
-      note: { fine: fines[level], kind: "busted", rival, roadId },
+      note: { fine: fineFor(rules, level), kind: "busted", rival, roadId },
       tick: incident.bustedTick,
     });
   }
@@ -288,9 +289,9 @@ const datedNotes = (
   return notes;
 };
 
-const notesOf = (outcome: RaceOutcome): BoardNote[] =>
+const notesOf = (rules: RaceRules, outcome: RaceOutcome): BoardNote[] =>
   outcome.incidents
-    .flatMap((incident) => datedNotes(outcome, incident))
+    .flatMap((incident) => datedNotes(rules, outcome, incident))
     .toSorted((left, right) => right.tick - left.tick)
     .map((dated) => dated.note);
 
@@ -299,6 +300,9 @@ const memoryAfter = (
   outcome: RaceOutcome
 ): CareerState["memory"] => {
   const memory = { ...career.memory };
+  for (const rival of rivalIds) {
+    memory[rival] = sitOut(career.memory[rival]);
+  }
   for (const incidents of outcome.incidents) {
     memory[incidents.rival] = remember(
       career.memory[incidents.rival],
@@ -348,6 +352,7 @@ interface Bill {
 }
 
 const billOf = (
+  rules: RaceRules,
   career: CareerState,
   race: ActiveRace,
   outcome: RaceOutcome,
@@ -357,10 +362,12 @@ const billOf = (
   const earned = repeat ? repeatPrizeFor : prizeFor;
   return {
     envelope: envelopeDue(career, outcome) ? -ENVELOPE_CLAWBACK : 0,
-    fine: outcome.result === "busted" ? fines[race.level] : 0,
+    fine: outcome.result === "busted" ? fineFor(rules, race.level) : 0,
     prize:
-      outcome.result === "finished" ? earned(race.level, outcome.place) : 0,
-    repair: repairOf(race, outcome, offer),
+      outcome.result === "finished"
+        ? earned(rules, race.level, outcome.place)
+        : 0,
+    repair: repairOf(rules, race, outcome, offer),
     repairHalved: outcome.result === "wrecked" && offer === "half",
     repeat,
   };
@@ -413,7 +420,7 @@ const progressOf = (
     isFinale(rules, roadId, level) &&
     career.story.ending === null;
   return {
-    arrivals: promoted ? stockArrivingAt(nextLevel) : [],
+    arrivals: promoted ? stockArrivingAt(rules, nextLevel) : [],
     ending: crowned ? endingOf(career, outcome) : null,
     level: nextLevel,
     newlyQualified,
@@ -423,12 +430,13 @@ const progressOf = (
 };
 
 const allyAfter = (
+  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome,
   progress: Progress
 ): boolean => {
   if (progress.promoted) {
-    return progress.level >= ALLY_LEVEL;
+    return rungsOf(rules, progress.level).highest >= ALLY_RUNG;
   }
   const knockdowns =
     outcome.incidents.find((incident) => incident.rival === ALLY)
@@ -449,13 +457,14 @@ const envelopeAfter = (
 };
 
 const storyAfter = (
+  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome,
   progress: Progress,
   bill: Bill
 ): StoryFlags => ({
   ...career.story,
-  deeAlly: allyAfter(career, outcome, progress),
+  deeAlly: allyAfter(rules, career, outcome, progress),
   ending: progress.ending ?? career.story.ending,
   envelope: envelopeAfter(career.story, progress),
   envelopeClawedBack: career.story.envelopeClawedBack || bill.envelope !== 0,
@@ -499,7 +508,7 @@ export const settleRace = (
   if (!sameRace(race, outcome)) {
     return refused(career, "wrongRace");
   }
-  const bill = billOf(career, race, outcome, offer);
+  const bill = billOf(rules, career, race, outcome, offer);
   const debt = checkDebt(
     career.cash + bill.prize - bill.repair - bill.fine + bill.envelope,
     career.bikeId
@@ -516,7 +525,7 @@ export const settleRace = (
         bikeId,
         kind: "newBike",
       })),
-      ...notesOf(outcome),
+      ...notesOf(rules, outcome),
       ...career.board,
     ].slice(0, BOARD_NOTES),
     cash: debt.cash,
@@ -529,7 +538,7 @@ export const settleRace = (
     qualified: { ...career.qualified, [race.level]: progress.roads },
     record: recordAfter(career.record, outcome, bill.prize),
     season: scoreRace(career.season, outcome.placings, career.record.starts),
-    story: storyAfter(career, outcome, progress, bill),
+    story: storyAfter(rules, career, outcome, progress, bill),
   };
   const ledger: Ledger = {
     ...bill,
@@ -552,7 +561,10 @@ export const settleRace = (
   return {
     career: {
       ...settled,
-      lastResult: { ledger, summary: summaryOf(race, outcome, bill.prize) },
+      lastResult: {
+        ledger,
+        summary: summaryOf(rules, race, outcome, bill.prize),
+      },
       story: { ...settled.story, finaleUnlocked: finaleOpen(rules, settled) },
     },
     ledger,

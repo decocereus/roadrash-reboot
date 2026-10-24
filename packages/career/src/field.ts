@@ -9,6 +9,7 @@ import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
+import { rungsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { newCareer, nextRaceId, qualifiedCount } from "./state.ts";
 import type { CareerState, RivalMemory } from "./state.ts";
@@ -18,7 +19,7 @@ import {
   CHAMPION_STAND_IN,
   FINALE_AGGRESSION,
   FINALE_ROAD,
-  pacingLevels,
+  pacingFor,
   policeFor,
   prizeFor,
   repeatPrizeFor,
@@ -124,11 +125,12 @@ export const setupFor = (
 ): CareerRaceSetup => {
   const { level } = career;
   const field = fieldFor(rules, roadId, level, seed);
+  const rung = rungsOf(rules, level).highest;
   return {
     field,
     gridOrder: "playerLast",
     level,
-    pacing: pacingLevels[level],
+    pacing: pacingFor(rules, level),
     player: {
       ...defaultPlayer,
       bike: bikes[career.bikeId],
@@ -140,7 +142,7 @@ export const setupFor = (
     rivals: field.map((rival) =>
       withMemory(
         {
-          ...rivalAt(rivals[rival], level),
+          ...rivalAt(rivals[rival], rung),
           aggression: aggressionOf(rules, rival, roadId, level),
         },
         career.memory[rival],
@@ -238,8 +240,8 @@ export const roadsFor = (rules: RaceRules, career: CareerState): RoadBoard => {
     finale: isFinale(rules, road.id, level),
     firstPrize:
       qualified[road.id] === undefined
-        ? prizeFor(level, 1)
-        : repeatPrizeFor(level, 1),
+        ? prizeFor(rules, level, 1)
+        : repeatPrizeFor(rules, level, 1),
     home: homeRiders(road.id, level),
     lengthMetres: road.lengths[level],
     open: roadOpen(rules, career, road.id),

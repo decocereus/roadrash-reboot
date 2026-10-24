@@ -107,7 +107,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 
 | Flag | Effect |
 | --- | --- |
-| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, level 1 to 5. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`, and `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`. |
+| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, at any level the served rules hold (1 to 3 by default); a higher `level` rides level 1. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`, and `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`. |
 | `?bike=<bikeId>&with=alone\|field\|traffic` (DEV) | With `?ride`: the player's bike (ids in `packages/sim/src/bikes.ts`), and who rides along. `alone` drops rivals, police and traffic, `field` drops traffic, `traffic` is the full race and the default. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including ramps. |
@@ -121,7 +121,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
 | `?rung=<n>` | Pin a rung of the quality ladder: 0 full, 1 shadow 2048, 2 lean bloom, 3 no multisampling, then the pixel ratio in steps of 0.1. The governor stays off. |
 
-Ramps, by kilometre: Breakwater Run 4.05 and 5.42, Cinder Wash 4.25 and 5.30, Hollow Pine Road 3.33 and 7.76, Slag Row 4.72 and 7.28 (and 10.88 from level 4), Ridge Road 8.29. Every ramp sits right of the centre line. Roads end between 8.45 and 9.25 km at level 1 and 1,150 m later per level.
+Ramps, by kilometre: Breakwater Run 4.05 and 5.42, Cinder Wash 4.25 and 5.30, Hollow Pine Road 3.33 and 7.76, Slag Row 4.72 and 7.28 (and 10.88 on level-4 roads, which only a rules file serving four or more levels rides), Ridge Road 8.29. Every ramp sits right of the centre line. Roads end between 8.45 and 9.25 km at level 1 and 1,150 m later per level.
 
 ### Alternative: the T3 Code browser
 

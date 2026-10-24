@@ -263,6 +263,7 @@ export default defineConfig({
     {
       files: ["apps/web/src/game/**/*.ts"],
       rules: {
+        "rushline/no-distance-hide": "error",
         "rushline/numeric-draw-sort": "error",
         "rushline/ranged-buffer-upload": "error",
       },

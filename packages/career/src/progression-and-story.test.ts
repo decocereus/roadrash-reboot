@@ -29,10 +29,10 @@ describe("moving up", () => {
       roadList.slice(0, 4).map((entry) => ({ place: 3, roadId: entry.id }))
     );
     const fifth = play(four, { place: 1, roadId: "ridge-road" });
-    const lockedBefore = shopStock(four)
+    const lockedBefore = shopStock(recordedRules, four)
       .filter((row) => row.refusal === "locked")
       .map((row) => row.bikeId);
-    const lockedAfter = shopStock(fifth.career)
+    const lockedAfter = shopStock(recordedRules, fifth.career)
       .filter((row) => row.refusal === "locked")
       .map((row) => row.bikeId);
     expect([
