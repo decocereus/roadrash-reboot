@@ -17,6 +17,7 @@ const PALM = new THREE.Vector3(0, 0.055, 0);
 const SETTLED = 1;
 const FRAME = 1 / 60;
 const CORNER_FRAMES = 240;
+const SEATED_FRAMES = 30;
 
 const repository = path.join(import.meta.dirname, "../../..");
 const shading = createShading(lookOf("salt-coast"));
@@ -115,6 +116,23 @@ const placesOf = (figure: RiderFigure) => {
   };
 };
 
+const tuckedCorner = Array.from(
+  { length: CORNER_FRAMES },
+  (_, frame): Partial<Stance> => {
+    const lean = Math.sin(frame * FRAME * Math.PI * 1.3);
+    return { lean, tuck: 1 - 0.25 * Math.abs(lean) };
+  }
+);
+
+const kickLanding: readonly Partial<Stance>[] = [
+  ...[1, 0.84, 0.64, 0.36].map((rise): Partial<Stance> => ({
+    pose: "kick",
+    rise,
+    side: -1,
+  })),
+  ...Array.from({ length: SEATED_FRAMES }, () => ({})),
+];
+
 const riderUrls = [
   ...modelUrls.figures,
   ...Object.values(modelUrls.celebrities),
@@ -144,30 +162,27 @@ describe("planted hands and feet on every shipped rider", () => {
     }
   );
 
-  it.each(riderUrls)(
-    "%s keeps both palms on the grips through a tucked corner",
-    async (url) => {
-      const figure = await figureOf(url);
-      figure.animate(stanceOf({}), SETTLED);
-      const grips = placesOf(figure);
-      figure.animate(stanceOf({ tuck: 1 }), SETTLED);
-      let worst = 0;
-      for (let frame = 0; frame < CORNER_FRAMES; frame += 1) {
-        const seconds = frame * FRAME;
-        const lean = Math.sin(seconds * Math.PI * 1.3);
-        figure.animate(
-          stanceOf({ lean, tuck: 1 - 0.25 * Math.abs(lean) }),
-          FRAME
-        );
-        const places = placesOf(figure);
-        worst = Math.max(
-          worst,
-          places.hand_l.distanceTo(grips.hand_l),
-          places.hand_r.distanceTo(grips.hand_r)
-        );
-      }
-      figure.dispose();
-      expect(worst).toBeLessThan(CONTACT);
+  it.each(
+    riderUrls.flatMap((url) => [
+      [url, "a tucked corner", tuckedCorner] as const,
+      [url, "a kick dropping back to the seat", kickLanding] as const,
+    ])
+  )("%s keeps both palms on the grips through %s", async (url, _, frames) => {
+    const figure = await figureOf(url);
+    figure.animate(stanceOf({}), SETTLED);
+    const grips = placesOf(figure);
+    figure.animate(stanceOf(frames[0] ?? {}), SETTLED);
+    let worst = 0;
+    for (const frame of frames) {
+      figure.animate(stanceOf(frame), FRAME);
+      const places = placesOf(figure);
+      worst = Math.max(
+        worst,
+        places.hand_l.distanceTo(grips.hand_l),
+        places.hand_r.distanceTo(grips.hand_r)
+      );
     }
-  );
+    figure.dispose();
+    expect(worst).toBeLessThan(CONTACT);
+  });
 });

@@ -294,6 +294,7 @@ export const createRiderFigure = (
     }
     if (striking(pose)) {
       settleBase(stance);
+      planter.plant(base, lift, "seated", side);
       const to =
         pose === "kick"
           ? sideOf(riding.kicked, side)
@@ -311,12 +312,11 @@ export const createRiderFigure = (
   return {
     animate(stance, seconds) {
       skeleton.stale = true;
+      lift.copy(sideOf(lifts, stance.side)).multiplyScalar(stance.rise);
       const target = aim(stance);
       if (!target) {
         return;
       }
-      lift.copy(sideOf(lifts, stance.side)).multiplyScalar(stance.rise);
-      planter.plant(target, lift, stance.pose, stance.side);
       if (resting) {
         root.add(model);
       }
@@ -336,6 +336,7 @@ export const createRiderFigure = (
           blend
         );
       }
+      planter.plant(current, lift, stance.pose, stance.side);
       apply();
       model.position.copy(lift);
       showWeapon(
