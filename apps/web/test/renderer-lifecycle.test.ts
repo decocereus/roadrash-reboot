@@ -33,8 +33,12 @@ const bytesOf = (url: string): ArrayBuffer => {
 
 const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.riders;
-  const [bike, car, van, a, b, c] = await Promise.all([
-    assetParsers.parts(bytesOf(modelUrls.bike), modelUrls.bike),
+  const { classic, ghost, oni, seraph } = modelUrls.bikes;
+  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c] = await Promise.all([
+    assetParsers.parts(bytesOf(classic), classic),
+    assetParsers.parts(bytesOf(ghost), ghost),
+    assetParsers.parts(bytesOf(oni), oni),
+    assetParsers.parts(bytesOf(seraph), seraph),
     assetParsers.whole(bytesOf(modelUrls.car), modelUrls.car),
     assetParsers.whole(bytesOf(modelUrls.van), modelUrls.van),
     assetParsers.rider(bytesOf(riderA), riderA),
@@ -42,7 +46,12 @@ const pinnedAssets = async (): Promise<Assets> => {
     assetParsers.rider(bytesOf(riderC), riderC),
   ]);
   return {
-    bike: bike.value,
+    bikes: {
+      classic: bikeA.value,
+      ghost: bikeB.value,
+      oni: bikeC.value,
+      seraph: bikeD.value,
+    },
     car: car.value,
     riders: [a.value, b.value, c.value],
     van: van.value,

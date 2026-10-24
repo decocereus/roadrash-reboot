@@ -311,7 +311,11 @@ export const GarageScreen = ({
           className="object-cover"
           src={garagePlates.backdrop}
         />
-        <BikeStand paint={showroomPaint[row.bikeId]} style={place(STAND)} />
+        <BikeStand
+          bikeId={row.bikeId}
+          paint={showroomPaint[row.bikeId]}
+          style={place(STAND)}
+        />
         <Plate box={MECHANIC} src={garagePlates.mechanic} />
         <SpeechSticker
           at={MECHANIC_SPEECH}

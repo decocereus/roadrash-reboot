@@ -142,9 +142,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
     perf: [
       "assets.glb.bike",
       "assets.glb.car",
+      "assets.glb.ghost",
+      "assets.glb.oni",
       "assets.glb.rider_a",
       "assets.glb.rider_b",
       "assets.glb.rider_c",
+      "assets.glb.seraph",
       "assets.glb.van",
       "assets.glb.total",
     ],

@@ -4,12 +4,12 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import type * as Scope from "effect/Scope";
 
-import type { AssetRequest, BikeRequest, LoadRequest } from "./asset-load.ts";
+import type { AssetRequest, BikesRequest, LoadRequest } from "./asset-load.ts";
 import {
   AssetDecoder,
   FontReadiness,
   loadAssets,
-  loadBike,
+  loadBikes,
   ModelTransport,
 } from "./assets/load.ts";
 import type { ByteCache, Fonts, Transport } from "./assets/load.ts";
@@ -24,7 +24,7 @@ interface AssetServices {
 
 interface AssetRuntime {
   readonly mount: (request: AssetRequest) => void;
-  readonly mountBike: (request: BikeRequest) => void;
+  readonly mountBikes: (request: BikesRequest) => void;
 }
 
 type Needs = AssetParsers | Fonts | Scope.Scope | Transport;
@@ -88,11 +88,11 @@ export const createAssetRuntime = (
     });
   };
 
-  const mountBike = (request: BikeRequest): void => {
-    hold(loadBike(cache, urls), request);
+  const mountBikes = (request: BikesRequest): void => {
+    hold(loadBikes(cache, urls), request);
   };
 
-  return { mount, mountBike };
+  return { mount, mountBikes };
 };
 
 const pageCache: ByteCache = new Map();

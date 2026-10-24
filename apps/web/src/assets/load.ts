@@ -125,11 +125,22 @@ interface Loaded {
   readonly fontFallback: FontReadinessFailed | null;
 }
 
-export const loadBike = Effect.fn("assets.loadBike")(function* loadBike(
+const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
+  Effect.all(
+    {
+      classic: model(cache, bikes.classic, bikeParts),
+      ghost: model(cache, bikes.ghost, bikeParts),
+      oni: model(cache, bikes.oni, bikeParts),
+      seraph: model(cache, bikes.seraph, bikeParts),
+    },
+    { concurrency: "unbounded" }
+  );
+
+export const loadBikes = Effect.fn("assets.loadBikes")(function* loadBikes(
   cache: ByteCache,
   urls: ModelUrls
 ) {
-  return yield* model(cache, urls.bike, bikeParts);
+  return yield* bikeModels(cache, urls);
 });
 
 export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
@@ -137,10 +148,10 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
   urls: ModelUrls
 ) {
   const [buildA, buildB, buildC] = urls.riders;
-  const [bike, car, van, riderA, riderB, riderC, fontFallback] =
+  const [bikes, car, van, riderA, riderB, riderC, fontFallback] =
     yield* Effect.all(
       [
-        model(cache, urls.bike, bikeParts),
+        bikeModels(cache, urls),
         model(cache, urls.car, wholeModel),
         model(cache, urls.van, wholeModel),
         model(cache, buildA, riderModel),
@@ -151,7 +162,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       { concurrency: "unbounded" }
     );
   const loaded: Loaded = {
-    assets: { bike, car, riders: [riderA, riderB, riderC], van },
+    assets: { bikes, car, riders: [riderA, riderB, riderC], van },
     fontFallback,
   };
   return loaded;
