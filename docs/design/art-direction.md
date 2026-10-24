@@ -134,7 +134,7 @@ The Blender master and the PNG atlas stay with the art. Export the rider to `too
 | Ranveer GLB with its atlas | 302,744 B, 29,816 triangles | `assets.glb.rider_ranveer`, exact |
 | Texture memory of every shipped atlas | 33,554,424 B, six atlases | `assets.texture.total`, exact |
 | Draw calls per rider | one skinned mesh, textured or not | `apps/web/test/renderer-lifecycle.test.ts` |
-| Shader programs | one more, the painted cel material with a map, compiled in warm-up when a race shows a celebrity | none yet, because the `?stress` race shows no celebrity |
+| Shader programs | one more, the painted cel material with a map, compiled in warm-up and shared by every celebrity on screen: the `?stress` race wearing all six has 44 programs and 84 textures, against 43 and 78 without | none, because the GPU lane's races wear no celebrity |
 
 A new celebrity adds its own exact GLB row and raises `assets.texture.total` by one atlas, both from a build-lane baseline run.
 
