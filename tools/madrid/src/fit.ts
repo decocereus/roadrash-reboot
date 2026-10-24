@@ -587,6 +587,7 @@ export const fitPolyline = (
   line: readonly Position[],
   options: FitOptions
 ): Fit => {
+  const raw = resample(line, 0);
   const source = resample(line, SOURCE_SMOOTHING_M);
   const whole = gridOf(Math.round(source.lengthM), options.pieceLengthM);
   const free = solve(
@@ -598,7 +599,7 @@ export const fitPolyline = (
     SETTLE_ITERATIONS
   );
   const { bounds, grid, solved } = settle(source, whole, free.model, options);
-  const deviationM = distancesOf(source, solved);
+  const deviationM = distancesOf(raw, solved);
   const sorted = deviationM.toSorted();
   let squares = 0;
   for (const value of deviationM) {
@@ -615,11 +616,11 @@ export const fitPolyline = (
       p95M: percentile(sorted, 0.95),
       rmsM: Math.sqrt(squares / deviationM.length),
     },
-    forced: forcedSpans(source, grid, solved, deviationM, bounds),
+    forced: forcedSpans(raw, grid, solved, deviationM, bounds),
     lengthM: solved.line.length,
     minRadiusM: 1 / tightest,
     pieces: piecesOf(grid, solved.model.knots),
-    sourceLengthM: source.lengthM,
+    sourceLengthM: raw.lengthM,
     start: solved.model.start,
   };
 };
