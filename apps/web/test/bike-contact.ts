@@ -130,79 +130,83 @@ export const run = async (view: View, build = 0) => {
     bikes.group,
     figure.root
   );
-  pipeline.prepare(scene);
-  const camera = new THREE.PerspectiveCamera(
-    30,
-    CELL_WIDTH / CELL_HEIGHT,
-    0.1,
-    40
-  );
-  camera.position.copy(views[view]);
-  camera.lookAt(
-    0,
-    view === "detail" ? 0.7 : 0.78,
-    view === "detail" ? -0.05 : 0
-  );
-  camera.updateMatrixWorld();
-  shading.aim(camera);
-  const sheet = sheetCanvas();
-  const contacts: Record<string, Record<string, number[]>> = {};
-  for (let row = 0; row < bikeModelIds.length; row += 1) {
-    const model = bikeModelIds[row];
-    const bike = bikes.roots[row];
-    if (!(model && bike)) {
-      continue;
-    }
-    for (let column = 0; column < poses.length; column += 1) {
-      const pose = poses[column];
-      if (!pose) {
+  try {
+    pipeline.prepare(scene);
+    const camera = new THREE.PerspectiveCamera(
+      30,
+      CELL_WIDTH / CELL_HEIGHT,
+      0.1,
+      40
+    );
+    camera.position.copy(views[view]);
+    camera.lookAt(
+      0,
+      view === "detail" ? 0.7 : 0.78,
+      view === "detail" ? -0.05 : 0
+    );
+    camera.updateMatrixWorld();
+    shading.aim(camera);
+    const sheet = sheetCanvas();
+    const contacts: Record<string, Record<string, number[]>> = {};
+    for (let row = 0; row < bikeModelIds.length; row += 1) {
+      const model = bikeModelIds[row];
+      const bike = bikes.roots[row];
+      if (!(model && bike)) {
         continue;
       }
-      bike.position.set(0, 0, 0);
-      bike.rotation.set(0, 0, -pose.roll, "YXZ");
-      bike.updateMatrixWorld();
-      figure.root.position.copy(bike.position);
-      figure.root.quaternion.copy(bike.quaternion);
-      figure.root.translateY(figure.seat.y);
-      figure.root.translateZ(figure.seat.z);
-      const stance = stanceOf(pose);
-      for (let step = 0; step < SETTLE_STEPS; step += 1) {
-        figure.animate(stance, 1);
-      }
-      figure.root.updateMatrixWorld(true);
-      bikes.show(row);
-      bikes.commit(new THREE.Vector3());
-      pipeline.render(scene, camera);
-      sheet.drawImage(
-        renderer.domElement,
-        column * CELL_WIDTH * PIXEL_RATIO,
-        row * CELL_HEIGHT * PIXEL_RATIO
-      );
-      sheet.fillText(
-        `${model} ${pose.name}`,
-        (column * CELL_WIDTH + 8) * PIXEL_RATIO,
-        (row * CELL_HEIGHT + 20) * PIXEL_RATIO
-      );
-      if (pose.name === "rest" && row === 0) {
-        for (const name of CONTACT_BONES) {
-          const bone = figure.root.getObjectByName(name);
-          if (bone) {
-            contacts[name] = {
-              rest: inBikeSpace(
-                bike,
-                bone.getWorldPosition(new THREE.Vector3())
-              ),
-            };
+      for (let column = 0; column < poses.length; column += 1) {
+        const pose = poses[column];
+        if (!pose) {
+          continue;
+        }
+        bike.position.set(0, 0, 0);
+        bike.rotation.set(0, 0, -pose.roll, "YXZ");
+        bike.updateMatrixWorld();
+        figure.root.position.copy(bike.position);
+        figure.root.quaternion.copy(bike.quaternion);
+        figure.root.translateY(figure.seat.y);
+        figure.root.translateZ(figure.seat.z);
+        const stance = stanceOf(pose);
+        for (let step = 0; step < SETTLE_STEPS; step += 1) {
+          figure.animate(stance, 1);
+        }
+        figure.root.updateMatrixWorld(true);
+        bikes.show(row);
+        bikes.commit(new THREE.Vector3());
+        pipeline.render(scene, camera);
+        sheet.drawImage(
+          renderer.domElement,
+          column * CELL_WIDTH * PIXEL_RATIO,
+          row * CELL_HEIGHT * PIXEL_RATIO
+        );
+        sheet.fillText(
+          `${model} ${pose.name}`,
+          (column * CELL_WIDTH + 8) * PIXEL_RATIO,
+          (row * CELL_HEIGHT + 20) * PIXEL_RATIO
+        );
+        if (pose.name === "rest" && row === 0) {
+          for (const name of CONTACT_BONES) {
+            const bone = figure.root.getObjectByName(name);
+            if (bone) {
+              contacts[name] = {
+                rest: inBikeSpace(
+                  bike,
+                  bone.getWorldPosition(new THREE.Vector3())
+                ),
+              };
+            }
           }
         }
       }
     }
+    return { build, contacts, notes, seat: figure.seat.toArray(), view };
+  } finally {
+    light.dispose();
+    figure.dispose();
+    bikes.dispose();
+    shading.dispose();
+    pipeline.dispose();
+    renderer.dispose();
+    release();
   }
-  figure.dispose();
-  bikes.dispose();
-  shading.dispose();
-  pipeline.dispose();
-  renderer.dispose();
-  release();
-  return { build, contacts, notes, seat: figure.seat.toArray(), view };
 };
