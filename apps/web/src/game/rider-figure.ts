@@ -13,8 +13,9 @@ import {
   flinchTurns,
   hangTurns,
   kickedFrom,
+  planterOf,
   riseOffset,
-  risenFrom,
+  risenTurns,
   sideOf,
   TUCK_TURNS,
   turnedFrom,
@@ -100,10 +101,12 @@ export const createRiderFigure = (
     turnedFrom(rig, base, turns);
   const tucked = bake(seated, TUCK_TURNS);
   const risen = {
-    left: risenFrom(rig, seated, -1),
-    right: risenFrom(rig, seated, 1),
+    left: bake(seated, risenTurns(-1)),
+    right: bake(seated, risenTurns(1)),
   };
   const lifts = { left: riseOffset(-1), right: riseOffset(1) };
+  const lift = new THREE.Vector3();
+  const planter = planterOf(rig, seated);
   const riding: Riding = {
     flinch: {
       left: bake(seated, flinchTurns(-1)),
@@ -312,6 +315,8 @@ export const createRiderFigure = (
       if (!target) {
         return;
       }
+      lift.copy(sideOf(lifts, stance.side)).multiplyScalar(stance.rise);
+      planter.plant(target, lift, stance.pose, stance.side);
       if (resting) {
         root.add(model);
       }
@@ -332,9 +337,7 @@ export const createRiderFigure = (
         );
       }
       apply();
-      model.position
-        .copy(sideOf(lifts, stance.side))
-        .multiplyScalar(stance.rise);
+      model.position.copy(lift);
       showWeapon(
         stance.pose === "surrender" ? "none" : stance.weapon,
         stance.pose,

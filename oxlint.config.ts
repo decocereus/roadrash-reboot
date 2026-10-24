@@ -82,6 +82,17 @@ export const codecFiles = [
 
 export const hotBodies = {
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
+  "apps/web/src/game/figure-ik.ts": [
+    ["placeChain"],
+    ["turnAbout"],
+    ["swingInto"],
+    ["swingGirdle"],
+    ["leanToward"],
+    ["spanAfter"],
+    ["reachFor"],
+    ["writeLocal"],
+  ],
+  "apps/web/src/game/figure-pose.ts": [["planterOf", "plant"]],
   "apps/web/src/game/fixed-tick.ts": [["createFixedTick", "advance"]],
   "apps/web/src/game/frame-loop.ts": [
     ["installFrameLoop", "noteCallback"],
