@@ -24,11 +24,15 @@
       {
         "file": "tools/perf/baselines/post-step8.celebrities.json.gz",
         "sha256": "6c4e2ed8db757b225d6869a97a7661a08f97b76f263168bb3ed14cecfe8ee9ad"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.riders.json.gz",
+        "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
       }
     ],
     "revision": "fd677a71c74167dc049a2bcf232f26f8f9abda86",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "90281f71daba5484b5a35e96320a7787131e9ab969f46761d3c412c32542842e"
+    "summarySha256": "52c3e6a1c0e3d9a0193b847b827e3e0123cde060e8e6286200db1ab9a32ec0ac"
   },
   "limits": [
     {
@@ -570,6 +574,30 @@
       "source": "gpu-2026-10-22T17-28-48-380Z-edb664a-edb664a",
       "unit": "triangles",
       "value": 2929237
+    },
+    {
+      "baseline": 0.3999999761581421,
+      "derivation": "2 x the worst B window at the first revision that plants the riders' hands every frame",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "riders.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
+      "unit": "ms",
+      "value": 0.8
+    },
+    {
+      "baseline": 0.5,
+      "derivation": "2 x the worst B window at the first revision that plants the riders' hands every frame",
+      "direction": "max",
+      "environment": "gpu-helium-metal",
+      "metric": "riders.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
+      "unit": "ms",
+      "value": 1
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",

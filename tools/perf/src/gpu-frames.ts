@@ -74,6 +74,7 @@ export const pageCapture = Schema.Struct({
   frameRate: Schema.NullOr(Schema.String),
   frames: Schema.Array(gpuFrame),
   longTasks: Schema.Array(longTask),
+  parts: Schema.Array(Schema.String),
   rows: Schema.Struct({
     ...workloadRows.fields,
     times: Schema.Array(Schema.Number),
@@ -313,6 +314,14 @@ const missedFractionOf = (samples: readonly GpuSample[]): number => {
   return missed / (intervals.length + missed);
 };
 
+const partTimesOf = (samples: readonly GpuSample[], part: string): number[] =>
+  samples
+    .flatMap(({ capture }) => {
+      const column = capture.parts.indexOf(part);
+      return capture.frames.map((frame) => frame.cpu[column] ?? Number.NaN);
+    })
+    .toSorted((left, right) => left - right);
+
 const shares = {
   "frame.interval.p50": 0.5,
   "frame.interval.p95": 0.95,
@@ -324,6 +333,7 @@ const judgedPerWindow: ReadonlySet<string> = new Set([
   "frame.interval.p95",
   "frame.interval.p99",
   "frame.missedFraction",
+  "riders.cpu.p95",
 ]);
 
 const frameReaders = {
@@ -354,6 +364,9 @@ const valueOf = (metric: string, samples: readonly GpuSample[]): number => {
   }
   if (metric === "main.longTask.blockingMs") {
     return total(samples.map(blockingOf));
+  }
+  if (metric === "riders.cpu.p95") {
+    return quantile(partTimesOf(samples, "riders"), 0.95);
   }
   const share =
     metric === "frame.interval.p50" ||
