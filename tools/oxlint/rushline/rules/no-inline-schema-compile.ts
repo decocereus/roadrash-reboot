@@ -3,23 +3,11 @@ import type { ESTree } from "@oxlint/plugins";
 
 import { variableNamed } from "../bindings.ts";
 import { namespaceNames } from "../effect-names.ts";
+import { enclosingFunction } from "../functions.ts";
 import { memberName } from "../property-name.ts";
 
 const schemaModules = new Set(["effect", "effect/Schema"]);
 const compiler = /^(?:decode|encode|validate|is$|asserts$)/u;
-
-const insideFunction = (node: ESTree.Node) => {
-  for (let current = node.parent; current !== null; current = current.parent) {
-    if (
-      current.type === "ArrowFunctionExpression" ||
-      current.type === "FunctionDeclaration" ||
-      current.type === "FunctionExpression"
-    ) {
-      return true;
-    }
-  }
-  return false;
-};
 
 const identifiersIn = (node: ESTree.Node): readonly ESTree.Node[] => {
   if (node.type === "Identifier") {
@@ -72,7 +60,7 @@ export const noInlineSchemaCompileRule = defineRule({
           callee.callee.object.type !== "Identifier" ||
           !schemaNames.has(callee.callee.object.name) ||
           !compiler.test(memberName(callee.callee, raw) ?? "") ||
-          !insideFunction(node) ||
+          enclosingFunction(node) === null ||
           callee.arguments.some((argument) => !isStatic(argument))
         ) {
           return;

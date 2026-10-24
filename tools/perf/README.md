@@ -40,6 +40,8 @@ Nothing rewrites the budgets. To measure a new baseline, run `node tools/perf/ga
 
 Each scenario's hash covers its window, its race setup and the road it runs on. The road enters as the compiled track: the sampled centreline with every zero counted as +0, the lanes, props, ramps and hazards, and the plan's race settings. How the plan writes its geometry stays out, so a change to the track format that compiles the same road keeps the hash, and side A at an older revision still matches side B. Every side reports its own hash, and a side whose hash differs from the registry's fails before any timing is judged.
 
+The harness runs on side A as well, so it names riders only in ways both sides understand. Side A's `RaceRun.pilot` takes an array slot, and side B's rider ids equal those slots, so the harness pilots each slot as its `RiderId` once `seatedAt` has checked it. A race ends on the player's `finish`, `busted` or `wrecked` event, the same rule the career's race log uses. Once the baseline revision has stable rider ids, the harness can read `rider.id` and `riderOf` instead.
+
 `node tools/perf/gate.ts --select-window` replays both races and checks that the registered windows are still the ones the fixed selection rule picks.
 
 ### `pnpm perf`

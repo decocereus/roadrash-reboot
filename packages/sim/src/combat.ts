@@ -5,11 +5,13 @@ import {
   BIKE_HALF_WIDTH,
   clamp,
   raceOwned,
+  riderOf,
   TICK_SECONDS,
 } from "./state.ts";
 import type {
   AttackKind,
   RaceState,
+  RiderId,
   RiderInput,
   RiderState,
   WeaponKind,
@@ -53,31 +55,21 @@ const reaches = (
 
 export const nearestRival = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   side: number,
   strike: StrikeSpec = punch
-): number => {
-  const rider = state.riders[riderIndex];
-  if (!rider) {
-    return -1;
-  }
-  let best = -1;
+): RiderState | undefined => {
+  let best: RiderState | undefined;
   let bestGap = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < state.riders.length; index += 1) {
-    const other = state.riders[index];
-    if (
-      !other ||
-      index === riderIndex ||
-      !canFight(other) ||
-      allies(rider, other)
-    ) {
+  for (const other of state.riders) {
+    if (other === rider || !canFight(other) || allies(rider, other)) {
       continue;
     }
     if (reaches(rider, other, side, strike)) {
       const gap = Math.abs(other.s - rider.s) + Math.abs(other.x - rider.x);
       if (gap < bestGap) {
         bestGap = gap;
-        best = index;
+        best = other;
       }
     }
   }
@@ -86,12 +78,11 @@ export const nearestRival = (
 
 export const grudgeSide = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   strike: StrikeSpec = punch
 ): number => {
-  const rider = state.riders[riderIndex];
-  const target = state.riders[rider?.grudge ?? -1];
-  if (!(rider && target) || target === rider || !canFight(target)) {
+  const target = riderOf(state.riders, rider.grudge);
+  if (!target || target === rider || !canFight(target)) {
     return 0;
   }
   const side = Math.sign(target.x - rider.x);
@@ -100,30 +91,27 @@ export const grudgeSide = (
 
 const strikeTarget = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   side: number,
   strike: StrikeSpec = punch
-): number => {
-  const rider = state.riders[riderIndex];
-  if (rider && grudgeSide(state, riderIndex, strike) === side) {
-    return rider.grudge;
-  }
-  return nearestRival(state, riderIndex, side, strike);
-};
+): RiderState | undefined =>
+  grudgeSide(state, rider, strike) === side
+    ? riderOf(state.riders, rider.grudge)
+    : nearestRival(state, rider, side, strike);
 
 const rivalSide = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   strike: StrikeSpec = punch
 ): number => {
-  const grudge = grudgeSide(state, riderIndex, strike);
+  const grudge = grudgeSide(state, rider, strike);
   if (grudge !== 0) {
     return grudge;
   }
-  if (nearestRival(state, riderIndex, -1, strike) >= 0) {
+  if (nearestRival(state, rider, -1, strike)) {
     return -1;
   }
-  if (nearestRival(state, riderIndex, 1, strike) >= 0) {
+  if (nearestRival(state, rider, 1, strike)) {
     return 1;
   }
   return 0;
@@ -131,9 +119,7 @@ const rivalSide = (
 
 const takeWeapon = (
   state: RaceState,
-  riderIndex: number,
   rider: RiderState,
-  targetIndex: number,
   target: RiderState
 ): void => {
   if (target.weapon === "none") {
@@ -144,8 +130,8 @@ const takeWeapon = (
   disarm(target);
   state.events.push({
     kind: "weaponTaken",
-    rider: riderIndex,
-    target: targetIndex,
+    rider: rider.id,
+    target: target.id,
     weapon: rider.weapon,
   });
 };
@@ -153,7 +139,8 @@ const takeWeapon = (
 interface Strike {
   readonly attack: AttackKind;
   readonly side: number;
-  readonly target: number;
+  readonly striker: RiderState;
+  readonly target: RiderState;
   readonly weapon: WeaponKind;
   takesWeapon: boolean;
 }
@@ -162,7 +149,7 @@ interface Melee {
   readonly parties: Party[];
   partyCount: number;
   readonly strikes: (Strike | undefined)[];
-  readonly thieves: number[];
+  readonly thieves: (Strike | undefined)[];
 }
 
 const meleeOf = raceOwned((): Melee => ({
@@ -172,11 +159,7 @@ const meleeOf = raceOwned((): Melee => ({
   thieves: [],
 }));
 
-const finishSwing = (
-  state: RaceState,
-  riderIndex: number,
-  rider: RiderState
-): void => {
+const finishSwing = (state: RaceState, rider: RiderState): void => {
   rider.attack = "none";
   rider.attackTicks = 0;
   if (rider.weapon === "none" || rider.weaponHits > 0) {
@@ -184,38 +167,32 @@ const finishSwing = (
   }
   const { weapon } = rider;
   disarm(rider);
-  state.events.push({ kind: "weaponBroken", rider: riderIndex, weapon });
+  state.events.push({ kind: "weaponBroken", rider: rider.id, weapon });
 };
 
 const landHit = (
   state: RaceState,
-  riderIndex: number,
-  { attack, side, takesWeapon, target: targetIndex, weapon }: Strike
+  { attack, side, striker, takesWeapon, target, weapon }: Strike
 ): void => {
-  const rider = state.riders[riderIndex];
-  const target = state.riders[targetIndex];
-  if (!rider || !target) {
-    return;
-  }
   const strike = strikeOf(attack, weapon);
   target.stamina = Math.max(0, target.stamina - strike.damage);
   target.lateralSpeed += side * strike.shove;
   target.speed *= 1 - HIT_SPEED_LOSS;
   target.hitStun = HIT_STUN_TICKS;
-  target.lastHitBy = riderIndex;
+  target.lastHitBy = striker.id;
   target.lastHitTick = state.tick;
   if (target.attack !== "none") {
-    finishSwing(state, targetIndex, target);
+    finishSwing(state, target);
   }
   state.events.push({
     attack,
     kind: "hit",
-    rider: riderIndex,
-    target: targetIndex,
+    rider: striker.id,
+    target: target.id,
     weapon,
   });
   if (takesWeapon) {
-    takeWeapon(state, riderIndex, rider, targetIndex, target);
+    takeWeapon(state, striker, target);
   }
 };
 
@@ -237,11 +214,7 @@ const wantedAttack = (
   return "none";
 };
 
-const aimStrike = (
-  state: RaceState,
-  riderIndex: number,
-  rider: RiderState
-): Strike | undefined => {
+const aimStrike = (state: RaceState, rider: RiderState): Strike | undefined => {
   if (!canFight(rider) || rider.attack === "none") {
     return undefined;
   }
@@ -249,72 +222,52 @@ const aimStrike = (
   if (rider.attackTicks - 1 !== strike.strikeTick) {
     return undefined;
   }
-  const target = strikeTarget(state, riderIndex, rider.attackSide, strike);
-  if (target < 0) {
+  const target = strikeTarget(state, rider, rider.attackSide, strike);
+  if (!target) {
     return undefined;
   }
   return {
     attack: rider.attack,
     side: rider.attackSide,
+    striker: rider,
     takesWeapon: false,
     target,
     weapon: rider.attack === "swing" ? rider.weapon : "none",
   };
 };
 
-const reachTo = (state: RaceState, riderIndex: number, strike: Strike) => {
-  const rider = state.riders[riderIndex];
-  const target = state.riders[strike.target];
-  if (!rider || !target) {
-    return Number.POSITIVE_INFINITY;
-  }
-  return Math.abs(target.s - rider.s) + Math.abs(target.x - rider.x);
-};
+const reachOf = ({ striker, target }: Strike): number =>
+  Math.abs(target.s - striker.s) + Math.abs(target.x - striker.x);
 
-const covets = (
-  state: RaceState,
-  riderIndex: number,
-  strike: Strike | undefined
-): strike is Strike =>
+const covets = (strike: Strike | undefined): strike is Strike =>
   strike?.attack === "kick" &&
-  state.riders[riderIndex]?.weapon === "none" &&
-  (state.riders[strike.target]?.weaponHits ?? 0) > 0;
+  strike.striker.weapon === "none" &&
+  strike.target.weaponHits > 0;
 
 const pickThieves = (state: RaceState, melee: Melee): void => {
   const { strikes, thieves } = melee;
   for (let index = 0; index < state.riders.length; index += 1) {
-    thieves[index] = -1;
+    thieves[index] = undefined;
   }
-  for (let index = 0; index < strikes.length; index += 1) {
-    const strike = strikes[index];
-    if (covets(state, index, strike)) {
-      const rival = thieves[strike.target] ?? -1;
-      const rivalStrike = strikes[rival];
-      if (
-        !rivalStrike ||
-        reachTo(state, index, strike) < reachTo(state, rival, rivalStrike)
-      ) {
-        thieves[strike.target] = index;
+  for (const strike of strikes) {
+    if (covets(strike)) {
+      const rival = thieves[strike.target.id];
+      if (!rival || reachOf(strike) < reachOf(rival)) {
+        thieves[strike.target.id] = strike;
       }
     }
   }
-  for (let index = 0; index < strikes.length; index += 1) {
-    const strike = strikes[index];
-    if (strike && thieves[strike.target] === index) {
+  for (const strike of strikes) {
+    if (strike && thieves[strike.target.id] === strike) {
       strike.takesWeapon = true;
     }
   }
 };
 
-const wearWeapons = (
-  state: RaceState,
-  strikes: readonly (Strike | undefined)[]
-): void => {
-  for (let index = 0; index < strikes.length; index += 1) {
-    const strike = strikes[index];
-    const rider = state.riders[index];
-    if (rider && strike && strike.weapon !== "none") {
-      rider.weaponHits -= 1;
+const wearWeapons = (strikes: readonly (Strike | undefined)[]): void => {
+  for (const strike of strikes) {
+    if (strike && strike.weapon !== "none") {
+      strike.striker.weaponHits -= 1;
     }
   }
 };
@@ -326,10 +279,10 @@ const settleStrikes = (
   const { strikes } = melee;
   for (let index = 0; index < state.riders.length; index += 1) {
     const rider = state.riders[index];
-    strikes[index] = rider ? aimStrike(state, index, rider) : undefined;
+    strikes[index] = rider ? aimStrike(state, rider) : undefined;
   }
   strikes.length = state.riders.length;
-  wearWeapons(state, strikes);
+  wearWeapons(strikes);
   pickThieves(state, melee);
   return strikes;
 };
@@ -343,23 +296,18 @@ export const coolDown = (state: RaceState): void => {
 
 export const landStrikes = (state: RaceState): void => {
   const strikes = settleStrikes(state, meleeOf(state));
-  for (let index = 0; index < strikes.length; index += 1) {
-    const strike = strikes[index];
+  for (const strike of strikes) {
     if (strike) {
-      landHit(state, index, strike);
+      landHit(state, strike);
     }
   }
 };
 
 export const stepAttack = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   input: RiderInput
 ): void => {
-  const rider = state.riders[riderIndex];
-  if (!rider) {
-    return;
-  }
   if (!canFight(rider)) {
     rider.attack = "none";
     rider.attackTicks = 0;
@@ -368,7 +316,7 @@ export const stepAttack = (
   if (rider.attack !== "none") {
     rider.attackTicks = Math.max(0, rider.attackTicks - 1);
     if (rider.attackTicks <= 0) {
-      finishSwing(state, riderIndex, rider);
+      finishSwing(state, rider);
     } else if (!(followingThrough(rider) && input.punch && !input.kick)) {
       return;
     }
@@ -377,15 +325,14 @@ export const stepAttack = (
     return;
   }
   if (rider.attack !== "none") {
-    finishSwing(state, riderIndex, rider);
+    finishSwing(state, rider);
   }
   const wanted = wantedAttack(rider, input);
   if (wanted === "none") {
     return;
   }
   const strike = strikeOf(wanted, rider.weapon);
-  const side =
-    rivalSide(state, riderIndex, strike) || (input.steer < 0 ? -1 : 1);
+  const side = rivalSide(state, rider, strike) || (input.steer < 0 ? -1 : 1);
   rider.attack = wanted;
   rider.attackSide = side;
   rider.attackTicks = strike.ticks;
@@ -393,7 +340,7 @@ export const stepAttack = (
   state.events.push({
     attack: wanted,
     kind: "attack",
-    rider: riderIndex,
+    rider: rider.id,
     side,
     weapon: wanted === "swing" ? rider.weapon : "none",
   });
@@ -401,7 +348,7 @@ export const stepAttack = (
 
 export type ThrowRider = (
   state: RaceState,
-  riderIndex: number,
+  rider: RiderState,
   cause: "rider",
   bikeKeep: number,
   bodyKeep: number,
@@ -419,12 +366,11 @@ interface Jolt {
   behind: number;
   struckGap: number;
   struckSpeed: number;
-  touchedBy: number;
+  touchedBy: RiderId | null;
   touchedGap: number;
 }
 
 interface Party {
-  index: number;
   rider: RiderState;
   readonly jolt: Jolt;
 }
@@ -440,7 +386,7 @@ const untouched: Readonly<Jolt> = {
   speedLoss: 0,
   struckGap: Number.POSITIVE_INFINITY,
   struckSpeed: 0,
-  touchedBy: -1,
+  touchedBy: null,
   touchedGap: Number.POSITIVE_INFINITY,
 };
 
@@ -459,20 +405,18 @@ const resetJolt = (jolt: Jolt): void => {
   jolt.touchedGap = untouched.touchedGap;
 };
 
-const createParty = (index: number, rider: RiderState): Party => ({
-  index,
+const createParty = (rider: RiderState): Party => ({
   jolt: { ...untouched },
   rider,
 });
 
-const joinParty = (melee: Melee, index: number, rider: RiderState): void => {
+const joinParty = (melee: Melee, rider: RiderState): void => {
   const party = melee.parties[melee.partyCount];
   if (party) {
-    party.index = index;
     party.rider = rider;
     resetJolt(party.jolt);
   } else {
-    melee.parties[melee.partyCount] = createParty(index, rider);
+    melee.parties[melee.partyCount] = createParty(rider);
   }
   melee.partyCount += 1;
 };
@@ -483,7 +427,7 @@ const touch = (party: Party, other: Party): void => {
     Math.abs(other.rider.x - party.rider.x);
   if (gap < party.jolt.touchedGap) {
     party.jolt.touchedGap = gap;
-    party.jolt.touchedBy = other.index;
+    party.jolt.touchedBy = other.rider.id;
   }
 };
 
@@ -504,8 +448,8 @@ const shoveApart = (
   if (left.rider.attackCooldown < CONTACT_COOLDOWN_TICKS) {
     state.events.push({
       kind: "riderContact",
-      other: right.index,
-      rider: left.index,
+      other: right.rider.id,
+      rider: left.rider.id,
     });
   }
 };
@@ -538,8 +482,8 @@ const rearEnd = (state: RaceState, rear: Party, front: Party): void => {
   );
   state.events.push({
     kind: "riderContact",
-    other: front.index,
-    rider: rear.index,
+    other: front.rider.id,
+    rider: rear.rider.id,
   });
 };
 
@@ -598,10 +542,10 @@ const bumpLossOf = (rider: RiderState, shoved: boolean): number => {
 
 const settle = (
   state: RaceState,
-  { index, jolt, rider }: Party,
+  { jolt, rider }: Party,
   throwRider: ThrowRider
 ): void => {
-  if (jolt.touchedBy >= 0) {
+  if (jolt.touchedBy !== null) {
     rider.lastHitBy = jolt.touchedBy;
     rider.lastHitTick = state.tick;
   }
@@ -613,7 +557,7 @@ const settle = (
   if (jolt.struckGap < Number.POSITIVE_INFINITY) {
     const speedAtImpact = rider.speed;
     rider.speed = jolt.struckSpeed * 0.9;
-    throwRider(state, index, "rider", 0.4, 0.6, speedAtImpact);
+    throwRider(state, rider, "rider", 0.4, 0.6, speedAtImpact);
     return;
   }
   const speedLoss = jolt.speedLoss + bumpLossOf(rider, jolt.shoved);
@@ -631,10 +575,9 @@ export const stepRiderContacts = (
   const melee = meleeOf(state);
   const { parties } = melee;
   melee.partyCount = 0;
-  for (let index = 0; index < state.riders.length; index += 1) {
-    const rider = state.riders[index];
-    if (rider && canFight(rider)) {
-      joinParty(melee, index, rider);
+  for (const rider of state.riders) {
+    if (canFight(rider)) {
+      joinParty(melee, rider);
     }
   }
   for (let position = 0; position < melee.partyCount; position += 1) {

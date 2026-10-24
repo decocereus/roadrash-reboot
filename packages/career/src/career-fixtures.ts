@@ -2,7 +2,13 @@ import type { BikeId } from "@racer/sim/bikes";
 import type { RivalId } from "@racer/sim/cast";
 import { pilotInput } from "@racer/sim/pilot";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
-import type { RaceState, RiderInput, RiderState } from "@racer/sim/state";
+import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
+import type {
+  RaceState,
+  RiderId,
+  RiderInput,
+  RiderState,
+} from "@racer/sim/state";
 import { eased } from "@racer/track/alignment";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
@@ -61,18 +67,36 @@ export const enter = (
   };
 };
 
-export const riderOf = (
+const riderIdOf = (race: Entered, racer: RivalId | "player"): RiderId => {
+  if (racer === "player") {
+    return PLAYER_RIDER;
+  }
+  const entrant = race.log.entrants.find((each) => each.rival === racer);
+  if (!entrant) {
+    throw new Error(`${racer} is not in this race.`);
+  }
+  return entrant.rider;
+};
+
+export const racerIn = (
   race: Entered,
   racer: RivalId | "player"
 ): RiderState => {
-  const rider =
-    race.state.riders[
-      racer === "player" ? 0 : race.setup.field.indexOf(racer) + 1
-    ];
+  const rider = riderOf(race.state.riders, riderIdOf(race, racer));
   if (!rider) {
     throw new Error(`${racer} is not in this race.`);
   }
   return rider;
+};
+
+const copIn = (race: Entered): RiderState => {
+  const cop = race.state.riders.find(
+    (rider) => rider.profile.role === "police"
+  );
+  if (!cop) {
+    throw new Error("The race has no cop.");
+  }
+  return cop;
 };
 
 export const ride = (
@@ -113,7 +137,7 @@ export const sprint = (
   const inputs = race.state.riders.map(() => neutralInput);
   inputs[0] = flatOut;
   for (const [slot, rival] of order.entries()) {
-    const rider = riderOf(race, rival);
+    const rider = racerIn(race, rival);
     const ahead = slot < place - 1;
     rider.s = ahead ? road.length - 40 - slot * 12 : 100 + slot * 10;
     rider.speed = ahead ? 40 : 0;
@@ -121,14 +145,14 @@ export const sprint = (
       ? flatOut
       : neutralInput;
   }
-  const player = riderOf(race, "player");
+  const player = racerIn(race, "player");
   player.s = road.length - playerGap;
   player.speed = 40;
   ride(race, 30, () => inputs);
 };
 
 export const crashOut = (race: Entered): void => {
-  const player = riderOf(race, "player");
+  const player = racerIn(race, "player");
   player.s = 300;
   player.speed = 30;
   player.condition = 1;
@@ -139,12 +163,8 @@ export const getArrested = (
   race: Entered,
   racer: RivalId | "player" = "player"
 ) => {
-  const copIndex = race.setup.field.length + 1;
-  const cop = race.state.riders[copIndex];
-  const arrested = riderOf(race, racer);
-  if (!cop) {
-    throw new Error("The race has no cop.");
-  }
+  const cop = copIn(race);
+  const arrested = racerIn(race, racer);
   cop.parked = false;
   cop.s = 150;
   cop.x = road.plan.laneWidth / 2;
@@ -159,9 +179,9 @@ export const getArrested = (
     tick < 30 * TICKS && arrested.mode !== "busted";
     tick += 1
   ) {
-    const copInput = inputs[copIndex];
+    const copInput = inputs[cop.id];
     if (copInput) {
-      pilotInput(race.state, road, copIndex, copInput);
+      pilotInput(race.state, road, cop, copInput);
     }
     ride(race, 1 / TICKS, () => inputs);
   }
@@ -178,11 +198,11 @@ export const knockDown = (
   rival: RivalId,
   times: number
 ): void => {
-  const me = riderOf(race, "player");
-  const them = riderOf(race, rival);
-  const themIndex = race.setup.field.indexOf(rival) + 1;
+  const me = racerIn(race, "player");
+  const them = racerIn(race, rival);
+  const beyond = 400 + race.setup.field.indexOf(rival) + 1;
   for (const other of race.setup.field) {
-    riderOf(race, other).s = other === rival ? 50 : 400 + themIndex;
+    racerIn(race, other).s = other === rival ? 50 : beyond;
   }
   me.s = 50;
   me.speed = 30;
@@ -200,12 +220,12 @@ export const knockDown = (
     downs += wasRiding && !riding ? 1 : 0;
     wasRiding = riding;
     const inputs = race.state.riders.map(() => neutralInput);
-    inputs[0] = { ...idle, punch: riding && tick % 40 === 0 };
+    inputs[me.id] = { ...idle, punch: riding && tick % 40 === 0 };
     const theirInput = { ...idle };
     if (!riding) {
-      pilotInput(race.state, road, themIndex, theirInput);
+      pilotInput(race.state, road, them, theirInput);
     }
-    inputs[themIndex] = theirInput;
+    inputs[them.id] = theirInput;
     stepRace(race.state, road, inputs);
     recordTick(race.log, race.state, race.setup);
   }
@@ -215,11 +235,10 @@ export const rivalIn = (setup: CareerRaceSetup, rival: RivalId) =>
   setup.rivals[setup.field.indexOf(rival)];
 
 export const takeWeaponFrom = (race: Entered, rival: RivalId): void => {
-  const me = riderOf(race, "player");
-  const them = riderOf(race, rival);
-  const themIndex = race.setup.field.indexOf(rival) + 1;
+  const me = racerIn(race, "player");
+  const them = racerIn(race, rival);
   for (const other of race.setup.field) {
-    riderOf(race, other).s = 400;
+    racerIn(race, other).s = 400;
   }
   me.s = 50;
   me.speed = 30;
@@ -229,8 +248,8 @@ export const takeWeaponFrom = (race: Entered, rival: RivalId): void => {
     them.x = 1.8;
     them.s = me.s;
     const inputs = race.state.riders.map(() => neutralInput);
-    inputs[0] = { ...idle, kick: tick === 0 };
-    inputs[themIndex] = idle;
+    inputs[me.id] = { ...idle, kick: tick === 0 };
+    inputs[them.id] = idle;
     stepRace(race.state, road, inputs);
     recordTick(race.log, race.state, race.setup);
   }

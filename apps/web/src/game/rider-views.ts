@@ -2,7 +2,7 @@ import { HIT_STUN_TICKS } from "@racer/sim/combat";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
-import { clamp, TICK_RATE } from "@racer/sim/state";
+import { clamp, PLAYER_RIDER, riderOf, TICK_RATE } from "@racer/sim/state";
 import type {
   AttackKind,
   HazardEffect,
@@ -323,13 +323,14 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     stage.world.scene.add(fleetOfBikes.group);
     cast.puffs = createPuffs(stage.world.shading);
     stage.world.scene.add(cast.puffs.group);
-    cast.views = stage.race.view.riders.map((rider, index) => {
-      const bike = fleetOfBikes.roots[index] ?? new THREE.Object3D();
+    cast.views = stage.race.view.riders.map((rider) => {
+      const bike =
+        riderOf(fleetOfBikes.roots, rider.id) ?? new THREE.Object3D();
       const figure = createRiderFigure(
         assets,
         stage.world.shading,
         rider.profile.jacket,
-        index
+        rider.id
       );
       stage.world.scene.add(figure.root);
       const view: RiderActor = {
@@ -373,12 +374,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     s <= subject.s + cast.riderReach.ahead;
 
   const touchDown = (event: RaceEvent) => {
-    const view = cast.views[event.rider];
-    const rider = stage.race.view.riders[event.rider];
+    const view = riderOf(cast.views, event.rider);
+    const rider = riderOf(stage.race.view.riders, event.rider);
     if (!(view && rider)) {
       return;
     }
-    const near = event.rider === 0 || withinReach(rider.s);
+    const near = event.rider === PLAYER_RIDER || withinReach(rider.s);
     if (event.kind === "land") {
       view.sagSpeed += Math.min(MOST_SAG_KICK, -event.impact * SAG_PER_IMPACT);
       if (near && event.airSeconds > PUFF_AIR_SECONDS) {
@@ -415,7 +416,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   const flinchSideOf = (rider: RiderView): number => {
-    const hitter = stage.race.view.riders[rider.lastHitBy];
+    const hitter = riderOf(stage.race.view.riders, rider.lastHitBy);
     return hitter ? Math.sign(rider.x - hitter.x) || 1 : 1;
   };
 

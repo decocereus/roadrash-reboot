@@ -2,6 +2,8 @@ import { defineRule } from "@oxlint/plugins";
 import type { ESTree, Variable } from "@oxlint/plugins";
 
 import { variableNamed } from "../bindings.ts";
+import { isFunction } from "../functions.ts";
+import type { FunctionNode } from "../functions.ts";
 import { literalText, memberName } from "../property-name.ts";
 
 const registrations = new Set(["setOpaqueSort", "setTransparentSort"]);
@@ -20,17 +22,10 @@ const lookups = new Set([
   "toSorted",
 ]);
 
-type FunctionNode = ESTree.ArrowFunctionExpression | ESTree.Function;
-
 interface Finding {
   readonly name: string;
   readonly node: ESTree.Node;
 }
-
-const isFunction = (node: ESTree.Node): node is FunctionNode =>
-  node.type === "ArrowFunctionExpression" ||
-  node.type === "FunctionDeclaration" ||
-  node.type === "FunctionExpression";
 
 const declaredFunction = (variable: Variable): FunctionNode | null => {
   const [definition] = variable.defs;

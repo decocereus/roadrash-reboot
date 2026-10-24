@@ -13,12 +13,12 @@ export interface ModelUrls {
   readonly bikes: Readonly<Record<BikeModelId, string>>;
   readonly car: string;
   readonly van: string;
-  readonly riders: readonly [string, string, string];
+  readonly figures: readonly [string, string, string];
 }
 
 export const modelUrls: ModelUrls = {
   bikes: { classic, ghost, oni, seraph },
   car,
-  riders: [riderA, riderB, riderC],
+  figures: [riderA, riderB, riderC],
   van,
 };

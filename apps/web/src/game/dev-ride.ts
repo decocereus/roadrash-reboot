@@ -5,6 +5,7 @@ import {
   curvePushOf,
   lateralSpeedLimit,
   PLAYER_RIDER,
+  riderOf,
 } from "@racer/sim/state";
 import type { Hazard, RiderInput } from "@racer/sim/state";
 import { curvatureAt } from "@racer/track/track";
@@ -58,7 +59,7 @@ export const devRideFrom = (search: string): DevRide => {
     race.hazards.find((hazard) => hazard.id === hazardId);
 
   const seen = (race: RaceView): boolean => {
-    const [me] = race.riders;
+    const me = riderOf(race.riders, PLAYER_RIDER);
     if (!me) {
       return false;
     }
@@ -73,7 +74,7 @@ export const devRideFrom = (search: string): DevRide => {
       return hazard !== undefined && hazard.s - me.s <= holdDelay;
     }
     return race.events.some(
-      (event) => event.kind === holdOn && event.rider === 0
+      (event) => event.kind === holdOn && event.rider === PLAYER_RIDER
     );
   };
 
@@ -99,7 +100,7 @@ export const devRideFrom = (search: string): DevRide => {
       return false;
     },
     place: (run) => {
-      if (!run.view.riders[PLAYER_RIDER]) {
+      if (!riderOf(run.view.riders, PLAYER_RIDER)) {
         return;
       }
       const hazard = target(run.view);
@@ -119,7 +120,7 @@ export const devRideFrom = (search: string): DevRide => {
       }
     },
     steer: (race, track, input) => {
-      const [me] = race.riders;
+      const me = riderOf(race.riders, PLAYER_RIDER);
       if (me && input && straight) {
         input.steer = holdLine(track, me, target(race)?.x ?? me.x);
         input.throttle = 1;

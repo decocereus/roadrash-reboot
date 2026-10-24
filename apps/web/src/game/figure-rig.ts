@@ -50,7 +50,7 @@ export class PosedSkeleton extends THREE.Skeleton {
 }
 
 export const bodyFor = (assets: Assets, index: number): RiderAsset => {
-  const asset = assets.riders[index % assets.riders.length];
+  const asset = assets.figures[index % assets.figures.length];
   if (!asset) {
     throw new Error("No rider model is loaded.");
   }
