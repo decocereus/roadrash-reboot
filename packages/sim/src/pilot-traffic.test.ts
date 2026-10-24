@@ -1,3 +1,4 @@
+import { eased } from "@racer/track/alignment";
 import { hazardSizes } from "@racer/track/hazards";
 import type { HazardPlacement } from "@racer/track/hazards";
 import { compileTrack } from "@racer/track/track";
@@ -31,11 +32,11 @@ const oilyTurnIn = compileTrack({
   ...ridgeRoad,
   features: [],
   hazardsPerKilometre: 0,
-  sections: [
-    { climb: 0, length: 900, turnDegrees: 0 },
-    { climb: 0, length: 180, turnDegrees: -60 },
-    { climb: 0, length: 3000, turnDegrees: 0 },
-  ],
+  pieces: eased([
+    [900, 0, 0],
+    [180, -60, 0],
+    [3000, 0, 0],
+  ]),
   trafficPerKilometre: 0,
 });
 

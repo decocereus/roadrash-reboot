@@ -1,4 +1,4 @@
-import { block } from "../road.ts";
+import { eased } from "../alignment.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
@@ -28,62 +28,63 @@ const cinderWash: TrackPlan = {
   leadInLength: 80,
   level: 1,
   name: "Cinder Wash",
+  pieces: eased([
+    [400, 0, 0],
+    [600, 8, -6],
+    [70, 0, -3],
+    [70, 0, 3],
+    [200, 0, 0],
+    [60, 0, -2.8],
+    [60, 0, 2.8],
+    [180, 0, 0],
+    [50, 0, -2.7],
+    [50, 0, 2.7],
+    [760, 0, 2],
+    [200, 120, 6],
+    [300, 0, 22],
+    [200, -30, 4],
+    [120, 0, 5],
+    [120, 0, -8],
+    [400, 24, -20],
+    [250, -36, 0],
+    [310, 0, 0],
+    [200, 0, 0],
+    [300, -14, -4],
+    [100, 0, 0],
+    [40, 0, 1.4],
+    [40, 0, -1.4],
+    [720, 0, 0],
+    [70, 0, -3.3],
+    [70, 0, 3.3],
+    [40, 0, 0],
+    [65, 0, -3],
+    [65, 0, 3],
+    [40, 0, 0],
+    [60, 0, -2.75],
+    [60, 0, 2.75],
+    [350, 0, 2],
+    [210, -90, 0],
+    [300, 0, 0],
+    [250, 26, 6],
+    [200, 0, 8],
+    [100, 0, 5],
+    [100, 0, -7],
+    [350, -20, -14],
+    [200, 0, 0],
+    [220, 34, 0],
+    [300, 0, 0],
+  ]),
   region: "cinder-flats",
   roadblocks: [],
   runoffLength: 400,
-  sections: [
-    { climb: 0, length: 400, turnDegrees: 0 },
-    { climb: -6, length: 600, turnDegrees: 8 },
-    { climb: -3, length: 70, turnDegrees: 0 },
-    { climb: 3, length: 70, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: 0 },
-    { climb: -2.8, length: 60, turnDegrees: 0 },
-    { climb: 2.8, length: 60, turnDegrees: 0 },
-    { climb: 0, length: 180, turnDegrees: 0 },
-    { climb: -2.7, length: 50, turnDegrees: 0 },
-    { climb: 2.7, length: 50, turnDegrees: 0 },
-    { climb: 2, length: 760, turnDegrees: 0 },
-    { climb: 6, length: 200, turnDegrees: 120 },
-    { climb: 22, length: 300, turnDegrees: 0 },
-    { climb: 4, length: 200, turnDegrees: -30 },
-    { climb: 5, length: 120, turnDegrees: 0 },
-    { climb: -8, length: 120, turnDegrees: 0 },
-    { climb: -20, length: 400, turnDegrees: 24 },
-    { climb: 0, length: 250, turnDegrees: -36 },
-    { climb: 0, length: 310, turnDegrees: 0 },
-    { climb: 0, length: 200, turnDegrees: 0 },
-    { climb: -4, length: 300, turnDegrees: -14 },
-    { climb: 0, length: 100, turnDegrees: 0 },
-    { climb: 1.4, length: 40, turnDegrees: 0 },
-    { climb: -1.4, length: 40, turnDegrees: 0 },
-    { climb: 0, length: 720, turnDegrees: 0 },
-    { climb: -3.3, length: 70, turnDegrees: 0 },
-    { climb: 3.3, length: 70, turnDegrees: 0 },
-    { climb: 0, length: 40, turnDegrees: 0 },
-    { climb: -3, length: 65, turnDegrees: 0 },
-    { climb: 3, length: 65, turnDegrees: 0 },
-    { climb: 0, length: 40, turnDegrees: 0 },
-    { climb: -2.75, length: 60, turnDegrees: 0 },
-    { climb: 2.75, length: 60, turnDegrees: 0 },
-    { climb: 2, length: 350, turnDegrees: 0 },
-    { climb: 0, length: 210, turnDegrees: -90 },
-    { climb: 0, length: 300, turnDegrees: 0 },
-    { climb: 6, length: 250, turnDegrees: 26 },
-    { climb: 8, length: 200, turnDegrees: 0 },
-    { climb: 5, length: 100, turnDegrees: 0 },
-    { climb: -7, length: 100, turnDegrees: 0 },
-    { climb: -14, length: 350, turnDegrees: -20 },
-    { climb: 0, length: 200, turnDegrees: 0 },
-    { climb: 0, length: 220, turnDegrees: 34 },
-    { climb: 0, length: 300, turnDegrees: 0 },
-  ],
   seed: 0xc1_d3_0a,
   shoulderWidth: 1.4,
+  start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 3,
   vergeWidth: 14,
 };
 
-const cinderWashLevel2 = block([
+const cinderWashLevel2 = eased([
   [420, 0, 0],
   [60, 0, -3.5],
   [60, 0, 3.5],
@@ -92,7 +93,7 @@ const cinderWashLevel2 = block([
   [150, 0, 0],
 ]);
 
-const cinderWashLevel3 = block([
+const cinderWashLevel3 = eased([
   [560, 0, -2],
   [220, -110, 4],
   [130, 0, 6],
@@ -101,7 +102,7 @@ const cinderWashLevel3 = block([
   [60, 0, 0],
 ]);
 
-const cinderWashLevel4 = block([
+const cinderWashLevel4 = eased([
   [330, 18, -10],
   [65, 0, -3],
   [65, 0, 3],
@@ -112,7 +113,7 @@ const cinderWashLevel4 = block([
   [180, 0, 0],
 ]);
 
-const cinderWashLevel5 = block([
+const cinderWashLevel5 = eased([
   [380, 0, 0],
   [180, 130, 8],
   [160, 0, 10],
