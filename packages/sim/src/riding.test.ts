@@ -64,6 +64,7 @@ describe("riding", () => {
 
     const flat = compileTrack({
       ...ridgeRoad,
+      chevrons: [],
       features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
@@ -120,6 +121,7 @@ describe("riding", () => {
   it("stops from 200 km/h in about 55 metres", () => {
     const flat = compileTrack({
       ...ridgeRoad,
+      chevrons: [],
       features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
@@ -140,7 +142,7 @@ describe("riding", () => {
     expect(rider.s - from).toBeGreaterThan(45);
   });
 
-  it("a curve pushes a rider who does not steer to the outside", () => {
+  it("centred bars hold the opening bend at 144 km/h, where it asks a third of lock", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
@@ -152,22 +154,22 @@ describe("riding", () => {
       { brake: 0, kick: false, punch: false, steer: 0, throttle: 0.6 },
       2.5
     );
-    expect(rider.x).toBeLessThan(-1.5);
+    expect(Math.abs(rider.x)).toBeLessThan(0.5);
   });
 
-  it("a third of lock holds the opening bend at 144 km/h", () => {
+  it("the opening bend pushes a rider who does not steer to the outside at 190 km/h, where it asks half of lock", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
     rider.x = 0;
-    rider.speed = 40;
+    rider.speed = 190 / 3.6;
     hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0.3, throttle: 0.6 },
+      { brake: 0, kick: false, punch: false, steer: 0, throttle: 1 },
       2.5
     );
-    expect(Math.abs(rider.x)).toBeLessThan(1.5);
+    expect(rider.x).toBeLessThan(-1.5);
   });
 
   it("the bars take most of a second to reach full lock, so a lane change takes over a second", () => {

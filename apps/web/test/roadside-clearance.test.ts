@@ -100,17 +100,17 @@ describe("the roadside clears the chase camera", () => {
   it("hides the chevron, board and post together, on either side of the road, while a rider running wide puts the camera at it, and puts both back once the camera has passed", () => {
     const track = trackFor("slag-row", 1);
     const world = createWorld(track);
-    const right = instancesAt(world, footOf(track, 1732, 9.3));
-    const left = instancesAt(world, footOf(track, 352, -9.3));
-    const ahead = instancesAt(world, footOf(track, 1744, 9.3));
+    const right = instancesAt(world, footOf(track, 1733, 9.3));
+    const left = instancesAt(world, footOf(track, 356, -9.3));
+    const ahead = instancesAt(world, footOf(track, 1745, 9.3));
     expect([right.length, left.length, ahead.length]).toStrictEqual([2, 2, 2]);
 
-    rideTo(world, track, { s: 1738.1012, x: 11.9203 });
+    rideTo(world, track, { s: 1739.1012, x: 11.9203 });
     expect([...hidden(right), ...intact(ahead), ...intact(left)]).toStrictEqual(
       [true, true, true, true, true, true]
     );
 
-    rideTo(world, track, { s: 360.4, x: -12.4 });
+    rideTo(world, track, { s: 364.4, x: -12.4 });
     expect([...intact(right), ...hidden(left)]).toStrictEqual([
       true,
       true,
@@ -118,7 +118,7 @@ describe("the roadside clears the chase camera", () => {
       true,
     ]);
 
-    rideTo(world, track, { s: 380, x: -12.4 });
+    rideTo(world, track, { s: 384, x: -12.4 });
     expect([...intact(right), ...intact(left)]).toStrictEqual([
       true,
       true,

@@ -1,0 +1,166 @@
+import { chevronRuns } from "@racer/track/chevron-runs";
+import { roadIds, roadLevels } from "@racer/track/road";
+import { trackFor } from "@racer/track/roads";
+import { compileTrack, curvatureAt } from "@racer/track/track";
+import type { ChevronRun, Track } from "@racer/track/track";
+import { madridHook } from "@racer/track/tracks/madrid-hook";
+import { describe, expect, it } from "vitest";
+
+import {
+  brakingZonesOf,
+  chevronRunsOf,
+  isWarned,
+  signedFor,
+} from "./corner-warnings.ts";
+import type { BrakingZone } from "./corner-warnings.ts";
+import { player } from "./race-fixtures.ts";
+import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
+import {
+  clamp,
+  curvePushOf,
+  PLAYER_RIDER,
+  steerFor,
+  TICK_RATE,
+} from "./state.ts";
+import type { BikeSpec, RiderInput } from "./state.ts";
+
+const hook = compileTrack(madridHook);
+const quietHook = compileTrack({
+  ...madridHook,
+  hazardsPerKilometre: 0,
+  trafficPerKilometre: 0,
+});
+
+const RIDE_LIMIT = TICK_RATE * 60;
+
+const metres = (value: number): string =>
+  value < 10_000
+    ? String(value)
+    : `${Math.floor(value / 1000)}_${String(value % 1000).padStart(3, "0")}`;
+
+const runLines = (runs: readonly ChevronRun[]): string =>
+  runs
+    .map(
+      (run) =>
+        `    { from: ${metres(run.from)}, side: ${run.side}, to: ${metres(run.to)} },\n`
+    )
+    .join("");
+
+const tableOf = (): string =>
+  [
+    ...roadIds.map((id) => [id, chevronRunsOf(trackFor(id, 5))] as const),
+    ["madrid-hook", chevronRunsOf(hook)] as const,
+  ]
+    .toSorted(([left], [right]) => left.localeCompare(right))
+    .map(([id, runs]) => `  "${id}": [\n${runLines(runs)}  ],\n`)
+    .join("");
+
+const moduleOf = (): string => `import type { RoadId } from "./road.ts";
+import type { ChevronRun } from "./track.ts";
+
+export const chevronRuns = {
+${tableOf()}} as const satisfies Record<RoadId | "madrid-hook", readonly ChevronRun[]>;
+`;
+
+const brakeFromChevron = (
+  track: Track,
+  bike: BikeSpec,
+  run: ChevronRun,
+  zone: BrakingZone
+) => {
+  const setup = defaultSetup(track, 31);
+  const race = createRace({
+    ...setup,
+    player: { ...setup.player, bike },
+    police: { ...setup.police, count: 0 },
+    rivals: [],
+  });
+  const rider = player(race);
+  rider.s = run.from;
+  rider.bodyS = run.from;
+  rider.x = 0;
+  rider.bodyX = 0;
+  rider.speed = zone.approach;
+  rider.throttle = 1;
+  const input: RiderInput = { ...neutralInput, throttle: 1 };
+  const frame = new Map([[PLAYER_RIDER, input]]);
+  const reacted = run.from + zone.approach * 0.25;
+  let offRoad = false;
+  for (
+    let tick = 0;
+    tick < RIDE_LIMIT && rider.s < zone.end && rider.mode === "riding";
+    tick += 1
+  ) {
+    const curvature = curvatureAt(track, rider.s);
+    input.steer = clamp(
+      steerFor(
+        bike,
+        curvature,
+        rider.speed,
+        curvePushOf(bike, curvature, rider.speed) - 1.2 * rider.x
+      ),
+      -1,
+      1
+    );
+    const braking = rider.s >= reacted && rider.speed > zone.slowest;
+    input.brake = braking ? 1 : 0;
+    input.throttle = rider.s < reacted || rider.speed < zone.slowest ? 1 : 0;
+    stepRace(race, track, frame);
+    offRoad ||= rider.offRoad;
+  }
+  return { crashes: rider.crashes, offRoad, through: rider.s >= zone.end };
+};
+
+describe("corner warnings", () => {
+  it("every road carries the chevron runs of its riding-speed audit", async () => {
+    await expect(moduleOf()).toMatchFileSnapshot(
+      "../../track/src/chevron-runs.ts"
+    );
+  });
+
+  it.each(roadIds)(
+    "each level of %s is warned as the whole road is up to its finish",
+    (id) => {
+      for (const level of roadLevels) {
+        const track = trackFor(id, level);
+        expect(chevronRunsOf(track)).toStrictEqual(
+          chevronRuns[id].filter((run) => run.to < track.length)
+        );
+      }
+    }
+  );
+
+  it("the chevrons on the hook stand where the runs say", () => {
+    const boards = hook.props.filter((prop) => prop.kind === "chevron");
+    expect(boards.map((board) => board.s).slice(0, 1)).toStrictEqual(
+      chevronRuns["madrid-hook"].slice(0, 1).map((run) => run.from)
+    );
+    expect(
+      boards.every((board) =>
+        chevronRuns["madrid-hook"].some(
+          (run) =>
+            board.s >= run.from &&
+            board.s <= run.to &&
+            Math.sign(board.x) === run.side
+        )
+      )
+    ).toBeTruthy();
+  });
+
+  it.each(signedFor.map((bike) => [bike.name, bike] as const))(
+    "a %s rider who brakes at the hook's first chevron of a warned bend makes the bend",
+    (_name, bike) => {
+      const warned = brakingZonesOf(quietHook, bike).filter(isWarned);
+      const rides = warned.map((zone) => {
+        const run = chevronRuns["madrid-hook"].find(
+          (each) => each.from <= zone.start && each.to >= zone.start
+        );
+        return run && brakeFromChevron(quietHook, bike, run, zone);
+      });
+      expect(warned.length).toBeGreaterThan(0);
+      expect(rides).toStrictEqual(
+        warned.map(() => ({ crashes: 0, offRoad: false, through: true }))
+      );
+    }
+  );
+});

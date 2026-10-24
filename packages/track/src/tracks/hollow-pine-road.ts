@@ -1,8 +1,10 @@
 import { eased } from "../alignment.ts";
+import { chevronRuns } from "../chevron-runs.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const hollowPineRoad: TrackPlan = {
+  chevrons: chevronRuns["hollow-pine-road"],
   features: [
     {
       feature: { kind: "jump", length: 16, rise: 0.8, width: 1 },

@@ -49,6 +49,7 @@ describe("the pack", () => {
   it("a punch drains stamina and enough of them knock the rival down", () => {
     const flat = compileTrack({
       ...ridgeRoad,
+      chevrons: [],
       features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),

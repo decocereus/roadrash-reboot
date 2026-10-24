@@ -1,8 +1,10 @@
 import { eased } from "../alignment.ts";
+import { chevronRuns } from "../chevron-runs.ts";
 import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 const cinderWash: TrackPlan = {
+  chevrons: chevronRuns["cinder-wash"],
   features: [
     {
       feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },

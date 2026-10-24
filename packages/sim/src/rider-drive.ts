@@ -20,6 +20,7 @@ import {
   curvePushOf,
   GRAVITY,
   lateralSpeedLimit,
+  settledLean,
   TICK_SECONDS,
 } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
@@ -158,8 +159,12 @@ export const ride = (
     lateralSpeedLimit(bike, rider.speed, input.throttle) *
     (1 - (1 - VERGE_STEER) * verge) *
     (1 - WOBBLE_GRIP * rider.wobble);
-  const wantedLateral =
-    input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1);
+  const wantedLateral = clamp(
+    input.steer * limit * (rider.hitStun > 0 ? STUN_STEER : 1) +
+      settledLean(bike, curvature, rider.speed),
+    -limit,
+    limit
+  );
   rider.lateralSpeed = approach(
     rider.lateralSpeed,
     wantedLateral,

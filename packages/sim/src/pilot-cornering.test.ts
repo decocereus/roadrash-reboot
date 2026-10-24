@@ -232,6 +232,7 @@ describe("pacing by the gap to the player", () => {
 const planningRoad = (pieces: TrackPieces): Track =>
   compileTrack({
     ...ridgeRoad,
+    chevrons: [],
     features: [],
     hazardsPerKilometre: 0,
     pieces,
@@ -317,6 +318,7 @@ describe("the pilot plans its speed along the road", () => {
   it("takes a ramp 50 m before a bend at a speed it can land and hold, instead of planning to brake in the air", () => {
     const road = compileTrack({
       ...ridgeRoad,
+      chevrons: [],
       features: [
         {
           feature: kerbRamp,
@@ -411,6 +413,7 @@ describe("the pilot plans its speed along the road", () => {
     const road: Track = {
       ...compileTrack({
         ...ridgeRoad,
+        chevrons: [],
         features: [],
         hazardsPerKilometre: 0,
         lanesEachWay: 2,

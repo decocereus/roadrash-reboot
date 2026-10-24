@@ -8,6 +8,7 @@ export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
 const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
+const SETTLED_LEAN = 0.4;
 
 declare const riderIdBrand: unique symbol;
 
@@ -423,3 +424,21 @@ export const curvePushOf = (
   curvature: number,
   speed: number
 ): number => (curvature * speed * speed) / bike.curvePush;
+
+export const settledLean = (
+  bike: BikeSpec,
+  curvature: number,
+  speed: number
+): number => {
+  const most = SETTLED_LEAN * lateralSpeedLimit(bike, speed);
+  return clamp(curvePushOf(bike, curvature, speed), -most, most);
+};
+
+export const steerFor = (
+  bike: BikeSpec,
+  curvature: number,
+  speed: number,
+  lateralSpeed: number
+): number =>
+  (lateralSpeed - settledLean(bike, curvature, speed)) /
+  Math.max(1, lateralSpeedLimit(bike, speed));
