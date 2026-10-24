@@ -63,7 +63,7 @@ A save whose level is above the served level count is refused as `invalid` at `l
 
 ## Asset loading
 
-`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the eleven models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
+`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the nine boot models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. A celebrity rider is not among them: the game's wardrobe asks the same runtime for each celebrity a race wears, through `loadCelebrity`, while it prepares that race. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
 
 | Tag | Retried | What the player sees |
 | --- | --- | --- |
@@ -74,9 +74,12 @@ A save whose level is above the served level count is refused as `invalid` at `l
 
 Only a completed download enters the page's byte cache, keyed by the model's fingerprinted URL. A failed download or a rejected answer caches nothing, so the next mount fetches that model again. The bytes enter the cache before they are parsed, so a parse failure keeps them but no decoded model, and a later mount parses them again without fetching. Decoded models belong to one mount. They are released once, when the game is disposed, when the mount is aborted, or when another model of the same mount fails; a parse that finishes after the mount ended is released as it arrives. A remount parses the cached bytes again.
 
+A celebrity's download and parse follow the same rules and retries, keyed by its own URL. The wardrobe holds each decoded celebrity until a race is built without it or the game is disposed, and releases it once. A celebrity that fails to load fails the race's preparation with the stage `dress`: the race on screen stays as it was, the recorder keeps the message as a fault from `prepare dress`, and starting the race prepares it again, which fetches the model again because a failed download cached nothing.
+
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
 | Only a completed download enters the byte cache. A failed download or answer caches nothing, so the next mount fetches again. A parse failure keeps the completed bytes but no decoded model, so a later mount parses them again without fetching. Decoded models belong to one mount and are released once when it ends. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
+| A race loads only the celebrities its riders wear, once each, and a plain race loads none. The next race with the same rider fetches and parses nothing. The wardrobe releases a celebrity once when a race is built without it, and every celebrity it holds once when the game is disposed. A failed celebrity load fails the race's dressing and the next race fetches it again. | `pnpm test` | `apps/web/test/celebrity-load.test.ts` | None |
 | Only a transport or body-read failure or a 5xx answer is retried, once, through `Effect.retry`. A 4xx answer, a parser rejection, a font failure and an interruption are not retried. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Each asset failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. A rejected HTTP status has nothing thrown to keep. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/assets` | None |
 
