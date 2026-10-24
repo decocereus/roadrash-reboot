@@ -3,7 +3,7 @@ import path from "node:path";
 import { setImmediate as nextTurn } from "node:timers/promises";
 
 import * as THREE from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { AssetRequest } from "../src/asset-load.ts";
 import { createAssetRuntime } from "../src/asset-runtime.ts";
@@ -559,7 +559,7 @@ const pinned: Transport = {
 };
 
 describe("the real parser on the pinned models", () => {
-  it("decodes the same assets as before the Effect boundary and releases their geometry", async () => {
+  it("decodes the same assets as before the Effect boundary and releases their geometry and atlases", async () => {
     const runtime = createAssetRuntime(
       { fonts: readyFonts, transport: pinned },
       new Map(),
@@ -581,9 +581,15 @@ describe("the real parser on the pinned models", () => {
         freed.push(name);
       });
     }
+    const closes = vi.spyOn(ImageBitmap.prototype, "close");
     outcome.release();
     await nextTurn();
-    expect({ freed: freed.toSorted(), released }).toStrictEqual({
+    const closed = Object.values(outcome.assets.celebrities).map(
+      ({ atlas }) =>
+        closes.mock.contexts.filter((bitmap) => bitmap === atlas?.image).length
+    );
+    expect({ closed, freed: freed.toSorted(), released }).toStrictEqual({
+      closed: [1, 1],
       freed: ["kylie", "ronaldo"],
       released: outcome.assets.car.map((each) => each.slot),
     });

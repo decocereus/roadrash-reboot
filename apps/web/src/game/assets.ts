@@ -342,6 +342,21 @@ export interface AcquiredAssets {
 
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
+const atlasesOf = (root: THREE.Object3D): THREE.Texture[] => {
+  const atlases = new Set<THREE.Texture>();
+  root.traverse((node) => {
+    if (isMesh(node)) {
+      for (const material of [node.material].flat()) {
+        const atlas = atlasOf(material);
+        if (atlas) {
+          atlases.add(atlas);
+        }
+      }
+    }
+  });
+  return [...atlases];
+};
+
 const releaseOf =
   (root: THREE.Object3D, made: readonly Primitive[]) => (): void => {
     const geometries = new Set<THREE.BufferGeometry>();
@@ -364,8 +379,14 @@ const releaseOf =
       geometry.dispose();
     }
     for (const material of materials) {
-      atlasOf(material)?.dispose();
       material.dispose();
+    }
+    for (const atlas of atlasesOf(root)) {
+      const image: unknown = atlas.image;
+      atlas.dispose();
+      if (image instanceof ImageBitmap) {
+        image.close();
+      }
     }
   };
 
@@ -377,21 +398,6 @@ const decoded = <Value>(
 
 const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
   await loader.parseAsync(bytes, "");
-
-const atlasesOf = (root: THREE.Object3D): THREE.Texture[] => {
-  const atlases = new Set<THREE.Texture>();
-  root.traverse((node) => {
-    if (isMesh(node)) {
-      for (const material of [node.material].flat()) {
-        const atlas = atlasOf(material);
-        if (atlas) {
-          atlases.add(atlas);
-        }
-      }
-    }
-  });
-  return [...atlases];
-};
 
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const gltf = await parsed(bytes);
