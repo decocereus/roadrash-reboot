@@ -1,6 +1,6 @@
 # Roadside clearance
 
-The chase camera rides behind the bike and follows three quarters of its swing across the road, so a rider who runs wide carries the camera to the verge. A chevron, warning sign, marker post, pine, pole, boulder, gantry post or ramp beacon that comes within 3 m of the camera is gone for that moment, all of its parts together, and back once the camera has passed. Signs never show the outlines of a rider or post standing behind them.
+The chase camera rides behind the bike and follows three quarters of its swing across the road, so a rider who runs wide carries the camera to the verge. A chevron, warning sign, marker post, pine, pole, boulder, gantry post or ramp beacon that comes within 2 m of the camera is gone for that moment, all of its parts together, and back once the camera has passed. Signs never show the outlines of a rider or post standing behind them.
 
 ## Sub-features
 
@@ -8,7 +8,7 @@ The chase camera rides behind the bike and follows three quarters of its swing a
 - `clear-tree` hides a whole pine, crown and trunk, when its crown reaches the camera though its trunk is further away.
 - `clear-beacon` hides a ramp beacon's post and lamp while the camera crosses the lip, and shows them again behind the camera.
 - `clear-restore` puts every hidden prop back as the camera leaves it, with no prop left missing.
-- `clear-lane` leaves every prop in place while the rider stays on the road.
+- `clear-lane` leaves every prop in view in place while the rider stays a metre or more inside the road's edge.
 - `sign-no-ghost` draws no outline of anything behind the back of a sign.
 
 ## How to get to it (user POV)
@@ -37,5 +37,6 @@ Preconditions:
 - The flags skip the menus and force the steering with `swerve`, so they prove the camera and the scenery, not the pilot or a menu path.
 - `hold=at` freezes at a distance and `hold=crash` a number of ticks after a crash; both fire once per page. Reopen the URL to try again.
 - The clearance hides a prop by its whole parts and its full width, so a pine goes when its crown reaches the camera though its trunk is 4.6 m away. Check for the crown, not the trunk.
-- `hold=air` counts ticks airborne. Much later than 8 ticks the camera is past the 3 m band and the beacons are drawn again behind it.
-- Building fronts, banks, awnings and over-road cables do not take part. They stand beyond the camera's reach or high above it.
+- `hold=air` counts ticks airborne. Much later than 8 ticks the camera is past the 2 m band and the beacons are drawn again behind it.
+- On Hollow Pine Road and Ridge Road a rider within about half a metre of the road's edge brings a pine crown within 2 m of the camera, and it goes while still on screen. Further in, none does.
+- Building fronts, banks, awnings, hanging signs and over-road cables do not take part. On the building line an awning can pass 1.8 m from the camera, but beside or behind it, never in front.

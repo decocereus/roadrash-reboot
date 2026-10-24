@@ -1,4 +1,5 @@
 import { lipOf } from "@racer/track/features";
+import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
@@ -194,5 +195,65 @@ describe("the roadside clears the chase camera", () => {
     rideTo(world, track, { s: lip + 30, x: jump.x });
     expect(beacons.map(drawn)).toStrictEqual([true, true, true, true]);
     world.dispose();
+  });
+
+  it("hides no planted prop the camera can see while a rider rides a metre inside either edge of any road", () => {
+    const seen: string[] = [];
+    const view = new THREE.Frustum();
+    const viewProjection = new THREE.Matrix4();
+    const box = new THREE.Box3();
+    for (const roadId of roadIds) {
+      const track = trackFor(roadId, 1);
+      const world = createWorld(track);
+      const batches: {
+        bounds: THREE.Box3;
+        mesh: THREE.InstancedMesh;
+        poses: Float32Array;
+      }[] = [];
+      world.scene.traverse((node) => {
+        if (!isInstancedMesh(node)) {
+          return;
+        }
+        node.geometry.computeBoundingBox();
+        if (node.geometry.boundingBox) {
+          batches.push({
+            bounds: node.geometry.boundingBox,
+            mesh: node,
+            poses: Float32Array.from(node.instanceMatrix.array),
+          });
+        }
+      });
+      for (const x of [track.roadHalfWidth - 1, 1 - track.roadHalfWidth]) {
+        const chase = createChaseCamera();
+        chase.camera.aspect = 1512 / 860;
+        chase.camera.updateProjectionMatrix();
+        for (let s = 30; s < track.length - 30; s += 2) {
+          chase.update(track, { air: 0, s, speed: 40, tuck: 0, x }, 1 / 60);
+          world.follow(chase.camera, s);
+          chase.camera.updateMatrixWorld();
+          view.setFromProjectionMatrix(
+            viewProjection.multiplyMatrices(
+              chase.camera.projectionMatrix,
+              chase.camera.matrixWorldInverse
+            )
+          );
+          for (const { bounds, mesh, poses } of batches) {
+            const now = mesh.instanceMatrix.array;
+            for (let index = 0; index < mesh.count; index += 1) {
+              if (now[index * 16] === 0 && now[index * 16 + 5] === 0) {
+                box
+                  .copy(bounds)
+                  .applyMatrix4(matrix.fromArray(poses, index * 16));
+                if (view.intersectsBox(box)) {
+                  seen.push(`${roadId} s=${s} x=${x}`);
+                }
+              }
+            }
+          }
+        }
+      }
+      world.dispose();
+    }
+    expect(seen).toStrictEqual([]);
   });
 });

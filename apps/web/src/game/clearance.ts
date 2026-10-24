@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { isMesh } from "./meshes.ts";
 import { uploadSpan } from "./uploads.ts";
 
-const CLEARANCE = 3;
+const CLEARANCE = 2;
 const CELL = 8;
 const CELL_OFFSET = 32_768;
 const CELL_SPAN = 65_536;
