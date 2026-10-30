@@ -152,11 +152,11 @@ The line is fitted at 60 m with two slow places. The fitted road runs 2,348 m ag
 | Puerta de Alcalá roundabout | 0 to 120 | 25 m | 5.9 m | 10.0 m | A slow place the rider brakes for, on the paved roundabout |
 | Plaza de España | 2,030 to 2,130 | 25 m | 4.8 m | 7.7 m | A junction the rider slows for, round the plaza's east side |
 
-The street circles Puerta de Alcalá and turns 83° in its first 64 m, and at 60 m the fit runs 10.0 m off it. The stretch keeps the gate instead of starting after the turn, because the gate is what the owner asked to ride from and a road starting past it would never show it. At 25 m, the radius Patines already uses, the line stays within 5.9 m of the IGN centreline, inside a paved plaza whose own street-area estimate is 32.6 m wide. The grid stands at the plaza's north edge, so the field meets that bend while it is still accelerating off the line: the pilot takes it at 53 km/h on a Sesta without braking for it. Plaza de España turns about 100° in 60 m across three junction nodes, and 25 m holds the line to 4.8 m there.
+The street circles Puerta de Alcalá and turns 83° in its first 64 m, and at 60 m the fit runs 10.0 m off it. The stretch keeps the gate instead of starting after the turn, because the gate is what the owner asked to ride from and a road starting past it would put it behind the field. At 25 m, the radius Patines already uses, the line stays within 5.9 m of the IGN centreline, inside a paved plaza whose own street-area estimate is 32.6 m wide. The grid stands at the plaza's north edge, so the field meets that bend while it is still accelerating off the line: the pilot takes it at 53 km/h on a Sesta without braking for it. The gate itself stands 3 m past the start line and 29 to 56 m to the right of it, which is square to the chase camera, so the opening frame shows its piers as a wall at the edge of the screen and never from the front. The gate is in its place; showing it as a gate wants a start-line camera or a run-up from further east, and neither belongs in a greybox. Plaza de España turns about 100° in 60 m across three junction nodes, and 25 m holds the line to 4.8 m there.
 
 The grade comes from the corridor's MDT05 samples between the two chainages, fitted the way the hook's is. There is no bridge on this stretch. The road starts at 655.8 m above sea level, which is y 0, dips to 642 m at Cibeles, climbs to the Red de San Luis at 662 m by Telefónica, and falls 34 m into Plaza de España. The fit misses the ground by RMS 0.4 m, largest 2.5 m. The steepest grade is 5.3% and the sharpest change 1.49 per mille per metre. The origin is the street's first point, rounded, at corridor 4,575, 1,648.
 
-The scene is a greybox: no textures and no building kit. The ground is paved, and grass covers only two authored patches, the Retiro edge east of Puerta de Alcalá and the garden in Plaza de España, both traced inside ground the corridor's footprints leave empty. Trees grow on the grass and nowhere else. 77 of the 90 footprints within 90 m of the street are kept at their estimated heights, which walls Gran Vía; 13 are dropped because they reach inside the verge, and they leave the gaps the side streets open anyway. Five landmarks get massing, authored as prisms from their own Wikidata point, the footprint around it and the building's known height. The heights are authored estimates, not sourced measurements, and no new source was used.
+The scene is a greybox: no textures and no building kit. The ring of mountains every open look draws on the horizon is left out wherever a plan's ground is paved, so this city ends in its own blocks instead of in peaks, and the hook and the five roads keep theirs. The ground is paved, and grass covers only two authored patches, the Retiro edge east of Puerta de Alcalá and the garden in Plaza de España, both traced inside ground the corridor's footprints leave empty. Trees grow on the grass and nowhere else. 77 of the 90 footprints within 90 m of the street are kept at their estimated heights, which walls Gran Vía; 13 are dropped because they reach inside the verge, and they leave the gaps the side streets open anyway. Five landmarks get massing, authored as prisms from their own Wikidata point, the footprint around it and the building's known height. The heights are authored estimates, not sourced measurements, and no new source was used.
 
 | Landmark | Chainage | Massing | Top | Nearest to the road |
 | --- | --: | --- | --: | --: |
@@ -186,6 +186,17 @@ The Sesta reaches 229 km/h on the fall into Plaza de España, faster than it rid
 | The five existing roads | 2.72 to 3.74 | 0.006 to 0.025 |
 
 Both Madrid stretches stay gentler than every existing road in height, and the city stretch's yaw wobble sits inside the existing roads' range. Its straights measure 19.7 s of the lap, against the hook's 4.1 s, because Gran Vía runs straight for a kilometre.
+
+What it costs to draw, measured on 2026-10-30 in windowed Helium on an M4 Pro over Metal, on a 120 Hz display the game paces at 120, with the quality rung at 0 of 8 the whole time and no console error:
+
+| Ride | Frames | p50 | p95 | Worst | Draw calls | Triangles | Programs |
+| --- | --: | --: | --: | --: | --: | --: | --: |
+| Alone on Gran Vía at 1,100 m, 20 s | 94.6 fps | 8.4 ms | 16.8 ms | 208 ms | 86 | 364,981 | 39 |
+| With traffic there, 20 s | 94.5 fps | 8.4 ms | 16.8 ms | 217 ms | 102 | 567,913 | 41 |
+| Field and traffic, the whole lap from the grid, 40 s | 108.2 fps | 8.3 ms | 16.7 ms | 216 ms | 197 mean | 1,196,141 | 41 |
+| The same on the Wren, 25 s | 100.3 fps | 8.4 ms | 16.7 ms | 208 ms | 206 mean, 198 at the pack | 1,761,991 | 41 |
+
+Every worst frame is the first one after the page loads the race. The busiest frame the stretch drew, 198 calls and 1.76 million triangles with nine rivals, a car and the city around it, stays well inside the gate's own scenarios on Slag Row, which the GPU lane holds at 430 calls and 2.36 million triangles for `reference-v1` and 534 and 3.00 million for `pack-riding-v1`. The stretch therefore takes no row in `tools/perf/budgets.json`: it is reached only by a development URL, it is not a gate scenario, and it could not be the binding case for one. Blocks cost one draw call however many there are, because `buildBlocks` merges them into a single mesh.
 
 ## Measurement limits
 

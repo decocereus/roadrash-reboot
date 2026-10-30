@@ -419,7 +419,7 @@ Test files: none
 
 ### Roads, cities and scenery on screen
 
-The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground under its grass or paved cover, grey blocks, flat water, grass patches and simple trees.
+The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground under its grass or paved cover, grey blocks, flat water, grass patches and simple trees. The ring of mountains on the horizon stands behind open country and is left out of a city, whether that city is the kit's or a paved greybox.
 
 - Id: `world`
 - Start: `apps/web/src/game/world.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/city.ts`

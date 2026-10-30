@@ -576,7 +576,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   plain.position.y = lowest - 24;
   const sky = buildSky(look, shading, track.plan.seed + 3, textures);
   const backdrop = buildMountains(look);
-  backdrop.visible = !city;
+  backdrop.visible = city === null && scenery?.cover !== "paving";
   scene.add(plain, sky, backdrop);
 
   return {

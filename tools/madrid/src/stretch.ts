@@ -37,7 +37,7 @@ interface SlowPlace {
   readonly minRadiusM: number;
 }
 
-export interface Carriageway {
+interface Carriageway {
   readonly lanesEachWay: 1 | 2;
   readonly laneWidth: number;
   readonly shoulderWidth: number;
@@ -57,7 +57,7 @@ export interface StretchSettings {
   readonly cover: GroundCover;
 }
 
-export const vergeHalfWidthOf = (road: Carriageway): number =>
+const vergeHalfWidthOf = (road: Carriageway): number =>
   road.lanesEachWay * road.laneWidth + road.shoulderWidth + road.vergeWidth;
 
 interface PlaceDistance {
