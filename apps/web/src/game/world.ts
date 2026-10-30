@@ -11,7 +11,7 @@ import type { City } from "./city.ts";
 import { createClearance } from "./clearance.ts";
 import type { Clearance } from "./clearance.ts";
 import { disposeTree } from "./dispose.ts";
-import { buildGreybox } from "./greybox.ts";
+import { buildGreybox, coverPalette } from "./greybox.ts";
 import {
   freeze,
   groundLift,
@@ -463,7 +463,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const kerbMaterial = shading.cel(look.kerb);
   const terrainMaterial = shading.cel("#ffffff", { vertexColors: true });
   const { scenery } = track.plan;
-  const vergeMaterial = scenery ? shading.cel(look.groundNear) : null;
+  const vergeMaterial = scenery
+    ? shading.cel(coverPalette(look, scenery.cover).near)
+    : null;
   const verge = track.vergeHalfWidth;
 
   const add = (

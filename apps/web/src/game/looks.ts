@@ -280,6 +280,7 @@ const looks = {
   "cinder-flats": dawn,
   "kettle-woods": woods,
   lowtown: night,
+  "madrid-centro": park,
   "salt-coast": dusk,
   stonepeak: ridge,
 } as const satisfies Record<RegionId, Look>;

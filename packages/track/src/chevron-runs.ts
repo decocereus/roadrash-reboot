@@ -1,4 +1,5 @@
 import type { RoadId } from "./road.ts";
+import type { StretchId } from "./stretches.ts";
 import type { ChevronRun } from "./track.ts";
 
 export const chevronRuns = {
@@ -45,6 +46,14 @@ export const chevronRuns = {
     { from: 11_623, side: 1, to: 11_763 },
     { from: 12_315, side: 1, to: 12_514 },
   ],
+  "madrid-gran-via": [
+    { from: 280, side: -1, to: 280 },
+    { from: 281, side: 1, to: 401 },
+    { from: 402, side: -1, to: 405 },
+    { from: 584, side: -1, to: 644 },
+    { from: 1396, side: -1, to: 1526 },
+    { from: 1925, side: 1, to: 2077 },
+  ],
   "madrid-hook": [
     { from: 332, side: 1, to: 490 },
     { from: 491, side: -1, to: 584 },
@@ -85,4 +94,4 @@ export const chevronRuns = {
     { from: 11_049, side: 1, to: 11_238 },
     { from: 12_559, side: -1, to: 12_774 },
   ],
-} as const satisfies Record<RoadId | "madrid-hook", readonly ChevronRun[]>;
+} as const satisfies Record<RoadId | StretchId, readonly ChevronRun[]>;

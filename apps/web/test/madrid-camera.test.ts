@@ -4,9 +4,9 @@ import { player } from "@racer/sim/race-fixtures";
 import { TICK_RATE } from "@racer/sim/state";
 import { roadAtLevel, roadIds } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
+import { stretches, stretchIds } from "@racer/track/stretches";
 import { compileTrack } from "@racer/track/track";
 import type { Track, TrackPlan } from "@racer/track/track";
-import { madridHook } from "@racer/track/tracks/madrid-hook";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createChaseCamera } from "../src/game/chase-camera.ts";
@@ -112,7 +112,7 @@ const steadinessOn = (
   };
 };
 
-describe("the chase camera on the Casa de Campo hook", () => {
+describe("the chase camera on the Madrid stretches", () => {
   beforeAll(() => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
   });
@@ -121,23 +121,29 @@ describe("the chase camera on the Casa de Campo hook", () => {
     vi.restoreAllMocks();
   });
 
-  it.each(["ostra-sesta-600", "halden-wren-400"] as const)(
-    "holds as steady on the straights as on the shakiest existing road, on the %s",
-    (bikeId) => {
+  it.each(
+    stretchIds.flatMap((id) =>
+      (["ostra-sesta-600", "halden-wren-400"] as const).map(
+        (bikeId) => [id, bikeId] as const
+      )
+    )
+  )(
+    "holds %s as steady on the straights as the shakiest existing road, on the %s",
+    (id, bikeId) => {
       const existing = roadIds.map((roadId) =>
         steadinessOn(roadAtLevel(roads[roadId], 1), bikeId)
       );
-      const hook = steadinessOn(madridHook, bikeId);
-      for (const ride of [...existing, hook]) {
+      const stretch = steadinessOn(stretches[id], bikeId);
+      for (const ride of [...existing, stretch]) {
         expect(ride.finished).toBeTruthy();
         expect(ride.straightSeconds).toBeGreaterThanOrEqual(
           LEAST_STRAIGHT_SECONDS
         );
       }
-      expect(hook.heightAcceleration).toBeLessThanOrEqual(
+      expect(stretch.heightAcceleration).toBeLessThanOrEqual(
         Math.max(...existing.map((road) => road.heightAcceleration))
       );
-      expect(hook.yawWobble).toBeLessThanOrEqual(
+      expect(stretch.yawWobble).toBeLessThanOrEqual(
         Math.max(...existing.map((road) => road.yawWobble))
       );
     }
