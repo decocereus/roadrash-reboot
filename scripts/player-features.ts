@@ -390,7 +390,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/city.ts",
     ],
     summary:
-      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground, grey blocks, a flat lake and simple trees.",
+      "The road, terrain, sky, city blocks, signs and roadside props drawn from the compiled track, in the look of each region, built in chunks around the player, and the clearance that hides a prop while the chase camera passes it. A plan that carries its own scenery gets a greybox instead: world-space ground under its grass or paved cover, grey blocks, flat water, grass patches and simple trees.",
     title: "Roads, cities and scenery on screen",
     verify: ["roadside-clearance.md"],
   },
@@ -431,6 +431,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/track/src/tracks/**",
       "packages/track/src/regions.ts",
       "packages/track/src/roads.test.ts",
+      "packages/track/src/stretches.ts",
       "packages/track/src/chevron-runs.ts",
       "packages/sim/src/corner-warnings.ts",
       "packages/sim/src/corner-warnings.test.ts",
@@ -442,7 +443,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/corner-warnings.ts",
     ],
     summary:
-      "The five roads and their regions: each road's sections, crests, ramps, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the generated Casa de Campo hook, a development-only greybox outside the career.",
+      "The five roads and their regions: each road's sections, crests, ramps, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.",
     title: "The five roads",
     verify: [],
   },
