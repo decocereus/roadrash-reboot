@@ -21,6 +21,7 @@ import type { Side, SideName } from "./sides.ts";
 
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
+const SNAPSHOT_RUNS = 3;
 
 const decodeChild = Schema.decodeUnknownEffect(
   Schema.fromJsonString(childRecord)
@@ -50,6 +51,7 @@ export const nodeLaneRecord = Schema.Struct({
   allocation: Schema.Array(nodePair),
   calibrations: Schema.Array(nodeSample),
   scenario: Schema.String,
+  snapshots: Schema.Array(nodeSample),
   timing: Schema.Array(nodePair),
   validation: Schema.Array(nodeSample),
 });
@@ -72,12 +74,14 @@ const runChild = Effect.fnUntraced(function* runChild(
   const processes = yield* ToolProcesses;
   const file = path.join(dir, `${scenario.id}-${label}.json`);
   const startedAt = yield* Clock.currentTimeMillis;
+  const script =
+    task === "snapshot" ? "tools/perf/snapshot.ts" : "tools/perf/node.ts";
+  const taskArgs = task === "snapshot" ? [] : ["--task", task];
   yield* processes.run(
     process.execPath,
     [
-      path.join(side.root, "tools/perf/node.ts"),
-      "--task",
-      task,
+      path.join(side.root, script),
+      ...taskArgs,
       "--scenario",
       scenario.id,
       "--out",
@@ -161,10 +165,17 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   for (let pair = 0; pair < ALLOCATION_PAIRS; pair += 1) {
     allocation.push(yield* pairOf(sides, "alloc", scenario, dir, pair));
   }
+  const snapshots: NodeSample[] = [];
+  for (let run = 0; run < SNAPSHOT_RUNS; run += 1) {
+    snapshots.push(
+      yield* runChild(sides.B, "snapshot", scenario, dir, `snapshot-${run}-B`)
+    );
+  }
   const lane: NodeLane = {
     allocation,
     calibrations,
     scenario: scenario.id,
+    snapshots,
     timing,
     validation,
   };
@@ -178,6 +189,7 @@ const samplesOf = (lane: NodeLane): NodeSample[] => [
   ...lane.validation,
   ...lane.timing.flatMap((pair) => [pair.a, pair.b]),
   ...lane.allocation.flatMap((pair) => [pair.a, pair.b]),
+  ...lane.snapshots,
 ];
 
 const workloadFailures = (
@@ -265,6 +277,60 @@ const timingOf = (record: ChildRecord): RunTiming => {
 const allocatedPerTick = (record: ChildRecord): number =>
   (record.allocation?.bytes ?? Number.NaN) / WINDOW_TICKS;
 
+type SnapshotRun = NonNullable<ChildRecord["snapshot"]>;
+
+const snapshotMetrics = [
+  { metric: "snapshot.write.p95", of: (run: SnapshotRun) => run.write },
+  { metric: "snapshot.restore.p95", of: (run: SnapshotRun) => run.restore },
+  { metric: "snapshot.hash.p95", of: (run: SnapshotRun) => run.hash },
+] as const;
+
+const p95Of = (durations: readonly number[]): number =>
+  quantile(
+    durations.toSorted((left, right) => left - right),
+    0.95
+  );
+
+const snapshotRuns = (lane: NodeLane): readonly SnapshotRun[] =>
+  lane.snapshots.flatMap((sample) =>
+    sample.record.snapshot ? [sample.record.snapshot] : []
+  );
+
+const snapshotObservations = (
+  scenario: Scenario,
+  lane: NodeLane,
+  environment: string,
+  scale: number
+): readonly Observation[] => {
+  const runs = snapshotRuns(lane);
+  const bytes = runs.map((run) => Math.max(...run.bytes));
+  return [
+    ...snapshotMetrics.map(({ metric, of }): Observation => {
+      const measured = runs.map((run) => p95Of(of(run)) / scale);
+      return {
+        environment,
+        lane: "node",
+        metric,
+        note: `runs=${measured.length} scale=${scale.toFixed(3)}`,
+        paired: null,
+        runs: { a: [], b: measured },
+        scenario: scenario.id,
+        value: median(measured),
+      };
+    }),
+    {
+      environment,
+      lane: "node",
+      metric: "snapshot.bytes.max",
+      note: `runs=${bytes.length}`,
+      paired: null,
+      runs: { a: [], b: bytes },
+      scenario: scenario.id,
+      value: median(bytes),
+    },
+  ];
+};
+
 export const nodeVerdicts = (
   scenario: Scenario,
   lane: NodeLane,
@@ -346,6 +412,7 @@ export const nodeVerdicts = (
     a: lane.allocation.map((pair) => allocatedPerTick(pair.a.record)),
     b: lane.allocation.map((pair) => allocatedPerTick(pair.b.record)),
   };
+  const laneScale = median(runs.map((run) => run.scale));
   const observations: Observation[] = [
     timed(
       "sim.ticksPerSecond",
@@ -374,6 +441,7 @@ export const nodeVerdicts = (
       scenario: scenario.id,
       value: median(allocated.b),
     },
+    ...snapshotObservations(scenario, lane, environment, laneScale),
   ];
   return { environment, failures, observations, scales };
 };

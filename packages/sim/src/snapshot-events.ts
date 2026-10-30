@@ -1,358 +1,655 @@
 import { hazardKinds } from "@racer/track/hazards";
 
 import {
+  CHOICE_BYTES,
+  COUNT_BYTES,
   cursor,
-  putChoice,
+  FLAG_BYTES,
   putCount,
   putFlag,
-  putFloat,
-  putRiderRef,
-  putText,
-  putTextOrNone,
-  takeChoice,
+  refuse,
   takeCount,
   takeFlag,
-  takeFloat,
-  takeRiderRef,
-  takeText,
-  refuse,
-  takeTextOrNone,
-  textBytes,
-  textOrNoneBytes,
 } from "./snapshot-bytes.ts";
 import {
-  CHOICE_BYTES,
-  eventFixedBytes,
-  eventTags,
-  FLAG_BYTES,
-  fixedBytesOf,
-  hazardTagFields,
-} from "./snapshot-format.ts";
+  bytesOf,
+  choiceAt,
+  floatAt,
+  putRecord,
+  riderAt,
+  riderRefAt,
+  schemaOf,
+  takeRecord,
+  textAt,
+  textOrNoneAt,
+} from "./snapshot-members.ts";
+import type { Member, Schema } from "./snapshot-members.ts";
 import {
   attackKinds,
   crashCauses,
   hazardEffects,
+  PLAYER_RIDER,
   weaponKinds,
 } from "./state.ts";
-import type { HazardTag, RaceEvent, RiderId } from "./state.ts";
+import type { HazardTag, RaceEvent } from "./state.ts";
 
-const TAG_FIXED_BYTES = fixedBytesOf(hazardTagFields);
+type EventKind = RaceEvent["kind"];
 
-const tagBytes = (tag: HazardTag): number =>
-  TAG_FIXED_BYTES + textBytes(tag.id) + textOrNoneBytes(tag.command);
+type EventOf<Kind extends EventKind> = Extract<
+  RaceEvent,
+  { readonly kind: Kind }
+>;
 
-const tagOrNoneBytes = (tag: HazardTag | null): number =>
-  FLAG_BYTES + (tag === null ? 0 : tagBytes(tag));
+type Mutable<Value> = { -readonly [Key in keyof Value]: Value[Key] };
 
-export const eventBytes = (event: RaceEvent): number => {
-  const fixed = CHOICE_BYTES + eventFixedBytes[event.kind];
+const tagSchema = schemaOf<HazardTag, HazardTag>({
+  command: textOrNoneAt("command"),
+  id: textAt("id"),
+  kind: choiceAt("kind", hazardKinds),
+});
+
+const blankTag = (): HazardTag => ({
+  command: null,
+  id: "",
+  kind: hazardKinds[0],
+});
+
+const tagAt = <Key extends string>(
+  key: Key
+): Member<
+  Readonly<Record<Key, HazardTag>>,
+  Readonly<Record<Key, HazardTag>>
+> => ({
+  bytes: (value) => bytesOf(tagSchema, value[key]),
+  put: (out, value) => {
+    putRecord(out, tagSchema, value[key]);
+  },
+  take: (from, value) => {
+    takeRecord(from, tagSchema, value[key]);
+  },
+});
+
+const tagOrNoneAt = <Key extends string>(
+  key: Key
+): Member<
+  Readonly<Record<Key, HazardTag | null>>,
+  Record<Key, HazardTag | null>
+> => ({
+  bytes: (value) => {
+    const tag = value[key];
+    return FLAG_BYTES + (tag === null ? 0 : bytesOf(tagSchema, tag));
+  },
+  put: (out, value) => {
+    const tag = value[key];
+    putFlag(out, tag !== null);
+    if (tag !== null) {
+      putRecord(out, tagSchema, tag);
+    }
+  },
+  take: (from, value) => {
+    if (takeFlag(from)) {
+      const tag = value[key] ?? blankTag();
+      takeRecord(from, tagSchema, tag);
+      value[key] = tag;
+      return;
+    }
+    value[key] = null;
+  },
+});
+
+type EventSchemas = {
+  readonly [Kind in EventKind]: Schema<
+    Omit<EventOf<Kind>, "kind">,
+    Omit<Mutable<EventOf<Kind>>, "kind">
+  >;
+};
+
+export const eventSchemas: EventSchemas = {
+  attack: schemaOf<
+    Omit<EventOf<"attack">, "kind">,
+    Omit<Mutable<EventOf<"attack">>, "kind">
+  >({
+    attack: choiceAt("attack", attackKinds),
+    rider: riderAt("rider"),
+    side: floatAt("side"),
+    weapon: choiceAt("weapon", weaponKinds),
+  }),
+  bump: schemaOf<
+    Omit<EventOf<"bump">, "kind">,
+    Omit<Mutable<EventOf<"bump">>, "kind">
+  >({ rider: riderAt("rider") }),
+  busted: schemaOf<
+    Omit<EventOf<"busted">, "kind">,
+    Omit<Mutable<EventOf<"busted">>, "kind">
+  >({
+    cop: riderAt("cop"),
+    fine: floatAt("fine"),
+    rider: riderAt("rider"),
+    s: floatAt("s"),
+    weapon: choiceAt("weapon", weaponKinds),
+    x: floatAt("x"),
+  }),
+  crash: schemaOf<
+    Omit<EventOf<"crash">, "kind">,
+    Omit<Mutable<EventOf<"crash">>, "kind">
+  >({
+    by: riderRefAt("by"),
+    cause: choiceAt("cause", crashCauses),
+    hazard: tagOrNoneAt("hazard"),
+    rider: riderAt("rider"),
+    speed: floatAt("speed"),
+  }),
+  finish: schemaOf<
+    Omit<EventOf<"finish">, "kind">,
+    Omit<Mutable<EventOf<"finish">>, "kind">
+  >({
+    rider: riderAt("rider"),
+    tick: floatAt("tick"),
+  }),
+  glance: schemaOf<
+    Omit<EventOf<"glance">, "kind">,
+    Omit<Mutable<EventOf<"glance">>, "kind">
+  >({
+    rider: riderAt("rider"),
+  }),
+  hazard: schemaOf<
+    Omit<EventOf<"hazard">, "kind">,
+    Omit<Mutable<EventOf<"hazard">>, "kind">
+  >({
+    effect: choiceAt("effect", hazardEffects),
+    hazard: tagAt("hazard"),
+    rider: riderAt("rider"),
+    speed: floatAt("speed"),
+  }),
+  hit: schemaOf<
+    Omit<EventOf<"hit">, "kind">,
+    Omit<Mutable<EventOf<"hit">>, "kind">
+  >({
+    attack: choiceAt("attack", attackKinds),
+    rider: riderAt("rider"),
+    target: riderAt("target"),
+    weapon: choiceAt("weapon", weaponKinds),
+  }),
+  knockedDown: schemaOf<
+    Omit<EventOf<"knockedDown">, "kind">,
+    Omit<Mutable<EventOf<"knockedDown">>, "kind">
+  >({
+    by: riderRefAt("by"),
+    rider: riderAt("rider"),
+    speed: floatAt("speed"),
+  }),
+  land: schemaOf<
+    Omit<EventOf<"land">, "kind">,
+    Omit<Mutable<EventOf<"land">>, "kind">
+  >({
+    airSeconds: floatAt("airSeconds"),
+    impact: floatAt("impact"),
+    rider: riderAt("rider"),
+    s: floatAt("s"),
+    x: floatAt("x"),
+  }),
+  nearMiss: schemaOf<
+    Omit<EventOf<"nearMiss">, "kind">,
+    Omit<Mutable<EventOf<"nearMiss">>, "kind">
+  >({
+    closingSpeed: floatAt("closingSpeed"),
+    hazard: tagOrNoneAt("hazard"),
+    rider: riderAt("rider"),
+  }),
+  pursuit: schemaOf<
+    Omit<EventOf<"pursuit">, "kind">,
+    Omit<Mutable<EventOf<"pursuit">>, "kind">
+  >({
+    rider: riderAt("rider"),
+    target: riderAt("target"),
+  }),
+  remount: schemaOf<
+    Omit<EventOf<"remount">, "kind">,
+    Omit<Mutable<EventOf<"remount">>, "kind">
+  >({
+    rider: riderAt("rider"),
+  }),
+  riderContact: schemaOf<
+    Omit<EventOf<"riderContact">, "kind">,
+    Omit<Mutable<EventOf<"riderContact">>, "kind">
+  >({
+    other: riderAt("other"),
+    rider: riderAt("rider"),
+  }),
+  weaponBroken: schemaOf<
+    Omit<EventOf<"weaponBroken">, "kind">,
+    Omit<Mutable<EventOf<"weaponBroken">>, "kind">
+  >({
+    rider: riderAt("rider"),
+    weapon: choiceAt("weapon", weaponKinds),
+  }),
+  weaponTaken: schemaOf<
+    Omit<EventOf<"weaponTaken">, "kind">,
+    Omit<Mutable<EventOf<"weaponTaken">>, "kind">
+  >({
+    rider: riderAt("rider"),
+    target: riderAt("target"),
+    weapon: choiceAt("weapon", weaponKinds),
+  }),
+  wrecked: schemaOf<
+    Omit<EventOf<"wrecked">, "kind">,
+    Omit<Mutable<EventOf<"wrecked">>, "kind">
+  >({
+    rider: riderAt("rider"),
+  }),
+};
+
+export const eventTags = {
+  attack: 0,
+  bump: 1,
+  busted: 2,
+  crash: 3,
+  finish: 4,
+  glance: 5,
+  hazard: 6,
+  hit: 7,
+  knockedDown: 8,
+  land: 9,
+  nearMiss: 10,
+  pursuit: 11,
+  remount: 12,
+  riderContact: 13,
+  weaponBroken: 14,
+  weaponTaken: 15,
+  wrecked: 16,
+} satisfies Record<EventKind, number>;
+
+const eventKinds = [
+  "attack",
+  "bump",
+  "busted",
+  "crash",
+  "finish",
+  "glance",
+  "hazard",
+  "hit",
+  "knockedDown",
+  "land",
+  "nearMiss",
+  "pursuit",
+  "remount",
+  "riderContact",
+  "weaponBroken",
+  "weaponTaken",
+  "wrecked",
+] as const satisfies readonly EventKind[];
+
+const blankEvents = {
+  attack: () => ({
+    attack: attackKinds[0],
+    kind: "attack",
+    rider: PLAYER_RIDER,
+    side: 0,
+    weapon: weaponKinds[0],
+  }),
+  bump: () => ({ kind: "bump", rider: PLAYER_RIDER }),
+  busted: () => ({
+    cop: PLAYER_RIDER,
+    fine: 0,
+    kind: "busted",
+    rider: PLAYER_RIDER,
+    s: 0,
+    weapon: weaponKinds[0],
+    x: 0,
+  }),
+  crash: () => ({
+    by: null,
+    cause: crashCauses[0],
+    hazard: null,
+    kind: "crash",
+    rider: PLAYER_RIDER,
+    speed: 0,
+  }),
+  finish: () => ({ kind: "finish", rider: PLAYER_RIDER, tick: 0 }),
+  glance: () => ({ kind: "glance", rider: PLAYER_RIDER }),
+  hazard: () => ({
+    effect: hazardEffects[0],
+    hazard: blankTag(),
+    kind: "hazard",
+    rider: PLAYER_RIDER,
+    speed: 0,
+  }),
+  hit: () => ({
+    attack: attackKinds[0],
+    kind: "hit",
+    rider: PLAYER_RIDER,
+    target: PLAYER_RIDER,
+    weapon: weaponKinds[0],
+  }),
+  knockedDown: () => ({
+    by: null,
+    kind: "knockedDown",
+    rider: PLAYER_RIDER,
+    speed: 0,
+  }),
+  land: () => ({
+    airSeconds: 0,
+    impact: 0,
+    kind: "land",
+    rider: PLAYER_RIDER,
+    s: 0,
+    x: 0,
+  }),
+  nearMiss: () => ({
+    closingSpeed: 0,
+    hazard: null,
+    kind: "nearMiss",
+    rider: PLAYER_RIDER,
+  }),
+  pursuit: () => ({
+    kind: "pursuit",
+    rider: PLAYER_RIDER,
+    target: PLAYER_RIDER,
+  }),
+  remount: () => ({ kind: "remount", rider: PLAYER_RIDER }),
+  riderContact: () => ({
+    kind: "riderContact",
+    other: PLAYER_RIDER,
+    rider: PLAYER_RIDER,
+  }),
+  weaponBroken: () => ({
+    kind: "weaponBroken",
+    rider: PLAYER_RIDER,
+    weapon: weaponKinds[0],
+  }),
+  weaponTaken: () => ({
+    kind: "weaponTaken",
+    rider: PLAYER_RIDER,
+    target: PLAYER_RIDER,
+    weapon: weaponKinds[0],
+  }),
+  wrecked: () => ({ kind: "wrecked", rider: PLAYER_RIDER }),
+} satisfies { readonly [Kind in EventKind]: () => Mutable<EventOf<Kind>> };
+
+const kindOfTag = (tag: number): EventKind => {
+  const kind = eventKinds[tag];
+  if (kind === undefined) {
+    return refuse(`A snapshot holds no event with tag ${tag}.`);
+  }
+  return kind;
+};
+
+const eventBytes = (event: RaceEvent): number => {
   switch (event.kind) {
-    case "crash":
-    case "nearMiss": {
-      return fixed + tagOrNoneBytes(event.hazard);
+    case "attack": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.attack, event);
+    }
+    case "bump": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.bump, event);
+    }
+    case "busted": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.busted, event);
+    }
+    case "crash": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.crash, event);
+    }
+    case "finish": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.finish, event);
+    }
+    case "glance": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.glance, event);
     }
     case "hazard": {
-      return (
-        fixed +
-        textBytes(event.hazard.id) +
-        textOrNoneBytes(event.hazard.command)
-      );
+      return CHOICE_BYTES + bytesOf(eventSchemas.hazard, event);
     }
-    case "attack":
-    case "bump":
-    case "busted":
-    case "finish":
-    case "glance":
-    case "hit":
-    case "knockedDown":
-    case "land":
-    case "pursuit":
-    case "remount":
-    case "riderContact":
-    case "weaponBroken":
-    case "weaponTaken":
+    case "hit": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.hit, event);
+    }
+    case "knockedDown": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.knockedDown, event);
+    }
+    case "land": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.land, event);
+    }
+    case "nearMiss": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.nearMiss, event);
+    }
+    case "pursuit": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.pursuit, event);
+    }
+    case "remount": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.remount, event);
+    }
+    case "riderContact": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.riderContact, event);
+    }
+    case "weaponBroken": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.weaponBroken, event);
+    }
+    case "weaponTaken": {
+      return CHOICE_BYTES + bytesOf(eventSchemas.weaponTaken, event);
+    }
     case "wrecked": {
-      return fixed;
+      return CHOICE_BYTES + bytesOf(eventSchemas.wrecked, event);
     }
     default: {
       return event satisfies never;
     }
   }
 };
-
-const putTag = (out: DataView, tag: HazardTag): void => {
-  putTextOrNone(out, tag.command);
-  putText(out, tag.id);
-  putChoice(out, hazardKinds, tag.kind);
-};
-
-const putTagOrNone = (out: DataView, tag: HazardTag | null): void => {
-  putFlag(out, tag !== null);
-  if (tag !== null) {
-    putTag(out, tag);
-  }
-};
-
-const takeTag = (from: DataView): HazardTag => {
-  const command = takeTextOrNone(from);
-  const id = takeText(from);
-  return { command, id, kind: takeChoice(from, hazardKinds) };
-};
-
-const takeTagOrNone = (from: DataView): HazardTag | null =>
-  takeFlag(from) ? takeTag(from) : null;
 
 const putEvent = (out: DataView, event: RaceEvent): void => {
   out.setUint8(cursor.byte, eventTags[event.kind]);
   cursor.byte += CHOICE_BYTES;
   switch (event.kind) {
     case "attack": {
-      putChoice(out, attackKinds, event.attack);
-      putRiderRef(out, event.rider);
-      putFloat(out, event.side);
-      putChoice(out, weaponKinds, event.weapon);
+      putRecord(out, eventSchemas.attack, event);
       return;
     }
-    case "bump":
-    case "glance":
-    case "remount":
-    case "wrecked": {
-      putRiderRef(out, event.rider);
+    case "bump": {
+      putRecord(out, eventSchemas.bump, event);
       return;
     }
     case "busted": {
-      putRiderRef(out, event.cop);
-      putFloat(out, event.fine);
-      putRiderRef(out, event.rider);
-      putFloat(out, event.s);
-      putChoice(out, weaponKinds, event.weapon);
-      putFloat(out, event.x);
+      putRecord(out, eventSchemas.busted, event);
       return;
     }
     case "crash": {
-      putRiderRef(out, event.by);
-      putChoice(out, crashCauses, event.cause);
-      putTagOrNone(out, event.hazard);
-      putRiderRef(out, event.rider);
-      putFloat(out, event.speed);
+      putRecord(out, eventSchemas.crash, event);
       return;
     }
     case "finish": {
-      putRiderRef(out, event.rider);
-      putFloat(out, event.tick);
+      putRecord(out, eventSchemas.finish, event);
+      return;
+    }
+    case "glance": {
+      putRecord(out, eventSchemas.glance, event);
       return;
     }
     case "hazard": {
-      putChoice(out, hazardEffects, event.effect);
-      putTag(out, event.hazard);
-      putRiderRef(out, event.rider);
-      putFloat(out, event.speed);
+      putRecord(out, eventSchemas.hazard, event);
       return;
     }
     case "hit": {
-      putChoice(out, attackKinds, event.attack);
-      putRiderRef(out, event.rider);
-      putRiderRef(out, event.target);
-      putChoice(out, weaponKinds, event.weapon);
+      putRecord(out, eventSchemas.hit, event);
       return;
     }
     case "knockedDown": {
-      putRiderRef(out, event.by);
-      putRiderRef(out, event.rider);
-      putFloat(out, event.speed);
+      putRecord(out, eventSchemas.knockedDown, event);
       return;
     }
     case "land": {
-      putFloat(out, event.airSeconds);
-      putFloat(out, event.impact);
-      putRiderRef(out, event.rider);
-      putFloat(out, event.s);
-      putFloat(out, event.x);
+      putRecord(out, eventSchemas.land, event);
       return;
     }
     case "nearMiss": {
-      putFloat(out, event.closingSpeed);
-      putTagOrNone(out, event.hazard);
-      putRiderRef(out, event.rider);
+      putRecord(out, eventSchemas.nearMiss, event);
       return;
     }
     case "pursuit": {
-      putRiderRef(out, event.rider);
-      putRiderRef(out, event.target);
+      putRecord(out, eventSchemas.pursuit, event);
+      return;
+    }
+    case "remount": {
+      putRecord(out, eventSchemas.remount, event);
       return;
     }
     case "riderContact": {
-      putRiderRef(out, event.other);
-      putRiderRef(out, event.rider);
+      putRecord(out, eventSchemas.riderContact, event);
       return;
     }
     case "weaponBroken": {
-      putRiderRef(out, event.rider);
-      putChoice(out, weaponKinds, event.weapon);
+      putRecord(out, eventSchemas.weaponBroken, event);
       return;
     }
     case "weaponTaken": {
-      putRiderRef(out, event.rider);
-      putRiderRef(out, event.target);
-      putChoice(out, weaponKinds, event.weapon);
+      putRecord(out, eventSchemas.weaponTaken, event);
+      return;
+    }
+    case "wrecked": {
+      putRecord(out, eventSchemas.wrecked, event);
       return;
     }
     default: {
-      return event satisfies never;
+      event satisfies never;
     }
   }
 };
 
-const riderAt = (from: DataView): RiderId => {
-  const id = takeRiderRef(from);
-  if (id === null) {
-    return refuse("A snapshot holds an event with no rider.");
-  }
-  return id;
-};
-
-const takeEvent = (from: DataView, tag: number): RaceEvent => {
-  switch (tag) {
-    case eventTags.attack: {
-      return {
-        attack: takeChoice(from, attackKinds),
-        kind: "attack",
-        rider: riderAt(from),
-        side: takeFloat(from),
-        weapon: takeChoice(from, weaponKinds),
-      };
+const takeInto = (from: DataView, event: RaceEvent): void => {
+  switch (event.kind) {
+    case "attack": {
+      takeRecord(from, eventSchemas.attack, event);
+      return;
     }
-    case eventTags.bump: {
-      return { kind: "bump", rider: riderAt(from) };
+    case "bump": {
+      takeRecord(from, eventSchemas.bump, event);
+      return;
     }
-    case eventTags.busted: {
-      return {
-        cop: riderAt(from),
-        fine: takeFloat(from),
-        kind: "busted",
-        rider: riderAt(from),
-        s: takeFloat(from),
-        weapon: takeChoice(from, weaponKinds),
-        x: takeFloat(from),
-      };
+    case "busted": {
+      takeRecord(from, eventSchemas.busted, event);
+      return;
     }
-    case eventTags.crash: {
-      return {
-        by: takeRiderRef(from),
-        cause: takeChoice(from, crashCauses),
-        hazard: takeTagOrNone(from),
-        kind: "crash",
-        rider: riderAt(from),
-        speed: takeFloat(from),
-      };
+    case "crash": {
+      takeRecord(from, eventSchemas.crash, event);
+      return;
     }
-    case eventTags.finish: {
-      return { kind: "finish", rider: riderAt(from), tick: takeFloat(from) };
+    case "finish": {
+      takeRecord(from, eventSchemas.finish, event);
+      return;
     }
-    case eventTags.glance: {
-      return { kind: "glance", rider: riderAt(from) };
+    case "glance": {
+      takeRecord(from, eventSchemas.glance, event);
+      return;
     }
-    case eventTags.hazard: {
-      return {
-        effect: takeChoice(from, hazardEffects),
-        hazard: takeTag(from),
-        kind: "hazard",
-        rider: riderAt(from),
-        speed: takeFloat(from),
-      };
+    case "hazard": {
+      takeRecord(from, eventSchemas.hazard, event);
+      return;
     }
-    case eventTags.hit: {
-      return {
-        attack: takeChoice(from, attackKinds),
-        kind: "hit",
-        rider: riderAt(from),
-        target: riderAt(from),
-        weapon: takeChoice(from, weaponKinds),
-      };
+    case "hit": {
+      takeRecord(from, eventSchemas.hit, event);
+      return;
     }
-    case eventTags.knockedDown: {
-      return {
-        by: takeRiderRef(from),
-        kind: "knockedDown",
-        rider: riderAt(from),
-        speed: takeFloat(from),
-      };
+    case "knockedDown": {
+      takeRecord(from, eventSchemas.knockedDown, event);
+      return;
     }
-    case eventTags.land: {
-      return {
-        airSeconds: takeFloat(from),
-        impact: takeFloat(from),
-        kind: "land",
-        rider: riderAt(from),
-        s: takeFloat(from),
-        x: takeFloat(from),
-      };
+    case "land": {
+      takeRecord(from, eventSchemas.land, event);
+      return;
     }
-    case eventTags.nearMiss: {
-      return {
-        closingSpeed: takeFloat(from),
-        hazard: takeTagOrNone(from),
-        kind: "nearMiss",
-        rider: riderAt(from),
-      };
+    case "nearMiss": {
+      takeRecord(from, eventSchemas.nearMiss, event);
+      return;
     }
-    case eventTags.pursuit: {
-      return {
-        kind: "pursuit",
-        rider: riderAt(from),
-        target: riderAt(from),
-      };
+    case "pursuit": {
+      takeRecord(from, eventSchemas.pursuit, event);
+      return;
     }
-    case eventTags.remount: {
-      return { kind: "remount", rider: riderAt(from) };
+    case "remount": {
+      takeRecord(from, eventSchemas.remount, event);
+      return;
     }
-    case eventTags.riderContact: {
-      return {
-        kind: "riderContact",
-        other: riderAt(from),
-        rider: riderAt(from),
-      };
+    case "riderContact": {
+      takeRecord(from, eventSchemas.riderContact, event);
+      return;
     }
-    case eventTags.weaponBroken: {
-      return {
-        kind: "weaponBroken",
-        rider: riderAt(from),
-        weapon: takeChoice(from, weaponKinds),
-      };
+    case "weaponBroken": {
+      takeRecord(from, eventSchemas.weaponBroken, event);
+      return;
     }
-    case eventTags.weaponTaken: {
-      return {
-        kind: "weaponTaken",
-        rider: riderAt(from),
-        target: riderAt(from),
-        weapon: takeChoice(from, weaponKinds),
-      };
+    case "weaponTaken": {
+      takeRecord(from, eventSchemas.weaponTaken, event);
+      return;
     }
-    case eventTags.wrecked: {
-      return { kind: "wrecked", rider: riderAt(from) };
+    case "wrecked": {
+      takeRecord(from, eventSchemas.wrecked, event);
+      return;
     }
     default: {
-      return refuse(`A snapshot holds no event with tag ${tag}.`);
+      event satisfies never;
     }
   }
 };
 
-export const putEvents = (
-  out: DataView,
-  events: readonly RaceEvent[]
-): void => {
-  putCount(out, events.length);
-  for (const event of events) {
-    putEvent(out, event);
+const held = new WeakMap<readonly RaceEvent[], RaceEvent[]>();
+
+const heldFor = (events: readonly RaceEvent[]): RaceEvent[] => {
+  const mine = held.get(events);
+  if (mine) {
+    return mine;
   }
+  const made: RaceEvent[] = [];
+  held.set(events, made);
+  return made;
 };
 
-export const takeEvents = (from: DataView, events: RaceEvent[]): void => {
-  const count = takeCount(from);
-  events.length = 0;
-  for (let index = 0; index < count; index += 1) {
-    const tag = from.getUint8(cursor.byte);
-    cursor.byte += CHOICE_BYTES;
-    events.push(takeEvent(from, tag));
+const slotOf = (
+  mine: RaceEvent[],
+  live: RaceEvent[],
+  index: number,
+  kind: EventKind
+): RaceEvent => {
+  const standing = live[index];
+  if (standing !== undefined && standing.kind === kind) {
+    mine[index] = standing;
+    return standing;
   }
+  const own = mine[index];
+  if (own !== undefined && own.kind === kind) {
+    return own;
+  }
+  const made = blankEvents[kind]();
+  mine[index] = made;
+  return made;
 };
+
+export const eventsAt = <Key extends string>(
+  key: Key
+): Member<
+  Readonly<Record<Key, readonly RaceEvent[]>>,
+  Readonly<Record<Key, RaceEvent[]>>
+> => ({
+  bytes: (value) => {
+    let total = COUNT_BYTES;
+    for (const event of value[key]) {
+      total += eventBytes(event);
+    }
+    return total;
+  },
+  put: (out, value) => {
+    const events = value[key];
+    putCount(out, events.length);
+    for (const event of events) {
+      putEvent(out, event);
+    }
+  },
+  take: (from, value) => {
+    const events = value[key];
+    const mine = heldFor(events);
+    const count = takeCount(from);
+    for (let index = 0; index < count; index += 1) {
+      const tag = from.getUint8(cursor.byte);
+      cursor.byte += CHOICE_BYTES;
+      const event = slotOf(mine, events, index, kindOfTag(tag));
+      takeInto(from, event);
+      events[index] = event;
+    }
+    events.length = count;
+  },
+});

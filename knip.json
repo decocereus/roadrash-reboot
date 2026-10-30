@@ -12,6 +12,7 @@
         "src/**/*.test.ts",
         "test/**/*.test.ts",
         "test/bike-contact.ts",
+        "test/cold-restore-worker.ts",
         "test/outline-sides.ts",
         "test/renderer-lifecycle.ts",
         "test/replay-bundle.ts"
@@ -51,6 +52,7 @@
         "measure.ts",
         "node.ts",
         "session.ts",
+        "snapshot.ts",
         "test/**/*.test.ts"
       ],
       "project": ["**/*.ts"],

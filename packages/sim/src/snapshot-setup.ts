@@ -1,193 +1,209 @@
-import { hazardKinds } from "@racer/track/hazards";
-import type { Track } from "@racer/track/track";
+import type { TrackFeature } from "@racer/track/features";
+import type { HazardPlacement } from "@racer/track/hazards";
+import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
 
-import type { RaceView, RiderView } from "./race-view.ts";
-import {
-  cursor,
-  floatListBytes,
-  putChoice,
-  putCount,
-  putFloat,
-  putText,
-  refuse,
-  textBytes,
-} from "./snapshot-bytes.ts";
-import {
-  bikeFields,
-  CHOICE_BYTES,
-  COUNT_BYTES,
-  FLOAT_BYTES,
-  fixedBytesOf,
-  HASH_WORDS,
-  pacingFields,
-  policeFields,
-  profileFields,
-  SNAPSHOT_FORMAT,
+import type { RaceView, RiderView, TrafficView } from "./race-view.ts";
+import { cursor, HASH_WORDS, refuse } from "./snapshot-bytes.ts";
+import { SNAPSHOT_FORMAT } from "./snapshot-format.ts";
+import type {
+  CarSetupKey,
+  RaceSetupKey,
+  RiderSetupKey,
 } from "./snapshot-format.ts";
 import { hashBytes } from "./snapshot-hash.ts";
-import { bikeClasses, riderRoles, weaponKinds } from "./state.ts";
+import {
+  bytesOf,
+  floatAt,
+  floatsAt,
+  putRecord,
+  riderAt,
+  riderRefAt,
+  samplesAt,
+  textAt,
+  writtenListAt,
+  writtenRecordAt,
+  writtenSchemaOf,
+} from "./snapshot-members.ts";
+import type { WrittenSchema } from "./snapshot-members.ts";
+import type {
+  BikeSpec,
+  PacingRules,
+  PoliceRules,
+  RiderProfile,
+} from "./state.ts";
 
-const PROFILE_FIXED_BYTES = fixedBytesOf(profileFields);
-const BIKE_FIXED_BYTES = fixedBytesOf(bikeFields);
-const POLICE_FIXED_BYTES = fixedBytesOf(policeFields);
-const PACING_FIXED_BYTES = fixedBytesOf(pacingFields);
-const TRACK_FLOATS = 18;
-const FEATURE_FLOATS = 7;
-const PLACEMENT_FLOATS = 3;
-const CAR_SETUP_FLOATS = 6;
-const RIDER_SETUP_FLOATS = 3;
+type PlanKey =
+  | "hazardsPerKilometre"
+  | "id"
+  | "lanesEachWay"
+  | "laneWidth"
+  | "level"
+  | "name"
+  | "region"
+  | "seed"
+  | "shoulderWidth"
+  | "trafficPerKilometre"
+  | "vergeWidth";
 
-const laneBytes = (lanes: readonly number[]): number =>
-  COUNT_BYTES + FLOAT_BYTES * lanes.length;
+const planSchema = writtenSchemaOf<Pick<TrackPlan, PlanKey>>({
+  hazardsPerKilometre: floatAt("hazardsPerKilometre"),
+  id: textAt("id"),
+  laneWidth: floatAt("laneWidth"),
+  lanesEachWay: floatAt("lanesEachWay"),
+  level: floatAt("level"),
+  name: textAt("name"),
+  region: textAt("region"),
+  seed: floatAt("seed"),
+  shoulderWidth: floatAt("shoulderWidth"),
+  trafficPerKilometre: floatAt("trafficPerKilometre"),
+  vergeWidth: floatAt("vergeWidth"),
+});
 
-const trackBytes = (track: Track): number => {
-  const { plan } = track;
-  let total = FLOAT_BYTES * TRACK_FLOATS;
-  total += textBytes(plan.id) + textBytes(plan.name) + textBytes(plan.region);
-  total += laneBytes(track.sameWayLanes) + laneBytes(track.oncomingLanes);
-  total += COUNT_BYTES;
-  for (const feature of track.features) {
-    total += textBytes(feature.id) + FLOAT_BYTES * FEATURE_FLOATS;
-  }
-  total += COUNT_BYTES;
-  for (const placement of track.hazards) {
-    total +=
-      textBytes(placement.id) + CHOICE_BYTES + FLOAT_BYTES * PLACEMENT_FLOATS;
-  }
-  return total;
-};
+const propSchema = writtenSchemaOf<TrackProp>({
+  kind: textAt("kind"),
+  radius: floatAt("radius"),
+  s: floatAt("s"),
+  scale: floatAt("scale"),
+  x: floatAt("x"),
+});
 
-const riderBytes = (rider: RiderView): number =>
-  PROFILE_FIXED_BYTES +
-  textBytes(rider.profile.name) +
-  BIKE_FIXED_BYTES +
-  textBytes(rider.bike.id) +
-  textBytes(rider.bike.name) +
-  floatListBytes(rider.bike.gears) +
-  FLOAT_BYTES * RIDER_SETUP_FLOATS;
+const featureSchema = writtenSchemaOf<TrackFeature>({
+  fromS: floatAt("fromS"),
+  id: textAt("id"),
+  kind: textAt("kind"),
+  length: floatAt("length"),
+  rise: floatAt("rise"),
+  s: floatAt("s"),
+  toS: floatAt("toS"),
+  width: floatAt("width"),
+  x: floatAt("x"),
+});
 
-const setupBytes = (state: RaceView, track: Track): number => {
-  let total = FLOAT_BYTES + trackBytes(track);
-  total += POLICE_FIXED_BYTES + PACING_FIXED_BYTES;
-  total += COUNT_BYTES;
-  for (const rider of state.riders) {
-    total += riderBytes(rider);
-  }
-  total += COUNT_BYTES + state.cars.length * FLOAT_BYTES * CAR_SETUP_FLOATS;
-  return total;
-};
+const placementSchema = writtenSchemaOf<HazardPlacement>({
+  fromLevel: floatAt("fromLevel"),
+  id: textAt("id"),
+  kind: textAt("kind"),
+  s: floatAt("s"),
+  setting: textAt("setting"),
+  x: floatAt("x"),
+});
 
-const putLanes = (out: DataView, lanes: readonly number[]): void => {
-  putCount(out, lanes.length);
-  for (const lane of lanes) {
-    putFloat(out, lane);
-  }
-};
+const trackSchema: WrittenSchema<Omit<Track, "featureIndex">> = writtenSchemaOf<
+  Omit<Track, "featureIndex">
+>({
+  curvature: samplesAt("curvature"),
+  endS: floatAt("endS"),
+  features: writtenListAt("features", featureSchema),
+  hazards: writtenListAt("hazards", placementSchema),
+  heading: samplesAt("heading"),
+  length: floatAt("length"),
+  oncomingLanes: samplesAt("oncomingLanes"),
+  plan: writtenRecordAt("plan", planSchema),
+  props: writtenListAt("props", propSchema),
+  roadHalfWidth: floatAt("roadHalfWidth"),
+  sameWayLanes: samplesAt("sameWayLanes"),
+  sampleCount: floatAt("sampleCount"),
+  slope: samplesAt("slope"),
+  slopeRate: samplesAt("slopeRate"),
+  solidProps: writtenListAt("solidProps", propSchema),
+  startS: floatAt("startS"),
+  vergeHalfWidth: floatAt("vergeHalfWidth"),
+  worldX: samplesAt("worldX"),
+  worldY: samplesAt("worldY"),
+  worldZ: samplesAt("worldZ"),
+});
 
-const putTrack = (out: DataView, track: Track): void => {
-  const { plan } = track;
-  putText(out, plan.id);
-  putText(out, plan.name);
-  putText(out, plan.region);
-  putFloat(out, plan.level);
-  putFloat(out, plan.seed);
-  putFloat(out, plan.lanesEachWay);
-  putFloat(out, plan.laneWidth);
-  putFloat(out, plan.shoulderWidth);
-  putFloat(out, plan.vergeWidth);
-  putFloat(out, plan.trafficPerKilometre);
-  putFloat(out, plan.hazardsPerKilometre);
-  putFloat(out, plan.leadInLength);
-  putFloat(out, plan.runoffLength);
-  putFloat(out, track.length);
-  putFloat(out, track.startS);
-  putFloat(out, track.endS);
-  putFloat(out, track.sampleCount);
-  putFloat(out, track.roadHalfWidth);
-  putFloat(out, track.vergeHalfWidth);
-  putFloat(out, track.props.length);
-  putFloat(out, track.solidProps.length);
-  putLanes(out, track.sameWayLanes);
-  putLanes(out, track.oncomingLanes);
-  putCount(out, track.features.length);
-  for (const feature of track.features) {
-    putText(out, feature.id);
-    putFloat(out, feature.s);
-    putFloat(out, feature.x);
-    putFloat(out, feature.fromS);
-    putFloat(out, feature.toS);
-    putFloat(out, feature.length);
-    putFloat(out, feature.width);
-    putFloat(out, feature.rise);
-  }
-  putCount(out, track.hazards.length);
-  for (const placement of track.hazards) {
-    putText(out, placement.id);
-    putChoice(out, hazardKinds, placement.kind);
-    putFloat(out, placement.fromLevel);
-    putFloat(out, placement.s);
-    putFloat(out, placement.x);
-  }
-};
+const profileSchema = writtenSchemaOf<RiderProfile>({
+  aggression: floatAt("aggression"),
+  jacket: floatAt("jacket"),
+  name: textAt("name"),
+  paint: floatAt("paint"),
+  role: textAt("role"),
+  skill: floatAt("skill"),
+  weapon: textAt("weapon"),
+});
 
-const putRiderSetup = (out: DataView, rider: RiderView): void => {
-  const { bike, profile } = rider;
-  putFloat(out, rider.id);
-  putFloat(out, rider.grudge ?? -1);
-  putFloat(out, rider.aggressionBoost);
-  putFloat(out, profile.aggression);
-  putFloat(out, profile.jacket);
-  putText(out, profile.name);
-  putFloat(out, profile.paint);
-  putChoice(out, riderRoles, profile.role);
-  putFloat(out, profile.skill);
-  putChoice(out, weaponKinds, profile.weapon);
-  putChoice(out, bikeClasses, bike.bikeClass);
-  putFloat(out, bike.brakeDeceleration);
-  putFloat(out, bike.curvePush);
-  putFloat(out, bike.dragFactor);
-  putFloat(out, bike.engineBraking);
-  putCount(out, bike.gears.length);
-  for (const ratio of bike.gears) {
-    putFloat(out, ratio);
-  }
-  putText(out, bike.id);
-  putFloat(out, bike.lateralSpeed);
-  putFloat(out, bike.lateralSpeedPerSpeed);
-  putFloat(out, bike.launchAcceleration);
-  putFloat(out, bike.leanScrub);
-  putText(out, bike.name);
-  putFloat(out, bike.powerPerMass);
-  putFloat(out, bike.price);
-  putFloat(out, bike.rollingDeceleration);
-  putFloat(out, bike.steerRate);
-  putFloat(out, bike.visualLean);
-};
+const bikeSchema = writtenSchemaOf<BikeSpec>({
+  bikeClass: textAt("bikeClass"),
+  brakeDeceleration: floatAt("brakeDeceleration"),
+  curvePush: floatAt("curvePush"),
+  dragFactor: floatAt("dragFactor"),
+  engineBraking: floatAt("engineBraking"),
+  gears: floatsAt("gears"),
+  id: textAt("id"),
+  lateralSpeed: floatAt("lateralSpeed"),
+  lateralSpeedPerSpeed: floatAt("lateralSpeedPerSpeed"),
+  launchAcceleration: floatAt("launchAcceleration"),
+  leanScrub: floatAt("leanScrub"),
+  name: textAt("name"),
+  powerPerMass: floatAt("powerPerMass"),
+  price: floatAt("price"),
+  rollingDeceleration: floatAt("rollingDeceleration"),
+  steerRate: floatAt("steerRate"),
+  visualLean: floatAt("visualLean"),
+});
+
+const policeSchema = writtenSchemaOf<PoliceRules>({
+  beat: floatAt("beat"),
+  fine: floatAt("fine"),
+  sightRange: floatAt("sightRange"),
+  topSpeed: floatAt("topSpeed"),
+});
+
+const pacingSchema = writtenSchemaOf<PacingRules>({
+  catchUp: floatAt("catchUp"),
+  leadEase: floatAt("leadEase"),
+});
+
+const riderSetupSchema = writtenSchemaOf<Pick<RiderView, RiderSetupKey>>({
+  aggressionBoost: floatAt("aggressionBoost"),
+  bike: writtenRecordAt("bike", bikeSchema),
+  grudge: riderRefAt("grudge"),
+  id: riderAt("id"),
+  profile: writtenRecordAt("profile", profileSchema),
+});
+
+const carSetupSchema = writtenSchemaOf<Pick<TrafficView, CarSetupKey>>({
+  cruiseSpeed: floatAt("cruiseSpeed"),
+  halfLength: floatAt("halfLength"),
+  halfWidth: floatAt("halfWidth"),
+  height: floatAt("height"),
+  paint: floatAt("paint"),
+  x: floatAt("x"),
+});
+
+type SetupListKey = "cars" | "riders";
+
+const raceSetupSchema = writtenSchemaOf<
+  Pick<RaceView, RaceSetupKey | SetupListKey>
+>({
+  cars: writtenListAt("cars", carSetupSchema),
+  pacing: writtenRecordAt("pacing", pacingSchema),
+  police: writtenRecordAt("police", policeSchema),
+  riders: writtenListAt("riders", riderSetupSchema),
+});
+
+interface SetupSource {
+  readonly format: number;
+  readonly race: RaceView;
+  readonly track: Track;
+}
+
+const setupSchema = writtenSchemaOf<SetupSource>({
+  format: floatAt("format"),
+  race: writtenRecordAt("race", raceSetupSchema),
+  track: writtenRecordAt("track", trackSchema),
+});
 
 export const setupDigest = (state: RaceView, track: Track): Uint32Array => {
-  const bytes = new DataView(new ArrayBuffer(setupBytes(state, track)));
+  const source: SetupSource = {
+    format: SNAPSHOT_FORMAT,
+    race: state,
+    track,
+  };
+  const bytes = new DataView(new ArrayBuffer(bytesOf(setupSchema, source)));
   cursor.byte = 0;
-  putFloat(bytes, SNAPSHOT_FORMAT);
-  putTrack(bytes, track);
-  putFloat(bytes, state.police.beat);
-  putFloat(bytes, state.police.fine);
-  putFloat(bytes, state.police.sightRange);
-  putFloat(bytes, state.police.topSpeed);
-  putFloat(bytes, state.pacing.catchUp);
-  putFloat(bytes, state.pacing.leadEase);
-  putCount(bytes, state.riders.length);
-  for (const rider of state.riders) {
-    putRiderSetup(bytes, rider);
-  }
-  putCount(bytes, state.cars.length);
-  for (const car of state.cars) {
-    putFloat(bytes, car.cruiseSpeed);
-    putFloat(bytes, car.halfLength);
-    putFloat(bytes, car.halfWidth);
-    putFloat(bytes, car.height);
-    putFloat(bytes, car.paint);
-    putFloat(bytes, car.x);
-  }
+  putRecord(bytes, setupSchema, source);
   if (cursor.byte !== bytes.byteLength) {
     refuse(
       `The setup digest wrote ${cursor.byte} of ${bytes.byteLength} bytes.`

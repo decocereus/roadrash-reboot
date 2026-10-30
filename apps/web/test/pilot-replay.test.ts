@@ -15,7 +15,8 @@ import {
   replayCases,
   replayMatrix,
   ride,
-  TICKS,
+  rideToEnd,
+  TICK_LIMIT,
   WINDOW,
 } from "./pilot-replay.ts";
 import type { Matrix, Run } from "./pilot-replay.ts";
@@ -27,7 +28,7 @@ const decodeBaseline = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({
       provenance: Schema.Struct({
-        ticks: Schema.Number,
+        limit: Schema.Number,
         window: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
       }),
       solo: Schema.Array(
@@ -35,6 +36,7 @@ const decodeBaseline = Schema.decodeUnknownSync(
           final: Schema.String,
           full: Schema.String,
           id: Schema.String,
+          result: Schema.NullOr(Schema.String),
           ticks: Schema.Number,
           window: Schema.String,
         })
@@ -143,19 +145,26 @@ const playBack = (recorded: readonly RiderInput[]) => (run: Run) => {
   }
 };
 
-describe("pilot replays over 7,200 ticks", () => {
+describe("pilot replays to every race's outcome", () => {
   let matrix: Matrix;
 
   beforeAll(() => {
-    matrix = replayMatrix(TICKS);
+    matrix = replayMatrix(TICK_LIMIT);
   }, MATRIX_TIMEOUT_MS);
 
-  it("replay the step 3 baseline's ticks and window", () => {
-    expect(baseline.provenance).toStrictEqual({ ticks: TICKS, window: WINDOW });
+  it("replay the recorded baseline's limit and window", () => {
+    expect(baseline.provenance).toStrictEqual({
+      limit: TICK_LIMIT,
+      window: WINDOW,
+    });
   });
 
-  it("nine solo races match their step 3 baseline hashes", () => {
+  it("nine solo races match their recorded baseline hashes", () => {
     expect(matrix.solo).toStrictEqual(baseline.solo);
+  });
+
+  it("nine solo races each reach a finish, a bust or a wreck", () => {
+    expect(matrix.solo.map(({ result }) => result)).not.toContain(null);
   });
 
   it("each race run beside the other eight matches its solo run on every tick", () => {
@@ -171,7 +180,7 @@ describe("pilot replays over 7,200 ticks", () => {
       if (!slagRow) {
         throw new Error("The replay cases have no Slag Row seed 5 race.");
       }
-      const again = ride(openCase(slagRow), TICKS);
+      const again = rideToEnd(openCase(slagRow), TICK_LIMIT);
       expect(
         firstDifferentTick(
           again.frames,

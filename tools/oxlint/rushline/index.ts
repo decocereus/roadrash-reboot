@@ -1,6 +1,7 @@
 import { definePlugin } from "@oxlint/plugins";
 
 import { deterministicCoreRule } from "./rules/deterministic-core.ts";
+import { noBitwiseRule } from "./rules/no-bitwise.ts";
 import { noCommentsRule } from "./rules/no-comments.ts";
 import { noDiscardedExitRule } from "./rules/no-discarded-exit.ts";
 import { noDistanceHideRule } from "./rules/no-distance-hide.ts";
@@ -32,6 +33,7 @@ const rushlinePlugin = definePlugin({
   meta: { name: "rushline" },
   rules: {
     "deterministic-core": deterministicCoreRule,
+    "no-bitwise": noBitwiseRule,
     "no-comments": noCommentsRule,
     "no-discarded-exit": noDiscardedExitRule,
     "no-distance-hide": noDistanceHideRule,

@@ -1,4 +1,7 @@
 import { recordedRules } from "@racer/career/bench";
+import type { CareerRaceSetup } from "@racer/career/field";
+import { createRaceLog, recordTick } from "@racer/career/outcome";
+import type { RaceLog, RaceResult } from "@racer/career/outcome";
 import type { RoadId } from "@racer/career/tables";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
 import {
@@ -6,14 +9,13 @@ import {
   snapshotCapacity,
   writeSnapshot,
 } from "@racer/sim/snapshot";
-import { HASH_WORDS } from "@racer/sim/snapshot-format";
+import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { hashBytes, hashText } from "@racer/sim/snapshot-hash";
 import { setupDigest } from "@racer/sim/snapshot-setup";
 import { PLAYER_RIDER, riderModes } from "@racer/sim/state";
 import type {
   Controller,
   InputFrame,
-  RaceSetup,
   RaceState,
   RiderInput,
   RiderState,
@@ -25,12 +27,12 @@ import { planFor } from "../src/career/flow.ts";
 import { hasherFor } from "./race-hash.ts";
 import type { RaceHasher } from "./race-hash.ts";
 
-export const TICKS = 7200;
+export const TICK_LIMIT = 54_000;
 export const WINDOW = { from: 2880, to: 3480 };
 
 export interface ReplayCase {
   readonly id: string;
-  readonly setup: () => RaceSetup;
+  readonly setup: () => CareerRaceSetup;
 }
 
 const quickRace = (roadId: RoadId, seed: number): ReplayCase => ({
@@ -84,7 +86,8 @@ const foldChain = (chain: Chain, frame: Uint32Array): void => {
 
 export interface Run {
   readonly id: string;
-  readonly setup: RaceSetup;
+  readonly setup: CareerRaceSetup;
+  readonly log: RaceLog;
   readonly controller: Controller;
   state: RaceState;
   readonly track: Track;
@@ -108,10 +111,14 @@ const bufferFor = (run: Run): DataView => {
   return run.buffer;
 };
 
-const raceFor = (setup: RaceSetup, controller: Controller): RaceState =>
+const raceFor = (setup: CareerRaceSetup, controller: Controller): RaceState =>
   createRace({ ...setup, player: { ...setup.player, controller } });
 
-const open = (id: string, setup: RaceSetup, controller: Controller): Run => {
+const open = (
+  id: string,
+  setup: CareerRaceSetup,
+  controller: Controller
+): Run => {
   const state = raceFor(setup, controller);
   const controls = { ...neutralInput };
   const run: Run = {
@@ -123,6 +130,7 @@ const open = (id: string, setup: RaceSetup, controller: Controller): Run => {
     full: openChain(),
     hasher: hasherFor(state, setup.track),
     id,
+    log: createRaceLog(setup),
     problems: [],
     setup,
     state,
@@ -139,17 +147,27 @@ export const openCase = (
   controller: Controller = "pilot"
 ): Run => open(replay.id, replay.setup(), controller);
 
-export const restoredFrom = (run: Run): Run => {
+export const checkpointOf = (run: Run): Uint8Array => {
   const written = writeSnapshot(run.state, run.hasher.digest, bufferFor(run));
+  return new Uint8Array(run.buffer.buffer, run.buffer.byteOffset, written);
+};
+
+export const restoredWith = (run: Run, checkpoint: Uint8Array): Run => {
   const fresh = raceFor(run.setup, run.controller);
   restoreInto(
     fresh,
     setupDigest(fresh, run.track),
-    new DataView(run.buffer.buffer, run.buffer.byteOffset, written)
+    new DataView(
+      checkpoint.buffer,
+      checkpoint.byteOffset,
+      checkpoint.byteLength
+    )
   );
   run.state = fresh;
   return run;
 };
+
+const restoredFrom = (run: Run): Run => restoredWith(run, checkpointOf(run));
 
 const motion = [
   "s",
@@ -186,6 +204,7 @@ const inspect = (run: Run): void => {
 const advance = (run: Run, produce?: InputProducer): void => {
   produce?.(run);
   stepRace(run.state, run.track, run.frame);
+  recordTick(run.log, run.state, run.setup);
   inspect(run);
   run.frames.push(run.hasher.hash(run.state));
   foldChain(run.full, run.hasher.words);
@@ -201,20 +220,50 @@ export const ride = (run: Run, ticks: number, produce?: InputProducer): Run => {
   return run;
 };
 
+const settled = (run: Run): boolean => run.log.outcome !== null;
+
+const stillRiding = (run: Run, limit: number): boolean =>
+  !settled(run) && run.state.tick < limit;
+
+const noteUnsettled = (run: Run, limit: number): void => {
+  if (!settled(run)) {
+    run.problems.push(
+      `${run.id} had no outcome after ${limit} ticks, at ${run.state.tick}.`
+    );
+  }
+};
+
+export const rideToEnd = (
+  run: Run,
+  limit: number,
+  produce?: InputProducer
+): Run => {
+  while (stillRiding(run, limit)) {
+    advance(run, produce);
+  }
+  noteUnsettled(run, limit);
+  return run;
+};
+
 const RESTORE_EVERY = 600;
 
 const rideTogether = (
-  ticks: number,
+  limit: number,
   restore: (run: Run) => Run = (run) => run
 ): readonly Run[] => {
   let runs = replayCases.map((replay) => openCase(replay));
-  for (let tick = 0; tick < ticks; tick += 1) {
+  for (let tick = 0; runs.some((run) => stillRiding(run, limit)); tick += 1) {
     if (tick % RESTORE_EVERY === 0) {
-      runs = runs.map(restore);
+      runs = runs.map((run) => (stillRiding(run, limit) ? restore(run) : run));
     }
     for (const run of runs) {
-      advance(run);
+      if (stillRiding(run, limit)) {
+        advance(run);
+      }
     }
+  }
+  for (const run of runs) {
+    noteUnsettled(run, limit);
   }
   return runs;
 };
@@ -224,6 +273,7 @@ export interface Replay {
   readonly ticks: number;
   readonly full: string;
   readonly final: string;
+  readonly result: RaceResult | null;
   readonly window: string;
 }
 
@@ -231,6 +281,7 @@ export const close = (run: Run): Replay => ({
   final: run.hasher.hash(run.state),
   full: hashText(run.full.words),
   id: run.id,
+  result: run.log.outcome?.result ?? null,
   ticks: run.state.tick,
   window: hashText(run.window.words),
 });
@@ -257,10 +308,10 @@ export interface Matrix {
   readonly problems: readonly string[];
 }
 
-export const replayMatrix = (ticks: number): Matrix => {
-  const solo = replayCases.map((replay) => ride(openCase(replay), ticks));
-  const together = rideTogether(ticks);
-  const restored = rideTogether(WINDOW.to, restoredFrom);
+export const replayMatrix = (limit: number): Matrix => {
+  const solo = replayCases.map((replay) => rideToEnd(openCase(replay), limit));
+  const together = rideTogether(limit);
+  const restored = rideTogether(limit, restoredFrom);
   return {
     divergences: together.map((run, index) => ({
       firstDifferentTick: firstDifferentTick(

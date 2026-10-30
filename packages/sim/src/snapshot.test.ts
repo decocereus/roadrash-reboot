@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 import { track } from "./race-fixtures.ts";
 import type { RaceView } from "./race-view.ts";
 import { createRace, defaultSetup, stepRace } from "./race.ts";
-import { eventFields, eventTags, HASH_WORDS } from "./snapshot-format.ts";
+import { HASH_WORDS } from "./snapshot-bytes.ts";
+import { eventSchemas, eventTags } from "./snapshot-events.ts";
 import { hashBytes, hashText } from "./snapshot-hash.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import {
@@ -78,7 +79,18 @@ const EARLY_TICK = 60;
 const DIRTY_TICKS = 137;
 const FOREIGN_TICKS = 91;
 const SEED = 5;
-const OTHER_SEED = 9;
+const SLAG_SEED = 7;
+const COLLIDING_TICK = 554;
+const LIVE_LOAD = 1.0286586751722668;
+const COLLIDING_LOAD = 0.004018674765221998;
+const LIVE_FINISH_TICK = -1;
+const COLLIDING_FINISH_TICK = -0.003906011592334835;
+const COMPENSATED_WORD = 36;
+const COMPENSATED_FLIP = 2_147_483_684;
+const COMPENSATED_NEXT = 0x11_22_33_44;
+const COMPENSATED_SUM = 2_434_904_901;
+const PAIR_BYTES = 16;
+const MOMENT_TIMEOUT_MS = 120_000;
 
 const momentsOf = (
   state: RaceState,
@@ -122,25 +134,35 @@ describe("a race snapshot", () => {
     expect([...bytesOf(restored)]).toStrictEqual([...first]);
   });
 
-  it("carries a race on from a snapshot of an early tick, a fight, a crash and a chase", () => {
-    const moments = momentsOf(piloted(track, SEED), track, SCAN_TICKS);
-    expect(moments.filter((tick) => tick > 0)).toHaveLength(moments.length);
-    for (const at of [EARLY_TICK, ...moments]) {
-      const straightOn = piloted(track, SEED);
-      ride(straightOn, track, at);
-      const bytes = bytesOf(straightOn);
-      const expected = ride(straightOn, track, CONTINUE_TICKS);
-      expect(expected).toHaveLength(CONTINUE_TICKS);
-      const fresh = restoreSnapshot(pilotedSetup(track, SEED), viewOf(bytes));
-      expect(fresh.tick).toBe(at);
-      expect(ride(fresh, track, CONTINUE_TICKS)).toStrictEqual(expected);
-      const dirty = piloted(track, SEED);
-      ride(dirty, track, DIRTY_TICKS);
-      ride(piloted(track, OTHER_SEED), track, FOREIGN_TICKS);
-      restoreInto(dirty, setupDigest(dirty, track), viewOf(bytes));
-      expect(ride(dirty, track, CONTINUE_TICKS)).toStrictEqual(expected);
-    }
-  });
+  it.each([
+    { course: track, name: "the reference road", seed: SEED },
+    { course: compileTrack(slagRow), name: "Slag Row", seed: SLAG_SEED },
+  ])(
+    "carries $name on from a snapshot of an early tick, a fight, a crash and a chase",
+    ({ course, seed }) => {
+      const moments = momentsOf(piloted(course, seed), course, SCAN_TICKS);
+      expect(moments.filter((tick) => tick > 0)).toHaveLength(moments.length);
+      for (const at of [EARLY_TICK, ...moments]) {
+        const straightOn = piloted(course, seed);
+        ride(straightOn, course, at);
+        const bytes = bytesOf(straightOn, course);
+        const expected = ride(straightOn, course, CONTINUE_TICKS);
+        expect(expected).toHaveLength(CONTINUE_TICKS);
+        const fresh = restoreSnapshot(
+          pilotedSetup(course, seed),
+          viewOf(bytes)
+        );
+        expect(fresh.tick).toBe(at);
+        expect(ride(fresh, course, CONTINUE_TICKS)).toStrictEqual(expected);
+        const dirty = piloted(course, seed);
+        ride(dirty, course, DIRTY_TICKS);
+        ride(piloted(course, seed + 1), course, FOREIGN_TICKS);
+        restoreInto(dirty, setupDigest(dirty, course), viewOf(bytes));
+        expect(ride(dirty, course, CONTINUE_TICKS)).toStrictEqual(expected);
+      }
+    },
+    MOMENT_TIMEOUT_MS
+  );
 
   it("refuses a snapshot whose format does not match", () => {
     const state = piloted(track, 5);
@@ -215,7 +237,7 @@ describe("a race snapshot", () => {
 
   it("gives every race event kind one tag and one field table", () => {
     expect(Object.keys(eventTags).toSorted()).toStrictEqual(
-      Object.keys(eventFields).toSorted()
+      Object.keys(eventSchemas).toSorted()
     );
     expect(new Set(Object.values(eventTags)).size).toBe(
       Object.keys(eventTags).length
@@ -303,6 +325,117 @@ describe("a race snapshot", () => {
     expect(target.events).toStrictEqual(made);
   });
 
+  it("separates two races that differ only in one rider's load", () => {
+    const state = piloted(track, SEED);
+    ride(state, track, COLLIDING_TICK);
+    const rider = riderOf(state.riders, riderIdAt(1));
+    if (!rider) {
+      throw new Error("The race has no riders.");
+    }
+    expect(rider.load).toBe(LIVE_LOAD);
+    const live = hashOf(state, track);
+    rider.load = COLLIDING_LOAD;
+    expect(hashOf(state, track)).not.toBe(live);
+  });
+
+  it("separates two races that differ only in one rider's finishing tick", () => {
+    const state = piloted(track, SEED);
+    ride(state, track, COLLIDING_TICK);
+    const rider = riderOf(state.riders, riderIdAt(1));
+    if (!rider) {
+      throw new Error("The race has no riders.");
+    }
+    expect(rider.finishTick).toBe(LIVE_FINISH_TICK);
+    const live = hashOf(state, track);
+    rider.finishTick = COLLIDING_FINISH_TICK;
+    expect(hashOf(state, track)).not.toBe(live);
+  });
+
+  it("changes when one word moves and the next word compensates", () => {
+    const words = new Uint32Array(HASH_WORDS);
+    const left = new DataView(new ArrayBuffer(PAIR_BYTES));
+    const right = new DataView(new ArrayBuffer(PAIR_BYTES));
+    for (const view of [left, right]) {
+      view.setUint32(0, COMPENSATED_WORD, true);
+      view.setUint32(4, COMPENSATED_NEXT, true);
+      view.setUint32(8, 0x55_66_77_88, true);
+      view.setUint32(12, 0x99_aa_bb_cc, true);
+    }
+    right.setUint32(0, COMPENSATED_FLIP, true);
+    right.setUint32(4, COMPENSATED_SUM, true);
+    hashBytes(left, 0, PAIR_BYTES, words);
+    const first = hashText(words);
+    hashBytes(right, 0, PAIR_BYTES, words);
+    expect(hashText(words)).not.toBe(first);
+  });
+
+  it("refuses a snapshot taken on a road whose bends were moved", () => {
+    const state = piloted(track, SEED);
+    ride(state, track, EARLY_TICK);
+    const bent: Track = {
+      ...track,
+      curvature: track.curvature.map((value) => value + 0.001),
+    };
+    expect(setupDigest(state, bent)).not.toStrictEqual(
+      setupDigest(state, track)
+    );
+    const bytes = bytesOf(state, bent);
+    expect(() => {
+      restoreInto(
+        piloted(track, SEED),
+        setupDigest(state, track),
+        viewOf(bytes)
+      );
+    }).toThrow("another race setup");
+  });
+
+  it("restores a signed zero into a destination holding a positive zero", () => {
+    const state = piloted(track, SEED);
+    const rider = riderOf(state.riders, PLAYER_RIDER);
+    const [hazard] = state.hazards;
+    if (!(rider && hazard)) {
+      throw new Error("The race has no riders or no hazards.");
+    }
+    rider.lateralSpeed = -0;
+    state.hazards[0] = { ...hazard, x: -0 };
+    const bytes = bytesOf(state);
+    const dirty = piloted(track, SEED);
+    ride(dirty, track, DIRTY_TICKS);
+    const [standing] = dirty.hazards;
+    if (standing) {
+      dirty.hazards[0] = { ...standing, x: 0 };
+    }
+    restoreInto(dirty, setupDigest(dirty, track), viewOf(bytes));
+    expect(Object.is(dirty.hazards[0]?.x, -0)).toBeTruthy();
+    expect(
+      Object.is(riderOf(dirty.riders, PLAYER_RIDER)?.lateralSpeed, -0)
+    ).toBeTruthy();
+    expect([...bytesOf(dirty)]).toStrictEqual([...bytes]);
+  });
+
+  it("restores a race carrying events without building new ones", () => {
+    const state = piloted(track, SEED);
+    ride(state, track, COLLIDING_TICK);
+    const fight = state.events.find(({ kind }) => kind === "hit");
+    if (!fight) {
+      throw new Error(`Tick ${COLLIDING_TICK} of the race has no hit.`);
+    }
+    const bytes = bytesOf(state);
+    const target = piloted(track, SEED);
+    const digest = setupDigest(target, track);
+    restoreInto(target, digest, viewOf(bytes));
+    const first = [...target.events];
+    restoreInto(target, digest, viewOf(bytes));
+    expect(target.events).toHaveLength(first.length);
+    for (const [index, event] of first.entries()) {
+      expect(target.events[index]).toBe(event);
+    }
+    expect(target.events.map(({ kind }) => kind)).toStrictEqual(
+      state.events.map(({ kind }) => kind)
+    );
+    expect(target.events).toContainEqual(fight);
+  });
+
   it("keeps a signed zero, an infinity and a NaN through a round trip", () => {
     const state = piloted(track, 5);
     const rider = riderOf(state.riders, PLAYER_RIDER);
@@ -356,8 +489,8 @@ describe("a race snapshot", () => {
       taken.push(hashText(words));
     }
     expect(new Set(taken).size).toBe(taken.length);
-    expect(taken[0]).toBe("ae8c4b3aacd83bc3b2e36fea8d8e6c80");
-    expect(taken[1]).toBe("6dd7ed7988c5364612da5fdf9a6e9f46");
-    expect(taken[CORPUS_BYTES]).toBe("cd38182a50a83a102f331516122ad938");
+    expect(taken[0]).toBe("00000000000000000000000000000000");
+    expect(taken[1]).toBe("da3dd3f084f1d1dd84f1d1dd84f1d1dd");
+    expect(taken[CORPUS_BYTES]).toBe("9484de4b64f208db1af7b2d82a698bad");
   });
 });

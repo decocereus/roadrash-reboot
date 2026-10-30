@@ -536,6 +536,78 @@
       "side": "A",
       "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "value": 33554424
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.03208982127165214
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.050471499506113016
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.025013578660366274
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.03899155029840974
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.04149650911348169
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.06458247913964549
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 15473
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 21808
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 43238.828618968386
     }
   ],
   "revisions": {
@@ -769,6 +841,24 @@
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261025-025230-s0)",
         "B": "8d1b75a70b431c077a02e182690376f6249a2c73 with an uncommitted test edit the page does not load (rv 20261025-025234-s1)"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the snapshot child of tools/perf/snapshot.ts, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "the first run that measures the race snapshot's write, restore, hash and bytes, and the run that recalibrates sim.allocatedBytesPerTick on this Mac"
+      },
+      "id": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "lanes": ["node"],
+      "sides": {
+        "A": "3d782966036a6943f151fcdee0d00f434acc1393",
+        "B": "3d782966036a6943f151fcdee0d00f434acc1393"
       }
     }
   ],

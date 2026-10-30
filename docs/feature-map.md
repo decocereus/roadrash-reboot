@@ -605,11 +605,11 @@ Test files:
 The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs nine recorded races in Node, Chromium, Firefox and WebKit and compares every tick.
 
 - Id: `race-snapshot`
-- Start: `packages/sim/src/snapshot.ts`, `packages/sim/src/snapshot-format.ts`, `tools/replay/src/engines.ts`
+- Start: `packages/sim/src/snapshot.ts`, `packages/sim/src/snapshot-members.ts`, `packages/sim/src/snapshot-format.ts`, `tools/replay/src/engines.ts`
 - Docs: [docs/architecture.md#race-snapshots](architecture.md#race-snapshots), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: none yet
-- Perf: none yet
-- Owns: `packages/sim/src/snapshot*.ts`, `apps/web/test/race-hash.ts`, `apps/web/test/replay-bundle.ts`, `tools/replay/**`
+- Perf: `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95`, `snapshot.bytes.max`
+- Owns: `packages/sim/src/snapshot*.ts`, `apps/web/test/race-hash.ts`, `apps/web/test/replay-bundle.ts`, `apps/web/test/cold-restore-worker.ts`, `apps/web/test/cold-restore.test.ts`, `tools/perf/snapshot.ts`, `tools/perf/src/node-snapshot.ts`, `tools/replay/**`
 
 Source files:
 
@@ -617,16 +617,22 @@ Source files:
 - `packages/sim/src/snapshot-events.ts`
 - `packages/sim/src/snapshot-format.ts`
 - `packages/sim/src/snapshot-hash.ts`
+- `packages/sim/src/snapshot-members.ts`
 - `packages/sim/src/snapshot-setup.ts`
 - `packages/sim/src/snapshot.ts`
+- `tools/perf/snapshot.ts`
+- `tools/perf/src/node-snapshot.ts`
 - `tools/replay/engines.ts`
 - `tools/replay/src/engines.ts`
 - `tools/replay/src/replay-failed.ts`
 
 Test files:
 
+- `apps/web/test/cold-restore-worker.ts`
+- `apps/web/test/cold-restore.test.ts`
 - `apps/web/test/race-hash.ts`
 - `apps/web/test/replay-bundle.ts`
+- `packages/sim/src/snapshot-holes.test.ts`
 - `packages/sim/src/snapshot.test.ts`
 
 ### Deterministic math and randomness
@@ -1090,6 +1096,7 @@ Source files:
 - `tools/oxlint/rushline/notes.ts`
 - `tools/oxlint/rushline/property-name.ts`
 - `tools/oxlint/rushline/rules/deterministic-core.ts`
+- `tools/oxlint/rushline/rules/no-bitwise.ts`
 - `tools/oxlint/rushline/rules/no-comments.ts`
 - `tools/oxlint/rushline/rules/no-discarded-exit.ts`
 - `tools/oxlint/rushline/rules/no-distance-hide.ts`

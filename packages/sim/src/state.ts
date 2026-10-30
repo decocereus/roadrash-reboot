@@ -26,11 +26,7 @@ export const riderIdAt = (slot: number): RiderId => {
 
 export const PLAYER_RIDER = riderIdAt(0);
 
-export const bikeClasses = [
-  "featherweight",
-  "middleweight",
-  "heavyweight",
-] as const;
+const bikeClasses = ["featherweight", "middleweight", "heavyweight"] as const;
 
 export type BikeClass = (typeof bikeClasses)[number];
 
@@ -88,7 +84,7 @@ export const weaponKinds = [
 
 export type WeaponKind = (typeof weaponKinds)[number];
 
-export const riderRoles = ["racer", "police"] as const;
+const riderRoles = ["racer", "police"] as const;
 
 type RiderRole = (typeof riderRoles)[number];
 

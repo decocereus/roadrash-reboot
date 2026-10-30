@@ -1,6 +1,6 @@
 import type { RaceView } from "@racer/sim/race-view";
 import { hashRace, snapshotCapacity } from "@racer/sim/snapshot";
-import { HASH_WORDS } from "@racer/sim/snapshot-format";
+import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { hashText } from "@racer/sim/snapshot-hash";
 import { setupDigest } from "@racer/sim/snapshot-setup";
 import type { Track } from "@racer/track/track";

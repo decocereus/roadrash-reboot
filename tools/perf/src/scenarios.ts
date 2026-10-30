@@ -224,12 +224,13 @@ interface BenchRun {
   readonly step: () => void;
 }
 
-export const benchRun = (bench: Bench): BenchRun => {
+export const benchStart = (bench: Bench): RaceSetup => {
   const setup = benchSetup(bench);
-  const run = createRaceRun({
-    ...setup,
-    player: { ...setup.player, controller: "pilot" },
-  });
+  return { ...setup, player: { ...setup.player, controller: "pilot" } };
+};
+
+export const benchRun = (bench: Bench): BenchRun => {
+  const run = createRaceRun(benchStart(bench));
   const frame: InputFrame = new Map();
   return {
     step: () => {

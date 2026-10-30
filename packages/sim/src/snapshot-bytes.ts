@@ -1,11 +1,12 @@
-import {
-  CHOICE_BYTES,
-  COUNT_BYTES,
-  FLAG_BYTES,
-  FLOAT_BYTES,
-} from "./snapshot-format.ts";
 import { riderIdAt } from "./state.ts";
 import type { RiderId } from "./state.ts";
+
+export const HASH_WORDS = 4;
+export const FLOAT_BYTES = 8;
+export const FLAG_BYTES = 1;
+export const CHOICE_BYTES = 1;
+export const COUNT_BYTES = 4;
+export const WORD_BYTES = 4;
 
 const UNIT_BYTES = 2;
 const NAN_HIGH_WORD = 0x7f_f8_00_00;
@@ -24,9 +25,6 @@ export const textBytes = (value: string): number =>
 
 export const textOrNoneBytes = (value: string | null): number =>
   FLAG_BYTES + (value === null ? 0 : textBytes(value));
-
-export const floatListBytes = (values: readonly number[]): number =>
-  COUNT_BYTES + FLOAT_BYTES * values.length;
 
 export const putFloat = (out: DataView, value: number): void => {
   if (Number.isNaN(value)) {
@@ -132,19 +130,6 @@ export const takeText = (from: DataView): string => {
   return built;
 };
 
-export const textMatches = (from: DataView, value: string): boolean => {
-  const units = from.getUint16(cursor.byte, true);
-  cursor.byte += UNIT_BYTES;
-  let same = units === value.length;
-  for (let unit = 0; unit < units; unit += 1) {
-    if (from.getUint16(cursor.byte, true) !== value.codePointAt(unit)) {
-      same = false;
-    }
-    cursor.byte += UNIT_BYTES;
-  }
-  return same;
-};
-
 export const putTextOrNone = (out: DataView, value: string | null): void => {
   putFlag(out, value !== null);
   if (value !== null) {
@@ -154,15 +139,3 @@ export const putTextOrNone = (out: DataView, value: string | null): void => {
 
 export const takeTextOrNone = (from: DataView): string | null =>
   takeFlag(from) ? takeText(from) : null;
-
-export const textOrNoneMatches = (
-  from: DataView,
-  value: string | null
-): boolean => {
-  const present = takeFlag(from);
-  if (!present) {
-    return value === null;
-  }
-  const same = textMatches(from, value ?? "");
-  return value !== null && same;
-};
