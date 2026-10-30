@@ -84,7 +84,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     start: [
       "packages/sim/src/snapshot.ts",
       "packages/sim/src/snapshot-format.ts",
-      "tools/replay/src/engines.ts",
+      "packages/sim/src/snapshot-members.ts",
     ],
     summary:
       "The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs nine recorded races in Node, Chromium, Firefox and WebKit and compares every tick.",

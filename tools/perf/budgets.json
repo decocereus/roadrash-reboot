@@ -44,7 +44,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "b49bef1bda7bd4c5e8bc4e82508b8a8a513903c67ebf0b1933af09c65eacc92f"
+    "summarySha256": "05025f80f605c3557cc1fb772378d4f23506c65434ba098946ef002bcd604fbd"
   },
   "limits": [
     {
