@@ -14,7 +14,7 @@ import type { InputHost, KeyEvent, Pad } from "../src/game/input.ts";
 import type { Profiler } from "../src/game/profile.ts";
 import { bindQuality, createQuality } from "../src/game/quality-ladder.ts";
 import type { Quality, QualityRenderer } from "../src/game/quality-ladder.ts";
-import { frameDigest } from "./pilot-replay.ts";
+import { hasherFor } from "./race-hash.ts";
 
 export const VSYNC_MS = 1000 / 60;
 
@@ -116,14 +116,16 @@ interface Ticker {
 }
 
 export const createTicker = (): Ticker => {
-  const run = createRaceRun(defaultSetup(trackFor("ridge-road", 1), 7));
+  const track = trackFor("ridge-road", 1);
+  const run = createRaceRun(defaultSetup(track, 7));
   const input: RiderInput = { ...neutralInput };
   const frame: InputFrame = new Map([[PLAYER_RIDER, input]]);
   const digests: string[] = [];
+  const hasher = hasherFor(run.view, track);
   const tick = () => {
     scriptedInput(run.view.tick, input);
     run.step(frame);
-    digests.push(frameDigest(run.view));
+    digests.push(hasher.hash(run.view));
   };
   return { digests, run, tick };
 };

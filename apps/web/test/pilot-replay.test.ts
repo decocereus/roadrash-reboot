@@ -212,7 +212,7 @@ describe("pilot replays over 7,200 ticks", () => {
     RACE_TIMEOUT_MS
   );
 
-  it("each race rebuilt from a deep copy of its state every 600 ticks matches its solo run on every tick", () => {
+  it("each race restored from a snapshot into a fresh state every 600 ticks matches its solo run on every tick", () => {
     expect(matrix.restored).toStrictEqual(
       replayCases.map(({ id }) => ({ firstDifferentTick: null, id }))
     );

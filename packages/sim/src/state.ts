@@ -17,7 +17,7 @@ export type RiderId = number & { readonly [riderIdBrand]: true };
 const isRiderId = (slot: number): slot is RiderId =>
   Number.isSafeInteger(slot) && slot >= 0;
 
-const riderIdAt = (slot: number): RiderId => {
+export const riderIdAt = (slot: number): RiderId => {
   if (!isRiderId(slot)) {
     throw new RangeError(`No rider sits in slot ${slot}.`);
   }
@@ -26,7 +26,13 @@ const riderIdAt = (slot: number): RiderId => {
 
 export const PLAYER_RIDER = riderIdAt(0);
 
-export type BikeClass = "featherweight" | "middleweight" | "heavyweight";
+export const bikeClasses = [
+  "featherweight",
+  "middleweight",
+  "heavyweight",
+] as const;
+
+export type BikeClass = (typeof bikeClasses)[number];
 
 export interface BikeSpec {
   readonly id: string;
@@ -56,13 +62,19 @@ export interface RiderInput {
   kick: boolean;
 }
 
-const controllers = ["human", "pilot"] as const;
+export const controllers = ["human", "pilot"] as const;
 
 export type Controller = (typeof controllers)[number];
 
 export type InputFrame = ReadonlyMap<RiderId, Readonly<RiderInput>>;
 
-export type AttackKind = "punch" | "kick" | "swing";
+export const attackKinds = ["punch", "kick", "swing"] as const;
+
+export type AttackKind = (typeof attackKinds)[number];
+
+export const attackStates = ["none", ...attackKinds] as const;
+
+type AttackState = (typeof attackStates)[number];
 
 export const weaponKinds = [
   "none",
@@ -76,7 +88,9 @@ export const weaponKinds = [
 
 export type WeaponKind = (typeof weaponKinds)[number];
 
-type RiderRole = "racer" | "police";
+export const riderRoles = ["racer", "police"] as const;
+
+type RiderRole = (typeof riderRoles)[number];
 
 export interface RiderProfile {
   readonly name: string;
@@ -92,23 +106,29 @@ export const MAX_STAMINA = 100;
 
 export const FULL_CONDITION = 100;
 
-type RiderMode =
-  | "riding"
-  | "thrown"
-  | "lying"
-  | "running"
-  | "mounting"
-  | "busted"
-  | "wrecked";
+export const riderModes = [
+  "riding",
+  "thrown",
+  "lying",
+  "running",
+  "mounting",
+  "busted",
+  "wrecked",
+] as const;
 
-export type CrashCause =
-  | "traffic"
-  | "prop"
-  | "offTrack"
-  | "landing"
-  | "combat"
-  | "rider"
-  | "hazard";
+type RiderMode = (typeof riderModes)[number];
+
+export const crashCauses = [
+  "traffic",
+  "prop",
+  "offTrack",
+  "landing",
+  "combat",
+  "rider",
+  "hazard",
+] as const;
+
+export type CrashCause = (typeof crashCauses)[number];
 
 export interface RiderState {
   readonly id: RiderId;
@@ -125,7 +145,7 @@ export interface RiderState {
   lastHitBy: RiderId | null;
   lastHitTick: number;
   bumpLoss: number;
-  attack: AttackKind | "none";
+  attack: AttackState;
   attackSide: number;
   attackTicks: number;
   attackCooldown: number;
@@ -206,7 +226,9 @@ export interface Hazard extends HazardTag {
   readonly spawnTick: number;
 }
 
-export type HazardEffect = "slip" | "stagger" | "bump" | "jolt";
+export const hazardEffects = ["slip", "stagger", "bump", "jolt"] as const;
+
+export type HazardEffect = (typeof hazardEffects)[number];
 
 export type RaceEvent =
   | {
@@ -294,7 +316,7 @@ export type RaceEvent =
     }
   | { readonly kind: "finish"; readonly rider: RiderId; readonly tick: number };
 
-interface PoliceRules {
+export interface PoliceRules {
   readonly topSpeed: number;
   readonly sightRange: number;
   readonly beat: number;
@@ -325,7 +347,9 @@ export interface PoliceSetup extends PoliceRules {
   readonly bike: BikeSpec;
 }
 
-type GridOrder = "playerLast" | "playerFirst";
+const gridOrders = ["playerLast", "playerFirst"] as const;
+
+type GridOrder = (typeof gridOrders)[number];
 
 export interface RaceSetup {
   readonly track: Track;

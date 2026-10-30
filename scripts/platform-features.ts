@@ -58,6 +58,31 @@ export const platformFeatures: readonly FeatureEntry[] = [
     verify: [],
   },
   {
+    docs: [
+      "docs/architecture.md#race-snapshots",
+      "docs/coding-standards.md#keep-the-simulation-deterministic",
+      "docs/design/game-design.md#12-multiplayer",
+    ],
+    id: "race-snapshot",
+    kind: "platform",
+    owns: [
+      "packages/sim/src/snapshot*.ts",
+      "apps/web/test/race-hash.ts",
+      "apps/web/test/replay-bundle.ts",
+      "tools/replay/**",
+    ],
+    perf: [],
+    start: [
+      "packages/sim/src/snapshot.ts",
+      "packages/sim/src/snapshot-format.ts",
+      "tools/replay/src/engines.ts",
+    ],
+    summary:
+      "The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs nine recorded races in Node, Chromium, Firefox and WebKit and compares every tick.",
+    title: "Race snapshots and the replay hash",
+    verify: [],
+  },
+  {
     docs: ["docs/coding-standards.md#keep-the-simulation-deterministic"],
     id: "deterministic-math",
     kind: "platform",

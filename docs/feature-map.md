@@ -32,6 +32,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 
 - [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
+- [Race snapshots and the replay hash](#race-snapshots-and-the-replay-hash): `race-snapshot`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
 - [Track compiler](#track-compiler): `track-compiler`
 - [Renderer core and frame loop](#renderer-core-and-frame-loop): `renderer-core`
@@ -598,6 +599,35 @@ Test files:
 
 - `apps/web/test/race-view.test.ts`
 - `packages/sim/src/race-setup-and-replay.test.ts`
+
+### Race snapshots and the replay hash
+
+The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs nine recorded races in Node, Chromium, Firefox and WebKit and compares every tick.
+
+- Id: `race-snapshot`
+- Start: `packages/sim/src/snapshot.ts`, `packages/sim/src/snapshot-format.ts`, `tools/replay/src/engines.ts`
+- Docs: [docs/architecture.md#race-snapshots](architecture.md#race-snapshots), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Verify: none yet
+- Perf: none yet
+- Owns: `packages/sim/src/snapshot*.ts`, `apps/web/test/race-hash.ts`, `apps/web/test/replay-bundle.ts`, `tools/replay/**`
+
+Source files:
+
+- `packages/sim/src/snapshot-bytes.ts`
+- `packages/sim/src/snapshot-events.ts`
+- `packages/sim/src/snapshot-format.ts`
+- `packages/sim/src/snapshot-hash.ts`
+- `packages/sim/src/snapshot-setup.ts`
+- `packages/sim/src/snapshot.ts`
+- `tools/replay/engines.ts`
+- `tools/replay/src/engines.ts`
+- `tools/replay/src/replay-failed.ts`
+
+Test files:
+
+- `apps/web/test/race-hash.ts`
+- `apps/web/test/replay-bundle.ts`
+- `packages/sim/src/snapshot.test.ts`
 
 ### Deterministic math and randomness
 

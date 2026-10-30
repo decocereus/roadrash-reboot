@@ -13,6 +13,7 @@ coverage/
 .output/
 .wrangler/
 tools/perf/results/
+tools/replay/results/
 tools/blender/out/
 .claude/*
 !.claude/skills/

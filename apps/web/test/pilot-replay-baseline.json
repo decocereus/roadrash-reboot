@@ -1,8 +1,8 @@
 {
   "provenance": {
-    "recordedAt": ["5680bfcc1be8921a1979ad1d0c43a744e95ede81"],
-    "recordedWith": "the settled lean, full lock either way and the riding-speed chevrons at recordedAt, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1. Before it was recorded, the same code with the settled lean set to zero reproduced the earlier baseline, recorded at 9126e0dae787872a70a307fb6d4212fe7309c0c6 with the pilot-in-tick change, hash for hash in seven of the nine races; ridge-road/level5/seed1 and seed9 differ only because a rider meets a chevron board that moved. With the lean on, all nine change, because the pilot's steer now rides on the settled lean. Over 120 paired races to the finish (Ridge Road and Slag Row level 5, both signed bikes, seeds 1 to 30), every 90% bootstrap interval for the change sits inside its tolerance: winner time within 1.5%, total crashes within 5%, finishers within half a rider, the player's crashes within 0.3 and the player's place within one place a race",
-    "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text, Float64Array as a counted run of numbers",
+    "recordedAt": ["b2fc5ba"],
+    "recordedWith": "the race snapshot codec of feat/race-snapshot, branched from b2fc5ba, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Every hash changed because the serializer changed, not because any race did: at b2fc5ba plus this branch's state.ts, hazards.ts and math-words.ts changes, the previous node:crypto serializer reproduced the committed baseline hash for hash in all nine races, which is the tick-for-tick proof that the tuples, the exported riderIdAt and the little-endian assertion move no outcome. The nine races then ran again through the new writeSnapshot bytes and the new 128-bit hash, which covers the same race state plus the format word, the setup digest and the tick.",
+    "serializer": "writeSnapshot bytes (format 1, little-endian through DataView, one canonical NaN) hashed with snapshot-hash's four-lane 128-bit multiply-shift, chained tick by tick for full and window",
     "ticks": 7200,
     "window": {
       "from": 2880,
@@ -11,67 +11,67 @@
   },
   "solo": [
     {
+      "final": "26970e28596d1f990d92ccca1774e7e6",
+      "full": "ffb7f01f62e6a09bb543b11168d0a1bc",
       "id": "ridge-road/level5/seed1",
       "ticks": 7200,
-      "full": "c3da0d22aa85b9c3aa091d1778aeb921176121516f5bb3c85229aaf0369df135",
-      "final": "3d17ec44e894efa3c3a45ec94aa0c53924574ee9b30a2a4e23f9471c28ba3c59",
-      "window": "6f4fe289c0192461e62288d8fffe81ee7f7ac5d97c5cb51e785d28285567671c"
+      "window": "a413d00b69928758214d40a4db3baaad"
     },
     {
+      "final": "152229f55423a9098074f84d9364a576",
+      "full": "a8b73177fb9a1970e71b81da92edf19c",
       "id": "ridge-road/level5/seed5",
       "ticks": 7200,
-      "full": "bb0022de635725a607a2477904be8959b6ff158f6e610b38ec0a3b37d874b7c7",
-      "final": "2f73b4519466605ee506945e20be5d16b67db9e9944a470b54c7874db642861e",
-      "window": "acb66692a3fb35e41333f43a45a894ab0d9b8ec90bc0306d07eaf7fe9f1d684c"
+      "window": "327241dbff1e88bbd876634b01887f1f"
     },
     {
+      "final": "c24081d3021b3af379aa894a2aedfec1",
+      "full": "afea9ffab21c4e4301f5b73940ab30a9",
       "id": "ridge-road/level5/seed9",
       "ticks": 7200,
-      "full": "b7234dcf0ba1584c1499b061d2ad331e76052f5c190e6d9ea92a8b9ff0cefb5f",
-      "final": "04c45c7383928a6b4d4f30e37ad9ef6b6b878000526b9d7d160e23acb1b3cee4",
-      "window": "5f69b17c330e4e9e22f207a891434878391391b0706271d31302551ef8b6ddde"
+      "window": "58299ef7aa1c3e655f5e54d44b264963"
     },
     {
+      "final": "a1dd4f6dbf82b481faf8d0cff50a2c91",
+      "full": "c02cba7e3d432e0c273eced921c8de83",
       "id": "ridge-road/level5/seed31",
       "ticks": 7200,
-      "full": "9ee3652fc68a69d977386a4e73f1a84ae77aec32a74514940bdf9c240b98b76c",
-      "final": "023b3a1d4eb274903e3bad1da96aaa31e6908f602e32c16cbc05be7880c77335",
-      "window": "bac00c5527f49994f9c48a9814cdf93d691175e724973770e33369805f318182"
+      "window": "859ab858d10f17850630219895eba7a4"
     },
     {
+      "final": "1359efe8f9b603249b30bf5930515b9e",
+      "full": "d3f21fb1990a4eda25d81331ea34748e",
       "id": "slag-row/level5/seed1",
       "ticks": 7200,
-      "full": "0d3ee1c0ab8ac5c0e31ffdae0fd3eac015a45af31fc6d28a8a15c11c57adf825",
-      "final": "db98264a76581d35ada3bf1bbc66bb5522d37b9aa10f9c41f5908ec2f032cbf2",
-      "window": "73b5420ec7a1fe75a56f065895fd92521648a1ef7f024b9c1953ea12758238a0"
+      "window": "97ae47487061ce42b28270dfd8773367"
     },
     {
+      "final": "bed4723dc3bcc2957d1bd2692e2868d4",
+      "full": "edfbaf324148e6a64ea7ea2199bfc8d3",
       "id": "slag-row/level5/seed5",
       "ticks": 7200,
-      "full": "dff58839f4fbcd33d5493504756ce8f4a50924437a1bfcec015475abce815155",
-      "final": "4cdfdf9d2d03e203219e1de2d4098c515a88585c1dc2771a32e5fd57101b9c01",
-      "window": "47362da4f717cb9c3bcbe1d8c2156b239dda3fd20a79ab3f37a9a0fcbe8bc8d7"
+      "window": "dfba8f5b9a65016f1fedb3d739b63fbf"
     },
     {
+      "final": "b89c2263c0d6657e16b68dc55cb2a3b5",
+      "full": "69d0dd6773b7a165c925f2bd4797b22e",
       "id": "slag-row/level5/seed9",
       "ticks": 7200,
-      "full": "81658c34e010d9d242fd8b200eb089d0e87383642182f9c362326f364b9e747c",
-      "final": "fcc82a2abd92b95e87cc2f2ec0e925752acfd3b99f4f0a84125eec1af7a1806e",
-      "window": "c29c77db56362d7f72a321a76c58894f03bd3cbcf11ca2330026780728961e02"
+      "window": "8d8fb59bd7f936bf5c7afb5fc70a1e8e"
     },
     {
+      "final": "7e92c38b5226faeb98ed95978b247db2",
+      "full": "9b02b78eaeea92be0af037aa05ddca56",
       "id": "slag-row/level5/seed31",
       "ticks": 7200,
-      "full": "cd93e8eb91fb0e415237bd45705662a1161d49e20ca39fcb8bd43d5b3f815e94",
-      "final": "263582fee87769b9bc3d1ffa3477df3e9272839667327364a0c72aaa8bb3615e",
-      "window": "8576e0eb621f5f531defb0d660b6b016b3a5e8ccd3a976fcd6cdec02c93dc838"
+      "window": "a71d7f22b3d2dc4326d0b13139a62ea1"
     },
     {
+      "final": "663f560df752b3fc3dc738c0e679f49f",
+      "full": "24e81eb64eda65c4fcfcb648a79d468f",
       "id": "stress/seed8",
       "ticks": 7200,
-      "full": "d85a341a25b197b04c63b2b6a50b7667a8e96e2d4e21c88a834671ffad2fd6b8",
-      "final": "172ca1aad56a22d44fa6f9f02da9f165ab1fe08637b1d58a80bfb5768719bb06",
-      "window": "42cacdb85f2600792cc6a1def27cea08fe8104da695ba934ffc73a3d68bc60c9"
+      "window": "69b4b01effb20f937ce698c3630cce24"
     }
   ]
 }
