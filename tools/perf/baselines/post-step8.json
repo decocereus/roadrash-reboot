@@ -608,6 +608,70 @@
       "side": "B",
       "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
       "value": 43238.828618968386
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.07468902498202905
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.11432457933276678
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.06145614663194996
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.09421989183071527
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.09114638634566513
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.13294496098436617
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 15473
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 21808
     }
   ],
   "revisions": {
@@ -643,7 +707,10 @@
         "artifactDigestB": "c45adbfff54391d573ad6f738cca71c475e65636e91774236a0ae5117b3753b6"
       },
       "id": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
-      "lanes": ["node", "build"],
+      "lanes": [
+        "node",
+        "build"
+      ],
       "sides": {
         "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
         "B": "edb664a9120e82a3079bd2063a5794306600c1fe (dirty)"
@@ -672,7 +739,9 @@
         "wallMs": "{\"build\":3731,\"materialize\":15446,\"node\":0,\"total\":19283}"
       },
       "id": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
-      "lanes": ["build"],
+      "lanes": [
+        "build"
+      ],
       "sides": {
         "A": "fd677a71c74167dc049a2bcf232f26f8f9abda86 (dirty)",
         "B": "29f83004e8f78849fb56fb7f8378323a3cb9d6da (dirty)"
@@ -699,7 +768,9 @@
         "wallMs": "{\"build\":4156,\"materialize\":12618,\"node\":0,\"total\":16913}"
       },
       "id": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
-      "lanes": ["build"],
+      "lanes": [
+        "build"
+      ],
       "sides": {
         "A": "6e6ea5a56ee61b2a4b28aa160b458fdca9146bbe",
         "B": "6e6ea5a56ee61b2a4b28aa160b458fdca9146bbe"
@@ -727,7 +798,9 @@
         "wallMs": "{\"build\":4147,\"materialize\":12388,\"node\":0,\"total\":16674}"
       },
       "id": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
-      "lanes": ["build"],
+      "lanes": [
+        "build"
+      ],
       "sides": {
         "A": "6011594136d79e153d28a3689ed5575634cc1a6b",
         "B": "6011594136d79e153d28a3689ed5575634cc1a6b"
@@ -751,7 +824,9 @@
         "sourceDigestB": "75f606a81d411840b78360557226513fb551ceb3d6e11b2c97beb3e6f3c01a75"
       },
       "id": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
-      "lanes": ["gpu"],
+      "lanes": [
+        "gpu"
+      ],
       "sides": {
         "A": "b8705dd02aec5220687a005768b98529cddd00d0 (rv 20261025-003939-s0)",
         "B": "b8705dd02aec5220687a005768b98529cddd00d0 with the fig-1 planted-hands change, uncommitted (rv 20261025-003944-s1)"
@@ -780,7 +855,10 @@
         "quiet": "no other agent's test, lint, build or perf process ran during the run, checked every 2 s; two earlier runs at 21:15 and 21:17 UTC overlapped another agent's tests and were not used"
       },
       "id": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "lanes": ["node", "build"],
+      "lanes": [
+        "node",
+        "build"
+      ],
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
         "B": "8d1b75a70b431c077a02e182690376f6249a2c73"
@@ -812,7 +890,10 @@
         "attempts": "attempts 1 and 2 (artifacts 12576265202 and 12576705768) were not used: each had an A/A pair outside its margin, pack-riding-v1 tick p99 at 48% in attempt 1 and reference-v1 tick p99 at 42% in attempt 2"
       },
       "id": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "lanes": ["node", "build"],
+      "lanes": [
+        "node",
+        "build"
+      ],
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
         "B": "e2f4b79ffad0678aac50bb1935646d86d56ce6a9"
@@ -837,7 +918,9 @@
         "sourceDigestB": "B's digest covers an uncommitted edit to tools/perf/test/evaluate.test.ts made after rv built the page; the page does not load that file"
       },
       "id": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "lanes": ["gpu"],
+      "lanes": [
+        "gpu"
+      ],
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261025-025230-s0)",
         "B": "8d1b75a70b431c077a02e182690376f6249a2c73 with an uncommitted test edit the page does not load (rv 20261025-025234-s1)"
@@ -855,10 +938,30 @@
         "why": "the first run that measures the race snapshot's write, restore, hash and bytes, and the run that recalibrates sim.allocatedBytesPerTick on this Mac"
       },
       "id": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "lanes": ["node"],
+      "lanes": [
+        "node"
+      ],
       "sides": {
         "A": "3d782966036a6943f151fcdee0d00f434acc1393",
         "B": "3d782966036a6943f151fcdee0d00f434acc1393"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "harness": "the snapshot child of tools/perf/snapshot.ts, three runs per scenario",
+        "platform": "linux",
+        "runner": "the CI perf job of quality.yml on ubuntu-24.04, run 41061055166, with the job's pnpm perf step replaced by node tools/perf/gate.ts baseline --lanes node for this measurement and put back in the next commit",
+        "why": "the first run that measures the race snapshot on the CI runner"
+      },
+      "id": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "lanes": [
+        "node"
+      ],
+      "sides": {
+        "A": "f094dbba3527cb4c51212b5695940ee73fd442d2",
+        "B": "f094dbba3527cb4c51212b5695940ee73fd442d2"
       }
     }
   ],

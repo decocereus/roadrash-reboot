@@ -2,10 +2,6 @@
   "baseline": {
     "raw": [
       {
-        "file": "baselines/post-step8.snapshot.node-darwin-arm64.json.gz",
-        "sha256": "dd85ed61cd9ddb37bd9506a8270e3b17f2117eea3643a8e0763895bb28e52783"
-      },
-      {
         "file": "tools/perf/baselines/post-step8.bikes.json.gz",
         "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
       },
@@ -34,13 +30,21 @@
         "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
       },
       {
+        "file": "tools/perf/baselines/post-step8.snapshot.node-darwin-arm64.json.gz",
+        "sha256": "dd85ed61cd9ddb37bd9506a8270e3b17f2117eea3643a8e0763895bb28e52783"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.snapshot.node-linux-x64.json.gz",
+        "sha256": "4e2c20fa6df88bed881e9456fbb1a645496c5d5495b1a3024ddc7b1c8af44c36"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.worker.json.gz",
         "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
       }
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "2292191a412c5e6bc42bc4a72014d30ea25c338c03b968f884e1279bda0f9a3d"
+    "summarySha256": "b49bef1bda7bd4c5e8bc4e82508b8a8a513903c67ebf0b1933af09c65eacc92f"
   },
   "limits": [
     {
@@ -861,6 +865,18 @@
     },
     {
       "derivation": "exact baseline",
+      "value": 21808,
+      "baseline": 21808,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
       "value": 15473,
       "baseline": 15473,
       "direction": "max",
@@ -869,6 +885,18 @@
       "paired": null,
       "scenario": "reference-v1",
       "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 15473,
+      "baseline": 15473,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
       "unit": "B"
     },
     {
@@ -885,6 +913,18 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
+      "value": 0.1528867051320211,
+      "baseline": 0.13294496098436617,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
       "value": 0.04772098548050394,
       "baseline": 0.04149650911348169,
       "direction": "max",
@@ -893,6 +933,18 @@
       "paired": null,
       "scenario": "reference-v1",
       "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.1048183442975149,
+      "baseline": 0.09114638634566513,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
       "unit": "ms"
     },
     {
@@ -909,6 +961,18 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
+      "value": 0.10835287560532256,
+      "baseline": 0.09421989183071527,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
       "value": 0.028765615459421214,
       "baseline": 0.025013578660366274,
       "direction": "max",
@@ -917,6 +981,18 @@
       "paired": null,
       "scenario": "reference-v1",
       "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.07067456862674244,
+      "baseline": 0.06145614663194996,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
       "unit": "ms"
     },
     {
@@ -933,6 +1009,18 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
+      "value": 0.1314732662326818,
+      "baseline": 0.11432457933276678,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
       "value": 0.03690329446239996,
       "baseline": 0.03208982127165214,
       "direction": "max",
@@ -941,6 +1029,18 @@
       "paired": null,
       "scenario": "reference-v1",
       "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.0858923787293334,
+      "baseline": 0.07468902498202905,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
       "unit": "ms"
     }
   ],
