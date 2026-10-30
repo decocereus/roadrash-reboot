@@ -145,35 +145,36 @@ The hook's grade was gentler than every existing road's before the change, and s
 
 The road is two lanes each way, 3.5 m a lane, with a 0.5 m shoulder and a 5 m verge, so 15 m of carriageway and 25 m from building to building. The municipal street-area estimates for these sections are 32.6 m on Plaza de la Independencia, 23.4 and 13.0 m on Alcalá, 39.7 m across Plaza de Cibeles and 9.9 m on Gran Vía. Those are area estimates for a named street section, not paved widths, so the carriageway is authored to the game's own lane width and sits inside every one of them. The region is `madrid-centro`, which takes the park look and adds street lamps.
 
-The line is fitted at 60 m with two slow places. The fitted road runs 2,348 m against 2,366 m of street, RMS 0.6 m, 95th percentile 1.0 m, largest 5.9 m from the street. Outside the slow places it stays within 2.1 m, at the Cibeles exit. Curvature changes sign 4.3 times per kilometre and the change of grade 2.6 times.
+The line is fitted at 60 m with two slow places. The fitted road runs 2,348 m against 2,366 m of street, RMS 0.6 m, 95th percentile 1.0 m, largest 5.9 m from the street. A 90 m run-up, straight and level, is prepended to the fitted pieces and the start is translated back along its own heading, so the rider covers 2,438 m from the grid and every fitted piece, grade and distance above is the street's own. Outside the slow places it stays within 2.1 m, at the Cibeles exit. Curvature changes sign 4.3 times per kilometre and the change of grade 2.6 times.
 
 | Place | Chainage | Radius | Largest distance | 60 m line | Choice |
 | --- | --- | --: | --: | --: | --- |
 | Puerta de Alcalá roundabout | 0 to 120 | 25 m | 5.9 m | 10.0 m | A slow place the rider brakes for, on the paved roundabout |
 | Plaza de España | 2,030 to 2,130 | 25 m | 4.8 m | 7.7 m | A junction the rider slows for, round the plaza's east side |
 
-The street circles Puerta de Alcalá and turns 83° in its first 64 m, and at 60 m the fit runs 10.0 m off it. The stretch keeps the gate instead of starting after the turn, because the gate is what the owner asked to ride from and a road starting past it would put it behind the field. At 25 m, the radius Patines already uses, the line stays within 5.9 m of the IGN centreline, inside a paved plaza whose own street-area estimate is 32.6 m wide. The grid stands at the plaza's north edge, so the field meets that bend while it is still accelerating off the line: the pilot takes it at 53 km/h on a Sesta without braking for it. The gate itself stands 3 m past the start line and 29 to 56 m to the right of it, which is square to the chase camera, so the opening frame shows its piers as a wall at the edge of the screen and never from the front. The gate is in its place; showing it as a gate wants a start-line camera or a run-up from further east, and neither belongs in a greybox. Plaza de España turns about 100° in 60 m across three junction nodes, and 25 m holds the line to 4.8 m there.
+The street circles Puerta de Alcalá and turns 83° in its first 64 m, and at 60 m the fit runs 10.0 m off it. The stretch keeps the gate instead of starting after the turn, because the gate is what the owner asked to ride from and a road starting past it would put it behind the field. At 25 m, the radius Patines already uses, the line stays within 5.9 m of the IGN centreline, inside a paved plaza whose own street-area estimate is 32.6 m wide. The grid stands 90 m east of the plaza's north edge, on the run-up, so the field meets that bend while it is still accelerating off the line: the pilot takes it at 53 km/h on a Sesta without braking for it. The run-up is what makes the gate read. From the old start line the gate stood 3 m ahead and 44 m to the side, square to the chase camera, so the opening frame showed its piers as a wall at the edge of the screen. From the grid its massing sits 99 m along the road, about 103 m from the rider and 24° off the camera's axis, and the countdown frame shows four piers with sky through the three openings between them, under one entablature and a raised attic. The run-up adds 3.2 s to the lap and changes no fitted piece, no grade and no distance from the street. Plaza de España turns about 100° in 60 m across three junction nodes, and 25 m holds the line to 4.8 m there.
 
 The grade comes from the corridor's MDT05 samples between the two chainages, fitted the way the hook's is. There is no bridge on this stretch. The road starts at 655.8 m above sea level, which is y 0, dips to 642 m at Cibeles, climbs to the Red de San Luis at 662 m by Telefónica, and falls 34 m into Plaza de España. The fit misses the ground by RMS 0.4 m, largest 2.5 m. The steepest grade is 5.3% and the sharpest change 1.49 per mille per metre. The origin is the street's first point, rounded, at corridor 4,575, 1,648.
 
-The scene is a greybox: no textures and no building kit. The ring of mountains every open look draws on the horizon is left out wherever a plan's ground is paved, so this city ends in its own blocks instead of in peaks, and the hook and the five roads keep theirs. The ground is paved, and grass covers only two authored patches, the Retiro edge east of Puerta de Alcalá and the garden in Plaza de España, both traced inside ground the corridor's footprints leave empty. Trees grow on the grass and nowhere else. 77 of the 90 footprints within 90 m of the street are kept at their estimated heights, which walls Gran Vía; 13 are dropped because they reach inside the verge, and they leave the gaps the side streets open anyway. Five landmarks get massing, authored as prisms from their own Wikidata point, the footprint around it and the building's known height. The heights are authored estimates, not sourced measurements, and no new source was used.
+The scene is a greybox: no textures and no building kit. The ring of mountains every open look draws on the horizon is left out wherever a plan's ground is paved, so this city ends in its own blocks instead of in peaks, and the hook and the five roads keep theirs. The ground is paved, and grass covers only two authored patches, the Retiro edge east of Puerta de Alcalá and the garden in Plaza de España, both traced inside ground the corridor's footprints leave empty. Trees grow on the grass and nowhere else. 76 of the 90 footprints within 90 m of the street are kept at their estimated heights, which walls Gran Vía; 14 are dropped because they reach inside the verge, have no height, or draw a ring that is not simple, and they leave the gaps the side streets open anyway. One more is dropped than before the run-up, because the road now reaches 90 m further east and that block stands inside its verge. Six landmarks get massing, authored as prisms from their own Wikidata point, the footprint around it and the building's known height. The heights are authored estimates, not sourced measurements, and no new source was used.
 
-| Landmark | Chainage | Massing | Top | Nearest to the road |
+| Landmark | From the grid | Massing | Top | Nearest to the road |
 | --- | --: | --- | --: | --: |
-| Puerta de Alcalá | 0 | 4 piers, an entablature and an attic | 22.5 m | 27.4 m |
-| Palacio de Cibeles | 305 | A tower, its spire and two corner towers | 70.0 m | 37.5 m |
-| Edificio Metrópolis | 779 | An octagonal drum, its dome and the crown | 47.5 m | 25.5 m |
-| Edificio Telefónica | 1,189 | Three stepped boxes | 89.0 m | 25.0 m |
-| Edificio Carrión | 1,581 | The curved prow and its sign tower | 54.0 m | 32.5 m |
+| Puerta de Alcalá | 99 | 4 piers, an entablature and an attic | 22.5 m | 27.4 m |
+| Palacio de Cibeles | 371 | A tower, its spire and two corner towers | 70.0 m | 37.5 m |
+| Fuente de Cibeles | 440 | A 30 m basin and the column on it | 12.5 m | 17.0 m |
+| Edificio Metrópolis | 862 | An octagonal drum, four tapering steps and the crown | 47.5 m | 25.5 m |
+| Edificio Telefónica | 1,284 | Three stepped boxes | 89.0 m | 25.0 m |
+| Edificio Carrión | 1,663 | The curved prow and its sign tower | 54.0 m | 31.1 m |
 
-Chevrons come from the hdl-1b riding-speed audit, which warns four stretches: the Cibeles approach, the exit onto Alcalá, the Carrión bend and the way into Plaza de España. It leaves the first bend unwarned because a rider launching from the grid never has to brake for it. Hazards are placed as the hook's are, two a kilometre. There are no pedestrians, junction traffic or signals yet.
+Chevrons come from the hdl-1b riding-speed audit, which now warns five stretches: the Puerta de Alcalá bend, the Cibeles approach, the exit onto Alcalá, the Carrión bend and the way into Plaza de España. The first bend used to go unwarned, on the reasoning that a rider launching from the grid never had to brake for it. The run-up makes that false: a rider now arrives at it carrying speed, the audit warns it, and boards stand from 54 to 173 m. Every other run moved 90 m with the road. Hazards are placed as the hook's are, two a kilometre. There are no pedestrians, junction traffic or signals yet.
 
 The pilot's lap, level 1, seed 31, from `createRace`, with the slowest speed within 70 m of each landmark:
 
-| Bike | Lap | Puerta de Alcalá | Cibeles | Metrópolis | Telefónica | Carrión | Plaza de España | Below 60 km/h |
+| Bike | Lap from the grid | Puerta de Alcalá | Fuente de Cibeles | Metrópolis | Telefónica | Carrión | Plaza de España | Below 60 km/h |
 | --- | --: | --: | --: | --: | --: | --: | --: | --: |
-| Ostra Sesta 600 | 57.0 s | 53 km/h | 84 km/h | 124 km/h | 201 km/h | 85 km/h | 60 km/h | 3.1 s |
-| Halden Wren 400 | 60.3 s | 59 km/h | 97 km/h | 135 km/h | 176 km/h | 96 km/h | 69 km/h | 2.2 s |
+| Ostra Sesta 600 | 60.2 s | 53 km/h | 84 km/h | 124 km/h | 201 km/h | 85 km/h | 60 km/h | 3.1 s |
+| Halden Wren 400 | 63.6 s | 59 km/h | 97 km/h | 135 km/h | 176 km/h | 96 km/h | 69 km/h | 2.2 s |
 
 The Sesta reaches 229 km/h on the fall into Plaza de España, faster than it rides anywhere on the hook, because Gran Vía drops 3 to 5% for a kilometre.
 
@@ -181,22 +182,31 @@ The Sesta reaches 229 km/h on the fall into Plaza de España, faster than it rid
 
 | Road | Height acceleration on straights | Yaw wobble on straights |
 | --- | --: | --: |
-| Puerta de Alcalá into Gran Vía | 0.53 | 0.021 |
+| Puerta de Alcalá into Gran Vía | 0.51 | 0.021 |
 | Casa de Campo hook | 0.74 | 0.014 |
 | The five existing roads | 2.72 to 3.74 | 0.006 to 0.025 |
 
-Both Madrid stretches stay gentler than every existing road in height, and the city stretch's yaw wobble sits inside the existing roads' range. Its straights measure 19.7 s of the lap, against the hook's 4.1 s, because Gran Vía runs straight for a kilometre.
+Both Madrid stretches stay gentler than every existing road in height, and the city stretch's yaw wobble sits inside the existing roads' range. Its straights measure 21.1 s of the lap, against the hook's 4.1 s, because Gran Vía runs straight for a kilometre and the run-up is straight too.
 
 What it costs to draw, measured on 2026-10-30 in windowed Helium on an M4 Pro over Metal, on a 120 Hz display the game paces at 120, with the quality rung at 0 of 8 the whole time and no console error:
 
-| Ride | Frames | p50 | p95 | Worst | Draw calls | Triangles | Programs |
+| Ride | Frame rate | p50 | p95 | Worst | Draw calls | Triangles | Programs |
 | --- | --: | --: | --: | --: | --: | --: | --: |
-| Alone on Gran Vía at 1,100 m, 20 s | 94.6 fps | 8.4 ms | 16.8 ms | 208 ms | 86 | 364,981 | 39 |
-| With traffic there, 20 s | 94.5 fps | 8.4 ms | 16.8 ms | 217 ms | 102 | 567,913 | 41 |
-| Field and traffic, the whole lap from the grid, 40 s | 108.2 fps | 8.3 ms | 16.7 ms | 216 ms | 197 mean | 1,196,141 | 41 |
-| The same on the Wren, 25 s | 100.3 fps | 8.4 ms | 16.7 ms | 208 ms | 206 mean, 198 at the pack | 1,761,991 | 41 |
+| Alone on Gran Vía, 1,100 m of street, 20 s | 94.6 fps | 8.4 ms | 16.8 ms | 208 ms | 86 mean | 364,981 | 39 |
+| With traffic there, 20 s | 94.5 fps | 8.4 ms | 16.8 ms | 217 ms | 102 mean | 567,913 | 41 |
+| Field and traffic, the whole lap from the grid, 4,073 frames | 108.1 fps | 8.3 ms | 16.7 ms | 250 ms | 201 mean | 1,196,141 | 41 |
 
-Every worst frame is the first one after the page loads the race. The busiest frame the stretch drew, 198 calls and 1.76 million triangles with nine rivals, a car and the city around it, stays well inside the gate's own scenarios on Slag Row, which the GPU lane holds at 430 calls and 2.36 million triangles for `reference-v1` and 534 and 3.00 million for `pack-riding-v1`. The stretch therefore takes no row in `tools/perf/budgets.json`: it is reached only by a development URL, it is not a gate scenario, and it could not be the binding case for one. Blocks cost one draw call however many there are, because `buildBlocks` merges them into a single mesh.
+A sampled mean is not a peak, and the first two rows' counts are means too. The busiest frame has to be swept out of the profile, so this is the number to hold the stretch to: over the 5,622 profiled frames from tick 600 to the finish of the same ride, the mean is 191 calls and the busiest frame is tick 720, at **218 calls and 1,962,021 triangles**, with another frame peaking at 1,991,423 triangles, 41 programs and 34 textures. An earlier draft of this section read two sampled means, 197 and 206, as if one of them were the busiest frame. Neither was. The window starts at tick 600 because the frames right after the page loads are not the race: tick 6 records 2,072 calls, 5,623,839 triangles, 43 programs and 62 textures, and every worst frame in the table above is one of those.
+
+```
+rv open --run <run> '/?ride=madrid-gran-via&with=traffic&autopilot&prof&fps' --until race
+rv wait --run <run> 'globalThis.__rushlineProfile.info().tick > 1900' --timeout 90
+rv js --run <run> '(() => { const p = globalThis.__rushlineProfile; const f = p.window(600, p.info().tick); const sum = (a) => a.reduce((t, v) => t + (v ?? 0), 0); let best = { calls: 0 }; for (const frame of f) { const c = sum(frame.calls); if (c > best.calls) best = { calls: c, tick: frame.tick, triangles: sum(frame.triangles) }; } return JSON.stringify(best); })()'
+```
+
+218 calls and 1.99 million triangles, with nine rivals, a car and the city around it, stays well inside the gate's own scenarios on Slag Row, which the GPU lane holds at 452 calls and 2.36 million triangles for `reference-v1` and 534 and 3.00 million for `pack-riding-v1`. The bike does not change what the city draws, so the Wren rides the same frame.
+
+The stretch still takes no row in `tools/perf/budgets.json`, and this is a deliberate gap rather than a finished budget. A `perf:gpu` scenario cannot be added without moving the gate's baseline: `requiredRows` in `tools/perf/src/gate.ts` demands a node-lane and a GPU row for every scenario on both sides of the comparison, and side A is revision `b28f759`, which predates both Madrid stretches, so a Madrid scenario there falls back to Slag Row and measures nothing. What the city costs is budgeted instead in `apps/web/test/madrid-scenery.test.ts`, which builds each stretch's greybox through `buildGreybox` and holds its draw calls, triangles and block count; it needs no GPU, so it runs in CI with the rest of the tests. Blocks cost one draw call however many there are, because `buildBlocks` merges them into a single mesh: the gran-vía greybox is 4 draws and 102,608 triangles, the hook 5 draws and 157,880.
 
 ## Measurement limits
 

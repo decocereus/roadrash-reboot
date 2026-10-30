@@ -14,6 +14,7 @@ export const madridGranVia: TrackPlan = {
   level: 1,
   name: "Alcalá into Gran Vía",
   pieces: clothoids([
+    [90, 0, 0],
     [25, -0.036876, -0.01842],
     [25, -0.011932, -0.03022],
     [25, 0.04, -0.03731],
@@ -115,7 +116,7 @@ export const madridGranVia: TrackPlan = {
   scenery: madridGranViaScenery,
   seed: 0x4d_47_56,
   shoulderWidth: 0.5,
-  start: { heading: -1.582823, x: 0.4, z: 0.4 },
+  start: { heading: -1.582823, x: 90.4, z: -0.7 },
   trafficPerKilometre: 6,
   vergeWidth: 5,
 };

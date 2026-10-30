@@ -21,6 +21,7 @@ import {
   inside,
   nearest,
   pointAlong,
+  ringProblem,
 } from "./geometry.ts";
 import { fitGrades } from "./grade.ts";
 import type { Scene } from "./scene.ts";
@@ -43,6 +44,7 @@ interface Carriageway {
   readonly shoulderWidth: number;
   readonly vergeWidth: number;
   readonly leadInLength: number;
+  readonly runUpM: number;
   readonly runoffLength: number;
 }
 
@@ -97,6 +99,7 @@ interface StretchReport {
   readonly massing: readonly MassingReport[];
   readonly keptBlocks: number;
   readonly droppedBlocks: number;
+  readonly brokenFootprints: readonly string[];
 }
 
 export interface Stretch {
@@ -211,19 +214,34 @@ export const buildStretch = (
       return { groundM: sample.groundM, s: nearestSample(horizontal, x, -y) };
     });
   const grades = fitGrades({ knotS, samples });
-  const pieces = fit.pieces.map((piece, index): TrackPiece => ({
+  const fitted = fit.pieces.map((piece, index): TrackPiece => ({
     ...piece,
     endCurvature: Number(piece.endCurvature.toFixed(6)),
     endGrade: Number((grades.knots[index + 1] ?? 0).toFixed(5)),
   }));
+  const runUp = settings.road.runUpM;
+  const pieces: readonly TrackPiece[] =
+    runUp > 0
+      ? [
+          {
+            easedClimb: 0,
+            easedTurn: 0,
+            endCurvature: 0,
+            endGrade: 0,
+            length: runUp,
+          },
+          ...fitted,
+        ]
+      : fitted;
   const [firstPiece, ...laterPieces] = pieces;
   if (!firstPiece) {
     throw new Error("The stretch fit returned no pieces.");
   }
+  const heading = Number(fit.start.heading.toFixed(6));
   const start: TrackStart = {
-    heading: Number(fit.start.heading.toFixed(6)),
-    x: metre(fit.start.x - origin[0]),
-    z: metre(fit.start.z + origin[1]),
+    heading,
+    x: metre(fit.start.x - origin[0] - runUp * Math.sin(heading)),
+    z: metre(fit.start.z + origin[1] + runUp * Math.cos(heading)),
   };
   const road = sampleAlignment({
     leadInLength: settings.road.leadInLength,
@@ -258,7 +276,13 @@ export const buildStretch = (
       )
     );
   const blocks: SceneryBlock[] = [];
+  const brokenFootprints: string[] = [];
   for (const { building, open } of candidates) {
+    const problem = ringProblem(open);
+    if (problem !== null) {
+      brokenFootprints.push(`${building.id} ${problem}`);
+      continue;
+    }
     const ring = open.map(toGround);
     if (
       building.height.kind !== "unavailable" &&
@@ -307,6 +331,7 @@ export const buildStretch = (
     })),
     pieces: [firstPiece, ...laterPieces],
     report: {
+      brokenFootprints,
       curvatureFlipsPerKilometre: curvatureFlipsPerKilometre(road),
       droppedBlocks: candidates.length - footprints,
       gradeChangeFlipsPerKilometre: gradeChangeFlipsPerKilometre(road),

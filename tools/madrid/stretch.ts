@@ -5,10 +5,18 @@ import * as NodeChildProcessSpawner from "@effect/platform-node/NodeChildProcess
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
+import { clothoids } from "@racer/track/alignment";
+import type { TrackPiece, TrackPieces } from "@racer/track/alignment";
+import { chevronRuns } from "@racer/track/chevron-runs";
 import { readCorridor } from "@racer/track/madrid-corridor";
 import type { CorridorData } from "@racer/track/madrid-schema";
-import type { RegionId } from "@racer/track/regions";
-import type { GroundPoint, SceneryBlock } from "@racer/track/track";
+import { stretches as committed } from "@racer/track/stretches";
+import type {
+  ChevronRun,
+  GroundPoint,
+  SceneryBlock,
+  TrackPlan,
+} from "@racer/track/track";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -16,100 +24,10 @@ import * as ChildProcess from "effect/process/ChildProcess";
 import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 
 import { decodeScene } from "./src/scene.ts";
+import { stretchEntries } from "./src/settings.ts";
+import type { StretchEntry } from "./src/settings.ts";
 import { buildStretch } from "./src/stretch.ts";
-import type { Stretch, StretchSettings } from "./src/stretch.ts";
-
-interface StretchEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly region: RegionId;
-  readonly level: number;
-  readonly seed: number;
-  readonly trafficPerKilometre: number;
-  readonly hazardsPerKilometre: number;
-  readonly settings: StretchSettings;
-}
-
-const stretches: readonly StretchEntry[] = [
-  {
-    hazardsPerKilometre: 2,
-    id: "madrid-hook",
-    level: 1,
-    name: "Casa de Campo hook",
-    region: "casa-de-campo",
-    seed: 0x4d_48_4b,
-    settings: {
-      cover: "grass",
-      fromM: 3600,
-      minRadiusM: 60,
-      pieceLengthM: 25,
-      places: [
-        {
-          fromM: 4030,
-          minRadiusM: 35,
-          name: "Embarcadero S-bend by the boathouse",
-          toM: 4230,
-        },
-        {
-          fromM: 4380,
-          minRadiusM: 25,
-          name: "Glorieta de los Patines",
-          toM: 4620,
-        },
-      ],
-      road: {
-        laneWidth: 3.5,
-        lanesEachWay: 1,
-        leadInLength: 80,
-        runoffLength: 200,
-        shoulderWidth: 0.5,
-        vergeWidth: 5,
-      },
-      sceneReachM: 180,
-      toM: 4650,
-    },
-    trafficPerKilometre: 6,
-  },
-  {
-    hazardsPerKilometre: 2,
-    id: "madrid-gran-via",
-    level: 1,
-    name: "Alcalá into Gran Vía",
-    region: "madrid-centro",
-    seed: 0x4d_47_56,
-    settings: {
-      cover: "paving",
-      fromM: 0,
-      minRadiusM: 60,
-      pieceLengthM: 25,
-      places: [
-        {
-          fromM: 0,
-          minRadiusM: 25,
-          name: "Puerta de Alcalá roundabout",
-          toM: 120,
-        },
-        {
-          fromM: 2030,
-          minRadiusM: 25,
-          name: "Plaza de España",
-          toM: 2130,
-        },
-      ],
-      road: {
-        laneWidth: 3.5,
-        lanesEachWay: 2,
-        leadInLength: 80,
-        runoffLength: 200,
-        shoulderWidth: 0.5,
-        vergeWidth: 5,
-      },
-      sceneReachM: 90,
-      toM: 2365.7,
-    },
-    trafficPerKilometre: 6,
-  },
-];
+import type { Stretch } from "./src/stretch.ts";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const tracks = path.join(root, "packages/track/src/tracks");
@@ -117,7 +35,10 @@ const SOURCE_LIMIT = 20_000;
 const BLOCKS_BUDGET = 10_000;
 
 const options = parseArgs({
-  options: { id: { multiple: true, type: "string" } },
+  options: {
+    check: { type: "boolean" },
+    id: { multiple: true, type: "string" },
+  },
 }).values;
 
 const camelOf = (id: string): string =>
@@ -130,6 +51,19 @@ const hex = (value: number): string =>
 
 const points = (ring: readonly GroundPoint[]): string =>
   `[${ring.map(([x, z]) => `[${x}, ${z}]`).join(", ")}]`;
+
+type Triple = readonly [number, number, number];
+
+const tripleOf = (piece: TrackPiece): Triple => [
+  piece.length,
+  piece.endCurvature,
+  piece.endGrade,
+];
+
+const triples = ([first, ...rest]: TrackPieces): readonly [
+  Triple,
+  ...Triple[],
+] => [tripleOf(first), ...rest.map(tripleOf)];
 
 const blockText = (block: SceneryBlock): string =>
   `{ height: ${block.height}, lift: ${block.lift}, ring: ${points(block.ring)} }`;
@@ -198,7 +132,9 @@ export const ${camel}: TrackPlan = {
   leadInLength: ${road.leadInLength},
   level: ${entry.level},
   name: "${entry.name}",
-  pieces: clothoids([${stretch.pieces.map((piece) => `[${piece.length}, ${piece.endCurvature}, ${piece.endGrade}]`).join(", ")}]),
+  pieces: clothoids([${triples(stretch.pieces)
+    .map((triple) => `[${triple.join(", ")}]`)
+    .join(", ")}]),
   region: "${entry.region}",
   roadblocks: [],
   runoffLength: ${road.runoffLength},
@@ -247,7 +183,10 @@ const reportLines = (entry: StretchEntry, stretch: Stretch): string[] => {
     ),
     `Origin ${stretch.origin.join(", ")}; the road starts at ${metres(stretch.startHeightM)} above sea level, which is y 0`,
     `Grade fit: RMS ${metres(report.heightRmsM)}, largest ${metres(report.heightMaxM)}, steepest ${(report.steepestGrade * 100).toFixed(1)}%, sharpest change ${(report.sharpestGradeChange * 1000).toFixed(2)} per mille per metre`,
-    `Blocks: ${report.keptBlocks} kept within ${settings.sceneReachM} m, ${report.droppedBlocks} dropped inside the verge or without a height; ground ${settings.cover}, ${stretch.patches.length} grass patches`,
+    `Blocks: ${report.keptBlocks} kept within ${settings.sceneReachM} m, ${report.droppedBlocks} dropped inside the verge, without a height or with a broken ring; ground ${settings.cover}, ${stretch.patches.length} grass patches`,
+    ...report.brokenFootprints.map(
+      (broken) => `  Dropped the footprint of ${broken}`
+    ),
     ...report.massing.map(
       (landmark) =>
         `  ${landmark.name}: ${landmark.parts} parts up to ${metres(landmark.topM)}, nearest ${metres(landmark.clearanceM)} from the road`
@@ -259,36 +198,133 @@ const reportLines = (entry: StretchEntry, stretch: Stretch): string[] => {
   ];
 };
 
-const writeStretch = Effect.fn("madrid.writeStretch")(function* writeStretch(
-  data: CorridorData,
-  entry: StretchEntry
-) {
-  const fs = yield* FileSystem.FileSystem;
-  const scene = decodeScene(
-    JSON.parse(
-      yield* fs.readFileString(
-        path.join(import.meta.dirname, `scenes/${entry.id}.json`)
-      )
-    )
-  );
-  const stretch = buildStretch(data, scene, entry.settings);
-  const written = modulesOf(entry, stretch);
-  for (const file of written) {
-    yield* fs.writeFileString(file.path, file.text);
+const planOf = (
+  entry: StretchEntry,
+  stretch: Stretch,
+  chevrons: readonly ChevronRun[]
+): TrackPlan => {
+  const { road } = entry.settings;
+  return {
+    chevrons,
+    features: [],
+    hazardsPerKilometre: entry.hazardsPerKilometre,
+    id: entry.id,
+    laneWidth: road.laneWidth,
+    lanesEachWay: road.lanesEachWay,
+    leadInLength: road.leadInLength,
+    level: entry.level,
+    name: entry.name,
+    pieces: clothoids(triples(stretch.pieces)),
+    region: entry.region,
+    roadblocks: [],
+    runoffLength: road.runoffLength,
+    scenery: {
+      blocks: stretch.blocks,
+      cover: entry.settings.cover,
+      patches: stretch.patches,
+      water: stretch.water,
+    },
+    seed: entry.seed,
+    shoulderWidth: road.shoulderWidth,
+    start: stretch.start,
+    trafficPerKilometre: entry.trafficPerKilometre,
+    vergeWidth: road.vergeWidth,
+  };
+};
+
+const fieldsOf = (plan: TrackPlan): readonly (readonly [string, string])[] => [
+  ["id", plan.id],
+  ["name", plan.name],
+  ["region", plan.region],
+  ["level", String(plan.level)],
+  ["seed", String(plan.seed)],
+  ["lanesEachWay", String(plan.lanesEachWay)],
+  ["laneWidth", String(plan.laneWidth)],
+  ["shoulderWidth", String(plan.shoulderWidth)],
+  ["vergeWidth", String(plan.vergeWidth)],
+  ["leadInLength", String(plan.leadInLength)],
+  ["runoffLength", String(plan.runoffLength)],
+  ["trafficPerKilometre", String(plan.trafficPerKilometre)],
+  ["hazardsPerKilometre", String(plan.hazardsPerKilometre)],
+  ["features", String(plan.features.length)],
+  ["roadblocks", plan.roadblocks.join(" ")],
+  [
+    "start",
+    `heading ${plan.start.heading}, x ${plan.start.x}, z ${plan.start.z}`,
+  ],
+  [
+    "pieces",
+    triples(plan.pieces)
+      .map((triple) => `[${triple.join(", ")}]`)
+      .join(" "),
+  ],
+  [
+    "chevrons",
+    plan.chevrons.map((run) => `${run.from}-${run.to}/${run.side}`).join(" "),
+  ],
+  ["cover", plan.scenery?.cover ?? "no scenery"],
+  ["blocks", (plan.scenery?.blocks ?? []).map(blockText).join(" ")],
+  [
+    "patches",
+    (plan.scenery?.patches ?? [])
+      .map((patch) => `${patch.cover} ${points(patch.ring)}`)
+      .join(" "),
+  ],
+  [
+    "water",
+    (plan.scenery?.water ?? [])
+      .map((body) => `${body.level} ${points(body.ring)}`)
+      .join(" "),
+  ],
+];
+
+const SHOWN = 90;
+
+const differenceText = (made: string, held: string): string => {
+  if (made.length <= SHOWN && held.length <= SHOWN) {
+    return `${made} when built and ${held} as committed`;
   }
-  return { stretch, written };
-});
+  let at = 0;
+  while (at < made.length && at < held.length && made[at] === held[at]) {
+    at += 1;
+  }
+  return `${made.slice(at, at + SHOWN)} when built and ${held.slice(at, at + SHOWN)} as committed, from character ${at}`;
+};
+
+const planProblems = (made: TrackPlan, held: TrackPlan): string[] => {
+  const theirs = new Map(fieldsOf(held));
+  return fieldsOf(made).flatMap(([field, value]) => {
+    const other = theirs.get(field) ?? "";
+    return value === other
+      ? []
+      : [`${field} is ${differenceText(value, other)}`];
+  });
+};
+
+const buildStretchOf = Effect.fn("madrid.buildStretch")(
+  function* buildStretchOf(data: CorridorData, entry: StretchEntry) {
+    const fs = yield* FileSystem.FileSystem;
+    const scene = decodeScene(
+      JSON.parse(
+        yield* fs.readFileString(
+          path.join(import.meta.dirname, `scenes/${entry.id}.json`)
+        )
+      )
+    );
+    return buildStretch(data, scene, entry.settings);
+  }
+);
 
 const main = Effect.gen(function* main() {
   const fs = yield* FileSystem.FileSystem;
   const wanted = options.id ?? [];
-  const chosen = stretches.filter(
+  const chosen = stretchEntries.filter(
     (entry) => wanted.length === 0 || wanted.includes(entry.id)
   );
   if (chosen.length === 0) {
     yield* Effect.fail(
       new Error(
-        `No stretch matches ${wanted.join(", ")}. Known: ${stretches.map((entry) => entry.id).join(", ")}.`
+        `No stretch matches ${wanted.join(", ")}. Known: ${stretchEntries.map((entry) => entry.id).join(", ")}.`
       )
     );
   }
@@ -297,12 +333,39 @@ const main = Effect.gen(function* main() {
       path.join(root, "packages/track/data/madrid-corridor.json")
     )
   );
+  if (options.check === true) {
+    const faults: string[] = [];
+    for (const entry of chosen) {
+      const stretch = yield* buildStretchOf(data, entry);
+      const found = planProblems(
+        planOf(entry, stretch, chevronRuns[entry.id]),
+        committed[entry.id]
+      );
+      console.log(
+        found.length === 0
+          ? `${entry.id} builds to its committed plan.`
+          : found.map((problem) => `${entry.id}: ${problem}`).join("\n")
+      );
+      faults.push(...found);
+    }
+    if (faults.length > 0) {
+      yield* Effect.fail(
+        new Error(
+          "The builder no longer makes the committed plan. Run pnpm madrid:stretch and commit what it writes."
+        )
+      );
+    }
+    return;
+  }
   const lines: string[] = [];
   const paths: string[] = [];
   for (const entry of chosen) {
-    const { stretch, written } = yield* writeStretch(data, entry);
+    const stretch = yield* buildStretchOf(data, entry);
     lines.push(...reportLines(entry, stretch), "");
-    paths.push(...written.map((file) => file.path));
+    for (const file of modulesOf(entry, stretch)) {
+      yield* fs.writeFileString(file.path, file.text);
+      paths.push(file.path);
+    }
   }
   const spawner = yield* ChildProcessSpawner;
   const exitCode = yield* spawner.exitCode(

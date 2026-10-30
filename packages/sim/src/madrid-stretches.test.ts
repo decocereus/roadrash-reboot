@@ -27,7 +27,7 @@ const straights: readonly Straight[] = [
     widest: { "halden-wren-400": 0.6, "ostra-sesta-600": 1.1 },
   },
   {
-    atM: 1000,
+    atM: 1090,
     id: "madrid-gran-via",
     name: "Gran Vía past Telefónica",
     widest: { "halden-wren-400": 0.2, "ostra-sesta-600": 0.9 },

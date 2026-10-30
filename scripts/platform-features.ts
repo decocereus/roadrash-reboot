@@ -16,7 +16,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/madrid/**",
       "packages/track/src/madrid-*.ts",
       "packages/sim/src/madrid-stretches.test.ts",
-      "apps/web/test/madrid-camera.test.ts",
+      "apps/web/test/madrid-*.test.ts",
       "apps/web/src/routes/credits.tsx",
     ],
     perf: [],
