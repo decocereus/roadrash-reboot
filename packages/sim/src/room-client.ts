@@ -70,6 +70,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const ownControls = ringOf(() => coasting);
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
+  let sentThrough = 0;
   const stats: RoomStats = { desyncs: 0, resimulatedTicks: 0, rollbacks: 0 };
 
   const slotOf = (tick: number): number => tick % ownControls.length;
@@ -152,7 +153,11 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     predicted,
     stats,
     writeInputs: (view) => {
-      const last = predicted.tick;
+      const unsent = Math.max(sentThrough, confirmed.tick) + 1;
+      const last = Math.min(predicted.tick, unsent + MOST_BATCHED_CONTROLS - 1);
+      if (last < unsent) {
+        return 0;
+      }
       const first = Math.max(
         confirmed.tick + 1,
         last - MOST_BATCHED_CONTROLS + 1
@@ -161,7 +166,8 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       for (let tick = first; tick <= last; tick += 1) {
         batch.push(ownControls[slotOf(tick)] ?? coasting);
       }
-      return batch.length === 0 ? 0 : writeInput(view, first, batch);
+      sentThrough = last;
+      return writeInput(view, first, batch);
     },
   };
 };

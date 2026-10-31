@@ -201,9 +201,13 @@ const race = (riders: readonly Rider[], ticks: number): Session => {
         }
       }
       if (!quiet(rider, now)) {
-        const length = rider.client.writeInputs(out);
-        if (length > 0) {
-          send(rider.up, now + delay(rider, random), out, length);
+        const at = now + delay(rider, random);
+        for (
+          let length = rider.client.writeInputs(out);
+          length > 0;
+          length = rider.client.writeInputs(out)
+        ) {
+          send(rider.up, at, out, length);
         }
       }
     }
@@ -325,6 +329,37 @@ describe("a race room", () => {
       ...Array.from({ length: AUTO_AFTER_TICKS - HOLD_TICKS }, () => coasting),
       "pilot",
     ]);
+  });
+
+  it("a client that predicts sixteen ticks before it writes sends every one of them, eight to a packet", () => {
+    const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
+    const room = createRoom(setup);
+    const client = createRoomClient(setup, PLAYER_RIDER);
+    const ridden = Array.from({ length: 16 }, (_, at) =>
+      controlOf({ ...neutralInput, steer: at / 16, throttle: 1 })
+    );
+    for (const control of ridden) {
+      client.predict(control);
+    }
+    const out = new DataView(new ArrayBuffer(PACKET_BYTES));
+    const batch = createInputBatch();
+    const firstTicks: number[] = [];
+    for (let packet = 0; packet < 4; packet += 1) {
+      const length = client.writeInputs(out);
+      if (length > 0) {
+        readInput(new DataView(out.buffer, 0, length), batch);
+        firstTicks.push(batch.firstTick);
+        room.accept(PLAYER_RIDER, batch.firstTick, batch.controls);
+      }
+    }
+    const used = ridden.map(() => {
+      room.step();
+      return room.frame.controls.get(PLAYER_RIDER);
+    });
+    expect({ firstTicks, used }).toStrictEqual({
+      firstTicks: [1, 9],
+      used: ridden,
+    });
   });
 
   it("a rider who leaves is handed to the pilot on the next tick and later inputs change nothing", () => {
