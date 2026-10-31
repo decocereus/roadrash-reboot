@@ -37,9 +37,14 @@ export const ArtName = Schema.String.check(Schema.isPattern(namePattern));
 export const Manifest = Schema.Record(ArtName, ArtKey);
 export type ArtManifest = typeof Manifest.Type;
 
+const strict = { onExcessProperty: "error" } as const;
+
 const decodeManifest = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(Manifest)
+  Schema.fromJsonString(Manifest),
+  strict
 );
+
+export const parseManifest = Schema.decodeUnknownOption(Manifest, strict);
 
 export const extensionOf = (file: string): ArtExtension | null =>
   artExtensions.find((each) => file.endsWith(`.${each}`)) ?? null;

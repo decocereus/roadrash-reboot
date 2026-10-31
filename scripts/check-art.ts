@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import process from "node:process";
 
-import { extensionOf, Manifest } from "@racer/art/manifest";
-import * as Schema from "effect/Schema";
+import { extensionOf, parseManifest } from "@racer/art/manifest";
+import * as Option from "effect/Option";
 
 import { repositoryFiles } from "./git-files.ts";
 
@@ -36,17 +36,16 @@ const binaryArt = [
 ] as const;
 
 const MANIFEST = "apps/web/src/assets/art.json";
-const isManifest = Schema.is(Manifest);
 
 const committed = repositoryFiles(
   ".",
   binaryArt.map((extension) => `*.${extension}`)
 ).filter((file) => !file.startsWith("docs/"));
 
-const manifest: unknown = JSON.parse(readFileSync(MANIFEST, "utf-8"));
-const entries = isManifest(manifest) ? Object.entries(manifest) : [];
+const manifest = parseManifest(JSON.parse(readFileSync(MANIFEST, "utf-8")));
+const entries = Option.isSome(manifest) ? Object.entries(manifest.value) : [];
 const malformed = [
-  ...(isManifest(manifest)
+  ...(Option.isSome(manifest)
     ? []
     : [
         `${MANIFEST} maps art names to content-addressed keys; stage art with pnpm art:stage`,

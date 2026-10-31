@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -12,6 +12,7 @@ import {
   manifestText,
   readManifest,
 } from "../src/manifest.ts";
+import { replaceFile } from "../src/replace-file.ts";
 
 const bytes = new TextEncoder().encode("glTF fixture");
 
@@ -48,5 +49,20 @@ describe("art manifest", () => {
     await expect(
       decoded(JSON.stringify({ "models/van.glb": "van.glb" }))
     ).rejects.toThrow("is not an art manifest");
+    await expect(
+      decoded(JSON.stringify({ "Models/van.glb": keyOf(bytes, "glb") }))
+    ).rejects.toThrow("is not an art manifest");
+  });
+
+  it("lets writers of the same file race and leaves one whole copy", async () => {
+    const file = path.join(mkdtempSync(path.join(os.tmpdir(), "art-")), "key");
+    await Effect.runPromise(
+      Effect.all(
+        Array.from({ length: 8 }, () => replaceFile(file, bytes)),
+        { concurrency: "unbounded" }
+      ).pipe(Effect.provide(NodeServices.layer))
+    );
+    expect(readFileSync(file)).toStrictEqual(Buffer.from(bytes));
+    expect(readdirSync(path.dirname(file))).toStrictEqual(["key"]);
   });
 });

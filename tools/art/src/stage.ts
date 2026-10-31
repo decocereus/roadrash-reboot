@@ -15,6 +15,7 @@ import {
   readManifest,
   repositoryRoot,
 } from "./manifest.ts";
+import { replaceFile } from "./replace-file.ts";
 
 export interface StagedArt {
   readonly bytes: Uint8Array;
@@ -48,7 +49,10 @@ export const stageArt = Effect.fn("art.stage")(function* stageArt(
     );
     next[name] = key;
   }
-  yield* fs.writeFileString(manifestFile, manifestText(next));
+  yield* replaceFile(
+    manifestFile,
+    new TextEncoder().encode(manifestText(next))
+  );
   return [
     ...lines,
     `Wrote ${path.relative(repositoryRoot, manifestFile)}. Run pnpm art:upload before you push.`,

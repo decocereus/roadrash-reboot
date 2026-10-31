@@ -9,6 +9,7 @@ import { ArtRejected } from "./art-rejected.ts";
 import { holdsKey } from "./manifest.ts";
 import type { ArtManifest } from "./manifest.ts";
 import { artOrigin } from "./remote.ts";
+import { replaceFile } from "./replace-file.ts";
 
 export const cacheDirectory = path.join(os.homedir(), ".cache/rushline/art");
 
@@ -26,9 +27,7 @@ export const keep = Effect.fn("art.keep")(function* keep(
   }
   const fs = yield* FileSystem.FileSystem;
   yield* fs.makeDirectory(cacheDirectory, { recursive: true });
-  const partial = `${cachedFile(key)}.${process.pid}.partial`;
-  yield* fs.writeFile(partial, bytes);
-  yield* fs.rename(partial, cachedFile(key));
+  yield* replaceFile(cachedFile(key), bytes);
   return cachedFile(key);
 });
 
