@@ -140,7 +140,7 @@ export const hotBodies = {
     ["joinParty"],
     ["stepRiderContacts"],
   ],
-  "packages/sim/src/control.ts": [["controlOf"], ["applyControl"]],
+  "packages/sim/src/control.ts": [["finite"], ["controlOf"], ["applyControl"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [
     ["gatherInSight"],
@@ -173,6 +173,7 @@ export const hotBodies = {
     ["frameFits"],
     ["controllerAfter"],
     ["controlRider"],
+    ["handOver"],
   ],
   "packages/sim/src/snapshot-bytes.ts": [
     ["textBytes"],

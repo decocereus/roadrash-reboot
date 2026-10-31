@@ -539,13 +539,34 @@ const checkFrame = (state: RaceState, frame: InputFrame): void => {
   }
 };
 
+const handOver = (rider: RiderState, to: Controller): void => {
+  rider.controller = to;
+  switch (to) {
+    case "human": {
+      return;
+    }
+    case "pilot": {
+      rider.staleThrottle = false;
+      rider.staleBrake = false;
+      rider.staleSteer = false;
+      return;
+    }
+    default: {
+      return to satisfies never;
+    }
+  }
+};
+
 const controlRider = (
   state: RaceState,
   track: Track,
   frame: InputFrame,
   rider: RiderState
 ): void => {
-  rider.controller = controllerAfter(rider, frame);
+  const handover = frame.handovers.get(rider.id);
+  if (handover !== undefined) {
+    handOver(rider, handover);
+  }
   switch (rider.controller) {
     case "human": {
       const control = frame.controls.get(rider.id);

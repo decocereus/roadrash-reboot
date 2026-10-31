@@ -35,13 +35,18 @@ const refuse = (input: Readonly<RiderInput>): never => {
   );
 };
 
+const finite = (input: Readonly<RiderInput>): boolean =>
+  Number.isFinite(input.steer) &&
+  Number.isFinite(input.throttle) &&
+  Number.isFinite(input.brake);
+
 export const controlOf = (input: Readonly<RiderInput>): Control => {
   const word =
     steerByteOf(input.steer) +
     pedalByteOf(input.throttle) * THROTTLE_PLACE +
     pedalByteOf(input.brake) * BRAKE_PLACE +
     ((input.punch ? PUNCH : 0) + (input.kick ? KICK : 0)) * BUTTONS_PLACE;
-  return isControl(word) ? word : refuse(input);
+  return finite(input) && isControl(word) ? word : refuse(input);
 };
 
 export const applyControl = (control: Control, input: RiderInput): void => {

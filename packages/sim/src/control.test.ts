@@ -97,9 +97,26 @@ describe("a rider's controls", () => {
     expect(ridden({ ...neutralInput, steer: -0.3 }).steer).toBe(-38 / 127);
   });
 
-  it("a control with a steer that is not a number is refused before it reaches a frame", () => {
-    expect(() => playerFrame({ ...neutralInput, steer: Number.NaN })).toThrow(
-      "A control needs finite steer, throttle and brake, not NaN, 0 and 0."
+  it.each(
+    (["steer", "throttle", "brake"] as const).flatMap((axis) =>
+      [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY].map(
+        (value) => [axis, value] as const
+      )
+    )
+  )(
+    "a control whose %s is %d is refused before it reaches a frame",
+    (axis, value) => {
+      expect(() => playerFrame({ ...neutralInput, [axis]: value })).toThrow(
+        RangeError
+      );
+    }
+  );
+
+  it("a refused control names the steer, throttle and brake it was given", () => {
+    expect(() =>
+      playerFrame({ ...neutralInput, throttle: Number.POSITIVE_INFINITY })
+    ).toThrow(
+      "A control needs finite steer, throttle and brake, not 0, Infinity and 0."
     );
   });
 
