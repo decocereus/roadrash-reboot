@@ -9,7 +9,7 @@ A greybox of the Madrid corridor's Casa de Campo hook: Paseo del Embarcadero alo
 - `traffic`: the field and the hook's traffic.
 - `sbend`: the Embarcadero S-bend, 430 to 630 m, built to a 35 m radius.
 - `patines`: Glorieta de los Patines, 780 to 1,020 m, a junction built to a 25 m radius that the rider slows for.
-- `scenery`: world-space ground, 48 grey blocks from the footprints, the traced lake and trees.
+- `scenery`: world-space ground under its grass cover, 48 grey blocks from the footprints, the traced lake and trees.
 
 ## How to get to it (user POV)
 
@@ -24,8 +24,8 @@ Preconditions: a slot from `rv up` on this checkout and a passing `rv doctor`.
 - Freeze at Patines: the same with `holdafter=853`. The Sesta reads about 54 km/h, the Wren about 61.
 - Ride with the field or with traffic: swap `with=alone` for `with=field` or `with=traffic`. The grid fills with rivals; traffic adds cars in both lanes.
 - Measure a lap: `rv open --run <run> "/?ride=madrid-hook&bike=ostra-sesta-600&with=alone&autopilot&prof" --until race`, `rv sample --run <run> hook-lap --seconds 30`, then `rv wait --run <run> 'document.querySelector("[aria-label=Finish]") !== null' --timeout 90` for the finish. The finish menu shows no time. The headless pilot on the same seed finishes alone on the Sesta in 35.1 s and on the Wren in 35.0 s, and the Helium speeds at both places match it.
-- Measure camera steadiness without a browser: `pnpm test apps/web/test/madrid-hook-camera.test.ts` rides the pilot on every road and the hook, drives the real chase camera, and fails if the hook's straights shake more than the shakiest existing road's. `docs/madrid-corridor.md` has the numbers.
-- Read the fitted numbers without a browser: `pnpm madrid:hook` regenerates `packages/track/src/tracks/madrid-hook.ts` and prints the distance from the street, the curvature and grade change sign flips per kilometre, the grade fit, the blocks kept and the lake clearance. A clean `git diff` after it proves the plan matches its inputs.
+- Measure camera steadiness without a browser: `pnpm test apps/web/test/madrid-camera.test.ts` rides the pilot on every road and both Madrid stretches, drives the real chase camera, and fails if a stretch's straights shake more than the shakiest existing road's. `docs/madrid-corridor.md` has the numbers.
+- Read the fitted numbers without a browser: `pnpm madrid:stretch --id madrid-hook` regenerates `packages/track/src/tracks/madrid-hook.ts`, its scenery and its blocks module, and prints the distance from the street, the curvature and grade change sign flips per kilometre, the grade fit, the blocks kept and the lake clearance. A clean `git diff` after it proves the plan matches its inputs.
 
 ## Gotchas
 

@@ -107,7 +107,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 
 | Flag | Effect |
 | --- | --- |
-| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, at any level the served rules hold (1 to 3 by default); a higher `level` rides level 1. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`, and `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`. |
+| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, at any level the served rules hold (1 to 3 by default); a higher `level` rides level 1. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`, `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`, and `madrid-gran-via`, the central Madrid greybox in `features/madrid-gran-via.md`. |
 | `?bike=<bikeId>&with=alone\|field\|traffic` (DEV) | With `?ride`: the player's bike (ids in `packages/sim/src/bikes.ts`), and who rides along. `alone` drops rivals, police and traffic, `field` drops traffic, `traffic` is the full race and the default. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including ramps. The player's rider is built pilot-controlled, so the keys, `?straight` and `?swerve` do nothing. |

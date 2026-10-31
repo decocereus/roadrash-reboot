@@ -107,6 +107,55 @@ const intersects = (
   cross(a, b, c) * cross(a, b, d) <= 0 &&
   cross(c, d, a) * cross(c, d, b) <= 0;
 
+const signedArea = (ring: readonly Position[]): number => {
+  let twice = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const a = ring[j];
+    const b = ring[i];
+    if (a && b) {
+      twice += a[0] * b[1] - b[0] * a[1];
+    }
+  }
+  return twice / 2;
+};
+
+const SMALLEST_RING_AREA = 1;
+
+export const ringProblem = (ring: readonly Position[]): string | null => {
+  if (ring.length < 3) {
+    return `has ${ring.length} points, and a ring needs three`;
+  }
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const a = ring[j];
+    const b = ring[i];
+    if (a && b && a[0] === b[0] && a[1] === b[1]) {
+      return `repeats the point ${a[0]}, ${a[1]}`;
+    }
+  }
+  for (let i = 0; i < ring.length; i += 1) {
+    for (let j = i + 2; j < ring.length; j += 1) {
+      if (i === 0 && j === ring.length - 1) {
+        continue;
+      }
+      const a = ring[i];
+      const b = ring[i + 1];
+      const c = ring[j];
+      const d = ring[(j + 1) % ring.length];
+      if (a && b && c && d && intersects(a, b, c, d)) {
+        return `crosses itself: the edge ${a[0]}, ${a[1]} to ${b[0]}, ${b[1]} meets the edge ${c[0]}, ${c[1]} to ${d[0]}, ${d[1]}`;
+      }
+    }
+  }
+  const area = signedArea(ring);
+  if (Math.abs(area) < SMALLEST_RING_AREA) {
+    return `encloses ${area.toFixed(2)} m², too little to stand up`;
+  }
+  if (area < 0) {
+    return "runs clockwise, and corridor rings run counter-clockwise";
+  }
+  return null;
+};
+
 export const nearCorridor = (
   ring: readonly Position[],
   line: readonly Position[],
