@@ -1,9 +1,10 @@
 import { chevronRuns } from "@racer/track/chevron-runs";
 import { roadIds, roadLevels } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
+import { stretches, stretchIds } from "@racer/track/stretches";
+import type { StretchId } from "@racer/track/stretches";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { ChevronRun, Track } from "@racer/track/track";
-import { madridHook } from "@racer/track/tracks/madrid-hook";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -24,12 +25,15 @@ import {
 } from "./state.ts";
 import type { BikeSpec, RiderInput } from "./state.ts";
 
-const hook = compileTrack(madridHook);
-const quietHook = compileTrack({
-  ...madridHook,
-  hazardsPerKilometre: 0,
-  trafficPerKilometre: 0,
-});
+const trackOf = (id: StretchId): Track => compileTrack(stretches[id]);
+const quietTrackOf = (id: StretchId): Track =>
+  compileTrack({
+    ...stretches[id],
+    hazardsPerKilometre: 0,
+    trafficPerKilometre: 0,
+  });
+const stretchTracks = stretchIds.map((id) => [id, trackOf(id)] as const);
+const quietStretches = stretchIds.map((id) => [id, quietTrackOf(id)] as const);
 
 const RIDE_LIMIT = TICK_RATE * 60;
 const BOARD_GAP = 18;
@@ -67,17 +71,18 @@ const runLines = (runs: readonly ChevronRun[]): string =>
 const tableOf = (): string =>
   [
     ...roadIds.map((id) => [id, chevronRunsOf(trackFor(id, 5))] as const),
-    ["madrid-hook", chevronRunsOf(hook)] as const,
+    ...stretchTracks.map(([id, track]) => [id, chevronRunsOf(track)] as const),
   ]
     .toSorted(([left], [right]) => left.localeCompare(right))
     .map(([id, runs]) => `  "${id}": [\n${runLines(runs)}  ],\n`)
     .join("");
 
 const moduleOf = (): string => `import type { RoadId } from "./road.ts";
+import type { StretchId } from "./stretches.ts";
 import type { ChevronRun } from "./track.ts";
 
 export const chevronRuns = {
-${tableOf()}} as const satisfies Record<RoadId | "madrid-hook", readonly ChevronRun[]>;
+${tableOf()}} as const satisfies Record<RoadId | StretchId, readonly ChevronRun[]>;
 `;
 
 const brakeFromChevron = (
@@ -148,40 +153,47 @@ describe("corner warnings", () => {
     }
   );
 
-  it("every chevron run on the hook has boards from its start to its end, on its side", () => {
-    const boards = boardsOf(hook);
-    const runs = chevronRuns["madrid-hook"];
-    const coverOf = (run: ChevronRun) => {
-      const along = boards.filter(
-        (board) => board.s >= run.from && board.s <= run.to
-      );
-      const stops = [...along.map((board) => board.s), run.to];
-      return {
-        from: along[0]?.s,
-        onItsSide: along.every((board) => Math.sign(board.x) === run.side),
-        spaced: stops.every((s, at) => s - (stops[at - 1] ?? s) <= BOARD_GAP),
+  it.each(stretchTracks)(
+    "every chevron run on %s has boards from its start to its end, on its side",
+    (id, track) => {
+      const boards = boardsOf(track);
+      const runs = chevronRuns[id];
+      const coverOf = (run: ChevronRun) => {
+        const along = boards.filter(
+          (board) => board.s >= run.from && board.s <= run.to
+        );
+        const stops = [...along.map((board) => board.s), run.to];
+        return {
+          from: along[0]?.s,
+          onItsSide: along.every((board) => Math.sign(board.x) === run.side),
+          spaced: stops.every((s, at) => s - (stops[at - 1] ?? s) <= BOARD_GAP),
+        };
       };
-    };
-    expect(runs.map(coverOf)).toStrictEqual(
-      runs.map((run) => ({ from: run.from, onItsSide: true, spaced: true }))
-    );
-    expect(
-      boards.every((board) =>
-        runs.some((run) => board.s >= run.from && board.s <= run.to)
-      )
-    ).toBeTruthy();
-  });
+      expect(runs.map(coverOf)).toStrictEqual(
+        runs.map((run) => ({ from: run.from, onItsSide: true, spaced: true }))
+      );
+      expect(
+        boards.every((board) =>
+          runs.some((run) => board.s >= run.from && board.s <= run.to)
+        )
+      ).toBeTruthy();
+    }
+  );
 
-  it.each(signedFor.map((bike) => [bike.name, bike] as const))(
-    "a %s rider who brakes at the first board before each of the hook's warned bends makes the bend",
-    (_name, bike) => {
-      const warned = brakingZonesOf(quietHook, bike).filter(isWarned);
-      const boards = boardsOf(quietHook).map((board) => board.s);
+  it.each(
+    quietStretches.flatMap(([id, track]) =>
+      signedFor.map((bike) => [bike.name, id, bike, track] as const)
+    )
+  )(
+    "a %s rider who brakes at the first board before each warned bend on %s makes the bend",
+    (_name, _id, bike, track) => {
+      const warned = brakingZonesOf(track, bike).filter(isWarned);
+      const boards = boardsOf(track).map((board) => board.s);
       const rides = warned.map((zone) => {
         const from = firstBoardOf(boards, zone.start);
         return from === undefined
           ? undefined
-          : brakeFromChevron(quietHook, bike, from, zone);
+          : brakeFromChevron(track, bike, from, zone);
       });
       expect(warned.length).toBeGreaterThan(0);
       expect(rides).toStrictEqual(

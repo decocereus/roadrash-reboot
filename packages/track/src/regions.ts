@@ -1,5 +1,6 @@
 export type RegionId =
   | "casa-de-campo"
+  | "madrid-centro"
   | "salt-coast"
   | "cinder-flats"
   | "kettle-woods"
@@ -50,6 +51,12 @@ export const regions = {
     id: "lowtown",
     name: "Lowtown",
     propMix: { chevron: 1.5, pole: 1.5, rock: 0.25, tree: 0.3 },
+  },
+  "madrid-centro": {
+    hazardMix: { oil: 0.6, pothole: 0.2, rock: 0.2 },
+    id: "madrid-centro",
+    name: "Madrid centro",
+    propMix: { chevron: 1, pole: 1, rock: 0, tree: 0 },
   },
   "salt-coast": {
     hazardMix: { oil: 0.65, pothole: 0.2, rock: 0.15 },

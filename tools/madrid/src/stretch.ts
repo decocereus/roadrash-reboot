@@ -6,7 +6,13 @@ import type {
   TrackStart,
 } from "@racer/track/alignment";
 import type { CorridorData, Position } from "@racer/track/madrid-schema";
-import type { GroundPoint, SceneryBlock } from "@racer/track/track";
+import type {
+  GroundCover,
+  GroundPoint,
+  SceneryBlock,
+  SceneryPatch,
+  SceneryWater,
+} from "@racer/track/track";
 
 import { fitPolyline } from "./fit.ts";
 import {
@@ -15,40 +21,66 @@ import {
   inside,
   nearest,
   pointAlong,
+  ringProblem,
 } from "./geometry.ts";
 import { fitGrades } from "./grade.ts";
+import type { Scene } from "./scene.ts";
 import {
   curvatureFlipsPerKilometre,
   gradeChangeFlipsPerKilometre,
   sharpestGradeChange,
 } from "./smoothness.ts";
 
-interface HookPlace {
+interface SlowPlace {
   readonly name: string;
   readonly fromM: number;
   readonly toM: number;
   readonly minRadiusM: number;
 }
 
-export interface HookSettings {
+interface Carriageway {
+  readonly lanesEachWay: 1 | 2;
+  readonly laneWidth: number;
+  readonly shoulderWidth: number;
+  readonly vergeWidth: number;
+  readonly leadInLength: number;
+  readonly runUpM: number;
+  readonly runoffLength: number;
+}
+
+export interface StretchSettings {
   readonly fromM: number;
   readonly toM: number;
   readonly minRadiusM: number;
-  readonly places: readonly HookPlace[];
+  readonly places: readonly SlowPlace[];
   readonly pieceLengthM: number;
-  readonly leadInLength: number;
-  readonly runoffLength: number;
-  readonly vergeHalfWidthM: number;
+  readonly road: Carriageway;
   readonly sceneReachM: number;
-  readonly lakeDropM: number;
+  readonly cover: GroundCover;
 }
 
+const vergeHalfWidthOf = (road: Carriageway): number =>
+  road.lanesEachWay * road.laneWidth + road.shoulderWidth + road.vergeWidth;
+
 interface PlaceDistance {
-  readonly place: HookPlace;
+  readonly place: SlowPlace;
   readonly maxM: number;
 }
 
-interface HookReport {
+interface WaterReport {
+  readonly level: number;
+  readonly points: number;
+  readonly clearanceM: number;
+}
+
+interface MassingReport {
+  readonly name: string;
+  readonly parts: number;
+  readonly clearanceM: number;
+  readonly topM: number;
+}
+
+interface StretchReport {
   readonly maxM: number;
   readonly p95M: number;
   readonly rmsM: number;
@@ -63,19 +95,22 @@ interface HookReport {
   readonly sharpestGradeChange: number;
   readonly curvatureFlipsPerKilometre: number;
   readonly gradeChangeFlipsPerKilometre: number;
-  readonly lakeClearanceM: number;
+  readonly water: readonly WaterReport[];
+  readonly massing: readonly MassingReport[];
   readonly keptBlocks: number;
   readonly droppedBlocks: number;
+  readonly brokenFootprints: readonly string[];
 }
 
-export interface Hook {
+export interface Stretch {
   readonly origin: Position;
   readonly startHeightM: number;
   readonly start: TrackStart;
   readonly pieces: TrackPieces;
   readonly blocks: readonly SceneryBlock[];
-  readonly lake: { readonly level: number; readonly ring: GroundPoint[] };
-  readonly report: HookReport;
+  readonly patches: readonly SceneryPatch[];
+  readonly water: readonly SceneryWater[];
+  readonly report: StretchReport;
 }
 
 const metre = (value: number): number => Math.round(value * 10) / 10;
@@ -129,11 +164,24 @@ const clearance = (line: Centreline, ring: readonly GroundPoint[]): number => {
   return least;
 };
 
-export const buildHook = (
+const roadBeside = (road: Centreline, ring: readonly GroundPoint[]) => {
+  let gap = Number.POSITIVE_INFINITY;
+  let y = 0;
+  for (let at = 0; at < road.sampleCount; at += 1) {
+    const found = gapToRing(road.worldX[at] ?? 0, road.worldZ[at] ?? 0, ring);
+    if (found < gap) {
+      gap = found;
+      y = road.worldY[at] ?? 0;
+    }
+  }
+  return { gap, y };
+};
+
+export const buildStretch = (
   data: CorridorData,
-  lakeRing: readonly Position[],
-  settings: HookSettings
-): Hook => {
+  scene: Scene,
+  settings: StretchSettings
+): Stretch => {
   const corridor = corridorLine(data);
   const street = between(corridor, settings.fromM, settings.toM);
   const fit = fitPolyline(street, {
@@ -166,26 +214,42 @@ export const buildHook = (
       return { groundM: sample.groundM, s: nearestSample(horizontal, x, -y) };
     });
   const grades = fitGrades({ knotS, samples });
-  const pieces = fit.pieces.map((piece, index): TrackPiece => ({
+  const fitted = fit.pieces.map((piece, index): TrackPiece => ({
     ...piece,
     endCurvature: Number(piece.endCurvature.toFixed(6)),
     endGrade: Number((grades.knots[index + 1] ?? 0).toFixed(5)),
   }));
+  const runUp = settings.road.runUpM;
+  const pieces: readonly TrackPiece[] =
+    runUp > 0
+      ? [
+          {
+            easedClimb: 0,
+            easedTurn: 0,
+            endCurvature: 0,
+            endGrade: 0,
+            length: runUp,
+          },
+          ...fitted,
+        ]
+      : fitted;
   const [firstPiece, ...laterPieces] = pieces;
   if (!firstPiece) {
-    throw new Error("The hook fit returned no pieces.");
+    throw new Error("The stretch fit returned no pieces.");
   }
+  const heading = Number(fit.start.heading.toFixed(6));
   const start: TrackStart = {
-    heading: Number(fit.start.heading.toFixed(6)),
-    x: metre(fit.start.x - origin[0]),
-    z: metre(fit.start.z + origin[1]),
+    heading,
+    x: metre(fit.start.x - origin[0] - runUp * Math.sin(heading)),
+    z: metre(fit.start.z + origin[1] + runUp * Math.cos(heading)),
   };
   const road = sampleAlignment({
-    leadInLength: settings.leadInLength,
+    leadInLength: settings.road.leadInLength,
     pieces: [firstPiece, ...laterPieces],
-    runoffLength: settings.runoffLength,
+    runoffLength: settings.road.runoffLength,
     start,
   });
+  const verge = vergeHalfWidthOf(settings.road);
   const toGround = ([x, y]: Position): GroundPoint => [
     metre(x - origin[0]),
     metre(-(y - origin[1])),
@@ -212,43 +276,70 @@ export const buildHook = (
       )
     );
   const blocks: SceneryBlock[] = [];
+  const brokenFootprints: string[] = [];
   for (const { building, open } of candidates) {
+    const problem = ringProblem(open);
+    if (problem !== null) {
+      brokenFootprints.push(`${building.id} ${problem}`);
+      continue;
+    }
     const ring = open.map(toGround);
     if (
       building.height.kind !== "unavailable" &&
-      clearance(road, ring) > settings.vergeHalfWidthM
+      clearance(road, ring) > verge
     ) {
-      blocks.push({ height: metre(building.height.metres), ring });
+      blocks.push({ height: metre(building.height.metres), lift: 0, ring });
     }
   }
-  const lake = lakeRing.map(toGround);
-  let lakeGap = Number.POSITIVE_INFINITY;
-  let lakeside = 0;
-  for (let at = 0; at < road.sampleCount; at += 1) {
-    const gap = gapToRing(road.worldX[at] ?? 0, road.worldZ[at] ?? 0, lake);
-    if (gap < lakeGap) {
-      lakeGap = gap;
-      lakeside = road.worldY[at] ?? 0;
+  const footprints = blocks.length;
+  const massing = scene.massing.map((landmark): MassingReport => {
+    let closest = Number.POSITIVE_INFINITY;
+    let topM = 0;
+    for (const part of landmark.parts) {
+      const ring = part.ring.map(toGround);
+      const gap = clearance(road, ring);
+      if (gap <= verge) {
+        throw new Error(
+          `${landmark.name} has massing ${gap.toFixed(1)} m from the road, inside its ${verge} m verge.`
+        );
+      }
+      closest = Math.min(closest, gap);
+      topM = Math.max(topM, part.liftM + part.heightM);
+      blocks.push({ height: part.heightM, lift: part.liftM, ring });
     }
-  }
+    return {
+      clearanceM: closest,
+      name: landmark.name,
+      parts: landmark.parts.length,
+      topM,
+    };
+  });
+  const water = scene.water.map((body): SceneryWater => {
+    const ring = body.ring.map(toGround);
+    return { level: metre(roadBeside(road, ring).y - body.dropM), ring };
+  });
   let steepestGrade = 0;
   for (const piece of pieces) {
     steepestGrade = Math.max(steepestGrade, Math.abs(piece.endGrade));
   }
   return {
     blocks,
-    lake: { level: metre(lakeside - settings.lakeDropM), ring: lake },
     origin,
+    patches: scene.grass.map((ring): SceneryPatch => ({
+      cover: "grass",
+      ring: ring.map(toGround),
+    })),
     pieces: [firstPiece, ...laterPieces],
     report: {
+      brokenFootprints,
       curvatureFlipsPerKilometre: curvatureFlipsPerKilometre(road),
-      droppedBlocks: candidates.length - blocks.length,
+      droppedBlocks: candidates.length - footprints,
       gradeChangeFlipsPerKilometre: gradeChangeFlipsPerKilometre(road),
       heightMaxM: grades.maxM,
       heightRmsM: grades.rmsM,
-      keptBlocks: blocks.length,
-      lakeClearanceM: lakeGap,
+      keptBlocks: footprints,
       lengthM: fit.lengthM,
+      massing,
       maxM: fit.error.maxM,
       outsidePlacesM: Math.max(
         0,
@@ -276,8 +367,14 @@ export const buildHook = (
       steepestGrade,
       streetLengthM: fit.sourceLengthM,
       tightestRadiusM: fit.minRadiusM,
+      water: water.map((body): WaterReport => ({
+        clearanceM: roadBeside(road, body.ring).gap,
+        level: body.level,
+        points: body.ring.length,
+      })),
     },
     start,
     startHeightM: metre(grades.offset),
+    water,
   };
 };

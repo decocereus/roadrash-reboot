@@ -40,7 +40,8 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 ## Features
 
 - [Data credits](./credits.md): Settings link, source notices and the full building data licence.
-- [Casa de Campo hook](./madrid-hook.md): the development-only Madrid greybox, ridden alone, with the field or with traffic, and its two forced places.
+- [Casa de Campo hook](./madrid-hook.md): the development-only Madrid park greybox, ridden alone, with the field or with traffic, and its two forced places.
+- [Puerta de Alcalá into Gran Vía](./madrid-gran-via.md): the development-only Madrid city greybox, 2,348 m from the gate to Plaza de España, its two slow places and its five landmarks.
 
 - [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.

@@ -1,15 +1,17 @@
 import { createRandom } from "@racer/track/random";
 import type {
+  GroundCover,
   GroundPoint,
-  Lake,
   Scenery,
   SceneryBlock,
+  SceneryWater,
   Track,
 } from "@racer/track/track";
 import * as THREE from "three";
 
 import type { Shading } from "./cel.ts";
 import { lifted, rolling, smoothstep } from "./ground.ts";
+import type { Look } from "./looks.ts";
 
 const ROAD_STEP = 4;
 const GROUND_STEP = 8;
@@ -31,7 +33,30 @@ interface RoadNear {
   y: number;
 }
 
+interface WaterNear {
+  found: boolean;
+  gap: number;
+  level: number;
+}
+
+export interface CoverPalette {
+  readonly near: string;
+  readonly far: string;
+  readonly patch: string;
+}
+
+export const coverPalette = (look: Look, cover: GroundCover): CoverPalette =>
+  ({
+    grass: {
+      far: look.groundFar,
+      near: look.groundNear,
+      patch: look.groundPatch,
+    },
+    paving: { far: look.road, near: look.walk, patch: look.kerb },
+  })[cover];
+
 const near: RoadNear = { distance: 0, y: 0 };
+const wet: WaterNear = { found: false, gap: 0, level: 0 };
 const tint = new THREE.Color();
 const placer = new THREE.Object3D();
 
@@ -76,7 +101,25 @@ const gapTo = (ring: readonly GroundPoint[], x: number, z: number): number => {
   return least;
 };
 
-const createGround = (track: Track, lake: Lake) => {
+const nearestWater = (
+  water: readonly SceneryWater[],
+  x: number,
+  z: number
+): WaterNear => {
+  wet.found = water.length > 0;
+  wet.gap = Number.POSITIVE_INFINITY;
+  wet.level = 0;
+  for (const body of water) {
+    const gap = gapTo(body.ring, x, z);
+    if (gap < wet.gap) {
+      wet.gap = gap;
+      wet.level = body.level;
+    }
+  }
+  return wet;
+};
+
+const createGround = (track: Track, scenery: Scenery) => {
   const count = Math.ceil(track.sampleCount / ROAD_STEP);
   const xs = new Float64Array(count);
   const zs = new Float64Array(count);
@@ -102,19 +145,23 @@ const createGround = (track: Track, lake: Lake) => {
     return near;
   };
   const heightAt = (x: number, z: number): number => {
-    if (inside(lake.ring, x, z)) {
-      return lake.level - LAKE_FLOOR;
+    const water = nearestWater(scenery.water, x, z);
+    if (water.gap === 0) {
+      return water.level - LAKE_FLOOR;
     }
     const road = nearestRoad(x, z);
+    const dry = road.y - ROAD_DROP;
+    if (!water.found) {
+      return dry;
+    }
     const fromRoad = Math.max(0, road.distance - track.vergeHalfWidth);
-    const fromLake = gapTo(lake.ring, x, z);
-    const bank = lake.level + LAKE_BANK;
-    return (
-      bank +
-      ((road.y - ROAD_DROP - bank) * fromLake) / (fromLake + fromRoad + 1)
-    );
+    const bank = water.level + LAKE_BANK;
+    return bank + ((dry - bank) * water.gap) / (water.gap + fromRoad + 1);
   };
-  return { heightAt, nearestRoad };
+  const coverAt = (x: number, z: number): GroundCover =>
+    scenery.patches.find((patch) => inside(patch.ring, x, z))?.cover ??
+    scenery.cover;
+  return { coverAt, heightAt, nearestRoad };
 };
 
 type Ground = ReturnType<typeof createGround>;
@@ -143,7 +190,49 @@ const axis = (low: number, high: number): number[] => {
   ];
 };
 
-const bounds = (track: Track) => {
+interface Palette {
+  readonly near: THREE.Color;
+  readonly far: THREE.Color;
+  readonly patch: THREE.Color;
+}
+
+const paletteOf = (look: Look, cover: GroundCover): Palette => {
+  const colours = coverPalette(look, cover);
+  return {
+    far: new THREE.Color(colours.far),
+    near: new THREE.Color(colours.near),
+    patch: new THREE.Color(colours.patch),
+  };
+};
+
+const coverColoursOf = (look: Look) =>
+  ({
+    grass: paletteOf(look, "grass"),
+    paving: paletteOf(look, "paving"),
+  }) satisfies Record<GroundCover, Palette>;
+
+interface Box {
+  readonly west: number;
+  readonly east: number;
+  readonly north: number;
+  readonly south: number;
+}
+
+const ringBox = (ring: readonly GroundPoint[]): Box => {
+  let west = Number.POSITIVE_INFINITY;
+  let east = Number.NEGATIVE_INFINITY;
+  let north = Number.POSITIVE_INFINITY;
+  let south = Number.NEGATIVE_INFINITY;
+  for (const [x, z] of ring) {
+    west = Math.min(west, x);
+    east = Math.max(east, x);
+    north = Math.min(north, z);
+    south = Math.max(south, z);
+  }
+  return { east, north, south, west };
+};
+
+const bounds = (track: Track): Box => {
   let west = Number.POSITIVE_INFINITY;
   let east = Number.NEGATIVE_INFINITY;
   let north = Number.POSITIVE_INFINITY;
@@ -171,16 +260,16 @@ const buildGround = (
   const positions: number[] = [];
   const colors: number[] = [];
   const indices: number[] = [];
-  const far = new THREE.Color(look.groundFar);
-  const patch = new THREE.Color(look.groundPatch);
+  const palettes = coverColoursOf(look);
   for (const z of rows) {
     for (const x of columns) {
       positions.push(x, ground.heightAt(x, z), z);
       const reach = ground.nearestRoad(x, z).distance;
+      const palette = palettes[ground.coverAt(x, z)];
       const color = tint
-        .set(look.groundNear)
-        .lerp(far, smoothstep(reach / 400))
-        .lerp(patch, ((rolling(x * 3.1, z * 2.7) + 1.5) / 3) * 0.35);
+        .copy(palette.near)
+        .lerp(palette.far, smoothstep(reach / 400))
+        .lerp(palette.patch, ((rolling(x * 3.1, z * 2.7) + 1.5) / 3) * 0.35);
       colors.push(color.r, color.g, color.b);
     }
   }
@@ -282,8 +371,8 @@ const buildBlocks = (
   const positions: number[] = [];
   for (const block of blocks) {
     const heights = block.ring.map(([x, z]) => ground.heightAt(x, z));
-    const base = Math.min(...heights) - BLOCK_SINK;
-    const top = Math.max(...heights) + block.height;
+    const base = Math.min(...heights) + block.lift - BLOCK_SINK;
+    const top = Math.max(...heights) + block.lift + block.height;
     const outline = clockwise(block.ring);
     let [fromX, fromZ] = outline.at(-1) ?? [0, 0];
     for (const [x, z] of outline) {
@@ -323,10 +412,15 @@ const buildBlocks = (
   return mesh;
 };
 
-const buildLake = (lake: Lake, shading: Shading): THREE.Mesh => {
+const buildWater = (
+  water: readonly SceneryWater[],
+  shading: Shading
+): THREE.Mesh => {
   const mesh = new THREE.Mesh(
     flatGeometry(
-      capOf(clockwise(lake.ring)).flatMap(([x, z]) => [x, lake.level, z])
+      water.flatMap((body) =>
+        capOf(clockwise(body.ring)).flatMap(([x, z]) => [x, body.level, z])
+      )
     ),
     shading.cel(WATER_COLOUR)
   );
@@ -340,6 +434,25 @@ const inBlock = (
   z: number
 ): boolean => blocks.some((block) => inside(block.ring, x, z));
 
+const grassBoxes = (track: Track, scenery: Scenery): Box[] => {
+  const boxes: Box[] = [];
+  if (scenery.cover === "grass") {
+    const box = bounds(track);
+    boxes.push({
+      east: box.east + TREE_REACH,
+      north: box.north - TREE_REACH,
+      south: box.south + TREE_REACH,
+      west: box.west - TREE_REACH,
+    });
+  }
+  for (const patch of scenery.patches) {
+    if (patch.cover === "grass") {
+      boxes.push(ringBox(patch.ring));
+    }
+  }
+  return boxes;
+};
+
 const buildTrees = (
   track: Track,
   scenery: Scenery,
@@ -348,29 +461,25 @@ const buildTrees = (
 ): THREE.Group => {
   const { look } = shading;
   const random = createRandom(track.plan.seed + 7);
-  const box = bounds(track);
   const spots: (readonly [x: number, z: number, scale: number])[] = [];
-  for (
-    let z = box.north - TREE_REACH;
-    z < box.south + TREE_REACH;
-    z += TREE_STEP
-  ) {
-    for (
-      let x = box.west - TREE_REACH;
-      x < box.east + TREE_REACH;
-      x += TREE_STEP
-    ) {
-      const treeX = x + (random() - 0.5) * TREE_STEP * 0.8;
-      const treeZ = z + (random() - 0.5) * TREE_STEP * 0.8;
-      const scale = 0.8 + random() * 0.6;
-      const { distance } = ground.nearestRoad(treeX, treeZ);
-      if (
-        distance > track.vergeHalfWidth + TREE_CLEARANCE &&
-        distance < TREE_REACH &&
-        gapTo(scenery.lake.ring, treeX, treeZ) > SHORE_CLEARANCE &&
-        !inBlock(scenery.blocks, treeX, treeZ)
-      ) {
-        spots.push([treeX, treeZ, scale]);
+  for (const box of grassBoxes(track, scenery)) {
+    for (let z = box.north; z < box.south; z += TREE_STEP) {
+      for (let x = box.west; x < box.east; x += TREE_STEP) {
+        const treeX = x + (random() - 0.5) * TREE_STEP * 0.8;
+        const treeZ = z + (random() - 0.5) * TREE_STEP * 0.8;
+        const scale = 0.8 + random() * 0.6;
+        const { distance } = ground.nearestRoad(treeX, treeZ);
+        if (
+          distance > track.vergeHalfWidth + TREE_CLEARANCE &&
+          distance < TREE_REACH &&
+          ground.coverAt(treeX, treeZ) === "grass" &&
+          scenery.water.every(
+            (body) => gapTo(body.ring, treeX, treeZ) > SHORE_CLEARANCE
+          ) &&
+          !inBlock(scenery.blocks, treeX, treeZ)
+        ) {
+          spots.push([treeX, treeZ, scale]);
+        }
       }
     }
   }
@@ -410,13 +519,15 @@ export const buildGreybox = (
   scenery: Scenery,
   shading: Shading
 ): THREE.Group => {
-  const ground = createGround(track, scenery.lake);
+  const ground = createGround(track, scenery);
   const greybox = new THREE.Group();
   greybox.add(
     buildGround(track, ground, shading),
     buildBlocks(scenery.blocks, ground, shading),
-    buildLake(scenery.lake, shading),
     buildTrees(track, scenery, ground, shading)
   );
+  if (scenery.water.length > 0) {
+    greybox.add(buildWater(scenery.water, shading));
+  }
   return greybox;
 };

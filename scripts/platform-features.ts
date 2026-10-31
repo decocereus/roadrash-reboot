@@ -8,26 +8,27 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "docs/madrid-corridor.md#route-and-coordinates",
       "docs/madrid-corridor.md#fitting-track-pieces",
       "docs/madrid-corridor.md#casa-de-campo-hook",
+      "docs/madrid-corridor.md#puerta-de-alcalá-into-gran-vía",
     ],
     id: "madrid-corridor",
     kind: "platform",
     owns: [
       "tools/madrid/**",
       "packages/track/src/madrid-*.ts",
-      "packages/sim/src/madrid-hook.test.ts",
-      "apps/web/test/madrid-hook-camera.test.ts",
+      "packages/sim/src/madrid-stretches.test.ts",
+      "apps/web/test/madrid-*.test.ts",
       "apps/web/src/routes/credits.tsx",
     ],
     perf: [],
     start: [
       "tools/madrid/generate.ts",
-      "tools/madrid/hook.ts",
+      "tools/madrid/stretch.ts",
       "apps/web/src/routes/credits.tsx",
     ],
     summary:
-      "Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit with slower places, the generator that writes the Casa de Campo hook plan with its grade, blocks and lake, and the public data credits page. Only the hook rides, through a development URL.",
+      "Pinned, permissively licensed Madrid source data, the offline corridor generator, its connectivity checks, the fitter that turns the corridor centreline into track pieces under a radius limit with slower places, the one builder that writes each stretch's plan with its grade, blocks, landmark massing and ground cover, and the public data credits page. The Casa de Campo hook and the Puerta de Alcalá into Gran Vía stretch ride through development URLs.",
     title: "Madrid corridor and data credits",
-    verify: ["credits.md", "madrid-hook.md"],
+    verify: ["credits.md", "madrid-gran-via.md", "madrid-hook.md"],
   },
   {
     docs: [

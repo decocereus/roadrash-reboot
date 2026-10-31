@@ -11,19 +11,29 @@ import type { RegionId } from "./regions.ts";
 
 export type GroundPoint = readonly [x: number, z: number];
 
+export type GroundCover = "grass" | "paving";
+
 export interface SceneryBlock {
   readonly height: number;
+  readonly lift: number;
   readonly ring: readonly GroundPoint[];
 }
 
-export interface Lake {
+export interface SceneryPatch {
+  readonly cover: GroundCover;
+  readonly ring: readonly GroundPoint[];
+}
+
+export interface SceneryWater {
   readonly level: number;
   readonly ring: readonly GroundPoint[];
 }
 
 export interface Scenery {
   readonly blocks: readonly SceneryBlock[];
-  readonly lake: Lake;
+  readonly cover: GroundCover;
+  readonly patches: readonly SceneryPatch[];
+  readonly water: readonly SceneryWater[];
 }
 
 export interface TrackPlan extends Alignment {
