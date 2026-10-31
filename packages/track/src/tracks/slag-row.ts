@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
   chevrons: chevronRuns["slag-row"],
+  crossings: [],
   features: [
     {
       feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },

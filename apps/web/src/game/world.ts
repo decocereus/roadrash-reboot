@@ -12,21 +12,19 @@ import { createClearance } from "./clearance.ts";
 import type { Clearance } from "./clearance.ts";
 import { disposeTree } from "./dispose.ts";
 import { buildGreybox, coverPalette } from "./greybox.ts";
-import {
-  freeze,
-  groundLift,
-  KERB_WIDTH,
-  lifted,
-  plant,
-  rolling,
-  showWithin,
-  smoothstep,
-} from "./ground.ts";
+import { freeze, KERB_WIDTH, lifted, plant, showWithin } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
 import { createHazardMarks } from "./hazards.ts";
+import { buildJunctions } from "./junctions.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { buildRamps } from "./ramps.ts";
+import {
+  buildRibbon,
+  buildTerrainChunk,
+  piecesBesideArms,
+} from "./road-strips.ts";
+import type { Rail, Span } from "./road-strips.ts";
 import { paveTexture, ROAD_TILE_METRES, roadTexture } from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
@@ -36,9 +34,6 @@ import { owned } from "./texture-canvas.ts";
 const CHUNK_LENGTH = 200;
 const CHUNK_BEHIND = 260;
 const CHUNK_MARGIN = 200;
-const ROAD_STEP = 2;
-const TERRAIN_STEP = 4;
-const TERRAIN_RINGS = [0, 1.5, 4, 9, 20, 45, 90, 160];
 const SKY_RADIUS = 4000;
 const SHADOW_SPAN = 70;
 export const SHADOW_MAP = 4096;
@@ -50,116 +45,7 @@ const MOON_BEARING = new THREE.Vector3(0.35, 0, -0.92).normalize();
 const POLE = "#221a30";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
-const tint = new THREE.Color();
 const placer = new THREE.Object3D();
-
-type Rail = readonly [offset: number, lift: number, u: number];
-
-const buildRibbon = (
-  track: Track,
-  span: readonly [number, number],
-  rails: readonly Rail[],
-  tile: number
-): THREE.BufferGeometry => {
-  const [from, to] = span;
-  const positions: number[] = [];
-  const uvs: number[] = [];
-  const indices: number[] = [];
-  const columns = rails.length;
-  let row = 0;
-  for (let s = from; s <= to; s += ROAD_STEP) {
-    for (const [offset, lift, u] of rails) {
-      placeOnTrack(track, s, offset, point);
-      positions.push(point.x, point.y + lift, point.z);
-      uvs.push(u, s / tile);
-    }
-    if (s + ROAD_STEP <= to) {
-      for (let column = 0; column < columns - 1; column += 1) {
-        const near = row * columns + column;
-        const far = near + columns;
-        indices.push(near, near + 1, far, near + 1, far + 1, far);
-      }
-    }
-    row += 1;
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return geometry;
-};
-
-const terrainColor = (
-  look: Look,
-  ring: number,
-  worldX: number,
-  worldZ: number
-): THREE.Color => {
-  if (ring <= 1) {
-    return tint.set(look.walk);
-  }
-  const patch = (rolling(worldX * 3.1, worldZ * 2.7) + 1.5) / 3;
-  return tint
-    .set(look.groundNear)
-    .lerp(new THREE.Color(look.groundFar), smoothstep((ring - 2) / 5))
-    .lerp(new THREE.Color(look.groundPatch), patch * 0.35);
-};
-
-const buildTerrainChunk = (
-  track: Track,
-  span: readonly [number, number],
-  side: number,
-  look: Look
-): THREE.BufferGeometry => {
-  const [from, to] = span;
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const indices: number[] = [];
-  const columns = TERRAIN_RINGS.length;
-  let row = 0;
-  for (let s = from; s <= to; s += TERRAIN_STEP) {
-    const bend = track.curvature[Math.round(s - track.startS)] ?? 0;
-    const inside = side * bend > 0;
-    const reach = inside ? 0.8 / Math.abs(bend) : Number.POSITIVE_INFINITY;
-    for (let ring = 0; ring < TERRAIN_RINGS.length; ring += 1) {
-      const offset = TERRAIN_RINGS[ring];
-      if (offset === undefined) {
-        continue;
-      }
-      const distance = Math.min(offset, reach);
-      placeOnTrack(track, s, side * (track.roadHalfWidth + distance), point);
-      const lift = groundLift("open", distance, point.x, point.z);
-      positions.push(point.x, point.y + lift, point.z);
-      const color = terrainColor(look, ring, point.x, point.z);
-      colors.push(color.r, color.g, color.b);
-    }
-    if (s + TERRAIN_STEP <= to) {
-      for (let column = 0; column < columns - 1; column += 1) {
-        const near = row * columns + column;
-        const far = near + columns;
-        if (side > 0) {
-          indices.push(near, near + 1, far, near + 1, far + 1, far);
-        } else {
-          indices.push(near, far, near + 1, near + 1, far, far + 1);
-        }
-      }
-    }
-    row += 1;
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return geometry;
-};
 
 const buildGate = (
   track: Track,
@@ -425,6 +311,7 @@ export interface World {
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
   showHazards: (hazards: readonly Hazard[], s: number) => void;
+  showSignals: (tick: number) => void;
   samples: () => THREE.Group;
   setShadowMap: (size: number) => void;
   dispose: () => void;
@@ -471,7 +358,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   const add = (
     geometry: THREE.BufferGeometry,
     material: THREE.Material,
-    span: readonly [number, number]
+    span: Span
   ): void => {
     const mesh = freeze(new THREE.Mesh(geometry, material));
     mesh.receiveShadow = true;
@@ -505,16 +392,18 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
           [side * (half + KERB_WIDTH), KERB_HEIGHT, 0],
           [side * edge, KERB_HEIGHT, (edge - half) / 2],
         ];
-        add(
-          buildRibbon(track, span, side > 0 ? kerb : kerb.toReversed(), 2),
-          kerbMaterial,
-          span
-        );
-        add(
-          buildRibbon(track, span, side > 0 ? walk : walk.toReversed(), 2),
-          walkMaterial,
-          span
-        );
+        for (const piece of piecesBesideArms(track, span, side)) {
+          add(
+            buildRibbon(track, piece, side > 0 ? kerb : kerb.toReversed(), 2),
+            kerbMaterial,
+            span
+          );
+          add(
+            buildRibbon(track, piece, side > 0 ? walk : walk.toReversed(), 2),
+            walkMaterial,
+            span
+          );
+        }
       } else if (vergeMaterial) {
         const shoulder: Rail[] = [
           [side * half, 0, 0],
@@ -552,6 +441,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   stretches.push(...ramps.stretches);
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
+  const junctions = buildJunctions(track, shading, clearance);
+  scene.add(junctions.group);
+  stretches.push(...junctions.stretches);
   if (city) {
     scene.add(freeze(city.group));
   } else if (scenery) {
@@ -584,6 +476,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
       city?.group.removeFromParent();
       city?.dispose();
       hazards.dispose();
+      junctions.dispose();
       disposeTree(scene);
       for (const texture of textures) {
         texture.dispose();
@@ -615,6 +508,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
     shading,
     showHazards(list, s) {
       hazards.show(list, s);
+    },
+    showSignals(tick) {
+      junctions.show(tick);
     },
   };
 };

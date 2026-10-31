@@ -504,6 +504,7 @@ const startGame = (
     chase.update(stage.track, cast.subject, seconds);
     frame.profiler?.lap("camera");
     stage.world.showHazards(stage.race.view.hazards, cast.subject.s);
+    stage.world.showSignals(stage.race.view.tick);
     stage.world.follow(chase.camera, cast.subject.s);
     frame.profiler?.lap("world");
     present();

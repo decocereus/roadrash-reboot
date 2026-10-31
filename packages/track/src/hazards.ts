@@ -1,4 +1,5 @@
 import { pieceSpans } from "./alignment.ts";
+import { crossingReservationOf } from "./crossings.ts";
 import { reservationOf } from "./features.ts";
 import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
@@ -278,6 +279,12 @@ const clearOfRamps = (road: Road, s: number, halfLength: number): boolean =>
     );
   });
 
+const clearOfCrossings = (road: Road, s: number, halfLength: number): boolean =>
+  road.plan.crossings.every((rule) => {
+    const [from, to] = crossingReservationOf(rule);
+    return s + halfLength < from || s - halfLength > to;
+  });
+
 const placeable = (
   road: Road,
   kind: HazardKind,
@@ -286,6 +293,7 @@ const placeable = (
 ): boolean =>
   s >= HAZARD_START_CLEARANCE &&
   clearOfRamps(road, s, hazardSizes[kind].halfLength) &&
+  clearOfCrossings(road, s, hazardSizes[kind].halfLength) &&
   inSight(road, s, x);
 
 const placesOf = (road: Road): Place[] => {

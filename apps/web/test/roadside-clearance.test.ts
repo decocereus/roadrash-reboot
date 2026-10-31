@@ -1,12 +1,15 @@
+import { crossHalfWidthOf } from "@racer/track/crossings";
+import type { CrossingRule } from "@racer/track/crossings";
 import { lipOf } from "@racer/track/features";
 import { roadIds } from "@racer/track/road";
-import { trackFor } from "@racer/track/roads";
-import { placeOnTrack } from "@racer/track/track";
+import { roads, trackFor } from "@racer/track/roads";
+import { compileTrack, placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createChaseCamera } from "../src/game/chase-camera.ts";
+import { KERB_HEIGHT } from "../src/game/city.ts";
 import { placeOnGround } from "../src/game/ground.ts";
 import { isInstancedMesh, isMesh } from "../src/game/meshes.ts";
 import { BEACON_OUT } from "../src/game/ramp-markers.ts";
@@ -85,6 +88,34 @@ const rideTo = (
 
 const horizontal = (a: THREE.Vector3, b: THREE.Vector3): number =>
   Math.hypot(a.x - b.x, a.z - b.z);
+
+const postsAt = (
+  world: World,
+  track: Track,
+  s: number,
+  x: number
+): THREE.Mesh[] => {
+  placeOnTrack(track, s, x, point);
+  const posts: THREE.Mesh[] = [];
+  const box = new THREE.Box3();
+  world.scene.traverse((node) => {
+    if (!isMesh(node) || isInstancedMesh(node)) {
+      return;
+    }
+    box.setFromObject(node);
+    const size = box.getSize(spot);
+    const centre = box.getCenter(new THREE.Vector3());
+    if (
+      size.y > 3 &&
+      Math.hypot(centre.x - point.x, centre.z - point.z) < 0.5 &&
+      Math.max(size.x, size.z) > 0.1 &&
+      Math.max(size.x, size.z) < 1
+    ) {
+      posts.push(node);
+    }
+  });
+  return posts;
+};
 
 describe("the roadside clears the chase camera", () => {
   beforeAll(() => {
@@ -194,6 +225,133 @@ describe("the roadside clears the chase camera", () => {
 
     rideTo(world, track, { s: lip + 30, x: jump.x });
     expect(beacons.map(drawn)).toStrictEqual([true, true, true, true]);
+    world.dispose();
+  });
+
+  it("keeps every signal across the junction drawn while a rider rides the right lane through Harbour Cross", () => {
+    const track = trackFor("breakwater-run", 1);
+    const world = createWorld(track);
+    const harbour = track.crossings.find(({ id }) => id === "harbour-cross");
+    if (!harbour) {
+      throw new Error("Breakwater Run has Harbour Cross.");
+    }
+    const half = track.roadHalfWidth;
+    const far = [
+      ...postsAt(world, track, harbour.s + harbour.stopGap + 0.3, -half - 0.9),
+      ...postsAt(
+        world,
+        track,
+        harbour.s - harbour.boxHalfLength - 0.9,
+        -half - 1.4
+      ),
+      ...postsAt(
+        world,
+        track,
+        harbour.s + harbour.boxHalfLength + 0.9,
+        half + 1.4
+      ),
+    ];
+    expect(far).toHaveLength(3);
+    const lost: number[] = [];
+    for (let s = harbour.s - 80; s < harbour.s + 20; s += 2) {
+      rideTo(world, track, { s, x: half - 2 });
+      if (!far.every(drawn)) {
+        lost.push(s);
+      }
+    }
+    expect(lost).toStrictEqual([]);
+    world.dispose();
+  });
+
+  it("runs Harbour Cross's pavement right up to each arm and leaves no gap beside it", () => {
+    const track = trackFor("breakwater-run", 1);
+    const world = createWorld(track);
+    const harbour = track.crossings.find(({ id }) => id === "harbour-cross");
+    if (!harbour) {
+      throw new Error("Breakwater Run has Harbour Cross.");
+    }
+    const ground: THREE.Mesh[] = [];
+    world.scene.traverse((node) => {
+      if (isMesh(node) && !isInstancedMesh(node)) {
+        ground.push(node);
+      }
+    });
+    const ray = new THREE.Raycaster();
+    const down = new THREE.Vector3(0, -1, 0);
+    const surface = (s: number, x: number): string => {
+      placeOnTrack(track, s, x, point);
+      ray.set(new THREE.Vector3(point.x, point.y + 50, point.z), down);
+      const [first] = ray.intersectObjects(ground, false);
+      return first && first.point.y > point.y + KERB_HEIGHT / 2
+        ? "pavement"
+        : "arm";
+    };
+    const edge = harbour.boxHalfLength;
+    const rows = [-1, 1].map((side) => {
+      const x = side * (track.roadHalfWidth + 1.5);
+      return [
+        surface(harbour.s - edge - 0.2, x),
+        surface(harbour.s - edge + 0.2, x),
+        surface(harbour.s + edge - 0.2, x),
+        surface(harbour.s + edge + 0.2, x),
+      ];
+    });
+    expect(rows).toStrictEqual([
+      ["pavement", "arm", "arm", "pavement"],
+      ["pavement", "arm", "arm", "pavement"],
+    ]);
+    world.dispose();
+  });
+
+  it("lays an open-country junction's arms on the ground rather than under a hillside", () => {
+    const rule: CrossingRule = {
+      fromLevel: 1,
+      id: "woods-cross",
+      lights: null,
+      road: { arms: "both", laneWidth: 3.4, lanesEachWay: 1 },
+      s: 1500,
+      walk: "unmarked",
+    };
+    const track = compileTrack({
+      ...roads["breakwater-run"].plan,
+      chevrons: [],
+      crossings: [rule],
+      features: [],
+      region: "kettle-woods",
+    });
+    const world = createWorld(track);
+    const ground: THREE.Mesh[] = [];
+    world.scene.traverse((node) => {
+      if (isMesh(node) && !isInstancedMesh(node)) {
+        ground.push(node);
+      }
+    });
+    const down = new THREE.Vector3(0, -1, 0);
+    const ray = new THREE.Raycaster();
+    const buried: string[] = [];
+    const [crossing] = track.crossings;
+    if (!crossing?.road) {
+      throw new Error("The woods junction has a cross road.");
+    }
+    const width = crossHalfWidthOf(crossing.road);
+    for (const side of [-1, 1]) {
+      for (let out = 2; out <= 58; out += 4) {
+        for (const along of [-width + 0.3, 0, width - 0.3]) {
+          placeOnTrack(
+            track,
+            crossing.s + along,
+            side * (track.roadHalfWidth + out),
+            point
+          );
+          ray.set(new THREE.Vector3(point.x, point.y + 200, point.z), down);
+          const [first] = ray.intersectObjects(ground, false);
+          if (!first || first.point.y > point.y + 0.05) {
+            buried.push(`side=${side} out=${out} along=${along}`);
+          }
+        }
+      }
+    }
+    expect(buried).toStrictEqual([]);
     world.dispose();
   });
 

@@ -178,6 +178,30 @@ The level-1 hazards, by id, kind, setting, position along the road, and position
 
 Roadblock spots are not checked against hazards yet; roadblocks are not in the simulation.
 
+## Junctions and crossings
+
+A road declares the places where something crosses it in `crossings`. Each entry has an id, the level it appears from, its position `s`, its lights or none, its cross road or none, and its walk, a zebra or unmarked. A cross road has one or two lanes each way, a lane width, and arms on both sides, on the left (oncoming, negative x) or on the right (same-way, positive x), so a T is one arm. An entry with a cross road is a junction; one without is a pedestrian crossing. Lights carry only a phase offset in ticks; the cycle itself is a game rule in `packages/sim/src/signals.ts`.
+
+A junction's box is as long as the cross road is wide, from kerb to kerb. A zebra lies a metre outside the box on each side, 4 m wide, and the stop line 1.5 m beyond it, so a two-lane cross road with 3.4 m lanes puts the stop lines 13.8 m either side of the centre. A crossing with no cross road has one zebra across its centre and stop lines 3.5 m either side. The compiler reserves the stretch from 30 m before one stop line to 30 m past the other, at every level, and refuses an entry whose reserved stretch:
+
+- curves more than 1/400 per metre, a 400 m radius, anywhere;
+- climbs or falls more than 6%, or changes grade faster than 0.002 per metre, which is a crest;
+- starts within 300 m of the start or ends within 100 m of the finish at a level that has it;
+- overlaps a ramp's reservation, or comes within 120 m of another crossing's.
+
+No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 m of a cross road's arm on the side that has it. Hazards reserve the crossings of every level, so a crossing that appears at a later level leaves the hazards of earlier levels where they were. Props clear only the arms of the level being raced, because an arm that is not drawn yet needs no room. City blocks keep 2 m clear of the arms. In open country the ground lies flat under an arm and 30 m beyond its end, and rises again 2 m either side of it. The greybox scenery of the Madrid stretches does not yet make room for an arm, so a Madrid stretch declares a cross road only where its corridor data already has a street.
+
+The lights run main green 9 s, main amber 2.5 s, all red 1 s, cross green 7 s, cross amber 2.5 s and all red 1 s, a 23 s cycle, so a rider meets a red about half the time. A pedestrian crossing runs main green 10 s, amber 2.5 s, all red 1 s, walk 6 s, flashing 2 s and all red 1 s. The phase is a function of the race tick and the entry's offset, so it needs no race state and replays exactly.
+
+| Road | Id | From level | At (m) | Lights | Cross road | Walk |
+| --- | --- | --: | --: | --- | --- | --- |
+| Breakwater Run | `harbour-cross` | 1 | 1,700 | offset 0 | two lanes each way, both arms | zebra |
+| Breakwater Run | `market-cross` | 1 | 6,000 | offset 540 | one lane each way, right arm | zebra |
+| Breakwater Run | `pier-crossing` | 1 | 7,850 | offset 300 | none | zebra |
+| Breakwater Run | `esplanade-cross` | 4 | 10,900 | none, give way | one lane each way, left arm | unmarked |
+
+Nothing on the road reacts to a crossing yet: riders, traffic and the pilot ride through as if it were not there. The lights cycle and are drawn.
+
 ## How levels extend a road
 
 Level N is the level-1 section list followed by the appended blocks for levels 2 to N. The start line never moves, so the opening kilometres are the ones the player already knows; the finish moves 1,150 m further each level. Appended sections are written `[length, turnDegrees, climb]`.
