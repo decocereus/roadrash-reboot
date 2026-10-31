@@ -19,17 +19,16 @@ import type { Stance } from "../src/game/rider-figure.ts";
 
 const PIXEL_RATIO = 2;
 const SETTLE_STEPS = 8;
-const CLUSTERS = 8;
+const CLUSTERS = 16;
 const ROUNDS = 16;
 const SAMPLE_LIMIT = 24_000;
-const MIN_SHARE = 0.01;
 const BACKGROUND = "#3a3a3a";
 const BAND_STEP = 0.02;
 const SHEET_COLUMNS = 3;
 const HUE_FLOOR = 0.03;
 const INK_TOLERANCE = 3;
 
-const lookNames = ["dawn", "dusk", "night"] as const;
+const lookNames = ["dusk", "night", "dawn"] as const;
 type LookName = (typeof lookNames)[number];
 
 const looks = {
@@ -121,9 +120,10 @@ const meanOf = (labs: readonly Lab[]): Lab => {
 const round = (value: number, places = 3): number =>
   Math.round(value * 10 ** places) / 10 ** places;
 
-interface Pair {
-  readonly lit: Lab;
-  readonly shadow: Lab;
+interface Bands {
+  readonly valid: Uint8Array;
+  readonly lit: readonly Lab[];
+  readonly shadow: readonly Lab[];
 }
 
 const labAt = (pixels: Uint8Array, pixel: number): Lab =>
@@ -153,19 +153,19 @@ const quantile = (values: readonly number[], at: number): number | null => {
   return value === undefined ? null : round(value, 1);
 };
 
-const pairsOf = (
+const backgroundLab = labOf(
+  Number.parseInt(BACKGROUND.slice(1, 3), 16),
+  Number.parseInt(BACKGROUND.slice(3, 5), 16),
+  Number.parseInt(BACKGROUND.slice(5, 7), 16)
+);
+
+const bandsOf = (
   lit: Uint8Array,
   inked: Uint8Array,
   shadow: Uint8Array,
   width: number,
   height: number
-): Pair[] => {
-  const background = new THREE.Color(BACKGROUND);
-  const backgroundLab = labOf(
-    background.r * 255,
-    background.g * 255,
-    background.b * 255
-  );
+): Bands => {
   const banded = new Uint8Array(width * height);
   const litLabs: Lab[] = Array.from({ length: width * height });
   const shadowLabs: Lab[] = Array.from({ length: width * height });
@@ -174,74 +174,65 @@ const pairsOf = (
     const shadowLab = labAt(shadow, pixel);
     litLabs[pixel] = litLab;
     shadowLabs[pixel] = shadowLab;
-    const onRider =
+    const onSubject =
       clearOfInk(lit, inked, pixel) &&
       distance(litLab, backgroundLab) > BAND_STEP &&
       distance(shadowLab, backgroundLab) > BAND_STEP;
-    banded[pixel] = onRider && litLab[0] - shadowLab[0] > BAND_STEP ? 1 : 0;
+    banded[pixel] = onSubject && litLab[0] - shadowLab[0] > BAND_STEP ? 1 : 0;
   }
-  const pairs: Pair[] = [];
+  const valid = new Uint8Array(width * height);
   for (let row = 1; row < height - 1; row += 1) {
     for (let column = 1; column < width - 1; column += 1) {
       const pixel = row * width + column;
-      const inside =
+      valid[pixel] =
         banded[pixel] === 1 &&
         banded[pixel - 1] === 1 &&
         banded[pixel + 1] === 1 &&
         banded[pixel - width] === 1 &&
-        banded[pixel + width] === 1;
-      const litLab = litLabs[pixel];
-      const shadowLab = shadowLabs[pixel];
-      if (inside && litLab && shadowLab) {
-        pairs.push({ lit: litLab, shadow: shadowLab });
-      }
+        banded[pixel + width] === 1
+          ? 1
+          : 0;
     }
   }
-  return pairs;
+  return { lit: litLabs, shadow: shadowLabs, valid };
 };
 
-const clustersOf = (pairs: readonly Pair[]) => {
-  const stride = Math.max(1, Math.floor(pairs.length / SAMPLE_LIMIT));
-  const sample = pairs.filter((_pair, index) => index % stride === 0);
-  const byLightness = sample.toSorted((a, b) => a.lit[0] - b.lit[0]);
+const nearestOf = (centres: readonly Lab[], lab: Lab): number => {
+  let best = 0;
+  let gap = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < centres.length; index += 1) {
+    const centre = centres[index];
+    if (centre && distance(centre, lab) < gap) {
+      gap = distance(centre, lab);
+      best = index;
+    }
+  }
+  return best;
+};
+
+const centresOf = (sample: readonly Lab[]): Lab[] => {
+  const byLightness = sample.toSorted((a, b) => a[0] - b[0]);
   const first = byLightness[Math.floor(byLightness.length / 2)];
   if (!first) {
     return [];
   }
-  const centres: Lab[] = [first.lit];
+  const centres: Lab[] = [first];
   while (centres.length < CLUSTERS) {
-    let farthest = first.lit;
+    let farthest = first;
     let gap = -1;
-    for (const pair of sample) {
-      const nearest = Math.min(
-        ...centres.map((centre) => distance(centre, pair.lit))
-      );
+    for (const lab of sample) {
+      const nearest = distance(centres[nearestOf(centres, lab)] ?? first, lab);
       if (nearest > gap) {
         gap = nearest;
-        farthest = pair.lit;
+        farthest = lab;
       }
     }
     centres.push(farthest);
   }
-  const nearestCentre = (lab: Lab): number => {
-    let best = 0;
-    for (let index = 1; index < centres.length; index += 1) {
-      const centre = centres[index];
-      const bestCentre = centres[best];
-      if (
-        centre &&
-        bestCentre &&
-        distance(centre, lab) < distance(bestCentre, lab)
-      ) {
-        best = index;
-      }
-    }
-    return best;
-  };
   for (let roundIndex = 0; roundIndex < ROUNDS; roundIndex += 1) {
     const members: Lab[][] = centres.map(() => []);
-    for (const pair of sample) {
-      members[nearestCentre(pair.lit)]?.push(pair.lit);
+    for (const lab of sample) {
+      members[nearestOf(centres, lab)]?.push(lab);
     }
     for (let index = 0; index < centres.length; index += 1) {
       const group = members[index];
@@ -250,55 +241,90 @@ const clustersOf = (pairs: readonly Pair[]) => {
       }
     }
   }
-  const lit: Lab[][] = centres.map(() => []);
-  const shadow: Lab[][] = centres.map(() => []);
-  const gaps: number[][] = centres.map(() => []);
-  for (const pair of pairs) {
-    const index = nearestCentre(pair.lit);
-    lit[index]?.push(pair.lit);
-    shadow[index]?.push(pair.shadow);
-    const litLch = lchOf(pair.lit);
-    const shadowLch = lchOf(pair.shadow);
-    if (litLch.c >= HUE_FLOOR && shadowLch.c >= HUE_FLOOR) {
-      gaps[index]?.push(hueGap(litLch.h, shadowLch.h));
-    }
-  }
-
-  return centres
-    .map((_centre, index) => {
-      const litMean = meanOf(lit[index] ?? []);
-      const shadowMean = meanOf(shadow[index] ?? []);
-      const litLch = lchOf(litMean);
-      const shadowLch = lchOf(shadowMean);
-      return {
-        drift: round(hueGap(litLch.h, shadowLch.h), 1),
-        lit: {
-          c: round(litLch.c),
-          h: round(litLch.h, 1),
-          l: round(litLch.l),
-          lab: litMean.map((value) => round(value, 4)),
-        },
-        pixelDrift: {
-          counted: gaps[index]?.length ?? 0,
-          median: quantile(gaps[index] ?? [], 0.5),
-          p90: quantile(gaps[index] ?? [], 0.9),
-        },
-        shadow: {
-          c: round(shadowLch.c),
-          h: round(shadowLch.h, 1),
-          l: round(shadowLch.l),
-        },
-        share: round((lit[index]?.length ?? 0) / pairs.length),
-      };
-    })
-    .filter((cluster) => cluster.share >= MIN_SHARE)
-    .toSorted((a, b) => b.share - a.share);
+  return centres;
 };
 
-const measured = (pairs: readonly Pair[]) => ({
-  clusters: clustersOf(pairs),
-  pixels: pairs.length,
-});
+interface Identity {
+  readonly centres: readonly Lab[];
+  readonly flatOf: Int16Array;
+  readonly counted: number;
+}
+
+const identityOf = (reference: Bands): Identity => {
+  const sample: Lab[] = [];
+  let counted = 0;
+  for (const valid of reference.valid) {
+    counted += valid;
+  }
+  const stride = Math.max(1, Math.floor(counted / SAMPLE_LIMIT));
+  let seen = 0;
+  for (let pixel = 0; pixel < reference.valid.length; pixel += 1) {
+    const lab = reference.lit[pixel];
+    if (reference.valid[pixel] === 1 && lab) {
+      if (seen % stride === 0) {
+        sample.push(lab);
+      }
+      seen += 1;
+    }
+  }
+  const centres = centresOf(sample);
+  const flatOf = new Int16Array(reference.valid.length).fill(-1);
+  for (let pixel = 0; pixel < reference.valid.length; pixel += 1) {
+    const lab = reference.lit[pixel];
+    if (reference.valid[pixel] === 1 && lab) {
+      flatOf[pixel] = nearestOf(centres, lab);
+    }
+  }
+  return { centres, counted, flatOf };
+};
+
+const lchRounded = (lab: Lab) => {
+  const lch = lchOf(lab);
+  return {
+    c: round(lch.c),
+    h: round(lch.h, 1),
+    l: round(lch.l),
+    lab: lab.map((value) => round(value, 4)),
+  };
+};
+
+const flatsIn = (identity: Identity, bands: Bands) =>
+  identity.centres.map((_centre, flat) => {
+    const lit: Lab[] = [];
+    const shadow: Lab[] = [];
+    const gaps: number[] = [];
+    for (let pixel = 0; pixel < bands.valid.length; pixel += 1) {
+      const litLab = bands.lit[pixel];
+      const shadowLab = bands.shadow[pixel];
+      if (
+        identity.flatOf[pixel] === flat &&
+        bands.valid[pixel] === 1 &&
+        litLab &&
+        shadowLab
+      ) {
+        lit.push(litLab);
+        shadow.push(shadowLab);
+        const litLch = lchOf(litLab);
+        const shadowLch = lchOf(shadowLab);
+        if (litLch.c >= HUE_FLOOR && shadowLch.c >= HUE_FLOOR) {
+          gaps.push(hueGap(litLch.h, shadowLch.h));
+        }
+      }
+    }
+    const litMean = meanOf(lit);
+    const shadowMean = meanOf(shadow);
+    return {
+      drift: round(hueGap(lchOf(litMean).h, lchOf(shadowMean).h), 1),
+      lit: lchRounded(litMean),
+      pixelDrift: {
+        counted: gaps.length,
+        median: quantile(gaps, 0.5),
+        p90: quantile(gaps, 0.9),
+      },
+      pixels: lit.length,
+      shadow: lchRounded(shadowMean),
+    };
+  });
 
 const acquire = async (
   notes: string[]
@@ -370,21 +396,29 @@ const castOf = async (
     browserAssetRuntime().mountCelebrity,
     Promise.resolve({ assetParsers })
   );
-  const { signal } = new AbortController();
-  const worn = await Promise.all(
-    celebrityIds.map(async (id) => {
-      const loaded = await load(id, signal);
-      if (!loaded) {
-        throw new Error(`The ${id} model did not load.`);
-      }
-      return { id, worn: loaded };
-    })
+  const aborting = new AbortController();
+  const settled = await Promise.allSettled(
+    celebrityIds.map(async (id) => ({
+      id,
+      worn: await load(id, aborting.signal),
+    }))
   );
+  const held = settled.flatMap((outcome) =>
+    outcome.status === "fulfilled" && outcome.value.worn
+      ? [{ id: outcome.value.id, worn: outcome.value.worn }]
+      : []
+  );
+  const release = releaseEach(held.map(({ worn }) => worn));
+  if (held.length < celebrityIds.length) {
+    aborting.abort();
+    release();
+    throw new Error("A celebrity model did not load.");
+  }
   return {
-    release: releaseEach(worn.map(({ worn: loaded }) => loaded)),
+    release,
     sitters: [
-      ...worn.map(({ id, worn: loaded }): Sitter => ({
-        asset: loaded.value,
+      ...held.map(({ id, worn }): Sitter => ({
+        asset: worn.value,
         kind: "rider",
         name: id,
       })),
@@ -398,26 +432,22 @@ const bikeShading = (shading: Shading, subject: Subject): Shading =>
     ? { ...shading, paint: shading.figure }
     : shading;
 
-export const run = async (view: View, subject: Subject = "riders") => {
-  const notes: string[] = [];
-  const { assets, release } = await acquire(notes);
-  const cast = await castOf(subject, assets);
+interface Frame {
+  readonly renderer: THREE.WebGLRenderer;
+  readonly pipeline: ReturnType<typeof createPipeline>;
+  readonly camera: THREE.PerspectiveCamera;
+  readonly width: number;
+  readonly height: number;
+}
+
+const frameFor = (view: View): Frame => {
+  const frame = views[view];
   const renderer = createRenderer(document.createElement("canvas"));
   renderer.shadowMap.autoUpdate = true;
-  const frame = views[view];
   renderer.setPixelRatio(PIXEL_RATIO);
   renderer.setSize(frame.width, frame.height, false);
   const pipeline = createPipeline(renderer);
   pipeline.resize(frame.width, frame.height, PIXEL_RATIO);
-  const gl = renderer.getContext();
-  const width = frame.width * PIXEL_RATIO;
-  const height = frame.height * PIXEL_RATIO;
-  const litPixels = new Uint8Array(width * height * 4);
-  const inkedPixels = new Uint8Array(width * height * 4);
-  const shadowPixels = new Uint8Array(width * height * 4);
-  const read = (into: Uint8Array) => {
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, into);
-  };
   const camera = new THREE.PerspectiveCamera(
     frame.fov,
     frame.width / frame.height,
@@ -427,112 +457,174 @@ export const run = async (view: View, subject: Subject = "riders") => {
   camera.position.copy(frame.eye);
   camera.lookAt(frame.target);
   camera.updateMatrixWorld();
-  const sheet = sheetCanvas(cast.sitters.length, width, height);
-  const results: Record<
-    string,
-    Partial<Record<LookName, ReturnType<typeof measured>>>
-  > = {};
+  return {
+    camera,
+    height: frame.height * PIXEL_RATIO,
+    pipeline,
+    renderer,
+    width: frame.width * PIXEL_RATIO,
+  };
+};
+
+interface Shot {
+  readonly bands: Bands;
+  readonly picture: HTMLCanvasElement;
+}
+
+const shoot = (
+  frame: Frame,
+  assets: AcquiredAssets["assets"],
+  sitter: Sitter,
+  lookName: LookName,
+  subject: Subject
+): Shot => {
+  const { camera, height, pipeline, renderer, width } = frame;
+  const look = lookOf(looks[lookName]);
+  const shading = createShading(look);
+  shading.aim(camera);
+  const bikes = createBikes(
+    assets,
+    bikeShading(shading, subject),
+    bikeModelIds.map((model) => ({ model, paint: 2, police: false }))
+  );
+  const figure =
+    sitter.kind === "rider"
+      ? createRiderFigure(sitter.asset, shading, 0)
+      : null;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(BACKGROUND);
+  const light = new THREE.DirectionalLight(shading.sun, 1);
+  scene.add(
+    new THREE.AmbientLight(shading.ambient, 1),
+    light,
+    light.target,
+    bikes.group
+  );
+  const gl = renderer.getContext();
+  const read = () => {
+    const pixels = new Uint8Array(width * height * 4);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    return pixels;
+  };
   try {
-    for (let column = 0; column < lookNames.length; column += 1) {
-      const lookName = lookNames[column];
-      if (!lookName) {
-        continue;
+    if (figure) {
+      scene.add(figure.root);
+      figure.root.translateY(figure.seat.y);
+      figure.root.translateZ(figure.seat.z);
+      for (let step = 0; step < SETTLE_STEPS; step += 1) {
+        figure.animate(stance, 1);
       }
-      const look = lookOf(looks[lookName]);
-      const shading = createShading(look);
-      shading.aim(camera);
-      const bikes = createBikes(
-        assets,
-        bikeShading(shading, subject),
-        bikeModelIds.map((model) => ({ model, paint: 2, police: false }))
-      );
+      figure.root.updateMatrixWorld(true);
+    }
+    bikes.show(sitter.kind === "bike" ? bikeModelIds.indexOf(sitter.name) : 1);
+    bikes.commit(new THREE.Vector3());
+    pipeline.prepare(scene);
+    pipeline.setLook(look);
+    light.castShadow = true;
+    light.position.copy(shading.key).multiplyScalar(8);
+    pipeline.render(scene, camera);
+    const picture = document.createElement("canvas");
+    picture.width = width;
+    picture.height = height;
+    picture.getContext("2d")?.drawImage(renderer.domElement, 0, 0);
+    bikes.group.visible = sitter.kind === "bike";
+    light.castShadow = false;
+    light.position.copy(camera.position);
+    pipeline.setLook({ ...look, bloom: 0, ink: "#ffffff" });
+    pipeline.render(scene, camera);
+    const inked = read();
+    pipeline.setLook({ ...look, bloom: 0, ink: "#000000" });
+    pipeline.render(scene, camera);
+    const lit = read();
+    light.intensity = 0;
+    pipeline.render(scene, camera);
+    const shadow = read();
+    return { bands: bandsOf(lit, inked, shadow, width, height), picture };
+  } finally {
+    light.dispose();
+    figure?.dispose();
+    bikes.dispose();
+    shading.dispose();
+  }
+};
+
+export const run = async (view: View, subject: Subject = "riders") => {
+  const notes: string[] = [];
+  const { assets, release } = await acquire(notes);
+  const frame = frameFor(view);
+  try {
+    const cast = await castOf(subject, assets);
+    try {
+      const sheet = sheetCanvas(cast.sitters.length, frame.width, frame.height);
+      const results: Record<
+        string,
+        {
+          counted: number;
+          flats: {
+            share: number;
+            looks: Partial<
+              Record<LookName, ReturnType<typeof flatsIn>[number]>
+            >;
+          }[];
+        }
+      > = {};
       for (let row = 0; row < cast.sitters.length; row += 1) {
         const sitter = cast.sitters[row];
         if (!sitter) {
           continue;
         }
-        const figure =
-          sitter.kind === "rider"
-            ? createRiderFigure(sitter.asset, shading, 0)
-            : null;
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(BACKGROUND);
-        const light = new THREE.DirectionalLight(shading.sun, 1);
-        scene.add(
-          new THREE.AmbientLight(shading.ambient, 1),
-          light,
-          light.target,
-          bikes.group
-        );
-        if (figure) {
-          scene.add(figure.root);
-          figure.root.translateY(figure.seat.y);
-          figure.root.translateZ(figure.seat.z);
-          for (let step = 0; step < SETTLE_STEPS; step += 1) {
-            figure.animate(stance, 1);
+        let identity: Identity | null = null;
+        const perLook: Partial<Record<LookName, ReturnType<typeof flatsIn>>> =
+          {};
+        for (let column = 0; column < lookNames.length; column += 1) {
+          const lookName = lookNames[column];
+          if (!lookName) {
+            continue;
           }
-          figure.root.updateMatrixWorld(true);
+          const shot = shoot(frame, assets, sitter, lookName, subject);
+          identity ??= identityOf(shot.bands);
+          perLook[lookName] = flatsIn(identity, shot.bands);
+          sheet.drawImage(
+            shot.picture,
+            column * frame.width,
+            row * frame.height
+          );
+          sheet.fillText(
+            `${sitter.name} ${lookName}`,
+            column * frame.width + 8 * PIXEL_RATIO,
+            row * frame.height + 18 * PIXEL_RATIO
+          );
         }
-        bikes.show(
-          sitter.kind === "bike" ? bikeModelIds.indexOf(sitter.name) : 1
-        );
-        bikes.commit(new THREE.Vector3());
-        pipeline.prepare(scene);
-
-        pipeline.setLook(look);
-        light.castShadow = true;
-        light.position.copy(shading.key).multiplyScalar(8);
-        pipeline.render(scene, camera);
-        sheet.drawImage(renderer.domElement, column * width, row * height);
-        sheet.fillText(
-          `${sitter.name} ${lookName}`,
-          column * width + 8 * PIXEL_RATIO,
-          row * height + 18 * PIXEL_RATIO
-        );
-
-        bikes.group.visible = sitter.kind === "bike";
-        light.castShadow = false;
-        light.position.copy(camera.position);
-        pipeline.setLook({ ...look, bloom: 0, ink: "#ffffff" });
-        pipeline.render(scene, camera);
-        read(inkedPixels);
-        pipeline.setLook({ ...look, bloom: 0, ink: "#000000" });
-        pipeline.render(scene, camera);
-        read(litPixels);
-        light.intensity = 0;
-        pipeline.render(scene, camera);
-        read(shadowPixels);
-        bikes.group.visible = true;
-        const pairs = pairsOf(
-          litPixels,
-          inkedPixels,
-          shadowPixels,
-          width,
-          height
-        );
-        results[sitter.name] = {
-          ...results[sitter.name],
-          [lookName]: measured(pairs),
-        };
-        scene.remove(bikes.group);
-        light.dispose();
-        figure?.dispose();
+        const named = identity;
+        if (named) {
+          results[sitter.name] = {
+            counted: named.counted,
+            flats: named.centres.map((_centre, flat) => ({
+              looks: Object.fromEntries(
+                lookNames.map((lookName) => [
+                  lookName,
+                  perLook[lookName]?.[flat],
+                ])
+              ),
+              share: round((perLook.dusk?.[flat]?.pixels ?? 0) / named.counted),
+            })),
+          };
+        }
       }
-      bikes.dispose();
-      shading.dispose();
+      return {
+        notes,
+        programs: frame.renderer.info.programs?.length ?? 0,
+        results,
+        sheet: sheet.canvas.toDataURL("image/png"),
+        subject,
+        view,
+      };
+    } finally {
+      cast.release();
     }
-    return {
-      notes,
-      programs: renderer.info.programs?.length ?? 0,
-      results,
-      sheet: sheet.canvas.toDataURL("image/png"),
-      subject,
-      view,
-    };
   } finally {
-    pipeline.dispose();
-    renderer.dispose();
-    cast.release();
+    frame.pipeline.dispose();
+    frame.renderer.dispose();
     release();
   }
 };

@@ -57,7 +57,7 @@ const CEL_FRAGMENT = `
     if (figureShade > 0.5) {
       vec3 figureLit = diffuseColor.rgb * figureLight;
       float figureBand = clamp(dot(reflectedLight.directDiffuse, FIGURE_LUMA) / max(dot(diffuseColor.rgb * figureSun, FIGURE_LUMA), 1e-6), 0.0, 1.0);
-      outgoingLight = mix(figureShadeOf(min(figureLit, 1.0)), figureLit, figureBand);
+      outgoingLight = figureBand < 0.999 ? mix(figureShadeOf(min(figureLit, 1.0)), figureLit, figureBand) : figureLit;
     }
   #endif
   vec3 celView = normalize(vViewPosition);
