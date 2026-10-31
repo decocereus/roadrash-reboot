@@ -1,6 +1,7 @@
 import type { Random } from "@racer/track/random";
 import type { LaneCentres, Track } from "@racer/track/track";
 
+import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
 import { approach, BIKE_HALF_LENGTH, TICK_SECONDS } from "./state.ts";
 import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
@@ -15,6 +16,10 @@ const LOOK_AHEAD = 70;
 const PAINT_COUNT = 6;
 const SLOW_CRUISE = 23;
 const FAVOURED_LANE_SHARE = 0.8;
+const STOP_SHORT = 1;
+const QUEUE_GAP = 2;
+const STOP_SIGHT = 150;
+const STOP_SLACK = 3;
 const directions = [1, -1] as const;
 
 interface Body {
@@ -211,6 +216,48 @@ const firstPast = (lane: Lane, point: number): number => {
   return low;
 };
 
+const stopAtLights = (
+  track: Track,
+  cars: readonly TrafficCar[],
+  flow: Flow,
+  tick: number
+): void => {
+  const { lane, lastSpeed, target } = flow;
+  const { along, direction, order } = lane;
+  for (const crossing of track.crossings) {
+    if (
+      isSignalled(crossing) &&
+      mainLightOf(signalPhaseAt(crossing, tick)) !== "green"
+    ) {
+      const line = direction * crossing.s - crossing.stopGap - STOP_SHORT;
+      let limit = line;
+      for (
+        let place = firstPast(lane, line) - 1;
+        place >= 0 && (along[place] ?? line) > line - STOP_SIGHT;
+        place -= 1
+      ) {
+        const index = order[place] ?? -1;
+        const car = cars[index];
+        if (car) {
+          const carAlong = along[place] ?? line;
+          const room = limit - carAlong - car.halfLength;
+          const speed = lastSpeed[index] ?? 0;
+          if (room + STOP_SLACK >= (speed * speed) / (2 * BRAKING)) {
+            target[index] = Math.min(
+              target[index] ?? 0,
+              Math.sqrt(2 * BRAKING * Math.max(0, room))
+            );
+            limit = Math.min(
+              limit - 2 * car.halfLength - QUEUE_GAP,
+              carAlong - car.halfLength - QUEUE_GAP
+            );
+          }
+        }
+      }
+    }
+  }
+};
+
 const yieldTo = (
   cars: readonly TrafficCar[],
   flow: Flow,
@@ -261,6 +308,7 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
     ) {
       gatherLane(track, cars, trafficFlow, direction, laneIndex);
       followLane(cars, trafficFlow);
+      stopAtLights(track, cars, trafficFlow, state.tick);
       for (const rider of riders) {
         yieldTo(cars, trafficFlow, rider, rider.s);
         if (rider.bodyS !== rider.s) {

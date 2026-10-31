@@ -142,6 +142,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "packages/track/src/crossings*.ts",
       "packages/sim/src/signals*.ts",
+      "packages/sim/src/junction-traffic*.ts",
       "apps/web/src/game/junctions.ts",
     ],
     perf: sceneCounts,
@@ -151,7 +152,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/junctions.ts",
     ],
     summary:
-      "Junctions, cross roads and pedestrian crossings a road declares, their lights, and how each is drawn: the arms, zebras, stop lines and signal heads.",
+      "Junctions, cross roads and pedestrian crossings a road declares, their lights, the main-road traffic that queues at a red, and how each is drawn: the arms, zebras, stop lines and signal heads.",
     title: "Junctions and crossings",
     verify: ["junctions.md"],
   },
