@@ -173,14 +173,14 @@ Test files:
 
 ### Junctions and crossings
 
-Junctions, cross roads and pedestrian crossings a road declares, their lights, and how each is drawn: the arms, zebras, stop lines and signal heads.
+Junctions, cross roads and pedestrian crossings a road declares, their lights, the main-road traffic that queues at a red, and how each is drawn: the arms, zebras, stop lines and signal heads.
 
 - Id: `junctions`
 - Start: `packages/track/src/crossings.ts`, `packages/sim/src/signals.ts`, `apps/web/src/game/junctions.ts`
 - Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `apps/web/src/game/junctions.ts`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `apps/web/src/game/junctions.ts`
 
 Source files:
 
@@ -190,6 +190,7 @@ Source files:
 
 Test files:
 
+- `packages/sim/src/junction-traffic.test.ts`
 - `packages/sim/src/signals.test.ts`
 - `packages/track/src/crossings.test.ts`
 
