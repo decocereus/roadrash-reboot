@@ -1060,7 +1060,7 @@ Test files:
 `pnpm perf`, `pnpm perf:gpu` and `pnpm check:perf`, which hold the race, the build and the GPU frames to `tools/perf/budgets.json`, and the `measure.ts` frame bench.
 
 - Id: `perf-gate`
-- Start: `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/scenarios.ts`
+- Start: `tools/perf/src/gate.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/scenarios.ts`
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet

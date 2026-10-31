@@ -495,7 +495,6 @@ export const platformFeatures: readonly FeatureEntry[] = [
     perf: [],
     start: [
       "tools/perf/src/gate.ts",
-      "tools/perf/src/glb-textures.ts",
       "tools/perf/src/budgets.ts",
       "tools/perf/src/scenarios.ts",
     ],
