@@ -74,3 +74,16 @@ export const readControl = (
   const word = view.getUint32(offset, true);
   return isControl(word) ? word : undefined;
 };
+
+export const coasting: Control = controlOf({
+  brake: 0,
+  kick: false,
+  punch: false,
+  steer: 0,
+  throttle: 0,
+});
+
+export const withoutButtons = (control: Control): Control => {
+  const movement = control % BUTTONS_PLACE;
+  return isControl(movement) ? movement : coasting;
+};
