@@ -19,6 +19,7 @@ import {
 } from "./snapshot.ts";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 import type {
+  HazardTag,
   InputFrame,
   RaceEvent,
   RaceSetup,
@@ -47,6 +48,13 @@ const bytesOf = (state: RaceView, course: Track = track): Uint8Array => {
 
 const viewOf = (bytes: Uint8Array): DataView =>
   new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+const crashTag = (event: RaceEvent | undefined): HazardTag | null => {
+  if (event?.kind !== "crash") {
+    throw new Error("The restored race holds no crash in that slot.");
+  }
+  return event.hazard;
+};
 
 const hashOf = (state: RaceView, course: Track): string => {
   const words = new Uint32Array(HASH_WORDS);
@@ -434,6 +442,51 @@ describe("a race snapshot", () => {
       state.events.map(({ kind }) => kind)
     );
     expect(target.events).toContainEqual(fight);
+  });
+
+  it("restores an alternating sequence of events, and a tag that passes through none, without building new ones", () => {
+    const state = piloted(track, SEED);
+    const target = piloted(track, SEED);
+    const digest = setupDigest(target, track);
+    const tag: HazardTag = { command: "spin", id: "oil-1", kind: "oil" };
+    const crash = (hazard: HazardTag | null): RaceEvent => ({
+      by: null,
+      cause: "hazard",
+      hazard,
+      kind: "crash",
+      rider: PLAYER_RIDER,
+      speed: 12.5,
+    });
+    const wrecked: RaceEvent = { kind: "wrecked", rider: PLAYER_RIDER };
+    const snapshotWith = (events: readonly RaceEvent[]): Uint8Array => {
+      state.events.length = 0;
+      state.events.push(...events);
+      return bytesOf(state);
+    };
+    const tagged = snapshotWith([crash(tag)]);
+    const other = snapshotWith([wrecked]);
+    const bare = snapshotWith([crash(null)]);
+
+    restoreInto(target, digest, viewOf(tagged));
+    const first = target.events[0];
+    const firstTag = crashTag(first);
+    restoreInto(target, digest, viewOf(other));
+    const between = target.events[0];
+    restoreInto(target, digest, viewOf(tagged));
+
+    expect(target.events[0]).toBe(first);
+    expect(crashTag(target.events[0])).toBe(firstTag);
+    expect(between).not.toBe(first);
+
+    restoreInto(target, digest, viewOf(bare));
+    expect(crashTag(target.events[0])).toBeNull();
+    restoreInto(target, digest, viewOf(tagged));
+
+    expect(target.events[0]).toBe(first);
+    expect(crashTag(target.events[0])).toBe(firstTag);
+    expect(crashTag(target.events[0])).toStrictEqual(tag);
+    restoreInto(target, digest, viewOf(other));
+    expect(target.events[0]).toBe(between);
   });
 
   it("keeps a signed zero, an infinity and a NaN through a round trip", () => {

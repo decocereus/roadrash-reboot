@@ -11,6 +11,7 @@ import type { Keyboard } from "./hosts.ts";
 import {
   close,
   firstDifferentTick,
+  FIXED_RIDE,
   openCase,
   replayCases,
   replayMatrix,
@@ -24,23 +25,27 @@ import type { Matrix, Run } from "./pilot-replay.ts";
 const MATRIX_TIMEOUT_MS = 900_000;
 const RACE_TIMEOUT_MS = 120_000;
 
+const replaySet = Schema.Array(
+  Schema.Struct({
+    final: Schema.String,
+    full: Schema.String,
+    id: Schema.String,
+    result: Schema.NullOr(Schema.String),
+    ticks: Schema.Number,
+    window: Schema.String,
+  })
+);
+
 const decodeBaseline = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({
       provenance: Schema.Struct({
+        fixed: Schema.Number,
         limit: Schema.Number,
         window: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
       }),
-      solo: Schema.Array(
-        Schema.Struct({
-          final: Schema.String,
-          full: Schema.String,
-          id: Schema.String,
-          result: Schema.NullOr(Schema.String),
-          ticks: Schema.Number,
-          window: Schema.String,
-        })
-      ),
+      fixed: replaySet,
+      solo: replaySet,
     })
   )
 );
@@ -154,6 +159,7 @@ describe("pilot replays to every race's outcome", () => {
 
   it("replay the recorded baseline's limit and window", () => {
     expect(baseline.provenance).toStrictEqual({
+      fixed: FIXED_RIDE,
       limit: TICK_LIMIT,
       window: WINDOW,
     });
@@ -161,6 +167,10 @@ describe("pilot replays to every race's outcome", () => {
 
   it("nine solo races match their recorded baseline hashes", () => {
     expect(matrix.solo).toStrictEqual(baseline.solo);
+  });
+
+  it("nine races stopped at the fixed 7,200 ticks match their own baseline set", () => {
+    expect(matrix.fixed).toStrictEqual(baseline.fixed);
   });
 
   it("nine solo races each reach a finish, a bust or a wreck", () => {

@@ -58,8 +58,10 @@ const tagAt = <Key extends string>(
   key: Key
 ): Member<
   Readonly<Record<Key, HazardTag>>,
-  Readonly<Record<Key, HazardTag>>
+  Readonly<Record<Key, HazardTag>>,
+  Key
 > => ({
+  key,
   bytes: (value) => bytesOf(tagSchema, value[key]),
   put: (out, value) => {
     putRecord(out, tagSchema, value[key]);
@@ -73,29 +75,35 @@ const tagOrNoneAt = <Key extends string>(
   key: Key
 ): Member<
   Readonly<Record<Key, HazardTag | null>>,
-  Record<Key, HazardTag | null>
-> => ({
-  bytes: (value) => {
-    const tag = value[key];
-    return FLAG_BYTES + (tag === null ? 0 : bytesOf(tagSchema, tag));
-  },
-  put: (out, value) => {
-    const tag = value[key];
-    putFlag(out, tag !== null);
-    if (tag !== null) {
-      putRecord(out, tagSchema, tag);
-    }
-  },
-  take: (from, value) => {
-    if (takeFlag(from)) {
-      const tag = value[key] ?? blankTag();
-      takeRecord(from, tagSchema, tag);
-      value[key] = tag;
-      return;
-    }
-    value[key] = null;
-  },
-});
+  Record<Key, HazardTag | null>,
+  Key
+> => {
+  const warm = new WeakMap<object, HazardTag>();
+  return {
+    key,
+    bytes: (value) => {
+      const tag = value[key];
+      return FLAG_BYTES + (tag === null ? 0 : bytesOf(tagSchema, tag));
+    },
+    put: (out, value) => {
+      const tag = value[key];
+      putFlag(out, tag !== null);
+      if (tag !== null) {
+        putRecord(out, tagSchema, tag);
+      }
+    },
+    take: (from, value) => {
+      if (takeFlag(from)) {
+        const tag = value[key] ?? warm.get(value) ?? blankTag();
+        takeRecord(from, tagSchema, tag);
+        warm.set(value, tag);
+        value[key] = tag;
+        return;
+      }
+      value[key] = null;
+    },
+  };
+};
 
 type EventSchemas = {
   readonly [Kind in EventKind]: Schema<
@@ -587,44 +595,47 @@ const takeInto = (from: DataView, event: RaceEvent): void => {
   }
 };
 
-const held = new WeakMap<readonly RaceEvent[], RaceEvent[]>();
+type Slot = Map<EventKind, RaceEvent>;
 
-const heldFor = (events: readonly RaceEvent[]): RaceEvent[] => {
+const held = new WeakMap<readonly RaceEvent[], Slot[]>();
+
+const heldFor = (events: readonly RaceEvent[]): Slot[] => {
   const mine = held.get(events);
   if (mine) {
     return mine;
   }
-  const made: RaceEvent[] = [];
+  const made: Slot[] = [];
   held.set(events, made);
   return made;
 };
 
+const warmed = (slot: Slot, event: RaceEvent): RaceEvent => {
+  slot.set(event.kind, event);
+  return event;
+};
+
 const slotOf = (
-  mine: RaceEvent[],
-  live: RaceEvent[],
+  mine: Slot[],
+  live: readonly RaceEvent[],
   index: number,
   kind: EventKind
 ): RaceEvent => {
+  const slot = (mine[index] ??= new Map());
   const standing = live[index];
   if (standing !== undefined && standing.kind === kind) {
-    mine[index] = standing;
-    return standing;
+    return warmed(slot, standing);
   }
-  const own = mine[index];
-  if (own !== undefined && own.kind === kind) {
-    return own;
-  }
-  const made = blankEvents[kind]();
-  mine[index] = made;
-  return made;
+  return slot.get(kind) ?? warmed(slot, blankEvents[kind]());
 };
 
 export const eventsAt = <Key extends string>(
   key: Key
 ): Member<
   Readonly<Record<Key, readonly RaceEvent[]>>,
-  Readonly<Record<Key, RaceEvent[]>>
+  Readonly<Record<Key, RaceEvent[]>>,
+  Key
 > => ({
+  key,
   bytes: (value) => {
     let total = COUNT_BYTES;
     for (const event of value[key]) {

@@ -30,6 +30,13 @@ import type { RaceHasher } from "./race-hash.ts";
 export const TICK_LIMIT = 54_000;
 export const WINDOW = { from: 2880, to: 3480 };
 
+/**
+ * The fixed ride every case was measured over before they rode to their own
+ * outcomes. It stays as its own baseline set: it fingerprints the same early
+ * ticks for every road, whatever the terminal rule later decides.
+ */
+export const FIXED_RIDE = 7200;
+
 export interface ReplayCase {
   readonly id: string;
   readonly setup: () => CareerRaceSetup;
@@ -300,6 +307,7 @@ interface Divergence {
 }
 
 export interface Matrix {
+  readonly fixed: readonly Replay[];
   readonly solo: readonly Replay[];
   readonly soloFrames: ReadonlyMap<string, readonly string[]>;
   readonly interleaved: readonly Replay[];
@@ -309,10 +317,12 @@ export interface Matrix {
 }
 
 export const replayMatrix = (limit: number): Matrix => {
+  const fixed = replayCases.map((replay) => ride(openCase(replay), FIXED_RIDE));
   const solo = replayCases.map((replay) => rideToEnd(openCase(replay), limit));
   const together = rideTogether(limit);
   const restored = rideTogether(limit, restoredFrom);
   return {
+    fixed: fixed.map(close),
     divergences: together.map((run, index) => ({
       firstDifferentTick: firstDifferentTick(
         run.frames,
@@ -321,7 +331,7 @@ export const replayMatrix = (limit: number): Matrix => {
       id: run.id,
     })),
     interleaved: together.map(close),
-    problems: [...solo, ...together, ...restored].flatMap(
+    problems: [...fixed, ...solo, ...together, ...restored].flatMap(
       (run) => run.problems
     ),
     restored: restored.map((run, index) => ({

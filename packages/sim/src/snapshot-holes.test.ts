@@ -47,6 +47,15 @@ describe("the snapshot schema", () => {
     expect(Object.keys(partial)).toStrictEqual(["seeded"]);
   });
 
+  it("refuses a codec that encodes another field of the same record", () => {
+    const crossed = {
+      edge: floatAt("edge"),
+      // @ts-expect-error -- this slot must encode seeded, and this codec encodes edge
+      seeded: floatAt("edge"),
+    } satisfies Fields<Bordered, Bordered>;
+    expect(crossed.seeded.key).toBe("edge");
+  });
+
   it("refuses a codec that names a field the record does not hold", () => {
     const stray = {
       // @ts-expect-error -- Seeded holds no edge

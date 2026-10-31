@@ -304,10 +304,18 @@ const engineReply = Effect.fnUntraced(function* engineReply(
 const firstDifference = (
   frames: readonly string[],
   reference: readonly string[]
-) => {
-  const at = frames.findIndex((frame, tick) => frame !== reference[tick]);
-  return at === -1 ? null : at + 1;
+): number | null => {
+  const shared = Math.min(frames.length, reference.length);
+  for (let tick = 0; tick < shared; tick += 1) {
+    if (frames[tick] !== reference[tick]) {
+      return tick + 1;
+    }
+  }
+  return frames.length === reference.length ? null : shared + 1;
 };
+
+const frameAt = (run: Run, tick: number): string =>
+  run.frames[tick - 1] ?? "no tick of its own";
 
 const caseLines = (
   engine: string,
@@ -317,16 +325,21 @@ const caseLines = (
   if (same === undefined) {
     return [`${engine} replayed ${run.id}, which Node did not.`];
   }
-  if (run.ticks !== same.ticks || run.result !== same.result) {
-    return [
-      `${engine} ended ${run.id} at tick ${run.ticks} as ${run.result}, Node at tick ${same.ticks} as ${same.result}.`,
-    ];
-  }
   const tick = firstDifference(run.frames, same.frames);
+  const ended =
+    run.ticks === same.ticks && run.result === same.result
+      ? []
+      : [
+          `${engine} ended ${run.id} at tick ${run.ticks} as ${run.result}, Node at tick ${same.ticks} as ${same.result}.`,
+        ];
   if (tick !== null) {
     return [
-      `${engine} and Node first differ in ${run.id} at tick ${tick}: ${run.frames[tick - 1]} against ${same.frames[tick - 1]}.`,
+      `${engine} and Node first differ in ${run.id} at tick ${tick}: ${frameAt(run, tick)} against ${frameAt(same, tick)}.`,
+      ...ended,
     ];
+  }
+  if (ended.length > 0) {
+    return ended;
   }
   return [
     ...(run.full === same.full
