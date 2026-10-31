@@ -912,6 +912,22 @@
       "side": "B",
       "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "value": 33554424
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "value": 1142894
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "value": 297263
     }
   ],
   "revisions": {
@@ -1209,6 +1225,31 @@
       "sides": {
         "A": "8b0a017ec6ef6244a640ed58e501f19ef6a50973",
         "B": "8b0a017ec6ef6244a640ed58e501f19ef6a50973"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"client\":[1914150,825078],\"game\":[1892981,815576],\"gameIncremental\":[763575,212420],\"kit\":[939431,538411],\"root\":[1129406,603156],\"worker\":[1142814,297252]}",
+        "builtB": "{\"client\":[1914150,825078],\"game\":[1892981,815576],\"gameIncremental\":[763575,212420],\"kit\":[939431,538411],\"root\":[1129406,603156],\"worker\":[1142894,297263]}",
+        "artifactDigestA": "fdf8b419ce7b22a18c45455459f939fc3feb81ba0ec6b8bc834bcdd734f4c696",
+        "artifactDigestB": "89ef623d27ee05befdfdb79e959bf97bff6ce60fde944ce57f78503de0e0ade6",
+        "harnessDigest": "7d75183da1bf0e5e131da18d039b581c0957890ac704d50ad62fe48af42af6ce",
+        "lockfileSha256": "4e1674811073c5c79dc05a248d53faee2efff701d012a405456cbc4a1bb948fd",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "5a6cc174fc83e53febe69d82fb6390bb5cb6a203c39e879b0fcdbed9157c331d",
+        "sideBSourceDigest": "5a6cc174fc83e53febe69d82fb6390bb5cb6a203c39e879b0fcdbed9157c331d",
+        "why": "Road life D1 (junctions and crossings) adds the junction renderer, the crossing format and the light cycle to the game chunk, which the Worker counts through its dynamic imports: 4,752 B gzip and 18,596 B raw over main 1b2be32 (292,499 B gzip). Only the two bytes.worker rows are re-pinned from this run; every other build row keeps its 8b0a017 limit, which this head still meets."
+      },
+      "id": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "lanes": ["build"],
+      "sides": {
+        "A": "f58812705eae692bf7c2b75b20b5530aa81486db",
+        "B": "f58812705eae692bf7c2b75b20b5530aa81486db"
       }
     }
   ],

@@ -1,3 +1,4 @@
+import type { CrossRoad, Lights, TrackCrossing } from "@racer/track/crossings";
 import type { TrackFeature } from "@racer/track/features";
 import type { HazardPlacement } from "@racer/track/hazards";
 import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
@@ -22,6 +23,7 @@ import {
   textAt,
   writtenListAt,
   writtenRecordAt,
+  writtenRecordOrNoneAt,
   writtenSchemaOf,
 } from "./snapshot-members.ts";
 import type { WrittenSchema } from "./snapshot-members.ts";
@@ -79,6 +81,28 @@ const featureSchema = writtenSchemaOf<TrackFeature>({
   x: floatAt("x"),
 });
 
+const lightsSchema = writtenSchemaOf<Lights>({
+  offsetTicks: floatAt("offsetTicks"),
+});
+
+const crossRoadSchema = writtenSchemaOf<CrossRoad>({
+  arms: textAt("arms"),
+  laneWidth: floatAt("laneWidth"),
+  lanesEachWay: floatAt("lanesEachWay"),
+});
+
+const crossingSchema = writtenSchemaOf<TrackCrossing>({
+  boxHalfLength: floatAt("boxHalfLength"),
+  fromS: floatAt("fromS"),
+  id: textAt("id"),
+  lights: writtenRecordOrNoneAt("lights", lightsSchema),
+  road: writtenRecordOrNoneAt("road", crossRoadSchema),
+  s: floatAt("s"),
+  stopGap: floatAt("stopGap"),
+  toS: floatAt("toS"),
+  walk: textAt("walk"),
+});
+
 const placementSchema = writtenSchemaOf<HazardPlacement>({
   fromLevel: floatAt("fromLevel"),
   id: textAt("id"),
@@ -91,6 +115,7 @@ const placementSchema = writtenSchemaOf<HazardPlacement>({
 const trackSchema: WrittenSchema<Omit<Track, "featureIndex">> = writtenSchemaOf<
   Omit<Track, "featureIndex">
 >({
+  crossings: writtenListAt("crossings", crossingSchema),
   curvature: samplesAt("curvature"),
   endS: floatAt("endS"),
   features: writtenListAt("features", featureSchema),

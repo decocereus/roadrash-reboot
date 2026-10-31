@@ -13,6 +13,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Jumps, ramps and landings](#jumps-ramps-and-landings): `jumps`
 - [Road hazards](#road-hazards): `hazards`
 - [Traffic](#traffic): `traffic`
+- [Junctions and crossings](#junctions-and-crossings): `junctions`
 - [Fighting and weapons](#fighting-and-weapons): `combat`
 - [Police and busts](#police-and-busts): `police`
 - [AI riders (the pilot)](#ai-riders-the-pilot): `pilot`
@@ -168,6 +169,28 @@ Source files:
 Test files:
 
 - `packages/sim/src/lanes.test.ts`
+
+### Junctions and crossings
+
+Junctions, cross roads and pedestrian crossings a road declares, their lights, and how each is drawn: the arms, zebras, stop lines and signal heads.
+
+- Id: `junctions`
+- Start: `packages/track/src/crossings.ts`, `packages/sim/src/signals.ts`, `apps/web/src/game/junctions.ts`
+- Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
+- Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
+- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `apps/web/src/game/junctions.ts`
+
+Source files:
+
+- `apps/web/src/game/junctions.ts`
+- `packages/sim/src/signals.ts`
+- `packages/track/src/crossings.ts`
+
+Test files:
+
+- `packages/sim/src/signals.test.ts`
+- `packages/track/src/crossings.test.ts`
 
 ### Fighting and weapons
 
@@ -428,16 +451,18 @@ The road, terrain, sky, city blocks, signs and roadside props drawn from the com
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
 
 Source files:
 
+- `apps/web/src/game/city-blocks.ts`
 - `apps/web/src/game/city.ts`
 - `apps/web/src/game/clearance.ts`
 - `apps/web/src/game/facade-texture.ts`
 - `apps/web/src/game/greybox.ts`
 - `apps/web/src/game/ground.ts`
 - `apps/web/src/game/looks.ts`
+- `apps/web/src/game/road-strips.ts`
 - `apps/web/src/game/road-texture.ts`
 - `apps/web/src/game/roadside.ts`
 - `apps/web/src/game/shop-texture.ts`

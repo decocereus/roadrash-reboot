@@ -7,6 +7,8 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
+import { layBlocks } from "./city-blocks.ts";
+import type { Block } from "./city-blocks.ts";
 import { facadeTexture } from "./facade-texture.ts";
 import { CYAN, MAGENTA, ORANGE, RED, YELLOW } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
@@ -31,13 +33,6 @@ const CHUNK_BEHIND = 260;
 const BLOCKS_PER_FRAME = 3;
 const AWNINGS = [MAGENTA, CYAN, YELLOW, ORANGE, RED] as const;
 const SCREENS = [CYAN, "#ffffff", MAGENTA] as const;
-
-interface Block {
-  readonly side: number;
-  readonly s: number;
-  readonly length: number;
-  readonly seed: number;
-}
 
 type Batch = Map<string, THREE.BufferGeometry[]>;
 
@@ -182,27 +177,6 @@ const meshFor = (
     mesh.receiveShadow = lit;
   }
   return mesh;
-};
-
-const layBlocks = (track: Track, front: number): Block[] => {
-  const blocks: Block[] = [];
-  const random = createRandom(track.plan.seed + 77);
-  for (const side of [-1, 1]) {
-    let s = track.startS;
-    while (s < track.endS) {
-      const length = 14 + random() * 20;
-      blocks.push({
-        length,
-        s,
-        seed: Math.floor(random() * 1_000_000),
-        side,
-      });
-      const bend = track.curvature[Math.round(s - track.startS)] ?? 0;
-      const stretch = 1 + Math.max(0, -side * bend) * (front + 12);
-      s += (length + (random() < 0.2 ? 6 : 0.3)) / stretch;
-    }
-  }
-  return blocks;
 };
 
 export interface City {

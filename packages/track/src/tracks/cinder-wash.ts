@@ -5,6 +5,7 @@ import type { TrackPlan } from "../track.ts";
 
 const cinderWash: TrackPlan = {
   chevrons: chevronRuns["cinder-wash"],
+  crossings: [],
   features: [
     {
       feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },

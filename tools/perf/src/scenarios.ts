@@ -170,12 +170,23 @@ type Track = RaceSetup["track"];
 
 type RaceSettings = Omit<
   Track["plan"],
-  "chevrons" | "leadInLength" | "pieces" | "runoffLength" | "scenery" | "start"
+  | "chevrons"
+  | "crossings"
+  | "leadInLength"
+  | "pieces"
+  | "runoffLength"
+  | "scenery"
+  | "start"
 >;
 
-interface RaceTrack extends Omit<Track, "plan"> {
+type Road = Omit<Track, "crossings" | "plan"> & {
   readonly plan: RaceSettings;
-}
+};
+
+type RaceTrack = Road | (Road & Pick<Track, "crossings">);
+
+type EitherSideTrack = Omit<Track, "crossings"> &
+  Partial<Pick<Track, "crossings">>;
 
 const raceSettings = (plan: Track["plan"]): RaceSettings => ({
   features: plan.features,
@@ -193,17 +204,21 @@ const raceSettings = (plan: Track["plan"]): RaceSettings => ({
   vergeWidth: plan.vergeWidth,
 });
 
-const raceTrack = (track: Track): RaceTrack => ({
-  ...track,
-  curvature: withoutSignedZero(track.curvature),
-  heading: withoutSignedZero(track.heading),
-  plan: raceSettings(track.plan),
-  slope: withoutSignedZero(track.slope),
-  slopeRate: withoutSignedZero(track.slopeRate),
-  worldX: withoutSignedZero(track.worldX),
-  worldY: withoutSignedZero(track.worldY),
-  worldZ: withoutSignedZero(track.worldZ),
-});
+const raceTrack = (track: EitherSideTrack): RaceTrack => {
+  const { crossings = [], ...compiled } = track;
+  const road: Road = {
+    ...compiled,
+    curvature: withoutSignedZero(track.curvature),
+    heading: withoutSignedZero(track.heading),
+    plan: raceSettings(track.plan),
+    slope: withoutSignedZero(track.slope),
+    slopeRate: withoutSignedZero(track.slopeRate),
+    worldX: withoutSignedZero(track.worldX),
+    worldY: withoutSignedZero(track.worldY),
+    worldZ: withoutSignedZero(track.worldZ),
+  };
+  return crossings.length === 0 ? road : { ...road, crossings };
+};
 
 export const scenarioHash = (scenario: Scenario): string => {
   const setup = benchSetup(scenario.bench);

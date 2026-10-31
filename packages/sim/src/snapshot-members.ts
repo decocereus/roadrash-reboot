@@ -308,6 +308,24 @@ export const writtenRecordAt = <Key extends string, Read>(
   },
 });
 
+export const writtenRecordOrNoneAt = <Key extends string, Read>(
+  key: Key,
+  schema: WrittenSchema<Read>
+): Writer<Readonly<Record<Key, Read | null>>, Key> => ({
+  at: key,
+  bytes: (value) => {
+    const record = value[key];
+    return FLAG_BYTES + (record === null ? 0 : bytesOf(schema, record));
+  },
+  put: (out, value) => {
+    const record = value[key];
+    putFlag(out, record !== null);
+    if (record !== null) {
+      putRecord(out, schema, record);
+    }
+  },
+});
+
 export const listAt = <Key extends string, Read, Write>(
   key: Key,
   schema: Schema<Read, Write>

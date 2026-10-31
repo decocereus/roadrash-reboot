@@ -5,6 +5,40 @@ import type { TrackPlan } from "../track.ts";
 
 const breakwaterRun: TrackPlan = {
   chevrons: chevronRuns["breakwater-run"],
+  crossings: [
+    {
+      fromLevel: 1,
+      id: "harbour-cross",
+      lights: { offsetTicks: 0 },
+      road: { arms: "both", laneWidth: 3.4, lanesEachWay: 2 },
+      s: 1700,
+      walk: "zebra",
+    },
+    {
+      fromLevel: 1,
+      id: "market-cross",
+      lights: { offsetTicks: 540 },
+      road: { arms: "right", laneWidth: 3.4, lanesEachWay: 1 },
+      s: 6000,
+      walk: "zebra",
+    },
+    {
+      fromLevel: 1,
+      id: "pier-crossing",
+      lights: { offsetTicks: 300 },
+      road: null,
+      s: 7850,
+      walk: "zebra",
+    },
+    {
+      fromLevel: 4,
+      id: "esplanade-cross",
+      lights: null,
+      road: { arms: "left", laneWidth: 3.4, lanesEachWay: 1 },
+      s: 10_900,
+      walk: "unmarked",
+    },
+  ],
   features: [
     {
       feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
