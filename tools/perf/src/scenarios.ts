@@ -178,6 +178,9 @@ type Road = Omit<Track, "crossings" | "plan"> & {
 
 type RaceTrack = Road | (Road & Pick<Track, "crossings">);
 
+type EitherSideTrack = Omit<Track, "crossings"> &
+  Partial<Pick<Track, "crossings">>;
+
 const raceSettings = (plan: Track["plan"]): RaceSettings => ({
   features: plan.features,
   hazardsPerKilometre: plan.hazardsPerKilometre,
@@ -194,8 +197,8 @@ const raceSettings = (plan: Track["plan"]): RaceSettings => ({
   vergeWidth: plan.vergeWidth,
 });
 
-const raceTrack = (track: Track): RaceTrack => {
-  const { crossings, ...compiled } = track;
+const raceTrack = (track: EitherSideTrack): RaceTrack => {
+  const { crossings = [], ...compiled } = track;
   const road: Road = {
     ...compiled,
     curvature: withoutSignedZero(track.curvature),
