@@ -29,12 +29,6 @@ import type { RaceHasher } from "./race-hash.ts";
 
 export const TICK_LIMIT = 54_000;
 export const WINDOW = { from: 2880, to: 3480 };
-
-/**
- * The fixed ride every case was measured over before they rode to their own
- * outcomes. It stays as its own baseline set: it fingerprints the same early
- * ticks for every road, whatever the terminal rule later decides.
- */
 export const FIXED_RIDE = 7200;
 
 export interface ReplayCase {
@@ -293,21 +287,56 @@ export const close = (run: Run): Replay => ({
   window: hashText(run.window.words),
 });
 
-export const firstDifferentTick = (
+const sharedTicks = (
+  frames: readonly string[],
+  reference: readonly string[]
+): number => Math.min(frames.length, reference.length);
+
+const firstSharedDifference = (
   frames: readonly string[],
   reference: readonly string[]
 ): number | null => {
-  const first = frames.findIndex((frame, tick) => frame !== reference[tick]);
-  return first === -1 ? null : first + 1;
+  const shared = sharedTicks(frames, reference);
+  for (let tick = 0; tick < shared; tick += 1) {
+    if (frames[tick] !== reference[tick]) {
+      return tick + 1;
+    }
+  }
+  return null;
 };
+
+export const firstDifferentTick = (
+  frames: readonly string[],
+  reference: readonly string[]
+): number | null =>
+  firstSharedDifference(frames, reference) ??
+  (frames.length === reference.length
+    ? null
+    : sharedTicks(frames, reference) + 1);
 
 interface Divergence {
   readonly id: string;
   readonly firstDifferentTick: number | null;
 }
 
+type Comparison = (
+  frames: readonly string[],
+  reference: readonly string[]
+) => number | null;
+
+const against = (
+  runs: readonly Run[],
+  reference: readonly Run[],
+  compare: Comparison
+): readonly Divergence[] =>
+  runs.map((run, index) => ({
+    firstDifferentTick: compare(run.frames, reference[index]?.frames ?? []),
+    id: run.id,
+  }));
+
 export interface Matrix {
   readonly fixed: readonly Replay[];
+  readonly fixedStart: readonly Divergence[];
   readonly solo: readonly Replay[];
   readonly soloFrames: ReadonlyMap<string, readonly string[]>;
   readonly interleaved: readonly Replay[];
@@ -322,25 +351,14 @@ export const replayMatrix = (limit: number): Matrix => {
   const together = rideTogether(limit);
   const restored = rideTogether(limit, restoredFrom);
   return {
+    divergences: against(together, solo, firstDifferentTick),
     fixed: fixed.map(close),
-    divergences: together.map((run, index) => ({
-      firstDifferentTick: firstDifferentTick(
-        run.frames,
-        solo[index]?.frames ?? []
-      ),
-      id: run.id,
-    })),
+    fixedStart: against(fixed, solo, firstSharedDifference),
     interleaved: together.map(close),
     problems: [...fixed, ...solo, ...together, ...restored].flatMap(
       (run) => run.problems
     ),
-    restored: restored.map((run, index) => ({
-      firstDifferentTick: firstDifferentTick(
-        run.frames,
-        solo[index]?.frames ?? []
-      ),
-      id: run.id,
-    })),
+    restored: against(restored, solo, firstDifferentTick),
     solo: solo.map(close),
     soloFrames: new Map(solo.map((run) => [run.id, run.frames])),
   };

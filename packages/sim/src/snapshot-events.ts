@@ -61,7 +61,7 @@ const tagAt = <Key extends string>(
   Readonly<Record<Key, HazardTag>>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: (value) => bytesOf(tagSchema, value[key]),
   put: (out, value) => {
     putRecord(out, tagSchema, value[key]);
@@ -80,7 +80,7 @@ const tagOrNoneAt = <Key extends string>(
 > => {
   const warm = new WeakMap<object, HazardTag>();
   return {
-    key,
+    at: key,
     bytes: (value) => {
       const tag = value[key];
       return FLAG_BYTES + (tag === null ? 0 : bytesOf(tagSchema, tag));
@@ -595,37 +595,41 @@ const takeInto = (from: DataView, event: RaceEvent): void => {
   }
 };
 
-type Slot = Map<EventKind, RaceEvent>;
+type Warm = Map<number, RaceEvent>;
 
-const held = new WeakMap<readonly RaceEvent[], Slot[]>();
+const held = new WeakMap<readonly RaceEvent[], Warm>();
 
-const heldFor = (events: readonly RaceEvent[]): Slot[] => {
+const heldFor = (events: readonly RaceEvent[]): Warm => {
   const mine = held.get(events);
   if (mine) {
     return mine;
   }
-  const made: Slot[] = [];
+  const made: Warm = new Map();
   held.set(events, made);
   return made;
 };
 
-const warmed = (slot: Slot, event: RaceEvent): RaceEvent => {
-  slot.set(event.kind, event);
-  return event;
-};
+const KIND_COUNT = eventKinds.length;
 
 const slotOf = (
-  mine: Slot[],
+  mine: Warm,
   live: readonly RaceEvent[],
   index: number,
   kind: EventKind
 ): RaceEvent => {
-  const slot = (mine[index] ??= new Map());
+  const at = index * KIND_COUNT + eventTags[kind];
   const standing = live[index];
   if (standing !== undefined && standing.kind === kind) {
-    return warmed(slot, standing);
+    mine.set(at, standing);
+    return standing;
   }
-  return slot.get(kind) ?? warmed(slot, blankEvents[kind]());
+  const own = mine.get(at);
+  if (own !== undefined) {
+    return own;
+  }
+  const made = blankEvents[kind]();
+  mine.set(at, made);
+  return made;
 };
 
 export const eventsAt = <Key extends string>(
@@ -635,7 +639,7 @@ export const eventsAt = <Key extends string>(
   Readonly<Record<Key, RaceEvent[]>>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: (value) => {
     let total = COUNT_BYTES;
     for (const event of value[key]) {

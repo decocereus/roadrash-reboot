@@ -53,7 +53,7 @@ describe("the snapshot schema", () => {
       // @ts-expect-error -- this slot must encode seeded, and this codec encodes edge
       seeded: floatAt("edge"),
     } satisfies Fields<Bordered, Bordered>;
-    expect(crossed.seeded.key).toBe("edge");
+    expect(crossed.seeded.at).toBe("edge");
   });
 
   it("refuses a codec that names a field the record does not hold", () => {

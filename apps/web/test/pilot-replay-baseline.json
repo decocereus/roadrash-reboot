@@ -1,8 +1,83 @@
 {
+  "fixed": [
+    {
+      "final": "3bb3ccc728703973fae8c589975b8ee8",
+      "full": "3a7ac2a4fea60a00697ee7fc0ac39f7f",
+      "id": "ridge-road/level5/seed1",
+      "result": null,
+      "ticks": 7200,
+      "window": "523d45e31edc369f26d34a1ee7ba3173"
+    },
+    {
+      "final": "acef9906195af0e07491752a7ea23920",
+      "full": "436985cc37b16e993aba92666ef4c9ab",
+      "id": "ridge-road/level5/seed5",
+      "result": null,
+      "ticks": 7200,
+      "window": "113c2b7f880af02eb82d046ff2294016"
+    },
+    {
+      "final": "fdb0761656e28ed9958e60efbc2deaa5",
+      "full": "6d4a2067df5afdbd854a15ac3bac5918",
+      "id": "ridge-road/level5/seed9",
+      "result": "busted",
+      "ticks": 7200,
+      "window": "ec83be67a5ded5f406cd8f50464447e6"
+    },
+    {
+      "final": "2b39e1fb851bc69bb547826383800405",
+      "full": "7d744a8731df983fd2012bf6ce59b6c9",
+      "id": "ridge-road/level5/seed31",
+      "result": null,
+      "ticks": 7200,
+      "window": "95576764be47bb09760e4e3f4c99b726"
+    },
+    {
+      "final": "bafaafd3cae05b8c97dfb90ddc53c744",
+      "full": "663419a9f3f360accc3c3b87bfe3a0ca",
+      "id": "slag-row/level5/seed1",
+      "result": null,
+      "ticks": 7200,
+      "window": "9d4ef1e60f345363d0a576259b3ab330"
+    },
+    {
+      "final": "5904061655e7dc5d820d9fd9bc2d23dc",
+      "full": "b9095c4f8e61c107ba24398fbaf80b3e",
+      "id": "slag-row/level5/seed5",
+      "result": null,
+      "ticks": 7200,
+      "window": "534d969842047cbd9a91307a5c383740"
+    },
+    {
+      "final": "2d7dbb2b059bc2ea8db9010c7152e04a",
+      "full": "e1c07080723e5a36d31c071576a7a834",
+      "id": "slag-row/level5/seed9",
+      "result": null,
+      "ticks": 7200,
+      "window": "e33f0d58a1a021f9942a80c7ab80f56a"
+    },
+    {
+      "final": "827624dda672a1ae06630863e47e565c",
+      "full": "19a0ab7177523582d03d1f71b95d2029",
+      "id": "slag-row/level5/seed31",
+      "result": null,
+      "ticks": 7200,
+      "window": "01802860788112115f59b2f80c8b73a2"
+    },
+    {
+      "final": "8a3e1747cfc9196acf026034d766db72",
+      "full": "e569829b0b5edad4e4f55e43597ce1cd",
+      "id": "stress/seed8",
+      "result": null,
+      "ticks": 7200,
+      "window": "5efb0212b4bf72747b776ea9a709fdc9"
+    }
+  ],
   "provenance": {
+    "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["b2fc5ba"],
-    "recordedWith": "the race snapshot codec of feat/race-snapshot, branched from b2fc5ba, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Every case now rides to its own outcome instead of stopping at 7,200 ticks, so ticks and result record where each race ended and full covers every tick of it. The hashes differ from the 7,200-tick baseline because the fingerprint changed, not because any race did: snapshot-hash.ts now mixes with MurmurHash3 x86 128 and the setup digest now covers the compiled centreline, curvature and solid props, while no module that steps a race changed on this branch. window still folds ticks 2,880 to 3,480, the same stretch the earlier baseline fingerprinted.",
+    "recordedAt": ["b2fc5ba", "56d001f"],
+    "recordedWith": "the race snapshot codec of feat/race-snapshot, merged with origin/main at 56d001f, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed, so the same early ticks stay fingerprinted whatever that rule later decides. Both sets differ from the pre-branch 7,200-tick numbers because the fingerprint changed, not because any race did. snapshot-hash.ts now mixes with MurmurHash3 x86 128 and the setup digest now covers the compiled centreline, curvature and solid props, while no module that steps a race changed on this branch or in the merge. The solo rows are hash for hash the rows recorded at b2fc5ba before the merge, and every case's fixed ride matches its ride to the outcome on every tick the two share, so neither the merge nor the warmed event storage moved a race. window still folds ticks 2,880 to 3,480 in both sets, the same stretch the earlier baseline fingerprinted.",
     "window": {
       "from": 2880,
       "to": 3480

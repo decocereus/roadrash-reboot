@@ -56,6 +56,28 @@ const crashTag = (event: RaceEvent | undefined): HazardTag | null => {
   return event.hazard;
 };
 
+const CRASH_TAG: HazardTag = { command: "spin", id: "oil-1", kind: "oil" };
+
+const WRECKED: RaceEvent = { kind: "wrecked", rider: PLAYER_RIDER };
+
+const crashOf = (hazard: HazardTag | null): RaceEvent => ({
+  by: null,
+  cause: "hazard",
+  hazard,
+  kind: "crash",
+  rider: PLAYER_RIDER,
+  speed: 12.5,
+});
+
+const snapshotWith = (
+  state: RaceState,
+  events: readonly RaceEvent[]
+): Uint8Array => {
+  state.events.length = 0;
+  state.events.push(...events);
+  return bytesOf(state);
+};
+
 const hashOf = (state: RaceView, course: Track): string => {
   const words = new Uint32Array(HASH_WORDS);
   hashRace(state, setupDigest(state, course), bufferFor(state), words);
@@ -444,49 +466,40 @@ describe("a race snapshot", () => {
     expect(target.events).toContainEqual(fight);
   });
 
-  it("restores an alternating sequence of events, and a tag that passes through none, without building new ones", () => {
+  it("restores an alternating sequence of events without building new ones", () => {
     const state = piloted(track, SEED);
     const target = piloted(track, SEED);
     const digest = setupDigest(target, track);
-    const tag: HazardTag = { command: "spin", id: "oil-1", kind: "oil" };
-    const crash = (hazard: HazardTag | null): RaceEvent => ({
-      by: null,
-      cause: "hazard",
-      hazard,
-      kind: "crash",
-      rider: PLAYER_RIDER,
-      speed: 12.5,
-    });
-    const wrecked: RaceEvent = { kind: "wrecked", rider: PLAYER_RIDER };
-    const snapshotWith = (events: readonly RaceEvent[]): Uint8Array => {
-      state.events.length = 0;
-      state.events.push(...events);
-      return bytesOf(state);
-    };
-    const tagged = snapshotWith([crash(tag)]);
-    const other = snapshotWith([wrecked]);
-    const bare = snapshotWith([crash(null)]);
+    const tagged = snapshotWith(state, [crashOf(CRASH_TAG)]);
+    const other = snapshotWith(state, [WRECKED]);
 
     restoreInto(target, digest, viewOf(tagged));
-    const first = target.events[0];
-    const firstTag = crashTag(first);
+    const [first] = target.events;
     restoreInto(target, digest, viewOf(other));
-    const between = target.events[0];
+    const [between] = target.events;
     restoreInto(target, digest, viewOf(tagged));
-
     expect(target.events[0]).toBe(first);
-    expect(crashTag(target.events[0])).toBe(firstTag);
-    expect(between).not.toBe(first);
 
-    restoreInto(target, digest, viewOf(bare));
-    expect(crashTag(target.events[0])).toBeNull();
-    restoreInto(target, digest, viewOf(tagged));
-
-    expect(target.events[0]).toBe(first);
-    expect(crashTag(target.events[0])).toBe(firstTag);
-    expect(crashTag(target.events[0])).toStrictEqual(tag);
     restoreInto(target, digest, viewOf(other));
     expect(target.events[0]).toBe(between);
+    expect(between).not.toBe(first);
+  });
+
+  it("restores a hazard tag that passed through none without building a new one", () => {
+    const state = piloted(track, SEED);
+    const target = piloted(track, SEED);
+    const digest = setupDigest(target, track);
+    const tagged = snapshotWith(state, [crashOf(CRASH_TAG)]);
+    const bare = snapshotWith(state, [crashOf(null)]);
+
+    restoreInto(target, digest, viewOf(tagged));
+    const first = crashTag(target.events[0]);
+    restoreInto(target, digest, viewOf(bare));
+    expect(crashTag(target.events[0])).toBeNull();
+
+    restoreInto(target, digest, viewOf(tagged));
+    expect(crashTag(target.events[0])).toBe(first);
+    expect(crashTag(target.events[0])).toStrictEqual(CRASH_TAG);
   });
 
   it("keeps a signed zero, an infinity and a NaN through a round trip", () => {

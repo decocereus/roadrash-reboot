@@ -39,12 +39,12 @@ const replaySet = Schema.Array(
 const decodeBaseline = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({
+      fixed: replaySet,
       provenance: Schema.Struct({
         fixed: Schema.Number,
         limit: Schema.Number,
         window: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
       }),
-      fixed: replaySet,
       solo: replaySet,
     })
   )
@@ -171,6 +171,12 @@ describe("pilot replays to every race's outcome", () => {
 
   it("nine races stopped at the fixed 7,200 ticks match their own baseline set", () => {
     expect(matrix.fixed).toStrictEqual(baseline.fixed);
+  });
+
+  it("each race's fixed ride matches its ride to the outcome on every tick the two share", () => {
+    expect(matrix.fixedStart).toStrictEqual(
+      replayCases.map(({ id }) => ({ firstDifferentTick: null, id }))
+    );
   });
 
   it("nine solo races each reach a finish, a bust or a wreck", () => {

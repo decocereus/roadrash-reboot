@@ -29,7 +29,7 @@ export interface FloatRun {
 }
 
 export interface Writer<Read, Key extends PropertyKey> {
-  readonly key: Key;
+  readonly at: Key;
   readonly bytes: (value: Read) => number;
   readonly put: (out: DataView, value: Read) => void;
 }
@@ -119,7 +119,7 @@ const sameCount = (from: DataView, live: number, what: string): void => {
 export const floatAt = <Key extends string>(
   key: Key
 ): Member<Readonly<Record<Key, number>>, Record<Key, number>, Key> => ({
-  key,
+  at: key,
   bytes: () => FLOAT_BYTES,
   put: (out, value) => {
     putFloat(out, value[key]);
@@ -132,7 +132,7 @@ export const floatAt = <Key extends string>(
 export const flagAt = <Key extends string>(
   key: Key
 ): Member<Readonly<Record<Key, boolean>>, Record<Key, boolean>, Key> => ({
-  key,
+  at: key,
   bytes: () => FLAG_BYTES,
   put: (out, value) => {
     putFlag(out, value[key]);
@@ -146,7 +146,7 @@ export const choiceAt = <Key extends string, Choice extends string>(
   key: Key,
   values: readonly [Choice, ...Choice[]]
 ): Member<Readonly<Record<Key, Choice>>, Record<Key, Choice>, Key> => ({
-  key,
+  at: key,
   bytes: () => CHOICE_BYTES,
   put: (out, value) => {
     putChoice(out, values, value[key]);
@@ -163,7 +163,7 @@ export const riderRefAt = <Key extends string>(
   Record<Key, RiderId | null>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: () => FLOAT_BYTES,
   put: (out, value) => {
     putRiderRef(out, value[key]);
@@ -176,7 +176,7 @@ export const riderRefAt = <Key extends string>(
 export const riderAt = <Key extends string>(
   key: Key
 ): Member<Readonly<Record<Key, RiderId>>, Record<Key, RiderId>, Key> => ({
-  key,
+  at: key,
   bytes: () => FLOAT_BYTES,
   put: (out, value) => {
     putRiderRef(out, value[key]);
@@ -194,7 +194,7 @@ export const riderAt = <Key extends string>(
 export const textAt = <Key extends string>(
   key: Key
 ): Member<Readonly<Record<Key, string>>, Record<Key, string>, Key> => ({
-  key,
+  at: key,
   bytes: (value) => textBytes(value[key]),
   put: (out, value) => {
     putText(out, value[key]);
@@ -211,7 +211,7 @@ export const textOrNoneAt = <Key extends string>(
   Record<Key, string | null>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: (value) => textOrNoneBytes(value[key]),
   put: (out, value) => {
     putTextOrNone(out, value[key]);
@@ -224,7 +224,7 @@ export const textOrNoneAt = <Key extends string>(
 export const floatsAt = <Key extends string>(
   key: Key
 ): Member<Readonly<Record<Key, FloatRun>>, Record<Key, number[]>, Key> => ({
-  key,
+  at: key,
   bytes: (value) => COUNT_BYTES + FLOAT_BYTES * value[key].length,
   put: (out, value) => {
     const list = value[key];
@@ -252,7 +252,7 @@ export const blockAt = <Key extends string>(
   Readonly<Record<Key, Float64Array>>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: () => FLOAT_BYTES * length,
   put: (out, value) => {
     const block = value[key];
@@ -271,7 +271,7 @@ export const blockAt = <Key extends string>(
 export const samplesAt = <Key extends string>(
   key: Key
 ): Writer<Readonly<Record<Key, FloatRun>>, Key> => ({
-  key,
+  at: key,
   bytes: (value) => COUNT_BYTES + FLOAT_BYTES * value[key].length,
   put: (out, value) => {
     const block = value[key];
@@ -287,7 +287,7 @@ export const recordAt = <Key extends string, Read, Write>(
   key: Key,
   schema: Schema<Read, Write>
 ): Member<Readonly<Record<Key, Read>>, Readonly<Record<Key, Write>>, Key> => ({
-  key,
+  at: key,
   bytes: (value) => bytesOf(schema, value[key]),
   put: (out, value) => {
     putRecord(out, schema, value[key]);
@@ -301,7 +301,7 @@ export const writtenRecordAt = <Key extends string, Read>(
   key: Key,
   schema: WrittenSchema<Read>
 ): Writer<Readonly<Record<Key, Read>>, Key> => ({
-  key,
+  at: key,
   bytes: (value) => bytesOf(schema, value[key]),
   put: (out, value) => {
     putRecord(out, schema, value[key]);
@@ -316,7 +316,7 @@ export const listAt = <Key extends string, Read, Write>(
   Readonly<Record<Key, readonly Write[]>>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: (value) => {
     let total = COUNT_BYTES;
     for (const item of value[key]) {
@@ -342,7 +342,7 @@ export const writtenListAt = <Key extends string, Read>(
   key: Key,
   schema: WrittenSchema<Read>
 ): Writer<Readonly<Record<Key, readonly Read[]>>, Key> => ({
-  key,
+  at: key,
   bytes: (value) => {
     let total = COUNT_BYTES;
     for (const item of value[key]) {
@@ -367,7 +367,7 @@ export const filledListAt = <Key extends string, Read, Write>(
   Readonly<Record<Key, Write[]>>,
   Key
 > => ({
-  key,
+  at: key,
   bytes: (value) => {
     let total = COUNT_BYTES;
     for (const item of value[key]) {
