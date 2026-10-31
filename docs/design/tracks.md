@@ -193,6 +193,8 @@ No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 
 
 The lights run main green 9 s, main amber 2.5 s, all red 1 s, cross green 7 s, cross amber 2.5 s and all red 1 s, a 23 s cycle, so a rider meets a red about half the time. A pedestrian crossing runs main green 10 s, amber 2.5 s, all red 1 s, walk 6 s, flashing 2 s and all red 1 s. The phase is a function of the race tick and the entry's offset, so it needs no race state and replays exactly.
 
+Main-road traffic obeys the lights. On a red, and on an amber it can stop for at its normal 7 m/s² braking, a car stops with its nose a metre short of its stop line, and the cars behind it queue 2 m apart. A car too close to stop runs the amber, so no car stops inside the box. Riders and the pilot ignore the lights. They meet the queue as slow or stopped cars.
+
 | Road | Id | From level | At (m) | Lights | Cross road | Walk |
 | --- | --- | --: | --: | --- | --- | --- |
 | Breakwater Run | `harbour-cross` | 1 | 1,700 | offset 0 | two lanes each way, both arms | zebra |
