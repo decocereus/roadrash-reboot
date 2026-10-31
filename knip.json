@@ -17,6 +17,7 @@
         "test/renderer-lifecycle.ts",
         "test/replay-bundle.ts"
       ],
+      "ignoreDependencies": ["cloudflare"],
       "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
       "typescript": true
     },
@@ -74,7 +75,7 @@
       "typescript": true
     },
     "tools/art": {
-      "entry": ["pull.ts", "stage.ts", "upload.ts", "test/**/*.test.ts"],
+      "entry": ["test/**/*.test.ts"],
       "project": ["**/*.ts"],
       "typescript": true
     }

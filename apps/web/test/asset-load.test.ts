@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { setImmediate as nextTurn } from "node:timers/promises";
 
 import * as THREE from "three";
@@ -22,6 +20,7 @@ import type {
 } from "../src/game/assets.ts";
 import { celebrityIds } from "../src/game/figure-wear.ts";
 import type { CelebrityId } from "../src/game/figure-wear.ts";
+import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
 
 const urls: ModelUrls = {
@@ -550,13 +549,8 @@ const summary = (assets: Assets, celebrities: readonly Worn[]) => ({
   van: assets.van.map(primitiveSummary),
 });
 
-const repository = path.join(import.meta.dirname, "../../..");
-
 const pinned: Transport = {
-  fetch: async (url) =>
-    await Promise.resolve(
-      new Response(readFileSync(path.join(repository, url)))
-    ),
+  fetch: async (url) => await Promise.resolve(new Response(artFile(url))),
 };
 
 describe("the real parser on the pinned models", () => {

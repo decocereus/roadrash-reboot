@@ -251,7 +251,7 @@ In `pnpm dev`, `vite preview`, the verify tool and the perf tools, a middleware 
 | --- | --- |
 | Add or replace art | `pnpm art:stage <name>=<file> ...` hashes each file into the cache and writes its key into the manifest. `node tools/blender/compress.ts` stages the models it compresses the same way. |
 | Publish it | `pnpm art:upload` puts every manifest key the bucket lacks, from the cache, and skips keys it already holds. It uses the Alchemy login (`alchemy profile`), or `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` when they are set. Run it before you push: CI downloads art from the deployed Worker and fails on a key the bucket lacks. |
-| Fill the cache | `pnpm art:pull` downloads every key the cache lacks. `pnpm perf` does this itself. |
+| Fill the cache | `pnpm art:pull` downloads every key the cache lacks. `pnpm perf` and the `vite` test project do this themselves, and the tests that parse the real models read them from the cache through `apps/web/test/art-files.ts`. |
 
 `pnpm check:art` fails when a game binary (a model, image, sound, video or font file) is committed outside `docs/`, and when the manifest holds a key that is not a content hash. The review images under `docs/art` stay in git: they are design records that the READMEs beside them show, and the player never downloads them.
 

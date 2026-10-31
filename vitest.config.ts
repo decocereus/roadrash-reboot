@@ -36,6 +36,7 @@ export default defineConfig({
       },
       {
         test: {
+          globalSetup: ["apps/web/test/pull-art.ts"],
           include: viteTests,
           name: "vite",
           setupFiles: ["apps/web/test/node-images.ts"],

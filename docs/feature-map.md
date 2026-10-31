@@ -766,7 +766,7 @@ Game art in R2: the manifest that maps each model and plate to its content-addre
 - Docs: [docs/architecture.md#game-art](architecture.md#game-art), [docs/errors.md#game-art](errors.md#game-art), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [art.md](../.claude/skills/verify-rushline/features/art.md)
 - Perf: `assets.image.total`
-- Owns: `tools/art/**`, `apps/web/src/assets/art.ts`, `apps/web/src/routes/art/**`, `apps/web/src/server/art*.ts`, `scripts/check-art.ts`
+- Owns: `tools/art/**`, `apps/web/src/assets/art.ts`, `apps/web/src/routes/art/**`, `apps/web/src/server/art*.ts`, `apps/web/test/art-files.ts`, `apps/web/test/pull-art.ts`, `scripts/check-art.ts`
 
 Source files:
 
@@ -786,6 +786,8 @@ Source files:
 
 Test files:
 
+- `apps/web/test/art-files.ts`
+- `apps/web/test/pull-art.ts`
 - `tools/art/test/manifest.test.ts`
 
 ### Blender model pipeline
@@ -1058,11 +1060,11 @@ Test files:
 `pnpm perf`, `pnpm perf:gpu` and `pnpm check:perf`, which hold the race, the build and the GPU frames to `tools/perf/budgets.json`, and the `measure.ts` frame bench.
 
 - Id: `perf-gate`
-- Start: `tools/perf/src/gate.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/scenarios.ts`
+- Start: `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/scenarios.ts`
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1077,6 +1079,7 @@ Source files:
 - `tools/perf/src/config-invalid.ts`
 - `tools/perf/src/evaluate.ts`
 - `tools/perf/src/gate.ts`
+- `tools/perf/src/glb-textures.ts`
 - `tools/perf/src/gpu-frames.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/measure-model.ts`

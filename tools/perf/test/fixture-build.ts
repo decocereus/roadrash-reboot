@@ -138,7 +138,7 @@ const glbOf = (size: number, atlas: FixtureOptions["atlas"]): Uint8Array => {
   return bytes;
 };
 
-export const PLATE_BYTES = 48;
+const PLATE_BYTES = 48;
 
 export const fixtureBuild = (
   dir: string,
