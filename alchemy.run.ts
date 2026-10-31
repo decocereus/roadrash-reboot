@@ -7,7 +7,7 @@ export default Alchemy.Stack(
   "Rushline",
   {
     providers: Cloudflare.providers(),
-    state: Alchemy.localState(),
+    state: Cloudflare.state(),
   },
   Effect.gen(function* rushline() {
     const stage = yield* Alchemy.Stage;

@@ -24,6 +24,13 @@ The art direction is cel-shaded cyberpunk anime: two flat tones, ink outlines, n
 
 The game is deployed as one Worker named `rushline`, at https://rushline.amartya-faceless.workers.dev, from the `prod` stage of `alchemy.run.ts`. The stack also declares the R2 bucket `rushline-art`, which the Worker reads through its `ART` binding.
 
+Every push to `main` deploys `prod` through `.github/workflows/deploy.yml`. The job runs `alchemy deploy --stage prod`, then checks that the site answers and runs `pnpm art:pull` against it, which fetches every manifest key and checks its hash. The stack keeps its state in the account's Alchemy state store, the `alchemy-state-store` Worker, so CI and a local deploy see the same resources. CI reaches that store through two repository secrets.
+
+- `CLOUDFLARE_API_TOKEN` is the account-owned token `rushline-deploy-ci`. It holds only Workers Scripts Write and Workers R2 Storage Write.
+- `ALCHEMY_STATE_STORE` is the state store's credentials file, which the job writes under `ALCHEMY_HOME`.
+
+A local `alchemy deploy --stage prod` uses the Alchemy login instead. A stage other than `prod` would claim the same bucket name, so only `prod` is deployed. `pnpm dev` runs the bucket in the local simulator.
+
 There is no API Worker or database yet. Accounts, saves on the server, multiplayer, the store, and billboard view counts bring them in before launch. Where the database is hosted is decided on cost and is open; Cloudflare D1 is not assumed. A guest's career stays in the browser, and signing in moves it to the server.
 
 ## Riding model
