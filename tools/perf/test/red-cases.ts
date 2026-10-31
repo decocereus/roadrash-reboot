@@ -28,6 +28,10 @@ const TICK_MS = 0.3;
 const SPREAD_STEP = 37;
 const SPREAD_SPAN = 101;
 export const ALLOCATED_PER_TICK = 1_000_000;
+
+const hashes = new Map(
+  scenarios.map((scenario) => [scenario.id, scenarioHash(scenario)])
+);
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
 const SNAPSHOT_RUNS = 3;
@@ -83,7 +87,7 @@ const sampleOf = (
     ...measured,
     runtime,
     scenario: scenario.id,
-    scenarioHash: scenarioHash(scenario),
+    scenarioHash: hashes.get(scenario.id) ?? scenarioHash(scenario),
     task,
   },
   side,

@@ -393,6 +393,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/game/world.ts",
       "apps/web/src/game/city-blocks.ts",
+      "apps/web/src/game/road-strips.ts",
       "apps/web/src/game/city.ts",
       "apps/web/src/game/clearance.ts",
       "apps/web/src/game/ground.ts",

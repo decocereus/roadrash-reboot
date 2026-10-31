@@ -54,7 +54,6 @@ const LEAST_SPACING = 120;
 const STRAIGHT_CURVATURE = 1 / 400;
 const STEEPEST_SLOPE = 0.06;
 const SHARPEST_SLOPE_RATE = 0.002;
-const SURVEY_STEP = 1;
 
 export const crossHalfWidthOf = (road: CrossRoad): number =>
   road.lanesEachWay * road.laneWidth + CROSS_SHOULDER;
@@ -126,8 +125,8 @@ const sampleIndexOf = (centreline: Centreline, s: number): number =>
 
 const checkGround = (rule: CrossingRule, centreline: Centreline): void => {
   const [from, to] = crossingReservationOf(rule);
-  for (let s = from; s <= to; s += SURVEY_STEP) {
-    const at = sampleIndexOf(centreline, s);
+  const last = sampleIndexOf(centreline, to);
+  for (let at = sampleIndexOf(centreline, from); at <= last; at += 1) {
     if (Math.abs(centreline.curvature[at] ?? 0) > STRAIGHT_CURVATURE) {
       reject(rule, "sits on a bend");
     }
@@ -209,6 +208,17 @@ export const compileCrossings = (
     .toSorted((left, right) => left.s - right.s);
 };
 
+export const armSpans = (
+  crossings: readonly TrackCrossing[],
+  side: number,
+  margin: number
+): (readonly [from: number, to: number])[] =>
+  crossings.flatMap(({ boxHalfLength, road, s }) =>
+    road && armSidesOf(road).some((arm) => arm * side > 0)
+      ? [[s - boxHalfLength - margin, s + boxHalfLength + margin] as const]
+      : []
+  );
+
 export const armClaims = (
   crossings: readonly TrackCrossing[],
   fromS: number,
@@ -216,10 +226,6 @@ export const armClaims = (
   side: number,
   margin: number
 ): boolean =>
-  crossings.some(
-    (crossing) =>
-      crossing.road !== null &&
-      fromS < crossing.s + crossing.boxHalfLength + margin &&
-      toS > crossing.s - crossing.boxHalfLength - margin &&
-      armSidesOf(crossing.road).some((arm) => arm * side > 0)
+  armSpans(crossings, side, margin).some(
+    ([from, to]) => fromS < to && toS > from
   );

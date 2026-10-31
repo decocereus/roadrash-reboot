@@ -59,7 +59,7 @@ export const signalPhaseAt = (
 ): SignalPhase => {
   const cycle = cycleOf(crossing);
   const total = crossing.road ? junctionLength : crosswalkLength;
-  let left = (tick + crossing.lights.offsetTicks) % total;
+  let left = (((tick + crossing.lights.offsetTicks) % total) + total) % total;
   for (const phase of signalPhases) {
     if (left < cycle[phase]) {
       return phase;

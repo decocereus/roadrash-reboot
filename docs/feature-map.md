@@ -450,7 +450,7 @@ The road, terrain, sky, city blocks, signs and roadside props drawn from the com
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
+- Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`
 
 Source files:
 
@@ -461,6 +461,7 @@ Source files:
 - `apps/web/src/game/greybox.ts`
 - `apps/web/src/game/ground.ts`
 - `apps/web/src/game/looks.ts`
+- `apps/web/src/game/road-strips.ts`
 - `apps/web/src/game/road-texture.ts`
 - `apps/web/src/game/roadside.ts`
 - `apps/web/src/game/shop-texture.ts`

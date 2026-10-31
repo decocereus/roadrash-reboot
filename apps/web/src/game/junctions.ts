@@ -84,17 +84,20 @@ interface Head {
   shown: LightColour | null;
 }
 
+interface Signal {
+  readonly post: Sheet;
+  readonly overhead: Sheet;
+  readonly glow: Sheet;
+  readonly reads: Head["reads"];
+  readonly slots: Slots;
+  readonly outward: THREE.Vector3;
+}
+
 export interface Junctions {
   readonly group: THREE.Group;
   readonly stretches: readonly Stretch[];
   readonly show: (tick: number) => void;
   readonly dispose: () => void;
-}
-
-interface Sheets {
-  readonly solid: Sheet;
-  readonly glow: Sheet;
-  readonly marks: Sheet;
 }
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
@@ -297,39 +300,41 @@ const lampFor = (
 
 const lenses = (
   track: Track,
-  sheets: Sheets,
+  sheet: Sheet,
   facing: Facing,
-  faceS: number,
-  faceX: number,
+  face: { readonly s: number; readonly x: number },
   top: number,
-  along: boolean
+  facesAlongRoad: boolean
 ): void => {
   const pitch = HEAD_HEIGHT / slotOrder.length;
+  const thin = 0.02;
+  const broad = LAMP_SIZE / 2 + 0.03;
   for (let index = 0; index < slotOrder.length; index += 1) {
     const middle = top - pitch * (index + 0.5);
-    const height = around(middle, LAMP_SIZE / 2 + 0.03);
     box(
       track,
-      sheets.solid,
+      sheet,
       facing,
-      along ? around(faceS, 0.02) : around(faceS, LAMP_SIZE / 2 + 0.03),
-      along ? around(faceX, LAMP_SIZE / 2 + 0.03) : around(faceX, 0.02),
-      height,
+      around(face.s, facesAlongRoad ? thin : broad),
+      around(face.x, facesAlongRoad ? broad : thin),
+      around(middle, broad),
       LENS_COLOUR
     );
   }
 };
 
+const signalSheets = (): Pick<Signal, "glow" | "overhead" | "post"> => ({
+  glow: emptySheet(),
+  overhead: emptySheet(),
+  post: emptySheet(),
+});
+
 const mainHead = (
   track: Track,
-  sheets: Sheets,
   crossing: SignalledCrossing,
-  side: ArmSide,
-  build: (
-    head: Omit<Head, "lamp" | "parent" | "shown">,
-    outward: THREE.Vector3
-  ) => void
-): void => {
+  side: ArmSide
+): Signal => {
+  const sheets = signalSheets();
   const half = track.roadHalfWidth;
   const poleS = crossing.s - side * (crossing.stopGap + 0.3);
   const poleX = side * (half + POLE_OUT);
@@ -338,7 +343,7 @@ const mainHead = (
   const outward = side > 0 ? facing.back : facing.ahead;
   box(
     track,
-    sheets.solid,
+    sheets.post,
     facing,
     around(poleS, POLE_WIDTH / 2),
     around(poleX, POLE_WIDTH / 2),
@@ -357,7 +362,7 @@ const mainHead = (
   const armSpan = [Math.min(poleX, headX), Math.max(poleX, headX)] as const;
   box(
     track,
-    sheets.solid,
+    sheets.overhead,
     facing,
     around(poleS, ARM_DEPTH / 2),
     [armSpan[0] - HEAD_WIDTH / 2, armSpan[1] + HEAD_WIDTH / 2],
@@ -367,7 +372,7 @@ const mainHead = (
   const top = ARM_TOP - ARM_DEPTH;
   box(
     track,
-    sheets.solid,
+    sheets.overhead,
     facing,
     around(poleS, HEAD_DEPTH / 2),
     around(headX, HEAD_WIDTH / 2),
@@ -375,34 +380,28 @@ const mainHead = (
     HEAD_COLOUR
   );
   const faceS = poleS - side * (HEAD_DEPTH / 2 + 0.02);
-  lenses(track, sheets, facing, faceS, headX, top, false);
-  build(
-    {
-      crossing,
-      reads: "main",
-      slots: slotsOn(track, faceS - side * 0.02, headX, top, outward),
-    },
-    outward
-  );
+  lenses(track, sheets.overhead, facing, { s: faceS, x: headX }, top, true);
+  return {
+    ...sheets,
+    outward,
+    reads: "main",
+    slots: slotsOn(track, faceS - side * 0.02, headX, top, outward),
+  };
 };
 
 const crossHead = (
   track: Track,
-  sheets: Sheets,
   crossing: SignalledCrossing,
-  side: ArmSide,
-  build: (
-    head: Omit<Head, "lamp" | "parent" | "shown">,
-    outward: THREE.Vector3
-  ) => void
-): void => {
+  side: ArmSide
+): Signal => {
+  const sheets = signalSheets();
   const poleS = crossing.s + side * (crossing.boxHalfLength + POLE_OUT);
   const poleX = side * (track.roadHalfWidth + 1.4);
   const facing = facingAt(track, poleS, poleX);
   const outward = side > 0 ? facing.right : facing.left;
   box(
     track,
-    sheets.solid,
+    sheets.post,
     facing,
     around(poleS, POLE_WIDTH / 2),
     around(poleX, POLE_WIDTH / 2),
@@ -412,7 +411,7 @@ const crossHead = (
   const top = CROSS_POLE_HEIGHT + HEAD_HEIGHT;
   box(
     track,
-    sheets.solid,
+    sheets.post,
     facing,
     around(poleS, HEAD_WIDTH / 2),
     around(poleX, HEAD_DEPTH / 2),
@@ -420,16 +419,24 @@ const crossHead = (
     HEAD_COLOUR
   );
   const faceX = poleX + side * (HEAD_DEPTH / 2 + 0.02);
-  lenses(track, sheets, facing, poleS, faceX, top, true);
-  build(
-    {
-      crossing,
-      reads: "cross",
-      slots: slotsOn(track, poleS, faceX + side * 0.02, top, outward),
-    },
-    outward
-  );
+  lenses(track, sheets.post, facing, { s: poleS, x: faceX }, top, false);
+  return {
+    ...sheets,
+    outward,
+    reads: "cross",
+    slots: slotsOn(track, poleS, faceX + side * 0.02, top, outward),
+  };
 };
+
+const signalsOf = (
+  track: Track,
+  crossing: SignalledCrossing
+): readonly Signal[] => [
+  ...([1, -1] as const).map((side) => mainHead(track, crossing, side)),
+  ...(crossing.road
+    ? armSidesOf(crossing.road).map((side) => crossHead(track, crossing, side))
+    : []),
+];
 
 const nothing = (): void => undefined;
 
@@ -467,47 +474,48 @@ export const buildJunctions = (
     road: new THREE.Color(look.road),
   };
 
-  for (const crossing of track.crossings) {
-    const sheets: Sheets = {
-      glow: emptySheet(),
-      marks: emptySheet(),
-      solid: emptySheet(),
-    };
-    const assembly = new THREE.Group();
-    const build = (
-      head: Omit<Head, "lamp" | "parent" | "shown">,
-      outward: THREE.Vector3
-    ): void => {
-      const lamp = lampFor(head.slots, outward, lampGeometry, lamps.red);
-      assembly.add(lamp);
-      heads.push({ ...head, lamp, parent: assembly, shown: null });
-    };
-    if (crossing.road) {
-      markArms(track, sheets.marks, crossing, crossing.road, colours);
-    }
-    markRoad(track, sheets.marks, crossing, colours.line);
-    if (isSignalled(crossing)) {
-      for (const side of [1, -1] as const) {
-        mainHead(track, sheets, crossing, side, build);
-      }
-      if (crossing.road) {
-        for (const side of armSidesOf(crossing.road)) {
-          crossHead(track, sheets, crossing, side, build);
-        }
+  const place = (crossing: SignalledCrossing, signal: Signal): THREE.Group => {
+    const parent = new THREE.Group();
+    for (const sheet of [signal.post, signal.overhead]) {
+      if (sheet.positions.length > 0) {
+        const solid = new THREE.Mesh(geometryOf(sheet), solidMaterial);
+        solid.castShadow = true;
+        solid.receiveShadow = true;
+        parent.add(solid);
       }
     }
-    const marks = new THREE.Mesh(geometryOf(sheets.marks), markMaterial);
-    marks.receiveShadow = true;
-    assembly.add(marks);
-    if (sheets.solid.positions.length > 0) {
-      const solid = new THREE.Mesh(geometryOf(sheets.solid), solidMaterial);
-      solid.castShadow = true;
-      solid.receiveShadow = true;
-      const glow = onFxLayer(
-        new THREE.Mesh(geometryOf(sheets.glow), glowMaterial)
+    if (signal.glow.positions.length > 0) {
+      parent.add(
+        onFxLayer(new THREE.Mesh(geometryOf(signal.glow), glowMaterial))
       );
-      assembly.add(solid, glow);
-      clearance.addObject(solid);
+    }
+    const lamp = lampFor(signal.slots, signal.outward, lampGeometry, lamps.red);
+    parent.add(lamp);
+    clearance.addObject(parent);
+    heads.push({
+      crossing,
+      lamp,
+      parent,
+      reads: signal.reads,
+      shown: null,
+      slots: signal.slots,
+    });
+    return parent;
+  };
+
+  for (const crossing of track.crossings) {
+    const sheet = emptySheet();
+    if (crossing.road) {
+      markArms(track, sheet, crossing, crossing.road, colours);
+    }
+    markRoad(track, sheet, crossing, colours.line);
+    const marks = new THREE.Mesh(geometryOf(sheet), markMaterial);
+    marks.receiveShadow = true;
+    const assembly = new THREE.Group().add(marks);
+    if (isSignalled(crossing)) {
+      for (const signal of signalsOf(track, crossing)) {
+        assembly.add(place(crossing, signal));
+      }
     }
     group.add(freeze(assembly));
     stretches.push({

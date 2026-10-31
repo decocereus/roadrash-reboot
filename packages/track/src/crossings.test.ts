@@ -92,6 +92,24 @@ describe("crossings", () => {
     );
   });
 
+  it("a junction whose reserved stretch reaches a fraction of a metre into a bend is refused", () => {
+    const bend = eased([
+      [1300, 0, 0],
+      [400, 90, 0],
+      [1300, 0, 0],
+    ]);
+    const bare = compileTrack(flatRoad([], bend));
+    const curved = bare.curvature.findIndex((each) => Math.abs(each) > 1 / 400);
+    const [, end] = crossingReservationOf(junction);
+    const s = bare.startS + curved - 0.4 - (end - junction.s);
+    expect(() => compileTrack(flatRoad([{ ...junction, s }], bend))).toThrow(
+      /sits on a bend/u
+    );
+    expect(
+      compileTrack(flatRoad([{ ...junction, s: s - 1 }], bend)).crossings
+    ).toHaveLength(1);
+  });
+
   it("two crossings too close together, or one in a ramp's landing, are refused", () => {
     expect(() =>
       compileTrack(flatRoad([junction, { ...junction, id: "next", s: 1600 }]))

@@ -60,4 +60,14 @@ describe("junction lights", () => {
     const market = lightsOver(signalled("market-cross"), CYCLE_TICKS).main;
     expect(market).not.toStrictEqual(harbour);
   });
+
+  it("an offset behind the race clock runs the same cycle as the offset a whole cycle later", () => {
+    const harbour = signalled("harbour-cross");
+    const behind = { ...harbour, lights: { offsetTicks: -60 } };
+    const ahead = { ...harbour, lights: { offsetTicks: CYCLE_TICKS - 60 } };
+    expect(lightsOver(behind, 2 * CYCLE_TICKS)).toStrictEqual(
+      lightsOver(ahead, 2 * CYCLE_TICKS)
+    );
+    expect(signalPhaseAt(behind, 0)).toBe("crossClear");
+  });
 });

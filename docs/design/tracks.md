@@ -189,7 +189,7 @@ A junction's box is as long as the cross road is wide, from kerb to kerb. A zebr
 - starts within 300 m of the start or ends within 100 m of the finish at a level that has it;
 - overlaps a ramp's reservation, or comes within 120 m of another crossing's.
 
-No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 m of a cross road's arm on the side that has it. Both reserve every level's crossings, so a road with crossings keeps the rest of its hazards and props where they were. City blocks keep 2 m clear of the arms.
+No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 m of a cross road's arm on the side that has it. Hazards reserve the crossings of every level, so a crossing that appears at a later level leaves the hazards of earlier levels where they were. Props clear only the arms of the level being raced, because an arm that is not drawn yet needs no room. City blocks keep 2 m clear of the arms. In open country the ground lies flat under an arm and 30 m beyond its end, and rises again 2 m either side of it. The greybox scenery of the Madrid stretches does not yet make room for an arm, so a Madrid stretch declares a cross road only where its corridor data already has a street.
 
 The lights run main green 9 s, main amber 2.5 s, all red 1 s, cross green 7 s, cross amber 2.5 s and all red 1 s, a 23 s cycle, so a rider meets a red about half the time. A pedestrian crossing runs main green 10 s, amber 2.5 s, all red 1 s, walk 6 s, flashing 2 s and all red 1 s. The phase is a function of the race tick and the entry's offset, so it needs no race state and replays exactly.
 
