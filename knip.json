@@ -14,6 +14,7 @@
         "test/bike-contact.ts",
         "test/cold-restore-worker.ts",
         "test/outline-sides.ts",
+        "test/rider-shade.ts",
         "test/renderer-lifecycle.ts",
         "test/replay-bundle.ts"
       ],
