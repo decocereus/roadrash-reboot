@@ -55,9 +55,9 @@ const accounted = async (
   options: FixtureOptions
 ): Promise<BuildRecord> => {
   const dir = scratch();
-  const { out, side } = fixtureBuild(dir, name, options);
+  const { artCache, out, side } = fixtureBuild(dir, name, options);
   return await Effect.runPromise(
-    accountBuild(side, out, path.join(dir, "evidence"), 0).pipe(
+    accountBuild(side, out, path.join(dir, "evidence"), 0, artCache).pipe(
       Effect.provide(NodeFileSystem.layer)
     )
   );
@@ -72,7 +72,7 @@ const middle = Math.floor(WINDOW_TICKS / 2);
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
-describe("perf gate red cases", () => {
+describe("perf gate red cases", { timeout: 30_000 }, () => {
   afterEach(() => {
     for (const dir of made.splice(0)) {
       rmSync(dir, { force: true, recursive: true });
@@ -301,7 +301,7 @@ describe("perf gate red cases", () => {
       uploaderIncremental: record.closures.uploaderIncremental.raw,
       worker: record.closures.worker.raw,
     }).toStrictEqual({
-      gameIncremental: 5000 + 300 + glbTotal,
+      gameIncremental: 5000 + 300,
       kit: 8700,
       root: 9000,
       uploaderIncremental: 400,

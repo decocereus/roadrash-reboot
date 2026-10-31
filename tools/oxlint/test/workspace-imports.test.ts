@@ -120,6 +120,10 @@ runRule("rushline/workspace-imports", workspaceImportsRule, {
     { code: "import { b } from '@fixture/ws-b/b';", filename: inA },
     { code: "import { a } from '@fixture/ws-a/a';", filename: inA },
     { code: "import path from 'node:path';", filename: inB },
+    {
+      code: "const { env } = await import('cloudflare:workers');",
+      filename: inB,
+    },
     { code: "import { only } from 'fixture-root-only';", filename: inRoot },
     { code: "export { b } from '@fixture/ws-b/b';", filename: inA },
     { code: "const lib = import('fixture-lib');", filename: inA },
