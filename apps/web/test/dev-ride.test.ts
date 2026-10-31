@@ -5,6 +5,7 @@ import {
   neutralInput,
   stepRace,
 } from "@racer/sim/race";
+import { playerFrame } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
@@ -83,7 +84,7 @@ describe("dev race plans", () => {
     const track = trackFor(plan.setup.roadId, plan.setup.level);
     const state = createRace(plan.setup);
     const log = createRaceLog(plan.setup);
-    stepRace(state, track, new Map([[PLAYER_RIDER, neutralInput]]));
+    stepRace(state, track, playerFrame(neutralInput));
     recordTick(log, state, plan.setup);
     const report = quickReport(plan, outcomeOf(state, plan.setup, log));
     const ridden = new Map(

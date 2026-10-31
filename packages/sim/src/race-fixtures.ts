@@ -7,8 +7,15 @@ import { slagRow } from "@racer/track/tracks/slag-row";
 
 import { rivals } from "./cast.ts";
 import type { RivalId } from "./cast.ts";
+import { controlOf } from "./control.ts";
 import { PATROL_SPEED } from "./police.ts";
-import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
+import {
+  createRace,
+  defaultSetup,
+  neutralInput,
+  noHandovers,
+  stepRace,
+} from "./race.ts";
 import { PLAYER_RIDER, TICK_RATE, riderOf } from "./state.ts";
 import type {
   BikeSpec,
@@ -53,16 +60,26 @@ export const piloted = (state: RaceState): RaceState => {
   return state;
 };
 
+export const controlsOf = (
+  ...controls: readonly (readonly [RiderId, Readonly<RiderInput>])[]
+): InputFrame => ({
+  controls: new Map(controls.map(([id, input]) => [id, controlOf(input)])),
+  handovers: noHandovers,
+});
+
+export const playerFrame = (input: Readonly<RiderInput>): InputFrame =>
+  controlsOf([PLAYER_RIDER, input]);
+
 export const frameOf = (
   state: RaceState,
   ...controls: readonly (readonly [RiderId, RiderInput])[]
 ): InputFrame =>
-  new Map([
+  controlsOf(
     ...state.riders.flatMap((rider) =>
       rider.controller === "human" ? [[rider.id, neutralInput] as const] : []
     ),
-    ...controls,
-  ]);
+    ...controls
+  );
 
 export const field = (
   course: Track,

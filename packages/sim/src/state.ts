@@ -62,7 +62,14 @@ export const controllers = ["human", "pilot"] as const;
 
 export type Controller = (typeof controllers)[number];
 
-export type InputFrame = ReadonlyMap<RiderId, Readonly<RiderInput>>;
+declare const controlBrand: unique symbol;
+
+export type Control = number & { readonly [controlBrand]: true };
+
+export interface InputFrame {
+  readonly handovers: ReadonlyMap<RiderId, Controller>;
+  readonly controls: ReadonlyMap<RiderId, Control>;
+}
 
 export const attackKinds = ["punch", "kick", "swing"] as const;
 

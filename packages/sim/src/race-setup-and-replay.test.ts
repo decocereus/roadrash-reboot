@@ -7,11 +7,13 @@ import { bikes } from "./bikes.ts";
 import { cast, rivalAt, rivals } from "./cast.ts";
 import {
   brawl,
+  controlsOf,
   cruising,
   field,
   frameOf,
   piloted,
   player,
+  playerFrame,
   pressing,
   quietTrack,
   rivalNamed,
@@ -22,6 +24,7 @@ import {
 import {
   createRace,
   defaultSetup,
+  emptyFrame,
   neutralInput,
   stepRace,
   validateSetup,
@@ -360,7 +363,7 @@ describe("the input frame", () => {
   it("a frame without a control for a human rider is rejected before the tick moves", () => {
     const state = field(straight, 1, 1, 0);
     const dee = rivalNamed(state, "dee-santangelo");
-    expect(stepWith(state, new Map([[PLAYER_RIDER, cruising]]))).toThrow(
+    expect(stepWith(state, playerFrame(cruising))).toThrow(
       `Rider ${dee.id} is ridden by a human and has no control in the frame.`
     );
     expect(state.tick).toBe(0);
@@ -371,13 +374,7 @@ describe("the input frame", () => {
     const dee = rivalNamed(state, "dee-santangelo");
     dee.controller = "pilot";
     expect(
-      stepWith(
-        state,
-        new Map([
-          [PLAYER_RIDER, cruising],
-          [dee.id, cruising],
-        ])
-      )
+      stepWith(state, controlsOf([PLAYER_RIDER, cruising], [dee.id, cruising]))
     ).toThrow(
       `Rider ${dee.id} is ridden by the pilot and has a control in the frame.`
     );
@@ -389,14 +386,9 @@ describe("the input frame", () => {
     expect(
       stepWith(
         state,
-        new Map([
-          [PLAYER_RIDER, cruising],
-          [stranger, cruising],
-        ])
+        controlsOf([PLAYER_RIDER, cruising], [stranger, cruising])
       )
-    ).toThrow(
-      `The frame has a control for rider ${stranger}, who is not in the race.`
-    );
+    ).toThrow(`The frame names rider ${stranger}, who is not in the race.`);
   });
 
   it("a player the setup gives to the pilot rides with an empty frame", () => {
@@ -407,7 +399,7 @@ describe("the input frame", () => {
     });
     const start = player(state).s;
     for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
-      stepRace(state, quietTrack, new Map());
+      stepRace(state, quietTrack, emptyFrame);
     }
     expect(player(state).speed).toBeGreaterThan(20);
     expect(player(state).s - start).toBeGreaterThan(200);

@@ -165,11 +165,11 @@ describe("pilot replays to every race's outcome", () => {
     });
   });
 
-  it("nine solo races match their recorded baseline hashes", () => {
+  it("ten solo races match their recorded baseline hashes", () => {
     expect(matrix.solo).toStrictEqual(baseline.solo);
   });
 
-  it("nine races stopped at the fixed 7,200 ticks match their own baseline set", () => {
+  it("ten races stopped at the fixed 7,200 ticks match their own baseline set", () => {
     expect(matrix.fixed).toStrictEqual(baseline.fixed);
   });
 
@@ -179,7 +179,7 @@ describe("pilot replays to every race's outcome", () => {
     );
   });
 
-  it("nine solo races each reach a finish, a bust or a wreck", () => {
+  it("ten solo races each reach a finish, a bust or a wreck", () => {
     expect(matrix.solo.map(({ result }) => result)).not.toContain(null);
   });
 

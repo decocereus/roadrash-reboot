@@ -12,7 +12,14 @@ import type { WorkloadColumns } from "@racer/sim/bench-workload";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
 import { PLAYER_RIDER, TICK_SECONDS } from "@racer/sim/state";
-import type { InputFrame, RaceSetup } from "@racer/sim/state";
+import type {
+  Control,
+  Controller,
+  InputFrame,
+  RaceSetup,
+  RiderId,
+  RiderInput,
+} from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 
 import { digestOf } from "./result.ts";
@@ -224,6 +231,14 @@ interface BenchRun {
   readonly step: () => void;
 }
 
+export const eitherSideFrame: InputFrame = Object.assign(
+  new Map<RiderId, RiderInput>(),
+  {
+    controls: new Map<RiderId, Control>(),
+    handovers: new Map<RiderId, Controller>(),
+  }
+);
+
 export const benchStart = (bench: Bench): RaceSetup => {
   const setup = benchSetup(bench);
   return { ...setup, player: { ...setup.player, controller: "pilot" } };
@@ -231,10 +246,9 @@ export const benchStart = (bench: Bench): RaceSetup => {
 
 export const benchRun = (bench: Bench): BenchRun => {
   const run = createRaceRun(benchStart(bench));
-  const frame: InputFrame = new Map();
   return {
     step: () => {
-      run.step(frame);
+      run.step(eitherSideFrame);
     },
     view: run.view,
   };
