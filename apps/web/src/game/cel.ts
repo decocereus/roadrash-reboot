@@ -9,15 +9,20 @@ const FX_LAYER = 1;
 const FIGURE_LIGHT = [1.1, 0.97, 0.82] as const;
 const SHADE_CHROMA = 1.24;
 const LUMA = new THREE.Vector3(0.2126, 0.7152, 0.0722);
+const SUN_ANCHOR_HEIGHT = 2.2;
 
 const CEL_UNIFORMS =
   "uniform vec3 rimDirection;uniform vec3 rimColour;uniform vec3 keyDirection;uniform float rimStrength;\n";
 
 const FIGURE_SHADE = `
+varying vec4 vSunAnchor;
 uniform float figureShade;uniform vec3 figureLight;uniform vec3 figureSun;uniform float figureDepth;uniform float figureChroma;
 const vec3 FIGURE_LUMA = vec3(0.2126, 0.7152, 0.0722);
 const vec2 SHADE_HUE = vec2(0.8660254, -0.5);
 const float SHADE_TURN = 0.17453293;
+const float SHADE_DIM = 0.8;
+const float FIGURE_RIM_EDGE = 0.62;
+const float FIGURE_RIM_FACING = -0.1;
 const mat3 LINEAR_TO_LMS = mat3(0.4122214708, 0.2119034982, 0.0883024619, 0.5363325363, 0.6806995451, 0.2817188376, 0.0514459929, 0.1073969566, 0.6299787005);
 const mat3 LMS_TO_LAB = mat3(0.2104542553, 1.9779984951, 0.0259040371, 0.7936177850, -2.4285922050, 0.7827717662, -0.0040720468, 0.4505937099, -0.8086757660);
 const mat3 LAB_TO_LMS = mat3(1.0, 1.0, 1.0, 0.3963377774, -0.1055613458, -0.0894841775, 0.2158037573, -0.0638541728, -1.2914855480);
@@ -26,13 +31,13 @@ vec3 figureLinearOf(vec3 lab) {
   vec3 lms = LAB_TO_LMS * lab;
   return LMS_TO_LINEAR * (lms * lms * lms);
 }
-vec3 figureShadeOf(vec3 lit) {
+vec3 figureShadeOf(vec3 lit, float dim) {
   vec3 lab = LMS_TO_LAB * pow(max(LINEAR_TO_LMS * lit, 0.0), vec3(1.0 / 3.0));
   vec2 ab = lab.yz * figureChroma;
   vec2 hue = ab / max(length(ab), 1e-6);
   float turn = min(SHADE_TURN, acos(clamp(dot(hue, SHADE_HUE), -1.0, 1.0))) * sign(hue.x * SHADE_HUE.y - hue.y * SHADE_HUE.x);
   ab = vec2(ab.x * cos(turn) - ab.y * sin(turn), ab.x * sin(turn) + ab.y * cos(turn));
-  float lightness = lab.x * figureDepth;
+  float lightness = lab.x * figureDepth * dim;
   vec3 shade = figureLinearOf(vec3(lightness, ab));
   if (min(shade.r, min(shade.g, shade.b)) < 0.0) {
     float inside = 0.0;
@@ -52,21 +57,41 @@ vec3 figureShadeOf(vec3 lit) {
 }
 `;
 
+const SUN_ANCHOR_VERTEX = `#include <shadowmap_vertex>
+#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+  vec4 sunAnchor = vec4(0.0, 0.0, 0.0, 1.0);
+  #ifdef USE_INSTANCING
+    sunAnchor = instanceMatrix * sunAnchor;
+  #endif
+  sunAnchor = modelMatrix * sunAnchor;
+  sunAnchor.y += ${SUN_ANCHOR_HEIGHT.toFixed(2)};
+  vSunAnchor = directionalShadowMatrix[0] * sunAnchor;
+#endif`;
+
 const CEL_FRAGMENT = `
   #ifdef PAINTED
+    float figureSunlit = 1.0;
     if (figureShade > 0.5) {
+      #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+        figureSunlit = getShadow(directionalShadowMap[0], directionalLightShadows[0].shadowMapSize, directionalLightShadows[0].shadowIntensity, directionalLightShadows[0].shadowBias, directionalLightShadows[0].shadowRadius, vSunAnchor);
+      #endif
       vec3 figureLit = diffuseColor.rgb * figureLight;
       float figureBand = clamp(dot(reflectedLight.directDiffuse, FIGURE_LUMA) / max(dot(diffuseColor.rgb * figureSun, FIGURE_LUMA), 1e-6), 0.0, 1.0);
-      outgoingLight = figureBand < 0.999 ? mix(figureShadeOf(min(figureLit, 1.0)), figureLit, figureBand) : figureLit;
+      outgoingLight = figureBand < 0.999 ? mix(figureShadeOf(min(figureLit, 1.0), mix(SHADE_DIM, 1.0, figureSunlit)), figureLit, figureBand) : figureLit;
     }
   #endif
   vec3 celView = normalize(vViewPosition);
   vec3 celNormal = normalize(normal);
   float celFresnel = 1.0 - max(dot(celNormal, celView), 0.0);
   float celRim = step(0.64, celFresnel) * step(0.25, dot(celNormal, rimDirection)) * rimStrength;
+  #ifdef PAINTED
+    if (figureShade > 0.5) {
+      celRim = step(FIGURE_RIM_EDGE, celFresnel) * step(FIGURE_RIM_FACING, dot(celNormal, keyDirection)) * figureSunlit;
+    }
+  #endif
   outgoingLight = mix(outgoingLight, rimColour, celRim);
   #ifdef PAINTED
-    float celShine = step(0.965, dot(celNormal, normalize(keyDirection + celView))) * vGloss;
+    float celShine = step(0.965, dot(celNormal, normalize(keyDirection + celView))) * vGloss * figureSunlit;
     outgoingLight = mix(outgoingLight, vec3(1.0), celShine * 0.85);
   #endif
   #include <opaque_fragment>`;
@@ -182,10 +207,12 @@ export const createShading = (look: Look): Shading => {
         shader.uniforms.figureSun = figureSun;
         shader.uniforms.figureDepth = figureDepth;
         shader.uniforms.figureChroma = figureChroma;
-        shader.vertexShader = `attribute float gloss;varying float vGloss;\n${shader.vertexShader.replace(
-          "#include <begin_vertex>",
-          "#include <begin_vertex>\nvGloss = gloss;"
-        )}`;
+        shader.vertexShader = `attribute float gloss;varying float vGloss;varying vec4 vSunAnchor;\n${shader.vertexShader
+          .replace(
+            "#include <begin_vertex>",
+            "#include <begin_vertex>\nvGloss = gloss;"
+          )
+          .replace("#include <shadowmap_vertex>", SUN_ANCHOR_VERTEX)}`;
       }
       shader.fragmentShader = `${painted ? `#define PAINTED\nvarying float vGloss;\n${FIGURE_SHADE}` : ""}${CEL_UNIFORMS}${shader.fragmentShader.replace(
         "#include <opaque_fragment>",
