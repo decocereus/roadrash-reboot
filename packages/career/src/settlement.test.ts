@@ -1,6 +1,5 @@
-import { createRace, stepRace } from "@racer/sim/race";
+import { createRace, emptyFrame, stepRace } from "@racer/sim/race";
 import { frameOf } from "@racer/sim/race-fixtures";
-import type { InputFrame } from "@racer/sim/state";
 import { arm } from "@racer/sim/weapons";
 import { roadAtLevel } from "@racer/track/road";
 import { regionOf, roads as roadPlans, trackFor } from "@racer/track/roads";
@@ -225,9 +224,8 @@ describe("the roads", () => {
         player: { ...setup.player, controller: "pilot" },
       });
       const log = createRaceLog(setup);
-      const frame: InputFrame = new Map();
       for (let tick = 0; tick < 400 * TICKS && !log.outcome; tick += 1) {
-        stepRace(state, course, frame);
+        stepRace(state, course, emptyFrame);
         recordTick(log, state, setup);
       }
       const outcome = outcomeOf(state, setup, log);

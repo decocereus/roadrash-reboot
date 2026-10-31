@@ -1,8 +1,8 @@
 import { defaultSetup, neutralInput } from "@racer/sim/race";
-import { straight } from "@racer/sim/race-fixtures";
+import { playerFrame, straight } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf, TICK_SECONDS } from "@racer/sim/state";
-import type { InputFrame, RiderInput } from "@racer/sim/state";
+import type { RiderInput } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createControls } from "../src/game/input.ts";
@@ -167,11 +167,10 @@ describe("controls in a real race", () => {
     const { controls, keyboard } = setUp();
     const run = soloRun();
     const input: RiderInput = { ...neutralInput };
-    const frame: InputFrame = new Map([[PLAYER_RIDER, input]]);
     const ride = (ticks: number) => {
       for (let tick = 0; tick < ticks; tick += 1) {
         controls.read(TICK_SECONDS, input);
-        run.step(frame);
+        run.step(playerFrame(input));
       }
     };
     const player = () => riderOf(run.view.riders, PLAYER_RIDER);

@@ -18,6 +18,7 @@ export const deterministicFiles = [
   "packages/sim/src/cast.ts",
   "packages/sim/src/combat.ts",
   "packages/sim/src/commands.ts",
+  "packages/sim/src/control.ts",
   "packages/sim/src/corner-warnings.ts",
   "packages/sim/src/engine.ts",
   "packages/sim/src/hazards.ts",
@@ -139,6 +140,7 @@ export const hotBodies = {
     ["joinParty"],
     ["stepRiderContacts"],
   ],
+  "packages/sim/src/control.ts": [["controlOf"], ["applyControl"]],
   "packages/sim/src/pilot-corners.ts": [["planForecast"]],
   "packages/sim/src/pilot-forecast.ts": [
     ["gatherInSight"],
@@ -166,7 +168,12 @@ export const hotBodies = {
     ["offerBetweenLanes"],
   ],
   "packages/sim/src/pilot.ts": [["pilotRider"]],
-  "packages/sim/src/race.ts": [["stepRace"]],
+  "packages/sim/src/race.ts": [
+    ["stepRace"],
+    ["frameFits"],
+    ["controllerAfter"],
+    ["controlRider"],
+  ],
   "packages/sim/src/snapshot-bytes.ts": [
     ["textBytes"],
     ["textOrNoneBytes"],

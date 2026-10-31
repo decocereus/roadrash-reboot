@@ -1,8 +1,9 @@
 import { defaultSetup, neutralInput } from "@racer/sim/race";
+import { playerFrame } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
-import type { InputFrame, RiderInput } from "@racer/sim/state";
+import type { RiderInput } from "@racer/sim/state";
 import type { FrameRate } from "@racer/telemetry/limits";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
@@ -119,12 +120,11 @@ export const createTicker = (): Ticker => {
   const track = trackFor("ridge-road", 1);
   const run = createRaceRun(defaultSetup(track, 7));
   const input: RiderInput = { ...neutralInput };
-  const frame: InputFrame = new Map([[PLAYER_RIDER, input]]);
   const digests: string[] = [];
   const hasher = hasherFor(run.view, track);
   const tick = () => {
     scriptedInput(run.view.tick, input);
-    run.step(frame);
+    run.step(playerFrame(input));
     digests.push(hasher.hash(run.view));
   };
   return { digests, run, tick };

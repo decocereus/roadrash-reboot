@@ -14,15 +14,9 @@ import {
   signedFor,
 } from "./corner-warnings.ts";
 import type { BrakingZone } from "./corner-warnings.ts";
-import { player } from "./race-fixtures.ts";
+import { player, playerFrame } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
-import {
-  clamp,
-  curvePushOf,
-  PLAYER_RIDER,
-  steerFor,
-  TICK_RATE,
-} from "./state.ts";
+import { clamp, curvePushOf, steerFor, TICK_RATE } from "./state.ts";
 import type { BikeSpec, RiderInput } from "./state.ts";
 
 const trackOf = (id: StretchId): Track => compileTrack(stretches[id]);
@@ -106,7 +100,6 @@ const brakeFromChevron = (
   rider.speed = zone.approach;
   rider.throttle = 1;
   const input: RiderInput = { ...neutralInput, throttle: 1 };
-  const frame = new Map([[PLAYER_RIDER, input]]);
   const reacted = from + zone.approach * 0.25;
   let offRoad = false;
   for (
@@ -128,7 +121,7 @@ const brakeFromChevron = (
     const braking = rider.s >= reacted && rider.speed > zone.slowest;
     input.brake = braking ? 1 : 0;
     input.throttle = rider.s < reacted || rider.speed < zone.slowest ? 1 : 0;
-    stepRace(race, track, frame);
+    stepRace(race, track, playerFrame(input));
     offRoad ||= rider.offRoad;
   }
   return { crashes: rider.crashes, offRoad, through: rider.s >= zone.end };

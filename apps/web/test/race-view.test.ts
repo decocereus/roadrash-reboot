@@ -1,4 +1,5 @@
 import { defaultSetup, neutralInput } from "@racer/sim/race";
+import { playerFrame } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RaceView, RiderView, TrafficView } from "@racer/sim/race-view";
@@ -6,7 +7,6 @@ import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type {
   BikeSpec,
   Hazard,
-  InputFrame,
   RaceEvent,
   RaceState,
   RiderId,
@@ -17,9 +17,7 @@ import { trackFor } from "@racer/track/roads";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 const ride = (run: RaceRun, ticks: number): void => {
-  const frame: InputFrame = new Map([
-    [PLAYER_RIDER, { ...neutralInput, throttle: 1 }],
-  ]);
+  const frame = playerFrame({ ...neutralInput, throttle: 1 });
   for (let tick = 0; tick < ticks; tick += 1) {
     run.step(frame);
   }

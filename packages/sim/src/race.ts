@@ -10,6 +10,7 @@ import {
   stepAttack,
   stepRiderContacts,
 } from "./combat.ts";
+import { applyControl } from "./control.ts";
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
@@ -54,6 +55,13 @@ export const neutralInput: RiderInput = {
   punch: false,
   steer: 0,
   throttle: 0,
+};
+
+export const noHandovers: ReadonlyMap<RiderId, Controller> = new Map();
+
+export const emptyFrame: InputFrame = {
+  controls: new Map(),
+  handovers: noHandovers,
 };
 
 export const defaultPlayer: PlayerSetup = {
@@ -439,13 +447,29 @@ const touchdownOf = (
 type FrameProblem =
   | { readonly kind: "missingControl"; readonly rider: RiderId }
   | { readonly kind: "pilotControl"; readonly rider: RiderId }
-  | { readonly kind: "unknownRider"; readonly rider: RiderId };
+  | { readonly kind: "unknownRider"; readonly rider: RiderId }
+  | {
+      readonly kind: "sameController";
+      readonly rider: RiderId;
+      readonly controller: Controller;
+    };
+
+const controllerAfter = (rider: RiderState, frame: InputFrame): Controller =>
+  frame.handovers.get(rider.id) ?? rider.controller;
 
 const frameFits = (state: RaceState, frame: InputFrame): boolean => {
   let humans = 0;
+  let handovers = 0;
   for (const rider of state.riders) {
-    const controlled = frame.has(rider.id);
-    if (rider.controller === "human") {
+    const handover = frame.handovers.get(rider.id);
+    if (handover !== undefined) {
+      if (handover === rider.controller) {
+        return false;
+      }
+      handovers += 1;
+    }
+    const controlled = frame.controls.has(rider.id);
+    if (controllerAfter(rider, frame) === "human") {
       if (!controlled) {
         return false;
       }
@@ -454,19 +478,37 @@ const frameFits = (state: RaceState, frame: InputFrame): boolean => {
       return false;
     }
   }
-  return humans === frame.size;
+  return humans === frame.controls.size && handovers === frame.handovers.size;
 };
+
+const strangers = (state: RaceState, ids: Iterable<RiderId>): FrameProblem[] =>
+  [...ids]
+    .filter((id) => !riderOf(state.riders, id))
+    .map((id): FrameProblem => ({ kind: "unknownRider", rider: id }));
 
 const frameProblems = (state: RaceState, frame: InputFrame): FrameProblem[] => [
   ...state.riders
-    .filter((rider) => (rider.controller === "human") !== frame.has(rider.id))
+    .filter((rider) => frame.handovers.get(rider.id) === rider.controller)
     .map((rider): FrameProblem => ({
-      kind: rider.controller === "human" ? "missingControl" : "pilotControl",
+      controller: rider.controller,
+      kind: "sameController",
       rider: rider.id,
     })),
-  ...[...frame.keys()]
-    .filter((id) => !riderOf(state.riders, id))
-    .map((id): FrameProblem => ({ kind: "unknownRider", rider: id })),
+  ...state.riders
+    .filter(
+      (rider) =>
+        (controllerAfter(rider, frame) === "human") !==
+        frame.controls.has(rider.id)
+    )
+    .map((rider): FrameProblem => ({
+      kind:
+        controllerAfter(rider, frame) === "human"
+          ? "missingControl"
+          : "pilotControl",
+      rider: rider.id,
+    })),
+  ...strangers(state, frame.handovers.keys()),
+  ...strangers(state, frame.controls.keys()),
 ];
 
 const describeFrameProblem = (problem: FrameProblem): string => {
@@ -478,7 +520,10 @@ const describeFrameProblem = (problem: FrameProblem): string => {
       return `Rider ${problem.rider} is ridden by the pilot and has a control in the frame.`;
     }
     case "unknownRider": {
-      return `The frame has a control for rider ${problem.rider}, who is not in the race.`;
+      return `The frame names rider ${problem.rider}, who is not in the race.`;
+    }
+    case "sameController": {
+      return `The frame hands rider ${problem.rider} to the ${problem.controller}, who already rides it.`;
     }
     default: {
       return problem satisfies never;
@@ -494,29 +539,18 @@ const checkFrame = (state: RaceState, frame: InputFrame): void => {
   }
 };
 
-const takeControl = (
-  rider: RiderState,
-  control: Readonly<RiderInput>
-): void => {
-  const { input } = rider;
-  input.steer = control.steer;
-  input.throttle = control.throttle;
-  input.brake = control.brake;
-  input.punch = control.punch;
-  input.kick = control.kick;
-};
-
 const controlRider = (
   state: RaceState,
   track: Track,
   frame: InputFrame,
   rider: RiderState
 ): void => {
+  rider.controller = controllerAfter(rider, frame);
   switch (rider.controller) {
     case "human": {
-      const control = frame.get(rider.id);
-      if (control) {
-        takeControl(rider, control);
+      const control = frame.controls.get(rider.id);
+      if (control !== undefined) {
+        applyControl(control, rider.input);
       }
       return;
     }

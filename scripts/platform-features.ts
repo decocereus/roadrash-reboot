@@ -40,6 +40,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     owns: [
       "packages/sim/src/race*.ts",
       "packages/sim/src/state.ts",
+      "packages/sim/src/control*.ts",
       "apps/web/test/race-view.test.ts",
     ],
     perf: [
@@ -54,7 +55,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/race-run.ts",
     ],
     summary:
-      "`createRace` and `stepRace`, the plain-data `RaceState`, race setups and their validation, and the readonly `RaceView` and `RaceRun` the browser holds a race through.",
+      "`createRace` and `stepRace`, the plain-data `RaceState`, race setups and their validation, the input frame with its four-byte controls and its handovers between a human and the pilot, and the readonly `RaceView` and `RaceRun` the browser holds a race through.",
     title: "Race simulation core",
     verify: [],
   },
@@ -88,7 +89,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/snapshot-members.ts",
     ],
     summary:
-      "The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs nine recorded races in Node, Chromium, Firefox and WebKit and compares every tick.",
+      "The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs ten recorded races in Node, Chromium, Firefox and WebKit and compares every tick.",
     title: "Race snapshots and the replay hash",
     verify: [],
   },

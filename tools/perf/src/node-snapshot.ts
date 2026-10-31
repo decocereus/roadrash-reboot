@@ -12,7 +12,6 @@ import {
 } from "@racer/sim/snapshot";
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { setupDigest } from "@racer/sim/snapshot-setup";
-import type { InputFrame } from "@racer/sim/state";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
@@ -20,6 +19,7 @@ import { runtimeOf } from "./node.ts";
 import {
   benchRun,
   benchStart,
+  eitherSideFrame,
   rowsOf,
   scenarioHash,
   scenarios,
@@ -31,12 +31,11 @@ const prepareSnapshots = (scenario: Scenario) => {
   const setup = benchStart(scenario.bench);
   const run = benchRun(scenario.bench);
   const spare = createRace(setup);
-  const frame: InputFrame = new Map();
   while (run.view.tick < scenario.window.from - 1) {
     run.step();
   }
   while (spare.tick < scenario.window.from) {
-    stepRace(spare, setup.track, frame);
+    stepRace(spare, setup.track, eitherSideFrame);
   }
   const police = run.view.riders.filter(
     (rider) => rider.profile.role === "police"
@@ -53,7 +52,7 @@ const prepareSnapshots = (scenario: Scenario) => {
     measure: () => {
       for (let index = 0; index < WINDOW_TICKS; index += 1) {
         run.step();
-        stepRace(spare, setup.track, frame);
+        stepRace(spare, setup.track, eitherSideFrame);
         const needed = snapshotCapacity(run.view);
         if (out.byteLength < needed) {
           out = new DataView(new ArrayBuffer(needed));

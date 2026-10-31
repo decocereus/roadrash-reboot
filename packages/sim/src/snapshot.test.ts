@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { track } from "./race-fixtures.ts";
 import type { RaceView } from "./race-view.ts";
-import { createRace, defaultSetup, stepRace } from "./race.ts";
+import { createRace, defaultSetup, emptyFrame, stepRace } from "./race.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { eventSchemas, eventTags } from "./snapshot-events.ts";
 import { hashBytes, hashText } from "./snapshot-hash.ts";
@@ -20,14 +20,11 @@ import {
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 import type {
   HazardTag,
-  InputFrame,
   RaceEvent,
   RaceSetup,
   RaceState,
   RiderId,
 } from "./state.ts";
-
-const empty: InputFrame = new Map();
 
 const pilotedSetup = (course: Track, seed: number): RaceSetup => {
   const setup = defaultSetup(course, seed);
@@ -94,7 +91,7 @@ const ride = (
   const words = new Uint32Array(HASH_WORDS);
   const buffer = new DataView(new ArrayBuffer(2 * snapshotCapacity(state)));
   for (let tick = 0; tick < ticks; tick += 1) {
-    stepRace(state, course, empty);
+    stepRace(state, course, emptyFrame);
     hashRace(state, digest, buffer, words);
     hashes.push(hashText(words));
   }
@@ -131,7 +128,7 @@ const momentsOf = (
   let atFall = -1;
   let atPursuit = -1;
   for (let tick = 0; tick < ticks; tick += 1) {
-    stepRace(state, course, empty);
+    stepRace(state, course, emptyFrame);
     for (const rider of state.riders) {
       if (atFight < 0 && (rider.attack !== "none" || rider.hitStun > 0)) {
         atFight = state.tick;
