@@ -29,7 +29,7 @@ Every push to `main` deploys `prod` through `.github/workflows/deploy.yml`. The 
 - `CLOUDFLARE_API_TOKEN` is the account-owned token `rushline-deploy-ci`. It holds only Workers Scripts Write and Workers R2 Storage Write.
 - `ALCHEMY_STATE_STORE` is the state store's credentials file, which the job writes under `ALCHEMY_HOME`.
 
-A local `alchemy deploy --stage prod` uses the Alchemy login instead. A stage other than `prod` would claim the same bucket name, so only `prod` is deployed. `pnpm dev` runs the bucket in the local simulator.
+A local `alchemy deploy --stage prod` uses the Alchemy login instead. `alchemy dev` keeps its state in the local `.alchemy` folder and needs no Cloudflare login. A stage other than `prod` would claim the same bucket name, so only `prod` is deployed. `pnpm dev` runs the bucket in the local simulator.
 
 There is no API Worker or database yet. Accounts, saves on the server, multiplayer, the store, and billboard view counts bring them in before launch. Where the database is hosted is decided on cost and is open; Cloudflare D1 is not assumed. A guest's career stays in the browser, and signing in moves it to the server.
 

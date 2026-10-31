@@ -2,12 +2,20 @@ import { artBucketName } from "@racer/art/remote";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+
+const state = Layer.unwrap(
+  Effect.gen(function* stateFor() {
+    const { dev } = yield* Alchemy.AlchemyContext;
+    return dev ? Alchemy.localState() : Cloudflare.state();
+  })
+);
 
 export default Alchemy.Stack(
   "Rushline",
   {
     providers: Cloudflare.providers(),
-    state: Cloudflare.state(),
+    state,
   },
   Effect.gen(function* rushline() {
     const stage = yield* Alchemy.Stage;
