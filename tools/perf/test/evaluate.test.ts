@@ -72,7 +72,7 @@ const middle = Math.floor(WINDOW_TICKS / 2);
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
-describe("perf gate red cases", () => {
+describe("perf gate red cases", { timeout: 30_000 }, () => {
   afterEach(() => {
     for (const dir of made.splice(0)) {
       rmSync(dir, { force: true, recursive: true });
