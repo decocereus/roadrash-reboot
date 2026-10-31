@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { defaultSetup } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { TrafficView } from "@racer/sim/race-view";
@@ -26,28 +23,23 @@ import { createRiderFigure } from "../src/game/rider-figure.ts";
 import { stageEverything, warmStaged } from "../src/game/staging.ts";
 import type { Staged } from "../src/game/staging.ts";
 import { uploadSpan } from "../src/game/uploads.ts";
+import { artFile } from "./art-files.ts";
 
-const repository = path.join(import.meta.dirname, "../../..");
 const HELMET_REACH = 0.4;
-
-const bytesOf = (url: string): ArrayBuffer => {
-  const file = readFileSync(path.join(repository, url));
-  return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
-};
 
 const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.figures;
   const { classic, ghost, oni, seraph } = modelUrls.bikes;
   const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c] = await Promise.all([
-    assetParsers.parts(bytesOf(classic), classic),
-    assetParsers.parts(bytesOf(ghost), ghost),
-    assetParsers.parts(bytesOf(oni), oni),
-    assetParsers.parts(bytesOf(seraph), seraph),
-    assetParsers.whole(bytesOf(modelUrls.car), modelUrls.car),
-    assetParsers.whole(bytesOf(modelUrls.van), modelUrls.van),
-    assetParsers.rider(bytesOf(riderA), riderA),
-    assetParsers.rider(bytesOf(riderB), riderB),
-    assetParsers.rider(bytesOf(riderC), riderC),
+    assetParsers.parts(artFile(classic), classic),
+    assetParsers.parts(artFile(ghost), ghost),
+    assetParsers.parts(artFile(oni), oni),
+    assetParsers.parts(artFile(seraph), seraph),
+    assetParsers.whole(artFile(modelUrls.car), modelUrls.car),
+    assetParsers.whole(artFile(modelUrls.van), modelUrls.van),
+    assetParsers.rider(artFile(riderA), riderA),
+    assetParsers.rider(artFile(riderB), riderB),
+    assetParsers.rider(artFile(riderC), riderC),
   ]);
   return {
     bikes: {
@@ -66,7 +58,7 @@ const pinnedCelebrities = async (): Promise<RiderAsset[]> =>
   await Promise.all(
     celebrityIds.map(async (id) => {
       const url = modelUrls.celebrities[id];
-      const { value } = await assetParsers.rider(bytesOf(url), url);
+      const { value } = await assetParsers.rider(artFile(url), url);
       return value;
     })
   );

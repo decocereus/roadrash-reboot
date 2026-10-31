@@ -44,7 +44,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "05025f80f605c3557cc1fb772378d4f23506c65434ba098946ef002bcd604fbd"
+    "summarySha256": "4d33ded10b81a45f401db29a6817cbced5fdd00c770fb4ae4121feb646206abc"
   },
   "limits": [
     {
@@ -56,7 +56,7 @@
       "metric": "assets.glb.bike",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -68,7 +68,7 @@
       "metric": "assets.glb.car",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -80,7 +80,7 @@
       "metric": "assets.glb.ghost",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -92,7 +92,7 @@
       "metric": "assets.glb.oni",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -104,7 +104,7 @@
       "metric": "assets.glb.rider_a",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -116,7 +116,7 @@
       "metric": "assets.glb.rider_altman",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -128,7 +128,7 @@
       "metric": "assets.glb.rider_b",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -140,7 +140,7 @@
       "metric": "assets.glb.rider_c",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -152,7 +152,7 @@
       "metric": "assets.glb.rider_kylie",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -164,7 +164,7 @@
       "metric": "assets.glb.rider_mbappe",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -176,7 +176,7 @@
       "metric": "assets.glb.rider_musk",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -188,7 +188,7 @@
       "metric": "assets.glb.rider_ranveer",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -200,7 +200,7 @@
       "metric": "assets.glb.rider_ronaldo",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -212,19 +212,19 @@
       "metric": "assets.glb.seraph",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T09-09-52-001Z-6e6ea5a-6e6ea5a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 937780,
-      "baseline": 937780,
+      "value": 3110316,
+      "baseline": 3110316,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -236,7 +236,19 @@
       "metric": "assets.glb.van",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 10199418,
+      "baseline": 10199418,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.image.total",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
@@ -248,151 +260,151 @@
       "metric": "assets.texture.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1409763,
-      "baseline": 1382120,
+      "value": 837162,
+      "baseline": 820747,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.client.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 2856338,
-      "baseline": 2800331,
+      "value": 1940962,
+      "baseline": 1902903,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.client.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1402602,
-      "baseline": 1375100,
+      "value": 827470,
+      "baseline": 811245,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 810111,
-      "baseline": 794226,
+      "value": 213207,
+      "baseline": 209026,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1725744,
-      "baseline": 1691905,
+      "value": 770126,
+      "baseline": 755025,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 2835298,
-      "baseline": 2779703,
+      "value": 1919369,
+      "baseline": 1881734,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 505146,
-      "baseline": 495241,
+      "value": 548215,
+      "baseline": 537465,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.kit.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 856237,
-      "baseline": 839448,
+      "value": 955467,
+      "baseline": 936732,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.kit.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 592492,
-      "baseline": 580874,
+      "value": 614264,
+      "baseline": 602219,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.root.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1109554,
-      "baseline": 1087798,
+      "value": 1149244,
+      "baseline": 1126709,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.root.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)), from side A's build in a clean /tmp clone, counting every server chunk the Worker entry reaches through static and dynamic imports",
-      "value": 264455,
-      "baseline": 259269,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
+      "value": 297092,
+      "baseline": 291266,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline)), from side A's build in a clean /tmp clone, counting every server chunk the Worker entry reaches through static and dynamic imports",
-      "value": 1057245,
-      "baseline": 1036514,
+      "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
+      "value": 1143300,
+      "baseline": 1120882,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-22T21-21-12-343Z-fd677a7-29f8300",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
       "unit": "B"
     },
     {

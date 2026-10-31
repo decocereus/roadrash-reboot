@@ -1,11 +1,7 @@
+import { artBucketName } from "@racer/art/remote";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
-
-export class Web extends Cloudflare.Website.Vite<Web>()("Web", {
-  dev: { port: 1350, strictPort: true },
-  rootDir: `${import.meta.dirname}/apps/web`,
-}) {}
 
 export default Alchemy.Stack(
   "Rushline",
@@ -14,7 +10,25 @@ export default Alchemy.Stack(
     state: Alchemy.localState(),
   },
   Effect.gen(function* rushline() {
-    const web = yield* Web;
+    const stage = yield* Alchemy.Stage;
+    const art = yield* Cloudflare.R2.Bucket("Art", { name: artBucketName });
+    const web = yield* Cloudflare.Website.Vite("Web", {
+      dev: { port: 1350, strictPort: true },
+      env: { ART: art },
+      memo: {
+        include: [
+          "**/*",
+          "../../packages/*/src/**",
+          "../../packages/*/package.json",
+        ],
+        lockfile: true,
+      },
+      name:
+        stage === "prod"
+          ? "rushline"
+          : `rushline-${stage.replaceAll("_", "-")}`,
+      rootDir: `${import.meta.dirname}/apps/web`,
+    });
 
     return {
       webUrl: web.url.as<string>(),

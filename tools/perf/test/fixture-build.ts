@@ -1,6 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { keyOf } from "@racer/art/manifest";
+
 import { glbNames } from "../src/build.ts";
 import type { GlbName } from "../src/build.ts";
 import type { Side } from "../src/sides.ts";
@@ -67,7 +69,6 @@ const clientManifest = (missingEdge: boolean) => ({
     ],
   },
   "src/asset-runtime.ts": {
-    assets: glbNames.map((name) => `assets/${name}.glb`),
     file: "assets/asset-runtime.js",
     imports: ["_shared"],
     src: "src/asset-runtime.ts",
@@ -82,12 +83,6 @@ const clientManifest = (missingEdge: boolean) => ({
     imports: ["_shared", ROUTE_CHUNK],
     src: "src/game/game.ts",
   },
-  ...Object.fromEntries(
-    glbNames.map((name) => [
-      `src/game/models/${name}.glb`,
-      { file: `assets/${name}.glb`, src: `src/game/models/${name}.glb` },
-    ])
-  ),
 });
 
 const startManifest = `export const tsrStartManifest = () => ({
@@ -143,6 +138,8 @@ const glbOf = (size: number, atlas: FixtureOptions["atlas"]): Uint8Array => {
   return bytes;
 };
 
+const PLATE_BYTES = 48;
+
 export const fixtureBuild = (
   dir: string,
   name: Side["name"],
@@ -150,14 +147,27 @@ export const fixtureBuild = (
 ) => {
   const root = path.join(dir, `side-${name}`);
   const out = path.join(dir, `out-${name}`);
+  const artCache = path.join(dir, `art-${name}`);
+  const manifest: Record<string, string> = {};
+  const stage = (artName: string, bytes: Uint8Array): void => {
+    const key = keyOf(bytes, artName.endsWith(".glb") ? "glb" : "webp");
+    write(path.join(artCache, key), bytes);
+    manifest[artName] = key;
+  };
   for (const glb of glbNames.filter((each) => each !== options.missingGlb)) {
-    const bytes = glbOf(
-      GLB_BYTES + (glb === "bike" ? options.bikeExtraBytes : 0),
-      glb === "rider_kylie" ? options.atlas : null
+    stage(
+      `models/${glb}.glb`,
+      glbOf(
+        GLB_BYTES + (glb === "bike" ? options.bikeExtraBytes : 0),
+        glb === "rider_kylie" ? options.atlas : null
+      )
     );
-    write(path.join(root, "apps/web/src/game/models", `${glb}.glb`), bytes);
-    write(path.join(out, "client/assets", `${glb}.glb`), bytes);
   }
+  stage("clubhouse/wall.webp", new Uint8Array(PLATE_BYTES));
+  write(
+    path.join(root, "apps/web/src/assets/art.json"),
+    JSON.stringify(manifest)
+  );
   for (const [file, size] of Object.entries(clientFiles)) {
     write(path.join(out, "client", file), "x".repeat(size));
   }
@@ -199,5 +209,5 @@ export const fixtureBuild = (
     sourceDigest: "fixture",
     sourceFiles: 0,
   };
-  return { out, side };
+  return { artCache, out, side };
 };

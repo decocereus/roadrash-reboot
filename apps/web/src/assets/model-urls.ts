@@ -1,20 +1,6 @@
 import type { BikeModelId } from "../game/bike-models.ts";
 import type { CelebrityId } from "../game/figure-wear.ts";
-import classic from "../game/models/bike.glb?url";
-import car from "../game/models/car.glb?url";
-import ghost from "../game/models/ghost.glb?url";
-import oni from "../game/models/oni.glb?url";
-import riderA from "../game/models/rider_a.glb?url";
-import altman from "../game/models/rider_altman.glb?url";
-import riderB from "../game/models/rider_b.glb?url";
-import riderC from "../game/models/rider_c.glb?url";
-import kylie from "../game/models/rider_kylie.glb?url";
-import mbappe from "../game/models/rider_mbappe.glb?url";
-import musk from "../game/models/rider_musk.glb?url";
-import ranveer from "../game/models/rider_ranveer.glb?url";
-import ronaldo from "../game/models/rider_ronaldo.glb?url";
-import seraph from "../game/models/seraph.glb?url";
-import van from "../game/models/van.glb?url";
+import { artUrl } from "./art.ts";
 
 export interface ModelUrls {
   readonly bikes: Readonly<Record<BikeModelId, string>>;
@@ -25,9 +11,25 @@ export interface ModelUrls {
 }
 
 export const modelUrls: ModelUrls = {
-  bikes: { classic, ghost, oni, seraph },
-  car,
-  celebrities: { altman, kylie, mbappe, musk, ranveer, ronaldo },
-  figures: [riderA, riderB, riderC],
-  van,
+  bikes: {
+    classic: artUrl("models/bike.glb"),
+    ghost: artUrl("models/ghost.glb"),
+    oni: artUrl("models/oni.glb"),
+    seraph: artUrl("models/seraph.glb"),
+  },
+  car: artUrl("models/car.glb"),
+  celebrities: {
+    altman: artUrl("models/rider_altman.glb"),
+    kylie: artUrl("models/rider_kylie.glb"),
+    mbappe: artUrl("models/rider_mbappe.glb"),
+    musk: artUrl("models/rider_musk.glb"),
+    ranveer: artUrl("models/rider_ranveer.glb"),
+    ronaldo: artUrl("models/rider_ronaldo.glb"),
+  },
+  figures: [
+    artUrl("models/rider_a.glb"),
+    artUrl("models/rider_b.glb"),
+    artUrl("models/rider_c.glb"),
+  ],
+  van: artUrl("models/van.glb"),
 };

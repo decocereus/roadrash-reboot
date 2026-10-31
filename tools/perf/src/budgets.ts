@@ -71,6 +71,7 @@ const buildKinds: readonly MetricKind[] = [
   ),
   ...glbNames.map((name) => `assets.glb.${name}`),
   "assets.glb.total",
+  "assets.image.total",
   "assets.texture.total",
 ].map((metric) => ({
   direction: "max",

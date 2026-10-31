@@ -1,10 +1,10 @@
 # Errors
 
-Rushline has four places where a failure reaches someone: the telemetry endpoint, the browser's uploader, the career save, and the game's asset loading. Read this file before you add or change one of them. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+Rushline has five places where a failure reaches someone: the telemetry endpoint, the browser's uploader, the career save, the game's asset loading, and the art route. Read this file before you add or change one of them. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
 
 ## The telemetry endpoint
 
-`POST /api/telemetry` (`apps/web/src/routes/api/telemetry.ts`) runs `collect` from `apps/web/src/server/telemetry.ts` with `Effect.runPromise`, and is the only server code that runs an Effect. It passes the store Layer that `vite.config.ts` installed through `apps/web/src/server/telemetry-local.ts`. With no Layer installed, `collect` refuses with `NoStore` before it reads the request. With one, `ingest` reads the body, decodes the batch, takes `receivedAt` from Effect's `Clock` and saves through the `TelemetryStore` service. Each refusal is a `Schema.TaggedError` in `apps/web/src/server/refusals/`, and `statusOf` maps each tag to one HTTP status.
+`POST /api/telemetry` (`apps/web/src/routes/api/telemetry.ts`) runs `collect` from `apps/web/src/server/telemetry.ts` with `Effect.runPromise`. It and the art route are the only server code that runs an Effect. It passes the store Layer that `vite.config.ts` installed through `apps/web/src/server/telemetry-local.ts`. With no Layer installed, `collect` refuses with `NoStore` before it reads the request. With one, `ingest` reads the body, decodes the batch, takes `receivedAt` from Effect's `Clock` and saves through the `TelemetryStore` service. Each refusal is a `Schema.TaggedError` in `apps/web/src/server/refusals/`, and `statusOf` maps each tag to one HTTP status.
 
 | Tag | Status | Meaning |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Rushline has four places where a failure reaches someone: the telemetry endpoint
 | Every refusal tag has exactly one status. `statusOf` is typed with `satisfies Record<Refusal["_tag"], number>`, so a new tag fails the typecheck until it gets one. | `pnpm typecheck` | `apps/web/src/server/telemetry.ts` | None |
 | A refusal is built with its `Schema.TaggedError` constructor and keeps the failure behind it, the body read, the JSON parse, the schema error or the store error, as its `cause`. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/server` | None |
 | A refusal body carries only its tag, the facts in the table above and a fixed `issue`. Both `issue` texts live in one object in `telemetry.ts`. No cause, stack, path or schema message reaches the response. | `pnpm test` | `apps/web/src/server/telemetry.ts` | None |
-| The route provides the store Layer and is the only server code that runs an Effect. `collect`, `ingest`, the refusals and the store Layers return Effects. | `rushline/no-effect-runtime`, judgment | `apps/web/src/routes/api/telemetry.ts`, `apps/web/src/server`, `packages/telemetry/src` | None |
+| The route provides the store Layer, and it and `GET /art/<key>` are the only server code that runs an Effect. `collect`, `ingest`, the refusals and the store Layers return Effects. | `rushline/no-effect-runtime`, judgment | `apps/web/src/routes/api/telemetry.ts`, `apps/web/src/server`, `packages/telemetry/src` | None |
 | A batch the store has already saved is acknowledged with `duplicate: true`, not refused, so a retried upload is safe. | `pnpm test` | `apps/web/src/server/telemetry.ts`, `packages/telemetry/src/jsonl-store.ts`, `packages/telemetry/src/memory-store.ts` | None |
 
 ## The uploader
@@ -82,6 +82,16 @@ A celebrity's download and parse follow the same rules and retries, keyed by its
 | A race loads only the celebrities its riders wear, once each, and a plain race loads none. The next race with the same rider fetches and parses nothing. The wardrobe releases a celebrity once when a race is built without it, and every celebrity it holds once when the game is disposed. A failed celebrity load fails the race's dressing and the next race fetches it again. | `pnpm test` | `apps/web/test/celebrity-load.test.ts` | None |
 | Only a transport or body-read failure or a 5xx answer is retried, once, through `Effect.retry`. A 4xx answer, a parser rejection, a font failure and an interruption are not retried. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Each asset failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. A rejected HTTP status has nothing thrown to keep. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/assets` | None |
+
+## Game art
+
+`GET /art/<key>` (`apps/web/src/routes/art/$key.ts`) runs `serveArt` from `apps/web/src/server/art.ts` with `Effect.runPromise`, against the Worker's `ART` R2 binding. A stored key answers 200 with the object's content type, its ETag and `cache-control: public, max-age=31536000, immutable`. A key the bucket lacks answers 404 with `cache-control: no-store`, so a key uploaded later is not hidden by a cached miss. A bucket read that throws becomes `ArtReadFailed`, which the route logs with its cause and answers 502, uncached. The game meets either failure as a rejected model or a broken menu image, and asset loading above handles the model.
+
+In dev and preview the middleware in `apps/web/vite.config.ts` answers instead. A path that is not a content-addressed key answers 404. A key the shared cache lacks is downloaded from the deployed Worker; an unreachable origin, a non-200 answer or bytes that do not hash to the key answer 502 with the reason, and nothing is cached. The art tools fail with `ArtRejected` (`tools/art/src/art-rejected.ts`) and the same reasons, and `pnpm art:upload` refuses a manifest key that is not in this machine's cache, naming the machine that must stage it.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| A miss and a read failure are answered uncached; only a stored object carries the immutable header. Bytes enter the local cache only when they hash to their key. | judgment, `pnpm test` | `apps/web/src/server/art.ts`, `apps/web/vite.config.ts`, `tools/art` | None |
 
 ## Shader preparation
 
