@@ -49,6 +49,43 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test --project '${{ matrix.project }}'
 
+  replay:
+    name: replay (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: engine
+        run: |
+          version=$(node -p 'require(require.resolve("playwright/package.json", { paths: ["tools/replay"] })).version')
+          if [ -z "$version" ]; then
+            echo "The replay workspace reported no Playwright version." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.engine.outputs.version }}-${{ matrix.engine }}
+      - run: pnpm --filter @racer/replay exec playwright install --with-deps ${{ matrix.engine }}
+        if: steps.browsers.outputs.cache-hit != 'true'
+      - run: pnpm --filter @racer/replay exec playwright install-deps ${{ matrix.engine }}
+        if: steps.browsers.outputs.cache-hit == 'true'
+      - run: pnpm replay:engines --engine ${{ matrix.engine }}
+
   perf:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

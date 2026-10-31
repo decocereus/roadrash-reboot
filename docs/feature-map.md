@@ -32,6 +32,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 
 - [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
+- [Race snapshots and the replay hash](#race-snapshots-and-the-replay-hash): `race-snapshot`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
 - [Track compiler](#track-compiler): `track-compiler`
 - [Renderer core and frame loop](#renderer-core-and-frame-loop): `renderer-core`
@@ -611,6 +612,41 @@ Test files:
 - `apps/web/test/race-view.test.ts`
 - `packages/sim/src/race-setup-and-replay.test.ts`
 
+### Race snapshots and the replay hash
+
+The versioned race snapshot: one schema as data, the encoder, the decoder that reads a race back without allocating, the setup digest that names the immutable inputs, the portable 128-bit hash the replay tests and a room would agree on, and the cross-engine replay that runs nine recorded races in Node, Chromium, Firefox and WebKit and compares every tick.
+
+- Id: `race-snapshot`
+- Start: `packages/sim/src/snapshot.ts`, `packages/sim/src/snapshot-format.ts`, `packages/sim/src/snapshot-members.ts`
+- Docs: [docs/architecture.md#race-snapshots](architecture.md#race-snapshots), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Verify: none yet
+- Perf: `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95`, `snapshot.bytes.max`
+- Owns: `packages/sim/src/snapshot*.ts`, `apps/web/test/race-hash.ts`, `apps/web/test/replay-bundle.ts`, `apps/web/test/cold-restore-worker.ts`, `apps/web/test/cold-restore.test.ts`, `tools/perf/snapshot.ts`, `tools/perf/src/node-snapshot.ts`, `tools/replay/**`
+
+Source files:
+
+- `packages/sim/src/snapshot-bytes.ts`
+- `packages/sim/src/snapshot-events.ts`
+- `packages/sim/src/snapshot-format.ts`
+- `packages/sim/src/snapshot-hash.ts`
+- `packages/sim/src/snapshot-members.ts`
+- `packages/sim/src/snapshot-setup.ts`
+- `packages/sim/src/snapshot.ts`
+- `tools/perf/snapshot.ts`
+- `tools/perf/src/node-snapshot.ts`
+- `tools/replay/engines.ts`
+- `tools/replay/src/engines.ts`
+- `tools/replay/src/replay-failed.ts`
+
+Test files:
+
+- `apps/web/test/cold-restore-worker.ts`
+- `apps/web/test/cold-restore.test.ts`
+- `apps/web/test/race-hash.ts`
+- `apps/web/test/replay-bundle.ts`
+- `packages/sim/src/snapshot-holes.test.ts`
+- `packages/sim/src/snapshot.test.ts`
+
 ### Deterministic math and randomness
 
 The owned `sin`, `cos`, `atan` and `hypot2` that give the same bits on every machine, and the seeded random generator every deterministic module draws from.
@@ -1072,6 +1108,7 @@ Source files:
 - `tools/oxlint/rushline/notes.ts`
 - `tools/oxlint/rushline/property-name.ts`
 - `tools/oxlint/rushline/rules/deterministic-core.ts`
+- `tools/oxlint/rushline/rules/no-bitwise.ts`
 - `tools/oxlint/rushline/rules/no-comments.ts`
 - `tools/oxlint/rushline/rules/no-discarded-exit.ts`
 - `tools/oxlint/rushline/rules/no-distance-hide.ts`
@@ -1117,6 +1154,7 @@ Test files:
 - `tools/oxlint/test/effect-services.test.ts`
 - `tools/oxlint/test/effect-style.test.ts`
 - `tools/oxlint/test/effect-tags.test.ts`
+- `tools/oxlint/test/no-bitwise.test.ts`
 - `tools/oxlint/test/no-discarded-exit.test.ts`
 - `tools/oxlint/test/no-distance-hide.test.ts`
 - `tools/oxlint/test/no-entries-loop.test.ts`

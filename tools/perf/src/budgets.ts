@@ -12,9 +12,13 @@ export interface MetricKind {
   readonly lane: Lane;
   readonly unit: string;
   readonly direction: "min" | "max";
+  readonly headroom: number;
   readonly paired: number | null;
   readonly perScenario: boolean;
 }
+
+const SNAPSHOT_BYTES_METRIC = "snapshot.bytes.max";
+const SNAPSHOT_HEADROOM = 1.15;
 
 const nodeKind = (
   metric: string,
@@ -23,9 +27,20 @@ const nodeKind = (
   paired: number
 ): MetricKind => ({
   direction,
+  headroom: paired,
   lane: "node",
   metric,
   paired,
+  perScenario: true,
+  unit,
+});
+
+const snapshotKind = (metric: string, unit: string): MetricKind => ({
+  direction: "max",
+  headroom: metric === SNAPSHOT_BYTES_METRIC ? 1 : SNAPSHOT_HEADROOM,
+  lane: "node",
+  metric,
+  paired: null,
   perScenario: true,
   unit,
 });
@@ -35,6 +50,10 @@ const nodeKinds: readonly MetricKind[] = [
   nodeKind("sim.tick.p95", "ms", "max", 1.15),
   nodeKind("sim.tick.p99", "ms", "max", 1.2),
   nodeKind("sim.allocatedBytesPerTick", "B", "max", 1.1),
+  snapshotKind("snapshot.write.p95", "ms"),
+  snapshotKind("snapshot.restore.p95", "ms"),
+  snapshotKind("snapshot.hash.p95", "ms"),
+  snapshotKind(SNAPSHOT_BYTES_METRIC, "B"),
 ];
 
 const byteClosures = [
@@ -55,6 +74,7 @@ const buildKinds: readonly MetricKind[] = [
   "assets.texture.total",
 ].map((metric) => ({
   direction: "max",
+  headroom: 1,
   lane: "build",
   metric,
   paired: null,
@@ -68,6 +88,7 @@ const gpuKind = (
   paired: number | null
 ): MetricKind => ({
   direction: "max",
+  headroom: paired ?? 1,
   lane: "gpu",
   metric,
   paired,
@@ -311,7 +332,7 @@ export const judge = (
   });
 
 export const exactMetric = (metric: string): boolean =>
-  metric.startsWith("assets.");
+  metric.startsWith("assets.") || metric === SNAPSHOT_BYTES_METRIC;
 
 const proposed = (kind: MetricKind, baseline: number) => {
   if (exactMetric(kind.metric)) {
@@ -323,7 +344,7 @@ const proposed = (kind: MetricKind, baseline: number) => {
       value: baseline + Math.max(4096, Math.ceil(0.02 * baseline)),
     };
   }
-  const factor = kind.paired ?? 1;
+  const factor = kind.headroom;
   return {
     derivation:
       kind.metric === "sim.allocatedBytesPerTick"

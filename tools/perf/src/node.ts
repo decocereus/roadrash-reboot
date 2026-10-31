@@ -163,7 +163,7 @@ const allocationWindow = Effect.fnUntraced(function* allocationWindow(
   };
 });
 
-const runtime = () => ({
+export const runtimeOf = () => ({
   arch: arch(),
   cpu: cpus()[0]?.model ?? "unknown",
   cpus: cpus().length,
@@ -174,7 +174,7 @@ const runtime = () => ({
   v8: process.versions.v8,
 });
 
-const tasks = ["validate", "time", "alloc", "calibrate"] as const;
+const tasks = ["validate", "time", "alloc", "calibrate", "snapshot"] as const;
 
 export const childRecord = Schema.Struct({
   allocation: Schema.optionalKey(
@@ -207,6 +207,14 @@ export const childRecord = Schema.Struct({
   }),
   scenario: Schema.String,
   scenarioHash: Schema.String,
+  snapshot: Schema.optionalKey(
+    Schema.Struct({
+      bytes: Schema.Array(Schema.Number),
+      hash: Schema.Array(Schema.Number),
+      restore: Schema.Array(Schema.Number),
+      write: Schema.Array(Schema.Number),
+    })
+  ),
   task: Schema.Literals(tasks),
 });
 
@@ -237,7 +245,7 @@ const measure = Effect.fnUntraced(function* measure(
   scenario: Scenario
 ) {
   const base = {
-    runtime: runtime(),
+    runtime: runtimeOf(),
     scenario: scenario.id,
     scenarioHash: scenarioHash(scenario),
     task,

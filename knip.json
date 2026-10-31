@@ -12,8 +12,10 @@
         "src/**/*.test.ts",
         "test/**/*.test.ts",
         "test/bike-contact.ts",
+        "test/cold-restore-worker.ts",
         "test/outline-sides.ts",
-        "test/renderer-lifecycle.ts"
+        "test/renderer-lifecycle.ts",
+        "test/replay-bundle.ts"
       ],
       "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
       "typescript": true
@@ -50,6 +52,7 @@
         "measure.ts",
         "node.ts",
         "session.ts",
+        "snapshot.ts",
         "test/**/*.test.ts"
       ],
       "project": ["**/*.ts"],
@@ -62,6 +65,11 @@
     },
     "tools/madrid": {
       "entry": ["generate.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
+    },
+    "tools/replay": {
+      "entry": ["engines.ts"],
       "project": ["**/*.ts"],
       "typescript": true
     }

@@ -30,6 +30,11 @@ const SPREAD_SPAN = 101;
 export const ALLOCATED_PER_TICK = 1_000_000;
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
+const SNAPSHOT_RUNS = 3;
+const SNAPSHOT_WRITE_MS = 0.05;
+const SNAPSHOT_RESTORE_MS = 0.04;
+const SNAPSHOT_HASH_MS = 0.08;
+const SNAPSHOT_BYTES = 12_000;
 const CLOSURE_BYTES = 100_000;
 
 export const validRows = (scenario: Scenario): WorkloadRows => {
@@ -110,6 +115,17 @@ export const syntheticLane = (
       },
       rows: side === "B" ? rowsB : rows,
     });
+  const snapshotted = (run: number) =>
+    sampleOf(scenario, "B", "snapshot", `snapshot-${run}-B.json`, {
+      ...workload,
+      rows: rowsB,
+      snapshot: {
+        bytes: Array.from({ length: WINDOW_TICKS }, () => SNAPSHOT_BYTES),
+        hash: tickDurations(SNAPSHOT_HASH_MS * slowdown.runner),
+        restore: tickDurations(SNAPSHOT_RESTORE_MS * slowdown.runner),
+        write: tickDurations(SNAPSHOT_WRITE_MS * slowdown.runner),
+      },
+    });
   return {
     allocation: pairs(ALLOCATION_PAIRS).map((pair) => ({
       a: allocated("A", pair),
@@ -130,6 +146,7 @@ export const syntheticLane = (
       })
     ),
     scenario: scenario.id,
+    snapshots: pairs(SNAPSHOT_RUNS).map(snapshotted),
     timing: pairs(TIMING_PAIRS).map((pair) => ({
       a: timed("A", pair),
       b: timed("B", pair),

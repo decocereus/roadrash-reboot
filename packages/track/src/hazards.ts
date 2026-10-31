@@ -8,7 +8,9 @@ import type { HazardMix } from "./regions.ts";
 import type { RoadLevel } from "./road.ts";
 import type { Track } from "./track.ts";
 
-export type HazardKind = "oil" | "rock" | "pothole";
+export const hazardKinds = ["oil", "rock", "pothole"] as const;
+
+export type HazardKind = (typeof hazardKinds)[number];
 
 export interface HazardSize {
   readonly halfLength: number;

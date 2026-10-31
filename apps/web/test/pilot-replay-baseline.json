@@ -1,9 +1,83 @@
 {
+  "fixed": [
+    {
+      "final": "3bb3ccc728703973fae8c589975b8ee8",
+      "full": "3a7ac2a4fea60a00697ee7fc0ac39f7f",
+      "id": "ridge-road/level5/seed1",
+      "result": null,
+      "ticks": 7200,
+      "window": "523d45e31edc369f26d34a1ee7ba3173"
+    },
+    {
+      "final": "acef9906195af0e07491752a7ea23920",
+      "full": "436985cc37b16e993aba92666ef4c9ab",
+      "id": "ridge-road/level5/seed5",
+      "result": null,
+      "ticks": 7200,
+      "window": "113c2b7f880af02eb82d046ff2294016"
+    },
+    {
+      "final": "fdb0761656e28ed9958e60efbc2deaa5",
+      "full": "6d4a2067df5afdbd854a15ac3bac5918",
+      "id": "ridge-road/level5/seed9",
+      "result": "busted",
+      "ticks": 7200,
+      "window": "ec83be67a5ded5f406cd8f50464447e6"
+    },
+    {
+      "final": "2b39e1fb851bc69bb547826383800405",
+      "full": "7d744a8731df983fd2012bf6ce59b6c9",
+      "id": "ridge-road/level5/seed31",
+      "result": null,
+      "ticks": 7200,
+      "window": "95576764be47bb09760e4e3f4c99b726"
+    },
+    {
+      "final": "bafaafd3cae05b8c97dfb90ddc53c744",
+      "full": "663419a9f3f360accc3c3b87bfe3a0ca",
+      "id": "slag-row/level5/seed1",
+      "result": null,
+      "ticks": 7200,
+      "window": "9d4ef1e60f345363d0a576259b3ab330"
+    },
+    {
+      "final": "5904061655e7dc5d820d9fd9bc2d23dc",
+      "full": "b9095c4f8e61c107ba24398fbaf80b3e",
+      "id": "slag-row/level5/seed5",
+      "result": null,
+      "ticks": 7200,
+      "window": "534d969842047cbd9a91307a5c383740"
+    },
+    {
+      "final": "2d7dbb2b059bc2ea8db9010c7152e04a",
+      "full": "e1c07080723e5a36d31c071576a7a834",
+      "id": "slag-row/level5/seed9",
+      "result": null,
+      "ticks": 7200,
+      "window": "e33f0d58a1a021f9942a80c7ab80f56a"
+    },
+    {
+      "final": "827624dda672a1ae06630863e47e565c",
+      "full": "19a0ab7177523582d03d1f71b95d2029",
+      "id": "slag-row/level5/seed31",
+      "result": null,
+      "ticks": 7200,
+      "window": "01802860788112115f59b2f80c8b73a2"
+    },
+    {
+      "final": "8a3e1747cfc9196acf026034d766db72",
+      "full": "e569829b0b5edad4e4f55e43597ce1cd",
+      "id": "stress/seed8",
+      "result": null,
+      "ticks": 7200,
+      "window": "5efb0212b4bf72747b776ea9a709fdc9"
+    }
+  ],
   "provenance": {
-    "recordedAt": ["5680bfcc1be8921a1979ad1d0c43a744e95ede81"],
-    "recordedWith": "the settled lean, full lock either way and the riding-speed chevrons at recordedAt, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v24.22.1. Before it was recorded, the same code with the settled lean set to zero reproduced the earlier baseline, recorded at 9126e0dae787872a70a307fb6d4212fe7309c0c6 with the pilot-in-tick change, hash for hash in seven of the nine races; ridge-road/level5/seed1 and seed9 differ only because a rider meets a chevron board that moved. With the lean on, all nine change, because the pilot's steer now rides on the settled lean. Over 120 paired races to the finish (Ridge Road and Slag Row level 5, both signed bikes, seeds 1 to 30), every 90% bootstrap interval for the change sits inside its tolerance: winner time within 1.5%, total crashes within 5%, finishers within half a rider, the player's crashes within 0.3 and the player's place within one place a race",
-    "serializer": "typed values, sorted object keys, Float64LE number bits, UTF16LE text, Float64Array as a counted run of numbers",
-    "ticks": 7200,
+    "fixed": 7200,
+    "limit": 54000,
+    "recordedAt": ["b2fc5ba", "56d001f"],
+    "recordedWith": "the race snapshot codec of feat/race-snapshot, merged with origin/main at 56d001f, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed, so the same early ticks stay fingerprinted whatever that rule later decides. Both sets differ from the pre-branch 7,200-tick numbers because the fingerprint changed, not because any race did. snapshot-hash.ts now mixes with MurmurHash3 x86 128 and the setup digest now covers the compiled centreline, curvature and solid props, while no module that steps a race changed on this branch or in the merge. The solo rows are hash for hash the rows recorded at b2fc5ba before the merge, and every case's fixed ride matches its ride to the outcome on every tick the two share, so neither the merge nor the warmed event storage moved a race. window still folds ticks 2,880 to 3,480 in both sets, the same stretch the earlier baseline fingerprinted.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -11,67 +85,76 @@
   },
   "solo": [
     {
+      "final": "ec8c07d37f03c83c9dcdf4014fe6bd19",
+      "full": "b00057d6363ac53a42f1205e39ad6940",
       "id": "ridge-road/level5/seed1",
-      "ticks": 7200,
-      "full": "c3da0d22aa85b9c3aa091d1778aeb921176121516f5bb3c85229aaf0369df135",
-      "final": "3d17ec44e894efa3c3a45ec94aa0c53924574ee9b30a2a4e23f9471c28ba3c59",
-      "window": "6f4fe289c0192461e62288d8fffe81ee7f7ac5d97c5cb51e785d28285567671c"
+      "result": "finished",
+      "ticks": 19948,
+      "window": "523d45e31edc369f26d34a1ee7ba3173"
     },
     {
+      "final": "acfd0056a5864d736fb478dab3bdd2db",
+      "full": "4c65f8f9ba2f0f231dea45be78e9c51f",
       "id": "ridge-road/level5/seed5",
-      "ticks": 7200,
-      "full": "bb0022de635725a607a2477904be8959b6ff158f6e610b38ec0a3b37d874b7c7",
-      "final": "2f73b4519466605ee506945e20be5d16b67db9e9944a470b54c7874db642861e",
-      "window": "acb66692a3fb35e41333f43a45a894ab0d9b8ec90bc0306d07eaf7fe9f1d684c"
+      "result": "finished",
+      "ticks": 26145,
+      "window": "113c2b7f880af02eb82d046ff2294016"
     },
     {
+      "final": "2f13fb6b989d507303cfdecc0f55b5a2",
+      "full": "6925add50989c7e17afd4ab0516cf429",
       "id": "ridge-road/level5/seed9",
-      "ticks": 7200,
-      "full": "b7234dcf0ba1584c1499b061d2ad331e76052f5c190e6d9ea92a8b9ff0cefb5f",
-      "final": "04c45c7383928a6b4d4f30e37ad9ef6b6b878000526b9d7d160e23acb1b3cee4",
-      "window": "5f69b17c330e4e9e22f207a891434878391391b0706271d31302551ef8b6ddde"
+      "result": "busted",
+      "ticks": 5460,
+      "window": "ec83be67a5ded5f406cd8f50464447e6"
     },
     {
+      "final": "b9096a7f38f2f70352db1da9e9dd15fc",
+      "full": "4b9b2524b12be036587a2d62409f7ef4",
       "id": "ridge-road/level5/seed31",
-      "ticks": 7200,
-      "full": "9ee3652fc68a69d977386a4e73f1a84ae77aec32a74514940bdf9c240b98b76c",
-      "final": "023b3a1d4eb274903e3bad1da96aaa31e6908f602e32c16cbc05be7880c77335",
-      "window": "bac00c5527f49994f9c48a9814cdf93d691175e724973770e33369805f318182"
+      "result": "finished",
+      "ticks": 22894,
+      "window": "95576764be47bb09760e4e3f4c99b726"
     },
     {
+      "final": "9564bea9767ebd2a0a5cccbd42728810",
+      "full": "a67e312647e8825d6105e1e800933ff6",
       "id": "slag-row/level5/seed1",
-      "ticks": 7200,
-      "full": "0d3ee1c0ab8ac5c0e31ffdae0fd3eac015a45af31fc6d28a8a15c11c57adf825",
-      "final": "db98264a76581d35ada3bf1bbc66bb5522d37b9aa10f9c41f5908ec2f032cbf2",
-      "window": "73b5420ec7a1fe75a56f065895fd92521648a1ef7f024b9c1953ea12758238a0"
+      "result": "finished",
+      "ticks": 19746,
+      "window": "9d4ef1e60f345363d0a576259b3ab330"
     },
     {
+      "final": "ca3c80861a5ab02e8d6695e77d5d8bf1",
+      "full": "5cd67e831a617d00c39ffbdf40cd955d",
       "id": "slag-row/level5/seed5",
-      "ticks": 7200,
-      "full": "dff58839f4fbcd33d5493504756ce8f4a50924437a1bfcec015475abce815155",
-      "final": "4cdfdf9d2d03e203219e1de2d4098c515a88585c1dc2771a32e5fd57101b9c01",
-      "window": "47362da4f717cb9c3bcbe1d8c2156b239dda3fd20a79ab3f37a9a0fcbe8bc8d7"
+      "result": "busted",
+      "ticks": 18725,
+      "window": "534d969842047cbd9a91307a5c383740"
     },
     {
+      "final": "13cf378093f7af435a0f94ff583023f4",
+      "full": "637672f92cf58ea57d6b36e3b8f0b3a7",
       "id": "slag-row/level5/seed9",
-      "ticks": 7200,
-      "full": "81658c34e010d9d242fd8b200eb089d0e87383642182f9c362326f364b9e747c",
-      "final": "fcc82a2abd92b95e87cc2f2ec0e925752acfd3b99f4f0a84125eec1af7a1806e",
-      "window": "c29c77db56362d7f72a321a76c58894f03bd3cbcf11ca2330026780728961e02"
+      "result": "busted",
+      "ticks": 14928,
+      "window": "e33f0d58a1a021f9942a80c7ab80f56a"
     },
     {
+      "final": "c8a0b2c91dd79a99ce4f901a3a078b27",
+      "full": "ebf71884711c8079de2817edada90417",
       "id": "slag-row/level5/seed31",
-      "ticks": 7200,
-      "full": "cd93e8eb91fb0e415237bd45705662a1161d49e20ca39fcb8bd43d5b3f815e94",
-      "final": "263582fee87769b9bc3d1ffa3477df3e9272839667327364a0c72aaa8bb3615e",
-      "window": "8576e0eb621f5f531defb0d660b6b016b3a5e8ccd3a976fcd6cdec02c93dc838"
+      "result": "finished",
+      "ticks": 18618,
+      "window": "01802860788112115f59b2f80c8b73a2"
     },
     {
+      "final": "aafbc2c906451584db8a10ff2d284de0",
+      "full": "5b52148a89b8c6d13aea0d677adc12a3",
       "id": "stress/seed8",
-      "ticks": 7200,
-      "full": "d85a341a25b197b04c63b2b6a50b7667a8e96e2d4e21c88a834671ffad2fd6b8",
-      "final": "172ca1aad56a22d44fa6f9f02da9f165ab1fe08637b1d58a80bfb5768719bb06",
-      "window": "42cacdb85f2600792cc6a1def27cea08fe8104da695ba934ffc73a3d68bc60c9"
+      "result": "busted",
+      "ticks": 10128,
+      "window": "5efb0212b4bf72747b776ea9a709fdc9"
     }
   ]
 }

@@ -177,6 +177,11 @@ const spreadLine = (observation: Observation): string => {
   const margin = allowance(observation);
   const where = `${observation.lane} ${observation.scenario ?? "-"} ${observation.metric}`;
   const a = observation.runs.a[0] ?? Number.NaN;
+  if (observation.runs.a.length === 0) {
+    const spread = observation.runs.b;
+    const center = median(spread);
+    return `ok   B only ${where} value=${observation.value.toPrecision(5)} run range=${percent((Math.max(...spread) - Math.min(...spread)) / center)} (side A does not measure it)`;
+  }
   if (observation.lane === "build") {
     const delta = Math.abs(observation.value - a);
     const over = margin === null || delta > margin;

@@ -11,11 +11,13 @@ import type { Keyboard } from "./hosts.ts";
 import {
   close,
   firstDifferentTick,
+  FIXED_RIDE,
   openCase,
   replayCases,
   replayMatrix,
   ride,
-  TICKS,
+  rideToEnd,
+  TICK_LIMIT,
   WINDOW,
 } from "./pilot-replay.ts";
 import type { Matrix, Run } from "./pilot-replay.ts";
@@ -23,22 +25,27 @@ import type { Matrix, Run } from "./pilot-replay.ts";
 const MATRIX_TIMEOUT_MS = 900_000;
 const RACE_TIMEOUT_MS = 120_000;
 
+const replaySet = Schema.Array(
+  Schema.Struct({
+    final: Schema.String,
+    full: Schema.String,
+    id: Schema.String,
+    result: Schema.NullOr(Schema.String),
+    ticks: Schema.Number,
+    window: Schema.String,
+  })
+);
+
 const decodeBaseline = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({
+      fixed: replaySet,
       provenance: Schema.Struct({
-        ticks: Schema.Number,
+        fixed: Schema.Number,
+        limit: Schema.Number,
         window: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
       }),
-      solo: Schema.Array(
-        Schema.Struct({
-          final: Schema.String,
-          full: Schema.String,
-          id: Schema.String,
-          ticks: Schema.Number,
-          window: Schema.String,
-        })
-      ),
+      solo: replaySet,
     })
   )
 );
@@ -143,19 +150,37 @@ const playBack = (recorded: readonly RiderInput[]) => (run: Run) => {
   }
 };
 
-describe("pilot replays over 7,200 ticks", () => {
+describe("pilot replays to every race's outcome", () => {
   let matrix: Matrix;
 
   beforeAll(() => {
-    matrix = replayMatrix(TICKS);
+    matrix = replayMatrix(TICK_LIMIT);
   }, MATRIX_TIMEOUT_MS);
 
-  it("replay the step 3 baseline's ticks and window", () => {
-    expect(baseline.provenance).toStrictEqual({ ticks: TICKS, window: WINDOW });
+  it("replay the recorded baseline's limit and window", () => {
+    expect(baseline.provenance).toStrictEqual({
+      fixed: FIXED_RIDE,
+      limit: TICK_LIMIT,
+      window: WINDOW,
+    });
   });
 
-  it("nine solo races match their step 3 baseline hashes", () => {
+  it("nine solo races match their recorded baseline hashes", () => {
     expect(matrix.solo).toStrictEqual(baseline.solo);
+  });
+
+  it("nine races stopped at the fixed 7,200 ticks match their own baseline set", () => {
+    expect(matrix.fixed).toStrictEqual(baseline.fixed);
+  });
+
+  it("each race's fixed ride matches its ride to the outcome on every tick the two share", () => {
+    expect(matrix.fixedStart).toStrictEqual(
+      replayCases.map(({ id }) => ({ firstDifferentTick: null, id }))
+    );
+  });
+
+  it("nine solo races each reach a finish, a bust or a wreck", () => {
+    expect(matrix.solo.map(({ result }) => result)).not.toContain(null);
   });
 
   it("each race run beside the other eight matches its solo run on every tick", () => {
@@ -171,7 +196,7 @@ describe("pilot replays over 7,200 ticks", () => {
       if (!slagRow) {
         throw new Error("The replay cases have no Slag Row seed 5 race.");
       }
-      const again = ride(openCase(slagRow), TICKS);
+      const again = rideToEnd(openCase(slagRow), TICK_LIMIT);
       expect(
         firstDifferentTick(
           again.frames,
@@ -212,7 +237,7 @@ describe("pilot replays over 7,200 ticks", () => {
     RACE_TIMEOUT_MS
   );
 
-  it("each race rebuilt from a deep copy of its state every 600 ticks matches its solo run on every tick", () => {
+  it("each race restored from a snapshot into a fresh state every 600 ticks matches its solo run on every tick", () => {
     expect(matrix.restored).toStrictEqual(
       replayCases.map(({ id }) => ({ firstDifferentTick: null, id }))
     );

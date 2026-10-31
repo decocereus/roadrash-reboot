@@ -536,6 +536,142 @@
       "side": "A",
       "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "value": 33554424
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.03208982127165214
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.050471499506113016
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.025013578660366274
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.03899155029840974
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.04149650911348169
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 0.06458247913964549
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 15473
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 21808
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "value": 43238.828618968386
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.07468902498202905
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.11432457933276678
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.06145614663194996
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.09421989183071527
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.09114638634566513
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 0.13294496098436617
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 15473
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "value": 21808
     }
   ],
   "revisions": {
@@ -769,6 +905,40 @@
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261025-025230-s0)",
         "B": "8d1b75a70b431c077a02e182690376f6249a2c73 with an uncommitted test edit the page does not load (rv 20261025-025234-s1)"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the snapshot child of tools/perf/snapshot.ts, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "the first run that measures the race snapshot's write, restore, hash and bytes, and the run that recalibrates sim.allocatedBytesPerTick on this Mac"
+      },
+      "id": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "lanes": ["node"],
+      "sides": {
+        "A": "3d782966036a6943f151fcdee0d00f434acc1393",
+        "B": "3d782966036a6943f151fcdee0d00f434acc1393"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "harness": "the snapshot child of tools/perf/snapshot.ts, three runs per scenario",
+        "platform": "linux",
+        "runner": "the CI perf job of quality.yml on ubuntu-24.04, run 41061055166, with the job's pnpm perf step replaced by node tools/perf/gate.ts baseline --lanes node for this measurement and put back in the next commit",
+        "why": "the first run that measures the race snapshot on the CI runner"
+      },
+      "id": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "lanes": ["node"],
+      "sides": {
+        "A": "f094dbba3527cb4c51212b5695940ee73fd442d2",
+        "B": "f094dbba3527cb4c51212b5695940ee73fd442d2"
       }
     }
   ],

@@ -24,14 +24,15 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
     "lint:rules": "vitest run --config tools/oxlint/vitest.config.ts && vitest run scripts",
-    "perf": "node tools/perf/gate.ts",
-    "perf:gpu": "node tools/perf/gpu.ts",
-    "test": "vitest run",
-    "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
-    "verify": "node scripts/verify.ts",
     "madrid": "node tools/madrid/generate.ts",
     "madrid:fit": "node tools/madrid/fit.ts",
-    "madrid:stretch": "node tools/madrid/stretch.ts"
+    "madrid:stretch": "node tools/madrid/stretch.ts",
+    "perf": "node tools/perf/gate.ts",
+    "perf:gpu": "node tools/perf/gpu.ts",
+    "replay:engines": "node tools/replay/engines.ts",
+    "test": "vitest run",
+    "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
+    "verify": "node scripts/verify.ts"
   },
   "dependencies": {
     "effect": "4.0.0"
