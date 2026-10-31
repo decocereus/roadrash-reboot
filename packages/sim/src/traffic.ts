@@ -244,9 +244,10 @@ const stopAtLights = (
           const speed = lastSpeed[index] ?? 0;
           if (room + STOP_SHORT >= (speed * speed) / (2 * BRAKING)) {
             const stopping = Math.sqrt(2 * BRAKING * Math.max(0, room));
-            target[index] = queued
-              ? stopping
-              : Math.min(target[index] ?? 0, stopping);
+            target[index] = Math.min(
+              queued ? Math.abs(car.cruiseSpeed) : (target[index] ?? 0),
+              stopping
+            );
             limit = Math.min(
               limit - 2 * car.halfLength - QUEUE_GAP,
               carAlong - car.halfLength - QUEUE_GAP

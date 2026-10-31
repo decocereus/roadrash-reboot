@@ -62,7 +62,7 @@ describe("traffic at junction lights", () => {
     const red = firstTick(0, "red");
     const [sameWay] = course.sameWayLanes;
     const [oncoming] = course.oncomingLanes;
-    const queue = [120, 135, 150].map((back) =>
+    const queue = [62, 147, 162].map((back) =>
       carAt(junction.s - back, sameWay, 20)
     );
     const facing = [110, 128].map((ahead) =>
@@ -70,7 +70,16 @@ describe("traffic at junction lights", () => {
     );
     const state = quietRace(red, [...queue, ...facing]);
 
-    ride(state, 10);
+    let overCruise = 0;
+    for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+      stepRace(state, course, frameOf(state));
+      for (const car of state.cars) {
+        overCruise = Math.max(
+          overCruise,
+          Math.abs(car.speed) - Math.abs(car.cruiseSpeed)
+        );
+      }
+    }
     const line = junction.s - junction.stopGap;
     const leadFront = (queue[0]?.s ?? 0) + 2.2;
     const facingFront = (facing[0]?.s ?? 0) - 2.2;
@@ -82,12 +91,14 @@ describe("traffic at junction lights", () => {
       facingBehindItsLine: facingFront > junction.s + junction.stopGap,
       leadJustShort: leadFront < line && leadFront > line - 4,
       light: mainLightOf(signalPhaseAt(junction, state.tick)),
+      neverOverCruise: overCruise <= 0,
       stopped: state.cars.map((car) => Math.abs(car.speed) < 0.5),
     }).toStrictEqual({
       apart: [true, true],
       facingBehindItsLine: true,
       leadJustShort: true,
       light: "red",
+      neverOverCruise: true,
       stopped: [true, true, true, true, true],
     });
 
