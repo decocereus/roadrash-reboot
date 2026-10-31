@@ -5,6 +5,7 @@ import { madridHookScenery } from "./madrid-hook-scenery.ts";
 
 export const madridHook: TrackPlan = {
   chevrons: chevronRuns["madrid-hook"],
+  crossings: [],
   features: [],
   hazardsPerKilometre: 2,
   id: "madrid-hook",

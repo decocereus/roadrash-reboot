@@ -1,6 +1,8 @@
 import { sampleAlignment } from "./alignment.ts";
 import type { Alignment, Centreline } from "./alignment.ts";
-import { compileFeatures, indexFeatures } from "./features.ts";
+import { armClaims, compileCrossings } from "./crossings.ts";
+import type { CrossingRule, TrackCrossing } from "./crossings.ts";
+import { compileFeatures, indexFeatures, reservationOf } from "./features.ts";
 import type { FeatureIndex, FeatureRule, TrackFeature } from "./features.ts";
 import { placeHazards } from "./hazards.ts";
 import type { HazardPlacement } from "./hazards.ts";
@@ -39,6 +41,7 @@ export interface Scenery {
 export interface TrackPlan extends Alignment {
   readonly id: string;
   readonly chevrons: readonly ChevronRun[];
+  readonly crossings: readonly CrossingRule[];
   readonly name: string;
   readonly region: RegionId;
   readonly level: number;
@@ -83,6 +86,7 @@ export interface Track extends Centreline {
   readonly features: readonly TrackFeature[];
   readonly featureIndex: FeatureIndex;
   readonly hazards: readonly HazardPlacement[];
+  readonly crossings: readonly TrackCrossing[];
 }
 
 export interface TrackPoint {
@@ -94,6 +98,7 @@ export interface TrackPoint {
 }
 
 const ROCK_SEED_SALT = 0x70_c5;
+const ARM_PROP_MARGIN = 3;
 
 const roadHalfWidthOf = (plan: TrackPlan): number =>
   plan.lanesEachWay * plan.laneWidth + plan.shoulderWidth;
@@ -181,7 +186,6 @@ const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
 export const compileTrack = (plan: TrackPlan): Track => {
   const centreline = sampleAlignment(plan);
   const { endS, length, startS } = centreline;
-  const props = scatterProps(plan, length);
   const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
   const features = compileFeatures(plan.features, {
@@ -189,9 +193,19 @@ export const compileTrack = (plan: TrackPlan): Track => {
     level: plan.level,
     roadHalfWidth,
   });
+  const crossings = compileCrossings(
+    plan.crossings,
+    centreline,
+    plan.level,
+    plan.features.map(reservationOf)
+  );
+  const props = scatterProps(plan, length).filter(
+    (prop) => !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN)
+  );
 
   const road = {
     ...centreline,
+    crossings,
     featureIndex: indexFeatures(features, startS, endS),
     features,
     oncomingLanes: laneCentres(plan, -1),

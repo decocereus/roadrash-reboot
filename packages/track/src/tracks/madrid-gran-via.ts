@@ -5,6 +5,7 @@ import { madridGranViaScenery } from "./madrid-gran-via-scenery.ts";
 
 export const madridGranVia: TrackPlan = {
   chevrons: chevronRuns["madrid-gran-via"],
+  crossings: [],
   features: [],
   hazardsPerKilometre: 2,
   id: "madrid-gran-via",

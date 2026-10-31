@@ -134,6 +134,29 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
+      "docs/architecture.md#junctions-and-crossings",
+      "docs/design/tracks.md#junctions-and-crossings",
+    ],
+    id: "junctions",
+    kind: "feature",
+    owns: [
+      "packages/track/src/crossings*.ts",
+      "packages/sim/src/signals*.ts",
+      "apps/web/src/game/junctions.ts",
+    ],
+    perf: sceneCounts,
+    start: [
+      "packages/track/src/crossings.ts",
+      "packages/sim/src/signals.ts",
+      "apps/web/src/game/junctions.ts",
+    ],
+    summary:
+      "Junctions, cross roads and pedestrian crossings a road declares, their lights, and how each is drawn: the arms, zebras, stop lines and signal heads.",
+    title: "Junctions and crossings",
+    verify: ["junctions.md"],
+  },
+  {
+    docs: [
       "docs/architecture.md#riding-model",
       "docs/design/game-design.md#7-weapons",
     ],
@@ -369,6 +392,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/game/world.ts",
+      "apps/web/src/game/city-blocks.ts",
       "apps/web/src/game/city.ts",
       "apps/web/src/game/clearance.ts",
       "apps/web/src/game/ground.ts",

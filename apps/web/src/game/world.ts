@@ -1,4 +1,5 @@
 import type { Hazard } from "@racer/sim/state";
+import { armClaims } from "@racer/track/crossings";
 import { createRandom } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
@@ -24,6 +25,7 @@ import {
 } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
 import { createHazardMarks } from "./hazards.ts";
+import { buildJunctions } from "./junctions.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import { buildRamps } from "./ramps.ts";
@@ -91,6 +93,33 @@ const buildRibbon = (
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
+};
+
+const piecesBesideArms = (
+  track: Track,
+  span: readonly [number, number],
+  side: number
+): (readonly [number, number])[] => {
+  const pieces: (readonly [number, number])[] = [];
+  let [from] = span;
+  for (const crossing of track.crossings) {
+    const gapFrom = crossing.s - crossing.boxHalfLength;
+    const gapTo = crossing.s + crossing.boxHalfLength;
+    if (
+      gapTo > from &&
+      gapFrom < span[1] &&
+      armClaims([crossing], gapFrom, gapTo, side, 0)
+    ) {
+      if (gapFrom - from >= ROAD_STEP) {
+        pieces.push([from, gapFrom]);
+      }
+      from = Math.max(from, gapTo);
+    }
+  }
+  if (span[1] - from >= ROAD_STEP) {
+    pieces.push([from, span[1]]);
+  }
+  return pieces;
 };
 
 const terrainColor = (
@@ -425,6 +454,7 @@ export interface World {
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
   showHazards: (hazards: readonly Hazard[], s: number) => void;
+  showSignals: (tick: number) => void;
   samples: () => THREE.Group;
   setShadowMap: (size: number) => void;
   dispose: () => void;
@@ -505,16 +535,18 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
           [side * (half + KERB_WIDTH), KERB_HEIGHT, 0],
           [side * edge, KERB_HEIGHT, (edge - half) / 2],
         ];
-        add(
-          buildRibbon(track, span, side > 0 ? kerb : kerb.toReversed(), 2),
-          kerbMaterial,
-          span
-        );
-        add(
-          buildRibbon(track, span, side > 0 ? walk : walk.toReversed(), 2),
-          walkMaterial,
-          span
-        );
+        for (const piece of piecesBesideArms(track, span, side)) {
+          add(
+            buildRibbon(track, piece, side > 0 ? kerb : kerb.toReversed(), 2),
+            kerbMaterial,
+            span
+          );
+          add(
+            buildRibbon(track, piece, side > 0 ? walk : walk.toReversed(), 2),
+            walkMaterial,
+            span
+          );
+        }
       } else if (vergeMaterial) {
         const shoulder: Rail[] = [
           [side * half, 0, 0],
@@ -552,6 +584,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   stretches.push(...ramps.stretches);
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
+  const junctions = buildJunctions(track, shading, clearance);
+  scene.add(junctions.group);
+  stretches.push(...junctions.stretches);
   if (city) {
     scene.add(freeze(city.group));
   } else if (scenery) {
@@ -584,6 +619,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
       city?.group.removeFromParent();
       city?.dispose();
       hazards.dispose();
+      junctions.dispose();
       disposeTree(scene);
       for (const texture of textures) {
         texture.dispose();
@@ -615,6 +651,9 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
     shading,
     showHazards(list, s) {
       hazards.show(list, s);
+    },
+    showSignals(tick) {
+      junctions.show(tick);
     },
   };
 };

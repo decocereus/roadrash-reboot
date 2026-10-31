@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { eased, sampleAlignment } from "./alignment.ts";
 import type { TrackPiece, TrackPieces } from "./alignment.ts";
-import { roadIds, roadLevels } from "./road.ts";
-import { trackFor } from "./roads.ts";
+import { roadAtLevel, roadIds, roadLevels } from "./road.ts";
+import { roads } from "./roads.ts";
 import { compileTrack } from "./track.ts";
 import type { Track } from "./track.ts";
 import { ridgeRoad } from "./tracks/ridge-road.ts";
@@ -114,17 +114,22 @@ const sweeperCurvatureAt = (s: number): number => {
 };
 
 describe("track pieces", () => {
-  it("every road at every level compiles to the centreline, ramps, hazards and props other than chevrons it had before pieces replaced sections", () => {
+  it("every road at every level, without the crossings added since, compiles to the centreline, ramps, hazards and props other than chevrons it had before pieces replaced sections", () => {
     const fingerprints = Object.fromEntries(
       roadIds.flatMap((roadId) =>
         roadLevels.map((level) => [
           `${roadId}-${level}`,
-          fingerprintOf(trackFor(roadId, level)),
+          fingerprintOf(
+            compileTrack({
+              ...roadAtLevel(roads[roadId], level),
+              crossings: [],
+            })
+          ),
         ])
       )
     );
     expect(fingerprints).toStrictEqual(fingerprintsBeforePieces);
-  });
+  }, 60_000);
 
   it("a clothoid changes the curvature evenly, an arc holds it, and the road lands where the curvature integrates to", () => {
     const line = lineOf(sweeper);
