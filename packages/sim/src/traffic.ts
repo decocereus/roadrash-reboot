@@ -19,7 +19,6 @@ const FAVOURED_LANE_SHARE = 0.8;
 const STOP_SHORT = 1;
 const QUEUE_GAP = 2;
 const STOP_SIGHT = 150;
-const STOP_SLACK = 3;
 const directions = [1, -1] as const;
 
 interface Body {
@@ -231,6 +230,7 @@ const stopAtLights = (
     ) {
       const line = direction * crossing.s - crossing.stopGap - STOP_SHORT;
       let limit = line;
+      let queued = false;
       for (
         let place = firstPast(lane, line) - 1;
         place >= 0 && (along[place] ?? line) > line - STOP_SIGHT;
@@ -242,15 +242,18 @@ const stopAtLights = (
           const carAlong = along[place] ?? line;
           const room = limit - carAlong - car.halfLength;
           const speed = lastSpeed[index] ?? 0;
-          if (room + STOP_SLACK >= (speed * speed) / (2 * BRAKING)) {
-            target[index] = Math.min(
-              target[index] ?? 0,
-              Math.sqrt(2 * BRAKING * Math.max(0, room))
-            );
+          if (room + STOP_SHORT >= (speed * speed) / (2 * BRAKING)) {
+            const stopping = Math.sqrt(2 * BRAKING * Math.max(0, room));
+            target[index] = queued
+              ? stopping
+              : Math.min(target[index] ?? 0, stopping);
             limit = Math.min(
               limit - 2 * car.halfLength - QUEUE_GAP,
               carAlong - car.halfLength - QUEUE_GAP
             );
+            queued = true;
+          } else {
+            queued = false;
           }
         }
       }

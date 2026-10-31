@@ -70,14 +70,15 @@ describe("traffic at junction lights", () => {
     );
     const state = quietRace(red, [...queue, ...facing]);
 
-    ride(state, 8);
+    ride(state, 10);
     const line = junction.s - junction.stopGap;
     const leadFront = (queue[0]?.s ?? 0) + 2.2;
     const facingFront = (facing[0]?.s ?? 0) - 2.2;
     expect({
-      apart: queue
-        .slice(1)
-        .map((car, index) => (queue[index]?.s ?? 0) - car.s - 2 * 2.2 > 1),
+      apart: queue.slice(1).map((car, index) => {
+        const gap = (queue[index]?.s ?? 0) - car.s - 2 * 2.2;
+        return gap > 1 && gap < 3;
+      }),
       facingBehindItsLine: facingFront > junction.s + junction.stopGap,
       leadJustShort: leadFront < line && leadFront > line - 4,
       light: mainLightOf(signalPhaseAt(junction, state.tick)),
@@ -96,18 +97,23 @@ describe("traffic at junction lights", () => {
     expect(facing.every((car) => car.s < junction.s - 60)).toBeTruthy();
   });
 
-  it("runs an amber it is too close to stop for rather than stopping in the box", () => {
+  it("runs an amber it cannot stop for before the painted line, and stops for one it can", () => {
     const amber = firstTick(0, "red") - 150;
     expect(mainLightOf(signalPhaseAt(junction, amber + 1))).toBe("amber");
-    const late = carAt(
-      junction.s - junction.stopGap - 15,
-      course.sameWayLanes[0],
-      25
-    );
-    const state = quietRace(amber, [late]);
+    const line = junction.s - junction.stopGap;
+    const [inner, outer] = course.sameWayLanes;
+    if (outer === undefined) {
+      throw new Error("Breakwater Run has two lanes each way.");
+    }
+    const braking = (25 * 25) / (2 * 7);
+    const late = carAt(line - (braking - 1.5) - 2.2, inner, 25);
+    const early = carAt(line - (braking + 1.5) - 2.2, outer, 25);
+    const state = quietRace(amber, [late, early]);
 
-    ride(state, 3);
-    expect(late.s).toBeGreaterThan(junction.s + junction.stopGap + 20);
-    expect(late.speed).toBeGreaterThan(20);
+    ride(state, 6);
+    expect({
+      earlyStoppedShort: early.s + 2.2 < line && Math.abs(early.speed) < 0.5,
+      lateRanIt: late.s > junction.s + junction.stopGap + 20,
+    }).toStrictEqual({ earlyStoppedShort: true, lateRanIt: true });
   });
 });
