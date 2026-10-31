@@ -71,13 +71,21 @@
       "result": null,
       "ticks": 7200,
       "window": "5ea7a85eefacf046d107e2be6eafaf1e"
+    },
+    {
+      "final": "839c820c1783b5018482aa11f09392fe",
+      "full": "e310521b1e899a39be4be3a440daf1fa",
+      "id": "handover/slag-row/level5/seed5",
+      "result": null,
+      "ticks": 7200,
+      "window": "f2139917b440b56aa5d9c94979255ea9"
     }
   ],
   "provenance": {
     "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["70ddd94"],
-    "recordedWith": "the race snapshot codec at 70ddd94 with the track format's crossings added to the setup digest, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed. Every hash moved because the setup digest in each snapshot's header now counts the track's crossings, which none of the nine roads has, not because a race did. With the crossings left out of the digest this tree reproduces every hash recorded at b2fc5ba and 56d001f in both sets, and the re-recorded rows end on the same tick with the same result as those. window still folds ticks 2,880 to 3,480 in both sets.",
+    "recordedAt": ["70ddd94", "d45f220"],
+    "recordedWith": "the race snapshot codec at d45f220 with the track format's crossings added to the setup digest, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed. Every hash moved because the setup digest in each snapshot's header now counts the track's crossings, which no rule reads yet, not because a race did. With the crossings left out of the digest this tree reproduces every hash recorded at b2fc5ba, 56d001f and d45f220 (the handover case) in both sets, and every re-recorded row ends on the same tick with the same result as those. window still folds ticks 2,880 to 3,480 in both sets.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -155,6 +163,14 @@
       "result": "busted",
       "ticks": 10128,
       "window": "5ea7a85eefacf046d107e2be6eafaf1e"
+    },
+    {
+      "final": "a2f813294d321db558946b88508bda33",
+      "full": "5289837ea64fd11eb47a6350766cd1fe",
+      "id": "handover/slag-row/level5/seed5",
+      "result": "finished",
+      "ticks": 21213,
+      "window": "f2139917b440b56aa5d9c94979255ea9"
     }
   ]
 }

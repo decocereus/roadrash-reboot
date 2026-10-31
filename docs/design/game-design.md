@@ -1019,7 +1019,7 @@ Race rules belong to the server and are never player settings. Field size, level
 - **Clients predict.** Each client steps the whole race ahead with its own input and a guess at everyone else's. When the room's confirmed inputs differ, it rewinds up to 16 ticks and replays them. Inputs travel at 60 Hz in both directions, and the rate is a server setting.
 - **Inputs.** The room sets a deadline for each tick. A late input is replaced by a neutral one, never by a held punch or kick. The room acknowledges the input it used, and a client that predicted another corrects. An input packs steer, throttle, and brake as 8 bits each with the buttons, four bytes, plus tick, sequence, and version headers. Inputs name riders by a stable id, not by array position.
 - **Bots.** A bot's input comes from the pilot inside `stepRace`, which plans every pilot-controlled rider from `RaceState` alone, so the server and every client run the same pilot phase and a bot's inputs never go on the wire.
-- **Checks.** The room and each client hash confirmed ticks with `hashRace` from `packages/sim/src/snapshot.ts`, 128 bits over the canonical snapshot bytes. A mismatch reveals a fault but does not make the code safe, so a hash is a diagnostic and never a vote. Agreement rests on the simulation's own trig, the enforced math whitelist, and the cross-engine replay job, which runs nine recorded races to the finish in Node, Chromium, Firefox and WebKit and compares every tick's hash against Node's.
+- **Checks.** The room and each client hash confirmed ticks with `hashRace` from `packages/sim/src/snapshot.ts`, 128 bits over the canonical snapshot bytes. A mismatch reveals a fault but does not make the code safe, so a hash is a diagnostic and never a vote. Agreement rests on the simulation's own trig, the enforced math whitelist, and the cross-engine replay job, which runs ten recorded races to the finish in Node, Chromium, Firefox and WebKit, one of them with riders handed between a human and the bot, and compares every tick's hash against Node's.
 
 ### Disconnects and lost rooms
 
@@ -1031,13 +1031,13 @@ When a player drops, their rider stays and a bot rides it under an "AUTO" tag. A
 - A bike on each rider, set from the race setup.
 - Race rules passed in by the caller, with only the ceiling of 15 racers in the simulation.
 - A stable `RiderId` for every rider, given once when the race is built, with the rider array in a fixed order for the whole race. Grudges, chases, `lastHitBy`, events and results name riders by id, and `null` means no rider.
+- Four-byte controls. A human's control is quantized before the client steps it, so the client predicts the control the room receives, and `readControl` refuses malformed bytes.
+- Handovers as tick data. An `InputFrame` hands a rider to the bot or back to a human at the tick it is stepped, and the frame is checked whole before anything changes.
 - A snapshot codec. `writeSnapshot` writes a race into a caller's buffer, `restoreInto` reads one back into a race that is already built without allocating, `restoreSnapshot` builds a fresh race from a setup and a snapshot, and `hashRace` hashes a race through the same bytes. The format is versioned, little-endian through `DataView`, exact for float64 including signed zero, and carries one canonical encoding for NaN. The immutable inputs, the track, the bikes, the profiles and the rules, are named by a 128-bit setup digest instead of being copied, and a restore refuses a snapshot whose format word or digest does not match. A 10-racer stress race at tick 3,000 is 21.3 KiB.
 
 ### What it lacks
 
-- **Ids in the input frame.** `stepRace` still takes one input per array slot. Each slot's id equals its place, so a room can address a seat today, and the tick operation can take inputs keyed by id when it lands.
-- **Input validation and the codec.** `stepRace` trusts its inputs. The room clamps and quantizes them and drops inputs for ticks already stepped before they reach the simulation.
-- **One tick operation.** The pilot and `stepRace` as one call, so a bot's tick is the same everywhere.
+- **The packet and its deadline.** The tick, sequence and version header around the four control bytes, and the room's policy for a late or missing control, which decides when a seat is handed to the bot.
 - **Event copying.** `state.events` is cleared at the start of every step, so the runner copies events out each tick for the renderer and the room.
 - **Room lifecycle.** Who writes the result and how it is written once, pinning a race to the deploy it started on, backpressure, version mismatch, and abuse limits.
 - **Scale gates.** CPU per room, bytes and messages per second, region placement, admission, and cost, measured before public rooms open.

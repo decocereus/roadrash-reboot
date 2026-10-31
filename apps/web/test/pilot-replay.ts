@@ -3,6 +3,12 @@ import type { CareerRaceSetup } from "@racer/career/field";
 import { createRaceLog, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceResult } from "@racer/career/outcome";
 import type { RoadId } from "@racer/career/tables";
+import {
+  CONTROL_BYTES,
+  controlOf,
+  readControl,
+  writeControl,
+} from "@racer/sim/control";
 import { createRace, neutralInput, stepRace } from "@racer/sim/race";
 import {
   restoreInto,
@@ -12,11 +18,12 @@ import {
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { hashBytes, hashText } from "@racer/sim/snapshot-hash";
 import { setupDigest } from "@racer/sim/snapshot-setup";
-import { PLAYER_RIDER, riderModes } from "@racer/sim/state";
+import { PLAYER_RIDER, riderIdAt, riderModes } from "@racer/sim/state";
 import type {
+  Control,
   Controller,
-  InputFrame,
   RaceState,
+  RiderId,
   RiderInput,
   RiderState,
 } from "@racer/sim/state";
@@ -31,29 +38,59 @@ export const TICK_LIMIT = 54_000;
 export const WINDOW = { from: 2880, to: 3480 };
 export const FIXED_RIDE = 7200;
 
+interface Handover {
+  readonly tick: number;
+  readonly rider: RiderId;
+  readonly to: Controller;
+}
+
 export interface ReplayCase {
   readonly id: string;
   readonly setup: () => CareerRaceSetup;
+  readonly controller: Controller;
+  readonly handovers: readonly Handover[];
 }
 
+const quickSetup = (roadId: RoadId, seed: number) => (): CareerRaceSetup =>
+  planFor(recordedRules, null, {
+    bikeId: "ostra-sesta-600",
+    level: 5,
+    mode: "quick",
+    roadId,
+    seed,
+  }).setup;
+
 const quickRace = (roadId: RoadId, seed: number): ReplayCase => ({
+  controller: "pilot",
+  handovers: [],
   id: `${roadId}/level5/seed${seed}`,
-  setup: () =>
-    planFor(recordedRules, null, {
-      bikeId: "ostra-sesta-600",
-      level: 5,
-      mode: "quick",
-      roadId,
-      seed,
-    }).setup,
+  setup: quickSetup(roadId, seed),
 });
 
 const roads: readonly RoadId[] = ["ridge-road", "slag-row"];
 const seeds: readonly number[] = [1, 5, 9, 31];
+const FIRST_RIVAL = riderIdAt(1);
 
 export const replayCases: readonly ReplayCase[] = [
   ...roads.flatMap((roadId) => seeds.map((seed) => quickRace(roadId, seed))),
-  { id: "stress/seed8", setup: () => benchPlan("stress").setup },
+  {
+    controller: "pilot",
+    handovers: [],
+    id: "stress/seed8",
+    setup: () => benchPlan("stress").setup,
+  },
+  {
+    controller: "human",
+    handovers: [
+      { rider: FIRST_RIVAL, tick: 600, to: "human" },
+      { rider: FIRST_RIVAL, tick: 1500, to: "pilot" },
+      { rider: PLAYER_RIDER, tick: 1800, to: "pilot" },
+      { rider: PLAYER_RIDER, tick: 2400, to: "human" },
+      { rider: PLAYER_RIDER, tick: 3000, to: "pilot" },
+    ],
+    id: "handover/slag-row/level5/seed5",
+    setup: quickSetup("slag-row", 5),
+  },
 ];
 
 const CHAIN_BYTES = 8 * HASH_WORDS;
@@ -85,15 +122,22 @@ const foldChain = (chain: Chain, frame: Uint32Array): void => {
   hashBytes(chain.scratch, 0, CHAIN_BYTES, chain.words);
 };
 
+interface ReplayFrame {
+  readonly controls: Map<RiderId, Control>;
+  readonly handovers: Map<RiderId, Controller>;
+}
+
 export interface Run {
   readonly id: string;
   readonly setup: CareerRaceSetup;
   readonly log: RaceLog;
   readonly controller: Controller;
+  readonly handovers: readonly Handover[];
   state: RaceState;
   readonly track: Track;
   readonly controls: RiderInput;
-  readonly frame: InputFrame;
+  readonly wire: DataView;
+  readonly frame: ReplayFrame;
   readonly hasher: RaceHasher;
   buffer: DataView;
   readonly full: Chain;
@@ -116,27 +160,28 @@ const raceFor = (setup: CareerRaceSetup, controller: Controller): RaceState =>
   createRace({ ...setup, player: { ...setup.player, controller } });
 
 const open = (
-  id: string,
+  replay: ReplayCase,
   setup: CareerRaceSetup,
   controller: Controller
 ): Run => {
   const state = raceFor(setup, controller);
-  const controls = { ...neutralInput };
   const run: Run = {
     buffer: new DataView(new ArrayBuffer(snapshotCapacity(state))),
     controller,
-    controls,
-    frame: new Map(controller === "human" ? [[PLAYER_RIDER, controls]] : []),
+    controls: { ...neutralInput },
+    frame: { controls: new Map(), handovers: new Map() },
     frames: [],
     full: openChain(),
+    handovers: replay.handovers,
     hasher: hasherFor(state, setup.track),
-    id,
+    id: replay.id,
     log: createRaceLog(setup),
     problems: [],
     setup,
     state,
     track: setup.track,
     window: openChain(),
+    wire: new DataView(new ArrayBuffer(CONTROL_BYTES)),
   };
   run.hasher.hash(state);
   foldChain(run.full, run.hasher.words);
@@ -145,8 +190,8 @@ const open = (
 
 export const openCase = (
   replay: ReplayCase,
-  controller: Controller = "pilot"
-): Run => open(replay.id, replay.setup(), controller);
+  controller: Controller = replay.controller
+): Run => open(replay, replay.setup(), controller);
 
 export const checkpointOf = (run: Run): Uint8Array => {
   const written = writeSnapshot(run.state, run.hasher.digest, bufferFor(run));
@@ -202,9 +247,51 @@ const inspect = (run: Run): void => {
   }
 };
 
-const advance = (run: Run, produce?: InputProducer): void => {
-  produce?.(run);
-  stepRace(run.state, run.track, run.frame);
+const WEAVE_TICKS = 240;
+const WEAVE_STEER = 0.35;
+const PUNCH_EVERY = 90;
+const PUNCH_TICKS = 6;
+
+const weave: InputProducer = (run) => {
+  const { tick } = run.state;
+  run.controls.steer =
+    tick % WEAVE_TICKS < WEAVE_TICKS / 2 ? WEAVE_STEER : -WEAVE_STEER;
+  run.controls.throttle = 1;
+  run.controls.brake = 0;
+  run.controls.punch = tick % PUNCH_EVERY < PUNCH_TICKS;
+  run.controls.kick = false;
+};
+
+const overTheWire = (run: Run): Control => {
+  writeControl(run.wire, 0, controlOf(run.controls));
+  const control = readControl(run.wire, 0);
+  if (control === undefined) {
+    throw new Error(`${run.id} wrote a control it cannot read back.`);
+  }
+  return control;
+};
+
+const frameFor = (run: Run): ReplayFrame => {
+  const { controls, handovers } = run.frame;
+  handovers.clear();
+  controls.clear();
+  for (const handover of run.handovers) {
+    if (handover.tick === run.state.tick) {
+      handovers.set(handover.rider, handover.to);
+    }
+  }
+  const control = overTheWire(run);
+  for (const rider of run.state.riders) {
+    if ((handovers.get(rider.id) ?? rider.controller) === "human") {
+      controls.set(rider.id, control);
+    }
+  }
+  return run.frame;
+};
+
+const advance = (run: Run, produce: InputProducer = weave): void => {
+  produce(run);
+  stepRace(run.state, run.track, frameFor(run));
   recordTick(run.log, run.state, run.setup);
   inspect(run);
   run.frames.push(run.hasher.hash(run.state));

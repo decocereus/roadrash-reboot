@@ -1,5 +1,10 @@
 import { bikes } from "@racer/sim/bikes";
-import { createRace, defaultSetup, stepRace } from "@racer/sim/race";
+import {
+  createRace,
+  defaultSetup,
+  emptyFrame,
+  stepRace,
+} from "@racer/sim/race";
 import { player } from "@racer/sim/race-fixtures";
 import { TICK_RATE } from "@racer/sim/state";
 import { roadAtLevel, roadIds } from "@racer/track/road";
@@ -80,7 +85,7 @@ const steadinessOn = (
   const yaws: number[] = [];
   const straight: boolean[] = [];
   for (let tick = 0; tick < RIDE_LIMIT && rider.finishTick < 0; tick += 1) {
-    stepRace(race, track, new Map());
+    stepRace(race, track, emptyFrame);
     subject.s = rider.s;
     subject.x = rider.x;
     subject.air = rider.air;

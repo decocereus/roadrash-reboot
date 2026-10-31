@@ -5,9 +5,15 @@ import type { Track } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
-import { player } from "./race-fixtures.ts";
-import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
-import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import { player, playerFrame } from "./race-fixtures.ts";
+import {
+  createRace,
+  defaultSetup,
+  emptyFrame,
+  neutralInput,
+  stepRace,
+} from "./race.ts";
+import { TICK_RATE } from "./state.ts";
 
 const LAP_LIMIT = TICK_RATE * 180;
 const KMH = 3.6;
@@ -65,7 +71,7 @@ describe("the Madrid stretches", () => {
       const rider = player(race);
       let offRoad = false;
       for (let tick = 0; tick < LAP_LIMIT && rider.finishTick < 0; tick += 1) {
-        stepRace(race, track, new Map());
+        stepRace(race, track, emptyFrame);
         offRoad ||= rider.offRoad;
       }
       expect({
@@ -96,7 +102,7 @@ describe("the Madrid stretches", () => {
       rider.bodyS = straight.atM;
       rider.speed = 190 / KMH;
       const line = rider.x;
-      const frame = new Map([[PLAYER_RIDER, { ...neutralInput, throttle: 1 }]]);
+      const frame = playerFrame({ ...neutralInput, throttle: 1 });
       let widest = 0;
       let offRoad = false;
       for (let tick = 0; tick < 3 * TICK_RATE; tick += 1) {

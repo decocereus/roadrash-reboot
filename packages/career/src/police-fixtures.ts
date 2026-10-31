@@ -1,7 +1,7 @@
 import type { BikeId } from "@racer/sim/bikes";
-import { createRace, stepRace } from "@racer/sim/race";
+import { createRace, emptyFrame, stepRace } from "@racer/sim/race";
 import { PLAYER_RIDER, TICK_RATE, riderOf } from "@racer/sim/state";
-import type { InputFrame, RaceState } from "@racer/sim/state";
+import type { RaceState } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 
@@ -86,14 +86,13 @@ const ridePolice = ({ level, roadId, seed }: PoliceStart): PoliceRide => {
       skill: DECENT_SKILL,
     },
   });
-  const frame: InputFrame = new Map();
   let ending = endingOf(state);
   for (
     let tick = 0;
     tick < RACE_LIMIT_SECONDS * TICK_RATE && ending === "unsettled";
     tick += 1
   ) {
-    stepRace(state, track, frame);
+    stepRace(state, track, emptyFrame);
     ending = endingOf(state);
   }
   return { ending, level, rivalsBusted: rivalsBustedIn(state) };

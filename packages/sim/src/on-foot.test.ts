@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   KMH,
   onlyCop,
+  controlsOf,
   cruising,
   field,
   frameOf,
@@ -236,6 +237,28 @@ describe("on foot", () => {
     onFoot(state, me, 1, () => ({ ...held, steer: 1 }));
     expect(me.bodyX).toBeGreaterThan(from.x + 4);
     expect(Math.abs(me.bodyS - from.s)).toBeLessThan(0.01);
+  });
+
+  it("a rider handed to the pilot while running beside the bike with the steer and throttle still held from the fall runs back and rides again", () => {
+    const held = { ...neutralInput, steer: 1, throttle: 1 };
+    const { me, state } = thrownWhileHolding(held);
+    const stillHeld = onFoot(state, me, 1, () => held);
+    expect(stillHeld.moved).toBe(0);
+    me.bodyX = me.x + 3.5;
+    me.bodyS = me.s + 0.01;
+    const rival = rivalNamed(state, "dee-santangelo");
+    const frame = controlsOf([rival.id, cruising]);
+    stepRace(state, straight, {
+      ...frame,
+      handovers: new Map([[me.id, "pilot"]]),
+    });
+    const events: RaceEvent[] = [];
+    for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+      stepRace(state, straight, frame);
+      events.push(...state.events);
+    }
+    expect(events.map((event) => event.kind)).toContain("remount");
+    expect(me.mode).toBe("riding");
   });
 
   it("a rider on foot cannot leave the verge or walk through the finish", () => {
