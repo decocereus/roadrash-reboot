@@ -1,3 +1,4 @@
+import { riderPalette } from "@racer/sim/palette";
 import type { RegionId } from "@racer/track/regions";
 import * as THREE from "three";
 
@@ -8,7 +9,6 @@ import type { AcquiredAssets, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
-import type { Shading } from "../src/game/cel.ts";
 import { bodyFor } from "../src/game/figure-rig.ts";
 import { celebrityIds } from "../src/game/figure-wear.ts";
 import { assetParsers, createRenderer } from "../src/game/game.ts";
@@ -27,6 +27,7 @@ const BAND_STEP = 0.02;
 const SHEET_COLUMNS = 3;
 const HUE_FLOOR = 0.03;
 const INK_TOLERANCE = 3;
+const RIDER_BIKE_PAINT = 2;
 
 const lookNames = ["dusk", "night", "dawn"] as const;
 type LookName = (typeof lookNames)[number];
@@ -38,6 +39,13 @@ const looks = {
 } as const satisfies Record<LookName, RegionId>;
 
 const views = {
+  bike: {
+    eye: new THREE.Vector3(-2.6, 1.5, -2.9),
+    fov: 34,
+    height: 300,
+    target: new THREE.Vector3(0, 0.62, 0.05),
+    width: 400,
+  },
   chase: {
     eye: new THREE.Vector3(0.4, 2.3, 7.6),
     fov: 48,
@@ -365,7 +373,7 @@ const sheetCanvas = (
   return context;
 };
 
-type Subject = "riders" | "bikes" | "bikes-as-riders";
+type Subject = "riders" | "bikes";
 
 type Sitter =
   | {
@@ -373,7 +381,12 @@ type Sitter =
       readonly name: string;
       readonly asset: RiderAsset;
     }
-  | { readonly kind: "bike"; readonly name: BikeModelId };
+  | {
+      readonly kind: "bike";
+      readonly name: string;
+      readonly model: BikeModelId;
+      readonly paint: number;
+    };
 
 const releaseEach =
   (held: readonly { readonly release: () => void }[]) => (): void => {
@@ -389,7 +402,12 @@ const castOf = async (
   if (subject !== "riders") {
     return {
       release: releaseEach([]),
-      sitters: bikeModelIds.map((name) => ({ kind: "bike", name })),
+      sitters: riderPalette.flatMap((_colours, paint): Sitter[] => {
+        const model = bikeModelIds[paint % bikeModelIds.length];
+        return model
+          ? [{ kind: "bike", model, name: `${model} paint ${paint}`, paint }]
+          : [];
+      }),
     };
   }
   const load = celebrityLoader(
@@ -426,11 +444,6 @@ const castOf = async (
     ],
   };
 };
-
-const bikeShading = (shading: Shading, subject: Subject): Shading =>
-  subject === "bikes-as-riders"
-    ? { ...shading, paint: shading.figure }
-    : shading;
 
 interface Frame {
   readonly renderer: THREE.WebGLRenderer;
@@ -475,8 +488,7 @@ const shoot = (
   frame: Frame,
   assets: AcquiredAssets["assets"],
   sitter: Sitter,
-  lookName: LookName,
-  subject: Subject
+  lookName: LookName
 ): Shot => {
   const { camera, height, pipeline, renderer, width } = frame;
   const look = lookOf(looks[lookName]);
@@ -484,8 +496,12 @@ const shoot = (
   shading.aim(camera);
   const bikes = createBikes(
     assets,
-    bikeShading(shading, subject),
-    bikeModelIds.map((model) => ({ model, paint: 2, police: false }))
+    shading,
+    bikeModelIds.map((model) => ({
+      model,
+      paint: sitter.kind === "bike" ? sitter.paint : RIDER_BIKE_PAINT,
+      police: false,
+    }))
   );
   const figure =
     sitter.kind === "rider"
@@ -516,7 +532,7 @@ const shoot = (
       }
       figure.root.updateMatrixWorld(true);
     }
-    bikes.show(sitter.kind === "bike" ? bikeModelIds.indexOf(sitter.name) : 1);
+    bikes.show(sitter.kind === "bike" ? bikeModelIds.indexOf(sitter.model) : 1);
     bikes.commit(new THREE.Vector3());
     pipeline.prepare(scene);
     pipeline.setLook(look);
@@ -581,7 +597,7 @@ export const run = async (view: View, subject: Subject = "riders") => {
           if (!lookName) {
             continue;
           }
-          const shot = shoot(frame, assets, sitter, lookName, subject);
+          const shot = shoot(frame, assets, sitter, lookName);
           identity ??= identityOf(shot.bands);
           perLook[lookName] = flatsIn(identity, shot.bands);
           sheet.drawImage(

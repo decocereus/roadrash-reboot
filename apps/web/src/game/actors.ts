@@ -197,7 +197,7 @@ export const createBikes = (
     store(paints, index, colours?.bike ?? DEFAULT_PAINT);
     store(trims, index, colours?.trim ?? DARK_TRIM);
   }
-  const material = liveried(shading.paint(null));
+  const material = liveried(shading.figure(null));
   const wheels: Wheel[] = WHEELS.map(([, radius, z]) => ({
     frame: new THREE.Matrix4(),
     radius,
