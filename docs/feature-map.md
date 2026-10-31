@@ -34,6 +34,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
 - [Race snapshots and the replay hash](#race-snapshots-and-the-replay-hash): `race-snapshot`
+- [Race rooms](#race-rooms): `race-room`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
 - [Track compiler](#track-compiler): `track-compiler`
 - [Renderer core and frame loop](#renderer-core-and-frame-loop): `renderer-core`
@@ -675,6 +676,28 @@ Test files:
 - `apps/web/test/replay-bundle.ts`
 - `packages/sim/src/snapshot-holes.test.ts`
 - `packages/sim/src/snapshot.test.ts`
+
+### Race rooms
+
+The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess.
+
+- Id: `race-room`
+- Start: `packages/sim/src/room.ts`, `packages/sim/src/room-client.ts`, `packages/sim/src/room-wire.ts`
+- Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Verify: none yet
+- Perf: none yet
+- Owns: `packages/sim/src/room*.ts`
+
+Source files:
+
+- `packages/sim/src/room-client.ts`
+- `packages/sim/src/room-frame.ts`
+- `packages/sim/src/room-wire.ts`
+- `packages/sim/src/room.ts`
+
+Test files:
+
+- `packages/sim/src/room.test.ts`
 
 ### Deterministic math and randomness
 
