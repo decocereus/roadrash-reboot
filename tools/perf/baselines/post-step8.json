@@ -672,6 +672,246 @@
       "side": "B",
       "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
       "value": 21808
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 1126709
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 602219
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 936732
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 537465
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 1881734
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 811245
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 755025
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 209026
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 1120882
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 291266
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 1902903
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 820747
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.bike",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 122108
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.car",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 53048
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.ghost",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 116948
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.oni",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 126272
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_a",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 238128
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_altman",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 347996
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_b",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 238876
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_c",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 237836
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_kylie",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 344904
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_mbappe",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 236968
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_musk",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 261240
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_ranveer",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 302744
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.rider_ronaldo",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 316580
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.seraph",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 118884
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.van",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 47784
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 3110316
+    },
+    {
+      "environment": "build",
+      "metric": "assets.image.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 10199418
+    },
+    {
+      "environment": "build",
+      "metric": "assets.texture.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "value": 33554424
     }
   ],
   "revisions": {
@@ -939,6 +1179,36 @@
       "sides": {
         "A": "f094dbba3527cb4c51212b5695940ee73fd442d2",
         "B": "f094dbba3527cb4c51212b5695940ee73fd442d2"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "glbB": "{\"bike\":122108,\"car\":53048,\"ghost\":116948,\"oni\":126272,\"rider_a\":238128,\"rider_altman\":347996,\"rider_b\":238876,\"rider_c\":237836,\"rider_kylie\":344904,\"rider_mbappe\":236968,\"rider_musk\":261240,\"rider_ranveer\":302744,\"rider_ronaldo\":316580,\"seraph\":118884,\"van\":47784}",
+        "imageBytesB": "10199418",
+        "builtA": "{\"client\":[1902903,820747],\"game\":[1881734,811245],\"gameIncremental\":[755025,209026],\"kit\":[936732,537465],\"root\":[1126709,602219],\"worker\":[1120802,291255]}",
+        "builtB": "{\"client\":[1902903,820747],\"game\":[1881734,811245],\"gameIncremental\":[755025,209026],\"kit\":[936732,537465],\"root\":[1126709,602219],\"worker\":[1120882,291266]}",
+        "artifactDigestA": "10b1b7183f6ff1ae9333a7a47f4e47caad25cefb60f9b4f90439a403f571810a",
+        "artifactDigestB": "3a34dc91095e89c91b49275eddd44655df01a513f9b26c264e5d42474b9358f1",
+        "artManifestSha256": "27a490e1d1c08e9a62b48bdf8635f8dedfabf67784d17f650228d67de5f19ce2",
+        "cloneKiB": "2589740",
+        "harnessDigest": "9c9e3ca5ee08382923d597d79ba205a0f50a1eb5fad6b7eef24767496f939301",
+        "lockfileSha256": "4e1674811073c5c79dc05a248d53faee2efff701d012a405456cbc4a1bb948fd",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "1d2f0cca64ca954b5961d2eec26caaa2be0b60785e685b5d8fc818f4b28bddd8",
+        "sideBSourceDigest": "1d2f0cca64ca954b5961d2eec26caaa2be0b60785e685b5d8fc818f4b28bddd8",
+        "wallMs": "{\"build\":4009,\"materialize\":21521,\"node\":0,\"total\":25640}",
+        "why": "Art moved to R2 (lane A): the build rows now count code only and the art rows read the manifest, so every build limit is re-measured from this run."
+      },
+      "id": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "lanes": ["build"],
+      "sides": {
+        "A": "8b0a017ec6ef6244a640ed58e501f19ef6a50973",
+        "B": "8b0a017ec6ef6244a640ed58e501f19ef6a50973"
       }
     }
   ],

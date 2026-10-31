@@ -202,6 +202,34 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
+      "docs/architecture.md#game-art",
+      "docs/errors.md#game-art",
+      "docs/coding-standards.md#the-checks",
+    ],
+    id: "art-store",
+    kind: "platform",
+    owns: [
+      "tools/art/**",
+      "apps/web/src/assets/art.ts",
+      "apps/web/src/routes/art/**",
+      "apps/web/src/server/art*.ts",
+      "apps/web/test/art-files.ts",
+      "apps/web/test/pull-art.ts",
+      "scripts/check-art.ts",
+    ],
+    perf: ["assets.image.total"],
+    start: [
+      "tools/art/src/manifest.ts",
+      "tools/art/upload.ts",
+      "apps/web/src/server/art.ts",
+    ],
+    summary:
+      "Game art in R2: the manifest that maps each model and plate to its content-addressed key, the shared local cache, `pnpm art:stage`, `art:pull` and `art:upload`, the Worker's `/art/<key>` route, the dev and preview middleware, and the check that keeps game binaries out of git.",
+    title: "Game art store",
+    verify: ["art.md"],
+  },
+  {
+    docs: [
       "docs/architecture.md#browser-client",
       "docs/design/art-direction.md#budget-and-build",
       "docs/art/wren-400-study/README.md#contract",
@@ -226,7 +254,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     ],
     start: ["tools/blender/compress.ts"],
     summary:
-      "The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that writes the shipped GLBs.",
+      "The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that stages the shipped GLBs into the art store.",
     title: "Blender model pipeline",
     verify: [],
   },
@@ -446,6 +474,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/config-invalid.ts",
       "tools/perf/src/evaluate.ts",
       "tools/perf/src/gate.ts",
+      "tools/perf/src/glb-textures.ts",
       "tools/perf/src/gpu.ts",
       "tools/perf/src/gpu-frames.ts",
       "tools/perf/src/measure*.ts",

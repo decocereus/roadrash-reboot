@@ -281,6 +281,8 @@ const entriesLoopFiles = [
 ];
 
 const effectFiles = [
+  "tools/art/*.ts",
+  "tools/art/src/**/*.ts",
   "tools/madrid/*.ts",
   "tools/madrid/src/**/*.ts",
   "tools/perf/*.ts",
@@ -311,6 +313,7 @@ const effectFiles = [
 ];
 
 const libraryFiles = [
+  "tools/art/src/**/*.ts",
   "tools/madrid/src/**/*.ts",
   "tools/perf/src/**/*.ts",
   "tools/verify/src/**/*.ts",

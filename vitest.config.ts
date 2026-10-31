@@ -22,7 +22,7 @@ export default defineConfig({
             "apps/**/*.test.ts",
             "packages/**/*.test.ts",
             "scripts/**/*.test.ts",
-            "tools/{perf,verify,madrid}/test/**/*.test.ts",
+            "tools/{art,perf,verify,madrid}/test/**/*.test.ts",
           ],
           name: "node",
         },
@@ -36,6 +36,7 @@ export default defineConfig({
       },
       {
         test: {
+          globalSetup: ["apps/web/test/pull-art.ts"],
           include: viteTests,
           name: "vite",
           setupFiles: ["apps/web/test/node-images.ts"],

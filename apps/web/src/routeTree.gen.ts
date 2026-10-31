@@ -14,6 +14,7 @@ import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as KitRouteImport } from './routes/kit'
 import { Route as ApiRaceRulesRouteImport } from './routes/api/race-rules'
 import { Route as ApiTelemetryRouteImport } from './routes/api/telemetry'
+import { Route as ArtKeyRouteImport } from './routes/art/$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const ApiTelemetryRoute = ApiTelemetryRouteImport.update({
   path: '/api/telemetry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtKeyRoute = ArtKeyRouteImport.update({
+  id: '/art/$key',
+  path: '/art/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/kit': typeof KitRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
+  '/art/$key': typeof ArtKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/kit': typeof KitRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
+  '/art/$key': typeof ArtKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/kit': typeof KitRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
+  '/art/$key': typeof ArtKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/credits' | '/kit' | '/api/race-rules' | '/api/telemetry'
+  fullPaths:
+    | '/'
+    | '/credits'
+    | '/kit'
+    | '/api/race-rules'
+    | '/api/telemetry'
+    | '/art/$key'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/credits' | '/kit' | '/api/race-rules' | '/api/telemetry'
+  to:
+    | '/'
+    | '/credits'
+    | '/kit'
+    | '/api/race-rules'
+    | '/api/telemetry'
+    | '/art/$key'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/kit'
     | '/api/race-rules'
     | '/api/telemetry'
+    | '/art/$key'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +105,7 @@ export interface RootRouteChildren {
   KitRoute: typeof KitRoute
   ApiRaceRulesRoute: typeof ApiRaceRulesRoute
   ApiTelemetryRoute: typeof ApiTelemetryRoute
+  ArtKeyRoute: typeof ArtKeyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTelemetryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/art/$key': {
+      id: '/art/$key'
+      path: '/art/$key'
+      fullPath: '/art/$key'
+      preLoaderRoute: typeof ArtKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   KitRoute: KitRoute,
   ApiRaceRulesRoute: ApiRaceRulesRoute,
   ApiTelemetryRoute: ApiTelemetryRoute,
+  ArtKeyRoute: ArtKeyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

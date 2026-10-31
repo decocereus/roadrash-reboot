@@ -3,6 +3,8 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
+import { cacheDirectory, pullAll } from "@racer/art/cache";
+import { extensionOf, holdsKey, readManifest } from "@racer/art/manifest";
 import { released } from "@racer/devtools/cleanup";
 import { ToolProcesses } from "@racer/devtools/process";
 import { celebrityIds } from "@racer/web/figure-wear";
@@ -13,6 +15,7 @@ import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 
 import type { Observation } from "./budgets.ts";
+import { textureBytesOf } from "./glb-textures.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
 import type { Side } from "./sides.ts";
 
@@ -20,13 +23,8 @@ const GZIP_LEVEL = 9;
 const GAME_ENTRIES = ["src/game/game.ts", "src/asset-runtime.ts"];
 const UPLOADER_ENTRY = "src/diagnostics/uploader-runtime.ts";
 const START_MANIFEST = "tanstack-start-manifest:v";
-const MODELS = "apps/web/src/game/models";
-const GLB_HEADER_BYTES = 12;
-const CHUNK_HEADER_BYTES = 8;
-const VP8L_SIGNATURE = 0x2f;
-const VP8L_SIZE_AT = 21;
-const DIMENSION_SPAN = 2 ** 14;
-const RGBA_BYTES = 4;
+const ART_MANIFEST = "apps/web/src/assets/art.json";
+const MODEL_PREFIX = "models/";
 
 export const glbNames = [
   "bike",
@@ -98,8 +96,7 @@ const closureCost = Schema.Struct({
 type ClosureCost = typeof closureCost.Type;
 
 const glbRecord = Schema.Struct({
-  emitted: Schema.NullOr(Schema.String),
-  emittedSha256: Schema.NullOr(Schema.String),
+  key: Schema.String,
   name: Schema.String,
   raw: Schema.Number,
   sha256: Schema.String,
@@ -121,6 +118,7 @@ export const buildRecord = Schema.Struct({
   }),
   durationMs: Schema.Number,
   glb: Schema.Array(glbRecord),
+  imageBytes: Schema.Number,
   payloads: Schema.Array(payload),
   problems: Schema.Array(Schema.String),
   side: Schema.Literals(["A", "B"]),
@@ -133,88 +131,6 @@ const sha256 = (bytes: Uint8Array): string =>
 
 const invalid = (message: string) => (cause: unknown) =>
   new MeasurementFailed({ cause, lane: "build", message });
-
-const decodeGltf = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(
-    Schema.Struct({
-      bufferViews: Schema.optionalKey(
-        Schema.Array(
-          Schema.Struct({
-            byteLength: Schema.Number,
-            byteOffset: Schema.optionalKey(Schema.Number),
-          })
-        )
-      ),
-      images: Schema.optionalKey(
-        Schema.Array(Schema.Struct({ bufferView: Schema.Number }))
-      ),
-    })
-  )
-);
-
-const losslessWebpSize = (
-  image: Uint8Array
-): readonly [number, number] | null => {
-  const fourCC = new TextDecoder().decode(image.subarray(0, 16));
-  if (
-    !fourCC.startsWith("RIFF") ||
-    !fourCC.endsWith("WEBPVP8L") ||
-    image[VP8L_SIZE_AT - 1] !== VP8L_SIGNATURE
-  ) {
-    return null;
-  }
-  const bits = new DataView(
-    image.buffer,
-    image.byteOffset,
-    image.byteLength
-  ).getUint32(VP8L_SIZE_AT, true);
-  return [
-    (bits % DIMENSION_SPAN) + 1,
-    (Math.floor(bits / DIMENSION_SPAN) % DIMENSION_SPAN) + 1,
-  ];
-};
-
-const mipChainBytes = (width: number, height: number): number =>
-  width * height * RGBA_BYTES +
-  (width === 1 && height === 1
-    ? 0
-    : mipChainBytes(
-        Math.max(1, Math.floor(width / 2)),
-        Math.max(1, Math.floor(height / 2))
-      ));
-
-const textureBytesOf = Effect.fnUntraced(function* textureBytesOf(
-  name: string,
-  glb: Uint8Array
-) {
-  const jsonStart = GLB_HEADER_BYTES + CHUNK_HEADER_BYTES;
-  const jsonBytes = new DataView(
-    glb.buffer,
-    glb.byteOffset,
-    glb.byteLength
-  ).getUint32(GLB_HEADER_BYTES, true);
-  const gltf = yield* decodeGltf(
-    new TextDecoder().decode(glb.subarray(jsonStart, jsonStart + jsonBytes))
-  ).pipe(Effect.mapError(invalid(`GLB ${name} has no readable glTF JSON.`)));
-  const binStart = jsonStart + jsonBytes + CHUNK_HEADER_BYTES;
-  let total = 0;
-  for (const image of gltf.images ?? []) {
-    const view = gltf.bufferViews?.[image.bufferView];
-    const start = binStart + (view?.byteOffset ?? 0);
-    const size = losslessWebpSize(
-      glb.subarray(start, start + (view?.byteLength ?? 0))
-    );
-    if (size === null) {
-      return yield* new MeasurementFailed({
-        cause: null,
-        lane: "build",
-        message: `GLB ${name} embeds a texture that is not lossless WebP, the only format tools/blender/compress.ts writes.`,
-      });
-    }
-    total += mipChainBytes(...size);
-  }
-  return total;
-});
 
 interface WalkRule {
   readonly attached: boolean;
@@ -348,66 +264,74 @@ const startPreloads = Effect.fnUntraced(function* startPreloads(
   };
 });
 
-const glbInventory = Effect.fnUntraced(function* glbInventory(
+const artInventory = Effect.fnUntraced(function* artInventory(
   side: Side,
-  client: ViteManifest,
+  artCache: string,
   payloads: ReadonlyMap<string, Payload>
 ) {
   const fs = yield* FileSystem.FileSystem;
   const problems: string[] = [];
-  const sourceDir = path.join(side.root, MODELS);
-  const sourceNames = (yield* fs.readDirectory(sourceDir))
-    .filter((file) => file.endsWith(".glb"))
-    .map((file) => file.slice(0, -".glb".length))
-    .toSorted();
-  const expected = [...glbNames].toSorted();
-  if (side.name === "B" && sourceNames.join(",") !== expected.join(",")) {
-    problems.push(
-      `GLB inventory is ${sourceNames.join(", ")}; expected ${expected.join(", ")}`
-    );
-  }
-  const records: GlbRecord[] = [];
-  for (const name of sourceNames) {
-    const bytes = yield* fs.readFile(path.join(sourceDir, `${name}.glb`));
-    const [key] = keyBySource(
-      client,
-      `${MODELS.slice("apps/web/".length)}/${name}.glb`
-    );
-    const emitted = key === undefined ? null : (client[key]?.file ?? null);
-    const emittedSha256 =
-      emitted === null
-        ? null
-        : (payloads.get(`client/${emitted}`)?.sha256 ?? null);
-    if (emittedSha256 !== sha256(bytes)) {
-      problems.push(
-        `GLB ${name} was not emitted unchanged (${emitted ?? "absent"})`
-      );
-    }
-    records.push({
-      emitted,
-      emittedSha256,
-      name,
-      raw: bytes.length,
-      sha256: sha256(bytes),
-      textureBytes: yield* textureBytesOf(name, bytes),
-    });
-  }
-  const emittedGlbs = [...payloads.keys()].filter((file) =>
-    file.endsWith(".glb")
+  const bundled = [...payloads.keys()].filter(
+    (file) => file.startsWith("client/") && extensionOf(file) !== null
   );
-  if (emittedGlbs.length !== records.length) {
+  if (side.name === "B" && bundled.length > 0) {
     problems.push(
-      `The client build emitted ${emittedGlbs.length} GLB files for ${records.length} sources`
+      `The client build bundles art that loads from the art manifest: ${bundled.join(", ")}`
     );
   }
-  return { problems, records };
+  const manifestFile = path.join(side.root, ART_MANIFEST);
+  if (!(yield* fs.exists(manifestFile))) {
+    return { glb: [], imageBytes: 0, problems };
+  }
+  const manifest = yield* readManifest(manifestFile).pipe(
+    Effect.mapError(invalid(`Side ${side.name} has no valid art manifest.`))
+  );
+  const records: GlbRecord[] = [];
+  let imageBytes = 0;
+  for (const [name, key] of Object.entries(manifest).toSorted(([a], [b]) =>
+    a < b ? -1 : 1
+  )) {
+    const bytes = yield* fs
+      .readFile(path.join(artCache, key))
+      .pipe(
+        Effect.mapError(
+          invalid(
+            `${name} (${key}) is not in the art cache; run pnpm art:pull.`
+          )
+        )
+      );
+    if (!holdsKey(key, bytes)) {
+      problems.push(`${name} does not hash to its key ${key}`);
+    }
+    if (name.startsWith(MODEL_PREFIX) && name.endsWith(".glb")) {
+      const model = name.slice(MODEL_PREFIX.length, -".glb".length);
+      records.push({
+        key,
+        name: model,
+        raw: bytes.length,
+        sha256: sha256(bytes),
+        textureBytes: yield* textureBytesOf(model, bytes),
+      });
+    } else {
+      imageBytes += bytes.length;
+    }
+  }
+  const listed = records.map((each) => each.name);
+  const expected = [...glbNames].toSorted();
+  if (side.name === "B" && listed.join(",") !== expected.join(",")) {
+    problems.push(
+      `GLB inventory is ${listed.join(", ")}; expected ${expected.join(", ")}`
+    );
+  }
+  return { glb: records, imageBytes, problems };
 });
 
 export const accountBuild = Effect.fn("build.account")(function* accountBuild(
   side: Side,
   out: string,
   evidence: string,
-  durationMs: number
+  durationMs: number,
+  artCache: string = cacheDirectory
 ) {
   const fs = yield* FileSystem.FileSystem;
   const client = yield* fs
@@ -504,7 +428,7 @@ export const accountBuild = Effect.fn("build.account")(function* accountBuild(
     problems.push(`The server manifest has no chunk ${key}`);
   }
   const rootSet = new Set(root);
-  const glb = yield* glbInventory(side, client, payloads);
+  const art = yield* artInventory(side, artCache, payloads);
   const record: BuildRecord = {
     artifactDigest: createHash("sha256")
       .update(
@@ -535,9 +459,10 @@ export const accountBuild = Effect.fn("build.account")(function* accountBuild(
       ),
     },
     durationMs,
-    glb: glb.records,
+    glb: art.glb,
+    imageBytes: art.imageBytes,
     payloads: payloadList,
-    problems: [...new Set([...problems, ...glb.problems])],
+    problems: [...new Set([...problems, ...art.problems])],
     side: side.name,
   };
   return record;
@@ -554,6 +479,13 @@ export const buildSide = Effect.fn("build.side")(function* buildSide(
     (made) => released(fs.remove(made, { force: true, recursive: true }))
   );
   const web = path.join(side.root, "apps/web");
+  const manifestFile = path.join(side.root, ART_MANIFEST);
+  if (yield* fs.exists(manifestFile)) {
+    yield* readManifest(manifestFile).pipe(
+      Effect.flatMap(pullAll),
+      Effect.mapError(invalid("Could not fill the art cache."))
+    );
+  }
   const started = yield* Clock.currentTimeMillis;
   yield* processes.run(
     process.execPath,
@@ -649,6 +581,7 @@ export const buildVerdicts = (a: BuildRecord, b: BuildRecord) => {
       glbSum(b.glb, (each) => each.raw),
       ""
     ),
+    observed("assets.image.total", a.imageBytes, b.imageBytes, ""),
     observed(
       "assets.texture.total",
       glbSum(a.glb, (each) => each.textureBytes),

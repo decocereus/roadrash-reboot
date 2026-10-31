@@ -18,6 +18,7 @@
         "test/renderer-lifecycle.ts",
         "test/replay-bundle.ts"
       ],
+      "ignoreDependencies": ["cloudflare"],
       "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts"],
       "typescript": true
     },
@@ -71,6 +72,11 @@
     },
     "tools/replay": {
       "entry": ["engines.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
+    },
+    "tools/art": {
+      "entry": ["test/**/*.test.ts"],
       "project": ["**/*.ts"],
       "typescript": true
     }
