@@ -780,6 +780,7 @@ Source files:
 - `tools/art/src/cache.ts`
 - `tools/art/src/manifest.ts`
 - `tools/art/src/remote.ts`
+- `tools/art/src/replace-file.ts`
 - `tools/art/src/stage.ts`
 - `tools/art/stage.ts`
 - `tools/art/upload.ts`
