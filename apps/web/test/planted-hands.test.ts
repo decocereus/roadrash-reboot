@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
@@ -10,6 +7,7 @@ import { createShading } from "../src/game/cel.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { RiderFigure, Stance } from "../src/game/rider-figure.ts";
+import { artFile } from "./art-files.ts";
 
 const CONTACT = 0.005;
 const FREE = 0.2;
@@ -19,7 +17,6 @@ const FRAME = 1 / 60;
 const CORNER_FRAMES = 240;
 const SEATED_FRAMES = 30;
 
-const repository = path.join(import.meta.dirname, "../../..");
 const shading = createShading(lookOf("salt-coast"));
 
 const contacts = ["hand_l", "hand_r", "foot_l", "foot_r"] as const;
@@ -89,11 +86,7 @@ const stanceOf = (stance: Partial<Stance>): Stance => ({
 });
 
 const figureOf = async (url: string): Promise<RiderFigure> => {
-  const bytes = readFileSync(path.join(repository, url));
-  const { value } = await assetParsers.rider(
-    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-    url
-  );
+  const { value } = await assetParsers.rider(artFile(url), url);
   return createRiderFigure(value, shading, 0);
 };
 

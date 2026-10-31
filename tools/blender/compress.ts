@@ -1,24 +1,18 @@
-import { mkdir, readdir, stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Logger, NodeIO } from "@gltf-transform/core";
 import type { Document, Primitive } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { meshopt, prune, textureCompress } from "@gltf-transform/functions";
+import { stageArt } from "@racer/art/stage";
+import type { StagedArt } from "@racer/art/stage";
+import * as Effect from "effect/Effect";
 import { MeshoptDecoder, MeshoptEncoder } from "meshoptimizer";
 import sharp from "sharp";
 
 const RAW = path.join(import.meta.dirname, "out");
-const SHIPPED = path.join(
-  import.meta.dirname,
-  "..",
-  "..",
-  "apps",
-  "web",
-  "src",
-  "game",
-  "models"
-);
 const ATLAS_SIZE = 1024;
 
 const READ_ATTRIBUTES = new Set([
@@ -81,9 +75,8 @@ const io = new NodeIO()
     "meshopt.encoder": MeshoptEncoder,
   });
 
-const compress = async (name: string): Promise<string> => {
+const compress = async (name: string): Promise<StagedArt> => {
   const source = path.join(RAW, name);
-  const target = path.join(SHIPPED, name);
   const document = await io.read(source);
   document.setLogger(new Logger(Logger.Verbosity.WARN));
   dropUnread(document);
@@ -98,9 +91,10 @@ const compress = async (name: string): Promise<string> => {
     }),
     meshopt({ encoder: MeshoptEncoder, level: "high" })
   );
-  await io.write(target, document);
-  const [before, after] = await Promise.all([stat(source), stat(target)]);
-  return `${name}: ${before.size} -> ${after.size} bytes`;
+  const bytes = await io.writeBinary(document);
+  const before = await stat(source);
+  console.log(`${name}: ${before.size} -> ${bytes.length} bytes`);
+  return { bytes, name: `models/${name}` };
 };
 
 const exported = await readdir(RAW);
@@ -110,7 +104,8 @@ if (names.length === 0) {
     `No models in ${RAW}. Export them with the Blender scripts first.`
   );
 }
-await mkdir(SHIPPED, { recursive: true });
-for (const line of await Promise.all(names.map(compress))) {
-  console.log(line);
-}
+const staged = await Promise.all(names.map(compress));
+const lines = await Effect.runPromise(
+  stageArt(staged).pipe(Effect.provide(NodeServices.layer))
+);
+console.log(lines.join("\n"));

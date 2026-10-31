@@ -1,5 +1,6 @@
 import * as NodeChildProcessSpawner from "@effect/platform-node/NodeChildProcessSpawner";
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient";
 import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import { runCommand } from "@racer/devtools/cleanup";
@@ -11,7 +12,13 @@ import { main } from "./src/gate.ts";
 
 const services = ToolProcesses.layer.pipe(
   Layer.provide(NodeChildProcessSpawner.layer),
-  Layer.provideMerge(Layer.mergeAll(NodeFileSystem.layer, NodePath.layer))
+  Layer.provideMerge(
+    Layer.mergeAll(
+      NodeFileSystem.layer,
+      NodePath.layer,
+      NodeHttpClient.layerUndici
+    )
+  )
 );
 
 NodeRuntime.runMain(

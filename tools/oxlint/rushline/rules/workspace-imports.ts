@@ -70,6 +70,8 @@ const workspaceOf = (place: string): Workspace => {
 const packageName = (specifier: string) =>
   specifier.split("/", specifier.startsWith("@") ? 2 : 1).join("/");
 
+const runtimeBuiltin = /^(?:node|cloudflare):/u;
+
 const isPath = (specifier: string) =>
   specifier.startsWith(".") || path.isAbsolute(specifier);
 
@@ -108,7 +110,7 @@ export const workspaceImportsRule = defineRule({
       }
       const name = packageName(source);
       if (
-        !source.startsWith("node:") &&
+        !runtimeBuiltin.test(source) &&
         name !== from.name &&
         !from.declared.has(name)
       ) {

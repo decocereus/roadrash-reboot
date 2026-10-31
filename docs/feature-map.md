@@ -38,6 +38,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Track compiler](#track-compiler): `track-compiler`
 - [Renderer core and frame loop](#renderer-core-and-frame-loop): `renderer-core`
 - [Model and font loading](#model-and-font-loading): `asset-loading`
+- [Game art store](#game-art-store): `art-store`
 - [Blender model pipeline](#blender-model-pipeline): `blender-tools`
 - [Career save](#career-save): `save-format`
 - [Race rules](#race-rules): `race-rules`
@@ -484,7 +485,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
 
 Source files:
 
@@ -507,6 +508,7 @@ Test files:
 - `apps/web/test/bike-contact.ts`
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
+- `apps/web/test/rider-shade.ts`
 
 ### The five roads
 
@@ -781,9 +783,43 @@ Test files:
 - `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/node-images.ts`
 
+### Game art store
+
+Game art in R2: the manifest that maps each model and plate to its content-addressed key, the shared local cache, `pnpm art:stage`, `art:pull` and `art:upload`, the Worker's `/art/<key>` route, the dev and preview middleware, and the check that keeps game binaries out of git.
+
+- Id: `art-store`
+- Start: `tools/art/src/manifest.ts`, `tools/art/upload.ts`, `apps/web/src/server/art.ts`
+- Docs: [docs/architecture.md#game-art](architecture.md#game-art), [docs/errors.md#game-art](errors.md#game-art), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
+- Verify: [art.md](../.claude/skills/verify-rushline/features/art.md)
+- Perf: `assets.image.total`
+- Owns: `tools/art/**`, `apps/web/src/assets/art.ts`, `apps/web/src/routes/art/**`, `apps/web/src/server/art*.ts`, `apps/web/test/art-files.ts`, `apps/web/test/pull-art.ts`, `scripts/check-art.ts`
+
+Source files:
+
+- `apps/web/src/assets/art.ts`
+- `apps/web/src/routes/art/$key.ts`
+- `apps/web/src/server/art-read-failed.ts`
+- `apps/web/src/server/art.ts`
+- `scripts/check-art.ts`
+- `tools/art/pull.ts`
+- `tools/art/src/art-rejected.ts`
+- `tools/art/src/cache.ts`
+- `tools/art/src/manifest.ts`
+- `tools/art/src/remote.ts`
+- `tools/art/src/replace-file.ts`
+- `tools/art/src/stage.ts`
+- `tools/art/stage.ts`
+- `tools/art/upload.ts`
+
+Test files:
+
+- `apps/web/test/art-files.ts`
+- `apps/web/test/pull-art.ts`
+- `tools/art/test/manifest.test.ts`
+
 ### Blender model pipeline
 
-The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that writes the shipped GLBs.
+The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that stages the shipped GLBs into the art store.
 
 - Id: `blender-tools`
 - Start: `tools/blender/compress.ts`
@@ -1055,7 +1091,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1070,6 +1106,7 @@ Source files:
 - `tools/perf/src/config-invalid.ts`
 - `tools/perf/src/evaluate.ts`
 - `tools/perf/src/gate.ts`
+- `tools/perf/src/glb-textures.ts`
 - `tools/perf/src/gpu-frames.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/measure-model.ts`
