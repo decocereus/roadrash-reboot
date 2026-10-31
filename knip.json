@@ -72,6 +72,11 @@
       "entry": ["engines.ts"],
       "project": ["**/*.ts"],
       "typescript": true
+    },
+    "tools/art": {
+      "entry": ["pull.ts", "stage.ts", "upload.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
     }
   }
 }

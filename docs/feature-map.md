@@ -37,6 +37,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Track compiler](#track-compiler): `track-compiler`
 - [Renderer core and frame loop](#renderer-core-and-frame-loop): `renderer-core`
 - [Model and font loading](#model-and-font-loading): `asset-loading`
+- [Game art store](#game-art-store): `art-store`
 - [Blender model pipeline](#blender-model-pipeline): `blender-tools`
 - [Career save](#career-save): `save-format`
 - [Race rules](#race-rules): `race-rules`
@@ -756,9 +757,40 @@ Test files:
 - `apps/web/test/celebrity-load.test.ts`
 - `apps/web/test/node-images.ts`
 
+### Game art store
+
+Game art in R2: the manifest that maps each model and plate to its content-addressed key, the shared local cache, `pnpm art:stage`, `art:pull` and `art:upload`, the Worker's `/art/<key>` route, the dev and preview middleware, and the check that keeps game binaries out of git.
+
+- Id: `art-store`
+- Start: `tools/art/src/manifest.ts`, `tools/art/upload.ts`, `apps/web/src/server/art.ts`
+- Docs: [docs/architecture.md#game-art](architecture.md#game-art), [docs/errors.md#game-art](errors.md#game-art), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
+- Verify: [art.md](../.claude/skills/verify-rushline/features/art.md)
+- Perf: `assets.image.total`
+- Owns: `tools/art/**`, `apps/web/src/assets/art.ts`, `apps/web/src/routes/art/**`, `apps/web/src/server/art*.ts`, `scripts/check-art.ts`
+
+Source files:
+
+- `apps/web/src/assets/art.ts`
+- `apps/web/src/routes/art/$key.ts`
+- `apps/web/src/server/art-read-failed.ts`
+- `apps/web/src/server/art.ts`
+- `scripts/check-art.ts`
+- `tools/art/pull.ts`
+- `tools/art/src/art-rejected.ts`
+- `tools/art/src/cache.ts`
+- `tools/art/src/manifest.ts`
+- `tools/art/src/remote.ts`
+- `tools/art/src/stage.ts`
+- `tools/art/stage.ts`
+- `tools/art/upload.ts`
+
+Test files:
+
+- `tools/art/test/manifest.test.ts`
+
 ### Blender model pipeline
 
-The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that writes the shipped GLBs.
+The Blender scripts for the shipped models, the Wren and cyber sport-bike studies, and the compression step that stages the shipped GLBs into the art store.
 
 - Id: `blender-tools`
 - Start: `tools/blender/compress.ts`

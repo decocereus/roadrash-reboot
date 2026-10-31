@@ -1,0 +1,25 @@
+{
+  "name": "@racer/art",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./cache": "./src/cache.ts",
+    "./manifest": "./src/manifest.ts",
+    "./remote": "./src/remote.ts",
+    "./stage": "./src/stage.ts"
+  },
+  "scripts": {
+    "typecheck": "tsrs --noEmit"
+  },
+  "dependencies": {
+    "@distilled.cloud/cloudflare": "1.0.0-rc.15",
+    "@effect/platform-node": "4.0.0",
+    "alchemy": "2.0.0-beta.83",
+    "effect": "4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "vitest": "5.0.0"
+  }
+}
