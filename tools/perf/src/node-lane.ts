@@ -15,6 +15,7 @@ import {
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
 import { median, quantile } from "./result.ts";
+import { ROAD_LIFE } from "./road-life.ts";
 import { validateWorkload, WINDOW_TICKS } from "./scenarios.ts";
 import type { Scenario } from "./scenarios.ts";
 import type { Side, SideName } from "./sides.ts";
@@ -22,6 +23,7 @@ import type { Side, SideName } from "./sides.ts";
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
 const SNAPSHOT_RUNS = 3;
+const ROAD_LIFE_RUNS = 5;
 const ROOM_RUNS = 3;
 
 const decodeChild = Schema.decodeUnknownEffect(
@@ -48,6 +50,13 @@ const nodePair = Schema.Struct({
 
 type NodePair = typeof nodePair.Type;
 
+export const roadLifeRecord = Schema.Struct({
+  calibrations: Schema.Array(nodeSample),
+  runs: Schema.Array(nodeSample),
+});
+
+export type RoadLifeLane = typeof roadLifeRecord.Type;
+
 export const nodeLaneRecord = Schema.Struct({
   allocation: Schema.Array(nodePair),
   calibrations: Schema.Array(nodeSample),
@@ -65,10 +74,22 @@ export interface Sides {
   readonly B: Side;
 }
 
+const NODE_CHILD = "tools/perf/node.ts";
+
+const childScripts = {
+  alloc: NODE_CHILD,
+  calibrate: NODE_CHILD,
+  roadLife: "tools/perf/road-life.ts",
+  room: "tools/perf/room.ts",
+  snapshot: "tools/perf/snapshot.ts",
+  time: NODE_CHILD,
+  validate: NODE_CHILD,
+} as const satisfies Readonly<Record<ChildRecord["task"], string>>;
+
 const runChild = Effect.fnUntraced(function* runChild(
   side: Side,
   task: ChildRecord["task"],
-  scenario: Scenario,
+  scenario: { readonly id: string },
   dir: string,
   label: string
 ) {
@@ -76,9 +97,8 @@ const runChild = Effect.fnUntraced(function* runChild(
   const processes = yield* ToolProcesses;
   const file = path.join(dir, `${scenario.id}-${label}.json`);
   const startedAt = yield* Clock.currentTimeMillis;
-  const ownChild = task === "snapshot" || task === "room";
-  const script = ownChild ? `tools/perf/${task}.ts` : "tools/perf/node.ts";
-  const taskArgs = ownChild ? [] : ["--task", task];
+  const script = childScripts[task];
+  const taskArgs = script === NODE_CHILD ? ["--task", task] : [];
   yield* processes.run(
     process.execPath,
     [
@@ -191,6 +211,31 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   return lane;
 });
 
+export const roadLifeLane = Effect.fn("node.roadLife")(function* roadLifeLane(
+  side: Side,
+  calibrator: Scenario,
+  dir: string
+) {
+  const calibrate = (index: number) =>
+    runChild(
+      side,
+      "calibrate",
+      calibrator,
+      dir,
+      `road-life-calibrate-${index}`
+    );
+  const calibrations = [yield* calibrate(0)];
+  const runs: NodeSample[] = [];
+  for (let run = 0; run < ROAD_LIFE_RUNS; run += 1) {
+    runs.push(
+      yield* runChild(side, "roadLife", { id: ROAD_LIFE.id }, dir, `run-${run}`)
+    );
+    calibrations.push(yield* calibrate(run + 1));
+  }
+  const lane: RoadLifeLane = { calibrations, runs };
+  return lane;
+});
+
 export const nodeEnvironment = (record: ChildRecord): string =>
   `node-${record.runtime.platform}-${record.runtime.arch}`;
 
@@ -234,8 +279,8 @@ const workloadFailures = (
   });
 
 const calibrationFailures = (
-  scenario: Scenario,
-  lane: NodeLane,
+  scenario: { readonly id: string },
+  lane: { readonly calibrations: readonly NodeSample[] },
   environment: string,
   profile: NodeProfile | undefined
 ): string[] => {
@@ -261,6 +306,41 @@ const calibrationFailures = (
           `FAIL node ${scenario.id} ${sample.file} calibration checksum ${checksums.join(",")} expected ${calibration.checksum}`,
         ];
   });
+};
+
+const scalesAcross = (
+  scenario: { readonly id: string },
+  calibrations: readonly NodeSample[],
+  count: number,
+  calibration: NodeProfile["calibration"]
+) => {
+  const medians = calibrations.map((sample) =>
+    median(sample.record.calibration?.durations ?? [])
+  );
+  const scales = Array.from({ length: count }, (_, pair) => {
+    const before = medians[pair] ?? Number.NaN;
+    const after = medians[pair + 1] ?? Number.NaN;
+    return {
+      after,
+      before,
+      drift: Math.abs(after - before) / Math.min(after, before),
+      pair,
+      scale: (before + after) / 2 / calibration.median,
+    };
+  });
+  const failures = scales.flatMap((each) => [
+    ...(each.drift <= calibration.maxDrift
+      ? []
+      : [
+          `FAIL node ${scenario.id} pair=${each.pair} CalibrationUnstable before=${each.before.toFixed(3)} ms after=${each.after.toFixed(3)} ms drift=${each.drift.toFixed(3)} limit ${calibration.maxDrift}`,
+        ]),
+    ...(each.scale >= calibration.minScale && each.scale <= calibration.maxScale
+      ? []
+      : [
+          `FAIL node ${scenario.id} pair=${each.pair} RunnerUnsupported scale=${each.scale.toFixed(3)} outside ${calibration.minScale}..${calibration.maxScale}`,
+        ]),
+  ]);
+  return { failures, scales };
 };
 
 const mean = (values: readonly number[]): number =>
@@ -405,39 +485,14 @@ export const nodeVerdicts = (
   if (failures.length > 0 || !profile) {
     return { environment, failures, observations: [], scales: [] };
   }
-  const { calibration } = profile;
-  const medians = lane.calibrations.map((sample) =>
-    median(sample.record.calibration?.durations ?? [])
+  const { failures: unstable, scales } = scalesAcross(
+    scenario,
+    lane.calibrations,
+    lane.timing.length,
+    profile.calibration
   );
-  const scales = lane.timing.map((pair) => {
-    const before = medians[pair.pair] ?? Number.NaN;
-    const after = medians[pair.pair + 1] ?? Number.NaN;
-    return {
-      after,
-      before,
-      drift: Math.abs(after - before) / Math.min(after, before),
-      pair: pair.pair,
-      scale: (before + after) / 2 / calibration.median,
-    };
-  });
-  for (const each of scales) {
-    if (!(each.drift <= calibration.maxDrift)) {
-      failures.push(
-        `FAIL node ${scenario.id} pair=${each.pair} CalibrationUnstable before=${each.before.toFixed(3)} ms after=${each.after.toFixed(3)} ms drift=${each.drift.toFixed(3)} limit ${calibration.maxDrift}`
-      );
-    }
-    if (
-      !(
-        each.scale >= calibration.minScale && each.scale <= calibration.maxScale
-      )
-    ) {
-      failures.push(
-        `FAIL node ${scenario.id} pair=${each.pair} RunnerUnsupported scale=${each.scale.toFixed(3)} outside ${calibration.minScale}..${calibration.maxScale}`
-      );
-    }
-  }
-  if (failures.length > 0) {
-    return { environment, failures, observations: [], scales };
+  if (unstable.length > 0) {
+    return { environment, failures: unstable, observations: [], scales };
   }
   const runs = lane.timing.map((pair, index) => ({
     a: timingOf(pair.a.record),
@@ -503,4 +558,61 @@ export const nodeVerdicts = (
     ...roomObservations(scenario, lane, environment, laneScale),
   ];
   return { environment, failures, observations, scales };
+};
+
+const roadLifeWorkloadFailures = (lane: RoadLifeLane): string[] =>
+  lane.runs.flatMap(({ file, record }) => {
+    const seen = record.roadLife;
+    const where = `FAIL workload ${ROAD_LIFE.id} ${file}`;
+    if (!seen || record.durations?.length !== WINDOW_TICKS) {
+      return [`${where} wrote no road life window`];
+    }
+    return seen.fewestCrossCars >= ROAD_LIFE.leastCrossCars &&
+      seen.fewestWalkers >= ROAD_LIFE.leastWalkers &&
+      seen.mostRacersAtCrossing >= ROAD_LIFE.leastRacersAtCrossing
+      ? []
+      : [
+          `${where} fewestCrossCars=${seen.fewestCrossCars} fewestWalkers=${seen.fewestWalkers} mostRacersAtCrossing=${seen.mostRacersAtCrossing} expected at least ${ROAD_LIFE.leastCrossCars} and ${ROAD_LIFE.leastRacersAtCrossing}`,
+        ];
+  });
+
+export const roadLifeVerdict = (
+  lane: RoadLifeLane,
+  profiles: Readonly<Record<string, NodeProfile>>
+) => {
+  const scenario = { id: ROAD_LIFE.id };
+  const [first] = lane.calibrations;
+  const environment = first ? nodeEnvironment(first.record) : "node-unknown";
+  const profile = profiles[environment];
+  const failures = [
+    ...roadLifeWorkloadFailures(lane),
+    ...calibrationFailures(scenario, lane, environment, profile),
+  ];
+  if (failures.length > 0 || !profile) {
+    return { failures, observations: [] };
+  }
+  const { failures: unstable, scales } = scalesAcross(
+    scenario,
+    lane.calibrations,
+    lane.runs.length,
+    profile.calibration
+  );
+  if (unstable.length > 0) {
+    return { failures: unstable, observations: [] };
+  }
+  const measured = lane.runs.map(
+    ({ record }, index) =>
+      p95Of(record.durations ?? []) / (scales[index]?.scale ?? Number.NaN)
+  );
+  const observation: Observation = {
+    environment,
+    lane: "node",
+    metric: "roadLife.tick.p95",
+    note: `runs=${measured.length} scale=${median(scales.map((each) => each.scale)).toFixed(3)}`,
+    paired: null,
+    runs: { a: [], b: measured },
+    scenario: null,
+    value: median(measured),
+  };
+  return { failures, observations: [observation] };
 };

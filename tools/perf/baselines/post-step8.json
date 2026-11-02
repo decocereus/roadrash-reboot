@@ -1152,6 +1152,166 @@
       "side": "B",
       "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
       "value": 838838
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "value": 15477
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "value": 21812
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "value": 0.1500411228045597
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
+      "value": 15477
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
+      "value": 21812
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
+      "value": 0.36559641332822784
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
+      "value": 1169368
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
+      "value": 303792
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "value": 15609
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "value": 22000
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "value": 0.26927241396866336
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "value": 15609
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "value": 22000
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "value": 0.6665838198118207
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "value": 1912212
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "value": 822443
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "value": 766169
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "value": 213313
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "value": 1233532
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "value": 319493
     }
   ],
   "revisions": {
@@ -1565,6 +1725,115 @@
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
         "B": "fe783bb561ad85cfdb1264c92279c3bb929e52b8"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+      },
+      "id": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "be3c5d3cb7068c5dfa1cda055ebd6d5c3fffd975"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+      },
+      "id": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "a1a02a6e562c944f9d47cb55a3d1921d05c8b0c4"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "why": "the Worker carries the game chunk, so the merged cast of #74 on top of the cross-car code passes bytes.worker.raw by 3,616 B and bytes.worker.gzip by 583 B",
+        "builtWorkerA": "1169272 raw, 303777 gzip",
+        "builtWorkerB": "1169368 raw, 303792 gzip"
+      },
+      "id": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
+      "lanes": ["build"],
+      "sides": {
+        "A": "20ded42484c3310036c1b0c3a5d9ef48a327e1b2",
+        "B": "20ded42484c3310036c1b0c3a5d9ef48a327e1b2"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "re-pins roadLife.tick.p95 and snapshot.bytes.max for the pedestrians on the road and in the snapshot"
+      },
+      "id": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "b3465ad34e75748047e9d67f2b6ce721e1b7cac6"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "why": "re-pins roadLife.tick.p95 and snapshot.bytes.max for the pedestrians on the road and in the snapshot"
+      },
+      "id": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "375b6d10effe4e776acf6f3f529504d5c0706700"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1146043, \"bytes.route.root.gzip\": 609130, \"bytes.route.kit.raw\": 953468, \"bytes.route.kit.gzip\": 543447, \"bytes.game.raw\": 1912212, \"bytes.game.gzip\": 822443, \"bytes.game.incremental.raw\": 766169, \"bytes.game.incremental.gzip\": 213313, \"bytes.worker.raw\": 1233436, \"bytes.worker.gzip\": 319479, \"bytes.client.raw\": 1959849, \"bytes.client.gzip\": 841191}",
+        "builtB": "{\"bytes.route.root.raw\": 1146043, \"bytes.route.root.gzip\": 609130, \"bytes.route.kit.raw\": 953468, \"bytes.route.kit.gzip\": 543447, \"bytes.game.raw\": 1912212, \"bytes.game.gzip\": 822443, \"bytes.game.incremental.raw\": 766169, \"bytes.game.incremental.gzip\": 213313, \"bytes.worker.raw\": 1233532, \"bytes.worker.gzip\": 319493, \"bytes.client.raw\": 1959849, \"bytes.client.gzip\": 841191}",
+        "harnessDigest": "71db0ac308490b2bf84730615adf7ce2b3d422c7f653e4fe641f994966378797",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "3daa2d6687baeb244d7b42e3594ebe7d44efd7de214a55045a3b14cc010da5be",
+        "sideBSourceDigest": "3daa2d6687baeb244d7b42e3594ebe7d44efd7de214a55045a3b14cc010da5be",
+        "why": "Pedestrians, their capsules and the cross cars add to the game chunk and the Worker on top of the browser room client, so the game and Worker rows re-pin on the merged tree."
+      },
+      "id": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "lanes": ["build"],
+      "sides": {
+        "A": "712c1735a48d0a4d14284c691efc92750050ef00",
+        "B": "712c1735a48d0a4d14284c691efc92750050ef00"
       }
     }
   ],

@@ -11,6 +11,19 @@ export const nextSeed = (seed: number): number =>
 
 export const unitOf = (seed: number): number => seed / MODULUS;
 
+export const rollDice = (holder: { dice: number }): number => {
+  holder.dice = nextSeed(holder.dice);
+  return unitOf(holder.dice);
+};
+
+export const siteSeed = (seed: number, site: string): number => {
+  let mixed = wrap(seed);
+  for (let index = 0; index < site.length; index += 1) {
+    mixed = nextSeed(mixed + (site.codePointAt(index) ?? 0));
+  }
+  return mixed;
+};
+
 export const createRandom = (seed: number): Random => {
   let state = wrap(seed);
   for (let warmup = 0; warmup < 4; warmup += 1) {

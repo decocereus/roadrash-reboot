@@ -21,6 +21,8 @@ import type { Assets } from "./assets.ts";
 import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
+import { crossCarPose } from "./cross-car-pose.ts";
+import type { CrossCarPose } from "./cross-car-pose.ts";
 import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
@@ -263,6 +265,7 @@ interface CastStage {
   readonly world: World;
   readonly fleet: Fleet;
   readonly previousCars: Float64Array;
+  readonly previousCrossCars: Float64Array;
 }
 
 interface CastParts {
@@ -571,6 +574,8 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     placed.x = x;
   };
 
+  const crossPose: CrossCarPose = { s: 0, x: 0, yaw: 0 };
+
   const followPlayer = (rider: RiderView) => {
     const onBike = placed.seated || placed.s < placed.bodyS;
     subject.s = onBike ? placed.s : placed.bodyS;
@@ -587,6 +592,21 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       const from = stage.previousCars[index] ?? s;
       const wrapped = Math.abs(s - from) > WRAP_JUMP;
       stage.fleet.place(stage.track, index, wrapped ? s : mix(from, s, blend));
+    }
+    const { crossCars } = stage.race.view;
+    for (let index = 0; index < crossCars.length; index += 1) {
+      const car = crossCars[index];
+      if (car && car.wait === 0) {
+        const from = stage.previousCrossCars[index] ?? car.travel;
+        crossCarPose(
+          car,
+          from > car.travel ? car.travel : mix(from, car.travel, blend),
+          crossPose
+        );
+        stage.fleet.placeCrossCar(stage.track, index, crossPose);
+      } else {
+        stage.fleet.hideCrossCar(index);
+      }
     }
     stage.fleet.commit(subject.s);
   };

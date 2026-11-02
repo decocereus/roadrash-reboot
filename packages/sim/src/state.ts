@@ -1,5 +1,8 @@
+import type { ArmSide } from "@racer/track/crossings";
+import { hazardKinds } from "@racer/track/hazards";
 import type { HazardKind } from "@racer/track/hazards";
 import type { Track } from "@racer/track/track";
+import type { WalkKind } from "@racer/track/walk-sites";
 
 export const TICK_RATE = 60;
 export const TICK_SECONDS = 1 / TICK_RATE;
@@ -182,6 +185,7 @@ export interface RiderState {
   slipTicks: number;
   hazardContacts: number[];
   bumpedBy: number;
+  bumpedWalker: number;
   hazardSeen: number;
   hazardMissed: boolean;
   pilotLine: number;
@@ -203,24 +207,87 @@ export interface RiderState {
   crashes: number;
 }
 
-export interface TrafficCar {
-  s: number;
-  speed: number;
+export interface CarBox {
+  readonly s: number;
   readonly x: number;
-  readonly cruiseSpeed: number;
+  readonly speed: number;
   readonly halfLength: number;
   readonly halfWidth: number;
   readonly height: number;
+}
+
+export interface TrafficCar extends CarBox {
+  s: number;
+  speed: number;
+  readonly cruiseSpeed: number;
   readonly paint: number;
 }
 
+export interface CrossCar extends CarBox {
+  readonly junction: number;
+  readonly laneS: number;
+  readonly fromX: number;
+  readonly across: ArmSide;
+  readonly turnAt: number;
+  readonly along: ArmSide;
+  readonly stopAt: number;
+  readonly endAt: number;
+  readonly cruise: number;
+  readonly everyTicks: number;
+  readonly bodyHalfLength: number;
+  readonly bodyHalfWidth: number;
+  readonly paint: number;
+  s: number;
+  x: number;
+  speed: number;
+  drift: number;
+  halfLength: number;
+  halfWidth: number;
+  travel: number;
+  pace: number;
+  wait: number;
+  dice: number;
+}
+
+export const hazardTagKinds = [...hazardKinds, "pedestrian"] as const;
+
+type HazardTagKind = (typeof hazardTagKinds)[number];
+
 export interface HazardTag {
   readonly id: string;
-  readonly kind: HazardKind;
+  readonly kind: HazardTagKind;
   readonly command: string | null;
 }
 
+export const pedestrianModes = [
+  "waiting",
+  "walking",
+  "flinching",
+  "down",
+  "gone",
+] as const;
+
+type PedestrianMode = (typeof pedestrianModes)[number];
+
+export interface Pedestrian extends HazardTag {
+  readonly kind: "pedestrian";
+  readonly command: null;
+  readonly crossing: number;
+  readonly walkKind: WalkKind;
+  readonly s: number;
+  readonly halfLength: number;
+  readonly halfWidth: number;
+  readonly height: number;
+  mode: PedestrianMode;
+  x: number;
+  across: number;
+  drift: number;
+  wait: number;
+  dice: number;
+}
+
 export interface Hazard extends HazardTag {
+  readonly kind: HazardKind;
   readonly s: number;
   readonly x: number;
   readonly halfLength: number;
@@ -380,6 +447,8 @@ export interface RaceState {
   readonly pacing: PacingRules;
   readonly riders: readonly RiderState[];
   readonly cars: TrafficCar[];
+  readonly crossCars: readonly CrossCar[];
+  readonly pedestrians: readonly Pedestrian[];
   readonly hazards: Hazard[];
   readonly events: RaceEvent[];
 }

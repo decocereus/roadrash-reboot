@@ -1,7 +1,13 @@
 import { hazardKinds } from "@racer/track/hazards";
 
 import { CORNER_SCAN_POINTS, FORECAST_TICKS } from "./pilot-history.ts";
-import type { RaceView, RiderView, TrafficView } from "./race-view.ts";
+import type {
+  CrossCarView,
+  PedestrianView,
+  RaceView,
+  RiderView,
+  TrafficView,
+} from "./race-view.ts";
 import { HASH_WORDS, WORD_BYTES } from "./snapshot-bytes.ts";
 import { eventsAt } from "./snapshot-events.ts";
 import {
@@ -18,9 +24,17 @@ import {
   textAt,
   textOrNoneAt,
 } from "./snapshot-members.ts";
-import { attackStates, controllers, riderModes, weaponKinds } from "./state.ts";
+import {
+  attackStates,
+  controllers,
+  pedestrianModes,
+  riderModes,
+  weaponKinds,
+} from "./state.ts";
 import type {
+  CrossCar,
   Hazard,
+  Pedestrian,
   PilotHistory,
   RaceState,
   RiderInput,
@@ -28,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 1;
+export const SNAPSHOT_FORMAT = 3;
 
 const TICK_BYTES = 8;
 
@@ -53,6 +67,33 @@ export type CarSetupKey =
   | "height"
   | "paint"
   | "x";
+
+export type CrossCarSetupKey =
+  | "across"
+  | "along"
+  | "bodyHalfLength"
+  | "bodyHalfWidth"
+  | "cruise"
+  | "endAt"
+  | "everyTicks"
+  | "fromX"
+  | "height"
+  | "junction"
+  | "laneS"
+  | "paint"
+  | "stopAt"
+  | "turnAt";
+
+export type PedestrianSetupKey =
+  | "command"
+  | "crossing"
+  | "halfLength"
+  | "halfWidth"
+  | "height"
+  | "id"
+  | "kind"
+  | "s"
+  | "walkKind";
 
 export type RaceHeaderKey = "tick";
 
@@ -105,6 +146,34 @@ const carSchema = schemaOf<
   speed: floatAt("speed"),
 });
 
+const crossCarSchema = schemaOf<
+  Omit<CrossCarView, CrossCarSetupKey>,
+  Omit<CrossCar, CrossCarSetupKey>
+>({
+  dice: floatAt("dice"),
+  drift: floatAt("drift"),
+  halfLength: floatAt("halfLength"),
+  halfWidth: floatAt("halfWidth"),
+  pace: floatAt("pace"),
+  s: floatAt("s"),
+  speed: floatAt("speed"),
+  travel: floatAt("travel"),
+  wait: floatAt("wait"),
+  x: floatAt("x"),
+});
+
+const pedestrianSchema = schemaOf<
+  Omit<PedestrianView, PedestrianSetupKey>,
+  Omit<Pedestrian, PedestrianSetupKey>
+>({
+  across: floatAt("across"),
+  dice: floatAt("dice"),
+  drift: floatAt("drift"),
+  mode: choiceAt("mode", pedestrianModes),
+  wait: floatAt("wait"),
+  x: floatAt("x"),
+});
+
 const riderSchema = schemaOf<
   Omit<RiderView, RiderSetupKey>,
   Omit<RiderState, RiderSetupKey>
@@ -125,6 +194,7 @@ const riderSchema = schemaOf<
   brake: floatAt("brake"),
   bumpLoss: floatAt("bumpLoss"),
   bumpedBy: floatAt("bumpedBy"),
+  bumpedWalker: floatAt("bumpedWalker"),
   chase: riderRefAt("chase"),
   condition: floatAt("condition"),
   controller: choiceAt("controller", controllers),
@@ -178,10 +248,12 @@ export const raceSchema = schemaOf<
   Omit<RaceState, RaceHeaderKey | RaceSetupKey>
 >({
   cars: listAt("cars", carSchema),
+  crossCars: listAt("crossCars", crossCarSchema),
   dice: floatAt("dice"),
   events: eventsAt("events"),
   hazardDice: floatAt("hazardDice"),
   hazards: filledListAt("hazards", hazardSchema, blankHazard),
+  pedestrians: listAt("pedestrians", pedestrianSchema),
   pilot: recordAt("pilot", pilotSchema),
   riders: listAt("riders", riderSchema),
 });

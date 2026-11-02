@@ -2,12 +2,21 @@ import type { CrossRoad, Lights, TrackCrossing } from "@racer/track/crossings";
 import type { TrackFeature } from "@racer/track/features";
 import type { HazardPlacement } from "@racer/track/hazards";
 import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
+import type { WalkSite } from "@racer/track/walk-sites";
 
-import type { RaceView, RiderView, TrafficView } from "./race-view.ts";
+import type {
+  CrossCarView,
+  PedestrianView,
+  RaceView,
+  RiderView,
+  TrafficView,
+} from "./race-view.ts";
 import { cursor, HASH_WORDS, refuse } from "./snapshot-bytes.ts";
 import { SNAPSHOT_FORMAT } from "./snapshot-format.ts";
 import type {
   CarSetupKey,
+  CrossCarSetupKey,
+  PedestrianSetupKey,
   RaceSetupKey,
   RiderSetupKey,
 } from "./snapshot-format.ts";
@@ -21,6 +30,7 @@ import {
   riderRefAt,
   samplesAt,
   textAt,
+  textOrNoneAt,
   writtenListAt,
   writtenRecordAt,
   writtenRecordOrNoneAt,
@@ -87,6 +97,7 @@ const lightsSchema = writtenSchemaOf<Lights>({
 
 const crossRoadSchema = writtenSchemaOf<CrossRoad>({
   arms: textAt("arms"),
+  carsPerMinute: floatAt("carsPerMinute"),
   laneWidth: floatAt("laneWidth"),
   lanesEachWay: floatAt("lanesEachWay"),
 });
@@ -112,6 +123,13 @@ const placementSchema = writtenSchemaOf<HazardPlacement>({
   x: floatAt("x"),
 });
 
+const walkSiteSchema = writtenSchemaOf<WalkSite>({
+  crossing: floatAt("crossing"),
+  id: textAt("id"),
+  kind: textAt("kind"),
+  s: floatAt("s"),
+});
+
 const trackSchema: WrittenSchema<Omit<Track, "featureIndex">> = writtenSchemaOf<
   Omit<Track, "featureIndex">
 >({
@@ -133,6 +151,7 @@ const trackSchema: WrittenSchema<Omit<Track, "featureIndex">> = writtenSchemaOf<
   solidProps: writtenListAt("solidProps", propSchema),
   startS: floatAt("startS"),
   vergeHalfWidth: floatAt("vergeHalfWidth"),
+  walkSites: writtenListAt("walkSites", walkSiteSchema),
   worldX: samplesAt("worldX"),
   worldY: samplesAt("worldY"),
   worldZ: samplesAt("worldZ"),
@@ -197,13 +216,48 @@ const carSetupSchema = writtenSchemaOf<Pick<TrafficView, CarSetupKey>>({
   x: floatAt("x"),
 });
 
-type SetupListKey = "cars" | "riders";
+const crossCarSetupSchema = writtenSchemaOf<
+  Pick<CrossCarView, CrossCarSetupKey>
+>({
+  across: floatAt("across"),
+  along: floatAt("along"),
+  bodyHalfLength: floatAt("bodyHalfLength"),
+  bodyHalfWidth: floatAt("bodyHalfWidth"),
+  cruise: floatAt("cruise"),
+  endAt: floatAt("endAt"),
+  everyTicks: floatAt("everyTicks"),
+  fromX: floatAt("fromX"),
+  height: floatAt("height"),
+  junction: floatAt("junction"),
+  laneS: floatAt("laneS"),
+  paint: floatAt("paint"),
+  stopAt: floatAt("stopAt"),
+  turnAt: floatAt("turnAt"),
+});
+
+const pedestrianSetupSchema = writtenSchemaOf<
+  Pick<PedestrianView, PedestrianSetupKey>
+>({
+  command: textOrNoneAt("command"),
+  crossing: floatAt("crossing"),
+  halfLength: floatAt("halfLength"),
+  halfWidth: floatAt("halfWidth"),
+  height: floatAt("height"),
+  id: textAt("id"),
+  kind: textAt("kind"),
+  s: floatAt("s"),
+  walkKind: textAt("walkKind"),
+});
+
+type SetupListKey = "cars" | "crossCars" | "pedestrians" | "riders";
 
 const raceSetupSchema = writtenSchemaOf<
   Pick<RaceView, RaceSetupKey | SetupListKey>
 >({
   cars: writtenListAt("cars", carSetupSchema),
+  crossCars: writtenListAt("crossCars", crossCarSetupSchema),
   pacing: writtenRecordAt("pacing", pacingSchema),
+  pedestrians: writtenListAt("pedestrians", pedestrianSetupSchema),
   police: writtenRecordAt("police", policeSchema),
   riders: writtenListAt("riders", riderSetupSchema),
 });

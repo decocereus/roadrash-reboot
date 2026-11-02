@@ -28,6 +28,7 @@ import {
   attackKinds,
   crashCauses,
   hazardEffects,
+  hazardTagKinds,
   PLAYER_RIDER,
   weaponKinds,
 } from "./state.ts";
@@ -45,7 +46,7 @@ type Mutable<Value> = { -readonly [Key in keyof Value]: Value[Key] };
 const tagSchema = schemaOf<HazardTag, HazardTag>({
   command: textOrNoneAt("command"),
   id: textAt("id"),
-  kind: choiceAt("kind", hazardKinds),
+  kind: choiceAt("kind", hazardTagKinds),
 });
 
 const blankTag = (): HazardTag => ({

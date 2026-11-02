@@ -1,27 +1,30 @@
 import type { Random } from "@racer/track/random";
 import type { LaneCentres, Track } from "@racer/track/track";
 
+import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
 import { approach, BIKE_HALF_LENGTH, TICK_SECONDS } from "./state.ts";
-import type { RaceState, RiderState, TrafficCar } from "./state.ts";
+import type { Pedestrian, RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const CLEAR_START_FROM = -70;
 const CLEAR_START_TO = 260;
 const CLEAR_ONCOMING_START_TO = 300;
-const BRAKING = 7;
-const ACCELERATION = 2.5;
+export const BRAKING = 7;
+export const ACCELERATION = 2.5;
 const FOLLOW_GAP = 10;
 const FOLLOW_SECONDS = 0.9;
 const LOOK_AHEAD = 70;
-const PAINT_COUNT = 6;
+export const PAINT_COUNT = 6;
 const SLOW_CRUISE = 23;
 const FAVOURED_LANE_SHARE = 0.8;
-const STOP_SHORT = 1;
-const QUEUE_GAP = 2;
+export const STOP_SHORT = 1;
+export const QUEUE_GAP = 2;
 const STOP_SIGHT = 150;
+const WALKER_MARGIN = 1.5;
+const WALKER_HOLD_SECONDS = 1.5;
 const directions = [1, -1] as const;
 
-interface Body {
+export interface Body {
   readonly halfLength: number;
   readonly halfWidth: number;
   readonly height: number;
@@ -31,7 +34,7 @@ const sedan: Body = { halfLength: 2.2, halfWidth: 0.92, height: 1.45 };
 const van: Body = { halfLength: 2.6, halfWidth: 1, height: 2.1 };
 const truck: Body = { halfLength: 4.2, halfWidth: 1.2, height: 3.1 };
 
-const pickBody = (roll: number): Body => {
+export const pickBody = (roll: number): Body => {
   if (roll < 0.62) {
     return sedan;
   }
@@ -293,6 +296,48 @@ const yieldTo = (
   }
 };
 
+export const walkerComesInto = (
+  pedestrian: Pedestrian,
+  pace: number,
+  x: number,
+  reach: number
+): boolean => {
+  const seconds = pace / BRAKING + WALKER_HOLD_SECONDS;
+  const ahead = pedestrian.x + pedestrian.drift * seconds;
+  return (
+    x > Math.min(pedestrian.x, ahead) - reach &&
+    x < Math.max(pedestrian.x, ahead) + reach
+  );
+};
+
+const yieldToWalker = (
+  cars: readonly TrafficCar[],
+  flow: Flow,
+  pedestrian: Pedestrian
+): void => {
+  const { lane, lastSpeed, target } = flow;
+  const { along, count, direction, longest, order } = lane;
+  const reach = pedestrian.s * direction;
+  for (
+    let place = firstPast(lane, reach - LOOK_AHEAD - longest);
+    place < count && (along[place] ?? reach) < reach;
+    place += 1
+  ) {
+    const index = order[place] ?? -1;
+    const car = cars[index];
+    const speed = lastSpeed[index] ?? 0;
+    if (
+      car &&
+      walkerComesInto(pedestrian, speed, car.x, car.halfWidth + WALKER_MARGIN)
+    ) {
+      const gap = reach - (along[place] ?? reach) - car.halfLength;
+      if (gap < LOOK_AHEAD && gap < (speed * speed) / (2 * BRAKING) + 8) {
+        target[index] = 0;
+      }
+    }
+  }
+};
+
 export const stepTraffic = (state: RaceState, track: Track): void => {
   const { cars, riders } = state;
   const { lastS, lastSpeed, target } = trafficFlow;
@@ -313,6 +358,11 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
       gatherLane(track, cars, trafficFlow, direction, laneIndex);
       followLane(cars, trafficFlow);
       stopAtLights(track, cars, trafficFlow, state.tick);
+      for (const pedestrian of state.pedestrians) {
+        if (blocksCars(pedestrian)) {
+          yieldToWalker(cars, trafficFlow, pedestrian);
+        }
+      }
       for (const rider of riders) {
         yieldTo(cars, trafficFlow, rider, rider.s);
         if (rider.bodyS !== rider.s) {

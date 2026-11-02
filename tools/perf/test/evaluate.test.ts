@@ -20,6 +20,7 @@ import {
   BIKE_BYTES,
   samplesOf,
   steadyLanes,
+  syntheticRoadLife,
   syntheticBudgets,
   syntheticBuild,
   syntheticLane,
@@ -84,6 +85,40 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     B: syntheticBuild("B", BIKE_BYTES),
   };
   const budgets = syntheticBudgets(build);
+
+  it("fails road life when the race step slows past its limit", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "road-life-slow",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife({ runner: 1.6, sim: 1.3 })
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(
+      result.lines.some(
+        (line) => line.startsWith("FAIL") && line.includes("roadLife.tick.p95")
+      )
+    ).toBeTruthy();
+  });
+
+  it("fails road life when the window no longer holds cross cars", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "road-life-empty",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife(steady, 0)
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(
+      result.lines.some((line) => line.includes("fewestCrossCars=0"))
+    ).toBeTruthy();
+  });
 
   it("passes an unchanged synthetic A/B", () => {
     const evaluation = evaluateGate(

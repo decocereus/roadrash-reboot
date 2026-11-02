@@ -72,10 +72,10 @@ interface Band {
 }
 
 const bands: readonly Band[] = [
-  { fewest: 2, level: 1, most: 13 },
+  { fewest: 2, level: 1, most: 14 },
   { fewest: 3, level: 2, most: 14 },
   { fewest: 4, level: 3, most: 13 },
-  { fewest: 4, level: 4, most: 14 },
+  { fewest: 4, level: 4, most: 16 },
   { fewest: 5, level: 5, most: 15 },
 ];
 
@@ -101,12 +101,12 @@ describe("police balance", () => {
     }
   );
 
-  it("over the five levels the busts come to between an eighth and 27% of all starts", () => {
+  it("over the five levels the busts come to between an eighth and 30% of all starts", () => {
     const starts = levels.length * STARTS;
     const busted = levels
       .map((level) => tallyOf(season, level).busted)
       .reduce((total, count) => total + count, 0);
     expect(busted / starts).toBeGreaterThan(1 / 8);
-    expect(busted / starts).toBeLessThanOrEqual(0.27);
+    expect(busted / starts).toBeLessThanOrEqual(0.3);
   });
 });

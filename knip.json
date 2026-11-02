@@ -62,6 +62,7 @@
         "gate.ts",
         "measure.ts",
         "node.ts",
+        "road-life.ts",
         "room.ts",
         "session.ts",
         "snapshot.ts",

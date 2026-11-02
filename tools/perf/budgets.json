@@ -26,6 +26,14 @@
         "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
       },
       {
+        "file": "tools/perf/baselines/post-step8.road-life.node-darwin-arm64.json.gz",
+        "sha256": "0f507d159558a1ebb1d9fbaa787432fbf836aa9aec7bb530e998b16b88c0f3da"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.road-life.node-linux-x64.json.gz",
+        "sha256": "19c43081d23b4a00b47f218c75df399984f773c3ac429c9355b4d636271e722e"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.room-settled.node-darwin-arm64.json.gz",
         "sha256": "e5320c4c368cb669ff52dbce655ac4d6987ecc80107e00bc243ce904f9b86f7f"
       },
@@ -64,7 +72,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "f4f2deeb6151ab7cda2d4db74918594f7d58315b2b868858f95d382f821e04a1"
+    "summarySha256": "e93723735c75b277a861328b3182405b9c9f8320bfd2f3540a1629c37ec137b2"
   },
   "limits": [
     {
@@ -309,50 +317,50 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 827470,
-      "baseline": 811245,
+      "value": 838892,
+      "baseline": 822443,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 213207,
-      "baseline": 209026,
+      "value": 217580,
+      "baseline": 213313,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 770126,
-      "baseline": 755025,
+      "value": 781493,
+      "baseline": 766169,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1919369,
-      "baseline": 1881734,
+      "value": 1950457,
+      "baseline": 1912212,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
@@ -405,26 +413,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 322572,
-      "baseline": 316247,
+      "value": 325883,
+      "baseline": 319493,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1235410,
-      "baseline": 1211186,
+      "value": 1258203,
+      "baseline": 1233532,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
@@ -690,6 +698,30 @@
       "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
       "unit": "ms",
       "value": 1
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.3096632760639628,
+      "baseline": 0.26927241396866336,
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.7665713927835938,
+      "baseline": 0.6665838198118207,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "unit": "ms"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
@@ -1173,50 +1205,50 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 21808,
-      "baseline": 21808,
+      "value": 22000,
+      "baseline": 22000,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 21808,
-      "baseline": 21808,
+      "value": 22000,
+      "baseline": 22000,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 15473,
-      "baseline": 15473,
+      "value": 15609,
+      "baseline": 15609,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 15473,
-      "baseline": 15473,
+      "value": 15609,
+      "baseline": 15609,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
       "unit": "B"
     },
     {

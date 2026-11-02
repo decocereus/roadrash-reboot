@@ -1,6 +1,7 @@
 import type { Track } from "@racer/track/track";
 
-import { hitCar, hitProps } from "./rider-collisions.ts";
+import { onRoad } from "./cross-traffic.ts";
+import { hitCar, hitCrossCar, hitProps } from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
 import { ride } from "./rider-drive.ts";
 import { fly } from "./rider-flight.ts";
@@ -59,6 +60,14 @@ export const stepRider = (
     }
     if (Math.abs(car.s - rider.s) < 12) {
       thrown = hitCar(state, rider, car);
+    }
+  }
+  for (const car of state.crossCars) {
+    if (thrown) {
+      break;
+    }
+    if (onRoad(car) && Math.abs(car.s - rider.s) < 12) {
+      thrown = hitCrossCar(state, rider, car);
     }
   }
   if (thrown) {

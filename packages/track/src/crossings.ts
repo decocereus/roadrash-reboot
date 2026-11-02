@@ -13,6 +13,7 @@ export interface CrossRoad {
   readonly arms: CrossingArms;
   readonly lanesEachWay: 1 | 2;
   readonly laneWidth: number;
+  readonly carsPerMinute: number;
 }
 
 export interface Lights {
@@ -105,12 +106,16 @@ const checkNumbers = (rule: CrossingRule): void => {
     rule.s,
     rule.lights?.offsetTicks ?? 0,
     rule.road?.laneWidth ?? 1,
+    rule.road?.carsPerMinute ?? 0,
   ];
   if (!numbers.every((value) => Number.isFinite(value))) {
     reject(rule, "has a number that is not finite");
   }
   if (rule.road && rule.road.laneWidth <= 0) {
     reject(rule, "needs a cross road with a positive lane width");
+  }
+  if (rule.road && rule.road.carsPerMinute < 0) {
+    reject(rule, "needs a cross road with no fewer than zero cars a minute");
   }
   if (rule.lights && !Number.isInteger(rule.lights.offsetTicks)) {
     reject(rule, "needs a whole number of ticks for its light offset");

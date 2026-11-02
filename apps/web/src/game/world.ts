@@ -1,4 +1,4 @@
-import type { Hazard } from "@racer/sim/state";
+import type { RaceView } from "@racer/sim/race-view";
 import { createRandom } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
@@ -30,6 +30,7 @@ import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
 import { skyTexture } from "./sky-texture.ts";
 import { owned } from "./texture-canvas.ts";
+import { createWalkerMarks } from "./walkers.ts";
 
 const CHUNK_LENGTH = 200;
 const CHUNK_BEHIND = 260;
@@ -310,8 +311,10 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly shading: Shading;
   follow: (camera: THREE.Camera, s: number) => void;
-  showHazards: (hazards: readonly Hazard[], s: number) => void;
-  showSignals: (tick: number) => void;
+  showRoadLife: (
+    view: Pick<RaceView, "hazards" | "pedestrians" | "tick">,
+    s: number
+  ) => void;
   samples: () => THREE.Group;
   setShadowMap: (size: number) => void;
   dispose: () => void;
@@ -441,6 +444,8 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   stretches.push(...ramps.stretches);
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
+  const walkers = createWalkerMarks(track, shading);
+  scene.add(walkers.group);
   const junctions = buildJunctions(track, shading, clearance);
   scene.add(junctions.group);
   stretches.push(...junctions.stretches);
@@ -476,6 +481,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
       city?.group.removeFromParent();
       city?.dispose();
       hazards.dispose();
+      walkers.dispose();
       junctions.dispose();
       disposeTree(scene);
       for (const texture of textures) {
@@ -506,11 +512,10 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
       rig.setMapSize(size);
     },
     shading,
-    showHazards(list, s) {
-      hazards.show(list, s);
-    },
-    showSignals(tick) {
-      junctions.show(tick);
+    showRoadLife(view, s) {
+      hazards.show(view.hazards, s);
+      walkers.show(view.pedestrians, s);
+      junctions.show(view.tick);
     },
   };
 };

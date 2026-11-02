@@ -10,6 +10,8 @@ import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
+import { placeWalkSites } from "./walk-sites.ts";
+import type { WalkSite } from "./walk-sites.ts";
 
 export type GroundPoint = readonly [x: number, z: number];
 
@@ -87,6 +89,7 @@ export interface Track extends Centreline {
   readonly featureIndex: FeatureIndex;
   readonly hazards: readonly HazardPlacement[];
   readonly crossings: readonly TrackCrossing[];
+  readonly walkSites: readonly WalkSite[];
 }
 
 export interface TrackPoint {
@@ -218,7 +221,8 @@ export const compileTrack = (plan: TrackPlan): Track => {
     ),
     vergeHalfWidth,
   };
-  return { ...road, hazards: placeHazards(road) };
+  const placed = { ...road, hazards: placeHazards(road) };
+  return { ...placed, walkSites: placeWalkSites(placed) };
 };
 
 const sampleAt = (track: Track, values: Float64Array, s: number): number => {

@@ -9,19 +9,27 @@ import {
 } from "./pilot-corners.ts";
 import type { Slick } from "./pilot-corners.ts";
 import {
+  crossCarInSight,
+  crosserAtArrival,
+  crosserReach,
+  seesCrosser,
+  sightOf,
+  walkerInSight,
+} from "./pilot-crossers.ts";
+import {
   createOutlook,
   dodgeReach,
   gatherInSight,
   gatherObstructions,
   measureHorizons,
   planCourse,
-  ROCK_THROUGH_SPEED,
-  sightOf,
   weigh,
 } from "./pilot-forecast.ts";
 import type { Outlook, Toll } from "./pilot-forecast.ts";
 import { BIKE_HALF_LENGTH, BIKE_HALF_WIDTH, slotOf } from "./state.ts";
 import type {
+  CrossCar,
+  Pedestrian,
   PilotHistory,
   RaceState,
   RiderState,
@@ -188,11 +196,11 @@ const createSighting = (): Sighting => ({ seconds: 0, speed: 0, x: 0 });
 const createWeighed = (): Weighed => ({
   braking: false,
   cost: 0,
-  rock: false,
   slickMetres: Number.POSITIVE_INFINITY,
   slickSpeed: Number.POSITIVE_INFINITY,
   speed: Number.POSITIVE_INFINITY,
   speedMetres: Number.POSITIVE_INFINITY,
+  through: Number.POSITIVE_INFINITY,
   x: 0,
 });
 
@@ -403,9 +411,23 @@ const passable = (rider: RiderState, car: TrafficCar): boolean =>
   car.s - rider.s <= sightOf(rider) &&
   rider.speed > car.speed;
 
+const passOnBothSides = (
+  offLane: number[],
+  count: number,
+  rider: RiderState,
+  crosser: CrossCar | Pedestrian
+): number => {
+  const atArrival = crosserAtArrival(rider, crosser);
+  const pass = crosserReach(crosser) + PASS_MARGIN;
+  offLane[count] = atArrival + pass;
+  offLane[count + 1] = atArrival - pass;
+  return count + 2;
+};
+
 const offLaneLines = (
   plan: LinePlan,
   state: RaceState,
+  track: Track,
   rider: RiderState
 ): void => {
   const { offLane, outlook } = plan;
@@ -419,12 +441,29 @@ const offLaneLines = (
       count += 2;
     }
   }
-  for (const car of state.cars) {
-    if (passable(rider, car)) {
+  const { cars, crossCars, pedestrians } = state;
+  const carCount = cars.length;
+  const crossCount = crossCars.length;
+  const walkerCount = pedestrians.length;
+  for (let index = 0; index < carCount; index += 1) {
+    const car = cars[index];
+    if (car && passable(rider, car)) {
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
       offLane[count] = car.x + pass;
       offLane[count + 1] = car.x - pass;
       count += 2;
+    }
+  }
+  for (let index = 0; index < crossCount; index += 1) {
+    const car = crossCars[index];
+    if (car && crossCarInSight(track, rider, car)) {
+      count = passOnBothSides(offLane, count, rider, car);
+    }
+  }
+  for (let index = 0; index < walkerCount; index += 1) {
+    const pedestrian = pedestrians[index];
+    if (pedestrian && walkerInSight(track, rider, pedestrian)) {
+      count = passOnBothSides(offLane, count, rider, pedestrian);
     }
   }
   if (Number.isFinite(rider.pilotLine)) {
@@ -467,11 +506,11 @@ const weighOnce = (
     const known = weighed[index];
     if (known && Object.is(known.x, x) && known.braking === braking) {
       toll.cost = known.cost;
-      toll.rock = known.rock;
       toll.slickMetres = known.slickMetres;
       toll.slickSpeed = known.slickSpeed;
       toll.speed = known.speed;
       toll.speedMetres = known.speedMetres;
+      toll.through = known.through;
       return;
     }
   }
@@ -480,11 +519,11 @@ const weighOnce = (
   plan.weighedCount += 1;
   line.braking = braking;
   line.cost = toll.cost;
-  line.rock = toll.rock;
   line.slickMetres = toll.slickMetres;
   line.slickSpeed = toll.slickSpeed;
   line.speed = toll.speed;
   line.speedMetres = toll.speedMetres;
+  line.through = toll.through;
   line.x = x;
 };
 
@@ -507,11 +546,7 @@ const offer = (
   if (plan.weighing) {
     weighOnce(plan, history, track, rider, x, braking);
     total += toll.cost;
-    lineSpeed = Math.min(
-      speed,
-      toll.speed,
-      toll.rock ? ROCK_THROUGH_SPEED : Number.POSITIVE_INFINITY
-    );
+    lineSpeed = Math.min(speed, toll.speed, toll.through);
     if (Math.abs(x - rider.pilotLine) < LINE_MATCH) {
       total -= HYSTERESIS;
     }
@@ -597,8 +632,11 @@ export const chooseLine = (
   gatherLaneThreats(linePlan, state, rider);
   gatherInSight(outlook, state, rider);
   const kept = rider.pilotLine;
-  linePlan.weighing = outlook.sighted > 0 || Number.isFinite(kept);
+  const crosserSeen = seesCrosser(state, track, rider);
+  linePlan.weighing =
+    outlook.sighted > 0 || crosserSeen || Number.isFinite(kept);
   linePlan.weighedCount = 0;
+  outlook.crosserMoving = false;
   choice.cost = Number.POSITIVE_INFINITY;
   if (linePlan.weighing) {
     measureDeceleration(track, rider);
@@ -640,7 +678,7 @@ export const chooseLine = (
   }
   if (linePlan.weighing) {
     offerFollow(linePlan, history, track, rider);
-    offLaneLines(linePlan, state, rider);
+    offLaneLines(linePlan, state, track, rider);
     for (let index = 0; index < linePlan.offLaneCount; index += 1) {
       offerBetweenLanes(
         linePlan,
@@ -655,10 +693,13 @@ export const chooseLine = (
   }
   if (choice.cost < Number.POSITIVE_INFINITY) {
     const stays = Math.abs(choice.x - kept) < LINE_MATCH;
-    rider.pilotLine = outlook.sighted > 0 || stays ? choice.x : Number.NaN;
+    rider.pilotLine =
+      outlook.sighted > 0 || crosserSeen || stays ? choice.x : Number.NaN;
     slickAhead.metres = choice.slickMetres;
     slickAhead.speed = choice.slickSpeed;
-    aim.speed = choice.speed;
+    aim.speed = outlook.crosserMoving
+      ? Math.min(choice.speed, rider.speed)
+      : choice.speed;
     aim.x = choice.x;
     return aim;
   }
