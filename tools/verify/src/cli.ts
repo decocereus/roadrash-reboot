@@ -47,7 +47,7 @@ const HELP = `rv: drive a Rushline verification instance in a windowed Helium ov
   rv screencast --run <id> <name> [--seconds s] [--every n]
   rv trace      --run <id> <name> [--seconds s]
   rv sample     --run <id> <name> [--seconds s]
-  rv throttle   --run <id> [--cpu n] [--network off|fast4g|slow4g|3g]
+  rv throttle   --run <id> [--cpu n] [--network off|fast4g|slow4g|3g|offline]
   rv console    --run <id> [errors]
   rv rebuild    --run <id>
   rv down       --run <id>`;
