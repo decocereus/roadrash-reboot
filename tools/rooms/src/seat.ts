@@ -29,7 +29,6 @@ export interface Seat {
   readonly opened: () => boolean;
   readonly over: () => boolean;
   readonly report: () => SeatReport;
-  readonly seatsSeen: () => number;
   readonly start: () => void;
   readonly started: () => boolean;
 }
@@ -54,7 +53,7 @@ const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
   );
 
 export const openSeat = (roomsUrl: string, raceId: string): Seat => {
-  const seat = openRoomSeat(roomsUrl, raceId);
+  const seat = openRoomSeat(roomsUrl, raceId, "Script");
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;
@@ -88,7 +87,12 @@ export const openSeat = (roomsUrl: string, raceId: string): Seat => {
   });
   const over = (): boolean => {
     const phase = seat.phase();
-    return phase === "ended" || phase === "refused" || phase === "lost";
+    return (
+      phase === "ended" ||
+      phase === "left" ||
+      phase === "lost" ||
+      phase === "refused"
+    );
   };
   return {
     leave: () => {
@@ -118,7 +122,6 @@ export const openSeat = (roomsUrl: string, raceId: string): Seat => {
         you: you(),
       };
     },
-    seatsSeen: seat.seats,
     start: seat.start,
     started: () => seat.race() !== null,
   };

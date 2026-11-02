@@ -1,15 +1,24 @@
+import { isCelebrity } from "@racer/sim/cast";
 import { createRace } from "@racer/sim/race";
 import { riderIdAt } from "@racer/sim/state";
 import type { RaceEvent } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createRaceLog, recordTick } from "./outcome.ts";
-import { seatedRace } from "./room-race.ts";
+import { guestNames, seatedRace } from "./room-race.ts";
 
 const finishOf = (rider: number): RaceEvent => ({
   kind: "finish",
   rider: riderIdAt(rider),
   tick: 0,
+});
+
+describe("a room's field", () => {
+  it("has no celebrity riding among the humans", () => {
+    const seeds = Array.from({ length: 20 }, (_, seed) => seed);
+    const field = seeds.flatMap((seed) => seatedRace(seed, 2).setup.field);
+    expect(field.filter((rival) => isCelebrity(rival))).toStrictEqual([]);
+  });
 });
 
 describe("a seat's race log", () => {
@@ -37,5 +46,36 @@ describe("a seat's race log", () => {
       (placing) => placing.racer === "player"
     );
     expect(players).toHaveLength(1);
+  });
+});
+
+describe("the humans' names in a result", () => {
+  const seed = 11;
+
+  it("name the other humans' rows and never mine", () => {
+    const { humans, setup } = seatedRace(seed, 3);
+    const [first, second, third] = humans;
+    if (first === undefined || second === undefined || third === undefined) {
+      throw new RangeError("A three-seat race has three humans.");
+    }
+    const names = guestNames(setup, second, ["Ann", "Bo", "Cy"]);
+    const log = createRaceLog(setup, second);
+    const racerOf = (rider: number) =>
+      log.entrants.find((entrant) => entrant.rider === rider)?.rival;
+    expect(names.size).toBe(2);
+    expect([...names.values()]).not.toContain("Bo");
+    expect(names.get(racerOf(first) ?? "player")).toBe("Ann");
+    expect(names.get(racerOf(third) ?? "player")).toBe("Cy");
+  });
+
+  it("name every other human for the first seat too", () => {
+    const { humans, setup } = seatedRace(seed, 2);
+    const [me] = humans;
+    if (me === undefined) {
+      throw new RangeError("A two-seat race has a first human.");
+    }
+    expect([...guestNames(setup, me, ["Ann", "Bo"]).values()]).toStrictEqual([
+      "Bo",
+    ]);
   });
 });

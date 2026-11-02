@@ -34,6 +34,18 @@
         "sha256": "a4fd38d6ad9762bc702a7df74ff76f46e9d7f7ebf51b95b02a20d680639d37b5"
       },
       {
+        "file": "tools/perf/baselines/post-step8.room-settled.node-darwin-arm64.json.gz",
+        "sha256": "e5320c4c368cb669ff52dbce655ac4d6987ecc80107e00bc243ce904f9b86f7f"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.room-settled.node-linux-x64.json.gz",
+        "sha256": "16b7e4dfdfd4214eab70d69483771c97be5b045cb4c0c62a2f923dd59bc18682"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.room-slow-runner.node-linux-x64.json.gz",
+        "sha256": "d440c2740d6f041a5b70393bc71eda530ea106351cfc03b6eab38c30d7d01e62"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.room.node-darwin-arm64.json.gz",
         "sha256": "2fcac5c0f2661c01c1d0215539771d9349219ae5758daeec06bcd9a8cebdde64"
       },
@@ -60,7 +72,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "d902dbb243e3218232fb0f2ab6c3866f8d4c74bc989368360c0e725b3a40760a"
+    "summarySha256": "368e970c112ba3aff647e9272af2de6b7a026d1c4f92b3bd8b5dd8118e29b0f7"
   },
   "limits": [
     {
@@ -713,98 +725,98 @@
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 73190.12712146423,
-      "baseline": 66536.47920133111,
+      "value": 60072.57770382696,
+      "baseline": 54611.434276206324,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.allocatedBytesPerTick",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 76411.55673876873,
-      "baseline": 69465.05158069884,
+      "value": 64278.08452579036,
+      "baseline": 58434.622296173045,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.allocatedBytesPerTick",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 84483.58735440932,
-      "baseline": 76803.2612312812,
+      "value": 30871.249251247926,
+      "baseline": 28064.77204658902,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.allocatedBytesPerTick",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 89799.81231281198,
-      "baseline": 81636.19301164725,
+      "value": 31163.157404326124,
+      "baseline": 28330.14309484193,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.allocatedBytesPerTick",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 132603.55407653912,
-      "baseline": 120548.68552412646,
+      "value": 129611.15873544094,
+      "baseline": 117828.32612312812,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.client.allocatedBytesPerTick",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 139558.52645590683,
-      "baseline": 126871.38768718802,
+      "value": 129167.57138103162,
+      "baseline": 117425.06489184692,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.client.allocatedBytesPerTick",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 70020.83860232946,
-      "baseline": 63655.3078202995,
+      "value": 60628.9690515807,
+      "baseline": 55117.24459234609,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.client.allocatedBytesPerTick",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 71139.69783693845,
-      "baseline": 64672.45257903494,
+      "value": 64944.17570715475,
+      "baseline": 59040.159733777036,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.client.allocatedBytesPerTick",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
       "unit": "B"
     },
     {
@@ -821,14 +833,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.5072376495928272,
-      "baseline": 0.44107621703724115,
+      "value": 0.5913775960773744,
+      "baseline": 0.514241387893369,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.confirm.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
       "unit": "ms"
     },
     {
@@ -845,62 +857,62 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.32365945146587716,
-      "baseline": 0.2814430012746758,
+      "value": 0.3862078177975263,
+      "baseline": 0.33583288504132724,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.confirm.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
       "unit": "ms"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 1415.7874875207988,
-      "baseline": 1287.079534109817,
+      "value": 1349.7677204658903,
+      "baseline": 1227.0615640599,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.frame.allocatedBytesPerTick",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 1401.74921797005,
-      "baseline": 1274.3174708818635,
+      "value": 1400.3135440931783,
+      "baseline": 1273.01231281198,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.frame.allocatedBytesPerTick",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 1085.2325457570716,
-      "baseline": 986.5750415973378,
+      "value": 1093.9820299500832,
+      "baseline": 994.5291181364393,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.frame.allocatedBytesPerTick",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
       "unit": "B"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",
-      "value": 1049.770449251248,
-      "baseline": 954.336772046589,
+      "value": 1049.1437603993345,
+      "baseline": 953.7670549084859,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.frame.allocatedBytesPerTick",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
       "unit": "B"
     },
     {
@@ -917,14 +929,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 3.25205177037109,
-      "baseline": 2.827871104670513,
+      "value": 3.84417277571411,
+      "baseline": 3.3427589354035745,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.rollback.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
       "unit": "ms"
     },
     {
@@ -941,14 +953,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 2.1063616823576288,
-      "baseline": 1.8316188542240253,
+      "value": 2.5471324305379723,
+      "baseline": 2.2148977656851936,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.rollback.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
       "unit": "ms"
     },
     {
@@ -965,14 +977,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.5261364251040133,
-      "baseline": 0.4575099348730551,
+      "value": 0.5989296799649346,
+      "baseline": 0.5208084173608127,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.tick.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
       "unit": "ms"
     },
     {
@@ -989,14 +1001,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.3396744689200436,
-      "baseline": 0.29536910340873357,
+      "value": 0.3838315856377019,
+      "baseline": 0.33376659620669735,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.tick.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
       "unit": "ms"
     },
     {

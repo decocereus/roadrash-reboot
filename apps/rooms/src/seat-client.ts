@@ -1,5 +1,6 @@
 import type { CareerRaceSetup } from "@racer/career/field";
-import { seatedRace } from "@racer/career/room-race";
+import { guestNames, seatedRace } from "@racer/career/room-race";
+import type { GuestNames } from "@racer/career/room-race";
 import { createRoomClient } from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
 import { createRoomClock } from "@racer/sim/room-clock";
@@ -21,12 +22,15 @@ import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
 import { decodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
+import type { RoomStarted } from "./messages.ts";
 
 const PING_EVERY_MS = 500;
+const DEAD_AFTER_MS = 5000;
 
 export type SeatPhase =
   | "connecting"
   | "ended"
+  | "left"
   | "lobby"
   | "lost"
   | "racing"
@@ -36,6 +40,7 @@ export interface SeatRace {
   readonly client: RoomClient;
   readonly digestMatched: boolean;
   readonly me: RiderId;
+  readonly names: GuestNames;
   readonly setup: CareerRaceSetup;
 }
 
@@ -53,18 +58,24 @@ export interface RoomSeat {
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
   readonly refusal: () => string | null;
+  readonly riders: () => number;
   readonly rttMs: () => number;
-  readonly seats: () => number;
+  readonly worstRttMs: () => number;
   readonly start: () => void;
+  readonly startsInMs: () => number;
   readonly stepsDue: () => number;
   readonly target: () => number;
 }
 
-const seatUrl = (roomsUrl: string, raceId: string): string =>
-  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${raceId}/seat`;
+const seatUrl = (roomsUrl: string, raceId: string, name: string): string =>
+  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${raceId}/seat?name=${encodeURIComponent(name)}`;
 
-export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
-  const socket = new WebSocket(seatUrl(roomsUrl, raceId));
+export const openRoomSeat = (
+  roomsUrl: string,
+  raceId: string,
+  name: string
+): RoomSeat => {
+  const socket = new WebSocket(seatUrl(roomsUrl, raceId, name));
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
   const pong = { stamp: 0, tick: 0 };
@@ -75,11 +86,13 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
   const clock = createRoomClock();
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
-  let seats = 0;
+  let riders = 0;
+  let lobbyEndsAt = 0;
   let race: SeatRace | null = null;
   let refused: string | null = null;
   let closeCode: number | null = null;
   let rttMs = 0;
+  let worstRttMs = 0;
   let pings: ReturnType<typeof setInterval> | null = null;
 
   const move = (next: SeatPhase): void => {
@@ -94,25 +107,33 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     }
   };
 
-  const onStarted = (
-    seed: number,
-    count: number,
-    rider: number,
-    digest: readonly number[],
-    startsInMs: number
-  ): void => {
-    const { setup } = seatedRace(seed, count);
-    const me = riderIdAt(rider);
+  const onStarted = ({
+    digest,
+    names,
+    seats,
+    seed,
+    startsInMs,
+    you,
+  }: RoomStarted): void => {
+    const { setup } = seatedRace(seed, seats);
+    const me = riderIdAt(you);
     const client = createRoomClient(setup, me);
     const mine = setupDigest(client.confirmed, setup.track);
     race = {
       client,
       digestMatched: digest.join(",") === [...mine].join(","),
       me,
+      names: guestNames(setup, me, names),
       setup,
     };
     clock.start(startsInMs, performance.now());
     pings = setInterval(() => {
+      if (clock.silentMs(performance.now()) > DEAD_AFTER_MS) {
+        stopPings();
+        socket.close(SEAT_CLOSED, "The room went silent.");
+        move("lost");
+        return;
+      }
       writePing(ping, Math.floor(performance.now()));
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
     }, PING_EVERY_MS);
@@ -123,6 +144,7 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     const view = new DataView(data);
     if (readPong(view, pong)) {
       rttMs = Math.floor(performance.now()) - pong.stamp;
+      worstRttMs = Math.max(worstRttMs, rttMs);
       clock.heardRtt(rttMs);
       return;
     }
@@ -138,7 +160,7 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();
-    if (phase !== "ended" && phase !== "refused") {
+    if (phase === "connecting" || phase === "lobby" || phase === "racing") {
       move("lost");
     }
   });
@@ -154,13 +176,13 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     }
     switch (message.value.kind) {
       case "lobby": {
-        ({ seats } = message.value);
+        ({ riders } = message.value);
+        lobbyEndsAt = performance.now() + message.value.startsInMs;
         move("lobby");
         break;
       }
       case "started": {
-        const { digest, seats: count, seed, startsInMs, you } = message.value;
-        onStarted(seed, count, you, digest, startsInMs);
+        onStarted(message.value);
         break;
       }
       case "ended": {
@@ -197,6 +219,7 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     },
     leave: () => {
       stopPings();
+      phase = "left";
       socket.close(SEAT_CLOSED, "The rider left this seat.");
     },
     listen: (next) => {
@@ -205,16 +228,18 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     phase: () => phase,
     race: () => race,
     refusal: () => refused,
+    riders: () => riders,
     rttMs: () => rttMs,
-    seats: () => seats,
     start: () => {
       const packet = new DataView(new ArrayBuffer(START_PACKET_BYTES));
       writeStart(packet);
       socket.send(packet.buffer);
     },
+    startsInMs: () => lobbyEndsAt - performance.now(),
     stepsDue: () =>
       race ? clock.stepsDue(race.client.predicted.tick, performance.now()) : 0,
     target: () => clock.target(performance.now()),
+    worstRttMs: () => worstRttMs,
   };
 };
 
