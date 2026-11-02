@@ -36,6 +36,7 @@ export const rematchRoomId = (raceId: string): string => {
 
 const Lobby = Schema.Struct({
   kind: Schema.Literal("lobby"),
+  names: Schema.Array(Schema.String),
   riders: Schema.Number,
   startsInMs: Schema.Number,
 });
@@ -46,8 +47,12 @@ const Started = Schema.Struct({
   names: Schema.Array(Schema.String),
   seats: Schema.Number,
   seed: Schema.Number,
-  startsInMs: Schema.Number,
   you: Schema.Number,
+});
+
+const Countdown = Schema.Struct({
+  kind: Schema.Literal("countdown"),
+  startsInMs: Schema.Number,
 });
 
 const Ended = Schema.Struct({
@@ -60,7 +65,13 @@ const Refused = Schema.Struct({
   reason: Schema.Literals(["full", "racing"]),
 });
 
-const RoomMessageSchema = Schema.Union([Lobby, Started, Ended, Refused]);
+const RoomMessageSchema = Schema.Union([
+  Lobby,
+  Started,
+  Countdown,
+  Ended,
+  Refused,
+]);
 
 export type RoomMessage = typeof RoomMessageSchema.Type;
 export type RoomStarted = typeof Started.Type;

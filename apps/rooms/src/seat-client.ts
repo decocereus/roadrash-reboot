@@ -10,10 +10,12 @@ import {
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
+  READY_PACKET_BYTES,
   readPong,
   readTick,
   START_PACKET_BYTES,
   writePing,
+  writeReady,
   writeStart,
 } from "@racer/sim/room-wire";
 import { setupDigest } from "@racer/sim/snapshot-setup";
@@ -31,6 +33,7 @@ export type SeatPhase =
   | "connecting"
   | "ended"
   | "left"
+  | "loading"
   | "lobby"
   | "lost"
   | "racing"
@@ -57,8 +60,10 @@ export interface RoomSeat {
   readonly listen: (next: SeatListeners) => void;
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
+  readonly ready: () => void;
   readonly refusal: () => string | null;
   readonly riders: () => number;
+  readonly riderNames: () => readonly string[];
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
   readonly start: () => void;
@@ -87,6 +92,8 @@ export const openRoomSeat = (
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
   let riders = 0;
+  let riderNames: readonly string[] = [];
+  let counting = false;
   let lobbyEndsAt = 0;
   let race: SeatRace | null = null;
   let refused: string | null = null;
@@ -112,7 +119,6 @@ export const openRoomSeat = (
     names,
     seats,
     seed,
-    startsInMs,
     you,
   }: RoomStarted): void => {
     const { setup } = seatedRace(seed, seats);
@@ -126,9 +132,8 @@ export const openRoomSeat = (
       names: guestNames(setup, me, names),
       setup,
     };
-    clock.start(startsInMs, performance.now());
     pings = setInterval(() => {
-      if (clock.silentMs(performance.now()) > DEAD_AFTER_MS) {
+      if (counting && clock.silentMs(performance.now()) > DEAD_AFTER_MS) {
         stopPings();
         socket.close(SEAT_CLOSED, "The room went silent.");
         move("lost");
@@ -137,7 +142,7 @@ export const openRoomSeat = (
       writePing(ping, Math.floor(performance.now()));
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
     }, PING_EVERY_MS);
-    move("racing");
+    move("loading");
   };
 
   const onBinary = (data: ArrayBuffer): void => {
@@ -160,7 +165,12 @@ export const openRoomSeat = (
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();
-    if (phase === "connecting" || phase === "lobby" || phase === "racing") {
+    if (
+      phase === "connecting" ||
+      phase === "lobby" ||
+      phase === "loading" ||
+      phase === "racing"
+    ) {
       move("lost");
     }
   });
@@ -176,13 +186,19 @@ export const openRoomSeat = (
     }
     switch (message.value.kind) {
       case "lobby": {
-        ({ riders } = message.value);
+        ({ names: riderNames, riders } = message.value);
         lobbyEndsAt = performance.now() + message.value.startsInMs;
         move("lobby");
         break;
       }
       case "started": {
         onStarted(message.value);
+        break;
+      }
+      case "countdown": {
+        clock.start(message.value.startsInMs, performance.now());
+        counting = true;
+        move("racing");
         break;
       }
       case "ended": {
@@ -227,7 +243,13 @@ export const openRoomSeat = (
     },
     phase: () => phase,
     race: () => race,
+    ready: () => {
+      const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
+      writeReady(packet);
+      socket.send(packet.buffer);
+    },
     refusal: () => refused,
+    riderNames: () => riderNames,
     riders: () => riders,
     rttMs: () => rttMs,
     start: () => {

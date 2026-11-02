@@ -4,9 +4,17 @@ import { Screen } from "@racer/ui/components/screen";
 import { Stencil } from "@racer/ui/components/stencil";
 import { useState } from "react";
 
+const ridersLine = (riders: number, names: readonly string[]): string => {
+  const others = riders - names.length;
+  const count = riders === 1 ? "1 rider" : `${riders} riders`;
+  const more = others > 0 ? ` and ${others} more` : "";
+  return `${count} here: ${names.join(", ")}${more}.`;
+};
+
 const statusOf = (
   phase: SeatPhase,
   riders: number,
+  names: readonly string[],
   refusal: string | null
 ): string => {
   switch (phase) {
@@ -14,7 +22,10 @@ const statusOf = (
       return "Finding the room.";
     }
     case "lobby": {
-      return riders === 1 ? "1 rider here." : `${riders} riders here.`;
+      return ridersLine(riders, names);
+    }
+    case "loading": {
+      return "Loading the race. The countdown starts when everyone is ready.";
     }
     case "racing": {
       return "Rolling out.";
@@ -114,6 +125,7 @@ export const RoomLobbyScreen = ({
   raceId,
   refusal,
   requeued,
+  riderNames,
   riders,
   startsInSeconds,
   onBack,
@@ -127,6 +139,7 @@ export const RoomLobbyScreen = ({
   readonly raceId: string;
   readonly refusal: string | null;
   readonly requeued: boolean;
+  readonly riderNames: readonly string[];
   readonly riders: number;
   readonly startsInSeconds: number;
   readonly onBack: () => void;
@@ -138,7 +151,7 @@ export const RoomLobbyScreen = ({
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
       <Stencil>{raceId}</Stencil>
       <p aria-live="polite" className="font-display text-quote text-paper">
-        {statusOf(phase, riders, refusal)}
+        {statusOf(phase, riders, riderNames, refusal)}
       </p>
       {phase === "lobby" && (
         <p className="font-display text-paper">

@@ -10,6 +10,7 @@ const TICK_KIND = 2;
 const PING_KIND = 3;
 const PONG_KIND = 4;
 const START_KIND = 5;
+const READY_KIND = 6;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
 const COUNT_BYTES = 1;
@@ -256,6 +257,7 @@ const NO_STAMP = -1;
 export const PING_PACKET_BYTES = KIND_BYTES + STAMP_BYTES;
 export const PONG_PACKET_BYTES = KIND_BYTES + STAMP_BYTES + TICK_BYTES;
 export const START_PACKET_BYTES = KIND_BYTES;
+export const READY_PACKET_BYTES = KIND_BYTES;
 
 export const writePing = (view: DataView, stamp: number): number => {
   view.setUint8(0, PING_KIND);
@@ -300,3 +302,11 @@ export const writeStart = (view: DataView): number => {
 
 export const isStart = (view: DataView): boolean =>
   view.byteLength === START_PACKET_BYTES && view.getUint8(0) === START_KIND;
+
+export const writeReady = (view: DataView): number => {
+  view.setUint8(0, READY_KIND);
+  return READY_PACKET_BYTES;
+};
+
+export const isReady = (view: DataView): boolean =>
+  view.byteLength === READY_PACKET_BYTES && view.getUint8(0) === READY_KIND;
