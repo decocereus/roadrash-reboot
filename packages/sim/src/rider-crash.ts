@@ -12,6 +12,7 @@ const DAMAGE_SPEED = 200 / 3.6;
 const LEAST_DAMAGE = 0.1;
 const MOST_DAMAGE = 1.25;
 const BLAME_TICKS = 60;
+const BODY_FORWARD_SHARE = 0.6;
 
 const damage = {
   combat: 28,
@@ -69,7 +70,7 @@ export const throwRider = (
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air + 0.9;
-  rider.bodySpeed = impactSpeed * bodyKeep;
+  rider.bodySpeed = impactSpeed * bodyKeep * BODY_FORWARD_SHARE;
   rider.bodyLateralSpeed = rider.lateralSpeed * bodyKeep;
   rider.bodyVerticalSpeed =
     2 + impactSpeed * 0.05 + Math.max(0, rider.verticalSpeed);

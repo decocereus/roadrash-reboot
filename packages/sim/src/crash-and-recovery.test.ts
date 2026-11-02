@@ -133,19 +133,19 @@ describe("crashing", () => {
     expect(rider.mode).toBe("riding");
   });
 
-  it("a rider thrown into a pole at 160 km/h tumbles and slides for over four and a half seconds, lies still, and is on their feet about five and a half seconds after the impact; a fall at 50 km/h is over in half the time and a rider who runs straight back is riding again within five and a half seconds", () => {
+  it("a rider thrown into a pole at 160 km/h tumbles and slides for over two and a half seconds, lies still, and is on their feet a little over three seconds after the impact; a fall at 50 km/h is over sooner and a rider who runs straight back is riding again within five and a half seconds", () => {
     const fast = crashIntoPole(160);
     const slow = crashIntoPole(50);
     expect({
-      onFeetAboutFiveAndAHalf: fast.onFeetSeconds > 5 && fast.onFeetSeconds < 6,
+      onFeetAboutThree: fast.onFeetSeconds > 3 && fast.onFeetSeconds < 3.6,
       order: fast.order,
-      slidesOverFourAndAHalf: fast.slidingSeconds > 4.5,
+      slidesOverTwoAndAHalf: fast.slidingSeconds > 2.5,
     }).toStrictEqual({
-      onFeetAboutFiveAndAHalf: true,
+      onFeetAboutThree: true,
       order: ["thrown", "lying", "running"],
-      slidesOverFourAndAHalf: true,
+      slidesOverTwoAndAHalf: true,
     });
-    expect(slow.onFeetSeconds).toBeLessThan(fast.onFeetSeconds / 2);
+    expect(slow.onFeetSeconds).toBeLessThan(fast.onFeetSeconds);
     expect(slow.remountSeconds).toBeLessThan(5.5);
   });
 

@@ -197,6 +197,56 @@ const towardIt = (rider: RiderState): RiderInput => {
   };
 };
 
+const tumblingFrom = (kmh: number) => {
+  const state = field(straight, 1, 1, 0);
+  const me = player(state);
+  const rival = rivalNamed(state, "dee-santangelo");
+  rival.s = 900;
+  me.s = 100;
+  me.x = 0;
+  me.speed = kmh / KMH;
+  me.stamina = 0;
+  return { me, rival, state };
+};
+
+const wipeOut = (kmh: number, held: RiderInput) => {
+  const { me, rival, state } = tumblingFrom(kmh);
+  stepRace(
+    state,
+    straight,
+    frameOf(state, [me.id, held], [rival.id, cruising])
+  );
+  expect(me.mode).toBe("thrown");
+  while (me.mode === "thrown") {
+    stepRace(
+      state,
+      straight,
+      frameOf(state, [me.id, held], [rival.id, cruising])
+    );
+  }
+  return { travelled: me.bodyS - 100, x: me.bodyX };
+};
+
+describe("the tumble", () => {
+  it("a rider thrown at 200 km/h stops within about seventy metres, not the hundred or two they used to", () => {
+    expect(wipeOut(200, neutralInput).travelled).toBeLessThan(70);
+  });
+
+  it("A and D held from before the crash carry the rider across the road, each way", () => {
+    const left = wipeOut(100, { ...neutralInput, steer: -1 });
+    const right = wipeOut(100, { ...neutralInput, steer: 1 });
+    const none = wipeOut(100, neutralInput);
+    expect(right.x - none.x).toBeGreaterThan(4);
+    expect(none.x - left.x).toBeGreaterThan(4);
+  });
+
+  it("S held from before the crash cuts the slide short", () => {
+    const braked = wipeOut(160, { ...neutralInput, brake: 1 });
+    const free = wipeOut(160, neutralInput);
+    expect(braked.travelled).toBeLessThan(free.travelled - 5);
+  });
+});
+
 describe("on foot", () => {
   it("a rider who presses E once runs to the bike by themselves and climbs on, and the bike has not moved", () => {
     const { me, state } = knockedOffAndRunning();
