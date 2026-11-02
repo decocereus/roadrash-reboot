@@ -28,6 +28,7 @@ import type { RoomStarted } from "./messages.ts";
 
 const PING_EVERY_MS = 500;
 const DEAD_AFTER_MS = 5000;
+const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 
 export type SeatPhase =
   | "connecting"
@@ -100,6 +101,7 @@ export const openRoomSeat = (
   let closeCode: number | null = null;
   let rttMs = 0;
   let worstRttMs = 0;
+  let unansweredPings = 0;
   let pings: ReturnType<typeof setInterval> | null = null;
 
   const move = (next: SeatPhase): void => {
@@ -133,7 +135,10 @@ export const openRoomSeat = (
       setup,
     };
     pings = setInterval(() => {
-      if (counting && clock.silentMs(performance.now()) > DEAD_AFTER_MS) {
+      const silent = counting
+        ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
+        : unansweredPings > MOST_UNANSWERED_PINGS;
+      if (silent) {
         stopPings();
         socket.close(SEAT_CLOSED, "The room went silent.");
         move("lost");
@@ -141,6 +146,7 @@ export const openRoomSeat = (
       }
       writePing(ping, Math.floor(performance.now()));
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
+      unansweredPings += 1;
     }, PING_EVERY_MS);
     move("loading");
   };
@@ -148,6 +154,7 @@ export const openRoomSeat = (
   const onBinary = (data: ArrayBuffer): void => {
     const view = new DataView(data);
     if (readPong(view, pong)) {
+      unansweredPings = 0;
       rttMs = Math.floor(performance.now()) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
       clock.heardRtt(rttMs);
