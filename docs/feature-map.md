@@ -1332,6 +1332,7 @@ Test files:
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/messages.test.ts`
+- `apps/rooms/test/seat-client.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
 - `packages/sim/src/room-limit.test.ts`

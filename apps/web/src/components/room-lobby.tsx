@@ -79,6 +79,9 @@ const SeatedLobby = ({
   const [, redraw] = useReducer((count: number) => count + 1, 0);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
   const handedOver = useRef(false);
+  const riding = useRef(false);
+  const [plan, setPlan] = useState<RacePlan | null>(null);
+  const [prepared, setPrepared] = useState(false);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
     const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, raceId, name);
@@ -98,7 +101,7 @@ const SeatedLobby = ({
       if (reopening) {
         clearTimeout(reopening);
       }
-      if (!handedOver.current) {
+      if (!riding.current) {
         opened.leave();
       }
     };
@@ -109,6 +112,7 @@ const SeatedLobby = ({
   };
   const phase = seat?.phase() ?? "connecting";
   const racing = phase === "racing";
+  const raceBegun = racing || phase === "loading";
   const requeued = isRequeuedRoom(raceId);
   useEffect(() => {
     const redrawing = setInterval(redraw, REDRAW_MS);
@@ -127,22 +131,30 @@ const SeatedLobby = ({
     };
   }, [phase, requeued, seat]);
   useEffect(() => {
-    if (!(seat && racing && ready) || handedOver.current) {
+    if (!(seat && raceBegun && ready) || handedOver.current) {
       return;
     }
-    const plan = planOf(seat, raceId);
-    if (!plan) {
+    const next = planOf(seat, raceId);
+    if (!next) {
       return;
     }
     handedOver.current = true;
+    setPlan(next);
     const prepare = async (): Promise<void> => {
-      const outcome = await onPrepare(plan);
+      const outcome = await onPrepare(next);
       if (outcome.kind !== "cancelled") {
-        onStart(plan);
+        seat.ready();
+        setPrepared(true);
       }
     };
     void prepare();
-  }, [seat, raceId, racing, ready, onPrepare, onStart]);
+  }, [seat, raceId, raceBegun, ready, onPrepare]);
+  useEffect(() => {
+    if (plan && prepared && racing) {
+      riding.current = true;
+      onStart(plan);
+    }
+  }, [plan, prepared, racing, onStart]);
   return (
     <RoomLobbyScreen
       copied={copied}
@@ -159,6 +171,7 @@ const SeatedLobby = ({
       raceId={raceId}
       refusal={seat?.refusal() ?? null}
       requeued={requeued}
+      riderNames={seat?.riderNames() ?? []}
       riders={seat?.riders() ?? 0}
       startsInSeconds={Math.max(0, Math.ceil((seat?.startsInMs() ?? 0) / 1000))}
     />

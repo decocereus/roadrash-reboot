@@ -69,7 +69,9 @@ export const openSeat = (roomsUrl: string, raceId: string): Seat => {
   seat.listen({
     onChange: () => {
       const phase = seat.phase();
-      if (phase === "racing" && !pump) {
+      if (phase === "loading") {
+        seat.ready();
+      } else if (phase === "racing" && !pump) {
         pump = setInterval(() => {
           refusedPredictions += pumpWeaving(seat, you);
         }, TICK_MS);
