@@ -425,7 +425,9 @@ const offLaneLines = (
     }
   }
   const { cars, crossCars } = state;
-  for (let index = 0; index < cars.length; index += 1) {
+  const carCount = cars.length;
+  const crossCount = crossCars.length;
+  for (let index = 0; index < carCount; index += 1) {
     const car = cars[index];
     if (car && passable(rider, car)) {
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
@@ -434,7 +436,7 @@ const offLaneLines = (
       count += 2;
     }
   }
-  for (let index = 0; index < crossCars.length; index += 1) {
+  for (let index = 0; index < crossCount; index += 1) {
     const car = crossCars[index];
     if (car && crossCarInSight(track, rider, car)) {
       const atArrival = crossCarAtArrival(rider, car);

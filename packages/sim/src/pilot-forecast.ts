@@ -444,13 +444,15 @@ export const gatherObstructions = (
     }
   }
   const { cars, crossCars } = state;
-  for (let index = 0; index < cars.length; index += 1) {
+  const carCount = cars.length;
+  const crossCount = crossCars.length;
+  for (let index = 0; index < carCount; index += 1) {
     const car = cars[index];
     if (car) {
       obstructWithCar(outlook, rider, car);
     }
   }
-  for (let index = 0; index < crossCars.length; index += 1) {
+  for (let index = 0; index < crossCount; index += 1) {
     const car = crossCars[index];
     if (car && crossCarInSight(track, rider, car)) {
       if (car.drift === 0) {
