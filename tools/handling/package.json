@@ -1,0 +1,16 @@
+{
+  "name": "@racer/handling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsrs --noEmit"
+  },
+  "dependencies": {
+    "@racer/sim": "workspace:*",
+    "@racer/track": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1"
+  }
+}

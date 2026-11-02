@@ -57,6 +57,7 @@ const checks: readonly Check[] = [
     name: "madrid stretches",
     stage: "static",
   },
+  { command: ["pnpm", "check:handling"], name: "handling", stage: "static" },
   { command: ["pnpm", "check:perf"], name: "perf budgets", stage: "static" },
   { command: ["pnpm", "typecheck"], name: "typecheck", stage: "static" },
   { command: ["pnpm", "test"], name: "tests", stage: "tests" },
