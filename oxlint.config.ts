@@ -43,6 +43,7 @@ export const deterministicFiles = [
   "packages/sim/src/rider-recovery.ts",
   "packages/sim/src/rider.ts",
   "packages/sim/src/room-client.ts",
+  "packages/sim/src/room-clock.ts",
   "packages/sim/src/room-frame.ts",
   "packages/sim/src/room-wire.ts",
   "packages/sim/src/room.ts",

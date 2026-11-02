@@ -2,7 +2,7 @@ import { roadOpen } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { acceptEnvelope, refuseEnvelope } from "@racer/career/story";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
@@ -28,6 +28,11 @@ import {
   useFlow,
 } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
+
+const RoomLobby = lazy(async () => {
+  const { RoomLobby: lobby } = await import("./room-lobby.tsx");
+  return { default: lobby };
+});
 
 const DWELL_MS = 2200;
 
@@ -231,6 +236,21 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         ready={flow.ready}
         rules={rules}
       />
+    );
+  }
+  if (view.screen === "room") {
+    return (
+      <Suspense>
+        <RoomLobby
+          onBack={() => {
+            globalThis.location.assign("/");
+          }}
+          onPrepare={flow.prepare}
+          onStart={flow.start}
+          raceId={view.raceId}
+          ready={flow.ready}
+        />
+      </Suspense>
     );
   }
   if (view.screen === "rideOut") {

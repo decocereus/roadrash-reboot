@@ -382,6 +382,7 @@ Source files:
 - `apps/web/src/components/screens/race-hud.tsx`
 - `apps/web/src/components/screens/results.tsx`
 - `apps/web/src/components/screens/ride-out.tsx`
+- `apps/web/src/components/screens/room-lobby.tsx`
 - `apps/web/src/components/screens/route-board.tsx`
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
@@ -1294,7 +1295,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race.ts`, `apps/rooms/**`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/room-lobby.tsx`, `tools/rooms/**`
 
 Source files:
 
@@ -1303,9 +1304,13 @@ Source files:
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/race-server.ts`
+- `apps/rooms/src/room-run.ts`
+- `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/worker.ts`
+- `apps/web/src/components/room-lobby.tsx`
 - `packages/career/src/room-race.ts`
 - `packages/sim/src/room-client.ts`
+- `packages/sim/src/room-clock.ts`
 - `packages/sim/src/room-frame.ts`
 - `packages/sim/src/room-wire.ts`
 - `packages/sim/src/room.ts`
@@ -1316,4 +1321,6 @@ Source files:
 Test files:
 
 - `apps/rooms/test/host.test.ts`
+- `packages/career/src/room-race.test.ts`
+- `packages/sim/src/room-clock.test.ts`
 - `packages/sim/src/room.test.ts`

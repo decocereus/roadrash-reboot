@@ -1,9 +1,10 @@
+import type { RoomRun } from "@racer/rooms/room-run";
 import { defaultSetup } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
-import type { Controller, RaceSetup } from "@racer/sim/state";
+import type { Controller, RaceSetup, RiderId } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 
 import { createFleet } from "./actors.ts";
@@ -26,6 +27,7 @@ export interface Stage {
   track: Track;
   world: World;
   race: RaceRun;
+  me: RiderId;
   fleet: Fleet;
   previousCars: Float64Array;
   previousCrossCars: Float64Array;
@@ -51,6 +53,7 @@ export const createStage = (
       race.view.cars,
       race.view.crossCars
     ),
+    me: PLAYER_RIDER,
     previousCars: new Float64Array(race.view.cars.length),
     previousCrossCars: new Float64Array(race.view.crossCars.length),
     race,
@@ -86,7 +89,7 @@ export const bindStage = ({
   stage,
 }: StageParts) => {
   const player = (): RiderView => {
-    const rider = riderOf(stage.race.view.riders, PLAYER_RIDER);
+    const rider = riderOf(stage.race.view.riders, stage.me);
     if (!rider) {
       throw new Error("The race has no player.");
     }
@@ -187,17 +190,25 @@ export const bindStage = ({
   const build = (
     setup: RaceSetup,
     dressing: Dressing,
-    forRace: boolean
+    forRace: boolean,
+    room: RoomRun | null = null
   ): (() => void) => {
     const releaseActors = retire();
     const previous = stage.world;
     takeTrack(setup.track);
     const replaced = stage.world === previous ? null : previous;
-    stage.race = createRaceRun(
-      ridden(setup, forRace && !autopilot ? "human" : "pilot")
-    );
-    if (forRace) {
-      devRide?.place(stage.race);
+    if (room) {
+      stage.race = room;
+      stage.me = room.me;
+    } else {
+      const local = createRaceRun(
+        ridden(setup, forRace && !autopilot ? "human" : "pilot")
+      );
+      stage.race = local;
+      stage.me = PLAYER_RIDER;
+      if (forRace) {
+        devRide?.place(local);
+      }
     }
     const { cars, crossCars } = stage.race.view;
     stage.fleet = createFleet(assets, stage.world.shading, cars, crossCars);

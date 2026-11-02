@@ -6,6 +6,8 @@
   "exports": {
     "./contract": "./src/contract.ts",
     "./messages": "./src/messages.ts",
+    "./room-run": "./src/room-run.ts",
+    "./seat-client": "./src/seat-client.ts",
     "./worker": "./src/worker.ts"
   },
   "scripts": {
