@@ -27,6 +27,7 @@ interface Pressed {
   readonly brake?: number;
   readonly kick?: boolean;
   readonly punch?: boolean;
+  readonly remount?: boolean;
   readonly throttle?: number;
 }
 
@@ -35,7 +36,7 @@ const button = (value: number) => ({ pressed: value > 0.5, value });
 const pad = (axis: number | null, pressed: Pressed, connected = true): Pad => ({
   axes: axis === null ? [] : [axis],
   buttons: [
-    button(0),
+    button(pressed.remount === true ? 1 : 0),
     button(pressed.kick === true ? 1 : 0),
     button(pressed.punch === true ? 1 : 0),
     button(0),
@@ -97,6 +98,17 @@ describe("keyboard controls", () => {
     expect(readOnce(controls)).toMatchObject({ kick: true, punch: false });
   });
 
+  it("E and the pad's first face button ask to get back on the bike", () => {
+    const { controls, keyboard } = setUp();
+    expect(readOnce(controls).remount).toBeFalsy();
+    keyboard.press("KeyE");
+    expect(readOnce(controls).remount).toBeTruthy();
+    keyboard.release("KeyE");
+    expect(readOnce(controls).remount).toBeFalsy();
+    keyboard.pads.push(pad(0, { remount: true }));
+    expect(readOnce(controls).remount).toBeTruthy();
+  });
+
   it("losing focus lets go of every key, and steering eases back", () => {
     const { controls, keyboard } = setUp();
     keyboard.press("ArrowUp");
@@ -134,6 +146,7 @@ describe("gamepad controls", () => {
       brake: 0.3,
       kick: false,
       punch: true,
+      remount: false,
       steer: 0.5,
       throttle: 0.8,
     });

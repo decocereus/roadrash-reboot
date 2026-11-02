@@ -89,6 +89,11 @@ export const RaceHud = ({
               {noticeText(hud)}
             </Notice>
           )}
+          {racing && hud.remountPrompt && (
+            <p className="hud-ink text-name absolute bottom-[28%] left-1/2 -translate-x-1/2">
+              E to get back on
+            </p>
+          )}
         </>
       )}
     </Screen>

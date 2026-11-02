@@ -110,6 +110,7 @@ const weave =
       brake: step % 23 === 0 ? 0.6 : 0,
       kick: false,
       punch: step % punchEvery === 0,
+      remount: false,
       steer: ((step % period) - period / 2) / period,
       throttle: step % 23 === 0 ? 0 : 1,
     };
@@ -309,6 +310,7 @@ describe("a race room", () => {
     const punching = controlOf({
       ...neutralInput,
       punch: true,
+      remount: false,
       steer: 0.5,
       throttle: 1,
     });
@@ -445,6 +447,7 @@ describe("the room's wire", () => {
   const full = controlOf({
     ...neutralInput,
     punch: true,
+    remount: false,
     steer: -1,
     throttle: 1,
   });

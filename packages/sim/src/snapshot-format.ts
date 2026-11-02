@@ -42,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 3;
+export const SNAPSHOT_FORMAT = 4;
 
 const TICK_BYTES = 8;
 
@@ -103,6 +103,7 @@ const inputSchema = schemaOf<Readonly<RiderInput>, RiderInput>({
   brake: floatAt("brake"),
   kick: flagAt("kick"),
   punch: flagAt("punch"),
+  remount: flagAt("remount"),
   steer: floatAt("steer"),
   throttle: floatAt("throttle"),
 });
@@ -206,7 +207,6 @@ const riderSchema = schemaOf<
   hazardSeen: floatAt("hazardSeen"),
   heading: floatAt("heading"),
   hitStun: floatAt("hitStun"),
-  idleTicks: floatAt("idleTicks"),
   input: recordAt("input", inputSchema),
   jumpMisread: flagAt("jumpMisread"),
   jumpSeen: floatAt("jumpSeen"),
@@ -222,6 +222,7 @@ const riderSchema = schemaOf<
   pilotLine: floatAt("pilotLine"),
   post: floatAt("post"),
   revs: floatAt("revs"),
+  runningToBike: flagAt("runningToBike"),
   s: floatAt("s"),
   shiftTicks: floatAt("shiftTicks"),
   slip: floatAt("slip"),

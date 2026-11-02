@@ -16,6 +16,7 @@ const handled = new Set([
   "Space",
   "KeyJ",
   "KeyK",
+  "KeyE",
   "ShiftLeft",
   "ShiftRight",
 ]);
@@ -68,6 +69,9 @@ const firstConnected = (pads: readonly (Pad | null)[]): Pad | null => {
   }
   return null;
 };
+
+const padPressed = (pad: Pad | null, index: number): boolean =>
+  pad?.buttons[index]?.pressed ?? false;
 
 const nextSteer = (
   current: number,
@@ -136,11 +140,10 @@ export const createControls = (
         down("ArrowDown", "KeyS") ? 1 : 0,
         pad?.buttons[6]?.value ?? 0
       );
-      input.punch =
-        down("Space", "KeyJ") || (pad?.buttons[2]?.pressed ?? false);
+      input.punch = down("Space", "KeyJ") || padPressed(pad, 2);
       input.kick =
-        down("KeyK", "ShiftLeft", "ShiftRight") ||
-        (pad?.buttons[1]?.pressed ?? false);
+        down("KeyK", "ShiftLeft", "ShiftRight") || padPressed(pad, 1);
+      input.remount = down("KeyE") || padPressed(pad, 0);
     },
   };
 };

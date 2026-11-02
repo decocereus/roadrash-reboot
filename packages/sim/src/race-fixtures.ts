@@ -101,6 +101,7 @@ export const cruising: RiderInput = {
   brake: 0,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle: 0.5,
 };
@@ -155,20 +156,7 @@ export const hold = (
 export const towardTheBike = (
   rider: RiderState,
   riding: RiderInput
-): RiderInput => {
-  if (rider.mode !== "running") {
-    return riding;
-  }
-  const gapS = rider.s - rider.bodyS;
-  const gapX = rider.x - rider.bodyX;
-  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
-  return {
-    ...riding,
-    brake: Math.max(0, -gapS / distance),
-    steer: gapX / distance,
-    throttle: Math.max(0, gapS / distance),
-  };
-};
+): RiderInput => ({ ...riding, remount: rider.mode !== "riding" });
 
 export const alone = (course: Track, bike: BikeSpec): RaceState => {
   const setup = defaultSetup(course, 1);
@@ -287,6 +275,7 @@ export const flatOut: RiderInput = {
   brake: 0,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle: 1,
 };

@@ -26,6 +26,7 @@ const cruising: RiderInput = {
   brake: 0,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle: 0.5,
 };

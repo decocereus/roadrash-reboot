@@ -30,6 +30,12 @@ const weaponCapacity = (rider: RiderView): number =>
 export const out = (rider: RiderView): boolean =>
   rider.mode === "busted" || rider.mode === "wrecked";
 
+const needsRemountPrompt = (rider: RiderView): boolean =>
+  !rider.runningToBike &&
+  (rider.mode === "thrown" ||
+    rider.mode === "lying" ||
+    rider.mode === "running");
+
 export interface Feedback {
   notice: Notice;
   noticeDetail: string;
@@ -198,6 +204,7 @@ export const bindFeedback = ({
       phase: session.phase,
       position: session.settled?.place ?? order.indexOf(stage.me) + 1,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
+      remountPrompt: needsRemountPrompt(me),
       riderCount: order.length,
       roadLength: stage.track.length,
       roadName: stage.track.plan.name,

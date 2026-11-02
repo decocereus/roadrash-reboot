@@ -59,6 +59,7 @@ export interface RiderInput {
   brake: number;
   punch: boolean;
   kick: boolean;
+  remount: boolean;
 }
 
 export const controllers = ["human", "pilot"] as const;
@@ -202,7 +203,7 @@ export interface RiderState {
   staleThrottle: boolean;
   staleBrake: boolean;
   staleSteer: boolean;
-  idleTicks: number;
+  runningToBike: boolean;
   finishTick: number;
   crashes: number;
 }

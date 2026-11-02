@@ -234,6 +234,7 @@ describe("a room host", () => {
               brake: 0,
               kick: false,
               punch: false,
+              remount: false,
               steer,
               throttle: 1,
             })

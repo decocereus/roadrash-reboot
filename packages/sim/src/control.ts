@@ -12,7 +12,8 @@ const BRAKE_PLACE = BYTE * BYTE;
 const BUTTONS_PLACE = BYTE * BYTE * BYTE;
 const PUNCH = 1;
 const KICK = 2;
-const BUTTONS = PUNCH + KICK;
+const REMOUNT = 4;
+const BUTTONS = PUNCH + KICK + REMOUNT;
 
 const isControl = (word: number): word is Control =>
   Number.isSafeInteger(word) &&
@@ -45,7 +46,10 @@ export const controlOf = (input: Readonly<RiderInput>): Control => {
     steerByteOf(input.steer) +
     pedalByteOf(input.throttle) * THROTTLE_PLACE +
     pedalByteOf(input.brake) * BRAKE_PLACE +
-    ((input.punch ? PUNCH : 0) + (input.kick ? KICK : 0)) * BUTTONS_PLACE;
+    ((input.punch ? PUNCH : 0) +
+      (input.kick ? KICK : 0) +
+      (input.remount ? REMOUNT : 0)) *
+      BUTTONS_PLACE;
   return finite(input) && isControl(word) ? word : refuse(input);
 };
 
@@ -56,7 +60,8 @@ export const applyControl = (control: Control, input: RiderInput): void => {
   input.brake = (Math.floor(control / BRAKE_PLACE) % BYTE) / PEDAL_STEPS;
   const buttons = Math.floor(control / BUTTONS_PLACE);
   input.punch = buttons % KICK === PUNCH;
-  input.kick = buttons >= KICK;
+  input.kick = buttons % REMOUNT >= KICK;
+  input.remount = buttons >= REMOUNT;
 };
 
 export const writeControl = (
@@ -79,6 +84,7 @@ export const coasting: Control = controlOf({
   brake: 0,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle: 0,
 });
