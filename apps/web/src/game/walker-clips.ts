@@ -26,6 +26,11 @@ export interface WalkerClip {
 
 export type WalkerClips = Readonly<Record<WalkerClipName, WalkerClip>>;
 
+export interface WalkerLook {
+  readonly offset: number;
+  readonly scale: number;
+}
+
 export const walkerBodies = [
   { height: 1.76, name: "pedestrian_man" },
   { height: 1.65, name: "pedestrian_woman" },
@@ -47,10 +52,13 @@ const stepping = (
   clip: WalkerClip,
   walker: PedestrianView,
   stride: number,
-  offset: number
+  look: WalkerLook
 ): number => {
   const travelled = walker.x * walker.across;
-  return looped(clip, (travelled / stride + offset) * clip.frames);
+  return looped(
+    clip,
+    (travelled / (stride * look.scale) + look.offset) * clip.frames
+  );
 };
 
 export const walkerFrameOf = (
@@ -58,14 +66,14 @@ export const walkerFrameOf = (
   walker: PedestrianView,
   tick: number,
   fellAt: number,
-  offset: number
+  look: WalkerLook
 ): number => {
-  const inTicks = (tick + offset * clips.wait.frames) / TICKS_PER_FRAME;
+  const inTicks = (tick + look.offset * clips.wait.frames) / TICKS_PER_FRAME;
   switch (walker.mode) {
     case "walking": {
       return Math.abs(walker.drift) > RUN_ABOVE
-        ? stepping(clips.run, walker, RUN_STRIDE, offset)
-        : stepping(clips.walk, walker, WALK_STRIDE, offset);
+        ? stepping(clips.run, walker, RUN_STRIDE, look)
+        : stepping(clips.walk, walker, WALK_STRIDE, look);
     }
     case "flinching": {
       return once(

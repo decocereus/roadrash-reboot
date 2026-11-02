@@ -620,10 +620,9 @@ const walkers: Parse<WalkerAsset> = async (bytes, url) => {
   const geometries = meshes.map((mesh) =>
     coloured(
       {
-        geometry: fileSpaceGeometry(
-          mesh?.geometry ?? first.geometry,
-          new THREE.Matrix4()
-        ),
+        geometry: mesh
+          ? fileSpaceGeometry(mesh.geometry, sharedBind(mesh, first))
+          : first.geometry,
         slot: ATLAS,
       },
       WHITE,

@@ -34,7 +34,7 @@ const walker = (over: Partial<PedestrianView>): PedestrianView => ({
 });
 
 const frameOf = (over: Partial<PedestrianView>, tick = 0, fellAt = 0): number =>
-  walkerFrameOf(clips, walker(over), tick, fellAt, 0);
+  walkerFrameOf(clips, walker(over), tick, fellAt, { offset: 0, scale: 1 });
 
 const inClipOf = (name: keyof WalkerClips, frame: number): number => {
   const clip = clips[name];
@@ -54,6 +54,17 @@ describe("which frame a walker shows", () => {
     expect(walkFrameAt(0)).toBe(0);
     expect(walkFrameAt(0.7)).toBe(15);
     expect(walkFrameAt(1.4)).toBe(0);
+  });
+
+  it("takes a shorter stride on a shorter body, so its feet do not slide either", () => {
+    const scale = 0.93;
+    const walking = walker({ drift: 1.4, mode: "walking", x: 0.7 * scale });
+    expect(
+      inClipOf(
+        "walk",
+        walkerFrameOf(clips, walking, 0, 0, { offset: 0, scale })
+      )
+    ).toBe(15);
   });
 
   it("steps backwards along the road the same way when crossing the other way", () => {
@@ -100,8 +111,10 @@ describe("which frame a walker shows", () => {
 
   it("gives two waiting walkers with different offsets different poses", () => {
     const standing = walker({ mode: "waiting" });
-    expect(walkerFrameOf(clips, standing, 40, 0, 0)).not.toBe(
-      walkerFrameOf(clips, standing, 40, 0, 0.5)
+    expect(
+      walkerFrameOf(clips, standing, 40, 0, { offset: 0, scale: 1 })
+    ).not.toBe(
+      walkerFrameOf(clips, standing, 40, 0, { offset: 0.5, scale: 1 })
     );
   });
 });

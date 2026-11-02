@@ -10,6 +10,7 @@ import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { uploadSpan } from "./uploads.ts";
 import { WALKER_OUTFITS, walkerBodies, walkerFrameOf } from "./walker-clips.ts";
+import type { WalkerLook } from "./walker-clips.ts";
 import { useWalkerPoses } from "./walker-skin.ts";
 
 const BEHIND = 40;
@@ -36,9 +37,8 @@ interface BodyMarks {
   count: number;
 }
 
-interface Identity {
+interface Identity extends WalkerLook {
   readonly body: BodyMarks;
-  readonly offset: number;
   readonly outfit: number;
 }
 
@@ -138,20 +138,27 @@ export const createWalkerMarks = (
       body,
       offset: unitOf(seed),
       outfit: siteSeed(OUTFIT_SALT, walker.id) % WALKER_OUTFITS,
+      scale: body.scale,
     };
     identities[index] = made;
     return made;
   };
 
   const place = (walker: PedestrianView, index: number, tick: number): void => {
-    const { body, offset, outfit } = identityOf(walker, index);
+    const identity = identityOf(walker, index);
+    const { body, outfit } = identity;
     const slot = body.count;
     pose(track, walker, body.scale);
     body.mesh.setMatrixAt(slot, placer.matrix);
     body.frames.setX(
       slot,
-      walkerFrameOf(asset.clips, walker, tick, fellAt[index] ?? tick, offset) +
-        1
+      walkerFrameOf(
+        asset.clips,
+        walker,
+        tick,
+        fellAt[index] ?? tick,
+        identity
+      ) + 1
     );
     body.outfits.setX(slot, outfit);
     body.count = slot + 1;
