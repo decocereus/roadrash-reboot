@@ -353,8 +353,8 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/hud-feed.ts",
     ],
     summary:
-      "The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, rival speech and the cop warning; the React HUD screen sits with the menus.",
-    title: "Race HUD, notices and speech",
+      "The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices and the cop warning; the React HUD screen sits with the menus.",
+    title: "Race HUD and notices",
     verify: ["riding-and-fighting.md", "single-race.md"],
   },
   {
@@ -442,7 +442,6 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/rider-shade.ts",
       "apps/web/src/game/rider-*.ts",
       "apps/web/src/game/figure-*.ts",
-      "apps/web/src/career/colours.ts",
     ],
     perf: [...sceneCounts, "riders.cpu.p95"],
     start: [

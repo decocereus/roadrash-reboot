@@ -246,7 +246,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     draw: () => {
       bound.present();
     },
-    feedback: { noticeLeft: 0, speechLeft: 0 },
+    feedback: { noticeLeft: 0 },
     frame,
     govern: bound.govern,
     halted,

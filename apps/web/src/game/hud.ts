@@ -40,11 +40,6 @@ export interface HudState {
   readonly position: number;
   readonly riderCount: number;
   readonly stamina: number;
-  readonly rivalName: string;
-  readonly rivalCelebrity: boolean;
-  readonly rivalStamina: number;
-  readonly rivalColour: string;
-  readonly speech: string;
   readonly weaponName: string;
   readonly weaponHits: number;
   readonly weaponCapacity: number;
@@ -71,6 +66,5 @@ export interface GameHandle {
   readonly resume: () => void;
   readonly quit: () => RaceOutcome | null;
   readonly toggleMute: () => void;
-  readonly followRival: (tag: HTMLElement | null) => void;
   readonly dispose: () => void;
 }

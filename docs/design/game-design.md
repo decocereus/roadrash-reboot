@@ -654,7 +654,7 @@ For launch, six parody celebrities and ordinary riders replace this cast (sectio
 | Kylip Jetner | Kylie Jenner | Breakwater Run, standing in for Mumbai | 0.92 | 0.35 | Nothing |
 | Ranwear Bling | Ranveer Singh | Breakwater Run, standing in for Mumbai | 0.85 | 0.40 | Nothing |
 
-The owner approved the names and bios on November 2, 2026. The bios are `celebrityBios` in `packages/career/src/lines.ts`. Each celebrity is a home rider on one road and is not drawn for any other, and each takes its bikes and aggression from an ordinary rival: Ines, Lyle, Ruth Ann, Wanda, Tristan and Benny, in table order. Skill is set so the top rider of each pair starts as the road's boss; Juno still takes Ridge Road from the level she races. They have no lines yet, so a celebrity says nothing in a race. The bar shows the bio on the boss's sticker with an empty stool, and the race shows the name on a tag over the nearest celebrity.
+The owner approved the names and bios on November 2, 2026. The bios are `celebrityBios` in `packages/career/src/lines.ts`. Each celebrity is a home rider on one road and is not drawn for any other, and each takes its bikes and aggression from an ordinary rival: Ines, Lyle, Ruth Ann, Wanda, Tristan and Benny, in table order. Skill is set so the top rider of each pair starts as the road's boss; Juno still takes Ridge Road from the level she races. They have no pre-race or post-race lines. The bar shows the bio on the boss's sticker with an empty stool.
 
 ### Summary
 
@@ -733,7 +733,7 @@ Rivals move up the catalogue as the season goes on. The player's "decent" path (
 
 ### The riders
 
-Each rider has six lines: two pre-race taunts (the first is the default, the second is the grudge line chosen by section 10), a post-race line for when they beat you, one for when you beat them, a line when they knock you down, and a line when you knock them down.
+Each rider has four lines: two pre-race taunts (the first is the default, the second is the grudge line chosen by section 10), a post-race line for when they beat you, and one for when you beat them. Nobody speaks during a race.
 
 #### Juno Kade
 
@@ -747,8 +747,6 @@ Visual: tall and narrow, upright on the bike. Black one-piece leathers with a si
 - Grudge taunt: "You touched me last time. I wrote it down. I don't write things down."
 - She beat you: "Good effort. I mean that the way people say it to children."
 - You beat her: "Enjoy it. Frame something. I'll be back to normal by Thursday."
-- She knocks you down: "Stay there. It suits you."
-- You knock her down: "Oh, now it's personal. Congratulations, you're a person."
 
 #### Ruth Ann Bixby
 
@@ -762,8 +760,6 @@ Visual: compact, sits low. Suede jacket with a short fringe along the sleeves th
 - Grudge taunt: "You kicked me last time. Mules remember. So do I."
 - She beat you: "Rode you like a fence line. Straight, then done."
 - You beat her: "Well. Even a blind sow finds an acorn."
-- She knocks you down: "Whoa there."
-- You knock her down: "That's my good braid ruined."
 
 #### Dee Santangelo
 
@@ -777,8 +773,6 @@ Visual: small and forward, elbows out. Red delivery jacket with a white collar. 
 - Grudge taunt: "Last race cost me a tip. You owe me four dollars and an apology."
 - She beat you: "Thirty minutes or less. You took thirty-one."
 - You beat her: "Fine. You win. I'm still getting a one-star review because of you."
-- She knocks you down: "Delivery!"
-- You knock her down: "My box! Do you know how hard it is to get cheese off a highway?"
 
 #### Ines Marchetti
 
@@ -792,8 +786,6 @@ Visual: ivory leathers that were clearly a wedding outfit once. A torn veil tied
 - Grudge taunt: "You knocked me down last time. Kevin also knocked me down. Emotionally."
 - She beat you: "Something old, something new, something borrowed, something beat you."
 - You beat her: "Fine. Throw the bouquet. Throw it at your own face."
-- She knocks you down: "Speak now or forever hold your peace!"
-- You knock her down: "This veil was nonrefundable!"
 
 #### Mags Dunleavy
 
@@ -807,8 +799,6 @@ Visual: short and hunched over the tank. Oil-stained blue-grey coveralls, a pudd
 - Grudge taunt: "You put me in the dirt last time, sweetheart. I've buried better in the scrap pile."
 - She beat you: "Bring that bike by the yard. I'll give you forty bucks for the seat."
 - You beat her: "Not bad. Your clutch sounds like a goose with a cough, though."
-- She knocks you down: "Don't get up on my account."
-- You knock her down: "Fifty-eight years old and you pick me? Your mother would be thrilled."
 
 #### Lyle Gorski
 
@@ -822,8 +812,6 @@ Visual: broad shoulders, upright like he is on patrol. Khaki uniform jacket with
 - Grudge taunt: "I've opened a file on you. It's thick. It's mostly drawings of you crying."
 - He beat you: "Let the record show the suspect finished behind me. Case closed."
 - You beat him: "This doesn't go in the report. There is no report. I'm not a deputy anymore."
-- He knocks you down: "Stay down. That's a lawful order. Probably."
-- You knock him down: "Assaulting an officer! A former officer! Same thing, morally!"
 
 #### Tristan Lux
 
@@ -837,8 +825,6 @@ Visual: lean, glossy purple jacket covered in sponsor patches, phone on a chest 
 - Grudge taunt: "Chat is clipping what you did last race. You're going viral, and not the fun way."
 - He beat you: "GG. Chat, do not rewatch turn four, I looked weird."
 - You beat him: "Chat, that was a sponsored loss. Use code CRASH for ten percent off."
-- He knocks you down: "Chat, did you get that? Tell me you got that."
-- You knock him down: "Not the phone! Not the phone! Is it still recording?"
 
 #### Coach Dale Hutto
 
@@ -852,8 +838,6 @@ Visual: soft round build, sits back on the bike. Blue polo shirt over a back pro
 - Grudge taunt: "You knocked me down last time. I've reframed it as a gift. Today I give it back."
 - He beat you: "Winners never quit, and you, my friend, should quit."
 - You beat him: "Failure is just success that hasn't been invoiced yet. Tape six, side B."
-- He knocks you down: "Lesson one: gravity is your coach now!"
-- You knock him down: "I'm not falling, I'm pivoting!"
 
 #### Moose Kowalczyk
 
@@ -867,8 +851,6 @@ Visual: broad, heavy shoulders and tattooed arms. A blond mullet with a shaved s
 - Grudge taunt: "Last time you made me fall down. I've been thinking about it in the bath."
 - He beat you: "Good race. Ice your face. Twenty minutes on, twenty off."
 - You beat him: "You were very fast. I'll be faster after a sandwich."
-- He knocks you down: "Sorry. Not sorry. Sorry, I get those mixed up."
-- You knock him down: "Ow. Okay. That's fair. Ow."
 
 #### Gus Abernathy
 
@@ -882,8 +864,6 @@ Visual: lanky and bent, white beard, hi-vis vest over a red flannel shirt, a hel
 - Grudge taunt: "You ran my sign last time, kid. Nobody runs my sign."
 - He beat you: "Slow and steady. Mostly slow. But steady."
 - You beat him: "Back in my day the road was shorter. And I was faster. And it was uphill."
-- He knocks you down: "STOP. Means stop."
-- You knock him down: "That's coming out of the county's budget!"
 
 #### Sister Agnes Mulcahy
 
@@ -897,8 +877,6 @@ Visual: small and very upright, elbows in. Black habit cut short over grey leath
 - Grudge taunt: "You struck a nun last time. I've forgiven you. The roof fund hasn't."
 - She beat you: "Blessed are the meek, dear. Meek enough to brake for the corners."
 - You beat her: "Well done. Put something in the tin on your way out."
-- She knocks you down: "Mind the step."
-- You knock her down: "Sixty-one years, and that's the first time I've said that word."
 
 #### Benny Okafor
 
@@ -912,8 +890,6 @@ Visual: broad-shouldered, head back, mouth open. A teal sequinned stage jacket o
 - Grudge taunt: "You hit me last time, mid-chorus. Nobody hits Benny mid-chorus."
 - He beat you: "That was a duet. You sang backup."
 - You beat him: "Fine. Encore next week. Bring a bike this time."
-- He knocks you down: "And that's the key change!"
-- You knock him down: "My voice! My beautiful... no, wait, that's my knee."
 
 #### Dr Felix Aurand
 
@@ -927,8 +903,6 @@ Visual: lean and tense, elbows high. Pale blue surgical scrubs under a mint jack
 - Grudge taunt: "You chipped something of mine last time. I don't do my own work."
 - He beat you: "Floss, ride less, and see me in six months."
 - You beat him: "Congratulations. Here's my card. You'll need it eventually."
-- He knocks you down: "That's going to need a crown."
-- You knock him down: "My hands! Do you know what these hands bill by the hour?"
 
 #### Hollis Thorne
 
@@ -942,8 +916,6 @@ Visual: tall, square, and relaxed, sitting far back on the seat. High-vis orange
 - Grudge taunt: "You put me over the edge last time. I had to rescue myself. There's paperwork."
 - He beat you: "You're fine. You're all fine. I checked, from the front."
 - You beat him: "Good ride. Hydrate. I mean it, hydrate."
-- He knocks you down: "Don't move. I'm trained. Okay, move a little."
-- You knock him down: "That's a textbook fall, actually. Chapter four."
 
 #### Orrin Blackwell
 
@@ -957,8 +929,6 @@ Visual: compact and forward, chin down. Field khaki jacket with too many pockets
 - Grudge taunt: "You put me in the dirt last time. I got footage. It did numbers."
 - He beat you: "And that, subscribers, is how you survive a race. Like and remember."
 - You beat him: "The wild is unpredictable. So are you, apparently. Cut that bit."
-- He knocks you down: "Nature is brutal! Did we get that? Say we got that."
-- You knock him down: "I've survived worse. I haven't, but I've said I have."
 
 #### Wanda Pruitt
 
@@ -972,8 +942,6 @@ Visual: neat and still on the bike, shoulders square. A cream blazer with the st
 - Grudge taunt: "Last week I predicted you'd behave. I'm correcting that on air tonight."
 - She beat you: "As predicted. Back to you in the studio."
 - You beat her: "An unexpected front. I'll be issuing an apology at six."
-- She knocks you down: "Heavy fall expected. Oh, there it is."
-- You knock her down: "This blazer is station property!"
 
 ## 10. Memory
 
@@ -1001,7 +969,6 @@ Rules:
 - Effective aggression toward the player is `profile.aggression + aggressionBonus`, clamped to 0 to 1. Toward other riders it stays the profile value.
 - The grudge flag is set when the bonus reaches 0.15 and cleared when it falls below 0.05. A rider with a grudge picks the player as their attack target whenever the player is in reach, even if another rider is closer.
 - The post-race line follows the settled places: if they are placed ahead, their "beat you" line; if you are placed ahead, their "you beat them" line. A rival who was busted or wrecked uses the "you beat them" line.
-- The two in-race lines appear as a speech tag on the HUD for two seconds when the knockdown happens.
 - Dee's bonus is fixed at −1 toward the player from the level whose field rides rung 3 (level 3 of five, level 2 of three; she will not attack you), unless the player knocks her down twice in one race, which ends the alliance for the rest of that level. Her memory keeps running underneath the alliance, so the two knockdowns that end it also give her the usual +0.20 and a grudge for the next race.
 
 ## 11. Story

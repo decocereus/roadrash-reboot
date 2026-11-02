@@ -250,9 +250,7 @@ const startGame = (
     stage,
   });
   owners.push(cancelPreparation);
-  const { placeTag, quiet, react, report, say, toggleMute } = bindFeedback({
-    canvas,
-    cast,
+  const { quiet, react, report, say, toggleMute } = bindFeedback({
     chase,
     events,
     feedback,
@@ -273,9 +271,6 @@ const startGame = (
     session.lastStretchSaid = false;
     feedback.notice = "";
     feedback.noticeLeft = 0;
-    feedback.speech = "";
-    feedback.speechLeft = 0;
-    feedback.tagRider = null;
     frame.clockReset = true;
   };
 
@@ -513,7 +508,6 @@ const startGame = (
     stage.world.follow(chase.camera, cast.subject.s);
     frame.profiler?.lap("world");
     present();
-    placeTag();
   };
 
   const applySettings = bindSettings({
@@ -682,9 +676,6 @@ const startGame = (
   return {
     dispose() {
       releaseAll(owners);
-    },
-    followRival(element) {
-      feedback.tag = element;
     },
     pause() {
       if (session.frozen || session.phase !== "racing") {

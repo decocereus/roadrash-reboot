@@ -105,7 +105,6 @@ Handwriting on the board (Vic's notes, the marker on Polaroids) is drawn as part
 - No dashboard, no bezel, no dials. Text and bars float directly over the road with a 2 px `#0E0F12` outline and a soft shadow so they hold up against sky and asphalt.
 - Bars are flat rectangles with a 2 px `#0E0F12` border and square ends, 10 px tall for stamina and 6 px for bike condition. Stamina is green above 50, yellow to 25, red below. Bike condition is warm white `#F2EEE6` above 50, yellow to 25, red below. A bar changes colour at its threshold and holds that colour; it does not flash.
 - Weapon hits are pips: small solid rectangles in `#F2EEE6`, hollow when spent.
-- The rival tag is a `#17191F` plate at 85% opacity with the rival's bike colour as a 4 px left edge, their name in Saira, and their stamina bar. The speech tag is the same plate, wider, with the line in Inter.
 - The cop warning alternates `#2F6BFF` and `#E5312B` at 2 Hz. Nothing else on the HUD blinks. The position numeral turns yellow `#FFC531` for half a second when it changes and then returns to warm white, as one steady change of colour.
 - Notices are one or two words in Saira 800, yellow, centred at 30% of the screen height, on screen for 0.8 seconds, scaling from 110% to 100% as they appear.
 - Layout, strings, and data sources are in `screens.md`.
@@ -225,7 +224,7 @@ The existing road: a two-lane mountain road climbing through meadow and rock to 
 
 1. **A hit has three beats: wind-up, contact, reaction.** The wind-up is the arm or weapon raised clear of the body for at least 10 ticks (the fist's `strikeTick`), so a watchful player can react. Contact is one frame of white flash on the struck rider and a spark or dust puff at the point of impact. The reaction is the struck rider's body rocking away for the length of the hit stun.
 2. **The attacking arm is always on the side of the target** and extends away from the body, never across it, so the silhouette changes.
-3. **Weapons are visible before they are used.** A rider's weapon is on screen from the grid onward, and the HUD rival tag is the second source.
+3. **Weapons are visible before they are used.** A rider's weapon is on screen from the grid onward.
 4. **Low stamina shows on the rider.** Below 25 stamina a rider slumps and wobbles slightly; the player can see who is one hit from falling without reading a bar.
 5. **A knockdown separates two shapes.** The rider leaves the bike upward and away from the hit; the bike slides on its side with sparks. They never overlap after the first three frames.
 6. **A downed rider stays readable.** The rider on the ground keeps their jacket colour, lies flat for the settle time, then stands. The run back is a full-height figure, upright, arms pumping. A yellow outline marks the player's own rider and bike while they are apart.

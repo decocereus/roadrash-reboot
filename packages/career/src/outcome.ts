@@ -145,10 +145,8 @@ const entrantOf = (
   return undefined;
 };
 
-export const rivalOf = (
-  log: RaceLog,
-  rider: RiderId | null
-): RivalId | undefined => entrantOf(log, rider)?.rival;
+const rivalOf = (log: RaceLog, rider: RiderId | null): RivalId | undefined =>
+  entrantOf(log, rider)?.rival;
 
 const kmOf = (metres: number): number => Math.max(0, metres) / METRES_PER_KM;
 

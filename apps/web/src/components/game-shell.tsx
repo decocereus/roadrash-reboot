@@ -283,11 +283,7 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
   const { finish } = view;
   return (
     <>
-      <RaceHud
-        feed={flow.feed}
-        settled={finish !== null}
-        tagRef={flow.followRival}
-      />
+      <RaceHud feed={flow.feed} settled={finish !== null} />
       {finish && (
         <FinishBanner
           onContinue={() => {
