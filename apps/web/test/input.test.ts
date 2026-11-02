@@ -109,6 +109,24 @@ describe("keyboard controls", () => {
     expect(readOnce(controls).remount).toBeTruthy();
   });
 
+  it("a key pressed under Cmd never sticks when its release is lost, as with Cmd+Shift+4 on a Mac", () => {
+    const { controls, keyboard } = setUp();
+    keyboard.press("MetaLeft");
+    keyboard.press("ShiftLeft");
+    expect(readOnce(controls).kick).toBeFalsy();
+    keyboard.release("MetaLeft");
+    expect(readOnce(controls).kick).toBeFalsy();
+  });
+
+  it("releasing Cmd lets go of a key held since before Cmd, whose release Cmd may have swallowed", () => {
+    const { controls, keyboard } = setUp();
+    keyboard.press("ShiftLeft");
+    keyboard.press("MetaLeft");
+    expect(readOnce(controls).kick).toBeTruthy();
+    keyboard.release("MetaLeft");
+    expect(readOnce(controls).kick).toBeFalsy();
+  });
+
   it("losing focus lets go of every key, and steering eases back", () => {
     const { controls, keyboard } = setUp();
     keyboard.press("ArrowUp");

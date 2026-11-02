@@ -90,7 +90,7 @@ export const RaceHud = ({
             </Notice>
           )}
           {racing && hud.remountPrompt && (
-            <p className="hud-ink text-name absolute bottom-[28%] left-1/2 -translate-x-1/2">
+            <p className="font-display tracking-display text-name bg-ink/85 absolute bottom-[28%] left-1/2 -translate-x-1/2 px-4 py-1 font-extrabold whitespace-nowrap uppercase">
               E to get back on
             </p>
           )}

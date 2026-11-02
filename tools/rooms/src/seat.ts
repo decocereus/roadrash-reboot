@@ -47,6 +47,7 @@ export const weavingControl = (tick: number, rider: number): Control =>
     brake: 0,
     kick: false,
     punch: tick % 241 === 0,
+    remount: tick % 241 === 0,
     steer: steerOf(tick, rider),
     throttle: 1,
   });

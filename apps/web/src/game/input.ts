@@ -24,6 +24,7 @@ const handled = new Set([
 export interface KeyEvent {
   readonly code: string;
   readonly repeat: boolean;
+  readonly metaKey: boolean;
   readonly preventDefault: () => void;
 }
 
@@ -106,13 +107,16 @@ export const createControls = (
     if (handled.has(event.code)) {
       event.preventDefault();
     }
-    if (!event.repeat) {
+    if (!(event.repeat || event.metaKey)) {
       held.add(event.code);
       onCommand(event.code);
     }
   };
   const release = (event: KeyEvent) => {
     held.delete(event.code);
+    if (event.code === "MetaLeft" || event.code === "MetaRight") {
+      held.clear();
+    }
   };
   const clear = () => {
     held.clear();
