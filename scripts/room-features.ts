@@ -16,6 +16,9 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/guest-name.ts",
       "apps/web/src/components/room-lobby.tsx",
       "apps/web/src/components/room-url.ts",
+      "apps/web/src/components/rematch-watch.test.ts",
+      "apps/web/src/components/rematch-watch.ts",
+      "apps/web/src/components/use-rematch.ts",
       "tools/rooms/**",
     ],
     perf: [
