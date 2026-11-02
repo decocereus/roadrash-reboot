@@ -1,6 +1,8 @@
 import { artBucketName } from "@racer/art/remote";
+import Rooms from "@racer/rooms/worker";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
+import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
@@ -20,8 +22,12 @@ export default Alchemy.Stack(
   Effect.gen(function* rushline() {
     const stage = yield* Alchemy.Stage;
     const art = yield* Cloudflare.R2.Bucket("Art", { name: artBucketName });
+    const rooms = yield* Rooms;
+    const webPort = yield* Config.Int("RUSHLINE_WEB_PORT").pipe(
+      Config.withDefault(1350)
+    );
     const web = yield* Cloudflare.Website.Vite("Web", {
-      dev: { port: 1350, strictPort: true },
+      dev: { port: webPort, strictPort: true },
       env: { ART: art },
       memo: {
         include: [
@@ -39,6 +45,7 @@ export default Alchemy.Stack(
     });
 
     return {
+      roomsUrl: rooms.url.as<string>(),
       webUrl: web.url.as<string>(),
     };
   })

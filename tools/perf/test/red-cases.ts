@@ -40,6 +40,9 @@ const SNAPSHOT_RUNS = 3;
 const SNAPSHOT_WRITE_MS = 0.05;
 const SNAPSHOT_RESTORE_MS = 0.04;
 const SNAPSHOT_HASH_MS = 0.08;
+const ROOM_TICK_MS = 0.1;
+const ROOM_CONFIRM_MS = 0.1;
+const ROOM_ROLLBACK_MS = 0.6;
 const SNAPSHOT_BYTES = 12_000;
 const CLOSURE_BYTES = 100_000;
 
@@ -132,6 +135,16 @@ export const syntheticLane = (
         write: tickDurations(SNAPSHOT_WRITE_MS * slowdown.runner),
       },
     });
+  const roomed = (run: number) =>
+    sampleOf(scenario, "B", "room", `room-${run}-B.json`, {
+      room: {
+        allocated: { client: 900, frame: 200, server: 900 },
+        confirm: tickDurations(ROOM_CONFIRM_MS * slowdown.runner),
+        resimulated: [5],
+        rollback: tickDurations(ROOM_ROLLBACK_MS * slowdown.runner),
+        tick: tickDurations(ROOM_TICK_MS * slowdown.runner),
+      },
+    });
   return {
     allocation: pairs(ALLOCATION_PAIRS).map((pair) => ({
       a: allocated("A", pair),
@@ -151,6 +164,7 @@ export const syntheticLane = (
         },
       })
     ),
+    rooms: pairs(SNAPSHOT_RUNS).map(roomed),
     scenario: scenario.id,
     snapshots: pairs(SNAPSHOT_RUNS).map(snapshotted),
     timing: pairs(TIMING_PAIRS).map((pair) => ({

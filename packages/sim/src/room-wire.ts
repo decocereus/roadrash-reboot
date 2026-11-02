@@ -7,6 +7,9 @@ import type { Control } from "./state.ts";
 
 const INPUT_KIND = 1;
 const TICK_KIND = 2;
+const PING_KIND = 3;
+const PONG_KIND = 4;
+const START_KIND = 5;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
 const COUNT_BYTES = 1;
@@ -141,6 +144,16 @@ export const writeTick = (
   return at;
 };
 
+export const tickCapacity = (seats: number): number =>
+  KIND_BYTES +
+  TICK_BYTES +
+  COUNT_BYTES +
+  seats * HANDOVER_BYTES +
+  COUNT_BYTES +
+  seats * CONTROL_ENTRY_BYTES +
+  FLAG_BYTES +
+  HASH_BYTES;
+
 export interface ReadTick {
   readonly frame: TickFrame;
   readonly hash: Uint32Array;
@@ -236,3 +249,54 @@ export const readTick = (view: DataView, into: ReadTick): boolean => {
   const afterControls = readControls(view, afterHandovers, into.frame);
   return afterControls >= 0 && readHash(view, afterControls, into);
 };
+
+const STAMP_BYTES = 4;
+const NO_STAMP = -1;
+
+export const PING_PACKET_BYTES = KIND_BYTES + STAMP_BYTES;
+export const PONG_PACKET_BYTES = KIND_BYTES + STAMP_BYTES + TICK_BYTES;
+export const START_PACKET_BYTES = KIND_BYTES;
+
+export const writePing = (view: DataView, stamp: number): number => {
+  view.setUint8(0, PING_KIND);
+  view.setUint32(KIND_BYTES, stamp, true);
+  return PING_PACKET_BYTES;
+};
+
+export const readPing = (view: DataView): number =>
+  view.byteLength === PING_PACKET_BYTES && view.getUint8(0) === PING_KIND
+    ? view.getUint32(KIND_BYTES, true)
+    : NO_STAMP;
+
+export const writePong = (
+  view: DataView,
+  stamp: number,
+  tick: number
+): number => {
+  view.setUint8(0, PONG_KIND);
+  view.setUint32(KIND_BYTES, stamp, true);
+  view.setUint32(KIND_BYTES + STAMP_BYTES, tick, true);
+  return PONG_PACKET_BYTES;
+};
+
+export interface Pong {
+  stamp: number;
+  tick: number;
+}
+
+export const readPong = (view: DataView, into: Pong): boolean => {
+  if (view.byteLength !== PONG_PACKET_BYTES || view.getUint8(0) !== PONG_KIND) {
+    return false;
+  }
+  into.stamp = view.getUint32(KIND_BYTES, true);
+  into.tick = view.getUint32(KIND_BYTES + STAMP_BYTES, true);
+  return true;
+};
+
+export const writeStart = (view: DataView): number => {
+  view.setUint8(0, START_KIND);
+  return START_PACKET_BYTES;
+};
+
+export const isStart = (view: DataView): boolean =>
+  view.byteLength === START_PACKET_BYTES && view.getUint8(0) === START_KIND;

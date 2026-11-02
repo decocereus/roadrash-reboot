@@ -34,7 +34,6 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Madrid corridor and data credits](#madrid-corridor-and-data-credits): `madrid-corridor`
 - [Race simulation core](#race-simulation-core): `race-core`
 - [Race snapshots and the replay hash](#race-snapshots-and-the-replay-hash): `race-snapshot`
-- [Race rooms](#race-rooms): `race-room`
 - [Deterministic math and randomness](#deterministic-math-and-randomness): `deterministic-math`
 - [Track compiler](#track-compiler): `track-compiler`
 - [Renderer core and frame loop](#renderer-core-and-frame-loop): `renderer-core`
@@ -52,6 +51,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Perf gate and frame bench](#perf-gate-and-frame-bench): `perf-gate`
 - [Lint plugins](#lint-plugins): `lint-plugins`
 - [Repository checks](#repository-checks): `repo-checks`
+- [Race rooms](#race-rooms): `race-room`
 
 ## Features
 
@@ -683,28 +683,6 @@ Test files:
 - `packages/sim/src/snapshot-holes.test.ts`
 - `packages/sim/src/snapshot.test.ts`
 
-### Race rooms
-
-The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess.
-
-- Id: `race-room`
-- Start: `packages/sim/src/room.ts`, `packages/sim/src/room-client.ts`, `packages/sim/src/room-wire.ts`
-- Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
-- Verify: none yet
-- Perf: none yet
-- Owns: `packages/sim/src/room*.ts`
-
-Source files:
-
-- `packages/sim/src/room-client.ts`
-- `packages/sim/src/room-frame.ts`
-- `packages/sim/src/room-wire.ts`
-- `packages/sim/src/room.ts`
-
-Test files:
-
-- `packages/sim/src/room.test.ts`
-
 ### Deterministic math and randomness
 
 The owned `sin`, `cos`, `atan` and `hypot2` that give the same bits on every machine, and the seeded random generator every deterministic module draws from.
@@ -1122,7 +1100,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1130,6 +1108,7 @@ Source files:
 - `tools/perf/gpu.ts`
 - `tools/perf/measure.ts`
 - `tools/perf/node.ts`
+- `tools/perf/room.ts`
 - `tools/perf/src/approved.ts`
 - `tools/perf/src/baseline.ts`
 - `tools/perf/src/budgets.ts`
@@ -1147,6 +1126,7 @@ Source files:
 - `tools/perf/src/measure.ts`
 - `tools/perf/src/measurement-failed.ts`
 - `tools/perf/src/node-lane.ts`
+- `tools/perf/src/node-room.ts`
 - `tools/perf/src/node.ts`
 - `tools/perf/src/result.ts`
 - `tools/perf/src/scenarios.ts`
@@ -1292,6 +1272,7 @@ Source files:
 - `scripts/player-features.ts`
 - `scripts/postcss-tokenize.d.ts`
 - `scripts/renderer-imports.ts`
+- `scripts/room-features.ts`
 - `scripts/rule-ledger.ts`
 - `scripts/setup-effect-reference.ts`
 - `scripts/verify.ts`
@@ -1303,3 +1284,36 @@ Test files:
 - `scripts/feature-map.test.ts`
 - `scripts/renderer-imports.test.ts`
 - `scripts/rule-ledger.test.ts`
+
+### Race rooms
+
+The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, and `pnpm rooms:race` races scripted seats against it.
+
+- Id: `race-room`
+- Start: `apps/rooms/src/host.ts`, `packages/sim/src/room.ts`, `packages/sim/src/room-client.ts`
+- Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
+- Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race.ts`, `apps/rooms/**`, `tools/rooms/**`
+
+Source files:
+
+- `apps/rooms/src/contract.ts`
+- `apps/rooms/src/host.ts`
+- `apps/rooms/src/messages.ts`
+- `apps/rooms/src/not-web-socket.ts`
+- `apps/rooms/src/race-server.ts`
+- `apps/rooms/src/worker.ts`
+- `packages/career/src/room-race.ts`
+- `packages/sim/src/room-client.ts`
+- `packages/sim/src/room-frame.ts`
+- `packages/sim/src/room-wire.ts`
+- `packages/sim/src/room.ts`
+- `tools/rooms/race.ts`
+- `tools/rooms/src/race.ts`
+- `tools/rooms/src/seat.ts`
+
+Test files:
+
+- `apps/rooms/test/host.test.ts`
+- `packages/sim/src/room.test.ts`

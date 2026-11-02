@@ -181,6 +181,7 @@ const tasks = [
   "calibrate",
   "snapshot",
   "roadLife",
+  "room",
 ] as const;
 
 export const childRecord = Schema.Struct({
@@ -205,6 +206,19 @@ export const childRecord = Schema.Struct({
     Schema.Struct({
       fewestCrossCars: Schema.Number,
       mostRacersAtCrossing: Schema.Number,
+    })
+  ),
+  room: Schema.optionalKey(
+    Schema.Struct({
+      allocated: Schema.Struct({
+        client: Schema.Number,
+        frame: Schema.Number,
+        server: Schema.Number,
+      }),
+      confirm: Schema.Array(Schema.Number),
+      resimulated: Schema.Array(Schema.Number),
+      rollback: Schema.Array(Schema.Number),
+      tick: Schema.Array(Schema.Number),
     })
   ),
   rows: Schema.optionalKey(workloadRows),

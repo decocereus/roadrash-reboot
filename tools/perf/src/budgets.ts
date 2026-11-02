@@ -50,6 +50,18 @@ const roadLifeKind: MetricKind = {
   perScenario: false,
 };
 
+const ROOM_ALLOCATION_HEADROOM = 1.1;
+
+const roomAllocationKind = (metric: string): MetricKind => ({
+  direction: "max",
+  headroom: ROOM_ALLOCATION_HEADROOM,
+  lane: "node",
+  metric,
+  paired: null,
+  perScenario: true,
+  unit: "B",
+});
+
 const nodeKinds: readonly MetricKind[] = [
   nodeKind("sim.ticksPerSecond", "ticks/s", "min", 0.9),
   nodeKind("sim.tick.p95", "ms", "max", 1.15),
@@ -60,6 +72,12 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("snapshot.hash.p95", "ms"),
   snapshotKind(SNAPSHOT_BYTES_METRIC, "B"),
   roadLifeKind,
+  snapshotKind("room.tick.p95", "ms"),
+  snapshotKind("room.confirm.p95", "ms"),
+  snapshotKind("room.rollback.p95", "ms"),
+  roomAllocationKind("room.allocatedBytesPerTick"),
+  roomAllocationKind("room.client.allocatedBytesPerTick"),
+  roomAllocationKind("room.frame.allocatedBytesPerTick"),
 ];
 
 const byteClosures = [
@@ -353,10 +371,9 @@ const proposed = (kind: MetricKind, baseline: number) => {
   }
   const factor = kind.headroom;
   return {
-    derivation:
-      kind.metric === "sim.allocatedBytesPerTick"
-        ? `${factor} x baseline median, uncalibrated`
-        : `${factor} x calibrated baseline median`,
+    derivation: kind.metric.endsWith("allocatedBytesPerTick")
+      ? `${factor} x baseline median, uncalibrated`
+      : `${factor} x calibrated baseline median`,
     value: baseline * factor,
   };
 };

@@ -24,6 +24,9 @@ importers:
       '@racer/career':
         specifier: workspace:*
         version: link:packages/career
+      '@racer/rooms':
+        specifier: workspace:*
+        version: link:apps/rooms
       '@racer/sim':
         specifier: workspace:*
         version: link:packages/sim
@@ -57,6 +60,31 @@ importers:
       vite:
         specifier: 8.3.2
         version: 8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.0
+        version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+
+  apps/rooms:
+    dependencies:
+      '@racer/career':
+        specifier: workspace:*
+        version: link:../../packages/career
+      '@racer/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
+      alchemy:
+        specifier: 2.0.0-beta.83
+        version: 2.0.0-beta.83(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.4.1)(@types/react@19.2.18)(effect@4.0.0)(hono@4.13.12)(vite@8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(ws@8.22.0)
+      effect:
+        specifier: 4.0.0
+        version: 4.0.0
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260918.1
+        version: 5.20260918.1
+      '@types/node':
+        specifier: 26.4.1
+        version: 26.4.1
       vitest:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -378,6 +406,31 @@ importers:
       playwright:
         specifier: 1.64.1
         version: 1.64.1
+    devDependencies:
+      '@types/node':
+        specifier: 26.4.1
+        version: 26.4.1
+
+  tools/rooms:
+    dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0
+        version: 4.0.0(effect@4.0.0)(redis@6.3.0)
+      '@racer/career':
+        specifier: workspace:*
+        version: link:../../packages/career
+      '@racer/devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      '@racer/rooms':
+        specifier: workspace:*
+        version: link:../../apps/rooms
+      '@racer/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
+      effect:
+        specifier: 4.0.0
+        version: 4.0.0
     devDependencies:
       '@types/node':
         specifier: 26.4.1

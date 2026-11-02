@@ -1,0 +1,36 @@
+import * as Schema from "effect/Schema";
+
+const Lobby = Schema.Struct({
+  kind: Schema.Literal("lobby"),
+  seats: Schema.Number,
+});
+
+const Started = Schema.Struct({
+  digest: Schema.Array(Schema.Number),
+  kind: Schema.Literal("started"),
+  seats: Schema.Number,
+  seed: Schema.Number,
+  startsInMs: Schema.Number,
+  you: Schema.Number,
+});
+
+const Ended = Schema.Struct({
+  kind: Schema.Literal("ended"),
+  tick: Schema.Number,
+});
+
+const Refused = Schema.Struct({
+  kind: Schema.Literal("refused"),
+  reason: Schema.Literals(["full", "racing"]),
+});
+
+const RoomMessageSchema = Schema.Union([Lobby, Started, Ended, Refused]);
+
+export type RoomMessage = typeof RoomMessageSchema.Type;
+
+const RoomMessageJson = Schema.fromJsonString(RoomMessageSchema);
+
+export const encodeRoomMessage = Schema.encodeSync(RoomMessageJson);
+export const decodeRoomMessage = Schema.decodeUnknownOption(RoomMessageJson);
+
+export const SEAT_CLOSED = 1000;
