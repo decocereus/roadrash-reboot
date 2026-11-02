@@ -210,50 +210,49 @@ const identity = {
   sourceFiles: 1,
 };
 
+const roadLifeSample = (
+  task: ChildRecord["task"],
+  file: string,
+  measured: Partial<ChildRecord>
+): NodeSample => ({
+  file,
+  record: {
+    ...measured,
+    runtime,
+    scenario: ROAD_LIFE.id,
+    scenarioHash: "road-life",
+    task,
+  },
+  side: "B",
+  startedAt: 0,
+});
+
 export const syntheticRoadLife = (
   slowdown: Slowdown,
   fewestCrossCars: number = ROAD_LIFE.leastCrossCars
-): RoadLifeLane => {
-  const sample = (
-    task: ChildRecord["task"],
-    file: string,
-    measured: Partial<ChildRecord>
-  ): NodeSample => ({
-    file,
-    record: {
-      ...measured,
-      runtime,
-      scenario: ROAD_LIFE.id,
-      scenarioHash: "road-life",
-      task,
-    },
-    side: "B",
-    startedAt: 0,
-  });
-  return {
-    calibrations: pairs(ROAD_LIFE_RUNS + 1).map((index) =>
-      sample("calibrate", `road-life-calibrate-${index}.json`, {
-        calibration: {
-          checksums: [CHECKSUM],
-          durations: Array.from(
-            { length: CALIBRATION_SAMPLES },
-            () => CALIBRATION_MS * slowdown.runner
-          ),
-          rounds: CALIBRATION_ROUNDS,
-        },
-      })
-    ),
-    runs: pairs(ROAD_LIFE_RUNS).map((run) =>
-      sample("roadLife", `road-life-run-${run}.json`, {
-        durations: tickDurations(slowdown.runner * slowdown.sim),
-        roadLife: {
-          fewestCrossCars,
-          mostRacersAtCrossing: ROAD_LIFE.leastRacersAtCrossing,
-        },
-      })
-    ),
-  };
-};
+): RoadLifeLane => ({
+  calibrations: pairs(ROAD_LIFE_RUNS + 1).map((index) =>
+    roadLifeSample("calibrate", `road-life-calibrate-${index}.json`, {
+      calibration: {
+        checksums: [CHECKSUM],
+        durations: Array.from(
+          { length: CALIBRATION_SAMPLES },
+          () => CALIBRATION_MS * slowdown.runner
+        ),
+        rounds: CALIBRATION_ROUNDS,
+      },
+    })
+  ),
+  runs: pairs(ROAD_LIFE_RUNS).map((run) =>
+    roadLifeSample("roadLife", `road-life-run-${run}.json`, {
+      durations: tickDurations(slowdown.runner * slowdown.sim),
+      roadLife: {
+        fewestCrossCars,
+        mostRacersAtCrossing: ROAD_LIFE.leastRacersAtCrossing,
+      },
+    })
+  ),
+});
 
 export const samplesOf = (
   comparisonId: string,

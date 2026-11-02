@@ -173,14 +173,14 @@ Test files:
 
 ### Junctions and crossings
 
-Junctions, cross roads and pedestrian crossings a road declares, their lights, the main-road traffic that queues at a red, and how each is drawn: the arms, zebras, stop lines and signal heads.
+Junctions, cross roads and pedestrian crossings a road declares, their lights, the cars on the cross roads, the main-road traffic that queues at a red, and how each is drawn: the arms, zebras, stop lines and signal heads.
 
 - Id: `junctions`
 - Start: `packages/track/src/crossings.ts`, `packages/sim/src/signals.ts`, `apps/web/src/game/junctions.ts`
 - Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
-- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `apps/web/src/game/junctions.ts`
+- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `apps/web/src/game/junctions.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
 
 Source files:
 
@@ -188,6 +188,9 @@ Source files:
 - `packages/sim/src/cross-traffic.ts`
 - `packages/sim/src/signals.ts`
 - `packages/track/src/crossings.ts`
+- `tools/perf/road-life.ts`
+- `tools/perf/src/node-road-life.ts`
+- `tools/perf/src/road-life.ts`
 
 Test files:
 

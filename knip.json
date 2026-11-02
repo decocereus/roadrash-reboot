@@ -53,6 +53,7 @@
         "gate.ts",
         "measure.ts",
         "node.ts",
+        "road-life.ts",
         "session.ts",
         "snapshot.ts",
         "test/**/*.test.ts"

@@ -87,7 +87,6 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
   const budgets = syntheticBudgets(build);
 
   it("fails road life when the race step slows past its limit", () => {
-    const budgets = syntheticBudgets(build);
     const result = evaluateGate(
       samplesOf(
         "road-life-slow",
@@ -106,7 +105,6 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
   });
 
   it("fails road life when the window no longer holds cross cars", () => {
-    const budgets = syntheticBudgets(build);
     const result = evaluateGate(
       samplesOf(
         "road-life-empty",
