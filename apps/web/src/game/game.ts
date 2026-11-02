@@ -447,16 +447,19 @@ const startGame = (
     }
   };
 
-  const tick = () => {
-    captureAll("before");
-    const { cars } = stage.race.view;
+  const rememberCars = () => {
+    const { cars, crossCars } = stage.race.view;
     for (let index = 0; index < cars.length; index += 1) {
       stage.previousCars[index] = cars[index]?.s ?? 0;
     }
-    const { crossCars } = stage.race.view;
     for (let index = 0; index < crossCars.length; index += 1) {
       stage.previousCrossCars[index] = crossCars[index]?.travel ?? 0;
     }
+  };
+
+  const tick = () => {
+    captureAll("before");
+    rememberCars();
     if (session.holdLeft > 0) {
       session.holdLeft -= TICK_SECONDS;
       holdStill();
