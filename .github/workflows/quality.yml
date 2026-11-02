@@ -110,7 +110,7 @@ jobs:
           key: art-${{ hashFiles('apps/web/src/assets/art.json') }}
           restore-keys: art-
       - run: pnpm art:pull
-      - run: node tools/perf/gate.ts baseline --lanes node
+      - run: pnpm perf
       - uses: actions/upload-artifact@v4
         if: always()
         with:
