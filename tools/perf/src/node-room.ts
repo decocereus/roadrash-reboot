@@ -236,8 +236,10 @@ const frameWork = (): void => {
 const allocationWindow = Effect.fnUntraced(function* allocationWindow(
   scenario: Scenario
 ) {
+  serverWork(prepareWarmed(scenario))();
   const serverBytes = yield* sampled(serverWork(prepareWarmed(scenario)));
   const packets = recordedPackets(prepareWarmed(scenario));
+  clientWork(prepareWarmed(scenario), packets)();
   const clientBytes = yield* sampled(
     clientWork(prepareWarmed(scenario), packets)
   );
