@@ -81,4 +81,17 @@ const RoomMessageJson = Schema.fromJsonString(RoomMessageSchema);
 export const encodeRoomMessage = Schema.encodeSync(RoomMessageJson);
 export const decodeRoomMessage = Schema.decodeUnknownOption(RoomMessageJson);
 
+export const ROOM_PHASES = ["waiting", "racing"] as const;
+
+const RoomPresenceSchema = Schema.Struct({
+  names: Schema.Array(Schema.String),
+  phase: Schema.Literals(ROOM_PHASES),
+});
+
+export type RoomPresence = typeof RoomPresenceSchema.Type;
+
+export const decodeRoomPresence = Schema.decodeUnknownOption(
+  Schema.fromJsonString(RoomPresenceSchema)
+);
+
 export const SEAT_CLOSED = 1000;

@@ -317,6 +317,7 @@ export const createHost = (ports: HostPorts): Host => {
     },
     status: () => ({
       catchUpWakes,
+      names: [...seats.values()].map((seat) => seat.name),
       phase: running ? "racing" : "waiting",
       seats: [...seats.values()].flatMap((seat) =>
         seat.rider === null

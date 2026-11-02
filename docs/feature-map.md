@@ -1306,7 +1306,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-url.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/rematch-watch.test.ts`, `apps/web/src/components/rematch-watch.ts`, `apps/web/src/components/use-rematch.ts`, `tools/rooms/**`
 
 Source files:
 
@@ -1320,8 +1320,10 @@ Source files:
 - `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
+- `apps/web/src/components/rematch-watch.ts`
 - `apps/web/src/components/room-lobby.tsx`
 - `apps/web/src/components/room-url.ts`
+- `apps/web/src/components/use-rematch.ts`
 - `packages/career/src/room-race.ts`
 - `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
@@ -1338,6 +1340,7 @@ Test files:
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
+- `apps/web/src/components/rematch-watch.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
 - `packages/sim/src/room-limit.test.ts`

@@ -37,7 +37,14 @@ export default class Rooms extends Cloudflare.Worker<Rooms>()(
             status: 404,
           });
         }
-        return yield* races.getByName(raceId.value).fetch(request);
+        const response = yield* races.getByName(raceId.value).fetch(request);
+        return new URL(request.url, "http://rooms").pathname.endsWith("/seat")
+          ? response
+          : HttpServerResponse.setHeader(
+              response,
+              "access-control-allow-origin",
+              "*"
+            );
       }),
     };
   })

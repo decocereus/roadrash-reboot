@@ -3,6 +3,7 @@ import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { creditLimitOf, roads } from "@racer/career/tables";
+import type { RoomPresence } from "@racer/rooms/messages";
 import type { RoomNet } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
 import { rivals } from "@racer/sim/cast";
@@ -27,6 +28,7 @@ import {
   weaponLabel,
 } from "../../career/format.ts";
 import { incidentLines } from "../../career/notes.ts";
+import { useRematch } from "../use-rematch.ts";
 import { BarHeader, BarNav } from "./bar-chrome.tsx";
 import type { BarAction } from "./bar-chrome.tsx";
 import {
@@ -394,6 +396,22 @@ const footOf = (report: RaceReport): string => {
   return report.ledger ? "Settled and saved" : "Single race";
 };
 
+const rematchLine = (rematch: RoomPresence | null): string | null => {
+  if (rematch === null) {
+    return null;
+  }
+  if (rematch.phase === "racing") {
+    return "The rematch has started without you.";
+  }
+  const [first, ...others] = rematch.names;
+  if (first === undefined) {
+    return null;
+  }
+  return others.length === 0
+    ? `${first} is waiting in the rematch.`
+    : `${[first, ...others].join(", ")} are waiting in the rematch.`;
+};
+
 export const ResultsScreen = ({
   report,
   career,
@@ -416,8 +434,10 @@ export const ResultsScreen = ({
   const clock = useBarClock();
   const speaker = speakerOf(report);
   const note = noteOf(report, riding);
+  const rematch = useRematch(report.room?.rematchId ?? null);
+  const rematchNote = rematchLine(rematch);
   const actions: BarAction[] = [
-    ...(canRaceAgain
+    ...(canRaceAgain && rematch?.phase !== "racing"
       ? [
           {
             id: "again",
@@ -448,6 +468,11 @@ export const ResultsScreen = ({
         {note !== null && <MagentaNote note={note} />}
         <BarLight clock={clock} />
         <BarNav actions={actions} label="Results" primary="continue">
+          {rematchNote !== null && (
+            <p className="text-paper" style={{ fontSize: stagePx(26) }}>
+              {rematchNote}
+            </p>
+          )}
           <p
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(20) }}
