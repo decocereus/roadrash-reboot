@@ -30,6 +30,10 @@
         "sha256": "7004384deca1059ea9b7d158c2c82b6ade34d73bb456866f3f2281e5397d3025"
       },
       {
+        "file": "tools/perf/baselines/post-step8.road-life.node-linux-x64.json.gz",
+        "sha256": "a4fd38d6ad9762bc702a7df74ff76f46e9d7f7ebf51b95b02a20d680639d37b5"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.six-celebrities.json.gz",
         "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
       },
@@ -48,7 +52,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "0a61f2ae850a5c1c8ecde3724288e497aede62c1f194bec15dc639fe87096b2a"
+    "summarySha256": "0237b174bb9be618c110be4b7cefa063fd6fe8eb9c5fd6895ebc83f08d0a93db"
   },
   "limits": [
     {
@@ -688,6 +692,18 @@
       "unit": "ms"
     },
     {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.42043587532746196,
+      "baseline": 0.36559641332822784,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
+      "unit": "ms"
+    },
+    {
       "derivation": "1.1 x baseline median, uncalibrated",
       "value": 115620.74009983362,
       "baseline": 105109.76372712146,
@@ -893,14 +909,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 21808,
-      "baseline": 21808,
+      "value": 21812,
+      "baseline": 21812,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
       "unit": "B"
     },
     {
@@ -917,14 +933,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 15473,
-      "baseline": 15473,
+      "value": 15477,
+      "baseline": 15477,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
+      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
       "unit": "B"
     },
     {
