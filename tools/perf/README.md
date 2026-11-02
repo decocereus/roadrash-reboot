@@ -40,6 +40,8 @@ The six `room.*` rows measure side B alone as well, because no room exists at th
 
 Nothing rewrites the budgets. To measure a new baseline, run `node tools/perf/gate.ts baseline --baseline-ref <rev>` on this Mac and in the CI perf job, and run `pnpm perf:gpu`. Then update `budgets.json`, the summary, the raw files and their hashes together, and explain each changed limit in the pull request.
 
+A baseline run scales its timings by its own calibration and proposes that calibration as the new node profile. To add a row without replacing the profile, gunzip the raw samples and read the `observed` value from `node tools/perf/gate.ts --evaluate <samples.json>`, which scales by the retained profile the way the gate will. A value copied from the proposal leaves more headroom than its derivation says.
+
 ### Scenarios
 
 `src/scenarios.ts` registers two 601-tick windows. On every tick the player must be riding at 20 m/s or more, with the pinned number of rivals within 150 m ahead, and the rival total must match exactly. An emptier window or a crash fails before any timing is judged.

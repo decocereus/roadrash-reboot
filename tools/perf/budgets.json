@@ -52,7 +52,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "b9a4503c8b3b809991356674d928fd6366a0bd9e37f1a6971d94f9bb066a6f34"
+    "summarySha256": "f3487d17e3f19ac7893f630d3534e2769dc1736f7897b6f57b98e272e0c22bd9"
   },
   "limits": [
     {
@@ -777,8 +777,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.2662308046820928,
-      "baseline": 0.23150504754964596,
+      "value": 0.23439043904370105,
+      "baseline": 0.2038177730814792,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.confirm.p95",
@@ -789,8 +789,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.6080051360952753,
-      "baseline": 0.5287001183437177,
+      "value": 0.5072376495928272,
+      "baseline": 0.44107621703724115,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.confirm.p95",
@@ -801,8 +801,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.17775729655301312,
-      "baseline": 0.15457156222001142,
+      "value": 0.1564980838037656,
+      "baseline": 0.136085290264144,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.confirm.p95",
@@ -813,8 +813,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.3879574179775465,
-      "baseline": 0.3373542765022144,
+      "value": 0.32365945146587716,
+      "baseline": 0.2814430012746758,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.confirm.p95",
@@ -873,8 +873,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 1.6716182935150639,
-      "baseline": 1.4535811247957078,
+      "value": 1.4716980110485016,
+      "baseline": 1.2797374009117406,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.rollback.p95",
@@ -885,8 +885,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 3.8981021633953166,
-      "baseline": 3.3896540551263623,
+      "value": 3.25205177037109,
+      "baseline": 2.827871104670513,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.rollback.p95",
@@ -897,8 +897,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 1.1293337216840984,
-      "baseline": 0.9820293232035638,
+      "value": 0.9942689658639537,
+      "baseline": 0.8645817094469164,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.rollback.p95",
@@ -909,8 +909,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 2.5248100616658817,
-      "baseline": 2.195487010144245,
+      "value": 2.1063616823576288,
+      "baseline": 1.8316188542240253,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.rollback.p95",
@@ -921,8 +921,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.26498395667811564,
-      "baseline": 0.23042083189401363,
+      "value": 0.23329271013354752,
+      "baseline": 0.2028632262030848,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
@@ -933,8 +933,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.6306583294967045,
-      "baseline": 0.5483985473884387,
+      "value": 0.5261364251040133,
+      "baseline": 0.4575099348730551,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.tick.p95",
@@ -945,8 +945,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.17646339435825323,
-      "baseline": 0.15344642987674195,
+      "value": 0.15535892823583075,
+      "baseline": 0.13509472020507024,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "room.tick.p95",
@@ -957,8 +957,8 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.40715396790755465,
-      "baseline": 0.35404692861526493,
+      "value": 0.3396744689200436,
+      "baseline": 0.29536910340873357,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "room.tick.p95",
