@@ -12,6 +12,7 @@ export interface RoomClock {
   readonly start: (startsInMs: number, now: number) => void;
   readonly heardTick: (tick: number, now: number) => void;
   readonly heardRtt: (rttMs: number) => void;
+  readonly silentMs: (now: number) => number;
   readonly target: (now: number) => number;
   readonly stepsDue: (predictedTick: number, now: number) => number;
 }
@@ -38,6 +39,7 @@ export const createRoomClock = (): RoomClock => {
       lastTick = tick;
       lastArrival = now;
     },
+    silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
     start: (startsInMs, now) => {
       startsAt = now + startsInMs;
     },

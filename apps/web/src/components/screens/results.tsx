@@ -3,6 +3,7 @@ import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { creditLimitOf, roads } from "@racer/career/tables";
+import type { RoomNet } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
 import { rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
@@ -130,7 +131,10 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
               >
                 <span className="numeric text-center">{row.place}</span>
                 <span className="truncate">
-                  {you ? "You" : shortNames[row.racer]}
+                  {you
+                    ? "You"
+                    : (report.room?.names.get(row.racer) ??
+                      shortNames[row.racer])}
                   {note !== undefined && (
                     <span className="text-neon-red ml-[0.5em] text-[0.6em]">
                       {note}
@@ -374,6 +378,22 @@ const speakerOf = (
   };
 };
 
+const netLine = ({
+  inputToFrame,
+  resimulatedPerSecond,
+  rollbacks,
+  roundTripMs,
+  worstRoundTripMs,
+}: RoomNet): string =>
+  `Round trip ${roundTripMs} ms, worst ${worstRoundTripMs}. Rollbacks ${rollbacks}. Resimulated ${resimulatedPerSecond.toFixed(1)} ticks/s. Input to frame ${Math.round(inputToFrame.medianMs)} ms, worst ${Math.round(inputToFrame.worstMs)}.`;
+
+const footOf = (report: RaceReport): string => {
+  if (report.room) {
+    return netLine(report.room.net);
+  }
+  return report.ledger ? "Settled and saved" : "Single race";
+};
+
 export const ResultsScreen = ({
   report,
   career,
@@ -432,7 +452,7 @@ export const ResultsScreen = ({
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(20) }}
           >
-            {report.ledger ? "Settled and saved" : "Single race"}
+            {footOf(report)}
           </p>
         </BarNav>
       </Stage>

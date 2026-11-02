@@ -1,4 +1,4 @@
-import { seatedRace } from "@racer/career/room-race";
+import { ROOM_FIELD_SIZE, seatedRace } from "@racer/career/room-race";
 import { createRoom, MOST_SEATS } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import {
@@ -21,6 +21,9 @@ import type { RoomMessage } from "./messages.ts";
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
 const START_DELAY_MS = 3000;
+const LOBBY_MS = 120_000;
+const FILL_LEAST_MS = 8000;
+const FILL_SPAN_MS = 10_000;
 const NO_STAMP = 0;
 
 export interface HostSocket {
@@ -35,11 +38,17 @@ export interface HostPorts {
 }
 
 interface Seat {
+  readonly name: string;
   readonly socket: HostSocket;
   rider: RiderId | null;
   accepted: number;
   ahead: number;
   late: number;
+}
+
+interface Lobby {
+  readonly startsAt: number;
+  fill: number;
 }
 
 interface Running {
@@ -48,8 +57,7 @@ interface Running {
 }
 
 export interface Host {
-  readonly seat: (socket: HostSocket) => void;
-  readonly rejoin: (socket: HostSocket) => void;
+  readonly seat: (socket: HostSocket, name: string) => void;
   readonly message: (socket: HostSocket, data: string | ArrayBuffer) => void;
   readonly gone: (socket: HostSocket) => void;
   readonly status: () => RoomStatus;
@@ -62,15 +70,17 @@ export const createHost = (ports: HostPorts): Host => {
   const tickView = new DataView(tickBuffer);
   const pongBuffer = new ArrayBuffer(PONG_PACKET_BYTES);
   const pongView = new DataView(pongBuffer);
+  let lobby: Lobby | null = null;
   let running: Running | null = null;
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
 
-  const seatFor = (socket: HostSocket): Seat => ({
+  const seatFor = (socket: HostSocket, name: string): Seat => ({
     accepted: 0,
     ahead: 0,
     late: 0,
+    name,
     rider: null,
     socket,
   });
@@ -95,6 +105,30 @@ export const createHost = (ports: HostPorts): Host => {
     for (const seat of seats.values()) {
       sendTo(seat, text);
     }
+  };
+
+  const ridersHere = (fill: number): number =>
+    Math.min(ROOM_FIELD_SIZE, seats.size + fill);
+
+  const tellLobby = (open: Lobby): void => {
+    tell({
+      kind: "lobby",
+      riders: ridersHere(open.fill),
+      startsInMs: open.startsAt - ports.now(),
+    });
+  };
+
+  const fillAfterGap = (open: Lobby): void => {
+    ports.after(FILL_LEAST_MS + (ports.seed() % FILL_SPAN_MS), () => {
+      if (lobby !== open) {
+        return;
+      }
+      if (ridersHere(open.fill) < ROOM_FIELD_SIZE) {
+        open.fill += 1;
+        tellLobby(open);
+      }
+      fillAfterGap(open);
+    });
   };
 
   const end = (room: Room): void => {
@@ -150,6 +184,7 @@ export const createHost = (ports: HostPorts): Host => {
     if (running || seats.size === 0) {
       return;
     }
+    lobby = null;
     const seed = ports.seed();
     const { humans, setup } = seatedRace(seed, seats.size);
     const room = createRoom(setup);
@@ -161,12 +196,14 @@ export const createHost = (ports: HostPorts): Host => {
     }
     const startedAt = ports.now() + START_DELAY_MS;
     running = { room, startedAt };
+    const names = [...seats.values()].map((seat) => seat.name);
     for (const seat of seats.values()) {
       sendTo(
         seat,
         encodeRoomMessage({
           digest: [...room.digest],
           kind: "started",
+          names,
           seats: humans.length,
           seed,
           startsInMs: START_DELAY_MS,
@@ -177,6 +214,18 @@ export const createHost = (ports: HostPorts): Host => {
     ports.after(START_DELAY_MS, wake);
   };
 
+  const openLobby = (): Lobby => {
+    const open: Lobby = { fill: 0, startsAt: ports.now() + LOBBY_MS };
+    lobby = open;
+    ports.after(LOBBY_MS, () => {
+      if (lobby === open) {
+        start();
+      }
+    });
+    fillAfterGap(open);
+    return open;
+  };
+
   return {
     gone: (socket) => {
       const seat = seats.get(socket);
@@ -184,8 +233,10 @@ export const createHost = (ports: HostPorts): Host => {
         return;
       }
       leave(seat);
-      if (!running) {
-        tell({ kind: "lobby", seats: seats.size });
+      if (seats.size === 0) {
+        lobby = null;
+      } else if (lobby) {
+        tellLobby(lobby);
       }
     },
     message: (socket, data) => {
@@ -218,18 +269,15 @@ export const createHost = (ports: HostPorts): Host => {
         start();
       }
     },
-    rejoin: (socket) => {
-      seats.set(socket, seatFor(socket));
-    },
-    seat: (socket) => {
+    seat: (socket, name) => {
       if (running || seats.size >= MOST_SEATS) {
         const reason = running ? "racing" : "full";
         socket.send(encodeRoomMessage({ kind: "refused", reason }));
         socket.close(SEAT_CLOSED, reason);
         return;
       }
-      seats.set(socket, seatFor(socket));
-      tell({ kind: "lobby", seats: seats.size });
+      seats.set(socket, seatFor(socket, name));
+      tellLobby(lobby ?? openLobby());
     },
     status: () => ({
       catchUpWakes,

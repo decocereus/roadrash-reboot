@@ -8,7 +8,7 @@ import * as Layer from "effect/Layer";
 import { RoomApi } from "./contract.ts";
 import { createHost } from "./host.ts";
 import type { HostPorts, HostSocket } from "./host.ts";
-import { SEAT_CLOSED } from "./messages.ts";
+import { cleanGuestName, SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 
 const ports: HostPorts = {
@@ -27,11 +27,6 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
     const state = yield* Cloudflare.DurableObjectState;
     return Effect.gen(function* raceServerInstance() {
       const host = createHost(ports);
-      for (const socket of yield* state.getWebSockets()) {
-        if (socket.ws.readyState === WebSocket.OPEN) {
-          host.rejoin(rawSocket(socket));
-        }
-      }
       const handlers = HttpApiBuilder.group(RoomApi, "rooms", (group) =>
         group
           .handle("status", () => Effect.sync(host.status))
@@ -43,7 +38,11 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
                 });
               }
               const [response, socket] = yield* Cloudflare.upgrade();
-              host.seat(rawSocket(socket));
+              const asked = new URL(request.url, "http://rooms").searchParams;
+              host.seat(
+                rawSocket(socket),
+                cleanGuestName(asked.get("name") ?? "")
+              );
               return response;
             }).pipe(Effect.provideService(Cloudflare.DurableObjectState, state))
           )

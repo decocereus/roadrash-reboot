@@ -10,6 +10,7 @@ import { nextRaceSeed } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { STARTING_BIKE } from "@racer/career/tables";
 import type { Level, RoadId } from "@racer/career/tables";
+import type { RoomReport } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
 import { trackFor } from "@racer/track/roads";
 
@@ -44,6 +45,7 @@ export interface RaceReport {
   readonly summary: RaceSummary;
   readonly ledger: Ledger | null;
   readonly line: RivalLine | null;
+  readonly room?: RoomReport;
 }
 
 export const careerEntry = (
@@ -101,11 +103,12 @@ export const quickReport = (
 ): RaceReport => ({
   ledger: null,
   level: outcome.level,
-  line: resultLine(outcome),
+  line: plan.room ? null : resultLine(outcome),
   mode: "quick",
   place: outcome.place,
   result: outcome.result,
   roadId: outcome.roadId,
+  ...(plan.room && { room: plan.room.report() }),
   summary: summaryOf(
     plan.rules,
     {
