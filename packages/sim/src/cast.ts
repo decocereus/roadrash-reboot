@@ -8,7 +8,7 @@ import type { RiderProfile, RivalSetup, WeaponKind } from "./state.ts";
 
 export type { RegionId } from "@racer/track/regions";
 
-export const rivalIds = [
+export const ordinaryRivalIds = [
   "juno-kade",
   "ruth-ann-bixby",
   "dee-santangelo",
@@ -27,7 +27,45 @@ export const rivalIds = [
   "felix-aurand",
 ] as const;
 
+export type OrdinaryRivalId = (typeof ordinaryRivalIds)[number];
+
+export const celebrityIds = [
+  "kylie",
+  "ronaldo",
+  "mbappe",
+  "musk",
+  "altman",
+  "ranveer",
+] as const;
+
+export type CelebrityId = (typeof celebrityIds)[number];
+
+export const celebrityRivalIds = [
+  "captain-penaldo",
+  "supreme-leader-mbosse",
+  "elongated-muskrat",
+  "slam-altruman",
+  "kylip-jetner",
+  "ranwear-bling",
+] as const;
+
+export type CelebrityRivalId = (typeof celebrityRivalIds)[number];
+
+export const celebrityModels = {
+  "captain-penaldo": "ronaldo",
+  "elongated-muskrat": "musk",
+  "kylip-jetner": "kylie",
+  "ranwear-bling": "ranveer",
+  "slam-altruman": "altman",
+  "supreme-leader-mbosse": "mbappe",
+} as const satisfies Record<CelebrityRivalId, CelebrityId>;
+
+export const rivalIds = [...ordinaryRivalIds, ...celebrityRivalIds] as const;
+
 export type RivalId = (typeof rivalIds)[number];
+
+export const isCelebrity = (rival: RivalId): rival is CelebrityRivalId =>
+  celebrityRivalIds.some((celebrity) => celebrity === rival);
 
 const CLUB_LEVEL = 4;
 const CLUB_AGGRESSION = 0.5;
@@ -85,6 +123,25 @@ export const rivals = {
     skill: 0.85,
     weapon: "none",
   },
+  "captain-penaldo": {
+    aggression: 0.75,
+    armedFrom: 1,
+    bikes: [
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "halden-meridian-900",
+      "halden-meridian-900",
+    ],
+    home: "lowtown",
+    id: "captain-penaldo",
+    jacket: 6,
+    name: "Captain Penaldo",
+    paint: 6,
+    racesFrom: 1,
+    skill: 0.94,
+    weapon: "none",
+  },
   "coach-dale-hutto": {
     aggression: 0.55,
     armedFrom: 2,
@@ -122,6 +179,25 @@ export const rivals = {
     racesFrom: 1,
     skill: 0.93,
     weapon: "chain",
+  },
+  "elongated-muskrat": {
+    aggression: 0.45,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "halden-meridian-900",
+    ],
+    home: "stonepeak",
+    id: "elongated-muskrat",
+    jacket: 5,
+    name: "Elongated Muskrat",
+    paint: 5,
+    racesFrom: 1,
+    skill: 0.96,
+    weapon: "none",
   },
   "felix-aurand": {
     aggression: 0.7,
@@ -218,6 +294,25 @@ export const rivals = {
     skill: 0.99,
     weapon: "none",
   },
+  "kylip-jetner": {
+    aggression: 0.35,
+    armedFrom: 1,
+    bikes: [
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "halden-meridian-900",
+      "ostra-nera-1000",
+    ],
+    home: "salt-coast",
+    id: "kylip-jetner",
+    jacket: 7,
+    name: "Kylip Jetner",
+    paint: 7,
+    racesFrom: 1,
+    skill: 0.92,
+    weapon: "none",
+  },
   "lyle-gorski": {
     aggression: 0.7,
     armedFrom: 1,
@@ -294,6 +389,25 @@ export const rivals = {
     skill: 0.83,
     weapon: "none",
   },
+  "ranwear-bling": {
+    aggression: 0.4,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "halden-meridian-900",
+    ],
+    home: "salt-coast",
+    id: "ranwear-bling",
+    jacket: 8,
+    name: "Ranwear Bling",
+    paint: 8,
+    racesFrom: 1,
+    skill: 0.85,
+    weapon: "none",
+  },
   "ruth-ann-bixby": {
     aggression: 0.45,
     armedFrom: 1,
@@ -312,6 +426,44 @@ export const rivals = {
     racesFrom: 1,
     skill: 0.95,
     weapon: "none",
+  },
+  "slam-altruman": {
+    aggression: 0.3,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "ostra-sette-750",
+      "ostra-sette-750",
+    ],
+    home: "stonepeak",
+    id: "slam-altruman",
+    jacket: 4,
+    name: "Slam Altruman",
+    paint: 4,
+    racesFrom: 1,
+    skill: 0.87,
+    weapon: "none",
+  },
+  "supreme-leader-mbosse": {
+    aggression: 0.7,
+    armedFrom: 1,
+    bikes: [
+      "halden-wren-400",
+      "halden-kite-500",
+      "ostra-sesta-600",
+      "halden-meridian-900",
+      "brack-anvil-1100",
+    ],
+    home: "lowtown",
+    id: "supreme-leader-mbosse",
+    jacket: 10,
+    name: "Supreme Leader M'Bossé",
+    paint: 10,
+    racesFrom: 1,
+    skill: 0.9,
+    weapon: "baton",
   },
   "tristan-lux": {
     aggression: 0.35,
@@ -353,7 +505,13 @@ export const rivals = {
   },
 } as const satisfies Record<RivalId, Rival>;
 
-export const cast: readonly Rival[] = rivalIds.map((id) => rivals[id]);
+export const ordinaryCast: readonly Rival[] = ordinaryRivalIds.map(
+  (id) => rivals[id]
+);
+
+export const celebrityCast: readonly Rival[] = celebrityRivalIds.map(
+  (id) => rivals[id]
+);
 
 export const weaponAt = (rival: Rival, level: RoadLevel): WeaponKind => {
   if (rival.weapon !== "none" && level >= rival.armedFrom) {

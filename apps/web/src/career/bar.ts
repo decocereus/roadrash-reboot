@@ -5,12 +5,12 @@ import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { FINALE_ROAD } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
-import { cast } from "@racer/sim/cast";
-import type { RivalId } from "@racer/sim/cast";
+import { ordinaryRivalIds } from "@racer/sim/cast";
+import type { OrdinaryRivalId, RivalId } from "@racer/sim/cast";
 
 import {
   bills,
-  figures,
+  figureOf,
   flyers,
   plates,
   stickers,
@@ -35,13 +35,17 @@ export const openRoads = (
 export const firstRoad = (rules: RaceRules, career: CareerState): RoadId =>
   roadsFor(rules, career).next ?? openRoads(rules, career)[0] ?? FINALE_ROAD;
 
-const billRider = (career: CareerState, boss: RivalId): RivalId => {
-  const others = cast.filter((rival) => rival.id !== boss);
-  return others[career.record.starts % others.length]?.id ?? boss;
+const billRider = (career: CareerState, boss: RivalId): OrdinaryRivalId => {
+  const others = ordinaryRivalIds.filter((rival) => rival !== boss);
+  return others[career.record.starts % others.length] ?? ordinaryRivalIds[0];
 };
 
-export const barCast = (career: CareerState, roadId: RoadId): BarCast => {
-  const boss = roadBoss(career, roadId);
+export const barCast = (
+  rules: RaceRules,
+  career: CareerState,
+  roadId: RoadId
+): BarCast => {
+  const boss = roadBoss(rules, career, roadId);
   return {
     bill: bills[billRider(career, boss)],
     boss,
@@ -65,9 +69,14 @@ const scenery = [
   plates.wall,
 ];
 
+const bossFigure = (boss: RivalId): readonly string[] => {
+  const figure = figureOf(boss);
+  return figure === null ? [] : [figure];
+};
+
 export const barPlates = (bar: BarCast): readonly string[] => [
   ...scenery,
-  figures[bar.boss],
+  ...bossFigure(bar.boss),
   flyers[bar.roadId],
   bar.bill,
   bar.sticker,
@@ -79,7 +88,7 @@ export const roadPlates = (
 ): readonly string[] =>
   openRoads(rules, career).flatMap((roadId) => [
     flyers[roadId],
-    figures[roadBoss(career, roadId)],
+    ...bossFigure(roadBoss(rules, career, roadId)),
   ]);
 
 const decoded = async (url: string): Promise<void> => {

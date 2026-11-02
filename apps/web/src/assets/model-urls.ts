@@ -1,5 +1,6 @@
+import type { CelebrityId } from "@racer/sim/cast";
+
 import type { BikeModelId } from "../game/bike-models.ts";
-import type { CelebrityId } from "../game/figure-wear.ts";
 import { artUrl } from "./art.ts";
 
 export interface ModelUrls {

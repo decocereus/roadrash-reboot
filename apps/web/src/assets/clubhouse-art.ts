@@ -1,5 +1,6 @@
 import type { RoadId } from "@racer/career/tables";
-import type { OfficerId, RivalId } from "@racer/sim/cast";
+import { isCelebrity } from "@racer/sim/cast";
+import type { OfficerId, OrdinaryRivalId, RivalId } from "@racer/sim/cast";
 
 import { artUrl } from "./art.ts";
 
@@ -17,7 +18,7 @@ export const plates = {
   wall: artUrl("clubhouse/wall.webp"),
 } as const;
 
-export const figures = {
+const figures = {
   "agnes-mulcahy": artUrl("clubhouse/rivals/agnes-mulcahy.webp"),
   "benny-okafor": artUrl("clubhouse/rivals/benny-okafor.webp"),
   "coach-dale-hutto": artUrl("clubhouse/rivals/coach-dale-hutto.webp"),
@@ -34,7 +35,10 @@ export const figures = {
   "ruth-ann-bixby": artUrl("clubhouse/rivals/ruth-ann-bixby.webp"),
   "tristan-lux": artUrl("clubhouse/rivals/tristan-lux.webp"),
   "wanda-pruitt": artUrl("clubhouse/rivals/wanda-pruitt.webp"),
-} as const satisfies Record<RivalId, string>;
+} as const satisfies Record<OrdinaryRivalId, string>;
+
+export const figureOf = (rival: RivalId): string | null =>
+  isCelebrity(rival) ? null : figures[rival];
 
 export const officerFigures = {
   "dolores-pike": artUrl("clubhouse/officers/dolores-pike.webp"),
@@ -71,7 +75,7 @@ export const bills = {
   "ruth-ann-bixby": artUrl("clubhouse/bills/ruth-ann-bixby.webp"),
   "tristan-lux": artUrl("clubhouse/bills/tristan-lux.webp"),
   "wanda-pruitt": artUrl("clubhouse/bills/wanda-pruitt.webp"),
-} as const satisfies Record<RivalId, string>;
+} as const satisfies Record<OrdinaryRivalId, string>;
 
 export const stickers: readonly string[] = [
   artUrl("clubhouse/stickers/stencil-m.webp"),

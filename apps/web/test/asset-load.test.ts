@@ -1,5 +1,7 @@
 import { setImmediate as nextTurn } from "node:timers/promises";
 
+import { celebrityIds } from "@racer/sim/cast";
+import type { CelebrityId } from "@racer/sim/cast";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
@@ -18,8 +20,6 @@ import type {
   Primitive,
   RiderAsset,
 } from "../src/game/assets.ts";
-import { celebrityIds } from "../src/game/figure-wear.ts";
-import type { CelebrityId } from "../src/game/figure-wear.ts";
 import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
 

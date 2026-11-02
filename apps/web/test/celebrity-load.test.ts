@@ -1,4 +1,5 @@
-import { defaultSetup } from "@racer/sim/race";
+import { recordedRules } from "@racer/career/bench";
+import { practiceSetup } from "@racer/career/field";
 import { PLAYER_RIDER, rosterOf } from "@racer/sim/state";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
@@ -13,7 +14,11 @@ import { createWardrobe } from "../src/game/figure-wardrobe.ts";
 import type { Dressing } from "../src/game/figure-wardrobe.ts";
 import { wearingFrom, wornBy } from "../src/game/figure-wear.ts";
 
-const setup = defaultSetup(trackFor("ridge-road", 1), 3);
+const setup = practiceSetup(
+  recordedRules,
+  { bikeId: "ostra-sesta-600", level: 1, roadId: "ridge-road", seed: 3 },
+  trackFor("ridge-road", 1)
+);
 const { rivals } = rosterOf(setup);
 const { kylie, musk } = modelUrls.celebrities;
 

@@ -204,6 +204,7 @@ export const sample = Effect.fn("rv.sample")(function* sample(
 });
 
 export interface NetworkProfile {
+  readonly offline: boolean;
   readonly latency: number;
   readonly downloadThroughput: number;
   readonly uploadThroughput: number;
@@ -217,6 +218,7 @@ export const networkProfiles = new Map<string, NetworkProfile>([
     {
       downloadThroughput: 1.6 * MEGABIT,
       latency: 300,
+      offline: false,
       uploadThroughput: 0.75 * MEGABIT,
     },
   ],
@@ -225,6 +227,7 @@ export const networkProfiles = new Map<string, NetworkProfile>([
     {
       downloadThroughput: 9 * MEGABIT,
       latency: 60,
+      offline: false,
       uploadThroughput: 1.5 * MEGABIT,
     },
   ],
@@ -233,7 +236,17 @@ export const networkProfiles = new Map<string, NetworkProfile>([
     {
       downloadThroughput: 3 * MEGABIT,
       latency: 150,
+      offline: false,
       uploadThroughput: 1.5 * MEGABIT,
+    },
+  ],
+  [
+    "offline",
+    {
+      downloadThroughput: 0,
+      latency: 0,
+      offline: true,
+      uploadThroughput: 0,
     },
   ],
 ]);
@@ -249,10 +262,13 @@ export const throttle = Effect.fn("rv.throttle")(function* throttle(
     return;
   }
   yield* page.send("Network.enable");
+  yield* page.send("Network.setCacheDisabled", {
+    cacheDisabled: profile.offline,
+  });
   yield* page.send("Network.emulateNetworkConditions", {
     downloadThroughput: profile.downloadThroughput,
     latency: profile.latency,
-    offline: false,
+    offline: profile.offline,
     uploadThroughput: profile.uploadThroughput,
   });
 });

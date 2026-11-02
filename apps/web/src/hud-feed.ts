@@ -15,6 +15,7 @@ export const idleHud: HudState = {
   position: 1,
   progress: 0,
   riderCount: 1,
+  rivalCelebrity: false,
   rivalColour: "",
   rivalName: "",
   rivalStamina: 0,

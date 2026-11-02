@@ -1,6 +1,7 @@
 import { rivalLines } from "@racer/career/lines";
 import { rivalOf } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
+import { isCelebrity } from "@racer/sim/cast";
 import { chaserDistance } from "@racer/sim/police";
 import { distanceLeft, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
@@ -149,7 +150,7 @@ export const bindFeedback = ({
     line: "knocksYouDown" | "youKnockThemDown"
   ) => {
     const rival = session.log ? rivalOf(session.log, rider) : undefined;
-    if (rival === undefined) {
+    if (rival === undefined || isCelebrity(rival)) {
       return;
     }
     feedback.speech = rivalLines[rival][line];
@@ -281,6 +282,9 @@ export const bindFeedback = ({
     feedback.tagRider =
       feedback.speechLeft > 0 ? feedback.speechRider : nearestRacer(me);
     const rival = riderOf(stage.race.view.riders, feedback.tagRider);
+    const tagged = session.log
+      ? rivalOf(session.log, feedback.tagRider)
+      : undefined;
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
@@ -299,6 +303,7 @@ export const bindFeedback = ({
       position: session.settled?.place ?? order.indexOf(PLAYER_RIDER) + 1,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
       riderCount: order.length,
+      rivalCelebrity: tagged !== undefined && isCelebrity(tagged),
       rivalColour: riderOf(cast.plates, feedback.tagRider) ?? "",
       rivalName: rival?.profile.name ?? "",
       rivalStamina: rival ? rival.stamina / MAX_STAMINA : 0,

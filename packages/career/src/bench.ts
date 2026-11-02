@@ -10,6 +10,7 @@ import { STARTING_BIKE } from "./tables.ts";
 export type Bench = "stress" | "reference";
 
 export const recordedRules: RaceRules = {
+  celebrities: false,
   fieldSize: 15,
   levelCount: 5,
   police: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },

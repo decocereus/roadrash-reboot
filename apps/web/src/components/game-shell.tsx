@@ -31,6 +31,10 @@ import type { Flow } from "./use-flow.ts";
 
 const DWELL_MS = 2200;
 
+const noRaceBuilt = (
+  stage: Extract<PrepareOutcome, { readonly kind: "failed" }>["stage"]
+): boolean => stage === "dress" || stage === "build";
+
 const RideOut = ({
   rules,
   career,
@@ -53,6 +57,8 @@ const RideOut = ({
   const [plan] = useState(() => planFor(rules, career, entry));
   const [prepared, setPrepared] = useState(false);
   const [dwelt, setDwelt] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
   const started = useRef(false);
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -72,7 +78,12 @@ const RideOut = ({
     let current = true;
     const prepare = async (): Promise<void> => {
       const outcome = await onPrepare(plan);
-      if (current && outcome.kind !== "cancelled") {
+      if (!current || outcome.kind === "cancelled") {
+        return;
+      }
+      if (outcome.kind === "failed" && noRaceBuilt(outcome.stage)) {
+        setLoadFailed(true);
+      } else {
         setPrepared(true);
       }
     };
@@ -82,12 +93,17 @@ const RideOut = ({
     return () => {
       current = false;
     };
-  }, [ready, plan, onPrepare]);
+  }, [ready, plan, onPrepare, attempt]);
   return (
     <RideOutScreen
       career={career}
       failure={failure}
+      loadFailed={loadFailed}
       onBack={onBack}
+      onRetry={() => {
+        setLoadFailed(false);
+        setAttempt((tried) => tried + 1);
+      }}
       plan={plan}
       ready={ready && prepared}
     />

@@ -100,13 +100,13 @@ const careers = [
   play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
 ];
 
-const versionTwoBytes = [
-  ["5521:161723b61ec00e5c", "5521:161723b61ec00e5c"],
-  ["18687:1cf1a77a93e950b6", "18687:f38bb8eed1d40b2"],
-  ["18424:172cf3a4d1761a2f", "18424:173d589a128e2977"],
-  ["10101:5e5c93e05af3e98", "10101:4944f168f9ad9a0"],
-  ["14852:307db6b6ed999cf", "14852:b4469b039251789"],
-  ["14716:12aff8a683a85b63", "14716:1b0dc17eac2ba218"],
+const versionThreeBytes = [
+  ["7419:21e189c42086668", "7419:21e189c42086668"],
+  ["20585:e9ba674a45f9195", "20585:16840809eea9b1fa"],
+  ["20322:1cb863eb2b602aba", "20322:fc33529acacb8d2"],
+  ["11999:3da44ce165495ea", "11999:f2044353d2d820"],
+  ["16750:15eae934d84adb8d", "16750:ecf04309b4316be"],
+  ["16614:1d30b27dd8da8459", "16614:dd5e32e4e3b78cd"],
 ];
 
 describe("the save", () => {
@@ -118,13 +118,13 @@ describe("the save", () => {
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a career writes, and reads back into, the same bytes as the version 2 reader", () => {
+  it("a career writes, and reads back into, the same bytes as the version 3 reader", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
         return [fingerprint(text), fingerprint(rereadOf(text))];
       })
-    ).toStrictEqual(versionTwoBytes);
+    ).toStrictEqual(versionThreeBytes);
   });
 
   it("text that is not a save, or a save from another version, is rejected with the reason", () => {
@@ -133,7 +133,7 @@ describe("the save", () => {
       verdictOn(serialiseCareer(good).slice(0, -40)),
       verdictOn("[]"),
       verdictOn('"a save"'),
-      verdictOn(corrupted(good, "version", 1)),
+      verdictOn(corrupted(good, "version", 2)),
     ]).toStrictEqual([
       "notJson:",
       "notJson:",
@@ -146,7 +146,7 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(missing(good, "version")),
-      verdictOn(corrupted(good, "version", 3)),
+      verdictOn(corrupted(good, "version", 4)),
       verdictOn('{"version":1e400}'),
       verdictOn(serialiseCareer(good).replace(/"cash":-?\d+/u, '"cash":1e400')),
     ]).toStrictEqual([
