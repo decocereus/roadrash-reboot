@@ -60,7 +60,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "edacdb7ee418930c7e921ba799c17bb0b4511ddd4801b697a4bf51ca57572b69"
+    "summarySha256": "be8e296b3cf49918d68ed7eb85a152ec75ca7832389b425c0cbc3202c6ada02c"
   },
   "limits": [
     {
@@ -305,26 +305,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 838897,
-      "baseline": 822448,
+      "value": 838892,
+      "baseline": 822443,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 217582,
-      "baseline": 213315,
+      "value": 217580,
+      "baseline": 213313,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
@@ -336,7 +336,7 @@
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
@@ -348,7 +348,7 @@
       "metric": "bytes.game.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
@@ -401,14 +401,14 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 325888,
-      "baseline": 319498,
+      "value": 325883,
+      "baseline": 319493,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
@@ -420,7 +420,7 @@
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
+      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "unit": "B"
     },
     {
