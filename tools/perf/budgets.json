@@ -72,7 +72,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "4974fc8b48dbbaf7ec73616ff116a06b3012771d537a73d16374585e032afa3c"
+    "summarySha256": "668b8ce4ca32a0e107fb12982d40c32d5458144860f7f2b5450c38184ac2a7fd"
   },
   "limits": [
     {
@@ -616,52 +616,52 @@
       "value": 452
     },
     {
-      "baseline": 43,
+      "baseline": 46,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "programs",
-      "value": 44
+      "value": 47
     },
     {
-      "baseline": 43,
+      "baseline": 46,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "programs",
-      "value": 44
+      "value": 47
     },
     {
-      "baseline": 78,
+      "baseline": 80,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "textures",
-      "value": 79
+      "value": 81
     },
     {
-      "baseline": 71,
+      "baseline": 73,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "textures",
-      "value": 72
+      "value": 74
     },
     {
       "baseline": 3002895,
