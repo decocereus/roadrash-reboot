@@ -65,12 +65,12 @@
       "window": "a9f1066d8efaf0d38259b3ca48ac7965"
     },
     {
-      "final": "81e32e0703cb10797a87a8469de160fa",
-      "full": "e235a97168963b82ca198774c352ea08",
+      "final": "c2e481797750eef1254dd2cbb22056d6",
+      "full": "70d72a555255c1b750fd4b076504d581",
       "id": "breakwater-run/level5/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "98234c9b4ddd14b32a071324b6bd43c1"
+      "window": "557eeddb7ca61f938efaa6a335d28fd7"
     },
     {
       "final": "29602d2659c99575789475930a72a879",
@@ -92,7 +92,7 @@
   "provenance": {
     "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["f63b6ba"],
+    "recordedAt": ["f2b79fb"],
     "recordedWith": "snapshot format 4 at the D8 head, with the pedestrians' moving fields and each rider's bumpedWalker and witnessed in the race schema, and the pedestrians' immutable fields and the track's walkSites in the setup digest, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed. Every hash moved because each snapshot carries a new format word, a pedestrian list and a rider member. With the format word at 2, those members out of the codec and the digest, and createPedestrians building nobody, this tree reproduces all eleven rows recorded for D2b. With pedestrians back, the Ridge Road rows end on the same tick with the same result because Stonepeak has no footfall, and the stress row does too because benchSetup empties its walk sites. The Slag Row, handover and Breakwater Run rows end differently, and only those, because their regions are city scenery and a race there now has people crossing.",
     "window": {
       "from": 2880,
@@ -165,12 +165,12 @@
       "window": "a9f1066d8efaf0d38259b3ca48ac7965"
     },
     {
-      "final": "a6f7a5719d7e8b43fbe35fbd207e383f",
-      "full": "413030e0c5b80cfd153d6ba9c39c7629",
+      "final": "64b1faa5bf04bf7011997af0d1d3a054",
+      "full": "a96db1405fe296ddd114e27c8b9d4c3a",
       "id": "breakwater-run/level5/seed8",
       "result": "finished",
-      "ticks": 18802,
-      "window": "98234c9b4ddd14b32a071324b6bd43c1"
+      "ticks": 18711,
+      "window": "557eeddb7ca61f938efaa6a335d28fd7"
     },
     {
       "final": "c902e4e7bdfb8245f9c9771f03db0f29",

@@ -63,7 +63,9 @@ const offenderOf = (
   cop: RiderState
 ): RiderState | undefined => {
   const rider = riderOf(state.riders, cop.witnessed);
-  return rider && inReach(cop, rider, OFFENDER_RANGE, OFFENDER_RANGE)
+  return rider &&
+    inReach(cop, rider, OFFENDER_RANGE, OFFENDER_RANGE) &&
+    (onBeat(state, cop) || isDown(rider))
     ? rider
     : undefined;
 };
@@ -79,7 +81,7 @@ export const reportOffence = (state: RaceState, rider: RiderState): void => {
       onBeat(state, cop) &&
       Math.abs(cop.s - rider.s) < WITNESS_RANGE
     ) {
-      cop.witnessed = rider.id;
+      cop.witnessed ??= rider.id;
     }
   }
 };

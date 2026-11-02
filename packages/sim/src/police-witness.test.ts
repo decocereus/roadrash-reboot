@@ -178,6 +178,55 @@ describe("a cop who sees an offence", () => {
     expect(cop).toMatchObject({ chase: null, witnessed: null });
   });
 
+  it("stays on the first offender when a second runs the light behind them", () => {
+    const state = raceAt(1);
+    const cop = onlyCop(state);
+    const me = player(state);
+    const second = state.riders.find(
+      (rider) => rider.profile.role === "racer" && rider !== me
+    );
+    if (!second) {
+      throw new Error("The race has a rival.");
+    }
+    ride(state, "red", 20);
+    second.s = LINE - 1;
+    second.bodyS = second.s;
+    second.speed = 40;
+    for (let tick = 0; tick < 15; tick += 1) {
+      stepRace(state, course, frameOf(state, [me.id, cruising]));
+    }
+    expect(second.s).toBeGreaterThan(LINE);
+    expect(cop.chase).toBe(me.id);
+  });
+
+  it("drops the offender at the end of its beat and does not come back when they fall", () => {
+    const state = raceAt(0);
+    const cop = onlyCop(state);
+    const me = player(state);
+    ride(state, "red", 20);
+    expect(cop.chase).toBe(me.id);
+    cop.post = cop.s - state.police.beat - 1;
+    stepRace(state, course, frameOf(state, [me.id, cruising]));
+    expect(cop).toMatchObject({ chase: null, witnessed: null });
+    me.s = cop.s + 100;
+    me.bodyS = me.s;
+    me.mode = "lying";
+    stepRace(state, course, frameOf(state, [me.id, cruising]));
+    expect(cop).toMatchObject({ chase: null, witnessed: null });
+  });
+
+  it("finishes the job on an offender who falls as the beat runs out", () => {
+    const state = raceAt(0);
+    const cop = onlyCop(state);
+    const me = player(state);
+    ride(state, "red", 20);
+    me.mode = "lying";
+    me.bodyS = cop.s + 100;
+    cop.post = cop.s - state.police.beat - 1;
+    stepRace(state, course, frameOf(state, [me.id, cruising]));
+    expect(cop).toMatchObject({ chase: me.id, witnessed: me.id });
+  });
+
   it("does nothing for a cop past the end of its beat", () => {
     const state = raceAt(0);
     const cop = onlyCop(state);
