@@ -160,6 +160,7 @@ export interface RiderState {
   weaponHits: number;
   weaponAtThrow: WeaponKind;
   chase: RiderId | null;
+  witnessed: RiderId | null;
   parked: boolean;
   post: number;
   s: number;

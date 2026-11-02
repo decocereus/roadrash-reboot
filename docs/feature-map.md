@@ -250,6 +250,7 @@ Source files:
 Test files:
 
 - `packages/career/src/police.test.ts`
+- `packages/sim/src/police-witness.test.ts`
 - `packages/sim/src/police.test.ts`
 
 ### AI riders (the pilot)

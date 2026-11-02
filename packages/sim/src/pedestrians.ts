@@ -10,6 +10,7 @@ import {
   reportHazard,
   shoveOff,
 } from "./hazards.ts";
+import { reportOffence } from "./police.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
 import { BIKE_HALF_WIDTH, TICK_RATE, TICK_SECONDS } from "./state.ts";
 import type { Pedestrian, RaceState, RiderState } from "./state.ts";
@@ -246,6 +247,7 @@ const hit = (
     return;
   }
   fall(pedestrian);
+  reportOffence(state, rider);
   if (rider.speed <= STAGGER_SPEED) {
     shoveOff(state, rider, pedestrian, false);
     return;

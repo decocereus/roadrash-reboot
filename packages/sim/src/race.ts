@@ -22,7 +22,7 @@ import {
 } from "./pedestrians.ts";
 import { createPilotHistory } from "./pilot-history.ts";
 import { pilotRider } from "./pilot.ts";
-import { PULL_OVER, stepPolice } from "./police.ts";
+import { meetLights, PULL_OVER, stepPolice } from "./police.ts";
 import type { RaceView, RiderView } from "./race-view.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
@@ -207,6 +207,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   weapon: entry.weaponHits > 0 ? entry.profile.weapon : "none",
   weaponAtThrow: "none",
   weaponHits: entry.weaponHits,
+  witnessed: null,
   wobble: 0,
   x: spot.x,
 });
@@ -629,6 +630,7 @@ export const stepRace = (
       touchdown?.s ?? fromS,
       touchdown?.x ?? fromX
     );
+    meetLights(state, track, rider, fromS);
   }
   stepRiderContacts(state, track, throwRider);
   coolDown(state);
