@@ -21,7 +21,7 @@ import * as Option from "effect/Option";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import type { Host, HostPorts, HostSocket } from "../src/host.ts";
+import type { Host, HostPorts, HostSocket, RoomNote } from "../src/host.ts";
 import { decodeRoomMessage, SEAT_CLOSED } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 
@@ -30,6 +30,7 @@ const START_DELAY_MS = 3000;
 
 interface Clock extends HostPorts {
   readonly advance: (ms: number) => void;
+  readonly notes: RoomNote[];
   readonly stall: (ms: number) => void;
   readonly wakeOnce: () => void;
   readonly pending: () => number;
@@ -38,6 +39,7 @@ interface Clock extends HostPorts {
 const createClock = (): Clock => {
   let at = 1000;
   let timers: { due: number; wake: () => void }[] = [];
+  const notes: RoomNote[] = [];
   const nextBy = (until: number) =>
     timers
       .filter((timer) => timer.due <= until)
@@ -58,6 +60,10 @@ const createClock = (): Clock => {
     after: (ms, wake) => {
       timers.push({ due: at + ms, wake });
     },
+    note: (note) => {
+      notes.push(note);
+    },
+    notes,
     now: () => at,
     pending: () => timers.length,
     seed: () => 7,
@@ -270,6 +276,59 @@ describe("a room host", () => {
     expect(new Set(started.map((each) => each.seed)).size).toBe(1);
     expect(started.map((each) => each.seats)).toStrictEqual([3, 3, 3]);
     expect(new Set(started.map((each) => each.digest.join(","))).size).toBe(1);
+  });
+
+  describe("the room's notes", () => {
+    it("says how long the countdown waited, and for whom", () => {
+      const { clock, far, host, near } = pressedStart();
+      host.message(near, readyPacket());
+      clock.advance(6000);
+      host.message(far, readyPacket());
+      expect(clock.notes.map((note) => note.kind)).toStrictEqual([
+        "started",
+        "countdown",
+      ]);
+      expect(clock.notes[1]).toMatchObject({
+        stillLoading: [],
+        waitedMs: 6000,
+      });
+    });
+
+    it("names who the countdown gave up on", () => {
+      const { clock, host, near } = pressedStart();
+      host.message(near, readyPacket());
+      clock.advance(20_000);
+      expect(clock.notes[1]).toMatchObject({
+        stillLoading: ["Far"],
+        waitedMs: 20_000,
+      });
+    });
+
+    it("says who left and who was refused", () => {
+      const { clock, far, host } = pressedStart();
+      host.gone(far);
+      host.seat(fakeSocket(), "Late");
+      expect(clock.notes).toContainEqual({
+        kind: "refused",
+        name: "Late",
+        reason: "racing",
+      });
+      expect(clock.notes).toContainEqual(
+        expect.objectContaining({
+          kind: "left",
+          seatsLeft: 1,
+          tally: [expect.objectContaining({ accepted: 0, missed: 0 })],
+        })
+      );
+    });
+
+    it("writes one note per race event, none per tick", () => {
+      const { clock, far, host, near } = pressedStart();
+      host.message(near, readyPacket());
+      host.message(far, readyPacket());
+      clock.advance(START_DELAY_MS + 5000);
+      expect(clock.notes).toHaveLength(2);
+    });
   });
 
   describe("the start", () => {
