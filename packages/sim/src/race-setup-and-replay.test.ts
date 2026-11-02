@@ -4,7 +4,7 @@ import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
-import { cast, rivalAt, rivals } from "./cast.ts";
+import { ordinaryCast, rivalAt, rivals } from "./cast.ts";
 import {
   brawl,
   controlsOf,
@@ -290,7 +290,7 @@ const fullGrid = (course: Track, seed: number): RaceState => {
   return createRace({
     ...setup,
     player: { ...setup.player, bike: bikes["halden-wren-400"] },
-    rivals: cast
+    rivals: ordinaryCast
       .filter((rival) => rival.racesFrom <= 1)
       .slice(0, 14)
       .map((rival) => rivalAt(rival, 1)),

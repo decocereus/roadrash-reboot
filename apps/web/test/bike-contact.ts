@@ -1,3 +1,4 @@
+import type { CelebrityId } from "@racer/sim/cast";
 import * as THREE from "three";
 
 import { celebrityLoader } from "../src/asset-load.ts";
@@ -7,7 +8,6 @@ import type { AcquiredAssets } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import { bodyFor } from "../src/game/figure-rig.ts";
-import type { CelebrityId } from "../src/game/figure-wear.ts";
 import { assetParsers } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";

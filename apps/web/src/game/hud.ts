@@ -41,6 +41,7 @@ export interface HudState {
   readonly riderCount: number;
   readonly stamina: number;
   readonly rivalName: string;
+  readonly rivalCelebrity: boolean;
   readonly rivalStamina: number;
   readonly rivalColour: string;
   readonly speech: string;

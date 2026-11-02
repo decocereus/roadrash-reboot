@@ -1,4 +1,4 @@
-import { bikeAt, rivals } from "@racer/sim/cast";
+import { bikeAt, isCelebrity, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { describe, expect, it } from "vitest";
 
@@ -39,7 +39,7 @@ describe("the last result", () => {
     const settled = settle(race);
     const stored = loaded(settled.career).lastResult;
     const [winner, ...others] = race.setup.field;
-    if (!(stored && winner)) {
+    if (!(stored && winner) || isCelebrity(winner)) {
       throw new Error("The save holds no result.");
     }
     const [first, second, third] = stored.summary.rows;

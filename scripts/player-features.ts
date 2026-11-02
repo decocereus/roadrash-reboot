@@ -237,7 +237,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/career/src/lines.ts",
     ],
     summary:
-      "The sixteen rivals and two officers, their colours, who is drawn into a career race and on which bike, what each rival remembers, and every line the cast says.",
+      "The sixteen ordinary rivals, the six celebrity rivals and two officers, their colours, who is drawn into a career race and on which bike, what each rival remembers, and every line the cast says.",
     title: "Rivals, the field and their lines",
     verify: ["career.md"],
   },

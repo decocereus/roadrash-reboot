@@ -1,3 +1,4 @@
+import type { CareerRaceSetup } from "@racer/career/field";
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
 import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
 import { controlOf } from "@racer/sim/control";
@@ -603,7 +604,9 @@ const startGame = (
   const builtFor = (setup: RaceSetup): boolean =>
     session.prepared?.kind === "built" && session.prepared.setup === setup;
 
-  const buildPrepared = async (setup: RaceSetup): Promise<PrepareOutcome> => {
+  const buildPrepared = async (
+    setup: CareerRaceSetup
+  ): Promise<PrepareOutcome> => {
     let dressing: Dressing | null;
     try {
       dressing = await wardrobe.dress(wornBy(wearing, setup));

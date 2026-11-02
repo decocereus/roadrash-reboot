@@ -1,12 +1,21 @@
-import { defaultSetup } from "@racer/sim/race";
+import { recordedRules } from "@racer/career/bench";
+import { practiceSetup } from "@racer/career/field";
+import { celebrityIds, rivals as castRivals } from "@racer/sim/cast";
 import { createRaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER } from "@racer/sim/state";
 import { trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
 
-import { celebrityIds, wearingFrom, wornBy } from "../src/game/figure-wear.ts";
+import { wearingFrom, wornBy } from "../src/game/figure-wear.ts";
 
-const setup = defaultSetup(trackFor("ridge-road", 1), 3);
+const onRoad = (celebrities: boolean, roadId: "ridge-road" | "slag-row") =>
+  practiceSetup(
+    { ...recordedRules, celebrities, fieldSize: 10, levelCount: 3 },
+    { bikeId: "ostra-sesta-600", level: 1, roadId, seed: 3 },
+    trackFor(roadId, 1)
+  );
+
+const setup = onRoad(false, "ridge-road");
 
 describe("celebrity figures from the play-test flags", () => {
   it("reads ?as and ?against and skips names that are not celebrities", () => {
@@ -41,5 +50,22 @@ describe("celebrity figures from the play-test flags", () => {
 
   it("leaves every rider generic without the flags", () => {
     expect(wornBy(wearingFrom(""), setup).size).toBe(0);
+  });
+
+  it("dresses the two named celebrities of a Slag Row race as themselves", () => {
+    const slagRow = onRoad(true, "slag-row");
+    const run = createRaceRun(slagRow);
+    const worn = wornBy(wearingFrom(""), slagRow);
+    const wornByName = run.view.riders.flatMap((rider) => {
+      const model = worn.get(rider.id);
+      return model === undefined ? [] : [[rider.profile.name, model]];
+    });
+    expect(wornByName).toStrictEqual(
+      expect.arrayContaining([
+        [castRivals["captain-penaldo"].name, "ronaldo"],
+        [castRivals["supreme-leader-mbosse"].name, "mbappe"],
+      ])
+    );
+    expect(wornByName).toHaveLength(2);
   });
 });

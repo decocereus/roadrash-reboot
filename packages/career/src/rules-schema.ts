@@ -9,6 +9,7 @@ import { byLevel } from "./tables.ts";
 const PoliceCount = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 
 export const RaceRulesSchema = Schema.Struct({
+  celebrities: Schema.Boolean,
   fieldSize: Schema.Int.check(
     Schema.isBetween({ maximum: MOST_RACERS, minimum: fewestRacers })
   ),

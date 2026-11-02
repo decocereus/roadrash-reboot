@@ -1,3 +1,4 @@
+import { celebrityIds } from "@racer/sim/cast";
 import { riderPalette } from "@racer/sim/palette";
 import type { RegionId } from "@racer/track/regions";
 import * as THREE from "three";
@@ -10,7 +11,6 @@ import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import { bodyFor } from "../src/game/figure-rig.ts";
-import { celebrityIds } from "../src/game/figure-wear.ts";
 import { assetParsers, createRenderer } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";

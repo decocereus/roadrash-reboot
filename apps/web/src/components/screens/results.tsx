@@ -11,7 +11,11 @@ import { Screen } from "@racer/ui/components/screen";
 import { cn } from "@racer/ui/utils";
 import type { ReactNode } from "react";
 
-import { figures, officerFigures, plates } from "../../assets/clubhouse-art.ts";
+import {
+  figureOf,
+  officerFigures,
+  plates,
+} from "../../assets/clubhouse-art.ts";
 import { magsLine, shortNames } from "../../career/copy.ts";
 import type { RaceReport } from "../../career/flow.ts";
 import {
@@ -337,7 +341,7 @@ const MagentaNote = ({ note: { text, warning } }: { readonly note: Note }) => (
 
 const speakerOf = (
   report: RaceReport
-): { readonly figure: string; readonly speech: Speech } | null => {
+): { readonly figure: string | null; readonly speech: Speech } | null => {
   const { bust, wreck, raceId, rows } = report.summary;
   if (bust) {
     return {
@@ -347,7 +351,7 @@ const speakerOf = (
   }
   if (report.ledger && wreck) {
     return {
-      figure: figures[MAGS],
+      figure: figureOf(MAGS),
       speech: {
         line: magsLine(raceId),
         name: rivals[MAGS].name,
@@ -361,7 +365,7 @@ const speakerOf = (
   }
   const row = rows.find((each) => each.racer === line.rival);
   return {
-    figure: figures[line.rival],
+    figure: figureOf(line.rival),
     speech: {
       line: line.text,
       name: rivals[line.rival].name,

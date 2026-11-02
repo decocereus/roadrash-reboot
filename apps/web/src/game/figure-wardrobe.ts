@@ -1,7 +1,7 @@
+import type { CelebrityId } from "@racer/sim/cast";
 import type { RiderId } from "@racer/sim/state";
 
 import type { Decoded, LoadCelebrity, RiderAsset } from "./assets.ts";
-import type { CelebrityId } from "./figure-wear.ts";
 
 export type Dressing = ReadonlyMap<RiderId, RiderAsset>;
 

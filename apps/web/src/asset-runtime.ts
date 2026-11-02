@@ -1,3 +1,4 @@
+import type { CelebrityId } from "@racer/sim/cast";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -22,7 +23,6 @@ import type { ByteCache, Fonts, Transport } from "./assets/load.ts";
 import { modelUrls } from "./assets/model-urls.ts";
 import type { ModelUrls } from "./assets/model-urls.ts";
 import type { AssetParsers } from "./game/assets.ts";
-import type { CelebrityId } from "./game/figure-wear.ts";
 
 interface AssetServices {
   readonly fonts: Fonts;

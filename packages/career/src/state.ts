@@ -14,7 +14,7 @@ import {
 } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export const racerIds = ["player", ...rivalIds] as const;
 
@@ -23,18 +23,24 @@ export type RacerId = (typeof racerIds)[number];
 export const byRival = <Value>(make: (rival: RivalId) => Value) => ({
   "agnes-mulcahy": make("agnes-mulcahy"),
   "benny-okafor": make("benny-okafor"),
+  "captain-penaldo": make("captain-penaldo"),
   "coach-dale-hutto": make("coach-dale-hutto"),
   "dee-santangelo": make("dee-santangelo"),
+  "elongated-muskrat": make("elongated-muskrat"),
   "felix-aurand": make("felix-aurand"),
   "gus-abernathy": make("gus-abernathy"),
   "hollis-thorne": make("hollis-thorne"),
   "ines-marchetti": make("ines-marchetti"),
   "juno-kade": make("juno-kade"),
+  "kylip-jetner": make("kylip-jetner"),
   "lyle-gorski": make("lyle-gorski"),
   "mags-dunleavy": make("mags-dunleavy"),
   "moose-kowalczyk": make("moose-kowalczyk"),
   "orrin-blackwell": make("orrin-blackwell"),
+  "ranwear-bling": make("ranwear-bling"),
   "ruth-ann-bixby": make("ruth-ann-bixby"),
+  "slam-altruman": make("slam-altruman"),
+  "supreme-leader-mbosse": make("supreme-leader-mbosse"),
   "tristan-lux": make("tristan-lux"),
   "wanda-pruitt": make("wanda-pruitt"),
 });
