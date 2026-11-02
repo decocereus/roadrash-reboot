@@ -1,5 +1,7 @@
 import * as Schema from "effect/Schema";
 
+export const RACE_ID_PATTERN = /^[a-z0-9-]{6,40}$/u;
+
 const Lobby = Schema.Struct({
   kind: Schema.Literal("lobby"),
   seats: Schema.Number,

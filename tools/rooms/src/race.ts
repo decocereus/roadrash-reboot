@@ -20,6 +20,7 @@ const POLL_MS = 50;
 const OPEN_TIMEOUT_MS = 15_000;
 const START_DELAY_SECONDS = 3;
 const LOWEST_TICK_SHARE = 0.97;
+const MOST_LATE_SHARE = 0.02;
 
 class RoomRaceFailed extends Data.TaggedError("RoomRaceFailed")<{
   readonly message: string;
@@ -54,9 +55,9 @@ const waitFor = (test: () => boolean, what: string, timeoutMs: number) =>
     }
   });
 
-const refusalOf = (socketUrl: string) =>
+const refusalOf = (url: string, raceId: string) =>
   Effect.gen(function* refusal() {
-    const seat = openSeat(socketUrl);
+    const seat = openSeat(url, raceId);
     yield* waitFor(seat.over, "a refused seat to close", OPEN_TIMEOUT_MS);
     return seat.report().refused;
   });
@@ -86,6 +87,19 @@ const problemsOf = (
     }
     return problems;
   });
+
+const lateProblems = (
+  seats: readonly {
+    readonly accepted: number;
+    readonly late: number;
+    readonly rider: number;
+  }[]
+): readonly string[] =>
+  seats.flatMap(({ accepted, late, rider }) =>
+    late > (accepted + late) * MOST_LATE_SHARE
+      ? [`Rider ${rider} had ${late} late controls and ${accepted} accepted.`]
+      : []
+  );
 
 interface ContractAnswers {
   readonly badPath: number;
@@ -156,8 +170,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   const plain = yield* http.get(`${url}/rooms/${raceId}/seat`);
   const badPath = yield* http.get(`${url}/rooms/NOT_A_ROOM/seat`);
 
-  const socketUrl = `${url.replace(/^http/u, "ws")}/rooms/${raceId}/seat`;
-  const seats = Array.from({ length: seatCount }, () => openSeat(socketUrl));
+  const seats = Array.from({ length: seatCount }, () => openSeat(url, raceId));
   yield* waitFor(
     () => seats.every((seat) => seat.opened()),
     "every seat to open",
@@ -168,7 +181,8 @@ export const main = Effect.fn("rooms.race")(function* main(
     "every seat to hear the full lobby",
     OPEN_TIMEOUT_MS
   );
-  const ninth = seatCount === MOST_SEATS ? yield* refusalOf(socketUrl) : "full";
+  const ninth =
+    seatCount === MOST_SEATS ? yield* refusalOf(url, raceId) : "full";
   yield* Effect.sleep(lobbySeconds * 1000);
   const [first] = seats;
   const last = seats.at(-1);
@@ -186,7 +200,7 @@ export const main = Effect.fn("rooms.race")(function* main(
     "every seat to hear the start",
     OPEN_TIMEOUT_MS
   );
-  const late = yield* refusalOf(socketUrl);
+  const late = yield* refusalOf(url, raceId);
   const other = yield* client.rooms.status({
     params: { raceId: makeRaceId(`other-${stamp}`) },
   });
@@ -200,6 +214,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   }
   const problems = [
     ...problemsOf(drop ? reports.slice(0, -1) : reports, seconds),
+    ...lateProblems(status.seats),
     ...contractProblems({
       badPath: badPath.status,
       idle: idle.phase,

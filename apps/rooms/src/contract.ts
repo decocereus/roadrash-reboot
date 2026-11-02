@@ -4,12 +4,11 @@ import * as HttpApiGroup from "effect/http-api/HttpApiGroup";
 import * as HttpApiSchema from "effect/http-api/HttpApiSchema";
 import * as Schema from "effect/Schema";
 
+import { RACE_ID_PATTERN } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 
-const RACE_ID = /^[a-z0-9-]{6,40}$/u;
-
 export const RaceIdSchema = Schema.String.pipe(
-  Schema.check(Schema.isPattern(RACE_ID)),
+  Schema.check(Schema.isPattern(RACE_ID_PATTERN)),
   Schema.brand("RaceId")
 );
 

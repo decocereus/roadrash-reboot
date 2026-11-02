@@ -1232,6 +1232,38 @@
       "side": "B",
       "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
       "value": 0.6665838198118207
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 1211186
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 316247
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 1950865
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 838838
     }
   ],
   "revisions": {
@@ -1649,7 +1681,7 @@
         "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
         "node": "v26.13.0",
         "platform": "darwin",
-        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+        "why": "re-pins roadLife.tick.p95 and snapshot.bytes.max for the pedestrians on the road and in the snapshot"
       },
       "id": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
       "lanes": ["node"],
@@ -1667,13 +1699,36 @@
         "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
         "node": "v24.22.1",
         "platform": "linux",
-        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+        "why": "re-pins roadLife.tick.p95 and snapshot.bytes.max for the pedestrians on the road and in the snapshot"
       },
       "id": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
       "lanes": ["node"],
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
         "B": "375b6d10effe4e776acf6f3f529504d5c0706700"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1139434, \"bytes.route.root.gzip\": 607392, \"bytes.route.kit.raw\": 946920, \"bytes.route.kit.gzip\": 541824, \"bytes.game.raw\": 1903988, \"bytes.game.gzip\": 820192, \"bytes.game.incremental.raw\": 764554, \"bytes.game.incremental.gzip\": 212800, \"bytes.worker.raw\": 1211086, \"bytes.worker.gzip\": 316231, \"bytes.client.raw\": 1950865, \"bytes.client.gzip\": 838838}",
+        "builtB": "{\"bytes.route.root.raw\": 1139434, \"bytes.route.root.gzip\": 607392, \"bytes.route.kit.raw\": 946920, \"bytes.route.kit.gzip\": 541824, \"bytes.game.raw\": 1903988, \"bytes.game.gzip\": 820192, \"bytes.game.incremental.raw\": 764554, \"bytes.game.incremental.gzip\": 212800, \"bytes.worker.raw\": 1211186, \"bytes.worker.gzip\": 316247, \"bytes.client.raw\": 1950865, \"bytes.client.gzip\": 838838}",
+        "harnessDigest": "12965bc453429aa79d840b712340792c4b9ecf483b8b7cb7dccd13cf89984798",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "07277a280ca8b469c6be34263d829cb544676949ad51f218660eb858618cffae",
+        "sideBSourceDigest": "07277a280ca8b469c6be34263d829cb544676949ad51f218660eb858618cffae",
+        "why": "The browser room client (mp-6c) adds the seat client, the room client and the lobby. React loads them through a lazy chunk, so the route and game rows still meet their limits, and only the four rows that total every chunk grow: 66 KB raw and 18 KB gzip on the Worker, 47 KB raw and 18 KB gzip on the client. Only those four rows are re-pinned from this build-lane A/A run."
+      },
+      "id": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d78fcf7be203265015874b9bd31090f25cee33e7",
+        "B": "d78fcf7be203265015874b9bd31090f25cee33e7"
       }
     }
   ],

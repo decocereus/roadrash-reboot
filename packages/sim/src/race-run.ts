@@ -11,13 +11,16 @@ import type { InputFrame, RaceSetup, RiderId } from "./state.ts";
 export interface RaceRun {
   readonly view: RaceView;
   readonly step: (frame: InputFrame) => void;
+}
+
+export interface LocalRun extends RaceRun {
   readonly placeRiderAt: (id: RiderId, s: number) => void;
   readonly placeRiderAcross: (id: RiderId, x: number) => void;
   readonly setRiderSpeed: (id: RiderId, speed: number) => void;
   readonly relocateTraffic: (from: number, to: number) => void;
 }
 
-export const createRaceRun = (setup: RaceSetup): RaceRun => {
+export const createRaceRun = (setup: RaceSetup): LocalRun => {
   const state = createRace(setup);
   const { track } = setup;
   return {

@@ -11,8 +11,9 @@ export const roomFeatures: readonly FeatureEntry[] = [
     kind: "platform",
     owns: [
       "packages/sim/src/room*.ts",
-      "packages/career/src/room-race.ts",
+      "packages/career/src/room-race*.ts",
       "apps/rooms/**",
+      "apps/web/src/components/room-lobby.tsx",
       "tools/rooms/**",
     ],
     perf: [

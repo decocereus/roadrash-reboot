@@ -2,13 +2,7 @@ import type { RaceOutcome } from "@racer/career/outcome";
 import { chaserDistance } from "@racer/sim/police";
 import { distanceLeft, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
-import {
-  clamp,
-  FULL_CONDITION,
-  MAX_STAMINA,
-  PLAYER_RIDER,
-  riderOf,
-} from "@racer/sim/state";
+import { clamp, FULL_CONDITION, MAX_STAMINA, riderOf } from "@racer/sim/state";
 import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import { weapons } from "@racer/sim/weapons";
 
@@ -65,7 +59,7 @@ interface FeedbackParts {
   readonly recorder: Recorder;
   readonly session: FeedbackSession;
   readonly sound: Sound;
-  readonly stage: Pick<Stage, "race" | "track">;
+  readonly stage: Pick<Stage, "me" | "race" | "track">;
 }
 
 export const bindFeedback = ({
@@ -102,13 +96,13 @@ export const bindFeedback = ({
   };
 
   const reactToHit = (attacker: RiderId, target: RiderId, armed: boolean) => {
-    if (attacker === PLAYER_RIDER) {
+    if (attacker === stage.me) {
       strikeSound(armed);
       const victim = riderOf(stage.race.view.riders, target);
       if (victim && victim.stamina <= 0) {
         say("knockdown");
       }
-    } else if (target === PLAYER_RIDER) {
+    } else if (target === stage.me) {
       strikeSound(armed);
       chase.jolt(armed ? 0.8 : 0.5);
     }
@@ -152,12 +146,12 @@ export const bindFeedback = ({
   };
 
   const reactToOthers = (event: RaceEvent) => {
-    if (event.kind === "riderContact" && event.other === PLAYER_RIDER) {
+    if (event.kind === "riderContact" && event.other === stage.me) {
       chase.jolt(0.3);
       sound.thump(0.35);
-    } else if (event.kind === "weaponTaken" && event.target === PLAYER_RIDER) {
+    } else if (event.kind === "weaponTaken" && event.target === stage.me) {
       say("disarmed");
-    } else if (event.kind === "pursuit" && event.target === PLAYER_RIDER) {
+    } else if (event.kind === "pursuit" && event.target === stage.me) {
       sound.siren();
       say("police");
     } else if (event.kind === "crash") {
@@ -176,7 +170,7 @@ export const bindFeedback = ({
     for (const event of stage.race.view.events) {
       if (event.kind === "hit") {
         reactToHit(event.rider, event.target, event.weapon !== "none");
-      } else if (event.rider === PLAYER_RIDER) {
+      } else if (event.rider === stage.me) {
         reactToOwn(event);
       } else {
         reactToOthers(event);
@@ -190,7 +184,7 @@ export const bindFeedback = ({
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
-      copDistance: chaserDistance(stage.race.view, PLAYER_RIDER),
+      copDistance: chaserDistance(stage.race.view, stage.me),
       countdown: Math.max(
         0,
         Math.ceil(session.holdLeft > 0 ? session.holdLeft : session.countdown)
@@ -202,7 +196,7 @@ export const bindFeedback = ({
       noticeDetail: feedback.noticeDetail,
       offBike: me.mode !== "riding",
       phase: session.phase,
-      position: session.settled?.place ?? order.indexOf(PLAYER_RIDER) + 1,
+      position: session.settled?.place ?? order.indexOf(stage.me) + 1,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
       riderCount: order.length,
       roadLength: stage.track.length,

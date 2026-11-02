@@ -1,4 +1,4 @@
-import type { RaceRun } from "@racer/sim/race-run";
+import type { LocalRun } from "@racer/sim/race-run";
 import type { RaceView, RiderView } from "@racer/sim/race-view";
 import {
   clamp,
@@ -32,7 +32,7 @@ const holdLine = (track: Track, me: RiderView, lineX: number): number => {
 };
 
 export interface DevRide {
-  readonly place: (run: RaceRun) => void;
+  readonly place: (run: LocalRun) => void;
   readonly steer: (race: RaceView, track: Track, input: RiderInput) => void;
   readonly holds: (race: RaceView) => boolean;
   readonly whenReleased: (resume: () => void) => void;

@@ -7,7 +7,7 @@ import {
 } from "@racer/sim/race";
 import { playerFrame } from "@racer/sim/race-fixtures";
 import { createRaceRun } from "@racer/sim/race-run";
-import type { RaceRun } from "@racer/sim/race-run";
+import type { LocalRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import { trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
@@ -16,10 +16,10 @@ import { benchPlan } from "../src/career/bench.ts";
 import { quickReport } from "../src/career/flow.ts";
 import { devRideFrom } from "../src/game/dev-ride.ts";
 
-const freshRun = (): RaceRun =>
+const freshRun = (): LocalRun =>
   createRaceRun(defaultSetup(trackFor("ridge-road", 1), 3));
 
-const playerOf = (run: RaceRun) => {
+const playerOf = (run: LocalRun) => {
   const me = riderOf(run.view.riders, PLAYER_RIDER);
   if (!me) {
     throw new Error("The race has no rider.");

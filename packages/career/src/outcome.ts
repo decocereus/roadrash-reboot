@@ -101,6 +101,7 @@ interface Entrant {
 }
 
 export interface RaceLog {
+  readonly rider: RiderId;
   readonly raceId: number;
   readonly entrants: readonly Entrant[];
   outcome: RaceOutcome | null;
@@ -121,15 +122,24 @@ const freshTally = (): Tally => ({
   weaponTakenTick: 0,
 });
 
-export const createRaceLog = (setup: CareerRaceSetup): RaceLog => {
-  const { rivals } = rosterOf(setup);
+export const createRaceLog = (
+  setup: CareerRaceSetup,
+  me: RiderId = PLAYER_RIDER
+): RaceLog => {
+  const { player, rivals } = rosterOf(setup);
   return {
     entrants: setup.field.flatMap((rival, slot): Entrant[] => {
       const rider = rivals[slot];
-      return rider === undefined ? [] : [{ rider, rival, tally: freshTally() }];
+      if (rider === undefined) {
+        return [];
+      }
+      return [
+        { rider: rider === me ? player : rider, rival, tally: freshTally() },
+      ];
     }),
     outcome: null,
     raceId: setup.raceId,
+    rider: me,
   };
 };
 
@@ -174,13 +184,13 @@ const noteCrash = (
   }
   const km = kmOf(bodyOf(state, event.rider));
   const attacker = entrantOf(log, event.by)?.tally;
-  if (event.rider === PLAYER_RIDER && attacker) {
+  if (event.rider === log.rider && attacker) {
     attacker.knockedPlayerDown += 1;
     attacker.knockedPlayerDownKm = km;
     attacker.knockedPlayerDownTick = state.tick;
   }
   const victim = entrantOf(log, event.rider)?.tally;
-  if (event.by === PLAYER_RIDER && victim) {
+  if (event.by === log.rider && victim) {
     victim.knockedDownByPlayer += 1;
     victim.knockdownKm = km;
     victim.knockdownTick = state.tick;
@@ -196,7 +206,7 @@ const noteEvent = (log: RaceLog, state: RaceView, event: RaceEvent): void => {
     const tally = entrantOf(log, event.rider)?.tally;
     if (tally) {
       tally.busted =
-        Math.abs(bodyOf(state, PLAYER_RIDER) - event.s) <= BLAME_METRES
+        Math.abs(bodyOf(state, log.rider) - event.s) <= BLAME_METRES
           ? "near"
           : "far";
       tally.bustedTick = state.tick;
@@ -208,23 +218,26 @@ const noteEvent = (log: RaceLog, state: RaceView, event: RaceEvent): void => {
   }
   const struck = entrantOf(log, event.target)?.tally;
   const striker = entrantOf(log, event.rider)?.tally;
-  if (event.rider === PLAYER_RIDER && struck) {
+  if (event.rider === log.rider && struck) {
     struck.tradedHits = true;
     if (event.kind === "weaponTaken") {
       struck.weaponTakenByPlayer = event.weapon;
       struck.weaponTakenTick = state.tick;
     }
   }
-  if (event.target === PLAYER_RIDER && striker) {
+  if (event.target === log.rider && striker) {
     striker.tradedHits = true;
     striker.tookPlayerWeapon =
       event.kind === "weaponTaken" ? event.weapon : striker.tookPlayerWeapon;
   }
 };
 
-const terminalOf = (events: readonly RaceEvent[]): RaceResult | null => {
+const terminalOf = (
+  events: readonly RaceEvent[],
+  me: RiderId
+): RaceResult | null => {
   for (const event of events) {
-    if (event.rider !== PLAYER_RIDER) {
+    if (event.rider !== me) {
       continue;
     }
     if (event.kind === "finish") {
@@ -249,19 +262,23 @@ const fateOf = (rider: RiderView): Fate => {
 const isOut = (rider: RiderView | undefined): boolean =>
   rider?.mode === "busted" || rider?.mode === "wrecked";
 
-const orderOf = (state: RaceView, result: RaceResult): RiderId[] => {
+const orderOf = (
+  state: RaceView,
+  result: RaceResult,
+  me: RiderId
+): RiderId[] => {
   const order = standings(state);
-  const player = riderOf(state.riders, PLAYER_RIDER);
+  const player = riderOf(state.riders, me);
   if (result !== "quit" || !player) {
     return order;
   }
-  const others = order.filter((id) => id !== PLAYER_RIDER);
+  const others = order.filter((id) => id !== me);
   const behind = others.findIndex((id) => {
     const rider = riderOf(state.riders, id);
     return isOut(rider) && (rider?.bodyS ?? 0) < player.bodyS;
   });
   const slot = behind === -1 ? others.length : behind;
-  return [...others.slice(0, slot), PLAYER_RIDER, ...others.slice(slot)];
+  return [...others.slice(0, slot), me, ...others.slice(slot)];
 };
 
 const beatByAWheel = (player: RiderView, rival: RiderView): boolean =>
@@ -279,8 +296,12 @@ const lostByAWheel = (player: RiderView, rival: RiderView): boolean => {
   return rival.mode === "riding" && player.s - rival.s <= WHEEL_METRES;
 };
 
-const arrestOf = (state: RaceView, setup: CareerRaceSetup): Arrest | null => {
-  const bust = bustOf(state, PLAYER_RIDER);
+const arrestOf = (
+  state: RaceView,
+  setup: CareerRaceSetup,
+  me: RiderId
+): Arrest | null => {
+  const bust = bustOf(state, me);
   return bust
     ? {
         fine: bust.fine,
@@ -298,16 +319,17 @@ const classify = (
   setup: CareerRaceSetup,
   result: RaceResult
 ): RaceOutcome => {
-  const order = orderOf(state, result);
-  const player = riderOf(state.riders, PLAYER_RIDER);
-  const playerSpot = order.indexOf(PLAYER_RIDER);
+  const me = log.rider;
+  const order = orderOf(state, result, me);
+  const player = riderOf(state.riders, me);
+  const playerSpot = order.indexOf(me);
   const racerOf = (id: RiderId): RacerId => rivalOf(log, id) ?? "player";
   const placings = order.flatMap((id, spot): Placing[] => {
     const rider = riderOf(state.riders, id);
     if (!rider) {
       return [];
     }
-    const quitter = id === PLAYER_RIDER && result === "quit";
+    const quitter = id === me && result === "quit";
     return [
       {
         fate: quitter ? "wrecked" : fateOf(rider),
@@ -335,10 +357,10 @@ const classify = (
   });
   const finished = result === "finished";
   return {
-    arrest: result === "busted" ? arrestOf(state, setup) : null,
+    arrest: result === "busted" ? arrestOf(state, setup, me) : null,
     finishTick: player?.finishTick ?? -1,
     incidents,
-    km: kmOf(bodyOf(state, PLAYER_RIDER)),
+    km: kmOf(bodyOf(state, me)),
     level: setup.level,
     place: playerSpot === -1 ? setup.field.length + 1 : playerSpot + 1,
     placings,
@@ -363,7 +385,7 @@ export const recordTick = (
   for (const event of state.events) {
     noteEvent(log, state, event);
   }
-  const result = terminalOf(state.events);
+  const result = terminalOf(state.events, log.rider);
   if (result) {
     log.outcome = classify(log, state, setup, result);
   }

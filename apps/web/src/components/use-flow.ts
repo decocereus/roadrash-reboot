@@ -3,6 +3,7 @@ import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { LevelUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
+import { RACE_ID_PATTERN } from "@racer/rooms/messages";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
@@ -48,6 +49,7 @@ export type View =
   | { readonly screen: "routeBoard" }
   | { readonly screen: "garage" }
   | { readonly screen: "rideOut"; readonly entry: RaceEntry }
+  | { readonly screen: "room"; readonly raceId: string }
   | {
       readonly screen: "race";
       readonly plan: RacePlan;
@@ -103,6 +105,11 @@ const urlRide = (rules: RaceRules): RacePlan | null => {
   return bench ? benchPlan(bench) : rideOf(rules, globalThis.location.search);
 };
 
+const roomOf = (search: string): string | null => {
+  const raceId = new URLSearchParams(search).get("room");
+  return raceId !== null && RACE_ID_PATTERN.test(raceId) ? raceId : null;
+};
+
 const entrance = async (
   rules: RulesLoad | null,
   save: SaveState,
@@ -113,6 +120,10 @@ const entrance = async (
   }
   if (rules === null || save.status === "loading") {
     return null;
+  }
+  const raceId = roomOf(globalThis.location.search);
+  if (raceId !== null) {
+    return { raceId, screen: "room" };
   }
   if (save.status === "corrupt") {
     return backRoom;
