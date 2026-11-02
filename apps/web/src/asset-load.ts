@@ -41,6 +41,10 @@ const parsersOf = (module: Promise<ParserModule>): AssetParsers => ({
     const { assetParsers } = await module;
     return await assetParsers.rider(bytes, url);
   },
+  walkers: async (bytes, url) => {
+    const { assetParsers } = await module;
+    return await assetParsers.walkers(bytes, url);
+  },
   whole: async (bytes, url) => {
     const { assetParsers } = await module;
     return await assetParsers.whole(bytes, url);

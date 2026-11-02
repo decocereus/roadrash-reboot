@@ -77,7 +77,12 @@ const wardrobeOf = (answer: (url: string) => Promise<Response>) => {
     celebrityLoader(
       runtime.mountCelebrity,
       Promise.resolve({
-        assetParsers: { parts: onlyRiders, rider, whole: onlyRiders },
+        assetParsers: {
+          parts: onlyRiders,
+          rider,
+          walkers: onlyRiders,
+          whole: onlyRiders,
+        },
       })
     )
   );

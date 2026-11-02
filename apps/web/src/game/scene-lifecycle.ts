@@ -44,7 +44,7 @@ export const createStage = (
   track: Track,
   seed: number
 ): Stage => {
-  const world = createWorld(track);
+  const world = createWorld(track, assets.walkers);
   const race = createRaceRun(ridden(defaultSetup(track, seed), "pilot"));
   return {
     fleet: createFleet(
@@ -132,6 +132,7 @@ export const bindStage = ({
     stage.track = next;
     stage.world = createWorld(
       stage.track,
+      assets.walkers,
       (quality.ladder[quality.rung] ?? quality.ladder[0])?.shadowMap
     );
     pipeline.setLook(stage.world.shading.look);

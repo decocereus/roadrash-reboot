@@ -107,6 +107,7 @@ const model = <Value>(
 const bikeParts = (parsers: AssetParsers) => parsers.parts;
 const wholeModel = (parsers: AssetParsers) => parsers.whole;
 const riderModel = (parsers: AssetParsers) => parsers.rider;
+const walkerModel = (parsers: AssetParsers) => parsers.walkers;
 
 const displayFont = Effect.gen(function* loadDisplayFont() {
   const fonts = yield* FontReadiness;
@@ -154,7 +155,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
   urls: ModelUrls
 ) {
   const [buildA, buildB, buildC] = urls.figures;
-  const [bikes, car, van, riderA, riderB, riderC, fontFallback] =
+  const [bikes, car, van, riderA, riderB, riderC, walkers, fontFallback] =
     yield* Effect.all(
       [
         bikeModels(cache, urls),
@@ -163,6 +164,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
         model(cache, buildA, riderModel),
         model(cache, buildB, riderModel),
         model(cache, buildC, riderModel),
+        model(cache, urls.walkers, walkerModel),
         displayFont,
       ],
       { concurrency: "unbounded" }
@@ -173,6 +175,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       car,
       figures: [riderA, riderB, riderC],
       van,
+      walkers,
     },
     fontFallback,
   };

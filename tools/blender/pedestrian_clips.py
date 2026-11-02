@@ -1,5 +1,5 @@
 import bpy, math
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Matrix, Vector
 
 FPS = 30
 SOLE = 0.0
@@ -60,7 +60,7 @@ class Poser:
 
     def leg(self, s, sx, ankle, pitch, pole=(0.12, -1.0, 0.1), toe=None):
         reach = self.reach(s, ankle, Vector((pole[0] * sx, pole[1], pole[2])))
-        self.foot(s, sx, pitch, toe)
+        self.foot(s, pitch, toe)
         return reach
 
     def reach(self, s, ankle, side):
@@ -79,7 +79,7 @@ class Poser:
         self.aim("calf" + s, ankle - knee)
         return to.length / (a + b)
 
-    def foot(self, s, sx, pitch, toe=None):
+    def foot(self, s, pitch, toe=None):
         foot = self.bones["foot" + s]
         d = foot.tail_local - foot.head_local
         rest = math.atan2(d.z, -d.y)
@@ -238,7 +238,7 @@ def thrown_pose(p):
     for s, sx in SIDES:
         p.aim("thigh" + s, (sx * 0.2, -0.75, -0.25 if sx == 1 else -0.55))
         p.aim("calf" + s, (sx * 0.08, -0.15 if sx == 1 else -0.45, -0.95))
-        p.foot(s, sx, 18, toe=0.0)
+        p.foot(s, 18, toe=0.0)
         p.aim("upperarm" + s, (sx * 0.85, 0.15, 0.55))
         p.aim("lowerarm" + s, (sx * 0.65, 0.5, 0.6))
         p.aim("hand" + s, (sx * 0.6, 0.55, 0.55))
@@ -253,7 +253,7 @@ def landing_pose(p):
     for s, sx in SIDES:
         p.aim("thigh" + s, (sx * 0.22, -0.92, 0.28 if sx == 1 else 0.12))
         p.aim("calf" + s, (sx * 0.1, -0.86, -0.42 if sx == 1 else -0.08))
-        p.foot(s, sx, 40, toe=0.0)
+        p.foot(s, 40, toe=0.0)
         p.aim("upperarm" + s, (sx * 0.86, 0.45, 0.12))
         p.aim("lowerarm" + s, (sx * 0.8, 0.5, 0.14))
         p.aim("hand" + s, (sx * 0.8, 0.5, 0.14))
@@ -270,7 +270,7 @@ def lie_pose(p, breathe=0.0):
     for s, sx in SIDES:
         p.aim("thigh" + s, (sx * 0.2, -1, 0.02 if sx == 1 else 0.22))
         p.aim("calf" + s, (sx * 0.1, -1, 0.01 if sx == 1 else -0.2))
-        p.foot(s, sx, 62, toe=0.0)
+        p.foot(s, 62, toe=0.0)
         p.aim("upperarm" + s, (sx * 0.84, 0.48, -0.02))
         p.aim("lowerarm" + s, (sx * 0.86, 0.3 if sx == 1 else -0.2, 0.02))
         p.aim("hand" + s, (sx * 0.86, 0.3 if sx == 1 else -0.2, 0.0))

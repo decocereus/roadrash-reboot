@@ -410,7 +410,7 @@ def zone_uv(name):
     return ((Z[name] + 0.5) / len(ZONES), 1 - 0.5 / len(OUTFITS))
 
 
-def solid(arm, name, bm, zone, bones):
+def solid(name, bm, zone, bones):
     uv = bm.loops.layers.uv.new("UV")
     for f in bm.faces:
         at = zone_uv(zone(f) if callable(zone) else zone)
@@ -434,7 +434,7 @@ def ellipsoid(arm, name, centre, radii, zone, bone, tilt=0.0, seg=10, rings=7):
     bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=rings, radius=1.0)
     m = Matrix.Translation(centre) @ Matrix.Rotation(math.radians(tilt), 4, "X") @ Matrix.Diagonal((*radii, 1))
     bmesh.ops.transform(bm, matrix=m, verts=bm.verts)
-    return solid(arm, name, bm, zone, bone)
+    return solid(name, bm, zone, bone)
 
 
 def loft(arm, name, rings, zone, n=8):
@@ -455,7 +455,7 @@ def loft(arm, name, rings, zone, n=8):
     bm.faces.new(loops[-1])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bm.verts.index_update()
-    return solid(arm, name, bm, zone, bones)
+    return solid(name, bm, zone, bones)
 
 
 def shoe(arm, shape, s):
@@ -483,7 +483,7 @@ def shoe(arm, shape, s):
     bm.faces.new(rings[-1])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bm.verts.index_update()
-    return solid(arm, "shoe", bm, lambda f: "dark" if f.calc_center_median().z < 0.018 else "shoes", bones)
+    return solid("shoe", bm, lambda f: "dark" if f.calc_center_median().z < 0.018 else "shoes", bones)
 
 
 def wear(arm, style, shape, eye):

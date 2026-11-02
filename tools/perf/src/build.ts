@@ -31,6 +31,7 @@ export const glbNames = [
   "car",
   "ghost",
   "oni",
+  "pedestrians",
   "rider_a",
   "rider_b",
   "rider_c",
