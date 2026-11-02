@@ -33,9 +33,33 @@ export interface HostSocket {
   readonly close: (code: number, reason: string) => void;
 }
 
+export type RoomNote =
+  | { readonly kind: "refused"; readonly name: string; readonly reason: string }
+  | { readonly kind: "started"; readonly names: readonly string[] }
+  | {
+      readonly kind: "countdown";
+      readonly stillLoading: readonly string[];
+      readonly waitedMs: number;
+    }
+  | {
+      readonly kind: "left";
+      readonly name: string;
+      readonly seatsLeft: number;
+      readonly tally: RoomStatus["seats"];
+      readonly tick: number;
+    }
+  | {
+      readonly catchUpWakes: number;
+      readonly kind: "ended";
+      readonly seats: RoomStatus["seats"];
+      readonly tick: number;
+      readonly worstBehindTicks: number;
+    };
+
 export interface HostPorts {
   readonly now: () => number;
   readonly after: (ms: number, wake: () => void) => void;
+  readonly note: (note: RoomNote) => void;
   readonly seed: () => number;
 }
 
@@ -56,6 +80,7 @@ interface Lobby {
 interface Running {
   readonly loading: Set<HostSocket>;
   readonly room: Room;
+  readonly since: number;
   startedAt: number | null;
 }
 
@@ -136,7 +161,30 @@ export const createHost = (ports: HostPorts): Host => {
     });
   };
 
+  const tallyOf = (seat: Seat, room: Room | null): RoomStatus["seats"] =>
+    seat.rider === null
+      ? []
+      : [
+          {
+            accepted: seat.accepted,
+            ahead: seat.ahead,
+            late: seat.late,
+            missed: room?.missedControls(seat.rider) ?? 0,
+            rider: seat.rider,
+          },
+        ];
+
+  const talliesOf = (room: Room | null): RoomStatus["seats"] =>
+    [...seats.values()].flatMap((seat) => tallyOf(seat, room));
+
   const end = (room: Room): void => {
+    ports.note({
+      catchUpWakes,
+      kind: "ended",
+      seats: talliesOf(room),
+      tick: room.state.tick,
+      worstBehindTicks,
+    });
     running = null;
     tell({ kind: "ended", tick: room.state.tick });
     for (const seat of seats.values()) {
@@ -192,6 +240,14 @@ export const createHost = (ports: HostPorts): Host => {
     if (run !== running || run.startedAt !== null) {
       return;
     }
+    ports.note({
+      kind: "countdown",
+      stillLoading: [...run.loading].flatMap((socket) => {
+        const seat = seats.get(socket);
+        return seat ? [seat.name] : [];
+      }),
+      waitedMs: ports.now() - run.since,
+    });
     run.startedAt = ports.now() + START_DELAY_MS;
     tell({ kind: "countdown", startsInMs: START_DELAY_MS });
     ports.after(START_DELAY_MS, wake);
@@ -220,10 +276,12 @@ export const createHost = (ports: HostPorts): Host => {
     const run: Running = {
       loading: new Set(seats.keys()),
       room,
+      since: ports.now(),
       startedAt: null,
     };
     running = run;
     const names = [...seats.values()].map((seat) => seat.name);
+    ports.note({ kind: "started", names });
     for (const seat of seats.values()) {
       sendTo(
         seat,
@@ -261,6 +319,13 @@ export const createHost = (ports: HostPorts): Host => {
         return;
       }
       leave(seat);
+      ports.note({
+        kind: "left",
+        name: seat.name,
+        seatsLeft: seats.size,
+        tally: tallyOf(seat, running?.room ?? null),
+        tick: running?.room.state.tick ?? 0,
+      });
       if (running) {
         countDownOnceLoaded(running);
       }
@@ -308,6 +373,7 @@ export const createHost = (ports: HostPorts): Host => {
     seat: (socket, name) => {
       if (running || seats.size >= MOST_SEATS) {
         const reason = running ? "racing" : "full";
+        ports.note({ kind: "refused", name, reason });
         socket.send(encodeRoomMessage({ kind: "refused", reason }));
         socket.close(SEAT_CLOSED, reason);
         return;
@@ -319,19 +385,7 @@ export const createHost = (ports: HostPorts): Host => {
       catchUpWakes,
       names: [...seats.values()].map((seat) => seat.name),
       phase: running ? "racing" : "waiting",
-      seats: [...seats.values()].flatMap((seat) =>
-        seat.rider === null
-          ? []
-          : [
-              {
-                accepted: seat.accepted,
-                ahead: seat.ahead,
-                late: seat.late,
-                missed: running?.room.missedControls(seat.rider) ?? 0,
-                rider: seat.rider,
-              },
-            ]
-      ),
+      seats: talliesOf(running?.room ?? null),
       tick: running ? running.room.state.tick : 0,
       waiting: seats.size,
       wakes,

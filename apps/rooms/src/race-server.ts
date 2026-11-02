@@ -15,6 +15,9 @@ const ports: HostPorts = {
   after: (ms, wake) => {
     setTimeout(wake, ms);
   },
+  note: (note) => {
+    console.log(JSON.stringify(note));
+  },
   now: () => Date.now(),
   seed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
 };
@@ -38,11 +41,22 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
                 });
               }
               const [response, socket] = yield* Cloudflare.upgrade();
-              const asked = new URL(request.url, "http://rooms").searchParams;
-              host.seat(
-                rawSocket(socket),
-                cleanGuestName(asked.get("name") ?? "")
+              const url = new URL(request.url, "http://rooms");
+              const name = cleanGuestName(url.searchParams.get("name") ?? "");
+              const cf =
+                request.source instanceof Request
+                  ? request.source.cf
+                  : undefined;
+              console.log(
+                JSON.stringify({
+                  colo: cf?.colo ?? null,
+                  kind: "seat",
+                  name,
+                  room: url.pathname,
+                  tcpRttMs: cf?.clientTcpRtt ?? null,
+                })
               );
+              host.seat(rawSocket(socket), name);
               return response;
             }).pipe(Effect.provideService(Cloudflare.DurableObjectState, state))
           )
