@@ -2,6 +2,7 @@ import { nextSeed, unitOf } from "@racer/track/random";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { onRoad } from "./cross-traffic.ts";
 import { OIL_SLIP, rockUpsetShare } from "./hazards.ts";
 import {
   deceleration,
@@ -29,6 +30,8 @@ import {
 } from "./state.ts";
 import type {
   BikeSpec,
+  CarBox,
+  CrossCar,
   Hazard,
   PilotHistory,
   RaceState,
@@ -54,6 +57,9 @@ export const SLIPPING = 0.2;
 export const SLIPPING_STEER = 0.45;
 const OIL_BEND_PUSH = 1.2;
 const OIL_SCAN_STEP = 5;
+const GIVE_WAY_MARGIN = 0.3;
+const GIVE_WAY_COST = 2;
+const GIVE_WAY_COST_PER_SHARE = 3;
 
 const hazardRoll = (state: RaceState): number => {
   state.hazardDice = nextSeed(state.hazardDice);
@@ -89,8 +95,10 @@ interface Obstruction {
   along: number;
   speed: number;
   x: number;
+  drift: number;
   reach: number;
   cost: number;
+  crossing: boolean;
   rock: boolean;
   oil: boolean;
   curvature: number;
@@ -116,11 +124,15 @@ export interface Outlook {
   hazardHorizon: number;
   touchedOil: boolean;
   carAhead: boolean;
+  gaveWay: boolean;
+  crossCarMoving: boolean;
   readonly toll: Toll;
 }
 
 export const createOutlook = (): Outlook => ({
   carAhead: false,
+  crossCarMoving: false,
+  gaveWay: false,
   hazardHorizon: 0,
   inSight: [],
   obstructed: 0,
@@ -141,7 +153,9 @@ const createObstruction = (): Obstruction => ({
   ahead: 0,
   along: 0,
   cost: 0,
+  crossing: false,
   curvature: 0,
+  drift: 0,
   end: 0,
   metres: 0,
   oil: false,
@@ -305,6 +319,96 @@ const nextObstruction = (outlook: Outlook): Obstruction => {
   return obstruction;
 };
 
+const obstructWithCar = (
+  outlook: Outlook,
+  rider: RiderState,
+  car: CarBox
+): void => {
+  const closing = rider.speed - car.speed;
+  const start = (car.s - car.halfLength - BIKE_HALF_LENGTH - rider.s) / closing;
+  const end = (car.s + car.halfLength + BIKE_HALF_LENGTH - rider.s) / closing;
+  if (closing > 0 && end >= 0 && start <= FORECAST_SECONDS) {
+    const obstruction = nextObstruction(outlook);
+    obstruction.ahead = car.s - rider.s;
+    obstruction.along = car.halfLength + BIKE_HALF_LENGTH;
+    obstruction.cost = CRASH_COST;
+    obstruction.crossing = false;
+    obstruction.curvature = 0;
+    obstruction.drift = 0;
+    obstruction.end = end;
+    obstruction.metres = 0;
+    obstruction.oil = false;
+    obstruction.reach = car.halfWidth + BIKE_HALF_WIDTH;
+    obstruction.rock = false;
+    obstruction.speed = car.speed;
+    obstruction.start = start;
+    obstruction.traffic = true;
+    obstruction.x = car.x;
+  }
+};
+
+const metresToCrossCar = (rider: RiderState, car: CrossCar): number =>
+  car.s - car.halfLength - BIKE_HALF_LENGTH - rider.s;
+
+export const crossCarAtArrival = (rider: RiderState, car: CrossCar): number =>
+  car.x +
+  (car.drift * Math.max(0, metresToCrossCar(rider, car))) /
+    Math.max(1, rider.speed);
+
+export const crossCarReach = (car: CrossCar): number =>
+  car.halfWidth + BIKE_HALF_WIDTH;
+
+export const crossCarInSight = (
+  track: Track,
+  rider: RiderState,
+  car: CrossCar
+): boolean =>
+  onRoad(car) &&
+  metresToCrossCar(rider, car) <= sightOf(rider) &&
+  car.s + car.halfLength + BIKE_HALF_LENGTH >= rider.s &&
+  Math.abs(crossCarAtArrival(rider, car)) <
+    track.roadHalfWidth + crossCarReach(car);
+
+export const seesCrossCar = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState
+): boolean => {
+  for (const car of state.crossCars) {
+    if (crossCarInSight(track, rider, car)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const obstructWithCrossCar = (
+  outlook: Outlook,
+  rider: RiderState,
+  car: CrossCar
+): void => {
+  const pace = Math.max(1, rider.speed);
+  const metres = metresToCrossCar(rider, car);
+  const obstruction = nextObstruction(outlook);
+  outlook.crossCarMoving = true;
+  obstruction.ahead = 0;
+  obstruction.along = 0;
+  obstruction.cost = CRASH_COST;
+  obstruction.crossing = true;
+  obstruction.curvature = 0;
+  obstruction.drift = car.drift;
+  obstruction.end =
+    (car.s + car.halfLength + BIKE_HALF_LENGTH - rider.s) / pace;
+  obstruction.metres = Math.max(0, metres);
+  obstruction.oil = false;
+  obstruction.reach = crossCarReach(car);
+  obstruction.rock = false;
+  obstruction.speed = 0;
+  obstruction.start = metres / pace;
+  obstruction.traffic = false;
+  obstruction.x = car.x;
+};
+
 export const gatherObstructions = (
   outlook: Outlook,
   state: RaceState,
@@ -321,10 +425,12 @@ export const gatherObstructions = (
       obstruction.ahead = 0;
       obstruction.along = 0;
       obstruction.cost = hazardCost(hazard, rider.speed);
+      obstruction.crossing = false;
       obstruction.curvature =
         hazard.kind === "oil"
           ? oilBendOf(track, hazard, rider.speed)
           : curvatureAt(track, hazard.s);
+      obstruction.drift = 0;
       obstruction.end =
         (hazard.s + hazard.halfLength + BIKE_HALF_LENGTH - rider.s) / pace;
       obstruction.metres = Math.max(0, metresToContact(rider, hazard));
@@ -338,25 +444,15 @@ export const gatherObstructions = (
     }
   }
   for (const car of state.cars) {
-    const closing = rider.speed - car.speed;
-    const start =
-      (car.s - car.halfLength - BIKE_HALF_LENGTH - rider.s) / closing;
-    const end = (car.s + car.halfLength + BIKE_HALF_LENGTH - rider.s) / closing;
-    if (closing > 0 && end >= 0 && start <= FORECAST_SECONDS) {
-      const obstruction = nextObstruction(outlook);
-      obstruction.ahead = car.s - rider.s;
-      obstruction.along = car.halfLength + BIKE_HALF_LENGTH;
-      obstruction.cost = CRASH_COST;
-      obstruction.curvature = 0;
-      obstruction.end = end;
-      obstruction.metres = 0;
-      obstruction.oil = false;
-      obstruction.reach = car.halfWidth + BIKE_HALF_WIDTH;
-      obstruction.rock = false;
-      obstruction.speed = car.speed;
-      obstruction.start = start;
-      obstruction.traffic = true;
-      obstruction.x = car.x;
+    obstructWithCar(outlook, rider, car);
+  }
+  for (const car of state.crossCars) {
+    if (crossCarInSight(track, rider, car)) {
+      if (car.drift === 0) {
+        obstructWithCar(outlook, rider, car);
+      } else {
+        obstructWithCrossCar(outlook, rider, car);
+      }
     }
   }
 };
@@ -440,6 +536,36 @@ const crossOil = (
   }
 };
 
+const giveWay = (
+  outlook: Outlook,
+  rider: RiderState,
+  obstruction: Obstruction,
+  x: number
+): void => {
+  const { toll } = outlook;
+  const rate = riding.brakeShare * deceleration.capacity;
+  const clears =
+    ((x - obstruction.x) * Math.sign(obstruction.drift) + obstruction.reach) /
+      Math.abs(obstruction.drift) +
+    GIVE_WAY_MARGIN;
+  const room =
+    rate * rate * clears * clears -
+    2 * rate * clears * rider.speed +
+    2 * rate * obstruction.metres;
+  if (room < 0) {
+    return;
+  }
+  const arrival = rider.speed - rate * clears + Math.sqrt(room);
+  if (arrival > 0 && arrival < rider.speed) {
+    outlook.gaveWay = true;
+    toll.speed = Math.min(toll.speed, arrival);
+    toll.speedMetres = Math.min(
+      toll.speedMetres,
+      (rider.speed * rider.speed - arrival * arrival) / (2 * rate)
+    );
+  }
+};
+
 const tally = (
   outlook: Outlook,
   rider: RiderState,
@@ -464,9 +590,16 @@ const tally = (
       outlook.carAhead ||= gap > -obstruction.along;
       meets = !braking && Math.abs(gap) <= obstruction.along;
     }
-    if (meets && Math.abs(x - obstruction.x) < obstruction.reach) {
+    if (
+      meets &&
+      Math.abs(x - obstruction.x - obstruction.drift * seconds) <
+        obstruction.reach
+    ) {
       obstruction.struck = true;
       toll.cost += obstruction.cost;
+      if (obstruction.crossing) {
+        giveWay(outlook, rider, obstruction, x);
+      }
       if (obstruction.rock) {
         toll.rock = true;
         landOnRock(toll, rider, obstruction, lateralSpeed);
@@ -585,6 +718,7 @@ export const weigh = (
   toll.slickSpeed = Number.POSITIVE_INFINITY;
   toll.speed = Number.POSITIVE_INFINITY;
   toll.speedMetres = Number.POSITIVE_INFINITY;
+  outlook.gaveWay = false;
   forecast(
     history,
     outlook,
@@ -600,7 +734,9 @@ export const weigh = (
   if (slowTo < rider.speed) {
     const slowAt =
       slowTo === toll.slickSpeed ? toll.slickMetres : toll.speedMetres;
-    toll.cost = 0;
+    toll.cost = outlook.gaveWay
+      ? GIVE_WAY_COST + GIVE_WAY_COST_PER_SHARE * (1 - slowTo / rider.speed)
+      : 0;
     forecast(history, outlook, track, rider, line, braking, slowTo, slowAt);
   }
 };

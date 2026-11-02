@@ -1,5 +1,5 @@
 import { riderPalette } from "@racer/sim/palette";
-import type { TrafficView } from "@racer/sim/race-view";
+import type { CrossCarView, TrafficView } from "@racer/sim/race-view";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -8,6 +8,7 @@ import { glows, paintPrimitives } from "./assets.ts";
 import type { Assets, BikeParts, Palette, Primitive } from "./assets.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
+import type { CrossCarPose } from "./cross-car-pose.ts";
 import { disposeTree } from "./dispose.ts";
 import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
 import { uploadSpan } from "./uploads.ts";
@@ -418,8 +419,21 @@ interface FleetPart {
 export interface Fleet {
   readonly group: THREE.Group;
   place: (track: Track, index: number, s: number) => void;
+  placeCrossCar: (
+    track: Track,
+    index: number,
+    pose: Readonly<CrossCarPose>
+  ) => void;
+  hideCrossCar: (index: number) => void;
   commit: (centre: number) => void;
   dispose: () => void;
+}
+
+interface FleetBody {
+  readonly halfLength: number;
+  readonly halfWidth: number;
+  readonly height: number;
+  readonly paint: number;
 }
 
 const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
@@ -436,18 +450,28 @@ const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
 export const createFleet = (
   assets: Assets,
   shading: Shading,
-  cars: readonly TrafficView[]
+  cars: readonly TrafficView[],
+  crossCars: readonly CrossCarView[]
 ): Fleet => {
   const group = new THREE.Group();
   const parts: FleetPart[] = [];
-  const local: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
-  const along = new Float64Array(cars.length);
+  const bodies: readonly FleetBody[] = [
+    ...cars,
+    ...crossCars.map((car) => ({
+      halfLength: car.bodyHalfLength,
+      halfWidth: car.bodyHalfWidth,
+      height: car.height,
+      paint: car.paint,
+    })),
+  ];
+  const local: THREE.Matrix4[] = bodies.map(() => new THREE.Matrix4());
+  const along = new Float64Array(bodies.length);
   const reach = shading.look.fogFar + FLEET_MARGIN;
   const scratch = new THREE.Object3D();
   const color = new THREE.Color();
 
   const muster = (primitives: readonly Primitive[], boxy: boolean): void => {
-    const members = cars
+    const members = bodies
       .map((car, index) => ({ car, index }))
       .filter(({ car }) => car.height > BOXY_HEIGHT === boxy);
     if (members.length === 0) {
@@ -508,14 +532,21 @@ export const createFleet = (
   const base = new THREE.Object3D();
   const world = new THREE.Matrix4();
   const spot: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
-  const placed: THREE.Matrix4[] = cars.map(() => new THREE.Matrix4());
-  const placedAt = new Float64Array(cars.length).fill(Number.NaN);
+  const placed: THREE.Matrix4[] = bodies.map(() => new THREE.Matrix4());
+  const placedAt = new Float64Array(bodies.length).fill(Number.NaN);
   let road: Track | null = null;
+
+  const fitInto = (index: number): void => {
+    const fit = local[index];
+    if (fit) {
+      base.updateMatrix();
+      placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
+    }
+  };
 
   const placeCar = (track: Track, index: number, s: number): void => {
     const car = cars[index];
-    const fit = local[index];
-    if (!(car && fit)) {
+    if (!car) {
       return;
     }
     placeOnGround(track, s, car.x, spot);
@@ -527,8 +558,7 @@ export const createFleet = (
       0,
       "YXZ"
     );
-    base.updateMatrix();
-    placed[index]?.copy(world.multiplyMatrices(base.matrix, fit));
+    fitInto(index);
   };
 
   const recolour = (part: FleetPart, slot: number, index: number): boolean => {
@@ -555,7 +585,7 @@ export const createFleet = (
           if (!matrix || s < from || s > to) {
             continue;
           }
-          if (road && placedAt[index] !== s) {
+          if (road && index < cars.length && placedAt[index] !== s) {
             placeCar(road, index, s);
             placedAt[index] = s;
           }
@@ -581,9 +611,21 @@ export const createFleet = (
       disposeTree(group);
     },
     group,
+    hideCrossCar(index) {
+      along[cars.length + index] = Number.NEGATIVE_INFINITY;
+    },
     place(track, index, s) {
       road = track;
       along[index] = s;
+    },
+    placeCrossCar(track, index, pose) {
+      const at = cars.length + index;
+      road = track;
+      along[at] = pose.s;
+      placeOnGround(track, pose.s, pose.x, spot);
+      base.position.set(spot.x, spot.y, spot.z);
+      base.rotation.set(0, -spot.heading + pose.yaw, 0, "YXZ");
+      fitInto(at);
     },
   };
 };

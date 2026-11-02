@@ -1,7 +1,12 @@
 import { hazardKinds } from "@racer/track/hazards";
 
 import { CORNER_SCAN_POINTS, FORECAST_TICKS } from "./pilot-history.ts";
-import type { RaceView, RiderView, TrafficView } from "./race-view.ts";
+import type {
+  CrossCarView,
+  RaceView,
+  RiderView,
+  TrafficView,
+} from "./race-view.ts";
 import { HASH_WORDS, WORD_BYTES } from "./snapshot-bytes.ts";
 import { eventsAt } from "./snapshot-events.ts";
 import {
@@ -20,6 +25,7 @@ import {
 } from "./snapshot-members.ts";
 import { attackStates, controllers, riderModes, weaponKinds } from "./state.ts";
 import type {
+  CrossCar,
   Hazard,
   PilotHistory,
   RaceState,
@@ -28,7 +34,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 1;
+export const SNAPSHOT_FORMAT = 2;
 
 const TICK_BYTES = 8;
 
@@ -53,6 +59,22 @@ export type CarSetupKey =
   | "height"
   | "paint"
   | "x";
+
+export type CrossCarSetupKey =
+  | "across"
+  | "along"
+  | "bodyHalfLength"
+  | "bodyHalfWidth"
+  | "cruise"
+  | "endAt"
+  | "everyTicks"
+  | "fromX"
+  | "height"
+  | "junction"
+  | "laneS"
+  | "paint"
+  | "stopAt"
+  | "turnAt";
 
 export type RaceHeaderKey = "tick";
 
@@ -103,6 +125,22 @@ const carSchema = schemaOf<
 >({
   s: floatAt("s"),
   speed: floatAt("speed"),
+});
+
+const crossCarSchema = schemaOf<
+  Omit<CrossCarView, CrossCarSetupKey>,
+  Omit<CrossCar, CrossCarSetupKey>
+>({
+  dice: floatAt("dice"),
+  drift: floatAt("drift"),
+  halfLength: floatAt("halfLength"),
+  halfWidth: floatAt("halfWidth"),
+  pace: floatAt("pace"),
+  s: floatAt("s"),
+  speed: floatAt("speed"),
+  travel: floatAt("travel"),
+  wait: floatAt("wait"),
+  x: floatAt("x"),
 });
 
 const riderSchema = schemaOf<
@@ -178,6 +216,7 @@ export const raceSchema = schemaOf<
   Omit<RaceState, RaceHeaderKey | RaceSetupKey>
 >({
   cars: listAt("cars", carSchema),
+  crossCars: listAt("crossCars", crossCarSchema),
   dice: floatAt("dice"),
   events: eventsAt("events"),
   hazardDice: floatAt("hazardDice"),

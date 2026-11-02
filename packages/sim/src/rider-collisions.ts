@@ -8,7 +8,7 @@ import {
   TICK_SECONDS,
   WALKING_PACE,
 } from "./state.ts";
-import type { RaceState, RiderState, TrafficCar } from "./state.ts";
+import type { CarBox, CrossCar, RaceState, RiderState } from "./state.ts";
 
 const WALL_SPEED_KEEP = 0.98;
 const WALL_THROW_HEIGHT = 0.2;
@@ -72,7 +72,7 @@ export const hitProps = (
   return false;
 };
 
-const wayAround = (rider: RiderState, car: TrafficCar): number => {
+const wayAround = (rider: RiderState, car: CarBox): number => {
   if (Math.abs(rider.lateralSpeed) > STEERING_AWAY) {
     return Math.sign(rider.lateralSpeed);
   }
@@ -82,7 +82,7 @@ const wayAround = (rider: RiderState, car: TrafficCar): number => {
 export const hitCar = (
   state: RaceState,
   rider: RiderState,
-  car: TrafficCar
+  car: CarBox
 ): boolean => {
   const gapS = car.s - rider.s;
   const gapX = car.x - rider.x;
@@ -141,4 +141,27 @@ export const hitCar = (
   }
   state.events.push({ kind: "bump", rider: rider.id });
   return false;
+};
+
+export const hitCrossCar = (
+  state: RaceState,
+  rider: RiderState,
+  car: CrossCar
+): boolean => {
+  const gapX = car.x - rider.x;
+  const overlapS =
+    car.halfLength + BIKE_HALF_LENGTH - Math.abs(car.s - rider.s);
+  const overlapX = car.halfWidth + BIKE_HALF_WIDTH - Math.abs(gapX);
+  const closingAcross = (car.drift - rider.lateralSpeed) * -Math.sign(gapX);
+  if (
+    overlapS >= GLANCE_OVERLAP &&
+    overlapX > 0 &&
+    overlapX <= closingAcross * TICK_SECONDS &&
+    closingAcross > CRASH_CLOSING_SPEED &&
+    rider.air < car.height
+  ) {
+    throwRider(state, rider, "traffic", 0.45, 0.6);
+    return true;
+  }
+  return hitCar(state, rider, car);
 };

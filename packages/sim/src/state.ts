@@ -1,3 +1,4 @@
+import type { ArmSide } from "@racer/track/crossings";
 import type { HazardKind } from "@racer/track/hazards";
 import type { Track } from "@racer/track/track";
 
@@ -203,15 +204,46 @@ export interface RiderState {
   crashes: number;
 }
 
-export interface TrafficCar {
-  s: number;
-  speed: number;
+export interface CarBox {
+  readonly s: number;
   readonly x: number;
-  readonly cruiseSpeed: number;
+  readonly speed: number;
   readonly halfLength: number;
   readonly halfWidth: number;
   readonly height: number;
+}
+
+export interface TrafficCar extends CarBox {
+  s: number;
+  speed: number;
+  readonly cruiseSpeed: number;
   readonly paint: number;
+}
+
+export interface CrossCar extends CarBox {
+  readonly junction: number;
+  readonly laneS: number;
+  readonly fromX: number;
+  readonly across: ArmSide;
+  readonly turnAt: number;
+  readonly along: ArmSide;
+  readonly stopAt: number;
+  readonly endAt: number;
+  readonly cruise: number;
+  readonly everyTicks: number;
+  readonly bodyHalfLength: number;
+  readonly bodyHalfWidth: number;
+  readonly paint: number;
+  s: number;
+  x: number;
+  speed: number;
+  drift: number;
+  halfLength: number;
+  halfWidth: number;
+  travel: number;
+  pace: number;
+  wait: number;
+  dice: number;
 }
 
 export interface HazardTag {
@@ -380,6 +412,7 @@ export interface RaceState {
   readonly pacing: PacingRules;
   readonly riders: readonly RiderState[];
   readonly cars: TrafficCar[];
+  readonly crossCars: readonly CrossCar[];
   readonly hazards: Hazard[];
   readonly events: RaceEvent[];
 }

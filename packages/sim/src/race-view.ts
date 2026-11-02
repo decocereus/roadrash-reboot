@@ -9,3 +9,4 @@ type ReadonlyData<T> = T extends number
 export type RaceView = ReadonlyData<RaceState>;
 export type RiderView = RaceView["riders"][number];
 export type TrafficView = RaceView["cars"][number];
+export type CrossCarView = RaceView["crossCars"][number];

@@ -308,7 +308,12 @@ describe("the roadside clears the chase camera", () => {
       fromLevel: 1,
       id: "woods-cross",
       lights: null,
-      road: { arms: "both", laneWidth: 3.4, lanesEachWay: 1 },
+      road: {
+        arms: "both",
+        carsPerMinute: 10,
+        laneWidth: 3.4,
+        lanesEachWay: 1,
+      },
       s: 1500,
       walk: "unmarked",
     };

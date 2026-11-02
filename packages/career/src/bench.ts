@@ -30,6 +30,13 @@ export const benchRaces = {
   },
 } as const satisfies Readonly<Record<Bench, PracticeRace>>;
 
+export const roadLifeRace = {
+  bikeId: "ostra-sesta-600",
+  level: 5,
+  roadId: "breakwater-run",
+  seed: 8,
+} as const satisfies PracticeRace;
+
 const STRESS_COPS = 8;
 const STRESS_SIGHT_RANGE = 250;
 const STRESS_PLAYER_AGGRESSION = 0.8;
@@ -37,6 +44,9 @@ const STRESS_PACING: PacingRules = { catchUp: 0.6, leadEase: 0.8 };
 
 const benchRaceSetup = (race: PracticeRace): CareerRaceSetup =>
   practiceSetup(recordedRules, race, trackFor(race.roadId, race.level));
+
+export const roadLifeSetup = (): CareerRaceSetup =>
+  benchRaceSetup(roadLifeRace);
 
 const stressSetup = (): CareerRaceSetup => {
   const setup = benchRaceSetup(benchRaces.stress);

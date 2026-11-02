@@ -180,16 +180,18 @@ Junctions, cross roads and pedestrian crossings a road declares, their lights, t
 - Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `apps/web/src/game/junctions.ts`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `apps/web/src/game/junctions.ts`
 
 Source files:
 
 - `apps/web/src/game/junctions.ts`
+- `packages/sim/src/cross-traffic.ts`
 - `packages/sim/src/signals.ts`
 - `packages/track/src/crossings.ts`
 
 Test files:
 
+- `packages/sim/src/cross-traffic.test.ts`
 - `packages/sim/src/junction-traffic.test.ts`
 - `packages/sim/src/signals.test.ts`
 - `packages/track/src/crossings.test.ts`
@@ -487,13 +489,14 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
 
 Source files:
 
 - `apps/web/src/career/colours.ts`
 - `apps/web/src/game/actors.ts`
 - `apps/web/src/game/bike-models.ts`
+- `apps/web/src/game/cross-car-pose.ts`
 - `apps/web/src/game/figure-bounds.ts`
 - `apps/web/src/game/figure-cycle.ts`
 - `apps/web/src/game/figure-ik.ts`

@@ -25,6 +25,7 @@ The four `snapshot.*` rows measure side B alone, because the race snapshot does 
 | `sim.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | at most 1.10 |
 | `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `snapshot.bytes.max` | the baseline size exactly | none, side B only |
+| `roadLife.tick.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `bytes.*.raw`, `bytes.*.gzip` | the baseline plus 4,096 B or 2%, whichever is larger | none |
 | `assets.glb.*`, `assets.texture.total` | the baseline size exactly | none |
 | `render.calls.max`, `render.triangles.max` | ceil(1.05 x the largest frame in any baseline window, either side) | none |
@@ -50,6 +51,8 @@ Each scenario's hash covers its window, its race setup and the road it runs on. 
 The harness runs on side A as well, so it drives a race only in ways both sides understand. The race plans every pilot rider inside `step`, in index order, so the harness builds it with the player pilot-controlled and steps it with an empty input frame. A race ends on the player's `finish`, `busted` or `wrecked` event, the same rule the career's race log uses, and the workload reads the player through `riderOf`.
 
 `node tools/perf/gate.ts --select-window` replays both races and checks that the registered windows are still the ones the fixed selection rule picks.
+
+`road-life-v1` is the third window, and it runs on side B alone, because the roads at the baseline revision have no junctions and a window on them could not hold the same race on both sides. It is `roadLifeSetup` in `packages/career/src/bench.ts`, Breakwater Run level 5 on seed 8 with the full field, ticks 2,400 to 3,000, as the pack rides through `harbour-cross`. Its one budget row, `roadLife.tick.p95`, covers the whole race step, cross cars and the pilot's forecast of them included. Each of five child runs measures a warmed second pass. The window checks only that at least four cross cars stay on the road and that three racers reach a junction, so a change to how riders ride does not invalidate it. It is not in the scenario registry, and the windows the registry pins are untouched.
 
 ### `pnpm perf`
 

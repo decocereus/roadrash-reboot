@@ -12,7 +12,7 @@ const junction: CrossingRule = {
   fromLevel: 1,
   id: "test-cross",
   lights: { offsetTicks: 0 },
-  road: { arms: "both", laneWidth: 3.4, lanesEachWay: 2 },
+  road: { arms: "both", carsPerMinute: 10, laneWidth: 3.4, lanesEachWay: 2 },
   s: 1500,
   walk: "zebra",
 };
@@ -134,7 +134,12 @@ describe("crossings", () => {
   it("no tree, pole or rock stands where a cross road's arm meets the road, and the far side keeps its own", () => {
     const right: CrossingRule = {
       ...junction,
-      road: { arms: "right", laneWidth: 3.4, lanesEachWay: 2 },
+      road: {
+        arms: "right",
+        carsPerMinute: 10,
+        laneWidth: 3.4,
+        lanesEachWay: 2,
+      },
     };
     const bare = compileTrack(wooded([]));
     const crossed = compileTrack(wooded([right]));

@@ -11,6 +11,7 @@ import {
   stepRiderContacts,
 } from "./combat.ts";
 import { applyControl } from "./control.ts";
+import { createCrossTraffic, stepCrossTraffic } from "./cross-traffic.ts";
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
@@ -373,6 +374,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
   }
   const state: RaceState = {
     cars: createTraffic(track, createRandom(seed)),
+    crossCars: createCrossTraffic(track, seed),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
     hazardDice: nextSeed(seed + HAZARD_DICE_SALT),
@@ -597,6 +599,7 @@ export const stepRace = (
   state.events.length = 0;
   state.tick += 1;
   stepTraffic(state, track);
+  stepCrossTraffic(state, track);
   for (const rider of state.riders) {
     const fromS = rider.s;
     const fromX = rider.x;

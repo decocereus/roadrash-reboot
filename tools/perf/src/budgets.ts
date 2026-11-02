@@ -45,6 +45,11 @@ const snapshotKind = (metric: string, unit: string): MetricKind => ({
   unit,
 });
 
+const roadLifeKind: MetricKind = {
+  ...snapshotKind("roadLife.tick.p95", "ms"),
+  perScenario: false,
+};
+
 const nodeKinds: readonly MetricKind[] = [
   nodeKind("sim.ticksPerSecond", "ticks/s", "min", 0.9),
   nodeKind("sim.tick.p95", "ms", "max", 1.15),
@@ -54,6 +59,7 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("snapshot.restore.p95", "ms"),
   snapshotKind("snapshot.hash.p95", "ms"),
   snapshotKind(SNAPSHOT_BYTES_METRIC, "B"),
+  roadLifeKind,
 ];
 
 const byteClosures = [

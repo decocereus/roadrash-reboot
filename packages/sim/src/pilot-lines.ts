@@ -10,12 +10,16 @@ import {
 import type { Slick } from "./pilot-corners.ts";
 import {
   createOutlook,
+  crossCarAtArrival,
+  crossCarInSight,
+  crossCarReach,
   dodgeReach,
   gatherInSight,
   gatherObstructions,
   measureHorizons,
   planCourse,
   ROCK_THROUGH_SPEED,
+  seesCrossCar,
   sightOf,
   weigh,
 } from "./pilot-forecast.ts";
@@ -406,6 +410,7 @@ const passable = (rider: RiderState, car: TrafficCar): boolean =>
 const offLaneLines = (
   plan: LinePlan,
   state: RaceState,
+  track: Track,
   rider: RiderState
 ): void => {
   const { offLane, outlook } = plan;
@@ -424,6 +429,15 @@ const offLaneLines = (
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
       offLane[count] = car.x + pass;
       offLane[count + 1] = car.x - pass;
+      count += 2;
+    }
+  }
+  for (const car of state.crossCars) {
+    if (crossCarInSight(track, rider, car)) {
+      const atArrival = crossCarAtArrival(rider, car);
+      const pass = crossCarReach(car) + PASS_MARGIN;
+      offLane[count] = atArrival + pass;
+      offLane[count + 1] = atArrival - pass;
       count += 2;
     }
   }
@@ -597,8 +611,11 @@ export const chooseLine = (
   gatherLaneThreats(linePlan, state, rider);
   gatherInSight(outlook, state, rider);
   const kept = rider.pilotLine;
-  linePlan.weighing = outlook.sighted > 0 || Number.isFinite(kept);
+  const crossCarSeen = seesCrossCar(state, track, rider);
+  linePlan.weighing =
+    outlook.sighted > 0 || crossCarSeen || Number.isFinite(kept);
   linePlan.weighedCount = 0;
+  outlook.crossCarMoving = false;
   choice.cost = Number.POSITIVE_INFINITY;
   if (linePlan.weighing) {
     measureDeceleration(track, rider);
@@ -640,7 +657,7 @@ export const chooseLine = (
   }
   if (linePlan.weighing) {
     offerFollow(linePlan, history, track, rider);
-    offLaneLines(linePlan, state, rider);
+    offLaneLines(linePlan, state, track, rider);
     for (let index = 0; index < linePlan.offLaneCount; index += 1) {
       offerBetweenLanes(
         linePlan,
@@ -655,10 +672,13 @@ export const chooseLine = (
   }
   if (choice.cost < Number.POSITIVE_INFINITY) {
     const stays = Math.abs(choice.x - kept) < LINE_MATCH;
-    rider.pilotLine = outlook.sighted > 0 || stays ? choice.x : Number.NaN;
+    rider.pilotLine =
+      outlook.sighted > 0 || crossCarSeen || stays ? choice.x : Number.NaN;
     slickAhead.metres = choice.slickMetres;
     slickAhead.speed = choice.slickSpeed;
-    aim.speed = choice.speed;
+    aim.speed = outlook.crossCarMoving
+      ? Math.min(choice.speed, rider.speed)
+      : choice.speed;
     aim.x = choice.x;
     return aim;
   }

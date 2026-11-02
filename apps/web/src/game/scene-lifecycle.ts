@@ -28,6 +28,7 @@ export interface Stage {
   race: RaceRun;
   fleet: Fleet;
   previousCars: Float64Array;
+  previousCrossCars: Float64Array;
   warming: boolean;
 }
 
@@ -44,8 +45,14 @@ export const createStage = (
   const world = createWorld(track);
   const race = createRaceRun(ridden(defaultSetup(track, seed), "pilot"));
   return {
-    fleet: createFleet(assets, world.shading, race.view.cars),
+    fleet: createFleet(
+      assets,
+      world.shading,
+      race.view.cars,
+      race.view.crossCars
+    ),
     previousCars: new Float64Array(race.view.cars.length),
+    previousCrossCars: new Float64Array(race.view.crossCars.length),
     race,
     track,
     warming: false,
@@ -192,12 +199,16 @@ export const bindStage = ({
     if (forRace) {
       devRide?.place(stage.race);
     }
-    const { cars } = stage.race.view;
-    stage.fleet = createFleet(assets, stage.world.shading, cars);
+    const { cars, crossCars } = stage.race.view;
+    stage.fleet = createFleet(assets, stage.world.shading, cars, crossCars);
     stage.world.scene.add(stage.fleet.group);
     stage.previousCars = new Float64Array(cars.length);
     for (let index = 0; index < cars.length; index += 1) {
       stage.previousCars[index] = cars[index]?.s ?? 0;
+    }
+    stage.previousCrossCars = new Float64Array(crossCars.length);
+    for (let index = 0; index < crossCars.length; index += 1) {
+      stage.previousCrossCars[index] = crossCars[index]?.travel ?? 0;
     }
     buildViews(dressing);
     chase.snap();

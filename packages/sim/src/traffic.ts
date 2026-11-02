@@ -8,20 +8,20 @@ import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 const CLEAR_START_FROM = -70;
 const CLEAR_START_TO = 260;
 const CLEAR_ONCOMING_START_TO = 300;
-const BRAKING = 7;
-const ACCELERATION = 2.5;
+export const BRAKING = 7;
+export const ACCELERATION = 2.5;
 const FOLLOW_GAP = 10;
 const FOLLOW_SECONDS = 0.9;
 const LOOK_AHEAD = 70;
-const PAINT_COUNT = 6;
+export const PAINT_COUNT = 6;
 const SLOW_CRUISE = 23;
 const FAVOURED_LANE_SHARE = 0.8;
-const STOP_SHORT = 1;
-const QUEUE_GAP = 2;
+export const STOP_SHORT = 1;
+export const QUEUE_GAP = 2;
 const STOP_SIGHT = 150;
 const directions = [1, -1] as const;
 
-interface Body {
+export interface Body {
   readonly halfLength: number;
   readonly halfWidth: number;
   readonly height: number;
@@ -31,7 +31,7 @@ const sedan: Body = { halfLength: 2.2, halfWidth: 0.92, height: 1.45 };
 const van: Body = { halfLength: 2.6, halfWidth: 1, height: 2.1 };
 const truck: Body = { halfLength: 4.2, halfWidth: 1.2, height: 3.1 };
 
-const pickBody = (roll: number): Body => {
+export const pickBody = (roll: number): Body => {
   if (roll < 0.62) {
     return sedan;
   }

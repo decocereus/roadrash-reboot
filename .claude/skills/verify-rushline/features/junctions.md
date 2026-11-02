@@ -9,6 +9,7 @@ A road declares junctions and pedestrian crossings in its plan's `crossings`. A 
 - `crossing-look` draws the arms, zebras, stop lines and signal heads.
 - `crossing-lights` lights the green, amber or red lamp of each head from `signalPhaseAt`.
 - `traffic-at-lights` stops main-road traffic at a red and queues it behind the stop line (`stopAtLights` in `packages/sim/src/traffic.ts`).
+- `cross-cars` drives cars down the cross roads, across the box or round into a main-road lane on a T, and hits riders by speed and lean (`packages/sim/src/cross-traffic.ts`, `hitCrossCar` in `packages/sim/src/rider-collisions.ts`).
 
 ## How to get to it (user POV)
 
@@ -23,10 +24,14 @@ Preconditions: `rv doctor --run <run>` passes on a development build (`?at`, `?k
 - **A T junction.** `rv open --run <run> "/?ride=breakwater-run&at=5975&kmh=0&clear&prof" --until race`, then `rv shot`. The cross road leaves only on the right; the left kerb and shop fronts run on unbroken.
 - **A pedestrian crossing.** `rv open --run <run> "/?ride=breakwater-run&at=7828&kmh=0&clear&prof" --until race`, then `rv shot`. One zebra, a stop line on each side and the two mast-arm signals, with no cross road.
 - **Traffic queues at the red.** `rv open --run <run> "/?ride=breakwater-run&at=1560&kmh=0&clear&prof" --until race`, then `rv wait ... 'globalThis.__rushlineProfile.info().tick > 800'` and `rv shot --run <run> queue`. With the main light red from tick 690, the same-way cars ahead stand nose to tail behind the stop line, and the oncoming cars stand behind theirs. `> 1400` and another `rv shot` shows them gone on the green.
+- **Cars cross on the green.** `rv open --run <run> "/?ride=breakwater-run&at=1672&kmh=0&clear&prof" --until race`, `rv wait --run <run> 'globalThis.__rushlineProfile.info().tick > 880' --timeout 40`, `rv shot --run <run> cross`. The main light is red and cars cross the box nose first, side-on to the camera, and none slides sideways. At the next main green (`tick > 1400`) they stand behind the arm's stop line.
+- **A car turns on the T.** `rv open --run <run> "/?ride=breakwater-run&at=5975&kmh=0&clear&prof" --until race`, wait for `tick > 880`, and take shots a second apart. A car comes out of the right arm, rounds the corner, and runs on along a main-road lane facing along it.
+- **A crash and a near miss.** Ride through `harbour-cross` on a cross green at 200 km/h in the lane a crossing car is about to fill and the rider is thrown with cause `traffic`. Pass behind its tail and the race raises a near miss with no crash. Crossing at 40 km/h upright, a glancing contact only knocks the bike aside.
 - **No console errors.** `rv console --run <run> errors` reads 0 lines.
 
 ## Gotchas
 
 - `?at` is metres along the road, and the camera sits behind the bike, so `at` 25 to 30 m short of a crossing's centre frames it best.
 - The lamps are small at 30 m. Crop the head from the full-size PNG (`sips -c 260 260 --cropOffset 240 1470 <png> --out <crop>` at rv's default page size) to read the colour.
-- The proofs in `packages/track/src/crossings.test.ts`, `packages/sim/src/signals.test.ts` and `packages/sim/src/junction-traffic.test.ts` pin the placement rules, the cycle and the queue.
+- The proofs in `packages/track/src/crossings.test.ts`, `packages/sim/src/signals.test.ts` and `packages/sim/src/junction-traffic.test.ts` pin the placement rules, the cycle and the queue. `packages/sim/src/cross-traffic.test.ts` pins the cross cars, their contact grading and the pilot's reaction.
+- `pnpm perf` runs `road-life-v1` from `tools/perf/src/node-road-life.ts`: Breakwater Run level 5 on seed 8, ticks 2,400 to 3,000, with `harbour-cross` full of racers.

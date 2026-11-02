@@ -18,9 +18,10 @@ import {
   samplesRecord,
 } from "./evaluate.ts";
 import type { Evaluation, Samples } from "./evaluate.ts";
-import { nodeLane } from "./node-lane.ts";
+import { nodeLane, roadLifeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { sha256Of } from "./result.ts";
+import { ROAD_LIFE } from "./road-life.ts";
 import { scenarioHash, scenarios } from "./scenarios.ts";
 import { selectWindows } from "./select.ts";
 import {
@@ -166,6 +167,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
     lanes: [],
     mode: options.mode,
     node: [],
+    roadLife: null,
     sides,
     version: 1,
   };
@@ -180,8 +182,13 @@ const measure = Effect.fn("gate.measure")(function* measure(
       node.push(yield* nodeLane(scenario, { A, B }, path.join(dir, "node")));
       yield* say(`node ${scenario.id} measured`);
     }
+    const [calibrator] = scenarios;
+    const roadLife = calibrator
+      ? yield* roadLifeLane(B, calibrator, path.join(dir, "node"))
+      : null;
+    yield* say(`node ${ROAD_LIFE.id} measured`);
     nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
-    samples = yield* save({ ...samples, lanes: ["node"], node });
+    samples = yield* save({ ...samples, lanes: ["node"], node, roadLife });
   }
   if (options.lanes.includes("build")) {
     const ran = yield* timed(

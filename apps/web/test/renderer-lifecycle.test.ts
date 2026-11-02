@@ -117,7 +117,12 @@ describe("renderer resource owners", () => {
     const ramp = counted(rampOf(shading.paint(null)));
     const assets = await pinnedAssets();
     const race = createRaceRun(defaultSetup(track, 3));
-    const fleet = createFleet(assets, shading, race.view.cars);
+    const fleet = createFleet(
+      assets,
+      shading,
+      race.view.cars,
+      race.view.crossCars
+    );
     const figure = createRiderFigure(bodyFor(assets, 0), shading, 0);
     fleet.dispose();
     figure.dispose();
@@ -147,7 +152,7 @@ const placedFleet = (
   shading: Shading,
   cars: readonly TrafficView[]
 ): Fleet => {
-  const fleet = createFleet(assets, shading, cars);
+  const fleet = createFleet(assets, shading, cars, []);
   for (let index = 0; index < cars.length; index += 1) {
     fleet.place(track, index, cars[index]?.s ?? 0);
   }

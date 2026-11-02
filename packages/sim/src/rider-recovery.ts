@@ -1,6 +1,7 @@
 import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
+import { onRoad } from "./cross-traffic.ts";
 import { pullOver } from "./police.ts";
 import {
   approach,
@@ -132,6 +133,16 @@ const hitOnFoot = (state: RaceState, rider: RiderState): boolean => {
       overBody(rider, car.s, car.x, car.halfLength, car.halfWidth)
     ) {
       knockDown(state, rider, null, car.speed);
+      return true;
+    }
+  }
+  for (const car of state.crossCars) {
+    if (
+      onRoad(car) &&
+      car.pace > WALKING_PACE &&
+      overBody(rider, car.s, car.x, car.halfLength, car.halfWidth)
+    ) {
+      knockDown(state, rider, null, car.pace);
       return true;
     }
   }

@@ -73,6 +73,7 @@ const FIRST_RIVAL = riderIdAt(1);
 
 export const replayCases: readonly ReplayCase[] = [
   ...roads.flatMap((roadId) => seeds.map((seed) => quickRace(roadId, seed))),
+  quickRace("breakwater-run", 8),
   {
     controller: "pilot",
     handovers: [],

@@ -9,7 +9,13 @@ import {
 } from "./budgets.ts";
 import type { Budgets, Limit, NodeProfile, Observation } from "./budgets.ts";
 import { buildRecord, buildVerdicts } from "./build.ts";
-import { nodeEnvironment, nodeLaneRecord, nodeVerdicts } from "./node-lane.ts";
+import {
+  nodeEnvironment,
+  nodeLaneRecord,
+  nodeVerdicts,
+  roadLifeRecord,
+  roadLifeVerdict,
+} from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { CALIBRATION_ROUNDS, CALIBRATION_VERSION } from "./node.ts";
 import { median } from "./result.ts";
@@ -26,6 +32,7 @@ export const samplesRecord = Schema.Struct({
   lanes: Schema.Array(Schema.Literals(portableLanes)),
   mode: Schema.Literals(["gate", "baseline"]),
   node: Schema.Array(nodeLaneRecord),
+  roadLife: Schema.NullOr(roadLifeRecord),
   sides: Schema.Struct({ A: sideIdentity, B: sideIdentity }),
   version: Schema.Literal(1),
 });
@@ -63,6 +70,13 @@ const observe = (
       } else {
         failures.push(`FAIL node ${scenario.id} has no samples`);
       }
+    }
+    if (samples.roadLife) {
+      const verdict = roadLifeVerdict(samples.roadLife, profiles);
+      failures.push(...verdict.failures);
+      observations.push(...verdict.observations);
+    } else {
+      failures.push("FAIL node road life has no samples");
     }
   }
   if (samples.lanes.includes("build")) {

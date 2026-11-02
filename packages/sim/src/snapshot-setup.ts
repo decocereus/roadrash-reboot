@@ -3,11 +3,17 @@ import type { TrackFeature } from "@racer/track/features";
 import type { HazardPlacement } from "@racer/track/hazards";
 import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
 
-import type { RaceView, RiderView, TrafficView } from "./race-view.ts";
+import type {
+  CrossCarView,
+  RaceView,
+  RiderView,
+  TrafficView,
+} from "./race-view.ts";
 import { cursor, HASH_WORDS, refuse } from "./snapshot-bytes.ts";
 import { SNAPSHOT_FORMAT } from "./snapshot-format.ts";
 import type {
   CarSetupKey,
+  CrossCarSetupKey,
   RaceSetupKey,
   RiderSetupKey,
 } from "./snapshot-format.ts";
@@ -87,6 +93,7 @@ const lightsSchema = writtenSchemaOf<Lights>({
 
 const crossRoadSchema = writtenSchemaOf<CrossRoad>({
   arms: textAt("arms"),
+  carsPerMinute: floatAt("carsPerMinute"),
   laneWidth: floatAt("laneWidth"),
   lanesEachWay: floatAt("lanesEachWay"),
 });
@@ -197,12 +204,32 @@ const carSetupSchema = writtenSchemaOf<Pick<TrafficView, CarSetupKey>>({
   x: floatAt("x"),
 });
 
-type SetupListKey = "cars" | "riders";
+const crossCarSetupSchema = writtenSchemaOf<
+  Pick<CrossCarView, CrossCarSetupKey>
+>({
+  across: floatAt("across"),
+  along: floatAt("along"),
+  bodyHalfLength: floatAt("bodyHalfLength"),
+  bodyHalfWidth: floatAt("bodyHalfWidth"),
+  cruise: floatAt("cruise"),
+  endAt: floatAt("endAt"),
+  everyTicks: floatAt("everyTicks"),
+  fromX: floatAt("fromX"),
+  height: floatAt("height"),
+  junction: floatAt("junction"),
+  laneS: floatAt("laneS"),
+  paint: floatAt("paint"),
+  stopAt: floatAt("stopAt"),
+  turnAt: floatAt("turnAt"),
+});
+
+type SetupListKey = "cars" | "crossCars" | "riders";
 
 const raceSetupSchema = writtenSchemaOf<
   Pick<RaceView, RaceSetupKey | SetupListKey>
 >({
   cars: writtenListAt("cars", carSetupSchema),
+  crossCars: writtenListAt("crossCars", crossCarSetupSchema),
   pacing: writtenRecordAt("pacing", pacingSchema),
   police: writtenRecordAt("police", policeSchema),
   riders: writtenListAt("riders", riderSetupSchema),

@@ -143,6 +143,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/track/src/crossings*.ts",
       "packages/sim/src/signals*.ts",
       "packages/sim/src/junction-traffic*.ts",
+      "packages/sim/src/cross-traffic*.ts",
       "apps/web/src/game/junctions.ts",
     ],
     perf: sceneCounts,
@@ -430,6 +431,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/game/actors.ts",
+      "apps/web/src/game/cross-car-pose.ts",
       "apps/web/src/game/bike-models.ts",
       "apps/web/test/bike-contact.ts",
       "apps/web/test/figure-wear.test.ts",
