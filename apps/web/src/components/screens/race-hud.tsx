@@ -3,7 +3,6 @@ import { Notice } from "@racer/ui/components/notice";
 import { Screen } from "@racer/ui/components/screen";
 import { useSyncExternalStore } from "react";
 
-import { plates } from "../../assets/clubhouse-art.ts";
 import { ordinal } from "../../career/format.ts";
 import type { HudState } from "../../game/hud.ts";
 import { idleHud } from "../../hud-feed.ts";
@@ -41,57 +40,6 @@ const CopWarning = ({ metres }: { readonly metres: number }) => (
   </p>
 );
 
-const RivalName = ({
-  colour,
-  name,
-}: {
-  readonly colour: string;
-  readonly name: string;
-}) => (
-  <p
-    className="font-display text-ink bg-neon-yellow m-0 w-max -rotate-3 border-l-[0.35em] px-[0.4em] py-[0.15em] text-base leading-none font-bold tracking-wide uppercase"
-    style={{ borderColor: colour }}
-  >
-    {name}
-  </p>
-);
-
-const RivalTag = ({
-  hud,
-  tagRef,
-}: {
-  readonly hud: HudState;
-  readonly tagRef: (element: HTMLDivElement | null) => void;
-}) => (
-  <div
-    className="invisible absolute top-0 left-0 will-change-transform"
-    ref={tagRef}
-  >
-    {hud.rivalName !== "" && hud.speech === "" && hud.rivalCelebrity && (
-      <RivalName colour={hud.rivalColour} name={hud.rivalName} />
-    )}
-    {hud.rivalName !== "" && hud.speech !== "" && (
-      <figure className="relative m-0 aspect-[266/191] w-64">
-        <img
-          alt=""
-          className="absolute inset-0 size-full"
-          decoding="async"
-          src={plates.speech}
-        />
-        <blockquote className="font-display text-ink absolute inset-x-[10%] top-[12%] flex h-[46%] -rotate-2 items-center justify-center text-center text-2xl leading-[1.05] font-bold text-balance">
-          {hud.speech}
-        </blockquote>
-        <figcaption
-          className="font-display text-ink bg-neon-yellow absolute top-[78%] left-[40%] -rotate-3 border-l-[0.35em] px-[0.4em] py-[0.15em] text-base leading-none font-bold tracking-wide uppercase"
-          style={{ borderColor: hud.rivalColour }}
-        >
-          {hud.rivalName}
-        </figcaption>
-      </figure>
-    )}
-  </div>
-);
-
 const Speedometer = ({ hud }: { readonly hud: HudState }) => (
   <Dial
     className={`absolute bottom-[1.5%] left-1/2 h-[25%] min-h-36 -translate-x-1/2 ${hud.offBike ? "opacity-60" : ""}`}
@@ -108,11 +56,9 @@ const Speedometer = ({ hud }: { readonly hud: HudState }) => (
 
 export const RaceHud = ({
   feed,
-  tagRef,
   settled,
 }: {
   readonly feed: HudFeed;
-  readonly tagRef: (element: HTMLDivElement | null) => void;
   readonly settled: boolean;
 }) => {
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
@@ -130,7 +76,6 @@ export const RaceHud = ({
             <CopWarning metres={hud.copDistance} />
           )}
           <Speedometer hud={hud} />
-          <RivalTag hud={hud} tagRef={tagRef} />
           {hud.countdown > 0 && (
             <p
               className={`${numeral} notice-in absolute top-[30%] left-1/2 -translate-x-1/2`}

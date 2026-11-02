@@ -21,7 +21,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Career money and settlement](#career-money-and-settlement): `career-money`
 - [Career levels, season and story](#career-levels-season-and-story): `career-progression`
 - [Menus and screens](#menus-and-screens): `menus`
-- [Race HUD, notices and speech](#race-hud-notices-and-speech): `hud`
+- [Race HUD and notices](#race-hud-and-notices): `hud`
 - [Chase camera](#chase-camera): `camera`
 - [Engine and race sound](#engine-and-race-sound): `audio`
 - [Roads, cities and scenery on screen](#roads-cities-and-scenery-on-screen): `world`
@@ -388,9 +388,9 @@ Test files:
 
 - `apps/web/src/career/copy.test.ts`
 
-### Race HUD, notices and speech
+### Race HUD and notices
 
-The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices, rival speech and the cop warning; the React HUD screen sits with the menus.
+The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices and the cop warning; the React HUD screen sits with the menus.
 
 - Id: `hud`
 - Start: `apps/web/src/game/hud.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`
@@ -487,11 +487,10 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`, `apps/web/src/career/colours.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
 
 Source files:
 
-- `apps/web/src/career/colours.ts`
 - `apps/web/src/game/actors.ts`
 - `apps/web/src/game/bike-models.ts`
 - `apps/web/src/game/figure-bounds.ts`

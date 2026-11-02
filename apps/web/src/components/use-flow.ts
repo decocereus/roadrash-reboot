@@ -331,7 +331,6 @@ export interface Flow {
   readonly resume: () => void;
   readonly mute: () => void;
   readonly quit: (plan: RacePlan) => void;
-  readonly followRival: (tag: HTMLDivElement | null) => void;
 }
 
 export const useFlow = (): Flow => {
@@ -439,13 +438,6 @@ export const useFlow = (): Flow => {
     [gameRef]
   );
 
-  const followRival = useCallback(
-    (tag: HTMLDivElement | null) => {
-      gameRef.current?.followRival(tag);
-    },
-    [gameRef]
-  );
-
   return {
     canvasRef,
     career,
@@ -453,7 +445,6 @@ export const useFlow = (): Flow => {
     eraseSave,
     failure,
     feed,
-    followRival,
     go: setView,
     mute: () => gameRef.current?.toggleMute(),
     newCareer() {

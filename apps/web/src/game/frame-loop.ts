@@ -145,7 +145,7 @@ interface LoopParts {
   readonly applyPending: () => void;
   readonly checkPresented: () => void;
   readonly draw: (blend: number, seconds: number) => void;
-  readonly feedback: Pick<Feedback, "noticeLeft" | "speechLeft">;
+  readonly feedback: Pick<Feedback, "noticeLeft">;
   readonly frame: FrameLoop;
   readonly govern: (seconds: number, busyMs: number) => void;
   readonly halted: () => boolean;
@@ -249,7 +249,6 @@ export const installFrameLoop = ({
       frame.meter.frame(sample);
     }
     feedback.noticeLeft -= seconds;
-    feedback.speechLeft -= seconds;
     advanceHud(frame, seconds, report);
     if (frame.profiler) {
       frameEnd.discarded = discarded;

@@ -10,7 +10,6 @@ import type { Support } from "@racer/track/features";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
-import { bikeColour } from "../career/colours.ts";
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Fleet, Reach } from "./actors.ts";
 import type { Assets } from "./assets.ts";
@@ -212,7 +211,6 @@ export interface Cast {
   puffs: Puffs | null;
   readonly deck: Support;
   riderReach: Reach;
-  plates: string[];
   clock: number;
   readonly subject: Subject;
   readonly stance: Stance;
@@ -234,7 +232,6 @@ export const createCast = (shading: Shading): Cast => ({
     seated: true,
     x: 0,
   },
-  plates: [],
   puffs: null,
   riderReach: reachOf(shading),
   stance: {
@@ -336,9 +333,6 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       capture(rider, view.after);
       return view;
     });
-    cast.plates = stage.race.view.riders.map((rider) =>
-      bikeColour(rider.profile.paint)
-    );
   };
 
   const touchHazard = (
