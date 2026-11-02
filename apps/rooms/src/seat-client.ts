@@ -23,10 +23,12 @@ import * as Option from "effect/Option";
 import { decodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
 
 const PING_EVERY_MS = 500;
+const DEAD_AFTER_MS = 5000;
 
 export type SeatPhase =
   | "connecting"
   | "ended"
+  | "left"
   | "lobby"
   | "lost"
   | "racing"
@@ -53,9 +55,10 @@ export interface RoomSeat {
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
   readonly refusal: () => string | null;
+  readonly riders: () => number;
   readonly rttMs: () => number;
-  readonly seats: () => number;
   readonly start: () => void;
+  readonly startsInMs: () => number;
   readonly stepsDue: () => number;
   readonly target: () => number;
 }
@@ -75,7 +78,8 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
   const clock = createRoomClock();
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
-  let seats = 0;
+  let riders = 0;
+  let lobbyEndsAt = 0;
   let race: SeatRace | null = null;
   let refused: string | null = null;
   let closeCode: number | null = null;
@@ -113,6 +117,12 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     };
     clock.start(startsInMs, performance.now());
     pings = setInterval(() => {
+      if (clock.silentMs(performance.now()) > DEAD_AFTER_MS) {
+        stopPings();
+        socket.close(SEAT_CLOSED, "The room went silent.");
+        move("lost");
+        return;
+      }
       writePing(ping, Math.floor(performance.now()));
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
     }, PING_EVERY_MS);
@@ -138,7 +148,7 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();
-    if (phase !== "ended" && phase !== "refused") {
+    if (phase === "connecting" || phase === "lobby" || phase === "racing") {
       move("lost");
     }
   });
@@ -154,7 +164,8 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     }
     switch (message.value.kind) {
       case "lobby": {
-        ({ seats } = message.value);
+        ({ riders } = message.value);
+        lobbyEndsAt = performance.now() + message.value.startsInMs;
         move("lobby");
         break;
       }
@@ -197,6 +208,7 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     },
     leave: () => {
       stopPings();
+      phase = "left";
       socket.close(SEAT_CLOSED, "The rider left this seat.");
     },
     listen: (next) => {
@@ -205,13 +217,14 @@ export const openRoomSeat = (roomsUrl: string, raceId: string): RoomSeat => {
     phase: () => phase,
     race: () => race,
     refusal: () => refused,
+    riders: () => riders,
     rttMs: () => rttMs,
-    seats: () => seats,
     start: () => {
       const packet = new DataView(new ArrayBuffer(START_PACKET_BYTES));
       writeStart(packet);
       socket.send(packet.buffer);
     },
+    startsInMs: () => lobbyEndsAt - performance.now(),
     stepsDue: () =>
       race ? clock.stepsDue(race.client.predicted.tick, performance.now()) : 0,
     target: () => clock.target(performance.now()),

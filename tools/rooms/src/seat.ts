@@ -29,7 +29,6 @@ export interface Seat {
   readonly opened: () => boolean;
   readonly over: () => boolean;
   readonly report: () => SeatReport;
-  readonly seatsSeen: () => number;
   readonly start: () => void;
   readonly started: () => boolean;
 }
@@ -88,7 +87,12 @@ export const openSeat = (roomsUrl: string, raceId: string): Seat => {
   });
   const over = (): boolean => {
     const phase = seat.phase();
-    return phase === "ended" || phase === "refused" || phase === "lost";
+    return (
+      phase === "ended" ||
+      phase === "left" ||
+      phase === "lost" ||
+      phase === "refused"
+    );
   };
   return {
     leave: () => {
@@ -118,7 +122,6 @@ export const openSeat = (roomsUrl: string, raceId: string): Seat => {
         you: you(),
       };
     },
-    seatsSeen: seat.seats,
     start: seat.start,
     started: () => seat.race() !== null,
   };

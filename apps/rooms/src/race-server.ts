@@ -27,11 +27,6 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
     const state = yield* Cloudflare.DurableObjectState;
     return Effect.gen(function* raceServerInstance() {
       const host = createHost(ports);
-      for (const socket of yield* state.getWebSockets()) {
-        if (socket.ws.readyState === WebSocket.OPEN) {
-          host.rejoin(rawSocket(socket));
-        }
-      }
       const handlers = HttpApiBuilder.group(RoomApi, "rooms", (group) =>
         group
           .handle("status", () => Effect.sync(host.status))

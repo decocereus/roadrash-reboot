@@ -1,4 +1,4 @@
-import { seatedRace } from "@racer/career/room-race";
+import { ROOM_FIELD_SIZE, seatedRace } from "@racer/career/room-race";
 import { controlOf } from "@racer/sim/control";
 import { createRoomClient } from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
@@ -141,6 +141,24 @@ const race = (host: Host, clock: Clock, sockets: readonly FakeSocket[]) => {
   clock.advance(START_DELAY_MS);
 };
 
+const seatOn = (host: Host): FakeSocket => {
+  const socket = fakeSocket();
+  host.seat(socket);
+  return socket;
+};
+
+const lobbyWithOneSeat = () => {
+  const clock = createClock();
+  const host = createHost(clock);
+  const socket = seatOn(host);
+  return { clock, host, messages: socket.messages, socket };
+};
+
+const lobbyCounts = (messages: readonly RoomMessage[]): readonly number[] =>
+  messages.flatMap((message) =>
+    message.kind === "lobby" ? [message.riders] : []
+  );
+
 const followTicks = (socket: FakeSocket, client: RoomClient): void => {
   const read = createReadTick(createTickFrame());
   for (const packet of socket.ticks.splice(0)) {
@@ -150,6 +168,29 @@ const followTicks = (socket: FakeSocket, client: RoomClient): void => {
 };
 
 describe("a room host", () => {
+  it("fills its lobby toward the field and starts by itself at the deadline", () => {
+    const { clock, host, messages } = lobbyWithOneSeat();
+    clock.advance(60_000);
+    const counts = lobbyCounts(messages);
+    expect(counts[0]).toBe(1);
+    expect(Math.max(...counts)).toBeGreaterThan(3);
+    expect(host.status().phase).toBe("waiting");
+    clock.advance(60_000);
+    const [last] = lobbyCounts(messages).toReversed();
+    expect(last).toBe(ROOM_FIELD_SIZE);
+    expect(host.status().phase).toBe("racing");
+  });
+
+  it("forgets a lobby that every seat left, so its old deadline starts nothing", () => {
+    const { clock, host, socket } = lobbyWithOneSeat();
+    host.gone(socket);
+    clock.advance(60_000);
+    const next = seatOn(host);
+    clock.advance(60_001);
+    expect(host.status().phase).toBe("waiting");
+    expect(lobbyCounts(next.messages)[0]).toBe(1);
+  });
+
   it("races two clients through its packets and agrees with them hash for hash", () => {
     const clock = createClock();
     const host = createHost(clock);
@@ -265,7 +306,7 @@ describe("a room host", () => {
     expect(second.ticks).toStrictEqual([]);
     expect(first.ticks.length).toBeGreaterThanOrEqual(19);
     host.gone(first);
-    clock.advance(TICK_MS * 2);
+    clock.advance(120_000);
     expect(clock.pending()).toBe(0);
     const again = fakeSocket();
     host.seat(again);

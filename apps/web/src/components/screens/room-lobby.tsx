@@ -5,7 +5,7 @@ import { Stencil } from "@racer/ui/components/stencil";
 
 const statusOf = (
   phase: SeatPhase,
-  seats: number,
+  riders: number,
   refusal: string | null
 ): string => {
   switch (phase) {
@@ -13,7 +13,7 @@ const statusOf = (
       return "Finding the room.";
     }
     case "lobby": {
-      return seats === 1 ? "1 rider here." : `${seats} riders here.`;
+      return riders === 1 ? "1 rider here." : `${riders} riders here.`;
     }
     case "racing": {
       return "Rolling out.";
@@ -21,8 +21,11 @@ const statusOf = (
     case "ended": {
       return "This race is over.";
     }
+    case "left": {
+      return "You left this room.";
+    }
     case "lost": {
-      return "The room closed.";
+      return "Reconnecting to the room.";
     }
     case "refused": {
       return refusal === "full"
@@ -39,22 +42,33 @@ export const RoomLobbyScreen = ({
   phase,
   raceId,
   refusal,
-  seats,
+  requeued,
+  riders,
+  startsInSeconds,
   onBack,
   onStart,
 }: {
   readonly phase: SeatPhase;
   readonly raceId: string;
   readonly refusal: string | null;
-  readonly seats: number;
+  readonly requeued: boolean;
+  readonly riders: number;
+  readonly startsInSeconds: number;
   readonly onBack: () => void;
   readonly onStart: () => void;
 }) => (
   <Screen className="bg-ink flex flex-col items-center justify-center gap-6">
     <Stencil>{raceId}</Stencil>
     <p aria-live="polite" className="font-display text-quote text-paper">
-      {statusOf(phase, seats, refusal)}
+      {statusOf(phase, riders, refusal)}
     </p>
+    {phase === "lobby" && (
+      <p className="font-display text-paper">
+        {requeued
+          ? "The last room dropped. A new race starts from the line."
+          : `Rolling out in ${startsInSeconds} s.`}
+      </p>
+    )}
     <MenuList
       autoFocus
       defaultValue={phase === "lobby" ? "start" : "back"}

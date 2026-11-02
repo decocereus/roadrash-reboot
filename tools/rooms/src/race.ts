@@ -176,11 +176,11 @@ export const main = Effect.fn("rooms.race")(function* main(
     "every seat to open",
     OPEN_TIMEOUT_MS
   );
-  yield* waitFor(
-    () => seats.every((seat) => seat.seatsSeen() === seatCount),
-    "every seat to hear the full lobby",
-    OPEN_TIMEOUT_MS
-  );
+  while (
+    (yield* client.rooms.status({ params: { raceId } })).waiting < seatCount
+  ) {
+    yield* Effect.sleep(POLL_MS);
+  }
   const ninth =
     seatCount === MOST_SEATS ? yield* refusalOf(url, raceId) : "full";
   yield* Effect.sleep(lobbySeconds * 1000);

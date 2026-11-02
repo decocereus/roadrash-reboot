@@ -5,7 +5,12 @@ import { trackFor } from "@racer/track/roads";
 import { practiceSetup } from "./field.ts";
 import type { CareerRaceSetup, PracticeRace } from "./field.ts";
 import { launchRules } from "./rules.ts";
+import type { RaceRules } from "./rules.ts";
 import { STARTING_BIKE } from "./tables.ts";
+
+const roomRules: RaceRules = { ...launchRules, celebrities: false };
+
+export const ROOM_FIELD_SIZE = roomRules.fieldSize;
 
 const roomRaceOf = (seed: number): PracticeRace => ({
   bikeId: STARTING_BIKE,
@@ -22,7 +27,7 @@ export interface SeatedRace {
 export const seatedRace = (seed: number, seats: number): SeatedRace => {
   const race = roomRaceOf(seed);
   const setup = practiceSetup(
-    launchRules,
+    roomRules,
     race,
     trackFor(race.roadId, race.level)
   );

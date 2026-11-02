@@ -1,3 +1,4 @@
+import { isCelebrity } from "@racer/sim/cast";
 import { createRace } from "@racer/sim/race";
 import { riderIdAt } from "@racer/sim/state";
 import type { RaceEvent } from "@racer/sim/state";
@@ -10,6 +11,14 @@ const finishOf = (rider: number): RaceEvent => ({
   kind: "finish",
   rider: riderIdAt(rider),
   tick: 0,
+});
+
+describe("a room's field", () => {
+  it("has no celebrity riding among the humans", () => {
+    const seeds = Array.from({ length: 20 }, (_, seed) => seed);
+    const field = seeds.flatMap((seed) => seatedRace(seed, 2).setup.field);
+    expect(field.filter((rival) => isCelebrity(rival))).toStrictEqual([]);
+  });
 });
 
 describe("a seat's race log", () => {
