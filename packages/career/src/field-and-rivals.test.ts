@@ -14,7 +14,6 @@ import { MAX_STAMINA, PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { recordedRules } from "./bench.ts";
-import type { RaceRules } from "./rules.ts";
 import {
   TICKS,
   enter,
@@ -35,6 +34,7 @@ import type { Entered } from "./career-fixtures.ts";
 import { fieldFor, practiceSetup, roadsFor, setupFor } from "./field.ts";
 import { preRaceLine, rivalLines } from "./lines.ts";
 import { outcomeOf, recordTick } from "./outcome.ts";
+import type { RaceRules } from "./rules.ts";
 import { quitRace, resumeCareer } from "./settle.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";

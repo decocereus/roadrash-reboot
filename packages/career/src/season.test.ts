@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   enter,
   lastOf,
@@ -7,7 +8,6 @@ import {
   sprint,
   wreckTimes,
 } from "./career-fixtures.ts";
-import { recordedRules } from "./bench.ts";
 import { roadBoss } from "./field.ts";
 import { celebrityBios, tauntFrom } from "./lines.ts";
 import type { RaceRules } from "./rules.ts";

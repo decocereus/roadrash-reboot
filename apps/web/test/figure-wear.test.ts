@@ -60,9 +60,12 @@ describe("celebrity figures from the play-test flags", () => {
       const model = worn.get(rider.id);
       return model === undefined ? [] : [[rider.profile.name, model]];
     });
-    expect(wornByName.toSorted()).toStrictEqual([
-      [castRivals["captain-penaldo"].name, "ronaldo"],
-      [castRivals["supreme-leader-mbosse"].name, "mbappe"],
-    ]);
+    expect(wornByName).toStrictEqual(
+      expect.arrayContaining([
+        [castRivals["captain-penaldo"].name, "ronaldo"],
+        [castRivals["supreme-leader-mbosse"].name, "mbappe"],
+      ])
+    );
+    expect(wornByName).toHaveLength(2);
   });
 });

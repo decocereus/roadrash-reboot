@@ -18,7 +18,7 @@ export const plates = {
   wall: artUrl("clubhouse/wall.webp"),
 } as const;
 
-export const figures = {
+const figures = {
   "agnes-mulcahy": artUrl("clubhouse/rivals/agnes-mulcahy.webp"),
   "benny-okafor": artUrl("clubhouse/rivals/benny-okafor.webp"),
   "coach-dale-hutto": artUrl("clubhouse/rivals/coach-dale-hutto.webp"),

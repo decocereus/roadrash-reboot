@@ -13,17 +13,8 @@
           "ostra-sesta-600",
           "ostra-sette-750"
         ],
-        "Level": [
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "Officer": [
-          "dolores-pike",
-          "wendell-haverty"
-        ],
+        "Level": [1, 2, 3, 4, 5],
+        "Officer": ["dolores-pike", "wendell-haverty"],
         "Racer": [
           "agnes-mulcahy",
           "benny-okafor",
@@ -68,15 +59,7 @@
           "ridge-road",
           "slag-row"
         ],
-        "Weapon": [
-          "baton",
-          "chain",
-          "club",
-          "crowbar",
-          "cue",
-          "none",
-          "sign"
-        ]
+        "Weapon": ["baton", "chain", "club", "crowbar", "cue", "none", "sign"]
       },
       "fingerprint": "85048134d378298e38b16035d306e692aa5ab9625507ddefae21d009d6e19883",
       "version": 2,
@@ -95,17 +78,8 @@
           "ostra-sesta-600",
           "ostra-sette-750"
         ],
-        "Level": [
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
-        "Officer": [
-          "dolores-pike",
-          "wendell-haverty"
-        ],
+        "Level": [1, 2, 3, 4, 5],
+        "Officer": ["dolores-pike", "wendell-haverty"],
         "Racer": [
           "agnes-mulcahy",
           "benny-okafor",
@@ -174,15 +148,7 @@
           "ridge-road",
           "slag-row"
         ],
-        "Weapon": [
-          "baton",
-          "chain",
-          "club",
-          "crowbar",
-          "cue",
-          "none",
-          "sign"
-        ]
+        "Weapon": ["baton", "chain", "club", "crowbar", "cue", "none", "sign"]
       },
       "fingerprint": "d0e3ecf0f7f25ce2e0dee437e458d120dea7f2ef6cead4bafa5e13358bb174ea",
       "version": 3,
