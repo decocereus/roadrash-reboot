@@ -174,7 +174,14 @@ export const runtimeOf = () => ({
   v8: process.versions.v8,
 });
 
-const tasks = ["validate", "time", "alloc", "calibrate", "snapshot"] as const;
+const tasks = [
+  "validate",
+  "time",
+  "alloc",
+  "calibrate",
+  "snapshot",
+  "room",
+] as const;
 
 export const childRecord = Schema.Struct({
   allocation: Schema.optionalKey(
@@ -194,6 +201,19 @@ export const childRecord = Schema.Struct({
   durations: Schema.optionalKey(Schema.Array(Schema.Number)),
   police: Schema.optionalKey(Schema.Number),
   racers: Schema.optionalKey(Schema.Number),
+  room: Schema.optionalKey(
+    Schema.Struct({
+      allocated: Schema.Struct({
+        client: Schema.Number,
+        frame: Schema.Number,
+        server: Schema.Number,
+      }),
+      confirm: Schema.Array(Schema.Number),
+      resimulated: Schema.Array(Schema.Number),
+      rollback: Schema.Array(Schema.Number),
+      tick: Schema.Array(Schema.Number),
+    })
+  ),
   rows: Schema.optionalKey(workloadRows),
   runtime: Schema.Struct({
     arch: Schema.String,

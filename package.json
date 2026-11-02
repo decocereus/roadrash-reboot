@@ -34,6 +34,7 @@
     "perf": "node tools/perf/gate.ts",
     "perf:gpu": "node tools/perf/gpu.ts",
     "replay:engines": "node tools/replay/engines.ts",
+    "rooms:race": "node tools/rooms/race.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
     "verify": "node scripts/verify.ts"
@@ -46,6 +47,7 @@
     "@effect/platform-node": "4.0.0",
     "@racer/art": "workspace:*",
     "@racer/career": "workspace:*",
+    "@racer/rooms": "workspace:*",
     "@racer/sim": "workspace:*",
     "@types/node": "26.4.1",
     "alchemy": "2.0.0-beta.83",

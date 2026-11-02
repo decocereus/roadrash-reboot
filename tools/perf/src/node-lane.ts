@@ -22,6 +22,7 @@ import type { Side, SideName } from "./sides.ts";
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
 const SNAPSHOT_RUNS = 3;
+const ROOM_RUNS = 3;
 
 const decodeChild = Schema.decodeUnknownEffect(
   Schema.fromJsonString(childRecord)
@@ -50,6 +51,7 @@ type NodePair = typeof nodePair.Type;
 export const nodeLaneRecord = Schema.Struct({
   allocation: Schema.Array(nodePair),
   calibrations: Schema.Array(nodeSample),
+  rooms: Schema.Array(nodeSample),
   scenario: Schema.String,
   snapshots: Schema.Array(nodeSample),
   timing: Schema.Array(nodePair),
@@ -74,9 +76,9 @@ const runChild = Effect.fnUntraced(function* runChild(
   const processes = yield* ToolProcesses;
   const file = path.join(dir, `${scenario.id}-${label}.json`);
   const startedAt = yield* Clock.currentTimeMillis;
-  const script =
-    task === "snapshot" ? "tools/perf/snapshot.ts" : "tools/perf/node.ts";
-  const taskArgs = task === "snapshot" ? [] : ["--task", task];
+  const ownChild = task === "snapshot" || task === "room";
+  const script = ownChild ? `tools/perf/${task}.ts` : "tools/perf/node.ts";
+  const taskArgs = ownChild ? [] : ["--task", task];
   yield* processes.run(
     process.execPath,
     [
@@ -171,9 +173,16 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
       yield* runChild(sides.B, "snapshot", scenario, dir, `snapshot-${run}-B`)
     );
   }
+  const rooms: NodeSample[] = [];
+  for (let run = 0; run < ROOM_RUNS; run += 1) {
+    rooms.push(
+      yield* runChild(sides.B, "room", scenario, dir, `room-${run}-B`)
+    );
+  }
   const lane: NodeLane = {
     allocation,
     calibrations,
+    rooms,
     scenario: scenario.id,
     snapshots,
     timing,
@@ -331,6 +340,55 @@ const snapshotObservations = (
   ];
 };
 
+type RoomRun = NonNullable<ChildRecord["room"]>;
+
+const roomRuns = (lane: NodeLane): readonly RoomRun[] =>
+  lane.rooms.flatMap((sample) =>
+    sample.record.room ? [sample.record.room] : []
+  );
+
+const roomObservations = (
+  scenario: Scenario,
+  lane: NodeLane,
+  environment: string,
+  scale: number
+): readonly Observation[] => {
+  const runs = roomRuns(lane);
+  const observed = (
+    metric: string,
+    note: string,
+    measured: readonly number[]
+  ): Observation => ({
+    environment,
+    lane: "node",
+    metric,
+    note,
+    paired: null,
+    runs: { a: [], b: measured },
+    scenario: scenario.id,
+    value: median(measured),
+  });
+  const timed = (metric: string, of: (run: RoomRun) => readonly number[]) =>
+    observed(
+      metric,
+      `runs=${runs.length} scale=${scale.toFixed(3)}`,
+      runs.map((run) => p95Of(of(run)) / scale)
+    );
+  const allocated = (metric: string, of: (run: RoomRun) => number) =>
+    observed(metric, `runs=${runs.length}`, runs.map(of));
+  return [
+    timed("room.tick.p95", (run) => run.tick),
+    timed("room.confirm.p95", (run) => run.confirm),
+    timed("room.rollback.p95", (run) => run.rollback),
+    allocated("room.allocatedBytesPerTick", (run) => run.allocated.server),
+    allocated(
+      "room.client.allocatedBytesPerTick",
+      (run) => run.allocated.client
+    ),
+    allocated("room.frame.allocatedBytesPerTick", (run) => run.allocated.frame),
+  ];
+};
+
 export const nodeVerdicts = (
   scenario: Scenario,
   lane: NodeLane,
@@ -442,6 +500,7 @@ export const nodeVerdicts = (
       value: median(allocated.b),
     },
     ...snapshotObservations(scenario, lane, environment, laneScale),
+    ...roomObservations(scenario, lane, environment, laneScale),
   ];
   return { environment, failures, observations, scales };
 };

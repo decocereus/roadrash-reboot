@@ -20,7 +20,7 @@ import type {
   RiderState,
 } from "./state.ts";
 
-const MOST_SEATS = 8;
+export const MOST_SEATS = 8;
 export const HOLD_TICKS = 6;
 export const AUTO_AFTER_TICKS = 30;
 export const INPUT_HORIZON = 32;
@@ -58,6 +58,14 @@ export const roomSetup = (
   };
 };
 
+export const firstRacers = (
+  setup: RaceSetup,
+  count: number
+): readonly RiderId[] => {
+  const roster = rosterOf(setup);
+  return [roster.player, ...roster.rivals].slice(0, count);
+};
+
 export const seatsOf = (state: RaceState): readonly RiderState[] =>
   state.riders.filter((rider) => rider.controller === "human");
 
@@ -85,8 +93,12 @@ const seatFor = (rider: RiderState): Seat => ({
   ticks: Array.from({ length: INPUT_HORIZON }, () => NO_TICK),
 });
 
+const isDone = (rider: RiderState): boolean =>
+  rider.finishTick >= 0 || rider.mode === "busted" || rider.mode === "wrecked";
+
 export interface Room {
   readonly state: RaceState;
+  readonly digest: Uint32Array;
   readonly frame: TickFrame;
   readonly hash: Uint32Array;
   readonly acceptance: Acceptance;
@@ -97,6 +109,7 @@ export interface Room {
     controls: readonly Control[]
   ) => Acceptance;
   readonly leave: (rider: RiderId) => void;
+  readonly over: () => boolean;
   readonly step: () => void;
 }
 
@@ -167,6 +180,7 @@ export const createRoom = (setup: RaceSetup): Room => {
       return tally;
     },
     acceptance: { accepted: 0, ahead: 0, late: 0 },
+    digest,
     frame: createTickFrame(),
     hash: new Uint32Array(HASH_WORDS),
     hashed: false,
@@ -176,6 +190,7 @@ export const createRoom = (setup: RaceSetup): Room => {
         seat.left = true;
       }
     },
+    over: () => seats.every((seat) => seat.left || isDone(seat.rider)),
     state,
     step: () => {
       const tick = state.tick + 1;

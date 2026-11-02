@@ -18,6 +18,8 @@ Render counts are checked only by `pnpm perf:gpu`, on this Mac. CI has no GPU, a
 
 The four `snapshot.*` rows measure side B alone, because the race snapshot does not exist at the baseline revision, the way a new GLB does not. `tools/perf/snapshot.ts` is their child: it rides the scenario's window with a second race of the same setup one tick ahead as the restore destination, and records, for every tick, how long `writeSnapshot`, `restoreInto` and `hashRace` take and how many bytes the snapshot holds. It runs three times per scenario on side B, and the ms rows are divided by the runner's calibration scale like the other timings. `node.ts` never imports the snapshot codec, so side A's children still run with the current harness copied over an older revision.
 
+The six `room.*` rows measure side B alone as well, because no room exists at the baseline revision. `tools/perf/room.ts` is their child. It seats four riders on the scenario's race with weaving scripted controls and a client six ticks ahead of the room. `room.tick.p95` times `accept` for every seat, `step` and `writeTick`. `room.confirm.p95` times `readTick` and `confirm` on a tick the client guessed right, and `room.rollback.p95` on one it guessed wrong, which restores the confirmed race and resimulates up to the lead. `room.allocatedBytesPerTick` samples the server's work alone, `room.client.allocatedBytesPerTick` the client's over recorded packets, and `room.frame.allocatedBytesPerTick` two `TickFrame`s cleared, filled and compared, which is the map churn the room and each client pay per tick and resimulated tick.
+
 | Metric | Limit | Paired B/A |
 | --- | --- | --- |
 | `sim.ticksPerSecond` | at least 0.90 x the calibrated baseline median | at least 0.90 |
@@ -25,6 +27,8 @@ The four `snapshot.*` rows measure side B alone, because the race snapshot does 
 | `sim.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | at most 1.10 |
 | `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `snapshot.bytes.max` | the baseline size exactly | none, side B only |
+| `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
+| `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | none, side B only |
 | `bytes.*.raw`, `bytes.*.gzip` | the baseline plus 4,096 B or 2%, whichever is larger | none |
 | `assets.glb.*`, `assets.texture.total` | the baseline size exactly | none |
 | `render.calls.max`, `render.triangles.max` | ceil(1.05 x the largest frame in any baseline window, either side) | none |

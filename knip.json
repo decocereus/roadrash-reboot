@@ -6,6 +6,11 @@
       "project": ["*.ts", "scripts/**/*.ts"],
       "typescript": true
     },
+    "apps/rooms": {
+      "entry": ["test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"],
+      "typescript": true
+    },
     "apps/web": {
       "entry": [
         "src/routes/**/*.{ts,tsx}",
@@ -43,6 +48,10 @@
       "project": ["*.ts"],
       "typescript": true
     },
+    "tools/rooms": {
+      "project": ["**/*.ts"],
+      "typescript": true
+    },
     "tools/oxlint": {
       "entry": ["anti-slop/index.ts", "rushline/index.ts", "test/**/*.test.ts"],
       "project": ["**/*.ts"],
@@ -53,6 +62,7 @@
         "gate.ts",
         "measure.ts",
         "node.ts",
+        "room.ts",
         "session.ts",
         "snapshot.ts",
         "test/**/*.test.ts"
