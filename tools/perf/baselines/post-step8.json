@@ -976,6 +976,22 @@
       "side": "B",
       "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
       "value": 0.36559641332822784
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
+      "value": 1169368
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
+      "value": 303792
     }
   ],
   "revisions": {
@@ -1334,6 +1350,20 @@
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
         "B": "a1a02a6e562c944f9d47cb55a3d1921d05c8b0c4"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "why": "the Worker carries the game chunk, so the merged cast of #74 on top of the cross-car code passes bytes.worker.raw by 3,616 B and bytes.worker.gzip by 583 B",
+        "builtWorkerA": "1169272 raw, 303777 gzip",
+        "builtWorkerB": "1169368 raw, 303792 gzip"
+      },
+      "id": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
+      "lanes": ["build"],
+      "sides": {
+        "A": "20ded42484c3310036c1b0c3a5d9ef48a327e1b2",
+        "B": "20ded42484c3310036c1b0c3a5d9ef48a327e1b2"
       }
     }
   ],

@@ -52,7 +52,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "0237b174bb9be618c110be4b7cefa063fd6fe8eb9c5fd6895ebc83f08d0a93db"
+    "summarySha256": "3ade4edafdef23cded81a500e1a3bb780509173f436f9f085e9f3fa832863107"
   },
   "limits": [
     {
@@ -393,26 +393,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 303209,
-      "baseline": 297263,
+      "value": 309868,
+      "baseline": 303792,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1165752,
-      "baseline": 1142894,
+      "value": 1192756,
+      "baseline": 1169368,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
       "unit": "B"
     },
     {
