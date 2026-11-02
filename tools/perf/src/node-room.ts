@@ -34,6 +34,7 @@ const STEER_PERIOD_TICKS = 29;
 const PUNCH_EVERY_TICKS = 241;
 const SAMPLING_BYTES = 4096;
 const FRAME_REPEATS = 20;
+const SAMPLED_WINDOWS = 3;
 
 const controlAt = (tick: number, seat: number): Control => {
   const phase = (tick + seat * STEER_PERIOD_TICKS) % (STEER_PERIOD_TICKS * 2);
@@ -176,6 +177,16 @@ const sampled = Effect.fnUntraced(function* sampled(work: () => void) {
   return sampledBytes(profile.head);
 });
 
+const leastSampled = Effect.fnUntraced(function* leastSampled(
+  workOf: () => () => void
+) {
+  let least = Number.POSITIVE_INFINITY;
+  for (let window = 0; window < SAMPLED_WINDOWS; window += 1) {
+    least = Math.min(least, yield* sampled(workOf()));
+  }
+  return least;
+});
+
 const serverWork = (prepared: Prepared) => (): void => {
   for (let index = 0; index < WINDOW_TICKS; index += 1) {
     prepared.stepRoom();
@@ -236,11 +247,11 @@ const frameWork = (): void => {
 const allocationWindow = Effect.fnUntraced(function* allocationWindow(
   scenario: Scenario
 ) {
-  serverWork(prepareWarmed(scenario))();
-  const serverBytes = yield* sampled(serverWork(prepareWarmed(scenario)));
+  const serverBytes = yield* leastSampled(() =>
+    serverWork(prepareWarmed(scenario))
+  );
   const packets = recordedPackets(prepareWarmed(scenario));
-  clientWork(prepareWarmed(scenario), packets)();
-  const clientBytes = yield* sampled(
+  const clientBytes = yield* leastSampled(() =>
     clientWork(prepareWarmed(scenario), packets)
   );
   const frameBytes = yield* sampled(frameWork);

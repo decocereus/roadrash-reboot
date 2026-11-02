@@ -53,7 +53,7 @@ const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
   );
 
 export const openSeat = (roomsUrl: string, raceId: string): Seat => {
-  const seat = openRoomSeat(roomsUrl, raceId);
+  const seat = openRoomSeat(roomsUrl, raceId, "Script");
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;

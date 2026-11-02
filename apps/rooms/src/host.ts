@@ -38,6 +38,7 @@ export interface HostPorts {
 }
 
 interface Seat {
+  readonly name: string;
   readonly socket: HostSocket;
   rider: RiderId | null;
   accepted: number;
@@ -56,7 +57,7 @@ interface Running {
 }
 
 export interface Host {
-  readonly seat: (socket: HostSocket) => void;
+  readonly seat: (socket: HostSocket, name: string) => void;
   readonly message: (socket: HostSocket, data: string | ArrayBuffer) => void;
   readonly gone: (socket: HostSocket) => void;
   readonly status: () => RoomStatus;
@@ -75,10 +76,11 @@ export const createHost = (ports: HostPorts): Host => {
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
 
-  const seatFor = (socket: HostSocket): Seat => ({
+  const seatFor = (socket: HostSocket, name: string): Seat => ({
     accepted: 0,
     ahead: 0,
     late: 0,
+    name,
     rider: null,
     socket,
   });
@@ -194,12 +196,14 @@ export const createHost = (ports: HostPorts): Host => {
     }
     const startedAt = ports.now() + START_DELAY_MS;
     running = { room, startedAt };
+    const names = [...seats.values()].map((seat) => seat.name);
     for (const seat of seats.values()) {
       sendTo(
         seat,
         encodeRoomMessage({
           digest: [...room.digest],
           kind: "started",
+          names,
           seats: humans.length,
           seed,
           startsInMs: START_DELAY_MS,
@@ -265,14 +269,14 @@ export const createHost = (ports: HostPorts): Host => {
         start();
       }
     },
-    seat: (socket) => {
+    seat: (socket, name) => {
       if (running || seats.size >= MOST_SEATS) {
         const reason = running ? "racing" : "full";
         socket.send(encodeRoomMessage({ kind: "refused", reason }));
         socket.close(SEAT_CLOSED, reason);
         return;
       }
-      seats.set(socket, seatFor(socket));
+      seats.set(socket, seatFor(socket, name));
       tellLobby(lobby ?? openLobby());
     },
     status: () => ({

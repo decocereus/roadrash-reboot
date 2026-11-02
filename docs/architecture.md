@@ -148,6 +148,8 @@ A browser joins with `/?room=<race id>`. `openRoomSeat` in `apps/rooms/src/seat-
 
 Timers keep a room with seats in memory: the lobby's fill and deadline timers, then the 60 Hz tick. A room keeps no state outside memory, so a restart ends its race. Each seat then loads the next room by name, `<id>-r1`, and that room starts from the line.
 
+A room link is `/?room=<id>`, and `Race friends` on the bar makes one with a new ID. A guest name is the only identity. The browser keeps it in `rushline.guestName.v1` and sends it as a query parameter on the seat URL, and `cleanGuestName` in `apps/rooms/src/messages.ts` is what the server stores. The `started` message carries the humans' names in rider order, and `guestNames` in `packages/career/src/room-race.ts` maps them onto the race log's rows, because a seat that is not rider 0 reads rider 0 under a rival's slot. `Race again` after a room moves to `rematchRoomId`, a normal lobby, where `nextRoomId` is a requeue that starts by itself.
+
 ## Tracks
 
 `packages/track` compiles a `TrackPlan` into a `Track`. A plan has a start pose, a list of pieces, its region, its level, its traffic per kilometre, and the positions where a roadblock may stand. Compilation samples the centre line every metre, scatters trees, poles, and rocks from the plan's seed, and stands chevron boards along the plan's `chevrons` runs. The simulation and the renderer read the same compiled track.

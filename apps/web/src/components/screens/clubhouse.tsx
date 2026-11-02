@@ -153,16 +153,19 @@ const ClubhouseNav = ({
   onRide,
   onGarage,
   onBackRoom,
+  onFriends,
 }: {
   readonly roadName: string;
   readonly onStep: (step: -1 | 1) => void;
   readonly onRide: () => void;
   readonly onGarage: () => void;
   readonly onBackRoom: () => void;
+  readonly onFriends: () => void;
 }) => (
   <BarNav
     actions={[
       { id: "ride", label: "Ride", run: onRide },
+      { id: "friends", label: "Race friends", run: onFriends },
       { id: "garage", label: "Garage", run: onGarage },
       { id: "back-room", label: "Back room", run: onBackRoom },
     ]}
@@ -245,6 +248,7 @@ export const ClubhouseScreen = ({
   onGarage,
   onBackRoom,
   onEnvelope,
+  onFriends,
 }: {
   readonly rules: RaceRules;
   readonly career: CareerState;
@@ -253,6 +257,7 @@ export const ClubhouseScreen = ({
   readonly onGarage: () => void;
   readonly onBackRoom: () => void;
   readonly onEnvelope: (take: boolean) => void;
+  readonly onFriends: () => void;
 }) => {
   const [envelope, setEnvelope] = useState(false);
   const clock = useBarClock();
@@ -309,6 +314,7 @@ export const ClubhouseScreen = ({
         <BarLight clock={clock} />
         <ClubhouseNav
           onBackRoom={onBackRoom}
+          onFriends={onFriends}
           onGarage={onGarage}
           onRide={() => {
             onRide(roadId);
