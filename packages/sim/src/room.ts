@@ -81,6 +81,7 @@ interface Seat {
   readonly controls: Control[];
   last: Control;
   silent: number;
+  missed: number;
   left: boolean;
 }
 
@@ -88,6 +89,7 @@ const seatFor = (rider: RiderState): Seat => ({
   controls: Array.from({ length: INPUT_HORIZON }, () => coasting),
   last: coasting,
   left: false,
+  missed: 0,
   rider,
   silent: 0,
   ticks: Array.from({ length: INPUT_HORIZON }, () => NO_TICK),
@@ -109,6 +111,7 @@ export interface Room {
     controls: readonly Control[]
   ) => Acceptance;
   readonly leave: (rider: RiderId) => void;
+  readonly missedControls: (rider: RiderId) => number;
   readonly over: () => boolean;
   readonly step: () => void;
 }
@@ -133,6 +136,9 @@ const seatFrame = (seat: Seat, tick: number, frame: TickFrame): void => {
     return;
   }
   seat.silent += 1;
+  if (!isDone(rider)) {
+    seat.missed += 1;
+  }
   if (rider.controller === "pilot") {
     return;
   }
@@ -190,6 +196,7 @@ export const createRoom = (setup: RaceSetup): Room => {
         seat.left = true;
       }
     },
+    missedControls: (rider) => seatOf(rider)?.missed ?? 0,
     over: () => seats.every((seat) => seat.left || isDone(seat.rider)),
     state,
     step: () => {

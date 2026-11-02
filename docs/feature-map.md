@@ -1322,4 +1322,5 @@ Test files:
 - `apps/rooms/test/messages.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
+- `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`

@@ -6,7 +6,7 @@ A race room runs one race for up to eight humans on the `RaceServer` Durable Obj
 
 - `tick-rate` holds 60 Hz: a seat's arrival gaps sit near 16.7 ms and it confirms at least 97% of the expected ticks.
 - `agreement` keeps every seat on the room's race: `digestMatched` is true and `desyncs` is 0 with `hashesCompared` above 0.
-- `no-late-inputs` accepts a seat's controls in time: `late` is 0 on a local link, and `pnpm rooms:race` fails when over 2% of a seat's controls arrive late.
+- `no-missed-inputs` gets a seat's controls in on time. `missed` in the status counts the ticks the room stepped with no control from that seat, and it is 0 or close to it on a local link. `pnpm rooms:race` fails when a seat misses over 2% of the ticks. `late` counts every copy of a control that arrived after its tick, and a batch resends up to 8 controls, so it overstates what a rider loses.
 - `seat-refusals` sends a ninth seat `refused` with `full` and a seat after the start `refused` with `racing`, and answers a plain request to a seat with 426 and a malformed race ID with 404.
 - `own-room` gives each race ID its own room: another race ID reads as a waiting room with no seats while this race runs.
 - `dropped-seat` hands a closed seat to the pilot while the others ride on.

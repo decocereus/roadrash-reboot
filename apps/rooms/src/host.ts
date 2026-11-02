@@ -290,6 +290,7 @@ export const createHost = (ports: HostPorts): Host => {
                 accepted: seat.accepted,
                 ahead: seat.ahead,
                 late: seat.late,
+                missed: running?.room.missedControls(seat.rider) ?? 0,
                 rider: seat.rider,
               },
             ]
