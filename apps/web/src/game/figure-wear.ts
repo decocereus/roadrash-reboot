@@ -1,16 +1,8 @@
+import type { CareerRaceSetup } from "@racer/career/field";
+import { celebrityIds, celebrityModels, isCelebrity } from "@racer/sim/cast";
+import type { CelebrityId } from "@racer/sim/cast";
 import { PLAYER_RIDER, rosterOf } from "@racer/sim/state";
-import type { RaceSetup, RiderId } from "@racer/sim/state";
-
-export const celebrityIds = [
-  "kylie",
-  "ronaldo",
-  "mbappe",
-  "musk",
-  "altman",
-  "ranveer",
-] as const;
-
-export type CelebrityId = (typeof celebrityIds)[number];
+import type { RiderId } from "@racer/sim/state";
 
 export interface Wearing {
   readonly as: CelebrityId | null;
@@ -33,19 +25,27 @@ export const wearingFrom = (search: string): Wearing => {
 
 export const wornBy = (
   { against, as }: Wearing,
-  setup: RaceSetup
+  setup: CareerRaceSetup
 ): ReadonlyMap<RiderId, CelebrityId> => {
   const worn = new Map<RiderId, CelebrityId>();
   if (as !== null) {
     worn.set(PLAYER_RIDER, as);
   }
   const waiting = [...against];
-  for (const rival of rosterOf(setup).rivals) {
-    const celebrity = waiting.shift();
-    if (celebrity === undefined) {
-      break;
+  const { rivals } = rosterOf(setup);
+  for (let slot = 0; slot < rivals.length; slot += 1) {
+    const rider = rivals[slot];
+    const rival = setup.field[slot];
+    const named = waiting.shift();
+    if (rider !== undefined && named !== undefined) {
+      worn.set(rider, named);
+    } else if (
+      rider !== undefined &&
+      rival !== undefined &&
+      isCelebrity(rival)
+    ) {
+      worn.set(rider, celebrityModels[rival]);
     }
-    worn.set(rival, celebrity);
   }
   return worn;
 };

@@ -5,7 +5,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { BikeModelId } from "./bike-models.ts";
-import type { CelebrityId } from "./figure-wear.ts";
+import type { CelebrityId } from "@racer/sim/cast";
 import { RED } from "./looks.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
 

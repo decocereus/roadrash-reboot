@@ -13,7 +13,7 @@ import {
   weaponLabel,
 } from "../../career/format.ts";
 import type { RacePlan } from "../../game/hud.ts";
-import { standingTag, useEscape } from "./shared.tsx";
+import { ActionMenu, standingTag, useEscape } from "./shared.tsx";
 
 const kitOf = (bike: string, weapon: string): string =>
   weapon === "" ? shortBike(bike) : `${shortBike(bike)} · ${weapon}`;
@@ -55,13 +55,17 @@ export const RideOutScreen = ({
   career,
   ready,
   failure,
+  loadFailed,
   onBack,
+  onRetry,
 }: {
   readonly plan: RacePlan;
   readonly career: CareerState | null;
   readonly ready: boolean;
   readonly failure: string;
+  readonly loadFailed: boolean;
   readonly onBack: () => void;
+  readonly onRetry: () => void;
 }) => {
   const { setup } = plan;
   const road = roads[setup.roadId];
@@ -132,7 +136,22 @@ export const RideOutScreen = ({
               “{speaker.text}”
             </blockquote>
           )}
-          {failure === "" ? (
+          {loadFailed && (
+            <>
+              <p className="text-neon-red normal-case" role="alert">
+                The riders did not load. Check your connection and try again.
+              </p>
+              <ActionMenu
+                actions={[
+                  { id: "retry", label: "Retry", run: onRetry },
+                  { id: "back", label: "Back", run: onBack },
+                ]}
+                label="The riders did not load"
+                primary="retry"
+              />
+            </>
+          )}
+          {!loadFailed && failure === "" && (
             <p
               aria-live="polite"
               className={cn(
@@ -142,7 +161,8 @@ export const RideOutScreen = ({
             >
               {ready ? "Ride" : "Loading the road"}
             </p>
-          ) : (
+          )}
+          {!loadFailed && failure !== "" && (
             <p className="text-neon-red normal-case" role="alert">
               Could not start the game: {failure}
             </p>

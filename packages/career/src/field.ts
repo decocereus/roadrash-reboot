@@ -1,6 +1,6 @@
 import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
-import { cast, rivalAt, rivals } from "@racer/sim/cast";
+import { celebrityCast, ordinaryCast, rivalAt, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { defaultPlayer } from "@racer/sim/race";
 import { clamp, PLAYER_RIDER } from "@racer/sim/state";
@@ -40,8 +40,12 @@ export interface CareerRaceSetup extends RaceSetup {
 const races = (rival: RivalId, level: Level): boolean =>
   level >= rivals[rival].racesFrom;
 
-const homeRiders = (roadId: RoadId, level: Level): readonly RivalId[] =>
-  cast
+const homeRiders = (
+  { celebrities }: Pick<RaceRules, "celebrities">,
+  roadId: RoadId,
+  level: Level
+): readonly RivalId[] =>
+  [...ordinaryCast, ...(celebrities ? celebrityCast : [])]
     .filter((rival) => rival.home === roads[roadId].region)
     .map((rival) => (races(rival.id, level) ? rival.id : CHAMPION_STAND_IN));
 
@@ -60,7 +64,12 @@ const shuffled = <Item>(items: readonly Item[], random: Random): Item[] => {
 };
 
 export const fewestRacers =
-  1 + Math.max(...roadList.map((road) => homeRiders(road.id, 1).length));
+  1 +
+  Math.max(
+    ...roadList.map(
+      (road) => homeRiders({ celebrities: true }, road.id, 1).length
+    )
+  );
 
 export const fewestLevels = rivals[CHAMPION].racesFrom;
 
@@ -71,8 +80,8 @@ export const fieldFor = (
   seed: number
 ): readonly RivalId[] => {
   const random = createRandom(seed + FIELD_SALT);
-  const home = homeRiders(roadId, level);
-  const others = cast
+  const home = homeRiders(rules, roadId, level);
+  const others = ordinaryCast
     .map((rival) => rival.id)
     .filter((rival) => races(rival, level) && !home.includes(rival));
   const drawn = shuffled(others, random).slice(
@@ -220,9 +229,13 @@ export const roadOpen = (
 ): boolean =>
   !isFinale(rules, roadId, career.level) || finaleOpen(rules, career);
 
-export const roadBoss = (career: CareerState, roadId: RoadId): RivalId => {
+export const roadBoss = (
+  rules: RaceRules,
+  career: CareerState,
+  roadId: RoadId
+): RivalId => {
   const { season } = career;
-  const [boss] = homeRiders(roadId, career.level).toSorted(
+  const [boss] = homeRiders(rules, roadId, career.level).toSorted(
     (left, right) =>
       season[right].wins - season[left].wins ||
       season[right].points - season[left].points ||
@@ -242,7 +255,7 @@ export const roadsFor = (rules: RaceRules, career: CareerState): RoadBoard => {
       qualified[road.id] === undefined
         ? prizeFor(rules, level, 1)
         : repeatPrizeFor(rules, level, 1),
-    home: homeRiders(road.id, level),
+    home: homeRiders(rules, road.id, level),
     lengthMetres: road.lengths[level],
     open: roadOpen(rules, career, road.id),
     qualified: qualified[road.id] !== undefined,

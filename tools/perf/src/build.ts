@@ -7,7 +7,7 @@ import { cacheDirectory, pullAll } from "@racer/art/cache";
 import { extensionOf, holdsKey, readManifest } from "@racer/art/manifest";
 import { released } from "@racer/devtools/cleanup";
 import { ToolProcesses } from "@racer/devtools/process";
-import { celebrityIds } from "@racer/web/figure-wear";
+import { celebrityIds } from "@racer/sim/cast";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

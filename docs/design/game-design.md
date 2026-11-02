@@ -12,7 +12,7 @@ Agreed with the owner on October 23, 2026. `docs/architecture.md` has the lanes 
 - **Audience.** People who played Road Rash and want a game with the same mechanics.
 - **World.** A near-future version of the real one. Illegal road races are streamed around the world, and people watch them and bet on them inside the story. The streets have ordinary pedestrians. The police are a company's private security, the junction lights are its "smart city" system, and cops react to a rider who runs a red light.
 - **Race director.** Code that decides which obstacles appear where and how they move. It is not a character in the story.
-- **Cast.** Parodies of real celebrities, six at launch: Elon Musk, Sam Altman, Kylie Jenner, Ranveer Singh, Cristiano Ronaldo, and Kylian Mbappé. Each gets a parody name and a recognisable caricature, never a real name, photo, or exact likeness. Each one's personality comes from the public memes about them: Ronaldo as a vain, beloved superhero with something rotten underneath, after the memes comparing him to Homelander, without that character's name or costume; Mbappé after the memes of him as a dictator; Musk and Altman with their feud. Ordinary riders fill the rest of the field. Section 9's sixteen rivals stay in the build until the new cast lands, and their skill, aggression, weapons, and grudges are the templates for it.
+- **Cast.** Parodies of real celebrities, six at launch: Elon Musk, Sam Altman, Kylie Jenner, Ranveer Singh, Cristiano Ronaldo, and Kylian Mbappé. Each gets a parody name and a recognisable caricature, never a real name, photo, or exact likeness. Each one's personality comes from the public memes about them: Ronaldo as a vain, beloved superhero with something rotten underneath, after the memes comparing him to Homelander, without that character's name or costume; Mbappé after the memes of him as a dictator; Musk and Altman with their feud. Ordinary riders fill the rest of the field. Section 9 lists the six names. Its sixteen ordinary rivals fill the rest of each field until the launch riders replace them.
 - **The player.** Your own rider, an unknown climbing the league, with the celebrities as named rivals. Each celebrity's story plays out as a scene inside the career. Beating a celebrity in their story moment unlocks them for single races and multiplayer.
 - **Cities.** Each launch city hosts a pair of celebrities on an existing road shape. Landmarks are parodied, not copied.
 
@@ -639,7 +639,20 @@ Deputy Haverty's lines:
 
 ## 9. Rival cast
 
-For launch, six parody celebrities and ordinary riders replace this cast (section 0). Its skill, aggression, weapons, and grudges are the templates for them, and it stays in the build until the new cast lands.
+For launch, six parody celebrities and ordinary riders replace this cast (section 0). The six are in the build, and the sixteen below stay until the launch riders replace them.
+
+### The six celebrities
+
+| Rival | Parody of | Rides today | Skill | Aggression | Starts with |
+| --- | --- | --- | --: | --: | --- |
+| Captain Penaldo | Ronaldo | Slag Row, standing in for Madrid | 0.94 | 0.75 | Nothing |
+| Supreme Leader M'Bossé | Mbappé | Slag Row, standing in for Madrid | 0.90 | 0.70 | Baton |
+| Elongated Muskrat | Musk | Ridge Road, standing in for the Bay Area | 0.96 | 0.45 | Nothing |
+| Slam Altruman | Altman | Ridge Road, standing in for the Bay Area | 0.87 | 0.30 | Nothing |
+| Kylip Jetner | Kylie Jenner | Breakwater Run, standing in for Mumbai | 0.92 | 0.35 | Nothing |
+| Ranwear Bling | Ranveer Singh | Breakwater Run, standing in for Mumbai | 0.85 | 0.40 | Nothing |
+
+The owner approved the names and bios on November 2, 2026. The bios are `celebrityBios` in `packages/career/src/lines.ts`. Each celebrity is a home rider on one road and is not drawn for any other, and each takes its bikes and aggression from an ordinary rival: Ines, Lyle, Ruth Ann, Wanda, Tristan and Benny, in table order. Skill is set so the top rider of each pair starts as the road's boss; Juno still takes Ridge Road from the level she races. They have no lines yet, so a celebrity says nothing in a race. The bar shows the bio on the boss's sticker with an empty stool, and the race shows the name on a tag over the nearest celebrity.
 
 ### Summary
 
@@ -664,7 +677,7 @@ For launch, six parody celebrities and ordinary riders replace this cast (sectio
 
 The player's default is bike `#C82F2F` red and jacket `#23262C` charcoal. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#141C33`.
 
-Home roads: Breakwater Run (Tristan, Ines, Benny), Cinder Wash (Ruth Ann, Mags, Wanda), Hollow Pine Road (Lyle, Gus, Orrin), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis). At level 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
+Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny), Cinder Wash (Ruth Ann, Mags, Wanda), Hollow Pine Road (Lyle, Gus, Orrin), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis). At level 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
 
 ### Pilot rules two riders need
 
@@ -1003,7 +1016,7 @@ The new story is drafted as a short story bible, which the owner rewrites in the
 
 Until the new story lands, a career with fewer levels joins the old chapters of the rungs each level takes in (section 4). At three levels level 2 is "Dee's Tip", with the envelope and Dee's tip, and level 3 is "The Long Ridge", with the badge and the finale. Vic's promotion cards join the same way, so the level-3 card ends "The Ridge is last. She'll be waiting."
 
-Still for the story bible: the six parody names, the league's arc, one scene or line for each of the nine races, the bar's lines, and the ending.
+Still for the story bible: the league's arc, one scene or line for each of the nine races, the bar's lines, and the ending.
 
 ## 12. Multiplayer
 
@@ -1011,7 +1024,7 @@ Still for the story bible: the six parody names, the league's arc, one scene or 
 
 Two to eight signed-in players race one road at one level. Bots fill the other seats, so every race has the field the server's race rules set, ten racers at launch. Police and traffic are extra actors in the simulation, so the humans in a room, the racers, and the actors stepped are three different counts. A host creates a private room and shares its short code. A private room admits anyone and shows each player's connection. Quick Race puts the player in a public lobby, where bots fill the empty seats and present as human, so a race starts however few people are playing. A public room targets an 80 ms round trip and admits no one above 100 ms. Ranked matchmaking waits until enough people play to fill it. A player rides any celebrity they have unlocked, in any skin they own, on a bike from the full catalogue, and the bike is locked when the race starts. There is no money; the reward is the result and, later, a leaderboard. There is no pacing in multiplayer, because the rule in section 9 reads the gap to rider 0 and would favour one seat.
 
-Race rules belong to the server and are never player settings. Field size, level count, and police per level are one `RaceRules` record in `apps/web/src/server/race-rules.ts`, served at `/api/race-rules`. The browser reads it once at boot, and the career and race setup take it as input.
+Race rules belong to the server and are never player settings. Whether the celebrities ride, field size, level count, and police per level are one `RaceRules` record in `apps/web/src/server/race-rules.ts`, served at `/api/race-rules`. The browser reads it once at boot, and the career and race setup take it as input.
 
 ### How it runs
 

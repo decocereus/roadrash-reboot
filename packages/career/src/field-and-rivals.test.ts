@@ -1,5 +1,12 @@
 import { bikes } from "@racer/sim/bikes";
-import { bikeAt, rivalIds, rivals, weaponAt } from "@racer/sim/cast";
+import {
+  bikeAt,
+  celebrityRivalIds,
+  isCelebrity,
+  rivalIds,
+  rivals,
+  weaponAt,
+} from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { createRace, stepRace } from "@racer/sim/race";
 import { frameOf, scripted } from "@racer/sim/race-fixtures";
@@ -7,6 +14,7 @@ import { MAX_STAMINA, PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { recordedRules } from "./bench.ts";
+import type { RaceRules } from "./rules.ts";
 import {
   TICKS,
   enter,
@@ -111,6 +119,37 @@ const junoAggression = (roadId: RoadId): number | undefined => {
 };
 
 describe("the field", () => {
+  it("rides each celebrity on its home road, and on no other road, when the rules turn the cast on", () => {
+    const served: RaceRules = {
+      ...recordedRules,
+      celebrities: true,
+      fieldSize: 10,
+      levelCount: 3,
+    };
+    const seen = roadList.map((entry) => [
+      entry.id,
+      [
+        ...new Set(
+          [1, 2, 3].flatMap((seed) =>
+            fieldFor(served, entry.id, 1, seed).filter(isCelebrity)
+          )
+        ),
+      ].toSorted(),
+    ]);
+    expect(seen).toStrictEqual([
+      ["breakwater-run", ["kylip-jetner", "ranwear-bling"]],
+      ["cinder-wash", []],
+      ["hollow-pine-road", []],
+      ["slag-row", ["captain-penaldo", "supreme-leader-mbosse"]],
+      ["ridge-road", ["elongated-muskrat", "slam-altruman"]],
+    ]);
+    expect(
+      celebrityRivalIds.flatMap((rival) =>
+        fieldFor(recordedRules, "slag-row", 1, 3).filter((one) => one === rival)
+      )
+    ).toStrictEqual([]);
+  });
+
   it("always fills the field with different rivals, the road's home riders among them", () => {
     const problems: string[] = [];
     for (const level of levels) {
@@ -331,9 +370,11 @@ describe("memory", () => {
     sprint(again, 1);
     const twice = settle(again).career;
     const speaker = preRaceLine(fresh, first);
-    expect(speaker?.text).toBe(
-      speaker ? rivalLines[speaker.rival].taunt : undefined
-    );
+    expect(
+      speaker && !isCelebrity(speaker.rival)
+        ? rivalLines[speaker.rival].taunt
+        : null
+    ).toBe(speaker?.text);
     expect(
       race.setup.field.map((rival) => career.memory[rival].aggressionBonus)
     ).toStrictEqual(Array.from({ length: 14 }, () => -0.05));
@@ -354,7 +395,7 @@ describe("memory", () => {
     const satOut = rivalIds.filter(
       (rival) => !race.setup.field.includes(rival)
     );
-    expect(satOut).toHaveLength(2);
+    expect(satOut).toHaveLength(8);
     expect(satOut.map((rival) => career.memory[rival])).toStrictEqual(
       satOut.map((rival) => ({
         ...memory[rival],

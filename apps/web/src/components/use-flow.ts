@@ -124,7 +124,9 @@ const entrance = async (
   const home = homeOf(save.career);
   if (home.screen === "clubhouse") {
     await preload(
-      barPlates(barCast(save.career, firstRoad(rules.rules, save.career)))
+      barPlates(
+        barCast(rules.rules, save.career, firstRoad(rules.rules, save.career))
+      )
     );
   }
   return home;

@@ -12,7 +12,7 @@ import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useEffect, useMemo, useState } from "react";
 
-import { figures, flyers, plates } from "../../assets/clubhouse-art.ts";
+import { figureOf, flyers, plates } from "../../assets/clubhouse-art.ts";
 import {
   barCast,
   firstRoad,
@@ -258,7 +258,10 @@ export const ClubhouseScreen = ({
   const clock = useBarClock();
   const { roadId, step } = useRoad(rules, career);
   const road = roads[roadId];
-  const bar = useMemo(() => barCast(career, roadId), [career, roadId]);
+  const bar = useMemo(
+    () => barCast(rules, career, roadId),
+    [rules, career, roadId]
+  );
   const rival = rivals[bar.boss];
   const ally = rival.id === ALLY && storyBeat(career).deeAlly;
   const vic = useVic(vicLines(rules, career, promotion));
@@ -281,7 +284,7 @@ export const ClubhouseScreen = ({
     >
       <Stage inert={envelope ? true : undefined}>
         <BarBackdrop clock={clock} />
-        <BarSeats figure={vic ? null : figures[bar.boss]} />
+        <BarSeats figure={vic ? null : figureOf(bar.boss)} />
         <SpeechSticker speech={speech} />
         <BarHeader standing={{ career, rules }} />
         <Standings

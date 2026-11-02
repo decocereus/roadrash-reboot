@@ -7,7 +7,10 @@ import {
   sprint,
   wreckTimes,
 } from "./career-fixtures.ts";
+import { recordedRules } from "./bench.ts";
 import { roadBoss } from "./field.ts";
+import { celebrityBios, tauntFrom } from "./lines.ts";
+import type { RaceRules } from "./rules.ts";
 import { seasonBoard } from "./season.ts";
 import { newCareer, nextRaceSeed } from "./state.ts";
 
@@ -27,12 +30,28 @@ describe("the season board", () => {
 });
 
 describe("the bar", () => {
-  it("the home rider with the most wins on the season holds the road, the best rider until someone wins", () => {
+  it("names a celebrity as the road's boss and gives the bio as the line, until an ordinary rider out-wins them", () => {
+    const served: RaceRules = { ...recordedRules, celebrities: true };
     const career = newCareer(4);
-    expect(roadBoss(career, "slag-row")).toBe("dee-santangelo");
+    expect(roadBoss(served, career, "slag-row")).toBe("captain-penaldo");
+    expect(tauntFrom(career, "captain-penaldo").text).toBe(
+      celebrityBios["captain-penaldo"]
+    );
     const race = enter(career, "slag-row", 1);
     sprint(race, 3, ["moose-kowalczyk"]);
-    expect(roadBoss(settle(race).career, "slag-row")).toBe("moose-kowalczyk");
+    expect(roadBoss(served, settle(race).career, "slag-row")).toBe(
+      "moose-kowalczyk"
+    );
+  });
+
+  it("the home rider with the most wins on the season holds the road, the best rider until someone wins", () => {
+    const career = newCareer(4);
+    expect(roadBoss(recordedRules, career, "slag-row")).toBe("dee-santangelo");
+    const race = enter(career, "slag-row", 1);
+    sprint(race, 3, ["moose-kowalczyk"]);
+    expect(roadBoss(recordedRules, settle(race).career, "slag-row")).toBe(
+      "moose-kowalczyk"
+    );
   });
 });
 

@@ -41,6 +41,21 @@ const CopWarning = ({ metres }: { readonly metres: number }) => (
   </p>
 );
 
+const RivalName = ({
+  colour,
+  name,
+}: {
+  readonly colour: string;
+  readonly name: string;
+}) => (
+  <p
+    className="font-display text-ink bg-neon-yellow m-0 w-max -rotate-3 border-l-[0.35em] px-[0.4em] py-[0.15em] text-base leading-none font-bold tracking-wide uppercase"
+    style={{ borderColor: colour }}
+  >
+    {name}
+  </p>
+);
+
 const RivalTag = ({
   hud,
   tagRef,
@@ -52,6 +67,9 @@ const RivalTag = ({
     className="invisible absolute top-0 left-0 will-change-transform"
     ref={tagRef}
   >
+    {hud.rivalName !== "" && hud.speech === "" && hud.rivalCelebrity && (
+      <RivalName colour={hud.rivalColour} name={hud.rivalName} />
+    )}
     {hud.rivalName !== "" && hud.speech !== "" && (
       <figure className="relative m-0 aspect-[266/191] w-64">
         <img

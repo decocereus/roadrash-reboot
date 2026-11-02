@@ -1,5 +1,11 @@
 import type { BikeId } from "@racer/sim/bikes";
-import type { OfficerId, RivalId } from "@racer/sim/cast";
+import { isCelebrity } from "@racer/sim/cast";
+import type {
+  CelebrityRivalId,
+  OfficerId,
+  OrdinaryRivalId,
+  RivalId,
+} from "@racer/sim/cast";
 
 import type { CareerRaceSetup } from "./field.ts";
 import { holdsItAgainstPlayer, memoryStrength } from "./memory.ts";
@@ -183,7 +189,22 @@ export const rivalLines = {
     youBeatThem: "An unexpected front. I'll be issuing an apology at six.",
     youKnockThemDown: "This blazer is station property!",
   },
-} as const satisfies Record<RivalId, RivalLines>;
+} as const satisfies Record<OrdinaryRivalId, RivalLines>;
+
+export const celebrityBios = {
+  "captain-penaldo":
+    "The world's most beloved superhero, by a popular vote of one. The smile stays on after the cameras stop, which is worse.",
+  "elongated-muskrat":
+    "Says the bike will ride itself next year. Said that in 2016 too.",
+  "kylip-jetner":
+    "Takes the jet to the start line, a 17-minute flight, and sells you the lip kit at the finish.",
+  "ranwear-bling":
+    "Races in a fuchsia jacket with sleeves that need their own lane, and calls this toned down.",
+  "slam-altruman":
+    "Started the team as a nonprofit for the good of all riders. Now needs seven trillion dollars for a faster bike.",
+  "supreme-leader-mbosse":
+    "Annexed the league's biggest club on a free transfer and has ruled by decree ever since.",
+} as const satisfies Record<CelebrityRivalId, string>;
 
 export const officerLines = {
   "dolores-pike": [
@@ -224,6 +245,9 @@ export interface RivalLine {
 }
 
 export const tauntFrom = (career: CareerState, rival: RivalId): RivalLine => {
+  if (isCelebrity(rival)) {
+    return { rival, text: celebrityBios[rival] };
+  }
   const lines = rivalLines[rival];
   return {
     rival,
@@ -237,7 +261,8 @@ export const preRaceLine = (
   career: CareerState,
   setup: CareerRaceSetup
 ): RivalLine | null => {
-  const [speaker] = setup.field.toSorted((left, right) => {
+  const speakers = setup.field.filter((rival) => !isCelebrity(rival));
+  const [speaker] = speakers.toSorted((left, right) => {
     const strength =
       memoryStrength(career.memory[right]) -
       memoryStrength(career.memory[left]);
@@ -254,7 +279,12 @@ export const resultLine = (outcome: RaceOutcome): RivalLine | null => {
     (placing) => placing.racer === "player"
   );
   const neighbour = outcome.placings[spot === 0 ? 1 : spot - 1];
-  if (spot === -1 || !neighbour || neighbour.racer === "player") {
+  if (
+    spot === -1 ||
+    !neighbour ||
+    neighbour.racer === "player" ||
+    isCelebrity(neighbour.racer)
+  ) {
     return null;
   }
   const beaten =

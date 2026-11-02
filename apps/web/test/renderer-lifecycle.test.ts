@@ -1,3 +1,4 @@
+import { celebrityIds } from "@racer/sim/cast";
 import { defaultSetup } from "@racer/sim/race";
 import { createRaceRun } from "@racer/sim/race-run";
 import type { TrafficView } from "@racer/sim/race-view";
@@ -15,7 +16,6 @@ import { createShading } from "../src/game/cel.ts";
 import type { Shading } from "../src/game/cel.ts";
 import { disposeTree } from "../src/game/dispose.ts";
 import { bodyFor } from "../src/game/figure-rig.ts";
-import { celebrityIds } from "../src/game/figure-wear.ts";
 import { createHazardMarks } from "../src/game/hazards.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh, isMesh, isSkinnedMesh } from "../src/game/meshes.ts";

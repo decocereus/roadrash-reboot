@@ -1,4 +1,4 @@
-import { celebrityIds } from "@racer/web/figure-wear";
+import { celebrityIds } from "@racer/sim/cast";
 
 import type { FeatureEntry } from "./feature-map.ts";
 

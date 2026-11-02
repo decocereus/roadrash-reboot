@@ -2,6 +2,7 @@ import { roadLevels } from "@racer/track/road";
 import type { RoadLevel } from "@racer/track/road";
 
 export interface RaceRules {
+  readonly celebrities: boolean;
   readonly fieldSize: number;
   readonly levelCount: RoadLevel;
   readonly police: Readonly<Record<RoadLevel, number>>;

@@ -28,6 +28,7 @@ export const RaceBoard = () => {
       progress: 0.4,
       riderCount: 8,
       rivalColour: "#ff2fb5",
+      rivalCelebrity: false,
       rivalName: "Vex",
       speech: "Get off my road.",
       speedKmh: 184,
