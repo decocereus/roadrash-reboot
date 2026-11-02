@@ -2,6 +2,7 @@ import { openRoomSeat, predictSteps } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { controlOf } from "@racer/sim/control";
 import { TICK_SECONDS } from "@racer/sim/state";
+import type { Control } from "@racer/sim/state";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const STEER_PERIOD_TICKS = 37;
@@ -41,16 +42,18 @@ const steerOf = (tick: number, rider: number): number => {
   return phase < STEER_PERIOD_TICKS ? 0.35 : -0.35;
 };
 
+export const weavingControl = (tick: number, rider: number): Control =>
+  controlOf({
+    brake: 0,
+    kick: false,
+    punch: tick % 241 === 0,
+    remount: tick % 241 === 0,
+    steer: steerOf(tick, rider),
+    throttle: 1,
+  });
+
 const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
-  predictSteps(seat, (tick) =>
-    controlOf({
-      brake: 0,
-      kick: false,
-      punch: tick % 241 === 0,
-      steer: steerOf(tick, you()),
-      throttle: 1,
-    })
-  );
+  predictSteps(seat, (tick) => weavingControl(tick, you()));
 
 export const openSeat = (roomsUrl: string, raceId: string): Seat => {
   const seat = openRoomSeat(roomsUrl, raceId, "Script");

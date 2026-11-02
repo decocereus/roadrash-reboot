@@ -17,6 +17,10 @@ const props = Effect.map(
   (port) => ({
     dev: { port, strictPort: true },
     main: import.meta.url,
+    observability: {
+      enabled: true,
+      logs: { enabled: true, invocationLogs: false, persist: true },
+    },
   })
 );
 

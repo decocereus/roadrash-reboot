@@ -212,7 +212,6 @@ export const hotBodies = {
     ["frameFits"],
     ["controllerAfter"],
     ["controlRider"],
-    ["handOver"],
   ],
   "packages/sim/src/room-client.ts": [
     ["sameHash"],

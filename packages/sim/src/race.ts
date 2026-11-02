@@ -22,7 +22,7 @@ import {
 } from "./pedestrians.ts";
 import { createPilotHistory } from "./pilot-history.ts";
 import { pilotRider } from "./pilot.ts";
-import { PULL_OVER, stepPolice } from "./police.ts";
+import { meetLights, PULL_OVER, stepPolice } from "./police.ts";
 import type { RaceView, RiderView } from "./race-view.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
@@ -59,6 +59,7 @@ export const neutralInput: RiderInput = {
   brake: 0,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle: 0,
 };
@@ -173,7 +174,6 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   heading: 0,
   hitStun: 0,
   id: entry.id,
-  idleTicks: 0,
   input: { ...neutralInput },
   jumpMisread: false,
   jumpSeen: -1,
@@ -190,6 +190,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   post: spot.s,
   profile: entry.profile,
   revs: 0,
+  runningToBike: false,
   s: spot.s,
   shiftTicks: 0,
   slip: 0,
@@ -207,6 +208,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   weapon: entry.weaponHits > 0 ? entry.profile.weapon : "none",
   weaponAtThrow: "none",
   weaponHits: entry.weaponHits,
+  witnessed: null,
   wobble: 0,
   x: spot.x,
 });
@@ -548,24 +550,6 @@ const checkFrame = (state: RaceState, frame: InputFrame): void => {
   }
 };
 
-const handOver = (rider: RiderState, to: Controller): void => {
-  rider.controller = to;
-  switch (to) {
-    case "human": {
-      return;
-    }
-    case "pilot": {
-      rider.staleThrottle = false;
-      rider.staleBrake = false;
-      rider.staleSteer = false;
-      return;
-    }
-    default: {
-      return to satisfies never;
-    }
-  }
-};
-
 const controlRider = (
   state: RaceState,
   track: Track,
@@ -574,7 +558,7 @@ const controlRider = (
 ): void => {
   const handover = frame.handovers.get(rider.id);
   if (handover !== undefined) {
-    handOver(rider, handover);
+    rider.controller = handover;
   }
   switch (rider.controller) {
     case "human": {
@@ -629,6 +613,7 @@ export const stepRace = (
       touchdown?.s ?? fromS,
       touchdown?.x ?? fromX
     );
+    meetLights(state, track, rider, fromS);
   }
   stepRiderContacts(state, track, throwRider);
   coolDown(state);

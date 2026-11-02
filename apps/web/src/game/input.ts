@@ -16,6 +16,7 @@ const handled = new Set([
   "Space",
   "KeyJ",
   "KeyK",
+  "KeyE",
   "ShiftLeft",
   "ShiftRight",
 ]);
@@ -23,6 +24,7 @@ const handled = new Set([
 export interface KeyEvent {
   readonly code: string;
   readonly repeat: boolean;
+  readonly metaKey: boolean;
   readonly preventDefault: () => void;
 }
 
@@ -69,6 +71,9 @@ const firstConnected = (pads: readonly (Pad | null)[]): Pad | null => {
   return null;
 };
 
+const padPressed = (pad: Pad | null, index: number): boolean =>
+  pad?.buttons[index]?.pressed ?? false;
+
 const nextSteer = (
   current: number,
   stick: number,
@@ -102,13 +107,16 @@ export const createControls = (
     if (handled.has(event.code)) {
       event.preventDefault();
     }
-    if (!event.repeat) {
+    if (!(event.repeat || event.metaKey)) {
       held.add(event.code);
       onCommand(event.code);
     }
   };
   const release = (event: KeyEvent) => {
     held.delete(event.code);
+    if (event.code === "MetaLeft" || event.code === "MetaRight") {
+      held.clear();
+    }
   };
   const clear = () => {
     held.clear();
@@ -136,11 +144,10 @@ export const createControls = (
         down("ArrowDown", "KeyS") ? 1 : 0,
         pad?.buttons[6]?.value ?? 0
       );
-      input.punch =
-        down("Space", "KeyJ") || (pad?.buttons[2]?.pressed ?? false);
+      input.punch = down("Space", "KeyJ") || padPressed(pad, 2);
       input.kick =
-        down("KeyK", "ShiftLeft", "ShiftRight") ||
-        (pad?.buttons[1]?.pressed ?? false);
+        down("KeyK", "ShiftLeft", "ShiftRight") || padPressed(pad, 1);
+      input.remount = down("KeyE") || padPressed(pad, 0);
     },
   };
 };

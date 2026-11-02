@@ -20,7 +20,6 @@ const BIKE_SLIDE_DECELERATION = 5;
 export const RUN_SPEED = 7;
 const RUN_ACCELERATION = 28;
 const RISE_TICKS = 18;
-const IDLE_WALK_TICKS = 240;
 const MOUNT_REACH = 0.7;
 const MOUNT_TICKS = 30;
 const SETTLE_TICKS = 50;
@@ -188,7 +187,7 @@ interface Stride {
   readonly across: number;
 }
 
-export const towardBike = (rider: RiderState): Stride => {
+const towardBike = (rider: RiderState): Stride => {
   const gapS = rider.s - rider.bodyS;
   const gapX = rider.x - rider.bodyX;
   const distance = Math.max(1e-6, hypot2(gapS, gapX));
@@ -202,16 +201,18 @@ const releaseHeldInput = (rider: RiderState, input: RiderInput): void => {
 };
 
 const strideOf = (rider: RiderState, input: RiderInput): Stride => {
-  const throttle = rider.staleThrottle ? 0 : input.throttle;
-  const brake = rider.staleBrake ? 0 : input.brake;
-  const steer = rider.staleSteer ? 0 : input.steer;
-  const chosen = {
-    across: clamp(steer, -1, 1),
-    along: clamp(throttle - brake, -1, 1),
+  if (rider.runningToBike) {
+    return towardBike(rider);
+  }
+  return {
+    across: clamp(rider.staleSteer ? 0 : input.steer, -1, 1),
+    along: clamp(
+      (rider.staleThrottle ? 0 : input.throttle) -
+        (rider.staleBrake ? 0 : input.brake),
+      -1,
+      1
+    ),
   };
-  rider.idleTicks =
-    chosen.along === 0 && chosen.across === 0 ? rider.idleTicks + 1 : 0;
-  return rider.idleTicks > IDLE_WALK_TICKS ? towardBike(rider) : chosen;
 };
 
 const run = (
@@ -224,7 +225,7 @@ const run = (
     return;
   }
   rider.modeTicks += 1;
-  if (atTheBike(rider)) {
+  if (rider.runningToBike && atTheBike(rider)) {
     rider.mode = "mounting";
     rider.modeTicks = 0;
     rider.bodySpeed = 0;
@@ -269,6 +270,7 @@ const mount = (state: RaceState, rider: RiderState): void => {
   }
   rider.mode = "riding";
   rider.modeTicks = 0;
+  rider.runningToBike = false;
   rider.lean = 0;
   rider.heading = 0;
   rider.throttle = 0;
@@ -285,6 +287,7 @@ export const stepOffBike = (
   input: RiderInput
 ): void => {
   releaseHeldInput(rider, input);
+  rider.runningToBike ||= input.remount;
   if (rider.mode === "wrecked") {
     comeToRest(track, rider);
   } else if (rider.mode === "thrown") {

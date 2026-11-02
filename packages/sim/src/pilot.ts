@@ -19,7 +19,6 @@ import { jumpAim, straightened } from "./pilot-jumps.ts";
 import { chooseLine, slickAhead } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
 import { copAim } from "./pilot-police.ts";
-import { towardBike } from "./rider-recovery.ts";
 import { clamp, PLAYER_RIDER, riderOf, steerFor } from "./state.ts";
 import type {
   PilotHistory,
@@ -122,14 +121,13 @@ const ride = (
       : 0;
 };
 
-const walkToBike = (rider: RiderState, input: RiderInput): void => {
-  const { across, along } =
-    rider.mode === "running" ? towardBike(rider) : { across: 0, along: 0 };
-  input.steer = across;
-  input.throttle = Math.max(0, along);
-  input.brake = Math.max(0, -along);
+const getBackOnBike = (input: RiderInput): void => {
+  input.steer = 0;
+  input.throttle = 0;
+  input.brake = 0;
   input.punch = false;
   input.kick = false;
+  input.remount = true;
 };
 
 export const pilotRider = (
@@ -139,9 +137,10 @@ export const pilotRider = (
 ): void => {
   const { input } = rider;
   if (rider.mode !== "riding") {
-    walkToBike(rider, input);
+    getBackOnBike(input);
     return;
   }
+  input.remount = false;
   const history = state.pilot;
   const police = rider.profile.role === "police";
   const pace = police ? freePace : paceOf(state, rider);

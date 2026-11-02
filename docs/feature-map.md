@@ -250,6 +250,7 @@ Source files:
 Test files:
 
 - `packages/career/src/police.test.ts`
+- `packages/sim/src/police-witness.test.ts`
 - `packages/sim/src/police.test.ts`
 
 ### AI riders (the pilot)
@@ -1330,9 +1331,20 @@ Source files:
 - `packages/sim/src/room-frame.ts`
 - `packages/sim/src/room-wire.ts`
 - `packages/sim/src/room.ts`
+- `tools/rooms/lag.ts`
+- `tools/rooms/load-clients.ts`
+- `tools/rooms/load.ts`
 - `tools/rooms/race.ts`
+- `tools/rooms/src/lag.ts`
+- `tools/rooms/src/load-clients.ts`
+- `tools/rooms/src/load-plan.ts`
+- `tools/rooms/src/load-report.ts`
+- `tools/rooms/src/load.ts`
+- `tools/rooms/src/machine.ts`
 - `tools/rooms/src/race.ts`
 - `tools/rooms/src/seat.ts`
+- `tools/rooms/src/send-budget.ts`
+- `tools/rooms/src/thin-seat.ts`
 
 Test files:
 
@@ -1346,3 +1358,5 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
+- `tools/rooms/test/load-report.test.ts`
+- `tools/rooms/test/send-budget.test.ts`

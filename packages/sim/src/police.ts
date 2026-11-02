@@ -2,6 +2,7 @@ import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
 import type { RaceView } from "./race-view.ts";
+import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
 import { BIKE_HALF_LENGTH, riderOf } from "./state.ts";
 import type { RaceState, RiderId, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
@@ -10,6 +11,8 @@ export const PATROL_SPEED = 22;
 const BODY_RANGE = 60;
 const WAKE_RANGE = 35;
 const LOSE_RANGE = 120;
+const WITNESS_RANGE = 250;
+const OFFENDER_RANGE = 500;
 const BUST_REACH = 4;
 const BUST_DELAY_TICKS = 30;
 export const PULL_OVER = 1.1;
@@ -36,15 +39,73 @@ const wanted = (rider: RiderState): boolean =>
 const bodyAhead = (cop: RiderState, rider: RiderState): number =>
   rider.bodyS - cop.s;
 
-const stillChasing = (cop: RiderState, rider: RiderState): boolean => {
+const inReach = (
+  cop: RiderState,
+  rider: RiderState,
+  bodyRange: number,
+  ridingRange: number
+): boolean => {
   if (!wanted(rider)) {
     return false;
   }
   if (isDown(rider)) {
     const ahead = bodyAhead(cop, rider);
-    return ahead > -BUST_REACH && ahead < BODY_RANGE;
+    return ahead > -BUST_REACH && ahead < bodyRange;
   }
-  return rider.mode === "riding" && Math.abs(rider.s - cop.s) < LOSE_RANGE;
+  return rider.mode === "riding" && Math.abs(rider.s - cop.s) < ridingRange;
+};
+
+const stillChasing = (cop: RiderState, rider: RiderState): boolean =>
+  inReach(cop, rider, BODY_RANGE, LOSE_RANGE);
+
+const offenderOf = (
+  state: RaceState,
+  cop: RiderState
+): RiderState | undefined => {
+  const rider = riderOf(state.riders, cop.witnessed);
+  return rider &&
+    inReach(cop, rider, OFFENDER_RANGE, OFFENDER_RANGE) &&
+    (onBeat(state, cop) || isDown(rider))
+    ? rider
+    : undefined;
+};
+
+export const reportOffence = (state: RaceState, rider: RiderState): void => {
+  if (!wanted(rider)) {
+    return;
+  }
+  for (const cop of state.riders) {
+    if (
+      cop.profile.role === "police" &&
+      cop.mode === "riding" &&
+      onBeat(state, cop) &&
+      Math.abs(cop.s - rider.s) < WITNESS_RANGE
+    ) {
+      cop.witnessed ??= rider.id;
+    }
+  }
+};
+
+export const meetLights = (
+  state: RaceState,
+  track: Track,
+  rider: RiderState,
+  fromS: number
+): void => {
+  if (rider.mode !== "riding") {
+    return;
+  }
+  for (const crossing of track.crossings) {
+    const line = crossing.s - crossing.stopGap;
+    if (
+      fromS < line &&
+      rider.s >= line &&
+      isSignalled(crossing) &&
+      mainLightOf(signalPhaseAt(crossing, state.tick)) === "red"
+    ) {
+      reportOffence(state, rider);
+    }
+  }
 };
 
 const pickTarget = (
@@ -89,7 +150,9 @@ const updateChase = (state: RaceState, cop: RiderState) => {
     cop.chase = null;
     return;
   }
-  cop.parked = stillParked(state, cop);
+  const offender = offenderOf(state, cop);
+  cop.witnessed = offender?.id ?? null;
+  cop.parked = offender === undefined && stillParked(state, cop);
   if (cop.parked) {
     return;
   }
@@ -99,6 +162,7 @@ const updateChase = (state: RaceState, cop: RiderState) => {
   if (next && isDown(next)) {
     quarry = next;
   }
+  quarry = offender ?? quarry;
   if (!(onBeat(state, cop) || (quarry && isDown(quarry)))) {
     quarry = undefined;
   }

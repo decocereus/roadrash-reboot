@@ -42,6 +42,7 @@ const controlAt = (tick: number, seat: number): Control => {
     brake: 0,
     kick: false,
     punch: tick % PUNCH_EVERY_TICKS === 0,
+    remount: tick % PUNCH_EVERY_TICKS === 0,
     steer: phase < STEER_PERIOD_TICKS ? 0.3 : -0.3,
     throttle: 1,
   });

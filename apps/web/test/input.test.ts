@@ -27,6 +27,7 @@ interface Pressed {
   readonly brake?: number;
   readonly kick?: boolean;
   readonly punch?: boolean;
+  readonly remount?: boolean;
   readonly throttle?: number;
 }
 
@@ -35,7 +36,7 @@ const button = (value: number) => ({ pressed: value > 0.5, value });
 const pad = (axis: number | null, pressed: Pressed, connected = true): Pad => ({
   axes: axis === null ? [] : [axis],
   buttons: [
-    button(0),
+    button(pressed.remount === true ? 1 : 0),
     button(pressed.kick === true ? 1 : 0),
     button(pressed.punch === true ? 1 : 0),
     button(0),
@@ -97,6 +98,35 @@ describe("keyboard controls", () => {
     expect(readOnce(controls)).toMatchObject({ kick: true, punch: false });
   });
 
+  it("E and the pad's first face button ask to get back on the bike", () => {
+    const { controls, keyboard } = setUp();
+    expect(readOnce(controls).remount).toBeFalsy();
+    keyboard.press("KeyE");
+    expect(readOnce(controls).remount).toBeTruthy();
+    keyboard.release("KeyE");
+    expect(readOnce(controls).remount).toBeFalsy();
+    keyboard.pads.push(pad(0, { remount: true }));
+    expect(readOnce(controls).remount).toBeTruthy();
+  });
+
+  it("a key pressed under Cmd never sticks when its release is lost, as with Cmd+Shift+4 on a Mac", () => {
+    const { controls, keyboard } = setUp();
+    keyboard.press("MetaLeft");
+    keyboard.press("ShiftLeft");
+    expect(readOnce(controls).kick).toBeFalsy();
+    keyboard.release("MetaLeft");
+    expect(readOnce(controls).kick).toBeFalsy();
+  });
+
+  it("releasing Cmd lets go of a key held since before Cmd, whose release Cmd may have swallowed", () => {
+    const { controls, keyboard } = setUp();
+    keyboard.press("ShiftLeft");
+    keyboard.press("MetaLeft");
+    expect(readOnce(controls).kick).toBeTruthy();
+    keyboard.release("MetaLeft");
+    expect(readOnce(controls).kick).toBeFalsy();
+  });
+
   it("losing focus lets go of every key, and steering eases back", () => {
     const { controls, keyboard } = setUp();
     keyboard.press("ArrowUp");
@@ -134,6 +164,7 @@ describe("gamepad controls", () => {
       brake: 0.3,
       kick: false,
       punch: true,
+      remount: false,
       steer: 0.5,
       throttle: 0.8,
     });

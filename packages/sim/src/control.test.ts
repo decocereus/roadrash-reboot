@@ -57,6 +57,7 @@ const weaving = (tick: number): RiderInput => ({
   brake: tick % 300 > 240 ? 0.7 : 0,
   kick: tick % 170 === 0,
   punch: tick % 110 < 4,
+  remount: false,
   steer: ((tick % 120) - 60) / 75,
   throttle: tick % 300 > 240 ? 0 : 0.9,
 });
@@ -83,6 +84,7 @@ describe("a rider's controls", () => {
         brake: 0,
         kick: true,
         punch: true,
+        remount: false,
         steer: -0.001,
         throttle: 0.5,
       })
@@ -90,6 +92,7 @@ describe("a rider's controls", () => {
       brake: 0,
       kick: true,
       punch: true,
+      remount: false,
       steer: 0,
       throttle: 128 / 255,
     });
@@ -144,7 +147,7 @@ describe("a rider's controls", () => {
     expect(wired).toStrictEqual(direct);
   });
 
-  it("four bytes with a steer byte of -128 or a button bit past punch and kick are not a control", () => {
+  it("four bytes with a steer byte of -128 or a button bit past punch, kick and remount are not a control", () => {
     const wire = new DataView(new ArrayBuffer(CONTROL_BYTES));
     wire.setUint8(STEER_BYTE, 128);
     expect(readControl(wire, 0)).toBeUndefined();
@@ -152,11 +155,17 @@ describe("a rider's controls", () => {
     expect(readControl(wire, 0)).toBe(
       controlOf({ ...neutralInput, steer: -1 })
     );
-    wire.setUint8(BUTTONS_BYTE, 4);
+    wire.setUint8(BUTTONS_BYTE, 8);
     expect(readControl(wire, 0)).toBeUndefined();
-    wire.setUint8(BUTTONS_BYTE, 3);
+    wire.setUint8(BUTTONS_BYTE, 7);
     expect(readControl(wire, 0)).toBe(
-      controlOf({ ...neutralInput, kick: true, punch: true, steer: -1 })
+      controlOf({
+        ...neutralInput,
+        kick: true,
+        punch: true,
+        remount: true,
+        steer: -1,
+      })
     );
   });
 });

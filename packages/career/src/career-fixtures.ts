@@ -202,7 +202,11 @@ export const getArrested = (
   cop.x = road.roadHalfWidth + 1.1;
 };
 
-export const idle: RiderInput = { ...neutralInput, throttle: 0.5 };
+export const idle: RiderInput = {
+  ...neutralInput,
+  remount: true,
+  throttle: 0.5,
+};
 
 export const knockDown = (
   race: Entered,

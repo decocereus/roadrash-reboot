@@ -53,6 +53,7 @@ export const throwRider = (
   rider.weaponAtThrow = rider.weapon;
   disarm(rider);
   rider.chase = null;
+  rider.witnessed = null;
   rider.parked = false;
   rider.attack = "none";
   rider.attackTicks = 0;
@@ -64,7 +65,7 @@ export const throwRider = (
   rider.staleThrottle = true;
   rider.staleBrake = true;
   rider.staleSteer = true;
-  rider.idleTicks = 0;
+  rider.runningToBike = false;
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air + 0.9;
