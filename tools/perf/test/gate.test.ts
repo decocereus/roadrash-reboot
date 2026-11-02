@@ -44,13 +44,13 @@ describe("pack-riding workload validation", () => {
   it("rejects a tick with fewer rivals ahead than the pinned band", () => {
     const rows = {
       ...captured,
-      ahead: changedAt(captured.ahead, middle, 9),
+      ahead: changedAt(captured.ahead, middle, 5),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "9",
-      expected: "10..13 rivals",
+      actual: "5",
+      expected: "6..14 rivals",
       field: "ahead",
-      tick: 2107 + middle,
+      tick: 3017 + middle,
     });
   });
 
@@ -63,7 +63,7 @@ describe("pack-riding workload validation", () => {
       actual: "thrown",
       expected: "riding",
       field: "mode",
-      tick: 2107 + middle,
+      tick: 3017 + middle,
     });
   });
 
@@ -75,21 +75,21 @@ describe("pack-riding workload validation", () => {
       ticks: without(captured.ticks, middle),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: String(2107 + middle + 1),
-      expected: String(2107 + middle),
+      actual: String(3017 + middle + 1),
+      expected: String(3017 + middle),
       field: "tick",
-      tick: 2107 + middle,
+      tick: 3017 + middle,
     });
   });
 
   it("rejects a thinner window that stays inside the band", () => {
-    const at = captured.ahead.indexOf(13);
-    const rows = { ...captured, ahead: changedAt(captured.ahead, at, 12) };
+    const at = captured.ahead.indexOf(14);
+    const rows = { ...captured, ahead: changedAt(captured.ahead, at, 13) };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "7369",
-      expected: "7370",
+      actual: "6326",
+      expected: "6327",
       field: "total",
-      tick: 2707,
+      tick: 3617,
     });
   });
 });
