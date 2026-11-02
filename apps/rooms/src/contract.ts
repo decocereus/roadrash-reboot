@@ -18,6 +18,7 @@ const SeatTally = Schema.Struct({
   accepted: Schema.Number,
   ahead: Schema.Number,
   late: Schema.Number,
+  missed: Schema.Number,
   rider: Schema.Number,
 });
 

@@ -20,7 +20,7 @@ const POLL_MS = 50;
 const OPEN_TIMEOUT_MS = 15_000;
 const START_DELAY_SECONDS = 3;
 const LOWEST_TICK_SHARE = 0.97;
-const MOST_LATE_SHARE = 0.02;
+const MOST_MISSED_SHARE = 0.02;
 
 class RoomRaceFailed extends Data.TaggedError("RoomRaceFailed")<{
   readonly message: string;
@@ -88,16 +88,13 @@ const problemsOf = (
     return problems;
   });
 
-const lateProblems = (
-  seats: readonly {
-    readonly accepted: number;
-    readonly late: number;
-    readonly rider: number;
-  }[]
+const missedProblems = (
+  tick: number,
+  seats: readonly { readonly missed: number; readonly rider: number }[]
 ): readonly string[] =>
-  seats.flatMap(({ accepted, late, rider }) =>
-    late > (accepted + late) * MOST_LATE_SHARE
-      ? [`Rider ${rider} had ${late} late controls and ${accepted} accepted.`]
+  seats.flatMap(({ missed, rider }) =>
+    missed > tick * MOST_MISSED_SHARE
+      ? [`Rider ${rider} rode ${missed} of ${tick} ticks with no control.`]
       : []
   );
 
@@ -218,7 +215,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   }
   const problems = [
     ...problemsOf(drop ? reports.slice(0, -1) : reports, seconds),
-    ...lateProblems(status.seats),
+    ...missedProblems(status.tick, status.seats),
     ...contractProblems({
       badPath: badPath.status,
       idle: idle.phase,
