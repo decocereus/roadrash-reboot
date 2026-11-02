@@ -1024,6 +1024,102 @@
       "side": "B",
       "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
       "value": 1274.3174708818635
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 0.15344642987674195
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 0.15457156222001142
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 0.9820293232035638
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 76803.2612312812
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 63655.3078202995
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 986.5750415973378
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 0.23042083189401363
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 0.23150504754964596
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 1.4535811247957078
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 66536.47920133111
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 120548.68552412646
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "value": 1287.079534109817
     }
   ],
   "revisions": {
@@ -1363,6 +1459,23 @@
       "sides": {
         "A": "d2d301881596f349dcbc16d8732c5059e3a16034",
         "B": "d2d301881596f349dcbc16d8732c5059e3a16034"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "harness": "the room child of tools/perf/room.ts, three runs per scenario",
+        "platform": "darwin",
+        "roomRun": "yes",
+        "runner": "this Mac, an Apple M4 Pro, measured at load average 4 to 6 after two runs under load were thrown out",
+        "why": "the first run that measures the race room"
+      },
+      "id": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
+      "lanes": ["node"],
+      "sides": {
+        "A": "595cbf72d27d75f5e214dc8acf3d8f0a64ff2490",
+        "B": "595cbf72d27d75f5e214dc8acf3d8f0a64ff2490"
       }
     }
   ],
