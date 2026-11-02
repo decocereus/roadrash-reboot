@@ -11,7 +11,6 @@ import {
   player,
   rivalNamed,
   straight,
-  towardTheBike,
 } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { TICK_RATE } from "./state.ts";
@@ -119,12 +118,14 @@ describe("knocked down on foot", () => {
 });
 
 const awayFromTheBike = (rider: RiderState): RiderInput => {
-  const back = towardTheBike(rider, neutralInput);
+  const gapS = rider.s - rider.bodyS;
+  const gapX = rider.x - rider.bodyX;
+  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
   return {
-    ...back,
-    brake: back.throttle,
-    steer: -back.steer,
-    throttle: back.brake,
+    ...neutralInput,
+    brake: Math.max(0, gapS / distance),
+    steer: -gapX / distance,
+    throttle: Math.max(0, -gapS / distance),
   };
 };
 
@@ -184,13 +185,27 @@ const onFoot = (
   };
 };
 
+const towardIt = (rider: RiderState): RiderInput => {
+  const gapS = rider.s - rider.bodyS;
+  const gapX = rider.x - rider.bodyX;
+  const distance = Math.max(1e-6, Math.hypot(gapS, gapX));
+  return {
+    ...neutralInput,
+    brake: Math.max(0, -gapS / distance),
+    steer: gapX / distance,
+    throttle: Math.max(0, gapS / distance),
+  };
+};
+
 describe("on foot", () => {
-  it("a rider on their feet who holds the controls toward the bike runs to it and remounts, and the bike has not moved", () => {
+  it("a rider who presses E once runs to the bike by themselves and climbs on, and the bike has not moved", () => {
     const { me, state } = knockedOffAndRunning();
     const bike = { s: me.s, x: me.x };
-    const run = onFoot(state, me, 6, (rider) =>
-      towardTheBike(rider, neutralInput)
-    );
+    let presses = 1;
+    const run = onFoot(state, me, 6, () => {
+      presses -= 1;
+      return { ...neutralInput, remount: presses === 0 };
+    });
     expect(run.gapAtStart).toBeGreaterThan(2);
     expect(run.remounted).toBeTruthy();
     expect(me.mode).toBe("riding");
@@ -207,14 +222,78 @@ describe("on foot", () => {
     expect(run.moved).toBeLessThan(3 * 7);
   });
 
-  it("a rider who touches nothing stands where they got up for four seconds, then walks back to the bike by themselves", () => {
+  it("a rider who touches nothing stands where they got up and stays there", () => {
     const { me, state } = knockedOffAndRunning();
-    const waiting = onFoot(state, me, 3.5, () => neutralInput);
+    const waiting = onFoot(state, me, 8, () => neutralInput);
     expect(waiting.moved).toBe(0);
     expect(waiting.remounted).toBeFalsy();
     expect(me.mode).toBe("running");
-    const walking = onFoot(state, me, 6, () => neutralInput);
-    expect(walking.remounted).toBeTruthy();
+  });
+
+  it("a rider steered onto the bike without E walks through it and does not get on", () => {
+    const { me, state } = knockedOffAndRunning();
+    let closest = Number.POSITIVE_INFINITY;
+    let remounted = false;
+    for (let tick = 0; tick < 6 * TICK_RATE; tick += 1) {
+      remounted ||= onFoot(state, me, 1 / TICK_RATE, towardIt).remounted;
+      closest = Math.min(closest, Math.hypot(me.s - me.bodyS, me.x - me.bodyX));
+    }
+    expect(closest).toBeLessThan(0.7);
+    expect(remounted).toBeFalsy();
+    expect(me.mode).toBe("running");
+  });
+
+  it("E pressed during the fall still takes the rider to the bike, and no key steers them off the way", () => {
+    const { me, state } = thrownWhileHolding({
+      ...neutralInput,
+      remount: true,
+    });
+    expect(me.runningToBike).toBeTruthy();
+    const against = { ...awayFromTheBike(me), kick: false };
+    const run = onFoot(state, me, 8, () => against);
+    expect(run.remounted).toBeTruthy();
+    expect(me.mode).toBe("riding");
+    expect(me.runningToBike).toBeFalsy();
+  });
+
+  it("the run still costs its time at seven metres a second, and the climb takes half a second more", () => {
+    const { me, state } = knockedOffAndRunning();
+    const metres = Math.hypot(me.s - me.bodyS, me.x - me.bodyX);
+    let ticks = 0;
+    while (me.mode !== "riding" && ticks < 20 * TICK_RATE) {
+      onFoot(state, me, 1 / TICK_RATE, () => ({
+        ...neutralInput,
+        remount: true,
+      }));
+      ticks += 1;
+    }
+    expect(me.mode).toBe("riding");
+    expect(ticks / TICK_RATE).toBeGreaterThan((metres - 0.7) / 7 + 0.5);
+  });
+
+  it("a rider running to the bike can still be hit by traffic, and carries on to the bike without pressing E again", () => {
+    const { me, state } = knockedOffAndRunning();
+    onFoot(state, me, 1 / TICK_RATE, () => ({
+      ...neutralInput,
+      remount: true,
+    }));
+    state.cars.push({
+      cruiseSpeed: 20,
+      halfLength: 2.2,
+      halfWidth: 0.92,
+      height: 1.45,
+      paint: 0,
+      s: me.bodyS - 3,
+      speed: 20,
+      x: me.bodyX,
+    });
+    const hit = onFoot(state, me, 0.5, () => neutralInput);
+    expect(hit.events).toContainEqual(
+      expect.objectContaining({ kind: "knockedDown", rider: me.id })
+    );
+    state.cars.pop();
+    const run = onFoot(state, me, 10, () => neutralInput);
+    expect(run.remounted).toBeTruthy();
     expect(me.mode).toBe("riding");
   });
 

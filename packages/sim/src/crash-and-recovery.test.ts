@@ -102,7 +102,14 @@ describe("crashing", () => {
     const events = hold(
       state,
       track,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 0 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 0,
+      },
       1.5
     );
     expect(events.map((event) => event.kind)).toContain("crash");
@@ -112,7 +119,14 @@ describe("crashing", () => {
     const later = holdAndRunBack(
       state,
       track,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 0 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 0,
+      },
       14
     );
     expect(later.map((event) => event.kind)).toContain("remount");
@@ -143,7 +157,14 @@ describe("crashing", () => {
     const events = hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 1, throttle: 1 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 1,
+        throttle: 1,
+      },
       6
     );
     expect(events.map((event) => event.kind)).toContain("crash");

@@ -39,7 +39,14 @@ const brakeIntoBend = (brake: number) => {
   const rider = player(state);
   rider.s = 1520;
   rider.speed = 44;
-  const input = { brake, kick: false, punch: false, steer: -1, throttle: 0 };
+  const input = {
+    brake,
+    kick: false,
+    punch: false,
+    remount: false,
+    steer: -1,
+    throttle: 0,
+  };
   for (let tick = 0; tick < 6 * TICK_RATE && rider.speed > 30; tick += 1) {
     stepRace(state, quietTrack, frameOf(state, [PLAYER_RIDER, input]));
   }
@@ -55,7 +62,7 @@ const brakeAcrossBend = (brake: number): number => {
   hold(
     state,
     quietTrack,
-    { brake, kick: false, punch: false, steer: 1, throttle: 0 },
+    { brake, kick: false, punch: false, remount: false, steer: 1, throttle: 0 },
     0.4
   );
   return rider.speed;
@@ -68,6 +75,7 @@ describe("riding", () => {
       brake: 0,
       kick: false,
       punch: false,
+      remount: false,
       steer: 0,
       throttle: 1,
     };
@@ -148,7 +156,14 @@ describe("riding", () => {
     hold(
       state,
       flat,
-      { brake: 1, kick: false, punch: false, steer: 0, throttle: 0 },
+      {
+        brake: 1,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 0,
+      },
       8
     );
     expect(rider.speed).toBe(0);
@@ -165,7 +180,14 @@ describe("riding", () => {
     hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 0.6 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 0.6,
+      },
       2.5
     );
     expect(Math.abs(rider.x)).toBeLessThan(0.5);
@@ -180,7 +202,14 @@ describe("riding", () => {
     hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 1 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 1,
+      },
       2.5
     );
     expect(rider.x).toBeLessThan(-1.5);
@@ -250,7 +279,14 @@ describe("riding", () => {
     const events = hold(
       flatOut,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: -1, throttle: 1 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: -1,
+        throttle: 1,
+      },
       5
     );
     expect(
@@ -265,7 +301,14 @@ describe("riding", () => {
     hold(
       sane,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: -0.45, throttle: 0.3 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: -0.45,
+        throttle: 0.3,
+      },
       3
     );
     expect(steady.mode).toBe("riding");
@@ -288,7 +331,14 @@ describe("riding", () => {
     const events = hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 1 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 1,
+      },
       5
     );
     const flights = events.filter(
@@ -306,7 +356,14 @@ describe("riding", () => {
     const events = hold(
       state,
       quietTrack,
-      { brake: 0, kick: false, punch: false, steer: 0, throttle: 0.2 },
+      {
+        brake: 0,
+        kick: false,
+        punch: false,
+        remount: false,
+        steer: 0,
+        throttle: 0.2,
+      },
       5
     );
     expect(events.some((event) => event.kind === "land")).toBeFalsy();

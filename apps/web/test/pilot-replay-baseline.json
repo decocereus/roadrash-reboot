@@ -1,99 +1,99 @@
 {
   "fixed": [
     {
-      "final": "a64d38d9ecff250fb1765842a36da0b7",
-      "full": "b45c2f578f3cddfd8cc4ac89593c740d",
+      "final": "0718af97db312ca959dadc624305a04b",
+      "full": "30f49b7ba10431696c858391fca3f559",
       "id": "ridge-road/level5/seed1",
       "result": null,
       "ticks": 7200,
-      "window": "fc93a42e892945cae822ece471dfec1b"
+      "window": "0173182cae2d5ddb548398778185e0a6"
     },
     {
-      "final": "72948cc7aad7dbbc372b08ea98a428b2",
-      "full": "0f00cdbc181b536fb6a0e8b25b88f8bb",
+      "final": "efc9845a5179009a339f08f1c8d63e2b",
+      "full": "5f8ed759b8bc8ffb2b950e3169cf3d38",
       "id": "ridge-road/level5/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "2c3b4566dc095d6c26e28814c89c1d1e"
+      "window": "d45ebc43ce63acbecb9a43b2c2c66911"
     },
     {
-      "final": "6eec26362c95e6dad882ce4921a7244a",
-      "full": "c73e178afb9bf30362fa0341b476b915",
+      "final": "e7fea9eb26c67630c28a5ebcdfe4cf50",
+      "full": "22eaa70dbd9559f1a5b4d1289c0b3bfd",
       "id": "ridge-road/level5/seed9",
       "result": "busted",
       "ticks": 7200,
-      "window": "6127d4827bc32ac18f8bccbded200e4d"
+      "window": "5d717732767b99f1b065e307707f02f3"
     },
     {
-      "final": "1e026e9429e30ccb7c705a9eef155a4a",
-      "full": "0da48041e586fc7b00250e81bb1320ad",
+      "final": "9208d8b44fc3fc78c87aa571680a0ca4",
+      "full": "9cd8192f0bb48af5b73ab1a74f4d8de8",
       "id": "ridge-road/level5/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "0a23bb56cac04f1793c835af82276f2d"
+      "window": "ca7832bfabce427b2b6b914db7db5390"
     },
     {
-      "final": "3a0cd81cb779c2fc00e7288a2c2a8dfc",
-      "full": "fb3f4f9ced87329ffa1fe7f814c5487a",
+      "final": "6180e2a72cb6c1c765d646e024279fdc",
+      "full": "4b57be66dbfb36514e4f13c7e308bd9a",
       "id": "slag-row/level5/seed1",
       "result": null,
       "ticks": 7200,
-      "window": "19d0727bdf213748d6b070794b0add93"
+      "window": "91a5a042b7dbede7390f65fc5f24bbae"
     },
     {
-      "final": "33b6c2d98d6ed1da4f3b1d4b630b9e72",
-      "full": "2b37a021272b31ffd7a8ca13bed43173",
+      "final": "2f12cb8ed8e95d65a01e247cb8812b83",
+      "full": "f1cdcfb0b5ff5ca519a9cd68f9c41973",
       "id": "slag-row/level5/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "1e148b6b9f38013e57a84ea0c1fb3ef5"
+      "window": "c8aab0832fabcb178af84f15a9472551"
     },
     {
-      "final": "11d6edd2574a1248ffbd556080be0ba3",
-      "full": "c52ceb538e04287926c0a9cc139fd39a",
+      "final": "e7d4453f2e50579329f5f15262ed2376",
+      "full": "1f70480ac58c70b9887c011c99c0ddc2",
       "id": "slag-row/level5/seed9",
       "result": null,
       "ticks": 7200,
-      "window": "0db30880b19fb7e065116da44a61aaa4"
+      "window": "dd9212a2cea60903d59a8e1efece009a"
     },
     {
-      "final": "9f09e90c407b91b56522009d16370c0a",
-      "full": "51c3248e37f0eef1d2892ca30e8ca37e",
+      "final": "b233473089476a5109f7c55c652e8627",
+      "full": "cc6b0c6c031f11ad79a8d58708cf0137",
       "id": "slag-row/level5/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "a9f1066d8efaf0d38259b3ca48ac7965"
+      "window": "98091c34aff10570fe0e99481361a4af"
     },
     {
-      "final": "c2e481797750eef1254dd2cbb22056d6",
-      "full": "70d72a555255c1b750fd4b076504d581",
+      "final": "18984397914ee569bcf8fa0171b469bb",
+      "full": "ccb803819427dc280293ddac0439adab",
       "id": "breakwater-run/level5/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "557eeddb7ca61f938efaa6a335d28fd7"
+      "window": "0c9e260a342b45ee2ebb8459f14a69f7"
     },
     {
-      "final": "29602d2659c99575789475930a72a879",
-      "full": "e0450c8cc73200fa54d9499a39fd958c",
+      "final": "8021187959a70663d48003e41237ca44",
+      "full": "7a97a9b1137c0ac5b240dd5b0361b9ee",
       "id": "stress/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "69e266b42452808cd872f8030c845ed8"
+      "window": "c5ddf71d7d8b59f56d44cbdfdddf8ae3"
     },
     {
-      "final": "0d58442355310c26143a3d66b367e0e3",
-      "full": "761fdbb9da3dacd4bea17e491d13a996",
+      "final": "6cfaa3f1e248b5cdd048eb3649978538",
+      "full": "1497ef8b9588a4f677513b12b546ee8a",
       "id": "handover/slag-row/level5/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "b217486d12f0cda22618ac232257cf2f"
+      "window": "a55d3e992ec47a109dddbde87ea3dfd8"
     }
   ],
   "provenance": {
     "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["f2b79fb"],
-    "recordedWith": "snapshot format 4 at the D8 head, with the pedestrians' moving fields and each rider's bumpedWalker and witnessed in the race schema, and the pedestrians' immutable fields and the track's walkSites in the setup digest, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed. Every hash moved because each snapshot carries a new format word, a pedestrian list and a rider member. With the format word at 2, those members out of the codec and the digest, and createPedestrians building nobody, this tree reproduces all eleven rows recorded for D2b. With pedestrians back, the Ridge Road rows end on the same tick with the same result because Stonepeak has no footfall, and the stress row does too because benchSetup empties its walk sites. The Slag Row, handover and Breakwater Run rows end differently, and only those, because their regions are city scenery and a race there now has people crossing.",
+    "recordedAt": ["c1c5e63"],
+    "recordedWith": "snapshot format 5 at the D8 head, with the pedestrians' moving fields and each rider's bumpedWalker, remount and witnessed in the race schema, and the pedestrians' immutable fields and the track's walkSites in the setup digest, run through apps/web/test/pilot-replay.ts on darwin-arm64 with Node v26.13.0. Two sets are recorded. solo rides every case to its own outcome, so its ticks and result record where each race ended and full covers every tick of it. fixed keeps the 7,200-tick ride the baseline measured before the terminal rule existed. Every hash moved because each snapshot carries a new format word, a pedestrian list and a rider member. With the format word at 2, those members out of the codec and the digest, and createPedestrians building nobody, this tree reproduces all eleven rows recorded for D2b. With pedestrians back, the Ridge Road rows end on the same tick with the same result because Stonepeak has no footfall, and the stress row does too because benchSetup empties its walk sites. The Slag Row, handover and Breakwater Run rows end differently, and only those, because their regions are city scenery and a race there now has people crossing.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -101,92 +101,92 @@
   },
   "solo": [
     {
-      "final": "d4eca1f3a99859edd34e99e596973865",
-      "full": "d690235ce05318c07ee3cae44bcb6f03",
+      "final": "9ad9e137a10ff7c93f2ffd001a088158",
+      "full": "0f4d93b41f530c0843285ad539885525",
       "id": "ridge-road/level5/seed1",
       "result": "finished",
       "ticks": 19948,
-      "window": "fc93a42e892945cae822ece471dfec1b"
+      "window": "0173182cae2d5ddb548398778185e0a6"
     },
     {
-      "final": "81e1b80f5c0fd53a9ee904eb3517ffbd",
-      "full": "4ea9b29f6fe9f419c4871a4104b1fa90",
+      "final": "b1e48976a1383d1c80caf675a10160d0",
+      "full": "9eb638a7a9f3a0d396223de438521e0f",
       "id": "ridge-road/level5/seed5",
       "result": "finished",
       "ticks": 26145,
-      "window": "2c3b4566dc095d6c26e28814c89c1d1e"
+      "window": "d45ebc43ce63acbecb9a43b2c2c66911"
     },
     {
-      "final": "7e651a24eaae507ab6df80053189191a",
-      "full": "b26fc40bdba91ebb01e656ddc5a198b6",
+      "final": "0dc5293a752bb22367d8fb49dc4fa9ca",
+      "full": "b848a1eeda1769105e1c29acb6bac917",
       "id": "ridge-road/level5/seed9",
       "result": "busted",
       "ticks": 5460,
-      "window": "6127d4827bc32ac18f8bccbded200e4d"
+      "window": "5d717732767b99f1b065e307707f02f3"
     },
     {
-      "final": "6c59dbc2ae5d9c99ebba1e5d06e882af",
-      "full": "94c3b81326cd2587c245e3360a59280d",
+      "final": "df9b70159b7687925775f7fcebe7c72c",
+      "full": "5796bce8eac0f467cfbdb3e4d2d513d6",
       "id": "ridge-road/level5/seed31",
       "result": "finished",
       "ticks": 22894,
-      "window": "0a23bb56cac04f1793c835af82276f2d"
+      "window": "ca7832bfabce427b2b6b914db7db5390"
     },
     {
-      "final": "dc448126616f222ae8ed1c51838ee84c",
-      "full": "e67f1be0ecaf2873c3f7c813e780053b",
+      "final": "c599d7f3d87ebdd5643c50c18cda0d23",
+      "full": "553bace794d0c747da46db9c5ad41014",
       "id": "slag-row/level5/seed1",
       "result": "finished",
       "ticks": 19167,
-      "window": "19d0727bdf213748d6b070794b0add93"
+      "window": "91a5a042b7dbede7390f65fc5f24bbae"
     },
     {
-      "final": "b6eff2b527b295edd1567b19515bac55",
-      "full": "be75fba7d4fec4a5d84e8b63fb5a389a",
+      "final": "6b633c2f858938f29b8f0e202bf12a47",
+      "full": "9d1aeba033ae0c4168d182aafe5ac201",
       "id": "slag-row/level5/seed5",
       "result": "finished",
       "ticks": 20779,
-      "window": "1e148b6b9f38013e57a84ea0c1fb3ef5"
+      "window": "c8aab0832fabcb178af84f15a9472551"
     },
     {
-      "final": "23c94e7275697febb3dc1fec1eb6d64e",
-      "full": "d3be0373ed3a4c44217f64d59512140b",
+      "final": "e4dcde370b8760f7209066858eaf2437",
+      "full": "bddaf8caa58c4d372ef3d880d7686ec6",
       "id": "slag-row/level5/seed9",
       "result": "finished",
       "ticks": 19931,
-      "window": "0db30880b19fb7e065116da44a61aaa4"
+      "window": "dd9212a2cea60903d59a8e1efece009a"
     },
     {
-      "final": "a79511cdbf8ae771fa1c797440652d84",
-      "full": "04cc16527480502732ba2a98c1079943",
+      "final": "3ceb88a264efb5a293f9c1482479cc21",
+      "full": "d15902a850d806b7fa8c8c157192bb74",
       "id": "slag-row/level5/seed31",
       "result": "finished",
       "ticks": 19363,
-      "window": "a9f1066d8efaf0d38259b3ca48ac7965"
+      "window": "98091c34aff10570fe0e99481361a4af"
     },
     {
-      "final": "64b1faa5bf04bf7011997af0d1d3a054",
-      "full": "a96db1405fe296ddd114e27c8b9d4c3a",
+      "final": "1bad24f96f7af01d49ac01674b24f113",
+      "full": "7f8a5b91c6227066c7eb704bab82f6aa",
       "id": "breakwater-run/level5/seed8",
       "result": "finished",
       "ticks": 18711,
-      "window": "557eeddb7ca61f938efaa6a335d28fd7"
+      "window": "0c9e260a342b45ee2ebb8459f14a69f7"
     },
     {
-      "final": "c902e4e7bdfb8245f9c9771f03db0f29",
-      "full": "2d8688f478973575082c7832a014ac20",
+      "final": "2cdd3ed3e425e20c170c599f25dcf94a",
+      "full": "3a77b83a845c917bccfdb76ffe97d544",
       "id": "stress/seed8",
       "result": "busted",
       "ticks": 10128,
-      "window": "69e266b42452808cd872f8030c845ed8"
+      "window": "c5ddf71d7d8b59f56d44cbdfdddf8ae3"
     },
     {
-      "final": "2cddf3ed4f35a8993afe5e9763b1b5fe",
-      "full": "eb5e6697206934175f6337a35dede885",
+      "final": "a02d83c1896d3169337dc1ce0cba1692",
+      "full": "f5924839d284528685e0ebebda8a246b",
       "id": "handover/slag-row/level5/seed5",
       "result": "finished",
-      "ticks": 20667,
-      "window": "b217486d12f0cda22618ac232257cf2f"
+      "ticks": 20821,
+      "window": "a55d3e992ec47a109dddbde87ea3dfd8"
     }
   ]
 }

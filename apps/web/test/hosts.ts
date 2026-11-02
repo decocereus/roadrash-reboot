@@ -298,14 +298,19 @@ export interface Keyboard {
   readonly release: (code: string) => void;
 }
 
+const isCmd = (code: string): boolean =>
+  code === "MetaLeft" || code === "MetaRight";
+
 export const createKeyboard = (): Keyboard => {
   const presses: ((event: KeyEvent) => void)[] = [];
   const releases: ((event: KeyEvent) => void)[] = [];
   const blurs: (() => void)[] = [];
   const pads: (Pad | null)[] = [];
   const count = { prevented: 0 };
+  let cmdHeld = false;
   const eventOf = (code: string, repeat: boolean): KeyEvent => ({
     code,
+    metaKey: cmdHeld,
     preventDefault: () => {
       count.prevented += 1;
     },
@@ -334,12 +339,14 @@ export const createKeyboard = (): Keyboard => {
     listeners: () => presses.length + releases.length + blurs.length,
     pads,
     press: (code, repeat = false) => {
+      cmdHeld ||= isCmd(code);
       for (const press of presses) {
         press(eventOf(code, repeat));
       }
     },
     prevented: () => count.prevented,
     release: (code) => {
+      cmdHeld &&= !isCmd(code);
       for (const release of releases) {
         release(eventOf(code, false));
       }
