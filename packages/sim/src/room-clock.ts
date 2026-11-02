@@ -29,7 +29,7 @@ export const createRoomClock = (): RoomClock => {
     serverTick(now) +
     (rtt === NOT_MEASURED
       ? FIRST_LEAD_TICKS
-      : Math.ceil(rtt / 2 / TICK_MS) + LEAD_MARGIN_TICKS);
+      : Math.ceil(rtt / TICK_MS) + LEAD_MARGIN_TICKS);
   return {
     heardRtt: (rttMs) => {
       rtt = rttMs;

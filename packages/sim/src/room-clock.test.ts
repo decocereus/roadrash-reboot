@@ -5,6 +5,8 @@ import { TICK_SECONDS } from "./state.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 
+const roomTick = (atMs: number): number => Math.floor(atMs / TICK_MS);
+
 describe("the room clock", () => {
   it("waits through the countdown until the lead reaches the first tick", () => {
     const clock = createRoomClock();
@@ -14,12 +16,23 @@ describe("the room clock", () => {
     expect(clock.stepsDue(0, 3000)).toBe(4);
   });
 
-  it("leads the server by half the round trip and a margin", () => {
+  it("leads the tick it heard by the whole round trip and a margin", () => {
     const clock = createRoomClock();
     clock.heardTick(100, 1000);
     clock.heardRtt(100);
-    expect(clock.target(1000)).toBe(105);
+    expect(clock.target(1000)).toBe(108);
   });
+
+  it.each([0, 20, 100, 200])(
+    "lands a control before its tick over a %i ms round trip",
+    (rttMs) => {
+      const clock = createRoomClock();
+      const now = 5000;
+      clock.heardRtt(rttMs);
+      clock.heardTick(roomTick(now - rttMs / 2), now);
+      expect(clock.target(now)).toBeGreaterThan(roomTick(now + rttMs / 2));
+    }
+  );
 
   it("treats a measured round trip of zero as a measurement", () => {
     const clock = createRoomClock();

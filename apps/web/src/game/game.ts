@@ -419,6 +419,7 @@ const startGame = (
     if (frameOf() === playerFrame) {
       controls.read(TICK_SECONDS, playerInput);
       devRide?.steer(stage.race.view, stage.track, playerInput);
+      playerControls.clear();
       playerControls.set(stage.me, controlOf(playerInput));
     }
   };
@@ -523,11 +524,11 @@ const startGame = (
         continue;
       }
       drawRider(index, rider, view, blend, seconds);
-      if (index === 0) {
+      if (index === stage.me) {
         followPlayer(rider);
       }
     }
-    const [lead] = cast.views;
+    const lead = cast.views[stage.me];
     if (cast.bikes && lead) {
       cast.bikes.commit(lead.bike.position);
     }

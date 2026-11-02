@@ -542,7 +542,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     cast.bikes?.spin(index, rider.speed * seconds);
     settleSag(view, seconds);
     cast.bikes?.sag(index, view.sag);
-    if (index === 0 || withinReach(s)) {
+    if (index === stage.me || withinReach(s)) {
       cast.bikes?.show(index);
     }
     placeFigure(
@@ -556,7 +556,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       blend,
       seconds
     );
-    if (index === 0 || withinReach(seated ? s : bodyS)) {
+    if (index === stage.me || withinReach(seated ? s : bodyS)) {
       view.figure.animate(stance, seconds);
     } else {
       view.figure.rest();
