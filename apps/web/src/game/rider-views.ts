@@ -2,8 +2,13 @@ import { HIT_STUN_TICKS } from "@racer/sim/combat";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
-import { clamp, PLAYER_RIDER, riderOf, TICK_RATE } from "@racer/sim/state";
-import type { AttackKind, HazardEffect, RaceEvent } from "@racer/sim/state";
+import { clamp, riderOf, TICK_RATE } from "@racer/sim/state";
+import type {
+  AttackKind,
+  HazardEffect,
+  RaceEvent,
+  RiderId,
+} from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
 import { emptySupport, supportAt } from "@racer/track/features";
 import type { Support } from "@racer/track/features";
@@ -252,6 +257,7 @@ export const createCast = (shading: Shading): Cast => ({
 });
 
 interface CastStage {
+  readonly me: RiderId;
   readonly race: Pick<RaceRun, "view">;
   readonly track: Track;
   readonly world: World;
@@ -358,7 +364,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     if (!(view && rider)) {
       return;
     }
-    const near = event.rider === PLAYER_RIDER || withinReach(rider.s);
+    const near = event.rider === stage.me || withinReach(rider.s);
     if (event.kind === "land") {
       view.sagSpeed += Math.min(MOST_SAG_KICK, -event.impact * SAG_PER_IMPACT);
       if (near && event.airSeconds > PUFF_AIR_SECONDS) {
@@ -536,7 +542,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     cast.bikes?.spin(index, rider.speed * seconds);
     settleSag(view, seconds);
     cast.bikes?.sag(index, view.sag);
-    if (index === 0 || withinReach(s)) {
+    if (index === stage.me || withinReach(s)) {
       cast.bikes?.show(index);
     }
     placeFigure(
@@ -550,7 +556,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       blend,
       seconds
     );
-    if (index === 0 || withinReach(seated ? s : bodyS)) {
+    if (index === stage.me || withinReach(seated ? s : bodyS)) {
       view.figure.animate(stance, seconds);
     } else {
       view.figure.rest();

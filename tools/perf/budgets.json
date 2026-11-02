@@ -52,7 +52,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "f3487d17e3f19ac7893f630d3534e2769dc1736f7897b6f57b98e272e0c22bd9"
+    "summarySha256": "28e19fc7fb6ac5a44c26dc3d2ee6b236f0f1096172c75fcca811f89567150583"
   },
   "limits": [
     {
@@ -273,26 +273,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 837162,
-      "baseline": 820747,
+      "value": 855615,
+      "baseline": 838838,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.client.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1940962,
-      "baseline": 1902903,
+      "value": 1989883,
+      "baseline": 1950865,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.client.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
       "unit": "B"
     },
     {
@@ -393,26 +393,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 303209,
-      "baseline": 297263,
+      "value": 322572,
+      "baseline": 316247,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1165752,
-      "baseline": 1142894,
+      "value": 1235410,
+      "baseline": 1211186,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T11-02-03-011Z-f588127-f588127",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
       "unit": "B"
     },
     {

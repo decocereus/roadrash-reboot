@@ -1,6 +1,7 @@
 import type { CareerRaceSetup } from "@racer/career/field";
 import type { RaceOutcome } from "@racer/career/outcome";
 import type { RaceRules } from "@racer/career/rules";
+import type { RoomRun } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
 
 import type { PrepareOutcome } from "./preparation.ts";
@@ -14,6 +15,7 @@ export interface RacePlan {
   readonly bikeId: BikeId;
   readonly rules: RaceRules;
   readonly setup: CareerRaceSetup;
+  readonly room?: RoomRun;
 }
 
 export type Notice =

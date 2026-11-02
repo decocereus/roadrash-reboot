@@ -28,12 +28,14 @@ export default Alchemy.Stack(
     );
     const web = yield* Cloudflare.Website.Vite("Web", {
       dev: { port: webPort, strictPort: true },
-      env: { ART: art },
+      env: { ART: art, VITE_ROOMS_URL: rooms.url.as<string>() },
       memo: {
         include: [
           "**/*",
           "../../packages/*/src/**",
           "../../packages/*/package.json",
+          "../rooms/src/**",
+          "../rooms/package.json",
         ],
         lockfile: true,
       },

@@ -28,10 +28,10 @@ export const HASH_EVERY = 60;
 
 const NO_TICK = -1;
 
-export const roomSetup = (
-  setup: RaceSetup,
+export const roomSetup = <Setup extends RaceSetup>(
+  setup: Setup,
   humans: readonly RiderId[]
-): RaceSetup => {
+): Setup => {
   const roster = rosterOf(setup);
   const racers = new Set([roster.player, ...roster.rivals]);
   const seated = new Set(humans);
