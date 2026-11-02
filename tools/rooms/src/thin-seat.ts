@@ -27,7 +27,6 @@ const PING_EVERY_MS = 500;
 const GAP_BUCKETS = 2000;
 
 export interface LoadTally {
-  sent: number;
   heard: number;
   lost: number;
   refused: number;
@@ -40,7 +39,6 @@ export const createLoadTally = (): LoadTally => ({
   heard: 0,
   lost: 0,
   refused: 0,
-  sent: 0,
   worstRttMs: 0,
 });
 
@@ -103,14 +101,12 @@ export const openThinSeat = (
     sentThrough = last;
     const bytes = writeInput(input, first, batch);
     socket.send(new Uint8Array(input.buffer, 0, bytes));
-    tally.sent += 1;
   };
 
   const sendPing = (): void => {
     if (socket.readyState === WebSocket.OPEN) {
       writePing(ping, Math.floor(performance.now()));
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
-      tally.sent += 1;
     }
   };
 

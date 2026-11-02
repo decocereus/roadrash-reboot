@@ -25,6 +25,7 @@ const usage =
 
 const CLIENT_ENTRY = new URL("../load-clients.ts", import.meta.url).pathname;
 const START_DELAY_SECONDS = 3;
+const FULL_SEAT_HZ = 60;
 const LEAST_OPEN_MS = 2000;
 const OPEN_MS_PER_SEAT = 5;
 const LAST_SAMPLE_BEFORE_END_MS = 400;
@@ -79,8 +80,12 @@ const rideSecondsOf = (load: LoadOptions): number =>
 const planOf = (load: LoadOptions, rooms: number) => {
   const seats = rooms * load.seats;
   const ride = rideSecondsOf(load);
+  const full = Math.min(rooms, load.fullSeats);
   const incoming =
-    seats * (load.inputHz + PINGS_PER_SECOND) * (ride + START_DELAY_SECONDS);
+    ((seats - full) * load.inputHz +
+      full * FULL_SEAT_HZ +
+      seats * PINGS_PER_SECOND) *
+    (ride + START_DELAY_SECONDS);
   const requests = seats + rooms * STATUS_READS_PER_ROOM;
   return {
     connections: seats,
@@ -167,7 +172,7 @@ const runStep = Effect.fn("rooms.load.step")(function* runStep(
           runClient({
             endAt,
             inputEvery: Math.round(TICKS_PER_SECOND / load.inputHz),
-            mostSent: Math.floor(mostMessages / chunks.length),
+            mostSent: Math.floor((mostMessages * chunk.length) / seats.length),
             seats: chunk,
             startAt,
             url: load.url,

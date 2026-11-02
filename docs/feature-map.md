@@ -1337,6 +1337,7 @@ Source files:
 - `tools/rooms/src/machine.ts`
 - `tools/rooms/src/race.ts`
 - `tools/rooms/src/seat.ts`
+- `tools/rooms/src/send-budget.ts`
 - `tools/rooms/src/thin-seat.ts`
 
 Test files:
@@ -1351,3 +1352,5 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
+- `tools/rooms/test/load-report.test.ts`
+- `tools/rooms/test/send-budget.test.ts`

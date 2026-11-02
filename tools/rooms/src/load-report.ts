@@ -115,6 +115,9 @@ const machineProblems = (
   ...(facts.loadBefore > facts.mostLoad
     ? [`Load average was ${facts.loadBefore.toFixed(1)} at the start.`]
     : []),
+  ...(facts.loadAfter > facts.mostLoad
+    ? [`Load average was ${facts.loadAfter.toFixed(1)} at the end.`]
+    : []),
   ...(otherCores > MOST_OTHER_CORES
     ? [`Other processes used ${otherCores.toFixed(1)} cores.`]
     : []),
@@ -169,7 +172,7 @@ export const stepReport = (facts: StepFacts) => {
     facts.server
   );
   const full = clients.flatMap((client) => client.full);
-  const thinSeats = facts.rooms * facts.seats - full.length;
+  const capped = clients.some((client) => client.capped);
   const sent = sumOf(clients.map((client) => client.sent));
   const problems = [
     ...deadlineProblems({
@@ -182,9 +185,12 @@ export const stepReport = (facts: StepFacts) => {
     }),
     ...fullSeatProblems(clients),
   ];
-  const notCounted = machineProblems(facts, otherCores, clientLoopP99Ms);
+  const notCounted = [
+    ...machineProblems(facts, otherCores, clientLoopP99Ms),
+    ...(capped ? ["The message cap ended this step."] : []),
+  ];
   return {
-    capped: clients.some((client) => client.capped),
+    capped,
     catchUpShare: catchUps / Math.max(1, wakes),
     clientLoopP99Ms,
     counted: notCounted.length === 0,
@@ -196,7 +202,7 @@ export const stepReport = (facts: StepFacts) => {
     loadBefore: facts.loadBefore,
     messagesSent: sent,
     messagesSentPerSeatSecond:
-      sent / Math.max(1, thinSeats) / facts.rideSeconds,
+      sent / (facts.rooms * facts.seats) / facts.rideSeconds,
     missedShare,
     notCounted,
     otherCores,

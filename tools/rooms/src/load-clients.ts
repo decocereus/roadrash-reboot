@@ -8,6 +8,7 @@ import { decodeClientPlan, encodeClientResult } from "./load-plan.ts";
 import type { ClientPlan } from "./load-plan.ts";
 import { sleepUntil } from "./machine.ts";
 import { openSeat } from "./seat.ts";
+import { capWebSocketSends } from "./send-budget.ts";
 import { createLoadTally, openThinSeat } from "./thin-seat.ts";
 import type { LoadTally } from "./thin-seat.ts";
 
@@ -46,6 +47,7 @@ const seatAll = (plan: ClientPlan, tally: LoadTally) => {
 export const clientsMain = Effect.fn("rooms.load.clients")(
   function* clientsMain(planJson: string) {
     const plan = yield* decodeClientPlan(planJson);
+    const budget = capWebSocketSends(plan.mostSent);
     const tally = createLoadTally();
     const { full, riders } = seatAll(plan, tally);
     yield* sleepUntil(plan.startAt);
@@ -56,10 +58,8 @@ export const clientsMain = Effect.fn("rooms.load.clients")(
         rider.start();
       }
     }
-    let capped = false;
-    while (!capped && (yield* Clock.currentTimeMillis) < plan.endAt) {
+    while (!budget.capped() && (yield* Clock.currentTimeMillis) < plan.endAt) {
       yield* Effect.sleep(CHECK_CAP_EVERY_MS);
-      capped = tally.sent >= plan.mostSent;
     }
     loop.disable();
     const reports = full.map((seat) => seat.report());
@@ -68,7 +68,7 @@ export const clientsMain = Effect.fn("rooms.load.clients")(
     }
     yield* Console.log(
       encodeClientResult({
-        capped,
+        capped: budget.capped(),
         full: reports,
         gaps: gapsOf(tally),
         heard: tally.heard,
@@ -76,7 +76,7 @@ export const clientsMain = Effect.fn("rooms.load.clients")(
         loopP99Ms: loop.percentile(99) / NANOS_PER_MS,
         lost: tally.lost,
         refused: tally.refused,
-        sent: tally.sent,
+        sent: budget.spent(),
         worstRttMs: tally.worstRttMs,
       })
     );
