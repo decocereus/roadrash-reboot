@@ -8,6 +8,7 @@ import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
+import { RoomLobby } from "./room-lobby.tsx";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen } from "./screens/boot.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
@@ -230,6 +231,19 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         pick={flow.pick}
         ready={flow.ready}
         rules={rules}
+      />
+    );
+  }
+  if (view.screen === "room") {
+    return (
+      <RoomLobby
+        onBack={() => {
+          globalThis.location.assign("/");
+        }}
+        onPrepare={flow.prepare}
+        onStart={flow.start}
+        raceId={view.raceId}
+        ready={flow.ready}
       />
     );
   }

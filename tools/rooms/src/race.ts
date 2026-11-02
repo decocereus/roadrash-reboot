@@ -54,9 +54,9 @@ const waitFor = (test: () => boolean, what: string, timeoutMs: number) =>
     }
   });
 
-const refusalOf = (socketUrl: string) =>
+const refusalOf = (url: string, raceId: string) =>
   Effect.gen(function* refusal() {
-    const seat = openSeat(socketUrl);
+    const seat = openSeat(url, raceId);
     yield* waitFor(seat.over, "a refused seat to close", OPEN_TIMEOUT_MS);
     return seat.report().refused;
   });
@@ -156,8 +156,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   const plain = yield* http.get(`${url}/rooms/${raceId}/seat`);
   const badPath = yield* http.get(`${url}/rooms/NOT_A_ROOM/seat`);
 
-  const socketUrl = `${url.replace(/^http/u, "ws")}/rooms/${raceId}/seat`;
-  const seats = Array.from({ length: seatCount }, () => openSeat(socketUrl));
+  const seats = Array.from({ length: seatCount }, () => openSeat(url, raceId));
   yield* waitFor(
     () => seats.every((seat) => seat.opened()),
     "every seat to open",
@@ -168,7 +167,8 @@ export const main = Effect.fn("rooms.race")(function* main(
     "every seat to hear the full lobby",
     OPEN_TIMEOUT_MS
   );
-  const ninth = seatCount === MOST_SEATS ? yield* refusalOf(socketUrl) : "full";
+  const ninth =
+    seatCount === MOST_SEATS ? yield* refusalOf(url, raceId) : "full";
   yield* Effect.sleep(lobbySeconds * 1000);
   const [first] = seats;
   const last = seats.at(-1);
@@ -186,7 +186,7 @@ export const main = Effect.fn("rooms.race")(function* main(
     "every seat to hear the start",
     OPEN_TIMEOUT_MS
   );
-  const late = yield* refusalOf(socketUrl);
+  const late = yield* refusalOf(url, raceId);
   const other = yield* client.rooms.status({
     params: { raceId: makeRaceId(`other-${stamp}`) },
   });
