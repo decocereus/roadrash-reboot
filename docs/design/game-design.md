@@ -96,7 +96,7 @@ The measured field is **15 racers: the player and 14 rivals**, the original's fi
 - The pacing rule in section 9 keeps the field around the player. Without it fifteen riders string out and most of them are dots, which is why the field was eight for a while.
 - Multiplayer races hold up to eight players and AI rivals fill the other seven slots, so career and multiplayer use the same field size, roads, police counts, and balance.
 
-Field selection: the rivals whose home is the road's region always race there (three, or four on Slag Row). The rest are drawn from the remaining cast with the race seed.
+Field selection: the rivals whose home is the road's region always race there. That is three ordinary riders, or four on Slag Row, plus two celebrities on Slag Row, Ridge Road and Breakwater Run. The rest are drawn from the remaining ordinary cast with the race seed.
 
 Juno Kade is the one exception. She does not race at level 1 ("she doesn't race new meat"), so at level 1 no draw includes her, and Ridge Road's two home riders are Coach Dale Hutto and Ruth Ann Bixby, who stands in for Juno as the best rider left in the cast. She also keeps her own home road, Cinder Wash. From level 2 Juno takes her place back, Ridge Road's home riders are Juno and Coach, and the finale's field always includes her.
 
