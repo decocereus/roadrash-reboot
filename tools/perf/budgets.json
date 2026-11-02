@@ -60,7 +60,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "b8559801d6acb5dec1fc193fce21d41c32f230a42f8b4db03b4b30041c01adbf"
+    "summarySha256": "edacdb7ee418930c7e921ba799c17bb0b4511ddd4801b697a4bf51ca57572b69"
   },
   "limits": [
     {
@@ -305,50 +305,50 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 827470,
-      "baseline": 811245,
+      "value": 838897,
+      "baseline": 822448,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 213207,
-      "baseline": 209026,
+      "value": 217582,
+      "baseline": 213315,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 770126,
-      "baseline": 755025,
+      "value": 781493,
+      "baseline": 766169,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1919369,
-      "baseline": 1881734,
+      "value": 1950457,
+      "baseline": 1912212,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
       "unit": "B"
     },
     {
@@ -401,26 +401,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 322572,
-      "baseline": 316247,
+      "value": 325888,
+      "baseline": 319498,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1235410,
-      "baseline": 1211186,
+      "value": 1258203,
+      "baseline": 1233532,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "source": "baseline-2026-11-02T15-46-24-001Z-ab5f3cc-ab5f3cc",
       "unit": "B"
     },
     {
