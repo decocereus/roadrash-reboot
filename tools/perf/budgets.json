@@ -26,6 +26,10 @@
         "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
       },
       {
+        "file": "tools/perf/baselines/post-step8.road-life.node-darwin-arm64.json.gz",
+        "sha256": "7004384deca1059ea9b7d158c2c82b6ade34d73bb456866f3f2281e5397d3025"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.six-celebrities.json.gz",
         "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
       },
@@ -672,6 +676,18 @@
       "value": 1
     },
     {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.17254729122524365,
+      "baseline": 0.1500411228045597,
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "unit": "ms"
+    },
+    {
       "derivation": "1.1 x baseline median, uncalibrated",
       "value": 115620.74009983362,
       "baseline": 105109.76372712146,
@@ -865,14 +881,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 21808,
-      "baseline": 21808,
+      "value": 21812,
+      "baseline": 21812,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
       "unit": "B"
     },
     {
@@ -889,14 +905,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 15473,
-      "baseline": 15473,
+      "value": 15477,
+      "baseline": 15477,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
+      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
       "unit": "B"
     },
     {
