@@ -1312,6 +1312,30 @@
       "side": "B",
       "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "value": 319493
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.pedestrians",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "value": 297036
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "value": 3407352
+    },
+    {
+      "environment": "build",
+      "metric": "assets.texture.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "value": 33554764
     }
   ],
   "revisions": {
@@ -1834,6 +1858,29 @@
       "sides": {
         "A": "712c1735a48d0a4d14284c691efc92750050ef00",
         "B": "712c1735a48d0a4d14284c691efc92750050ef00"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1147560, \"bytes.route.root.gzip\": 609743, \"bytes.route.kit.raw\": 953687, \"bytes.route.kit.gzip\": 543516, \"bytes.game.raw\": 1918012, \"bytes.game.gzip\": 824646, \"bytes.game.incremental.raw\": 770452, \"bytes.game.incremental.gzip\": 214903, \"bytes.worker.raw\": 1253022, \"bytes.worker.gzip\": 325388, \"bytes.client.raw\": 1969451, \"bytes.client.gzip\": 844776}",
+        "builtB": "{\"bytes.route.root.raw\": 1147560, \"bytes.route.root.gzip\": 609743, \"bytes.route.kit.raw\": 953687, \"bytes.route.kit.gzip\": 543516, \"bytes.game.raw\": 1918012, \"bytes.game.gzip\": 824646, \"bytes.game.incremental.raw\": 770452, \"bytes.game.incremental.gzip\": 214903, \"bytes.worker.raw\": 1253118, \"bytes.worker.gzip\": 325403, \"bytes.client.raw\": 1969451, \"bytes.client.gzip\": 844776}",
+        "harnessDigest": "1d68c76a2109648d32fbbf1b6b76b61b7912bfc98f48f00caca67619ebc70ed2",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "a681b7149f0d57a9f7c68ab04ff72efa64c0952c5273392e26bc908adc9bdd3b",
+        "sideBSourceDigest": "a681b7149f0d57a9f7c68ab04ff72efa64c0952c5273392e26bc908adc9bdd3b",
+        "why": "The six pedestrian bodies add one model on the art CDN and its 8 by 8 palette to the decoded texture total. No code byte row moved past its limit, so those rows stay."
+      },
+      "id": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d9bd0b25c5e9995d5d04e054325df60414569fd0",
+        "B": "d9bd0b25c5e9995d5d04e054325df60414569fd0"
       }
     }
   ],

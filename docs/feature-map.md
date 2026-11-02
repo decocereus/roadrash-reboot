@@ -201,6 +201,7 @@ Test files:
 
 - `apps/web/test/walker-asset.ts`
 - `apps/web/test/walker-clips.test.ts`
+- `apps/web/test/walker-model.test.ts`
 - `packages/sim/src/cross-traffic.test.ts`
 - `packages/sim/src/junction-traffic.test.ts`
 - `packages/sim/src/pedestrians.test.ts`

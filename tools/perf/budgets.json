@@ -72,7 +72,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "e93723735c75b277a861328b3182405b9c9f8320bfd2f3540a1629c37ec137b2"
+    "summarySha256": "4974fc8b48dbbaf7ec73616ff116a06b3012771d537a73d16374585e032afa3c"
   },
   "limits": [
     {
@@ -132,7 +132,7 @@
       "metric": "assets.glb.pedestrians",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
       "unit": "B"
     },
     {
@@ -264,7 +264,7 @@
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
       "unit": "B"
     },
     {
@@ -293,14 +293,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 33554424,
-      "baseline": 33554424,
+      "value": 33554764,
+      "baseline": 33554764,
       "direction": "max",
       "environment": "build",
       "metric": "assets.texture.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
       "unit": "B"
     },
     {
