@@ -10,10 +10,12 @@ import {
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
+  READY_PACKET_BYTES,
   readPong,
   readTick,
   START_PACKET_BYTES,
   writePing,
+  writeReady,
   writeStart,
 } from "@racer/sim/room-wire";
 import { setupDigest } from "@racer/sim/snapshot-setup";
@@ -26,11 +28,13 @@ import type { RoomStarted } from "./messages.ts";
 
 const PING_EVERY_MS = 500;
 const DEAD_AFTER_MS = 5000;
+const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 
 export type SeatPhase =
   | "connecting"
   | "ended"
   | "left"
+  | "loading"
   | "lobby"
   | "lost"
   | "racing"
@@ -57,8 +61,10 @@ export interface RoomSeat {
   readonly listen: (next: SeatListeners) => void;
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
+  readonly ready: () => void;
   readonly refusal: () => string | null;
   readonly riders: () => number;
+  readonly riderNames: () => readonly string[];
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
   readonly start: () => void;
@@ -87,12 +93,15 @@ export const openRoomSeat = (
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
   let riders = 0;
+  let riderNames: readonly string[] = [];
+  let counting = false;
   let lobbyEndsAt = 0;
   let race: SeatRace | null = null;
   let refused: string | null = null;
   let closeCode: number | null = null;
   let rttMs = 0;
   let worstRttMs = 0;
+  let unansweredPings = 0;
   let pings: ReturnType<typeof setInterval> | null = null;
 
   const move = (next: SeatPhase): void => {
@@ -112,7 +121,6 @@ export const openRoomSeat = (
     names,
     seats,
     seed,
-    startsInMs,
     you,
   }: RoomStarted): void => {
     const { setup } = seatedRace(seed, seats);
@@ -126,9 +134,11 @@ export const openRoomSeat = (
       names: guestNames(setup, me, names),
       setup,
     };
-    clock.start(startsInMs, performance.now());
     pings = setInterval(() => {
-      if (clock.silentMs(performance.now()) > DEAD_AFTER_MS) {
+      const silent = counting
+        ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
+        : unansweredPings > MOST_UNANSWERED_PINGS;
+      if (silent) {
         stopPings();
         socket.close(SEAT_CLOSED, "The room went silent.");
         move("lost");
@@ -136,13 +146,15 @@ export const openRoomSeat = (
       }
       writePing(ping, Math.floor(performance.now()));
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
+      unansweredPings += 1;
     }, PING_EVERY_MS);
-    move("racing");
+    move("loading");
   };
 
   const onBinary = (data: ArrayBuffer): void => {
     const view = new DataView(data);
     if (readPong(view, pong)) {
+      unansweredPings = 0;
       rttMs = Math.floor(performance.now()) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
       clock.heardRtt(rttMs);
@@ -160,7 +172,12 @@ export const openRoomSeat = (
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();
-    if (phase === "connecting" || phase === "lobby" || phase === "racing") {
+    if (
+      phase === "connecting" ||
+      phase === "lobby" ||
+      phase === "loading" ||
+      phase === "racing"
+    ) {
       move("lost");
     }
   });
@@ -176,13 +193,19 @@ export const openRoomSeat = (
     }
     switch (message.value.kind) {
       case "lobby": {
-        ({ riders } = message.value);
+        ({ names: riderNames, riders } = message.value);
         lobbyEndsAt = performance.now() + message.value.startsInMs;
         move("lobby");
         break;
       }
       case "started": {
         onStarted(message.value);
+        break;
+      }
+      case "countdown": {
+        clock.start(message.value.startsInMs, performance.now());
+        counting = true;
+        move("racing");
         break;
       }
       case "ended": {
@@ -227,7 +250,13 @@ export const openRoomSeat = (
     },
     phase: () => phase,
     race: () => race,
+    ready: () => {
+      const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
+      writeReady(packet);
+      socket.send(packet.buffer);
+    },
     refusal: () => refused,
+    riderNames: () => riderNames,
     riders: () => riders,
     rttMs: () => rttMs,
     start: () => {

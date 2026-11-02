@@ -9,9 +9,11 @@ import {
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
   readPong,
+  READY_PACKET_BYTES,
   readTick,
   START_PACKET_BYTES,
   writePing,
+  writeReady,
   writeStart,
 } from "@racer/sim/room-wire";
 import { riderIdAt } from "@racer/sim/state";
@@ -115,6 +117,26 @@ const startPacket = (): ArrayBuffer => {
   return buffer;
 };
 
+const readyPacket = (): ArrayBuffer => {
+  const buffer = new ArrayBuffer(READY_PACKET_BYTES);
+  writeReady(new DataView(buffer));
+  return buffer;
+};
+
+const countdownsOn = (socket: FakeSocket): number =>
+  socket.messages.filter((each) => each.kind === "countdown").length;
+
+const pressedStart = () => {
+  const clock = createClock();
+  const host = createHost(clock);
+  const near = fakeSocket();
+  const far = fakeSocket();
+  host.seat(near, "Near");
+  host.seat(far, "Far");
+  host.message(near, startPacket());
+  return { clock, far, host, near };
+};
+
 const startedOf = (socket: FakeSocket) => {
   const message = socket.messages.find((each) => each.kind === "started");
   if (message?.kind !== "started") {
@@ -138,6 +160,9 @@ const race = (host: Host, clock: Clock, sockets: readonly FakeSocket[]) => {
     throw new Error("A race needs a seat.");
   }
   host.message(first, startPacket());
+  for (const socket of sockets) {
+    host.message(socket, readyPacket());
+  }
   clock.advance(START_DELAY_MS);
 };
 
@@ -245,6 +270,36 @@ describe("a room host", () => {
     expect(new Set(started.map((each) => each.seed)).size).toBe(1);
     expect(started.map((each) => each.seats)).toStrictEqual([3, 3, 3]);
     expect(new Set(started.map((each) => each.digest.join(","))).size).toBe(1);
+  });
+
+  describe("the start", () => {
+    it("holds the countdown until the last seat has loaded", () => {
+      const { clock, far, host, near } = pressedStart();
+      host.message(near, readyPacket());
+      clock.advance(10_000);
+      expect(countdownsOn(near)).toBe(0);
+      expect(host.status().tick).toBe(0);
+      host.message(far, readyPacket());
+      expect(countdownsOn(far)).toBe(1);
+      clock.advance(START_DELAY_MS + 1000);
+      expect(host.status().tick).toBeGreaterThan(50);
+    });
+
+    it("starts without a seat that never loads, at the deadline", () => {
+      const { clock, host, near } = pressedStart();
+      host.message(near, readyPacket());
+      clock.advance(20_000);
+      expect(countdownsOn(near)).toBe(1);
+      clock.advance(START_DELAY_MS + 1000);
+      expect(host.status().tick).toBeGreaterThan(50);
+    });
+
+    it("stops waiting for a seat that leaves while loading", () => {
+      const { far, host, near } = pressedStart();
+      host.message(near, readyPacket());
+      host.gone(far);
+      expect(countdownsOn(near)).toBe(1);
+    });
   });
 
   it("tells every seat the humans' names in rider order", () => {
