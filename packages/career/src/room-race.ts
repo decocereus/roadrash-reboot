@@ -4,8 +4,10 @@ import { trackFor } from "@racer/track/roads";
 
 import { practiceSetup } from "./field.ts";
 import type { CareerRaceSetup, PracticeRace } from "./field.ts";
+import { createRaceLog } from "./outcome.ts";
 import { launchRules } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
+import type { RacerId } from "./state.ts";
 import { STARTING_BIKE } from "./tables.ts";
 
 const roomRules: RaceRules = { ...launchRules, celebrities: false };
@@ -33,4 +35,20 @@ export const seatedRace = (seed: number, seats: number): SeatedRace => {
   );
   const humans = firstRacers(setup, seats);
   return { humans, setup: roomSetup(setup, humans) };
+};
+
+export type GuestNames = ReadonlyMap<RacerId, string>;
+
+export const guestNames = (
+  setup: CareerRaceSetup,
+  me: RiderId,
+  names: readonly string[]
+): GuestNames => {
+  const humans = firstRacers(setup, names.length);
+  return new Map(
+    createRaceLog(setup, me).entrants.flatMap((entrant) => {
+      const name = names[humans.indexOf(entrant.rider)];
+      return name === undefined ? [] : [[entrant.rival, name] as const];
+    })
+  );
 };

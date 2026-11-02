@@ -8,6 +8,7 @@ import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
+import { moveToRoom, newRoomId } from "./room-url.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen } from "./screens/boot.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
@@ -131,6 +132,9 @@ const CareerScreens = ({
         career={career}
         onBackRoom={() => {
           flow.go(backRoom);
+        }}
+        onFriends={() => {
+          moveToRoom(newRoomId());
         }}
         onEnvelope={(take) => {
           flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
@@ -275,10 +279,18 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         canRaceAgain={raceAgainOffered(rules, view.report, career)}
         career={career}
         onContinue={() => {
-          flow.go(afterResults(view.report));
+          if (view.report.room) {
+            globalThis.location.assign("/");
+          } else {
+            flow.go(afterResults(view.report));
+          }
         }}
         onRaceAgain={() => {
-          flow.rideOut(view.report.mode, view.report.roadId);
+          if (view.report.room) {
+            moveToRoom(view.report.room.rematchId);
+          } else {
+            flow.rideOut(view.report.mode, view.report.roadId);
+          }
         }}
         repeatRun={
           view.report.ledger !== null &&

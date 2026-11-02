@@ -131,7 +131,7 @@ const clientOf = (socket: FakeSocket): RoomClient => {
 
 const race = (host: Host, clock: Clock, sockets: readonly FakeSocket[]) => {
   for (const socket of sockets) {
-    host.seat(socket);
+    host.seat(socket, "Guest");
   }
   const [first] = sockets;
   if (!first) {
@@ -143,7 +143,7 @@ const race = (host: Host, clock: Clock, sockets: readonly FakeSocket[]) => {
 
 const seatOn = (host: Host): FakeSocket => {
   const socket = fakeSocket();
-  host.seat(socket);
+  host.seat(socket, "Guest");
   return socket;
 };
 
@@ -247,15 +247,26 @@ describe("a room host", () => {
     expect(new Set(started.map((each) => each.digest.join(","))).size).toBe(1);
   });
 
+  it("tells every seat the humans' names in rider order", () => {
+    const host = createHost(createClock());
+    const first = fakeSocket();
+    const second = fakeSocket();
+    host.seat(first, "Ann");
+    host.seat(second, "Bo");
+    host.message(first, startPacket());
+    expect(startedOf(first).names).toStrictEqual(["Ann", "Bo"]);
+    expect(startedOf(second).names).toStrictEqual(["Ann", "Bo"]);
+  });
+
   it("refuses a late seat and a ninth seat", () => {
     const clock = createClock();
     const host = createHost(clock);
     const eight = Array.from({ length: 8 }, fakeSocket);
     for (const socket of eight) {
-      host.seat(socket);
+      host.seat(socket, "Guest");
     }
     const ninth = fakeSocket();
-    host.seat(ninth);
+    host.seat(ninth, "Guest");
     expect(ninth.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "full",
@@ -265,7 +276,7 @@ describe("a room host", () => {
       host.message(first, startPacket());
     }
     const late = fakeSocket();
-    host.seat(late);
+    host.seat(late, "Guest");
     expect(late.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "racing",
@@ -309,7 +320,7 @@ describe("a room host", () => {
     clock.advance(120_000);
     expect(clock.pending()).toBe(0);
     const again = fakeSocket();
-    host.seat(again);
+    host.seat(again, "Guest");
     expect(again.closed).toBeNull();
   });
 
@@ -331,7 +342,7 @@ describe("a room host", () => {
     const clock = createClock();
     const host = createHost(clock);
     const socket = fakeSocket();
-    host.seat(socket);
+    host.seat(socket, "Guest");
     host.message(socket, new ArrayBuffer(0));
     host.message(socket, new Uint8Array([9, 9, 9]).buffer);
     host.message(socket, "not a packet");
