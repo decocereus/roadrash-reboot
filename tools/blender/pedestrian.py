@@ -10,7 +10,7 @@ HEIGHT = 1.7
 DECIMATE = 0.15
 YOKE = 1.3
 BELT = (0.93, 0.975)
-POCKET = 1.0
+POCKET = (0.97, 1.09)
 ARM_BONES = ("clavicle", "upperarm", "lowerarm", "hand")
 LEG_BONES = ("thigh", "calf", "foot", "ball")
 SIDES = ("_l", "_r")
@@ -49,7 +49,7 @@ BODIES = {
         "sleeve": ("lowerarm", 0.92),
         "legs": ("calf", 0.97),
         "panel": ("zip",),
-        "wear": ("short_hair",),
+        "wear": (),
     },
     "woman": {
         "macro": {"gender": 0.0, "age": 0.5, "muscle": 0.45, "weight": 0.45, "height": 0.62, "cupsize": 0.3},
@@ -68,12 +68,28 @@ BODIES = {
         "wear": ("cap", "beard"),
     },
     "slim": {
-        "macro": {"gender": 0.25, "age": 0.5, "muscle": 0.4, "weight": 0.3, "height": 0.62, "cupsize": 0.25},
+        "macro": {"gender": 0.0, "age": 0.5, "muscle": 0.4, "weight": 0.3, "height": 0.62, "cupsize": 0.25},
         "hem": 0.88,
         "sleeve": ("lowerarm", 0.92),
         "legs": ("thigh", 0.72),
         "panel": ("pocket",),
-        "wear": ("short_hair", "hood", "backpack"),
+        "wear": ("bob", "hood", "backpack"),
+    },
+    "older": {
+        "macro": {"gender": 0.0, "age": 0.8, "muscle": 0.35, "weight": 0.76, "height": 0.5, "cupsize": 0.4},
+        "hem": 0.89,
+        "sleeve": ("lowerarm", 0.92),
+        "legs": ("calf", 0.97),
+        "panel": ("belt",),
+        "wear": ("bun", "scarf"),
+    },
+    "sporty": {
+        "macro": {"gender": 0.0, "age": 0.5, "muscle": 0.62, "weight": 0.42, "height": 0.6, "cupsize": 0.25},
+        "hem": 0.9,
+        "sleeve": ("upperarm", 0.62),
+        "legs": ("thigh", 0.6),
+        "panel": ("zip",),
+        "wear": ("ponytail",),
     },
 }
 
@@ -277,6 +293,7 @@ def paint(h, style, shape):
     bm.from_mesh(me)
     for layer in list(bm.loops.layers.uv.values()):
         bm.loops.layers.uv.remove(layer)
+    bmesh.ops.dissolve_degenerate(bm, dist=0.003, edges=bm.edges[:])
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     dl = bm.verts.layers.deform.verify()
     names = {g.index: g.name for g in h.vertex_groups}
@@ -313,7 +330,8 @@ def paint(h, style, shape):
         for z in BELT:
             cut(Vector((0, 0, z)), Vector((0, 0, 1)), trunk)
     elif panel == "pocket":
-        cut(Vector((0, 0, POCKET)), Vector((0, 0, 1)), trunk)
+        for z in POCKET:
+            cut(Vector((0, 0, z)), Vector((0, 0, 1)), trunk)
         for x in (-0.1, 0.1):
             cut(Vector((x, 0, 0)), Vector((1, 0, 0)), trunk)
 
@@ -356,7 +374,7 @@ def paint(h, style, shape):
             return "accent"
         if panel == "belt" and BELT[0] < c.z < BELT[1]:
             return "accent"
-        if panel == "pocket" and c.z < POCKET and c.y < 0.0 and abs(c.x) < 0.1:
+        if panel == "pocket" and POCKET[0] < c.z < POCKET[1] and c.y < 0.0 and abs(c.x) < 0.1:
             return "accent"
         if panel == "yoke" and c.z > YOKE:
             return "accent"
@@ -382,6 +400,8 @@ def paint(h, style, shape):
         elif out == PUFF["bottom"] and v.co.z < 0.5:
             flare = 0.016 * smooth((0.5 - v.co.z) / 0.35)
         v.co += v.normal * (out + flare)
+    clothed = [v for v, out in puff.items() if out > 0.0]
+    bmesh.ops.smooth_vert(bm, verts=clothed, factor=0.35, use_axis_x=True, use_axis_y=True, use_axis_z=True)
     bm.to_mesh(me)
     bm.free()
 
@@ -487,6 +507,25 @@ def wear(arm, style, shape, eye):
             ((0, 0.09, centre.z - 0.3), (0.075, 0.028), "spine_03"),
             ((0, 0.085, centre.z - 0.4), (0.03, 0.012), "spine_03"),
         ], "hair"))
+    if "bob" in items:
+        parts.append(loft(arm, "hair", [
+            ((0, 0.05, centre.z + 0.05), (0.08, 0.06), "head"),
+            ((0, 0.05, centre.z - 0.03), (0.098, 0.068), "head"),
+            ((0, 0.05, centre.z - 0.1), (0.098, 0.066), "head"),
+            ((0, 0.05, centre.z - 0.15), (0.075, 0.05), "head"),
+        ], "hair"))
+    if "bun" in items:
+        parts.append(ellipsoid(arm, "bun", top + Vector((0, 0.055, -0.005)), (0.05, 0.05, 0.045), "hair", "head"))
+    if "ponytail" in items:
+        parts.append(ellipsoid(arm, "tie", centre + Vector((0, 0.1, 0.03)), (0.026, 0.026, 0.026), "accent", "head", seg=8, rings=5))
+        parts.append(loft(arm, "tail", [
+            ((0, 0.115, centre.z + 0.03), (0.022, 0.022), "head"),
+            ((0, 0.135, centre.z - 0.05), (0.036, 0.03), "head"),
+            ((0, 0.135, centre.z - 0.16), (0.032, 0.026), "neck_01"),
+            ((0, 0.125, centre.z - 0.28), (0.012, 0.01), "spine_03"),
+        ], "hair", n=8))
+    if "scarf" in items:
+        parts.append(ellipsoid(arm, "scarf", shape.point("neck_01", 0.15) + Vector((0, -0.005, 0)), (0.092, 0.092, 0.042), "accent", "neck_01"))
     if "cap" in items:
         parts.append(ellipsoid(arm, "cap", centre + Vector((0, 0.002, 0.036)), (0.1, 0.112, 0.07), "accent", "head"))
         parts.append(ellipsoid(arm, "brim", centre + Vector((0, -0.095, 0.03)), (0.075, 0.052, 0.008), "accent", "head", tilt=-6))
@@ -681,16 +720,16 @@ def show_bodies(bodies, arm, path):
     made = []
     for i, h in enumerate(bodies):
         for j in range(4):
-            at = (j * 1.0 + (i % 2) * 4.4, 0, (1 - i // 2) * 2.1)
+            at = (j * 1.0 + (i % 2) * 4.4, 0, (2 - i // 2) * 2.1)
             made.append(snapshot(h, f"s{i}{j}", at, row=(i * 2 + j) % len(OUTFITS)))
         made.append(snapshot(h, f"c{i}", (20 + i * 1.1, 0, 0), row=i))
     for h in bodies:
         h.hide_render = True
     arm.hide_render = True
     views = {
-        "front": ((3.7, -26, 2.0), (3.7, 0, 1.95), 100),
-        "back": ((3.7, 26, 2.0), (3.7, 0, 1.95), 100),
-        "close": ((21.65, -5.6, 1.45), (21.65, 0, 1.2), 50),
+        "front": ((3.7, -26, 3.0), (3.7, 0, 3.0), 88),
+        "back": ((3.7, 26, 3.0), (3.7, 0, 3.0), 88),
+        "close": ((22.75, -7.5, 1.3), (22.75, 0, 1.0), 36),
     }
     for name, (loc, target, lens) in views.items():
         cam = camera(name, loc, target, lens=lens)
@@ -741,14 +780,14 @@ def film(bodies, arm, actions, path):
     for h in bodies:
         h.hide_render = True
     arm.hide_render = True
-    cam = camera("film", (6.2, -8.0, 1.5), (2.25, 0, 0.82), lens=46)
+    cam = camera("film", (7.2, -9.4, 1.6), (3.0, 0, 0.82), lens=46)
     sc.camera = cam
     for clip, frames in clip_frames(actions).items():
         arm.animation_data.action = actions[clip]
         os.makedirs(f"{path}/{clip}", exist_ok=True)
         for f in frames:
             sc.frame_set(f)
-            made = [snapshot(h, f"film{i}", (i * 1.5, 0, 0), row=i * 3 % len(OUTFITS)) for i, h in enumerate(bodies)]
+            made = [snapshot(h, f"film{i}", (i * 1.2, 0, 0), row=i * 3 % len(OUTFITS)) for i, h in enumerate(bodies)]
             sc.render.filepath = f"{path}/{clip}/{f:04d}.png"
             bpy.ops.render.render(write_still=True)
             for o in made:
