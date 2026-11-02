@@ -1,0 +1,20 @@
+{
+  "name": "@racer/rooms-tool",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsrs --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0",
+    "@racer/career": "workspace:*",
+    "@racer/devtools": "workspace:*",
+    "@racer/rooms": "workspace:*",
+    "@racer/sim": "workspace:*",
+    "effect": "4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1"
+  }
+}

@@ -17,7 +17,7 @@ The art direction is cel-shaded cyberpunk anime: two flat tones, ink outlines, n
 | Rendering | Three.js on WebGL 2 |
 | Simulation | Plain TypeScript in `packages/sim`, fixed 60 Hz, running in the browser |
 | Server runtime | Effect 4.0.0 on Workers, when a server feature exists |
-| Multiplayer | One Durable Object per race running the same simulation |
+| Multiplayer | One Durable Object per race running the same simulation, in the `Rooms` Worker (`apps/rooms`) |
 | Accounts | Sign-in with Discord, Google, or an emailed link; no passwords |
 | Payments | Polar or Dodo Payments, both merchants of record; not chosen |
 | Tooling | pnpm, TypeScript 7 checked by tsrs, Oxlint with the anti-slop rules, Oxfmt through Ultracite, Vitest |
@@ -34,7 +34,7 @@ The job runs in the GitHub `production` environment, which only `main` can deplo
 
 A local `alchemy deploy --stage prod` uses the Alchemy login instead. `alchemy dev` keeps its state in the local `.alchemy` folder and needs no Cloudflare login. A stage other than `prod` would claim the same bucket name, so only `prod` is deployed. `pnpm dev` runs the bucket in the local simulator.
 
-There is no API Worker or database yet. Accounts, saves on the server, multiplayer, the store, and billboard view counts bring them in before launch. Where the database is hosted is decided on cost and is open; Cloudflare D1 is not assumed. A guest's career stays in the browser, and signing in moves it to the server.
+There is no database yet. Accounts, saves on the server, the store, and billboard view counts bring them in before launch. Where the database is hosted is decided on cost and is open; Cloudflare D1 is not assumed. A guest's career stays in the browser, and signing in moves it to the server.
 
 ## Riding model
 
@@ -135,6 +135,16 @@ A race room runs one race for up to eight humans. The room is the authority: it 
 `createRoomClient(setup, me)` in `room-client.ts` holds two races. `confirmed` steps only on the room's frames, in order. `predicted` runs ahead and is the race the browser draws. `predict(control)` steps the predicted race one tick with this rider's control and a guess for everyone else: each remote human holds their last confirmed control without buttons, and this rider takes the bike back from the pilot. It refuses to run more than `MOST_LEAD_TICKS` (32) ahead of the confirmed race. `confirm(frame, hash)` steps the confirmed race and compares the room's frame with the guess for that tick. When they differ it writes the confirmed race to a snapshot, restores it into the predicted race in place, so the renderer keeps the same objects, and steps forward again to the tick it had reached. It counts rollbacks, resimulated ticks and desyncs, a desync being a room hash that differs from the confirmed race's. `writeInputs(view)` writes one packet of up to eight controls that starts with the oldest control not yet sent and fills the rest with recent unconfirmed ones, and returns 0 once every predicted control has gone out, so a client that predicted many ticks at once calls it until it returns 0.
 
 `packages/sim/src/room.test.ts` races clients over simulated links in ticks, each with its own latency, jitter and lead, through the encoded packets. Two riders racing twenty seconds end on the room's race hash for hash, and each one's predicted race equals the room's at the tick it stopped predicting. A rider who goes silent is handed to the pilot exactly 31 ticks after the last tick it was heard for and takes the bike back when its controls arrive again. A rider whose lead is shorter than its latency loses its controls to the pilot and still agrees with the room.
+
+### The room on a Durable Object
+
+`alchemy.run.ts` declares a second Worker, `Rooms`, from `apps/rooms/src/worker.ts`. It is separate from the site so that a merge that leaves the simulation alone does not restart a live race, and so the room's bundle carries no React. `Rooms` answers `/rooms/:raceId...` by looking up the `RaceServer` Durable Object named by that race ID and forwarding the request. A malformed ID answers 404. `race-server.ts` serves the contract in `contract.ts`, an Effect `HttpApi`: `GET /rooms/:raceId` returns the room's status as JSON, and `GET /rooms/:raceId/seat` upgrades to a WebSocket, or answers 426 to any other request.
+
+`host.ts` is the room's plain core, given a clock, a timer and a seed as ports, so tests drive it without a Worker. A seat joins in the waiting phase and every seat hears a `lobby` message. A room sends a ninth seat `refused` with `full` and a seat after the start `refused` with `racing`, then closes it. The message carries the reason because a client cannot rely on seeing the close finish. Any seated rider's start packet locks the roster. The host gives out riders in the order it holds the seats, which after a hibernation is the order the runtime returns them, so no rule may read a meaning into a rider number. It builds the race with `seatedRace(seed, seats)` from `packages/career/src/room-race.ts`, which is the career's practice setup under `launchRules` with `roomSetup` applied, and tells each seat `started` with the seed, the seat count, its rider, the race's setup digest and the 3 s until the first tick. The client builds the same race from those numbers and compares digests, so a client on another build finds out before it rides.
+
+The tick loop is an absolute-deadline `setTimeout` chain: tick N is due N/60 s after the start, a wake steps what is due and at most four ticks, and a room still behind wakes again at once. The status counts wakes, wakes that had to catch up and the worst backlog, because `Date.now()` does not advance while a Durable Object runs and these are the only clock facts a room can report. Each tick goes to every seat as the tick packet. Control messages from the room are JSON text (`messages.ts`). Everything a client sends is binary: input, ping and start, in `room-wire.ts`. A ping gets a pong with the room's tick, which is how a client sets its lead. A race ends when `room.over()` says every seat has left or finished, been busted or wrecked. Every seat then hears `ended` and closes with 1000, and the room waits for a new race. A seat that closes mid-race goes to the pilot.
+
+The timer keeps a racing room in memory. A waiting room has no timer, so it can hibernate, and its seats rejoin from `getWebSockets()` when it wakes. A restart mid-race closes every socket with 1006. Requeueing those riders is the lobby's job.
 
 ## Tracks
 

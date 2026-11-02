@@ -1,0 +1,25 @@
+{
+  "name": "@racer/rooms",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contract": "./src/contract.ts",
+    "./messages": "./src/messages.ts",
+    "./worker": "./src/worker.ts"
+  },
+  "scripts": {
+    "typecheck": "tsrs --noEmit"
+  },
+  "dependencies": {
+    "@racer/career": "workspace:*",
+    "@racer/sim": "workspace:*",
+    "alchemy": "2.0.0-beta.83",
+    "effect": "4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260918.1",
+    "@types/node": "26.4.1",
+    "vitest": "5.0.0"
+  }
+}

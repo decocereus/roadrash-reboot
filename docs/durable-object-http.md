@@ -1,23 +1,23 @@
 # Durable Object HTTP conventions
 
-Rushline has no multiplayer and no Durable Object today. These are the conventions for the planned race service, written down before its first line of code. They describe nothing that is deployed. [architecture.md](architecture.md) plans one Durable Object per race running the same simulation, and [coding-standards.md](coding-standards.md) keeps Effect at boundaries such as this one.
+These are the conventions for the race service in `apps/rooms`. `RaceServer` in `apps/rooms/src/race-server.ts` is its Durable Object, one per race, and [architecture.md](architecture.md#the-room-on-a-durable-object) says how it runs. [coding-standards.md](coding-standards.md) keeps Effect at boundaries such as this one.
 
 ## Boundary and ownership
 
 - Treat the race Durable Object as an HTTP service: it answers `fetch` through an Effect HTTP API (`HttpApi`, `HttpApiBuilder` and `HttpApiClient` from `effect/http-api`). Do not call it through Alchemy's typed RPC.
 - The boundary is logical. It holds even when the caller and the object run in the same Cloudflare runtime.
 - The HTTP adapter and Effect stay at the boundary. `packages/sim` stays plain deterministic TypeScript, and the server advances a race with `stepRace` as the browser does.
-- These conventions do not decide how a player's inputs reach the race in real time. They do not require an HTTP request per tick, and they do not choose WebSockets, a lobby, accounts or reconnection.
+- A player's inputs reach the race over the WebSocket the seat route upgrades to, not over an HTTP request per tick. The socket's per-tick handlers and the tick loop are plain functions in `host.ts`; only the upgrade and the status route pass through the contract. These conventions do not choose a lobby, accounts or reconnection.
 
 ## Contract and names
 
 - The server and the client generated from it share one typed contract for requests, responses and errors. External input is validated once, at that boundary.
-- The names follow their roles. `IRaceClient` is the interface the application sees, `RaceClient` is the contextual Effect service that implements it, and `RaceServer` is the Alchemy Durable Object (`Cloudflare.DurableObject`) that serves the HTTP API. These names show the roles; do not create them before the race service is designed.
+- The names follow their roles. `IRaceClient` is the interface the application sees, `RaceClient` is the contextual Effect service that implements it, and `RaceServer` is the Alchemy Durable Object (`Cloudflare.DurableObject`) that serves the HTTP API. `RaceClient` and `IRaceClient` do not exist yet: `tools/rooms` builds the generated client directly, and the browser client brings them in.
 - Game and application code yield `RaceClient` and call its domain methods. They never receive a namespace, a stub or a generated HTTP client. The interface has no stub resolver and no instance-bound `forRace` facade.
 
 ## Identity and private plumbing
 
-- An instance is looked up by the race's stable, branded canonical ID, never by a road name, track slug, lobby title or display label. How that ID is generated and encoded belongs to the multiplayer design.
+- An instance is looked up by the race's stable, branded canonical ID, `RaceId` in `apps/rooms/src/contract.ts`, never by a road name, track slug, lobby title or display label.
 - Namespace bindings, stubs and `Cloudflare.toHttpClient` (`alchemy/src/Cloudflare/Fetcher.ts`) stay inside composition roots and client implementations.
 - A client constructor yields its Alchemy Durable Object service and closes over the namespace. Do not write a namespace interface by hand, and do not pass a namespace through application Layers.
 
@@ -31,13 +31,13 @@ Rushline has no multiplayer and no Durable Object today. These are the conventio
 ## Routes and failures
 
 - The server composes its router (`HttpRouter` from `effect/http`) for the life of the Durable Object instance and handles each `fetch` through the declared contract.
-- Routes carry no version prefix such as `/v1` and no compatibility aliases; the owner chose no legacy routes when these rules were planned. Do not name endpoints before the race service is designed.
+- Routes carry no version prefix such as `/v1` and no compatibility aliases; the owner chose no legacy routes when these rules were planned.
 - Each domain refusal is declared in the contract with its HTTP status, the way `statusOf` maps each telemetry refusal in `apps/web/src/server/telemetry.ts`. Follow [errors.md](errors.md): a fixed public message, and the cause kept internally.
 - Do not copy `orDie`, which `rushline/no-swallowed-failure` bans, blanket exception hiding or an unconditional retry from reference code. Whether a mutation may be retried depends on what it means in the race, and is decided with it.
 
 ## Proof
 
-The first multiplayer change proves these conventions through the real HTTP contract: `fetch` and the generated client with service Layers, routing by canonical ID, each typed failure with its status, and two invocations that cannot share the first one's stub-backed client. Those tests arrive with that code. Nothing is added before it.
+`pnpm rooms:race` proves the contract against a running Worker: the generated client reads a new room's status through `fetch`, a plain request to a seat answers 426, a malformed race ID answers 404, and each race ID reaches its own room. The Worker looks up its stub inside each `fetch` and keeps none, so no invocation can reuse another's. [The race-room recipe](../.claude/skills/verify-rushline/features/race-room.md) has the commands.
 
 ## Sources
 
