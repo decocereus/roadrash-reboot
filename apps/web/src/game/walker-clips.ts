@@ -93,8 +93,7 @@ export const walkerFrameOf = (
         ? once(clips.fall, fallen)
         : looped(clips.lie, inTicks);
     }
-    case "waiting":
-    case "gone": {
+    case "waiting": {
       return looped(clips.wait, inTicks);
     }
     default: {

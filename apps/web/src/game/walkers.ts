@@ -52,8 +52,7 @@ const yawOf = (walker: PedestrianView, heading: number): number => {
       return -heading;
     }
     case "waiting":
-    case "walking":
-    case "gone": {
+    case "walking": {
       return walker.across * QUARTER - heading;
     }
     default: {
@@ -183,11 +182,7 @@ export const createWalkerMarks = (
             fellAt[index] = tick;
           }
           wasDown[index] = down;
-          if (
-            walker.mode !== "gone" &&
-            walker.s > centre - BEHIND &&
-            walker.s < centre + reach
-          ) {
+          if (walker.s > centre - BEHIND && walker.s < centre + reach) {
             place(walker, index, tick);
           }
         }

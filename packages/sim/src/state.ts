@@ -264,7 +264,6 @@ export const pedestrianModes = [
   "walking",
   "flinching",
   "down",
-  "gone",
 ] as const;
 
 type PedestrianMode = (typeof pedestrianModes)[number];

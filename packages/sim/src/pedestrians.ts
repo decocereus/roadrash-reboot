@@ -42,14 +42,14 @@ export const WALKER_BUMP = {
 } as const;
 
 interface WalkHabit {
-  readonly goneSeconds: number;
-  readonly goneSpreadSeconds: number;
+  readonly restSeconds: number;
+  readonly restSpreadSeconds: number;
 }
 
 const walkHabits = {
-  jaywalk: { goneSeconds: 15, goneSpreadSeconds: 25 },
-  unmarked: { goneSeconds: 6, goneSpreadSeconds: 12 },
-  zebra: { goneSeconds: 3, goneSpreadSeconds: 7 },
+  jaywalk: { restSeconds: 15, restSpreadSeconds: 25 },
+  unmarked: { restSeconds: 6, restSpreadSeconds: 12 },
+  zebra: { restSeconds: 3, restSpreadSeconds: 7 },
 } as const satisfies Record<WalkKind, WalkHabit>;
 
 const kerbOf = (track: Track): number => track.roadHalfWidth + KERB_OUT;
@@ -110,8 +110,7 @@ export const blocksCars = (pedestrian: Pedestrian): boolean => {
     case "down": {
       return true;
     }
-    case "waiting":
-    case "gone": {
+    case "waiting": {
       return false;
     }
     default: {
@@ -166,10 +165,12 @@ const walkAcross = (
     (pedestrian.x - pedestrian.across * kerbOf(track)) * pedestrian.across >=
     0
   ) {
+    pedestrian.x = pedestrian.across * kerbOf(track);
+    pedestrian.across = -pedestrian.across;
     pedestrian.drift = 0;
-    pedestrian.mode = "gone";
+    pedestrian.mode = "waiting";
     pedestrian.wait = ticksOf(
-      habit.goneSeconds + rollDice(pedestrian) * habit.goneSpreadSeconds
+      habit.restSeconds + rollDice(pedestrian) * habit.restSpreadSeconds
     );
   }
 };
@@ -203,13 +204,6 @@ const stepPedestrian = (
       pedestrian.wait -= 1;
       if (pedestrian.wait <= 0) {
         walkOn(pedestrian, WALK_PACE);
-      }
-      break;
-    }
-    case "gone": {
-      pedestrian.wait -= 1;
-      if (pedestrian.wait <= 0) {
-        arrive(pedestrian, track);
       }
       break;
     }
