@@ -6,6 +6,7 @@ import {
   reachFor,
   reachOf,
   swingGirdle,
+  swingKneeOut,
   turnInWorld,
   writeLocal,
 } from "./figure-ik.ts";
@@ -182,9 +183,45 @@ export interface Planter {
     pose: number[],
     lift: THREE.Vector3,
     stance: RiderPose,
-    side: number
+    side: number,
+    lean: number,
+    speed: number
   ) => void;
 }
+
+const KMH = 3.6;
+const FOOT_DOWN_FULL_SPEED = 35 / KMH;
+const FOOT_DOWN_END_SPEED = 50 / KMH;
+const FOOT_DOWN_FROM = 0.1;
+const FOOT_DOWN_FULL = 0.28;
+const FOOT_SIDE = 0.28;
+const FOOT_DROP = 0.26;
+const FOOT_FORWARD = 0.1;
+const KNEE_START_SPEED = 50 / KMH;
+const KNEE_FULL_SPEED = 75 / KMH;
+const KNEE_OUT_FROM = 0.25;
+const KNEE_OUT_FULL = 0.85;
+const KNEE_SWING = THREE.MathUtils.degToRad(55);
+const KNEE_SCRAPE = 0.92;
+export const HANG_SHIFT = 0.13;
+const KNEE_FORWARD = new THREE.Vector3(0, 0, -1);
+const footTarget = new THREE.Vector3();
+
+const footDown = (lean: number, speed: number): number =>
+  (1 -
+    THREE.MathUtils.smoothstep(
+      speed,
+      FOOT_DOWN_FULL_SPEED,
+      FOOT_DOWN_END_SPEED
+    )) *
+  THREE.MathUtils.smoothstep(Math.abs(lean), FOOT_DOWN_FROM, FOOT_DOWN_FULL);
+
+export const kneeOut = (lean: number, speed: number): number =>
+  THREE.MathUtils.smoothstep(speed, KNEE_START_SPEED, KNEE_FULL_SPEED) *
+  THREE.MathUtils.smoothstep(Math.abs(lean), KNEE_OUT_FROM, KNEE_OUT_FULL);
+
+export const kneeScrapes = (lean: number, speed: number): boolean =>
+  speed >= KNEE_FULL_SPEED && Math.abs(lean) >= KNEE_SCRAPE;
 
 const boneNamed = (rig: Rig, name: string): THREE.Bone => {
   const bone = rig.skeleton.getBoneByName(name);
@@ -282,7 +319,7 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
     none: { left: [], right: [] },
   } satisfies Record<Planted, Sided<readonly Grip[]>>;
   return {
-    plant(pose, lift, stance, side) {
+    plant(pose, lift, stance, side, lean, speed) {
       const grips = sideOf(held[plantedIn(stance)], side);
       if (grips.length === 0) {
         return;
@@ -293,8 +330,23 @@ export const planterOf = (rig: Rig, seated: readonly number[]): Planter => {
       }
       leanToward(torso, above, PITCH_FORWARD, grips, TORSO_LEAN);
       writeLocal(chain, pose, torso);
+      const inside = lean < 0 ? legs.left : legs.right;
+      const foot = footDown(lean, speed);
+      const knee = kneeOut(lean, speed);
       for (const grip of grips) {
-        reachFor(grip);
+        if (grip === inside && foot > 0) {
+          footTarget.set(
+            grip.at.x + Math.sign(grip.at.x) * FOOT_SIDE * foot,
+            grip.at.y - FOOT_DROP * foot,
+            grip.at.z - FOOT_FORWARD * foot
+          );
+          reachFor(grip, footTarget);
+        } else {
+          reachFor(grip);
+        }
+        if (grip === inside && knee > 0) {
+          swingKneeOut(grip, KNEE_FORWARD, KNEE_SWING * knee);
+        }
         const { bones, girdle } = grip.limb;
         if (girdle) {
           writeLocal(chain, pose, girdle);

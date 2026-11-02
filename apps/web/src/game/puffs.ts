@@ -12,6 +12,8 @@ const DUST_PER_BURST = 9;
 const SPARKS_PER_BURST = 12;
 const SPARKS_FROM = 0.35;
 const DUST_LIFE = 0.5;
+const KNEE_REACH = 0.55;
+const KNEE_BEHIND = 0.1;
 const SPARK_LIFE = 0.28;
 const DUST_START = 0.4;
 const DUST_GROWTH = 1.2;
@@ -39,6 +41,7 @@ interface Particle {
 export interface Puffs {
   readonly group: THREE.Group;
   burst: (bike: THREE.Object3D, strength: number, speed: number) => void;
+  scrape: (bike: THREE.Object3D, lean: number, speed: number) => void;
   update: (seconds: number) => void;
   prime: () => () => void;
   dispose: () => void;
@@ -275,6 +278,28 @@ export const createPuffs = (shading: Shading): Puffs => {
         dust.points.geometry.setDrawRange(0, 0);
         sparks.mesh.count = 0;
       };
+    },
+    scrape(bike, lean, speed) {
+      heading.copy(FORWARD).applyQuaternion(bike.quaternion);
+      side.set(heading.z, 0, -heading.x).normalize();
+      origin
+        .copy(bike.position)
+        .addScaledVector(side, -lean * KNEE_REACH)
+        .addScaledVector(heading, -KNEE_BEHIND);
+      const particle = spawn(sparks.particles, nextSpark);
+      nextSpark += 1;
+      if (!particle) {
+        return;
+      }
+      particle.life = SPARK_LIFE * (0.3 + 0.4 * Math.random());
+      particle.size = SPARK_LENGTH * (0.4 + 0.5 * Math.random());
+      particle.position.copy(origin).setY(origin.y + 0.05);
+      particle.velocity
+        .copy(heading)
+        .multiplyScalar(speed * SPARK_CARRY - 5 * Math.random())
+        .addScaledVector(side, -lean * 2 * Math.random())
+        .setY(0.8 + 1.8 * Math.random());
+      live = true;
     },
     update(seconds) {
       if (!live) {

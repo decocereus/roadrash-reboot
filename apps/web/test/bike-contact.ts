@@ -69,6 +69,7 @@ const stanceOf = (pose: Pose): Stance => ({
   reach: 0,
   rise: 0,
   side: 1,
+  speed: 0,
   time: 0,
   tuck: 0,
   weapon: "none",
