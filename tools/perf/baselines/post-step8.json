@@ -1120,6 +1120,38 @@
       "side": "B",
       "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
       "value": 1287.079534109817
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 1211186
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 316247
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 1950865
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "value": 838838
     }
   ],
   "revisions": {
@@ -1476,6 +1508,29 @@
       "sides": {
         "A": "595cbf72d27d75f5e214dc8acf3d8f0a64ff2490",
         "B": "595cbf72d27d75f5e214dc8acf3d8f0a64ff2490"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1139434, \"bytes.route.root.gzip\": 607392, \"bytes.route.kit.raw\": 946920, \"bytes.route.kit.gzip\": 541824, \"bytes.game.raw\": 1903988, \"bytes.game.gzip\": 820192, \"bytes.game.incremental.raw\": 764554, \"bytes.game.incremental.gzip\": 212800, \"bytes.worker.raw\": 1211086, \"bytes.worker.gzip\": 316231, \"bytes.client.raw\": 1950865, \"bytes.client.gzip\": 838838}",
+        "builtB": "{\"bytes.route.root.raw\": 1139434, \"bytes.route.root.gzip\": 607392, \"bytes.route.kit.raw\": 946920, \"bytes.route.kit.gzip\": 541824, \"bytes.game.raw\": 1903988, \"bytes.game.gzip\": 820192, \"bytes.game.incremental.raw\": 764554, \"bytes.game.incremental.gzip\": 212800, \"bytes.worker.raw\": 1211186, \"bytes.worker.gzip\": 316247, \"bytes.client.raw\": 1950865, \"bytes.client.gzip\": 838838}",
+        "harnessDigest": "12965bc453429aa79d840b712340792c4b9ecf483b8b7cb7dccd13cf89984798",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "07277a280ca8b469c6be34263d829cb544676949ad51f218660eb858618cffae",
+        "sideBSourceDigest": "07277a280ca8b469c6be34263d829cb544676949ad51f218660eb858618cffae",
+        "why": "The browser room client (mp-6c) adds the seat client, the room client and the lobby. React loads them through a lazy chunk, so the route and game rows still meet their limits, and only the four rows that total every chunk grow: 66 KB raw and 18 KB gzip on the Worker, 47 KB raw and 18 KB gzip on the client. Only those four rows are re-pinned from this build-lane A/A run."
+      },
+      "id": "baseline-2026-11-02T13-10-37-814Z-d78fcf7-d78fcf7",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d78fcf7be203265015874b9bd31090f25cee33e7",
+        "B": "d78fcf7be203265015874b9bd31090f25cee33e7"
       }
     }
   ],
