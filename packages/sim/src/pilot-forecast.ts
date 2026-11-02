@@ -443,11 +443,16 @@ export const gatherObstructions = (
       obstruction.x = hazard.x;
     }
   }
-  for (const car of state.cars) {
-    obstructWithCar(outlook, rider, car);
+  const { cars, crossCars } = state;
+  for (let index = 0; index < cars.length; index += 1) {
+    const car = cars[index];
+    if (car) {
+      obstructWithCar(outlook, rider, car);
+    }
   }
-  for (const car of state.crossCars) {
-    if (crossCarInSight(track, rider, car)) {
+  for (let index = 0; index < crossCars.length; index += 1) {
+    const car = crossCars[index];
+    if (car && crossCarInSight(track, rider, car)) {
       if (car.drift === 0) {
         obstructWithCar(outlook, rider, car);
       } else {

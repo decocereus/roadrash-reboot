@@ -424,16 +424,19 @@ const offLaneLines = (
       count += 2;
     }
   }
-  for (const car of state.cars) {
-    if (passable(rider, car)) {
+  const { cars, crossCars } = state;
+  for (let index = 0; index < cars.length; index += 1) {
+    const car = cars[index];
+    if (car && passable(rider, car)) {
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
       offLane[count] = car.x + pass;
       offLane[count + 1] = car.x - pass;
       count += 2;
     }
   }
-  for (const car of state.crossCars) {
-    if (crossCarInSight(track, rider, car)) {
+  for (let index = 0; index < crossCars.length; index += 1) {
+    const car = crossCars[index];
+    if (car && crossCarInSight(track, rider, car)) {
       const atArrival = crossCarAtArrival(rider, car);
       const pass = crossCarReach(car) + PASS_MARGIN;
       offLane[count] = atArrival + pass;
