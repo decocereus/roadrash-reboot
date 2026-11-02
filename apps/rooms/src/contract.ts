@@ -4,15 +4,13 @@ import * as HttpApiGroup from "effect/http-api/HttpApiGroup";
 import * as HttpApiSchema from "effect/http-api/HttpApiSchema";
 import * as Schema from "effect/Schema";
 
-import { RACE_ID_PATTERN } from "./messages.ts";
+import { RACE_ID_PATTERN, ROOM_PHASES } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 
 export const RaceIdSchema = Schema.String.pipe(
   Schema.check(Schema.isPattern(RACE_ID_PATTERN)),
   Schema.brand("RaceId")
 );
-
-const phases = ["waiting", "racing"] as const;
 
 const SeatTally = Schema.Struct({
   accepted: Schema.Number,
@@ -24,7 +22,8 @@ const SeatTally = Schema.Struct({
 
 const RoomStatusSchema = Schema.Struct({
   catchUpWakes: Schema.Number,
-  phase: Schema.Literals(phases),
+  names: Schema.Array(Schema.String),
+  phase: Schema.Literals(ROOM_PHASES),
   seats: Schema.Array(SeatTally),
   tick: Schema.Number,
   waiting: Schema.Number,
