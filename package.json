@@ -34,6 +34,8 @@
     "perf": "node tools/perf/gate.ts",
     "perf:gpu": "node tools/perf/gpu.ts",
     "replay:engines": "node tools/replay/engines.ts",
+    "rooms:lag": "node tools/rooms/lag.ts",
+    "rooms:load": "node tools/rooms/load.ts",
     "rooms:race": "node tools/rooms/race.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
