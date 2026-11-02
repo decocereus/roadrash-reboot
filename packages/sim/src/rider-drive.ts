@@ -16,11 +16,15 @@ import {
 } from "./rider-flight.ts";
 import {
   approach,
+  brakeGrip,
   clamp,
   curvePushOf,
+  driveGrip,
   GRAVITY,
   lateralFor,
   lateralSpeedLimit,
+  settledLean,
+  sidewaysRate,
   TICK_SECONDS,
 } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
@@ -45,7 +49,6 @@ const WOBBLE_GRIP = 0.4;
 const STUN_STEER = 0.65;
 const VERGE_STEER = 0.8;
 const VERGE_BLEND = 0.75;
-export const BRAKE_RESERVE = 0.35;
 export const SLIP_RECOVERY = 1;
 export const SLIP_PUSH = 1;
 const SLIP_BRAKES = 0.7;
@@ -162,14 +165,17 @@ export const ride = (
   const bendPush = curvePushOf(bike, curvature, rider.speed);
   const wantedLateral = lateralFor(
     input.steer,
-    bendPush,
+    settledLean(bike, curvature, rider.speed),
     limit,
     rider.hitStun > 0 ? STUN_STEER : 1
   );
   rider.lateralSpeed = approach(
     rider.lateralSpeed,
     wantedLateral,
-    bike.steerRate * weapons[rider.weapon].steerFactor * grip * TICK_SECONDS
+    sidewaysRate(bike, rider.lateralSpeed, wantedLateral, bendPush) *
+      weapons[rider.weapon].steerFactor *
+      grip *
+      TICK_SECONDS
   );
   const lock = clamp(Math.abs(rider.lateralSpeed) / Math.max(1, limit), 0, 1);
   const push = bendPush * (1 + SLIP_PUSH * rider.slip);
@@ -193,13 +199,14 @@ export const ride = (
       bike.launchAcceleration * Math.min(1, rider.load) * rider.throttle,
       pull
     ) *
-    (1 - SLIP_DRIVE * rider.slip);
+    (1 - SLIP_DRIVE * rider.slip) *
+    driveGrip(bendPush, limit);
   acceleration -=
     bike.brakeDeceleration *
     rider.brake *
     (1 - (1 - VERGE_BRAKES) * verge) *
     Math.min(1, rider.load) *
-    (1 - (1 - BRAKE_RESERVE) * lock) *
+    brakeGrip(bike, rider.lateralSpeed) *
     (1 - SLIP_BRAKES * rider.slip);
   if (rider.offRoad) {
     acceleration -= VERGE_DRAG + VERGE_DRAG_PER_SPEED * rider.speed;
@@ -211,7 +218,7 @@ export const ride = (
   rider.x +=
     (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
-  settleVisuals(rider, 1);
+  settleVisuals(rider, 1, push);
   rider.heading += rider.slip * SLIDE_YAW * sin(rider.modeTicks * SLIDE_SWING);
   settleOnSurface(
     state,

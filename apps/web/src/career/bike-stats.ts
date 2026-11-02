@@ -12,8 +12,8 @@ const KMH = 3.6;
 const FASTEST = 290 / KMH;
 const SLOWEST_LAUNCH = 8;
 const QUICKEST_LAUNCH = 2.5;
-const BEST_RESPONSE = 6.5;
-const BEST_SIDESTEP = 4.2;
+const BEST_RESPONSE = 8.8;
+const BEST_SIDESTEP = 5.7;
 const BEST_GRIP = 3;
 const BEST_BRAKES = 30;
 

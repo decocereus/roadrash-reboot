@@ -43,13 +43,28 @@ export const forwardRateOf = (rider: RiderState, curvature: number): number =>
 export const swayOf = (rider: RiderState): number =>
   rider.wobble * sin(rider.wobble * WOBBLE_TURNS);
 
-export const settleVisuals = (rider: RiderState, authority: number): void => {
+const SLOW_LEAN = 0.2;
+const FULL_LEAN_SPEED = 120 / 3.6;
+
+export const settleVisuals = (
+  rider: RiderState,
+  authority: number,
+  push: number
+): void => {
   const limit = Math.max(1, lateralSpeedLimit(rider.bike, rider.speed));
   rider.lean =
-    (clamp(rider.lateralSpeed / limit, -1, 1) * authority +
+    (clamp(rider.lateralSpeed / limit, -1, 1) *
+      authority *
+      (SLOW_LEAN +
+        (1 - SLOW_LEAN) * clamp(rider.speed / FULL_LEAN_SPEED, 0, 1)) +
       swayOf(rider) * WOBBLE_LEAN) *
     rider.bike.visualLean;
-  rider.heading = atan(rider.lateralSpeed / Math.max(rider.speed, 6)) * 0.5;
+  const steered = clamp(
+    rider.lateralSpeed - push,
+    Math.min(0, rider.lateralSpeed),
+    Math.max(0, rider.lateralSpeed)
+  );
+  rider.heading = atan(steered / Math.max(rider.speed, 6));
 };
 
 const under: Support = emptySupport();
@@ -274,7 +289,7 @@ export const fly = (
   rider.air +=
     rise * TICK_SECONDS - (GRAVITY * TICK_SECONDS * TICK_SECONDS) / 2 - drop;
   rider.verticalSpeed -= GRAVITY * TICK_SECONDS;
-  settleVisuals(rider, 0.6);
+  settleVisuals(rider, 0.6, push);
   rider.load = 0;
   rider.airTicks += 1;
   crossRamps(track, fromS, fromX, rider.s, rider.x, fromDeck, crossing);

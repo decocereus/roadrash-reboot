@@ -17,14 +17,16 @@ import type { Track } from "@racer/track/track";
 
 import { dragOf } from "./engine.ts";
 import { CORNER_SCAN_POINTS } from "./pilot-history.ts";
-import { BRAKE_RESERVE, TAKEOFF_SPEED } from "./rider-drive.ts";
+import { TAKEOFF_SPEED } from "./rider-drive.ts";
 import { HARD_LANDING, LANDING_SLIP } from "./rider-flight.ts";
 import {
   BIKE_HALF_WIDTH,
+  brakeGrip,
   clamp,
   curvePushOf,
   GRAVITY,
   lateralSpeedLimit,
+  sidewaysRate,
 } from "./state.ts";
 import type { BikeSpec, PilotHistory, RiderState } from "./state.ts";
 import { weapons } from "./weapons.ts";
@@ -76,10 +78,10 @@ const brakingOn = (
   rider: RiderState,
   drop: number,
   speed: number,
-  lock: number
+  lateralSpeed: number
 ): number =>
   rider.bike.brakeDeceleration *
-  (1 - (1 - BRAKE_RESERVE) * lock) *
+  brakeGrip(rider.bike, lateralSpeed) *
   clamp(1 + (drop * speed * speed) / GRAVITY, 0, 1);
 
 const resistanceOn = (
@@ -121,7 +123,7 @@ export const measureDeceleration = (
     rider,
     slopeRateAt(track, rider.s),
     speed,
-    lock
+    rider.lateralSpeed
   );
   deceleration.resisting = resistanceOn(
     rider,
@@ -190,7 +192,9 @@ export const askedLateral = (
     rider.speed
   );
   const drift = rider.lateralSpeed - push;
-  const settling = (drift * Math.abs(drift)) / (2 * rider.bike.steerRate);
+  const settling =
+    (drift * Math.abs(drift)) /
+    (2 * sidewaysRate(rider.bike, rider.lateralSpeed, push, push));
   return clamp(
     (line - rider.x - settling) * LANE_CHANGE_RATE,
     -MAX_LATERAL_SPEED,
@@ -244,15 +248,11 @@ const slowedFrom = (
     return next;
   }
   const { bike } = rider;
-  const lock = clamp(
-    curvePushOf(bike, bends[index] ?? 0, next) /
-      Math.max(1, lateralSpeedLimit(bike, next)),
-    0,
-    1
-  );
+  const limit = Math.max(1, lateralSpeedLimit(bike, next));
+  const lateral = clamp(curvePushOf(bike, bends[index] ?? 0, next), 0, limit);
   const slowing =
-    share * brakingOn(rider, drops[index] ?? 0, next, lock) +
-    resistanceOn(rider, slopes[index] ?? 0, next, lock);
+    share * brakingOn(rider, drops[index] ?? 0, next, lateral) +
+    resistanceOn(rider, slopes[index] ?? 0, next, lateral / limit);
   return Math.sqrt(Math.max(0, next * next + 2 * slowing * CORNER_SCAN_STEP));
 };
 
@@ -585,7 +585,10 @@ export const callCorners = (
       )
     : 0;
   const pressing = excess > 0 || rider.brake > 0;
-  const wanted = slope + BRAKE_PER_EXCESS * excess - resisting;
+  const wanted =
+    Math.min(slope, braking + resisting) +
+    BRAKE_PER_EXCESS * excess -
+    resisting;
   const brake = pressing ? clamp(wanted / Math.max(1, braking), 0, 1) : 0;
   cornerCall.brake = runsWide(track, rider) ? 1 : brake;
   cornerCall.speed = target;
