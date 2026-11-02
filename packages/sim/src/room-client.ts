@@ -9,12 +9,18 @@ import {
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
 import { MOST_BATCHED_CONTROLS, writeInput } from "./room-wire.ts";
-import { INPUT_HORIZON, seatsOf } from "./room.ts";
+import { INPUT_HORIZON, PILOT_FROM_TICK, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
 import { riderOf } from "./state.ts";
-import type { Control, RaceSetup, RaceState, RiderId } from "./state.ts";
+import type {
+  Control,
+  RaceSetup,
+  RaceState,
+  RiderId,
+  RiderState,
+} from "./state.ts";
 
 const MOST_LEAD_TICKS = INPUT_HORIZON;
 
@@ -75,17 +81,30 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
 
   const slotOf = (tick: number): number => tick % ownControls.length;
 
+  const remoteRider = (remote: Remote): RiderState | undefined =>
+    riderOf(predicted.riders, remote.id);
+
   const guess = (tick: number): TickFrame => {
     const frame = guesses[slotOf(tick)] ?? createTickFrame();
     clearFrame(frame, tick);
+    if (tick >= PILOT_FROM_TICK) {
+      if (mine.controller === "human") {
+        frame.handovers.set(me, "pilot");
+      }
+      for (const remote of remotes) {
+        if (remoteRider(remote)?.controller === "human") {
+          frame.handovers.set(remote.id, "pilot");
+        }
+      }
+      return frame;
+    }
     const control = ownControls[slotOf(tick)] ?? coasting;
     if (mine.controller === "pilot") {
       frame.handovers.set(me, "human");
     }
     frame.controls.set(me, control);
     for (const remote of remotes) {
-      const rider = riderOf(predicted.riders, remote.id);
-      if (rider?.controller === "human") {
+      if (remoteRider(remote)?.controller === "human") {
         frame.controls.set(remote.id, withoutButtons(remote.last));
       }
     }

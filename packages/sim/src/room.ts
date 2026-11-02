@@ -25,6 +25,7 @@ export const HOLD_TICKS = 6;
 export const AUTO_AFTER_TICKS = 30;
 export const INPUT_HORIZON = 32;
 export const HASH_EVERY = 60;
+export const PILOT_FROM_TICK = 21_600;
 
 const NO_TICK = -1;
 
@@ -119,7 +120,7 @@ export interface Room {
 const seatFrame = (seat: Seat, tick: number, frame: TickFrame): void => {
   const { rider } = seat;
   const slot = tick % INPUT_HORIZON;
-  if (seat.left) {
+  if (seat.left || tick >= PILOT_FROM_TICK) {
     if (rider.controller === "human") {
       frame.handovers.set(rider.id, "pilot");
     }
