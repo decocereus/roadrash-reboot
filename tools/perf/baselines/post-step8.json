@@ -1368,6 +1368,54 @@
       "side": "A+B",
       "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "value": 80
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 1918953
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 824997
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 770450
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 214900
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 1256856
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 326466
     }
   ],
   "revisions": {
@@ -1939,6 +1987,29 @@
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261103-010625-s6)",
         "B": "4558996482c865fbf758d62d9f5607033c47e005 (rv 20261103-010632-s7)"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1148503, \"bytes.route.root.gzip\": 610097, \"bytes.route.kit.raw\": 953665, \"bytes.route.kit.gzip\": 543505, \"bytes.game.raw\": 1918953, \"bytes.game.gzip\": 824997, \"bytes.game.incremental.raw\": 770450, \"bytes.game.incremental.gzip\": 214900, \"bytes.worker.raw\": 1256760, \"bytes.worker.gzip\": 326451, \"bytes.client.raw\": 1971179, \"bytes.client.gzip\": 845390}",
+        "builtB": "{\"bytes.route.root.raw\": 1148503, \"bytes.route.root.gzip\": 610097, \"bytes.route.kit.raw\": 953665, \"bytes.route.kit.gzip\": 543505, \"bytes.game.raw\": 1918953, \"bytes.game.gzip\": 824997, \"bytes.game.incremental.raw\": 770450, \"bytes.game.incremental.gzip\": 214900, \"bytes.worker.raw\": 1256856, \"bytes.worker.gzip\": 326466, \"bytes.client.raw\": 1971179, \"bytes.client.gzip\": 845390}",
+        "harnessDigest": "1d68c76a2109648d32fbbf1b6b76b61b7912bfc98f48f00caca67619ebc70ed2",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "50acfaae2dbb8b4eb69adbc5d1214df9408f26dd728d830278d5f345aa922651",
+        "sideBSourceDigest": "50acfaae2dbb8b4eb69adbc5d1214df9408f26dd728d830278d5f345aa922651",
+        "why": "The walker models and the room rematch and fair-start work each stayed inside the Worker's limit alone and go over it together, so the game and Worker rows re-pin on the merged tree."
+      },
+      "id": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "lanes": ["build"],
+      "sides": {
+        "A": "bcca1fe459ebe810ef2d0688b85e9e781e62a10a",
+        "B": "bcca1fe459ebe810ef2d0688b85e9e781e62a10a"
       }
     }
   ],
