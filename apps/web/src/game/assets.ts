@@ -8,6 +8,13 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { BikeModelId } from "./bike-models.ts";
 import { RED } from "./looks.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
+import { walkerBodies, walkerClipLoops } from "./walker-clips.ts";
+import type {
+  WalkerClip,
+  WalkerClipName,
+  WalkerClips,
+} from "./walker-clips.ts";
+import { POSE_TEXELS_PER_BONE } from "./walker-skin.ts";
 
 const POSE_NAMES = [
   "rest",
@@ -47,6 +54,13 @@ export interface RiderAsset {
   readonly standHeight: number;
 }
 
+export interface WalkerAsset {
+  readonly atlas: THREE.Texture;
+  readonly clips: WalkerClips;
+  readonly geometries: readonly THREE.BufferGeometry[];
+  readonly poses: THREE.DataTexture;
+}
+
 export type BikeParts = ReadonlyMap<string, readonly Primitive[]>;
 
 const ATLAS = "atlas";
@@ -56,6 +70,7 @@ export interface Assets {
   readonly car: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
+  readonly walkers: WalkerAsset;
 }
 
 const fixedColours: ReadonlyMap<string, string> = new Map([
@@ -332,6 +347,7 @@ export interface AssetParsers {
   readonly parts: Parse<BikeParts>;
   readonly whole: Parse<readonly Primitive[]>;
   readonly rider: Parse<RiderAsset>;
+  readonly walkers: Parse<WalkerAsset>;
 }
 
 export type LoadCelebrity = (
@@ -456,4 +472,176 @@ const whole: Parse<readonly Primitive[]> = async (bytes) => {
   return decoded(gltf.scene, primitives, primitives);
 };
 
-export const assetParsers: AssetParsers = { parts, rider, whole };
+const CLIP_FPS = 30;
+const POSE_ROW_TEXELS = 4;
+const WHITE = new THREE.Color("#ffffff");
+
+const framesOf = (clip: THREE.AnimationClip, name: WalkerClipName): number => {
+  const counted = Math.round(clip.duration * CLIP_FPS) + 1;
+  return walkerClipLoops[name] ? counted - 1 : counted;
+};
+
+interface BakedClip {
+  readonly clip: THREE.AnimationClip;
+  readonly frames: number;
+}
+
+const clipsOf = (
+  animations: readonly THREE.AnimationClip[],
+  refused: (why: string) => Error
+) => {
+  const baked: BakedClip[] = [];
+  let start = 0;
+  const slot = (name: WalkerClipName): WalkerClip => {
+    const clip = animations.find((each) => each.name === name);
+    if (!clip) {
+      throw refused(`is missing the ${name} clip.`);
+    }
+    const frames = framesOf(clip, name);
+    const made = { frames, start };
+    baked.push({ clip, frames });
+    start += frames;
+    return made;
+  };
+  const clips: WalkerClips = {
+    fall: slot("fall"),
+    flinch: slot("flinch"),
+    get_up: slot("get_up"),
+    lie: slot("lie"),
+    run: slot("run"),
+    wait: slot("wait"),
+    walk: slot("walk"),
+  };
+  return { baked, clips };
+};
+
+const channelOf = (root: THREE.Object3D, track: THREE.KeyframeTrack) => {
+  const target = THREE.PropertyBinding.parseTrackName(track.name);
+  const Sampler =
+    target.propertyName === "quaternion"
+      ? THREE.QuaternionLinearInterpolant
+      : THREE.LinearInterpolant;
+  const size = track.getValueSize();
+  const value = new Float32Array(size);
+  return {
+    node: root.getObjectByName(target.nodeName),
+    property: target.propertyName,
+    sampler: new Sampler(track.times, track.values, size, value),
+    value,
+  };
+};
+
+const posedBy = (
+  root: THREE.Object3D,
+  clip: THREE.AnimationClip
+): ((time: number) => void) => {
+  const channels = clip.tracks.map((track) => channelOf(root, track));
+  return (time) => {
+    for (const { node, property, sampler, value } of channels) {
+      sampler.evaluate(time);
+      if (property === "quaternion") {
+        node?.quaternion.fromArray(value);
+      } else {
+        node?.position.fromArray(value);
+      }
+    }
+  };
+};
+
+const bakePoses = (
+  root: THREE.Object3D,
+  skeleton: THREE.Skeleton,
+  baked: readonly BakedClip[]
+): THREE.DataTexture => {
+  const { bones, boneInverses } = skeleton;
+  const width = bones.length * POSE_TEXELS_PER_BONE;
+  const height = baked.reduce((total, { frames }) => total + frames, 0);
+  const values = new Float32Array(width * height * POSE_ROW_TEXELS);
+  const matrix = new THREE.Matrix4();
+  let write = 0;
+  for (const { clip, frames } of baked) {
+    const poseAt = posedBy(root, clip);
+    for (let frame = 0; frame < frames; frame += 1) {
+      poseAt(frame / CLIP_FPS);
+      root.updateMatrixWorld(true);
+      for (let bone = 0; bone < bones.length; bone += 1) {
+        const joint = bones[bone];
+        const inverse = boneInverses[bone];
+        if (!(joint && inverse)) {
+          throw new Error("A walker joint has no bind pose.");
+        }
+        const { elements } = matrix.multiplyMatrices(
+          joint.matrixWorld,
+          inverse
+        );
+        for (let row = 0; row < POSE_TEXELS_PER_BONE; row += 1) {
+          for (let column = 0; column < POSE_ROW_TEXELS; column += 1) {
+            values[write] = elements[column * POSE_ROW_TEXELS + row] ?? 0;
+            write += 1;
+          }
+        }
+      }
+    }
+  }
+  const poses = new THREE.DataTexture(
+    values,
+    width,
+    height,
+    THREE.RGBAFormat,
+    THREE.FloatType
+  );
+  poses.minFilter = THREE.NearestFilter;
+  poses.magFilter = THREE.NearestFilter;
+  poses.needsUpdate = true;
+  return poses;
+};
+
+const walkers: Parse<WalkerAsset> = async (bytes, url) => {
+  const gltf = await parsed(bytes);
+  const refused = (why: string): Error => {
+    releaseOf(gltf.scene, [])();
+    return new Error(`The walker model ${url} ${why}`);
+  };
+  const meshes = walkerBodies.map(({ name }) => {
+    const mesh = gltf.scene.getObjectByName(name);
+    return mesh && isSkinnedMesh(mesh) ? mesh : null;
+  });
+  const [first] = meshes;
+  const [atlas] = atlasesOf(gltf.scene);
+  if (!first || meshes.includes(null)) {
+    throw refused("is missing a body.");
+  }
+  if (!atlas) {
+    throw refused("has no palette.");
+  }
+  atlas.minFilter = THREE.NearestFilter;
+  atlas.magFilter = THREE.NearestFilter;
+  atlas.generateMipmaps = false;
+  const geometries = meshes.map((mesh) =>
+    coloured(
+      {
+        geometry: mesh
+          ? fileSpaceGeometry(mesh.geometry, sharedBind(mesh, first))
+          : first.geometry,
+        slot: ATLAS,
+      },
+      WHITE,
+      0
+    )
+  );
+  const { baked, clips } = clipsOf(gltf.animations, refused);
+  const poses = bakePoses(gltf.scene, first.skeleton, baked);
+  const release = releaseOf(
+    gltf.scene,
+    geometries.map((geometry) => ({ geometry, slot: ATLAS }))
+  );
+  return {
+    release: () => {
+      poses.dispose();
+      release();
+    },
+    value: { atlas, clips, geometries, poses },
+  };
+};
+
+export const assetParsers: AssetParsers = { parts, rider, walkers, whole };

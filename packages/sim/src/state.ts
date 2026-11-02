@@ -161,6 +161,7 @@ export interface RiderState {
   weaponHits: number;
   weaponAtThrow: WeaponKind;
   chase: RiderId | null;
+  witnessed: RiderId | null;
   parked: boolean;
   post: number;
   s: number;
@@ -265,7 +266,6 @@ export const pedestrianModes = [
   "walking",
   "flinching",
   "down",
-  "gone",
 ] as const;
 
 type PedestrianMode = (typeof pedestrianModes)[number];

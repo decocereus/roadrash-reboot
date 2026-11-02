@@ -30,17 +30,19 @@ const HELMET_REACH = 0.4;
 const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.figures;
   const { classic, ghost, oni, seraph } = modelUrls.bikes;
-  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c] = await Promise.all([
-    assetParsers.parts(artFile(classic), classic),
-    assetParsers.parts(artFile(ghost), ghost),
-    assetParsers.parts(artFile(oni), oni),
-    assetParsers.parts(artFile(seraph), seraph),
-    assetParsers.whole(artFile(modelUrls.car), modelUrls.car),
-    assetParsers.whole(artFile(modelUrls.van), modelUrls.van),
-    assetParsers.rider(artFile(riderA), riderA),
-    assetParsers.rider(artFile(riderB), riderB),
-    assetParsers.rider(artFile(riderC), riderC),
-  ]);
+  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c, walkers] =
+    await Promise.all([
+      assetParsers.parts(artFile(classic), classic),
+      assetParsers.parts(artFile(ghost), ghost),
+      assetParsers.parts(artFile(oni), oni),
+      assetParsers.parts(artFile(seraph), seraph),
+      assetParsers.whole(artFile(modelUrls.car), modelUrls.car),
+      assetParsers.whole(artFile(modelUrls.van), modelUrls.van),
+      assetParsers.rider(artFile(riderA), riderA),
+      assetParsers.rider(artFile(riderB), riderB),
+      assetParsers.rider(artFile(riderC), riderC),
+      assetParsers.walkers(artFile(modelUrls.walkers), modelUrls.walkers),
+    ]);
   return {
     bikes: {
       classic: bikeA.value,
@@ -51,6 +53,7 @@ const pinnedAssets = async (): Promise<Assets> => {
     car: car.value,
     figures: [a.value, b.value, c.value],
     van: van.value,
+    walkers: walkers.value,
   };
 };
 

@@ -196,12 +196,11 @@ describe("a pedestrian who is hit", () => {
     }
     expect(seen).toContain("down");
     expect(seen).toContain("walking");
-    expect(seen).toContain("gone");
   });
 });
 
 describe("a pedestrian's own walk", () => {
-  it("waits at the kerb, crosses to the far kerb, is gone, and comes back", () => {
+  it("waits at the kerb, crosses, stays on the far kerb, and crosses back", () => {
     const state = raceOn(onStraight);
     const walker = walkerOf(state);
     const rider = player(state);
@@ -220,10 +219,39 @@ describe("a pedestrian's own walk", () => {
     expect(seen.slice(0, 4)).toStrictEqual([
       "waiting",
       "walking",
-      "gone",
       "waiting",
+      "walking",
     ]);
     expect(Math.sign(fromX)).toBe(-Math.sign(lastX));
+  });
+
+  it("is on a kerb from the moment they finish crossing until they step out again, turned to face the road", () => {
+    const state = raceOn(onStraight);
+    const walker = walkerOf(state);
+    const rider = player(state);
+    rider.s = straight.length - 50;
+    const kerb = onStraight.roadHalfWidth + 1;
+    const arrivals: { x: number; expected: number; faces: number }[] = [];
+    let was = walker.mode;
+    for (let tick = 0; tick < 120 * TICK_RATE; tick += 1) {
+      const heading = walker.across;
+      stepRace(state, onStraight, frameOf(state));
+      if (was === "walking" && walker.mode === "waiting") {
+        arrivals.push({
+          expected: heading * kerb,
+          faces: walker.across + heading,
+          x: walker.x,
+        });
+      }
+      was = walker.mode;
+    }
+    expect(arrivals.length).toBeGreaterThan(1);
+    expect(arrivals.map(({ x }) => x)).toStrictEqual(
+      arrivals.map(({ expected }) => expected)
+    );
+    expect(arrivals.map(({ faces }) => faces)).toStrictEqual(
+      arrivals.map(() => 0)
+    );
   });
 
   it("steps out into a gap in the cars and not in front of one", () => {
@@ -313,7 +341,9 @@ describe("a car and a pedestrian", () => {
     }
     expect(car.speed).toBe(0);
     expect(car.s + car.halfLength).toBeLessThan(WALKER_S);
-    walker.mode = "gone";
+    walker.mode = "waiting";
+    walker.drift = 0;
+    walker.x = onStraight.roadHalfWidth + 1;
     walker.wait = 60 * TICK_RATE;
     for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
       stepRace(state, onStraight, frameOf(state));

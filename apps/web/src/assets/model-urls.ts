@@ -8,6 +8,7 @@ export interface ModelUrls {
   readonly car: string;
   readonly van: string;
   readonly figures: readonly [string, string, string];
+  readonly walkers: string;
   readonly celebrities: Readonly<Record<CelebrityId, string>>;
 }
 
@@ -33,4 +34,5 @@ export const modelUrls: ModelUrls = {
     artUrl("models/rider_c.glb"),
   ],
   van: artUrl("models/van.glb"),
+  walkers: artUrl("models/pedestrians.glb"),
 };

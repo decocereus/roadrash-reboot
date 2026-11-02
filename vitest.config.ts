@@ -7,6 +7,7 @@ const viteTests = [
   "apps/web/test/celebrity-load.test.ts",
   "apps/web/test/planted-hands.test.ts",
   "apps/web/test/renderer-lifecycle.test.ts",
+  "apps/web/test/walker-model.test.ts",
 ];
 const policeTest = "packages/career/src/police.test.ts";
 const nativeImports = { nodeLoader: false, viteModuleRunner: false };

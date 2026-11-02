@@ -1,6 +1,8 @@
 import * as THREE from "three";
 
 import type { Look } from "./looks.ts";
+import { WALKER_OUTFITS } from "./walker-clips.ts";
+import { skinWalkers } from "./walker-skin.ts";
 
 const RAMP_STEPS = 16;
 const RAMP_LIT_FROM = 9;
@@ -116,6 +118,7 @@ export interface Shading {
   ) => THREE.MeshToonMaterial;
   paint: (atlas: THREE.Texture | null) => THREE.MeshToonMaterial;
   figure: (atlas: THREE.Texture | null) => THREE.MeshToonMaterial;
+  walker: (atlas: THREE.Texture) => THREE.MeshToonMaterial;
   glow: (
     colour: THREE.ColorRepresentation,
     strength?: number
@@ -190,7 +193,8 @@ export const createShading = (look: Look): Shading => {
     parameters: THREE.MeshToonMaterialParameters,
     rim: number,
     painted: boolean,
-    figure = false
+    figure = false,
+    walker = false
   ): THREE.MeshToonMaterial => {
     const material = new THREE.MeshToonMaterial({
       ...parameters,
@@ -214,12 +218,20 @@ export const createShading = (look: Look): Shading => {
           )
           .replace("#include <shadowmap_vertex>", SUN_ANCHOR_VERTEX)}`;
       }
+      if (walker) {
+        skinWalkers(shader);
+        shader.vertexShader = `attribute float walkerOutfit;\n${shader.vertexShader.replace(
+          "#include <uv_vertex>",
+          `#include <uv_vertex>\nvMapUv.y += walkerOutfit / ${WALKER_OUTFITS.toFixed(1)};`
+        )}`;
+      }
       shader.fragmentShader = `${painted ? `#define PAINTED\nvarying float vGloss;\n${FIGURE_SHADE}` : ""}${CEL_UNIFORMS}${shader.fragmentShader.replace(
         "#include <opaque_fragment>",
         CEL_FRAGMENT
       )}`;
     };
-    material.customProgramCacheKey = () => (painted ? "cel-painted" : "cel");
+    const programKey = painted ? "cel-painted" : "cel";
+    material.customProgramCacheKey = () => (walker ? "cel-walker" : programKey);
     return material;
   };
 
@@ -254,5 +266,8 @@ export const createShading = (look: Look): Shading => {
       return build({ map: atlas, vertexColors: true }, 1, true);
     },
     sun,
+    walker(atlas) {
+      return build({ map: atlas, vertexColors: true }, 1, true, true, true);
+    },
   };
 };

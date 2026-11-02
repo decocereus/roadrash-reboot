@@ -27,11 +27,11 @@
       },
       {
         "file": "tools/perf/baselines/post-step8.road-life.node-darwin-arm64.json.gz",
-        "sha256": "0f507d159558a1ebb1d9fbaa787432fbf836aa9aec7bb530e998b16b88c0f3da"
+        "sha256": "3d54b14df56f72982b90f03504659d601970f53d18072fd6c4e90067874a610a"
       },
       {
         "file": "tools/perf/baselines/post-step8.road-life.node-linux-x64.json.gz",
-        "sha256": "19c43081d23b4a00b47f218c75df399984f773c3ac429c9355b4d636271e722e"
+        "sha256": "53dc98de29e93a385decdce718c74cfe21d8caddb05a62a20560d7ed63b024f0"
       },
       {
         "file": "tools/perf/baselines/post-step8.room-settled.node-darwin-arm64.json.gz",
@@ -72,7 +72,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "e93723735c75b277a861328b3182405b9c9f8320bfd2f3540a1629c37ec137b2"
+    "summarySha256": "16694b64b3ea77f3eef9f495dd1866006523c203b05bb166984bf78d49f008a3"
   },
   "limits": [
     {
@@ -121,6 +121,18 @@
       "paired": null,
       "scenario": null,
       "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 297036,
+      "baseline": 297036,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.pedestrians",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
       "unit": "B"
     },
     {
@@ -245,14 +257,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 3110316,
-      "baseline": 3110316,
+      "value": 3407352,
+      "baseline": 3407352,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
       "unit": "B"
     },
     {
@@ -281,14 +293,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 33554424,
-      "baseline": 33554424,
+      "value": 33554764,
+      "baseline": 33554764,
       "direction": "max",
       "environment": "build",
       "metric": "assets.texture.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
       "unit": "B"
     },
     {
@@ -317,50 +329,50 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 838892,
-      "baseline": 822443,
+      "value": 841497,
+      "baseline": 824997,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 217580,
-      "baseline": 213313,
+      "value": 219198,
+      "baseline": 214900,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 781493,
-      "baseline": 766169,
+      "value": 785859,
+      "baseline": 770450,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.incremental.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1950457,
-      "baseline": 1912212,
+      "value": 1957333,
+      "baseline": 1918953,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.game.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
       "unit": "B"
     },
     {
@@ -413,26 +425,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 325883,
-      "baseline": 319493,
+      "value": 332996,
+      "baseline": 326466,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1258203,
-      "baseline": 1233532,
+      "value": 1281994,
+      "baseline": 1256856,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
       "unit": "B"
     },
     {
@@ -604,52 +616,52 @@
       "value": 452
     },
     {
-      "baseline": 43,
+      "baseline": 46,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "programs",
-      "value": 44
+      "value": 47
     },
     {
-      "baseline": 43,
+      "baseline": 46,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "programs",
-      "value": 44
+      "value": 47
     },
     {
-      "baseline": 78,
+      "baseline": 80,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "textures",
-      "value": 79
+      "value": 81
     },
     {
-      "baseline": 71,
+      "baseline": 73,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
       "unit": "textures",
-      "value": 72
+      "value": 74
     },
     {
       "baseline": 3002895,
@@ -701,26 +713,26 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.3096632760639628,
-      "baseline": 0.26927241396866336,
+      "value": 0.36517157224742697,
+      "baseline": 0.31754049760645825,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "roadLife.tick.p95",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
       "unit": "ms"
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.7665713927835938,
-      "baseline": 0.6665838198118207,
+      "value": 0.8516390758530701,
+      "baseline": 0.7405557181331045,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "roadLife.tick.p95",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
       "unit": "ms"
     },
     {
@@ -1205,50 +1217,50 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 22000,
-      "baseline": 22000,
+      "value": 22184,
+      "baseline": 22184,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 22000,
-      "baseline": 22000,
+      "value": 22184,
+      "baseline": 22184,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 15609,
-      "baseline": 15609,
+      "value": 15737,
+      "baseline": 15737,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
       "unit": "B"
     },
     {
       "derivation": "exact baseline",
-      "value": 15609,
-      "baseline": 15609,
+      "value": 15737,
+      "baseline": 15737,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
+      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
       "unit": "B"
     },
     {

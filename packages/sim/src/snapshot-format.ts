@@ -42,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 4;
+export const SNAPSHOT_FORMAT = 5;
 
 const TICK_BYTES = 8;
 
@@ -240,6 +240,7 @@ const riderSchema = schemaOf<
   weapon: choiceAt("weapon", weaponKinds),
   weaponAtThrow: choiceAt("weaponAtThrow", weaponKinds),
   weaponHits: floatAt("weaponHits"),
+  witnessed: riderRefAt("witnessed"),
   wobble: floatAt("wobble"),
   x: floatAt("x"),
 });

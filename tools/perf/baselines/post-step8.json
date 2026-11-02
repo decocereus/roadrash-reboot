@@ -1312,6 +1312,182 @@
       "side": "B",
       "source": "baseline-2026-11-02T15-47-52-832Z-712c173-712c173",
       "value": 319493
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.pedestrians",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "value": 297036
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "value": 3407352
+    },
+    {
+      "environment": "build",
+      "metric": "assets.texture.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "value": 33554764
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
+      "value": 46
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
+      "value": 73
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
+      "value": 46
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
+      "value": 80
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 1918953
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 824997
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 770450
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 214900
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 1256856
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "value": 326466
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "value": 15737
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "value": 22184
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "value": 0.3490333161721302
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
+      "value": 15737
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
+      "value": 22184
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
+      "value": 0.7405557181331045
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "value": 15737
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "value": 22184
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "value": 0.31754049760645825
     }
   ],
   "revisions": {
@@ -1834,6 +2010,132 @@
       "sides": {
         "A": "712c1735a48d0a4d14284c691efc92750050ef00",
         "B": "712c1735a48d0a4d14284c691efc92750050ef00"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1147560, \"bytes.route.root.gzip\": 609743, \"bytes.route.kit.raw\": 953687, \"bytes.route.kit.gzip\": 543516, \"bytes.game.raw\": 1918012, \"bytes.game.gzip\": 824646, \"bytes.game.incremental.raw\": 770452, \"bytes.game.incremental.gzip\": 214903, \"bytes.worker.raw\": 1253022, \"bytes.worker.gzip\": 325388, \"bytes.client.raw\": 1969451, \"bytes.client.gzip\": 844776}",
+        "builtB": "{\"bytes.route.root.raw\": 1147560, \"bytes.route.root.gzip\": 609743, \"bytes.route.kit.raw\": 953687, \"bytes.route.kit.gzip\": 543516, \"bytes.game.raw\": 1918012, \"bytes.game.gzip\": 824646, \"bytes.game.incremental.raw\": 770452, \"bytes.game.incremental.gzip\": 214903, \"bytes.worker.raw\": 1253118, \"bytes.worker.gzip\": 325403, \"bytes.client.raw\": 1969451, \"bytes.client.gzip\": 844776}",
+        "harnessDigest": "1d68c76a2109648d32fbbf1b6b76b61b7912bfc98f48f00caca67619ebc70ed2",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "a681b7149f0d57a9f7c68ab04ff72efa64c0952c5273392e26bc908adc9bdd3b",
+        "sideBSourceDigest": "a681b7149f0d57a9f7c68ab04ff72efa64c0952c5273392e26bc908adc9bdd3b",
+        "why": "The six pedestrian bodies add one model on the art CDN and its 8 by 8 palette to the decoded texture total. No code byte row moved past its limit, so those rows stay."
+      },
+      "id": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d9bd0b25c5e9995d5d04e054325df60414569fd0",
+        "B": "d9bd0b25c5e9995d5d04e054325df60414569fd0"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.6.2 (25G83)",
+        "power": "AC power",
+        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
+        "browser": "Helium 0.20.1.1, windowed, rv slots 6 and 7, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1283x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5",
+        "wallMs": "989143",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\",",
+        "quiet": "Another lane's Firefox replay ran during this run; only the render count rows are pinned from it, and counts do not vary across windows.",
+        "sourceDigestB": "185b137f70925f1a27d27e9ae00e8ae64120d7414903a6899dbb417839122ea3",
+        "why": "The walker's toon program, its two instanced depth programs (three copies a material's map onto the depth material) and its palette and pose textures. Compile time only; first-use stays clean."
+      },
+      "id": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261103-010625-s6)",
+        "B": "4558996482c865fbf758d62d9f5607033c47e005 (rv 20261103-010632-s7)"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1148503, \"bytes.route.root.gzip\": 610097, \"bytes.route.kit.raw\": 953665, \"bytes.route.kit.gzip\": 543505, \"bytes.game.raw\": 1918953, \"bytes.game.gzip\": 824997, \"bytes.game.incremental.raw\": 770450, \"bytes.game.incremental.gzip\": 214900, \"bytes.worker.raw\": 1256760, \"bytes.worker.gzip\": 326451, \"bytes.client.raw\": 1971179, \"bytes.client.gzip\": 845390}",
+        "builtB": "{\"bytes.route.root.raw\": 1148503, \"bytes.route.root.gzip\": 610097, \"bytes.route.kit.raw\": 953665, \"bytes.route.kit.gzip\": 543505, \"bytes.game.raw\": 1918953, \"bytes.game.gzip\": 824997, \"bytes.game.incremental.raw\": 770450, \"bytes.game.incremental.gzip\": 214900, \"bytes.worker.raw\": 1256856, \"bytes.worker.gzip\": 326466, \"bytes.client.raw\": 1971179, \"bytes.client.gzip\": 845390}",
+        "harnessDigest": "1d68c76a2109648d32fbbf1b6b76b61b7912bfc98f48f00caca67619ebc70ed2",
+        "lockfileSha256": "ff6ec4cce6bea437d570b2bc9d0ded345eb8c0a8c4a381a2b9da1654ad90c286",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "50acfaae2dbb8b4eb69adbc5d1214df9408f26dd728d830278d5f345aa922651",
+        "sideBSourceDigest": "50acfaae2dbb8b4eb69adbc5d1214df9408f26dd728d830278d5f345aa922651",
+        "why": "The walker models and the room rematch and fair-start work each stayed inside the Worker's limit alone and go over it together, so the game and Worker rows re-pin on the merged tree."
+      },
+      "id": "baseline-2026-11-02T20-46-14-628Z-bcca1fe-bcca1fe",
+      "lanes": ["build"],
+      "sides": {
+        "A": "bcca1fe459ebe810ef2d0688b85e9e781e62a10a",
+        "B": "bcca1fe459ebe810ef2d0688b85e9e781e62a10a"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+      },
+      "id": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "b5ef1ef03cc07db85ca337cfa7c54169407cbc17"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "AMD EPYC 9V74 80-Core Processor",
+        "cpus": "4",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+      },
+      "id": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "d14800e55608d21a2bd3db9ac902d71b9c50cfc4"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+      },
+      "id": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "78aef1a1a5238fd675dcee7a2f211f7304db6bd7"
       }
     }
   ],

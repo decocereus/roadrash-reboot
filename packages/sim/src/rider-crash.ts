@@ -53,6 +53,7 @@ export const throwRider = (
   rider.weaponAtThrow = rider.weapon;
   disarm(rider);
   rider.chase = null;
+  rider.witnessed = null;
   rider.parked = false;
   rider.attack = "none";
   rider.attackTicks = 0;

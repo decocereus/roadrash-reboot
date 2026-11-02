@@ -180,11 +180,13 @@ Junctions, cross roads and pedestrian crossings a road declares, their lights, t
 - Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/walkers.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
 
 Source files:
 
 - `apps/web/src/game/junctions.ts`
+- `apps/web/src/game/walker-clips.ts`
+- `apps/web/src/game/walker-skin.ts`
 - `apps/web/src/game/walkers.ts`
 - `packages/sim/src/cross-traffic.ts`
 - `packages/sim/src/pedestrians.ts`
@@ -197,6 +199,9 @@ Source files:
 
 Test files:
 
+- `apps/web/test/walker-asset.ts`
+- `apps/web/test/walker-clips.test.ts`
+- `apps/web/test/walker-model.test.ts`
 - `packages/sim/src/cross-traffic.test.ts`
 - `packages/sim/src/junction-traffic.test.ts`
 - `packages/sim/src/pedestrians.test.ts`
@@ -245,6 +250,7 @@ Source files:
 Test files:
 
 - `packages/career/src/police.test.ts`
+- `packages/sim/src/police-witness.test.ts`
 - `packages/sim/src/police.test.ts`
 
 ### AI riders (the pilot)

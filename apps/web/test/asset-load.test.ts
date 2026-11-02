@@ -22,6 +22,7 @@ import type {
 } from "../src/game/assets.ts";
 import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
+import { fakeWalkerAsset } from "./walker-asset.ts";
 
 const urls: ModelUrls = {
   bikes: {
@@ -38,6 +39,7 @@ const urls: ModelUrls = {
     "/models/rider_c.glb",
   ],
   van: "/models/van.glb",
+  walkers: "/models/pedestrians.glb",
 };
 
 const bikeUrl = urls.bikes.classic;
@@ -45,6 +47,7 @@ const everyUrl = [
   ...Object.values(urls.bikes),
   urls.car,
   urls.van,
+  urls.walkers,
   ...urls.figures,
 ].toSorted();
 const onceEach = everyUrl.map(() => 1);
@@ -192,6 +195,7 @@ const parsingOf = (
       parts: async (_, url) =>
         await decoded(url, new Map<string, readonly Primitive[]>()),
       rider: async (_, url) => await decoded(url, fakeRider()),
+      walkers: async (_, url) => await decoded(url, fakeWalkerAsset()),
       whole: async (_, url) => await decoded<readonly Primitive[]>(url, []),
     },
     releases,

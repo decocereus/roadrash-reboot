@@ -4,6 +4,7 @@ import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
 import * as THREE from "three";
 
+import type { WalkerAsset } from "./assets.ts";
 import { createShading, onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { createCity, FRONT_GAP, KERB_HEIGHT } from "./city.ts";
@@ -320,7 +321,11 @@ export interface World {
   dispose: () => void;
 }
 
-export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
+export const createWorld = (
+  track: Track,
+  walkerAsset: WalkerAsset,
+  shadowMap = SHADOW_MAP
+): World => {
   const look = lookOf(track.plan.region);
   const shading = createShading(look);
   const random = createRandom(track.plan.seed + 5);
@@ -444,7 +449,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
   stretches.push(...ramps.stretches);
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
-  const walkers = createWalkerMarks(track, shading);
+  const walkers = createWalkerMarks(track, shading, walkerAsset);
   scene.add(walkers.group);
   const junctions = buildJunctions(track, shading, clearance);
   scene.add(junctions.group);
@@ -514,7 +519,7 @@ export const createWorld = (track: Track, shadowMap = SHADOW_MAP): World => {
     shading,
     showRoadLife(view, s) {
       hazards.show(view.hazards, s);
-      walkers.show(view.pedestrians, s);
+      walkers.show(view.pedestrians, s, view.tick);
       junctions.show(view.tick);
     },
   };

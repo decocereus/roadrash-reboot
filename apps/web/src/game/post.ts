@@ -6,6 +6,7 @@ import type { Part } from "../profile-parts.ts";
 import { seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
+import { skinWalkers } from "./walker-skin.ts";
 
 const LINE_WIDTH = 1.15;
 const LINE_REFERENCE_HEIGHT = 900;
@@ -184,6 +185,7 @@ export const createPipeline = (
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
   normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
   const normalMaterial = new THREE.MeshNormalMaterial();
+  normalMaterial.onBeforeCompile = skinWalkers;
   normalMaterial.onBeforeRender = (
     _renderer,
     _scene,
@@ -200,6 +202,7 @@ export const createPipeline = (
   const instancedDepth = new THREE.MeshDepthMaterial({
     depthPacking: THREE.RGBADepthPacking,
   });
+  instancedDepth.onBeforeCompile = skinWalkers;
   const skinnedDepth = new THREE.MeshDepthMaterial({
     depthPacking: THREE.RGBADepthPacking,
   });
