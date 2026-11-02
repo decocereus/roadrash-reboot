@@ -26,6 +26,10 @@
         "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
       },
       {
+        "file": "tools/perf/baselines/post-step8.room.node-linux-x64.json.gz",
+        "sha256": "3969eedce0ca6a16396c389dc62630215c8c353344252ce5aaa436c8dd85bf3d"
+      },
+      {
         "file": "tools/perf/baselines/post-step8.six-celebrities.json.gz",
         "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
       },
@@ -44,7 +48,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "0a61f2ae850a5c1c8ecde3724288e497aede62c1f194bec15dc639fe87096b2a"
+    "summarySha256": "d7be328c52c4fdd3dc796618ce0287c3a90694ba72733bb4f3624a1474b4e19f"
   },
   "limits": [
     {
@@ -670,6 +674,150 @@
       "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
       "unit": "ms",
       "value": 1
+    },
+    {
+      "derivation": "1.1 x baseline median, uncalibrated",
+      "value": 76411.55673876873,
+      "baseline": 69465.05158069884,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "B"
+    },
+    {
+      "derivation": "1.1 x baseline median, uncalibrated",
+      "value": 89799.81231281198,
+      "baseline": 81636.19301164725,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "B"
+    },
+    {
+      "derivation": "1.1 x baseline median, uncalibrated",
+      "value": 139558.52645590683,
+      "baseline": 126871.38768718802,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "B"
+    },
+    {
+      "derivation": "1.1 x baseline median, uncalibrated",
+      "value": 71139.69783693845,
+      "baseline": 64672.45257903494,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "B"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.6080051360952753,
+      "baseline": 0.5287001183437177,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.3879574179775465,
+      "baseline": 0.3373542765022144,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.1 x baseline median, uncalibrated",
+      "value": 1401.74921797005,
+      "baseline": 1274.3174708818635,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "B"
+    },
+    {
+      "derivation": "1.1 x baseline median, uncalibrated",
+      "value": 1049.770449251248,
+      "baseline": 954.336772046589,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "B"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 3.8981021633953166,
+      "baseline": 3.3896540551263623,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 2.5248100616658817,
+      "baseline": 2.195487010144245,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.6306583294967045,
+      "baseline": 0.5483985473884387,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.40715396790755465,
+      "baseline": 0.35404692861526493,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-02T11-28-20-821Z-d2d3018-d2d3018",
+      "unit": "ms"
     },
     {
       "derivation": "1.1 x baseline median, uncalibrated",

@@ -366,7 +366,7 @@ const proposed = (kind: MetricKind, baseline: number) => {
   const factor = kind.headroom;
   return {
     derivation:
-      kind.metric === "sim.allocatedBytesPerTick"
+      kind.metric.endsWith("allocatedBytesPerTick")
         ? `${factor} x baseline median, uncalibrated`
         : `${factor} x calibrated baseline median`,
     value: baseline * factor,
