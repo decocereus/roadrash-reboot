@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./contract": "./src/contract.ts",
+    "./input-latency": "./src/input-latency.ts",
     "./messages": "./src/messages.ts",
     "./room-run": "./src/room-run.ts",
     "./seat-client": "./src/seat-client.ts",

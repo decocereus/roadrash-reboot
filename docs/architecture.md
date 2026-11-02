@@ -146,7 +146,9 @@ The tick loop is an absolute-deadline `setTimeout` chain: tick N is due N/60 s a
 
 A browser joins with `/?room=<race id>`. `openRoomSeat` in `apps/rooms/src/seat-client.ts` owns the socket, the ping and the room clock, and `pnpm rooms:race` uses the same client. When the race starts, `createRoomRun` makes a `RaceRun` whose `view` is the predicted race, and the game draws it like any other race. `stage.me` names the local rider, so the camera, the HUD and the race log follow that rider instead of rider 0. The race log reads the confirmed race, so a guess the room later corrects cannot settle a result. `createRoomClock` keeps prediction half a round trip plus two ticks ahead of the room. It steps once per game tick while the lead is within a tick or two, so a late packet does not stutter the bike, and only then skips a step or catches up.
 
-The timer keeps a racing room in memory. A waiting room has no timer, so it can hibernate, and its seats rejoin from `getWebSockets()` when it wakes. A restart mid-race closes every socket with 1006. Requeueing those riders is the lobby's job.
+Timers keep a room with seats in memory: the lobby's fill and deadline timers, then the 60 Hz tick. A room keeps no state outside memory, so a restart ends its race. Each seat then loads the next room by name, `<id>-r1`, and that room starts from the line.
+
+A room link is `/?room=<id>`, and `Race friends` on the bar makes one with a new ID. A guest name is the only identity. The browser keeps it in `rushline.guestName.v1` and sends it as a query parameter on the seat URL, and `cleanGuestName` in `apps/rooms/src/messages.ts` is what the server stores. The `started` message carries the humans' names in rider order, and `guestNames` in `packages/career/src/room-race.ts` maps them onto the race log's rows, because a seat that is not rider 0 reads rider 0 under a rival's slot. `Race again` after a room moves to `rematchRoomId`, a normal lobby, where `nextRoomId` is a requeue that starts by itself.
 
 ## Tracks
 

@@ -34,6 +34,15 @@ describe("the room clock", () => {
     }
   );
 
+  it("counts silence from the start, then from the last tick heard", () => {
+    const clock = createRoomClock();
+    clock.start(3000, 0);
+    expect(clock.silentMs(1000)).toBeLessThan(0);
+    expect(clock.silentMs(4000)).toBe(1000);
+    clock.heardTick(1, 4000);
+    expect(clock.silentMs(4500)).toBe(500);
+  });
+
   it("treats a measured round trip of zero as a measurement", () => {
     const clock = createRoomClock();
     clock.heardTick(100, 1000);
