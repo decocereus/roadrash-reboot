@@ -76,7 +76,7 @@ const bands: readonly Band[] = [
   { fewest: 3, level: 2, most: 14 },
   { fewest: 4, level: 3, most: 14 },
   { fewest: 4, level: 4, most: 16 },
-  { fewest: 5, level: 5, most: 15 },
+  { fewest: 5, level: 5, most: 17 },
 ];
 
 const MINUTES = 60_000;

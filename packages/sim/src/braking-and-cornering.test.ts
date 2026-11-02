@@ -25,6 +25,7 @@ import {
   TICK_RATE,
   clamp,
   curvePushOf,
+  sidewaysRate,
   steerFor,
 } from "./state.ts";
 import type { BikeSpec, RiderState } from "./state.ts";
@@ -83,7 +84,7 @@ const topSpeedKmh = (bike: BikeSpec): number => {
 };
 
 describe("the bike catalogue", () => {
-  it("the Wren holds the Switchback at 158 km/h where the Sesta lets go at 138; flat out the Wren scrubs down and holds it where the Sesta is pushed wide", () => {
+  it("the Wren holds the Switchback at 188 km/h where the Sesta lets go at 156; flat out the Wren scrubs down and holds it where the Sesta is pushed wide", () => {
     const wren = bikes["halden-wren-400"];
     const sesta = bikes["ostra-sesta-600"];
     expect({
@@ -91,10 +92,10 @@ describe("the bike catalogue", () => {
       wren: pushedWideInSwitchback(wren),
     }).toStrictEqual({ sesta: true, wren: false });
     expect({
-      sestaAbove: pushedWideInSwitchback(sesta, 138 * 1.05),
-      sestaBelow: pushedWideInSwitchback(sesta, 138 * 0.95),
-      wrenAbove: pushedWideInSwitchback(wren, 158 * 1.05),
-      wrenBelow: pushedWideInSwitchback(wren, 158 * 0.95),
+      sestaAbove: pushedWideInSwitchback(sesta, 156 * 1.05),
+      sestaBelow: pushedWideInSwitchback(sesta, 156 * 0.95),
+      wrenAbove: pushedWideInSwitchback(wren, 188 * 1.05),
+      wrenBelow: pushedWideInSwitchback(wren, 188 * 0.95),
     }).toStrictEqual({
       sestaAbove: true,
       sestaBelow: false,
@@ -104,13 +105,13 @@ describe("the bike catalogue", () => {
   });
 
   it.each([
-    { bike: bikes["gutter-pup-250"], kmh: 141 },
-    { bike: bikes["halden-kite-500"], kmh: 149 },
-    { bike: bikes["ostra-sette-750"], kmh: 134 },
-    { bike: bikes["brack-stoker-800"], kmh: 128 },
-    { bike: bikes["halden-meridian-900"], kmh: 134 },
-    { bike: bikes["brack-anvil-1100"], kmh: 121 },
-    { bike: bikes["ostra-nera-1000"], kmh: 128 },
+    { bike: bikes["gutter-pup-250"], kmh: 166 },
+    { bike: bikes["halden-kite-500"], kmh: 176 },
+    { bike: bikes["ostra-sette-750"], kmh: 152 },
+    { bike: bikes["brack-stoker-800"], kmh: 145 },
+    { bike: bikes["halden-meridian-900"], kmh: 145 },
+    { bike: bikes["brack-anvil-1100"], kmh: 130 },
+    { bike: bikes["ostra-nera-1000"], kmh: 138 },
   ])(
     "the $bike.name holds the Switchback up to about $kmh km/h",
     ({ bike, kmh }) => {
@@ -168,7 +169,9 @@ const feltSteer = (course: Track, rider: RiderState): number => {
   const curvature = curvatureAt(course, rider.s);
   const push = curvePushOf(rider.bike, curvature, rider.speed);
   const drift = rider.lateralSpeed - push;
-  const settling = (drift * Math.abs(drift)) / (2 * rider.bike.steerRate);
+  const settling =
+    (drift * Math.abs(drift)) /
+    (2 * sidewaysRate(rider.bike, rider.lateralSpeed, push, push));
   const [lane] = course.sameWayLanes;
   return clamp(
     steerFor(
@@ -253,16 +256,16 @@ describe("cornering with the throttle held", () => {
     expect(run.left).toBeLessThan(run.entered - 20);
   });
 
-  it("the same Wren holding the throttle into Dry Dock Corner at 190 km/h runs out of road, and a lift with no brake gets it round", () => {
+  it("a Sesta holding the throttle into Dry Dock Corner at 190 km/h runs out of road, and a lift with no brake gets it round", () => {
     const held = throttleHeldThrough(
       quietSlagRow,
-      bikes["halden-wren-400"],
+      bikes["ostra-sesta-600"],
       DRY_DOCK_CORNER_FROM,
       DRY_DOCK_CORNER_TO,
       190
     );
     expect(held.offRoad || held.crashed).toBeTruthy();
-    const state = alone(quietSlagRow, bikes["halden-wren-400"]);
+    const state = alone(quietSlagRow, bikes["ostra-sesta-600"]);
     const rider = player(state);
     rider.s = DRY_DOCK_CORNER_FROM - TURN_IN_BEFORE;
     rider.x = 0;
@@ -281,10 +284,10 @@ describe("cornering with the throttle held", () => {
     expect(rider.mode).toBe("riding");
   });
 
-  it("the Sawmill Hook at 190 km/h on a Wren is a brake bend: the throttle held runs out of road", () => {
+  it("the Sawmill Hook at 190 km/h on a Sesta is a brake bend: the throttle held runs out of road", () => {
     const held = throttleHeldThrough(
       quietHollowPine,
-      bikes["halden-wren-400"],
+      bikes["ostra-sesta-600"],
       SAWMILL_HOOK_FROM,
       SAWMILL_HOOK_TO,
       190

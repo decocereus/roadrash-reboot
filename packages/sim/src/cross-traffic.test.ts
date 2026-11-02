@@ -319,7 +319,7 @@ describe("a rider and a cross-road car", () => {
   });
 
   it("glances off when the bike only clips the end of the car", () => {
-    const { rider, seen } = rideInto(2 - nose(quietRace()) + 0.05, 40);
+    const { rider, seen } = rideInto(2 - nose(quietRace()) + 0.2, 40);
     expect(seen).toContain("glance");
     expect(seen).not.toContain("crash");
     expect(rider.mode).toBe("riding");
@@ -434,7 +434,7 @@ describe("the pilot and cross-road cars", () => {
     launch(state, car, onCollision(rider, car, car.cruise), car.cruise);
     const slowest = rideUntilPast(state, narrow, car);
     expect(rider.mode).toBe("riding");
-    expect(slowest).toBeLessThan(SPEED - 8);
+    expect(slowest).toBeLessThan(SPEED - 4);
   });
 
   it("rides through without braking when braking cannot help", () => {

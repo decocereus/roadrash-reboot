@@ -1,5 +1,6 @@
 import { clothoids, eased } from "@racer/track/alignment";
 import { compileTrack } from "@racer/track/track";
+import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 import { describe, expect, it } from "vitest";
 
@@ -16,7 +17,14 @@ import {
   straight,
 } from "./race-fixtures.ts";
 import { stepRace } from "./race.ts";
-import { lateralSpeedLimit, PLAYER_RIDER, TICK_RATE } from "./state.ts";
+import {
+  brakeGrip,
+  curvePushOf,
+  lateralSpeedLimit,
+  PLAYER_RIDER,
+  settledLean,
+  TICK_RATE,
+} from "./state.ts";
 
 const MPH = 2.237;
 
@@ -66,6 +74,26 @@ const brakeAcrossBend = (brake: number): number => {
     0.4
   );
   return rider.speed;
+};
+
+const gainedOn = (course: Track, curvature: number): number => {
+  const state = alone(course, streetBike);
+  const rider = player(state);
+  rider.s = 200;
+  rider.speed = 25;
+  const push = curvePushOf(streetBike, curvature, rider.speed);
+  rider.lateralSpeed = push;
+  const steer = curvature === 0 ? 0 : 1;
+  hold(state, course, { ...cruising, steer, throttle: 1 }, 0.25);
+  return rider.speed - 25;
+};
+
+const leanAt = (kmh: number): number => {
+  const state = alone(straight, streetBike);
+  const rider = player(state);
+  rider.speed = kmh / KMH;
+  hold(state, straight, { ...cruising, steer: 1, throttle: 0.5 }, 1);
+  return rider.lean;
 };
 
 describe("riding", () => {
@@ -171,7 +199,7 @@ describe("riding", () => {
     expect(rider.s - from).toBeGreaterThan(45);
   });
 
-  it("centred bars hold the opening bend at 144 km/h, where it asks a third of lock", () => {
+  it("the opening bend pushes a rider with centred bars off their line at 144 km/h", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
@@ -190,10 +218,10 @@ describe("riding", () => {
       },
       2.5
     );
-    expect(Math.abs(rider.x)).toBeLessThan(0.5);
+    expect(rider.x).toBeLessThan(-2);
   });
 
-  it("the opening bend pushes a rider who does not steer to the outside at 190 km/h, where it asks half of lock", () => {
+  it("the opening bend pushes a rider who does not steer to the outside at 190 km/h", () => {
     const state = field(quietTrack, 1, 0, 0);
     const rider = player(state);
     rider.s = 300;
@@ -213,6 +241,28 @@ describe("riding", () => {
       2.5
     );
     expect(rider.x).toBeLessThan(-1.5);
+  });
+
+  it("slowing down does not take the bend for a rider with centred bars", () => {
+    const arc = arcOf(1 / 200);
+    const state = alone(arc, streetBike);
+    const rider = player(state);
+    rider.s = 100;
+    rider.x = 0;
+    rider.speed = 80 / 3.6;
+    hold(state, arc, { ...cruising, steer: 0, throttle: 0.4 }, 4);
+    expect(Math.abs(rider.x)).toBeGreaterThan(2);
+  });
+
+  it("a curve that reads as straight carries a rider with centred bars at 190 km/h", () => {
+    const arc = arcOf(1 / 2000);
+    const state = alone(arc, streetBike);
+    const rider = player(state);
+    rider.s = 100;
+    rider.x = 0;
+    rider.speed = 190 / 3.6;
+    hold(state, arc, { ...cruising, steer: 0, throttle: 1 }, 3);
+    expect(Math.abs(rider.x)).toBeLessThan(0.1);
   });
 
   it.each([
@@ -235,6 +285,88 @@ describe("riding", () => {
       ).toBeCloseTo(steer, 2);
     }
   );
+
+  it("a rider holding a line through a bend leans into it and points along the road", () => {
+    const curvature = 1 / 60;
+    const arc = arcOf(curvature);
+    const state = alone(arc, streetBike);
+    const rider = player(state);
+    rider.s = 200;
+    rider.speed = 20;
+    for (let tick = 0; tick < 2 * TICK_RATE; tick += 1) {
+      const push = curvePushOf(streetBike, curvature, rider.speed);
+      const lean = settledLean(streetBike, curvature, rider.speed);
+      const limit = lateralSpeedLimit(streetBike, rider.speed, 0);
+      hold(
+        state,
+        arc,
+        {
+          ...cruising,
+          steer: (push - lean) / (limit - lean),
+          throttle: 0,
+        },
+        1 / TICK_RATE
+      );
+    }
+    expect(Math.abs(rider.lean)).toBeGreaterThan(0.1);
+    expect(Math.abs(rider.heading)).toBeLessThan(0.02);
+  });
+
+  it("a rider carried wide by a bend while steering into it never points outside the bend", () => {
+    const arc = arcOf(1 / 40);
+    const state = alone(arc, streetBike);
+    const rider = player(state);
+    rider.s = 200;
+    rider.speed = 30;
+    hold(state, arc, { ...cruising, steer: 0.5, throttle: 0.5 }, 0.5);
+    expect(rider.lateralSpeed).toBeGreaterThan(0);
+    expect(rider.lateralSpeed).toBeLessThan(
+      curvePushOf(rider.bike, 1 / 40, rider.speed)
+    );
+    expect(rider.heading).toBe(0);
+  });
+
+  it("a lane change on a straight points the bike where it is going", () => {
+    const state = alone(straight, streetBike);
+    const rider = player(state);
+    rider.speed = 30;
+    hold(state, straight, { ...cruising, steer: 1, throttle: 0.5 }, 0.5);
+    expect(rider.heading).toBeCloseTo(
+      Math.atan(rider.lateralSpeed / rider.speed),
+      2
+    );
+  });
+
+  it("the brakes give up part of their bite to a full-lock turn and keep the rest", () => {
+    const lock = lateralSpeedLimit(streetBike, 150 / KMH);
+    expect(brakeGrip(streetBike, 0)).toBe(1);
+    expect(brakeGrip(streetBike, lock)).toBeLessThan(1);
+    expect(brakeGrip(streetBike, lock)).toBeGreaterThan(0.5);
+  });
+
+  it("the throttle at the limit of a bend adds less speed than the same throttle on a straight", () => {
+    expect(gainedOn(arcOf(1 / 48), 1 / 48)).toBeLessThan(
+      gainedOn(straight, 0) * 0.5
+    );
+  });
+
+  it("a tap off the key in a bend keeps most of the turn", () => {
+    const curvature = 1 / 60;
+    const arc = arcOf(curvature);
+    const state = alone(arc, streetBike);
+    const rider = player(state);
+    rider.s = 200;
+    rider.speed = 20;
+    const push = curvePushOf(streetBike, curvature, rider.speed);
+    rider.lateralSpeed = push;
+    const held = rider.lateralSpeed;
+    hold(state, arc, { ...cruising, steer: 0, throttle: 0.4 }, 0.1);
+    expect(rider.lateralSpeed).toBeGreaterThan(held * 0.75);
+  });
+
+  it("the same lock leans the bike less at a crawl than at speed", () => {
+    expect(leanAt(30)).toBeLessThan(leanAt(140) * 0.5);
+  });
 
   it("the bars take most of a second to reach full lock, so a lane change takes over a second", () => {
     const state = alone(straight, streetBike);

@@ -178,7 +178,7 @@ describe("jumping", () => {
     rider.x = 0.75;
     rider.speed = 40;
     rider.lateralSpeed = -0.9;
-    const events = hold(brush, rampRoad, { ...flatOut, steer: -0.05 }, 0.12);
+    const events = hold(brush, rampRoad, { ...flatOut, steer: -0.08 }, 0.12);
     expect(rider.s).toBeLessThan(1016);
     expect(events.map((event) => event.kind)).toContain("glance");
     expect(events.some((event) => event.kind === "crash")).toBeFalsy();
@@ -239,18 +239,16 @@ describe("jumping", () => {
   });
 
   it("a rider drifting across a ramp's deck onto its edge line rides on along the deck instead of dropping to the road", () => {
-    const drift = besideRamp(
-      {
-        air: 0.3125,
-        airborne: false,
-        lateralSpeed: 1 / 6,
-        s: 1010,
-        speed: 40,
-        steer: 0,
-        x: 0.7 - 1 / 720,
-      },
-      2
-    );
+    const drifting = {
+      air: 0.3125,
+      airborne: false,
+      lateralSpeed: 1 / 6,
+      s: 1010,
+      speed: 40,
+      steer: 0.02,
+    };
+    const travelled = besideRamp({ ...drifting, x: 0 }, 2).rider.x;
+    const drift = besideRamp({ ...drifting, x: 0.7 - travelled }, 2);
     const deckHeight =
       loadingRamp.rise * ((drift.rider.s - 1000) / loadingRamp.length) ** 2;
     expect(drift.events).toStrictEqual([]);

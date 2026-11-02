@@ -184,7 +184,7 @@ const steeringHardInto = (kmh: number) => {
     boulder,
     {
       lateralSpeed: sideways,
-      s: 996 - 0.6 * speed,
+      s: 1000 - 0.6 * speed,
       speed,
       x: 1.8 - 0.6 * sideways,
     },
