@@ -8,13 +8,6 @@ import { KitBoard } from "./kit-board.tsx";
 
 const BACKDROP = { h: 941, w: 1672, x: 0, y: 0 } as const;
 
-const showTag = (tag: HTMLDivElement | null) => {
-  if (tag) {
-    tag.style.visibility = "visible";
-    tag.style.transform = "translate(62cqw, 14cqw)";
-  }
-};
-
 export const RaceBoard = () => {
   const [feed] = useState(() => {
     const made = createHudFeed();
@@ -27,17 +20,13 @@ export const RaceBoard = () => {
       position: 3,
       progress: 0.4,
       riderCount: 8,
-      rivalCelebrity: false,
-      rivalColour: "#ff2fb5",
-      rivalName: "Vex",
-      speech: "Get off my road.",
       speedKmh: 184,
     });
     return made;
   });
   return (
     <KitBoard
-      note="Race type sits on the road, so it uses hud-ink outlines instead of paper. The rival taunt rides the speech sticker."
+      note="Race type sits on the road, so it uses hud-ink outlines instead of paper."
       title="Race"
     >
       <Plate
@@ -46,7 +35,7 @@ export const RaceBoard = () => {
         src={gameOverPlates.backdrop}
       />
       <div className="absolute inset-0 [contain:paint]">
-        <RaceHud feed={feed} settled={false} tagRef={showTag} />
+        <RaceHud feed={feed} settled={false} />
       </div>
     </KitBoard>
   );

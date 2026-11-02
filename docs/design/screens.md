@@ -193,7 +193,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Purpose.** Tell the player what they need while steering and fighting, and nothing else. The road stays clear: no dashboard, no panel across the bottom.
 
-**Layout.** Four small corner clusters and one floating tag. Everything sits within 12% of the screen edges except the rival tag, which follows the nearest rival.
+**Layout.** Four small corner clusters. Everything sits within 12% of the screen edges.
 
 ```
 +------------------------------------------------------------------------------+
@@ -202,7 +202,6 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 |                                                                              |
 |                                                                              |
 |                         ┌──────────────┐                                     |
-|                         │ MOOSE ▓▓▓▓░░ │   (follows the nearest rival)       |
 |                         └──────────────┘                                     |
 |                               [rival]                                        |
 |                                                                              |
@@ -223,8 +222,6 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 | Bottom left | Speed | Speed in km/h as large tabular numerals with `km/h` under it. No dial. | `speed` |
 | Bottom centre | Player bars | `YOU` stamina bar and, under it, a thinner `BIKE` condition bar. Stamina goes green, yellow under 50, red under 25. The bike bar is warm white, yellow under 50, and red under 25. Both bars change colour and hold it; neither flashes. | `stamina`, `condition` |
 | Bottom right | Weapon | Weapon name and one pip per hit left. Shows `FISTS` with no pips when unarmed. | `weapon`, `weaponHits` |
-| Floating | Rival tag | Name and stamina bar of the nearest rival within 25 m, placed above their helmet and clamped to the screen. Only one tag at a time. An arrow replaces the tag at the screen edge when that rival is behind: `◄ MOOSE 6 m`. | nearest racer by `s` and `x`, their `stamina` |
-| Floating | Speech | A rival's knockdown line for two seconds, attached to their tag. | `crash` event with `by` |
 | Centre, brief | Notices | One word or short phrase, 0.8 s, then gone. | events |
 
 **Notice strings.** `WIPEOUT` (crash), `CLOSE` (near miss), `AIR` (landing after more than half a second), `HIT` (your strike lands), `DOWN!` (you knock a rider off), `GOT THE {WEAPON}` (weapon taken), `{WEAPON} BROKE`, `DISARMED` (yours taken), `COP!` (pursuit starts), `RUN!` (off the bike with a cop within 60 m), `LAST KM`.
@@ -233,9 +230,9 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 
 **Rules.**
 
-- Nothing is drawn in the middle 60% of the width between 25% and 80% of the height, except the rival tag, the speech tag, and the brief notice.
+- Nothing is drawn in the middle 60% of the width between 25% and 80% of the height, except the brief notice.
 - Only the cop warning blinks. Position and the two bars change colour without flashing, and notices appear once and fade.
-- At most one rival tag. No rear-view mirror; the edge arrow does that job.
+- No rival tags, names or speech during a race. No rear-view mirror.
 - All numerals are tabular so they do not jitter.
 - The HUD scales with the shorter screen side and stays readable at 1280 × 720.
 
