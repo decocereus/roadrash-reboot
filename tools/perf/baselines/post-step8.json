@@ -1464,6 +1464,30 @@
       "side": "B",
       "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
       "value": 0.7405557181331045
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "value": 15737
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "value": 22184
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "value": 0.31754049760645825
     }
   ],
   "revisions": {
@@ -2094,6 +2118,24 @@
       "sides": {
         "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
         "B": "d14800e55608d21a2bd3db9ac902d71b9c50cfc4"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+      },
+      "id": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
+      "lanes": ["node"],
+      "sides": {
+        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
+        "B": "78aef1a1a5238fd675dcee7a2f211f7304db6bd7"
       }
     }
   ],

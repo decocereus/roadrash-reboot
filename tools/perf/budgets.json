@@ -27,7 +27,7 @@
       },
       {
         "file": "tools/perf/baselines/post-step8.road-life.node-darwin-arm64.json.gz",
-        "sha256": "87389309d54c1a3e2cb72bd4796d01ad9fe7d96ecc4ee73266ad6919ff745172"
+        "sha256": "3d54b14df56f72982b90f03504659d601970f53d18072fd6c4e90067874a610a"
       },
       {
         "file": "tools/perf/baselines/post-step8.road-life.node-linux-x64.json.gz",
@@ -72,7 +72,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "6e8bd06432bcd3510e23d2bbe432a26e3956cfda684bd22b484ea711c510cd92"
+    "summarySha256": "16694b64b3ea77f3eef9f495dd1866006523c203b05bb166984bf78d49f008a3"
   },
   "limits": [
     {
@@ -713,14 +713,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.4013883135979497,
-      "baseline": 0.3490333161721302,
+      "value": 0.36517157224742697,
+      "baseline": 0.31754049760645825,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "roadLife.tick.p95",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
       "unit": "ms"
     },
     {
@@ -1224,7 +1224,7 @@
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
       "unit": "B"
     },
     {
@@ -1248,7 +1248,7 @@
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
+      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
       "unit": "B"
     },
     {
