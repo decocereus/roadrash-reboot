@@ -41,6 +41,16 @@ const crossCarsOnRoad = (view: RaceView): number => {
   return count;
 };
 
+const walkersOnRoad = (view: RaceView): number => {
+  let count = 0;
+  for (const pedestrian of view.pedestrians) {
+    if (pedestrian.mode === "walking") {
+      count += 1;
+    }
+  }
+  return count;
+};
+
 const measuredWindow = () => {
   const setup = roadLifeSetup();
   const crossingS = setup.track.crossings
@@ -55,12 +65,14 @@ const measuredWindow = () => {
   }
   const durations = new Float64Array(WINDOW_TICKS);
   let fewestCrossCars = Number.POSITIVE_INFINITY;
+  let fewestWalkers = Number.POSITIVE_INFINITY;
   let mostRacersAtCrossing = 0;
   for (let index = 0; index < WINDOW_TICKS; index += 1) {
     const started = performance.now();
     run.step(eitherSideFrame);
     durations[index] = performance.now() - started;
     fewestCrossCars = Math.min(fewestCrossCars, crossCarsOnRoad(run.view));
+    fewestWalkers = Math.min(fewestWalkers, walkersOnRoad(run.view));
     mostRacersAtCrossing = Math.max(
       mostRacersAtCrossing,
       racersNear(run.view, crossingS)
@@ -68,7 +80,7 @@ const measuredWindow = () => {
   }
   return {
     durations: [...durations],
-    roadLife: { fewestCrossCars, mostRacersAtCrossing },
+    roadLife: { fewestCrossCars, fewestWalkers, mostRacersAtCrossing },
   };
 };
 

@@ -76,6 +76,7 @@ export const throwRider = (
   rider.airborne = false;
   rider.airTicks = 0;
   rider.bumpedBy = -1;
+  rider.bumpedWalker = -1;
   rider.verticalSpeed = 0;
   rider.wobble = 0;
   rider.slip = 0;

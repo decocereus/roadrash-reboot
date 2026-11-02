@@ -205,6 +205,7 @@ export const childRecord = Schema.Struct({
   roadLife: Schema.optionalKey(
     Schema.Struct({
       fewestCrossCars: Schema.Number,
+      fewestWalkers: Schema.Number,
       mostRacersAtCrossing: Schema.Number,
     })
   ),

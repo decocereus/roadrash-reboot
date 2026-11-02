@@ -11,11 +11,14 @@ import type { SignalledCrossing } from "./signals.ts";
 import { BIKE_HALF_WIDTH, TICK_RATE } from "./state.ts";
 import type { CrossCar, RaceEvent, RaceState, RiderState } from "./state.ts";
 
-const quiet = compileTrack({
-  ...roads["breakwater-run"].plan,
-  hazardsPerKilometre: 0,
-  trafficPerKilometre: 0,
-});
+const quiet: Track = {
+  ...compileTrack({
+    ...roads["breakwater-run"].plan,
+    hazardsPerKilometre: 0,
+    trafficPerKilometre: 0,
+  }),
+  walkSites: [],
+};
 
 const crossingOf = (id: string): SignalledCrossing => {
   const crossing = quiet.crossings.find((each) => each.id === id);
@@ -409,12 +412,15 @@ describe("the pilot and cross-road cars", () => {
   });
 
   it("brakes to arrive after the car has cleared when no line is open", () => {
-    const narrow = compileTrack({
-      ...roads["breakwater-run"].plan,
-      hazardsPerKilometre: 0,
-      lanesEachWay: 1,
-      trafficPerKilometre: 0,
-    });
+    const narrow: Track = {
+      ...compileTrack({
+        ...roads["breakwater-run"].plan,
+        hazardsPerKilometre: 0,
+        lanesEachWay: 1,
+        trafficPerKilometre: 0,
+      }),
+      walkSites: [],
+    };
     let seed = 1;
     let chance = meet(narrow, seed);
     while (crossCarHeadingLeft(chance.state).bodyHalfLength < 4) {

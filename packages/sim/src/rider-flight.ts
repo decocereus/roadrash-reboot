@@ -83,8 +83,12 @@ const land = (
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
   rider.offRoad = Math.abs(contact.x) > track.roadHalfWidth;
-  const bumpedBy = state.hazards[rider.bumpedBy] ?? null;
+  const bumpedBy =
+    state.hazards[rider.bumpedBy] ??
+    state.pedestrians[rider.bumpedWalker] ??
+    null;
   rider.bumpedBy = -1;
+  rider.bumpedWalker = -1;
   if (
     impact < HARD_LANDING ||
     (judged && (rider.offRoad || slip > LANDING_SLIP))

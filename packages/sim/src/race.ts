@@ -15,6 +15,11 @@ import { createCrossTraffic, stepCrossTraffic } from "./cross-traffic.ts";
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
+import {
+  createPedestrians,
+  meetPedestrians,
+  stepPedestrians,
+} from "./pedestrians.ts";
 import { createPilotHistory } from "./pilot-history.ts";
 import { pilotRider } from "./pilot.ts";
 import { PULL_OVER, stepPolice } from "./police.ts";
@@ -154,6 +159,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   brake: 0,
   bumpLoss: 0,
   bumpedBy: -1,
+  bumpedWalker: -1,
   chase: null,
   condition: FULL_CONDITION,
   controller: entry.controller,
@@ -380,6 +386,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     hazardDice: nextSeed(seed + HAZARD_DICE_SALT),
     hazards: [],
     pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
+    pedestrians: createPedestrians(track, seed),
     pilot: createPilotHistory(),
     police: {
       beat: police.beat,
@@ -598,6 +605,7 @@ export const stepRace = (
   }
   state.events.length = 0;
   state.tick += 1;
+  stepPedestrians(state, track);
   stepTraffic(state, track);
   stepCrossTraffic(state, track);
   for (const rider of state.riders) {
@@ -613,6 +621,13 @@ export const stepRace = (
       touchdown?.s ?? fromS,
       touchdown?.x ?? fromX,
       throwForHazard
+    );
+    meetPedestrians(
+      state,
+      track,
+      rider,
+      touchdown?.s ?? fromS,
+      touchdown?.x ?? fromX
     );
   }
   stepRiderContacts(state, track, throwRider);

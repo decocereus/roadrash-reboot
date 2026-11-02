@@ -262,6 +262,7 @@ export const syntheticRoadLife = (
       durations: tickDurations(slowdown.runner * slowdown.sim),
       roadLife: {
         fewestCrossCars,
+        fewestWalkers: ROAD_LIFE.leastWalkers,
         mostRacersAtCrossing: ROAD_LIFE.leastRacersAtCrossing,
       },
     })

@@ -53,11 +53,26 @@ export const devRideFrom = (search: string): DevRide => {
   const hazardLead = Number(flags.get("before") ?? HAZARD_LEAD);
   const startKmh = Number(flags.get("kmh") ?? 0);
   const straight = flags.has("straight");
+  const passBy = Number(flags.get("passby") ?? 0);
   const clear = flags.has("clear");
   let holdTicks = WATCHING;
 
   const target = (race: RaceView): Hazard | undefined =>
     race.hazards.find((hazard) => hazard.id === hazardId);
+
+  const lineFor = (race: RaceView, me: RiderView): number => {
+    const walker = race.pedestrians.find(({ id }) => id === hazardId);
+    if (walker) {
+      return walker.mode === "walking" ? walker.x + passBy : me.x;
+    }
+    return target(race)?.x ?? me.x;
+  };
+
+  const placedAt = (race: RaceView): number => {
+    const spot =
+      target(race) ?? race.pedestrians.find(({ id }) => id === hazardId);
+    return spot ? spot.s - hazardLead : startAt;
+  };
 
   const seen = (race: RaceView): boolean => {
     const me = riderOf(race.riders, PLAYER_RIDER);
@@ -105,7 +120,7 @@ export const devRideFrom = (search: string): DevRide => {
         return;
       }
       const hazard = target(run.view);
-      const s = hazard ? hazard.s - hazardLead : startAt;
+      const s = placedAt(run.view);
       if (s <= 0) {
         return;
       }
@@ -123,7 +138,7 @@ export const devRideFrom = (search: string): DevRide => {
     steer: (race, track, input) => {
       const me = riderOf(race.riders, PLAYER_RIDER);
       if (me && straight) {
-        input.steer = holdLine(track, me, target(race)?.x ?? me.x);
+        input.steer = holdLine(track, me, lineFor(race, me));
         input.throttle = 1;
         input.brake = 0;
       }

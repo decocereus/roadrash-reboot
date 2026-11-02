@@ -568,10 +568,11 @@ const roadLifeWorkloadFailures = (lane: RoadLifeLane): string[] =>
       return [`${where} wrote no road life window`];
     }
     return seen.fewestCrossCars >= ROAD_LIFE.leastCrossCars &&
+      seen.fewestWalkers >= ROAD_LIFE.leastWalkers &&
       seen.mostRacersAtCrossing >= ROAD_LIFE.leastRacersAtCrossing
       ? []
       : [
-          `${where} fewestCrossCars=${seen.fewestCrossCars} mostRacersAtCrossing=${seen.mostRacersAtCrossing} expected at least ${ROAD_LIFE.leastCrossCars} and ${ROAD_LIFE.leastRacersAtCrossing}`,
+          `${where} fewestCrossCars=${seen.fewestCrossCars} fewestWalkers=${seen.fewestWalkers} mostRacersAtCrossing=${seen.mostRacersAtCrossing} expected at least ${ROAD_LIFE.leastCrossCars} and ${ROAD_LIFE.leastRacersAtCrossing}`,
         ];
   });
 

@@ -179,14 +179,14 @@ type RaceSettings = Omit<
   | "start"
 >;
 
-type Road = Omit<Track, "crossings" | "plan"> & {
+type Road = Omit<Track, "crossings" | "plan" | "walkSites"> & {
   readonly plan: RaceSettings;
 };
 
 type RaceTrack = Road | (Road & Pick<Track, "crossings">);
 
-type EitherSideTrack = Omit<Track, "crossings"> &
-  Partial<Pick<Track, "crossings">>;
+type EitherSideTrack = Omit<Track, "crossings" | "walkSites"> &
+  Partial<Pick<Track, "crossings" | "walkSites">>;
 
 const raceSettings = (plan: Track["plan"]): RaceSettings => ({
   features: plan.features,
@@ -205,7 +205,7 @@ const raceSettings = (plan: Track["plan"]): RaceSettings => ({
 });
 
 const raceTrack = (track: EitherSideTrack): RaceTrack => {
-  const { crossings = [], ...compiled } = track;
+  const { crossings = [], walkSites: _sideBOnly, ...compiled } = track;
   const road: Road = {
     ...compiled,
     curvature: withoutSignedZero(track.curvature),

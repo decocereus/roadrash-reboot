@@ -83,7 +83,7 @@ const LEVEL_SHARES: readonly (readonly [RoadLevel, number])[] = [
   [5, 1],
 ];
 
-type Road = Omit<Track, "hazards">;
+type Road = Omit<Track, "hazards" | "walkSites">;
 
 type Bend = "straight" | "gentle" | "tight";
 
@@ -93,7 +93,7 @@ interface Place {
   readonly inside: number;
 }
 
-const levelOf = (roll: number): RoadLevel =>
+export const levelOf = (roll: number): RoadLevel =>
   LEVEL_SHARES.find(([, share]) => roll < share)?.[0] ?? 5;
 
 const kindOf = (

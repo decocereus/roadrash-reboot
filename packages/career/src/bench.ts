@@ -68,5 +68,12 @@ const stressSetup = (): CareerRaceSetup => {
   };
 };
 
+const withoutWalkers = (setup: CareerRaceSetup): CareerRaceSetup => ({
+  ...setup,
+  track: { ...setup.track, walkSites: [] },
+});
+
 export const benchSetup = (bench: Bench): CareerRaceSetup =>
-  bench === "stress" ? stressSetup() : benchRaceSetup(benchRaces.reference);
+  withoutWalkers(
+    bench === "stress" ? stressSetup() : benchRaceSetup(benchRaces.reference)
+  );

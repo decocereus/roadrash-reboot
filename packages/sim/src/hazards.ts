@@ -49,6 +49,13 @@ const FLAT_CLEARANCE = 0.05;
 const NEAR_MISS_GAP = 0.8;
 const NEAR_MISS_SPEED = 20;
 
+interface Footprint {
+  readonly s: number;
+  readonly x: number;
+  readonly halfLength: number;
+  readonly halfWidth: number;
+}
+
 interface HazardSpot {
   readonly id: string;
   readonly s: number;
@@ -174,8 +181,8 @@ const slabLeave = (
   return (centre + Math.sign(delta) * half - from) / delta;
 };
 
-const entryShare = (
-  hazard: Hazard,
+export const entryShare = (
+  hazard: Footprint,
   fromS: number,
   fromX: number,
   rider: RiderState
@@ -195,10 +202,10 @@ const entryShare = (
   return enter < leave ? enter : -1;
 };
 
-const report = (
+export const reportHazard = (
   state: RaceState,
   rider: RiderState,
-  hazard: Hazard,
+  hazard: HazardTag,
   effect: HazardEffect
 ): void => {
   state.events.push({
@@ -219,13 +226,13 @@ const slipOnOil = (
   rider.slip = OIL_SLIP;
   rider.slipFrom = hazardIndex;
   rider.wobble = Math.max(rider.wobble, OIL_WOBBLE);
-  report(state, rider, hazard, "slip");
+  reportHazard(state, rider, hazard, "slip");
 };
 
-const shoveOff = (
+export const shoveOff = (
   state: RaceState,
   rider: RiderState,
-  hazard: Hazard,
+  hazard: HazardTag & Footprint,
   glancing: boolean
 ): void => {
   const side =
@@ -239,12 +246,45 @@ const shoveOff = (
     hazard.x + side * (hazard.halfWidth + BIKE_HALF_WIDTH + ROCK_CLEARANCE);
   rider.lateralSpeed = side * ROCK_SHOVE;
   rider.hitStun = ROCK_STUN;
-  report(state, rider, hazard, "stagger");
+  reportHazard(state, rider, hazard, "stagger");
 };
+
+interface BikeBump {
+  readonly kick: number;
+  readonly loss: number;
+  readonly fastLoss: number;
+  readonly upset: number;
+}
+
+export const ROCK_BUMP = {
+  fastLoss: ROCK_FAST_LOSS,
+  kick: ROCK_KICK,
+  loss: ROCK_LOSS,
+  upset: 1,
+} as const satisfies BikeBump;
 
 export const rockUpsetShare = (speed: number): number => {
   const ratio = speed / ROCK_UPSET_SPEED;
   return ROCK_UPSET * (ratio * ratio * ratio);
+};
+
+export const bumpBike = (
+  track: Track,
+  rider: RiderState,
+  x: number,
+  blow: BikeBump
+): void => {
+  const pace = rider.speed;
+  const upset =
+    blow.upset * lateralSpeedLimit(rider.bike, pace) * rockUpsetShare(pace);
+  const lean = Math.sign(rider.lateralSpeed) || Math.sign(rider.x - x) || 1;
+  rider.speed *= 1 - blow.loss - blow.fastLoss * Math.min(1, pace / ROCK_FAST);
+  rider.lateralSpeed += lean * upset;
+  rider.airborne = true;
+  rider.airTicks = 0;
+  rider.verticalSpeed =
+    blow.kick * pace +
+    slopeAt(track, rider.s) * forwardRateOf(rider, curvatureAt(track, rider.s));
 };
 
 const bumpOver = (
@@ -254,19 +294,9 @@ const bumpOver = (
   hazardIndex: number,
   hazard: Hazard
 ): void => {
-  const pace = rider.speed;
-  const upset = lateralSpeedLimit(rider.bike, pace) * rockUpsetShare(pace);
-  const lean =
-    Math.sign(rider.lateralSpeed) || Math.sign(rider.x - hazard.x) || 1;
-  rider.speed *= 1 - ROCK_LOSS - ROCK_FAST_LOSS * Math.min(1, pace / ROCK_FAST);
-  rider.lateralSpeed += lean * upset;
-  rider.airborne = true;
-  rider.airTicks = 0;
-  rider.verticalSpeed =
-    ROCK_KICK * pace +
-    slopeAt(track, rider.s) * forwardRateOf(rider, curvatureAt(track, rider.s));
+  bumpBike(track, rider, hazard.x, ROCK_BUMP);
   rider.bumpedBy = hazardIndex;
-  report(state, rider, hazard, "bump");
+  reportHazard(state, rider, hazard, "bump");
 };
 
 const hitRock = (
@@ -316,14 +346,14 @@ const dropIntoPothole = (
       1
     )
   );
-  report(state, rider, hazard, "jolt");
+  reportHazard(state, rider, hazard, "jolt");
 };
 
-const passesClose = (
+export const passesClose = (
   state: RaceState,
   rider: RiderState,
   fromS: number,
-  hazard: Hazard
+  hazard: HazardTag & Footprint
 ): void => {
   const gap = Math.abs(rider.x - hazard.x) - hazard.halfWidth - BIKE_HALF_WIDTH;
   if (

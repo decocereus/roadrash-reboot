@@ -3,6 +3,7 @@ import { hazardKinds } from "@racer/track/hazards";
 import { CORNER_SCAN_POINTS, FORECAST_TICKS } from "./pilot-history.ts";
 import type {
   CrossCarView,
+  PedestrianView,
   RaceView,
   RiderView,
   TrafficView,
@@ -23,10 +24,17 @@ import {
   textAt,
   textOrNoneAt,
 } from "./snapshot-members.ts";
-import { attackStates, controllers, riderModes, weaponKinds } from "./state.ts";
+import {
+  attackStates,
+  controllers,
+  pedestrianModes,
+  riderModes,
+  weaponKinds,
+} from "./state.ts";
 import type {
   CrossCar,
   Hazard,
+  Pedestrian,
   PilotHistory,
   RaceState,
   RiderInput,
@@ -34,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 2;
+export const SNAPSHOT_FORMAT = 3;
 
 const TICK_BYTES = 8;
 
@@ -75,6 +83,17 @@ export type CrossCarSetupKey =
   | "paint"
   | "stopAt"
   | "turnAt";
+
+export type PedestrianSetupKey =
+  | "command"
+  | "crossing"
+  | "halfLength"
+  | "halfWidth"
+  | "height"
+  | "id"
+  | "kind"
+  | "s"
+  | "walkKind";
 
 export type RaceHeaderKey = "tick";
 
@@ -143,6 +162,18 @@ const crossCarSchema = schemaOf<
   x: floatAt("x"),
 });
 
+const pedestrianSchema = schemaOf<
+  Omit<PedestrianView, PedestrianSetupKey>,
+  Omit<Pedestrian, PedestrianSetupKey>
+>({
+  across: floatAt("across"),
+  dice: floatAt("dice"),
+  drift: floatAt("drift"),
+  mode: choiceAt("mode", pedestrianModes),
+  wait: floatAt("wait"),
+  x: floatAt("x"),
+});
+
 const riderSchema = schemaOf<
   Omit<RiderView, RiderSetupKey>,
   Omit<RiderState, RiderSetupKey>
@@ -163,6 +194,7 @@ const riderSchema = schemaOf<
   brake: floatAt("brake"),
   bumpLoss: floatAt("bumpLoss"),
   bumpedBy: floatAt("bumpedBy"),
+  bumpedWalker: floatAt("bumpedWalker"),
   chase: riderRefAt("chase"),
   condition: floatAt("condition"),
   controller: choiceAt("controller", controllers),
@@ -221,6 +253,7 @@ export const raceSchema = schemaOf<
   events: eventsAt("events"),
   hazardDice: floatAt("hazardDice"),
   hazards: filledListAt("hazards", hazardSchema, blankHazard),
+  pedestrians: listAt("pedestrians", pedestrianSchema),
   pilot: recordAt("pilot", pilotSchema),
   riders: listAt("riders", riderSchema),
 });

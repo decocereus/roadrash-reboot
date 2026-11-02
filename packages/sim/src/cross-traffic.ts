@@ -1,8 +1,9 @@
 import { ARM_LENGTH, armSidesOf } from "@racer/track/crossings";
 import type { ArmSide, CrossRoad, TrackCrossing } from "@racer/track/crossings";
-import { nextSeed, siteSeed, unitOf } from "@racer/track/random";
+import { nextSeed, rollDice, siteSeed } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
+import { blocksCars } from "./pedestrians.ts";
 import { crossLightOf, isSignalled, signalPhaseAt } from "./signals.ts";
 import {
   approach,
@@ -11,7 +12,7 @@ import {
   TICK_RATE,
   TICK_SECONDS,
 } from "./state.ts";
-import type { CrossCar, RaceState, RiderState } from "./state.ts";
+import type { CrossCar, Pedestrian, RaceState, RiderState } from "./state.ts";
 import {
   ACCELERATION,
   BRAKING,
@@ -19,6 +20,7 @@ import {
   pickBody,
   QUEUE_GAP,
   STOP_SHORT,
+  walkerComesInto,
 } from "./traffic.ts";
 
 const CARS_PER_LANE = 3;
@@ -35,15 +37,11 @@ const LANE_REACH = 1.5;
 const YIELD_MARGIN = 0.9;
 const YIELD_SIGHT = 40;
 const YIELD_ROOM = 8;
+const TURN_REACH = 15;
 const SECONDS_PER_MINUTE = 60;
 
-const roll = (car: { dice: number }): number => {
-  car.dice = nextSeed(car.dice);
-  return unitOf(car.dice);
-};
-
 const waitOf = (car: CrossCar): number =>
-  1 + Math.floor(roll(car) * 2 * car.everyTicks);
+  1 + Math.floor(rollDice(car) * 2 * car.everyTicks);
 
 const placeOnPath = (car: CrossCar): void => {
   const past = car.travel - car.turnAt;
@@ -79,16 +77,16 @@ const exitLane = (track: Track, side: ArmSide, along: ArmSide): number => {
 const carFor = (track: Track, lane: Lane, seed: number): CrossCar => {
   const { junction, laneS, road, side } = lane;
   const dice = { dice: seed };
-  const body = pickBody(roll(dice));
+  const body = pickBody(rollDice(dice));
   const start = track.roadHalfWidth + ARM_LENGTH;
   const across: ArmSide = side === 1 ? -1 : 1;
   const stopAt = ARM_LENGTH - STOP_LINE_OUT - STOP_SHORT - body.halfLength;
-  const along: ArmSide = roll(dice) < 0.5 ? 1 : -1;
+  const along: ArmSide = rollDice(dice) < 0.5 ? 1 : -1;
   const through = road.arms === "both";
   const everyTicks =
     (CARS_PER_LANE * SECONDS_PER_MINUTE * TICK_RATE * road.lanesEachWay) /
     road.carsPerMinute;
-  const cruise = SLOWEST_CRUISE + roll(dice) * CRUISE_SPREAD;
+  const cruise = SLOWEST_CRUISE + rollDice(dice) * CRUISE_SPREAD;
   const car: CrossCar = {
     across,
     along,
@@ -106,7 +104,7 @@ const carFor = (track: Track, lane: Lane, seed: number): CrossCar => {
     junction,
     laneS,
     pace: cruise,
-    paint: Math.floor(roll(dice) * PAINT_COUNT),
+    paint: Math.floor(rollDice(dice) * PAINT_COUNT),
     s: laneS,
     speed: 0,
     stopAt,
@@ -250,18 +248,61 @@ const gapToPoint = (car: CrossCar, s: number, x: number): number => {
     : Number.POSITIVE_INFINITY;
 };
 
-const stopsFor = (car: CrossCar, rider: RiderState, gap: number): boolean =>
-  rider.mode !== "busted" &&
-  !(rider.mode === "wrecked" && rider.parked) &&
+const gapToWalkerPastTurn = (car: CrossCar, pedestrian: Pedestrian): number => {
+  const past = (pedestrian.s - car.laneS) * car.along;
+  return car.turnAt < Number.POSITIVE_INFINITY &&
+    past > 0 &&
+    past < TURN_REACH &&
+    walkerComesInto(
+      pedestrian,
+      car.pace,
+      car.fromX + car.across * car.turnAt,
+      car.bodyHalfWidth + YIELD_MARGIN
+    )
+    ? car.turnAt - car.travel
+    : Number.POSITIVE_INFINITY;
+};
+
+const gapToWalker = (car: CrossCar, pedestrian: Pedestrian): number => {
+  if (car.travel <= car.turnAt) {
+    return Math.min(
+      gapToPoint(car, pedestrian.s, pedestrian.x),
+      gapToWalkerPastTurn(car, pedestrian)
+    );
+  }
+  return walkerComesInto(
+    pedestrian,
+    car.pace,
+    car.x,
+    car.halfWidth + YIELD_MARGIN
+  )
+    ? (pedestrian.s - car.s) * car.along - car.halfLength - BIKE_HALF_LENGTH
+    : Number.POSITIVE_INFINITY;
+};
+
+const stopsShort = (car: CrossCar, gap: number): boolean =>
   gap > 0 &&
   gap < YIELD_SIGHT &&
   gap < (car.pace * car.pace) / (2 * BRAKING) + YIELD_ROOM;
 
-const yieldsToRiders = (state: RaceState, car: CrossCar): boolean => {
+const stopsFor = (car: CrossCar, rider: RiderState, gap: number): boolean =>
+  rider.mode !== "busted" &&
+  !(rider.mode === "wrecked" && rider.parked) &&
+  stopsShort(car, gap);
+
+const yields = (state: RaceState, car: CrossCar): boolean => {
   for (const rider of state.riders) {
     if (
       stopsFor(car, rider, gapToPoint(car, rider.s, rider.x)) ||
       stopsFor(car, rider, gapToPoint(car, rider.bodyS, rider.bodyX))
+    ) {
+      return true;
+    }
+  }
+  for (const pedestrian of state.pedestrians) {
+    if (
+      blocksCars(pedestrian) &&
+      stopsShort(car, gapToWalker(car, pedestrian))
     ) {
       return true;
     }
@@ -306,7 +347,7 @@ const drive = (
   car: CrossCar
 ): void => {
   const cruise = car.travel > car.turnAt ? RUN_SPEED : car.cruise;
-  const limit = yieldsToRiders(state, car)
+  const limit = yields(state, car)
     ? 0
     : Math.min(
         cruise,

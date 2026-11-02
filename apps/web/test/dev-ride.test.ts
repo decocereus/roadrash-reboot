@@ -28,6 +28,23 @@ const playerOf = (run: RaceRun) => {
 };
 
 describe("dev ride placement", () => {
+  it("hazard also takes a pedestrian, and straight rides at their line once they walk", () => {
+    const track = trackFor("breakwater-run", 1);
+    const run = createRaceRun(defaultSetup(track, 3));
+    const [walker] = run.view.pedestrians;
+    if (!walker) {
+      throw new Error("Breakwater Run has people on it.");
+    }
+    const search = `?hazard=${encodeURIComponent(walker.id)}&before=50&passby=1&straight`;
+    const dev = devRideFrom(search);
+    const me = playerOf(run);
+    dev.place(run);
+    expect(me.s).toBe(walker.s - 50);
+    const input = { ...neutralInput };
+    dev.steer(run.view, track, input);
+    expect(input.steer).toBeCloseTo(0, 1);
+  });
+
   it("at and kmh move the player and its body along the road and set its speed, keeping its line", () => {
     const run = freshRun();
     const me = playerOf(run);

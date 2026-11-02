@@ -173,21 +173,24 @@ Test files:
 
 ### Junctions and crossings
 
-Junctions, cross roads and pedestrian crossings a road declares, their lights, the cars on the cross roads, the main-road traffic that queues at a red, and how each is drawn: the arms, zebras, stop lines and signal heads.
+Junctions, cross roads and pedestrian crossings a road declares, their lights, the pedestrians on them, the cars on the cross roads, the main-road traffic that queues at a red, and how each is drawn: the arms, zebras, stop lines and signal heads.
 
 - Id: `junctions`
 - Start: `packages/track/src/crossings.ts`, `packages/sim/src/signals.ts`, `apps/web/src/game/junctions.ts`
 - Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `apps/web/src/game/junctions.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/walkers.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
 
 Source files:
 
 - `apps/web/src/game/junctions.ts`
+- `apps/web/src/game/walkers.ts`
 - `packages/sim/src/cross-traffic.ts`
+- `packages/sim/src/pedestrians.ts`
 - `packages/sim/src/signals.ts`
 - `packages/track/src/crossings.ts`
+- `packages/track/src/walk-sites.ts`
 - `tools/perf/road-life.ts`
 - `tools/perf/src/node-road-life.ts`
 - `tools/perf/src/road-life.ts`
@@ -196,8 +199,10 @@ Test files:
 
 - `packages/sim/src/cross-traffic.test.ts`
 - `packages/sim/src/junction-traffic.test.ts`
+- `packages/sim/src/pedestrians.test.ts`
 - `packages/sim/src/signals.test.ts`
 - `packages/track/src/crossings.test.ts`
+- `packages/track/src/walk-sites.test.ts`
 
 ### Fighting and weapons
 
@@ -257,6 +262,7 @@ Source files:
 
 - `packages/sim/src/pilot-combat.ts`
 - `packages/sim/src/pilot-corners.ts`
+- `packages/sim/src/pilot-crossers.ts`
 - `packages/sim/src/pilot-forecast.ts`
 - `packages/sim/src/pilot-history.ts`
 - `packages/sim/src/pilot-jumps.ts`
