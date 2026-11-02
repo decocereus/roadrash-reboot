@@ -15,14 +15,16 @@ const coasting: RiderInput = {
   brake: FINISH_BRAKE,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle: 0,
 };
 
-const standing: RiderInput = {
+const pastTheLine: RiderInput = {
   brake: 0,
   kick: false,
   punch: false,
+  remount: true,
   steer: 0,
   throttle: 0,
 };
@@ -34,7 +36,12 @@ export const stepRider = (
   input: RiderInput
 ): void => {
   if (rider.mode !== "riding") {
-    stepOffBike(state, track, rider, rider.finishTick < 0 ? input : standing);
+    stepOffBike(
+      state,
+      track,
+      rider,
+      rider.finishTick < 0 ? input : pastTheLine
+    );
     return;
   }
 

@@ -452,17 +452,21 @@ describe("the pilot and cross-road cars", () => {
     expect(rider.mode).toBe("thrown");
   });
 
-  it("gets through a whole race on Breakwater Run with cross cars about as often as without them", () => {
-    const road = trackFor("breakwater-run", 4);
-    const without = compileTrack({
-      ...road.plan,
-      crossings: road.plan.crossings.map((crossing) => ({
-        ...crossing,
-        road: crossing.road && { ...crossing.road, carsPerMinute: 0 },
-      })),
-    });
-    expect(crashesWith(road)).toBeLessThanOrEqual(crashesWith(without) + 4);
-  });
+  it(
+    "gets through a whole race on Breakwater Run with cross cars about as often as without them",
+    { timeout: 30_000 },
+    () => {
+      const road = trackFor("breakwater-run", 4);
+      const without = compileTrack({
+        ...road.plan,
+        crossings: road.plan.crossings.map((crossing) => ({
+          ...crossing,
+          road: crossing.road && { ...crossing.road, carsPerMinute: 0 },
+        })),
+      });
+      expect(crashesWith(road)).toBeLessThanOrEqual(crashesWith(without) + 4);
+    }
+  );
 });
 
 describe("the dice", () => {

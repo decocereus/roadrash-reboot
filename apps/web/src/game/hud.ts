@@ -35,6 +35,7 @@ export interface HudState {
   readonly speedKmh: number;
   readonly gear: number;
   readonly offBike: boolean;
+  readonly remountPrompt: boolean;
   readonly progress: number;
   readonly notice: Notice;
   readonly noticeDetail: string;

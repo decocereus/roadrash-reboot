@@ -14,6 +14,7 @@ export const idleHud: HudState = {
   phase: "attract",
   position: 1,
   progress: 0,
+  remountPrompt: false,
   riderCount: 1,
   roadLength: 0,
   roadName: "",
