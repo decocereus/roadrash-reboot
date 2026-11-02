@@ -27,7 +27,7 @@
       },
       {
         "file": "tools/perf/baselines/post-step8.road-life.node-darwin-arm64.json.gz",
-        "sha256": "7004384deca1059ea9b7d158c2c82b6ade34d73bb456866f3f2281e5397d3025"
+        "sha256": "0f507d159558a1ebb1d9fbaa787432fbf836aa9aec7bb530e998b16b88c0f3da"
       },
       {
         "file": "tools/perf/baselines/post-step8.road-life.node-linux-x64.json.gz",
@@ -60,7 +60,7 @@
     ],
     "revision": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "aa04cf08b76feece08059d1ac10a4357243c05aa696aefe1aed6305cb1abf294"
+    "summarySha256": "c29db7f1a0d5f8340c28170a20458eade114e9cfef103ffdeb60d9c794baef45"
   },
   "limits": [
     {
@@ -689,14 +689,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.17254729122524365,
-      "baseline": 0.1500411228045597,
+      "value": 0.3096632760639628,
+      "baseline": 0.26927241396866336,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "roadLife.tick.p95",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
       "unit": "ms"
     },
     {
@@ -1193,14 +1193,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 21812,
-      "baseline": 21812,
+      "value": 22000,
+      "baseline": 22000,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
       "unit": "B"
     },
     {
@@ -1217,14 +1217,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 15477,
-      "baseline": 15477,
+      "value": 15609,
+      "baseline": 15609,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
+      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
       "unit": "B"
     },
     {
