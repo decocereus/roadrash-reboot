@@ -180,8 +180,10 @@ describe("crashing", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 2,
+      patience: 120,
       s: 103.1,
       speed: -3,
+      waited: 0,
       x: -1.8,
     };
     state.cars.push(car);
@@ -296,8 +298,10 @@ const oncomingCar = (state: RaceState): void => {
     halfWidth: 0.92,
     height: 1.45,
     paint: 2,
+    patience: 120,
     s: 0,
     speed: -22,
+    waited: 0,
     x: -1.8,
   });
 };
@@ -434,8 +438,10 @@ describe("bike condition", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 2,
+      patience: 120,
       s: 0,
       speed: -22,
+      waited: 0,
       x: -1.8,
     });
     headOn(state, me);

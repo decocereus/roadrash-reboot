@@ -98,7 +98,7 @@ Hitting a car, a prop or another rider, the throw and the slide, bike condition,
 - Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/game-design.md#condition-by-speed](design/game-design.md#condition-by-speed), [docs/design/game-design.md#the-fall-by-speed](design/game-design.md#the-fall-by-speed)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/rider-crash.ts`, `packages/sim/src/rider-collisions.ts`, `packages/sim/src/rider-recovery.ts`, `packages/sim/src/crash-and-recovery.test.ts`, `packages/sim/src/on-foot.test.ts`
+- Owns: `packages/sim/src/rider-crash.ts`, `packages/sim/src/rider-collisions.ts`, `packages/sim/src/rider-recovery.ts`, `packages/sim/src/crash-and-recovery.test.ts`, `packages/sim/src/on-foot.test.ts`, `packages/sim/src/run-over.test.ts`
 
 Source files:
 
@@ -110,6 +110,7 @@ Test files:
 
 - `packages/sim/src/crash-and-recovery.test.ts`
 - `packages/sim/src/on-foot.test.ts`
+- `packages/sim/src/run-over.test.ts`
 
 ### Jumps, ramps and landings
 

@@ -3,7 +3,12 @@ import type { LaneCentres, Track } from "@racer/track/track";
 
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
-import { approach, BIKE_HALF_LENGTH, TICK_SECONDS } from "./state.ts";
+import {
+  approach,
+  BIKE_HALF_LENGTH,
+  TICK_SECONDS,
+  WALKING_PACE,
+} from "./state.ts";
 import type { Pedestrian, RaceState, RiderState, TrafficCar } from "./state.ts";
 
 const CLEAR_START_FROM = -70;
@@ -22,6 +27,8 @@ export const QUEUE_GAP = 2;
 const STOP_SIGHT = 150;
 const WALKER_MARGIN = 1.5;
 const WALKER_HOLD_SECONDS = 1.5;
+const LEAST_PATIENCE_TICKS = 90;
+const MOST_PATIENCE_TICKS = 180;
 const directions = [1, -1] as const;
 
 export interface Body {
@@ -58,7 +65,17 @@ const laneFor = (
   return random() < FAVOURED_LANE_SHARE ? favoured : other;
 };
 
-export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
+const patienceOf = (random: Random): number =>
+  Math.round(
+    LEAST_PATIENCE_TICKS +
+      random() * (MOST_PATIENCE_TICKS - LEAST_PATIENCE_TICKS)
+  );
+
+export const createTraffic = (
+  track: Track,
+  random: Random,
+  patience: Random
+): TrafficCar[] => {
   const cars: TrafficCar[] = [];
   const span = track.endS - track.startS;
   const perDirection = Math.round(
@@ -79,8 +96,10 @@ export const createTraffic = (track: Track, random: Random): TrafficCar[] => {
           ...body,
           cruiseSpeed,
           paint: Math.floor(random() * PAINT_COUNT),
+          patience: patienceOf(patience),
           s,
           speed: cruiseSpeed,
+          waited: 0,
           x: laneFor(lanes, cruiseSpeed, random),
         });
       }
@@ -95,17 +114,16 @@ const gapToRider = (car: TrafficCar, rider: RiderState): number => {
   }
   const direction = Math.sign(car.cruiseSpeed);
   const riding = rider.mode === "riding" || rider.mode === "mounting";
-  const inLane =
-    Math.abs((riding ? rider.x : rider.bodyX) - car.x) < car.halfWidth + 0.9 ||
-    Math.abs(rider.x - car.x) < car.halfWidth + 0.9;
-  if (!inLane) {
-    return Number.POSITIVE_INFINITY;
-  }
+  const reach = car.halfWidth + 0.9;
   const bikeGap = (rider.s - car.s) * direction;
   const bodyGap = (rider.bodyS - car.s) * direction;
   const nearest = Math.min(
-    bikeGap > 0 ? bikeGap : Number.POSITIVE_INFINITY,
-    bodyGap > 0 ? bodyGap : Number.POSITIVE_INFINITY
+    bikeGap > 0 && Math.abs(rider.x - car.x) < reach
+      ? bikeGap
+      : Number.POSITIVE_INFINITY,
+    bodyGap > 0 && Math.abs((riding ? rider.x : rider.bodyX) - car.x) < reach
+      ? bodyGap
+      : Number.POSITIVE_INFINITY
   );
   return nearest - car.halfLength - BIKE_HALF_LENGTH;
 };
@@ -118,7 +136,14 @@ interface Lane {
   readonly along: number[];
 }
 
+const isDownOnTheRoad = (rider: RiderState): boolean =>
+  rider.mode === "thrown" ||
+  rider.mode === "lying" ||
+  rider.mode === "running" ||
+  rider.mode === "wrecked";
+
 interface Flow {
+  readonly facingDown: boolean[];
   readonly lastS: number[];
   readonly lastSpeed: number[];
   readonly target: number[];
@@ -126,6 +151,7 @@ interface Flow {
 }
 
 const trafficFlow: Flow = {
+  facingDown: [],
   lane: { along: [], count: 0, direction: 1, longest: 0, order: [] },
   lastS: [],
   lastSpeed: [],
@@ -271,8 +297,9 @@ const yieldTo = (
   rider: RiderState,
   point: number
 ): void => {
-  const { lane, lastSpeed, target } = flow;
+  const { facingDown, lane, lastSpeed, target } = flow;
   const { along, count, direction, longest, order } = lane;
+  const down = isDownOnTheRoad(rider);
   const riderSpeed =
     rider.mode === "riding" ? Math.max(0, rider.speed * direction) : 0;
   const reach = point * direction;
@@ -290,7 +317,10 @@ const yieldTo = (
       const stoppingRoom =
         (speed * speed - riderSpeed * riderSpeed) / (2 * BRAKING) + 8;
       if (gap < LOOK_AHEAD && gap < stoppingRoom) {
-        target[index] = Math.min(target[index] ?? riderSpeed, riderSpeed);
+        facingDown[index] ||= down;
+        if (!down || car.waited < car.patience) {
+          target[index] = Math.min(target[index] ?? riderSpeed, riderSpeed);
+        }
       }
     }
   }
@@ -340,13 +370,14 @@ const yieldToWalker = (
 
 export const stepTraffic = (state: RaceState, track: Track): void => {
   const { cars, riders } = state;
-  const { lastS, lastSpeed, target } = trafficFlow;
+  const { facingDown, lastS, lastSpeed, target } = trafficFlow;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
     if (car) {
       lastS[index] = car.s;
       lastSpeed[index] = Math.abs(car.speed);
       target[index] = Math.abs(car.cruiseSpeed);
+      facingDown[index] = false;
     }
   }
   for (const direction of directions) {
@@ -379,6 +410,11 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
     const direction = Math.sign(car.cruiseSpeed);
     const speed = lastSpeed[index] ?? 0;
     const targetSpeed = target[index] ?? Math.abs(car.cruiseSpeed);
+    if (facingDown[index] === true) {
+      car.waited += speed < WALKING_PACE ? 1 : 0;
+    } else {
+      car.waited = 0;
+    }
     const rate = targetSpeed < speed ? BRAKING : ACCELERATION;
     car.speed = direction * approach(speed, targetSpeed, rate * TICK_SECONDS);
     car.s += car.speed * TICK_SECONDS;

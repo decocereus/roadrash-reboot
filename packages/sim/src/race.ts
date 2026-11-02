@@ -51,6 +51,7 @@ const FIRST_COP_S = 1500;
 const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const HAZARD_DICE_SALT = 0x2e_c3;
+const TRAFFIC_PATIENCE_SALT = 0x71_b5;
 const DEFAULT_LEVEL = 3;
 export const MOST_RACERS = 15;
 const MOST_RIVALS = MOST_RACERS - 1;
@@ -190,6 +191,7 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
   post: spot.s,
   profile: entry.profile,
   revs: 0,
+  runOverBy: -1,
   runningToBike: false,
   s: spot.s,
   shiftTicks: 0,
@@ -381,7 +383,11 @@ export const createRace = (setup: RaceSetup): RaceState => {
     riders.push(cop);
   }
   const state: RaceState = {
-    cars: createTraffic(track, createRandom(seed)),
+    cars: createTraffic(
+      track,
+      createRandom(seed),
+      createRandom(nextSeed(seed + TRAFFIC_PATIENCE_SALT))
+    ),
     crossCars: createCrossTraffic(track, seed),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],

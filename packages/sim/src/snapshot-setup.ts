@@ -213,6 +213,7 @@ const carSetupSchema = writtenSchemaOf<Pick<TrafficView, CarSetupKey>>({
   halfWidth: floatAt("halfWidth"),
   height: floatAt("height"),
   paint: floatAt("paint"),
+  patience: floatAt("patience"),
   x: floatAt("x"),
 });
 

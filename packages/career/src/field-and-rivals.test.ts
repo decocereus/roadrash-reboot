@@ -479,8 +479,10 @@ describe("memory", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 0,
+      patience: 120,
       s: me.s + 6,
       speed: 0,
+      waited: 0,
       x: me.x,
     });
     const crashes: string[] = [];
