@@ -75,6 +75,7 @@ export interface Sides {
 }
 
 const NODE_CHILD = "tools/perf/node.ts";
+const SYNCHRONOUS_COMPILE = "--no-concurrent-recompilation";
 
 const childScripts = {
   alloc: NODE_CHILD,
@@ -102,6 +103,7 @@ const runChild = Effect.fnUntraced(function* runChild(
   yield* processes.run(
     process.execPath,
     [
+      SYNCHRONOUS_COMPILE,
       path.join(side.root, script),
       ...taskArgs,
       "--scenario",
