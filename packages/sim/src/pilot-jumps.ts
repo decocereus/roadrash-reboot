@@ -1,92 +1,123 @@
-import { lipOf, nextJumpFrom } from "@racer/track/features";
-import type { TrackFeature } from "@racer/track/features";
-import { slopeRateAt } from "@racer/track/track";
+import { heightAt, slopeAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import {
-  JUMP_LANDING_ROOM,
-  JUMP_WALL_CLEARANCE,
-  safeLaunchSpeed,
-} from "./pilot-corners.ts";
+  clearsDecks,
+  climbOffLip,
+  frontOf,
+  lipOf,
+  passingLineOf,
+  RAMP_RISE,
+  ridingOver,
+  toeOf,
+} from "./carrier.ts";
+import { canBrakeAfterLanding, landsOnRoad, riding } from "./pilot-corners.ts";
+import { LANE_REACH } from "./pilot-lines.ts";
 import type { Aim } from "./pilot-lines.ts";
-import { BIKE_HALF_WIDTH, GRAVITY, sidewaysRate } from "./state.ts";
-import type { RaceState, RiderState } from "./state.ts";
+import { HARD_LANDING } from "./rider-flight.ts";
+import { GRAVITY, sidewaysRate } from "./state.ts";
+import type { RaceState, RiderState, TrafficCar } from "./state.ts";
 
-const JUMP_SIGHT_SECONDS = 3.5;
-const JUMP_SIGHT_EXTRA = 10;
-const JUMP_PULL = 3.6;
-const JUMP_ALIGN_SECONDS = 0.5;
-const JUMP_ALIGN_PER_METRE = 0.45;
-const JUMP_LINE_SPREAD = 1.2;
-const MISREAD_SHARE = 0.8;
-const MISREAD_EDGE = 0.15;
-const MISREAD_REACH = 1.5;
-const MISREAD_SLACK = 0.1;
-const MISREAD_DIVE = 5;
+const JUDGE_SECONDS = 3;
+const MISJUDGE_SHARE = 0.8;
+const FLIGHT_STEP = 0.05;
+const LONGEST_FLIGHT = 4;
+const LANDING_ROOM_BEHIND = 15;
+const LANDING_ROOM_SECONDS = 1;
 const STRAIGHTEN_SECONDS = 0.6;
 const STRAIGHTEN_SCAN_STEP = 2;
 
-const misreads = (
+const flight = { impact: 0, seconds: 0 };
+
+const forecastFlight = (
+  track: Track,
+  lip: number,
+  speed: number,
+  climb: number
+): void => {
+  const rise = climb + slopeAt(track, lip) * speed;
+  const from = heightAt(track, lip) + RAMP_RISE;
+  let above = RAMP_RISE;
+  flight.impact = Number.NEGATIVE_INFINITY;
+  flight.seconds = LONGEST_FLIGHT;
+  for (let at = FLIGHT_STEP; at < LONGEST_FLIGHT; at += FLIGHT_STEP) {
+    const clearance =
+      from +
+      rise * at -
+      (GRAVITY * at * at) / 2 -
+      heightAt(track, lip + speed * at);
+    if (clearance <= 0) {
+      const seconds = at - (FLIGHT_STEP * clearance) / (clearance - above);
+      flight.seconds = seconds;
+      flight.impact =
+        rise -
+        GRAVITY * seconds -
+        slopeAt(track, lip + speed * seconds) * speed;
+      return;
+    }
+    above = clearance;
+  }
+};
+
+const carInTheWay = (
   state: RaceState,
   rider: RiderState,
-  jumpIndex: number,
-  roll: (state: RaceState) => number
+  carrier: TrafficCar,
+  landing: number,
+  seconds: number
 ): boolean => {
-  if (rider.jumpSeen !== jumpIndex) {
-    rider.jumpSeen = jumpIndex;
-    rider.jumpMisread = roll(state) < (1 - rider.profile.skill) * MISREAD_SHARE;
+  const toe = toeOf(carrier);
+  const landingFrom = landing - LANDING_ROOM_BEHIND;
+  const landingTo = landing + rider.speed * LANDING_ROOM_SECONDS;
+  for (const car of state.cars) {
+    if (car !== carrier && Math.abs(car.x - carrier.x) < LANE_REACH) {
+      const reach = car.halfLength;
+      const down = car.s + car.speed * seconds;
+      if (
+        (car.s + reach > rider.s && car.s - reach < toe) ||
+        (down + reach > landingFrom && down - reach < landingTo)
+      ) {
+        return true;
+      }
+    }
   }
-  return rider.jumpMisread;
+  return false;
 };
 
-const roadSide = (
+const jumpWorks = (
+  state: RaceState,
   track: Track,
-  jump: TrackFeature,
-  side: number,
-  reach: number
-): number =>
-  Math.abs(jump.x + side * reach) > track.roadHalfWidth - BIKE_HALF_WIDTH
-    ? -side
-    : side;
-
-const lineOnto = (
-  track: Track,
-  jump: TrackFeature,
   rider: RiderState,
-  misread: boolean
-): number => {
-  const side = rider.id % 2 === 0 ? 1 : -1;
-  if (misread) {
-    const across = rider.x - jump.x;
-    const gap = Math.abs(across) - jump.width / 2;
-    const toLip = (lipOf(jump) - rider.s) / Math.max(1, rider.speed);
-    const dives =
-      gap > 0 &&
-      gap < MISREAD_REACH &&
-      toLip < Math.sqrt((2 * gap) / rider.bike.steerRate) + MISREAD_SLACK;
-    return dives
-      ? jump.x - Math.sign(across) * MISREAD_DIVE
-      : jump.x +
-          roadSide(track, jump, side, jump.width / 2 + MISREAD_EDGE) *
-            (jump.width / 2 + MISREAD_EDGE);
+  carrier: TrafficCar
+): boolean => {
+  const { speed } = rider;
+  if (!clearsDecks(speed, carrier.speed)) {
+    return false;
   }
-  const spread = (1 - rider.profile.skill) * JUMP_LINE_SPREAD;
-  return jump.x + side * Math.min(spread, jump.width / 2 - BIKE_HALF_WIDTH);
+  const toLip = (lipOf(carrier) - rider.s) / (speed - carrier.speed);
+  const lip = rider.s + speed * toLip;
+  forecastFlight(track, lip, speed, climbOffLip(speed, carrier.speed));
+  const carried = speed * flight.seconds;
+  return (
+    flight.impact >= HARD_LANDING &&
+    landsOnRoad(track, rider, lip, carried, carrier.x, speed, riding.margin) &&
+    canBrakeAfterLanding(track, rider, lip + carried, speed, riding.margin) &&
+    !carInTheWay(state, rider, carrier, lip + carried, toLip + flight.seconds)
+  );
 };
 
-const clearOfWall = (
-  track: Track,
-  jump: TrackFeature,
-  rider: RiderState,
-  aim: Aim
-): Aim => {
-  const wall = jump.width / 2 + JUMP_WALL_CLEARANCE;
-  if (Math.abs(aim.x - jump.x) >= wall) {
-    return aim;
-  }
-  const side = roadSide(track, jump, Math.sign(rider.x - jump.x) || 1, wall);
-  return { speed: aim.speed, x: jump.x + side * wall };
+const inJudgingRange = (rider: RiderState, car: TrafficCar): boolean => {
+  const toToe = toeOf(car) - rider.s;
+  return (
+    toToe > 0 &&
+    rider.speed > car.speed &&
+    toToe < (rider.speed - car.speed) * JUDGE_SECONDS
+  );
 };
+
+const stillMeeting = (rider: RiderState, car: TrafficCar): boolean =>
+  rider.s <= frontOf(car) &&
+  (rider.s >= toeOf(car) || inJudgingRange(rider, car));
 
 export const jumpAim = (
   state: RaceState,
@@ -95,46 +126,30 @@ export const jumpAim = (
   aim: Aim,
   roll: (state: RaceState) => number
 ): Aim => {
-  const jumpIndex = nextJumpFrom(track, rider.s);
-  const jump = track.features[jumpIndex];
-  if (!jump) {
-    return aim;
+  const met = state.cars[rider.jumpSeen];
+  if (met && !stillMeeting(rider, met)) {
+    rider.jumpSeen = -1;
+    rider.jumpTaken = false;
   }
-  const toToe = jump.s - rider.s;
-  const offset = Math.abs(rider.x - jump.x);
-  if (toToe <= 0) {
-    if (offset <= jump.width / 2) {
-      return { speed: aim.speed, x: jump.x };
+  let { x } = aim;
+  const carriers = track.carrierStarts.length;
+  for (let index = 0; index < carriers; index += 1) {
+    const car = state.cars[index];
+    if (car?.carrier === true && stillMeeting(rider, car)) {
+      if (
+        rider.jumpSeen < 0 &&
+        Math.abs(rider.x - car.x) < LANE_REACH &&
+        inJudgingRange(rider, car)
+      ) {
+        const misjudges =
+          roll(state) < (1 - rider.profile.skill) * MISJUDGE_SHARE;
+        rider.jumpSeen = index;
+        rider.jumpTaken = misjudges || jumpWorks(state, track, rider, car);
+      }
+      x = ridingOver(rider, index) ? car.x : passingLineOf(car, x);
     }
-    return rider.jumpSeen === jumpIndex && rider.jumpMisread
-      ? { speed: aim.speed, x: lineOnto(track, jump, rider, true) }
-      : clearOfWall(track, jump, rider, aim);
   }
-  if (toToe > rider.speed * JUMP_SIGHT_SECONDS + JUMP_SIGHT_EXTRA) {
-    return aim;
-  }
-  const drawn =
-    Math.abs(aim.x - jump.x) < JUMP_PULL ||
-    offset < jump.width / 2 + BIKE_HALF_WIDTH;
-  if (!drawn) {
-    return aim;
-  }
-  const lined = offset <= jump.width / 2 - BIKE_HALF_WIDTH;
-  const committed = rider.jumpSeen === jumpIndex && rider.jumpMisread;
-  const reachable =
-    lined ||
-    committed ||
-    toToe / Math.max(1, rider.speed) >
-      JUMP_ALIGN_SECONDS + JUMP_ALIGN_PER_METRE * offset;
-  const landsOnRoad =
-    Math.abs(jump.x) < track.roadHalfWidth - JUMP_LANDING_ROOM;
-  if (reachable && landsOnRoad) {
-    return {
-      speed: Math.min(aim.speed, safeLaunchSpeed(jump)),
-      x: lineOnto(track, jump, rider, misreads(state, rider, jumpIndex, roll)),
-    };
-  }
-  return clearOfWall(track, jump, rider, aim);
+  return x === aim.x ? aim : { speed: aim.speed, x };
 };
 
 const launchesSoon = (track: Track, rider: RiderState): boolean => {

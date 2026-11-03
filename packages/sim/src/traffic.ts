@@ -1,6 +1,7 @@
 import type { Random } from "@racer/track/random";
 import type { LaneCentres, Track } from "@racer/track/track";
 
+import { carrierAt, clearOfCarrier } from "./carrier.ts";
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
 import {
@@ -94,6 +95,7 @@ export const createTraffic = (
       if (!blocksStart) {
         cars.push({
           ...body,
+          carrier: false,
           cruiseSpeed,
           paint: Math.floor(random() * PAINT_COUNT),
           patience: patienceOf(patience),
@@ -105,7 +107,16 @@ export const createTraffic = (
       }
     }
   }
-  return cars;
+  const [lane] = track.sameWayLanes;
+  const carriers = track.carrierStarts.map((s) =>
+    carrierAt(s, lane, Math.floor(random() * PAINT_COUNT), patienceOf(patience))
+  );
+  return [
+    ...carriers,
+    ...cars.filter((car) =>
+      carriers.every((carrier) => clearOfCarrier(car, carrier.s, carrier.x))
+    ),
+  ];
 };
 
 const gapToRider = (car: TrafficCar, rider: RiderState): number => {

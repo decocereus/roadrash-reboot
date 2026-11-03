@@ -194,7 +194,7 @@ export interface RiderState {
   hazardMissed: boolean;
   pilotLine: number;
   jumpSeen: number;
-  jumpMisread: boolean;
+  jumpTaken: boolean;
   offRoad: boolean;
   load: number;
   bodyS: number;
@@ -208,6 +208,7 @@ export interface RiderState {
   staleSteer: boolean;
   runningToBike: boolean;
   runOverBy: number;
+  onCarrier: number;
   finishTick: number;
   crashes: number;
 }
@@ -227,6 +228,7 @@ export interface TrafficCar extends CarBox {
   readonly cruiseSpeed: number;
   readonly paint: number;
   readonly patience: number;
+  readonly carrier: boolean;
   waited: number;
 }
 

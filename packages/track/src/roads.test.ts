@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { reservationOf } from "./features.ts";
 import {
   HAZARD_FINISH_CLEARANCE,
   HAZARD_GENTLE_CURVATURE,
-  HAZARD_RAMP_CLEARANCE,
   HAZARD_START_CLEARANCE,
   HAZARD_TIGHT_CURVATURE,
   hazardSizes,
@@ -21,7 +19,6 @@ import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 const GRAVITY = 9.81;
 const STRAIGHT = 1 / 1500;
 const PINNED_RIDGE_LENGTH = 4250;
-const RAMP_RUN_UP = 40;
 
 interface Stretch {
   readonly from: number;
@@ -33,37 +30,37 @@ interface Expected {
   readonly lengths: readonly number[];
   readonly traffic: readonly number[];
   readonly lowestLaunch: readonly number[];
-  readonly ramps: readonly (readonly string[])[];
+  readonly carriers: readonly (readonly number[])[];
   readonly signature: Stretch | undefined;
   readonly roadblocks: readonly (readonly number[])[];
 }
 
 const design: readonly Expected[] = [
   {
+    carriers: [
+      [2350, 3200],
+      [2350, 3200],
+      [2350, 3200],
+      [2350, 3200],
+      [2350, 3200],
+    ],
     lengths: [8500, 9650, 10_800, 11_950, 13_100],
     lowestLaunch: [169, 169, 169, 169, 169],
-    ramps: [
-      ["promenade-ramp", "mole-ramp"],
-      ["promenade-ramp", "mole-ramp"],
-      ["promenade-ramp", "mole-ramp"],
-      ["promenade-ramp", "mole-ramp"],
-      ["promenade-ramp", "mole-ramp"],
-    ],
     roadId: "breakwater-run",
     roadblocks: [[], [], [2800, 9450], [2800, 9450], [2800, 9450, 12_050]],
     signature: undefined,
     traffic: [5, 6, 7, 8, 9],
   },
   {
+    carriers: [
+      [2600, 3300],
+      [2600, 3300],
+      [2600, 3300],
+      [2600, 3300],
+      [2600, 3300],
+    ],
     lengths: [8850, 10_000, 11_150, 12_300, 13_450],
     lowestLaunch: [154, 154, 154, 154, 154],
-    ramps: [
-      ["drive-in-ramp", "salt-pan-ramp"],
-      ["drive-in-ramp", "salt-pan-ramp"],
-      ["drive-in-ramp", "salt-pan-ramp"],
-      ["drive-in-ramp", "salt-pan-ramp"],
-      ["drive-in-ramp", "salt-pan-ramp"],
-    ],
     roadId: "cinder-wash",
     roadblocks: [
       [],
@@ -76,30 +73,30 @@ const design: readonly Expected[] = [
     traffic: [3, 4, 5, 6, 7],
   },
   {
+    carriers: [
+      [1000, 2600],
+      [1000, 2600],
+      [1000, 2600],
+      [1000, 2600],
+      [1000, 2600],
+    ],
     lengths: [8050, 9200, 10_350, 11_500, 12_650],
     lowestLaunch: [186, 173, 173, 170, 162],
-    ramps: [
-      ["sawmill-ramp", "kiln-ramp"],
-      ["sawmill-ramp", "kiln-ramp"],
-      ["sawmill-ramp", "kiln-ramp"],
-      ["sawmill-ramp", "kiln-ramp"],
-      ["sawmill-ramp", "kiln-ramp"],
-    ],
     roadId: "hollow-pine-road",
     roadblocks: [[], [], [10_150], [10_150, 11_300], [10_150, 11_300, 12_100]],
     signature: undefined,
     traffic: [6, 7, 8, 9, 10],
   },
   {
+    carriers: [
+      [2600, 4100],
+      [2600, 4100],
+      [2600, 4100],
+      [2600, 4100, 5900],
+      [2600, 4100, 5900],
+    ],
     lengths: [8500, 9650, 10_800, 11_950, 13_100],
     lowestLaunch: [152, 152, 152, 152, 152],
-    ramps: [
-      ["slipway-ramp", "bonded-ramp"],
-      ["slipway-ramp", "bonded-ramp"],
-      ["slipway-ramp", "bonded-ramp"],
-      ["slipway-ramp", "bonded-ramp", "boulevard-ramp"],
-      ["slipway-ramp", "bonded-ramp", "boulevard-ramp"],
-    ],
     roadId: "slag-row",
     roadblocks: [
       [],
@@ -112,15 +109,9 @@ const design: readonly Expected[] = [
     traffic: [8, 9, 10, 11, 12],
   },
   {
+    carriers: [[4500], [4500], [4500], [4500], [4500]],
     lengths: [8550, 9700, 10_850, 12_000, 13_150],
     lowestLaunch: [162, 162, 162, 162, 162],
-    ramps: [
-      ["cable-car-ramp"],
-      ["cable-car-ramp"],
-      ["cable-car-ramp"],
-      ["cable-car-ramp"],
-      ["cable-car-ramp"],
-    ],
     roadId: "ridge-road",
     roadblocks: [[], [], [9550], [9550, 10_950], [9550, 10_950, 12_950]],
     signature: undefined,
@@ -362,52 +353,33 @@ describe("roadblock spots", () => {
   );
 });
 
-describe("ramps", () => {
+describe("car carriers", () => {
   it.each(design)(
-    "$roadId has its ramps at each level",
-    ({ ramps, roadId }) => {
+    "$roadId starts its trucks where its plan says at each level",
+    ({ carriers, roadId }) => {
       expect(
-        everyLevel((level) =>
-          trackFor(roadId, level).features.map((feature) => feature.id)
-        )
-      ).toStrictEqual(ramps);
+        everyLevel((level) => trackFor(roadId, level).carrierStarts)
+      ).toStrictEqual(carriers);
     }
   );
 
-  it.each(design)(
-    "every ramp on $roadId sits on a straight from 40 m before the toe to the end of its landing, with no crest and no roadblock near it",
-    ({ roadId }) => {
-      const ramps = everyLevel((level) => {
-        const track = trackFor(roadId, level);
-        return track.features.map((feature) => {
-          let bend = 0;
-          let sharpest = 0;
-          for (let s = feature.fromS; s <= feature.toS; s += 1) {
-            sharpest = Math.min(
-              sharpest,
-              track.slopeRate[Math.round(s - track.startS)] ?? 0
-            );
-            if (s >= feature.s - RAMP_RUN_UP) {
-              bend = Math.max(bend, bendAt(track, s));
-            }
-          }
-          const nearestRoadblock = Math.min(
-            Number.POSITIVE_INFINITY,
-            ...track.plan.roadblocks.map((spot) =>
-              Math.max(0, feature.fromS - spot, spot - feature.toS)
-            )
-          );
-          return { bend, nearestRoadblock, sharpest };
-        });
-      }).flat();
-      expect(ramps.length).toBeGreaterThan(0);
-      for (const ramp of ramps) {
-        expect(ramp.bend).toBeLessThan(STRAIGHT);
-        expect(ramp.sharpest).toBeGreaterThan(-GRAVITY / (200 / 3.6) ** 2);
-        expect(ramp.nearestRoadblock).toBeGreaterThanOrEqual(100);
-      }
+  it("a road with no traffic has no trucks", () => {
+    expect(
+      compileTrack({
+        ...roads["breakwater-run"].plan,
+        trafficPerKilometre: 0,
+      }).carrierStarts
+    ).toStrictEqual([]);
+  });
+
+  it("a truck that starts inside the start clearance or past the finish is refused", () => {
+    const { plan } = roads["breakwater-run"];
+    for (const s of [100, 90_000]) {
+      expect(() =>
+        compileTrack({ ...plan, carriers: [{ fromLevel: 1, s }] })
+      ).toThrow(/starts off the road/u);
     }
-  );
+  });
 });
 
 describe("hazards", () => {
@@ -457,7 +429,7 @@ describe("hazards", () => {
   );
 
   it.each(design)(
-    "every hazard on $roadId is on the road, clear of the start, the finish, and every ramp, and can be seen from 25 m before it",
+    "every hazard on $roadId is on the road, clear of the start and the finish, and can be seen from 25 m before it",
     ({ roadId }) => {
       for (const level of roadLevels) {
         const track = trackFor(roadId, level);
@@ -470,13 +442,6 @@ describe("hazards", () => {
           expect(hazard.s).toBeLessThanOrEqual(
             track.length - HAZARD_FINISH_CLEARANCE
           );
-          for (const rule of roads[roadId].plan.features) {
-            const [from, to] = reservationOf(rule);
-            const clear =
-              hazard.s + size.halfLength < from - HAZARD_RAMP_CLEARANCE ||
-              hazard.s - size.halfLength > to + HAZARD_RAMP_CLEARANCE;
-            expect(clear).toBeTruthy();
-          }
           expect(inSight(track, hazard.s, hazard.x)).toBeTruthy();
           expect(hazard.fromLevel).toBeLessThanOrEqual(level);
         }
@@ -526,9 +491,18 @@ describe("hazards", () => {
   });
 
   it("a rock in a gentle bend lies at the edge of a lane, clear of a bike holding the lane's centre", () => {
-    const gentle = roadIds.flatMap((roadId) => {
-      const track = trackFor(roadId, 5);
-      return track.hazards
+    const seededRoads = roadIds.flatMap((roadId) =>
+      [0, 1, 2, 3].map((extra) =>
+        extra === 0
+          ? trackFor(roadId, 5)
+          : compileTrack({
+              ...trackFor(roadId, 5).plan,
+              seed: trackFor(roadId, 5).plan.seed + extra,
+            })
+      )
+    );
+    const gentle = seededRoads.flatMap((track) =>
+      track.hazards
         .filter(
           (hazard) =>
             hazard.kind === "rock" &&
@@ -540,8 +514,8 @@ describe("hazards", () => {
               Math.abs(hazard.x - lane)
             )
           )
-        );
-    });
+        )
+    );
     expect(gentle.length).toBeGreaterThan(0);
     expect(Math.min(...gentle)).toBeGreaterThan(
       hazardSizes.rock.halfWidth + 0.38

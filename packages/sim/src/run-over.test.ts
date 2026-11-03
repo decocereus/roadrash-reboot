@@ -31,6 +31,7 @@ const downInLane = () => {
 };
 
 const carBehind = (s: number, x: number, patience: number): TrafficCar => ({
+  carrier: false,
   cruiseSpeed: 20,
   halfLength: 2.2,
   halfWidth: 0.92,

@@ -175,6 +175,7 @@ describe("crashing", () => {
     const me = player(state);
     Object.assign(me, { bodyS: 100, bodyX: -1.8, s: 100, speed: 2, x: -1.8 });
     const car = {
+      carrier: false,
       cruiseSpeed: -22,
       halfLength: 2.2,
       halfWidth: 0.92,
@@ -293,6 +294,7 @@ const headOn = (
 
 const oncomingCar = (state: RaceState): void => {
   state.cars.push({
+    carrier: false,
     cruiseSpeed: -22,
     halfLength: 2.2,
     halfWidth: 0.92,
@@ -433,6 +435,7 @@ describe("bike condition", () => {
     me.s = 100;
     me.condition = 1;
     state.cars.push({
+      carrier: false,
       cruiseSpeed: -22,
       halfLength: 2.2,
       halfWidth: 0.92,

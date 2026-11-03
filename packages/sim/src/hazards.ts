@@ -1,4 +1,3 @@
-import { lipOf } from "@racer/track/features";
 import { hazardSizes } from "@racer/track/hazards";
 import type { HazardKind } from "@racer/track/hazards";
 import { curvatureAt, slopeAt } from "@racer/track/track";
@@ -78,15 +77,6 @@ export type ThrowForHazard = (
   hazard: HazardTag
 ) => void;
 
-const onRamp = (track: Track, hazard: Hazard): boolean =>
-  track.features.some(
-    (jump) =>
-      hazard.s + hazard.halfLength > jump.s &&
-      hazard.s - hazard.halfLength < lipOf(jump) &&
-      hazard.x + hazard.halfWidth > jump.x - jump.width / 2 &&
-      hazard.x - hazard.halfWidth < jump.x + jump.width / 2
-  );
-
 const fitsOnRoad = (state: RaceState, track: Track, hazard: Hazard): boolean =>
   Number.isFinite(hazard.s) &&
   Number.isFinite(hazard.x) &&
@@ -94,7 +84,6 @@ const fitsOnRoad = (state: RaceState, track: Track, hazard: Hazard): boolean =>
   hazard.s >= 0 &&
   hazard.s <= track.length &&
   Math.abs(hazard.x) + hazard.halfWidth <= track.roadHalfWidth &&
-  !onRamp(track, hazard) &&
   state.hazards.every((other) => other.id !== hazard.id);
 
 const spawn = (

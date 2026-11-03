@@ -19,7 +19,6 @@ import { createHazardMarks } from "./hazards.ts";
 import { buildJunctions } from "./junctions.ts";
 import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
-import { buildRamps } from "./ramps.ts";
 import {
   buildRibbon,
   buildTerrainChunk,
@@ -444,9 +443,6 @@ export const createWorld = (
       )
     )
   );
-  const ramps = buildRamps(track, shading, clearance);
-  scene.add(ramps.group);
-  stretches.push(...ramps.stretches);
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
   const walkers = createWalkerMarks(track, shading, walkerAsset);

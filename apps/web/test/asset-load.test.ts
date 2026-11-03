@@ -38,6 +38,7 @@ const urls: ModelUrls = {
     "/models/rider_b.glb",
     "/models/rider_c.glb",
   ],
+  truck: "/models/truck.glb",
   van: "/models/van.glb",
   walkers: "/models/pedestrians.glb",
 };
@@ -46,6 +47,7 @@ const bikeUrl = urls.bikes.classic;
 const everyUrl = [
   ...Object.values(urls.bikes),
   urls.car,
+  urls.truck,
   urls.van,
   urls.walkers,
   ...urls.figures,

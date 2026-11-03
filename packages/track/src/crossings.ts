@@ -144,10 +144,7 @@ const checkGround = (rule: CrossingRule, centreline: Centreline): void => {
   }
 };
 
-const checkSpacing = (
-  rules: readonly CrossingRule[],
-  reserved: readonly (readonly [from: number, to: number])[]
-): void => {
+const checkSpacing = (rules: readonly CrossingRule[]): void => {
   const ordered = rules.toSorted((left, right) => left.s - right.s);
   for (let index = 1; index < ordered.length; index += 1) {
     const before = ordered[index - 1];
@@ -161,19 +158,12 @@ const checkSpacing = (
       reject(after, `is too close to crossing "${before.id}"`);
     }
   }
-  for (const rule of rules) {
-    const [from, to] = crossingReservationOf(rule);
-    if (reserved.some(([start, end]) => from < end && to > start)) {
-      reject(rule, "sits in the approach or landing of a ramp");
-    }
-  }
 };
 
 export const compileCrossings = (
   rules: readonly CrossingRule[],
   centreline: Centreline,
-  level: number,
-  rampReservations: readonly (readonly [from: number, to: number])[]
+  level: number
 ): TrackCrossing[] => {
   const seen = new Set<string>();
   for (const rule of rules) {
@@ -183,7 +173,7 @@ export const compileCrossings = (
     seen.add(rule.id);
     checkNumbers(rule);
   }
-  checkSpacing(rules, rampReservations);
+  checkSpacing(rules);
   const active = rules.filter((rule) => rule.fromLevel <= level);
   for (const rule of active) {
     const [from, to] = crossingReservationOf(rule);

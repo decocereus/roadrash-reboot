@@ -4,26 +4,12 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 const cinderWash: TrackPlan = {
+  carriers: [
+    { fromLevel: 1, s: 2600 },
+    { fromLevel: 1, s: 3300 },
+  ],
   chevrons: chevronRuns["cinder-wash"],
   crossings: [],
-  features: [
-    {
-      feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },
-      fromLevel: 1,
-      id: "drive-in-ramp",
-      placement: "fixed",
-      s: 4250,
-      x: 3.8,
-    },
-    {
-      feature: { kind: "jump", length: 18, rise: 1, width: 1.4 },
-      fromLevel: 1,
-      id: "salt-pan-ramp",
-      placement: "fixed",
-      s: 5300,
-      x: 3.8,
-    },
-  ],
   hazardsPerKilometre: 1,
   id: "cinder-wash",
   laneWidth: 3.8,

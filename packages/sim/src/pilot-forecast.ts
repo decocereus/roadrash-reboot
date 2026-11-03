@@ -2,6 +2,7 @@ import { nextSeed, unitOf } from "@racer/track/random";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
+import { ridingOver } from "./carrier.ts";
 import { OIL_SLIP, ROCK_BUMP, rockUpsetShare } from "./hazards.ts";
 import { WALKER_BUMP } from "./pedestrians.ts";
 import {
@@ -424,18 +425,14 @@ export const gatherObstructions = (
     }
   }
   const { cars, crossCars, pedestrians } = state;
-  const carCount = cars.length;
-  const crossCount = crossCars.length;
-  const walkerCount = pedestrians.length;
-  for (let index = 0; index < carCount; index += 1) {
+  for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
-    if (car) {
+    if (car && !ridingOver(rider, index)) {
       obstructWithCar(outlook, rider, car);
     }
   }
-  for (let index = 0; index < crossCount; index += 1) {
-    const car = crossCars[index];
-    if (car && crossCarInSight(track, rider, car)) {
+  for (const car of crossCars) {
+    if (crossCarInSight(track, rider, car)) {
       if (car.drift === 0) {
         obstructWithCar(outlook, rider, car);
       } else {
@@ -443,9 +440,8 @@ export const gatherObstructions = (
       }
     }
   }
-  for (let index = 0; index < walkerCount; index += 1) {
-    const pedestrian = pedestrians[index];
-    if (pedestrian && walkerInSight(track, rider, pedestrian)) {
+  for (const pedestrian of pedestrians) {
+    if (walkerInSight(track, rider, pedestrian)) {
       const obstruction = obstructWithCrosser(outlook, rider, pedestrian);
       obstruction.cost = WALKER_BUMP.upset * rockCost(rider.speed);
       obstruction.curvature = curvatureAt(track, pedestrian.s);

@@ -68,6 +68,7 @@ const ATLAS = "atlas";
 export interface Assets {
   readonly bikes: Readonly<Record<BikeModelId, BikeParts>>;
   readonly car: readonly Primitive[];
+  readonly truck: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
   readonly walkers: WalkerAsset;

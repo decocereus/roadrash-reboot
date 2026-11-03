@@ -79,6 +79,7 @@ export const throwRider = (
   rider.staleSteer = true;
   rider.runningToBike = false;
   rider.runOverBy = -1;
+  rider.onCarrier = -1;
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air + 0.9;

@@ -110,7 +110,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, at any level the served rules hold (1 to 3 by default); a higher `level` rides level 1. Roads: `breakwater-run`, `cinder-wash`, `hollow-pine-road`, `slag-row`, `ridge-road`, `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`, and `madrid-gran-via`, the central Madrid greybox in `features/madrid-gran-via.md`. |
 | `?bike=<bikeId>&with=alone\|field\|traffic` (DEV) | With `?ride`: the player's bike (ids in `packages/sim/src/bikes.ts`), and who rides along. `alone` drops rivals, police and traffic, `field` drops traffic, `traffic` is the full race and the default. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
-| `?autopilot` (DEV) | The AI pilot rides the player's bike, including ramps. The player's rider is built pilot-controlled, so the keys, `?straight` and `?swerve` do nothing. |
+| `?autopilot` (DEV) | The AI pilot rides the player's bike, including truck jumps. The player's rider is built pilot-controlled, so the keys, `?straight` and `?swerve` do nothing. |
 | `?hazard=<id>&before=<m>` (DEV) | Put the player on that road hazard's line, `before` metres (default 150) ahead of it. Ids are per road (`hazard-3` on Breakwater Run), listed by the node command in `features/hazards.md`. With `?kmh=<n>` for the starting speed, `?straight` to hold that line at full throttle, and `?clear` to move traffic out of the way. |
 | `?swerve=<m>&swervefor=<m>&swerveto=<-1..1>` (DEV) | After `swerve` metres, force the steer to `swerveto` (default 1, right) for `swervefor` metres (default 25). It steers a player you ride, so pair it with `?straight` for a hands-off run; it does nothing under `?autopilot`. |
 | `?hold=air\|at\|near\|<event>&holdafter=<n>` (DEV) | Freeze the race: `air` after n ticks airborne, `at` at n metres, `near` when the `?hazard=` hazard is n metres ahead, or n ticks after the player's event of that kind (`land`, `crash`, `remount`, `finish`, `hit`, `hazard`, `nearMiss`, `busted`, ...). Fires once per page load. |
@@ -121,7 +121,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
 | `?rung=<n>` | Pin a rung of the quality ladder: 0 full, 1 shadow 2048, 2 lean bloom, 3 no multisampling, then the pixel ratio in steps of 0.1. The governor stays off. |
 
-Ramps, by kilometre: Breakwater Run 4.05 and 5.42, Cinder Wash 4.25 and 5.30, Hollow Pine Road 3.33 and 7.76, Slag Row 4.72 and 7.28 (and 10.88 on level-4 roads, which only a rules file serving four or more levels rides), Ridge Road 8.29. Every ramp sits right of the centre line. Roads end between 8.45 and 9.25 km at level 1 and 1,150 m later per level.
+Trucks, by where each starts at the race start: Breakwater Run 2.35 and 3.20 km, Cinder Wash 2.60 and 3.30, Hollow Pine Road 1.00 and 2.60, Slag Row 2.60 and 4.10 (and 5.90 on level-4 roads, which only a rules file serving four or more levels rides), Ridge Road 4.50. A truck drives 20 m/s in the first same-way lane, so with `?at` it is that far along when the race starts. Roads end between 8.45 and 9.25 km at level 1 and 1,150 m later per level.
 
 ### Alternative: the T3 Code browser
 

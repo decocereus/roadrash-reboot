@@ -76,26 +76,20 @@ export const playerFeatures: readonly FeatureEntry[] = [
     docs: [
       "docs/architecture.md#riding-model",
       "docs/design/tracks.md#the-crest-rule",
-      "docs/design/tracks.md#ramps-and-humps",
+      "docs/design/tracks.md#carriers-and-humps",
     ],
     id: "jumps",
     kind: "feature",
     owns: [
-      "packages/track/src/features.ts",
       "packages/sim/src/rider-flight.ts",
       "packages/sim/src/jumps.test.ts",
-      "apps/web/src/game/ramp*.ts",
       "apps/web/src/game/puffs.ts",
     ],
     perf: simTick,
-    start: [
-      "packages/track/src/features.ts",
-      "packages/sim/src/rider-flight.ts",
-      "apps/web/src/game/ramps.ts",
-    ],
+    start: ["packages/sim/src/rider-flight.ts", "apps/web/src/game/puffs.ts"],
     summary:
-      "Ramps placed on the road, crests that launch the bike, flight, judged landings, and the ramp models and the landing dust and sparks drawn for them.",
-    title: "Jumps, ramps and landings",
+      "Crests and truck ramps that launch the bike, flight, judged landings, and the landing dust and sparks drawn for them.",
+    title: "Jumps and landings",
     verify: ["jumps.md"],
   },
   {
@@ -126,7 +120,12 @@ export const playerFeatures: readonly FeatureEntry[] = [
     docs: ["docs/architecture.md#tracks"],
     id: "traffic",
     kind: "feature",
-    owns: ["packages/sim/src/traffic.ts", "packages/sim/src/lanes.test.ts"],
+    owns: [
+      "packages/sim/src/carrier.ts",
+      "packages/sim/src/carrier.test.ts",
+      "packages/sim/src/traffic.ts",
+      "packages/sim/src/lanes.test.ts",
+    ],
     perf: simTick,
     start: ["packages/sim/src/traffic.ts"],
     summary:
@@ -149,6 +148,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/track/src/walk-sites*.ts",
       "packages/sim/src/pedestrians*.ts",
       "apps/web/src/game/junctions.ts",
+      "apps/web/src/game/road-sheet.ts",
       "apps/web/src/game/walker*.ts",
       "apps/web/test/walker-*.ts",
       "tools/perf/road-life.ts",
@@ -216,7 +216,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/pilot-lines.ts",
     ],
     summary:
-      "The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, planned inside the tick from the race's own state.",
+      "The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, truck jumps, fights and pursuit, planned inside the tick from the race's own state.",
     title: "AI riders (the pilot)",
     verify: [],
   },
@@ -480,7 +480,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/corner-warnings.ts",
     ],
     summary:
-      "The five roads and their regions: each road's sections, crests, ramps, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.",
+      "The five roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.",
     title: "The five roads",
     verify: [],
   },

@@ -155,25 +155,36 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
   urls: ModelUrls
 ) {
   const [buildA, buildB, buildC] = urls.figures;
-  const [bikes, car, van, riderA, riderB, riderC, walkers, fontFallback] =
-    yield* Effect.all(
-      [
-        bikeModels(cache, urls),
-        model(cache, urls.car, wholeModel),
-        model(cache, urls.van, wholeModel),
-        model(cache, buildA, riderModel),
-        model(cache, buildB, riderModel),
-        model(cache, buildC, riderModel),
-        model(cache, urls.walkers, walkerModel),
-        displayFont,
-      ],
-      { concurrency: "unbounded" }
-    );
+  const [
+    bikes,
+    car,
+    truck,
+    van,
+    riderA,
+    riderB,
+    riderC,
+    walkers,
+    fontFallback,
+  ] = yield* Effect.all(
+    [
+      bikeModels(cache, urls),
+      model(cache, urls.car, wholeModel),
+      model(cache, urls.truck, wholeModel),
+      model(cache, urls.van, wholeModel),
+      model(cache, buildA, riderModel),
+      model(cache, buildB, riderModel),
+      model(cache, buildC, riderModel),
+      model(cache, urls.walkers, walkerModel),
+      displayFont,
+    ],
+    { concurrency: "unbounded" }
+  );
   const loaded: Loaded = {
     assets: {
       bikes,
       car,
       figures: [riderA, riderB, riderC],
+      truck,
       van,
       walkers,
     },

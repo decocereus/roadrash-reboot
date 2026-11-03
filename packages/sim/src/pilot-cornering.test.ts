@@ -235,7 +235,6 @@ const planningRoad = (pieces: TrackPieces): Track =>
   compileTrack({
     ...ridgeRoad,
     chevrons: [],
-    features: [],
     hazardsPerKilometre: 0,
     pieces,
     trafficPerKilometre: 0,
@@ -309,44 +308,7 @@ const downhillRoad = (): Track => {
   };
 };
 
-const kerbRamp = {
-  kind: "jump",
-  length: 16,
-  rise: 0.8,
-  width: 1.4,
-} as const;
-
 describe("the pilot plans its speed along the road", () => {
-  it("takes a ramp 50 m before a bend at a speed it can land and hold, instead of planning to brake in the air", () => {
-    const road = compileTrack({
-      ...ridgeRoad,
-      chevrons: [],
-      features: [
-        {
-          feature: kerbRamp,
-          fromLevel: 1,
-          id: "kerb-ramp",
-          placement: "fixed",
-          s: 500,
-          x: 0,
-        },
-      ],
-      hazardsPerKilometre: 0,
-      pieces: bendAfter(550, -60, 200),
-      trafficPerKilometre: 0,
-    });
-    const run = ridePlanned(
-      road,
-      { lateralSpeed: 0, s: 250, speed: 250 / KMH, x: 0 },
-      8
-    );
-    expect({
-      crashed: kindsOf(run.events).includes("crash"),
-      landed: kindsOf(run.events).includes("land"),
-      offRoad: run.offRoad,
-    }).toStrictEqual({ crashed: false, landed: true, offRoad: false });
-  });
-
   it("brakes for a bend at the foot of a 10% downhill early enough that the bend never pushes harder than the bike can hold", () => {
     const run = ridePlanned(
       downhillRoad(),
@@ -435,7 +397,6 @@ describe("the pilot plans its speed along the road", () => {
       ...compileTrack({
         ...ridgeRoad,
         chevrons: [],
-        features: [],
         hazardsPerKilometre: 0,
         lanesEachWay: 2,
         pieces: eased([[6000, 0, 0]]),
@@ -453,6 +414,7 @@ describe("the pilot plans its speed along the road", () => {
       5,
       [
         {
+          carrier: false,
           cruiseSpeed: -17.5,
           halfLength: 2.2,
           halfWidth: 0.92,

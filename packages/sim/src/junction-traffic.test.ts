@@ -21,6 +21,7 @@ if (!harbour?.lights) {
 const junction: SignalledCrossing = { ...harbour, lights: harbour.lights };
 
 const carAt = (s: number, x: number, speed: number): TrafficCar => ({
+  carrier: false,
   cruiseSpeed: speed,
   halfLength: 2.2,
   halfWidth: 0.92,

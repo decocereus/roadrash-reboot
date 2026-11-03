@@ -10,8 +10,6 @@ import type {
   RiderId,
 } from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
-import { emptySupport, supportAt } from "@racer/track/features";
-import type { Support } from "@racer/track/features";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
 
@@ -217,7 +215,6 @@ export interface Cast {
   views: RiderActor[];
   bikes: Bikes | null;
   puffs: Puffs | null;
-  readonly deck: Support;
   riderReach: Reach;
   clock: number;
   readonly subject: Subject;
@@ -229,7 +226,6 @@ export interface Cast {
 export const createCast = (shading: Shading): Cast => ({
   bikes: null,
   clock: 0,
-  deck: emptySupport(),
   placed: {
     air: 0,
     bodyAir: 0,
@@ -277,7 +273,7 @@ interface CastParts {
 }
 
 export const bindCast = ({ assets, cast, stage }: CastParts) => {
-  const { deck, placed, stance, strike, subject } = cast;
+  const { placed, stance, strike, subject } = cast;
 
   const dropViews = () => {
     for (const view of cast.views) {
@@ -542,7 +538,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     const seated = rider.mode === "riding" || rider.mode === "mounting";
     const pitch = rider.airborne
       ? Math.atan2(rider.verticalSpeed, Math.max(rider.speed, 1)) * 0.6
-      : Math.atan(supportAt(stage.track, s, x, deck).slope);
+      : 0;
 
     poseOnTrack(bike, stage.track, s, x, air, heading, lean, pitch);
     cast.bikes?.spin(index, rider.speed * seconds);

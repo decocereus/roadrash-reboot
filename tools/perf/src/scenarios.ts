@@ -189,7 +189,7 @@ type EitherSideTrack = Omit<Track, "crossings" | "walkSites"> &
   Partial<Pick<Track, "crossings" | "walkSites">>;
 
 const raceSettings = (plan: Track["plan"]): RaceSettings => ({
-  features: plan.features,
+  carriers: plan.carriers,
   hazardsPerKilometre: plan.hazardsPerKilometre,
   id: plan.id,
   laneWidth: plan.laneWidth,

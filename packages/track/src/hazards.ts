@@ -1,6 +1,5 @@
 import { pieceSpans } from "./alignment.ts";
 import { crossingReservationOf } from "./crossings.ts";
-import { reservationOf } from "./features.ts";
 import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import type { Random } from "./random.ts";
@@ -39,7 +38,6 @@ export interface HazardPlacement {
 const HAZARD_SIGHT = 25;
 export const HAZARD_START_CLEARANCE = 450;
 export const HAZARD_FINISH_CLEARANCE = 150;
-export const HAZARD_RAMP_CLEARANCE = 30;
 const HAZARD_LEAST_GAP = 60;
 const BEND_TURN = (20 * Math.PI) / 180;
 const SIGHT_STEP = 5;
@@ -270,15 +268,6 @@ const bendAt = (road: Road, s: number): Bend => {
   return sharpest >= HAZARD_GENTLE_CURVATURE ? "gentle" : "straight";
 };
 
-const clearOfRamps = (road: Road, s: number, halfLength: number): boolean =>
-  road.plan.features.every((rule) => {
-    const [from, to] = reservationOf(rule);
-    return (
-      s + halfLength < from - HAZARD_RAMP_CLEARANCE ||
-      s - halfLength > to + HAZARD_RAMP_CLEARANCE
-    );
-  });
-
 const clearOfCrossings = (road: Road, s: number, halfLength: number): boolean =>
   road.plan.crossings.every((rule) => {
     const [from, to] = crossingReservationOf(rule);
@@ -292,7 +281,6 @@ const placeable = (
   x: number
 ): boolean =>
   s >= HAZARD_START_CLEARANCE &&
-  clearOfRamps(road, s, hazardSizes[kind].halfLength) &&
   clearOfCrossings(road, s, hazardSizes[kind].halfLength) &&
   inSight(road, s, x);
 

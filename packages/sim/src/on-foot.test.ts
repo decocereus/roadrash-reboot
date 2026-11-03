@@ -67,6 +67,7 @@ describe("knocked down on foot", () => {
   it("a rider running back to the bike who is hit by a car goes down again and is back on their feet about two seconds later", () => {
     const { me, rival, state } = knockedOffAndRunning();
     state.cars.push({
+      carrier: false,
       cruiseSpeed: 20,
       halfLength: 2.2,
       halfWidth: 0.92,
@@ -330,6 +331,7 @@ describe("on foot", () => {
       remount: true,
     }));
     state.cars.push({
+      carrier: false,
       cruiseSpeed: 20,
       halfLength: 2.2,
       halfWidth: 0.92,
