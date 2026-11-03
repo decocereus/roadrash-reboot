@@ -1,3 +1,4 @@
+import { CurrentHost, browserHosts } from "@racer/devtools/browser-host";
 import { CleanupOutcomes } from "@racer/devtools/cleanup";
 import { ToolProcesses } from "@racer/devtools/process";
 import { ProcessError } from "@racer/devtools/process-error";
@@ -80,7 +81,7 @@ const upWhereWriteFails = async (failing: number) => {
         };
       }),
     spawnScoped: () => Effect.die("rv never spawns a scoped browser"),
-    startDetached: (args) =>
+    startDetached: (_file, args) =>
       Effect.sync(() => {
         const pid = args.includes("watch") ? WATCHER : SERVER;
         commands.set(pid, args.join(" "));
@@ -160,7 +161,17 @@ const upWhereWriteFails = async (failing: number) => {
         Effect.exit
       );
       return { cleanup: yield* Ref.get(outcomes), exit: ended };
-    }).pipe(Effect.provide(Layer.mergeAll(processes, slots, server, files)))
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          Layer.succeed(CurrentHost)(browserHosts["macos-metal"]),
+          processes,
+          slots,
+          server,
+          files
+        )
+      )
+    )
   );
 
   return {

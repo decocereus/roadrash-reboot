@@ -1,8 +1,8 @@
 import path from "node:path";
 
+import { CurrentHost } from "@racer/devtools/browser-host";
 import {
   awaitPortClosed,
-  browsers,
   sharedFlags,
   startInBackground,
   stopProfileBrowser,
@@ -162,6 +162,7 @@ export const startServer = Effect.fn("rv.startServer")(function* startServer(
   const next = yield* Effect.uninterruptible(
     processes
       .startDetached(
+        process.execPath,
         serverArgs(state),
         webDir(state.checkout),
         path.join(state.evidence, "server.log"),
@@ -189,16 +190,26 @@ export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
   state: InstanceState,
   url: string
 ) {
+  const host = yield* CurrentHost;
   const flags = [
-    ...sharedFlags(state.devtoolsPort, state.profile, VIEWPORT),
+    ...sharedFlags(
+      host.windowed.flags,
+      state.devtoolsPort,
+      state.profile,
+      VIEWPORT
+    ),
     ...(state.sound ? [] : ["--mute-audio"]),
     url,
   ];
   const pid = yield* startInBackground(
-    browsers.helium,
+    host,
     flags,
     state.devtoolsPort,
-    state.profile
+    state.profile,
+    {
+      env: { ...process.env, ...host.windowed.env },
+      log: path.join(state.evidence, "browser.log"),
+    }
   );
   const started: InstanceState = { ...state, browserPid: pid };
   return started;
@@ -212,6 +223,7 @@ export const startWatcher = Effect.fn("rv.startWatcher")(function* startWatcher(
   return yield* Effect.uninterruptible(
     processes
       .startDetached(
+        process.execPath,
         [script, "watch", "--run", state.run],
         state.checkout,
         path.join(state.evidence, "watch.log"),
@@ -241,10 +253,11 @@ export const stopBrowser = Effect.fn("rv.stopBrowser")(function* stopBrowser(
   state: InstanceState
 ) {
   const processes = yield* ToolProcesses;
+  const host = yield* CurrentHost;
   const result =
     state.browserPid === null
       ? yield* stopProfileBrowser(state.profile)
-      : yield* processes.stopOwned(state.browserPid, "Helium");
+      : yield* processes.stopOwned(state.browserPid, host.processMark);
   yield* awaitPortClosed(state.devtoolsPort);
   return result;
 });

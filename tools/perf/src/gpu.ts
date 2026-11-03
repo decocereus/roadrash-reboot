@@ -42,7 +42,7 @@ const DOCTOR_CHECKS = [
   "server process",
   "server answers",
   "build is current",
-  "helium process",
+  "browser process",
   "console watcher",
   "page",
   "page visible",

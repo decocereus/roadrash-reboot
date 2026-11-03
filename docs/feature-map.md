@@ -1059,6 +1059,7 @@ Source files:
 
 - `packages/devtools/src/analysis.ts`
 - `packages/devtools/src/browser-error.ts`
+- `packages/devtools/src/browser-host.ts`
 - `packages/devtools/src/cdp-error.ts`
 - `packages/devtools/src/cdp-protocol.ts`
 - `packages/devtools/src/cdp.ts`
@@ -1104,6 +1105,7 @@ Source files:
 
 Test files:
 
+- `tools/verify/test/browser-host.test.ts`
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`

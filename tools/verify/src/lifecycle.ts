@@ -65,17 +65,18 @@ const teardown = Effect.fnUntraced(function* teardown(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const slots = yield* SlotStore;
-  const stages = [
-    ["watcher", stopWatcher(state)],
-    ["helium", stopBrowser(state)],
-    ["server", stopServer(state)],
-  ] as const;
-  for (const [label, stop] of stages) {
-    const stopped = yield* attempt(stop);
-    if (Option.isSome(stopped)) {
-      yield* print(`${label}: ${stopped.value}`);
-    }
-  }
+  const stage = <E, R>(label: string, stop: Effect.Effect<string, E, R>) =>
+    attempt(stop).pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.void,
+          onSome: (stopped) => print(`${label}: ${stopped}`),
+        })
+      )
+    );
+  yield* stage("watcher", stopWatcher(state));
+  yield* stage("browser", stopBrowser(state));
+  yield* stage("server", stopServer(state));
   const removals = [
     fs.remove(state.profile, { force: true, recursive: true }),
     ...(buildDir === null || buildDir === ""
@@ -148,7 +149,7 @@ const bringUp = Effect.fnUntraced(function* bringUp(
     restore(startBrowser(served, url)).pipe(Effect.tap(slots.writeState))
   );
   yield* print(
-    `helium pid ${browsing.browserPid}, devtools ${browsing.devtoolsPort}, opened ${url}`
+    `browser pid ${browsing.browserPid}, devtools ${browsing.devtoolsPort}, opened ${url}`
   );
   const watching = yield* launchWatcher(browsing, script);
   yield* print(`console watcher pid ${watching.watcherPid}`);

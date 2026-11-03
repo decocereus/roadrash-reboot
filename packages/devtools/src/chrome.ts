@@ -1,44 +1,16 @@
+import path from "node:path";
+
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as HttpClient from "effect/http/HttpClient";
 import * as Schema from "effect/Schema";
 
 import { BrowserError } from "./browser-error.ts";
+import { CurrentHost } from "./browser-host.ts";
+import type { BrowserHost, BrowserMode, DesktopEnv } from "./browser-host.ts";
 import { connect } from "./cdp.ts";
 import { released } from "./cleanup.ts";
 import { ToolProcesses } from "./process.ts";
-
-export type BrowserName = "chrome" | "helium";
-
-export interface BrowserChoice {
-  readonly name: BrowserName;
-  readonly app: string;
-  readonly binary: string;
-  readonly headless: boolean;
-}
-
-export const browsers = {
-  chrome: {
-    app: "/Applications/Google Chrome.app",
-    binary: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    headless: true,
-    name: "chrome",
-  },
-  helium: {
-    app: "/Applications/Helium.app",
-    binary: "/Applications/Helium.app/Contents/MacOS/Helium",
-    headless: false,
-    name: "helium",
-  },
-} satisfies Readonly<Record<BrowserName, BrowserChoice>>;
-
-export const browserNamed = (name: string): BrowserChoice => {
-  const found = Object.values(browsers).find((each) => each.name === name);
-  if (!found) {
-    throw new Error(`Unknown browser ${name}; use chrome or helium.`);
-  }
-  return found;
-};
 
 const STARTUP_ATTEMPTS = 150;
 const STARTUP_POLL_MS = 100;
@@ -64,6 +36,7 @@ const decodeTargets = Schema.decodeUnknownEffect(
 const profileFlag = (profile: string): string => `--user-data-dir=${profile}`;
 
 export const sharedFlags = (
+  gpuFlags: readonly string[],
   port: number,
   profile: string,
   viewport: Viewport
@@ -71,9 +44,7 @@ export const sharedFlags = (
   profileFlag(profile),
   `--remote-debugging-port=${port}`,
   `--window-size=${viewport.width},${viewport.height}`,
-  "--use-angle=metal",
-  "--enable-gpu",
-  "--ignore-gpu-blocklist",
+  ...gpuFlags,
   "--no-first-run",
   "--no-default-browser-check",
   "--disable-background-timer-throttling",
@@ -81,14 +52,15 @@ export const sharedFlags = (
   "--disable-backgrounding-occluded-windows",
 ];
 
-const chromeFlags = (
+const benchFlags = (
+  host: BrowserHost,
+  mode: BrowserMode,
   port: number,
   profile: string,
-  viewport: Viewport,
-  browser: BrowserChoice = browsers.chrome
+  viewport: Viewport
 ): string[] => [
-  ...(browser.headless ? ["--headless=new"] : []),
-  ...sharedFlags(port, profile, viewport),
+  ...(mode === "headless" ? ["--headless=new"] : []),
+  ...sharedFlags(host[mode].flags, port, profile, viewport),
   `--force-device-scale-factor=${viewport.scale}`,
   "--disable-gpu-vsync",
   "--disable-frame-rate-limit",
@@ -173,26 +145,48 @@ export const stopProfileBrowser = Effect.fn("chrome.stopProfileBrowser")(
   }
 );
 
+export interface WindowedStart {
+  readonly env: NodeJS.ProcessEnv;
+  readonly log: string;
+}
+
+const openWindowed = (
+  { windowed: { launcher } }: BrowserHost,
+  flags: readonly string[],
+  { env, log }: WindowedStart
+) =>
+  ToolProcesses.use((processes) => {
+    switch (launcher.kind) {
+      case "open": {
+        return processes
+          .run("open", ["-g", "-n", "-a", launcher.app, "--args", ...flags])
+          .pipe(Effect.asVoid);
+      }
+      case "direct": {
+        return processes
+          .startDetached(launcher.binary, flags, path.dirname(log), log, env)
+          .pipe(Effect.asVoid);
+      }
+      default: {
+        return launcher satisfies never;
+      }
+    }
+  });
+
 const listening = Effect.fnUntraced(function* listening(
-  browser: BrowserChoice,
+  host: BrowserHost,
   flags: readonly string[],
   port: number,
-  profile: string
+  profile: string,
+  start: WindowedStart
 ) {
   const processes = yield* ToolProcesses;
-  yield* processes.run("open", [
-    "-g",
-    "-n",
-    "-a",
-    browser.app,
-    "--args",
-    ...flags,
-  ]);
+  yield* openWindowed(host, flags, start);
   const pid = yield* awaitListener(port);
   const command = yield* processes.commandOf(pid);
   if (!command.includes(profileFlag(profile))) {
     return yield* new BrowserError({
-      browser: browser.name,
+      browser: host.id,
       message: `Port ${port} is held by pid ${pid}, not the browser this run started.`,
       operation: "listen",
       port,
@@ -202,12 +196,13 @@ const listening = Effect.fnUntraced(function* listening(
 });
 
 export const startInBackground = (
-  browser: BrowserChoice,
+  host: BrowserHost,
   flags: readonly string[],
   port: number,
-  profile: string
+  profile: string,
+  start: WindowedStart
 ) =>
-  listening(browser, flags, port, profile).pipe(
+  listening(host, flags, port, profile, start).pipe(
     Effect.onError(() => released(stopProfileBrowser(profile)))
   );
 
@@ -220,13 +215,14 @@ const temporaryProfile = Effect.gen(function* temporaryProfile() {
 });
 
 const launchWindowed = (
-  browser: BrowserChoice,
+  host: BrowserHost,
   flags: readonly string[],
   port: number,
-  profile: string
+  profile: string,
+  start: WindowedStart
 ) =>
   Effect.acquireRelease(
-    startInBackground(browser, flags, port, profile),
+    startInBackground(host, flags, port, profile, start),
     (pid) =>
       released(
         ToolProcesses.use((processes) =>
@@ -239,23 +235,39 @@ const launchWindowed = (
 export const launch = Effect.fn("chrome.launch")(function* launch(
   port: number,
   viewport: Viewport,
-  browser: BrowserChoice = browsers.chrome
+  mode: BrowserMode,
+  desktopEnv: DesktopEnv
 ) {
+  const host = yield* CurrentHost;
   if (yield* portAnswers(port)) {
     return yield* new BrowserError({
-      browser: browser.name,
+      browser: host.id,
       message: `Port ${port} already answers; pick another with --port.`,
       operation: "launch",
       port,
     });
   }
   const profile = yield* temporaryProfile;
-  const flags = chromeFlags(port, profile, viewport, browser);
-  if (browser.headless) {
-    const processes = yield* ToolProcesses;
-    yield* processes.spawnScoped(browser.binary, flags);
-  } else {
-    yield* launchWindowed(browser, flags, port, profile);
+  const flags = benchFlags(host, mode, port, profile, viewport);
+  switch (mode) {
+    case "headless": {
+      const processes = yield* ToolProcesses;
+      yield* processes.spawnScoped(host.headless.binary, flags, {
+        ...process.env,
+        ...host.headless.env,
+      });
+      break;
+    }
+    case "windowed": {
+      yield* launchWindowed(host, flags, port, profile, {
+        env: { ...process.env, ...host.windowed.env, ...desktopEnv },
+        log: path.join(profile, "browser.log"),
+      });
+      break;
+    }
+    default: {
+      return mode satisfies never;
+    }
   }
   return yield* connect(yield* pageSocket(port));
 });

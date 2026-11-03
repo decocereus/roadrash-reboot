@@ -1,3 +1,4 @@
+import { CurrentHost } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
 import { ToolProcesses, alive } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
@@ -28,6 +29,7 @@ export const doctor = Effect.fn("rv.doctor")(function* doctor(
   const state = yield* requireRun(context);
   const processes = yield* ToolProcesses;
   const evidence = yield* Evidence;
+  const host = yield* CurrentHost;
   const results: boolean[] = [];
   const check = (ok: boolean, label: string, detail: string) =>
     Effect.map(print(`${ok ? "ok  " : "FAIL"} ${label}: ${detail}`), () => {
@@ -58,7 +60,7 @@ export const doctor = Effect.fn("rv.doctor")(function* doctor(
   const browserListener = yield* processes.listenerOf(state.devtoolsPort);
   yield* check(
     browserListener !== null && browserListener === state.browserPid,
-    "helium process",
+    "browser process",
     `devtools ${state.devtoolsPort}, listener pid ${browserListener}, recorded ${state.browserPid}`
   );
   yield* check(
@@ -88,7 +90,7 @@ export const doctor = Effect.fn("rv.doctor")(function* doctor(
     `${facts.visibility}; a hidden page pauses the race and stops frames`
   );
   yield* check(
-    facts.gl.includes("Metal") && !facts.gl.includes("SwiftShader"),
+    facts.gl.includes(host.rendererMark) && !facts.gl.includes("SwiftShader"),
     "gpu",
     facts.gl
   );

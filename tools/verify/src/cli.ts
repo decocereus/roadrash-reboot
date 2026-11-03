@@ -1,3 +1,4 @@
+import type { CurrentHost } from "@racer/devtools/browser-host";
 import { runCommand } from "@racer/devtools/cleanup";
 import type { CleanupOutcomes } from "@racer/devtools/cleanup";
 import type { ToolProcesses } from "@racer/devtools/process";
@@ -31,7 +32,7 @@ import { down, up } from "./lifecycle.ts";
 import type { SlotStore } from "./state.ts";
 import { watch } from "./watcher.ts";
 
-const HELP = `rv: drive a Rushline verification instance in a windowed Helium over DevTools
+const HELP = `rv: drive a Rushline verification instance in a windowed browser over DevTools
 
   rv up [--dev] [--path /?ride=...] [--slot n] [--cpu n] [--network fast4g|slow4g|3g] [--sound]
   rv up --server http://127.0.0.1:1351/ --user-asked     only when the user said to drive their server
@@ -58,6 +59,7 @@ type Handler = (
   void,
   unknown,
   | CleanupOutcomes
+  | CurrentHost
   | Evidence
   | FileSystem.FileSystem
   | HttpClient.HttpClient

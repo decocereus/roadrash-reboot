@@ -6,6 +6,7 @@ import {
   gcNamesSeen,
   summariseTrace,
 } from "@racer/devtools/analysis";
+import type { DesktopEnv } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
 import { launch } from "@racer/devtools/chrome";
 import {
@@ -53,14 +54,15 @@ const SAMPLING_MICROS = 100;
 
 const ALLOCATION_SAMPLING_BYTES = 4096;
 
-const measureOnce = (options: Options, run: number) =>
+const measureOnce = (options: Options, run: number, desktopEnv: DesktopEnv) =>
   Effect.scoped(
     Effect.gen(function* measureRun() {
       const fs = yield* FileSystem.FileSystem;
       const page = yield* launch(
         options.port,
         options.viewport,
-        options.browser
+        options.browser,
+        desktopEnv
       );
       const deadline = (yield* Clock.currentTimeMillis) + TIMEOUT_MS;
       yield* page.send("Page.enable");
@@ -185,7 +187,7 @@ const measureOnce = (options: Options, run: number) =>
 const runAll = Effect.fnUntraced(function* runAll(options: Options) {
   const results: RunResult[] = [];
   for (let run = 1; run <= options.runs; run += 1) {
-    const result = yield* measureOnce(options, run);
+    const result = yield* measureOnce(options, run, {});
     yield* Effect.sync(() => {
       printRun(result);
     });
