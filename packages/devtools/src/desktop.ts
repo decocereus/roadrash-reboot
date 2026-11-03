@@ -236,7 +236,7 @@ const underLock = <A, E, R>(
   step: Effect.Effect<A, E, R>
 ) =>
   Effect.acquireUseRelease(
-    takeLock(paths),
+    Effect.interruptible(takeLock(paths)),
     () => step,
     () => released(dropClaim(paths.lock))
   );

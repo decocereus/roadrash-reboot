@@ -28,6 +28,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import type * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import type * as Path from "effect/Path";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
@@ -425,6 +426,19 @@ describe("desktop session lifecycle", () => {
     expect(status).toStrictEqual(
       Exit.succeed({ claim: claimOf(60, "run-a"), kind: "owned" })
     );
+  });
+
+  it("lets an interrupt end a wait for the lock", async () => {
+    const dir = freshDir();
+    writeFileSync(
+      path.join(dir, "desktop.lock"),
+      JSON.stringify({ label: "desktop session", pid: process.pid })
+    );
+    const status = await onMachine(
+      machineOf(),
+      desktopStatus(dir).pipe(Effect.timeoutOption("100 millis"))
+    );
+    expect(status).toStrictEqual(Exit.succeed(Option.none()));
   });
 
   it("fails at once on a compositor with no display, launching nothing", async () => {
