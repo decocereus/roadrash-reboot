@@ -4,7 +4,11 @@ import { createServer } from "node:net";
 import * as NodeChildProcessSpawner from "@effect/platform-node/NodeChildProcessSpawner";
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodePath from "@effect/platform-node/NodePath";
-import { browserHosts, hostOf } from "@racer/devtools/browser-host";
+import {
+  browserHosts,
+  hostOf,
+  perfEnvironments,
+} from "@racer/devtools/browser-host";
 import { ToolProcesses } from "@racer/devtools/process";
 import type { ProcessError } from "@racer/devtools/process-error";
 import * as Cause from "effect/Cause";
@@ -58,6 +62,12 @@ describe("browser hosts", () => {
 
   it("refuses a platform with no row and names it", () => {
     expect(() => hostOf("win32")).toThrow("No browser host for win32");
+  });
+
+  it("gives every host its own perf environment", () => {
+    expect(new Set(perfEnvironments).size).toBe(
+      Object.keys(browserHosts).length
+    );
   });
 
   it("keeps macOS on Metal through open -g, with no desktop session", () => {

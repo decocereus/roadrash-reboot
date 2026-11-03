@@ -155,6 +155,10 @@ export const browserHosts = {
   },
 } as const satisfies Readonly<Record<BrowserHostId, BrowserHost>>;
 
+export const perfEnvironments: readonly string[] = browserHostIds.map(
+  (id) => browserHosts[id].perfEnvironment
+);
+
 export const hostOf = (platform: NodeJS.Platform): BrowserHost => {
   if (platform === "darwin") {
     return browserHosts["macos-metal"];

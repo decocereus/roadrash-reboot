@@ -1,6 +1,8 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { CurrentHost } from "@racer/devtools/browser-host";
+import { desktopRuntimeEnv } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
@@ -10,7 +12,6 @@ import * as Schema from "effect/Schema";
 
 import { readBudgets } from "./approved.ts";
 import { holdBench } from "./bench-lock.ts";
-import { GPU_ENVIRONMENT } from "./budgets.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
 import {
   evaluateGpu,
@@ -52,7 +53,7 @@ const DOCTOR_CHECKS = [
 
 const USAGE = `Usage:
   node tools/perf/gpu.ts --a <rv run> --b <rv run> [--baseline-ref <rev>] [--budgets <file>] [--out <dir>]
-Start both runs first: rv up from a /tmp clone at the baseline revision for A, and from this checkout for B.`;
+Start both runs first with this checkout's rv: with the working directory in a /tmp clone at the baseline revision for A, and in this checkout for B.`;
 
 interface GpuOptions {
   readonly runs: Readonly<Record<SideName, string>>;
@@ -398,6 +399,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
+  const host = yield* CurrentHost;
   yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`);
   const startedAt = yield* Clock.currentTimeMillis;
   const approved = yield* readBudgets(options.budgets);
@@ -416,9 +418,18 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
   if (before.length > 0) {
     return { code: 1, lines: [...before, `evidence ${dir}`] };
   }
-  const display = yield* processes.run("system_profiler", [
-    "SPDisplaysDataType",
-  ]);
+  const displayFacts = yield* Effect.all(
+    host.displayProbes.map((probe) =>
+      processes.run(probe.file, probe.args, { env: desktopRuntimeEnv() }).pipe(
+        Effect.map(({ stdout }) =>
+          stdout
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => probe.keep.test(line))
+        )
+      )
+    )
+  );
   const page = {
     A: yield* rv(["open", "--run", options.runs.A, PARK]).pipe(
       Effect.andThen(rv(["js", "--run", options.runs.A, PREPARE])),
@@ -467,7 +478,11 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     }
   }
   const after = yield* doctorAll(options, dir, "doctor-after");
-  const evaluation = evaluateGpu(samples, approved.budgets.limits);
+  const evaluation = evaluateGpu(
+    samples,
+    approved.budgets.limits,
+    host.perfEnvironment
+  );
   const files = yield* Effect.all(
     samples.map((sample) =>
       fs
@@ -491,18 +506,11 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         comparisonId,
         counts: evaluation.counts,
         display: {
+          facts: displayFacts.flat(),
           frameRate: FRAME_RATE,
           page,
-          systemProfiler: display.stdout
-            .split("\n")
-            .map((line) => line.trim())
-            .filter((line) =>
-              /^(?:Chipset Model|Display Type|Resolution|UI Looks like|Main Display|Refresh)/u.test(
-                line
-              )
-            ),
         },
-        environment: GPU_ENVIRONMENT,
+        environment: host.perfEnvironment,
         files,
         lines,
         observations: evaluation.observations,

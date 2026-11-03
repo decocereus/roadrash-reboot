@@ -2,6 +2,7 @@ import * as NodeChildProcessSpawner from "@effect/platform-node/NodeChildProcess
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
+import { CurrentHost } from "@racer/devtools/browser-host";
 import { runCommand } from "@racer/devtools/cleanup";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
@@ -9,8 +10,10 @@ import * as Layer from "effect/Layer";
 
 import { main } from "./src/gpu.ts";
 
-const services = ToolProcesses.layer.pipe(
-  Layer.provide(NodeChildProcessSpawner.layer),
+const services = Layer.mergeAll(
+  CurrentHost.layer,
+  ToolProcesses.layer.pipe(Layer.provide(NodeChildProcessSpawner.layer))
+).pipe(
   Layer.provideMerge(Layer.mergeAll(NodeFileSystem.layer, NodePath.layer))
 );
 

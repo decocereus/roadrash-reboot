@@ -116,7 +116,7 @@ export const evaluateGate = (
   const verdicts = judge(
     budgets.limits,
     observed.observations,
-    requiredRows(samples.lanes, [observed.environment])
+    requiredRows(samples.lanes, [observed.environment], [])
   );
   const incomplete = incompleteLine(samples);
   return {
@@ -227,7 +227,7 @@ export const evaluateBaseline = (samples: Samples): BaselineEvaluation => {
   const profiles: Record<string, NodeProfile> =
     profile && first ? { [nodeEnvironment(first.record)]: profile } : {};
   const observed = observe(samples, profiles);
-  const required = requiredRows(samples.lanes, [observed.environment]);
+  const required = requiredRows(samples.lanes, [observed.environment], []);
   const limits = proposeLimits(
     observed.observations,
     required,

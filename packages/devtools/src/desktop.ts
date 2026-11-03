@@ -135,7 +135,7 @@ export const withDesktopHold = (
   ],
 });
 
-const desktopRuntimeEnv = (): NodeJS.ProcessEnv => ({
+export const desktopRuntimeEnv = (): NodeJS.ProcessEnv => ({
   ...process.env,
   XDG_RUNTIME_DIR:
     process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 0}`,

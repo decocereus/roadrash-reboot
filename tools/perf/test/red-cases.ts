@@ -1,3 +1,5 @@
+import { perfEnvironments } from "@racer/devtools/browser-host";
+
 import { requiredRows } from "../src/budgets.ts";
 import type { Budgets, Limit } from "../src/budgets.ts";
 import { glbNames } from "../src/build.ts";
@@ -291,18 +293,20 @@ export const steadyLanes = (slowdown: Slowdown): NodeLane[] =>
   scenarios.map((scenario) => syntheticLane(scenario, slowdown));
 
 const unusedGpuLimits = (): Limit[] =>
-  requiredRows(["gpu"], []).map(({ environment, kind, scenario }) => ({
-    baseline: 0,
-    derivation: "synthetic",
-    direction: kind.direction,
-    environment,
-    metric: kind.metric,
-    paired: kind.paired,
-    scenario,
-    source: "synthetic",
-    unit: kind.unit,
-    value: 0,
-  }));
+  requiredRows(["gpu"], [], perfEnvironments).map(
+    ({ environment, kind, scenario }) => ({
+      baseline: 0,
+      derivation: "synthetic",
+      direction: kind.direction,
+      environment,
+      metric: kind.metric,
+      paired: kind.paired,
+      scenario,
+      source: "synthetic",
+      unit: kind.unit,
+      value: 0,
+    })
+  );
 
 export const syntheticBudgets = (build: {
   readonly A: BuildRecord;

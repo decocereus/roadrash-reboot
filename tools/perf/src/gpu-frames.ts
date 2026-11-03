@@ -1,11 +1,6 @@
 import * as Schema from "effect/Schema";
 
-import {
-  GPU_ENVIRONMENT,
-  judge,
-  metricKinds,
-  requiredRows,
-} from "./budgets.ts";
+import { judge, metricKinds, requiredRows } from "./budgets.ts";
 import type { Limit, MetricKind, Observation } from "./budgets.ts";
 import { median, quantile } from "./result.ts";
 import {
@@ -393,6 +388,7 @@ const pairedOf = (
       );
 
 const observationOf = (
+  environment: string,
   scenario: Scenario,
   kind: MetricKind,
   a: readonly GpuSample[],
@@ -404,7 +400,7 @@ const observationOf = (
   };
   const pooled = { a: valueOf(kind.metric, a), b: valueOf(kind.metric, b) };
   const observed = {
-    environment: GPU_ENVIRONMENT,
+    environment,
     lane: "gpu",
     metric: kind.metric,
     paired: pairedOf(kind, a, b),
@@ -448,12 +444,14 @@ const countsOf = (samples: readonly GpuSample[]) => {
   };
 };
 
-const gpuRows = requiredRows(["gpu"], []);
-
 const viewportText = ({ viewport }: GpuSample["capture"]): string =>
   `${viewport.width}x${viewport.height}@${viewport.dpr}`;
 
-const scenarioResult = (scenario: Scenario, mine: readonly GpuSample[]) => {
+const scenarioResult = (
+  environment: string,
+  scenario: Scenario,
+  mine: readonly GpuSample[]
+) => {
   const failures = mine.flatMap((sample) =>
     sampleProblems(scenario, sample).map(
       (problem) =>
@@ -481,7 +479,7 @@ const scenarioResult = (scenario: Scenario, mine: readonly GpuSample[]) => {
     return { counts: null, failures, observations: [] };
   }
   const observations = gpuKinds.map((kind) =>
-    observationOf(scenario, kind, a, b)
+    observationOf(environment, scenario, kind, a, b)
   );
   return { counts: { A: countsOf(a), B: countsOf(b) }, failures, observations };
 };
@@ -491,11 +489,13 @@ const peaksText = (peaks: ReturnType<typeof countsOf>): string =>
 
 export const evaluateGpu = (
   samples: readonly GpuSample[],
-  limits: readonly Limit[]
+  limits: readonly Limit[],
+  environment: string
 ) => {
   const results = scenarios.map((scenario) => ({
     scenario: scenario.id,
     ...scenarioResult(
+      environment,
       scenario,
       samples.filter((sample) => sample.scenario === scenario.id)
     ),
@@ -506,7 +506,11 @@ export const evaluateGpu = (
     ...firstUse.failures,
   ];
   const observations = results.flatMap((each) => each.observations);
-  const verdicts = judge(limits, observations, gpuRows);
+  const verdicts = judge(
+    limits,
+    observations,
+    requiredRows(["gpu"], [], [environment])
+  );
   const counts = results.map(({ counts: peaks, scenario }) => ({
     peaks,
     scenario,
