@@ -1,5 +1,5 @@
 {
-  "harnessDigest": "55d8b2d53dad637dd2979fd906cb97a8cfbe71f688e3b186efdd132fc7efa162",
+  "harnessDigest": "2204461106acb1dfa653a58427f407aab6d1a0afd253957565850e5b35a3d97b",
   "observations": [
     {
       "environment": "build",
@@ -658,641 +658,657 @@
       "value": 326466
     },
     {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 23043.84587370901
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.048713174712985675
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p99",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.051647012362136736
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 33932.21963394343
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.write.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.032500916125620435
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.02598408992899794
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.04394646810407727
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 15682
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.04862554931252366
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.confirm.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.04841600828577191
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.rollback.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.35341249758729354
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 51194.11647254576
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 112498.58236272879
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 904.7194675540766
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 16549.16710887819
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.07524377874187835
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p99",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.10154630206801586
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 23358.256239600665
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.write.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.04978487957060858
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.039885358453225175
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.065067060277466
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 22068
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.18832648577851066
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.confirm.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.18749846076682677
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.rollback.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 1.2231509925655721
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 81326.89517470881
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 172339.24792013312
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 1507.050915141431
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "roadLife.tick.p95",
+      "environment": "build",
+      "metric": "assets.glb.total",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 0.2257761977863957
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 3474992
     },
     {
-      "environment": "node-linux-x64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 7474.486766456492
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.16833508461004817
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p99",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.18241502789319936
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 66054.04326123129
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.write.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.07829605424999125
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.06335186125240375
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.09341020395445947
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 15682
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.13841173990844718
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.confirm.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.14574387206547917
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.rollback.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.9300340758434981
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 53201.63727121464
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 115833.30449251249
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 1052.7547420965059
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 5707.007406155018
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.21779817565785137
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p99",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.283575673983362
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 45361.23793677205
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.write.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.11241243846053023
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.08982974770297114
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.13157802469523489
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 22068
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.5339603327195838
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.confirm.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.5398715135303777
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.rollback.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 3.450852554329481
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 226723.2612312812
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 500250.462562396
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 1387.0841930116474
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "roadLife.tick.p95",
+      "environment": "build",
+      "metric": "assets.glb.truck",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
-      "value": 0.6517662550166683
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p50",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 16.700000762939453
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 16.899999618530273
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p99",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 17.899999618530273
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.missedFraction",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.count",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.blockingMs",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.calls.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 427
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.triangles.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 2375757
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.programs.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 46
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.textures.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 73
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p50",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 16.700000762939453
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 16.899999618530273
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p99",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 17.5
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.missedFraction",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.count",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.blockingMs",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.calls.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 471
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.triangles.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 2792653
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.programs.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 46
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.textures.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
-      "value": 80
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 67640
     },
     {
       "environment": "build",
       "metric": "bytes.route.root.raw",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
-      "value": 1149527
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 1146339
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 17
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 17.299999237060547
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 17.5
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 17.600000381469727
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.count",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.count",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.calls.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 510
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.calls.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 422
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 45
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 45
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 80
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 73
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.triangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 2875351
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.triangles.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "value": 2526537
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.44632387837760146
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 1.2007018649790084
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 85375.17470881864
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 224261.99001663894
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 43339.527454242925
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 47598.602329450914
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 180790.65557404325
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 493903.28119800333
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 94578.76871880199
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 104916.49916805324
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.20348162240825796
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.5176614767361502
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.05973734656871485
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.1520843640872568
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 1509.5474209650583
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 1385.5680532445924
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 873.3950083194676
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 1070.7620632279534
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 1.3757086455536407
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 3.312810303521065
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.4091800797366746
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 1.0095769686045617
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.20170035803570543
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.5237510471934786
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.055948197421078594
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.15133211001818145
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 25365.89683860233
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 84527.93344425957
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 32273.091514143096
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 65002.515806988355
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.1423343742382388
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.3711228773075864
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.05724799061412239
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.17889241807608644
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.15517292992391163
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.43169120835829106
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.06280227496280565
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.1928414208562653
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 9926.657621930539
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 3863.4901295377017
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 19495.594794049164
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 7005.609830321837
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 25093
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 25093
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 17050
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 17050
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.0710308989178539
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.14599672663940255
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.050370749719428176
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.09608144998538545
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.04568267191614263
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.1004434204749702
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.031721350579998045
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.06330938173879788
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.05607901348014885
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.1257844715539517
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "value": 0.03798039549650969
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "value": 0.08024610184746536
     }
   ],
   "revisions": {
-    "instrumented": "21de955ec2732826482aa4c4ccad922313ed697c",
-    "parent": "22f6921f92c869ad1167e1c4ba50b8a7ae3d9803"
+    "instrumented": "094d56103508df57a96b02ff7462ba88feb395bd",
+    "parent": "93ec40f5ea47be0761c244b037cb87b515763508"
   },
   "runs": [
     {
@@ -1772,11 +1788,93 @@
         "A": "21de955ec2732826482aa4c4ccad922313ed697c",
         "B": "ca5a452a158aa72a8f3d1868124e31f7e5fd489f"
       }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 8.444707999999991 ms",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "2204461106acb1dfa653a58427f407aab6d1a0afd253957565850e5b35a3d97b",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "sideASourceDigest": "337993fb0e05ccf168ff8df2ff58cb99a666486e05465cbe65c0c6b76e70aad6",
+        "sideBSourceDigest": "337993fb0e05ccf168ff8df2ff58cb99a666486e05465cbe65c0c6b76e70aad6",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":5350,\"materialize\":14218,\"node\":206763,\"total\":226454}",
+        "machine": "Mac16,8",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "quiet": "the owner held the machine idle for the run; load average 1.56 at the start and caffeinate -dimsu held for the run"
+      },
+      "id": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "094d56103508df57a96b02ff7462ba88feb395bd",
+        "B": "8f2bb84308868d8d8cf1f176a7b6d0246a01e237"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 17.624810000000025 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "2204461106acb1dfa653a58427f407aab6d1a0afd253957565850e5b35a3d97b",
+        "memoryBytes": "16760344576",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "sideASourceDigest": "337993fb0e05ccf168ff8df2ff58cb99a666486e05465cbe65c0c6b76e70aad6",
+        "sideBSourceDigest": "337993fb0e05ccf168ff8df2ff58cb99a666486e05465cbe65c0c6b76e70aad6",
+        "v8": "13.6.233.17-node.58",
+        "wallMs": "{\"build\":5561,\"materialize\":7959,\"node\":543297,\"total\":557260}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "pnpm": "11.21.0",
+        "ci": "GitHub Actions run 41635110499 (perf), pull_request event on PR #95",
+        "checkout": "3ad4bc4, the pull request merge of a7d7152 into feat/cars-over-bikes",
+        "command": "node tools/perf/gate.ts baseline --baseline-ref 094d56103508df57a96b02ff7462ba88feb395bd --lanes node,build, one attempt in each of five parallel perf jobs",
+        "artifact": "perf-results",
+        "attempts": "sample 1 of the five, one of two that landed on an AMD EPYC 7763 and the lower on pack-riding-v1 throughput of those two. The other three landed on a 9V74 twice and an Intel Xeon; once calibrated, those read lower. Eight attempts in run 41626398111 on an EPYC 9V45 read lower again."
+      },
+      "id": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "094d56103508df57a96b02ff7462ba88feb395bd",
+        "B": "3ad4bc409a31c14a63926d653a44047122b54635"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.6.2 (25G83)",
+        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
+        "browser": "Helium, windowed, rv slots 1 and 2, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1283x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1753554",
+        "quiet": "the owner held the machine idle; caffeinate -dimsu held for the run, with a user-active assertion renewed every 25 s, and both pages kept their DevTools targets in all 66 samples of the target log",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"reference-v1 pair4 A\", \"reference-v1 pair4 B\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]"
+      },
+      "id": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "094d56103508df57a96b02ff7462ba88feb395bd",
+        "B": "8f2bb84308868d8d8cf1f176a7b6d0246a01e237"
+      }
     }
   ],
   "scenarios": [
     {
-      "hash": "82c2d3943fd12a21ddfe4807642bf56e1a272b4a41749d3e646882136745aa93",
+      "hash": "e7597305c88e7d64e3788e1ab81de323dc449d20dcb9a0214caeb8da50f6fa53",
       "id": "reference-v1",
       "police": 1,
       "race": "slag-row level 1, seed 31, halden-wren-400",
@@ -1788,21 +1886,21 @@
       "workloadDigest": "9b8cd30f2302c8a6666e3b84d60808b1a7f87ab0b573f42a233471d2330184be"
     },
     {
-      "hash": "4ef3f0c0e3ef07bb5e0771ed05306ce01f55eebc0514bc05f7132409b1722da4",
+      "hash": "82f94cfbca9dc05601e7e8c465805d01a328f60bb6dae66b748ad8098bdf6b04",
       "id": "pack-riding-v1",
       "police": 8,
       "race": "slag-row level 5, seed 8, ostra-sesta-600",
       "racers": 15,
       "window": {
-        "from": 3017,
-        "to": 3617
+        "from": 2918,
+        "to": 3518
       },
-      "workloadDigest": "867e182075dadf75cc25f0fc2272456a1772bca5a60ee2245502926970c892c2"
+      "workloadDigest": "78438b5bb63c459747255d25600337a6d44cf7833fbd644be4cd786e05e74fb1"
     }
   ],
   "trackCompile": {
-    "method": "compileTrack(roadAtLevel(road, level)) for the 5 roads x 5 levels, cold, in a fresh Node 26.13.0 process on this Mac at 21de955; median of five processes (44.7, 44.81, 45.41, 45.65, 46.9 ms). Recorded, not budgeted.",
-    "ms": 45.41,
+    "method": "compileTrack(roadAtLevel(road, level)) for the 5 roads x 5 levels, cold, in a fresh Node 26.13.0 process on this Mac at 094d561; median of five processes (43.19, 44.64, 44.7, 45.02, 45.36 ms). Recorded, not budgeted.",
+    "ms": 44.7,
     "tracks": 25
   },
   "version": 1
