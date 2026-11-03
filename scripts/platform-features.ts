@@ -488,6 +488,8 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/scenarios.ts",
       "tools/perf/src/select.ts",
       "tools/perf/src/sides.ts",
+      "tools/perf/test/bench-lock-race.test.ts",
+      "tools/perf/test/bench-lock-worker.ts",
       "tools/perf/test/bench-lock.test.ts",
       "tools/perf/test/check.test.ts",
       "tools/perf/test/evaluate.test.ts",
