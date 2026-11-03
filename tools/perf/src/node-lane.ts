@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 import { ToolProcesses } from "@racer/devtools/process";
@@ -75,6 +76,14 @@ export interface Sides {
 }
 
 const NODE_CHILD = "tools/perf/node.ts";
+const SYNCHRONOUS_COMPILE = "--no-concurrent-recompilation";
+const LAYOUT_BYTES = 16_384;
+
+export const layoutPadding = (childFile: string): string =>
+  "x".repeat(
+    createHash("sha256").update(childFile).digest().readUInt32BE(0) %
+      LAYOUT_BYTES
+  );
 
 const childScripts = {
   alloc: NODE_CHILD,
@@ -102,6 +111,7 @@ const runChild = Effect.fnUntraced(function* runChild(
   yield* processes.run(
     process.execPath,
     [
+      SYNCHRONOUS_COMPILE,
       path.join(side.root, script),
       ...taskArgs,
       "--scenario",
@@ -109,7 +119,13 @@ const runChild = Effect.fnUntraced(function* runChild(
       "--out",
       file,
     ],
-    { cwd: side.root }
+    {
+      cwd: side.root,
+      env: {
+        ...process.env,
+        PERF_LAYOUT_PADDING: layoutPadding(path.basename(file)),
+      },
+    }
   );
   const record = yield* fs.readFileString(file).pipe(
     Effect.flatMap(decodeChild),

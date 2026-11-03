@@ -32,12 +32,13 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/engine-and-tuck.test.ts",
       "apps/web/src/game/input.ts",
       "apps/web/test/input.test.ts",
+      "tools/handling/**",
     ],
     perf: simTick,
     start: [
       "packages/sim/src/rider-drive.ts",
-      "packages/sim/src/engine.ts",
       "apps/web/src/game/input.ts",
+      "tools/handling/hands-off.ts",
     ],
     summary:
       "How the bike answers the keys and the gamepad: throttle, brakes, steering, the push of a bend, grass, gears and the tuck, with each bike's numbers in its `BikeSpec`.",

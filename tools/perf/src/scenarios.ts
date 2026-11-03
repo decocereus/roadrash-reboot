@@ -26,7 +26,7 @@ import { digestOf } from "./result.ts";
 
 const VALIDATOR_VERSION = 1;
 export const WINDOW_TICKS = 601;
-const WARMUP_TICKS = 600;
+const WARMUP_TICKS = 1800;
 export const SEARCH_TICKS = 7200;
 const SPEED_FLOOR = 20;
 
@@ -69,30 +69,30 @@ const quality: Quality = {
 
 export const scenarios: readonly Scenario[] = [
   {
-    band: { max: 11, min: 9, total: 5796 },
+    band: { max: 10, min: 10, total: 6010 },
     bench: "reference",
     floor: 0,
     id: "reference-v1",
-    minSpeed: 21.840483763318808,
+    minSpeed: 34.45786169103772,
     police: 1,
     quality,
     racers: 15,
     window: benchWindows.reference,
     workloadDigest:
-      "81524702669a82811ec3adeeefc66a60429d9fc3bd630fd6bd6de4f69161edec",
+      "9b8cd30f2302c8a6666e3b84d60808b1a7f87ab0b573f42a233471d2330184be",
   },
   {
-    band: { max: 13, min: 10, total: 7370 },
+    band: { max: 14, min: 6, total: 6327 },
     bench: "stress",
     floor: 6,
     id: "pack-riding-v1",
-    minSpeed: 43.07578124462869,
+    minSpeed: 24.445343708249972,
     police: 8,
     quality,
     racers: 15,
     window: benchWindows.stress,
     workloadDigest:
-      "86b63e62efec65ef2b7de9659bcd9b3534ad4ca66aa89df2aac705bb524a6f2a",
+      "867e182075dadf75cc25f0fc2272456a1772bca5a60ee2245502926970c892c2",
   },
 ];
 

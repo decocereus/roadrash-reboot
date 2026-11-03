@@ -9,7 +9,7 @@ import {
   safeLaunchSpeed,
 } from "./pilot-corners.ts";
 import type { Aim } from "./pilot-lines.ts";
-import { BIKE_HALF_WIDTH, GRAVITY } from "./state.ts";
+import { BIKE_HALF_WIDTH, GRAVITY, sidewaysRate } from "./state.ts";
 import type { RaceState, RiderState } from "./state.ts";
 
 const JUMP_SIGHT_SECONDS = 3.5;
@@ -158,6 +158,6 @@ export const straightened = (
   }
   const settling =
     (rider.lateralSpeed * Math.abs(rider.lateralSpeed)) /
-    (2 * rider.bike.steerRate);
+    (2 * sidewaysRate(rider.bike, rider.lateralSpeed, 0, 0));
   return { speed: aim.speed, x: rider.x + settling };
 };

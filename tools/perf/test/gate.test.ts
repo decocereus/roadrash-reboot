@@ -4,6 +4,7 @@ import path from "node:path";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
+import { layoutPadding } from "../src/node-lane.ts";
 import {
   scenarios,
   validateWorkload,
@@ -44,13 +45,13 @@ describe("pack-riding workload validation", () => {
   it("rejects a tick with fewer rivals ahead than the pinned band", () => {
     const rows = {
       ...captured,
-      ahead: changedAt(captured.ahead, middle, 9),
+      ahead: changedAt(captured.ahead, middle, 5),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "9",
-      expected: "10..13 rivals",
+      actual: "5",
+      expected: "6..14 rivals",
       field: "ahead",
-      tick: 2107 + middle,
+      tick: 3017 + middle,
     });
   });
 
@@ -63,7 +64,7 @@ describe("pack-riding workload validation", () => {
       actual: "thrown",
       expected: "riding",
       field: "mode",
-      tick: 2107 + middle,
+      tick: 3017 + middle,
     });
   });
 
@@ -75,21 +76,33 @@ describe("pack-riding workload validation", () => {
       ticks: without(captured.ticks, middle),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: String(2107 + middle + 1),
-      expected: String(2107 + middle),
+      actual: String(3017 + middle + 1),
+      expected: String(3017 + middle),
       field: "tick",
-      tick: 2107 + middle,
+      tick: 3017 + middle,
     });
   });
 
   it("rejects a thinner window that stays inside the band", () => {
-    const at = captured.ahead.indexOf(13);
-    const rows = { ...captured, ahead: changedAt(captured.ahead, at, 12) };
+    const at = captured.ahead.indexOf(14);
+    const rows = { ...captured, ahead: changedAt(captured.ahead, at, 13) };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "7369",
-      expected: "7370",
+      actual: "6326",
+      expected: "6327",
       field: "total",
-      tick: 2707,
+      tick: 3617,
     });
+  });
+});
+
+describe("the stack layout of a measurement child", () => {
+  it("differs for every timing child, so one bad layout costs one sample", () => {
+    const children = ["reference-v1", "pack-riding-v1"].flatMap((scenario) =>
+      [0, 1, 2, 3, 4].flatMap((pair) =>
+        ["A", "B"].map((side) => `${scenario}-time-${pair}-${side}.json`)
+      )
+    );
+    const lengths = children.map((child) => layoutPadding(child).length);
+    expect(new Set(lengths).size).toBe(children.length);
   });
 });

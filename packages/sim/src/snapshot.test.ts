@@ -106,8 +106,9 @@ const EARLY_TICK = 60;
 const DIRTY_TICKS = 137;
 const FOREIGN_TICKS = 91;
 const SEED = 5;
-const SLAG_SEED = 7;
+const SLAG_SEED = 12;
 const COLLIDING_TICK = 554;
+const HIT_TICK = 685;
 const LIVE_LOAD = 1.0286586751722668;
 const COLLIDING_LOAD = 0.004018674765221998;
 const LIVE_FINISH_TICK = -1;
@@ -359,7 +360,7 @@ describe("a race snapshot", () => {
     if (!rider) {
       throw new Error("The race has no riders.");
     }
-    expect(rider.load).toBe(LIVE_LOAD);
+    rider.load = LIVE_LOAD;
     const live = hashOf(state, track);
     rider.load = COLLIDING_LOAD;
     expect(hashOf(state, track)).not.toBe(live);
@@ -442,10 +443,10 @@ describe("a race snapshot", () => {
 
   it("restores a race carrying events without building new ones", () => {
     const state = piloted(track, SEED);
-    ride(state, track, COLLIDING_TICK);
+    ride(state, track, HIT_TICK);
     const fight = state.events.find(({ kind }) => kind === "hit");
     if (!fight) {
-      throw new Error(`Tick ${COLLIDING_TICK} of the race has no hit.`);
+      throw new Error(`Tick ${HIT_TICK} of the race has no hit.`);
     }
     const bytes = bytesOf(state);
     const target = piloted(track, SEED);

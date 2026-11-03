@@ -13,6 +13,8 @@ import {
   flinchTurns,
   hangTurns,
   kickedFrom,
+  HANG_SHIFT,
+  kneeOut,
   planterOf,
   riseOffset,
   risenTurns,
@@ -33,6 +35,7 @@ export interface Stance {
   weapon: WeaponKind;
   tuck: number;
   lean: number;
+  speed: number;
   reach: number;
   rise: number;
   flinch: number;
@@ -294,7 +297,7 @@ export const createRiderFigure = (
     }
     if (striking(pose)) {
       settleBase(stance);
-      planter.plant(base, lift, "seated", side);
+      planter.plant(base, lift, "seated", side, 0, 0);
       const to =
         pose === "kick"
           ? sideOf(riding.kicked, side)
@@ -313,6 +316,10 @@ export const createRiderFigure = (
     animate(stance, seconds) {
       skeleton.stale = true;
       lift.copy(sideOf(lifts, stance.side)).multiplyScalar(stance.rise);
+      lift.x +=
+        Math.sign(stance.lean) *
+        HANG_SHIFT *
+        kneeOut(stance.lean, stance.speed);
       const target = aim(stance);
       if (!target) {
         return;
@@ -336,7 +343,14 @@ export const createRiderFigure = (
           blend
         );
       }
-      planter.plant(current, lift, stance.pose, stance.side);
+      planter.plant(
+        current,
+        lift,
+        stance.pose,
+        stance.side,
+        stance.lean,
+        stance.speed
+      );
       apply();
       model.position.copy(lift);
       showWeapon(

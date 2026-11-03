@@ -314,6 +314,19 @@ importers:
         specifier: 26.4.1
         version: 26.4.1
 
+  tools/handling:
+    dependencies:
+      '@racer/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
+      '@racer/track':
+        specifier: workspace:*
+        version: link:../../packages/track
+    devDependencies:
+      '@types/node':
+        specifier: 26.4.1
+        version: 26.4.1
+
   tools/madrid:
     dependencies:
       '@effect/platform-node':

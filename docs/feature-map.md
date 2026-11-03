@@ -60,11 +60,11 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 How the bike answers the keys and the gamepad: throttle, brakes, steering, the push of a bend, grass, gears and the tuck, with each bike's numbers in its `BikeSpec`.
 
 - Id: `riding`
-- Start: `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `apps/web/src/game/input.ts`
+- Start: `packages/sim/src/rider-drive.ts`, `apps/web/src/game/input.ts`, `tools/handling/hands-off.ts`
 - Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/test/input.test.ts`
+- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
 
 Source files:
 
@@ -73,6 +73,14 @@ Source files:
 - `packages/sim/src/engine.ts`
 - `packages/sim/src/rider-drive.ts`
 - `packages/sim/src/rider.ts`
+- `tools/handling/hands-off.ts`
+- `tools/handling/src/acceptance.ts`
+- `tools/handling/src/bends.ts`
+- `tools/handling/src/course.ts`
+- `tools/handling/src/keyboard.ts`
+- `tools/handling/src/probe.ts`
+- `tools/handling/src/report.ts`
+- `tools/handling/src/steering.ts`
 
 Test files:
 

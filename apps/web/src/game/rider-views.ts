@@ -23,6 +23,7 @@ import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
 import { crossCarPose } from "./cross-car-pose.ts";
 import type { CrossCarPose } from "./cross-car-pose.ts";
+import { kneeScrapes } from "./figure-pose.ts";
 import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
@@ -249,6 +250,7 @@ export const createCast = (shading: Shading): Cast => ({
     reach: 0,
     rise: 0,
     side: 1,
+    speed: 0,
     time: 0,
     tuck: 0,
     weapon: "none",
@@ -514,6 +516,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     stance.weapon = rider.weapon;
     stance.tuck = seated ? rider.tuck : 0;
     stance.lean = seated ? lean / rider.bike.visualLean : 0;
+    stance.speed = rider.speed;
     stance.reach = reach;
     stance.rise = rise;
     stance.flinch = seated ? flinchOf(rider, subTick) : 0;
@@ -561,6 +564,9 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     );
     if (index === stage.me || withinReach(seated ? s : bodyS)) {
       view.figure.animate(stance, seconds);
+      if (kneeScrapes(stance.lean, stance.speed)) {
+        cast.puffs?.scrape(view.bike, Math.sign(stance.lean), rider.speed);
+      }
     } else {
       view.figure.rest();
     }

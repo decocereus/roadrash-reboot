@@ -11,7 +11,9 @@ export const BIKE_HALF_LENGTH = 1;
 export const BIKE_HALF_WIDTH = 0.38;
 const MIN_STEER_SPEED = 12;
 export const WALKING_PACE = 3;
-const SETTLED_LEAN = 0.4;
+const GENTLE_CURVATURE = 5e-4;
+const SETTLE_SHARE = 2;
+const BEND_HOLD_SHARE = 0.5;
 
 declare const riderIdBrand: unique symbol;
 
@@ -522,17 +524,49 @@ export const curvePushOf = (
   speed: number
 ): number => (curvature * speed * speed) / bike.curvePush;
 
-const settledLean = (push: number, limit: number): number =>
-  clamp(push, -SETTLED_LEAN * limit, SETTLED_LEAN * limit);
+export const settledLean = (
+  bike: BikeSpec,
+  curvature: number,
+  speed: number
+): number =>
+  curvePushOf(
+    bike,
+    clamp(curvature, -GENTLE_CURVATURE, GENTLE_CURVATURE),
+    speed
+  );
 
 export const lateralFor = (
   steer: number,
-  push: number,
+  lean: number,
   limit: number,
   share: number
+): number => lean + steer * (limit - Math.sign(steer) * lean) * share;
+
+export const brakeGrip = (bike: BikeSpec, lateralSpeed: number): number => {
+  const cornering = (lateralSpeed * bike.curvePush) / bike.brakeDeceleration;
+  return Math.sqrt(Math.max(0, 1 - cornering * cornering));
+};
+
+export const sidewaysRate = (
+  bike: BikeSpec,
+  lateralSpeed: number,
+  wanted: number,
+  push: number
 ): number => {
-  const lean = settledLean(push, limit);
-  return lean + steer * (limit - Math.sign(steer) * lean) * share;
+  if (lateralSpeed * wanted < 0) {
+    return bike.steerRate * SETTLE_SHARE;
+  }
+  if (Math.abs(wanted) > Math.abs(lateralSpeed)) {
+    return bike.steerRate;
+  }
+  return lateralSpeed * push > 0 && Math.abs(lateralSpeed) <= Math.abs(push)
+    ? bike.steerRate * BEND_HOLD_SHARE
+    : bike.steerRate * SETTLE_SHARE;
+};
+
+export const driveGrip = (push: number, limit: number): number => {
+  const cornering = push / Math.max(1, limit);
+  return Math.sqrt(Math.max(0, 1 - cornering * cornering));
 };
 
 export const steerFor = (
@@ -542,7 +576,7 @@ export const steerFor = (
   lateralSpeed: number
 ): number => {
   const limit = Math.max(1, lateralSpeedLimit(bike, speed));
-  const lean = settledLean(curvePushOf(bike, curvature, speed), limit);
+  const lean = settledLean(bike, curvature, speed);
   const swing = lateralSpeed - lean;
   return swing / (limit - Math.sign(swing) * lean);
 };

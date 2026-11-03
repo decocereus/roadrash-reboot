@@ -13,6 +13,7 @@
     "check:css-comments": "node scripts/check-css-comments.ts",
     "check:dead": "knip --no-progress",
     "check:feature-map": "node scripts/check-feature-map.ts",
+    "check:handling": "node tools/handling/hands-off.ts --check",
     "check:madrid": "node tools/madrid/stretch.ts --check",
     "check:perf": "node tools/perf/gate.ts --check",
     "check:renderer-imports": "node scripts/check-renderer-imports.ts",

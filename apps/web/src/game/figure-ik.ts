@@ -171,13 +171,13 @@ const spanAfter = (
 ): number =>
   bent.copy(shin).applyAxisAngle(hinge, angle).add(middle).distanceTo(joint);
 
-export const reachFor = (grip: Grip) => {
+export const reachFor = (grip: Grip, target: THREE.Vector3 = grip.at) => {
   const { bones } = grip.limb;
   const [upper, lower, end] = bones;
   const upperLength = upper.at.distanceTo(lower.at);
   const lowerLength = lower.at.distanceTo(end.at);
   const span = THREE.MathUtils.clamp(
-    upper.at.distanceTo(grip.at),
+    upper.at.distanceTo(target),
     Math.abs(upperLength - lowerLength) + REACH_SLACK,
     upperLength + lowerLength - REACH_SLACK
   );
@@ -198,10 +198,34 @@ export const reachFor = (grip: Grip) => {
     upper.at,
     spin.setFromUnitVectors(
       arm.subVectors(end.at, upper.at).normalize(),
-      toward.subVectors(grip.at, upper.at).normalize()
+      toward.subVectors(target, upper.at).normalize()
     )
   );
   end.turn.copy(grip.facing);
+};
+
+export const swingKneeOut = (
+  grip: Grip,
+  forward: THREE.Vector3,
+  angle: number
+) => {
+  const { bones } = grip.limb;
+  const [upper, lower, end] = bones;
+  const out = Math.sign(grip.at.x);
+  toward.subVectors(end.at, upper.at).normalize();
+  arm.subVectors(lower.at, upper.at);
+  along.copy(forward).addScaledVector(toward, -forward.dot(toward));
+  across.crossVectors(toward, along).multiplyScalar(out);
+  const swung = Math.atan2(arm.dot(across), arm.dot(along));
+  if (swung < angle) {
+    turnAbout(
+      bones,
+      0,
+      upper.at,
+      spin.setFromAxisAngle(toward, (angle - swung) * out)
+    );
+    end.turn.copy(grip.facing);
+  }
 };
 
 export const reachOf = ({ bones: [, lower, end] }: Limb): number =>

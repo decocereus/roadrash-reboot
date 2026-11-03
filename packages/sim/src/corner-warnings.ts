@@ -4,8 +4,8 @@ import type { ChevronRun, Track } from "@racer/track/track";
 import { bikes } from "./bikes.ts";
 import { CONTROL_RAMP, dragOf, stepDrive } from "./engine.ts";
 import type { Drive } from "./engine.ts";
-import { BRAKE_RESERVE } from "./rider-drive.ts";
 import {
+  brakeGrip,
   clamp,
   curvePushOf,
   GRAVITY,
@@ -103,14 +103,12 @@ const brakingAt = (
   s: number,
   speed: number
 ): number => {
-  const lock = clamp(
-    Math.abs(curvePushOf(bike, curvatureAt(track, s), speed)) /
-      Math.max(1, lateralSpeedLimit(bike, speed)),
-    0,
-    1
+  const lateral = Math.min(
+    Math.abs(curvePushOf(bike, curvatureAt(track, s), speed)),
+    Math.max(1, lateralSpeedLimit(bike, speed))
   );
   return (
-    bike.brakeDeceleration * (1 - (1 - BRAKE_RESERVE) * lock) +
+    bike.brakeDeceleration * brakeGrip(bike, lateral) +
     dragOf(bike, speed, 0) +
     GRAVITY * slopeAt(track, s)
   );

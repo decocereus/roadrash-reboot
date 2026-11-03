@@ -452,7 +452,7 @@ describe("the pilot and a pedestrian", () => {
     const rider = player(state);
     const walker = walkerOf(state);
     const speed = 55;
-    const metres = 22;
+    const metres = 20;
     const drift = 1.4;
     placeWalker(walker, LANE_X - (drift * metres) / speed, drift);
     rider.s = WALKER_S - metres;

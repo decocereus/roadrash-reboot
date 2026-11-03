@@ -33,6 +33,7 @@ import {
   clamp,
   curvePushOf,
   lateralSpeedLimit,
+  sidewaysRate,
   slotOf,
   TICK_SECONDS,
 } from "./state.ts";
@@ -623,7 +624,7 @@ const forecast = (
   slowAt: number
 ): void => {
   const { bike } = rider;
-  const steerRate = bike.steerRate * weapons[rider.weapon].steerFactor;
+  const { steerFactor } = weapons[rider.weapon];
   const slowingRate = riding.brakeShare * deceleration.capacity;
   const slowsDown = Number.isFinite(slowTo);
   let { lateralSpeed, slip, speed, x } = rider;
@@ -674,7 +675,9 @@ const forecast = (
     const push = bendPush * (1 + SLIP_PUSH * slip);
     const limit = grip * (slip > SLIPPING ? SLIPPING_STEER : 1);
     const drift = lateralSpeed - push;
-    const settling = (drift * Math.abs(drift)) / (2 * bike.steerRate);
+    const settling =
+      (drift * Math.abs(drift)) /
+      (2 * sidewaysRate(bike, lateralSpeed, push, push));
     const wanted = clamp(
       clamp(
         (line - x - settling) * LANE_CHANGE_RATE,
@@ -684,7 +687,11 @@ const forecast = (
       -limit,
       limit
     );
-    const turn = steerRate * (1 - slip) * TICK_SECONDS;
+    const turn =
+      sidewaysRate(bike, lateralSpeed, wanted, push) *
+      steerFactor *
+      (1 - slip) *
+      TICK_SECONDS;
     lateralSpeed += clamp(wanted - lateralSpeed, -turn, turn);
     x += (lateralSpeed - push) * TICK_SECONDS;
     slip = Math.max(0, slip - SLIP_RECOVERY * TICK_SECONDS);

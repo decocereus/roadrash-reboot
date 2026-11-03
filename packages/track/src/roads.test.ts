@@ -289,7 +289,7 @@ describe("the five roads", () => {
       curvature: "becd6387",
       height: "bdd0d924",
       line: "cbabb60b",
-      props: "a50b5fda",
+      props: "5e4f225d",
       rocks: "0356dee5",
       slopeRate: "1656c28f",
     });

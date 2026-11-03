@@ -15,6 +15,12 @@ const PALM = new THREE.Vector3(0, 0.055, 0);
 const SETTLED = 1;
 const FRAME = 1 / 60;
 const CORNER_FRAMES = 240;
+const KNEE_SETTLE_FRAMES = 60;
+const KNEE_HOLD_FRAMES = 60;
+const KNEE_STILL = 0.002;
+const KNEE_OUT = 0.08;
+const RIDING_SPEED = 30;
+const WALKING_SPEED = 5;
 const SEATED_FRAMES = 30;
 
 const shading = createShading(lookOf("salt-coast"));
@@ -30,11 +36,33 @@ interface Held {
 
 const held: readonly Held[] = [
   { free: [], name: "tuck", stance: { tuck: 1 } },
-  { free: [], name: "lean left", stance: { lean: -1 } },
-  { free: [], name: "lean right", stance: { lean: 1 } },
-  { free: [], name: "tucked lean left", stance: { lean: -1, tuck: 1 } },
-  { free: [], name: "tucked lean right", stance: { lean: 1, tuck: 1 } },
-  { free: [], name: "part tuck in a lean", stance: { lean: 0.5, tuck: 0.75 } },
+  { free: [], name: "lean left", stance: { lean: -1, speed: RIDING_SPEED } },
+  { free: [], name: "lean right", stance: { lean: 1, speed: RIDING_SPEED } },
+  {
+    free: [],
+    name: "tucked lean left",
+    stance: { lean: -1, speed: RIDING_SPEED, tuck: 1 },
+  },
+  {
+    free: [],
+    name: "tucked lean right",
+    stance: { lean: 1, speed: RIDING_SPEED, tuck: 1 },
+  },
+  {
+    free: [],
+    name: "part tuck in a lean",
+    stance: { lean: 0.5, speed: RIDING_SPEED, tuck: 0.75 },
+  },
+  {
+    free: ["foot_l"],
+    name: "slow turn left",
+    stance: { lean: -0.4, speed: WALKING_SPEED },
+  },
+  {
+    free: ["foot_r"],
+    name: "slow turn right",
+    stance: { lean: 0.4, speed: WALKING_SPEED },
+  },
   { free: [], name: "flinch", stance: { flinch: 1, flinchSide: -1 } },
   { free: [], name: "rise left", stance: { rise: 1, side: -1 } },
   { free: [], name: "rise right", stance: { rise: 1, side: 1 } },
@@ -79,6 +107,7 @@ const stanceOf = (stance: Partial<Stance>): Stance => ({
   reach: 0,
   rise: 0,
   side: 1,
+  speed: 0,
   time: 0,
   tuck: 0,
   weapon: "none",
@@ -113,7 +142,7 @@ const tuckedCorner = Array.from(
   { length: CORNER_FRAMES },
   (_, frame): Partial<Stance> => {
     const lean = Math.sin(frame * FRAME * Math.PI * 1.3);
-    return { lean, tuck: 1 - 0.25 * Math.abs(lean) };
+    return { lean, speed: RIDING_SPEED, tuck: 1 - 0.25 * Math.abs(lean) };
   }
 );
 
@@ -178,4 +207,41 @@ describe("planted hands and feet on every shipped rider", () => {
     figure.dispose();
     expect(worst).toBeLessThan(CONTACT);
   });
+
+  it.each(
+    riderUrls.flatMap((url) => [
+      [url, "calf_l", -1] as const,
+      [url, "calf_r", 1] as const,
+    ])
+  )(
+    "%s swings %s out in a lean and holds it still",
+    async (url, knee, lean) => {
+      const figure = await figureOf(url);
+      figure.animate(stanceOf({}), SETTLED);
+      const kneeAt = () => {
+        figure.root.updateMatrixWorld(true);
+        const bone = figure.root.getObjectByName(knee);
+        if (!bone) {
+          throw new Error(`The rider has no ${knee} bone.`);
+        }
+        return bone.getWorldPosition(new THREE.Vector3());
+      };
+      const seated = kneeAt();
+      const stance = stanceOf({ lean, speed: RIDING_SPEED });
+      for (let frame = 0; frame < KNEE_SETTLE_FRAMES; frame += 1) {
+        figure.animate(stance, FRAME);
+      }
+      let last = kneeAt();
+      let moved = 0;
+      for (let frame = 0; frame < KNEE_HOLD_FRAMES; frame += 1) {
+        figure.animate(stance, FRAME);
+        const now = kneeAt();
+        moved = Math.max(moved, now.distanceTo(last));
+        last = now;
+      }
+      figure.dispose();
+      expect(moved).toBeLessThan(KNEE_STILL);
+      expect(lean * (last.x - seated.x)).toBeGreaterThan(KNEE_OUT);
+    }
+  );
 });
