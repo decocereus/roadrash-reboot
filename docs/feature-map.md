@@ -1046,10 +1046,10 @@ Test files:
 
 ### Browser devtools client
 
-Launching Chrome or Helium, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.
+The table of what differs per machine, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.
 
 - Id: `devtools`
-- Start: `packages/devtools/src/chrome.ts`, `packages/devtools/src/cdp.ts`, `packages/devtools/src/analysis.ts`
+- Start: `packages/devtools/src/browser-host.ts`, `packages/devtools/src/chrome.ts`, `packages/devtools/src/desktop.ts`
 - Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
 - Verify: none yet
 - Perf: none yet
@@ -1079,12 +1079,12 @@ Test files: none
 
 ### rv, the verify tool
 
-`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed Helium, clicks, key presses, screenshots, page state and the evidence journal.
+`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal.
 
 - Id: `verify-tool`
 - Start: `tools/verify/rushline.ts`, `tools/verify/src/commands.ts`, `tools/verify/src/lifecycle.ts`
 - Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
-- Verify: none yet
+- Verify: [desktop-session.md](../.claude/skills/verify-rushline/features/desktop-session.md)
 - Perf: none yet
 - Owns: `tools/verify/**`
 

@@ -431,12 +431,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
     owns: ["packages/devtools/**"],
     perf: [],
     start: [
+      "packages/devtools/src/browser-host.ts",
       "packages/devtools/src/chrome.ts",
-      "packages/devtools/src/cdp.ts",
-      "packages/devtools/src/analysis.ts",
+      "packages/devtools/src/desktop.ts",
     ],
     summary:
-      "Launching Chrome or Helium, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.",
+      "The table of what differs per machine, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.",
     title: "Browser devtools client",
     verify: [],
   },
@@ -452,9 +452,9 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/verify/src/lifecycle.ts",
     ],
     summary:
-      "`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed Helium, clicks, key presses, screenshots, page state and the evidence journal.",
+      "`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal.",
     title: "rv, the verify tool",
-    verify: [],
+    verify: ["desktop-session.md"],
   },
   {
     docs: [

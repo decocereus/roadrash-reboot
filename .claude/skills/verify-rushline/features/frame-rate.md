@@ -24,7 +24,7 @@ The game paces itself at 60 frames per second at the screen's native pixel ratio
 
 Preconditions:
 
-- `rv doctor --run <run>` passes and its gpu line reads the Metal renderer.
+- `rv doctor --run <run>` passes and its gpu line reads the renderer this machine's row requires: Metal on the Mac, NVIDIA on vimaan.
 - Note the machine load (`uptime`); other agents' work moves these numbers.
 
 - **Overlay.** Run `rv open --run <run> "/?stress&ratio=2&fps" --until race` and `rv shot --run <run> fps-overlay`. The top-left readout shows fps, ms, worst, `×2.00`, the rung, pace, the display's Hz, calls, and tris.
@@ -33,7 +33,7 @@ Preconditions:
 - **Throttled.** Run `rv throttle --run <run> --cpu 4`, `rv sample --run <run> stress-cpu4 --seconds 6`, then `rv throttle --run <run> --cpu 1`. Expect roughly twice the JS per frame and the rung climbing as the governor sheds quality; the sample records `cpu x4`.
 - **Trace.** Run `rv trace --run <run> stress --seconds 5`. The summary lists long tasks, GC pauses, and the busiest threads (`Renderer/CrRendererMain`, `GPU Process/CrGpuMain`, `GPU Process/VizCompositorThread`); open `stress.trace.json` in the DevTools Performance panel for detail.
 - **First load.** Run `rv throttle --run <run> --network slow4g`, then `rv open --run <run> / --until bar` and `rv open --run <run> "/?ride=ridge-road" --until race`. Each prints load time and time to the signal. Clear with `rv throttle --run <run> --network off`.
-- **Perf gate on the GPU.** Follow "The perf gate on the GPU" in `SKILL.md`: a quiet machine, `rv up --slot 0 --path /kit` in a `/tmp` clone at the baseline revision and `rv up --slot 1 --path /kit` here, then `pnpm perf:gpu --a <A run> --b <B run>`. It ends with `PASS perf gpu <id>` or a `FAIL` row per metric, including `render.calls.max`, `render.triangles.max`, `render.programs.max` and `render.textures.max`. `rv down` both runs and delete the clone afterwards.
+- **Perf gate on the GPU.** Follow "The perf gate on the GPU" in `SKILL.md`: a quiet machine, this checkout's `tools/verify/rushline.ts up --slot 0 --path /kit` with the working directory in a clone at the baseline revision, `rv up --slot 1 --path /kit` here, then `pnpm perf:gpu --a <A run> --b <B run>`. It ends with `PASS perf gpu <id>` or a `FAIL` row per metric, including `render.calls.max`, `render.triangles.max`, `render.programs.max` and `render.textures.max`. `rv down` both runs and delete the clone afterwards.
 - **Perf A/B.** Follow "Frame cost with measure.ts" in `SKILL.md`: one server per side, `?stress&ratio=2`, `node tools/perf/measure.ts --url ... --label <side> --runs 1 --port <free port>` alternated A, B, A, B at least five times each, then compare means and spread.
 
 ## Gotchas
@@ -45,4 +45,4 @@ Preconditions:
 - CPU throttling slows the main thread only. The GPU runs at full speed, so GPU-bound passes look better than they would on an Air; compare `?ratio=1` with `?ratio=2` to see fill cost.
 - Throttling lives in the console watcher. If `rv doctor` shows the watcher dead, the throttling is gone too.
 - `?prof=gpu` timer queries on ANGLE over Metal add up to more than the frame; do not quote them.
-- measure.ts launches headless Chrome by default (allowed for this bench only). `--browser helium` runs it windowed; give it a DevTools `--port` nobody holds.
+- measure.ts launches a headless browser by default (allowed for this bench only). `--browser windowed` runs it windowed; give it a DevTools `--port` nobody holds. A second bench on the same machine fails at once and names the one holding the GPU.
