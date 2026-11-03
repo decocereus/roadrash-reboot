@@ -43,6 +43,12 @@ export interface DesktopEnv {
   readonly DISPLAY?: string;
 }
 
+export interface HostPage {
+  readonly dpr: number;
+  readonly height: number;
+  readonly width: number;
+}
+
 export interface BrowserHost {
   readonly desktop: DesktopNeed;
   readonly displayProbes: readonly DisplayProbe[];
@@ -53,6 +59,7 @@ export interface BrowserHost {
   };
   readonly id: BrowserHostId;
   readonly listener: ListenerProbe;
+  readonly page: HostPage | null;
   readonly perfEnvironment: string | null;
   readonly platform: NodeJS.Platform;
   readonly processMark: string;
@@ -112,6 +119,7 @@ export const browserHosts = {
     },
     id: "linux-intel",
     listener: ss,
+    page: null,
     perfEnvironment: null,
     platform: "linux",
     processMark: "chromium",
@@ -159,6 +167,7 @@ export const browserHosts = {
     },
     id: "linux-nvidia",
     listener: ss,
+    page: { dpr: 2, height: 773, width: 1512 },
     perfEnvironment: "gpu-chromium-nvidia",
     platform: "linux",
     processMark: "chromium",
@@ -198,6 +207,7 @@ export const browserHosts = {
     },
     id: "macos-metal",
     listener: lsof,
+    page: null,
     perfEnvironment: "gpu-helium-metal",
     platform: "darwin",
     processMark: "Helium",

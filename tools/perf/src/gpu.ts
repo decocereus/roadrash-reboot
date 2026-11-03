@@ -2,6 +2,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 
 import { CurrentHost, HOST_SETTING } from "@racer/devtools/browser-host";
+import type { BrowserHost } from "@racer/devtools/browser-host";
 import { desktopRuntimeEnv } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
@@ -135,6 +136,15 @@ const pageFacts = Schema.Struct({
 const decodeFacts = Schema.decodeUnknownEffect(
   Schema.fromJsonString(pageFacts)
 );
+
+type PageFacts = typeof pageFacts.Type;
+
+const sizeOf = ({
+  dpr,
+  height,
+  width,
+}: Pick<PageFacts, "dpr" | "height" | "width">): string =>
+  `${width}x${height}@${dpr}`;
 
 const PREPARE = `(async () => {
   const stored = JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}");
@@ -398,6 +408,42 @@ const warm = Effect.fnUntraced(function* warm(run: string) {
   yield* rv(["open", "--run", run, PARK]);
 });
 
+const readPage = (run: string) =>
+  rv(["open", "--run", run, PARK]).pipe(
+    Effect.andThen(rv(["js", "--run", run, PREPARE])),
+    Effect.flatMap(decodeFacts)
+  );
+
+type PagesRead =
+  | { readonly kind: "refused"; readonly line: string }
+  | {
+      readonly kind: "read";
+      readonly page: Readonly<Record<SideName, PageFacts>>;
+    };
+
+export const readPages = Effect.fnUntraced(function* readPages(
+  runs: Readonly<Record<SideName, string>>,
+  host: Pick<BrowserHost, "id" | "page">
+) {
+  const page = { A: yield* readPage(runs.A), B: yield* readPage(runs.B) };
+  if (sizeOf(page.A) !== sizeOf(page.B)) {
+    const refused: PagesRead = {
+      kind: "refused",
+      line: `FAIL viewport A=${sizeOf(page.A)} B=${sizeOf(page.B)}: restart the run whose window was resized`,
+    };
+    return refused;
+  }
+  if (host.page !== null && sizeOf(page.A) !== sizeOf(host.page)) {
+    const refused: PagesRead = {
+      kind: "refused",
+      line: `FAIL page ${sizeOf(page.A)} on both runs, and ${host.id} judges a ${sizeOf(host.page)} page, the page its budget rows were measured on. A compositor rv did not start is the usual cause, because its layout sizes the window. Stop that compositor, then start both runs again so that rv starts its own session.`,
+    };
+    return refused;
+  }
+  const read: PagesRead = { kind: "read", page };
+  return read;
+});
+
 const stampOf = (ms: number): string =>
   new Date(ms).toISOString().replaceAll(/[:.]/gu, "-");
 
@@ -451,30 +497,12 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
       )
     )
   );
-  const page = {
-    A: yield* rv(["open", "--run", options.runs.A, PARK]).pipe(
-      Effect.andThen(rv(["js", "--run", options.runs.A, PREPARE])),
-      Effect.flatMap(decodeFacts)
-    ),
-    B: yield* rv(["open", "--run", options.runs.B, PARK]).pipe(
-      Effect.andThen(rv(["js", "--run", options.runs.B, PREPARE])),
-      Effect.flatMap(decodeFacts)
-    ),
-  };
-  yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
-  if (
-    page.A.width !== page.B.width ||
-    page.A.height !== page.B.height ||
-    page.A.dpr !== page.B.dpr
-  ) {
-    return {
-      code: 1,
-      lines: [
-        `FAIL viewport A=${page.A.width}x${page.A.height}@${page.A.dpr} B=${page.B.width}x${page.B.height}@${page.B.dpr}: restart the run whose window was resized`,
-        `evidence ${dir}`,
-      ],
-    };
+  const pages = yield* readPages(options.runs, host);
+  if (pages.kind === "refused") {
+    return { code: 1, lines: [pages.line, `evidence ${dir}`] };
   }
+  const { page } = pages;
+  yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
   yield* warm(options.runs.A);
   yield* warm(options.runs.B);
   const samples: GpuSample[] = [];

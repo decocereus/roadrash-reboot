@@ -495,6 +495,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/test/evaluate.test.ts",
       "tools/perf/test/fixture-build.ts",
       "tools/perf/test/gate.test.ts",
+      "tools/perf/test/gpu-page.test.ts",
       "tools/perf/test/gpu.test.ts",
       "tools/perf/test/measure-page.test.ts",
       "tools/perf/test/red-cases.ts",
