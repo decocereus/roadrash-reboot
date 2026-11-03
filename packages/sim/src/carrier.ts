@@ -171,14 +171,21 @@ export const stepCarrierRamp = (
     carry(track, rider, carried);
     return;
   }
-  const carriers = track.carrierStarts.length;
-  for (let index = 0; index < carriers; index += 1) {
-    const car = state.cars[index];
+  const { cars } = state;
+  const first = cars.length - track.carrierStarts.length;
+  for (let index = first; index < cars.length; index += 1) {
+    const car = cars[index];
     if (car?.carrier === true && onFootprint(car, rider.s, rider.x)) {
       meetRamp(state, track, rider, index, car, fromS, fromX);
       return;
     }
   }
+};
+
+const rigBody = {
+  halfLength: RIG_HALF_LENGTH,
+  halfWidth: CARRIER_HALF_WIDTH,
+  height: CARRIER_HEIGHT,
 };
 
 export const carrierAt = (
@@ -187,11 +194,9 @@ export const carrierAt = (
   paint: number,
   patience: number
 ): TrafficCar => ({
+  ...rigBody,
   carrier: true,
   cruiseSpeed: CARRIER_SPEED,
-  halfLength: RIG_HALF_LENGTH,
-  halfWidth: CARRIER_HALF_WIDTH,
-  height: CARRIER_HEIGHT,
   paint,
   patience,
   s,

@@ -132,9 +132,10 @@ export const jumpAim = (
     rider.jumpTaken = false;
   }
   let { x } = aim;
-  const carriers = track.carrierStarts.length;
-  for (let index = 0; index < carriers; index += 1) {
-    const car = state.cars[index];
+  const { cars } = state;
+  const first = cars.length - track.carrierStarts.length;
+  for (let index = first; index < cars.length; index += 1) {
+    const car = cars[index];
     if (car?.carrier === true && stillMeeting(rider, car)) {
       if (
         rider.jumpSeen < 0 &&

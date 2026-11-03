@@ -32,10 +32,10 @@ const pastTheLine: RiderInput = {
 
 const hitTraffic = (state: RaceState, rider: RiderState): boolean => {
   for (const car of state.cars) {
-    const solid = solidBoxOf(car);
     if (
-      Math.abs(solid.s - rider.s) < solid.halfLength + 8 &&
-      (comesDownOnCarrier(state, rider, car) || hitCar(state, rider, solid))
+      Math.abs(car.s - rider.s) < car.halfLength + 8 &&
+      (comesDownOnCarrier(state, rider, car) ||
+        hitCar(state, rider, solidBoxOf(car)))
     ) {
       return true;
     }

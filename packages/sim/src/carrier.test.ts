@@ -63,13 +63,13 @@ const pilotMeets = (
     rivals: [],
   });
   const rider = player(state);
-  const [truck] = state.cars;
+  const truck = state.cars.at(-1);
   if (truck?.carrier !== true) {
-    throw new Error("The road's truck comes first among its cars.");
+    throw new Error("The road's truck comes last among its cars.");
   }
-  state.cars.length = 1;
+  state.cars.splice(0, state.cars.length - 1);
   if (carAhead) {
-    state.cars.push({
+    state.cars.unshift({
       ...truck,
       carrier: false,
       cruiseSpeed: carAhead.speed,
@@ -203,13 +203,15 @@ describe("trucks on the roads", () => {
     (road, level, starts) => {
       const track = trackFor(road, level);
       const { cars } = createRace(defaultSetup(track, 1));
-      const trucks = cars.slice(0, starts.length);
+      const trucks = cars.slice(cars.length - starts.length);
       expect(trucks.map((car) => car.s)).toStrictEqual([...starts]);
       expect(trucks.every((car) => car.carrier)).toBeTruthy();
       expect(
         trucks.every((car) => car.x === track.sameWayLanes[0])
       ).toBeTruthy();
-      expect(cars.slice(starts.length).some((car) => car.carrier)).toBeFalsy();
+      expect(
+        cars.slice(0, cars.length - starts.length).some((car) => car.carrier)
+      ).toBeFalsy();
     }
   );
 });

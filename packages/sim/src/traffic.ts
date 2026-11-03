@@ -112,10 +112,10 @@ export const createTraffic = (
     carrierAt(s, lane, Math.floor(random() * PAINT_COUNT), patienceOf(patience))
   );
   return [
-    ...carriers,
     ...cars.filter((car) =>
       carriers.every((carrier) => clearOfCarrier(car, carrier.s, carrier.x))
     ),
+    ...carriers,
   ];
 };
 
