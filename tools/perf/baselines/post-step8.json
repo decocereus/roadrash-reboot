@@ -1,14 +1,6 @@
 {
-  "harnessDigest": "d1ef5b74dfeb44e8a7660887348b7432be4ee30e845202b6b7d2505e0a827986",
+  "harnessDigest": "55d8b2d53dad637dd2979fd906cb97a8cfbe71f688e3b186efdd132fc7efa162",
   "observations": [
-    {
-      "environment": "build",
-      "metric": "bytes.route.root.raw",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-10-22T17-46-02-016Z-fd677a7-edb664a",
-      "value": 1087798
-    },
     {
       "environment": "build",
       "metric": "bytes.route.root.gzip",
@@ -194,294 +186,6 @@
       "value": 0.3999999761581421
     },
     {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 10468.21986098063
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 0.18602348936593271
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p99",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 0.20464467929385566
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 38523.15474209651
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 5110.5571556412915
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 0.3254363747100225
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.tick.p99",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 0.38889684517533724
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "value": 105109.76372712146
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 4351.683811944532
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 0.44352410825209565
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p99",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 0.4780153501157568
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 38552
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.ticksPerSecond",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 2206.0514192196406
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 0.7647752524492606
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.tick.p99",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 0.8784788944417381
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "value": 105968.35940099834
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p50",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 16.700000762939453
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 17.100000381469727
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p99",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 18
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.missedFraction",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.count",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.blockingMs",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.calls.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 430
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.triangles.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 2357079
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.programs.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 43
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.textures.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 71
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p50",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 16.700000762939453
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 17
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.interval.p99",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 18
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "frame.missedFraction",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.count",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "main.longTask.blockingMs",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 0
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.calls.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 534
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.triangles.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 3002895
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.programs.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 43
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.textures.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "value": 78
-    },
-    {
       "environment": "build",
       "metric": "assets.glb.rider_altman",
       "scenario": null,
@@ -536,150 +240,6 @@
       "side": "A",
       "source": "baseline-2026-10-24T22-12-13-763Z-6011594-6011594",
       "value": 33554424
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.write.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 0.03208982127165214
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.write.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 0.050471499506113016
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 0.025013578660366274
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 0.03899155029840974
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 0.04149650911348169
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 0.06458247913964549
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 15473
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 21808
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "sim.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "value": 43238.828618968386
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.write.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 0.07468902498202905
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.write.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 0.11432457933276678
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 0.06145614663194996
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.restore.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 0.09421989183071527
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 0.09114638634566513
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.hash.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 0.13294496098436617
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 15473
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "value": 21808
-    },
-    {
-      "environment": "build",
-      "metric": "bytes.route.root.raw",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
-      "value": 1126709
     },
     {
       "environment": "build",
@@ -930,198 +490,6 @@
       "value": 297263
     },
     {
-      "environment": "node-linux-x64",
-      "metric": "room.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "value": 0.33376659620669735
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.confirm.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "value": 0.33583288504132724
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.rollback.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "value": 2.2148977656851936
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "value": 28330.14309484193
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "value": 59040.159733777036
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "value": 953.7670549084859
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "value": 0.5208084173608127
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.confirm.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "value": 0.514241387893369
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.rollback.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "value": 3.3427589354035745
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "value": 58434.622296173045
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "value": 117425.06489184692
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "value": 1273.01231281198
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.tick.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "value": 0.13509472020507024
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.confirm.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "value": 0.136085290264144
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.rollback.p95",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "value": 0.8645817094469164
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "value": 28064.77204658902
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "value": 55117.24459234609
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "value": 994.5291181364393
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.tick.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "value": 0.2028632262030848
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.confirm.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "value": 0.2038177730814792
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.rollback.p95",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "value": 1.2797374009117406
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "value": 54611.434276206324
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.client.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "value": 117828.32612312812
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "room.frame.allocatedBytesPerTick",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "value": 1227.0615640599
-    },
-    {
       "environment": "build",
       "metric": "bytes.worker.raw",
       "scenario": null,
@@ -1154,54 +522,6 @@
       "value": 838838
     },
     {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
-      "value": 15477
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
-      "value": 21812
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "roadLife.tick.p95",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-11-02T11-21-45-176Z-b28f759-be3c5d3",
-      "value": 0.1500411228045597
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
-      "value": 15477
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
-      "value": 21812
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "roadLife.tick.p95",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-11-02T11-24-33-482Z-b28f759-a1a02a6",
-      "value": 0.36559641332822784
-    },
-    {
       "environment": "build",
       "metric": "bytes.worker.raw",
       "scenario": null,
@@ -1216,54 +536,6 @@
       "side": "B",
       "source": "baseline-2026-11-02T12-31-02-027Z-20ded42-20ded42",
       "value": 303792
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
-      "value": 15609
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
-      "value": 22000
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "roadLife.tick.p95",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-11-02T14-34-01-324Z-b28f759-b3465ad",
-      "value": 0.26927241396866336
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "reference-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
-      "value": 15609
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
-      "value": 22000
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "roadLife.tick.p95",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-11-02T14-38-22-694Z-b28f759-375b6d1",
-      "value": 0.6665838198118207
     },
     {
       "environment": "build",
@@ -1338,38 +610,6 @@
       "value": 33554764
     },
     {
-      "environment": "gpu-helium-metal",
-      "metric": "render.programs.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
-      "value": 46
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.textures.max",
-      "scenario": "reference-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
-      "value": 73
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.programs.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
-      "value": 46
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "metric": "render.textures.max",
-      "scenario": "pack-riding-v1",
-      "side": "A+B",
-      "source": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
-      "value": 80
-    },
-    {
       "environment": "build",
       "metric": "bytes.game.raw",
       "scenario": null,
@@ -1419,80 +659,640 @@
     },
     {
       "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 23043.84587370901
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.048713174712985675
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.051647012362136736
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 33932.21963394343
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.032500916125620435
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.02598408992899794
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.04394646810407727
+    },
+    {
+      "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "scenario": "reference-v1",
       "side": "B",
-      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
-      "value": 15737
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 15682
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.04862554931252366
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.04841600828577191
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.35341249758729354
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 51194.11647254576
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 112498.58236272879
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 904.7194675540766
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 16549.16710887819
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.07524377874187835
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.10154630206801586
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 23358.256239600665
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.04978487957060858
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.039885358453225175
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.065067060277466
     },
     {
       "environment": "node-darwin-arm64",
       "metric": "snapshot.bytes.max",
       "scenario": "pack-riding-v1",
       "side": "B",
-      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
-      "value": 22184
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 22068
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.18832648577851066
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.18749846076682677
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 1.2231509925655721
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 81326.89517470881
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 172339.24792013312
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 1507.050915141431
     },
     {
       "environment": "node-darwin-arm64",
       "metric": "roadLife.tick.p95",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-02T21-12-01-855Z-b28f759-b5ef1ef",
-      "value": 0.3490333161721302
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 0.2257761977863957
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 7474.486766456492
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.16833508461004817
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.18241502789319936
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 66054.04326123129
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.07829605424999125
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.06335186125240375
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.09341020395445947
     },
     {
       "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "scenario": "reference-v1",
       "side": "B",
-      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
-      "value": 15737
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 15682
     },
     {
       "environment": "node-linux-x64",
-      "metric": "snapshot.bytes.max",
-      "scenario": "pack-riding-v1",
-      "side": "B",
-      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
-      "value": 22184
-    },
-    {
-      "environment": "node-linux-x64",
-      "metric": "roadLife.tick.p95",
-      "scenario": null,
-      "side": "B",
-      "source": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
-      "value": 0.7405557181331045
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "metric": "snapshot.bytes.max",
+      "metric": "room.tick.p95",
       "scenario": "reference-v1",
       "side": "B",
-      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
-      "value": 15737
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.13841173990844718
     },
     {
-      "environment": "node-darwin-arm64",
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.14574387206547917
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.9300340758434981
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 53201.63727121464
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 115833.30449251249
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 1052.7547420965059
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 5707.007406155018
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.21779817565785137
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.283575673983362
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 45361.23793677205
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.11241243846053023
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.08982974770297114
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.13157802469523489
+    },
+    {
+      "environment": "node-linux-x64",
       "metric": "snapshot.bytes.max",
       "scenario": "pack-riding-v1",
       "side": "B",
-      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
-      "value": 22184
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 22068
     },
     {
-      "environment": "node-darwin-arm64",
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.5339603327195838
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.5398715135303777
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 3.450852554329481
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 226723.2612312812
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 500250.462562396
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 1387.0841930116474
+    },
+    {
+      "environment": "node-linux-x64",
       "metric": "roadLife.tick.p95",
       "scenario": null,
       "side": "B",
-      "source": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
-      "value": 0.31754049760645825
+      "source": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "value": 0.6517662550166683
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 16.899999618530273
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 17.899999618530273
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.count",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.calls.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 427
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.triangles.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 2375757
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 46
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 73
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 16.899999618530273
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 17.5
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.count",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.calls.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 471
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.triangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 2792653
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 46
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "value": 80
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "value": 1149527
     }
   ],
   "revisions": {
-    "instrumented": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
-    "parent": "b8f01e3b218f4e8cfc64ede06577dc28ff8b9af7"
+    "instrumented": "21de955ec2732826482aa4c4ccad922313ed697c",
+    "parent": "22f6921f92c869ad1167e1c4ba50b8a7ae3d9803"
   },
   "runs": [
     {
@@ -1638,126 +1438,6 @@
       }
     },
     {
-      "environment": "node-darwin-arm64",
-      "facts": {
-        "arch": "arm64",
-        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 7.924874999999986 ms",
-        "cpu": "Apple M4 Pro",
-        "cpus": "12",
-        "execArgv": "[]",
-        "harnessDigest": "d1ef5b74dfeb44e8a7660887348b7432be4ee30e845202b6b7d2505e0a827986",
-        "memoryBytes": "25769803776",
-        "node": "v24.22.1",
-        "platform": "darwin",
-        "sideASourceDigest": "665f8e8a3e423c63a81c5f291a4c8726a4ec3b37c3a70fa829e8cdbb233c3296",
-        "sideBSourceDigest": "665f8e8a3e423c63a81c5f291a4c8726a4ec3b37c3a70fa829e8cdbb233c3296",
-        "v8": "13.6.233.17-node.58",
-        "wallMs": "{\"build\":3846,\"materialize\":11400,\"node\":32381,\"total\":47783}",
-        "machine": "Mac16,8",
-        "os": "macOS 26.6.2 (25G83)",
-        "pnpm": "11.21.0",
-        "cloneKiB": "2305496",
-        "quiet": "no other agent's test, lint, build or perf process ran during the run, checked every 2 s; two earlier runs at 21:15 and 21:17 UTC overlapped another agent's tests and were not used"
-      },
-      "id": "baseline-2026-10-24T21-21-11-194Z-b28f759-8d1b75a",
-      "lanes": ["node", "build"],
-      "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
-        "B": "8d1b75a70b431c077a02e182690376f6249a2c73"
-      }
-    },
-    {
-      "environment": "node-linux-x64",
-      "facts": {
-        "arch": "x64",
-        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 9.014231000000109 ms",
-        "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
-        "cpus": "4",
-        "execArgv": "[]",
-        "harnessDigest": "d1ef5b74dfeb44e8a7660887348b7432be4ee30e845202b6b7d2505e0a827986",
-        "memoryBytes": "16765370368",
-        "node": "v24.21.0",
-        "platform": "linux",
-        "sideASourceDigest": "665f8e8a3e423c63a81c5f291a4c8726a4ec3b37c3a70fa829e8cdbb233c3296",
-        "sideBSourceDigest": "665f8e8a3e423c63a81c5f291a4c8726a4ec3b37c3a70fa829e8cdbb233c3296",
-        "v8": "13.6.233.17-node.53",
-        "wallMs": "{\"build\":5728,\"materialize\":6296,\"node\":80549,\"total\":92873}",
-        "machine": "GitHub-hosted runner, Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz, 4 vCPU, 16 GiB",
-        "os": "Ubuntu 24.04, runner image ubuntu-24.04 version 20261012.334.1",
-        "pnpm": "11.21.0",
-        "ci": "GitHub Actions run 40133448656 attempt 3, job 120992661335 (perf), workflow .github/workflows/quality.yml, pull_request event on PR #58",
-        "checkout": "e2f4b79, the pull request merge of 8d1b75a70b431c077a02e182690376f6249a2c73 into b8f01e3b218f4e8cfc64ede06577dc28ff8b9af7",
-        "command": "node tools/perf/gate.ts baseline --baseline-ref b28f7595a4ab0a162714f6604673cc03cdbbd267 --lanes node,build",
-        "artifact": "perf-results, artifact 12576521542",
-        "attempts": "attempts 1 and 2 (artifacts 12576265202 and 12576705768) were not used: each had an A/A pair outside its margin, pack-riding-v1 tick p99 at 48% in attempt 1 and reference-v1 tick p99 at 42% in attempt 2"
-      },
-      "id": "baseline-2026-10-24T21-29-04-175Z-b28f759-e2f4b79",
-      "lanes": ["node", "build"],
-      "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
-        "B": "e2f4b79ffad0678aac50bb1935646d86d56ce6a9"
-      }
-    },
-    {
-      "environment": "gpu-helium-metal",
-      "facts": {
-        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
-        "os": "macOS 26.6.2 (25G83)",
-        "power": "AC power",
-        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
-        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
-        "browser": "Helium 0.20.1.1, windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
-        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
-        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
-        "page": "1283x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
-        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
-        "wallMs": "974250",
-        "order": "reference-v1 pair0 A, reference-v1 pair0 B, pack-riding-v1 pair0 B, pack-riding-v1 pair0 A, reference-v1 pair1 B, reference-v1 pair1 A, pack-riding-v1 pair1 A, pack-riding-v1 pair1 B, reference-v1 pair2 A, reference-v1 pair2 B, pack-riding-v1 pair2 B, pack-riding-v1 pair2 A, reference-v1 pair3 B, reference-v1 pair3 A, pack-riding-v1 pair3 A, pack-riding-v1 pair3 B, reference-v1 pair4 A, reference-v1 pair4 B, pack-riding-v1 pair4 B, pack-riding-v1 pair4 A",
-        "quiet": "no other agent's test, lint, build or perf process ran during the campaign, checked every 2 s; an earlier campaign at 21:23 UTC overlapped another agent's tests and was stopped",
-        "sourceDigestB": "B's digest covers an uncommitted edit to tools/perf/test/evaluate.test.ts made after rv built the page; the page does not load that file"
-      },
-      "id": "gpu-2026-10-24T21-27-43-414Z-b28f759-8d1b75a",
-      "lanes": ["gpu"],
-      "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261025-025230-s0)",
-        "B": "8d1b75a70b431c077a02e182690376f6249a2c73 with an uncommitted test edit the page does not load (rv 20261025-025234-s1)"
-      }
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "facts": {
-        "arch": "arm64",
-        "cpu": "Apple M4 Pro",
-        "cpus": "12",
-        "harness": "the snapshot child of tools/perf/snapshot.ts, three runs per scenario",
-        "node": "v26.13.0",
-        "platform": "darwin",
-        "why": "the first run that measures the race snapshot's write, restore, hash and bytes, and the run that recalibrates sim.allocatedBytesPerTick on this Mac"
-      },
-      "id": "baseline-2026-10-30T10-28-45-227Z-3d78296-3d78296",
-      "lanes": ["node"],
-      "sides": {
-        "A": "3d782966036a6943f151fcdee0d00f434acc1393",
-        "B": "3d782966036a6943f151fcdee0d00f434acc1393"
-      }
-    },
-    {
-      "environment": "node-linux-x64",
-      "facts": {
-        "arch": "x64",
-        "harness": "the snapshot child of tools/perf/snapshot.ts, three runs per scenario",
-        "platform": "linux",
-        "runner": "the CI perf job of quality.yml on ubuntu-24.04, run 41061055166, with the job's pnpm perf step replaced by node tools/perf/gate.ts baseline --lanes node for this measurement and put back in the next commit",
-        "why": "the first run that measures the race snapshot on the CI runner"
-      },
-      "id": "baseline-2026-10-30T13-11-05-228Z-f094dbb-f094dbb",
-      "lanes": ["node"],
-      "sides": {
-        "A": "f094dbba3527cb4c51212b5695940ee73fd442d2",
-        "B": "f094dbba3527cb4c51212b5695940ee73fd442d2"
-      }
-    },
-    {
       "environment": "build",
       "facts": {
         "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
@@ -1813,23 +1493,6 @@
       }
     },
     {
-      "environment": "node-darwin-arm64",
-      "facts": {
-        "arch": "arm64",
-        "harness": "the room child of tools/perf/room.ts, three runs per scenario",
-        "platform": "darwin",
-        "roomRun": "yes",
-        "runner": "this Mac, an Apple M4 Pro, measured at load average 4 to 6 after two runs under load were thrown out",
-        "why": "the first run that measures the race room"
-      },
-      "id": "baseline-2026-11-02T11-59-37-652Z-595cbf7-595cbf7",
-      "lanes": ["node"],
-      "sides": {
-        "A": "595cbf72d27d75f5e214dc8acf3d8f0a64ff2490",
-        "B": "595cbf72d27d75f5e214dc8acf3d8f0a64ff2490"
-      }
-    },
-    {
       "environment": "build",
       "facts": {
         "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
@@ -1850,57 +1513,6 @@
       "sides": {
         "A": "d78fcf7be203265015874b9bd31090f25cee33e7",
         "B": "d78fcf7be203265015874b9bd31090f25cee33e7"
-      }
-    },
-    {
-      "environment": "node-darwin-arm64",
-      "facts": {
-        "arch": "arm64",
-        "harness": "the room child of tools/perf/room.ts, three runs per scenario",
-        "platform": "darwin",
-        "roomRun": "yes",
-        "runner": "this Mac, an Apple M4 Pro, measured at load average 2 to 3",
-        "why": "the first run that reads room allocation as the least of three sampled windows"
-      },
-      "id": "baseline-2026-11-02T16-55-34-950Z-4232690-4232690",
-      "lanes": ["node"],
-      "sides": {
-        "A": "4232690b3c65978a59322b2a28f8ab6972018ee9",
-        "B": "4232690b3c65978a59322b2a28f8ab6972018ee9"
-      }
-    },
-    {
-      "environment": "node-linux-x64",
-      "facts": {
-        "arch": "x64",
-        "harness": "the room child of tools/perf/room.ts, three runs per scenario",
-        "platform": "linux",
-        "roomRun": "yes",
-        "runner": "the CI perf job's GitHub Actions ubuntu runner",
-        "why": "the first run that reads room allocation as the least of three sampled windows"
-      },
-      "id": "baseline-2026-11-02T16-57-42-662Z-a25e7d9-a25e7d9",
-      "lanes": ["node"],
-      "sides": {
-        "A": "a25e7d984cfc67042712f4278f4348ac1e83943e",
-        "B": "a25e7d984cfc67042712f4278f4348ac1e83943e"
-      }
-    },
-    {
-      "environment": "node-linux-x64",
-      "facts": {
-        "arch": "x64",
-        "harness": "the room child of tools/perf/room.ts, three runs per scenario",
-        "platform": "linux",
-        "roomRun": "yes",
-        "runner": "the CI perf job's GitHub Actions ubuntu runner, on the slower of its two speeds, side A sim.tick.p95 0.445 ms",
-        "why": "pins the room timing rows on the runner speed the Linux sim rows were pinned on"
-      },
-      "id": "gate-2026-11-02T16-48-16-936Z-b28f759-fe783bb",
-      "lanes": ["node", "build"],
-      "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
-        "B": "fe783bb561ad85cfdb1264c92279c3bb929e52b8"
       }
     },
     {
@@ -2036,32 +1648,6 @@
       }
     },
     {
-      "environment": "gpu-helium-metal",
-      "facts": {
-        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
-        "os": "macOS 26.6.2 (25G83)",
-        "power": "AC power",
-        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
-        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
-        "browser": "Helium 0.20.1.1, windowed, rv slots 6 and 7, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
-        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
-        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
-        "page": "1283x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
-        "pairs": "5",
-        "wallMs": "989143",
-        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\",",
-        "quiet": "Another lane's Firefox replay ran during this run; only the render count rows are pinned from it, and counts do not vary across windows.",
-        "sourceDigestB": "185b137f70925f1a27d27e9ae00e8ae64120d7414903a6899dbb417839122ea3",
-        "why": "The walker's toon program, its two instanced depth programs (three copies a material's map onto the depth material) and its palette and pose textures. Compile time only; first-use stays clean."
-      },
-      "id": "gpu-2026-11-02T19-36-41-898Z-b28f759-4558996",
-      "lanes": ["gpu"],
-      "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267 (rv 20261103-010625-s6)",
-        "B": "4558996482c865fbf758d62d9f5607033c47e005 (rv 20261103-010632-s7)"
-      }
-    },
-    {
       "environment": "build",
       "facts": {
         "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
@@ -2103,71 +1689,120 @@
       }
     },
     {
-      "environment": "node-linux-x64",
-      "facts": {
-        "arch": "x64",
-        "cpu": "AMD EPYC 9V74 80-Core Processor",
-        "cpus": "4",
-        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
-        "node": "v24.22.1",
-        "platform": "linux",
-        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
-      },
-      "id": "baseline-2026-11-02T21-19-09-959Z-b28f759-d14800e",
-      "lanes": ["node"],
-      "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
-        "B": "d14800e55608d21a2bd3db9ac902d71b9c50cfc4"
-      }
-    },
-    {
       "environment": "node-darwin-arm64",
       "facts": {
         "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 8.415500000000009 ms",
         "cpu": "Apple M4 Pro",
         "cpus": "12",
-        "harness": "the road-life child of tools/perf/road-life.ts, five runs, and the snapshot child, three runs per scenario",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "55d8b2d53dad637dd2979fd906cb97a8cfbe71f688e3b186efdd132fc7efa162",
+        "memoryBytes": "25769803776",
         "node": "v26.13.0",
         "platform": "darwin",
-        "why": "the first run that measures roadLife.tick.p95, and the run that re-pins snapshot.bytes.max for the cross-car list's length word"
+        "sideASourceDigest": "2a4b0e296caa8d0677d1054dfd99c1bf592ec1247170d12d6017de5d1b80fbfc",
+        "sideBSourceDigest": "2a4b0e296caa8d0677d1054dfd99c1bf592ec1247170d12d6017de5d1b80fbfc",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3460,\"materialize\":12904,\"node\":187241,\"total\":203756}",
+        "machine": "Mac16,8",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "cloneKiB": "2601620",
+        "quiet": "no other agent's test, lint or typecheck process ran during the run, checked every 2 s"
       },
-      "id": "baseline-2026-11-02T21-41-12-059Z-b28f759-78aef1a",
-      "lanes": ["node"],
+      "id": "baseline-2026-11-02T23-25-23-495Z-21de955-ca5a452",
+      "lanes": ["node", "build"],
       "sides": {
-        "A": "b28f7595a4ab0a162714f6604673cc03cdbbd267",
-        "B": "78aef1a1a5238fd675dcee7a2f211f7304db6bd7"
+        "A": "21de955ec2732826482aa4c4ccad922313ed697c",
+        "B": "ca5a452a158aa72a8f3d1868124e31f7e5fd489f"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 17.621348000000125 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "55d8b2d53dad637dd2979fd906cb97a8cfbe71f688e3b186efdd132fc7efa162",
+        "memoryBytes": "16760344576",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "sideASourceDigest": "2a4b0e296caa8d0677d1054dfd99c1bf592ec1247170d12d6017de5d1b80fbfc",
+        "sideBSourceDigest": "2a4b0e296caa8d0677d1054dfd99c1bf592ec1247170d12d6017de5d1b80fbfc",
+        "v8": "13.6.233.17-node.58",
+        "wallMs": "{\"build\":5338,\"materialize\":7907,\"node\":513531,\"total\":527122}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "pnpm": "11.21.0",
+        "ci": "GitHub Actions run 41545207061 (perf), pull_request event on PR #77",
+        "checkout": "e33d7ee, the pull request merge of ca5a452 into main",
+        "command": "node tools/perf/gate.ts baseline --baseline-ref 21de955ec2732826482aa4c4ccad922313ed697c --lanes node,build, four times in one job",
+        "artifact": "perf-results",
+        "attempts": "the third of four attempts in the job, the slowest on pack-riding-v1 throughput and within 0.3% of the slowest on reference-v1. Every median pair for sim.tick.p95 in the four was within 3%."
+      },
+      "id": "baseline-2026-11-02T23-44-20-001Z-21de955-e33d7ee",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "21de955ec2732826482aa4c4ccad922313ed697c",
+        "B": "e33d7eeff8d5617758d989b6229b16aa26dd20cc"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "Mac16,8, Apple M4 Pro, 12 CPU cores, 24 GiB",
+        "os": "macOS 26.6.2 (25G83)",
+        "power": "AC power",
+        "display": "Built-in Liquid Retina XDR Display, 3024 x 1964 Retina, ProMotion; requestAnimationFrame measured 120 Hz on both sides; display settings untouched",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every second vsync is drawn",
+        "browser": "Helium 0.20.1.1, windowed, rv slots 0 and 1, --use-angle=metal --enable-gpu --ignore-gpu-blocklist",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1283x790 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1769169",
+        "quiet": "no other agent's test, lint or typecheck process ran during the run, checked every 2 s",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"reference-v1 pair4 A\", \"reference-v1 pair4 B\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]"
+      },
+      "id": "gpu-2026-11-02T23-29-44-206Z-21de955-ca5a452",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "21de955ec2732826482aa4c4ccad922313ed697c",
+        "B": "ca5a452a158aa72a8f3d1868124e31f7e5fd489f"
       }
     }
   ],
   "scenarios": [
     {
-      "hash": "23d6f3a060ddce12244c942dc959c03db5b06daeef26e1033af2bbe990d8eca5",
+      "hash": "82c2d3943fd12a21ddfe4807642bf56e1a272b4a41749d3e646882136745aa93",
       "id": "reference-v1",
       "police": 1,
       "race": "slag-row level 1, seed 31, halden-wren-400",
       "racers": 15,
       "window": {
-        "from": 1811,
-        "to": 2411
+        "from": 5679,
+        "to": 6279
       },
-      "workloadDigest": "81524702669a82811ec3adeeefc66a60429d9fc3bd630fd6bd6de4f69161edec"
+      "workloadDigest": "9b8cd30f2302c8a6666e3b84d60808b1a7f87ab0b573f42a233471d2330184be"
     },
     {
-      "hash": "7a4f9a228560dce14cac23a0daae13f83a97c0bd15e102107e98425170ce239e",
+      "hash": "4ef3f0c0e3ef07bb5e0771ed05306ce01f55eebc0514bc05f7132409b1722da4",
       "id": "pack-riding-v1",
       "police": 8,
       "race": "slag-row level 5, seed 8, ostra-sesta-600",
       "racers": 15,
       "window": {
-        "from": 2107,
-        "to": 2707
+        "from": 3017,
+        "to": 3617
       },
-      "workloadDigest": "86b63e62efec65ef2b7de9659bcd9b3534ad4ca66aa89df2aac705bb524a6f2a"
+      "workloadDigest": "867e182075dadf75cc25f0fc2272456a1772bca5a60ee2245502926970c892c2"
     }
   ],
   "trackCompile": {
-    "method": "compileTrack(roadAtLevel(road, level)) for the 5 roads x 5 levels, cold, in a fresh Node 24.22.1 process on this Mac at b28f759; median of five processes (41.6, 41.9, 42.0, 42.5, 44.8 ms). Recorded, not budgeted.",
-    "ms": 42.02,
+    "method": "compileTrack(roadAtLevel(road, level)) for the 5 roads x 5 levels, cold, in a fresh Node 26.13.0 process on this Mac at 21de955; median of five processes (44.7, 44.81, 45.41, 45.65, 46.9 ms). Recorded, not budgeted.",
+    "ms": 45.41,
     "tracks": 25
   },
   "version": 1
