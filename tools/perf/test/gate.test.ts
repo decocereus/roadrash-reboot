@@ -4,6 +4,7 @@ import path from "node:path";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
+import { layoutPadding } from "../src/node-lane.ts";
 import {
   scenarios,
   validateWorkload,
@@ -91,5 +92,17 @@ describe("pack-riding workload validation", () => {
       field: "total",
       tick: 3617,
     });
+  });
+});
+
+describe("the stack layout of a measurement child", () => {
+  it("differs for every timing child, so one bad layout costs one sample", () => {
+    const children = ["reference-v1", "pack-riding-v1"].flatMap((scenario) =>
+      [0, 1, 2, 3, 4].flatMap((pair) =>
+        ["A", "B"].map((side) => `${scenario}-time-${pair}-${side}.json`)
+      )
+    );
+    const lengths = children.map((child) => layoutPadding(child).length);
+    expect(new Set(lengths).size).toBe(children.length);
   });
 });
