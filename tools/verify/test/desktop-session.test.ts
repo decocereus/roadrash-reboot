@@ -16,6 +16,7 @@ import {
   desktopDown,
   desktopReleaseOf,
   desktopStateOf,
+  desktopStatus,
   desktopUp,
   retainDesktop,
   withDesktopHold,
@@ -83,6 +84,16 @@ describe("desktop session states", () => {
       ])
     ).toStrictEqual({ kind: "no-display", pid: 40 });
   });
+
+  it.for(["hyprland", "/usr/bin/hyprland --config /home/me/hypr.conf"])(
+    "recognises a compositor started as %s through the lowercase symlink",
+    (command) => {
+      expect(desktopStateOf(null, [{ command, pid: 40 }])).toStrictEqual({
+        kind: "no-display",
+        pid: 40,
+      });
+    }
+  );
 
   it.for([
     "vim rushline-desktop.conf",
@@ -394,6 +405,28 @@ describe("desktop session lifecycle", () => {
     expect(existsSync(path.join(dir, "desktop.log"))).toBeFalsy();
   });
 
+  it("waits for a live start before it reads the session", async () => {
+    const machine = machineOf();
+    machine.commands.set(60, CONFIG_COMMAND);
+    const dir = freshDir();
+    const lock = path.join(dir, "desktop.lock");
+    writeFileSync(
+      lock,
+      JSON.stringify({ label: "desktop session", pid: process.pid })
+    );
+    setTimeout(() => {
+      writeFileSync(
+        path.join(dir, "desktop.json"),
+        JSON.stringify(claimOf(60, "run-a"))
+      );
+      rmSync(lock);
+    }, 300);
+    const status = await onMachine(machine, desktopStatus(dir));
+    expect(status).toStrictEqual(
+      Exit.succeed({ claim: claimOf(60, "run-a"), kind: "owned" })
+    );
+  });
+
   it("fails at once on a compositor with no display, launching nothing", async () => {
     const machine = machineOf();
     machine.commands.set(40, "Hyprland");
@@ -406,8 +439,8 @@ describe("desktop session lifecycle", () => {
           .filter(Cause.isFailReason)
           .map((reason) => String(reason.error))
       : [];
-    expect(messages.join("\n")).toContain("no X display yet");
-    expect(messages.join("\n")).toContain("any X client");
+    expect(messages.join("\n")).toContain("still starting");
+    expect(messages.join("\n")).toContain("disables Xwayland");
   });
 
   it("leaves a compositor with no display alone on down", async () => {

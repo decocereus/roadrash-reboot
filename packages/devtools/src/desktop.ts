@@ -79,7 +79,8 @@ export const desktopStateOf = (
   listed: readonly ListedProcess[]
 ): DesktopState => {
   const compositors = listed.filter(
-    ({ command }) => executableOf(command) === COMPOSITOR
+    ({ command }) =>
+      executableOf(command).toLowerCase() === COMPOSITOR.toLowerCase()
   );
   const ours = compositors.filter(({ command }) =>
     command.includes(CONFIG_NAME)
@@ -367,7 +368,7 @@ export const desktopUp = Effect.fn("desktop.up")(function* desktopUp(
       }
       case "no-display": {
         return yield* new DesktopError({
-          message: `${COMPOSITOR} pid ${state.pid} is a compositor rv did not start, and it has no Xwayland, so rv cannot use a compositor with no X display yet. Starting any X client in that session gives it one.`,
+          message: `${COMPOSITOR} pid ${state.pid} is a compositor rv did not start, and it has no Xwayland, so rv cannot use it. Either it is still starting, which takes about 2 s, so run this again, or its config disables Xwayland, so enable it there.`,
           operation: "use",
         });
       }
@@ -448,8 +449,10 @@ export const desktopDown = Effect.fn("desktop.down")(function* desktopDown(
   return yield* underLock(paths, step);
 });
 
-export const desktopStatus = (dir: string = toolStateDir) =>
-  readState(pathsIn(dir));
+export const desktopStatus = (dir: string = toolStateDir) => {
+  const paths = pathsIn(dir);
+  return underLock(paths, readState(paths));
+};
 
 export const describeDesktop = (state: DesktopState): string => {
   switch (state.kind) {
@@ -463,7 +466,7 @@ export const describeDesktop = (state: DesktopState): string => {
       return `a compositor rv did not start is up: Xwayland pid ${state.pid} on ${state.display}; rv uses it and never stops it`;
     }
     case "no-display": {
-      return `a compositor rv did not start is up: ${COMPOSITOR} pid ${state.pid} has no Xwayland, so rv cannot use it yet; starting any X client in that session gives it an X display`;
+      return `a compositor rv did not start is up: ${COMPOSITOR} pid ${state.pid} has no Xwayland, so rv cannot use it: it is still starting, or its config disables Xwayland`;
     }
     case "owned": {
       const holds = state.claim.holds.map((hold) => hold.holder).join(", ");
