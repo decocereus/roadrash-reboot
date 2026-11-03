@@ -199,7 +199,7 @@ describe("gpu frame lane", () => {
     );
     expect(evaluation.ok).toBeFalsy();
     expect(failing(evaluation.lines).join("\n")).toContain(
-      "viewport=1504x790@2 expected=1512x773@2"
+      "viewport=1504x790@2 expected=1512x773@2 the host's page"
     );
   });
 

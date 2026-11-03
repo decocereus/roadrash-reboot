@@ -468,12 +468,16 @@ const scenarioResult = (
   const [first] = mine;
   const firstPage = first ? viewportText(first.capture) : "";
   const expected = page === null ? firstPage : pageText(page);
+  const source =
+    page === null
+      ? `like ${first?.file ?? "the first sample"}`
+      : "the host's page";
   failures.push(
     ...mine
       .filter((sample) => viewportText(sample.capture) !== expected)
       .map(
         (sample) =>
-          `FAIL gpu ${scenario.id} side=${sample.side} ${sample.file} viewport=${viewportText(sample.capture)} expected=${expected} like ${first?.file ?? "the first sample"}`
+          `FAIL gpu ${scenario.id} side=${sample.side} ${sample.file} viewport=${viewportText(sample.capture)} expected=${expected} ${source}`
       )
   );
   const a = byPair(mine, "A");
