@@ -13,6 +13,7 @@ import { DesktopError } from "./desktop-error.ts";
 import { ToolProcesses, alive } from "./process.ts";
 import type { ListedProcess } from "./process.ts";
 
+const COMPOSITOR = "Hyprland";
 const CONFIG_NAME = "rushline-desktop.conf";
 const CONFIG = path.join(import.meta.dirname, CONFIG_NAME);
 const DISPLAY_FILE_ENV = "RUSHLINE_DESKTOP_DISPLAY_FILE";
@@ -40,11 +41,13 @@ type DesktopHold = typeof desktopHold.Type;
 export type DesktopState =
   | { readonly kind: "none" }
   | { readonly claim: DesktopClaim; readonly kind: "owned" }
+  | { readonly kind: "orphan"; readonly pid: number }
   | {
       readonly display: string;
       readonly kind: "foreign";
       readonly pid: number;
-    };
+    }
+  | { readonly kind: "no-display"; readonly pid: number };
 
 export type DesktopRelease =
   | { readonly kind: "no-session" }
@@ -54,7 +57,7 @@ export type DesktopRelease =
       readonly kind: "keep";
       readonly others: readonly string[];
     }
-  | { readonly claim: DesktopClaim; readonly kind: "stop" };
+  | { readonly kind: "stop"; readonly pid: number };
 
 const decodeClaim = Schema.decodeUnknownOption(
   Schema.fromJsonString(desktopClaim)
@@ -68,25 +71,54 @@ const decodeInstances = Schema.decodeUnknownOption(
 
 const xwaylandLine = /^(?:\S*\/)?Xwayland (?<display>:\d+)(?:\s|$)/u;
 
+const executableOf = (command: string): string =>
+  path.basename(command.split(/\s/u, 1)[0] ?? "");
+
 export const desktopStateOf = (
   claim: DesktopClaim | null,
   listed: readonly ListedProcess[]
 ): DesktopState => {
-  if (
-    claim !== null &&
-    listed.some(
-      (each) => each.pid === claim.pid && each.command.includes(CONFIG_NAME)
-    )
-  ) {
+  const compositors = listed.filter(
+    ({ command }) => executableOf(command) === COMPOSITOR
+  );
+  const ours = compositors.filter(({ command }) =>
+    command.includes(CONFIG_NAME)
+  );
+  if (claim !== null && ours.some((each) => each.pid === claim.pid)) {
     return { claim, kind: "owned" };
+  }
+  const [orphan] = ours;
+  if (orphan !== undefined) {
+    return { kind: "orphan", pid: orphan.pid };
   }
   const [foreign] = listed.flatMap(({ command, pid }) => {
     const display = xwaylandLine.exec(command)?.groups?.display;
     return display === undefined ? [] : [{ display, pid }];
   });
-  return foreign === undefined
+  if (foreign !== undefined) {
+    return { display: foreign.display, kind: "foreign", pid: foreign.pid };
+  }
+  const [displayless] = compositors;
+  return displayless === undefined
     ? { kind: "none" }
-    : { display: foreign.display, kind: "foreign", pid: foreign.pid };
+    : { kind: "no-display", pid: displayless.pid };
+};
+
+export const desktopCarriesBrowser = (state: DesktopState): boolean => {
+  switch (state.kind) {
+    case "owned":
+    case "foreign": {
+      return true;
+    }
+    case "none":
+    case "orphan":
+    case "no-display": {
+      return false;
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
 };
 
 const holdIsLive = ({ pid }: DesktopHold): boolean =>
@@ -101,18 +133,21 @@ export const desktopReleaseOf = (
     case "none": {
       return { kind: "no-session" };
     }
-    case "foreign": {
+    case "foreign":
+    case "no-display": {
       return { kind: "foreign", pid: state.pid };
+    }
+    case "orphan": {
+      return { kind: "stop", pid: state.pid };
     }
     case "owned": {
       const holds = state.claim.holds.filter(
         (hold) => hold.holder !== holder && isLive(hold)
       );
-      const claim = { ...state.claim, holds };
       return holds.length === 0
-        ? { claim, kind: "stop" }
+        ? { kind: "stop", pid: state.claim.pid }
         : {
-            claim,
+            claim: { ...state.claim, holds },
             kind: "keep",
             others: holds.map((hold) => hold.holder),
           };
@@ -271,7 +306,7 @@ const started = Effect.fnUntraced(function* started(
   return yield* Effect.uninterruptibleMask((restore) =>
     Effect.gen(function* startCompositor() {
       const pid = yield* processes.startDetached(
-        "Hyprland",
+        COMPOSITOR,
         ["--config", CONFIG],
         dir,
         paths.log,
@@ -301,6 +336,12 @@ type DesktopUse =
       readonly pid: number;
     };
 
+const ownedUse = ({ display, pid }: DesktopClaim): DesktopUse => ({
+  display,
+  kind: "owned",
+  pid,
+});
+
 export const desktopUp = Effect.fn("desktop.up")(function* desktopUp(
   holder: string,
   holderPid: number | null,
@@ -308,6 +349,7 @@ export const desktopUp = Effect.fn("desktop.up")(function* desktopUp(
 ) {
   const paths = pathsIn(dir);
   const fs = yield* FileSystem.FileSystem;
+  const processes = yield* ToolProcesses;
   yield* fs.makeDirectory(dir, { recursive: true });
   const step = Effect.gen(function* decide() {
     const state = yield* readState(paths);
@@ -317,12 +359,17 @@ export const desktopUp = Effect.fn("desktop.up")(function* desktopUp(
           paths,
           withDesktopHold(state.claim, holder, holderPid)
         );
-        const use: DesktopUse = {
-          display: state.claim.display,
-          kind: "owned",
-          pid: state.claim.pid,
-        };
-        return use;
+        return ownedUse(state.claim);
+      }
+      case "orphan": {
+        yield* processes.stopOwned(state.pid, CONFIG_NAME);
+        return ownedUse(yield* started(paths, dir, holder, holderPid));
+      }
+      case "no-display": {
+        return yield* new DesktopError({
+          message: `${COMPOSITOR} pid ${state.pid} is a compositor rv did not start, and it has no Xwayland, so rv cannot use a compositor with no X display yet. Starting any X client in that session gives it one.`,
+          operation: "use",
+        });
       }
       case "foreign": {
         yield* fs.remove(paths.claim, { force: true });
@@ -334,13 +381,7 @@ export const desktopUp = Effect.fn("desktop.up")(function* desktopUp(
         return use;
       }
       case "none": {
-        const claim = yield* started(paths, dir, holder, holderPid);
-        const use: DesktopUse = {
-          display: claim.display,
-          kind: "owned",
-          pid: claim.pid,
-        };
-        return use;
+        return ownedUse(yield* started(paths, dir, holder, holderPid));
       }
       default: {
         return state satisfies never;
@@ -393,10 +434,7 @@ export const desktopDown = Effect.fn("desktop.down")(function* desktopDown(
         return `left running for ${release.others.join(", ")}`;
       }
       case "stop": {
-        const stopped = yield* processes.stopOwned(
-          release.claim.pid,
-          CONFIG_NAME
-        );
+        const stopped = yield* processes.stopOwned(release.pid, CONFIG_NAME);
         yield* fs.remove(paths.claim, { force: true });
         yield* fs.remove(paths.display, { force: true });
         yield* fs.remove(paths.log, { force: true });
@@ -418,12 +456,18 @@ export const describeDesktop = (state: DesktopState): string => {
     case "none": {
       return "no desktop session is running";
     }
+    case "orphan": {
+      return `${COMPOSITOR} pid ${state.pid} runs rv's config, but no claim matches it, so the rv that started it died; rv desktop up replaces it and rv desktop down stops it`;
+    }
     case "foreign": {
       return `a compositor rv did not start is up: Xwayland pid ${state.pid} on ${state.display}; rv uses it and never stops it`;
     }
+    case "no-display": {
+      return `a compositor rv did not start is up: ${COMPOSITOR} pid ${state.pid} has no Xwayland, so rv cannot use it yet; starting any X client in that session gives it an X display`;
+    }
     case "owned": {
       const holds = state.claim.holds.map((hold) => hold.holder).join(", ");
-      return `Hyprland pid ${state.claim.pid} on ${state.claim.display}, instance ${state.claim.instance}, held by ${holds === "" ? "nobody" : holds}`;
+      return `${COMPOSITOR} pid ${state.claim.pid} on ${state.claim.display}, instance ${state.claim.instance}, held by ${holds === "" ? "nobody" : holds}`;
     }
     default: {
       return state satisfies never;

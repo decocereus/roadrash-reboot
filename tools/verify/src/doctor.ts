@@ -1,6 +1,10 @@
 import { browserHosts } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
-import { describeDesktop, desktopStatus } from "@racer/devtools/desktop";
+import {
+  describeDesktop,
+  desktopCarriesBrowser,
+  desktopStatus,
+} from "@racer/devtools/desktop";
 import { ToolProcesses, alive } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -61,7 +65,7 @@ export const doctor = Effect.fn("rv.doctor")(function* doctor(
   if (host.desktop !== "none") {
     const session = yield* desktopStatus();
     yield* check(
-      session.kind !== "none",
+      desktopCarriesBrowser(session),
       "desktop session",
       describeDesktop(session)
     );

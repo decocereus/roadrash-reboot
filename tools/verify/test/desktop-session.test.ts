@@ -12,6 +12,7 @@ import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodePath from "@effect/platform-node/NodePath";
 import { CleanupOutcomes } from "@racer/devtools/cleanup";
 import {
+  desktopCarriesBrowser,
   desktopDown,
   desktopReleaseOf,
   desktopStateOf,
@@ -19,7 +20,7 @@ import {
   retainDesktop,
   withDesktopHold,
 } from "@racer/devtools/desktop";
-import type { DesktopClaim } from "@racer/devtools/desktop";
+import type { DesktopClaim, DesktopState } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
@@ -56,6 +57,46 @@ describe("desktop session states", () => {
     ).toStrictEqual({ kind: "none" });
   });
 
+  it("calls our config running with no matching claim an orphan", () => {
+    const orphan = { kind: "orphan", pid: 60 };
+    const running = { command: CONFIG_COMMAND, pid: 60 };
+    expect(desktopStateOf(null, [running])).toStrictEqual(orphan);
+    expect(desktopStateOf(claimOf(50), [running])).toStrictEqual(orphan);
+    expect(
+      desktopStateOf(null, [{ command: `/usr/bin/${CONFIG_COMMAND}`, pid: 60 }])
+    ).toStrictEqual(orphan);
+  });
+
+  it("never reads an orphan's own Xwayland as a foreign compositor", () => {
+    expect(
+      desktopStateOf(null, [
+        { command: "Xwayland :0 -rootless -core", pid: 61 },
+        { command: CONFIG_COMMAND, pid: 60 },
+      ])
+    ).toStrictEqual({ kind: "orphan", pid: 60 });
+  });
+
+  it("calls another Hyprland with no Xwayland a compositor with no display", () => {
+    expect(
+      desktopStateOf(null, [
+        { command: "/usr/bin/Hyprland --config /home/me/hypr.conf", pid: 40 },
+      ])
+    ).toStrictEqual({ kind: "no-display", pid: 40 });
+  });
+
+  it.for([
+    "vim rushline-desktop.conf",
+    "vim Hyprland",
+    "tail -f /run/Hyprland/hyprland.log",
+    "/bin/sh -c exec Hyprland --config /x/rushline-desktop.conf",
+    "bash -c pgrep -x Hyprland; ps | grep Xwayland",
+    "Hyprlandish --config /x/rushline-desktop.conf",
+  ])("does not take %s for a compositor", (command) => {
+    expect(desktopStateOf(null, [{ command, pid: 70 }])).toStrictEqual({
+      kind: "none",
+    });
+  });
+
   it("reads a compositor someone else started from its Xwayland", () => {
     expect(
       desktopStateOf(null, [
@@ -77,6 +118,35 @@ describe("desktop session states", () => {
     ).toStrictEqual({ kind: "foreign", pid: 41 });
   });
 
+  it("never offers to stop a compositor with no display", () => {
+    expect(
+      desktopReleaseOf({ kind: "no-display", pid: 40 }, "run-a")
+    ).toStrictEqual({ kind: "foreign", pid: 40 });
+  });
+
+  it("stops an orphan", () => {
+    expect(
+      desktopReleaseOf({ kind: "orphan", pid: 60 }, "run-a")
+    ).toStrictEqual({ kind: "stop", pid: 60 });
+  });
+
+  it("carries a browser only on a session with an X display it can trust", () => {
+    const states: readonly DesktopState[] = [
+      { kind: "none" },
+      { claim: claimOf(50), kind: "owned" },
+      { kind: "orphan", pid: 60 },
+      { display: ":3", kind: "foreign", pid: 41 },
+      { kind: "no-display", pid: 40 },
+    ];
+    expect(states.map(desktopCarriesBrowser)).toStrictEqual([
+      false,
+      true,
+      false,
+      true,
+      false,
+    ]);
+  });
+
   it("keeps the session while another slot holds it and stops on the last", () => {
     const claim = claimOf(50, "run-a", "run-b");
     expect(
@@ -92,7 +162,7 @@ describe("desktop session states", () => {
         "run-b",
         () => true
       )
-    ).toStrictEqual({ claim: claimOf(50), kind: "stop" });
+    ).toStrictEqual({ kind: "stop", pid: 50 });
   });
 
   it("does not count a holder whose process died", () => {
@@ -102,7 +172,7 @@ describe("desktop session states", () => {
         "run-a",
         (hold) => hold.holder !== "crashed"
       )
-    ).toStrictEqual({ claim: claimOf(50), kind: "stop" });
+    ).toStrictEqual({ kind: "stop", pid: 50 });
   });
 
   it("replaces a holder's hold instead of adding a second", () => {
@@ -294,6 +364,60 @@ describe("desktop session lifecycle", () => {
     const up = await onMachine(machine, desktopUp("run-a", null, dir));
     expect(up).toStrictEqual(
       Exit.succeed({ display: ":7", kind: "owned", pid: OWNED_PID })
+    );
+    expect(machine.stops).toStrictEqual([]);
+  });
+
+  it("replaces an orphan on up, and starts one session", async () => {
+    const machine = machineOf();
+    machine.commands.set(60, CONFIG_COMMAND);
+    machine.commands.set(61, "Xwayland :0 -rootless -core");
+    const dir = freshDir();
+    const up = await onMachine(machine, desktopUp("run-a", null, dir));
+    expect(machine.stops).toStrictEqual([[60, "rushline-desktop.conf"]]);
+    expect(machine.starts).toStrictEqual(["Hyprland"]);
+    expect(up).toStrictEqual(
+      Exit.succeed({ display: ":7", kind: "owned", pid: OWNED_PID })
+    );
+  });
+
+  it("stops an orphan on down, and cleans up the session's files", async () => {
+    const machine = machineOf();
+    machine.commands.set(60, CONFIG_COMMAND);
+    const dir = freshDir();
+    writeFileSync(path.join(dir, "desktop.display"), ":0");
+    writeFileSync(path.join(dir, "desktop.log"), "log");
+    const down = await onMachine(machine, desktopDown("rv desktop", dir));
+    expect(down).toStrictEqual(Exit.succeed("stopped pid 60"));
+    expect(machine.stops).toStrictEqual([[60, "rushline-desktop.conf"]]);
+    expect(existsSync(path.join(dir, "desktop.display"))).toBeFalsy();
+    expect(existsSync(path.join(dir, "desktop.log"))).toBeFalsy();
+  });
+
+  it("fails at once on a compositor with no display, launching nothing", async () => {
+    const machine = machineOf();
+    machine.commands.set(40, "Hyprland");
+    const dir = freshDir();
+    const up = await onMachine(machine, desktopUp("run-a", null, dir));
+    expect(machine.starts).toStrictEqual([]);
+    expect(machine.stops).toStrictEqual([]);
+    const messages = Exit.isFailure(up)
+      ? up.cause.reasons
+          .filter(Cause.isFailReason)
+          .map((reason) => String(reason.error))
+      : [];
+    expect(messages.join("\n")).toContain("no X display yet");
+    expect(messages.join("\n")).toContain("any X client");
+  });
+
+  it("leaves a compositor with no display alone on down", async () => {
+    const machine = machineOf();
+    machine.commands.set(40, "Hyprland");
+    const down = await onMachine(machine, desktopDown("run-a", freshDir()));
+    expect(down).toStrictEqual(
+      Exit.succeed(
+        "left alone: pid 40 belongs to a compositor rv did not start"
+      )
     );
     expect(machine.stops).toStrictEqual([]);
   });
