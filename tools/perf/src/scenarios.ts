@@ -82,17 +82,17 @@ export const scenarios: readonly Scenario[] = [
       "9b8cd30f2302c8a6666e3b84d60808b1a7f87ab0b573f42a233471d2330184be",
   },
   {
-    band: { max: 14, min: 6, total: 6327 },
+    band: { max: 14, min: 8, total: 6495 },
     bench: "stress",
     floor: 6,
     id: "pack-riding-v1",
-    minSpeed: 24.445343708249972,
+    minSpeed: 24.192002226257973,
     police: 8,
     quality,
     racers: 15,
     window: benchWindows.stress,
     workloadDigest:
-      "867e182075dadf75cc25f0fc2272456a1772bca5a60ee2245502926970c892c2",
+      "78438b5bb63c459747255d25600337a6d44cf7833fbd644be4cd786e05e74fb1",
   },
 ];
 
