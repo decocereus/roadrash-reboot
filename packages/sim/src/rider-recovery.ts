@@ -15,8 +15,11 @@ import {
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 import { rearm } from "./weapons.ts";
 
-const BODY_GROUND_DECELERATION = 6;
-const BIKE_SLIDE_DECELERATION = 5;
+const BODY_GROUND_DECELERATION = 10;
+const BIKE_SLIDE_DECELERATION = 10;
+const TUMBLE_BRAKING = 10;
+const TUMBLE_STEER_SPEED = 5;
+const TUMBLE_STEER_RATE = 16;
 export const RUN_SPEED = 7;
 const RUN_ACCELERATION = 28;
 const RISE_TICKS = 18;
@@ -81,7 +84,23 @@ const slide = (track: Track, rider: RiderState): boolean => {
   return settled && rider.modeTicks > SETTLE_TICKS;
 };
 
-const tumble = (track: Track, rider: RiderState): void => {
+const steerTumble = (rider: RiderState, input: RiderInput): void => {
+  rider.bodySpeed = approach(
+    rider.bodySpeed,
+    0,
+    clamp(input.brake, 0, 1) * TUMBLE_BRAKING * TICK_SECONDS
+  );
+  if (input.steer !== 0) {
+    rider.bodyLateralSpeed = approach(
+      rider.bodyLateralSpeed,
+      clamp(input.steer, -1, 1) * TUMBLE_STEER_SPEED,
+      TUMBLE_STEER_RATE * TICK_SECONDS
+    );
+  }
+};
+
+const tumble = (track: Track, rider: RiderState, input: RiderInput): void => {
+  steerTumble(rider, input);
   if (slide(track, rider)) {
     rider.mode = "lying";
     rider.modeTicks = 0;
@@ -291,7 +310,7 @@ export const stepOffBike = (
   if (rider.mode === "wrecked") {
     comeToRest(track, rider);
   } else if (rider.mode === "thrown") {
-    tumble(track, rider);
+    tumble(track, rider, input);
   } else if (rider.mode === "lying") {
     lie(state, rider);
   } else if (rider.mode === "running") {

@@ -3,7 +3,7 @@ import type { Track } from "@racer/track/track";
 
 import type { RaceView } from "./race-view.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
-import { BIKE_HALF_LENGTH, riderOf } from "./state.ts";
+import { BIKE_HALF_LENGTH, riderOf, WALKING_PACE } from "./state.ts";
 import type { RaceState, RiderId, RiderState } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
@@ -14,6 +14,7 @@ const LOSE_RANGE = 120;
 const WITNESS_RANGE = 250;
 const OFFENDER_RANGE = 500;
 const BUST_REACH = 4;
+const OVERSHOOT_REACH = 8;
 const BUST_DELAY_TICKS = 30;
 export const PULL_OVER = 1.1;
 
@@ -50,7 +51,7 @@ const inReach = (
   }
   if (isDown(rider)) {
     const ahead = bodyAhead(cop, rider);
-    return ahead > -BUST_REACH && ahead < bodyRange;
+    return ahead > -OVERSHOOT_REACH && ahead < bodyRange;
   }
   return rider.mode === "riding" && Math.abs(rider.s - cop.s) < ridingRange;
 };
@@ -226,13 +227,23 @@ export const chaserGap = (state: RaceView, chased: RiderId): number | null => {
   return gap;
 };
 
+const stoppedPast = (cop: RiderState, rider: RiderState): boolean =>
+  cop.chase === rider.id &&
+  cop.speed < WALKING_PACE &&
+  bodyAhead(cop, rider) < 0 &&
+  hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x) < OVERSHOOT_REACH;
+
 const catchDowned = (state: RaceState, track: Track, cop: RiderState) => {
   if (cop.mode !== "riding" || cop.airborne) {
     return;
   }
   for (const rider of state.riders) {
     const reach = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
-    if (wanted(rider) && arrestable(rider) && reach < BUST_REACH) {
+    if (
+      wanted(rider) &&
+      arrestable(rider) &&
+      (reach < BUST_REACH || stoppedPast(cop, rider))
+    ) {
       bust(state, track, rider, cop);
     }
   }

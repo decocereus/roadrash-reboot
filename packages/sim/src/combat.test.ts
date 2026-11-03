@@ -401,10 +401,7 @@ describe("rider contact", () => {
   });
 
   it("a pileup throws each rider at most once a tick", () => {
-    const { rear, state, stopped } = pileup(
-      "dee-santangelo",
-      "moose-kowalczyk"
-    );
+    const { rear, state } = pileup("dee-santangelo", "moose-kowalczyk");
     const crashes = ride(state, 0.5, (events) =>
       state.riders.map(
         (rider) =>
@@ -415,7 +412,7 @@ describe("rider contact", () => {
     ).flat();
     expect(Math.max(...crashes)).toBe(1);
     expect(rear.crashes).toBe(1);
-    expect(rear.bodyS).toBeGreaterThan(stopped.s);
+    expect(rear.bodyS).toBeGreaterThan(rear.s);
   });
 
   it("a pileup launches the rear rider and leaves the two in front the same whichever of them is listed first", () => {

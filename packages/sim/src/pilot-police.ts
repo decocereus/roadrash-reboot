@@ -28,13 +28,16 @@ const pursuitOf = (
     const within = target.bodyS - cop.s;
     return {
       engaged: true,
-      speed: Math.min(
-        state.police.topSpeed,
-        Math.max(
-          BODY_CREEP_SPEED,
-          Math.sqrt(2 * PLANNED_BRAKING * Math.max(0, within - 1))
-        )
-      ),
+      speed:
+        within < 0
+          ? 0
+          : Math.min(
+              state.police.topSpeed,
+              Math.max(
+                BODY_CREEP_SPEED,
+                Math.sqrt(2 * PLANNED_BRAKING * Math.max(0, within - 1))
+              )
+            ),
       within,
       x: target.bodyX,
     };

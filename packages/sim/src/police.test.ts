@@ -154,16 +154,17 @@ describe("police", () => {
   });
 });
 
-const knockedOffBeside = (speed: number) => {
+const knockedOffWithCopBack = (speed: number, metresBack: number) => {
   const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
   const me = player(state);
-  const cop = patrolFrom(onlyCop(state), 200);
+  const cop = patrolFrom(onlyCop(state), 200 - metresBack);
   cop.speed = speed;
   me.s = 200;
   me.x = 0;
   me.speed = speed;
   me.stamina = 0;
   const flatOut = { ...cruising, throttle: 1 };
+  let copPassedBody = false;
   let ticksToArrest = -1;
   for (let tick = 0; tick < 15 * TICK_RATE; tick += 1) {
     stepRace(
@@ -174,8 +175,9 @@ const knockedOffBeside = (speed: number) => {
     if (state.events.some((event) => event.kind === "busted")) {
       ticksToArrest = tick;
     }
+    copPassedBody ||= me.mode === "thrown" && cop.s > me.bodyS + 4;
   }
-  return { mode: me.mode, ticksToArrest };
+  return { copPassedBody, mode: me.mode, ticksToArrest };
 };
 
 const patrolWithBeat = (beat: number) => {
@@ -226,18 +228,48 @@ describe("the cop warning", () => {
 });
 
 describe("the bust window", () => {
+  it("a slow cop does not arrest a rider on foot who is still ahead of it", () => {
+    const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
+    const me = player(state);
+    const cop = onlyCop(state);
+    me.mode = "running";
+    me.modeTicks = 100;
+    me.s = cop.s + 30;
+    me.bodyS = cop.s + 30;
+    me.x = cop.x;
+    me.bodyX = cop.x;
+    cop.parked = false;
+    cop.chase = me.id;
+    cop.speed = 0;
+    stepRace(state, straight, frameOf(state, [me.id, cruising]));
+    expect(state.events.some((event) => event.kind === "busted")).toBeFalsy();
+    expect(me.mode).toBe("running");
+  });
+
   it("a cop beside a rider who is knocked off at walking pace arrests them, but not in the first half second", () => {
-    const { mode, ticksToArrest } = knockedOffBeside(4);
+    const { mode, ticksToArrest } = knockedOffWithCopBack(4, 0);
     expect(mode).toBe("busted");
     expect(ticksToArrest).toBeGreaterThanOrEqual(30);
     expect(ticksToArrest).toBeLessThan(90);
   });
 
-  it("a cop beside a rider who is knocked off at 160 km/h brakes, is passed by the flying body, and arrests it within a second and a half", () => {
-    const { mode, ticksToArrest } = knockedOffBeside(45);
+  it("a cop beside a rider who is knocked off at 160 km/h cannot brake in time and rides past the body, and the rider gets away", () => {
+    const { copPassedBody, mode, ticksToArrest } = knockedOffWithCopBack(45, 0);
+    expect(copPassedBody).toBeTruthy();
+    expect(ticksToArrest).toBe(-1);
+    expect(mode).toBe("riding");
+  });
+
+  it("a cop beside a rider who is knocked off at 90 km/h stops right past the body and arrests them there", () => {
+    const { mode, ticksToArrest } = knockedOffWithCopBack(25, 0);
     expect(mode).toBe("busted");
     expect(ticksToArrest).toBeGreaterThanOrEqual(30);
-    expect(ticksToArrest).toBeLessThan(1.5 * TICK_RATE);
+  });
+
+  it("a cop sixty metres back when a rider is knocked off at 160 km/h has the room to brake, and arrests them", () => {
+    const { mode, ticksToArrest } = knockedOffWithCopBack(45, 60);
+    expect(mode).toBe("busted");
+    expect(ticksToArrest).toBeGreaterThanOrEqual(30);
   });
 
   it("a cop gives up the chase at the end of its beat and pulls off the road", () => {
