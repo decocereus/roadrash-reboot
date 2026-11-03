@@ -1,0 +1,461 @@
+import path from "node:path";
+
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+
+import { CurrentHost } from "./browser-host.ts";
+import type { DesktopEnv } from "./browser-host.ts";
+import { dropClaim, takeClaim, toolStateDir } from "./claim.ts";
+import { released } from "./cleanup.ts";
+import { DesktopError } from "./desktop-error.ts";
+import { ToolProcesses, alive } from "./process.ts";
+import type { ListedProcess } from "./process.ts";
+
+const CONFIG_NAME = "rushline-desktop.conf";
+const CONFIG = path.join(import.meta.dirname, CONFIG_NAME);
+const DISPLAY_FILE_ENV = "RUSHLINE_DESKTOP_DISPLAY_FILE";
+const POLL_MS = 200;
+const READY_ATTEMPTS = 150;
+const LOCK_ATTEMPTS = 300;
+const LOG_TAIL_LINES = 12;
+
+const desktopHold = Schema.Struct({
+  holder: Schema.String,
+  pid: Schema.NullOr(Schema.Number),
+});
+
+const desktopClaim = Schema.Struct({
+  display: Schema.String,
+  holds: Schema.Array(desktopHold),
+  instance: Schema.String,
+  pid: Schema.Number,
+});
+
+export type DesktopClaim = typeof desktopClaim.Type;
+
+type DesktopHold = typeof desktopHold.Type;
+
+export type DesktopState =
+  | { readonly kind: "none" }
+  | { readonly claim: DesktopClaim; readonly kind: "owned" }
+  | {
+      readonly display: string;
+      readonly kind: "foreign";
+      readonly pid: number;
+    };
+
+export type DesktopRelease =
+  | { readonly kind: "no-session" }
+  | { readonly kind: "foreign"; readonly pid: number }
+  | {
+      readonly claim: DesktopClaim;
+      readonly kind: "keep";
+      readonly others: readonly string[];
+    }
+  | { readonly claim: DesktopClaim; readonly kind: "stop" };
+
+const decodeClaim = Schema.decodeUnknownOption(
+  Schema.fromJsonString(desktopClaim)
+);
+
+const decodeInstances = Schema.decodeUnknownOption(
+  Schema.fromJsonString(
+    Schema.Array(Schema.Struct({ instance: Schema.String, pid: Schema.Number }))
+  )
+);
+
+const xwaylandLine = /^(?:\S*\/)?Xwayland (?<display>:\d+)(?:\s|$)/u;
+
+export const desktopStateOf = (
+  claim: DesktopClaim | null,
+  listed: readonly ListedProcess[]
+): DesktopState => {
+  if (
+    claim !== null &&
+    listed.some(
+      (each) => each.pid === claim.pid && each.command.includes(CONFIG_NAME)
+    )
+  ) {
+    return { claim, kind: "owned" };
+  }
+  const [foreign] = listed.flatMap(({ command, pid }) => {
+    const display = xwaylandLine.exec(command)?.groups?.display;
+    return display === undefined ? [] : [{ display, pid }];
+  });
+  return foreign === undefined
+    ? { kind: "none" }
+    : { display: foreign.display, kind: "foreign", pid: foreign.pid };
+};
+
+const holdIsLive = ({ pid }: DesktopHold): boolean =>
+  pid === null || alive(pid);
+
+export const desktopReleaseOf = (
+  state: DesktopState,
+  holder: string,
+  isLive: (hold: DesktopHold) => boolean = holdIsLive
+): DesktopRelease => {
+  switch (state.kind) {
+    case "none": {
+      return { kind: "no-session" };
+    }
+    case "foreign": {
+      return { kind: "foreign", pid: state.pid };
+    }
+    case "owned": {
+      const holds = state.claim.holds.filter(
+        (hold) => hold.holder !== holder && isLive(hold)
+      );
+      const claim = { ...state.claim, holds };
+      return holds.length === 0
+        ? { claim, kind: "stop" }
+        : {
+            claim,
+            kind: "keep",
+            others: holds.map((hold) => hold.holder),
+          };
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
+};
+
+export const withDesktopHold = (
+  claim: DesktopClaim,
+  holder: string,
+  pid: number | null
+): DesktopClaim => ({
+  ...claim,
+  holds: [
+    ...claim.holds.filter((hold) => hold.holder !== holder),
+    { holder, pid },
+  ],
+});
+
+const desktopRuntimeEnv = (): NodeJS.ProcessEnv => ({
+  ...process.env,
+  XDG_RUNTIME_DIR:
+    process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 0}`,
+});
+
+interface DesktopPaths {
+  readonly claim: string;
+  readonly display: string;
+  readonly draft: string;
+  readonly lock: string;
+  readonly log: string;
+}
+
+const pathsIn = (dir: string): DesktopPaths => ({
+  claim: path.join(dir, "desktop.json"),
+  display: path.join(dir, "desktop.display"),
+  draft: path.join(dir, "desktop.json.draft"),
+  lock: path.join(dir, "desktop.lock"),
+  log: path.join(dir, "desktop.log"),
+});
+
+const readClaim = (paths: DesktopPaths) =>
+  FileSystem.FileSystem.use((fs) => fs.readFileString(paths.claim)).pipe(
+    Effect.map((text) => Option.getOrNull(decodeClaim(text))),
+    Effect.catchReason("PlatformError", "NotFound", () => Effect.succeed(null))
+  );
+
+const writeClaim = Effect.fnUntraced(function* writeClaim(
+  paths: DesktopPaths,
+  claim: DesktopClaim
+) {
+  const fs = yield* FileSystem.FileSystem;
+  yield* fs.writeFileString(paths.draft, JSON.stringify(claim, null, 1));
+  yield* fs.rename(paths.draft, paths.claim);
+});
+
+const readState = Effect.fnUntraced(function* readState(paths: DesktopPaths) {
+  const processes = yield* ToolProcesses;
+  return desktopStateOf(yield* readClaim(paths), yield* processes.listed);
+});
+
+const takeLock = Effect.fnUntraced(function* takeLock(paths: DesktopPaths) {
+  let outcome = yield* takeClaim(paths.lock, "desktop session");
+  for (
+    let attempt = 0;
+    outcome.kind === "held" && attempt < LOCK_ATTEMPTS;
+    attempt += 1
+  ) {
+    yield* Effect.sleep(POLL_MS);
+    outcome = yield* takeClaim(paths.lock, "desktop session");
+  }
+  if (outcome.kind === "held") {
+    yield* new DesktopError({
+      message: `Pid ${outcome.holder.pid} has held the desktop session lock ${paths.lock} for a minute. Find out what it is doing before you take it.`,
+      operation: "lock",
+    });
+  }
+});
+
+const underLock = <A, E, R>(
+  paths: DesktopPaths,
+  step: Effect.Effect<A, E, R>
+) =>
+  Effect.acquireUseRelease(
+    takeLock(paths),
+    () => step,
+    () => released(dropClaim(paths.lock))
+  );
+
+const instanceOf = (pid: number) =>
+  ToolProcesses.use((processes) =>
+    processes.run("hyprctl", ["instances", "-j"], { env: desktopRuntimeEnv() })
+  ).pipe(
+    Effect.map(({ stdout }) =>
+      Option.match(decodeInstances(stdout), {
+        onNone: () => null,
+        onSome: (instances) =>
+          instances.find((each) => each.pid === pid)?.instance ?? null,
+      })
+    ),
+    Effect.catchTag("ProcessError", () => Effect.succeed(null))
+  );
+
+const readDisplay = (paths: DesktopPaths) =>
+  FileSystem.FileSystem.use((fs) => fs.readFileString(paths.display)).pipe(
+    Effect.map((text) => text.trim()),
+    Effect.catchReason("PlatformError", "NotFound", () => Effect.succeed(""))
+  );
+
+const logTail = (paths: DesktopPaths) =>
+  FileSystem.FileSystem.use((fs) => fs.readFileString(paths.log)).pipe(
+    Effect.map((text) =>
+      text.trim().split("\n").slice(-LOG_TAIL_LINES).join("\n")
+    ),
+    Effect.orElseSucceed(() => "")
+  );
+
+const awaitReady = Effect.fnUntraced(function* awaitReady(
+  paths: DesktopPaths,
+  pid: number
+) {
+  for (let attempt = 0; attempt < READY_ATTEMPTS; attempt += 1) {
+    if (!alive(pid)) {
+      return yield* new DesktopError({
+        message: `Hyprland exited before its session was ready, so it could not open the seat. It needs an active logind seat, such as a console login on tty1, and no other compositor holding the panel. Last lines of ${paths.log}:\n${yield* logTail(paths)}`,
+        operation: "start",
+      });
+    }
+    const display = yield* readDisplay(paths);
+    const instance = yield* instanceOf(pid);
+    if (display !== "" && instance !== null) {
+      return { display, instance };
+    }
+    yield* Effect.sleep(POLL_MS);
+  }
+  return yield* new DesktopError({
+    message: `Hyprland pid ${pid} did not report its Xwayland display within ${(READY_ATTEMPTS * POLL_MS) / 1000} s. Last lines of ${paths.log}:\n${yield* logTail(paths)}`,
+    operation: "start",
+  });
+});
+
+const started = Effect.fnUntraced(function* started(
+  paths: DesktopPaths,
+  dir: string,
+  holder: string,
+  holderPid: number | null
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const processes = yield* ToolProcesses;
+  yield* fs.remove(paths.claim, { force: true });
+  yield* fs.remove(paths.display, { force: true });
+  yield* fs.writeFileString(paths.log, "");
+  return yield* Effect.uninterruptibleMask((restore) =>
+    Effect.gen(function* startCompositor() {
+      const pid = yield* processes.startDetached(
+        "Hyprland",
+        ["--config", CONFIG],
+        dir,
+        paths.log,
+        { ...desktopRuntimeEnv(), [DISPLAY_FILE_ENV]: paths.display }
+      );
+      const ready = yield* restore(awaitReady(paths, pid)).pipe(
+        Effect.onError(() => released(processes.stopOwned(pid, CONFIG_NAME)))
+      );
+      const claim: DesktopClaim = {
+        ...ready,
+        holds: [{ holder, pid: holderPid }],
+        pid,
+      };
+      yield* writeClaim(paths, claim).pipe(
+        Effect.onError(() => released(processes.stopOwned(pid, CONFIG_NAME)))
+      );
+      return claim;
+    })
+  );
+});
+
+type DesktopUse =
+  | { readonly display: string; readonly kind: "owned"; readonly pid: number }
+  | {
+      readonly display: string;
+      readonly kind: "foreign";
+      readonly pid: number;
+    };
+
+export const desktopUp = Effect.fn("desktop.up")(function* desktopUp(
+  holder: string,
+  holderPid: number | null,
+  dir: string = toolStateDir
+) {
+  const paths = pathsIn(dir);
+  const fs = yield* FileSystem.FileSystem;
+  yield* fs.makeDirectory(dir, { recursive: true });
+  const step = Effect.gen(function* decide() {
+    const state = yield* readState(paths);
+    switch (state.kind) {
+      case "owned": {
+        yield* writeClaim(
+          paths,
+          withDesktopHold(state.claim, holder, holderPid)
+        );
+        const use: DesktopUse = {
+          display: state.claim.display,
+          kind: "owned",
+          pid: state.claim.pid,
+        };
+        return use;
+      }
+      case "foreign": {
+        yield* fs.remove(paths.claim, { force: true });
+        const use: DesktopUse = {
+          display: state.display,
+          kind: "foreign",
+          pid: state.pid,
+        };
+        return use;
+      }
+      case "none": {
+        const claim = yield* started(paths, dir, holder, holderPid);
+        const use: DesktopUse = {
+          display: claim.display,
+          kind: "owned",
+          pid: claim.pid,
+        };
+        return use;
+      }
+      default: {
+        return state satisfies never;
+      }
+    }
+  });
+  return yield* underLock(paths, step);
+});
+
+export const retainDesktop = Effect.fn("desktop.retain")(
+  function* retainDesktop(
+    holder: string,
+    holderPid: number,
+    dir: string = toolStateDir
+  ) {
+    const paths = pathsIn(dir);
+    const step = Effect.gen(function* retain() {
+      const state = yield* readState(paths);
+      if (state.kind === "owned") {
+        yield* writeClaim(
+          paths,
+          withDesktopHold(state.claim, holder, holderPid)
+        );
+      }
+    });
+    yield* underLock(paths, step);
+  }
+);
+
+export const desktopDown = Effect.fn("desktop.down")(function* desktopDown(
+  holder: string,
+  dir: string = toolStateDir
+) {
+  const paths = pathsIn(dir);
+  const fs = yield* FileSystem.FileSystem;
+  const processes = yield* ToolProcesses;
+  yield* fs.makeDirectory(dir, { recursive: true });
+  const step = Effect.gen(function* decide() {
+    const release = desktopReleaseOf(yield* readState(paths), holder);
+    switch (release.kind) {
+      case "no-session": {
+        yield* fs.remove(paths.claim, { force: true });
+        return "no desktop session is running";
+      }
+      case "foreign": {
+        return `left alone: pid ${release.pid} belongs to a compositor rv did not start`;
+      }
+      case "keep": {
+        yield* writeClaim(paths, release.claim);
+        return `left running for ${release.others.join(", ")}`;
+      }
+      case "stop": {
+        const stopped = yield* processes.stopOwned(
+          release.claim.pid,
+          CONFIG_NAME
+        );
+        yield* fs.remove(paths.claim, { force: true });
+        yield* fs.remove(paths.display, { force: true });
+        yield* fs.remove(paths.log, { force: true });
+        return stopped;
+      }
+      default: {
+        return release satisfies never;
+      }
+    }
+  });
+  return yield* underLock(paths, step);
+});
+
+export const desktopStatus = (dir: string = toolStateDir) =>
+  readState(pathsIn(dir));
+
+export const describeDesktop = (state: DesktopState): string => {
+  switch (state.kind) {
+    case "none": {
+      return "no desktop session is running";
+    }
+    case "foreign": {
+      return `a compositor rv did not start is up: Xwayland pid ${state.pid} on ${state.display}; rv uses it and never stops it`;
+    }
+    case "owned": {
+      const holds = state.claim.holds.map((hold) => hold.holder).join(", ");
+      return `Hyprland pid ${state.claim.pid} on ${state.claim.display}, instance ${state.claim.instance}, held by ${holds === "" ? "nobody" : holds}`;
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
+};
+
+export const desktopEnvFor = Effect.fn("desktop.envFor")(
+  function* desktopEnvFor(holder: string, holderPid: number) {
+    const host = yield* CurrentHost;
+    switch (host.desktop) {
+      case "none": {
+        const env: DesktopEnv = {};
+        return env;
+      }
+      case "hyprland": {
+        const { display } = yield* desktopUp(holder, holderPid);
+        const env: DesktopEnv = { DISPLAY: display };
+        return env;
+      }
+      default: {
+        return host.desktop satisfies never;
+      }
+    }
+  }
+);
+
+export const holdDesktop = (holder: string) =>
+  Effect.acquireRelease(desktopEnvFor(holder, process.pid), () =>
+    released(
+      CurrentHost.use((host) =>
+        host.desktop === "none" ? Effect.void : desktopDown(holder)
+      )
+    )
+  );

@@ -1,6 +1,13 @@
 import path from "node:path";
 
+import { CurrentHost } from "@racer/devtools/browser-host";
 import { attempt, cleanupFailed, released } from "@racer/devtools/cleanup";
+import {
+  describeDesktop,
+  desktopDown,
+  desktopStatus,
+  desktopUp,
+} from "@racer/devtools/desktop";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -65,6 +72,7 @@ const teardown = Effect.fnUntraced(function* teardown(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const slots = yield* SlotStore;
+  const host = yield* CurrentHost;
   const stage = <E, R>(label: string, stop: Effect.Effect<string, E, R>) =>
     attempt(stop).pipe(
       Effect.flatMap(
@@ -76,6 +84,9 @@ const teardown = Effect.fnUntraced(function* teardown(
     );
   yield* stage("watcher", stopWatcher(state));
   yield* stage("browser", stopBrowser(state));
+  if (host.desktop !== "none") {
+    yield* stage("desktop", desktopDown(state.run));
+  }
   yield* stage("server", stopServer(state));
   const removals = [
     fs.remove(state.profile, { force: true, recursive: true }),
@@ -225,4 +236,34 @@ export const down = Effect.fn("rv.down")(function* down(
   const evidence = yield* Evidence;
   yield* evidence.journal(context.command, state, "down");
   yield* teardown(context, state, state.buildDir);
+});
+
+const DESKTOP_COMMAND_HOLDER = "rv desktop";
+
+export const desktop = Effect.fn("rv.desktop")(function* desktop(
+  context: CommandContext
+) {
+  const { print, rest } = context;
+  const host = yield* CurrentHost;
+  if (host.desktop === "none") {
+    yield* print(`${host.id} needs no desktop session`);
+    return;
+  }
+  const [action = "status"] = rest;
+  if (action === "up") {
+    const use = yield* desktopUp(DESKTOP_COMMAND_HOLDER, null);
+    yield* print(`${use.kind} session, pid ${use.pid}, DISPLAY=${use.display}`);
+    return;
+  }
+  if (action === "down") {
+    yield* print(yield* desktopDown(DESKTOP_COMMAND_HOLDER));
+    return;
+  }
+  if (action === "status") {
+    yield* print(describeDesktop(yield* desktopStatus()));
+    return;
+  }
+  yield* new UsageError({
+    message: `rv desktop takes up, down or status, not ${action}.`,
+  });
 });

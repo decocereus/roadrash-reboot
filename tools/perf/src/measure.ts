@@ -9,6 +9,7 @@ import {
 import type { DesktopEnv } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
 import { launch } from "@racer/devtools/chrome";
+import { holdDesktop } from "@racer/devtools/desktop";
 import {
   allocationProfile,
   allocationSites,
@@ -185,9 +186,13 @@ const measureOnce = (options: Options, run: number, desktopEnv: DesktopEnv) =>
   );
 
 const runAll = Effect.fnUntraced(function* runAll(options: Options) {
+  const desktopEnv =
+    options.browser === "windowed"
+      ? yield* holdDesktop(`measure.ts ${options.label} pid ${process.pid}`)
+      : {};
   const results: RunResult[] = [];
   for (let run = 1; run <= options.runs; run += 1) {
-    const result = yield* measureOnce(options, run, {});
+    const result = yield* measureOnce(options, run, desktopEnv);
     yield* Effect.sync(() => {
       printRun(result);
     });

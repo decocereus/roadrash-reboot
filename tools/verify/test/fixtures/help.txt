@@ -18,3 +18,4 @@ rv: drive a Rushline verification instance in a windowed browser over DevTools
   rv console    --run <id> [errors]
   rv rebuild    --run <id>
   rv down       --run <id>
+  rv desktop    up|down|status                           the Linux desktop session rv up starts on demand

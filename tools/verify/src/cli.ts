@@ -28,7 +28,7 @@ import { readCommandLine } from "./context.ts";
 import type { CommandContext } from "./context.ts";
 import { doctor } from "./doctor.ts";
 import type { Evidence } from "./evidence.ts";
-import { down, up } from "./lifecycle.ts";
+import { desktop, down, up } from "./lifecycle.ts";
 import type { SlotStore } from "./state.ts";
 import { watch } from "./watcher.ts";
 
@@ -51,7 +51,8 @@ const HELP = `rv: drive a Rushline verification instance in a windowed browser o
   rv throttle   --run <id> [--cpu n] [--network off|fast4g|slow4g|3g|offline]
   rv console    --run <id> [errors]
   rv rebuild    --run <id>
-  rv down       --run <id>`;
+  rv down       --run <id>
+  rv desktop    up|down|status                           the Linux desktop session rv up starts on demand`;
 
 type Handler = (
   context: CommandContext
@@ -73,6 +74,7 @@ const commands = new Map<string, Handler>([
   ["aria", ariaCommand],
   ["click", clickCommand],
   ["console", consoleCommand],
+  ["desktop", desktop],
   ["doctor", doctor],
   ["down", down],
   ["js", jsCommand],

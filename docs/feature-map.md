@@ -1064,8 +1064,11 @@ Source files:
 - `packages/devtools/src/cdp-protocol.ts`
 - `packages/devtools/src/cdp.ts`
 - `packages/devtools/src/chrome.ts`
+- `packages/devtools/src/claim.ts`
 - `packages/devtools/src/cleanup.ts`
 - `packages/devtools/src/deadline.ts`
+- `packages/devtools/src/desktop-error.ts`
+- `packages/devtools/src/desktop.ts`
 - `packages/devtools/src/process-error.ts`
 - `packages/devtools/src/process.ts`
 - `packages/devtools/src/profiles.ts`
@@ -1108,6 +1111,7 @@ Test files:
 - `tools/verify/test/browser-host.test.ts`
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
+- `tools/verify/test/desktop-session.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`
 - `tools/verify/test/wait-deadline.test.ts`
 

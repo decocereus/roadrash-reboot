@@ -1,0 +1,331 @@
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import * as NodePath from "@effect/platform-node/NodePath";
+import { CleanupOutcomes } from "@racer/devtools/cleanup";
+import {
+  desktopDown,
+  desktopReleaseOf,
+  desktopStateOf,
+  desktopUp,
+  retainDesktop,
+  withDesktopHold,
+} from "@racer/devtools/desktop";
+import type { DesktopClaim } from "@racer/devtools/desktop";
+import { ToolProcesses } from "@racer/devtools/process";
+import * as Cause from "effect/Cause";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import type * as FileSystem from "effect/FileSystem";
+import * as Layer from "effect/Layer";
+import type * as Path from "effect/Path";
+import * as Ref from "effect/Ref";
+import * as Schema from "effect/Schema";
+import { afterEach, describe, expect, it } from "vitest";
+
+const CONFIG_COMMAND = "Hyprland --config /x/rushline-desktop.conf";
+const OWNED_PID = process.pid;
+
+const claimOf = (pid: number, ...holders: readonly string[]): DesktopClaim => ({
+  display: ":7",
+  holds: holders.map((holder) => ({ holder, pid: null })),
+  instance: "sig",
+  pid,
+});
+
+describe("desktop session states", () => {
+  it("has no session when nothing runs", () => {
+    expect(desktopStateOf(null, [])).toStrictEqual({ kind: "none" });
+  });
+
+  it("owns a session only while the claimed pid still runs our config", () => {
+    const claim = claimOf(50);
+    expect(
+      desktopStateOf(claim, [{ command: CONFIG_COMMAND, pid: 50 }])
+    ).toStrictEqual({ claim, kind: "owned" });
+    expect(
+      desktopStateOf(claim, [{ command: "vim notes.txt", pid: 50 }])
+    ).toStrictEqual({ kind: "none" });
+  });
+
+  it("reads a compositor someone else started from its Xwayland", () => {
+    expect(
+      desktopStateOf(null, [
+        { command: "Hyprland", pid: 40 },
+        { command: "Xwayland :3 -rootless -core", pid: 41 },
+      ])
+    ).toStrictEqual({ display: ":3", kind: "foreign", pid: 41 });
+  });
+
+  it("does not take a command that merely names Xwayland for a server", () => {
+    expect(
+      desktopStateOf(null, [{ command: "vim Xwayland :3", pid: 41 }])
+    ).toStrictEqual({ kind: "none" });
+  });
+
+  it("never offers to stop a foreign compositor", () => {
+    expect(
+      desktopReleaseOf({ display: ":3", kind: "foreign", pid: 41 }, "run-a")
+    ).toStrictEqual({ kind: "foreign", pid: 41 });
+  });
+
+  it("keeps the session while another slot holds it and stops on the last", () => {
+    const claim = claimOf(50, "run-a", "run-b");
+    expect(
+      desktopReleaseOf({ claim, kind: "owned" }, "run-a", () => true)
+    ).toStrictEqual({
+      claim: { ...claim, holds: [{ holder: "run-b", pid: null }] },
+      kind: "keep",
+      others: ["run-b"],
+    });
+    expect(
+      desktopReleaseOf(
+        { claim: claimOf(50, "run-b"), kind: "owned" },
+        "run-b",
+        () => true
+      )
+    ).toStrictEqual({ claim: claimOf(50), kind: "stop" });
+  });
+
+  it("does not count a holder whose process died", () => {
+    expect(
+      desktopReleaseOf(
+        { claim: claimOf(50, "run-a", "crashed"), kind: "owned" },
+        "run-a",
+        (hold) => hold.holder !== "crashed"
+      )
+    ).toStrictEqual({ claim: claimOf(50), kind: "stop" });
+  });
+
+  it("replaces a holder's hold instead of adding a second", () => {
+    expect(
+      withDesktopHold(claimOf(50, "run-a"), "run-a", 77).holds
+    ).toStrictEqual([{ holder: "run-a", pid: 77 }]);
+  });
+});
+
+const dirs: string[] = [];
+
+const freshDir = () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "rushline-desktop-test-"));
+  dirs.push(dir);
+  return dir;
+};
+
+interface Machine {
+  readonly commands: Map<number, string>;
+  readonly starts: string[];
+  readonly stops: (readonly [number | null, string])[];
+  seatOpens: boolean;
+}
+
+const machineOf = (): Machine => ({
+  commands: new Map(),
+  seatOpens: true,
+  starts: [],
+  stops: [],
+});
+
+const processesOn = (machine: Machine) =>
+  Layer.succeed(ToolProcesses)({
+    commandOf: (pid) => Effect.succeed(machine.commands.get(pid) ?? ""),
+    listed: Effect.sync(() =>
+      [...machine.commands].map(([pid, command]) => ({ command, pid }))
+    ),
+    listenerOf: () => Effect.succeed(null),
+    run: (file) =>
+      Effect.sync(() => ({
+        stderr: "",
+        stdout:
+          file === "hyprctl"
+            ? JSON.stringify([{ instance: "sig", pid: OWNED_PID }])
+            : "",
+      })),
+    spawnScoped: () => Effect.die("the desktop session spawns nothing scoped"),
+    startDetached: (file, _args, _cwd, _log, env) =>
+      Effect.sync(() => {
+        machine.starts.push(file);
+        if (machine.seatOpens) {
+          machine.commands.set(OWNED_PID, CONFIG_COMMAND);
+          writeFileSync(env.RUSHLINE_DESKTOP_DISPLAY_FILE ?? "", ":7");
+          return OWNED_PID;
+        }
+        return 2 ** 30;
+      }),
+    stopOwned: (pid, expect_) =>
+      Effect.sync(() => {
+        machine.stops.push([pid, expect_]);
+        if (pid !== null) {
+          machine.commands.delete(pid);
+        }
+        return `stopped pid ${pid}`;
+      }),
+  });
+
+const onMachine = async <A, E>(
+  machine: Machine,
+  effect: Effect.Effect<
+    A,
+    E,
+    CleanupOutcomes | ToolProcesses | FileSystem.FileSystem | Path.Path
+  >
+) =>
+  await Effect.runPromiseExit(
+    Effect.gen(function* withOutcomes() {
+      const outcomes = yield* Ref.make<readonly Cause.Cause<unknown>[]>([]);
+      return yield* effect.pipe(
+        Effect.provideService(CleanupOutcomes, outcomes)
+      );
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          processesOn(machine),
+          NodeFileSystem.layer,
+          NodePath.layer
+        )
+      )
+    )
+  );
+
+const decodeWrittenClaim = Schema.decodeUnknownSync(
+  Schema.fromJsonString(
+    Schema.Struct({
+      display: Schema.String,
+      holds: Schema.Array(Schema.Struct({ holder: Schema.String })),
+      pid: Schema.Number,
+    })
+  )
+);
+
+describe("desktop session lifecycle", () => {
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) {
+      rmSync(dir, { force: true, recursive: true });
+    }
+  });
+
+  it("starts once when two agents race and hands both the same display", async () => {
+    const machine = machineOf();
+    const dir = freshDir();
+    const exit = await onMachine(
+      machine,
+      Effect.all(
+        [desktopUp("run-a", null, dir), desktopUp("run-b", null, dir)],
+        { concurrency: "unbounded" }
+      )
+    );
+    expect(machine.starts).toStrictEqual(["Hyprland"]);
+    expect(Exit.isSuccess(exit)).toBeTruthy();
+    const claim = decodeWrittenClaim(
+      readFileSync(path.join(dir, "desktop.json"), "utf-8")
+    );
+    expect({
+      display: claim.display,
+      holders: claim.holds.map((hold) => hold.holder).toSorted(),
+      pid: claim.pid,
+    }).toStrictEqual({
+      display: ":7",
+      holders: ["run-a", "run-b"],
+      pid: OWNED_PID,
+    });
+    expect(existsSync(path.join(dir, "desktop.lock"))).toBeFalsy();
+  });
+
+  it("is idempotent for one holder", async () => {
+    const machine = machineOf();
+    const dir = freshDir();
+    await onMachine(
+      machine,
+      Effect.all([desktopUp("run-a", null, dir), desktopUp("run-a", null, dir)])
+    );
+    expect(machine.starts).toStrictEqual(["Hyprland"]);
+  });
+
+  it("survives the first holder leaving and stops on the second, by its config", async () => {
+    const machine = machineOf();
+    const dir = freshDir();
+    await onMachine(
+      machine,
+      Effect.all([desktopUp("run-a", null, dir), desktopUp("run-b", null, dir)])
+    );
+    const first = await onMachine(machine, desktopDown("run-a", dir));
+    expect(first).toStrictEqual(Exit.succeed("left running for run-b"));
+    expect(machine.stops).toStrictEqual([]);
+    const second = await onMachine(machine, desktopDown("run-b", dir));
+    expect(second).toStrictEqual(Exit.succeed(`stopped pid ${OWNED_PID}`));
+    expect(machine.stops).toStrictEqual([[OWNED_PID, "rushline-desktop.conf"]]);
+    expect(existsSync(path.join(dir, "desktop.json"))).toBeFalsy();
+  });
+
+  it("uses a compositor someone else started and never stops it", async () => {
+    const machine = machineOf();
+    machine.commands.set(41, "Xwayland :3 -rootless");
+    const dir = freshDir();
+    const up = await onMachine(machine, desktopUp("run-a", null, dir));
+    expect(up).toStrictEqual(
+      Exit.succeed({ display: ":3", kind: "foreign", pid: 41 })
+    );
+    expect(machine.starts).toStrictEqual([]);
+    const down = await onMachine(machine, desktopDown("run-a", dir));
+    expect(down).toStrictEqual(
+      Exit.succeed(
+        "left alone: pid 41 belongs to a compositor rv did not start"
+      )
+    );
+    expect(machine.stops).toStrictEqual([]);
+  });
+
+  it("starts afresh when the claimed pid is no longer our compositor", async () => {
+    const machine = machineOf();
+    const dir = freshDir();
+    writeFileSync(
+      path.join(dir, "desktop.json"),
+      JSON.stringify(claimOf(99, "crashed"))
+    );
+    machine.commands.set(99, "vim notes.txt");
+    const up = await onMachine(machine, desktopUp("run-a", null, dir));
+    expect(up).toStrictEqual(
+      Exit.succeed({ display: ":7", kind: "owned", pid: OWNED_PID })
+    );
+    expect(machine.stops).toStrictEqual([]);
+  });
+
+  it("fails naming the seat when the compositor exits, and leaves no claim", async () => {
+    const machine = machineOf();
+    machine.seatOpens = false;
+    const dir = freshDir();
+    const up = await onMachine(machine, desktopUp("run-a", null, dir));
+    expect(Exit.isFailure(up)).toBeTruthy();
+    const messages = Exit.isFailure(up)
+      ? up.cause.reasons
+          .filter(Cause.isFailReason)
+          .map((reason) => String(reason.error))
+      : [];
+    expect(messages.join("\n")).toContain("could not open the seat");
+    expect(existsSync(path.join(dir, "desktop.json"))).toBeFalsy();
+    expect(existsSync(path.join(dir, "desktop.lock"))).toBeFalsy();
+  });
+
+  it("moves a hold to the browser's pid so a crash frees the session", async () => {
+    const machine = machineOf();
+    const dir = freshDir();
+    await onMachine(
+      machine,
+      Effect.all([
+        desktopUp("run-a", null, dir),
+        desktopUp("run-b", null, dir),
+        retainDesktop("run-a", 2 ** 30, dir),
+      ])
+    );
+    const down = await onMachine(machine, desktopDown("run-b", dir));
+    expect(down).toStrictEqual(Exit.succeed(`stopped pid ${OWNED_PID}`));
+  });
+});

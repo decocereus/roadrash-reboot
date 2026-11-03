@@ -1,5 +1,6 @@
 import { CurrentHost } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
+import { describeDesktop, desktopStatus } from "@racer/devtools/desktop";
 import { ToolProcesses, alive } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -55,6 +56,14 @@ export const doctor = Effect.fn("rv.doctor")(function* doctor(
       changed <= state.builtAt && state.builtFrom?.startsWith(head) === true,
       "build is current",
       `built from ${state.builtFrom} at ${new Date(state.builtAt).toISOString()}; HEAD ${head}; newest source edit ${new Date(changed).toISOString()}${changed > state.builtAt ? " (after the build: run rv rebuild)" : ""}`
+    );
+  }
+  if (host.desktop !== "none") {
+    const session = yield* desktopStatus();
+    yield* check(
+      session.kind !== "none",
+      "desktop session",
+      describeDesktop(session)
     );
   }
   const browserListener = yield* processes.listenerOf(state.devtoolsPort);

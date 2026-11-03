@@ -8,6 +8,7 @@ import {
   stopProfileBrowser,
 } from "@racer/devtools/chrome";
 import { released } from "@racer/devtools/cleanup";
+import { desktopEnvFor, retainDesktop } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -191,6 +192,7 @@ export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
   url: string
 ) {
   const host = yield* CurrentHost;
+  const desktopEnv = yield* desktopEnvFor(state.run, process.pid);
   const flags = [
     ...sharedFlags(
       host.windowed.flags,
@@ -207,10 +209,13 @@ export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
     state.devtoolsPort,
     state.profile,
     {
-      env: { ...process.env, ...host.windowed.env },
+      env: { ...process.env, ...host.windowed.env, ...desktopEnv },
       log: path.join(state.evidence, "browser.log"),
     }
   );
+  if (host.desktop !== "none") {
+    yield* retainDesktop(state.run, pid);
+  }
   const started: InstanceState = { ...state, browserPid: pid };
   return started;
 });
