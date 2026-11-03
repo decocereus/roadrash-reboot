@@ -1046,10 +1046,10 @@ Test files:
 
 ### Browser devtools client
 
-Launching Chrome or Helium, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.
+The table of what differs per machine, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.
 
 - Id: `devtools`
-- Start: `packages/devtools/src/chrome.ts`, `packages/devtools/src/cdp.ts`, `packages/devtools/src/analysis.ts`
+- Start: `packages/devtools/src/browser-host.ts`, `packages/devtools/src/chrome.ts`, `packages/devtools/src/desktop.ts`
 - Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
 - Verify: none yet
 - Perf: none yet
@@ -1059,12 +1059,16 @@ Source files:
 
 - `packages/devtools/src/analysis.ts`
 - `packages/devtools/src/browser-error.ts`
+- `packages/devtools/src/browser-host.ts`
 - `packages/devtools/src/cdp-error.ts`
 - `packages/devtools/src/cdp-protocol.ts`
 - `packages/devtools/src/cdp.ts`
 - `packages/devtools/src/chrome.ts`
+- `packages/devtools/src/claim.ts`
 - `packages/devtools/src/cleanup.ts`
 - `packages/devtools/src/deadline.ts`
+- `packages/devtools/src/desktop-error.ts`
+- `packages/devtools/src/desktop.ts`
 - `packages/devtools/src/process-error.ts`
 - `packages/devtools/src/process.ts`
 - `packages/devtools/src/profiles.ts`
@@ -1075,12 +1079,12 @@ Test files: none
 
 ### rv, the verify tool
 
-`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed Helium, clicks, key presses, screenshots, page state and the evidence journal.
+`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal.
 
 - Id: `verify-tool`
 - Start: `tools/verify/rushline.ts`, `tools/verify/src/commands.ts`, `tools/verify/src/lifecycle.ts`
 - Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
-- Verify: none yet
+- Verify: [desktop-session.md](../.claude/skills/verify-rushline/features/desktop-session.md)
 - Perf: none yet
 - Owns: `tools/verify/**`
 
@@ -1104,8 +1108,10 @@ Source files:
 
 Test files:
 
+- `tools/verify/test/browser-host.test.ts`
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
+- `tools/verify/test/desktop-session.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`
 - `tools/verify/test/wait-deadline.test.ts`
 
@@ -1118,7 +1124,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/bench-lock.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1129,6 +1135,7 @@ Source files:
 - `tools/perf/room.ts`
 - `tools/perf/src/approved.ts`
 - `tools/perf/src/baseline.ts`
+- `tools/perf/src/bench-lock.ts`
 - `tools/perf/src/budgets.ts`
 - `tools/perf/src/build.ts`
 - `tools/perf/src/config-invalid.ts`
@@ -1153,10 +1160,14 @@ Source files:
 
 Test files:
 
+- `tools/perf/test/bench-lock-race.test.ts`
+- `tools/perf/test/bench-lock-worker.ts`
+- `tools/perf/test/bench-lock.test.ts`
 - `tools/perf/test/check.test.ts`
 - `tools/perf/test/evaluate.test.ts`
 - `tools/perf/test/fixture-build.ts`
 - `tools/perf/test/gate.test.ts`
+- `tools/perf/test/gpu-page.test.ts`
 - `tools/perf/test/gpu.test.ts`
 - `tools/perf/test/measure-page.test.ts`
 - `tools/perf/test/red-cases.ts`

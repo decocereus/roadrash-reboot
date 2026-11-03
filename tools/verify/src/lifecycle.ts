@@ -1,6 +1,13 @@
 import path from "node:path";
 
+import { CurrentHost, browserHosts } from "@racer/devtools/browser-host";
 import { attempt, cleanupFailed, released } from "@racer/devtools/cleanup";
+import {
+  describeDesktop,
+  desktopDown,
+  desktopStatus,
+  desktopUp,
+} from "@racer/devtools/desktop";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -65,17 +72,22 @@ const teardown = Effect.fnUntraced(function* teardown(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const slots = yield* SlotStore;
-  const stages = [
-    ["watcher", stopWatcher(state)],
-    ["helium", stopBrowser(state)],
-    ["server", stopServer(state)],
-  ] as const;
-  for (const [label, stop] of stages) {
-    const stopped = yield* attempt(stop);
-    if (Option.isSome(stopped)) {
-      yield* print(`${label}: ${stopped.value}`);
-    }
+  const host = browserHosts[state.host];
+  const stage = <E, R>(label: string, stop: Effect.Effect<string, E, R>) =>
+    attempt(stop).pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.void,
+          onSome: (stopped) => print(`${label}: ${stopped}`),
+        })
+      )
+    );
+  yield* stage("watcher", stopWatcher(state));
+  yield* stage("browser", stopBrowser(state));
+  if (host.desktop !== "none") {
+    yield* stage("desktop", desktopDown(state.run));
   }
+  yield* stage("server", stopServer(state));
   const removals = [
     fs.remove(state.profile, { force: true, recursive: true }),
     ...(buildDir === null || buildDir === ""
@@ -148,7 +160,7 @@ const bringUp = Effect.fnUntraced(function* bringUp(
     restore(startBrowser(served, url)).pipe(Effect.tap(slots.writeState))
   );
   yield* print(
-    `helium pid ${browsing.browserPid}, devtools ${browsing.devtoolsPort}, opened ${url}`
+    `browser pid ${browsing.browserPid}, devtools ${browsing.devtoolsPort}, opened ${url}`
   );
   const watching = yield* launchWatcher(browsing, script);
   yield* print(`console watcher pid ${watching.watcherPid}`);
@@ -163,6 +175,7 @@ export const up = Effect.fn("rv.up")(function* up(context: CommandContext) {
     yield* checkExternal(context, values.server);
   }
   const slots = yield* SlotStore;
+  const host = yield* CurrentHost;
   yield* slots.ensureStateDir;
   const reclaimed = yield* Effect.all(
     Array.from({ length: SLOTS }, (_, slot) => slots.reclaimStale(slot)),
@@ -194,6 +207,7 @@ export const up = Effect.fn("rv.up")(function* up(context: CommandContext) {
           cpu: Number(values.cpu ?? 1),
           devtoolsPort: devtoolsPortOf(slot),
           evidence: path.join(evidenceBase, run),
+          host: host.id,
           network: values.network ?? "off",
           profile: profileFor(run),
           run,
@@ -224,4 +238,34 @@ export const down = Effect.fn("rv.down")(function* down(
   const evidence = yield* Evidence;
   yield* evidence.journal(context.command, state, "down");
   yield* teardown(context, state, state.buildDir);
+});
+
+const DESKTOP_COMMAND_HOLDER = "rv desktop";
+
+export const desktop = Effect.fn("rv.desktop")(function* desktop(
+  context: CommandContext
+) {
+  const { print, rest } = context;
+  const host = yield* CurrentHost;
+  if (host.desktop === "none") {
+    yield* print(`${host.id} needs no desktop session`);
+    return;
+  }
+  const [action = "status"] = rest;
+  if (action === "up") {
+    const use = yield* desktopUp(DESKTOP_COMMAND_HOLDER, null);
+    yield* print(`${use.kind} session, pid ${use.pid}, DISPLAY=${use.display}`);
+    return;
+  }
+  if (action === "down") {
+    yield* print(yield* desktopDown(DESKTOP_COMMAND_HOLDER));
+    return;
+  }
+  if (action === "status") {
+    yield* print(describeDesktop(yield* desktopStatus()));
+    return;
+  }
+  yield* new UsageError({
+    message: `rv desktop takes up, down or status, not ${action}.`,
+  });
 });

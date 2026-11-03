@@ -1304,6 +1304,182 @@
       "side": "B",
       "source": "baseline-2026-11-03T12-22-38-851Z-094d561-3ad4bc4",
       "value": 0.08024610184746536
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 16.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "riders.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0.8999999761581421
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.count",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.calls.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 469
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.triangles.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 2537257
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 45
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 73
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 16.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "riders.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0.8999999761581421
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.count",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.calls.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 510
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.triangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 2878479
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 45
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "value": 80
     }
   ],
   "revisions": {
@@ -1869,6 +2045,31 @@
       "sides": {
         "A": "094d56103508df57a96b02ff7462ba88feb395bd",
         "B": "8f2bb84308868d8d8cf1f176a7b6d0246a01e237"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, NVIDIA driver 615.78.08, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "power": "AC power, battery full",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started, lid closed; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload, rv slots 0 and 2, --ozone-platform=x11 --use-gl=angle --use-angle=gl --enable-gpu --ignore-gpu-blocklist --force-device-scale-factor=2 --disable-features=BackForwardCache; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1841888",
+        "order": "reference-v1 pair0 A, reference-v1 pair0 B, pack-riding-v1 pair0 B, pack-riding-v1 pair0 A, reference-v1 pair1 B, reference-v1 pair1 A, pack-riding-v1 pair1 A, pack-riding-v1 pair1 B, reference-v1 pair2 A, reference-v1 pair2 B, pack-riding-v1 pair2 B, pack-riding-v1 pair2 A, reference-v1 pair3 B, reference-v1 pair3 A, pack-riding-v1 pair3 A, pack-riding-v1 pair3 B, reference-v1 pair4 A, reference-v1 pair4 B, pack-riding-v1 pair4 B, pack-riding-v1 pair4 A",
+        "quiet": "no other agent's test, lint, build or perf process ran during the campaign, checked every 20 s; the 1-minute load averaged 2.0 of 12 threads",
+        "sideA": "A's clone was in /var/tmp because /tmp here is a small tmpfs, and it ran under B's rv because the baseline revision's own rv knows only macOS"
+      },
+      "id": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "094d56103508df57a96b02ff7462ba88feb395bd (rv 20261103-191327-s0)",
+        "B": "fc1dbf29ba85370a6f8df7eecaec1ff6995b0a15 (rv 20261103-191333-s2)"
       }
     }
   ],

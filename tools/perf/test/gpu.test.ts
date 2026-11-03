@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import { browserHosts } from "@racer/devtools/browser-host";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
@@ -15,6 +16,7 @@ const { limits } = Schema.decodeUnknownSync(Schema.fromJsonString(budgetsFile))(
   readFileSync(path.join(import.meta.dirname, "../budgets.json"), "utf-8")
 );
 
+const METAL = browserHosts["macos-metal"].perfEnvironment;
 const SLOT = 1000 / 60;
 const MAIN_CALLS = 130;
 const DRAWN_CALLS = 350;
@@ -188,10 +190,25 @@ const [reference, packRiding] = scenarios;
 const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
 
 describe("gpu frame lane", () => {
+  it("fails a campaign whose every page left the host's required page", () => {
+    const evaluation = evaluateGpu(
+      campaign(() => steady),
+      limits,
+      METAL,
+      { dpr: 2, height: 773, width: 1512 }
+    );
+    expect(evaluation.ok).toBeFalsy();
+    expect(failing(evaluation.lines).join("\n")).toContain(
+      "viewport=1504x790@2 expected=1512x773@2 the host's page"
+    );
+  });
+
   it("passes a steady 60 Hz campaign against the owner caps", () => {
     const evaluation = evaluateGpu(
       campaign(() => steady),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toStrictEqual([]);
     expect(evaluation.ok).toBeTruthy();
@@ -214,7 +231,9 @@ describe("gpu frame lane", () => {
           ? { ...steady, discardedAt: 9 }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     const from = packRiding?.window.from ?? 0;
     expect(failing(evaluation.lines)).toContain(
@@ -243,7 +262,9 @@ describe("gpu frame lane", () => {
             }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     const blocking = evaluation.observations.find(
       (each) =>
@@ -268,7 +289,9 @@ describe("gpu frame lane", () => {
       campaign((scenario, side) =>
         isPack(scenario) && side === "B" ? slower : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(
       failing(evaluation.lines).map((line) => line.split(" observed=")[0])
@@ -293,7 +316,9 @@ describe("gpu frame lane", () => {
       campaign((scenario, side, pair) =>
         isPack(scenario) && side === "B" && pair === 0 ? stalled : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       "FAIL gpu pack-riding-v1 frame.interval.p99 [gpu-helium-metal] observed=33.400 ms limit <= 33.334 ms A/B=1 (<= 1.2) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
@@ -309,7 +334,9 @@ describe("gpu frame lane", () => {
           ? { ...steady, viewport: { ...steady.viewport, height: 836 } }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toContain(
       "FAIL gpu pack-riding-v1 side=B pack-riding-v1-pair0-B.json viewport=1504x836@2 expected=1504x790@2 like pack-riding-v1-pair0-A.json"
@@ -323,7 +350,9 @@ describe("gpu frame lane", () => {
   it("fails a pack window that draws more calls than the committed budget", () => {
     const budget = limits.find(
       (each) =>
-        each.metric === "render.calls.max" && each.scenario === packRiding?.id
+        each.environment === METAL &&
+        each.metric === "render.calls.max" &&
+        each.scenario === packRiding?.id
     );
     if (!budget) {
       throw new Error("budgets.json has no pack-riding draw-call budget.");
@@ -338,7 +367,9 @@ describe("gpu frame lane", () => {
             }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       `FAIL gpu pack-riding-v1 render.calls.max [gpu-helium-metal] observed=${over} calls limit <= ${budget.value} calls A=${DRAWN_CALLS.toPrecision(5)}`,
@@ -349,7 +380,9 @@ describe("gpu frame lane", () => {
   it("fails a B window whose riders take longer than the committed budget", () => {
     const budget = limits.find(
       (each) =>
-        each.metric === "riders.cpu.p95" && each.scenario === packRiding?.id
+        each.environment === METAL &&
+        each.metric === "riders.cpu.p95" &&
+        each.scenario === packRiding?.id
     );
     if (!budget) {
       throw new Error("budgets.json has no pack-riding riders budget.");
@@ -361,7 +394,9 @@ describe("gpu frame lane", () => {
           ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(
       failing(evaluation.lines).map((line) => line.split(" observed=")[0])
@@ -389,7 +424,9 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: uploaded }
           : steady;
       }),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       "FAIL first-use reference-v1 side=B reference-v1-pair3-B.json textures created after the first race frame: 2 (+2 at frame=1220 tick=1200)",
@@ -412,7 +449,9 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: replaced }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair2-B.json textures created after the first race frame: 1 (+1 at frame=2420 tick=2400)",
@@ -430,10 +469,27 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: [] }
           : steady
       ),
-      limits
+      limits,
+      METAL,
+      null
     );
     expect(failing(evaluation.lines)).toStrictEqual([
       "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair1-B.json race frames start at tick=none expected=0",
     ]);
+  });
+
+  it("judges vimaan against its own rows, never the Mac's", () => {
+    const nvidia = browserHosts["linux-nvidia"].perfEnvironment;
+    const evaluation = evaluateGpu(
+      campaign(() => steady),
+      limits.filter((limit) => limit.environment === nvidia),
+      nvidia,
+      null
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([]);
+    expect(evaluation.lines.join("\n")).not.toContain(METAL);
+    expect(
+      new Set(evaluation.observations.map((each) => each.environment))
+    ).toStrictEqual(new Set([nvidia]));
   });
 });

@@ -1,6 +1,9 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { CurrentHost, HOST_SETTING } from "@racer/devtools/browser-host";
+import type { BrowserHost } from "@racer/devtools/browser-host";
+import { desktopRuntimeEnv } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
@@ -9,7 +12,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
 import { readBudgets } from "./approved.ts";
-import { GPU_ENVIRONMENT } from "./budgets.ts";
+import { holdBench } from "./bench-lock.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
 import {
   evaluateGpu,
@@ -42,7 +45,7 @@ const DOCTOR_CHECKS = [
   "server process",
   "server answers",
   "build is current",
-  "helium process",
+  "browser process",
   "console watcher",
   "page",
   "page visible",
@@ -51,7 +54,7 @@ const DOCTOR_CHECKS = [
 
 const USAGE = `Usage:
   node tools/perf/gpu.ts --a <rv run> --b <rv run> [--baseline-ref <rev>] [--budgets <file>] [--out <dir>]
-Start both runs first: rv up from a /tmp clone at the baseline revision for A, and from this checkout for B.`;
+Start both runs first with this checkout's rv: with the working directory in a /tmp clone at the baseline revision for A, and in this checkout for B.`;
 
 interface GpuOptions {
   readonly runs: Readonly<Record<SideName, string>>;
@@ -133,6 +136,15 @@ const pageFacts = Schema.Struct({
 const decodeFacts = Schema.decodeUnknownEffect(
   Schema.fromJsonString(pageFacts)
 );
+
+type PageFacts = typeof pageFacts.Type;
+
+const sizeOf = ({
+  dpr,
+  height,
+  width,
+}: Pick<PageFacts, "dpr" | "height" | "width">): string =>
+  `${width}x${height}@${dpr}`;
 
 const PREPARE = `(async () => {
   const stored = JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}");
@@ -249,9 +261,24 @@ const checkoutOf = (listed: string, run: string): string | null =>
 
 const checkedSides = Effect.fnUntraced(function* checkedSides(
   options: GpuOptions,
-  revision: string
+  revision: string,
+  hostId: string
 ) {
   const listed = yield* rv(["list"]);
+  const elsewhere = [options.runs.A, options.runs.B].filter((run) =>
+    listed
+      .split("\n")
+      .some(
+        (line) =>
+          line.includes(` run ${run} `) && !line.includes(` host ${hostId} `)
+      )
+  );
+  if (elsewhere.length > 0) {
+    return yield* new MeasurementFailed({
+      lane: "gpu",
+      message: `Run ${elsewhere.join(" and ")} started on another browser host; this lane judges ${hostId}. Start both runs with the same ${HOST_SETTING}:\n${listed}`,
+    });
+  }
   const B = yield* currentSide(REPO_ROOT);
   const checkouts = {
     A: checkoutOf(listed, options.runs.A),
@@ -381,6 +408,43 @@ const warm = Effect.fnUntraced(function* warm(run: string) {
   yield* rv(["open", "--run", run, PARK]);
 });
 
+const readPage = (run: string) =>
+  rv(["open", "--run", run, PARK]).pipe(
+    Effect.andThen(rv(["js", "--run", run, PREPARE])),
+    Effect.flatMap(decodeFacts)
+  );
+
+type PagesRead =
+  | { readonly kind: "refused"; readonly line: string }
+  | {
+      readonly kind: "read";
+      readonly page: Readonly<Record<SideName, PageFacts>>;
+    };
+
+export const readPages = Effect.fnUntraced(function* readPages(
+  runs: Readonly<Record<SideName, string>>,
+  host: Pick<BrowserHost, "id" | "page">
+) {
+  const page = { A: yield* readPage(runs.A), B: yield* readPage(runs.B) };
+  yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
+  if (sizeOf(page.A) !== sizeOf(page.B)) {
+    const refused: PagesRead = {
+      kind: "refused",
+      line: `FAIL viewport A=${sizeOf(page.A)} B=${sizeOf(page.B)}: restart the run whose window was resized`,
+    };
+    return refused;
+  }
+  if (host.page !== null && sizeOf(page.A) !== sizeOf(host.page)) {
+    const refused: PagesRead = {
+      kind: "refused",
+      line: `FAIL page ${sizeOf(page.A)} on both runs, and ${host.id} judges a ${sizeOf(host.page)} page, the page its budget rows were measured on. A compositor rv did not start is the usual cause, because its layout sizes the window. Stop that compositor, then start both runs again so that rv starts its own session.`,
+    };
+    return refused;
+  }
+  const read: PagesRead = { kind: "read", page };
+  return read;
+});
+
 const stampOf = (ms: number): string =>
   new Date(ms).toISOString().replaceAll(/[:.]/gu, "-");
 
@@ -397,13 +461,21 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
+  const host = yield* CurrentHost;
+  const environment: string | null = host.perfEnvironment;
+  if (environment === null) {
+    return yield* new UsageError({
+      message: `${host.id} has no rows in tools/perf/budgets.json, so perf:gpu cannot judge it. tools/perf/README.md, under Intel, records why and the numbers measured so far.`,
+    });
+  }
+  yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`);
   const startedAt = yield* Clock.currentTimeMillis;
   const approved = yield* readBudgets(options.budgets);
   const revision = yield* revisionOf(
     REPO_ROOT,
     options.ref ?? approved.budgets.baseline.revision
   );
-  const sides = yield* checkedSides(options, revision);
+  const sides = yield* checkedSides(options, revision, host.id);
   const comparisonId = `gpu-${stampOf(startedAt)}-${revision.slice(0, 7)}-${sides.B.revision.slice(0, 7)}`;
   const dir = path.join(options.out, comparisonId);
   yield* fs.makeDirectory(path.join(dir, "gpu"), { recursive: true });
@@ -414,33 +486,23 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
   if (before.length > 0) {
     return { code: 1, lines: [...before, `evidence ${dir}`] };
   }
-  const display = yield* processes.run("system_profiler", [
-    "SPDisplaysDataType",
-  ]);
-  const page = {
-    A: yield* rv(["open", "--run", options.runs.A, PARK]).pipe(
-      Effect.andThen(rv(["js", "--run", options.runs.A, PREPARE])),
-      Effect.flatMap(decodeFacts)
-    ),
-    B: yield* rv(["open", "--run", options.runs.B, PARK]).pipe(
-      Effect.andThen(rv(["js", "--run", options.runs.B, PREPARE])),
-      Effect.flatMap(decodeFacts)
-    ),
-  };
-  yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
-  if (
-    page.A.width !== page.B.width ||
-    page.A.height !== page.B.height ||
-    page.A.dpr !== page.B.dpr
-  ) {
-    return {
-      code: 1,
-      lines: [
-        `FAIL viewport A=${page.A.width}x${page.A.height}@${page.A.dpr} B=${page.B.width}x${page.B.height}@${page.B.dpr}: restart the run whose window was resized`,
-        `evidence ${dir}`,
-      ],
-    };
+  const displayFacts = yield* Effect.all(
+    host.displayProbes.map((probe) =>
+      processes.run(probe.file, probe.args, { env: desktopRuntimeEnv() }).pipe(
+        Effect.map(({ stdout }) =>
+          stdout
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => probe.keep.test(line))
+        )
+      )
+    )
+  );
+  const pages = yield* readPages(options.runs, host);
+  if (pages.kind === "refused") {
+    return { code: 1, lines: [pages.line, `evidence ${dir}`] };
   }
+  const { page } = pages;
   yield* warm(options.runs.A);
   yield* warm(options.runs.B);
   const samples: GpuSample[] = [];
@@ -465,7 +527,12 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     }
   }
   const after = yield* doctorAll(options, dir, "doctor-after");
-  const evaluation = evaluateGpu(samples, approved.budgets.limits);
+  const evaluation = evaluateGpu(
+    samples,
+    approved.budgets.limits,
+    environment,
+    host.page
+  );
   const files = yield* Effect.all(
     samples.map((sample) =>
       fs
@@ -489,18 +556,11 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
         comparisonId,
         counts: evaluation.counts,
         display: {
+          facts: displayFacts.flat(),
           frameRate: FRAME_RATE,
           page,
-          systemProfiler: display.stdout
-            .split("\n")
-            .map((line) => line.trim())
-            .filter((line) =>
-              /^(?:Chipset Model|Display Type|Resolution|UI Looks like|Main Display|Refresh)/u.test(
-                line
-              )
-            ),
         },
-        environment: GPU_ENVIRONMENT,
+        environment,
         files,
         lines,
         observations: evaluation.observations,

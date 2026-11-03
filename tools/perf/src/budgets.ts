@@ -1,11 +1,10 @@
+import { perfEnvironments } from "@racer/devtools/browser-host";
 import * as Schema from "effect/Schema";
 
 import { glbNames } from "./build.ts";
 import { scenarios } from "./scenarios.ts";
 
 export type Lane = "node" | "build" | "gpu";
-
-export const GPU_ENVIRONMENT = "gpu-helium-metal";
 
 export interface MetricKind {
   readonly metric: string;
@@ -210,25 +209,38 @@ export interface Verdict {
 
 const environmentsOf = (
   lane: Lane,
-  nodeEnvironments: readonly string[]
+  nodeEnvironments: readonly string[],
+  gpuEnvironments: readonly string[]
 ): readonly string[] => {
-  if (lane === "node") {
-    return nodeEnvironments;
+  switch (lane) {
+    case "node": {
+      return nodeEnvironments;
+    }
+    case "gpu": {
+      return gpuEnvironments;
+    }
+    case "build": {
+      return [lane];
+    }
+    default: {
+      return lane satisfies never;
+    }
   }
-  return lane === "gpu" ? [GPU_ENVIRONMENT] : [lane];
 };
 
 export const requiredRows = (
   lanes: readonly Lane[],
-  nodeEnvironments: readonly string[]
+  nodeEnvironments: readonly string[],
+  gpuEnvironments: readonly string[]
 ) =>
   metricKinds
     .filter((kind) => lanes.includes(kind.lane))
     .flatMap((kind) =>
-      environmentsOf(kind.lane, nodeEnvironments).flatMap((environment) =>
-        (kind.perScenario ? scenarios.map((each) => each.id) : [null]).map(
-          (scenario) => ({ environment, kind, scenario })
-        )
+      environmentsOf(kind.lane, nodeEnvironments, gpuEnvironments).flatMap(
+        (environment) =>
+          (kind.perScenario ? scenarios.map((each) => each.id) : [null]).map(
+            (scenario) => ({ environment, kind, scenario })
+          )
       )
     );
 
@@ -252,7 +264,8 @@ export const budgetProblems = (budgets: Budgets): string[] => {
   }
   const required = requiredRows(
     ["node", "build", "gpu"],
-    Object.keys(budgets.nodeProfiles).toSorted()
+    Object.keys(budgets.nodeProfiles).toSorted(),
+    perfEnvironments
   );
   const wanted = new Set(
     required.map(({ environment, kind, scenario }) =>

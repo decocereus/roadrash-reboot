@@ -1,3 +1,4 @@
+import type { CurrentHost } from "@racer/devtools/browser-host";
 import { runCommand } from "@racer/devtools/cleanup";
 import type { CleanupOutcomes } from "@racer/devtools/cleanup";
 import type { ToolProcesses } from "@racer/devtools/process";
@@ -27,11 +28,11 @@ import { readCommandLine } from "./context.ts";
 import type { CommandContext } from "./context.ts";
 import { doctor } from "./doctor.ts";
 import type { Evidence } from "./evidence.ts";
-import { down, up } from "./lifecycle.ts";
+import { desktop, down, up } from "./lifecycle.ts";
 import type { SlotStore } from "./state.ts";
 import { watch } from "./watcher.ts";
 
-const HELP = `rv: drive a Rushline verification instance in a windowed Helium over DevTools
+const HELP = `rv: drive a Rushline verification instance in a windowed browser over DevTools
 
   rv up [--dev] [--path /?ride=...] [--slot n] [--cpu n] [--network fast4g|slow4g|3g] [--sound]
   rv up --server http://127.0.0.1:1351/ --user-asked     only when the user said to drive their server
@@ -50,7 +51,8 @@ const HELP = `rv: drive a Rushline verification instance in a windowed Helium ov
   rv throttle   --run <id> [--cpu n] [--network off|fast4g|slow4g|3g|offline]
   rv console    --run <id> [errors]
   rv rebuild    --run <id>
-  rv down       --run <id>`;
+  rv down       --run <id>
+  rv desktop    up|down|status                           the Linux desktop session rv up starts on demand`;
 
 type Handler = (
   context: CommandContext
@@ -58,6 +60,7 @@ type Handler = (
   void,
   unknown,
   | CleanupOutcomes
+  | CurrentHost
   | Evidence
   | FileSystem.FileSystem
   | HttpClient.HttpClient
@@ -71,6 +74,7 @@ const commands = new Map<string, Handler>([
   ["aria", ariaCommand],
   ["click", clickCommand],
   ["console", consoleCommand],
+  ["desktop", desktop],
   ["doctor", doctor],
   ["down", down],
   ["js", jsCommand],
