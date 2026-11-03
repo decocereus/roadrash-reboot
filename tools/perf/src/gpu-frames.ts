@@ -444,13 +444,20 @@ const countsOf = (samples: readonly GpuSample[]) => {
   };
 };
 
+const pageText = ({
+  dpr,
+  height,
+  width,
+}: GpuSample["capture"]["viewport"]): string => `${width}x${height}@${dpr}`;
+
 const viewportText = ({ viewport }: GpuSample["capture"]): string =>
-  `${viewport.width}x${viewport.height}@${viewport.dpr}`;
+  pageText(viewport);
 
 const scenarioResult = (
   environment: string,
   scenario: Scenario,
-  mine: readonly GpuSample[]
+  mine: readonly GpuSample[],
+  page: GpuSample["capture"]["viewport"] | null
 ) => {
   const failures = mine.flatMap((sample) =>
     sampleProblems(scenario, sample).map(
@@ -459,7 +466,8 @@ const scenarioResult = (
     )
   );
   const [first] = mine;
-  const expected = first ? viewportText(first.capture) : "";
+  const firstPage = first ? viewportText(first.capture) : "";
+  const expected = page === null ? firstPage : pageText(page);
   failures.push(
     ...mine
       .filter((sample) => viewportText(sample.capture) !== expected)
@@ -490,14 +498,16 @@ const peaksText = (peaks: ReturnType<typeof countsOf>): string =>
 export const evaluateGpu = (
   samples: readonly GpuSample[],
   limits: readonly Limit[],
-  environment: string
+  environment: string,
+  page: GpuSample["capture"]["viewport"] | null
 ) => {
   const results = scenarios.map((scenario) => ({
     scenario: scenario.id,
     ...scenarioResult(
       environment,
       scenario,
-      samples.filter((sample) => sample.scenario === scenario.id)
+      samples.filter((sample) => sample.scenario === scenario.id),
+      page
     ),
   }));
   const firstUse = firstUseOf(samples);

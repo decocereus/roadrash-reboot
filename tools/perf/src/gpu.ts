@@ -527,7 +527,12 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     }
   }
   const after = yield* doctorAll(options, dir, "doctor-after");
-  const evaluation = evaluateGpu(samples, approved.budgets.limits, environment);
+  const evaluation = evaluateGpu(
+    samples,
+    approved.budgets.limits,
+    environment,
+    host.page
+  );
   const files = yield* Effect.all(
     samples.map((sample) =>
       fs
