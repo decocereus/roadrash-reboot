@@ -4,6 +4,7 @@ import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient";
 import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeSocket from "@effect/platform-node/NodeSocket";
+import { CurrentHost } from "@racer/devtools/browser-host";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -21,6 +22,7 @@ const processes = ToolProcesses.layer.pipe(
 const services = Layer.mergeAll(SlotStore.layer, Evidence.layer).pipe(
   Layer.provideMerge(
     Layer.mergeAll(
+      CurrentHost.chosen(),
       processes,
       NodeHttpClient.layerUndici,
       NodeSocket.layerWebSocketConstructor

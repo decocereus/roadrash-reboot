@@ -5,7 +5,7 @@ This directory is the maintained source for verifying what a player of Rushline 
 ## Baseline preconditions
 
 - A slot from `rv up` (ports 1410-1419, DevTools 9410-9419), serving a development-mode build of this checkout. Never 1350, 1351, or the user's tunnel.
-- `rv doctor --run <run>` passes: our server and Helium PIDs on our ports, a current build, a visible page, the Metal renderer, no console errors.
+- `rv doctor --run <run>` passes: our server and browser PIDs on our ports, a current build, a visible page, the renderer this machine's row requires (Metal on the Mac, NVIDIA on vimaan), no console errors.
 - A fresh browser profile: no career save, sound muted, focus left with the user.
 - Desktop viewport from the 1512 x 860 window at device pixel ratio 2.
 
@@ -53,4 +53,5 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
 - [Race rules](./race-rules.md): the served field size and level count, a ten-racer grid, a three-level career, and the save a level above them refused.
 - [Game art](./art.md): the `/art/<key>` route, the bar's and the race's art loaded from it, the local cache refilled from the deployed game, and the deployed game reading R2.
+- [Desktop session](./desktop-session.md): the Hyprland session `rv up` starts on demand on vimaan, shared by slots and stopped by the last one.
 - [Frame rate and load](./frame-rate.md): the stress race, frame sampling, throttled play, traces, first load on a slow network, the perf gate on the GPU, and the measure.ts A/B.

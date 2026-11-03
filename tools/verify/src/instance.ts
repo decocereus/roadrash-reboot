@@ -1,13 +1,14 @@
 import path from "node:path";
 
+import { browserHosts } from "@racer/devtools/browser-host";
 import {
   awaitPortClosed,
-  browsers,
   sharedFlags,
   startInBackground,
   stopProfileBrowser,
 } from "@racer/devtools/chrome";
 import { released } from "@racer/devtools/cleanup";
+import { desktopEnvFor, retainDesktop } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -15,7 +16,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as HttpClient from "effect/http/HttpClient";
 import * as Option from "effect/Option";
 
-import { SlotStore, VIEWPORT, serverPortOf } from "./state.ts";
+import { SlotStore, serverPortOf } from "./state.ts";
 import type { InstanceState } from "./state.ts";
 import { VerificationError } from "./verification-error.ts";
 
@@ -162,6 +163,7 @@ export const startServer = Effect.fn("rv.startServer")(function* startServer(
   const next = yield* Effect.uninterruptible(
     processes
       .startDetached(
+        process.execPath,
         serverArgs(state),
         webDir(state.checkout),
         path.join(state.evidence, "server.log"),
@@ -189,17 +191,31 @@ export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
   state: InstanceState,
   url: string
 ) {
+  const host = browserHosts[state.host];
+  const desktopEnv = yield* desktopEnvFor(host, state.run, process.pid);
   const flags = [
-    ...sharedFlags(state.devtoolsPort, state.profile, VIEWPORT),
+    ...sharedFlags(
+      host.windowed.flags,
+      state.devtoolsPort,
+      state.profile,
+      host.windowed.viewport
+    ),
     ...(state.sound ? [] : ["--mute-audio"]),
     url,
   ];
   const pid = yield* startInBackground(
-    browsers.helium,
+    host,
     flags,
     state.devtoolsPort,
-    state.profile
+    state.profile,
+    {
+      env: { ...process.env, ...host.windowed.env, ...desktopEnv },
+      log: path.join(state.evidence, "browser.log"),
+    }
   );
+  if (host.desktop !== "none") {
+    yield* retainDesktop(state.run, pid);
+  }
   const started: InstanceState = { ...state, browserPid: pid };
   return started;
 });
@@ -212,6 +228,7 @@ export const startWatcher = Effect.fn("rv.startWatcher")(function* startWatcher(
   return yield* Effect.uninterruptible(
     processes
       .startDetached(
+        process.execPath,
         [script, "watch", "--run", state.run],
         state.checkout,
         path.join(state.evidence, "watch.log"),
@@ -241,10 +258,11 @@ export const stopBrowser = Effect.fn("rv.stopBrowser")(function* stopBrowser(
   state: InstanceState
 ) {
   const processes = yield* ToolProcesses;
+  const host = browserHosts[state.host];
   const result =
     state.browserPid === null
       ? yield* stopProfileBrowser(state.profile)
-      : yield* processes.stopOwned(state.browserPid, "Helium");
+      : yield* processes.stopOwned(state.browserPid, host.processMark);
   yield* awaitPortClosed(state.devtoolsPort);
   return result;
 });

@@ -1,12 +1,12 @@
 import { parseArgs } from "node:util";
 
-import { browserNamed } from "@racer/devtools/chrome";
-import type { BrowserChoice, Viewport } from "@racer/devtools/chrome";
+import { browserModes } from "@racer/devtools/browser-host";
+import type { BrowserMode, Viewport } from "@racer/devtools/browser-host";
 import { benchWindows } from "@racer/sim/bench-window";
 
 export interface Options {
   readonly url: string;
-  readonly browser: BrowserChoice;
+  readonly browser: BrowserMode;
   readonly label: string;
   readonly runs: number;
   readonly from: number;
@@ -23,11 +23,14 @@ export interface Options {
   readonly worst: number;
 }
 
+const isBrowserMode = (name: string): name is BrowserMode =>
+  browserModes.some((mode) => mode === name);
+
 export const readOptions = (): Options => {
   const { values } = parseArgs({
     options: {
       "alloc-profile": { default: false, type: "boolean" },
-      browser: { default: "chrome", type: "string" },
+      browser: { default: "headless", type: "string" },
       "cpu-profile": { default: false, type: "boolean" },
       "first-run": { default: false, type: "boolean" },
       from: { type: "string" },
@@ -51,10 +54,16 @@ export const readOptions = (): Options => {
       "Pass --url, for example http://localhost:1352/?stress&ratio=2"
     );
   }
+  const { browser } = values;
+  if (!isBrowserMode(browser)) {
+    throw new Error(
+      `Unknown --browser ${browser}; use ${browserModes.join(" or ")}.`
+    );
+  }
   const firstRun = values["first-run"];
   return {
     allocProfile: values["alloc-profile"],
-    browser: browserNamed(values.browser),
+    browser,
     cpuProfile: values["cpu-profile"],
     firstRun,
     from: Number(values.from ?? (firstRun ? 1 : benchWindows.stress.from)),

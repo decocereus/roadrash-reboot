@@ -66,7 +66,8 @@
         "room.ts",
         "session.ts",
         "snapshot.ts",
-        "test/**/*.test.ts"
+        "test/**/*.test.ts",
+        "test/bench-lock-worker.ts"
       ],
       "project": ["**/*.ts"],
       "typescript": true

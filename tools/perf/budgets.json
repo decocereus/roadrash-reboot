@@ -32,11 +32,15 @@
       {
         "file": "tools/perf/baselines/post-step8.trucks.gpu-helium-metal.json.gz",
         "sha256": "a9dfbbc2b179905fb949a7f706b892675ca5614d4d0bbf82c7e2e73177287d53"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "e2cf7bc8917be10a965f1364d30858f4af8d95196effde9df957c2701d8504cf"
       }
     ],
     "revision": "094d56103508df57a96b02ff7462ba88feb395bd",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "6f784117b4df33ae1c3b218b20111aa9ffcbe08a763780d988381bcc40da71c7"
+    "summarySha256": "b12c0e5748eeaf48f30ffcba351d782a4d269d4da31e5c6614689af012a84c83"
   },
   "limits": [
     {
@@ -427,11 +431,35 @@
       "baseline": 16.700000762939453,
       "derivation": "owner cap",
       "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p50",
+      "paired": 1.1,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 17.5
+    },
+    {
+      "baseline": 16.700000762939453,
+      "derivation": "owner cap",
+      "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "frame.interval.p50",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "unit": "ms",
+      "value": 17.5
+    },
+    {
+      "baseline": 16.700000762939453,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p50",
+      "paired": 1.1,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
       "unit": "ms",
       "value": 17.5
     },
@@ -448,6 +476,18 @@
       "value": 17.5
     },
     {
+      "baseline": 16.700000762939453,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p95",
+      "paired": 1.15,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 20
+    },
+    {
       "baseline": 17,
       "derivation": "owner cap",
       "direction": "max",
@@ -456,6 +496,18 @@
       "paired": 1.15,
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "unit": "ms",
+      "value": 20
+    },
+    {
+      "baseline": 16.700000762939453,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p95",
+      "paired": 1.15,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
       "unit": "ms",
       "value": 20
     },
@@ -472,6 +524,18 @@
       "value": 20
     },
     {
+      "baseline": 16.799999237060547,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p99",
+      "paired": 1.2,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 33.334
+    },
+    {
       "baseline": 17.5,
       "derivation": "owner cap",
       "direction": "max",
@@ -480,6 +544,18 @@
       "paired": 1.2,
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "unit": "ms",
+      "value": 33.334
+    },
+    {
+      "baseline": 16.799999237060547,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p99",
+      "paired": 1.2,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
       "unit": "ms",
       "value": 33.334
     },
@@ -499,11 +575,35 @@
       "baseline": 0,
       "derivation": "owner cap",
       "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.missedFraction",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "share",
+      "value": 0.01
+    },
+    {
+      "baseline": 0,
+      "derivation": "owner cap",
+      "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "unit": "share",
+      "value": 0.01
+    },
+    {
+      "baseline": 0,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.missedFraction",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
       "unit": "share",
       "value": 0.01
     },
@@ -518,6 +618,18 @@
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
       "unit": "share",
       "value": 0.01
+    },
+    {
+      "baseline": 0,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.blockingMs",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 0
     },
     {
       "baseline": 0,
@@ -535,12 +647,36 @@
       "baseline": 0,
       "derivation": "owner cap",
       "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.blockingMs",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 0
+    },
+    {
+      "baseline": 0,
+      "derivation": "owner cap",
+      "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "main.longTask.blockingMs",
       "paired": null,
       "scenario": "reference-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
       "unit": "ms",
+      "value": 0
+    },
+    {
+      "baseline": 0,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.count",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "tasks",
       "value": 0
     },
     {
@@ -552,6 +688,18 @@
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "unit": "tasks",
+      "value": 0
+    },
+    {
+      "baseline": 0,
+      "derivation": "owner cap",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.count",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
       "unit": "tasks",
       "value": 0
     },
@@ -571,6 +719,18 @@
       "baseline": 510,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.calls.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "calls",
+      "value": 536
+    },
+    {
+      "baseline": 510,
+      "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
+      "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.calls.max",
       "paired": null,
@@ -578,6 +738,18 @@
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
       "unit": "calls",
       "value": 536
+    },
+    {
+      "baseline": 469,
+      "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.calls.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "calls",
+      "value": 493
     },
     {
       "baseline": 422,
@@ -595,11 +767,35 @@
       "baseline": 45,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.programs.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "programs",
+      "value": 46
+    },
+    {
+      "baseline": 45,
+      "derivation": "baseline maximum over both sides' windows + 1",
+      "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "unit": "programs",
+      "value": 46
+    },
+    {
+      "baseline": 45,
+      "derivation": "baseline maximum over both sides' windows + 1",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.programs.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
       "unit": "programs",
       "value": 46
     },
@@ -619,6 +815,18 @@
       "baseline": 80,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.textures.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "textures",
+      "value": 81
+    },
+    {
+      "baseline": 80,
+      "derivation": "baseline maximum over both sides' windows + 1",
+      "direction": "max",
       "environment": "gpu-helium-metal",
       "metric": "render.textures.max",
       "paired": null,
@@ -626,6 +834,18 @@
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
       "unit": "textures",
       "value": 81
+    },
+    {
+      "baseline": 73,
+      "derivation": "baseline maximum over both sides' windows + 1",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.textures.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "textures",
+      "value": 74
     },
     {
       "baseline": 73,
@@ -640,6 +860,18 @@
       "value": 74
     },
     {
+      "baseline": 2878479,
+      "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.triangles.max",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "triangles",
+      "value": 3022403
+    },
+    {
       "baseline": 2875351,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
@@ -650,6 +882,18 @@
       "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
       "unit": "triangles",
       "value": 3019119
+    },
+    {
+      "baseline": 2537257,
+      "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.triangles.max",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "triangles",
+      "value": 2664120
     },
     {
       "baseline": 2526537,
@@ -664,6 +908,18 @@
       "value": 2652864
     },
     {
+      "baseline": 0.8999999761581421,
+      "derivation": "2 x the worst B window of vimaan's first campaign",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "riders.cpu.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 1.7999999523162842
+    },
+    {
       "baseline": 0.3999999761581421,
       "derivation": "2 x the worst B window at the first revision that plants the riders' hands every frame",
       "direction": "max",
@@ -674,6 +930,18 @@
       "source": "gpu-2026-10-24T19-09-51-329Z-b8705dd-b8705dd",
       "unit": "ms",
       "value": 0.8
+    },
+    {
+      "baseline": 0.8999999761581421,
+      "derivation": "2 x the worst B window of vimaan's first campaign",
+      "direction": "max",
+      "environment": "gpu-chromium-nvidia",
+      "metric": "riders.cpu.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "gpu-2026-11-03T13-43-46-801Z-094d561-fc1dbf2",
+      "unit": "ms",
+      "value": 1.7999999523162842
     },
     {
       "baseline": 0.5,
