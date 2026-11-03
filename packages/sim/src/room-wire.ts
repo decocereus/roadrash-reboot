@@ -11,6 +11,7 @@ const PING_KIND = 3;
 const PONG_KIND = 4;
 const START_KIND = 5;
 const READY_KIND = 6;
+const RACE_STATS_KIND = 7;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
 const COUNT_BYTES = 1;
@@ -310,3 +311,61 @@ export const writeReady = (view: DataView): number => {
 
 export const isReady = (view: DataView): boolean =>
   view.byteLength === READY_PACKET_BYTES && view.getUint8(0) === READY_KIND;
+
+const RACE_STAT_FIELDS = [
+  "doubledSteps",
+  "finished",
+  "heldSteps",
+  "jumpsBehindServer",
+  "jumpsOtherRiders",
+  "jumpsOwnControl",
+  "mostSteps",
+  "desyncs",
+  "refusedPredictions",
+  "resimulatedTicks",
+  "rollbacks",
+  "rttMeanMs",
+  "rttWorstMs",
+  "slowFrames",
+  "tick",
+  "totalBehindServerCm",
+  "totalOtherRidersCm",
+  "totalOwnControlCm",
+  "worstBehindServerCm",
+  "worstFrameMs",
+  "worstFrameRoadMetres",
+  "worstJumpRoadMetres",
+  "worstJumpTick",
+  "worstOtherRidersCm",
+  "worstOwnControlCm",
+] as const;
+
+export type RaceStats = Readonly<
+  Record<(typeof RACE_STAT_FIELDS)[number], number>
+>;
+
+export const RACE_STATS_PACKET_BYTES =
+  KIND_BYTES + RACE_STAT_FIELDS.length * WORD_BYTES;
+
+export const writeRaceStats = (view: DataView, stats: RaceStats): number => {
+  view.setUint8(0, RACE_STATS_KIND);
+  let offset = KIND_BYTES;
+  for (const field of RACE_STAT_FIELDS) {
+    view.setUint32(offset, Math.max(0, Math.round(stats[field])));
+    offset += WORD_BYTES;
+  }
+  return RACE_STATS_PACKET_BYTES;
+};
+
+export const readRaceStats = (
+  view: DataView
+): Readonly<Record<string, number>> | null =>
+  view.byteLength === RACE_STATS_PACKET_BYTES &&
+  view.getUint8(0) === RACE_STATS_KIND
+    ? Object.fromEntries(
+        RACE_STAT_FIELDS.map((field, index) => [
+          field,
+          view.getUint32(KIND_BYTES + index * WORD_BYTES),
+        ])
+      )
+    : null;

@@ -8,14 +8,17 @@ import {
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
+  RACE_STATS_PACKET_BYTES,
   readPong,
   READY_PACKET_BYTES,
   readTick,
   START_PACKET_BYTES,
   writePing,
+  writeRaceStats,
   writeReady,
   writeStart,
 } from "@racer/sim/room-wire";
+import type { RaceStats } from "@racer/sim/room-wire";
 import { riderIdAt } from "@racer/sim/state";
 import * as Option from "effect/Option";
 import { describe, expect, it } from "vitest";
@@ -121,6 +124,34 @@ const startPacket = (): ArrayBuffer => {
   const buffer = new ArrayBuffer(START_PACKET_BYTES);
   writeStart(new DataView(buffer));
   return buffer;
+};
+
+const someRaceStats: RaceStats = {
+  desyncs: 0,
+  doubledSteps: 2,
+  finished: 1,
+  heldSteps: 3,
+  jumpsBehindServer: 0,
+  jumpsOtherRiders: 1,
+  jumpsOwnControl: 4,
+  mostSteps: 3,
+  refusedPredictions: 0,
+  resimulatedTicks: 90,
+  rollbacks: 7,
+  rttMeanMs: 95,
+  rttWorstMs: 204,
+  slowFrames: 1,
+  tick: 11_909,
+  totalBehindServerCm: 0,
+  totalOtherRidersCm: 12,
+  totalOwnControlCm: 240,
+  worstBehindServerCm: 0,
+  worstFrameMs: 61,
+  worstFrameRoadMetres: 812,
+  worstJumpRoadMetres: 1430,
+  worstJumpTick: 4321,
+  worstOtherRidersCm: 12,
+  worstOwnControlCm: 88,
 };
 
 const readyPacket = (): ArrayBuffer => {
@@ -321,6 +352,33 @@ describe("a room host", () => {
           tally: [expect.objectContaining({ accepted: 0, missed: 0 })],
         })
       );
+    });
+
+    it("logs a seat's race stats once, however often it sends them", () => {
+      const { clock, host, near } = pressedStart();
+      const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
+      writeRaceStats(new DataView(packet), someRaceStats);
+      host.message(near, packet);
+      host.message(near, packet);
+      const stats = clock.notes.filter((note) => note.kind === "stats");
+      expect(stats).toHaveLength(1);
+      expect(stats[0]).toMatchObject({
+        name: "Near",
+        stats: { rollbacks: 7, worstOwnControlCm: 88 },
+      });
+    });
+
+    it("logs a place behind the start line as zero, not a huge number", () => {
+      const { clock, host, near } = pressedStart();
+      const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
+      writeRaceStats(new DataView(packet), {
+        ...someRaceStats,
+        worstFrameRoadMetres: -23,
+      });
+      host.message(near, packet);
+      expect(clock.notes.find((note) => note.kind === "stats")).toMatchObject({
+        stats: { worstFrameRoadMetres: 0 },
+      });
     });
 
     it("writes one note per race event, none per tick", () => {

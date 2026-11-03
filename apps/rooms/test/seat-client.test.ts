@@ -1,6 +1,7 @@
 import {
   PING_PACKET_BYTES,
   PONG_PACKET_BYTES,
+  RACE_STATS_PACKET_BYTES,
   readPing,
   writePong,
 } from "@racer/sim/room-wire";
@@ -19,7 +20,13 @@ interface SocketEvent {
 }
 
 class FakeSocket {
+  static readonly OPEN = 1;
+
   static opened: FakeSocket[] = [];
+
+  readonly readyState = FakeSocket.OPEN;
+
+  readonly sentBytes: number[] = [];
 
   binaryType = "blob";
 
@@ -43,7 +50,11 @@ class FakeSocket {
     this.heard.get("message")?.({ data });
   }
 
-  send(data: Uint8Array): void {
+  send(data: Uint8Array | ArrayBuffer): void {
+    this.sentBytes.push(data.byteLength);
+    if (!(data instanceof Uint8Array)) {
+      return;
+    }
     if (!this.answers || data.byteLength !== PING_PACKET_BYTES) {
       return;
     }
@@ -82,6 +93,22 @@ describe("a seat loading the race", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("sends the room its race stats once when it leaves", () => {
+    const { seat, socket } = loadingSeat();
+    seat.leave();
+    seat.leave();
+    const stats = socket?.sentBytes.filter(
+      (bytes) => bytes === RACE_STATS_PACKET_BYTES
+    );
+    expect(stats).toHaveLength(1);
+  });
+
+  it("has no stats to send from a lobby", () => {
+    const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+    seat.leave();
+    expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
   });
 
   it("waits as long as the room answers its pings", () => {

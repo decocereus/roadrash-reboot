@@ -4,6 +4,7 @@ import type { Room } from "@racer/sim/room";
 import {
   createInputBatch,
   isReady,
+  readRaceStats,
   isStart,
   PONG_PACKET_BYTES,
   readInput,
@@ -49,6 +50,11 @@ export type RoomNote =
       readonly tick: number;
     }
   | {
+      readonly kind: "stats";
+      readonly name: string;
+      readonly stats: Readonly<Record<string, number>>;
+    }
+  | {
       readonly catchUpWakes: number;
       readonly kind: "ended";
       readonly seats: RoomStatus["seats"];
@@ -70,6 +76,7 @@ interface Seat {
   accepted: number;
   ahead: number;
   late: number;
+  reported: boolean;
 }
 
 interface Lobby {
@@ -109,6 +116,7 @@ export const createHost = (ports: HostPorts): Host => {
     ahead: 0,
     late: 0,
     name,
+    reported: false,
     rider: null,
     socket,
   });
@@ -368,6 +376,12 @@ export const createHost = (ports: HostPorts): Host => {
       if (running && isReady(view)) {
         running.loading.delete(socket);
         countDownOnceLoaded(running);
+        return;
+      }
+      const stats = readRaceStats(view);
+      if (stats && !seat.reported) {
+        seat.reported = true;
+        ports.note({ kind: "stats", name: seat.name, stats });
       }
     },
     seat: (socket, name) => {
