@@ -217,7 +217,7 @@ The wireframe is the decent player's garage at the start of level 2 (`game-desig
 | Where | Element | Shows | Sim source |
 | --- | --- | --- | --- |
 | Top left | Position | `3rd / 15`, large numerals. Turns yellow when it changes, holds for half a second, and returns to white. It does not blink. | `standings` |
-| Top centre | Cop warning | Hidden unless a cop is chasing the player. `▲ COP {m} m ▲` in police blue and red, alternating at 2 Hz, with a short siren cue. Under 15 m it reads `COP ON YOU`. This is the only element on the HUD that blinks. | `chase` on police riders, distance to the player |
+| Top centre | Cop warning | Hidden unless a cop is chasing the player. `▲ COP {m} m AHEAD ▲` or `▼ COP {m} m BEHIND ▼` in police blue and red, alternating at 2 Hz, with a short siren cue. Under 15 m it reads `COP ON YOU`. This is the only element on the HUD that blinks. | `chase` on police riders, distance to the player |
 | Top right | Distance | `{km} km to go` over a thin progress line with a dot for the player and small ticks for the riders ahead. Police roadblocks the player knows about (Dee's tip) show as a blue tick. | `s` over track length |
 | Bottom left | Speed | Speed in km/h as large tabular numerals with `km/h` under it. No dial. | `speed` |
 | Bottom centre | Player bars | `YOU` stamina bar and, under it, a thinner `BIKE` condition bar. Stamina goes green, yellow under 50, red under 25. The bike bar is warm white, yellow under 50, and red under 25. Both bars change colour and hold it; neither flashes. | `stamina`, `condition` |

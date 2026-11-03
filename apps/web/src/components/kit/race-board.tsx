@@ -13,7 +13,7 @@ export const RaceBoard = () => {
     const made = createHudFeed();
     made.write({
       ...idleHud,
-      copDistance: 42,
+      copGap: 42,
       gear: 4,
       notice: "knockdown",
       phase: "racing",

@@ -3,7 +3,7 @@ import type { HudState } from "./game/hud.ts";
 export const idleHud: HudState = {
   bikeName: "",
   condition: 1,
-  copDistance: -1,
+  copGap: null,
   countdown: 0,
   distanceLeft: 0,
   gear: 1,
