@@ -50,7 +50,14 @@ const ridden = (
   rider.speed = PROBE_SPEED;
   const line = rider.x;
   const seen: Seen[] = [];
-  const input = { brake: 0, kick: false, punch: false, steer: 0, throttle: 1 };
+  const input = {
+    brake: 0,
+    kick: false,
+    punch: false,
+    remount: false,
+    steer: 0,
+    throttle: 1,
+  };
   let key = 0;
   let presses = 0;
   let widest = 0;

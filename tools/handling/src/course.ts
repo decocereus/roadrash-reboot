@@ -69,6 +69,7 @@ const pedals = (throttle: number, brake: number): RiderInput => ({
   brake,
   kick: false,
   punch: false,
+  remount: false,
   steer: 0,
   throttle,
 });
