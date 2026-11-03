@@ -64,10 +64,36 @@ describe("browser hosts", () => {
     expect(() => hostOf("win32")).toThrow("No browser host for win32");
   });
 
-  it("gives every host its own perf environment", () => {
-    expect(new Set(perfEnvironments).size).toBe(
-      Object.keys(browserHosts).length
+  it("keeps NVIDIA the default on Linux and lets the setting choose Intel", () => {
+    expect(hostOf("linux").id).toBe("linux-nvidia");
+    expect(hostOf("linux", "").id).toBe("linux-nvidia");
+    const intel = hostOf("linux", "linux-intel");
+    expect(intel.rendererMark).toBe("Intel");
+    expect(intel.windowed.env).toStrictEqual({});
+    expect(intel.windowed.viewport).toStrictEqual({
+      height: 1080,
+      scale: 1,
+      width: 1920,
+    });
+  });
+
+  it("refuses a setting outside the tuple and names the choices", () => {
+    expect(() => hostOf("linux", "linux-amd")).toThrow(
+      "use macos-metal, linux-nvidia, linux-intel"
     );
+  });
+
+  it("refuses a host from another platform", () => {
+    expect(() => hostOf("darwin", "linux-intel")).toThrow(
+      "runs on linux, and this machine is darwin"
+    );
+  });
+
+  it("requires budget rows only for hosts that have an environment", () => {
+    expect(perfEnvironments).toStrictEqual([
+      "gpu-helium-metal",
+      "gpu-chromium-nvidia",
+    ]);
   });
 
   it("keeps macOS on Metal through open -g, with no desktop session", () => {

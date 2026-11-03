@@ -16,7 +16,7 @@ import { main } from "./src/measure.ts";
 const options = readOptions();
 
 const services = Layer.mergeAll(
-  CurrentHost.layer,
+  CurrentHost.chosen(),
   ToolProcesses.layer.pipe(Layer.provide(NodeChildProcessSpawner.layer)),
   NodeHttpClient.layerUndici,
   NodeSocket.layerWebSocketConstructor

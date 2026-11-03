@@ -22,7 +22,7 @@ const processes = ToolProcesses.layer.pipe(
 const services = Layer.mergeAll(SlotStore.layer, Evidence.layer).pipe(
   Layer.provideMerge(
     Layer.mergeAll(
-      CurrentHost.layer,
+      CurrentHost.chosen(),
       processes,
       NodeHttpClient.layerUndici,
       NodeSocket.layerWebSocketConstructor

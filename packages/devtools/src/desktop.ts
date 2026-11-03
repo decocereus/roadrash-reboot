@@ -6,7 +6,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import { CurrentHost } from "./browser-host.ts";
-import type { DesktopEnv } from "./browser-host.ts";
+import type { BrowserHost, DesktopEnv } from "./browser-host.ts";
 import { dropClaim, takeClaim, toolStateDir } from "./claim.ts";
 import { released } from "./cleanup.ts";
 import { DesktopError } from "./desktop-error.ts";
@@ -432,8 +432,11 @@ export const describeDesktop = (state: DesktopState): string => {
 };
 
 export const desktopEnvFor = Effect.fn("desktop.envFor")(
-  function* desktopEnvFor(holder: string, holderPid: number) {
-    const host = yield* CurrentHost;
+  function* desktopEnvFor(
+    host: BrowserHost,
+    holder: string,
+    holderPid: number
+  ) {
     switch (host.desktop) {
       case "none": {
         const env: DesktopEnv = {};
@@ -452,10 +455,12 @@ export const desktopEnvFor = Effect.fn("desktop.envFor")(
 );
 
 export const holdDesktop = (holder: string) =>
-  Effect.acquireRelease(desktopEnvFor(holder, process.pid), () =>
-    released(
-      CurrentHost.use((host) =>
-        host.desktop === "none" ? Effect.void : desktopDown(holder)
+  Effect.acquireRelease(
+    CurrentHost.use((host) => desktopEnvFor(host, holder, process.pid)),
+    () =>
+      released(
+        CurrentHost.use((host) =>
+          host.desktop === "none" ? Effect.void : desktopDown(holder)
+        )
       )
-    )
   );

@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { browserHostId } from "@racer/devtools/browser-host";
 import { toolStateDir } from "@racer/devtools/claim";
 import { ToolProcesses, alive } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
@@ -21,8 +22,6 @@ const DEVTOOLS_BASE_PORT = 9410;
 
 export const USER_PORTS: ReadonlySet<number> = new Set([1350, 1351]);
 
-export const VIEWPORT = { height: 860, scale: 2, width: 1512 } as const;
-
 const serverModes = ["preview", "dev", "external"] as const;
 
 export type ServerMode = (typeof serverModes)[number];
@@ -36,6 +35,7 @@ const instanceState = Schema.Struct({
   cpu: Schema.Number,
   devtoolsPort: Schema.Number,
   evidence: Schema.String,
+  host: browserHostId,
   network: Schema.String,
   profile: Schema.String,
   run: Schema.String,

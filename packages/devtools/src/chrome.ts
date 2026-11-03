@@ -7,19 +7,18 @@ import * as Schema from "effect/Schema";
 
 import { BrowserError } from "./browser-error.ts";
 import { CurrentHost } from "./browser-host.ts";
-import type { BrowserHost, BrowserMode, DesktopEnv } from "./browser-host.ts";
+import type {
+  BrowserHost,
+  BrowserMode,
+  DesktopEnv,
+  Viewport,
+} from "./browser-host.ts";
 import { connect } from "./cdp.ts";
 import { released } from "./cleanup.ts";
 import { ToolProcesses } from "./process.ts";
 
 const STARTUP_ATTEMPTS = 150;
 const STARTUP_POLL_MS = 100;
-
-export interface Viewport {
-  readonly width: number;
-  readonly height: number;
-  readonly scale: number;
-}
 
 const decodeTargets = Schema.decodeUnknownEffect(
   Schema.fromJsonString(

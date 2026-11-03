@@ -1,8 +1,7 @@
 import { parseArgs } from "node:util";
 
 import { browserModes } from "@racer/devtools/browser-host";
-import type { BrowserMode } from "@racer/devtools/browser-host";
-import type { Viewport } from "@racer/devtools/chrome";
+import type { BrowserMode, Viewport } from "@racer/devtools/browser-host";
 import { benchWindows } from "@racer/sim/bench-window";
 
 export interface Options {

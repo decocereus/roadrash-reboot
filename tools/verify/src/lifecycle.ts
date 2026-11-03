@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { CurrentHost } from "@racer/devtools/browser-host";
+import { CurrentHost, browserHosts } from "@racer/devtools/browser-host";
 import { attempt, cleanupFailed, released } from "@racer/devtools/cleanup";
 import {
   describeDesktop,
@@ -72,7 +72,7 @@ const teardown = Effect.fnUntraced(function* teardown(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const slots = yield* SlotStore;
-  const host = yield* CurrentHost;
+  const host = browserHosts[state.host];
   const stage = <E, R>(label: string, stop: Effect.Effect<string, E, R>) =>
     attempt(stop).pipe(
       Effect.flatMap(
@@ -175,6 +175,7 @@ export const up = Effect.fn("rv.up")(function* up(context: CommandContext) {
     yield* checkExternal(context, values.server);
   }
   const slots = yield* SlotStore;
+  const host = yield* CurrentHost;
   yield* slots.ensureStateDir;
   const reclaimed = yield* Effect.all(
     Array.from({ length: SLOTS }, (_, slot) => slots.reclaimStale(slot)),
@@ -206,6 +207,7 @@ export const up = Effect.fn("rv.up")(function* up(context: CommandContext) {
           cpu: Number(values.cpu ?? 1),
           devtoolsPort: devtoolsPortOf(slot),
           evidence: path.join(evidenceBase, run),
+          host: host.id,
           network: values.network ?? "off",
           profile: profileFor(run),
           run,

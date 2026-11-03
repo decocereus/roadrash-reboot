@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { CurrentHost } from "@racer/devtools/browser-host";
+import { browserHosts } from "@racer/devtools/browser-host";
 import {
   awaitPortClosed,
   sharedFlags,
@@ -16,7 +16,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as HttpClient from "effect/http/HttpClient";
 import * as Option from "effect/Option";
 
-import { SlotStore, VIEWPORT, serverPortOf } from "./state.ts";
+import { SlotStore, serverPortOf } from "./state.ts";
 import type { InstanceState } from "./state.ts";
 import { VerificationError } from "./verification-error.ts";
 
@@ -191,14 +191,14 @@ export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
   state: InstanceState,
   url: string
 ) {
-  const host = yield* CurrentHost;
-  const desktopEnv = yield* desktopEnvFor(state.run, process.pid);
+  const host = browserHosts[state.host];
+  const desktopEnv = yield* desktopEnvFor(host, state.run, process.pid);
   const flags = [
     ...sharedFlags(
       host.windowed.flags,
       state.devtoolsPort,
       state.profile,
-      VIEWPORT
+      host.windowed.viewport
     ),
     ...(state.sound ? [] : ["--mute-audio"]),
     url,
@@ -258,7 +258,7 @@ export const stopBrowser = Effect.fn("rv.stopBrowser")(function* stopBrowser(
   state: InstanceState
 ) {
   const processes = yield* ToolProcesses;
-  const host = yield* CurrentHost;
+  const host = browserHosts[state.host];
   const result =
     state.browserPid === null
       ? yield* stopProfileBrowser(state.profile)

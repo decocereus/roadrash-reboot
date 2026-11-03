@@ -11,7 +11,7 @@ import * as Layer from "effect/Layer";
 import { main } from "./src/gpu.ts";
 
 const services = Layer.mergeAll(
-  CurrentHost.layer,
+  CurrentHost.chosen(),
   ToolProcesses.layer.pipe(Layer.provide(NodeChildProcessSpawner.layer))
 ).pipe(
   Layer.provideMerge(Layer.mergeAll(NodeFileSystem.layer, NodePath.layer))

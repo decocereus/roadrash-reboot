@@ -1,13 +1,25 @@
 import * as Context from "effect/Context";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 
 export const browserModes = ["headless", "windowed"] as const;
 
 export type BrowserMode = (typeof browserModes)[number];
 
-const browserHostIds = ["macos-metal", "linux-nvidia"] as const;
+const browserHostIds = ["macos-metal", "linux-nvidia", "linux-intel"] as const;
 
 export type BrowserHostId = (typeof browserHostIds)[number];
+
+export const browserHostId = Schema.Literals(browserHostIds);
+
+export const HOST_SETTING = "RUSHLINE_BROWSER_HOST";
+
+export interface Viewport {
+  readonly width: number;
+  readonly height: number;
+  readonly scale: number;
+}
 
 type WindowedLauncher =
   | { readonly app: string; readonly kind: "open" }
@@ -41,13 +53,15 @@ export interface BrowserHost {
   };
   readonly id: BrowserHostId;
   readonly listener: ListenerProbe;
-  readonly perfEnvironment: string;
+  readonly perfEnvironment: string | null;
+  readonly platform: NodeJS.Platform;
   readonly processMark: string;
   readonly rendererMark: string;
   readonly windowed: {
     readonly env: Readonly<Record<string, string>>;
     readonly flags: readonly string[];
     readonly launcher: WindowedLauncher;
+    readonly viewport: Viewport;
   };
 }
 
@@ -74,15 +88,53 @@ const METAL_FLAGS = [
 
 const CHROMIUM = "/usr/lib/chromium/chromium";
 
+const HYPRCTL_MONITORS: DisplayProbe = {
+  args: ["-i", "0", "monitors"],
+  file: "hyprctl",
+  keep: /^(?:Monitor |\d+x\d+@|scale:|vrr:|dpmsStatus:)/u,
+};
+
+const RETINA_WINDOW: Viewport = { height: 860, scale: 2, width: 1512 };
+
 export const browserHosts = {
+  "linux-intel": {
+    desktop: "hyprland",
+    displayProbes: [HYPRCTL_MONITORS],
+    headless: {
+      binary: CHROMIUM,
+      env: {},
+      flags: [
+        "--use-gl=angle",
+        "--use-angle=gl-egl",
+        "--enable-gpu",
+        "--ignore-gpu-blocklist",
+      ],
+    },
+    id: "linux-intel",
+    listener: ss,
+    perfEnvironment: null,
+    platform: "linux",
+    processMark: "chromium",
+    rendererMark: "Intel",
+    windowed: {
+      env: {},
+      flags: [
+        "--ozone-platform=x11",
+        "--use-gl=angle",
+        "--use-angle=gl",
+        "--enable-gpu",
+        "--ignore-gpu-blocklist",
+        "--disable-features=BackForwardCache",
+        "--start-fullscreen",
+      ],
+      launcher: { binary: CHROMIUM, kind: "direct" },
+      viewport: { height: 1080, scale: 1, width: 1920 },
+    },
+  },
   "linux-nvidia": {
     desktop: "hyprland",
     displayProbes: [
-      {
-        args: ["-i", "0", "monitors"],
-        file: "hyprctl",
-        keep: /^(?:Monitor |\d+x\d+@|scale:|vrr:|dpmsStatus:)/u,
-      },
+      HYPRCTL_MONITORS,
       {
         args: [
           "--query-gpu=name,driver_version,power.limit,pstate",
@@ -108,6 +160,7 @@ export const browserHosts = {
     id: "linux-nvidia",
     listener: ss,
     perfEnvironment: "gpu-chromium-nvidia",
+    platform: "linux",
     processMark: "chromium",
     rendererMark: "NVIDIA",
     windowed: {
@@ -126,6 +179,7 @@ export const browserHosts = {
         "--disable-features=BackForwardCache",
       ],
       launcher: { binary: CHROMIUM, kind: "direct" },
+      viewport: RETINA_WINDOW,
     },
   },
   "macos-metal": {
@@ -145,21 +199,53 @@ export const browserHosts = {
     id: "macos-metal",
     listener: lsof,
     perfEnvironment: "gpu-helium-metal",
+    platform: "darwin",
     processMark: "Helium",
     rendererMark: "Metal",
     windowed: {
       env: {},
       flags: METAL_FLAGS,
       launcher: { app: "/Applications/Helium.app", kind: "open" },
+      viewport: RETINA_WINDOW,
     },
   },
 } as const satisfies Readonly<Record<BrowserHostId, BrowserHost>>;
 
-export const perfEnvironments: readonly string[] = browserHostIds.map(
-  (id) => browserHosts[id].perfEnvironment
+export const perfEnvironments: readonly string[] = browserHostIds.flatMap(
+  (id) => {
+    const environment: string | null = browserHosts[id].perfEnvironment;
+    return environment === null ? [] : [environment];
+  }
 );
 
-export const hostOf = (platform: NodeJS.Platform): BrowserHost => {
+const decodeHostId = Schema.decodeUnknownOption(browserHostId);
+
+const chosenHost = (
+  platform: NodeJS.Platform,
+  setting: string
+): BrowserHost => {
+  const id = Option.getOrNull(decodeHostId(setting));
+  if (id === null) {
+    throw new Error(
+      `Unknown ${HOST_SETTING}=${setting}; use ${browserHostIds.join(", ")}.`
+    );
+  }
+  const host = browserHosts[id];
+  if (host.platform !== platform) {
+    throw new Error(
+      `${HOST_SETTING}=${setting} runs on ${host.platform}, and this machine is ${platform}.`
+    );
+  }
+  return host;
+};
+
+export const hostOf = (
+  platform: NodeJS.Platform,
+  setting?: string
+): BrowserHost => {
+  if (setting !== undefined && setting !== "") {
+    return chosenHost(platform, setting);
+  }
   if (platform === "darwin") {
     return browserHosts["macos-metal"];
   }
@@ -174,7 +260,8 @@ export const hostOf = (platform: NodeJS.Platform): BrowserHost => {
 export class CurrentHost extends Context.Service<CurrentHost, BrowserHost>()(
   "@racer/devtools/CurrentHost"
 ) {
-  static readonly layer = Layer.sync(CurrentHost)(() =>
-    hostOf(process.platform)
-  );
+  static readonly chosen = () =>
+    Layer.succeed(CurrentHost)(
+      hostOf(process.platform, process.env[HOST_SETTING])
+    );
 }

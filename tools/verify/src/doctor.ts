@@ -1,4 +1,4 @@
-import { CurrentHost } from "@racer/devtools/browser-host";
+import { browserHosts } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
 import { describeDesktop, desktopStatus } from "@racer/devtools/desktop";
 import { ToolProcesses, alive } from "@racer/devtools/process";
@@ -30,7 +30,7 @@ export const doctor = Effect.fn("rv.doctor")(function* doctor(
   const state = yield* requireRun(context);
   const processes = yield* ToolProcesses;
   const evidence = yield* Evidence;
-  const host = yield* CurrentHost;
+  const host = browserHosts[state.host];
   const results: boolean[] = [];
   const check = (ok: boolean, label: string, detail: string) =>
     Effect.map(print(`${ok ? "ok  " : "FAIL"} ${label}: ${detail}`), () => {

@@ -47,7 +47,7 @@ export const listSlots = Effect.fn("rv.list")(function* listSlots({
   }
   for (const state of held) {
     yield* print(
-      `slot ${state.slot}  run ${state.run}  ${state.serverUrl}  devtools ${state.devtoolsPort}  server ${alive(state.serverPid) ? "up" : "down"}  browser ${alive(state.browserPid) ? "up" : "down"}  from ${state.checkout}`
+      `slot ${state.slot}  run ${state.run}  ${state.serverUrl}  devtools ${state.devtoolsPort}  host ${state.host}  server ${alive(state.serverPid) ? "up" : "down"}  browser ${alive(state.browserPid) ? "up" : "down"}  from ${state.checkout}`
     );
   }
 });

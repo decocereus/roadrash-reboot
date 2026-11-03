@@ -1,7 +1,7 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { CurrentHost } from "@racer/devtools/browser-host";
+import { CurrentHost, HOST_SETTING } from "@racer/devtools/browser-host";
 import { desktopRuntimeEnv } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
@@ -251,9 +251,24 @@ const checkoutOf = (listed: string, run: string): string | null =>
 
 const checkedSides = Effect.fnUntraced(function* checkedSides(
   options: GpuOptions,
-  revision: string
+  revision: string,
+  hostId: string
 ) {
   const listed = yield* rv(["list"]);
+  const elsewhere = [options.runs.A, options.runs.B].filter((run) =>
+    listed
+      .split("\n")
+      .some(
+        (line) =>
+          line.includes(` run ${run} `) && !line.includes(` host ${hostId} `)
+      )
+  );
+  if (elsewhere.length > 0) {
+    return yield* new MeasurementFailed({
+      lane: "gpu",
+      message: `Run ${elsewhere.join(" and ")} started on another browser host; this lane judges ${hostId}. Start both runs with the same ${HOST_SETTING}:\n${listed}`,
+    });
+  }
   const B = yield* currentSide(REPO_ROOT);
   const checkouts = {
     A: checkoutOf(listed, options.runs.A),
@@ -400,6 +415,12 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
   const host = yield* CurrentHost;
+  const environment: string | null = host.perfEnvironment;
+  if (environment === null) {
+    return yield* new UsageError({
+      message: `${host.id} has no rows in tools/perf/budgets.json, so perf:gpu cannot judge it. tools/perf/README.md, under Intel, records why and the numbers measured so far.`,
+    });
+  }
   yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`);
   const startedAt = yield* Clock.currentTimeMillis;
   const approved = yield* readBudgets(options.budgets);
@@ -407,7 +428,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     REPO_ROOT,
     options.ref ?? approved.budgets.baseline.revision
   );
-  const sides = yield* checkedSides(options, revision);
+  const sides = yield* checkedSides(options, revision, host.id);
   const comparisonId = `gpu-${stampOf(startedAt)}-${revision.slice(0, 7)}-${sides.B.revision.slice(0, 7)}`;
   const dir = path.join(options.out, comparisonId);
   yield* fs.makeDirectory(path.join(dir, "gpu"), { recursive: true });
@@ -478,11 +499,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     }
   }
   const after = yield* doctorAll(options, dir, "doctor-after");
-  const evaluation = evaluateGpu(
-    samples,
-    approved.budgets.limits,
-    host.perfEnvironment
-  );
+  const evaluation = evaluateGpu(samples, approved.budgets.limits, environment);
   const files = yield* Effect.all(
     samples.map((sample) =>
       fs
@@ -510,7 +527,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
           frameRate: FRAME_RATE,
           page,
         },
-        environment: host.perfEnvironment,
+        environment,
         files,
         lines,
         observations: evaluation.observations,
