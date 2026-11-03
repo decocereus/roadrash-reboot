@@ -9,6 +9,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
 import { readBudgets } from "./approved.ts";
+import { holdBench } from "./bench-lock.ts";
 import { GPU_ENVIRONMENT } from "./budgets.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
 import {
@@ -397,6 +398,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
+  yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`);
   const startedAt = yield* Clock.currentTimeMillis;
   const approved = yield* readBudgets(options.budgets);
   const revision = yield* revisionOf(

@@ -21,6 +21,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
+import { holdBench } from "./bench-lock.ts";
 import {
   LATE_MS,
   afterGreenLight,
@@ -203,6 +204,7 @@ const runAll = Effect.fnUntraced(function* runAll(options: Options) {
 
 export const main = Effect.fn("measure.main")(function* main(options: Options) {
   const fs = yield* FileSystem.FileSystem;
+  yield* holdBench(`measure.ts --label ${options.label}`);
   yield* fs.makeDirectory(options.out, { recursive: true });
   const results = yield* runAll(options);
   yield* Effect.sync(() => {
