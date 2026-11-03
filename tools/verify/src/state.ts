@@ -35,7 +35,9 @@ const instanceState = Schema.Struct({
   cpu: Schema.Number,
   devtoolsPort: Schema.Number,
   evidence: Schema.String,
-  host: browserHostId,
+  host: browserHostId.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed("macos-metal" as const))
+  ),
   network: Schema.String,
   profile: Schema.String,
   run: Schema.String,
