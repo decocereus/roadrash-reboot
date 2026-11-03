@@ -426,6 +426,7 @@ export const readPages = Effect.fnUntraced(function* readPages(
   host: Pick<BrowserHost, "id" | "page">
 ) {
   const page = { A: yield* readPage(runs.A), B: yield* readPage(runs.B) };
+  yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
   if (sizeOf(page.A) !== sizeOf(page.B)) {
     const refused: PagesRead = {
       kind: "refused",
@@ -502,7 +503,6 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
     return { code: 1, lines: [pages.line, `evidence ${dir}`] };
   }
   const { page } = pages;
-  yield* say(`display A ${JSON.stringify(page.A)} B ${JSON.stringify(page.B)}`);
   yield* warm(options.runs.A);
   yield* warm(options.runs.B);
   const samples: GpuSample[] = [];
