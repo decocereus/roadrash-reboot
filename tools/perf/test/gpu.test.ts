@@ -331,7 +331,9 @@ describe("gpu frame lane", () => {
   it("fails a pack window that draws more calls than the committed budget", () => {
     const budget = limits.find(
       (each) =>
-        each.metric === "render.calls.max" && each.scenario === packRiding?.id
+        each.environment === METAL &&
+        each.metric === "render.calls.max" &&
+        each.scenario === packRiding?.id
     );
     if (!budget) {
       throw new Error("budgets.json has no pack-riding draw-call budget.");
@@ -358,7 +360,9 @@ describe("gpu frame lane", () => {
   it("fails a B window whose riders take longer than the committed budget", () => {
     const budget = limits.find(
       (each) =>
-        each.metric === "riders.cpu.p95" && each.scenario === packRiding?.id
+        each.environment === METAL &&
+        each.metric === "riders.cpu.p95" &&
+        each.scenario === packRiding?.id
     );
     if (!budget) {
       throw new Error("budgets.json has no pack-riding riders budget.");
@@ -448,5 +452,19 @@ describe("gpu frame lane", () => {
     expect(failing(evaluation.lines)).toStrictEqual([
       "FAIL first-use pack-riding-v1 side=B pack-riding-v1-pair1-B.json race frames start at tick=none expected=0",
     ]);
+  });
+
+  it("judges vimaan against its own rows, never the Mac's", () => {
+    const nvidia = browserHosts["linux-nvidia"].perfEnvironment;
+    const evaluation = evaluateGpu(
+      campaign(() => steady),
+      limits.filter((limit) => limit.environment === nvidia),
+      nvidia
+    );
+    expect(failing(evaluation.lines)).toStrictEqual([]);
+    expect(evaluation.lines.join("\n")).not.toContain(METAL);
+    expect(
+      new Set(evaluation.observations.map((each) => each.environment))
+    ).toStrictEqual(new Set([nvidia]));
   });
 });
