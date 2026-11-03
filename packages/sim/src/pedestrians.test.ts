@@ -266,8 +266,10 @@ describe("a pedestrian's own walk", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 0,
+      patience: 120,
       s: WALKER_S - 90,
       speed: 20,
+      waited: 0,
       x: 2,
     };
     state.cars.push(car);
@@ -331,8 +333,10 @@ describe("a car and a pedestrian", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 0,
+      patience: 120,
       s: WALKER_S - 100,
       speed: 20,
+      waited: 0,
       x: 2,
     };
     state.cars.push(car);
@@ -372,8 +376,10 @@ describe("a car and a pedestrian who walks into its lane", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 0,
+      patience: 120,
       s: WALKER_S - 40,
       speed: 20,
+      waited: 0,
       x: 2,
     };
     state.cars.push(car);

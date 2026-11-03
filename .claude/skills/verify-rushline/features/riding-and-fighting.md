@@ -11,6 +11,7 @@ In a race the player rides a motorcycle down a point-to-point road through traff
 - `fight-kick` kicks a rider alongside with Shift or K.
 - `crash` throws the rider off the bike after hitting the roadside or traffic.
 - `tumble`: while thrown, A and D move the rider sideways and S shortens the slide, including keys held through the crash.
+- `run-over`: a car waits 1.5 to 3 s behind a bike down in its lane, then drives over it, knocking the bike and cutting its condition.
 - `remount`: one press of E or the pad's first face button runs the rider to the bike and climbs on. A small prompt shows until it is pressed.
 - `cop-warning` shows the cop's distance at the top, blinking red under 80 m.
 - `finish` shows the place out of the field and a Continue banner at the end of the road.

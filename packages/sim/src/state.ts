@@ -207,6 +207,7 @@ export interface RiderState {
   staleBrake: boolean;
   staleSteer: boolean;
   runningToBike: boolean;
+  runOverBy: number;
   finishTick: number;
   crashes: number;
 }
@@ -225,6 +226,8 @@ export interface TrafficCar extends CarBox {
   speed: number;
   readonly cruiseSpeed: number;
   readonly paint: number;
+  readonly patience: number;
+  waited: number;
 }
 
 export interface CrossCar extends CarBox {

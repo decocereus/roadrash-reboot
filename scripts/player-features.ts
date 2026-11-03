@@ -59,6 +59,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/rider-recovery.ts",
       "packages/sim/src/crash-and-recovery.test.ts",
       "packages/sim/src/on-foot.test.ts",
+      "packages/sim/src/run-over.test.ts",
     ],
     perf: simTick,
     start: [

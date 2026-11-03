@@ -208,7 +208,7 @@ export const bindFeedback = ({
       riderCount: order.length,
       roadLength: stage.track.length,
       roadName: stage.track.plan.name,
-      speedKmh: me.speed * 3.6,
+      speedKmh: Math.abs(me.speed) * 3.6,
       stamina: me.stamina / MAX_STAMINA,
       weaponCapacity: weaponCapacity(me),
       weaponHits: me.weaponHits,

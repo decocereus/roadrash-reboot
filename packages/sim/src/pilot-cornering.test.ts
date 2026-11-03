@@ -458,8 +458,10 @@ describe("the pilot plans its speed along the road", () => {
           halfWidth: 0.92,
           height: 1.45,
           paint: 2,
+          patience: 120,
           s: 961,
           speed: -17.5,
+          waited: 0,
           x: -1.8,
         },
       ]

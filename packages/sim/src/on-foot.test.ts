@@ -72,8 +72,10 @@ describe("knocked down on foot", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 2,
+      patience: 120,
       s: me.bodyS - 2.2,
       speed: 20,
+      waited: 0,
       x: me.bodyX,
     });
     const { events, ticksDown } = untilOnFeetAgain(
@@ -333,8 +335,10 @@ describe("on foot", () => {
       halfWidth: 0.92,
       height: 1.45,
       paint: 0,
+      patience: 120,
       s: me.bodyS - 3,
       speed: 20,
+      waited: 0,
       x: me.bodyX,
     });
     const hit = onFoot(state, me, 0.5, () => neutralInput);

@@ -46,8 +46,10 @@ const slowCar = (s: number, x: number): TrafficCar => ({
   halfWidth: 0.92,
   height: 1.45,
   paint: 1,
+  patience: 120,
   s,
   speed: 15,
+  waited: 0,
   x,
 });
 

@@ -3,6 +3,7 @@ import type { Track } from "@racer/track/track";
 
 import { onRoad } from "./cross-traffic.ts";
 import { pullOver } from "./police.ts";
+import { damageRunOver } from "./rider-crash.ts";
 import {
   approach,
   BIKE_HALF_LENGTH,
@@ -12,7 +13,7 @@ import {
   TICK_SECONDS,
   WALKING_PACE,
 } from "./state.ts";
-import type { RaceState, RiderInput, RiderState } from "./state.ts";
+import type { RaceState, RiderInput, RiderState, TrafficCar } from "./state.ts";
 import { rearm } from "./weapons.ts";
 
 const BODY_GROUND_DECELERATION = 10;
@@ -33,6 +34,24 @@ const KNOCKDOWN_HOP = 0.3;
 const BODY_REACH = 0.5;
 const RUN_OVER_SPEED_LOSS = 0.1;
 const REMOUNT_STAMINA = 55;
+const BIKE_KNOCK_SHARE = 1.4;
+const LEAST_BIKE_KNOCK = 5;
+const BIKE_KNOCK_ACROSS = 6;
+
+const slideBike = (track: Track, rider: RiderState): void => {
+  rider.speed = approach(
+    rider.speed,
+    0,
+    BIKE_SLIDE_DECELERATION * TICK_SECONDS
+  );
+  rider.lateralSpeed = approach(rider.lateralSpeed, 0, 6 * TICK_SECONDS);
+  rider.s += rider.speed * TICK_SECONDS;
+  rider.x = clamp(
+    rider.x + rider.lateralSpeed * TICK_SECONDS,
+    -track.vergeHalfWidth,
+    track.vergeHalfWidth
+  );
+};
 
 const slide = (track: Track, rider: RiderState): boolean => {
   rider.modeTicks += 1;
@@ -60,18 +79,7 @@ const slide = (track: Track, rider: RiderState): boolean => {
     track.vergeHalfWidth
   );
 
-  rider.speed = approach(
-    rider.speed,
-    0,
-    BIKE_SLIDE_DECELERATION * TICK_SECONDS
-  );
-  rider.lateralSpeed = approach(rider.lateralSpeed, 0, 6 * TICK_SECONDS);
-  rider.s += rider.speed * TICK_SECONDS;
-  rider.x = clamp(
-    rider.x + rider.lateralSpeed * TICK_SECONDS,
-    -track.vergeHalfWidth,
-    track.vergeHalfWidth
-  );
+  slideBike(track, rider);
   rider.air = Math.max(0, rider.air - 8 * TICK_SECONDS);
   rider.lean = approach(
     rider.lean,
@@ -80,7 +88,7 @@ const slide = (track: Track, rider: RiderState): boolean => {
   );
 
   const settled =
-    rider.bodyAir === 0 && rider.bodySpeed < 0.3 && rider.speed < 0.3;
+    rider.bodyAir === 0 && rider.bodySpeed < 0.3 && Math.abs(rider.speed) < 0.3;
   return settled && rider.modeTicks > SETTLE_TICKS;
 };
 
@@ -180,7 +188,57 @@ const hitOnFoot = (state: RaceState, rider: RiderState): boolean => {
   return false;
 };
 
-const lie = (state: RaceState, rider: RiderState): void => {
+const over = (rider: RiderState, car: TrafficCar): boolean =>
+  Math.abs(car.s - rider.s) < car.halfLength + BIKE_HALF_LENGTH &&
+  Math.abs(car.x - rider.x) < car.halfWidth + BIKE_HALF_WIDTH;
+
+const hasCleared = (rider: RiderState, car: TrafficCar): boolean =>
+  (car.s - rider.s) * Math.sign(car.cruiseSpeed) >
+  car.halfLength + BIKE_HALF_LENGTH;
+
+const knockBike = (
+  state: RaceState,
+  rider: RiderState,
+  car: TrafficCar
+): void => {
+  const off = clamp(
+    (rider.x - car.x) / (car.halfWidth + BIKE_HALF_WIDTH),
+    -1,
+    1
+  );
+  const forward = Math.sign(car.cruiseSpeed);
+  rider.speed =
+    forward *
+    Math.max(LEAST_BIKE_KNOCK, Math.abs(car.speed) * BIKE_KNOCK_SHARE) *
+    (1 - Math.abs(off) / 2);
+  rider.lateralSpeed = off * BIKE_KNOCK_ACROSS;
+  damageRunOver(rider);
+  state.events.push({ kind: "bump", rider: rider.id });
+};
+
+const runOverBike = (state: RaceState, rider: RiderState): void => {
+  const under = state.cars[rider.runOverBy];
+  if (under && !hasCleared(rider, under)) {
+    return;
+  }
+  rider.runOverBy = -1;
+  for (let index = 0; index < state.cars.length; index += 1) {
+    const car = state.cars[index];
+    if (
+      car &&
+      car.waited >= car.patience &&
+      Math.abs(car.speed) > WALKING_PACE &&
+      over(rider, car)
+    ) {
+      rider.runOverBy = index;
+      knockBike(state, rider, car);
+      return;
+    }
+  }
+};
+
+const lie = (state: RaceState, track: Track, rider: RiderState): void => {
+  slideBike(track, rider);
   if (hitOnFoot(state, rider)) {
     return;
   }
@@ -240,6 +298,7 @@ const run = (
   rider: RiderState,
   input: RiderInput
 ): void => {
+  slideBike(track, rider);
   if (hitOnFoot(state, rider)) {
     return;
   }
@@ -247,6 +306,8 @@ const run = (
   if (rider.runningToBike && atTheBike(rider)) {
     rider.mode = "mounting";
     rider.modeTicks = 0;
+    rider.speed = 0;
+    rider.lateralSpeed = 0;
     rider.bodySpeed = 0;
     rider.bodyLateralSpeed = 0;
     return;
@@ -307,12 +368,19 @@ export const stepOffBike = (
 ): void => {
   releaseHeldInput(rider, input);
   rider.runningToBike ||= input.remount;
+  if (
+    rider.mode === "thrown" ||
+    rider.mode === "lying" ||
+    rider.mode === "running"
+  ) {
+    runOverBike(state, rider);
+  }
   if (rider.mode === "wrecked") {
     comeToRest(track, rider);
   } else if (rider.mode === "thrown") {
     tumble(track, rider, input);
   } else if (rider.mode === "lying") {
-    lie(state, rider);
+    lie(state, track, rider);
   } else if (rider.mode === "running") {
     run(state, track, rider, input);
   } else if (rider.mode === "mounting") {

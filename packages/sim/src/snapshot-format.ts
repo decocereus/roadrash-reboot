@@ -66,6 +66,7 @@ export type CarSetupKey =
   | "halfWidth"
   | "height"
   | "paint"
+  | "patience"
   | "x";
 
 export type CrossCarSetupKey =
@@ -145,6 +146,7 @@ const carSchema = schemaOf<
 >({
   s: floatAt("s"),
   speed: floatAt("speed"),
+  waited: floatAt("waited"),
 });
 
 const crossCarSchema = schemaOf<
@@ -222,6 +224,7 @@ const riderSchema = schemaOf<
   pilotLine: floatAt("pilotLine"),
   post: floatAt("post"),
   revs: floatAt("revs"),
+  runOverBy: floatAt("runOverBy"),
   runningToBike: flagAt("runningToBike"),
   s: floatAt("s"),
   shiftTicks: floatAt("shiftTicks"),

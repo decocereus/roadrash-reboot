@@ -13,6 +13,8 @@ const LEAST_DAMAGE = 0.1;
 const MOST_DAMAGE = 1.25;
 const BLAME_TICKS = 60;
 const BODY_FORWARD_SHARE = 0.6;
+const RUN_OVER_DAMAGE = 40;
+const LEAST_AFTER_RUN_OVER = 1;
 
 const damage = {
   combat: 28,
@@ -29,6 +31,15 @@ const blamedFor = (state: RaceState, rider: RiderState): RiderId | null =>
 
 const takesDamage = (rider: RiderState): boolean =>
   rider.profile.role === "racer" && rider.finishTick < 0;
+
+export const damageRunOver = (rider: RiderState): void => {
+  if (takesDamage(rider)) {
+    rider.condition = Math.min(
+      rider.condition,
+      Math.max(LEAST_AFTER_RUN_OVER, rider.condition - RUN_OVER_DAMAGE)
+    );
+  }
+};
 
 export const throwRider = (
   state: RaceState,
@@ -67,6 +78,7 @@ export const throwRider = (
   rider.staleBrake = true;
   rider.staleSteer = true;
   rider.runningToBike = false;
+  rider.runOverBy = -1;
   rider.bodyS = rider.s;
   rider.bodyX = rider.x;
   rider.bodyAir = rider.air + 0.9;

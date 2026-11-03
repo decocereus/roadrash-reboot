@@ -363,8 +363,10 @@ export const slowTruckAt = (state: RaceState, s: number, x: number): void => {
     halfWidth: 1.2,
     height: 3.1,
     paint: 1,
+    patience: 120,
     s,
     speed: 10,
+    waited: 0,
     x,
   });
 };
