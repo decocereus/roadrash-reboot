@@ -1,6 +1,7 @@
 import {
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
   existsSync,
@@ -94,5 +95,30 @@ describe("the bench lock", () => {
     const dir = freshDir();
     writeFileSync(path.join(dir, "bench.lock"), "not json");
     expect(Exit.isSuccess(await run(holdBench("next", dir)))).toBeTruthy();
+  });
+
+  it("names a live process that is clearing a dead claim, and leaves the claim to it", async () => {
+    const dir = freshDir();
+    const file = path.join(dir, "bench.lock");
+    const dead = JSON.stringify({ label: "crashed", pid: 2 ** 30 });
+    writeFileSync(file, dead);
+    writeFileSync(
+      `${file}.clearing`,
+      JSON.stringify({ label: "clearing", pid: process.pid })
+    );
+    const exit = await run(holdBench("next", dir));
+    expect(messageOf(exit)).toContain(`pid ${process.pid}, clearing`);
+    expect(readFileSync(file, "utf-8")).toBe(dead);
+  });
+
+  it("clears a clearer that died, then the claim it left", async () => {
+    const dir = freshDir();
+    const file = path.join(dir, "bench.lock");
+    const dead = JSON.stringify({ label: "crashed", pid: 2 ** 30 });
+    writeFileSync(file, dead);
+    writeFileSync(`${file}.clearing`, dead);
+    writeFileSync(`${file}.clearing.clearing`, "not json");
+    expect(Exit.isSuccess(await run(holdBench("next", dir)))).toBeTruthy();
+    expect(readdirSync(dir)).toStrictEqual([]);
   });
 });
