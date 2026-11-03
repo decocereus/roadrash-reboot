@@ -202,12 +202,13 @@ vimaan is a Linux laptop with a GTX 1650 Ti and no running desktop. Everything a
 
 - `rv up`, `rv doctor` and `rv down` manage the session. A second slot shares it, and the last slot to leave stops it. `rv desktop status` says who holds it.
 - It needs a logind seat that can open, which the owner's console login on tty1 gives. Without one `rv up` fails and says so. Nothing needs root.
-- A compositor someone else started is used and never stopped.
-- The page is 1512x773 at device pixel ratio 2 and does not change when another slot opens. A window bigger than the panel is expected. `rv shot` captures the whole page.
+- A compositor someone else started is used and never stopped, once it has an Xwayland. Until then `rv desktop up` and `rv up` fail and say that starting any X client in that session gives it an X display.
+- A session left behind by a killed `rv` is an orphan. `rv desktop status` names it, `rv desktop up` replaces it, and `rv desktop down` stops it.
+- In rv's own session the page is 1512x773 at device pixel ratio 2 and does not change when another slot opens, because its config floats every window. A compositor rv did not start tiles them, so the page shrinks and changes as slots open, and `pnpm perf:gpu` refuses it. A window bigger than the panel is expected. `rv shot` captures the whole page.
 - `rv doctor`'s gpu line must contain `NVIDIA`. `tools/perf/README.md`, under Vimaan, says why the flags are what they are.
 - `pnpm perf:gpu` needs side A's clone in `/var/tmp`, because `/tmp` is a small tmpfs. Its limits are the `gpu-chromium-nvidia` rows, never the Mac's.
 - The T3 browser stays on SwiftShader. Use `rv` for anything that needs a GPU.
-- `RUSHLINE_BROWSER_HOST=linux-intel rv up` runs on the Intel UHD 630, the stand-in for thin laptops, fullscreen at 1920x1080 and ratio 1. The slot remembers its host, so `rv doctor` then requires `Intel`, and later commands need no setting. It has no budget rows and `pnpm perf:gpu` refuses it. `tools/perf/README.md`, under Intel, holds the numbers it measured.
+- `RUSHLINE_BROWSER_HOST=linux-intel rv up` runs on the Intel UHD 630, the stand-in for thin laptops, fullscreen at 1920x1080 and ratio 1. The slot remembers its host, so `rv doctor` then requires `Intel`, and later commands need no setting. It has no budget rows and `pnpm perf:gpu` refuses it. Run an Intel measurement one slot at a time, because a second slot takes fullscreen from the first and changes its page from 1920x1080 to 1919x1079. `tools/perf/README.md`, under Intel, holds the numbers it measured.
 
 ## Sandbox notes for worktree agents
 

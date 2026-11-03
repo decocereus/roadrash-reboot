@@ -118,7 +118,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 
 Each run launches the host's browser with a new temporary profile that is deleted when the run ends, fails or is interrupted, `--force-device-scale-factor`, `--disable-gpu-vsync --disable-frame-rate-limit` so frames are not capped, and the host's GPU flags: `--use-angle=metal --enable-gpu --ignore-gpu-blocklist` on this Mac, `--use-gl=angle --use-angle=gl-egl` headless and `--use-gl=angle --use-angle=gl` windowed on vimaan. The summary prints the unmasked renderer string. It should read `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` on this Mac and `ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti ...)` on vimaan, and never SwiftShader.
 
-`measure.ts` and `pnpm perf:gpu` take one exclusive claim, `$TMPDIR/rushline-verify/bench.lock`, because two benches on one GPU skew each other. The second fails at once and names the holder's pid and command. A claim whose pid has died is recovered. Plain `rv` verification does not take it.
+`measure.ts` and `pnpm perf:gpu` take one exclusive claim, `$TMPDIR/rushline-verify/bench.lock`, because two benches on one GPU skew each other. The second fails at once and names the holder's pid and command. A claim whose pid has died is recovered, by one process at a time: the process that takes `bench.lock.clearing` re-reads the claim and removes it only if it is still dead. Plain `rv` verification does not take it.
 
 ### The page side
 
@@ -204,11 +204,11 @@ Evidence goes to `tools/perf/results/gpu-<time>-<A>-<B>/`: every raw page captur
 
 ### Vimaan
 
-vimaan has no running desktop, so `rv up` starts one on demand. `packages/devtools/src/desktop.ts` owns it: a claim file holds the Hyprland pid, its Xwayland display and who holds it, and the last holder to leave stops it. A compositor someone else started is used and never stopped. It needs a logind seat that can open, which the owner's console login on tty1 gives. These facts decide how a run looks there, and each was measured on 2026-11-03:
+vimaan has no running desktop, so `rv up` starts one on demand. `packages/devtools/src/desktop.ts` owns it: a claim file holds the Hyprland pid, its Xwayland display and who holds it, and the last holder to leave stops it. A compositor someone else started is used and never stopped, but its layout usually changes the page, and the lane then refuses it. It needs a logind seat that can open, which the owner's console login on tty1 gives. These facts decide how a run looks there, and each was measured on 2026-11-03:
 
 - The window goes through Xwayland with PRIME offload, because Wayland with `--render-node-override` crashes the GPU process and default Wayland uses the Intel GPU.
 - `packages/devtools/src/rushline-desktop.conf` floats every window. A tiled window ignores `--window-size`, and opening a second run would resize the first, which the lane refuses.
-- `--force-device-scale-factor=2` with the 1512x860 window gives a 1512x773 page at device pixel ratio 2, the ratio every sample must have. That is 4.7 million pixels against 4.1 million on this Mac. The window is 3024x1720, larger than the 1920x1080 panel. Hyprland draws only what fits, and the game still renders the whole canvas. A fully covered window keeps its 16.7 ms frames.
+- `--force-device-scale-factor=2` with the 1512x860 window gives a 1512x773 page at device pixel ratio 2, the ratio every sample must have. `pnpm perf:gpu` refuses any other page before warm-up, because the `gpu-chromium-nvidia` rows were measured on this one. That is 4.7 million pixels against 4.1 million on this Mac. The window is 3024x1720, larger than the 1920x1080 panel. Hyprland draws only what fits, and the game still renders the whole canvas. A fully covered window keeps its 16.7 ms frames.
 - `--disable-features=BackForwardCache` keeps a parked side from holding VRAM. Without it the card's 4 GB filled with three finished races on `/kit`, about 1.1 GB each, and the other side's next race fell to a 116 ms median frame. With it a parked page holds about 120 MB. This Mac's unified memory never showed the problem, so its row does not carry the flag.
 - The browser is `/usr/lib/chromium/chromium`, not `/usr/bin/chromium`, because that launcher adds the owner's `~/.config/chromium-flags.conf`, which loads extensions and asks for Wayland.
 
