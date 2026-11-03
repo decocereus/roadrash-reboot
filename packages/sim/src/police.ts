@@ -210,16 +210,20 @@ const bust = (
   pullOver(track, rider);
 };
 
-export const chaserDistance = (state: RaceView, chased: RiderId): number => {
+export const chaserGap = (state: RaceView, chased: RiderId): number | null => {
   const rider = riderOf(state.riders, chased);
-  let nearest = -1;
+  let gap: number | null = null;
+  let nearest = Number.POSITIVE_INFINITY;
   for (const cop of state.riders) {
     if (rider && cop.profile.role === "police" && cop.chase === chased) {
       const distance = hypot2(rider.bodyS - cop.s, rider.bodyX - cop.x);
-      nearest = nearest < 0 ? distance : Math.min(nearest, distance);
+      if (distance < nearest) {
+        nearest = distance;
+        gap = cop.s < rider.bodyS ? -distance : distance;
+      }
     }
   }
-  return nearest;
+  return gap;
 };
 
 const catchDowned = (state: RaceState, track: Track, cop: RiderState) => {

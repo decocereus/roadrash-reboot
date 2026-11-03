@@ -48,7 +48,7 @@ export interface HudState {
   readonly weaponCapacity: number;
   readonly bikeName: string;
   readonly condition: number;
-  readonly copDistance: number;
+  readonly copGap: number | null;
   readonly distanceLeft: number;
   readonly roadName: string;
   readonly roadLength: number;

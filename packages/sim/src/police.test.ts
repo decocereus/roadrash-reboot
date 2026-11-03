@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chaserDistance, PATROL_SPEED } from "./police.ts";
+import { chaserGap, PATROL_SPEED } from "./police.ts";
 import {
   cruising,
   field,
@@ -195,16 +195,35 @@ const patrolWithBeat = (beat: number) => {
     me.x = -1.8;
     me.stamina = MAX_STAMINA;
     stepRace(state, straight, frameOf(state, [me.id, cruising]));
-    chased ||= chaserDistance(state, me.id) >= 0;
+    chased ||= chaserGap(state, me.id) !== null;
   }
   return {
     chased,
-    chasing: chaserDistance(state, me.id) >= 0,
+    chasing: chaserGap(state, me.id) !== null,
     offTheRoad: Math.abs(cop.x) > straight.roadHalfWidth,
     past: cop.s - post,
     speed: cop.speed,
   };
 };
+
+describe("the cop warning", () => {
+  it("says whether the chasing cop is ahead of the rider or behind them", () => {
+    const state = createRace({ ...defaultSetup(straight, 1), rivals: [] });
+    const me = player(state);
+    const cop = onlyCop(state);
+    me.s = 1000;
+    me.bodyS = 1000;
+    me.x = cop.x;
+    me.bodyX = cop.x;
+    cop.chase = me.id;
+    cop.s = 650;
+    expect(chaserGap(state, me.id)).toBe(-350);
+    cop.s = 1100;
+    expect(chaserGap(state, me.id)).toBe(100);
+    cop.chase = null;
+    expect(chaserGap(state, me.id)).toBeNull();
+  });
+});
 
 describe("the bust window", () => {
   it("a cop beside a rider who is knocked off at walking pace arrests them, but not in the first half second", () => {
@@ -280,7 +299,12 @@ const chase = (police: PoliceSetup, lead: number, quarrySpeed: number) => {
     pursued ||= state.events.some((event) => event.kind === "pursuit");
     fastest = Math.max(fastest, cop.speed);
   }
-  return { distance: chaserDistance(state, me.id), fastest, pursued };
+  const gap = chaserGap(state, me.id);
+  return {
+    distance: gap === null ? -1 : Math.abs(gap),
+    fastest,
+    pursued,
+  };
 };
 
 const rideToBody = (police: PoliceSetup) => {

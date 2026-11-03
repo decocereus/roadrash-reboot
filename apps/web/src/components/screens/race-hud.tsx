@@ -31,12 +31,20 @@ const noticeText = (hud: HudState): string => {
   }[hud.notice];
 };
 
-const CopWarning = ({ metres }: { readonly metres: number }) => (
+const copWarningText = (gap: number): string => {
+  const metres = Math.round(Math.abs(gap));
+  if (metres < COP_ON_YOU) {
+    return "Cop on you";
+  }
+  return gap > 0 ? `▲ Cop ${metres} m ahead ▲` : `▼ Cop ${metres} m behind ▼`;
+};
+
+const CopWarning = ({ gap }: { readonly gap: number }) => (
   <p
     className="font-display tracking-display cop-blink numeric text-name bg-ink/85 absolute top-[3%] left-1/2 -translate-x-1/2 px-4 py-1 font-extrabold whitespace-nowrap uppercase"
     role="alert"
   >
-    {metres < COP_ON_YOU ? "Cop on you" : `▲ Cop ${Math.round(metres)} m ▲`}
+    {copWarningText(gap)}
   </p>
 );
 
@@ -72,9 +80,7 @@ export const RaceHud = ({
         </p>
       ) : (
         <>
-          {racing && hud.copDistance >= 0 && (
-            <CopWarning metres={hud.copDistance} />
-          )}
+          {racing && hud.copGap !== null && <CopWarning gap={hud.copGap} />}
           <Speedometer hud={hud} />
           {hud.countdown > 0 && (
             <p

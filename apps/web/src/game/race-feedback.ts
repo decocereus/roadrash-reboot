@@ -1,5 +1,5 @@
 import type { RaceOutcome } from "@racer/career/outcome";
-import { chaserDistance } from "@racer/sim/police";
+import { chaserGap } from "@racer/sim/police";
 import { distanceLeft, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
 import { clamp, FULL_CONDITION, MAX_STAMINA, riderOf } from "@racer/sim/state";
@@ -190,7 +190,7 @@ export const bindFeedback = ({
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
-      copDistance: chaserDistance(stage.race.view, stage.me),
+      copGap: chaserGap(stage.race.view, stage.me),
       countdown: Math.max(
         0,
         Math.ceil(session.holdLeft > 0 ? session.holdLeft : session.countdown)
