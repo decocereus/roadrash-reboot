@@ -24,14 +24,30 @@ import type {
 
 const MOST_LEAD_TICKS = INPUT_HORIZON;
 
+const FELT_JUMP_METRES = 0.25;
+
+const JUMP_CAUSES = ["behindServer", "otherRiders", "ownControl"] as const;
+
+type JumpCause = (typeof JUMP_CAUSES)[number];
+
+interface JumpTally {
+  felt: number;
+  totalMetres: number;
+  worstMetres: number;
+}
+
 interface RoomStats {
   rollbacks: number;
   resimulatedTicks: number;
   desyncs: number;
+  refusedPredictions: number;
+  readonly jumps: Record<JumpCause, JumpTally>;
+  readonly worstJump: { metres: number; roadMetres: number; tick: number };
 }
 
 export interface RoomClient {
   readonly confirmed: RaceState;
+  readonly mine: RiderState;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
   readonly predict: (control: Control) => boolean;
@@ -77,7 +93,18 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
   let sentThrough = 0;
-  const stats: RoomStats = { desyncs: 0, resimulatedTicks: 0, rollbacks: 0 };
+  const stats: RoomStats = {
+    desyncs: 0,
+    jumps: {
+      behindServer: { felt: 0, totalMetres: 0, worstMetres: 0 },
+      otherRiders: { felt: 0, totalMetres: 0, worstMetres: 0 },
+      ownControl: { felt: 0, totalMetres: 0, worstMetres: 0 },
+    },
+    refusedPredictions: 0,
+    resimulatedTicks: 0,
+    rollbacks: 0,
+    worstJump: { metres: 0, roadMetres: 0, tick: 0 },
+  };
 
   const slotOf = (tick: number): number => tick % ownControls.length;
 
@@ -121,6 +148,19 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     restoreInto(predicted, digest, view);
   };
 
+  const noteJump = (cause: JumpCause, fromS: number, fromX: number): void => {
+    const metres = Math.max(Math.abs(mine.s - fromS), Math.abs(mine.x - fromX));
+    const tally = stats.jumps[cause];
+    tally.felt += metres >= FELT_JUMP_METRES ? 1 : 0;
+    tally.totalMetres += metres;
+    tally.worstMetres = Math.max(tally.worstMetres, metres);
+    if (metres > stats.worstJump.metres) {
+      stats.worstJump.metres = metres;
+      stats.worstJump.roadMetres = mine.s;
+      stats.worstJump.tick = predicted.tick;
+    }
+  };
+
   const learn = (frame: TickFrame): void => {
     for (const remote of remotes) {
       const control = frame.controls.get(remote.id);
@@ -144,8 +184,11 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         }
       }
       const reached = predicted.tick;
+      const fromS = mine.s;
+      const fromX = mine.x;
       if (reached < frame.tick) {
         rewind();
+        noteJump("behindServer", fromS, fromX);
         return;
       }
       const guessed = guesses[slotOf(frame.tick)];
@@ -158,11 +201,20 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         advance(tick);
         stats.resimulatedTicks += 1;
       }
+      noteJump(
+        guessed?.controls.get(me) === frame.controls.get(me)
+          ? "otherRiders"
+          : "ownControl",
+        fromS,
+        fromX
+      );
     },
     confirmed,
+    mine,
     predict: (control) => {
       const tick = predicted.tick + 1;
       if (tick - confirmed.tick > MOST_LEAD_TICKS) {
+        stats.refusedPredictions += 1;
         return false;
       }
       ownControls[slotOf(tick)] = control;

@@ -96,7 +96,7 @@ const seatFor = (rider: RiderState): Seat => ({
   ticks: Array.from({ length: INPUT_HORIZON }, () => NO_TICK),
 });
 
-const isDone = (rider: RiderState): boolean =>
+export const isDone = (rider: RiderState): boolean =>
   rider.finishTick >= 0 || rider.mode === "busted" || rider.mode === "wrecked";
 
 export interface Room {

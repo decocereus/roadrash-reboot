@@ -1,6 +1,7 @@
 import type { CareerRaceSetup } from "@racer/career/field";
 import { guestNames, seatedRace } from "@racer/career/room-race";
 import type { GuestNames } from "@racer/career/room-race";
+import { isDone } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
 import { createRoomClock } from "@racer/sim/room-clock";
@@ -10,11 +11,13 @@ import {
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
+  RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
   readPong,
   readTick,
   START_PACKET_BYTES,
   writePing,
+  writeRaceStats,
   writeReady,
   writeStart,
 } from "@racer/sim/room-wire";
@@ -25,6 +28,7 @@ import * as Option from "effect/Option";
 
 import { decodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
 import type { RoomStarted } from "./messages.ts";
+import { createRaceTally } from "./race-tally.ts";
 
 const PING_EVERY_MS = 500;
 const DEAD_AFTER_MS = 5000;
@@ -57,6 +61,7 @@ export interface SeatListeners {
 export interface RoomSeat {
   readonly closeCode: () => number | null;
   readonly flush: () => void;
+  readonly frameDrawn: () => void;
   readonly leave: () => void;
   readonly listen: (next: SeatListeners) => void;
   readonly phase: () => SeatPhase;
@@ -90,6 +95,8 @@ export const openRoomSeat = (
   );
   const ping = new DataView(new ArrayBuffer(PING_PACKET_BYTES));
   const clock = createRoomClock();
+  const tally = createRaceTally();
+  let reported = false;
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
   let riders = 0;
@@ -158,6 +165,7 @@ export const openRoomSeat = (
       rttMs = Math.floor(performance.now()) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
       clock.heardRtt(rttMs);
+      tally.heardRtt(rttMs);
       return;
     }
     if (race && readTick(view, read)) {
@@ -226,6 +234,16 @@ export const openRoomSeat = (
     }
   });
 
+  const reportOnce = (): void => {
+    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    reported = true;
+    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
+    writeRaceStats(packet, tally.read(race.client, worstRttMs));
+    socket.send(packet.buffer);
+  };
+
   return {
     closeCode: () => closeCode,
     flush: () => {
@@ -239,8 +257,17 @@ export const openRoomSeat = (
       ) {
         socket.send(new Uint8Array(input.buffer, 0, bytes));
       }
+      if (isDone(race.client.mine)) {
+        reportOnce();
+      }
+    },
+    frameDrawn: () => {
+      if (race && race.client.predicted.tick > 0) {
+        tally.frameDrawn(performance.now(), race.client.mine.s);
+      }
     },
     leave: () => {
+      reportOnce();
       stopPings();
       phase = "left";
       socket.close(SEAT_CLOSED, "The rider left this seat.");
@@ -265,8 +292,17 @@ export const openRoomSeat = (
       socket.send(packet.buffer);
     },
     startsInMs: () => lobbyEndsAt - performance.now(),
-    stepsDue: () =>
-      race ? clock.stepsDue(race.client.predicted.tick, performance.now()) : 0,
+    stepsDue: () => {
+      if (!race) {
+        return 0;
+      }
+      const { predicted } = race.client;
+      const steps = clock.stepsDue(predicted.tick, performance.now());
+      if (predicted.tick > 0) {
+        tally.stepped(steps);
+      }
+      return steps;
+    },
     target: () => clock.target(performance.now()),
     worstRttMs: () => worstRttMs,
   };

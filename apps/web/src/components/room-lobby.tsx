@@ -37,6 +37,7 @@ const planOf = (seat: RoomSeat, raceId: string): RacePlan | null => {
       latency.pressed();
     }
   });
+  globalThis.addEventListener("pagehide", seat.leave);
   const room = createRoomRun(seat, race, raceId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,

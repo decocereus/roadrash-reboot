@@ -522,6 +522,7 @@ const startGame = (
     if (stage.warming) {
       return;
     }
+    session.plan?.room?.frameDrawn();
     cast.clock += seconds;
     let index = -1;
     for (const rider of stage.race.view.riders) {

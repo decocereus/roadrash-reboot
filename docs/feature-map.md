@@ -1333,6 +1333,7 @@ Source files:
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/race-server.ts`
+- `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/worker.ts`
@@ -1367,10 +1368,12 @@ Test files:
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/messages.test.ts`
+- `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/web/src/components/rematch-watch.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
+- `packages/sim/src/room-jumps.test.ts`
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
