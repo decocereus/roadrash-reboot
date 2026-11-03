@@ -47,7 +47,7 @@ const holdersOfOneTrial = async (
   const released = Promise.all(children.map(nextMessage));
   orderEach(children, null);
   await released;
-  return reports.map(decodeReport).filter((report) => report.entered).length;
+  return reports.filter((report) => decodeReport(report).entered).length;
 };
 
 describe("recovering a dead bench claim with real processes", () => {

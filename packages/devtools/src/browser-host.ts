@@ -43,7 +43,7 @@ export interface DesktopEnv {
   readonly DISPLAY?: string;
 }
 
-export interface HostPage {
+interface HostPage {
   readonly dpr: number;
   readonly height: number;
   readonly width: number;
