@@ -61,6 +61,7 @@ export interface SeatListeners {
 export interface RoomSeat {
   readonly closeCode: () => number | null;
   readonly flush: () => void;
+  readonly frameDrawn: (now: number) => void;
   readonly leave: () => void;
   readonly listen: (next: SeatListeners) => void;
   readonly phase: () => SeatPhase;
@@ -260,6 +261,11 @@ export const openRoomSeat = (
         reportOnce();
       }
     },
+    frameDrawn: (now) => {
+      if (race && race.client.predicted.tick > 0) {
+        tally.frameDrawn(now, race.client.mine.s);
+      }
+    },
     leave: () => {
       reportOnce();
       stopPings();
@@ -290,11 +296,10 @@ export const openRoomSeat = (
       if (!race) {
         return 0;
       }
-      const now = performance.now();
-      const { mine, predicted } = race.client;
-      const steps = clock.stepsDue(predicted.tick, now);
+      const { predicted } = race.client;
+      const steps = clock.stepsDue(predicted.tick, performance.now());
       if (predicted.tick > 0) {
-        tally.stepped(now, steps, mine.s);
+        tally.stepped(steps);
       }
       return steps;
     },

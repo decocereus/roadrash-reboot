@@ -6,14 +6,15 @@ const CENTIMETRES = 100;
 
 export interface RaceTally {
   readonly heardRtt: (rttMs: number) => void;
-  readonly stepped: (now: number, steps: number, roadMetres: number) => void;
+  readonly frameDrawn: (now: number, roadMetres: number) => void;
+  readonly stepped: (steps: number) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
 }
 
 export const createRaceTally = (): RaceTally => {
   let rttTotal = 0;
   let rttCount = 0;
-  let lastStepAt = 0;
+  let lastFrameAt = 0;
   let held = 0;
   let doubled = 0;
   let mostSteps = 0;
@@ -21,6 +22,15 @@ export const createRaceTally = (): RaceTally => {
   let worstFrameMs = 0;
   let worstFrameRoadMetres = 0;
   return {
+    frameDrawn: (now, roadMetres) => {
+      const frameMs = lastFrameAt === 0 ? 0 : now - lastFrameAt;
+      lastFrameAt = now;
+      slowFrames += frameMs >= SLOW_FRAME_MS ? 1 : 0;
+      if (frameMs > worstFrameMs) {
+        worstFrameMs = frameMs;
+        worstFrameRoadMetres = roadMetres;
+      }
+    },
     heardRtt: (rttMs) => {
       rttTotal += rttMs;
       rttCount += 1;
@@ -52,17 +62,10 @@ export const createRaceTally = (): RaceTally => {
       worstOtherRidersCm: stats.jumps.otherRiders.worstMetres * CENTIMETRES,
       worstOwnControlCm: stats.jumps.ownControl.worstMetres * CENTIMETRES,
     }),
-    stepped: (now, steps, roadMetres) => {
-      const frameMs = lastStepAt === 0 ? 0 : now - lastStepAt;
-      lastStepAt = now;
+    stepped: (steps) => {
       held += steps === 0 ? 1 : 0;
       doubled += steps >= 2 ? 1 : 0;
       mostSteps = Math.max(mostSteps, steps);
-      slowFrames += frameMs >= SLOW_FRAME_MS ? 1 : 0;
-      if (frameMs > worstFrameMs) {
-        worstFrameMs = frameMs;
-        worstFrameRoadMetres = roadMetres;
-      }
     },
   };
 };

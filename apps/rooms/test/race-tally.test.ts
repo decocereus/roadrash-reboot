@@ -15,10 +15,10 @@ const client = createRoomClient(
 describe("a rider's race tally", () => {
   it("counts the frames the clock held the bike or moved it more than once", () => {
     const tally = createRaceTally();
-    tally.stepped(1000, 1, 10);
-    tally.stepped(1016, 0, 10);
-    tally.stepped(1032, 4, 12);
-    tally.stepped(1048, 2, 13);
+    tally.stepped(1);
+    tally.stepped(0);
+    tally.stepped(4);
+    tally.stepped(2);
     expect(tally.read(client, 0)).toMatchObject({
       doubledSteps: 2,
       heldSteps: 1,
@@ -28,9 +28,9 @@ describe("a rider's race tally", () => {
 
   it("keeps the slowest frame and where on the road it happened", () => {
     const tally = createRaceTally();
-    tally.stepped(1000, 1, 10);
-    tally.stepped(1080, 1, 500);
-    tally.stepped(1096, 1, 501);
+    tally.frameDrawn(1000, 10);
+    tally.frameDrawn(1080, 500);
+    tally.frameDrawn(1096, 501);
     expect(tally.read(client, 0)).toMatchObject({
       slowFrames: 1,
       worstFrameMs: 80,
