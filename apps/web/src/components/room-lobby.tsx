@@ -38,13 +38,6 @@ const planOf = (seat: RoomSeat, raceId: string): RacePlan | null => {
     }
   });
   globalThis.addEventListener("pagehide", seat.leave);
-  const watchFrames = (now: number): void => {
-    seat.frameDrawn(now);
-    if (seat.phase() === "loading" || seat.phase() === "racing") {
-      requestAnimationFrame(watchFrames);
-    }
-  };
-  requestAnimationFrame(watchFrames);
   const room = createRoomRun(seat, race, raceId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
