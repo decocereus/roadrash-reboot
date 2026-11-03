@@ -1,5 +1,6 @@
 import type { Track } from "@racer/track/track";
 
+import { comesDownOnCarrier, solidBoxOf, stepCarrierRamp } from "./carrier.ts";
 import { onRoad } from "./cross-traffic.ts";
 import { hitCar, hitCrossCar, hitProps } from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
@@ -29,6 +30,28 @@ const pastTheLine: RiderInput = {
   throttle: 0,
 };
 
+const hitTraffic = (state: RaceState, rider: RiderState): boolean => {
+  for (const car of state.cars) {
+    if (
+      Math.abs(car.s - rider.s) < car.halfLength + 8 &&
+      (comesDownOnCarrier(state, rider, car) ||
+        hitCar(state, rider, solidBoxOf(car)))
+    ) {
+      return true;
+    }
+  }
+  for (const car of state.crossCars) {
+    if (
+      onRoad(car) &&
+      Math.abs(car.s - rider.s) < 12 &&
+      hitCrossCar(state, rider, car)
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const stepRider = (
   state: RaceState,
   track: Track,
@@ -46,10 +69,15 @@ export const stepRider = (
   }
 
   rider.modeTicks += 1;
-  if (rider.airborne) {
+  const fromS = rider.s;
+  const fromX = rider.x;
+  if (rider.airborne && rider.onCarrier < 0) {
     fly(state, track, rider);
   } else {
     ride(state, track, rider, rider.finishTick < 0 ? input : coasting);
+  }
+  if (rider.mode === "riding") {
+    stepCarrierRamp(state, track, rider, fromS, fromX);
   }
 
   let thrown = rider.mode !== "riding";
@@ -61,22 +89,7 @@ export const stepRider = (
   if (!thrown) {
     thrown = hitProps(state, track, rider);
   }
-  for (const car of state.cars) {
-    if (thrown) {
-      break;
-    }
-    if (Math.abs(car.s - rider.s) < 12) {
-      thrown = hitCar(state, rider, car);
-    }
-  }
-  for (const car of state.crossCars) {
-    if (thrown) {
-      break;
-    }
-    if (onRoad(car) && Math.abs(car.s - rider.s) < 12) {
-      thrown = hitCrossCar(state, rider, car);
-    }
-  }
+  thrown ||= hitTraffic(state, rider);
   if (thrown) {
     return;
   }

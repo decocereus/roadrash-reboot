@@ -6,14 +6,13 @@ import {
   field,
   flatOut,
   frameOf,
-  hazardFreeRoad,
   hold,
   pilotAt,
   pilotFrom,
   placedAt,
   onlyCop,
   player,
-  rampRoad,
+  hazardFreeRoad,
   roadWith,
 } from "./race-fixtures.ts";
 import { neutralInput, stepRace } from "./race.ts";
@@ -69,18 +68,20 @@ describe("road hazards", () => {
     ]);
   });
 
-  it("a hazard cannot be spawned on a ramp, off the road, or with an id already taken", () => {
-    const state = field(rampRoad, 1, 0, 0);
+  it("a hazard cannot be spawned off the road or with an id already taken", () => {
+    const state = field(hazardFreeRoad, 1, 0, 0);
     const spot = { command: null, id: "a", s: 1500, x: 0 };
-    expect(spawnPothole(state, rampRoad, spot)?.id).toBe("a");
-    expect(spawnPothole(state, rampRoad, { ...spot, s: 1600 })).toBeUndefined();
+    expect(spawnPothole(state, hazardFreeRoad, spot)?.id).toBe("a");
     expect(
-      spawnOil(state, rampRoad, { ...spot, id: "b", s: 1008 })
+      spawnPothole(state, hazardFreeRoad, { ...spot, s: 1600 })
     ).toBeUndefined();
     expect(
-      spawnRock(state, rampRoad, { ...spot, id: "c", x: 4.4 })
+      spawnOil(state, hazardFreeRoad, { ...spot, id: "b", x: 4.4 })
     ).toBeUndefined();
-    hold(state, rampRoad, neutralInput, 1);
+    expect(
+      spawnRock(state, hazardFreeRoad, { ...spot, id: "c", x: 4.4 })
+    ).toBeUndefined();
+    hold(state, hazardFreeRoad, neutralInput, 1);
     expect(
       state.hazards
         .filter((hazard) => ["a", "b", "c"].includes(hazard.id))

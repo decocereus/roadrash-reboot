@@ -1,5 +1,4 @@
 import type { CrossRoad, Lights, TrackCrossing } from "@racer/track/crossings";
-import type { TrackFeature } from "@racer/track/features";
 import type { HazardPlacement } from "@racer/track/hazards";
 import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
 import type { WalkSite } from "@racer/track/walk-sites";
@@ -23,6 +22,7 @@ import type {
 import { hashBytes } from "./snapshot-hash.ts";
 import {
   bytesOf,
+  flagAt,
   floatAt,
   floatsAt,
   putRecord,
@@ -79,18 +79,6 @@ const propSchema = writtenSchemaOf<TrackProp>({
   x: floatAt("x"),
 });
 
-const featureSchema = writtenSchemaOf<TrackFeature>({
-  fromS: floatAt("fromS"),
-  id: textAt("id"),
-  kind: textAt("kind"),
-  length: floatAt("length"),
-  rise: floatAt("rise"),
-  s: floatAt("s"),
-  toS: floatAt("toS"),
-  width: floatAt("width"),
-  x: floatAt("x"),
-});
-
 const lightsSchema = writtenSchemaOf<Lights>({
   offsetTicks: floatAt("offsetTicks"),
 });
@@ -130,13 +118,11 @@ const walkSiteSchema = writtenSchemaOf<WalkSite>({
   s: floatAt("s"),
 });
 
-const trackSchema: WrittenSchema<Omit<Track, "featureIndex">> = writtenSchemaOf<
-  Omit<Track, "featureIndex">
->({
+const trackSchema: WrittenSchema<Track> = writtenSchemaOf<Track>({
+  carrierStarts: samplesAt("carrierStarts"),
   crossings: writtenListAt("crossings", crossingSchema),
   curvature: samplesAt("curvature"),
   endS: floatAt("endS"),
-  features: writtenListAt("features", featureSchema),
   hazards: writtenListAt("hazards", placementSchema),
   heading: samplesAt("heading"),
   length: floatAt("length"),
@@ -208,6 +194,7 @@ const riderSetupSchema = writtenSchemaOf<Pick<RiderView, RiderSetupKey>>({
 });
 
 const carSetupSchema = writtenSchemaOf<Pick<TrafficView, CarSetupKey>>({
+  carrier: flagAt("carrier"),
   cruiseSpeed: floatAt("cruiseSpeed"),
   halfLength: floatAt("halfLength"),
   halfWidth: floatAt("halfWidth"),

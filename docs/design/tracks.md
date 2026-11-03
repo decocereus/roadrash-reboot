@@ -4,11 +4,11 @@ Drafted October 10, 2026. The five roads as `TrackPlan` data. Each level-1 plan 
 
 Lengthened October 14, 2026. The original game's level-1 roads measure 8.0 to 8.9 km (5.0 to 5.5 miles), and the first drafts here were 3.6 to 4.4 km, so a race lasted about a minute and a half instead of several minutes. Each level-1 road keeps every section it had and continues past its old finish line, which is now a place the race rides through. The new stretch is listed in each road's section table below the old finish, and its moments are named in the paragraph after the road's opening description. Level-1 roads are now 8.05 to 8.85 km.
 
-Jumps added October 15, 2026. Three roads gained a hump across the whole road, made by splitting a straight, so no road changed length and no bend moved: **the Pier hump** on Breakwater Run and **the Pressure Ridge** on Cinder Wash launch at 172 km/h, and **the Slag Heap hump** on Slag Row at 163 km/h. Every road gained steel ramps at fixed places: two each on Breakwater Run, Cinder Wash, and Hollow Pine Road, one on Ridge Road, and two on Slag Row with a third from level 4. The section tables of the three roads with a hump are renumbered to match the plans. "Ramps and humps" below says how they are placed, and each road has a table of its ramps. The pilot's times in "Ridden by the pilot" were taken before the jumps.
+Jumps added October 15, 2026. Three roads gained a hump across the whole road, made by splitting a straight, so no road changed length and no bend moved: **the Pier hump** on Breakwater Run and **the Pressure Ridge** on Cinder Wash launch at 172 km/h, and **the Slag Heap hump** on Slag Row at 163 km/h. Every road gained steel ramps at fixed places, which car carrier trucks replaced in November 2026: two each on Breakwater Run, Cinder Wash, and Hollow Pine Road, one on Ridge Road, and two on Slag Row with a third from level 4. The section tables of the three roads with a hump are renumbered to match the plans. "Carriers and humps" below says how they are placed, and each road has a table of its trucks. The pilot's times in "Ridden by the pilot" were taken before the jumps.
 
 Hazards added October 16, 2026. Every road has oil slicks, rocks, and potholes on the tarmac, placed from the road's seed by the rules in "Hazards" below: four to six at level 1 and eleven to fourteen at level 5. No road changed length and no bend or ramp moved.
 
-Launch cities agreed October 23, 2026. Three of these shapes become real cities with a cyberpunk twist: Slag Row becomes Madrid, Breakwater Run becomes Mumbai, and Ridge Road becomes a Bay Area mountain road on the hills above Silicon Valley (`game-design.md` section 0). Each keeps its road's shape where the city fits, so the bends, crests, ramps, and hazard rules below carry over; the landmarks, junctions, crossings, and billboard slots are new. The career moves to three levels, so the level blocks below are re-measured. Cinder Wash and Hollow Pine Road stay in the build until later cities replace them.
+Launch cities agreed October 23, 2026. Three of these shapes become real cities with a cyberpunk twist: Slag Row becomes Madrid, Breakwater Run becomes Mumbai, and Ridge Road becomes a Bay Area mountain road on the hills above Silicon Valley (`game-design.md` section 0). Each keeps its road's shape where the city fits, so the bends, crests, trucks, and hazard rules below carry over; the landmarks, junctions, crossings, and billboard slots are new. The career moves to three levels, so the level blocks below are re-measured. Cinder Wash and Hollow Pine Road stay in the build until later cities replace them.
 
 Pieces replaced sections October 24, 2026. A plan is now a start pose and a list of pieces (`docs/architecture.md`, "Tracks"). Each section in the tables and plans below is one eased piece, written `[length, turnDegrees, climb]` inside `eased(...)` in the road files, and every road samples bit for bit as it did. The plan listings below keep the older `{ length, turnDegrees, climb }` objects; the road files in `packages/track/src/tracks` are the source.
 
@@ -88,23 +88,13 @@ Height is eased through each section with a cosine, so every section that climbs
 
 Each road below has a table of every crest that launches under 260 km/h, read from the compiled `slopeRate`. A crest made of a rise and a drop is listed once, at its top, with the lower of its two launch speeds. A dip is listed at its far lip. Every other change of grade on these roads needs more than 260 km/h, which only the Meridian (263 km/h tucked), the Anvil (278), and the Nera (294) can reach, and only at the end of a long straight.
 
-## Ramps and humps
+## Carriers and humps
 
 A hump is an ordinary crest. It is a piece of straight split into a rise and a drop of the same length, 1.4 m up and 1.4 m down, across the whole road, so it obeys the crest rule and is listed in its road's crest table. A 40 m rise and drop launch at 172 km/h and a 38 m pair at 163 km/h, the formula above with `c` of 1.4. Each hump took its length from the straight it sits in, so the road's length and every position outside that straight are unchanged.
 
-A ramp is not part of the road's height. It is a steel loading ramp, a `Track.features` entry of kind `"jump"`, that stands on the road from its toe at `s` to its lip at `s + length` and is `width` wide. The deck height is `rise × u²`, where `u` runs from 0 at the toe to 1 at the lip, so the deck leaves the road flat and is steepest at the lip, where the slope is `2 × rise / length`. The 16 m ramps rise 0.8 m and the 18 m ramps on Cinder Wash rise 1 m, so their lips are at 0.1 and 0.111. A bike leaves the lip with the lip's height and slope and nothing more. Off a 16 m ramp at 180 km/h it is in the air 1.16 s, lands 58 m past the lip on level road, and comes down at 6.4 m/s, which costs 5% of its speed; off an 18 m ramp it flies 1.29 s and 64.5 m and comes down at 7.1 m/s. On level road neither ramp gives a landing over the 11 m/s crash limit below 326 km/h, faster than any bike.
+A carrier is not part of the road. It is a car-carrying truck that drives the first same-way lane at 20 m/s (72 km/h) and tows a straight ramp 10.7 m long that rises 4.3 m. The plan lists where each truck starts and the level it appears from, and `compileTrack` turns the list into `Track.carrierStarts`.
 
-Every ramp is placed by the same rules. `compileFeatures` in `features.ts` enforces the first four, the track tests check the next two, and the last is how every ramp so far was placed:
-
-- **It reserves its approach and landing.** The compiled ramp holds the 80 m before its toe and a landing corridor after its lip as long as its level flight at 306 km/h (85 m/s) plus 25 m: 180 m after a 16 m ramp, 276 m in all, and 197 m after an 18 m ramp, 295 m in all. No other feature may sit in that stretch.
-- **It is clear of the start and the finish.** The reservation starts at least 300 m after the start line and ends before the finish.
-- **It stays on the road.** `|x| + width / 2` must be no more than the road's half width.
-- **It has a level.** A ramp exists from its `fromLevel` up; the level-1 ramps are there at every level.
-- **It is on a straight.** The road is straight from 40 m before the toe to the end of the landing corridor, and no crest in the reservation launches below 200 km/h, so a ramp never throws a bike off a crest or into a bend.
-- **It is away from the roadblocks.** The reservation is at least 100 m from every roadblock spot the level uses.
-- **It stands off the centre line, where traffic cannot reach it.** On a road with two lanes each way a ramp is 1.4 m wide and centred on the dashed line between the two same-way lanes. On a road with one lane each way it is narrower and stands between the same-way lane and the kerb: 1.2 m wide with its centre 3.8 m out on Ridge Road, 1 m wide and 3.45 m out on Hollow Pine Road. Traffic keeps to the lane centres and never changes lane, so cars and vans clear every ramp; a truck, 2.4 m wide, clears the one-lane ramps and Cinder Wash's but overhangs the edge of a 1.4 m deck by up to 0.1 m on Breakwater Run and 0.15 m on Slag Row, because traffic does not see ramps. Off the centre line the chase camera sees the ramp beside the player's bike from far off instead of behind it, and a rider who does not want the jump rides past it in a lane.
-
-The compiled ramps are indexed in 32 m cells along the road, and the simulation and the renderer both find the deck under a bike with `supportAt(track, s, x, out)`.
+A truck moves, so it has no fixed stretch and reserves nothing. Hazards, crossings and walkers do not keep clear of it. Each start is chosen so a rider meets the truck at about a stretch the road had a fixed ramp on: the start is that stretch minus 20 m/s times the median time a field of level-1 pilots took to reach the stretch, rounded to 50 m. A faster rider meets the truck earlier on the road and a slower one later. A start must be at least 300 m past the start line and on the road, a road with no traffic has no trucks, and traffic is cleared for 30 m round each truck when the race starts. A truck that drives off the end of the road comes back at the start, like any car.
 
 ## Hazards
 
@@ -133,7 +123,6 @@ A rock mid-bend would throw nearly every rider leaning through it, which is a mu
 A plan's `hazardsPerKilometre`, 1 on every road, sets how many hazards there are. The road's own seeded stream (its seed with a salt) walks it from the start in steps of 0.6 to 1.4 times 1,000 m, and each step is a candidate. For each candidate the stream draws its kind, its line, its offset, the level it appears from (60% of candidates from level 1 and 10% more from each level after), and which place it takes. The candidate takes one of the places that are free between it and 250 m behind it and at least 60 m past the previous hazard; with none, it lies on the straight where it stands, in the traffic setting. Its kind is drawn from the region's `hazardMix` weighted by the setting, so a turn-in is always oil and an apex always a pothole. Every number is drawn whether or not the candidate is kept, and the place it takes depends only on the road behind it, so a hazard on the part of the road a player already knows is in the same place, with the same id, at every level. A placed hazard is kept when:
 
 - **It is clear of the start and the finish.** It is at least 450 m past the start line and 150 m before the finish.
-- **It is clear of every ramp.** Its footprint is at least 30 m outside every ramp's reservation, its approach and its landing corridor, including ramps that only appear at a later level, so no hazard sits on a ramp, in its run-up, or where a bike comes down.
 - **It is not hidden until it is under the wheel.** From 25 m before it, the line from a rider's eye 1.2 m above the road on the hazard's own line to a point 0.1 m above the hazard stays above the road and inside the verges. A hazard does not have to be visible from far off: one round a blind bend or just over a crest is part of the game.
 
 If the place a candidate takes fails a rule, it tries the straight where it stands instead; if that fails too, the candidate is dropped.
@@ -187,7 +176,7 @@ A junction's box is as long as the cross road is wide, from kerb to kerb. A zebr
 - curves more than 1/400 per metre, a 400 m radius, anywhere;
 - climbs or falls more than 6%, or changes grade faster than 0.002 per metre, which is a crest;
 - starts within 300 m of the start or ends within 100 m of the finish at a level that has it;
-- overlaps a ramp's reservation, or comes within 120 m of another crossing's.
+- comes within 120 m of another crossing's reservation.
 
 No hazard lies in a reserved stretch, and no tree, pole or rock stands within 3 m of a cross road's arm on the side that has it. Hazards reserve the crossings of every level, so a crossing that appears at a later level leaves the hazards of earlier levels where they were. Props clear only the arms of the level being raced, because an arm that is not drawn yet needs no room. City blocks keep 2 m clear of the arms. In open country the ground lies flat under an arm and 30 m beyond its end, and rises again 2 m either side of it. The greybox scenery of the Madrid stretches does not yet make room for an arm, so a Madrid stretch declares a cross road only where its corridor data already has a street.
 
@@ -236,7 +225,7 @@ Each road has three spots, checked against the compiled sections at every level 
 
 Breakwater Run goes from the harbour along the seawall, over the pier, and out round the harbour wall to the fish market, with the sea beside it nearly the whole way. It is the easiest road to see down and the gentlest on a light bike: the Wren takes all but four level-1 bends flat. Its character is rhythm, a long stretch of holding one line followed by a sudden demand. The signature moments are **the Long Sweeper**, 700 m of constant right-hand bend beside the water at a radius of about 739 m that every bike holds flat out and that is the best place on any road to fight side by side; **the tunnel**, 300 m of straight where engine noise doubles and oncoming headlights are all you see; and **the Lighthouse Kink**, a 55° left packed into 140 m right at the tunnel mouth, which a Sesta 600 holds at 102 km/h and a Wren at 117, and no faster. A rider who comes out of the tunnel flat out on any bike meets the lighthouse. Two crests, the Headland drop and the Seawall hump, launch at 176 and 169 km/h: a Wren at full stretch stays on the road over them, and anything from the Sesta up flies.
 
-The pier is no longer the end. Halfway along it the road crosses **the Pier hump**, 1.4 m up and down in 80 m, which launches at 172 km/h; its top is 140 m before the old finish. The road runs off the pier onto **the Promenade**, 800 m of straight between the arcades counting the pier itself, where the first ramp stands between the same-way lanes, and over **the Marina bridge**, a crest that launches at 179 km/h, then round the yacht basin and out along the harbour wall. **The Mole** is 440 m of straight with spray on both sides and the second ramp on the line between the same-way lanes, and **the Harbour Arm** is the Long Sweeper's twin: 600 m of constant right at a radius of 752 m, flat out on every bike. At the end of the arm is **the Fort Gate**, a 58° left in 150 m at a radius of 104 m that a Sesta 600 holds at 103 km/h and a Wren at 118, so the road asks the same question as at the lighthouse: whoever comes off the sweeper flat out meets the fort. **The Battery crest** under the fort walls launches at 186 km/h, the road sweeps down to the quay, and **the Crane Kink**, a 46° left at a radius of 122 m (112 km/h on a Sesta, 129 on a Wren), comes 300 m before the finish at the fish market. The Wren brakes for four level-1 bends: the Lighthouse Kink, the 48° right after it, the Fort Gate, and the Crane Kink.
+The pier is no longer the end. Halfway along it the road crosses **the Pier hump**, 1.4 m up and down in 80 m, which launches at 172 km/h; its top is 140 m before the old finish. The road runs off the pier onto **the Promenade**, 800 m of straight between the arcades counting the pier itself, and over **the Marina bridge**, a crest that launches at 179 km/h, then round the yacht basin and out along the harbour wall. **The Mole** is 440 m of straight with spray on both sides, and **the Harbour Arm** is the Long Sweeper's twin: 600 m of constant right at a radius of 752 m, flat out on every bike. At the end of the arm is **the Fort Gate**, a 58° left in 150 m at a radius of 104 m that a Sesta 600 holds at 103 km/h and a Wren at 118, so the road asks the same question as at the lighthouse: whoever comes off the sweeper flat out meets the fort. **The Battery crest** under the fort walls launches at 186 km/h, the road sweeps down to the quay, and **the Crane Kink**, a 46° left at a radius of 122 m (112 km/h on a Sesta, 129 on a Wren), comes 300 m before the finish at the fish market. The Wren brakes for four level-1 bends: the Lighthouse Kink, the 48° right after it, the Fort Gate, and the Crane Kink.
 
 ### Level 1 sections
 
@@ -261,13 +250,13 @@ The pier is no longer the end. Halfway along it the road crosses **the Pier hump
 | 17 | 3,720 | 40 | 0 | 1.4 | Pier hump, rise |
 | 18 | 3,760 | 40 | 0 | -1.4 | Pier hump, drop; launches at 172 km/h |
 | 19 | 3,800 | 100 | 0 | 0 | Along the pier, the old finish |
-| 20 | 3,900 | 500 | 0 | 0 | The Promenade, between the arcades; ramp at 4,050 m |
+| 20 | 3,900 | 500 | 0 | 0 | The Promenade, between the arcades |
 | 21 | 4,400 | 260 | 22 | 2 | Easy right at the Ferris wheel |
 | 22 | 4,660 | 180 | 0 | 6 | Climb to the Marina bridge |
 | 23 | 4,840 | 100 | 0 | 5 | Marina bridge, rise |
 | 24 | 4,940 | 100 | 0 | -8 | Marina bridge, drop; launches at 179 km/h |
 | 25 | 5,040 | 240 | -48 | -3 | Left round the yacht basin |
-| 26 | 5,280 | 440 | 0 | 0 | The Mole; ramp at 5,420 m |
+| 26 | 5,280 | 440 | 0 | 0 | The Mole |
 | 27 | 5,720 | 600 | 32 | 0 | The Harbour Arm |
 | 28 | 6,320 | 150 | -58 | 0 | Fort Gate at the end of the arm; 103 km/h on a Sesta 600 |
 | 29 | 6,470 | 200 | 40 | 2 | Right under the fort walls |
@@ -367,14 +356,12 @@ export const breakwaterRun: TrackPlan = {
 
 No crest on Breakwater Run launches below 160 km/h.
 
-### Ramps
+### Trucks
 
-| Ramp | From level | Toe at (m) | Lip at (m) | x (m) | Length × width × rise | Reserved (m) | Where |
-| --- | --: | --: | --: | --: | --- | --- | --- |
-| `promenade-ramp` | 1 | 4,050 | 4,066 | 3.6 | 16 × 1.4 × 0.8 m | 3,970 to 4,246 | The Promenade (section 20), between the same-way lanes |
-| `mole-ramp` | 1 | 5,420 | 5,436 | 3.6 | 16 × 1.4 × 0.8 m | 5,340 to 5,616 | The Mole (section 26), between the same-way lanes |
-
-The promenade ramp's approach starts 170 m past the bottom of the Pier hump.
+| Starts at (m) | From level | Meant to meet riders near | Median pilot arrival | Where |
+| --: | --: | --: | --: | --- |
+| 2,350 | 1 | 4,050 m | 84 s | The Promenade (section 20) |
+| 3,200 | 1 | 5,420 m | 110 s | The Mole (section 26) |
 
 Traffic per km by level: 5, 6, 7, 8, 9.
 
@@ -384,7 +371,7 @@ Roadblocks: the seawall climb at 2.8 km (260 m past the bend, 200 m before the t
 
 Cinder Wash is the fast road: 2.5 km of near-straight across the dry lake before the first real bend. The danger is speed and air. **The three washes** are dips where the road drops into a dry stream bed and climbs out, each shorter and sharper than the one before. The first launches only above 205 km/h and the second above 182, both beyond a Wren, so at level 1 they are a lurch in the suspension and a warning. The third is **the Main Wash**, the road's signature: its lips launch at 154 km/h, so every bike but the Gutter Pup flies, and the question is who lands next to whom. Then comes **the Drag**, 760 m flat out, and at the end of it **the Mesa Hairpin**: 120° of right-hand bend at a radius of 67 m, which a Sesta 600 holds at 81 km/h and a Wren at 93. It is the hairpin after the straight, the hardest braking zone at level 1, and the place where slipstreaming rivals arrive too fast together. The road then climbs 22 m up the mesa, crosses a crest that launches only the fastest bikes (215 km/h), and falls in a long sweeper to the drive-in. Traffic is light, the verge is wide and open, and there is nothing to hit but the occasional cactus and each other.
 
-The drive-in is no longer the end. The first ramp stands between the same-way lanes past the drive-in. Then the road drops onto **the Salt Pan**, 900 m of dead straight across the white crust. 100 m in, **the Pressure Ridge**, a 1.4 m buckle in the crust, launches at 172 km/h, and 220 m past it the second ramp stands on the line between the same-way lanes. From the start of the pan to the next real bend is 1.7 km without a turn of the bars. Halfway across is **the Ladder**: three short washes 40 m apart, each a little smaller than the last, launching at 196, 190, and 184 km/h. A Wren at 158 km/h rides through them on the suspension; a Sesta flat out rides the first two and hops the third; an Anvil or a Nera skips from rung to rung and lands each time next to whoever it took off beside. At the end of the 1.7 km is **the Boneyard Bend**, a 90° left at a radius of 94 m around the rows of parked bombers. A Wren holds it at 112 km/h, a Sesta 600 at 97, and an Anvil 1100 at 86, so it is the Mesa Hairpin's lesson again, at the end of a longer straight. The road then climbs a butte, crosses **the Butte crest** at 192 km/h, and falls 14 m in a long left to the finish at the Last Chance motel. The Wren brakes for only two level-1 bends, the Mesa Hairpin and the Boneyard Bend; a Sesta brakes for five and an Anvil for six.
+The drive-in is no longer the end. Then the road drops onto **the Salt Pan**, 900 m of dead straight across the white crust. 100 m in, **the Pressure Ridge**, a 1.4 m buckle in the crust, launches at 172 km/h. From the start of the pan to the next real bend is 1.7 km without a turn of the bars. Halfway across is **the Ladder**: three short washes 40 m apart, each a little smaller than the last, launching at 196, 190, and 184 km/h. A Wren at 158 km/h rides through them on the suspension; a Sesta flat out rides the first two and hops the third; an Anvil or a Nera skips from rung to rung and lands each time next to whoever it took off beside. At the end of the 1.7 km is **the Boneyard Bend**, a 90° left at a radius of 94 m around the rows of parked bombers. A Wren holds it at 112 km/h, a Sesta 600 at 97, and an Anvil 1100 at 86, so it is the Mesa Hairpin's lesson again, at the end of a longer straight. The road then climbs a butte, crosses **the Butte crest** at 192 km/h, and falls 14 m in a long left to the finish at the Last Chance motel. The Wren brakes for only two level-1 bends, the Mesa Hairpin and the Boneyard Bend; a Sesta brakes for five and an Anvil for six.
 
 ### Level 1 sections
 
@@ -408,13 +395,13 @@ The drive-in is no longer the end. The first ramp stands between the same-way la
 | 16 | 3,320 | 120 | 0 | -8 | Mesa top, drop; launches at 215 km/h |
 | 17 | 3,440 | 400 | 24 | -20 | Sweeping descent off the mesa |
 | 18 | 3,840 | 250 | -36 | 0 | Left at the cattle grid |
-| 19 | 4,090 | 310 | 0 | 0 | Past the drive-in, the old finish; ramp at 4,250 m |
+| 19 | 4,090 | 310 | 0 | 0 | Past the drive-in, the old finish |
 | 20 | 4,400 | 200 | 0 | 0 |  |
 | 21 | 4,600 | 300 | -14 | -4 | Gentle left down to the salt pan |
 | 22 | 4,900 | 100 | 0 | 0 | The Salt Pan, 900 m flat out |
 | 23 | 5,000 | 40 | 0 | 1.4 | Pressure Ridge, rise |
 | 24 | 5,040 | 40 | 0 | -1.4 | Pressure Ridge, drop; launches at 172 km/h |
-| 25 | 5,080 | 720 | 0 | 0 | The Salt Pan; ramp at 5,300 m |
+| 25 | 5,080 | 720 | 0 | 0 | The Salt Pan |
 | 26 | 5,800 | 70 | 0 | -3.3 | The Ladder, first rung, down |
 | 27 | 5,870 | 70 | 0 | 3.3 | First rung, up; launches at 196 km/h |
 | 28 | 5,940 | 40 | 0 | 0 |  |
@@ -537,14 +524,12 @@ export const cinderWash: TrackPlan = {
 
 The Main Wash is the only crest on Cinder Wash that launches below 160 km/h.
 
-### Ramps
+### Trucks
 
-| Ramp | From level | Toe at (m) | Lip at (m) | x (m) | Length × width × rise | Reserved (m) | Where |
-| --- | --: | --: | --: | --: | --- | --- | --- |
-| `drive-in-ramp` | 1 | 4,250 | 4,268 | 3.8 | 18 × 1.4 × 1 m | 4,170 to 4,465 | Past the drive-in (section 19), between the same-way lanes |
-| `salt-pan-ramp` | 1 | 5,300 | 5,318 | 3.8 | 18 × 1.4 × 1 m | 5,220 to 5,515 | The Salt Pan (section 25), between the same-way lanes |
-
-Cinder Wash's ramps are the only ones 18 m long and 1 m high, so their lips are steeper than the rest, at 0.111, and their landing corridors are 197 m. The drive-in ramp's landing runs over the old finish line at 4,400 m, and the salt pan ramp's approach starts 140 m past the bottom of the Pressure Ridge.
+| Starts at (m) | From level | Meant to meet riders near | Median pilot arrival | Where |
+| --: | --: | --: | --: | --- |
+| 2,600 | 1 | 4,250 m | 82 s | Past the drive-in (section 19) |
+| 3,300 | 1 | 5,300 m | 100 s | The Salt Pan (section 25) |
 
 Traffic per km by level: 3, 4, 5, 6, 7.
 
@@ -698,14 +683,12 @@ Level 1 has no straight long enough for a roadblock, and it does not need one. E
 
 No crest on Hollow Pine Road launches below 160 km/h.
 
-### Ramps
+### Trucks
 
-| Ramp | From level | Toe at (m) | Lip at (m) | x (m) | Length × width × rise | Reserved (m) | Where |
-| --- | --: | --: | --: | --: | --- | --- | --- |
-| `sawmill-ramp` | 1 | 3,330 | 3,346 | 3.45 | 16 × 1 × 0.8 m | 3,250 to 3,526 | The sawmill yard (section 19), 110 m past the Sawmill Hook, by the kerb |
-| `kiln-ramp` | 1 | 7,760 | 7,776 | 3.45 | 16 × 1 × 0.8 m | 7,680 to 7,956 | The finish straight at the charcoal kilns (section 42), 90 m past the Kiln Hook, by the kerb |
-
-Hollow Pine Road has no straight longer than 380 m at level 1, so both ramps sit on the two 380 m straights after its hooks, and the kiln ramp's landing ends 94 m before the finish. The road is 8 m wide, so each ramp stands between the same-way lane and the kerb, 1 m wide, with 0.05 m between it and a truck's side and 0.55 m between its outer edge and the edge of the road.
+| Starts at (m) | From level | Meant to meet riders near | Median pilot arrival | Where |
+| --: | --: | --: | --: | --- |
+| 1,000 | 1 | 3,330 m | 116 s | The sawmill yard (section 19) |
+| 2,600 | 1 | 7,760 m | 257 s | The finish straight at the charcoal kilns (section 42) |
 
 Traffic per km by level: 6, 7, 8, 9, 10.
 
@@ -715,7 +698,7 @@ Roadblocks: the Firebreak at 10.15 km, from level 3 (275 m past the 70° right, 
 
 Slag Row is the stop-and-go road. Long straights through the port end in right-angle corners at radii near 70 m, which even the Wren must brake for (95 to 97 km/h) and a Sesta 600 holds at 83 to 85 km/h. It has two lanes like every other road; it feels wide because the buildings stand back and the straights are long. Three corners, **Foundry Corner**, **Canal Corner**, and **Smelter Gate**, set the rhythm: sprint, brake, turn, sprint. Between them, **the rail crossing** is a 60 m hump and the road's signature launch at 152 km/h, so every bike but the Gutter Pup hops it at full speed, and **the underpass** is a dip under the freeway that compresses the suspension and hides what is coming up the far side. **The scrapyard chicane** flicks right and left at 46° each, and **the drawbridge** is a 10 m ramp with a crest at the top that launches at 166 km/h. Traffic is the heaviest of any road and includes buses and vans that block the view. The old finish was 310 m after Smelter Gate.
 
-The smelter is no longer the end. Past it the road runs along the slag heaps and keeps the rhythm with four more right angles. **Coke Oven Corner** is an 88° left at a radius of 73 m after a 710 m sprint from Smelter Gate over **the Slag Heap hump**, which rises across the old finish line and launches at 163 km/h. **The Slipway**, 560 m along the shipyard where hulls stand over the road, has a ramp on the line between the same-way lanes and ends in **Dry Dock Corner**, a 92° right at a radius of 70 m and the tightest bend on the level-1 road: 95 km/h on a Wren and 83 on a Sesta 600. **The Gasholder Esses** are a second, gentler chicane, 40° each way at radii of 180 and 160 m, which a Wren holds at 160 and 150 km/h, so even the Wren brakes for the second; a Sesta holds 139 and 130, an Anvil 1100 122 and 115. **The ore bridge** climbs 12 m over the ore railway to a crest that launches at 176 km/h, and the road comes down off it to **Customs Corner**, a 90° left at a radius of 71 m. A second ramp stands between the same-way lanes on the bonded straight after it. The last corner is **the Dock Gate**, an 88° right at a radius of 73 m, and the finish at the dry dock is 360 m after it, close enough that the exit of the last corner decides the race.
+The smelter is no longer the end. Past it the road runs along the slag heaps and keeps the rhythm with four more right angles. **Coke Oven Corner** is an 88° left at a radius of 73 m after a 710 m sprint from Smelter Gate over **the Slag Heap hump**, which rises across the old finish line and launches at 163 km/h. **The Slipway**, 560 m along the shipyard where hulls stand over the road ends in **Dry Dock Corner**, a 92° right at a radius of 70 m and the tightest bend on the level-1 road: 95 km/h on a Wren and 83 on a Sesta 600. **The Gasholder Esses** are a second, gentler chicane, 40° each way at radii of 180 and 160 m, which a Wren holds at 160 and 150 km/h, so even the Wren brakes for the second; a Sesta holds 139 and 130, an Anvil 1100 122 and 115. **The ore bridge** climbs 12 m over the ore railway to a crest that launches at 176 km/h, and the road comes down off it to **Customs Corner**, a 90° left at a radius of 71 m. The last corner is **the Dock Gate**, an 88° right at a radius of 73 m, and the finish at the dry dock is 360 m after it, close enough that the exit of the last corner decides the race.
 
 ### Level 1 sections
 
@@ -743,7 +726,7 @@ The smelter is no longer the end. Past it the road runs along the slag heaps and
 | 20 | 4,018 | 38 | 0 | -1.4 | Slag Heap hump, drop; launches at 163 km/h |
 | 21 | 4,056 | 344 | 0 | 0 | Along the slag heaps |
 | 22 | 4,400 | 160 | -88 | 0 | Coke Oven Corner |
-| 23 | 4,560 | 560 | 0 | 0 | The Slipway; ramp at 4,720 m |
+| 23 | 4,560 | 560 | 0 | 0 | The Slipway |
 | 24 | 5,120 | 160 | 92 | 0 | Dry Dock Corner; 83 km/h on a Sesta 600 |
 | 25 | 5,280 | 330 | 0 | 2 |  |
 | 26 | 5,610 | 180 | 40 | 0 | Gasholder Esses, right |
@@ -754,7 +737,7 @@ The smelter is no longer the end. Past it the road runs along the slag heaps and
 | 31 | 6,380 | 300 | -12 | -6 | Down off the ore bridge |
 | 32 | 6,680 | 300 | 0 | 0 |  |
 | 33 | 6,980 | 160 | -90 | 0 | Customs Corner |
-| 34 | 7,140 | 400 | 0 | 0 | Bonded straight; ramp at 7,280 m |
+| 34 | 7,140 | 400 | 0 | 0 | Bonded straight |
 | 35 | 7,540 | 200 | 30 | 0 |  |
 | 36 | 7,740 | 240 | 0 | 0 |  |
 | 37 | 7,980 | 160 | 88 | 0 | The Dock Gate |
@@ -826,7 +809,7 @@ export const slagRow: TrackPlan = {
 
 `[220, 0, 6], [80, 0, 4], [90, 0, -7], [200, -26, -3], [160, 92, 0], [400, 0, 0]`
 
-**Level 4 appends (1,150 m).** An 88° left in 130 m (radius 59 m), a third chicane, and a second underpass. The boulevard ramp stands on the block's first straight, which carries on from the level-3 boulevard.
+**Level 4 appends (1,150 m).** An 88° left in 130 m (radius 59 m), a third chicane, and a second underpass. The straight past the boulevard is on the block's first straight, which carries on from the level-3 boulevard.
 
 `[340, 0, 0], [130, -88, 0], [160, 50, 0], [140, -50, 0], [120, 0, -5], [120, 0, 5], [140, 0, 0]`
 
@@ -848,15 +831,13 @@ export const slagRow: TrackPlan = {
 
 The rail crossing is the only crest on Slag Row that launches below 160 km/h. The two underpasses need more than 270 km/h at their lips.
 
-### Ramps
+### Trucks
 
-| Ramp | From level | Toe at (m) | Lip at (m) | x (m) | Length × width × rise | Reserved (m) | Where |
-| --- | --: | --: | --: | --: | --- | --- | --- |
-| `slipway-ramp` | 1 | 4,720 | 4,736 | 3.5 | 16 × 1.4 × 0.8 m | 4,640 to 4,916 | The Slipway (section 23), between the same-way lanes |
-| `bonded-ramp` | 1 | 7,280 | 7,296 | 3.5 | 16 × 1.4 × 0.8 m | 7,200 to 7,476 | The bonded straight (section 34), between the same-way lanes |
-| `boulevard-ramp` | 4 | 10,880 | 10,896 | 3.5 | 16 × 1.4 × 0.8 m | 10,800 to 11,076 | The straight past the boulevard (section 52), between the same-way lanes |
-
-The boulevard ramp's approach starts at the level-3 finish, so it exists from level 4. It starts 150 m past the boulevard's roadblock spot at 10.65 km and its landing ends 64 m before the 88° left.
+| Starts at (m) | From level | Meant to meet riders near | Median pilot arrival | Where |
+| --: | --: | --: | --: | --- |
+| 2,600 | 1 | 4,720 m | 106 s | The Slipway (section 23) |
+| 4,100 | 1 | 7,280 m | 159 s | The bonded straight (section 34) |
+| 5,900 | 4 | 10,880 m | 249 s | The straight past the boulevard (section 52) |
 
 Traffic per km by level: 8, 9, 10, 11, 12.
 
@@ -953,13 +934,11 @@ Sections 1 to 21 are the original road and are unchanged; sections 22 to 42 were
 
 No crest on Ridge Road launches below 160 km/h. The Saddle stays the lowest launch on the road at every level.
 
-### Ramps
+### Trucks
 
-| Ramp | From level | Toe at (m) | Lip at (m) | x (m) | Length × width × rise | Reserved (m) | Where |
-| --- | --: | --: | --: | --: | --- | --- | --- |
-| `cable-car-ramp` | 1 | 8,290 | 8,306 | 3.8 | 16 × 1.2 × 0.8 m | 8,210 to 8,486 | The finish straight at the cable-car station (section 42), by the kerb |
-
-The ramp is in the appended part of the road, so the pinned first 4,250 m are unchanged. Its landing ends 64 m before the level-1 finish.
+| Starts at (m) | From level | Meant to meet riders near | Median pilot arrival | Where |
+| --: | --: | --: | --: | --- |
+| 4,500 | 1 | 8,290 m | 189 s | The finish straight at the cable-car station (section 42) |
 
 Traffic per km by level: 5, 6, 7, 8, 9.
 

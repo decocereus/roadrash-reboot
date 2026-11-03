@@ -24,8 +24,8 @@ import { freeze } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
 import { CYAN } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
-import { emptySheet, facingAt, geometryOf, quad, UP } from "./ramp-geometry.ts";
-import type { Sheet } from "./ramp-geometry.ts";
+import { emptySheet, facingAt, geometryOf, quad, UP } from "./road-sheet.ts";
+import type { Sheet } from "./road-sheet.ts";
 
 const STRIPE = 0.5;
 const STRIPE_PITCH = 1;

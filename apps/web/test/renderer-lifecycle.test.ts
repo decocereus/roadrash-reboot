@@ -52,6 +52,7 @@ const pinnedAssets = async (): Promise<Assets> => {
     },
     car: car.value,
     figures: [a.value, b.value, c.value],
+    truck: car.value,
     van: van.value,
     walkers: walkers.value,
   };

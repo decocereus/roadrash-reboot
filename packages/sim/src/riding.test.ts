@@ -31,8 +31,8 @@ const MPH = 2.237;
 const arcOf = (curvature: number) =>
   compileTrack({
     ...ridgeRoad,
+    carriers: [],
     chevrons: [],
-    features: [],
     hazardsPerKilometre: 0,
     pieces: clothoids([
       [40, curvature, 0],
@@ -114,8 +114,8 @@ describe("riding", () => {
 
     const flat = compileTrack({
       ...ridgeRoad,
+      carriers: [],
       chevrons: [],
-      features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,
@@ -171,8 +171,8 @@ describe("riding", () => {
   it("stops from 200 km/h in about 55 metres", () => {
     const flat = compileTrack({
       ...ridgeRoad,
+      carriers: [],
       chevrons: [],
-      features: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,

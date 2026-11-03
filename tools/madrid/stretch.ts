@@ -123,9 +123,9 @@ import type { TrackPlan } from "../track.ts";
 import { ${camel}Scenery } from "./${entry.id}-scenery.ts";
 
 export const ${camel}: TrackPlan = {
+  carriers: [],
   chevrons: chevronRuns["${entry.id}"],
   crossings: [],
-  features: [],
   hazardsPerKilometre: ${entry.hazardsPerKilometre},
   id: "${entry.id}",
   laneWidth: ${road.laneWidth},
@@ -206,9 +206,9 @@ const planOf = (
 ): TrackPlan => {
   const { road } = entry.settings;
   return {
+    carriers: [],
     chevrons,
     crossings: [],
-    features: [],
     hazardsPerKilometre: entry.hazardsPerKilometre,
     id: entry.id,
     laneWidth: road.laneWidth,
@@ -248,7 +248,7 @@ const fieldsOf = (plan: TrackPlan): readonly (readonly [string, string])[] => [
   ["runoffLength", String(plan.runoffLength)],
   ["trafficPerKilometre", String(plan.trafficPerKilometre)],
   ["hazardsPerKilometre", String(plan.hazardsPerKilometre)],
-  ["features", String(plan.features.length)],
+  ["carriers", String(plan.carriers.length)],
   ["roadblocks", plan.roadblocks.join(" ")],
   [
     "start",

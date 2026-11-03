@@ -2,14 +2,13 @@ import { sampleAlignment } from "./alignment.ts";
 import type { Alignment, Centreline } from "./alignment.ts";
 import { armClaims, compileCrossings } from "./crossings.ts";
 import type { CrossingRule, TrackCrossing } from "./crossings.ts";
-import { compileFeatures, indexFeatures, reservationOf } from "./features.ts";
-import type { FeatureIndex, FeatureRule, TrackFeature } from "./features.ts";
 import { placeHazards } from "./hazards.ts";
 import type { HazardPlacement } from "./hazards.ts";
 import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
+import type { RoadLevel } from "./road.ts";
 import { placeWalkSites } from "./walk-sites.ts";
 import type { WalkSite } from "./walk-sites.ts";
 
@@ -55,8 +54,13 @@ export interface TrackPlan extends Alignment {
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
   readonly roadblocks: readonly number[];
-  readonly features: readonly FeatureRule[];
+  readonly carriers: readonly CarrierStart[];
   readonly scenery?: Scenery;
+}
+
+interface CarrierStart {
+  readonly fromLevel: RoadLevel;
+  readonly s: number;
 }
 
 export interface ChevronRun {
@@ -85,8 +89,7 @@ export interface Track extends Centreline {
   readonly oncomingLanes: LaneCentres;
   readonly props: readonly TrackProp[];
   readonly solidProps: readonly TrackProp[];
-  readonly features: readonly TrackFeature[];
-  readonly featureIndex: FeatureIndex;
+  readonly carrierStarts: readonly number[];
   readonly hazards: readonly HazardPlacement[];
   readonly crossings: readonly TrackCrossing[];
   readonly walkSites: readonly WalkSite[];
@@ -102,6 +105,7 @@ export interface TrackPoint {
 
 const ROCK_SEED_SALT = 0x70_c5;
 const ARM_PROP_MARGIN = 3;
+const CARRIER_START_CLEARANCE = 300;
 
 const roadHalfWidthOf = (plan: TrackPlan): number =>
   plan.lanesEachWay * plan.laneWidth + plan.shoulderWidth;
@@ -186,31 +190,39 @@ const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
   return props.toSorted((left, right) => left.s - right.s);
 };
 
+const carrierStartsOf = (
+  plan: TrackPlan,
+  length: number
+): readonly number[] => {
+  if (plan.trafficPerKilometre <= 0) {
+    return [];
+  }
+  const starts = plan.carriers
+    .filter((carrier) => carrier.fromLevel <= plan.level)
+    .map((carrier) => carrier.s)
+    .toSorted((left, right) => left - right);
+  for (const s of starts) {
+    if (s < CARRIER_START_CLEARANCE || s > length) {
+      throw new Error(`A carrier on ${plan.name} starts off the road at ${s}.`);
+    }
+  }
+  return starts;
+};
+
 export const compileTrack = (plan: TrackPlan): Track => {
   const centreline = sampleAlignment(plan);
-  const { endS, length, startS } = centreline;
+  const { length } = centreline;
   const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
-  const features = compileFeatures(plan.features, {
-    length,
-    level: plan.level,
-    roadHalfWidth,
-  });
-  const crossings = compileCrossings(
-    plan.crossings,
-    centreline,
-    plan.level,
-    plan.features.map(reservationOf)
-  );
+  const crossings = compileCrossings(plan.crossings, centreline, plan.level);
   const props = scatterProps(plan, length).filter(
     (prop) => !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN)
   );
 
   const road = {
     ...centreline,
+    carrierStarts: carrierStartsOf(plan, length),
     crossings,
-    featureIndex: indexFeatures(features, startS, endS),
-    features,
     oncomingLanes: laneCentres(plan, -1),
     plan,
     props,

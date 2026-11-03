@@ -1,19 +1,10 @@
-import { emptySupport, supportAt } from "@racer/track/features";
-import type { Support } from "@racer/track/features";
 import { hypot2, sin } from "@racer/track/math";
 import { curvatureAt, slopeAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { CONTROL_RAMP, dragOf, stepDrive } from "./engine.ts";
 import { throwRider } from "./rider-crash.ts";
-import {
-  belowDeck,
-  fly,
-  forwardRateOf,
-  settleOnSurface,
-  settleVisuals,
-  swayOf,
-} from "./rider-flight.ts";
+import { fly, forwardRateOf, settleVisuals, swayOf } from "./rider-flight.ts";
 import {
   approach,
   brakeGrip,
@@ -91,8 +82,6 @@ const settleIntoTuck = (
   );
 };
 
-const before: Support = emptySupport();
-
 const losesTheFront = (
   state: RaceState,
   rider: RiderState,
@@ -125,14 +114,11 @@ export const ride = (
   input: RiderInput
 ): void => {
   const { bike } = rider;
-  supportAt(track, rider.s, rider.x, before);
   const curvature = curvatureAt(track, rider.s);
-  const slope = slopeAt(track, rider.s) + before.slope;
+  const slope = slopeAt(track, rider.s);
   const forwardRate = forwardRateOf(rider, curvature);
   const verticalAcceleration =
-    (slopeRateAt(track, rider.s) + before.slopeRate) *
-    forwardRate *
-    forwardRate;
+    slopeRateAt(track, rider.s) * forwardRate * forwardRate;
 
   if (verticalAcceleration < -GRAVITY && rider.speed > TAKEOFF_SPEED) {
     rider.airborne = true;
@@ -213,20 +199,10 @@ export const ride = (
   }
   rider.speed = Math.max(0, rider.speed + acceleration * TICK_SECONDS);
 
-  const fromS = rider.s;
-  const fromX = rider.x;
   rider.x +=
     (rider.lateralSpeed - push + swayOf(rider) * WOBBLE_SWAY) * TICK_SECONDS;
   rider.s += forwardRate * TICK_SECONDS;
   settleVisuals(rider, 1, push);
   rider.heading += rider.slip * SLIDE_YAW * sin(rider.modeTicks * SLIDE_SWING);
-  settleOnSurface(
-    state,
-    track,
-    rider,
-    fromS,
-    fromX,
-    !belowDeck(before.height, rider.air),
-    forwardRate
-  );
+  rider.air = 0;
 };

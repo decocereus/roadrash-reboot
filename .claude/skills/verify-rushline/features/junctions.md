@@ -4,7 +4,7 @@ A road declares junctions and pedestrian crossings in its plan's `crossings`. A 
 
 ## Sub-features
 
-- `crossing-format` compiles each road's crossings and refuses one on a bend, a crest, near the start or finish, in a ramp's reservation, or within 120 m of another.
+- `crossing-format` compiles each road's crossings and refuses one on a bend, a crest, near the start or finish, or within 120 m of another.
 - `crossing-clearance` keeps hazards off a crossing's reserved stretch and props and city blocks off a cross road's arms.
 - `crossing-look` draws the arms, zebras, stop lines and signal heads.
 - `crossing-lights` lights the green, amber or red lamp of each head from `signalPhaseAt`.

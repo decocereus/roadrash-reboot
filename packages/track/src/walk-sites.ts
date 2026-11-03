@@ -1,8 +1,6 @@
 import { zebrasOf } from "./crossings.ts";
-import { reservationOf } from "./features.ts";
 import {
   HAZARD_FINISH_CLEARANCE,
-  HAZARD_RAMP_CLEARANCE,
   HAZARD_START_CLEARANCE,
   levelOf,
 } from "./hazards.ts";
@@ -54,14 +52,6 @@ const declaredSites = (road: Road): WalkSite[] =>
     }))
   );
 
-const clearOfJumps = (road: Road, s: number): boolean =>
-  road.plan.features
-    .map(reservationOf)
-    .every(
-      ([from, to]) =>
-        s < from - HAZARD_RAMP_CLEARANCE || s > to + HAZARD_RAMP_CLEARANCE
-    );
-
 const clearOfCrossings = (road: Road, s: number): boolean =>
   road.crossings.every(
     (crossing) =>
@@ -87,12 +77,7 @@ const seededSites = (road: Road): WalkSite[] => {
     const s = from + random() * gap;
     const kindRoll = random() * perKilometre;
     const fromLevel = levelOf(random());
-    if (
-      s < last &&
-      fromLevel <= road.plan.level &&
-      clearOfJumps(road, s) &&
-      clearOfCrossings(road, s)
-    ) {
+    if (s < last && fromLevel <= road.plan.level && clearOfCrossings(road, s)) {
       const [unmarked, jaywalk] = seededKinds;
       const kind = kindRoll < footfall.unmarked ? unmarked : jaywalk;
       sites.push({ crossing: NO_CROSSING, id: `${kind}-${place}`, kind, s });

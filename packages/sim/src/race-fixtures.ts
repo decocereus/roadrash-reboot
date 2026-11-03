@@ -39,8 +39,8 @@ export const quietTrack = compileTrack({
 
 export const straight = compileTrack({
   ...ridgeRoad,
+  carriers: [],
   chevrons: [],
-  features: [],
   hazardsPerKilometre: 0,
   pieces: eased([[6000, 0, 0]]),
   trafficPerKilometre: 0,
@@ -236,41 +236,6 @@ export const HERMITS_BEND_FROM = 6060;
 
 export const HERMITS_BEND_TO = 6240;
 
-export const loadingRamp = {
-  kind: "jump",
-  length: 16,
-  rise: 0.8,
-  width: 1.4,
-} as const;
-
-export const rampRoadPlan = {
-  ...ridgeRoad,
-  chevrons: [],
-  features: [
-    {
-      feature: loadingRamp,
-      fromLevel: 1,
-      id: "middle-ramp",
-      placement: "fixed",
-      s: 1000,
-      x: 0,
-    },
-    {
-      feature: loadingRamp,
-      fromLevel: 1,
-      id: "edge-ramp",
-      placement: "fixed",
-      s: 2000,
-      x: 3.8,
-    },
-  ],
-  hazardsPerKilometre: 0,
-  pieces: eased([[6000, 0, 0]]),
-  trafficPerKilometre: 0,
-} as const;
-
-export const rampRoad = compileTrack(rampRoadPlan);
-
 export const flatOut: RiderInput = {
   brake: 0,
   kick: false,
@@ -291,10 +256,19 @@ export interface Placement {
   readonly steer?: number;
 }
 
+export const truckRoad = compileTrack({
+  ...ridgeRoad,
+  carriers: [{ fromLevel: 1, s: 1000 }],
+  chevrons: [],
+  hazardsPerKilometre: 0,
+  pieces: eased([[6000, 0, 0]]),
+  trafficPerKilometre: 1,
+});
+
 export const hazardFreeRoad = compileTrack({
   ...ridgeRoad,
+  carriers: [],
   chevrons: [],
-  features: [],
   hazardsPerKilometre: 0,
   pieces: eased([[6000, 0, 0]]),
   trafficPerKilometre: 0,
@@ -358,6 +332,7 @@ export const pilotAt = (road: Track, s: number, seconds: number) => {
 
 export const slowTruckAt = (state: RaceState, s: number, x: number): void => {
   state.cars.push({
+    carrier: false,
     cruiseSpeed: 10,
     halfLength: 4.2,
     halfWidth: 1.2,

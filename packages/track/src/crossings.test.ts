@@ -22,9 +22,9 @@ const flatRoad = (
   pieces = eased([[3000, 0, 0]])
 ): TrackPlan => ({
   ...roads["breakwater-run"].plan,
+  carriers: [],
   chevrons: [],
   crossings,
-  features: [],
   pieces,
 });
 
@@ -110,25 +110,10 @@ describe("crossings", () => {
     ).toHaveLength(1);
   });
 
-  it("two crossings too close together, or one in a ramp's landing, are refused", () => {
+  it("two crossings too close together are refused", () => {
     expect(() =>
       compileTrack(flatRoad([junction, { ...junction, id: "next", s: 1600 }]))
     ).toThrow(/too close to crossing/u);
-    expect(() =>
-      compileTrack({
-        ...flatRoad([junction]),
-        features: [
-          {
-            feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
-            fromLevel: 1,
-            id: "ramp",
-            placement: "fixed",
-            s: 1420,
-            x: 3.6,
-          },
-        ],
-      })
-    ).toThrow(/approach or landing of a ramp/u);
   });
 
   it("no tree, pole or rock stands where a cross road's arm meets the road, and the far side keeps its own", () => {

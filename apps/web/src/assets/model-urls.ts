@@ -6,6 +6,7 @@ import { artUrl } from "./art.ts";
 export interface ModelUrls {
   readonly bikes: Readonly<Record<BikeModelId, string>>;
   readonly car: string;
+  readonly truck: string;
   readonly van: string;
   readonly figures: readonly [string, string, string];
   readonly walkers: string;
@@ -33,6 +34,7 @@ export const modelUrls: ModelUrls = {
     artUrl("models/rider_b.glb"),
     artUrl("models/rider_c.glb"),
   ],
+  truck: artUrl("models/truck.glb"),
   van: artUrl("models/van.glb"),
   walkers: artUrl("models/pedestrians.glb"),
 };

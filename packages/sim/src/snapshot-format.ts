@@ -42,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 5;
+export const SNAPSHOT_FORMAT = 6;
 
 const TICK_BYTES = 8;
 
@@ -61,6 +61,7 @@ export type RiderSetupKey =
   | "profile";
 
 export type CarSetupKey =
+  | "carrier"
   | "cruiseSpeed"
   | "halfLength"
   | "halfWidth"
@@ -210,8 +211,8 @@ const riderSchema = schemaOf<
   heading: floatAt("heading"),
   hitStun: floatAt("hitStun"),
   input: recordAt("input", inputSchema),
-  jumpMisread: flagAt("jumpMisread"),
   jumpSeen: floatAt("jumpSeen"),
+  jumpTaken: flagAt("jumpTaken"),
   lastHitBy: riderRefAt("lastHitBy"),
   lastHitTick: floatAt("lastHitTick"),
   lateralSpeed: floatAt("lateralSpeed"),
@@ -220,6 +221,7 @@ const riderSchema = schemaOf<
   mode: choiceAt("mode", riderModes),
   modeTicks: floatAt("modeTicks"),
   offRoad: flagAt("offRoad"),
+  onCarrier: floatAt("onCarrier"),
   parked: flagAt("parked"),
   pilotLine: floatAt("pilotLine"),
   post: floatAt("post"),

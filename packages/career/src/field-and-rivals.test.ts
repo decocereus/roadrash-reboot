@@ -474,6 +474,7 @@ describe("memory", () => {
       );
     }
     race.state.cars.push({
+      carrier: false,
       cruiseSpeed: 0,
       halfLength: 2.2,
       halfWidth: 0.92,

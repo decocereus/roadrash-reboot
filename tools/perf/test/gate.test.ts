@@ -49,9 +49,9 @@ describe("pack-riding workload validation", () => {
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
       actual: "5",
-      expected: "6..14 rivals",
+      expected: "8..14 rivals",
       field: "ahead",
-      tick: 3017 + middle,
+      tick: 2918 + middle,
     });
   });
 
@@ -64,7 +64,7 @@ describe("pack-riding workload validation", () => {
       actual: "thrown",
       expected: "riding",
       field: "mode",
-      tick: 3017 + middle,
+      tick: 2918 + middle,
     });
   });
 
@@ -76,10 +76,10 @@ describe("pack-riding workload validation", () => {
       ticks: without(captured.ticks, middle),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: String(3017 + middle + 1),
-      expected: String(3017 + middle),
+      actual: String(2918 + middle + 1),
+      expected: String(2918 + middle),
       field: "tick",
-      tick: 3017 + middle,
+      tick: 2918 + middle,
     });
   });
 
@@ -87,10 +87,10 @@ describe("pack-riding workload validation", () => {
     const at = captured.ahead.indexOf(14);
     const rows = { ...captured, ahead: changedAt(captured.ahead, at, 13) };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "6326",
-      expected: "6327",
+      actual: "6494",
+      expected: "6495",
       field: "total",
-      tick: 3617,
+      tick: 3518,
     });
   });
 });

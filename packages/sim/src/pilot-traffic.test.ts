@@ -30,8 +30,8 @@ import type { RaceEvent } from "./state.ts";
 
 const oilyTurnIn = compileTrack({
   ...ridgeRoad,
+  carriers: [],
   chevrons: [],
-  features: [],
   hazardsPerKilometre: 0,
   pieces: eased([
     [900, 0, 0],

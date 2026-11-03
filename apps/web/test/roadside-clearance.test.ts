@@ -1,6 +1,5 @@
 import { crossHalfWidthOf } from "@racer/track/crossings";
 import type { CrossingRule } from "@racer/track/crossings";
-import { lipOf } from "@racer/track/features";
 import { roadIds } from "@racer/track/road";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, placeOnTrack } from "@racer/track/track";
@@ -12,7 +11,6 @@ import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { KERB_HEIGHT } from "../src/game/city.ts";
 import { placeOnGround } from "../src/game/ground.ts";
 import { isInstancedMesh, isMesh } from "../src/game/meshes.ts";
-import { BEACON_OUT } from "../src/game/ramp-markers.ts";
 import { createWorld } from "../src/game/world.ts";
 import type { World } from "../src/game/world.ts";
 import { fakeWalkerAsset } from "./walker-asset.ts";
@@ -184,51 +182,6 @@ describe("the roadside clears the chase camera", () => {
     world.dispose();
   });
 
-  it("hides a ramp beacon's post and lamp while the camera passes the lip, keeps them hidden when the camera leaves the ramp's stretch from there, and shows them with the ramp behind the camera", () => {
-    const track = trackFor("breakwater-run", 1);
-    const world = createWorld(track, fakeWalkerAsset());
-    const [jump] = track.features;
-    if (!jump) {
-      throw new Error("Breakwater Run has a ramp.");
-    }
-    const lip = lipOf(jump);
-    const beaconAt = (x: number): THREE.Mesh[] => {
-      placeOnTrack(track, lip, x, point);
-      const parts: THREE.Mesh[] = [];
-      const box = new THREE.Box3();
-      world.scene.traverse((node) => {
-        if (!isMesh(node) || isInstancedMesh(node)) {
-          return;
-        }
-        box.setFromObject(node);
-        const size = box.getSize(spot);
-        const centre = box.getCenter(new THREE.Vector3());
-        if (
-          size.x < 1 &&
-          size.z < 1 &&
-          Math.hypot(centre.x - point.x, centre.z - point.z) < 0.6
-        ) {
-          parts.push(node);
-        }
-      });
-      return parts;
-    };
-    const inner = beaconAt(jump.x - jump.width / 2 - BEACON_OUT);
-    const outer = beaconAt(jump.x + jump.width / 2 + BEACON_OUT);
-    expect([inner.length, outer.length]).toStrictEqual([2, 2]);
-    const beacons = [...inner, ...outer];
-
-    rideTo(world, track, { air: 0.6, s: lip + 8, x: jump.x });
-    expect(beacons.map(drawn)).toStrictEqual([false, false, false, false]);
-
-    rideTo(world, track, { s: lip + 600, x: jump.x });
-    expect(beacons.map(drawn)).toStrictEqual([false, false, false, false]);
-
-    rideTo(world, track, { s: lip + 30, x: jump.x });
-    expect(beacons.map(drawn)).toStrictEqual([true, true, true, true]);
-    world.dispose();
-  });
-
   it("keeps every signal across the junction drawn while a rider rides the right lane through Harbour Cross", () => {
     const track = trackFor("breakwater-run", 1);
     const world = createWorld(track, fakeWalkerAsset());
@@ -320,9 +273,9 @@ describe("the roadside clears the chase camera", () => {
     };
     const track = compileTrack({
       ...roads["breakwater-run"].plan,
+      carriers: [],
       chevrons: [],
       crossings: [rule],
-      features: [],
       region: "kettle-woods",
     });
     const world = createWorld(track, fakeWalkerAsset());

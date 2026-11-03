@@ -1,5 +1,6 @@
 import { riderPalette } from "@racer/sim/palette";
 import type { CrossCarView, TrafficView } from "@racer/sim/race-view";
+import { PAINT_COUNT } from "@racer/sim/traffic";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -447,6 +448,16 @@ const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
   return bounds.getSize(new THREE.Vector3());
 };
 
+const DECK_CAR = { halfLength: 2.2, halfWidth: 0.92, height: 1.45 };
+const CARRIER_DECKS = [
+  { along: 8.85, y: 1.18 },
+  { along: 4.5, y: 1.18 },
+  { along: 0.15, y: 1.18 },
+  { along: 8.85, y: 2.72 },
+  { along: 4.5, y: 2.72 },
+  { along: 0.15, y: 2.72 },
+] as const;
+
 export const createFleet = (
   assets: Assets,
   shading: Shading,
@@ -455,6 +466,9 @@ export const createFleet = (
 ): Fleet => {
   const group = new THREE.Group();
   const parts: FleetPart[] = [];
+  const carriers = cars.flatMap((car, index) => (car.carrier ? [index] : []));
+  const deckOwner = carriers.flatMap((owner) => CARRIER_DECKS.map(() => owner));
+  const firstDeckCar = cars.length + crossCars.length;
   const bodies: readonly FleetBody[] = [
     ...cars,
     ...crossCars.map((car) => ({
@@ -463,6 +477,10 @@ export const createFleet = (
       height: car.height,
       paint: car.paint,
     })),
+    ...deckOwner.map((owner, slot) => ({
+      ...DECK_CAR,
+      paint: ((cars[owner]?.paint ?? 0) + slot + 1) % PAINT_COUNT,
+    })),
   ];
   const local: THREE.Matrix4[] = bodies.map(() => new THREE.Matrix4());
   const along = new Float64Array(bodies.length);
@@ -470,16 +488,24 @@ export const createFleet = (
   const scratch = new THREE.Object3D();
   const color = new THREE.Color();
 
-  const muster = (primitives: readonly Primitive[], boxy: boolean): void => {
+  const muster = (
+    primitives: readonly Primitive[],
+    belongs: (car: FleetBody, index: number) => boolean
+  ): void => {
     const members = bodies
       .map((car, index) => ({ car, index }))
-      .filter(({ car }) => car.height > BOXY_HEIGHT === boxy);
+      .filter(({ car, index }) => belongs(car, index));
     if (members.length === 0) {
       return;
     }
     const size = sizeOf(primitives);
     for (const { car, index } of members) {
-      scratch.position.set(0, 0, 0);
+      const deck = CARRIER_DECKS[(index - firstDeckCar) % CARRIER_DECKS.length];
+      if (index >= firstDeckCar && deck) {
+        scratch.position.set(0, deck.y, -deck.along);
+      } else {
+        scratch.position.set(0, 0, 0);
+      }
       scratch.rotation.set(0, Math.PI, 0);
       scratch.scale.set(
         (car.halfWidth * 2) / size.x,
@@ -525,8 +551,17 @@ export const createFleet = (
     addPart(rest.glow, shading.glowPaint(), false, false);
   };
 
-  muster(assets.car, false);
-  muster(assets.van, true);
+  const isCarrier = (index: number): boolean =>
+    index < cars.length && cars[index]?.carrier === true;
+  muster(
+    assets.car,
+    (car, index) => car.height <= BOXY_HEIGHT && !isCarrier(index)
+  );
+  muster(
+    assets.van,
+    (car, index) => car.height > BOXY_HEIGHT && !isCarrier(index)
+  );
+  muster(assets.truck, (_car, index) => isCarrier(index));
   freeze(group);
 
   const base = new THREE.Object3D();
@@ -544,8 +579,11 @@ export const createFleet = (
     }
   };
 
+  const ownerOf = (index: number): number =>
+    index >= firstDeckCar ? (deckOwner[index - firstDeckCar] ?? index) : index;
+
   const placeCar = (track: Track, index: number, s: number): void => {
-    const car = cars[index];
+    const car = cars[ownerOf(index)];
     if (!car) {
       return;
     }
@@ -566,7 +604,7 @@ export const createFleet = (
       return false;
     }
     part.slotCar[slot] = index;
-    const paint = cars[index]?.paint ?? 0;
+    const paint = bodies[index]?.paint ?? 0;
     part.mesh.setColorAt(slot, color.setHex(paints[paint] ?? 0x88_88_88));
     return true;
   };
@@ -581,11 +619,15 @@ export const createFleet = (
         let lastRecoloured = -1;
         for (const index of part.cars) {
           const matrix = placed[index];
-          const s = along[index] ?? Number.NEGATIVE_INFINITY;
+          const s = along[ownerOf(index)] ?? Number.NEGATIVE_INFINITY;
           if (!matrix || s < from || s > to) {
             continue;
           }
-          if (road && index < cars.length && placedAt[index] !== s) {
+          if (
+            road &&
+            (index < cars.length || index >= firstDeckCar) &&
+            placedAt[index] !== s
+          ) {
             placeCar(road, index, s);
             placedAt[index] = s;
           }

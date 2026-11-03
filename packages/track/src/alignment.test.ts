@@ -9,31 +9,31 @@ import type { Track } from "./track.ts";
 import { ridgeRoad } from "./tracks/ridge-road.ts";
 
 const fingerprintsBeforePieces = {
-  "breakwater-run-1": "58f62d674779e78f",
-  "breakwater-run-2": "18d4b67c3557fff2",
-  "breakwater-run-3": "587ac8136226bd78",
-  "breakwater-run-4": "6cfbfbc76105a0aa",
-  "breakwater-run-5": "2af6782137b35078",
-  "cinder-wash-1": "2fd6a2ba0ef21ac3",
-  "cinder-wash-2": "460ebef4369a6337",
-  "cinder-wash-3": "2f6f22212eb3d034",
-  "cinder-wash-4": "6d44a30973bc83f1",
-  "cinder-wash-5": "7c3b285b3ffa5ff5",
-  "hollow-pine-road-1": "54c2f32f310883de",
-  "hollow-pine-road-2": "7e0696f75f1d92ba",
-  "hollow-pine-road-3": "5a1ce9486f0ce2e1",
-  "hollow-pine-road-4": "4cdc9bc64f53e644",
-  "hollow-pine-road-5": "0aae76d003d2f64c",
-  "ridge-road-1": "30ee201f2a12f56e",
-  "ridge-road-2": "38a49b31475bd11d",
-  "ridge-road-3": "0d887d64694b0db1",
-  "ridge-road-4": "464c3df76331db44",
-  "ridge-road-5": "2efcc7c764428e85",
-  "slag-row-1": "36a7676561758935",
-  "slag-row-2": "125e6afd26e5ea55",
-  "slag-row-3": "1d905bb3453bcdc2",
-  "slag-row-4": "7ee67b2e47c48ea6",
-  "slag-row-5": "7c1722f66449fe88",
+  "breakwater-run-1": "1af7538e09afe403",
+  "breakwater-run-2": "2b39aef930c036cc",
+  "breakwater-run-3": "6b8bed605d50a627",
+  "breakwater-run-4": "4c07cbc92962a28e",
+  "breakwater-run-5": "7070d73371a1da4b",
+  "cinder-wash-1": "3516077820af397c",
+  "cinder-wash-2": "51c3f3a012ed0575",
+  "cinder-wash-3": "7c1068173bf09c4b",
+  "cinder-wash-4": "69cd800519999dd1",
+  "cinder-wash-5": "6c9e1c22352f1c8d",
+  "hollow-pine-road-1": "621de94156f2f7d1",
+  "hollow-pine-road-2": "77328e9157064fa6",
+  "hollow-pine-road-3": "3acdbbe26171f94c",
+  "hollow-pine-road-4": "39a76cfd6e09efce",
+  "hollow-pine-road-5": "17cbd9b55ce4b7be",
+  "ridge-road-1": "7cbf7a1017d36dd8",
+  "ridge-road-2": "30a0c1d33a458781",
+  "ridge-road-3": "27675a432c87a700",
+  "ridge-road-4": "384d4e053866591e",
+  "ridge-road-5": "31ac777f53f83815",
+  "slag-row-1": "1ff206095fb06e63",
+  "slag-row-2": "72025aed2d8d6bbf",
+  "slag-row-3": "7bf96e3e11376cdb",
+  "slag-row-4": "446f758a0fa7f0fb",
+  "slag-row-5": "63de1e5f2182dc3a",
 };
 
 const DIGEST_MODULUS = 2_147_483_647;
@@ -65,7 +65,6 @@ const fingerprintOf = (track: Track): string => {
   }
   for (const char of JSON.stringify([
     track.props.filter((prop) => prop.kind !== "chevron"),
-    track.features,
     track.hazards,
   ])) {
     add(char.codePointAt(0) ?? 0);
@@ -114,7 +113,7 @@ const sweeperCurvatureAt = (s: number): number => {
 };
 
 describe("track pieces", () => {
-  it("every road at every level, without the crossings added since, compiles to the centreline, ramps, hazards and props other than chevrons it had before pieces replaced sections", () => {
+  it("every road at every level, without the crossings added since, compiles to the centreline, hazards and props other than chevrons it had before pieces replaced sections", () => {
     const fingerprints = Object.fromEntries(
       roadIds.flatMap((roadId) =>
         roadLevels.map((level) => [

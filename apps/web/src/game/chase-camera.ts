@@ -19,6 +19,8 @@ const RIDER_TOP = 1.85;
 const REAR_WHEEL_BEHIND = 0.75;
 const SIDEWAYS_FOLLOW = 0.75;
 const AIR_FOLLOW = 0.25;
+const HIGH_AIR_FROM = 1;
+const HIGH_AIR_FULL = 3.5;
 const GROUND_CLEARANCE = 0.6;
 const BUMP_KICK = 2.2;
 const BUMP_STIFFNESS = 90;
@@ -114,7 +116,10 @@ export const createChaseCamera = (): ChaseCamera => {
       const wantedHeight =
         heightAt(track, subject.s) +
         rig.height +
-        subject.air * AIR_FOLLOW -
+        subject.air *
+          (AIR_FOLLOW +
+            (1 - AIR_FOLLOW) *
+              smoothstep(HIGH_AIR_FROM, HIGH_AIR_FULL, subject.air)) -
         TUCK_DROP * tuck;
       height += (wantedHeight - height) * follow;
       rush += (smoothstep(0, FULL_SPEED, subject.speed) - rush) * follow;

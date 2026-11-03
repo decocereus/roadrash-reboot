@@ -1,11 +1,3 @@
-import {
-  FASTEST_LAUNCH,
-  flatFlightLength,
-  lipOf,
-  lipSlopeOf,
-  nextJumpFrom,
-} from "@racer/track/features";
-import type { TrackFeature } from "@racer/track/features";
 import { hypot2 } from "@racer/track/math";
 import {
   curvatureAt,
@@ -18,7 +10,7 @@ import type { Track } from "@racer/track/track";
 import { dragOf } from "./engine.ts";
 import { CORNER_SCAN_POINTS } from "./pilot-history.ts";
 import { TAKEOFF_SPEED } from "./rider-drive.ts";
-import { HARD_LANDING, LANDING_SLIP } from "./rider-flight.ts";
+import { LANDING_SLIP } from "./rider-flight.ts";
 import {
   BIKE_HALF_WIDTH,
   brakeGrip,
@@ -42,7 +34,7 @@ const BRAKE_PER_EXCESS = 4;
 const LEAD_STEPS = 12;
 const LIFT_DROP = 0.05;
 const RESERVE_SHARE = 0.3;
-const LAUNCH_SEARCH_STEPS = 10;
+const FASTEST_LAUNCH = 85;
 const CREST_FLIGHT_STEP = 4;
 const LONGEST_CREST_FLIGHT = 200;
 const CREST_MARGIN = 1.15;
@@ -51,9 +43,7 @@ const PLANNED_LIFT = 3.5;
 const SCAN_STEP = 10;
 export const LANE_CHANGE_RATE = 1.2;
 export const MAX_LATERAL_SPEED = 5;
-export const JUMP_LANDING_ROOM = 0.5;
-const JUMP_IMPACT_MARGIN = 0.9;
-export const JUMP_WALL_CLEARANCE = 1.2;
+const JUMP_LANDING_ROOM = 0.5;
 export const OIL_RECOVERY_SECONDS = 0.6;
 
 export const riding = { brakeShare: BRAKE_SHARE, margin: 1 };
@@ -256,23 +246,7 @@ const slowedFrom = (
   return Math.sqrt(Math.max(0, next * next + 2 * slowing * CORNER_SCAN_STEP));
 };
 
-const rampAhead = (
-  track: Track,
-  rider: RiderState,
-  line: number,
-  reach: number
-): TrackFeature | undefined => {
-  const jump = track.features[nextJumpFrom(track, rider.s)];
-  if (!jump) {
-    return undefined;
-  }
-  const lip = lipOf(jump) - rider.s;
-  const taken = Math.abs(line - jump.x) < jump.width / 2 + BIKE_HALF_WIDTH;
-  return taken && lip >= 0 && lip <= reach ? jump : undefined;
-};
-
-const landsAfterFlight = (
-  history: PilotHistory,
+export const landsOnRoad = (
   track: Track,
   rider: RiderState,
   from: number,
@@ -282,9 +256,6 @@ const landsAfterFlight = (
   margin: number
 ): boolean => {
   const { bike } = rider;
-  if (speed > sampleOf(history.braked, plan.count, from + flight - rider.s)) {
-    return false;
-  }
   const takeoff = curvatureAt(track, from);
   let bendAcross = 0;
   for (let s = from; s < from + flight; s += CORNER_SCAN_STEP) {
@@ -298,24 +269,26 @@ const landsAfterFlight = (
   );
 };
 
-const landsFrom = (
-  history: PilotHistory,
+export const canBrakeAfterLanding = (
   track: Track,
   rider: RiderState,
-  jump: TrackFeature,
+  landing: number,
   speed: number,
   margin: number
-): boolean =>
-  landsAfterFlight(
-    history,
-    track,
-    rider,
-    lipOf(jump),
-    flatFlightLength(jump, speed),
-    jump.x,
-    speed,
-    margin
-  );
+): boolean => {
+  const { bike } = rider;
+  const braking = SCAN_BRAKING_SHARE * bike.brakeDeceleration;
+  const reach = (speed * speed) / (2 * braking);
+  for (let ahead = 0; ahead <= reach; ahead += CORNER_SCAN_STEP) {
+    const bend = Math.abs(curvatureAt(track, landing + ahead));
+    const holds =
+      bend > MIN_BEND ? holdingSpeed(bike, bend, 1) * margin : speed;
+    if (speed * speed - 2 * braking * ahead > holds * holds) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const crestTakeoffSpeed = (drop: number): number =>
   drop < 0
@@ -355,46 +328,10 @@ const crestCeiling = (
   const s = rider.s + index * CORNER_SCAN_STEP;
   const flying = Math.min(speed, FASTEST_LAUNCH);
   const flight = crestFlightLength(track, s, flying);
-  return landsAfterFlight(
-    history,
-    track,
-    rider,
-    s,
-    flight,
-    line,
-    flying,
-    margin
-  )
-    ? speed
-    : takeoff;
-};
-
-export const safeLaunchSpeed = (jump: TrackFeature): number => {
-  const impact = -HARD_LANDING * JUMP_IMPACT_MARGIN;
-  const fall = 2 * GRAVITY * jump.rise;
-  return impact * impact > fall
-    ? Math.sqrt(impact * impact - fall) / lipSlopeOf(jump)
-    : 0;
-};
-
-const launchSpeed = (
-  history: PilotHistory,
-  track: Track,
-  rider: RiderState,
-  jump: TrackFeature,
-  margin: number
-): number => {
-  let low = 0;
-  let high = FASTEST_LAUNCH;
-  for (let step = 0; step < LAUNCH_SEARCH_STEPS; step += 1) {
-    const middle = (low + high) / 2;
-    if (landsFrom(history, track, rider, jump, middle, margin)) {
-      low = middle;
-    } else {
-      high = middle;
-    }
-  }
-  return Math.min(low, safeLaunchSpeed(jump));
+  const lands =
+    flying <= sampleOf(history.braked, plan.count, s + flight - rider.s) &&
+    landsOnRoad(track, rider, s, flight, line, flying, margin);
+  return lands ? speed : takeoff;
 };
 
 const planCorners = (
@@ -415,13 +352,9 @@ const planCorners = (
   const stopping =
     (speed * speed) / (2 * SCAN_BRAKING_SHARE * bike.brakeDeceleration) +
     2 * CORNER_SCAN_STEP;
-  const jump = rampAhead(track, rider, line, stopping);
-  const reach = jump
-    ? lipOf(jump) - rider.s + flatFlightLength(jump, FASTEST_LAUNCH) + stopping
-    : stopping;
   const count = Math.min(
     CORNER_SCAN_POINTS,
-    Math.ceil(reach / CORNER_SCAN_STEP) + 1
+    Math.ceil(stopping / CORNER_SCAN_STEP) + 1
   );
   const recovery = slick.metres + speed * OIL_RECOVERY_SECONDS;
   plan.count = count;
@@ -448,48 +381,36 @@ const planCorners = (
   const last = count - 1;
   braked[last] = ceilings[last] ?? Number.POSITIVE_INFINITY;
   coasted[last] = braked[last] ?? Number.POSITIVE_INFINITY;
-  const lipIndex = jump
-    ? Math.floor((lipOf(jump) - rider.s) / CORNER_SCAN_STEP)
-    : -1;
   for (let index = last - 1; index >= 0; index -= 1) {
     const ceiling = ceilings[index] ?? Number.POSITIVE_INFINITY;
-    if (jump && index === lipIndex) {
-      const launch = Math.min(
-        ceiling,
-        launchSpeed(history, track, rider, jump, margin)
-      );
-      braked[index] = launch;
-      coasted[index] = launch;
-    } else {
-      const grounded = Math.min(
-        ceiling,
-        slowedFrom(
-          rider,
-          index,
-          braked[index + 1] ?? Number.POSITIVE_INFINITY,
-          riding.brakeShare
-        )
-      );
-      const landable = crestCeiling(
-        history,
-        track,
+    const grounded = Math.min(
+      ceiling,
+      slowedFrom(
         rider,
         index,
-        line,
-        grounded,
-        margin
-      );
-      braked[index] = landable;
-      coasted[index] = Math.min(
-        landable,
-        slowedFrom(
-          rider,
-          index,
-          coasted[index + 1] ?? Number.POSITIVE_INFINITY,
-          0
-        )
-      );
-    }
+        braked[index + 1] ?? Number.POSITIVE_INFINITY,
+        riding.brakeShare
+      )
+    );
+    const landable = crestCeiling(
+      history,
+      track,
+      rider,
+      index,
+      line,
+      grounded,
+      margin
+    );
+    braked[index] = landable;
+    coasted[index] = Math.min(
+      landable,
+      slowedFrom(
+        rider,
+        index,
+        coasted[index + 1] ?? Number.POSITIVE_INFINITY,
+        0
+      )
+    );
   }
 };
 

@@ -261,6 +261,7 @@ describe("a pedestrian's own walk", () => {
     const rider = player(state);
     rider.s = straight.length - 50;
     const car = {
+      carrier: false,
       cruiseSpeed: 20,
       halfLength: 2.2,
       halfWidth: 0.92,
@@ -328,6 +329,7 @@ describe("a car and a pedestrian", () => {
     walker.mode = "down";
     walker.wait = 15 * TICK_RATE;
     const car = {
+      carrier: false,
       cruiseSpeed: 20,
       halfLength: 2.2,
       halfWidth: 0.92,
@@ -371,6 +373,7 @@ describe("a car and a pedestrian who walks into its lane", () => {
     player(state).s = straight.length - 50;
     placeWalker(walker, -3, 1.4);
     const car = {
+      carrier: false,
       cruiseSpeed: 20,
       halfLength: 2.2,
       halfWidth: 0.92,

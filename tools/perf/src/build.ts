@@ -36,6 +36,7 @@ export const glbNames = [
   "rider_b",
   "rider_c",
   "seraph",
+  "truck",
   "van",
   ...celebrityIds.map((id) => `rider_${id}` as const),
 ] as const;

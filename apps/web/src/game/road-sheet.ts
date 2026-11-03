@@ -1,4 +1,3 @@
-import type { TrackFeature } from "@racer/track/features";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
@@ -6,8 +5,7 @@ import * as THREE from "three";
 export const UP = new THREE.Vector3(0, 1, 0);
 
 type Corner = readonly [s: number, x: number, lift: number];
-export type Face = readonly [Corner, Corner, Corner, Corner];
-export type Lift = (s: number) => number;
+type Face = readonly [Corner, Corner, Corner, Corner];
 
 export interface Sheet {
   readonly positions: number[];
@@ -20,16 +18,6 @@ interface Facing {
   readonly right: THREE.Vector3;
   readonly back: THREE.Vector3;
   readonly ahead: THREE.Vector3;
-}
-
-export interface Ramp {
-  readonly track: Track;
-  readonly jump: TrackFeature;
-  readonly heightOf: Lift;
-  readonly underOf: Lift;
-  readonly left: number;
-  readonly right: number;
-  readonly facing: Facing;
 }
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
@@ -98,18 +86,6 @@ export const quad = (
   });
 };
 
-export const fadedQuad = (
-  track: Track,
-  sheet: Sheet,
-  face: Face,
-  alphas: readonly [number, number, number, number],
-  outward: THREE.Vector3
-): void => {
-  shade(track, sheet, face, outward, (index) => {
-    sheet.colours.push(0, 0, 0, alphas[index] ?? 0);
-  });
-};
-
 export const geometryOf = (sheet: Sheet): THREE.BufferGeometry => {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
@@ -140,73 +116,4 @@ export const facingAt = (track: Track, s: number, x: number): Facing => {
     left,
     right: left.clone().negate(),
   };
-};
-
-interface Prism {
-  readonly span: readonly [near: number, far: number];
-  readonly across: readonly [left: number, right: number];
-  readonly bottom: Lift;
-  readonly top: Lift;
-  readonly colour: THREE.Color;
-}
-
-export const prism = (
-  ramp: Ramp,
-  sheet: Sheet,
-  beam: Prism,
-  ends: boolean
-): void => {
-  const { track, facing } = ramp;
-  const [near, far] = beam.span;
-  const [left, right] = beam.across;
-  const { bottom, top, colour } = beam;
-  quad(
-    track,
-    sheet,
-    [
-      [near, left, top(near)],
-      [near, right, top(near)],
-      [far, right, top(far)],
-      [far, left, top(far)],
-    ],
-    colour,
-    UP
-  );
-  for (const [x, outward] of [
-    [left, facing.left],
-    [right, facing.right],
-  ] as const) {
-    quad(
-      track,
-      sheet,
-      [
-        [near, x, bottom(near)],
-        [far, x, bottom(far)],
-        [far, x, top(far)],
-        [near, x, top(near)],
-      ],
-      colour,
-      outward
-    );
-  }
-  if (!ends) {
-    return;
-  }
-  for (const [s, outward] of [
-    [near, facing.back],
-    [far, facing.ahead],
-  ] as const) {
-    quad(
-      track,
-      sheet,
-      [
-        [s, left, bottom(s)],
-        [s, right, bottom(s)],
-        [s, right, top(s)],
-        [s, left, top(s)],
-      ],
-      colour,
-      outward
-    );
-  }
 };

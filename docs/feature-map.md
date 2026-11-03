@@ -10,7 +10,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 
 - [Riding, handling and controls](#riding-handling-and-controls): `riding`
 - [Crashes and getting back on](#crashes-and-getting-back-on): `crashes`
-- [Jumps, ramps and landings](#jumps-ramps-and-landings): `jumps`
+- [Jumps and landings](#jumps-and-landings): `jumps`
 - [Road hazards](#road-hazards): `hazards`
 - [Traffic](#traffic): `traffic`
 - [Junctions and crossings](#junctions-and-crossings): `junctions`
@@ -112,28 +112,21 @@ Test files:
 - `packages/sim/src/on-foot.test.ts`
 - `packages/sim/src/run-over.test.ts`
 
-### Jumps, ramps and landings
+### Jumps and landings
 
-Ramps placed on the road, crests that launch the bike, flight, judged landings, and the ramp models and the landing dust and sparks drawn for them.
+Crests and truck ramps that launch the bike, flight, judged landings, and the landing dust and sparks drawn for them.
 
 - Id: `jumps`
-- Start: `packages/track/src/features.ts`, `packages/sim/src/rider-flight.ts`, `apps/web/src/game/ramps.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/tracks.md#the-crest-rule](design/tracks.md#the-crest-rule), [docs/design/tracks.md#ramps-and-humps](design/tracks.md#ramps-and-humps)
+- Start: `packages/sim/src/rider-flight.ts`, `apps/web/src/game/puffs.ts`
+- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/tracks.md#the-crest-rule](design/tracks.md#the-crest-rule), [docs/design/tracks.md#carriers-and-humps](design/tracks.md#carriers-and-humps)
 - Verify: [jumps.md](../.claude/skills/verify-rushline/features/jumps.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/track/src/features.ts`, `packages/sim/src/rider-flight.ts`, `packages/sim/src/jumps.test.ts`, `apps/web/src/game/ramp*.ts`, `apps/web/src/game/puffs.ts`
+- Owns: `packages/sim/src/rider-flight.ts`, `packages/sim/src/jumps.test.ts`, `apps/web/src/game/puffs.ts`
 
 Source files:
 
 - `apps/web/src/game/puffs.ts`
-- `apps/web/src/game/ramp-deck.ts`
-- `apps/web/src/game/ramp-frame.ts`
-- `apps/web/src/game/ramp-geometry.ts`
-- `apps/web/src/game/ramp-markers.ts`
-- `apps/web/src/game/ramp-materials.ts`
-- `apps/web/src/game/ramps.ts`
 - `packages/sim/src/rider-flight.ts`
-- `packages/track/src/features.ts`
 
 Test files:
 
@@ -170,14 +163,16 @@ Same-way and oncoming cars in every lane, spawned from each road's traffic densi
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks)
 - Verify: none yet
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/traffic.ts`, `packages/sim/src/lanes.test.ts`
+- Owns: `packages/sim/src/carrier.ts`, `packages/sim/src/carrier.test.ts`, `packages/sim/src/traffic.ts`, `packages/sim/src/lanes.test.ts`
 
 Source files:
 
+- `packages/sim/src/carrier.ts`
 - `packages/sim/src/traffic.ts`
 
 Test files:
 
+- `packages/sim/src/carrier.test.ts`
 - `packages/sim/src/lanes.test.ts`
 
 ### Junctions and crossings
@@ -189,11 +184,12 @@ Junctions, cross roads and pedestrian crossings a road declares, their lights, t
 - Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
-- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
+- Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/road-sheet.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
 
 Source files:
 
 - `apps/web/src/game/junctions.ts`
+- `apps/web/src/game/road-sheet.ts`
 - `apps/web/src/game/walker-clips.ts`
 - `apps/web/src/game/walker-skin.ts`
 - `apps/web/src/game/walkers.ts`
@@ -264,7 +260,7 @@ Test files:
 
 ### AI riders (the pilot)
 
-The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, ramps, fights and pursuit, planned inside the tick from the race's own state.
+The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line choice around traffic and hazards, truck jumps, fights and pursuit, planned inside the tick from the race's own state.
 
 - Id: `pilot`
 - Start: `packages/sim/src/pilot.ts`, `packages/sim/src/pilot-corners.ts`, `packages/sim/src/pilot-lines.ts`
@@ -541,7 +537,7 @@ Test files:
 
 ### The five roads
 
-The five roads and their regions: each road's sections, crests, ramps, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.
+The five roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.
 
 - Id: `roads`
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`

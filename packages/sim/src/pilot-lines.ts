@@ -1,8 +1,7 @@
-import { nextJumpFrom } from "@racer/track/features";
 import type { Track } from "@racer/track/track";
 
+import { ridingOver } from "./carrier.ts";
 import {
-  JUMP_WALL_CLEARANCE,
   measureDeceleration,
   planForecast,
   PLANNED_BRAKING,
@@ -42,7 +41,7 @@ const ONCOMING_ENTRY_SECONDS = 8;
 const START_TICKS = 600;
 const START_ONCOMING_ENTRY_SECONDS = 12;
 const CENTRE_SEAM_BIAS = 0.6;
-const LANE_REACH = 1.7;
+export const LANE_REACH = 1.7;
 const SPLITTING_SPEED = 8;
 const RIDER_FOLLOW_SECONDS = 1.2;
 const CROSSING_SECONDS = 1.5;
@@ -234,8 +233,10 @@ const gatherInReach = (
   rider: RiderState
 ): void => {
   plan.carCount = 0;
-  for (const car of state.cars) {
-    if (rider.speed > car.speed) {
+  const { cars } = state;
+  for (let index = 0; index < cars.length; index += 1) {
+    const car = cars[index];
+    if (car && rider.speed > car.speed && !ridingOver(rider, index)) {
       const seconds = secondsUntilContact(
         rider,
         car.s,
@@ -393,18 +394,6 @@ const seamOf = (
   return straddlesCentre ? middle + CENTRE_SEAM_BIAS : middle;
 };
 
-const straddlesRamp = (track: Track, rider: RiderState, x: number): boolean => {
-  const jump = track.features[nextJumpFrom(track, rider.s)];
-  if (!jump || jump.s - rider.s > sightOf(rider)) {
-    return false;
-  }
-  const across = Math.abs(x - jump.x);
-  return (
-    across > jump.width / 2 - BIKE_HALF_WIDTH &&
-    across < jump.width / 2 + JUMP_WALL_CLEARANCE
-  );
-};
-
 const passable = (rider: RiderState, car: TrafficCar): boolean =>
   car.cruiseSpeed >= 0 &&
   car.s > rider.s &&
@@ -447,7 +436,7 @@ const offLaneLines = (
   const walkerCount = pedestrians.length;
   for (let index = 0; index < carCount; index += 1) {
     const car = cars[index];
-    if (car && passable(rider, car)) {
+    if (car && passable(rider, car) && !ridingOver(rider, index)) {
       const pass = car.halfWidth + BIKE_HALF_WIDTH + PASS_MARGIN;
       offLane[count] = car.x + pass;
       offLane[count + 1] = car.x - pass;
@@ -597,10 +586,7 @@ const offerBetweenLanes = (
   x: number,
   cruise: number
 ): void => {
-  if (
-    Math.abs(x) <= track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE &&
-    !straddlesRamp(track, rider, x)
-  ) {
+  if (Math.abs(x) <= track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE) {
     laneThreat(plan, state, rider, x, plan.found);
     if (!threatened(plan.found) && !crossesBlocked(plan, rider, x)) {
       offer(

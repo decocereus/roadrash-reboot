@@ -106,8 +106,8 @@ const leaned = (kmh: number) => {
 
 const gentleBend = compileTrack({
   ...ridgeRoad,
+  carriers: [],
   chevrons: [],
-  features: [],
   hazardsPerKilometre: 0,
   pieces: eased([
     [600, 0, 0],
@@ -158,8 +158,8 @@ const throughGentleBend = (kmh: number, rockX: number) => {
 
 const climbThenFlat = compileTrack({
   ...ridgeRoad,
+  carriers: [],
   chevrons: [],
-  features: [],
   hazardsPerKilometre: 0,
   pieces: eased([
     [2000, 0, 100],

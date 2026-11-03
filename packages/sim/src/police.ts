@@ -14,7 +14,7 @@ const LOSE_RANGE = 120;
 const WITNESS_RANGE = 250;
 const OFFENDER_RANGE = 500;
 const BUST_REACH = 4;
-const OVERSHOOT_REACH = 8;
+const OVERSHOOT_REACH = 10;
 const BUST_DELAY_TICKS = 30;
 export const PULL_OVER = 1.1;
 

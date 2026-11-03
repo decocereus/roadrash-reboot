@@ -4,6 +4,10 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 const breakwaterRun: TrackPlan = {
+  carriers: [
+    { fromLevel: 1, s: 2350 },
+    { fromLevel: 1, s: 3200 },
+  ],
   chevrons: chevronRuns["breakwater-run"],
   crossings: [
     {
@@ -52,24 +56,6 @@ const breakwaterRun: TrackPlan = {
       },
       s: 10_900,
       walk: "unmarked",
-    },
-  ],
-  features: [
-    {
-      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
-      fromLevel: 1,
-      id: "promenade-ramp",
-      placement: "fixed",
-      s: 4050,
-      x: 3.6,
-    },
-    {
-      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
-      fromLevel: 1,
-      id: "mole-ramp",
-      placement: "fixed",
-      s: 5420,
-      x: 3.6,
     },
   ],
   hazardsPerKilometre: 1,

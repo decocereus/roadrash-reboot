@@ -4,34 +4,13 @@ import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
+  carriers: [
+    { fromLevel: 1, s: 2600 },
+    { fromLevel: 1, s: 4100 },
+    { fromLevel: 4, s: 5900 },
+  ],
   chevrons: chevronRuns["slag-row"],
   crossings: [],
-  features: [
-    {
-      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
-      fromLevel: 1,
-      id: "slipway-ramp",
-      placement: "fixed",
-      s: 4720,
-      x: 3.5,
-    },
-    {
-      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
-      fromLevel: 1,
-      id: "bonded-ramp",
-      placement: "fixed",
-      s: 7280,
-      x: 3.5,
-    },
-    {
-      feature: { kind: "jump", length: 16, rise: 0.8, width: 1.4 },
-      fromLevel: 4,
-      id: "boulevard-ramp",
-      placement: "fixed",
-      s: 10_880,
-      x: 3.5,
-    },
-  ],
   hazardsPerKilometre: 1,
   id: "slag-row",
   laneWidth: 3.5,

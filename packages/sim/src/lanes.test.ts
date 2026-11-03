@@ -14,7 +14,6 @@ const straightOf = (lanesEachWay: 1 | 2): Track =>
   compileTrack({
     ...ridgeRoad,
     chevrons: [],
-    features: [],
     lanesEachWay,
     pieces: eased([[6000, 0, 0]]),
     trafficPerKilometre: 0,
@@ -41,6 +40,7 @@ const field = (course: Track, seed: number, rivalCount: number): RaceState => {
 };
 
 const slowCar = (s: number, x: number): TrafficCar => ({
+  carrier: false,
   cruiseSpeed: 15,
   halfLength: 2.2,
   halfWidth: 0.92,

@@ -4,9 +4,9 @@ import type { TrackPlan } from "../track.ts";
 import { madridGranViaScenery } from "./madrid-gran-via-scenery.ts";
 
 export const madridGranVia: TrackPlan = {
+  carriers: [],
   chevrons: chevronRuns["madrid-gran-via"],
   crossings: [],
-  features: [],
   hazardsPerKilometre: 2,
   id: "madrid-gran-via",
   laneWidth: 3.5,
