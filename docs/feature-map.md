@@ -1411,4 +1411,5 @@ Test files:
 - `packages/sim/src/room.test.ts`
 - `tools/rooms/test/load-report.test.ts`
 - `tools/rooms/test/race-report.test.ts`
+- `tools/rooms/test/replay.test.ts`
 - `tools/rooms/test/send-budget.test.ts`

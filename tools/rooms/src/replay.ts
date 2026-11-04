@@ -126,7 +126,7 @@ export const main = Effect.fn("rooms.replay")(function* main(
   const { humans, setup } = seatedRace(header.seed, header.seats);
   const replay = replayTape(setup, header.digest, parts);
   yield* Console.log(replayReport(header, end, humans, replay));
-  if (replay.kind !== "matched") {
+  if (replay.kind !== "matched" || replay.state.tick !== end.tick) {
     return yield* failed("The replay did not match the race.");
   }
   return replay;
