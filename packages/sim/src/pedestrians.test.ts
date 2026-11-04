@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -230,7 +231,7 @@ describe("a pedestrian's own walk", () => {
     const walker = walkerOf(state);
     const rider = player(state);
     rider.s = straight.length - 50;
-    const kerb = onStraight.roadHalfWidth + 1;
+    const kerb = roadHalfWidthAt(onStraight, 0) + 1;
     const arrivals: { x: number; expected: number; faces: number }[] = [];
     let was = walker.mode;
     for (let tick = 0; tick < 120 * TICK_RATE; tick += 1) {
@@ -266,6 +267,7 @@ describe("a pedestrian's own walk", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: 2,
       paint: 0,
       patience: 120,
       s: WALKER_S - 90,
@@ -334,6 +336,7 @@ describe("a car and a pedestrian", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: 2,
       paint: 0,
       patience: 120,
       s: WALKER_S - 100,
@@ -349,7 +352,7 @@ describe("a car and a pedestrian", () => {
     expect(car.s + car.halfLength).toBeLessThan(WALKER_S);
     walker.mode = "waiting";
     walker.drift = 0;
-    walker.x = onStraight.roadHalfWidth + 1;
+    walker.x = roadHalfWidthAt(onStraight, 0) + 1;
     walker.wait = 60 * TICK_RATE;
     for (let tick = 0; tick < 5 * TICK_RATE; tick += 1) {
       stepRace(state, onStraight, frameOf(state));
@@ -378,6 +381,7 @@ describe("a car and a pedestrian who walks into its lane", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: 2,
       paint: 0,
       patience: 120,
       s: WALKER_S - 40,

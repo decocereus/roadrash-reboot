@@ -34,10 +34,13 @@ const notes: readonly RoomNote[] = [
     digest: "00",
     kind: "started",
     lobbyMs: 30_000,
+    protocol: 1,
     raceId: "race-a",
     road: "slag-row",
     seats: 2,
     seed: 7,
+    tier: 2,
+    trackHash: "00",
   },
   { kind: "countdown", raceId: "race-a", stillLoading: [1], waitedMs: 20_000 },
   {
@@ -64,10 +67,13 @@ const notes: readonly RoomNote[] = [
     digest: "00",
     kind: "started",
     lobbyMs: 1000,
+    protocol: 1,
     raceId: "race-b",
     road: "slag-row",
     seats: 1,
     seed: 8,
+    tier: 2,
+    trackHash: "00",
   },
   {
     kind: "left",
@@ -120,6 +126,7 @@ describe("the race report", () => {
 
 const reportOfSeat = (only: RaceSeat): string =>
   raceReport({
+    browsers: [],
     ended: {
       catchUpWakes: 0,
       kind: "ended",

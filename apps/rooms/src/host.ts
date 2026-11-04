@@ -1,47 +1,67 @@
-import { ROOM_FIELD_SIZE, seatedRace } from "@racer/career/room-race";
-import { createRoom, MOST_SEATS } from "@racer/sim/room";
+import {
+  publicRoomRule,
+  ROOM_FIELD_SIZE,
+  seatedRace,
+} from "@racer/career/room-race";
+import { createRoom, firstRacers, MOST_SEATS } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import { createTapeWriter, hexOfWords } from "@racer/sim/room-tape";
 import type { TapeWriter } from "@racer/sim/room-tape";
 import {
   createInputBatch,
-  isReady,
-  readRaceStats,
-  isStart,
   PONG_PACKET_BYTES,
   readInput,
   readPing,
+  readRaceStats,
+  readReady,
+  ROOM_PROTOCOL,
   tickCapacity,
   writePong,
   writeTick,
 } from "@racer/sim/room-wire";
+import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
+import { trackDigest } from "@racer/sim/snapshot-setup";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 
 import type { RoomStatus } from "./contract.ts";
+import type { RaceManifest } from "./manifest.ts";
 import { encodeRoomMessage, SEAT_CLOSED, SEAT_SILENT } from "./messages.ts";
-import type { RoomMessage } from "./messages.ts";
+import type { Refusal, RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
 import {
+  BrowserTraceSchema,
+  MOST_TRACE_CHARS,
+  riderTraceName,
+  ROOM_TRACE_EVERY_TICKS,
+  roomTraceName,
   TAPE_VERSION,
   tapeEndName,
   tapeHeaderName,
   tapeKey,
   tapePartName,
 } from "./tape.ts";
+import type { RoomTrace } from "./tape.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
 const START_DELAY_MS = 3000;
 const READY_DEADLINE_MS = 20_000;
-const LOBBY_MS = 120_000;
+export const LOBBY_MS = 60_000;
+const REPORT_GRACE_MS = 5000;
 const FILL_LEAST_MS = 8000;
 const FILL_SPAN_MS = 10_000;
 const NO_STAMP = 0;
 const SILENT_SEAT_MS = 10_000;
 const SEAT_WATCH_MS = 1000;
 const SEND_FAILED = Number.NEGATIVE_INFINITY;
+
+const decodeBrowserTrace = Schema.decodeUnknownOption(
+  Schema.fromJsonString(BrowserTraceSchema)
+);
 
 export interface HostSocket {
   readonly send: (data: string | ArrayBufferView) => void;
@@ -51,6 +71,11 @@ export interface HostSocket {
 interface SeatLink {
   readonly colo: string | null;
   readonly tcpRttMs: number | null;
+}
+
+export interface SeatClaim {
+  readonly build: string;
+  readonly protocol: number;
 }
 
 export interface HostPorts {
@@ -75,6 +100,9 @@ interface Seat {
   leftAtTick: number | null;
   readyMs: number | null;
   reported: boolean;
+  traced: boolean;
+  tracedLate: number;
+  tracedMissed: number;
 }
 
 interface Lobby {
@@ -90,13 +118,19 @@ interface Running {
   readonly room: Room;
   readonly since: number;
   readonly tape: TapeWriter;
+  readonly trace: number[];
   readonly wakeGaps: Uint32Array;
   lastWakeAt: number;
   startedAt: number | null;
 }
 
 export interface Host {
-  readonly seat: (socket: HostSocket, name: string, link: SeatLink) => void;
+  readonly seat: (
+    socket: HostSocket,
+    name: string,
+    link: SeatLink,
+    claim: SeatClaim
+  ) => void;
   readonly message: (socket: HostSocket, data: string | ArrayBuffer) => void;
   readonly gone: (socket: HostSocket) => void;
   readonly status: () => RoomStatus;
@@ -115,17 +149,22 @@ const noteGap = (gaps: Uint32Array, gapMs: number): void => {
 
 export const createHost = (ports: HostPorts): Host => {
   const seats = new Map<HostSocket, Seat>();
+  const reporting = new Map<HostSocket, { raceId: string; seat: Seat }>();
   const batch = createInputBatch();
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
   const pongBuffer = new ArrayBuffer(PONG_PACKET_BYTES);
   const pongView = new DataView(pongBuffer);
+  const readyDigest = new Uint32Array(HASH_WORDS);
+  const bornAt = ports.now();
   let lobby: Lobby | null = null;
   let running: Running | null = null;
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
   let watching = false;
+
+  const roomMs = (): number => ports.now() - bornAt;
 
   const seatFor = (socket: HostSocket, name: string, link: SeatLink): Seat => ({
     accepted: 0,
@@ -139,6 +178,9 @@ export const createHost = (ports: HostPorts): Host => {
     reported: false,
     rider: null,
     socket,
+    traced: false,
+    tracedLate: 0,
+    tracedMissed: 0,
   });
 
   const sendTo = (seat: Seat, data: string | ArrayBufferView): void => {
@@ -161,6 +203,7 @@ export const createHost = (ports: HostPorts): Host => {
 
   const tellLobby = (open: Lobby): void => {
     tell({
+      atMs: roomMs(),
       kind: "lobby",
       names: [...seats.values()].map((seat) => seat.name),
       riders: ridersHere(open.fill),
@@ -222,9 +265,32 @@ export const createHost = (ports: HostPorts): Host => {
       })
     );
 
+  const traceSeats = ({ riders, room, trace }: Running): void => {
+    for (const seat of riders) {
+      if (seat.rider !== null) {
+        const missed = room.missedControls(seat.rider);
+        if (missed !== seat.tracedMissed || seat.late !== seat.tracedLate) {
+          trace.push(
+            room.state.tick,
+            seat.rider,
+            missed - seat.tracedMissed,
+            seat.late - seat.tracedLate
+          );
+          seat.tracedMissed = missed;
+          seat.tracedLate = seat.late;
+        }
+      }
+    }
+  };
+
   const end = (run: Running): void => {
-    const { room, tape } = run;
+    const { raceId, room, tape, trace } = run;
+    traceSeats(run);
     tape.finish();
+    ports.saveTape(
+      tapeKey(run.raceId, roomTraceName),
+      JSON.stringify({ rows: trace } satisfies RoomTrace)
+    );
     ports.saveTape(
       tapeKey(run.raceId, tapeEndName),
       JSON.stringify({ parts: tape.parts(), tick: room.state.tick })
@@ -240,14 +306,58 @@ export const createHost = (ports: HostPorts): Host => {
     });
     running = null;
     tell({ kind: "ended", tick: room.state.tick });
-    for (const seat of seats.values()) {
-      seat.socket.close(SEAT_CLOSED, "The race is over.");
+    const finished = [...seats.values()];
+    for (const seat of finished) {
+      reporting.set(seat.socket, { raceId, seat });
     }
     seats.clear();
+    ports.after(REPORT_GRACE_MS, () => {
+      for (const seat of finished) {
+        if (reporting.delete(seat.socket)) {
+          seat.socket.close(SEAT_CLOSED, "The race is over.");
+        }
+      }
+    });
   };
 
-  const stepOnce = ({ room, tape }: Running): void => {
+  const saveBrowserTrace = (seat: Seat, raceId: string, text: string): void => {
+    if (seat.rider === null || seat.traced || text.length > MOST_TRACE_CHARS) {
+      return;
+    }
+    seat.traced = true;
+    const decoded = decodeBrowserTrace(text);
+    if (Option.isNone(decoded)) {
+      return;
+    }
+    const { build, gpu, graphics } = decoded.value;
+    ports.note({
+      build,
+      gpu,
+      graphics,
+      kind: "browser",
+      raceId,
+      rider: seat.rider,
+    });
+    ports.saveTape(
+      tapeKey(raceId, riderTraceName(seat.rider)),
+      JSON.stringify(decoded.value)
+    );
+  };
+
+  const noteStats = (seat: Seat, raceId: string, view: DataView): void => {
+    const stats = readRaceStats(view);
+    if (stats && !seat.reported && seat.rider !== null) {
+      seat.reported = true;
+      ports.note({ kind: "stats", raceId, rider: seat.rider, stats });
+    }
+  };
+
+  const stepOnce = (run: Running): void => {
+    const { room, tape } = run;
     room.step();
+    if (room.state.tick % ROOM_TRACE_EVERY_TICKS === 0) {
+      traceSeats(run);
+    }
     const bytes = writeTick(
       tickView,
       room.frame,
@@ -259,6 +369,15 @@ export const createHost = (ports: HostPorts): Host => {
       sendTo(seat, packet);
     }
   };
+
+  const lagOf = (run: Running | null): number =>
+    run === null || run.startedAt === null
+      ? 0
+      : Math.max(
+          0,
+          Math.floor((ports.now() - run.startedAt) / TICK_MS) -
+            run.room.state.tick
+        );
 
   const wake = (): void => {
     if (!running) {
@@ -307,7 +426,7 @@ export const createHost = (ports: HostPorts): Host => {
     });
     run.startedAt = ports.now() + START_DELAY_MS;
     run.lastWakeAt = run.startedAt;
-    tell({ kind: "countdown", startsInMs: START_DELAY_MS });
+    tell({ kind: "countdown", startAtMs: run.startedAt - bornAt });
     ports.after(START_DELAY_MS, wake);
   };
 
@@ -328,7 +447,8 @@ export const createHost = (ports: HostPorts): Host => {
     worstBehindTicks = 0;
     const seed = ports.seed();
     const raceId = ports.raceId();
-    const { humans, road, setup } = seatedRace(seed, seats.size);
+    const rule = publicRoomRule;
+    const { humans, road, setup } = seatedRace(seed, seats.size, rule);
     const room = createRoom(setup);
     const digest = hexOfWords(room.digest);
     ports.saveTape(
@@ -360,31 +480,61 @@ export const createHost = (ports: HostPorts): Host => {
       tape: createTapeWriter(tickBuffer.byteLength, (part, bytes) => {
         ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
       }),
+      trace: [],
       wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
     };
     running = run;
-    const names = [...seats.values()].map((seat) => seat.name);
+    const trackHash = trackDigest(setup.track);
+    const racerIds = firstRacers(setup, Number.POSITIVE_INFINITY);
+    const namesBySeat = new Map(
+      [...seats.values()].map((seat) => [seat.rider, seat.name])
+    );
+    const manifest: RaceManifest = {
+      build: ports.build,
+      contentHash: [...room.digest],
+      loadingDeadlineMs: READY_DEADLINE_MS,
+      protocol: ROOM_PROTOCOL,
+      raceId,
+      reconnect: "none",
+      roster: racerIds.flatMap((rider) => {
+        const state = room.state.riders.find((each) => each.id === rider);
+        const name = namesBySeat.get(rider) ?? null;
+        return state
+          ? [
+              {
+                bikeId: state.bike.id,
+                kind: name === null ? ("ai" as const) : ("human" as const),
+                name,
+                rider,
+              },
+            ]
+          : [];
+      }),
+      rule,
+      seed,
+      tickRate: Math.round(1 / TICK_SECONDS),
+      trackHash: [...trackHash],
+    };
     ports.note({
       at: ports.now(),
       build: ports.build,
       digest,
       kind: "started",
       lobbyMs,
+      protocol: ROOM_PROTOCOL,
       raceId,
       road,
       seats: humans.length,
       seed,
+      tier: rule.tier,
+      trackHash: hexOfWords(trackHash),
     });
     for (const seat of seats.values()) {
       sendTo(
         seat,
         encodeRoomMessage({
-          digest: [...room.digest],
           kind: "started",
-          names,
-          raceId,
-          seats: humans.length,
-          seed,
+          manifest,
           you: seat.rider ?? 0,
         })
       );
@@ -392,6 +542,12 @@ export const createHost = (ports: HostPorts): Host => {
     ports.after(READY_DEADLINE_MS, () => {
       countDown(run);
     });
+  };
+
+  const refuse = (socket: HostSocket, reason: Refusal): void => {
+    ports.note({ kind: "refused", reason });
+    socket.send(encodeRoomMessage({ kind: "refused", reason }));
+    socket.close(SEAT_CLOSED, reason);
   };
 
   const drop = (seat: Seat): void => {
@@ -453,18 +609,31 @@ export const createHost = (ports: HostPorts): Host => {
 
   return {
     gone: (socket) => {
+      reporting.delete(socket);
       const seat = seats.get(socket);
       if (seat) {
         drop(seat);
       }
     },
     message: (socket, data) => {
+      const late = reporting.get(socket);
+      if (late) {
+        if (data instanceof ArrayBuffer) {
+          noteStats(late.seat, late.raceId, new DataView(data));
+        } else {
+          saveBrowserTrace(late.seat, late.raceId, data);
+        }
+        return;
+      }
       const seat = seats.get(socket);
       if (!seat) {
         return;
       }
       seat.heardAt = ports.now();
       if (!(data instanceof ArrayBuffer)) {
+        if (running) {
+          saveBrowserTrace(seat, running.raceId, data);
+        }
         return;
       }
       const view = new DataView(data);
@@ -483,38 +652,32 @@ export const createHost = (ports: HostPorts): Host => {
       }
       const stamp = readPing(view);
       if (stamp >= NO_STAMP) {
-        const tick = running ? running.room.state.tick : 0;
-        const bytes = writePong(pongView, stamp, tick);
+        const bytes = writePong(pongView, stamp, roomMs());
         sendTo(seat, new Uint8Array(pongBuffer, 0, bytes));
         return;
       }
-      if (isStart(view)) {
-        start();
-        return;
-      }
-      if (running && isReady(view)) {
+      if (running && readReady(view, readyDigest)) {
+        if (hexOfWords(readyDigest) !== hexOfWords(running.room.digest)) {
+          refuse(socket, "content");
+          drop(seat);
+          return;
+        }
         running.loading.delete(socket);
         seat.readyMs ??= ports.now() - running.since;
         countDownOnceLoaded(running);
         return;
       }
-      const stats = readRaceStats(view);
-      if (stats && !seat.reported && running && seat.rider !== null) {
-        seat.reported = true;
-        ports.note({
-          kind: "stats",
-          raceId: running.raceId,
-          rider: seat.rider,
-          stats,
-        });
+      if (running) {
+        noteStats(seat, running.raceId, view);
       }
     },
-    seat: (socket, name, link) => {
+    seat: (socket, name, link, claim) => {
+      if (claim.build !== ports.build || claim.protocol !== ROOM_PROTOCOL) {
+        refuse(socket, "build");
+        return;
+      }
       if (running || seats.size >= MOST_SEATS) {
-        const reason = running ? "racing" : "full";
-        ports.note({ kind: "refused", reason });
-        socket.send(encodeRoomMessage({ kind: "refused", reason }));
-        socket.close(SEAT_CLOSED, reason);
+        refuse(socket, running ? "racing" : "full");
         return;
       }
       seats.set(socket, seatFor(socket, name, link));
@@ -525,7 +688,9 @@ export const createHost = (ports: HostPorts): Host => {
       tellLobby(lobby ?? openLobby());
     },
     status: () => ({
+      build: ports.build,
       catchUpWakes,
+      lagTicks: lagOf(running),
       names: [...seats.values()].map((seat) => seat.name),
       phase: running ? "racing" : "waiting",
       raceId: running?.raceId ?? null,

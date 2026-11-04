@@ -2728,6 +2728,22 @@
       "side": "B",
       "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
       "value": 0.08150342414437427
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T16-24-07-782Z-fe32571-fe32571",
+      "value": 1269875
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T16-24-07-782Z-fe32571-fe32571",
+      "value": 334552
     }
   ],
   "revisions": {
@@ -3490,6 +3506,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1149866, \"bytes.route.root.gzip\": 612501, \"bytes.route.kit.raw\": 948537, \"bytes.route.kit.gzip\": 543525, \"bytes.game.raw\": 1916268, \"bytes.game.gzip\": 825916, \"bytes.game.incremental.raw\": 766402, \"bytes.game.incremental.gzip\": 213415, \"bytes.worker.raw\": 1269767, \"bytes.worker.gzip\": 334538, \"bytes.client.raw\": 1977082, \"bytes.client.gzip\": 849946}",
+        "builtB": "{\"bytes.route.root.raw\": 1149866, \"bytes.route.root.gzip\": 612501, \"bytes.route.kit.raw\": 948537, \"bytes.route.kit.gzip\": 543525, \"bytes.game.raw\": 1916268, \"bytes.game.gzip\": 825916, \"bytes.game.incremental.raw\": 766402, \"bytes.game.incremental.gzip\": 213415, \"bytes.worker.raw\": 1269875, \"bytes.worker.gzip\": 334552, \"bytes.client.raw\": 1977082, \"bytes.client.gzip\": 849946}",
+        "harnessDigest": "fab3b39deb7fe32a44e9021e8eda8e051db88e2cdc09ed33951de609e70aedfc",
+        "lockfileSha256": "43e2e5bec2b289b62df67c7f1cccd68db1f2fe3920ebe198cda1dba24e35c297",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "def4b1eced6476f0453e4a7aed1e2c60b79a6848e39fe25be029bd001fff6e20",
+        "sideBSourceDigest": "def4b1eced6476f0453e4a7aed1e2c60b79a6848e39fe25be029bd001fff6e20",
+        "why": "Road districts add width, lane and merge code to the game and traffic chunks the Worker reaches through dynamic imports, on top of the room manifest and tapes already on main. Only the two Worker rows move; every other build row keeps its limit, which this head meets."
+      },
+      "id": "baseline-2026-11-04T16-24-07-782Z-fe32571-fe32571",
+      "lanes": ["build"],
+      "sides": {
+        "A": "fe3257153f33a8665907525cc8fd751b0874bfb3",
+        "B": "fe3257153f33a8665907525cc8fd751b0874bfb3"
       }
     }
   ],

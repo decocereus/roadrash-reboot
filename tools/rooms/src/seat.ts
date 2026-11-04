@@ -31,7 +31,6 @@ export interface Seat {
   readonly opened: () => boolean;
   readonly over: () => boolean;
   readonly report: () => SeatReport;
-  readonly start: () => void;
   readonly started: () => boolean;
 }
 
@@ -56,8 +55,12 @@ export const weavingControl = (tick: number, rider: number): Control =>
 const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
   predictSteps(seat, (tick) => weavingControl(tick, you()));
 
-export const openSeat = (roomsUrl: string, roomId: string): Seat => {
-  const seat = openRoomSeat(roomsUrl, roomId, "Script");
+export const openSeat = (
+  roomsUrl: string,
+  roomId: string,
+  build: string
+): Seat => {
+  const seat = openRoomSeat(roomsUrl, roomId, "Script", build, () => null);
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;
@@ -116,7 +119,7 @@ export const openSeat = (roomsUrl: string, roomId: string): Seat => {
         arrivalGapP99Ms: quantile(sorted, 0.99),
         closeCode: seat.closeCode(),
         desyncs: race?.client.stats.desyncs ?? 0,
-        digestMatched: race?.digestMatched ?? false,
+        digestMatched: seat.refusal() !== "content",
         ended: seat.phase() === "ended",
         hashesCompared,
         raceId: race?.raceId ?? null,
@@ -129,7 +132,6 @@ export const openSeat = (roomsUrl: string, roomId: string): Seat => {
         you: you(),
       };
     },
-    start: seat.start,
     started: () => seat.race() !== null,
   };
 };

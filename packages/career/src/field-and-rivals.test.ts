@@ -468,6 +468,7 @@ describe("memory", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: me.x,
       paint: 0,
       patience: 120,
       s: me.s + 6,

@@ -6,10 +6,10 @@ export const ridgeRoad: TrackPlan = {
   carriers: [4500],
   chevrons: chevronRuns["ridge-road"],
   crossings: [],
+  districts: [{ from: 0, lanesEachWay: 1, shoulderWidth: 0.9, vergeWidth: 9 }],
   hazardsPerKilometre: 1,
   id: "ridge-road",
   laneWidth: 3.6,
-  lanesEachWay: 1,
   leadInLength: 80,
   name: "Ridge Road",
   pieces: eased([
@@ -59,8 +59,6 @@ export const ridgeRoad: TrackPlan = {
   region: "stonepeak",
   runoffLength: 400,
   seed: 0x51_ed_27,
-  shoulderWidth: 0.9,
   start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 5,
-  vergeWidth: 9,
 };

@@ -18,7 +18,6 @@ import type { SignFrame } from "./sign-atlas.ts";
 import { pick } from "./texture-canvas.ts";
 
 const CITY_CHUNK = 200;
-export const FRONT_GAP = 1.2;
 export const KERB_HEIGHT = 0.14;
 
 const PODIUM = 4.5;
@@ -189,7 +188,6 @@ export interface City {
 
 export const createCity = (track: Track, shading: Shading): City => {
   const { look } = shading;
-  const front = track.vergeHalfWidth + FRONT_GAP;
   const paint = createRandom(track.plan.seed + 11);
   const textures: THREE.Texture[] = [];
   const materials = new Map<string, THREE.Material>();
@@ -236,7 +234,7 @@ export const createCity = (track: Track, shading: Shading): City => {
   );
   materials.set("cable", new THREE.MeshBasicMaterial({ color: look.ink }));
 
-  const blocks = layBlocks(track, front);
+  const blocks = layBlocks(track);
   const chunkCount = Math.ceil((track.endS - track.startS) / CITY_CHUNK);
   const chunks: (THREE.Group | null)[] = Array.from(
     { length: chunkCount },
@@ -250,9 +248,9 @@ export const createCity = (track: Track, shading: Shading): City => {
   const hangSign = (
     batch: Batch,
     random: Random,
-    block: readonly [number, number, number]
+    block: readonly [number, number, number, number]
   ): void => {
-    const [side, height, length] = block;
+    const [side, height, length, front] = block;
     const frame = pick(random, atlas.upright);
     const tall = Math.min(height - 1, 4.5 + frame.letters * 1.25);
     const wide = tall * frame.ratio;
@@ -280,9 +278,9 @@ export const createCity = (track: Track, shading: Shading): City => {
   const dress = (
     batch: Batch,
     random: Random,
-    block: readonly [number, number, number]
+    block: readonly [number, number, number, number]
   ): void => {
-    const [side, height, length] = block;
+    const [side, height, length, front] = block;
     for (let y = PODIUM + 6.4; y < PODIUM + height - 1; y += 6.4) {
       put(batch, "solid", solid([0.5, 0.28, length - 0.2], trim), [
         side * (front + 0.05),
@@ -378,7 +376,7 @@ export const createCity = (track: Track, shading: Shading): City => {
 
   const raise = (batch: Batch, block: Block): void => {
     const random = createRandom(block.seed);
-    const { side } = block;
+    const { front, side } = block;
     const middle = block.s + block.length / 2;
     const depth = 16 + random() * 10;
     const length = block.length + 0.3;
@@ -466,9 +464,9 @@ export const createCity = (track: Track, shading: Shading): City => {
         0,
       ]);
     }
-    dress(batch, random, [side, height, length]);
+    dress(batch, random, [side, height, length, front]);
     if (random() < 0.85) {
-      hangSign(batch, random, [side, height, length]);
+      hangSign(batch, random, [side, height, length, front]);
     }
     if (random() < 0.3 && height < 34) {
       const frame = pick(random, atlas.flat);

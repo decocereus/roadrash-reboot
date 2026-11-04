@@ -1,4 +1,5 @@
 import type { CrossRoad, Lights, TrackCrossing } from "@racer/track/crossings";
+import type { District } from "@racer/track/districts";
 import type { HazardPlacement } from "@racer/track/hazards";
 import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
 import type { WalkSite } from "@racer/track/walk-sites";
@@ -45,28 +46,31 @@ import type {
 } from "./state.ts";
 
 type PlanKey =
+  | "districts"
   | "hazardsPerKilometre"
   | "id"
-  | "lanesEachWay"
   | "laneWidth"
   | "name"
   | "region"
   | "seed"
-  | "shoulderWidth"
-  | "trafficPerKilometre"
-  | "vergeWidth";
+  | "trafficPerKilometre";
+
+const districtSchema = writtenSchemaOf<District>({
+  from: floatAt("from"),
+  lanesEachWay: floatAt("lanesEachWay"),
+  shoulderWidth: floatAt("shoulderWidth"),
+  vergeWidth: floatAt("vergeWidth"),
+});
 
 const planSchema = writtenSchemaOf<Pick<TrackPlan, PlanKey>>({
+  districts: writtenListAt("districts", districtSchema),
   hazardsPerKilometre: floatAt("hazardsPerKilometre"),
   id: textAt("id"),
   laneWidth: floatAt("laneWidth"),
-  lanesEachWay: floatAt("lanesEachWay"),
   name: textAt("name"),
   region: textAt("region"),
   seed: floatAt("seed"),
-  shoulderWidth: floatAt("shoulderWidth"),
   trafficPerKilometre: floatAt("trafficPerKilometre"),
-  vergeWidth: floatAt("vergeWidth"),
 });
 
 const propSchema = writtenSchemaOf<TrackProp>({
@@ -125,16 +129,18 @@ const trackSchema: WrittenSchema<Track> = writtenSchemaOf<Track>({
   heading: samplesAt("heading"),
   length: floatAt("length"),
   oncomingLanes: samplesAt("oncomingLanes"),
+  openLanes: samplesAt("openLanes"),
   plan: writtenRecordAt("plan", planSchema),
   props: writtenListAt("props", propSchema),
-  roadHalfWidth: floatAt("roadHalfWidth"),
+  roadHalfWidth: samplesAt("roadHalfWidth"),
   sameWayLanes: samplesAt("sameWayLanes"),
   sampleCount: floatAt("sampleCount"),
   slope: samplesAt("slope"),
   slopeRate: samplesAt("slopeRate"),
   solidProps: writtenListAt("solidProps", propSchema),
   startS: floatAt("startS"),
-  vergeHalfWidth: floatAt("vergeHalfWidth"),
+  trafficReach: samplesAt("trafficReach"),
+  vergeHalfWidth: samplesAt("vergeHalfWidth"),
   walkSites: writtenListAt("walkSites", walkSiteSchema),
   worldX: samplesAt("worldX"),
   worldY: samplesAt("worldY"),
@@ -198,9 +204,9 @@ const carSetupSchema = writtenSchemaOf<Pick<TrafficView, CarSetupKey>>({
   halfLength: floatAt("halfLength"),
   halfWidth: floatAt("halfWidth"),
   height: floatAt("height"),
+  home: floatAt("home"),
   paint: floatAt("paint"),
   patience: floatAt("patience"),
-  x: floatAt("x"),
 });
 
 const crossCarSetupSchema = writtenSchemaOf<
@@ -262,15 +268,13 @@ const setupSchema = writtenSchemaOf<SetupSource>({
   track: writtenRecordAt("track", trackSchema),
 });
 
-export const setupDigest = (state: RaceView, track: Track): Uint32Array => {
-  const source: SetupSource = {
-    format: SNAPSHOT_FORMAT,
-    race: state,
-    track,
-  };
-  const bytes = new DataView(new ArrayBuffer(bytesOf(setupSchema, source)));
+const digestOf = <Source>(
+  schema: WrittenSchema<Source>,
+  source: Source
+): Uint32Array => {
+  const bytes = new DataView(new ArrayBuffer(bytesOf(schema, source)));
   cursor.byte = 0;
-  putRecord(bytes, setupSchema, source);
+  putRecord(bytes, schema, source);
   if (cursor.byte !== bytes.byteLength) {
     refuse(
       `The setup digest wrote ${cursor.byte} of ${bytes.byteLength} bytes.`
@@ -280,3 +284,9 @@ export const setupDigest = (state: RaceView, track: Track): Uint32Array => {
   hashBytes(bytes, 0, bytes.byteLength, digest);
   return digest;
 };
+
+export const setupDigest = (state: RaceView, track: Track): Uint32Array =>
+  digestOf(setupSchema, { format: SNAPSHOT_FORMAT, race: state, track });
+
+export const trackDigest = (track: Track): Uint32Array =>
+  digestOf(trackSchema, track);

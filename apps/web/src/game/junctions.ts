@@ -13,6 +13,7 @@ import {
   zebrasOf,
 } from "@racer/track/crossings";
 import type { ArmSide, CrossRoad, TrackCrossing } from "@racer/track/crossings";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
@@ -187,7 +188,7 @@ const markArms = (
   road: CrossRoad,
   colours: { readonly road: THREE.Color; readonly line: THREE.Color }
 ): void => {
-  const half = track.roadHalfWidth;
+  const half = roadHalfWidthAt(track, crossing.s);
   const width = crossHalfWidthOf(road);
   for (const side of armSidesOf(road)) {
     const inner = side * half;
@@ -233,7 +234,7 @@ const markRoad = (
   crossing: TrackCrossing,
   line: THREE.Color
 ): void => {
-  const half = track.roadHalfWidth - 0.3;
+  const half = roadHalfWidthAt(track, crossing.s) - 0.3;
   if (crossing.walk === "zebra") {
     for (const centre of zebrasOf(crossing)) {
       for (let x = -half; x + STRIPE <= half; x += STRIPE_PITCH) {
@@ -335,7 +336,7 @@ const mainHead = (
   side: ArmSide
 ): Signal => {
   const sheets = signalSheets();
-  const half = track.roadHalfWidth;
+  const half = roadHalfWidthAt(track, crossing.s);
   const poleS = crossing.s - side * (crossing.stopGap + 0.3);
   const poleX = side * (half + POLE_OUT);
   const headX = side * half * 0.5;
@@ -396,7 +397,7 @@ const crossHead = (
 ): Signal => {
   const sheets = signalSheets();
   const poleS = crossing.s + side * (crossing.boxHalfLength + POLE_OUT);
-  const poleX = side * (track.roadHalfWidth + 1.4);
+  const poleX = side * (roadHalfWidthAt(track, crossing.s) + 1.4);
   const facing = facingAt(track, poleS, poleX);
   const outward = side > 0 ? facing.right : facing.left;
   box(

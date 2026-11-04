@@ -125,11 +125,12 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/carrier.test.ts",
       "packages/sim/src/traffic.ts",
       "packages/sim/src/lanes.test.ts",
+      "packages/sim/src/lanes-closing.test.ts",
     ],
     perf: simTick,
     start: ["packages/sim/src/traffic.ts"],
     summary:
-      "Same-way and oncoming cars in every lane, spawned from each road's traffic density and kept clear of the start; the cars are drawn by `createFleet` in the riders-on-screen entry.",
+      "Same-way and oncoming cars in every lane, spawned from each road's traffic density and kept clear of the start, merging into the open lanes where a district narrows and returning home after; the cars are drawn by `createFleet` in the riders-on-screen entry.",
     title: "Traffic",
     verify: [],
   },
@@ -440,6 +441,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/sign-*.ts",
       "apps/web/src/game/texture-canvas.ts",
       "apps/web/test/roadside-clearance.test.ts",
+      "apps/web/test/road-districts.test.ts",
     ],
     perf: sceneCounts,
     start: [

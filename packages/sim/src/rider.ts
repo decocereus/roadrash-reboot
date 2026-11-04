@@ -1,3 +1,4 @@
+import { vergeHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 
 import { comesDownOnCarrier, solidBoxOf, stepCarrierRamp } from "./carrier.ts";
@@ -81,8 +82,9 @@ export const stepRider = (
   }
 
   let thrown = rider.mode !== "riding";
-  if (!thrown && Math.abs(rider.x) > track.vergeHalfWidth) {
-    rider.x = clamp(rider.x, -track.vergeHalfWidth, track.vergeHalfWidth);
+  const vergeHalfWidth = vergeHalfWidthAt(track, rider.s);
+  if (!thrown && Math.abs(rider.x) > vergeHalfWidth) {
+    rider.x = clamp(rider.x, -vergeHalfWidth, vergeHalfWidth);
     throwRider(state, rider, "offTrack", 0.3, 0.5);
     thrown = true;
   }

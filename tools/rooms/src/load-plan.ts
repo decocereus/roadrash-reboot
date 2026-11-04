@@ -2,11 +2,11 @@ import * as Schema from "effect/Schema";
 
 const SeatPlanSchema = Schema.Struct({
   full: Schema.Boolean,
-  opener: Schema.Boolean,
   roomId: Schema.String,
 });
 
 const ClientPlanSchema = Schema.Struct({
+  build: Schema.String,
   endAt: Schema.Number,
   inputEvery: Schema.Number,
   mostSent: Schema.Number,

@@ -36,7 +36,15 @@ const git = (...args: string[]): string | null => {
 };
 
 const buildIdentity = () => ({
-  dirty: (git("status", "--porcelain") ?? "") !== "",
+  dirty:
+    (git(
+      "status",
+      "--porcelain",
+      "--",
+      ":/",
+      ":(top,exclude)apps/web/public/rushline-build.txt"
+    ) ?? "") !== "",
+  rooms: process.env.RUSHLINE_BUILD ?? "local",
   sha: git("rev-parse", "--short=12", "HEAD") ?? "unknown",
 });
 

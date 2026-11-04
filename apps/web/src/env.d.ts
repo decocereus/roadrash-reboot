@@ -1,4 +1,5 @@
 declare const __RUSHLINE_BUILD__: {
+  readonly rooms: string;
   readonly sha: string;
   readonly dirty: boolean;
 };

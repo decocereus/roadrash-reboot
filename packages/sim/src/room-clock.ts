@@ -12,7 +12,8 @@ const OFFSET_SAG_PER_MS = 0.002;
 const FRAMES_PER_EASED_STEP = 6;
 
 export interface RoomClock {
-  readonly start: (startsInMs: number, now: number) => void;
+  readonly start: (startAtRoomMs: number) => void;
+  readonly heardRoomTime: (roomMs: number, now: number) => void;
   readonly heardTick: (tick: number, now: number) => void;
   readonly heardRtt: (rttMs: number) => void;
   readonly silentMs: (now: number) => number;
@@ -24,6 +25,7 @@ export const createRoomClock = (): RoomClock => {
   let startsAt = 0;
   let lastArrival = 0;
   let offset = 0;
+  let roomAhead = Number.NEGATIVE_INFINITY;
   const rtts: number[] = [];
   let rttAt = 0;
   let framesSinceEased = FRAMES_PER_EASED_STEP;
@@ -60,6 +62,9 @@ export const createRoomClock = (): RoomClock => {
     );
   };
   return {
+    heardRoomTime: (roomMs, now) => {
+      roomAhead = Math.max(roomAhead, roomMs - now);
+    },
     heardRtt: (rttMs) => {
       rtts[rttAt] = rttMs;
       rttAt = (rttAt + 1) % RTT_SAMPLES;
@@ -73,8 +78,8 @@ export const createRoomClock = (): RoomClock => {
       lastArrival = now;
     },
     silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
-    start: (startsInMs, now) => {
-      startsAt = now + startsInMs;
+    start: (startAtRoomMs) => {
+      startsAt = startAtRoomMs - roomAhead;
     },
     stepsDue: (predictedTick, now) => {
       const wanted = target(now);

@@ -63,7 +63,7 @@ const prepareSnapshots = (scenario: Scenario) => {
         bytes[index] = written;
         const taken = new DataView(out.buffer, 0, written);
         const atRestore = performance.now();
-        restoreInto(spare, digest, taken);
+        restoreInto(spare, digest, taken, setup.track);
         restore[index] = performance.now() - atRestore;
         const atHash = performance.now();
         hashRace(run.view, digest, out, words);

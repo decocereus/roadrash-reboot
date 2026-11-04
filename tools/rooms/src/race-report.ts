@@ -5,6 +5,7 @@ import type {
   RaceLeft,
   RaceSeat,
   RaceStarted,
+  RaceBrowserNote,
   RaceStatsNote,
   RoomNote,
 } from "@racer/rooms/notes";
@@ -15,6 +16,7 @@ const SECONDS_PER_MINUTE = 60;
 
 interface RaceRecord {
   readonly raceId: string;
+  readonly browsers: RaceBrowserNote[];
   countdown?: RaceCountdown;
   ended?: RaceEnded;
   readonly left: RaceLeft[];
@@ -30,7 +32,7 @@ const recordOf = (
   if (known) {
     return known;
   }
-  const fresh: RaceRecord = { left: [], raceId, stats: [] };
+  const fresh: RaceRecord = { browsers: [], left: [], raceId, stats: [] };
   records.set(raceId, fresh);
   return fresh;
 };
@@ -59,6 +61,10 @@ export const groupRaces = (
       }
       case "stats": {
         recordOf(records, note.raceId).stats.push(note);
+        break;
+      }
+      case "browser": {
+        recordOf(records, note.raceId).browsers.push(note);
         break;
       }
       case "ended": {
@@ -107,18 +113,25 @@ const browserLines = (note: RaceStatsNote): readonly string[] => [
   `    clock: held steps ${stat(note, "heldSteps")}, multi-steps ${stat(note, "doubledSteps")}, most in one frame ${stat(note, "mostSteps")}`,
   `    worst jump: own control ${stat(note, "worstOwnControlCm")} cm, behind the server ${stat(note, "worstBehindServerCm")} cm, other riders ${stat(note, "worstOtherRidersCm")} cm, at ${stat(note, "worstJumpRoadMetres")} m`,
   `    round trip: mean ${stat(note, "rttMeanMs")} ms, worst ${stat(note, "rttWorstMs")} ms`,
+  `    frame times: ${stat(note, "frameCount")} frames, p50 ${stat(note, "frameP50Ms")} ms, p95 ${stat(note, "frameP95Ms")} ms, p99 ${stat(note, "frameP99Ms")} ms`,
   `    frames: slowest ${stat(note, "worstFrameMs")} ms at ${stat(note, "worstFrameRoadMetres")} m, ${stat(note, "slowFrames")} slow`,
   `    desyncs ${stat(note, "desyncs")}, rollbacks ${stat(note, "rollbacks")}, refused predictions ${stat(note, "refusedPredictions")}`,
 ];
 
+const browserIdentity = ({ build, gpu, graphics }: RaceBrowserNote): string =>
+  `    browser: build ${build.slice(0, 12)}, ${gpu}, ${graphics}`;
+
 const seatLines = (
   seat: RaceSeat,
-  stats: readonly RaceStatsNote[]
+  stats: readonly RaceStatsNote[],
+  browsers: readonly RaceBrowserNote[]
 ): readonly string[] => {
   const report = stats.find((note) => note.rider === seat.rider);
+  const browser = browsers.find((note) => note.rider === seat.rider);
   return [
     `  Rider ${seat.rider}: ${outcomeOf(seat)}, ${seat.colo ?? "unknown colo"} at ${seat.tcpRttMs ?? "?"} ms, ready after ${seat.readyMs === null ? "never" : seconds(seat.readyMs)}, road ${seat.roadMetres} m`,
     `    server: ${seat.crashes} crashes, controls ${seat.accepted} accepted, ${seat.missed} missed, ${seat.late} late, ${seat.ahead} ahead`,
+    ...(browser ? [browserIdentity(browser)] : []),
     ...(report ? browserLines(report) : ["    browser: no stats line arrived"]),
   ];
 };
@@ -147,7 +160,12 @@ const unfinishedLines = (record: RaceRecord): readonly string[] => [
   ]),
 ];
 
-const timelineLine = ({ countdown, ended, started }: RaceRecord): string => {
+const timelineLine = ({
+  countdown,
+  ended,
+  started,
+  stats,
+}: RaceRecord): string => {
   const parts = [
     started ? `lobby ${seconds(started.lobbyMs)}` : null,
     countdown ? `loading ${seconds(countdown.waitedMs)}` : null,
@@ -156,7 +174,7 @@ const timelineLine = ({ countdown, ended, started }: RaceRecord): string => {
       : null,
     ended ? `raced ${raceTime(ended.tick)}` : null,
     ended
-      ? `browser stats from ${ended.seats.filter((seat) => seat.reported).length} of ${ended.seats.length} riders`
+      ? `browser stats from ${stats.length} of ${ended.seats.length} riders`
       : null,
   ];
   return `  ${parts.filter((part) => part !== null).join(", ")}`;
@@ -170,7 +188,7 @@ export const raceReport = (record: RaceRecord): string =>
       ? [
           serverLine(record.ended),
           ...record.ended.seats.flatMap((seat) =>
-            seatLines(seat, record.stats)
+            seatLines(seat, record.stats, record.browsers)
           ),
         ]
       : unfinishedLines(record)),

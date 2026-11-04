@@ -1,10 +1,11 @@
 import { eased } from "@racer/track/alignment";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
 
-import { onRoad } from "./cross-traffic.ts";
+import { createCrossTraffic, onRoad } from "./cross-traffic.ts";
 import { frameOf, player } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { crossLightOf, mainLightOf, signalPhaseAt } from "./signals.ts";
@@ -75,7 +76,7 @@ describe("cross-road cars at a signalled junction", () => {
     const state = quietRace();
     parkPlayer(state);
     const cars = carsAt(state, junctionOf(harbour.id));
-    const halfRoad = quiet.roadHalfWidth;
+    const halfRoad = roadHalfWidthAt(quiet, 0);
     let crossedOnGreen = 0;
     let onRoadOnMainGreen = 0;
     let closest = Number.POSITIVE_INFINITY;
@@ -200,6 +201,56 @@ describe("cross-road cars at a T", () => {
     rider.bodyS = rider.s;
     stepQuiet(state);
     expect(onRoad(watched)).toBeFalsy();
+  });
+});
+
+describe("a car turning onto a road of districts", () => {
+  const widths = { shoulderWidth: 0.9, vergeWidth: 7 };
+  const road = compileTrack({
+    ...roads["breakwater-run"],
+    carriers: [],
+    chevrons: [],
+    crossings: [
+      {
+        id: "between-squeezes",
+        lights: null,
+        road: {
+          arms: "left",
+          carsPerMinute: 6,
+          laneWidth: 3.4,
+          lanesEachWay: 1,
+        },
+        s: 1500,
+        walk: "unmarked",
+      },
+    ],
+    districts: [
+      { ...widths, from: 0, lanesEachWay: 1 },
+      { ...widths, from: 800, lanesEachWay: 3 },
+      { ...widths, from: 2000, lanesEachWay: 1 },
+    ],
+    pieces: eased([[3000, 0, 0]]),
+  });
+
+  it("picks a lane that stays on the road however far a following rider keeps it running", () => {
+    const seen = new Set<number>();
+    for (let seed = 1; seed <= 20; seed += 1) {
+      for (const car of createCrossTraffic(road, seed)) {
+        seen.add(car.along);
+        const exitX = Math.abs(car.fromX + car.across * car.turnAt);
+        const end = car.along === 1 ? road.endS : road.startS;
+        for (
+          let s = car.laneS;
+          s * car.along <= end * car.along;
+          s += car.along
+        ) {
+          expect(exitX + car.bodyHalfWidth, `at ${s} m`).toBeLessThanOrEqual(
+            roadHalfWidthAt(road, s)
+          );
+        }
+      }
+    }
+    expect(seen).toStrictEqual(new Set([-1, 1]));
   });
 });
 
@@ -435,8 +486,10 @@ describe("the pilot and cross-road cars", () => {
     const narrow: Track = {
       ...compileTrack({
         ...roads["breakwater-run"],
+        districts: [
+          { ...roads["breakwater-run"].districts[0], lanesEachWay: 1 },
+        ],
         hazardsPerKilometre: 0,
-        lanesEachWay: 1,
         trafficPerKilometre: 0,
       }),
       walkSites: [],

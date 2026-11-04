@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -96,7 +97,7 @@ describe("jumping", () => {
   });
 
   it("the same gentle drift at the road edge lands on the verge and crashes", () => {
-    const landing = comeDown(straight.roadHalfWidth - 0.5, 0.3);
+    const landing = comeDown(roadHalfWidthAt(straight, 0) - 0.5, 0.3);
     expect(landing.crashes.map((crash) => crash.cause)).toStrictEqual([
       "landing",
     ]);

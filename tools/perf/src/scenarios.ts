@@ -172,45 +172,100 @@ type RaceSettings = Omit<
   Track["plan"],
   | "chevrons"
   | "crossings"
+  | "districts"
   | "leadInLength"
   | "pieces"
   | "runoffLength"
   | "scenery"
   | "start"
->;
+> &
+  Omit<Track["plan"]["districts"][0], "from">;
 
-type Road = Omit<Track, "crossings" | "plan" | "walkSites"> & {
+type Road = Omit<
+  Track,
+  | "crossings"
+  | "openLanes"
+  | "plan"
+  | "roadHalfWidth"
+  | "trafficReach"
+  | "vergeHalfWidth"
+  | "walkSites"
+> & {
   readonly plan: RaceSettings;
+  readonly roadHalfWidth: number;
+  readonly vergeHalfWidth: number;
 };
 
 type RaceTrack = Road | (Road & Pick<Track, "crossings">);
 
-type EitherSideTrack = Omit<Track, "crossings" | "walkSites"> &
-  Partial<Pick<Track, "crossings" | "walkSites">>;
+type PlanWidths = Omit<Track["plan"]["districts"][0], "from">;
 
-const raceSettings = (plan: Track["plan"]): RaceSettings => ({
-  carriers: plan.carriers,
-  hazardsPerKilometre: plan.hazardsPerKilometre,
-  id: plan.id,
-  laneWidth: plan.laneWidth,
-  lanesEachWay: plan.lanesEachWay,
-  name: plan.name,
-  region: plan.region,
-  seed: plan.seed,
-  shoulderWidth: plan.shoulderWidth,
-  trafficPerKilometre: plan.trafficPerKilometre,
-  vergeWidth: plan.vergeWidth,
-});
+type EitherSidePlan = Omit<Track["plan"], "districts"> &
+  (Pick<Track["plan"], "districts"> | PlanWidths);
+
+type EitherSideTrack = Omit<
+  Track,
+  | "crossings"
+  | "openLanes"
+  | "plan"
+  | "roadHalfWidth"
+  | "trafficReach"
+  | "vergeHalfWidth"
+  | "walkSites"
+> &
+  Partial<
+    Pick<Track, "crossings" | "openLanes" | "trafficReach" | "walkSites">
+  > & {
+    readonly plan: EitherSidePlan;
+    readonly roadHalfWidth: Float64Array | number;
+    readonly vergeHalfWidth: Float64Array | number;
+  };
+
+const widthsOf = (plan: EitherSidePlan): PlanWidths =>
+  "districts" in plan ? plan.districts[0] : plan;
+
+const scalarWidth = (width: Float64Array | number): number =>
+  width instanceof Float64Array ? (width[0] ?? 0) : width;
+
+const raceSettings = (plan: EitherSidePlan): RaceSettings => {
+  const { lanesEachWay, shoulderWidth, vergeWidth } = widthsOf(plan);
+  return {
+    carriers: plan.carriers,
+    hazardsPerKilometre: plan.hazardsPerKilometre,
+    id: plan.id,
+    laneWidth: plan.laneWidth,
+    lanesEachWay,
+    name: plan.name,
+    region: plan.region,
+    seed: plan.seed,
+    shoulderWidth,
+    trafficPerKilometre: plan.trafficPerKilometre,
+    vergeWidth,
+  };
+};
 
 const raceTrack = (track: EitherSideTrack): RaceTrack => {
-  const { crossings = [], walkSites: _sideBOnly, ...compiled } = track;
+  if ("districts" in track.plan && track.plan.districts.length > 1) {
+    throw new Error(
+      `A perf scenario rides a road of one district, and ${track.plan.name} has ${track.plan.districts.length}. Add the districts to this digest and measure a new baseline.`
+    );
+  }
+  const {
+    crossings = [],
+    openLanes: _openLanes,
+    trafficReach: _trafficReach,
+    walkSites: _sideBOnly,
+    ...compiled
+  } = track;
   const road: Road = {
     ...compiled,
     curvature: withoutSignedZero(track.curvature),
     heading: withoutSignedZero(track.heading),
     plan: raceSettings(track.plan),
+    roadHalfWidth: scalarWidth(track.roadHalfWidth),
     slope: withoutSignedZero(track.slope),
     slopeRate: withoutSignedZero(track.slopeRate),
+    vergeHalfWidth: scalarWidth(track.vergeHalfWidth),
     worldX: withoutSignedZero(track.worldX),
     worldY: withoutSignedZero(track.worldY),
     worldZ: withoutSignedZero(track.worldZ),

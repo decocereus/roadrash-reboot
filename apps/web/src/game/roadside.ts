@@ -1,3 +1,4 @@
+import { roadHalfWidthAt, vergeHalfWidthAt } from "@racer/track/districts";
 import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
@@ -6,7 +7,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { Shading } from "./cel.ts";
-import { FRONT_GAP } from "./city.ts";
+import { FRONT_GAP } from "./city-blocks.ts";
 import type { Clearance } from "./clearance.ts";
 import { groundLift, lifted, plant, rolling } from "./ground.ts";
 import type { Part, Placement, Stretch } from "./ground.ts";
@@ -133,7 +134,11 @@ const layBanks = (track: Track, random: Random, roadside: Roadside): Bank[] => {
   return banks;
 };
 
-const bankRow = (track: Track, bank: Bank, front: number, s: number): Row => {
+const frontAt = (track: Track, s: number): number =>
+  vergeHalfWidthAt(track, s) + FRONT_GAP;
+
+const bankRow = (track: Track, bank: Bank, s: number): Row => {
+  const front = frontAt(track, s);
   const taper = Math.min(
     1,
     (s - bank.from) / BANK_TAPER,
@@ -148,7 +153,7 @@ const bankRow = (track: Track, bank: Bank, front: number, s: number): Row => {
     placeOnTrack(track, s, bank.side * across, point);
     const ground = groundLift(
       "open",
-      across - track.roadHalfWidth,
+      across - roadHalfWidthAt(track, s),
       point.x,
       point.z
     );
@@ -188,7 +193,6 @@ const bankGeometry = (
   track: Track,
   bank: Bank,
   span: readonly [number, number],
-  front: number,
   colours: readonly [THREE.Color, THREE.Color]
 ): THREE.BufferGeometry | null => {
   const from = Math.max(bank.from, span[0]);
@@ -202,7 +206,7 @@ const bankGeometry = (
   let previous: Row | null = null;
   const shaded = new THREE.Color();
   for (let s = from; s < to + BANK_STEP; s += BANK_STEP) {
-    const row = bankRow(track, bank, front, Math.min(s, to));
+    const row = bankRow(track, bank, Math.min(s, to));
     if (previous) {
       placeOnTrack(track, Math.min(s, to), 0, point);
       centre.set(point.x, point.y, point.z);
@@ -231,11 +235,12 @@ const bankGeometry = (
   return geometry;
 };
 
-const layPosts = (track: Track, random: Random, front: number): Placement[] => {
+const layPosts = (track: Track, random: Random): Placement[] => {
   const posts: Placement[] = [];
   for (let s = track.startS + 14; s < track.endS; s += POST_SPACING) {
     for (const side of [-1, 1]) {
-      posts.push({ s: s + random() * 2, scale: 1, x: side * (front + 0.15) });
+      const at = s + random() * 2;
+      posts.push({ s: at, scale: 1, x: side * (frontAt(track, at) + 0.15) });
     }
   }
   return posts;
@@ -244,7 +249,6 @@ const layPosts = (track: Track, random: Random, front: number): Placement[] => {
 const layTreeline = (
   track: Track,
   random: Random,
-  front: number,
   treeline: number
 ): Placement[] => {
   const trees: Placement[] = [];
@@ -256,10 +260,11 @@ const layTreeline = (
     for (const side of [-1, 1]) {
       if (random() < 0.85) {
         const spread = random();
+        const at = s + random() * spacing * 0.8;
         trees.push({
-          s: s + random() * spacing * 0.8,
+          s: at,
           scale: 0.9 + random() * 0.7,
-          x: side * (front + 0.4 + spread * spread * 6),
+          x: side * (frontAt(track, at) + 0.4 + spread * spread * 6),
         });
       }
     }
@@ -270,7 +275,6 @@ const layTreeline = (
 const layBoulders = (
   track: Track,
   random: Random,
-  front: number,
   boulders: number
 ): Placement[] => {
   const rocks: Placement[] = [];
@@ -280,10 +284,11 @@ const layBoulders = (
   for (let s = track.startS; s < track.endS; s += BOULDER_SPACING) {
     for (const side of [-1, 1]) {
       if (random() < boulders) {
+        const at = s + random() * BOULDER_SPACING;
         rocks.push({
-          s: s + random() * BOULDER_SPACING,
+          s: at,
           scale: 0.7 + random() * 1.6,
-          x: side * (front + 0.6 + random() * 8),
+          x: side * (frontAt(track, at) + 0.6 + random() * 8),
         });
       }
     }
@@ -291,19 +296,15 @@ const layBoulders = (
   return rocks;
 };
 
-const laySigns = (
-  track: Track,
-  random: Random,
-  front: number,
-  signs: number
-): Placement[] => {
+const laySigns = (track: Track, random: Random, signs: number): Placement[] => {
   const boards: Placement[] = [];
   if (signs <= 0) {
     return boards;
   }
   for (let s = 120; s < track.length; s += SIGN_SPACING) {
     if (random() < signs) {
-      boards.push({ s: s + random() * 60, scale: 1, x: front + 0.5 });
+      const at = s + random() * 60;
+      boards.push({ s: at, scale: 1, x: frontAt(track, at) + 0.5 });
     }
   }
   return boards;
@@ -323,7 +324,6 @@ export const buildRoadside = (
   const { look } = shading;
   const { roadside } = look;
   const random = createRandom(track.plan.seed + SEED_SALT);
-  const front = track.vergeHalfWidth + FRONT_GAP;
   const group = new THREE.Group();
   const stretches: Stretch[] = [];
 
@@ -337,7 +337,7 @@ export const buildRoadside = (
     const span = [from, Math.min(track.endS, from + CHUNK_LENGTH)] as const;
     const pieces: THREE.BufferGeometry[] = [];
     for (const bank of banks) {
-      const piece = bankGeometry(track, bank, span, front, colours);
+      const piece = bankGeometry(track, bank, span, colours);
       if (piece) {
         pieces.push(piece);
       }
@@ -359,7 +359,7 @@ export const buildRoadside = (
     clearance,
     group,
     track,
-    layPosts(track, random, front),
+    layPosts(track, random),
     postParts(shading),
     true
   );
@@ -367,21 +367,21 @@ export const buildRoadside = (
     clearance,
     group,
     track,
-    layTreeline(track, random, front, roadside.treeline),
+    layTreeline(track, random, roadside.treeline),
     pineParts(shading)
   );
   plant(
     clearance,
     group,
     track,
-    layBoulders(track, random, front, roadside.boulders),
+    layBoulders(track, random, roadside.boulders),
     boulderParts(shading)
   );
   plant(
     clearance,
     group,
     track,
-    laySigns(track, random, front, roadside.signs),
+    laySigns(track, random, roadside.signs),
     signParts(shading, textures)
   );
   return { group, stretches };

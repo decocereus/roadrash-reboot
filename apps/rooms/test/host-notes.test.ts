@@ -2,25 +2,27 @@ import { RACE_STATS_PACKET_BYTES, writeRaceStats } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
+import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
   advanceHearing,
   nearby,
+  sameBuild,
   START_DELAY_MS,
   createClock,
   fakeSocket,
   someRaceStats,
   readyPacket,
-  pressedStart,
+  loadingRace,
   startedOf,
   race,
 } from "./host-harness.ts";
 
 describe("the room's notes", () => {
   it("says how long the countdown waited, and for whom", () => {
-    const { clock, far, host, near } = pressedStart();
-    host.message(near, readyPacket());
+    const { clock, far, host, near } = loadingRace();
+    host.message(near, readyPacket(near));
     clock.advance(6000);
-    host.message(far, readyPacket());
+    host.message(far, readyPacket(far));
     expect(clock.notes.map((note) => note.kind)).toStrictEqual([
       "started",
       "countdown",
@@ -32,8 +34,8 @@ describe("the room's notes", () => {
   });
 
   it("names who the countdown gave up on", () => {
-    const { clock, far, host, near } = pressedStart();
-    host.message(near, readyPacket());
+    const { clock, far, host, near } = loadingRace();
+    host.message(near, readyPacket(near));
     advanceHearing(host, clock, [far, near], 20_000);
     expect(clock.notes[1]).toMatchObject({
       raceId: "race-1",
@@ -43,9 +45,9 @@ describe("the room's notes", () => {
   });
 
   it("says who left and who was refused", () => {
-    const { clock, far, host } = pressedStart();
+    const { clock, far, host } = loadingRace();
     host.gone(far);
-    host.seat(fakeSocket(), "Late", nearby);
+    host.seat(fakeSocket(), "Late", nearby, sameBuild);
     expect(clock.notes).toContainEqual({
       kind: "refused",
       reason: "racing",
@@ -61,7 +63,7 @@ describe("the room's notes", () => {
   });
 
   it("logs a seat's race stats once, however often it sends them", () => {
-    const { clock, host, near } = pressedStart();
+    const { clock, host, near } = loadingRace();
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
     host.message(near, packet);
@@ -75,8 +77,49 @@ describe("the room's notes", () => {
     });
   });
 
+  it("saves a seat's browser trace once, under its race, with no extra fields", () => {
+    const { clock, host, near } = loadingRace();
+    const trace = {
+      build: "abc",
+      extra: "a name",
+      gpu: "Test GPU",
+      graphics: "quality rung 1",
+      rows: [0, 0, 1, 0, 60, 2, 16, 90, 17],
+    };
+    host.message(near, JSON.stringify(trace));
+    host.message(near, JSON.stringify({ ...trace, build: "second" }));
+    expect(clock.notes.filter((note) => note.kind === "browser")).toStrictEqual(
+      [
+        {
+          build: "abc",
+          gpu: "Test GPU",
+          graphics: "quality rung 1",
+          kind: "browser",
+          raceId: "race-1",
+          rider: 0,
+        },
+      ]
+    );
+    const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
+    expect(saved).toContain('"build":"abc"');
+    expect(saved).not.toContain("a name");
+  });
+
+  it("refuses a browser trace that is not one, or is too long", () => {
+    const { clock, host, near } = loadingRace();
+    host.message(near, "not json");
+    expect(clock.tape.has("tapes/race-1/rider-0.trace.json")).toBeFalsy();
+    const { clock: other, host: otherHost, near: otherNear } = loadingRace();
+    otherHost.message(otherNear, "x".repeat(MOST_TRACE_CHARS + 1));
+    otherHost.message(
+      otherNear,
+      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+    );
+    expect(other.tape.has("tapes/race-1/rider-0.trace.json")).toBeTruthy();
+  });
+
   it("logs a place behind the start line as zero, not a huge number", () => {
-    const { clock, host, near } = pressedStart();
+    const { clock, host, near } = loadingRace();
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), {
       ...someRaceStats,
@@ -93,8 +136,8 @@ describe("the room's notes", () => {
     const host = createHost(clock);
     const first = [fakeSocket(), fakeSocket()];
     race(host, clock, first);
-    expect(startedOf(first[0] ?? fakeSocket()).raceId).toBe("race-1");
-    expect(startedOf(first[1] ?? fakeSocket()).raceId).toBe("race-1");
+    expect(startedOf(first[0] ?? fakeSocket()).manifest.raceId).toBe("race-1");
+    expect(startedOf(first[1] ?? fakeSocket()).manifest.raceId).toBe("race-1");
     expect(host.status().raceId).toBe("race-1");
     for (const socket of first) {
       host.gone(socket);
@@ -103,17 +146,17 @@ describe("the room's notes", () => {
     expect(host.status().raceId).toBeNull();
     const second = [fakeSocket()];
     race(host, clock, second);
-    expect(startedOf(second[0] ?? fakeSocket()).raceId).toBe("race-2");
+    expect(startedOf(second[0] ?? fakeSocket()).manifest.raceId).toBe("race-2");
   });
 
   it("keeps names out of every note", () => {
-    const { clock, far, host, near } = pressedStart();
+    const { clock, far, host, near } = loadingRace();
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
     host.message(near, packet);
     host.gone(far);
     host.gone(near);
-    host.seat(fakeSocket(), "Late", nearby);
+    host.seat(fakeSocket(), "Late", nearby, sameBuild);
     clock.advance(40_000);
     const written = JSON.stringify(clock.notes);
     expect(written).toContain('"kind":"ended"');
@@ -123,11 +166,11 @@ describe("the room's notes", () => {
   });
 
   it("sums up every rider who started, including who left", () => {
-    const { clock, far, host, near } = pressedStart();
+    const { clock, far, host, near } = loadingRace();
     clock.advance(1500);
-    host.message(near, readyPacket());
+    host.message(near, readyPacket(near));
     clock.advance(1500);
-    host.message(far, readyPacket());
+    host.message(far, readyPacket(far));
     clock.advance(START_DELAY_MS + 5000);
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
@@ -152,9 +195,9 @@ describe("the room's notes", () => {
   });
 
   it("sorts the gaps between wakes into the summary's buckets", () => {
-    const { clock, far, host, near } = pressedStart();
-    host.message(near, readyPacket());
-    host.message(far, readyPacket());
+    const { clock, far, host, near } = loadingRace();
+    host.message(near, readyPacket(near));
+    host.message(far, readyPacket(far));
     clock.advance(START_DELAY_MS + 1000);
     clock.stall(70);
     clock.wakeOnce();
@@ -171,9 +214,9 @@ describe("the room's notes", () => {
   });
 
   it("writes one note per race event, none per tick", () => {
-    const { clock, far, host, near } = pressedStart();
-    host.message(near, readyPacket());
-    host.message(far, readyPacket());
+    const { clock, far, host, near } = loadingRace();
+    host.message(near, readyPacket(near));
+    host.message(far, readyPacket(far));
     clock.advance(START_DELAY_MS + 5000);
     expect(clock.notes).toHaveLength(2);
   });

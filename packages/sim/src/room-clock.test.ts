@@ -8,9 +8,26 @@ const TICK_MS = TICK_SECONDS * 1000;
 const roomTick = (atMs: number): number => Math.floor(atMs / TICK_MS);
 
 describe("the room clock", () => {
+  it("counts down to the room's start moment, as fast as this link can hear it", () => {
+    const clock = createRoomClock();
+    clock.heardRoomTime(10_000, 1050);
+    clock.heardRoomTime(10_500, 1520);
+    clock.start(13_000);
+    expect(clock.silentMs(4020)).toBe(0);
+  });
+
+  it("is not fooled by a late packet about the room's time", () => {
+    const clock = createRoomClock();
+    clock.heardRoomTime(10_000, 1020);
+    clock.heardRoomTime(10_500, 1900);
+    clock.start(13_000);
+    expect(clock.silentMs(4020)).toBe(0);
+  });
+
   it("waits through the countdown until the lead reaches the first tick", () => {
     const clock = createRoomClock();
-    clock.start(3000, 0);
+    clock.heardRoomTime(0, 0);
+    clock.start(3000);
     expect(clock.stepsDue(0, 0)).toBe(0);
     expect(clock.stepsDue(0, 3000 - TICK_MS * 8)).toBe(0);
     expect(clock.stepsDue(0, 3000)).toBe(4);
@@ -36,7 +53,8 @@ describe("the room clock", () => {
 
   it("counts silence from the start, then from the last tick heard", () => {
     const clock = createRoomClock();
-    clock.start(3000, 0);
+    clock.heardRoomTime(0, 0);
+    clock.start(3000);
     expect(clock.silentMs(1000)).toBeLessThan(0);
     expect(clock.silentMs(4000)).toBe(1000);
     clock.heardTick(1, 4000);

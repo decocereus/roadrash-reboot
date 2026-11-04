@@ -9,7 +9,6 @@ const INPUT_KIND = 1;
 const TICK_KIND = 2;
 const PING_KIND = 3;
 const PONG_KIND = 4;
-const START_KIND = 5;
 const READY_KIND = 6;
 const RACE_STATS_KIND = 7;
 const KIND_BYTES = 1;
@@ -21,6 +20,8 @@ const FLAG_BYTES = 1;
 const WORD_BYTES = 4;
 const HASH_BYTES = HASH_WORDS * WORD_BYTES;
 const LARGEST_TICK = 0xff_ff_ff_ff;
+
+export const ROOM_PROTOCOL = 1;
 
 export const MOST_BATCHED_CONTROLS = 8;
 
@@ -256,9 +257,8 @@ const STAMP_BYTES = 4;
 const NO_STAMP = -1;
 
 export const PING_PACKET_BYTES = KIND_BYTES + STAMP_BYTES;
-export const PONG_PACKET_BYTES = KIND_BYTES + STAMP_BYTES + TICK_BYTES;
-export const START_PACKET_BYTES = KIND_BYTES;
-export const READY_PACKET_BYTES = KIND_BYTES;
+export const PONG_PACKET_BYTES = KIND_BYTES + STAMP_BYTES + STAMP_BYTES;
+export const READY_PACKET_BYTES = KIND_BYTES + HASH_BYTES;
 
 export const writePing = (view: DataView, stamp: number): number => {
   view.setUint8(0, PING_KIND);
@@ -274,17 +274,17 @@ export const readPing = (view: DataView): number =>
 export const writePong = (
   view: DataView,
   stamp: number,
-  tick: number
+  roomMs: number
 ): number => {
   view.setUint8(0, PONG_KIND);
   view.setUint32(KIND_BYTES, stamp, true);
-  view.setUint32(KIND_BYTES + STAMP_BYTES, tick, true);
+  view.setUint32(KIND_BYTES + STAMP_BYTES, roomMs, true);
   return PONG_PACKET_BYTES;
 };
 
 export interface Pong {
   stamp: number;
-  tick: number;
+  roomMs: number;
 }
 
 export const readPong = (view: DataView, into: Pong): boolean => {
@@ -292,31 +292,40 @@ export const readPong = (view: DataView, into: Pong): boolean => {
     return false;
   }
   into.stamp = view.getUint32(KIND_BYTES, true);
-  into.tick = view.getUint32(KIND_BYTES + STAMP_BYTES, true);
+  into.roomMs = view.getUint32(KIND_BYTES + STAMP_BYTES, true);
   return true;
 };
 
-export const writeStart = (view: DataView): number => {
-  view.setUint8(0, START_KIND);
-  return START_PACKET_BYTES;
-};
-
-export const isStart = (view: DataView): boolean =>
-  view.byteLength === START_PACKET_BYTES && view.getUint8(0) === START_KIND;
-
-export const writeReady = (view: DataView): number => {
+export const writeReady = (view: DataView, digest: Uint32Array): number => {
   view.setUint8(0, READY_KIND);
+  for (let word = 0; word < HASH_WORDS; word += 1) {
+    view.setUint32(KIND_BYTES + word * WORD_BYTES, digest[word] ?? 0, true);
+  }
   return READY_PACKET_BYTES;
 };
 
-export const isReady = (view: DataView): boolean =>
-  view.byteLength === READY_PACKET_BYTES && view.getUint8(0) === READY_KIND;
+export const readReady = (view: DataView, into: Uint32Array): boolean => {
+  if (
+    view.byteLength !== READY_PACKET_BYTES ||
+    view.getUint8(0) !== READY_KIND
+  ) {
+    return false;
+  }
+  for (let word = 0; word < into.length; word += 1) {
+    into[word] = view.getUint32(KIND_BYTES + word * WORD_BYTES, true);
+  }
+  return true;
+};
 
 const RACE_STAT_FIELDS = [
   "crashes",
   "crashesAfterCorrection",
   "doubledSteps",
   "finished",
+  "frameCount",
+  "frameP50Ms",
+  "frameP95Ms",
+  "frameP99Ms",
   "heldSteps",
   "jumpsBehindServer",
   "jumpsOtherRiders",

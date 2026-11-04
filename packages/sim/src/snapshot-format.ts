@@ -66,9 +66,11 @@ export type CarSetupKey =
   | "halfLength"
   | "halfWidth"
   | "height"
+  | "home"
   | "paint"
-  | "patience"
-  | "x";
+  | "patience";
+
+type CarDerivedKey = "x";
 
 export type CrossCarSetupKey =
   | "across"
@@ -142,8 +144,8 @@ const blankHazard = (): Hazard => ({
 });
 
 const carSchema = schemaOf<
-  Omit<TrafficView, CarSetupKey>,
-  Omit<TrafficCar, CarSetupKey>
+  Omit<TrafficView, CarSetupKey | CarDerivedKey>,
+  Omit<TrafficCar, CarSetupKey | CarDerivedKey>
 >({
   s: floatAt("s"),
   speed: floatAt("speed"),

@@ -208,7 +208,8 @@ export const restoredWith = (run: Run, checkpoint: Uint8Array): Run => {
       checkpoint.buffer,
       checkpoint.byteOffset,
       checkpoint.byteLength
-    )
+    ),
+    run.track
   );
   run.state = fresh;
   return run;

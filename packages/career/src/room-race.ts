@@ -34,15 +34,35 @@ export interface SeatedRace {
   readonly road: RoadId;
 }
 
+const fairStartFor = (
+  setup: CareerRaceSetup,
+  humans: number
+): CareerRaceSetup => {
+  const { aggression, bike, skill, weapon } = setup.player;
+  return {
+    ...setup,
+    gridOrder: "playerFirst",
+    rivals: setup.rivals.map((rival, at) =>
+      at < humans - 1
+        ? { ...rival, aggression, bike, skill, weapon }
+        : { ...rival, bike }
+    ),
+  };
+};
+
 export const seatedRace = (
   seed: number,
   seats: number,
   rule: RoomRule = publicRoomRule
 ): SeatedRace => {
   const race: PracticeRace = { ...rule, seed };
-  const setup = practiceSetup(roomRules, race, trackFor(race.roadId));
-  const humans = firstRacers(setup, seats);
-  return { humans, road: race.roadId, setup: roomSetup(setup, humans) };
+  const field = practiceSetup(roomRules, race, trackFor(race.roadId));
+  const humans = firstRacers(field, seats);
+  return {
+    humans,
+    road: race.roadId,
+    setup: roomSetup(fairStartFor(field, humans.length), humans),
+  };
 };
 
 export type GuestNames = ReadonlyMap<RacerId, string>;

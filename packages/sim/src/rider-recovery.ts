@@ -1,3 +1,4 @@
+import { vergeHalfWidthAt } from "@racer/track/districts";
 import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
@@ -46,10 +47,11 @@ const slideBike = (track: Track, rider: RiderState): void => {
   );
   rider.lateralSpeed = approach(rider.lateralSpeed, 0, 6 * TICK_SECONDS);
   rider.s += rider.speed * TICK_SECONDS;
+  const vergeHalfWidth = vergeHalfWidthAt(track, rider.s);
   rider.x = clamp(
     rider.x + rider.lateralSpeed * TICK_SECONDS,
-    -track.vergeHalfWidth,
-    track.vergeHalfWidth
+    -vergeHalfWidth,
+    vergeHalfWidth
   );
 };
 
@@ -73,10 +75,11 @@ const slide = (track: Track, rider: RiderState): boolean => {
     );
   }
   rider.bodyS += rider.bodySpeed * TICK_SECONDS;
+  const bodyVerge = vergeHalfWidthAt(track, rider.bodyS);
   rider.bodyX = clamp(
     rider.bodyX + rider.bodyLateralSpeed * TICK_SECONDS,
-    -track.vergeHalfWidth,
-    track.vergeHalfWidth
+    -bodyVerge,
+    bodyVerge
   );
 
   slideBike(track, rider);
@@ -333,10 +336,11 @@ const run = (
     Math.min(rider.s, 0),
     Math.max(rider.s, track.length)
   );
+  const bodyVerge = vergeHalfWidthAt(track, rider.bodyS);
   rider.bodyX = clamp(
     rider.bodyX + rider.bodyLateralSpeed * TICK_SECONDS,
-    -track.vergeHalfWidth,
-    track.vergeHalfWidth
+    -bodyVerge,
+    bodyVerge
   );
 };
 

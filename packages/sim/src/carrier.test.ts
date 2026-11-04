@@ -77,6 +77,7 @@ const pilotMeets = (
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: carAhead.speed < 0 ? truckRoad.oncomingLanes[0] : truck.x,
       s: carAhead.s,
       speed: carAhead.speed,
       x: carAhead.speed < 0 ? truckRoad.oncomingLanes[0] : truck.x,

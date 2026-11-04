@@ -1,3 +1,4 @@
+import { vergeHalfWidthAt } from "@racer/track/districts";
 import { createRandom } from "@racer/track/random";
 import type {
   GroundCover,
@@ -30,6 +31,7 @@ const WATER_COLOUR = "#3d6f8f";
 
 interface RoadNear {
   distance: number;
+  s: number;
   y: number;
 }
 
@@ -55,7 +57,7 @@ export const coverPalette = (look: Look, cover: GroundCover): CoverPalette =>
     paving: { far: look.road, near: look.walk, patch: look.kerb },
   })[cover];
 
-const near: RoadNear = { distance: 0, y: 0 };
+const near: RoadNear = { distance: 0, s: 0, y: 0 };
 const wet: WaterNear = { found: false, gap: 0, level: 0 };
 const tint = new THREE.Color();
 const placer = new THREE.Object3D();
@@ -138,6 +140,7 @@ const createGround = (track: Track, scenery: Scenery) => {
       const squared = dx * dx + dz * dz;
       if (squared < best) {
         best = squared;
+        near.s = track.startS + index * ROAD_STEP;
         near.y = ys[index] ?? 0;
       }
     }
@@ -154,7 +157,10 @@ const createGround = (track: Track, scenery: Scenery) => {
     if (!water.found) {
       return dry;
     }
-    const fromRoad = Math.max(0, road.distance - track.vergeHalfWidth);
+    const fromRoad = Math.max(
+      0,
+      road.distance - vergeHalfWidthAt(track, road.s)
+    );
     const bank = water.level + LAKE_BANK;
     return bank + ((dry - bank) * water.gap) / (water.gap + fromRoad + 1);
   };
@@ -468,9 +474,9 @@ const buildTrees = (
         const treeX = x + (random() - 0.5) * TREE_STEP * 0.8;
         const treeZ = z + (random() - 0.5) * TREE_STEP * 0.8;
         const scale = 0.8 + random() * 0.6;
-        const { distance } = ground.nearestRoad(treeX, treeZ);
+        const { distance, s } = ground.nearestRoad(treeX, treeZ);
         if (
-          distance > track.vergeHalfWidth + TREE_CLEARANCE &&
+          distance > vergeHalfWidthAt(track, s) + TREE_CLEARANCE &&
           distance < TREE_REACH &&
           ground.coverAt(treeX, treeZ) === "grass" &&
           scenery.water.every(

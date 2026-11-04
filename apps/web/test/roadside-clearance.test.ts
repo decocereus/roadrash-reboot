@@ -1,5 +1,6 @@
 import { crossHalfWidthOf } from "@racer/track/crossings";
 import type { CrossingRule } from "@racer/track/crossings";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { roadIds } from "@racer/track/road";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, placeOnTrack } from "@racer/track/track";
@@ -189,7 +190,7 @@ describe("the roadside clears the chase camera", () => {
     if (!harbour) {
       throw new Error("Breakwater Run has Harbour Cross.");
     }
-    const half = track.roadHalfWidth;
+    const half = roadHalfWidthAt(track, 0);
     const far = [
       ...postsAt(world, track, harbour.s + harbour.stopGap + 0.3, -half - 0.9),
       ...postsAt(
@@ -242,7 +243,7 @@ describe("the roadside clears the chase camera", () => {
     };
     const edge = harbour.boxHalfLength;
     const rows = [-1, 1].map((side) => {
-      const x = side * (track.roadHalfWidth + 1.5);
+      const x = side * (roadHalfWidthAt(track, 0) + 1.5);
       return [
         surface(harbour.s - edge - 0.2, x),
         surface(harbour.s - edge + 0.2, x),
@@ -298,7 +299,7 @@ describe("the roadside clears the chase camera", () => {
           placeOnTrack(
             track,
             crossing.s + along,
-            side * (track.roadHalfWidth + out),
+            side * (roadHalfWidthAt(track, 0) + out),
             point
           );
           ray.set(new THREE.Vector3(point.x, point.y + 200, point.z), down);
@@ -339,7 +340,10 @@ describe("the roadside clears the chase camera", () => {
           });
         }
       });
-      for (const x of [track.roadHalfWidth - 1, 1 - track.roadHalfWidth]) {
+      for (const x of [
+        roadHalfWidthAt(track, 0) - 1,
+        1 - roadHalfWidthAt(track, 0),
+      ]) {
         const chase = createChaseCamera();
         chase.camera.aspect = 1512 / 860;
         chase.camera.updateProjectionMatrix();

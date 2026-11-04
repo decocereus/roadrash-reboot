@@ -1,6 +1,7 @@
 import { createRace, emptyFrame, stepRace } from "@racer/sim/race";
 import { frameOf } from "@racer/sim/race-fixtures";
 import { arm } from "@racer/sim/weapons";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { regionOf, roads as roadPlans, trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
 
@@ -312,8 +313,8 @@ describe("a bust", () => {
     expect(Math.abs((arrest?.x ?? 9) - lay.x)).toBeLessThan(0.2);
     expect(km).toBe(arrest?.km);
     expect([
-      Math.abs(arrest?.x ?? 9) < road.roadHalfWidth,
-      Math.abs(player.bodyX) > road.roadHalfWidth,
+      Math.abs(arrest?.x ?? 9) < roadHalfWidthAt(road, 0),
+      Math.abs(player.bodyX) > roadHalfWidthAt(road, 0),
     ]).toStrictEqual([true, true]);
   });
 });

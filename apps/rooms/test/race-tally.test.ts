@@ -6,6 +6,12 @@ import { PLAYER_RIDER } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createRaceTally } from "../src/race-tally.ts";
+import {
+  MOST_TRACE_ROWS,
+  TRACE_ROW_FIELDS,
+  TRACE_ROW_MS,
+  TraceField,
+} from "../src/tape.ts";
 
 const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
 const client = createRoomClient(setup, PLAYER_RIDER);
@@ -26,9 +32,9 @@ describe("a rider's race tally", () => {
 
   it("keeps the slowest frame and where on the road it happened", () => {
     const tally = createRaceTally();
-    tally.frameDrawn(1000, 10);
-    tally.frameDrawn(1080, 500);
-    tally.frameDrawn(1096, 501);
+    tally.frameDrawn(1000, 10, 0);
+    tally.frameDrawn(1080, 500, 0);
+    tally.frameDrawn(1096, 501, 0);
     expect(tally.read(client, 0)).toMatchObject({
       slowFrames: 1,
       worstFrameMs: 80,
@@ -54,5 +60,62 @@ describe("a rider's race tally", () => {
       crashes: 3,
       crashesAfterCorrection: 1,
     });
+  });
+
+  it("counts frames and reads percentiles from every frame interval", () => {
+    const tally = createRaceTally();
+    let now = 1000;
+    tally.frameDrawn(now, 0, 0);
+    for (let frame = 0; frame < 100; frame += 1) {
+      now += frame < 90 ? 16 : 40;
+      tally.frameDrawn(now, 0, 0);
+    }
+    expect(tally.read(client, 0)).toMatchObject({
+      frameCount: 100,
+      frameP50Ms: 16,
+      frameP95Ms: 40,
+      frameP99Ms: 40,
+    });
+  });
+
+  it("writes a row every quarter second with that moment's worst numbers", () => {
+    const tally = createRaceTally();
+    tally.frameDrawn(1000, 0, 10);
+    tally.heardTick(1010);
+    tally.heardTick(1130);
+    tally.heardRtt(90);
+    tally.stepped(0);
+    tally.stepped(2);
+    tally.frameDrawn(1100, 0, 12);
+    tally.frameDrawn(1300, 0, 20);
+    const expected = Array.from({ length: TRACE_ROW_FIELDS }, () => 0);
+    expected[TraceField.atMs] = 300;
+    expected[TraceField.tick] = 20;
+    expected[TraceField.frames] = 2;
+    expected[TraceField.worstFrameMs] = 200;
+    expected[TraceField.ticksHeard] = 2;
+    expected[TraceField.worstTickGapMs] = 120;
+    expected[TraceField.worstRttMs] = 90;
+    expected[TraceField.held] = 1;
+    expected[TraceField.doubled] = 1;
+    expect(tally.traceRows()).toStrictEqual(expected);
+  });
+
+  it("stops at the row limit instead of growing", () => {
+    const tally = createRaceTally();
+    for (let row = 0; row <= MOST_TRACE_ROWS + 1; row += 1) {
+      tally.frameDrawn(1000 + row * TRACE_ROW_MS, 0, row);
+    }
+    expect(tally.traceRows()).toHaveLength(MOST_TRACE_ROWS * TRACE_ROW_FIELDS);
+  });
+
+  it("keeps the last unfinished row, so a stall just before the end still shows", () => {
+    const tally = createRaceTally();
+    tally.frameDrawn(1000, 0, 0);
+    tally.frameDrawn(1120, 0, 7);
+    const rows = tally.traceRows();
+    expect(rows).toHaveLength(TRACE_ROW_FIELDS);
+    expect(rows[TraceField.worstFrameMs]).toBe(120);
+    expect(rows[TraceField.tick]).toBe(7);
   });
 });

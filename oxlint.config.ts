@@ -72,6 +72,7 @@ export const deterministicFiles = [
   "packages/track/src/alignment.ts",
   "packages/track/src/chevron-runs.ts",
   "packages/track/src/crossings.ts",
+  "packages/track/src/districts.ts",
   "packages/track/src/hazards.ts",
   "packages/track/src/madrid-sources.ts",
   "packages/track/src/math-atan.ts",
@@ -126,6 +127,11 @@ export const codecFiles = [
 ];
 
 export const hotBodies = {
+  "apps/rooms/src/race-tally.ts": [
+    ["createRaceTally", "closeRow"],
+    ["createRaceTally", "frameDrawn"],
+    ["createRaceTally", "heardTick"],
+  ],
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/figure-ik.ts": [
     ["placeChain"],
@@ -354,7 +360,10 @@ export const hotBodies = {
     ["yieldTo"],
     ["firstPast"],
     ["gapToRider"],
-    ["laneIndexOf"],
+    ["occupiedLaneOf"],
+    ["queueOf"],
+    ["readCars"],
+    ["seatCar"],
   ],
 };
 
