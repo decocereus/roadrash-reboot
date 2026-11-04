@@ -231,6 +231,7 @@ const processesOn = (machine: Machine) =>
             ? JSON.stringify([{ instance: "sig", pid: OWNED_PID }])
             : "",
       })),
+    runShown: () => Effect.die("nothing here runs a shown command"),
     spawnScoped: () => Effect.die("the desktop session spawns nothing scoped"),
     startDetached: (file, _args, _cwd, _log, env) =>
       Effect.sync(() => {
@@ -391,6 +392,18 @@ describe("desktop session lifecycle", () => {
     expect(up).toStrictEqual(
       Exit.succeed({ display: ":7", kind: "owned", pid: OWNED_PID })
     );
+  });
+
+  it("keeps the session when one named hold leaves and another remains", async () => {
+    const machine = machineOf();
+    const dir = freshDir();
+    await onMachine(machine, desktopUp("baseline", null, dir));
+    await onMachine(machine, desktopUp("bar-look", null, dir));
+    const first = await onMachine(machine, desktopDown("bar-look", dir));
+    expect(first).toStrictEqual(Exit.succeed("left running for baseline"));
+    expect(machine.stops).toStrictEqual([]);
+    const last = await onMachine(machine, desktopDown("baseline", dir));
+    expect(last).toStrictEqual(Exit.succeed(`stopped pid ${OWNED_PID}`));
   });
 
   it("stops an orphan on down, and cleans up the session's files", async () => {

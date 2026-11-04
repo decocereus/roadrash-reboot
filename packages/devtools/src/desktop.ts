@@ -460,7 +460,7 @@ export const describeDesktop = (state: DesktopState): string => {
       return "no desktop session is running";
     }
     case "orphan": {
-      return `${COMPOSITOR} pid ${state.pid} runs rv's config, but no claim matches it, so the rv that started it died; rv desktop up replaces it and rv desktop down stops it`;
+      return `${COMPOSITOR} pid ${state.pid} runs rv's config, but no claim matches it, so the rv that started it died; rv desktop up <name> replaces it and rv desktop down <name> stops it`;
     }
     case "foreign": {
       return `a compositor rv did not start is up: Xwayland pid ${state.pid} on ${state.display}; rv uses it and never stops it`;

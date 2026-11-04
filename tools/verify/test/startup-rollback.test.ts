@@ -80,6 +80,7 @@ const upWhereWriteFails = async (failing: number) => {
             : CHECKOUT,
         };
       }),
+    runShown: () => Effect.die("nothing here runs a shown command"),
     spawnScoped: () => Effect.die("rv never spawns a scoped browser"),
     startDetached: (_file, args) =>
       Effect.sync(() => {
