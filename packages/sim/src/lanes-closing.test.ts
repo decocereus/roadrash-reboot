@@ -214,9 +214,10 @@ describe("a pilot nearing a narrow district", () => {
 
 describe("a pilot field on a road of three, one and two lanes", () => {
   const raceTicks = 60 * 420;
+  const fieldSeeds = [11, 23, 37, 41, 59, 67, 73, 89];
 
-  const fieldRide = (track: Track) => {
-    const setup = defaultSetup(track, 11);
+  const fieldRide = (track: Track, seed: number) => {
+    const setup = defaultSetup(track, seed);
     const state = createRace({
       ...setup,
       pacing: { catchUp: 0, leadEase: 0 },
@@ -243,9 +244,18 @@ describe("a pilot field on a road of three, one and two lanes", () => {
     };
   };
 
+  const fieldsOn = (track: Track) => {
+    const rides = fieldSeeds.map((seed) => fieldRide(track, seed));
+    return {
+      finished: rides.reduce((sum, ride) => sum + ride.finished, 0),
+      offRoad: rides.reduce((sum, ride) => sum + ride.offRoad, 0),
+      riders: rides.reduce((sum, ride) => sum + ride.riders, 0),
+    };
+  };
+
   it("finishes and leaves the road no more than on a road of uniform width", () => {
-    const uniform = fieldRide(compileTrack(roads["breakwater-run"]));
-    const mixed = fieldRide(
+    const uniform = fieldsOn(compileTrack(roads["breakwater-run"]));
+    const mixed = fieldsOn(
       compileTrack({
         ...roads["breakwater-run"],
         districts: [

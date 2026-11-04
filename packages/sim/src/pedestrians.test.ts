@@ -321,6 +321,21 @@ describe("a pedestrian's own walk", () => {
   });
 });
 
+const carInLane = (s: number, cruiseSpeed: number) => ({
+  carrier: false,
+  cruiseSpeed,
+  halfLength: 2.2,
+  halfWidth: 0.92,
+  height: 1.45,
+  home: 2,
+  paint: 0,
+  patience: 120,
+  s,
+  speed: cruiseSpeed,
+  waited: 0,
+  x: 2,
+});
+
 describe("a car and a pedestrian", () => {
   it("stops short of a pedestrian in its lane and goes on when they have crossed", () => {
     const state = raceOn(onStraight);
@@ -359,6 +374,33 @@ describe("a car and a pedestrian", () => {
     }
     expect(car.speed).toBeGreaterThan(5);
   });
+
+  it.each([19, 23, 27])(
+    "the car behind one stopped for a pedestrian stops behind it from %i m/s",
+    (cruise) => {
+      const state = raceOn(onStraight);
+      const walker = walkerOf(state);
+      const rider = player(state);
+      rider.s = straight.length - 50;
+      placeWalker(walker, 2);
+      walker.mode = "down";
+      walker.wait = 30 * TICK_RATE;
+      const stopped = carInLane(WALKER_S - 60, 20);
+      const behind = carInLane(WALKER_S - 260, cruise);
+      state.cars.push(stopped, behind);
+      let closest = Number.POSITIVE_INFINITY;
+      for (let tick = 0; tick < 15 * TICK_RATE; tick += 1) {
+        stepRace(state, onStraight, frameOf(state));
+        closest = Math.min(
+          closest,
+          stopped.s - stopped.halfLength - (behind.s + behind.halfLength)
+        );
+      }
+      expect(stopped.speed).toBe(0);
+      expect(behind.speed).toBe(0);
+      expect(closest).toBeGreaterThan(0);
+    }
+  );
 });
 
 const carsOn = (state: RaceState, walker: Pedestrian): boolean =>

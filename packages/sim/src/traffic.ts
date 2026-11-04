@@ -337,7 +337,10 @@ const followLane = (cars: readonly TrafficCar[], flow: Flow): void => {
       continue;
     }
     const s = lastS[index] ?? car.s;
-    const reach = FOLLOW_GAP + (lastSpeed[index] ?? 0) * FOLLOW_SECONDS;
+    const speed = lastSpeed[index] ?? 0;
+    const reach = FOLLOW_GAP + speed * FOLLOW_SECONDS;
+    const stoppingRoom = (speed * speed) / (2 * BRAKING);
+    const sight = Math.max(reach, stoppingRoom + QUEUE_GAP);
     let targetSpeed = Math.abs(car.cruiseSpeed);
     for (let ahead = place + 1; ahead < count; ahead += 1) {
       const otherIndex = order[ahead] ?? -1;
@@ -346,12 +349,14 @@ const followLane = (cars: readonly TrafficCar[], flow: Flow): void => {
         continue;
       }
       const apart = ((lastS[otherIndex] ?? other.s) - s) * direction;
-      if (apart - longest - car.halfLength >= reach) {
+      if (apart - longest - car.halfLength >= sight) {
         break;
       }
       const gap = apart - other.halfLength - car.halfLength;
       const otherSpeed = lastSpeed[otherIndex] ?? 0;
-      if (gap > 0 && gap < reach) {
+      const closingRoom =
+        stoppingRoom - (otherSpeed * otherSpeed) / (2 * BRAKING) + QUEUE_GAP;
+      if (gap > 0 && gap < Math.max(reach, closingRoom)) {
         targetSpeed = Math.min(targetSpeed, otherSpeed);
       }
       if (
