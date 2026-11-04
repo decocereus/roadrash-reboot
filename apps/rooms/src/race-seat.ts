@@ -1,8 +1,10 @@
 import type { Room } from "@racer/sim/room";
+import type { RaceStats } from "@racer/sim/room-wire";
 import type { RiderId } from "@racer/sim/state";
 
 import type { HostSocket } from "./host.ts";
 import type { RaceSeat, SeatTally } from "./notes.ts";
+import type { SeatBrowser } from "./tape.ts";
 
 export interface SeatLink {
   readonly colo: string | null;
@@ -13,14 +15,16 @@ export interface Seat {
   readonly link: SeatLink;
   readonly name: string;
   readonly socket: HostSocket;
+  readonly traceRows: number[];
   rider: RiderId | null;
   accepted: number;
   ahead: number;
+  browser: SeatBrowser | null;
   late: number;
   leftAtTick: number | null;
   readyMs: number | null;
   reported: boolean;
-  traced: boolean;
+  stats: RaceStats | null;
   tracedLate: number;
   tracedMissed: number;
 }
@@ -32,6 +36,7 @@ export const seatFor = (
 ): Seat => ({
   accepted: 0,
   ahead: 0,
+  browser: null,
   late: 0,
   leftAtTick: null,
   link,
@@ -40,7 +45,8 @@ export const seatFor = (
   reported: false,
   rider: null,
   socket,
-  traced: false,
+  stats: null,
+  traceRows: [],
   tracedLate: 0,
   tracedMissed: 0,
 });

@@ -95,7 +95,7 @@ describe("a lobby's start", () => {
 
   it("gives a rider who is away the minute to come back", () => {
     const { clock, first, host, second } = twoSeated();
-    host.gone(second);
+    host.gone(second, 1000);
     readyAll(host, [first]);
     expect(host.status().phase).toBe("waiting");
     advanceHearing(host, clock, [first], READY_WAIT_MS + 1000);
@@ -198,7 +198,7 @@ describe("a lobby's rules", () => {
   it("go to the next oldest rider while the host is away, and back", () => {
     const { clock, first, host, second } = twoSeated();
     const hostId = lastLobby(first).you;
-    host.gone(first);
+    host.gone(first, 1000);
     expect(lastLobby(second).hostId).toBe(lastLobby(second).you);
     clock.advance(1000);
     const back = fakeSocket();
@@ -213,8 +213,8 @@ describe("a lobby across races", () => {
     const ids = lastLobby(second).members.map((member) => member.id);
     choose(host, first);
     readyAll(host, [first, second]);
-    host.gone(first);
-    host.gone(second);
+    host.gone(first, 1000);
+    host.gone(second, 1000);
     clock.advance(AWAY_MS / 2);
     expect(host.status().phase).toBe("waiting");
     const backOne = fakeSocket();
@@ -234,10 +234,10 @@ describe("a lobby across races", () => {
   it("forgets a rider who stays away, and its rules once nobody is left", () => {
     const { clock, first, host, second } = twoSeated();
     choose(host, first);
-    host.gone(first);
+    host.gone(first, 1000);
     advanceHearing(host, clock, [second], AWAY_MS + 2000);
     expect(lastLobby(second).members).toHaveLength(1);
-    host.gone(second);
+    host.gone(second, 1000);
     clock.advance(AWAY_MS + 2000);
     const next = fakeSocket();
     host.seat(next, "Cy", nearby, sameBuild());
@@ -251,8 +251,8 @@ describe("a lobby across races", () => {
     host.seat(late, "Cy", nearby, sameBuild("cy"));
     expect(late.closed).toBeNull();
     expect(lastLobby(late).phase).toBe("racing");
-    host.gone(first);
-    host.gone(second);
+    host.gone(first, 1000);
+    host.gone(second, 1000);
     advanceHearing(host, clock, [late], 120_000);
     expect(lastLobby(late).phase).toBe("gathering");
     readyAll(host, [late]);

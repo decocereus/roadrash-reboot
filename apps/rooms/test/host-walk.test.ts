@@ -72,7 +72,7 @@ describe("riders walking the lobby", () => {
     const { host, seated } = room();
     const walker = seated();
     host.message(walker, walkCommand);
-    host.gone(walker);
+    host.gone(walker, 1000);
     const late = seated();
     expect(late.messages.some(({ kind }) => kind === "walk")).toBeFalsy();
   });

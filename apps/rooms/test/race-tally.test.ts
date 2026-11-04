@@ -98,7 +98,17 @@ describe("a rider's race tally", () => {
     expected[TraceField.worstRttMs] = 90;
     expected[TraceField.held] = 1;
     expected[TraceField.doubled] = 1;
-    expect(tally.traceRows()).toStrictEqual(expected);
+    expect(tally.lastTraceRows()).toStrictEqual(expected);
+  });
+
+  it("hands over each row once, and only finished rows while riding", () => {
+    const tally = createRaceTally();
+    tally.frameDrawn(1000, 0, 0);
+    tally.frameDrawn(1000 + TRACE_ROW_MS, 0, 1);
+    tally.frameDrawn(1000 + TRACE_ROW_MS + 10, 0, 2);
+    expect(tally.closedTraceRows()).toHaveLength(TRACE_ROW_FIELDS);
+    expect(tally.closedTraceRows()).toHaveLength(0);
+    expect(tally.lastTraceRows()).toHaveLength(TRACE_ROW_FIELDS);
   });
 
   it("stops at the row limit instead of growing", () => {
@@ -106,14 +116,16 @@ describe("a rider's race tally", () => {
     for (let row = 0; row <= MOST_TRACE_ROWS + 1; row += 1) {
       tally.frameDrawn(1000 + row * TRACE_ROW_MS, 0, row);
     }
-    expect(tally.traceRows()).toHaveLength(MOST_TRACE_ROWS * TRACE_ROW_FIELDS);
+    expect(tally.lastTraceRows()).toHaveLength(
+      MOST_TRACE_ROWS * TRACE_ROW_FIELDS
+    );
   });
 
   it("keeps the last unfinished row, so a stall just before the end still shows", () => {
     const tally = createRaceTally();
     tally.frameDrawn(1000, 0, 0);
     tally.frameDrawn(1120, 0, 7);
-    const rows = tally.traceRows();
+    const rows = tally.lastTraceRows();
     expect(rows).toHaveLength(TRACE_ROW_FIELDS);
     expect(rows[TraceField.worstFrameMs]).toBe(120);
     expect(rows[TraceField.tick]).toBe(7);

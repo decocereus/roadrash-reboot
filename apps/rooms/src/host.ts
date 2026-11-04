@@ -43,6 +43,7 @@ import type { RoomKind } from "./room-id.ts";
 import {
   BrowserTraceSchema,
   MOST_TRACE_CHARS,
+  MOST_TRACE_ROW_VALUES,
   riderTraceName,
   ROOM_TRACE_EVERY_TICKS,
   roomTraceName,
@@ -118,7 +119,7 @@ export interface Host {
     claim: SeatClaim
   ) => void;
   readonly message: (socket: HostSocket, data: string | ArrayBuffer) => void;
-  readonly gone: (socket: HostSocket) => void;
+  readonly gone: (socket: HostSocket, closeCode: number | null) => void;
   readonly status: () => RoomStatus;
 }
 
@@ -131,6 +132,29 @@ const noteGap = (gaps: Uint32Array, gapMs: number): void => {
     bucket += 1;
   }
   gaps[bucket] = (gaps[bucket] ?? 0) + 1;
+};
+
+const keepBrowserRows = (seat: Seat, text: string): void => {
+  if (text.length > MOST_TRACE_CHARS) {
+    return;
+  }
+  const decoded = decodeBrowserTrace(text);
+  if (Option.isNone(decoded)) {
+    return;
+  }
+  const { rows, ...browser } = decoded.value;
+  if (seat.traceRows.length + rows.length <= MOST_TRACE_ROW_VALUES) {
+    seat.browser = browser;
+    seat.traceRows.push(...rows);
+  }
+};
+
+const keepStats = (seat: Seat, view: DataView): void => {
+  const stats = readRaceStats(view);
+  if (stats) {
+    seat.reported = true;
+    seat.stats = stats;
+  }
 };
 
 export const createHost = (
@@ -209,6 +233,25 @@ export const createHost = (
   const talliesOf = (room: Room | null): RoomStatus["seats"] =>
     [...seats.values()].flatMap((seat) => tallyOf(seat, room));
 
+  const settleReport = (seat: Seat, raceId: string): void => {
+    const { browser, rider, stats, traceRows } = seat;
+    if (rider === null) {
+      return;
+    }
+    seat.browser = null;
+    seat.stats = null;
+    if (stats) {
+      ports.note({ kind: "stats", raceId, rider, stats });
+    }
+    if (browser) {
+      ports.note({ ...browser, kind: "browser", raceId, rider });
+      ports.saveTape(
+        tapeKey(raceId, riderTraceName(rider)),
+        JSON.stringify({ ...browser, rows: traceRows })
+      );
+    }
+  };
+
   const end = (run: Running): void => {
     const { raceId, room, tape, trace } = run;
     traceSeats(run.riders, run.room, run.trace);
@@ -242,42 +285,11 @@ export const createHost = (
     ports.after(REPORT_GRACE_MS, () => {
       for (const seat of finished) {
         if (reporting.delete(seat.socket)) {
+          settleReport(seat, raceId);
           seat.socket.close(SEAT_CLOSED, "The race is over.");
         }
       }
     });
-  };
-
-  const saveBrowserTrace = (seat: Seat, raceId: string, text: string): void => {
-    if (seat.rider === null || seat.traced || text.length > MOST_TRACE_CHARS) {
-      return;
-    }
-    seat.traced = true;
-    const decoded = decodeBrowserTrace(text);
-    if (Option.isNone(decoded)) {
-      return;
-    }
-    const { build, gpu, graphics } = decoded.value;
-    ports.note({
-      build,
-      gpu,
-      graphics,
-      kind: "browser",
-      raceId,
-      rider: seat.rider,
-    });
-    ports.saveTape(
-      tapeKey(raceId, riderTraceName(seat.rider)),
-      JSON.stringify(decoded.value)
-    );
-  };
-
-  const noteStats = (seat: Seat, raceId: string, view: DataView): void => {
-    const stats = readRaceStats(view);
-    if (stats && !seat.reported && seat.rider !== null) {
-      seat.reported = true;
-      ports.note({ kind: "stats", raceId, rider: seat.rider, stats });
-    }
   };
 
   const stepOnce = (run: Running): void => {
@@ -490,7 +502,7 @@ export const createHost = (
     socket.close(SEAT_CLOSED, reason);
   };
 
-  const leaveRace = (seat: Seat): void => {
+  const leaveRace = (seat: Seat, closeCode: number | null): void => {
     seats.delete(seat.socket);
     if (running && seat.rider !== null) {
       const { loading, raceId, room } = running;
@@ -499,6 +511,7 @@ export const createHost = (
       loading.delete(seat.socket);
       for (const tally of tallyOf(seat, room)) {
         ports.note({
+          closeCode,
           kind: "left",
           raceId,
           seatsLeft: seats.size,
@@ -506,16 +519,21 @@ export const createHost = (
           tick: room.state.tick,
         });
       }
+      settleReport(seat, raceId);
       countDownOnceLoaded(running);
     }
   };
 
-  const retire = (socket: HostSocket): void => {
+  const retire = (socket: HostSocket, closeCode: number | null): void => {
     present.delete(socket);
-    reporting.delete(socket);
+    const late = reporting.get(socket);
+    if (late) {
+      reporting.delete(socket);
+      settleReport(late.seat, late.raceId);
+    }
     const seat = seats.get(socket);
     if (seat) {
-      leaveRace(seat);
+      leaveRace(seat, closeCode);
     }
   };
 
@@ -525,8 +543,11 @@ export const createHost = (
     }
   };
 
-  const drop = ({ memberId, socket }: Present): void => {
-    retire(socket);
+  const drop = (
+    { memberId, socket }: Present,
+    closeCode: number | null
+  ): void => {
+    retire(socket, closeCode);
     walks.delete(memberId);
     lobby.away(memberId, ports.now());
     tellLobby();
@@ -537,13 +558,14 @@ export const createHost = (
     const now = ports.now();
     for (const person of present.values()) {
       if (now - person.heardAt > SILENT_SEAT_MS) {
-        if (person.heardAt !== SEND_FAILED) {
+        const heard = person.heardAt !== SEND_FAILED;
+        if (heard) {
           person.socket.close(
             SEAT_SILENT,
             "The room stopped hearing this seat."
           );
         }
-        drop(person);
+        drop(person, heard ? SEAT_SILENT : null);
       }
     }
     if (lobby.sweep(now)) {
@@ -585,19 +607,19 @@ export const createHost = (
   };
 
   return {
-    gone: (socket) => {
+    gone: (socket, closeCode) => {
       const person = present.get(socket);
       if (person) {
-        drop(person);
+        drop(person, closeCode);
       }
     },
     message: (socket, data) => {
       const late = reporting.get(socket);
       if (late) {
         if (data instanceof ArrayBuffer) {
-          noteStats(late.seat, late.raceId, new DataView(data));
+          keepStats(late.seat, new DataView(data));
         } else {
-          saveBrowserTrace(late.seat, late.raceId, data);
+          keepBrowserRows(late.seat, data);
         }
         return;
       }
@@ -612,7 +634,7 @@ export const createHost = (
         if (Option.isSome(command)) {
           obey(person, command.value);
         } else if (running && seat) {
-          saveBrowserTrace(seat, running.raceId, data);
+          keepBrowserRows(seat, data);
         }
         return;
       }
@@ -639,7 +661,7 @@ export const createHost = (
       if (running && seat && readReady(view, readyDigest)) {
         if (hexOfWords(readyDigest) !== hexOfWords(running.room.digest)) {
           refuse(socket, "content");
-          drop(person);
+          drop(person, SEAT_CLOSED);
           return;
         }
         running.loading.delete(socket);
@@ -648,7 +670,7 @@ export const createHost = (
         return;
       }
       if (running && seat) {
-        noteStats(seat, running.raceId, view);
+        keepStats(seat, view);
       }
     },
     seat: (socket, name, link, claim) => {
@@ -664,7 +686,7 @@ export const createHost = (
       for (const person of present.values()) {
         if (person.memberId === memberId) {
           refuse(person.socket, "replaced");
-          retire(person.socket);
+          retire(person.socket, SEAT_CLOSED);
         }
       }
       present.set(socket, {
