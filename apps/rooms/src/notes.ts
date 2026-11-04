@@ -1,6 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
+import { REFUSALS } from "./messages.ts";
+
 export const WAKE_GAP_CEILINGS_MS = [20, 34, 50, 100] as const;
 
 const orMissing = <S extends Schema.Top>(schema: S) =>
@@ -35,7 +37,7 @@ export type RaceSeat = typeof RaceSeatSchema.Type;
 
 const Refused = Schema.Struct({
   kind: Schema.Literal("refused"),
-  reason: Schema.Literals(["full", "racing"]),
+  reason: Schema.Literals(REFUSALS),
 });
 
 const Started = Schema.Struct({
@@ -44,10 +46,13 @@ const Started = Schema.Struct({
   digest: Schema.String,
   kind: Schema.Literal("started"),
   lobbyMs: Schema.Number,
+  protocol: orMissing(Schema.Number),
   raceId: Schema.String,
   road: Schema.String,
   seats: Schema.Number,
   seed: Schema.Number,
+  tier: orMissing(Schema.Number),
+  trackHash: orMissing(Schema.String),
 });
 
 const Countdown = Schema.Struct({

@@ -1,11 +1,9 @@
 import type { RoomStatus } from "@racer/rooms/contract";
-import { TICK_SECONDS } from "@racer/sim/state";
 
 import type { ClientResult } from "./load-plan.ts";
 import { otherCoresBetween } from "./machine.ts";
 import type { ProcessTable } from "./machine.ts";
 
-const TICK_MS = TICK_SECONDS * 1000;
 const TICKS_PER_SECOND = 60;
 const LEAST_TICK_SHARE = 0.98;
 const MOST_CATCH_UP_SHARE = 0.01;
@@ -27,7 +25,6 @@ export interface StepFacts {
   readonly loadBefore: number;
   readonly loadAfter: number;
   readonly mostLoad: number;
-  readonly raceAt: number;
   readonly rideSeconds: number;
   readonly rooms: number;
   readonly seats: number;
@@ -149,9 +146,7 @@ export const stepReport = (facts: StepFacts) => {
     )
   );
   const behindAtEnd = Math.max(
-    ...second.statuses.map(
-      (status) => Math.floor((second.at - facts.raceAt) / TICK_MS) - status.tick
-    )
+    ...second.statuses.map((status) => status.lagTicks)
   );
   const missedShare = Math.max(
     0,

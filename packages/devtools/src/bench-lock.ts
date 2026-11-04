@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
@@ -11,6 +12,8 @@ import { released } from "./cleanup.ts";
 import { alive } from "./process.ts";
 
 const BENCH_PID = "RUSHLINE_BENCH_PID";
+const QUEUE_PATIENCE_MS = 3_600_000;
+const QUEUE_POLL_MS = 5000;
 
 const fileIn = (dir: string): string => path.join(dir, "bench.lock");
 
@@ -62,7 +65,7 @@ const claimed = Effect.fnUntraced(function* claimed(
   const outcome = yield* takeClaim(file, label);
   if (outcome.kind === "held") {
     yield* new BenchBusy({
-      message: `Another bench is using this GPU: pid ${outcome.holder.pid}, ${outcome.holder.label}. Two benches on one GPU skew each other, so wait for it. Claim: ${file}`,
+      message: `Another bench is measuring this machine: pid ${outcome.holder.pid}, ${outcome.holder.label}. Two benches at once skew each other, so wait for it. Claim: ${file}`,
     });
   }
 });
@@ -87,6 +90,51 @@ export const holdBench = Effect.fnUntraced(function* holdBench(
   }
 });
 
+interface Queue {
+  readonly dir: string;
+  readonly patienceMs: number;
+  readonly pollMs: number;
+}
+
+export const queueForBench = Effect.fnUntraced(function* queueForBench(
+  label: string,
+  {
+    dir = toolStateDir,
+    patienceMs = QUEUE_PATIENCE_MS,
+    pollMs = QUEUE_POLL_MS,
+  }: Partial<Queue> = {}
+) {
+  const file = fileIn(dir);
+  const inherited = yield* claimHolder(file);
+  if (inherited !== null && insideBench(inherited.pid)) {
+    return;
+  }
+  const attempt = Effect.acquireRelease(
+    Effect.scoped(takeClaim(file, label)),
+    (taken) =>
+      taken.kind === "taken" ? released(dropClaim(file)) : Effect.void
+  );
+  const startedAt = yield* Clock.currentTimeMillis;
+  let announced = -1;
+  let outcome = yield* attempt;
+  while (outcome.kind === "held") {
+    const { holder } = outcome;
+    if ((yield* Clock.currentTimeMillis) - startedAt >= patienceMs) {
+      yield* new BenchBusy({
+        message: `Gave up after ${patienceMs} ms waiting for another bench on this machine: pid ${holder.pid}, ${holder.label}. Claim: ${file}`,
+      });
+    }
+    if (holder.pid !== announced) {
+      announced = holder.pid;
+      process.stderr.write(
+        `Queued behind pid ${holder.pid}, ${holder.label}. Two benches at once skew each other.\n`
+      );
+    }
+    yield* Effect.sleep(pollMs);
+    outcome = yield* attempt;
+  }
+});
+
 export const refuseDuringBench = Effect.fnUntraced(function* refuseDuringBench(
   command: string,
   dir: string = toolStateDir
@@ -94,7 +142,7 @@ export const refuseDuringBench = Effect.fnUntraced(function* refuseDuringBench(
   const holder = yield* claimHolder(fileIn(dir));
   if (holder !== null && !insideBench(holder.pid)) {
     yield* new BenchBusy({
-      message: `rv ${command} would draw on the GPU while a bench is measuring it: pid ${holder.pid}, ${holder.label}. Wait for it. rv list, rv shot and rv down still work.`,
+      message: `rv ${command} would draw on this machine while a bench is measuring it: pid ${holder.pid}, ${holder.label}. Wait for it. rv list, rv shot and rv down still work.`,
     });
   }
 });

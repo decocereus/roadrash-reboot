@@ -7,23 +7,24 @@ import {
   PING_PACKET_BYTES,
   READY_PACKET_BYTES,
   readTick,
-  START_PACKET_BYTES,
+  ROOM_PROTOCOL,
   writePing,
   writeReady,
-  writeStart,
 } from "@racer/sim/room-wire";
 import type { RaceStats } from "@racer/sim/room-wire";
 import { riderIdAt } from "@racer/sim/state";
 import * as Option from "effect/Option";
 import { expect } from "vitest";
 
-import { createHost } from "../src/host.ts";
+import { createHost, LOBBY_MS } from "../src/host.ts";
 import type { Host, HostPorts, HostSocket } from "../src/host.ts";
+import { seatedCount } from "../src/manifest.ts";
 import { decodeRoomMessage } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
 
 export const nearby = { colo: "DEL", tcpRttMs: 8 };
+export const sameBuild = { build: "test-build", protocol: ROOM_PROTOCOL };
 export const TICK_MS = 1000 / 60;
 export const START_DELAY_MS = 3000;
 
@@ -148,12 +149,6 @@ export const advanceHearing = (
   }
 };
 
-export const startPacket = (): ArrayBuffer => {
-  const buffer = new ArrayBuffer(START_PACKET_BYTES);
-  writeStart(new DataView(buffer));
-  return buffer;
-};
-
 export const someRaceStats: RaceStats = {
   crashes: 2,
   crashesAfterCorrection: 1,
@@ -188,23 +183,17 @@ export const someRaceStats: RaceStats = {
   worstOwnControlCm: 88,
 };
 
-export const readyPacket = (): ArrayBuffer => {
-  const buffer = new ArrayBuffer(READY_PACKET_BYTES);
-  writeReady(new DataView(buffer));
-  return buffer;
-};
-
 export const countdownsOn = (socket: FakeSocket): number =>
   socket.messages.filter((each) => each.kind === "countdown").length;
 
-export const pressedStart = () => {
+export const loadingRace = () => {
   const clock = createClock();
   const host = createHost(clock);
   const near = fakeSocket();
   const far = fakeSocket();
-  host.seat(near, "Near", nearby);
-  host.seat(far, "Far", nearby);
-  host.message(near, startPacket());
+  host.seat(near, "Near", nearby, sameBuild);
+  host.seat(far, "Far", nearby, sameBuild);
+  advanceHearing(host, clock, [near, far], LOBBY_MS);
   return { clock, far, host, near };
 };
 
@@ -216,9 +205,22 @@ export const startedOf = (socket: FakeSocket) => {
   return message;
 };
 
+export const readyPacket = (socket: FakeSocket): ArrayBuffer => {
+  const buffer = new ArrayBuffer(READY_PACKET_BYTES);
+  writeReady(
+    new DataView(buffer),
+    new Uint32Array(startedOf(socket).manifest.contentHash)
+  );
+  return buffer;
+};
+
 export const clientOf = (socket: FakeSocket): RoomClient => {
   const started = startedOf(socket);
-  const { setup } = seatedRace(started.seed, started.seats);
+  const { setup } = seatedRace(
+    started.manifest.seed,
+    seatedCount(started.manifest),
+    started.manifest.rule
+  );
   return createRoomClient(setup, riderIdAt(started.you));
 };
 
@@ -228,22 +230,18 @@ export const race = (
   sockets: readonly FakeSocket[]
 ) => {
   for (const socket of sockets) {
-    host.seat(socket, "Guest", nearby);
+    host.seat(socket, "Guest", nearby, sameBuild);
   }
-  const [first] = sockets;
-  if (!first) {
-    throw new Error("A race needs a seat.");
-  }
-  host.message(first, startPacket());
+  advanceHearing(host, clock, sockets, LOBBY_MS);
   for (const socket of sockets) {
-    host.message(socket, readyPacket());
+    host.message(socket, readyPacket(socket));
   }
   clock.advance(START_DELAY_MS);
 };
 
 export const seatOn = (host: Host): FakeSocket => {
   const socket = fakeSocket();
-  host.seat(socket, "Guest", nearby);
+  host.seat(socket, "Guest", nearby, sameBuild);
   return socket;
 };
 

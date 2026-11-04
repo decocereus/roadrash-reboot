@@ -1,5 +1,7 @@
 import * as Schema from "effect/Schema";
 
+import { RaceManifestSchema } from "./manifest.ts";
+
 export const ROOM_ID_PATTERN = /^[a-z0-9-]{6,40}$/u;
 
 const REQUEUED_ROOM = /-r(?<attempt>\d+)$/u;
@@ -35,6 +37,7 @@ export const rematchRoomId = (roomId: string): string => {
 };
 
 const Lobby = Schema.Struct({
+  atMs: Schema.Number,
   kind: Schema.Literal("lobby"),
   names: Schema.Array(Schema.String),
   riders: Schema.Number,
@@ -42,18 +45,14 @@ const Lobby = Schema.Struct({
 });
 
 const Started = Schema.Struct({
-  digest: Schema.Array(Schema.Number),
   kind: Schema.Literal("started"),
-  names: Schema.Array(Schema.String),
-  raceId: Schema.String,
-  seats: Schema.Number,
-  seed: Schema.Number,
+  manifest: RaceManifestSchema,
   you: Schema.Number,
 });
 
 const Countdown = Schema.Struct({
   kind: Schema.Literal("countdown"),
-  startsInMs: Schema.Number,
+  startAtMs: Schema.Number,
 });
 
 const Ended = Schema.Struct({
@@ -61,9 +60,13 @@ const Ended = Schema.Struct({
   tick: Schema.Number,
 });
 
+export const REFUSALS = ["build", "content", "full", "racing"] as const;
+
+export type Refusal = (typeof REFUSALS)[number];
+
 const Refused = Schema.Struct({
   kind: Schema.Literal("refused"),
-  reason: Schema.Literals(["full", "racing"]),
+  reason: Schema.Literals(REFUSALS),
 });
 
 const RoomMessageSchema = Schema.Union([

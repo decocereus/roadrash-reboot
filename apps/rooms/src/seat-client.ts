@@ -15,19 +15,19 @@ import {
   READY_PACKET_BYTES,
   readPong,
   readTick,
-  START_PACKET_BYTES,
+  ROOM_PROTOCOL,
   writePing,
   writeRaceStats,
   writeReady,
-  writeStart,
 } from "@racer/sim/room-wire";
 import { setupDigest } from "@racer/sim/snapshot-setup";
 import { riderIdAt } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
+import { humanNames, seatedCount } from "./manifest.ts";
 import { decodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
-import type { RoomStarted } from "./messages.ts";
+import type { Refusal, RoomStarted } from "./messages.ts";
 import { createRaceTally } from "./race-tally.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
@@ -47,7 +47,6 @@ export type SeatPhase =
 
 export interface SeatRace {
   readonly client: RoomClient;
-  readonly digestMatched: boolean;
   readonly me: RiderId;
   readonly names: GuestNames;
   readonly raceId: string;
@@ -69,30 +68,35 @@ export interface RoomSeat {
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
   readonly ready: () => void;
-  readonly refusal: () => string | null;
+  readonly refusal: () => Refusal | null;
   readonly riders: () => number;
   readonly riderNames: () => readonly string[];
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
-  readonly start: () => void;
   readonly startsInMs: () => number;
   readonly stepsDue: () => number;
   readonly target: () => number;
 }
 
-const seatUrl = (roomsUrl: string, roomId: string, name: string): string =>
-  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}`;
+export const seatUrl = (
+  roomsUrl: string,
+  roomId: string,
+  name: string,
+  build: string
+): string =>
+  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}&build=${encodeURIComponent(build)}&protocol=${ROOM_PROTOCOL}`;
 
 export const openRoomSeat = (
   roomsUrl: string,
   roomId: string,
   name: string,
+  build: string,
   browser: () => SeatBrowser | null
 ): RoomSeat => {
-  const socket = new WebSocket(seatUrl(roomsUrl, roomId, name));
+  const socket = new WebSocket(seatUrl(roomsUrl, roomId, name, build));
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
-  const pong = { stamp: 0, tick: 0 };
+  const pong = { roomMs: 0, stamp: 0 };
   const input = new DataView(
     new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS))
   );
@@ -107,7 +111,8 @@ export const openRoomSeat = (
   let counting = false;
   let lobbyEndsAt = 0;
   let race: SeatRace | null = null;
-  let refused: string | null = null;
+  let refused: Refusal | null = null;
+  let digest: Uint32Array = new Uint32Array();
   let closeCode: number | null = null;
   let rttMs = 0;
   let worstRttMs = 0;
@@ -126,24 +131,20 @@ export const openRoomSeat = (
     }
   };
 
-  const onStarted = ({
-    digest,
-    names,
-    raceId,
-    seats,
-    seed,
-    you,
-  }: RoomStarted): void => {
-    const { setup } = seatedRace(seed, seats);
+  const onStarted = ({ manifest, you }: RoomStarted): void => {
+    const { setup } = seatedRace(
+      manifest.seed,
+      seatedCount(manifest),
+      manifest.rule
+    );
     const me = riderIdAt(you);
     const client = createRoomClient(setup, me);
-    const mine = setupDigest(client.confirmed, setup.track);
+    digest = setupDigest(client.confirmed, setup.track);
     race = {
       client,
-      digestMatched: digest.join(",") === [...mine].join(","),
       me,
-      names: guestNames(setup, me, names),
-      raceId,
+      names: guestNames(setup, me, humanNames(manifest)),
+      raceId: manifest.raceId,
       setup,
     };
     move("loading");
@@ -168,9 +169,11 @@ export const openRoomSeat = (
     const view = new DataView(data);
     if (readPong(view, pong)) {
       unansweredPings = 0;
-      rttMs = Math.floor(performance.now()) - pong.stamp;
+      const now = performance.now();
+      rttMs = Math.floor(now) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
       clock.heardRtt(rttMs);
+      clock.heardRoomTime(pong.roomMs, now);
       tally.heardRtt(rttMs);
       return;
     }
@@ -232,6 +235,7 @@ export const openRoomSeat = (
     switch (message.value.kind) {
       case "lobby": {
         ({ names: riderNames, riders } = message.value);
+        clock.heardRoomTime(message.value.atMs, performance.now());
         lobbyEndsAt = performance.now() + message.value.startsInMs;
         move("lobby");
         break;
@@ -241,7 +245,7 @@ export const openRoomSeat = (
         break;
       }
       case "countdown": {
-        clock.start(message.value.startsInMs, performance.now());
+        clock.start(message.value.startAtMs);
         counting = true;
         move("racing");
         break;
@@ -304,18 +308,13 @@ export const openRoomSeat = (
     race: () => race,
     ready: () => {
       const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
-      writeReady(packet);
+      writeReady(packet, digest);
       socket.send(packet.buffer);
     },
     refusal: () => refused,
     riderNames: () => riderNames,
     riders: () => riders,
     rttMs: () => rttMs,
-    start: () => {
-      const packet = new DataView(new ArrayBuffer(START_PACKET_BYTES));
-      writeStart(packet);
-      socket.send(packet.buffer);
-    },
     startsInMs: () => lobbyEndsAt - performance.now(),
     stepsDue: () => {
       if (!race) {

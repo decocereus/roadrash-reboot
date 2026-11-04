@@ -1,8 +1,10 @@
+import { STARTING_BIKE } from "@racer/career/tables";
 import {
   PING_PACKET_BYTES,
   PONG_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   readPing,
+  ROOM_PROTOCOL,
   writePong,
 } from "@racer/sim/room-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -83,18 +85,29 @@ const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
     "http://rooms.test",
     "friday-ride",
     "Near",
+    "test-build",
     browser
   );
   const [socket] = FakeSocket.opened;
   socket?.open();
   socket?.hear(
     encodeRoomMessage({
-      digest: [0],
       kind: "started",
-      names: ["Near"],
-      raceId: "race-1",
-      seats: 1,
-      seed: 1,
+      manifest: {
+        build: "test-build",
+        contentHash: [0],
+        loadingDeadlineMs: 20_000,
+        protocol: ROOM_PROTOCOL,
+        raceId: "race-1",
+        reconnect: "none",
+        roster: [
+          { bikeId: STARTING_BIKE, kind: "human", name: "Near", rider: 0 },
+        ],
+        rule: { bikeId: STARTING_BIKE, roadId: "slag-row", tier: 2 },
+        seed: 1,
+        tickRate: 60,
+        trackHash: [0],
+      },
       you: 0,
     })
   );
@@ -146,6 +159,7 @@ describe("a seat loading the race", () => {
       "http://rooms.test",
       "friday-ride",
       "Near",
+      "test-build",
       () => null
     );
     seat.leave();
@@ -157,6 +171,7 @@ describe("a seat loading the race", () => {
       "http://rooms.test",
       "friday-ride",
       "Near",
+      "test-build",
       () => null
     );
     const [socket] = FakeSocket.opened;

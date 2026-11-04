@@ -1,20 +1,30 @@
-import { ROOM_FIELD_SIZE } from "@racer/career/room-race";
+import { ROOM_FIELD_SIZE, seatedRace } from "@racer/career/room-race";
+import { STARTING_BIKE } from "@racer/career/tables";
 import { controlOf } from "@racer/sim/control";
+import { createRoomClient } from "@racer/sim/room-client";
 import {
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
+  READY_PACKET_BYTES,
   readPong,
+  ROOM_PROTOCOL,
   writePing,
   writeRaceStats,
+  writeReady,
 } from "@racer/sim/room-wire";
+import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
+import { setupDigest, trackDigest } from "@racer/sim/snapshot-setup";
+import { riderIdAt } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
-import { createHost } from "../src/host.ts";
+import { createHost, LOBBY_MS } from "../src/host.ts";
+import { humanNames, seatedCount } from "../src/manifest.ts";
 import { SEAT_CLOSED, SEAT_SILENT } from "../src/messages.ts";
 import {
   nearby,
+  sameBuild,
   TICK_MS,
   START_DELAY_MS,
   createClock,
@@ -22,10 +32,9 @@ import {
   advanceHearing,
   pingPacket,
   someRaceStats,
-  startPacket,
   readyPacket,
   countdownsOn,
-  pressedStart,
+  loadingRace,
   startedOf,
   clientOf,
   race,
@@ -36,17 +45,21 @@ import {
 } from "./host-harness.ts";
 import type { FakeSocket } from "./host-harness.ts";
 
+const announcedStarts = (socket: FakeSocket): readonly number[] =>
+  socket.messages.flatMap((message) =>
+    message.kind === "countdown" ? [message.startAtMs] : []
+  );
+
 describe("a room host", () => {
   it("fills its lobby toward the field and starts by itself at the deadline", () => {
     const { clock, host, messages, socket } = lobbyWithOneSeat();
-    advanceHearing(host, clock, [socket], 60_000);
+    advanceHearing(host, clock, [socket], LOBBY_MS - 1000);
     const counts = lobbyCounts(messages);
     expect(counts[0]).toBe(1);
     expect(Math.max(...counts)).toBeGreaterThan(3);
+    expect(Math.max(...counts)).toBeLessThanOrEqual(ROOM_FIELD_SIZE);
     expect(host.status().phase).toBe("waiting");
-    advanceHearing(host, clock, [socket], 60_000);
-    const [last] = lobbyCounts(messages).toReversed();
-    expect(last).toBe(ROOM_FIELD_SIZE);
+    advanceHearing(host, clock, [socket], 1000);
     expect(host.status().phase).toBe("racing");
   });
 
@@ -112,27 +125,31 @@ describe("a room host", () => {
     race(host, clock, sockets);
     const started = sockets.map(startedOf);
     expect(started.map((each) => each.you)).toStrictEqual([0, 1, 2]);
-    expect(new Set(started.map((each) => each.seed)).size).toBe(1);
-    expect(started.map((each) => each.seats)).toStrictEqual([3, 3, 3]);
-    expect(new Set(started.map((each) => each.digest.join(","))).size).toBe(1);
+    expect(new Set(started.map((each) => each.manifest.seed)).size).toBe(1);
+    expect(started.map((each) => seatedCount(each.manifest))).toStrictEqual([
+      3, 3, 3,
+    ]);
+    expect(
+      new Set(started.map((each) => each.manifest.contentHash.join(","))).size
+    ).toBe(1);
   });
 
   describe("the start", () => {
     it("holds the countdown until the last seat has loaded", () => {
-      const { clock, far, host, near } = pressedStart();
-      host.message(near, readyPacket());
+      const { clock, far, host, near } = loadingRace();
+      host.message(near, readyPacket(near));
       clock.advance(10_000);
       expect(countdownsOn(near)).toBe(0);
       expect(host.status().tick).toBe(0);
-      host.message(far, readyPacket());
+      host.message(far, readyPacket(far));
       expect(countdownsOn(far)).toBe(1);
       clock.advance(START_DELAY_MS + 1000);
       expect(host.status().tick).toBeGreaterThan(50);
     });
 
     it("starts without a seat that never loads, at the deadline", () => {
-      const { clock, far, host, near } = pressedStart();
-      host.message(near, readyPacket());
+      const { clock, far, host, near } = loadingRace();
+      host.message(near, readyPacket(near));
       advanceHearing(host, clock, [far, near], 20_000);
       expect(countdownsOn(near)).toBe(1);
       clock.advance(START_DELAY_MS + 1000);
@@ -140,22 +157,128 @@ describe("a room host", () => {
     });
 
     it("stops waiting for a seat that leaves while loading", () => {
-      const { far, host, near } = pressedStart();
-      host.message(near, readyPacket());
+      const { far, host, near } = loadingRace();
+      host.message(near, readyPacket(near));
       host.gone(far);
       expect(countdownsOn(near)).toBe(1);
     });
   });
 
   it("tells every seat the humans' names in rider order", () => {
-    const host = createHost(createClock());
+    const clock = createClock();
+    const host = createHost(clock);
     const first = fakeSocket();
     const second = fakeSocket();
-    host.seat(first, "Ann", nearby);
-    host.seat(second, "Bo", nearby);
-    host.message(first, startPacket());
-    expect(startedOf(first).names).toStrictEqual(["Ann", "Bo"]);
-    expect(startedOf(second).names).toStrictEqual(["Ann", "Bo"]);
+    host.seat(first, "Ann", nearby, sameBuild);
+    host.seat(second, "Bo", nearby, sameBuild);
+    advanceHearing(host, clock, [first, second], LOBBY_MS);
+    expect(humanNames(startedOf(first).manifest)).toStrictEqual(["Ann", "Bo"]);
+    expect(humanNames(startedOf(second).manifest)).toStrictEqual(["Ann", "Bo"]);
+  });
+
+  it("starts the race itself when the lobby runs out, and no packet can start it sooner", () => {
+    const clock = createClock();
+    const host = createHost(clock);
+    const socket = fakeSocket();
+    host.seat(socket, "Guest", nearby, sameBuild);
+    host.message(socket, new Uint8Array([5]).buffer);
+    expect(host.status().phase).toBe("waiting");
+    advanceHearing(host, clock, [socket], LOBBY_MS - 1000);
+    expect(host.status().phase).toBe("waiting");
+    advanceHearing(host, clock, [socket], 1000);
+    expect(host.status().phase).toBe("racing");
+  });
+
+  it.each([
+    ["another build", { build: "old-build", protocol: ROOM_PROTOCOL }],
+    ["another protocol", { build: "test-build", protocol: ROOM_PROTOCOL + 1 }],
+    ["no claim", { build: "", protocol: 0 }],
+  ])("refuses a seat with %s before it sits", (_case, claim) => {
+    const clock = createClock();
+    const host = createHost(clock);
+    const stale = fakeSocket();
+    host.seat(stale, "Guest", nearby, claim);
+    expect(stale.messages).toStrictEqual([
+      { kind: "refused", reason: "build" },
+    ]);
+    expect(host.status().waiting).toBe(0);
+    expect(clock.notes.at(-1)).toStrictEqual({
+      kind: "refused",
+      reason: "build",
+    });
+  });
+
+  it("freezes one manifest for every seat, built from the same race", () => {
+    const { far, near } = loadingRace();
+    const { manifest } = startedOf(near);
+    expect(startedOf(far).manifest).toStrictEqual(manifest);
+    const { setup } = seatedRace(
+      manifest.seed,
+      seatedCount(manifest),
+      manifest.rule
+    );
+    const { confirmed } = createRoomClient(setup, riderIdAt(0));
+    expect(manifest.contentHash).toStrictEqual([
+      ...setupDigest(confirmed, setup.track),
+    ]);
+    expect(manifest.trackHash).toStrictEqual([...trackDigest(setup.track)]);
+    expect(manifest).toMatchObject({
+      build: "test-build",
+      protocol: ROOM_PROTOCOL,
+      reconnect: "none",
+      rule: { roadId: setup.roadId, tier: 2 },
+      tickRate: 60,
+    });
+  });
+
+  it("lists every rider in the manifest, with AI labelled as AI", () => {
+    const { near } = loadingRace();
+    const { roster } = startedOf(near).manifest;
+    const humans = roster.filter((entry) => entry.kind === "human");
+    const ai = roster.filter((entry) => entry.kind === "ai");
+    expect(humans.map((entry) => [entry.name, entry.bikeId])).toStrictEqual([
+      ["Near", STARTING_BIKE],
+      ["Far", STARTING_BIKE],
+    ]);
+    expect(ai.map((entry) => entry.name)).toStrictEqual(
+      Array.from({ length: ROOM_FIELD_SIZE - 2 }, () => null)
+    );
+  });
+
+  it("drops a seat whose loaded race does not match, and starts without it", () => {
+    const { clock, far, host, near } = loadingRace();
+    host.message(near, readyPacket(near));
+    const wrong = new ArrayBuffer(READY_PACKET_BYTES);
+    writeReady(new DataView(wrong), new Uint32Array(HASH_WORDS));
+    host.message(far, wrong);
+    expect(far.messages.at(-1)).toStrictEqual({
+      kind: "refused",
+      reason: "content",
+    });
+    expect(host.status().waiting).toBe(1);
+    expect(countdownsOn(near)).toBe(1);
+    expect(clock.notes.some((note) => note.kind === "left")).toBeTruthy();
+  });
+
+  it("announces one start moment on its own clock, and rides from it", () => {
+    const { clock, far, host, near } = loadingRace();
+    const pongTime = (): number => {
+      const before = near.pongs.length;
+      host.message(near, pingPacket());
+      const pong = { roomMs: 0, stamp: 0 };
+      const answer = near.pongs[before];
+      expect(answer && readPong(answer, pong)).toBeTruthy();
+      return pong.roomMs;
+    };
+    host.message(near, readyPacket(near));
+    host.message(far, readyPacket(far));
+    const [startAtMs] = announcedStarts(near);
+    expect(announcedStarts(far)).toStrictEqual([startAtMs]);
+    expect(startAtMs).toBe(pongTime() + START_DELAY_MS);
+    clock.advance(START_DELAY_MS - 1);
+    expect(host.status().tick).toBe(0);
+    clock.advance(1000 + 1);
+    expect(host.status().tick).toBeGreaterThan(55);
   });
 
   it("refuses a late seat and a ninth seat", () => {
@@ -163,20 +286,17 @@ describe("a room host", () => {
     const host = createHost(clock);
     const eight = Array.from({ length: 8 }, fakeSocket);
     for (const socket of eight) {
-      host.seat(socket, "Guest", nearby);
+      host.seat(socket, "Guest", nearby, sameBuild);
     }
     const ninth = fakeSocket();
-    host.seat(ninth, "Guest", nearby);
+    host.seat(ninth, "Guest", nearby, sameBuild);
     expect(ninth.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "full",
     });
-    const [first] = eight;
-    if (first) {
-      host.message(first, startPacket());
-    }
+    advanceHearing(host, clock, eight, LOBBY_MS);
     const late = fakeSocket();
-    host.seat(late, "Guest", nearby);
+    host.seat(late, "Guest", nearby, sameBuild);
     expect(late.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "racing",
@@ -220,7 +340,7 @@ describe("a room host", () => {
     clock.advance(120_000);
     expect(clock.pending()).toBe(0);
     const again = fakeSocket();
-    host.seat(again, "Guest", nearby);
+    host.seat(again, "Guest", nearby, sameBuild);
     expect(again.closed).toBeNull();
   });
 
@@ -332,8 +452,8 @@ describe("a room host", () => {
     const host = createHost(clock);
     const lost = fakeSocket();
     const here = fakeSocket();
-    host.seat(lost, "Lost", nearby);
-    host.seat(here, "Here", nearby);
+    host.seat(lost, "Lost", nearby, sameBuild);
+    host.seat(here, "Here", nearby, sameBuild);
     for (let second = 0; second < 12; second += 1) {
       clock.advance(1000);
       host.message(here, pingPacket());
@@ -347,17 +467,17 @@ describe("a room host", () => {
     const clock = createClock();
     const host = createHost(clock);
     const socket = fakeSocket();
-    host.seat(socket, "Guest", nearby);
+    host.seat(socket, "Guest", nearby, sameBuild);
     host.message(socket, new ArrayBuffer(0));
     host.message(socket, new Uint8Array([9, 9, 9]).buffer);
     host.message(socket, "not a packet");
     const buffer = new ArrayBuffer(PING_PACKET_BYTES);
     writePing(new DataView(buffer), 1234);
     host.message(socket, buffer);
-    const pong = { stamp: 0, tick: 0 };
+    const pong = { roomMs: 0, stamp: 0 };
     const [answer] = socket.pongs;
     expect(answer && readPong(answer, pong)).toBeTruthy();
-    expect(pong).toStrictEqual({ stamp: 1234, tick: 0 });
+    expect(pong).toStrictEqual({ roomMs: 0, stamp: 1234 });
     expect(host.status().phase).toBe("waiting");
   });
 });

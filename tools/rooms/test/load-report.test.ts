@@ -9,7 +9,9 @@ const MOST_LOAD = 10;
 const SAMPLE_MS = 10_000;
 
 const statusAt = (tick: number): RoomStatus => ({
+  build: "test-build",
   catchUpWakes: 0,
+  lagTicks: 0,
   names: [],
   phase: "racing",
   raceId: null,
@@ -46,7 +48,6 @@ const facts: StepFacts = {
   loadAfter: 1,
   loadBefore: 1,
   mostLoad: MOST_LOAD,
-  raceAt: 0,
   rideSeconds: 10,
   rooms: 1,
   seats: 4,
