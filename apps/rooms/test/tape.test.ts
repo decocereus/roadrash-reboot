@@ -14,7 +14,7 @@ const decodeHeader = Schema.decodeUnknownSync(
 const decodeEnd = Schema.decodeUnknownSync(
   Schema.fromJsonString(TapeEndSchema)
 );
-const RACE_MS = 65_000;
+const RACE_MS = 35_000;
 const PING_EVERY_MS = 5000;
 
 const pingPacket = (): ArrayBuffer => {
