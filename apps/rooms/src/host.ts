@@ -1,6 +1,8 @@
 import { ROOM_FIELD_SIZE, seatedRace } from "@racer/career/room-race";
 import { createRoom, MOST_SEATS } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
+import { createTapeWriter, hexOfWords } from "@racer/sim/room-tape";
+import type { TapeWriter } from "@racer/sim/room-tape";
 import {
   createInputBatch,
   isReady,
@@ -21,6 +23,13 @@ import { encodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
 import type { RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
+import {
+  TAPE_VERSION,
+  tapeEndName,
+  tapeHeaderName,
+  tapeKey,
+  tapePartName,
+} from "./tape.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
@@ -47,6 +56,7 @@ export interface HostPorts {
   readonly after: (ms: number, wake: () => void) => void;
   readonly note: (note: RoomNote) => void;
   readonly raceId: () => string;
+  readonly saveTape: (key: string, body: string | Uint8Array) => void;
   readonly seed: () => number;
 }
 
@@ -75,6 +85,7 @@ interface Running {
   readonly riders: readonly Seat[];
   readonly room: Room;
   readonly since: number;
+  readonly tape: TapeWriter;
   readonly wakeGaps: Uint32Array;
   lastWakeAt: number;
   startedAt: number | null;
@@ -86,9 +97,6 @@ export interface Host {
   readonly gone: (socket: HostSocket) => void;
   readonly status: () => RoomStatus;
 }
-
-const hexOf = (words: Uint32Array): string =>
-  [...words].map((word) => word.toString(16).padStart(8, "0")).join("");
 
 const noteGap = (gaps: Uint32Array, gapMs: number): void => {
   let bucket = 0;
@@ -218,7 +226,12 @@ export const createHost = (ports: HostPorts): Host => {
     );
 
   const end = (run: Running): void => {
-    const { room } = run;
+    const { room, tape } = run;
+    tape.finish();
+    ports.saveTape(
+      tapeKey(run.raceId, tapeEndName),
+      JSON.stringify({ parts: tape.parts(), tick: room.state.tick })
+    );
     ports.note({
       catchUpWakes,
       kind: "ended",
@@ -236,7 +249,7 @@ export const createHost = (ports: HostPorts): Host => {
     seats.clear();
   };
 
-  const stepOnce = (room: Room): void => {
+  const stepOnce = ({ room, tape }: Running): void => {
     room.step();
     const bytes = writeTick(
       tickView,
@@ -244,6 +257,7 @@ export const createHost = (ports: HostPorts): Host => {
       room.hashed ? room.hash : null
     );
     const packet = new Uint8Array(tickBuffer, 0, bytes);
+    tape.add(packet);
     for (const seat of seats.values()) {
       sendTo(seat, packet);
     }
@@ -269,7 +283,7 @@ export const createHost = (ports: HostPorts): Host => {
     }
     const steps = Math.min(behind, MOST_CATCH_UP_TICKS);
     for (let step = 0; step < steps; step += 1) {
-      stepOnce(room);
+      stepOnce(run);
       if (room.over()) {
         end(run);
         return;
@@ -319,6 +333,19 @@ export const createHost = (ports: HostPorts): Host => {
     const raceId = ports.raceId();
     const { humans, road, setup } = seatedRace(seed, seats.size);
     const room = createRoom(setup);
+    const digest = hexOfWords(room.digest);
+    ports.saveTape(
+      tapeKey(raceId, tapeHeaderName),
+      JSON.stringify({
+        build: ports.build,
+        digest,
+        raceId,
+        road,
+        seats: seats.size,
+        seed,
+        version: TAPE_VERSION,
+      })
+    );
     let at = 0;
     for (const seat of seats.values()) {
       const rider = humans[at];
@@ -333,6 +360,9 @@ export const createHost = (ports: HostPorts): Host => {
       room,
       since: ports.now(),
       startedAt: null,
+      tape: createTapeWriter(tickBuffer.byteLength, (part, bytes) => {
+        ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
+      }),
       wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
     };
     running = run;
@@ -340,7 +370,7 @@ export const createHost = (ports: HostPorts): Host => {
     ports.note({
       at: ports.now(),
       build: ports.build,
-      digest: hexOf(room.digest),
+      digest,
       kind: "started",
       lobbyMs,
       raceId,

@@ -28,6 +28,7 @@ export const START_DELAY_MS = 3000;
 export interface Clock extends HostPorts {
   readonly advance: (ms: number) => void;
   readonly notes: RoomNote[];
+  readonly tape: Map<string, string | Uint8Array>;
   readonly stall: (ms: number) => void;
   readonly wakeOnce: () => void;
   readonly pending: () => number;
@@ -37,6 +38,7 @@ export const createClock = (): Clock => {
   let at = 1000;
   let timers: { due: number; wake: () => void }[] = [];
   const notes: RoomNote[] = [];
+  const tape = new Map<string, string | Uint8Array>();
   let races = 0;
   const nextBy = (until: number) =>
     timers
@@ -69,10 +71,14 @@ export const createClock = (): Clock => {
       races += 1;
       return `race-${races}`;
     },
+    saveTape: (key, body) => {
+      tape.set(key, body);
+    },
     seed: () => 7,
     stall: (ms) => {
       at += ms;
     },
+    tape,
     wakeOnce: () => {
       const next = nextBy(at);
       if (next) {
