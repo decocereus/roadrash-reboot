@@ -6,10 +6,12 @@ import {
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
+  RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
   readPong,
   ROOM_PROTOCOL,
   writePing,
+  writeRaceStats,
   writeReady,
 } from "@racer/sim/room-wire";
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
@@ -29,6 +31,7 @@ import {
   fakeSocket,
   advanceHearing,
   pingPacket,
+  someRaceStats,
   readyPacket,
   countdownsOn,
   loadingRace,
@@ -353,9 +356,28 @@ describe("a room host", () => {
       socket.pongs.length = 0;
     }
     expect(socket.messages.at(-1)?.kind).toBe("ended");
-    expect(socket.closed).toBe(SEAT_CLOSED);
-    clock.advance(1000);
-    expect(clock.pending()).toBe(0);
+    expect(socket.closed).toBeNull();
+    const stats = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
+    writeRaceStats(new DataView(stats), someRaceStats);
+    host.message(socket, stats);
+    host.message(
+      socket,
+      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+    );
+    clock.advance(6000);
+    expect({
+      closed: socket.closed,
+      kinds: clock.notes
+        .map(({ kind }) => kind)
+        .filter((kind) => kind === "stats" || kind === "browser"),
+      pending: clock.pending(),
+      traced: clock.tape.has("tapes/race-1/rider-0.trace.json"),
+    }).toStrictEqual({
+      closed: SEAT_CLOSED,
+      kinds: ["stats", "browser"],
+      pending: 0,
+      traced: true,
+    });
   }, 60_000);
 
   it("drops a rider whose link died with no close, and the race rides on", () => {

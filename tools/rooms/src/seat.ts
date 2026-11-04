@@ -60,7 +60,7 @@ export const openSeat = (
   roomId: string,
   build: string
 ): Seat => {
-  const seat = openRoomSeat(roomsUrl, roomId, "Script", build);
+  const seat = openRoomSeat(roomsUrl, roomId, "Script", build, () => null);
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;

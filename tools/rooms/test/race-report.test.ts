@@ -126,6 +126,7 @@ describe("the race report", () => {
 
 const reportOfSeat = (only: RaceSeat): string =>
   raceReport({
+    browsers: [],
     ended: {
       catchUpWakes: 0,
       kind: "ended",

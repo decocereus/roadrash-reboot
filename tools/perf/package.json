@@ -11,6 +11,7 @@
     "@racer/art": "workspace:*",
     "@racer/career": "workspace:*",
     "@racer/devtools": "workspace:*",
+    "@racer/rooms": "workspace:*",
     "@racer/sim": "workspace:*",
     "@racer/telemetry": "workspace:*",
     "effect": "4.0.0"

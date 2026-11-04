@@ -121,6 +121,11 @@ export const codecFiles = [
 ];
 
 export const hotBodies = {
+  "apps/rooms/src/race-tally.ts": [
+    ["createRaceTally", "closeRow"],
+    ["createRaceTally", "frameDrawn"],
+    ["createRaceTally", "heardTick"],
+  ],
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/figure-ik.ts": [
     ["placeChain"],
