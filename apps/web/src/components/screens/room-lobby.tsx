@@ -1,3 +1,4 @@
+import type { Refusal } from "@racer/rooms/messages";
 import type { SeatPhase } from "@racer/rooms/seat-client";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import { Screen } from "@racer/ui/components/screen";
@@ -11,11 +12,29 @@ const ridersLine = (riders: number, names: readonly string[]): string => {
   return `${count} here: ${names.join(", ")}${more}.`;
 };
 
+const refusalLine = (refusal: Refusal): string => {
+  switch (refusal) {
+    case "build":
+    case "content": {
+      return "The game has updated. Reload to join.";
+    }
+    case "full": {
+      return "This room is full.";
+    }
+    case "racing": {
+      return "This race has already started.";
+    }
+    default: {
+      return refusal satisfies never;
+    }
+  }
+};
+
 const statusOf = (
   phase: SeatPhase,
   riders: number,
   names: readonly string[],
-  refusal: string | null
+  refusal: Refusal | null
 ): string => {
   switch (phase) {
     case "connecting": {
@@ -40,9 +59,7 @@ const statusOf = (
       return "Reconnecting to the room.";
     }
     case "refused": {
-      return refusal === "full"
-        ? "This room is full."
-        : "This race has already started.";
+      return refusal ? refusalLine(refusal) : "This seat was refused.";
     }
     default: {
       return phase satisfies never;
@@ -54,12 +71,11 @@ interface LobbyActions {
   readonly onBack: () => void;
   readonly onChangeName: () => void;
   readonly onCopyLink: () => void;
-  readonly onStart: () => void;
 }
 
 const lobbyAction = (id: string, actions: LobbyActions): void => {
-  if (id === "start") {
-    actions.onStart();
+  if (id === "reload") {
+    globalThis.location.reload();
   } else if (id === "copy") {
     actions.onCopyLink();
   } else if (id === "name") {
@@ -67,6 +83,16 @@ const lobbyAction = (id: string, actions: LobbyActions): void => {
   } else {
     actions.onBack();
   }
+};
+
+const mustReload = (refusal: Refusal | null): boolean =>
+  refusal === "build" || refusal === "content";
+
+const defaultItem = (phase: SeatPhase, refusal: Refusal | null): string => {
+  if (phase === "lobby") {
+    return "copy";
+  }
+  return mustReload(refusal) ? "reload" : "back";
 };
 
 export const GuestNameScreen = ({
@@ -131,13 +157,12 @@ export const RoomLobbyScreen = ({
   onBack,
   onChangeName,
   onCopyLink,
-  onStart,
 }: {
   readonly copied: boolean;
   readonly name: string;
   readonly phase: SeatPhase;
   readonly roomId: string;
-  readonly refusal: string | null;
+  readonly refusal: Refusal | null;
   readonly requeued: boolean;
   readonly riderNames: readonly string[];
   readonly riders: number;
@@ -145,7 +170,6 @@ export const RoomLobbyScreen = ({
   readonly onBack: () => void;
   readonly onChangeName: () => void;
   readonly onCopyLink: () => void;
-  readonly onStart: () => void;
 }) => (
   <Screen className="bg-ink">
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
@@ -155,9 +179,8 @@ export const RoomLobbyScreen = ({
       </p>
       {phase === "lobby" && (
         <p className="font-display text-paper">
-          {requeued
-            ? "The last room dropped. A new race starts from the line."
-            : `Rolling out in ${startsInSeconds} s.`}
+          {requeued && "The last room dropped. "}
+          Rolling out in {startsInSeconds} s.
         </p>
       )}
       <p className="font-display text-paper/60">
@@ -166,13 +189,13 @@ export const RoomLobbyScreen = ({
       <MenuList
         key={phase}
         autoFocus
-        defaultValue={phase === "lobby" ? "start" : "back"}
+        defaultValue={defaultItem(phase, refusal)}
         label="Room"
         onSelect={(id) => {
-          lobbyAction(id, { onBack, onChangeName, onCopyLink, onStart });
+          lobbyAction(id, { onBack, onChangeName, onCopyLink });
         }}
       >
-        {phase === "lobby" && <MenuItem value="start">Start the race</MenuItem>}
+        {mustReload(refusal) && <MenuItem value="reload">Reload</MenuItem>}
         {phase === "lobby" && <MenuItem value="copy">Copy the link</MenuItem>}
         {phase === "lobby" && <MenuItem value="name">Change name</MenuItem>}
         <MenuItem value="back">Leave</MenuItem>

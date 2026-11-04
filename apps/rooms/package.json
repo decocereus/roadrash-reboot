@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./contract": "./src/contract.ts",
+    "./host": "./src/host.ts",
     "./input-latency": "./src/input-latency.ts",
     "./messages": "./src/messages.ts",
     "./notes": "./src/notes.ts",
@@ -19,6 +20,7 @@
   "dependencies": {
     "@racer/career": "workspace:*",
     "@racer/sim": "workspace:*",
+    "@racer/track": "workspace:*",
     "alchemy": "2.0.0-beta.83",
     "effect": "4.0.0"
   },
