@@ -1,6 +1,7 @@
 import type { BikeId } from "@racer/sim/bikes";
 import { firstRacers, roomSetup } from "@racer/sim/room";
 import type { RiderId } from "@racer/sim/state";
+import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 
 import { practiceSetup } from "./field.ts";
@@ -38,6 +39,11 @@ export const publicRoomRule: RoomRule = {
   tier: 2,
   traffic: "normal",
 };
+
+export const publicRuleFor = (seed: number): RoomRule => ({
+  ...publicRoomRule,
+  roadId: roadIds[seed % roadIds.length] ?? publicRoomRule.roadId,
+});
 
 const trafficScale = {
   heavy: 1.5,

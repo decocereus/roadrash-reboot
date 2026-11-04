@@ -10,10 +10,12 @@ The bar is the lobby the player walks around before a race. It runs live in the 
 - `bike`: the hidden bike. `E` at the beer taps from behind the bar unlocks it, then `B` hops on and off and `R` revs.
 - `door`: the countdown, the door rising, the hero bike riding out and everyone gathering, then the scene loops.
 - `clock`: the dusk-to-night cycle, the skyline, the rain and the neon.
+- `room`: real members of a race room walking the bar together, with their names and matching outfits. Walks, greets, shoves and someone leaving reach every browser.
 
 ## How to get to it (user POV)
 
 - Development build only: open `/bar`.
+- In a room: open `/bar?room=<8 character id>&name=<name>` in two browsers.
 - Add `?time=dusk`, `?time=night` or `?time=0.5` to hold the clock, `?lean` for the Intel settings, `?ratio=<n>`, `?samples=<n>`, `?bloom=<n>` and `?shadow=<n>` to pin one setting, `?riders=<n>` to draw fewer riders.
 
 ## Driving it with rv
@@ -27,6 +29,7 @@ Preconditions: a slot from `rv up` on a development build.
 - Change camera: `rv press --run <run> KeyC --hold 80`. The button changes, and `rushline.bar-camera` in local storage holds the choice after a reload.
 - Open the door: `rv js --run <run> '__rushlineBar.openDoor()'`, then `rv screencast --run <run> door --seconds 11 --every 12`. The door lifts, the hero bike rides out, the riders gather, and you walk to the door.
 - Count the frame: `rv js --run <run> '__rushlineBar.triangles()'` and `rv js --run <run> '__rushlineBar.calls()'` read one frame's totals. `rv sample --run <run> bar --seconds 20` reads the frame times.
+- Walk a room with two browsers: start the Worker with `RUSHLINE_WEB_PORT=1436 RUSHLINE_ROOMS_PORT=1437 pnpm exec alchemy dev --stage barriders` and leave it running. In each Bash call that starts a run, `export VITE_ROOMS_URL=http://127.0.0.1:1437`, then `rv up --dev --path "/bar?room=abcd2345&name=A&time=dusk"` and the same with `name=B`. Each gets its own slot and `curl http://127.0.0.1:1437/rooms/abcd2345` lists the room. Walk A with `walkTo` to a spot beside B and watch B's screen with `rv screencast --run <b> walkin --seconds 3 --every 6`. A's figure walks with its legs moving, under A's name, in the outfit A sees on its own screen. `KeyF` on A moves B's rider in B's `__rushlineBar.player()`. `KeyE` shows YO over A and SUP over B on both screens. `rv down` on A takes A's figure out of B's room.
 
 ## Gotchas
 

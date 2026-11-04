@@ -148,6 +148,10 @@ export const openThinSeat = (
 
   const onMessage = (message: RoomMessage): void => {
     switch (message.kind) {
+      case "walk":
+      case "act": {
+        break;
+      }
       case "lobby": {
         clock.heardRoomTime(message.atMs, performance.now());
         if (!saidReady && message.members.length >= readyAtMembers) {

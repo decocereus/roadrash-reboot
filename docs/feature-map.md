@@ -460,6 +460,7 @@ Source files:
 - `apps/web/src/game/bar-input.ts`
 - `apps/web/src/game/bar-kit.ts`
 - `apps/web/src/game/bar-light.ts`
+- `apps/web/src/game/bar-members.ts`
 - `apps/web/src/game/bar-outside.ts`
 - `apps/web/src/game/bar-player.ts`
 - `apps/web/src/game/bar-pools.ts`
@@ -469,14 +470,17 @@ Source files:
 - `apps/web/src/game/bar-signs.ts`
 - `apps/web/src/game/bar-speech.ts`
 - `apps/web/src/game/bar-tags.ts`
-- `apps/web/src/game/bar-you.ts`
+- `apps/web/src/game/bar-walker.ts`
 - `apps/web/src/game/bar.ts`
 - `apps/web/src/routes/bar.tsx`
 - `packages/sim/src/lobby-floor.ts`
+- `packages/sim/src/lobby-walk.ts`
 - `packages/sim/src/lobby.ts`
 
 Test files:
 
+- `apps/web/src/game/bar-members.test.ts`
+- `apps/web/src/game/bar-player.test.ts`
 - `packages/sim/src/lobby.test.ts`
 
 ### Race HUD and notices
@@ -1422,6 +1426,10 @@ Source files:
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/notes.ts`
+- `apps/rooms/src/queue-client.ts`
+- `apps/rooms/src/queue-messages.ts`
+- `apps/rooms/src/queue-server.ts`
+- `apps/rooms/src/queue.ts`
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
@@ -1444,6 +1452,7 @@ Source files:
 - `tools/rooms/lag.ts`
 - `tools/rooms/load-clients.ts`
 - `tools/rooms/load.ts`
+- `tools/rooms/queue.ts`
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
 - `tools/rooms/replay.ts`
@@ -1453,6 +1462,7 @@ Source files:
 - `tools/rooms/src/load-report.ts`
 - `tools/rooms/src/load.ts`
 - `tools/rooms/src/machine.ts`
+- `tools/rooms/src/queue.ts`
 - `tools/rooms/src/race-report.ts`
 - `tools/rooms/src/race.ts`
 - `tools/rooms/src/read.ts`
@@ -1467,10 +1477,12 @@ Test files:
 
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-notes.test.ts`
+- `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/lobby.test.ts`
 - `apps/rooms/test/messages.test.ts`
+- `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/tape.test.ts`

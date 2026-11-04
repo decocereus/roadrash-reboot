@@ -1,4 +1,5 @@
-import type { LobbyControl, LobbyPose } from "@racer/sim/lobby";
+import type { LobbyControl } from "@racer/sim/lobby";
+import type { LobbyPose } from "@racer/sim/lobby-walk";
 
 const POSE_KEYS = {
   Digit1: "arms",

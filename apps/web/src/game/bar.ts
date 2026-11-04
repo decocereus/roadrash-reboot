@@ -1,3 +1,5 @@
+import type { RoomSeat } from "@racer/rooms/seat-client";
+import { createLobbyRider } from "@racer/sim/lobby";
 import { GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
@@ -11,8 +13,10 @@ import { buildGarage } from "./bar-garage.ts";
 import { createBarInput } from "./bar-input.ts";
 import { createKit } from "./bar-kit.ts";
 import { duskLook, nightLook, toneAt } from "./bar-light.ts";
+import { createMembers } from "./bar-members.ts";
 import { createOutside } from "./bar-outside.ts";
 import { createBarPlayer } from "./bar-player.ts";
+import type { PlayerSlot } from "./bar-player.ts";
 import { createPools } from "./bar-pools.ts";
 import { buildProps } from "./bar-props.ts";
 import {
@@ -25,7 +29,7 @@ import {
 import { countdownPlate, createSignAtlas, signGeometry } from "./bar-signs.ts";
 import { createSpeech } from "./bar-speech.ts";
 import { createTagLayer } from "./bar-tags.ts";
-import { createYou, yourBlocks } from "./bar-you.ts";
+import { createWalkers, SOLO_SLOT } from "./bar-walker.ts";
 import { createShading } from "./cel.ts";
 import { createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
@@ -55,7 +59,9 @@ const COUNTDOWN_START = 90;
 const DOOR_SECONDS = 2.6;
 const DOOR_RISE = 4.5;
 const TURN_SECONDS = 14;
-const YOUR_BIKE = 2;
+const FIRST_WALKER_BIKE = 2;
+const MS_PER_SECOND = 1000;
+const NO_RACE_YET = "--";
 const DOOR_GATHER = { x: 1.3, z: -4.8 } as const;
 
 interface Pins {
@@ -95,6 +101,7 @@ const openRoom = (
   canvas: HTMLCanvasElement,
   assets: Assets,
   startCamera: BarCamera,
+  seat: RoomSeat | null,
   owners: (() => void)[]
 ): BarScene => {
   const pins = pinsFrom(globalThis.location.search);
@@ -254,14 +261,19 @@ const openRoom = (
       police: false,
     },
     { livery: GARAGE_LIVERY, model: "ghost", paint: 4, police: false },
-    { livery: yourBlocks?.livery, model: "classic", paint: 2, police: false },
+    ...riderBlocks.map(({ livery }) => ({
+      livery,
+      model: "classic" as const,
+      paint: 2,
+      police: false,
+    })),
   ]);
   scene.add(bikes.group);
   owners.push(() => {
     bikes.dispose();
   });
-  const [heroBike, garageBike, yourBike] = bikes.roots;
-  if (!(heroBike && garageBike && yourBike)) {
+  const [heroBike, garageBike] = bikes.roots;
+  if (!(heroBike && garageBike)) {
     throw new Error("The bar lost a bike.");
   }
   garageBike.position.set(
@@ -294,25 +306,45 @@ const openRoom = (
     speech,
     heroBike,
     garageBike,
-    pins.riders
+    pins.riders,
+    seat === null
   );
   scene.add(cast.group);
   owners.push(() => {
     cast.dispose();
   });
-  const you = createYou(assets, shading, tags);
-  scene.add(you.figure.root);
+  const walkers = createWalkers(assets, shading, tags, scene);
   owners.push(() => {
-    you.dispose();
+    walkers.dispose();
   });
+  const rider = createLobbyRider();
+  const members =
+    seat &&
+    createMembers({
+      bikes,
+      firstBike: FIRST_WALKER_BIKE,
+      rider,
+      seat,
+      speech,
+      walkers,
+    });
+  const yourSlot = (): PlayerSlot => {
+    const slot = members?.mine() ?? SOLO_SLOT;
+    const bikeIndex = FIRST_WALKER_BIKE + slot;
+    const bike = bikes.roots[bikeIndex];
+    if (!bike) {
+      throw new Error(`The bar has no bike for slot ${String(slot)}.`);
+    }
+    return { bike, bikeIndex, walker: walkers.at(slot) };
+  };
+  yourSlot().walker.rename("YOU");
   const player = createBarPlayer({
-    bike: yourBike,
-    bikeIndex: YOUR_BIKE,
     bikes,
-    cast,
+    company: members ?? cast,
     puffs,
+    rider,
+    slot: yourSlot,
     speech,
-    you,
   });
   pipeline.prepare(scene);
 
@@ -442,14 +474,20 @@ const openRoom = (
       spinAt = 0;
       heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
     }
-    const left = Math.max(0, COUNTDOWN_START - clock);
-    if (left === 0) {
+    const left = seat
+      ? seat.startsInMs()
+      : Math.max(0, COUNTDOWN_START - clock) * MS_PER_SECOND;
+    if (!seat && left === 0) {
       openDoor();
     }
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
     door.position.y = lift * DOOR_RISE;
-    countdown.show(`0:${String(Math.ceil(left)).padStart(2, "0")}`);
+    countdown.show(
+      left === null
+        ? NO_RACE_YET
+        : `0:${String(Math.ceil(left / MS_PER_SECOND)).padStart(2, "0")}`
+    );
 
     revving = Math.max(0, revving - seconds * 0.8);
     spinAt += seconds * ((Math.PI * 2) / TURN_SECONDS);
@@ -485,6 +523,7 @@ const openRoom = (
     garageBike.rotation.y =
       GARAGE_BIKE_YAW + Math.sin(clock * 0.25) * GARAGE_BIKE_SWAY;
     bikes.show(1);
+    members?.step(seconds, clock);
     const ticks = player.advance(
       seconds,
       lift > 0 ? noControl : input.control(),
@@ -507,10 +546,14 @@ const openRoom = (
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
     cast.update(seconds, clock, camera, lift, viewSize, ticks);
-    you.update(
-      player.rider,
+    members?.draw(seconds, camera, viewSize);
+    const you = yourSlot();
+    you.walker.rename("YOU");
+    you.walker.show(true);
+    you.walker.update(
+      player.stance(),
       player.view,
-      yourBike,
+      you.bike,
       clock,
       seconds,
       camera,
@@ -539,15 +582,15 @@ const openRoom = (
     frames: () => frameId,
     openDoor,
     player: () => ({
-      bikeFound: player.rider.bikeFound,
+      bikeFound: rider.bikeFound,
       camera: eye.mode(),
-      heading: player.rider.heading,
-      lean: player.rider.lean,
-      pace: player.rider.pace,
-      place: player.rider.place,
-      target: player.rider.target,
-      x: player.rider.x,
-      z: player.rider.z,
+      heading: rider.heading,
+      lean: rider.lean,
+      pace: rider.pace,
+      place: rider.place,
+      target: rider.target,
+      x: rider.x,
+      z: rider.z,
     }),
     rev,
     triangles: () => renderer.info.render.triangles,
@@ -564,7 +607,7 @@ const openRoom = (
       }
     },
     setCamera(mode) {
-      eye.setMode(mode, player.rider.heading);
+      eye.setMode(mode, rider.heading);
     },
   };
 };
@@ -572,11 +615,12 @@ const openRoom = (
 export const createBar = (
   canvas: HTMLCanvasElement,
   assets: Decoded<Assets>,
-  startCamera: BarCamera
+  startCamera: BarCamera,
+  seat: RoomSeat | null
 ): BarScene => {
   const owners = [assets.release];
   try {
-    return openRoom(canvas, assets.value, startCamera, owners);
+    return openRoom(canvas, assets.value, startCamera, seat, owners);
   } catch (error) {
     for (const release of owners.splice(0).toReversed()) {
       release();

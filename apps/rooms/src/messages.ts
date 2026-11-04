@@ -1,3 +1,4 @@
+import { lobbyActs, lobbyPlaces, lobbyPoses } from "@racer/sim/lobby-walk";
 import * as Schema from "effect/Schema";
 
 import { LOBBY_PHASES } from "./lobby.ts";
@@ -6,6 +7,7 @@ import {
   RoomChoiceChangeSchema,
   RoomRuleSchema,
 } from "./manifest.ts";
+import { ROOM_KINDS } from "./room-id.ts";
 
 const MOST_NAME_CHARS = 12;
 const BARRED_NAME_CHARS = /[^\p{L}\p{M}\p{N} ._-]/gu;
@@ -19,6 +21,29 @@ export const cleanGuestName = (raw: string): string => {
     .trim();
   return name === "" ? UNNAMED_GUEST : name;
 };
+
+const WALK_FIELDS = {
+  heading: Schema.Finite,
+  lean: Schema.Finite,
+  pace: Schema.Finite,
+  place: Schema.Literals(lobbyPlaces),
+  pose: Schema.NullOr(Schema.Literals(lobbyPoses)),
+  x: Schema.Finite,
+  z: Schema.Finite,
+};
+
+const Walked = Schema.Struct({
+  ...WALK_FIELDS,
+  kind: Schema.Literal("walk"),
+  member: Schema.String,
+});
+
+const Acted = Schema.Struct({
+  act: Schema.Literals(lobbyActs),
+  from: Schema.String,
+  kind: Schema.Literal("act"),
+  target: Schema.String,
+});
 
 const Lobby = Schema.Struct({
   atMs: Schema.Number,
@@ -34,6 +59,7 @@ const Lobby = Schema.Struct({
     })
   ),
   phase: Schema.Literals(LOBBY_PHASES),
+  roomKind: Schema.Literals(ROOM_KINDS),
   rule: RoomRuleSchema,
   startsInMs: Schema.NullOr(Schema.Number),
   you: Schema.String,
@@ -70,11 +96,15 @@ const RoomMessageSchema = Schema.Union([
   Countdown,
   Ended,
   Refused,
+  Walked,
+  Acted,
 ]);
 
 export type RoomMessage = typeof RoomMessageSchema.Type;
 export type RoomLobbyMessage = typeof Lobby.Type;
 export type RoomStarted = typeof Started.Type;
+export type RoomWalked = typeof Walked.Type;
+export type RoomActed = typeof Acted.Type;
 
 const RoomMessageJson = Schema.fromJsonString(RoomMessageSchema);
 
@@ -90,6 +120,12 @@ const LobbyCommandSchema = Schema.Union([
   Schema.Struct({
     choice: RoomChoiceChangeSchema,
     kind: Schema.Literal("choose"),
+  }),
+  Schema.Struct({ ...WALK_FIELDS, kind: Schema.Literal("walk") }),
+  Schema.Struct({
+    act: Schema.Literals(lobbyActs),
+    kind: Schema.Literal("act"),
+    target: Schema.String,
   }),
 ]);
 

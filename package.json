@@ -37,6 +37,7 @@
     "replay:engines": "node tools/replay/engines.ts",
     "rooms:lag": "node tools/rooms/lag.ts",
     "rooms:load": "node tools/rooms/load.ts",
+    "rooms:queue": "node tools/rooms/queue.ts",
     "rooms:race": "node tools/rooms/race.ts",
     "rooms:read": "node tools/rooms/read.ts",
     "rooms:replay": "node tools/rooms/replay.ts",

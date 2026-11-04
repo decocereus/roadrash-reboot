@@ -7,11 +7,9 @@ import {
   STOOLS,
 } from "./lobby-floor.ts";
 import type { Spot } from "./lobby-floor.ts";
+import type { LobbyPose, LobbyWalk } from "./lobby-walk.ts";
 
 export const LOBBY_TICK = 1 / 60;
-
-export const lobbyPoses = ["arms", "chat", "phone"] as const;
-export type LobbyPose = (typeof lobbyPoses)[number];
 
 type LobbyPlace =
   | { readonly kind: "foot"; readonly pose: LobbyPose | null }
@@ -146,6 +144,33 @@ const stopMoving = (rider: LobbyRider): void => {
   rider.lean = 0;
   dropRoute(rider);
 };
+
+const SPAWN_SPACING = 0.9;
+
+export const stepAsideAtSpawn = (rider: LobbyRider, slot: number): void => {
+  rider.x = SPAWN.x + slot * SPAWN_SPACING;
+};
+
+const CENTIMETRES = 100;
+const toCentimetres = (metres: number): number =>
+  Math.round(metres * CENTIMETRES) / CENTIMETRES;
+
+export const walkOf = ({
+  heading,
+  lean,
+  pace,
+  place,
+  x,
+  z,
+}: LobbyRider): LobbyWalk => ({
+  heading: toCentimetres(heading),
+  lean: toCentimetres(lean),
+  pace: toCentimetres(pace),
+  place: place.kind,
+  pose: place.kind === "foot" ? place.pose : null,
+  x: toCentimetres(x),
+  z: toCentimetres(z),
+});
 
 export const respawnRider = (rider: LobbyRider): void => {
   rider.x = SPAWN.x;

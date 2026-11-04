@@ -1,14 +1,11 @@
-import {
-  lobbyPoses,
-  LOBBY_MAX_LEAN,
-  LOBBY_TICK,
-  SHOVE,
-} from "@racer/sim/lobby";
-import type { LobbyPose, LobbyRider } from "@racer/sim/lobby";
+import { LOBBY_MAX_LEAN, LOBBY_TICK, SHOVE } from "@racer/sim/lobby";
+import { lobbyPoses } from "@racer/sim/lobby-walk";
+import type { LobbyPlaceKind, LobbyPose } from "@racer/sim/lobby-walk";
 import * as THREE from "three";
 
 import type { Assets } from "./assets.ts";
 import { blockPaletteOf, riderBlocks } from "./bar-blocks.ts";
+import type { RiderBlocks } from "./bar-blocks.ts";
 import { breathTurns, poseTurns } from "./bar-poses.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
@@ -16,7 +13,7 @@ import { bodyFor } from "./figure-rig.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
 
-const YOUR_BLOCKS = riderBlocks.length - 1;
+export const SOLO_SLOT = riderBlocks.length - 1;
 const STOOL_SEAT = 1;
 const TAG_LIFT = 1;
 const SEATED_TAG_LIFT = 1.02;
@@ -30,9 +27,7 @@ const BREATH_RATE = 0.7;
 const PUNCH = { back: 0.22, hold: 0.13, out: 0.07 } as const;
 const SHOVE_SECONDS = SHOVE.ticks * LOBBY_TICK;
 
-export const yourBlocks = riderBlocks[YOUR_BLOCKS];
-
-export interface YouView {
+export interface WalkerView {
   x: number;
   z: number;
   heading: number;
@@ -40,6 +35,12 @@ export interface YouView {
   pace: number;
   stride: number;
   mounted: boolean;
+}
+
+export interface WalkerStance {
+  readonly place: LobbyPlaceKind;
+  readonly pose: LobbyPose | null;
+  readonly shoving: number;
 }
 
 interface Held {
@@ -57,12 +58,13 @@ const punchReach = (age: number): number => {
   return Math.max(0, 1 - (age - PUNCH.hold) / (PUNCH.back - PUNCH.hold));
 };
 
-export interface BarYou {
-  readonly figure: RiderFigure;
+export interface BarWalker {
   readonly head: THREE.Vector3;
+  readonly rename: (label: string) => void;
+  readonly show: (visible: boolean) => void;
   readonly update: (
-    rider: LobbyRider,
-    view: YouView,
+    stance: WalkerStance,
+    view: WalkerView,
     bike: THREE.Object3D,
     time: number,
     seconds: number,
@@ -72,19 +74,20 @@ export interface BarYou {
   readonly dispose: () => void;
 }
 
-export const createYou = (
+const createWalker = (
   assets: Assets,
   shading: Shading,
-  tags: TagLayer
-): BarYou => {
-  if (!yourBlocks) {
-    throw new Error("The bar has no rider blocks for you.");
-  }
+  tags: TagLayer,
+  blocks: RiderBlocks,
+  slot: number,
+  parent: THREE.Object3D
+): BarWalker => {
   const figure = createRiderFigure(
-    bodyFor(assets, YOUR_BLOCKS),
+    bodyFor(assets, slot),
     shading,
-    blockPaletteOf(yourBlocks)
+    blockPaletteOf(blocks)
   );
+  parent.add(figure.root);
   const heldFor = (
     base: "stand" | "seated",
     turns: Parameters<RiderFigure["bakePose"]>[1]
@@ -98,8 +101,7 @@ export const createYou = (
   const poses = new Map<LobbyPose, Held>(
     lobbyPoses.map((pose) => [pose, heldFor("stand", poseTurns[pose])])
   );
-  const tag: Tag = tags.name("YOU");
-  tag.show(true);
+  const tag: Tag = tags.name(blocks.name);
   const head = new THREE.Vector3();
   const stance: Stance = {
     flinch: 0,
@@ -121,8 +123,8 @@ export const createYou = (
   };
 
   const onBike = (
-    rider: LobbyRider,
-    view: YouView,
+    { shoving: shoveLeft }: WalkerStance,
+    view: WalkerView,
     bike: THREE.Object3D,
     seconds: number
   ): void => {
@@ -130,8 +132,8 @@ export const createYou = (
     figure.root.quaternion.copy(bike.quaternion);
     figure.root.translateY(figure.seat.y);
     figure.root.translateZ(figure.seat.z);
-    const age = SHOVE_SECONDS - rider.shoving * LOBBY_TICK;
-    stance.pose = rider.shoving > 0 && age < PUNCH.back ? "punch" : "seated";
+    const age = SHOVE_SECONDS - shoveLeft * LOBBY_TICK;
+    stance.pose = shoveLeft > 0 && age < PUNCH.back ? "punch" : "seated";
     stance.reach = stance.pose === "punch" ? punchReach(age) : 0;
     stance.lean = -view.lean / LOBBY_MAX_LEAN;
     stance.speed = BAR_RIDE_SPEED;
@@ -141,13 +143,13 @@ export const createYou = (
   };
 
   const onFoot = (
-    rider: LobbyRider,
-    view: YouView,
+    { pose, shoving: shoveLeft }: WalkerStance,
+    view: WalkerView,
     time: number,
     seconds: number
   ): void => {
     figure.root.rotation.set(0, view.heading, 0);
-    if (rider.shoving > 0) {
+    if (shoveLeft > 0) {
       figure.root.position.set(view.x, figure.standHeight, view.z);
       figure.holdPose(shoving, shoving, 0, seconds);
     } else if (view.pace > MOVING_PACE) {
@@ -161,7 +163,6 @@ export const createYou = (
       figure.animate(stance, seconds);
     } else {
       figure.root.position.set(view.x, figure.standHeight, view.z);
-      const pose = rider.place.kind === "foot" ? rider.place.pose : null;
       hold(pose ? (poses.get(pose) ?? idle) : idle, time, seconds);
     }
     head.copy(figure.root.position);
@@ -172,12 +173,18 @@ export const createYou = (
     dispose() {
       figure.dispose();
     },
-    figure,
     head,
-    update(rider, view, bike, time, seconds, camera, size) {
-      switch (rider.place.kind) {
+    rename: (label) => {
+      tag.rename(label);
+    },
+    show(visible) {
+      figure.root.visible = visible;
+      tag.show(visible);
+    },
+    update(walking, view, bike, time, seconds, camera, size) {
+      switch (walking.place) {
         case "bike": {
-          onBike(rider, view, bike, seconds);
+          onBike(walking, view, bike, seconds);
           break;
         }
         case "stool": {
@@ -189,14 +196,54 @@ export const createYou = (
           break;
         }
         case "foot": {
-          onFoot(rider, view, time, seconds);
+          onFoot(walking, view, time, seconds);
           break;
         }
         default: {
-          rider.place satisfies never;
+          walking.place satisfies never;
         }
       }
       tag.set(head, camera, size);
+    },
+  };
+};
+
+export interface BarWalkers {
+  readonly at: (slot: number) => BarWalker;
+  readonly hide: (slot: number) => void;
+  readonly dispose: () => void;
+}
+
+export const createWalkers = (
+  assets: Assets,
+  shading: Shading,
+  tags: TagLayer,
+  parent: THREE.Object3D
+): BarWalkers => {
+  const made = new Map<number, BarWalker>();
+  return {
+    at(slot) {
+      const known = made.get(slot);
+      if (known) {
+        return known;
+      }
+      const blocks = riderBlocks[slot];
+      if (!blocks) {
+        throw new Error(
+          `The bar has no colour blocks for slot ${String(slot)}.`
+        );
+      }
+      const walker = createWalker(assets, shading, tags, blocks, slot, parent);
+      made.set(slot, walker);
+      return walker;
+    },
+    dispose() {
+      for (const walker of made.values()) {
+        walker.dispose();
+      }
+    },
+    hide(slot) {
+      made.get(slot)?.show(false);
     },
   };
 };

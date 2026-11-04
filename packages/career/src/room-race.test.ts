@@ -12,6 +12,7 @@ import {
   guestNames,
   policeChoices,
   publicRoomRule,
+  publicRuleFor,
   ROOM_FIELD_SIZE,
   seatedRace,
   trafficChoices,
@@ -172,6 +173,23 @@ describe("a room's fairness", () => {
       .riders.filter((rider) => humans.includes(rider.id))
       .map((rider) => rider.s);
     expect(Math.max(...starts) - Math.min(...starts)).toBeLessThanOrEqual(21);
+  });
+});
+
+describe("a public room's rule", () => {
+  it("lets the server pick any road, and only the road", () => {
+    const rules = Array.from({ length: roadIds.length }, (_, seed) =>
+      publicRuleFor(seed)
+    );
+    expect(new Set(rules.map((rule) => rule.roadId))).toStrictEqual(
+      new Set(roadIds)
+    );
+    expect(rules.map(({ roadId: _road, ...rest }) => rest)).toStrictEqual(
+      rules.map(() => {
+        const { roadId: _road, ...rest } = publicRoomRule;
+        return rest;
+      })
+    );
   });
 });
 

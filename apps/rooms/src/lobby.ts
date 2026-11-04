@@ -1,13 +1,19 @@
-import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomChoice, RoomRule } from "@racer/career/room-race";
 import { MOST_SEATS } from "@racer/sim/room";
 
+import type { RoomKind } from "./room-id.ts";
+
 export const READY_WAIT_MS = 60_000;
+export const PUBLIC_WAIT_MS = 45_000;
+export const PUBLIC_GATHER_MS = 10_000;
 export const AWAY_MS = 120_000;
 
 export const LOBBY_PHASES = ["gathering", "racing"] as const;
 
 type LobbyPhase = (typeof LOBBY_PHASES)[number];
+
+const minus = (at: number | null, now: number): number | null =>
+  at === null ? null : at - now;
 
 interface Member {
   readonly id: string;
@@ -29,6 +35,7 @@ interface LobbyView {
   readonly hostId: string | null;
   readonly members: readonly LobbyMemberView[];
   readonly phase: LobbyPhase;
+  readonly roomKind: RoomKind;
   readonly rule: RoomRule;
   readonly startsInMs: number | null;
 }
@@ -53,31 +60,62 @@ export interface Lobby {
   readonly view: (now: number) => LobbyView;
 }
 
-export const createLobby = (bornAt: number): Lobby => {
+export const createLobby = (
+  bornAt: number,
+  kind: RoomKind,
+  freshRule: () => RoomRule
+): Lobby => {
   let members: Member[] = [];
   let joined = 0;
-  let rule: RoomRule = publicRoomRule;
+  let rule = freshRule();
   let edition = 0;
   let phase: LobbyPhase = "gathering";
-  let firstReadyAt: number | null = null;
+  let clockFrom: number | null = null;
   let since = bornAt;
 
   const here = (): readonly Member[] =>
     members.filter((member) => member.awaySince === null);
 
-  const hostOf = (): Member | null => here()[0] ?? members[0] ?? null;
+  const hostOf = (): Member | null =>
+    kind === "public" ? null : (here()[0] ?? members[0] ?? null);
+
+  const clockRuns = {
+    custom: () => members.some((member) => member.ready),
+    public: () => here().length > 0,
+  } as const satisfies Record<RoomKind, () => boolean>;
+
+  const waitMs = {
+    custom: READY_WAIT_MS,
+    public: PUBLIC_WAIT_MS,
+  } as const satisfies Record<RoomKind, number>;
+
+  const earliestMs = {
+    custom: 0,
+    public: PUBLIC_GATHER_MS,
+  } as const satisfies Record<RoomKind, number>;
+
+  const settleClock = (now: number): void => {
+    clockFrom =
+      phase === "gathering" && clockRuns[kind]() ? (clockFrom ?? now) : null;
+  };
 
   const clearReady = (): void => {
     for (const member of members) {
       member.ready = false;
     }
-    firstReadyAt = null;
+    clockFrom = null;
   };
 
-  const keepTimerHonest = (): void => {
-    if (!members.some((member) => member.ready)) {
-      firstReadyAt = null;
+  const startsAt = (): number | null => {
+    if (clockFrom === null) {
+      return null;
     }
+    return (
+      clockFrom +
+      (members.every((member) => member.ready)
+        ? earliestMs[kind]
+        : waitMs[kind])
+    );
   };
 
   return {
@@ -88,7 +126,7 @@ export const createLobby = (bornAt: number): Lobby => {
           member.ready = false;
         }
       }
-      keepTimerHonest();
+      settleClock(now);
     },
     choose: (id, choice) => {
       if (hostOf()?.id !== id || phase !== "gathering") {
@@ -99,16 +137,18 @@ export const createLobby = (bornAt: number): Lobby => {
       clearReady();
       return true;
     },
-    due: (now) =>
-      phase === "gathering" &&
-      here().length > 0 &&
-      (members.every((member) => member.ready) ||
-        (firstReadyAt !== null && now >= firstReadyAt + READY_WAIT_MS)),
+    due: (now) => {
+      const at = startsAt();
+      return (
+        phase === "gathering" && here().length > 0 && at !== null && now >= at
+      );
+    },
     join: (key, name, now) => {
       const known = members.find((member) => member.key === key);
       if (known) {
         known.awaySince = null;
         known.name = name;
+        settleClock(now);
         return known.id;
       }
       if (members.length >= MOST_SEATS) {
@@ -120,12 +160,18 @@ export const createLobby = (bornAt: number): Lobby => {
       joined += 1;
       const id = `m${joined}`;
       members.push({ awaySince: null, id, key, name, ready: false });
+      settleClock(now);
       return id;
     },
     raceEnded: (now) => {
       phase = "gathering";
       since = now;
       clearReady();
+      if (kind === "public") {
+        rule = freshRule();
+        edition += 1;
+      }
+      settleClock(now);
     },
     raceStarted: () => {
       phase = "racing";
@@ -140,10 +186,7 @@ export const createLobby = (bornAt: number): Lobby => {
           member.ready = ready;
         }
       }
-      keepTimerHonest();
-      if (ready) {
-        firstReadyAt ??= now;
-      }
+      settleClock(now);
     },
     rule: () => rule,
     since: () => since,
@@ -154,7 +197,7 @@ export const createLobby = (bornAt: number): Lobby => {
         ({ awaySince }) => awaySince === null || now - awaySince < AWAY_MS
       );
       if (members.length === 0) {
-        rule = publicRoomRule;
+        rule = freshRule();
         edition += 1;
       }
       return members.length !== before;
@@ -169,9 +212,9 @@ export const createLobby = (bornAt: number): Lobby => {
         ready,
       })),
       phase,
+      roomKind: kind,
       rule,
-      startsInMs:
-        firstReadyAt === null ? null : firstReadyAt + READY_WAIT_MS - now,
+      startsInMs: phase === "gathering" ? minus(startsAt(), now) : null,
     }),
   };
 };
