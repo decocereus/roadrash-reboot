@@ -4,7 +4,7 @@ import { controlOf } from "./control.ts";
 import { track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
-import { createRoom, roomSetup } from "./room.ts";
+import { createRoom, INPUT_HORIZON, roomSetup } from "./room.ts";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 import type { Control } from "./state.ts";
 
@@ -78,11 +78,32 @@ describe("how far a correction moves the rider's own bike", () => {
   it("counts the predictions it refuses when the room goes quiet", () => {
     const { client } = rideTogether();
     let refused = 0;
-    for (let tick = 0; tick < 40; tick += 1) {
+    for (let tick = 0; tick <= INPUT_HORIZON + LEAD_TICKS; tick += 1) {
       refused += client.predict(riding) ? 0 : 1;
     }
     expect(refused).toBeGreaterThan(0);
     expect(client.stats.refusedPredictions).toBe(refused);
+  });
+});
+
+describe("a burst of queued ticks", () => {
+  it("replays the prediction once, however many of its ticks differ", () => {
+    const { client, room, step } = rideTogether();
+    client.settle();
+    const { resimulatedTicks, rollbacks } = client.stats;
+    for (let tick = 0; tick < 60; tick += 1) {
+      client.predict(riding);
+    }
+    for (let tick = 0; tick < 30; tick += 1) {
+      step(
+        controlOf({ ...neutralInput, steer: tick % 2 === 0 ? 1 : -1 }),
+        riding
+      );
+      client.confirm(room.frame, null);
+    }
+    client.settle();
+    expect(client.stats.rollbacks - rollbacks).toBe(1);
+    expect(client.stats.resimulatedTicks - resimulatedTicks).toBe(30);
   });
 });
 

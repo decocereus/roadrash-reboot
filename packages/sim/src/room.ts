@@ -23,7 +23,7 @@ import type {
 export const MOST_SEATS = 8;
 export const HOLD_TICKS = 6;
 export const AUTO_AFTER_TICKS = 30;
-export const INPUT_HORIZON = 32;
+export const INPUT_HORIZON = 90;
 export const HASH_EVERY = 60;
 export const PILOT_FROM_TICK = 21_600;
 

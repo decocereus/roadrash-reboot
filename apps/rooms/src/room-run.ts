@@ -55,20 +55,23 @@ export const createRoomRun = (
       });
     },
     me,
-    report: () => ({
-      names,
-      net: {
-        inputToFrame: latency.summary(),
-        resimulatedPerSecond:
-          client.stats.resimulatedTicks /
-          Math.max(1, client.confirmed.tick * TICK_SECONDS),
-        rollbacks: client.stats.rollbacks,
-        roundTripMs: seat.rttMs(),
-        worstRoundTripMs: seat.worstRttMs(),
-      },
-      raceId,
-      roomId,
-    }),
+    report: () => {
+      client.settle();
+      return {
+        names,
+        net: {
+          inputToFrame: latency.summary(),
+          resimulatedPerSecond:
+            client.stats.resimulatedTicks /
+            Math.max(1, client.confirmed.tick * TICK_SECONDS),
+          rollbacks: client.stats.rollbacks,
+          roundTripMs: seat.rttMs(),
+          worstRoundTripMs: seat.worstRttMs(),
+        },
+        raceId,
+        roomId,
+      };
+    },
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       if (control !== sent) {
