@@ -54,6 +54,8 @@ describe("a parked bike when the member list shifts", () => {
     const { x, z } = first.bike.position;
     const { y } = first.bike.rotation;
     expect(first.bike.position.lengthSq()).toBeGreaterThan(0);
+    first.bike.position.set(8, 0, 8);
+    second.bike.position.set(1, 0, 1);
     current = second;
     player.advance(FRAME, noControl, 0, 0);
     expect(second.bike.position.x).toBe(x);

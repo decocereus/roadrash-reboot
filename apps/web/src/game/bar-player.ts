@@ -91,7 +91,7 @@ export const createBarPlayer = ({
     z: rider.z,
   };
   let bikeOut = false;
-  let ownBike = slot().bike;
+  const parked = { heading: 0, x: 0, z: 0 };
   let backlog = 0;
   let fromX = rider.x;
   let fromZ = rider.z;
@@ -151,7 +151,9 @@ export const createBarPlayer = ({
       bike.position.set(rider.x, 0, rider.z);
       bike.rotation.set(0, rider.heading, 0);
     } else {
-      bike.rotation.z = 0;
+      parked.x = bike.position.x;
+      parked.z = bike.position.z;
+      parked.heading = bike.rotation.y;
     }
     puffs.burst(bike, 1, REV_PUFF_SPEED);
   };
@@ -197,10 +199,9 @@ export const createBarPlayer = ({
 
   const advance: BarPlayer["advance"] = (seconds, control, viewYaw, time) => {
     const { bike, bikeIndex } = slot();
-    if (bike !== ownBike) {
-      bike.position.copy(ownBike.position);
-      bike.rotation.copy(ownBike.rotation);
-      ownBike = bike;
+    if (bikeOut && rider.place.kind !== "bike") {
+      bike.position.set(parked.x, 0, parked.z);
+      bike.rotation.set(0, parked.heading, 0);
     }
     backlog += seconds;
     let ticks = 0;
