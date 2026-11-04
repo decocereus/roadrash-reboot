@@ -29,7 +29,9 @@ import {
   storeCareer,
 } from "../career/save.ts";
 import type { SaveState } from "../career/save.ts";
-import { diagnostics } from "../diagnostics/hub.ts";
+import { diagnostics, sanitise } from "../diagnostics/hub.ts";
+import { createRaceEvents } from "../diagnostics/race-events.ts";
+import type { RaceEvents, RaceFacts } from "../diagnostics/race-events.ts";
 import type {
   GameEvents,
   GameHandle,
@@ -92,6 +94,9 @@ const stageOf = (view: View): "boot" | "race" | "menu" => {
   }
   return view.screen === "race" ? "race" : "menu";
 };
+
+const modeOf = ({ mode }: RacePlan): "career" | "single" =>
+  mode === "career" ? "career" : "single";
 
 const afterConsequence = (plan: RacePlan, report: RaceReport | null): View => {
   if (report) {
@@ -261,6 +266,7 @@ const useGame = (
           {
             onHud: (hud) => eventsRef.current?.onHud(hud),
             onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
+            onRestart: () => eventsRef.current?.onRestart(),
             onSettle: (plan, outcome) =>
               eventsRef.current?.onSettle(plan, outcome),
             onStart: (plan) => eventsRef.current?.onStart(plan),
@@ -320,6 +326,47 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
   }, [racing, pause]);
 };
 
+const MS_PER_SECOND = 1000;
+const REASON_LENGTH = 160;
+
+const raceStartOf = (plan: RacePlan, riderCount: number) => {
+  const room = plan.room?.report();
+  const humans = room ? room.names.size + 1 : 1;
+  return {
+    bots: Math.max(0, riderCount - humans),
+    humans,
+    mode: room ? ("friends" as const) : modeOf(plan),
+    raceId: room ? room.raceId : crypto.randomUUID(),
+    road: plan.setup.roadId,
+  };
+};
+
+const useLoadEvents = (
+  loaded: boolean,
+  failure: string,
+  stage: "game" | "rules"
+): void => {
+  const readyTold = useRef(false);
+  useEffect(() => {
+    if (loaded && !readyTold.current) {
+      readyTold.current = true;
+      diagnostics().events.track({
+        event: "game_ready",
+        loadSeconds: performance.now() / MS_PER_SECOND,
+      });
+    }
+  }, [loaded]);
+  useEffect(() => {
+    if (failure !== "") {
+      diagnostics().events.track({
+        event: "game_load_failed",
+        reason: sanitise(failure).slice(0, REASON_LENGTH),
+        stage,
+      });
+    }
+  }, [failure, stage]);
+};
+
 export interface Flow {
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
   readonly rules: RaceRules | null;
@@ -342,6 +389,7 @@ export interface Flow {
   readonly resume: () => void;
   readonly mute: () => void;
   readonly quit: (plan: RacePlan) => void;
+  readonly roomLost: () => void;
 }
 
 export const useFlow = (): Flow => {
@@ -349,6 +397,11 @@ export const useFlow = (): Flow => {
   const eventsRef = useRef<GameEvents | null>(null);
   const pendingRef = useRef<RaceReport | null>(null);
   const [feed] = useState(createHudFeed);
+  const [races] = useState<RaceEvents>(() =>
+    createRaceEvents((event) => {
+      diagnostics().events.track(event);
+    })
+  );
   const [view, setView] = useState<View>({ screen: "boot" });
   const [pick, setPick] = useState<QuickPick>(firstQuickPick);
   const rulesLoad = useRules();
@@ -364,6 +417,32 @@ export const useFlow = (): Flow => {
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
   useBoot(view.screen === "boot", rulesLoad, save, commit, setView);
+  useLoadEvents(
+    ready && rules !== null,
+    failure,
+    rulesLoad?.status === "failed" ? "rules" : "game"
+  );
+
+  const factsNow = useCallback((): RaceFacts => {
+    const facts = gameRef.current?.riderFacts();
+    return {
+      crashes: facts?.crashes ?? 0,
+      place: feed.read().position,
+      roadMetres: facts?.roadMetres ?? 0,
+      seconds: facts?.seconds ?? 0,
+    };
+  }, [feed, gameRef]);
+
+  useEffect(() => {
+    const closed = () => {
+      races.ended("closed", factsNow());
+      diagnostics().events.flush();
+    };
+    window.addEventListener("pagehide", closed);
+    return () => {
+      window.removeEventListener("pagehide", closed);
+    };
+  }, [factsNow, races]);
 
   useEffect(() => {
     eventsRef.current = {
@@ -374,7 +453,11 @@ export const useFlow = (): Flow => {
           pendingRef.current = null;
         }
       },
+      onRestart() {
+        races.ended("restarted", factsNow());
+      },
       onSettle(plan, outcome) {
+        races.ended(outcome.result, { ...factsNow(), place: outcome.place });
         const racer = careerRef.current;
         let report: RaceReport | null = null;
         if (plan.mode === "quick") {
@@ -388,6 +471,7 @@ export const useFlow = (): Flow => {
         }
       },
       onStart(plan) {
+        races.started(raceStartOf(plan, feed.read().riderCount));
         const racer = careerRef.current;
         if (plan.mode !== "career" || !racer || !rules) {
           return;
@@ -405,7 +489,7 @@ export const useFlow = (): Flow => {
         }
       },
     };
-  }, [careerRef, commit, feed, rules, settle]);
+  }, [careerRef, commit, factsNow, feed, races, rules, settle]);
 
   const stage = stageOf(view);
   useEffect(() => {
@@ -438,11 +522,32 @@ export const useFlow = (): Flow => {
       if (!game) {
         return { kind: "cancelled" };
       }
+      const hub = diagnostics();
+      const askedAt = performance.now();
       try {
-        return await game.prepare(plan);
+        const outcome = await game.prepare(plan);
+        if (outcome.kind === "failed") {
+          hub.events.track({
+            event: "game_load_failed",
+            reason: outcome.stage,
+            stage: "race",
+          });
+        } else if (outcome.kind !== "cancelled") {
+          hub.events.track({
+            event: "race_loaded",
+            loadSeconds: (performance.now() - askedAt) / MS_PER_SECOND,
+            qualityRung: hub.qualityRung(),
+          });
+        }
+        return outcome;
       } catch (error) {
         const cause = error instanceof Error ? error : new Error(String(error));
-        diagnostics().recorder.fault("error", cause.message, "prepare build");
+        hub.recorder.fault("error", cause.message, "prepare build");
+        hub.events.track({
+          event: "game_load_failed",
+          reason: "build",
+          stage: "race",
+        });
         return { cause, kind: "failed", stage: "build" };
       }
     },
@@ -465,6 +570,7 @@ export const useFlow = (): Flow => {
     pick,
     prepare,
     quit(plan) {
+      races.ended("quit", factsNow());
       const outcome = gameRef.current?.quit() ?? null;
       const report =
         plan.mode === "career" && career && outcome && rules
@@ -490,6 +596,9 @@ export const useFlow = (): Flow => {
           : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
       setView({ entry, screen: "rideOut" });
     },
+    roomLost() {
+      races.ended("lost", factsNow());
+    },
     rules,
     save,
     setPick,
@@ -498,6 +607,7 @@ export const useFlow = (): Flow => {
       if (!game) {
         return;
       }
+      diagnostics().settings.change({ noticeSeen: true });
       pendingRef.current = null;
       game.startRace(plan);
       setView({ finish: null, paused: false, plan, screen: "race" });

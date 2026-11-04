@@ -1,4 +1,4 @@
-import { shortSession } from "@racer/telemetry/limits";
+import { PLAYER_EVENTS_ENDPOINT, shortSession } from "@racer/telemetry/limits";
 import type {
   BatchKind,
   FaultSource,
@@ -7,9 +7,16 @@ import type {
 import type { Quality, Session, TelemetryEvent } from "@racer/telemetry/schema";
 
 import type { ProfileFrame } from "../game/profile.ts";
+import {
+  browserFamilyOf,
+  createPlayerEvents,
+  graphicsCard,
+  storedPlayerId,
+} from "./player-events.ts";
+import type { PlayerEvents } from "./player-events.ts";
 import { createRecorder } from "./recorder.ts";
 import type { Recorder } from "./recorder.ts";
-import { createSettingsStore } from "./settings.ts";
+import { createSettingsStore, storage } from "./settings.ts";
 import type { Settings, SettingsStore } from "./settings.ts";
 import type { UploadRuntime } from "./uploader-runtime.ts";
 import { createUploader } from "./uploader.ts";
@@ -35,6 +42,7 @@ interface GameProbe {
 export interface DiagnosticsView {
   readonly settings: Settings;
   readonly report: ReportStatus;
+  readonly playerId: string;
   readonly queued: number;
   readonly session: string;
 }
@@ -52,11 +60,14 @@ interface DiagnosticsReader {
   readonly frames: (afterFrame: number, limit: number) => ProfileFrame[];
   readonly events: (afterSeq: number, limit: number) => TelemetryEvent[];
   readonly flush: () => void;
+  readonly playerEventsDropped: () => number;
 }
 
 export interface Diagnostics {
+  readonly events: PlayerEvents;
   readonly settings: SettingsStore;
   readonly recorder: Recorder;
+  readonly qualityRung: () => number;
   readonly attachGame: (probe: GameProbe) => () => void;
   readonly watchCanvas: (canvas: HTMLCanvasElement) => () => void;
   readonly sendReport: () => void;
@@ -64,7 +75,7 @@ export interface Diagnostics {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
-const sanitise = (text: string): string =>
+export const sanitise = (text: string): string =>
   text
     .replaceAll(/(?<url>https?:\/\/[^\s?#)]*)[?#][^\s)]*/gu, "$<url>")
     .replaceAll(globalThis.location.origin, "")
@@ -117,6 +128,27 @@ const createDiagnostics = (): Diagnostics => {
   let probe: GameProbe | null = null;
   let contextLost = false;
   let view: DiagnosticsView | null = null;
+  let playerId: string | null = null;
+
+  const player = (): string => {
+    playerId ??= storedPlayerId(storage());
+    return playerId;
+  };
+
+  const events = createPlayerEvents({
+    after(ms, run) {
+      setTimeout(run, ms);
+    },
+    build: __RUSHLINE_BUILD__.sha,
+    enabled: () => settings.read().raceData,
+    now: () => performance.now(),
+    playerId: player,
+    send: (body) =>
+      navigator.sendBeacon(
+        PLAYER_EVENTS_ENDPOINT,
+        new Blob([body], { type: "application/json" })
+      ),
+  });
 
   const notify = () => {
     view = null;
@@ -200,6 +232,7 @@ const createDiagnostics = (): Diagnostics => {
     recorder.visibility(document.hidden);
   });
   window.addEventListener("pagehide", () => {
+    events.flush();
     if (recorder.recording) {
       enqueue("final", false);
       uploader.beacon();
@@ -209,6 +242,16 @@ const createDiagnostics = (): Diagnostics => {
   settings.subscribe(apply);
   uploader.subscribe(notify);
   apply();
+  if (settings.read().raceData) {
+    events.track({
+      browser: browserFamilyOf(navigator.userAgent),
+      event: "game_opened",
+      graphicsCard: graphicsCard(),
+      pixelRatio: globalThis.devicePixelRatio,
+      screenHeight: Math.round(globalThis.screen.height),
+      screenWidth: Math.round(globalThis.screen.width),
+    });
+  }
 
   const reader: DiagnosticsReader = {
     events: recorder.events,
@@ -229,6 +272,7 @@ const createDiagnostics = (): Diagnostics => {
       return list;
     },
     info: () => session(settings.read().device),
+    playerEventsDropped: events.dropped,
     snapshot: () =>
       probe && {
         ...probe.snapshot(),
@@ -247,6 +291,8 @@ const createDiagnostics = (): Diagnostics => {
         probe = null;
       };
     },
+    events,
+    qualityRung: () => probe?.snapshot().quality.rung ?? 0,
     recorder,
     sendReport() {
       enqueue("report", true);
@@ -262,6 +308,7 @@ const createDiagnostics = (): Diagnostics => {
     },
     view() {
       view ??= {
+        playerId: player(),
         queued: uploader.queued(),
         report: uploader.report(),
         session: shortSession(sessionId),

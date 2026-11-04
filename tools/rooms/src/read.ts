@@ -110,6 +110,7 @@ export const liveNotes = (script: string, hours: number) =>
               type: "string",
               value: script,
             },
+            { key: "kind", operation: "exists", type: "string" },
           ],
         },
         queryId: "rushline-rooms-read",

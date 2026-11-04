@@ -12,6 +12,16 @@ import type { ChaseCamera } from "./chase-camera.ts";
 import type { GameEvents, GamePhase, Notice } from "./hud.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
+const BUSTED_SECONDS = 0.8;
+const WRECKED_SECONDS = 1.2;
+
+export const consequenceSeconds = (outcome: RaceOutcome): number => {
+  if (outcome.result === "busted") {
+    return BUSTED_SECONDS;
+  }
+  return outcome.result === "wrecked" ? WRECKED_SECONDS : 0;
+};
+
 const NOTICE_SECONDS = 0.8;
 const HAZARD_JOLT = {
   bump: 0.55,

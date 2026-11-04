@@ -43,6 +43,36 @@ export type FaultSource = (typeof faultSources)[number];
 export const batchKinds = ["periodic", "report", "final"] as const;
 export type BatchKind = (typeof batchKinds)[number];
 
+export const PLAYER_EVENTS_ENDPOINT = "/api/events";
+export const MAX_EVENTS_IN_BATCH = 32;
+export const MAX_EVENT_BATCH_BYTES = 16 * 1024;
+
+export const browserFamilies = [
+  "chrome",
+  "edge",
+  "firefox",
+  "opera",
+  "safari",
+  "other",
+] as const;
+export type BrowserFamily = (typeof browserFamilies)[number];
+
+export const gameLoadStages = ["game", "race", "rules"] as const;
+export const raceChoices = ["career", "friends", "single"] as const;
+export const roomArrivals = ["link", "made", "moved", "rematch"] as const;
+export type RoomArrival = (typeof roomArrivals)[number];
+export const roomLostStages = ["lobby", "race"] as const;
+export const playerRaceEnds = [
+  "finished",
+  "busted",
+  "wrecked",
+  "quit",
+  "restarted",
+  "lost",
+  "closed",
+] as const;
+export type PlayerRaceEnd = (typeof playerRaceEnds)[number];
+
 export const histogramBucket = (milliseconds: number): number => {
   for (let index = 0; index < HISTOGRAM_EDGES_MS.length; index += 1) {
     if (milliseconds <= (HISTOGRAM_EDGES_MS[index] ?? 0)) {

@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BarRouteImport } from './routes/bar'
 import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as KitRouteImport } from './routes/kit'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiRaceRulesRouteImport } from './routes/api/race-rules'
 import { Route as ApiTelemetryRouteImport } from './routes/api/telemetry'
 import { Route as ArtKeyRouteImport } from './routes/art/$key'
@@ -37,6 +39,16 @@ const KitRoute = KitRouteImport.update({
   path: '/kit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEventsRoute = ApiEventsRouteImport.update({
+  id: '/api/events',
+  path: '/api/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRaceRulesRoute = ApiRaceRulesRouteImport.update({
   id: '/api/race-rules',
   path: '/api/race-rules',
@@ -58,6 +70,8 @@ export interface FileRoutesByFullPath {
   '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
+  '/privacy': typeof PrivacyRoute
+  '/api/events': typeof ApiEventsRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
   '/art/$key': typeof ArtKeyRoute
@@ -67,6 +81,8 @@ export interface FileRoutesByTo {
   '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
+  '/privacy': typeof PrivacyRoute
+  '/api/events': typeof ApiEventsRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
   '/art/$key': typeof ArtKeyRoute
@@ -77,6 +93,8 @@ export interface FileRoutesById {
   '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
+  '/privacy': typeof PrivacyRoute
+  '/api/events': typeof ApiEventsRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
   '/art/$key': typeof ArtKeyRoute
@@ -88,6 +106,8 @@ export interface FileRouteTypes {
     | '/bar'
     | '/credits'
     | '/kit'
+    | '/privacy'
+    | '/api/events'
     | '/api/race-rules'
     | '/api/telemetry'
     | '/art/$key'
@@ -97,6 +117,8 @@ export interface FileRouteTypes {
     | '/bar'
     | '/credits'
     | '/kit'
+    | '/privacy'
+    | '/api/events'
     | '/api/race-rules'
     | '/api/telemetry'
     | '/art/$key'
@@ -106,6 +128,8 @@ export interface FileRouteTypes {
     | '/bar'
     | '/credits'
     | '/kit'
+    | '/privacy'
+    | '/api/events'
     | '/api/race-rules'
     | '/api/telemetry'
     | '/art/$key'
@@ -116,6 +140,8 @@ export interface RootRouteChildren {
   BarRoute: typeof BarRoute
   CreditsRoute: typeof CreditsRoute
   KitRoute: typeof KitRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ApiEventsRoute: typeof ApiEventsRoute
   ApiRaceRulesRoute: typeof ApiRaceRulesRoute
   ApiTelemetryRoute: typeof ApiTelemetryRoute
   ArtKeyRoute: typeof ArtKeyRoute
@@ -151,6 +177,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/events': {
+      id: '/api/events'
+      path: '/api/events'
+      fullPath: '/api/events'
+      preLoaderRoute: typeof ApiEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/race-rules': {
       id: '/api/race-rules'
       path: '/api/race-rules'
@@ -180,6 +220,8 @@ const rootRouteChildren: RootRouteChildren = {
   BarRoute: BarRoute,
   CreditsRoute: CreditsRoute,
   KitRoute: KitRoute,
+  PrivacyRoute: PrivacyRoute,
+  ApiEventsRoute: ApiEventsRoute,
   ApiRaceRulesRoute: ApiRaceRulesRoute,
   ApiTelemetryRoute: ApiTelemetryRoute,
   ArtKeyRoute: ArtKeyRoute,

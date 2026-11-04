@@ -4,7 +4,7 @@ Rushline has five places where a failure reaches someone: the telemetry endpoint
 
 ## The telemetry endpoint
 
-`POST /api/telemetry` (`apps/web/src/routes/api/telemetry.ts`) runs `collect` from `apps/web/src/server/telemetry.ts` with `Effect.runPromise`. It and the art route are the only server code that runs an Effect. It passes the store Layer that `vite.config.ts` installed through `apps/web/src/server/telemetry-local.ts`. With no Layer installed, `collect` refuses with `NoStore` before it reads the request. With one, `ingest` reads the body, decodes the batch, takes `receivedAt` from Effect's `Clock` and saves through the `TelemetryStore` service. Each refusal is a `Schema.TaggedError` in `apps/web/src/server/refusals/`, and `statusOf` maps each tag to one HTTP status.
+`POST /api/telemetry` (`apps/web/src/routes/api/telemetry.ts`) runs `collect` from `apps/web/src/server/telemetry.ts` with `Effect.runPromise`. It, the player events route and the art route are the only server code that runs an Effect. It passes the store Layer that `vite.config.ts` installed through `apps/web/src/server/telemetry-local.ts`. With no Layer installed, `collect` refuses with `NoStore` before it reads the request. With one, `ingest` reads the body, decodes the batch, takes `receivedAt` from Effect's `Clock` and saves through the `TelemetryStore` service. Each refusal is a `Schema.TaggedError` in `apps/web/src/server/refusals/`, and `statusOf` maps each tag to one HTTP status.
 
 | Tag | Status | Meaning |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Rushline has five places where a failure reaches someone: the telemetry endpoint
 | Every refusal tag has exactly one status. `statusOf` is typed with `satisfies Record<Refusal["_tag"], number>`, so a new tag fails the typecheck until it gets one. | `pnpm typecheck` | `apps/web/src/server/telemetry.ts` | None |
 | A refusal is built with its `Schema.TaggedError` constructor and keeps the failure behind it, the body read, the JSON parse, the schema error or the store error, as its `cause`. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/server` | None |
 | A refusal body carries only its tag, the facts in the table above and a fixed `issue`. Both `issue` texts live in one object in `telemetry.ts`. No cause, stack, path or schema message reaches the response. | `pnpm test` | `apps/web/src/server/telemetry.ts` | None |
-| The route provides the store Layer, and it and `GET /art/<key>` are the only server code that runs an Effect. `collect`, `ingest`, the refusals and the store Layers return Effects. | `rushline/no-effect-runtime`, judgment | `apps/web/src/routes/api/telemetry.ts`, `apps/web/src/server`, `packages/telemetry/src` | None |
+| The route provides the store Layer, and it, `POST /api/events` and `GET /art/<key>` are the only server code that runs an Effect. `collect`, `ingest`, the refusals and the store Layers return Effects. | `rushline/no-effect-runtime`, judgment | `apps/web/src/routes/api/telemetry.ts`, `apps/web/src/server`, `packages/telemetry/src` | None |
 | A batch the store has already saved is acknowledged with `duplicate: true`, not refused, so a retried upload is safe. | `pnpm test` | `apps/web/src/server/telemetry.ts`, `packages/telemetry/src/jsonl-store.ts`, `packages/telemetry/src/memory-store.ts` | None |
 
 ## The uploader
