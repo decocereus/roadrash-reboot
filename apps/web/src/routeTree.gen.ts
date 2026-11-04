@@ -10,8 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BarRouteImport } from './routes/bar'
 import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as KitRouteImport } from './routes/kit'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiRaceRulesRouteImport } from './routes/api/race-rules'
 import { Route as ApiTelemetryRouteImport } from './routes/api/telemetry'
 import { Route as ArtKeyRouteImport } from './routes/art/$key'
@@ -19,6 +22,11 @@ import { Route as ArtKeyRouteImport } from './routes/art/$key'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BarRoute = BarRouteImport.update({
+  id: '/bar',
+  path: '/bar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreditsRoute = CreditsRouteImport.update({
@@ -29,6 +37,16 @@ const CreditsRoute = CreditsRouteImport.update({
 const KitRoute = KitRouteImport.update({
   id: '/kit',
   path: '/kit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEventsRoute = ApiEventsRouteImport.update({
+  id: '/api/events',
+  path: '/api/events',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRaceRulesRoute = ApiRaceRulesRouteImport.update({
@@ -49,16 +67,22 @@ const ArtKeyRoute = ArtKeyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
+  '/privacy': typeof PrivacyRoute
+  '/api/events': typeof ApiEventsRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
   '/art/$key': typeof ArtKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
+  '/privacy': typeof PrivacyRoute
+  '/api/events': typeof ApiEventsRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
   '/art/$key': typeof ArtKeyRoute
@@ -66,8 +90,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
+  '/privacy': typeof PrivacyRoute
+  '/api/events': typeof ApiEventsRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
   '/api/telemetry': typeof ApiTelemetryRoute
   '/art/$key': typeof ArtKeyRoute
@@ -76,24 +103,33 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/bar'
     | '/credits'
     | '/kit'
+    | '/privacy'
+    | '/api/events'
     | '/api/race-rules'
     | '/api/telemetry'
     | '/art/$key'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/bar'
     | '/credits'
     | '/kit'
+    | '/privacy'
+    | '/api/events'
     | '/api/race-rules'
     | '/api/telemetry'
     | '/art/$key'
   id:
     | '__root__'
     | '/'
+    | '/bar'
     | '/credits'
     | '/kit'
+    | '/privacy'
+    | '/api/events'
     | '/api/race-rules'
     | '/api/telemetry'
     | '/art/$key'
@@ -101,8 +137,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BarRoute: typeof BarRoute
   CreditsRoute: typeof CreditsRoute
   KitRoute: typeof KitRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ApiEventsRoute: typeof ApiEventsRoute
   ApiRaceRulesRoute: typeof ApiRaceRulesRoute
   ApiTelemetryRoute: typeof ApiTelemetryRoute
   ArtKeyRoute: typeof ArtKeyRoute
@@ -117,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bar': {
+      id: '/bar'
+      path: '/bar'
+      fullPath: '/bar'
+      preLoaderRoute: typeof BarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/credits': {
       id: '/credits'
       path: '/credits'
@@ -129,6 +175,20 @@ declare module '@tanstack/react-router' {
       path: '/kit'
       fullPath: '/kit'
       preLoaderRoute: typeof KitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/events': {
+      id: '/api/events'
+      path: '/api/events'
+      fullPath: '/api/events'
+      preLoaderRoute: typeof ApiEventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/race-rules': {
@@ -157,8 +217,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BarRoute: BarRoute,
   CreditsRoute: CreditsRoute,
   KitRoute: KitRoute,
+  PrivacyRoute: PrivacyRoute,
+  ApiEventsRoute: ApiEventsRoute,
   ApiRaceRulesRoute: ApiRaceRulesRoute,
   ApiTelemetryRoute: ApiTelemetryRoute,
   ArtKeyRoute: ArtKeyRoute,

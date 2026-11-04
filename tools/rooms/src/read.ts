@@ -48,21 +48,37 @@ const options = (args: readonly string[]) =>
   });
 
 const decodeNote = Schema.decodeUnknownOption(RoomNoteSchema);
+const hasKind = Schema.is(Schema.Struct({ kind: Schema.String }));
 
-export const notesOfLines = (text: string): readonly RoomNote[] =>
-  text.split("\n").flatMap((line) => {
-    const from = line.indexOf("{");
-    const to = line.lastIndexOf("}");
-    if (from === -1 || to < from) {
-      return [];
-    }
-    try {
-      const parsed: unknown = JSON.parse(line.slice(from, to + 1));
-      return Option.toArray(decodeNote(parsed));
-    } catch {
-      return [];
-    }
-  });
+interface NotesRead {
+  readonly notes: readonly RoomNote[];
+  readonly unread: number;
+}
+
+const notesOfValues = (values: readonly unknown[]): NotesRead => {
+  const notes = values.flatMap((value) => Option.toArray(decodeNote(value)));
+  return {
+    notes,
+    unread: values.filter(hasKind).length - notes.length,
+  };
+};
+
+const jsonOfLine = (line: string): readonly unknown[] => {
+  const from = line.indexOf("{");
+  const to = line.lastIndexOf("}");
+  if (from === -1 || to < from) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(line.slice(from, to + 1));
+    return [parsed];
+  } catch {
+    return [];
+  }
+};
+
+export const notesOfLines = (text: string): NotesRead =>
+  notesOfValues(text.split("\n").flatMap(jsonOfLine));
 
 const QueryAnswer = Schema.Struct({
   result: Schema.Struct({
@@ -94,6 +110,7 @@ export const liveNotes = (script: string, hours: number) =>
               type: "string",
               value: script,
             },
+            { key: "kind", operation: "exists", type: "string" },
           ],
         },
         queryId: "rushline-rooms-read",
@@ -105,8 +122,8 @@ export const liveNotes = (script: string, hours: number) =>
     const answer = yield* HttpClientResponse.schemaBodyJson(QueryAnswer)(
       yield* HttpClientResponse.filterStatusOk(response)
     );
-    return answer.result.events.events.flatMap(({ source }) =>
-      Option.toArray(decodeNote(source))
+    return notesOfValues(
+      answer.result.events.events.map(({ source }) => source)
     );
   }).pipe(
     Effect.mapError(
@@ -123,10 +140,15 @@ export const main = Effect.fn("rooms.read")(function* main(
 ) {
   const { file, hours, last, race, script } = yield* options(args);
   const fileSystem = yield* FileSystem.FileSystem;
-  const notes =
+  const { notes, unread } =
     file === undefined
       ? yield* liveNotes(script, Number(hours))
       : notesOfLines(yield* fileSystem.readFileString(file));
+  if (unread > 0) {
+    yield* Console.warn(
+      `${unread} room line(s) did not match RoomNoteSchema, so a race below may look incomplete.`
+    );
+  }
   const races = groupRaces(notes).filter(
     ({ raceId }) => race === undefined || raceId === race
   );

@@ -368,9 +368,9 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Id: `menus`
 - Start: `apps/web/src/components/use-flow.ts`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/career/flow.ts`
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
-- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
+- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md), [bar-look.md](../.claude/skills/verify-rushline/features/bar-look.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/bar*.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/routes/bar.tsx`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -391,6 +391,7 @@ Source files:
 - `apps/web/src/components/screens/clubhouse-wall.tsx`
 - `apps/web/src/components/screens/clubhouse.tsx`
 - `apps/web/src/components/screens/confirm.tsx`
+- `apps/web/src/components/screens/data-notice.tsx`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/game-over.tsx`
 - `apps/web/src/components/screens/garage.tsx`
@@ -404,7 +405,20 @@ Source files:
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
 - `apps/web/src/components/use-flow.ts`
+- `apps/web/src/game/bar-blocks.ts`
+- `apps/web/src/game/bar-cast.ts`
+- `apps/web/src/game/bar-garage.ts`
+- `apps/web/src/game/bar-kit.ts`
+- `apps/web/src/game/bar-light.ts`
+- `apps/web/src/game/bar-outside.ts`
+- `apps/web/src/game/bar-pools.ts`
+- `apps/web/src/game/bar-props.ts`
+- `apps/web/src/game/bar-room.ts`
+- `apps/web/src/game/bar-signs.ts`
+- `apps/web/src/game/bar-tags.ts`
+- `apps/web/src/game/bar.ts`
 - `apps/web/src/game/showroom.ts`
+- `apps/web/src/routes/bar.tsx`
 - `apps/web/src/styles.css`
 
 Test files:
@@ -510,7 +524,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
 
 Source files:
 
@@ -531,6 +545,7 @@ Source files:
 Test files:
 
 - `apps/web/test/bike-contact.ts`
+- `apps/web/test/figure-shadow.test.ts`
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
 - `apps/web/test/rider-shade.ts`
@@ -921,18 +936,20 @@ Test files:
 
 ### Play-test telemetry
 
-Play-test recording with the tester's consent: the diagnostics hub, recorder, device settings and uploader in the browser, the `POST /api/telemetry` collector and its store, and the session reader.
+Race data and play-test recording: the player events sender, `POST /api/events`, the notice and privacy page, and the tester's diagnostics hub, recorder, device settings and uploader in the browser, the `POST /api/telemetry` collector and its store, and the session reader.
 
 - Id: `telemetry`
 - Start: `apps/web/src/diagnostics/hub.ts`, `apps/web/src/server/telemetry.ts`, `tools/perf/session.ts`
 - Docs: [docs/observability.md#play-test-telemetry](observability.md#play-test-telemetry), [docs/errors.md#the-telemetry-endpoint](errors.md#the-telemetry-endpoint), [docs/errors.md#the-uploader](errors.md#the-uploader)
-- Verify: none yet
+- Verify: [player-events.md](../.claude/skills/verify-rushline/features/player-events.md)
 - Perf: none yet
-- Owns: `packages/telemetry/**`, `apps/web/src/diagnostics/**`, `apps/web/src/server/telemetry*.ts`, `apps/web/src/server/refusals/**`, `apps/web/src/routes/api/telemetry.ts`, `apps/web/test/telemetry.test.ts`, `apps/web/test/uploader.test.ts`, `tools/perf/session.ts`, `tools/perf/src/session*.ts`, `tools/perf/test/session.test.ts`
+- Owns: `packages/telemetry/**`, `apps/web/src/diagnostics/**`, `apps/web/src/server/telemetry*.ts`, `apps/web/src/server/refusals/**`, `apps/web/src/routes/api/telemetry.ts`, `apps/web/src/routes/api/events.ts`, `apps/web/src/routes/privacy.tsx`, `apps/web/src/server/player-events.ts`, `apps/web/test/player-events.test.ts`, `apps/web/test/player-events-server.test.ts`, `apps/web/test/telemetry.test.ts`, `apps/web/test/uploader.test.ts`, `tools/perf/session.ts`, `tools/perf/src/session*.ts`, `tools/perf/test/session.test.ts`
 
 Source files:
 
 - `apps/web/src/diagnostics/hub.ts`
+- `apps/web/src/diagnostics/player-events.ts`
+- `apps/web/src/diagnostics/race-events.ts`
 - `apps/web/src/diagnostics/recorder.ts`
 - `apps/web/src/diagnostics/settings.ts`
 - `apps/web/src/diagnostics/upload/delivery.ts`
@@ -940,9 +957,13 @@ Source files:
 - `apps/web/src/diagnostics/upload/worker.ts`
 - `apps/web/src/diagnostics/uploader-runtime.ts`
 - `apps/web/src/diagnostics/uploader.ts`
+- `apps/web/src/routes/api/events.ts`
 - `apps/web/src/routes/api/telemetry.ts`
+- `apps/web/src/routes/privacy.tsx`
+- `apps/web/src/server/player-events.ts`
 - `apps/web/src/server/refusals/invalid.ts`
 - `apps/web/src/server/refusals/no-store.ts`
+- `apps/web/src/server/refusals/not-forwarded.ts`
 - `apps/web/src/server/refusals/not-json.ts`
 - `apps/web/src/server/refusals/store-failed.ts`
 - `apps/web/src/server/refusals/too-large.ts`
@@ -951,6 +972,7 @@ Source files:
 - `packages/telemetry/src/jsonl-store.ts`
 - `packages/telemetry/src/limits.ts`
 - `packages/telemetry/src/memory-store.ts`
+- `packages/telemetry/src/player-events.ts`
 - `packages/telemetry/src/schema.ts`
 - `packages/telemetry/src/store-error.ts`
 - `packages/telemetry/src/store.ts`
@@ -961,6 +983,8 @@ Source files:
 
 Test files:
 
+- `apps/web/test/player-events-server.test.ts`
+- `apps/web/test/player-events.test.ts`
 - `apps/web/test/telemetry.test.ts`
 - `apps/web/test/uploader.test.ts`
 - `packages/telemetry/test/store.test.ts`

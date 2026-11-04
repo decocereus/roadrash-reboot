@@ -324,6 +324,11 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/server/telemetry*.ts",
       "apps/web/src/server/refusals/**",
       "apps/web/src/routes/api/telemetry.ts",
+      "apps/web/src/routes/api/events.ts",
+      "apps/web/src/routes/privacy.tsx",
+      "apps/web/src/server/player-events.ts",
+      "apps/web/test/player-events.test.ts",
+      "apps/web/test/player-events-server.test.ts",
       "apps/web/test/telemetry.test.ts",
       "apps/web/test/uploader.test.ts",
       "tools/perf/session.ts",
@@ -337,9 +342,9 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/session.ts",
     ],
     summary:
-      "Play-test recording with the tester's consent: the diagnostics hub, recorder, device settings and uploader in the browser, the `POST /api/telemetry` collector and its store, and the session reader.",
+      "Race data and play-test recording: the player events sender, `POST /api/events`, the notice and privacy page, and the tester's diagnostics hub, recorder, device settings and uploader in the browser, the `POST /api/telemetry` collector and its store, and the session reader.",
     title: "Play-test telemetry",
-    verify: [],
+    verify: ["player-events.md"],
   },
   {
     docs: [

@@ -56,6 +56,7 @@ export interface HudState {
 
 export interface GameEvents {
   readonly onHud: (hud: HudState) => void;
+  readonly onRestart: () => void;
   readonly onStart: (plan: RacePlan) => void;
   readonly onSettle: (plan: RacePlan, outcome: RaceOutcome) => void;
   readonly onOver: (plan: RacePlan, outcome: RaceOutcome) => void;
@@ -68,6 +69,11 @@ export interface GameHandle {
   readonly pause: () => boolean;
   readonly resume: () => void;
   readonly quit: () => RaceOutcome | null;
+  readonly riderFacts: () => {
+    readonly crashes: number;
+    readonly roadMetres: number;
+    readonly seconds: number;
+  };
   readonly toggleMute: () => void;
   readonly dispose: () => void;
 }

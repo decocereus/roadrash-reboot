@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
 import { paintPrimitives } from "./assets.ts";
-import type { RiderAsset } from "./assets.ts";
+import type { Palette, PoseName, RiderAsset } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
@@ -23,7 +23,7 @@ import {
   turnedFrom,
 } from "./figure-pose.ts";
 import type { RiderPose, Riding, Sided, Turn } from "./figure-pose.ts";
-import { paletteOf, PosedSkeleton } from "./figure-rig.ts";
+import { posed, PosedSkeleton } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
 import { weaponKinds, weaponMesh } from "./figure-weapons.ts";
 import { isSkinnedMesh } from "./meshes.ts";
@@ -43,6 +43,7 @@ export interface Stance {
 }
 
 const BLEND_RATE = 16;
+const HOLD_RATE = 9;
 
 export interface RiderFigure {
   readonly root: THREE.Group;
@@ -52,6 +53,13 @@ export interface RiderFigure {
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
   holdEveryWeapon: () => () => void;
+  bakePose: (base: PoseName, turns: readonly Turn[]) => number[];
+  holdPose: (
+    from: number[],
+    to: number[],
+    blend: number,
+    seconds: number
+  ) => void;
 }
 
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
@@ -59,7 +67,7 @@ const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
 export const createRiderFigure = (
   asset: RiderAsset,
   shading: Shading,
-  jacketIndex: number
+  palette: Palette
 ): RiderFigure => {
   const root = new THREE.Group();
   const model = cloneRig(asset.scene);
@@ -73,7 +81,7 @@ export const createRiderFigure = (
     }
   });
   const [first] = skinned;
-  const painted = paintPrimitives(asset.primitives, paletteOf(jacketIndex));
+  const painted = paintPrimitives(asset.primitives, palette);
   if (!(first && painted.cel)) {
     throw new Error("The rider model has no skin.");
   }
@@ -180,11 +188,14 @@ export const createRiderFigure = (
     holding = next;
   };
 
-  for (const bone of bones) {
-    if (bone) {
-      bone.matrixAutoUpdate = false;
+  const composeBones = (automatic: boolean) => {
+    for (const bone of bones) {
+      if (bone) {
+        bone.matrixAutoUpdate = automatic;
+      }
     }
-  }
+  };
+  composeBones(false);
 
   const apply = () => {
     let offset = -4;
@@ -359,6 +370,17 @@ export const createRiderFigure = (
         stance.side
       );
     },
+    bakePose(from, turns) {
+      const pose = asset.poses.get(from);
+      if (!pose) {
+        throw new Error(`The rider model has no ${from} pose.`);
+      }
+      composeBones(true);
+      const baked = bake(pose, turns);
+      posed(rig, written);
+      composeBones(false);
+      return baked;
+    },
     dispose() {
       holding?.removeFromParent();
       holding = null;
@@ -389,6 +411,32 @@ export const createRiderFigure = (
           }
         }
       };
+    },
+    holdPose(from, to, blend, seconds) {
+      skeleton.stale = true;
+      const follow = Math.min(1, HOLD_RATE * seconds);
+      for (let offset = 0; offset < current.length; offset += 4) {
+        THREE.Quaternion.slerpFlat(
+          wanted,
+          offset,
+          from,
+          offset,
+          to,
+          offset,
+          blend
+        );
+        THREE.Quaternion.slerpFlat(
+          current,
+          offset,
+          current,
+          offset,
+          wanted,
+          offset,
+          follow
+        );
+      }
+      apply();
+      model.position.set(0, 0, 0);
     },
     rest() {
       if (!resting) {

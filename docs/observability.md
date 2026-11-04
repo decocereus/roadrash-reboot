@@ -1,6 +1,20 @@
 # Observability
 
-Rushline records three things: play-test telemetry from testers' browsers, one record per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+Rushline records four things: player events for the funnel, play-test telemetry from testers' browsers, one record per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+
+## Player events
+
+Eleven events answer where players stop: `game_opened`, `game_ready`, `game_load_failed`, `race_picked`, `room_joined`, `invite_copied`, `room_lost`, `race_loaded`, `race_started`, `race_ended` and `race_again`. `packages/telemetry/src/player-events.ts` is the list. `apps/web/src/diagnostics/player-events.ts` sends them with `navigator.sendBeacon` to `POST /api/events`, and `apps/web/src/server/player-events.ts` forwards them to the EU PostHog project named by the `POSTHOG_PROJECT_KEY` secret. With no key, the route answers 503 and sends nothing. `race_started` and `race_ended` carry the race ID, so they join the race's summary: the room's ID for a room race, and a browser-minted one for a solo race.
+
+Collection is on by default. The first menu shows a short notice once, and `/privacy` has the detail. Copy says what is recorded and never calls it anonymous: a stable ID ties a player's events together.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| A new event or field is added to the list in `player-events.ts`, and the route refuses an event the list does not have and removes a field it does not have, so a name, email, token or chat cannot reach PostHog by accident. | `pnpm test` | `packages/telemetry/src/player-events.ts`, `apps/web/src/server/player-events.ts` | None |
+| Events go through our Worker. PostHog receives the Worker's address, never the player's, and every event sets `$process_person_profile: false` and `$geoip_disable: true`. Country comes from `request.cf`. There is no PostHog SDK or autocapture in the browser. | `pnpm test` | `apps/web/src/server/player-events.ts`, `apps/web/src/diagnostics/player-events.ts` | None |
+| The player ID is a random UUID kept on the device under `rushline.player.v1`, with no link to a name. Settings shows it and has the Race data switch. With the switch off, the sender drops what it holds and sends nothing. | `pnpm test` | `apps/web/src/diagnostics/player-events.ts`, `apps/web/src/components/screens/settings.tsx` | None |
+| A dropped call never affects a race. `track` only adds to a list. JSON and the beacon happen on a timer 5 seconds later or at `pagehide`, a failed send is counted and never retried, and nothing awaits an answer. Events fire on screen and race changes, never per frame or per tick. | `pnpm test`, judgment | `apps/web/src/diagnostics/player-events.ts`, `apps/web/src/components/use-flow.ts` | None |
+| Some blockers refuse beacons to `/api/events`: Helium, the verification browser, answers `ERR_BLOCKED_BY_CLIENT` and `sendBeacon` still returns true, so those players are missing from the funnels and `dropped` does not count them. The path keeps its plain name, because a player's blocker is that player's choice. | judgment | `apps/web/src/diagnostics/hub.ts` | None |
 
 ## Play-test telemetry
 
@@ -8,7 +22,7 @@ Rushline records three things: play-test telemetry from testers' browsers, one r
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| Nothing is uploaded without the tester's choice. Automatic upload is off by default. Until the tester turns it on, batches wait in the page's queue and leave only when the tester sends a report. | judgment | `apps/web/src/diagnostics` | None |
+| Play-test recording is a tester's tool, separate from player events. Its Settings rows appear only with `?tester` in the address, and recording and automatic upload stay off until the tester turns them on. No deployed store exists, so it records only against a local play server. | judgment | `apps/web/src/diagnostics`, `apps/web/src/components/screens/settings.tsx` | None |
 | The hub owns the session: a UUID per page load, the build's commit and dirty flag stamped by `vite.config.ts`, and the device the tester picked. Every batch carries it. | judgment | `apps/web/src/diagnostics/hub.ts` | None |
 | In the frame loop the recorder only writes numbers into preallocated rings. JSON and network work happen in a batch every 30 seconds outside the loop, and a period with no frames and no events sends nothing. | judgment | `apps/web/src/diagnostics/recorder.ts`, `apps/web/src/diagnostics/hub.ts` | None |
 | A batch is validated against the Effect schema in `packages/telemetry/src/schema.ts` before a store acknowledges it. `limits.ts` has no dependencies so the browser can import it. | `pnpm test` | `packages/telemetry`, `apps/web/src/server/telemetry.ts` | None |
@@ -30,6 +44,8 @@ Every room race has a random race ID that is not the invite link. `apps/rooms/sr
 | No room note holds a guest name, the room ID or an IP address. A rider is named by its number. | `pnpm test` | `apps/rooms/src/notes.ts`, `apps/rooms/src/host.ts` | None |
 | The `ended` note lists every rider who started, including those who left, and says whether each browser's stats arrived, so a missing stats line is a counted fact rather than a guess. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 | The room writes a note per race event and never per tick or per message. In the tick loop it only adds to the wake counters. | `pnpm test` | `apps/rooms/src/host.ts` | None |
+| Workers Logs removes null values and empty lists from a stored line, so `RoomNoteSchema` reads a missing nullable field as null and a missing list as empty. `pnpm rooms:read` warns about any line with a `kind` that still does not decode, because a report without its `ended` line otherwise reads as a dead room. | `pnpm test` | `apps/rooms/src/notes.ts`, `tools/rooms/src/read.ts` | None |
+| `pnpm rooms:read` asks Cloudflare only for lines with a `kind`. Request lines are most of the log, and they used up the 2000-event limit and cut off older races. | `pnpm test` | `tools/rooms/src/read.ts` | None |
 
 ## Frame profiles
 

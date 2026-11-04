@@ -10,5 +10,6 @@ interface ImportMetaEnv {
 declare namespace Cloudflare {
   interface Env {
     readonly ART: R2Bucket;
+    readonly POSTHOG_PROJECT_KEY: string;
   }
 }

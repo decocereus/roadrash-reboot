@@ -10,6 +10,7 @@ const DISPLAY_GAMMA = 2.2;
 const FX_LAYER = 1;
 const FIGURE_LIGHT = [1.1, 0.97, 0.82] as const;
 const SHADE_CHROMA = 1.24;
+const FIGURE_DEPTH_FLOOR = 0.93;
 const LUMA = new THREE.Vector3(0.2126, 0.7152, 0.0722);
 const SUN_ANCHOR_HEIGHT = 2.2;
 
@@ -107,11 +108,14 @@ interface CelOptions {
   readonly vertexColors?: boolean;
 }
 
+export type Tone = Pick<Look, "lit" | "rim" | "rimDirection" | "shadow">;
+
 export interface Shading {
   readonly look: Look;
   readonly key: THREE.Vector3;
   readonly ambient: THREE.Color;
   readonly sun: THREE.Color;
+  relight: (tone: Tone) => void;
   cel: (
     colour: THREE.ColorRepresentation,
     options?: CelOptions
@@ -166,28 +170,49 @@ export const seesFx = (camera: THREE.Camera, sees: boolean): void => {
   }
 };
 
+export const figureShadowOf = ({
+  lit,
+  shadow,
+}: Pick<Look, "lit" | "shadow">) => {
+  const depth = Math.max(
+    Math.cbrt(linearOf(shadow).dot(LUMA) / linearOf(lit).dot(LUMA)),
+    FIGURE_DEPTH_FLOOR
+  );
+  return { chroma: Math.min(depth * SHADE_CHROMA, 1), depth };
+};
+
 export const createShading = (look: Look): Shading => {
   const ramp = createRamp();
   const key = new THREE.Vector3(...look.keyDirection).normalize();
-  const rimWorld = new THREE.Vector3(...look.rimDirection).normalize();
+  const rimWorld = new THREE.Vector3();
   const rimDirection = { value: new THREE.Vector3(0, 0, 1) };
   const keyDirection = { value: new THREE.Vector3(0, 0, 1) };
-  const rimColour = { value: new THREE.Color(look.rim) };
+  const rimColour = { value: new THREE.Color() };
   const toView = new THREE.Matrix3();
-  const ambient = lightOf(look.shadow);
-  const sun = lightOf(look.lit).sub(ambient);
-  const litLinear = linearOf(look.lit);
-  const shadowLinear = linearOf(look.shadow);
-  const figureLinear = linearOf(FIGURE_LIGHT);
-  const depth = Math.cbrt(shadowLinear.dot(LUMA) / litLinear.dot(LUMA));
-  const figureLight = {
-    value: figureLinear.multiplyScalar(
-      litLinear.dot(LUMA) / figureLinear.dot(LUMA)
-    ),
+  const ambient = new THREE.Color();
+  const sun = new THREE.Color();
+  const figureLight = { value: new THREE.Vector3() };
+  const figureSun = { value: new THREE.Vector3() };
+  const figureDepth = { value: 1 };
+  const figureChroma = { value: 1 };
+
+  const relight = (tone: Tone): void => {
+    rimWorld.set(...tone.rimDirection).normalize();
+    rimColour.value.set(tone.rim);
+    ambient.copy(lightOf(tone.shadow));
+    sun.copy(lightOf(tone.lit)).sub(ambient);
+    const litLinear = linearOf(tone.lit);
+    const shadowLinear = linearOf(tone.shadow);
+    const figureLinear = linearOf(FIGURE_LIGHT);
+    figureLight.value.copy(
+      figureLinear.multiplyScalar(litLinear.dot(LUMA) / figureLinear.dot(LUMA))
+    );
+    figureSun.value.copy(litLinear).sub(shadowLinear);
+    const shade = figureShadowOf(tone);
+    figureDepth.value = shade.depth;
+    figureChroma.value = shade.chroma;
   };
-  const figureSun = { value: litLinear.clone().sub(shadowLinear) };
-  const figureDepth = { value: depth };
-  const figureChroma = { value: Math.min(depth * SHADE_CHROMA, 1) };
+  relight(look);
 
   const build = (
     parameters: THREE.MeshToonMaterialParameters,
@@ -265,6 +290,7 @@ export const createShading = (look: Look): Shading => {
     paint(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true);
     },
+    relight,
     sun,
     walker(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true, true, true);

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { modelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
 import { createShading } from "../src/game/cel.ts";
+import { paletteOf } from "../src/game/figure-rig.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createRiderFigure } from "../src/game/rider-figure.ts";
 import type { RiderFigure, Stance } from "../src/game/rider-figure.ts";
@@ -116,7 +117,7 @@ const stanceOf = (stance: Partial<Stance>): Stance => ({
 
 const figureOf = async (url: string): Promise<RiderFigure> => {
   const { value } = await assetParsers.rider(artFile(url), url);
-  return createRiderFigure(value, shading, 0);
+  return createRiderFigure(value, shading, paletteOf(0));
 };
 
 const placesOf = (figure: RiderFigure) => {
