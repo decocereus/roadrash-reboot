@@ -80,11 +80,23 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "week=$(date +%G-W%V)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
         id: browsers
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.engine.outputs.version }}-${{ matrix.engine }}
+      # Ubuntu's Azure mirror sometimes serves at 45 kB/s, and WebKit's 139 MB of
+      # packages would then take 51 minutes. With last week's packages restored,
+      # apt fetches only what changed.
+      - run: |
+          mkdir -p ~/apt-archives/partial
+          echo "Dir::Cache::Archives \"$HOME/apt-archives\";" | sudo tee /etc/apt/apt.conf.d/99-keep-archives
+      - uses: actions/cache@v4
+        with:
+          path: ~/apt-archives/*.deb
+          key: apt-${{ runner.os }}-${{ matrix.engine }}-${{ steps.engine.outputs.week }}
+          restore-keys: apt-${{ runner.os }}-${{ matrix.engine }}-
       - run: pnpm --filter @racer/replay exec playwright install --with-deps ${{ matrix.engine }}
         if: steps.browsers.outputs.cache-hit != 'true'
       - run: pnpm --filter @racer/replay exec playwright install-deps ${{ matrix.engine }}
