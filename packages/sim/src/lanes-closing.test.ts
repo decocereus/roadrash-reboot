@@ -86,6 +86,7 @@ const directions = [
     direction: 1,
     lanes: road.sameWayLanes,
     name: "same way",
+    opensAt: WIDE_AGAIN_FROM,
     past: WIDE_AGAIN_FROM + 2 * TAPER + 60,
   },
   {
@@ -93,9 +94,46 @@ const directions = [
     direction: -1,
     lanes: road.oncomingLanes,
     name: "oncoming",
+    opensAt: NARROW_FROM,
     past: NARROW_FROM - 2 * TAPER - 60,
   },
 ] as const;
+
+describe.each(directions)(
+  "cars $name where the road opens again",
+  ({ direction, lanes, opensAt }) => {
+    it.each([20, 23, 27])(
+      "a car moving back to its lane stops behind a car stopped there, from %i m/s",
+      (cruise) => {
+        const state = raceOn(road);
+        const home = lanes[1] ?? 0;
+        const stoppedAt = opensAt + direction * (TAPER + 36);
+        const stopped = carAt(stoppedAt, home, direction * 20);
+        const behind = carAt(
+          stoppedAt - direction * 240,
+          home,
+          direction * cruise
+        );
+        state.cars.length = 0;
+        state.cars.push(stopped, behind);
+        let closest = Number.POSITIVE_INFINITY;
+        for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {
+          stopped.s = stoppedAt;
+          stopped.speed = 0;
+          stepRace(state, road, frameOf(state));
+          closest = Math.min(
+            closest,
+            (stoppedAt - behind.s) * direction -
+              stopped.halfLength -
+              behind.halfLength
+          );
+        }
+        expect(Math.abs(behind.speed)).toBe(0);
+        expect(closest).toBeGreaterThan(0);
+      }
+    );
+  }
+);
 
 describe.each(directions)(
   "cars $name where a lane closes",
