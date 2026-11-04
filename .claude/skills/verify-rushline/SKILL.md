@@ -123,7 +123,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
 | `?rung=<n>` | Pin a rung of the quality ladder: 0 full, 1 shadow 2048, 2 lean bloom, 3 no multisampling, then the pixel ratio in steps of 0.1. The governor stays off. |
 
-Trucks, by where each starts at the race start: Breakwater Run 2.35 and 3.20 km, Slag Row 2.60 and 4.10, Ridge Road 4.50. A truck drives 20 m/s in the first same-way lane, so with `?at` it is that far along when the race starts. Roads end at 8.50 and 8.55 km.
+Trucks, by where each starts at the race start: Breakwater Run 3.90 and 4.65 km, Slag Row 2.60 and 4.10, Ridge Road 4.50. A truck drives 20 m/s in the first same-way lane, so with `?at` it is that far along when the race starts. Roads end at 8.50 and 8.55 km.
 
 ### Alternative: the T3 Code browser
 
