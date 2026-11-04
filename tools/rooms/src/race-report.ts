@@ -87,13 +87,15 @@ const headline = ({ raceId, started }: RaceRecord): string =>
     ? `Race ${raceId} on ${started.road}, ${new Date(started.at).toISOString()}, build ${started.build.slice(0, 12)}, ${started.seats} human(s), seed ${started.seed}`
     : `Race ${raceId}, its started line is missing`;
 
-const outcomeOf = (seat: RaceSeat): string => {
-  if (seat.finishTick >= 0) {
-    return `finished at ${raceTime(seat.finishTick)}`;
+const outcomeOf = ({ finishTick, leftAtTick, mode }: RaceSeat): string => {
+  const finished = finishTick >= 0;
+  if (leftAtTick === null || (finished && finishTick <= leftAtTick)) {
+    return finished ? `finished at ${raceTime(finishTick)}` : mode;
   }
-  return seat.leftAtTick === null
-    ? seat.mode
-    : `left at ${raceTime(seat.leftAtTick)}`;
+  const pilot = finished
+    ? `, the pilot finished at ${raceTime(finishTick)}`
+    : "";
+  return `left at ${raceTime(leftAtTick)}${pilot}`;
 };
 
 const stat = (note: RaceStatsNote, field: string): number =>

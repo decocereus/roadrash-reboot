@@ -117,6 +117,36 @@ describe("the race report", () => {
   });
 });
 
+const reportOfSeat = (only: RaceSeat): string =>
+  raceReport({
+    ended: {
+      catchUpWakes: 0,
+      kind: "ended",
+      raceId: "race-c",
+      seats: [only],
+      tick: 7200,
+      wakeGaps: [],
+      worstBehindTicks: 0,
+    },
+    left: [],
+    raceId: "race-c",
+    stats: [],
+  });
+
+describe("a rider who left", () => {
+  it("still reads as having left when the pilot finishes for them", () => {
+    expect(
+      reportOfSeat(seat(0, { finishTick: 7200, leftAtTick: 3600 }))
+    ).toContain("Rider 0: left at 1:00, the pilot finished at 2:00");
+  });
+
+  it("reads as finished when they closed the tab after the line", () => {
+    expect(
+      reportOfSeat(seat(0, { finishTick: 3600, leftAtTick: 7200 }))
+    ).toContain("Rider 0: finished at 1:00");
+  });
+});
+
 describe("reading a log", () => {
   it("finds notes in log lines and skips everything else", () => {
     const found = notesOfLines(
