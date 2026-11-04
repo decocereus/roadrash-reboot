@@ -16,17 +16,19 @@ One layout per road November 4, 2026. A road has one layout, the sections below,
 
 Breakwater Run's districts laid November 4, 2026. Breakwater Run now changes width seven times along its 8,500 m, its squeeze replaces the Long Sweeper with two quick bends, and its old hill replaces the yacht basin, the Mole and the Harbour Arm. Figures for it dated before this are of the sixteen-bend road.
 
-All figures were produced by compiling each plan with `compileTrack` and reading the compiled `curvature` and `slopeRate` arrays. A bend's radius is one over its peak curvature, which is `turn / (length × 0.7)` because of the 30% ease in and out. A bend's hold speed is where full steer equals the outward push for that bike's `BikeSpec` in `game-design.md`. The hold speeds quoted in the road sections below are from before the grip retune of October 15, 2026 (`game-design.md`, "Bends and the lean scrub"), which raised every `curvePush` by 30%; multiply them by 1.14 for the current bikes, so a 70 m right angle that held at 97 km/h on a Wren now holds at 112. Since that retune a leaned bike also scrubs its own speed, so "not flat" below no longer means the bend needs the brake: see the paragraph after the table. A crest's launch speed is where `slopeRate × speed²` passes gravity, the condition `rider-drive.ts` uses. No person has ridden the roads yet. The AI pilot finishes every road on its own without a crash (section "Ridden by the pilot" below), but passing numbers do not show that a road plays well, so each needs a play test.
+Breakwater Run tightened November 5, 2026. The owner rode the seven districts and asked for more bends, tighter bends and more places where combat is needed. The road now has eight districts and 25 bends, the tightest at a radius of 83 m, and a second one-lane stretch, the Arcades, at 3,900 m. Figures for it dated before this are of the seven-district road.
+
+All figures were produced by compiling each plan with `compileTrack` and reading the compiled `curvature` and `slopeRate` arrays. A bend's radius is one over its peak curvature, which is `turn / (length × 0.7)` because of the 30% ease in and out. A bend's hold speed is where full steer equals the outward push for that bike's `BikeSpec` in `game-design.md`. The hold speeds quoted in the road sections below are from before the grip retune of October 15, 2026 (`game-design.md`, "Bends and the lean scrub"), which raised every `curvePush` by 30%; multiply them by 1.14 for the current bikes, so a 70 m right angle that held at 97 km/h on a Wren now holds at 112. Breakwater Run's section is the exception and quotes the current bikes directly. Since that retune a leaned bike also scrubs its own speed, so "not flat" below no longer means the bend needs the brake: see the paragraph after the table. A crest's launch speed is where `slopeRate × speed²` passes gravity, the condition `rider-drive.ts` uses. No person has ridden the roads yet. The AI pilot finishes every road on its own without a crash (section "Ridden by the pilot" below), but passing numbers do not show that a road plays well, so each needs a play test.
 
 ## Summary
 
 | Region | Road | id | Length | Lane width / shoulder / verge | Traffic per km | Seed |
 | --- | --- | --- | --: | --- | --: | --- |
-| Salt Coast | Breakwater Run | `breakwater-run` | 8,500 m | 1 to 3 × 3.6 / 0.2 to 7.2 / 7 m, seven districts | 5 | `0xb4_7a_c1` |
+| Salt Coast | Breakwater Run | `breakwater-run` | 8,500 m | 1 to 3 × 3.6 / 0.2 to 7.2 / 7 m, eight districts | 5 | `0xb4_7a_c1` |
 | Lowtown | Slag Row | `slag-row` | 8,500 m | 2 × 3.5 / 0.5 / 6 m | 8 | `0x5a_9c_33` |
 | Stonepeak | Ridge Road | `ridge-road` | 8,550 m | 1 × 3.6 / 0.9 / 9 m | 5 | `0x51_ed_27` |
 
-Slag Row has two lanes each way, as The City did in the original, and Ridge Road has one. Each is a single district, so it keeps one width the whole way. Breakwater Run has seven districts, listed in its section. A plan's `districts` can change the lane count, up to three lanes each way, and the shoulder and verge along a road, with a 60 m taper inside the wider district. `docs/architecture.md` has the rules. `trafficPerKilometre` is per direction, as in `createTraffic`, and a direction shares it between its lanes. Every plan uses `leadInLength: 80` and `runoffLength: 400`.
+Slag Row has two lanes each way, as The City did in the original, and Ridge Road has one. Each is a single district, so it keeps one width the whole way. Breakwater Run has eight districts, listed in its section. A plan's `districts` can change the lane count, up to three lanes each way, and the shoulder and verge along a road, with a 60 m taper inside the wider district. `docs/architecture.md` has the rules. `trafficPerKilometre` is per direction, as in `createTraffic`, and a direction shares it between its lanes. Every plan uses `leadInLength: 80` and `runoffLength: 400`.
 
 ### How hard each road is
 
@@ -34,7 +36,7 @@ A bend counts as "not flat" for a bike when the bike's top speed is above the sp
 
 | Road | Length | Bends | Tightest radius | Not flat: Wren 400 | Not flat: Sesta 600 | Not flat: Anvil 1100 |
 | --- | --: | --: | --: | --: | --: | --: |
-| Breakwater Run | 8.50 km | 19 | 102 m | not recounted | not recounted | not recounted |
+| Breakwater Run | 8.50 km | 25 | 83 m | not recounted | not recounted | not recounted |
 | Slag Row | 8.50 km | 15 | 70 m | 10 | 12 | 12 |
 | Ridge Road | 8.55 km | 19 | 136 m | 7 | 10 | 17 |
 
@@ -123,11 +125,11 @@ The track tests check every rule above, that a road has four to seven hazards, o
 
 The seed salt, 0x4bc2, was picked from 400 when there were five roads, as the one that kept the old hazard counts and gave every road two or more oil slicks. Breakwater Run has 6 at tier 1 (3 oil, 3 rock), Slag Row 6 (3 oil, 2 rock, 1 pothole) and Ridge Road 6 (4 oil, 2 potholes).
 
-Tier 1 places these hazards, by id, kind, setting, position along the road, and position across it. A compiled road holds more candidates, ranked per road by a seeded roll, and a tier places the share of them its table gives (`game-design.md` section 4): 6, 8 and 9 on Breakwater Run and Slag Row, and 5, 7 and 8 on Ridge Road. Breakwater Run's tier 2 adds `hazard-4`, a pothole at 3,979 m, and `hazard-6`, oil at 5,720 m on the hill's last left. Its tier 3 adds `hazard-2`, a pothole at 1,665 m, x 0.67, on the squeeze's second bend. The ids and their places along the road are the ones the sixteen-bend road had. `hazard-3`, `hazard-7` and `hazard-9` lie 3.6 m further across, one lane out, because they now lie where the road has three lanes.
+Tier 1 places these hazards, by id, kind, setting, position along the road, and position across it. A compiled road holds more candidates, ranked per road by a seeded roll, and a tier places the share of them its table gives (`game-design.md` section 4): 6, 8 and 9 on Breakwater Run and Slag Row, and 5, 7 and 8 on Ridge Road. Breakwater Run's tier 2 adds `hazard-4`, oil at 3,967 m, x 1.85, on the only open lane at the Arcades' first bend, and `hazard-6`, oil at 5,720 m, x 5.78, on the hill's second left. Its tier 3 adds `hazard-2`, oil at 1,720 m, x 2.02, on the only open lane at the squeeze's exit. The road has more bends for a hazard to snap to, so seven of its nine candidates are oil, where four were on the seven-district road.
 
 | Road | Hazards |
 | --- | --- |
-| Breakwater Run | `hazard-1` rock (exit) at 920 m, x 0.84; `hazard-3` oil (turn-in) at 3,145 m, x 9.33; `hazard-5` rock (exit) at 4,680 m, x 1.03; `hazard-7` rock (traffic) at 6,946 m, x 3.92; `hazard-8` oil (turn-in) at 7,488 m, x 1.49; `hazard-9` oil (turn-in) at 8,081 m, x 9.01 |
+| Breakwater Run | `hazard-1` rock (exit) at 920 m, x 0.84; `hazard-3` oil (turn-in) at 3,145 m, x 9.33; `hazard-5` oil (turn-in) at 4,687 m, x 5.72; `hazard-7` oil (exit) at 6,930 m, x 5.74; `hazard-8` pothole (apex) at 7,565 m, x 10.15; `hazard-9` oil (exit) at 8,080 m, x 1.79 |
 | Slag Row | `hazard-2` oil (exit) at 1,480 m, x 5.66; `hazard-3` pothole (traffic) at 2,271 m, x 0.64; `hazard-6` rock (exit) at 5,300 m, x 1.21; `hazard-7` rock (traffic) at 6,372 m, x 1.41; `hazard-8` oil (turn-in) at 7,004 m, x 5.39; `hazard-9` oil (exit) at 7,760 m, x 1.48 |
 | Ridge Road | `hazard-2` oil (turn-in) at 1,696 m, x 1.74; `hazard-4` oil (traffic) at 4,244 m, x 1.38; `hazard-6` pothole (apex) at 6,150 m, x 0.84; `hazard-7` pothole (apex) at 7,640 m, x 0.22; `hazard-8` oil (exit) at 8,270 m, x 1.38 |
 
@@ -162,23 +164,60 @@ Nothing on the road reacts to a crossing yet: riders, traffic and the pilot ride
 
 ## Breakwater Run (Salt Coast)
 
-Breakwater Run goes from the harbour along a wide boulevard, through a market one lane wide, across a plaza, along the seawall and the pier, up an old hill, and down into the docks. Its character is a road that changes under the rider: 23 m, 8 m, 36 m, 23 m, 16 m, 15 m and 22 m wide. Traffic follows the open lanes through each change, so the same cars that spread over three lanes on the boulevard file in single order through the market.
+Breakwater Run goes from the harbour along a wide boulevard, through a market one lane wide, across a plaza, along the seawall and the pier, through the Arcades, one lane wide again, up an old hill, and down into the docks. Its character is a road that changes under the rider: 23 m, 8 m, 36 m, 23 m, 16 m, 8 m, 15 m and 22 m wide. Traffic follows the open lanes through each change, so the same cars that spread over three lanes on the boulevard file in single order through the market.
 
 | # | District | From (m) | Lanes each way | Shoulder | Road width | Taper |
 | --: | --- | --: | --: | --: | --: | --- |
 | 1 | Harbour boulevard | 0 | 3 | 0.7 | 23 m | 1,240 to 1,300, into the squeeze |
-| 2 | Market squeeze | 1,300 | 1 | 0.4 | 8 m | 1,900 to 1,960, out to the plaza |
-| 3 | The plaza | 1,900 | 3 | 7.2 | 36 m | 2,240 to 2,300, in to 23 m |
+| 2 | Market squeeze | 1,300 | 1 | 0.4 | 8 m | 1,740 to 1,800, out to the plaza |
+| 3 | The plaza | 1,740 | 3 | 7.2 | 36 m | 2,240 to 2,300, in to 23 m |
 | 4 | Where the split will go | 2,300 | 3 | 0.7 | 23 m | 3,440 to 3,500, in to 16 m |
-| 5 | Seafront | 3,500 | 2 | 0.8 | 16 m | 4,940 to 5,000, in to 15 m |
-| 6 | Old hill | 5,000 | 2 | 0.3 | 15 m | 6,100 to 6,160, out to 22 m |
-| 7 | Docks into neon | 6,100 | 3 | 0.2 | 22 m | none |
+| 5 | Seafront | 3,500 | 2 | 0.8 | 16 m | 3,840 to 3,900, into the Arcades |
+| 6 | The Arcades | 3,900 | 1 | 0.4 | 8 m | 4,220 to 4,280, out to 15 m |
+| 7 | Old hill | 4,220 | 2 | 0.3 | 15 m | 7,150 to 7,210, out to 22 m |
+| 8 | Docks into neon | 7,150 | 3 | 0.2 | 22 m | none |
 
-**The Market squeeze** is the road's demand: two lanes' worth of oncoming and same-way traffic on 8 m of tarmac, with a 46° right and a 46° left at a radius of 131 m that a Sesta 600 holds at 116 km/h and a Wren at 133. **The plaza** is a stand-in until its own surface exists: traffic keeps to three lanes, and the 7.2 m each side of them is bare asphalt a pilot may use to pass. No paving or ad tower stands on it yet, and `roadSurfacesOf` paints one texture per lane count at the widest half, so every three-lane stretch shows the same road markings at 28 texels a metre rather than 44. **The Lighthouse Kink**, a 55° left packed into 140 m, comes as the plaza closes, which a Sesta 600 holds at 102 km/h and a Wren at 117. **The Old hill** climbs 25 m through four bends, a 46° left, a 44° right, a 44° left and a 30° right, at radii of 157 to 214 m, to a 160 m flat top that holds `market-cross`, then falls 18 m into the docks. **The Fort Gate**, a 58° left at a radius of 104 m (103 km/h on a Sesta, 118 on a Wren), is the docks' first demand, and **the Crane Kink**, a 46° left at a radius of 122 m (112 km/h on a Sesta, 129 on a Wren), comes 300 m before the finish at the fish market.
+The eighth district is there for the Arcades. Fighting on the seven-district road stopped at about 2,300 m, because the field has spread out by then, and only a narrow road brings it together again. Lanes are 3.6 m apart and a punch or a kick reaches 2.2 m across, so a pass one lane over is out of reach. In 30 pilot races at tier 1, 90 percent of passes in the squeeze happened within reach, against 15 percent on the boulevard. Tighter bends alone moved nothing: they lowered attacks in the squeeze from 8.13 to 6.67 per kilometre on eight seeds.
+
+Hold speeds in this section are the current bikes', from `holdSpeed` in `packages/sim/src/corner-warnings.ts`, so the 1.14 at the top of this document does not apply to them. A ride at fixed speed with full steer on a constant radius read 126 km/h on a Sesta 600 and 152 on a Wren at a radius of 97 m, and 116 and 139 at 83 m, within 3 km/h of the formula. The pilots ride a little under these figures. Alone on an empty road the pilot laps in 181.5 s on a Sesta 600 and 190.8 s on a Wren, 14.4 and 11.6 s slower than on the seven-district road.
+
+**The Market squeeze** is the road's first demand: two lanes' worth of oncoming and same-way traffic on 8 m of tarmac for 440 m, with a 58° right and a 58° left at a radius of 97 m that a Sesta 600 holds at 129 km/h and a Wren at 155. **The plaza** is a stand-in until its own surface exists: traffic keeps to three lanes, and the 7.2 m each side of them is bare asphalt a pilot may use to pass. No paving or ad tower stands on it yet, and `roadSurfacesOf` paints one texture per lane count at the widest half, so every three-lane stretch shows the same road markings at 28 texels a metre rather than 44. Its 558 m straight and the 620 m along the seawall stay straight on purpose, the first as the sprint out of the squeeze and the second as the place the split will go. **The Lighthouse Kink**, a 68° left packed into 140 m at a radius of 83 m, comes as the plaza closes, and it is the tightest bend on the road. A Sesta 600 holds it at 118 km/h and a Wren at 142. **The Arcades** is the road's second demand: 320 m of one lane on the old Promenade straight, with a 46° left at a radius of 96 m (128 km/h on a Sesta, 154 on a Wren) and a 50° right at 88 m (123 and 147). It is at 3,900 m because the two lanes before it hold a queue without making one, where three lanes before it brought stuck to about 50 percent at tier 3, and because a neck on the hill drew 0.75 to 1.07 attacks per kilometre at tier 1 against 2.81 here. **The Old hill** climbs 25 m through four bends, a 52° left, a 50° right, a 50° left and a 42° right, at radii of 139 to 144 m, to a 170 m flat top that holds `market-cross`, then falls 18 m through a 28° right. It keeps two lanes through **the Fort Gate**, a 72° left at a radius of 84 m (119 km/h on a Sesta, 143 on a Wren), which is the docks' first demand. **The Crane Kink**, a 66° left at a radius of 85 m (120 km/h on a Sesta, 144 on a Wren), follows a 38° right with no straight between them and comes 300 m before the finish at the fish market.
 
 Five crests remain: the Headland drop, the Seawall hump, the Pier hump, the Marina bridge and the Battery crest, launching at 176, 169, 172, 179 and 186 km/h. The sea and the jump are later units.
 
-The hill's two outer bends and the quay's right turn further than the sketch asked. A wider road forgives more of a bend's hands-off drift, so a 24° last bend on the hill and a 30° quay bend each let a rider with centred bars stay on the road. Shortening those bends lowered the drift, and turning them further put that rider off the road. `pnpm check:handling` holds this road to five such bends: 266 to 515, 747 to 894, 3,122 to 3,379, 4,419 to 4,642 and 7,173 to 7,428 m. The sixteen-bend road had four. The fifth, the Headland right, drifts 9.4 m against an 11.5 m half width on the boulevard.
+A wider road forgives more of a bend's hands-off drift, so a gentle bend on three lanes lets a rider with centred bars stay on the road. The new bends on the wide stretches turn far enough to put that rider off, except the 38° right before the Crane Kink, which drifts 10.2 m against an 11 m half width. `pnpm check:handling` holds this road to five such bends, and it now has four: 266 to 515, 747 to 894, 3,122 to 3,379 and 7,907 to 8,054 m.
+
+### Bends
+
+| At (m)         | Turn | Radius | Sesta 600 | Wren 400 | Lanes |
+| -------------- | ---: | -----: | --------: | -------: | ----: |
+| 266 to 515     |  18° |  668 m |  396 km/h | 492 km/h |     3 |
+| 747 to 894     |  34° |  189 m |  187 km/h | 227 km/h |     3 |
+| 1,031 to 1,230 |  42° |  210 m |  199 km/h | 241 km/h |     3 |
+| 1,345 to 1,476 |  58° |   97 m |  129 km/h | 155 km/h |     1 |
+| 1,565 to 1,696 |  58° |   97 m |  129 km/h | 155 km/h |     1 |
+| 2,244 to 2,377 |  68° |   83 m |  118 km/h | 142 km/h |     3 |
+| 2,386 to 2,535 |  62° |  104 m |  134 km/h | 161 km/h |     3 |
+| 3,122 to 3,379 |  26° |  463 m |  316 km/h | 389 km/h |     3 |
+| 3,411 to 3,590 |  30° |  267 m |  228 km/h | 278 km/h |     2 |
+| 3,954 to 4,057 |  46° |   96 m |  128 km/h | 154 km/h |     1 |
+| 4,104 to 4,207 |  50° |   88 m |  123 km/h | 147 km/h |     1 |
+| 4,412 to 4,629 |  40° |  241 m |  215 km/h | 261 km/h |     2 |
+| 4,669 to 4,832 |  30° |  241 m |  215 km/h | 261 km/h |     2 |
+| 5,047 to 5,214 |  52° |  139 m |  157 km/h | 190 km/h |     2 |
+| 5,287 to 5,454 |  50° |  144 m |  161 km/h | 194 km/h |     2 |
+| 5,527 to 5,694 |  50° |  144 m |  161 km/h | 194 km/h |     2 |
+| 5,766 to 5,905 |  42° |  143 m |  160 km/h | 193 km/h |     2 |
+| 6,095 to 6,306 |  28° |  344 m |  264 km/h | 324 km/h |     2 |
+| 6,325 to 6,466 |  72° |   84 m |  119 km/h | 143 km/h |     2 |
+| 6,478 to 6,663 |  52° |  154 m |  167 km/h | 202 km/h |     2 |
+| 6,682 to 6,899 |  40° |  241 m |  215 km/h | 261 km/h |     2 |
+| 7,162 to 7,379 |  40° |  241 m |  215 km/h | 261 km/h |     3 |
+| 7,461 to 7,670 |  48° |  192 m |  189 km/h | 229 km/h |     3 |
+| 7,907 to 8,054 |  38° |  169 m |  176 km/h | 212 km/h |     3 |
+| 8,065 to 8,196 |  66° |   85 m |  120 km/h | 144 km/h |     3 |
+
+Eight straights over 250 m remain: 0 to 307, 474 to 756, 1,691 to 2,249 (the plaza), 2,530 to 3,150 (the split), 3,577 to 3,958, 6,884 to 7,177, 7,658 to 7,915 and the last 308 m.
 
 ### Sections
 
@@ -191,13 +230,13 @@ The hill's two outer bends and the quay's right turn further than the sketch ask
 | 5 | 900 | 120 | 0 | -12 | Headland drop; launches at 176 km/h |
 | 6 | 1,020 | 220 | -42 | -4 | Left down to the market |
 | 7 | 1,240 | 100 | 0 | 0 | Into the squeeze |
-| 8 | 1,340 | 150 | 46 | 0 | Squeeze, right |
-| 9 | 1,490 | 100 | 0 | 0 | Squeeze, between the bends |
-| 10 | 1,590 | 150 | -46 | 0 | Squeeze, left |
-| 11 | 1,740 | 200 | 0 | 0 | Out of the squeeze, widening to the plaza at 1,900 m |
+| 8 | 1,340 | 140 | 58 | 0 | Squeeze, right; 129 km/h on a Sesta 600, 155 on a Wren |
+| 9 | 1,480 | 80 | 0 | 0 | Squeeze, between the bends |
+| 10 | 1,560 | 140 | -58 | 0 | Squeeze, left; 129 km/h on a Sesta 600, 155 on a Wren |
+| 11 | 1,700 | 240 | 0 | 0 | Out of the squeeze, widening to the plaza at 1,740 m |
 | 12 | 1,940 | 300 | 0 | 0 | The plaza |
-| 13 | 2,240 | 140 | -55 | 0 | Lighthouse Kink as the plaza closes; 102 km/h on a Sesta 600 |
-| 14 | 2,380 | 160 | 48 | 2 | Right, recovering |
+| 13 | 2,240 | 140 | -68 | 0 | Lighthouse Kink as the plaza closes; 118 km/h on a Sesta 600, 142 on a Wren |
+| 14 | 2,380 | 160 | 62 | 2 | Right, recovering; 134 km/h on a Sesta 600, 161 on a Wren |
 | 15 | 2,540 | 360 | 0 | 8 | Seawall climb |
 | 16 | 2,900 | 100 | 0 | 6 | Seawall hump, rise |
 | 17 | 3,000 | 100 | 0 | -9 | Seawall hump, drop; launches at 169 km/h |
@@ -206,31 +245,40 @@ The hill's two outer bends and the quay's right turn further than the sketch ask
 | 20 | 3,600 | 120 | 0 | 0 | Along the pier |
 | 21 | 3,720 | 40 | 0 | 1.4 | Pier hump, rise |
 | 22 | 3,760 | 40 | 0 | -1.4 | Pier hump, drop; launches at 172 km/h |
-| 23 | 3,800 | 100 | 0 | 0 | Along the pier, the old finish |
-| 24 | 3,900 | 500 | 0 | 0 | The Promenade, between the arcades |
-| 25 | 4,400 | 260 | 22 | 2 | Easy right at the Ferris wheel |
-| 26 | 4,660 | 180 | 0 | 6 | Climb to the Marina bridge |
-| 27 | 4,840 | 100 | 0 | 5 | Marina bridge, rise |
-| 28 | 4,940 | 100 | 0 | -8 | Marina bridge, drop; launches at 179 km/h |
-| 29 | 5,040 | 180 | -46 | 6 | Old hill, first left |
-| 30 | 5,220 | 60 | 0 | 0 | Old hill |
-| 31 | 5,280 | 180 | 44 | 7 | Old hill, right |
-| 32 | 5,460 | 60 | 0 | 0 | Old hill |
-| 33 | 5,520 | 180 | -44 | 7 | Old hill, left |
-| 34 | 5,700 | 60 | 0 | 0 | Old hill |
-| 35 | 5,760 | 160 | 30 | 5 | Old hill, last right |
-| 36 | 5,920 | 160 | 0 | 0 | The hilltop, over `market-cross` at 6,000 m |
-| 37 | 6,080 | 240 | 0 | -18 | Down into the docks, widening to three lanes at 6,100 m |
-| 38 | 6,320 | 150 | -58 | 0 | Fort Gate; 103 km/h on a Sesta 600 |
-| 39 | 6,470 | 200 | 40 | 2 | Right under the fort walls |
-| 40 | 6,670 | 260 | 0 | 4 | Climb along the battery |
-| 41 | 6,930 | 110 | 0 | 5 | Battery crest, rise |
-| 42 | 7,040 | 110 | 0 | -9 | Battery crest, drop; launches at 186 km/h |
-| 43 | 7,150 | 300 | -24 | -4 | Sweeping left down to the quay |
-| 44 | 7,450 | 250 | 40 | 0 | Right onto the quay |
-| 45 | 7,700 | 360 | 0 | -2 | Quay straight, over `pier-crossing` at 7,850 m |
-| 46 | 8,060 | 140 | -46 | 0 | The Crane Kink; 112 km/h on a Sesta 600 |
-| 47 | 8,200 | 300 | 0 | 0 | Finish at the fish market |
+| 23 | 3,800 | 100 | 0 | 0 | Along the pier, the old finish, closing to one lane |
+| 24 | 3,900 | 50 | 0 | 0 | Into the Arcades, one lane from 3,900 m |
+| 25 | 3,950 | 110 | -46 | 0 | Arcades, left; 128 km/h on a Sesta 600, 154 on a Wren |
+| 26 | 4,060 | 40 | 0 | 0 | Arcades, between the bends |
+| 27 | 4,100 | 110 | 50 | 0 | Arcades, right; 123 km/h on a Sesta 600, 147 on a Wren |
+| 28 | 4,210 | 190 | 0 | 0 | Out of the Arcades, widening at 4,220 m |
+| 29 | 4,400 | 240 | 40 | 2 | Right at the Ferris wheel |
+| 30 | 4,640 | 20 | 0 | 0 | Between the Marina bends |
+| 31 | 4,660 | 180 | -30 | 6 | Left, climbing to the Marina bridge |
+| 32 | 4,840 | 100 | 0 | 5 | Marina bridge, rise |
+| 33 | 4,940 | 100 | 0 | -8 | Marina bridge, drop; launches at 179 km/h |
+| 34 | 5,040 | 180 | -52 | 6 | Old hill, first left |
+| 35 | 5,220 | 60 | 0 | 0 | Old hill |
+| 36 | 5,280 | 180 | 50 | 7 | Old hill, right |
+| 37 | 5,460 | 60 | 0 | 0 | Old hill |
+| 38 | 5,520 | 180 | -50 | 7 | Old hill, left |
+| 39 | 5,700 | 60 | 0 | 0 | Old hill |
+| 40 | 5,760 | 150 | 42 | 5 | Old hill, last right |
+| 41 | 5,910 | 170 | 0 | 0 | The hilltop, over `market-cross` at 6,000 m |
+| 42 | 6,080 | 240 | 28 | -18 | Down into the docks, bending right |
+| 43 | 6,320 | 150 | -72 | 0 | Fort Gate; 119 km/h on a Sesta 600, 143 on a Wren |
+| 44 | 6,470 | 200 | 52 | 2 | Right under the fort walls |
+| 45 | 6,670 | 240 | -40 | 4 | Left, climbing along the battery |
+| 46 | 6,910 | 20 | 0 | 0 | Along the battery |
+| 47 | 6,930 | 110 | 0 | 5 | Battery crest, rise |
+| 48 | 7,040 | 110 | 0 | -9 | Battery crest, drop; launches at 186 km/h |
+| 49 | 7,150 | 240 | -40 | -4 | Sweeping left down to the quay, three lanes from 7,150 m |
+| 50 | 7,390 | 60 | 0 | 0 | Onto the quay |
+| 51 | 7,450 | 230 | 48 | 0 | Right onto the quay |
+| 52 | 7,680 | 20 | 0 | 0 | The quay |
+| 53 | 7,700 | 200 | 0 | -2 | Quay straight, over `pier-crossing` at 7,850 m |
+| 54 | 7,900 | 160 | 38 | 0 | Right toward the cranes |
+| 55 | 8,060 | 140 | -66 | 0 | The Crane Kink; 120 km/h on a Sesta 600, 144 on a Wren |
+| 56 | 8,200 | 300 | 0 | 0 | Finish at the fish market |
 
 Total 8,500 m.
 
@@ -239,11 +287,12 @@ export const breakwaterRun: TrackPlan = {
   districts: [
     { from: 0, lanesEachWay: 3, shoulderWidth: 0.7, vergeWidth: 7 },
     { from: 1300, lanesEachWay: 1, shoulderWidth: 0.4, vergeWidth: 7 },
-    { from: 1900, lanesEachWay: 3, shoulderWidth: 7.2, vergeWidth: 7 },
+    { from: 1740, lanesEachWay: 3, shoulderWidth: 7.2, vergeWidth: 7 },
     { from: 2300, lanesEachWay: 3, shoulderWidth: 0.7, vergeWidth: 7 },
     { from: 3500, lanesEachWay: 2, shoulderWidth: 0.8, vergeWidth: 7 },
-    { from: 5000, lanesEachWay: 2, shoulderWidth: 0.3, vergeWidth: 7 },
-    { from: 6100, lanesEachWay: 3, shoulderWidth: 0.2, vergeWidth: 7 },
+    { from: 3900, lanesEachWay: 1, shoulderWidth: 0.4, vergeWidth: 7 },
+    { from: 4220, lanesEachWay: 2, shoulderWidth: 0.3, vergeWidth: 7 },
+    { from: 7150, lanesEachWay: 3, shoulderWidth: 0.2, vergeWidth: 7 },
   ],
   id: "breakwater-run",
   laneWidth: 3.6,
@@ -258,13 +307,13 @@ export const breakwaterRun: TrackPlan = {
     { climb: -12, length: 120, turnDegrees: 0 },
     { climb: -4, length: 220, turnDegrees: -42 },
     { climb: 0, length: 100, turnDegrees: 0 },
-    { climb: 0, length: 150, turnDegrees: 46 },
-    { climb: 0, length: 100, turnDegrees: 0 },
-    { climb: 0, length: 150, turnDegrees: -46 },
-    { climb: 0, length: 200, turnDegrees: 0 },
+    { climb: 0, length: 140, turnDegrees: 58 },
+    { climb: 0, length: 80, turnDegrees: 0 },
+    { climb: 0, length: 140, turnDegrees: -58 },
+    { climb: 0, length: 240, turnDegrees: 0 },
     { climb: 0, length: 300, turnDegrees: 0 },
-    { climb: 0, length: 140, turnDegrees: -55 },
-    { climb: 2, length: 160, turnDegrees: 48 },
+    { climb: 0, length: 140, turnDegrees: -68 },
+    { climb: 2, length: 160, turnDegrees: 62 },
     { climb: 8, length: 360, turnDegrees: 0 },
     { climb: 6, length: 100, turnDegrees: 0 },
     { climb: -9, length: 100, turnDegrees: 0 },
@@ -274,29 +323,38 @@ export const breakwaterRun: TrackPlan = {
     { climb: 1.4, length: 40, turnDegrees: 0 },
     { climb: -1.4, length: 40, turnDegrees: 0 },
     { climb: 0, length: 100, turnDegrees: 0 },
-    { climb: 0, length: 500, turnDegrees: 0 },
-    { climb: 2, length: 260, turnDegrees: 22 },
-    { climb: 6, length: 180, turnDegrees: 0 },
+    { climb: 0, length: 50, turnDegrees: 0 },
+    { climb: 0, length: 110, turnDegrees: -46 },
+    { climb: 0, length: 40, turnDegrees: 0 },
+    { climb: 0, length: 110, turnDegrees: 50 },
+    { climb: 0, length: 190, turnDegrees: 0 },
+    { climb: 2, length: 240, turnDegrees: 40 },
+    { climb: 0, length: 20, turnDegrees: 0 },
+    { climb: 6, length: 180, turnDegrees: -30 },
     { climb: 5, length: 100, turnDegrees: 0 },
     { climb: -8, length: 100, turnDegrees: 0 },
-    { climb: 6, length: 180, turnDegrees: -46 },
+    { climb: 6, length: 180, turnDegrees: -52 },
     { climb: 0, length: 60, turnDegrees: 0 },
-    { climb: 7, length: 180, turnDegrees: 44 },
+    { climb: 7, length: 180, turnDegrees: 50 },
     { climb: 0, length: 60, turnDegrees: 0 },
-    { climb: 7, length: 180, turnDegrees: -44 },
+    { climb: 7, length: 180, turnDegrees: -50 },
     { climb: 0, length: 60, turnDegrees: 0 },
-    { climb: 5, length: 160, turnDegrees: 30 },
-    { climb: 0, length: 160, turnDegrees: 0 },
-    { climb: -18, length: 240, turnDegrees: 0 },
-    { climb: 0, length: 150, turnDegrees: -58 },
-    { climb: 2, length: 200, turnDegrees: 40 },
-    { climb: 4, length: 260, turnDegrees: 0 },
+    { climb: 5, length: 150, turnDegrees: 42 },
+    { climb: 0, length: 170, turnDegrees: 0 },
+    { climb: -18, length: 240, turnDegrees: 28 },
+    { climb: 0, length: 150, turnDegrees: -72 },
+    { climb: 2, length: 200, turnDegrees: 52 },
+    { climb: 4, length: 240, turnDegrees: -40 },
+    { climb: 0, length: 20, turnDegrees: 0 },
     { climb: 5, length: 110, turnDegrees: 0 },
     { climb: -9, length: 110, turnDegrees: 0 },
-    { climb: -4, length: 300, turnDegrees: -24 },
-    { climb: 0, length: 250, turnDegrees: 40 },
-    { climb: -2, length: 360, turnDegrees: 0 },
-    { climb: 0, length: 140, turnDegrees: -46 },
+    { climb: -4, length: 240, turnDegrees: -40 },
+    { climb: 0, length: 60, turnDegrees: 0 },
+    { climb: 0, length: 230, turnDegrees: 48 },
+    { climb: 0, length: 20, turnDegrees: 0 },
+    { climb: -2, length: 200, turnDegrees: 0 },
+    { climb: 0, length: 160, turnDegrees: 38 },
+    { climb: 0, length: 140, turnDegrees: -66 },
     { climb: 0, length: 300, turnDegrees: 0 },
   ],
   seed: 0xb4_7a_c1,
@@ -311,8 +369,8 @@ export const breakwaterRun: TrackPlan = {
 | Headland drop |  0.9 km | 5        |    176 km/h |
 | Seawall hump  |  3.0 km | 16, 17   |    169 km/h |
 | Pier hump     | 3.76 km | 21, 22   |    172 km/h |
-| Marina bridge | 4.94 km | 27, 28   |    179 km/h |
-| Battery crest | 7.04 km | 41, 42   |    186 km/h |
+| Marina bridge | 4.94 km | 32, 33   |    179 km/h |
+| Battery crest | 7.04 km | 47, 48   |    186 km/h |
 
 No crest on Breakwater Run launches below 160 km/h. The hill's fall into the docks launches at 287 km/h.
 
@@ -320,10 +378,10 @@ No crest on Breakwater Run launches below 160 km/h. The hill's fall into the doc
 
 | Starts at (m) | Median meeting, tier 1 | Median meeting, tier 3 | Where |
 | --: | --: | --: | --- |
-| 3,900 | 6,804 m at 152 s | 6,988 m at 161 s | The docks, after the Fort Gate |
-| 4,650 | 7,653 m at 164 s | 7,927 m at 180 s | The quay, into the Crane Kink |
+| 3,900 | 7,248 m at 172 s | 7,263 m at 178 s | Where the docks open to three lanes |
+| 4,650 | 7,887 m at 189 s | 7,957 m at 197 s | The quay, into the Crane Kink |
 
-A truck runs in the inner same-way lane, so these starts keep both clear of the one-lane squeeze and reach the pack in the docks, where three lanes leave a way round. Every meeting in eight seeds of a full pilot field fell between 6,263 and 8,504 m. A start at 3,750 m put the first truck at `market-cross`'s red as the pack arrived. The pilots rode 20 of 94 ramps at tier 1 and 10 of 93 at tier 3.
+A truck runs in the inner same-way lane. The first starts at the mouth of the Arcades and has left them about a minute before the pack arrives, and both reach the pack in the docks, where three lanes leave a way round. Every meeting in eight seeds of a full pilot field fell between 6,665 and 8,517 m. A start at 3,750 m put the first truck at `market-cross`'s red as the pack arrived. The pilots rode 12 of 89 ramps at tier 1 and 8 of 85 at tier 3.
 
 Traffic per km: 5.
 
