@@ -136,17 +136,21 @@ const convoysOf = (
       track.startS +
       (span * (convoy + 1)) / (count + 1) +
       (random() - 0.5) * CONVOY_JITTER;
-    return Array.from({ length: CONVOY_CARS }, (__, place) => ({
-      ...pickBody(random()),
-      carrier: false,
-      cruiseSpeed: CONVOY_CRUISE,
-      paint: Math.floor(random() * PAINT_COUNT),
-      patience: patienceOf(patience),
-      s: lead - place * CONVOY_GAP,
-      speed: CONVOY_CRUISE,
-      waited: 0,
-      x: track.sameWayLanes[place % track.sameWayLanes.length] ?? 0,
-    }));
+    return Array.from({ length: CONVOY_CARS }, (__, place) => {
+      const home = track.sameWayLanes[place % track.sameWayLanes.length] ?? 0;
+      return {
+        ...pickBody(random()),
+        carrier: false,
+        cruiseSpeed: CONVOY_CRUISE,
+        home,
+        paint: Math.floor(random() * PAINT_COUNT),
+        patience: patienceOf(patience),
+        s: lead - place * CONVOY_GAP,
+        speed: CONVOY_CRUISE,
+        waited: 0,
+        x: home,
+      };
+    });
   });
 };
 
@@ -208,6 +212,7 @@ export const createTraffic = (
     convoyRandom,
     patience
   );
+  seatCars(convoys, track);
   return [
     ...cars.filter(
       (car) =>
