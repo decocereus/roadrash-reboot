@@ -10,6 +10,7 @@ const DISPLAY_GAMMA = 2.2;
 const FX_LAYER = 1;
 const FIGURE_LIGHT = [1.1, 0.97, 0.82] as const;
 const SHADE_CHROMA = 1.24;
+const FIGURE_DEPTH_FLOOR = 0.93;
 const LUMA = new THREE.Vector3(0.2126, 0.7152, 0.0722);
 const SUN_ANCHOR_HEIGHT = 2.2;
 
@@ -169,6 +170,17 @@ export const seesFx = (camera: THREE.Camera, sees: boolean): void => {
   }
 };
 
+export const figureShadowOf = ({
+  lit,
+  shadow,
+}: Pick<Look, "lit" | "shadow">) => {
+  const depth = Math.max(
+    Math.cbrt(linearOf(shadow).dot(LUMA) / linearOf(lit).dot(LUMA)),
+    FIGURE_DEPTH_FLOOR
+  );
+  return { chroma: Math.min(depth * SHADE_CHROMA, 1), depth };
+};
+
 export const createShading = (look: Look): Shading => {
   const ramp = createRamp();
   const key = new THREE.Vector3(...look.keyDirection).normalize();
@@ -192,13 +204,13 @@ export const createShading = (look: Look): Shading => {
     const litLinear = linearOf(tone.lit);
     const shadowLinear = linearOf(tone.shadow);
     const figureLinear = linearOf(FIGURE_LIGHT);
-    const depth = Math.cbrt(shadowLinear.dot(LUMA) / litLinear.dot(LUMA));
     figureLight.value.copy(
       figureLinear.multiplyScalar(litLinear.dot(LUMA) / figureLinear.dot(LUMA))
     );
     figureSun.value.copy(litLinear).sub(shadowLinear);
-    figureDepth.value = depth;
-    figureChroma.value = Math.min(depth * SHADE_CHROMA, 1);
+    const shade = figureShadowOf(tone);
+    figureDepth.value = shade.depth;
+    figureChroma.value = shade.chroma;
   };
   relight(look);
 
