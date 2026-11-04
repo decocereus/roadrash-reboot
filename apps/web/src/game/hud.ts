@@ -56,6 +56,7 @@ export interface HudState {
 
 export interface GameEvents {
   readonly onHud: (hud: HudState) => void;
+  readonly onRestart: () => void;
   readonly onStart: (plan: RacePlan) => void;
   readonly onSettle: (plan: RacePlan, outcome: RaceOutcome) => void;
   readonly onOver: (plan: RacePlan, outcome: RaceOutcome) => void;

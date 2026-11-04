@@ -266,6 +266,7 @@ const useGame = (
           {
             onHud: (hud) => eventsRef.current?.onHud(hud),
             onOver: (plan, outcome) => eventsRef.current?.onOver(plan, outcome),
+            onRestart: () => eventsRef.current?.onRestart(),
             onSettle: (plan, outcome) =>
               eventsRef.current?.onSettle(plan, outcome),
             onStart: (plan) => eventsRef.current?.onStart(plan),
@@ -330,7 +331,7 @@ const REASON_LENGTH = 160;
 
 const raceStartOf = (plan: RacePlan, riderCount: number) => {
   const room = plan.room?.report();
-  const humans = room ? room.names.size : 1;
+  const humans = room ? room.names.size + 1 : 1;
   return {
     bots: Math.max(0, riderCount - humans),
     humans,
@@ -341,20 +342,20 @@ const raceStartOf = (plan: RacePlan, riderCount: number) => {
 };
 
 const useLoadEvents = (
-  booting: boolean,
+  loaded: boolean,
   failure: string,
   stage: "game" | "rules"
 ): void => {
   const readyTold = useRef(false);
   useEffect(() => {
-    if (!booting && !readyTold.current) {
+    if (loaded && !readyTold.current) {
       readyTold.current = true;
       diagnostics().events.track({
         event: "game_ready",
         loadSeconds: performance.now() / MS_PER_SECOND,
       });
     }
-  }, [booting]);
+  }, [loaded]);
   useEffect(() => {
     if (failure !== "") {
       diagnostics().events.track({
@@ -417,7 +418,7 @@ export const useFlow = (): Flow => {
   const career = save.status === "ready" ? save.career : null;
   useBoot(view.screen === "boot", rulesLoad, save, commit, setView);
   useLoadEvents(
-    view.screen === "boot",
+    ready && rules !== null,
     failure,
     rulesLoad?.status === "failed" ? "rules" : "game"
   );
@@ -451,6 +452,9 @@ export const useFlow = (): Flow => {
           setView(afterConsequence(plan, pendingRef.current));
           pendingRef.current = null;
         }
+      },
+      onRestart() {
+        races.ended("restarted", factsNow());
       },
       onSettle(plan, outcome) {
         races.ended(outcome.result, { ...factsNow(), place: outcome.place });
@@ -603,7 +607,6 @@ export const useFlow = (): Flow => {
       if (!game) {
         return;
       }
-      races.ended("restarted", factsNow());
       diagnostics().settings.change({ noticeSeen: true });
       pendingRef.current = null;
       game.startRace(plan);

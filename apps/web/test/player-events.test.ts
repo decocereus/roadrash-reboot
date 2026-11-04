@@ -158,6 +158,13 @@ describe("a race's events", () => {
     });
   });
 
+  it("counts a rider who leaves from the grid as riding no road", () => {
+    const { races, seen } = tracked();
+    races.started(start);
+    races.ended("quit", { ...facts, roadMetres: -23 });
+    expect(seen[1]).toMatchObject({ roadMetres: 0 });
+  });
+
   it("says nothing when no race is running", () => {
     const { races, seen } = tracked();
     races.ended("closed", facts);

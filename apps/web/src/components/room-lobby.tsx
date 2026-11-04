@@ -9,7 +9,7 @@ import {
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
@@ -88,6 +88,7 @@ const SeatedLobby = ({
   const joinedTold = useRef(false);
   const [plan, setPlan] = useState<RacePlan | null>(null);
   const [prepared, setPrepared] = useState(false);
+  const lost = useEffectEvent(onLost);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
     const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, roomId, name);
@@ -106,7 +107,7 @@ const SeatedLobby = ({
           redraw();
         } else if (opened.race()) {
           tellLost();
-          onLost();
+          lost();
           moveToRoom(nextRoomId(roomId), "moved");
         } else {
           tellLost();
@@ -123,7 +124,7 @@ const SeatedLobby = ({
         opened.leave();
       }
     };
-  }, [name, onLost, roomId, opening]);
+  }, [name, roomId, opening]);
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);

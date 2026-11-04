@@ -25,7 +25,13 @@ export const createRaceEvents = (
   return {
     ended(result, facts) {
       if (running !== null) {
-        track({ ...facts, event: "race_ended", raceId: running, result });
+        track({
+          ...facts,
+          event: "race_ended",
+          raceId: running,
+          result,
+          roadMetres: Math.max(0, facts.roadMetres),
+        });
         running = null;
       }
     },

@@ -338,6 +338,7 @@ const startGame = (
   };
 
   const restart = (plan: RacePlan) => {
+    events.onRestart();
     const release = build(plan.setup, session.dressing, true, plan.room);
     try {
       warmNow();

@@ -401,6 +401,9 @@ export const run = async () => {
       onOver: () => {
         notes.push("over");
       },
+      onRestart: () => {
+        notes.push("restart");
+      },
       onSettle: () => {
         notes.push("settle");
       },
