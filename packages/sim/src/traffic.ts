@@ -104,11 +104,20 @@ const laneFor = (
 
 const narrows = (track: Track): boolean => track.plan.districts.length > 1;
 
+const seatOf = (home: number, track: Track, s: number): number =>
+  Math.sign(home) * Math.min(Math.abs(home), trafficReachAt(track, s));
+
 const seatCar = (car: TrafficCar, track: Track): void => {
-  car.x =
-    Math.sign(car.home) *
-    Math.min(Math.abs(car.home), trafficReachAt(track, car.s));
+  car.x = seatOf(car.home, track, car.s);
 };
+
+export const carSlant = (
+  { halfLength, home }: Pick<TrafficCar, "halfLength" | "home">,
+  track: Track,
+  s: number
+): number =>
+  (seatOf(home, track, s + halfLength) - seatOf(home, track, s - halfLength)) /
+  (2 * halfLength);
 
 export const seatCars = (cars: readonly TrafficCar[], track: Track): void => {
   if (narrows(track)) {

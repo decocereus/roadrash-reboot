@@ -18,6 +18,7 @@ import {
 } from "./snapshot.ts";
 import { TICK_RATE } from "./state.ts";
 import type { RaceConditions, RaceState, TrafficCar } from "./state.ts";
+import { carSlant } from "./traffic.ts";
 
 const NARROW_FROM = 2000;
 const WIDE_AGAIN_FROM = 2600;
@@ -147,6 +148,28 @@ describe.each(directions)(
     });
   }
 );
+
+describe("a car's slant while it changes lane", () => {
+  const [inner, , outer = 0] = road.sameWayLanes;
+  const across = road.plan.laneWidth / 30;
+  const middleOfMerge = NARROW_FROM - TAPER - 15;
+
+  it("points an outer lane's car across the road where its seat is closing", () => {
+    expect(carSlant(carAt(0, outer, 20), road, middleOfMerge)).toBeCloseTo(
+      -across,
+      6
+    );
+    expect(carSlant(carAt(0, -outer, -20), road, middleOfMerge)).toBeCloseTo(
+      across,
+      6
+    );
+  });
+
+  it("leaves the open lane's car and a car on open road straight", () => {
+    expect(carSlant(carAt(0, inner, 20), road, middleOfMerge)).toBe(0);
+    expect(carSlant(carAt(0, outer, 20), road, 400)).toBe(0);
+  });
+});
 
 describe("a car's x on a road of districts", () => {
   it("follows the road's reach after a snapshot restore", () => {

@@ -1,6 +1,6 @@
 import { riderPalette } from "@racer/sim/palette";
 import type { CrossCarView, TrafficView } from "@racer/sim/race-view";
-import { PAINT_COUNT } from "@racer/sim/traffic";
+import { carSlant, PAINT_COUNT } from "@racer/sim/traffic";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -595,7 +595,9 @@ export const createFleet = (
     const oncoming = car.cruiseSpeed < 0;
     base.rotation.set(
       Math.atan(spot.slope) * (oncoming ? -1 : 1),
-      -spot.heading + (oncoming ? Math.PI : 0),
+      -spot.heading -
+        Math.atan(carSlant(car, track, s)) +
+        (oncoming ? Math.PI : 0),
       0,
       "YXZ"
     );
