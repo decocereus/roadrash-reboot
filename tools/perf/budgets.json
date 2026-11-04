@@ -60,11 +60,15 @@
       {
         "file": "tools/perf/baselines/tiers.vimaan.gpu-chromium-nvidia.json.gz",
         "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
+      },
+      {
+        "file": "tools/perf/baselines/districts.node-darwin-arm64.json.gz",
+        "sha256": "70a367582679d4f7331f7c7b7e5b1b464806be11844bdb0983add325b511e479"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "ea44e290c6982c34a42bec0fbc743f609c06714a3f5350b22c65b9da8e021c44"
+    "summarySha256": "e3548be3ab9633c2881218255a01b394310209ecf42fb8d4caf14fa03b6af83a"
   },
   "limits": [
     {
@@ -981,14 +985,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median",
-      "value": 0.25968178567500233,
-      "baseline": 0.22581024841304553,
+      "value": 0.9403444141026098,
+      "baseline": 0.8176907948718347,
       "direction": "max",
       "environment": "node-darwin-arm64",
       "metric": "roadLife.tick.p95",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "source": "gate-2026-11-04T18-05-09-616Z-9f67ba9-baa60e4",
       "unit": "ms"
     },
     {
@@ -1485,7 +1489,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 22224.0,
+      "value": 22224,
       "baseline": 22224,
       "direction": "max",
       "environment": "node-darwin-arm64",
@@ -1497,7 +1501,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 22224.0,
+      "value": 22224,
       "baseline": 22224,
       "direction": "max",
       "environment": "node-linux-x64",
@@ -1509,7 +1513,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 17006.0,
+      "value": 17006,
       "baseline": 17006,
       "direction": "max",
       "environment": "node-darwin-arm64",
@@ -1521,7 +1525,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 17006.0,
+      "value": 17006,
       "baseline": 17006,
       "direction": "max",
       "environment": "node-linux-x64",
