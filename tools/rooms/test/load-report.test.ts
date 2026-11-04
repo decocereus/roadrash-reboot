@@ -12,6 +12,7 @@ const statusAt = (tick: number): RoomStatus => ({
   catchUpWakes: 0,
   names: [],
   phase: "racing",
+  raceId: null,
   seats: [],
   tick,
   waiting: 4,

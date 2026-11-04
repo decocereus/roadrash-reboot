@@ -1,235 +1,34 @@
-import { ROOM_FIELD_SIZE, seatedRace } from "@racer/career/room-race";
+import { ROOM_FIELD_SIZE } from "@racer/career/room-race";
 import { controlOf } from "@racer/sim/control";
-import { createRoomClient } from "@racer/sim/room-client";
-import type { RoomClient } from "@racer/sim/room-client";
-import { createTickFrame } from "@racer/sim/room-frame";
 import {
-  createReadTick,
   inputBytes,
   MOST_BATCHED_CONTROLS,
   PING_PACKET_BYTES,
-  RACE_STATS_PACKET_BYTES,
   readPong,
-  READY_PACKET_BYTES,
-  readTick,
-  START_PACKET_BYTES,
   writePing,
-  writeRaceStats,
-  writeReady,
-  writeStart,
 } from "@racer/sim/room-wire";
-import type { RaceStats } from "@racer/sim/room-wire";
-import { riderIdAt } from "@racer/sim/state";
-import * as Option from "effect/Option";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import type { Host, HostPorts, HostSocket, RoomNote } from "../src/host.ts";
-import { decodeRoomMessage, SEAT_CLOSED } from "../src/messages.ts";
-import type { RoomMessage } from "../src/messages.ts";
-
-const TICK_MS = 1000 / 60;
-const START_DELAY_MS = 3000;
-
-interface Clock extends HostPorts {
-  readonly advance: (ms: number) => void;
-  readonly notes: RoomNote[];
-  readonly stall: (ms: number) => void;
-  readonly wakeOnce: () => void;
-  readonly pending: () => number;
-}
-
-const createClock = (): Clock => {
-  let at = 1000;
-  let timers: { due: number; wake: () => void }[] = [];
-  const notes: RoomNote[] = [];
-  const nextBy = (until: number) =>
-    timers
-      .filter((timer) => timer.due <= until)
-      .toSorted((left, right) => left.due - right.due)[0];
-  const fire = (next: { due: number; wake: () => void }): void => {
-    timers = timers.filter((timer) => timer !== next);
-    at = Math.max(at, next.due);
-    next.wake();
-  };
-  return {
-    advance: (ms) => {
-      const until = at + ms;
-      for (let next = nextBy(until); next; next = nextBy(until)) {
-        fire(next);
-      }
-      at = until;
-    },
-    after: (ms, wake) => {
-      timers.push({ due: at + ms, wake });
-    },
-    note: (note) => {
-      notes.push(note);
-    },
-    notes,
-    now: () => at,
-    pending: () => timers.length,
-    seed: () => 7,
-    stall: (ms) => {
-      at += ms;
-    },
-    wakeOnce: () => {
-      const next = nextBy(at);
-      if (next) {
-        fire(next);
-      }
-    },
-  };
-};
-
-interface FakeSocket extends HostSocket {
-  readonly messages: RoomMessage[];
-  readonly ticks: DataView[];
-  readonly pongs: DataView[];
-  closed: number | null;
-}
-
-const fakeSocket = (): FakeSocket => {
-  const messages: RoomMessage[] = [];
-  const ticks: DataView[] = [];
-  const pongs: DataView[] = [];
-  const socket: FakeSocket = {
-    close: (code) => {
-      socket.closed = code;
-    },
-    closed: null,
-    messages,
-    pongs,
-    send: (data) => {
-      if (!ArrayBuffer.isView(data)) {
-        const decoded = decodeRoomMessage(data);
-        if (Option.isSome(decoded)) {
-          messages.push(decoded.value);
-        }
-        return;
-      }
-      const copy = new DataView(
-        data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
-      );
-      (copy.byteLength === 9 && copy.getUint8(0) === 4 ? pongs : ticks).push(
-        copy
-      );
-    },
-    ticks,
-  };
-  return socket;
-};
-
-const startPacket = (): ArrayBuffer => {
-  const buffer = new ArrayBuffer(START_PACKET_BYTES);
-  writeStart(new DataView(buffer));
-  return buffer;
-};
-
-const someRaceStats: RaceStats = {
-  crashes: 2,
-  crashesAfterCorrection: 1,
-  desyncs: 0,
-  doubledSteps: 2,
-  finished: 1,
-  heldSteps: 3,
-  jumpsBehindServer: 0,
-  jumpsOtherRiders: 1,
-  jumpsOwnControl: 4,
-  mostSteps: 3,
-  refusedPredictions: 0,
-  resimulatedTicks: 90,
-  rollbacks: 7,
-  rttMeanMs: 95,
-  rttWorstMs: 204,
-  slowFrames: 1,
-  tick: 11_909,
-  totalBehindServerCm: 0,
-  totalOtherRidersCm: 12,
-  totalOwnControlCm: 240,
-  worstBehindServerCm: 0,
-  worstFrameMs: 61,
-  worstFrameRoadMetres: 812,
-  worstJumpRoadMetres: 1430,
-  worstJumpTick: 4321,
-  worstOtherRidersCm: 12,
-  worstOwnControlCm: 88,
-};
-
-const readyPacket = (): ArrayBuffer => {
-  const buffer = new ArrayBuffer(READY_PACKET_BYTES);
-  writeReady(new DataView(buffer));
-  return buffer;
-};
-
-const countdownsOn = (socket: FakeSocket): number =>
-  socket.messages.filter((each) => each.kind === "countdown").length;
-
-const pressedStart = () => {
-  const clock = createClock();
-  const host = createHost(clock);
-  const near = fakeSocket();
-  const far = fakeSocket();
-  host.seat(near, "Near");
-  host.seat(far, "Far");
-  host.message(near, startPacket());
-  return { clock, far, host, near };
-};
-
-const startedOf = (socket: FakeSocket) => {
-  const message = socket.messages.find((each) => each.kind === "started");
-  if (message?.kind !== "started") {
-    throw new Error("The room never said the race started.");
-  }
-  return message;
-};
-
-const clientOf = (socket: FakeSocket): RoomClient => {
-  const started = startedOf(socket);
-  const { setup } = seatedRace(started.seed, started.seats);
-  return createRoomClient(setup, riderIdAt(started.you));
-};
-
-const race = (host: Host, clock: Clock, sockets: readonly FakeSocket[]) => {
-  for (const socket of sockets) {
-    host.seat(socket, "Guest");
-  }
-  const [first] = sockets;
-  if (!first) {
-    throw new Error("A race needs a seat.");
-  }
-  host.message(first, startPacket());
-  for (const socket of sockets) {
-    host.message(socket, readyPacket());
-  }
-  clock.advance(START_DELAY_MS);
-};
-
-const seatOn = (host: Host): FakeSocket => {
-  const socket = fakeSocket();
-  host.seat(socket, "Guest");
-  return socket;
-};
-
-const lobbyWithOneSeat = () => {
-  const clock = createClock();
-  const host = createHost(clock);
-  const socket = seatOn(host);
-  return { clock, host, messages: socket.messages, socket };
-};
-
-const lobbyCounts = (messages: readonly RoomMessage[]): readonly number[] =>
-  messages.flatMap((message) =>
-    message.kind === "lobby" ? [message.riders] : []
-  );
-
-const followTicks = (socket: FakeSocket, client: RoomClient): void => {
-  const read = createReadTick(createTickFrame());
-  for (const packet of socket.ticks.splice(0)) {
-    expect(readTick(packet, read)).toBeTruthy();
-    client.confirm(read.frame, read.hashed ? read.hash : null);
-  }
-};
+import { SEAT_CLOSED } from "../src/messages.ts";
+import {
+  nearby,
+  TICK_MS,
+  START_DELAY_MS,
+  createClock,
+  fakeSocket,
+  startPacket,
+  readyPacket,
+  countdownsOn,
+  pressedStart,
+  startedOf,
+  clientOf,
+  race,
+  seatOn,
+  lobbyWithOneSeat,
+  lobbyCounts,
+  followTicks,
+} from "./host-harness.ts";
 
 describe("a room host", () => {
   it("fills its lobby toward the field and starts by itself at the deadline", () => {
@@ -312,86 +111,6 @@ describe("a room host", () => {
     expect(new Set(started.map((each) => each.digest.join(","))).size).toBe(1);
   });
 
-  describe("the room's notes", () => {
-    it("says how long the countdown waited, and for whom", () => {
-      const { clock, far, host, near } = pressedStart();
-      host.message(near, readyPacket());
-      clock.advance(6000);
-      host.message(far, readyPacket());
-      expect(clock.notes.map((note) => note.kind)).toStrictEqual([
-        "started",
-        "countdown",
-      ]);
-      expect(clock.notes[1]).toMatchObject({
-        stillLoading: [],
-        waitedMs: 6000,
-      });
-    });
-
-    it("names who the countdown gave up on", () => {
-      const { clock, host, near } = pressedStart();
-      host.message(near, readyPacket());
-      clock.advance(20_000);
-      expect(clock.notes[1]).toMatchObject({
-        stillLoading: ["Far"],
-        waitedMs: 20_000,
-      });
-    });
-
-    it("says who left and who was refused", () => {
-      const { clock, far, host } = pressedStart();
-      host.gone(far);
-      host.seat(fakeSocket(), "Late");
-      expect(clock.notes).toContainEqual({
-        kind: "refused",
-        name: "Late",
-        reason: "racing",
-      });
-      expect(clock.notes).toContainEqual(
-        expect.objectContaining({
-          kind: "left",
-          seatsLeft: 1,
-          tally: [expect.objectContaining({ accepted: 0, missed: 0 })],
-        })
-      );
-    });
-
-    it("logs a seat's race stats once, however often it sends them", () => {
-      const { clock, host, near } = pressedStart();
-      const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
-      writeRaceStats(new DataView(packet), someRaceStats);
-      host.message(near, packet);
-      host.message(near, packet);
-      const stats = clock.notes.filter((note) => note.kind === "stats");
-      expect(stats).toHaveLength(1);
-      expect(stats[0]).toMatchObject({
-        name: "Near",
-        stats: { rollbacks: 7, worstOwnControlCm: 88 },
-      });
-    });
-
-    it("logs a place behind the start line as zero, not a huge number", () => {
-      const { clock, host, near } = pressedStart();
-      const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
-      writeRaceStats(new DataView(packet), {
-        ...someRaceStats,
-        worstFrameRoadMetres: -23,
-      });
-      host.message(near, packet);
-      expect(clock.notes.find((note) => note.kind === "stats")).toMatchObject({
-        stats: { worstFrameRoadMetres: 0 },
-      });
-    });
-
-    it("writes one note per race event, none per tick", () => {
-      const { clock, far, host, near } = pressedStart();
-      host.message(near, readyPacket());
-      host.message(far, readyPacket());
-      clock.advance(START_DELAY_MS + 5000);
-      expect(clock.notes).toHaveLength(2);
-    });
-  });
-
   describe("the start", () => {
     it("holds the countdown until the last seat has loaded", () => {
       const { clock, far, host, near } = pressedStart();
@@ -426,8 +145,8 @@ describe("a room host", () => {
     const host = createHost(createClock());
     const first = fakeSocket();
     const second = fakeSocket();
-    host.seat(first, "Ann");
-    host.seat(second, "Bo");
+    host.seat(first, "Ann", nearby);
+    host.seat(second, "Bo", nearby);
     host.message(first, startPacket());
     expect(startedOf(first).names).toStrictEqual(["Ann", "Bo"]);
     expect(startedOf(second).names).toStrictEqual(["Ann", "Bo"]);
@@ -438,10 +157,10 @@ describe("a room host", () => {
     const host = createHost(clock);
     const eight = Array.from({ length: 8 }, fakeSocket);
     for (const socket of eight) {
-      host.seat(socket, "Guest");
+      host.seat(socket, "Guest", nearby);
     }
     const ninth = fakeSocket();
-    host.seat(ninth, "Guest");
+    host.seat(ninth, "Guest", nearby);
     expect(ninth.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "full",
@@ -451,7 +170,7 @@ describe("a room host", () => {
       host.message(first, startPacket());
     }
     const late = fakeSocket();
-    host.seat(late, "Guest");
+    host.seat(late, "Guest", nearby);
     expect(late.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "racing",
@@ -495,7 +214,7 @@ describe("a room host", () => {
     clock.advance(120_000);
     expect(clock.pending()).toBe(0);
     const again = fakeSocket();
-    host.seat(again, "Guest");
+    host.seat(again, "Guest", nearby);
     expect(again.closed).toBeNull();
   });
 
@@ -517,7 +236,7 @@ describe("a room host", () => {
     const clock = createClock();
     const host = createHost(clock);
     const socket = fakeSocket();
-    host.seat(socket, "Guest");
+    host.seat(socket, "Guest", nearby);
     host.message(socket, new ArrayBuffer(0));
     host.message(socket, new Uint8Array([9, 9, 9]).buffer);
     host.message(socket, "not a packet");

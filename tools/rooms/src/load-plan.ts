@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema";
 const SeatPlanSchema = Schema.Struct({
   full: Schema.Boolean,
   opener: Schema.Boolean,
-  raceId: Schema.String,
+  roomId: Schema.String,
 });
 
 const ClientPlanSchema = Schema.Struct({

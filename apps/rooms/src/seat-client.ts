@@ -49,6 +49,7 @@ export interface SeatRace {
   readonly digestMatched: boolean;
   readonly me: RiderId;
   readonly names: GuestNames;
+  readonly raceId: string;
   readonly setup: CareerRaceSetup;
 }
 
@@ -78,15 +79,15 @@ export interface RoomSeat {
   readonly target: () => number;
 }
 
-const seatUrl = (roomsUrl: string, raceId: string, name: string): string =>
-  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${raceId}/seat?name=${encodeURIComponent(name)}`;
+const seatUrl = (roomsUrl: string, roomId: string, name: string): string =>
+  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}`;
 
 export const openRoomSeat = (
   roomsUrl: string,
-  raceId: string,
+  roomId: string,
   name: string
 ): RoomSeat => {
-  const socket = new WebSocket(seatUrl(roomsUrl, raceId, name));
+  const socket = new WebSocket(seatUrl(roomsUrl, roomId, name));
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
   const pong = { stamp: 0, tick: 0 };
@@ -126,6 +127,7 @@ export const openRoomSeat = (
   const onStarted = ({
     digest,
     names,
+    raceId,
     seats,
     seed,
     you,
@@ -139,6 +141,7 @@ export const openRoomSeat = (
       digestMatched: digest.join(",") === [...mine].join(","),
       me,
       names: guestNames(setup, me, names),
+      raceId,
       setup,
     };
     pings = setInterval(() => {

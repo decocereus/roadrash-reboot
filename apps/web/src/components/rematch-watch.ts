@@ -30,11 +30,11 @@ const watching = (url: string, onPresence: (presence: RoomPresence) => void) =>
 
 export const watchRematch = (
   roomsUrl: string,
-  raceId: string,
+  roomId: string,
   onPresence: (presence: RoomPresence) => void
 ): (() => void) => {
   const fiber = Effect.runFork(
-    watching(`${roomsUrl}/rooms/${raceId}`, onPresence)
+    watching(`${roomsUrl}/rooms/${roomId}`, onPresence)
   );
   return () => {
     fiber.interruptUnsafe();

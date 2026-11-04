@@ -19,6 +19,8 @@ import type { RiderId } from "@racer/sim/state";
 import type { RoomStatus } from "./contract.ts";
 import { encodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
 import type { RoomMessage } from "./messages.ts";
+import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
+import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
@@ -34,69 +36,70 @@ export interface HostSocket {
   readonly close: (code: number, reason: string) => void;
 }
 
-export type RoomNote =
-  | { readonly kind: "refused"; readonly name: string; readonly reason: string }
-  | { readonly kind: "started"; readonly names: readonly string[] }
-  | {
-      readonly kind: "countdown";
-      readonly stillLoading: readonly string[];
-      readonly waitedMs: number;
-    }
-  | {
-      readonly kind: "left";
-      readonly name: string;
-      readonly seatsLeft: number;
-      readonly tally: RoomStatus["seats"];
-      readonly tick: number;
-    }
-  | {
-      readonly kind: "stats";
-      readonly name: string;
-      readonly stats: Readonly<Record<string, number>>;
-    }
-  | {
-      readonly catchUpWakes: number;
-      readonly kind: "ended";
-      readonly seats: RoomStatus["seats"];
-      readonly tick: number;
-      readonly worstBehindTicks: number;
-    };
+interface SeatLink {
+  readonly colo: string | null;
+  readonly tcpRttMs: number | null;
+}
 
 export interface HostPorts {
+  readonly build: string;
   readonly now: () => number;
   readonly after: (ms: number, wake: () => void) => void;
   readonly note: (note: RoomNote) => void;
+  readonly raceId: () => string;
   readonly seed: () => number;
 }
 
 interface Seat {
+  readonly link: SeatLink;
   readonly name: string;
   readonly socket: HostSocket;
   rider: RiderId | null;
   accepted: number;
   ahead: number;
   late: number;
+  leftAtTick: number | null;
+  readyMs: number | null;
   reported: boolean;
 }
 
 interface Lobby {
+  readonly openedAt: number;
   readonly startsAt: number;
   fill: number;
 }
 
 interface Running {
   readonly loading: Set<HostSocket>;
+  readonly raceId: string;
+  readonly riders: readonly Seat[];
   readonly room: Room;
   readonly since: number;
+  readonly wakeGaps: Uint32Array;
+  lastWakeAt: number;
   startedAt: number | null;
 }
 
 export interface Host {
-  readonly seat: (socket: HostSocket, name: string) => void;
+  readonly seat: (socket: HostSocket, name: string, link: SeatLink) => void;
   readonly message: (socket: HostSocket, data: string | ArrayBuffer) => void;
   readonly gone: (socket: HostSocket) => void;
   readonly status: () => RoomStatus;
 }
+
+const hexOf = (words: Uint32Array): string =>
+  [...words].map((word) => word.toString(16).padStart(8, "0")).join("");
+
+const noteGap = (gaps: Uint32Array, gapMs: number): void => {
+  let bucket = 0;
+  while (
+    bucket < WAKE_GAP_CEILINGS_MS.length &&
+    gapMs > (WAKE_GAP_CEILINGS_MS[bucket] ?? gapMs)
+  ) {
+    bucket += 1;
+  }
+  gaps[bucket] = (gaps[bucket] ?? 0) + 1;
+};
 
 export const createHost = (ports: HostPorts): Host => {
   const seats = new Map<HostSocket, Seat>();
@@ -111,11 +114,14 @@ export const createHost = (ports: HostPorts): Host => {
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
 
-  const seatFor = (socket: HostSocket, name: string): Seat => ({
+  const seatFor = (socket: HostSocket, name: string, link: SeatLink): Seat => ({
     accepted: 0,
     ahead: 0,
     late: 0,
+    leftAtTick: null,
+    link,
     name,
+    readyMs: null,
     reported: false,
     rider: null,
     socket,
@@ -125,6 +131,7 @@ export const createHost = (ports: HostPorts): Host => {
     seats.delete(seat.socket);
     if (running && seat.rider !== null) {
       running.room.leave(seat.rider);
+      seat.leftAtTick = running.room.state.tick;
     }
     running?.loading.delete(seat.socket);
   };
@@ -169,7 +176,7 @@ export const createHost = (ports: HostPorts): Host => {
     });
   };
 
-  const tallyOf = (seat: Seat, room: Room | null): RoomStatus["seats"] =>
+  const tallyOf = (seat: Seat, room: Room | null): readonly SeatTally[] =>
     seat.rider === null
       ? []
       : [
@@ -185,12 +192,40 @@ export const createHost = (ports: HostPorts): Host => {
   const talliesOf = (room: Room | null): RoomStatus["seats"] =>
     [...seats.values()].flatMap((seat) => tallyOf(seat, room));
 
-  const end = (room: Room): void => {
+  const raceSeatsOf = (run: Running): readonly RaceSeat[] =>
+    run.riders.flatMap((seat) =>
+      tallyOf(seat, run.room).flatMap((tally) => {
+        const state = run.room.state.riders.find(
+          (rider) => rider.id === seat.rider
+        );
+        return state
+          ? [
+              {
+                ...tally,
+                colo: seat.link.colo,
+                crashes: state.crashes,
+                finishTick: state.finishTick,
+                leftAtTick: seat.leftAtTick,
+                mode: state.mode,
+                readyMs: seat.readyMs,
+                reported: seat.reported,
+                roadMetres: Math.round(state.s),
+                tcpRttMs: seat.link.tcpRttMs,
+              },
+            ]
+          : [];
+      })
+    );
+
+  const end = (run: Running): void => {
+    const { room } = run;
     ports.note({
       catchUpWakes,
       kind: "ended",
-      seats: talliesOf(room),
+      raceId: run.raceId,
+      seats: raceSeatsOf(run),
       tick: room.state.tick,
+      wakeGaps: [...run.wakeGaps],
       worstBehindTicks,
     });
     running = null;
@@ -218,13 +253,16 @@ export const createHost = (ports: HostPorts): Host => {
     if (!running) {
       return;
     }
-    const { room, startedAt } = running;
+    const run = running;
+    const { room, startedAt } = run;
     if (startedAt === null) {
       return;
     }
     wakes += 1;
-    const behind =
-      Math.floor((ports.now() - startedAt) / TICK_MS) - room.state.tick;
+    const now = ports.now();
+    noteGap(run.wakeGaps, now - run.lastWakeAt);
+    run.lastWakeAt = now;
+    const behind = Math.floor((now - startedAt) / TICK_MS) - room.state.tick;
     worstBehindTicks = Math.max(worstBehindTicks, behind);
     if (behind > 1) {
       catchUpWakes += 1;
@@ -233,7 +271,7 @@ export const createHost = (ports: HostPorts): Host => {
     for (let step = 0; step < steps; step += 1) {
       stepOnce(room);
       if (room.over()) {
-        end(room);
+        end(run);
         return;
       }
     }
@@ -250,13 +288,14 @@ export const createHost = (ports: HostPorts): Host => {
     }
     ports.note({
       kind: "countdown",
-      stillLoading: [...run.loading].flatMap((socket) => {
-        const seat = seats.get(socket);
-        return seat ? [seat.name] : [];
-      }),
+      raceId: run.raceId,
+      stillLoading: run.riders.flatMap((seat) =>
+        run.loading.has(seat.socket) && seat.rider !== null ? [seat.rider] : []
+      ),
       waitedMs: ports.now() - run.since,
     });
     run.startedAt = ports.now() + START_DELAY_MS;
+    run.lastWakeAt = run.startedAt;
     tell({ kind: "countdown", startsInMs: START_DELAY_MS });
     ports.after(START_DELAY_MS, wake);
   };
@@ -271,9 +310,14 @@ export const createHost = (ports: HostPorts): Host => {
     if (running || seats.size === 0) {
       return;
     }
+    const lobbyMs = lobby ? ports.now() - lobby.openedAt : 0;
     lobby = null;
+    wakes = 0;
+    catchUpWakes = 0;
+    worstBehindTicks = 0;
     const seed = ports.seed();
-    const { humans, setup } = seatedRace(seed, seats.size);
+    const raceId = ports.raceId();
+    const { humans, road, setup } = seatedRace(seed, seats.size);
     const room = createRoom(setup);
     let at = 0;
     for (const seat of seats.values()) {
@@ -282,14 +326,28 @@ export const createHost = (ports: HostPorts): Host => {
       at += 1;
     }
     const run: Running = {
+      lastWakeAt: 0,
       loading: new Set(seats.keys()),
+      raceId,
+      riders: [...seats.values()],
       room,
       since: ports.now(),
       startedAt: null,
+      wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
     };
     running = run;
     const names = [...seats.values()].map((seat) => seat.name);
-    ports.note({ kind: "started", names });
+    ports.note({
+      at: ports.now(),
+      build: ports.build,
+      digest: hexOf(room.digest),
+      kind: "started",
+      lobbyMs,
+      raceId,
+      road,
+      seats: humans.length,
+      seed,
+    });
     for (const seat of seats.values()) {
       sendTo(
         seat,
@@ -297,6 +355,7 @@ export const createHost = (ports: HostPorts): Host => {
           digest: [...room.digest],
           kind: "started",
           names,
+          raceId,
           seats: humans.length,
           seed,
           you: seat.rider ?? 0,
@@ -309,7 +368,11 @@ export const createHost = (ports: HostPorts): Host => {
   };
 
   const openLobby = (): Lobby => {
-    const open: Lobby = { fill: 0, startsAt: ports.now() + LOBBY_MS };
+    const open: Lobby = {
+      fill: 0,
+      openedAt: ports.now(),
+      startsAt: ports.now() + LOBBY_MS,
+    };
     lobby = open;
     ports.after(LOBBY_MS, () => {
       if (lobby === open) {
@@ -327,13 +390,18 @@ export const createHost = (ports: HostPorts): Host => {
         return;
       }
       leave(seat);
-      ports.note({
-        kind: "left",
-        name: seat.name,
-        seatsLeft: seats.size,
-        tally: tallyOf(seat, running?.room ?? null),
-        tick: running?.room.state.tick ?? 0,
-      });
+      if (running) {
+        const { raceId, room } = running;
+        for (const tally of tallyOf(seat, room)) {
+          ports.note({
+            kind: "left",
+            raceId,
+            seatsLeft: seats.size,
+            tally,
+            tick: room.state.tick,
+          });
+        }
+      }
       if (running) {
         countDownOnceLoaded(running);
       }
@@ -375,30 +443,37 @@ export const createHost = (ports: HostPorts): Host => {
       }
       if (running && isReady(view)) {
         running.loading.delete(socket);
+        seat.readyMs ??= ports.now() - running.since;
         countDownOnceLoaded(running);
         return;
       }
       const stats = readRaceStats(view);
-      if (stats && !seat.reported) {
+      if (stats && !seat.reported && running && seat.rider !== null) {
         seat.reported = true;
-        ports.note({ kind: "stats", name: seat.name, stats });
+        ports.note({
+          kind: "stats",
+          raceId: running.raceId,
+          rider: seat.rider,
+          stats,
+        });
       }
     },
-    seat: (socket, name) => {
+    seat: (socket, name, link) => {
       if (running || seats.size >= MOST_SEATS) {
         const reason = running ? "racing" : "full";
-        ports.note({ kind: "refused", name, reason });
+        ports.note({ kind: "refused", reason });
         socket.send(encodeRoomMessage({ kind: "refused", reason }));
         socket.close(SEAT_CLOSED, reason);
         return;
       }
-      seats.set(socket, seatFor(socket, name));
+      seats.set(socket, seatFor(socket, name, link));
       tellLobby(lobby ?? openLobby());
     },
     status: () => ({
       catchUpWakes,
       names: [...seats.values()].map((seat) => seat.name),
       phase: running ? "racing" : "waiting",
+      raceId: running?.raceId ?? null,
       seats: talliesOf(running?.room ?? null),
       tick: running ? running.room.state.tick : 0,
       waiting: seats.size,

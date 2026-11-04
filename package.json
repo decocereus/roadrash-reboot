@@ -38,6 +38,7 @@
     "rooms:lag": "node tools/rooms/lag.ts",
     "rooms:load": "node tools/rooms/load.ts",
     "rooms:race": "node tools/rooms/race.ts",
+    "rooms:read": "node tools/rooms/read.ts",
     "test": "vitest run",
     "typecheck": "tsrs --noEmit && pnpm -r --if-present typecheck",
     "verify": "node scripts/verify.ts"

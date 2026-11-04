@@ -4,7 +4,7 @@ import {
   cleanGuestName,
   isRequeuedRoom,
   nextRoomId,
-  RACE_ID_PATTERN,
+  ROOM_ID_PATTERN,
   rematchRoomId,
 } from "../src/messages.ts";
 
@@ -17,8 +17,8 @@ describe("the room after a dead one", () => {
 
   it("stays a valid race id from the longest id there is", () => {
     const longest = "a".repeat(40);
-    expect(RACE_ID_PATTERN.test(nextRoomId(longest))).toBeTruthy();
-    expect(RACE_ID_PATTERN.test(nextRoomId(nextRoomId(longest)))).toBeTruthy();
+    expect(ROOM_ID_PATTERN.test(nextRoomId(longest))).toBeTruthy();
+    expect(ROOM_ID_PATTERN.test(nextRoomId(nextRoomId(longest)))).toBeTruthy();
   });
 
   it("is known by its name", () => {
@@ -37,9 +37,9 @@ describe("a rematch room", () => {
 
   it("stays a valid race id from the longest id there is", () => {
     const longest = "a".repeat(40);
-    expect(RACE_ID_PATTERN.test(rematchRoomId(longest))).toBeTruthy();
+    expect(ROOM_ID_PATTERN.test(rematchRoomId(longest))).toBeTruthy();
     expect(
-      RACE_ID_PATTERN.test(nextRoomId(rematchRoomId(longest)))
+      ROOM_ID_PATTERN.test(nextRoomId(rematchRoomId(longest)))
     ).toBeTruthy();
   });
 });

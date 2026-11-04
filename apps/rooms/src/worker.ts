@@ -6,16 +6,20 @@ import * as HttpServerResponse from "effect/http/HttpServerResponse";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
-import { RaceIdSchema } from "./contract.ts";
+import { RoomIdSchema } from "./contract.ts";
 import { RaceServer } from "./race-server.ts";
 
-const decodeRaceId = Schema.decodeUnknownOption(RaceIdSchema);
-const ROOM_PATH = /^\/rooms\/(?<raceId>[^/]+)/u;
+const decodeRoomId = Schema.decodeUnknownOption(RoomIdSchema);
+const ROOM_PATH = /^\/rooms\/(?<roomId>[^/]+)/u;
 
 const props = Effect.map(
-  Config.Int("RUSHLINE_ROOMS_PORT").pipe(Config.withDefault(1352)),
-  (port) => ({
+  Effect.all({
+    build: Config.String("RUSHLINE_BUILD").pipe(Config.withDefault("local")),
+    port: Config.Int("RUSHLINE_ROOMS_PORT").pipe(Config.withDefault(1352)),
+  }),
+  ({ build, port }) => ({
     dev: { port, strictPort: true },
+    env: { RUSHLINE_BUILD: build },
     main: import.meta.url,
     observability: {
       enabled: true,
@@ -32,16 +36,16 @@ export default class Rooms extends Cloudflare.Worker<Rooms>()(
     return {
       fetch: Effect.gen(function* route() {
         const request = yield* HttpServerRequest.HttpServerRequest;
-        const raceId = decodeRaceId(
+        const roomId = decodeRoomId(
           ROOM_PATH.exec(new URL(request.url, "http://rooms").pathname)?.groups
-            ?.raceId
+            ?.roomId
         );
-        if (Option.isNone(raceId)) {
+        if (Option.isNone(roomId)) {
           return HttpServerResponse.text("No room lives at this path.", {
             status: 404,
           });
         }
-        const response = yield* races.getByName(raceId.value).fetch(request);
+        const response = yield* races.getByName(roomId.value).fetch(request);
         return new URL(request.url, "http://rooms").pathname.endsWith("/seat")
           ? response
           : HttpServerResponse.setHeader(

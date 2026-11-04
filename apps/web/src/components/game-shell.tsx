@@ -251,7 +251,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           }}
           onPrepare={flow.prepare}
           onStart={flow.start}
-          raceId={view.raceId}
+          roomId={view.roomId}
           ready={flow.ready}
         />
       </Suspense>

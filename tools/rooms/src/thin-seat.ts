@@ -49,12 +49,12 @@ export interface ThinSeat {
 
 export const openThinSeat = (
   roomsUrl: string,
-  raceId: string,
+  roomId: string,
   inputEvery: number,
   tally: LoadTally
 ): ThinSeat => {
   const socket = new WebSocket(
-    `${roomsUrl.replace(/^http/u, "ws")}/rooms/${raceId}/seat?name=Load`
+    `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=Load`
   );
   socket.binaryType = "arraybuffer";
   const clock = createRoomClock();
