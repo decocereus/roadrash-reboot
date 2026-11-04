@@ -4,11 +4,17 @@ import type { ChevronRun } from "./track.ts";
 
 export const chevronRuns = {
   "breakwater-run": [
-    { from: 1280, side: -1, to: 1345 },
-    { from: 2164, side: 1, to: 2247 },
-    { from: 4974, side: 1, to: 5046 },
-    { from: 6239, side: 1, to: 6327 },
-    { from: 7982, side: 1, to: 8064 },
+    { from: 1273, side: -1, to: 1347 },
+    { from: 1517, side: 1, to: 1567 },
+    { from: 2161, side: 1, to: 2248 },
+    { from: 3863, side: 1, to: 3953 },
+    { from: 4062, side: -1, to: 4103 },
+    { from: 4977, side: 1, to: 5049 },
+    { from: 6237, side: -1, to: 6238 },
+    { from: 6239, side: 1, to: 6329 },
+    { from: 7842, side: -1, to: 7903 },
+    { from: 7918, side: -1, to: 8014 },
+    { from: 8015, side: 1, to: 8068 },
   ],
   "madrid-gran-via": [
     { from: 55, side: 1, to: 127 },

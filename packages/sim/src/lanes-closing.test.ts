@@ -378,10 +378,17 @@ describe("a convoy on Breakwater Run in a full race", () => {
     return { convoy, state };
   };
 
-  const rideThrough = (seed: number, leadS: number, exit: number) => {
+  const squeeze = { from: 1300, to: 1740 };
+  const neck = { from: 3900, to: 4220 };
+
+  const rideThrough = (
+    seed: number,
+    leadS: number,
+    exit: number,
+    oneLane: { readonly from: number; readonly to: number } = squeeze
+  ) => {
     const { convoy, state } = raceWithConvoyAt(seed, leadS);
     const homes = convoy.map((car) => car.home);
-    const squeeze = { from: 1300, to: 1900 };
     let overlaps = 0;
     let offTheRoad = 0;
     let singleFile = true;
@@ -394,7 +401,7 @@ describe("a convoy on Breakwater Run in a full race", () => {
           Math.abs(car.x) + car.halfWidth > roadHalfWidthAt(track, car.s)
             ? 1
             : 0;
-        if (car.s > squeeze.from && car.s < squeeze.to) {
+        if (car.s > oneLane.from && car.s < oneLane.to) {
           sawOneLane = true;
           singleFile &&= car.x === innerLane;
         }
@@ -417,7 +424,7 @@ describe("a convoy on Breakwater Run in a full race", () => {
   it.each([11, 23, 59, 67])(
     "files through the one-lane squeeze as the pack arrives, seed %i",
     (seed) => {
-      const { backHome, homes, ...ride } = rideThrough(seed, 900, 2040);
+      const { backHome, homes, ...ride } = rideThrough(seed, 900, 1880);
       expect(ride).toStrictEqual({
         allOut: true,
         offTheRoad: 0,
@@ -426,6 +433,20 @@ describe("a convoy on Breakwater Run in a full race", () => {
         singleFile: true,
       });
       expect(backHome).toStrictEqual(homes);
+    },
+    60_000
+  );
+
+  it.each([11, 23, 59, 67])(
+    "files through the one-lane neck as the pack arrives, seed %i",
+    (seed) => {
+      expect(rideThrough(seed, 2550, 4360, neck)).toMatchObject({
+        allOut: true,
+        offTheRoad: 0,
+        overlaps: 0,
+        sawOneLane: true,
+        singleFile: true,
+      });
     },
     60_000
   );
