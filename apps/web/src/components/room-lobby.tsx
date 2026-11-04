@@ -203,7 +203,7 @@ const SeatedLobby = ({
     }
   }, [plan, prepared, racing, onStart]);
   const lobby = seat?.lobby() ?? null;
-  if (seat && lobby && (raceBegun || phase === "lobby")) {
+  if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
       <BarLobby
         copied={copied}
