@@ -2744,6 +2744,22 @@
       "side": "B",
       "source": "baseline-2026-11-04T16-24-07-782Z-fe32571-fe32571",
       "value": 334552
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T17-08-51-939Z-05add0a-05add0a",
+      "value": 960195
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T17-08-51-939Z-05add0a-05add0a",
+      "value": 245112
     }
   ],
   "revisions": {
@@ -3529,6 +3545,29 @@
       "sides": {
         "A": "fe3257153f33a8665907525cc8fd751b0874bfb3",
         "B": "fe3257153f33a8665907525cc8fd751b0874bfb3"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1150412, \"bytes.route.root.gzip\": 613123, \"bytes.route.kit.raw\": 948700, \"bytes.route.kit.gzip\": 543873, \"bytes.game.raw\": 1916356, \"bytes.game.gzip\": 826430, \"bytes.game.incremental.raw\": 765944, \"bytes.game.incremental.gzip\": 213307, \"bytes.worker.raw\": 960045, \"bytes.worker.gzip\": 245095, \"bytes.client.raw\": 1979060, \"bytes.client.gzip\": 851219, \"assets.glb.bike\": 122108, \"assets.glb.car\": 53048, \"assets.glb.ghost\": 116948, \"assets.glb.oni\": 126272, \"assets.glb.pedestrians\": 297036, \"assets.glb.rider_a\": 238128, \"assets.glb.rider_altman\": 347996, \"assets.glb.rider_b\": 238876, \"assets.glb.rider_c\": 237836, \"assets.glb.rider_kylie\": 344904, \"assets.glb.rider_mbappe\": 236968, \"assets.glb.rider_musk\": 261240, \"assets.glb.rider_ranveer\": 302744, \"assets.glb.rider_ronaldo\": 316580, \"assets.glb.seraph\": 118884, \"assets.glb.truck\": 67640, \"assets.glb.van\": 47784, \"assets.glb.total\": 3474992, \"assets.image.total\": 9099096, \"assets.texture.total\": 33554764}",
+        "builtB": "{\"bytes.route.root.raw\": 1150412, \"bytes.route.root.gzip\": 613123, \"bytes.route.kit.raw\": 948700, \"bytes.route.kit.gzip\": 543873, \"bytes.game.raw\": 1916356, \"bytes.game.gzip\": 826430, \"bytes.game.incremental.raw\": 765944, \"bytes.game.incremental.gzip\": 213307, \"bytes.worker.raw\": 960195, \"bytes.worker.gzip\": 245112, \"bytes.client.raw\": 1979060, \"bytes.client.gzip\": 851219, \"assets.glb.bike\": 122108, \"assets.glb.car\": 53048, \"assets.glb.ghost\": 116948, \"assets.glb.oni\": 126272, \"assets.glb.pedestrians\": 297036, \"assets.glb.rider_a\": 238128, \"assets.glb.rider_altman\": 347996, \"assets.glb.rider_b\": 238876, \"assets.glb.rider_c\": 237836, \"assets.glb.rider_kylie\": 344904, \"assets.glb.rider_mbappe\": 236968, \"assets.glb.rider_musk\": 261240, \"assets.glb.rider_ranveer\": 302744, \"assets.glb.rider_ronaldo\": 316580, \"assets.glb.seraph\": 118884, \"assets.glb.truck\": 67640, \"assets.glb.van\": 47784, \"assets.glb.total\": 3474992, \"assets.image.total\": 9099096, \"assets.texture.total\": 33554764}",
+        "harnessDigest": "1a001fff436676f89cf95697b133e942268ae0abbd16d7fb95e705667b361281",
+        "lockfileSha256": "13d7c978bcef701dd126c127c32d1f4659f708e3aa0b97bb3af00a94db6ebf06",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "3953dc0374ddfc73b9bc91c998f6e98c7424a0e33f8ba8f02c5886eba9c6fccd",
+        "sideBSourceDigest": "3953dc0374ddfc73b9bc91c998f6e98c7424a0e33f8ba8f02c5886eba9c6fccd",
+        "why": "The Worker counted the game, the showroom and everything they import because the server build kept their dynamic imports. Guarding them on import.meta.env.SSR drops them, and the limits come down to match."
+      },
+      "id": "baseline-2026-11-04T17-08-51-939Z-05add0a-05add0a",
+      "lanes": ["build"],
+      "sides": {
+        "A": "05add0ad730da70acc47e138b0ff9d40dbaaa6a9",
+        "B": "05add0ad730da70acc47e138b0ff9d40dbaaa6a9"
       }
     }
   ],
