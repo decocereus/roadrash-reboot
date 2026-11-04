@@ -268,7 +268,7 @@ describe("the roadside clears the chase camera", () => {
         laneWidth: 3.4,
         lanesEachWay: 1,
       },
-      s: 1500,
+      s: 4000,
       walk: "unmarked",
     };
     const track = compileTrack({
@@ -299,7 +299,7 @@ describe("the roadside clears the chase camera", () => {
           placeOnTrack(
             track,
             crossing.s + along,
-            side * (roadHalfWidthAt(track, 0) + out),
+            side * (roadHalfWidthAt(track, crossing.s) + out),
             point
           );
           ray.set(new THREE.Vector3(point.x, point.y + 200, point.z), down);
@@ -340,14 +340,12 @@ describe("the roadside clears the chase camera", () => {
           });
         }
       });
-      for (const x of [
-        roadHalfWidthAt(track, 0) - 1,
-        1 - roadHalfWidthAt(track, 0),
-      ]) {
+      for (const side of [1, -1]) {
         const chase = createChaseCamera();
         chase.camera.aspect = 1512 / 860;
         chase.camera.updateProjectionMatrix();
         for (let s = 30; s < track.length - 30; s += 2) {
+          const x = side * (roadHalfWidthAt(track, s) - 1);
           chase.update(track, { air: 0, s, speed: 40, tuck: 0, x }, 1 / 60);
           world.follow(chase.camera, s);
           chase.camera.updateMatrixWorld();

@@ -65,12 +65,12 @@
       "window": "1b845fa97eb5a7d38720ab5ad2f71fa0"
     },
     {
-      "final": "7945e4477d2cd5298aeb47b1b4acc378",
-      "full": "bfee7ccb6f7237c6907d99d8bee7a92d",
+      "final": "5d26a1d9529ec01c2a56a28ca63eb411",
+      "full": "8363931218c24573be8937c0ced0c353",
       "id": "breakwater-run/tier3/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "b2e12355405575650aff1c499003c53f"
+      "window": "ea8ff904c91853c53dcb88ae0cf8a30d"
     },
     {
       "final": "78fd15f4641f3116a03a59b51b673b0b",
@@ -92,8 +92,8 @@
   "provenance": {
     "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["fb5e0ffe", "feat/breakwater-districts"],
-    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick.",
+    "recordedAt": ["5933fbc8", "feat/breakwater-districts"],
+    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -165,12 +165,12 @@
       "window": "1b845fa97eb5a7d38720ab5ad2f71fa0"
     },
     {
-      "final": "7450820a9ba29d7e4423dcb0606b6fc6",
-      "full": "cd2d457b649459d8d6c24e541312171b",
+      "final": "e67109696df6ff5de2df31aade5fbb71",
+      "full": "cd1885781afd6d1794c717ae31a88590",
       "id": "breakwater-run/tier3/seed8",
       "result": "finished",
-      "ticks": 12790,
-      "window": "b2e12355405575650aff1c499003c53f"
+      "ticks": 13065,
+      "window": "ea8ff904c91853c53dcb88ae0cf8a30d"
     },
     {
       "final": "dee5bcd6c69b24dd2bb08c58eb586c90",

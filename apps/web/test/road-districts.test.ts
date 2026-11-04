@@ -1,7 +1,7 @@
-import { vergeHalfWidthAt } from "@racer/track/districts";
+import { roadHalfWidthAt, vergeHalfWidthAt } from "@racer/track/districts";
 import { createRandom } from "@racer/track/random";
-import { roads } from "@racer/track/roads";
-import { compileTrack } from "@racer/track/track";
+import { roads, trackFor } from "@racer/track/roads";
+import { compileTrack, placeOnTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -35,7 +35,7 @@ const drawsNothing = new Proxy(
 
 describe("the road's pieces along a chunk", () => {
   it("keep one piece on a road of one district, even across the start line", () => {
-    const uniform = compileTrack(roads["breakwater-run"]);
+    const uniform = compileTrack(roads["slag-row"]);
     expect(districtPieces(uniform, [-80, 120])).toStrictEqual([
       { lanes: uniform.plan.districts[0].lanesEachWay, span: [-80, 120] },
     ]);
@@ -88,12 +88,52 @@ describe("a road of several districts in the world", () => {
     world.dispose();
   });
 
-  it("stands no block's front on the road, wherever along it the verge is widest", () => {
-    const tooClose = layBlocks(threeOneTwo).filter(({ front, length, s }) =>
-      Array.from({ length: Math.ceil(length) + 1 }, (_, metre) =>
-        vergeHalfWidthAt(threeOneTwo, s + metre)
-      ).some((verge) => front < verge)
-    );
-    expect(tooClose).toStrictEqual([]);
+  it.each([
+    ["a road of three, one and two lanes", threeOneTwo],
+    ["Breakwater Run", trackFor("breakwater-run")],
+  ] as const)(
+    "stands no block's front on %s, wherever along it the verge is widest",
+    (_name, track) => {
+      const tooClose = layBlocks(track).filter(({ front, length, s }) =>
+        Array.from({ length: Math.ceil(length) + 1 }, (_, metre) =>
+          vergeHalfWidthAt(track, s + metre)
+        ).some((verge) => front < verge)
+      );
+      expect(tooClose).toStrictEqual([]);
+    }
+  );
+
+  it("leaves every Breakwater Run block's front face clear of the tarmac, on the bends and across each change of width", () => {
+    const track = trackFor("breakwater-run");
+    const on = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
+    const clearance = (
+      worldX: number,
+      worldZ: number,
+      near: number
+    ): number => {
+      let least = Number.POSITIVE_INFINITY;
+      for (let s = near - 60; s <= near + 60; s += 2) {
+        placeOnTrack(track, s, 0, on);
+        least = Math.min(
+          least,
+          Math.hypot(on.x - worldX, on.z - worldZ) - roadHalfWidthAt(track, s)
+        );
+      }
+      return least;
+    };
+    const onRoad = layBlocks(track).filter(({ front, length, s, side }) => {
+      const middle = s + length / 2;
+      placeOnTrack(track, middle, side * front, on);
+      const { heading, x, z } = on;
+      return [-0.5, -0.25, 0, 0.25, 0.5].some(
+        (share) =>
+          clearance(
+            x + Math.sin(heading) * share * length,
+            z - Math.cos(heading) * share * length,
+            middle
+          ) < 0
+      );
+    });
+    expect(onRoad).toStrictEqual([]);
   });
 });

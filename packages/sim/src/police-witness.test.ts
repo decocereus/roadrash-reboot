@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { roads } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
@@ -25,7 +26,7 @@ const signalledCrossing = (): SignalledCrossing => {
 
 const harbour = signalledCrossing();
 const LINE = harbour.s - harbour.stopGap;
-const POST = 1500;
+const POST = harbour.s - 200;
 const STAY_PUT = 100_000;
 const BRUSH = BIKE_HALF_WIDTH + 0.2;
 
@@ -62,6 +63,11 @@ const raceAt = (rivals: number): RaceState => {
       rider.s = 40;
     }
   }
+  const cop = onlyCop(state);
+  cop.x += roadHalfWidthAt(course, POST) - roadHalfWidthAt(course, cop.post);
+  cop.s = POST;
+  cop.bodyS = POST;
+  cop.post = POST;
   return state;
 };
 
