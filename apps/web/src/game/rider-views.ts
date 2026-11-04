@@ -23,7 +23,7 @@ import { crossCarPose } from "./cross-car-pose.ts";
 import type { CrossCarPose } from "./cross-car-pose.ts";
 import { kneeScrapes } from "./figure-pose.ts";
 import type { RiderPose } from "./figure-pose.ts";
-import { bodyFor } from "./figure-rig.ts";
+import { bodyFor, paletteOf } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
@@ -320,7 +320,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       const figure = createRiderFigure(
         dressing.get(rider.id) ?? bodyFor(assets, rider.id),
         stage.world.shading,
-        rider.profile.jacket
+        paletteOf(rider.profile.jacket)
       );
       stage.world.scene.add(figure.root);
       const view: RiderActor = {

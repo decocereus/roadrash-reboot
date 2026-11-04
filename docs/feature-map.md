@@ -368,9 +368,9 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Id: `menus`
 - Start: `apps/web/src/components/use-flow.ts`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/career/flow.ts`
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
-- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
+- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md), [bar-look.md](../.claude/skills/verify-rushline/features/bar-look.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/bar*.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/routes/bar.tsx`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -404,7 +404,20 @@ Source files:
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
 - `apps/web/src/components/use-flow.ts`
+- `apps/web/src/game/bar-blocks.ts`
+- `apps/web/src/game/bar-cast.ts`
+- `apps/web/src/game/bar-garage.ts`
+- `apps/web/src/game/bar-kit.ts`
+- `apps/web/src/game/bar-light.ts`
+- `apps/web/src/game/bar-outside.ts`
+- `apps/web/src/game/bar-pools.ts`
+- `apps/web/src/game/bar-props.ts`
+- `apps/web/src/game/bar-room.ts`
+- `apps/web/src/game/bar-signs.ts`
+- `apps/web/src/game/bar-tags.ts`
+- `apps/web/src/game/bar.ts`
 - `apps/web/src/game/showroom.ts`
+- `apps/web/src/routes/bar.tsx`
 - `apps/web/src/styles.css`
 
 Test files:

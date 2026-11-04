@@ -316,7 +316,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/game-shell.tsx",
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/assets/*-art.ts",
+      "apps/web/src/game/bar*.ts",
       "apps/web/src/game/showroom.ts",
+      "apps/web/src/routes/bar.tsx",
       "apps/web/src/styles.css",
       "apps/web/src/career/bar.ts",
       "apps/web/src/career/bike-stats.ts",
@@ -335,7 +337,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     summary:
       "Every screen React draws around a race, from the bar and the back room to the garage, the ride-out card, pause and results, with the screen flow, the menu art and the copy.",
     title: "Menus and screens",
-    verify: ["single-race.md", "career.md"],
+    verify: ["single-race.md", "career.md", "bar-look.md"],
   },
   {
     docs: [

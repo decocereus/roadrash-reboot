@@ -7,7 +7,7 @@ import { createBikes } from "../src/game/actors.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
-import { bodyFor } from "../src/game/figure-rig.ts";
+import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
 import { assetParsers } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
@@ -156,7 +156,7 @@ export const run = async (
   const figure = createRiderFigure(
     worn?.value ?? bodyFor(assets, build),
     shading,
-    0
+    paletteOf(0)
   );
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#2a2433");
