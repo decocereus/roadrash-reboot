@@ -406,6 +406,7 @@ Source files:
 - `apps/web/src/components/use-flow.ts`
 - `apps/web/src/game/bar-blocks.ts`
 - `apps/web/src/game/bar-cast.ts`
+- `apps/web/src/game/bar-garage.ts`
 - `apps/web/src/game/bar-kit.ts`
 - `apps/web/src/game/bar-light.ts`
 - `apps/web/src/game/bar-outside.ts`

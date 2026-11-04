@@ -4,6 +4,7 @@ import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
 import { riderBlocks } from "./bar-blocks.ts";
 import { createCast } from "./bar-cast.ts";
+import { buildGarage } from "./bar-garage.ts";
 import { createKit } from "./bar-kit.ts";
 import { duskLook, nightLook, toneAt } from "./bar-light.ts";
 import { createOutside } from "./bar-outside.ts";
@@ -15,7 +16,7 @@ import {
   buildFixtures,
   buildFloor,
   buildShell,
-  MEZZANINE,
+  GARAGE_PLINTH,
   PLINTH,
   ROOM,
 } from "./bar-room.ts";
@@ -39,11 +40,15 @@ const DOOR_REACH = Math.hypot(
 );
 const SIGN_GLOW = 1.55;
 const REV_PUFF_SPEED = 9;
+const FOCUS_CLEARANCE = PLINTH.radius + 0.6;
+const GARAGE_LIVERY = { bike: "#c8214a", trim: "#2a1a38" } as const;
+const GARAGE_BIKE_YAW = 2.61;
+const GARAGE_BIKE_SWAY = 0.22;
 const SHOTS = {
   garage: {
-    aim: new THREE.Vector3(2.4, 1.75, 0.8),
-    fov: 26,
-    spot: new THREE.Vector3(-11, 2.4, 8.2),
+    aim: new THREE.Vector3(7.5, 1.45, -3.75),
+    fov: 34,
+    spot: new THREE.Vector3(-0.3, 1.6, -1.6),
   },
   home: {
     aim: new THREE.Vector3(-0.4, 2.4, -3),
@@ -93,6 +98,16 @@ const pinsFrom = (search: string): Pins => {
     shadow: lean ? 2048 : (number("shadow") ?? 4096),
     time: named === "dusk" ? 0 : fixed,
   };
+};
+
+const clearOfPlinth = (eye: THREE.Vector3): void => {
+  const dx = eye.x - PLINTH.x;
+  const dz = eye.z - PLINTH.z;
+  const away = Math.hypot(dx, dz);
+  if (away < FOCUS_CLEARANCE) {
+    eye.x = PLINTH.x + (dx / away) * FOCUS_CLEARANCE;
+    eye.z = PLINTH.z + (dz / away) * FOCUS_CLEARANCE;
+  }
 };
 
 export interface BarScene {
@@ -174,6 +189,7 @@ const openRoom = (
   buildCeiling(shellKit, glowKit);
   buildFixtures(propKit, glowKit);
   buildProps(propKit, glowKit);
+  buildGarage(propKit, glowKit);
   buildDoor({ slatGlow, slats });
 
   const celMaterial = shading.cel("#ffffff", { vertexColors: true });
@@ -259,18 +275,21 @@ const openRoom = (
       paint: 0,
       police: false,
     },
-    { livery: riderBlocks[4]?.livery, model: "oni", paint: 4, police: false },
+    { livery: GARAGE_LIVERY, model: "ghost", paint: 4, police: false },
   ]);
   scene.add(bikes.group);
   owners.push(() => {
     bikes.dispose();
   });
-  const [heroBike, shelfBike] = bikes.roots;
-  if (!(heroBike && shelfBike)) {
+  const [heroBike, garageBike] = bikes.roots;
+  if (!(heroBike && garageBike)) {
     throw new Error("The bar lost a bike.");
   }
-  shelfBike.position.set(10.9, MEZZANINE.y, -1.4);
-  shelfBike.rotation.y = Math.PI * 0.68;
+  garageBike.position.set(
+    GARAGE_PLINTH.x,
+    GARAGE_PLINTH.height,
+    GARAGE_PLINTH.z
+  );
   heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
 
   let revving = 0;
@@ -294,6 +313,7 @@ const openRoom = (
     tags,
     BUBBLES,
     heroBike,
+    garageBike,
     pins.riders
   );
   scene.add(cast.group);
@@ -491,6 +511,8 @@ const openRoom = (
     }
     bikes.show(0);
     bikes.sag(0, Math.sin(clock * 90) * 0.006 * revving);
+    garageBike.rotation.y =
+      GARAGE_BIKE_YAW + Math.sin(clock * 0.25) * GARAGE_BIKE_SWAY;
     bikes.show(1);
     bikes.commit(anchor);
 
@@ -507,10 +529,11 @@ const openRoom = (
     if (member) {
       wantAim.copy(member.head).setY(member.head.y - 0.5);
       wantEye.copy(wantAim).add(projected.set(1.4, 0.9, 5.2));
+      clearOfPlinth(wantEye);
     } else if (lift > 0) {
       wantAim.set(ROOM.doorCentre, 2.2, ROOM.backZ - 6);
       wantEye.set(
-        ROOM.doorCentre + (1 - lift) * 2,
+        ROOM.doorCentre - 1 + (1 - lift) * 3,
         2.4 + (1 - lift) * 4,
         -1 + (1 - lift) * 20
       );
@@ -535,6 +558,7 @@ const openRoom = (
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
     cast.update(seconds, clock, camera, lift, viewSize);
+    tags.reveal(shot === "home" || focus !== null);
     shading.aim(camera);
     pipeline.render(scene, camera);
 

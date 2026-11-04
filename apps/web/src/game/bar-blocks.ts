@@ -71,8 +71,8 @@ export const riderBlocks: readonly RiderBlocks[] = [
     helmetTrim: 0xf8_f8_f4,
     livery: { bike: 0xf8_f8_f4, trim: 0xff_2e_3d },
     name: "CASEY",
-    panel: 0x4a_4a_58,
-    suit: 0xf8_f8_f4,
+    panel: 0xff_2e_3d,
+    suit: 0xcf_dc_f0,
   },
 ];
 

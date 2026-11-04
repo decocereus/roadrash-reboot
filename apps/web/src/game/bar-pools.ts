@@ -1,7 +1,14 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-import { LAMP_SPOTS, PLINTH, ROOM } from "./bar-room.ts";
+import {
+  GARAGE_LAMPS,
+  GARAGE_PLINTH,
+  LAMP_SPOTS,
+  MEZZANINE,
+  PLINTH,
+  ROOM,
+} from "./bar-room.ts";
 import { onFxLayer } from "./cel.ts";
 import { CYAN, MAGENTA, ORANGE, YELLOW } from "./looks.ts";
 
@@ -106,24 +113,58 @@ const neonPools = (): THREE.BufferGeometry[] => [
   rect(-5, -2.4, 11.4, 0.7, ORANGE, 0.14),
   rect(ROOM.doorCentre, -8.4, 6.4, 1.2, MAGENTA, 0.14),
   rect(ROOM.doorCentre, -7.3, 6.4, 1.2, MAGENTA, 0.08),
-  ring(
-    PLINTH.x,
-    PLINTH.z,
-    PLINTH.radius + 0.2,
-    PLINTH.radius + 0.95,
-    CYAN,
-    0.2
-  ),
-  ring(
-    PLINTH.x,
-    PLINTH.z,
-    PLINTH.radius + 0.95,
-    PLINTH.radius + 1.6,
-    CYAN,
-    0.08
-  ),
-  rect(10.8, 4, 4.4, 4.5, ORANGE, 0.12),
-  rect(9.4, 2.4, 1.4, 1.2, MAGENTA, 0.1),
+  ...[PLINTH, GARAGE_PLINTH].flatMap(({ radius, x, z }) => [
+    ring(x, z, radius + 0.2, radius + 0.95, CYAN, 0.2),
+    ring(x, z, radius + 0.95, radius + 1.6, CYAN, 0.08),
+  ]),
+];
+
+const wallWash = (
+  x: number,
+  z: number,
+  width: number,
+  top: number,
+  colour: string,
+  strength: number
+): THREE.BufferGeometry => {
+  const geometry = quad(
+    [
+      [x, z - width / 2],
+      [x, z + width / 2],
+      [x, z + width / 2],
+      [x, z - width / 2],
+    ],
+    colour,
+    strength
+  );
+  const positions = geometry.getAttribute("position");
+  const colours = geometry.getAttribute("color");
+  for (const [vertex, y, share] of [
+    [0, top, 1],
+    [1, top, 1],
+    [2, 0, 0.2],
+    [3, 0, 0.2],
+  ] as const) {
+    positions.setY(vertex, y);
+    colours.setXYZ(
+      vertex,
+      colours.getX(vertex) * share,
+      colours.getY(vertex) * share,
+      colours.getZ(vertex) * share
+    );
+  }
+  return geometry;
+};
+
+const garagePools = (): THREE.BufferGeometry[] => [
+  ...GARAGE_LAMPS.flatMap(([x, z]) => [
+    rect(x, z, 4.4, 5.4, ORANGE, 0.16),
+    rect(x - 0.3, z, 2.8, 4, "#ffb765", 0.12),
+    wallWash(ROOM.rightX - 0.13, z, 5, MEZZANINE.y - 0.3, ORANGE, 0.2),
+  ]),
+  rect(GARAGE_PLINTH.x - 4.1, GARAGE_PLINTH.z, 3.6, 1.7, ORANGE, 0.16),
+  rect(GARAGE_PLINTH.x - 4.1, GARAGE_PLINTH.z, 3.6, 0.8, "#ffb765", 0.1),
+  rect(10.4, GARAGE_PLINTH.z, 2.6, 2.2, ORANGE, 0.16),
 ];
 
 const windowShafts = (): THREE.BufferGeometry[] => {
@@ -198,7 +239,7 @@ export interface BarPools {
 
 export const createPools = (): BarPools => {
   const group = new THREE.Group();
-  const steady = poolMesh([...lampPools(), ...neonPools()]);
+  const steady = poolMesh([...lampPools(), ...neonPools(), ...garagePools()]);
   const dusk = poolMesh(windowShafts());
   const night = poolMesh(nightSheen());
   const lights = poolMesh([rect(0, 0, 8, 2.4, "#fff2c8", 0.24)]);

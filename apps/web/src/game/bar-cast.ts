@@ -3,7 +3,7 @@ import * as THREE from "three";
 import type { Assets } from "./assets.ts";
 import { blockPaletteOf, riderBlocks } from "./bar-blocks.ts";
 import type { RiderBlocks } from "./bar-blocks.ts";
-import { PLINTH } from "./bar-room.ts";
+import { GARAGE_PLINTH, PLINTH } from "./bar-room.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
 import type { Turn } from "./figure-pose.ts";
@@ -23,13 +23,13 @@ const TAG_LIFT = 1;
 const FORWARD_YAW = Math.PI;
 
 const barActs = [
-  "stand",
   "lean",
   "arms",
   "phone",
   "stool",
   "chat",
   "ride",
+  "tune",
   "walk",
 ] as const;
 
@@ -86,8 +86,8 @@ const actTurns = {
     { axis: YAW, bone: "head", degrees: 8 },
   ],
   ride: [],
-  stand: relaxed,
   stool: [],
+  tune: [],
   walk: relaxed,
 } as const satisfies Record<BarAct, readonly Turn[]>;
 
@@ -122,10 +122,10 @@ const spots: readonly CastSpot[] = [
   { act: "chat", face: 0.9, gather: [1.8, -6], x: 3.3, z: 6.9 },
   { act: "lean", face: 0.5, x: -8.4, z: -2.55 },
   { act: "stool", face: 3.14, x: -6.15, z: -2.65 },
-  { act: "arms", face: -0.35, x: 0.6, z: -2.2 },
-  { act: "walk", face: -1.9, gather: [7.1, -6.6], x: 7.6, z: 3 },
+  { act: "arms", face: -0.35, x: -0.4, z: -2.6 },
+  { act: "tune", face: 0, x: GARAGE_PLINTH.x, z: GARAGE_PLINTH.z },
   { act: "phone", face: 0.9, x: -9.4, z: 3.4 },
-  { act: "stand", face: 3.14, x: 6, z: -5.2 },
+  { act: "walk", face: -1.9, gather: [1.3, -4.8], x: 4.6, z: 0.4 },
 ];
 
 const STOOL_SEAT = 1;
@@ -160,6 +160,7 @@ export const createCast = (
   tags: TagLayer,
   bubbleLines: readonly string[],
   heroBike: THREE.Object3D,
+  garageBike: THREE.Object3D,
   shown: number
 ): BarCast => {
   const group = new THREE.Group();
@@ -172,7 +173,7 @@ export const createCast = (
   }[] = [];
   const stride = new THREE.Vector3();
   const route = [
-    new THREE.Vector3(7.6, 0, 3),
+    new THREE.Vector3(4.6, 0, 0.4),
     new THREE.Vector3(3, 0, -0.4),
     new THREE.Vector3(-2.5, 0, -1.3),
     new THREE.Vector3(3, 0, -0.4),
@@ -192,7 +193,9 @@ export const createCast = (
       blockPaletteOf(blocks)
     );
     const base =
-      spot.act === "stool" || spot.act === "ride" ? "seated" : "stand";
+      spot.act === "stool" || spot.act === "ride" || spot.act === "tune"
+        ? "seated"
+        : "stand";
     const still = figure.bakePose(base, actTurns[spot.act]);
     const breath = figure.bakePose(base, [
       ...actTurns[spot.act],
@@ -262,9 +265,10 @@ export const createCast = (
           continue;
         }
         const { figure, spot, tag } = member;
-        if (spot.act === "ride") {
-          figure.root.position.copy(heroBike.position);
-          figure.root.quaternion.copy(heroBike.quaternion);
+        if (spot.act === "ride" || spot.act === "tune") {
+          const bike = spot.act === "ride" ? heroBike : garageBike;
+          figure.root.position.copy(bike.position);
+          figure.root.quaternion.copy(bike.quaternion);
           figure.root.translateY(figure.seat.y);
           figure.root.translateZ(figure.seat.z);
           figure.animate(riding, seconds);

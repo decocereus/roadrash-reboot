@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { MEZZANINE, ROOM } from "./bar-room.ts";
+import { ROOM } from "./bar-room.ts";
 import { MAGENTA, CYAN, ORANGE, RED, YELLOW } from "./looks.ts";
 import { FULL_TURN, sheet, textureOf } from "./texture-canvas.ts";
 
@@ -170,37 +170,32 @@ const signFaces: readonly SignFace[] = [
     yaw: 0,
   },
   {
-    at: [11.55, 3.55, MEZZANINE.frontZ - 0.06],
+    at: [12.8, 3.12, -1.5],
     size: [2.5, 0.84],
     slot: "garage",
-    yaw: 0,
+    yaw: -Math.PI / 2,
   },
-  { at: [12.94, 2.6, 1.8], size: [1.5, 0.75], slot: "bike", yaw: -Math.PI / 2 },
   {
-    at: [12.94, 3.3, 7.4],
-    size: [1.5, 0.75],
+    at: [12.8, 3.05, 0.42],
+    size: [1.1, 0.55],
+    slot: "tune",
+    yaw: -Math.PI / 2,
+  },
+  { at: [12.8, 3.1, -5.5], size: [1.3, 0.65], slot: "bike", yaw: -Math.PI / 2 },
+  {
+    at: [12.8, 2.3, -7.25],
+    size: [1.3, 0.65],
     slot: "tools",
     yaw: -Math.PI / 2,
   },
-  { at: [12.94, 2.4, 4.2], size: [1.5, 0.75], slot: "tune", yaw: -Math.PI / 2 },
+  { at: [12.94, 1.9, 3], size: [1, 1.34], slot: "poster-a", yaw: -Math.PI / 2 },
   {
-    at: [12.94, 1.7, -2],
+    at: [12.94, 1.9, 4.4],
     size: [1, 1.34],
-    slot: "poster-a",
+    slot: "poster-b",
     yaw: -Math.PI / 2,
   },
-  {
-    at: [9.5, 1.5, ROOM.backZ + 0.08],
-    size: [1.05, 1.4],
-    slot: "poster-b",
-    yaw: 0,
-  },
-  {
-    at: [11.5, 1.5, ROOM.backZ + 0.08],
-    size: [1.05, 1.4],
-    slot: "poster-c",
-    yaw: 0,
-  },
+  { at: [12.94, 1.9, 8], size: [1, 1.34], slot: "poster-c", yaw: -Math.PI / 2 },
   {
     at: [ROOM.doorCentre, 0.018, -8.6],
     size: [6.4, 0.7],

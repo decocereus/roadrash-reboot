@@ -20,6 +20,7 @@ export interface Tag {
 export interface TagLayer {
   readonly name: (label: string) => Tag;
   readonly bubble: (line: string) => Tag;
+  readonly reveal: (visible: boolean) => void;
   readonly dispose: () => void;
 }
 
@@ -58,5 +59,8 @@ export const createTagLayer = (canvas: HTMLCanvasElement): TagLayer => {
       layer.remove();
     },
     name: (label) => made(label, NAME_STYLE, 0),
+    reveal(visible) {
+      layer.style.display = visible ? "block" : "none";
+    },
   };
 };

@@ -19,13 +19,30 @@ export const ROOM = {
   windowTop: 8,
 } as const;
 
-export const PLINTH = { height: 0.42, radius: 2.9, x: -0.6, z: 2.9 } as const;
+export interface Plinth {
+  readonly height: number;
+  readonly radius: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+export const PLINTH: Plinth = { height: 0.42, radius: 2.9, x: -0.6, z: 2.9 };
+export const GARAGE_PLINTH: Plinth = {
+  height: 0.42,
+  radius: 2.2,
+  x: 7,
+  z: -3.75,
+};
 export const MEZZANINE = {
   backZ: -9,
   frontZ: 1.5,
   leftX: 8.6,
   y: 4.3,
 } as const;
+export const GARAGE_LAMPS = [
+  [10.2, -6.6],
+  [10.2, -0.9],
+] as const;
 
 const WALL = "#57307a";
 const WALL_LOW = "#44245e";
