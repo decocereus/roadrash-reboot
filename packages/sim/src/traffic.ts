@@ -104,11 +104,20 @@ const laneFor = (
 
 const narrows = (track: Track): boolean => track.plan.districts.length > 1;
 
+const seatOf = (home: number, track: Track, s: number): number =>
+  Math.sign(home) * Math.min(Math.abs(home), trafficReachAt(track, s));
+
 const seatCar = (car: TrafficCar, track: Track): void => {
-  car.x =
-    Math.sign(car.home) *
-    Math.min(Math.abs(car.home), trafficReachAt(track, car.s));
+  car.x = seatOf(car.home, track, car.s);
 };
+
+export const carSlant = (
+  { halfLength, home }: Pick<TrafficCar, "halfLength" | "home">,
+  track: Track,
+  s: number
+): number =>
+  (seatOf(home, track, s + halfLength) - seatOf(home, track, s - halfLength)) /
+  (2 * halfLength);
 
 export const seatCars = (cars: readonly TrafficCar[], track: Track): void => {
   if (narrows(track)) {
@@ -337,7 +346,10 @@ const followLane = (cars: readonly TrafficCar[], flow: Flow): void => {
       continue;
     }
     const s = lastS[index] ?? car.s;
-    const reach = FOLLOW_GAP + (lastSpeed[index] ?? 0) * FOLLOW_SECONDS;
+    const speed = lastSpeed[index] ?? 0;
+    const reach = FOLLOW_GAP + speed * FOLLOW_SECONDS;
+    const stoppingRoom = (speed * speed) / (2 * BRAKING);
+    const sight = Math.max(reach, stoppingRoom + QUEUE_GAP);
     let targetSpeed = Math.abs(car.cruiseSpeed);
     for (let ahead = place + 1; ahead < count; ahead += 1) {
       const otherIndex = order[ahead] ?? -1;
@@ -346,12 +358,14 @@ const followLane = (cars: readonly TrafficCar[], flow: Flow): void => {
         continue;
       }
       const apart = ((lastS[otherIndex] ?? other.s) - s) * direction;
-      if (apart - longest - car.halfLength >= reach) {
+      if (apart - longest - car.halfLength >= sight) {
         break;
       }
       const gap = apart - other.halfLength - car.halfLength;
       const otherSpeed = lastSpeed[otherIndex] ?? 0;
-      if (gap > 0 && gap < reach) {
+      const closingRoom =
+        stoppingRoom - (otherSpeed * otherSpeed) / (2 * BRAKING) + QUEUE_GAP;
+      if (gap > 0 && gap < Math.max(reach, closingRoom)) {
         targetSpeed = Math.min(targetSpeed, otherSpeed);
       }
       if (

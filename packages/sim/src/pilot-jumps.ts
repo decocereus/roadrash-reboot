@@ -119,6 +119,9 @@ const stillMeeting = (rider: RiderState, car: TrafficCar): boolean =>
   rider.s <= frontOf(car) &&
   (rider.s >= toeOf(car) || inJudgingRange(rider, car));
 
+const missedTheRamp = (rider: RiderState, car: TrafficCar): boolean =>
+  rider.s > toeOf(car) && rider.onCarrier < 0 && !rider.airborne;
+
 export const jumpAim = (
   state: RaceState,
   track: Track,
@@ -129,6 +132,8 @@ export const jumpAim = (
   const met = state.cars[rider.jumpSeen];
   if (met && !stillMeeting(rider, met)) {
     rider.jumpSeen = -1;
+    rider.jumpTaken = false;
+  } else if (met && missedTheRamp(rider, met)) {
     rider.jumpTaken = false;
   }
   let { x } = aim;

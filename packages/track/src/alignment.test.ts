@@ -9,7 +9,6 @@ import type { Track } from "./track.ts";
 import { ridgeRoad } from "./tracks/ridge-road.ts";
 
 const fingerprintsBeforePieces = {
-  "breakwater-run": "0ca7770f77355d9b",
   "ridge-road": "422c832160f83d4c",
   "slag-row": "42a8a3b74af8c5f3",
 };
@@ -95,12 +94,14 @@ const sweeperCurvatureAt = (s: number): number => {
 };
 
 describe("track pieces", () => {
-  it("every road, without the crossings added since, compiles to the centreline, hazards and props other than chevrons it had before pieces replaced sections", () => {
+  it("every road Breakwater Run's rebuild left alone, without the crossings added since, compiles to the centreline, hazards and props other than chevrons it had before pieces replaced sections", () => {
     const fingerprints = Object.fromEntries(
-      roadIds.map((roadId) => [
-        roadId,
-        fingerprintOf(compileTrack({ ...roads[roadId], crossings: [] })),
-      ])
+      roadIds
+        .filter((roadId) => roadId !== "breakwater-run")
+        .map((roadId) => [
+          roadId,
+          fingerprintOf(compileTrack({ ...roads[roadId], crossings: [] })),
+        ])
     );
     expect(fingerprints).toStrictEqual(fingerprintsBeforePieces);
   }, 60_000);

@@ -37,7 +37,7 @@ interface Expected {
 
 const design: readonly Expected[] = [
   {
-    carriers: [2350, 3200],
+    carriers: [3900, 4650],
     length: 8500,
     lowestLaunch: 169,
     roadId: "breakwater-run",
@@ -135,6 +135,26 @@ describe("the roads", () => {
       expect(track.plan.region).toBe(regionOf(roadId));
     }
   );
+
+  it("Breakwater Run changes width district by district, with its lanes opening and closing from the outside", () => {
+    const track = trackFor("breakwater-run");
+    expect(
+      [650, 1600, 2100, 2900, 4200, 5500, 7300].map((s) => [
+        openLanesAt(track, s),
+        2 * roadHalfWidthAt(track, s),
+      ])
+    ).toStrictEqual([
+      [3, 23],
+      [1, 8],
+      [3, 36],
+      [3, 23],
+      [2, 16],
+      [2, 15],
+      [3, 22],
+    ]);
+    expect(track.sameWayLanes).toHaveLength(3);
+    expect(track).toHaveLength(8500);
+  });
 
   it("the first 4,250 m of Ridge Road are still the pinned road, sample for sample and prop for prop", () => {
     const ridge = trackFor("ridge-road");
