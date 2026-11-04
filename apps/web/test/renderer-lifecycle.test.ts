@@ -7,8 +7,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
-import { createBikes, createFleet } from "../src/game/actors.ts";
-import type { Fleet } from "../src/game/actors.ts";
+import { createBikes } from "../src/game/actors.ts";
 import { assetParsers, glows } from "../src/game/assets.ts";
 import type { Assets, BikeParts, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelFor, bikeModelIds } from "../src/game/bike-models.ts";
@@ -16,6 +15,8 @@ import { createShading } from "../src/game/cel.ts";
 import type { Shading } from "../src/game/cel.ts";
 import { disposeTree } from "../src/game/dispose.ts";
 import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
+import { createFleet } from "../src/game/fleet.ts";
+import type { Fleet } from "../src/game/fleet.ts";
 import { createHazardMarks } from "../src/game/hazards.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh, isMesh, isSkinnedMesh } from "../src/game/meshes.ts";

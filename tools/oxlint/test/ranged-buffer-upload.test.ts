@@ -140,6 +140,7 @@ runRule("rushline/ranged-buffer-upload", rangedBufferUploadRule, {
   valid: [
     actualSource("apps/web/src/game/uploads.ts"),
     actualSource("apps/web/src/game/actors.ts"),
+    actualSource("apps/web/src/game/fleet.ts"),
     actualSource("apps/web/src/game/puffs.ts"),
     actualSource("apps/web/src/game/hazards.ts"),
     actualSource("apps/web/src/game/ground.ts"),
