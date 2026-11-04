@@ -4,9 +4,11 @@ import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
 import {
   createReadTick,
+  PING_PACKET_BYTES,
   READY_PACKET_BYTES,
   readTick,
   START_PACKET_BYTES,
+  writePing,
   writeReady,
   writeStart,
 } from "@racer/sim/room-wire";
@@ -118,6 +120,26 @@ export const fakeSocket = (): FakeSocket => {
     ticks,
   };
   return socket;
+};
+
+export const pingPacket = (): ArrayBuffer => {
+  const buffer = new ArrayBuffer(PING_PACKET_BYTES);
+  writePing(new DataView(buffer), 1);
+  return buffer;
+};
+
+export const advanceHearing = (
+  host: Host,
+  clock: Clock,
+  sockets: readonly FakeSocket[],
+  ms: number
+): void => {
+  for (let passed = 0; passed < ms; passed += 1000) {
+    clock.advance(Math.min(1000, ms - passed));
+    for (const socket of sockets) {
+      host.message(socket, pingPacket());
+    }
+  }
 };
 
 export const startPacket = (): ArrayBuffer => {

@@ -17,7 +17,7 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 
 import type { RoomStatus } from "./contract.ts";
-import { encodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
+import { encodeRoomMessage, SEAT_CLOSED, SEAT_SILENT } from "./messages.ts";
 import type { RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
@@ -30,6 +30,9 @@ const LOBBY_MS = 120_000;
 const FILL_LEAST_MS = 8000;
 const FILL_SPAN_MS = 10_000;
 const NO_STAMP = 0;
+const SILENT_SEAT_MS = 10_000;
+const SEAT_WATCH_MS = 1000;
+const SEND_FAILED = Number.NEGATIVE_INFINITY;
 
 export interface HostSocket {
   readonly send: (data: string | ArrayBufferView) => void;
@@ -57,6 +60,7 @@ interface Seat {
   rider: RiderId | null;
   accepted: number;
   ahead: number;
+  heardAt: number;
   late: number;
   leftAtTick: number | null;
   readyMs: number | null;
@@ -113,10 +117,12 @@ export const createHost = (ports: HostPorts): Host => {
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
+  let watching = false;
 
   const seatFor = (socket: HostSocket, name: string, link: SeatLink): Seat => ({
     accepted: 0,
     ahead: 0,
+    heardAt: ports.now(),
     late: 0,
     leftAtTick: null,
     link,
@@ -127,20 +133,11 @@ export const createHost = (ports: HostPorts): Host => {
     socket,
   });
 
-  const leave = (seat: Seat): void => {
-    seats.delete(seat.socket);
-    if (running && seat.rider !== null) {
-      running.room.leave(seat.rider);
-      seat.leftAtTick = running.room.state.tick;
-    }
-    running?.loading.delete(seat.socket);
-  };
-
   const sendTo = (seat: Seat, data: string | ArrayBufferView): void => {
     try {
       seat.socket.send(data);
     } catch {
-      leave(seat);
+      seat.heardAt = SEND_FAILED;
     }
   };
 
@@ -367,6 +364,47 @@ export const createHost = (ports: HostPorts): Host => {
     });
   };
 
+  const drop = (seat: Seat): void => {
+    seats.delete(seat.socket);
+    if (running && seat.rider !== null) {
+      const { loading, raceId, room } = running;
+      room.leave(seat.rider);
+      seat.leftAtTick = room.state.tick;
+      loading.delete(seat.socket);
+      for (const tally of tallyOf(seat, room)) {
+        ports.note({
+          kind: "left",
+          raceId,
+          seatsLeft: seats.size,
+          tally,
+          tick: room.state.tick,
+        });
+      }
+      countDownOnceLoaded(running);
+    }
+    if (seats.size === 0) {
+      lobby = null;
+    } else if (lobby) {
+      tellLobby(lobby);
+    }
+  };
+
+  const watchSeats = (): void => {
+    const now = ports.now();
+    for (const seat of seats.values()) {
+      if (now - seat.heardAt > SILENT_SEAT_MS) {
+        if (seat.heardAt !== SEND_FAILED) {
+          seat.socket.close(SEAT_SILENT, "The room stopped hearing this seat.");
+        }
+        drop(seat);
+      }
+    }
+    watching = seats.size > 0;
+    if (watching) {
+      ports.after(SEAT_WATCH_MS, watchSeats);
+    }
+  };
+
   const openLobby = (): Lobby => {
     const open: Lobby = {
       fill: 0,
@@ -386,34 +424,17 @@ export const createHost = (ports: HostPorts): Host => {
   return {
     gone: (socket) => {
       const seat = seats.get(socket);
-      if (!seat) {
-        return;
-      }
-      leave(seat);
-      if (running) {
-        const { raceId, room } = running;
-        for (const tally of tallyOf(seat, room)) {
-          ports.note({
-            kind: "left",
-            raceId,
-            seatsLeft: seats.size,
-            tally,
-            tick: room.state.tick,
-          });
-        }
-      }
-      if (running) {
-        countDownOnceLoaded(running);
-      }
-      if (seats.size === 0) {
-        lobby = null;
-      } else if (lobby) {
-        tellLobby(lobby);
+      if (seat) {
+        drop(seat);
       }
     },
     message: (socket, data) => {
       const seat = seats.get(socket);
-      if (!seat || !(data instanceof ArrayBuffer)) {
+      if (!seat) {
+        return;
+      }
+      seat.heardAt = ports.now();
+      if (!(data instanceof ArrayBuffer)) {
         return;
       }
       const view = new DataView(data);
@@ -467,6 +488,10 @@ export const createHost = (ports: HostPorts): Host => {
         return;
       }
       seats.set(socket, seatFor(socket, name, link));
+      if (!watching) {
+        watching = true;
+        ports.after(SEAT_WATCH_MS, watchSeats);
+      }
       tellLobby(lobby ?? openLobby());
     },
     status: () => ({

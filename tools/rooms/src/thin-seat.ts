@@ -150,10 +150,7 @@ export const openThinSeat = (
       }
       case "countdown": {
         clock.start(message.startsInMs, performance.now());
-        timers = [
-          setInterval(sendControls, TICK_MS),
-          setInterval(sendPing, PING_EVERY_MS),
-        ];
+        timers = [...timers, setInterval(sendControls, TICK_MS)];
         break;
       }
       case "ended": {
@@ -174,6 +171,9 @@ export const openThinSeat = (
     }
   };
 
+  socket.addEventListener("open", () => {
+    timers = [setInterval(sendPing, PING_EVERY_MS)];
+  });
   socket.addEventListener("message", (event) => {
     const data: unknown = event.data;
     if (data instanceof ArrayBuffer) {
