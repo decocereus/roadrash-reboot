@@ -14,17 +14,14 @@ describe("Vic's promotion cards", () => {
         vicCard(served, level),
       ])
     ).toStrictEqual([
-      [
-        "New Meat",
-        "Top three on all five roads and you move up. Don't go broke.",
-      ],
+      ["New Meat", "Top three on every road and you move up. Don't go broke."],
       [
         "Dee's Tip",
-        "Longer roads and bigger purses. The garage got a delivery. The new cops are quicker.",
+        "Bigger purses. The garage got a delivery. The new cops are quicker.",
       ],
       [
         "The Long Ridge",
-        "Everyone's armed now. Try to keep up. Five roads left. The Ridge is last. She'll be waiting.",
+        "Everyone's armed now. Try to keep up. One more round. The Ridge is last. She'll be waiting.",
       ],
     ]);
   });

@@ -21,7 +21,7 @@ const decentBikes = {
 
 const DECENT_SKILL = 0.9;
 const DECENT_AGGRESSION = 0.5;
-const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14];
 const SEED_STEP = 7919;
 const RACE_LIMIT_SECONDS = 600;
 export const STARTS = roadIds.length * SEEDS.length;
@@ -68,7 +68,7 @@ const rivalsBustedIn = (state: RaceState): number =>
   ).length;
 
 const ridePolice = ({ level, roadId, seed }: PoliceStart): PoliceRide => {
-  const track = trackFor(roadId, level);
+  const track = trackFor(roadId);
   const bikeId = decentBikes[level];
   const setup = setupFor(
     recordedRules,

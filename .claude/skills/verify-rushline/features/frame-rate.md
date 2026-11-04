@@ -1,6 +1,6 @@
 # Frame rate and load
 
-The game paces itself at 60 frames per second at the screen's native pixel ratio, and drops quality one rung at a time (shadow map, bloom, then pixel ratio) only when frames are late for a sustained stretch. The target is 60 fps on an integrated-graphics laptop. The heaviest moment is the `?stress` race on Slag Row at level 5 with the full field and eight police.
+The game paces itself at 60 frames per second at the screen's native pixel ratio, and drops quality one rung at a time (shadow map, bloom, then pixel ratio) only when frames are late for a sustained stretch. The target is 60 fps on an integrated-graphics laptop. The heaviest moment is the `?stress` race on Slag Row with the top rung's full field and eight police.
 
 ## Sub-features
 

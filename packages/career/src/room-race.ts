@@ -28,11 +28,7 @@ export interface SeatedRace {
 
 export const seatedRace = (seed: number, seats: number): SeatedRace => {
   const race = roomRaceOf(seed);
-  const setup = practiceSetup(
-    roomRules,
-    race,
-    trackFor(race.roadId, race.level)
-  );
+  const setup = practiceSetup(roomRules, race, trackFor(race.roadId));
   const humans = firstRacers(setup, seats);
   return { humans, setup: roomSetup(setup, humans) };
 };

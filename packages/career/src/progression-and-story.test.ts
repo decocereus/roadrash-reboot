@@ -23,29 +23,29 @@ import { acceptEnvelope, refuseEnvelope, storyBeat } from "./story.ts";
 import { roadList } from "./tables.ts";
 
 describe("moving up", () => {
-  it("the fifth qualification moves the player up and unlocks the level's bikes", () => {
-    const four = playAll(
+  it("the third qualification moves the player up and unlocks the level's bikes", () => {
+    const two = playAll(
       newCareer(5),
-      roadList.slice(0, 4).map((entry) => ({ place: 3, roadId: entry.id }))
+      roadList.slice(0, 2).map((entry) => ({ place: 3, roadId: entry.id }))
     );
-    const fifth = play(four, { place: 1, roadId: "ridge-road" });
-    const lockedBefore = shopStock(recordedRules, four)
+    const third = play(two, { place: 1, roadId: "ridge-road" });
+    const lockedBefore = shopStock(recordedRules, two)
       .filter((row) => row.refusal === "locked")
       .map((row) => row.bikeId);
-    const lockedAfter = shopStock(recordedRules, fifth.career)
+    const lockedAfter = shopStock(recordedRules, third.career)
       .filter((row) => row.refusal === "locked")
       .map((row) => row.bikeId);
     expect([
-      four.level,
-      roadsFor(recordedRules, four).qualifiedCount,
-    ]).toStrictEqual([1, 4]);
-    expect(ledgerOf(fifth)).toMatchObject({
+      two.level,
+      roadsFor(recordedRules, two).qualifiedCount,
+    ]).toStrictEqual([1, 2]);
+    expect(ledgerOf(third)).toMatchObject({
       levelUp: {
         bikes: ["ostra-sette-750", "brack-stoker-800"],
         level: 2,
       },
       qualified: true,
-      qualifiedCount: 5,
+      qualifiedCount: 3,
     });
     expect(lockedBefore).toContain("ostra-sette-750");
     expect(lockedAfter).toStrictEqual([
@@ -53,33 +53,30 @@ describe("moving up", () => {
       "brack-anvil-1100",
       "ostra-nera-1000",
     ]);
-    expect(roadsFor(recordedRules, fifth.career)).toMatchObject({
+    expect(roadsFor(recordedRules, third.career)).toMatchObject({
       level: 2,
       next: "breakwater-run",
       qualifiedCount: 0,
     });
   });
 
-  it("the Long Ridge is closed until the other four level-5 roads are qualified, and a top three there ends the season", () => {
+  it("the Long Ridge is closed until the other two level-5 roads are qualified, and a top three there ends the season", () => {
     const { start } = seasonAt(decent, 5);
-    const three = playAll(
-      start,
-      roadList.slice(0, 3).map((entry) => ({ place: 3, roadId: entry.id }))
-    );
-    const four = play(three, { place: 3, roadId: "slag-row" }).career;
-    const fourth = play(four, { place: 4, roadId: "ridge-road" });
+    const one = play(start, { place: 3, roadId: "breakwater-run" }).career;
+    const two = play(one, { place: 3, roadId: "slag-row" }).career;
+    const fourth = play(two, { place: 4, roadId: "ridge-road" });
     const won = play(fourth.career, { place: 1, roadId: "ridge-road" });
     expect([
-      roadsFor(recordedRules, three).finaleOpen,
-      three.story.finaleUnlocked,
+      roadsFor(recordedRules, one).finaleOpen,
+      one.story.finaleUnlocked,
     ]).toStrictEqual([false, false]);
-    expect(startRace(recordedRules, three, "ridge-road", 1)).toMatchObject({
+    expect(startRace(recordedRules, one, "ridge-road", 1)).toMatchObject({
       reason: "roadClosed",
       started: false,
     });
     expect([
-      roadsFor(recordedRules, four).finaleOpen,
-      four.story.finaleUnlocked,
+      roadsFor(recordedRules, two).finaleOpen,
+      two.story.finaleUnlocked,
     ]).toStrictEqual([true, true]);
     expect([
       ledgerOf(fourth).ending,
@@ -115,7 +112,7 @@ describe("the story", () => {
       ledgerOf(ahead).envelope,
       ledgerOf(ahead).prize,
       ledgerOf(again).envelope,
-    ]).toStrictEqual([0, -2000, 2400, 0]);
+    ]).toStrictEqual([0, -2000, 4000, 0]);
   });
 
   it("an envelope that is refused, or left on the board until the Breakwater race, pays nothing and cannot be taken later", () => {
@@ -155,7 +152,7 @@ describe("the story", () => {
   it("winning the Long Ridge after taking the envelope is the bought crown", () => {
     const beforeFinale = playAll(
       seasonAt(decent, 5).start,
-      roadList.slice(0, 4).map((entry) => ({ place: 3, roadId: entry.id }))
+      roadList.slice(0, 2).map((entry) => ({ place: 3, roadId: entry.id }))
     );
     const bought: CareerState = {
       ...beforeFinale,

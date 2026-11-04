@@ -1,5 +1,4 @@
 import type { Centreline } from "./alignment.ts";
-import type { RoadLevel } from "./road.ts";
 
 const crossingArms = ["both", "left", "right"] as const;
 
@@ -22,7 +21,6 @@ export interface Lights {
 
 export interface CrossingRule {
   readonly id: string;
-  readonly fromLevel: RoadLevel;
   readonly s: number;
   readonly lights: Lights | null;
   readonly road: CrossRoad | null;
@@ -162,8 +160,7 @@ const checkSpacing = (rules: readonly CrossingRule[]): void => {
 
 export const compileCrossings = (
   rules: readonly CrossingRule[],
-  centreline: Centreline,
-  level: number
+  centreline: Centreline
 ): TrackCrossing[] => {
   const seen = new Set<string>();
   for (const rule of rules) {
@@ -174,8 +171,7 @@ export const compileCrossings = (
     checkNumbers(rule);
   }
   checkSpacing(rules);
-  const active = rules.filter((rule) => rule.fromLevel <= level);
-  for (const rule of active) {
+  for (const rule of rules) {
     const [from, to] = crossingReservationOf(rule);
     if (from < START_CLEARANCE) {
       reject(rule, "is too close to the start");
@@ -185,7 +181,7 @@ export const compileCrossings = (
     }
     checkGround(rule, centreline);
   }
-  return active
+  return rules
     .map((rule) => {
       const [fromS, toS] = crossingReservationOf(rule);
       return {

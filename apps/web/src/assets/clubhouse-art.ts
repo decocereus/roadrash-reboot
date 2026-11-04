@@ -88,8 +88,6 @@ export const stickers: readonly string[] = [
 
 export const flyers = {
   "breakwater-run": artUrl("clubhouse/flyers/breakwater-run.webp"),
-  "cinder-wash": artUrl("clubhouse/flyers/cinder-wash.webp"),
-  "hollow-pine-road": artUrl("clubhouse/flyers/hollow-pine-road.webp"),
   "ridge-road": artUrl("clubhouse/flyers/ridge-road.webp"),
   "slag-row": artUrl("clubhouse/flyers/slag-row.webp"),
 } as const satisfies Record<RoadId, string>;

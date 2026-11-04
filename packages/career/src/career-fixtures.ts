@@ -317,10 +317,8 @@ export const decentSeason: readonly Step[] = [
   { place: 3, roadId: "slag-row" },
   { place: 4, roadId: "breakwater-run" },
   { place: 3, roadId: "breakwater-run" },
-  { ends: "busted", roadId: "hollow-pine-road" },
-  { place: 3, roadId: "hollow-pine-road" },
-  { ends: "wrecked", roadId: "cinder-wash" },
-  { place: 2, roadId: "cinder-wash" },
+  { ends: "busted", roadId: "slag-row" },
+  { ends: "wrecked", roadId: "breakwater-run" },
   { place: 3, roadId: "ridge-road" },
 ];
 

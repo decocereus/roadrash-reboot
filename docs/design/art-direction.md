@@ -1,6 +1,6 @@
 # Art direction
 
-Drafted October 10, 2026. The look and sound of the game: palette, type, HUD, models, the five regions, readability rules, camera, and audio. It builds on what the greybox already does (flat matte materials, a chase camera, synthesised audio) and on `docs/architecture.md`, which fixes the style as stylized low-poly.
+Drafted October 10, 2026. The look and sound of the game: palette, type, HUD, models, the regions, readability rules, camera, and audio. It builds on what the greybox already does (flat matte materials, a chase camera, synthesised audio) and on `docs/architecture.md`, which fixes the style as stylized low-poly.
 
 Superseded in part on October 13, 2026. The race view is now cel-shaded cyberpunk anime, as `docs/architecture.md` describes under Product and Browser client. The principles of flat matte low-poly shading, the palette, the HUD style, and the region kits below describe the earlier direction and no longer bind the race view. The readability rules, camera rules, and audio direction still hold.
 
@@ -55,13 +55,11 @@ Each region tints the asphalt slightly (below) but the centre and edge lines kee
 
 ### Region skies
 
-| Region | Zenith | Horizon | Light |
-| --- | --- | --- | --- |
-| Salt Coast | `#3C7FCC` | `#CFE3EC` | Clear late morning, cool |
-| Cinder Flats | `#4A8FD4` | `#F1D9B0` | High noon, dusty warm horizon |
-| Kettle Woods | `#6F8FA6` | `#C9D3CF` | Overcast, soft, low contrast |
-| Lowtown | `#3B3354` | `#E08A5C` | Smoggy dusk, sodium lamps on |
-| Stonepeak | `#3F7FD6` | `#C9DBE8` | Bright mountain afternoon (today's sky) |
+| Region     | Zenith    | Horizon   | Light                                   |
+| ---------- | --------- | --------- | --------------------------------------- |
+| Salt Coast | `#3C7FCC` | `#CFE3EC` | Clear late morning, cool                |
+| Lowtown    | `#3B3354` | `#E08A5C` | Smoggy dusk, sodium lamps on            |
+| Stonepeak  | `#3F7FD6` | `#C9DBE8` | Bright mountain afternoon (today's sky) |
 
 ### Riders
 
@@ -179,27 +177,6 @@ Sea on the right for most of the road, low cliff or seawall on the left. Open, b
 - **Set pieces.** The harbour start with moored boats. The tunnel through the headland: a dark concrete mouth, inside lit by a row of orange lamps `#FFB347`. The lighthouse at the kink. The pier at the finish with a striped pavilion.
 - **Traffic.** Hatchbacks, a camper van, an ice cream van.
 
-### Cinder Flats (Cinder Wash)
-
-Flat, enormous, and empty, with a red mesa at the end. Heat and distance.
-
-- **Ground.** Asphalt `#4B4640`, sun-baked and cracked at the edges. Sand `#C9925A`, dry lake bed `#E3CFA5`, mesa rock `#A8512E` with a darker band `#7C3A22`, scrub `#8C9A5B`.
-- **Near props.** Saguaro-like cacti with one or two arms (replaces tree), tumbleweeds, leaning wooden fence posts with wire, dead tyres, a cow skull on a post, billboards faded to pastel, cattle grid rails.
-- **Far backdrop.** Mesas in three flat layers fading to `#D8B48A`, a line of pylons, dust devils.
-- **Set pieces.** The dead gas station at the start with a toppled sign. The three washes, each marked by a yellow "DIP" sign and a line of white stones; the third, the Main Wash, is the one that launches and gets a second sign and a bleached cattle skull on its lip. The mesa hairpin with a wall of red rock on the inside and a long drop on the outside. The drive-in cinema at the finish, its blank screen `#EDE4D0` facing the road and a teal neon arrow `#3FB8AF`.
-- **Traffic.** Pickup trucks, a road train (the longest vehicle in the game), a dusty sedan.
-
-### Kettle Woods (Hollow Pine Road)
-
-A narrow road in a tall dark forest. The sky is a strip overhead and the next bend is always hidden.
-
-- **Ground.** Asphalt `#33363A`, dark and damp, with a faint green edge. Forest floor `#3E4A2E`, fern `#4F7A3D`, bark `#5B432E`, pine `#2E4A33` with a lighter tip `#3F6A45`, fog `#AEBBB5`.
-- **Near props.** Tall pines close to the verge (the 5 m verge puts them near the road), fern clumps, log piles, mossy boulders, yellow diamond warning signs `#E0A43A`, deer standing still at the tree line.
-- **Far backdrop.** Layers of pine silhouettes fading into fog. No horizon line; the fog is the horizon.
-- **Set pieces.** The ranger station at the start. A log truck parked at the Logjam Left. The covered bridge: a red timber tunnel `#8A2E24` with slatted light. The sawmill at the finish with a conical burner and stacked planks.
-- **Traffic.** Log trucks, an old station wagon, a forestry pickup.
-- **Light.** Fog shortens the draw distance to about 350 m, which helps the frame budget and hides the bends.
-
 ### Lowtown (Slag Row)
 
 An industrial port at dusk: brick, steel, and orange light. Two lanes like every other road, and the most traffic of any. It feels broad because the buildings stand 6 m back and the straights are long, not because the road is wider: its 3.5 m lanes are narrower than Cinder Wash's.
@@ -256,8 +233,6 @@ All music is original and instrumental. Nothing is licensed and nothing imitates
 | --- | --- | --: | --- |
 | The Lowside (menus) | Slow bar-room groove, fuzz bass, brushed drums, a jukebox crackle underneath | 92 bpm | Baritone guitar |
 | Salt Coast | Surf garage: tremolo-picked guitar, spring reverb, driving snare | 152 bpm | Twang guitar |
-| Cinder Flats | Desert rock: one heavy riff, lots of space, a slide guitar that enters on the mesa | 128 bpm | Fuzz guitar, slide |
-| Kettle Woods | Tense post-punk: tight bass line, dry drums, chiming guitar, minor key | 160 bpm | Bass |
 | Lowtown | Industrial breakbeat: distorted bass, metal percussion, a factory-hooter stab | 140 bpm | Synth bass |
 | Stonepeak | Grunge-weight rock: drop-tuned guitars, half-time drums that double for the last kilometre | 120 bpm | Rhythm guitar |
 | Results | A 12-second sting in the region's style: major for qualified, a slump for not |  |  |

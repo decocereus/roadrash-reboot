@@ -17,7 +17,7 @@ import { wearingFrom, wornBy } from "../src/game/figure-wear.ts";
 const setup = practiceSetup(
   recordedRules,
   { bikeId: "ostra-sesta-600", level: 1, roadId: "ridge-road", seed: 3 },
-  trackFor("ridge-road", 1)
+  trackFor("ridge-road")
 );
 const { rivals } = rosterOf(setup);
 const { kylie, musk } = modelUrls.celebrities;

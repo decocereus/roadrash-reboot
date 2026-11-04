@@ -4,8 +4,8 @@ import { practiceSetup } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import { levelsOf } from "@racer/career/rules";
 import { bikeIds } from "@racer/sim/bikes";
-import { roadAtLevel, roadIds } from "@racer/track/road";
-import type { RoadId, RoadLevel } from "@racer/track/road";
+import { roadIds } from "@racer/track/road";
+import type { RoadId } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
 import { stretches, stretchIds } from "@racer/track/stretches";
 import { compileTrack } from "@racer/track/track";
@@ -33,15 +33,14 @@ export const benchPlan = (bench: Bench): RacePlan => ({
 });
 
 const rideRoad = (
-  ride: string | null,
-  level: RoadLevel
+  ride: string | null
 ): { readonly plan: TrackPlan; readonly roadId: RoadId } | null => {
   const stretchId = stretchIds.find((id) => id === ride);
   if (stretchId) {
     return { plan: stretches[stretchId], roadId: STRETCH_FIELD_ROAD };
   }
   const roadId = roadIds.find((id) => id === ride);
-  return roadId ? { plan: roadAtLevel(roads[roadId], level), roadId } : null;
+  return roadId ? { plan: roads[roadId], roadId } : null;
 };
 
 export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
@@ -51,7 +50,7 @@ export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
   const flags = new URLSearchParams(search);
   const level =
     levelsOf(rules).find((each) => each === Number(flags.get("level"))) ?? 1;
-  const road = rideRoad(flags.get("ride"), level);
+  const road = rideRoad(flags.get("ride"));
   if (!road) {
     return null;
   }

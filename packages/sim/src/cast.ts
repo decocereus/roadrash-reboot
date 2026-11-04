@@ -1,5 +1,4 @@
 import type { RegionId } from "@racer/track/regions";
-import type { RoadLevel } from "@racer/track/road";
 
 import { bikes } from "./bikes.ts";
 import type { BikeId } from "./bikes.ts";
@@ -66,6 +65,10 @@ export type RivalId = (typeof rivalIds)[number];
 
 export const isCelebrity = (rival: RivalId): rival is CelebrityRivalId =>
   celebrityRivalIds.some((celebrity) => celebrity === rival);
+
+export const rungs = [1, 2, 3, 4, 5] as const;
+
+export type Rung = (typeof rungs)[number];
 
 const CLUB_LEVEL = 4;
 const CLUB_AGGRESSION = 0.5;
@@ -228,7 +231,7 @@ export const rivals = {
       "brack-stoker-800",
       "brack-stoker-800",
     ],
-    home: "kettle-woods",
+    home: "stonepeak",
     id: "gus-abernathy",
     jacket: 10,
     name: "Gus Abernathy",
@@ -323,7 +326,7 @@ export const rivals = {
       "halden-meridian-900",
       "brack-anvil-1100",
     ],
-    home: "kettle-woods",
+    home: "stonepeak",
     id: "lyle-gorski",
     jacket: 6,
     name: "Lyle Gorski",
@@ -342,7 +345,7 @@ export const rivals = {
       "brack-stoker-800",
       "brack-anvil-1100",
     ],
-    home: "cinder-flats",
+    home: "lowtown",
     id: "mags-dunleavy",
     jacket: 5,
     name: "Mags Dunleavy",
@@ -380,7 +383,7 @@ export const rivals = {
       "ostra-sesta-600",
       "ostra-sette-750",
     ],
-    home: "kettle-woods",
+    home: "stonepeak",
     id: "orrin-blackwell",
     jacket: 14,
     name: "Orrin Blackwell",
@@ -418,7 +421,7 @@ export const rivals = {
       "ostra-sette-750",
       "halden-meridian-900",
     ],
-    home: "cinder-flats",
+    home: "salt-coast",
     id: "ruth-ann-bixby",
     jacket: 2,
     name: "Ruth Ann Bixby",
@@ -494,7 +497,7 @@ export const rivals = {
       "ostra-sette-750",
       "ostra-sette-750",
     ],
-    home: "cinder-flats",
+    home: "salt-coast",
     id: "wanda-pruitt",
     jacket: 13,
     name: "Wanda Pruitt",
@@ -513,7 +516,7 @@ export const celebrityCast: readonly Rival[] = celebrityRivalIds.map(
   (id) => rivals[id]
 );
 
-export const weaponAt = (rival: Rival, level: RoadLevel): WeaponKind => {
+export const weaponAt = (rival: Rival, level: Rung): WeaponKind => {
   if (rival.weapon !== "none" && level >= rival.armedFrom) {
     return rival.weapon;
   }
@@ -522,10 +525,10 @@ export const weaponAt = (rival: Rival, level: RoadLevel): WeaponKind => {
     : "none";
 };
 
-export const bikeAt = (rival: Rival, level: RoadLevel): BikeId =>
+export const bikeAt = (rival: Rival, level: Rung): BikeId =>
   rival.bikes[level - 1] ?? rival.bikes[0];
 
-export const rivalAt = (rival: Rival, level: RoadLevel): RivalSetup => ({
+export const rivalAt = (rival: Rival, level: Rung): RivalSetup => ({
   aggression: rival.aggression,
   bike: bikes[bikeAt(rival, level)],
   jacket: rival.jacket,
@@ -559,12 +562,12 @@ const officerProfile = (name: string): RiderProfile => ({
 export const officers = {
   "dolores-pike": {
     id: "dolores-pike",
-    patrols: ["salt-coast", "stonepeak", "cinder-flats"],
+    patrols: ["salt-coast", "stonepeak"],
     profile: officerProfile("Sergeant Dolores Pike"),
   },
   "wendell-haverty": {
     id: "wendell-haverty",
-    patrols: ["lowtown", "kettle-woods"],
+    patrols: ["lowtown"],
     profile: officerProfile("Deputy Wendell Haverty"),
   },
 } as const satisfies Record<OfficerId, Officer>;

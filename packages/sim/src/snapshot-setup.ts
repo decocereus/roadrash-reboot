@@ -49,7 +49,6 @@ type PlanKey =
   | "id"
   | "lanesEachWay"
   | "laneWidth"
-  | "level"
   | "name"
   | "region"
   | "seed"
@@ -62,7 +61,6 @@ const planSchema = writtenSchemaOf<Pick<TrackPlan, PlanKey>>({
   id: textAt("id"),
   laneWidth: floatAt("laneWidth"),
   lanesEachWay: floatAt("lanesEachWay"),
-  level: floatAt("level"),
   name: textAt("name"),
   region: textAt("region"),
   seed: floatAt("seed"),
@@ -103,7 +101,6 @@ const crossingSchema = writtenSchemaOf<TrackCrossing>({
 });
 
 const placementSchema = writtenSchemaOf<HazardPlacement>({
-  fromLevel: floatAt("fromLevel"),
   id: textAt("id"),
   kind: textAt("kind"),
   s: floatAt("s"),

@@ -78,8 +78,6 @@ export const deterministicFiles = [
   "packages/track/src/stretches.ts",
   "packages/track/src/track.ts",
   "packages/track/src/tracks/breakwater-run.ts",
-  "packages/track/src/tracks/cinder-wash.ts",
-  "packages/track/src/tracks/hollow-pine-road.ts",
   "packages/track/src/tracks/madrid-gran-via-blocks-1.ts",
   "packages/track/src/tracks/madrid-gran-via-blocks-2.ts",
   "packages/track/src/tracks/madrid-gran-via-blocks-3.ts",

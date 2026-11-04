@@ -1,14 +1,9 @@
 import { eased } from "../alignment.ts";
 import { chevronRuns } from "../chevron-runs.ts";
-import type { Road } from "../road.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
-  carriers: [
-    { fromLevel: 1, s: 2600 },
-    { fromLevel: 1, s: 4100 },
-    { fromLevel: 4, s: 5900 },
-  ],
+  carriers: [2600, 4100],
   chevrons: chevronRuns["slag-row"],
   crossings: [],
   hazardsPerKilometre: 1,
@@ -16,7 +11,6 @@ export const slagRow: TrackPlan = {
   laneWidth: 3.5,
   lanesEachWay: 2,
   leadInLength: 80,
-  level: 1,
   name: "Slag Row",
   pieces: eased([
     [320, 0, 0],
@@ -59,61 +53,10 @@ export const slagRow: TrackPlan = {
     [360, 0, 0],
   ]),
   region: "lowtown",
-  roadblocks: [],
   runoffLength: 400,
   seed: 0x5a_9c_33,
   shoulderWidth: 0.5,
   start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 8,
   vergeWidth: 6,
-};
-
-const slagRowLevel2 = eased([
-  [290, 0, 0],
-  [150, -90, 0],
-  [260, 0, -4],
-  [35, 0, 1],
-  [35, 0, -1],
-  [200, 40, 4],
-  [180, 0, 0],
-]);
-
-const slagRowLevel3 = eased([
-  [220, 0, 6],
-  [80, 0, 4],
-  [90, 0, -7],
-  [200, -26, -3],
-  [160, 92, 0],
-  [400, 0, 0],
-]);
-
-const slagRowLevel4 = eased([
-  [340, 0, 0],
-  [130, -88, 0],
-  [160, 50, 0],
-  [140, -50, 0],
-  [120, 0, -5],
-  [120, 0, 5],
-  [140, 0, 0],
-]);
-
-const slagRowLevel5 = eased([
-  [300, 0, 8],
-  [90, 0, 5],
-  [100, 0, -9],
-  [220, -12, -4],
-  [150, 95, 0],
-  [150, -40, 0],
-  [140, 0, 0],
-]);
-
-export const slagRowRoad: Road = {
-  blocks: [slagRowLevel2, slagRowLevel3, slagRowLevel4, slagRowLevel5],
-  id: "slag-row",
-  plan: slagRow,
-  roadblockSpots: [
-    { fromLevel: 3, s: 750 },
-    { fromLevel: 3, s: 2150 },
-    { fromLevel: 3, s: 10_650 },
-  ],
 };

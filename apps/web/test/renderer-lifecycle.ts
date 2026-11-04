@@ -25,7 +25,7 @@ const WARM_CYCLES = 2;
 const COMPARED_CYCLES = 5;
 const EVENT_DEADLINE_MS = 10_000;
 const COUNTDOWN_FRAMES = 60;
-const ROAD_A: QuickPick["roadId"] = "cinder-wash";
+const ROAD_A: QuickPick["roadId"] = "ridge-road";
 const ROAD_B: QuickPick["roadId"] = "slag-row";
 
 interface Counts {
@@ -267,11 +267,7 @@ const qualityProof = () => {
   if (!high || !low) {
     throw new Error("The quality ladder has no rungs.");
   }
-  const world = createWorld(
-    trackFor(ROAD_A, 1),
-    fakeWalkerAsset(),
-    low.shadowMap
-  );
+  const world = createWorld(trackFor(ROAD_A), fakeWalkerAsset(), low.shadowMap);
   const pipeline = createPipeline(renderer);
   const { camera } = createChaseCamera();
   camera.aspect = WIDTH / HEIGHT;

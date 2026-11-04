@@ -131,13 +131,11 @@ export const ${camel}: TrackPlan = {
   laneWidth: ${road.laneWidth},
   lanesEachWay: ${road.lanesEachWay},
   leadInLength: ${road.leadInLength},
-  level: ${entry.level},
   name: "${entry.name}",
   pieces: clothoids([${triples(stretch.pieces)
     .map((triple) => `[${triple.join(", ")}]`)
     .join(", ")}]),
   region: "${entry.region}",
-  roadblocks: [],
   runoffLength: ${road.runoffLength},
   scenery: ${camel}Scenery,
   seed: ${hex(entry.seed)},
@@ -214,11 +212,9 @@ const planOf = (
     laneWidth: road.laneWidth,
     lanesEachWay: road.lanesEachWay,
     leadInLength: road.leadInLength,
-    level: entry.level,
     name: entry.name,
     pieces: clothoids(triples(stretch.pieces)),
     region: entry.region,
-    roadblocks: [],
     runoffLength: road.runoffLength,
     scenery: {
       blocks: stretch.blocks,
@@ -238,7 +234,6 @@ const fieldsOf = (plan: TrackPlan): readonly (readonly [string, string])[] => [
   ["id", plan.id],
   ["name", plan.name],
   ["region", plan.region],
-  ["level", String(plan.level)],
   ["seed", String(plan.seed)],
   ["lanesEachWay", String(plan.lanesEachWay)],
   ["laneWidth", String(plan.laneWidth)],
@@ -249,7 +244,6 @@ const fieldsOf = (plan: TrackPlan): readonly (readonly [string, string])[] => [
   ["trafficPerKilometre", String(plan.trafficPerKilometre)],
   ["hazardsPerKilometre", String(plan.hazardsPerKilometre)],
   ["carriers", String(plan.carriers.length)],
-  ["roadblocks", plan.roadblocks.join(" ")],
   [
     "start",
     `heading ${plan.start.heading}, x ${plan.start.x}, z ${plan.start.z}`,

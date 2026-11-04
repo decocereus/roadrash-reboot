@@ -5,7 +5,7 @@ import { sampleAlignment } from "@racer/track/alignment";
 import type { TrackPiece } from "@racer/track/alignment";
 import { readCorridor } from "@racer/track/madrid-corridor";
 import type { Position } from "@racer/track/madrid-schema";
-import { roadAtLevel, roadIds, roadLevels } from "@racer/track/road";
+import { roadIds } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
@@ -147,18 +147,16 @@ describe("fitting pieces to a street", () => {
 
   it("holds every existing road to the smoothness limits", () => {
     for (const roadId of roadIds) {
-      for (const level of roadLevels) {
-        const track = compileTrack(roadAtLevel(roads[roadId], level));
-        expect(curvatureFlipsPerKilometre(track)).toBeLessThanOrEqual(
-          smoothRoad.curvatureFlipsPerKilometre
-        );
-        expect(gradeChangeFlipsPerKilometre(track)).toBeLessThanOrEqual(
-          smoothRoad.gradeChangeFlipsPerKilometre
-        );
-        expect(sharpestGradeChange(track)).toBeLessThanOrEqual(
-          smoothRoad.gradeChangePerMetre
-        );
-      }
+      const track = compileTrack(roads[roadId]);
+      expect(curvatureFlipsPerKilometre(track)).toBeLessThanOrEqual(
+        smoothRoad.curvatureFlipsPerKilometre
+      );
+      expect(gradeChangeFlipsPerKilometre(track)).toBeLessThanOrEqual(
+        smoothRoad.gradeChangeFlipsPerKilometre
+      );
+      expect(sharpestGradeChange(track)).toBeLessThanOrEqual(
+        smoothRoad.gradeChangePerMetre
+      );
     }
   });
 

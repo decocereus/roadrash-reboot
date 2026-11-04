@@ -44,7 +44,7 @@ const STRESS_PLAYER_AGGRESSION = 0.8;
 const STRESS_PACING: PacingRules = { catchUp: 0.6, leadEase: 0.8 };
 
 const benchRaceSetup = (race: PracticeRace): CareerRaceSetup =>
-  practiceSetup(recordedRules, race, trackFor(race.roadId, race.level));
+  practiceSetup(recordedRules, race, trackFor(race.roadId));
 
 export const roadLifeSetup = (): CareerRaceSetup =>
   benchRaceSetup(roadLifeRace);

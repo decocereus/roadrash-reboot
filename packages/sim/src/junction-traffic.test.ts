@@ -10,7 +10,7 @@ import { TICK_RATE } from "./state.ts";
 import type { RaceState, TrafficCar } from "./state.ts";
 
 const course = compileTrack({
-  ...roads["breakwater-run"].plan,
+  ...roads["breakwater-run"],
   trafficPerKilometre: 0,
 });
 

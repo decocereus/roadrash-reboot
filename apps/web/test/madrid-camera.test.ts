@@ -7,7 +7,7 @@ import {
 } from "@racer/sim/race";
 import { player } from "@racer/sim/race-fixtures";
 import { TICK_RATE } from "@racer/sim/state";
-import { roadAtLevel, roadIds } from "@racer/track/road";
+import { roadIds } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
 import { stretches, stretchIds } from "@racer/track/stretches";
 import { compileTrack } from "@racer/track/track";
@@ -117,6 +117,11 @@ const steadinessOn = (
   };
 };
 
+const shakiestShippedRoad = {
+  "halden-wren-400": { heightAcceleration: 2.891, yawWobble: 0.0224 },
+  "ostra-sesta-600": { heightAcceleration: 3.671, yawWobble: 0.0253 },
+} as const;
+
 describe("the chase camera on the Madrid stretches", () => {
   beforeAll(() => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
@@ -133,10 +138,10 @@ describe("the chase camera on the Madrid stretches", () => {
       )
     )
   )(
-    "holds %s as steady on the straights as the shakiest existing road, on the %s",
+    "holds %s as steady on the straights as the shakiest road the game has shipped, on the %s",
     (id, bikeId) => {
       const existing = roadIds.map((roadId) =>
-        steadinessOn(roadAtLevel(roads[roadId], 1), bikeId)
+        steadinessOn(roads[roadId], bikeId)
       );
       const stretch = steadinessOn(stretches[id], bikeId);
       for (const ride of [...existing, stretch]) {
@@ -146,10 +151,10 @@ describe("the chase camera on the Madrid stretches", () => {
         );
       }
       expect(stretch.heightAcceleration).toBeLessThanOrEqual(
-        Math.max(...existing.map((road) => road.heightAcceleration))
+        shakiestShippedRoad[bikeId].heightAcceleration
       );
       expect(stretch.yawWobble).toBeLessThanOrEqual(
-        Math.max(...existing.map((road) => road.yawWobble))
+        shakiestShippedRoad[bikeId].yawWobble
       );
     }
   );

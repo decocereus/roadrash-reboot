@@ -15,7 +15,7 @@ A road declares junctions and pedestrian crossings in its plan's `crossings`. A 
 
 ## How to get to it (user POV)
 
-Breakwater Run has `harbour-cross` at 1,700 m (two lanes each way, both arms, lights), `market-cross` at 6,000 m (one lane each way, a right arm only, lights), `pier-crossing` at 7,850 m (a signalled zebra) from level 1, and `esplanade-cross` at 10,900 m (a give-way T to the left, unmarked) from level 4. List them from the checkout under test with no browser: `node --input-type=module -e 'import { trackFor } from "./packages/track/src/roads.ts"; for (const level of [1, 4]) for (const c of trackFor("breakwater-run", level).crossings) console.log(level, c.id, c.s, c.fromS, c.toS, c.road?.arms ?? "no road", c.lights ? "lights" : "no lights", c.walk);'`.
+Breakwater Run has `harbour-cross` at 1,700 m (two lanes each way, both arms, lights), `market-cross` at 6,000 m (one lane each way, a right arm only, lights), and `pier-crossing` at 7,850 m (a signalled zebra). List them from the checkout under test with no browser: `node --input-type=module -e 'import { trackFor } from "./packages/track/src/roads.ts"; for (const level of [1, 4]) for (const c of trackFor("breakwater-run", level).crossings) console.log(level, c.id, c.s, c.fromS, c.toS, c.road?.arms ?? "no road", c.lights ? "lights" : "no lights", c.walk);'`.
 
 ## Driving it with rv
 
@@ -45,5 +45,5 @@ Preconditions: `rv doctor --run <run>` passes on a development build (`?at`, `?k
 - `?at` is metres along the road, and the camera sits behind the bike, so `at` 25 to 30 m short of a crossing's centre frames it best.
 - The lamps are small at 30 m. Crop the head from the full-size PNG (`sips -c 260 260 --cropOffset 240 1470 <png> --out <crop>` at rv's default page size) to read the colour.
 - The proofs in `packages/track/src/crossings.test.ts`, `packages/sim/src/signals.test.ts` and `packages/sim/src/junction-traffic.test.ts` pin the placement rules, the cycle and the queue. `packages/sim/src/cross-traffic.test.ts` pins the cross cars, their contact grading and the pilot's reaction. `packages/sim/src/pedestrians.test.ts` and `packages/track/src/walk-sites.test.ts` pin the walkers and where they stand.
-- Walkers exist only in level order, so those rides use level 1, the default. A `hazard` id the race does not have leaves the bike at the start.
-- `pnpm perf` runs `road-life-v1` from `tools/perf/src/node-road-life.ts`: Breakwater Run level 5 on seed 8, ticks 2,400 to 3,000, with `harbour-cross` full of racers and at least three people on the road. `benchSetup` empties `walkSites` on the Slag Row scenarios, so those still compare against side A, and only `road-life-v1` carries the cost of walkers.
+- A `hazard` id the race does not have leaves the bike at the start.
+- `pnpm perf` runs `road-life-v1` from `tools/perf/src/node-road-life.ts`: Breakwater Run on seed 8, ticks 2,400 to 3,000, with `harbour-cross` full of racers and at least three people on the road. `benchSetup` empties `walkSites` on the Slag Row scenarios, so those still compare against side A, and only `road-life-v1` carries the cost of walkers.

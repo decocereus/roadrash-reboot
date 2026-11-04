@@ -76,7 +76,7 @@ A promotion returns to the bar, where Vic says the level's line. A damaged save 
   - `YOU LEFT A RACE. THE BIKE DIDN'T MAKE IT HOME. V.` (after a race settled on reload)
   - `THE GARAGE TOOK THE {bike}. YOU RIDE THE GUTTER PUP NOW. STAY ON IT.` (after a repossession)
 - The rider on the stool: the boss of the chosen road, the home rider with the most season wins. Their name and `BOSS OF {road}` (or `HOLDS A GRUDGE` / `ON YOUR SIDE`) sit on yellow tape under the speech sticker, with their taunt, or their grudge taunt when they hold one against the player.
-- Vic, before the first race of a career: `You've got $1,500, a Halden Wren, and nobody knows your name.` / `Top three on all five roads and you move up.` / `Don't go broke.`, one line per click on the speech sticker, tagged `{n} / 3`, with the stool empty. Each line plays once per page load.
+- Vic, before the first race of a career: `You've got $1,500, a Halden Wren, and nobody knows your name.` / `Top three on every road and you move up.` / `Don't go broke.`, one line per click on the speech sticker, tagged `{n} / 3`, with the stool empty. Each line plays once per page load.
 - Text message line (template): `✉ {Rival}: {message}`. Shown when the story has one for this point.
 - Navigation: `RIDE` · `GARAGE` · `BACK ROOM` and, right aligned, the road picker `◄ {road} ►`. It opens on the first unqualified road and steps through the open roads with Up and Down, its arrows, or a click on the flyer. A qualified road's flyer carries the stamp `QUALIFIED {place}`.
 - When in debt: a red strip under the status, `YOU OWE ${debt}. PRIZE MONEY PAYS IT FIRST. LIMIT ${limit}.`
@@ -103,8 +103,6 @@ A promotion returns to the bar, where Vic says the level's line. A damaged save 
 - Facts note: `LENGTH {km} KM` · `TRAFFIC {LIGHT|STEADY|HEAVY}` · `POLICE {n}` · `HOME OF {rivals}`.
 - Descriptions:
   - Breakwater Run: `Harbour to pier along the seawall. One long bend by the water, one tunnel, and a kink at the tunnel mouth that nobody sees coming twice.`
-  - Cinder Wash: `Dead straight across the dry lake, three washes, the last of which throws you in the air, then a hairpin up the mesa at the end of the fastest straight in the game.`
-  - Hollow Pine Road: `Narrow, dark, and never straight for long. The trees are close and the crests hide the bends.`
   - Slag Row: `Two lanes and a lot of nothing, then a right angle. Rail tracks, an underpass, a drawbridge, and more traffic than anywhere else.`
   - Ridge Road: `The home road. Ten bends and two crests on the way up to the lookout.`
 - Bottom strip: `No money · Nothing to qualify` and `Left and right change the road, level, and bike`.
@@ -273,7 +271,7 @@ The rewarded ad that halves the bill is not built. When it is, it belongs on Res
 
 ## 9. Busted
 
-Folded into Results on October 23, 2026. Results stamps `BUSTED`, puts the fine on the ledger, and puts the km and any confiscated weapon under the stamp: `KM {km} · TOOK YOUR {WEAPON}`. The arresting officer takes the stool with one of their lines in the speech sticker and `BOOKED YOU` on the tape. The officer is the one who patrols the road: `SERGEANT DOLORES PIKE` on Breakwater Run, Cinder Wash, and Ridge Road; `DEPUTY WENDELL HAVERTY` on Slag Row and Hollow Pine Road. Both are drawn as fan-service pin-ups in uniform, in the same figure framing as the riders. The cut to Results comes 0.8 s after the `busted` event, so the player sees the cop arrive.
+Folded into Results on October 23, 2026. Results stamps `BUSTED`, puts the fine on the ledger, and puts the km and any confiscated weapon under the stamp: `KM {km} · TOOK YOUR {WEAPON}`. The arresting officer takes the stool with one of their lines in the speech sticker and `BOOKED YOU` on the tape. The officer is the one who patrols the road: `SERGEANT DOLORES PIKE` on Breakwater Run and Ridge Road; `DEPUTY WENDELL HAVERTY` on Slag Row. Both are drawn as fan-service pin-ups in uniform, in the same figure framing as the riders. The cut to Results comes 0.8 s after the `busted` event, so the player sees the cop arrive.
 
 The arrest record comes from the race runner, because the sim's own state no longer holds it by the time Results draws: the road; the km, taken from the body's `s` at the `busted` event; and the weapon the player held on the tick before the throw that put them on the ground.
 
@@ -284,7 +282,7 @@ The arrest record comes from the race runner, because the sim's own state no lon
 **Layout.** Results happens in the bar, on the same 1672 × 941 stage as the Clubhouse, with the same header, status strip (now showing the new cash), and bottom strip. The left half is the bar: the rival with the post-race line sits on the stool, with the line in the speech sticker and their name and finishing place on yellow tape. After a bust the arresting officer takes the stool, and after a wreck or a quit Mags does. The wall on the right shows:
 
 - **The race sheet:** the standings paper, stretched to fifteen ruled lines, the most a race seats (its border image repeats one ruled gap), with `{ROAD} · LEVEL {n}` on the tape and one rider per line. The player's line is yellow.
-- **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 5 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the bust line above.
+- **The stamp:** the place (`1ST`) framed in yellow, or `WRECKED`, `QUIT`, or `BUSTED` framed in red, with one line under it: `QUALIFIED · {q} / 3 ROADS`, `NOT QUALIFIED`, `QUALIFIED ALREADY`, `{km} KM IN, THE BIKE GAVE UP`, `PULLED OUT AT KM {km}`, or the bust line above.
 - **The ledger** on the cyan note.
 - **The pink note,** only when there is something to say: the career-over line, the repossession, or the debt warning, in that order.
 
@@ -302,7 +300,7 @@ There is no display ad slot since Results moved into the bar. If one comes back,
 - Repossession notice, when debt passed the bike's credit limit: `THE GARAGE TOOK THE {bike}. IT SOLD FOR ${trade-in}, PAID WHAT YOU OWED, AND LEFT YOU ${cash}. YOU RIDE THE GUTTER PUP NOW. IT CAN'T OUTRUN A COP. STAY ON IT.` If the sale did not cover the debt the middle sentence reads `IT SOLD FOR ${trade-in}. YOU STILL OWE ${debt}.`
 - Career over, when the player is on the Pup (before or after a repossession) and still owes more than $750: `YOU OWE ${debt} ON A GUTTER PUP. VIC WANTS A WORD.`
 
-**Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to the ride-out card). `RACE AGAIN` is not shown when the career is over, when this race qualified the fifth road, or when the finale was just finished in the top three. On a road that is already qualified it reads `RACE AGAIN · HALF PAY`.
+**Buttons.** `CONTINUE` (primary), `RACE AGAIN` (same road, new seed, straight to the ride-out card). `RACE AGAIN` is not shown when the career is over, when this race qualified the third road, or when the finale was just finished in the top three. On a road that is already qualified it reads `RACE AGAIN · HALF PAY`.
 
 **In.** From Finish, from the race after a wreck or a bust, and from a career quit. Never before the settlement write.
 
@@ -316,12 +314,12 @@ There is no display ad slot since Results moved into the bar. If one comes back,
 
 **Purpose.** Mark the promotion briefly and say what is new, in the bar.
 
-**In the bar.** After a race that qualifies the fifth road of any level but the last, Continue on Results returns to the bar. The stool is empty and Vic speaks the level's line in the speech sticker until it is clicked. Each rung (`game-design.md` section 4) has a line, and a level speaks the lines of the rungs it takes in, in order:
+**In the bar.** After a race that qualifies the third road of any level but the last, Continue on Results returns to the bar. The stool is empty and Vic speaks the level's line in the speech sticker until it is clicked. Each rung (`game-design.md` section 4) has a line, and a level speaks the lines of the rungs it takes in, in order:
 
 - Rung 2: `Longer roads and bigger purses. The garage got a delivery.`
 - Rung 3: `The new cops are quicker.`
 - Rung 4: `Everyone's armed now. Try to keep up.`
-- Rung 5: `Five roads left. The Ridge is last. She'll be waiting.`
+- Rung 5: `One more round. The Ridge is last. She'll be waiting.`
 
 At three levels, level 2 speaks the rung 2 and 3 lines and level 3 the rung 4 and 5 lines, so the last promotion always names the finale. The lines leave the cop count to the wall note, which reads the served rules.
 

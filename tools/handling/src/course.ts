@@ -14,8 +14,7 @@ import type {
   RiderInput,
   RiderState,
 } from "@racer/sim/state";
-import { roadAtLevel, roadIds } from "@racer/track/road";
-import type { RoadLevel } from "@racer/track/road";
+import { roadIds } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
 import { stretches, stretchIds } from "@racer/track/stretches";
 import type { Track, TrackPlan } from "@racer/track/track";
@@ -29,8 +28,8 @@ export interface Course {
   readonly plan: TrackPlan;
 }
 
-export const coursesAt = (level: RoadLevel): readonly Course[] => [
-  ...roadIds.map((id) => ({ id, plan: roadAtLevel(roads[id], level) })),
+export const courses: readonly Course[] = [
+  ...roadIds.map((id) => ({ id, plan: roads[id] })),
   ...stretchIds.map((id) => ({ id, plan: stretches[id] })),
 ];
 

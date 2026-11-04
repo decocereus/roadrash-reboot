@@ -17,7 +17,7 @@ import { quickReport } from "../src/career/flow.ts";
 import { devRideFrom } from "../src/game/dev-ride.ts";
 
 const freshRun = (): LocalRun =>
-  createRaceRun(defaultSetup(trackFor("ridge-road", 1), 3));
+  createRaceRun(defaultSetup(trackFor("ridge-road"), 3));
 
 const playerOf = (run: LocalRun) => {
   const me = riderOf(run.view.riders, PLAYER_RIDER);
@@ -29,7 +29,7 @@ const playerOf = (run: LocalRun) => {
 
 describe("dev ride placement", () => {
   it("hazard also takes a pedestrian, and straight rides at their line once they walk", () => {
-    const track = trackFor("breakwater-run", 1);
+    const track = trackFor("breakwater-run");
     const run = createRaceRun(defaultSetup(track, 3));
     const [walker] = run.view.pedestrians;
     if (!walker) {
@@ -98,7 +98,7 @@ describe("dev ride placement", () => {
 describe("dev race plans", () => {
   it("a stress race reports its field under the recorded rules it was set up with", () => {
     const plan = benchPlan("stress");
-    const track = trackFor(plan.setup.roadId, plan.setup.level);
+    const track = trackFor(plan.setup.roadId);
     const state = createRace(plan.setup);
     const log = createRaceLog(plan.setup);
     stepRace(state, track, playerFrame(neutralInput));

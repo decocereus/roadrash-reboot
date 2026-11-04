@@ -3,13 +3,12 @@ import { describe, expect, it } from "vitest";
 import { eased } from "./alignment.ts";
 import { crossingReservationOf } from "./crossings.ts";
 import type { CrossingRule } from "./crossings.ts";
-import { roadIds, roadLevels } from "./road.ts";
+import { roadIds } from "./road.ts";
 import { roads, trackFor } from "./roads.ts";
 import { compileTrack } from "./track.ts";
 import type { TrackPlan } from "./track.ts";
 
 const junction: CrossingRule = {
-  fromLevel: 1,
   id: "test-cross",
   lights: { offsetTicks: 0 },
   road: { arms: "both", carsPerMinute: 10, laneWidth: 3.4, lanesEachWay: 2 },
@@ -21,7 +20,7 @@ const flatRoad = (
   crossings: readonly CrossingRule[],
   pieces = eased([[3000, 0, 0]])
 ): TrackPlan => ({
-  ...roads["breakwater-run"].plan,
+  ...roads["breakwater-run"],
   carriers: [],
   chevrons: [],
   crossings,
@@ -30,35 +29,25 @@ const flatRoad = (
 
 const wooded = (crossings: readonly CrossingRule[]): TrackPlan => ({
   ...flatRoad(crossings),
-  region: "kettle-woods",
+  region: "stonepeak",
 });
 
 describe("crossings", () => {
-  it("every road compiles its crossings at every level, in order along the road", () => {
+  it("every road compiles its crossings in order along the road", () => {
     for (const roadId of roadIds) {
-      for (const level of roadLevels) {
-        const track = trackFor(roadId, level);
-        const along = track.crossings.map(({ s }) => s);
-        expect(along).toStrictEqual(along.toSorted((a, b) => a - b));
-        for (const crossing of track.crossings) {
-          expect(crossing.toS).toBeLessThan(track.length);
-        }
+      const track = trackFor(roadId);
+      const along = track.crossings.map(({ s }) => s);
+      expect(along).toStrictEqual(along.toSorted((a, b) => a - b));
+      for (const crossing of track.crossings) {
+        expect(crossing.toS).toBeLessThan(track.length);
       }
     }
   });
 
-  it("Breakwater Run has its three crossings from level 1 and the esplanade junction from level 4", () => {
-    const ids = roadLevels.map((level) =>
-      trackFor("breakwater-run", level).crossings.map(({ id }) => id)
-    );
-    const first = ["harbour-cross", "market-cross", "pier-crossing"];
-    expect(ids).toStrictEqual([
-      first,
-      first,
-      first,
-      [...first, "esplanade-cross"],
-      [...first, "esplanade-cross"],
-    ]);
+  it("Breakwater Run has its three crossings", () => {
+    expect(
+      trackFor("breakwater-run").crossings.map(({ id }) => id)
+    ).toStrictEqual(["harbour-cross", "market-cross", "pier-crossing"]);
   });
 
   it("a junction on a bend, on a crest or near the start is refused", () => {
@@ -141,16 +130,14 @@ describe("crossings", () => {
     ).toStrictEqual(bare.props.filter((prop) => Math.abs(prop.s - 1500) > 20));
   });
 
-  it("no hazard lies in a crossing's approach on any level of any road", () => {
+  it("no hazard lies in a crossing's approach on any road", () => {
     for (const roadId of roadIds) {
-      for (const level of roadLevels) {
-        const track = trackFor(roadId, level);
-        for (const rule of track.plan.crossings) {
-          const [from, to] = crossingReservationOf(rule);
-          expect(
-            track.hazards.filter(({ s }) => s > from && s < to)
-          ).toStrictEqual([]);
-        }
+      const track = trackFor(roadId);
+      for (const rule of track.plan.crossings) {
+        const [from, to] = crossingReservationOf(rule);
+        expect(
+          track.hazards.filter(({ s }) => s > from && s < to)
+        ).toStrictEqual([]);
       }
     }
   });

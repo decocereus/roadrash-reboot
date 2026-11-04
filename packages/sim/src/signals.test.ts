@@ -14,7 +14,7 @@ const CYCLE_TICKS = 1380;
 const open = (colour: LightColour) => colour !== "red";
 
 const signalled = (id: string): SignalledCrossing => {
-  const crossing = trackFor("breakwater-run", 1).crossings.find(
+  const crossing = trackFor("breakwater-run").crossings.find(
     (each) => each.id === id
   );
   if (!(crossing && isSignalled(crossing))) {

@@ -63,7 +63,7 @@ describe("the browser's race view", () => {
   });
 
   it("is the race itself, shared across real steps rather than copied", () => {
-    const run = createRaceRun(defaultSetup(trackFor("ridge-road", 1), 3));
+    const run = createRaceRun(defaultSetup(trackFor("ridge-road"), 3));
     const { view } = run;
     const { cars, riders } = view;
     const me = riderOf(riders, PLAYER_RIDER);
@@ -75,7 +75,7 @@ describe("the browser's race view", () => {
   });
 
   it("shows each real step as it happens", () => {
-    const run = createRaceRun(defaultSetup(trackFor("ridge-road", 1), 3));
+    const run = createRaceRun(defaultSetup(trackFor("ridge-road"), 3));
     const start = riderOf(run.view.riders, PLAYER_RIDER)?.s ?? 0;
     ride(run, 120);
     expect(run.view.tick).toBe(120);

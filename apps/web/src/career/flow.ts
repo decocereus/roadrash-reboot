@@ -70,7 +70,7 @@ export const planFor = (
   career: CareerState | null,
   entry: RaceEntry
 ): RacePlan => {
-  const track = trackFor(entry.roadId, entry.level);
+  const track = trackFor(entry.roadId);
   return entry.mode === "career" && career
     ? {
         bikeId: career.bikeId,

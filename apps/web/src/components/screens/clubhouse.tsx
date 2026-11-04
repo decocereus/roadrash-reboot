@@ -105,7 +105,7 @@ const notesFor = (
       text:
         career.level === rules.levelCount
           ? "The Ridge is last. She'll be waiting."
-          : "Top three on all five roads and you move up.",
+          : "Top three on every road and you move up.",
     });
   }
   return notes;

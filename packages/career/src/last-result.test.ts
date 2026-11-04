@@ -45,14 +45,14 @@ describe("the last result", () => {
     const [first, second, third] = stored.summary.rows;
     expect(stored.ledger).toStrictEqual(ledgerOf(settled));
     expect(stored.ledger).toMatchObject({
-      cashAfter: 2500,
+      cashAfter: 3200,
       cashBefore: 1500,
       fine: 0,
       gameOver: false,
       levelUp: null,
       line: { rival: winner, text: rivalLines[winner].beatYou },
       place: 2,
-      prize: 1000,
+      prize: 1700,
       qualified: true,
       repair: 0,
       repeat: false,
@@ -66,7 +66,7 @@ describe("the last result", () => {
           fate: "finished",
           name: rivals[winner].name,
           place: 1,
-          prize: 1500,
+          prize: 2500,
           racer: winner,
         },
         {
@@ -74,7 +74,7 @@ describe("the last result", () => {
           fate: "finished",
           name: "You",
           place: 2,
-          prize: 1000,
+          prize: 1700,
           racer: "player",
         },
         ...others.toReversed().map((rival, index) => ({
@@ -82,7 +82,7 @@ describe("the last result", () => {
           finishTick: -1,
           name: rivals[rival].name,
           place: index + 3,
-          prize: [700, 400, 250, 150, 100, 50, 40, 30, 25, 20, 15, 10, 10][
+          prize: [1200, 700, 400, 250, 170, 100, 70, 50, 40, 35, 25, 15, 15][
             index
           ],
           racer: rival,
@@ -102,11 +102,11 @@ describe("the last result", () => {
     crashOut(race);
     const { km } = outcomeOf(race.state, race.setup, race.log);
     const wrecked = settle(race);
-    const four = playAll(
+    const two = playAll(
       newCareer(5),
-      roadList.slice(0, 4).map((entry) => ({ place: 3, roadId: entry.id }))
+      roadList.slice(0, 2).map((entry) => ({ place: 3, roadId: entry.id }))
     );
-    const promoted = play(four, { place: 1, roadId: "ridge-road" });
+    const promoted = play(two, { place: 1, roadId: "ridge-road" });
     const broke = lastOf(
       wreckTimes(lastOf(wreckTimes(newCareer(1), 4)).career, 3)
     );
@@ -128,7 +128,7 @@ describe("the last result", () => {
       promoted.career.lastResult?.summary.raceId,
       next.career.lastResult,
       next.career.activeRace?.raceId,
-    ]).toStrictEqual([5, null, 6]);
+    ]).toStrictEqual([3, null, 4]);
   });
 
   it("carries the incidents Results prints under a rival's row", () => {

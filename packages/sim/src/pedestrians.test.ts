@@ -286,7 +286,7 @@ describe("a pedestrian's own walk", () => {
 
   it("crosses a signalled zebra on the main road's red, and only a few go against it", () => {
     const road = compileTrack({
-      ...roads["breakwater-run"].plan,
+      ...roads["breakwater-run"],
       hazardsPerKilometre: 0,
       trafficPerKilometre: 0,
     });
@@ -397,7 +397,7 @@ describe("a car and a pedestrian who walks into its lane", () => {
   });
 
   it("never drives through one on a road with junctions", () => {
-    const road = trackFor("breakwater-run", 5);
+    const road = trackFor("breakwater-run");
     const struck = [1, 8, 11].flatMap((seed) => {
       const state = raceOn(road, seed);
       player(state).speed = 0;
@@ -487,7 +487,7 @@ describe("the pilot and a pedestrian", () => {
 
 describe("pedestrians in the snapshot", () => {
   it("restore mid-crossing and go on exactly as the original", () => {
-    const road = trackFor("breakwater-run", 5);
+    const road = trackFor("breakwater-run");
     const setup = defaultSetup(road, 5);
     const original = createRace(setup);
     for (let tick = 0; tick < 20 * TICK_RATE; tick += 1) {

@@ -12,7 +12,6 @@ export const madridGranVia: TrackPlan = {
   laneWidth: 3.5,
   lanesEachWay: 2,
   leadInLength: 80,
-  level: 1,
   name: "Alcalá into Gran Vía",
   pieces: clothoids([
     [90, 0, 0],
@@ -112,7 +111,6 @@ export const madridGranVia: TrackPlan = {
     [23, 0, 0],
   ]),
   region: "madrid-centro",
-  roadblocks: [],
   runoffLength: 200,
   scenery: madridGranViaScenery,
   seed: 0x4d_47_56,

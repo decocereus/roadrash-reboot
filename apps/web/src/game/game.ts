@@ -54,7 +54,6 @@ const RESUME_SECONDS = 3;
 const LAST_STRETCH = 1000;
 const BUSTED_SECONDS = 0.8;
 const WRECKED_SECONDS = 1.2;
-const ROAD_LEVEL = 1;
 const MARKER_KEY = "KeyB";
 
 type Prepared =
@@ -115,7 +114,7 @@ const pinnedRefresh = Number(
 );
 
 const roadForTurn = (turn: number): Track =>
-  trackFor(roadIds[turn % roadIds.length] ?? "ridge-road", ROAD_LEVEL);
+  trackFor(roadIds[turn % roadIds.length] ?? "ridge-road");
 
 export { assetParsers } from "./assets.ts";
 

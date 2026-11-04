@@ -1,18 +1,18 @@
 import { bikeIds, bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { officerFor } from "@racer/sim/cast";
-import type { RegionId, RivalId } from "@racer/sim/cast";
+import type { RegionId, RivalId, Rung } from "@racer/sim/cast";
 import type { BikeClass, PacingRules, PoliceSetup } from "@racer/sim/state";
 import { roadIds } from "@racer/track/road";
-import type { RoadId, RoadLevel } from "@racer/track/road";
+import type { RoadId } from "@racer/track/road";
 
 import { climbOf, levelReaching, rungsOf, rungsWithin } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 
 export type { RoadId } from "@racer/track/road";
-export { roadLevels as levels } from "@racer/track/road";
+export { rungs as levels } from "@racer/sim/cast";
 
-export type Level = RoadLevel;
+export type Level = Rung;
 
 export const byLevel = <Value>(make: (level: Level) => Value) => ({
   1: make(1),
@@ -27,41 +27,27 @@ export interface Road {
   readonly name: string;
   readonly region: RegionId;
   readonly regionName: string;
-  readonly lengths: Record<Level, number>;
+  readonly length: number;
 }
 
 export const roads = {
   "breakwater-run": {
     id: "breakwater-run",
-    lengths: { 1: 8500, 2: 9650, 3: 10_800, 4: 11_950, 5: 13_100 },
+    length: 8500,
     name: "Breakwater Run",
     region: "salt-coast",
     regionName: "Salt Coast",
   },
-  "cinder-wash": {
-    id: "cinder-wash",
-    lengths: { 1: 8850, 2: 10_000, 3: 11_150, 4: 12_300, 5: 13_450 },
-    name: "Cinder Wash",
-    region: "cinder-flats",
-    regionName: "Cinder Flats",
-  },
-  "hollow-pine-road": {
-    id: "hollow-pine-road",
-    lengths: { 1: 8050, 2: 9200, 3: 10_350, 4: 11_500, 5: 12_650 },
-    name: "Hollow Pine Road",
-    region: "kettle-woods",
-    regionName: "Kettle Woods",
-  },
   "ridge-road": {
     id: "ridge-road",
-    lengths: { 1: 8550, 2: 9700, 3: 10_850, 4: 12_000, 5: 13_150 },
+    length: 8550,
     name: "Ridge Road",
     region: "stonepeak",
     regionName: "Stonepeak",
   },
   "slag-row": {
     id: "slag-row",
-    lengths: { 1: 8500, 2: 9650, 3: 10_800, 4: 11_950, 5: 13_100 },
+    length: 8500,
     name: "Slag Row",
     region: "lowtown",
     regionName: "Lowtown",
@@ -97,7 +83,7 @@ const REPEAT_RATE = 0.5;
 export const AD_REPAIR_RATE = 0.5;
 
 const levelOnePrizes = [
-  1500, 1000, 700, 400, 250, 150, 100, 50, 40, 30, 25, 20, 15, 10, 10,
+  2500, 1700, 1200, 700, 400, 250, 170, 100, 70, 50, 40, 35, 25, 15, 15,
 ];
 
 const PRIZE_MULTIPLIER = { 1: 1, 2: 1.6, 3: 2.4, 4: 3.4, 5: 4.6 } as const;

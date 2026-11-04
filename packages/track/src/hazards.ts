@@ -5,7 +5,6 @@ import { createRandom, nextSeed } from "./random.ts";
 import type { Random } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { HazardMix } from "./regions.ts";
-import type { RoadLevel } from "./road.ts";
 import type { Track } from "./track.ts";
 
 export const hazardKinds = ["oil", "rock", "pothole"] as const;
@@ -30,7 +29,6 @@ export interface HazardPlacement {
   readonly id: string;
   readonly kind: HazardKind;
   readonly setting: HazardSetting;
-  readonly fromLevel: RoadLevel;
   readonly s: number;
   readonly x: number;
 }
@@ -73,13 +71,7 @@ const SETTING_WEIGHTS = {
   traffic: { oil: 1, pothole: 1, rock: 1.5 },
   turnIn: { oil: 1, pothole: 0, rock: 0 },
 } as const satisfies Record<HazardSetting, Record<HazardKind, number>>;
-const LEVEL_SHARES: readonly (readonly [RoadLevel, number])[] = [
-  [1, 0.6],
-  [2, 0.7],
-  [3, 0.8],
-  [4, 0.9],
-  [5, 1],
-];
+export const PLACED_SHARE = 0.6;
 
 type Road = Omit<Track, "hazards" | "walkSites">;
 
@@ -90,9 +82,6 @@ interface Place {
   readonly setting: HazardSetting;
   readonly inside: number;
 }
-
-export const levelOf = (roll: number): RoadLevel =>
-  LEVEL_SHARES.find(([, share]) => roll < share)?.[0] ?? 5;
 
 const kindOf = (
   mix: HazardMix,
@@ -347,7 +336,7 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
     const kindRoll = random();
     const laneRoll = random();
     const offsetRoll = random();
-    const fromLevel = levelOf(random());
+    const placedRoll = random();
     const placeRoll = random();
     const after = last + HAZARD_LEAST_GAP;
     const snapped = snapTo(places, claimed, s, after, placeRoll);
@@ -372,11 +361,10 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
     claimed.add(chosen.place);
     last = chosen.place.s;
     if (
-      fromLevel <= road.plan.level &&
+      placedRoll < PLACED_SHARE &&
       chosen.place.s <= road.length - HAZARD_FINISH_CLEARANCE
     ) {
       placed.push({
-        fromLevel,
         id: `hazard-${candidate}`,
         kind: chosen.kind,
         s: chosen.place.s,
