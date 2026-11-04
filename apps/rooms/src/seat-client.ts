@@ -29,6 +29,7 @@ import * as Option from "effect/Option";
 import { decodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
 import type { RoomStarted } from "./messages.ts";
 import { createRaceTally } from "./race-tally.ts";
+import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
 const PING_EVERY_MS = 500;
 const DEAD_AFTER_MS = 5000;
@@ -85,7 +86,8 @@ const seatUrl = (roomsUrl: string, roomId: string, name: string): string =>
 export const openRoomSeat = (
   roomsUrl: string,
   roomId: string,
-  name: string
+  name: string,
+  browser: () => SeatBrowser | null
 ): RoomSeat => {
   const socket = new WebSocket(seatUrl(roomsUrl, roomId, name));
   socket.binaryType = "arraybuffer";
@@ -174,6 +176,7 @@ export const openRoomSeat = (
     if (race && readTick(view, read)) {
       const now = performance.now();
       clock.heardTick(read.frame.tick, now);
+      tally.heardTick(now);
       listeners.onTickHeard?.(now, read.hashed);
       race.client.confirm(read.frame, read.hashed ? read.hash : null);
       listeners.onConfirmed?.(race.client);
@@ -245,6 +248,11 @@ export const openRoomSeat = (
     const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
     writeRaceStats(packet, tally.read(race.client, worstRttMs));
     socket.send(packet.buffer);
+    const identity = browser();
+    if (identity) {
+      const trace: BrowserTrace = { ...identity, rows: tally.traceRows() };
+      socket.send(JSON.stringify(trace));
+    }
   };
 
   return {
@@ -266,7 +274,11 @@ export const openRoomSeat = (
     },
     frameDrawn: () => {
       if (race && race.client.predicted.tick > 0) {
-        tally.frameDrawn(performance.now(), race.client.mine.s);
+        tally.frameDrawn(
+          performance.now(),
+          race.client.mine.s,
+          race.client.confirmed.tick
+        );
       }
     },
     leave: () => {

@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeRoomMessage } from "../src/messages.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
+import type { SeatBrowser } from "../src/tape.ts";
 
 const LONGEST_LOAD_MS = 20_000;
 const DEAD_AFTER_MS = 5000;
@@ -27,6 +28,8 @@ class FakeSocket {
   readonly readyState = FakeSocket.OPEN;
 
   readonly sentBytes: number[] = [];
+
+  readonly sentText: string[] = [];
 
   binaryType = "blob";
 
@@ -50,7 +53,11 @@ class FakeSocket {
     this.heard.get("message")?.({ data });
   }
 
-  send(data: Uint8Array | ArrayBuffer): void {
+  send(data: string | Uint8Array | ArrayBuffer): void {
+    if (!(data instanceof Uint8Array || data instanceof ArrayBuffer)) {
+      this.sentText.push(data);
+      return;
+    }
     this.sentBytes.push(data.byteLength);
     if (!(data instanceof Uint8Array)) {
       return;
@@ -67,8 +74,13 @@ class FakeSocket {
   }
 }
 
-const loadingSeat = () => {
-  const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
+  const seat = openRoomSeat(
+    "http://rooms.test",
+    "friday-ride",
+    "Near",
+    browser
+  );
   const [socket] = FakeSocket.opened;
   socket?.hear(
     encodeRoomMessage({
@@ -96,6 +108,24 @@ describe("a seat loading the race", () => {
     vi.unstubAllGlobals();
   });
 
+  it("sends its browser trace once with the stats, and none with Race data off", () => {
+    const browser = {
+      build: "abc",
+      gpu: "Test GPU",
+      graphics: "quality rung 1",
+    };
+    const { seat, socket } = loadingSeat(() => browser);
+    seat.leave();
+    seat.leave();
+    expect(socket?.sentText).toStrictEqual([
+      JSON.stringify({ ...browser, rows: [] }),
+    ]);
+    FakeSocket.opened = [];
+    const { seat: off, socket: quiet } = loadingSeat();
+    off.leave();
+    expect(quiet?.sentText).toStrictEqual([]);
+  });
+
   it("sends the room its race stats once when it leaves", () => {
     const { seat, socket } = loadingSeat();
     seat.leave();
@@ -107,7 +137,12 @@ describe("a seat loading the race", () => {
   });
 
   it("has no stats to send from a lobby", () => {
-    const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      () => null
+    );
     seat.leave();
     expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
   });

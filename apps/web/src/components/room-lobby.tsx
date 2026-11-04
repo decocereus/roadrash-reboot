@@ -12,6 +12,7 @@ import type { RoomSeat } from "@racer/rooms/seat-client";
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 
 import { diagnostics } from "../diagnostics/hub.ts";
+import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
 import { storedGuestName, storeGuestName } from "./guest-name.ts";
@@ -91,7 +92,20 @@ const SeatedLobby = ({
   const lost = useEffectEvent(onLost);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
-    const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, roomId, name);
+    const card = graphicsCard();
+    const opened = openRoomSeat(
+      import.meta.env.VITE_ROOMS_URL,
+      roomId,
+      name,
+      () =>
+        diagnostics().settings.read().raceData
+          ? {
+              build: __RUSHLINE_BUILD__.sha,
+              gpu: card,
+              graphics: `quality rung ${diagnostics().qualityRung()}`,
+            }
+          : null
+    );
     const tellLost = () => {
       if (!lostTold.current) {
         lostTold.current = true;

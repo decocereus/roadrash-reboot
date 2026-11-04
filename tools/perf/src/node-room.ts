@@ -4,6 +4,7 @@ import { performance } from "node:perf_hooks";
 import { parseArgs } from "node:util";
 
 import { UsageError } from "@racer/devtools/usage-error";
+import { createRaceTally } from "@racer/rooms/race-tally";
 import { controlOf } from "@racer/sim/control";
 import { createRoom, firstRacers, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
@@ -232,6 +233,9 @@ const clientWork =
     }
   };
 
+const FRAME_MS = 16;
+const frameTally = createRaceTally();
+
 const frameWork = (): void => {
   const left = createTickFrame();
   const right = createTickFrame();
@@ -248,6 +252,7 @@ const frameWork = (): void => {
       }
     }
     sameFrame(left, right);
+    frameTally.frameDrawn(index * FRAME_MS, 0, index);
   }
 };
 

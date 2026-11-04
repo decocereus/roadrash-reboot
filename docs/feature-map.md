@@ -1391,6 +1391,8 @@ Source files:
 - `tools/rooms/src/seat.ts`
 - `tools/rooms/src/send-budget.ts`
 - `tools/rooms/src/thin-seat.ts`
+- `tools/rooms/src/trace.ts`
+- `tools/rooms/trace.ts`
 
 Test files:
 
@@ -1413,3 +1415,4 @@ Test files:
 - `tools/rooms/test/race-report.test.ts`
 - `tools/rooms/test/replay.test.ts`
 - `tools/rooms/test/send-budget.test.ts`
+- `tools/rooms/test/trace.test.ts`

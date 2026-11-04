@@ -2,6 +2,7 @@ import { RACE_STATS_PACKET_BYTES, writeRaceStats } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
+import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
   nearby,
   START_DELAY_MS,
@@ -72,6 +73,47 @@ describe("the room's notes", () => {
       rider: 0,
       stats: { rollbacks: 7, worstOwnControlCm: 88 },
     });
+  });
+
+  it("saves a seat's browser trace once, under its race, with no extra fields", () => {
+    const { clock, host, near } = pressedStart();
+    const trace = {
+      build: "abc",
+      extra: "a name",
+      gpu: "Test GPU",
+      graphics: "quality rung 1",
+      rows: [0, 0, 1, 0, 60, 2, 16, 90, 17],
+    };
+    host.message(near, JSON.stringify(trace));
+    host.message(near, JSON.stringify({ ...trace, build: "second" }));
+    expect(clock.notes.filter((note) => note.kind === "browser")).toStrictEqual(
+      [
+        {
+          build: "abc",
+          gpu: "Test GPU",
+          graphics: "quality rung 1",
+          kind: "browser",
+          raceId: "race-1",
+          rider: 0,
+        },
+      ]
+    );
+    const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
+    expect(saved).toContain('"build":"abc"');
+    expect(saved).not.toContain("a name");
+  });
+
+  it("refuses a browser trace that is not one, or is too long", () => {
+    const { clock, host, near } = pressedStart();
+    host.message(near, "not json");
+    expect(clock.tape.has("tapes/race-1/rider-0.trace.json")).toBeFalsy();
+    const { clock: other, host: otherHost, near: otherNear } = pressedStart();
+    otherHost.message(otherNear, "x".repeat(MOST_TRACE_CHARS + 1));
+    otherHost.message(
+      otherNear,
+      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+    );
+    expect(other.tape.has("tapes/race-1/rider-0.trace.json")).toBeTruthy();
   });
 
   it("logs a place behind the start line as zero, not a huge number", () => {

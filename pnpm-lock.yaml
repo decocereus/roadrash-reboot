@@ -388,6 +388,9 @@ importers:
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
+      '@racer/rooms':
+        specifier: workspace:*
+        version: link:../../apps/rooms
       '@racer/sim':
         specifier: workspace:*
         version: link:../../packages/sim

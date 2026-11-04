@@ -17,6 +17,8 @@ import {
 } from "@racer/sim/room-wire";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 
 import type { RoomStatus } from "./contract.ts";
 import { encodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
@@ -24,12 +26,18 @@ import type { RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
 import {
+  BrowserTraceSchema,
+  MOST_TRACE_CHARS,
+  riderTraceName,
+  ROOM_TRACE_EVERY_TICKS,
+  roomTraceName,
   TAPE_VERSION,
   tapeEndName,
   tapeHeaderName,
   tapeKey,
   tapePartName,
 } from "./tape.ts";
+import type { RoomTrace } from "./tape.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
@@ -39,6 +47,10 @@ const LOBBY_MS = 120_000;
 const FILL_LEAST_MS = 8000;
 const FILL_SPAN_MS = 10_000;
 const NO_STAMP = 0;
+
+const decodeBrowserTrace = Schema.decodeUnknownOption(
+  Schema.fromJsonString(BrowserTraceSchema)
+);
 
 export interface HostSocket {
   readonly send: (data: string | ArrayBufferView) => void;
@@ -71,6 +83,9 @@ interface Seat {
   leftAtTick: number | null;
   readyMs: number | null;
   reported: boolean;
+  traced: boolean;
+  tracedLate: number;
+  tracedMissed: number;
 }
 
 interface Lobby {
@@ -86,6 +101,7 @@ interface Running {
   readonly room: Room;
   readonly since: number;
   readonly tape: TapeWriter;
+  readonly trace: number[];
   readonly wakeGaps: Uint32Array;
   lastWakeAt: number;
   startedAt: number | null;
@@ -133,6 +149,9 @@ export const createHost = (ports: HostPorts): Host => {
     reported: false,
     rider: null,
     socket,
+    traced: false,
+    tracedLate: 0,
+    tracedMissed: 0,
   });
 
   const leave = (seat: Seat): void => {
@@ -226,8 +245,12 @@ export const createHost = (ports: HostPorts): Host => {
     );
 
   const end = (run: Running): void => {
-    const { room, tape } = run;
+    const { room, tape, trace } = run;
     tape.finish();
+    ports.saveTape(
+      tapeKey(run.raceId, roomTraceName),
+      JSON.stringify({ rows: trace } satisfies RoomTrace)
+    );
     ports.saveTape(
       tapeKey(run.raceId, tapeEndName),
       JSON.stringify({ parts: tape.parts(), tick: room.state.tick })
@@ -249,8 +272,59 @@ export const createHost = (ports: HostPorts): Host => {
     seats.clear();
   };
 
-  const stepOnce = ({ room, tape }: Running): void => {
+  const traceSeats = ({ riders, room, trace }: Running): void => {
+    for (const seat of riders) {
+      if (seat.rider !== null) {
+        const missed = room.missedControls(seat.rider);
+        if (missed !== seat.tracedMissed || seat.late !== seat.tracedLate) {
+          trace.push(
+            room.state.tick,
+            seat.rider,
+            missed - seat.tracedMissed,
+            seat.late - seat.tracedLate
+          );
+          seat.tracedMissed = missed;
+          seat.tracedLate = seat.late;
+        }
+      }
+    }
+  };
+
+  const saveBrowserTrace = (seat: Seat, text: string): void => {
+    if (
+      !running ||
+      seat.rider === null ||
+      seat.traced ||
+      text.length > MOST_TRACE_CHARS
+    ) {
+      return;
+    }
+    seat.traced = true;
+    const decoded = decodeBrowserTrace(text);
+    if (Option.isNone(decoded)) {
+      return;
+    }
+    const { build, gpu, graphics } = decoded.value;
+    ports.note({
+      build,
+      gpu,
+      graphics,
+      kind: "browser",
+      raceId: running.raceId,
+      rider: seat.rider,
+    });
+    ports.saveTape(
+      tapeKey(running.raceId, riderTraceName(seat.rider)),
+      JSON.stringify(decoded.value)
+    );
+  };
+
+  const stepOnce = (run: Running): void => {
+    const { room, tape } = run;
     room.step();
+    if (room.state.tick % ROOM_TRACE_EVERY_TICKS === 0) {
+      traceSeats(run);
+    }
     const bytes = writeTick(
       tickView,
       room.frame,
@@ -363,6 +437,7 @@ export const createHost = (ports: HostPorts): Host => {
       tape: createTapeWriter(tickBuffer.byteLength, (part, bytes) => {
         ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
       }),
+      trace: [],
       wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
     };
     running = run;
@@ -443,7 +518,11 @@ export const createHost = (ports: HostPorts): Host => {
     },
     message: (socket, data) => {
       const seat = seats.get(socket);
-      if (!seat || !(data instanceof ArrayBuffer)) {
+      if (!seat) {
+        return;
+      }
+      if (!(data instanceof ArrayBuffer)) {
+        saveBrowserTrace(seat, data);
         return;
       }
       const view = new DataView(data);

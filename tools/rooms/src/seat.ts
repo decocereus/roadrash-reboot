@@ -57,7 +57,7 @@ const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
   predictSteps(seat, (tick) => weavingControl(tick, you()));
 
 export const openSeat = (roomsUrl: string, roomId: string): Seat => {
-  const seat = openRoomSeat(roomsUrl, roomId, "Script");
+  const seat = openRoomSeat(roomsUrl, roomId, "Script", () => null);
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;
