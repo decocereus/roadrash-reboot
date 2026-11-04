@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { atan, sin } from "@racer/track/math";
 import { curvatureAt, heightAt, slopeAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -75,7 +76,7 @@ const land = (
   rider.airborne = false;
   rider.airTicks = 0;
   rider.verticalSpeed = 0;
-  rider.offRoad = Math.abs(contact.x) > track.roadHalfWidth;
+  rider.offRoad = Math.abs(contact.x) > roadHalfWidthAt(track, contact.s);
   const bumpedBy =
     state.hazards[rider.bumpedBy] ??
     state.pedestrians[rider.bumpedWalker] ??

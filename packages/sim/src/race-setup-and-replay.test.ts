@@ -46,7 +46,10 @@ import type {
 } from "./state.ts";
 import { disarm } from "./weapons.ts";
 
-const wideTrack = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
+const wideTrack = compileTrack({
+  ...ridgeRoad,
+  districts: [{ ...ridgeRoad.districts[0], lanesEachWay: 2 }],
+});
 
 const pilotUntilFinish = (
   state: RaceState,

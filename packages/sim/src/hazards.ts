@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { hazardSizes } from "@racer/track/hazards";
 import type { HazardKind } from "@racer/track/hazards";
 import { curvatureAt, slopeAt } from "@racer/track/track";
@@ -83,7 +84,7 @@ const fitsOnRoad = (state: RaceState, track: Track, hazard: Hazard): boolean =>
   hazard.id !== "" &&
   hazard.s >= 0 &&
   hazard.s <= track.length &&
-  Math.abs(hazard.x) + hazard.halfWidth <= track.roadHalfWidth &&
+  Math.abs(hazard.x) + hazard.halfWidth <= roadHalfWidthAt(track, hazard.s) &&
   state.hazards.every((other) => other.id !== hazard.id);
 
 const spawn = (

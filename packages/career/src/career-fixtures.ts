@@ -11,6 +11,7 @@ import type {
   RiderState,
 } from "@racer/sim/state";
 import { eased } from "@racer/track/alignment";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { compileTrack } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
 
@@ -194,7 +195,7 @@ export const getArrested = (
   cop.parked = true;
   cop.speed = 0;
   cop.s = road.length / 2;
-  cop.x = road.roadHalfWidth + 1.1;
+  cop.x = roadHalfWidthAt(road, cop.s) + 1.1;
 };
 
 export const idle: RiderInput = {

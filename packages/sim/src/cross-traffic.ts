@@ -1,5 +1,6 @@
 import { ARM_LENGTH, armSidesOf } from "@racer/track/crossings";
 import type { ArmSide, CrossRoad, TrackCrossing } from "@racer/track/crossings";
+import { fewestOpenLanesAlong, roadHalfWidthAt } from "@racer/track/districts";
 import { nextSeed, rollDice, siteSeed } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
@@ -69,16 +70,26 @@ interface Lane {
   readonly laneS: number;
 }
 
-const exitLane = (track: Track, side: ArmSide, along: ArmSide): number => {
+const exitLane = (
+  track: Track,
+  laneS: number,
+  side: ArmSide,
+  along: ArmSide
+): number => {
   const lanes = along === 1 ? track.sameWayLanes : track.oncomingLanes;
-  return along === side ? (lanes.at(-1) ?? lanes[0]) : lanes[0];
+  const open = fewestOpenLanesAlong(
+    track,
+    laneS,
+    along === 1 ? track.endS : track.startS
+  );
+  return along === side ? (lanes[open - 1] ?? lanes[0]) : lanes[0];
 };
 
 const carFor = (track: Track, lane: Lane, seed: number): CrossCar => {
   const { junction, laneS, road, side } = lane;
   const dice = { dice: seed };
   const body = pickBody(rollDice(dice));
-  const start = track.roadHalfWidth + ARM_LENGTH;
+  const start = roadHalfWidthAt(track, laneS) + ARM_LENGTH;
   const across: ArmSide = side === 1 ? -1 : 1;
   const stopAt = ARM_LENGTH - STOP_LINE_OUT - STOP_SHORT - body.halfLength;
   const along: ArmSide = rollDice(dice) < 0.5 ? 1 : -1;
@@ -111,7 +122,7 @@ const carFor = (track: Track, lane: Lane, seed: number): CrossCar => {
     travel: 0,
     turnAt: through
       ? Number.POSITIVE_INFINITY
-      : start - side * exitLane(track, side, along),
+      : start - side * exitLane(track, laneS, side, along),
     wait: 0,
     x: side * start,
   };

@@ -7,6 +7,7 @@ import {
   TICK_RATE,
 } from "@racer/sim/state";
 import type { RaceState } from "@racer/sim/state";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
@@ -185,7 +186,7 @@ const bendResult = (bend: Bend, track: Track, free: Ride): BendResult => {
     peakPushShare: peakShare,
     radius: 1 / bend.peakCurvature,
     reached: entry !== undefined,
-    roadHalfWidth: track.roadHalfWidth,
+    roadHalfWidth: roadHalfWidthAt(track, bend.from),
     stayedOn: !failed,
     to: bend.to,
     turnDegrees: bend.turnDegrees,

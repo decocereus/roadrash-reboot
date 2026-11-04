@@ -9,12 +9,15 @@ import { createRace, defaultSetup, stepRace } from "./race.ts";
 import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
 import type { RaceEvent, RaceState, RiderInput, TrafficCar } from "./state.ts";
 
-const wide = compileTrack({ ...ridgeRoad, lanesEachWay: 2 });
+const wide = compileTrack({
+  ...ridgeRoad,
+  districts: [{ ...ridgeRoad.districts[0], lanesEachWay: 2 }],
+});
 const straightOf = (lanesEachWay: 1 | 2): Track =>
   compileTrack({
     ...ridgeRoad,
     chevrons: [],
-    lanesEachWay,
+    districts: [{ ...ridgeRoad.districts[0], lanesEachWay }],
     pieces: eased([[6000, 0, 0]]),
     trafficPerKilometre: 0,
   });
@@ -45,6 +48,7 @@ const slowCar = (s: number, x: number): TrafficCar => ({
   halfLength: 2.2,
   halfWidth: 0.92,
   height: 1.45,
+  home: x,
   paint: 1,
   patience: 120,
   s,

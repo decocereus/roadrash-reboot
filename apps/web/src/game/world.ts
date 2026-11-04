@@ -1,4 +1,9 @@
 import type { RaceView } from "@racer/sim/race-view";
+import {
+  roadHalfWidthAt,
+  vergeHalfWidthAt,
+  widestVergeAlong,
+} from "@racer/track/districts";
 import { createRandom } from "@racer/track/random";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
@@ -7,7 +12,8 @@ import * as THREE from "three";
 import type { WalkerAsset } from "./assets.ts";
 import { createShading, onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
-import { createCity, FRONT_GAP, KERB_HEIGHT } from "./city.ts";
+import { FRONT_GAP, LONGEST_BLOCK } from "./city-blocks.ts";
+import { createCity, KERB_HEIGHT } from "./city.ts";
 import type { City } from "./city.ts";
 import { createClearance } from "./clearance.ts";
 import type { Clearance } from "./clearance.ts";
@@ -21,11 +27,16 @@ import { lookOf } from "./looks.ts";
 import type { Look } from "./looks.ts";
 import {
   buildRibbon,
+  districtPieces,
   buildTerrainChunk,
   piecesBesideArms,
 } from "./road-strips.ts";
-import type { Rail, Span } from "./road-strips.ts";
-import { paveTexture, ROAD_TILE_METRES, roadTexture } from "./road-texture.ts";
+import type { Rail, RailsAt, Span } from "./road-strips.ts";
+import {
+  paveTexture,
+  ROAD_TILE_METRES,
+  roadSurfacesOf,
+} from "./road-texture.ts";
 import { boulderParts, buildRoadside, pineParts } from "./roadside.ts";
 import { bannerTexture, chevronTexture } from "./sign-textures.ts";
 import { skyTexture } from "./sky-texture.ts";
@@ -48,6 +59,11 @@ const POLE = "#221a30";
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const placer = new THREE.Object3D();
 
+const walkEdgeAt = (track: Track, s: number): number =>
+  widestVergeAlong(track, s - LONGEST_BLOCK, s + LONGEST_BLOCK) +
+  FRONT_GAP +
+  0.6;
+
 const buildGate = (
   track: Track,
   s: number,
@@ -57,7 +73,7 @@ const buildGate = (
   clearance: Clearance
 ): THREE.Group => {
   const gate = new THREE.Group();
-  const span = track.roadHalfWidth * 2 + 3;
+  const span = roadHalfWidthAt(track, s) * 2 + 3;
   const steel = shading.cel(POLE, { rim: 0.6 });
   const posts = [-1, 1].map((side) => {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, 7, 0.4), steel);
@@ -87,7 +103,6 @@ const buildGate = (
 const buildScenery = (
   track: Track,
   shading: Shading,
-  limit: number,
   textures: Set<THREE.Texture>,
   clearance: Clearance
 ): THREE.Group => {
@@ -96,7 +111,9 @@ const buildScenery = (
   const city = look.kit === "city";
   const ofKind = (kind: TrackProp["kind"]): TrackProp[] =>
     track.props.filter(
-      (prop) => prop.kind === kind && Math.abs(prop.x) < limit
+      (prop) =>
+        prop.kind === kind &&
+        (!city || Math.abs(prop.x) < vergeHalfWidthAt(track, prop.s) + 0.4)
     );
 
   plant(
@@ -337,21 +354,30 @@ export const createWorld = (
   const stretches: Stretch[] = [];
   const clearance = createClearance();
 
-  const half = track.roadHalfWidth;
   const textures = new Set<THREE.Texture>();
-  const paved = roadTexture(random, look, track);
-  textures.add(paved.map).add(paved.glow);
-  const roadMaterial = shading.cel("#ffffff", {
-    emissiveIntensity: 0.9,
-    emissiveMap: paved.glow,
-    map: paved.map,
-  });
-  if (look.wet) {
-    roadMaterial.emissive.set("#ffffff");
-  }
+  const roadLooks = new Map(
+    [...roadSurfacesOf(random, look, track)].map(([lanes, surface]) => {
+      textures.add(surface.map).add(surface.glow);
+      const material = shading.cel("#ffffff", {
+        emissiveIntensity: 0.9,
+        emissiveMap: surface.glow,
+        map: surface.map,
+      });
+      if (look.wet) {
+        material.emissive.set("#ffffff");
+      }
+      const rails: RailsAt = (s) => {
+        const half = roadHalfWidthAt(track, s);
+        return [
+          [-half, 0, (surface.half - half) / (2 * surface.half)],
+          [half, 0, (surface.half + half) / (2 * surface.half)],
+        ];
+      };
+      return [lanes, { material, rails }] as const;
+    })
+  );
   const city: City | null =
     look.kit === "city" ? createCity(track, shading) : null;
-  const edge = track.vergeHalfWidth + FRONT_GAP + 0.6;
   const walkTexture = owned(textures, paveTexture(look));
   const walkMaterial = shading.cel("#ffffff", { map: walkTexture });
   const kerbMaterial = shading.cel(look.kerb);
@@ -360,7 +386,6 @@ export const createWorld = (
   const vergeMaterial = scenery
     ? shading.cel(coverPalette(look, scenery.cover).near)
     : null;
-  const verge = track.vergeHalfWidth;
 
   const add = (
     geometry: THREE.BufferGeometry,
@@ -375,74 +400,57 @@ export const createWorld = (
 
   for (let from = track.startS; from < track.endS; from += CHUNK_LENGTH) {
     const span = [from, Math.min(track.endS, from + CHUNK_LENGTH)] as const;
-    add(
-      buildRibbon(
-        track,
-        span,
-        [
-          [-half, 0, 0],
-          [half, 0, 1],
-        ],
-        ROAD_TILE_METRES
-      ),
-      roadMaterial,
-      span
-    );
-    for (const side of [-1, 1]) {
-      if (city) {
-        const kerb: Rail[] = [
-          [side * half, 0, 0],
-          [side * half, KERB_HEIGHT, 0],
-          [side * (half + KERB_WIDTH), KERB_HEIGHT, 0],
-        ];
-        const walk: Rail[] = [
-          [side * (half + KERB_WIDTH), KERB_HEIGHT, 0],
-          [side * edge, KERB_HEIGHT, (edge - half) / 2],
-        ];
-        for (const piece of piecesBesideArms(track, span, side)) {
-          add(
-            buildRibbon(track, piece, side > 0 ? kerb : kerb.toReversed(), 2),
-            kerbMaterial,
-            span
-          );
-          add(
-            buildRibbon(track, piece, side > 0 ? walk : walk.toReversed(), 2),
-            walkMaterial,
-            span
-          );
-        }
-      } else if (vergeMaterial) {
-        const shoulder: Rail[] = [
-          [side * half, 0, 0],
-          [side * verge, 0, 0],
-          [side * (verge + 3), -0.3, 0],
-        ];
+    for (const { lanes, span: piece } of districtPieces(track, span)) {
+      const road = roadLooks.get(lanes);
+      if (road) {
         add(
-          buildRibbon(
-            track,
-            span,
-            side > 0 ? shoulder : shoulder.toReversed(),
-            2
-          ),
-          vergeMaterial,
+          buildRibbon(track, piece, road.rails, ROAD_TILE_METRES),
+          road.material,
           span
         );
+      }
+    }
+    for (const side of [-1, 1]) {
+      if (city) {
+        const kerb: RailsAt = (s) => {
+          const half = roadHalfWidthAt(track, s);
+          const rails: Rail[] = [
+            [side * half, 0, 0],
+            [side * half, KERB_HEIGHT, 0],
+            [side * (half + KERB_WIDTH), KERB_HEIGHT, 0],
+          ];
+          return side > 0 ? rails : rails.toReversed();
+        };
+        const walk: RailsAt = (s) => {
+          const half = roadHalfWidthAt(track, s);
+          const edge = walkEdgeAt(track, s);
+          const rails: Rail[] = [
+            [side * (half + KERB_WIDTH), KERB_HEIGHT, 0],
+            [side * edge, KERB_HEIGHT, (edge - half) / 2],
+          ];
+          return side > 0 ? rails : rails.toReversed();
+        };
+        for (const piece of piecesBesideArms(track, span, side)) {
+          add(buildRibbon(track, piece, kerb, 2), kerbMaterial, span);
+          add(buildRibbon(track, piece, walk, 2), walkMaterial, span);
+        }
+      } else if (vergeMaterial) {
+        const shoulder: RailsAt = (s) => {
+          const verge = vergeHalfWidthAt(track, s);
+          const rails: Rail[] = [
+            [side * roadHalfWidthAt(track, s), 0, 0],
+            [side * verge, 0, 0],
+            [side * (verge + 3), -0.3, 0],
+          ];
+          return side > 0 ? rails : rails.toReversed();
+        };
+        add(buildRibbon(track, span, shoulder, 2), vergeMaterial, span);
       } else {
         add(buildTerrainChunk(track, span, side, look), terrainMaterial, span);
       }
     }
   }
-  scene.add(
-    freeze(
-      buildScenery(
-        track,
-        shading,
-        city ? track.vergeHalfWidth + 0.4 : Number.POSITIVE_INFINITY,
-        textures,
-        clearance
-      )
-    )
-  );
+  scene.add(freeze(buildScenery(track, shading, textures, clearance)));
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
   const walkers = createWalkerMarks(track, shading, walkerAsset);

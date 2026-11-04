@@ -225,6 +225,8 @@ export interface CarBox {
 export interface TrafficCar extends CarBox {
   s: number;
   speed: number;
+  x: number;
+  readonly home: number;
   readonly cruiseSpeed: number;
   readonly paint: number;
   readonly patience: number;

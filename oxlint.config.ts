@@ -66,6 +66,7 @@ export const deterministicFiles = [
   "packages/track/src/alignment.ts",
   "packages/track/src/chevron-runs.ts",
   "packages/track/src/crossings.ts",
+  "packages/track/src/districts.ts",
   "packages/track/src/hazards.ts",
   "packages/track/src/madrid-sources.ts",
   "packages/track/src/math-atan.ts",
@@ -353,7 +354,10 @@ export const hotBodies = {
     ["yieldTo"],
     ["firstPast"],
     ["gapToRider"],
-    ["laneIndexOf"],
+    ["occupiedLaneOf"],
+    ["queueOf"],
+    ["readCars"],
+    ["seatCar"],
   ],
 };
 

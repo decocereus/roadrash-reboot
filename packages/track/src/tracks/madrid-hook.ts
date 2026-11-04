@@ -7,10 +7,10 @@ export const madridHook: TrackPlan = {
   carriers: [],
   chevrons: chevronRuns["madrid-hook"],
   crossings: [],
+  districts: [{ from: 0, lanesEachWay: 1, shoulderWidth: 0.5, vergeWidth: 5 }],
   hazardsPerKilometre: 2,
   id: "madrid-hook",
   laneWidth: 3.5,
-  lanesEachWay: 1,
   leadInLength: 80,
   name: "Casa de Campo hook",
   pieces: clothoids([
@@ -61,8 +61,6 @@ export const madridHook: TrackPlan = {
   runoffLength: 200,
   scenery: madridHookScenery,
   seed: 0x4d_48_4b,
-  shoulderWidth: 0.5,
   start: { heading: -1.638015, x: 0.2, z: 0.1 },
   trafficPerKilometre: 6,
-  vergeWidth: 5,
 };

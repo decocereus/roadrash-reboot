@@ -3,6 +3,7 @@ import process from "node:process";
 import { parseArgs } from "node:util";
 
 import { bikes } from "@racer/sim/bikes";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { compileTrack } from "@racer/track/track";
 
 import {
@@ -64,7 +65,7 @@ for (const course of courses) {
     id: course.id,
     length: quiet.length,
     name: course.plan.name,
-    roadHalfWidth: quiet.roadHalfWidth,
+    roadHalfWidth: roadHalfWidthAt(quiet, 0),
     steering,
   };
   if (!values.check) {

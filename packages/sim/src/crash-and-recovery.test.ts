@@ -1,3 +1,4 @@
+import { roadHalfWidthAt, vergeHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 import { describe, expect, it } from "vitest";
 
@@ -44,7 +45,8 @@ const crashIntoPole = (kmh: number) => {
   const state = field(quietTrack, 1, 0, 0);
   const rider = player(state);
   const pole = quietTrack.solidProps.find(
-    (prop) => prop.s > 300 && Math.abs(prop.x) < quietTrack.vergeHalfWidth - 0.5
+    (prop) =>
+      prop.s > 300 && Math.abs(prop.x) < vergeHalfWidthAt(quietTrack, 0) - 0.5
   );
   if (!pole) {
     throw new Error("The road has no pole beside it.");
@@ -180,6 +182,7 @@ describe("crashing", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: -1.8,
       paint: 2,
       patience: 120,
       s: 103.1,
@@ -227,7 +230,7 @@ describe("recovering", () => {
     let onRoad = -1;
     for (let tick = 0; tick < 4 * TICK_RATE && onRoad < 0; tick += 1) {
       if (punched < 0) {
-        me.x = quietTrack.roadHalfWidth + 0.5;
+        me.x = roadHalfWidthAt(quietTrack, 0) + 0.5;
         me.lateralSpeed = 0;
         rival.x = me.x - 1.5;
         rival.s = me.s;
@@ -248,7 +251,7 @@ describe("recovering", () => {
       if (punched < 0 && state.events.some((event) => event.kind === "hit")) {
         punched = tick;
       }
-      if (punched >= 0 && Math.abs(me.x) < quietTrack.roadHalfWidth) {
+      if (punched >= 0 && Math.abs(me.x) < roadHalfWidthAt(quietTrack, 0)) {
         onRoad = tick;
       }
     }
@@ -299,6 +302,7 @@ const oncomingCar = (state: RaceState): void => {
     halfLength: 2.2,
     halfWidth: 0.92,
     height: 1.45,
+    home: -1.8,
     paint: 2,
     patience: 120,
     s: 0,
@@ -420,7 +424,7 @@ describe("bike condition", () => {
     expect({
       finished: finisher.finishTick >= 0,
       mode: me.mode,
-      offTheRoad: Math.abs(me.x) > straight.roadHalfWidth,
+      offTheRoad: Math.abs(me.x) > roadHalfWidthAt(straight, 0),
     }).toStrictEqual({ finished: true, mode: "wrecked", offTheRoad: true });
     expect(standings(state)).toStrictEqual([
       finisher.id,
@@ -440,6 +444,7 @@ describe("bike condition", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: -1.8,
       paint: 2,
       patience: 120,
       s: 0,
@@ -464,7 +469,7 @@ const knockedOffTrack = (ticksAfterPunch: number) => {
     moose.s = me.s;
     moose.x =
       punchedAt >= 0 && state.tick + 1 === punchedAt + ticksAfterPunch
-        ? straight.vergeHalfWidth + 1
+        ? vergeHalfWidthAt(straight, 0) + 1
         : 1.8;
     stepRace(
       state,

@@ -1,3 +1,5 @@
+import type { Track } from "@racer/track/track";
+
 import type { RaceView } from "./race-view.ts";
 import { createRace } from "./race.ts";
 import { cursor, HASH_WORDS, refuse, WORD_BYTES } from "./snapshot-bytes.ts";
@@ -14,6 +16,7 @@ import { hashBytes } from "./snapshot-hash.ts";
 import { bytesOf, putRecord, takeRecord } from "./snapshot-members.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import type { RaceSetup, RaceState } from "./state.ts";
+import { seatCars } from "./traffic.ts";
 
 export const snapshotCapacity = (state: RaceView): number =>
   HEADER_BYTES + bytesOf(raceSchema, state);
@@ -85,7 +88,8 @@ const checkHeader = (
 export const restoreInto = (
   state: RaceState,
   digest: Uint32Array,
-  from: DataView
+  from: DataView,
+  track: Track
 ): void => {
   const length = checkHeader(state, digest, from);
   state.tick = from.getFloat64(TICK_AT, true);
@@ -96,6 +100,7 @@ export const restoreInto = (
       `This snapshot is ${length} bytes and the race read ${cursor.byte}.`
     );
   }
+  seatCars(state.cars, track);
 };
 
 export const restoreSnapshot = (
@@ -103,7 +108,7 @@ export const restoreSnapshot = (
   from: DataView
 ): RaceState => {
   const state = createRace(setup);
-  restoreInto(state, setupDigest(state, setup.track), from);
+  restoreInto(state, setupDigest(state, setup.track), from, setup.track);
   return state;
 };
 
