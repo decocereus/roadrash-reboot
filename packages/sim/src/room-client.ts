@@ -147,7 +147,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const rewind = (): void => {
     const view = scratchFor(scratch, confirmed);
     writeSnapshot(confirmed, digest, view);
-    restoreInto(predicted, digest, view);
+    restoreInto(predicted, digest, view, setup.track);
   };
 
   const noteJump = (cause: JumpCause, fromS: number, fromX: number): void => {

@@ -1,7 +1,22 @@
-import { sampleAlignment } from "./alignment.ts";
+import { sampleAlignment, sampleAlong } from "./alignment.ts";
 import type { Alignment, Centreline } from "./alignment.ts";
 import { armClaims, compileCrossings } from "./crossings.ts";
 import type { CrossingRule, TrackCrossing } from "./crossings.ts";
+import {
+  checkCrossingsOffTapers,
+  checkDistricts,
+  roadHalfWidthAt,
+  roadWidthsOf,
+  tapersOf,
+  vergeHalfWidthAt,
+  widestLanes,
+} from "./districts.ts";
+import type {
+  Districts,
+  LaneCentres,
+  LaneCount,
+  RoadWidths,
+} from "./districts.ts";
 import { placeHazards } from "./hazards.ts";
 import type { HazardPlacement } from "./hazards.ts";
 import { cos, sin } from "./math.ts";
@@ -42,13 +57,11 @@ export interface TrackPlan extends Alignment {
   readonly id: string;
   readonly chevrons: readonly ChevronRun[];
   readonly crossings: readonly CrossingRule[];
+  readonly districts: Districts;
   readonly name: string;
   readonly region: RegionId;
   readonly seed: number;
-  readonly lanesEachWay: 1 | 2;
   readonly laneWidth: number;
-  readonly shoulderWidth: number;
-  readonly vergeWidth: number;
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
   readonly carriers: readonly number[];
@@ -71,12 +84,8 @@ export interface TrackProp {
   readonly scale: number;
 }
 
-export type LaneCentres = readonly [number] | readonly [number, number];
-
-export interface Track extends Centreline {
+export interface Track extends Centreline, RoadWidths {
   readonly plan: TrackPlan;
-  readonly roadHalfWidth: number;
-  readonly vergeHalfWidth: number;
   readonly sameWayLanes: LaneCentres;
   readonly oncomingLanes: LaneCentres;
   readonly props: readonly TrackProp[];
@@ -99,23 +108,37 @@ const ROCK_SEED_SALT = 0x70_c5;
 const ARM_PROP_MARGIN = 3;
 const CARRIER_START_CLEARANCE = 300;
 
-const roadHalfWidthOf = (plan: TrackPlan): number =>
-  plan.lanesEachWay * plan.laneWidth + plan.shoulderWidth;
+const laneCentres = (
+  laneWidth: number,
+  lanes: LaneCount,
+  side: number
+): LaneCentres => {
+  const centre = (lane: number): number => side * (lane + 0.5) * laneWidth;
+  switch (lanes) {
+    case 1: {
+      return [centre(0)];
+    }
+    case 2: {
+      return [centre(0), centre(1)];
+    }
+    case 3: {
+      return [centre(0), centre(1), centre(2)];
+    }
+    default: {
+      return lanes satisfies never;
+    }
+  }
+};
 
-const laneCentre = (plan: TrackPlan, side: number, lane: number): number =>
-  side * (lane + 0.5) * plan.laneWidth;
-
-const laneCentres = (plan: TrackPlan, side: number): LaneCentres =>
-  plan.lanesEachWay === 2
-    ? [laneCentre(plan, side, 0), laneCentre(plan, side, 1)]
-    : [laneCentre(plan, side, 0)];
-
-const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
+const scatterProps = (
+  plan: TrackPlan,
+  road: Centreline & RoadWidths
+): TrackProp[] => {
+  const { length } = road;
   const props: TrackProp[] = [];
   const mix = regions[plan.region].propMix;
   const random = createRandom(plan.seed);
   const rockRandom = createRandom(nextSeed(plan.seed + ROCK_SEED_SALT));
-  const roadHalfWidth = roadHalfWidthOf(plan);
   const startS = -plan.leadInLength;
   const endS = length + plan.runoffLength;
 
@@ -124,12 +147,13 @@ const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
     for (const side of [-1, 1]) {
       if (random() < grove * mix.tree) {
         const spread = random();
+        const at = s + random() * 5;
         props.push({
           kind: "tree",
           radius: 0.4,
-          s: s + random() * 5,
+          s: at,
           scale: 0.8 + random() * 0.9,
-          x: side * (roadHalfWidth + 4 + spread * spread * 60),
+          x: side * (roadHalfWidthAt(road, at) + 4 + spread * spread * 60),
         });
       }
     }
@@ -142,7 +166,7 @@ const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
         radius: 0.18,
         s,
         scale: 1,
-        x: roadHalfWidth + 2.4,
+        x: roadHalfWidthAt(road, s) + 2.4,
       });
     }
   }
@@ -155,7 +179,7 @@ const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
           radius: 0.2,
           s,
           scale: 1,
-          x: run.side * (roadHalfWidth + 1.8),
+          x: run.side * (roadHalfWidthAt(road, s) + 1.8),
         });
       }
     }
@@ -169,7 +193,7 @@ const scatterProps = (plan: TrackPlan, length: number): TrackProp[] => {
         radius: 0.75,
         s,
         scale: 0.8 + rockRandom() * 0.7,
-        x: side * (roadHalfWidth + 2.5 + rockRandom() * 5),
+        x: side * (roadHalfWidthAt(road, s) + 2.5 + rockRandom() * 5),
       });
     }
   }
@@ -201,42 +225,38 @@ const carrierStartsOf = (
 export const compileTrack = (plan: TrackPlan): Track => {
   const centreline = sampleAlignment(plan);
   const { length } = centreline;
-  const roadHalfWidth = roadHalfWidthOf(plan);
-  const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
+  const tapers = tapersOf(plan);
+  checkDistricts(plan, tapers, length);
+  const along = {
+    ...centreline,
+    ...roadWidthsOf(plan, tapers, centreline),
+  };
   const crossings = compileCrossings(plan.crossings, centreline);
-  const props = scatterProps(plan, length).filter(
+  checkCrossingsOffTapers(plan, crossings, tapers);
+  const widest = widestLanes(plan.districts);
+  const props = scatterProps(plan, along).filter(
     (prop) => !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN)
   );
 
   const road = {
-    ...centreline,
+    ...along,
     carrierStarts: carrierStartsOf(plan, length),
     crossings,
-    oncomingLanes: laneCentres(plan, -1),
+    oncomingLanes: laneCentres(plan.laneWidth, widest, -1),
     plan,
     props,
-    roadHalfWidth,
-    sameWayLanes: laneCentres(plan, 1),
+    sameWayLanes: laneCentres(plan.laneWidth, widest, 1),
     solidProps: props.filter(
-      (prop) => prop.radius > 0 && Math.abs(prop.x) < vergeHalfWidth + 1
+      (prop) =>
+        prop.radius > 0 &&
+        Math.abs(prop.x) < vergeHalfWidthAt(along, prop.s) + 1
     ),
-    vergeHalfWidth,
   };
   const placed = { ...road, hazards: placeHazards(road) };
   return { ...placed, walkSites: placeWalkSites(placed) };
 };
 
-const sampleAt = (track: Track, values: Float64Array, s: number): number => {
-  const position = Math.min(
-    track.sampleCount - 1,
-    Math.max(0, s - track.startS)
-  );
-  const index = Math.min(track.sampleCount - 2, Math.floor(position));
-  const blend = position - index;
-  const from = values[index] ?? 0;
-  const to = values[index + 1] ?? from;
-  return from + (to - from) * blend;
-};
+const sampleAt = sampleAlong;
 
 export const curvatureAt = (track: Track, s: number): number =>
   sampleAt(track, track.curvature, s);

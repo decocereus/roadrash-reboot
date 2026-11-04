@@ -7,10 +7,10 @@ export const madridGranVia: TrackPlan = {
   carriers: [],
   chevrons: chevronRuns["madrid-gran-via"],
   crossings: [],
+  districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.5, vergeWidth: 5 }],
   hazardsPerKilometre: 2,
   id: "madrid-gran-via",
   laneWidth: 3.5,
-  lanesEachWay: 2,
   leadInLength: 80,
   name: "Alcalá into Gran Vía",
   pieces: clothoids([
@@ -114,8 +114,6 @@ export const madridGranVia: TrackPlan = {
   runoffLength: 200,
   scenery: madridGranViaScenery,
   seed: 0x4d_47_56,
-  shoulderWidth: 0.5,
   start: { heading: -1.582823, x: 90.4, z: -0.7 },
   trafficPerKilometre: 6,
-  vergeWidth: 5,
 };

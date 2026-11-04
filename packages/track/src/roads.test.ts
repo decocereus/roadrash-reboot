@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { openLanesAt, roadHalfWidthAt } from "./districts.ts";
 import {
   HAZARD_FINISH_CLEARANCE,
   HAZARD_GENTLE_CURVATURE,
@@ -251,7 +252,7 @@ describe("hazards", () => {
       for (const hazard of track.hazards) {
         const size = hazardSizes[hazard.kind];
         expect(Math.abs(hazard.x) + size.halfWidth).toBeLessThanOrEqual(
-          track.roadHalfWidth
+          roadHalfWidthAt(track, hazard.s)
         );
         expect(hazard.s).toBeGreaterThanOrEqual(HAZARD_START_CLEARANCE);
         expect(hazard.s).toBeLessThanOrEqual(
@@ -266,11 +267,12 @@ describe("hazards", () => {
     "every hazard on $roadId lies on the lanes, never on the shoulder",
     ({ roadId }) => {
       const track = trackFor(roadId);
-      const lanesEdge = track.plan.lanesEachWay * track.plan.laneWidth;
       for (const hazard of track.hazards) {
         expect(
           Math.abs(hazard.x) + hazardSizes[hazard.kind].halfWidth
-        ).toBeLessThanOrEqual(lanesEdge);
+        ).toBeLessThanOrEqual(
+          openLanesAt(track, hazard.s) * track.plan.laneWidth
+        );
       }
     }
   );

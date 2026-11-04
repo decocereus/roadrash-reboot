@@ -185,7 +185,7 @@ describe("a race snapshot", () => {
         const dirty = piloted(course, seed);
         ride(dirty, course, DIRTY_TICKS);
         ride(piloted(course, seed + 1), course, FOREIGN_TICKS);
-        restoreInto(dirty, setupDigest(dirty, course), viewOf(bytes));
+        restoreInto(dirty, setupDigest(dirty, course), viewOf(bytes), course);
         expect(ride(dirty, course, CONTINUE_TICKS)).toStrictEqual(expected);
       }
     },
@@ -198,7 +198,7 @@ describe("a race snapshot", () => {
     const view = viewOf(bytesOf(state));
     view.setUint32(0, 99, true);
     expect(() => {
-      restoreInto(piloted(track, 5), setupDigest(state, track), view);
+      restoreInto(piloted(track, 5), setupDigest(state, track), view, track);
     }).toThrow("format 99");
   });
 
@@ -208,7 +208,7 @@ describe("a race snapshot", () => {
     const bytes = bytesOf(state);
     const other = piloted(track, 9);
     expect(() => {
-      restoreInto(other, setupDigest(other, track), viewOf(bytes));
+      restoreInto(other, setupDigest(other, track), viewOf(bytes), track);
     }).toThrow("another race setup");
   });
 
@@ -219,7 +219,7 @@ describe("a race snapshot", () => {
     const bytes = bytesOf(state, course);
     const here = piloted(track, 5);
     expect(() => {
-      restoreInto(here, setupDigest(here, track), viewOf(bytes));
+      restoreInto(here, setupDigest(here, track), viewOf(bytes), track);
     }).toThrow("another race setup");
   });
 
@@ -229,7 +229,12 @@ describe("a race snapshot", () => {
     const bytes = bytesOf(state);
     const short = bytes.slice(0, bytes.byteLength - 1);
     expect(() => {
-      restoreInto(piloted(track, 5), setupDigest(state, track), viewOf(short));
+      restoreInto(
+        piloted(track, 5),
+        setupDigest(state, track),
+        viewOf(short),
+        track
+      );
     }).toThrow("the buffer holds");
   });
 
@@ -237,7 +242,12 @@ describe("a race snapshot", () => {
     const state = piloted(track, 5);
     const bytes = bytesOf(state).slice(0, 8);
     expect(() => {
-      restoreInto(piloted(track, 5), setupDigest(state, track), viewOf(bytes));
+      restoreInto(
+        piloted(track, 5),
+        setupDigest(state, track),
+        viewOf(bytes),
+        track
+      );
     }).toThrow("snapshot header");
   });
 
@@ -259,7 +269,7 @@ describe("a race snapshot", () => {
     const view = viewOf(marked);
     view.setFloat64((differing[0] ?? 0) - 7, 0.5, true);
     expect(() => {
-      restoreInto(piloted(track, 5), setupDigest(quiet, track), view);
+      restoreInto(piloted(track, 5), setupDigest(quiet, track), view, track);
     }).toThrow("slot 0.5");
   });
 
@@ -349,7 +359,7 @@ describe("a race snapshot", () => {
     state.events.push(...made);
     const bytes = bytesOf(state);
     const target = piloted(track, 5);
-    restoreInto(target, setupDigest(target, track), viewOf(bytes));
+    restoreInto(target, setupDigest(target, track), viewOf(bytes), track);
     expect(target.events).toStrictEqual(made);
   });
 
@@ -412,7 +422,8 @@ describe("a race snapshot", () => {
       restoreInto(
         piloted(track, SEED),
         setupDigest(state, track),
-        viewOf(bytes)
+        viewOf(bytes),
+        track
       );
     }).toThrow("another race setup");
   });
@@ -433,7 +444,7 @@ describe("a race snapshot", () => {
     if (standing) {
       dirty.hazards[0] = { ...standing, x: 0 };
     }
-    restoreInto(dirty, setupDigest(dirty, track), viewOf(bytes));
+    restoreInto(dirty, setupDigest(dirty, track), viewOf(bytes), track);
     expect(Object.is(dirty.hazards[0]?.x, -0)).toBeTruthy();
     expect(
       Object.is(riderOf(dirty.riders, PLAYER_RIDER)?.lateralSpeed, -0)
@@ -451,9 +462,9 @@ describe("a race snapshot", () => {
     const bytes = bytesOf(state);
     const target = piloted(track, SEED);
     const digest = setupDigest(target, track);
-    restoreInto(target, digest, viewOf(bytes));
+    restoreInto(target, digest, viewOf(bytes), track);
     const first = [...target.events];
-    restoreInto(target, digest, viewOf(bytes));
+    restoreInto(target, digest, viewOf(bytes), track);
     expect(target.events).toHaveLength(first.length);
     for (const [index, event] of first.entries()) {
       expect(target.events[index]).toBe(event);
@@ -471,14 +482,14 @@ describe("a race snapshot", () => {
     const tagged = snapshotWith(state, [crashOf(CRASH_TAG)]);
     const other = snapshotWith(state, [WRECKED]);
 
-    restoreInto(target, digest, viewOf(tagged));
+    restoreInto(target, digest, viewOf(tagged), track);
     const [first] = target.events;
-    restoreInto(target, digest, viewOf(other));
+    restoreInto(target, digest, viewOf(other), track);
     const [between] = target.events;
-    restoreInto(target, digest, viewOf(tagged));
+    restoreInto(target, digest, viewOf(tagged), track);
     expect(target.events[0]).toBe(first);
 
-    restoreInto(target, digest, viewOf(other));
+    restoreInto(target, digest, viewOf(other), track);
     expect(target.events[0]).toBe(between);
     expect(between).not.toBe(first);
   });
@@ -490,12 +501,12 @@ describe("a race snapshot", () => {
     const tagged = snapshotWith(state, [crashOf(CRASH_TAG)]);
     const bare = snapshotWith(state, [crashOf(null)]);
 
-    restoreInto(target, digest, viewOf(tagged));
+    restoreInto(target, digest, viewOf(tagged), track);
     const first = crashTag(target.events[0]);
-    restoreInto(target, digest, viewOf(bare));
+    restoreInto(target, digest, viewOf(bare), track);
     expect(crashTag(target.events[0])).toBeNull();
 
-    restoreInto(target, digest, viewOf(tagged));
+    restoreInto(target, digest, viewOf(tagged), track);
     expect(crashTag(target.events[0])).toBe(first);
     expect(crashTag(target.events[0])).toStrictEqual(CRASH_TAG);
   });
@@ -512,7 +523,7 @@ describe("a race snapshot", () => {
     expect(rider.pilotLine).toBeNaN();
     const bytes = bytesOf(state);
     const target = piloted(track, 5);
-    restoreInto(target, setupDigest(target, track), viewOf(bytes));
+    restoreInto(target, setupDigest(target, track), viewOf(bytes), track);
     const back = riderOf(target.riders, PLAYER_RIDER);
     expect(Object.is(back?.lateralSpeed, -0)).toBeTruthy();
     expect(back?.post).toBe(Number.POSITIVE_INFINITY);

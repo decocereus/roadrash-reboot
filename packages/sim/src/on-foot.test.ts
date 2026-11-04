@@ -1,3 +1,4 @@
+import { vergeHalfWidthAt } from "@racer/track/districts";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -72,6 +73,7 @@ describe("knocked down on foot", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: me.bodyX,
       paint: 2,
       patience: 120,
       s: me.bodyS - 2.2,
@@ -336,6 +338,7 @@ describe("on foot", () => {
       halfLength: 2.2,
       halfWidth: 0.92,
       height: 1.45,
+      home: me.bodyX,
       paint: 0,
       patience: 120,
       s: me.bodyS - 3,
@@ -400,7 +403,7 @@ describe("on foot", () => {
     const { me, state } = knockedOffAndRunning();
     const sideways = { ...neutralInput, steer: -1 };
     onFoot(state, me, 4, () => sideways);
-    expect(me.bodyX).toBe(-straight.vergeHalfWidth);
+    expect(me.bodyX).toBe(-vergeHalfWidthAt(straight, 0));
     me.bodyS = straight.length - 5;
     const forward = { ...neutralInput, throttle: 1 };
     onFoot(state, me, 3, () => forward);

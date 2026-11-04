@@ -114,18 +114,19 @@ export const platformFeatures: readonly FeatureEntry[] = [
     kind: "platform",
     owns: [
       "packages/track/src/alignment*.ts",
+      "packages/track/src/districts*.ts",
       "packages/track/src/track.ts",
       "packages/track/src/road.ts",
       "packages/track/src/roads.ts",
     ],
     perf: [],
     start: [
-      "packages/track/src/alignment.ts",
+      "packages/track/src/districts.ts",
       "packages/track/src/track.ts",
       "packages/track/src/roads.ts",
     ],
     summary:
-      "Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, lanes and scattered props, the plan for each level, and the `trackFor` registry.",
+      "Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, districts with their per-metre widths and open lanes, and scattered props, the plan for each level, and the `trackFor` registry.",
     title: "Track compiler",
     verify: [],
   },

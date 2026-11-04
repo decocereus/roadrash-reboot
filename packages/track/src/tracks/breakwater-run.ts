@@ -38,10 +38,10 @@ export const breakwaterRun: TrackPlan = {
       walk: "zebra",
     },
   ],
+  districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 }],
   hazardsPerKilometre: 1,
   id: "breakwater-run",
   laneWidth: 3.6,
-  lanesEachWay: 2,
   leadInLength: 80,
   name: "Breakwater Run",
   pieces: eased([
@@ -86,8 +86,6 @@ export const breakwaterRun: TrackPlan = {
   region: "salt-coast",
   runoffLength: 400,
   seed: 0xb4_7a_c1,
-  shoulderWidth: 0.9,
   start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 5,
-  vergeWidth: 7,
 };

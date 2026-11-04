@@ -26,6 +26,7 @@ const carAt = (s: number, x: number, speed: number): TrafficCar => ({
   halfLength: 2.2,
   halfWidth: 0.92,
   height: 1.45,
+  home: x,
   paint: 1,
   patience: 120,
   s,

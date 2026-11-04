@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { hypot2 } from "@racer/track/math";
 import type { Track } from "@racer/track/track";
 
@@ -178,8 +179,9 @@ const updateChase = (state: RaceState, cop: RiderState) => {
 
 export const pullOver = (track: Track, rider: RiderState): void => {
   const side = Math.sign(rider.bodyX) || 1;
-  rider.x = side * (track.roadHalfWidth + PULL_OVER);
-  rider.bodyX = side * (track.roadHalfWidth + PULL_OVER + 0.8);
+  const halfWidth = roadHalfWidthAt(track, rider.s);
+  rider.x = side * (halfWidth + PULL_OVER);
+  rider.bodyX = side * (halfWidth + PULL_OVER + 0.8);
   rider.bodyS = rider.s;
   rider.heading = 0;
   rider.modeTicks = 0;

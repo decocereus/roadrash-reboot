@@ -397,8 +397,8 @@ describe("the pilot plans its speed along the road", () => {
       ...compileTrack({
         ...ridgeRoad,
         chevrons: [],
+        districts: [{ ...ridgeRoad.districts[0], lanesEachWay: 2 }],
         hazardsPerKilometre: 0,
-        lanesEachWay: 2,
         pieces: eased([[6000, 0, 0]]),
         trafficPerKilometre: 0,
       }),
@@ -419,6 +419,7 @@ describe("the pilot plans its speed along the road", () => {
           halfLength: 2.2,
           halfWidth: 0.92,
           height: 1.45,
+          home: -1.8,
           paint: 2,
           patience: 120,
           s: 961,

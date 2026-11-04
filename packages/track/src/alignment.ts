@@ -235,3 +235,19 @@ export const sampleAlignment = (alignment: Alignment): Centreline => {
   }
   return centreline;
 };
+
+export const sampleAlong = (
+  centreline: Centreline,
+  values: Float64Array,
+  s: number
+): number => {
+  const position = Math.min(
+    centreline.sampleCount - 1,
+    Math.max(0, s - centreline.startS)
+  );
+  const index = Math.min(centreline.sampleCount - 2, Math.floor(position));
+  const blend = position - index;
+  const from = values[index] ?? 0;
+  const to = values[index + 1] ?? from;
+  return from + (to - from) * blend;
+};

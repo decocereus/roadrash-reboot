@@ -1,5 +1,7 @@
+import { openLanesAt, trafficReachAt } from "@racer/track/districts";
+import type { LaneCentres } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
-import type { LaneCentres, Track } from "@racer/track/track";
+import type { Track } from "@racer/track/track";
 
 import { carrierAt, clearOfCarrier } from "./carrier.ts";
 import { blocksCars } from "./pedestrians.ts";
@@ -29,6 +31,11 @@ const LOOK_AHEAD = 70;
 export const PAINT_COUNT = 6;
 const SLOW_CRUISE = 23;
 const FAVOURED_LANE_SHARE = 0.8;
+const FAVOURED_OF_THREE_SHARE = 0.6;
+const MIDDLE_OF_THREE_SHARE = 0.3;
+const MERGE_SIGHT = 100;
+const MERGE_ROOM = 5;
+const MERGE_EASE = 8;
 export const STOP_SHORT = 1;
 export const QUEUE_GAP = 2;
 const STOP_SIGHT = 150;
@@ -67,13 +74,48 @@ const laneFor = (
   cruiseSpeed: number,
   random: Random
 ): number => {
-  if (lanes.length === 1) {
-    return lanes[0];
+  const slow = Math.abs(cruiseSpeed) < SLOW_CRUISE;
+  switch (lanes.length) {
+    case 1: {
+      return lanes[0];
+    }
+    case 2: {
+      const [inner, outer] = lanes;
+      const favoured = slow ? outer : inner;
+      const other = favoured === outer ? inner : outer;
+      return random() < FAVOURED_LANE_SHARE ? favoured : other;
+    }
+    case 3: {
+      const [inner, middle, outer] = lanes;
+      const [favoured, least] = slow ? [outer, inner] : [inner, outer];
+      const roll = random();
+      if (roll < FAVOURED_OF_THREE_SHARE) {
+        return favoured;
+      }
+      return roll < FAVOURED_OF_THREE_SHARE + MIDDLE_OF_THREE_SHARE
+        ? middle
+        : least;
+    }
+    default: {
+      return lanes satisfies never;
+    }
   }
-  const [inner, outer] = lanes;
-  const favoured = Math.abs(cruiseSpeed) < SLOW_CRUISE ? outer : inner;
-  const other = favoured === outer ? inner : outer;
-  return random() < FAVOURED_LANE_SHARE ? favoured : other;
+};
+
+const narrows = (track: Track): boolean => track.plan.districts.length > 1;
+
+const seatCar = (car: TrafficCar, track: Track): void => {
+  car.x =
+    Math.sign(car.home) *
+    Math.min(Math.abs(car.home), trafficReachAt(track, car.s));
+};
+
+export const seatCars = (cars: readonly TrafficCar[], track: Track): void => {
+  if (narrows(track)) {
+    for (const car of cars) {
+      seatCar(car, track);
+    }
+  }
 };
 
 const patienceOf = (random: Random): number =>
@@ -94,17 +136,21 @@ const convoysOf = (
       track.startS +
       (span * (convoy + 1)) / (count + 1) +
       (random() - 0.5) * CONVOY_JITTER;
-    return Array.from({ length: CONVOY_CARS }, (__, place) => ({
-      ...pickBody(random()),
-      carrier: false,
-      cruiseSpeed: CONVOY_CRUISE,
-      paint: Math.floor(random() * PAINT_COUNT),
-      patience: patienceOf(patience),
-      s: lead - place * CONVOY_GAP,
-      speed: CONVOY_CRUISE,
-      waited: 0,
-      x: track.sameWayLanes[place % track.sameWayLanes.length] ?? 0,
-    }));
+    return Array.from({ length: CONVOY_CARS }, (__, place) => {
+      const home = track.sameWayLanes[place % track.sameWayLanes.length] ?? 0;
+      return {
+        ...pickBody(random()),
+        carrier: false,
+        cruiseSpeed: CONVOY_CRUISE,
+        home,
+        paint: Math.floor(random() * PAINT_COUNT),
+        patience: patienceOf(patience),
+        s: lead - place * CONVOY_GAP,
+        speed: CONVOY_CRUISE,
+        waited: 0,
+        x: home,
+      };
+    });
   });
 };
 
@@ -138,20 +184,24 @@ export const createTraffic = (
         direction === 1 ? CLEAR_START_TO : CLEAR_ONCOMING_START_TO;
       const blocksStart = s > CLEAR_START_FROM && s < clearTo;
       if (!blocksStart) {
+        const paint = Math.floor(random() * PAINT_COUNT);
+        const home = laneFor(lanes, cruiseSpeed, random);
         cars.push({
           ...body,
           carrier: false,
           cruiseSpeed,
-          paint: Math.floor(random() * PAINT_COUNT),
+          home,
+          paint,
           patience: patienceOf(patience),
           s,
           speed: cruiseSpeed,
           waited: 0,
-          x: laneFor(lanes, cruiseSpeed, random),
+          x: home,
         });
       }
     }
   }
+  seatCars(cars, track);
   const [lane] = track.sameWayLanes;
   const carriers = track.carrierStarts.map((s) =>
     carrierAt(s, lane, Math.floor(random() * PAINT_COUNT), patienceOf(patience))
@@ -162,6 +212,7 @@ export const createTraffic = (
     convoyRandom,
     patience
   );
+  seatCars(convoys, track);
   return [
     ...cars.filter(
       (car) =>
@@ -210,6 +261,9 @@ const isDownOnTheRoad = (rider: RiderState): boolean =>
 
 interface Flow {
   readonly facingDown: boolean[];
+  readonly merging: boolean[];
+  readonly occupied: number[];
+  readonly queue: number[];
   readonly lastS: number[];
   readonly lastSpeed: number[];
   readonly target: number[];
@@ -221,23 +275,32 @@ const trafficFlow: Flow = {
   lane: { along: [], count: 0, direction: 1, longest: 0, order: [] },
   lastS: [],
   lastSpeed: [],
+  merging: [],
+  occupied: [],
+  queue: [],
   target: [],
 };
 
-const laneIndexOf = (track: Track, car: TrafficCar): number =>
+const occupiedLaneOf = (track: Track, car: TrafficCar): number =>
   Math.min(
-    track.plan.lanesEachWay - 1,
+    track.sameWayLanes.length - 1,
     Math.floor(Math.abs(car.x) / track.plan.laneWidth)
   );
 
+const queueOf = (track: Track, car: TrafficCar, occupied: number): number =>
+  Math.min(
+    openLanesAt(track, car.s) - 1,
+    openLanesAt(track, car.s + Math.sign(car.cruiseSpeed) * MERGE_SIGHT) - 1,
+    occupied
+  );
+
 const gatherLane = (
-  track: Track,
   cars: readonly TrafficCar[],
   flow: Flow,
   direction: number,
   laneIndex: number
 ): void => {
-  const { lane, lastS } = flow;
+  const { lane, lastS, occupied, queue } = flow;
   const { along, order } = lane;
   lane.direction = direction;
   lane.count = 0;
@@ -247,7 +310,7 @@ const gatherLane = (
     if (
       car &&
       Math.sign(car.cruiseSpeed) === direction &&
-      laneIndexOf(track, car) === laneIndex
+      (queue[index] === laneIndex || occupied[index] === laneIndex)
     ) {
       const carAlong = (lastS[index] ?? 0) * direction;
       let place = lane.count;
@@ -265,7 +328,7 @@ const gatherLane = (
 };
 
 const followLane = (cars: readonly TrafficCar[], flow: Flow): void => {
-  const { lane, lastS, lastSpeed, target } = flow;
+  const { lane, lastS, lastSpeed, merging, target } = flow;
   const { count, direction, longest, order } = lane;
   for (let place = 0; place < count; place += 1) {
     const index = order[place] ?? -1;
@@ -287,11 +350,21 @@ const followLane = (cars: readonly TrafficCar[], flow: Flow): void => {
         break;
       }
       const gap = apart - other.halfLength - car.halfLength;
+      const otherSpeed = lastSpeed[otherIndex] ?? 0;
       if (gap > 0 && gap < reach) {
-        targetSpeed = Math.min(targetSpeed, lastSpeed[otherIndex] ?? 0);
+        targetSpeed = Math.min(targetSpeed, otherSpeed);
+      }
+      if (
+        gap < MERGE_ROOM &&
+        (merging[index] === true || merging[otherIndex] === true)
+      ) {
+        targetSpeed = Math.min(
+          targetSpeed,
+          Math.max(0, otherSpeed - MERGE_EASE)
+        );
       }
     }
-    target[index] = targetSpeed;
+    target[index] = Math.min(target[index] ?? targetSpeed, targetSpeed);
   }
 };
 
@@ -434,25 +507,42 @@ const yieldToWalker = (
   }
 };
 
-export const stepTraffic = (state: RaceState, track: Track): void => {
-  const { cars, riders } = state;
-  const { facingDown, lastS, lastSpeed, target } = trafficFlow;
+const readCars = (cars: readonly TrafficCar[], track: Track): void => {
+  const { facingDown, lastS, lastSpeed, merging, occupied, queue, target } =
+    trafficFlow;
+  const offHomeCounts = narrows(track);
+  const { laneWidth } = track.plan;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
     if (car) {
+      const inLane = occupiedLaneOf(track, car);
+      const lane = queueOf(track, car, inLane);
+      occupied[index] = inLane;
+      queue[index] = lane;
+      merging[index] =
+        offHomeCounts &&
+        (car.x !== car.home ||
+          lane < Math.floor(Math.abs(car.home) / laneWidth));
       lastS[index] = car.s;
       lastSpeed[index] = Math.abs(car.speed);
       target[index] = Math.abs(car.cruiseSpeed);
       facingDown[index] = false;
     }
   }
+};
+
+export const stepTraffic = (state: RaceState, track: Track): void => {
+  const { cars, riders } = state;
+  const { facingDown, lastSpeed, target } = trafficFlow;
+  const moveAcross = narrows(track);
+  readCars(cars, track);
   for (const direction of directions) {
     for (
       let laneIndex = 0;
-      laneIndex < track.plan.lanesEachWay;
+      laneIndex < track.sameWayLanes.length;
       laneIndex += 1
     ) {
-      gatherLane(track, cars, trafficFlow, direction, laneIndex);
+      gatherLane(cars, trafficFlow, direction, laneIndex);
       followLane(cars, trafficFlow);
       stopAtLights(track, cars, trafficFlow, state.tick);
       for (const pedestrian of state.pedestrians) {
@@ -488,6 +578,9 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
       car.s = track.startS;
     } else if (car.s < track.startS) {
       car.s = track.endS;
+    }
+    if (moveAcross) {
+      seatCar(car, track);
     }
   }
 };

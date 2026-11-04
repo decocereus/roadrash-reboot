@@ -1,3 +1,5 @@
+import { roadHalfOf } from "@racer/track/districts";
+import type { LaneCount } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 import type * as THREE from "three";
@@ -15,9 +17,18 @@ const ROAD_TEXELS_PER_METRE = ROAD_TILE / ROAD_TILE_METRES;
 const DASH_METRES = 3;
 const DASH_PERIOD_METRES = 8;
 
-export const roadTexture = (random: Random, look: Look, track: Track): Lit => {
-  const half = track.roadHalfWidth;
-  const { laneWidth, lanesEachWay } = track.plan;
+export interface RoadSurface extends Lit {
+  readonly half: number;
+}
+
+const paintRoad = (
+  random: Random,
+  look: Look,
+  track: Track,
+  lanesEachWay: LaneCount,
+  half: number
+): RoadSurface => {
+  const { laneWidth } = track.plan;
   const width = lanesEachWay > 1 ? ROAD_TEXELS_WIDE : ROAD_TEXELS;
   const density = width / ROAD_TEXELS;
   const { canvas, context } = sheet(width, ROAD_TILE);
@@ -65,8 +76,8 @@ export const roadTexture = (random: Random, look: Look, track: Track): Lit => {
   for (const edge of [-paved, paved]) {
     context.fillRect(across(edge) - 0.075 * scale, 0, 0.15 * scale, ROAD_TILE);
   }
-  if (lanesEachWay > 1) {
-    for (const divider of [-laneWidth, laneWidth]) {
+  for (let inner = 1; inner < lanesEachWay; inner += 1) {
+    for (const divider of [-inner * laneWidth, inner * laneWidth]) {
       for (
         let start = 0;
         start < ROAD_TILE_METRES;
@@ -91,7 +102,10 @@ export const roadTexture = (random: Random, look: Look, track: Track): Lit => {
     );
   }
   context.fillStyle = "rgba(0,0,0,.06)";
-  for (const centre of [...track.oncomingLanes, ...track.sameWayLanes]) {
+  for (const centre of [
+    ...track.oncomingLanes.slice(0, lanesEachWay),
+    ...track.sameWayLanes.slice(0, lanesEachWay),
+  ]) {
     context.fillRect(across(centre) - 0.5 * scale, 0, scale, ROAD_TILE);
   }
   light.context.fillStyle = "#000";
@@ -128,7 +142,31 @@ export const roadTexture = (random: Random, look: Look, track: Track): Lit => {
   }
   const map = textureOf(canvas, true);
   map.anisotropy = 16;
-  return { glow: textureOf(light.canvas, true), map };
+  return { glow: textureOf(light.canvas, true), half, map };
+};
+
+export const roadSurfacesOf = (
+  random: Random,
+  look: Look,
+  track: Track
+): ReadonlyMap<LaneCount, RoadSurface> => {
+  const { districts, laneWidth } = track.plan;
+  const halves = new Map<LaneCount, number>();
+  for (const district of districts) {
+    halves.set(
+      district.lanesEachWay,
+      Math.max(
+        halves.get(district.lanesEachWay) ?? 0,
+        roadHalfOf(district, laneWidth)
+      )
+    );
+  }
+  return new Map(
+    [...halves].map(([lanes, half]) => [
+      lanes,
+      paintRoad(random, look, track, lanes, half),
+    ])
+  );
 };
 
 export const paveTexture = (look: Look): THREE.CanvasTexture => {

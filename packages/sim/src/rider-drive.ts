@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { hypot2, sin } from "@racer/track/math";
 import { curvatureAt, slopeAt, slopeRateAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -127,13 +128,10 @@ export const ride = (
     return;
   }
 
-  rider.offRoad = Math.abs(rider.x) > track.roadHalfWidth;
+  const halfWidth = roadHalfWidthAt(track, rider.s);
+  rider.offRoad = Math.abs(rider.x) > halfWidth;
   rider.load = clamp(1 + verticalAcceleration / GRAVITY, 0, 1.8);
-  const verge = clamp(
-    (Math.abs(rider.x) - track.roadHalfWidth) / VERGE_BLEND,
-    0,
-    1
-  );
+  const verge = clamp((Math.abs(rider.x) - halfWidth) / VERGE_BLEND, 0, 1);
   rider.throttle = approach(
     rider.throttle,
     input.throttle,

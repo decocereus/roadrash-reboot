@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
@@ -48,7 +49,7 @@ export const placeOnGround = (
   placeOnTrack(track, s, x, target);
   target.y += groundLift(
     lookOf(track.plan.region).kit,
-    Math.abs(x) - track.roadHalfWidth,
+    Math.abs(x) - roadHalfWidthAt(track, s),
     target.x,
     target.z
   );

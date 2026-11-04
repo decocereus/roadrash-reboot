@@ -5,6 +5,7 @@ import type {
   TrackPieces,
   TrackStart,
 } from "@racer/track/alignment";
+import type { Districts } from "@racer/track/districts";
 import type { CorridorData, Position } from "@racer/track/madrid-schema";
 import type {
   GroundCover,
@@ -39,10 +40,8 @@ interface SlowPlace {
 }
 
 interface Carriageway {
-  readonly lanesEachWay: 1 | 2;
+  readonly districts: Districts;
   readonly laneWidth: number;
-  readonly shoulderWidth: number;
-  readonly vergeWidth: number;
   readonly leadInLength: number;
   readonly runUpM: number;
   readonly runoffLength: number;
@@ -60,7 +59,12 @@ export interface StretchSettings {
 }
 
 const vergeHalfWidthOf = (road: Carriageway): number =>
-  road.lanesEachWay * road.laneWidth + road.shoulderWidth + road.vergeWidth;
+  Math.max(
+    ...road.districts.map(
+      ({ lanesEachWay, shoulderWidth, vergeWidth }) =>
+        lanesEachWay * road.laneWidth + shoulderWidth + vergeWidth
+    )
+  );
 
 interface PlaceDistance {
   readonly place: SlowPlace;
