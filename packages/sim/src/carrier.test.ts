@@ -2,7 +2,7 @@ import { trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
 
 import { streetBike } from "./bikes.ts";
-import { carrierAt } from "./carrier.ts";
+import { carrierAt, frontOf, lipOf } from "./carrier.ts";
 import { difficulties, tiers } from "./difficulty.ts";
 import { alone, frameOf, player, truckRoad } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
@@ -207,7 +207,7 @@ describe("trucks on the roads", () => {
   );
 
   it.each([
-    ["breakwater-run", [2350, 3200]],
+    ["breakwater-run", [3900, 4650]],
     ["slag-row", [2600, 4100]],
     ["ridge-road", [4500]],
   ] as const)(
@@ -265,6 +265,39 @@ describe("a pilot and a truck", () => {
     expect(run.rampTaken).toBeFalsy();
     expect(run.passed).toBeTruthy();
     expect(crashed(run.events)).toBeFalsy();
+  });
+
+  it("rides round a stopped truck it crashed on, having given up the jump it chose", () => {
+    const setup = defaultSetup(truckRoad, 1);
+    const state = createRace({
+      ...setup,
+      player: { ...setup.player, bike: streetBike, controller: "pilot" },
+      police: { ...setup.police, count: 0 },
+      rivals: [],
+    });
+    const rider = player(state);
+    const truck = state.cars.at(-1);
+    if (truck?.carrier !== true) {
+      throw new Error("The road's truck comes last among its cars.");
+    }
+    state.cars.splice(0, state.cars.length - 1);
+    const stoppedAt = truck.s;
+    rider.s = lipOf(truck) + 0.6;
+    rider.x = truck.x;
+    rider.speed = 0;
+    rider.jumpSeen = 0;
+    rider.jumpTaken = true;
+    for (
+      let tick = 0;
+      tick < 15 * TICK_RATE && rider.s <= frontOf(truck);
+      tick += 1
+    ) {
+      truck.s = stoppedAt;
+      truck.speed = 0;
+      stepRace(state, truckRoad, frameOf(state));
+    }
+    expect(rider.jumpTaken).toBeFalsy();
+    expect(rider.s).toBeGreaterThan(frontOf(truck));
   });
 
   it("an unskilled pilot sometimes misjudges a jump it cannot make and a skilled one never does", () => {

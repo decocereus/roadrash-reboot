@@ -7,6 +7,7 @@ import type { Track } from "@racer/track/track";
 import { breakwaterRun } from "@racer/track/tracks/breakwater-run";
 import { describe, expect, it } from "vitest";
 
+import { difficulties, tiers } from "./difficulty.ts";
 import { frameOf, player } from "./race-fixtures.ts";
 import { createRace, defaultSetup, emptyFrame, stepRace } from "./race.ts";
 import { setupDigest } from "./snapshot-setup.ts";
@@ -16,7 +17,8 @@ import {
   writeSnapshot,
 } from "./snapshot.ts";
 import { TICK_RATE } from "./state.ts";
-import type { RaceState, TrafficCar } from "./state.ts";
+import type { RaceConditions, RaceState, TrafficCar } from "./state.ts";
+import { carSlant } from "./traffic.ts";
 
 const NARROW_FROM = 2000;
 const WIDE_AGAIN_FROM = 2600;
@@ -147,6 +149,28 @@ describe.each(directions)(
   }
 );
 
+describe("a car's slant while it changes lane", () => {
+  const [inner, , outer = 0] = road.sameWayLanes;
+  const across = road.plan.laneWidth / 30;
+  const middleOfMerge = NARROW_FROM - TAPER - 15;
+
+  it("points an outer lane's car across the road where its seat is closing", () => {
+    expect(carSlant(carAt(0, outer, 20), road, middleOfMerge)).toBeCloseTo(
+      -across,
+      6
+    );
+    expect(carSlant(carAt(0, -outer, -20), road, middleOfMerge)).toBeCloseTo(
+      across,
+      6
+    );
+  });
+
+  it("leaves the open lane's car and a car on open road straight", () => {
+    expect(carSlant(carAt(0, inner, 20), road, middleOfMerge)).toBe(0);
+    expect(carSlant(carAt(0, outer, 20), road, 400)).toBe(0);
+  });
+});
+
 describe("a car's x on a road of districts", () => {
   it("follows the road's reach after a snapshot restore", () => {
     const track = compileTrack({
@@ -212,13 +236,19 @@ describe("a pilot nearing a narrow district", () => {
   });
 });
 
-describe("a pilot field on a road of three, one and two lanes", () => {
+describe("a pilot field on Breakwater Run's districts", () => {
   const raceTicks = 60 * 420;
+  const fieldSeeds = [11, 23, 37, 41, 59, 67, 73, 89];
 
-  const fieldRide = (track: Track) => {
-    const setup = defaultSetup(track, 11);
+  const fieldRide = (
+    track: Track,
+    seed: number,
+    conditions: RaceConditions
+  ) => {
+    const setup = defaultSetup(track, seed);
     const state = createRace({
       ...setup,
+      conditions,
       pacing: { catchUp: 0, leadEase: 0 },
       player: { ...setup.player, controller: "pilot" },
       police: { ...setup.police, count: 0 },
@@ -243,19 +273,134 @@ describe("a pilot field on a road of three, one and two lanes", () => {
     };
   };
 
-  it("finishes and leaves the road no more than on a road of uniform width", () => {
-    const uniform = fieldRide(compileTrack(roads["breakwater-run"]));
-    const mixed = fieldRide(
+  const fieldsOn = (track: Track, conditions: RaceConditions) => {
+    const rides = fieldSeeds.map((seed) => fieldRide(track, seed, conditions));
+    return {
+      finished: rides.reduce((sum, ride) => sum + ride.finished, 0),
+      offRoad: rides.reduce((sum, ride) => sum + ride.offRoad, 0),
+      riders: rides.reduce((sum, ride) => sum + ride.riders, 0),
+    };
+  };
+
+  const across = (track: Track) =>
+    tiers.map((tier) => fieldsOn(track, difficulties[tier].conditions));
+
+  const offRoadOf = (fields: ReturnType<typeof across>): number =>
+    fields.reduce((sum, field) => sum + field.offRoad, 0);
+
+  it("finishes at every tier and leaves the road no more over the tiers than on a road of one width", () => {
+    const plan = roads["breakwater-run"];
+    const uniform = across(
       compileTrack({
-        ...roads["breakwater-run"],
+        ...plan,
         districts: [
-          { ...threeOneThree, from: 0, lanesEachWay: 3 },
-          { ...threeOneThree, from: 3000, lanesEachWay: 1 },
-          { ...threeOneThree, from: 3600, lanesEachWay: 2 },
+          { from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 },
         ],
       })
     );
-    expect(mixed.finished).toBe(mixed.riders);
-    expect(mixed.offRoad).toBeLessThanOrEqual(uniform.offRoad);
-  }, 240_000);
+    const districted = across(compileTrack(plan));
+    expect(districted.map((field) => field.finished)).toStrictEqual(
+      districted.map((field) => field.riders)
+    );
+    expect(offRoadOf(districted)).toBeLessThanOrEqual(offRoadOf(uniform));
+  }, 600_000);
+});
+
+describe("a convoy on Breakwater Run in a full race", () => {
+  const CONVOY_CRUISE = 15;
+  const CONVOY_CARS = 6;
+  const CLEAR_METRES = 30;
+  const track = compileTrack(roads["breakwater-run"]);
+  const [innerLane] = track.sameWayLanes;
+
+  const raceWithConvoyAt = (seed: number, leadS: number) => {
+    const setup = defaultSetup(track, seed);
+    const state = createRace({
+      ...setup,
+      conditions: difficulties[3].conditions,
+      pacing: { catchUp: 0, leadEase: 0 },
+      player: { ...setup.player, controller: "pilot" },
+      police: { ...setup.police, count: 0 },
+    });
+    const convoy = state.cars
+      .filter((car) => car.cruiseSpeed === CONVOY_CRUISE && !car.carrier)
+      .slice(0, CONVOY_CARS);
+    const shift = leadS - Math.max(...convoy.map((car) => car.s));
+    for (const car of convoy) {
+      car.s += shift;
+    }
+    const clear = state.cars.filter(
+      (car) =>
+        convoy.includes(car) ||
+        car.cruiseSpeed < 0 ||
+        convoy.every((other) => Math.abs(other.s - car.s) >= CLEAR_METRES)
+    );
+    state.cars.length = 0;
+    state.cars.push(...clear);
+    return { convoy, state };
+  };
+
+  const rideThrough = (seed: number, leadS: number, exit: number) => {
+    const { convoy, state } = raceWithConvoyAt(seed, leadS);
+    const homes = convoy.map((car) => car.home);
+    const squeeze = { from: 1300, to: 1900 };
+    let overlaps = 0;
+    let offTheRoad = 0;
+    let singleFile = true;
+    let sawOneLane = false;
+    for (let tick = 0; tick < 150 * TICK_RATE; tick += 1) {
+      stepRace(state, track, emptyFrame);
+      overlaps += overlapping(state.cars) ? 1 : 0;
+      for (const car of convoy) {
+        offTheRoad +=
+          Math.abs(car.x) + car.halfWidth > roadHalfWidthAt(track, car.s)
+            ? 1
+            : 0;
+        if (car.s > squeeze.from && car.s < squeeze.to) {
+          sawOneLane = true;
+          singleFile &&= car.x === innerLane;
+        }
+      }
+      if (convoy.every((car) => car.s > exit)) {
+        break;
+      }
+    }
+    return {
+      allOut: convoy.every((car) => car.s > exit),
+      backHome: convoy.map((car) => car.x),
+      homes,
+      offTheRoad,
+      overlaps,
+      sawOneLane,
+      singleFile,
+    };
+  };
+
+  it.each([11, 23, 59, 67])(
+    "files through the one-lane squeeze as the pack arrives, seed %i",
+    (seed) => {
+      const { backHome, homes, ...ride } = rideThrough(seed, 900, 2040);
+      expect(ride).toStrictEqual({
+        allOut: true,
+        offTheRoad: 0,
+        overlaps: 0,
+        sawOneLane: true,
+        singleFile: true,
+      });
+      expect(backHome).toStrictEqual(homes);
+    },
+    60_000
+  );
+
+  it.each([11, 59])(
+    "closes from three lanes to two at the seafront, seed %i",
+    (seed) => {
+      expect(rideThrough(seed, 3200, 3700)).toMatchObject({
+        allOut: true,
+        offTheRoad: 0,
+        overlaps: 0,
+      });
+    },
+    60_000
+  );
 });

@@ -273,6 +273,9 @@ describe("a give-way side road", () => {
         walk: "unmarked",
       },
     ],
+    districts: [
+      { from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 },
+    ],
     pieces: eased([[3000, 0, 0]]),
   });
   const [esplanade] = road.crossings;

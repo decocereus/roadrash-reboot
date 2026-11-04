@@ -121,7 +121,9 @@ describe("a road of several districts", () => {
   });
 
   it("reads one number the whole way along a road of one district", () => {
-    for (const plan of Object.values(roads)) {
+    for (const plan of Object.values(roads).filter(
+      ({ districts }) => districts.length === 1
+    )) {
       const uniform = compileTrack(plan);
       const [only] = plan.districts;
       const half = only.lanesEachWay * plan.laneWidth + only.shoulderWidth;
