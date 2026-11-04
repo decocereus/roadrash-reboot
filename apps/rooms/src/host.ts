@@ -130,6 +130,7 @@ const noteGap = (gaps: Uint32Array, gapMs: number): void => {
 
 export const createHost = (ports: HostPorts): Host => {
   const present = new Map<HostSocket, Present>();
+  const walks = new Map<string, string>();
   const seats = new Map<HostSocket, Seat>();
   const reporting = new Map<HostSocket, { raceId: string; seat: Seat }>();
   const batch = createInputBatch();
@@ -163,6 +164,18 @@ export const createHost = (ports: HostPorts): Host => {
     const text = encodeRoomMessage(message);
     for (const socket of seats.keys()) {
       sendTo(socket, text);
+    }
+  };
+
+  const tellWalkers = (from: HostSocket, text: string): void => {
+    for (const person of present.values()) {
+      if (
+        person.socket !== from &&
+        !seats.has(person.socket) &&
+        !reporting.has(person.socket)
+      ) {
+        sendTo(person.socket, text);
+      }
     }
   };
 
@@ -342,6 +355,7 @@ export const createHost = (ports: HostPorts): Host => {
   };
 
   const start = (): void => {
+    walks.clear();
     for (const person of present.values()) {
       if (!reporting.has(person.socket)) {
         seats.set(
@@ -503,6 +517,7 @@ export const createHost = (ports: HostPorts): Host => {
 
   const drop = ({ memberId, socket }: Present): void => {
     retire(socket);
+    walks.delete(memberId);
     lobby.away(memberId, ports.now());
     tellLobby();
     consider();
@@ -531,8 +546,18 @@ export const createHost = (ports: HostPorts): Host => {
     }
   };
 
-  const obey = ({ memberId }: Present, command: LobbyCommand): void => {
+  const obey = ({ memberId, socket }: Present, command: LobbyCommand): void => {
     switch (command.kind) {
+      case "walk": {
+        const text = encodeRoomMessage({ ...command, member: memberId });
+        walks.set(memberId, text);
+        tellWalkers(socket, text);
+        return;
+      }
+      case "act": {
+        tellWalkers(socket, encodeRoomMessage({ ...command, from: memberId }));
+        return;
+      }
       case "ready": {
         lobby.ready(memberId, command.ready, command.edition, ports.now());
         if (command.ready) {
@@ -647,6 +672,11 @@ export const createHost = (ports: HostPorts): Host => {
         ports.after(SEAT_WATCH_MS, watchSeats);
       }
       tellLobby();
+      for (const [walker, text] of walks) {
+        if (walker !== memberId) {
+          sendTo(socket, text);
+        }
+      }
     },
     status: () => ({
       build: ports.build,

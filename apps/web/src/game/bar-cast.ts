@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { Assets } from "./assets.ts";
 import { blockPaletteOf, riderBlocks } from "./bar-blocks.ts";
 import type { RiderBlocks } from "./bar-blocks.ts";
+import type { BarCompany } from "./bar-player.ts";
 import { poseTurns, breathTurns } from "./bar-poses.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
@@ -84,12 +85,7 @@ interface CastMember {
   readonly head: THREE.Vector3;
 }
 
-export interface BarCast {
-  readonly members: readonly CastMember[];
-  readonly crowd: readonly THREE.Vector3[];
-  readonly nearest: (x: number, z: number, reach: number) => number | null;
-  readonly face: (index: number, x: number, z: number, time: number) => void;
-  readonly shove: (index: number, fromX: number, fromZ: number) => void;
+export interface BarCast extends BarCompany {
   readonly group: THREE.Group;
   readonly update: (
     seconds: number,
@@ -125,7 +121,8 @@ export const createCast = (
   speech: BarSpeech,
   heroBike: THREE.Object3D,
   garageBike: THREE.Object3D,
-  shown: number
+  shown: number,
+  standIns: boolean
 ): BarCast => {
   const group = new THREE.Group();
   const mounts = new Map<BarAct, THREE.Object3D>([
@@ -168,9 +165,10 @@ export const createCast = (
     const stepB = mixPose(still, figure.bakePose("run_b", []), STEP_SHARE);
     motions.push({ breath, stepA, stepB, still });
     group.add(figure.root);
-    figure.root.visible = index < shown;
+    const onShow = index < shown && (standIns || mounts.has(spot.act));
+    figure.root.visible = onShow;
     const tag = tags.name(blocks.name);
-    tag.show(index < shown);
+    tag.show(onShow);
     members.push({
       blocks,
       figure,
@@ -201,9 +199,11 @@ export const createCast = (
     }
   };
   reset();
-  const crowd = members
-    .filter(({ spot }) => !mounts.has(spot.act))
-    .map(({ figure }) => figure.root.position);
+  const crowd = standIns
+    ? members
+        .filter(({ spot }) => !mounts.has(spot.act))
+        .map(({ figure }) => figure.root.position)
+    : [];
   const riding: Stance = {
     flinch: 0,
     flinchSide: 1,
@@ -362,24 +362,31 @@ export const createCast = (
     }
   };
 
+  const lookAt = (index: number, x: number, z: number, time: number): void => {
+    const member = members[index];
+    const look = faces[index];
+    if (member && look && !mounts.has(member.spot.act)) {
+      const body = member.figure.root.position;
+      look.yaw = Math.atan2(x - body.x, z - body.z) + FORWARD_YAW;
+      look.until = time + FACE_SECONDS;
+    }
+  };
+
   return {
-    crowd,
+    crowd: () => crowd,
     dispose() {
       for (const { figure } of members) {
         figure.dispose();
       }
     },
-    face(index, x, z, time) {
+    greet(index, x, z, time) {
       const member = members[index];
-      const look = faces[index];
-      if (member && look && !mounts.has(member.spot.act)) {
-        const body = member.figure.root.position;
-        look.yaw = Math.atan2(x - body.x, z - body.z) + FORWARD_YAW;
-        look.until = time + FACE_SECONDS;
+      if (member) {
+        lookAt(index, x, z, time);
+        speech.say("SUP", member.head, time);
       }
     },
     group,
-    members,
     nearest(x, z, reach) {
       let best: number | null = null;
       let closest = Number.POSITIVE_INFINITY;
@@ -397,7 +404,7 @@ export const createCast = (
       return best;
     },
     reset,
-    shove(index, fromX, fromZ) {
+    shove(index, x, z, time) {
       const member = members[index];
       const push = pushes[index];
       if (
@@ -408,9 +415,14 @@ export const createCast = (
       ) {
         push.x = member.figure.root.position.x;
         push.z = member.figure.root.position.z;
-        shoveRider(push, fromX, fromZ);
+        shoveRider(push, x, z);
+      }
+      if (member) {
+        lookAt(index, x, z, time);
+        speech.say(index % 2 === 0 ? "WATCH IT!" : "OI!", member.head, time);
       }
     },
+    spotOf: (index) => members[index]?.figure.root.position ?? null,
     update(seconds, time, camera, door, size, ticks) {
       for (let index = 0; index < members.length; index += 1) {
         const member = members[index];
@@ -430,7 +442,7 @@ export const createCast = (
         }
       }
       const ambient = Math.floor(time / AMBIENT_EVERY);
-      if (ambient !== lastAmbient && door === 0) {
+      if (standIns && ambient !== lastAmbient && door === 0) {
         lastAmbient = ambient;
         const speaker = members[(ambient * 3 + 1) % members.length];
         if (speaker) {

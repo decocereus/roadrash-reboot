@@ -1,6 +1,7 @@
 import type { CareerRaceSetup } from "@racer/career/field";
 import { guestNames, seatedRace } from "@racer/career/room-race";
 import type { GuestNames, RoomChoice } from "@racer/career/room-race";
+import type { LobbyAct, LobbyWalk } from "@racer/sim/lobby-walk";
 import { isDone } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
@@ -31,7 +32,14 @@ import {
   encodeLobbyCommand,
   SEAT_CLOSED,
 } from "./messages.ts";
-import type { Refusal, RoomLobbyMessage, RoomStarted } from "./messages.ts";
+import type {
+  LobbyCommand,
+  Refusal,
+  RoomActed,
+  RoomLobbyMessage,
+  RoomStarted,
+  RoomWalked,
+} from "./messages.ts";
 import { createRaceTally } from "./race-tally.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
@@ -59,6 +67,7 @@ export interface SeatRace {
 
 export interface SeatListeners {
   readonly onChange?: () => void;
+  readonly onActed?: (acted: RoomActed) => void;
   readonly onConfirmed?: (client: RoomClient) => void;
   readonly onTickHeard?: (now: number, hashed: boolean) => void;
 }
@@ -75,6 +84,9 @@ export interface RoomSeat {
   readonly loaded: () => void;
   readonly choose: (choice: Partial<RoomChoice>) => void;
   readonly setReady: (ready: boolean) => void;
+  readonly walk: (walk: LobbyWalk) => void;
+  readonly walkOf: (member: string) => RoomWalked | undefined;
+  readonly act: (act: LobbyAct, target: string) => void;
   readonly refusal: () => Refusal | null;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
@@ -114,6 +126,7 @@ export const openRoomSeat = (
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
   let lobby: RoomLobbyMessage | null = null;
+  const walks = new Map<string, RoomWalked>();
   let counting = false;
   let lobbyHeardAt = 0;
   let race: SeatRace | null = null;
@@ -239,6 +252,14 @@ export const openRoomSeat = (
       return;
     }
     switch (message.value.kind) {
+      case "walk": {
+        walks.set(message.value.member, message.value);
+        break;
+      }
+      case "act": {
+        listeners.onActed?.(message.value);
+        break;
+      }
       case "lobby": {
         lobby = message.value;
         lobbyHeardAt = performance.now();
@@ -275,9 +296,18 @@ export const openRoomSeat = (
     }
   });
 
+  const sendCommand = (command: LobbyCommand): void => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(encodeLobbyCommand(command));
+    }
+  };
+
   return {
+    act: (act, target) => {
+      sendCommand({ act, kind: "act", target });
+    },
     choose: (choice) => {
-      socket.send(encodeLobbyCommand({ choice, kind: "choose" }));
+      sendCommand({ choice, kind: "choose" });
     },
     closeCode: () => closeCode,
     flush: () => {
@@ -325,9 +355,7 @@ export const openRoomSeat = (
     rttMs: () => rttMs,
     setReady: (ready) => {
       if (lobby) {
-        socket.send(
-          encodeLobbyCommand({ edition: lobby.edition, kind: "ready", ready })
-        );
+        sendCommand({ edition: lobby.edition, kind: "ready", ready });
       }
     },
     startsInMs: () =>
@@ -346,6 +374,10 @@ export const openRoomSeat = (
       return steps;
     },
     target: () => clock.target(performance.now()),
+    walk: (walk) => {
+      sendCommand({ ...walk, kind: "walk" });
+    },
+    walkOf: (member) => walks.get(member),
     worstRttMs: () => worstRttMs,
   };
 };

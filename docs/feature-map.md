@@ -460,6 +460,7 @@ Source files:
 - `apps/web/src/game/bar-input.ts`
 - `apps/web/src/game/bar-kit.ts`
 - `apps/web/src/game/bar-light.ts`
+- `apps/web/src/game/bar-members.ts`
 - `apps/web/src/game/bar-outside.ts`
 - `apps/web/src/game/bar-player.ts`
 - `apps/web/src/game/bar-pools.ts`
@@ -469,14 +470,17 @@ Source files:
 - `apps/web/src/game/bar-signs.ts`
 - `apps/web/src/game/bar-speech.ts`
 - `apps/web/src/game/bar-tags.ts`
-- `apps/web/src/game/bar-you.ts`
+- `apps/web/src/game/bar-walker.ts`
 - `apps/web/src/game/bar.ts`
 - `apps/web/src/routes/bar.tsx`
 - `packages/sim/src/lobby-floor.ts`
+- `packages/sim/src/lobby-walk.ts`
 - `packages/sim/src/lobby.ts`
 
 Test files:
 
+- `apps/web/src/game/bar-members.test.ts`
+- `apps/web/src/game/bar-player.test.ts`
 - `packages/sim/src/lobby.test.ts`
 
 ### Race HUD and notices
@@ -1466,6 +1470,7 @@ Test files:
 
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-notes.test.ts`
+- `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/lobby.test.ts`

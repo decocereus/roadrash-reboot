@@ -1,3 +1,5 @@
+import { openRoomSeat } from "@racer/rooms/seat-client";
+import type { RoomSeat } from "@racer/rooms/seat-client";
 import { cn } from "@racer/ui/utils";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
@@ -10,9 +12,26 @@ import {
   savedBarCamera,
 } from "../bar-view.ts";
 import type { BarCamera } from "../bar-view.ts";
+import { memberKey, storedGuestName } from "../components/guest-name.ts";
 import type { BarScene } from "../game/bar.ts";
 
 const NEXT_CAMERA_KEY = "KeyC";
+const UNNAMED = "Rider";
+
+const seatFromUrl = (): RoomSeat | null => {
+  const search = new URLSearchParams(globalThis.location.search);
+  const roomId = search.get("room");
+  return roomId === null
+    ? null
+    : openRoomSeat(
+        import.meta.env.VITE_ROOMS_URL,
+        roomId,
+        search.get("name") ?? storedGuestName() ?? UNNAMED,
+        __RUSHLINE_BUILD__.rooms,
+        memberKey(),
+        () => null
+      );
+};
 
 const BarPage = () => {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -27,17 +46,21 @@ const BarPage = () => {
   useEffect(() => {
     const target = canvas.current;
     const mount = new AbortController();
+    const seat = seatFromUrl();
     let close = (): void => {
       mount.abort();
+      seat?.leave();
     };
     const start = async (): Promise<void> => {
       try {
         const opened =
-          target && (await openBar(target, savedBarCamera(), mount.signal));
+          target &&
+          (await openBar(target, savedBarCamera(), seat, mount.signal));
         if (opened) {
           room.current = opened;
           close = () => {
             mount.abort();
+            seat?.leave();
             room.current = null;
             opened.dispose();
           };

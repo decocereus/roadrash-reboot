@@ -15,6 +15,7 @@ export interface Tag {
     size: { readonly width: number; readonly height: number }
   ) => void;
   readonly show: (visible: boolean) => void;
+  readonly rename: (label: string) => void;
 }
 
 export interface TagLayer {
@@ -37,6 +38,11 @@ export const createTagLayer = (canvas: HTMLCanvasElement): TagLayer => {
     layer.replaceChildren(...layer.childNodes, element);
     let spot: THREE.Vector3 | null = null;
     return {
+      rename(next) {
+        if (element.textContent !== next) {
+          element.textContent = next;
+        }
+      },
       set(world, camera, { height, width }) {
         spot ??= world.clone();
         const away = camera.position.distanceTo(world);

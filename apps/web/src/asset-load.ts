@@ -1,3 +1,5 @@
+import type { RoomSeat } from "@racer/rooms/seat-client";
+
 import type { AssetRuntime } from "./asset-runtime.ts";
 import type { BarCamera } from "./bar-view.ts";
 import { diagnostics } from "./diagnostics/hub.ts";
@@ -148,6 +150,7 @@ export const bootGame = async (
 export const openBar = async (
   canvas: HTMLCanvasElement,
   startCamera: BarCamera,
+  seat: RoomSeat | null,
   signal: AbortSignal
 ): Promise<BarScene | null> => {
   if (!import.meta.env.DEV) {
@@ -171,7 +174,8 @@ export const openBar = async (
       release: acquired.release,
       value: acquired.assets,
     },
-    startCamera
+    startCamera,
+    seat
   );
 };
 
