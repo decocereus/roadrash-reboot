@@ -10,6 +10,7 @@ const DISPLAY_GAMMA = 2.2;
 const FX_LAYER = 1;
 const FIGURE_LIGHT = [1.1, 0.97, 0.82] as const;
 const SHADE_CHROMA = 1.24;
+const LIFTED_FIGURE_DEPTH = 0.93;
 const LUMA = new THREE.Vector3(0.2126, 0.7152, 0.0722);
 const SUN_ANCHOR_HEIGHT = 2.2;
 
@@ -197,8 +198,13 @@ export const createShading = (look: Look): Shading => {
       figureLinear.multiplyScalar(litLinear.dot(LUMA) / figureLinear.dot(LUMA))
     );
     figureSun.value.copy(litLinear).sub(shadowLinear);
-    figureDepth.value = depth;
-    figureChroma.value = Math.min(depth * SHADE_CHROMA, 1);
+    const figureFloor =
+      import.meta.env.DEV &&
+      new URLSearchParams(globalThis.location.search).has("lift")
+        ? LIFTED_FIGURE_DEPTH
+        : 0;
+    figureDepth.value = Math.max(depth, figureFloor);
+    figureChroma.value = Math.min(figureDepth.value * SHADE_CHROMA, 1);
   };
   relight(look);
 
