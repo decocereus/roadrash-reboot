@@ -5,12 +5,13 @@ import { track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import { createRoom, roomSetup } from "./room.ts";
-import { PLAYER_RIDER, riderIdAt } from "./state.ts";
+import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 import type { Control } from "./state.ts";
 
 const RIVAL = riderIdAt(1);
 const RIDE_TICKS = 180;
 const LEAD_TICKS = 30;
+const CRASH_WITHIN_TICKS = 1200;
 const riding = controlOf({ ...neutralInput, throttle: 1 });
 const braking = controlOf({ ...neutralInput, brake: 1 });
 const veering = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
@@ -82,5 +83,51 @@ describe("how far a correction moves the rider's own bike", () => {
     }
     expect(refused).toBeGreaterThan(0);
     expect(client.stats.refusedPredictions).toBe(refused);
+  });
+});
+
+describe("the crashes a rider rides into", () => {
+  it("counts a crash that first appears when the room corrects the bike", () => {
+    const { client, room, step } = rideTogether();
+    for (let tick = 0; tick < LEAD_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    for (
+      let tick = 0;
+      tick < CRASH_WITHIN_TICKS && client.mine.crashes === 0;
+      tick += 1
+    ) {
+      client.predict(riding);
+      step(veering, riding);
+      client.confirm(room.frame, null);
+    }
+    expect(client.mine.crashes).toBeGreaterThan(0);
+    expect(client.stats.crashesAfterCorrection).toBe(client.mine.crashes);
+  });
+
+  it("doesn't count a crash the prediction already showed", () => {
+    const { client, room, step } = rideTogether();
+    for (let tick = 0; tick < LEAD_TICKS; tick += 1) {
+      client.predict(veering);
+    }
+    for (
+      let tick = 0;
+      tick < CRASH_WITHIN_TICKS &&
+      riderOf(room.state.riders, PLAYER_RIDER)?.crashes === 0;
+      tick += 1
+    ) {
+      client.predict(veering);
+      step(veering, riding);
+      client.confirm(room.frame, null);
+    }
+    const rollbacksBefore = client.stats.rollbacks;
+    for (let tick = 0; tick < LEAD_TICKS; tick += 1) {
+      client.predict(veering);
+      step(veering, veering);
+      client.confirm(room.frame, null);
+    }
+    expect(client.mine.crashes).toBeGreaterThan(0);
+    expect(client.stats.rollbacks).toBeGreaterThan(rollbacksBefore);
+    expect(client.stats.crashesAfterCorrection).toBe(0);
   });
 });

@@ -7,10 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import { createRaceTally } from "../src/race-tally.ts";
 
-const client = createRoomClient(
-  roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]),
-  PLAYER_RIDER
-);
+const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
+const client = createRoomClient(setup, PLAYER_RIDER);
 
 describe("a rider's race tally", () => {
   it("counts the frames the clock held the bike or moved it more than once", () => {
@@ -45,6 +43,16 @@ describe("a rider's race tally", () => {
     expect(tally.read(client, 204)).toMatchObject({
       rttMeanMs: 100,
       rttWorstMs: 204,
+    });
+  });
+
+  it("reports the rider's crashes and those a correction brought", () => {
+    const crashed = createRoomClient(setup, PLAYER_RIDER);
+    crashed.stats.crashesAfterCorrection = 1;
+    crashed.mine.crashes = 3;
+    expect(createRaceTally().read(crashed, 0)).toMatchObject({
+      crashes: 3,
+      crashesAfterCorrection: 1,
     });
   });
 });

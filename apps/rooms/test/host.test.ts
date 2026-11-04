@@ -127,6 +127,8 @@ const startPacket = (): ArrayBuffer => {
 };
 
 const someRaceStats: RaceStats = {
+  crashes: 2,
+  crashesAfterCorrection: 1,
   desyncs: 0,
   doubledSteps: 2,
   finished: 1,

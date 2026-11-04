@@ -37,6 +37,7 @@ interface JumpTally {
 }
 
 interface RoomStats {
+  crashesAfterCorrection: number;
   rollbacks: number;
   resimulatedTicks: number;
   desyncs: number;
@@ -94,6 +95,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const batch: Control[] = [];
   let sentThrough = 0;
   const stats: RoomStats = {
+    crashesAfterCorrection: 0,
     desyncs: 0,
     jumps: {
       behindServer: { felt: 0, totalMetres: 0, worstMetres: 0 },
@@ -186,6 +188,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       const reached = predicted.tick;
       const fromS = mine.s;
       const fromX = mine.x;
+      const crashesBefore = mine.crashes;
       if (reached < frame.tick) {
         rewind();
         noteJump("behindServer", fromS, fromX);
@@ -201,6 +204,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         advance(tick);
         stats.resimulatedTicks += 1;
       }
+      stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
       noteJump(
         guessed?.controls.get(me) === frame.controls.get(me)
           ? "otherRiders"
