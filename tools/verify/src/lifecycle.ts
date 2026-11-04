@@ -240,25 +240,34 @@ export const down = Effect.fn("rv.down")(function* down(
   yield* teardown(context, state, state.buildDir);
 });
 
-const DESKTOP_COMMAND_HOLDER = "rv desktop";
+const namedHold = (action: string, name: string | undefined) =>
+  name === undefined
+    ? Effect.fail(
+        new UsageError({
+          message: `rv desktop ${action} needs a name for this hold, such as your run or task, so one agent's rv desktop down cannot release another's: rv desktop ${action} <name>.`,
+        })
+      )
+    : Effect.succeed(name);
 
 export const desktop = Effect.fn("rv.desktop")(function* desktop(
   context: CommandContext
 ) {
   const { print, rest } = context;
+  const [action = "status", name] = rest;
+  const holder =
+    action === "up" || action === "down" ? yield* namedHold(action, name) : "";
   const host = yield* CurrentHost;
   if (host.desktop === "none") {
     yield* print(`${host.id} needs no desktop session`);
     return;
   }
-  const [action = "status"] = rest;
   if (action === "up") {
-    const use = yield* desktopUp(DESKTOP_COMMAND_HOLDER, null);
+    const use = yield* desktopUp(holder, null);
     yield* print(`${use.kind} session, pid ${use.pid}, DISPLAY=${use.display}`);
     return;
   }
   if (action === "down") {
-    yield* print(yield* desktopDown(DESKTOP_COMMAND_HOLDER));
+    yield* print(yield* desktopDown(holder));
     return;
   }
   if (action === "status") {
@@ -266,6 +275,6 @@ export const desktop = Effect.fn("rv.desktop")(function* desktop(
     return;
   }
   yield* new UsageError({
-    message: `rv desktop takes up, down or status, not ${action}.`,
+    message: `rv desktop takes up <name>, down <name> or status, not ${action}.`,
   });
 });

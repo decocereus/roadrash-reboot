@@ -477,7 +477,6 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/room.ts",
       "tools/perf/src/approved.ts",
       "tools/perf/src/baseline.ts",
-      "tools/perf/src/bench-lock.ts",
       "tools/perf/src/budgets.ts",
       "tools/perf/src/build.ts",
       "tools/perf/src/config-invalid.ts",

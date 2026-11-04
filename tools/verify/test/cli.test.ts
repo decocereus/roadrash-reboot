@@ -65,6 +65,53 @@ describe("rv command line", () => {
   });
 });
 
+const benchTemp = () => {
+  const temp = mkdtempSync(path.join(tmpdir(), "rushline-bench-cli-test-"));
+  onTestFinished(() => {
+    rmSync(temp, { force: true, recursive: true });
+  });
+  return temp;
+};
+
+describe("rv and another agent's work on the machine", () => {
+  it.for(["up", "down"])(
+    "rv desktop %s needs a name for its hold",
+    (action) => {
+      const result = runCli(["desktop", action]);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`rv desktop ${action} <name>`);
+    }
+  );
+
+  it("rv bench holds the lock for its command, gives it the exit code, and frees the lock", () => {
+    const temp = benchTemp();
+    const script =
+      "const fs=require('node:fs');const claim=JSON.parse(fs.readFileSync(process.env.TMPDIR+'/rushline-verify/bench.lock','utf-8'));console.log(claim.label,String(claim.pid)===process.env.RUSHLINE_BENCH_PID);process.exit(3)";
+    const result = runCli(
+      ["bench", "campaign", "--", process.execPath, "-e", script],
+      { TMPDIR: temp }
+    );
+    expect(result.stdout).toBe("campaign true\n");
+    expect(result.status).toBe(3);
+    expect(
+      existsSync(path.join(temp, "rushline-verify", "bench.lock"))
+    ).toBeFalsy();
+  });
+
+  it("rv open fails and names the bench while another process holds the lock", () => {
+    const temp = benchTemp();
+    const dir = path.join(temp, "rushline-verify");
+    mkdirSync(dir);
+    writeFileSync(
+      path.join(dir, "bench.lock"),
+      JSON.stringify({ label: "someone's campaign", pid: process.pid })
+    );
+    const result = runCli(["open", "--run", "x-s0", "/kit"], { TMPDIR: temp });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("someone's campaign");
+  });
+});
+
 const OLD_RUN = "20261103-000000-s7";
 
 const withOldSlotFile = (pids: {

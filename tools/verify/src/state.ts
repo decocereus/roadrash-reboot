@@ -139,11 +139,14 @@ export class SlotStore extends Context.Service<
           )
         );
 
-      const writeState = (state: InstanceState) =>
-        fs.writeFileString(
-          statePath(state.slot),
-          JSON.stringify(state, null, 1)
-        );
+      const writeState = Effect.fn("SlotStore.writeState")(function* writeState(
+        state: InstanceState
+      ) {
+        const file = statePath(state.slot);
+        const draft = `${file}.${process.pid}.draft`;
+        yield* fs.writeFileString(draft, JSON.stringify(state, null, 1));
+        yield* fs.rename(draft, file);
+      });
 
       const stateOfRun = Effect.fn("SlotStore.stateOfRun")(function* stateOfRun(
         runId: string
