@@ -1,4 +1,5 @@
-import { seatedRace } from "@racer/career/room-race";
+import { publicRoomRule, seatedRace } from "@racer/career/room-race";
+import { TAPE_VERSION } from "@racer/rooms/tape";
 import { createRace } from "@racer/sim/race";
 import { hexOfWords } from "@racer/sim/room-tape";
 import { setupDigest } from "@racer/sim/snapshot-setup";
@@ -20,9 +21,10 @@ const endingAt = async (tick: number) => {
     digest: hexOfWords(setupDigest(createRace(setup), setup.track)),
     raceId: "race-a",
     road: "slag-row",
+    rule: publicRoomRule,
     seats: SEATS,
     seed: SEED,
-    version: 1,
+    version: TAPE_VERSION,
   });
   return await main(["--dir", "tape"]).pipe(
     Effect.provide(

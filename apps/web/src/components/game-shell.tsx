@@ -298,7 +298,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         onRaceAgain={() => {
           diagnostics().events.track({ event: "race_again" });
           if (view.report.room) {
-            moveToRoom(view.report.room.rematchId, "rematch");
+            moveToRoom(view.report.room.roomId, "rematch");
           } else {
             flow.rideOut(view.report.mode, view.report.roadId);
           }

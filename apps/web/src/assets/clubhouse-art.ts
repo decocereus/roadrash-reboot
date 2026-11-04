@@ -1,4 +1,6 @@
 import type { RoadId } from "@racer/career/tables";
+import { ordinaryRiders } from "@racer/content/riders";
+import { byId } from "@racer/content/rows";
 import { isCelebrity } from "@racer/sim/cast";
 import type { OfficerId, OrdinaryRivalId, RivalId } from "@racer/sim/cast";
 
@@ -18,24 +20,10 @@ export const plates = {
   wall: artUrl("clubhouse/wall.webp"),
 } as const;
 
-const figures = {
-  "agnes-mulcahy": artUrl("clubhouse/rivals/agnes-mulcahy.webp"),
-  "benny-okafor": artUrl("clubhouse/rivals/benny-okafor.webp"),
-  "coach-dale-hutto": artUrl("clubhouse/rivals/coach-dale-hutto.webp"),
-  "dee-santangelo": artUrl("clubhouse/rivals/dee-santangelo.webp"),
-  "felix-aurand": artUrl("clubhouse/rivals/felix-aurand.webp"),
-  "gus-abernathy": artUrl("clubhouse/rivals/gus-abernathy.webp"),
-  "hollis-thorne": artUrl("clubhouse/rivals/hollis-thorne.webp"),
-  "ines-marchetti": artUrl("clubhouse/rivals/ines-marchetti.webp"),
-  "juno-kade": artUrl("clubhouse/rivals/juno-kade.webp"),
-  "lyle-gorski": artUrl("clubhouse/rivals/lyle-gorski.webp"),
-  "mags-dunleavy": artUrl("clubhouse/rivals/mags-dunleavy.webp"),
-  "moose-kowalczyk": artUrl("clubhouse/rivals/moose-kowalczyk.webp"),
-  "orrin-blackwell": artUrl("clubhouse/rivals/orrin-blackwell.webp"),
-  "ruth-ann-bixby": artUrl("clubhouse/rivals/ruth-ann-bixby.webp"),
-  "tristan-lux": artUrl("clubhouse/rivals/tristan-lux.webp"),
-  "wanda-pruitt": artUrl("clubhouse/rivals/wanda-pruitt.webp"),
-} as const satisfies Record<OrdinaryRivalId, string>;
+const figures: Readonly<Record<OrdinaryRivalId, string>> = byId(
+  ordinaryRiders,
+  ({ art }) => artUrl(art.figure)
+);
 
 export const figureOf = (rival: RivalId): string | null =>
   isCelebrity(rival) ? null : figures[rival];
@@ -58,24 +46,10 @@ export const garagePlates = {
   mechanic: artUrl("clubhouse/garage/mechanic.webp"),
 } as const;
 
-export const bills = {
-  "agnes-mulcahy": artUrl("clubhouse/bills/agnes-mulcahy.webp"),
-  "benny-okafor": artUrl("clubhouse/bills/benny-okafor.webp"),
-  "coach-dale-hutto": artUrl("clubhouse/bills/coach-dale-hutto.webp"),
-  "dee-santangelo": artUrl("clubhouse/bills/dee-santangelo.webp"),
-  "felix-aurand": artUrl("clubhouse/bills/felix-aurand.webp"),
-  "gus-abernathy": artUrl("clubhouse/bills/gus-abernathy.webp"),
-  "hollis-thorne": artUrl("clubhouse/bills/hollis-thorne.webp"),
-  "ines-marchetti": artUrl("clubhouse/bills/ines-marchetti.webp"),
-  "juno-kade": artUrl("clubhouse/bills/juno-kade.webp"),
-  "lyle-gorski": artUrl("clubhouse/bills/lyle-gorski.webp"),
-  "mags-dunleavy": artUrl("clubhouse/bills/mags-dunleavy.webp"),
-  "moose-kowalczyk": artUrl("clubhouse/bills/smoke-fuel.webp"),
-  "orrin-blackwell": artUrl("clubhouse/bills/orrin-blackwell.webp"),
-  "ruth-ann-bixby": artUrl("clubhouse/bills/ruth-ann-bixby.webp"),
-  "tristan-lux": artUrl("clubhouse/bills/tristan-lux.webp"),
-  "wanda-pruitt": artUrl("clubhouse/bills/wanda-pruitt.webp"),
-} as const satisfies Record<OrdinaryRivalId, string>;
+export const bills: Readonly<Record<OrdinaryRivalId, string>> = byId(
+  ordinaryRiders,
+  ({ art }) => artUrl(art.bill)
+);
 
 export const stickers: readonly string[] = [
   artUrl("clubhouse/stickers/stencil-m.webp"),

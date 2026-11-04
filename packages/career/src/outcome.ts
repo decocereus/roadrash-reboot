@@ -1,3 +1,4 @@
+import type { BikeId } from "@racer/sim/bikes";
 import { officerFor } from "@racer/sim/cast";
 import type { OfficerId, RivalId } from "@racer/sim/cast";
 import { distanceLeft, standings } from "@racer/sim/race";
@@ -29,6 +30,7 @@ export const witnesses = ["none", "near", "far"] as const;
 type BustWitness = (typeof witnesses)[number];
 
 export interface Placing {
+  readonly bikeId: BikeId;
   readonly racer: RacerId;
   readonly place: number;
   readonly fate: Fate;
@@ -332,6 +334,7 @@ const classify = (
     const quitter = id === me && result === "quit";
     return [
       {
+        bikeId: rider.bike.id,
         fate: quitter ? "wrecked" : fateOf(rider),
         finishTick: rider.finishTick,
         metresLeft: distanceLeft(setup.track, rider),

@@ -16,6 +16,12 @@ export interface Kit {
     colour: string,
     placed?: Placed
   ) => void;
+  readonly panel: (
+    centre: Vec,
+    size: readonly [number, number],
+    colour: string,
+    placed?: Placed
+  ) => void;
   readonly pole: (
     centre: Vec,
     radii: readonly [number, number],
@@ -29,6 +35,7 @@ export interface Kit {
 
 const DEFAULT_SIDES = 10;
 const UNIT = new THREE.BoxGeometry(1, 1, 1);
+const SHEET = new THREE.PlaneGeometry(1, 1);
 const SPHERE = new THREE.SphereGeometry(1, 10, 8);
 
 const paintGeometry = (
@@ -97,6 +104,16 @@ export const createKit = (): Kit => {
         part.dispose();
       }
       return merged;
+    },
+    panel(centre, [wide, high], colour, placed = {}) {
+      parts.push(
+        paintGeometry(
+          SHEET,
+          composed(centre, [wide, high, 1], placed),
+          colour,
+          placed.strength ?? 1
+        )
+      );
     },
     pole(centre, [top, bottom], height, colour, placed = {}) {
       const source = new THREE.CylinderGeometry(

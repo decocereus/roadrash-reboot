@@ -46,6 +46,7 @@ const Started = Schema.Struct({
   digest: Schema.String,
   kind: Schema.Literal("started"),
   lobbyMs: Schema.Number,
+  police: orMissing(Schema.String),
   protocol: orMissing(Schema.Number),
   raceId: Schema.String,
   road: Schema.String,
@@ -53,6 +54,7 @@ const Started = Schema.Struct({
   seed: Schema.Number,
   tier: orMissing(Schema.Number),
   trackHash: orMissing(Schema.String),
+  traffic: orMissing(Schema.String),
 });
 
 const Countdown = Schema.Struct({
@@ -79,6 +81,15 @@ const Stats = Schema.Struct({
   stats: Schema.Record(Schema.String, Schema.Number),
 });
 
+const Browser = Schema.Struct({
+  build: Schema.String,
+  gpu: Schema.String,
+  graphics: Schema.String,
+  kind: Schema.Literal("browser"),
+  raceId: Schema.String,
+  rider: Schema.Number,
+});
+
 const Ended = Schema.Struct({
   catchUpWakes: Schema.Number,
   kind: Schema.Literal("ended"),
@@ -101,6 +112,7 @@ export const RoomNoteSchema = Schema.Union([
   Countdown,
   Left,
   Stats,
+  Browser,
   Ended,
 ]);
 
@@ -109,4 +121,5 @@ export type RaceStarted = typeof Started.Type;
 export type RaceEnded = typeof Ended.Type;
 export type RaceCountdown = typeof Countdown.Type;
 export type RaceStatsNote = typeof Stats.Type;
+export type RaceBrowserNote = typeof Browser.Type;
 export type RaceLeft = typeof Left.Type;

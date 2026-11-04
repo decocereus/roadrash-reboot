@@ -1,3 +1,5 @@
+import { byId } from "@racer/content/rows";
+import { bikeVisuals } from "@racer/content/visuals";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 
@@ -128,12 +130,7 @@ interface Loaded {
 
 const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
   Effect.all(
-    {
-      classic: model(cache, bikes.classic, bikeParts),
-      ghost: model(cache, bikes.ghost, bikeParts),
-      oni: model(cache, bikes.oni, bikeParts),
-      seraph: model(cache, bikes.seraph, bikeParts),
-    },
+    byId(bikeVisuals, ({ id }) => model(cache, bikes[id], bikeParts)),
     { concurrency: "unbounded" }
   );
 

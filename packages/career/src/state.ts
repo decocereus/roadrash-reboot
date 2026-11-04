@@ -1,3 +1,4 @@
+import { byId } from "@racer/content/rows";
 import type { BikeId } from "@racer/sim/bikes";
 import { rivalIds } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
@@ -14,36 +15,17 @@ import {
 } from "./tables.ts";
 import type { Tier, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export const racerIds = ["player", ...rivalIds] as const;
 
 export type RacerId = (typeof racerIds)[number];
 
-export const byRival = <Value>(make: (rival: RivalId) => Value) => ({
-  "agnes-mulcahy": make("agnes-mulcahy"),
-  "benny-okafor": make("benny-okafor"),
-  "captain-penaldo": make("captain-penaldo"),
-  "coach-dale-hutto": make("coach-dale-hutto"),
-  "dee-santangelo": make("dee-santangelo"),
-  "elongated-muskrat": make("elongated-muskrat"),
-  "felix-aurand": make("felix-aurand"),
-  "gus-abernathy": make("gus-abernathy"),
-  "hollis-thorne": make("hollis-thorne"),
-  "ines-marchetti": make("ines-marchetti"),
-  "juno-kade": make("juno-kade"),
-  "kylip-jetner": make("kylip-jetner"),
-  "lyle-gorski": make("lyle-gorski"),
-  "mags-dunleavy": make("mags-dunleavy"),
-  "moose-kowalczyk": make("moose-kowalczyk"),
-  "orrin-blackwell": make("orrin-blackwell"),
-  "ranwear-bling": make("ranwear-bling"),
-  "ruth-ann-bixby": make("ruth-ann-bixby"),
-  "slam-altruman": make("slam-altruman"),
-  "supreme-leader-mbosse": make("supreme-leader-mbosse"),
-  "tristan-lux": make("tristan-lux"),
-  "wanda-pruitt": make("wanda-pruitt"),
-});
+export const byRival = <Value>(make: (rival: RivalId) => Value) =>
+  byId(
+    rivalIds.map((id) => ({ id })),
+    ({ id }) => make(id)
+  );
 
 export const byRacer = <Value>(make: (racer: RacerId) => Value) => ({
   ...byRival(make),
@@ -164,7 +146,7 @@ export interface CareerState {
   readonly gameOver: boolean;
 }
 
-const blankMemory: RivalMemory = {
+export const blankMemory: RivalMemory = {
   aggressionBonus: 0,
   beatPlayerByAWheel: 0,
   busted: 0,
@@ -178,6 +160,8 @@ const blankMemory: RivalMemory = {
   tookPlayerWeapon: 0,
   weaponTakenByPlayer: 0,
 };
+
+export const blankSeason: SeasonEntry = { lastAhead: {}, points: 0, wins: 0 };
 
 export const newCareer = (seed: number): CareerState => ({
   activeRace: null,
@@ -198,7 +182,7 @@ export const newCareer = (seed: number): CareerState => ({
     wins: 0,
     wrecks: 0,
   },
-  season: byRacer(() => ({ lastAhead: {}, points: 0, wins: 0 })),
+  season: byRacer(() => blankSeason),
   seed,
   story: {
     deeAlly: false,

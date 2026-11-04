@@ -4,8 +4,8 @@ const records = [
   {
     kept: "Kept about 7 days in Cloudflare's logs.",
     title: "How each race ran",
-    what: "The race ID, the road, the seed, connection times, where each rider connected from at city level, crashes, controls and frame times. Riders are numbers. It holds no player ID, name or invite link.",
-    why: "To find out why a race went badly. The room server writes this for every race, because it runs the race, so the switch below does not stop it.",
+    what: "The race ID, the road, the seed, connection times, where each rider connected from at city level, crashes, controls and frame times. With Race data on, it also holds the game version, your graphics card and quality level, and a timeline of your frame and network timing during the race. Riders are numbers. It holds no player ID, name or invite link.",
+    why: "To find out why a race went badly. The room server writes most of this for every race, because it runs the race, so the switch below stops only the game version, graphics card, quality level and timeline.",
   },
   {
     kept: "Kept by PostHog, in the EU, under its retention rules.",

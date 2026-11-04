@@ -2,6 +2,8 @@ import { RACE_STATS_PACKET_BYTES, writeRaceStats } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
+import { AWAY_MS } from "../src/lobby.ts";
+import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
   advanceHearing,
   nearby,
@@ -46,10 +48,13 @@ describe("the room's notes", () => {
   it("says who left and who was refused", () => {
     const { clock, far, host } = loadingRace();
     host.gone(far);
-    host.seat(fakeSocket(), "Late", nearby, sameBuild);
+    host.seat(fakeSocket(), "Stale", nearby, {
+      ...sameBuild(),
+      build: "old-build",
+    });
     expect(clock.notes).toContainEqual({
       kind: "refused",
-      reason: "racing",
+      reason: "build",
     });
     expect(clock.notes).toContainEqual(
       expect.objectContaining({
@@ -74,6 +79,47 @@ describe("the room's notes", () => {
       rider: 0,
       stats: { rollbacks: 7, worstOwnControlCm: 88 },
     });
+  });
+
+  it("saves a seat's browser trace once, under its race, with no extra fields", () => {
+    const { clock, host, near } = loadingRace();
+    const trace = {
+      build: "abc",
+      extra: "a name",
+      gpu: "Test GPU",
+      graphics: "quality rung 1",
+      rows: [0, 0, 1, 0, 60, 2, 16, 90, 17],
+    };
+    host.message(near, JSON.stringify(trace));
+    host.message(near, JSON.stringify({ ...trace, build: "second" }));
+    expect(clock.notes.filter((note) => note.kind === "browser")).toStrictEqual(
+      [
+        {
+          build: "abc",
+          gpu: "Test GPU",
+          graphics: "quality rung 1",
+          kind: "browser",
+          raceId: "race-1",
+          rider: 0,
+        },
+      ]
+    );
+    const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
+    expect(saved).toContain('"build":"abc"');
+    expect(saved).not.toContain("a name");
+  });
+
+  it("refuses a browser trace that is not one, or is too long", () => {
+    const { clock, host, near } = loadingRace();
+    host.message(near, "not json");
+    expect(clock.tape.has("tapes/race-1/rider-0.trace.json")).toBeFalsy();
+    const { clock: other, host: otherHost, near: otherNear } = loadingRace();
+    otherHost.message(otherNear, "x".repeat(MOST_TRACE_CHARS + 1));
+    otherHost.message(
+      otherNear,
+      JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
+    );
+    expect(other.tape.has("tapes/race-1/rider-0.trace.json")).toBeTruthy();
   });
 
   it("logs a place behind the start line as zero, not a huge number", () => {
@@ -102,6 +148,7 @@ describe("the room's notes", () => {
     }
     clock.advance(1000);
     expect(host.status().raceId).toBeNull();
+    clock.advance(AWAY_MS + 1000);
     const second = [fakeSocket()];
     race(host, clock, second);
     expect(startedOf(second[0] ?? fakeSocket()).manifest.raceId).toBe("race-2");
@@ -114,7 +161,7 @@ describe("the room's notes", () => {
     host.message(near, packet);
     host.gone(far);
     host.gone(near);
-    host.seat(fakeSocket(), "Late", nearby, sameBuild);
+    host.seat(fakeSocket(), "Late", nearby, sameBuild());
     clock.advance(40_000);
     const written = JSON.stringify(clock.notes);
     expect(written).toContain('"kind":"ended"');

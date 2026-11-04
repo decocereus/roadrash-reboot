@@ -384,7 +384,7 @@ describe("memory", () => {
     const satOut = rivalIds.filter(
       (rival) => !race.setup.field.includes(rival)
     );
-    expect(satOut).toHaveLength(8);
+    expect(satOut).toHaveLength(rivalIds.length - race.setup.field.length);
     expect(satOut.map((rival) => career.memory[rival])).toStrictEqual(
       satOut.map((rival) => ({
         ...memory[rival],

@@ -68,7 +68,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "e3548be3ab9633c2881218255a01b394310209ecf42fb8d4caf14fa03b6af83a"
+    "summarySha256": "fc99962c6bf2621e6c7b4a94cc33413e54c0b62e6bd9e3a0eea5b5241d11c3e3"
   },
   "limits": [
     {
@@ -433,26 +433,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 341244,
-      "baseline": 334552,
+      "value": 250015,
+      "baseline": 245112,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-04T16-24-07-782Z-fe32571-fe32571",
+      "source": "baseline-2026-11-04T17-08-51-939Z-05add0a-05add0a",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 1295273,
-      "baseline": 1269875,
+      "value": 979399,
+      "baseline": 960195,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.worker.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-04T16-24-07-782Z-fe32571-fe32571",
+      "source": "baseline-2026-11-04T17-08-51-939Z-05add0a-05add0a",
       "unit": "B"
     },
     {
@@ -1489,7 +1489,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 22224,
+      "value": 22224.0,
       "baseline": 22224,
       "direction": "max",
       "environment": "node-darwin-arm64",
@@ -1501,7 +1501,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 22224,
+      "value": 22224.0,
       "baseline": 22224,
       "direction": "max",
       "environment": "node-linux-x64",
@@ -1513,7 +1513,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 17006,
+      "value": 17006.0,
       "baseline": 17006,
       "direction": "max",
       "environment": "node-darwin-arm64",
@@ -1525,7 +1525,7 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 17006,
+      "value": 17006.0,
       "baseline": 17006,
       "direction": "max",
       "environment": "node-linux-x64",

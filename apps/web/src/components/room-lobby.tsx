@@ -1,25 +1,31 @@
 import { launchRules } from "@racer/career/rules";
 import { STARTING_BIKE } from "@racer/career/tables";
 import { createInputLatency } from "@racer/rooms/input-latency";
-import {
-  cleanGuestName,
-  isRequeuedRoom,
-  nextRoomId,
-} from "@racer/rooms/messages";
+import { cleanGuestName } from "@racer/rooms/messages";
+import type { RoomPreview } from "@racer/rooms/messages";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 
 import { diagnostics } from "../diagnostics/hub.ts";
+import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
-import { storedGuestName, storeGuestName } from "./guest-name.ts";
+import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
+import { readRoomPreview } from "./room-preview.ts";
 import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
-import { GuestNameScreen, RoomLobbyScreen } from "./screens/room-lobby.tsx";
+import {
+  GuestNameScreen,
+  RoomInviteScreen,
+  RoomLobbyScreen,
+} from "./screens/room-lobby.tsx";
 
 const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
+
+const secondsOf = (ms: number | null): number | null =>
+  ms === null ? null : Math.max(0, Math.ceil(ms / 1000));
 
 const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
   const race = seat.race();
@@ -89,11 +95,21 @@ const SeatedLobby = ({
   const lost = useEffectEvent(onLost);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
+    const card = graphicsCard();
     const opened = openRoomSeat(
       import.meta.env.VITE_ROOMS_URL,
       roomId,
       name,
-      __RUSHLINE_BUILD__.rooms
+      __RUSHLINE_BUILD__.rooms,
+      memberKey(),
+      () =>
+        diagnostics().settings.read().raceData
+          ? {
+              build: __RUSHLINE_BUILD__.sha,
+              gpu: card,
+              graphics: `quality rung ${diagnostics().qualityRung()}`,
+            }
+          : null
     );
     const tellLost = () => {
       if (!lostTold.current) {
@@ -111,7 +127,7 @@ const SeatedLobby = ({
         } else if (opened.race()) {
           tellLost();
           lost();
-          moveToRoom(nextRoomId(roomId), "moved");
+          moveToRoom(roomId, "moved");
         } else {
           tellLost();
           reopening = setTimeout(reopen, REOPEN_MS);
@@ -164,7 +180,7 @@ const SeatedLobby = ({
     const prepare = async (): Promise<void> => {
       const outcome = await onPrepare(next);
       if (outcome.kind !== "cancelled") {
-        seat.ready();
+        seat.loaded();
         setPrepared(true);
       }
     };
@@ -188,16 +204,47 @@ const SeatedLobby = ({
       phase={phase}
       roomId={roomId}
       refusal={seat?.refusal() ?? null}
-      requeued={isRequeuedRoom(roomId)}
-      riderNames={seat?.riderNames() ?? []}
-      riders={seat?.riders() ?? 0}
-      startsInSeconds={Math.max(0, Math.ceil((seat?.startsInMs() ?? 0) / 1000))}
+      lobby={seat?.lobby() ?? null}
+      onChoose={(choice) => {
+        seat?.choose(choice);
+      }}
+      onReady={(next) => {
+        seat?.setReady(next);
+      }}
+      startsInSeconds={secondsOf(seat?.startsInMs() ?? null)}
     />
   );
 };
 
 export const RoomLobby = (props: RoomProps) => {
   const [name, setName] = useState(storedGuestName);
+  const [invited, setInvited] = useState(
+    () => roomArrivalOf(globalThis.location.search) === "link"
+  );
+  const [preview, setPreview] = useState<RoomPreview | null>(null);
+  useEffect(
+    () =>
+      invited
+        ? readRoomPreview(
+            import.meta.env.VITE_ROOMS_URL,
+            props.roomId,
+            setPreview
+          )
+        : undefined,
+    [invited, props.roomId]
+  );
+  if (invited) {
+    return (
+      <RoomInviteScreen
+        onBack={props.onBack}
+        onJoin={() => {
+          setInvited(false);
+        }}
+        preview={preview}
+        roomId={props.roomId}
+      />
+    );
+  }
   if (name === null) {
     return (
       <GuestNameScreen

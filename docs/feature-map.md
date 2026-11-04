@@ -17,10 +17,12 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Fighting and weapons](#fighting-and-weapons): `combat`
 - [Police and busts](#police-and-busts): `police`
 - [AI riders (the pilot)](#ai-riders-the-pilot): `pilot`
+- [Bike and rider tables](#bike-and-rider-tables): `content-tables`
 - [Rivals, the field and their lines](#rivals-the-field-and-their-lines): `rivals`
 - [Career money and settlement](#career-money-and-settlement): `career-money`
 - [Career tiers, season and story](#career-tiers-season-and-story): `career-progression`
 - [Menus and screens](#menus-and-screens): `menus`
+- [Walkable bar lobby](#walkable-bar-lobby): `bar-lobby`
 - [Race HUD and notices](#race-hud-and-notices): `hud`
 - [Chase camera](#chase-camera): `camera`
 - [Engine and race sound](#engine-and-race-sound): `audio`
@@ -290,6 +292,30 @@ Test files:
 - `packages/sim/src/pilot-flight.test.ts`
 - `packages/sim/src/pilot-traffic.test.ts`
 
+### Bike and rider tables
+
+One table row per bike and per rider: riding numbers, shop details, lines, art and model. The sim, the career and the browser all read their part of a row, and a race refuses numbers outside their range.
+
+- Id: `content-tables`
+- Start: `packages/content/src/bikes.ts`, `packages/content/src/riders.ts`, `packages/content/src/visuals.ts`
+- Docs: [docs/architecture.md#bike-and-rider-tables](architecture.md#bike-and-rider-tables)
+- Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
+- Perf: none yet
+- Owns: `packages/content/**`, `packages/sim/src/definitions.test.ts`, `packages/sim/src/setup-ranges.ts`
+
+Source files:
+
+- `packages/content/src/bikes.ts`
+- `packages/content/src/celebrities.ts`
+- `packages/content/src/riders.ts`
+- `packages/content/src/rows.ts`
+- `packages/content/src/visuals.ts`
+- `packages/sim/src/setup-ranges.ts`
+
+Test files:
+
+- `packages/sim/src/definitions.test.ts`
+
 ### Rivals, the field and their lines
 
 The sixteen ordinary rivals, the six celebrity rivals and two officers, their colours, who is drawn into a career race and on which bike, what each rival remembers, and every line the cast says.
@@ -369,9 +395,9 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Id: `menus`
 - Start: `apps/web/src/components/use-flow.ts`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/career/flow.ts`
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
-- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md), [bar-look.md](../.claude/skills/verify-rushline/features/bar-look.md)
+- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/bar*.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/routes/bar.tsx`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -406,25 +432,52 @@ Source files:
 - `apps/web/src/components/screens/settings.tsx`
 - `apps/web/src/components/screens/shared.tsx`
 - `apps/web/src/components/use-flow.ts`
-- `apps/web/src/game/bar-blocks.ts`
-- `apps/web/src/game/bar-cast.ts`
-- `apps/web/src/game/bar-garage.ts`
-- `apps/web/src/game/bar-kit.ts`
-- `apps/web/src/game/bar-light.ts`
-- `apps/web/src/game/bar-outside.ts`
-- `apps/web/src/game/bar-pools.ts`
-- `apps/web/src/game/bar-props.ts`
-- `apps/web/src/game/bar-room.ts`
-- `apps/web/src/game/bar-signs.ts`
-- `apps/web/src/game/bar-tags.ts`
-- `apps/web/src/game/bar.ts`
 - `apps/web/src/game/showroom.ts`
-- `apps/web/src/routes/bar.tsx`
 - `apps/web/src/styles.css`
 
 Test files:
 
 - `apps/web/src/career/copy.test.ts`
+
+### Walkable bar lobby
+
+The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.
+
+- Id: `bar-lobby`
+- Start: `packages/sim/src/lobby.ts`, `apps/web/src/game/bar.ts`, `apps/web/src/game/bar-player.ts`
+- Docs: [docs/architecture.md#the-bar-lobby](architecture.md#the-bar-lobby)
+- Verify: [walkable-bar.md](../.claude/skills/verify-rushline/features/walkable-bar.md)
+- Perf: none yet
+- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`
+
+Source files:
+
+- `apps/web/src/bar-view.ts`
+- `apps/web/src/game/bar-blocks.ts`
+- `apps/web/src/game/bar-camera.ts`
+- `apps/web/src/game/bar-cast.ts`
+- `apps/web/src/game/bar-garage.ts`
+- `apps/web/src/game/bar-input.ts`
+- `apps/web/src/game/bar-kit.ts`
+- `apps/web/src/game/bar-light.ts`
+- `apps/web/src/game/bar-outside.ts`
+- `apps/web/src/game/bar-player.ts`
+- `apps/web/src/game/bar-pools.ts`
+- `apps/web/src/game/bar-poses.ts`
+- `apps/web/src/game/bar-props.ts`
+- `apps/web/src/game/bar-room.ts`
+- `apps/web/src/game/bar-signs.ts`
+- `apps/web/src/game/bar-speech.ts`
+- `apps/web/src/game/bar-tags.ts`
+- `apps/web/src/game/bar-you.ts`
+- `apps/web/src/game/bar.ts`
+- `apps/web/src/routes/bar.tsx`
+- `packages/sim/src/lobby-floor.ts`
+- `packages/sim/src/lobby.ts`
+
+Test files:
+
+- `packages/sim/src/lobby.test.ts`
 
 ### Race HUD and notices
 
@@ -1352,32 +1405,34 @@ Test files:
 The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, `pnpm rooms:race` races scripted seats against it, and `pnpm rooms:replay` runs a saved race tape again.
 
 - Id: `race-room`
-- Start: `apps/rooms/src/host.ts`, `packages/sim/src/room.ts`, `packages/sim/src/room-client.ts`
+- Start: `apps/rooms/src/host.ts`, `apps/rooms/src/lobby.ts`, `packages/sim/src/room.ts`
 - Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/rematch-watch.test.ts`, `apps/web/src/components/rematch-watch.ts`, `apps/web/src/components/use-rematch.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `tools/rooms/**`
 
 Source files:
 
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
+- `apps/rooms/src/lobby.ts`
 - `apps/rooms/src/manifest.ts`
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/notes.ts`
+- `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
+- `apps/rooms/src/room-id.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
-- `apps/web/src/components/rematch-watch.ts`
 - `apps/web/src/components/room-lobby.tsx`
+- `apps/web/src/components/room-preview.ts`
 - `apps/web/src/components/room-url.ts`
-- `apps/web/src/components/use-rematch.ts`
 - `packages/career/src/room-race.ts`
 - `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
@@ -1404,6 +1459,8 @@ Source files:
 - `tools/rooms/src/seat.ts`
 - `tools/rooms/src/send-budget.ts`
 - `tools/rooms/src/thin-seat.ts`
+- `tools/rooms/src/trace.ts`
+- `tools/rooms/trace.ts`
 
 Test files:
 
@@ -1411,11 +1468,11 @@ Test files:
 - `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
+- `apps/rooms/test/lobby.test.ts`
 - `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/tape.test.ts`
-- `apps/web/src/components/rematch-watch.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
 - `packages/sim/src/room-jumps.test.ts`
@@ -1426,3 +1483,4 @@ Test files:
 - `tools/rooms/test/race-report.test.ts`
 - `tools/rooms/test/replay.test.ts`
 - `tools/rooms/test/send-budget.test.ts`
+- `tools/rooms/test/trace.test.ts`

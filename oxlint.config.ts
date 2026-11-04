@@ -14,6 +14,11 @@ const coreWithoutBitwise: typeof core = {
 export const deterministicFiles = [
   "packages/sim/src/bench-window.ts",
   "packages/sim/src/bench-workload.ts",
+  "packages/content/src/bikes.ts",
+  "packages/content/src/celebrities.ts",
+  "packages/content/src/riders.ts",
+  "packages/content/src/rows.ts",
+  "packages/content/src/visuals.ts",
   "packages/sim/src/bikes.ts",
   "packages/sim/src/cast.ts",
   "packages/sim/src/combat.ts",
@@ -24,6 +29,8 @@ export const deterministicFiles = [
   "packages/sim/src/difficulty.ts",
   "packages/sim/src/engine.ts",
   "packages/sim/src/hazards.ts",
+  "packages/sim/src/lobby-floor.ts",
+  "packages/sim/src/lobby.ts",
   "packages/sim/src/palette.ts",
   "packages/sim/src/pedestrians.ts",
   "packages/sim/src/pilot-combat.ts",
@@ -40,6 +47,7 @@ export const deterministicFiles = [
   "packages/sim/src/race-run.ts",
   "packages/sim/src/race-view.ts",
   "packages/sim/src/race.ts",
+  "packages/sim/src/setup-ranges.ts",
   "packages/sim/src/rider-collisions.ts",
   "packages/sim/src/rider-crash.ts",
   "packages/sim/src/rider-drive.ts",
@@ -121,6 +129,11 @@ export const codecFiles = [
 ];
 
 export const hotBodies = {
+  "apps/rooms/src/race-tally.ts": [
+    ["createRaceTally", "closeRow"],
+    ["createRaceTally", "frameDrawn"],
+    ["createRaceTally", "heardTick"],
+  ],
   "apps/web/src/game/bench-profile.ts": [["createBenchProfile", "record"]],
   "apps/web/src/game/figure-ik.ts": [
     ["placeChain"],

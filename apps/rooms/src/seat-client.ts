@@ -1,6 +1,6 @@
 import type { CareerRaceSetup } from "@racer/career/field";
 import { guestNames, seatedRace } from "@racer/career/room-race";
-import type { GuestNames } from "@racer/career/room-race";
+import type { GuestNames, RoomChoice } from "@racer/career/room-race";
 import { isDone } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
@@ -26,9 +26,14 @@ import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
 import { humanNames, seatedCount } from "./manifest.ts";
-import { decodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
-import type { Refusal, RoomStarted } from "./messages.ts";
+import {
+  decodeRoomMessage,
+  encodeLobbyCommand,
+  SEAT_CLOSED,
+} from "./messages.ts";
+import type { Refusal, RoomLobbyMessage, RoomStarted } from "./messages.ts";
 import { createRaceTally } from "./race-tally.ts";
+import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
 const PING_EVERY_MS = 500;
 const DEAD_AFTER_MS = 5000;
@@ -66,13 +71,14 @@ export interface RoomSeat {
   readonly listen: (next: SeatListeners) => void;
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
-  readonly ready: () => void;
+  readonly lobby: () => RoomLobbyMessage | null;
+  readonly loaded: () => void;
+  readonly choose: (choice: Partial<RoomChoice>) => void;
+  readonly setReady: (ready: boolean) => void;
   readonly refusal: () => Refusal | null;
-  readonly riders: () => number;
-  readonly riderNames: () => readonly string[];
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
-  readonly startsInMs: () => number;
+  readonly startsInMs: () => number | null;
   readonly stepsDue: () => number;
   readonly target: () => number;
 }
@@ -81,17 +87,20 @@ export const seatUrl = (
   roomsUrl: string,
   roomId: string,
   name: string,
-  build: string
+  build: string,
+  key: string
 ): string =>
-  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}&build=${encodeURIComponent(build)}&protocol=${ROOM_PROTOCOL}`;
+  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}&build=${encodeURIComponent(build)}&protocol=${ROOM_PROTOCOL}&key=${encodeURIComponent(key)}`;
 
 export const openRoomSeat = (
   roomsUrl: string,
   roomId: string,
   name: string,
-  build: string
+  build: string,
+  key: string,
+  browser: () => SeatBrowser | null
 ): RoomSeat => {
-  const socket = new WebSocket(seatUrl(roomsUrl, roomId, name, build));
+  const socket = new WebSocket(seatUrl(roomsUrl, roomId, name, build, key));
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
   const pong = { roomMs: 0, stamp: 0 };
@@ -104,10 +113,9 @@ export const openRoomSeat = (
   let reported = false;
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
-  let riders = 0;
-  let riderNames: readonly string[] = [];
+  let lobby: RoomLobbyMessage | null = null;
   let counting = false;
-  let lobbyEndsAt = 0;
+  let lobbyHeardAt = 0;
   let race: SeatRace | null = null;
   let refused: Refusal | null = null;
   let digest: Uint32Array = new Uint32Array();
@@ -178,6 +186,7 @@ export const openRoomSeat = (
     if (race && readTick(view, read)) {
       const now = performance.now();
       clock.heardTick(read.frame.tick, now);
+      tally.heardTick(now);
       listeners.onTickHeard?.(now, read.hashed);
       race.client.confirm(read.frame, read.hashed ? read.hash : null);
       listeners.onConfirmed?.(race.client);
@@ -187,6 +196,26 @@ export const openRoomSeat = (
   socket.addEventListener("open", () => {
     pings = setInterval(sendPing, PING_EVERY_MS);
   });
+  const reportOnce = (): void => {
+    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    reported = true;
+    tally.frameDrawn(
+      performance.now(),
+      race.client.mine.s,
+      race.client.confirmed.tick
+    );
+    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
+    writeRaceStats(packet, tally.read(race.client, worstRttMs));
+    socket.send(packet.buffer);
+    const identity = browser();
+    if (identity) {
+      const trace: BrowserTrace = { ...identity, rows: tally.traceRows() };
+      socket.send(JSON.stringify(trace));
+    }
+  };
+
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();
@@ -211,9 +240,9 @@ export const openRoomSeat = (
     }
     switch (message.value.kind) {
       case "lobby": {
-        ({ names: riderNames, riders } = message.value);
-        clock.heardRoomTime(message.value.atMs, performance.now());
-        lobbyEndsAt = performance.now() + message.value.startsInMs;
+        lobby = message.value;
+        lobbyHeardAt = performance.now();
+        clock.heardRoomTime(message.value.atMs, lobbyHeardAt);
         move("lobby");
         break;
       }
@@ -228,6 +257,7 @@ export const openRoomSeat = (
         break;
       }
       case "ended": {
+        reportOnce();
         stopPings();
         socket.close(SEAT_CLOSED, "The race is over.");
         move("ended");
@@ -236,7 +266,7 @@ export const openRoomSeat = (
       case "refused": {
         refused = message.value.reason;
         socket.close(SEAT_CLOSED, "This seat was refused.");
-        move("refused");
+        move(race ? "lost" : "refused");
         break;
       }
       default: {
@@ -245,17 +275,10 @@ export const openRoomSeat = (
     }
   });
 
-  const reportOnce = (): void => {
-    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    reported = true;
-    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
-    writeRaceStats(packet, tally.read(race.client, worstRttMs));
-    socket.send(packet.buffer);
-  };
-
   return {
+    choose: (choice) => {
+      socket.send(encodeLobbyCommand({ choice, kind: "choose" }));
+    },
     closeCode: () => closeCode,
     flush: () => {
       if (!race || socket.readyState !== WebSocket.OPEN) {
@@ -274,7 +297,11 @@ export const openRoomSeat = (
     },
     frameDrawn: () => {
       if (race && race.client.predicted.tick > 0) {
-        tally.frameDrawn(performance.now(), race.client.mine.s);
+        tally.frameDrawn(
+          performance.now(),
+          race.client.mine.s,
+          race.client.confirmed.tick
+        );
       }
     },
     leave: () => {
@@ -286,18 +313,27 @@ export const openRoomSeat = (
     listen: (next) => {
       listeners = { ...listeners, ...next };
     },
-    phase: () => phase,
-    race: () => race,
-    ready: () => {
+    loaded: () => {
       const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
       writeReady(packet, digest);
       socket.send(packet.buffer);
     },
+    lobby: () => lobby,
+    phase: () => phase,
+    race: () => race,
     refusal: () => refused,
-    riderNames: () => riderNames,
-    riders: () => riders,
     rttMs: () => rttMs,
-    startsInMs: () => lobbyEndsAt - performance.now(),
+    setReady: (ready) => {
+      if (lobby) {
+        socket.send(
+          encodeLobbyCommand({ edition: lobby.edition, kind: "ready", ready })
+        );
+      }
+    },
+    startsInMs: () =>
+      lobby?.startsInMs === null || lobby === null
+        ? null
+        : lobby.startsInMs - (performance.now() - lobbyHeardAt),
     stepsDue: () => {
       if (!race) {
         return 0;

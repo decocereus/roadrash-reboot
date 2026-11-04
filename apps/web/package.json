@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@racer/career": "workspace:*",
+    "@racer/content": "workspace:*",
     "@racer/rooms": "workspace:*",
     "@racer/sim": "workspace:*",
     "@racer/telemetry": "workspace:*",

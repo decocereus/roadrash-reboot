@@ -2,6 +2,7 @@ import * as Schema from "effect/Schema";
 
 const SeatPlanSchema = Schema.Struct({
   full: Schema.Boolean,
+  ridersInRoom: Schema.Number,
   roomId: Schema.String,
 });
 

@@ -10,6 +10,7 @@
     "typecheck": "tsrs --noEmit"
   },
   "dependencies": {
+    "@racer/content": "workspace:*",
     "@racer/sim": "workspace:*",
     "@racer/track": "workspace:*",
     "effect": "4.0.0"

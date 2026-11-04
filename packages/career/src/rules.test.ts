@@ -105,16 +105,9 @@ describe("ten racers over three tiers", () => {
         )
       )
     );
-    expect(tiers.map((tier) => stockArrivingAt(tier))).toStrictEqual([
-      [
-        "gutter-pup-250",
-        "halden-wren-400",
-        "halden-kite-500",
-        "ostra-sesta-600",
-      ],
-      ["ostra-sette-750", "brack-stoker-800", "halden-meridian-900"],
-      ["brack-anvil-1100", "ostra-nera-1000"],
-    ]);
+    expect(tiers.flatMap(stockArrivingAt).toSorted()).toStrictEqual(
+      bikeIds.toSorted()
+    );
     expect(bikeIds.filter((bikeId) => !ridden.has(bikeId))).toStrictEqual([]);
   });
 

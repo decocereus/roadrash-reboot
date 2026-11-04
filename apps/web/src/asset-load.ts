@@ -1,4 +1,5 @@
 import type { AssetRuntime } from "./asset-runtime.ts";
+import type { BarCamera } from "./bar-view.ts";
 import { diagnostics } from "./diagnostics/hub.ts";
 import type {
   AcquiredAssets,
@@ -126,6 +127,9 @@ export const bootGame = async (
   events: GameEvents,
   signal: AbortSignal
 ): Promise<GameHandle | null> => {
+  if (import.meta.env.SSR) {
+    return null;
+  }
   const game = import("./game/game.ts");
   const [acquired, { createGame }] = await Promise.all([
     acquire(game, signal),
@@ -143,6 +147,7 @@ export const bootGame = async (
 
 export const openBar = async (
   canvas: HTMLCanvasElement,
+  startCamera: BarCamera,
   signal: AbortSignal
 ): Promise<BarScene | null> => {
   if (!import.meta.env.DEV) {
@@ -160,16 +165,23 @@ export const openBar = async (
     acquired.release();
     return null;
   }
-  return createBar(canvas, {
-    release: acquired.release,
-    value: acquired.assets,
-  });
+  return createBar(
+    canvas,
+    {
+      release: acquired.release,
+      value: acquired.assets,
+    },
+    startCamera
+  );
 };
 
 export const openShowroom = async (
   canvas: HTMLCanvasElement,
   signal: AbortSignal
 ): Promise<Showroom | null> => {
+  if (import.meta.env.SSR) {
+    return null;
+  }
   const showroom = import("./game/showroom.ts");
   const [bikes, { createShowroom }] = await Promise.all([
     acquireBikes(showroom, signal),

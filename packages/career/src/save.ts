@@ -5,7 +5,13 @@ import { problemOf } from "./save-invariants.ts";
 import { firstField, issuePaths } from "./save-issues.ts";
 import { EncodedSaveSchema, SaveSourceSchema } from "./save-schema.ts";
 import type { SaveError } from "./save-schema.ts";
-import { SAVE_VERSION } from "./state.ts";
+import {
+  blankMemory,
+  blankSeason,
+  byRacer,
+  byRival,
+  SAVE_VERSION,
+} from "./state.ts";
 import type { CareerState } from "./state.ts";
 
 export type SaveResult =
@@ -34,6 +40,12 @@ const loaded = (career: CareerState): SaveResult => {
     : { error: problem, ok: false };
 };
 
+const withEveryRacer = (save: typeof EncodedSaveSchema.Type): CareerState => ({
+  ...save,
+  memory: byRival((rival) => save.memory[rival] ?? blankMemory),
+  season: byRacer((racer) => save.season[racer] ?? blankSeason),
+});
+
 const currentSave = (save: typeof RawSave.Type): SaveResult => {
   const sources = Result.match(decodeSources(save), {
     onFailure: issuePaths,
@@ -45,7 +57,7 @@ const currentSave = (save: typeof RawSave.Type): SaveResult => {
     onSuccess: (career) =>
       sources.length > 0
         ? refused("invalid", firstField(sources))
-        : loaded(career),
+        : loaded(withEveryRacer(career)),
   });
 };
 

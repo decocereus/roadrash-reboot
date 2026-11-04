@@ -1,3 +1,4 @@
+import { publicRoomRule } from "@racer/career/room-race";
 import { STARTING_BIKE } from "@racer/career/tables";
 import {
   PING_PACKET_BYTES,
@@ -11,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeRoomMessage } from "../src/messages.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
+import type { SeatBrowser } from "../src/tape.ts";
 
 const LONGEST_LOAD_MS = 20_000;
 const DEAD_AFTER_MS = 5000;
@@ -29,6 +31,8 @@ class FakeSocket {
   readonly readyState = FakeSocket.OPEN;
 
   readonly sentBytes: number[] = [];
+
+  readonly sentText: string[] = [];
 
   binaryType = "blob";
 
@@ -56,7 +60,11 @@ class FakeSocket {
     this.heard.get("message")?.({ data });
   }
 
-  send(data: Uint8Array | ArrayBuffer): void {
+  send(data: string | Uint8Array | ArrayBuffer): void {
+    if (!(data instanceof Uint8Array || data instanceof ArrayBuffer)) {
+      this.sentText.push(data);
+      return;
+    }
     this.sentBytes.push(data.byteLength);
     if (!(data instanceof Uint8Array)) {
       return;
@@ -73,12 +81,14 @@ class FakeSocket {
   }
 }
 
-const loadingSeat = () => {
+const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
   const seat = openRoomSeat(
     "http://rooms.test",
     "friday-ride",
     "Near",
-    "test-build"
+    "test-build",
+    "member-key",
+    browser
   );
   const [socket] = FakeSocket.opened;
   socket?.open();
@@ -95,7 +105,7 @@ const loadingSeat = () => {
         roster: [
           { bikeId: STARTING_BIKE, kind: "human", name: "Near", rider: 0 },
         ],
-        rule: { bikeId: STARTING_BIKE, roadId: "slag-row", tier: 2 },
+        rule: publicRoomRule,
         seed: 1,
         tickRate: 60,
         trackHash: [0],
@@ -118,6 +128,46 @@ describe("a seat loading the race", () => {
     vi.unstubAllGlobals();
   });
 
+  it("stays down when another tab takes its place in the lobby", () => {
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      "test-build",
+      "member-key",
+      () => null
+    );
+    FakeSocket.opened[0]?.hear(
+      encodeRoomMessage({ kind: "refused", reason: "replaced" })
+    );
+    expect(seat.phase()).toBe("refused");
+    expect(seat.refusal()).toBe("replaced");
+  });
+
+  it("is lost when another tab takes its place during a race", () => {
+    const { seat, socket } = loadingSeat();
+    socket?.hear(encodeRoomMessage({ kind: "refused", reason: "replaced" }));
+    expect(seat.phase()).toBe("lost");
+  });
+
+  it("sends its browser trace once with the stats, and none with Race data off", () => {
+    const browser = {
+      build: "abc",
+      gpu: "Test GPU",
+      graphics: "quality rung 1",
+    };
+    const { seat, socket } = loadingSeat(() => browser);
+    seat.leave();
+    seat.leave();
+    expect(socket?.sentText).toStrictEqual([
+      JSON.stringify({ ...browser, rows: [] }),
+    ]);
+    FakeSocket.opened = [];
+    const { seat: off, socket: quiet } = loadingSeat();
+    off.leave();
+    expect(quiet?.sentText).toStrictEqual([]);
+  });
+
   it("sends the room its race stats once when it leaves", () => {
     const { seat, socket } = loadingSeat();
     seat.leave();
@@ -133,7 +183,9 @@ describe("a seat loading the race", () => {
       "http://rooms.test",
       "friday-ride",
       "Near",
-      "test-build"
+      "test-build",
+      "member-key",
+      () => null
     );
     seat.leave();
     expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
@@ -144,7 +196,9 @@ describe("a seat loading the race", () => {
       "http://rooms.test",
       "friday-ride",
       "Near",
-      "test-build"
+      "test-build",
+      "member-key",
+      () => null
     );
     const [socket] = FakeSocket.opened;
     socket?.open();

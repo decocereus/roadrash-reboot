@@ -1,6 +1,6 @@
 # Observability
 
-Rushline records five things: player events for the funnel, play-test telemetry from testers' browsers, one record per room race, one tape per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+Rushline records five things: player events for the funnel, play-test telemetry from testers' browsers, one record per room race, one tape and timing trace per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
 
 ## Player events
 
@@ -46,6 +46,16 @@ Every room race has a random race ID that is not the invite link. `apps/rooms/sr
 | The room writes a note per race event and never per tick or per message. In the tick loop it only adds to the wake counters. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 | Workers Logs removes null values and empty lists from a stored line, so `RoomNoteSchema` reads a missing nullable field as null and a missing list as empty. `pnpm rooms:read` warns about any line with a `kind` that still does not decode, because a report without its `ended` line otherwise reads as a dead room. | `pnpm test` | `apps/rooms/src/notes.ts`, `tools/rooms/src/read.ts` | None |
 | `pnpm rooms:read` asks Cloudflare only for lines with a `kind`. Request lines are most of the log, and they used up the 2000-event limit and cut off older races. | `pnpm test` | `tools/rooms/src/read.ts` | None |
+
+## Race traces
+
+Per-race counters cannot show whether a browser stall and a transport burst happened together, or whether two riders missed controls at the same moment. So the tape folder also holds a timeline per rider. Each browser with Race data on keeps a row each 250 ms: the time, the last room tick it heard, its frame count and worst frame, the ticks it heard and the worst gap between them, its worst round trip, and its held and doubled clock steps. It sends the rows once, as `rider-<n>.trace.json`, with its loaded build, graphics card and quality rung, when its race ends or it leaves. The room adds `room-trace.json`, which lists each rider's missed and late controls every 15 ticks. Room ticks are the shared clock, so `pnpm rooms:trace --dir <folder>` lines the riders up by second and counts stalls, tick gaps and misses in the same second. A tick gap with no stall within a second points at the network. A tick gap next to a stall points at the browser, because a stalled browser reads its socket late, and the two can land in neighbouring rows.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| In the frame loop the tally only writes numbers into typed arrays it allocated at the start of the race. It keeps at most 2400 rows, and JSON happens once when the rider's race ends, off the frame path. The room's perf run calls `frameDrawn`, so `room.frame.allocatedBytesPerTick` includes it. | `pnpm perf`, `rushline/no-hot-allocation` | `apps/rooms/src/race-tally.ts`, `tools/perf/src/node-room.ts` | None |
+| The room decodes a trace once per seat, refuses one over `MOST_TRACE_CHARS`, and saves only the fields the schema names, so a client cannot store other text. The trace carries no name, player ID or room ID. | `pnpm test` | `apps/rooms/src/host.ts`, `apps/rooms/src/tape.ts` | None |
+| With Race data off, the browser sends no build, graphics card, quality rung or timeline. The stats packet and the room's own notes and trace still run, because the room runs the race, and `/privacy` says so. | judgment | `apps/web/src/components/room-lobby.tsx`, `apps/web/src/routes/privacy.tsx` | None |
 
 ## Race tapes
 

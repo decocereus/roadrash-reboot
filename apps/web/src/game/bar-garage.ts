@@ -1,5 +1,7 @@
+import { MEZZANINE, ROOM } from "@racer/sim/lobby-floor";
+
 import type { Kit } from "./bar-kit.ts";
-import { GARAGE_LAMPS, MEZZANINE, ROOM } from "./bar-room.ts";
+import { GARAGE_LAMPS } from "./bar-room.ts";
 import { CYAN, MAGENTA, YELLOW } from "./looks.ts";
 
 type Vec = readonly [number, number, number];

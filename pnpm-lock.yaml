@@ -97,6 +97,9 @@ importers:
       '@racer/career':
         specifier: workspace:*
         version: link:../../packages/career
+      '@racer/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@racer/rooms':
         specifier: workspace:*
         version: link:../rooms
@@ -167,6 +170,9 @@ importers:
 
   packages/career:
     dependencies:
+      '@racer/content':
+        specifier: workspace:*
+        version: link:../content
       '@racer/sim':
         specifier: workspace:*
         version: link:../sim
@@ -181,6 +187,8 @@ importers:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
+  packages/content: {}
+
   packages/devtools:
     dependencies:
       effect:
@@ -193,6 +201,9 @@ importers:
 
   packages/sim:
     dependencies:
+      '@racer/content':
+        specifier: workspace:*
+        version: link:../content
       '@racer/track':
         specifier: workspace:*
         version: link:../track
@@ -391,6 +402,9 @@ importers:
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
+      '@racer/rooms':
+        specifier: workspace:*
+        version: link:../../apps/rooms
       '@racer/sim':
         specifier: workspace:*
         version: link:../../packages/sim

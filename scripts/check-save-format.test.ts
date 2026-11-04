@@ -434,6 +434,7 @@ describe("check:save-format", () => {
     ["the unchanged save", base],
     ["a new bike with its registry membership appended", addBike],
     ["a new road with its optional qualified keys", addRoad],
+    ["a new rival with its optional memory and season rows", addRival],
     ["every declaration and catalogue in reverse order", reordered],
     ["documentation on every schema node", documented],
     ["a field behind a local reference", local("Story")],
@@ -488,14 +489,17 @@ describe("check:save-format", () => {
       edit(base, bound("maxLength", 300, 301)),
       structure,
     ],
-    ["a required rival row", addRival, structure],
     ["a required tier row", addLevel, structure],
     [
       "a catalogue-sized bound raised without a new bike",
       top((fields) =>
-        set(fields, "garage", set(child(fields, "garage"), "maxItems", 10))
+        set(
+          fields,
+          "garage",
+          set(child(fields, "garage"), "maxItems", bikes.length + 1)
+        )
       ),
-      /^`garage` has a bound that follows the size of the Bike catalogue, 9 IDs, but its schema is .*"maxItems":10/u,
+      /^`garage` has a bound that follows the size of the Bike catalogue, \d+ IDs, but its schema is .*"maxItems":\d+/u,
     ],
     [
       "one catalogue field narrowed",

@@ -1,3 +1,5 @@
+import { byId } from "@racer/content/rows";
+import { bikeVisuals, riderVisuals } from "@racer/content/visuals";
 import type { CelebrityId } from "@racer/sim/cast";
 
 import type { BikeModelId } from "../game/bike-models.ts";
@@ -14,21 +16,9 @@ export interface ModelUrls {
 }
 
 export const modelUrls: ModelUrls = {
-  bikes: {
-    classic: artUrl("models/bike.glb"),
-    ghost: artUrl("models/ghost.glb"),
-    oni: artUrl("models/oni.glb"),
-    seraph: artUrl("models/seraph.glb"),
-  },
+  bikes: byId(bikeVisuals, ({ model }) => artUrl(model)),
   car: artUrl("models/car.glb"),
-  celebrities: {
-    altman: artUrl("models/rider_altman.glb"),
-    kylie: artUrl("models/rider_kylie.glb"),
-    mbappe: artUrl("models/rider_mbappe.glb"),
-    musk: artUrl("models/rider_musk.glb"),
-    ranveer: artUrl("models/rider_ranveer.glb"),
-    ronaldo: artUrl("models/rider_ronaldo.glb"),
-  },
+  celebrities: byId(riderVisuals, ({ model }) => artUrl(model)),
   figures: [
     artUrl("models/rider_a.glb"),
     artUrl("models/rider_b.glb"),

@@ -1,5 +1,5 @@
 import type { BikeId } from "@racer/sim/bikes";
-import { bikeAt, officers, rivals } from "@racer/sim/cast";
+import { officers, rivals } from "@racer/sim/cast";
 import type { OfficerId } from "@racer/sim/cast";
 import { defaultPlayer } from "@racer/sim/race";
 import type { WeaponKind } from "@racer/sim/state";
@@ -12,7 +12,6 @@ import { prizeFor } from "./tables.ts";
 
 export interface ResultRow extends Placing {
   readonly name: string;
-  readonly bikeId: BikeId;
   readonly prize: number;
 }
 
@@ -49,21 +48,22 @@ const rowOf = (
   placing: Placing,
   playerPrize: number
 ): ResultRow => {
-  if (placing.racer === "player") {
+  const { bikeId, ...place } = placing;
+  if (place.racer === "player") {
     return {
-      ...placing,
-      bikeId: race.bikeId,
+      ...place,
+      bikeId,
       name: defaultPlayer.name,
       prize: playerPrize,
     };
   }
-  const rival = rivals[placing.racer];
-  const out = placing.fate === "busted" || placing.fate === "wrecked";
+  const rival = rivals[place.racer];
+  const out = place.fate === "busted" || place.fate === "wrecked";
   return {
-    ...placing,
-    bikeId: bikeAt(rival, race.tier),
+    ...place,
+    bikeId,
     name: rival.name,
-    prize: out ? 0 : prizeFor(race.tier, placing.place),
+    prize: out ? 0 : prizeFor(race.tier, place.place),
   };
 };
 
