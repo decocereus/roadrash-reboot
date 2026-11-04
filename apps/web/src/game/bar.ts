@@ -515,7 +515,7 @@ const openRoom = (
     revving = Math.max(0, revving - seconds * 0.8);
     spinAt += seconds * ((Math.PI * 2) / TURN_SECONDS);
     bikes.spin(0, revving * seconds * 60);
-    glowMaterial.color.setScalar(neonNow * (1 + revving * 0.7));
+    glowMaterial.color.setScalar(neonNow);
     if (doorOpenedAt === null) {
       heroBike.rotation.y = spinAt;
     } else {

@@ -8,7 +8,7 @@ The bar runs live in the game's renderer with the real riders and bikes: a neon 
 - `clock`: the dusk-to-night cycle, the skyline, the rain and the neon.
 - `cast`: eight posed riders, one walking the floor, with name tags and speech bubbles.
 - `door`: the countdown, the door rising, the hero bike riding out and the riders gathering.
-- `rev`: the hero bike's engine and the neon pulse.
+- `rev`: the hero bike's engine and exhaust puffs.
 - `garage`: the garage camera shot.
 
 ## How to get to it (user POV)
