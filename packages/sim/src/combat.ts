@@ -1,3 +1,4 @@
+import { vergeHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 
 import {
@@ -601,7 +602,8 @@ export const stepRiderContacts = (
     }
   }
   for (const rider of state.riders) {
-    rider.x = clamp(rider.x, -track.vergeHalfWidth, track.vergeHalfWidth);
+    const vergeHalfWidth = vergeHalfWidthAt(track, rider.s);
+    rider.x = clamp(rider.x, -vergeHalfWidth, vergeHalfWidth);
     rider.bumpLoss = Math.max(
       0,
       rider.bumpLoss - BUMP_LOSS_PER_SECOND * TICK_SECONDS

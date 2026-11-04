@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { rollDice, siteSeed, unitOf } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 import { walkersAt } from "@racer/track/walk-sites";
@@ -53,7 +54,8 @@ const walkHabits = {
   zebra: { restSeconds: 3, restSpreadSeconds: 7 },
 } as const satisfies Record<WalkKind, WalkHabit>;
 
-const kerbOf = (track: Track): number => track.roadHalfWidth + KERB_OUT;
+const kerbOf = (track: Track, s: number): number =>
+  roadHalfWidthAt(track, s) + KERB_OUT;
 
 const ticksOf = (seconds: number): number =>
   1 + Math.floor(seconds * TICK_RATE);
@@ -64,7 +66,7 @@ const arrive = (pedestrian: Pedestrian, track: Track): void => {
   pedestrian.drift = 0;
   pedestrian.mode = "waiting";
   pedestrian.wait = ticksOf(rollDice(pedestrian) * WAIT_SECONDS);
-  pedestrian.x = side * kerbOf(track);
+  pedestrian.x = side * kerbOf(track, pedestrian.s);
 };
 
 const walkerFor = (
@@ -162,11 +164,9 @@ const walkAcross = (
   habit: WalkHabit
 ): void => {
   pedestrian.x += pedestrian.drift * TICK_SECONDS;
-  if (
-    (pedestrian.x - pedestrian.across * kerbOf(track)) * pedestrian.across >=
-    0
-  ) {
-    pedestrian.x = pedestrian.across * kerbOf(track);
+  const kerb = kerbOf(track, pedestrian.s);
+  if ((pedestrian.x - pedestrian.across * kerb) * pedestrian.across >= 0) {
+    pedestrian.x = pedestrian.across * kerb;
     pedestrian.across = -pedestrian.across;
     pedestrian.drift = 0;
     pedestrian.mode = "waiting";

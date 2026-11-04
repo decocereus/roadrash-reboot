@@ -1,5 +1,6 @@
 import { pieceSpans, sampleAlong } from "./alignment.ts";
 import { crossingReservationOf } from "./crossings.ts";
+import { openLanesAt, vergeHalfWidthAt } from "./districts.ts";
 import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import type { Random } from "./random.ts";
@@ -99,27 +100,22 @@ const kindOf = (
   return roll * total < oil + rock ? "rock" : "pothole";
 };
 
-const laneOf = (road: Road, roll: number): number => {
+const laneOf = (road: Road, open: number, roll: number): number => {
   const sameWay = roll < SAME_WAY_SHARE;
   const lanes = sameWay ? road.sameWayLanes : road.oncomingLanes;
   const share = sameWay
     ? roll / SAME_WAY_SHARE
     : (roll - SAME_WAY_SHARE) / (1 - SAME_WAY_SHARE);
-  return (
-    lanes[Math.min(lanes.length - 1, Math.floor(share * lanes.length))] ??
-    lanes[0]
-  );
+  return lanes[Math.min(open - 1, Math.floor(share * open))] ?? lanes[0];
 };
 
-const seamOf = (road: Road, roll: number): number => {
-  const seams = road.plan.lanesEachWay === 2 ? [0, road.plan.laneWidth] : [0];
-  return (
-    seams[Math.min(seams.length - 1, Math.floor(roll * seams.length))] ?? 0
-  );
-};
+const seamOf = (road: Road, open: number, roll: number): number =>
+  Math.min(open - 1, Math.floor(roll * open)) * road.plan.laneWidth;
 
-const sameWayLaneToward = (road: Road, side: number): number =>
-  road.sameWayLanes.toSorted((left, right) => (right - left) * side)[0] ??
+const sameWayLaneToward = (road: Road, open: number, side: number): number =>
+  road.sameWayLanes
+    .slice(0, open)
+    .toSorted((left, right) => (right - left) * side)[0] ??
   road.sameWayLanes[0];
 
 const centreOf = (
@@ -129,40 +125,47 @@ const centreOf = (
   laneRoll: number,
   offsetRoll: number
 ): number => {
+  const open = openLanesAt(road, place.s);
   const spread = (offsetRoll * 2 - 1) * LANE_SPREAD[kind];
   if (place.setting === "apex") {
     return (
-      sameWayLaneToward(road, place.inside) +
+      sameWayLaneToward(road, open, place.inside) +
       place.inside * offsetRoll * APEX_REACH * road.plan.laneWidth
     );
   }
   if (place.setting === "turnIn" || place.setting === "exit") {
     return (
-      sameWayLaneToward(road, -place.inside) -
+      sameWayLaneToward(road, open, -place.inside) -
       place.inside * offsetRoll * LANE_SPREAD[kind]
     );
   }
   if (place.setting === "crest") {
-    return laneOf(road, laneRoll) + spread;
+    return laneOf(road, open, laneRoll) + spread;
   }
   if (laneRoll < SEAM_SHARE) {
     return (
-      seamOf(road, laneRoll / SEAM_SHARE) + (offsetRoll * 2 - 1) * SEAM_SPREAD
+      seamOf(road, open, laneRoll / SEAM_SHARE) +
+      (offsetRoll * 2 - 1) * SEAM_SPREAD
     );
   }
-  return laneOf(road, (laneRoll - SEAM_SHARE) / (1 - SEAM_SHARE)) + spread;
+  return (
+    laneOf(road, open, (laneRoll - SEAM_SHARE) / (1 - SEAM_SHARE)) + spread
+  );
 };
 
 const laneEdgeOf = (
   road: Road,
+  open: number,
   kind: HazardKind,
   x: number,
   offsetRoll: number
 ): number => {
   const lane =
-    [...road.sameWayLanes, ...road.oncomingLanes].toSorted(
-      (left, right) => Math.abs(left - x) - Math.abs(right - x)
-    )[0] ?? road.sameWayLanes[0];
+    [
+      ...road.sameWayLanes.slice(0, open),
+      ...road.oncomingLanes.slice(0, open),
+    ].toSorted((left, right) => Math.abs(left - x) - Math.abs(right - x))[0] ??
+    road.sameWayLanes[0];
   const side = Math.sign(x - lane) || (offsetRoll < SEAM_SHARE ? -1 : 1);
   return (
     lane +
@@ -178,14 +181,13 @@ const acrossOf = (
   laneRoll: number,
   offsetRoll: number
 ): number => {
+  const open = openLanesAt(road, place.s);
   const reach =
-    road.plan.lanesEachWay * road.plan.laneWidth -
-    hazardSizes[kind].halfWidth -
-    EDGE_MARGIN;
+    open * road.plan.laneWidth - hazardSizes[kind].halfWidth - EDGE_MARGIN;
   const centre = centreOf(road, place, kind, laneRoll, offsetRoll);
   const x =
     kind === "rock" && bend === "gentle"
-      ? laneEdgeOf(road, kind, centre, offsetRoll)
+      ? laneEdgeOf(road, open, kind, centre, offsetRoll)
       : centre;
   return Math.min(reach, Math.max(-reach, x));
 };
@@ -221,8 +223,9 @@ const seenFrom = (road: Road, s: number, x: number, distance: number) => {
     const across =
       (chordX - sampleAlong(road, road.worldX, along)) * cos(heading) +
       (chordZ - sampleAlong(road, road.worldZ, along)) * sin(heading);
-    const ground = sampleAlong(road, road.worldY, along) + SIGHT_GROUND_CLEARANCE;
-    if (Math.abs(across) > road.vergeHalfWidth || chordY < ground) {
+    const ground =
+      sampleAlong(road, road.worldY, along) + SIGHT_GROUND_CLEARANCE;
+    if (Math.abs(across) > vergeHalfWidthAt(road, along) || chordY < ground) {
       return false;
     }
   }

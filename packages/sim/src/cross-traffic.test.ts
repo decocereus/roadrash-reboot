@@ -1,4 +1,5 @@
 import { eased } from "@racer/track/alignment";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -75,7 +76,7 @@ describe("cross-road cars at a signalled junction", () => {
     const state = quietRace();
     parkPlayer(state);
     const cars = carsAt(state, junctionOf(harbour.id));
-    const halfRoad = quiet.roadHalfWidth;
+    const halfRoad = roadHalfWidthAt(quiet, 0);
     let crossedOnGreen = 0;
     let onRoadOnMainGreen = 0;
     let closest = Number.POSITIVE_INFINITY;
@@ -435,8 +436,10 @@ describe("the pilot and cross-road cars", () => {
     const narrow: Track = {
       ...compileTrack({
         ...roads["breakwater-run"],
+        districts: [
+          { ...roads["breakwater-run"].districts[0], lanesEachWay: 1 },
+        ],
         hazardsPerKilometre: 0,
-        lanesEachWay: 1,
         trafficPerKilometre: 0,
       }),
       walkSites: [],

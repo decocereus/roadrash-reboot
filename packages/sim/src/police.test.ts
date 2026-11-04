@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { describe, expect, it } from "vitest";
 
 import { chaserGap, PATROL_SPEED } from "./police.ts";
@@ -31,7 +32,7 @@ describe("meeting the police", () => {
     const state = piloted(createRace(defaultSetup(track, 4)));
     const cop = onlyCop(state);
     expect({
-      offRoad: Math.abs(cop.x) > track.roadHalfWidth,
+      offRoad: Math.abs(cop.x) > roadHalfWidthAt(track, 0),
       s: cop.s,
       speed: cop.speed,
     }).toStrictEqual({ offRoad: true, s: 1500, speed: 0 });
@@ -53,7 +54,7 @@ describe("meeting the police", () => {
     expect(pursuedAt).toBeLessThan(2000);
     expect({
       fastestWhileParked,
-      onRoad: Math.abs(cop.x) < track.roadHalfWidth,
+      onRoad: Math.abs(cop.x) < roadHalfWidthAt(track, 0),
     }).toStrictEqual({ fastestWhileParked: 0, onRoad: true });
   });
 });
@@ -103,7 +104,7 @@ describe("police", () => {
     expect(events.map((event) => event.kind)).not.toContain("remount");
     expect({
       mode: me.mode,
-      pulledOver: Math.abs(me.bodyX) > straight.roadHalfWidth,
+      pulledOver: Math.abs(me.bodyX) > roadHalfWidthAt(straight, 0),
     }).toStrictEqual({ mode: "busted", pulledOver: true });
     expect(standings(state)).toStrictEqual([me.id]);
   });
@@ -130,8 +131,8 @@ describe("police", () => {
     expect(Math.abs(arrest.s - body.s)).toBeLessThan(0.2);
     expect(Math.abs(arrest.x - body.x)).toBeLessThan(0.2);
     expect({
-      arrestedOnTheRoad: Math.abs(arrest.x) < straight.roadHalfWidth,
-      movedToTheVerge: Math.abs(me.bodyX) > straight.roadHalfWidth,
+      arrestedOnTheRoad: Math.abs(arrest.x) < roadHalfWidthAt(straight, 0),
+      movedToTheVerge: Math.abs(me.bodyX) > roadHalfWidthAt(straight, 0),
       weapon: me.weapon,
     }).toStrictEqual({
       arrestedOnTheRoad: true,
@@ -202,7 +203,7 @@ const patrolWithBeat = (beat: number) => {
   return {
     chased,
     chasing: chaserGap(state, me.id) !== null,
-    offTheRoad: Math.abs(cop.x) > straight.roadHalfWidth,
+    offTheRoad: Math.abs(cop.x) > roadHalfWidthAt(straight, 0),
     past: cop.s - post,
     speed: cop.speed,
   };
@@ -307,7 +308,7 @@ describe("the end of a patrol", () => {
     }
     expect(cop.mode).toBe("riding");
     expect(cop.speed).toBe(0);
-    expect(Math.abs(cop.x)).toBeGreaterThan(track.roadHalfWidth);
+    expect(Math.abs(cop.x)).toBeGreaterThan(roadHalfWidthAt(track, 0));
     expect(slowest).toBeGreaterThan(10);
     expect(follower.s).toBeGreaterThan(cop.s + 50);
   });

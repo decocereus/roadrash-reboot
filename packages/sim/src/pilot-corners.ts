@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { hypot2 } from "@racer/track/math";
 import {
   curvatureAt,
@@ -163,7 +164,7 @@ const runsWide = (track: Track, rider: RiderState): boolean => {
   }
   const room = Math.max(
     0,
-    track.roadHalfWidth - BIKE_HALF_WIDTH - rider.x * outward
+    roadHalfWidthAt(track, rider.s) - BIKE_HALF_WIDTH - rider.x * outward
   );
   return (
     Math.abs(push) > lateralSpeedLimit(bike, speed) ||
@@ -263,7 +264,8 @@ export const landsOnRoad = (
   }
   const landing = x + (bendAcross * speed * CORNER_SCAN_STEP) / bike.curvePush;
   return (
-    Math.abs(landing) <= track.roadHalfWidth - JUMP_LANDING_ROOM &&
+    Math.abs(landing) <=
+      roadHalfWidthAt(track, from + flight) - JUMP_LANDING_ROOM &&
     Math.abs(curvePushOf(bike, takeoff, speed)) <=
       LANDING_SLIP * margin * lateralSpeedLimit(bike, speed)
   );

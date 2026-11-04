@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { nextSeed, unitOf } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
@@ -40,7 +41,7 @@ const crosserAhead = (
   metresToCrosser(rider, crosser) <= sightOf(rider) &&
   crosser.s + crosser.halfLength + BIKE_HALF_LENGTH >= rider.s &&
   Math.abs(crosserAtArrival(rider, crosser)) <
-    track.roadHalfWidth + crosserReach(crosser);
+    roadHalfWidthAt(track, crosser.s) + crosserReach(crosser);
 
 export const crossCarInSight = (
   track: Track,

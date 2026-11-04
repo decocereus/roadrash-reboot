@@ -1,4 +1,6 @@
 import { ARM_LENGTH, armSpans } from "@racer/track/crossings";
+import { roadHalfWidthAt } from "@racer/track/districts";
+import type { LaneCount } from "@racer/track/districts";
 import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
@@ -16,6 +18,7 @@ const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 const tint = new THREE.Color();
 
 export type Rail = readonly [offset: number, lift: number, u: number];
+export type RailsAt = (s: number) => readonly Rail[];
 export type Span = readonly [from: number, to: number];
 
 const rowsAlong = (
@@ -39,17 +42,17 @@ const rowsAlong = (
 export const buildRibbon = (
   track: Track,
   span: Span,
-  rails: readonly Rail[],
+  railsAt: RailsAt,
   tile: number
 ): THREE.BufferGeometry => {
   const positions: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];
-  const columns = rails.length;
+  const columns = railsAt(span[0]).length;
   const rows = rowsAlong(span, ROAD_STEP);
   let row = 0;
   for (const s of rows) {
-    for (const [offset, lift, u] of rails) {
+    for (const [offset, lift, u] of railsAt(s)) {
       placeOnTrack(track, s, offset, point);
       positions.push(point.x, point.y + lift, point.z);
       uvs.push(u, s / tile);
@@ -72,6 +75,27 @@ export const buildRibbon = (
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
+};
+
+export const districtPieces = (
+  { plan: { districts } }: Track,
+  [spanFrom, spanTo]: Span
+): { readonly lanes: LaneCount; readonly span: Span }[] => {
+  const pieces: { readonly lanes: LaneCount; readonly span: Span }[] = [];
+  let start = spanFrom;
+  let lanes = districts[0].lanesEachWay;
+  for (let index = 1; index < districts.length; index += 1) {
+    const district = districts[index];
+    if (district && district.from < spanTo) {
+      if (district.from > start) {
+        pieces.push({ lanes, span: [start, district.from] });
+        start = district.from;
+      }
+      lanes = district.lanesEachWay;
+    }
+  }
+  pieces.push({ lanes, span: [start, spanTo] });
+  return pieces;
 };
 
 export const piecesBesideArms = (
@@ -135,7 +159,12 @@ export const buildTerrainChunk = (
         continue;
       }
       const distance = Math.min(offset, reach);
-      placeOnTrack(track, s, side * (track.roadHalfWidth + distance), point);
+      placeOnTrack(
+        track,
+        s,
+        side * (roadHalfWidthAt(track, s) + distance),
+        point
+      );
       const lift =
         cut && distance <= ARM_CUT_REACH
           ? 0

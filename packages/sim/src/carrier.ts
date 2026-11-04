@@ -197,6 +197,7 @@ export const carrierAt = (
   ...rigBody,
   carrier: true,
   cruiseSpeed: CARRIER_SPEED,
+  home: x,
   paint,
   patience,
   s,

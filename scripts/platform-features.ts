@@ -114,13 +114,14 @@ export const platformFeatures: readonly FeatureEntry[] = [
     kind: "platform",
     owns: [
       "packages/track/src/alignment*.ts",
+      "packages/track/src/districts*.ts",
       "packages/track/src/track.ts",
       "packages/track/src/road.ts",
       "packages/track/src/roads.ts",
     ],
     perf: [],
     start: [
-      "packages/track/src/alignment.ts",
+      "packages/track/src/districts.ts",
       "packages/track/src/track.ts",
       "packages/track/src/roads.ts",
     ],

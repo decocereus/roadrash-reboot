@@ -1,4 +1,5 @@
 import { clothoids, eased } from "@racer/track/alignment";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { compileTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 import { ridgeRoad } from "@racer/track/tracks/ridge-road";
@@ -444,7 +445,7 @@ describe("riding", () => {
       3
     );
     expect(steady.mode).toBe("riding");
-    expect(Math.abs(steady.x)).toBeLessThan(quietTrack.roadHalfWidth);
+    expect(Math.abs(steady.x)).toBeLessThan(roadHalfWidthAt(quietTrack, 0));
   });
 
   it("the brakes still bite in the tightest bend whichever way the rider steers", () => {

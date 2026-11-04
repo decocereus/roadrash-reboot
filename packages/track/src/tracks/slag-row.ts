@@ -6,10 +6,10 @@ export const slagRow: TrackPlan = {
   carriers: [2600, 4100],
   chevrons: chevronRuns["slag-row"],
   crossings: [],
+  districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.5, vergeWidth: 6 }],
   hazardsPerKilometre: 1,
   id: "slag-row",
   laneWidth: 3.5,
-  lanesEachWay: 2,
   leadInLength: 80,
   name: "Slag Row",
   pieces: eased([
@@ -55,8 +55,6 @@ export const slagRow: TrackPlan = {
   region: "lowtown",
   runoffLength: 400,
   seed: 0x5a_9c_33,
-  shoulderWidth: 0.5,
   start: { heading: 0, x: 0, z: 0 },
   trafficPerKilometre: 8,
-  vergeWidth: 6,
 };

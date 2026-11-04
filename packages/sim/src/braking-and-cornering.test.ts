@@ -144,8 +144,8 @@ describe("the bike catalogue", () => {
 
 const sawmillRoad = compileTrack({
   ...straight.plan,
+  districts: [{ from: 0, lanesEachWay: 1, shoulderWidth: 0.6, vergeWidth: 5 }],
   laneWidth: 3.4,
-  lanesEachWay: 1,
   leadInLength: 80,
   pieces: eased([
     [260, 0, 0],
@@ -193,8 +193,6 @@ const sawmillRoad = compileTrack({
   ]),
   runoffLength: 400,
   seed: 0x4f_17_e2,
-  shoulderWidth: 0.6,
-  vergeWidth: 5,
 });
 
 const DRY_DOCK_CORNER_FROM = 5120;

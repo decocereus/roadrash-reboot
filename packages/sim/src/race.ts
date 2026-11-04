@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { createRandom, nextSeed } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
@@ -408,6 +409,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     if (id === undefined) {
       continue;
     }
+    const post = copPost(track, index, police.count);
     const cop = createRider(
       {
         aggressionBoost: 0,
@@ -419,8 +421,8 @@ export const createRace = (setup: RaceSetup): RaceState => {
         weaponHits: freshHits(police.officer),
       },
       {
-        s: copPost(track, index, police.count),
-        x: track.roadHalfWidth + PULL_OVER,
+        s: post,
+        x: roadHalfWidthAt(track, post) + PULL_OVER,
       }
     );
     cop.parked = true;

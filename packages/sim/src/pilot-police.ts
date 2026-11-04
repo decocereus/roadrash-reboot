@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 
 import { PLANNED_BRAKING } from "./pilot-corners.ts";
@@ -84,10 +85,11 @@ export const copAim = (
   const target = riderOf(state.riders, cop.chase);
   const offDuty = target === undefined && !onBeat(state, cop);
   if (offDuty || cop.s > track.length - PATROL_END_MARGIN) {
-    const offRoad = cop.x > track.roadHalfWidth + BIKE_HALF_WIDTH;
+    const halfWidth = roadHalfWidthAt(track, cop.s);
+    const offRoad = cop.x > halfWidth + BIKE_HALF_WIDTH;
     return {
       speed: offRoad ? 0 : PULL_OVER_CRAWL,
-      x: track.roadHalfWidth + PULL_OVER,
+      x: halfWidth + PULL_OVER,
     };
   }
   if (!target) {

@@ -337,6 +337,7 @@ export const slowTruckAt = (state: RaceState, s: number, x: number): void => {
     halfLength: 4.2,
     halfWidth: 1.2,
     height: 3.1,
+    home: x,
     paint: 1,
     patience: 120,
     s,

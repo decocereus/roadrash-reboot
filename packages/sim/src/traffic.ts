@@ -1,5 +1,6 @@
+import type { LaneCentres } from "@racer/track/districts";
 import type { Random } from "@racer/track/random";
-import type { LaneCentres, Track } from "@racer/track/track";
+import type { Track } from "@racer/track/track";
 
 import { carrierAt, clearOfCarrier } from "./carrier.ts";
 import { blocksCars } from "./pedestrians.ts";
@@ -138,16 +139,19 @@ export const createTraffic = (
         direction === 1 ? CLEAR_START_TO : CLEAR_ONCOMING_START_TO;
       const blocksStart = s > CLEAR_START_FROM && s < clearTo;
       if (!blocksStart) {
+        const paint = Math.floor(random() * PAINT_COUNT);
+        const home = laneFor(lanes, cruiseSpeed, random);
         cars.push({
           ...body,
           carrier: false,
           cruiseSpeed,
-          paint: Math.floor(random() * PAINT_COUNT),
+          home,
+          paint,
           patience: patienceOf(patience),
           s,
           speed: cruiseSpeed,
           waited: 0,
-          x: laneFor(lanes, cruiseSpeed, random),
+          x: home,
         });
       }
     }
@@ -226,7 +230,7 @@ const trafficFlow: Flow = {
 
 const laneIndexOf = (track: Track, car: TrafficCar): number =>
   Math.min(
-    track.plan.lanesEachWay - 1,
+    track.sameWayLanes.length - 1,
     Math.floor(Math.abs(car.x) / track.plan.laneWidth)
   );
 
@@ -449,7 +453,7 @@ export const stepTraffic = (state: RaceState, track: Track): void => {
   for (const direction of directions) {
     for (
       let laneIndex = 0;
-      laneIndex < track.plan.lanesEachWay;
+      laneIndex < track.sameWayLanes.length;
       laneIndex += 1
     ) {
       gatherLane(track, cars, trafficFlow, direction, laneIndex);

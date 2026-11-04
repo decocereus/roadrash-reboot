@@ -1,3 +1,4 @@
+import { roadHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 
 import { ridingOver } from "./carrier.ts";
@@ -586,7 +587,10 @@ const offerBetweenLanes = (
   x: number,
   cruise: number
 ): void => {
-  if (Math.abs(x) <= track.roadHalfWidth - BIKE_HALF_WIDTH - DODGE_EDGE) {
+  if (
+    Math.abs(x) <=
+    roadHalfWidthAt(track, rider.s) - BIKE_HALF_WIDTH - DODGE_EDGE
+  ) {
     laneThreat(plan, state, rider, x, plan.found);
     if (!threatened(plan.found) && !crossesBlocked(plan, rider, x)) {
       offer(

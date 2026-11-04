@@ -1,5 +1,6 @@
 import { ARM_LENGTH, armSidesOf } from "@racer/track/crossings";
 import type { ArmSide, CrossRoad, TrackCrossing } from "@racer/track/crossings";
+import { roadHalfWidthAt } from "@racer/track/districts";
 import { nextSeed, rollDice, siteSeed } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
@@ -78,7 +79,7 @@ const carFor = (track: Track, lane: Lane, seed: number): CrossCar => {
   const { junction, laneS, road, side } = lane;
   const dice = { dice: seed };
   const body = pickBody(rollDice(dice));
-  const start = track.roadHalfWidth + ARM_LENGTH;
+  const start = roadHalfWidthAt(track, laneS) + ARM_LENGTH;
   const across: ArmSide = side === 1 ? -1 : 1;
   const stopAt = ARM_LENGTH - STOP_LINE_OUT - STOP_SHORT - body.halfLength;
   const along: ArmSide = rollDice(dice) < 0.5 ? 1 : -1;

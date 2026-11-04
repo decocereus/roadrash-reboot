@@ -743,15 +743,16 @@ Test files:
 Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, lanes and scattered props, the plan for each level, and the `trackFor` registry.
 
 - Id: `track-compiler`
-- Start: `packages/track/src/alignment.ts`, `packages/track/src/track.ts`, `packages/track/src/roads.ts`
+- Start: `packages/track/src/districts.ts`, `packages/track/src/track.ts`, `packages/track/src/roads.ts`
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
 - Verify: none yet
 - Perf: none yet
-- Owns: `packages/track/src/alignment*.ts`, `packages/track/src/track.ts`, `packages/track/src/road.ts`, `packages/track/src/roads.ts`
+- Owns: `packages/track/src/alignment*.ts`, `packages/track/src/districts*.ts`, `packages/track/src/track.ts`, `packages/track/src/road.ts`, `packages/track/src/roads.ts`
 
 Source files:
 
 - `packages/track/src/alignment.ts`
+- `packages/track/src/districts.ts`
 - `packages/track/src/road.ts`
 - `packages/track/src/roads.ts`
 - `packages/track/src/track.ts`

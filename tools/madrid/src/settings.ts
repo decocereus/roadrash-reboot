@@ -40,13 +40,13 @@ export const stretchEntries: readonly StretchEntry[] = [
         },
       ],
       road: {
+        districts: [
+          { from: 0, lanesEachWay: 1, shoulderWidth: 0.5, vergeWidth: 5 },
+        ],
         laneWidth: 3.5,
-        lanesEachWay: 1,
         leadInLength: 80,
         runUpM: 0,
         runoffLength: 200,
-        shoulderWidth: 0.5,
-        vergeWidth: 5,
       },
       sceneReachM: 180,
       toM: 4650,
@@ -79,13 +79,13 @@ export const stretchEntries: readonly StretchEntry[] = [
         },
       ],
       road: {
+        districts: [
+          { from: 0, lanesEachWay: 2, shoulderWidth: 0.5, vergeWidth: 5 },
+        ],
         laneWidth: 3.5,
-        lanesEachWay: 2,
         leadInLength: 80,
         runUpM: 90,
         runoffLength: 200,
-        shoulderWidth: 0.5,
-        vergeWidth: 5,
       },
       sceneReachM: 90,
       toM: 2365.7,

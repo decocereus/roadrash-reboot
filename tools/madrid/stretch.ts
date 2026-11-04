@@ -8,6 +8,7 @@ import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import { clothoids } from "@racer/track/alignment";
 import type { TrackPiece, TrackPieces } from "@racer/track/alignment";
 import { chevronRuns } from "@racer/track/chevron-runs";
+import type { Districts } from "@racer/track/districts";
 import { readCorridor } from "@racer/track/madrid-corridor";
 import type { CorridorData } from "@racer/track/madrid-schema";
 import { stretches as committed } from "@racer/track/stretches";
@@ -114,6 +115,14 @@ export const ${camel}Scenery: Scenery = {
 `;
 };
 
+const districtsOf = (districts: Districts): string =>
+  `[${districts
+    .map(
+      ({ from, lanesEachWay, shoulderWidth, vergeWidth }) =>
+        `{ from: ${from}, lanesEachWay: ${lanesEachWay}, shoulderWidth: ${shoulderWidth}, vergeWidth: ${vergeWidth} }`
+    )
+    .join(", ")}]`;
+
 const planModule = (entry: StretchEntry, stretch: Stretch): string => {
   const camel = camelOf(entry.id);
   const { road } = entry.settings;
@@ -126,10 +135,10 @@ export const ${camel}: TrackPlan = {
   carriers: [],
   chevrons: chevronRuns["${entry.id}"],
   crossings: [],
+  districts: ${districtsOf(road.districts)},
   hazardsPerKilometre: ${entry.hazardsPerKilometre},
   id: "${entry.id}",
   laneWidth: ${road.laneWidth},
-  lanesEachWay: ${road.lanesEachWay},
   leadInLength: ${road.leadInLength},
   name: "${entry.name}",
   pieces: clothoids([${triples(stretch.pieces)
@@ -139,10 +148,8 @@ export const ${camel}: TrackPlan = {
   runoffLength: ${road.runoffLength},
   scenery: ${camel}Scenery,
   seed: ${hex(entry.seed)},
-  shoulderWidth: ${road.shoulderWidth},
   start: { heading: ${stretch.start.heading}, x: ${stretch.start.x}, z: ${stretch.start.z} },
   trafficPerKilometre: ${entry.trafficPerKilometre},
-  vergeWidth: ${road.vergeWidth},
 };
 `;
 };
@@ -207,10 +214,10 @@ const planOf = (
     carriers: [],
     chevrons,
     crossings: [],
+    districts: road.districts,
     hazardsPerKilometre: entry.hazardsPerKilometre,
     id: entry.id,
     laneWidth: road.laneWidth,
-    lanesEachWay: road.lanesEachWay,
     leadInLength: road.leadInLength,
     name: entry.name,
     pieces: clothoids(triples(stretch.pieces)),
@@ -223,10 +230,8 @@ const planOf = (
       water: stretch.water,
     },
     seed: entry.seed,
-    shoulderWidth: road.shoulderWidth,
     start: stretch.start,
     trafficPerKilometre: entry.trafficPerKilometre,
-    vergeWidth: road.vergeWidth,
   };
 };
 
@@ -235,10 +240,8 @@ const fieldsOf = (plan: TrackPlan): readonly (readonly [string, string])[] => [
   ["name", plan.name],
   ["region", plan.region],
   ["seed", String(plan.seed)],
-  ["lanesEachWay", String(plan.lanesEachWay)],
+  ["districts", JSON.stringify(plan.districts)],
   ["laneWidth", String(plan.laneWidth)],
-  ["shoulderWidth", String(plan.shoulderWidth)],
-  ["vergeWidth", String(plan.vergeWidth)],
   ["leadInLength", String(plan.leadInLength)],
   ["runoffLength", String(plan.runoffLength)],
   ["trafficPerKilometre", String(plan.trafficPerKilometre)],
