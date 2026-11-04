@@ -16,7 +16,9 @@ import {
 import { riderIdAt } from "@racer/sim/state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage } from "../src/messages.ts";
+import { createRoomRun } from "../src/room-run.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
 import type { SeatBrowser } from "../src/tape.ts";
 
@@ -219,6 +221,37 @@ describe("a seat loading the race", () => {
     seat.leave();
     const [report] = socket?.sentBuffers ?? [];
     expect(report && readRaceStats(new DataView(report))?.rollbacks).toBe(1);
+  });
+
+  it("counts a correction it had not yet replayed on the results screen", () => {
+    const { seat, socket } = loadingSeat();
+    const race = seat.race();
+    if (!race) {
+      throw new Error("The seat has no race.");
+    }
+    const run = createRoomRun(
+      seat,
+      race,
+      "friday-ride",
+      createInputLatency(
+        () => 0,
+        (done) => {
+          done();
+        }
+      )
+    );
+    race.client.predict(coasting);
+    race.client.predict(coasting);
+    const frame = createTickFrame();
+    clearFrame(frame, 1);
+    frame.controls.set(
+      riderIdAt(0),
+      controlOf({ ...neutralInput, throttle: 1 })
+    );
+    const view = new DataView(new ArrayBuffer(64));
+    const bytes = writeTick(view, frame, null);
+    socket?.hear(view.buffer.slice(0, bytes));
+    expect(run.report().net.rollbacks).toBe(1);
   });
 
   it("sends the room its race stats once when it leaves", () => {
