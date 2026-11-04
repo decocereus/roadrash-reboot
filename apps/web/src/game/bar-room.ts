@@ -1,44 +1,8 @@
+import { MEZZANINE, ROOM } from "@racer/sim/lobby-floor";
+
 import type { Kit } from "./bar-kit.ts";
 import { CYAN, MAGENTA, ORANGE, YELLOW } from "./looks.ts";
 
-export const ROOM = {
-  backZ: -9,
-  ceiling: 10,
-  doorCentre: 4.6,
-  doorHeight: 4.7,
-  doorLeft: 1.4,
-  doorRight: 7.8,
-  frontZ: 11,
-  leftX: -13,
-  rightX: 13,
-  skyBottom: 5.3,
-  skyLeft: -13,
-  skyRight: -6.2,
-  skyTop: 9,
-  windowBottom: 0.5,
-  windowTop: 8,
-} as const;
-
-export interface Plinth {
-  readonly height: number;
-  readonly radius: number;
-  readonly x: number;
-  readonly z: number;
-}
-
-export const PLINTH: Plinth = { height: 0.42, radius: 2.9, x: -0.6, z: 2.9 };
-export const GARAGE_PLINTH: Plinth = {
-  height: 0.42,
-  radius: 2.2,
-  x: 7,
-  z: -3.75,
-};
-export const MEZZANINE = {
-  backZ: -9,
-  frontZ: 1.5,
-  leftX: 8.6,
-  y: 4.3,
-} as const;
 export const GARAGE_LAMPS = [
   [10.2, -6.6],
   [10.2, -0.9],
@@ -46,6 +10,8 @@ export const GARAGE_LAMPS = [
 
 const WALL = "#57307a";
 const WALL_LOW = "#44245e";
+const FRONT_BAND = 2.6;
+const FRONT_NEON = "#19e6ff";
 const STEEL = "#33204a";
 const STEEL_LIGHT = "#59456f";
 const LAMP_HOUSE = "#2a1a38";
@@ -124,9 +90,33 @@ const buildLeftWall = (kit: Kit): void => {
   );
 };
 
+const buildFrontWall = (kit: Kit): void => {
+  const { ceiling, frontZ, leftX, rightX } = ROOM;
+  const wide = rightX - leftX;
+  const middle = (rightX + leftX) / 2;
+  const facing = { yaw: Math.PI };
+  kit.panel(
+    [middle, (FRONT_BAND + ceiling) / 2, frontZ],
+    [wide, ceiling - FRONT_BAND],
+    WALL,
+    facing
+  );
+  kit.panel(
+    [middle, FRONT_BAND / 2, frontZ],
+    [wide, FRONT_BAND],
+    WALL_LOW,
+    facing
+  );
+  kit.panel([middle, FRONT_BAND, frontZ - 0.02], [wide, 0.09], FRONT_NEON, {
+    strength: 2.4,
+    yaw: Math.PI,
+  });
+};
+
 export const buildShell = (kit: Kit): void => {
   buildBackWall(kit);
   buildLeftWall(kit);
+  buildFrontWall(kit);
   const { backZ, ceiling, frontZ, leftX, rightX } = ROOM;
   kit.box(
     [rightX + 0.2, ceiling / 2, (frontZ + backZ) / 2],

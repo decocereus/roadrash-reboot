@@ -49,7 +49,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Roadside clearance](./roadside-clearance.md): signs, trees and posts that give way to the chase camera on the shoulder, and signs that never show what stands behind them.
 - [Road hazards](./hazards.md): where oil, rocks, and potholes lie, how each draws, what contact costs by speed, what missing one costs, and the frame rate with them on screen.
 - [Junctions and crossings](./junctions.md): where a road's junctions and pedestrian crossings stand, how the arms, zebras, stop lines and signals draw, and the light cycle.
-- [Bar look test](./bar-look.md): the development-only live bar, its dusk-to-night clock, cast, door cutscene, and the colour blocks in a race.
+- [Walkable bar](./walkable-bar.md): the development-only bar the player walks around, its cameras, the hidden bike, the cast, the door cutscene and the clock.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
 - [Race rules](./race-rules.md): the served field size, a ten-racer grid, a three-tier career and what each tier changes, and the save above the top tier refused.

@@ -1,6 +1,14 @@
+import {
+  BAR_STOOL_ROW,
+  FURNITURE,
+  GARAGE_PLINTH,
+  PLINTH,
+  ROOM,
+  TABLE_STOOLS,
+} from "@racer/sim/lobby-floor";
+import type { Plinth } from "@racer/sim/lobby-floor";
+
 import type { Kit } from "./bar-kit.ts";
-import { GARAGE_PLINTH, PLINTH, ROOM } from "./bar-room.ts";
-import type { Plinth } from "./bar-room.ts";
 import { CYAN, MAGENTA, ORANGE, RED, YELLOW } from "./looks.ts";
 
 const WOOD = "#5c3142";
@@ -62,7 +70,7 @@ const backBar = (kit: Kit, glow: Kit): void => {
 };
 
 const counter = (kit: Kit, glow: Kit): void => {
-  const front = -3.9;
+  const front = FURNITURE.counterZ;
   kit.box([-5, 0.55, front], [11, 1.1, 0.9], WOOD);
   kit.box([-5, 1.16, front], [11.3, 0.1, 1.15], "#b0623f");
   kit.box([0.25, 0.55, -6.2], [0.9, 1.1, 3.8], WOOD);
@@ -74,17 +82,23 @@ const counter = (kit: Kit, glow: Kit): void => {
     strength: 2.2,
   });
   glow.box([0.84, 1.09, -6.2], [0.03, 0.05, 4.1], YELLOW, { strength: 3 });
-  for (const x of [-4, -3.75, -3.5]) {
+  for (const x of [
+    FURNITURE.taps.x - 0.25,
+    FURNITURE.taps.x,
+    FURNITURE.taps.x + 0.25,
+  ]) {
     kit.pole([x, 1.5, front], [0.03, 0.04], 0.6, METAL);
     glow.pole([x, 1.86, front], [0.05, 0.03], 0.14, AMBER, { strength: 1.3 });
   }
-  kit.box([-3.75, 1.3, front], [0.9, 0.14, 0.2], METAL);
-  for (let x = -9.2; x < 0; x += 1.55) {
-    kit.pole([x, 0.4, front + 1.25], [0.05, 0.06], 0.8, STEEL, { sides: 6 });
-    kit.pole([x, 0.84, front + 1.25], [0.25, 0.23], 0.13, "#d81f5f", {
+  kit.box([FURNITURE.taps.x, 1.3, front], [0.9, 0.14, 0.2], METAL);
+  const { count, firstX, spacing, z } = BAR_STOOL_ROW;
+  for (let seat = 0; seat < count; seat += 1) {
+    const x = firstX + seat * spacing;
+    kit.pole([x, 0.4, z], [0.05, 0.06], 0.8, STEEL, { sides: 6 });
+    kit.pole([x, 0.84, z], [0.25, 0.23], 0.13, "#d81f5f", {
       sides: 14,
     });
-    kit.pole([x, 0.03, front + 1.25], [0.2, 0.22], 0.06, STEEL, { sides: 10 });
+    kit.pole([x, 0.03, z], [0.2, 0.22], 0.06, STEEL, { sides: 10 });
   }
 };
 
@@ -109,10 +123,7 @@ const roundTable = (kit: Kit, glow: Kit, x: number, z: number): void => {
   kit.pole([x, 1.12, z], [0.62, 0.62], 0.06, "#3a2838", { sides: 18 });
   kit.pole([x, 0.03, z], [0.3, 0.32], 0.06, STEEL);
   glow.box([x, 1.3, z], [0.2, 0.3, 0.2], AMBER, { strength: 2 });
-  for (const [dx, dz] of [
-    [-1, 0.3],
-    [0.9, 0.55],
-  ] as const) {
+  for (const [dx, dz] of TABLE_STOOLS) {
     kit.pole([x + dx, 0.38, z + dz], [0.04, 0.05], 0.76, STEEL, { sides: 6 });
     kit.pole([x + dx, 0.8, z + dz], [0.23, 0.21], 0.12, "#d81f5f", {
       sides: 12,
@@ -120,10 +131,8 @@ const roundTable = (kit: Kit, glow: Kit, x: number, z: number): void => {
   }
 };
 
-const POOL = { x: 6.4, z: 6.6 } as const;
-
 const poolTable = (kit: Kit, glow: Kit): void => {
-  const { x, z } = POOL;
+  const { x, z } = FURNITURE.pool;
   kit.box([x, 0.02, z], [6.2, 0.04, 4.8], "#8c2a54");
   kit.box([x, 0.62, z], [4.1, 0.34, 2.4], "#3c2230");
   kit.box([x, 0.82, z], [3.7, 0.04, 2], "#1aa59a");
@@ -217,14 +226,17 @@ const planter = (kit: Kit, x: number, z: number): void => {
 export const buildProps = (kit: Kit, glow: Kit): void => {
   backBar(kit, glow);
   counter(kit, glow);
-  booth(kit, glow, -0.6);
-  booth(kit, glow, 4.4);
-  roundTable(kit, glow, -5.4, 7.6);
-  roundTable(kit, glow, -6.9, 2.9);
+  for (const z of FURNITURE.booths) {
+    booth(kit, glow, z);
+  }
+  for (const [x, z] of FURNITURE.tables) {
+    roundTable(kit, glow, x, z);
+  }
   poolTable(kit, glow);
   plinth(kit, glow, PLINTH);
   plinth(kit, glow, GARAGE_PLINTH);
   railing(kit, glow);
-  planter(kit, -11.8, 8.6);
-  planter(kit, -11.6, -2.9);
+  for (const [x, z] of FURNITURE.planters) {
+    planter(kit, x, z);
+  }
 };

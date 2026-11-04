@@ -315,6 +315,12 @@ The attract race loads at boot behind the loading screen and rotates through the
 
 The target is 60 frames per second on an integrated-graphics laptop.
 
+### The bar lobby
+
+The bar is the room players walk around before a race. `/bar` opens it in a development build, and no menu leads to it yet. `packages/sim/src/lobby-floor.ts` holds the room's layout as data, so the props the browser draws and the solids a rider collides with read the same numbers, and `packages/sim/src/lobby.ts` holds the movement rules at a fixed 60 Hz tick. A rider starts on foot and is `foot`, on a `stool` or on the `bike`. A click plans a route across the floor once, a breadth-first search over a 25 cm grid straightened by line of sight, and a key press drops it. A shove pushes the other rider away and fades in about half a second. The bike is hidden: the rider walks behind the bar through the gap past the counter's left end and presses `E` at the taps, and `B` then hops on or off anywhere for the rest of the page's life.
+
+`apps/web/src/game/bar.ts` builds the scene and steps nothing itself. `bar-player.ts` turns input into those rules and interpolates between ticks, `bar-you.ts` poses the player's figure from the result, `bar-camera.ts` owns the Angled, Follow and Whole room shots, and `bar-cast.ts` holds seven stand-in riders. The player's camera choice is saved in the browser by `apps/web/src/bar-view.ts`.
+
 ## Game art
 
 Models and menu art are not committed. Each file lives in the R2 bucket `rushline-art` under a content-addressed key, the first 32 hex digits of its SHA-256 and its extension, such as `d86d4b875dd46f911b288f42bc7a68cb.glb`. `apps/web/src/assets/art.json` is the manifest. It maps each logical name, such as `models/bike.glb` or `clubhouse/bar/dusk.webp`, to its key, and `artUrl` in `apps/web/src/assets/art.ts` turns a name into `/art/<key>`. A name that is not in the manifest does not type-check. A changed file gets a new key, so its URL changes and nothing needs purging.

@@ -29,6 +29,8 @@ export const deterministicFiles = [
   "packages/sim/src/difficulty.ts",
   "packages/sim/src/engine.ts",
   "packages/sim/src/hazards.ts",
+  "packages/sim/src/lobby-floor.ts",
+  "packages/sim/src/lobby.ts",
   "packages/sim/src/palette.ts",
   "packages/sim/src/pedestrians.ts",
   "packages/sim/src/pilot-combat.ts",

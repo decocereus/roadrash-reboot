@@ -1,20 +1,17 @@
+import { carryPush, shoveRider } from "@racer/sim/lobby";
+import { GARAGE_PLINTH, PLINTH } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
 import type { Assets } from "./assets.ts";
 import { blockPaletteOf, riderBlocks } from "./bar-blocks.ts";
 import type { RiderBlocks } from "./bar-blocks.ts";
-import { GARAGE_PLINTH, PLINTH } from "./bar-room.ts";
+import { poseTurns, breathTurns } from "./bar-poses.ts";
+import type { BarSpeech } from "./bar-speech.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
-import type { Turn } from "./figure-pose.ts";
 import { bodyFor } from "./figure-rig.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
-
-const FORWARD = new THREE.Vector3(-1, 0, 0);
-const RAISE = new THREE.Vector3(1, 0, 0);
-const ROLL = new THREE.Vector3(0, 0, 1);
-const YAW = new THREE.Vector3(0, 1, 0);
 
 const FULL_TURN = Math.PI * 2;
 const WALK_SPEED = 1.3;
@@ -27,7 +24,6 @@ const barActs = [
   "arms",
   "phone",
   "stool",
-  "chat",
   "ride",
   "tune",
   "walk",
@@ -35,71 +31,22 @@ const barActs = [
 
 type BarAct = (typeof barActs)[number];
 
-const relaxed: readonly Turn[] = [
-  { axis: RAISE, bone: "lowerarm_l", degrees: 16 },
-  { axis: RAISE, bone: "lowerarm_r", degrees: 16 },
-  { axis: ROLL, bone: "upperarm_l", degrees: -5 },
-  { axis: ROLL, bone: "upperarm_r", degrees: 5 },
-];
-
 const actTurns = {
-  arms: [
-    { axis: RAISE, bone: "upperarm_l", degrees: 16 },
-    { axis: RAISE, bone: "upperarm_r", degrees: 16 },
-    { axis: ROLL, bone: "upperarm_l", degrees: -12 },
-    { axis: ROLL, bone: "upperarm_r", degrees: 12 },
-    { axis: RAISE, bone: "lowerarm_l", degrees: 82 },
-    { axis: RAISE, bone: "lowerarm_r", degrees: 90 },
-    { axis: YAW, bone: "lowerarm_l", degrees: -72 },
-    { axis: YAW, bone: "lowerarm_r", degrees: 72 },
-    { axis: FORWARD, bone: "spine_03", degrees: -4 },
-  ],
-  chat: [
-    { axis: RAISE, bone: "upperarm_r", degrees: 32 },
-    { axis: ROLL, bone: "upperarm_r", degrees: 12 },
-    { axis: RAISE, bone: "lowerarm_r", degrees: 62 },
-    { axis: YAW, bone: "lowerarm_r", degrees: -24 },
-    { axis: RAISE, bone: "lowerarm_l", degrees: 16 },
-    { axis: ROLL, bone: "upperarm_l", degrees: -6 },
-    { axis: YAW, bone: "spine_03", degrees: 10 },
-  ],
-  lean: [
-    { axis: ROLL, bone: "pelvis", degrees: 5 },
-    { axis: FORWARD, bone: "spine_01", degrees: -6 },
-    { axis: FORWARD, bone: "spine_02", degrees: -6 },
-    { axis: RAISE, bone: "upperarm_l", degrees: -34 },
-    { axis: RAISE, bone: "upperarm_r", degrees: -34 },
-    { axis: ROLL, bone: "upperarm_l", degrees: -18 },
-    { axis: ROLL, bone: "upperarm_r", degrees: 18 },
-    { axis: RAISE, bone: "lowerarm_l", degrees: 36 },
-    { axis: RAISE, bone: "lowerarm_r", degrees: 36 },
-    { axis: FORWARD, bone: "head", degrees: 4 },
-  ],
-  phone: [
-    { axis: RAISE, bone: "upperarm_r", degrees: 26 },
-    { axis: RAISE, bone: "lowerarm_r", degrees: 92 },
-    { axis: YAW, bone: "lowerarm_r", degrees: 34 },
-    { axis: RAISE, bone: "lowerarm_l", degrees: 18 },
-    { axis: ROLL, bone: "upperarm_l", degrees: -5 },
-    { axis: FORWARD, bone: "neck_01", degrees: 12 },
-    { axis: FORWARD, bone: "head", degrees: 14 },
-    { axis: YAW, bone: "head", degrees: 8 },
-  ],
+  arms: poseTurns.arms,
+  lean: poseTurns.lean,
+  phone: poseTurns.phone,
   ride: [],
   stool: [],
   tune: [],
-  walk: relaxed,
-} as const satisfies Record<BarAct, readonly Turn[]>;
-
-const breathTurns: readonly Turn[] = [
-  { axis: FORWARD, bone: "spine_02", degrees: 1.6 },
-  { axis: FORWARD, bone: "spine_03", degrees: 1.3 },
-  { axis: ROLL, bone: "spine_01", degrees: 1.4 },
-  { axis: YAW, bone: "neck_01", degrees: 11 },
-  { axis: YAW, bone: "head", degrees: 9 },
-];
+  walk: poseTurns.relaxed,
+} as const;
 
 const STEP_SHARE = 0.46;
+const FLOOR_RADIUS = 0.34;
+const FACE_SECONDS = 3.5;
+const ON_MOUNT_REACH = 3.6;
+const AMBIENT_EVERY = 9;
+const NOBODY: readonly never[] = [];
 
 const mixPose = (from: number[], to: number[], share: number): number[] => {
   const mixed = [...from];
@@ -119,13 +66,12 @@ interface CastSpot {
 
 const spots: readonly CastSpot[] = [
   { act: "ride", face: 0, x: PLINTH.x, z: PLINTH.z },
-  { act: "chat", face: 0.9, gather: [1.8, -6], x: 3.3, z: 6.9 },
+  { act: "walk", face: -1.9, gather: [1.3, -4.8], x: 4.6, z: 0.4 },
   { act: "lean", face: 0.5, x: -8.4, z: -2.55 },
   { act: "stool", face: 3.14, x: -6.15, z: -2.65 },
   { act: "arms", face: -0.35, x: -0.4, z: -2.6 },
   { act: "tune", face: 0, x: GARAGE_PLINTH.x, z: GARAGE_PLINTH.z },
   { act: "phone", face: 0.9, x: -9.4, z: 3.4 },
-  { act: "walk", face: -1.9, gather: [1.3, -4.8], x: 4.6, z: 0.4 },
 ];
 
 const STOOL_SEAT = 1;
@@ -140,13 +86,18 @@ interface CastMember {
 
 export interface BarCast {
   readonly members: readonly CastMember[];
+  readonly crowd: readonly THREE.Vector3[];
+  readonly nearest: (x: number, z: number, reach: number) => number | null;
+  readonly face: (index: number, x: number, z: number, time: number) => void;
+  readonly shove: (index: number, fromX: number, fromZ: number) => void;
   readonly group: THREE.Group;
   readonly update: (
     seconds: number,
     time: number,
     camera: THREE.Camera,
     door: number,
-    size: { readonly width: number; readonly height: number }
+    size: { readonly width: number; readonly height: number },
+    ticks: number
   ) => void;
   readonly reset: () => void;
   readonly dispose: () => void;
@@ -154,11 +105,24 @@ export interface BarCast {
 
 const offsetOf = (index: number): number => index * 1.37;
 
+interface Motion {
+  readonly still: number[];
+  readonly breath: number[];
+  readonly stepA: number[];
+  readonly stepB: number[];
+}
+
+const turnOff = (figure: RiderFigure, wanted: number): number =>
+  THREE.MathUtils.euclideanModulo(
+    wanted - figure.root.rotation.y + Math.PI,
+    FULL_TURN
+  ) - Math.PI;
+
 export const createCast = (
   assets: Assets,
   shading: Shading,
   tags: TagLayer,
-  bubbleLines: readonly string[],
+  speech: BarSpeech,
   heroBike: THREE.Object3D,
   garageBike: THREE.Object3D,
   shown: number
@@ -169,12 +133,7 @@ export const createCast = (
     ["tune", garageBike],
   ]);
   const members: CastMember[] = [];
-  const motions: {
-    readonly still: number[];
-    readonly breath: number[];
-    readonly stepA: number[];
-    readonly stepB: number[];
-  }[] = [];
+  const motions: Motion[] = [];
   const stride = new THREE.Vector3();
   const route = [
     new THREE.Vector3(4.6, 0, 0.4),
@@ -185,6 +144,8 @@ export const createCast = (
   let leg = 0;
   let pause = 2;
   let walked = 0;
+  const pushes = riderBlocks.map(() => ({ pushX: 0, pushZ: 0, x: 0, z: 0 }));
+  const faces = riderBlocks.map(() => ({ until: 0, yaw: 0 }));
   for (let index = 0; index < riderBlocks.length; index += 1) {
     const blocks = riderBlocks[index];
     const spot = spots[index];
@@ -229,13 +190,16 @@ export const createCast = (
     }
     leg = 0;
     pause = 2;
+    for (const push of pushes) {
+      push.pushX = 0;
+      push.pushZ = 0;
+    }
   };
   reset();
-  const bubbles = bubbleLines.map((line) => {
-    const tag = tags.bubble(line);
-    tag.show(false);
-    return tag;
-  });
+  const crowd = members
+    .filter(({ spot }) => !mounts.has(spot.act))
+    .map(({ figure }) => figure.root.position);
+  let lastAmbient = -1;
   const riding: Stance = {
     flinch: 0,
     flinchSide: 1,
@@ -250,110 +214,223 @@ export const createCast = (
     weapon: "none",
   };
 
+  const rideMount = (
+    { figure, head }: CastMember,
+    bike: THREE.Object3D,
+    seconds: number
+  ): void => {
+    figure.root.position.copy(bike.position);
+    figure.root.quaternion.copy(bike.quaternion);
+    figure.root.translateY(figure.seat.y);
+    figure.root.translateZ(figure.seat.z);
+    figure.animate(riding, seconds);
+    head.copy(figure.root.position);
+    head.y += 0.9;
+  };
+
+  const breathe = (
+    figure: RiderFigure,
+    motion: Motion,
+    index: number,
+    time: number,
+    seconds: number
+  ): void => {
+    const blend = 0.5 + 0.5 * Math.sin(time * 0.7 + offsetOf(index));
+    figure.holdPose(motion.still, motion.breath, blend, seconds);
+  };
+
+  const walkToDoor = (
+    figure: RiderFigure,
+    motion: Motion,
+    gather: readonly [number, number],
+    index: number,
+    door: number,
+    time: number,
+    seconds: number
+  ): void => {
+    stride.set(
+      gather[0] - figure.root.position.x,
+      0,
+      gather[1] - figure.root.position.z
+    );
+    if (stride.length() > 0.2) {
+      figure.root.rotation.y = Math.atan2(stride.x, stride.z) + FORWARD_YAW;
+      figure.root.position.addScaledVector(
+        stride.normalize(),
+        WALK_SPEED * 1.4 * door * seconds
+      );
+      const phase = time * WALK_HZ * 1.4 + offsetOf(index);
+      figure.holdPose(
+        motion.stepA,
+        motion.stepB,
+        0.5 - 0.5 * Math.cos(phase * FULL_TURN),
+        seconds
+      );
+    } else {
+      figure.root.rotation.y = FORWARD_YAW + FORWARD_YAW;
+      figure.holdPose(motion.still, motion.breath, 0.5, seconds);
+    }
+  };
+
+  const walkTheRoute = (
+    figure: RiderFigure,
+    motion: Motion,
+    index: number,
+    time: number,
+    seconds: number
+  ): void => {
+    const target = route[leg] ?? route[0];
+    if (pause > 0 || !target) {
+      pause -= seconds;
+      breathe(figure, motion, index, time, seconds);
+      return;
+    }
+    stride.set(
+      target.x - figure.root.position.x,
+      0,
+      target.z - figure.root.position.z
+    );
+    if (stride.length() < 0.1) {
+      leg = (leg + 1) % route.length;
+      pause = 2.5;
+    } else {
+      const wanted = Math.atan2(stride.x, stride.z) + FORWARD_YAW;
+      figure.root.rotation.y +=
+        turnOff(figure, wanted) * Math.min(1, seconds * 5);
+      figure.root.position.addScaledVector(
+        stride.normalize(),
+        WALK_SPEED * seconds
+      );
+    }
+    walked += seconds;
+    figure.holdPose(
+      motion.stepA,
+      motion.stepB,
+      0.5 - 0.5 * Math.cos(walked * WALK_HZ * FULL_TURN),
+      seconds
+    );
+  };
+
+  const moveOnFoot = (
+    { figure, spot }: CastMember,
+    motion: Motion,
+    index: number,
+    door: number,
+    time: number,
+    seconds: number
+  ): void => {
+    if (door > 0 && spot.gather) {
+      walkToDoor(figure, motion, spot.gather, index, door, time, seconds);
+    } else if (spot.act === "walk" && door === 0) {
+      walkTheRoute(figure, motion, index, time, seconds);
+    } else {
+      breathe(figure, motion, index, time, seconds);
+    }
+  };
+
+  const carryShove = (
+    figure: RiderFigure,
+    index: number,
+    ticks: number
+  ): void => {
+    const push = pushes[index];
+    if (push && (push.pushX !== 0 || push.pushZ !== 0)) {
+      push.x = figure.root.position.x;
+      push.z = figure.root.position.z;
+      for (let tick = 0; tick < ticks; tick += 1) {
+        carryPush(push, FLOOR_RADIUS, NOBODY);
+      }
+      figure.root.position.x = push.x;
+      figure.root.position.z = push.z;
+    }
+  };
+
+  const turnToLook = (
+    figure: RiderFigure,
+    index: number,
+    time: number,
+    seconds: number
+  ): void => {
+    const look = faces[index];
+    if (look && look.until > time) {
+      figure.root.rotation.y +=
+        turnOff(figure, look.yaw) * Math.min(1, seconds * 7);
+    }
+  };
+
   return {
+    crowd,
     dispose() {
       for (const { figure } of members) {
         figure.dispose();
       }
     },
+    face(index, x, z, time) {
+      const member = members[index];
+      const look = faces[index];
+      if (member && look && !mounts.has(member.spot.act)) {
+        const body = member.figure.root.position;
+        look.yaw = Math.atan2(x - body.x, z - body.z) + FORWARD_YAW;
+        look.until = time + FACE_SECONDS;
+      }
+    },
     group,
     members,
+    nearest(x, z, reach) {
+      let best: number | null = null;
+      let closest = Number.POSITIVE_INFINITY;
+      for (let index = 0; index < members.length; index += 1) {
+        const member = members[index];
+        if (member) {
+          const away = Math.hypot(member.head.x - x, member.head.z - z);
+          const room = mounts.has(member.spot.act) ? ON_MOUNT_REACH : reach;
+          if (away < room && away < closest) {
+            best = index;
+            closest = away;
+          }
+        }
+      }
+      return best;
+    },
     reset,
-    update(seconds, time, camera, door, size) {
+    shove(index, fromX, fromZ) {
+      const member = members[index];
+      const push = pushes[index];
+      if (
+        member &&
+        push &&
+        member.spot.act !== "stool" &&
+        !mounts.has(member.spot.act)
+      ) {
+        push.x = member.figure.root.position.x;
+        push.z = member.figure.root.position.z;
+        shoveRider(push, fromX, fromZ);
+      }
+    },
+    update(seconds, time, camera, door, size, ticks) {
       for (let index = 0; index < members.length; index += 1) {
         const member = members[index];
         const motion = motions[index];
-        if (!(member && motion)) {
-          continue;
-        }
-        const { figure, spot, tag } = member;
-        const bike = mounts.get(spot.act);
-        if (bike) {
-          figure.root.position.copy(bike.position);
-          figure.root.quaternion.copy(bike.quaternion);
-          figure.root.translateY(figure.seat.y);
-          figure.root.translateZ(figure.seat.z);
-          figure.animate(riding, seconds);
-          member.head.copy(figure.root.position);
-          member.head.y += 0.9;
-        } else {
-          const gather = door > 0 ? spot.gather : undefined;
-          if (gather) {
-            stride.set(
-              gather[0] - figure.root.position.x,
-              0,
-              gather[1] - figure.root.position.z
-            );
-            if (stride.length() > 0.2) {
-              figure.root.rotation.y =
-                Math.atan2(stride.x, stride.z) + FORWARD_YAW;
-              figure.root.position.addScaledVector(
-                stride.normalize(),
-                WALK_SPEED * 1.4 * door * seconds
-              );
-              const phase = time * WALK_HZ * 1.4 + offsetOf(index);
-              figure.holdPose(
-                motion.stepA,
-                motion.stepB,
-                0.5 - 0.5 * Math.cos(phase * FULL_TURN),
-                seconds
-              );
-            } else {
-              figure.root.rotation.y = FORWARD_YAW + FORWARD_YAW;
-              figure.holdPose(motion.still, motion.breath, 0.5, seconds);
-            }
-          } else if (spot.act === "walk" && door === 0) {
-            const target = route[leg] ?? route[0];
-            if (pause > 0 || !target) {
-              pause -= seconds;
-              const blend = 0.5 + 0.5 * Math.sin(time * 0.7 + offsetOf(index));
-              figure.holdPose(motion.still, motion.breath, blend, seconds);
-            } else {
-              stride.set(
-                target.x - figure.root.position.x,
-                0,
-                target.z - figure.root.position.z
-              );
-              if (stride.length() < 0.1) {
-                leg = (leg + 1) % route.length;
-                pause = 2.5;
-              } else {
-                const wanted = Math.atan2(stride.x, stride.z) + FORWARD_YAW;
-                const off =
-                  THREE.MathUtils.euclideanModulo(
-                    wanted - figure.root.rotation.y + Math.PI,
-                    FULL_TURN
-                  ) - Math.PI;
-                figure.root.rotation.y += off * Math.min(1, seconds * 5);
-                figure.root.position.addScaledVector(
-                  stride.normalize(),
-                  WALK_SPEED * seconds
-                );
-              }
-              walked += seconds;
-              figure.holdPose(
-                motion.stepA,
-                motion.stepB,
-                0.5 - 0.5 * Math.cos(walked * WALK_HZ * FULL_TURN),
-                seconds
-              );
-            }
+        if (member && motion) {
+          const bike = mounts.get(member.spot.act);
+          if (bike) {
+            rideMount(member, bike, seconds);
           } else {
-            const blend = 0.5 + 0.5 * Math.sin(time * 0.7 + offsetOf(index));
-            figure.holdPose(motion.still, motion.breath, blend, seconds);
+            moveOnFoot(member, motion, index, door, time, seconds);
+            carryShove(member.figure, index, ticks);
+            turnToLook(member.figure, index, time, seconds);
+            member.head.copy(member.figure.root.position);
+            member.head.y += member.spot.act === "stool" ? 1.02 : TAG_LIFT;
           }
-          member.head.copy(figure.root.position);
-          member.head.y += spot.act === "stool" ? 1.02 : TAG_LIFT;
+          member.tag.set(member.head, camera, size);
         }
-        tag.set(member.head, camera, size);
       }
-      const spoken = Math.floor(time / 4.5) % bubbles.length;
-      for (let index = 0; index < bubbles.length; index += 1) {
-        const bubble = bubbles[index];
-        const speaker = members[(index * 3 + 1) % members.length];
-        if (bubble && speaker) {
-          bubble.show(index === spoken && door === 0);
-          bubble.set(speaker.head, camera, size);
+      const ambient = Math.floor(time / AMBIENT_EVERY);
+      if (ambient !== lastAmbient && door === 0) {
+        lastAmbient = ambient;
+        const speaker = members[(ambient * 3 + 1) % members.length];
+        if (speaker) {
+          speech.ambient(ambient, speaker.head, time);
         }
       }
     },

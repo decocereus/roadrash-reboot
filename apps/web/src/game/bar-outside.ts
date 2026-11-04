@@ -1,9 +1,9 @@
+import { ROOM } from "@racer/sim/lobby-floor";
 import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-import { ROOM } from "./bar-room.ts";
 import type { Shading } from "./cel.ts";
 import { CYAN, MAGENTA, YELLOW } from "./looks.ts";
 import type { Look } from "./looks.ts";
