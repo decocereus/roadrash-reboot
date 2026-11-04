@@ -80,6 +80,7 @@ const notes: readonly RoomNote[] = [
     traffic: "normal",
   },
   {
+    closeCode: 1006,
     kind: "left",
     raceId: "race-b",
     seatsLeft: 0,

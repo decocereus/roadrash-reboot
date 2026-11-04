@@ -46,6 +46,7 @@ import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 const PING_EVERY_MS = 500;
 const DEAD_AFTER_MS = 5000;
 const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
+const PINGS_PER_REPORT = 30;
 
 export type SeatPhase =
   | "connecting"
@@ -123,6 +124,7 @@ export const openRoomSeat = (
   const clock = createRoomClock();
   const tally = createRaceTally();
   let reported = false;
+  let pingsUntilReport = PINGS_PER_REPORT;
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
   let lobby: RoomLobbyMessage | null = null;
@@ -169,6 +171,26 @@ export const openRoomSeat = (
     move("loading");
   };
 
+  const sendReport = ({ client }: SeatRace, rows: readonly number[]): void => {
+    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
+    writeRaceStats(packet, tally.read(client, worstRttMs));
+    socket.send(packet.buffer);
+    const identity = browser();
+    if (identity) {
+      const trace: BrowserTrace = { ...identity, rows };
+      socket.send(JSON.stringify(trace));
+    }
+  };
+
+  const reportWhileRiding = (): void => {
+    pingsUntilReport -= 1;
+    if (pingsUntilReport > 0 || !race || reported || phase !== "racing") {
+      return;
+    }
+    pingsUntilReport = PINGS_PER_REPORT;
+    sendReport(race, tally.closedTraceRows());
+  };
+
   const sendPing = (): void => {
     const silent = counting
       ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
@@ -182,6 +204,7 @@ export const openRoomSeat = (
     writePing(ping, Math.floor(performance.now()));
     socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
     unansweredPings += 1;
+    reportWhileRiding();
   };
 
   const onBinary = (data: ArrayBuffer): void => {
@@ -209,6 +232,7 @@ export const openRoomSeat = (
   socket.addEventListener("open", () => {
     pings = setInterval(sendPing, PING_EVERY_MS);
   });
+
   const reportOnce = (): void => {
     if (!race || reported || socket.readyState !== WebSocket.OPEN) {
       return;
@@ -220,14 +244,7 @@ export const openRoomSeat = (
       race.client.mine.s,
       race.client.confirmed.tick
     );
-    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
-    writeRaceStats(packet, tally.read(race.client, worstRttMs));
-    socket.send(packet.buffer);
-    const identity = browser();
-    if (identity) {
-      const trace: BrowserTrace = { ...identity, rows: tally.traceRows() };
-      socket.send(JSON.stringify(trace));
-    }
+    sendReport(race, tally.lastTraceRows());
   };
 
   socket.addEventListener("close", (event) => {
@@ -275,6 +292,7 @@ export const openRoomSeat = (
       case "countdown": {
         clock.start(message.value.startAtMs);
         counting = true;
+        pingsUntilReport = PINGS_PER_REPORT;
         move("racing");
         break;
       }

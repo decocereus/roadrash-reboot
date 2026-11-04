@@ -25,7 +25,8 @@ export interface RaceTally {
   ) => void;
   readonly stepped: (steps: number) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
-  readonly traceRows: () => readonly number[];
+  readonly closedTraceRows: () => readonly number[];
+  readonly lastTraceRows: () => readonly number[];
 }
 
 const percentileOf = (
@@ -60,6 +61,7 @@ export const createRaceTally = (): RaceTally => {
 
   const rows = new Uint32Array(MOST_TRACE_ROWS * TRACE_ROW_FIELDS);
   let rowsUsed = 0;
+  let rowsTaken = 0;
   let firstFrameAt = 0;
   let rowStartedAt = 0;
   let lastTickAt = 0;
@@ -76,7 +78,16 @@ export const createRaceTally = (): RaceTally => {
     rowStartedAt = now;
   };
 
+  const takeRows = (): readonly number[] => {
+    const from = rowsTaken;
+    rowsTaken = rowsUsed;
+    return [
+      ...rows.subarray(from * TRACE_ROW_FIELDS, rowsUsed * TRACE_ROW_FIELDS),
+    ];
+  };
+
   return {
+    closedTraceRows: takeRows,
     frameDrawn: (now, roadMetres, confirmedTick) => {
       if (lastFrameAt === 0) {
         firstFrameAt = now;
@@ -121,6 +132,12 @@ export const createRaceTally = (): RaceTally => {
       }
       lastTickAt = now;
     },
+    lastTraceRows: () => {
+      if (open.some((value) => value > 0)) {
+        closeRow(lastFrameAt, lastConfirmedTick);
+      }
+      return takeRows();
+    },
     read: ({ mine, predicted, stats }, rttWorstMs) => ({
       crashes: mine.crashes,
       crashesAfterCorrection: stats.crashesAfterCorrection,
@@ -162,12 +179,6 @@ export const createRaceTally = (): RaceTally => {
         (open[TraceField.held] ?? 0) + (steps === 0 ? 1 : 0);
       open[TraceField.doubled] =
         (open[TraceField.doubled] ?? 0) + (steps >= 2 ? 1 : 0);
-    },
-    traceRows: () => {
-      if (open.some((value) => value > 0)) {
-        closeRow(lastFrameAt, lastConfirmedTick);
-      }
-      return [...rows.subarray(0, rowsUsed * TRACE_ROW_FIELDS)];
     },
   };
 };

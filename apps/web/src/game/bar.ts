@@ -1,9 +1,10 @@
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
-import { GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
+import { doorSpot, GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
+import { graphicsCard } from "../diagnostics/player-events.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
 import { riderBlocks } from "./bar-blocks.ts";
@@ -35,10 +36,12 @@ import { createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
+import { MODEST_GPU } from "./quality-ladder.ts";
 
 export { assetParsers } from "./assets.ts";
 
 const MAX_PIXEL_RATIO = 2;
+const LEAN_SCALE = 0.7;
 const LOOP_AFTER_DOOR = 15;
 const BIKE_WAITS = 1.3;
 const BIKE_PULL = 1.6;
@@ -62,13 +65,13 @@ const TURN_SECONDS = 14;
 const FIRST_WALKER_BIKE = 2;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
-const DOOR_GATHER = { x: 1.3, z: -4.8 } as const;
 
 interface Pins {
   readonly ratio: number | null;
   readonly riders: number;
   readonly samples: number | null;
   readonly bloom: number | null;
+  readonly scale: number;
   readonly shadow: number;
   readonly time: number | null;
 }
@@ -79,7 +82,7 @@ const pinsFrom = (search: string): Pins => {
     const value = flags.get(name);
     return value === null ? null : Number(value);
   };
-  const lean = flags.has("lean");
+  const lean = flags.has("lean") || MODEST_GPU.test(graphicsCard());
   const named = flags.get("time");
   const fixed = named === "night" ? 1 : number("time");
   return {
@@ -87,6 +90,7 @@ const pinsFrom = (search: string): Pins => {
     ratio: number("ratio"),
     riders: number("riders") ?? riderBlocks.length,
     samples: lean ? 0 : number("samples"),
+    scale: lean ? LEAN_SCALE : 1,
     shadow: lean ? 2048 : (number("shadow") ?? 4096),
     time: named === "dusk" ? 0 : fixed,
   };
@@ -370,7 +374,8 @@ const openRoom = (
       return;
     }
     const ratio =
-      pins.ratio ?? Math.min(globalThis.devicePixelRatio, MAX_PIXEL_RATIO);
+      pins.ratio ??
+      Math.min(globalThis.devicePixelRatio, MAX_PIXEL_RATIO) * pins.scale;
     renderer.setPixelRatio(ratio);
     renderer.setSize(width, height, false);
     pipeline.resize(width, height, ratio);
@@ -442,8 +447,39 @@ const openRoom = (
   const openDoor = (): void => {
     if (doorOpenedAt === null) {
       doorOpenedAt = clock;
-      player.walkTo(DOOR_GATHER.x, DOOR_GATHER.z);
+      const spot = doorSpot(members?.mine() ?? 0);
+      player.walkTo(spot.x, spot.z);
     }
+  };
+
+  const runDoor = (): void => {
+    if (seat?.race()) {
+      openDoor();
+    }
+    if (
+      !seat &&
+      doorOpenedAt !== null &&
+      clock - doorOpenedAt > LOOP_AFTER_DOOR
+    ) {
+      timeShift += clock;
+      clock = 0;
+      doorOpenedAt = null;
+      cast.reset();
+      speech.reset();
+      player.reset();
+      spinAt = 0;
+      heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
+    }
+    if (!seat && COUNTDOWN_START <= clock) {
+      openDoor();
+    }
+  };
+
+  const msToDoor = (): number | null => {
+    if (!seat) {
+      return Math.max(0, COUNTDOWN_START - clock) * MS_PER_SECOND;
+    }
+    return seat.race() ? 0 : seat.startsInMs();
   };
 
   const frame = (now: number): void => {
@@ -464,22 +500,8 @@ const openRoom = (
       setTime(cycle);
     }
 
-    if (doorOpenedAt !== null && clock - doorOpenedAt > LOOP_AFTER_DOOR) {
-      timeShift += clock;
-      clock = 0;
-      doorOpenedAt = null;
-      cast.reset();
-      speech.reset();
-      player.reset();
-      spinAt = 0;
-      heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
-    }
-    const left = seat
-      ? seat.startsInMs()
-      : Math.max(0, COUNTDOWN_START - clock) * MS_PER_SECOND;
-    if (!seat && left === 0) {
-      openDoor();
-    }
+    runDoor();
+    const left = msToDoor();
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
     door.position.y = lift * DOOR_RISE;
@@ -548,7 +570,7 @@ const openRoom = (
     cast.update(seconds, clock, camera, lift, viewSize, ticks);
     members?.draw(seconds, camera, viewSize);
     const you = yourSlot();
-    you.walker.rename("YOU");
+    you.walker.rename(members?.myLabel() ?? "YOU");
     you.walker.show(true);
     you.walker.update(
       player.stance(),

@@ -2792,6 +2792,38 @@
       "side": "B",
       "source": "baseline-2026-11-04T19-59-34-613Z-32323d6-32323d6",
       "value": 852737
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
+      "value": 2051822
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
+      "value": 879637
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
+      "value": 732726
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
+      "value": 188205
     }
   ],
   "revisions": {
@@ -3683,6 +3715,29 @@
       "sides": {
         "A": "32323d63bcd91f3a2c8a5cb602d7f3bf0e22f910",
         "B": "32323d63bcd91f3a2c8a5cb602d7f3bf0e22f910"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1151175, \"bytes.route.root.gzip\": 612988, \"bytes.route.kit.raw\": 949596, \"bytes.route.kit.gzip\": 543656, \"bytes.game.raw\": 1919658, \"bytes.game.gzip\": 827270, \"bytes.game.incremental.raw\": 768483, \"bytes.game.incremental.gzip\": 214282, \"bytes.worker.raw\": 732588, \"bytes.worker.gzip\": 188187, \"bytes.client.raw\": 2051822, \"bytes.client.gzip\": 879637}",
+        "builtB": "{\"bytes.route.root.raw\": 1151175, \"bytes.route.root.gzip\": 612988, \"bytes.route.kit.raw\": 949596, \"bytes.route.kit.gzip\": 543656, \"bytes.game.raw\": 1919658, \"bytes.game.gzip\": 827270, \"bytes.game.incremental.raw\": 768483, \"bytes.game.incremental.gzip\": 214282, \"bytes.worker.raw\": 732726, \"bytes.worker.gzip\": 188205, \"bytes.client.raw\": 2051822, \"bytes.client.gzip\": 879637}",
+        "harnessDigest": "6e43c2da687233abba9b07b029851d73205b0db46c1fe139f9961e203958f988",
+        "lockfileSha256": "13d7c978bcef701dd126c127c32d1f4659f708e3aa0b97bb3af00a94db6ebf06",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "79e0d394f7fdf13338c8c24c6953d19610fb451b1c52e029c6292bcb8795e333",
+        "sideBSourceDigest": "79e0d394f7fdf13338c8c24c6953d19610fb451b1c52e029c6292bcb8795e333",
+        "why": "The bar became every race room's lobby, so its code ships to players: the client rows grow by that code, 61,624 B raw and 26,804 B gzip against main. The Worker rows fall by 222,382 B raw and 55,141 B gzip, because the bar route no longer opens a room seat and openBar is guarded on import.meta.env.SSR. Every other build row keeps its limit."
+      },
+      "id": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
+      "lanes": ["build"],
+      "sides": {
+        "A": "4e4d8847cb4150987d8439bc5ae95bb253792b33",
+        "B": "4e4d8847cb4150987d8439bc5ae95bb253792b33"
       }
     }
   ],

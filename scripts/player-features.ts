@@ -364,6 +364,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/bar-view.ts",
+      "apps/web/src/components/bar-*.tsx",
       "apps/web/src/game/bar*.ts",
       "apps/web/src/routes/bar.tsx",
       "packages/sim/src/lobby*.ts",

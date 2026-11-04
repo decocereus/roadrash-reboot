@@ -1,6 +1,6 @@
 # Walkable bar
 
-The bar is the lobby the player walks around before a race. It runs live in the game's renderer with the real riders and bikes: a neon room with a back bar, a garage bay under the mezzanine, a hero bike on a turntable, seven stand-in riders with names over their heads, and a door counting down to the next race. It is reached only by a development URL, and no menu leads to it yet.
+The bar is the lobby the player walks around before a race. It runs live in the game's renderer with the real riders and bikes: a neon room with a back bar, a garage bay under the mezzanine, a hero bike on a turntable, seven stand-in riders with names over their heads, and a door counting down to the next race. It is the lobby of every race room, public and custom, and `/bar` opens it with no room in a development build.
 
 ## Sub-features
 
@@ -11,11 +11,13 @@ The bar is the lobby the player walks around before a race. It runs live in the 
 - `door`: the countdown, the door rising, the hero bike riding out and everyone gathering, then the scene loops.
 - `clock`: the dusk-to-night cycle, the skyline, the rain and the neon.
 - `room`: real members of a race room walking the bar together, with their names and matching outfits. Walks, greets, shoves and someone leaving reach every browser.
+- `pre-race`: a real lobby in the bar. `Enter` readies up, the server starts the race, the door lifts, the riders gather, and the countdown cuts to the race.
+- `panel`: the lobby panel over the bar: members, rules, Ready, Copy the link in a custom room, Change name, Leave. The host picks the rules behind `You set the rules`. A public lobby has no host, no picker and no link.
 
 ## How to get to it (user POV)
 
-- Development build only: open `/bar`.
-- In a room: open `/bar?room=<8 character id>&name=<name>` in two browsers.
+- Any race room: `Race friends` or `Find a race` on the bar screen lands in it. `/?room=<8 character id>` in two browsers asks for a name and shows the invite first. Add `&via=made` to skip the invite.
+- Development build with no room: open `/bar`.
 - Add `?time=dusk`, `?time=night` or `?time=0.5` to hold the clock, `?lean` for the Intel settings, `?ratio=<n>`, `?samples=<n>`, `?bloom=<n>` and `?shadow=<n>` to pin one setting, `?riders=<n>` to draw fewer riders.
 
 ## Driving it with rv
@@ -27,13 +29,18 @@ Preconditions: a slot from `rv up` on a development build.
 - Walk by click: `rv js --run <run> 'void __rushlineBar.walkTo(-8, -1)'`, then `rv wait --run <run> '__rushlineBar.player().target === null'`. The rider walks around the plinth and ends near that spot.
 - Find the bike: `rv js --run <run> 'void __rushlineBar.walkTo(-3.75, -5)'` and wait as above. The rider goes through the gap past the counter's left end and behind the bar. `rv press --run <run> KeyE --hold 80` shows the bubble and `bikeFound` turns true. `rv press --run <run> KeyB --hold 80` puts them on the bike with puffs. Hold `KeyW` and `KeyA` to see the lean.
 - Change camera: `rv press --run <run> KeyC --hold 80`. The button changes, and `rushline.bar-camera` in local storage holds the choice after a reload.
-- Open the door: `rv js --run <run> '__rushlineBar.openDoor()'`, then `rv screencast --run <run> door --seconds 11 --every 12`. The door lifts, the hero bike rides out, the riders gather, and you walk to the door.
+- Open the door in the no-room scene: `rv js --run <run> '__rushlineBar.openDoor()'`, then `rv screencast --run <run> door --seconds 11 --every 12`. The door lifts, the hero bike rides out, the riders gather, and you walk to the door.
 - Count the frame: `rv js --run <run> '__rushlineBar.triangles()'` and `rv js --run <run> '__rushlineBar.calls()'` read one frame's totals. `rv sample --run <run> bar --seconds 20` reads the frame times.
-- Walk a room with two browsers: start the Worker with `RUSHLINE_WEB_PORT=1436 RUSHLINE_ROOMS_PORT=1437 pnpm exec alchemy dev --stage barriders` and leave it running. In each Bash call that starts a run, `export VITE_ROOMS_URL=http://127.0.0.1:1437`, then `rv up --dev --path "/bar?room=abcd2345&name=A&time=dusk"` and the same with `name=B`. Each gets its own slot and `curl http://127.0.0.1:1437/rooms/abcd2345` lists the room. Walk A with `walkTo` to a spot beside B and watch B's screen with `rv screencast --run <b> walkin --seconds 3 --every 6`. A's figure walks with its legs moving, under A's name, in the outfit A sees on its own screen. `KeyF` on A moves B's rider in B's `__rushlineBar.player()`. `KeyE` shows YO over A and SUP over B on both screens. `rv down` on A takes A's figure out of B's room.
+- Walk a room with two browsers: start the Worker with `RUSHLINE_WEB_PORT=1436 RUSHLINE_ROOMS_PORT=1437 pnpm exec alchemy dev --stage barriders` and leave it running. In each Bash call that starts a run, `export VITE_ROOMS_URL=http://127.0.0.1:1437`, set `rushline.guestName.v1` in each browser's local storage, then open `/?room=abcd2345&via=made&time=dusk` in both. Each gets its own slot and `curl http://127.0.0.1:1437/rooms/abcd2345` lists the room. Walk A with `walkTo` to a spot beside B and watch B's screen with `rv screencast --run <b> walkin --seconds 3 --every 6`. A's figure walks with its legs moving, under A's name, in the outfit A sees on its own screen. `KeyF` on A moves B's rider in B's `__rushlineBar.player()`. `KeyE` shows YO over A and SUP over B on both screens. `rv down` on A takes A's figure out of B's room.
+- Play the pre-race moment: with the same room, `rv press --run <run> Enter --hold 80` on each. Record with `rv screencast --run <run> door --seconds 7 --every 10`. The panel disappears, the plate reads 0:00, the door lifts, the camera pushes in, and the other rider walks to the door. About 5 seconds later the race shows its countdown.
+- Prove it on the live site: `rv open` takes only this run's paths, so `rv up --dev --path /privacy`, then `rv js --run <run> 'void (location.href="https://rushline.amartya-faceless.workers.dev/privacy")'`, and set `rushline.guestName.v1` there, because local storage is per origin. Go to `/` and press `Find a race` in two windows. Both land in one public lobby within about 34 s. `&autopilot` does nothing on production, so an idle race ends at about 9:30, when the pilot brings each rider home. Then `Back to the lobby` returns to the bar with a road the server picked and a new 45 s timer. Hold other lanes' merges for it, because a deploy resets the room.
 
 ## Gotchas
 
 - `?time` holds the clock until the page reloads.
+- First-time browsers show the data notice over the left of the room, door moment included, until `Got it`.
 - The countdown opens the door by itself after 90 s and the scene loops 15 s later, so open a fresh page before a timed sample.
 - The bike unlock lasts until the page reloads.
+- The first `rv up --dev` after new imports can hit Vite's `504 Outdated Optimize Dep`, and the page never reaches the bar. Open the page again.
+- A development build opens a throwaway room socket when React mounts twice. About 1 join in 11 against the live rooms server ended on "You opened this lobby in another tab", probably because the throwaway socket reached the server second. Reload the page. Production builds mount once.
 - Riders are full detail until the rendering lane ships detail levels, so the triangle count is the worst case.

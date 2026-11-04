@@ -46,6 +46,13 @@ export const ROOM = {
 } as const;
 
 export const PLINTH: Plinth = { height: 0.42, radius: 2.9, x: -0.6, z: 2.9 };
+
+const DOOR_LINE = { first: ROOM.doorLeft + 0.5, gap: 0.7, z: -4.8 } as const;
+
+export const doorSpot = (slot: number): Spot => ({
+  x: DOOR_LINE.first + slot * DOOR_LINE.gap,
+  z: DOOR_LINE.z,
+});
 export const GARAGE_PLINTH: Plinth = {
   height: 0.42,
   radius: 2.2,

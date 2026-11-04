@@ -149,14 +149,14 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       );
       return {
         fetch,
-        webSocketClose: (socket: Cloudflare.WebSocket) =>
+        webSocketClose: (socket: Cloudflare.WebSocket, closeCode: number) =>
           Effect.sync(() => {
-            opened?.gone(rawSocket(socket));
+            opened?.gone(rawSocket(socket), closeCode);
             socket.ws.close(SEAT_CLOSED, "Seat closed.");
           }),
         webSocketError: (socket: Cloudflare.WebSocket) =>
           Effect.sync(() => {
-            opened?.gone(rawSocket(socket));
+            opened?.gone(rawSocket(socket), null);
           }),
         webSocketMessage: (
           socket: Cloudflare.WebSocket,

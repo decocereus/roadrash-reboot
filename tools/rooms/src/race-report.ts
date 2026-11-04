@@ -152,8 +152,8 @@ const serverLine = (ended: RaceEnded): string => {
 const unfinishedLines = (record: RaceRecord): readonly string[] => [
   "  No ended line: the room died, or the race is still running.",
   ...record.left.map(
-    ({ tally, tick }) =>
-      `  Rider ${tally.rider} left at ${raceTime(tick)}, controls ${tally.accepted} accepted, ${tally.missed} missed`
+    ({ closeCode, tally, tick }) =>
+      `  Rider ${tally.rider} left at ${raceTime(tick)}, socket closed ${closeCode ?? "with no code"}, controls ${tally.accepted} accepted, ${tally.missed} missed`
   ),
   ...record.stats.flatMap((note) => [
     `  Rider ${note.rider}, from the browser:`,
@@ -169,7 +169,7 @@ const timelineLine = ({
 }: RaceRecord): string => {
   const parts = [
     started ? `lobby ${seconds(started.lobbyMs)}` : null,
-    countdown ? `loading ${seconds(countdown.waitedMs)}` : null,
+    countdown ? `waited for riders ${seconds(countdown.waitedMs)}` : null,
     countdown && countdown.stillLoading.length > 0
       ? `started without rider(s) ${countdown.stillLoading.join(", ")}`
       : null,

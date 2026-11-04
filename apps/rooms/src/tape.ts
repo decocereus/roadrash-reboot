@@ -51,6 +51,7 @@ export const TraceField = {
 } as const;
 
 export const TRACE_ROW_FIELDS = Object.keys(TraceField).length;
+export const MOST_TRACE_ROW_VALUES = MOST_TRACE_ROWS * TRACE_ROW_FIELDS;
 
 const BrowserText = Schema.String.check(Schema.isMaxLength(MOST_BROWSER_TEXT));
 
@@ -65,7 +66,7 @@ export type SeatBrowser = typeof SeatBrowserSchema.Type;
 export const BrowserTraceSchema = Schema.Struct({
   ...SeatBrowserSchema.fields,
   rows: Schema.Array(Schema.Number).check(
-    Schema.isMaxLength(MOST_TRACE_ROWS * TRACE_ROW_FIELDS)
+    Schema.isMaxLength(MOST_TRACE_ROW_VALUES)
   ),
 });
 

@@ -1,128 +1,6 @@
-import { openRoomSeat } from "@racer/rooms/seat-client";
-import type { RoomSeat } from "@racer/rooms/seat-client";
-import { cn } from "@racer/ui/utils";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
 
-import { openBar } from "../asset-load.ts";
-import {
-  barCameraLabels,
-  barCameras,
-  saveBarCamera,
-  savedBarCamera,
-} from "../bar-view.ts";
-import type { BarCamera } from "../bar-view.ts";
-import { memberKey, storedGuestName } from "../components/guest-name.ts";
-import type { BarScene } from "../game/bar.ts";
-
-const NEXT_CAMERA_KEY = "KeyC";
-const UNNAMED = "Rider";
-
-const seatFromUrl = (): RoomSeat | null => {
-  const search = new URLSearchParams(globalThis.location.search);
-  const roomId = search.get("room");
-  return roomId === null
-    ? null
-    : openRoomSeat(
-        import.meta.env.VITE_ROOMS_URL,
-        roomId,
-        search.get("name") ?? storedGuestName() ?? UNNAMED,
-        __RUSHLINE_BUILD__.rooms,
-        memberKey(),
-        () => null
-      );
-};
-
-const BarPage = () => {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const room = useRef<BarScene | null>(null);
-  const [failed, setFailed] = useState<string | null>(null);
-  const [camera, setCamera] = useState<BarCamera>(savedBarCamera);
-  const pickCamera = useEffectEvent((next: BarCamera) => {
-    setCamera(next);
-    saveBarCamera(next);
-    room.current?.setCamera(next);
-  });
-  useEffect(() => {
-    const target = canvas.current;
-    const mount = new AbortController();
-    const seat = seatFromUrl();
-    let close = (): void => {
-      mount.abort();
-      seat?.leave();
-    };
-    const start = async (): Promise<void> => {
-      try {
-        const opened =
-          target &&
-          (await openBar(target, savedBarCamera(), seat, mount.signal));
-        if (opened) {
-          room.current = opened;
-          close = () => {
-            mount.abort();
-            seat?.leave();
-            room.current = null;
-            opened.dispose();
-          };
-        }
-      } catch (error) {
-        setFailed(error instanceof Error ? error.message : String(error));
-      }
-    };
-    void start();
-    return () => {
-      close();
-    };
-  }, []);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.code === NEXT_CAMERA_KEY && !event.repeat) {
-        const next = (barCameras.indexOf(camera) + 1) % barCameras.length;
-        pickCamera(barCameras[next] ?? "angled");
-      }
-    };
-    globalThis.addEventListener("keydown", onKey);
-    return () => {
-      globalThis.removeEventListener("keydown", onKey);
-    };
-  }, [camera]);
-  return (
-    <main aria-label="The Lowside" className="bg-ink fixed inset-0">
-      <canvas className="block size-full" ref={canvas} />
-      {failed !== null && (
-        <p className="text-paper absolute top-4 left-4">{failed}</p>
-      )}
-      <div
-        aria-label="Camera"
-        className="bg-ink/85 font-display absolute top-4 left-4 flex gap-1 rounded-md p-1 font-bold tracking-wide uppercase"
-        role="group"
-      >
-        {barCameras.map((option) => (
-          <button
-            aria-pressed={option === camera}
-            className={cn(
-              "cursor-pointer rounded px-3 py-1",
-              option === camera ? "bg-neon-yellow text-ink" : "text-paper"
-            )}
-            key={option}
-            onClick={(event) => {
-              event.currentTarget.blur();
-              pickCamera(option);
-            }}
-            tabIndex={-1}
-            type="button"
-          >
-            {barCameraLabels[option]}
-          </button>
-        ))}
-      </div>
-      <p className="font-display text-paper/80 pointer-events-none absolute bottom-3 left-4 tracking-wide uppercase">
-        WASD or click to move. Shift runs. E greets or sits. F shoves. 1 2 3
-        pose. C camera.
-      </p>
-    </main>
-  );
-};
+import { BarStage } from "../components/bar-stage.tsx";
 
 export const Route = createFileRoute("/bar")({
   beforeLoad: () => {
@@ -130,7 +8,7 @@ export const Route = createFileRoute("/bar")({
       notFound({ throw: true });
     }
   },
-  component: BarPage,
+  component: () => <BarStage seat={null} />,
   head: () => ({
     meta: [{ title: "The Lowside" }, { content: "noindex", name: "robots" }],
   }),
