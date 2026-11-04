@@ -1343,7 +1343,7 @@ Test files:
 
 ### Race rooms
 
-The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, and `pnpm rooms:race` races scripted seats against it.
+The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, `pnpm rooms:race` races scripted seats against it, and `pnpm rooms:replay` runs a saved race tape again.
 
 - Id: `race-room`
 - Start: `apps/rooms/src/host.ts`, `packages/sim/src/room.ts`, `packages/sim/src/room-client.ts`
@@ -1364,6 +1364,7 @@ Source files:
 - `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
 - `apps/web/src/components/rematch-watch.ts`
@@ -1374,6 +1375,7 @@ Source files:
 - `packages/sim/src/room-client.ts`
 - `packages/sim/src/room-clock.ts`
 - `packages/sim/src/room-frame.ts`
+- `packages/sim/src/room-tape.ts`
 - `packages/sim/src/room-wire.ts`
 - `packages/sim/src/room.ts`
 - `tools/rooms/lag.ts`
@@ -1381,6 +1383,7 @@ Source files:
 - `tools/rooms/load.ts`
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
+- `tools/rooms/replay.ts`
 - `tools/rooms/src/lag.ts`
 - `tools/rooms/src/load-clients.ts`
 - `tools/rooms/src/load-plan.ts`
@@ -1390,6 +1393,7 @@ Source files:
 - `tools/rooms/src/race-report.ts`
 - `tools/rooms/src/race.ts`
 - `tools/rooms/src/read.ts`
+- `tools/rooms/src/replay.ts`
 - `tools/rooms/src/seat.ts`
 - `tools/rooms/src/send-budget.ts`
 - `tools/rooms/src/thin-seat.ts`
@@ -1403,6 +1407,7 @@ Test files:
 - `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
+- `apps/rooms/test/tape.test.ts`
 - `apps/web/src/components/rematch-watch.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
@@ -1412,4 +1417,5 @@ Test files:
 - `packages/sim/src/room.test.ts`
 - `tools/rooms/test/load-report.test.ts`
 - `tools/rooms/test/race-report.test.ts`
+- `tools/rooms/test/replay.test.ts`
 - `tools/rooms/test/send-budget.test.ts`

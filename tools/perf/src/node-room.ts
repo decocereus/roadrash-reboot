@@ -8,6 +8,7 @@ import { controlOf } from "@racer/sim/control";
 import { createRoom, firstRacers, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import { clearFrame, createTickFrame, sameFrame } from "@racer/sim/room-frame";
+import { createTapeWriter } from "@racer/sim/room-tape";
 import {
   createReadTick,
   readTick,
@@ -59,6 +60,10 @@ const prepareRoom = (scenario: Scenario) => {
   }
   const client = createRoomClient(setup, me);
   const out = new DataView(new ArrayBuffer(tickCapacity(SEATS)));
+  const savedParts: Uint8Array[] = [];
+  const tape = createTapeWriter(tickCapacity(SEATS), (_part, bytes) => {
+    savedParts[0] = bytes;
+  });
   const read = createReadTick(createTickFrame());
   const one: Control[] = [];
 
@@ -77,6 +82,7 @@ const prepareRoom = (scenario: Scenario) => {
     }
     room.step();
     const bytes = writeTick(out, room.frame, room.hashed ? room.hash : null);
+    tape.add(new Uint8Array(out.buffer, 0, bytes));
     return new DataView(out.buffer, 0, bytes);
   };
 
