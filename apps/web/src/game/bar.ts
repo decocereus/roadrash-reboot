@@ -25,6 +25,7 @@ import { createShading } from "./cel.ts";
 import { createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd } from "./profile.ts";
+import { createPuffs } from "./puffs.ts";
 
 export { assetParsers } from "./assets.ts";
 
@@ -37,6 +38,7 @@ const DOOR_REACH = Math.hypot(
   PLINTH.z - ROOM.backZ
 );
 const SIGN_GLOW = 1.55;
+const REV_PUFF_SPEED = 9;
 const SHOTS = {
   garage: {
     aim: new THREE.Vector3(2.4, 1.75, 0.8),
@@ -271,6 +273,17 @@ const openRoom = (
   shelfBike.rotation.y = Math.PI * 0.68;
   heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
 
+  let revving = 0;
+  const puffs = createPuffs(shading);
+  scene.add(puffs.group);
+  owners.push(() => {
+    puffs.dispose();
+  });
+  const rev = (): void => {
+    revving = 1;
+    puffs.burst(heroBike, 1, REV_PUFF_SPEED);
+  };
+
   const tags = createTagLayer(canvas);
   owners.push(() => {
     tags.dispose();
@@ -304,7 +317,6 @@ const openRoom = (
   let timeShift = 0;
   let focus: number | null = null;
   let doorOpenedAt: number | null = null;
-  let revving = 0;
   let spinAt = 0;
 
   const resize = (): void => {
@@ -358,7 +370,7 @@ const openRoom = (
   };
   const onKey = (event: KeyboardEvent): void => {
     if (event.code === "KeyR") {
-      revving = 1;
+      rev();
     }
     if (event.code === "Space") {
       event.preventDefault();
@@ -482,6 +494,7 @@ const openRoom = (
     bikes.show(1);
     bikes.commit(anchor);
 
+    puffs.update(seconds);
     outside.tick(seconds);
     const sweepPhase = (clock % 9) / 9;
     pools.sweep(
@@ -545,9 +558,7 @@ const openRoom = (
     openDoor: () => {
       doorOpenedAt ??= clock;
     },
-    rev: () => {
-      revving = 1;
-    },
+    rev,
     setFocus: (index: number | null) => {
       focus = index;
     },

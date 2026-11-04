@@ -37,7 +37,8 @@ const BarPage = () => {
         <p className="text-paper absolute top-4 left-4">{failed}</p>
       )}
       <p className="font-display text-paper/80 pointer-events-none absolute bottom-3 left-4 tracking-wide uppercase">
-        Click a rider. R revs. T moves the clock. Space opens the door.
+        Click a rider. R revs. T moves the clock. G for the garage. Space opens
+        the door.
       </p>
     </main>
   );
