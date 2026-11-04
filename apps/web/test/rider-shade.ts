@@ -10,7 +10,7 @@ import type { AcquiredAssets, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import type { BikeModelId } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
-import { bodyFor } from "../src/game/figure-rig.ts";
+import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
 import { assetParsers, createRenderer } from "../src/game/game.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { createPipeline } from "../src/game/post.ts";
@@ -505,7 +505,7 @@ const shoot = (
   );
   const figure =
     sitter.kind === "rider"
-      ? createRiderFigure(sitter.asset, shading, 0)
+      ? createRiderFigure(sitter.asset, shading, paletteOf(0))
       : null;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(BACKGROUND);

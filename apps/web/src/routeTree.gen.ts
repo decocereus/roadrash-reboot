@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BarRouteImport } from './routes/bar'
 import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as KitRouteImport } from './routes/kit'
 import { Route as ApiRaceRulesRouteImport } from './routes/api/race-rules'
@@ -19,6 +20,11 @@ import { Route as ArtKeyRouteImport } from './routes/art/$key'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BarRoute = BarRouteImport.update({
+  id: '/bar',
+  path: '/bar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreditsRoute = CreditsRouteImport.update({
@@ -49,6 +55,7 @@ const ArtKeyRoute = ArtKeyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bar': typeof BarRoute
   '/credits': typeof CreditsRoute
   '/kit': typeof KitRoute
   '/api/race-rules': typeof ApiRaceRulesRoute
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/bar'
     | '/credits'
     | '/kit'
     | '/api/race-rules'
@@ -84,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/bar'
     | '/credits'
     | '/kit'
     | '/api/race-rules'
@@ -92,6 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/bar'
     | '/credits'
     | '/kit'
     | '/api/race-rules'
@@ -101,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BarRoute: typeof BarRoute
   CreditsRoute: typeof CreditsRoute
   KitRoute: typeof KitRoute
   ApiRaceRulesRoute: typeof ApiRaceRulesRoute
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bar': {
+      id: '/bar'
+      path: '/bar'
+      fullPath: '/bar'
+      preLoaderRoute: typeof BarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/credits': {
@@ -157,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BarRoute: BarRoute,
   CreditsRoute: CreditsRoute,
   KitRoute: KitRoute,
   ApiRaceRulesRoute: ApiRaceRulesRoute,

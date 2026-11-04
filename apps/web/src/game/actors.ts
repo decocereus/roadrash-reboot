@@ -49,6 +49,9 @@ export interface BikeRider {
   readonly model: BikeModelId;
   readonly paint: number;
   readonly police: boolean;
+  readonly livery?:
+    | { readonly bike: number; readonly trim: number }
+    | undefined;
 }
 
 export interface Reach {
@@ -195,7 +198,7 @@ export const createBikes = (
     if (!rider) {
       continue;
     }
-    const colours = riderPalette[rider.paint];
+    const colours = rider.livery ?? riderPalette[rider.paint];
     store(paints, index, colours?.bike ?? DEFAULT_PAINT);
     store(trims, index, colours?.trim ?? DARK_TRIM);
   }

@@ -8,7 +8,7 @@ import type {
   LoadCelebrity,
   RiderAsset,
 } from "./game/assets.ts";
-import type * as Game from "./game/game.ts";
+import type { BarScene } from "./game/bar.ts";
 import type { GameEvents, GameHandle } from "./game/hud.ts";
 import type { Showroom } from "./game/showroom.ts";
 
@@ -83,7 +83,7 @@ export const celebrityLoader =
     });
 
 const acquire = async (
-  game: Promise<typeof Game>,
+  game: Promise<ParserModule>,
   signal: AbortSignal
 ): Promise<AcquiredAssets | null> => {
   const { browserAssetRuntime } = await import("./asset-runtime.ts");
@@ -139,6 +139,28 @@ export const bootGame = async (
     return null;
   }
   return createGame(canvas, events, acquired);
+};
+
+export const openBar = async (
+  canvas: HTMLCanvasElement,
+  signal: AbortSignal
+): Promise<BarScene | null> => {
+  const bar = import("./game/bar.ts");
+  const [acquired, { createBar }] = await Promise.all([
+    acquire(bar, signal),
+    bar,
+  ]);
+  if (acquired === null) {
+    return null;
+  }
+  if (signal.aborted) {
+    acquired.release();
+    return null;
+  }
+  return createBar(canvas, {
+    release: acquired.release,
+    value: acquired.assets,
+  });
 };
 
 export const openShowroom = async (

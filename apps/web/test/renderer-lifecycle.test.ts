@@ -15,7 +15,7 @@ import { bikeModelFor, bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import type { Shading } from "../src/game/cel.ts";
 import { disposeTree } from "../src/game/dispose.ts";
-import { bodyFor } from "../src/game/figure-rig.ts";
+import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
 import { createHazardMarks } from "../src/game/hazards.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { isInstancedMesh, isMesh, isSkinnedMesh } from "../src/game/meshes.ts";
@@ -127,7 +127,7 @@ describe("renderer resource owners", () => {
       race.view.cars,
       race.view.crossCars
     );
-    const figure = createRiderFigure(bodyFor(assets, 0), shading, 0);
+    const figure = createRiderFigure(bodyFor(assets, 0), shading, paletteOf(0));
     fleet.dispose();
     figure.dispose();
     expect(ramp.count).toBe(0);
@@ -231,7 +231,7 @@ describe("rider figures", () => {
     const celebrities = await pinnedCelebrities();
     const bodies = [bodyFor(assets, 0), ...celebrities];
     const drawn = bodies.map((asset) => {
-      const figure = createRiderFigure(asset, shading, 0);
+      const figure = createRiderFigure(asset, shading, paletteOf(0));
       const atlas = mapOf(skinnedOf(figure.root));
       figure.dispose();
       return atlas;
@@ -247,7 +247,7 @@ describe("rider figures", () => {
     const shading = createShading(lookOf(track.plan.region));
     const celebrities = await pinnedCelebrities();
     const reaches = celebrities.map((asset) => {
-      const figure = createRiderFigure(asset, shading, 0);
+      const figure = createRiderFigure(asset, shading, paletteOf(0));
       figure.root.updateMatrixWorld(true);
       const body = skinnedOf(figure.root);
       body.skeleton.update();

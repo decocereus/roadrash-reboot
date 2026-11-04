@@ -107,11 +107,14 @@ interface CelOptions {
   readonly vertexColors?: boolean;
 }
 
+export type Tone = Pick<Look, "lit" | "rim" | "rimDirection" | "shadow">;
+
 export interface Shading {
   readonly look: Look;
   readonly key: THREE.Vector3;
   readonly ambient: THREE.Color;
   readonly sun: THREE.Color;
+  relight: (tone: Tone) => void;
   cel: (
     colour: THREE.ColorRepresentation,
     options?: CelOptions
@@ -169,25 +172,35 @@ export const seesFx = (camera: THREE.Camera, sees: boolean): void => {
 export const createShading = (look: Look): Shading => {
   const ramp = createRamp();
   const key = new THREE.Vector3(...look.keyDirection).normalize();
-  const rimWorld = new THREE.Vector3(...look.rimDirection).normalize();
+  const rimWorld = new THREE.Vector3();
   const rimDirection = { value: new THREE.Vector3(0, 0, 1) };
   const keyDirection = { value: new THREE.Vector3(0, 0, 1) };
-  const rimColour = { value: new THREE.Color(look.rim) };
+  const rimColour = { value: new THREE.Color() };
   const toView = new THREE.Matrix3();
-  const ambient = lightOf(look.shadow);
-  const sun = lightOf(look.lit).sub(ambient);
-  const litLinear = linearOf(look.lit);
-  const shadowLinear = linearOf(look.shadow);
-  const figureLinear = linearOf(FIGURE_LIGHT);
-  const depth = Math.cbrt(shadowLinear.dot(LUMA) / litLinear.dot(LUMA));
-  const figureLight = {
-    value: figureLinear.multiplyScalar(
-      litLinear.dot(LUMA) / figureLinear.dot(LUMA)
-    ),
+  const ambient = new THREE.Color();
+  const sun = new THREE.Color();
+  const figureLight = { value: new THREE.Vector3() };
+  const figureSun = { value: new THREE.Vector3() };
+  const figureDepth = { value: 1 };
+  const figureChroma = { value: 1 };
+
+  const relight = (tone: Tone): void => {
+    rimWorld.set(...tone.rimDirection).normalize();
+    rimColour.value.set(tone.rim);
+    ambient.copy(lightOf(tone.shadow));
+    sun.copy(lightOf(tone.lit)).sub(ambient);
+    const litLinear = linearOf(tone.lit);
+    const shadowLinear = linearOf(tone.shadow);
+    const figureLinear = linearOf(FIGURE_LIGHT);
+    const depth = Math.cbrt(shadowLinear.dot(LUMA) / litLinear.dot(LUMA));
+    figureLight.value.copy(
+      figureLinear.multiplyScalar(litLinear.dot(LUMA) / figureLinear.dot(LUMA))
+    );
+    figureSun.value.copy(litLinear).sub(shadowLinear);
+    figureDepth.value = depth;
+    figureChroma.value = Math.min(depth * SHADE_CHROMA, 1);
   };
-  const figureSun = { value: litLinear.clone().sub(shadowLinear) };
-  const figureDepth = { value: depth };
-  const figureChroma = { value: Math.min(depth * SHADE_CHROMA, 1) };
+  relight(look);
 
   const build = (
     parameters: THREE.MeshToonMaterialParameters,
@@ -265,6 +278,7 @@ export const createShading = (look: Look): Shading => {
     paint(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true);
     },
+    relight,
     sun,
     walker(atlas) {
       return build({ map: atlas, vertexColors: true }, 1, true, true, true);
