@@ -36,6 +36,8 @@ export const createRaceTally = (): RaceTally => {
       rttCount += 1;
     },
     read: ({ mine, predicted, stats }, rttWorstMs) => ({
+      crashes: mine.crashes,
+      crashesAfterCorrection: stats.crashesAfterCorrection,
       desyncs: stats.desyncs,
       doubledSteps: doubled,
       finished: mine.finishTick >= 0 ? 1 : 0,

@@ -313,6 +313,8 @@ export const isReady = (view: DataView): boolean =>
   view.byteLength === READY_PACKET_BYTES && view.getUint8(0) === READY_KIND;
 
 const RACE_STAT_FIELDS = [
+  "crashes",
+  "crashesAfterCorrection",
   "doubledSteps",
   "finished",
   "heldSteps",
