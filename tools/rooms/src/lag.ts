@@ -7,11 +7,13 @@ import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 
 const usage =
-  "Usage: pnpm rooms:lag --listen <port> --target <port> [--rtt 100] [--jitter 20] [--loss 1]";
+  "Usage: pnpm rooms:lag --listen <port> --target <port> [--rtt 100] [--jitter 20] [--loss 1] [--burst-every 10] [--burst-ms 1000]";
 
 const RETRANSMIT_EXTRA_MS = 50;
 
 interface Link {
+  readonly burstEveryMs: number;
+  readonly burstMs: number;
   readonly jitterMs: number;
   readonly lossShare: number;
   readonly rttMs: number;
@@ -24,6 +26,8 @@ const options = (args: readonly string[]) =>
       parseArgs({
         args: [...args],
         options: {
+          "burst-every": { default: "0", type: "string" },
+          "burst-ms": { default: "0", type: "string" },
           jitter: { default: "20", type: "string" },
           listen: { type: "string" },
           loss: { default: "1", type: "string" },
@@ -37,6 +41,14 @@ const delayOf = ({ jitterMs, lossShare, rttMs }: Link): number => {
   const oneWay = rttMs / 2 + (Math.random() - 0.5) * jitterMs;
   const lost = Math.random() < lossShare;
   return oneWay + (lost ? rttMs + RETRANSMIT_EXTRA_MS : 0);
+};
+
+const burstEndsAt = ({ burstEveryMs, burstMs }: Link, now: number): number => {
+  if (burstEveryMs <= 0) {
+    return now;
+  }
+  const into = now % burstEveryMs;
+  return into < burstMs ? now - into + burstMs : now;
 };
 
 const delayedWrites = (to: Socket, link: Link) => {
@@ -61,7 +73,8 @@ const delayedWrites = (to: Socket, link: Link) => {
     }
   };
   return (data: Buffer | null): void => {
-    lastAt = Math.max(lastAt, performance.now() + delayOf(link));
+    const now = performance.now();
+    lastAt = Math.max(lastAt, burstEndsAt(link, now) + delayOf(link));
     queue.push({ at: lastAt, data });
     timer ??= setTimeout(drain, Math.max(0, lastAt - performance.now()));
   };
@@ -98,6 +111,8 @@ export const main = Effect.fn("rooms.lag")(function* main(
     return yield* new UsageError({ message: usage });
   }
   const link: Link = {
+    burstEveryMs: Number(values["burst-every"]) * 1000,
+    burstMs: Number(values["burst-ms"]),
     jitterMs: Number(values.jitter),
     lossShare: Number(values.loss) / 100,
     rttMs: Number(values.rtt),

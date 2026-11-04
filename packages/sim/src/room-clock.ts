@@ -7,7 +7,7 @@ const CATCH_UP_AT_TICKS = 2;
 const SKIP_AT_TICKS = 3;
 const MOST_STEPS = 4;
 const NOT_MEASURED = -1;
-const RTT_SAMPLES = 10;
+const RTT_SAMPLES = 60;
 const OFFSET_SAG_PER_MS = 0.002;
 const FRAMES_PER_EASED_STEP = 6;
 
