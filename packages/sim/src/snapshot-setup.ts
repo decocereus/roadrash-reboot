@@ -103,6 +103,7 @@ const crossingSchema = writtenSchemaOf<TrackCrossing>({
 const placementSchema = writtenSchemaOf<HazardPlacement>({
   id: textAt("id"),
   kind: textAt("kind"),
+  rarity: floatAt("rarity"),
   s: floatAt("s"),
   setting: textAt("setting"),
   x: floatAt("x"),
@@ -173,6 +174,7 @@ const bikeSchema = writtenSchemaOf<BikeSpec>({
 const policeSchema = writtenSchemaOf<PoliceRules>({
   beat: floatAt("beat"),
   fine: floatAt("fine"),
+  loseRange: floatAt("loseRange"),
   sightRange: floatAt("sightRange"),
   topSpeed: floatAt("topSpeed"),
 });
@@ -241,6 +243,7 @@ const raceSetupSchema = writtenSchemaOf<
 >({
   cars: writtenListAt("cars", carSetupSchema),
   crossCars: writtenListAt("crossCars", crossCarSetupSchema),
+  hitDamage: floatAt("hitDamage"),
   pacing: writtenRecordAt("pacing", pacingSchema),
   pedestrians: writtenListAt("pedestrians", pedestrianSetupSchema),
   police: writtenRecordAt("police", policeSchema),

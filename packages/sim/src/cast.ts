@@ -2,6 +2,8 @@ import type { RegionId } from "@racer/track/regions";
 
 import { bikes } from "./bikes.ts";
 import type { BikeId } from "./bikes.ts";
+import { difficulties } from "./difficulty.ts";
+import type { Tier } from "./difficulty.ts";
 import { POLICE_COLOURS } from "./palette.ts";
 import type { RiderProfile, RivalSetup, WeaponKind } from "./state.ts";
 
@@ -66,11 +68,7 @@ export type RivalId = (typeof rivalIds)[number];
 export const isCelebrity = (rival: RivalId): rival is CelebrityRivalId =>
   celebrityRivalIds.some((celebrity) => celebrity === rival);
 
-export const rungs = [1, 2, 3, 4, 5] as const;
-
-export type Rung = (typeof rungs)[number];
-
-const CLUB_LEVEL = 4;
+const CLUB_TIER = 3;
 const CLUB_AGGRESSION = 0.5;
 
 export interface Rival {
@@ -82,22 +80,16 @@ export interface Rival {
   readonly paint: number;
   readonly jacket: number;
   readonly weapon: WeaponKind;
-  readonly armedFrom: number;
-  readonly racesFrom: number;
-  readonly bikes: readonly [BikeId, BikeId, BikeId, BikeId, BikeId];
+  readonly armedFrom: Tier;
+  readonly racesFrom: Tier;
+  readonly bikes: readonly [BikeId, BikeId, BikeId];
 }
 
 export const rivals = {
   "agnes-mulcahy": {
     aggression: 0.2,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "ostra-sette-750"],
     home: "lowtown",
     id: "agnes-mulcahy",
     jacket: 15,
@@ -110,13 +102,7 @@ export const rivals = {
   "benny-okafor": {
     aggression: 0.4,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "halden-meridian-900"],
     home: "salt-coast",
     id: "benny-okafor",
     jacket: 12,
@@ -129,13 +115,7 @@ export const rivals = {
   "captain-penaldo": {
     aggression: 0.75,
     armedFrom: 1,
-    bikes: [
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-kite-500", "ostra-sette-750", "halden-meridian-900"],
     home: "lowtown",
     id: "captain-penaldo",
     jacket: 6,
@@ -148,13 +128,7 @@ export const rivals = {
   "coach-dale-hutto": {
     aggression: 0.55,
     armedFrom: 2,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "brack-anvil-1100",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "brack-anvil-1100"],
     home: "stonepeak",
     id: "coach-dale-hutto",
     jacket: 8,
@@ -167,13 +141,7 @@ export const rivals = {
   "dee-santangelo": {
     aggression: 0.5,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "ostra-sette-750",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-wren-400", "ostra-sette-750", "halden-meridian-900"],
     home: "lowtown",
     id: "dee-santangelo",
     jacket: 3,
@@ -186,13 +154,7 @@ export const rivals = {
   "elongated-muskrat": {
     aggression: 0.45,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "halden-meridian-900"],
     home: "stonepeak",
     id: "elongated-muskrat",
     jacket: 5,
@@ -205,13 +167,7 @@ export const rivals = {
   "felix-aurand": {
     aggression: 0.7,
     armedFrom: 1,
-    bikes: [
-      "halden-kite-500",
-      "halden-kite-500",
-      "brack-stoker-800",
-      "brack-stoker-800",
-      "brack-anvil-1100",
-    ],
+    bikes: ["halden-kite-500", "brack-stoker-800", "brack-anvil-1100"],
     home: "lowtown",
     id: "felix-aurand",
     jacket: 17,
@@ -223,14 +179,8 @@ export const rivals = {
   },
   "gus-abernathy": {
     aggression: 0.65,
-    armedFrom: 3,
-    bikes: [
-      "gutter-pup-250",
-      "halden-wren-400",
-      "halden-kite-500",
-      "brack-stoker-800",
-      "brack-stoker-800",
-    ],
+    armedFrom: 2,
+    bikes: ["gutter-pup-250", "halden-kite-500", "brack-stoker-800"],
     home: "stonepeak",
     id: "gus-abernathy",
     jacket: 10,
@@ -243,13 +193,7 @@ export const rivals = {
   "hollis-thorne": {
     aggression: 0.45,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "halden-meridian-900"],
     home: "stonepeak",
     id: "hollis-thorne",
     jacket: 16,
@@ -262,13 +206,7 @@ export const rivals = {
   "ines-marchetti": {
     aggression: 0.75,
     armedFrom: 1,
-    bikes: [
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-kite-500", "ostra-sette-750", "halden-meridian-900"],
     home: "salt-coast",
     id: "ines-marchetti",
     jacket: 4,
@@ -281,13 +219,7 @@ export const rivals = {
   "juno-kade": {
     aggression: 0.25,
     armedFrom: 1,
-    bikes: [
-      "ostra-sesta-600",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-      "ostra-nera-1000",
-    ],
+    bikes: ["ostra-sesta-600", "ostra-sette-750", "ostra-nera-1000"],
     home: "stonepeak",
     id: "juno-kade",
     jacket: 1,
@@ -300,13 +232,7 @@ export const rivals = {
   "kylip-jetner": {
     aggression: 0.35,
     armedFrom: 1,
-    bikes: [
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-      "ostra-nera-1000",
-    ],
+    bikes: ["halden-kite-500", "ostra-sette-750", "ostra-nera-1000"],
     home: "salt-coast",
     id: "kylip-jetner",
     jacket: 7,
@@ -319,13 +245,7 @@ export const rivals = {
   "lyle-gorski": {
     aggression: 0.7,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "halden-meridian-900",
-      "brack-anvil-1100",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "brack-anvil-1100"],
     home: "stonepeak",
     id: "lyle-gorski",
     jacket: 6,
@@ -338,13 +258,7 @@ export const rivals = {
   "mags-dunleavy": {
     aggression: 0.6,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "brack-stoker-800",
-      "brack-stoker-800",
-      "brack-anvil-1100",
-    ],
+    bikes: ["halden-wren-400", "brack-stoker-800", "brack-anvil-1100"],
     home: "lowtown",
     id: "mags-dunleavy",
     jacket: 5,
@@ -357,13 +271,7 @@ export const rivals = {
   "moose-kowalczyk": {
     aggression: 0.85,
     armedFrom: 1,
-    bikes: [
-      "halden-kite-500",
-      "halden-kite-500",
-      "brack-stoker-800",
-      "brack-stoker-800",
-      "brack-anvil-1100",
-    ],
+    bikes: ["halden-kite-500", "brack-stoker-800", "brack-anvil-1100"],
     home: "lowtown",
     id: "moose-kowalczyk",
     jacket: 9,
@@ -376,13 +284,7 @@ export const rivals = {
   "orrin-blackwell": {
     aggression: 0.55,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-    ],
+    bikes: ["halden-wren-400", "halden-kite-500", "ostra-sette-750"],
     home: "stonepeak",
     id: "orrin-blackwell",
     jacket: 14,
@@ -395,13 +297,7 @@ export const rivals = {
   "ranwear-bling": {
     aggression: 0.4,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "halden-meridian-900"],
     home: "salt-coast",
     id: "ranwear-bling",
     jacket: 8,
@@ -414,13 +310,7 @@ export const rivals = {
   "ruth-ann-bixby": {
     aggression: 0.45,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "halden-meridian-900"],
     home: "salt-coast",
     id: "ruth-ann-bixby",
     jacket: 2,
@@ -433,13 +323,7 @@ export const rivals = {
   "slam-altruman": {
     aggression: 0.3,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "ostra-sette-750",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "ostra-sette-750"],
     home: "stonepeak",
     id: "slam-altruman",
     jacket: 4,
@@ -452,13 +336,7 @@ export const rivals = {
   "supreme-leader-mbosse": {
     aggression: 0.7,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "halden-meridian-900",
-      "brack-anvil-1100",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "brack-anvil-1100"],
     home: "lowtown",
     id: "supreme-leader-mbosse",
     jacket: 10,
@@ -471,13 +349,7 @@ export const rivals = {
   "tristan-lux": {
     aggression: 0.35,
     armedFrom: 1,
-    bikes: [
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "halden-meridian-900",
-      "ostra-nera-1000",
-    ],
+    bikes: ["halden-kite-500", "ostra-sette-750", "ostra-nera-1000"],
     home: "salt-coast",
     id: "tristan-lux",
     jacket: 7,
@@ -490,13 +362,7 @@ export const rivals = {
   "wanda-pruitt": {
     aggression: 0.3,
     armedFrom: 1,
-    bikes: [
-      "halden-wren-400",
-      "halden-kite-500",
-      "ostra-sesta-600",
-      "ostra-sette-750",
-      "ostra-sette-750",
-    ],
+    bikes: ["halden-wren-400", "ostra-sesta-600", "ostra-sette-750"],
     home: "salt-coast",
     id: "wanda-pruitt",
     jacket: 13,
@@ -516,27 +382,27 @@ export const celebrityCast: readonly Rival[] = celebrityRivalIds.map(
   (id) => rivals[id]
 );
 
-export const weaponAt = (rival: Rival, level: Rung): WeaponKind => {
-  if (rival.weapon !== "none" && level >= rival.armedFrom) {
+export const weaponAt = (rival: Rival, tier: Tier): WeaponKind => {
+  if (rival.weapon !== "none" && tier >= rival.armedFrom) {
     return rival.weapon;
   }
-  return level >= CLUB_LEVEL && rival.aggression >= CLUB_AGGRESSION
+  return tier >= CLUB_TIER && rival.aggression >= CLUB_AGGRESSION
     ? "club"
     : "none";
 };
 
-export const bikeAt = (rival: Rival, level: Rung): BikeId =>
-  rival.bikes[level - 1] ?? rival.bikes[0];
+export const bikeAt = (rival: Rival, tier: Tier): BikeId =>
+  rival.bikes[tier - 1] ?? rival.bikes[0];
 
-export const rivalAt = (rival: Rival, level: Rung): RivalSetup => ({
+export const rivalAt = (rival: Rival, tier: Tier): RivalSetup => ({
   aggression: rival.aggression,
-  bike: bikes[bikeAt(rival, level)],
+  bike: bikes[bikeAt(rival, tier)],
   jacket: rival.jacket,
   name: rival.name,
   paint: rival.paint,
   role: "racer",
-  skill: rival.skill,
-  weapon: weaponAt(rival, level),
+  skill: Math.min(1, rival.skill + difficulties[tier].rivalSkill),
+  weapon: weaponAt(rival, tier),
 });
 
 export const officerIds = ["dolores-pike", "wendell-haverty"] as const;

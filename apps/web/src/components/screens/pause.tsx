@@ -42,7 +42,7 @@ export const PauseScreen = ({
   const [adjusting, setAdjusting] = useState(false);
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
   const racing = plan.mode === "career" && career !== null && rules !== null;
-  const bill = racing ? repairBill(rules, career.level, career.bikeId) : 0;
+  const bill = racing ? repairBill(career.tier, career.bikeId) : 0;
   useEscape(onResume, !(asking || adjusting));
   const actions: MenuAction[] = [
     { id: "resume", label: "Resume", run: onResume },

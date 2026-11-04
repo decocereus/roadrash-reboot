@@ -12,7 +12,7 @@ const CAPACITY = 8192;
 interface BenchInfo {
   readonly bench: Bench;
   readonly roadId: string;
-  readonly level: number;
+  readonly tier: number;
   readonly seed: number;
   readonly bikeId: string;
   readonly race: number;

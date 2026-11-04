@@ -2,7 +2,6 @@ import { rivalIds } from "@racer/sim/cast";
 import { weapons } from "@racer/sim/weapons";
 
 import { memoryRows } from "./memory.ts";
-import type { RaceRules } from "./rules.ts";
 import type { SaveError } from "./save-schema.ts";
 import { racerIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
@@ -21,7 +20,7 @@ const activeRaceClash = (career: CareerState): string | null => {
     return null;
   }
   const clashes: readonly (readonly [string, boolean])[] = [
-    ["activeRace.level", race.level !== career.level],
+    ["activeRace.tier", race.tier !== career.tier],
     ["activeRace.bikeId", race.bikeId !== career.bikeId],
     ["activeRace.raceId", race.raceId !== career.record.starts],
     ["gameOver", career.gameOver],
@@ -59,13 +58,7 @@ const clashOf = (career: CareerState): string | null => {
   return activeRaceClash(career) ?? raceNumberClash(career);
 };
 
-export const problemOf = (
-  career: CareerState,
-  rules: RaceRules
-): SaveError | null => {
-  if (career.level > rules.levelCount) {
-    return { field: "level", kind: "invalid" };
-  }
+export const problemOf = (career: CareerState): SaveError | null => {
   if (!holdsWeapon(career)) {
     return { field: "weaponHits", kind: "invalid" };
   }

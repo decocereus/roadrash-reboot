@@ -1,11 +1,13 @@
 import { isCelebrity } from "@racer/sim/cast";
+import { difficulties } from "@racer/sim/difficulty";
 import { createRace } from "@racer/sim/race";
 import { riderIdAt } from "@racer/sim/state";
 import type { RaceEvent } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createRaceLog, recordTick } from "./outcome.ts";
-import { guestNames, seatedRace } from "./room-race.ts";
+import { guestNames, publicRoomRule, seatedRace } from "./room-race.ts";
+import { STARTING_BIKE } from "./tables.ts";
 
 const finishOf = (rider: number): RaceEvent => ({
   kind: "finish",
@@ -18,6 +20,24 @@ describe("a room's field", () => {
     const seeds = Array.from({ length: 20 }, (_, seed) => seed);
     const field = seeds.flatMap((seed) => seatedRace(seed, 2).setup.field);
     expect(field.filter((rival) => isCelebrity(rival))).toStrictEqual([]);
+  });
+});
+
+describe("a room's rule", () => {
+  it("rides public rooms at tier 2, on the starting bike, with no pacing", () => {
+    const { setup } = seatedRace(7, 2);
+    expect(setup.tier).toBe(publicRoomRule.tier);
+    expect(publicRoomRule.tier).toBe(2);
+    expect(setup.player.bike.id).toBe(STARTING_BIKE);
+    expect(setup.conditions).toStrictEqual(difficulties[2].conditions);
+    expect(setup.pacing).toStrictEqual({ catchUp: 0, leadEase: 0 });
+  });
+
+  it("carries another tier when a room names one, still with no pacing", () => {
+    const { setup } = seatedRace(7, 2, { ...publicRoomRule, tier: 3 });
+    expect(setup.conditions).toStrictEqual(difficulties[3].conditions);
+    expect(setup.police.count).toBe(difficulties[3].cops.count);
+    expect(setup.pacing).toStrictEqual({ catchUp: 0, leadEase: 0 });
   });
 });
 

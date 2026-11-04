@@ -10,8 +10,8 @@ import { wearingFrom, wornBy } from "../src/game/figure-wear.ts";
 
 const onRoad = (celebrities: boolean, roadId: "ridge-road" | "slag-row") =>
   practiceSetup(
-    { ...recordedRules, celebrities, fieldSize: 10, levelCount: 3 },
-    { bikeId: "ostra-sesta-600", level: 1, roadId, seed: 3 },
+    { ...recordedRules, celebrities, fieldSize: 10 },
+    { bikeId: "ostra-sesta-600", roadId, seed: 3, tier: 1 },
     trackFor(roadId)
   );
 

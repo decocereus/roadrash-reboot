@@ -1,8 +1,6 @@
-import { rungsOf, rungsWithin } from "./rules.ts";
-import type { RaceRules } from "./rules.ts";
 import type { CareerState, EndingId, EnvelopeFlag } from "./state.ts";
-import { ENVELOPE_LEVEL, ENVELOPE_PAYMENT } from "./tables.ts";
-import type { Level } from "./tables.ts";
+import { ENVELOPE_TIER, ENVELOPE_PAYMENT } from "./tables.ts";
+import type { Tier } from "./tables.ts";
 
 export interface StoryChapter {
   readonly name: string;
@@ -15,27 +13,19 @@ const chapters = {
     note: 'You roll into the Lowside car park on a Halden Wren with $1,500 and no reputation. Vic pins a Polaroid of you to the board under "NEW MEAT" and tells you the deal: top three on every road and you move up. Juno Kade is at the bar and does not look up. Moose introduces himself and apologises in advance. Texts arrive from numbers you never gave out ("Dee: are you the one with the red bike. you\'re in my lane"). When you qualify the last road, Vic moves your Polaroid up a row and writes "KID CAN RIDE" under it. Juno looks up.',
   },
   2: {
-    name: "The Envelope",
-    note: 'Tristan\'s sponsor wants a win on his home road, and Vic wants the sponsor. There is an envelope on the corkboard with your name on it and $1,500 inside; the note says "Breakwater Run. Behind the boy. V." Taking it is optional and is the only branch in the story. If you take it and beat Tristan anyway, Vic takes back $2,000 and pins a photo of your bike with a red X on it. If you leave it, the envelope is gone the next morning and Vic is very pleasant to you, which is worse. Juno races for the first time and says nothing to you at all.',
+    name: "Dee's Tip",
+    note: 'Tristan\'s sponsor wants a win on his home road, and Vic wants the sponsor. There is an envelope on the corkboard with your name on it and $1,500 inside; the note says "Breakwater Run. Behind the boy. V." Taking it is optional and is the only branch in the story. If you take it and beat Tristan anyway, Vic takes back $2,000 and pins a photo of your bike with a red X on it. If you leave it, the envelope is gone the next morning and Vic is very pleasant to you, which is worse. Juno races for the first time and says nothing to you at all. Dee wins a race on her home road and Vic pays her half, with a "processing fee" for the rest. She sits at your table and stops pretending to dislike you. From now on, before each race, she texts where the first cop is parked ("cop at 2.15 on slag row. same as always. vic knows. vic ALWAYS knows"), and she does not attack you on the road. The new cops are quicker, and the board fills up with tickets from riders who did not get a text.',
   },
   3: {
-    name: "Dee's Tip",
-    note: 'Dee wins a race on her home road and Vic pays her half, with a "processing fee" for the rest. She sits at your table and stops pretending to dislike you. From now on, before each race, she texts where the first roadblock will be ("cop van at 2.15 on slag row. same as always. vic knows. vic ALWAYS knows"), and she does not attack you on the road. Police roadblocks start this level, and the board fills up with tickets from riders who did not get a text.',
-  },
-  4: {
-    name: "The Badge",
-    note: "Lyle, drunk and furious, tells you what he was really fired for: he wrote up Sergeant Pike for taking money from Vic, and the report vanished. Now the cops seem to know which riders Vic likes, and you are not one of them. Coach Dale tries to sell you tape seven. Someone writes your name in marker over the top of Juno's spot on the board; Juno crosses it out, then, after you beat her once, leaves it there. She says your name for the first time.",
-  },
-  5: {
     name: "The Long Ridge",
-    note: "The last race of the season is Ridge Road, and it opens only when you have qualified the other two roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.",
+    note: "Lyle, drunk and furious, tells you what he was really fired for: he wrote up Sergeant Pike for taking money from Vic, and the report vanished. Now the cops seem to know which riders Vic likes, and you are not one of them. Coach Dale tries to sell you tape seven. Someone writes your name in marker over the top of Juno's spot on the board; Juno crosses it out, then, after you beat her once, leaves it there. She says your name for the first time. The last race of the season is Ridge Road, and it opens only when you have qualified the other two roads. It can be attempted as often as it takes: only a top-three finish ends the season. Juno rides it at aggression 0.9 for this one race, which under her retaliation rule means she will not start a fight and will finish one. The finish is no longer the cable-car station but the summit mast, and Vic is waiting there with a cash box and two friends.",
   },
-} as const satisfies Record<Level, StoryChapter>;
+} as const satisfies Record<Tier, StoryChapter>;
 
 export const endings = {
   "bought-crown": {
     name: "Bought Crown",
-    note: "You win the Long Ridge but took the envelope at level 2. Vic hands you the purse and a contract: next season you ride for him. Your Polaroid goes at the top of the board, pinned through Vic's business card. Juno does not buy a round. This is the hook for a second season.",
+    note: "You win the Long Ridge but took the envelope at tier 2. Vic hands you the purse and a contract: next season you ride for him. Your Polaroid goes at the top of the board, pinned through Vic's business card. Juno does not buy a round. This is the hook for a second season.",
   },
   "clean-crown": {
     name: "Clean Crown",
@@ -47,22 +37,14 @@ export const endings = {
   },
 } as const satisfies Record<EndingId, StoryChapter>;
 
-export const chapterOf = (rules: RaceRules, level: Level): StoryChapter => {
-  const rungs = rungsOf(rules, level);
-  return {
-    name: chapters[rungs.highest].name,
-    note: rungsWithin(rungs)
-      .map((rung) => chapters[rung].note)
-      .join(" "),
-  };
-};
+export const chapterOf = (tier: Tier): StoryChapter => chapters[tier];
 
 export const ENVELOPE_NOTE = "Breakwater Run. Behind the boy. V.";
 export const LEFT_RACE_NOTE =
   "You left a race. The bike didn't make it home. V.";
 
 export interface StoryBeat {
-  readonly level: Level;
+  readonly tier: Tier;
   readonly envelope: EnvelopeFlag;
   readonly envelopeOpen: boolean;
   readonly deeAlly: boolean;
@@ -73,7 +55,7 @@ export interface StoryBeat {
 }
 
 const envelopeOpen = (career: CareerState): boolean =>
-  career.level === ENVELOPE_LEVEL &&
+  career.tier === ENVELOPE_TIER &&
   career.story.envelope === "offered" &&
   !career.gameOver &&
   career.activeRace === null;
@@ -86,7 +68,7 @@ export const storyBeat = (career: CareerState): StoryBeat => ({
   envelopeOpen: envelopeOpen(career),
   finaleOpen: career.story.finaleUnlocked,
   leftRaceNote: career.story.leftRace ? LEFT_RACE_NOTE : null,
-  level: career.level,
+  tier: career.tier,
 });
 
 export const acceptEnvelope = (career: CareerState): CareerState =>

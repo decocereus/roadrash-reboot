@@ -54,19 +54,9 @@ describe("loading the race rules", () => {
       loaded(answering(() => new Response("down", { status: 503 }))),
       loaded(answering(() => new Response("<html>"))),
       loaded(
-        answering(() =>
-          Response.json({ fieldSize: 40, levelCount: 3, police: {} })
-        )
+        answering(() => Response.json({ celebrities: true, fieldSize: 40 }))
       ),
-      loaded(
-        answering(() =>
-          Response.json({
-            fieldSize: 10,
-            levelCount: 1,
-            police: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },
-          })
-        )
-      ),
+      loaded(answering(() => Response.json({ fieldSize: 10 }))),
     ]);
     expect(loads.map(failureOf)).toStrictEqual([
       { message: "offline", tag: "RulesRequestFailed" },

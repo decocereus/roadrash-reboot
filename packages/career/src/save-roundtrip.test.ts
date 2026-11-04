@@ -3,7 +3,6 @@ import { weapons } from "@racer/sim/weapons";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
-import { recordedRules } from "./bench.ts";
 import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { newCareer } from "./state.ts";
@@ -69,12 +68,12 @@ const missing = (career: CareerState, path: string): string =>
   );
 
 const verdictOn = (save: string): string => {
-  const result = parseCareer(recordedRules, save);
+  const result = parseCareer(save);
   return result.ok ? "loaded" : `${result.error.kind}:${result.error.field}`;
 };
 
 const rereadOf = (save: string): string => {
-  const result = parseCareer(recordedRules, save);
+  const result = parseCareer(save);
   return result.ok ? serialiseCareer(result.career) : verdictOn(save);
 };
 
@@ -93,38 +92,36 @@ const fingerprint = (text: string): string => {
 
 const careers = [
   newCareer(1),
-  seasonAt(decent, 5).end,
+  seasonAt(decent, 3).end,
   seasonAt(weak, 3).start,
   enter(seasonAt(decent, 2).start, "breakwater-run").career,
   play(newCareer(2), { ends: "busted", roadId: "slag-row" }).career,
   play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
 ];
 
-const versionFourBytes = [
-  ["7419:1f04cd977a7853b1", "7419:1f04cd977a7853b1"],
-  ["20401:de8ce429123d82b", "20401:1ccd004ed17e1162"],
-  ["20248:a28f60a8a839c1", "20248:143ace3a96954839"],
-  ["11842:171892179e215787", "11842:8da210b55b582a5"],
-  ["16819:1ffddbd67e41f4a", "16819:173e52aeb6baa43e"],
-  ["16685:4c237194a17f40", "16685:f9e37865d31ee6e"],
+const versionFiveBytes = [
+  ["7404:9afb83d0ffafa23", "7404:9afb83d0ffafa23"],
+  ["20254:1e16fc43dfa22c9a", "20254:1835588f4e0570e0"],
+  ["20261:1eb24a57c5f1a0d3", "20261:3a1f3bfffe9dd1b"],
+  ["11875:1df84392560e235b", "11875:858967fd6fbdc"],
+  ["16805:6dd2ddefb6cd7d5", "16805:eccf688a4e3c1e8"],
+  ["16671:1c0e5dfe4eefa654", "16671:f958efc78bc502d"],
 ];
 
 describe("the save", () => {
   it("a career round-trips through its save text", () => {
     expect(
-      careers.map((career) =>
-        parseCareer(recordedRules, serialiseCareer(career))
-      )
+      careers.map((career) => parseCareer(serialiseCareer(career)))
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a career writes, and reads back into, the same bytes as the version 4 reader", () => {
+  it("a career writes, and reads back into, the same bytes as the version 5 reader", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
         return [fingerprint(text), fingerprint(rereadOf(text))];
       })
-    ).toStrictEqual(versionFourBytes);
+    ).toStrictEqual(versionFiveBytes);
   });
 
   it("text that is not a save, or a save from another version, is rejected with the reason", () => {
@@ -146,7 +143,7 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(missing(good, "version")),
-      verdictOn(corrupted(good, "version", 5)),
+      verdictOn(corrupted(good, "version", 6)),
       verdictOn('{"version":1e400}'),
       verdictOn(serialiseCareer(good).replace(/"cash":-?\d+/u, '"cash":1e400')),
     ]).toStrictEqual([
@@ -160,7 +157,7 @@ describe("the save", () => {
   it("a save with a value of the wrong kind or out of range is rejected with the field", () => {
     const good = seasonAt(decent, 2).end;
     const cases: readonly (readonly [string, Json])[] = [
-      ["level", 9],
+      ["tier", 9],
       ["cash", "lots"],
       ["bikeId", "rocket"],
       ["weaponHits", 4],
@@ -179,7 +176,7 @@ describe("the save", () => {
     expect(
       cases.map(([path, value]) => verdictOn(corrupted(good, path, value)))
     ).toStrictEqual([
-      "invalid:level",
+      "invalid:tier",
       "invalid:cash",
       "invalid:bikeId",
       "invalid:weaponHits",
@@ -313,7 +310,7 @@ describe("the save", () => {
       ),
       verdictOn(
         edited(racing, [
-          ["activeRace.level", 9],
+          ["activeRace.tier", 9],
           ["garage", "rocket"],
         ])
       ),
@@ -382,15 +379,15 @@ describe("the save", () => {
       verdictOn(corrupted(racing, "activeRace.bikeId", "ostra-nera-1000")),
       verdictOn(corrupted(racing, "gameOver", true)),
       verdictOn(corrupted(racing, "activeRace.raceId", 1)),
-      verdictOn(corrupted(racing, "activeRace.level", 1)),
+      verdictOn(corrupted(racing, "activeRace.tier", 1)),
       verdictOn(
         corrupted(settled, "activeRace", {
           bikeId: settled.bikeId,
-          level: settled.level,
           raceId: starts,
           roadId: "slag-row",
           seed: 1,
           started: true,
+          tier: settled.tier,
         })
       ),
       verdictOn(
@@ -403,7 +400,7 @@ describe("the save", () => {
       "inconsistent:activeRace.bikeId",
       "inconsistent:gameOver",
       "inconsistent:activeRace.raceId",
-      "inconsistent:activeRace.level",
+      "inconsistent:activeRace.tier",
       "inconsistent:lastResult",
       "inconsistent:season.player.lastAhead.juno-kade",
       "inconsistent:lastResult.summary.raceId",

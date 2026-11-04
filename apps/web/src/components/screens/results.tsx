@@ -1,5 +1,4 @@
 import type { ResultRow } from "@racer/career/result";
-import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { creditLimitOf, roadList, roads } from "@racer/career/tables";
@@ -102,7 +101,7 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
         className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black whitespace-nowrap uppercase"
         style={{ ...place(SHEET_TITLE), fontSize: stagePx(36) }}
       >
-        {roads[report.roadId].name} · Level {report.level}
+        {roads[report.roadId].name} · Tier {report.tier}
       </h2>
       {rows.length === 0 ? (
         <p
@@ -415,7 +414,6 @@ const rematchLine = (rematch: RoomPresence | null): string | null => {
 export const ResultsScreen = ({
   report,
   career,
-  rules,
   riding,
   canRaceAgain,
   repeatRun,
@@ -424,7 +422,6 @@ export const ResultsScreen = ({
 }: {
   readonly report: RaceReport;
   readonly career: CareerState | null;
-  readonly rules: RaceRules;
   readonly riding: BikeId;
   readonly canRaceAgain: boolean;
   readonly repeatRun: boolean;
@@ -461,7 +458,7 @@ export const ResultsScreen = ({
         <BarBackdrop clock={clock} />
         <BarSeats figure={speaker?.figure ?? null} />
         {speaker && <SpeechSticker speech={speaker.speech} />}
-        <BarHeader standing={career ? { career, rules } : null} />
+        <BarHeader career={career} />
         <RaceSheet report={report} />
         <Outcome report={report} />
         {report.ledger && <Takings ledger={report.ledger} />}

@@ -299,8 +299,8 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/career/src/season.ts",
     ],
     summary:
-      "The career state itself, levels, qualification and promotion, the season board, the story beats, the envelope and the endings.",
-    title: "Career levels, season and story",
+      "The career state itself, tiers, qualification and promotion, the season board, the story beats, the envelope and the endings.",
+    title: "Career tiers, season and story",
     verify: ["career.md"],
   },
   {

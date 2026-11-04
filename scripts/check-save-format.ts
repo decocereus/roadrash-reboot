@@ -6,7 +6,7 @@ import process from "node:process";
 import { EncodedSaveSchema } from "@racer/career/save-schema";
 import {
   Bike,
-  Level,
+  Tier,
   Officer,
   Racer,
   Rival,
@@ -38,11 +38,11 @@ const RegistryFile = Schema.Struct({
       catalogues: Schema.optionalKey(
         Schema.Struct({
           Bike: Members,
-          Level: Members,
           Officer: Members,
           Racer: Members,
           Rival: Members,
           Road: Members,
+          Tier: Members,
           Weapon: Members,
         })
       ),
@@ -306,11 +306,11 @@ if (import.meta.main) {
   );
   const catalogues: Catalogues = {
     Bike: Bike.literals,
-    Level: Level.literals,
     Officer: Officer.literals,
     Racer: Racer.literals,
     Rival: Rival.literals,
     Road: Road.literals,
+    Tier: Tier.literals,
     Weapon: Weapon.literals,
   };
   const problems = checkSaveFormat({

@@ -19,15 +19,14 @@ import { setupFor } from "./field.ts";
 import type { CareerRaceSetup } from "./field.ts";
 import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
 import type { RaceLog } from "./outcome.ts";
-import { levelsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { quitRace, settleRace, startRace } from "./settle.ts";
 import type { Ledger, Settlement } from "./settle.ts";
 import { buyBike } from "./shop.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { roadList } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import { roadList, tiers } from "./tables.ts";
+import type { Tier, RoadId } from "./tables.ts";
 
 export const TICKS = 60;
 
@@ -55,7 +54,7 @@ export const enter = (
   seed = 7,
   rules = recordedRules
 ): Entered => {
-  const start = startRace(rules, career, roadId, seed);
+  const start = startRace(career, roadId, seed);
   if (!start.started) {
     throw new Error(`The race did not start: ${start.reason}.`);
   }
@@ -119,11 +118,7 @@ export const everyRider = (race: Entered, input: RiderInput): InputFrame =>
   );
 
 export const settle = (race: Entered): Settlement =>
-  settleRace(
-    race.rules,
-    race.career,
-    outcomeOf(race.state, race.setup, race.log)
-  );
+  settleRace(race.career, outcomeOf(race.state, race.setup, race.log));
 
 export const ledgerOf = (settlement: Settlement): Ledger => {
   if (!settlement.ledger) {
@@ -332,7 +327,7 @@ export const weakSeason: readonly Step[] = [
 ];
 
 export interface Season {
-  readonly level: Level;
+  readonly tier: Tier;
   readonly start: CareerState;
   readonly end: CareerState;
 }
@@ -344,32 +339,25 @@ export const seasonsOf = (
 ): readonly Season[] => {
   const seasons: Season[] = [];
   let career = newCareer(11);
-  for (const level of levelsOf(rules)) {
+  for (const tier of tiers) {
     const end = playAll(career, steps, rules);
-    seasons.push({ end, level, start: career });
-    const next = purchases[level - 1];
-    career = next ? buyBike(rules, end, next) : end;
+    seasons.push({ end, start: career, tier });
+    const next = purchases[tier - 1];
+    career = next ? buyBike(end, next) : end;
   }
   return seasons;
 };
 
-export const decent = seasonsOf(decentSeason, [
-  "halden-kite-500",
-  "ostra-sesta-600",
-  "ostra-sette-750",
-  "halden-meridian-900",
-]);
+const seasonBikes = ["ostra-sesta-600", "halden-meridian-900"] as const;
 
-export const weak = seasonsOf(weakSeason, [
-  "halden-kite-500",
-  "ostra-sesta-600",
-  "ostra-sette-750",
-]);
+export const decent = seasonsOf(decentSeason, seasonBikes);
 
-export const seasonAt = (seasons: readonly Season[], level: Level): Season => {
-  const season = seasons[level - 1];
+export const weak = seasonsOf(weakSeason, seasonBikes);
+
+export const seasonAt = (seasons: readonly Season[], tier: Tier): Season => {
+  const season = seasons[tier - 1];
   if (!season) {
-    throw new Error(`No season at level ${level}.`);
+    throw new Error(`No season at tier ${tier}.`);
   }
   return season;
 };
@@ -383,7 +371,6 @@ export const wreckTimes = (
   for (let wreck = 0; wreck < times; wreck += 1) {
     const race = enter(current, "slag-row", wreck + 1);
     const settlement = quitRace(
-      race.rules,
       race.career,
       outcomeOf(race.state, race.setup, race.log)
     );

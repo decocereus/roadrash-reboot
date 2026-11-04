@@ -190,7 +190,7 @@ export const bikePitches = {
   "halden-meridian-900":
     "The heavyweight that still listens to the handlebars.",
   "halden-wren-400":
-    "Light, honest, and forgiving. Takes every level-1 bend on the Ridge flat and still loses to people who brake.",
+    "Light, honest, and forgiving. Takes every bend on the Ridge flat and still loses to people who brake.",
   "ostra-nera-1000":
     "The fastest thing in the Lowside car park, and it knows it. Brake early or brake in the trees.",
   "ostra-sesta-600":

@@ -1,4 +1,3 @@
-import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { endings } from "@racer/career/story";
 import { bikes } from "@racer/sim/bikes";
@@ -77,7 +76,7 @@ const RecordNote = ({
           fontSize: stagePx(box.w / 27),
         }}
       >
-        <RecordLine label="Reached" value={`Level ${career.level}`} />
+        <RecordLine label="Reached" value={`Tier ${career.tier}`} />
         <RecordLine
           label="Races"
           value={`${record.starts} · ${plural(record.wins, "win", "wins")}`}
@@ -102,12 +101,10 @@ const RecordNote = ({
 
 export const GameOverScreen = ({
   career,
-  rules,
   onNewCareer,
   onBackRoom,
 }: {
   readonly career: CareerState;
-  readonly rules: RaceRules;
   readonly onNewCareer: () => void;
   readonly onBackRoom: () => void;
 }) => {
@@ -120,7 +117,7 @@ export const GameOverScreen = ({
           className="object-cover"
           src={gameOverPlates.backdrop}
         />
-        <BarHeader standing={{ career, rules }} />
+        <BarHeader career={career} />
         <WrittenSheet
           box={BROKE_SHEET}
           scale={0.75}
@@ -150,11 +147,9 @@ export const GameOverScreen = ({
 
 export const EndingScreen = ({
   career,
-  rules,
   onBackRoom,
 }: {
   readonly career: CareerState;
-  readonly rules: RaceRules;
   readonly onBackRoom: () => void;
 }) => {
   const clock = useBarClock();
@@ -172,7 +167,7 @@ export const EndingScreen = ({
       <Stage>
         <BarBackdrop clock={clock} />
         <BarSeats figure={null} />
-        <BarHeader standing={{ career, rules }} />
+        <BarHeader career={career} />
         <WrittenSheet
           box={ENDING_SHEET}
           scale={0.7}
