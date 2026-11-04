@@ -35,7 +35,7 @@ const recorded = () => {
     clock.advance(PING_EVERY_MS);
   }
   for (const socket of sockets) {
-    host.gone(socket);
+    host.gone(socket, 1000);
   }
   clock.advance(1000);
   const parts = [...clock.tape.entries()]

@@ -67,6 +67,7 @@ const Countdown = Schema.Struct({
 });
 
 const Left = Schema.Struct({
+  closeCode: orMissing(Schema.Number),
   kind: Schema.Literal("left"),
   raceId: Schema.String,
   seatsLeft: Schema.Number,

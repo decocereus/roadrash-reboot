@@ -18,6 +18,12 @@ import {
   race,
 } from "./host-harness.ts";
 
+const packetOf = (rollbacks: number): ArrayBuffer => {
+  const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
+  writeRaceStats(new DataView(packet), { ...someRaceStats, rollbacks });
+  return packet;
+};
+
 describe("the room's notes", () => {
   it("says how long the countdown waited, and for whom", () => {
     const { clock, far, host, near } = loadingRace();
@@ -47,7 +53,7 @@ describe("the room's notes", () => {
 
   it("says who left and who was refused", () => {
     const { clock, far, host } = loadingRace();
-    host.gone(far);
+    host.gone(far, 1000);
     host.seat(fakeSocket(), "Stale", nearby, {
       ...sameBuild(),
       build: "old-build",
@@ -66,12 +72,12 @@ describe("the room's notes", () => {
     );
   });
 
-  it("logs a seat's race stats once, however often it sends them", () => {
+  it("keeps a seat's latest stats and logs them once, when its socket dies", () => {
     const { clock, host, near } = loadingRace();
-    const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
-    writeRaceStats(new DataView(packet), someRaceStats);
-    host.message(near, packet);
-    host.message(near, packet);
+    host.message(near, packetOf(3));
+    host.message(near, packetOf(7));
+    expect(clock.notes.some((note) => note.kind === "stats")).toBeFalsy();
+    host.gone(near, 1006);
     const stats = clock.notes.filter((note) => note.kind === "stats");
     expect(stats).toHaveLength(1);
     expect(stats[0]).toMatchObject({
@@ -79,9 +85,12 @@ describe("the room's notes", () => {
       rider: 0,
       stats: { rollbacks: 7, worstOwnControlCm: 88 },
     });
+    expect(clock.notes).toContainEqual(
+      expect.objectContaining({ closeCode: 1006, kind: "left" })
+    );
   });
 
-  it("saves a seat's browser trace once, under its race, with no extra fields", () => {
+  it("saves every row a seat sent before its socket died, with no extra fields", () => {
     const { clock, host, near } = loadingRace();
     const trace = {
       build: "abc",
@@ -91,7 +100,8 @@ describe("the room's notes", () => {
       rows: [0, 0, 1, 0, 60, 2, 16, 90, 17],
     };
     host.message(near, JSON.stringify(trace));
-    host.message(near, JSON.stringify({ ...trace, build: "second" }));
+    host.message(near, JSON.stringify({ ...trace, rows: [250] }));
+    host.gone(near, 1006);
     expect(clock.notes.filter((note) => note.kind === "browser")).toStrictEqual(
       [
         {
@@ -105,13 +115,14 @@ describe("the room's notes", () => {
       ]
     );
     const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
-    expect(saved).toContain('"build":"abc"');
+    expect(saved).toContain("[0,0,1,0,60,2,16,90,17,250]");
     expect(saved).not.toContain("a name");
   });
 
   it("refuses a browser trace that is not one, or is too long", () => {
     const { clock, host, near } = loadingRace();
     host.message(near, "not json");
+    host.gone(near, 1006);
     expect(clock.tape.has("tapes/race-1/rider-0.trace.json")).toBeFalsy();
     const { clock: other, host: otherHost, near: otherNear } = loadingRace();
     otherHost.message(otherNear, "x".repeat(MOST_TRACE_CHARS + 1));
@@ -119,6 +130,7 @@ describe("the room's notes", () => {
       otherNear,
       JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
     );
+    otherHost.gone(otherNear, 1006);
     expect(other.tape.has("tapes/race-1/rider-0.trace.json")).toBeTruthy();
   });
 
@@ -130,6 +142,7 @@ describe("the room's notes", () => {
       worstFrameRoadMetres: -23,
     });
     host.message(near, packet);
+    host.gone(near, 1006);
     expect(clock.notes.find((note) => note.kind === "stats")).toMatchObject({
       stats: { worstFrameRoadMetres: 0 },
     });
@@ -144,7 +157,7 @@ describe("the room's notes", () => {
     expect(startedOf(first[1] ?? fakeSocket()).manifest.raceId).toBe("race-1");
     expect(host.status().raceId).toBe("race-1");
     for (const socket of first) {
-      host.gone(socket);
+      host.gone(socket, 1000);
     }
     clock.advance(1000);
     expect(host.status().raceId).toBeNull();
@@ -159,8 +172,8 @@ describe("the room's notes", () => {
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
     host.message(near, packet);
-    host.gone(far);
-    host.gone(near);
+    host.gone(far, 1000);
+    host.gone(near, 1000);
     host.seat(fakeSocket(), "Late", nearby, sameBuild());
     clock.advance(40_000);
     const written = JSON.stringify(clock.notes);
@@ -180,8 +193,8 @@ describe("the room's notes", () => {
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
     host.message(near, packet);
-    host.gone(near);
-    host.gone(far);
+    host.gone(near, 1000);
+    host.gone(far, 1000);
     clock.advance(1000);
     const ended = clock.notes.find((note) => note.kind === "ended");
     expect(ended).toMatchObject({
@@ -206,8 +219,8 @@ describe("the room's notes", () => {
     clock.advance(START_DELAY_MS + 1000);
     clock.stall(70);
     clock.wakeOnce();
-    host.gone(near);
-    host.gone(far);
+    host.gone(near, 1000);
+    host.gone(far, 1000);
     clock.advance(1000);
     const ended = clock.notes.find((note) => note.kind === "ended");
     if (ended?.kind !== "ended") {
