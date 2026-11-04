@@ -1,92 +1,92 @@
 {
   "fixed": [
     {
-      "final": "32e07e96924bbedaf0403e6fc3303c07",
-      "full": "e9c6eeaad909206b9e8bcca25165144f",
+      "final": "6d0cb85d15953219b1707885e7623283",
+      "full": "ea4cb5c113120be1283be77822c95959",
       "id": "ridge-road/tier3/seed1",
       "result": null,
       "ticks": 7200,
-      "window": "bc74343d219ae7c5fac5b43bc763c1d8"
+      "window": "390070329d705397262da171cbaeeac7"
     },
     {
-      "final": "1a5cc844cbe91ffdc7ba394e96cf16e4",
-      "full": "b1de91bbd090e9380f1af09135019363",
+      "final": "a64b8820e2dfac026d22ec2496745771",
+      "full": "0913a89d878e41850a2604b33b715eaa",
       "id": "ridge-road/tier3/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "71c73781c5f07d5b6ab90179701278c1"
+      "window": "8834d5aa61913677aea5d4930c1e25e8"
     },
     {
-      "final": "4db9339ca4f1d36770e171380c7c842f",
-      "full": "83bf89412c7aad20b5bcd1c954f83c48",
+      "final": "8ef8768389d54037868a64be167000dc",
+      "full": "3bd5e69a786d6009124f021dc7968cb5",
       "id": "ridge-road/tier3/seed9",
       "result": "busted",
       "ticks": 7200,
-      "window": "e622dee07bfcf655274868ca903fba63"
+      "window": "4fee08835dadba5b1814f4ade6b9fc3a"
     },
     {
-      "final": "6dbba524342e4a375ab9bcb1bb3d0408",
-      "full": "b87ed05e67bce05609ff8864f5917cef",
+      "final": "011c0b3243ba81d476e5fd6945d31dec",
+      "full": "22e9523973709089057199754538cd24",
       "id": "ridge-road/tier3/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "99d019c590b6f3a9e9530c6c9a6ddf38"
+      "window": "861c38f3559f80e7771c338a59247109"
     },
     {
-      "final": "dffc68ea72ad3ea3d11f700532c735d7",
-      "full": "c0b0e2f8c576f542d59755df5b57d334",
+      "final": "f10a1df63124092ee4dbebf36ad09612",
+      "full": "1ffba7ee9995551922dbacc8f0289282",
       "id": "slag-row/tier3/seed1",
       "result": "busted",
       "ticks": 7200,
-      "window": "e214f025d550bdc764f785a6a01c5416"
+      "window": "e74a69e00514ddac419ecc3c5c1cf562"
     },
     {
-      "final": "5f4cf90961290f44c8a484d1a2fa2077",
-      "full": "eb156a0be90b609de92d3627fd8a2a8e",
+      "final": "ad38ed4d04dd642e66fe492eecb31893",
+      "full": "c37218e5f0e94e9f1ee2eed05b8975e0",
       "id": "slag-row/tier3/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "cdc1d7577f3974db342cdd3db6296248"
+      "window": "cc20cc6787e4afed056a34178663086a"
     },
     {
-      "final": "0f3117e91b8e52e19a330826440fac01",
-      "full": "ae5eb370b32b8a431d1e759de4dbdbb3",
+      "final": "a5df9ddeff787c451b2fd0cbba6e9dea",
+      "full": "55b10ee4edf787d3020f202a9ecbd337",
       "id": "slag-row/tier3/seed9",
       "result": null,
       "ticks": 7200,
-      "window": "a6c04dfa362ae9b8a1b8b5bf54d69db8"
+      "window": "215266b50d47e06e7eedab892810a0af"
     },
     {
-      "final": "6bde996487036e9b5512b2da906b397f",
-      "full": "44a6ab32d22572fd99debd111a853f1c",
+      "final": "dbf53b7ff8849e7a2e4da8e05b479674",
+      "full": "c4ae45d307d3145a979259af61af97ab",
       "id": "slag-row/tier3/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "a9e13dba47e630a7af28e804ec68df6e"
+      "window": "3f17afbe0b68b6ab1c1553e136c1a3f6"
     },
     {
-      "final": "f0ab3335a6ce62025ae8ca77f47d8e3f",
-      "full": "4c76351a75b0c5540eea18d2a56a295c",
+      "final": "26b3d27cb1b88c4d65943ad4c6b996e1",
+      "full": "bacdb623a3cc4268bd63feea9f962858",
       "id": "breakwater-run/tier3/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "24c2dafb7f59ed41ff3e469bbc18fb2f"
+      "window": "ec5afd6594bf518dd749ecf2967f1369"
     },
     {
-      "final": "65392a111b39add936153440889217f1",
-      "full": "6de463d687a86e958df1f8d7eb92b8a9",
+      "final": "aeefad84701e496bd8ffc64a4565aefe",
+      "full": "7a25e856bcffdff4e3a56e3ad4b86a49",
       "id": "stress/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "659dc386a419458e28ed6e78917ed455"
+      "window": "a86a627e038fe97028a4757bad3fb4c4"
     },
     {
-      "final": "0a39473ed4e097b67aef36211ef8c4b3",
-      "full": "82c1dc5131f588b6fb34f7519d0d0748",
+      "final": "17792b7b3738a204f8da0804c8aac84b",
+      "full": "43582a18ef2ed1fbf2d575949a1daee5",
       "id": "handover/slag-row/tier3/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "9c977995948f633f1d5aba393526cd58"
+      "window": "f20815792249baf5235abb5c16940cd4"
     }
   ],
   "provenance": {
@@ -101,92 +101,92 @@
   },
   "solo": [
     {
-      "final": "346d64e43f61ddcaf81cae3c8d336b10",
-      "full": "7184a8f94b5cba930f27a31beb0c8a51",
+      "final": "ffebef4ffeb6bc1cc319383e5f79494f",
+      "full": "7f63ec7ba714b131893361b98131d0b2",
       "id": "ridge-road/tier3/seed1",
       "result": "finished",
-      "ticks": 17134,
-      "window": "bc74343d219ae7c5fac5b43bc763c1d8"
+      "ticks": 17076,
+      "window": "390070329d705397262da171cbaeeac7"
     },
     {
-      "final": "a2c9d2ee9cb04b6d5e0e6b1d839d0c89",
-      "full": "2d03fbb485de42a0e9b025fb12c399ca",
+      "final": "adf07681000bd20660a01b314ec4a0a1",
+      "full": "7a88b58719874859f0e0988981957fbd",
       "id": "ridge-road/tier3/seed5",
       "result": "finished",
       "ticks": 14597,
-      "window": "71c73781c5f07d5b6ab90179701278c1"
+      "window": "8834d5aa61913677aea5d4930c1e25e8"
     },
     {
-      "final": "df0c997c66a8520379246c73aeb9464a",
-      "full": "a5e7abf3724d293f5bb84e40383f7e76",
+      "final": "101346a5d88ae6d710d0334ac0b3c5cc",
+      "full": "ba0e74911a14ca3f289e3721fc0dded3",
       "id": "ridge-road/tier3/seed9",
       "result": "busted",
       "ticks": 6896,
-      "window": "e622dee07bfcf655274868ca903fba63"
+      "window": "4fee08835dadba5b1814f4ade6b9fc3a"
     },
     {
-      "final": "e72358961bb72a8dd0d7ddae2c06e5d1",
-      "full": "cfe63eb1da40405568c44e0205a3cbf8",
+      "final": "507415bb022312c1f7b0c1fb4dec52a2",
+      "full": "849862c838562f44d7512ed8f4411a77",
       "id": "ridge-road/tier3/seed31",
       "result": "busted",
-      "ticks": 13785,
-      "window": "99d019c590b6f3a9e9530c6c9a6ddf38"
+      "ticks": 21172,
+      "window": "861c38f3559f80e7771c338a59247109"
     },
     {
-      "final": "592514f415e8aff79843c81901d40eca",
-      "full": "99016a23a8db8b7febbdbbd9b5014055",
+      "final": "2c3377d3f39f272a16f2bb0d49937db3",
+      "full": "d96553d7773ddc4dc1cf30dae5ebb2a1",
       "id": "slag-row/tier3/seed1",
       "result": "busted",
       "ticks": 5464,
-      "window": "e214f025d550bdc764f785a6a01c5416"
+      "window": "e74a69e00514ddac419ecc3c5c1cf562"
     },
     {
-      "final": "4945dda26eea11141c2d1453307d0e2b",
-      "full": "f2b0f7272e4e38d72344854e743d9b6f",
+      "final": "73e9f201df54b80db66f135b2f77003f",
+      "full": "84efe32b5aaf18dc9f588955f08dfd14",
       "id": "slag-row/tier3/seed5",
       "result": "finished",
-      "ticks": 13329,
-      "window": "cdc1d7577f3974db342cdd3db6296248"
+      "ticks": 13244,
+      "window": "cc20cc6787e4afed056a34178663086a"
     },
     {
-      "final": "c477ff96d47094ec68de0e9db7b82d16",
-      "full": "b24441145ce10def55eba544dc50a097",
+      "final": "2e4d2b56ca30fd27b15f558b42172a11",
+      "full": "cb8b1631aea7964bc74da980233687af",
       "id": "slag-row/tier3/seed9",
       "result": "finished",
-      "ticks": 13559,
-      "window": "a6c04dfa362ae9b8a1b8b5bf54d69db8"
+      "ticks": 14552,
+      "window": "215266b50d47e06e7eedab892810a0af"
     },
     {
-      "final": "3158e06f4444c8d409d14050ad7c1c23",
-      "full": "661b340218ffdc882fcf6f64a1d3ea55",
+      "final": "2bebe96d9e942a37a514dfcc18f1aaa0",
+      "full": "06def875ed9ae86cc09d59e0730cb4c2",
       "id": "slag-row/tier3/seed31",
       "result": "finished",
-      "ticks": 12540,
-      "window": "a9e13dba47e630a7af28e804ec68df6e"
+      "ticks": 12536,
+      "window": "3f17afbe0b68b6ab1c1553e136c1a3f6"
     },
     {
-      "final": "d8dab233e433325a8403e406a35a5e8a",
-      "full": "85d9d975b85b40039eca4ddd36769ca0",
+      "final": "bfd43c36addb84d06fb4ed88e85e6d87",
+      "full": "1637a6a8f949be370bd05f5b59ee277b",
       "id": "breakwater-run/tier3/seed8",
       "result": "finished",
-      "ticks": 12608,
-      "window": "24c2dafb7f59ed41ff3e469bbc18fb2f"
+      "ticks": 12601,
+      "window": "ec5afd6594bf518dd749ecf2967f1369"
     },
     {
-      "final": "90e8d6746db66e1528e3a7915f6d1752",
-      "full": "a0cfbe5f4e29d81db39d648ac2efc53a",
+      "final": "2b2ef631b8a34c8d721726b822673562",
+      "full": "1e872a98f338dfab8c49d8a8c266c5fd",
       "id": "stress/seed8",
-      "result": "finished",
-      "ticks": 13669,
-      "window": "659dc386a419458e28ed6e78917ed455"
+      "result": "busted",
+      "ticks": 9931,
+      "window": "a86a627e038fe97028a4757bad3fb4c4"
     },
     {
-      "final": "cbc755ee1796f24b75451ab988099d62",
-      "full": "c0476973c631c522273655a2abbaa130",
+      "final": "515b7a5aea65346a93f34ed234ffa85d",
+      "full": "d401a84aafabce8937f0046df5e25aea",
       "id": "handover/slag-row/tier3/seed5",
       "result": "finished",
-      "ticks": 14600,
-      "window": "9c977995948f633f1d5aba393526cd58"
+      "ticks": 13747,
+      "window": "f20815792249baf5235abb5c16940cd4"
     }
   ]
 }

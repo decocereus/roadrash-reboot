@@ -169,8 +169,8 @@ export const createTraffic = (
           clearOfCarrier(car, carrier.s, carrier.x)
         ) && clearOfConvoys(car, convoys)
     ),
-    ...carriers,
     ...convoys,
+    ...carriers,
   ];
 };
 

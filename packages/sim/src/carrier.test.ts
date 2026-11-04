@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { streetBike } from "./bikes.ts";
 import { carrierAt } from "./carrier.ts";
+import { difficulties, tiers } from "./difficulty.ts";
 import { alone, frameOf, player, truckRoad } from "./race-fixtures.ts";
 import { createRace, defaultSetup, neutralInput, stepRace } from "./race.ts";
 import { PLAYER_RIDER, TICK_RATE } from "./state.ts";
@@ -190,6 +191,20 @@ describe("the moving carrier jump", () => {
 });
 
 describe("trucks on the roads", () => {
+  it.each(tiers)(
+    "at tier %i the trucks are the last cars, where the ramp and the pilot look for them",
+    (tier) => {
+      const track = trackFor("slag-row");
+      const { cars } = createRace({
+        ...defaultSetup(track, 1),
+        conditions: difficulties[tier].conditions,
+      });
+      expect(
+        cars.slice(-track.carrierStarts.length).map((car) => car.carrier)
+      ).toStrictEqual(track.carrierStarts.map(() => true));
+    }
+  );
+
   it.each([
     ["breakwater-run", [2350, 3200]],
     ["slag-row", [2600, 4100]],
