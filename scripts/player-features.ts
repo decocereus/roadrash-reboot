@@ -421,6 +421,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/sign-*.ts",
       "apps/web/src/game/texture-canvas.ts",
       "apps/web/test/roadside-clearance.test.ts",
+      "apps/web/test/road-districts.test.ts",
     ],
     perf: sceneCounts,
     start: [
