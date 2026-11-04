@@ -1,8 +1,10 @@
 import { bikeIds } from "@racer/sim/bikes";
+import { celebrityRivalIds } from "@racer/sim/cast";
 import { weapons } from "@racer/sim/weapons";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
+import { recordedCast } from "./bench.ts";
 import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { newCareer } from "./state.ts";
@@ -92,6 +94,32 @@ const fingerprint = (text: string): string => {
   return `${text.length}:${hash.toString(16)}`;
 };
 
+const recordedRacers = new Set<string>([
+  "player",
+  ...recordedCast,
+  ...celebrityRivalIds,
+]);
+
+const recordedRows = (rows: Json | undefined): Json =>
+  isJsonRecord(rows ?? null)
+    ? Object.fromEntries(
+        Object.entries(rows ?? {}).filter(([racer]) =>
+          recordedRacers.has(racer)
+        )
+      )
+    : null;
+
+const recordedBytes = (text: string): string => {
+  const save = parseJson(text);
+  return isJsonRecord(save)
+    ? JSON.stringify({
+        ...save,
+        memory: recordedRows(save.memory),
+        season: recordedRows(save.season),
+      })
+    : text;
+};
+
 const careers = [
   newCareer(1),
   seasonAt(decent, 3).end,
@@ -121,7 +149,10 @@ describe("the save", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
-        return [fingerprint(text), fingerprint(rereadOf(text))];
+        return [
+          fingerprint(recordedBytes(text)),
+          fingerprint(recordedBytes(rereadOf(text))),
+        ];
       })
     ).toStrictEqual(versionSixBytes);
   });

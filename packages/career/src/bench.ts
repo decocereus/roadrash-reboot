@@ -1,3 +1,4 @@
+import type { OrdinaryRivalId } from "@racer/sim/cast";
 import { PLAYER_RIDER } from "@racer/sim/state";
 import type { PacingRules } from "@racer/sim/state";
 import { trackFor } from "@racer/track/roads";
@@ -9,9 +10,29 @@ import { STARTING_BIKE } from "./tables.ts";
 
 export type Bench = "stress" | "reference";
 
+export const recordedCast = [
+  "juno-kade",
+  "ruth-ann-bixby",
+  "dee-santangelo",
+  "ines-marchetti",
+  "mags-dunleavy",
+  "lyle-gorski",
+  "tristan-lux",
+  "coach-dale-hutto",
+  "moose-kowalczyk",
+  "gus-abernathy",
+  "benny-okafor",
+  "wanda-pruitt",
+  "orrin-blackwell",
+  "agnes-mulcahy",
+  "hollis-thorne",
+  "felix-aurand",
+] as const satisfies readonly OrdinaryRivalId[];
+
 export const recordedRules: RaceRules = {
   celebrities: false,
   fieldSize: 15,
+  ordinaryCast: recordedCast,
 };
 
 export const benchRaces = {

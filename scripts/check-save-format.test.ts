@@ -493,9 +493,13 @@ describe("check:save-format", () => {
     [
       "a catalogue-sized bound raised without a new bike",
       top((fields) =>
-        set(fields, "garage", set(child(fields, "garage"), "maxItems", 10))
+        set(
+          fields,
+          "garage",
+          set(child(fields, "garage"), "maxItems", bikes.length + 1)
+        )
       ),
-      /^`garage` has a bound that follows the size of the Bike catalogue, 9 IDs, but its schema is .*"maxItems":10/u,
+      /^`garage` has a bound that follows the size of the Bike catalogue, \d+ IDs, but its schema is .*"maxItems":\d+/u,
     ],
     [
       "one catalogue field narrowed",

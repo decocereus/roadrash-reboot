@@ -1,7 +1,7 @@
 import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { celebrityCast, ordinaryCast, rivalAt, rivals } from "@racer/sim/cast";
-import type { RivalId } from "@racer/sim/cast";
+import type { Rival, RivalId } from "@racer/sim/cast";
 import { difficulties, TOP_TIER } from "@racer/sim/difficulty";
 import { defaultPlayer } from "@racer/sim/race";
 import { clamp, PLAYER_RIDER } from "@racer/sim/state";
@@ -40,12 +40,17 @@ export interface CareerRaceSetup extends RaceSetup {
 const races = (rival: RivalId, tier: Tier): boolean =>
   tier >= rivals[rival].racesFrom;
 
+const castOf = ({
+  ordinaryCast: named,
+}: Pick<RaceRules, "ordinaryCast">): readonly Rival[] =>
+  named === undefined ? ordinaryCast : named.map((id) => rivals[id]);
+
 const homeRiders = (
-  { celebrities }: Pick<RaceRules, "celebrities">,
+  rules: Pick<RaceRules, "celebrities" | "ordinaryCast">,
   roadId: RoadId,
   tier: Tier
 ): readonly RivalId[] =>
-  [...ordinaryCast, ...(celebrities ? celebrityCast : [])]
+  [...castOf(rules), ...(rules.celebrities ? celebrityCast : [])]
     .filter((rival) => rival.home === roads[roadId].region)
     .map((rival) => (races(rival.id, tier) ? rival.id : CHAMPION_STAND_IN));
 
@@ -79,7 +84,7 @@ export const fieldFor = (
 ): readonly RivalId[] => {
   const random = createRandom(seed + FIELD_SALT);
   const home = homeRiders(rules, roadId, tier);
-  const others = ordinaryCast
+  const others = castOf(rules)
     .map((rival) => rival.id)
     .filter((rival) => races(rival, tier) && !home.includes(rival));
   const drawn = shuffled(others, random).slice(
