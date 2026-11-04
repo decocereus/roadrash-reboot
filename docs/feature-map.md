@@ -1358,8 +1358,6 @@ Source files:
 
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/host.ts`
-- `apps/rooms/src/host.ts`
-- `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
 - `apps/rooms/src/manifest.ts`
 - `apps/rooms/src/messages.ts`
@@ -1369,14 +1367,10 @@ Source files:
 - `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
-- `apps/rooms/src/seat-client.ts`
-- `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
 - `apps/web/src/components/rematch-watch.ts`
-- `apps/web/src/components/room-lobby.tsx`
-- `apps/web/src/components/room-lobby.tsx`
 - `apps/web/src/components/room-lobby.tsx`
 - `apps/web/src/components/room-url.ts`
 - `apps/web/src/components/use-rematch.ts`
@@ -1404,8 +1398,6 @@ Source files:
 - `tools/rooms/src/read.ts`
 - `tools/rooms/src/replay.ts`
 - `tools/rooms/src/seat.ts`
-- `tools/rooms/src/seat.ts`
-- `tools/rooms/src/seat.ts`
 - `tools/rooms/src/send-budget.ts`
 - `tools/rooms/src/thin-seat.ts`
 - `tools/rooms/src/trace.ts`
@@ -1416,13 +1408,9 @@ Test files:
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host.test.ts`
-- `apps/rooms/test/host.test.ts`
-- `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
-- `apps/rooms/test/seat-client.test.ts`
-- `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/tape.test.ts`
 - `apps/web/src/components/rematch-watch.test.ts`
