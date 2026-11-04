@@ -13,9 +13,11 @@ import {
   sitOnStool,
   standUp,
   startShove,
+  stepAsideAtSpawn,
   stepLobbyRider,
   stoolNear,
   toggleBike,
+  walkOf,
 } from "./lobby.ts";
 import type { LobbyRider } from "./lobby.ts";
 
@@ -150,6 +152,34 @@ describe("the hidden bike", () => {
     respawnRider(rider);
     expect(rider.bikeFound).toBeTruthy();
     expect(rider.place.kind).toBe("foot");
+  });
+});
+
+describe("telling the room where a rider is", () => {
+  it("rounds to centimetres, so a still rider sends the same walk twice", () => {
+    const rider = createLobbyRider();
+    rider.x = 1.2341;
+    const first = JSON.stringify(walkOf(rider));
+    rider.x = 1.2349;
+    expect(walkOf(rider).x).toBe(1.23);
+    expect(JSON.stringify(walkOf(rider))).toBe(first);
+  });
+
+  it("sends a held pose only while the rider stands", () => {
+    const rider = createLobbyRider();
+    holdPose(rider, "phone");
+    expect(walkOf(rider).pose).toBe("phone");
+    sitOnStool(rider, 0);
+    expect(walkOf(rider)).toMatchObject({ place: "stool", pose: null });
+  });
+
+  it("stands riders apart at the door, by their place in the room", () => {
+    const first = createLobbyRider();
+    const second = createLobbyRider();
+    stepAsideAtSpawn(second, 3);
+    walk(first, 0.1);
+    walk(second, 0.1);
+    expect(second.x - first.x).toBeGreaterThan(2);
   });
 });
 
