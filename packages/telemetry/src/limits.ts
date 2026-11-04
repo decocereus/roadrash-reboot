@@ -58,8 +58,14 @@ export const browserFamilies = [
 export type BrowserFamily = (typeof browserFamilies)[number];
 
 export const gameLoadStages = ["game", "race", "rules"] as const;
-export const raceChoices = ["career", "friends", "single"] as const;
-export const roomArrivals = ["link", "made", "moved", "rematch"] as const;
+export const raceChoices = ["career", "friends", "public", "single"] as const;
+export const roomArrivals = [
+  "link",
+  "made",
+  "moved",
+  "queue",
+  "rematch",
+] as const;
 export type RoomArrival = (typeof roomArrivals)[number];
 export const roomLostStages = ["lobby", "race"] as const;
 export const playerRaceEnds = [

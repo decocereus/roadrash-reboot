@@ -29,6 +29,7 @@ const lobbyOf = (ids: readonly string[]): RoomLobbyMessage => ({
   kind: "lobby",
   members: ids.map((id) => ({ here: true, id, name: id, ready: false })),
   phase: "gathering",
+  roomKind: "custom",
   rule: publicRoomRule,
   startsInMs: null,
   you: "near",

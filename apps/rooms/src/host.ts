@@ -1,4 +1,8 @@
-import { seatedRace } from "@racer/career/room-race";
+import {
+  publicRoomRule,
+  publicRuleFor,
+  seatedRace,
+} from "@racer/career/room-race";
 import { createRoom, firstRacers, MOST_SEATS } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import { createTapeWriter, hexOfWords } from "@racer/sim/room-tape";
@@ -22,7 +26,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import type { RoomStatus } from "./contract.ts";
-import { createLobby, READY_WAIT_MS } from "./lobby.ts";
+import { createLobby } from "./lobby.ts";
 import type { RaceManifest } from "./manifest.ts";
 import {
   decodeLobbyCommand,
@@ -35,6 +39,7 @@ import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RoomNote } from "./notes.ts";
 import { raceSeatsOf, seatFor, tallyOf, traceSeats } from "./race-seat.ts";
 import type { Seat, SeatLink } from "./race-seat.ts";
+import type { RoomKind } from "./room-id.ts";
 import {
   BrowserTraceSchema,
   MOST_TRACE_CHARS,
@@ -128,7 +133,10 @@ const noteGap = (gaps: Uint32Array, gapMs: number): void => {
   gaps[bucket] = (gaps[bucket] ?? 0) + 1;
 };
 
-export const createHost = (ports: HostPorts): Host => {
+export const createHost = (
+  ports: HostPorts,
+  kind: RoomKind = "custom"
+): Host => {
   const present = new Map<HostSocket, Present>();
   const walks = new Map<string, string>();
   const seats = new Map<HostSocket, Seat>();
@@ -140,7 +148,9 @@ export const createHost = (ports: HostPorts): Host => {
   const pongView = new DataView(pongBuffer);
   const readyDigest = new Uint32Array(HASH_WORDS);
   const bornAt = ports.now();
-  const lobby = createLobby(bornAt);
+  const lobby = createLobby(bornAt, kind, () =>
+    kind === "public" ? publicRuleFor(ports.seed()) : publicRoomRule
+  );
   let running: Running | null = null;
   let wakes = 0;
   let catchUpWakes = 0;
@@ -538,8 +548,8 @@ export const createHost = (ports: HostPorts): Host => {
     }
     if (lobby.sweep(now)) {
       tellLobby();
-      consider();
     }
+    consider();
     watching = present.size > 0 || lobby.size() > 0;
     if (watching) {
       ports.after(SEAT_WATCH_MS, watchSeats);
@@ -560,9 +570,6 @@ export const createHost = (ports: HostPorts): Host => {
       }
       case "ready": {
         lobby.ready(memberId, command.ready, command.edition, ports.now());
-        if (command.ready) {
-          ports.after(READY_WAIT_MS, consider);
-        }
         break;
       }
       case "choose": {

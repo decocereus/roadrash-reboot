@@ -32,10 +32,21 @@ import {
 } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
 
-const RoomLobby = lazy(async () => {
-  const { RoomLobby: lobby } = await import("./room-lobby.tsx");
-  return { default: lobby };
-});
+const drawsNothing = () => null;
+
+const RoomLobby = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { RoomLobby: lobby } = await import("./room-lobby.tsx");
+      return { default: lobby };
+    });
+
+const QuickRace = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { QuickRace: finding } = await import("./room-lobby.tsx");
+      return { default: finding };
+    });
 
 const DWELL_MS = 2200;
 
@@ -141,6 +152,13 @@ const CareerScreens = ({
             event: "race_picked",
           });
           moveToRoom(newRoomId(), "made");
+        }}
+        onFindRace={() => {
+          diagnostics().events.track({
+            choice: "public",
+            event: "race_picked",
+          });
+          flow.go({ screen: "queue" });
         }}
         onEnvelope={(take) => {
           flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
@@ -249,6 +267,17 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         ready={flow.ready}
         rules={rules}
       />
+    );
+  }
+  if (view.screen === "queue") {
+    return (
+      <Suspense>
+        <QuickRace
+          onBack={() => {
+            flow.go(clubhouse);
+          }}
+        />
+      </Suspense>
     );
   }
   if (view.screen === "room") {

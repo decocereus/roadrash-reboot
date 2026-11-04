@@ -43,6 +43,7 @@ export const groupRaces = (
   const records = new Map<string, RaceRecord>();
   for (const note of notes) {
     switch (note.kind) {
+      case "placed":
       case "refused":
       case "tapeLost": {
         break;

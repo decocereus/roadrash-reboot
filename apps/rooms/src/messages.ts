@@ -7,6 +7,7 @@ import {
   RoomChoiceChangeSchema,
   RoomRuleSchema,
 } from "./manifest.ts";
+import { ROOM_KINDS } from "./room-id.ts";
 
 const MOST_NAME_CHARS = 12;
 const BARRED_NAME_CHARS = /[^\p{L}\p{M}\p{N} ._-]/gu;
@@ -58,6 +59,7 @@ const Lobby = Schema.Struct({
     })
   ),
   phase: Schema.Literals(LOBBY_PHASES),
+  roomKind: Schema.Literals(ROOM_KINDS),
   rule: RoomRuleSchema,
   startsInMs: Schema.NullOr(Schema.Number),
   you: Schema.String,

@@ -34,6 +34,23 @@ export type RoomStatus = typeof RoomStatusSchema.Type;
 
 const roomParams = { roomId: RoomIdSchema };
 
+export const QueueApi = HttpApi.make("queue").add(
+  HttpApiGroup.make("queue")
+    .add(
+      HttpApiEndpoint.get("queueStatus", "/queue", {
+        success: Schema.Struct({
+          build: Schema.String,
+          waiting: Schema.Number,
+        }),
+      })
+    )
+    .add(
+      HttpApiEndpoint.get("queueSeat", "/queue/seat", {
+        error: NotWebSocket.pipe(HttpApiSchema.status(426)),
+      })
+    )
+);
+
 export const RoomApi = HttpApi.make("rooms").add(
   HttpApiGroup.make("rooms")
     .add(

@@ -3,7 +3,7 @@ import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { TierUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
-import { ROOM_ID_PATTERN } from "@racer/rooms/room-id";
+import { ROOM_ID_PATTERN, roomKindOf } from "@racer/rooms/room-id";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
@@ -51,6 +51,7 @@ export type View =
   | { readonly screen: "routeBoard" }
   | { readonly screen: "garage" }
   | { readonly screen: "rideOut"; readonly entry: RaceEntry }
+  | { readonly screen: "queue" }
   | { readonly screen: "room"; readonly roomId: string }
   | {
       readonly screen: "race";
@@ -329,13 +330,16 @@ const usePauseKeys = (racing: boolean, pause: () => void): void => {
 const MS_PER_SECOND = 1000;
 const REASON_LENGTH = 160;
 
+const roomModeOf = (roomId: string) =>
+  roomKindOf(roomId) === "public" ? ("public" as const) : ("friends" as const);
+
 const raceStartOf = (plan: RacePlan, riderCount: number) => {
   const room = plan.room?.report();
   const humans = room ? room.names.size + 1 : 1;
   return {
     bots: Math.max(0, riderCount - humans),
     humans,
-    mode: room ? ("friends" as const) : modeOf(plan),
+    mode: room ? roomModeOf(room.roomId) : modeOf(plan),
     raceId: room ? room.raceId : crypto.randomUUID(),
     road: plan.setup.roadId,
   };

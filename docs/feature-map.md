@@ -1425,6 +1425,10 @@ Source files:
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/notes.ts`
+- `apps/rooms/src/queue-client.ts`
+- `apps/rooms/src/queue-messages.ts`
+- `apps/rooms/src/queue-server.ts`
+- `apps/rooms/src/queue.ts`
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
@@ -1447,6 +1451,7 @@ Source files:
 - `tools/rooms/lag.ts`
 - `tools/rooms/load-clients.ts`
 - `tools/rooms/load.ts`
+- `tools/rooms/queue.ts`
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
 - `tools/rooms/replay.ts`
@@ -1456,6 +1461,7 @@ Source files:
 - `tools/rooms/src/load-report.ts`
 - `tools/rooms/src/load.ts`
 - `tools/rooms/src/machine.ts`
+- `tools/rooms/src/queue.ts`
 - `tools/rooms/src/race-report.ts`
 - `tools/rooms/src/race.ts`
 - `tools/rooms/src/read.ts`
@@ -1475,6 +1481,7 @@ Test files:
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/lobby.test.ts`
 - `apps/rooms/test/messages.test.ts`
+- `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/tape.test.ts`
