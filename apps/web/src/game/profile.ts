@@ -96,10 +96,12 @@ const rendererName = (gl: WebGL2RenderingContext): string =>
     )
   );
 
-const contextOf = (renderer: THREE.WebGLRenderer): WebGL2RenderingContext => {
+export const contextOf = (
+  renderer: THREE.WebGLRenderer
+): WebGL2RenderingContext => {
   const gl = renderer.getContext();
   if (!(gl instanceof WebGL2RenderingContext)) {
-    throw new TypeError("Profiling needs a WebGL 2 context.");
+    throw new TypeError("The game needs a WebGL 2 context.");
   }
   return gl;
 };

@@ -3,9 +3,10 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import type { Part } from "../profile-parts.ts";
-import { seesFx } from "./cel.ts";
+import { onFxLayer, seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
+import { contextOf } from "./profile.ts";
 import { skinWalkers } from "./walker-skin.ts";
 
 const LINE_WIDTH = 1.15;
@@ -182,6 +183,49 @@ export interface Picture {
 
 const fullPicture: Picture = { bloomScale: BLOOM_SCALE, samples: SAMPLES };
 
+const seesThrough = (material: THREE.Material): boolean =>
+  material.transparent || material.alphaTest > 0;
+
+const framebufferOf = (
+  renderer: THREE.WebGLRenderer,
+  target: THREE.WebGLRenderTarget
+): WebGLFramebuffer => {
+  const held = renderer.properties.get(target);
+  if (
+    held instanceof Object &&
+    "__webglFramebuffer" in held &&
+    held.__webglFramebuffer instanceof WebGLFramebuffer
+  ) {
+    return held.__webglFramebuffer;
+  }
+  throw new TypeError("The render target has no framebuffer yet.");
+};
+
+const copyDepth = (
+  renderer: THREE.WebGLRenderer,
+  from: THREE.WebGLRenderTarget,
+  to: THREE.WebGLRenderTarget
+): void => {
+  const gl = contextOf(renderer);
+  const { state } = renderer;
+  state.bindFramebuffer(gl.READ_FRAMEBUFFER, framebufferOf(renderer, from));
+  state.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebufferOf(renderer, to));
+  gl.blitFramebuffer(
+    0,
+    0,
+    from.width,
+    from.height,
+    0,
+    0,
+    to.width,
+    to.height,
+    gl.DEPTH_BUFFER_BIT,
+    gl.NEAREST
+  );
+  state.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+  state.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+};
+
 export const createPipeline = (
   renderer: THREE.WebGLRenderer,
   lap?: (part: Part) => void,
@@ -189,7 +233,8 @@ export const createPipeline = (
 ): Pipeline => {
   renderer.setOpaqueSort(byVariantThenMaterial);
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
-  normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
+  const normalDepth = new THREE.DepthTexture(4, 4);
+  normalTarget.depthTexture = normalDepth;
   const normalMaterial = new THREE.MeshNormalMaterial();
   normalMaterial.onBeforeCompile = skinWalkers;
   normalMaterial.onBeforeRender = (
@@ -213,6 +258,7 @@ export const createPipeline = (
     depthPacking: THREE.RGBADepthPacking,
   });
   const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
+    depthTexture: samples === 0 ? new THREE.DepthTexture(4, 4) : null,
     samples,
     type: THREE.HalfFloatType,
   });
@@ -257,7 +303,7 @@ export const createPipeline = (
   bloom.blendMaterial.blendDstAlpha = THREE.OneFactor;
 
   uniform(line, "normals").value = normalTarget.texture;
-  uniform(line, "depths").value = normalTarget.depthTexture;
+  uniform(line, "depths").value = normalDepth;
   const clearColour = new THREE.Color();
 
   return {
@@ -272,7 +318,6 @@ export const createPipeline = (
       }
     },
     dispose() {
-      normalTarget.depthTexture?.dispose();
       normalTarget.dispose();
       normalMaterial.dispose();
       instancedDepth.dispose();
@@ -286,6 +331,9 @@ export const createPipeline = (
     },
     prepare(scene) {
       scene.traverse((node) => {
+        if (isMesh(node) && [node.material].flat().some(seesThrough)) {
+          onFxLayer(node);
+        }
         if (node instanceof THREE.InstancedMesh) {
           node.customDepthMaterial ??= instancedDepth;
         } else if (node instanceof THREE.SkinnedMesh) {
@@ -317,7 +365,13 @@ export const createPipeline = (
       scene.fog = fog;
       seesFx(camera, true);
       renderer.setRenderTarget(sceneTarget);
+      if (sceneTarget.depthTexture) {
+        copyDepth(renderer, normalTarget, sceneTarget);
+        renderer.setRenderTarget(sceneTarget);
+        renderer.autoClearDepth = false;
+      }
       renderer.render(scene, camera);
+      renderer.autoClearDepth = true;
       lap?.("main");
       line.render(renderer, inkTarget, sceneTarget, 0, false);
       lap?.("line");
