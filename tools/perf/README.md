@@ -238,6 +238,15 @@ node tools/verify/rushline.ts js --run <run> 'globalThis.__rushlineProfile.windo
 
 Add `gpu-chromium-intel` rows only when normal selection holds the caps. The lane also pins `rung=0` and ratio 2 today, so judging normal selection needs a change to the lane as well. A cap never moves to make a host pass.
 
+**The bar has no rows yet.** It reads well on both cards. `/bar?prof&time=dusk`, Angled camera, 7 stand-in riders, three 20 s samples each in a development build on `1966237`:
+
+| Card | Page, render ratio | fps | p50 ms | p95 ms | p99 ms | Over 20 ms | JS ms per frame | Calls | Triangles |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GTX 1650 Ti | 1512x773, 2 | 60.1 | 16.7 | 16.7 | 16.8 | 0 of 1,202 | 2.4 to 3.0 | 102 | 834,473 |
+| UHD 630 | 1920x1080, 0.7 | 59.3 to 59.7 | 16.7 | 17.2 to 17.3 | 24.0 to 33.2 | 21 to 22 of about 1,190 | 4.9 to 5.1 | 102 | 834,473 |
+
+The UHD 630 applies the bar's lean settings by itself, because its name matches `MODEST_GPU`. About 1% of its frames miss a vsync. JS is about 5 ms of a 16.7 ms frame, so the main thread is not the limit, but no GPU timer query separated the GPU from the compositor. p99 is noisy there, because a handful of frames moves it. The panel stops at 60 Hz, so the GTX 1650 Ti's numbers hide any headroom. The Whole room camera adds about 63,000 triangles and 0.6 ms of JS on the UHD 630. Measure again after a change to `post.ts`.
+
 ### Adding a host
 
 Give it a row in `packages/devtools/src/browser-host.ts`. A row with `perfEnvironment: null` runs under `rv` and `measure.ts`, and `pnpm perf:gpu` refuses it. With an environment, `pnpm check:perf` fails until `budgets.json` has that environment's rows. Run a first campaign with `--budgets` pointing at a copy of the file that holds placeholder rows, so `result.json` records the counts without judging them. The frame, missed-frame and long-task rows keep the owner's caps. Derive the render-count rows from that campaign the way the table above says, and `riders.cpu.p95` as twice its worst B window. Add the raw captures to `baselines/` as gzipped JSON, the run and its observations to the summary, and the raw file and both hashes to `budgets.json`. No other environment's row changes.
