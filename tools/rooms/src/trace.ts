@@ -112,6 +112,11 @@ const momentsOf = (
 const stalled = ({ frameMs }: Moment): boolean => frameMs >= STALL_MS;
 const gapped = ({ gapMs }: Moment): boolean => gapMs >= TICK_GAP_MS;
 const missedAny = ({ missed }: Moment): boolean => missed > 0;
+const stallNear = (moments: Map<number, Moment>, second: number): boolean =>
+  [second - 1, second, second + 1].some((near) => {
+    const moment = moments.get(near);
+    return moment !== undefined && stalled(moment);
+  });
 const isBad = (moment: Moment): boolean =>
   stalled(moment) || gapped(moment) || missedAny(moment);
 
@@ -132,8 +137,16 @@ export const traceReport = (
     rider,
   }));
   const riderLines = timelines.map(({ moments, rider }) => {
-    const all = [...moments.values()];
-    return `Rider ${rider.rider}: build ${rider.trace.build}, ${rider.trace.gpu}, ${rider.trace.graphics}. Browser stalls in ${all.filter(stalled).length} s, tick gaps in ${all.filter(gapped).length} s, both in ${all.filter((moment) => stalled(moment) && gapped(moment)).length} s, tick gaps with no stall in ${all.filter((moment) => gapped(moment) && !stalled(moment)).length} s, missed controls in ${all.filter(missedAny).length} s.`;
+    const all = [...moments.entries()];
+    const count = (wanted: (second: number, moment: Moment) => boolean) =>
+      all.filter(([second, moment]) => wanted(second, moment)).length;
+    const nearStall = count(
+      (second, moment) => gapped(moment) && stallNear(moments, second)
+    );
+    const alone = count(
+      (second, moment) => gapped(moment) && !stallNear(moments, second)
+    );
+    return `Rider ${rider.rider}: build ${rider.trace.build}, ${rider.trace.gpu}, ${rider.trace.graphics}. Browser stalls in ${count((_, moment) => stalled(moment))} s, tick gaps within a second of a stall in ${nearStall} s, tick gaps with no stall near in ${alone} s, missed controls in ${count((_, moment) => missedAny(moment))} s.`;
   });
   const seconds = [
     ...new Set(timelines.flatMap(({ moments }) => [...moments.keys()])),

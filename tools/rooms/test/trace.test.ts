@@ -21,7 +21,12 @@ const report = traceReport(
       rider: 0,
       trace: {
         ...browser,
-        rows: [...row(1, 16, 17), ...row(2, 16, 300), ...row(3, 200, 210)],
+        rows: [
+          ...row(1, 16, 17),
+          ...row(2, 16, 300),
+          ...row(10, 200, 17),
+          ...row(11, 16, 210),
+        ],
       },
     },
     { rider: 1, trace: { ...browser, rows: [...row(2, 16, 17)] } },
@@ -32,7 +37,7 @@ const report = traceReport(
 describe("the trace report", () => {
   it("names each browser and separates stalls from tick gaps", () => {
     expect(report).toContain(
-      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, tick gaps in 2 s, both in 1 s, tick gaps with no stall in 1 s, missed controls in 1 s."
+      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, tick gaps within a second of a stall in 1 s, tick gaps with no stall near in 1 s, missed controls in 1 s."
     );
   });
 
@@ -46,7 +51,7 @@ describe("the trace report", () => {
     expect(report).toContain(
       "0:02  rider 0 frame 16 ms, tick gap 300 ms, round trip 0 ms, held 0, doubled 0, missed 5, late 1 | rider 1 frame 16 ms, tick gap 17 ms, round trip 0 ms, held 0, doubled 0, missed 3, late 0"
     );
-    expect(report).toContain("0:03  rider 0 frame 200 ms");
+    expect(report).toContain("0:10  rider 0 frame 200 ms");
     expect(report).not.toContain("0:01  ");
   });
 });
