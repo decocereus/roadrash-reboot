@@ -69,7 +69,6 @@ export interface SeatListeners {
   readonly onChange?: () => void;
   readonly onActed?: (acted: RoomActed) => void;
   readonly onConfirmed?: (client: RoomClient) => void;
-  readonly onWalked?: (walked: RoomWalked) => void;
   readonly onTickHeard?: (now: number, hashed: boolean) => void;
 }
 
@@ -86,6 +85,7 @@ export interface RoomSeat {
   readonly choose: (choice: Partial<RoomChoice>) => void;
   readonly setReady: (ready: boolean) => void;
   readonly walk: (walk: LobbyWalk) => void;
+  readonly walkOf: (member: string) => RoomWalked | undefined;
   readonly act: (act: LobbyAct, target: string) => void;
   readonly refusal: () => Refusal | null;
   readonly rttMs: () => number;
@@ -126,6 +126,7 @@ export const openRoomSeat = (
   let listeners: SeatListeners = {};
   let phase: SeatPhase = "connecting";
   let lobby: RoomLobbyMessage | null = null;
+  const walks = new Map<string, RoomWalked>();
   let counting = false;
   let lobbyHeardAt = 0;
   let race: SeatRace | null = null;
@@ -252,7 +253,7 @@ export const openRoomSeat = (
     }
     switch (message.value.kind) {
       case "walk": {
-        listeners.onWalked?.(message.value);
+        walks.set(message.value.member, message.value);
         break;
       }
       case "act": {
@@ -376,6 +377,7 @@ export const openRoomSeat = (
     walk: (walk) => {
       sendCommand({ ...walk, kind: "walk" });
     },
+    walkOf: (member) => walks.get(member),
     worstRttMs: () => worstRttMs,
   };
 };

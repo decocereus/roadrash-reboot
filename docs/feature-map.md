@@ -479,6 +479,8 @@ Source files:
 
 Test files:
 
+- `apps/web/src/game/bar-members.test.ts`
+- `apps/web/src/game/bar-player.test.ts`
 - `packages/sim/src/lobby.test.ts`
 
 ### Race HUD and notices

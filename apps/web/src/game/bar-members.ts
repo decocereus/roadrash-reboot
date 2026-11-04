@@ -33,12 +33,12 @@ interface Body {
 }
 
 interface MemberParts {
-  readonly bikes: Bikes;
+  readonly bikes: Pick<Bikes, "roots" | "show" | "spin">;
   readonly firstBike: number;
   readonly rider: LobbyRider;
-  readonly seat: RoomSeat;
-  readonly speech: BarSpeech;
-  readonly walkers: BarWalkers;
+  readonly seat: Pick<RoomSeat, "act" | "listen" | "lobby" | "walk" | "walkOf">;
+  readonly speech: Pick<BarSpeech, "say">;
+  readonly walkers: Pick<BarWalkers, "at" | "hide">;
 }
 
 export interface BarMembers extends BarCompany {
@@ -90,7 +90,6 @@ export const createMembers = ({
   walkers,
 }: MemberParts): BarMembers => {
   const bodies = riderBlocks.map(newBody);
-  const walks = new Map<string, LobbyWalk>();
   const crowd: Spot[] = [];
   let slot = SOLO_SLOT;
   let placed = false;
@@ -134,9 +133,6 @@ export const createMembers = ({
   seat.listen({
     onActed: ({ act, from, target }) => {
       heardAct(act, from, target);
-    },
-    onWalked: ({ member, ...walk }) => {
-      walks.set(member, walk);
     },
   });
 
@@ -257,7 +253,7 @@ export const createMembers = ({
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
         const member = members[index];
-        const walk = member?.here === true ? walks.get(member.id) : undefined;
+        const walk = member?.here === true ? seat.walkOf(member.id) : undefined;
         if (index !== slot && member && walk) {
           moveBody(index, member.id, member.name, walk, seconds);
         } else if (body) {
@@ -267,7 +263,9 @@ export const createMembers = ({
           }
         }
       }
-      sendMine(seconds);
+      if (placed) {
+        sendMine(seconds);
+      }
     },
   };
 };

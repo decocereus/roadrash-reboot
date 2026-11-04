@@ -46,12 +46,12 @@ export interface PlayerSlot {
 }
 
 interface PlayerParts {
-  readonly bikes: Bikes;
+  readonly bikes: Pick<Bikes, "sag" | "show" | "spin">;
   readonly company: BarCompany;
-  readonly puffs: Puffs;
+  readonly puffs: Pick<Puffs, "burst">;
   readonly rider: LobbyRider;
   readonly slot: () => PlayerSlot;
-  readonly speech: BarSpeech;
+  readonly speech: Pick<BarSpeech, "say">;
 }
 
 export interface BarPlayer {
@@ -91,6 +91,7 @@ export const createBarPlayer = ({
     z: rider.z,
   };
   let bikeOut = false;
+  let ownBike = slot().bike;
   let backlog = 0;
   let fromX = rider.x;
   let fromZ = rider.z;
@@ -196,6 +197,11 @@ export const createBarPlayer = ({
 
   const advance: BarPlayer["advance"] = (seconds, control, viewYaw, time) => {
     const { bike, bikeIndex } = slot();
+    if (bike !== ownBike) {
+      bike.position.copy(ownBike.position);
+      bike.rotation.copy(ownBike.rotation);
+      ownBike = bike;
+    }
     backlog += seconds;
     let ticks = 0;
     fillBlockers(bike);

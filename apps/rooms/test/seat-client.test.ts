@@ -144,6 +144,31 @@ describe("a seat loading the race", () => {
     expect(seat.refusal()).toBe("replaced");
   });
 
+  it("remembers a walk it heard before anything asked for it", () => {
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      "test-build",
+      "member-key",
+      () => null
+    );
+    const walk = {
+      heading: 1,
+      lean: 0,
+      pace: 0,
+      place: "foot",
+      pose: null,
+      x: 2,
+      z: 3,
+    } as const;
+    FakeSocket.opened[0]?.hear(
+      encodeRoomMessage({ ...walk, kind: "walk", member: "far" })
+    );
+    expect(seat.walkOf("far")).toMatchObject(walk);
+    expect(seat.walkOf("nobody")).toBeUndefined();
+  });
+
   it("is lost when another tab takes its place during a race", () => {
     const { seat, socket } = loadingSeat();
     socket?.hear(encodeRoomMessage({ kind: "refused", reason: "replaced" }));
