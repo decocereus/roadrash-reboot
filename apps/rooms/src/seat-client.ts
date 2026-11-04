@@ -214,6 +214,7 @@ export const openRoomSeat = (
       return;
     }
     reported = true;
+    race.client.settle();
     tally.frameDrawn(
       performance.now(),
       race.client.mine.s,

@@ -1,13 +1,19 @@
 import { publicRoomRule } from "@racer/career/room-race";
 import { STARTING_BIKE } from "@racer/career/tables";
+import { coasting, controlOf } from "@racer/sim/control";
+import { neutralInput } from "@racer/sim/race";
+import { clearFrame, createTickFrame } from "@racer/sim/room-frame";
 import {
   PING_PACKET_BYTES,
   PONG_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   readPing,
+  readRaceStats,
   ROOM_PROTOCOL,
   writePong,
+  writeTick,
 } from "@racer/sim/room-wire";
+import { riderIdAt } from "@racer/sim/state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeRoomMessage } from "../src/messages.ts";
@@ -31,6 +37,8 @@ class FakeSocket {
   readonly readyState = FakeSocket.OPEN;
 
   readonly sentBytes: number[] = [];
+
+  readonly sentBuffers: ArrayBuffer[] = [];
 
   readonly sentText: string[] = [];
 
@@ -67,6 +75,7 @@ class FakeSocket {
     }
     this.sentBytes.push(data.byteLength);
     if (!(data instanceof Uint8Array)) {
+      this.sentBuffers.push(data);
       return;
     }
     if (!this.answers || data.byteLength !== PING_PACKET_BYTES) {
@@ -191,6 +200,25 @@ describe("a seat loading the race", () => {
     const { seat: off, socket: quiet } = loadingSeat();
     off.leave();
     expect(quiet?.sentText).toStrictEqual([]);
+  });
+
+  it("counts a correction it had not yet replayed in its last report", () => {
+    const { seat, socket } = loadingSeat();
+    const client = seat.race()?.client;
+    client?.predict(coasting);
+    client?.predict(coasting);
+    const frame = createTickFrame();
+    clearFrame(frame, 1);
+    frame.controls.set(
+      riderIdAt(0),
+      controlOf({ ...neutralInput, throttle: 1 })
+    );
+    const view = new DataView(new ArrayBuffer(64));
+    const bytes = writeTick(view, frame, null);
+    socket?.hear(view.buffer.slice(0, bytes));
+    seat.leave();
+    const [report] = socket?.sentBuffers ?? [];
+    expect(report && readRaceStats(new DataView(report))?.rollbacks).toBe(1);
   });
 
   it("sends the room its race stats once when it leaves", () => {
