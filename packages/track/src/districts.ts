@@ -210,11 +210,31 @@ export const roadHalfWidthAt = (track: WidthsAlong, s: number): number =>
 export const vergeHalfWidthAt = (track: WidthsAlong, s: number): number =>
   sampleAt(track, track.vergeHalfWidth, s);
 
+export const trafficReachAt = (track: WidthsAlong, s: number): number =>
+  sampleAt(track, track.trafficReach, s);
+
 const sampleIndexOf = (track: WidthsAlong, s: number): number =>
   Math.floor(Math.min(track.sampleCount - 1, Math.max(0, s - track.startS)));
 
 export const openLanesAt = (track: WidthsAlong, s: number): number =>
   track.openLanes[sampleIndexOf(track, s)] ?? 1;
+
+export const fewestOpenLanesAlong = (
+  track: WidthsAlong,
+  from: number,
+  to: number
+): number => {
+  let fewest = openLanesAt(track, from);
+  const last = sampleIndexOf(track, Math.max(from, to));
+  for (
+    let index = sampleIndexOf(track, Math.min(from, to));
+    index <= last;
+    index += 1
+  ) {
+    fewest = Math.min(fewest, track.openLanes[index] ?? fewest);
+  }
+  return fewest;
+};
 
 export const widestVergeAlong = (
   track: WidthsAlong,

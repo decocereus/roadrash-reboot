@@ -1,4 +1,4 @@
-import { roadHalfWidthAt } from "@racer/track/districts";
+import { openLanesAt, roadHalfWidthAt } from "@racer/track/districts";
 import { createRandom, nextSeed } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
@@ -224,10 +224,14 @@ const createRider = (entry: Entry, spot: GridSpot): RiderState => ({
 
 type GridColumns = readonly [number, ...number[]];
 
-const gridColumns = (track: Track): GridColumns => [
-  ...track.sameWayLanes,
-  ...track.oncomingLanes,
-];
+const gridColumns = (track: Track): GridColumns => {
+  const open = openLanesAt(track, GRID_S);
+  return [
+    track.sameWayLanes[0],
+    ...track.sameWayLanes.slice(1, open),
+    ...track.oncomingLanes.slice(0, open),
+  ];
+};
 
 const gridSpot = (columns: GridColumns, slot: number): GridSpot => ({
   s: GRID_S - Math.floor(slot / columns.length) * GRID_ROW_GAP,

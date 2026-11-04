@@ -1,4 +1,4 @@
-import { roadHalfWidthAt } from "@racer/track/districts";
+import { openLanesAt, roadHalfWidthAt } from "@racer/track/districts";
 import type { Track } from "@racer/track/track";
 
 import { ridingOver } from "./carrier.ts";
@@ -46,6 +46,7 @@ export const LANE_REACH = 1.7;
 const SPLITTING_SPEED = 8;
 const RIDER_FOLLOW_SECONDS = 1.2;
 const CROSSING_SECONDS = 1.5;
+const LINE_AHEAD_SECONDS = 2;
 const OWN_LANE_REACH = 1;
 const DODGE_EDGE = 0.2;
 const MOVE_COST = 0.05;
@@ -313,16 +314,24 @@ const laneThreat = (
 const threatened = (threat: Threat | undefined): threat is Threat =>
   threat !== undefined && threat.seconds < Number.POSITIVE_INFINITY;
 
-const fillLanes = (plan: LinePlan, track: Track): void => {
+const sOfLineAhead = (rider: RiderState): number =>
+  rider.s + Math.max(0, rider.speed) * LINE_AHEAD_SECONDS;
+
+const fillLanes = (plan: LinePlan, track: Track, rider: RiderState): number => {
   const { lanes } = plan;
   const { oncomingLanes, sameWayLanes } = track;
-  for (let index = 0; index < sameWayLanes.length; index += 1) {
+  const open = Math.min(
+    openLanesAt(track, rider.s),
+    openLanesAt(track, sOfLineAhead(rider))
+  );
+  for (let index = 0; index < open; index += 1) {
     lanes[index] = sameWayLanes[index] ?? 0;
   }
-  for (let index = 0; index < oncomingLanes.length; index += 1) {
-    lanes[sameWayLanes.length + index] = oncomingLanes[index] ?? 0;
+  for (let index = 0; index < open; index += 1) {
+    lanes[open + index] = oncomingLanes[index] ?? 0;
   }
-  lanes.length = sameWayLanes.length + oncomingLanes.length;
+  lanes.length = 2 * open;
+  return open;
 };
 
 const gatherLaneThreats = (
@@ -585,12 +594,10 @@ const offerBetweenLanes = (
   track: Track,
   rider: RiderState,
   x: number,
-  cruise: number
+  cruise: number,
+  furthest: number
 ): void => {
-  if (
-    Math.abs(x) <=
-    roadHalfWidthAt(track, rider.s) - BIKE_HALF_WIDTH - DODGE_EDGE
-  ) {
+  if (Math.abs(x) <= furthest) {
     laneThreat(plan, state, rider, x, plan.found);
     if (!threatened(plan.found) && !crossesBlocked(plan, rider, x)) {
       offer(
@@ -616,8 +623,7 @@ export const chooseLine = (
   pursuit?: Aim
 ): Aim => {
   const { aim, choice, lanes, outlook, threats } = linePlan;
-  const sameWayCount = track.sameWayLanes.length;
-  fillLanes(linePlan, track);
+  const sameWayCount = fillLanes(linePlan, track, rider);
   gatherInReach(linePlan, state, rider);
   gatherLaneThreats(linePlan, state, rider);
   gatherInSight(outlook, state, rider);
@@ -669,6 +675,13 @@ export const chooseLine = (
   if (linePlan.weighing) {
     offerFollow(linePlan, history, track, rider);
     offLaneLines(linePlan, state, track, rider);
+    const furthest =
+      Math.min(
+        roadHalfWidthAt(track, rider.s),
+        roadHalfWidthAt(track, sOfLineAhead(rider))
+      ) -
+      BIKE_HALF_WIDTH -
+      DODGE_EDGE;
     for (let index = 0; index < linePlan.offLaneCount; index += 1) {
       offerBetweenLanes(
         linePlan,
@@ -677,7 +690,8 @@ export const chooseLine = (
         track,
         rider,
         linePlan.offLane[index] ?? 0,
-        cruise
+        cruise,
+        furthest
       );
     }
   }

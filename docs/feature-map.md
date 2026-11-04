@@ -156,14 +156,14 @@ Test files:
 
 ### Traffic
 
-Same-way and oncoming cars in every lane, spawned from each road's traffic density and kept clear of the start; the cars are drawn by `createFleet` in the riders-on-screen entry.
+Same-way and oncoming cars in every lane, spawned from each road's traffic density and kept clear of the start, merging into the open lanes where a district narrows and returning home after; the cars are drawn by `createFleet` in the riders-on-screen entry.
 
 - Id: `traffic`
 - Start: `packages/sim/src/traffic.ts`
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks)
 - Verify: none yet
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/carrier.ts`, `packages/sim/src/carrier.test.ts`, `packages/sim/src/traffic.ts`, `packages/sim/src/lanes.test.ts`
+- Owns: `packages/sim/src/carrier.ts`, `packages/sim/src/carrier.test.ts`, `packages/sim/src/traffic.ts`, `packages/sim/src/lanes.test.ts`, `packages/sim/src/lanes-closing.test.ts`
 
 Source files:
 
@@ -173,6 +173,7 @@ Source files:
 Test files:
 
 - `packages/sim/src/carrier.test.ts`
+- `packages/sim/src/lanes-closing.test.ts`
 - `packages/sim/src/lanes.test.ts`
 
 ### Junctions and crossings
@@ -740,7 +741,7 @@ Test files:
 
 ### Track compiler
 
-Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, lanes and scattered props, the plan for each level, and the `trackFor` registry.
+Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the start pose and the pieces that set curvature and grade, the sampled centreline, districts with their per-metre widths and open lanes, and scattered props, the plan for each level, and the `trackFor` registry.
 
 - Id: `track-compiler`
 - Start: `packages/track/src/districts.ts`, `packages/track/src/track.ts`, `packages/track/src/roads.ts`
@@ -760,6 +761,7 @@ Source files:
 Test files:
 
 - `packages/track/src/alignment.test.ts`
+- `packages/track/src/districts.test.ts`
 
 ### Renderer core and frame loop
 

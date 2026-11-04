@@ -349,7 +349,10 @@ export const hotBodies = {
     ["yieldTo"],
     ["firstPast"],
     ["gapToRider"],
-    ["laneIndexOf"],
+    ["occupiedLaneOf"],
+    ["queueOf"],
+    ["readCars"],
+    ["seatCar"],
   ],
 };
 
