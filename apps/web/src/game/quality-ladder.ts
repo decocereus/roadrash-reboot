@@ -32,7 +32,7 @@ interface Rung {
   readonly pixelRatio: number;
 }
 
-const MODEST_GPU =
+export const MODEST_GPU =
   /Apple GPU|Apple M\d(?!\d|\s*(?:Pro|Max|Ultra))|Intel|Mali|Adreno|PowerVR/u;
 const MODEST_START_RUNG = 3;
 

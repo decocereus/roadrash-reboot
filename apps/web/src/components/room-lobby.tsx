@@ -7,20 +7,13 @@ import { enterQueue } from "@racer/rooms/queue-client";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useEffectEvent,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
+import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
 import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
@@ -31,20 +24,9 @@ import {
   RoomLobbyScreen,
 } from "./screens/room-lobby.tsx";
 
-const BarLobby = import.meta.env.DEV
-  ? lazy(async () => {
-      const { BarLobby: lobby } = await import("./bar-lobby.tsx");
-      return { default: lobby };
-    })
-  : null;
-
 const DOOR_MOMENT_MS = 5000;
 const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
-
-const inTheBar = (): boolean =>
-  BarLobby !== null &&
-  new URLSearchParams(globalThis.location.search).has("bar");
 
 const secondsOf = (ms: number | null): number | null =>
   ms === null ? null : Math.max(0, Math.ceil(ms / 1000));
@@ -203,18 +185,13 @@ const SeatedLobby = ({
     const prepare = async (): Promise<void> => {
       const outcome = await onPrepare(next);
       if (outcome.kind !== "cancelled") {
-        const finish = (): void => {
-          seat.loaded();
-          setPrepared(true);
-        };
-        if (inTheBar()) {
-          setTimeout(
-            finish,
-            Math.max(0, DOOR_MOMENT_MS - (performance.now() - begunAt))
-          );
-        } else {
-          finish();
-        }
+        setTimeout(
+          () => {
+            seat.loaded();
+            setPrepared(true);
+          },
+          Math.max(0, DOOR_MOMENT_MS - (performance.now() - begunAt))
+        );
       }
     };
     void prepare();
@@ -226,42 +203,30 @@ const SeatedLobby = ({
     }
   }, [plan, prepared, racing, onStart]);
   const lobby = seat?.lobby() ?? null;
-  if (BarLobby && inTheBar() && seat && lobby && phase !== "refused") {
+  if (seat && lobby && (raceBegun || phase === "lobby")) {
     return (
-      <Suspense>
-        <BarLobby
-          copied={copied}
-          lobby={lobby}
-          onBack={onBack}
-          onCopyLink={() => {
-            void copyLink();
-          }}
-          seat={seat}
-          startsInSeconds={secondsOf(seat.startsInMs())}
-        />
-      </Suspense>
+      <BarLobby
+        copied={copied}
+        lobby={lobby}
+        name={name}
+        onBack={onBack}
+        onChangeName={onChangeName}
+        onCopyLink={() => {
+          void copyLink();
+        }}
+        roomId={roomId}
+        seat={seat}
+        startsInSeconds={secondsOf(seat.startsInMs())}
+      />
     );
   }
   return (
     <RoomLobbyScreen
-      copied={copied}
       name={name}
       onBack={onBack}
-      onChangeName={onChangeName}
-      onCopyLink={() => {
-        void copyLink();
-      }}
       phase={phase}
-      roomId={roomId}
       refusal={seat?.refusal() ?? null}
-      lobby={lobby}
-      onChoose={(choice) => {
-        seat?.choose(choice);
-      }}
-      onReady={(next) => {
-        seat?.setReady(next);
-      }}
-      startsInSeconds={secondsOf(seat?.startsInMs() ?? null)}
+      roomId={roomId}
     />
   );
 };

@@ -4,6 +4,7 @@ import { doorSpot, GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
+import { graphicsCard } from "../diagnostics/player-events.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
 import { riderBlocks } from "./bar-blocks.ts";
@@ -35,10 +36,12 @@ import { createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
+import { MODEST_GPU } from "./quality-ladder.ts";
 
 export { assetParsers } from "./assets.ts";
 
 const MAX_PIXEL_RATIO = 2;
+const LEAN_SCALE = 0.7;
 const LOOP_AFTER_DOOR = 15;
 const BIKE_WAITS = 1.3;
 const BIKE_PULL = 1.6;
@@ -68,6 +71,7 @@ interface Pins {
   readonly riders: number;
   readonly samples: number | null;
   readonly bloom: number | null;
+  readonly scale: number;
   readonly shadow: number;
   readonly time: number | null;
 }
@@ -78,7 +82,7 @@ const pinsFrom = (search: string): Pins => {
     const value = flags.get(name);
     return value === null ? null : Number(value);
   };
-  const lean = flags.has("lean");
+  const lean = flags.has("lean") || MODEST_GPU.test(graphicsCard());
   const named = flags.get("time");
   const fixed = named === "night" ? 1 : number("time");
   return {
@@ -86,6 +90,7 @@ const pinsFrom = (search: string): Pins => {
     ratio: number("ratio"),
     riders: number("riders") ?? riderBlocks.length,
     samples: lean ? 0 : number("samples"),
+    scale: lean ? LEAN_SCALE : 1,
     shadow: lean ? 2048 : (number("shadow") ?? 4096),
     time: named === "dusk" ? 0 : fixed,
   };
@@ -369,7 +374,8 @@ const openRoom = (
       return;
     }
     const ratio =
-      pins.ratio ?? Math.min(globalThis.devicePixelRatio, MAX_PIXEL_RATIO);
+      pins.ratio ??
+      Math.min(globalThis.devicePixelRatio, MAX_PIXEL_RATIO) * pins.scale;
     renderer.setPixelRatio(ratio);
     renderer.setSize(width, height, false);
     pipeline.resize(width, height, ratio);

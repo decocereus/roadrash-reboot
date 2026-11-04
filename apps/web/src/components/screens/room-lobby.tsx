@@ -89,24 +89,6 @@ const statusOf = (phase: SeatPhase, refusal: Refusal | null): string => {
   }
 };
 
-interface LobbyActions {
-  readonly onBack: () => void;
-  readonly onChangeName: () => void;
-  readonly onCopyLink: () => void;
-}
-
-const lobbyAction = (id: string, actions: LobbyActions): void => {
-  if (id === "reload") {
-    globalThis.location.reload();
-  } else if (id === "copy") {
-    actions.onCopyLink();
-  } else if (id === "name") {
-    actions.onChangeName();
-  } else {
-    actions.onBack();
-  }
-};
-
 const mustReload = (refusal: Refusal | null): boolean =>
   refusal === "build" || refusal === "content";
 
@@ -234,7 +216,7 @@ const RuleLine = ({
   </div>
 );
 
-const RuleLines = ({ rule }: { readonly rule: RoomRule }) => (
+export const RuleLines = ({ rule }: { readonly rule: RoomRule }) => (
   <div className="flex flex-col gap-2">
     <RuleLine label="Road" value={roads[rule.roadId].name} />
     <RuleLine label="Tier" value={String(rule.tier)} />
@@ -245,7 +227,7 @@ const RuleLines = ({ rule }: { readonly rule: RoomRule }) => (
   </div>
 );
 
-const RuleChoices = ({
+export const RuleChoices = ({
   rule,
   onChoose,
 }: {
@@ -305,7 +287,7 @@ const memberState = (
   return member.ready ? "READY" : "NOT READY";
 };
 
-const startLine = (
+export const startLine = (
   phase: RoomLobbyMessage["phase"],
   startsInSeconds: number | null
 ): string => {
@@ -317,7 +299,7 @@ const startLine = (
     : `Rolling out in ${startsInSeconds} s, ready or not.`;
 };
 
-const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
+export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
   <ul className="flex flex-col gap-1">
     {lobby.members.map((member) => (
       <li
@@ -390,116 +372,47 @@ export const RoomInviteScreen = ({
   </Screen>
 );
 
-interface RoomLobbyProps extends LobbyActions {
-  readonly copied: boolean;
-  readonly lobby: RoomLobbyMessage | null;
+interface RoomLobbyProps {
   readonly name: string;
+  readonly onBack: () => void;
   readonly phase: SeatPhase;
   readonly refusal: Refusal | null;
   readonly roomId: string;
-  readonly startsInSeconds: number | null;
-  readonly onChoose: (choice: Partial<RoomChoice>) => void;
-  readonly onReady: (ready: boolean) => void;
 }
 
-const GatheringView = ({
-  lobby,
-  copied,
+export const RoomLobbyScreen = ({
   name,
-  roomId,
-  startsInSeconds,
   onBack,
-  onChangeName,
-  onChoose,
-  onCopyLink,
-  onReady,
-}: RoomLobbyProps & { readonly lobby: RoomLobbyMessage }) => {
-  const me = lobby.members.find((member) => member.id === lobby.you);
-  const ready = me?.ready ?? false;
-  return (
-    <Screen className="bg-ink">
-      <div className="grid flex-1 grid-cols-1 gap-8 p-8 md:grid-cols-[minmax(0,1fr)_28rem]">
-        <div className="flex min-h-0 flex-col gap-4">
-          <Stencil>
-            {lobby.roomKind === "public" ? "Public lobby" : roomId}
-          </Stencil>
-          <MemberRows lobby={lobby} />
-          <p aria-live="polite" className="font-display text-quote text-paper">
-            {startLine(lobby.phase, startsInSeconds)}
-          </p>
-          <p className="font-display text-paper/60">
-            Riding as {name}. {copied && "Link copied."}
-          </p>
-          <MenuList
-            autoFocus
-            defaultValue={lobby.phase === "gathering" ? "ready" : "back"}
-            key={lobby.phase}
-            label="Lobby"
-            onSelect={(id) => {
-              if (id === "ready") {
-                onReady(!ready);
-              } else {
-                lobbyAction(id, { onBack, onChangeName, onCopyLink });
-              }
-            }}
-          >
-            {lobby.phase === "gathering" && (
-              <MenuItem value="ready">{ready ? "Not ready" : "Ready"}</MenuItem>
-            )}
-            {lobby.roomKind === "custom" && (
-              <MenuItem value="copy">Copy the link</MenuItem>
-            )}
-            <MenuItem value="name">Change name</MenuItem>
-            <MenuItem value="back">Leave</MenuItem>
-          </MenuList>
-        </div>
-        <div className="border-paper/30 flex flex-col gap-4 border-2 p-6">
-          <p className="font-display text-quote text-paper">
-            {lobby.hostId === lobby.you ? "You set the rules" : "The rules"}
-          </p>
-          {lobby.hostId === lobby.you && lobby.phase === "gathering" ? (
-            <RuleChoices onChoose={onChoose} rule={lobby.rule} />
-          ) : (
-            <RuleLines rule={lobby.rule} />
-          )}
-        </div>
-      </div>
-    </Screen>
-  );
-};
-
-export const RoomLobbyScreen = (props: RoomLobbyProps) => {
-  const { name, phase, roomId, refusal, lobby, copied } = props;
-  const { onBack, onChangeName, onCopyLink } = props;
-  if (phase === "lobby" && lobby) {
-    return <GatheringView {...props} lobby={lobby} />;
-  }
-  return (
-    <Screen className="bg-ink">
-      <div className="flex flex-1 flex-col items-center justify-center gap-6">
-        <Stencil>{roomId}</Stencil>
-        <p aria-live="polite" className="font-display text-quote text-paper">
-          {statusOf(phase, refusal)}
-        </p>
-        <p className="font-display text-paper/60">
-          Riding as {name}. {copied && "Link copied."}
-        </p>
-        <MenuList
-          key={phase}
-          autoFocus
-          defaultValue={defaultItem(phase, refusal)}
-          label="Room"
-          onSelect={(id) => {
-            lobbyAction(id, { onBack, onChangeName, onCopyLink });
-          }}
-        >
-          {mustReload(refusal) && <MenuItem value="reload">Reload</MenuItem>}
-          <MenuItem value="back">Leave</MenuItem>
-        </MenuList>
-      </div>
-    </Screen>
-  );
-};
+  phase,
+  refusal,
+  roomId,
+}: RoomLobbyProps) => (
+  <Screen className="bg-ink">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6">
+      <Stencil>{roomId}</Stencil>
+      <p aria-live="polite" className="font-display text-quote text-paper">
+        {statusOf(phase, refusal)}
+      </p>
+      <p className="font-display text-paper/60">Riding as {name}.</p>
+      <MenuList
+        key={phase}
+        autoFocus
+        defaultValue={defaultItem(phase, refusal)}
+        label="Room"
+        onSelect={(id) => {
+          if (id === "reload") {
+            globalThis.location.reload();
+          } else {
+            onBack();
+          }
+        }}
+      >
+        {mustReload(refusal) && <MenuItem value="reload">Reload</MenuItem>}
+        <MenuItem value="back">Leave</MenuItem>
+      </MenuList>
+    </div>
+  </Screen>
+);
 
 const QUEUE_SECONDS = 30;
 

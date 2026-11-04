@@ -1,56 +1,68 @@
-import { roads } from "@racer/career/tables";
 import type { RoomLobbyMessage } from "@racer/rooms/messages";
 import type { RoomSeat } from "@racer/rooms/seat-client";
+import { Stencil } from "@racer/ui/components/stencil";
 import { cn } from "@racer/ui/utils";
-import { useEffect, useEffectEvent } from "react";
-import type { MouseEvent } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 import { BarStage } from "./bar-stage.tsx";
+import {
+  MemberRows,
+  RuleChoices,
+  RuleLines,
+  startLine,
+} from "./screens/room-lobby.tsx";
 
 const READY_KEY = "Enter";
-const buttonLook =
-  "cursor-pointer rounded px-3 py-1 font-bold tracking-wide uppercase";
+const BUTTON = "cursor-pointer rounded px-3 py-1 tracking-wide uppercase";
 
 interface BarLobbyProps {
   readonly copied: boolean;
   readonly lobby: RoomLobbyMessage;
+  readonly name: string;
   readonly onBack: () => void;
+  readonly onChangeName: () => void;
   readonly onCopyLink: () => void;
+  readonly roomId: string;
   readonly seat: RoomSeat;
   readonly startsInSeconds: number | null;
 }
 
-const blurred =
-  (act: () => void) =>
-  (event: MouseEvent<HTMLButtonElement>): void => {
-    event.currentTarget.blur();
-    act();
-  };
-
 export const BarLobby = ({
   copied,
   lobby,
+  name,
   onBack,
+  onChangeName,
   onCopyLink,
+  roomId,
   seat,
   startsInSeconds,
 }: BarLobbyProps) => {
+  const [showRules, setShowRules] = useState(false);
   const ready =
     lobby.members.find((member) => member.id === lobby.you)?.ready === true;
-  const toggle = useEffectEvent(() => {
-    seat.setReady(!ready);
+  const gathering = lobby.phase === "gathering";
+  const hosting = lobby.hostId === lobby.you && gathering;
+  const toggleReady = useEffectEvent(() => {
+    if (gathering && !seat.race()) {
+      seat.setReady(!ready);
+    }
   });
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if (event.code === READY_KEY && !event.repeat && !seat.race()) {
-        toggle();
+      if (
+        event.code === READY_KEY &&
+        !event.repeat &&
+        !(event.target instanceof HTMLButtonElement)
+      ) {
+        toggleReady();
       }
     };
     globalThis.addEventListener("keydown", onKey);
     return () => {
       globalThis.removeEventListener("keydown", onKey);
     };
-  }, [seat]);
+  }, []);
   if (seat.race()) {
     return <BarStage seat={seat} />;
   }
@@ -58,62 +70,62 @@ export const BarLobby = ({
     <BarStage seat={seat}>
       <aside
         aria-label="This lobby"
-        className="bg-ink/85 font-display text-paper absolute top-4 right-4 flex w-64 flex-col gap-2 rounded-md p-3"
+        className="bg-ink/90 font-display text-paper absolute top-4 right-4 flex max-h-[calc(100%-2rem)] w-96 max-w-[calc(100%-2rem)] flex-col gap-3 overflow-y-auto rounded-md p-4"
+        onPointerDown={(event) => {
+          event.preventDefault();
+        }}
       >
-        <p className="font-bold tracking-wide uppercase">
-          {roads[lobby.rule.roadId].name}
+        <Stencil className="text-4xl">
+          {lobby.roomKind === "public" ? "Public lobby" : roomId}
+        </Stencil>
+        <MemberRows lobby={lobby} />
+        <p aria-live="polite">{startLine(lobby.phase, startsInSeconds)}</p>
+        <p className="text-paper/60">
+          Riding as {name}. {copied && "Link copied."}
         </p>
-        <ul>
-          {lobby.members.map((member) => (
-            <li
-              className={cn(
-                "flex justify-between tracking-wide uppercase",
-                !member.here && "opacity-50"
-              )}
-              key={member.id}
-            >
-              <span>{member.name}</span>
-              {member.ready && <span className="text-neon-yellow">Ready</span>}
-            </li>
-          ))}
-        </ul>
-        {startsInSeconds !== null && (
-          <p className="tracking-wide uppercase">
-            Door opens in {startsInSeconds}
-          </p>
-        )}
-        <button
-          aria-pressed={ready}
-          className={cn(
-            buttonLook,
-            ready
-              ? "text-paper border-paper/40 border"
-              : "bg-neon-yellow text-ink"
-          )}
-          onClick={blurred(toggle)}
-          tabIndex={-1}
-          type="button"
-        >
-          {ready ? "Not ready" : "Ready"} (Enter)
-        </button>
-        <div className="flex gap-2">
+        {gathering && (
           <button
-            className={cn(buttonLook, "text-paper grow")}
-            onClick={blurred(onCopyLink)}
-            tabIndex={-1}
+            aria-pressed={ready}
+            className={cn(
+              BUTTON,
+              "font-bold",
+              ready ? "border-paper/40 border" : "bg-neon-yellow text-ink"
+            )}
+            onClick={toggleReady}
             type="button"
           >
-            {copied ? "Copied" : "Invite"}
+            {ready ? "Not ready" : "Ready"}
           </button>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {lobby.roomKind === "custom" && (
+            <button className={BUTTON} onClick={onCopyLink} type="button">
+              Copy the link
+            </button>
+          )}
           <button
-            className={cn(buttonLook, "text-paper grow")}
-            onClick={blurred(onBack)}
-            tabIndex={-1}
+            aria-expanded={showRules}
+            className={BUTTON}
+            onClick={() => {
+              setShowRules(!showRules);
+            }}
             type="button"
           >
+            {hosting ? "You set the rules" : "The rules"}
+          </button>
+          <button className={BUTTON} onClick={onChangeName} type="button">
+            Change name
+          </button>
+          <button className={BUTTON} onClick={onBack} type="button">
             Leave
           </button>
         </div>
+        {showRules &&
+          (hosting ? (
+            <RuleChoices onChoose={seat.choose} rule={lobby.rule} />
+          ) : (
+            <RuleLines rule={lobby.rule} />
+          ))}
       </aside>
     </BarStage>
   );
