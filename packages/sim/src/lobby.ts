@@ -318,12 +318,20 @@ const readWish = (
 const approach = (from: number, to: number, change: number): number =>
   from + Math.max(-change, Math.min(change, to - from));
 
+const stoppingSpeed = ({ route, target, x, z }: LobbyRider): number =>
+  target && route.length === 0
+    ? Math.sqrt(2 * FOOT.accel * hypot2(target.x - x, target.z - z))
+    : FOOT.sprint;
+
 const stepFoot = (
   rider: LobbyRider,
   wants: boolean,
   control: LobbyControl
 ): void => {
-  const top = control.sprint ? FOOT.sprint : FOOT.jog;
+  const top = Math.min(
+    control.sprint ? FOOT.sprint : FOOT.jog,
+    stoppingSpeed(rider)
+  );
   rider.speed = approach(rider.speed, wants ? top : 0, FOOT.accel * LOBBY_TICK);
   if (wants) {
     rider.dirX = wish.x;

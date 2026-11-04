@@ -61,6 +61,14 @@ describe("walking the bar", () => {
     expect(rider.z).toBeCloseTo(-1, 0);
   });
 
+  it("stops on a clicked spot instead of running past it, even sprinting", () => {
+    const rider = createLobbyRider();
+    sendRiderTo(rider, 3.4, 9);
+    walk(rider, 3, { forward: 0, right: 0, sprint: true });
+    expect(rider.x).toBeCloseTo(3.4, 0);
+    expect(Math.abs(rider.z - 9)).toBeLessThan(0.25);
+  });
+
   it("stops at the nearest floor when the click lands on furniture", () => {
     const rider = createLobbyRider();
     arrive(rider, FURNITURE.pool.x, FURNITURE.pool.z);

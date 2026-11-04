@@ -437,6 +437,7 @@ const openRoom = (
       clock = 0;
       doorOpenedAt = null;
       cast.reset();
+      speech.reset();
       player.reset();
       spinAt = 0;
       heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);

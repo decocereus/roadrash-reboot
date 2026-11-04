@@ -179,7 +179,12 @@ export const createCast = (
       tag,
     });
   }
+  let lastAmbient = -1;
   const reset = (): void => {
+    lastAmbient = -1;
+    for (const look of faces) {
+      look.until = 0;
+    }
     for (const { figure, spot } of members) {
       figure.root.position.set(
         spot.x,
@@ -199,7 +204,6 @@ export const createCast = (
   const crowd = members
     .filter(({ spot }) => !mounts.has(spot.act))
     .map(({ figure }) => figure.root.position);
-  let lastAmbient = -1;
   const riding: Stance = {
     flinch: 0,
     flinchSide: 1,
