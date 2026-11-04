@@ -40,4 +40,5 @@ Preconditions: a slot from `rv up` on a development build.
 - The countdown opens the door by itself after 90 s and the scene loops 15 s later, so open a fresh page before a timed sample.
 - The bike unlock lasts until the page reloads.
 - The first `rv up --dev` after new imports can hit Vite's `504 Outdated Optimize Dep`, and the page never reaches the bar. Open the page again.
+- A development build opens a throwaway room socket when React mounts twice. About 1 join in 11 against the live rooms server ended on "You opened this lobby in another tab", probably because the throwaway socket reached the server second. Reload the page. Production builds mount once.
 - Riders are full detail until the rendering lane ships detail levels, so the triangle count is the worst case.
