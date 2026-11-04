@@ -8,6 +8,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
 import type { NodeProfile, Observation } from "./budgets.ts";
+import { DRIFTED } from "./load.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
 import {
   CALIBRATION_ROUNDS,
@@ -348,7 +349,7 @@ const scalesAcross = (
     ...(each.drift <= calibration.maxDrift
       ? []
       : [
-          `FAIL node ${scenario.id} pair=${each.pair} CalibrationUnstable before=${each.before.toFixed(3)} ms after=${each.after.toFixed(3)} ms drift=${each.drift.toFixed(3)} limit ${calibration.maxDrift}`,
+          `FAIL node ${scenario.id} pair=${each.pair} ${DRIFTED} before=${each.before.toFixed(3)} ms after=${each.after.toFixed(3)} ms drift=${each.drift.toFixed(3)} limit ${calibration.maxDrift}`,
         ]),
     ...(each.scale >= calibration.minScale && each.scale <= calibration.maxScale
       ? []

@@ -13,6 +13,7 @@ import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import {
   benchChildEnv,
   holdBench,
+  queueForBench,
   refuseDuringBench,
 } from "@racer/devtools/bench-lock";
 import { CleanupOutcomes } from "@racer/devtools/cleanup";
@@ -100,6 +101,41 @@ describe("the bench lock", () => {
     expect(Exit.isSuccess(await run(holdBench("third", [], dir)))).toBeTruthy();
   });
 
+  it("queues behind a holder, takes over when it frees, and drops the claim on exit", async () => {
+    const dir = freshDir();
+    const file = path.join(dir, "bench.lock");
+    const holder = JSON.stringify({ label: "other run", pid: process.pid });
+    writeFileSync(file, holder);
+    const freed = setTimeout(() => {
+      rmSync(file);
+    }, 30);
+    const seen: string[] = [];
+    const exit = await run(
+      Effect.gen(function* inTurn() {
+        yield* queueForBench("pnpm perf gate", { dir, pollMs: 2 });
+        seen.push(readFileSync(file, "utf-8"));
+      })
+    );
+    clearTimeout(freed);
+    expect(Exit.isSuccess(exit)).toBeTruthy();
+    expect(seen[0]).toBe(
+      JSON.stringify({ label: "pnpm perf gate", pid: process.pid })
+    );
+    expect(existsSync(file)).toBeFalsy();
+  });
+
+  it("stops queueing at its patience, names the holder and leaves the claim", async () => {
+    const dir = freshDir();
+    const file = path.join(dir, "bench.lock");
+    const holder = JSON.stringify({ label: "other run", pid: process.pid });
+    writeFileSync(file, holder);
+    const exit = await run(
+      queueForBench("pnpm perf gate", { dir, patienceMs: 5, pollMs: 2 })
+    );
+    expect(messageOf(exit)).toContain(`pid ${process.pid}, other run`);
+    expect(readFileSync(file, "utf-8")).toBe(holder);
+  });
+
   it("refuses to measure while another rv run has a browser open, and frees the lock", async () => {
     const dir = freshDir();
     openRun(dir, "1", process.pid);
@@ -132,7 +168,7 @@ describe("the bench lock", () => {
         yield* holdBench("campaign", [], dir);
         const refused = yield* Effect.exit(refuseDuringBench("open", dir));
         expect(messageOf(refused)).toContain(
-          `rv open would draw on the GPU while a bench is measuring it: pid ${process.pid}, campaign`
+          `rv open would draw on this machine while a bench is measuring it: pid ${process.pid}, campaign`
         );
       })
     );
