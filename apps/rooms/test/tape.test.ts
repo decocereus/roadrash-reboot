@@ -1,5 +1,6 @@
 import { seatedRace } from "@racer/career/room-race";
 import { replayTape } from "@racer/sim/room-tape";
+import { PING_PACKET_BYTES, writePing } from "@racer/sim/room-wire";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
@@ -14,13 +15,25 @@ const decodeEnd = Schema.decodeUnknownSync(
   Schema.fromJsonString(TapeEndSchema)
 );
 const RACE_MS = 65_000;
+const PING_EVERY_MS = 5000;
+
+const pingPacket = (): ArrayBuffer => {
+  const view = new DataView(new ArrayBuffer(PING_PACKET_BYTES));
+  writePing(view, 1);
+  return view.buffer;
+};
 
 const recorded = () => {
   const clock = createClock();
   const host = createHost(clock);
   const sockets = [fakeSocket(), fakeSocket()];
   race(host, clock, sockets);
-  clock.advance(RACE_MS);
+  for (let at = 0; at < RACE_MS; at += PING_EVERY_MS) {
+    for (const socket of sockets) {
+      host.message(socket, pingPacket());
+    }
+    clock.advance(PING_EVERY_MS);
+  }
   for (const socket of sockets) {
     host.gone(socket);
   }
