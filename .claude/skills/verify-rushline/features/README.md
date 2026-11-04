@@ -52,7 +52,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Bar look test](./bar-look.md): the development-only live bar, its dusk-to-night clock, cast, door cutscene, and the colour blocks in a race.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
-- [Race rules](./race-rules.md): the served field size and level count, a ten-racer grid, a three-level career, and the save a level above them refused.
+- [Race rules](./race-rules.md): the served field size, a ten-racer grid, a three-tier career and what each tier changes, and the save above the top tier refused.
 - [Game art](./art.md): the `/art/<key>` route, the bar's and the race's art loaded from it, the local cache refilled from the deployed game, and the deployed game reading R2.
 - [Desktop session](./desktop-session.md): the Hyprland session `rv up` starts on demand on vimaan, shared by slots and stopped by the last one.
 - [Frame rate and load](./frame-rate.md): the stress race, frame sampling, throttled play, traces, first load on a slow network, the perf gate on the GPU, and the measure.ts A/B.

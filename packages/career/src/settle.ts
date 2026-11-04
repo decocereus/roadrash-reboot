@@ -1,5 +1,6 @@
 import type { BikeId } from "@racer/sim/bikes";
 import { rivalIds } from "@racer/sim/cast";
+import { tierAfter } from "@racer/sim/difficulty";
 
 import { finaleOpen, isFinale, roadOpen } from "./field.ts";
 import { resultLine } from "./lines.ts";
@@ -13,7 +14,6 @@ import type {
   RivalIncidents,
 } from "./outcome.ts";
 import { summaryOf } from "./result.ts";
-import { levelAfter, rungsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { scoreRace } from "./season.ts";
 import { BOARD_NOTES, nextRaceId, qualifiedCount } from "./state.ts";
@@ -30,10 +30,10 @@ import {
   AD_REPAIR_RATE,
   ALLY,
   ALLY_BREAKING_KNOCKDOWNS,
-  ALLY_RUNG,
+  ALLY_TIER,
   creditLimitOf,
   ENVELOPE_CLAWBACK,
-  ENVELOPE_LEVEL,
+  ENVELOPE_TIER,
   ENVELOPE_RIVAL,
   ENVELOPE_ROAD,
   fineFor,
@@ -47,7 +47,7 @@ import {
   stockArrivingAt,
   tradeInOf,
 } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import type { Tier, RoadId } from "./tables.ts";
 
 type StartRefusal = "gameOver" | "seasonOver" | "raceActive" | "roadClosed";
 
@@ -61,8 +61,8 @@ export type StartResult =
 
 export type RepairOffer = "full" | "half";
 
-export interface LevelUp {
-  readonly level: Level;
+export interface TierUp {
+  readonly tier: Tier;
   readonly bikes: readonly BikeId[];
 }
 
@@ -73,7 +73,7 @@ interface Repossession {
 
 export interface Ledger {
   readonly roadId: RoadId;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly result: RaceResult;
   readonly place: number;
   readonly repeat: boolean;
@@ -86,7 +86,7 @@ export interface Ledger {
   readonly cashAfter: number;
   readonly qualified: boolean;
   readonly qualifiedCount: number;
-  readonly levelUp: LevelUp | null;
+  readonly tierUp: TierUp | null;
   readonly repossessed: Repossession | null;
   readonly gameOver: boolean;
   readonly ending: EndingId | null;
@@ -109,7 +109,6 @@ export type Settlement =
     };
 
 const startRefusal = (
-  rules: RaceRules,
   career: CareerState,
   roadId: RoadId
 ): StartRefusal | null => {
@@ -122,31 +121,30 @@ const startRefusal = (
   if (career.activeRace) {
     return "raceActive";
   }
-  return roadOpen(rules, career, roadId) ? null : "roadClosed";
+  return roadOpen(career, roadId) ? null : "roadClosed";
 };
 
 export const startRace = (
-  rules: RaceRules,
   career: CareerState,
   roadId: RoadId,
   seed: number
 ): StartResult => {
-  const reason = startRefusal(rules, career, roadId);
+  const reason = startRefusal(career, roadId);
   if (reason) {
     return { career, reason, started: false };
   }
   const envelopeRace =
-    roadId === ENVELOPE_ROAD && career.level === ENVELOPE_LEVEL;
+    roadId === ENVELOPE_ROAD && career.tier === ENVELOPE_TIER;
   return {
     career: {
       ...career,
       activeRace: {
         bikeId: career.bikeId,
-        level: career.level,
         raceId: nextRaceId(career),
         roadId,
         seed,
         started: true,
+        tier: career.tier,
       },
       lastResult: null,
       record: { ...career.record, starts: career.record.starts + 1 },
@@ -211,17 +209,16 @@ const envelopeDue = (career: CareerState, outcome: RaceOutcome): boolean =>
   career.story.envelope === "taken" &&
   !career.story.envelopeClawedBack &&
   outcome.roadId === ENVELOPE_ROAD &&
-  outcome.level === ENVELOPE_LEVEL &&
+  outcome.tier === ENVELOPE_TIER &&
   outcome.result === "finished" &&
   placeOf(outcome, ENVELOPE_RIVAL) > outcome.place;
 
 const repairOf = (
-  rules: RaceRules,
   race: ActiveRace,
   outcome: RaceOutcome,
   offer: RepairOffer
 ): number => {
-  const full = repairBill(rules, race.level, race.bikeId);
+  const full = repairBill(race.tier, race.bikeId);
   if (outcome.result === "wrecked") {
     return full * (offer === "half" ? AD_REPAIR_RATE : 1);
   }
@@ -234,11 +231,10 @@ interface DatedNote {
 }
 
 const datedNotes = (
-  rules: RaceRules,
   outcome: RaceOutcome,
   incident: RivalIncidents
 ): DatedNote[] => {
-  const { level, roadId, tick } = outcome;
+  const { tier, roadId, tick } = outcome;
   const { rival } = incident;
   const notes: DatedNote[] = [];
   if (incident.weaponTakenByPlayer !== "none") {
@@ -270,7 +266,7 @@ const datedNotes = (
   }
   if (incident.busted !== "none") {
     notes.push({
-      note: { fine: fineFor(rules, level), kind: "busted", rival, roadId },
+      note: { fine: fineFor(tier), kind: "busted", rival, roadId },
       tick: incident.bustedTick,
     });
   }
@@ -289,9 +285,9 @@ const datedNotes = (
   return notes;
 };
 
-const notesOf = (rules: RaceRules, outcome: RaceOutcome): BoardNote[] =>
+const notesOf = (outcome: RaceOutcome): BoardNote[] =>
   outcome.incidents
-    .flatMap((incident) => datedNotes(rules, outcome, incident))
+    .flatMap((incident) => datedNotes(outcome, incident))
     .toSorted((left, right) => right.tick - left.tick)
     .map((dated) => dated.note);
 
@@ -352,22 +348,18 @@ interface Bill {
 }
 
 const billOf = (
-  rules: RaceRules,
   career: CareerState,
   race: ActiveRace,
   outcome: RaceOutcome,
   offer: RepairOffer
 ): Bill => {
-  const repeat = career.qualified[race.level][race.roadId] !== undefined;
+  const repeat = career.qualified[race.tier][race.roadId] !== undefined;
   const earned = repeat ? repeatPrizeFor : prizeFor;
   return {
     envelope: envelopeDue(career, outcome) ? -ENVELOPE_CLAWBACK : 0,
-    fine: outcome.result === "busted" ? fineFor(rules, race.level) : 0,
-    prize:
-      outcome.result === "finished"
-        ? earned(rules, race.level, outcome.place)
-        : 0,
-    repair: repairOf(rules, race, outcome, offer),
+    fine: outcome.result === "busted" ? fineFor(race.tier) : 0,
+    prize: outcome.result === "finished" ? earned(race.tier, outcome.place) : 0,
+    repair: repairOf(race, outcome, offer),
     repairHalved: outcome.result === "wrecked" && offer === "half",
     repeat,
   };
@@ -376,7 +368,7 @@ const billOf = (
 interface Progress {
   readonly roads: QualifiedRoads;
   readonly newlyQualified: boolean;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly promoted: boolean;
   readonly arrivals: readonly BikeId[];
   readonly ending: EndingId | null;
@@ -390,53 +382,51 @@ const endingOf = (career: CareerState, outcome: RaceOutcome): EndingId => {
 };
 
 const progressOf = (
-  rules: RaceRules,
   career: CareerState,
   race: ActiveRace,
   outcome: RaceOutcome,
   gameOver: boolean
 ): Progress => {
-  const { level, roadId } = race;
-  const bestPlace = career.qualified[level][roadId];
+  const { tier, roadId } = race;
+  const bestPlace = career.qualified[tier][roadId];
   const qualifies =
     outcome.result === "finished" && outcome.place <= QUALIFYING_PLACE;
   const roads: QualifiedRoads = qualifies
     ? {
-        ...career.qualified[level],
+        ...career.qualified[tier],
         [roadId]: Math.min(bestPlace ?? outcome.place, outcome.place),
       }
-    : career.qualified[level];
+    : career.qualified[tier];
   const newlyQualified = qualifies && bestPlace === undefined;
-  const next = levelAfter(rules, level);
+  const next = tierAfter(tier);
   const promoted =
     next !== null &&
     newlyQualified &&
     !gameOver &&
     roadList.every((road) => roads[road.id] !== undefined);
-  const nextLevel = promoted ? next : level;
+  const nextTier = promoted ? next : tier;
   const crowned =
     qualifies &&
     !gameOver &&
-    isFinale(rules, roadId, level) &&
+    isFinale(roadId, tier) &&
     career.story.ending === null;
   return {
-    arrivals: promoted ? stockArrivingAt(rules, nextLevel) : [],
+    arrivals: promoted ? stockArrivingAt(nextTier) : [],
     ending: crowned ? endingOf(career, outcome) : null,
-    level: nextLevel,
     newlyQualified,
     promoted,
     roads,
+    tier: nextTier,
   };
 };
 
 const allyAfter = (
-  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome,
   progress: Progress
 ): boolean => {
   if (progress.promoted) {
-    return rungsOf(rules, progress.level).highest >= ALLY_RUNG;
+    return progress.tier >= ALLY_TIER;
   }
   const knockdowns =
     outcome.incidents.find((incident) => incident.rival === ALLY)
@@ -448,7 +438,7 @@ const envelopeAfter = (
   story: StoryFlags,
   progress: Progress
 ): StoryFlags["envelope"] => {
-  if (progress.promoted && progress.level === ENVELOPE_LEVEL) {
+  if (progress.promoted && progress.tier === ENVELOPE_TIER) {
     return "offered";
   }
   return progress.promoted && story.envelope === "offered"
@@ -457,14 +447,13 @@ const envelopeAfter = (
 };
 
 const storyAfter = (
-  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome,
   progress: Progress,
   bill: Bill
 ): StoryFlags => ({
   ...career.story,
-  deeAlly: allyAfter(rules, career, outcome, progress),
+  deeAlly: allyAfter(career, outcome, progress),
   ending: progress.ending ?? career.story.ending,
   envelope: envelopeAfter(career.story, progress),
   envelopeClawedBack: career.story.envelopeClawedBack || bill.envelope !== 0,
@@ -482,7 +471,7 @@ const carried = (
 const sameRace = (race: ActiveRace, outcome: RaceOutcome): boolean =>
   race.raceId === outcome.raceId &&
   race.roadId === outcome.roadId &&
-  race.level === outcome.level &&
+  race.tier === outcome.tier &&
   race.seed === outcome.seed;
 
 const refused = (career: CareerState, reason: SettleRefusal): Settlement => ({
@@ -493,7 +482,6 @@ const refused = (career: CareerState, reason: SettleRefusal): Settlement => ({
 });
 
 export const settleRace = (
-  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome,
   offer: RepairOffer = "full"
@@ -508,12 +496,12 @@ export const settleRace = (
   if (!sameRace(race, outcome)) {
     return refused(career, "wrongRace");
   }
-  const bill = billOf(rules, career, race, outcome, offer);
+  const bill = billOf(career, race, outcome, offer);
   const debt = checkDebt(
     career.cash + bill.prize - bill.repair - bill.fine + bill.envelope,
     career.bikeId
   );
-  const progress = progressOf(rules, career, race, outcome, debt.gameOver);
+  const progress = progressOf(career, race, outcome, debt.gameOver);
   const settled: CareerState = {
     ...career,
     ...carried(outcome),
@@ -525,7 +513,7 @@ export const settleRace = (
         bikeId,
         kind: "newBike",
       })),
-      ...notesOf(rules, outcome),
+      ...notesOf(outcome),
       ...career.board,
     ].slice(0, BOARD_NOTES),
     cash: debt.cash,
@@ -533,12 +521,12 @@ export const settleRace = (
     garage: career.garage.includes(debt.bikeId)
       ? career.garage
       : [...career.garage, debt.bikeId],
-    level: progress.level,
     memory: memoryAfter(career, outcome),
-    qualified: { ...career.qualified, [race.level]: progress.roads },
+    qualified: { ...career.qualified, [race.tier]: progress.roads },
     record: recordAfter(career.record, outcome, bill.prize),
     season: scoreRace(career.season, outcome.placings, career.record.starts),
-    story: storyAfter(rules, career, outcome, progress, bill),
+    story: storyAfter(career, outcome, progress, bill),
+    tier: progress.tier,
   };
   const ledger: Ledger = {
     ...bill,
@@ -546,10 +534,6 @@ export const settleRace = (
     cashBefore: career.cash,
     ending: progress.ending,
     gameOver: debt.gameOver,
-    level: race.level,
-    levelUp: progress.promoted
-      ? { bikes: progress.arrivals, level: progress.level }
-      : null,
     line: resultLine(outcome),
     place: outcome.place,
     qualified: progress.newlyQualified,
@@ -557,15 +541,19 @@ export const settleRace = (
     repossessed: debt.repossessed,
     result: outcome.result,
     roadId: race.roadId,
+    tier: race.tier,
+    tierUp: progress.promoted
+      ? { bikes: progress.arrivals, tier: progress.tier }
+      : null,
   };
   return {
     career: {
       ...settled,
       lastResult: {
         ledger,
-        summary: summaryOf(rules, race, outcome, bill.prize),
+        summary: summaryOf(race, outcome, bill.prize),
       },
-      story: { ...settled.story, finaleUnlocked: finaleOpen(rules, settled) },
+      story: { ...settled.story, finaleUnlocked: finaleOpen(settled) },
     },
     ledger,
     settled: true,
@@ -573,10 +561,9 @@ export const settleRace = (
 };
 
 export const quitRace = (
-  rules: RaceRules,
   career: CareerState,
   outcome: RaceOutcome
-): Settlement => settleRace(rules, career, outcome);
+): Settlement => settleRace(career, outcome);
 
 export const resumeCareer = (
   rules: RaceRules,
@@ -585,11 +572,7 @@ export const resumeCareer = (
   if (!save.activeRace) {
     return refused(save, "noActiveRace");
   }
-  const settlement = settleRace(
-    rules,
-    save,
-    abandonedOutcome(rules, save.activeRace)
-  );
+  const settlement = settleRace(save, abandonedOutcome(rules, save.activeRace));
   if (!settlement.settled) {
     return settlement;
   }

@@ -6,15 +6,15 @@ import { nextSeed } from "@racer/track/random";
 
 import type { LastResult } from "./result.ts";
 import {
-  byLevel,
+  byTier,
   creditLimitOf,
   roadList,
   STARTING_BIKE,
   STARTING_CASH,
 } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import type { Tier, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export const racerIds = ["player", ...rivalIds] as const;
 
@@ -138,7 +138,7 @@ export const BOARD_NOTES = 3;
 export interface ActiveRace {
   readonly raceId: number;
   readonly roadId: RoadId;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly seed: number;
   readonly bikeId: BikeId;
   readonly started: true;
@@ -148,12 +148,12 @@ export interface CareerState {
   readonly version: typeof SAVE_VERSION;
   readonly seed: number;
   readonly cash: number;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly bikeId: BikeId;
   readonly garage: readonly BikeId[];
   readonly weapon: WeaponKind;
   readonly weaponHits: number;
-  readonly qualified: Record<Level, QualifiedRoads>;
+  readonly qualified: Record<Tier, QualifiedRoads>;
   readonly record: CareerRecord;
   readonly season: Record<RacerId, SeasonEntry>;
   readonly memory: Record<RivalId, RivalMemory>;
@@ -187,9 +187,8 @@ export const newCareer = (seed: number): CareerState => ({
   gameOver: false,
   garage: [STARTING_BIKE],
   lastResult: null,
-  level: 1,
   memory: byRival(() => blankMemory),
-  qualified: byLevel(() => ({})),
+  qualified: byTier(() => ({})),
   record: {
     busts: 0,
     earnings: 0,
@@ -209,6 +208,7 @@ export const newCareer = (seed: number): CareerState => ({
     finaleUnlocked: false,
     leftRace: false,
   },
+  tier: 1,
   version: SAVE_VERSION,
   weapon: "none",
   weaponHits: 0,

@@ -1,14 +1,13 @@
 import { once } from "node:events";
 
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import { holdBench } from "@racer/devtools/bench-lock";
 import { CleanupOutcomes } from "@racer/devtools/cleanup";
 import type * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
-
-import { holdBench } from "../src/bench-lock.ts";
 
 const decodeOrder = Schema.decodeUnknownSync(
   Schema.Struct({ dir: Schema.NullOr(Schema.String) })
@@ -29,7 +28,7 @@ const contend = Effect.fnUntraced(function* contend(dir: string) {
   const outcomes = yield* Ref.make<readonly Cause.Cause<unknown>[]>([]);
   const exit = yield* Effect.exit(
     Effect.scoped(
-      holdBench(`worker ${process.pid}`, dir).pipe(
+      holdBench(`worker ${process.pid}`, [], dir).pipe(
         Effect.andThen(reportThenAwaitRelease(true))
       )
     ).pipe(Effect.provideService(CleanupOutcomes, outcomes))

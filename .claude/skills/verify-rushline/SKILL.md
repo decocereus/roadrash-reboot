@@ -90,7 +90,8 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 | `rv throttle --run <id> [--cpu n] [--network off\|fast4g\|slow4g\|3g\|offline]` | Restarts the console watcher holding `Emulation.setCPUThrottlingRate` and `Network.emulateNetworkConditions`. Throttling lasts while the watcher is attached, survives navigation, and every sample and trace records it. `--cpu 1 --network off` clears it. |
 | `rv console --run <id> [errors]` | Print what the watcher captured. |
 | `rv list` | Every claimed slot, its run, and whether its processes are up. |
-| `rv desktop up\|down\|status` | On Linux, start, release or read the desktop session. `up` holds it until `down`. |
+| `rv desktop up <name>`, `down <name>`, `status` | On Linux, start, release or read the desktop session. `up` holds it under that name until `down` with the same name, so another agent's `down` cannot release it. |
+| `rv bench <label> -- <command> [args]` | Holds the bench lock while the command runs, for a campaign of several measurements. Other agents' `rv up`, `open`, `click`, `press` and `rebuild` fail until it ends. It refuses to start while another run has a browser open. |
 
 ### Game state you can read
 
@@ -108,7 +109,7 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 
 | Flag | Effect |
 | --- | --- |
-| `?ride=<roadId>&level=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, at any level the served rules hold (1 to 3 by default); a higher `level` rides level 1. `level` sets the field and the police, not the road. Roads: `breakwater-run`, `slag-row`, `ridge-road`, `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`, and `madrid-gran-via`, the central Madrid greybox in `features/madrid-gran-via.md`. |
+| `?ride=<roadId>&tier=<n>` (DEV) | Skip the menus and start a quick race at once: seed 31, Ostra Sesta 600, at tier 1 to 3; any other `tier` rides tier 1. `tier` sets the field, the traffic, the hazards and the police, not the road. Roads: `breakwater-run`, `slag-row`, `ridge-road`, `madrid-hook`, the Casa de Campo greybox in `features/madrid-hook.md`, and `madrid-gran-via`, the central Madrid greybox in `features/madrid-gran-via.md`. |
 | `?bike=<bikeId>&with=alone\|field\|traffic` (DEV) | With `?ride`: the player's bike (ids in `packages/sim/src/bikes.ts`), and who rides along. `alone` drops rivals, police and traffic, `field` drops traffic, `traffic` is the full race and the default. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including truck jumps. The player's rider is built pilot-controlled, so the keys, `?straight` and `?swerve` do nothing. |
@@ -202,8 +203,8 @@ vimaan is a Linux laptop with a GTX 1650 Ti and no running desktop. Everything a
 
 - `rv up`, `rv doctor` and `rv down` manage the session. A second slot shares it, and the last slot to leave stops it. `rv desktop status` says who holds it.
 - It needs a logind seat that can open, which the owner's console login on tty1 gives. Without one `rv up` fails and says so. Nothing needs root.
-- A compositor someone else started is used and never stopped, once it has an Xwayland. Xwayland arrives about 2 s after the compositor starts, unless its config disables it. Until then `rv desktop up` and `rv up` fail and say so.
-- A session left behind by a killed `rv` is an orphan. `rv desktop status` names it, `rv desktop up` replaces it, and `rv desktop down` stops it.
+- A compositor someone else started is used and never stopped, once it has an Xwayland. Xwayland arrives about 2 s after the compositor starts, unless its config disables it. Until then `rv desktop up <name>` and `rv up` fail and say so.
+- A session left behind by a killed `rv` is an orphan. `rv desktop status` names it, `rv desktop up <name>` replaces it, and `rv desktop down <name>` stops it.
 - In rv's own session the page is 1512x773 at device pixel ratio 2 and does not change when another slot opens, because its config floats every window. A compositor rv did not start tiles them, so the page shrinks and changes as slots open, and `pnpm perf:gpu` refuses it. A window bigger than the panel is expected. `rv shot` captures the whole page.
 - `rv doctor`'s gpu line must contain `NVIDIA`. `tools/perf/README.md`, under Vimaan, says why the flags are what they are.
 - `pnpm perf:gpu` needs side A's clone in `/var/tmp`, because `/tmp` is a small tmpfs. Its limits are the `gpu-chromium-nvidia` rows, never the Mac's.

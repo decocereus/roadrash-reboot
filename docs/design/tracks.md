@@ -12,7 +12,7 @@ Launch cities agreed October 23, 2026. Three of these shapes become real cities 
 
 Pieces replaced sections October 24, 2026. A plan is now a start pose and a list of pieces (`docs/architecture.md`, "Tracks"). Each section in the tables and plans below is one eased piece, written `[length, turnDegrees, climb]` inside `eased(...)` in the road files, and every road samples bit for bit as it did. The plan listings below keep the older `{ length, turnDegrees, climb }` objects; the road files in `packages/track/src/tracks` are the source.
 
-One layout per road November 4, 2026. A road has one layout, the sections below, and nothing about a race changes its bends, crests, trucks, crossings or hazards. The blocks that levels 2 to 5 appended are gone, and with them the roadblock spots, which the simulation never read. Cinder Wash and Hollow Pine Road and their regions are gone, because the launch has three cities. The figures below that were taken with all five roads, such as hazard totals before October 16, are history.
+One layout per road November 4, 2026. A road has one layout, the sections below, and nothing about a race changes its bends, crests, trucks, crossings or hazards. The blocks that old levels 2 to 5 appended are gone, and with them the roadblock spots, which the simulation never read. Cinder Wash and Hollow Pine Road and their regions are gone, because the launch has three cities. The figures below that were taken with all five roads, such as hazard totals before October 16, are history.
 
 All figures were produced by compiling each plan with `compileTrack` and reading the compiled `curvature` and `slopeRate` arrays. A bend's radius is one over its peak curvature, which is `turn / (length × 0.7)` because of the 30% ease in and out. A bend's hold speed is where full steer equals the outward push for that bike's `BikeSpec` in `game-design.md`. The hold speeds quoted in the road sections below are from before the grip retune of October 15, 2026 (`game-design.md`, "Bends and the lean scrub"), which raised every `curvePush` by 30%; multiply them by 1.14 for the current bikes, so a 70 m right angle that held at 97 km/h on a Wren now holds at 112. Since that retune a leaned bike also scrubs its own speed, so "not flat" below no longer means the bend needs the brake: see the paragraph after the table. A crest's launch speed is where `slopeRate × speed²` passes gravity, the condition `rider-drive.ts` uses. No person has ridden the roads yet. The AI pilot finishes every road on its own without a crash (section "Ridden by the pilot" below), but passing numbers do not show that a road plays well, so each needs a play test.
 
@@ -121,13 +121,13 @@ The track tests check every rule above, that a road has four to seven hazards, o
 
 The seed salt, 0x4bc2, was picked from 400 when there were five roads, as the one that kept the old hazard counts and gave every road two or more oil slicks. Breakwater Run has 7 hazards (3 oil, 3 rock, 1 pothole), Slag Row 6 (3 oil, 2 rock, 1 pothole) and Ridge Road 6 (4 oil, 2 potholes).
 
-The hazards, by id, kind, setting, position along the road, and position across it:
+Tier 1 places these hazards, by id, kind, setting, position along the road, and position across it. A compiled road holds more candidates, ranked per road by a seeded roll, and a tier places the share of them its table gives (`game-design.md` section 4): 6, 8 and 9 on Breakwater Run and Slag Row, and 5, 7 and 8 on Ridge Road.
 
 | Road | Hazards |
 | --- | --- |
-| Breakwater Run | `hazard-1` rock (exit) at 920 m, x 0.84; `hazard-3` oil (turn-in) at 3,145 m, x 5.73; `hazard-4` pothole (traffic) at 3,979 m, x 2.88; `hazard-5` rock (exit) at 4,680 m, x 1.03; `hazard-7` rock (traffic) at 6,946 m, x 0.32; `hazard-8` oil (turn-in) at 7,488 m, x 1.49; `hazard-9` oil (turn-in) at 8,081 m, x 5.41 |
+| Breakwater Run | `hazard-1` rock (exit) at 920 m, x 0.84; `hazard-3` oil (turn-in) at 3,145 m, x 5.73; `hazard-5` rock (exit) at 4,680 m, x 1.03; `hazard-7` rock (traffic) at 6,946 m, x 0.32; `hazard-8` oil (turn-in) at 7,488 m, x 1.49; `hazard-9` oil (turn-in) at 8,081 m, x 5.41 |
 | Slag Row | `hazard-2` oil (exit) at 1,480 m, x 5.66; `hazard-3` pothole (traffic) at 2,271 m, x 0.64; `hazard-6` rock (exit) at 5,300 m, x 1.21; `hazard-7` rock (traffic) at 6,372 m, x 1.41; `hazard-8` oil (turn-in) at 7,004 m, x 5.39; `hazard-9` oil (exit) at 7,760 m, x 1.48 |
-| Ridge Road | `hazard-2` oil (turn-in) at 1,696 m, x 1.74; `hazard-3` oil (turn-in) at 2,823 m, x 1.67; `hazard-4` oil (traffic) at 4,244 m, x 1.38; `hazard-6` pothole (apex) at 6,150 m, x 0.84; `hazard-7` pothole (apex) at 7,640 m, x 0.22; `hazard-8` oil (exit) at 8,270 m, x 1.38 |
+| Ridge Road | `hazard-2` oil (turn-in) at 1,696 m, x 1.74; `hazard-4` oil (traffic) at 4,244 m, x 1.38; `hazard-6` pothole (apex) at 6,150 m, x 0.84; `hazard-7` pothole (apex) at 7,640 m, x 0.22; `hazard-8` oil (exit) at 8,270 m, x 1.38 |
 
 ## Junctions and crossings
 

@@ -10,7 +10,7 @@ import {
   FieldPlace,
   FinishTick,
   Kilometres,
-  Level,
+  Tier,
   Metres,
   Money,
   Officer,
@@ -76,9 +76,9 @@ const Summary = Schema.Struct({
   wreck: Schema.NullOr(Wreck),
 });
 
-const LevelUp = Schema.Struct({
+const TierUp = Schema.Struct({
   bikes: Schema.Array(Bike).check(Schema.isMaxLength(bikeIds.length)),
-  level: Level,
+  tier: Tier,
 });
 
 const Line = Schema.Struct({ rival: Rival, text: Text });
@@ -92,8 +92,6 @@ const Ledger = Schema.Struct({
   envelope: Balance,
   fine: Money,
   gameOver: Schema.Boolean,
-  level: Level,
-  levelUp: Schema.NullOr(LevelUp),
   line: Schema.NullOr(Line),
   place: FieldPlace,
   prize: Money,
@@ -105,6 +103,8 @@ const Ledger = Schema.Struct({
   repossessed: Schema.NullOr(Repossession),
   result: Result,
   roadId: Road,
+  tier: Tier,
+  tierUp: Schema.NullOr(TierUp),
 });
 
 export const LastResultSchema = Schema.Struct({

@@ -144,21 +144,22 @@ export const openRoomSeat = (
       raceId,
       setup,
     };
-    pings = setInterval(() => {
-      const silent = counting
-        ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
-        : unansweredPings > MOST_UNANSWERED_PINGS;
-      if (silent) {
-        stopPings();
-        socket.close(SEAT_CLOSED, "The room went silent.");
-        move("lost");
-        return;
-      }
-      writePing(ping, Math.floor(performance.now()));
-      socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
-      unansweredPings += 1;
-    }, PING_EVERY_MS);
     move("loading");
+  };
+
+  const sendPing = (): void => {
+    const silent = counting
+      ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
+      : unansweredPings > MOST_UNANSWERED_PINGS;
+    if (silent) {
+      stopPings();
+      socket.close(SEAT_CLOSED, "The room went silent.");
+      move("lost");
+      return;
+    }
+    writePing(ping, Math.floor(performance.now()));
+    socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
+    unansweredPings += 1;
   };
 
   const onBinary = (data: ArrayBuffer): void => {
@@ -180,6 +181,9 @@ export const openRoomSeat = (
     }
   };
 
+  socket.addEventListener("open", () => {
+    pings = setInterval(sendPing, PING_EVERY_MS);
+  });
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();

@@ -1,13 +1,14 @@
 import { roadsFor } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import { seasonBoard } from "@racer/career/season";
-import type { LevelUp } from "@racer/career/settle";
+import type { TierUp } from "@racer/career/settle";
 import { creditLimit, debtOf } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { ENVELOPE_NOTE, storyBeat } from "@racer/career/story";
 import { ALLY, roads } from "@racer/career/tables";
 import type { RoadId } from "@racer/career/tables";
 import { rivals } from "@racer/sim/cast";
+import { difficulties, TOP_TIER } from "@racer/sim/difficulty";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
 import { useEffect, useMemo, useState } from "react";
@@ -59,28 +60,24 @@ const roadStep = (key: string): -1 | 0 | 1 => {
 
 const heard = new Set<string>();
 
-const promotionNote = (
-  rules: RaceRules,
-  { level, bikes }: LevelUp
-): WallNote => {
+const promotionNote = ({ tier, bikes }: TierUp): WallNote => {
   const delivery =
     bikes.length === 0
       ? ""
       : ` New at the garage: ${bikes.map((bikeId) => bikeName(bikeId)).join(", ")}.`;
   return {
     signature: "V.",
-    text: `Level ${level}. ${rules.police[level]} cops. 1st pays ${formatMoney(firstPrize(rules, level))}.${delivery}`,
+    text: `Tier ${tier}. ${difficulties[tier].cops.count} cops. 1st pays ${formatMoney(firstPrize(tier))}.${delivery}`,
   };
 };
 
 const notesFor = (
-  rules: RaceRules,
   career: CareerState,
-  promotion: LevelUp | undefined,
+  promotion: TierUp | undefined,
   openEnvelope: () => void
 ): readonly WallNote[] => {
   const debt = debtOf(career);
-  const notes: WallNote[] = promotion ? [promotionNote(rules, promotion)] : [];
+  const notes: WallNote[] = promotion ? [promotionNote(promotion)] : [];
   if (debt > 0) {
     notes.push({
       text: `You owe ${formatMoney(debt)}. Prize money pays it first. Limit ${formatMoney(creditLimit(career))}.`,
@@ -103,7 +100,7 @@ const notesFor = (
     notes.push({
       signature: "V.",
       text:
-        career.level === rules.levelCount
+        career.tier === TOP_TIER
           ? "The Ridge is last. She'll be waiting."
           : "Top three on every road and you move up.",
     });
@@ -184,12 +181,11 @@ const ClubhouseNav = ({
 );
 
 const vicLines = (
-  rules: RaceRules,
   career: CareerState,
-  promotion: LevelUp | undefined
+  promotion: TierUp | undefined
 ): readonly string[] => {
   if (promotion) {
-    return [vicCard(rules, promotion.level)];
+    return [vicCard(promotion.tier)];
   }
   return career.record.starts === 0 ? introCards : [];
 };
@@ -252,7 +248,7 @@ export const ClubhouseScreen = ({
 }: {
   readonly rules: RaceRules;
   readonly career: CareerState;
-  readonly promotion: LevelUp | undefined;
+  readonly promotion: TierUp | undefined;
   readonly onRide: (roadId: RoadId) => void;
   readonly onGarage: () => void;
   readonly onBackRoom: () => void;
@@ -269,7 +265,7 @@ export const ClubhouseScreen = ({
   );
   const rival = rivals[bar.boss];
   const ally = rival.id === ALLY && storyBeat(career).deeAlly;
-  const vic = useVic(vicLines(rules, career, promotion));
+  const vic = useVic(vicLines(career, promotion));
   const speech: Speech = vic ?? {
     line: bar.line.text,
     name: rival.name,
@@ -291,13 +287,13 @@ export const ClubhouseScreen = ({
         <BarBackdrop clock={clock} />
         <BarSeats figure={vic ? null : figureOf(bar.boss)} />
         <SpeechSticker speech={speech} />
-        <BarHeader standing={{ career, rules }} />
+        <BarHeader career={career} />
         <Standings
-          playerCaption={career.level === 1 ? "New meat" : "Kid can ride"}
+          playerCaption={career.tier === 1 ? "New meat" : "Kid can ride"}
           rows={seasonBoard(career)}
         />
         <WallNotes
-          notes={notesFor(rules, career, promotion, () => {
+          notes={notesFor(career, promotion, () => {
             setEnvelope(true);
           })}
         />

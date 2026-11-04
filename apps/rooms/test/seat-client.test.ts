@@ -46,6 +46,10 @@ class FakeSocket {
     this.heard.get("close")?.({ code });
   }
 
+  open(): void {
+    this.heard.get("open")?.({});
+  }
+
   hear(data: string | ArrayBuffer): void {
     this.heard.get("message")?.({ data });
   }
@@ -70,6 +74,7 @@ class FakeSocket {
 const loadingSeat = () => {
   const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
   const [socket] = FakeSocket.opened;
+  socket?.open();
   socket?.hear(
     encodeRoomMessage({
       digest: [0],
@@ -110,6 +115,15 @@ describe("a seat loading the race", () => {
     const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
     seat.leave();
     expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
+  });
+
+  it("pings the room from the lobby, so the room can tell it is still there", () => {
+    const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+    const [socket] = FakeSocket.opened;
+    socket?.open();
+    vi.advanceTimersByTime(PING_EVERY_MS);
+    expect(socket?.sentBytes).toStrictEqual([PING_PACKET_BYTES]);
+    seat.leave();
   });
 
   it("waits as long as the room answers its pings", () => {

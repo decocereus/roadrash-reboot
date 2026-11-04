@@ -12,7 +12,7 @@ import {
   Envelope,
   Hits,
   Kilometres,
-  Level,
+  Tier,
   Money,
   QualifiedPlace,
   RaceNumber,
@@ -24,7 +24,7 @@ import {
   Weapon,
 } from "./save-values.ts";
 import { BOARD_NOTES, byRacer, byRival, SAVE_VERSION } from "./state.ts";
-import { byLevel } from "./tables.ts";
+import { byTier } from "./tables.ts";
 
 type SaveErrorKind = "notJson" | "wrongVersion" | "invalid" | "inconsistent";
 
@@ -35,11 +35,11 @@ export interface SaveError {
 
 const ActiveRace = Schema.Struct({
   bikeId: Bike,
-  level: Level,
   raceId: RaceNumber,
   roadId: Road,
   seed: Seed,
   started: Schema.Literals([true]),
+  tier: Tier,
 });
 
 const BoardNote = Schema.Union([
@@ -124,15 +124,15 @@ export const EncodedSaveSchema = Schema.Struct({
   gameOver: Schema.Boolean,
   garage: Schema.Array(Bike).check(Schema.isMaxLength(bikeIds.length)),
   lastResult: Schema.NullOr(LastResultSchema),
-  level: Level,
   memory: Schema.Struct(byRival(() => RivalMemory)),
   qualified: Schema.Struct(
-    byLevel(() => Schema.Record(Road, Schema.optionalKey(QualifiedPlace)))
+    byTier(() => Schema.Record(Road, Schema.optionalKey(QualifiedPlace)))
   ),
   record: CareerRecord,
   season: Schema.Struct(byRacer(() => SeasonEntry)),
   seed: Seed,
   story: Story,
+  tier: Tier,
   version: Schema.Literal(SAVE_VERSION),
   weapon: Weapon,
   weaponHits: Hits,
@@ -152,7 +152,7 @@ export const SaveSourceSchema = Schema.Struct({
   lastResult: Schema.NullOr(
     Schema.Struct({
       ledger: Schema.Struct({
-        levelUp: Schema.NullOr(
+        tierUp: Schema.NullOr(
           Schema.Struct({ bikes: sourceList(bikeIds.length) })
         ),
       }),
@@ -162,7 +162,7 @@ export const SaveSourceSchema = Schema.Struct({
       }),
     })
   ),
-  qualified: Schema.Struct(byLevel(() => sourceKeys(Road))),
+  qualified: Schema.Struct(byTier(() => sourceKeys(Road))),
   season: Schema.Struct(
     byRacer(() => Schema.Struct({ lastAhead: sourceKeys(Racer) }))
   ),

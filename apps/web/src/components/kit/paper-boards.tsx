@@ -1,4 +1,3 @@
-import { recordedRules } from "@racer/career/bench";
 import { practiceCareer } from "@racer/career/field";
 import { seasonBoard } from "@racer/career/season";
 import { cn } from "@racer/ui/utils";
@@ -22,10 +21,10 @@ import { KitBoard } from "./kit-board.tsx";
 const career = practiceCareer(firstQuickPick, 1);
 const SHEET = { h: 691, w: 470, x: 560, y: 110 } as const;
 const STAMP = { h: 146, w: 500, x: 1110, y: 640 } as const;
-const LEVELS = ["1", "2", "3", "4", "5"] as const;
+const TIERS = ["1", "2", "3", "4", "5"] as const;
 
 export const ChromeBoard = () => {
-  const [level, setLevel] = useState(0);
+  const [tier, setTier] = useState(0);
   const [picked, setPicked] = useState("nothing yet");
   const pick = (label: string) => () => {
     setPicked(label);
@@ -35,11 +34,11 @@ export const ChromeBoard = () => {
       note="Every bar-side screen: the header, a pinned list on the left, a written sheet, and the strip along the bottom. The pinned list takes steppers, details, and a compact one-line mode."
       title="Bar chrome and sheets"
     >
-      <BarHeader standing={{ career, rules: recordedRules }} />
+      <BarHeader career={career} />
       <PinnedList
         actions={[
           {
-            detail: "Ridge Road at level 1",
+            detail: "Ridge Road at tier 1",
             id: "race",
             label: "Race",
             run: pick("Race"),
@@ -58,12 +57,12 @@ export const ChromeBoard = () => {
         primary="race"
         steppers={[
           {
-            id: "level",
-            label: "Level",
+            id: "tier",
+            label: "Tier",
             onStep: (step) => {
-              setLevel((LEVELS.length + level + step) % LEVELS.length);
+              setTier((TIERS.length + tier + step) % TIERS.length);
             },
-            value: LEVELS[level],
+            value: TIERS[tier],
           },
         ]}
         title="Pinned list"
@@ -168,7 +167,7 @@ export const ConfirmBoard = () => {
       note="Confirm pins a ruled slip over the dimmed room. Escape or the safe choice closes it, and focus goes back to the opener."
       title="Confirm"
     >
-      <BarHeader standing={{ career, rules: recordedRules }} />
+      <BarHeader career={career} />
       <BarStrip>
         <button
           className="font-display text-neon-yellow cursor-pointer uppercase"

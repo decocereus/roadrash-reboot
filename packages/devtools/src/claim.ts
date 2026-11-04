@@ -91,6 +91,11 @@ const claimWith = (
     }
   });
 
+export const claimHolder = (file: string) =>
+  readingOf(file).pipe(
+    Effect.map((reading) => (reading.kind === "held" ? reading.holder : null))
+  );
+
 export const takeClaim = Effect.fn("claim.take")(function* takeClaim(
   file: string,
   label: string

@@ -10,7 +10,13 @@ import {
   TICK_SECONDS,
   WALKING_PACE,
 } from "./state.ts";
-import type { Pedestrian, RaceState, RiderState, TrafficCar } from "./state.ts";
+import type {
+  Pedestrian,
+  RaceConditions,
+  RaceState,
+  RiderState,
+  TrafficCar,
+} from "./state.ts";
 
 const CLEAR_START_FROM = -70;
 const CLEAR_START_TO = 260;
@@ -30,6 +36,10 @@ const WALKER_MARGIN = 1.5;
 const WALKER_HOLD_SECONDS = 1.5;
 const LEAST_PATIENCE_TICKS = 90;
 const MOST_PATIENCE_TICKS = 180;
+const CONVOY_CARS = 6;
+const CONVOY_GAP = 14;
+const CONVOY_CRUISE = 15;
+const CONVOY_JITTER = 400;
 const directions = [1, -1] as const;
 
 export interface Body {
@@ -72,15 +82,50 @@ const patienceOf = (random: Random): number =>
       random() * (MOST_PATIENCE_TICKS - LEAST_PATIENCE_TICKS)
   );
 
+const convoysOf = (
+  track: Track,
+  count: number,
+  random: Random,
+  patience: Random
+): TrafficCar[] => {
+  const span = track.endS - track.startS;
+  return Array.from({ length: count }).flatMap((_, convoy) => {
+    const lead =
+      track.startS +
+      (span * (convoy + 1)) / (count + 1) +
+      (random() - 0.5) * CONVOY_JITTER;
+    return Array.from({ length: CONVOY_CARS }, (__, place) => ({
+      ...pickBody(random()),
+      carrier: false,
+      cruiseSpeed: CONVOY_CRUISE,
+      paint: Math.floor(random() * PAINT_COUNT),
+      patience: patienceOf(patience),
+      s: lead - place * CONVOY_GAP,
+      speed: CONVOY_CRUISE,
+      waited: 0,
+      x: track.sameWayLanes[place % track.sameWayLanes.length] ?? 0,
+    }));
+  });
+};
+
+const clearOfConvoys = (
+  car: TrafficCar,
+  convoys: readonly TrafficCar[]
+): boolean =>
+  car.cruiseSpeed < 0 ||
+  convoys.every((other) => Math.abs(car.s - other.s) > CONVOY_GAP);
+
 export const createTraffic = (
   track: Track,
   random: Random,
-  patience: Random
+  patience: Random,
+  conditions: RaceConditions,
+  convoyRandom: Random
 ): TrafficCar[] => {
   const cars: TrafficCar[] = [];
   const span = track.endS - track.startS;
   const perDirection = Math.round(
-    (track.plan.trafficPerKilometre * span) / 1000
+    (track.plan.trafficPerKilometre * conditions.trafficDensity * span) / 1000
   );
   const spacing = span / perDirection;
   for (const direction of directions) {
@@ -111,10 +156,20 @@ export const createTraffic = (
   const carriers = track.carrierStarts.map((s) =>
     carrierAt(s, lane, Math.floor(random() * PAINT_COUNT), patienceOf(patience))
   );
+  const convoys = convoysOf(
+    track,
+    conditions.slowConvoys,
+    convoyRandom,
+    patience
+  );
   return [
-    ...cars.filter((car) =>
-      carriers.every((carrier) => clearOfCarrier(car, carrier.s, carrier.x))
+    ...cars.filter(
+      (car) =>
+        carriers.every((carrier) =>
+          clearOfCarrier(car, carrier.s, carrier.x)
+        ) && clearOfConvoys(car, convoys)
     ),
+    ...convoys,
     ...carriers,
   ];
 };

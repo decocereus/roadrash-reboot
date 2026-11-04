@@ -10,6 +10,7 @@ A race room runs one race for up to eight humans on the `RaceServer` Durable Obj
 - `seat-refusals` sends a ninth seat `refused` with `full` and a seat after the start `refused` with `racing`, and answers a plain request to a seat with 426 and a malformed room ID with 404.
 - `own-room` gives each room ID its own room: another room ID reads as a waiting room with no seats while this race runs.
 - `dropped-seat` hands a closed seat to the pilot while the others ride on.
+- `vanished-seat` drops a seat the room has heard nothing from for 10 s, as a friend losing Wi-Fi looks, writes its `left` line, and the others ride on.
 - `lobby-stays-awake` starts a race after the lobby sat longer than the 10 s a Durable Object needs to hibernate. Its fill and deadline timers keep it in memory.
 - `fair-start` holds the countdown until every seat has loaded the race, for at most 20 s, so a slow browser does not miss the start. A seat reads `Loading the race` until then.
 - `lobby-names` lists the humans in the lobby by name, with any fill as `and <n> more`, so a rider can see a friend arrive.
@@ -39,6 +40,7 @@ A race room runs one race for up to eight humans on the `RaceServer` Durable Obj
 Start the Worker and leave it running. `pnpm rooms:race` prints one JSON report and exits non-zero with its `problems`.
 
 - **Tick rate, agreement, inputs, refusals, own room, dropped seat.** Run `pnpm rooms:race --url http://127.0.0.1:<port> --seats 8 --seconds 25 --drop-at-seconds 20`. `problems` is empty. Seven reports show about 1,500 `ticks`, the eighth stops near 1,200 with `closeCode` 1000, `status.seats` lists seven riders each with `late` 0, and `worstBehindTicks` is 1 or 2.
+- **Vanished seat.** Put a TCP proxy in front of the rooms port that keeps the upstream socket open and silent when its client dies, seat one scripted rider through it and one directly, start, then `kill -9` the proxied rider. Within about 11 s `curl <rooms url>/rooms/<id>` reads `waiting` 1, the log has a `left` line for that rider, and the other rider's `missed` stays 0.
 - **Lobby stays awake.** Run `pnpm rooms:race --url http://127.0.0.1:<port> --seats 2 --seconds 10 --lobby-seconds 12`. `problems` is empty, which shows the sockets and timers survived past the hibernation window.
 - **Lobby fill.** Open one window on `/?room=<id>` and leave it. The rider count climbs about every 13 s, and `Rolling out in <n> s` counts down. At 0 the race starts with no key pressed. `curl <rooms url>/rooms/<id>` reads `waiting` 1 throughout the lobby, so the climb is bots.
 - **Dead room.** Start a two-window race, then restart the Worker with `touch apps/rooms/src/worker.ts` under `alchemy dev`. Both windows load `/?room=<id>-r1`, read `The last room dropped`, and start a new race from the line within about 8 s, with `digestMatched` true and tick counting up from 0. A window whose socket hangs with no close does the same after 5 s of silence.

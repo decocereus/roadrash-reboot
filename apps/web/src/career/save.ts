@@ -119,7 +119,7 @@ const loaded = Effect.fn("career.save.load")(function* loaded(
   if (text === null) {
     return { status: "absent" } satisfies CareerLoad;
   }
-  const parsed = parseCareer(rules, text);
+  const parsed = parseCareer(text);
   if (!parsed.ok) {
     return { error: parsed.error, status: "corrupt" } satisfies CareerLoad;
   }

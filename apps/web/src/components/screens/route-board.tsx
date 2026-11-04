@@ -2,9 +2,10 @@ import { practiceCareer, roadsFor } from "@racer/career/field";
 import type { RoadStatus } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
-import { levels } from "@racer/career/tables";
-import type { RoadId } from "@racer/career/tables";
+import { tiers } from "@racer/career/tables";
+import type { RoadId, Tier } from "@racer/career/tables";
 import type { BikeId } from "@racer/sim/bikes";
+import { difficulties } from "@racer/sim/difficulty";
 import { roads as roadPlans } from "@racer/track/roads";
 import { Screen } from "@racer/ui/components/screen";
 
@@ -27,8 +28,10 @@ const ABOUT_TEXT = { h: 175, w: 264, x: 1185, y: 634 } as const;
 const STEADY_TRAFFIC = 6;
 const HEAVY_TRAFFIC = 10;
 
-const trafficOf = (roadId: RoadId): string => {
-  const perKm = roadPlans[roadId].trafficPerKilometre;
+const trafficOf = (roadId: RoadId, tier: Tier): string => {
+  const perKm =
+    roadPlans[roadId].trafficPerKilometre *
+    difficulties[tier].conditions.trafficDensity;
   if (perKm >= HEAVY_TRAFFIC) {
     return "Heavy";
   }
@@ -51,7 +54,13 @@ const Fact = ({
   </div>
 );
 
-const RoadFacts = ({ status }: { readonly status: RoadStatus }) => (
+const RoadFacts = ({
+  status,
+  tier,
+}: {
+  readonly status: RoadStatus;
+  readonly tier: Tier;
+}) => (
   <section aria-label="Road facts">
     <Plate box={FACTS} src={plates.noteCyan} />
     <dl
@@ -59,7 +68,7 @@ const RoadFacts = ({ status }: { readonly status: RoadStatus }) => (
       style={{ ...place(FACTS_TEXT), fontSize: stagePx(20) }}
     >
       <Fact label="Length" value={`${kilometres(status.lengthMetres)} km`} />
-      <Fact label="Traffic" value={trafficOf(status.road.id)} />
+      <Fact label="Traffic" value={trafficOf(status.road.id, tier)} />
       <Fact label="Police" value={String(status.cops)} />
       <Fact label="Home of" value={homeOf(status)} />
     </dl>
@@ -87,7 +96,7 @@ export const RouteBoardScreen = ({
   const roadIds = board.roads.map((status) => status.road.id);
   const status =
     board.roads.find((each) => each.road.id === pick.roadId) ?? board.roads[0];
-  const reached = levels.filter((level) => level <= (career?.level ?? 1));
+  const reached = tiers.filter((tier) => tier <= (career?.tier ?? 1));
   const owned: readonly BikeId[] = career?.garage ?? [pick.bikeId];
   useEscape(onBack);
   if (!status) {
@@ -104,7 +113,7 @@ export const RouteBoardScreen = ({
           className="object-cover"
           src={backRoomPlates.backdrop}
         />
-        <BarHeader standing={career ? { career, rules } : null} />
+        <BarHeader career={career} />
         <button
           aria-label={`${status.road.name}. Show another road`}
           className="cursor-pointer"
@@ -124,7 +133,7 @@ export const RouteBoardScreen = ({
             src={flyers[status.road.id]}
           />
         </button>
-        <RoadFacts status={status} />
+        <RoadFacts status={status} tier={pick.tier} />
         <Plate box={ABOUT} src={plates.noteMagenta} />
         <p
           className="font-display text-ink flex -rotate-2 items-center leading-tight font-bold"
@@ -154,12 +163,12 @@ export const RouteBoardScreen = ({
               value: status.road.name,
             },
             {
-              id: "level",
-              label: "Level",
+              id: "tier",
+              label: "Tier",
               onStep: (step) => {
-                onPick({ ...pick, level: stepped(reached, pick.level, step) });
+                onPick({ ...pick, tier: stepped(reached, pick.tier, step) });
               },
-              value: pick.level,
+              value: pick.tier,
             },
             {
               id: "bike",
@@ -183,7 +192,7 @@ export const RouteBoardScreen = ({
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(22) }}
           >
-            Left and right change the road, level, and bike
+            Left and right change the road, tier, and bike
           </p>
         </BarStrip>
       </Stage>

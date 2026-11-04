@@ -4,6 +4,6 @@ export interface TickWindow {
 }
 
 export const benchWindows = {
-  reference: { from: 2243, to: 2843 },
-  stress: { from: 1800, to: 2400 },
+  reference: { from: 3849, to: 4449 },
+  stress: { from: 2028, to: 2628 },
 } as const satisfies Readonly<Record<"reference" | "stress", TickWindow>>;

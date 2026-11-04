@@ -69,30 +69,30 @@ const quality: Quality = {
 
 export const scenarios: readonly Scenario[] = [
   {
-    band: { max: 12, min: 10, total: 6866 },
+    band: { max: 8, min: 7, total: 4421 },
     bench: "reference",
     floor: 0,
     id: "reference-v1",
-    minSpeed: 30.51119225494717,
+    minSpeed: 39.837493659184844,
     police: 1,
     quality,
     racers: 15,
     window: benchWindows.reference,
     workloadDigest:
-      "8030f414222a75c3b6ec9966f818ddfdafa473bb7c15f523ba46ae4a19b0cbb6",
+      "4a2de680dc45b6e7386cbf63f77b46f2248e2c267796807f98a4cf4ea5b226cb",
   },
   {
-    band: { max: 13, min: 12, total: 7565 },
+    band: { max: 12, min: 10, total: 6561 },
     bench: "stress",
     floor: 6,
     id: "pack-riding-v1",
-    minSpeed: 29.80958014245246,
+    minSpeed: 43.83868577198478,
     police: 8,
     quality,
     racers: 15,
     window: benchWindows.stress,
     workloadDigest:
-      "9e127e25a508a731da12dd1d7fa8a13f36b81e1b17d24433da99368db6be5309",
+      "e8bcdde4bd0aa0c6ee54a6923fb85efff1537a1cda05f9a6b3f5a8748ab7690e",
   },
 ];
 

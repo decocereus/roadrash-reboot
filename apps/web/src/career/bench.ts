@@ -2,8 +2,8 @@ import { benchRaces, benchSetup, recordedRules } from "@racer/career/bench";
 import type { Bench } from "@racer/career/bench";
 import { practiceSetup } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
-import { levelsOf } from "@racer/career/rules";
 import { bikeIds } from "@racer/sim/bikes";
+import { tiers } from "@racer/sim/difficulty";
 import { roadIds } from "@racer/track/road";
 import type { RoadId } from "@racer/track/road";
 import { roads } from "@racer/track/roads";
@@ -48,8 +48,7 @@ export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
     return null;
   }
   const flags = new URLSearchParams(search);
-  const level =
-    levelsOf(rules).find((each) => each === Number(flags.get("level"))) ?? 1;
+  const tier = tiers.find((each) => each === Number(flags.get("tier"))) ?? 1;
   const road = rideRoad(flags.get("ride"));
   if (!road) {
     return null;
@@ -63,7 +62,7 @@ export const rideOf = (rules: RaceRules, search: string): RacePlan | null => {
   );
   const setup = practiceSetup(
     rules,
-    { bikeId, level, roadId: road.roadId, seed: RIDE_SEED },
+    { bikeId, roadId: road.roadId, seed: RIDE_SEED, tier },
     track
   );
   return {

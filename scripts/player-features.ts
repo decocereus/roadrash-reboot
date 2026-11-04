@@ -299,8 +299,8 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/career/src/season.ts",
     ],
     summary:
-      "The career state itself, levels, qualification and promotion, the season board, the story beats, the envelope and the endings.",
-    title: "Career levels, season and story",
+      "The career state itself, tiers, qualification and promotion, the season board, the story beats, the envelope and the endings.",
+    title: "Career tiers, season and story",
     verify: ["career.md"],
   },
   {
@@ -446,6 +446,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/bike-models.ts",
       "apps/web/test/bike-contact.ts",
       "apps/web/test/figure-wear.test.ts",
+      "apps/web/test/figure-shadow.test.ts",
       "apps/web/test/planted-hands.test.ts",
       "apps/web/test/rider-shade.ts",
       "apps/web/src/game/rider-*.ts",

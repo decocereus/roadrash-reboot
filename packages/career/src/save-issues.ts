@@ -22,7 +22,7 @@ const body = [
   "cash",
   "gameOver",
   "lastResult",
-  "level",
+  "tier",
   "memory",
   "qualified",
   "record",

@@ -38,12 +38,12 @@ const topPoints = (career: CareerState): number[] =>
 describe("leaving a race", () => {
   it("a reload in the middle of a race settles it as a wreck once and only once", () => {
     const racing = enter(newCareer(3), "ridge-road").career;
-    const saved = parseCareer(recordedRules, serialiseCareer(racing));
+    const saved = parseCareer(serialiseCareer(racing));
     if (!saved.ok) {
       throw new Error(`The save did not load: ${saved.error.field}.`);
     }
     const first = resumeCareer(recordedRules, saved.career);
-    const reloaded = parseCareer(recordedRules, serialiseCareer(first.career));
+    const reloaded = parseCareer(serialiseCareer(first.career));
     if (!reloaded.ok) {
       throw new Error(`The save did not load: ${reloaded.error.field}.`);
     }
@@ -68,9 +68,9 @@ describe("leaving a race", () => {
     const race = enter(newCareer(3), "slag-row");
     sprint(race, 1);
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const once = settleRace(recordedRules, race.career, outcome);
-    const twice = settleRace(recordedRules, once.career, outcome);
-    expect([once.career.cash, once.settled]).toStrictEqual([4000, true]);
+    const once = settleRace(race.career, outcome);
+    const twice = settleRace(once.career, outcome);
+    expect([once.career.cash, once.settled]).toStrictEqual([6500, true]);
     expect(twice).toStrictEqual({
       career: once.career,
       ledger: null,
@@ -83,9 +83,9 @@ describe("leaving a race", () => {
     const first = enter(newCareer(3), "slag-row", 7);
     sprint(first, 1);
     const won = outcomeOf(first.state, first.setup, first.log);
-    const paid = settleRace(recordedRules, first.career, won);
+    const paid = settleRace(first.career, won);
     const second = enter(paid.career, "slag-row", 7);
-    const replayed = settleRace(recordedRules, second.career, won);
+    const replayed = settleRace(second.career, won);
     sprint(second, 1);
     const repeat = settle(second);
     expect([first.setup.seed, won.raceId]).toStrictEqual([
@@ -103,7 +103,7 @@ describe("leaving a race", () => {
       replayed.career.cash,
       replayed.career.activeRace?.raceId,
       repeat.career.cash,
-    ]).toStrictEqual([4000, 4000, 2, 5250]);
+    ]).toStrictEqual([6500, 6500, 2, 9000]);
   });
 
   it("quitting from the pause menu costs the repair bill and still scores the riders left racing", () => {
@@ -111,7 +111,7 @@ describe("leaving a race", () => {
     const frame = everyRider(race, flatOut);
     ride(race, 5, () => frame);
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const settled = quitRace(recordedRules, race.career, outcome);
+    const settled = quitRace(race.career, outcome);
     const board = seasonBoard(settled.career);
     expect([
       outcome.result,
@@ -131,7 +131,6 @@ describe("leaving a race", () => {
     const frame = everyRider(race, flatOut);
     ride(race, 2, () => frame);
     const quit = quitRace(
-      recordedRules,
       race.career,
       outcomeOf(race.state, race.setup, race.log)
     );
@@ -206,7 +205,7 @@ describe("the roads", () => {
     { timeout: 30_000 },
     () => {
       const course = trackFor("slag-row");
-      const start = startRace(recordedRules, newCareer(21), "slag-row", 21);
+      const start = startRace(newCareer(21), "slag-row", 21);
       const setup = setupFor(
         recordedRules,
         start.career,
@@ -224,7 +223,7 @@ describe("the roads", () => {
         recordTick(log, state, setup);
       }
       const outcome = outcomeOf(state, setup, log);
-      const ledger = ledgerOf(settleRace(recordedRules, start.career, outcome));
+      const ledger = ledgerOf(settleRace(start.career, outcome));
       expect(log.outcome).toBe(outcome);
       expect(outcome.placings.map((placing) => placing.place)).toStrictEqual(
         Array.from({ length: 15 }, (_, index) => index + 1)
@@ -246,7 +245,7 @@ describe("a bust", () => {
     arm(racerIn(race, "player"), "chain");
     getArrested(race);
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const settled = settleRace(recordedRules, race.career, outcome);
+    const settled = settleRace(race.career, outcome);
     expect(outcome).toMatchObject({
       arrest: {
         fine: 400,

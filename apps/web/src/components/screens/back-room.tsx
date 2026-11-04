@@ -1,4 +1,3 @@
-import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { formatMoney } from "@racer/ui/components/money";
 import { Screen } from "@racer/ui/components/screen";
@@ -49,7 +48,7 @@ const careerActions = (
   }
   return [
     {
-      detail: `Level ${career.level} · ${formatMoney(career.cash)} · ${bikeName(career.bikeId)}`,
+      detail: `Tier ${career.tier} · ${formatMoney(career.cash)} · ${bikeName(career.bikeId)}`,
       id: "continue",
       label: "Back to the bar",
       run: onContinue,
@@ -96,7 +95,6 @@ const Alert = ({
 
 export const BackRoomScreen = ({
   save,
-  rules,
   failure,
   onContinue,
   onNewCareer,
@@ -104,7 +102,6 @@ export const BackRoomScreen = ({
   onStartOver,
 }: {
   readonly save: SaveState;
-  readonly rules: RaceRules | null;
   readonly failure: string;
   readonly onContinue: () => void;
   readonly onNewCareer: () => void;
@@ -149,13 +146,7 @@ export const BackRoomScreen = ({
           className="object-cover"
           src={backRoomPlates.backdrop}
         />
-        <BarHeader
-          standing={
-            save.status === "ready" && rules
-              ? { career: save.career, rules }
-              : null
-          }
-        />
+        <BarHeader career={save.status === "ready" ? save.career : null} />
         {save.status !== "loading" && (
           <PinnedList
             actions={[...career, ...quick]}
@@ -200,7 +191,7 @@ export const BackRoomScreen = ({
             { label: "Erase and start", value: "erase" },
           ]}
         >
-          Start over? Your Level {save.career.level} career will be erased.
+          Start over? Your Tier {save.career.tier} career will be erased.
         </Confirm>
       )}
     </Screen>
