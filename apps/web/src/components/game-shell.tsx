@@ -32,15 +32,21 @@ import {
 } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
 
-const RoomLobby = lazy(async () => {
-  const { RoomLobby: lobby } = await import("./room-lobby.tsx");
-  return { default: lobby };
-});
+const drawsNothing = () => null;
 
-const QuickRace = lazy(async () => {
-  const { QuickRace: finding } = await import("./quick-race.tsx");
-  return { default: finding };
-});
+const RoomLobby = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { RoomLobby: lobby } = await import("./room-lobby.tsx");
+      return { default: lobby };
+    });
+
+const QuickRace = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { QuickRace: finding } = await import("./room-lobby.tsx");
+      return { default: finding };
+    });
 
 const DWELL_MS = 2200;
 
