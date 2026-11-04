@@ -2,7 +2,6 @@ import { bikeAt, isCelebrity, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
 import { describe, expect, it } from "vitest";
 
-import { recordedRules } from "./bench.ts";
 import {
   crashOut,
   enter,
@@ -25,7 +24,7 @@ import type { CareerState } from "./state.ts";
 import { roadList } from "./tables.ts";
 
 const loaded = (career: CareerState): CareerState => {
-  const save = parseCareer(recordedRules, serialiseCareer(career));
+  const save = parseCareer(serialiseCareer(career));
   if (!save.ok) {
     throw new Error(`The save did not load: ${save.error.field}.`);
   }
@@ -45,18 +44,18 @@ describe("the last result", () => {
     const [first, second, third] = stored.summary.rows;
     expect(stored.ledger).toStrictEqual(ledgerOf(settled));
     expect(stored.ledger).toMatchObject({
-      cashAfter: 3200,
+      cashAfter: 4900,
       cashBefore: 1500,
       fine: 0,
       gameOver: false,
-      levelUp: null,
       line: { rival: winner, text: rivalLines[winner].beatYou },
       place: 2,
-      prize: 1700,
+      prize: 3400,
       qualified: true,
       repair: 0,
       repeat: false,
       repossessed: null,
+      tierUp: null,
     });
     expect(stored.summary).toMatchObject({
       bust: null,
@@ -66,7 +65,7 @@ describe("the last result", () => {
           fate: "finished",
           name: rivals[winner].name,
           place: 1,
-          prize: 2500,
+          prize: 5000,
           racer: winner,
         },
         {
@@ -74,7 +73,7 @@ describe("the last result", () => {
           fate: "finished",
           name: "You",
           place: 2,
-          prize: 1700,
+          prize: 3400,
           racer: "player",
         },
         ...others.toReversed().map((rival, index) => ({
@@ -82,7 +81,7 @@ describe("the last result", () => {
           finishTick: -1,
           name: rivals[rival].name,
           place: index + 3,
-          prize: [1200, 700, 400, 250, 170, 100, 70, 50, 40, 35, 25, 15, 15][
+          prize: [2400, 1400, 800, 500, 340, 200, 140, 100, 80, 70, 50, 30, 30][
             index
           ],
           racer: rival,
@@ -97,7 +96,7 @@ describe("the last result", () => {
     ]).toStrictEqual([true, true, true]);
   });
 
-  it("holds the wreck, the level-up, and the repossession, and is cleared when the next race starts", () => {
+  it("holds the wreck, the tier-up, and the repossession, and is cleared when the next race starts", () => {
     const race = enter(newCareer(2), "slag-row");
     crashOut(race);
     const { km } = outcomeOf(race.state, race.setup, race.log);
@@ -110,15 +109,15 @@ describe("the last result", () => {
     const broke = lastOf(
       wreckTimes(lastOf(wreckTimes(newCareer(1), 4)).career, 3)
     );
-    const next = startRace(recordedRules, promoted.career, "slag-row", 3);
+    const next = startRace(promoted.career, "slag-row", 3);
     expect(km).toBeGreaterThan(0.3);
     expect(loaded(wrecked.career).lastResult).toMatchObject({
       ledger: { repair: 400, result: "wrecked" },
       summary: { wreck: { bikeId: "halden-wren-400", km } },
     });
-    expect(loaded(promoted.career).lastResult?.ledger.levelUp).toStrictEqual({
-      bikes: ["ostra-sette-750", "brack-stoker-800"],
-      level: 2,
+    expect(loaded(promoted.career).lastResult?.ledger.tierUp).toStrictEqual({
+      bikes: ["ostra-sette-750", "brack-stoker-800", "halden-meridian-900"],
+      tier: 2,
     });
     expect(loaded(broke.career).lastResult?.ledger).toMatchObject({
       cashAfter: 500,

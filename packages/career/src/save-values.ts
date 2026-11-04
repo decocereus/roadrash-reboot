@@ -7,7 +7,7 @@ import * as Schema from "effect/Schema";
 
 import { fates, raceResults, witnesses } from "./outcome.ts";
 import { endingIds, envelopeFlags, racerIds } from "./state.ts";
-import { levels, QUALIFYING_PLACE } from "./tables.ts";
+import { tiers, QUALIFYING_PLACE } from "./tables.ts";
 
 const MAX_MONEY = 1e9;
 const MAX_RACES = 1e6;
@@ -40,7 +40,7 @@ export const Hits = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 export const Text = Schema.String.check(Schema.isMaxLength(MAX_TEXT));
 export const Bike = Schema.Literals(bikeIds);
 export const Road = Schema.Literals(roadIds);
-export const Level = Schema.Literals(levels);
+export const Tier = Schema.Literals(tiers);
 export const Racer = Schema.Literals(racerIds);
 export const Rival = Schema.Literals(rivalIds);
 export const Weapon = Schema.Literals(weaponKinds);

@@ -2,6 +2,7 @@ import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { celebrityCast, ordinaryCast, rivalAt, rivals } from "@racer/sim/cast";
 import type { RivalId } from "@racer/sim/cast";
+import { difficulties, TOP_TIER } from "@racer/sim/difficulty";
 import { defaultPlayer } from "@racer/sim/race";
 import { clamp, PLAYER_RIDER } from "@racer/sim/state";
 import type { RaceSetup, RivalSetup } from "@racer/sim/state";
@@ -9,7 +10,6 @@ import { createRandom } from "@racer/track/random";
 import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
-import { rungsOf } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { newCareer, nextRaceId, qualifiedCount } from "./state.ts";
 import type { CareerState, RivalMemory } from "./state.ts";
@@ -26,28 +26,28 @@ import {
   roadList,
   roads,
 } from "./tables.ts";
-import type { Level, Road, RoadId } from "./tables.ts";
+import type { Tier, Road, RoadId } from "./tables.ts";
 
 const FIELD_SALT = 0xf1_e1_d0;
 
 export interface CareerRaceSetup extends RaceSetup {
   readonly raceId: number;
   readonly roadId: RoadId;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly field: readonly RivalId[];
 }
 
-const races = (rival: RivalId, level: Level): boolean =>
-  level >= rivals[rival].racesFrom;
+const races = (rival: RivalId, tier: Tier): boolean =>
+  tier >= rivals[rival].racesFrom;
 
 const homeRiders = (
   { celebrities }: Pick<RaceRules, "celebrities">,
   roadId: RoadId,
-  level: Level
+  tier: Tier
 ): readonly RivalId[] =>
   [...ordinaryCast, ...(celebrities ? celebrityCast : [])]
     .filter((rival) => rival.home === roads[roadId].region)
-    .map((rival) => (races(rival.id, level) ? rival.id : CHAMPION_STAND_IN));
+    .map((rival) => (races(rival.id, tier) ? rival.id : CHAMPION_STAND_IN));
 
 const shuffled = <Item>(items: readonly Item[], random: Random): Item[] => {
   const order = [...items];
@@ -71,19 +71,17 @@ export const fewestRacers =
     )
   );
 
-export const fewestLevels = rivals[CHAMPION].racesFrom;
-
 export const fieldFor = (
   rules: RaceRules,
   roadId: RoadId,
-  level: Level,
+  tier: Tier,
   seed: number
 ): readonly RivalId[] => {
   const random = createRandom(seed + FIELD_SALT);
-  const home = homeRiders(rules, roadId, level);
+  const home = homeRiders(rules, roadId, tier);
   const others = ordinaryCast
     .map((rival) => rival.id)
-    .filter((rival) => races(rival, level) && !home.includes(rival));
+    .filter((rival) => races(rival, tier) && !home.includes(rival));
   const drawn = shuffled(others, random).slice(
     0,
     rules.fieldSize - 1 - home.length
@@ -91,19 +89,11 @@ export const fieldFor = (
   return shuffled([...home, ...drawn], random);
 };
 
-export const isFinale = (
-  rules: RaceRules,
-  roadId: RoadId,
-  level: Level
-): boolean => roadId === FINALE_ROAD && level === rules.levelCount;
+export const isFinale = (roadId: RoadId, tier: Tier): boolean =>
+  roadId === FINALE_ROAD && tier === TOP_TIER;
 
-const aggressionOf = (
-  rules: RaceRules,
-  rival: RivalId,
-  roadId: RoadId,
-  level: Level
-): number =>
-  rival === CHAMPION && isFinale(rules, roadId, level)
+const aggressionOf = (rival: RivalId, roadId: RoadId, tier: Tier): number =>
+  rival === CHAMPION && isFinale(roadId, tier)
     ? FINALE_AGGRESSION
     : rivals[rival].aggression;
 
@@ -132,27 +122,26 @@ export const setupFor = (
   seed: number,
   track: Track
 ): CareerRaceSetup => {
-  const { level } = career;
-  const field = fieldFor(rules, roadId, level, seed);
-  const rung = rungsOf(rules, level).highest;
+  const { tier } = career;
+  const field = fieldFor(rules, roadId, tier, seed);
   return {
+    conditions: difficulties[tier].conditions,
     field,
     gridOrder: "playerLast",
-    level,
-    pacing: pacingFor(rules, level),
+    pacing: pacingFor(tier),
     player: {
       ...defaultPlayer,
       bike: bikes[career.bikeId],
       weapon: career.weapon,
       weaponHits: career.weaponHits,
     },
-    police: policeFor(rules, level, roads[roadId].region),
+    police: policeFor(tier, roads[roadId].region),
     raceId: career.activeRace?.raceId ?? nextRaceId(career),
     rivals: field.map((rival) =>
       withMemory(
         {
-          ...rivalAt(rivals[rival], rung),
-          aggression: aggressionOf(rules, rival, roadId, level),
+          ...rivalAt(rivals[rival], tier),
+          aggression: aggressionOf(rival, roadId, tier),
         },
         career.memory[rival],
         rival === ALLY && career.story.deeAlly
@@ -160,25 +149,26 @@ export const setupFor = (
     ),
     roadId,
     seed,
+    tier,
     track,
   };
 };
 
 export interface PracticeRace {
   readonly roadId: RoadId;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly bikeId: BikeId;
   readonly seed: number;
 }
 
 export const practiceCareer = (
-  pick: Pick<PracticeRace, "bikeId" | "level">,
+  pick: Pick<PracticeRace, "bikeId" | "tier">,
   seed: number
 ): CareerState => ({
   ...newCareer(seed),
   bikeId: pick.bikeId,
   garage: [pick.bikeId],
-  level: pick.level,
+  tier: pick.tier,
 });
 
 export const practiceSetup = (
@@ -207,27 +197,23 @@ export interface RoadStatus {
 }
 
 export interface RoadBoard {
-  readonly level: Level;
+  readonly tier: Tier;
   readonly qualifiedCount: number;
   readonly finaleOpen: boolean;
   readonly next: RoadId | null;
   readonly roads: readonly RoadStatus[];
 }
 
-export const finaleOpen = (rules: RaceRules, career: CareerState): boolean =>
-  career.level === rules.levelCount &&
+export const finaleOpen = (career: CareerState): boolean =>
+  career.tier === TOP_TIER &&
   roadList.every(
     (road) =>
       road.id === FINALE_ROAD ||
-      career.qualified[rules.levelCount][road.id] !== undefined
+      career.qualified[TOP_TIER][road.id] !== undefined
   );
 
-export const roadOpen = (
-  rules: RaceRules,
-  career: CareerState,
-  roadId: RoadId
-): boolean =>
-  !isFinale(rules, roadId, career.level) || finaleOpen(rules, career);
+export const roadOpen = (career: CareerState, roadId: RoadId): boolean =>
+  !isFinale(roadId, career.tier) || finaleOpen(career);
 
 export const roadBoss = (
   rules: RaceRules,
@@ -235,7 +221,7 @@ export const roadBoss = (
   roadId: RoadId
 ): RivalId => {
   const { season } = career;
-  const [boss] = homeRiders(rules, roadId, career.level).toSorted(
+  const [boss] = homeRiders(rules, roadId, career.tier).toSorted(
     (left, right) =>
       season[right].wins - season[left].wins ||
       season[right].points - season[left].points ||
@@ -245,29 +231,29 @@ export const roadBoss = (
 };
 
 export const roadsFor = (rules: RaceRules, career: CareerState): RoadBoard => {
-  const { level } = career;
-  const qualified = career.qualified[level];
+  const { tier } = career;
+  const qualified = career.qualified[tier];
   const statuses = roadList.map((road) => ({
     bestPlace: qualified[road.id] ?? 0,
-    cops: rules.police[level],
-    finale: isFinale(rules, road.id, level),
+    cops: difficulties[tier].cops.count,
+    finale: isFinale(road.id, tier),
     firstPrize:
       qualified[road.id] === undefined
-        ? prizeFor(rules, level, 1)
-        : repeatPrizeFor(rules, level, 1),
-    home: homeRiders(rules, road.id, level),
+        ? prizeFor(tier, 1)
+        : repeatPrizeFor(tier, 1),
+    home: homeRiders(rules, road.id, tier),
     lengthMetres: road.length,
-    open: roadOpen(rules, career, road.id),
+    open: roadOpen(career, road.id),
     qualified: qualified[road.id] !== undefined,
     road,
   }));
   return {
-    finaleOpen: finaleOpen(rules, career),
-    level,
+    finaleOpen: finaleOpen(career),
     next:
       statuses.find((status) => status.open && !status.qualified)?.road.id ??
       null,
     qualifiedCount: qualifiedCount(qualified),
     roads: statuses,
+    tier,
   };
 };

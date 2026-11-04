@@ -174,7 +174,10 @@ const landHit = (
   { attack, side, striker, takesWeapon, target, weapon }: Strike
 ): void => {
   const strike = strikeOf(attack, weapon);
-  target.stamina = Math.max(0, target.stamina - strike.damage);
+  target.stamina = Math.max(
+    0,
+    target.stamina - strike.damage * state.hitDamage
+  );
   target.lateralSpeed += side * strike.shove;
   target.speed *= 1 - HIT_SPEED_LOSS;
   target.hitStun = HIT_STUN_TICKS;

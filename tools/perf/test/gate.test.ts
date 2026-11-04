@@ -49,9 +49,9 @@ describe("pack-riding workload validation", () => {
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
       actual: "5",
-      expected: "12..13 rivals",
+      expected: "10..12 rivals",
       field: "ahead",
-      tick: 1800 + middle,
+      tick: 2028 + middle,
     });
   });
 
@@ -64,7 +64,7 @@ describe("pack-riding workload validation", () => {
       actual: "thrown",
       expected: "riding",
       field: "mode",
-      tick: 1800 + middle,
+      tick: 2028 + middle,
     });
   });
 
@@ -76,21 +76,21 @@ describe("pack-riding workload validation", () => {
       ticks: without(captured.ticks, middle),
     };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: String(1800 + middle + 1),
-      expected: String(1800 + middle),
+      actual: String(2028 + middle + 1),
+      expected: String(2028 + middle),
       field: "tick",
-      tick: 1800 + middle,
+      tick: 2028 + middle,
     });
   });
 
   it("rejects a thinner window that stays inside the band", () => {
-    const at = captured.ahead.indexOf(13);
-    const rows = { ...captured, ahead: changedAt(captured.ahead, at, 12) };
+    const at = captured.ahead.indexOf(12);
+    const rows = { ...captured, ahead: changedAt(captured.ahead, at, 11) };
     expect(packRiding && validateWorkload(packRiding, rows)).toStrictEqual({
-      actual: "7564",
-      expected: "7565",
+      actual: "6560",
+      expected: "6561",
       field: "total",
-      tick: 2400,
+      tick: 2628,
     });
   });
 });

@@ -1,6 +1,6 @@
 import type { RaceRules } from "@racer/career/rules";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
-import type { LevelUp, Settlement } from "@racer/career/settle";
+import type { TierUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
 import { ROOM_ID_PATTERN } from "@racer/rooms/messages";
@@ -44,7 +44,7 @@ import type { RulesLoad } from "../rules/load.ts";
 
 export type View =
   | { readonly screen: "boot" }
-  | { readonly screen: "clubhouse"; readonly promotion?: LevelUp }
+  | { readonly screen: "clubhouse"; readonly promotion?: TierUp }
   | { readonly screen: "backRoom" }
   | { readonly screen: "routeBoard" }
   | { readonly screen: "garage" }
@@ -81,8 +81,8 @@ export const afterResults = (report: RaceReport): View => {
   if (report.ledger.ending !== null) {
     return { screen: "ending" };
   }
-  return report.ledger.levelUp
-    ? { promotion: report.ledger.levelUp, screen: "clubhouse" }
+  return report.ledger.tierUp
+    ? { promotion: report.ledger.tierUp, screen: "clubhouse" }
     : clubhouse;
 };
 
@@ -380,7 +380,7 @@ export const useFlow = (): Flow => {
         if (plan.mode === "quick") {
           report = quickReport(plan, outcome);
         } else if (racer && rules) {
-          report = settle(settleRace(rules, racer, outcome));
+          report = settle(settleRace(racer, outcome));
         }
         pendingRef.current = report;
         if (outcome.result === "finished" && report) {
@@ -392,12 +392,7 @@ export const useFlow = (): Flow => {
         if (plan.mode !== "career" || !racer || !rules) {
           return;
         }
-        const started = startRace(
-          rules,
-          racer,
-          plan.setup.roadId,
-          plan.setup.seed
-        );
+        const started = startRace(racer, plan.setup.roadId, plan.setup.seed);
         if (started.started) {
           commit(started.career);
         } else {
@@ -468,7 +463,7 @@ export const useFlow = (): Flow => {
       const outcome = gameRef.current?.quit() ?? null;
       const report =
         plan.mode === "career" && career && outcome && rules
-          ? settle(quitRace(rules, career, outcome))
+          ? settle(quitRace(career, outcome))
           : null;
       if (report) {
         setView({ report, screen: "results" });

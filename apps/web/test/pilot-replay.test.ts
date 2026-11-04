@@ -54,7 +54,7 @@ const baseline = decodeBaseline(
   readFileSync(new URL("pilot-replay-baseline.json", import.meta.url), "utf-8")
 );
 
-const slagRow = replayCases.find(({ id }) => id === "slag-row/level5/seed5");
+const slagRow = replayCases.find(({ id }) => id === "slag-row/tier3/seed5");
 
 const TRACE_TICKS = 600;
 

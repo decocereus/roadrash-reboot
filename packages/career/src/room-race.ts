@@ -1,3 +1,4 @@
+import type { BikeId } from "@racer/sim/bikes";
 import { firstRacers, roomSetup } from "@racer/sim/room";
 import type { RiderId } from "@racer/sim/state";
 import { trackFor } from "@racer/track/roads";
@@ -9,18 +10,23 @@ import { launchRules } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import type { RacerId } from "./state.ts";
 import { STARTING_BIKE } from "./tables.ts";
-import type { RoadId } from "./tables.ts";
+import type { RoadId, Tier } from "./tables.ts";
 
 const roomRules: RaceRules = { ...launchRules, celebrities: false };
 
-export const ROOM_FIELD_SIZE = roomRules.fieldSize;
+export interface RoomRule {
+  readonly bikeId: BikeId;
+  readonly roadId: RoadId;
+  readonly tier: Tier;
+}
 
-const roomRaceOf = (seed: number): PracticeRace => ({
+export const publicRoomRule: RoomRule = {
   bikeId: STARTING_BIKE,
-  level: 1,
   roadId: "slag-row",
-  seed,
-});
+  tier: 2,
+};
+
+export const ROOM_FIELD_SIZE = roomRules.fieldSize;
 
 export interface SeatedRace {
   readonly setup: CareerRaceSetup;
@@ -28,8 +34,12 @@ export interface SeatedRace {
   readonly road: RoadId;
 }
 
-export const seatedRace = (seed: number, seats: number): SeatedRace => {
-  const race = roomRaceOf(seed);
+export const seatedRace = (
+  seed: number,
+  seats: number,
+  rule: RoomRule = publicRoomRule
+): SeatedRace => {
+  const race: PracticeRace = { ...rule, seed };
   const setup = practiceSetup(roomRules, race, trackFor(race.roadId));
   const humans = firstRacers(setup, seats);
   return { humans, road: race.roadId, setup: roomSetup(setup, humans) };

@@ -154,7 +154,6 @@ const CareerScreens = ({
     return (
       <GarageScreen
         career={career}
-        rules={rules}
         onBack={() => {
           flow.go(clubhouse);
         }}
@@ -166,7 +165,6 @@ const CareerScreens = ({
     return (
       <EndingScreen
         career={career}
-        rules={rules}
         onBackRoom={() => {
           flow.go(backRoom);
         }}
@@ -177,7 +175,6 @@ const CareerScreens = ({
     return (
       <GameOverScreen
         career={career}
-        rules={rules}
         onBackRoom={() => {
           flow.go(backRoom);
         }}
@@ -189,14 +186,13 @@ const CareerScreens = ({
 };
 
 const raceAgainOffered = (
-  rules: RaceRules,
   report: RaceReport,
   career: CareerState | null
 ): boolean =>
   report.ledger === null ||
   (career !== null &&
     afterResults(report) === clubhouse &&
-    roadOpen(rules, career, report.roadId));
+    roadOpen(career, report.roadId));
 
 const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
   const { view, career, rules } = flow;
@@ -217,7 +213,6 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           flow.go(singleRace);
         }}
         onStartOver={flow.eraseSave}
-        rules={rules}
         save={flow.save}
       />
     );
@@ -276,7 +271,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
   if (view.screen === "results") {
     return (
       <ResultsScreen
-        canRaceAgain={raceAgainOffered(rules, view.report, career)}
+        canRaceAgain={raceAgainOffered(view.report, career)}
         career={career}
         onContinue={() => {
           if (view.report.room) {
@@ -294,11 +289,10 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         }}
         repeatRun={
           view.report.ledger !== null &&
-          career?.qualified[career.level][view.report.roadId] !== undefined
+          career?.qualified[career.tier][view.report.roadId] !== undefined
         }
         report={view.report}
         riding={career?.bikeId ?? flow.pick.bikeId}
-        rules={rules}
       />
     );
   }

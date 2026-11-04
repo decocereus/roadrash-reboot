@@ -1,9 +1,7 @@
-import { rungsOf, rungsWithin } from "@racer/career/rules";
-import type { RaceRules } from "@racer/career/rules";
 import type { BillConsequence } from "@racer/career/settle";
 import { chapterOf } from "@racer/career/story";
 import { prizeFor } from "@racer/career/tables";
-import type { Level, RoadId } from "@racer/career/tables";
+import type { Tier, RoadId } from "@racer/career/tables";
 import type { RivalId } from "@racer/sim/cast";
 import type { BikeClass } from "@racer/sim/state";
 
@@ -18,8 +16,7 @@ export const introCards = [
   "Don't go broke.",
 ] as const;
 
-export const levelName = (rules: RaceRules, level: Level): string =>
-  chapterOf(rules, level).name;
+export const tierName = (tier: Tier): string => chapterOf(tier).name;
 
 export const roadDescriptions = {
   "breakwater-run":
@@ -68,19 +65,13 @@ export const magsLine = (raceId: number): string =>
 
 const vicCards = {
   1: "Top three on every road and you move up. Don't go broke.",
-  2: "Bigger purses. The garage got a delivery.",
-  3: "The new cops are quicker.",
-  4: "Everyone's armed now. Try to keep up.",
-  5: "One more round. The Ridge is last. She'll be waiting.",
-} as const satisfies Record<Level, string>;
+  2: "Bigger purses. The garage got a delivery. The new cops are quicker.",
+  3: "Everyone's armed now. Try to keep up. One more round. The Ridge is last. She'll be waiting.",
+} as const satisfies Record<Tier, string>;
 
-export const vicCard = (rules: RaceRules, level: Level): string =>
-  rungsWithin(rungsOf(rules, level))
-    .map((rung) => vicCards[rung])
-    .join(" ");
+export const vicCard = (tier: Tier): string => vicCards[tier];
 
-export const firstPrize = (rules: RaceRules, level: Level): number =>
-  prizeFor(rules, level, 1);
+export const firstPrize = (tier: Tier): number => prizeFor(tier, 1);
 
 export const BROKE_CARD =
   "You owe more than a Gutter Pup is worth, which is saying something. We're done.";

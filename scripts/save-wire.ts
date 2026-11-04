@@ -4,7 +4,7 @@ import * as Schema from "effect/Schema";
 
 export const domains = [
   "Bike",
-  "Level",
+  "Tier",
   "Officer",
   "Racer",
   "Rival",
@@ -58,8 +58,8 @@ const ids = (domain: Domain): Role => ({ domain, kind: "catalogue" });
 
 const roles = {
   "activeRace.bikeId": ids("Bike"),
-  "activeRace.level": ids("Level"),
   "activeRace.roadId": ids("Road"),
+  "activeRace.tier": ids("Tier"),
   bikeId: ids("Bike"),
   "board[].bikeId": ids("Bike"),
   "board[].loser": ids("Racer"),
@@ -69,14 +69,14 @@ const roles = {
   "board[].winner": ids("Racer"),
   garage: { domain: "Bike", kind: "items" },
   "garage[]": ids("Bike"),
-  "lastResult.ledger.level": ids("Level"),
-  "lastResult.ledger.levelUp.bikes": { domain: "Bike", kind: "items" },
-  "lastResult.ledger.levelUp.bikes[]": ids("Bike"),
-  "lastResult.ledger.levelUp.level": ids("Level"),
   "lastResult.ledger.line.rival": ids("Rival"),
   "lastResult.ledger.qualifiedCount": { domain: "Road", kind: "most" },
   "lastResult.ledger.repossessed.bikeId": ids("Bike"),
   "lastResult.ledger.roadId": ids("Road"),
+  "lastResult.ledger.tier": ids("Tier"),
+  "lastResult.ledger.tierUp.bikes": { domain: "Bike", kind: "items" },
+  "lastResult.ledger.tierUp.bikes[]": ids("Bike"),
+  "lastResult.ledger.tierUp.tier": ids("Tier"),
   "lastResult.summary.bust.officer": ids("Officer"),
   "lastResult.summary.bust.weapon": ids("Weapon"),
   "lastResult.summary.incidents[].rival": ids("Rival"),
@@ -85,9 +85,9 @@ const roles = {
   "lastResult.summary.rows[].bikeId": ids("Bike"),
   "lastResult.summary.rows[].racer": ids("Racer"),
   "lastResult.summary.wreck.bikeId": ids("Bike"),
-  level: ids("Level"),
   "qualified.*": { domain: "Road", kind: "keys" },
   "season.*.lastAhead": { domain: "Racer", kind: "keys" },
+  tier: ids("Tier"),
   weapon: ids("Weapon"),
 } satisfies Record<string, Role>;
 

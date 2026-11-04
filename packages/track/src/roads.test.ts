@@ -17,6 +17,7 @@ import { compileTrack, curvatureAt } from "./track.ts";
 import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 
 const GRAVITY = 9.81;
+const FIRST_TIER_SHARE = 0.6;
 const PINNED_RIDGE_LENGTH = 4250;
 
 interface Stretch {
@@ -222,7 +223,9 @@ describe("hazards", () => {
   it.each(design)(
     "$roadId has a handful of hazards, at least one an oil slick",
     ({ roadId }) => {
-      const { hazards } = trackFor(roadId);
+      const hazards = trackFor(roadId).hazards.filter(
+        (hazard) => hazard.rarity < FIRST_TIER_SHARE
+      );
       expect(hazards.length).toBeGreaterThanOrEqual(4);
       expect(hazards.length).toBeLessThanOrEqual(7);
       expect(

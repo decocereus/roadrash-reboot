@@ -9,7 +9,7 @@ import type { CareerRaceSetup } from "./field.ts";
 import type { RaceRules } from "./rules.ts";
 import type { ActiveRace, RacerId } from "./state.ts";
 import { roads } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import type { Tier, RoadId } from "./tables.ts";
 
 const WHEEL_TICKS = 30;
 const WHEEL_METRES = 25;
@@ -65,7 +65,7 @@ interface Arrest {
 export interface RaceOutcome {
   readonly raceId: number;
   readonly roadId: RoadId;
-  readonly level: Level;
+  readonly tier: Tier;
   readonly seed: number;
   readonly result: RaceResult;
   readonly place: number;
@@ -361,7 +361,6 @@ const classify = (
     finishTick: player?.finishTick ?? -1,
     incidents,
     km: kmOf(bodyOf(state, me)),
-    level: setup.level,
     place: playerSpot === -1 ? setup.field.length + 1 : playerSpot + 1,
     placings,
     raceId: log.raceId,
@@ -369,6 +368,7 @@ const classify = (
     roadId: setup.roadId,
     seed: setup.seed,
     tick: state.tick,
+    tier: setup.tier,
     weapon: finished ? (player?.weapon ?? "none") : "none",
     weaponHits: finished ? (player?.weaponHits ?? 0) : 0,
   };
@@ -405,7 +405,6 @@ export const abandonedOutcome = (
   finishTick: -1,
   incidents: [],
   km: 0,
-  level: race.level,
   place: rules.fieldSize,
   placings: [],
   raceId: race.raceId,
@@ -413,6 +412,7 @@ export const abandonedOutcome = (
   roadId: race.roadId,
   seed: race.seed,
   tick: 0,
+  tier: race.tier,
   weapon: "none",
   weaponHits: 0,
 });

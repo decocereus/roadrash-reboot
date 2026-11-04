@@ -28,6 +28,7 @@ export type HazardSetting = "turnIn" | "apex" | "exit" | "crest" | "traffic";
 export interface HazardPlacement {
   readonly id: string;
   readonly kind: HazardKind;
+  readonly rarity: number;
   readonly setting: HazardSetting;
   readonly s: number;
   readonly x: number;
@@ -71,7 +72,6 @@ const SETTING_WEIGHTS = {
   traffic: { oil: 1, pothole: 1, rock: 1.5 },
   turnIn: { oil: 1, pothole: 0, rock: 0 },
 } as const satisfies Record<HazardSetting, Record<HazardKind, number>>;
-export const PLACED_SHARE = 0.6;
 
 type Road = Omit<Track, "hazards" | "walkSites">;
 
@@ -360,18 +360,20 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
     }
     claimed.add(chosen.place);
     last = chosen.place.s;
-    if (
-      placedRoll < PLACED_SHARE &&
-      chosen.place.s <= road.length - HAZARD_FINISH_CLEARANCE
-    ) {
+    if (chosen.place.s <= road.length - HAZARD_FINISH_CLEARANCE) {
       placed.push({
         id: `hazard-${candidate}`,
         kind: chosen.kind,
+        rarity: placedRoll,
         s: chosen.place.s,
         setting: chosen.place.setting,
         x: chosen.x,
       });
     }
   }
-  return placed;
+  const byRoll = placed.toSorted((one, other) => one.rarity - other.rarity);
+  return placed.map((hazard) => ({
+    ...hazard,
+    rarity: byRoll.indexOf(hazard) / placed.length,
+  }));
 };

@@ -38,8 +38,8 @@ import type { RaceRules } from "./rules.ts";
 import { quitRace, resumeCareer } from "./settle.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
-import { levels, roadList } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import { tiers, roadList } from "./tables.ts";
+import type { Tier, RoadId } from "./tables.ts";
 
 const TRUCE_SECONDS = 3;
 
@@ -104,17 +104,17 @@ const attacksOnThePlayer = (
   return attacks;
 };
 
-const atLevel = (level: Level): CareerState => ({
+const atTier = (tier: Tier): CareerState => ({
   ...newCareer(1),
-  level,
+  tier,
 });
 
 const junoAggression = (roadId: RoadId): number | undefined => {
   const seed =
     Array.from({ length: 40 }, (_, index) => index + 1).find((candidate) =>
-      fieldFor(recordedRules, roadId, 5, candidate).includes("juno-kade")
+      fieldFor(recordedRules, roadId, 3, candidate).includes("juno-kade")
     ) ?? 0;
-  const setup = setupFor(recordedRules, atLevel(5), roadId, seed, road);
+  const setup = setupFor(recordedRules, atTier(3), roadId, seed, road);
   return setup.rivals[setup.field.indexOf("juno-kade")]?.aggression;
 };
 
@@ -124,7 +124,6 @@ describe("the field", () => {
       ...recordedRules,
       celebrities: true,
       fieldSize: 10,
-      levelCount: 3,
     };
     const seen = roadList.map((entry) => [
       entry.id,
@@ -150,11 +149,11 @@ describe("the field", () => {
 
   it("always fills the field with different rivals, the road's home riders among them", () => {
     const problems: string[] = [];
-    for (const level of levels) {
+    for (const tier of tiers) {
       for (const entry of roadList) {
         for (let seed = 1; seed <= 40; seed += 1) {
-          const field = fieldFor(recordedRules, entry.id, level, seed);
-          const home = roadsFor(recordedRules, atLevel(level)).roads.find(
+          const field = fieldFor(recordedRules, entry.id, tier, seed);
+          const home = roadsFor(recordedRules, atTier(tier)).roads.find(
             (status) => status.road.id === entry.id
           )?.home;
           if (
@@ -163,7 +162,7 @@ describe("the field", () => {
             home.length < 3 ||
             !home.every((rival) => field.includes(rival))
           ) {
-            problems.push(`${entry.id} level ${level} seed ${seed}`);
+            problems.push(`${entry.id} tier ${tier} seed ${seed}`);
           }
         }
       }
@@ -171,13 +170,13 @@ describe("the field", () => {
     expect(problems).toStrictEqual([]);
   });
 
-  it("never draws Juno at level 1, where Ruth Ann stands in on Ridge Road, and always draws her on Ridge Road from level 2", () => {
+  it("never draws Juno at tier 1, where Ruth Ann stands in on Ridge Road, and always draws her on Ridge Road from tier 2", () => {
     const seeds = Array.from({ length: 60 }, (_, seed) => seed + 1);
     const levelOne = roadList.flatMap((entry) =>
       seeds.flatMap((seed) => fieldFor(recordedRules, entry.id, 1, seed))
     );
-    const ridge = (level: Level) =>
-      seeds.map((seed) => fieldFor(recordedRules, "ridge-road", level, seed));
+    const ridge = (tier: Tier) =>
+      seeds.map((seed) => fieldFor(recordedRules, "ridge-road", tier, seed));
     expect(levelOne).not.toContain("juno-kade");
     expect(
       ridge(1).every(
@@ -186,8 +185,8 @@ describe("the field", () => {
       )
     ).toBeTruthy();
     expect(
-      ([2, 5] as const).map((level) =>
-        ridge(level).every((field) => field.includes("juno-kade"))
+      ([2, 3] as const).map((tier) =>
+        ridge(tier).every((field) => field.includes("juno-kade"))
       )
     ).toStrictEqual([true, true]);
   });
@@ -204,14 +203,8 @@ describe("the field", () => {
     );
   });
 
-  it("puts every rival on their bike and weapon for the level, the level's police on the road, and the player last on the grid", () => {
-    const setup = setupFor(
-      recordedRules,
-      atLevel(4),
-      "breakwater-run",
-      3,
-      road
-    );
+  it("puts every rival on their bike and weapon for the tier, the tier's police on the road, and the player last on the grid", () => {
+    const setup = setupFor(recordedRules, atTier(3), "breakwater-run", 3, road);
     const state = createRace(setup);
     const player = riderOf(state.riders, PLAYER_RIDER);
     const others = state.riders.filter((rider) => rider !== player);
@@ -220,21 +213,21 @@ describe("the field", () => {
     ).toStrictEqual(
       setup.field.map((rival) => [
         rivals[rival].name,
-        bikeAt(rivals[rival], 4),
-        weaponAt(rivals[rival], 4),
+        bikeAt(rivals[rival], 3),
+        weaponAt(rivals[rival], 3),
       ])
     );
     expect(setup.police).toMatchObject({
-      beat: 1500,
-      count: 4,
-      fine: 2200,
+      beat: 1200,
+      count: 5,
+      fine: 3000,
       officer: { name: "Sergeant Dolores Pike" },
-      sightRange: 50,
-      topSpeed: 64,
+      sightRange: 60,
+      topSpeed: 69,
     });
     expect(
       others.filter((rider) => rider.profile.role === "police")
-    ).toHaveLength(recordedRules.police[4]);
+    ).toHaveLength(5);
     expect(
       others
         .filter((rider) => rider.profile.role === "racer")
@@ -243,27 +236,25 @@ describe("the field", () => {
     expect(player?.bike).toBe(bikes["halden-wren-400"]);
   });
 
-  it("a quick race puts the player on the picked bike at the picked level, empty-handed, against a fresh field with no grudges", () => {
+  it("a quick race puts the player on the picked bike at the picked tier, empty-handed, against a fresh field with no grudges", () => {
     const setup = practiceSetup(
       recordedRules,
       {
         bikeId: "ostra-sesta-600",
-        level: 4,
         roadId: "breakwater-run",
         seed: 3,
+        tier: 3,
       },
       road
     );
     const player = riderOf(createRace(setup).riders, PLAYER_RIDER);
     expect(player?.bike).toBe(bikes["ostra-sesta-600"]);
     expect(player?.weapon).toBe("none");
-    expect([setup.level, setup.raceId, setup.police.count]).toStrictEqual([
-      4,
-      1,
-      recordedRules.police[4],
+    expect([setup.tier, setup.raceId, setup.police.count]).toStrictEqual([
+      3, 1, 5,
     ]);
     expect(setup.field).toStrictEqual(
-      fieldFor(recordedRules, "breakwater-run", 4, 3)
+      fieldFor(recordedRules, "breakwater-run", 3, 3)
     );
     expect(
       setup.rivals.map((rival) => [rival.aggressionBoost, rival.grudge])
@@ -496,7 +487,7 @@ describe("memory", () => {
       );
     }
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const { career } = quitRace(recordedRules, race.career, outcome);
+    const { career } = quitRace(race.career, outcome);
     const incidents = outcome.incidents.find(
       (incident) => incident.rival === "dee-santangelo"
     );

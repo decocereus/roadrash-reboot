@@ -9,14 +9,16 @@ import type { Track } from "./track.ts";
 import { ridgeRoad } from "./tracks/ridge-road.ts";
 
 const fingerprintsBeforePieces = {
-  "breakwater-run": "234562a916d7d231",
-  "ridge-road": "2aa30a216072bf65",
+  "breakwater-run": "0ca7770f77355d9b",
+  "ridge-road": "422c832160f83d4c",
   "slag-row": "42a8a3b74af8c5f3",
 };
 
 const DIGEST_MODULUS = 2_147_483_647;
 
 const bits = new DataView(new ArrayBuffer(8));
+
+const FIRST_TIER_SHARE = 0.6;
 
 const fingerprintOf = (track: Track): string => {
   let first = 0;
@@ -43,7 +45,9 @@ const fingerprintOf = (track: Track): string => {
   }
   for (const char of JSON.stringify([
     track.props.filter((prop) => prop.kind !== "chevron"),
-    track.hazards,
+    track.hazards
+      .filter((hazard) => hazard.rarity < FIRST_TIER_SHARE)
+      .map(({ rarity: _rarity, ...hazard }) => hazard),
   ])) {
     add(char.codePointAt(0) ?? 0);
   }

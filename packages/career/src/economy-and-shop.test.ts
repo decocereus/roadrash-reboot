@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { recordedRules } from "./bench.ts";
 import {
   decent,
   ledgerOf,
@@ -11,89 +10,78 @@ import {
   weakSeason,
 } from "./career-fixtures.ts";
 import type { Season } from "./career-fixtures.ts";
-import { buyBike, canBuy } from "./shop.ts";
+import { buyBike } from "./shop.ts";
 import { newCareer } from "./state.ts";
 
 const cashAt = (seasons: readonly Season[]) =>
   seasons.map((season) => [season.start.cash, season.end.cash]);
 
 describe("the economy", () => {
-  it("a decent level-1 season ends with the $5,000 of the worked example and moves up", () => {
+  it("a decent tier-1 season ends with $9,300 and moves up", () => {
     const { end } = seasonAt(decent, 1);
     expect({
       bike: end.bikeId,
       cash: end.cash,
-      level: end.level,
       record: end.record,
+      tier: end.tier,
     }).toStrictEqual({
       bike: "halden-wren-400",
-      cash: 5000,
-      level: 2,
+      cash: 9300,
       record: {
         busts: 1,
-        earnings: 4300,
+        earnings: 8600,
         knockdowns: 0,
         podiums: 3,
         starts: 6,
         wins: 0,
         wrecks: 1,
       },
+      tier: 2,
     });
   });
 
-  it("the decent player buys one bike per level and ends each level with the cash in the pacing table", () => {
+  it("the decent player buys one bike per tier and ends each tier with the cash in the pacing table", () => {
     expect(cashAt(decent)).toStrictEqual([
-      [1500, 5000],
-      [1800, 7080],
-      [2080, 9250],
-      [3050, 13_070],
-      [1170, 13_550],
+      [1500, 9300],
+      [3100, 20_590],
+      [6890, 39_050],
     ]);
     expect(decent.map((season) => season.start.bikeId)).toStrictEqual([
       "halden-wren-400",
-      "halden-kite-500",
       "ostra-sesta-600",
-      "ostra-sette-750",
       "halden-meridian-900",
     ]);
   });
 
-  it("a weak level-1 season of three thirds, three sevenths, and two wrecks ends with $4,810", () => {
+  it("a weak tier-1 season of three thirds, three sevenths, and two wrecks ends with $8,920", () => {
     const { end } = seasonAt(weak, 1);
-    expect([end.cash, end.level, end.record.starts]).toStrictEqual([
-      4810, 2, 8,
-    ]);
+    expect([end.cash, end.tier, end.record.starts]).toStrictEqual([8920, 2, 8]);
   });
 
-  it("the weak player still finishes the season, on the Sette, with the cash in the weak table", () => {
+  it("the weak player still finishes the season, on the Meridian, with the cash in the weak table", () => {
     expect(cashAt(weak)).toStrictEqual([
-      [1500, 4810],
-      [1610, 6786],
-      [1786, 8350],
-      [2150, 11_324],
-      [11_324, 23_630],
+      [1500, 8920],
+      [2720, 19_148],
+      [5448, 34_460],
     ]);
-    const last = seasonAt(weak, 5);
-    expect(
-      canBuy(recordedRules, seasonAt(weak, 4).end, "halden-meridian-900")
-    ).toBeFalsy();
+    const last = seasonAt(weak, 3);
     expect([last.end.bikeId, last.end.story.ending]).toStrictEqual([
-      "ostra-sette-750",
+      "halden-meridian-900",
       "runner-up",
     ]);
   });
 
-  it("two wrecks before the first prize put the weak player in debt inside the credit limit at levels 3 and 4", () => {
-    const afterTwoWrecks = ([3, 4] as const).map((level) => {
+  it("two wrecks before the first prize put the weak player in debt inside the credit limit at tiers 2 and 3", () => {
+    const afterTwoWrecks = ([2, 3] as const).map((tier) => {
       const career = playAll(
-        seasonAt(weak, level).start,
+        seasonAt(weak, tier).start,
         weakSeason.slice(0, 2)
       );
       return [career.cash, career.bikeId, career.gameOver];
     });
     expect(afterTwoWrecks).toStrictEqual([
-      [-1514, "ostra-sesta-600", false],
-      [-2650, "ostra-sette-750", false],
+      [-580, "ostra-sesta-600", false],
+      [-3352, "halden-meridian-900", false],
     ]);
   });
 
@@ -106,7 +94,7 @@ describe("the economy", () => {
       ledgerOf(qualified).prize,
       repeat.prize,
       repeat.qualified,
-    ]).toStrictEqual([1200, 1250, false]);
+    ]).toStrictEqual([2400, 2500, false]);
   });
 
   it("a place outside the top three on a qualified road pays nothing, and the same place on a new road pays in full", () => {
@@ -119,7 +107,7 @@ describe("the economy", () => {
       play(qualified, { place: 5, roadId: "breakwater-run" })
     );
     expect([repeat.prize, repeat.cashAfter, fresh.prize]).toStrictEqual([
-      0, 3200, 400,
+      0, 4900, 800,
     ]);
   });
 
@@ -131,11 +119,7 @@ describe("the economy", () => {
     const bust = ledgerOf(
       play(qualified, { ends: "busted", roadId: "slag-row" })
     );
-    const onSesta = buyBike(
-      recordedRules,
-      { ...qualified, cash: 9000 },
-      "ostra-sesta-600"
-    );
+    const onSesta = buyBike({ ...qualified, cash: 9000 }, "ostra-sesta-600");
     const wreck = ledgerOf(
       play(onSesta, { ends: "wrecked", roadId: "slag-row" })
     );

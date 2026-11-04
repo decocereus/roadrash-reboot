@@ -1,7 +1,6 @@
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
-import type { RaceRules } from "./rules.ts";
 import { problemOf } from "./save-invariants.ts";
 import { firstField, issuePaths } from "./save-issues.ts";
 import { EncodedSaveSchema, SaveSourceSchema } from "./save-schema.ts";
@@ -28,17 +27,14 @@ const refused = (kind: SaveError["kind"], field: string): SaveResult => ({
   ok: false,
 });
 
-const loaded = (career: CareerState, rules: RaceRules): SaveResult => {
-  const problem = problemOf(career, rules);
+const loaded = (career: CareerState): SaveResult => {
+  const problem = problemOf(career);
   return problem === null
     ? { career, ok: true }
     : { error: problem, ok: false };
 };
 
-const currentSave = (
-  save: typeof RawSave.Type,
-  rules: RaceRules
-): SaveResult => {
+const currentSave = (save: typeof RawSave.Type): SaveResult => {
   const sources = Result.match(decodeSources(save), {
     onFailure: issuePaths,
     onSuccess: () => [],
@@ -49,16 +45,16 @@ const currentSave = (
     onSuccess: (career) =>
       sources.length > 0
         ? refused("invalid", firstField(sources))
-        : loaded(career, rules),
+        : loaded(career),
   });
 };
 
-const decode = (text: string, rules: RaceRules): SaveResult =>
+const decode = (text: string): SaveResult =>
   Result.match(decodeText(text), {
     onFailure: () => refused("notJson", ""),
     onSuccess: (save) =>
       save.version === SAVE_VERSION
-        ? currentSave(save, rules)
+        ? currentSave(save)
         : refused("wrongVersion", "version"),
   });
 
@@ -67,9 +63,9 @@ export const serialiseCareer = (career: CareerState): string => {
   return JSON.stringify(save);
 };
 
-export const parseCareer = (rules: RaceRules, text: string): SaveResult => {
+export const parseCareer = (text: string): SaveResult => {
   try {
-    return decode(text, rules);
+    return decode(text);
   } catch {
     return refused("invalid", "");
   }

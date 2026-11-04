@@ -54,16 +54,16 @@ export interface ReplayCase {
 const quickSetup = (roadId: RoadId, seed: number) => (): CareerRaceSetup =>
   planFor(recordedRules, null, {
     bikeId: "ostra-sesta-600",
-    level: 5,
     mode: "quick",
     roadId,
     seed,
+    tier: 3,
   }).setup;
 
 const quickRace = (roadId: RoadId, seed: number): ReplayCase => ({
   controller: "pilot",
   handovers: [],
-  id: `${roadId}/level5/seed${seed}`,
+  id: `${roadId}/tier3/seed${seed}`,
   setup: quickSetup(roadId, seed),
 });
 
@@ -89,7 +89,7 @@ export const replayCases: readonly ReplayCase[] = [
       { rider: PLAYER_RIDER, tick: 2400, to: "human" },
       { rider: PLAYER_RIDER, tick: 3000, to: "pilot" },
     ],
-    id: "handover/slag-row/level5/seed5",
+    id: "handover/slag-row/tier3/seed5",
     setup: quickSetup("slag-row", 5),
   },
 ];

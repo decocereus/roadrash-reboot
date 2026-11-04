@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { recordedRules } from "./bench.ts";
 import {
   crashOut,
   enter,
@@ -56,15 +55,15 @@ describe("going broke", () => {
       [-700, false],
       [-1100, true],
     ]);
-    expect(startRace(recordedRules, over, "slag-row", 1)).toMatchObject({
+    expect(startRace(over, "slag-row", 1)).toMatchObject({
       reason: "gameOver",
       started: false,
     });
-    expect(canBuy(recordedRules, over, "gutter-pup-250")).toBeFalsy();
+    expect(canBuy(over, "gutter-pup-250")).toBeFalsy();
   });
 
-  it("a Wren rider $800 in debt who wrecks at level 5 loses the bike and the career in one step", () => {
-    const career: CareerState = { ...newCareer(1), cash: -800, level: 5 };
+  it("a Wren rider $800 in debt who wrecks at tier 3 loses the bike and the career in one step", () => {
+    const career: CareerState = { ...newCareer(1), cash: -800, tier: 3 };
     const ledger = ledgerOf(lastOf(wreckTimes(career, 1)));
     expect(ledger).toMatchObject({
       cashAfter: -1200,
@@ -77,8 +76,8 @@ describe("going broke", () => {
   it("the garage does not sell to a player in debt, but the player can sell down to the Pup", () => {
     const inDebt = lastOf(wreckTimes(newCareer(1), 4)).career;
     const sold = sellBike(inDebt);
-    expect(canBuy(recordedRules, inDebt, "gutter-pup-250")).toBeFalsy();
-    expect(buyBike(recordedRules, inDebt, "gutter-pup-250")).toBe(inDebt);
+    expect(canBuy(inDebt, "gutter-pup-250")).toBeFalsy();
+    expect(buyBike(inDebt, "gutter-pup-250")).toBe(inDebt);
     expect([sold.cash, sold.bikeId]).toStrictEqual([1700, "gutter-pup-250"]);
   });
 });
@@ -89,10 +88,8 @@ describe("the rewarded ad", () => {
     const race = enter(inDebt, "slag-row");
     crashOut(race);
     const outcome = outcomeOf(race.state, race.setup, race.log);
-    const full = ledgerOf(settleRace(recordedRules, race.career, outcome));
-    const half = ledgerOf(
-      settleRace(recordedRules, race.career, outcome, "half")
-    );
+    const full = ledgerOf(settleRace(race.career, outcome));
+    const half = ledgerOf(settleRace(race.career, outcome, "half"));
     expect(outcome.result).toBe("wrecked");
     expect([
       full.repair,
@@ -108,12 +105,10 @@ describe("the rewarded ad", () => {
   });
 
   it("is not offered for a quit, so the bill stays whole", () => {
-    const start = startRace(recordedRules, newCareer(1), "slag-row", 1);
+    const start = startRace(newCareer(1), "slag-row", 1);
     const race = enter(newCareer(1), "slag-row", 1);
     const quit = outcomeOf(race.state, race.setup, race.log);
-    expect(
-      ledgerOf(settleRace(recordedRules, start.career, quit, "half"))
-    ).toMatchObject({
+    expect(ledgerOf(settleRace(start.career, quit, "half"))).toMatchObject({
       repair: 400,
       repairHalved: false,
       result: "quit",

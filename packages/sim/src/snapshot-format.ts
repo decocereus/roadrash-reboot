@@ -42,7 +42,7 @@ import type {
   TrafficCar,
 } from "./state.ts";
 
-export const SNAPSHOT_FORMAT = 6;
+export const SNAPSHOT_FORMAT = 7;
 
 const TICK_BYTES = 8;
 
@@ -99,7 +99,7 @@ export type PedestrianSetupKey =
 
 export type RaceHeaderKey = "tick";
 
-export type RaceSetupKey = "pacing" | "police";
+export type RaceSetupKey = "hitDamage" | "pacing" | "police";
 
 const inputSchema = schemaOf<Readonly<RiderInput>, RiderInput>({
   brake: floatAt("brake"),

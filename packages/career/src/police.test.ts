@@ -12,8 +12,8 @@ import {
   STARTS,
 } from "./police-fixtures.ts";
 import type { PoliceRide } from "./police-fixtures.ts";
-import { levels } from "./tables.ts";
-import type { Level } from "./tables.ts";
+import { tiers } from "./tables.ts";
+import type { Tier } from "./tables.ts";
 
 const rideSeason = async (): Promise<readonly PoliceRide[]> => {
   const season = new Int32Array(
@@ -48,7 +48,7 @@ interface Tally {
   rivalsBusted: number;
 }
 
-const tallyOf = (season: readonly PoliceRide[], level: Level): Tally => {
+const tallyOf = (season: readonly PoliceRide[], tier: Tier): Tally => {
   const tally: Tally = {
     busted: 0,
     finished: 0,
@@ -57,7 +57,7 @@ const tallyOf = (season: readonly PoliceRide[], level: Level): Tally => {
     wrecked: 0,
   };
   for (const race of season) {
-    if (race.level === level) {
+    if (race.tier === tier) {
       tally[race.ending] += 1;
       tally.rivalsBusted += race.rivalsBusted;
     }
@@ -66,17 +66,15 @@ const tallyOf = (season: readonly PoliceRide[], level: Level): Tally => {
 };
 
 interface Band {
-  readonly level: Level;
+  readonly tier: Tier;
   readonly fewest: number;
   readonly most: number;
 }
 
 const bands: readonly Band[] = [
-  { fewest: 2, level: 1, most: 14 },
-  { fewest: 3, level: 2, most: 14 },
-  { fewest: 4, level: 3, most: 14 },
-  { fewest: 4, level: 4, most: 16 },
-  { fewest: 5, level: 5, most: 17 },
+  { fewest: 2, most: 14, tier: 1 },
+  { fewest: 3, most: 14, tier: 2 },
+  { fewest: 5, most: 17, tier: 3 },
 ];
 
 const MINUTES = 60_000;
@@ -89,9 +87,9 @@ describe("police balance", () => {
   }, 15 * MINUTES);
 
   it.each(bands)(
-    "a pilot standing in for the decent player is busted in $fewest to $most of 39 starts at level $level",
-    ({ fewest, level, most }) => {
-      const tally = tallyOf(season, level);
+    "a pilot standing in for the decent player is busted in $fewest to $most of 39 starts at tier $tier",
+    ({ fewest, tier, most }) => {
+      const tally = tallyOf(season, tier);
       expect(tally.busted + tally.finished + tally.wrecked).toBe(STARTS);
       expect(tally.busted).toBeGreaterThanOrEqual(fewest);
       expect(tally.busted).toBeLessThanOrEqual(most);
@@ -101,10 +99,10 @@ describe("police balance", () => {
     }
   );
 
-  it("over the five levels the busts come to between an eighth and 30% of all starts", () => {
-    const starts = levels.length * STARTS;
-    const busted = levels
-      .map((level) => tallyOf(season, level).busted)
+  it("over the three tiers the busts come to between an eighth and 30% of all starts", () => {
+    const starts = tiers.length * STARTS;
+    const busted = tiers
+      .map((tier) => tallyOf(season, tier).busted)
       .reduce((total, count) => total + count, 0);
     expect(busted / starts).toBeGreaterThan(1 / 8);
     expect(busted / starts).toBeLessThanOrEqual(0.3);

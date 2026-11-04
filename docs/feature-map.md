@@ -19,7 +19,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [AI riders (the pilot)](#ai-riders-the-pilot): `pilot`
 - [Rivals, the field and their lines](#rivals-the-field-and-their-lines): `rivals`
 - [Career money and settlement](#career-money-and-settlement): `career-money`
-- [Career levels, season and story](#career-levels-season-and-story): `career-progression`
+- [Career tiers, season and story](#career-tiers-season-and-story): `career-progression`
 - [Menus and screens](#menus-and-screens): `menus`
 - [Race HUD and notices](#race-hud-and-notices): `hud`
 - [Chase camera](#chase-camera): `camera`
@@ -338,9 +338,9 @@ Test files:
 - `packages/career/src/last-result.test.ts`
 - `packages/career/src/settlement.test.ts`
 
-### Career levels, season and story
+### Career tiers, season and story
 
-The career state itself, levels, qualification and promotion, the season board, the story beats, the envelope and the endings.
+The career state itself, tiers, qualification and promotion, the season board, the story beats, the envelope and the endings.
 
 - Id: `career-progression`
 - Start: `packages/career/src/state.ts`, `packages/career/src/story.ts`, `packages/career/src/season.ts`
@@ -892,14 +892,14 @@ Test files:
 
 ### Race rules
 
-The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.
+The difficulty tiers, and the server-owned field size and celebrity switch: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.
 
 - Id: `race-rules`
-- Start: `apps/web/src/server/race-rules.ts`, `packages/career/src/rules.ts`, `apps/web/src/rules/load.ts`
+- Start: `apps/web/src/server/race-rules.ts`, `packages/sim/src/difficulty.ts`, `apps/web/src/rules/load.ts`
 - Docs: [docs/architecture.md#career](architecture.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-rules.md](../.claude/skills/verify-rushline/features/race-rules.md)
 - Perf: none yet
-- Owns: `packages/career/src/rules*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
+- Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
 
 Source files:
 
@@ -911,11 +911,13 @@ Source files:
 - `apps/web/src/server/race-rules.ts`
 - `packages/career/src/rules-schema.ts`
 - `packages/career/src/rules.ts`
+- `packages/sim/src/difficulty.ts`
 
 Test files:
 
 - `apps/web/test/race-rules.test.ts`
 - `packages/career/src/rules.test.ts`
+- `packages/sim/src/difficulty.test.ts`
 
 ### Play-test telemetry
 
