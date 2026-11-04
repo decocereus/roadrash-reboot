@@ -1396,6 +1396,7 @@ Source files:
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
+- `apps/rooms/src/room-id.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/tape.ts`

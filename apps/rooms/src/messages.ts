@@ -7,8 +7,6 @@ import {
   RoomRuleSchema,
 } from "./manifest.ts";
 
-export const ROOM_ID_PATTERN = /^[a-z0-9-]{6,40}$/u;
-
 const MOST_NAME_CHARS = 12;
 const BARRED_NAME_CHARS = /[^\p{L}\p{M}\p{N} ._-]/gu;
 const UNNAMED_GUEST = "Rider";

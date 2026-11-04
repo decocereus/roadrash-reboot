@@ -8,6 +8,7 @@
     "./host": "./src/host.ts",
     "./input-latency": "./src/input-latency.ts",
     "./messages": "./src/messages.ts",
+    "./room-id": "./src/room-id.ts",
     "./notes": "./src/notes.ts",
     "./room-run": "./src/room-run.ts",
     "./race-tally": "./src/race-tally.ts",
