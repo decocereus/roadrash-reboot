@@ -58,6 +58,7 @@ describe("the bike and rider tables", () => {
         ...defaultPlayer,
         bike: {
           ...streetBike,
+          curvePush: 0,
           gears: [30, 20],
           launchAcceleration: Number.NaN,
         },
@@ -66,6 +67,7 @@ describe("the bike and rider tables", () => {
     } as const;
     expect(validateSetup(bad)).toStrictEqual([
       { kind: "outOfRange", rule: "You.skill", value: 2 },
+      { kind: "outOfRange", rule: "ostra-sesta-600.curvePush", value: 0 },
       {
         kind: "outOfRange",
         rule: "ostra-sesta-600.launchAcceleration",

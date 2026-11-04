@@ -43,7 +43,7 @@ const ruleRanges: readonly Range<RaceSetup>[] = [
 
 const bikeRanges: readonly Range<BikeSpec>[] = [
   ["brakeDeceleration", 1, 60, (bike) => bike.brakeDeceleration],
-  ["curvePush", 0, 10, (bike) => bike.curvePush],
+  ["curvePush", 0.1, 10, (bike) => bike.curvePush],
   ["dragFactor", 0, 0.01, (bike) => bike.dragFactor],
   ["engineBraking", 0, 20, (bike) => bike.engineBraking],
   ["lateralSpeed", 0.5, 20, (bike) => bike.lateralSpeed],
