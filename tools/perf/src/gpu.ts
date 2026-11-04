@@ -1,6 +1,7 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { benchChildEnv, holdBench } from "@racer/devtools/bench-lock";
 import { CurrentHost, HOST_SETTING } from "@racer/devtools/browser-host";
 import type { BrowserHost } from "@racer/devtools/browser-host";
 import { desktopRuntimeEnv } from "@racer/devtools/desktop";
@@ -12,7 +13,6 @@ import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
 import { readBudgets } from "./approved.ts";
-import { holdBench } from "./bench-lock.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
 import {
   evaluateGpu,
@@ -105,7 +105,10 @@ const failed = (message: string) => (cause: { readonly message: string }) =>
 
 const rv = (args: readonly string[]) =>
   ToolProcesses.use((processes) =>
-    processes.run(process.execPath, [RV, ...args], { cwd: REPO_ROOT })
+    processes.run(process.execPath, [RV, ...args], {
+      cwd: REPO_ROOT,
+      env: benchChildEnv(),
+    })
   ).pipe(
     Effect.map((output) => output.stdout.trim()),
     Effect.mapError(failed(`rv ${args.slice(0, 3).join(" ")}`))
@@ -468,7 +471,10 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
       message: `${host.id} has no rows in tools/perf/budgets.json, so perf:gpu cannot judge it. tools/perf/README.md, under Intel, records why and the numbers measured so far.`,
     });
   }
-  yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`);
+  yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`, [
+    options.runs.A,
+    options.runs.B,
+  ]);
   const startedAt = yield* Clock.currentTimeMillis;
   const approved = yield* readBudgets(options.budgets);
   const revision = yield* revisionOf(

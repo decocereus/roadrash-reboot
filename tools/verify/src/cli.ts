@@ -1,13 +1,15 @@
+import { refuseDuringBench } from "@racer/devtools/bench-lock";
 import type { CurrentHost } from "@racer/devtools/browser-host";
 import { runCommand } from "@racer/devtools/cleanup";
 import type { CleanupOutcomes } from "@racer/devtools/cleanup";
 import type { ToolProcesses } from "@racer/devtools/process";
-import type * as Effect from "effect/Effect";
+import * as Effect from "effect/Effect";
 import type * as FileSystem from "effect/FileSystem";
 import type * as HttpClient from "effect/http/HttpClient";
 import type * as Scope from "effect/Scope";
 import type * as Socket from "effect/socket/Socket";
 
+import { bench } from "./bench.ts";
 import {
   ariaCommand,
   clickCommand,
@@ -52,7 +54,8 @@ const HELP = `rv: drive a Rushline verification instance in a windowed browser o
   rv console    --run <id> [errors]
   rv rebuild    --run <id>
   rv down       --run <id>
-  rv desktop    up|down|status                           the Linux desktop session rv up starts on demand`;
+  rv desktop    up|down <name>, or status                the Linux desktop session rv up starts on demand; each name is its own hold
+  rv bench      <label> -- <command> [args]              holds the bench lock while the command runs; other rv runs may not draw until it ends`;
 
 type Handler = (
   context: CommandContext
@@ -72,6 +75,7 @@ type Handler = (
 
 const commands = new Map<string, Handler>([
   ["aria", ariaCommand],
+  ["bench", bench],
   ["click", clickCommand],
   ["console", consoleCommand],
   ["desktop", desktop],
@@ -92,10 +96,22 @@ const commands = new Map<string, Handler>([
   ["watch", watch],
 ]);
 
+const drawingCommands: ReadonlySet<string> = new Set([
+  "click",
+  "open",
+  "press",
+  "rebuild",
+  "up",
+]);
+
 export const main = (script: string) => {
   const context = readCommandLine(script);
   const chosen = commands.get(context.command);
-  return chosen
-    ? runCommand(chosen(context), `rv ${context.command}: `)
-    : context.print(HELP);
+  if (!chosen) {
+    return context.print(HELP);
+  }
+  const started = drawingCommands.has(context.command)
+    ? refuseDuringBench(context.command).pipe(Effect.andThen(chosen(context)))
+    : chosen(context);
+  return runCommand(started, `rv ${context.command}: `);
 };
