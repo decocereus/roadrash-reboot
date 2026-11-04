@@ -214,6 +214,7 @@ export const openRoomSeat = (
       return;
     }
     reported = true;
+    race.client.settle();
     tally.frameDrawn(
       performance.now(),
       race.client.mine.s,
@@ -366,6 +367,7 @@ export const openRoomSeat = (
       if (!race) {
         return 0;
       }
+      race.client.settle();
       const { predicted } = race.client;
       const steps = clock.stepsDue(predicted.tick, performance.now());
       if (predicted.tick > 0) {

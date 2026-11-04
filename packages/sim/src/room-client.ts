@@ -53,6 +53,7 @@ export interface RoomClient {
   readonly stats: RoomStats;
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
+  readonly settle: () => void;
   readonly writeInputs: (view: DataView) => number;
 }
 
@@ -94,6 +95,8 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
   let sentThrough = 0;
+  let stale = false;
+  let staleCause: JumpCause = "otherRiders";
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
     desyncs: 0,
@@ -172,6 +175,26 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     }
   };
 
+  const settle = (): void => {
+    if (!stale) {
+      return;
+    }
+    stale = false;
+    const reached = predicted.tick;
+    const fromS = mine.s;
+    const fromX = mine.x;
+    const crashesBefore = mine.crashes;
+    rewind();
+    stats.rollbacks += 1;
+    for (let tick = confirmed.tick + 1; tick <= reached; tick += 1) {
+      advance(tick);
+      stats.resimulatedTicks += 1;
+    }
+    stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
+    noteJump(staleCause, fromS, fromX);
+    staleCause = "otherRiders";
+  };
+
   return {
     confirm: (frame, serverHash) => {
       if (frame.tick !== confirmed.tick + 1) {
@@ -186,36 +209,29 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         }
       }
       const reached = predicted.tick;
-      const fromS = mine.s;
-      const fromX = mine.x;
-      const crashesBefore = mine.crashes;
       if (reached < frame.tick) {
+        const fromS = mine.s;
+        const fromX = mine.x;
+        stale = false;
         rewind();
         noteJump("behindServer", fromS, fromX);
         return;
       }
       const guessed = guesses[slotOf(frame.tick)];
-      if (guessed && sameFrame(guessed, frame)) {
-        return;
+      if (!guessed || !sameFrame(guessed, frame)) {
+        stale = true;
+        if (guessed?.controls.get(me) !== frame.controls.get(me)) {
+          staleCause = "ownControl";
+        }
       }
-      rewind();
-      stats.rollbacks += 1;
-      for (let tick = frame.tick + 1; tick <= reached; tick += 1) {
-        advance(tick);
-        stats.resimulatedTicks += 1;
+      if (reached === frame.tick) {
+        settle();
       }
-      stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
-      noteJump(
-        guessed?.controls.get(me) === frame.controls.get(me)
-          ? "otherRiders"
-          : "ownControl",
-        fromS,
-        fromX
-      );
     },
     confirmed,
     mine,
     predict: (control) => {
+      settle();
       const tick = predicted.tick + 1;
       if (tick - confirmed.tick > MOST_LEAD_TICKS) {
         stats.refusedPredictions += 1;
@@ -226,6 +242,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       return true;
     },
     predicted,
+    settle,
     stats,
     writeInputs: (view) => {
       const unsent = Math.max(sentThrough, confirmed.tick) + 1;

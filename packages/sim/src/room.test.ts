@@ -25,6 +25,7 @@ import {
   createRoom,
   HASH_EVERY,
   HOLD_TICKS,
+  INPUT_HORIZON,
   roomSetup,
 } from "./room.ts";
 import type { Room } from "./room.ts";
@@ -262,6 +263,17 @@ describe("a race room", () => {
     expect(riderAt(session.room.state, RIVAL).s).toBeGreaterThan(400);
   });
 
+  it("a rider with a round trip over 800 ms keeps riding their own bike", () => {
+    const far: Rider = { ...guest, jitter: 0, latency: 25, lead: 27 };
+    const session = race([host, far], TWENTY_SECONDS);
+    expectAgreement(session);
+    expect(session.late.get(far.id)).toBe(0);
+    expect(session.handovers).toStrictEqual([]);
+    expect(
+      session.seated.map((rider) => rider.client.stats.refusedPredictions)
+    ).toStrictEqual([0, 0]);
+  });
+
   it("riders who hold their controls are predicted exactly, roll back once for the start and once for a change, and their predicted race is the room's", () => {
     const steady = { ...neutralInput, steer: 0.2, throttle: 1 };
     const turning = (tick: number) =>
@@ -395,7 +407,9 @@ describe("a race room", () => {
       ahead: 0,
       late: 0,
     });
-    expect({ ...room.accept(PLAYER_RIDER, 34, [full]) }).toStrictEqual({
+    expect({
+      ...room.accept(PLAYER_RIDER, INPUT_HORIZON + 2, [full]),
+    }).toStrictEqual({
       accepted: 0,
       ahead: 1,
       late: 0,

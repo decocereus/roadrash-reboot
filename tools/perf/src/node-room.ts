@@ -97,6 +97,7 @@ const prepareRoom = (scenario: Scenario) => {
   const confirm = (packet: DataView): void => {
     readTick(packet, read);
     client.confirm(read.frame, read.hashed ? read.hash : null);
+    client.settle();
   };
 
   const warm = (): void => {

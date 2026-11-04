@@ -123,12 +123,12 @@ describe("the room clock", () => {
     expect(clock.stepsDue(109, 5000)).toBe(1);
   });
 
-  it("keeps the lead for the worst of its recent round trips", () => {
+  it("keeps the lead for the worst round trip of the last 15 seconds of pings", () => {
     const clock = createRoomClock();
     clock.heardTick(100, 1000);
     clock.heardRtt(100);
     clock.heardRtt(300);
-    for (let sample = 0; sample < 8; sample += 1) {
+    for (let sample = 0; sample < 28; sample += 1) {
       clock.heardRtt(100);
     }
     expect(clock.target(1000)).toBe(120);
