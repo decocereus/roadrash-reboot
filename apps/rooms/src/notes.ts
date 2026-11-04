@@ -84,8 +84,14 @@ const Ended = Schema.Struct({
   worstBehindTicks: Schema.Number,
 });
 
+const TapeLost = Schema.Struct({
+  key: Schema.String,
+  kind: Schema.Literal("tapeLost"),
+});
+
 export const RoomNoteSchema = Schema.Union([
   Refused,
+  TapeLost,
   Started,
   Countdown,
   Left,

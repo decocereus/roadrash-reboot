@@ -1,6 +1,6 @@
 # Observability
 
-Rushline records four things: player events for the funnel, play-test telemetry from testers' browsers, one record per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+Rushline records five things: player events for the funnel, play-test telemetry from testers' browsers, one record per room race, one tape per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
 
 ## Player events
 
@@ -46,6 +46,18 @@ Every room race has a random race ID that is not the invite link. `apps/rooms/sr
 | The room writes a note per race event and never per tick or per message. In the tick loop it only adds to the wake counters. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 | Workers Logs removes null values and empty lists from a stored line, so `RoomNoteSchema` reads a missing nullable field as null and a missing list as empty. `pnpm rooms:read` warns about any line with a `kind` that still does not decode, because a report without its `ended` line otherwise reads as a dead room. | `pnpm test` | `apps/rooms/src/notes.ts`, `tools/rooms/src/read.ts` | None |
 | `pnpm rooms:read` asks Cloudflare only for lines with a `kind`. Request lines are most of the log, and they used up the 2000-event limit and cut off older races. | `pnpm test` | `tools/rooms/src/read.ts` | None |
+
+## Race tapes
+
+A tape holds enough to run a room race again and check it against what happened. It lives in the `RaceTapes` R2 bucket under `tapes/<race ID>/`, so the race ID joins it to the race's notes and to `race_started` and `race_ended`. `header.json` has the build, seed, seats, road and setup digest. Each `00000.bin` part holds up to 1800 tick packets, about 30 seconds, each with a two-byte length in front. `end.json` has the part count and the last tick. A tick packet already carries every accepted control, every handover and a state hash each 60 ticks, so the tape stores no state snapshots. `pnpm rooms:replay --dir <folder>` rebuilds the race from the header, steps it through the packets and compares every hash. The [race-room recipe](../.claude/skills/verify-rushline/features/race-room.md) has the download steps.
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| A replay fails unless the code builds the same setup digest, every tick follows the last and every hash matches, so a changed control, another build's rules or a missing part cannot read as a match. Replay a tape on the build its header names. | `pnpm test` | `packages/sim/src/room-tape.ts`, `tools/rooms/src/replay.ts` | None |
+| In the tick loop the writer only copies a packet into a buffer it allocated at the start of the race. It allocates a part every 1800 ticks. The room's perf run writes a tape, so `room.tick.p95` and `room.allocatedBytesPerTick` include this cost. | `pnpm perf` | `packages/sim/src/room-tape.ts`, `tools/perf/src/node-room.ts` | None |
+| A failed save never affects a race. `ports.saveTape` only adds to a queue, and one fiber writes the queue in order. A failed write is noted once as `tapeLost` with its key and is not retried, and `pnpm rooms:replay` then reports the gap. | judgment | `apps/rooms/src/host.ts`, `apps/rooms/src/race-server.ts` | None |
+| A tape names riders by number and holds no guest name, player ID, room ID or IP address. A new header field goes in `TapeHeaderSchema`. | judgment | `apps/rooms/src/tape.ts`, `apps/web/src/routes/privacy.tsx` | None |
+| A lifecycle rule on the bucket deletes each object after `TAPE_KEEP_DAYS`, and the bucket holds nothing but tapes. Every race is taped during the closed test. Sampling to 1% plus incident captures comes before public launch. | judgment | `apps/rooms/src/race-server.ts`, `apps/rooms/src/tape.ts` | None |
 
 ## Frame profiles
 

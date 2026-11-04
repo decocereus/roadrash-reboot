@@ -55,6 +55,7 @@ export const deterministicFiles = [
   "packages/sim/src/room-client.ts",
   "packages/sim/src/room-clock.ts",
   "packages/sim/src/room-frame.ts",
+  "packages/sim/src/room-tape.ts",
   "packages/sim/src/room-wire.ts",
   "packages/sim/src/room.ts",
   "packages/sim/src/snapshot-bytes.ts",
@@ -234,6 +235,7 @@ export const hotBodies = {
     ["sameFrame"],
     ["scratchFor"],
   ],
+  "packages/sim/src/room-tape.ts": [["createTapeWriter", "add"]],
   "packages/sim/src/room-wire.ts": [
     ["writeInput"],
     ["readInput"],

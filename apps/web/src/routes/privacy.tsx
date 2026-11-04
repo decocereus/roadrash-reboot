@@ -13,6 +13,12 @@ const records = [
     what: "A small list of events: the game opened and loaded, which race you picked, joining a room, copying an invite, a race starting and ending, and racing again. Each one carries your random ID, the race ID, your country, your graphics card, screen size and browser family.",
     why: "To see where the game loses people and what breaks on which machines. Events go through our server first, so PostHog never receives your IP address.",
   },
+  {
+    kept: "Every race during the closed test. Kept 7 days in Cloudflare's storage.",
+    title: "Race tapes",
+    what: "The controls each rider sent, the race's seed and versions, and checks that let us replay the race. Riders are numbers. It holds no player ID, name or invite link.",
+    why: "To replay what a race went through when something goes wrong. The room server writes this too, so the switch below does not stop it.",
+  },
 ] as const;
 
 const never = [

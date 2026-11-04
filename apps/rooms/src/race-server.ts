@@ -6,6 +6,7 @@ import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
 
 import { RoomApi } from "./contract.ts";
@@ -13,19 +14,45 @@ import { createHost } from "./host.ts";
 import type { HostPorts, HostSocket } from "./host.ts";
 import { cleanGuestName, SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
+import type { RoomNote } from "./notes.ts";
+import { TAPE_KEEP_DAYS } from "./tape.ts";
 
 const LOCAL_BUILD = "local";
 
-const portsFor = (build: string): HostPorts => ({
+const SECONDS_PER_DAY = 86_400;
+
+const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
+  lifecycleRules: [
+    {
+      deleteObjectsTransition: {
+        condition: { maxAge: TAPE_KEEP_DAYS * SECONDS_PER_DAY, type: "Age" },
+      },
+      id: "keep-tapes-seven-days",
+    },
+  ],
+});
+
+interface TapeSave {
+  readonly body: string | Uint8Array;
+  readonly key: string;
+}
+
+const note = (line: RoomNote): void => {
+  console.log(JSON.stringify(line));
+};
+
+const portsFor = (
+  build: string,
+  saveTape: HostPorts["saveTape"]
+): HostPorts => ({
   after: (ms, wake) => {
     setTimeout(wake, ms);
   },
   build,
-  note: (note) => {
-    console.log(JSON.stringify(note));
-  },
+  note,
   now: () => Date.now(),
   raceId: () => crypto.randomUUID(),
+  saveTape,
   seed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
 });
 
@@ -55,8 +82,27 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       Config.withDefault(LOCAL_BUILD),
       Effect.catchTag("ConfigError", () => Effect.succeed(LOCAL_BUILD))
     );
+    const tapes = yield* Cloudflare.R2.WriteBucket(RaceTapes);
     return Effect.gen(function* raceServerInstance() {
-      const host = createHost(portsFor(build));
+      const saves = yield* Queue.unbounded<TapeSave>();
+      yield* Queue.take(saves).pipe(
+        Effect.flatMap(({ body, key }) =>
+          tapes.put(key, body).pipe(
+            Effect.catchCause(() =>
+              Effect.sync(() => {
+                note({ key, kind: "tapeLost" });
+              })
+            )
+          )
+        ),
+        Effect.forever,
+        Effect.forkDetach
+      );
+      const host = createHost(
+        portsFor(build, (key, body) => {
+          Queue.offerUnsafe(saves, { body, key });
+        })
+      );
       const handlers = HttpApiBuilder.group(RoomApi, "rooms", (group) =>
         group
           .handle("status", () => Effect.sync(host.status))
@@ -108,5 +154,5 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
           }),
       };
     });
-  })
+  }).pipe(Effect.provide(Cloudflare.R2.WriteBucketBinding))
 ) {}
