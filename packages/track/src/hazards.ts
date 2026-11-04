@@ -1,4 +1,4 @@
-import { pieceSpans } from "./alignment.ts";
+import { pieceSpans, sampleAlong } from "./alignment.ts";
 import { crossingReservationOf } from "./crossings.ts";
 import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
@@ -190,13 +190,6 @@ const acrossOf = (
   return Math.min(reach, Math.max(-reach, x));
 };
 
-const sampleOf = (road: Road, values: Float64Array, s: number): number => {
-  const position = Math.min(road.sampleCount - 1, Math.max(0, s - road.startS));
-  const index = Math.min(road.sampleCount - 2, Math.floor(position));
-  const from = values[index] ?? 0;
-  return from + ((values[index + 1] ?? from) - from) * (position - index);
-};
-
 interface Spot {
   x: number;
   y: number;
@@ -204,10 +197,10 @@ interface Spot {
 }
 
 const spotOf = (road: Road, s: number, x: number, lift: number, out: Spot) => {
-  const heading = sampleOf(road, road.heading, s);
-  out.x = sampleOf(road, road.worldX, s) + cos(heading) * x;
-  out.y = sampleOf(road, road.worldY, s) + lift;
-  out.z = sampleOf(road, road.worldZ, s) + sin(heading) * x;
+  const heading = sampleAlong(road, road.heading, s);
+  out.x = sampleAlong(road, road.worldX, s) + cos(heading) * x;
+  out.y = sampleAlong(road, road.worldY, s) + lift;
+  out.z = sampleAlong(road, road.worldZ, s) + sin(heading) * x;
 };
 
 const eye: Spot = { x: 0, y: 0, z: 0 };
@@ -221,14 +214,14 @@ const seenFrom = (road: Road, s: number, x: number, distance: number) => {
   for (let step = 1; step < steps; step += 1) {
     const share = step / steps;
     const along = from + distance * share;
-    const heading = sampleOf(road, road.heading, along);
+    const heading = sampleAlong(road, road.heading, along);
     const chordX = eye.x + (target.x - eye.x) * share;
     const chordY = eye.y + (target.y - eye.y) * share;
     const chordZ = eye.z + (target.z - eye.z) * share;
     const across =
-      (chordX - sampleOf(road, road.worldX, along)) * cos(heading) +
-      (chordZ - sampleOf(road, road.worldZ, along)) * sin(heading);
-    const ground = sampleOf(road, road.worldY, along) + SIGHT_GROUND_CLEARANCE;
+      (chordX - sampleAlong(road, road.worldX, along)) * cos(heading) +
+      (chordZ - sampleAlong(road, road.worldZ, along)) * sin(heading);
+    const ground = sampleAlong(road, road.worldY, along) + SIGHT_GROUND_CLEARANCE;
     if (Math.abs(across) > road.vergeHalfWidth || chordY < ground) {
       return false;
     }
@@ -248,7 +241,7 @@ const bendAt = (road: Road, s: number): Bend => {
   ) {
     sharpest = Math.max(
       sharpest,
-      Math.abs(sampleOf(road, road.curvature, along))
+      Math.abs(sampleAlong(road, road.curvature, along))
     );
   }
   if (sharpest >= HAZARD_TIGHT_CURVATURE) {
@@ -280,7 +273,7 @@ const placesOf = (road: Road): Place[] => {
     const { from, piece, to } = span;
     if (Math.abs(span.turn) >= BEND_TURN) {
       const middle = from + piece.length / 2;
-      const inside = Math.sign(sampleOf(road, road.curvature, middle)) || 1;
+      const inside = Math.sign(sampleAlong(road, road.curvature, middle)) || 1;
       places.push(
         { inside, s: from + piece.length * TURN_IN_SHARE, setting: "turnIn" },
         { inside, s: middle, setting: "apex" },

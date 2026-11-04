@@ -1,4 +1,4 @@
-import { sampleAlignment } from "./alignment.ts";
+import { sampleAlignment, sampleAlong } from "./alignment.ts";
 import type { Alignment, Centreline } from "./alignment.ts";
 import { armClaims, compileCrossings } from "./crossings.ts";
 import type { CrossingRule, TrackCrossing } from "./crossings.ts";
@@ -226,32 +226,20 @@ export const compileTrack = (plan: TrackPlan): Track => {
   return { ...placed, walkSites: placeWalkSites(placed) };
 };
 
-const sampleAt = (track: Track, values: Float64Array, s: number): number => {
-  const position = Math.min(
-    track.sampleCount - 1,
-    Math.max(0, s - track.startS)
-  );
-  const index = Math.min(track.sampleCount - 2, Math.floor(position));
-  const blend = position - index;
-  const from = values[index] ?? 0;
-  const to = values[index + 1] ?? from;
-  return from + (to - from) * blend;
-};
-
 export const curvatureAt = (track: Track, s: number): number =>
-  sampleAt(track, track.curvature, s);
+  sampleAlong(track, track.curvature, s);
 
 export const heightAt = (track: Track, s: number): number =>
-  sampleAt(track, track.worldY, s);
+  sampleAlong(track, track.worldY, s);
 
 export const slopeAt = (track: Track, s: number): number =>
-  sampleAt(track, track.slope, s);
+  sampleAlong(track, track.slope, s);
 
 export const slopeRateAt = (track: Track, s: number): number =>
-  sampleAt(track, track.slopeRate, s);
+  sampleAlong(track, track.slopeRate, s);
 
 const headingAt = (track: Track, s: number): number =>
-  sampleAt(track, track.heading, s);
+  sampleAlong(track, track.heading, s);
 
 export const placeOnTrack = (
   track: Track,
@@ -262,9 +250,9 @@ export const placeOnTrack = (
   const heading = headingAt(track, s);
   point.heading = heading;
   point.slope = slopeAt(track, s);
-  point.x = sampleAt(track, track.worldX, s) + cos(heading) * x;
+  point.x = sampleAlong(track, track.worldX, s) + cos(heading) * x;
   point.y = heightAt(track, s);
-  point.z = sampleAt(track, track.worldZ, s) + sin(heading) * x;
+  point.z = sampleAlong(track, track.worldZ, s) + sin(heading) * x;
 };
 
 export const firstSolidPropFrom = (track: Track, s: number): number => {
