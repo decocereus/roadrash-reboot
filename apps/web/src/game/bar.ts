@@ -497,6 +497,7 @@ const openRoom = (
     }
 
     if (doorOpenedAt !== null && clock - doorOpenedAt > LOOP_AFTER_DOOR) {
+      timeShift += clock;
       clock = 0;
       doorOpenedAt = null;
       cast.reset();
