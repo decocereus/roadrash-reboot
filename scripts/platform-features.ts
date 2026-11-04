@@ -293,6 +293,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     kind: "platform",
     owns: [
       "packages/career/src/rules*.ts",
+      "packages/sim/src/difficulty*.ts",
       "apps/web/src/server/race-rules.ts",
       "apps/web/src/routes/api/race-rules.ts",
       "apps/web/src/rules/**",
@@ -301,11 +302,11 @@ export const platformFeatures: readonly FeatureEntry[] = [
     perf: [],
     start: [
       "apps/web/src/server/race-rules.ts",
-      "packages/career/src/rules.ts",
+      "packages/sim/src/difficulty.ts",
       "apps/web/src/rules/load.ts",
     ],
     summary:
-      "The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.",
+      "The difficulty tiers, and the server-owned field size and celebrity switch: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.",
     title: "Race rules",
     verify: ["race-rules.md"],
   },
@@ -476,7 +477,6 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/room.ts",
       "tools/perf/src/approved.ts",
       "tools/perf/src/baseline.ts",
-      "tools/perf/src/bench-lock.ts",
       "tools/perf/src/budgets.ts",
       "tools/perf/src/build.ts",
       "tools/perf/src/config-invalid.ts",

@@ -35,6 +35,7 @@ const readOn = async (
           stdout: command === "js" && size !== undefined ? factsOf(size) : "",
         };
       }),
+    runShown: () => Effect.die("nothing here runs a shown command"),
     spawnScoped: () => Effect.die("reading a page spawns nothing"),
     startDetached: () => Effect.die("reading a page starts nothing"),
     stopOwned: () => Effect.die("reading a page stops nothing"),

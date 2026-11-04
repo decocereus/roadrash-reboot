@@ -10,7 +10,6 @@ import { disarm } from "./weapons.ts";
 export const PATROL_SPEED = 22;
 const BODY_RANGE = 60;
 const WAKE_RANGE = 35;
-const LOSE_RANGE = 120;
 const WITNESS_RANGE = 250;
 const OFFENDER_RANGE = 500;
 const BUST_REACH = 4;
@@ -56,8 +55,11 @@ const inReach = (
   return rider.mode === "riding" && Math.abs(rider.s - cop.s) < ridingRange;
 };
 
-const stillChasing = (cop: RiderState, rider: RiderState): boolean =>
-  inReach(cop, rider, BODY_RANGE, LOSE_RANGE);
+const stillChasing = (
+  state: RaceState,
+  cop: RiderState,
+  rider: RiderState
+): boolean => inReach(cop, rider, BODY_RANGE, state.police.loseRange);
 
 const offenderOf = (
   state: RaceState,
@@ -159,7 +161,7 @@ const updateChase = (state: RaceState, cop: RiderState) => {
   }
   const current = riderOf(state.riders, cop.chase);
   const next = pickTarget(state, cop);
-  let quarry = current && stillChasing(cop, current) ? current : next;
+  let quarry = current && stillChasing(state, cop, current) ? current : next;
   if (next && isDown(next)) {
     quarry = next;
   }

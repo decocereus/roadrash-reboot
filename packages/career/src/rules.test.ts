@@ -1,32 +1,35 @@
 import { bikeIds } from "@racer/sim/bikes";
+import { tierAfter } from "@racer/sim/difficulty";
 import { describe, expect, it } from "vitest";
 
-import { recordedRules } from "./bench.ts";
 import {
-  decent,
   decentSeason,
   enter,
   ledgerOf,
   play,
   playAll,
   road,
-  seasonAt,
   seasonsOf,
   settle,
   sprint,
   weakSeason,
 } from "./career-fixtures.ts";
 import { fieldFor, roadsFor, setupFor } from "./field.ts";
-import { levelAfter, levelsOf } from "./rules.ts";
-import type { RaceRules } from "./rules.ts";
+import { launchRules } from "./rules.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { startRace } from "./settle.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
 import { chapterOf } from "./story.ts";
-import { policeFor, prizeFor, roadList, stockArrivingAt } from "./tables.ts";
+import {
+  policeFor,
+  prizeFor,
+  roadList,
+  stockArrivingAt,
+  tiers,
+} from "./tables.ts";
 
-const served: RaceRules = { ...recordedRules, fieldSize: 10, levelCount: 3 };
+const served = launchRules;
 
 const qualifyOn = (career: CareerState, roads: typeof roadList): CareerState =>
   playAll(
@@ -35,10 +38,10 @@ const qualifyOn = (career: CareerState, roads: typeof roadList): CareerState =>
     served
   );
 
-describe("ten racers over three levels", () => {
-  it("draws nine different rivals for every road at every level", () => {
-    const fields = levelsOf(served).flatMap((level) =>
-      roadList.map((entry) => fieldFor(served, entry.id, level, 5))
+describe("ten racers over three tiers", () => {
+  it("draws nine different rivals for every road at every tier", () => {
+    const fields = tiers.flatMap((tier) =>
+      roadList.map((entry) => fieldFor(served, entry.id, tier, 5))
     );
     expect(
       fields.map((field) => [field.length, new Set(field).size])
@@ -55,7 +58,7 @@ describe("ten racers over three levels", () => {
     ]).toStrictEqual([10, 10]);
   });
 
-  it("moves up twice, opens the Long Ridge at level 3, and ends the season there", () => {
+  it("moves up twice, opens the Long Ridge at tier 3, and ends the season there", () => {
     const two = qualifyOn(newCareer(11), roadList);
     const three = qualifyOn(two, roadList);
     const four = qualifyOn(
@@ -64,39 +67,36 @@ describe("ten racers over three levels", () => {
     );
     const won = play(four, { place: 1, roadId: "ridge-road" }, 1, served);
     expect([
-      two.level,
-      three.level,
-      levelAfter(served, three.level),
+      two.tier,
+      three.tier,
+      tierAfter(three.tier),
       roadsFor(served, three).finaleOpen,
       roadsFor(served, four).finaleOpen,
       ledgerOf(won).ending,
-      won.career.level,
+      won.career.tier,
     ]).toStrictEqual([2, 3, null, false, true, "clean-crown", 3]);
-    expect(startRace(served, won.career, "slag-row", 1)).toMatchObject({
+    expect(startRace(won.career, "slag-row", 1)).toMatchObject({
       reason: "seasonOver",
       started: false,
     });
   });
 
-  it("refuses a save made at a level the rules no longer hold", () => {
-    const text = serialiseCareer(seasonAt(decent, 4).start);
-    expect([
-      parseCareer(recordedRules, text).ok,
-      parseCareer(served, text),
-    ]).toStrictEqual([
-      true,
-      { error: { field: "level", kind: "invalid" }, ok: false },
-    ]);
+  it("refuses a save made at a tier the game no longer holds", () => {
+    const text = serialiseCareer(newCareer(11)).replace('"tier":1', '"tier":4');
+    expect(parseCareer(text)).toStrictEqual({
+      error: { field: "tier", kind: "invalid" },
+      ok: false,
+    });
   });
 
-  it("stocks every bike at some level and puts every bike under some rival", () => {
+  it("stocks every bike at some tier and puts every bike under some rival", () => {
     const ridden = new Set(
-      levelsOf(served).flatMap((level) =>
+      tiers.flatMap((tier) =>
         roadList.flatMap((entry) =>
           [1, 2, 3, 4].flatMap((seed) =>
             setupFor(
               served,
-              { ...newCareer(seed), level },
+              { ...newCareer(seed), tier },
               entry.id,
               seed,
               road
@@ -105,9 +105,7 @@ describe("ten racers over three levels", () => {
         )
       )
     );
-    expect(
-      levelsOf(served).map((level) => stockArrivingAt(served, level))
-    ).toStrictEqual([
+    expect(tiers.map((tier) => stockArrivingAt(tier))).toStrictEqual([
       [
         "gutter-pup-250",
         "halden-wren-400",
@@ -120,21 +118,20 @@ describe("ten racers over three levels", () => {
     expect(bikeIds.filter((bikeId) => !ridden.has(bikeId))).toStrictEqual([]);
   });
 
-  it("pays each level for the two rungs of bike it climbs, and bills it at the rung its field rides", () => {
+  it("pays and fines more at each tier", () => {
     expect(
-      levelsOf(served).map((level) => [
-        [1, 2, 3, 10].map((place) => prizeFor(served, level, place)),
-        policeFor(served, level, "lowtown").fine,
+      tiers.map((tier) => [
+        [1, 2, 3, 10].map((place) => prizeFor(tier, place)),
+        policeFor(tier, "lowtown").fine,
       ])
     ).toStrictEqual([
       [[5000, 3400, 2400, 100], 400],
       [[12_000, 8160, 5760, 240], 1500],
       [[23_000, 15_640, 11_040, 460], 3000],
     ]);
-    expect(prizeFor(recordedRules, 5, 1)).toBe(11_500);
   });
 
-  it("lets the decent and the weak player buy one bike a level, the Sesta and then the Meridian", () => {
+  it("lets the decent and the weak player buy one bike a tier, the Sesta and then the Meridian", () => {
     const purchases = ["ostra-sesta-600", "halden-meridian-900"] as const;
     const cash = (steps: typeof decentSeason) =>
       seasonsOf(steps, purchases, served).map((season) => [
@@ -154,10 +151,12 @@ describe("ten racers over three levels", () => {
     ]);
   });
 
-  it("folds the last two chapters into level 3, the Long Ridge", () => {
-    expect(
-      levelsOf(served).map((level) => chapterOf(served, level).name)
-    ).toStrictEqual(["New Meat", "Dee's Tip", "The Long Ridge"]);
-    expect(chapterOf(served, 3).note).toContain("Ridge Road");
+  it("gives each tier its chapter, and tier 3 is the Long Ridge", () => {
+    expect(tiers.map((tier) => chapterOf(tier).name)).toStrictEqual([
+      "New Meat",
+      "Dee's Tip",
+      "The Long Ridge",
+    ]);
+    expect(chapterOf(3).note).toContain("Ridge Road");
   });
 });

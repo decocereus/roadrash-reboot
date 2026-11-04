@@ -12,6 +12,8 @@ import {
 } from "./combat.ts";
 import { applyControl } from "./control.ts";
 import { createCrossTraffic, stepCrossTraffic } from "./cross-traffic.ts";
+import { difficulties } from "./difficulty.ts";
+import type { Tier } from "./difficulty.ts";
 import { meetHazards, spawnScheduledHazards } from "./hazards.ts";
 import type { ThrowForHazard } from "./hazards.ts";
 import { PLAYER_COLOURS } from "./palette.ts";
@@ -52,7 +54,8 @@ const LAST_COP_BEFORE_FINISH = 1000;
 const PILOT_DICE_SALT = 0x5a_17;
 const HAZARD_DICE_SALT = 0x2e_c3;
 const TRAFFIC_PATIENCE_SALT = 0x71_b5;
-const DEFAULT_LEVEL = 3;
+const CONVOY_SALT = 0x3c_a9;
+const DEFAULT_TIER: Tier = 2;
 export const MOST_RACERS = 15;
 const MOST_RIVALS = MOST_RACERS - 1;
 
@@ -89,6 +92,7 @@ export const defaultPolice: PoliceSetup = {
   bike: streetBike,
   count: 1,
   fine: 1500,
+  loseRange: 120,
   officer: officers["dolores-pike"].profile,
   sightRange: 40,
   topSpeed: 48,
@@ -108,11 +112,12 @@ const defaultRivals: readonly RivalId[] = [
 ];
 
 export const defaultSetup = (track: Track, seed: number): RaceSetup => ({
+  conditions: difficulties[1].conditions,
   gridOrder: "playerLast",
   pacing: defaultPacing,
   player: defaultPlayer,
   police: defaultPolice,
-  rivals: defaultRivals.map((id) => rivalAt(rivals[id], DEFAULT_LEVEL)),
+  rivals: defaultRivals.map((id) => rivalAt(rivals[id], DEFAULT_TIER)),
   seed,
   track,
 });
@@ -245,6 +250,11 @@ const copPost = (track: Track, index: number, count: number): number => {
 export type SetupError =
   | { readonly kind: "tooManyRivals"; readonly count: number }
   | { readonly kind: "duplicateRival"; readonly name: string }
+  | {
+      readonly kind: "outOfRange";
+      readonly rule: string;
+      readonly value: number;
+    }
   | { readonly kind: "missingBike"; readonly rider: string }
   | { readonly kind: "strayGrudge"; readonly rider: string };
 
@@ -279,6 +289,34 @@ const strayGrudges = (setup: RaceSetup): SetupError[] => {
     .map((rival) => ({ kind: "strayGrudge", rider: rival.name }));
 };
 
+const ruleRanges = [
+  ["hazardShare", 0, 1, (setup) => setup.conditions.hazardShare],
+  ["hitDamage", 0, 10, (setup) => setup.conditions.hitDamage],
+  ["slowConvoys", 0, 4, (setup) => setup.conditions.slowConvoys],
+  ["trafficDensity", 0, 3, (setup) => setup.conditions.trafficDensity],
+  ["catchUp", 0, 1, (setup) => setup.pacing.catchUp],
+  ["leadEase", 0, 1, (setup) => setup.pacing.leadEase],
+  ["police.beat", 0, 20_000, (setup) => setup.police.beat],
+  ["police.count", 0, 8, (setup) => setup.police.count],
+  ["police.fine", 0, 100_000, (setup) => setup.police.fine],
+  ["police.loseRange", 0, 1000, (setup) => setup.police.loseRange],
+  ["police.sightRange", 0, 1000, (setup) => setup.police.sightRange],
+  ["police.topSpeed", 0, 150, (setup) => setup.police.topSpeed],
+] as const satisfies readonly (readonly [
+  string,
+  number,
+  number,
+  (setup: RaceSetup) => number,
+])[];
+
+const rulesOutOfRange = (setup: RaceSetup): SetupError[] =>
+  ruleRanges.flatMap(([rule, least, most, read]) => {
+    const value = read(setup);
+    return value >= least && value <= most
+      ? []
+      : [{ kind: "outOfRange", rule, value } as const];
+  });
+
 export const validateSetup = (setup: RaceSetup): SetupError[] => [
   ...(setup.rivals.length > MOST_RIVALS
     ? [{ count: setup.rivals.length, kind: "tooManyRivals" } as const]
@@ -286,6 +324,7 @@ export const validateSetup = (setup: RaceSetup): SetupError[] => [
   ...duplicateRivals(setup),
   ...missingBikes(setup),
   ...strayGrudges(setup),
+  ...rulesOutOfRange(setup),
 ];
 
 const describeSetupError = (error: SetupError): string => {
@@ -295,6 +334,9 @@ const describeSetupError = (error: SetupError): string => {
     }
     case "duplicateRival": {
       return `${error.name} is on the grid more than once.`;
+    }
+    case "outOfRange": {
+      return `The rule ${error.rule} cannot be ${error.value}.`;
     }
     case "missingBike": {
       return `${error.rider} has no bike.`;
@@ -314,6 +356,7 @@ export const createRace = (setup: RaceSetup): RaceState => {
     throw new Error(problems.map(describeSetupError).join(" "));
   }
   const {
+    conditions,
     gridOrder,
     pacing,
     player,
@@ -387,26 +430,30 @@ export const createRace = (setup: RaceSetup): RaceState => {
     cars: createTraffic(
       track,
       createRandom(seed),
-      createRandom(nextSeed(seed + TRAFFIC_PATIENCE_SALT))
+      createRandom(nextSeed(seed + TRAFFIC_PATIENCE_SALT)),
+      conditions,
+      createRandom(nextSeed(seed + CONVOY_SALT))
     ),
     crossCars: createCrossTraffic(track, seed),
     dice: nextSeed(seed + PILOT_DICE_SALT),
     events: [],
     hazardDice: nextSeed(seed + HAZARD_DICE_SALT),
     hazards: [],
+    hitDamage: conditions.hitDamage,
     pacing: { catchUp: pacing.catchUp, leadEase: pacing.leadEase },
     pedestrians: createPedestrians(track, seed),
     pilot: createPilotHistory(),
     police: {
       beat: police.beat,
       fine: police.fine,
+      loseRange: police.loseRange,
       sightRange: police.sightRange,
       topSpeed: police.topSpeed,
     },
     riders,
     tick: 0,
   };
-  spawnScheduledHazards(state, track);
+  spawnScheduledHazards(state, track, conditions.hazardShare);
   return state;
 };
 

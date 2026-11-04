@@ -126,14 +126,20 @@ const hazardSpawners = {
   rock: spawnRock,
 } as const satisfies Record<HazardKind, SpawnHazard>;
 
-export const spawnScheduledHazards = (state: RaceState, track: Track): void => {
+export const spawnScheduledHazards = (
+  state: RaceState,
+  track: Track,
+  share: number
+): void => {
   for (const placement of track.hazards) {
-    hazardSpawners[placement.kind](state, track, {
-      command: null,
-      id: placement.id,
-      s: placement.s,
-      x: placement.x,
-    });
+    if (placement.rarity < share) {
+      hazardSpawners[placement.kind](state, track, {
+        command: null,
+        id: placement.id,
+        s: placement.s,
+        x: placement.x,
+      });
+    }
   }
 };
 

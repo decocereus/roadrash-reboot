@@ -1,4 +1,3 @@
-import type { RaceRules } from "@racer/career/rules";
 import { debtOf, qualifiedCount } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { roadList } from "@racer/career/tables";
@@ -8,7 +7,7 @@ import { cn } from "@racer/ui/utils";
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { plates } from "../../assets/clubhouse-art.ts";
-import { levelName } from "../../career/copy.ts";
+import { tierName } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
 import { Plate, place, stagePx } from "./clubhouse-stage.tsx";
 
@@ -32,46 +31,38 @@ const StatusItem = ({
   </p>
 );
 
-export interface Standing {
-  readonly career: CareerState;
-  readonly rules: RaceRules;
-}
-
-const StatusStrip = ({ standing }: { readonly standing: Standing }) => {
-  const { career, rules } = standing;
-  return (
-    <div
-      className="bg-ink/85 font-display text-paper flex items-center justify-around border-y border-white/10 font-bold tracking-wide uppercase"
-      style={{ ...place(STATUS), fontSize: stagePx(27) }}
+const StatusStrip = ({ career }: { readonly career: CareerState }) => (
+  <div
+    className="bg-ink/85 font-display text-paper flex items-center justify-around border-y border-white/10 font-bold tracking-wide uppercase"
+    style={{ ...place(STATUS), fontSize: stagePx(27) }}
+  >
+    <StatusItem label={`Tier ${career.tier} ·`} tone="text-neon-cyan">
+      {tierName(career.tier)}
+    </StatusItem>
+    <StatusItem label="Roads" tone="text-neon-yellow">
+      <span className="text-neon-yellow">
+        {qualifiedCount(career.qualified[career.tier])} / {roadList.length}{" "}
+        qualified
+      </span>
+    </StatusItem>
+    <StatusItem
+      label={debtOf(career) > 0 ? "Owed" : "Cash"}
+      tone="text-paper/75"
     >
-      <StatusItem label={`Level ${career.level} ·`} tone="text-neon-cyan">
-        {levelName(rules, career.level)}
-      </StatusItem>
-      <StatusItem label="Roads" tone="text-neon-yellow">
-        <span className="text-neon-yellow">
-          {qualifiedCount(career.qualified[career.level])} / {roadList.length}{" "}
-          qualified
-        </span>
-      </StatusItem>
-      <StatusItem
-        label={debtOf(career) > 0 ? "Owed" : "Cash"}
-        tone="text-paper/75"
-      >
-        <span className="text-neon-red numeric">
-          {formatMoney(Math.abs(career.cash))}
-        </span>
-      </StatusItem>
-      <p className="text-neon-yellow whitespace-nowrap">
-        {bikeName(career.bikeId)}
-      </p>
-    </div>
-  );
-};
+      <span className="text-neon-red numeric">
+        {formatMoney(Math.abs(career.cash))}
+      </span>
+    </StatusItem>
+    <p className="text-neon-yellow whitespace-nowrap">
+      {bikeName(career.bikeId)}
+    </p>
+  </div>
+);
 
 export const BarHeader = ({
-  standing,
+  career,
 }: {
-  readonly standing: Standing | null;
+  readonly career: CareerState | null;
 }) => (
   <>
     <h1
@@ -81,7 +72,7 @@ export const BarHeader = ({
       The Lowside
     </h1>
     <Plate box={BADGE} src={plates.badge} />
-    {standing && <StatusStrip standing={standing} />}
+    {career && <StatusStrip career={career} />}
   </>
 );
 

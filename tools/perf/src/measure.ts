@@ -6,6 +6,7 @@ import {
   gcNamesSeen,
   summariseTrace,
 } from "@racer/devtools/analysis";
+import { holdBench } from "@racer/devtools/bench-lock";
 import type { DesktopEnv } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
 import { launch } from "@racer/devtools/chrome";
@@ -21,7 +22,6 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 
-import { holdBench } from "./bench-lock.ts";
 import {
   LATE_MS,
   afterGreenLight,

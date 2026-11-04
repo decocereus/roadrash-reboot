@@ -284,7 +284,7 @@ export const placedAt = (
   s: number,
   x: number,
   id: string
-): HazardPlacement => ({ id, kind, s, setting: "traffic", x });
+): HazardPlacement => ({ id, kind, rarity: 0, s, setting: "traffic", x });
 
 export const slick = roadWith(placedAt("oil", 1000, 1.8, "slick"));
 

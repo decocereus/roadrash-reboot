@@ -19,7 +19,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [AI riders (the pilot)](#ai-riders-the-pilot): `pilot`
 - [Rivals, the field and their lines](#rivals-the-field-and-their-lines): `rivals`
 - [Career money and settlement](#career-money-and-settlement): `career-money`
-- [Career levels, season and story](#career-levels-season-and-story): `career-progression`
+- [Career tiers, season and story](#career-tiers-season-and-story): `career-progression`
 - [Menus and screens](#menus-and-screens): `menus`
 - [Race HUD and notices](#race-hud-and-notices): `hud`
 - [Chase camera](#chase-camera): `camera`
@@ -338,9 +338,9 @@ Test files:
 - `packages/career/src/last-result.test.ts`
 - `packages/career/src/settlement.test.ts`
 
-### Career levels, season and story
+### Career tiers, season and story
 
-The career state itself, levels, qualification and promotion, the season board, the story beats, the envelope and the endings.
+The career state itself, tiers, qualification and promotion, the season board, the story beats, the envelope and the endings.
 
 - Id: `career-progression`
 - Start: `packages/career/src/state.ts`, `packages/career/src/story.ts`, `packages/career/src/season.ts`
@@ -524,7 +524,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
-- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
+- Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
 
 Source files:
 
@@ -545,6 +545,7 @@ Source files:
 Test files:
 
 - `apps/web/test/bike-contact.ts`
+- `apps/web/test/figure-shadow.test.ts`
 - `apps/web/test/figure-wear.test.ts`
 - `apps/web/test/planted-hands.test.ts`
 - `apps/web/test/rider-shade.ts`
@@ -906,14 +907,14 @@ Test files:
 
 ### Race rules
 
-The server-owned field size, level count and police per level: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.
+The difficulty tiers, and the server-owned field size and celebrity switch: the record and its schema, the `GET /api/race-rules` route, and the boot load that passes them to career and race setup.
 
 - Id: `race-rules`
-- Start: `apps/web/src/server/race-rules.ts`, `packages/career/src/rules.ts`, `apps/web/src/rules/load.ts`
+- Start: `apps/web/src/server/race-rules.ts`, `packages/sim/src/difficulty.ts`, `apps/web/src/rules/load.ts`
 - Docs: [docs/architecture.md#career](architecture.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-rules.md](../.claude/skills/verify-rushline/features/race-rules.md)
 - Perf: none yet
-- Owns: `packages/career/src/rules*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
+- Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
 
 Source files:
 
@@ -925,11 +926,13 @@ Source files:
 - `apps/web/src/server/race-rules.ts`
 - `packages/career/src/rules-schema.ts`
 - `packages/career/src/rules.ts`
+- `packages/sim/src/difficulty.ts`
 
 Test files:
 
 - `apps/web/test/race-rules.test.ts`
 - `packages/career/src/rules.test.ts`
+- `packages/sim/src/difficulty.test.ts`
 
 ### Play-test telemetry
 
@@ -1079,6 +1082,8 @@ The table of what differs per machine, launching the browser and the Linux deskt
 Source files:
 
 - `packages/devtools/src/analysis.ts`
+- `packages/devtools/src/bench-busy.ts`
+- `packages/devtools/src/bench-lock.ts`
 - `packages/devtools/src/browser-error.ts`
 - `packages/devtools/src/browser-host.ts`
 - `packages/devtools/src/cdp-error.ts`
@@ -1112,6 +1117,7 @@ Test files: none
 Source files:
 
 - `tools/verify/rushline.ts`
+- `tools/verify/src/bench.ts`
 - `tools/verify/src/capture.ts`
 - `tools/verify/src/cli.ts`
 - `tools/verify/src/commands.ts`
@@ -1133,6 +1139,7 @@ Test files:
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
 - `tools/verify/test/desktop-session.test.ts`
+- `tools/verify/test/slot-write.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`
 - `tools/verify/test/wait-deadline.test.ts`
 
@@ -1145,7 +1152,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/bench-lock.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1156,7 +1163,6 @@ Source files:
 - `tools/perf/room.ts`
 - `tools/perf/src/approved.ts`
 - `tools/perf/src/baseline.ts`
-- `tools/perf/src/bench-lock.ts`
 - `tools/perf/src/budgets.ts`
 - `tools/perf/src/build.ts`
 - `tools/perf/src/config-invalid.ts`

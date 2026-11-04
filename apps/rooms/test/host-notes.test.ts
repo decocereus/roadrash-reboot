@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createHost } from "../src/host.ts";
 import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
+  advanceHearing,
   nearby,
   START_DELAY_MS,
   createClock,
@@ -32,9 +33,9 @@ describe("the room's notes", () => {
   });
 
   it("names who the countdown gave up on", () => {
-    const { clock, host, near } = pressedStart();
+    const { clock, far, host, near } = pressedStart();
     host.message(near, readyPacket());
-    clock.advance(20_000);
+    advanceHearing(host, clock, [far, near], 20_000);
     expect(clock.notes[1]).toMatchObject({
       raceId: "race-1",
       stillLoading: [1],

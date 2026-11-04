@@ -12,30 +12,28 @@ export type Bench = "stress" | "reference";
 export const recordedRules: RaceRules = {
   celebrities: false,
   fieldSize: 15,
-  levelCount: 5,
-  police: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },
 };
 
 export const benchRaces = {
   reference: {
     bikeId: STARTING_BIKE,
-    level: 1,
     roadId: "slag-row",
     seed: 31,
+    tier: 1,
   },
   stress: {
     bikeId: "ostra-sesta-600",
-    level: 5,
     roadId: "slag-row",
     seed: 8,
+    tier: 3,
   },
 } as const satisfies Readonly<Record<Bench, PracticeRace>>;
 
 export const roadLifeRace = {
   bikeId: "ostra-sesta-600",
-  level: 5,
   roadId: "breakwater-run",
   seed: 8,
+  tier: 3,
 } as const satisfies PracticeRace;
 
 const STRESS_COPS = 8;

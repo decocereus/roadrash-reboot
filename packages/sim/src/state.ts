@@ -397,8 +397,16 @@ export type RaceEvent =
 export interface PoliceRules {
   readonly topSpeed: number;
   readonly sightRange: number;
+  readonly loseRange: number;
   readonly beat: number;
   readonly fine: number;
+}
+
+export interface RaceConditions {
+  readonly hazardShare: number;
+  readonly hitDamage: number;
+  readonly slowConvoys: number;
+  readonly trafficDensity: number;
 }
 
 export interface PacingRules {
@@ -436,6 +444,7 @@ export interface RaceSetup {
   readonly rivals: readonly RivalSetup[];
   readonly police: PoliceSetup;
   readonly pacing: PacingRules;
+  readonly conditions: RaceConditions;
   readonly gridOrder: GridOrder;
 }
 
@@ -453,6 +462,7 @@ export interface RaceState {
   readonly pilot: PilotHistory;
   readonly police: PoliceRules;
   readonly pacing: PacingRules;
+  readonly hitDamage: number;
   readonly riders: readonly RiderState[];
   readonly cars: TrafficCar[];
   readonly crossCars: readonly CrossCar[];

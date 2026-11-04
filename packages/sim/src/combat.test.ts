@@ -46,7 +46,7 @@ const raceThePack = (seed: number) => {
 };
 
 describe("the pack", () => {
-  it("a punch drains stamina and enough of them knock the rival down", () => {
+  it("a punch drains stamina and three of them knock the rival down at tier 1", () => {
     const flat = compileTrack({
       ...ridgeRoad,
       carriers: [],
@@ -89,7 +89,7 @@ describe("the pack", () => {
       }
     }
     const hits = events.filter((event) => event.kind === "hit");
-    expect(hits.length).toBeGreaterThan(3);
+    expect(hits).toHaveLength(3);
     expect(rival.mode).toBe("thrown");
     expect(
       events.some((event) => event.kind === "crash" && event.cause === "combat")

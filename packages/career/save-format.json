@@ -13,7 +13,7 @@
           "ostra-sesta-600",
           "ostra-sette-750"
         ],
-        "Level": [1, 2, 3, 4, 5],
+        "Tier": [1, 2, 3, 4, 5],
         "Officer": ["dolores-pike", "wendell-haverty"],
         "Racer": [
           "agnes-mulcahy",
@@ -78,7 +78,7 @@
           "ostra-sesta-600",
           "ostra-sette-750"
         ],
-        "Level": [1, 2, 3, 4, 5],
+        "Tier": [1, 2, 3, 4, 5],
         "Officer": ["dolores-pike", "wendell-haverty"],
         "Racer": [
           "agnes-mulcahy",
@@ -167,7 +167,7 @@
           "ostra-sesta-600",
           "ostra-sette-750"
         ],
-        "Level": [1, 2, 3, 4, 5],
+        "Tier": [1, 2, 3, 4, 5],
         "Officer": ["dolores-pike", "wendell-haverty"],
         "Racer": [
           "agnes-mulcahy",
@@ -236,6 +236,89 @@
       "fingerprint": "b2e853cef95e0c3967b9b73de16c002a306638aea7cbc89fa06e7178e28f88da",
       "version": 4,
       "wireFingerprint": "f0299bdf61e4a046576117e887d0a38c3833dde18875795510a64da609147b74"
+    },
+    {
+      "catalogues": {
+        "Bike": [
+          "brack-anvil-1100",
+          "brack-stoker-800",
+          "gutter-pup-250",
+          "halden-kite-500",
+          "halden-meridian-900",
+          "halden-wren-400",
+          "ostra-nera-1000",
+          "ostra-sesta-600",
+          "ostra-sette-750"
+        ],
+        "Tier": [1, 2, 3],
+        "Officer": ["dolores-pike", "wendell-haverty"],
+        "Racer": [
+          "agnes-mulcahy",
+          "benny-okafor",
+          "captain-penaldo",
+          "captain-penaldo",
+          "coach-dale-hutto",
+          "dee-santangelo",
+          "elongated-muskrat",
+          "elongated-muskrat",
+          "felix-aurand",
+          "gus-abernathy",
+          "hollis-thorne",
+          "ines-marchetti",
+          "juno-kade",
+          "kylip-jetner",
+          "kylip-jetner",
+          "lyle-gorski",
+          "mags-dunleavy",
+          "moose-kowalczyk",
+          "orrin-blackwell",
+          "player",
+          "ranwear-bling",
+          "ranwear-bling",
+          "ruth-ann-bixby",
+          "slam-altruman",
+          "slam-altruman",
+          "supreme-leader-mbosse",
+          "supreme-leader-mbosse",
+          "tristan-lux",
+          "wanda-pruitt"
+        ],
+        "Rival": [
+          "agnes-mulcahy",
+          "benny-okafor",
+          "captain-penaldo",
+          "captain-penaldo",
+          "coach-dale-hutto",
+          "dee-santangelo",
+          "elongated-muskrat",
+          "elongated-muskrat",
+          "felix-aurand",
+          "gus-abernathy",
+          "hollis-thorne",
+          "ines-marchetti",
+          "juno-kade",
+          "kylip-jetner",
+          "kylip-jetner",
+          "lyle-gorski",
+          "mags-dunleavy",
+          "moose-kowalczyk",
+          "orrin-blackwell",
+          "ranwear-bling",
+          "ranwear-bling",
+          "ruth-ann-bixby",
+          "slam-altruman",
+          "slam-altruman",
+          "supreme-leader-mbosse",
+          "supreme-leader-mbosse",
+          "tristan-lux",
+          "wanda-pruitt"
+        ],
+        "Road": ["breakwater-run", "ridge-road", "slag-row"],
+        "Weapon": ["baton", "chain", "club", "crowbar", "cue", "none", "sign"]
+      },
+      "fingerprint": "cf43c9fe298a6b787457d9cea41290dc45e637aaff3446a20ffad24a173f8da6",
+      "version": 5,
+      "wireFingerprint": "8955c2e7bf7f61e425307e9cf72be7b2ce528ef1974d55bf8b26a25eac3d5c72"
     }
   ]
 }

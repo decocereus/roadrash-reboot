@@ -6,7 +6,7 @@ import path from "node:path";
 import { EncodedSaveSchema } from "@racer/career/save-schema";
 import {
   Bike,
-  Level,
+  Tier,
   Officer,
   Racer,
   Rival,
@@ -68,11 +68,11 @@ const drop = (node: Node, key: string): Node =>
 const base: Save = {
   catalogues: {
     Bike: Bike.literals,
-    Level: Level.literals,
     Officer: Officer.literals,
     Racer: Racer.literals,
     Rival: Rival.literals,
     Road: Road.literals,
+    Tier: Tier.literals,
     Weapon: Weapon.literals,
   },
   document: decodeNode(
@@ -224,19 +224,19 @@ const addRival = edit(
   { Racer: [...racers, "review-rival"], Rival: [...rivals, "review-rival"] }
 );
 const addLevel = edit(
-  edit(base, grow(Level.literals, 6)),
-  row(Level.literals, "6"),
-  { Level: [...Level.literals, 6] }
+  edit(base, grow(Tier.literals, 6)),
+  row(Tier.literals, "6"),
+  { Tier: [...Tier.literals, 6] }
 );
 
 const reordered: Save = {
   catalogues: {
     Bike: bikes.toReversed(),
-    Level: Level.literals.toReversed(),
     Officer: Officer.literals.toReversed(),
     Racer: racers.toReversed(),
     Rival: rivals.toReversed(),
     Road: roads.toReversed(),
+    Tier: Tier.literals.toReversed(),
     Weapon: Weapon.literals.toReversed(),
   },
   document: edit(base, (node) =>
@@ -489,7 +489,7 @@ describe("check:save-format", () => {
       structure,
     ],
     ["a required rival row", addRival, structure],
-    ["a required level row", addLevel, structure],
+    ["a required tier row", addLevel, structure],
     [
       "a catalogue-sized bound raised without a new bike",
       top((fields) =>

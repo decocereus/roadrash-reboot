@@ -91,6 +91,11 @@ export class ToolProcesses extends Context.Service<
       args: readonly string[],
       options?: RunOptions
     ) => Effect.Effect<CommandOutput, ProcessError>;
+    readonly runShown: (
+      file: string,
+      args: readonly string[],
+      env: NodeJS.ProcessEnv
+    ) => Effect.Effect<number, ProcessError>;
     readonly spawnScoped: (
       file: string,
       args: readonly string[],
@@ -171,6 +176,36 @@ export class ToolProcesses extends Context.Service<
             });
           }
           return { stderr, stdout };
+        }, Effect.scoped);
+
+        const runShown = Effect.fn("ToolProcesses.runShown")(function* runShown(
+          file: string,
+          args: readonly string[],
+          env: NodeJS.ProcessEnv
+        ) {
+          const failure =
+            (operation: "run" | "start") =>
+            (cause: PlatformError.PlatformError) =>
+              new ProcessError({
+                cause,
+                executable: file,
+                message: `Could not ${operation} ${[file, ...args].join(" ")}: ${cause.message}`,
+                operation,
+              });
+          const handle = yield* spawner
+            .spawn(
+              ChildProcess.make(file, [...args], {
+                env,
+                extendEnv: false,
+                stderr: "inherit",
+                stdin: "ignore",
+                stdout: "inherit",
+              })
+            )
+            .pipe(Effect.mapError(failure("start")));
+          return Number(
+            yield* handle.exitCode.pipe(Effect.mapError(failure("run")))
+          );
         }, Effect.scoped);
 
         const spawnScoped = Effect.fn("ToolProcesses.spawnScoped")(
@@ -305,6 +340,7 @@ export class ToolProcesses extends Context.Service<
           listed,
           listenerOf,
           run,
+          runShown,
           spawnScoped,
           startDetached,
           stopOwned,

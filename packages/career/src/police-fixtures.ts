@@ -8,16 +8,14 @@ import { trackFor } from "@racer/track/roads";
 import { recordedRules } from "./bench.ts";
 import { setupFor } from "./field.ts";
 import { newCareer } from "./state.ts";
-import { levels } from "./tables.ts";
-import type { Level, RoadId } from "./tables.ts";
+import { tiers } from "./tables.ts";
+import type { Tier, RoadId } from "./tables.ts";
 
 const decentBikes = {
   1: "halden-wren-400",
-  2: "halden-kite-500",
-  3: "ostra-sesta-600",
-  4: "ostra-sette-750",
-  5: "halden-meridian-900",
-} as const satisfies Record<Level, BikeId>;
+  2: "ostra-sesta-600",
+  3: "halden-meridian-900",
+} as const satisfies Record<Tier, BikeId>;
 
 const DECENT_SKILL = 0.9;
 const DECENT_AGGRESSION = 0.5;
@@ -30,19 +28,19 @@ const endings = ["finished", "busted", "wrecked", "unsettled"] as const;
 type Ending = (typeof endings)[number];
 
 interface PoliceStart {
-  readonly level: Level;
+  readonly tier: Tier;
   readonly roadId: RoadId;
   readonly seed: number;
 }
 
 export interface PoliceRide {
-  readonly level: Level;
+  readonly tier: Tier;
   readonly ending: Ending;
   readonly rivalsBusted: number;
 }
 
-export const policeStarts: readonly PoliceStart[] = levels.flatMap((level) =>
-  roadIds.flatMap((roadId) => SEEDS.map((seed) => ({ level, roadId, seed })))
+export const policeStarts: readonly PoliceStart[] = tiers.flatMap((tier) =>
+  roadIds.flatMap((roadId) => SEEDS.map((seed) => ({ roadId, seed, tier })))
 );
 
 const endingOf = (state: RaceState): Ending => {
@@ -67,14 +65,14 @@ const rivalsBustedIn = (state: RaceState): number =>
       rider.mode === "busted"
   ).length;
 
-const ridePolice = ({ level, roadId, seed }: PoliceStart): PoliceRide => {
+const ridePolice = ({ tier, roadId, seed }: PoliceStart): PoliceRide => {
   const track = trackFor(roadId);
-  const bikeId = decentBikes[level];
+  const bikeId = decentBikes[tier];
   const setup = setupFor(
     recordedRules,
-    { ...newCareer(seed), bikeId, garage: [bikeId], level },
+    { ...newCareer(seed), bikeId, garage: [bikeId], tier },
     roadId,
-    seed * SEED_STEP + level,
+    seed * SEED_STEP + tier,
     track
   );
   const state = createRace({
@@ -95,7 +93,7 @@ const ridePolice = ({ level, roadId, seed }: PoliceStart): PoliceRide => {
     stepRace(state, track, emptyFrame);
     ending = endingOf(state);
   }
-  return { ending, level, rivalsBusted: rivalsBustedIn(state) };
+  return { ending, rivalsBusted: rivalsBustedIn(state), tier };
 };
 
 const RIDE_SLOTS = 2;
@@ -127,7 +125,7 @@ export const ridesIn = (season: Int32Array): readonly PoliceRide[] =>
     }
     return {
       ending,
-      level: start.level,
       rivalsBusted: Atomics.load(season, 2 + RIDE_SLOTS * index),
+      tier: start.tier,
     };
   });

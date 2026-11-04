@@ -93,7 +93,7 @@ export const RideOutScreen = ({
           className="font-display text-paper flex w-[34vw] flex-col gap-4 font-bold uppercase"
         >
           <p className="text-neon-cyan tracking-wide">
-            {quick ? "Single race" : `Level ${setup.level} · Top 3 qualifies`}
+            {quick ? "Single race" : `Tier ${setup.tier} · Top 3 qualifies`}
           </p>
           <h1 className="font-stencil text-[5vw] leading-none">{road.name}</h1>
           <p className="text-paper/70 tracking-wide">

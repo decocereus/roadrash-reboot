@@ -1,5 +1,4 @@
 import { bikePitches } from "@racer/career/lines";
-import type { RaceRules } from "@racer/career/rules";
 import {
   buyBike,
   canBuy,
@@ -71,7 +70,7 @@ const refusalText = (row: ShopRow): string => {
     return "Yours.";
   }
   if (row.refusal === "locked") {
-    return `Arrives at level ${row.arrivesAt}.`;
+    return `Arrives at tier ${row.arrivesAt}.`;
   }
   if (row.refusal === "inDebt") {
     return IN_DEBT_AT_THE_GARAGE;
@@ -87,7 +86,7 @@ const tagOf = (row: ShopRow): string => {
     return "Yours";
   }
   return row.refusal === "locked"
-    ? `Level ${row.arrivesAt}`
+    ? `Tier ${row.arrivesAt}`
     : formatMoney(row.price);
 };
 
@@ -215,8 +214,8 @@ const SpecBoard = ({
           </div>
         ))}
         <p className="text-paper/55 mt-[0.2em] text-[0.8em] tracking-wide">
-          A wreck at level {career.level} costs {formatMoney(row.repair)} on
-          this bike
+          A wreck at tier {career.tier} costs {formatMoney(row.repair)} on this
+          bike
         </p>
       </dl>
     </>
@@ -270,19 +269,17 @@ const Totals = ({
 
 export const GarageScreen = ({
   career,
-  rules,
   onTrade,
   onBack,
 }: {
   readonly career: CareerState;
-  readonly rules: RaceRules;
   readonly onTrade: (career: CareerState) => void;
   readonly onBack: () => void;
 }) => {
   const [bikeId, setBikeId] = useState<BikeId>(career.bikeId);
   const [asking, setAsking] = useState<Asking>("nothing");
   const [said, setSaid] = useState("");
-  const stock = shopStock(rules, career);
+  const stock = shopStock(career);
   const row = stock.find((each) => each.bikeId === bikeId) ?? stock[0];
   useEscape(onBack, asking === "nothing");
   if (!row) {
@@ -295,7 +292,7 @@ export const GarageScreen = ({
   };
   const tryBuy = (wanted: ShopRow) => {
     pick(wanted);
-    if (canBuy(rules, career, wanted.bikeId)) {
+    if (canBuy(career, wanted.bikeId)) {
       setAsking("buy");
     }
   };
@@ -329,7 +326,7 @@ export const GarageScreen = ({
             tag: undefined,
           }}
         />
-        <BarHeader standing={{ career, rules }} />
+        <BarHeader career={career} />
         <PriceList
           bikeId={row.bikeId}
           onBuy={tryBuy}
@@ -378,7 +375,7 @@ export const GarageScreen = ({
           onSelect={(value) => {
             setAsking("nothing");
             if (value === "yes") {
-              onTrade(buyBike(rules, career, row.bikeId));
+              onTrade(buyBike(career, row.bikeId));
               setSaid(BOUGHT);
             }
           }}

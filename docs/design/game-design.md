@@ -22,7 +22,7 @@ Agreed with the owner on October 23, 2026. `docs/architecture.md` has the lanes 
 | Mumbai | Breakwater Run, coast | Ranveer Singh and Jenner | Marine Drive, a sea-link bridge, and monsoon nights in the wet night look. Their rivalry is invented. |
 | Bay Area | Ridge Road, mountain | Musk and Altman | A parody of Skyline Boulevard, the motorcycle road along the hills above Silicon Valley. |
 
-- **Career.** Three levels across the three cities: nine qualifying races and a finale. Ten riders a race. The number of levels and the field size come from the race rules the server serves (section 12), so changing either means re-measuring the economy, bust rates, road lengths, and bikes by level, not rewriting code. The career tables are written for five levels, which section 4 calls rungs, and a career with fewer levels spreads them over its levels. Sections 4, 5, and 10 carry measurements at ten riders and three levels; section 8's bust rates were measured with five levels and fifteen riders.
+- **Career.** Three tiers across the three roads: nine qualifying races and a finale. Ten riders a race. Field size comes from the race rules the server serves (section 12). The tier table in section 4 is data, so changing a value means re-measuring the economy and bust rates, not rewriting code. Sections 4 and 5 give the tiers as they stand. Dated measurements in sections 5, 8 and 10 use the older five-step numbering that section 4 explains.
 - **Bikes.** Parodies of real bikes (Ducati, Kawasaki Ninja, Aprilia, Yamaha, and so on) under parody brands with no logos, and near-future prototypes at the top, each from a celebrity's company. Three tiers after the real-world convention: starter (400 cc and up), mid-tier (600 cc and up), and litre (1000 cc and up). Six bikes at launch, two per tier. Section 6 has the current catalogue.
 - **Money.** Sponsors buy billboards along the roads, and players buy cosmetics: character skins and bike skins at listed prices. Nothing sold changes speed or handling, there are no random loot boxes, and bikes are earned with prize money, never bought. Section 13 has the billboard rules. Payments go through Polar or Dodo Payments, not yet chosen.
 - **Accounts.** Anyone can play, and start a career, as a guest, and a guest's career saves in the browser. Signing in, with Discord, Google, or an emailed link, adds saving across devices and is required to buy something or to race online.
@@ -52,29 +52,48 @@ Decided October 23, 2026: **LOWSIDE** is the working name, and it may still chan
 
 ## 3. Modes
 
-**Career** is the main game: your own rider, money, the bike shop, the cast, and the story. The server's race rules set three levels on the three roads; launch has three levels across three cities and a finale (section 0). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
+**Career** is the main game: your own rider, money, the bike shop, the cast, and the story, over three tiers on the three roads and a finale (section 4). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
 
-**Single Race** picks any road at any level the player has reached in a career (all of level 1 is open from the start), any bike in the catalogue the player has ever owned, and a random field. There is no qualification and no money: no prize, no fine, no repair bill, and nothing is written to the career. Results go back to the Single Race menu. It is the quick session and the place to learn a road.
+**Single Race** picks any road at any tier the player has reached in a career (all of tier 1 is open from the start), any bike in the catalogue the player has ever owned, and a random field. There is no qualification and no money: no prize, no fine, no repair bill, and nothing is written to the career. Results go back to the Single Race menu. It is the quick session and the place to learn a road.
 
 **Multiplayer** ships at launch. Two to eight signed-in players race on the same deterministic simulation run in a Cloudflare Durable Object, with AI rivals filling the rest of the grid. Section 12 describes it.
 
 ## 4. Career structure
 
-For launch the career becomes three levels across the three cities, nine qualifying races and a finale, with ten riders a race (section 0). The tables below are written for five levels and fifteen riders, the rules the replay fixtures still record. Every level has the same three roads, since November 4, 2026. The server now serves ten riders and three levels.
+The career is three tiers on the three roads: nine qualifying races and a finale, with ten riders a race. Tiers replaced five-step levels on November 4, 2026. A road has one layout and one length at every tier, and a tier changes what happens on it. Older measurements in this file use the five steps, where tier t is old step 2t − 1, so tier 1 is old step 1, tier 2 is old step 3, and tier 3 is old step 5.
 
-### Rungs
+### Tiers
 
-The five columns of the career tables are **rungs**. A career with five levels gives each level its own rung. A career with fewer levels spreads the rungs over its levels in `packages/career/src/rules.ts`:
+`difficulties` in `packages/sim/src/difficulty.ts` holds these numbers, and `createRace` refuses a setup whose values fall outside the ranges in `race.ts`. A race locks its values at the start.
 
-- Level L's field rides rung 1 + round((L − 1) × 4 / (levels − 1)). At three levels the fields ride rungs 1, 3 and 5, so level 1 is still the starter's level and the last level is still the finale's.
-- Everything the field brings reads that rung. That covers rival bikes and weapons, pacing, the police and their fine, and the repair bill.
-- A level also takes in the rungs between its field's rung and the one below. At three levels the bikes, story chapters and Vic's cards of rungs 2 and 3 arrive at level 2, and those of rungs 4 and 5 at level 3. Dee turns ally at the level whose field rides rung 3 or higher.
-- Prizes are the rung's prizes times the number of rungs the level climbs to the next one: two at three levels and one at five. One level now has to pay for two steps of bike (section 5).
-- Which bikes the rivals ride depends on the count. At three levels all nine are under some rival. At two levels the fields ride rungs 1 and 5 and nobody rides the Sesta, because Juno, its only rung-1 rider, sits out level 1.
+|  | Tier 1 | Tier 2 | Tier 3 |
+| --- | --: | --: | --: |
+| Road hazards placed, share of the road's candidates | 60% | 80% | 100% |
+| Hazards on a road | 5 to 6 | 7 to 8 | 8 to 9 |
+| Traffic density | ×1 | ×1.25 | ×1.5 |
+| Slow convoys | 0 | 1 | 2 |
+| Damage per hit | ×2.4 | ×3 | ×5 |
+| Punches, kicks to go down | 3, 2 | 3, 2 | 2, 1 |
+| Cops | 1 | 3 | 5 |
+| Police bike | Sesta | Sesta | Nera |
+| Pursuit top speed | 49 m/s | 60 m/s | 69 m/s |
+| Sight range | 40 m | 45 m | 60 m |
+| Beat | 6,000 m | 1,800 m | 1,200 m |
+| Range at which a cop loses you | 120 m | 150 m | 240 m |
+| Rival pacing, catch-up and lead ease | .08, .22 | .06, .18 | .04, .14 |
+| Rival skill added | 0 | .03 | .06 |
 
-### Levels and roads
+- **Hazards nest.** A compiled road ranks its candidates by a seeded roll, and a tier places the lowest-ranked share, so tier 2 holds all of tier 1's hazards and tier 3 holds all of tier 2's.
+- **A convoy** is six cars at 15 m/s, 14 m apart in alternating same-way lanes, spaced evenly along the road with some jitter. It is the owner's "traffic engaged in some sections". Same-way cars near one are removed, so the road is blocked by the convoy and not by what happens to be beside it.
+- **Damage applies to every rider.** Rivals fall as fast as the player, so a tier-3 fight is short for both sides.
+- **Rival bikes and weapons rise with the tier.** Section 9 lists the bikes and section 7 the weapons. Skill, capped at 1, rises by the table's value.
+- **Rooms.** Multiplayer rooms use `publicRoomRule` in `packages/career/src/room-race.ts`: tier 2, Slag Row, and the starting bike, with catch-up and lead ease at zero. A later host choice replaces the rule's value.
 
-A level has the same three roads, one per region, and a road is the same road at every level. The rise in difficulty comes from who rides it and how they are policed. The roads are described in `tracks.md`.
+The owner chose this on November 4, 2026: difficulty rises through the career, road lengths stay the same, and "if it takes three hits on tier one, on tier three it might take one or one and a half".
+
+### Roads
+
+A tier has the same three roads, one per region, and a road is the same road at every tier. The roads are described in `tracks.md`.
 
 | Region     | Road           |  Length |
 | ---------- | -------------- | ------: |
@@ -95,11 +114,11 @@ The measured field is **15 racers: the player and 14 rivals**, the original's fi
 
 Field selection: the rivals whose home is the road's region always race there. That is three ordinary riders, or four on Slag Row, plus two celebrities on Slag Row, Ridge Road and Breakwater Run. The rest are drawn from the remaining ordinary cast with the race seed.
 
-Juno Kade is the one exception. She does not race at level 1 ("she doesn't race new meat"), so at level 1 no draw includes her, and Ridge Road's two home riders are Coach Dale Hutto and Ruth Ann Bixby, who stands in for Juno as the best rider left in the cast. She also keeps her own home road, Salt Coast's Breakwater Run. From level 2 Juno takes her place back, Ridge Road's home riders are Juno and Coach, and the finale's field always includes her.
+Juno Kade is the one exception. She does not race at tier 1 ("she doesn't race new meat"), so at tier 1 no draw includes her, and Ridge Road's two home riders are Coach Dale Hutto and Ruth Ann Bixby, who stands in for Juno as the best rider left in the cast. She also keeps her own home road, Salt Coast's Breakwater Run. From level 2 Juno takes her place back, Ridge Road's home riders are Juno and Coach, and the finale's field always includes her.
 
 ### Qualification
 
-**Finish in the top 3 to qualify a road.** Qualify all three roads in a level to move up. Roads can be raced in any order and retried as often as the player wants; each attempt on a road that is not yet qualified pays full prize money for whatever place it earns. A qualified road can be raced again but pays less (section 5, "Repeat runs") and does not need to be.
+**Finish in the top 3 to qualify a road.** Qualify all three roads in a tier to move up. Roads can be raced in any order and retried as often as the player wants; each attempt on a road that is not yet qualified pays full prize money for whatever place it earns. A qualified road can be raced again but pays less (section 5, "Repeat runs") and does not need to be.
 
 Top 3 of 15 is the 1994 original's rule (its manual asks for third place or better; the 1991 game asked for fourth of fifteen). The pilot standing in for the decent player finishes fifth of fifteen in the median level-1 race and fourth at level 5 with the pacing rule, so a third is within reach but not given. With ten riders a third is easier. The same stand-in places in the top three in 27%, 31% and 34% of its starts at levels 1, 2 and 3, against 19% to 27% with fifteen (section 5, "Measured careers"). Qualifying stays at top 3 until play tests say otherwise. The place is one value, `QUALIFYING_PLACE` in `packages/career/src/tables.ts`; if play tests show that new players cannot qualify level 1, loosen it to 4 before touching the field or the pacing, because the real pressure is meant to come from money, not from qualification alone.
 
@@ -108,21 +127,13 @@ A busted or wrecked rider does not finish, so the race does not qualify and pays
 ### Unlocks
 
 | Reached | Unlocks |
-| --- | --- |
-| New career | All three roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
-| Level 2 | Shop adds Ostra Sette 750 and Brack Stoker 800. Pool cue appears in the field. Story: the envelope. |
-| Level 3 | Shop adds Halden Meridian 900. Stop sign appears. First police roadblocks. Dee turns ally. |
-| Level 4 | Shop adds Brack Anvil 1100. Unarmed rivals with aggression 0.5 or more start with a club. |
-| Level 5 | Shop adds Ostra Nera 1000. Ridge Road at level 5 is the finale and opens only when the other two roads are qualified at level 5. |
-| Career end | The ending screen, then Single Race at every level. |
-
-At three levels the rungs fold into the levels like this.
 
 | Reached | Unlocks |
 | --- | --- |
 | New career | All three roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
-| Level 2 | The rung-3 field. Shop adds Ostra Sette 750, Brack Stoker 800 and Halden Meridian 900. Pool cue and stop sign appear in the field. Story: the envelope. Dee turns ally. |
-| Level 3 | The rung-5 field. Shop adds Brack Anvil 1100 and Ostra Nera 1000. Unarmed rivals with aggression 0.5 or more start with a club. Ridge Road at level 3 is the finale and opens only when the other two roads are qualified at level 3. |
+| Tier 2 | Shop adds Ostra Sette 750, Brack Stoker 800 and Halden Meridian 900. Pool cue and stop sign appear in the field. Story: the envelope. Dee turns ally. |
+| Tier 3 | Shop adds Brack Anvil 1100 and Ostra Nera 1000. Unarmed rivals with aggression 0.5 or more start with a club. Ridge Road at tier 3 is the finale and opens only when the other two roads are qualified at tier 3. |
+| Career end | The ending screen, then Single Race at every tier. |
 
 ### Going broke and game over
 
@@ -137,7 +148,7 @@ Each bike has a **credit limit equal to half its trade-in value**. The Gutter Pu
 2. If debt is now more than the bike's credit limit and the bike is not the Pup, the shop repossesses the bike: it is sold at trade-in value, the debt is paid from the sale, any remainder becomes cash, and the player now owns a Gutter Pup.
 3. If debt is still more than the Pup's $750 limit (after step 2, or because the player was already on the Pup), the career is over. The Game Over screen shows the season's record and offers a new career. There is no paid or ad-funded continue.
 
-A repossession clears the debt whenever the debt is no more than the bike's trade-in value, which is the usual case. A cheap bike at a high level is the exception: a player on a Wren ($1,800 trade-in) who is $800 in debt and wrecks at level 5 ($2,200) owes $3,000, loses the Wren, still owes $1,200, and is out in one step.
+A repossession clears the debt whenever the debt is no more than the bike's trade-in value, which is the usual case. A cheap bike at a high tier is the exception: a player on a Wren ($1,800 trade-in) who is $800 in debt and wrecks at tier 3 ($2,200) owes $3,000, loses the Wren, still owes $1,200, and is out in one step.
 
 This keeps one clear threat in view (lose the bike), gives a second chance on a funny bike, and makes the end real.
 
@@ -157,7 +168,7 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 **When Results opens.** After a finish, the Finish screen plays its animation and then opens Results. After a bust or wreck, the consequence screen comes first. Results never opens before the write and never shows a number the write did not store.
 
-**The active-race record.** When a career race starts (the tick the countdown ends), the save gets an active-race record: road, level, seed, and the bike ridden. The write that stores the result removes it. If the career loads and finds an active-race record, the page was refreshed, closed, or crashed during a race. That race is settled as a wreck: no prize, the level's repair bill for that bike, then the debt check above. The record is removed in the same write, so the charge happens exactly once however many times the page is reloaded. The Clubhouse then shows a note from Vic: "You left a race. The bike didn't make it home. V." The rewarded ad is not offered for this bill.
+**The active-race record.** When a career race starts (the tick the countdown ends), the save gets an active-race record: road, tier, seed, and the bike ridden. The write that stores the result removes it. If the career loads and finds an active-race record, the page was refreshed, closed, or crashed during a race. That race is settled as a wreck: no prize, the level's repair bill for that bike, then the debt check above. The record is removed in the same write, so the charge happens exactly once however many times the page is reloaded. The Clubhouse then shows a note from Vic: "You left a race. The bike didn't make it home. V." The rewarded ad is not offered for this bill.
 
 **Game over is written at once.** If the debt check ends the career, the save is marked over in that same write, before Results or Game Over is shown. A reload at that point opens Game Over, not the Clubhouse. `RACE AGAIN` is not offered on Results when the career is over.
 
@@ -165,7 +176,7 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 **Season standings.** Every settled career race scores points for all sixteen rivals and the player: 15 for 1st, 14 for 2nd, down to 1 for 15th. A busted or wrecked rider scores 0 for that race, and so does a rival who was not in that race's field. The Clubhouse board ranks by total points. Ties go to the rider with more wins, then to the rider who most recently placed better than the other in a race they shared.
 
-**The finale.** Ridge Road at level 5 opens only when the other two roads are qualified at level 5. A top-three finish there ends the season and plays an ending (section 11). Anything else, including a quit, a wreck, a bust, or fourth place, is an ordinary result: it pays or costs what it normally would, the debt check runs as usual, and the finale stays open for another attempt. Failing the finale never ends the career by itself.
+**The finale.** Ridge Road at tier 3 opens only when the other two roads are qualified at tier 3. A top-three finish there ends the season and plays an ending (section 11). Anything else, including a quit, a wreck, a bust, or fourth place, is an ordinary result: it pays or costs what it normally would, the debt check runs as usual, and the finale stays open for another attempt. Failing the finale never ends the career by itself.
 
 **Single Race and multiplayer.** Neither writes an active-race record or touches the career save. Single Race results go back to the Single Race menu; multiplayer results go back to the lobby.
 
@@ -175,43 +186,32 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 Starting cash is **$1,500** and a **Halden Wren 400**.
 
-Prize money by finishing place, by rung (section 4). Prizes rose on November 4, 2026, when five roads became three, so a season of fewer starts still buys a bike a level. Rung 1 is the base; later rungs multiply it by 1.6, 2.4, 3.4, and 4.6. With five levels each level is its rung. "Three levels and ten riders" below has the prizes the served career pays.
+Prize money by finishing place and tier. Prizes rose on November 4, 2026, when five roads became three, so a season of fewer starts still buys a bike a tier. Tier 2 pays 2.4 times tier 1 and tier 3 pays 4.6 times.
 
-| Place | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
-| ----: | ------: | ------: | ------: | ------: | ------: |
-|     1 |  $2,500 |  $4,000 |  $6,000 |  $8,500 | $11,500 |
-|     2 |  $1,700 |  $2,720 |  $4,080 |  $5,780 |  $7,820 |
-|     3 |  $1,200 |  $1,920 |  $2,880 |  $4,080 |  $5,520 |
-|     4 |    $700 |  $1,120 |  $1,680 |  $2,380 |  $3,220 |
-|     5 |    $400 |    $640 |    $960 |  $1,360 |  $1,840 |
-|     6 |    $250 |    $400 |    $600 |    $850 |  $1,150 |
-|     7 |    $170 |    $272 |    $408 |    $578 |    $782 |
-|     8 |    $100 |    $160 |    $240 |    $340 |    $460 |
-|     9 |     $70 |    $112 |    $168 |    $238 |    $322 |
-|    10 |     $50 |     $80 |    $120 |    $170 |    $230 |
-|    11 |     $40 |     $64 |     $96 |    $136 |    $184 |
-|    12 |     $35 |     $56 |     $84 |    $119 |    $161 |
-|    13 |     $25 |     $40 |     $60 |     $85 |    $115 |
-|    14 |     $15 |     $24 |     $36 |     $51 |     $69 |
-|    15 |     $15 |     $24 |     $36 |     $51 |     $69 |
-
-Places 9 to 15 pay pocket money, so a rider who limps home is paid something and a bust or a wreck, which pays nothing, is still worse than last.
+| Place | Tier 1 |  Tier 2 |  Tier 3 |
+| ----: | -----: | ------: | ------: |
+|     1 | $5,000 | $12,000 | $23,000 |
+|     2 | $3,400 |  $8,160 | $15,640 |
+|     3 | $2,400 |  $5,760 | $11,040 |
+|     4 | $1,400 |  $3,360 |  $6,440 |
+|     5 |   $800 |  $1,920 |  $3,680 |
+|     6 |   $500 |  $1,200 |  $2,300 |
+|     7 |   $340 |    $816 |  $1,564 |
+|     8 |   $200 |    $480 |    $920 |
+|     9 |   $140 |    $336 |    $644 |
+|    10 |   $100 |    $240 |    $460 |
 
 ### Money out
 
 A **spill** (thrown, run back, remount) costs only time. A **wreck** happens when the bike's condition reaches zero (section 14 describes condition); the race ends and the bike is repaired for a bill. A **bust** ends the race with a fine. Bikes are repaired free between races after an ordinary race; only a wreck sends a bill.
 
-| Level | Repair base | Featherweight (×1) | Middleweight (×1.5) | Heavyweight (×2) | Police fine |
-| --: | --: | --: | --: | --: | --: |
-| 1 | $400 | $400 | $600 | $800 | $400 |
-| 2 | $700 | $700 | $1,050 | $1,400 | $900 |
-| 3 | $1,100 | $1,100 | $1,650 | $2,200 | $1,500 |
-| 4 | $1,600 | $1,600 | $2,400 | $3,200 | $2,200 |
-| 5 | $2,200 | $2,200 | $3,300 | $4,400 | $3,000 |
+| Tier | Featherweight | Middleweight | Heavyweight | Police fine |
+| ---: | ------------: | -----------: | ----------: | ----------: |
+|    1 |          $400 |         $600 |        $800 |        $400 |
+|    2 |        $1,100 |       $1,650 |      $2,200 |      $1,500 |
+|    3 |        $2,200 |       $3,300 |      $4,400 |      $3,000 |
 
-Heavier bikes cost more to fix, so a faster bike is also a bigger bet.
-
-The level-1 fine is the original's: a level-1 arrest there cost $400 every time it was measured (cash went from $1,000 to $600 to $200 over two arrests, and from $1,000 to $600 in a second career). The original's fines at levels 2 to 5, its repair bills, and its prizes have not been measured, so the rest of this table and the prize table are still our own numbers.
+The tier-1 fine is the original's: a first-level arrest there cost $400 every time it was measured (cash went from $1,000 to $600 to $200 over two arrests, and from $1,000 to $600 in a second career). The original's later fines, its repair bills, and its prizes have not been measured, so the rest of this table and the prize table are still our own numbers.
 
 ### Trade-in
 
@@ -219,99 +219,36 @@ Trade-in value is **60% of the bike's list price**, whatever its history, becaus
 
 ### The envelope
 
-At level 2 the promoter offers an envelope (section 11). Taking it pays **$1,500** at once. If the player then finishes ahead of Tristan Lux on Breakwater Run at level 2, the promoter takes back **$2,000**. The bill follows the normal debt rules.
+At tier 2 the promoter offers an envelope (section 11). Taking it pays **$1,500** at once. If the player then finishes ahead of Tristan Lux on Breakwater Run at tier 2, the promoter takes back **$2,000**. The bill follows the normal debt rules.
 
 ### Repeat runs
 
-Prize money depends on whether the road is already qualified at the current level.
+Prize money depends on whether the road is already qualified at the current tier.
 
-| Road at the current level | Places 1 to 3    | Places 4 to 15 |
-| ------------------------- | ---------------- | -------------- |
-| Not yet qualified         | Full prize       | Full prize     |
-| Already qualified         | 50% of the prize | Nothing        |
+| Road at the current tier | Places 1 to 3    | Places 4 to 10 |
+| ------------------------ | ---------------- | -------------- |
+| Not yet qualified        | Full prize       | Full prize     |
+| Already qualified        | 50% of the prize | Nothing        |
 
-Fines and repair bills are never reduced. A repeat win at level 1 pays $1,250 and a repeat third pays $600, against a possible $400 fine or $400 to $800 repair. A repeat win at level 5 pays $5,750 against a $3,000 fine. Rerunning a qualified road is therefore a poor way to earn and a real way to lose, while a player who is still trying to qualify is always paid in full for the attempt. Moving up is the better trade: a third on a new level-2 road pays $1,120, more than three repeat thirds at level 1.
+Fines and repair bills are never reduced. A repeat win at tier 1 pays $2,500 and a repeat third pays $1,200, against a possible $400 fine or $400 to $800 repair. A repeat win at tier 3 pays $11,500 against a $3,000 fine. Rerunning a qualified road is therefore a poor way to earn and a real way to lose, while a player who is still trying to qualify is always paid in full for the attempt. Moving up is the better trade: a third on a new level-2 road pays $1,120, more than three repeat thirds at level 1.
 
 Single Race and multiplayer pay nothing, so the rule only applies to the career.
 
 ### Pacing
 
-The reference is the **decent player**: six starts per level, of which four are finishes (three 3rds that qualify and one 4th that does not), one is a bust, and one is a wreck. The 4th, the bust, and the wreck all happen on roads that are not yet qualified, so every prize is paid in full.
+The reference is the **decent player**: six starts per tier, of which four are finishes (three 3rds that qualify and one 4th that does not), one is a bust, and one is a wreck. The 4th, the bust, and the wreck all happen on roads that are not yet qualified, so every prize is paid in full.
 
-The promise to that player is **one bike per level and one class every other level**: Wren 400 at level 1, Kite 500 at level 2, Sesta 600 at level 3, Sette 750 at level 4, Meridian 900 at level 5. The Anvil 1100 and the Nera 1000 are for players who win.
+The promise to that player is **one bike per tier**: the Wren at tier 1, the Sesta at tier 2 and the Meridian at tier 3, the bikes most of each field rides (section 9).
 
-| Level | Rides | Cash at start | Prizes | Fine | Repair | Cash at end | Trade-in | Buys | Cash left |
-| --: | --- | --: | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$4,300 | −$400 | −$400 | $5,000 | $1,800 | Halden Kite 500, $5,000 | $1,800 |
-| 2 | Kite 500 | $1,800 | +$6,880 | −$900 | −$700 | $7,080 | $3,000 | Ostra Sesta 600, $8,000 | $2,080 |
-| 3 | Sesta 600 | $2,080 | +$10,320 | −$1,500 | −$1,650 | $9,250 | $4,800 | Ostra Sette 750, $11,000 | $3,050 |
-| 4 | Sette 750 | $3,050 | +$14,620 | −$2,200 | −$2,400 | $13,070 | $6,600 | Halden Meridian 900, $18,500 | $1,170 |
-| 5 | Meridian 900 | $1,170 | +$19,780 | −$3,000 | −$4,400 | $13,550 |  |  |  |
-
-Prizes are three 3rds and one 4th from the level's column of the prize table. The repair is the level's bill for the class of the bike ridden.
-
-What the table shows:
-
-- Each purchase is the next bike up and nothing more. After level 1 the Sesta is $1,200 out of reach; after level 2 the Sette is $920 out of reach; after level 3 the Stoker, the sideways choice at $13,500, would leave $550.
-- The Meridian is the tightest step. It leaves $1,170, and the Meridian's credit limit is $5,550, so a level-5 bust ($3,000) is survivable but a bust and a wreck ($7,400 together) before the first prize would repossess it. A careful player rides the Sette into level 5 and buys the Meridian after the first third ($5,520).
-- The Anvil 1100 needs a better season. A player who wins every road and buys nothing has $40,800 of spending power after level 3 and can buy the Anvil ($26,000) the day it arrives at level 4, and the Nera 1000 ($34,000) at level 5.
-
-### The weak player
-
-The second reference is the **weak player**: eight starts per level, of which two are wrecks and six are a seventh and then a third on each of the three roads. No busts.
-
-| Level | Rides | Cash at start | Prizes | Repairs | Cash at end | Trade-in | Buys | Cash left |
-| --: | --- | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$4,110 | −$800 | $4,810 | $1,800 | Halden Kite 500, $5,000 | $1,610 |
-| 2 | Kite 500 | $1,610 | +$6,576 | −$1,400 | $6,786 | $3,000 | Ostra Sesta 600, $8,000 | $1,786 |
-| 3 | Sesta 600 | $1,786 | +$9,864 | −$3,300 | $8,350 | $4,800 | Ostra Sette 750, $11,000 | $2,150 |
-| 4 | Sette 750 | $2,150 | +$13,974 | −$4,800 | $11,324 | $6,600 | Nothing. The Meridian is $576 short. | $11,324 |
-| 5 | Sette 750 | $11,324 | +$18,906 | −$6,600 | $23,630 |  |  |  |
-
-What the table shows:
-
-- The weak player still moves forward. Three thirds qualify a level whatever else happens, and the sevenths pay a little because those roads were not yet qualified.
-- Progress is slow in the way that matters to the player: eight starts per level instead of six, so forty races for the season instead of thirty, and the fifth bike never arrives. The weak player finishes the season on the Sette.
-- The margin is thin after every purchase. If both wrecks come before the first prize of a level, cash goes to $210 at level 2, to $1,514 of debt at level 3 (the Sesta's limit is $2,400), and to $2,650 of debt at level 4 (the Sette's limit is $3,300).
-- Bankruptcy comes from busts and wrecks, never from slow riding. Prize money is never negative, so a player with no bills only gains: the same six finishes without the two wrecks save $4,800 at level 4, which buys the Meridian. Add one bust per level to the two wrecks and the Sesta leaves only $486 at the start of level 3; two wrecks and a bust before the first prize ($4,800) then pass the Sesta's $2,400 limit and cost the bike.
-- Farming does not rescue a weak player. Eight reruns of a qualified level-1 road at this player's results pay three thirds at $600, nothing for three sevenths, and cost two $400 repairs: $1,000 for eight races, $125 a race. The price of a Kite is forty races away.
-
-### Three levels and ten riders
-
-The served career reads the rungs as section 4 sets out. Its levels ride rungs 1, 3 and 5, and each level climbs two rungs, so each pays twice its rung's prizes. A field of ten has no places 11 to 15.
-
-| Place | Level 1 | Level 2 | Level 3 |
-| ----: | ------: | ------: | ------: |
-|     1 |  $5,000 | $12,000 | $23,000 |
-|     2 |  $3,400 |  $8,160 | $15,640 |
-|     3 |  $2,400 |  $5,760 | $11,040 |
-|     4 |  $1,400 |  $3,360 |  $6,440 |
-|     5 |    $800 |  $1,920 |  $3,680 |
-|     6 |    $500 |  $1,200 |  $2,300 |
-|     7 |    $340 |    $816 |  $1,564 |
-|     8 |    $200 |    $480 |    $920 |
-|     9 |    $140 |    $336 |    $644 |
-|    10 |    $100 |    $240 |    $460 |
-
-Bills are one incident each, so they are the rung's and are not doubled. The level-1 fine is still the original's $400.
-
-| Level | Rung | Featherweight | Middleweight | Heavyweight | Police fine |
-| ----: | ---: | ------------: | -----------: | ----------: | ----------: |
-|     1 |    1 |          $400 |         $600 |        $800 |        $400 |
-|     2 |    3 |        $1,100 |       $1,650 |      $2,200 |      $1,500 |
-|     3 |    5 |        $2,200 |       $3,300 |      $4,400 |      $3,000 |
-
-The doubling is what keeps the promise of one bike per level. The fields jump two rungs a level, so the player has to as well. The decent player rides the Wren at level 1, the Sesta at level 2 and the Meridian at level 3, the bikes most of each field rides (section 9). The same six starts as the five-level plan, from the same columns of the tables above:
-
-| Level | Rides | Cash at start | Prizes | Fine | Repair | Cash at end | Trade-in | Buys | Cash left |
+| Tier | Rides | Cash at start | Prizes | Fine | Repair | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --: | --- | --: |
 | 1 | Wren 400 | $1,500 | +$8,600 | −$400 | −$400 | $9,300 | $1,800 | Ostra Sesta 600, $8,000 | $3,100 |
 | 2 | Sesta 600 | $3,100 | +$20,640 | −$1,500 | −$1,650 | $20,590 | $4,800 | Halden Meridian 900, $18,500 | $6,890 |
 | 3 | Meridian 900 | $6,890 | +$39,560 | −$3,000 | −$4,400 | $39,050 |  |  |  |
 
-The weak player, with the same eight starts as before:
+The second reference is the **weak player**: eight starts per tier, of which two are wrecks and six are a seventh and then a third on each of the three roads. No busts.
 
-| Level | Rides | Cash at start | Prizes | Repairs | Cash at end | Trade-in | Buys | Cash left |
+| Tier | Rides | Cash at start | Prizes | Repairs | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --- | --: |
 | 1 | Wren 400 | $1,500 | +$8,220 | −$800 | $8,920 | $1,800 | Ostra Sesta 600, $8,000 | $2,720 |
 | 2 | Sesta 600 | $2,720 | +$19,728 | −$3,300 | $19,148 | $4,800 | Halden Meridian 900, $18,500 | $5,448 |
@@ -319,11 +256,14 @@ The weak player, with the same eight starts as before:
 
 What the tables show:
 
-- Both players buy the Sesta after level 1 and the Meridian after level 2. The weak player gets every bike in the plan here, where with five levels the fifth never arrived, because the season has two purchases instead of four.
-- The margin after each purchase is still thin. If both of the weak player's wrecks come before the first prize of a level, cash goes to $580 of debt at level 2 (the Sesta's limit is $2,400) and $3,352 of debt at level 3 (the Meridian's limit is $5,550).
-- The Anvil 1100 and the Nera 1000 arrive at level 3 and are for players who win. `packages/career/src/rules.test.ts` pins both tables.
+- Both players buy the Sesta after tier 1 and the Meridian after tier 2.
+- The margin after each purchase is thin. If both of the weak player's wrecks come before the first prize of a tier, cash goes to $580 of debt at tier 2 (the Sesta's limit is $2,400) and $3,352 of debt at tier 3 (the Meridian's limit is $5,550).
+- Bankruptcy comes from busts and wrecks, never from slow riding. Prize money is never negative, so a player with no bills only gains.
+- The Anvil 1100 and the Nera 1000 arrive at tier 3 and are for players who win. `packages/career/src/rules.test.ts` pins both tables.
 
 ### Measured careers
+
+This measurement predates the tier table. Its fields, bills and prizes match the tiers, but its police, hazards and hit damage do not, and its level 1, 2 and 3 are tiers 1, 2 and 3.
 
 At ten riders and three levels the stand-in pilot (skill 0.9, aggression 0.5) rode six whole careers through the career rules, on the same six career seeds, before and after this change. It always took the first road it had not yet qualified, and when it moved up it bought the plan's next bike if it could afford it. "Before" is the five-level tables read by career level, with the fade only on shared races, riding the Wren, then the Kite, then the Sesta. "After" is the rungs, the doubled prizes and the fade on every race (section 10), riding the Wren, then the Sesta, then the Meridian.
 
@@ -365,22 +305,6 @@ The differences between the two rows are mostly noise. The memory rule changes w
 - **It still buys one bike per level.** Every attempt on a road that is not yet qualified pays in full, and places 4 to 8 pay $50 to $400 at level 1, so the extra starts pay for themselves. All six careers bought the Kite at level 2. After the change all six bought the Sesta at level 3, and both careers that reached level 4 bought the Sette. Before it, one career paid fourteen level-2 fines ($12,600), ended level 2 with $1,996, and could not buy the Sesta.
 - **Busts, not wrecks, are the bill.** No start in 960, over all levels the twelve careers reached, ended in a wreck, and no bike fell below 25 condition. The plan's one wreck in eight starts is still a guess about human riders.
 
-### Worked example: a level-1 season
-
-The decent player's level 1, start by start.
-
-| Start | Road           | Result                      |   Money | Cash after |
-| ----: | -------------- | --------------------------- | ------: | ---------: |
-|       |                | New career, Halden Wren 400 |         |     $1,500 |
-|     1 | Slag Row       | 3rd, qualified              | +$1,200 |     $2,700 |
-|     2 | Breakwater Run | 4th, not qualified          |   +$700 |     $3,400 |
-|     3 | Breakwater Run | 3rd, qualified              | +$1,200 |     $4,600 |
-|     4 | Ridge Road     | Busted at the Saddle        |   −$400 |     $4,200 |
-|     5 | Ridge Road     | Wrecked on the climb        |   −$400 |     $3,800 |
-|     6 | Ridge Road     | 3rd, qualified; level 2     | +$1,200 |     $5,000 |
-
-At the start of level 2 the Wren trades in for $1,800, giving $6,800 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,800, or stay on the Wren with $5,000 in hand and aim straight for the Sesta 600, which two level-2 thirds ($3,840) would then pay for. With the Kite and $1,800, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, a level-2 cop (187 km/h) is nearly as fast as the bike (190 km/h, 198 tucked in). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
-
 ## 6. Bike catalogue
 
 For launch the catalogue becomes parodies of real bikes and near-future prototypes in three tiers: starter (400 cc and up), mid-tier (600 cc and up), and litre (1000 cc and up), six bikes at launch (section 0). The current bikes already sit roughly in those tiers: the Wren and the Kite are starter bikes, the 600 to 800 cc bikes are mid-tier, and the 1000 and 1100 cc bikes are litre bikes. The 250 cc Gutter Pup and the 900 cc Meridian fall outside them. The tuned handling carries over to the new bikes.
@@ -400,7 +324,7 @@ Retuned October 14, 2026, twice. The morning's tune fitted the Wren to the origi
 | Bike | Class | Price | Top speed | Tucked | 0 to 100 km/h | Switchback | Pitch |
 | --- | --- | --: | --: | --: | --: | --: | --- |
 | Gutter Pup 250 | Featherweight | $1,000 | 145 km/h | 151 km/h | 7.1 s | 141 km/h | Zip ties, spite, and a seat from a different bike. Too slow to fly off anything. |
-| Halden Wren 400 | Featherweight | $3,000 | 190 km/h | 198 km/h | 3.6 s | 158 km/h | Light, honest, and forgiving. Takes every level-1 bend on the Ridge with the throttle held, slowing itself in the tight ones, and still loses to people who brake. |
+| Halden Wren 400 | Featherweight | $3,000 | 190 km/h | 198 km/h | 3.6 s | 158 km/h | Light, honest, and forgiving. Takes every tier-1 bend on the Ridge with the throttle held, slowing itself in the tight ones, and still loses to people who brake. |
 | Halden Kite 500 | Featherweight | $5,000 | 203 km/h | 211 km/h | 3.5 s | 149 km/h | The Wren with more lungs. Still turns before you finish deciding to. |
 | Ostra Sesta 600 | Middleweight | $8,000 | 230 km/h | 239 km/h | 3.3 s | 138 km/h | The bike everyone measures against. Fast enough to need the brakes, light enough to forgive you. |
 | Ostra Sette 750 | Middleweight | $11,000 | 243 km/h | 253 km/h | 3.0 s | 134 km/h | More of everything the Sesta does, and a little less patience in the bends. |
@@ -472,14 +396,14 @@ The four existing weapons stay as they are. Two new ones fill gaps the set does 
 
 | Strike | Damage | Shove | Reach (along × across) | Hits | ticks / strikeTick / cooldown | Lands after | First appears |
 | --- | --: | --: | --- | --: | --- | --: | --- |
-| Fist | 14 | 1.6 | 1.9 × 2.2 m |  | 18 / 14 / 16 | 4 ticks | Level 1 |
-| Boot | 22 | 3.2 | 1.9 × 2.2 m |  | 15 / 11 / 36 | 4 ticks | Level 1 |
-| Club | 28 | 3.8 | 2.2 × 2.6 m | 6 | 24 / 17 / 40 | 7 ticks | Level 1 (Moose) |
-| Chain | 20 | 2.2 | 2.6 × 3.1 m | 8 | 24 / 17 / 38 | 7 ticks | Level 1 (Dee) |
-| Crowbar | 22 | 2.8 | 2.2 × 2.6 m | 4 | 22 / 16 / 36 | 6 ticks | Level 1 (Mags) |
-| Baton | 18 | 2.4 | 2.2 × 2.6 m | 12 | 22 / 16 / 36 | 6 ticks | Level 1 (police, Lyle) |
-| **Pool cue** | 15 | 1.8 | 3.0 × 3.4 m | 3 | 20 / 15 / 30 | 5 ticks | Level 2 (Coach) |
-| **Stop sign** | 32 | 4.6 | 2.4 × 2.8 m | 3 | 44 / 17 / 50 | 27 ticks | Level 3 (Gus) |
+| Fist | 14 | 1.6 | 1.9 × 2.2 m |  | 18 / 14 / 16 | 4 ticks | Tier 1 |
+| Boot | 22 | 3.2 | 1.9 × 2.2 m |  | 15 / 11 / 36 | 4 ticks | Tier 1 |
+| Club | 28 | 3.8 | 2.2 × 2.6 m | 6 | 24 / 17 / 40 | 7 ticks | Tier 1 (Moose) |
+| Chain | 20 | 2.2 | 2.6 × 3.1 m | 8 | 24 / 17 / 38 | 7 ticks | Tier 1 (Dee) |
+| Crowbar | 22 | 2.8 | 2.2 × 2.6 m | 4 | 22 / 16 / 36 | 6 ticks | Tier 1 (Mags) |
+| Baton | 18 | 2.4 | 2.2 × 2.6 m | 12 | 22 / 16 / 36 | 6 ticks | Tier 1 (police, Lyle) |
+| **Pool cue** | 15 | 1.8 | 3.0 × 3.4 m | 3 | 20 / 15 / 30 | 5 ticks | Tier 2 (Coach) |
+| **Stop sign** | 32 | 4.6 | 2.4 × 2.8 m | 3 | 44 / 17 / 50 | 27 ticks | Tier 2 (Gus) |
 
 These are the numbers in `packages/sim/src/weapons.ts`. `ticks` is how long the swing lasts. `strikeTick` is the number of ticks left in the swing when the hit lands, so a strike lands `ticks − strikeTick` ticks after the press, which is the "Lands after" column, and `strikeTick` is the follow-through. `cooldown` is the shortest time from one press to the next and can be shorter than the swing: a press during the follow-through, once the hit has landed, starts the next swing at once with no return to neutral. Only the fist has a cooldown shorter than its swing, by two ticks, so only punches chain. A kick cannot be chained that way and always waits for its cooldown. Every weapon leaves its holder's steering alone except the stop sign, whose holder has 85% of the bike's `steerRate`.
 
@@ -491,17 +415,13 @@ The stop sign is the biggest hit in the game and the slowest. Its swing lasts 44
 
 Both are `WeaponKind` values (`"cue"`, `"sign"`) with entries in `weapons.ts`, and their numbers are the ones in this table.
 
-### By level
+### By tier
 
-| Level | Armed at the start |
+| Tier | Armed at the start |
 | --: | --- |
 | 1 | Moose (club), Dee (chain), Mags (crowbar), Lyle (baton), Felix (club). Police carry batons. |
-| 2 | As level 1, plus Coach (pool cue). |
-| 3 | As level 2, plus Gus (stop sign). |
-| 4 | Unarmed rivals with aggression 0.5 or more start with a club (Ines, Orrin). |
-| 5 | As level 4. Juno, Tristan, Ruth Ann, Benny, Wanda, Hollis, and Agnes still start unarmed; Juno never carries one. |
-
-The rows are rungs (section 4). At three levels the fields carry the rung 1, 3 and 5 rows: level 2 brings the cue and the sign together, and level 3 brings the clubs.
+| 2 | As tier 1, plus Coach (pool cue) and Gus (stop sign). |
+| 3 | As tier 2, plus a club for unarmed rivals with aggression 0.5 or more (Ines, Orrin). Juno, Tristan, Ruth Ann, Benny, Wanda, Hollis, and Agnes still start unarmed; Juno never carries one. |
 
 ### The stealing loop
 
@@ -523,21 +443,17 @@ A cop who sees an offence chases the offender first, then a downed racer within 
 
 Each cop has a **beat**: it gives up the chase that many metres past the spot where it was parked, pulls onto the verge, and stays there. A cop that is riding to a downed racer finishes that first. Without a beat every cop the pack woke rode with it to the finish, so five cops meant five batons around the player for the last three kilometres.
 
-| Level | Cops | Pursuit top speed | Sight range | Beat | Roadblocks | Fine |
-| --: | --: | --: | --: | --: | --: | --: |
-| 1 | 1 | 49 m/s (176 km/h) | 40 m | 6,000 m | 0 | $400 |
-| 2 | 2 | 52 m/s (187 km/h) | 40 m | 5,000 m | 0 | $900 |
-| 3 | 3 | 60 m/s (216 km/h) | 45 m | 1,800 m | 1 | $1,500 |
-| 4 | 4 | 64 m/s (230 km/h) | 50 m | 1,500 m | 2 | $2,200 |
-| 5 | 5 | 69 m/s (248 km/h) | 60 m | 1,200 m | 3 | $3,000 |
+| Tier | Cops | Pursuit top speed | Sight range | Beat | Loses you at | Roadblocks | Fine |
+| --: | --: | --: | --: | --: | --: | --: | --: |
+| 1 | 1 | 49 m/s (176 km/h) | 40 m | 6,000 m | 120 m | 0 | $400 |
+| 2 | 3 | 60 m/s (216 km/h) | 45 m | 1,800 m | 150 m | 1 | $1,500 |
+| 3 | 5 | 69 m/s (248 km/h) | 60 m | 1,200 m | 240 m | 3 | $3,000 |
 
-The beats are not in order of level because the police bikes are not equal and the cops are not equally far apart. With the brakes the bikes have had since the handling retune of October 14, 2026, every cop stops inside a body's slide, so a cop riding alongside a rider who falls makes the arrest; the beat is what limits how much road each cop covers. The single level-1 cop holds the longest beat because the decent player on a Wren falls only about once every three races and seldom near it; levels 3 to 5 hold short ones because three to five cops with batons are the fall as well as the arrest. The beats were 3,000, 5,000, 3,000, 1,500, and 2,000 m before that retune and 3,000, 1,200, 1,400, 750, and 700 m when the level-1 roads were 4 km with one lane each way; see "Measured bust rates" for both retunes.
+The beats fall with the tier because the police bikes are not equal and the cops are not equally far apart. With the brakes the bikes have had since the handling retune of October 14, 2026, every cop stops inside a body's slide, so a cop riding alongside a rider who falls makes the arrest; the beat is what limits how much road each cop covers. The single tier-1 cop holds the longest beat because the decent player on a Wren falls only about once every three races and seldom near it; levels 3 to 5 hold short ones because three to five cops with batons are the fall as well as the arrest. The beats were 3,000, 5,000, 3,000, 1,500, and 2,000 m before that retune and 3,000, 1,200, 1,400, 750, and 700 m when the level-1 roads were 4 km with one lane each way; see "Measured bust rates" for both retunes.
 
-The pursuit top speed always stays below the seated top speed of the bike a decent player rides at that level (Wren 190, Kite 203, Sesta 230, Sette 243, Meridian 253 km/h), by 14, 16, 14, 13, and 5 km/h, and a rider who tucks in gains another 4%, once they have held 120 km/h for a second and a half (section 6, "The tuck"). A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
+The pursuit top speed always stays below the seated top speed of the bike a decent player rides at that tier (Wren 190, Sesta 230, Meridian 253 km/h), by 14, 14, and 5 km/h, and a rider who tucks in gains another 4%, once they have held 120 km/h for a second and a half (section 6, "The tuck"). A rider who holds the throttle on a straight escapes; a rider who brakes, fights, or falls does not.
 
-The table's rows are rungs (section 4), except the count of cops, which the served rules set per level. At three levels the police are the rung 1, 3 and 5 rows with one, two and three cops. The decent player rides the Wren, the Sesta and the Meridian there, so the cops stay 14, 14 and 5 km/h below the bike, as at those rungs with five levels.
-
-A player who falls a bike behind loses that margin. A Wren at level 2 has 3 km/h on the cops seated and 11 tucked in, and the Gutter Pup (145 km/h) cannot outrun a cop at any level, not even level 1's 176 km/h. The Pup's survival rule is therefore different and should be taught on the repossession notice: **stay on the bike.** A cop can swing a baton at a riding racer but can only bust one who is off the bike, so a Pup rider survives by not crashing and not being knocked down, never by speed.
+A player who falls a bike behind loses that margin. A Wren at tier 2 is 26 km/h slower than the cops seated, and the Gutter Pup (145 km/h) cannot outrun a cop at any tier, not even tier 1's 176 km/h. The Pup's survival rule is therefore different and should be taught on the repossession notice: **stay on the bike.** A cop can swing a baton at a riding racer but can only bust one who is off the bike, so a Pup rider survives by not crashing and not being knocked down, never by speed.
 
 ### The bust window
 
@@ -551,6 +467,8 @@ Both numbers matter to what the player sees:
 A rider who is down gets up by themselves, and from then on the player steers them on foot (section 14, "The fall, by speed"). A cop that reaches the body arrests them wherever they are, standing still or running, so being on foot near a cop is the danger and the run back to the bike is the race against it. A cop riding right alongside at 110 km/h or more cannot brake in time and rides past the body, so the danger is the slower cop beside them and the cop some way behind. A cop that stops within 10 m past the body arrests from there. Shortening the fall on November 3, 2026 first cut the 200 starts of the police test from 52 busts (26%) to 28 (14%). The owner rode it and said cops should not be that weak, and that rule brought it back. With trucks on every road the same test measures 41 busts (20.5%), with rival busts at 573 against 549, inside every level's band. The player's better part still comes before the fall, by staying clear of the cop, outrunning it, or knocking it down first.
 
 ### Measured bust rates
+
+The tier table measures 10, 9 and 13 busts of 39 starts (26%, 23%, 33%), 27% overall, with rivals busted 83, 105 and 165 times. `packages/career/src/police.test.ts` holds the bands. Everything below this paragraph predates tiers and uses the five old steps (section 4).
 
 Measured by simulation, with a pilot standing in for the decent player: skill 0.9, aggression 0.5, the level's bike from section 5, a field of seven rivals from the career's own draw, 16 seeds on each of the five roads, 80 starts a level. "Before" is 8 seeds, 40 starts. These were measured with the field of eight; the police balance test pins the same bands with the field of fifteen, and the stand-in's bust rate there is 15% of level-1 starts and 30% of level-5 starts (8 seeds, 40 starts a level), with 2.1 and 3.0 rivals busted per race.
 
@@ -615,13 +533,13 @@ Two things the same runs show that are not fixed here:
 
 ### Roadblocks
 
-From level 3 a parked cruiser blocks one lane, lights on, at a seeded spot on a straight. The spot is at least 250 m past the end of the previous bend, at least 150 m before the start of the next bend or the finish line, and never inside a dip or within 150 m after a crest that can launch a bike. At the Nera's 249 km/h, 250 m of sightline is 3.6 seconds. Only straights of 400 m or more qualify; `tracks.md` names three valid spots on each road. Roadblocks alternate sides. Hitting one is a traffic crash. The parked officer does not chase. In the sim a roadblock is a traffic car with zero cruise speed that ignores the follow logic; the renderer draws it as a cruiser.
+From tier 2 a parked cruiser blocks one lane, lights on, at a seeded spot on a straight. The spot is at least 250 m past the end of the previous bend, at least 150 m before the start of the next bend or the finish line, and never inside a dip or within 150 m after a crest that can launch a bike. At the Nera's 249 km/h, 250 m of sightline is 3.6 seconds. Only straights of 400 m or more qualify; `tracks.md` names three valid spots on each road. Roadblocks alternate sides. Hitting one is a traffic crash. The parked officer does not chase. In the sim a roadblock is a traffic car with zero cruise speed that ignores the follow logic; the renderer draws it as a cruiser.
 
-From level 3, Dee's tip (section 11) shows the first roadblock's distance on the Route Board.
+From tier 2, Dee's tip (section 11) shows the first roadblock's distance on the Route Board.
 
 ### Busted
 
-A bust ends the race. The rider is placed after all finishers, gets no prize, pays the level's fine, and carries no weapon into the next race. If the fine takes cash below zero, the debt rules in section 4 apply. Results stamps the bust and shows the officer who patrols that road and one of their lines. It prints the arrest position and the confiscated weapon from the record described in section 4, "Settlement and persistence".
+A bust ends the race. The rider is placed after all finishers, gets no prize, pays the tier's fine, and carries no weapon into the next race. If the fine takes cash below zero, the debt rules in section 4 apply. Results stamps the bust and shows the officer who patrols that road and one of their lines. It prints the arrest position and the confiscated weapon from the record described in section 4, "Settlement and persistence".
 
 | Officer | Who they are |
 | --- | --- |
@@ -655,7 +573,7 @@ For launch, six parody celebrities and ordinary riders replace this cast (sectio
 | Kylip Jetner | Kylie Jenner | Breakwater Run, standing in for Mumbai | 0.92 | 0.35 | Nothing |
 | Ranwear Bling | Ranveer Singh | Breakwater Run, standing in for Mumbai | 0.85 | 0.40 | Nothing |
 
-The owner approved the names and bios on November 2, 2026. The bios are `celebrityBios` in `packages/career/src/lines.ts`. Each celebrity is a home rider on one road and is not drawn for any other, and each takes its bikes and aggression from an ordinary rival: Ines, Lyle, Ruth Ann, Wanda, Tristan and Benny, in table order. Skill is set so the top rider of each pair starts as the road's boss; Juno still takes Ridge Road from the level she races. They have no pre-race or post-race lines. The bar shows the bio on the boss's sticker with an empty stool.
+The owner approved the names and bios on November 2, 2026. The bios are `celebrityBios` in `packages/career/src/lines.ts`. Each celebrity is a home rider on one road and is not drawn for any other, and each takes its bikes and aggression from an ordinary rival: Ines, Lyle, Ruth Ann, Wanda, Tristan and Benny, in table order. Skill is set so the top rider of each pair starts as the road's boss; Juno still takes Ridge Road from the tier she races. They have no pre-race or post-race lines. The bar shows the bio on the boss's sticker with an empty stool.
 
 ### Summary
 
@@ -664,73 +582,71 @@ The owner approved the names and bios on November 2, 2026. The bios are `celebri
 | Juno Kade | 34 | Stonepeak | 0.99 | 0.25 | Nothing, ever | `#15171B` black, gold stripe `#D4A63A` | `#15171B` |
 | Ruth Ann Bixby | 38 | Cinder Junction | 0.95 | 0.45 | Nothing | `#26A6A0` teal | `#A8743E` suede |
 | Dee Santangelo | 20 | Lowtown | 0.93 | 0.50 | Chain | `#2F9A4E` basil green | `#D7263D` red |
-| Ines Marchetti | 29 | Saltmouth | 0.91 | 0.75 | Nothing (club from level 4) | `#F2ECDF` ivory | `#F2ECDF` ivory |
+| Ines Marchetti | 29 | Saltmouth | 0.91 | 0.75 | Nothing (club from tier 3) | `#F2ECDF` ivory | `#F2ECDF` ivory |
 | Mags Dunleavy | 58 | Cinder Junction | 0.90 | 0.60 | Crowbar | `#77806A` primer grey | `#3F4A57` coveralls |
 | Lyle Gorski | 47 | Kettle | 0.90 | 0.70 | Baton | `#22335C` navy | `#8A7A55` khaki |
 | Tristan Lux | 24 | Saltmouth | 0.88 | 0.35 | Nothing | `#E040A0` magenta | `#7B4FE0` purple |
-| Coach Dale Hutto | 55 | Stonepeak | 0.86 | 0.55 | Pool cue from level 2 | `#E0A21B` gold | `#1E5AA8` polo blue |
+| Coach Dale Hutto | 55 | Stonepeak | 0.86 | 0.55 | Pool cue from tier 2 | `#E0A21B` gold | `#1E5AA8` polo blue |
 | Moose Kowalczyk | 41 | Lowtown | 0.84 | 0.85 | Club | `#C2521F` rust | `#5B4632` brown vest |
-| Gus Abernathy | 66 | Kettle | 0.82 | 0.65 | Stop sign from level 3 | `#6B6B3A` olive | `#C8E03A` hi-vis |
+| Gus Abernathy | 66 | Kettle | 0.82 | 0.65 | Stop sign from tier 2 | `#6B6B3A` olive | `#C8E03A` hi-vis |
 | Sister Agnes Mulcahy | 61 | Lowtown | 0.89 | 0.20 | Nothing | `#BFC4C9` convent grey | `#1A1A1F` black habit |
 | Hollis Thorne | 33 | Stonepeak | 0.88 | 0.45 | Nothing | `#7A1F3D` rescue maroon | `#F26B1D` high-vis orange |
 | Wanda Pruitt | 49 | Cinder Junction | 0.87 | 0.30 | Nothing | `#5FB7E6` studio blue | `#E9E3D6` cream blazer |
 | Benny Okafor | 27 | Saltmouth | 0.85 | 0.40 | Nothing | `#F27D16` tangerine | `#1D7A8C` sequin teal |
-| Orrin Blackwell | 31 | Kettle | 0.83 | 0.55 | Nothing (club from level 4) | `#6B4A2B` bark brown | `#8C9A5B` field khaki |
+| Orrin Blackwell | 31 | Kettle | 0.83 | 0.55 | Nothing (club from tier 3) | `#6B4A2B` bark brown | `#8C9A5B` field khaki |
 | Dr Felix Aurand | 44 | Lowtown | 0.80 | 0.70 | Club | `#6AD6B5` mint | `#2B5F8F` scrubs blue |
 
 The player's default is bike `#C82F2F` red and jacket `#23262C` charcoal. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#141C33`.
 
-Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny, Ruth Ann, Mags, Wanda), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis, Lyle, Gus, Orrin). At level 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
+Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny, Ruth Ann, Mags, Wanda), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis, Lyle, Gus, Orrin). At tier 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
 
 ### Pilot rules two riders need
 
 Two profiles describe behaviour that skill and aggression alone do not produce, so the pilot needs a rule for each.
 
-- **Juno Kade: retaliation only.** Juno attacks only a rider who has hit her in the last 10 seconds (600 ticks), read from the `hit` events against her. Her aggression then sets how often she strikes that rider. She never attacks anyone else and never strikes first, at any level, including the finale, where her aggression of 0.9 means she answers a hit almost every time she is in reach.
+- **Juno Kade: retaliation only.** Juno attacks only a rider who has hit her in the last 10 seconds (600 ticks), read from the `hit` events against her. Her aggression then sets how often she strikes that rider. She never attacks anyone else and never strikes first, at any tier, including the finale, where her aggression of 0.9 means she answers a hit almost every time she is in reach.
 - **Ruth Ann Bixby: kicks preferred.** Whenever a rival is inside boot reach, Ruth Ann kicks. She punches only when the target is inside fist reach and outside boot reach, which with the current reaches is never, so in practice she only kicks. If she takes a weapon with a kick she carries it but still kicks.
 
 ### The pack: balance still to measure
 
 - **Side contact is capped.** Each pair of bikes in side contact used to cost both riders 0.9 m/s on every tick, and the losses added up across pairs, so a rider boxed in on both sides for one second lost every bit of their speed and two bikes leaning on each other from the grid could hold each other at walking pace for a whole race. A rider now loses 0.9 m/s on a tick with side contact however many bikes touch, and at most 6 m/s over any one second.
-- **The opening pack.** The player starts last (section 14), behind fourteen rivals in rows 7 m apart across every lane of the road. Measured with the pilot standing in for the decent player over 80 level-1 starts: the player falls in the first kilometre in 6 of them, 2.2 rivals go down per race in the first kilometre (most into traffic, the rest in fights), and no rival is busted there. The three things that got it there, in order of effect: the first cop post moved from 700 m to 1.5 km (section 8), the rows widened from 4.5 m to 7 m, and the truce before the first punch grew from 3 s to 7 s (420 ticks) so the pack sorts itself before the fists come out.
-- **The held-throttle start.** The second play test held the throttle from the gun on Slag Row and was thrown into the back of a rival within seven seconds, and three rivals went down into an oncoming van at the gantry in the first three. Measured on October 14, 2026 with a player bot on the Wren at level 1 that holds full throttle and steers not at all, and one that steers half a lock around the nearest rider ahead, 24 seeds on each of the five roads: before, the first bot was thrown in the first 10 s in 54% of starts and the second in 38%, every one a rear-end, and 1.02 rivals a race went down in the first 3 s, nearly all into traffic. The causes were that every pilot aimed for the home lane off the grid, since a bike alongside did not count as a threat, so the pack leaned on itself and lost speed to side contact while the player at the back, touching nobody, closed at 8 to 9 m/s; that oncoming cars spawned on the grid's oncoming lanes; and that a rear-end threw at 9 m/s of closing. After the rules in section 14, item 23, and the 18 m/s line in item 21: neither bot is thrown in the first 10 s in any of the 240 starts, no rival goes down in the first 3 s, and 0.12 rivals a race go down in the first 10 s, nearly all on the two roads with one lane each way where the half of the grid that stands in the oncoming lane has to merge. Over 20 s the no-steer bot still crashes in 44% of starts and the mild steerer in 22%, but those are the first bends: Slag Row's 88° turn at 320 m and Hollow Pine Road's, where a bot that does not steer for a bend runs into the scenery or into the pack braking for it, and the pack's own losses in 20 s are down from 2.2 to 1.0 a race. The sim's start test pins the first ten seconds on both road widths over three seeds.
-- **Pacing by the gap to the player.** Each rival's pace depends on where the player is, so the player rides in the field for most of a race. A rival ahead of the player rolls off the throttle: its throttle holds it at no more than `topSpeed × (1 − leadEase × share)`, where `share` is the gap over 200 m, clamped to 1. It never brakes for pace and the corner speeds its bike asks for still apply, so at level 1 a rival 200 m clear cruises at 78% of its top speed and one 50 m clear at 94.5%. A rival behind the player takes its bends a little better: its corner skill is lifted by `catchUp × share`, never above 1.0, and it never exceeds its bike's top speed, so a rival on a Wren cannot catch a player on a Sesta down a straight. The player, the police, busted and wrecked rivals, and every rival once the player has finished, been busted, or been wrecked are not paced. The numbers by level are in `pacingLevels` in `packages/career/src/tables.ts`:
+- **The opening pack.** The player starts last (section 14), behind fourteen rivals in rows 7 m apart across every lane of the road. Measured with the pilot standing in for the decent player over 80 tier-1 starts: the player falls in the first kilometre in 6 of them, 2.2 rivals go down per race in the first kilometre (most into traffic, the rest in fights), and no rival is busted there. The three things that got it there, in order of effect: the first cop post moved from 700 m to 1.5 km (section 8), the rows widened from 4.5 m to 7 m, and the truce before the first punch grew from 3 s to 7 s (420 ticks) so the pack sorts itself before the fists come out.
+- **The held-throttle start.** The second play test held the throttle from the gun on Slag Row and was thrown into the back of a rival within seven seconds, and three rivals went down into an oncoming van at the gantry in the first three. Measured on October 14, 2026 with a player bot on the Wren at tier 1 that holds full throttle and steers not at all, and one that steers half a lock around the nearest rider ahead, 24 seeds on each of the five roads: before, the first bot was thrown in the first 10 s in 54% of starts and the second in 38%, every one a rear-end, and 1.02 rivals a race went down in the first 3 s, nearly all into traffic. The causes were that every pilot aimed for the home lane off the grid, since a bike alongside did not count as a threat, so the pack leaned on itself and lost speed to side contact while the player at the back, touching nobody, closed at 8 to 9 m/s; that oncoming cars spawned on the grid's oncoming lanes; and that a rear-end threw at 9 m/s of closing. After the rules in section 14, item 23, and the 18 m/s line in item 21: neither bot is thrown in the first 10 s in any of the 240 starts, no rival goes down in the first 3 s, and 0.12 rivals a race go down in the first 10 s, nearly all on the two roads with one lane each way where the half of the grid that stands in the oncoming lane has to merge. Over 20 s the no-steer bot still crashes in 44% of starts and the mild steerer in 22%, but those are the first bends: Slag Row's 88° turn at 320 m and Hollow Pine Road's, where a bot that does not steer for a bend runs into the scenery or into the pack braking for it, and the pack's own losses in 20 s are down from 2.2 to 1.0 a race. The sim's start test pins the first ten seconds on both road widths over three seeds.
+- **Pacing by the gap to the player.** Each rival's pace depends on where the player is, so the player rides in the field for most of a race. A rival ahead of the player rolls off the throttle: its throttle holds it at no more than `topSpeed × (1 − leadEase × share)`, where `share` is the gap over 200 m, clamped to 1. It never brakes for pace and the corner speeds its bike asks for still apply, so at tier 1 a rival 200 m clear cruises at 78% of its top speed and one 50 m clear at 94.5%. A rival behind the player takes its bends a little better: its corner skill is lifted by `catchUp × share`, never above 1.0, and it never exceeds its bike's top speed, so a rival on a Wren cannot catch a player on a Sesta down a straight. The player, the police, busted and wrecked rivals, and every rival once the player has finished, been busted, or been wrecked are not paced. The numbers by level are in `pacingLevels` in `packages/career/src/tables.ts`:
 
-  | Level | leadEase | catchUp |
-  | ----: | -------: | ------: |
-  |     1 |     0.22 |    0.08 |
-  |     2 |     0.20 |    0.07 |
-  |     3 |     0.18 |    0.06 |
-  |     4 |     0.16 |    0.05 |
-  |     5 |     0.14 |    0.04 |
+  | Tier | leadEase | catchUp |
+  | ---: | -------: | ------: |
+  |    1 |     0.22 |    0.08 |
+  |    2 |     0.18 |    0.06 |
+  |    3 |     0.14 |    0.04 |
 
   The original (the 1994 3DO version, read from a third-party reconstruction of its code, so a prediction rather than a fact) paced opponents by rank once a second: the three rivals ranked just ahead of the player took a speed penalty from a table and the three just behind a bonus; far rivals ahead of the player lost a level-scaled share of their target speed (10% at level 1 down to 2% at level 5) while those behind gained one; rivals near the player were scaled by a table indexed by the gap in 256-unit steps; and far rivals halved their target speed while the player was down. The tables are not in the reconstruction, so this rule keeps the idea, ease the leaders by the gap and help the dropped, in two numbers a level, and measures the result. Measured with the pilot standing in for the decent player, 8 seeds on five roads: at level 1 the leader is 124, 143, and 134 m ahead at 2, 4, and 6 km (medians), the last rival 298, 460, and 492 m behind, five to seven rivals are within 100 m of the player, and the pilot finishes fifth of fifteen in the median race in 3.7 to 4.4 minutes. At level 5 on the Meridian the leader is 279, 395, and 435 m ahead, the last rival 346, 445, and 438 m behind, and the pilot finishes fourth in 5.6 to 7.7 minutes. Bike and skill still decide: at level 5 the Nera and Anvil riders lead, and the Gutter Pup is last whatever Gus does.
 
 - **Bust rates** for the pack are in section 8: between 0.7 and 1.7 rivals busted per race, down from 1.5 to 3.2.
 
-### Bikes by level
+### Bikes by tier
 
-Rivals move up the catalogue as the season goes on. The player's "decent" path (section 5) is in the last row for comparison. From level 2 the decent player is a step behind the front of the field: the fastest rivals ride a Sesta against the player's Kite at level 2, and a Nera against the player's Meridian at level 5. Top three out of fifteen allows for that, and it is what makes a win pay for the next class. The columns are rungs (section 4). At three levels the fields ride the Level 1, Level 3 and Level 5 columns, and the decent player rides the Wren, the Sesta and the Meridian against them. Between them those three columns put all nine bikes under some rival.
+Rivals move up the catalogue as the season goes on. The player's "decent" path (section 5) is in the last row for comparison. `packages/sim/src/cast.ts` holds the table.
 
-| Rival | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
-| --- | --- | --- | --- | --- | --- |
-| Juno Kade | sits out | Sesta 600 | Sette 750 | Meridian 900 | Nera 1000 |
-| Ruth Ann Bixby | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 |
-| Dee Santangelo | Wren 400 | Sesta 600 | Sette 750 | Sette 750 | Meridian 900 |
-| Ines Marchetti | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 | Meridian 900 |
-| Mags Dunleavy | Wren 400 | Kite 500 | Stoker 800 | Stoker 800 | Anvil 1100 |
-| Lyle Gorski | Wren 400 | Kite 500 | Sesta 600 | Meridian 900 | Anvil 1100 |
-| Tristan Lux | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 | Nera 1000 |
-| Coach Dale Hutto | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Anvil 1100 |
-| Moose Kowalczyk | Kite 500 | Kite 500 | Stoker 800 | Stoker 800 | Anvil 1100 |
-| Gus Abernathy | Gutter Pup 250 | Wren 400 | Kite 500 | Stoker 800 | Stoker 800 |
-| Sister Agnes Mulcahy | Wren 400 | Kite 500 | Sesta 600 | Sesta 600 | Sette 750 |
-| Hollis Thorne | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 |
-| Wanda Pruitt | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Sette 750 |
-| Benny Okafor | Wren 400 | Kite 500 | Sesta 600 | Sette 750 | Meridian 900 |
-| Orrin Blackwell | Wren 400 | Wren 400 | Kite 500 | Sesta 600 | Sette 750 |
-| Dr Felix Aurand | Kite 500 | Kite 500 | Stoker 800 | Stoker 800 | Anvil 1100 |
-| _Player, decent path_ | _Wren 400_ | _Kite 500_ | _Sesta 600_ | _Sette 750_ | _Meridian 900_ |
+| Rival                 | Tier 1         | Tier 2      | Tier 3         |
+| --------------------- | -------------- | ----------- | -------------- |
+| Juno Kade             | sits out       | Sette 750   | Nera 1000      |
+| Ruth Ann Bixby        | Wren 400       | Sesta 600   | Meridian 900   |
+| Dee Santangelo        | Wren 400       | Sette 750   | Meridian 900   |
+| Ines Marchetti        | Kite 500       | Sette 750   | Meridian 900   |
+| Mags Dunleavy         | Wren 400       | Stoker 800  | Anvil 1100     |
+| Lyle Gorski           | Wren 400       | Sesta 600   | Anvil 1100     |
+| Tristan Lux           | Kite 500       | Sette 750   | Nera 1000      |
+| Coach Dale Hutto      | Wren 400       | Sesta 600   | Anvil 1100     |
+| Moose Kowalczyk       | Kite 500       | Stoker 800  | Anvil 1100     |
+| Gus Abernathy         | Gutter Pup 250 | Kite 500    | Stoker 800     |
+| Sister Agnes Mulcahy  | Wren 400       | Sesta 600   | Sette 750      |
+| Hollis Thorne         | Wren 400       | Sesta 600   | Meridian 900   |
+| Wanda Pruitt          | Wren 400       | Sesta 600   | Sette 750      |
+| Benny Okafor          | Wren 400       | Sesta 600   | Meridian 900   |
+| Orrin Blackwell       | Wren 400       | Kite 500    | Sette 750      |
+| Dr Felix Aurand       | Kite 500       | Stoker 800  | Anvil 1100     |
+| _Player, decent path_ | _Wren 400_     | _Sesta 600_ | _Meridian 900_ |
 
 ### The riders
 
@@ -764,7 +680,7 @@ Visual: compact, sits low. Suede jacket with a short fringe along the sleeves th
 
 #### Dee Santangelo
 
-20, Lowtown. Skill 0.93, aggression 0.50. Rides like she is late, because she is: splits traffic, never brakes for a crest, swings the chain from either side. Turns ally at level 3 (section 11).
+20, Lowtown. Skill 0.93, aggression 0.50. Rides like she is late, because she is: splits traffic, never brakes for a crest, swings the chain from either side. Turns ally at tier 2 (section 11).
 
 Dee delivers pizza for Gino's on Slag Row and races because the prize money pays better than tips. The insulated delivery box stays bolted to her bike, even on race day.
 
@@ -829,7 +745,7 @@ Visual: lean, glossy purple jacket covered in sponsor patches, phone on a chest 
 
 #### Coach Dale Hutto
 
-55, Stonepeak. Skill 0.86, aggression 0.55. Rides by the numbers and attacks on a schedule, because the tape says momentum is a habit. From level 2 he fights with a pool cue he calls the Pointer.
+55, Stonepeak. Skill 0.86, aggression 0.55. Rides by the numbers and attacks on a schedule, because the tape says momentum is a habit. From tier 2 he fights with a pool cue he calls the Pointer.
 
 Coach Dale sold motivational cassette tapes out of his car for twenty years. He has twelve volumes left and a strong belief that each race is a teachable moment, mostly for other people.
 
@@ -855,11 +771,11 @@ Visual: broad, heavy shoulders and tattooed arms. A blond mullet with a shaved s
 
 #### Gus Abernathy
 
-66, Kettle. Skill 0.82, aggression 0.65. The slowest rider in the field and the most dangerous in a straight line next to you, because from level 3 he carries a stop sign. He waits for riders to come to him.
+66, Kettle. Skill 0.82, aggression 0.65. The slowest rider in the field and the most dangerous in a straight line next to you, because from tier 2 he carries a stop sign. He waits for riders to come to him.
 
 Gus held a stop sign on road crews for forty-one years and retired without ever being allowed to use it on anyone. He took it home with him.
 
-Visual: lanky and bent, white beard, hi-vis vest over a red flannel shirt, a helmet shaped like a hard hat. From level 3 the red octagon sits over his shoulder and rises above every other silhouette in the pack.
+Visual: lanky and bent, white beard, hi-vis vest over a red flannel shirt, a helmet shaped like a hard hat. From tier 2 the red octagon sits over his shoulder and rises above every other silhouette in the pack.
 
 - Taunt: "Forty-one years I held this sign. Today I finally get to use it."
 - Grudge taunt: "You ran my sign last time, kid. Nobody runs my sign."
@@ -894,7 +810,7 @@ Visual: broad-shouldered, head back, mouth open. A teal sequinned stage jacket o
 
 #### Dr Felix Aurand
 
-44, Lowtown. Skill 0.80, aggression 0.70. The weakest rider in the cast and the most willing to fight for it. Starts every level with a club and swings it like a man who bills by the hour.
+44, Lowtown. Skill 0.80, aggression 0.70. The weakest rider in the cast and the most willing to fight for it. Starts every tier with a club and swings it like a man who bills by the hour.
 
 Felix has the dental practice on the corner of Slag Row and most of the field as patients. He races, he says, for the cardio. He also races because every rider he knocks down comes back to him for the crown.
 
@@ -965,12 +881,12 @@ Rules:
 - When several incidents apply, the line comes from the highest row; bonuses add up.
 - **Memory fades.** Every career race, every rival's bonus first moves 0.05 toward 0, whether they rode it or not, and then that race's incidents add to it for those who rode. A rider remembers recent races, not the whole season.
 - So respect has a floor. Outrunning a rider cleanly every race, or letting them knock you down every race, holds their bonus at −0.05 and no lower: they ease off a little but never stop fighting. Anger has no such floor, because one race can add up to +0.55. Two knockdowns in a race take a rider from −0.05 to +0.20 and a grudge. A grudge from a stolen weapon ends after two races in which the player outruns that rider cleanly (0.15, then 0.05, then −0.05), or after three races the rider sits out (0.10, 0.05, then 0), and lasts as long as the player keeps adding to it.
-- Why: with fourteen of the sixteen rivals in every race, a player who finishes near the front and stays out of fights outruns about ten of them cleanly every race. Before the fade applied to every race, the −0.05 for respect added up for each of them: twenty such races put a rider on the −1 floor, where they never attack and two knockdowns still leave them at −0.8. In the stand-in pilot's careers (section 5, "Measured careers") one rival reached −0.95 by the end of level 1. With the fade, every rival in those careers ends every level between −0.05 and +0.20, and grudges still form.
+- Why: with fourteen of the sixteen rivals in every race, a player who finishes near the front and stays out of fights outruns about ten of them cleanly every race. Before the fade applied to every race, the −0.05 for respect added up for each of them: twenty such races put a rider on the −1 floor, where they never attack and two knockdowns still leave them at −0.8. In the stand-in pilot's careers (section 5, "Measured careers") one rival reached −0.95 by the end of tier 1. With the fade, every rival in those careers ends every level between −0.05 and +0.20, and grudges still form.
 - Why every race and not only shared ones: at fifteen riders two of the sixteen rivals sit out each race, and at ten seven do. A fade that only ran on shared races made a grudge last more of the season with the smaller field. In the stand-in's careers (section 5, "Measured careers") a grudge lasted a median of 3 career races and at most 14 with fifteen riders and five levels, and a median of 5 and at most 22 with ten riders and three levels. With the fade on every race it lasts a median of 3 and at most 10. After an average start 0.74 rivals hold a grudge, against 1.32 before and 1.09 with fifteen riders. With fifteen riders the change only touches the two who sit out.
 - Effective aggression toward the player is `profile.aggression + aggressionBonus`, clamped to 0 to 1. Toward other riders it stays the profile value.
 - The grudge flag is set when the bonus reaches 0.15 and cleared when it falls below 0.05. A rider with a grudge picks the player as their attack target whenever the player is in reach, even if another rider is closer.
 - The post-race line follows the settled places: if they are placed ahead, their "beat you" line; if you are placed ahead, their "you beat them" line. A rival who was busted or wrecked uses the "you beat them" line.
-- Dee's bonus is fixed at −1 toward the player from the level whose field rides rung 3 (level 3 of five, level 2 of three; she will not attack you), unless the player knocks her down twice in one race, which ends the alliance for the rest of that level. Her memory keeps running underneath the alliance, so the two knockdowns that end it also give her the usual +0.20 and a grudge for the next race.
+- Dee's bonus is fixed at −1 toward the player from tier 2 (she will not attack you), unless the player knocks her down twice in one race, which ends the alliance for the rest of that tier. Her memory keeps running underneath the alliance, so the two knockdowns that end it also give her the usual +0.20 and a grudge for the next race.
 
 ## 11. Story
 
@@ -979,12 +895,12 @@ The Vic Lomax story that stood here was retired on October 23, 2026. Its text is
 The new story is drafted as a short story bible, which the owner rewrites in their own voice. What is decided:
 
 - **The league.** Illegal road races are streamed around the world, touring real cities. Viewers watch and bet on them inside the story; the game itself sells only cosmetics (section 0).
-- **The player** is an unknown rider on a cheap bike, climbing the league. The career is that rise, across three levels and a finale.
+- **The player** is an unknown rider on a cheap bike, climbing the league. The career is that rise, across three tiers and a finale.
 - **The celebrities** each have a story moment on their home road, built from their public memes, and each pair's feud plays out in races the player rides in: Musk and Altman in the Bay Area, Ronaldo and Mbappé in Madrid, and Ranveer Singh and Jenner in Mumbai. Beating a celebrity in their story moment unlocks them for single races and multiplayer.
 - **The Lowside** stays the bar where riders wait between races, and the hub of the menus. Where it sits on a world tour is for the story bible.
 - **The limits.** Jokes come from public, well-known memes. The parodies never claim real crimes or private facts about the real people (section 15).
 
-Until the new story lands, a career with fewer levels joins the old chapters of the rungs each level takes in (section 4). At three levels level 2 is "Dee's Tip", with the envelope and Dee's tip, and level 3 is "The Long Ridge", with the badge and the finale. Vic's promotion cards join the same way, so the level-3 card ends "The Ridge is last. She'll be waiting."
+Each tier has one story chapter: tier 1 is "New Meat", tier 2 is "Dee's Tip", with the envelope and Dee's tip, and tier 3 is "The Long Ridge", with the badge and the finale. Vic's promotion cards follow the same order, so the tier-3 card ends "The Ridge is last. She'll be waiting."
 
 Still for the story bible: the league's arc, one scene or line for each of the nine races, the bar's lines, and the ending.
 
@@ -992,9 +908,9 @@ Still for the story bible: the league's arc, one scene or line for each of the n
 
 ### What it is
 
-Two to eight signed-in players race one road at one level. Bots fill the other seats, so every race has the field the server's race rules set, ten racers at launch. Police and traffic are extra actors in the simulation, so the humans in a room, the racers, and the actors stepped are three different counts. A host creates a private room and shares its short code. A private room admits anyone and shows each player's connection. Quick Race puts the player in a public lobby, where bots fill the empty seats and present as human, so a race starts however few people are playing. A public room targets an 80 ms round trip and admits no one above 100 ms. Ranked matchmaking waits until enough people play to fill it. A player rides any celebrity they have unlocked, in any skin they own, on a bike from the full catalogue, and the bike is locked when the race starts. There is no money; the reward is the result and, later, a leaderboard. There is no pacing in multiplayer, because the rule in section 9 reads the gap to rider 0 and would favour one seat.
+Two to eight signed-in players race one road at one tier. Bots fill the other seats, so every race has the field the server's race rules set, ten racers at launch. Police and traffic are extra actors in the simulation, so the humans in a room, the racers, and the actors stepped are three different counts. A host creates a private room and shares its short code. A private room admits anyone and shows each player's connection. Quick Race puts the player in a public lobby, where bots fill the empty seats and present as human, so a race starts however few people are playing. A public room targets an 80 ms round trip and admits no one above 100 ms. Ranked matchmaking waits until enough people play to fill it. A player rides any celebrity they have unlocked, in any skin they own, on a bike from the full catalogue, and the bike is locked when the race starts. There is no money; the reward is the result and, later, a leaderboard. There is no pacing in multiplayer, because the rule in section 9 reads the gap to rider 0 and would favour one seat.
 
-Race rules belong to the server and are never player settings. Whether the celebrities ride, field size, level count, and police per level are one `RaceRules` record, `launchRules` in `packages/career/src/rules.ts`, served at `/api/race-rules`. The browser reads it once at boot, and the career and race setup take it as input.
+Race rules belong to the server and are never player settings. Whether the celebrities ride and the field size are one `RaceRules` record, `launchRules` in `packages/career/src/rules.ts`, served at `/api/race-rules`. The browser reads it once at boot, and the career and race setup take it as input.
 
 ### How it runs
 
@@ -1076,9 +992,9 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 8 | Pilot rules for Juno and Ruth Ann | Juno: retaliation only, attacking only a rider who hit her in the last 10 s. Ruth Ann: kicks preferred. Section 9 gives both rules. They can be two flags on the profile. | Not built. The profile has no flag for either. |
 | 9 | HUD data | Bike condition, distance to the nearest chasing cop, and distance remaining. | Built as data in the HUD feed. The HUD draws only the speedometer (section 0). |
 | 10 | Detail for a bust on Results | The player's `crash` event carries the weapon dropped, and the `busted` event carries the body's `s`, both read before the sim clears or moves them (section 4). | Built on the `busted` event instead, which carries the weapon, the body's `s` and its `x`. |
-| 11 | Career rules | Money, level, qualified roads, repeat-run pay, owned bike, carried weapon, rival memory, season points, story flags, settlement, the active-race record, and the debt check are plain data advanced by plain functions. They are rules, so they live in a deterministic package (a new `packages/career`, or a `career` module in `packages/sim`), not in React. | Built in `packages/career`. |
+| 11 | Career rules | Money, tier, qualified roads, repeat-run pay, owned bike, carried weapon, rival memory, season points, story flags, settlement, the active-race record, and the debt check are plain data advanced by plain functions. They are rules, so they live in a deterministic package (a new `packages/career`, or a `career` module in `packages/sim`), not in React. | Built in `packages/career`. |
 | 12 | Paint palette | `paint` stays an index, but into a palette of eighteen rider colours (`art-direction.md`), with a second index for jacket colour. The cast cannot be told apart without it. | Built. `riderPalette` in `packages/sim/src/palette.ts`. |
-| 13 | Traffic per level | No change: a level's road is its own `TrackPlan`, and `trafficPerKilometre` is already per plan. `tracks.md` gives the values. | First career release, no work |
+| 13 | Traffic per tier | A tier multiplies a road's `trafficPerKilometre` by its density and adds its slow convoys (section 4). `tracks.md` gives the base values. | First career release, no work |
 | 14 | Side-contact cap | The cap on speed lost to side contact described in section 9: 0.9 m/s a tick and 6 m/s in any second, kept as `bumpLoss` on the rider. | Built |
 | 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 62, `strikeTick` 32. |
 | 16 | Last-slot grid start | The player starts in the last grid slot, behind every rival, in rows 7 m apart across every lane: four abreast on a road with two lanes each way, two abreast on a one-lane road. | Built and measured (section 9). |
@@ -1086,11 +1002,11 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8. | Later |
 | 18 | Region scenery kits | A `kit` field on `TrackPlan` so `scatterProps` places palms, cacti, streetlights, or pines instead of the same trees everywhere. | Later |
 | 19 | The bust window | A racer cannot be busted in the first 30 ticks after a fall unless they are already on their feet, and the arrest reach is 4 m. `BUST_DELAY_TICKS` and `BUST_REACH` in `police.ts`. Section 8 has the reasons. | Built |
-| 20 | Patrol beats | Every cop remembers where it was parked (`post`) and gives up the chase `beat` metres past it, unless it is riding to a downed racer. The beat is a race input per level. | Built |
+| 20 | Patrol beats | Every cop remembers where it was parked (`post`) and gives up the chase `beat` metres past it, unless it is riding to a downed racer. The beat is a race input per tier. | Built |
 | 21 | Rear-end by the last tick | Rider contact is classified by where the two bikes were a tick earlier. Clear along the road and overlapping across it means the rider behind ran in: a rear-end, which throws them above a closing speed of 18 m/s and below it is a bump that drops them to the speed of the bike ahead and shunts that bike on by 30% of the closing speed, up to 5.4 m/s. Clear across and overlapping along is a side shove. If both gaps closed in the same tick, the one that closed last decides. Before this a rider closing fast enough to overlap more than 0.86 m in a tick was shoved aside and rode through; until October 14, 2026 the throw line was 9 m/s, which threw a player who held the throttle off the grid into the pack in most starts. | Built |
 | 23 | The start | The pilot does not steer into a bike alongside, so the grid gets away in its lanes; it enters an oncoming lane only when the nearest oncoming car is more than 8 s of closing away, 12 s in the first 10 s of a race, and leaves one when a car is within 4.5 s; and oncoming traffic spawns no nearer than 300 m past the line. On foot, a control held through the fall is dead until released, and a rider left alone for 4 s walks back to the bike. Measured in section 9. | Built |
 | 24 | Road hazards | Oil slicks, small rocks 0.3 m high, and potholes lie on the road at their real size and are not made to stand out: no glow, no markers. They lie where they change the riding, by the rules in `tracks.md`: oil where a bend turns in and at bend exits, a pothole on the inside line mid-bend, rocks at exits, over crests, and on the straights where riders pass traffic, never in a tight bend or where a bike that hits one would land in one, and in a gentle bend only at the edge of a lane, all on the lanes and none on the shoulder. A hazard need only be visible from 25 m, so one round a blind bend is part of the game. Traffic drives over every hazard unchanged; only riders meet them. They are good to avoid, not must avoid: none is a crash on contact. Oil takes the grip: straight across is safe at any speed, and so is a quick tap of the bars, but holding them hard over (0.8 or more for 0.3 s) on it or just past it above 94 km/h puts the rider down. Before October 16, 2026 the threshold was 0.6 for 10 ticks with the danger lasting 0.45 s past the slick, so a keyboard rider tapping a key on the slick for a quarter of a second went down nearly every time; the play test read that as "the sparkly thing always crashes me". A rock bumps the bike into the air and costs 6 to 16% of the speed: below 50 km/h it is a stagger, from 130 to 180 km/h straight on the bike lands wobbling and rides on, and from about 210 km/h, or steering hard from much lower, it lands sideways and the rider is thrown. A pothole is a jolt that costs 3 to 6% of the speed and a wobble, and throws only a bike leaned hard over (past 85% of its steering limit) above 175 km/h; ridden straight it never throws. Until October 16, 2026 that threshold was 198 km/h; the user lowered it to 175 so a pothole taken flat out in a corner is a real risk. Pilots and cops slow for oil in a bend so the slide stays inside their lane, and ride round it when a lane is free. Pilots and cops choose one line with hazards and traffic in the same scoring: traffic and the road edge rule a line out, a hazard on it is a cost (a rock most, then oil, then a pothole), and they keep the line they chose rather than flip sides mid-move. A bump beats a truck, so when the only lines clear of traffic cross a hazard they ride through it, easing to 150 km/h for a rock. `docs/architecture.md` has the numbers. | Built |
-| 25 | Server-owned race rules | Field size, level count, and police per level come from one `RaceRules` record that the server serves and the career and race setup take as input. The simulation keeps only the ceiling, `MOST_RACERS` (15). | Built |
+| 25 | Server-owned race rules | Field size and whether the celebrities ride come from one `RaceRules` record that the server serves and the career and race setup take as input. The simulation keeps only the ceiling, `MOST_RACERS` (15). | Built |
 | 26 | Truck jumps | A moving double-deck car carrier tows a ramp up the road in place of fixed ramps. A rider who catches it at about 125 km/h or more rides up the ramp, clears both decks, and lands ahead of the truck; a slower one comes down on it and crashes. How far a rider flies depends on speed relative to the truck. Trucks start from each road's plan so that a rider meets them at about the stretches listed in `tracks.md`. Computer riders jump when they are in the lane and the jump would work, otherwise they go round; an unskilled one sometimes misjudges. |
 
 ### Condition by speed
@@ -1128,9 +1044,9 @@ Measured again on November 3, 2026, after a play test found riders flung too far
 
 ### The first career release without the later items
 
-- **No roadblocks.** The Roadblocks column in section 8 reads 0 at every level until item 17 ships. Dee still turns ally at level 3 and still texts, but her texts carry no distance, the Route Board shows no tip line, and the HUD shows no blue tick. Vic's level-3 card uses its alternate copy (`screens.md`).
+- **No roadblocks.** The Roadblocks column in section 8 reads 0 at every tier until item 17 ships. Dee still turns ally at tier 2 and still texts, but her texts carry no distance, the Route Board shows no tip line, and the HUD shows no blue tick. Vic's tier-2 card uses its alternate copy (`screens.md`).
 - **One scenery kit.** Every road uses today's trees, poles, rocks, and chevrons with its region's palette and fog. The roads are told apart by colour, layout, and traffic until item 18 ships.
-- **Cue and sign as built.** Coach carries the cue from level 2 and Gus the sign from level 3 with the numbers in section 7. Tuning them does not change a save.
+- **Cue and sign as built.** Coach carries the cue from tier 2 and Gus the sign from tier 2 with the numbers in section 7. Tuning them does not change a save.
 - **Balance measurements.** The bust rates in section 8 and the opening pack and pacing in section 9 are measured, and the bust rates are pinned by a test. Measurements may change numbers in this document, not its rules.
 
 ## 15. Originality check
