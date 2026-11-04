@@ -1,5 +1,5 @@
 import { chevronRuns } from "@racer/track/chevron-runs";
-import { roadIds, roadLevels } from "@racer/track/road";
+import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 import { stretches, stretchIds } from "@racer/track/stretches";
 import type { StretchId } from "@racer/track/stretches";
@@ -64,7 +64,7 @@ const runLines = (runs: readonly ChevronRun[]): string =>
 
 const tableOf = (): string =>
   [
-    ...roadIds.map((id) => [id, chevronRunsOf(trackFor(id, 5))] as const),
+    ...roadIds.map((id) => [id, chevronRunsOf(trackFor(id))] as const),
     ...stretchTracks.map(([id, track]) => [id, chevronRunsOf(track)] as const),
   ]
     .toSorted(([left], [right]) => left.localeCompare(right))
@@ -133,18 +133,6 @@ describe("corner warnings", () => {
       "../../track/src/chevron-runs.ts"
     );
   });
-
-  it.each(roadIds)(
-    "each level of %s is warned as the whole road is up to its finish",
-    (id) => {
-      for (const level of roadLevels) {
-        const track = trackFor(id, level);
-        expect(chevronRunsOf(track)).toStrictEqual(
-          chevronRuns[id].filter((run) => run.to < track.length)
-        );
-      }
-    }
-  );
 
   it.each(stretchTracks)(
     "every chevron run on %s has boards from its start to its end, on its side",

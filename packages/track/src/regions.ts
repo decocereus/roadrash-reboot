@@ -2,8 +2,6 @@ export type RegionId =
   | "casa-de-campo"
   | "madrid-centro"
   | "salt-coast"
-  | "cinder-flats"
-  | "kettle-woods"
   | "lowtown"
   | "stonepeak";
 
@@ -46,20 +44,6 @@ export const regions = {
     id: "casa-de-campo",
     name: "Casa de Campo",
     propMix: { chevron: 1, pole: 0, rock: 0, tree: 0 },
-  },
-  "cinder-flats": {
-    footfall: NO_FOOTFALL,
-    hazardMix: { oil: 0.6, pothole: 0.15, rock: 0.25 },
-    id: "cinder-flats",
-    name: "Cinder Flats",
-    propMix: { chevron: 1, pole: 0.5, rock: 0.8, tree: 0.12 },
-  },
-  "kettle-woods": {
-    footfall: NO_FOOTFALL,
-    hazardMix: { oil: 0.6, pothole: 0.2, rock: 0.2 },
-    id: "kettle-woods",
-    name: "Kettle Woods",
-    propMix: { chevron: 1, pole: 0, rock: 1.2, tree: 1.7 },
   },
   lowtown: {
     footfall: CITY_FOOTFALL,

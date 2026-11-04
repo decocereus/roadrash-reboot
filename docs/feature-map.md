@@ -26,7 +26,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Engine and race sound](#engine-and-race-sound): `audio`
 - [Roads, cities and scenery on screen](#roads-cities-and-scenery-on-screen): `world`
 - [Riders, bikes and cars on screen](#riders-bikes-and-cars-on-screen): `riders-on-screen`
-- [The five roads](#the-five-roads): `roads`
+- [The roads](#the-roads): `roads`
 - [Frame rate and quality](#frame-rate-and-quality): `frame-pacing`
 
 ### Platform
@@ -535,9 +535,9 @@ Test files:
 - `apps/web/test/planted-hands.test.ts`
 - `apps/web/test/rider-shade.ts`
 
-### The five roads
+### The roads
 
-The five roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.
+The roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.
 
 - Id: `roads`
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`
@@ -553,8 +553,6 @@ Source files:
 - `packages/track/src/regions.ts`
 - `packages/track/src/stretches.ts`
 - `packages/track/src/tracks/breakwater-run.ts`
-- `packages/track/src/tracks/cinder-wash.ts`
-- `packages/track/src/tracks/hollow-pine-road.ts`
 - `packages/track/src/tracks/madrid-gran-via-blocks-1.ts`
 - `packages/track/src/tracks/madrid-gran-via-blocks-2.ts`
 - `packages/track/src/tracks/madrid-gran-via-blocks-3.ts`

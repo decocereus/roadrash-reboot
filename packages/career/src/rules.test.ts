@@ -127,11 +127,11 @@ describe("ten racers over three levels", () => {
         policeFor(served, level, "lowtown").fine,
       ])
     ).toStrictEqual([
-      [[3000, 2000, 1400, 60], 400],
-      [[7200, 4800, 3360, 144], 1500],
-      [[13_800, 9200, 6440, 276], 3000],
+      [[5000, 3400, 2400, 100], 400],
+      [[12_000, 8160, 5760, 240], 1500],
+      [[23_000, 15_640, 11_040, 460], 3000],
     ]);
-    expect(prizeFor(recordedRules, 5, 1)).toBe(6900);
+    expect(prizeFor(recordedRules, 5, 1)).toBe(11_500);
   });
 
   it("lets the decent and the weak player buy one bike a level, the Sesta and then the Meridian", () => {
@@ -143,14 +143,14 @@ describe("ten racers over three levels", () => {
         season.end.cash,
       ]);
     expect(cash(decentSeason)).toStrictEqual([
-      ["halden-wren-400", 1500, 9100],
-      ["ostra-sesta-600", 2900, 19_910],
-      ["halden-meridian-900", 6210, 37_450],
+      ["halden-wren-400", 1500, 9300],
+      ["ostra-sesta-600", 3100, 20_590],
+      ["halden-meridian-900", 6890, 39_050],
     ]);
     expect(cash(weakSeason)).toStrictEqual([
-      ["halden-wren-400", 1500, 8700],
-      ["ostra-sesta-600", 2500, 18_400],
-      ["halden-meridian-900", 4700, 32_700],
+      ["halden-wren-400", 1500, 8920],
+      ["ostra-sesta-600", 2720, 19_148],
+      ["halden-meridian-900", 5448, 34_460],
     ]);
   });
 

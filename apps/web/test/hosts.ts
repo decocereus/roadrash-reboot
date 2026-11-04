@@ -117,7 +117,7 @@ interface Ticker {
 }
 
 export const createTicker = (): Ticker => {
-  const track = trackFor("ridge-road", 1);
+  const track = trackFor("ridge-road");
   const run = createRaceRun(defaultSetup(track, 7));
   const input: RiderInput = { ...neutralInput };
   const digests: string[] = [];

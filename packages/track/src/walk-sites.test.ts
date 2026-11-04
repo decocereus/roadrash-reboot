@@ -5,7 +5,7 @@ import { compileTrack } from "./track.ts";
 import type { Track } from "./track.ts";
 import { NO_CROSSING } from "./walk-sites.ts";
 
-const breakwater = trackFor("breakwater-run", 5);
+const breakwater = trackFor("breakwater-run");
 
 const seeded = (track: Track) =>
   track.walkSites.filter((site) => site.crossing === NO_CROSSING);
@@ -37,16 +37,7 @@ describe("walk sites", () => {
   });
 
   it("gives a road with no city scenery nobody to meet", () => {
-    expect(compileTrack(roads["ridge-road"].plan).walkSites).toStrictEqual([]);
-  });
-
-  it("keeps the same places as the level rises and only adds to them", () => {
-    const low = seeded(trackFor("breakwater-run", 1));
-    const high = seeded(breakwater);
-    expect(low.length).toBeLessThan(high.length);
-    for (const site of low) {
-      expect(high).toContainEqual(site);
-    }
+    expect(compileTrack(roads["ridge-road"]).walkSites).toStrictEqual([]);
   });
 
   it("names each site once", () => {

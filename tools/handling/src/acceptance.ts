@@ -7,8 +7,6 @@ const LEAST_PILOT_CORNER_SHARE = 0.8;
 
 const mostBendsSurvivedHandsOff = new Map([
   ["breakwater-run", 5],
-  ["cinder-wash", 5],
-  ["hollow-pine-road", 0],
   ["madrid-gran-via", 9],
   ["madrid-hook", 4],
   ["ridge-road", 0],

@@ -2,7 +2,7 @@ import { zebrasOf } from "./crossings.ts";
 import {
   HAZARD_FINISH_CLEARANCE,
   HAZARD_START_CLEARANCE,
-  levelOf,
+  PLACED_SHARE,
 } from "./hazards.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
@@ -76,8 +76,8 @@ const seededSites = (road: Road): WalkSite[] => {
   ) {
     const s = from + random() * gap;
     const kindRoll = random() * perKilometre;
-    const fromLevel = levelOf(random());
-    if (s < last && fromLevel <= road.plan.level && clearOfCrossings(road, s)) {
+    const placedRoll = random();
+    if (s < last && placedRoll < PLACED_SHARE && clearOfCrossings(road, s)) {
       const [unmarked, jaywalk] = seededKinds;
       const kind = kindRoll < footfall.unmarked ? unmarked : jaywalk;
       sites.push({ crossing: NO_CROSSING, id: `${kind}-${place}`, kind, s });

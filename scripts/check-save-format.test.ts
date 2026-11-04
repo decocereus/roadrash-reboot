@@ -201,7 +201,10 @@ const addBike = edit(
 );
 const addRoad = edit(
   edit(edit(base, grow(roads, "review-road")), row(roads, "review-road")),
-  bound("maximum", roads.length, roads.length + 1),
+  (node) =>
+    node.minimum === 0 && node.maximum === roads.length
+      ? set(node, "maximum", roads.length + 1)
+      : node,
   { Road: [...roads, "review-road"] }
 );
 const removeBike = edit(

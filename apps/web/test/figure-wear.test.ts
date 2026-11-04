@@ -12,7 +12,7 @@ const onRoad = (celebrities: boolean, roadId: "ridge-road" | "slag-row") =>
   practiceSetup(
     { ...recordedRules, celebrities, fieldSize: 10, levelCount: 3 },
     { bikeId: "ostra-sesta-600", level: 1, roadId, seed: 3 },
-    trackFor(roadId, 1)
+    trackFor(roadId)
   );
 
 const setup = onRoad(false, "ridge-road");

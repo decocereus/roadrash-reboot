@@ -3,9 +3,8 @@ import type { RoadStatus } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { levels } from "@racer/career/tables";
-import type { Level, RoadId } from "@racer/career/tables";
+import type { RoadId } from "@racer/career/tables";
 import type { BikeId } from "@racer/sim/bikes";
-import { roadAtLevel } from "@racer/track/road";
 import { roads as roadPlans } from "@racer/track/roads";
 import { Screen } from "@racer/ui/components/screen";
 
@@ -28,8 +27,8 @@ const ABOUT_TEXT = { h: 175, w: 264, x: 1185, y: 634 } as const;
 const STEADY_TRAFFIC = 6;
 const HEAVY_TRAFFIC = 10;
 
-const trafficOf = (roadId: RoadId, level: Level): string => {
-  const perKm = roadAtLevel(roadPlans[roadId], level).trafficPerKilometre;
+const trafficOf = (roadId: RoadId): string => {
+  const perKm = roadPlans[roadId].trafficPerKilometre;
   if (perKm >= HEAVY_TRAFFIC) {
     return "Heavy";
   }
@@ -52,13 +51,7 @@ const Fact = ({
   </div>
 );
 
-const RoadFacts = ({
-  status,
-  level,
-}: {
-  readonly status: RoadStatus;
-  readonly level: Level;
-}) => (
+const RoadFacts = ({ status }: { readonly status: RoadStatus }) => (
   <section aria-label="Road facts">
     <Plate box={FACTS} src={plates.noteCyan} />
     <dl
@@ -66,7 +59,7 @@ const RoadFacts = ({
       style={{ ...place(FACTS_TEXT), fontSize: stagePx(20) }}
     >
       <Fact label="Length" value={`${kilometres(status.lengthMetres)} km`} />
-      <Fact label="Traffic" value={trafficOf(status.road.id, level)} />
+      <Fact label="Traffic" value={trafficOf(status.road.id)} />
       <Fact label="Police" value={String(status.cops)} />
       <Fact label="Home of" value={homeOf(status)} />
     </dl>
@@ -131,7 +124,7 @@ export const RouteBoardScreen = ({
             src={flyers[status.road.id]}
           />
         </button>
-        <RoadFacts level={board.level} status={status} />
+        <RoadFacts status={status} />
         <Plate box={ABOUT} src={plates.noteMagenta} />
         <p
           className="font-display text-ink flex -rotate-2 items-center leading-tight font-bold"

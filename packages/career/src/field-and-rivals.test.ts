@@ -138,8 +138,6 @@ describe("the field", () => {
     ]);
     expect(seen).toStrictEqual([
       ["breakwater-run", ["kylip-jetner", "ranwear-bling"]],
-      ["cinder-wash", []],
-      ["hollow-pine-road", []],
       ["slag-row", ["captain-penaldo", "supreme-leader-mbosse"]],
       ["ridge-road", ["elongated-muskrat", "slam-altruman"]],
     ]);
@@ -210,7 +208,7 @@ describe("the field", () => {
     const setup = setupFor(
       recordedRules,
       atLevel(4),
-      "hollow-pine-road",
+      "breakwater-run",
       3,
       road
     );
@@ -230,7 +228,7 @@ describe("the field", () => {
       beat: 1500,
       count: 4,
       fine: 2200,
-      officer: { name: "Deputy Wendell Haverty" },
+      officer: { name: "Sergeant Dolores Pike" },
       sightRange: 50,
       topSpeed: 64,
     });
@@ -251,7 +249,7 @@ describe("the field", () => {
       {
         bikeId: "ostra-sesta-600",
         level: 4,
-        roadId: "hollow-pine-road",
+        roadId: "breakwater-run",
         seed: 3,
       },
       road
@@ -265,7 +263,7 @@ describe("the field", () => {
       recordedRules.police[4],
     ]);
     expect(setup.field).toStrictEqual(
-      fieldFor(recordedRules, "hollow-pine-road", 4, 3)
+      fieldFor(recordedRules, "breakwater-run", 4, 3)
     );
     expect(
       setup.rivals.map((rival) => [rival.aggressionBoost, rival.grudge])
@@ -275,7 +273,7 @@ describe("the field", () => {
   it("Juno rides the Long Ridge at an aggression of 0.9 and anywhere else at her own", () => {
     expect([
       junoAggression("ridge-road"),
-      junoAggression("cinder-wash"),
+      junoAggression("breakwater-run"),
     ]).toStrictEqual([0.9, 0.25]);
   });
 });
@@ -429,7 +427,7 @@ describe("memory", () => {
     takeWeaponFrom(race, "moose-kowalczyk");
     sprint(race, 1);
     const { career } = settle(race);
-    const next = setupFor(recordedRules, career, "cinder-wash", 4, road);
+    const next = setupFor(recordedRules, career, "breakwater-run", 4, road);
     expect([career.weapon, career.weaponHits]).toStrictEqual(["club", 6]);
     expect([next.player.weapon, next.player.weaponHits]).toStrictEqual([
       "club",

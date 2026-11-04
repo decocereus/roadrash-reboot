@@ -1,34 +1,28 @@
 import type { RegionId } from "./regions.ts";
-import { roadAtLevel } from "./road.ts";
-import type { Road, RoadId, RoadLevel } from "./road.ts";
+import type { RoadId } from "./road.ts";
 import { compileTrack } from "./track.ts";
-import type { Track } from "./track.ts";
-import { breakwaterRunRoad } from "./tracks/breakwater-run.ts";
-import { cinderWashRoad } from "./tracks/cinder-wash.ts";
-import { hollowPineRoadRoad } from "./tracks/hollow-pine-road.ts";
-import { ridgeRoadRoad } from "./tracks/ridge-road.ts";
-import { slagRowRoad } from "./tracks/slag-row.ts";
+import type { Track, TrackPlan } from "./track.ts";
+import { breakwaterRun } from "./tracks/breakwater-run.ts";
+import { ridgeRoad } from "./tracks/ridge-road.ts";
+import { slagRow } from "./tracks/slag-row.ts";
 
 export const roads = {
-  "breakwater-run": breakwaterRunRoad,
-  "cinder-wash": cinderWashRoad,
-  "hollow-pine-road": hollowPineRoadRoad,
-  "ridge-road": ridgeRoadRoad,
-  "slag-row": slagRowRoad,
-} as const satisfies Record<RoadId, Road>;
+  "breakwater-run": breakwaterRun,
+  "ridge-road": ridgeRoad,
+  "slag-row": slagRow,
+} as const satisfies Record<RoadId, TrackPlan>;
 
-export const regionOf = (roadId: RoadId): RegionId => roads[roadId].plan.region;
+export const regionOf = (roadId: RoadId): RegionId => roads[roadId].region;
 
-const createTrackCache = (): ((roadId: RoadId, level: RoadLevel) => Track) => {
-  const compiled = new Map<string, Track>();
-  return (roadId, level) => {
-    const key = `${roadId}-${level}`;
-    const cached = compiled.get(key);
+const createTrackCache = (): ((roadId: RoadId) => Track) => {
+  const compiled = new Map<RoadId, Track>();
+  return (roadId) => {
+    const cached = compiled.get(roadId);
     if (cached) {
       return cached;
     }
-    const track = compileTrack(roadAtLevel(roads[roadId], level));
-    compiled.set(key, track);
+    const track = compileTrack(roads[roadId]);
+    compiled.set(roadId, track);
     return track;
   };
 };

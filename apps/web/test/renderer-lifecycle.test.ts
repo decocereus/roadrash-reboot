@@ -82,7 +82,7 @@ const rampOf = (material: THREE.Material): THREE.Texture => {
   return material.gradientMap;
 };
 
-const track = trackFor("cinder-wash", 1);
+const track = trackFor("slag-row");
 
 const instancedIn = (root: THREE.Object3D): THREE.InstancedMesh[] => {
   const meshes: THREE.InstancedMesh[] = [];
@@ -325,17 +325,24 @@ describe("traffic instance uploads", () => {
     const fleet = placedFleet(assets, shading, race.view.cars);
     const meshes = instancedIn(fleet.group);
     fleet.commit(0);
+    const drawn = meshes.filter((mesh) => mesh.count > 0);
+    expect(drawn).not.toHaveLength(0);
     expect(
-      meshes.map((mesh) => ({
-        culled: mesh.count > 0 && mesh.count < mesh.instanceMatrix.count,
+      drawn.map((mesh) => ({
+        culled: mesh.count < mesh.instanceMatrix.count,
         ranges: mesh.instanceMatrix.updateRanges,
       }))
     ).toStrictEqual(
-      meshes.map((mesh) => ({
+      drawn.map((mesh) => ({
         culled: true,
         ranges: [{ count: mesh.count * 16, start: 0 }],
       }))
     );
+    expect(
+      meshes
+        .filter((mesh) => mesh.count === 0)
+        .flatMap((mesh) => mesh.instanceMatrix.updateRanges)
+    ).toStrictEqual([]);
     const painted = meshes.map((mesh) => coloursOf(mesh).version);
     expect(painted.filter((version) => version > 0)).not.toHaveLength(0);
     fleet.commit(1);

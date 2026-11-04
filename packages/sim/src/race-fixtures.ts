@@ -258,7 +258,7 @@ export interface Placement {
 
 export const truckRoad = compileTrack({
   ...ridgeRoad,
-  carriers: [{ fromLevel: 1, s: 1000 }],
+  carriers: [1000],
   chevrons: [],
   hazardsPerKilometre: 0,
   pieces: eased([[6000, 0, 0]]),
@@ -284,7 +284,7 @@ export const placedAt = (
   s: number,
   x: number,
   id: string
-): HazardPlacement => ({ fromLevel: 1, id, kind, s, setting: "traffic", x });
+): HazardPlacement => ({ id, kind, s, setting: "traffic", x });
 
 export const slick = roadWith(placedAt("oil", 1000, 1.8, "slick"));
 

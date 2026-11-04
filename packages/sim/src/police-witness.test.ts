@@ -10,7 +10,7 @@ import { BIKE_HALF_WIDTH } from "./state.ts";
 import type { RaceEvent, RaceState } from "./state.ts";
 
 const course = compileTrack({
-  ...roads["breakwater-run"].plan,
+  ...roads["breakwater-run"],
   hazardsPerKilometre: 0,
   trafficPerKilometre: 0,
 });

@@ -42,7 +42,7 @@ No geometry or other data was imported from OpenStreetMap, Overture, Google or t
 
 The penalty stands for what the rider feels. A change of curvature turns the chase camera's heading faster or slower, and that yaw acceleration grows with the square of the speed. So each change is weighed by the fourth power of the speed a bike takes that stretch at, relative to 50 m/s. The speed comes from the street's own curvature, the mean turn of its heading over 50 m, or from the radius limit where the limit is tighter, at 8 m/s² of cornering. On a straight the street's vertex noise would otherwise make the road weave from piece to piece at top speed, and the full weight stops it. A slow bend gets a light weight and keeps its shape. The centreline's vertices sit 12 to 29 m apart with about half a metre of jitter, so before this weighting the fit changed the sign of its curvature 16 to 20 times a kilometre on straight streets.
 
-`tools/madrid/src/smoothness.ts` holds the limits that every existing road meets at every level. Curvature changes sign at most 3 times a kilometre, counting only bends tighter than a 1 km radius. The change of grade changes sign at most 7 times a kilometre, counting only crests and dips tighter than a 10 km radius. Grade changes by at most 6 per mille per metre. `tools/madrid/test/fit.test.ts` holds a noisy straight street and a noisy climb to the same limits, and both tests fail on the uniform light penalty the fitter used before.
+`tools/madrid/src/smoothness.ts` holds the limits that every existing road meets. Curvature changes sign at most 3 times a kilometre, counting only bends tighter than a 1 km radius. The change of grade changes sign at most 7 times a kilometre, counting only crests and dips tighter than a 10 km radius. Grade changes by at most 6 per mille per metre. `tools/madrid/test/fit.test.ts` holds a noisy straight street and a noisy climb to the same limits, and both tests fail on the uniform light penalty the fitter used before.
 
 Fits on the pinned corridor, all distances in metres:
 
@@ -61,7 +61,7 @@ Without a limit the fit keeps within 2.5 m of the street for 95% of its length, 
 
 ### The 60 m limit
 
-Use a 60 m minimum radius. No Madrid bend can hold 200 km/h, so the limit comes from the bends the game already asks riders to take. Every existing road reaches a bend of 55.5 to 66.8 m by level 5, and Cinder Wash and Slag Row have bends of 67 and 70 m at level 1. A Sesta holds 88 km/h at 60 m with full steer and a Wren 101 km/h. A bike at 200 km/h brakes for it, as it does for the right angles on Slag Row. 60 m is also the bottom of the launch research's 60 to 120 m band for a major junction turn, below which a forced turn is a flagged exception.
+Use a 60 m minimum radius. No Madrid bend can hold 200 km/h, so the limit comes from the bends the game already asks riders to take. Slag Row has a bend of 70 m, and every road once reached 55.5 to 66.8 m in the stretches that levels added before roads went to one layout. A Sesta holds 88 km/h at 60 m with full steer and a Wren 101 km/h. A bike at 200 km/h brakes for it, as it does for the right angles on Slag Row. 60 m is also the bottom of the launch research's 60 to 120 m band for a major junction turn, below which a forced turn is a flagged exception.
 
 The larger limits leave the street. Holding 200 km/h at full lock on a Sesta needs 265 m, and that road leaves the street by up to 158 m, through buildings. At 120 m it leaves the street by up to 80 m. At 60 m the 95th percentile is 12.9 m, and the test interval on Alcalá and Gran Vía stays within 1.8 m.
 
@@ -127,7 +127,7 @@ Police posts start at 1,500 m, past the hook's finish, so no cop rides on the ho
 
 The Sesta rides Patines under 60 km/h for 2.4 s. That is the junction doing its job, and the reason to look again if the hook is meant to flow.
 
-`apps/web/test/madrid-camera.test.ts` rides the pilot alone on every road at level 1 and drives the real chase camera at the simulation's 60 ticks a second. It holds each Madrid stretch's straights to the shakiest existing road's on both bikes. A straight is road whose heading nets under 0.05 rad over 100 m with no bend tighter than 100 m in it, so a weave still counts as straight. Yaw wobble is the camera's yaw acceleration less its own one-second average, so a weave stays in and a bend the road eases into drops out. On the Sesta, in m/s² and rad/s²:
+`apps/web/test/madrid-camera.test.ts` rides the pilot alone on every road and drives the real chase camera at the simulation's 60 ticks a second. It holds each Madrid stretch's straights to fixed limits on both bikes, taken from the shakiest road the game had when it was written, Hollow Pine Road, which was removed on November 4, 2026. A straight is road whose heading nets under 0.05 rad over 100 m with no bend tighter than 100 m in it, so a weave still counts as straight. Yaw wobble is the camera's yaw acceleration less its own one-second average, so a weave stays in and a bend the road eases into drops out. On the Sesta, in m/s² and rad/s²:
 
 | Road | Height acceleration on straights | Yaw wobble on straights |
 | --- | --: | --: |
@@ -135,7 +135,7 @@ The Sesta rides Patines under 60 km/h for 2.4 s. That is the junction doing its 
 | Hook now | 0.74 | 0.015 |
 | Slag Row | 3.49 | 0.008 |
 | Ridge Road | 3.72 | 0.016 |
-| Hollow Pine Road | 3.18 | 0.024 |
+| Hollow Pine Road, when it was measured | 3.18 | 0.024 |
 
 The hook's grade was gentler than every existing road's before the change, and stays so. Its yaw on straights now sits inside the existing roads' range of 0.006 to 0.024. Its yaw rate on straights stays higher than theirs, 0.020 rad/s against 0.002 to 0.005, because the Paseo curves gently at a radius of 500 m to 1 km where the authored roads run dead straight. That is the street's shape, not a shake.
 
@@ -156,7 +156,7 @@ The street circles Puerta de Alcalá and turns 83° in its first 64 m, and at 60
 
 The grade comes from the corridor's MDT05 samples between the two chainages, fitted the way the hook's is. There is no bridge on this stretch. The road starts at 655.8 m above sea level, which is y 0, dips to 642 m at Cibeles, climbs to the Red de San Luis at 662 m by Telefónica, and falls 34 m into Plaza de España. The fit misses the ground by RMS 0.4 m, largest 2.5 m. The steepest grade is 5.3% and the sharpest change 1.49 per mille per metre. The origin is the street's first point, rounded, at corridor 4,575, 1,648.
 
-The scene is a greybox: no textures and no building kit. The ring of mountains every open look draws on the horizon is left out wherever a plan's ground is paved, so this city ends in its own blocks instead of in peaks, and the hook and the five roads keep theirs. The ground is paved, and grass covers only two authored patches, the Retiro edge east of Puerta de Alcalá and the garden in Plaza de España, both traced inside ground the corridor's footprints leave empty. Trees grow on the grass and nowhere else. 76 of the 90 footprints within 90 m of the street are kept at their estimated heights, which walls Gran Vía; 14 are dropped because they reach inside the verge, have no height, or draw a ring that is not simple, and they leave the gaps the side streets open anyway. One more is dropped than before the run-up, because the road now reaches 90 m further east and that block stands inside its verge. Six landmarks get massing, authored as prisms from their own Wikidata point, the footprint around it and the building's known height. The heights are authored estimates, not sourced measurements, and no new source was used.
+The scene is a greybox: no textures and no building kit. The ring of mountains every open look draws on the horizon is left out wherever a plan's ground is paved, so this city ends in its own blocks instead of in peaks, and the hook and the three roads keep theirs. The ground is paved, and grass covers only two authored patches, the Retiro edge east of Puerta de Alcalá and the garden in Plaza de España, both traced inside ground the corridor's footprints leave empty. Trees grow on the grass and nowhere else. 76 of the 90 footprints within 90 m of the street are kept at their estimated heights, which walls Gran Vía; 14 are dropped because they reach inside the verge, have no height, or draw a ring that is not simple, and they leave the gaps the side streets open anyway. One more is dropped than before the run-up, because the road now reaches 90 m further east and that block stands inside its verge. Six landmarks get massing, authored as prisms from their own Wikidata point, the footprint around it and the building's known height. The heights are authored estimates, not sourced measurements, and no new source was used.
 
 | Landmark | From the grid | Massing | Top | Nearest to the road |
 | --- | --: | --- | --: | --: |

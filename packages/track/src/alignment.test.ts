@@ -2,38 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import { eased, sampleAlignment } from "./alignment.ts";
 import type { TrackPiece, TrackPieces } from "./alignment.ts";
-import { roadAtLevel, roadIds, roadLevels } from "./road.ts";
+import { roadIds } from "./road.ts";
 import { roads } from "./roads.ts";
 import { compileTrack } from "./track.ts";
 import type { Track } from "./track.ts";
 import { ridgeRoad } from "./tracks/ridge-road.ts";
 
 const fingerprintsBeforePieces = {
-  "breakwater-run-1": "1af7538e09afe403",
-  "breakwater-run-2": "2b39aef930c036cc",
-  "breakwater-run-3": "6b8bed605d50a627",
-  "breakwater-run-4": "4c07cbc92962a28e",
-  "breakwater-run-5": "7070d73371a1da4b",
-  "cinder-wash-1": "3516077820af397c",
-  "cinder-wash-2": "51c3f3a012ed0575",
-  "cinder-wash-3": "7c1068173bf09c4b",
-  "cinder-wash-4": "69cd800519999dd1",
-  "cinder-wash-5": "6c9e1c22352f1c8d",
-  "hollow-pine-road-1": "621de94156f2f7d1",
-  "hollow-pine-road-2": "77328e9157064fa6",
-  "hollow-pine-road-3": "3acdbbe26171f94c",
-  "hollow-pine-road-4": "39a76cfd6e09efce",
-  "hollow-pine-road-5": "17cbd9b55ce4b7be",
-  "ridge-road-1": "7cbf7a1017d36dd8",
-  "ridge-road-2": "30a0c1d33a458781",
-  "ridge-road-3": "27675a432c87a700",
-  "ridge-road-4": "384d4e053866591e",
-  "ridge-road-5": "31ac777f53f83815",
-  "slag-row-1": "1ff206095fb06e63",
-  "slag-row-2": "72025aed2d8d6bbf",
-  "slag-row-3": "7bf96e3e11376cdb",
-  "slag-row-4": "446f758a0fa7f0fb",
-  "slag-row-5": "63de1e5f2182dc3a",
+  "breakwater-run": "234562a916d7d231",
+  "ridge-road": "2aa30a216072bf65",
+  "slag-row": "42a8a3b74af8c5f3",
 };
 
 const DIGEST_MODULUS = 2_147_483_647;
@@ -113,19 +91,12 @@ const sweeperCurvatureAt = (s: number): number => {
 };
 
 describe("track pieces", () => {
-  it("every road at every level, without the crossings added since, compiles to the centreline, hazards and props other than chevrons it had before pieces replaced sections", () => {
+  it("every road, without the crossings added since, compiles to the centreline, hazards and props other than chevrons it had before pieces replaced sections", () => {
     const fingerprints = Object.fromEntries(
-      roadIds.flatMap((roadId) =>
-        roadLevels.map((level) => [
-          `${roadId}-${level}`,
-          fingerprintOf(
-            compileTrack({
-              ...roadAtLevel(roads[roadId], level),
-              crossings: [],
-            })
-          ),
-        ])
-      )
+      roadIds.map((roadId) => [
+        roadId,
+        fingerprintOf(compileTrack({ ...roads[roadId], crossings: [] })),
+      ])
     );
     expect(fingerprints).toStrictEqual(fingerprintsBeforePieces);
   }, 60_000);

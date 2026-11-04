@@ -1,6 +1,6 @@
 # Game design
 
-Drafted October 10, 2026. This document describes the game: the career, money, bikes, weapons, police, cast, story, multiplayer, and ads. Section 0 is the launch direction agreed on October 23, 2026. Where a later section disagrees with it, section 0 is the target, and the later section describes the current build until that part is rebuilt. The companion documents are `screens.md` (every screen), `art-direction.md` (look and sound), and `tracks.md` (the five roads as `TrackPlan` data). All numbers in the four documents are the same numbers; if one changes, change it everywhere.
+Drafted October 10, 2026. This document describes the game: the career, money, bikes, weapons, police, cast, story, multiplayer, and ads. Section 0 is the launch direction agreed on October 23, 2026. Where a later section disagrees with it, section 0 is the target, and the later section describes the current build until that part is rebuilt. The companion documents are `screens.md` (every screen), `art-direction.md` (look and sound), and `tracks.md` (the roads as `TrackPlan` data). All numbers in the four documents are the same numbers; if one changes, change it everywhere.
 
 Every name, line, road, and bike here is original. Section 15 lists the checks against the original games' names.
 
@@ -52,7 +52,7 @@ Decided October 23, 2026: **LOWSIDE** is the working name, and it may still chan
 
 ## 3. Modes
 
-**Career** is the main game: your own rider, money, the bike shop, the cast, and the story. The server's race rules set three levels on the current five roads; launch has three levels across three cities and a finale (section 0). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
+**Career** is the main game: your own rider, money, the bike shop, the cast, and the story. The server's race rules set three levels on the three roads; launch has three levels across three cities and a finale (section 0). A guest's career saves to the browser after every race, and a signed-in player's saves on the server.
 
 **Single Race** picks any road at any level the player has reached in a career (all of level 1 is open from the start), any bike in the catalogue the player has ever owned, and a random field. There is no qualification and no money: no prize, no fine, no repair bill, and nothing is written to the career. Results go back to the Single Race menu. It is the quick session and the place to learn a road.
 
@@ -60,7 +60,7 @@ Decided October 23, 2026: **LOWSIDE** is the working name, and it may still chan
 
 ## 4. Career structure
 
-For launch the career becomes three levels across the three cities, nine qualifying races and a finale, with ten riders a race (section 0). The tables below are written for five levels on five roads and fifteen riders, the rules the replay fixtures still record. The server now serves ten riders and three levels.
+For launch the career becomes three levels across the three cities, nine qualifying races and a finale, with ten riders a race (section 0). The tables below are written for five levels and fifteen riders, the rules the replay fixtures still record. Every level has the same three roads, since November 4, 2026. The server now serves ten riders and three levels.
 
 ### Rungs
 
@@ -71,21 +71,18 @@ The five columns of the career tables are **rungs**. A career with five levels g
 - A level also takes in the rungs between its field's rung and the one below. At three levels the bikes, story chapters and Vic's cards of rungs 2 and 3 arrive at level 2, and those of rungs 4 and 5 at level 3. Dee turns ally at the level whose field rides rung 3 or higher.
 - Prizes are the rung's prizes times the number of rungs the level climbs to the next one: two at three levels and one at five. One level now has to pay for two steps of bike (section 5).
 - Which bikes the rivals ride depends on the count. At three levels all nine are under some rival. At two levels the fields ride rungs 1 and 5 and nobody rides the Sesta, because Juno, its only rung-1 rider, sits out level 1.
-- Road lengths, traffic and roadblock spots still follow the career level, so level 3's roads are the level-3 roads in the table below. Whether the last level should run the level-5 roads is open.
 
 ### Levels and roads
 
-There are five levels. Each level has the same five roads, one per region. A road at a higher level is the same road with more appended to the end, more traffic, and more police: the opening kilometres are familiar and the new part is where the level's difficulty lives. The roads are described in `tracks.md`.
+A level has the same three roads, one per region, and a road is the same road at every level. The rise in difficulty comes from who rides it and how they are policed. The roads are described in `tracks.md`.
 
-| Region | Road | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
-| --- | --- | --: | --: | --: | --: | --: |
-| Salt Coast | Breakwater Run | 8.50 km | 9.65 km | 10.80 km | 11.95 km | 13.10 km |
-| Cinder Flats | Cinder Wash | 8.85 km | 10.00 km | 11.15 km | 12.30 km | 13.45 km |
-| Kettle Woods | Hollow Pine Road | 8.05 km | 9.20 km | 10.35 km | 11.50 km | 12.65 km |
-| Lowtown | Slag Row | 8.50 km | 9.65 km | 10.80 km | 11.95 km | 13.10 km |
-| Stonepeak | Ridge Road | 8.55 km | 9.70 km | 10.85 km | 12.00 km | 13.15 km |
+| Region     | Road           |  Length |
+| ---------- | -------------- | ------: |
+| Salt Coast | Breakwater Run | 8.50 km |
+| Lowtown    | Slag Row       | 8.50 km |
+| Stonepeak  | Ridge Road     | 8.55 km |
 
-The level-1 lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. Each level adds 1,150 m to every road; the original's growth per level was not measured. The AI pilot rides a level-1 road in 2.9 to 3.2 minutes alone on the Wren and in 3.2 to 4.1 minutes in a full field with traffic, and a level-5 race on the Meridian 900 in 5.2 to 7.2 minutes, plus whatever time the player spends lying in the road. A 13.45 km road is 13,931 samples with lead-in and runoff, which the compiler and the 60 Hz step handle without change.
+The lengths follow the original game, whose level-1 roads measure 8.0 to 8.9 km. The AI pilot rides a road in 2.9 to 3.2 minutes alone on the Wren and in 3.2 to 4.1 minutes in a full field with traffic.
 
 ### The field
 
@@ -98,11 +95,11 @@ The measured field is **15 racers: the player and 14 rivals**, the original's fi
 
 Field selection: the rivals whose home is the road's region always race there. That is three ordinary riders, or four on Slag Row, plus two celebrities on Slag Row, Ridge Road and Breakwater Run. The rest are drawn from the remaining ordinary cast with the race seed.
 
-Juno Kade is the one exception. She does not race at level 1 ("she doesn't race new meat"), so at level 1 no draw includes her, and Ridge Road's two home riders are Coach Dale Hutto and Ruth Ann Bixby, who stands in for Juno as the best rider left in the cast. She also keeps her own home road, Cinder Wash. From level 2 Juno takes her place back, Ridge Road's home riders are Juno and Coach, and the finale's field always includes her.
+Juno Kade is the one exception. She does not race at level 1 ("she doesn't race new meat"), so at level 1 no draw includes her, and Ridge Road's two home riders are Coach Dale Hutto and Ruth Ann Bixby, who stands in for Juno as the best rider left in the cast. She also keeps her own home road, Salt Coast's Breakwater Run. From level 2 Juno takes her place back, Ridge Road's home riders are Juno and Coach, and the finale's field always includes her.
 
 ### Qualification
 
-**Finish in the top 3 to qualify a road.** Qualify all five roads in a level to move up. Roads can be raced in any order and retried as often as the player wants; each attempt on a road that is not yet qualified pays full prize money for whatever place it earns. A qualified road can be raced again but pays less (section 5, "Repeat runs") and does not need to be.
+**Finish in the top 3 to qualify a road.** Qualify all three roads in a level to move up. Roads can be raced in any order and retried as often as the player wants; each attempt on a road that is not yet qualified pays full prize money for whatever place it earns. A qualified road can be raced again but pays less (section 5, "Repeat runs") and does not need to be.
 
 Top 3 of 15 is the 1994 original's rule (its manual asks for third place or better; the 1991 game asked for fourth of fifteen). The pilot standing in for the decent player finishes fifth of fifteen in the median level-1 race and fourth at level 5 with the pacing rule, so a third is within reach but not given. With ten riders a third is easier. The same stand-in places in the top three in 27%, 31% and 34% of its starts at levels 1, 2 and 3, against 19% to 27% with fifteen (section 5, "Measured careers"). Qualifying stays at top 3 until play tests say otherwise. The place is one value, `QUALIFYING_PLACE` in `packages/career/src/tables.ts`; if play tests show that new players cannot qualify level 1, loosen it to 4 before touching the field or the pacing, because the real pressure is meant to come from money, not from qualification alone.
 
@@ -112,20 +109,20 @@ A busted or wrecked rider does not finish, so the race does not qualify and pays
 
 | Reached | Unlocks |
 | --- | --- |
-| New career | All five level-1 roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
-| Level 2 | Level-2 roads. Shop adds Ostra Sette 750 and Brack Stoker 800. Pool cue appears in the field. Story: the envelope. |
-| Level 3 | Level-3 roads. Shop adds Halden Meridian 900. Stop sign appears. First police roadblocks. Dee turns ally. |
-| Level 4 | Level-4 roads. Shop adds Brack Anvil 1100. Unarmed rivals with aggression 0.5 or more start with a club. |
-| Level 5 | Level-5 roads. Shop adds Ostra Nera 1000. Ridge Road at level 5 is the finale and opens only when the other four level-5 roads are qualified. |
+| New career | All three roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
+| Level 2 | Shop adds Ostra Sette 750 and Brack Stoker 800. Pool cue appears in the field. Story: the envelope. |
+| Level 3 | Shop adds Halden Meridian 900. Stop sign appears. First police roadblocks. Dee turns ally. |
+| Level 4 | Shop adds Brack Anvil 1100. Unarmed rivals with aggression 0.5 or more start with a club. |
+| Level 5 | Shop adds Ostra Nera 1000. Ridge Road at level 5 is the finale and opens only when the other two roads are qualified at level 5. |
 | Career end | The ending screen, then Single Race at every level. |
 
 At three levels the rungs fold into the levels like this.
 
 | Reached | Unlocks |
 | --- | --- |
-| New career | All five level-1 roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
-| Level 2 | Level-2 roads, with the rung-3 field. Shop adds Ostra Sette 750, Brack Stoker 800 and Halden Meridian 900. Pool cue and stop sign appear in the field. Story: the envelope. Dee turns ally. |
-| Level 3 | Level-3 roads, with the rung-5 field. Shop adds Brack Anvil 1100 and Ostra Nera 1000. Unarmed rivals with aggression 0.5 or more start with a club. Ridge Road at level 3 is the finale and opens only when the other four level-3 roads are qualified. |
+| New career | All three roads. Shop stock: Gutter Pup 250, Halden Wren 400, Halden Kite 500, Ostra Sesta 600. |
+| Level 2 | The rung-3 field. Shop adds Ostra Sette 750, Brack Stoker 800 and Halden Meridian 900. Pool cue and stop sign appear in the field. Story: the envelope. Dee turns ally. |
+| Level 3 | The rung-5 field. Shop adds Brack Anvil 1100 and Ostra Nera 1000. Unarmed rivals with aggression 0.5 or more start with a club. Ridge Road at level 3 is the finale and opens only when the other two roads are qualified at level 3. |
 
 ### Going broke and game over
 
@@ -168,7 +165,7 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 **Season standings.** Every settled career race scores points for all sixteen rivals and the player: 15 for 1st, 14 for 2nd, down to 1 for 15th. A busted or wrecked rider scores 0 for that race, and so does a rival who was not in that race's field. The Clubhouse board ranks by total points. Ties go to the rider with more wins, then to the rider who most recently placed better than the other in a race they shared.
 
-**The finale.** Ridge Road at level 5 opens only when the other four level-5 roads are qualified. A top-three finish there ends the season and plays an ending (section 11). Anything else, including a quit, a wreck, a bust, or fourth place, is an ordinary result: it pays or costs what it normally would, the debt check runs as usual, and the finale stays open for another attempt. Failing the finale never ends the career by itself.
+**The finale.** Ridge Road at level 5 opens only when the other two roads are qualified at level 5. A top-three finish there ends the season and plays an ending (section 11). Anything else, including a quit, a wreck, a bust, or fourth place, is an ordinary result: it pays or costs what it normally would, the debt check runs as usual, and the finale stays open for another attempt. Failing the finale never ends the career by itself.
 
 **Single Race and multiplayer.** Neither writes an active-race record or touches the career save. Single Race results go back to the Single Race menu; multiplayer results go back to the lobby.
 
@@ -178,25 +175,25 @@ A race changes the career at exactly one moment, called settlement. Everything t
 
 Starting cash is **$1,500** and a **Halden Wren 400**.
 
-Prize money by finishing place, by rung (section 4). Rung 1 is the base; later rungs multiply it by 1.6, 2.4, 3.4, and 4.6. With five levels each level is its rung. "Three levels and ten riders" below has the prizes the served career pays.
+Prize money by finishing place, by rung (section 4). Prizes rose on November 4, 2026, when five roads became three, so a season of fewer starts still buys a bike a level. Rung 1 is the base; later rungs multiply it by 1.6, 2.4, 3.4, and 4.6. With five levels each level is its rung. "Three levels and ten riders" below has the prizes the served career pays.
 
 | Place | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
 | ----: | ------: | ------: | ------: | ------: | ------: |
-|     1 |  $1,500 |  $2,400 |  $3,600 |  $5,100 |  $6,900 |
-|     2 |  $1,000 |  $1,600 |  $2,400 |  $3,400 |  $4,600 |
-|     3 |    $700 |  $1,120 |  $1,680 |  $2,380 |  $3,220 |
-|     4 |    $400 |    $640 |    $960 |  $1,360 |  $1,840 |
-|     5 |    $250 |    $400 |    $600 |    $850 |  $1,150 |
-|     6 |    $150 |    $240 |    $360 |    $510 |    $690 |
-|     7 |    $100 |    $160 |    $240 |    $340 |    $460 |
-|     8 |     $50 |     $80 |    $120 |    $170 |    $230 |
-|     9 |     $40 |     $64 |     $96 |    $136 |    $184 |
-|    10 |     $30 |     $48 |     $72 |    $102 |    $138 |
-|    11 |     $25 |     $40 |     $60 |     $85 |    $115 |
-|    12 |     $20 |     $32 |     $48 |     $68 |     $92 |
-|    13 |     $15 |     $24 |     $36 |     $51 |     $69 |
-|    14 |     $10 |     $16 |     $24 |     $34 |     $46 |
-|    15 |     $10 |     $16 |     $24 |     $34 |     $46 |
+|     1 |  $2,500 |  $4,000 |  $6,000 |  $8,500 | $11,500 |
+|     2 |  $1,700 |  $2,720 |  $4,080 |  $5,780 |  $7,820 |
+|     3 |  $1,200 |  $1,920 |  $2,880 |  $4,080 |  $5,520 |
+|     4 |    $700 |  $1,120 |  $1,680 |  $2,380 |  $3,220 |
+|     5 |    $400 |    $640 |    $960 |  $1,360 |  $1,840 |
+|     6 |    $250 |    $400 |    $600 |    $850 |  $1,150 |
+|     7 |    $170 |    $272 |    $408 |    $578 |    $782 |
+|     8 |    $100 |    $160 |    $240 |    $340 |    $460 |
+|     9 |     $70 |    $112 |    $168 |    $238 |    $322 |
+|    10 |     $50 |     $80 |    $120 |    $170 |    $230 |
+|    11 |     $40 |     $64 |     $96 |    $136 |    $184 |
+|    12 |     $35 |     $56 |     $84 |    $119 |    $161 |
+|    13 |     $25 |     $40 |     $60 |     $85 |    $115 |
+|    14 |     $15 |     $24 |     $36 |     $51 |     $69 |
+|    15 |     $15 |     $24 |     $36 |     $51 |     $69 |
 
 Places 9 to 15 pay pocket money, so a rider who limps home is paid something and a bust or a wreck, which pays nothing, is still worse than last.
 
@@ -233,51 +230,51 @@ Prize money depends on whether the road is already qualified at the current leve
 | Not yet qualified         | Full prize       | Full prize     |
 | Already qualified         | 50% of the prize | Nothing        |
 
-Fines and repair bills are never reduced. A repeat win at level 1 pays $750 and a repeat third pays $350, against a possible $400 fine or $400 to $800 repair. A repeat win at level 5 pays $3,450 against a $3,000 fine. Rerunning a qualified road is therefore a poor way to earn and a real way to lose, while a player who is still trying to qualify is always paid in full for the attempt. Moving up is the better trade: a third on a new level-2 road pays $1,120, more than three repeat thirds at level 1.
+Fines and repair bills are never reduced. A repeat win at level 1 pays $1,250 and a repeat third pays $600, against a possible $400 fine or $400 to $800 repair. A repeat win at level 5 pays $5,750 against a $3,000 fine. Rerunning a qualified road is therefore a poor way to earn and a real way to lose, while a player who is still trying to qualify is always paid in full for the attempt. Moving up is the better trade: a third on a new level-2 road pays $1,120, more than three repeat thirds at level 1.
 
 Single Race and multiplayer pay nothing, so the rule only applies to the career.
 
 ### Pacing
 
-The reference is the **decent player**: eight starts per level, of which six are finishes averaging third place (2nd, 3rd, 3rd, 3rd, 3rd, and one 4th that does not qualify), one is a bust, and one is a wreck. The 4th, the bust, and the wreck all happen on roads that are not yet qualified, so every prize is paid in full.
+The reference is the **decent player**: six starts per level, of which four are finishes (three 3rds that qualify and one 4th that does not), one is a bust, and one is a wreck. The 4th, the bust, and the wreck all happen on roads that are not yet qualified, so every prize is paid in full.
 
 The promise to that player is **one bike per level and one class every other level**: Wren 400 at level 1, Kite 500 at level 2, Sesta 600 at level 3, Sette 750 at level 4, Meridian 900 at level 5. The Anvil 1100 and the Nera 1000 are for players who win.
 
 | Level | Rides | Cash at start | Prizes | Fine | Repair | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$4,200 | −$400 | −$400 | $4,900 | $1,800 | Halden Kite 500, $5,000 | $1,700 |
-| 2 | Kite 500 | $1,700 | +$6,720 | −$900 | −$700 | $6,820 | $3,000 | Ostra Sesta 600, $8,000 | $1,820 |
-| 3 | Sesta 600 | $1,820 | +$10,080 | −$1,500 | −$1,650 | $8,750 | $4,800 | Ostra Sette 750, $11,000 | $2,550 |
-| 4 | Sette 750 | $2,550 | +$14,280 | −$2,200 | −$2,400 | $12,230 | $6,600 | Halden Meridian 900, $18,500 | $330 |
-| 5 | Meridian 900 | $330 | +$19,320 | −$3,000 | −$4,400 | $12,250 |  |  |  |
+| 1 | Wren 400 | $1,500 | +$4,300 | −$400 | −$400 | $5,000 | $1,800 | Halden Kite 500, $5,000 | $1,800 |
+| 2 | Kite 500 | $1,800 | +$6,880 | −$900 | −$700 | $7,080 | $3,000 | Ostra Sesta 600, $8,000 | $2,080 |
+| 3 | Sesta 600 | $2,080 | +$10,320 | −$1,500 | −$1,650 | $9,250 | $4,800 | Ostra Sette 750, $11,000 | $3,050 |
+| 4 | Sette 750 | $3,050 | +$14,620 | −$2,200 | −$2,400 | $13,070 | $6,600 | Halden Meridian 900, $18,500 | $1,170 |
+| 5 | Meridian 900 | $1,170 | +$19,780 | −$3,000 | −$4,400 | $13,550 |  |  |  |
 
-Prizes are one 2nd, four 3rds, and one 4th from the level's column of the prize table. The repair is the level's bill for the class of the bike ridden.
+Prizes are three 3rds and one 4th from the level's column of the prize table. The repair is the level's bill for the class of the bike ridden.
 
 What the table shows:
 
-- Each purchase is the next bike up and nothing more. After level 1 the Sesta is $1,300 out of reach; after level 2 the Sette is $1,180 out of reach; after level 3 the Stoker, the sideways choice at $13,500, would leave $50.
-- The Meridian is the tightest step. It leaves $330, and the Meridian's credit limit is $5,550, so a level-5 bust ($3,000) is survivable but a bust and a wreck ($4,400) before the first prize would repossess it. A careful player rides the Sette into level 5 and buys the Meridian after the first third ($3,220).
-- The Anvil 1100 needs a better season. A player who wins three roads per level, places 2nd and 3rd on the other two, and pays no bills has $29,100 of spending power after level 3 and can buy the Anvil ($26,000) the day it arrives at level 4, and the Nera 1000 ($34,000) at level 5.
+- Each purchase is the next bike up and nothing more. After level 1 the Sesta is $1,200 out of reach; after level 2 the Sette is $920 out of reach; after level 3 the Stoker, the sideways choice at $13,500, would leave $550.
+- The Meridian is the tightest step. It leaves $1,170, and the Meridian's credit limit is $5,550, so a level-5 bust ($3,000) is survivable but a bust and a wreck ($7,400 together) before the first prize would repossess it. A careful player rides the Sette into level 5 and buys the Meridian after the first third ($5,520).
+- The Anvil 1100 needs a better season. A player who wins every road and buys nothing has $40,800 of spending power after level 3 and can buy the Anvil ($26,000) the day it arrives at level 4, and the Nera 1000 ($34,000) at level 5.
 
 ### The weak player
 
-The second reference is the **weak player**: twelve starts per level, of which five are thirds that qualify the five roads, five are sevenths on roads not yet qualified, and two are wrecks. No busts.
+The second reference is the **weak player**: eight starts per level, of which two are wrecks and six are a seventh and then a third on each of the three roads. No busts.
 
 | Level | Rides | Cash at start | Prizes | Repairs | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$4,000 | −$800 | $4,700 | $1,800 | Halden Kite 500, $5,000 | $1,500 |
-| 2 | Kite 500 | $1,500 | +$6,400 | −$1,400 | $6,500 | $3,000 | Ostra Sesta 600, $8,000 | $1,500 |
-| 3 | Sesta 600 | $1,500 | +$9,600 | −$3,300 | $7,800 | $4,800 | Ostra Sette 750, $11,000 | $1,600 |
-| 4 | Sette 750 | $1,600 | +$13,600 | −$4,800 | $10,400 | $6,600 | Nothing. The Meridian is $1,500 short. | $10,400 |
-| 5 | Sette 750 | $10,400 | +$18,400 | −$6,600 | $22,200 |  |  |  |
+| 1 | Wren 400 | $1,500 | +$4,110 | −$800 | $4,810 | $1,800 | Halden Kite 500, $5,000 | $1,610 |
+| 2 | Kite 500 | $1,610 | +$6,576 | −$1,400 | $6,786 | $3,000 | Ostra Sesta 600, $8,000 | $1,786 |
+| 3 | Sesta 600 | $1,786 | +$9,864 | −$3,300 | $8,350 | $4,800 | Ostra Sette 750, $11,000 | $2,150 |
+| 4 | Sette 750 | $2,150 | +$13,974 | −$4,800 | $11,324 | $6,600 | Nothing. The Meridian is $576 short. | $11,324 |
+| 5 | Sette 750 | $11,324 | +$18,906 | −$6,600 | $23,630 |  |  |  |
 
 What the table shows:
 
-- The weak player still moves forward. Five thirds qualify a level whatever else happens, and the sevenths pay a little because those roads were not yet qualified.
-- Progress is slow in the way that matters to the player: twelve starts per level instead of eight, so sixty races for the season instead of forty, and the fifth bike never arrives. The weak player finishes the season on the Sette.
-- The margin is thin after every purchase. If both wrecks come before the first prize of a level, cash goes to $100 at level 2, to $1,800 of debt at level 3 (the Sesta's limit is $2,400), and to $3,200 of debt at level 4 (the Sette's limit is $3,300).
-- Bankruptcy comes from busts and wrecks, never from slow riding. Prize money is never negative, so a player with no bills only gains: the same ten finishes without the two wrecks end level 4 with $20,700 and buy the Meridian with $8,800 to spare. Add one bust per level to the two wrecks and the Sesta leaves only $200 at the start of level 3; two wrecks and a bust before the first prize ($4,800) then pass the Sesta's $2,400 limit and cost the bike.
-- Farming does not rescue a weak player. Twelve reruns of a qualified level-1 road at this player's results pay five thirds at $350, nothing for five sevenths, and cost two $400 repairs: $950 for twelve races, about $80 a race. The price of a Kite is more than sixty races away.
+- The weak player still moves forward. Three thirds qualify a level whatever else happens, and the sevenths pay a little because those roads were not yet qualified.
+- Progress is slow in the way that matters to the player: eight starts per level instead of six, so forty races for the season instead of thirty, and the fifth bike never arrives. The weak player finishes the season on the Sette.
+- The margin is thin after every purchase. If both wrecks come before the first prize of a level, cash goes to $210 at level 2, to $1,514 of debt at level 3 (the Sesta's limit is $2,400), and to $2,650 of debt at level 4 (the Sette's limit is $3,300).
+- Bankruptcy comes from busts and wrecks, never from slow riding. Prize money is never negative, so a player with no bills only gains: the same six finishes without the two wrecks save $4,800 at level 4, which buys the Meridian. Add one bust per level to the two wrecks and the Sesta leaves only $486 at the start of level 3; two wrecks and a bust before the first prize ($4,800) then pass the Sesta's $2,400 limit and cost the bike.
+- Farming does not rescue a weak player. Eight reruns of a qualified level-1 road at this player's results pay three thirds at $600, nothing for three sevenths, and cost two $400 repairs: $1,000 for eight races, $125 a race. The price of a Kite is forty races away.
 
 ### Three levels and ten riders
 
@@ -285,16 +282,16 @@ The served career reads the rungs as section 4 sets out. Its levels ride rungs 1
 
 | Place | Level 1 | Level 2 | Level 3 |
 | ----: | ------: | ------: | ------: |
-|     1 |  $3,000 |  $7,200 | $13,800 |
-|     2 |  $2,000 |  $4,800 |  $9,200 |
-|     3 |  $1,400 |  $3,360 |  $6,440 |
-|     4 |    $800 |  $1,920 |  $3,680 |
-|     5 |    $500 |  $1,200 |  $2,300 |
-|     6 |    $300 |    $720 |  $1,380 |
-|     7 |    $200 |    $480 |    $920 |
-|     8 |    $100 |    $240 |    $460 |
-|     9 |     $80 |    $192 |    $368 |
-|    10 |     $60 |    $144 |    $276 |
+|     1 |  $5,000 | $12,000 | $23,000 |
+|     2 |  $3,400 |  $8,160 | $15,640 |
+|     3 |  $2,400 |  $5,760 | $11,040 |
+|     4 |  $1,400 |  $3,360 |  $6,440 |
+|     5 |    $800 |  $1,920 |  $3,680 |
+|     6 |    $500 |  $1,200 |  $2,300 |
+|     7 |    $340 |    $816 |  $1,564 |
+|     8 |    $200 |    $480 |    $920 |
+|     9 |    $140 |    $336 |    $644 |
+|    10 |    $100 |    $240 |    $460 |
 
 Bills are one incident each, so they are the rung's and are not doubled. The level-1 fine is still the original's $400.
 
@@ -304,26 +301,26 @@ Bills are one incident each, so they are the rung's and are not doubled. The lev
 |     2 |    3 |        $1,100 |       $1,650 |      $2,200 |      $1,500 |
 |     3 |    5 |        $2,200 |       $3,300 |      $4,400 |      $3,000 |
 
-The doubling is what keeps the promise of one bike per level. The fields jump two rungs a level, so the player has to as well. The decent player rides the Wren at level 1, the Sesta at level 2 and the Meridian at level 3, the bikes most of each field rides (section 9). The same eight starts as the five-level plan, from the same columns of the tables above:
+The doubling is what keeps the promise of one bike per level. The fields jump two rungs a level, so the player has to as well. The decent player rides the Wren at level 1, the Sesta at level 2 and the Meridian at level 3, the bikes most of each field rides (section 9). The same six starts as the five-level plan, from the same columns of the tables above:
 
 | Level | Rides | Cash at start | Prizes | Fine | Repair | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$8,400 | −$400 | −$400 | $9,100 | $1,800 | Ostra Sesta 600, $8,000 | $2,900 |
-| 2 | Sesta 600 | $2,900 | +$20,160 | −$1,500 | −$1,650 | $19,910 | $4,800 | Halden Meridian 900, $18,500 | $6,210 |
-| 3 | Meridian 900 | $6,210 | +$38,640 | −$3,000 | −$4,400 | $37,450 |  |  |  |
+| 1 | Wren 400 | $1,500 | +$8,600 | −$400 | −$400 | $9,300 | $1,800 | Ostra Sesta 600, $8,000 | $3,100 |
+| 2 | Sesta 600 | $3,100 | +$20,640 | −$1,500 | −$1,650 | $20,590 | $4,800 | Halden Meridian 900, $18,500 | $6,890 |
+| 3 | Meridian 900 | $6,890 | +$39,560 | −$3,000 | −$4,400 | $39,050 |  |  |  |
 
-The weak player, with the same twelve starts as before:
+The weak player, with the same eight starts as before:
 
 | Level | Rides | Cash at start | Prizes | Repairs | Cash at end | Trade-in | Buys | Cash left |
 | --: | --- | --: | --: | --: | --: | --: | --- | --: |
-| 1 | Wren 400 | $1,500 | +$8,000 | −$800 | $8,700 | $1,800 | Ostra Sesta 600, $8,000 | $2,500 |
-| 2 | Sesta 600 | $2,500 | +$19,200 | −$3,300 | $18,400 | $4,800 | Halden Meridian 900, $18,500 | $4,700 |
-| 3 | Meridian 900 | $4,700 | +$36,800 | −$8,800 | $32,700 |  |  |  |
+| 1 | Wren 400 | $1,500 | +$8,220 | −$800 | $8,920 | $1,800 | Ostra Sesta 600, $8,000 | $2,720 |
+| 2 | Sesta 600 | $2,720 | +$19,728 | −$3,300 | $19,148 | $4,800 | Halden Meridian 900, $18,500 | $5,448 |
+| 3 | Meridian 900 | $5,448 | +$37,812 | −$8,800 | $34,460 |  |  |  |
 
 What the tables show:
 
 - Both players buy the Sesta after level 1 and the Meridian after level 2. The weak player gets every bike in the plan here, where with five levels the fifth never arrived, because the season has two purchases instead of four.
-- The margin after each purchase is still thin. If both of the weak player's wrecks come before the first prize of a level, cash goes to $800 of debt at level 2 (the Sesta's limit is $2,400) and $4,100 of debt at level 3 (the Meridian's limit is $5,550).
+- The margin after each purchase is still thin. If both of the weak player's wrecks come before the first prize of a level, cash goes to $580 of debt at level 2 (the Sesta's limit is $2,400) and $3,352 of debt at level 3 (the Meridian's limit is $5,550).
 - The Anvil 1100 and the Nera 1000 arrive at level 3 and are for players who win. `packages/career/src/rules.test.ts` pins both tables.
 
 ### Measured careers
@@ -364,7 +361,7 @@ The tables above are a plan. To see what fifteen riders and 8 to 13 km roads do 
 
 The differences between the two rows are mostly noise. The memory rule changes which rival attacks whom, and that changes every race that follows, so the same seed gives a different career. What both rows show:
 
-- **The stand-in needs about three times the plan's eight starts a level.** It places in the top three in one start in five, so qualifying five roads takes 10 to 49 starts. A level-1 race lasts 190 to 248 seconds, so level 1 takes about 35 minutes to two and a quarter hours of racing.
+- **The stand-in needs about three times the plan's eight starts a level.** It places in the top three in one start in five, so qualifying five roads took 10 to 49 starts when there were five. A level-1 race lasts 190 to 248 seconds, so level 1 takes about 35 minutes to two and a quarter hours of racing.
 - **It still buys one bike per level.** Every attempt on a road that is not yet qualified pays in full, and places 4 to 8 pay $50 to $400 at level 1, so the extra starts pay for themselves. All six careers bought the Kite at level 2. After the change all six bought the Sesta at level 3, and both careers that reached level 4 bought the Sette. Before it, one career paid fourteen level-2 fines ($12,600), ended level 2 with $1,996, and could not buy the Sesta.
 - **Busts, not wrecks, are the bill.** No start in 960, over all levels the twelve careers reached, ended in a wreck, and no bike fell below 25 condition. The plan's one wreck in eight starts is still a guess about human riders.
 
@@ -372,19 +369,17 @@ The differences between the two rows are mostly noise. The memory rule changes w
 
 The decent player's level 1, start by start.
 
-| Start | Road | Result | Money | Cash after |
-| --: | --- | --- | --: | --: |
-|  |  | New career, Halden Wren 400 |  | $1,500 |
-| 1 | Slag Row | 3rd, qualified | +$700 | $2,200 |
-| 2 | Breakwater Run | 4th, not qualified | +$400 | $2,600 |
-| 3 | Breakwater Run | 3rd, qualified | +$700 | $3,300 |
-| 4 | Hollow Pine Road | Busted at the Sawmill Hook | −$400 | $2,900 |
-| 5 | Hollow Pine Road | 3rd, qualified | +$700 | $3,600 |
-| 6 | Cinder Wash | Wrecked in the Main Wash | −$400 | $3,200 |
-| 7 | Cinder Wash | 2nd, qualified | +$1,000 | $4,200 |
-| 8 | Ridge Road | 3rd, qualified; level 2 | +$700 | $4,900 |
+| Start | Road           | Result                      |   Money | Cash after |
+| ----: | -------------- | --------------------------- | ------: | ---------: |
+|       |                | New career, Halden Wren 400 |         |     $1,500 |
+|     1 | Slag Row       | 3rd, qualified              | +$1,200 |     $2,700 |
+|     2 | Breakwater Run | 4th, not qualified          |   +$700 |     $3,400 |
+|     3 | Breakwater Run | 3rd, qualified              | +$1,200 |     $4,600 |
+|     4 | Ridge Road     | Busted at the Saddle        |   −$400 |     $4,200 |
+|     5 | Ridge Road     | Wrecked on the climb        |   −$400 |     $3,800 |
+|     6 | Ridge Road     | 3rd, qualified; level 2     | +$1,200 |     $5,000 |
 
-At the start of level 2 the Wren trades in for $1,800, giving $6,700 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,700, or stay on the Wren with $4,900 in hand and aim straight for the Sesta 600, which two level-2 thirds ($2,240) would then pay for. With the Kite and $1,700, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, a level-2 cop (187 km/h) is nearly as fast as the bike (190 km/h, 198 tucked in). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
+At the start of level 2 the Wren trades in for $1,800, giving $6,800 of spending power. The player can buy the Kite 500 for $5,000 and keep $1,800, or stay on the Wren with $5,000 in hand and aim straight for the Sesta 600, which two level-2 thirds ($3,840) would then pay for. With the Kite and $1,800, a level-2 wreck ($700) and a level-2 bust ($900) are both covered. On the Wren, a level-2 cop (187 km/h) is nearly as fast as the bike (190 km/h, 198 tucked in). The choice is the point: the upgrade makes level 2 easier to qualify, and waiting makes the next bike come sooner.
 
 ## 6. Bike catalogue
 
@@ -569,6 +564,8 @@ Measured by simulation, with a pilot standing in for the decent player: skill 0.
 
 With 80 starts a rate is good to about 4 or 5 points either way, so the five levels are on their targets and nothing finer can be claimed. `packages/career/src/police.test.ts` runs 40 of those starts a level on every check and fails if a level leaves a band around its target, so a retune shows.
 
+One layout per road (November 4, 2026) cut the test to three roads, so it now rides 13 seeds on each, 39 starts a level. It measures 11, 9, 4, 9 and 5 busts, 38 of 195 (19.5%). Levels 3 and 5 sit low because a race at those levels is now 8.5 km instead of up to 13 km, so there is less road to be caught on. Seed 13 is left out: at level 4 on Slag Row the pilot never settled that race, because it stopped behind a car 3 m short of the line in a traffic queue that formed behind riders who had already finished and parked in the lanes. A human rider steers around that queue.
+
 Cross-road cars (November 2, 2026) took the test's 40 level-1 starts from 13 busts to 14, so the band reaches 14. Breakwater Run is the only road with them. Over 60 level-1 starts on it the stand-in was busted 8 times with cars on the cross roads and 10 without them, so the change is dice, not a harder road.
 
 Pedestrians (November 2, 2026) moved the test's 40 starts a level from 14, 7, 9, 14 and 9 busts to 11, 13, 12, 16 and 6, 53 to 58 of 200, on the same tree with the walk sites taken out. Levels 2, 3 and 4 rose and levels 1 and 5 fell, each inside the 4 or 5 points a rate is good to, and the stand-in was thrown by a pedestrian in none of the eight whole races measured for the change. The level-4 band reaches 16 and the five-level ceiling is 30%.
@@ -628,8 +625,8 @@ A bust ends the race. The rider is placed after all finishers, gets no prize, pa
 
 | Officer | Who they are |
 | --- | --- |
-| **Sergeant Dolores Pike** | Nineteen years on the coast highway. Dry, unbothered, enjoys the paperwork more than the chase. Patrols Breakwater Run, Ridge Road, and Cinder Wash. |
-| **Deputy Wendell Haverty** | Six weeks into the job, eager, apologetic, and secretly thrilled. Patrols Slag Row and Hollow Pine Road. |
+| **Sergeant Dolores Pike** | Nineteen years on the coast highway. Dry, unbothered, enjoys the paperwork more than the chase. Patrols Breakwater Run and Ridge Road. |
+| **Deputy Wendell Haverty** | Six weeks into the job, eager, apologetic, and secretly thrilled. Patrols Slag Row. |
 
 Sergeant Pike's lines:
 
@@ -683,7 +680,7 @@ The owner approved the names and bios on November 2, 2026. The bios are `celebri
 
 The player's default is bike `#C82F2F` red and jacket `#23262C` charcoal. Police are bike `#F4F6F8` white with `#2F6BFF` blue panels and jacket `#141C33`.
 
-Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny), Cinder Wash (Ruth Ann, Mags, Wanda), Hollow Pine Road (Lyle, Gus, Orrin), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis). At level 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
+Home roads among the ordinary sixteen: Breakwater Run (Tristan, Ines, Benny, Ruth Ann, Mags, Wanda), Slag Row (Moose, Dee, Agnes, Felix), Ridge Road (Juno, Coach, Hollis, Lyle, Gus, Orrin). At level 1, where Juno does not race, Ridge Road's home riders are Coach, Hollis, and Ruth Ann (section 4).
 
 ### Pilot rules two riders need
 
@@ -1086,7 +1083,7 @@ The design assumes these changes. Each one is a rule, so it belongs in `packages
 | 15 | Extra weapons | `"cue"` and `"sign"` in `WeaponKind` and `weapons.ts`. | Built. Both carry the numbers in section 7. The sign lands 30 ticks after the press: `ticks` 62, `strikeTick` 32. |
 | 16 | Last-slot grid start | The player starts in the last grid slot, behind every rival, in rows 7 m apart across every lane: four abreast on a road with two lanes each way, two abreast on a one-lane road. | Built and measured (section 9). |
 | 22 | Pacing by the gap to the player | `RaceSetup.pacing` carries `leadEase` and `catchUp`; the pilot caps a leading rival's throttle and lifts a dropped rival's corner skill by the gap to rider 0 (section 9). | Built |
-| 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8 at the spots in `tracks.md`. | Later |
+| 17 | Roadblocks | Stationary cruisers in the traffic list with zero speed that do not follow, placed by the rules in section 8. | Later |
 | 18 | Region scenery kits | A `kit` field on `TrackPlan` so `scatterProps` places palms, cacti, streetlights, or pines instead of the same trees everywhere. | Later |
 | 19 | The bust window | A racer cannot be busted in the first 30 ticks after a fall unless they are already on their feet, and the arrest reach is 4 m. `BUST_DELAY_TICKS` and `BUST_REACH` in `police.ts`. Section 8 has the reasons. | Built |
 | 20 | Patrol beats | Every cop remembers where it was parked (`post`) and gives up the chase `beat` metres past it, unless it is riding to a downed racer. The beat is a race input per level. | Built |
@@ -1142,7 +1139,7 @@ Checked against every name in the research note and the 25 reference captures:
 
 - **Riders.** None of the sixteen rivals or two officers shares a first name, surname, or nickname with a rider or officer named in the reference (including the 1991, 1992, 1994, 1995, and later casts and the officers seen in the captures). The existing sim name **Viper** does match a rider in the original game's results screen and must be replaced.
 - **Bikes.** No bike name or maker matches the reference catalogues (none of the original makers, models, or the original class names). Two draft names were dropped during this check: "Mule", a Kawasaki product name, and "Ultima", an Electronic Arts game series.
-- **Roads and regions.** Salt Coast, Cinder Flats, Kettle Woods, Lowtown, Stonepeak, and the five road names do not match any original route or location name. Ridge Road is ours already.
+- **Roads and regions.** Salt Coast, Lowtown, Stonepeak, and the three road names do not match any original route or location name. Ridge Road is ours already.
 - **Places.** The Lowside, Gino's, and the scrapyard are ours. The reference clubhouse, shop, and restroom names are not used, and there is no restroom options menu.
 - **Lines.** Every line was written for this cast. None quotes or paraphrases a line visible in the captures or quoted in the research note.
 - **Weapons.** Club, chain, crowbar, and baton are generic objects already in the game. The pool cue and stop sign do not appear in the reference weapon lists; the reference spray, prod, and oil weapons were deliberately avoided.

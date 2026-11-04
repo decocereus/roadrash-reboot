@@ -191,17 +191,13 @@ describe("the moving carrier jump", () => {
 
 describe("trucks on the roads", () => {
   it.each([
-    ["breakwater-run", 1, [2350, 3200]],
-    ["cinder-wash", 1, [2600, 3300]],
-    ["hollow-pine-road", 1, [1000, 2600]],
-    ["slag-row", 1, [2600, 4100]],
-    ["slag-row", 3, [2600, 4100]],
-    ["slag-row", 4, [2600, 4100, 5900]],
-    ["ridge-road", 1, [4500]],
+    ["breakwater-run", [2350, 3200]],
+    ["slag-row", [2600, 4100]],
+    ["ridge-road", [4500]],
   ] as const)(
-    "%s at level %i starts its trucks at the plan's stretches, in the first lane the same way, first among the cars",
-    (road, level, starts) => {
-      const track = trackFor(road, level);
+    "%s starts its trucks at the plan's stretches, in the first lane the same way, first among the cars",
+    (road, starts) => {
+      const track = trackFor(road);
       const { cars } = createRace(defaultSetup(track, 1));
       const trucks = cars.slice(cars.length - starts.length);
       expect(trucks.map((car) => car.s)).toStrictEqual([...starts]);

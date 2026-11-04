@@ -35,5 +35,5 @@ Preconditions:
 - `hold=at` freezes at a distance and `hold=crash` a number of ticks after a crash; both fire once per page. Reopen the URL to try again.
 - The clearance hides a prop by its whole parts and its full width, so a pine goes when its crown reaches the camera though its trunk is 4.6 m away. Check for the crown, not the trunk.
 - `hold=air` counts ticks airborne. Much later than 8 ticks the camera is past the 2 m band and the beacons are drawn again behind it.
-- On Hollow Pine Road and Ridge Road a rider within about half a metre of the road's edge brings a pine crown within 2 m of the camera, and it goes while still on screen. Further in, none does.
+- On Ridge Road a rider within about half a metre of the road's edge brings a pine crown within 2 m of the camera, and it goes while still on screen. Further in, none does.
 - Building fronts, banks, awnings, hanging signs and over-road cables do not take part. On the building line an awning can pass 1.8 m from the camera, but beside or behind it, never in front.

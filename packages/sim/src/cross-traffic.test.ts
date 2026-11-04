@@ -1,3 +1,4 @@
+import { eased } from "@racer/track/alignment";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -13,7 +14,7 @@ import type { CrossCar, RaceEvent, RaceState, RiderState } from "./state.ts";
 
 const quiet: Track = {
   ...compileTrack({
-    ...roads["breakwater-run"].plan,
+    ...roads["breakwater-run"],
     hazardsPerKilometre: 0,
     trafficPerKilometre: 0,
   }),
@@ -203,12 +204,31 @@ describe("cross-road cars at a T", () => {
 });
 
 describe("a give-way side road", () => {
-  const road = trackFor("breakwater-run", 4);
-  const esplanade = road.crossings.find(({ id }) => id === "esplanade-cross");
+  const road = compileTrack({
+    ...roads["breakwater-run"],
+    carriers: [],
+    chevrons: [],
+    crossings: [
+      {
+        id: "esplanade-cross",
+        lights: null,
+        road: {
+          arms: "left",
+          carsPerMinute: 6,
+          laneWidth: 3.4,
+          lanesEachWay: 1,
+        },
+        s: 1500,
+        walk: "unmarked",
+      },
+    ],
+    pieces: eased([[3000, 0, 0]]),
+  });
+  const [esplanade] = road.crossings;
 
   it("sends a car out only into a gap in the main-road cars it has to cross", () => {
     if (!esplanade) {
-      throw new Error("Breakwater Run has the Esplanade Cross from level 4.");
+      throw new Error("The give-way road has its crossing.");
     }
     const state = quietRace(road);
     const cars = carsAt(state, road.crossings.indexOf(esplanade));
@@ -414,7 +434,7 @@ describe("the pilot and cross-road cars", () => {
   it("brakes to arrive after the car has cleared when no line is open", () => {
     const narrow: Track = {
       ...compileTrack({
-        ...roads["breakwater-run"].plan,
+        ...roads["breakwater-run"],
         hazardsPerKilometre: 0,
         lanesEachWay: 1,
         trafficPerKilometre: 0,
@@ -456,7 +476,7 @@ describe("the pilot and cross-road cars", () => {
     "gets through a whole race on Breakwater Run with cross cars about as often as without them",
     { timeout: 30_000 },
     () => {
-      const road = trackFor("breakwater-run", 4);
+      const road = trackFor("breakwater-run");
       const without = compileTrack({
         ...road.plan,
         crossings: road.plan.crossings.map((crossing) => ({
@@ -475,7 +495,7 @@ describe("the dice", () => {
     const noCars = createRace(
       defaultSetup(
         compileTrack({
-          ...roads["breakwater-run"].plan,
+          ...roads["breakwater-run"],
           crossings: [],
           hazardsPerKilometre: 0,
           trafficPerKilometre: 0,

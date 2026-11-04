@@ -256,7 +256,7 @@ export const roadsFor = (rules: RaceRules, career: CareerState): RoadBoard => {
         ? prizeFor(rules, level, 1)
         : repeatPrizeFor(rules, level, 1),
     home: homeRiders(rules, road.id, level),
-    lengthMetres: road.lengths[level],
+    lengthMetres: road.length,
     open: roadOpen(rules, career, road.id),
     qualified: qualified[road.id] !== undefined,
     road,

@@ -2,7 +2,7 @@ import type { ResultRow } from "@racer/career/result";
 import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
-import { creditLimitOf, roads } from "@racer/career/tables";
+import { creditLimitOf, roadList, roads } from "@racer/career/tables";
 import type { RoomPresence } from "@racer/rooms/messages";
 import type { RoomNet } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
@@ -189,7 +189,7 @@ const verdictOf = ({ ledger, summary, result }: RaceReport): string => {
     return "Single race";
   }
   if (ledger.qualified) {
-    return `Qualified · ${ledger.qualifiedCount} / 5 roads`;
+    return `Qualified · ${ledger.qualifiedCount} / ${roadList.length} roads`;
   }
   return ledger.repeat ? "Qualified already" : "Not qualified";
 };

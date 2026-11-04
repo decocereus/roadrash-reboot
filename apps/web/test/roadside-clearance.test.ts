@@ -128,7 +128,7 @@ describe("the roadside clears the chase camera", () => {
   });
 
   it("hides the chevron, board and post together, on either side of the road, while a rider running wide puts the camera at it, and puts both back once the camera has passed", () => {
-    const track = trackFor("slag-row", 1);
+    const track = trackFor("slag-row");
     const world = createWorld(track, fakeWalkerAsset());
     const right = instancesAt(world, footOf(track, 1700, 9.3));
     const left = instancesAt(world, footOf(track, 310, -9.3));
@@ -159,7 +159,7 @@ describe("the roadside clears the chase camera", () => {
   });
 
   it("hides the whole scaled pine whose canopy covers the camera behind a crashed bike, though its foot is 4.6 m from the eye", () => {
-    const track = trackFor("ridge-road", 1);
+    const track = trackFor("ridge-road");
     const world = createWorld(track, fakeWalkerAsset());
     const foot = footOf(track, 700.3308, 8.5107);
     const pine = instancesAt(world, foot);
@@ -183,7 +183,7 @@ describe("the roadside clears the chase camera", () => {
   });
 
   it("keeps every signal across the junction drawn while a rider rides the right lane through Harbour Cross", () => {
-    const track = trackFor("breakwater-run", 1);
+    const track = trackFor("breakwater-run");
     const world = createWorld(track, fakeWalkerAsset());
     const harbour = track.crossings.find(({ id }) => id === "harbour-cross");
     if (!harbour) {
@@ -218,7 +218,7 @@ describe("the roadside clears the chase camera", () => {
   });
 
   it("runs Harbour Cross's pavement right up to each arm and leaves no gap beside it", () => {
-    const track = trackFor("breakwater-run", 1);
+    const track = trackFor("breakwater-run");
     const world = createWorld(track, fakeWalkerAsset());
     const harbour = track.crossings.find(({ id }) => id === "harbour-cross");
     if (!harbour) {
@@ -259,7 +259,6 @@ describe("the roadside clears the chase camera", () => {
 
   it("lays an open-country junction's arms on the ground rather than under a hillside", () => {
     const rule: CrossingRule = {
-      fromLevel: 1,
       id: "woods-cross",
       lights: null,
       road: {
@@ -272,11 +271,11 @@ describe("the roadside clears the chase camera", () => {
       walk: "unmarked",
     };
     const track = compileTrack({
-      ...roads["breakwater-run"].plan,
+      ...roads["breakwater-run"],
       carriers: [],
       chevrons: [],
       crossings: [rule],
-      region: "kettle-woods",
+      region: "stonepeak",
     });
     const world = createWorld(track, fakeWalkerAsset());
     const ground: THREE.Mesh[] = [];
@@ -320,7 +319,7 @@ describe("the roadside clears the chase camera", () => {
     const viewProjection = new THREE.Matrix4();
     const box = new THREE.Box3();
     for (const roadId of roadIds) {
-      const track = trackFor(roadId, 1);
+      const track = trackFor(roadId);
       const world = createWorld(track, fakeWalkerAsset());
       const batches: {
         bounds: THREE.Box3;

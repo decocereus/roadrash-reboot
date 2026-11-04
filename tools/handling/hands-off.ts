@@ -3,8 +3,6 @@ import process from "node:process";
 import { parseArgs } from "node:util";
 
 import { bikes } from "@racer/sim/bikes";
-import { roadLevels } from "@racer/track/road";
-import type { RoadLevel } from "@racer/track/road";
 import { compileTrack } from "@racer/track/track";
 
 import {
@@ -14,7 +12,7 @@ import {
 } from "./src/acceptance.ts";
 import { bendsOf } from "./src/bends.ts";
 import {
-  coursesAt,
+  courses,
   flatOut,
   pilotPedals,
   quietPlan,
@@ -35,18 +33,9 @@ const { values } = parseArgs({
   options: {
     check: { default: false, type: "boolean" },
     json: { type: "string" },
-    level: { default: "1", type: "string" },
   },
 });
 
-const level: RoadLevel | undefined = roadLevels.find(
-  (each) => String(each) === values.level
-);
-if (level === undefined) {
-  throw new Error(`There is no road level ${values.level}.`);
-}
-
-const courses = coursesAt(level);
 const problems: string[] = [];
 const report: object[] = [];
 
@@ -130,7 +119,7 @@ if (ridge) {
 if (values.json !== undefined) {
   writeFileSync(
     values.json,
-    `${JSON.stringify({ courses: report, level, staged }, null, 2)}\n`
+    `${JSON.stringify({ courses: report, staged }, null, 2)}\n`
   );
 }
 

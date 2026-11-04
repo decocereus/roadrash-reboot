@@ -1,7 +1,6 @@
 import { createRace, emptyFrame, stepRace } from "@racer/sim/race";
 import { frameOf } from "@racer/sim/race-fixtures";
 import { arm } from "@racer/sim/weapons";
-import { roadAtLevel } from "@racer/track/road";
 import { regionOf, roads as roadPlans, trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
 
@@ -29,7 +28,7 @@ import { quitRace, resumeCareer, settleRace, startRace } from "./settle.ts";
 import { newCareer } from "./state.ts";
 import type { CareerState } from "./state.ts";
 import { LEFT_RACE_NOTE, storyBeat } from "./story.ts";
-import { levels, roadList } from "./tables.ts";
+import { roadList } from "./tables.ts";
 
 const topPoints = (career: CareerState): number[] =>
   seasonBoard(career)
@@ -71,7 +70,7 @@ describe("leaving a race", () => {
     const outcome = outcomeOf(race.state, race.setup, race.log);
     const once = settleRace(recordedRules, race.career, outcome);
     const twice = settleRace(recordedRules, once.career, outcome);
-    expect([once.career.cash, once.settled]).toStrictEqual([3000, true]);
+    expect([once.career.cash, once.settled]).toStrictEqual([4000, true]);
     expect(twice).toStrictEqual({
       career: once.career,
       ledger: null,
@@ -104,7 +103,7 @@ describe("leaving a race", () => {
       replayed.career.cash,
       replayed.career.activeRace?.raceId,
       repeat.career.cash,
-    ]).toStrictEqual([3000, 3000, 2, 3750]);
+    ]).toStrictEqual([4000, 4000, 2, 5250]);
   });
 
   it("quitting from the pause menu costs the repair bill and still scores the riders left racing", () => {
@@ -184,25 +183,21 @@ describe("leaving a race", () => {
 
 describe("the roads", () => {
   it("the career's road table agrees with the track package on every length, region, and name", () => {
-    const career = roadList.flatMap((entry) =>
-      levels.map((level) => [
-        entry.id,
-        entry.name,
-        entry.region,
-        entry.lengths[level],
-      ])
-    );
-    const track = roadList.flatMap((entry) =>
-      levels.map((level) => [
-        entry.id,
-        roadPlans[entry.id].plan.name,
-        regionOf(entry.id),
-        roadAtLevel(roadPlans[entry.id], level).pieces.reduce(
-          (total, piece) => total + piece.length,
-          0
-        ),
-      ])
-    );
+    const career = roadList.map((entry) => [
+      entry.id,
+      entry.name,
+      entry.region,
+      entry.length,
+    ]);
+    const track = roadList.map((entry) => [
+      entry.id,
+      roadPlans[entry.id].name,
+      regionOf(entry.id),
+      roadPlans[entry.id].pieces.reduce(
+        (total, piece) => total + piece.length,
+        0
+      ),
+    ]);
     expect(career).toStrictEqual(track);
   });
 
@@ -210,7 +205,7 @@ describe("the roads", () => {
     "a whole pilot-ridden race on Slag Row settles into fifteen places and a ledger that adds up",
     { timeout: 30_000 },
     () => {
-      const course = trackFor("slag-row", 1);
+      const course = trackFor("slag-row");
       const start = startRace(recordedRules, newCareer(21), "slag-row", 21);
       const setup = setupFor(
         recordedRules,
@@ -247,7 +242,7 @@ describe("the roads", () => {
 
 describe("a bust", () => {
   it("records the fine, the officer, where it happened, and the weapon held when the rider was thrown", () => {
-    const race = enter(newCareer(2), "hollow-pine-road");
+    const race = enter(newCareer(2), "slag-row");
     arm(racerIn(race, "player"), "chain");
     getArrested(race);
     const outcome = outcomeOf(race.state, race.setup, race.log);
@@ -290,7 +285,7 @@ describe("a bust", () => {
   });
 
   it("the ticket names the spot on the road where the rider lay, not the verge they were moved to", () => {
-    const race = enter(newCareer(2), "hollow-pine-road");
+    const race = enter(newCareer(2), "slag-row");
     const player = racerIn(race, "player");
     let lay = { s: player.bodyS, x: player.bodyX };
     const cop = race.state.riders.find(

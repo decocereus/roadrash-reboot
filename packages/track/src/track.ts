@@ -8,7 +8,6 @@ import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
-import type { RoadLevel } from "./road.ts";
 import { placeWalkSites } from "./walk-sites.ts";
 import type { WalkSite } from "./walk-sites.ts";
 
@@ -45,7 +44,6 @@ export interface TrackPlan extends Alignment {
   readonly crossings: readonly CrossingRule[];
   readonly name: string;
   readonly region: RegionId;
-  readonly level: number;
   readonly seed: number;
   readonly lanesEachWay: 1 | 2;
   readonly laneWidth: number;
@@ -53,14 +51,8 @@ export interface TrackPlan extends Alignment {
   readonly vergeWidth: number;
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
-  readonly roadblocks: readonly number[];
-  readonly carriers: readonly CarrierStart[];
+  readonly carriers: readonly number[];
   readonly scenery?: Scenery;
-}
-
-interface CarrierStart {
-  readonly fromLevel: RoadLevel;
-  readonly s: number;
 }
 
 export interface ChevronRun {
@@ -197,10 +189,7 @@ const carrierStartsOf = (
   if (plan.trafficPerKilometre <= 0) {
     return [];
   }
-  const starts = plan.carriers
-    .filter((carrier) => carrier.fromLevel <= plan.level)
-    .map((carrier) => carrier.s)
-    .toSorted((left, right) => left - right);
+  const starts = plan.carriers.toSorted((left, right) => left - right);
   for (const s of starts) {
     if (s < CARRIER_START_CLEARANCE || s > length) {
       throw new Error(`A carrier on ${plan.name} starts off the road at ${s}.`);
@@ -214,7 +203,7 @@ export const compileTrack = (plan: TrackPlan): Track => {
   const { length } = centreline;
   const roadHalfWidth = roadHalfWidthOf(plan);
   const vergeHalfWidth = roadHalfWidth + plan.vergeWidth;
-  const crossings = compileCrossings(plan.crossings, centreline, plan.level);
+  const crossings = compileCrossings(plan.crossings, centreline);
   const props = scatterProps(plan, length).filter(
     (prop) => !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN)
   );

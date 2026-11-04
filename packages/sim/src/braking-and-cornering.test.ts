@@ -1,6 +1,6 @@
+import { eased } from "@racer/track/alignment";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
-import { hollowPineRoad } from "@racer/track/tracks/hollow-pine-road";
 import { describe, expect, it } from "vitest";
 
 import { bikes } from "./bikes.ts";
@@ -142,10 +142,59 @@ describe("the bike catalogue", () => {
   });
 });
 
-const quietHollowPine = compileTrack({
-  ...hollowPineRoad,
-  hazardsPerKilometre: 0,
-  trafficPerKilometre: 0,
+const sawmillRoad = compileTrack({
+  ...straight.plan,
+  laneWidth: 3.4,
+  lanesEachWay: 1,
+  leadInLength: 80,
+  pieces: eased([
+    [260, 0, 0],
+    [200, -20, 0],
+    [180, 30, 3],
+    [180, -34, 3],
+    [140, 0, 6],
+    [100, 0, -6],
+    [160, 44, -3],
+    [120, -40, 0],
+    [120, 38, 0],
+    [340, 0, -8],
+    [220, -60, -4],
+    [160, 0, 4],
+    [90, 0, 5],
+    [90, 0, -6],
+    [300, 32, -2],
+    [200, -28, 0],
+    [220, 0, 0],
+    [140, 64, 0],
+    [380, 0, 0],
+    [200, -26, 0],
+    [180, 0, -4],
+    [160, 48, -3],
+    [140, -44, -2],
+    [200, 0, 2],
+    [260, 18, 6],
+    [100, 0, 4],
+    [100, 0, -6],
+    [220, -30, -4],
+    [140, 52, 0],
+    [350, 0, -6],
+    [190, -66, -4],
+    [220, 24, 0],
+    [260, -36, 3],
+    [140, 0, 5],
+    [100, 0, -7],
+    [220, 30, -3],
+    [140, -58, 0],
+    [160, 50, 0],
+    [240, 0, 0],
+    [200, -28, 0],
+    [150, 66, 0],
+    [380, 0, 0],
+  ]),
+  runoffLength: 400,
+  seed: 0x4f_17_e2,
+  shoulderWidth: 0.6,
+  vergeWidth: 5,
 });
 
 const DRY_DOCK_CORNER_FROM = 5120;
@@ -286,7 +335,7 @@ describe("cornering with the throttle held", () => {
 
   it("the Sawmill Hook at 190 km/h on a Sesta is a brake bend: the throttle held runs out of road", () => {
     const held = throttleHeldThrough(
-      quietHollowPine,
+      sawmillRoad,
       bikes["ostra-sesta-600"],
       SAWMILL_HOOK_FROM,
       SAWMILL_HOOK_TO,

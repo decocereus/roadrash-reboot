@@ -7,7 +7,6 @@ export interface StretchEntry {
   readonly id: StretchId;
   readonly name: string;
   readonly region: RegionId;
-  readonly level: number;
   readonly seed: number;
   readonly trafficPerKilometre: number;
   readonly hazardsPerKilometre: number;
@@ -18,7 +17,6 @@ export const stretchEntries: readonly StretchEntry[] = [
   {
     hazardsPerKilometre: 2,
     id: "madrid-hook",
-    level: 1,
     name: "Casa de Campo hook",
     region: "casa-de-campo",
     seed: 0x4d_48_4b,
@@ -58,7 +56,6 @@ export const stretchEntries: readonly StretchEntry[] = [
   {
     hazardsPerKilometre: 2,
     id: "madrid-gran-via",
-    level: 1,
     name: "Alcalá into Gran Vía",
     region: "madrid-centro",
     seed: 0x4d_47_56,

@@ -14,7 +14,7 @@ export const CONTROLS =
 
 export const introCards = [
   "You've got $1,500, a Halden Wren, and nobody knows your name.",
-  "Top three on all five roads and you move up.",
+  "Top three on every road and you move up.",
   "Don't go broke.",
 ] as const;
 
@@ -24,10 +24,6 @@ export const levelName = (rules: RaceRules, level: Level): string =>
 export const roadDescriptions = {
   "breakwater-run":
     "Harbour to pier along the seawall. One long bend by the water, one tunnel, and a kink at the tunnel mouth that nobody sees coming twice.",
-  "cinder-wash":
-    "Dead straight across the dry lake, three washes, the last of which throws you in the air, then a hairpin up the mesa at the end of the fastest straight in the game.",
-  "hollow-pine-road":
-    "Narrow, dark, and never straight for long. The trees are close and the crests hide the bends.",
   "ridge-road":
     "The home road. Ten bends and two crests on the way up to the lookout.",
   "slag-row":
@@ -71,11 +67,11 @@ export const magsLine = (raceId: number): string =>
   magsLines[Math.abs(raceId) % magsLines.length] ?? magsLines[0];
 
 const vicCards = {
-  1: "Top three on all five roads and you move up. Don't go broke.",
-  2: "Longer roads and bigger purses. The garage got a delivery.",
+  1: "Top three on every road and you move up. Don't go broke.",
+  2: "Bigger purses. The garage got a delivery.",
   3: "The new cops are quicker.",
   4: "Everyone's armed now. Try to keep up.",
-  5: "Five roads left. The Ridge is last. She'll be waiting.",
+  5: "One more round. The Ridge is last. She'll be waiting.",
 } as const satisfies Record<Level, string>;
 
 export const vicCard = (rules: RaceRules, level: Level): string =>

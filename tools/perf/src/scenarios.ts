@@ -69,30 +69,30 @@ const quality: Quality = {
 
 export const scenarios: readonly Scenario[] = [
   {
-    band: { max: 10, min: 10, total: 6010 },
+    band: { max: 12, min: 10, total: 6866 },
     bench: "reference",
     floor: 0,
     id: "reference-v1",
-    minSpeed: 34.45786169103772,
+    minSpeed: 30.51119225494717,
     police: 1,
     quality,
     racers: 15,
     window: benchWindows.reference,
     workloadDigest:
-      "9b8cd30f2302c8a6666e3b84d60808b1a7f87ab0b573f42a233471d2330184be",
+      "8030f414222a75c3b6ec9966f818ddfdafa473bb7c15f523ba46ae4a19b0cbb6",
   },
   {
-    band: { max: 14, min: 8, total: 6495 },
+    band: { max: 13, min: 12, total: 7565 },
     bench: "stress",
     floor: 6,
     id: "pack-riding-v1",
-    minSpeed: 24.192002226257973,
+    minSpeed: 29.80958014245246,
     police: 8,
     quality,
     racers: 15,
     window: benchWindows.stress,
     workloadDigest:
-      "78438b5bb63c459747255d25600337a6d44cf7833fbd644be4cd786e05e74fb1",
+      "9e127e25a508a731da12dd1d7fa8a13f36b81e1b17d24433da99368db6be5309",
   },
 ];
 
@@ -194,10 +194,8 @@ const raceSettings = (plan: Track["plan"]): RaceSettings => ({
   id: plan.id,
   laneWidth: plan.laneWidth,
   lanesEachWay: plan.lanesEachWay,
-  level: plan.level,
   name: plan.name,
   region: plan.region,
-  roadblocks: plan.roadblocks,
   seed: plan.seed,
   shoulderWidth: plan.shoulderWidth,
   trafficPerKilometre: plan.trafficPerKilometre,

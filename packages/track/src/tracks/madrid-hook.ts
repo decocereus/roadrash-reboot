@@ -12,7 +12,6 @@ export const madridHook: TrackPlan = {
   laneWidth: 3.5,
   lanesEachWay: 1,
   leadInLength: 80,
-  level: 1,
   name: "Casa de Campo hook",
   pieces: clothoids([
     [25, 0.000221, 0.00702],
@@ -59,7 +58,6 @@ export const madridHook: TrackPlan = {
     [14, 0, 0],
   ]),
   region: "casa-de-campo",
-  roadblocks: [],
   runoffLength: 200,
   scenery: madridHookScenery,
   seed: 0x4d_48_4b,

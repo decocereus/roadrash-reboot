@@ -10,14 +10,13 @@ import {
 } from "./hazards.ts";
 import type { HazardKind, HazardSetting } from "./hazards.ts";
 import { nextSeed } from "./random.ts";
-import { roadIds, roadLevels } from "./road.ts";
-import type { RoadId, RoadLevel } from "./road.ts";
+import { roadIds } from "./road.ts";
+import type { RoadId } from "./road.ts";
 import { regionOf, roads, trackFor } from "./roads.ts";
 import { compileTrack, curvatureAt } from "./track.ts";
 import type { Track, TrackProp, TrackPropKind } from "./track.ts";
 
 const GRAVITY = 9.81;
-const STRAIGHT = 1 / 1500;
 const PINNED_RIDGE_LENGTH = 4250;
 
 interface Stretch {
@@ -27,100 +26,39 @@ interface Stretch {
 
 interface Expected {
   readonly roadId: RoadId;
-  readonly lengths: readonly number[];
-  readonly traffic: readonly number[];
-  readonly lowestLaunch: readonly number[];
-  readonly carriers: readonly (readonly number[])[];
+  readonly length: number;
+  readonly traffic: number;
+  readonly lowestLaunch: number;
+  readonly carriers: readonly number[];
   readonly signature: Stretch | undefined;
-  readonly roadblocks: readonly (readonly number[])[];
 }
 
 const design: readonly Expected[] = [
   {
-    carriers: [
-      [2350, 3200],
-      [2350, 3200],
-      [2350, 3200],
-      [2350, 3200],
-      [2350, 3200],
-    ],
-    lengths: [8500, 9650, 10_800, 11_950, 13_100],
-    lowestLaunch: [169, 169, 169, 169, 169],
+    carriers: [2350, 3200],
+    length: 8500,
+    lowestLaunch: 169,
     roadId: "breakwater-run",
-    roadblocks: [[], [], [2800, 9450], [2800, 9450], [2800, 9450, 12_050]],
     signature: undefined,
-    traffic: [5, 6, 7, 8, 9],
+    traffic: 5,
   },
   {
-    carriers: [
-      [2600, 3300],
-      [2600, 3300],
-      [2600, 3300],
-      [2600, 3300],
-      [2600, 3300],
-    ],
-    lengths: [8850, 10_000, 11_150, 12_300, 13_450],
-    lowestLaunch: [154, 154, 154, 154, 154],
-    roadId: "cinder-wash",
-    roadblocks: [
-      [],
-      [],
-      [1900, 9050, 10_250],
-      [1900, 9050, 10_250],
-      [1900, 9050, 10_250],
-    ],
-    signature: { from: 1640, to: 1740 },
-    traffic: [3, 4, 5, 6, 7],
-  },
-  {
-    carriers: [
-      [1000, 2600],
-      [1000, 2600],
-      [1000, 2600],
-      [1000, 2600],
-      [1000, 2600],
-    ],
-    lengths: [8050, 9200, 10_350, 11_500, 12_650],
-    lowestLaunch: [186, 173, 173, 170, 162],
-    roadId: "hollow-pine-road",
-    roadblocks: [[], [], [10_150], [10_150, 11_300], [10_150, 11_300, 12_100]],
-    signature: undefined,
-    traffic: [6, 7, 8, 9, 10],
-  },
-  {
-    carriers: [
-      [2600, 4100],
-      [2600, 4100],
-      [2600, 4100],
-      [2600, 4100, 5900],
-      [2600, 4100, 5900],
-    ],
-    lengths: [8500, 9650, 10_800, 11_950, 13_100],
-    lowestLaunch: [152, 152, 152, 152, 152],
+    carriers: [2600, 4100],
+    length: 8500,
+    lowestLaunch: 152,
     roadId: "slag-row",
-    roadblocks: [
-      [],
-      [],
-      [750, 2150, 10_650],
-      [750, 2150, 10_650],
-      [750, 2150, 10_650],
-    ],
     signature: { from: 960, to: 1020 },
-    traffic: [8, 9, 10, 11, 12],
+    traffic: 8,
   },
   {
-    carriers: [[4500], [4500], [4500], [4500], [4500]],
-    lengths: [8550, 9700, 10_850, 12_000, 13_150],
-    lowestLaunch: [162, 162, 162, 162, 162],
+    carriers: [4500],
+    length: 8550,
+    lowestLaunch: 162,
     roadId: "ridge-road",
-    roadblocks: [[], [], [9550], [9550, 10_950], [9550, 10_950, 12_950]],
     signature: undefined,
-    traffic: [5, 6, 7, 8, 9],
+    traffic: 5,
   },
 ];
-
-const everyLevel = <Value>(measure: (level: RoadLevel) => Value): Value[] =>
-  roadLevels.map((level) => measure(level));
 
 const lowestLaunchKmh = (track: Track, skipped?: Stretch): number => {
   let sharpest = 0;
@@ -133,25 +71,6 @@ const lowestLaunchKmh = (track: Track, skipped?: Stretch): number => {
     }
   }
   return Math.sqrt(GRAVITY / -sharpest) * 3.6;
-};
-
-const bendAt = (track: Track, s: number): number =>
-  Math.abs(track.curvature[Math.round(s - track.startS)] ?? 0);
-
-const straightBehind = (track: Track, s: number): number => {
-  let metres = 0;
-  while (s - metres > track.startS && bendAt(track, s - metres) === 0) {
-    metres += 1;
-  }
-  return metres;
-};
-
-const straightAhead = (track: Track, s: number): number => {
-  let metres = 0;
-  while (s + metres < track.length && bendAt(track, s + metres) === 0) {
-    metres += 1;
-  }
-  return metres;
 };
 
 const WORD = 2 ** 32;
@@ -195,79 +114,35 @@ const rocksOf = (track: Track): TrackProp[] =>
 const treesOf = (track: Track): TrackProp[] =>
   track.props.filter((prop) => prop.kind === "tree" && prop.s > 0);
 
-describe("the five roads", () => {
-  it("the registry lists the five roads in career order with their regions", () => {
+describe("the roads", () => {
+  it("the registry lists the roads in career order with their regions", () => {
     expect(roadIds.map((roadId) => [roadId, regionOf(roadId)])).toStrictEqual([
       ["breakwater-run", "salt-coast"],
-      ["cinder-wash", "cinder-flats"],
-      ["hollow-pine-road", "kettle-woods"],
       ["slag-row", "lowtown"],
       ["ridge-road", "stonepeak"],
     ]);
   });
 
   it.each(design)(
-    "$roadId is the designed length at every level and each level adds 1,150 m",
-    ({ lengths, roadId }) => {
-      const compiled = everyLevel((level) => trackFor(roadId, level).length);
-      for (const [index, length] of compiled.entries()) {
-        expect(Math.abs(length - (lengths[index] ?? 0))).toBeLessThan(10);
-      }
-      expect(
-        compiled
-          .slice(1)
-          .map((length, index) => length - (compiled[index] ?? 0))
-      ).toStrictEqual([1150, 1150, 1150, 1150]);
+    "$roadId is its designed length with its traffic and its own name",
+    ({ length, roadId, traffic }) => {
+      const track = trackFor(roadId);
+      expect(Math.abs(track.length - length)).toBeLessThan(10);
+      expect(track.plan.id).toBe(roadId);
+      expect(track.plan.trafficPerKilometre).toBe(traffic);
+      expect(track.plan.region).toBe(regionOf(roadId));
     }
   );
 
-  it.each(design)(
-    "$roadId carries its level, its traffic, and its road name at every level",
-    ({ roadId, traffic }) => {
-      const plans = everyLevel((level) => trackFor(roadId, level).plan);
-      expect(plans.map((plan) => plan.level)).toStrictEqual([1, 2, 3, 4, 5]);
-      expect(plans.map((plan) => plan.trafficPerKilometre)).toStrictEqual(
-        traffic
-      );
-      expect(new Set(plans.map((plan) => plan.name)).size).toBe(1);
-      expect(new Set(plans.map((plan) => plan.region))).toStrictEqual(
-        new Set([regionOf(roadId)])
-      );
-    }
-  );
-
-  it.each(design)(
-    "a later level of $roadId starts with the road the player already knows",
-    ({ roadId }) => {
-      const first = trackFor(roadId, 1);
-      const last = trackFor(roadId, 5);
-      const known = first.length - first.startS;
-      expect(last.curvature.slice(0, known)).toStrictEqual(
-        first.curvature.slice(0, known)
-      );
-      expect(last.worldY.slice(0, known)).toStrictEqual(
-        first.worldY.slice(0, known)
-      );
-      const knownProp = (prop: TrackProp): boolean =>
-        prop.s < first.length && prop.kind !== "chevron";
-      expect(last.props.filter(knownProp)).toStrictEqual(
-        first.props.filter(knownProp)
-      );
-    }
-  );
-
-  it("the first 4,250 m of Ridge Road at level 1 are still the pinned road, sample for sample and prop for prop", () => {
-    const levelOne = trackFor("ridge-road", 1);
-    const samples = PINNED_RIDGE_LENGTH - levelOne.startS;
-    const props = levelOne.props.filter((prop) => prop.s < PINNED_RIDGE_LENGTH);
+  it("the first 4,250 m of Ridge Road are still the pinned road, sample for sample and prop for prop", () => {
+    const ridge = trackFor("ridge-road");
+    const samples = PINNED_RIDGE_LENGTH - ridge.startS;
+    const props = ridge.props.filter((prop) => prop.s < PINNED_RIDGE_LENGTH);
     expect({
-      curvature: digestOf(levelOne.curvature.slice(0, samples), 1e9),
-      height: digestOf(levelOne.worldY.slice(0, samples), 1e6),
+      curvature: digestOf(ridge.curvature.slice(0, samples), 1e9),
+      height: digestOf(ridge.worldY.slice(0, samples), 1e6),
       line: digestOf(
-        [
-          ...levelOne.worldX.slice(0, samples),
-          ...levelOne.worldZ.slice(0, samples),
-        ],
+        [...ridge.worldX.slice(0, samples), ...ridge.worldZ.slice(0, samples)],
         1e6
       ),
       props: digestOf(props.flatMap(propNumbers), 1e6),
@@ -275,7 +150,7 @@ describe("the five roads", () => {
         props.filter((prop) => prop.kind === "rock").flatMap(propNumbers),
         1e6
       ),
-      slopeRate: digestOf(levelOne.slopeRate.slice(0, samples), 1e9),
+      slopeRate: digestOf(ridge.slopeRate.slice(0, samples), 1e9),
     }).toStrictEqual({
       curvature: "becd6387",
       height: "bdd0d924",
@@ -287,7 +162,7 @@ describe("the five roads", () => {
   });
 
   it("the rocks on a road stay where they are when a longer lead-in scatters its trees differently", () => {
-    const { plan } = roads["ridge-road"];
+    const plan = roads["ridge-road"];
     const pinned = compileTrack(plan);
     const longer = compileTrack({ ...plan, leadInLength: 200 });
     expect(rocksOf(longer)).toStrictEqual(rocksOf(pinned));
@@ -300,151 +175,86 @@ describe("the five roads", () => {
 
 describe("crests", () => {
   it.each(design)(
-    "the lowest launch speed on $roadId matches the design at every level",
+    "the lowest launch speed on $roadId matches the design",
     ({ lowestLaunch, roadId }) => {
-      const measured = everyLevel((level) =>
-        lowestLaunchKmh(trackFor(roadId, level))
-      );
-      for (const [index, kmh] of measured.entries()) {
-        expect(Math.abs(kmh - (lowestLaunch[index] ?? 0))).toBeLessThan(3);
-      }
+      expect(
+        Math.abs(lowestLaunchKmh(trackFor(roadId)) - lowestLaunch)
+      ).toBeLessThan(3);
     }
   );
 
   it.each(design)(
     "nothing on $roadId but its signature crest launches below 160 km/h",
     ({ roadId, signature }) => {
-      const measured = everyLevel((level) =>
-        lowestLaunchKmh(trackFor(roadId, level), signature)
-      );
-      expect(Math.min(...measured)).toBeGreaterThan(160);
-    }
-  );
-});
-
-describe("roadblock spots", () => {
-  it.each(design)(
-    "$roadId has the designed spots at each level",
-    ({ roadId, roadblocks }) => {
-      expect(
-        everyLevel((level) => trackFor(roadId, level).plan.roadblocks)
-      ).toStrictEqual(roadblocks);
-    }
-  );
-
-  it.each(design)(
-    "every spot on $roadId is on a straight, 250 m past the last bend and 150 m before the next",
-    ({ roadId }) => {
-      const spots = everyLevel((level) => {
-        const track = trackFor(roadId, level);
-        return track.plan.roadblocks.map((s) => ({
-          ahead: straightAhead(track, s),
-          behind: straightBehind(track, s),
-          bend: bendAt(track, s),
-        }));
-      }).flat();
-      expect(spots.length).toBeGreaterThan(0);
-      for (const spot of spots) {
-        expect(spot.bend).toBeLessThan(STRAIGHT);
-        expect(spot.behind).toBeGreaterThanOrEqual(250);
-        expect(spot.ahead).toBeGreaterThanOrEqual(150);
-      }
+      expect(lowestLaunchKmh(trackFor(roadId), signature)).toBeGreaterThan(160);
     }
   );
 });
 
 describe("car carriers", () => {
   it.each(design)(
-    "$roadId starts its trucks where its plan says at each level",
+    "$roadId starts its trucks where its plan says",
     ({ carriers, roadId }) => {
-      expect(
-        everyLevel((level) => trackFor(roadId, level).carrierStarts)
-      ).toStrictEqual(carriers);
+      expect(trackFor(roadId).carrierStarts).toStrictEqual(carriers);
     }
   );
 
   it("a road with no traffic has no trucks", () => {
     expect(
       compileTrack({
-        ...roads["breakwater-run"].plan,
+        ...roads["breakwater-run"],
         trafficPerKilometre: 0,
       }).carrierStarts
     ).toStrictEqual([]);
   });
 
   it("a truck that starts inside the start clearance or past the finish is refused", () => {
-    const { plan } = roads["breakwater-run"];
+    const plan = roads["breakwater-run"];
     for (const s of [100, 90_000]) {
-      expect(() =>
-        compileTrack({ ...plan, carriers: [{ fromLevel: 1, s }] })
-      ).toThrow(/starts off the road/u);
+      expect(() => compileTrack({ ...plan, carriers: [s] })).toThrow(
+        /starts off the road/u
+      );
     }
   });
 });
 
 describe("hazards", () => {
   it.each(design)(
-    "$roadId has a handful of hazards at level 1, at least one an oil slick, and more at every level after",
+    "$roadId has a handful of hazards, at least one an oil slick",
     ({ roadId }) => {
-      const counts = everyLevel(
-        (level) => trackFor(roadId, level).hazards.length
-      );
-      const slicks = trackFor(roadId, 1).hazards.filter(
-        (hazard) => hazard.kind === "oil"
-      );
-      expect(counts[0]).toBeGreaterThanOrEqual(4);
-      expect(counts[0]).toBeLessThanOrEqual(7);
-      expect(slicks.length).toBeGreaterThanOrEqual(1);
-      for (const [index, count] of counts.slice(1).entries()) {
-        expect(count).toBeGreaterThanOrEqual(counts[index] ?? 0);
-      }
-      expect(counts[4]).toBeGreaterThanOrEqual((counts[0] ?? 0) * 2);
+      const { hazards } = trackFor(roadId);
+      expect(hazards.length).toBeGreaterThanOrEqual(4);
+      expect(hazards.length).toBeLessThanOrEqual(7);
+      expect(
+        hazards.filter((hazard) => hazard.kind === "oil").length
+      ).toBeGreaterThanOrEqual(1);
     }
   );
 
-  it.each(roadLevels)(
-    "oil is the most common hazard across the roads at level %i",
-    (level) => {
-      const kinds = roadIds.flatMap((roadId) =>
-        trackFor(roadId, level).hazards.map((hazard) => hazard.kind)
-      );
-      const countOf = (kind: HazardKind) =>
-        kinds.filter((each) => each === kind).length;
-      expect(countOf("oil")).toBeGreaterThan(countOf("rock"));
-      expect(countOf("oil")).toBeGreaterThan(countOf("pothole"));
-    }
-  );
-
-  it.each(design)(
-    "every hazard on $roadId at level 1 is in the same place at every later level",
-    ({ roadId }) => {
-      const first = trackFor(roadId, 1).hazards;
-      for (const level of roadLevels) {
-        const later = trackFor(roadId, level).hazards;
-        for (const hazard of first) {
-          expect(later).toContainEqual(hazard);
-        }
-      }
-    }
-  );
+  it("oil is the most common hazard across the roads", () => {
+    const kinds = roadIds.flatMap((roadId) =>
+      trackFor(roadId).hazards.map((hazard) => hazard.kind)
+    );
+    const countOf = (kind: HazardKind) =>
+      kinds.filter((each) => each === kind).length;
+    expect(countOf("oil")).toBeGreaterThan(countOf("rock"));
+    expect(countOf("oil")).toBeGreaterThan(countOf("pothole"));
+  });
 
   it.each(design)(
     "every hazard on $roadId is on the road, clear of the start and the finish, and can be seen from 25 m before it",
     ({ roadId }) => {
-      for (const level of roadLevels) {
-        const track = trackFor(roadId, level);
-        for (const hazard of track.hazards) {
-          const size = hazardSizes[hazard.kind];
-          expect(Math.abs(hazard.x) + size.halfWidth).toBeLessThanOrEqual(
-            track.roadHalfWidth
-          );
-          expect(hazard.s).toBeGreaterThanOrEqual(HAZARD_START_CLEARANCE);
-          expect(hazard.s).toBeLessThanOrEqual(
-            track.length - HAZARD_FINISH_CLEARANCE
-          );
-          expect(inSight(track, hazard.s, hazard.x)).toBeTruthy();
-          expect(hazard.fromLevel).toBeLessThanOrEqual(level);
-        }
+      const track = trackFor(roadId);
+      for (const hazard of track.hazards) {
+        const size = hazardSizes[hazard.kind];
+        expect(Math.abs(hazard.x) + size.halfWidth).toBeLessThanOrEqual(
+          track.roadHalfWidth
+        );
+        expect(hazard.s).toBeGreaterThanOrEqual(HAZARD_START_CLEARANCE);
+        expect(hazard.s).toBeLessThanOrEqual(
+          track.length - HAZARD_FINISH_CLEARANCE
+        );
+        expect(inSight(track, hazard.s, hazard.x)).toBeTruthy();
       }
     }
   );
@@ -452,7 +262,7 @@ describe("hazards", () => {
   it.each(design)(
     "every hazard on $roadId lies on the lanes, never on the shoulder",
     ({ roadId }) => {
-      const track = trackFor(roadId, 5);
+      const track = trackFor(roadId);
       const lanesEdge = track.plan.lanesEachWay * track.plan.laneWidth;
       for (const hazard of track.hazards) {
         expect(
@@ -464,8 +274,8 @@ describe("hazards", () => {
 
   it("rocks are spread across the lanes rather than lined up, and many lie where a bike rides", () => {
     const rocks = roadIds.flatMap((roadId) =>
-      trackFor(roadId, 5).hazards.flatMap((hazard) =>
-        hazard.kind === "rock" ? [{ hazard, track: trackFor(roadId, 5) }] : []
+      trackFor(roadId).hazards.flatMap((hazard) =>
+        hazard.kind === "rock" ? [{ hazard, track: trackFor(roadId) }] : []
       )
     );
     const across = new Set(rocks.map(({ hazard }) => hazard.x.toFixed(1)));
@@ -479,14 +289,12 @@ describe("hazards", () => {
   });
 
   it("no rock lies in a tight bend or where a bike that hits it would land in one", () => {
-    const sharpest = roadIds.flatMap((roadId) =>
-      roadLevels.flatMap((level) => {
-        const track = trackFor(roadId, level);
-        return track.hazards
-          .filter((hazard) => hazard.kind === "rock")
-          .map((hazard) => sharpestNear(track, hazard.s));
-      })
-    );
+    const sharpest = roadIds.flatMap((roadId) => {
+      const track = trackFor(roadId);
+      return track.hazards
+        .filter((hazard) => hazard.kind === "rock")
+        .map((hazard) => sharpestNear(track, hazard.s));
+    });
     expect(Math.max(...sharpest)).toBeLessThan(HAZARD_TIGHT_CURVATURE);
   });
 
@@ -494,10 +302,10 @@ describe("hazards", () => {
     const seededRoads = roadIds.flatMap((roadId) =>
       [0, 1, 2, 3].map((extra) =>
         extra === 0
-          ? trackFor(roadId, 5)
+          ? trackFor(roadId)
           : compileTrack({
-              ...trackFor(roadId, 5).plan,
-              seed: trackFor(roadId, 5).plan.seed + extra,
+              ...roads[roadId],
+              seed: roads[roadId].seed + extra,
             })
       )
     );
@@ -523,7 +331,7 @@ describe("hazards", () => {
   });
 
   it("most hazards lie at a bend or over a crest, and the rest on the straights where riders pass traffic", () => {
-    const hazards = roadIds.flatMap((roadId) => trackFor(roadId, 5).hazards);
+    const hazards = roadIds.flatMap((roadId) => trackFor(roadId).hazards);
     const atBends = hazards.filter((hazard) => hazard.setting !== "traffic");
     expect(atBends.length).toBeGreaterThan(hazards.length / 2);
   });
@@ -531,7 +339,7 @@ describe("hazards", () => {
   it.each(design)(
     "on $roadId a hazard mid-bend is a pothole on the inside line, and one where the bend begins is oil on the outside line",
     ({ roadId }) => {
-      const track = trackFor(roadId, 5);
+      const track = trackFor(roadId);
       const across = (setting: HazardSetting) =>
         track.hazards.flatMap((hazard) => {
           if (hazard.setting !== setting) {
@@ -560,16 +368,15 @@ describe("hazards", () => {
 
   it("hazard ids are unique on a road", () => {
     for (const roadId of roadIds) {
-      const ids = trackFor(roadId, 5).hazards.map((hazard) => hazard.id);
+      const ids = trackFor(roadId).hazards.map((hazard) => hazard.id);
       expect(new Set(ids).size).toBe(ids.length);
     }
   });
 });
 
 describe("the track cache", () => {
-  it("compiles a road at a level once and hands back the same track", () => {
-    expect(trackFor("slag-row", 3)).toBe(trackFor("slag-row", 3));
-    expect(trackFor("slag-row", 3)).not.toBe(trackFor("slag-row", 4));
-    expect(trackFor("slag-row", 3)).not.toBe(trackFor("cinder-wash", 3));
+  it("compiles a road once and hands back the same track", () => {
+    expect(trackFor("slag-row")).toBe(trackFor("slag-row"));
+    expect(trackFor("slag-row")).not.toBe(trackFor("ridge-road"));
   });
 });

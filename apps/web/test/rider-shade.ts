@@ -29,11 +29,10 @@ const HUE_FLOOR = 0.03;
 const INK_TOLERANCE = 3;
 const RIDER_BIKE_PAINT = 2;
 
-const lookNames = ["dusk", "night", "dawn"] as const;
+const lookNames = ["dusk", "night"] as const;
 type LookName = (typeof lookNames)[number];
 
 const looks = {
-  dawn: "cinder-flats",
   dusk: "salt-coast",
   night: "lowtown",
 } as const satisfies Record<LookName, RegionId>;

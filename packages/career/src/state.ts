@@ -14,7 +14,7 @@ import {
 } from "./tables.ts";
 import type { Level, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export const racerIds = ["player", ...rivalIds] as const;
 

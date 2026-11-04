@@ -95,18 +95,18 @@ const careers = [
   newCareer(1),
   seasonAt(decent, 5).end,
   seasonAt(weak, 3).start,
-  enter(seasonAt(decent, 2).start, "cinder-wash").career,
+  enter(seasonAt(decent, 2).start, "breakwater-run").career,
   play(newCareer(2), { ends: "busted", roadId: "slag-row" }).career,
   play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
 ];
 
-const versionThreeBytes = [
-  ["7419:21e189c42086668", "7419:21e189c42086668"],
-  ["20585:e9ba674a45f9195", "20585:16840809eea9b1fa"],
-  ["20322:1cb863eb2b602aba", "20322:fc33529acacb8d2"],
-  ["11999:3da44ce165495ea", "11999:f2044353d2d820"],
-  ["16749:1d97f528d2a9b22a", "16749:c5414df130dc28a"],
-  ["16615:add9bee2455948e", "16615:e8c914216a81fe5"],
+const versionFourBytes = [
+  ["7419:1f04cd977a7853b1", "7419:1f04cd977a7853b1"],
+  ["20401:de8ce429123d82b", "20401:1ccd004ed17e1162"],
+  ["20248:a28f60a8a839c1", "20248:143ace3a96954839"],
+  ["11842:171892179e215787", "11842:8da210b55b582a5"],
+  ["16819:1ffddbd67e41f4a", "16819:173e52aeb6baa43e"],
+  ["16685:4c237194a17f40", "16685:f9e37865d31ee6e"],
 ];
 
 describe("the save", () => {
@@ -118,13 +118,13 @@ describe("the save", () => {
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a career writes, and reads back into, the same bytes as the version 3 reader", () => {
+  it("a career writes, and reads back into, the same bytes as the version 4 reader", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
         return [fingerprint(text), fingerprint(rereadOf(text))];
       })
-    ).toStrictEqual(versionThreeBytes);
+    ).toStrictEqual(versionFourBytes);
   });
 
   it("text that is not a save, or a save from another version, is rejected with the reason", () => {
@@ -133,7 +133,7 @@ describe("the save", () => {
       verdictOn(serialiseCareer(good).slice(0, -40)),
       verdictOn("[]"),
       verdictOn('"a save"'),
-      verdictOn(corrupted(good, "version", 2)),
+      verdictOn(corrupted(good, "version", 3)),
     ]).toStrictEqual([
       "notJson:",
       "notJson:",
@@ -146,7 +146,7 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(missing(good, "version")),
-      verdictOn(corrupted(good, "version", 4)),
+      verdictOn(corrupted(good, "version", 5)),
       verdictOn('{"version":1e400}'),
       verdictOn(serialiseCareer(good).replace(/"cash":-?\d+/u, '"cash":1e400')),
     ]).toStrictEqual([
@@ -199,7 +199,7 @@ describe("the save", () => {
 
   it("a seed or a distance may be fractional, a null is not a missing field, and fields the game does not read are dropped", () => {
     const good = seasonAt(decent, 2).end;
-    const racing = enter(seasonAt(decent, 2).start, "cinder-wash").career;
+    const racing = enter(seasonAt(decent, 2).start, "breakwater-run").career;
     const extras = edited(good, [
       ["zz", 1],
       ["record.zz", 1],
@@ -297,7 +297,7 @@ describe("the save", () => {
 
   it("a save with two problems is rejected at the one the version 2 reader reported", () => {
     const good = seasonAt(decent, 2).end;
-    const racing = enter(seasonAt(decent, 2).start, "cinder-wash").career;
+    const racing = enter(seasonAt(decent, 2).start, "breakwater-run").career;
     expect([
       verdictOn(
         edited(good, [
@@ -375,7 +375,7 @@ describe("the save", () => {
   });
 
   it("a save that contradicts itself is rejected with the field that does not fit", () => {
-    const racing = enter(seasonAt(decent, 2).start, "cinder-wash").career;
+    const racing = enter(seasonAt(decent, 2).start, "breakwater-run").career;
     const settled = seasonAt(decent, 2).end;
     const { starts } = settled.record;
     expect([
