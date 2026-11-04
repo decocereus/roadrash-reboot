@@ -254,6 +254,30 @@ describe("a seat loading the race", () => {
     expect(run.report().net.rollbacks).toBe(1);
   });
 
+  it("sends its stats and finished rows every 15 s while it rides, so a dead socket loses little", () => {
+    const browser = {
+      build: "abc",
+      gpu: "Test GPU",
+      graphics: "quality rung 1",
+    };
+    const { seat, socket } = loadingSeat(() => browser);
+    socket?.hear(encodeRoomMessage({ kind: "countdown", startAtMs: 0 }));
+    const frame = createTickFrame();
+    const view = new DataView(new ArrayBuffer(64));
+    for (let tick = 1; tick <= 30; tick += 1) {
+      clearFrame(frame, tick);
+      frame.controls.set(riderIdAt(0), coasting);
+      const bytes = writeTick(view, frame, null);
+      socket?.hear(view.buffer.slice(0, bytes));
+      vi.advanceTimersByTime(1000);
+    }
+    expect(seat.phase()).toBe("racing");
+    expect(socket?.sentText).toHaveLength(2);
+    expect(
+      socket?.sentBytes.filter((bytes) => bytes === RACE_STATS_PACKET_BYTES)
+    ).toHaveLength(2);
+  });
+
   it("sends the room its race stats once when it leaves", () => {
     const { seat, socket } = loadingSeat();
     seat.leave();

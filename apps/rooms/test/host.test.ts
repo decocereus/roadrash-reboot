@@ -136,7 +136,7 @@ describe("a room host", () => {
     it("stops waiting for a seat that leaves while loading", () => {
       const { far, host, near } = loadingRace();
       host.message(near, readyPacket(near));
-      host.gone(far);
+      host.gone(far, 1000);
       expect(countdownsOn(near)).toBe(1);
     });
   });
@@ -305,12 +305,12 @@ describe("a room host", () => {
       throw new Error("Two seats were asked for.");
     }
     second.ticks.length = 0;
-    host.gone(second);
+    host.gone(second, 1000);
     clock.advance(TICK_MS * 10);
     expect(host.status().phase).toBe("racing");
     expect(second.ticks).toStrictEqual([]);
     expect(first.ticks.length).toBeGreaterThanOrEqual(19);
-    host.gone(first);
+    host.gone(first, 1000);
     clock.advance(240_000);
     expect(clock.pending()).toBe(0);
     const again = fakeSocket();
