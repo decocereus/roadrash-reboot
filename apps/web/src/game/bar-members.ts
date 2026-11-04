@@ -1,12 +1,17 @@
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import {
   angleOff,
+  createLobbyRider,
+  LOBBY_TICK,
+  sendRiderTo,
   shoveRider,
   SHOVE,
   stepAsideAtSpawn,
+  stepLobbyRider,
   walkOf,
 } from "@racer/sim/lobby";
 import type { LobbyRider } from "@racer/sim/lobby";
+import { doorSpot } from "@racer/sim/lobby-floor";
 import type { Spot } from "@racer/sim/lobby-floor";
 import type { LobbyAct, LobbyWalk } from "@racer/sim/lobby-walk";
 import { hypot2 } from "@racer/track/math";
@@ -24,9 +29,14 @@ const FOLLOW_RATE = 12;
 const SNAP_METRES = 4;
 const STRIDE_RUN_SPEED = 7;
 const TICKS_PER_SECOND = 60;
+const READY_SUFFIX = " READY";
+const NO_CONTROL = { forward: 0, right: 0, sprint: false };
+const YOU = "YOU";
 
 interface Body {
   id: string | null;
+  leaving: LobbyRider | null;
+  leavingBacklog: number;
   shoving: number;
   walk: LobbyWalk | null;
   readonly view: WalkerView;
@@ -36,13 +46,17 @@ interface MemberParts {
   readonly bikes: Pick<Bikes, "roots" | "show" | "spin">;
   readonly firstBike: number;
   readonly rider: LobbyRider;
-  readonly seat: Pick<RoomSeat, "act" | "listen" | "lobby" | "walk" | "walkOf">;
+  readonly seat: Pick<
+    RoomSeat,
+    "act" | "listen" | "lobby" | "phase" | "walk" | "walkOf"
+  >;
   readonly speech: Pick<BarSpeech, "say">;
   readonly walkers: Pick<BarWalkers, "at" | "hide">;
 }
 
 export interface BarMembers extends BarCompany {
   readonly mine: () => number;
+  readonly myLabel: () => string;
   readonly step: (seconds: number, time: number) => void;
   readonly draw: (
     seconds: number,
@@ -53,6 +67,8 @@ export interface BarMembers extends BarCompany {
 
 const newBody = (): Body => ({
   id: null,
+  leaving: null,
+  leavingBacklog: 0,
   shoving: 0,
   view: {
     heading: 0,
@@ -79,6 +95,25 @@ const followWalk = (body: Body, walk: LobbyWalk, seconds: number): void => {
   view.stride += (walk.pace / STRIDE_RUN_SPEED) * seconds;
   view.mounted = walk.place === "bike";
   body.shoving = Math.max(0, body.shoving - seconds * TICKS_PER_SECOND);
+};
+
+const headForDoor = (body: Body, slot: number, seconds: number): LobbyWalk => {
+  let rider = body.leaving;
+  if (!rider) {
+    rider = createLobbyRider();
+    rider.x = body.view.x;
+    rider.z = body.view.z;
+    rider.heading = body.view.heading;
+    const spot = doorSpot(slot);
+    sendRiderTo(rider, spot.x, spot.z);
+    body.leaving = rider;
+  }
+  body.leavingBacklog += seconds;
+  while (body.leavingBacklog >= LOBBY_TICK) {
+    stepLobbyRider(rider, NO_CONTROL, 0, []);
+    body.leavingBacklog -= LOBBY_TICK;
+  }
+  return walkOf(rider);
 };
 
 export const createMembers = ({
@@ -222,6 +257,10 @@ export const createMembers = ({
       }
     },
     mine: () => slot,
+    myLabel: () =>
+      seat.lobby()?.members[slot]?.ready === true
+        ? `${YOU}${READY_SUFFIX}`
+        : YOU,
     nearest(x, z, reach) {
       let best: number | null = null;
       let closest = reach;
@@ -250,12 +289,21 @@ export const createMembers = ({
       placeMe();
       crowd.length = 0;
       const members = seat.lobby()?.members ?? [];
+      const phase = seat.phase();
+      const begun = phase === "loading" || phase === "racing";
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
         const member = members[index];
-        const walk = member?.here === true ? seat.walkOf(member.id) : undefined;
-        if (index !== slot && member && walk) {
-          moveBody(index, member.id, member.name, walk, seconds);
+        const heard =
+          member?.here === true ? seat.walkOf(member.id) : undefined;
+        if (index !== slot && member && heard && body) {
+          moveBody(
+            index,
+            member.id,
+            member.ready ? `${member.name}${READY_SUFFIX}` : member.name,
+            begun ? headForDoor(body, index, seconds) : heard,
+            seconds
+          );
         } else if (body) {
           body.id = null;
           if (index !== slot) {
@@ -263,7 +311,7 @@ export const createMembers = ({
           }
         }
       }
-      if (placed) {
+      if (placed && !begun) {
         sendMine(seconds);
       }
     },

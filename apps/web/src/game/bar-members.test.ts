@@ -1,5 +1,6 @@
 import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomLobbyMessage, RoomWalked } from "@racer/rooms/messages";
+import type { SeatPhase } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
@@ -37,10 +38,11 @@ const lobbyOf = (ids: readonly string[]): RoomLobbyMessage => ({
 
 interface Heard {
   readonly lobby: () => RoomLobbyMessage | null;
+  readonly phase?: () => SeatPhase;
   readonly walkOf?: () => RoomWalked | null;
 }
 
-const room = ({ lobby, walkOf }: Heard) => {
+const room = ({ lobby, phase, walkOf }: Heard) => {
   const rename = vi.fn<BarWalker["rename"]>();
   const walker: BarWalker = {
     dispose: vi.fn<BarWalker["dispose"]>(),
@@ -62,6 +64,7 @@ const room = ({ lobby, walkOf }: Heard) => {
       act: vi.fn<() => void>(),
       listen: vi.fn<() => void>(),
       lobby,
+      phase: phase ?? (() => "lobby"),
       walk,
       walkOf: () => walkOf?.() ?? undefined,
     },
@@ -90,5 +93,23 @@ describe("members in the bar", () => {
     members.step(FRAME, 0);
     expect(rename).toHaveBeenCalledWith("far");
     expect(members.spotOf(1)).toMatchObject({ x: standing.x, z: standing.z });
+  });
+
+  it("walks the others to the door and stops sending once the race begins", () => {
+    let phase: SeatPhase = "lobby";
+    const { members, walk } = room({
+      lobby: () => lobbyOf(["near", "far"]),
+      phase: () => phase,
+      walkOf: () => standing,
+    });
+    members.step(FRAME, 0);
+    expect(walk).toHaveBeenCalledOnce();
+    const before = members.spotOf(1)?.z ?? 0;
+    phase = "loading";
+    for (let frame = 0; frame < 16; frame += 1) {
+      members.step(FRAME, frame);
+    }
+    expect(walk).toHaveBeenCalledOnce();
+    expect(members.spotOf(1)?.z).toBeLessThan(before);
   });
 });

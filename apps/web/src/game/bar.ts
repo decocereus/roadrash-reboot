@@ -1,6 +1,6 @@
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
-import { GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
+import { doorSpot, GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
@@ -62,7 +62,6 @@ const TURN_SECONDS = 14;
 const FIRST_WALKER_BIKE = 2;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
-const DOOR_GATHER = { x: 1.3, z: -4.8 } as const;
 
 interface Pins {
   readonly ratio: number | null;
@@ -442,8 +441,39 @@ const openRoom = (
   const openDoor = (): void => {
     if (doorOpenedAt === null) {
       doorOpenedAt = clock;
-      player.walkTo(DOOR_GATHER.x, DOOR_GATHER.z);
+      const spot = doorSpot(members?.mine() ?? 0);
+      player.walkTo(spot.x, spot.z);
     }
+  };
+
+  const runDoor = (): void => {
+    if (seat?.race()) {
+      openDoor();
+    }
+    if (
+      !seat &&
+      doorOpenedAt !== null &&
+      clock - doorOpenedAt > LOOP_AFTER_DOOR
+    ) {
+      timeShift += clock;
+      clock = 0;
+      doorOpenedAt = null;
+      cast.reset();
+      speech.reset();
+      player.reset();
+      spinAt = 0;
+      heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
+    }
+    if (!seat && COUNTDOWN_START <= clock) {
+      openDoor();
+    }
+  };
+
+  const msToDoor = (): number | null => {
+    if (!seat) {
+      return Math.max(0, COUNTDOWN_START - clock) * MS_PER_SECOND;
+    }
+    return seat.race() ? 0 : seat.startsInMs();
   };
 
   const frame = (now: number): void => {
@@ -464,22 +494,8 @@ const openRoom = (
       setTime(cycle);
     }
 
-    if (doorOpenedAt !== null && clock - doorOpenedAt > LOOP_AFTER_DOOR) {
-      timeShift += clock;
-      clock = 0;
-      doorOpenedAt = null;
-      cast.reset();
-      speech.reset();
-      player.reset();
-      spinAt = 0;
-      heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
-    }
-    const left = seat
-      ? seat.startsInMs()
-      : Math.max(0, COUNTDOWN_START - clock) * MS_PER_SECOND;
-    if (!seat && left === 0) {
-      openDoor();
-    }
+    runDoor();
+    const left = msToDoor();
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
     door.position.y = lift * DOOR_RISE;
@@ -548,7 +564,7 @@ const openRoom = (
     cast.update(seconds, clock, camera, lift, viewSize, ticks);
     members?.draw(seconds, camera, viewSize);
     const you = yourSlot();
-    you.walker.rename("YOU");
+    you.walker.rename(members?.myLabel() ?? "YOU");
     you.walker.show(true);
     you.walker.update(
       player.stance(),
