@@ -123,7 +123,7 @@ The track tests check every rule above, that a road has four to seven hazards, o
 | Crest   |   0 |    2 |       1 |
 | Traffic |   1 |  1.5 |       1 |
 
-The seed salt, 0x4bc2, was picked from 400 when there were five roads, as the one that kept the old hazard counts and gave every road two or more oil slicks. Breakwater Run has 6 at tier 1 (3 oil, 3 rock), Slag Row 6 (3 oil, 2 rock, 1 pothole) and Ridge Road 6 (4 oil, 2 potholes).
+The seed salt, 0x4bc2, was picked from 400 when there were five roads, as the one that kept the old hazard counts and gave every road two or more oil slicks. Breakwater Run has 6 at tier 1 (4 oil, 1 rock, 1 pothole), Slag Row 6 (3 oil, 2 rock, 1 pothole) and Ridge Road 6 (4 oil, 2 potholes).
 
 Tier 1 places these hazards, by id, kind, setting, position along the road, and position across it. A compiled road holds more candidates, ranked per road by a seeded roll, and a tier places the share of them its table gives (`game-design.md` section 4): 6, 8 and 9 on Breakwater Run and Slag Row, and 5, 7 and 8 on Ridge Road. Breakwater Run's tier 2 adds `hazard-4`, oil at 3,967 m, x 1.85, on the only open lane at the Arcades' first bend, and `hazard-6`, oil at 5,720 m, x 5.78, on the hill's second left. Its tier 3 adds `hazard-2`, oil at 1,720 m, x 2.02, on the only open lane at the squeeze's exit. The road has more bends for a hazard to snap to, so seven of its nine candidates are oil, where four were on the seven-district road.
 
