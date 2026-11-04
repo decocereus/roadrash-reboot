@@ -21,7 +21,7 @@ const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
 const REQUEUED_START_MS = 8000;
 
-const planOf = (seat: RoomSeat, raceId: string): RacePlan | null => {
+const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
   const race = seat.race();
   if (!race) {
     return null;
@@ -38,7 +38,7 @@ const planOf = (seat: RoomSeat, raceId: string): RacePlan | null => {
     }
   });
   globalThis.addEventListener("pagehide", seat.leave);
-  const room = createRoomRun(seat, race, raceId, latency);
+  const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
     digestMatched: race.digestMatched,
@@ -56,7 +56,7 @@ const planOf = (seat: RoomSeat, raceId: string): RacePlan | null => {
 };
 
 interface RoomProps {
-  readonly raceId: string;
+  readonly roomId: string;
   readonly ready: boolean;
   readonly onBack: () => void;
   readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
@@ -66,7 +66,7 @@ interface RoomProps {
 const SeatedLobby = ({
   name,
   onChangeName,
-  raceId,
+  roomId,
   ready,
   onBack,
   onPrepare,
@@ -85,13 +85,13 @@ const SeatedLobby = ({
   const [prepared, setPrepared] = useState(false);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
-    const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, raceId, name);
+    const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, roomId, name);
     opened.listen({
       onChange: () => {
         if (opened.phase() !== "lost") {
           redraw();
         } else if (opened.race()) {
-          moveToRoom(nextRoomId(raceId));
+          moveToRoom(nextRoomId(roomId));
         } else {
           reopening = setTimeout(reopen, REOPEN_MS);
         }
@@ -106,15 +106,15 @@ const SeatedLobby = ({
         opened.leave();
       }
     };
-  }, [name, raceId, opening]);
+  }, [name, roomId, opening]);
   const copyLink = async (): Promise<void> => {
-    await navigator.clipboard.writeText(roomLink(raceId));
+    await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);
   };
   const phase = seat?.phase() ?? "connecting";
   const racing = phase === "racing";
   const raceBegun = racing || phase === "loading";
-  const requeued = isRequeuedRoom(raceId);
+  const requeued = isRequeuedRoom(roomId);
   useEffect(() => {
     const redrawing = setInterval(redraw, REDRAW_MS);
     return () => {
@@ -135,7 +135,7 @@ const SeatedLobby = ({
     if (!(seat && raceBegun && ready) || handedOver.current) {
       return;
     }
-    const next = planOf(seat, raceId);
+    const next = planOf(seat, roomId);
     if (!next) {
       return;
     }
@@ -149,7 +149,7 @@ const SeatedLobby = ({
       }
     };
     void prepare();
-  }, [seat, raceId, raceBegun, ready, onPrepare]);
+  }, [seat, roomId, raceBegun, ready, onPrepare]);
   useEffect(() => {
     if (plan && prepared && racing) {
       riding.current = true;
@@ -169,7 +169,7 @@ const SeatedLobby = ({
         seat?.start();
       }}
       phase={phase}
-      raceId={raceId}
+      roomId={roomId}
       refusal={seat?.refusal() ?? null}
       requeued={requeued}
       riderNames={seat?.riderNames() ?? []}

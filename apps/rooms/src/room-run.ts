@@ -20,6 +20,7 @@ export interface RoomNet {
 export interface RoomReport {
   readonly names: GuestNames;
   readonly net: RoomNet;
+  readonly raceId: string;
   readonly rematchId: string;
 }
 
@@ -37,10 +38,10 @@ export interface RoomRun extends RaceRun {
 export const createRoomRun = (
   seat: RoomSeat,
   race: SeatRace,
-  raceId: string,
+  roomId: string,
   latency: InputLatency
 ): RoomRun => {
-  const { client, me, names } = race;
+  const { client, me, names, raceId } = race;
   let sent: Control = coasting;
   return {
     confirmed: client.confirmed,
@@ -66,7 +67,8 @@ export const createRoomRun = (
         roundTripMs: seat.rttMs(),
         worstRoundTripMs: seat.worstRttMs(),
       },
-      rematchId: rematchRoomId(raceId),
+      raceId,
+      rematchId: rematchRoomId(roomId),
     }),
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;

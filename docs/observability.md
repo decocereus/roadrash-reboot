@@ -1,6 +1,6 @@
 # Observability
 
-Rushline records two things: play-test telemetry from testers' browsers, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
+Rushline records three things: play-test telemetry from testers' browsers, one record per room race, and frame profiles for performance work. Read this file before you add a recorded number, a profile counter or a log line. [coding-standards.md](coding-standards.md) explains the Rule | Check | Scope | Exemption tables, and `pnpm check:rules` checks every Check cell here.
 
 ## Play-test telemetry
 
@@ -19,6 +19,17 @@ Rushline records two things: play-test telemetry from testers' browsers, and fra
 | A finding from a recorded session cites its file, line, batch and frame or event sequence, gives every retained frame sample, fault and suspect a disposition, and says what the recording cannot show. The `sessions` skill is the loop. | judgment | `tools/perf/results/sessions`, `.claude/skills/sessions` | None |
 
 To investigate a session, use the `sessions` skill (`.claude/skills/sessions/SKILL.md`), which reads the file with `node tools/perf/session.ts` and the raw batches. Each batch keeps only its `MAX_WORST_FRAMES` slowest frames in detail (`packages/telemetry/src/limits.ts`). Every other frame is a count in the histogram, so a session can show that slow frames happened without showing why. A session is not a perf gate run, so it cannot pass or fail a limit in `tools/perf/budgets.json`; the frame rows there are judged only by `pnpm perf:gpu`.
+
+## Race records
+
+Every room race has a random race ID that is not the invite link. `apps/rooms/src/notes.ts` holds the lines the room writes to Workers Logs. `pnpm rooms:read` reads them from Cloudflare, or from a saved log with `--file`, and prints one report per race. `CLOUDFLARE_API_TOKEN` needs permission to read Workers observability. Reading races is the job of the [race-room recipe](../.claude/skills/verify-rushline/features/race-room.md).
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| A race ID is minted once per race, not per room, and every note about that race, the `started` message and `RoomReport` carry it. A room that runs a second race gives it a new ID. | `pnpm test`, `pnpm rooms:race` | `apps/rooms/src/host.ts`, `tools/rooms/src/race.ts` | None |
+| No room note holds a guest name, the room ID or an IP address. A rider is named by its number. | `pnpm test` | `apps/rooms/src/notes.ts`, `apps/rooms/src/host.ts` | None |
+| The `ended` note lists every rider who started, including those who left, and says whether each browser's stats arrived, so a missing stats line is a counted fact rather than a guess. | `pnpm test` | `apps/rooms/src/host.ts` | None |
+| The room writes a note per race event and never per tick or per message. In the tick loop it only adds to the wake counters. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 
 ## Frame profiles
 

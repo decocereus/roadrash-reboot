@@ -9,6 +9,7 @@ import { launchRules } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import type { RacerId } from "./state.ts";
 import { STARTING_BIKE } from "./tables.ts";
+import type { RoadId } from "./tables.ts";
 
 const roomRules: RaceRules = { ...launchRules, celebrities: false };
 
@@ -24,6 +25,7 @@ const roomRaceOf = (seed: number): PracticeRace => ({
 export interface SeatedRace {
   readonly setup: CareerRaceSetup;
   readonly humans: readonly RiderId[];
+  readonly road: RoadId;
 }
 
 export const seatedRace = (seed: number, seats: number): SeatedRace => {
@@ -34,7 +36,7 @@ export const seatedRace = (seed: number, seats: number): SeatedRace => {
     trackFor(race.roadId, race.level)
   );
   const humans = firstRacers(setup, seats);
-  return { humans, setup: roomSetup(setup, humans) };
+  return { humans, road: race.roadId, setup: roomSetup(setup, humans) };
 };
 
 export type GuestNames = ReadonlyMap<RacerId, string>;

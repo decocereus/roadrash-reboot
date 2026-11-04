@@ -75,6 +75,7 @@ const loadingSeat = () => {
       digest: [0],
       kind: "started",
       names: ["Near"],
+      raceId: "race-1",
       seats: 1,
       seed: 1,
       you: 0,

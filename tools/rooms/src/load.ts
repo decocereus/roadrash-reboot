@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 
 import { ToolProcesses } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
-import { RaceIdSchema, RoomApi } from "@racer/rooms/contract";
+import { RoomIdSchema, RoomApi } from "@racer/rooms/contract";
 import * as Clock from "effect/Clock";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
@@ -37,7 +37,7 @@ const INCOMING_MESSAGES_PER_BILLED_REQUEST = 20;
 const STATUS_READS_PER_ROOM = 2;
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost"]);
 
-const makeRaceId = Schema.decodeUnknownSync(RaceIdSchema);
+const makeRoomId = Schema.decodeUnknownSync(RoomIdSchema);
 
 interface LoadOptions {
   readonly fullSeats: number;
@@ -109,7 +109,7 @@ const seatPlans = (
     Array.from({ length: load.seats }, (_, seat) => ({
       full: room < load.fullSeats && seat === load.seats - 1,
       opener: seat === 0,
-      raceId: `load-${stamp}-${room}`,
+      roomId: `load-${stamp}-${room}`,
     }))
   );
 
@@ -141,8 +141,8 @@ const runStep = Effect.fn("rooms.load.step")(function* runStep(
   const client = yield* HttpApiClient.make(RoomApi, { baseUrl: load.url });
   const stamp = (yield* Clock.currentTimeMillis).toString(36);
   const seats = seatPlans(load, rooms, stamp);
-  const raceIds = [...new Set(seats.map((seat) => seat.raceId))].map((id) =>
-    makeRaceId(id)
+  const roomIds = [...new Set(seats.map((seat) => seat.roomId))].map((id) =>
+    makeRoomId(id)
   );
   const sample = Effect.gen(function* sample() {
     const at = yield* Clock.currentTimeMillis;
@@ -150,7 +150,7 @@ const runStep = Effect.fn("rooms.load.step")(function* runStep(
       [
         readProcesses,
         Effect.all(
-          raceIds.map((raceId) => client.rooms.status({ params: { raceId } })),
+          roomIds.map((roomId) => client.rooms.status({ params: { roomId } })),
           { concurrency: "unbounded" }
         ),
       ],

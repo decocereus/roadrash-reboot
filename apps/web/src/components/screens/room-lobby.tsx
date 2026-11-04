@@ -122,7 +122,7 @@ export const RoomLobbyScreen = ({
   copied,
   name,
   phase,
-  raceId,
+  roomId,
   refusal,
   requeued,
   riderNames,
@@ -136,7 +136,7 @@ export const RoomLobbyScreen = ({
   readonly copied: boolean;
   readonly name: string;
   readonly phase: SeatPhase;
-  readonly raceId: string;
+  readonly roomId: string;
   readonly refusal: string | null;
   readonly requeued: boolean;
   readonly riderNames: readonly string[];
@@ -149,7 +149,7 @@ export const RoomLobbyScreen = ({
 }) => (
   <Screen className="bg-ink">
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
-      <Stencil>{raceId}</Stencil>
+      <Stencil>{roomId}</Stencil>
       <p aria-live="polite" className="font-display text-quote text-paper">
         {statusOf(phase, riders, riderNames, refusal)}
       </p>

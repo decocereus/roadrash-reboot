@@ -1,6 +1,6 @@
 # Durable Object HTTP conventions
 
-These are the conventions for the race service in `apps/rooms`. `RaceServer` in `apps/rooms/src/race-server.ts` is its Durable Object, one per race, and [architecture.md](architecture.md#the-room-on-a-durable-object) says how it runs. [coding-standards.md](coding-standards.md) keeps Effect at boundaries such as this one.
+These are the conventions for the race service in `apps/rooms`. `RaceServer` in `apps/rooms/src/race-server.ts` is its Durable Object, one per room, and [architecture.md](architecture.md#the-room-on-a-durable-object) says how it runs. [coding-standards.md](coding-standards.md) keeps Effect at boundaries such as this one.
 
 ## Boundary and ownership
 
@@ -17,7 +17,7 @@ These are the conventions for the race service in `apps/rooms`. `RaceServer` in 
 
 ## Identity and private plumbing
 
-- An instance is looked up by the race's stable, branded canonical ID, `RaceId` in `apps/rooms/src/contract.ts`, never by a road name, track slug, lobby title or display label.
+- An instance is looked up by the room's stable, branded canonical ID, `RoomId` in `apps/rooms/src/contract.ts`, never by a road name, track slug, lobby title or display label.
 - Namespace bindings, stubs and `Cloudflare.toHttpClient` (`alchemy/src/Cloudflare/Fetcher.ts`) stay inside composition roots and client implementations.
 - A client constructor yields its Alchemy Durable Object service and closes over the namespace. Do not write a namespace interface by hand, and do not pass a namespace through application Layers.
 
@@ -25,7 +25,7 @@ These are the conventions for the race service in `apps/rooms`. `RaceServer` in 
 
 - A namespace may be resolved while Alchemy initialises. A stub and its generated HTTP client are built inside the current Worker or Durable Object invocation, and are never kept in an isolate global or across invocations. The canonical ID selects the instance; it does not carry the caller's I/O context into the next invocation.
 - Build the client with Alchemy's `makeExecutionMemo` (`alchemy/src/Runtime/ExecutionMemo.ts`) around a suspended lookup, so planning never touches a binding that exists only at runtime.
-- When one invocation can address several races, the memo holds an Effect `Cache` keyed by canonical race ID, which joins concurrent first lookups. With exactly one fixed target, memoize that single suspended client and use no cache.
+- When one invocation can address several rooms, the memo holds an Effect `Cache` keyed by canonical room ID, which joins concurrent first lookups. With exactly one fixed target, memoize that single suspended client and use no cache.
 - An isolate-scoped Layer, `Layer.suspend`, `Layer.unwrap` or a global cache does not give this lifetime. The resolver stays private to the client.
 
 ## Routes and failures

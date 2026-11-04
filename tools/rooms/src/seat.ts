@@ -22,6 +22,7 @@ export interface SeatReport {
   readonly arrivalGapMaxMs: number;
   readonly closeCode: number | null;
   readonly ended: boolean;
+  readonly raceId: string | null;
   readonly refused: string | null;
 }
 
@@ -55,8 +56,8 @@ export const weavingControl = (tick: number, rider: number): Control =>
 const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
   predictSteps(seat, (tick) => weavingControl(tick, you()));
 
-export const openSeat = (roomsUrl: string, raceId: string): Seat => {
-  const seat = openRoomSeat(roomsUrl, raceId, "Script");
+export const openSeat = (roomsUrl: string, roomId: string): Seat => {
+  const seat = openRoomSeat(roomsUrl, roomId, "Script");
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;
@@ -118,6 +119,7 @@ export const openSeat = (roomsUrl: string, raceId: string): Seat => {
         digestMatched: race?.digestMatched ?? false,
         ended: seat.phase() === "ended",
         hashesCompared,
+        raceId: race?.raceId ?? null,
         refused: seat.refusal(),
         refusedPredictions,
         resimulatedTicks: race?.client.stats.resimulatedTicks ?? 0,

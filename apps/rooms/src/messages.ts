@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-export const RACE_ID_PATTERN = /^[a-z0-9-]{6,40}$/u;
+export const ROOM_ID_PATTERN = /^[a-z0-9-]{6,40}$/u;
 
 const REQUEUED_ROOM = /-r(?<attempt>\d+)$/u;
 const REMATCH_ROOM = /-m(?<round>\d+)$/u;
@@ -18,17 +18,17 @@ export const cleanGuestName = (raw: string): string => {
   return name === "" ? UNNAMED_GUEST : name;
 };
 
-export const isRequeuedRoom = (raceId: string): boolean =>
-  REQUEUED_ROOM.test(raceId);
+export const isRequeuedRoom = (roomId: string): boolean =>
+  REQUEUED_ROOM.test(roomId);
 
-export const nextRoomId = (raceId: string): string => {
-  const attempt = Number(REQUEUED_ROOM.exec(raceId)?.groups?.attempt ?? 0) + 1;
-  const base = raceId.replace(REQUEUED_ROOM, "").slice(0, MOST_BASE_ID_CHARS);
+export const nextRoomId = (roomId: string): string => {
+  const attempt = Number(REQUEUED_ROOM.exec(roomId)?.groups?.attempt ?? 0) + 1;
+  const base = roomId.replace(REQUEUED_ROOM, "").slice(0, MOST_BASE_ID_CHARS);
   return `${base}-r${attempt}`;
 };
 
-export const rematchRoomId = (raceId: string): string => {
-  const room = raceId.replace(REQUEUED_ROOM, "");
+export const rematchRoomId = (roomId: string): string => {
+  const room = roomId.replace(REQUEUED_ROOM, "");
   const round = Number(REMATCH_ROOM.exec(room)?.groups?.round ?? 0) + 1;
   const base = room.replace(REMATCH_ROOM, "").slice(0, MOST_BASE_ID_CHARS);
   return `${base}-m${round}`;
@@ -45,6 +45,7 @@ const Started = Schema.Struct({
   digest: Schema.Array(Schema.Number),
   kind: Schema.Literal("started"),
   names: Schema.Array(Schema.String),
+  raceId: Schema.String,
   seats: Schema.Number,
   seed: Schema.Number,
   you: Schema.Number,

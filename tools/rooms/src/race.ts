@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 
 import { UsageError } from "@racer/devtools/usage-error";
-import { RaceIdSchema, RoomApi } from "@racer/rooms/contract";
+import { RoomIdSchema, RoomApi } from "@racer/rooms/contract";
 import { MOST_SEATS } from "@racer/sim/room";
 import * as Clock from "effect/Clock";
 import * as Data from "effect/Data";
@@ -26,7 +26,7 @@ class RoomRaceFailed extends Data.TaggedError("RoomRaceFailed")<{
   readonly message: string;
 }> {}
 
-const makeRaceId = Schema.decodeUnknownSync(RaceIdSchema);
+const makeRoomId = Schema.decodeUnknownSync(RoomIdSchema);
 
 const options = (args: readonly string[]) =>
   Effect.try({
@@ -55,12 +55,25 @@ const waitFor = (test: () => boolean, what: string, timeoutMs: number) =>
     }
   });
 
-const refusalOf = (url: string, raceId: string) =>
+const refusalOf = (url: string, roomId: string) =>
   Effect.gen(function* refusal() {
-    const seat = openSeat(url, raceId);
+    const seat = openSeat(url, roomId);
     yield* waitFor(seat.over, "a refused seat to close", OPEN_TIMEOUT_MS);
     return seat.report().refused;
   });
+
+const raceIdProblems = (
+  reports: readonly SeatReport[],
+  current: string | null
+): readonly string[] => {
+  const raceIds = new Set(reports.map((report) => report.raceId));
+  if (raceIds.size !== 1 || raceIds.has(null)) {
+    return [`The seats did not share one race ID: ${[...raceIds].join(", ")}.`];
+  }
+  return current === null || raceIds.has(current)
+    ? []
+    : [`The seats' race ID is not the room's, ${current}.`];
+};
 
 const problemsOf = (
   reports: readonly SeatReport[],
@@ -160,14 +173,14 @@ export const main = Effect.fn("rooms.race")(function* main(
   const seconds = Number(values.seconds);
   const lobbySeconds = Number(values["lobby-seconds"]);
   const stamp = (yield* Clock.currentTimeMillis).toString(36);
-  const raceId = makeRaceId(`verify-${stamp}`);
+  const roomId = makeRoomId(`verify-${stamp}`);
   const client = yield* HttpApiClient.make(RoomApi, { baseUrl: url });
-  const idle = yield* client.rooms.status({ params: { raceId } });
+  const idle = yield* client.rooms.status({ params: { roomId } });
   const http = yield* HttpClient.HttpClient;
-  const plain = yield* http.get(`${url}/rooms/${raceId}/seat`);
+  const plain = yield* http.get(`${url}/rooms/${roomId}/seat`);
   const badPath = yield* http.get(`${url}/rooms/NOT_A_ROOM/seat`);
 
-  const seats = Array.from({ length: seatCount }, () => openSeat(url, raceId));
+  const seats = Array.from({ length: seatCount }, () => openSeat(url, roomId));
   yield* waitFor(
     () => seats.every((seat) => seat.opened()),
     "every seat to open",
@@ -175,7 +188,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   );
   const joiningFrom = yield* Clock.currentTimeMillis;
   while (
-    (yield* client.rooms.status({ params: { raceId } })).waiting < seatCount
+    (yield* client.rooms.status({ params: { roomId } })).waiting < seatCount
   ) {
     if ((yield* Clock.currentTimeMillis) - joiningFrom > OPEN_TIMEOUT_MS) {
       yield* new RoomRaceFailed({ message: "Timed out: seats joining." });
@@ -183,7 +196,7 @@ export const main = Effect.fn("rooms.race")(function* main(
     yield* Effect.sleep(POLL_MS);
   }
   const ninth =
-    seatCount === MOST_SEATS ? yield* refusalOf(url, raceId) : "full";
+    seatCount === MOST_SEATS ? yield* refusalOf(url, roomId) : "full";
   yield* Effect.sleep(lobbySeconds * 1000);
   const [first] = seats;
   const last = seats.at(-1);
@@ -201,12 +214,12 @@ export const main = Effect.fn("rooms.race")(function* main(
     "every seat to hear the start",
     OPEN_TIMEOUT_MS
   );
-  const late = yield* refusalOf(url, raceId);
+  const late = yield* refusalOf(url, roomId);
   const other = yield* client.rooms.status({
-    params: { raceId: makeRaceId(`other-${stamp}`) },
+    params: { roomId: makeRoomId(`other-${stamp}`) },
   });
   yield* rideUntil(seats, START_DELAY_SECONDS + seconds, drop);
-  const status = yield* client.rooms.status({ params: { raceId } });
+  const status = yield* client.rooms.status({ params: { roomId } });
   const reports = seats.map((seat) => seat.report());
   for (const seat of seats) {
     if (!seat.over()) {
@@ -216,6 +229,7 @@ export const main = Effect.fn("rooms.race")(function* main(
   const problems = [
     ...problemsOf(drop ? reports.slice(0, -1) : reports, seconds),
     ...missedProblems(status.tick, status.seats),
+    ...raceIdProblems(reports, status.raceId),
     ...contractProblems({
       badPath: badPath.status,
       idle: idle.phase,
@@ -226,7 +240,7 @@ export const main = Effect.fn("rooms.race")(function* main(
     }),
   ];
   yield* Effect.log(
-    JSON.stringify({ problems, raceId, reports, status }, null, 2)
+    JSON.stringify({ problems, reports, roomId, status }, null, 2)
   );
   return yield* problems.length > 0
     ? Effect.fail(new RoomRaceFailed({ message: problems.join(" ") }))

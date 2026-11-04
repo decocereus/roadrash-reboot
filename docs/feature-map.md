@@ -1332,6 +1332,7 @@ Source files:
 - `apps/rooms/src/input-latency.ts`
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
+- `apps/rooms/src/notes.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/room-run.ts`
@@ -1352,19 +1353,24 @@ Source files:
 - `tools/rooms/load-clients.ts`
 - `tools/rooms/load.ts`
 - `tools/rooms/race.ts`
+- `tools/rooms/read.ts`
 - `tools/rooms/src/lag.ts`
 - `tools/rooms/src/load-clients.ts`
 - `tools/rooms/src/load-plan.ts`
 - `tools/rooms/src/load-report.ts`
 - `tools/rooms/src/load.ts`
 - `tools/rooms/src/machine.ts`
+- `tools/rooms/src/race-report.ts`
 - `tools/rooms/src/race.ts`
+- `tools/rooms/src/read.ts`
 - `tools/rooms/src/seat.ts`
 - `tools/rooms/src/send-budget.ts`
 - `tools/rooms/src/thin-seat.ts`
 
 Test files:
 
+- `apps/rooms/test/host-harness.ts`
+- `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/messages.test.ts`
@@ -1378,4 +1384,5 @@ Test files:
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
 - `tools/rooms/test/load-report.test.ts`
+- `tools/rooms/test/race-report.test.ts`
 - `tools/rooms/test/send-budget.test.ts`

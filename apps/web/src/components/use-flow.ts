@@ -3,7 +3,7 @@ import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { LevelUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
-import { RACE_ID_PATTERN } from "@racer/rooms/messages";
+import { ROOM_ID_PATTERN } from "@racer/rooms/messages";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
@@ -49,7 +49,7 @@ export type View =
   | { readonly screen: "routeBoard" }
   | { readonly screen: "garage" }
   | { readonly screen: "rideOut"; readonly entry: RaceEntry }
-  | { readonly screen: "room"; readonly raceId: string }
+  | { readonly screen: "room"; readonly roomId: string }
   | {
       readonly screen: "race";
       readonly plan: RacePlan;
@@ -106,8 +106,8 @@ const urlRide = (rules: RaceRules): RacePlan | null => {
 };
 
 const roomOf = (search: string): string | null => {
-  const raceId = new URLSearchParams(search).get("room");
-  return raceId !== null && RACE_ID_PATTERN.test(raceId) ? raceId : null;
+  const roomId = new URLSearchParams(search).get("room");
+  return roomId !== null && ROOM_ID_PATTERN.test(roomId) ? roomId : null;
 };
 
 const entrance = async (
@@ -121,9 +121,9 @@ const entrance = async (
   if (rules === null || save.status === "loading") {
     return null;
   }
-  const raceId = roomOf(globalThis.location.search);
-  if (raceId !== null) {
-    return { raceId, screen: "room" };
+  const roomId = roomOf(globalThis.location.search);
+  if (roomId !== null) {
+    return { roomId, screen: "room" };
   }
   if (save.status === "corrupt") {
     return backRoom;

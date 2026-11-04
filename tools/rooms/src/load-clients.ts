@@ -27,11 +27,11 @@ const gapsOf = (tally: LoadTally): readonly (readonly [number, number])[] =>
 const seatAll = (plan: ClientPlan, tally: LoadTally) => {
   const full = plan.seats
     .filter((seat) => seat.full)
-    .map((seat) => ({ open: openSeat(plan.url, seat.raceId), plan: seat }));
+    .map((seat) => ({ open: openSeat(plan.url, seat.roomId), plan: seat }));
   const thin = plan.seats
     .filter((seat) => !seat.full)
     .map((seat) => ({
-      open: openThinSeat(plan.url, seat.raceId, plan.inputEvery, tally),
+      open: openThinSeat(plan.url, seat.roomId, plan.inputEvery, tally),
       plan: seat,
     }));
   const riders: readonly Rider[] = [...full, ...thin].map(

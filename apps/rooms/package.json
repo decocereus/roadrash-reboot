@@ -7,6 +7,7 @@
     "./contract": "./src/contract.ts",
     "./input-latency": "./src/input-latency.ts",
     "./messages": "./src/messages.ts",
+    "./notes": "./src/notes.ts",
     "./room-run": "./src/room-run.ts",
     "./seat-client": "./src/seat-client.ts",
     "./worker": "./src/worker.ts"

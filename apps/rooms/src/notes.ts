@@ -1,0 +1,93 @@
+import * as Schema from "effect/Schema";
+
+export const WAKE_GAP_CEILINGS_MS = [20, 34, 50, 100] as const;
+
+export const SeatTallySchema = Schema.Struct({
+  accepted: Schema.Number,
+  ahead: Schema.Number,
+  late: Schema.Number,
+  missed: Schema.Number,
+  rider: Schema.Number,
+});
+
+export type SeatTally = typeof SeatTallySchema.Type;
+
+const RaceSeatSchema = Schema.Struct({
+  ...SeatTallySchema.fields,
+  colo: Schema.NullOr(Schema.String),
+  crashes: Schema.Number,
+  finishTick: Schema.Number,
+  leftAtTick: Schema.NullOr(Schema.Number),
+  mode: Schema.String,
+  readyMs: Schema.NullOr(Schema.Number),
+  reported: Schema.Boolean,
+  roadMetres: Schema.Number,
+  tcpRttMs: Schema.NullOr(Schema.Number),
+});
+
+export type RaceSeat = typeof RaceSeatSchema.Type;
+
+const Refused = Schema.Struct({
+  kind: Schema.Literal("refused"),
+  reason: Schema.Literals(["full", "racing"]),
+});
+
+const Started = Schema.Struct({
+  at: Schema.Number,
+  build: Schema.String,
+  digest: Schema.String,
+  kind: Schema.Literal("started"),
+  lobbyMs: Schema.Number,
+  raceId: Schema.String,
+  road: Schema.String,
+  seats: Schema.Number,
+  seed: Schema.Number,
+});
+
+const Countdown = Schema.Struct({
+  kind: Schema.Literal("countdown"),
+  raceId: Schema.String,
+  stillLoading: Schema.Array(Schema.Number),
+  waitedMs: Schema.Number,
+});
+
+const Left = Schema.Struct({
+  kind: Schema.Literal("left"),
+  raceId: Schema.String,
+  seatsLeft: Schema.Number,
+  tally: SeatTallySchema,
+  tick: Schema.Number,
+});
+
+const Stats = Schema.Struct({
+  kind: Schema.Literal("stats"),
+  raceId: Schema.String,
+  rider: Schema.Number,
+  stats: Schema.Record(Schema.String, Schema.Number),
+});
+
+const Ended = Schema.Struct({
+  catchUpWakes: Schema.Number,
+  kind: Schema.Literal("ended"),
+  raceId: Schema.String,
+  seats: Schema.Array(RaceSeatSchema),
+  tick: Schema.Number,
+  wakeGaps: Schema.Array(Schema.Number),
+  worstBehindTicks: Schema.Number,
+});
+
+export const RoomNoteSchema = Schema.Union([
+  Refused,
+  Started,
+  Countdown,
+  Left,
+  Stats,
+  Ended,
+]);
+
+export type RoomNote = typeof RoomNoteSchema.Type;
+export type RaceStarted = typeof Started.Type;
+export type RaceEnded = typeof Ended.Type;
+export type RaceCountdown = typeof Countdown.Type;
+export type RaceStatsNote = typeof Stats.Type;
+export type RaceLeft = typeof Left.Type;
