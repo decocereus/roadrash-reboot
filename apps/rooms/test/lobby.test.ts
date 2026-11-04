@@ -3,7 +3,12 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import { AWAY_MS, READY_WAIT_MS } from "../src/lobby.ts";
+import {
+  AWAY_MS,
+  PUBLIC_GATHER_MS,
+  PUBLIC_WAIT_MS,
+  READY_WAIT_MS,
+} from "../src/lobby.ts";
 import { encodeLobbyCommand } from "../src/messages.ts";
 import { TapeHeaderSchema } from "../src/tape.ts";
 import {
@@ -96,6 +101,44 @@ describe("a lobby's start", () => {
     advanceHearing(host, clock, [first], READY_WAIT_MS + 1000);
     expect(host.status().phase).toBe("racing");
     expect(startedOf(first).manifest.roster[1]?.kind).toBe("ai");
+  });
+});
+
+const publicRoom = () => {
+  const clock = createClock();
+  const host = createHost(clock, "public");
+  const first = fakeSocket();
+  const second = fakeSocket();
+  host.seat(first, "Ann", nearby, sameBuild("ann"));
+  host.seat(second, "Bo", nearby, sameBuild("bo"));
+  return { clock, first, host, second };
+};
+
+describe("a public lobby", () => {
+  it("has no host, and nobody can change its rules", () => {
+    const { first, host, second } = publicRoom();
+    const { rule } = lastLobby(second);
+    expect(lastLobby(first).hostId).toBeNull();
+    expect(lastLobby(first).roomKind).toBe("public");
+    choose(host, first);
+    expect(lastLobby(second).rule).toStrictEqual(rule);
+    expect(rule.tier).toBe(2);
+  });
+
+  it("leaves on its timer with nobody ready", () => {
+    const { clock, first, host, second } = publicRoom();
+    advanceHearing(host, clock, [first, second], PUBLIC_WAIT_MS - 1000);
+    expect(host.status().phase).toBe("waiting");
+    advanceHearing(host, clock, [first, second], 2000);
+    expect(host.status().phase).toBe("racing");
+  });
+
+  it("waits a moment for riders still arriving, even if all are ready", () => {
+    const { clock, first, host, second } = publicRoom();
+    readyAll(host, [first, second]);
+    expect(host.status().phase).toBe("waiting");
+    advanceHearing(host, clock, [first, second], PUBLIC_GATHER_MS + 1000);
+    expect(host.status().phase).toBe("racing");
   });
 });
 

@@ -105,7 +105,14 @@ const TapeLost = Schema.Struct({
   kind: Schema.Literal("tapeLost"),
 });
 
+const Placed = Schema.Struct({
+  kind: Schema.Literal("placed"),
+  riders: Schema.Number,
+  waitedMs: Schema.Number,
+});
+
 export const RoomNoteSchema = Schema.Union([
+  Placed,
   Refused,
   TapeLost,
   Started,

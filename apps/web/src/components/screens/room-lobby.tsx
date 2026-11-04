@@ -220,7 +220,7 @@ const policeOptions = policeChoices.map((value) => ({
   value,
 }));
 
-const RuleLine = ({
+export const RuleLine = ({
   label,
   value,
 }: {
@@ -419,7 +419,9 @@ const GatheringView = ({
     <Screen className="bg-ink">
       <div className="grid flex-1 grid-cols-1 gap-8 p-8 md:grid-cols-[minmax(0,1fr)_28rem]">
         <div className="flex min-h-0 flex-col gap-4">
-          <Stencil>{roomId}</Stencil>
+          <Stencil>
+            {lobby.roomKind === "public" ? "Public lobby" : roomId}
+          </Stencil>
           <MemberRows lobby={lobby} />
           <p aria-live="polite" className="font-display text-quote text-paper">
             {startLine(lobby.phase, startsInSeconds)}
@@ -429,7 +431,7 @@ const GatheringView = ({
           </p>
           <MenuList
             autoFocus
-            defaultValue={lobby.phase === "gathering" ? "ready" : "copy"}
+            defaultValue={lobby.phase === "gathering" ? "ready" : "back"}
             key={lobby.phase}
             label="Lobby"
             onSelect={(id) => {
@@ -443,7 +445,9 @@ const GatheringView = ({
             {lobby.phase === "gathering" && (
               <MenuItem value="ready">{ready ? "Not ready" : "Ready"}</MenuItem>
             )}
-            <MenuItem value="copy">Copy the link</MenuItem>
+            {lobby.roomKind === "custom" && (
+              <MenuItem value="copy">Copy the link</MenuItem>
+            )}
             <MenuItem value="name">Change name</MenuItem>
             <MenuItem value="back">Leave</MenuItem>
           </MenuList>

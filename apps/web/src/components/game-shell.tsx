@@ -37,6 +37,11 @@ const RoomLobby = lazy(async () => {
   return { default: lobby };
 });
 
+const QuickRace = lazy(async () => {
+  const { QuickRace: finding } = await import("./quick-race.tsx");
+  return { default: finding };
+});
+
 const DWELL_MS = 2200;
 
 const noRaceBuilt = (
@@ -141,6 +146,13 @@ const CareerScreens = ({
             event: "race_picked",
           });
           moveToRoom(newRoomId(), "made");
+        }}
+        onFindRace={() => {
+          diagnostics().events.track({
+            choice: "public",
+            event: "race_picked",
+          });
+          flow.go({ screen: "queue" });
         }}
         onEnvelope={(take) => {
           flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
@@ -249,6 +261,17 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         ready={flow.ready}
         rules={rules}
       />
+    );
+  }
+  if (view.screen === "queue") {
+    return (
+      <Suspense>
+        <QuickRace
+          onBack={() => {
+            flow.go(clubhouse);
+          }}
+        />
+      </Suspense>
     );
   }
   if (view.screen === "room") {

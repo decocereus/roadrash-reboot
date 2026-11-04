@@ -17,6 +17,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/room-lobby.tsx",
       "apps/web/src/components/room-url.ts",
       "apps/web/src/components/room-preview.ts",
+      "apps/web/src/components/quick-race.tsx",
       "tools/rooms/**",
     ],
     perf: [

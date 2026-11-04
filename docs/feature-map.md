@@ -424,6 +424,7 @@ Source files:
 - `apps/web/src/components/screens/garage.tsx`
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/pinned-list.tsx`
+- `apps/web/src/components/screens/quick-race.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
 - `apps/web/src/components/screens/results.tsx`
 - `apps/web/src/components/screens/ride-out.tsx`
@@ -1413,7 +1414,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/src/components/quick-race.tsx`, `tools/rooms/**`
 
 Source files:
 
@@ -1425,6 +1426,10 @@ Source files:
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/notes.ts`
+- `apps/rooms/src/queue-client.ts`
+- `apps/rooms/src/queue-messages.ts`
+- `apps/rooms/src/queue-server.ts`
+- `apps/rooms/src/queue.ts`
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
@@ -1434,6 +1439,7 @@ Source files:
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
+- `apps/web/src/components/quick-race.tsx`
 - `apps/web/src/components/room-lobby.tsx`
 - `apps/web/src/components/room-preview.ts`
 - `apps/web/src/components/room-url.ts`
@@ -1447,6 +1453,7 @@ Source files:
 - `tools/rooms/lag.ts`
 - `tools/rooms/load-clients.ts`
 - `tools/rooms/load.ts`
+- `tools/rooms/queue.ts`
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
 - `tools/rooms/replay.ts`
@@ -1456,6 +1463,7 @@ Source files:
 - `tools/rooms/src/load-report.ts`
 - `tools/rooms/src/load.ts`
 - `tools/rooms/src/machine.ts`
+- `tools/rooms/src/queue.ts`
 - `tools/rooms/src/race-report.ts`
 - `tools/rooms/src/race.ts`
 - `tools/rooms/src/read.ts`
@@ -1475,6 +1483,7 @@ Test files:
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/lobby.test.ts`
 - `apps/rooms/test/messages.test.ts`
+- `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/tape.test.ts`

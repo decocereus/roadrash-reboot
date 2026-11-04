@@ -7,10 +7,25 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import { RoomIdSchema } from "./contract.ts";
+import { QueueServer } from "./queue-server.ts";
 import { RaceServer } from "./race-server.ts";
 
 const decodeRoomId = Schema.decodeUnknownOption(RoomIdSchema);
 const ROOM_PATH = /^\/rooms\/(?<roomId>[^/]+)/u;
+const QUEUE_PATH = /^\/queue(?:\/|$)/u;
+const THE_QUEUE = "public";
+
+const allowOthers = (
+  response: HttpServerResponse.HttpServerResponse,
+  path: string
+): HttpServerResponse.HttpServerResponse =>
+  path.endsWith("/seat")
+    ? response
+    : HttpServerResponse.setHeader(
+        response,
+        "access-control-allow-origin",
+        "*"
+      );
 
 const props = Effect.map(
   Effect.all({
@@ -33,26 +48,23 @@ export default class Rooms extends Cloudflare.Worker<Rooms>()(
   props,
   Effect.gen(function* rooms() {
     const races = yield* RaceServer;
+    const queues = yield* QueueServer;
     return {
       fetch: Effect.gen(function* route() {
         const request = yield* HttpServerRequest.HttpServerRequest;
-        const roomId = decodeRoomId(
-          ROOM_PATH.exec(new URL(request.url, "http://rooms").pathname)?.groups
-            ?.roomId
-        );
+        const path = new URL(request.url, "http://rooms").pathname;
+        if (QUEUE_PATH.test(path)) {
+          const response = yield* queues.getByName(THE_QUEUE).fetch(request);
+          return allowOthers(response, path);
+        }
+        const roomId = decodeRoomId(ROOM_PATH.exec(path)?.groups?.roomId);
         if (Option.isNone(roomId)) {
           return HttpServerResponse.text("No room lives at this path.", {
             status: 404,
           });
         }
         const response = yield* races.getByName(roomId.value).fetch(request);
-        return new URL(request.url, "http://rooms").pathname.endsWith("/seat")
-          ? response
-          : HttpServerResponse.setHeader(
-              response,
-              "access-control-allow-origin",
-              "*"
-            );
+        return allowOthers(response, path);
       }),
     };
   })

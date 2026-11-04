@@ -11,10 +11,11 @@ import * as Schema from "effect/Schema";
 
 import { RoomApi } from "./contract.ts";
 import { createHost } from "./host.ts";
-import type { HostPorts, HostSocket } from "./host.ts";
+import type { Host, HostPorts, HostSocket } from "./host.ts";
 import { cleanGuestName, SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import type { RoomNote } from "./notes.ts";
+import { roomKindOf } from "./room-id.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
 
 const LOCAL_BUILD = "local";
@@ -98,15 +99,22 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
         Effect.forever,
         Effect.forkDetach
       );
-      const host = createHost(
-        portsFor(build, (key, body) => {
-          Queue.offerUnsafe(saves, { body, key });
-        })
-      );
+      let opened: Host | null = null;
+      const hostOf = (roomId: string): Host => {
+        opened ??= createHost(
+          portsFor(build, (key, body) => {
+            Queue.offerUnsafe(saves, { body, key });
+          }),
+          roomKindOf(roomId)
+        );
+        return opened;
+      };
       const handlers = HttpApiBuilder.group(RoomApi, "rooms", (group) =>
         group
-          .handle("status", () => Effect.sync(host.status))
-          .handleRaw("seat", ({ request }) =>
+          .handle("status", ({ params }) =>
+            Effect.sync(() => hostOf(params.roomId).status())
+          )
+          .handleRaw("seat", ({ params, request }) =>
             Effect.gen(function* seat() {
               if (request.headers.upgrade?.toLowerCase() !== "websocket") {
                 return yield* new NotWebSocket({
@@ -116,7 +124,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
               const [response, socket] = yield* Cloudflare.upgrade();
               const url = new URL(request.url, "http://rooms");
               const name = cleanGuestName(url.searchParams.get("name") ?? "");
-              host.seat(
+              hostOf(params.roomId).seat(
                 rawSocket(socket),
                 name,
                 linkOf(
@@ -143,19 +151,19 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
         fetch,
         webSocketClose: (socket: Cloudflare.WebSocket) =>
           Effect.sync(() => {
-            host.gone(rawSocket(socket));
+            opened?.gone(rawSocket(socket));
             socket.ws.close(SEAT_CLOSED, "Seat closed.");
           }),
         webSocketError: (socket: Cloudflare.WebSocket) =>
           Effect.sync(() => {
-            host.gone(rawSocket(socket));
+            opened?.gone(rawSocket(socket));
           }),
         webSocketMessage: (
           socket: Cloudflare.WebSocket,
           message: string | ArrayBuffer
         ) =>
           Effect.sync(() => {
-            host.message(rawSocket(socket), message);
+            opened?.message(rawSocket(socket), message);
           }),
       };
     });
