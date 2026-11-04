@@ -153,6 +153,9 @@ export const openBar = async (
   seat: RoomSeat | null,
   signal: AbortSignal
 ): Promise<BarScene | null> => {
+  if (import.meta.env.SSR) {
+    return null;
+  }
   const bar = import("./game/bar.ts");
   const [acquired, { createBar }] = await Promise.all([
     acquire(bar, signal),
