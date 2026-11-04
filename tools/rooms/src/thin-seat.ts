@@ -1,4 +1,8 @@
-import { decodeRoomMessage, SEAT_CLOSED } from "@racer/rooms/messages";
+import {
+  decodeRoomMessage,
+  encodeLobbyCommand,
+  SEAT_CLOSED,
+} from "@racer/rooms/messages";
 import type { RoomMessage } from "@racer/rooms/messages";
 import { seatUrl } from "@racer/rooms/seat-client";
 import { createRoomClock } from "@racer/sim/room-clock";
@@ -50,9 +54,12 @@ export const openThinSeat = (
   roomId: string,
   inputEvery: number,
   tally: LoadTally,
-  build: string
+  build: string,
+  readyAtMembers: number
 ): ThinSeat => {
-  const socket = new WebSocket(seatUrl(roomsUrl, roomId, "Load", build));
+  const socket = new WebSocket(
+    seatUrl(roomsUrl, roomId, "Load", build, crypto.randomUUID())
+  );
   socket.binaryType = "arraybuffer";
   const clock = createRoomClock();
   const read = createReadTick(createTickFrame());
@@ -137,10 +144,22 @@ export const openThinSeat = (
     clock.heardTick(confirmed, now);
   };
 
+  let saidReady = false;
+
   const onMessage = (message: RoomMessage): void => {
     switch (message.kind) {
       case "lobby": {
         clock.heardRoomTime(message.atMs, performance.now());
+        if (!saidReady && message.members.length >= readyAtMembers) {
+          saidReady = true;
+          socket.send(
+            encodeLobbyCommand({
+              edition: message.edition,
+              kind: "ready",
+              ready: true,
+            })
+          );
+        }
         break;
       }
       case "started": {

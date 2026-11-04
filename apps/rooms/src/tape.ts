@@ -1,6 +1,8 @@
 import * as Schema from "effect/Schema";
 
-export const TAPE_VERSION = 1;
+import { RoomRuleSchema } from "./manifest.ts";
+
+export const TAPE_VERSION = 2;
 export const TAPE_KEEP_DAYS = 7;
 
 export const TapeHeaderSchema = Schema.Struct({
@@ -8,6 +10,7 @@ export const TapeHeaderSchema = Schema.Struct({
   digest: Schema.String,
   raceId: Schema.String,
   road: Schema.String,
+  rule: RoomRuleSchema,
   seats: Schema.Number,
   seed: Schema.Number,
   version: Schema.Literal(TAPE_VERSION),

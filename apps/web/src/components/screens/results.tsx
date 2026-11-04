@@ -2,7 +2,6 @@ import type { ResultRow } from "@racer/career/result";
 import type { Ledger } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import { creditLimitOf, roadList, roads } from "@racer/career/tables";
-import type { RoomPresence } from "@racer/rooms/messages";
 import type { RoomNet } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
 import { rivals } from "@racer/sim/cast";
@@ -27,7 +26,6 @@ import {
   weaponLabel,
 } from "../../career/format.ts";
 import { incidentLines } from "../../career/notes.ts";
-import { useRematch } from "../use-rematch.ts";
 import { BarHeader, BarNav } from "./bar-chrome.tsx";
 import type { BarAction } from "./bar-chrome.tsx";
 import {
@@ -136,6 +134,11 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
                     ? "You"
                     : (report.room?.names.get(row.racer) ??
                       shortNames[row.racer])}
+                  {report.room && !you && !report.room.names.has(row.racer) && (
+                    <span className="text-ink/60 ml-[0.5em] text-[0.6em]">
+                      AI
+                    </span>
+                  )}
                   {note !== undefined && (
                     <span className="text-neon-red ml-[0.5em] text-[0.6em]">
                       {note}
@@ -395,20 +398,11 @@ const footOf = (report: RaceReport): string => {
   return report.ledger ? "Settled and saved" : "Single race";
 };
 
-const rematchLine = (rematch: RoomPresence | null): string | null => {
-  if (rematch === null) {
-    return null;
+const againLabel = (report: RaceReport, repeatRun: boolean): string => {
+  if (report.room) {
+    return "Back to the lobby";
   }
-  if (rematch.phase === "racing") {
-    return "The rematch has started without you.";
-  }
-  const [first, ...others] = rematch.names;
-  if (first === undefined) {
-    return null;
-  }
-  return others.length === 0
-    ? `${first} is waiting in the rematch.`
-    : `${[first, ...others].join(", ")} are waiting in the rematch.`;
+  return repeatRun ? "Race again · Half pay" : "Race again";
 };
 
 export const ResultsScreen = ({
@@ -431,14 +425,12 @@ export const ResultsScreen = ({
   const clock = useBarClock();
   const speaker = speakerOf(report);
   const note = noteOf(report, riding);
-  const rematch = useRematch(report.room?.rematchId ?? null);
-  const rematchNote = rematchLine(rematch);
   const actions: BarAction[] = [
-    ...(canRaceAgain && rematch?.phase !== "racing"
+    ...(canRaceAgain
       ? [
           {
             id: "again",
-            label: repeatRun ? "Race again · Half pay" : "Race again",
+            label: againLabel(report, repeatRun),
             run: onRaceAgain,
           },
         ]
@@ -465,11 +457,6 @@ export const ResultsScreen = ({
         {note !== null && <MagentaNote note={note} />}
         <BarLight clock={clock} />
         <BarNav actions={actions} label="Results" primary="continue">
-          {rematchNote !== null && (
-            <p className="text-paper" style={{ fontSize: stagePx(26) }}>
-              {rematchNote}
-            </p>
-          )}
           <p
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(20) }}

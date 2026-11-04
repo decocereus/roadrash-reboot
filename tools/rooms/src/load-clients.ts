@@ -26,7 +26,7 @@ const seatAll = (plan: ClientPlan, tally: LoadTally) => {
   const full = plan.seats
     .filter((seat) => seat.full)
     .map((seat) => ({
-      open: openSeat(plan.url, seat.roomId, plan.build),
+      open: openSeat(plan.url, seat.roomId, plan.build, seat.ridersInRoom),
       plan: seat,
     }));
   const thin = plan.seats
@@ -37,7 +37,8 @@ const seatAll = (plan: ClientPlan, tally: LoadTally) => {
         seat.roomId,
         plan.inputEvery,
         tally,
-        plan.build
+        plan.build,
+        seat.ridersInRoom
       ),
       plan: seat,
     }));

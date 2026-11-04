@@ -6,7 +6,6 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 
 import type { InputLatency, LatencySummary } from "./input-latency.ts";
-import { rematchRoomId } from "./messages.ts";
 import type { RoomSeat, SeatRace } from "./seat-client.ts";
 
 export interface RoomNet {
@@ -21,7 +20,7 @@ export interface RoomReport {
   readonly names: GuestNames;
   readonly net: RoomNet;
   readonly raceId: string;
-  readonly rematchId: string;
+  readonly roomId: string;
 }
 
 export interface RoomRun extends RaceRun {
@@ -68,7 +67,7 @@ export const createRoomRun = (
         worstRoundTripMs: seat.worstRttMs(),
       },
       raceId,
-      rematchId: rematchRoomId(roomId),
+      roomId,
     }),
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;

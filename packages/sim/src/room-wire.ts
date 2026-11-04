@@ -21,7 +21,7 @@ const WORD_BYTES = 4;
 const HASH_BYTES = HASH_WORDS * WORD_BYTES;
 const LARGEST_TICK = 0xff_ff_ff_ff;
 
-export const ROOM_PROTOCOL = 1;
+export const ROOM_PROTOCOL = 2;
 
 export const MOST_BATCHED_CONTROLS = 8;
 

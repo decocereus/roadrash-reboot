@@ -58,9 +58,18 @@ const pumpWeaving = (seat: RoomSeat, you: () => number): number =>
 export const openSeat = (
   roomsUrl: string,
   roomId: string,
-  build: string
+  build: string,
+  readyAtMembers: number
 ): Seat => {
-  const seat = openRoomSeat(roomsUrl, roomId, "Script", build, () => null);
+  const seat = openRoomSeat(
+    roomsUrl,
+    roomId,
+    "Script",
+    build,
+    crypto.randomUUID(),
+    () => null
+  );
+  let saidReady = false;
   const gaps: number[] = [];
   let lastArrival = 0;
   let hashesCompared = 0;
@@ -76,8 +85,16 @@ export const openSeat = (
   seat.listen({
     onChange: () => {
       const phase = seat.phase();
-      if (phase === "loading") {
-        seat.ready();
+      if (phase === "lobby") {
+        if (
+          !saidReady &&
+          (seat.lobby()?.members.length ?? 0) >= readyAtMembers
+        ) {
+          saidReady = true;
+          seat.setReady(true);
+        }
+      } else if (phase === "loading") {
+        seat.loaded();
       } else if (phase === "racing" && !pump) {
         pump = setInterval(() => {
           refusedPredictions += pumpWeaving(seat, you);

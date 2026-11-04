@@ -34,6 +34,7 @@ const notes: readonly RoomNote[] = [
     digest: "00",
     kind: "started",
     lobbyMs: 30_000,
+    police: "normal",
     protocol: 1,
     raceId: "race-a",
     road: "slag-row",
@@ -41,6 +42,7 @@ const notes: readonly RoomNote[] = [
     seed: 7,
     tier: 2,
     trackHash: "00",
+    traffic: "normal",
   },
   { kind: "countdown", raceId: "race-a", stillLoading: [1], waitedMs: 20_000 },
   {
@@ -67,6 +69,7 @@ const notes: readonly RoomNote[] = [
     digest: "00",
     kind: "started",
     lobbyMs: 1000,
+    police: "normal",
     protocol: 1,
     raceId: "race-b",
     road: "slag-row",
@@ -74,6 +77,7 @@ const notes: readonly RoomNote[] = [
     seed: 8,
     tier: 2,
     trackHash: "00",
+    traffic: "normal",
   },
   {
     kind: "left",
@@ -159,14 +163,14 @@ describe("reading a log", () => {
   it("finds notes in log lines and skips everything else", () => {
     const found = notesOfLines(
       [
-        'RaceServer {"kind":"refused","reason":"racing"}',
+        'RaceServer {"kind":"refused","reason":"full"}',
         "starting the worker",
         '{"not":"a note"}',
         "{broken",
       ].join("\n")
     );
     expect(found).toStrictEqual({
-      notes: [{ kind: "refused", reason: "racing" }],
+      notes: [{ kind: "refused", reason: "full" }],
       unread: 0,
     });
   });

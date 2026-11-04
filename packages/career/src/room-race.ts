@@ -14,17 +14,42 @@ import type { RoadId, Tier } from "./tables.ts";
 
 const roomRules: RaceRules = { ...launchRules, celebrities: false };
 
-export interface RoomRule {
-  readonly bikeId: BikeId;
+export const trafficChoices = ["light", "normal", "heavy"] as const;
+export const policeChoices = ["none", "normal", "many"] as const;
+
+export type TrafficChoice = (typeof trafficChoices)[number];
+export type PoliceChoice = (typeof policeChoices)[number];
+
+export interface RoomChoice {
+  readonly police: PoliceChoice;
   readonly roadId: RoadId;
   readonly tier: Tier;
+  readonly traffic: TrafficChoice;
+}
+
+export interface RoomRule extends RoomChoice {
+  readonly bikeId: BikeId;
 }
 
 export const publicRoomRule: RoomRule = {
   bikeId: STARTING_BIKE,
+  police: "normal",
   roadId: "slag-row",
   tier: 2,
+  traffic: "normal",
 };
+
+const trafficScale = {
+  heavy: 1.5,
+  light: 0.5,
+  normal: 1,
+} as const satisfies Record<TrafficChoice, number>;
+
+const policeScale = {
+  many: 1.5,
+  none: 0,
+  normal: 1,
+} as const satisfies Record<PoliceChoice, number>;
 
 export const ROOM_FIELD_SIZE = roomRules.fieldSize;
 
@@ -56,7 +81,19 @@ export const seatedRace = (
   rule: RoomRule = publicRoomRule
 ): SeatedRace => {
   const race: PracticeRace = { ...rule, seed };
-  const field = practiceSetup(roomRules, race, trackFor(race.roadId));
+  const practice = practiceSetup(roomRules, race, trackFor(race.roadId));
+  const field: CareerRaceSetup = {
+    ...practice,
+    conditions: {
+      ...practice.conditions,
+      trafficDensity:
+        practice.conditions.trafficDensity * trafficScale[rule.traffic],
+    },
+    police: {
+      ...practice.police,
+      count: Math.ceil(practice.police.count * policeScale[rule.police]),
+    },
+  };
   const humans = firstRacers(field, seats);
   return {
     humans,

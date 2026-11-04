@@ -126,6 +126,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
                 ),
                 {
                   build: url.searchParams.get("build") ?? "",
+                  key: url.searchParams.get("key") ?? crypto.randomUUID(),
                   protocol: Number(url.searchParams.get("protocol")),
                 }
               );

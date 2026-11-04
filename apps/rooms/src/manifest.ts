@@ -1,3 +1,4 @@
+import { policeChoices, trafficChoices } from "@racer/career/room-race";
 import { bikeIds } from "@racer/sim/bikes";
 import { tiers } from "@racer/sim/difficulty";
 import { roadIds } from "@racer/track/road";
@@ -14,6 +15,26 @@ const RosterEntrySchema = Schema.Struct({
   rider: Schema.Number,
 });
 
+const Police = Schema.Literals(policeChoices);
+const Road = Schema.Literals(roadIds);
+const Tier = Schema.Literals(tiers);
+const Traffic = Schema.Literals(trafficChoices);
+
+export const RoomChoiceChangeSchema = Schema.Struct({
+  police: Schema.optionalKey(Police),
+  roadId: Schema.optionalKey(Road),
+  tier: Schema.optionalKey(Tier),
+  traffic: Schema.optionalKey(Traffic),
+});
+
+export const RoomRuleSchema = Schema.Struct({
+  bikeId: Schema.Literals(bikeIds),
+  police: Police,
+  roadId: Road,
+  tier: Tier,
+  traffic: Traffic,
+});
+
 export const RaceManifestSchema = Schema.Struct({
   build: Schema.String,
   contentHash: Schema.Array(Schema.Number),
@@ -22,11 +43,7 @@ export const RaceManifestSchema = Schema.Struct({
   raceId: Schema.String,
   reconnect: Schema.Literals(RECONNECT_POLICIES),
   roster: Schema.Array(RosterEntrySchema),
-  rule: Schema.Struct({
-    bikeId: Schema.Literals(bikeIds),
-    roadId: Schema.Literals(roadIds),
-    tier: Schema.Literals(tiers),
-  }),
+  rule: RoomRuleSchema,
   seed: Schema.Number,
   tickRate: Schema.Number,
   trackHash: Schema.Array(Schema.Number),

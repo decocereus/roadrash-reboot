@@ -3,7 +3,7 @@ import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { TierUp, Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
-import { ROOM_ID_PATTERN } from "@racer/rooms/messages";
+import { ROOM_ID_PATTERN } from "@racer/rooms/room-id";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 

@@ -1,12 +1,22 @@
 import { isCelebrity } from "@racer/sim/cast";
-import { difficulties } from "@racer/sim/difficulty";
+import { difficulties, tiers } from "@racer/sim/difficulty";
 import { createRace } from "@racer/sim/race";
 import { riderIdAt } from "@racer/sim/state";
 import type { RaceEvent, RiderId } from "@racer/sim/state";
+import { roadIds } from "@racer/track/road";
 import { describe, expect, it } from "vitest";
 
-import { createRaceLog, recordTick } from "./outcome.ts";
-import { guestNames, publicRoomRule, seatedRace } from "./room-race.ts";
+import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
+import { summaryOf } from "./result.ts";
+import {
+  guestNames,
+  policeChoices,
+  publicRoomRule,
+  ROOM_FIELD_SIZE,
+  seatedRace,
+  trafficChoices,
+} from "./room-race.ts";
+import type { RoomRule } from "./room-race.ts";
 import { STARTING_BIKE } from "./tables.ts";
 
 const finishOf = (rider: number): RaceEvent => ({
@@ -16,6 +26,28 @@ const finishOf = (rider: number): RaceEvent => ({
 });
 
 describe("a room's field", () => {
+  it("names the bike every rider rode on the results board", () => {
+    const { setup } = seatedRace(7, 2);
+    const state = createRace(setup);
+    const log = createRaceLog(setup, riderIdAt(1));
+    const outcome = outcomeOf(state, setup, log);
+    const { rows } = summaryOf(
+      {
+        bikeId: STARTING_BIKE,
+        raceId: outcome.raceId,
+        roadId: outcome.roadId,
+        seed: outcome.seed,
+        started: true,
+        tier: outcome.tier,
+      },
+      outcome,
+      0
+    );
+    expect(new Set(rows.map((row) => row.bikeId))).toStrictEqual(
+      new Set([STARTING_BIKE])
+    );
+  });
+
   it("has no celebrity riding among the humans", () => {
     const seeds = Array.from({ length: 20 }, (_, seed) => seed);
     const field = seeds.flatMap((seed) => seatedRace(seed, 2).setup.field);
@@ -38,6 +70,46 @@ describe("a room's rule", () => {
     expect(setup.conditions).toStrictEqual(difficulties[3].conditions);
     expect(setup.police.count).toBe(difficulties[3].cops.count);
     expect(setup.pacing).toStrictEqual({ catchUp: 0, leadEase: 0 });
+  });
+});
+
+const ruled = (over: Partial<RoomRule>) =>
+  seatedRace(7, 2, { ...publicRoomRule, ...over }).setup;
+
+describe("a host's choice", () => {
+  it("takes the tier's traffic and police when left at normal", () => {
+    const { setup } = seatedRace(7, 2);
+    expect(setup.conditions.trafficDensity).toBe(
+      difficulties[publicRoomRule.tier].conditions.trafficDensity
+    );
+    expect(setup.police.count).toBe(
+      difficulties[publicRoomRule.tier].cops.count
+    );
+  });
+
+  it("scales traffic and police from the tier", () => {
+    const { tier } = publicRoomRule;
+    expect(ruled({ traffic: "light" }).conditions.trafficDensity).toBe(
+      difficulties[tier].conditions.trafficDensity * 0.5
+    );
+    expect(ruled({ police: "none" }).police.count).toBe(0);
+    expect(ruled({ police: "many" }).police.count).toBe(
+      Math.ceil(difficulties[tier].cops.count * 1.5)
+    );
+  });
+
+  it("builds a valid race for every road, tier, traffic and police", () => {
+    const built = roadIds.flatMap((roadId) =>
+      tiers.flatMap((tier) =>
+        trafficChoices.flatMap((traffic) =>
+          policeChoices.map(
+            (police) =>
+              createRace(ruled({ police, roadId, tier, traffic })).riders.length
+          )
+        )
+      )
+    );
+    expect(built.every((riders) => riders >= ROOM_FIELD_SIZE)).toBeTruthy();
   });
 });
 

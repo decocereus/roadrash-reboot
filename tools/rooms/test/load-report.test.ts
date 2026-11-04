@@ -1,3 +1,4 @@
+import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomStatus } from "@racer/rooms/contract";
 import { describe, expect, it } from "vitest";
 
@@ -15,6 +16,7 @@ const statusAt = (tick: number): RoomStatus => ({
   names: [],
   phase: "racing",
   raceId: null,
+  rule: publicRoomRule,
   seats: [],
   tick,
   waiting: 4,
