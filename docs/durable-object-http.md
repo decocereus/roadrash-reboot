@@ -37,7 +37,7 @@ These are the conventions for the race service in `apps/rooms`. `RaceServer` in 
 
 ## Proof
 
-`pnpm rooms:race` proves the contract against a running Worker: the generated client reads a new room's status through `fetch`, a plain request to a seat answers 426, a malformed race ID answers 404, and each race ID reaches its own room. The Worker looks up its stub inside each `fetch` and keeps none, so no invocation can reuse another's. [The race-room recipe](../.claude/skills/verify-rushline/features/race-room.md) has the commands.
+`pnpm rooms:race` proves the contract against a running Worker: the generated client reads a new room's status through `fetch`, a plain request to a seat answers 426, a malformed room ID answers 404, and each room ID reaches its own room. The Worker looks up its stub inside each `fetch` and keeps none, so no invocation can reuse another's. [The race-room recipe](../.claude/skills/verify-rushline/features/race-room.md) has the commands.
 
 ## Sources
 

@@ -1,6 +1,6 @@
 # Race room
 
-A race room runs one race for up to eight humans on the `RaceServer` Durable Object in `apps/rooms`. It holds WebSocket seats, steps at 60 Hz and sends every seat each tick. A browser joins with `/?room=<race id>`. `pnpm rooms:race` races scripted seats through the same `openRoomSeat` client the browser uses, each one a real `createRoomClient` over a real WebSocket that predicts, rolls back and compares hashes with the room.
+A race room runs one race for up to eight humans on the `RaceServer` Durable Object in `apps/rooms`. It holds WebSocket seats, steps at 60 Hz and sends every seat each tick. A browser joins with `/?room=<room id>`. `pnpm rooms:race` races scripted seats through the same `openRoomSeat` client the browser uses, each one a real `createRoomClient` over a real WebSocket that predicts, rolls back and compares hashes with the room.
 
 ## Sub-features
 
