@@ -77,7 +77,11 @@ const exitLane = (
   along: ArmSide
 ): number => {
   const lanes = along === 1 ? track.sameWayLanes : track.oncomingLanes;
-  const open = fewestOpenLanesAlong(track, laneS, laneS + along * LEAST_RUN);
+  const open = fewestOpenLanesAlong(
+    track,
+    laneS,
+    along === 1 ? track.endS : track.startS
+  );
   return along === side ? (lanes[open - 1] ?? lanes[0]) : lanes[0];
 };
 
