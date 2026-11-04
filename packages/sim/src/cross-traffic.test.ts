@@ -259,9 +259,6 @@ describe("a give-way side road", () => {
     ...roads["breakwater-run"],
     carriers: [],
     chevrons: [],
-    districts: [
-      { from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 },
-    ],
     crossings: [
       {
         id: "esplanade-cross",
@@ -275,6 +272,9 @@ describe("a give-way side road", () => {
         s: 1500,
         walk: "unmarked",
       },
+    ],
+    districts: [
+      { from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 },
     ],
     pieces: eased([[3000, 0, 0]]),
   });
