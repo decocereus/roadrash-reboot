@@ -45,15 +45,18 @@ import { nativeClock } from "./preparation.ts";
 import type { PrepareOutcome } from "./preparation.ts";
 import { rendererOf } from "./profile.ts";
 import { bindQuality, createQuality } from "./quality-ladder.ts";
-import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
+import {
+  bindFeedback,
+  consequenceSeconds,
+  createFeedback,
+  out,
+} from "./race-feedback.ts";
 import { bindCast, createCast } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 
 const COUNTDOWN_SECONDS = 3;
 const RESUME_SECONDS = 3;
 const LAST_STRETCH = 1000;
-const BUSTED_SECONDS = 0.8;
-const WRECKED_SECONDS = 1.2;
 const MARKER_KEY = "KeyB";
 
 type Prepared =
@@ -76,13 +79,6 @@ interface Session {
   preparing: Promise<PrepareOutcome>;
   dressing: Dressing;
 }
-
-const consequenceSeconds = (outcome: RaceOutcome): number => {
-  if (outcome.result === "busted") {
-    return BUSTED_SECONDS;
-  }
-  return outcome.result === "wrecked" ? WRECKED_SECONDS : 0;
-};
 
 const autopilot =
   (import.meta.env.DEV &&
@@ -752,6 +748,11 @@ const startGame = (
       frame.clockReset = true;
       frame.last = performance.now();
     },
+    riderFacts: () => ({
+      crashes: player().crashes,
+      roadMetres: player().s,
+      seconds: stage.race.view.tick * TICK_SECONDS,
+    }),
     sleep() {
       if (session.phase === "idle") {
         return;

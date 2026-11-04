@@ -2,6 +2,7 @@ import type { RaceSeat, RoomNote } from "@racer/rooms/notes";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as HttpClient from "effect/http/HttpClient";
+import type * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import { describe, expect, it } from "vitest";
 
@@ -182,6 +183,9 @@ const answerWith = (sources: readonly unknown[]) =>
     )
   );
 
+const textOf = ({ body }: HttpClientRequest.HttpClientRequest): string =>
+  body._tag === "Uint8Array" ? new TextDecoder().decode(body.body) : "";
+
 describe("reading Cloudflare's logs", () => {
   it("keeps the room's notes and skips other events", async () => {
     const notesRead = await Effect.runPromise(
@@ -203,6 +207,33 @@ describe("reading Cloudflare's logs", () => {
       notes: [{ kind: "refused", reason: "full" }],
       unread: 0,
     });
+  });
+
+  it("asks only for the room's notes, so other log lines cannot use up the limit", async () => {
+    const asked: string[] = [];
+    await Effect.runPromise(
+      liveNotes("rooms-script", 24).pipe(
+        Effect.provideService(
+          HttpClient.HttpClient,
+          HttpClient.make((request) => {
+            asked.push(textOf(request));
+            return Effect.succeed(
+              HttpClientResponse.fromWeb(
+                request,
+                Response.json({ result: { events: { events: [] } } })
+              )
+            );
+          })
+        ),
+        Effect.provideService(
+          ConfigProvider.ConfigProvider,
+          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
+        )
+      )
+    );
+    expect(asked[0]).toContain(
+      '{"key":"kind","operation":"exists","type":"string"}'
+    );
   });
 
   it("reads an ended line whose nulls the log store dropped", async () => {

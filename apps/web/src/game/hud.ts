@@ -68,6 +68,11 @@ export interface GameHandle {
   readonly pause: () => boolean;
   readonly resume: () => void;
   readonly quit: () => RaceOutcome | null;
+  readonly riderFacts: () => {
+    readonly crashes: number;
+    readonly roadMetres: number;
+    readonly seconds: number;
+  };
   readonly toggleMute: () => void;
   readonly dispose: () => void;
 }

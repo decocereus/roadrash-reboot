@@ -6,12 +6,14 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
+import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
 import { moveToRoom, newRoomId } from "./room-url.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen } from "./screens/boot.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
+import { DataNotice } from "./screens/data-notice.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
 import { EndingScreen, GameOverScreen } from "./screens/game-over.tsx";
 import { GarageScreen } from "./screens/garage.tsx";
@@ -134,7 +136,11 @@ const CareerScreens = ({
           flow.go(backRoom);
         }}
         onFriends={() => {
-          moveToRoom(newRoomId());
+          diagnostics().events.track({
+            choice: "friends",
+            event: "race_picked",
+          });
+          moveToRoom(newRoomId(), "made");
         }}
         onEnvelope={(take) => {
           flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
@@ -143,6 +149,10 @@ const CareerScreens = ({
           flow.go({ screen: "garage" });
         }}
         onRide={(roadId) => {
+          diagnostics().events.track({
+            choice: "career",
+            event: "race_picked",
+          });
           flow.rideOut("career", roadId);
         }}
         promotion={view.promotion}
@@ -234,6 +244,10 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
         }}
         onPick={flow.setPick}
         onRace={() => {
+          diagnostics().events.track({
+            choice: "single",
+            event: "race_picked",
+          });
           flow.rideOut("quick", flow.pick.roadId);
         }}
         pick={flow.pick}
@@ -249,6 +263,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           onBack={() => {
             globalThis.location.assign("/");
           }}
+          onLost={flow.roomLost}
           onPrepare={flow.prepare}
           onStart={flow.start}
           roomId={view.roomId}
@@ -286,8 +301,9 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           }
         }}
         onRaceAgain={() => {
+          diagnostics().events.track({ event: "race_again" });
           if (view.report.room) {
-            moveToRoom(view.report.room.rematchId);
+            moveToRoom(view.report.room.rematchId, "rematch");
           } else {
             flow.rideOut(view.report.mode, view.report.roadId);
           }
@@ -355,6 +371,9 @@ export const GameShell = () => {
       />
       <MenuScreens flow={flow} />
       <RaceScreens flow={flow} />
+      {flow.view.screen !== "boot" && flow.view.screen !== "race" && (
+        <DataNotice />
+      )}
       {flow.unsaved && (
         <p
           className="bg-red text-text text-label fixed top-0 left-1/2 z-50 -translate-x-1/2 px-4 py-1 font-semibold uppercase"

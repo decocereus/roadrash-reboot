@@ -4,7 +4,7 @@ import { Screen } from "@racer/ui/components/screen";
 import { useState, useSyncExternalStore } from "react";
 
 import { diagnostics } from "../../diagnostics/hub.ts";
-import type { DiagnosticsView } from "../../diagnostics/hub.ts";
+import type { Diagnostics, DiagnosticsView } from "../../diagnostics/hub.ts";
 import type { ReportStatus } from "../../diagnostics/uploader.ts";
 import { BarStrip } from "./bar-chrome.tsx";
 import { Stage, stagePx } from "./clubhouse-stage.tsx";
@@ -54,31 +54,12 @@ const useDiagnosticsView = (): DiagnosticsView => {
   return useSyncExternalStore(hub.subscribe, hub.view, hub.view);
 };
 
-export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
-  const hub = diagnostics();
-  const { settings, report, queued, session } = useDiagnosticsView();
-  const [focused, setFocused] = useState("frame-rate");
-  useEscape(onBack);
+const testerActions = (
+  hub: Diagnostics,
+  { queued, report, settings }: DiagnosticsView
+): readonly MenuAction[] => {
   const reported = reportLine(report);
-  const actions: MenuAction[] = [
-    {
-      detail: "Auto lowers detail, then holds a steady 30, when frames slip",
-      id: "frame-rate",
-      label: "Frame rate",
-      run: () => {
-        hub.settings.change({ frameRate: nextRate(settings.frameRate) });
-      },
-      trailing: rateNames[settings.frameRate],
-    },
-    {
-      detail: "Frame rate, frame times, and quality rung in the corner",
-      id: "overlay",
-      label: "Frame meter",
-      run: () => {
-        hub.settings.change({ overlay: !settings.overlay });
-      },
-      trailing: onOff(settings.overlay),
-    },
+  return [
     {
       detail: "Keeps frame times, quality changes, and errors from this tab",
       id: "recording",
@@ -114,6 +95,45 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
       label: "Send report",
       run: hub.sendReport,
     },
+  ];
+};
+
+export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
+  const hub = diagnostics();
+  const view = useDiagnosticsView();
+  const { playerId, session, settings } = view;
+  const [focused, setFocused] = useState("frame-rate");
+  useEscape(onBack);
+  const tester = new URLSearchParams(globalThis.location.search).has("tester");
+  const actions: MenuAction[] = [
+    {
+      detail: "Auto lowers detail, then holds a steady 30, when frames slip",
+      id: "frame-rate",
+      label: "Frame rate",
+      run: () => {
+        hub.settings.change({ frameRate: nextRate(settings.frameRate) });
+      },
+      trailing: rateNames[settings.frameRate],
+    },
+    {
+      detail: "Frame rate, frame times, and quality rung in the corner",
+      id: "overlay",
+      label: "Frame meter",
+      run: () => {
+        hub.settings.change({ overlay: !settings.overlay });
+      },
+      trailing: onOff(settings.overlay),
+    },
+    {
+      detail: `Sends race and game events under your ID ${playerId}`,
+      id: "race-data",
+      label: "Race data",
+      run: () => {
+        hub.settings.change({ raceData: !settings.raceData });
+      },
+      trailing: onOff(settings.raceData),
+    },
+    ...(tester ? testerActions(hub, view) : []),
     { id: "back", label: "Back", run: onBack },
   ];
   const hint = actions.find((action) => action.id === focused)?.detail;
@@ -137,21 +157,34 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
           >
             {hint ?? ""}
           </p>
-          <p
-            className="text-paper/50 tracking-wide"
-            style={{ fontSize: stagePx(18) }}
-          >
-            B while riding marks the moment · Session {session}
-          </p>
-          <a
-            className="text-paper/75 underline underline-offset-4"
-            href="/credits"
-            rel="noopener noreferrer"
-            style={{ fontSize: stagePx(20) }}
-            target="_blank"
-          >
-            Data credits (new tab)
-          </a>
+          {tester && (
+            <p
+              className="text-paper/50 tracking-wide"
+              style={{ fontSize: stagePx(18) }}
+            >
+              B while riding marks the moment · Session {session}
+            </p>
+          )}
+          <div className="flex" style={{ gap: stagePx(24) }}>
+            <a
+              className="text-paper/75 underline underline-offset-4"
+              href="/privacy"
+              rel="noopener noreferrer"
+              style={{ fontSize: stagePx(20) }}
+              target="_blank"
+            >
+              Privacy (new tab)
+            </a>
+            <a
+              className="text-paper/75 underline underline-offset-4"
+              href="/credits"
+              rel="noopener noreferrer"
+              style={{ fontSize: stagePx(20) }}
+              target="_blank"
+            >
+              Data credits (new tab)
+            </a>
+          </div>
         </BarStrip>
       </Stage>
     </Screen>

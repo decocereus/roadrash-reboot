@@ -5,6 +5,7 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Redacted from "effect/Redacted";
 
 const state = Layer.unwrap(
   Effect.gen(function* stateFor() {
@@ -28,7 +29,13 @@ export default Alchemy.Stack(
     );
     const web = yield* Cloudflare.Website.Vite("Web", {
       dev: { port: webPort, strictPort: true },
-      env: { ART: art, VITE_ROOMS_URL: rooms.url.as<string>() },
+      env: {
+        ART: art,
+        POSTHOG_PROJECT_KEY: Config.Redacted("POSTHOG_PROJECT_KEY").pipe(
+          Config.withDefault(Redacted.make(""))
+        ),
+        VITE_ROOMS_URL: rooms.url.as<string>(),
+      },
       memo: {
         include: [
           "**/*",

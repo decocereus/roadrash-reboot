@@ -9,13 +9,17 @@ export interface Settings {
   readonly automaticUpload: boolean;
   readonly device: TestDevice;
   readonly frameRate: FrameRate;
+  readonly noticeSeen: boolean;
+  readonly raceData: boolean;
 }
 
 const defaultSettings: Settings = {
   automaticUpload: false,
   device: "unspecified",
   frameRate: "auto",
+  noticeSeen: false,
   overlay: false,
+  raceData: true,
   recording: false,
 };
 
@@ -33,7 +37,9 @@ const parseSettings = (text: string | null): Settings => {
       frameRate:
         frameRates.find((rate) => rate === fields.get("frameRate")) ??
         defaultSettings.frameRate,
+      noticeSeen: fields.get("noticeSeen") === true,
       overlay: fields.get("overlay") === true,
+      raceData: fields.get("raceData") !== false,
       recording: fields.get("recording") === true,
     };
   } catch {
@@ -47,7 +53,7 @@ export interface SettingsStore {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
-const storage = (): Storage | null => {
+export const storage = (): Storage | null => {
   try {
     return globalThis.localStorage ?? null;
   } catch {

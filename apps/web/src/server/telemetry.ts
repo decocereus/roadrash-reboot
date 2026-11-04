@@ -60,11 +60,12 @@ const reply = (
 const declaredLength = (request: Request): number =>
   Number(request.headers.get("content-length") ?? 0);
 
-const readBody = Effect.fn("telemetry.readBody")(function* readBody(
-  request: Request
+export const readBody = Effect.fn("telemetry.readBody")(function* readBody(
+  request: Request,
+  mostBytes: number
 ) {
   const declared = declaredLength(request);
-  if (declared > MAX_REQUEST_BYTES) {
+  if (declared > mostBytes) {
     return yield* new TooLarge({ bytes: declared });
   }
   const text = yield* Effect.tryPromise({
@@ -72,7 +73,7 @@ const readBody = Effect.fn("telemetry.readBody")(function* readBody(
     try: async () => await request.text(),
   });
   const bytes = new TextEncoder().encode(text).length;
-  if (bytes > MAX_REQUEST_BYTES) {
+  if (bytes > mostBytes) {
     return yield* new TooLarge({ bytes });
   }
   return text;
@@ -82,7 +83,7 @@ export const ingest = Effect.fn("telemetry.ingest")(function* ingest(
   request: Request
 ) {
   const store = yield* TelemetryStore;
-  const text = yield* readBody(request);
+  const text = yield* readBody(request, MAX_REQUEST_BYTES);
   const value = yield* decodeJson(text).pipe(
     Effect.mapError((cause) => new NotJson({ cause }))
   );

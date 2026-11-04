@@ -391,6 +391,7 @@ Source files:
 - `apps/web/src/components/screens/clubhouse-wall.tsx`
 - `apps/web/src/components/screens/clubhouse.tsx`
 - `apps/web/src/components/screens/confirm.tsx`
+- `apps/web/src/components/screens/data-notice.tsx`
 - `apps/web/src/components/screens/finish.tsx`
 - `apps/web/src/components/screens/game-over.tsx`
 - `apps/web/src/components/screens/garage.tsx`
@@ -932,18 +933,20 @@ Test files:
 
 ### Play-test telemetry
 
-Play-test recording with the tester's consent: the diagnostics hub, recorder, device settings and uploader in the browser, the `POST /api/telemetry` collector and its store, and the session reader.
+Race data and play-test recording: the player events sender, `POST /api/events`, the notice and privacy page, and the tester's diagnostics hub, recorder, device settings and uploader in the browser, the `POST /api/telemetry` collector and its store, and the session reader.
 
 - Id: `telemetry`
 - Start: `apps/web/src/diagnostics/hub.ts`, `apps/web/src/server/telemetry.ts`, `tools/perf/session.ts`
 - Docs: [docs/observability.md#play-test-telemetry](observability.md#play-test-telemetry), [docs/errors.md#the-telemetry-endpoint](errors.md#the-telemetry-endpoint), [docs/errors.md#the-uploader](errors.md#the-uploader)
-- Verify: none yet
+- Verify: [player-events.md](../.claude/skills/verify-rushline/features/player-events.md)
 - Perf: none yet
-- Owns: `packages/telemetry/**`, `apps/web/src/diagnostics/**`, `apps/web/src/server/telemetry*.ts`, `apps/web/src/server/refusals/**`, `apps/web/src/routes/api/telemetry.ts`, `apps/web/test/telemetry.test.ts`, `apps/web/test/uploader.test.ts`, `tools/perf/session.ts`, `tools/perf/src/session*.ts`, `tools/perf/test/session.test.ts`
+- Owns: `packages/telemetry/**`, `apps/web/src/diagnostics/**`, `apps/web/src/server/telemetry*.ts`, `apps/web/src/server/refusals/**`, `apps/web/src/routes/api/telemetry.ts`, `apps/web/src/routes/api/events.ts`, `apps/web/src/routes/privacy.tsx`, `apps/web/src/server/player-events.ts`, `apps/web/test/player-events.test.ts`, `apps/web/test/player-events-server.test.ts`, `apps/web/test/telemetry.test.ts`, `apps/web/test/uploader.test.ts`, `tools/perf/session.ts`, `tools/perf/src/session*.ts`, `tools/perf/test/session.test.ts`
 
 Source files:
 
 - `apps/web/src/diagnostics/hub.ts`
+- `apps/web/src/diagnostics/player-events.ts`
+- `apps/web/src/diagnostics/race-events.ts`
 - `apps/web/src/diagnostics/recorder.ts`
 - `apps/web/src/diagnostics/settings.ts`
 - `apps/web/src/diagnostics/upload/delivery.ts`
@@ -951,9 +954,13 @@ Source files:
 - `apps/web/src/diagnostics/upload/worker.ts`
 - `apps/web/src/diagnostics/uploader-runtime.ts`
 - `apps/web/src/diagnostics/uploader.ts`
+- `apps/web/src/routes/api/events.ts`
 - `apps/web/src/routes/api/telemetry.ts`
+- `apps/web/src/routes/privacy.tsx`
+- `apps/web/src/server/player-events.ts`
 - `apps/web/src/server/refusals/invalid.ts`
 - `apps/web/src/server/refusals/no-store.ts`
+- `apps/web/src/server/refusals/not-forwarded.ts`
 - `apps/web/src/server/refusals/not-json.ts`
 - `apps/web/src/server/refusals/store-failed.ts`
 - `apps/web/src/server/refusals/too-large.ts`
@@ -962,6 +969,7 @@ Source files:
 - `packages/telemetry/src/jsonl-store.ts`
 - `packages/telemetry/src/limits.ts`
 - `packages/telemetry/src/memory-store.ts`
+- `packages/telemetry/src/player-events.ts`
 - `packages/telemetry/src/schema.ts`
 - `packages/telemetry/src/store-error.ts`
 - `packages/telemetry/src/store.ts`
@@ -972,6 +980,8 @@ Source files:
 
 Test files:
 
+- `apps/web/test/player-events-server.test.ts`
+- `apps/web/test/player-events.test.ts`
 - `apps/web/test/telemetry.test.ts`
 - `apps/web/test/uploader.test.ts`
 - `packages/telemetry/test/store.test.ts`

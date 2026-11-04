@@ -11,10 +11,11 @@ import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { useEffect, useReducer, useRef, useState } from "react";
 
+import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
 import { storedGuestName, storeGuestName } from "./guest-name.ts";
-import { moveToRoom, roomLink } from "./room-url.ts";
+import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
 import { GuestNameScreen, RoomLobbyScreen } from "./screens/room-lobby.tsx";
 
 const REDRAW_MS = 1000;
@@ -59,6 +60,7 @@ interface RoomProps {
   readonly roomId: string;
   readonly ready: boolean;
   readonly onBack: () => void;
+  readonly onLost: () => void;
   readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly onStart: (plan: RacePlan) => void;
 }
@@ -69,6 +71,7 @@ const SeatedLobby = ({
   roomId,
   ready,
   onBack,
+  onLost,
   onPrepare,
   onStart,
 }: RoomProps & {
@@ -81,18 +84,32 @@ const SeatedLobby = ({
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
   const handedOver = useRef(false);
   const riding = useRef(false);
+  const lostTold = useRef(false);
+  const joinedTold = useRef(false);
   const [plan, setPlan] = useState<RacePlan | null>(null);
   const [prepared, setPrepared] = useState(false);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
     const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, roomId, name);
+    const tellLost = () => {
+      if (!lostTold.current) {
+        lostTold.current = true;
+        diagnostics().events.track({
+          event: "room_lost",
+          stage: opened.race() ? "race" : "lobby",
+        });
+      }
+    };
     opened.listen({
       onChange: () => {
         if (opened.phase() !== "lost") {
           redraw();
         } else if (opened.race()) {
-          moveToRoom(nextRoomId(roomId));
+          tellLost();
+          onLost();
+          moveToRoom(nextRoomId(roomId), "moved");
         } else {
+          tellLost();
           reopening = setTimeout(reopen, REOPEN_MS);
         }
       },
@@ -106,12 +123,22 @@ const SeatedLobby = ({
         opened.leave();
       }
     };
-  }, [name, roomId, opening]);
+  }, [name, onLost, roomId, opening]);
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);
+    diagnostics().events.track({ event: "invite_copied" });
   };
   const phase = seat?.phase() ?? "connecting";
+  useEffect(() => {
+    if (phase === "lobby" && !joinedTold.current) {
+      joinedTold.current = true;
+      diagnostics().events.track({
+        event: "room_joined",
+        via: roomArrivalOf(globalThis.location.search),
+      });
+    }
+  }, [phase]);
   const racing = phase === "racing";
   const raceBegun = racing || phase === "loading";
   const requeued = isRequeuedRoom(roomId);
