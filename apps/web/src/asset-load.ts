@@ -153,7 +153,7 @@ export const openBar = async (
   seat: RoomSeat | null,
   signal: AbortSignal
 ): Promise<BarScene | null> => {
-  if (!import.meta.env.DEV) {
+  if (import.meta.env.SSR) {
     return null;
   }
   const bar = import("./game/bar.ts");

@@ -448,11 +448,13 @@ The bar players walk around before a race, with the movement rules and floor in 
 - Docs: [docs/architecture.md#the-bar-lobby](architecture.md#the-bar-lobby)
 - Verify: [walkable-bar.md](../.claude/skills/verify-rushline/features/walkable-bar.md)
 - Perf: none yet
-- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`
+- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/components/bar-*.tsx`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`
 
 Source files:
 
 - `apps/web/src/bar-view.ts`
+- `apps/web/src/components/bar-lobby.tsx`
+- `apps/web/src/components/bar-stage.tsx`
 - `apps/web/src/game/bar-blocks.ts`
 - `apps/web/src/game/bar-camera.ts`
 - `apps/web/src/game/bar-cast.ts`

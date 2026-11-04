@@ -13,6 +13,7 @@ import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import type { PrepareOutcome } from "../game/preparation.ts";
+import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
 import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
@@ -23,6 +24,7 @@ import {
   RoomLobbyScreen,
 } from "./screens/room-lobby.tsx";
 
+const DOOR_MOMENT_MS = 5000;
 const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
 
@@ -179,11 +181,17 @@ const SeatedLobby = ({
     }
     handedOver.current = true;
     setPlan(next);
+    const begunAt = performance.now();
     const prepare = async (): Promise<void> => {
       const outcome = await onPrepare(next);
       if (outcome.kind !== "cancelled") {
-        seat.loaded();
-        setPrepared(true);
+        setTimeout(
+          () => {
+            seat.loaded();
+            setPrepared(true);
+          },
+          Math.max(0, DOOR_MOMENT_MS - (performance.now() - begunAt))
+        );
       }
     };
     void prepare();
@@ -194,26 +202,31 @@ const SeatedLobby = ({
       onStart(plan);
     }
   }, [plan, prepared, racing, onStart]);
+  const lobby = seat?.lobby() ?? null;
+  if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
+    return (
+      <BarLobby
+        copied={copied}
+        lobby={lobby}
+        name={name}
+        onBack={onBack}
+        onChangeName={onChangeName}
+        onCopyLink={() => {
+          void copyLink();
+        }}
+        roomId={roomId}
+        seat={seat}
+        startsInSeconds={secondsOf(seat.startsInMs())}
+      />
+    );
+  }
   return (
     <RoomLobbyScreen
-      copied={copied}
       name={name}
       onBack={onBack}
-      onChangeName={onChangeName}
-      onCopyLink={() => {
-        void copyLink();
-      }}
       phase={phase}
-      roomId={roomId}
       refusal={seat?.refusal() ?? null}
-      lobby={seat?.lobby() ?? null}
-      onChoose={(choice) => {
-        seat?.choose(choice);
-      }}
-      onReady={(next) => {
-        seat?.setReady(next);
-      }}
-      startsInSeconds={secondsOf(seat?.startsInMs() ?? null)}
+      roomId={roomId}
     />
   );
 };
