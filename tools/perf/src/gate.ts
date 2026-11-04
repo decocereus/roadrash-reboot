@@ -1,6 +1,8 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import type { BenchBusy } from "@racer/devtools/bench-busy";
+import { queueForBench } from "@racer/devtools/bench-lock";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
@@ -18,6 +20,8 @@ import {
   samplesRecord,
 } from "./evaluate.ts";
 import type { Evaluation, Samples } from "./evaluate.ts";
+import { guardedLoad } from "./load.ts";
+import type { LoadTooHigh } from "./load.ts";
 import { nodeLane, roadLifeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { sha256Of } from "./result.ts";
@@ -34,6 +38,8 @@ import {
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const DEFAULT_BUDGETS = path.join(REPO_ROOT, "tools/perf/budgets.json");
 const DEFAULT_OUT = path.join(REPO_ROOT, "tools/perf/results");
+
+const NO_VERDICT_CODE = 3;
 
 const USAGE = `Usage:
   node tools/perf/gate.ts [--baseline-ref <rev>] [--budgets <file>] [--lanes node,build] [--out <dir>]
@@ -146,6 +152,8 @@ const measure = Effect.fn("gate.measure")(function* measure(
   const fs = yield* FileSystem.FileSystem;
   const approved =
     options.mode === "gate" ? yield* readBudgets(options.budgets) : null;
+  yield* queueForBench(`pnpm perf ${options.mode}`);
+  const load = yield* guardedLoad(options.lanes.includes("node"));
   const startedAt = yield* Clock.currentTimeMillis;
   const B = yield* currentSide(REPO_ROOT);
   const ref = options.ref ?? approved?.budgets.baseline.revision ?? "HEAD";
@@ -180,12 +188,14 @@ const measure = Effect.fn("gate.measure")(function* measure(
     const node: NodeLane[] = [];
     for (const scenario of scenarios) {
       node.push(yield* nodeLane(scenario, { A, B }, path.join(dir, "node")));
+      load.note();
       yield* say(`node ${scenario.id} measured`);
     }
     const [calibrator] = scenarios;
     const roadLife = calibrator
       ? yield* roadLifeLane(B, calibrator, path.join(dir, "node"))
       : null;
+    load.note();
     yield* say(`node ${ROAD_LIFE.id} measured`);
     nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
     samples = yield* save({ ...samples, lanes: ["node"], node, roadLife });
@@ -211,6 +221,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
     node: nodeMs,
     total: (yield* Clock.currentTimeMillis) - startedAt,
   };
+  const noVerdict = load.noVerdict(evaluation.lines);
   const resultFile = path.join(dir, "result.json");
   const samplesText = yield* fs.readFileString(samplesFile);
   yield* fs.writeFileString(
@@ -229,9 +240,10 @@ const measure = Effect.fn("gate.measure")(function* measure(
         files: [{ file: "samples.json", sha256: sha256Of(samplesText) }],
         lanes: samples.lanes,
         lines: evaluation.lines,
+        load: load.record(),
         mode: options.mode,
         observations: evaluation.observations,
-        ok: evaluation.ok,
+        ok: evaluation.ok && noVerdict === null,
         proposal: evaluation.proposal ?? null,
         scenarios: scenarios.map((scenario) => ({
           hash: scenarioHash(scenario),
@@ -245,6 +257,16 @@ const measure = Effect.fn("gate.measure")(function* measure(
       1
     )
   );
+  if (noVerdict !== null) {
+    return {
+      code: NO_VERDICT_CODE,
+      lines: [
+        ...evaluation.lines,
+        `evidence ${resultFile}`,
+        `NO VERDICT perf ${options.mode} ${comparisonId}: ${noVerdict}. Timing rows above may be load alone, and a baseline from this run must not be committed. Run again when the machine is quiet, or read CI's perf job.`,
+      ],
+    };
+  }
   const verdict = approved
     ? `${evaluation.ok ? "PASS" : "FAIL"} perf gate ${comparisonId}`
     : `MEASUREMENT ONLY ${evaluation.ok ? "complete" : "FAILED"} ${comparisonId}`;
@@ -295,8 +317,12 @@ export const main = (args: readonly string[]) =>
   readGateOptions(args).pipe(
     Effect.flatMap(run),
     Effect.catchTags({
+      BenchBusy: (busy: BenchBusy) =>
+        Effect.succeed({ code: NO_VERDICT_CODE, lines: [busy.message] }),
       ConfigInvalid: (invalid: ConfigInvalid) =>
         Effect.succeed({ code: 2, lines: [`CONFIG ${invalid.message}`] }),
+      LoadTooHigh: (high: LoadTooHigh) =>
+        Effect.succeed({ code: NO_VERDICT_CODE, lines: [high.message] }),
       UsageError: (invalid: UsageError) =>
         Effect.succeed({ code: 2, lines: [invalid.message] }),
     }),
