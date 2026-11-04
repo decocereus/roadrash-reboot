@@ -83,9 +83,3 @@ export const blockPaletteOf = (blocks: RiderBlocks): Palette =>
     ["suit", blocks.suit],
     ["suit2", blocks.panel],
   ]);
-
-export const raceBlocksFor = (index: number): RiderBlocks | null =>
-  import.meta.env.DEV &&
-  new URLSearchParams(globalThis.location.search).has("blocks")
-    ? (riderBlocks[index % riderBlocks.length] ?? null)
-    : null;

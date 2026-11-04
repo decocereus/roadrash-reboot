@@ -16,7 +16,6 @@ The bar runs live in the game's renderer with the real riders and bikes: a neon 
 
 - Development build only: open `/bar`. Click a rider to push in on them, press `KeyR` to rev, `KeyT` to move the clock, `KeyG` for the garage shot, `Space` to open the door.
 - Add `?time=dusk`, `?time=night` or `?time=0.5` to hold the clock, `?lean` for the Intel settings, `?ratio=<n>`, `?samples=<n>`, `?bloom=<n>` and `?shadow=<n>` to pin one setting, `?riders=<n>` to draw fewer riders.
-- `/?ride=breakwater-run&with=field&blocks&autopilot` races with the colour blocks. Add `&lift` to brighten the riders' shadow tone, here or on `/bar`.
 
 ## Driving it with rv
 

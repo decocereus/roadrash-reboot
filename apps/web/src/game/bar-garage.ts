@@ -141,7 +141,7 @@ const chest = (kit: Kit, along: number): void => {
 const shelfUnit = (
   kit: Kit,
   along: number,
-  totes: readonly (readonly [number, string])[]
+  totes: readonly (readonly [number, string, number])[]
 ): void => {
   const out = 0.5;
   const wide = 1.7;
@@ -152,8 +152,7 @@ const shelfUnit = (
   for (const y of shelves) {
     kit.box(spot(along, y, out), size(wide, 0.06, 0.7), RACK);
   }
-  for (const [index, [dz, colour]] of totes.entries()) {
-    const y = shelves[index % 3] ?? 0.5;
+  for (const [dz, colour, y] of totes) {
     kit.box(
       spot(along + dz, y + 0.19, out + 0.06),
       size(0.56, 0.32, 0.5),
@@ -356,11 +355,11 @@ export const buildGarage = (kit: Kit, glow: Kit): void => {
   hazardColumn(kit);
   chest(kit, -7.25);
   shelfUnit(kit, -5.5, [
-    [-0.45, DRAWER],
-    [0.3, TOTE_GREY],
-    [-0.4, TOTE_PINK],
-    [0.3, TOTE_BLUE],
-    [-0.1, TOTE_GREY],
+    [-0.45, DRAWER, 0.5],
+    [0.3, TOTE_GREY, 1.2],
+    [-0.4, TOTE_PINK, 1.9],
+    [0.3, TOTE_BLUE, 0.5],
+    [-0.1, TOTE_GREY, 1.2],
   ]);
   helmetRack(kit, -3.75);
   backDoor(kit, glow, -3.75);

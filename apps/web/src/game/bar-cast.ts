@@ -164,6 +164,10 @@ export const createCast = (
   shown: number
 ): BarCast => {
   const group = new THREE.Group();
+  const mounts = new Map<BarAct, THREE.Object3D>([
+    ["ride", heroBike],
+    ["tune", garageBike],
+  ]);
   const members: CastMember[] = [];
   const motions: {
     readonly still: number[];
@@ -193,9 +197,7 @@ export const createCast = (
       blockPaletteOf(blocks)
     );
     const base =
-      spot.act === "stool" || spot.act === "ride" || spot.act === "tune"
-        ? "seated"
-        : "stand";
+      spot.act === "stool" || mounts.has(spot.act) ? "seated" : "stand";
     const still = figure.bakePose(base, actTurns[spot.act]);
     const breath = figure.bakePose(base, [
       ...actTurns[spot.act],
@@ -265,8 +267,8 @@ export const createCast = (
           continue;
         }
         const { figure, spot, tag } = member;
-        if (spot.act === "ride" || spot.act === "tune") {
-          const bike = spot.act === "ride" ? heroBike : garageBike;
+        const bike = mounts.get(spot.act);
+        if (bike) {
           figure.root.position.copy(bike.position);
           figure.root.quaternion.copy(bike.quaternion);
           figure.root.translateY(figure.seat.y);

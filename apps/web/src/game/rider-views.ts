@@ -16,7 +16,6 @@ import * as THREE from "three";
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Fleet, Reach } from "./actors.ts";
 import type { Assets } from "./assets.ts";
-import { blockPaletteOf, raceBlocksFor } from "./bar-blocks.ts";
 import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
@@ -305,7 +304,6 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       assets,
       stage.world.shading,
       stage.race.view.riders.map((rider) => ({
-        livery: raceBlocksFor(rider.id)?.livery,
         model: bikeModelFor(rider.bike.id),
         paint: rider.profile.paint,
         police: rider.profile.role === "police",
@@ -319,13 +317,10 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     cast.views = stage.race.view.riders.map((rider) => {
       const bike =
         riderOf(fleetOfBikes.roots, rider.id) ?? new THREE.Object3D();
-      const raceBlocks = raceBlocksFor(rider.id);
       const figure = createRiderFigure(
         dressing.get(rider.id) ?? bodyFor(assets, rider.id),
         stage.world.shading,
-        raceBlocks
-          ? blockPaletteOf(raceBlocks)
-          : paletteOf(rider.profile.jacket)
+        paletteOf(rider.profile.jacket)
       );
       stage.world.scene.add(figure.root);
       const view: RiderActor = {

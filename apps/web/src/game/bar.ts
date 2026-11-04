@@ -41,7 +41,7 @@ const DOOR_REACH = Math.hypot(
 const SIGN_GLOW = 1.55;
 const REV_PUFF_SPEED = 9;
 const FOCUS_CLEARANCE = PLINTH.radius + 0.6;
-const GARAGE_LIVERY = { bike: "#c8214a", trim: "#2a1a38" } as const;
+const GARAGE_LIVERY = { bike: 0xc8_21_4a, trim: 0x2a_1a_38 } as const;
 const GARAGE_BIKE_YAW = 2.61;
 const GARAGE_BIKE_SWAY = 0.22;
 const SHOTS = {
@@ -446,6 +446,38 @@ const openRoom = (
     pools.setTime(time, tone.neon);
   };
 
+  const aimCamera = (seconds: number, lift: number): void => {
+    const member = focus === null ? null : cast.members[focus];
+    if (member) {
+      wantAim.copy(member.head).setY(member.head.y - 0.5);
+      wantEye.copy(wantAim).add(projected.set(1.4, 0.9, 5.2));
+      clearOfPlinth(wantEye);
+    } else if (lift > 0) {
+      wantAim.set(ROOM.doorCentre, 2.2, ROOM.backZ - 6);
+      wantEye.set(
+        ROOM.doorCentre - 1 + (1 - lift) * 3,
+        2.4 + (1 - lift) * 4,
+        -1 + (1 - lift) * 20
+      );
+    } else {
+      const { aim: shotAim, spot } = SHOTS[shot];
+      wantAim.copy(shotAim);
+      wantEye.set(spot.x + pointer.x * 0.9, spot.y - pointer.y * 0.4, spot.z);
+      wantAim.x += pointer.x * 0.4;
+    }
+    const ease = Math.min(1, seconds * 3.2);
+    eye.lerp(wantEye, ease);
+    aim.lerp(wantAim, ease);
+    const wantFov = member || lift > 0 ? SHOTS.home.fov : SHOTS[shot].fov;
+    if (Math.abs(camera.fov - wantFov) > 0.01) {
+      camera.fov += (wantFov - camera.fov) * ease;
+      camera.updateProjectionMatrix();
+    }
+    camera.position.copy(eye);
+    camera.lookAt(aim);
+    camera.updateMatrixWorld();
+  };
+
   const frame = (now: number): void => {
     handle = requestAnimationFrame(frame);
     profiler?.start(frameId);
@@ -525,35 +557,7 @@ const openRoom = (
       sweepPhase < 0.5 ? cycle * 0.8 : 0
     );
 
-    const member = focus === null ? null : cast.members[focus];
-    if (member) {
-      wantAim.copy(member.head).setY(member.head.y - 0.5);
-      wantEye.copy(wantAim).add(projected.set(1.4, 0.9, 5.2));
-      clearOfPlinth(wantEye);
-    } else if (lift > 0) {
-      wantAim.set(ROOM.doorCentre, 2.2, ROOM.backZ - 6);
-      wantEye.set(
-        ROOM.doorCentre - 1 + (1 - lift) * 3,
-        2.4 + (1 - lift) * 4,
-        -1 + (1 - lift) * 20
-      );
-    } else {
-      const { aim: shotAim, spot } = SHOTS[shot];
-      wantAim.copy(shotAim);
-      wantEye.set(spot.x + pointer.x * 0.9, spot.y - pointer.y * 0.4, spot.z);
-      wantAim.x += pointer.x * 0.4;
-    }
-    const ease = Math.min(1, seconds * 3.2);
-    eye.lerp(wantEye, ease);
-    aim.lerp(wantAim, ease);
-    const wantFov = member || lift > 0 ? SHOTS.home.fov : SHOTS[shot].fov;
-    if (Math.abs(camera.fov - wantFov) > 0.01) {
-      camera.fov += (wantFov - camera.fov) * ease;
-      camera.updateProjectionMatrix();
-    }
-    camera.position.copy(eye);
-    camera.lookAt(aim);
-    camera.updateMatrixWorld();
+    aimCamera(seconds, lift);
 
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
