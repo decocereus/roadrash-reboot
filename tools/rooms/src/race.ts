@@ -2,7 +2,6 @@ import { parseArgs } from "node:util";
 
 import { UsageError } from "@racer/devtools/usage-error";
 import { RoomIdSchema, RoomApi } from "@racer/rooms/contract";
-import { LOBBY_MS } from "@racer/rooms/host";
 import { MOST_SEATS } from "@racer/sim/room";
 import * as Clock from "effect/Clock";
 import * as Data from "effect/Data";
@@ -22,6 +21,7 @@ const OPEN_TIMEOUT_MS = 15_000;
 const START_DELAY_SECONDS = 3;
 const LOWEST_TICK_SHARE = 0.97;
 const MOST_MISSED_SHARE = 0.02;
+const NEVER_READY = Number.POSITIVE_INFINITY;
 
 class RoomRaceFailed extends Data.TaggedError("RoomRaceFailed")<{
   readonly message: string;
@@ -57,9 +57,18 @@ const waitFor = (test: () => boolean, what: string, timeoutMs: number) =>
 
 const refusalOf = (url: string, roomId: string, build: string) =>
   Effect.gen(function* refusal() {
-    const seat = openSeat(url, roomId, build);
+    const seat = openSeat(url, roomId, build, NEVER_READY);
     yield* waitFor(seat.over, "a refused seat to close", OPEN_TIMEOUT_MS);
     return seat.report().refused;
+  });
+
+const lateSeatAnswer = (url: string, roomId: string, build: string) =>
+  Effect.gen(function* lateAnswer() {
+    const seat = openSeat(url, roomId, build, NEVER_READY);
+    yield* waitFor(seat.opened, "a late seat to open", OPEN_TIMEOUT_MS);
+    const { refused } = seat.report();
+    seat.leave();
+    return refused;
   });
 
 const raceIdProblems = (
@@ -115,6 +124,7 @@ interface ContractAnswers {
   readonly badPath: number;
   readonly idle: string;
   readonly late: string | null;
+  readonly lateExpected: string | null;
   readonly ninth: string | null;
   readonly other: { readonly phase: string; readonly seats: number };
   readonly plain: number;
@@ -122,10 +132,13 @@ interface ContractAnswers {
 }
 
 const contractProblems = (answers: ContractAnswers): readonly string[] => {
-  const { badPath, idle, late, ninth, other, plain, stale } = answers;
+  const { badPath, idle, late, lateExpected, ninth, other, plain, stale } =
+    answers;
   return [
     ...(ninth === "full" ? [] : [`A ninth seat was refused as ${ninth}.`]),
-    ...(late === "racing" ? [] : [`A late seat was refused as ${late}.`]),
+    ...(late === lateExpected
+      ? []
+      : [`A late seat answered ${late}, not ${lateExpected}.`]),
     ...(stale === "build" ? [] : [`An old build was refused as ${stale}.`]),
     ...(other.phase === "waiting" && other.seats === 0
       ? []
@@ -183,7 +196,7 @@ export const main = Effect.fn("rooms.race")(function* main(
 
   const { build } = idle;
   const seats = Array.from({ length: seatCount }, () =>
-    openSeat(url, roomId, build)
+    openSeat(url, roomId, build, seatCount)
   );
   yield* waitFor(
     () => seats.every((seat) => seat.opened()),
@@ -214,9 +227,9 @@ export const main = Effect.fn("rooms.race")(function* main(
   yield* waitFor(
     () => seats.every((seat) => seat.started()),
     "every seat to hear the start",
-    LOBBY_MS + OPEN_TIMEOUT_MS
+    OPEN_TIMEOUT_MS
   );
-  const late = yield* refusalOf(url, roomId, build);
+  const late = yield* lateSeatAnswer(url, roomId, build);
   const other = yield* client.rooms.status({
     params: { roomId: makeRoomId(`other-${stamp}`) },
   });
@@ -236,6 +249,7 @@ export const main = Effect.fn("rooms.race")(function* main(
       badPath: badPath.status,
       idle: idle.phase,
       late,
+      lateExpected: seatCount === MOST_SEATS ? "full" : null,
       ninth,
       other: { phase: other.phase, seats: other.seats.length },
       plain: plain.status,

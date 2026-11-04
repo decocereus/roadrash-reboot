@@ -1,3 +1,4 @@
+import { publicRoomRule } from "@racer/career/room-race";
 import { STARTING_BIKE } from "@racer/career/tables";
 import {
   PING_PACKET_BYTES,
@@ -86,6 +87,7 @@ const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
     "friday-ride",
     "Near",
     "test-build",
+    "member-key",
     browser
   );
   const [socket] = FakeSocket.opened;
@@ -103,7 +105,7 @@ const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
         roster: [
           { bikeId: STARTING_BIKE, kind: "human", name: "Near", rider: 0 },
         ],
-        rule: { bikeId: STARTING_BIKE, roadId: "slag-row", tier: 2 },
+        rule: publicRoomRule,
         seed: 1,
         tickRate: 60,
         trackHash: [0],
@@ -160,6 +162,7 @@ describe("a seat loading the race", () => {
       "friday-ride",
       "Near",
       "test-build",
+      "member-key",
       () => null
     );
     seat.leave();
@@ -172,6 +175,7 @@ describe("a seat loading the race", () => {
       "friday-ride",
       "Near",
       "test-build",
+      "member-key",
       () => null
     );
     const [socket] = FakeSocket.opened;

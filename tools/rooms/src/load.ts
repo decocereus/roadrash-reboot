@@ -3,7 +3,6 @@ import { parseArgs } from "node:util";
 import { ToolProcesses } from "@racer/devtools/process";
 import { UsageError } from "@racer/devtools/usage-error";
 import { RoomIdSchema, RoomApi } from "@racer/rooms/contract";
-import { LOBBY_MS } from "@racer/rooms/host";
 import * as Clock from "effect/Clock";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
@@ -26,7 +25,6 @@ const usage =
 
 const CLIENT_ENTRY = new URL("../load-clients.ts", import.meta.url).pathname;
 const START_DELAY_SECONDS = 3;
-const LOBBY_SECONDS = LOBBY_MS / 1000;
 const FULL_SEAT_HZ = 60;
 const LEAST_OPEN_MS = 2000;
 const OPEN_MS_PER_SEAT = 5;
@@ -87,13 +85,11 @@ const planOf = (load: LoadOptions, rooms: number) => {
     ((seats - full) * load.inputHz +
       full * FULL_SEAT_HZ +
       seats * PINGS_PER_SECOND) *
-      (ride + START_DELAY_SECONDS) +
-    seats * PINGS_PER_SECOND * LOBBY_SECONDS;
+    (ride + START_DELAY_SECONDS);
   const requests = seats + rooms * STATUS_READS_PER_ROOM;
   return {
     connections: seats,
-    gbSeconds:
-      rooms * GB_PER_ROOM * (LOBBY_SECONDS + ride + START_DELAY_SECONDS),
+    gbSeconds: rooms * GB_PER_ROOM * (ride + START_DELAY_SECONDS),
     incomingMessages: incoming,
     requestsCountedOneToOne: requests + incoming,
     requestsCountedTwentyToOne:
@@ -112,6 +108,7 @@ const seatPlans = (
   Array.from({ length: rooms }, (_, room) => room).flatMap((room) =>
     Array.from({ length: load.seats }, (_, seat) => ({
       full: room < load.fullSeats && seat === load.seats - 1,
+      ridersInRoom: load.seats,
       roomId: `load-${stamp}-${room}`,
     }))
   );
@@ -165,8 +162,7 @@ const runStep = Effect.fn("rooms.load.step")(function* runStep(
     params: { roomId: makeRoomId(`load-${stamp}-build`) },
   });
   const now = yield* Clock.currentTimeMillis;
-  const startAt =
-    now + LEAST_OPEN_MS + seats.length * OPEN_MS_PER_SEAT + LOBBY_MS;
+  const startAt = now + LEAST_OPEN_MS + seats.length * OPEN_MS_PER_SEAT;
   const raceAt = startAt + START_DELAY_SECONDS * 1000;
   const sampleFrom = raceAt + load.warmSeconds * 1000;
   const endAt = sampleFrom + load.seconds * 1000;

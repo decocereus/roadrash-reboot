@@ -1,3 +1,4 @@
+import type { BikeDefinition } from "@racer/content/bikes";
 import type { ArmSide } from "@racer/track/crossings";
 import { hazardKinds } from "@racer/track/hazards";
 import type { HazardKind } from "@racer/track/hazards";
@@ -36,7 +37,7 @@ const bikeClasses = ["featherweight", "middleweight", "heavyweight"] as const;
 export type BikeClass = (typeof bikeClasses)[number];
 
 export interface BikeSpec {
-  readonly id: string;
+  readonly id: BikeDefinition["id"];
   readonly name: string;
   readonly bikeClass: BikeClass;
   readonly price: number;

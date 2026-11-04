@@ -16,9 +16,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/guest-name.ts",
       "apps/web/src/components/room-lobby.tsx",
       "apps/web/src/components/room-url.ts",
-      "apps/web/src/components/rematch-watch.test.ts",
-      "apps/web/src/components/rematch-watch.ts",
-      "apps/web/src/components/use-rematch.ts",
+      "apps/web/src/components/room-preview.ts",
       "tools/rooms/**",
     ],
     perf: [
@@ -31,8 +29,8 @@ export const roomFeatures: readonly FeatureEntry[] = [
     ],
     start: [
       "apps/rooms/src/host.ts",
+      "apps/rooms/src/lobby.ts",
       "packages/sim/src/room.ts",
-      "packages/sim/src/room-client.ts",
     ],
     summary:
       "The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, `pnpm rooms:race` races scripted seats against it, and `pnpm rooms:replay` runs a saved race tape again.",

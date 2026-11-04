@@ -2,6 +2,7 @@ import { RACE_STATS_PACKET_BYTES, writeRaceStats } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
+import { AWAY_MS } from "../src/lobby.ts";
 import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
   advanceHearing,
@@ -47,10 +48,13 @@ describe("the room's notes", () => {
   it("says who left and who was refused", () => {
     const { clock, far, host } = loadingRace();
     host.gone(far);
-    host.seat(fakeSocket(), "Late", nearby, sameBuild);
+    host.seat(fakeSocket(), "Stale", nearby, {
+      ...sameBuild(),
+      build: "old-build",
+    });
     expect(clock.notes).toContainEqual({
       kind: "refused",
-      reason: "racing",
+      reason: "build",
     });
     expect(clock.notes).toContainEqual(
       expect.objectContaining({
@@ -144,6 +148,7 @@ describe("the room's notes", () => {
     }
     clock.advance(1000);
     expect(host.status().raceId).toBeNull();
+    clock.advance(AWAY_MS + 1000);
     const second = [fakeSocket()];
     race(host, clock, second);
     expect(startedOf(second[0] ?? fakeSocket()).manifest.raceId).toBe("race-2");
@@ -156,7 +161,7 @@ describe("the room's notes", () => {
     host.message(near, packet);
     host.gone(far);
     host.gone(near);
-    host.seat(fakeSocket(), "Late", nearby, sameBuild);
+    host.seat(fakeSocket(), "Late", nearby, sameBuild());
     clock.advance(40_000);
     const written = JSON.stringify(clock.notes);
     expect(written).toContain('"kind":"ended"');

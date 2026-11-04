@@ -46,6 +46,7 @@ const Started = Schema.Struct({
   digest: Schema.String,
   kind: Schema.Literal("started"),
   lobbyMs: Schema.Number,
+  police: orMissing(Schema.String),
   protocol: orMissing(Schema.Number),
   raceId: Schema.String,
   road: Schema.String,
@@ -53,6 +54,7 @@ const Started = Schema.Struct({
   seed: Schema.Number,
   tier: orMissing(Schema.Number),
   trackHash: orMissing(Schema.String),
+  traffic: orMissing(Schema.String),
 });
 
 const Countdown = Schema.Struct({

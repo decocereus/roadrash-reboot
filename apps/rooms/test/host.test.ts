@@ -19,7 +19,7 @@ import { setupDigest, trackDigest } from "@racer/sim/snapshot-setup";
 import { riderIdAt } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
-import { createHost, LOBBY_MS } from "../src/host.ts";
+import { createHost } from "../src/host.ts";
 import { humanNames, seatedCount } from "../src/manifest.ts";
 import { SEAT_CLOSED, SEAT_SILENT } from "../src/messages.ts";
 import {
@@ -38,9 +38,8 @@ import {
   startedOf,
   clientOf,
   race,
-  seatOn,
-  lobbyWithOneSeat,
-  lobbyCounts,
+  lastLobby,
+  readyAll,
   followTicks,
 } from "./host-harness.ts";
 import type { FakeSocket } from "./host-harness.ts";
@@ -51,28 +50,6 @@ const announcedStarts = (socket: FakeSocket): readonly number[] =>
   );
 
 describe("a room host", () => {
-  it("fills its lobby toward the field and starts by itself at the deadline", () => {
-    const { clock, host, messages, socket } = lobbyWithOneSeat();
-    advanceHearing(host, clock, [socket], LOBBY_MS - 1000);
-    const counts = lobbyCounts(messages);
-    expect(counts[0]).toBe(1);
-    expect(Math.max(...counts)).toBeGreaterThan(3);
-    expect(Math.max(...counts)).toBeLessThanOrEqual(ROOM_FIELD_SIZE);
-    expect(host.status().phase).toBe("waiting");
-    advanceHearing(host, clock, [socket], 1000);
-    expect(host.status().phase).toBe("racing");
-  });
-
-  it("forgets a lobby that every seat left, so its old deadline starts nothing", () => {
-    const { clock, host, socket } = lobbyWithOneSeat();
-    host.gone(socket);
-    clock.advance(60_000);
-    const next = seatOn(host);
-    clock.advance(60_001);
-    expect(host.status().phase).toBe("waiting");
-    expect(lobbyCounts(next.messages)[0]).toBe(1);
-  });
-
   it("races two clients through its packets and agrees with them hash for hash", () => {
     const clock = createClock();
     const host = createHost(clock);
@@ -169,30 +146,35 @@ describe("a room host", () => {
     const host = createHost(clock);
     const first = fakeSocket();
     const second = fakeSocket();
-    host.seat(first, "Ann", nearby, sameBuild);
-    host.seat(second, "Bo", nearby, sameBuild);
-    advanceHearing(host, clock, [first, second], LOBBY_MS);
+    host.seat(first, "Ann", nearby, sameBuild());
+    host.seat(second, "Bo", nearby, sameBuild());
+    readyAll(host, [first, second]);
     expect(humanNames(startedOf(first).manifest)).toStrictEqual(["Ann", "Bo"]);
     expect(humanNames(startedOf(second).manifest)).toStrictEqual(["Ann", "Bo"]);
   });
 
-  it("starts the race itself when the lobby runs out, and no packet can start it sooner", () => {
+  it("starts no race from a packet, only from its riders being ready", () => {
     const clock = createClock();
     const host = createHost(clock);
     const socket = fakeSocket();
-    host.seat(socket, "Guest", nearby, sameBuild);
+    host.seat(socket, "Guest", nearby, sameBuild());
     host.message(socket, new Uint8Array([5]).buffer);
+    advanceHearing(host, clock, [socket], 180_000);
     expect(host.status().phase).toBe("waiting");
-    advanceHearing(host, clock, [socket], LOBBY_MS - 1000);
-    expect(host.status().phase).toBe("waiting");
-    advanceHearing(host, clock, [socket], 1000);
+    readyAll(host, [socket]);
     expect(host.status().phase).toBe("racing");
   });
 
   it.each([
-    ["another build", { build: "old-build", protocol: ROOM_PROTOCOL }],
-    ["another protocol", { build: "test-build", protocol: ROOM_PROTOCOL + 1 }],
-    ["no claim", { build: "", protocol: 0 }],
+    [
+      "another build",
+      { build: "old-build", key: "k", protocol: ROOM_PROTOCOL },
+    ],
+    [
+      "another protocol",
+      { build: "test-build", key: "k", protocol: ROOM_PROTOCOL + 1 },
+    ],
+    ["no claim", { build: "", key: "k", protocol: 0 }],
   ])("refuses a seat with %s before it sits", (_case, claim) => {
     const clock = createClock();
     const host = createHost(clock);
@@ -281,25 +263,17 @@ describe("a room host", () => {
     expect(host.status().tick).toBeGreaterThan(55);
   });
 
-  it("refuses a late seat and a ninth seat", () => {
+  it("refuses a ninth member", () => {
     const clock = createClock();
     const host = createHost(clock);
-    const eight = Array.from({ length: 8 }, fakeSocket);
-    for (const socket of eight) {
-      host.seat(socket, "Guest", nearby, sameBuild);
+    for (const socket of Array.from({ length: 8 }, fakeSocket)) {
+      host.seat(socket, "Guest", nearby, sameBuild());
     }
     const ninth = fakeSocket();
-    host.seat(ninth, "Guest", nearby, sameBuild);
+    host.seat(ninth, "Guest", nearby, sameBuild());
     expect(ninth.messages.at(-1)).toStrictEqual({
       kind: "refused",
       reason: "full",
-    });
-    advanceHearing(host, clock, eight, LOBBY_MS);
-    const late = fakeSocket();
-    host.seat(late, "Guest", nearby, sameBuild);
-    expect(late.messages.at(-1)).toStrictEqual({
-      kind: "refused",
-      reason: "racing",
     });
   });
 
@@ -337,10 +311,10 @@ describe("a room host", () => {
     expect(second.ticks).toStrictEqual([]);
     expect(first.ticks.length).toBeGreaterThanOrEqual(19);
     host.gone(first);
-    clock.advance(120_000);
+    clock.advance(240_000);
     expect(clock.pending()).toBe(0);
     const again = fakeSocket();
-    host.seat(again, "Guest", nearby, sameBuild);
+    host.seat(again, "Guest", nearby, sameBuild());
     expect(again.closed).toBeNull();
   });
 
@@ -370,12 +344,10 @@ describe("a room host", () => {
       kinds: clock.notes
         .map(({ kind }) => kind)
         .filter((kind) => kind === "stats" || kind === "browser"),
-      pending: clock.pending(),
       traced: clock.tape.has("tapes/race-1/rider-0.trace.json"),
     }).toStrictEqual({
       closed: SEAT_CLOSED,
       kinds: ["stats", "browser"],
-      pending: 0,
       traced: true,
     });
   }, 60_000);
@@ -447,27 +419,30 @@ describe("a room host", () => {
     expect(clock.pending()).toBe(0);
   });
 
-  it("forgets a lobby rider whose link died, and tells the others", () => {
+  it("marks a lobby rider whose link died as away, and tells the others", () => {
     const clock = createClock();
     const host = createHost(clock);
     const lost = fakeSocket();
     const here = fakeSocket();
-    host.seat(lost, "Lost", nearby, sameBuild);
-    host.seat(here, "Here", nearby, sameBuild);
+    host.seat(lost, "Lost", nearby, sameBuild());
+    host.seat(here, "Here", nearby, sameBuild());
     for (let second = 0; second < 12; second += 1) {
       clock.advance(1000);
       host.message(here, pingPacket());
     }
     expect(lost.closed).toBe(SEAT_SILENT);
     expect(host.status().names).toStrictEqual(["Here"]);
-    expect(here.messages.at(-1)).toMatchObject({ names: ["Here"] });
+    expect(lastLobby(here).members.map((member) => member.here)).toStrictEqual([
+      false,
+      true,
+    ]);
   });
 
   it("answers a ping and ignores malformed packets", () => {
     const clock = createClock();
     const host = createHost(clock);
     const socket = fakeSocket();
-    host.seat(socket, "Guest", nearby, sameBuild);
+    host.seat(socket, "Guest", nearby, sameBuild());
     host.message(socket, new ArrayBuffer(0));
     host.message(socket, new Uint8Array([9, 9, 9]).buffer);
     host.message(socket, "not a packet");

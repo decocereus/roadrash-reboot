@@ -16,15 +16,23 @@ import { riderIdAt } from "@racer/sim/state";
 import * as Option from "effect/Option";
 import { expect } from "vitest";
 
-import { createHost, LOBBY_MS } from "../src/host.ts";
+import { createHost } from "../src/host.ts";
 import type { Host, HostPorts, HostSocket } from "../src/host.ts";
 import { seatedCount } from "../src/manifest.ts";
-import { decodeRoomMessage } from "../src/messages.ts";
+import { decodeRoomMessage, encodeLobbyCommand } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
 
 export const nearby = { colo: "DEL", tcpRttMs: 8 };
-export const sameBuild = { build: "test-build", protocol: ROOM_PROTOCOL };
+let claims = 0;
+export const sameBuild = (key = "") => {
+  claims += 1;
+  return {
+    build: "test-build",
+    key: key === "" ? `key-${claims}` : key,
+    protocol: ROOM_PROTOCOL,
+  };
+};
 export const TICK_MS = 1000 / 60;
 export const START_DELAY_MS = 3000;
 
@@ -186,14 +194,20 @@ export const someRaceStats: RaceStats = {
 export const countdownsOn = (socket: FakeSocket): number =>
   socket.messages.filter((each) => each.kind === "countdown").length;
 
+export const readyAll = (host: Host, sockets: readonly FakeSocket[]): void => {
+  for (const socket of sockets) {
+    host.message(socket, encodeLobbyCommand({ kind: "ready", ready: true }));
+  }
+};
+
 export const loadingRace = () => {
   const clock = createClock();
   const host = createHost(clock);
   const near = fakeSocket();
   const far = fakeSocket();
-  host.seat(near, "Near", nearby, sameBuild);
-  host.seat(far, "Far", nearby, sameBuild);
-  advanceHearing(host, clock, [near, far], LOBBY_MS);
+  host.seat(near, "Near", nearby, sameBuild());
+  host.seat(far, "Far", nearby, sameBuild());
+  readyAll(host, [near, far]);
   return { clock, far, host, near };
 };
 
@@ -230,34 +244,22 @@ export const race = (
   sockets: readonly FakeSocket[]
 ) => {
   for (const socket of sockets) {
-    host.seat(socket, "Guest", nearby, sameBuild);
+    host.seat(socket, "Guest", nearby, sameBuild());
   }
-  advanceHearing(host, clock, sockets, LOBBY_MS);
+  readyAll(host, sockets);
   for (const socket of sockets) {
     host.message(socket, readyPacket(socket));
   }
   clock.advance(START_DELAY_MS);
 };
 
-export const seatOn = (host: Host): FakeSocket => {
-  const socket = fakeSocket();
-  host.seat(socket, "Guest", nearby, sameBuild);
-  return socket;
+export const lastLobby = (socket: FakeSocket) => {
+  const message = socket.messages.findLast((each) => each.kind === "lobby");
+  if (message?.kind !== "lobby") {
+    throw new Error("The room never told this seat about its lobby.");
+  }
+  return message;
 };
-
-export const lobbyWithOneSeat = () => {
-  const clock = createClock();
-  const host = createHost(clock);
-  const socket = seatOn(host);
-  return { clock, host, messages: socket.messages, socket };
-};
-
-export const lobbyCounts = (
-  messages: readonly RoomMessage[]
-): readonly number[] =>
-  messages.flatMap((message) =>
-    message.kind === "lobby" ? [message.riders] : []
-  );
 
 export const followTicks = (socket: FakeSocket, client: RoomClient): void => {
   const read = createReadTick(createTickFrame());

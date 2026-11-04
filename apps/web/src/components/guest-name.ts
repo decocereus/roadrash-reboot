@@ -1,4 +1,5 @@
 const GUEST_NAME_KEY = "rushline.guestName.v1";
+const MEMBER_KEY = "rushline.memberKey.v1";
 
 export const storedGuestName = (): string | null => {
   try {
@@ -14,5 +15,19 @@ export const storeGuestName = (name: string): boolean => {
     return true;
   } catch {
     return false;
+  }
+};
+
+export const memberKey = (): string => {
+  const fresh = crypto.randomUUID();
+  try {
+    const stored = globalThis.sessionStorage.getItem(MEMBER_KEY);
+    if (stored !== null) {
+      return stored;
+    }
+    globalThis.sessionStorage.setItem(MEMBER_KEY, fresh);
+    return fresh;
+  } catch {
+    return fresh;
   }
 };
