@@ -126,6 +126,9 @@ export const bootGame = async (
   events: GameEvents,
   signal: AbortSignal
 ): Promise<GameHandle | null> => {
+  if (import.meta.env.SSR) {
+    return null;
+  }
   const game = import("./game/game.ts");
   const [acquired, { createGame }] = await Promise.all([
     acquire(game, signal),
@@ -170,6 +173,9 @@ export const openShowroom = async (
   canvas: HTMLCanvasElement,
   signal: AbortSignal
 ): Promise<Showroom | null> => {
+  if (import.meta.env.SSR) {
+    return null;
+  }
   const showroom = import("./game/showroom.ts");
   const [bikes, { createShowroom }] = await Promise.all([
     acquireBikes(showroom, signal),
