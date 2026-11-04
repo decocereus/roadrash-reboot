@@ -38,6 +38,8 @@ To investigate a session, use the `sessions` skill (`.claude/skills/sessions/SKI
 
 Every room race has a random race ID that is not the invite link. `apps/rooms/src/notes.ts` holds the lines the room writes to Workers Logs. `pnpm rooms:read` reads them from Cloudflare, or from a saved log with `--file`, and prints one report per race. `CLOUDFLARE_API_TOKEN` needs permission to read Workers observability. Reading races is the job of the [race-room recipe](../.claude/skills/verify-rushline/features/race-room.md).
 
+A report's "ready after" times, `readyMs` and `waitedMs`, end when the browser sends `loaded`, so they are not load time alone. A browser that races from the bar holds that message until its 5 s door moment ends, and only a longer wait there means slow loading.
+
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
 | A race ID is minted once per race, not per room, and every note about that race, the `started` message and `RoomReport` carry it. A room that runs a second race gives it a new ID. | `pnpm test`, `pnpm rooms:race` | `apps/rooms/src/host.ts`, `tools/rooms/src/race.ts` | None |

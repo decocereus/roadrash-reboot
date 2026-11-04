@@ -169,7 +169,7 @@ const timelineLine = ({
 }: RaceRecord): string => {
   const parts = [
     started ? `lobby ${seconds(started.lobbyMs)}` : null,
-    countdown ? `loading ${seconds(countdown.waitedMs)}` : null,
+    countdown ? `riders ready after ${seconds(countdown.waitedMs)}` : null,
     countdown && countdown.stillLoading.length > 0
       ? `started without rider(s) ${countdown.stillLoading.join(", ")}`
       : null,
