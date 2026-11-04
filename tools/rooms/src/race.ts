@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 
 import { UsageError } from "@racer/devtools/usage-error";
 import { RoomIdSchema, RoomApi } from "@racer/rooms/contract";
+import { LOBBY_MS } from "@racer/rooms/host";
 import { MOST_SEATS } from "@racer/sim/room";
 import * as Clock from "effect/Clock";
 import * as Data from "effect/Data";
@@ -14,7 +15,7 @@ import { openSeat } from "./seat.ts";
 import type { Seat, SeatReport } from "./seat.ts";
 
 const usage =
-  "Usage: pnpm rooms:race --url http://127.0.0.1:<port> [--seats 2] [--seconds 20] [--lobby-seconds 0] [--drop-at-seconds n]";
+  "Usage: pnpm rooms:race --url http://127.0.0.1:<port> [--seats 2] [--seconds 20] [--drop-at-seconds n]";
 
 const POLL_MS = 50;
 const OPEN_TIMEOUT_MS = 15_000;
@@ -36,7 +37,6 @@ const options = (args: readonly string[]) =>
         args: [...args],
         options: {
           "drop-at-seconds": { type: "string" },
-          "lobby-seconds": { default: "0", type: "string" },
           seats: { default: "2", type: "string" },
           seconds: { default: "20", type: "string" },
           url: { type: "string" },
@@ -55,9 +55,9 @@ const waitFor = (test: () => boolean, what: string, timeoutMs: number) =>
     }
   });
 
-const refusalOf = (url: string, roomId: string) =>
+const refusalOf = (url: string, roomId: string, build: string) =>
   Effect.gen(function* refusal() {
-    const seat = openSeat(url, roomId);
+    const seat = openSeat(url, roomId, build);
     yield* waitFor(seat.over, "a refused seat to close", OPEN_TIMEOUT_MS);
     return seat.report().refused;
   });
@@ -118,13 +118,15 @@ interface ContractAnswers {
   readonly ninth: string | null;
   readonly other: { readonly phase: string; readonly seats: number };
   readonly plain: number;
+  readonly stale: string | null;
 }
 
 const contractProblems = (answers: ContractAnswers): readonly string[] => {
-  const { badPath, idle, late, ninth, other, plain } = answers;
+  const { badPath, idle, late, ninth, other, plain, stale } = answers;
   return [
     ...(ninth === "full" ? [] : [`A ninth seat was refused as ${ninth}.`]),
     ...(late === "racing" ? [] : [`A late seat was refused as ${late}.`]),
+    ...(stale === "build" ? [] : [`An old build was refused as ${stale}.`]),
     ...(other.phase === "waiting" && other.seats === 0
       ? []
       : [`Another race id reached a room with ${other.seats} seats.`]),
@@ -171,7 +173,6 @@ export const main = Effect.fn("rooms.race")(function* main(
   }
   const seatCount = Number(values.seats);
   const seconds = Number(values.seconds);
-  const lobbySeconds = Number(values["lobby-seconds"]);
   const stamp = (yield* Clock.currentTimeMillis).toString(36);
   const roomId = makeRoomId(`verify-${stamp}`);
   const client = yield* HttpApiClient.make(RoomApi, { baseUrl: url });
@@ -180,7 +181,10 @@ export const main = Effect.fn("rooms.race")(function* main(
   const plain = yield* http.get(`${url}/rooms/${roomId}/seat`);
   const badPath = yield* http.get(`${url}/rooms/NOT_A_ROOM/seat`);
 
-  const seats = Array.from({ length: seatCount }, () => openSeat(url, roomId));
+  const { build } = idle;
+  const seats = Array.from({ length: seatCount }, () =>
+    openSeat(url, roomId, build)
+  );
   yield* waitFor(
     () => seats.every((seat) => seat.opened()),
     "every seat to open",
@@ -196,14 +200,12 @@ export const main = Effect.fn("rooms.race")(function* main(
     yield* Effect.sleep(POLL_MS);
   }
   const ninth =
-    seatCount === MOST_SEATS ? yield* refusalOf(url, roomId) : "full";
-  yield* Effect.sleep(lobbySeconds * 1000);
-  const [first] = seats;
+    seatCount === MOST_SEATS ? yield* refusalOf(url, roomId, build) : "full";
+  const stale = yield* refusalOf(url, roomId, `not-${build}`);
   const last = seats.at(-1);
-  if (!first || !last) {
+  if (!last) {
     return yield* new UsageError({ message: usage });
   }
-  first.start();
   const dropAt = values["drop-at-seconds"];
   const drop =
     dropAt === undefined
@@ -212,9 +214,9 @@ export const main = Effect.fn("rooms.race")(function* main(
   yield* waitFor(
     () => seats.every((seat) => seat.started()),
     "every seat to hear the start",
-    OPEN_TIMEOUT_MS
+    LOBBY_MS + OPEN_TIMEOUT_MS
   );
-  const late = yield* refusalOf(url, roomId);
+  const late = yield* refusalOf(url, roomId, build);
   const other = yield* client.rooms.status({
     params: { roomId: makeRoomId(`other-${stamp}`) },
   });
@@ -237,6 +239,7 @@ export const main = Effect.fn("rooms.race")(function* main(
       ninth,
       other: { phase: other.phase, seats: other.seats.length },
       plain: plain.status,
+      stale,
     }),
   ];
   yield* Effect.log(

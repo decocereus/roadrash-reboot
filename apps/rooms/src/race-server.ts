@@ -123,7 +123,11 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
                   decodeEdge(
                     request.source instanceof Request ? request.source.cf : null
                   )
-                )
+                ),
+                {
+                  build: url.searchParams.get("build") ?? "",
+                  protocol: Number(url.searchParams.get("protocol")),
+                }
               );
               return response;
             }).pipe(Effect.provideService(Cloudflare.DurableObjectState, state))

@@ -17,8 +17,6 @@ const NANOS_PER_MS = 1e6;
 
 interface Rider {
   readonly leave: () => void;
-  readonly opener: boolean;
-  readonly start: () => void;
 }
 
 const gapsOf = (tally: LoadTally): readonly (readonly [number, number])[] =>
@@ -27,20 +25,25 @@ const gapsOf = (tally: LoadTally): readonly (readonly [number, number])[] =>
 const seatAll = (plan: ClientPlan, tally: LoadTally) => {
   const full = plan.seats
     .filter((seat) => seat.full)
-    .map((seat) => ({ open: openSeat(plan.url, seat.roomId), plan: seat }));
+    .map((seat) => ({
+      open: openSeat(plan.url, seat.roomId, plan.build),
+      plan: seat,
+    }));
   const thin = plan.seats
     .filter((seat) => !seat.full)
     .map((seat) => ({
-      open: openThinSeat(plan.url, seat.roomId, plan.inputEvery, tally),
+      open: openThinSeat(
+        plan.url,
+        seat.roomId,
+        plan.inputEvery,
+        tally,
+        plan.build
+      ),
       plan: seat,
     }));
-  const riders: readonly Rider[] = [...full, ...thin].map(
-    ({ open, plan: seat }) => ({
-      leave: open.leave,
-      opener: seat.opener,
-      start: open.start,
-    })
-  );
+  const riders: readonly Rider[] = [...full, ...thin].map(({ open }) => ({
+    leave: open.leave,
+  }));
   return { full: full.map(({ open }) => open), riders };
 };
 
@@ -53,11 +56,6 @@ export const clientsMain = Effect.fn("rooms.load.clients")(
     yield* sleepUntil(plan.startAt);
     const loop = monitorEventLoopDelay({ resolution: 5 });
     loop.enable();
-    for (const rider of riders) {
-      if (rider.opener) {
-        rider.start();
-      }
-    }
     while (!budget.capped() && (yield* Clock.currentTimeMillis) < plan.endAt) {
       yield* Effect.sleep(CHECK_CAP_EVERY_MS);
     }

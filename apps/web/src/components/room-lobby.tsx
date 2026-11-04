@@ -20,7 +20,6 @@ import { GuestNameScreen, RoomLobbyScreen } from "./screens/room-lobby.tsx";
 
 const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
-const REQUEUED_START_MS = 8000;
 
 const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
   const race = seat.race();
@@ -42,7 +41,6 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
-    digestMatched: race.digestMatched,
     me: race.me,
     report: room.report,
     rttMs: seat.rttMs,
@@ -91,7 +89,12 @@ const SeatedLobby = ({
   const lost = useEffectEvent(onLost);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
-    const opened = openRoomSeat(import.meta.env.VITE_ROOMS_URL, roomId, name);
+    const opened = openRoomSeat(
+      import.meta.env.VITE_ROOMS_URL,
+      roomId,
+      name,
+      __RUSHLINE_BUILD__.rooms
+    );
     const tellLost = () => {
       if (!lostTold.current) {
         lostTold.current = true;
@@ -142,23 +145,12 @@ const SeatedLobby = ({
   }, [phase]);
   const racing = phase === "racing";
   const raceBegun = racing || phase === "loading";
-  const requeued = isRequeuedRoom(roomId);
   useEffect(() => {
     const redrawing = setInterval(redraw, REDRAW_MS);
     return () => {
       clearInterval(redrawing);
     };
   }, []);
-  useEffect(() => {
-    const starting = setTimeout(() => {
-      if (requeued && seat?.phase() === "lobby") {
-        seat.start();
-      }
-    }, REQUEUED_START_MS);
-    return () => {
-      clearTimeout(starting);
-    };
-  }, [phase, requeued, seat]);
   useEffect(() => {
     if (!(seat && raceBegun && ready) || handedOver.current) {
       return;
@@ -193,13 +185,10 @@ const SeatedLobby = ({
       onCopyLink={() => {
         void copyLink();
       }}
-      onStart={() => {
-        seat?.start();
-      }}
       phase={phase}
       roomId={roomId}
       refusal={seat?.refusal() ?? null}
-      requeued={requeued}
+      requeued={isRequeuedRoom(roomId)}
       riderNames={seat?.riderNames() ?? []}
       riders={seat?.riders() ?? 0}
       startsInSeconds={Math.max(0, Math.ceil((seat?.startsInMs() ?? 0) / 1000))}

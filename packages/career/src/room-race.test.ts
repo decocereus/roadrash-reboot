@@ -2,7 +2,7 @@ import { isCelebrity } from "@racer/sim/cast";
 import { difficulties } from "@racer/sim/difficulty";
 import { createRace } from "@racer/sim/race";
 import { riderIdAt } from "@racer/sim/state";
-import type { RaceEvent } from "@racer/sim/state";
+import type { RaceEvent, RiderId } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
 import { createRaceLog, recordTick } from "./outcome.ts";
@@ -38,6 +38,68 @@ describe("a room's rule", () => {
     expect(setup.conditions).toStrictEqual(difficulties[3].conditions);
     expect(setup.police.count).toBe(difficulties[3].cops.count);
     expect(setup.pacing).toStrictEqual({ catchUp: 0, leadEase: 0 });
+  });
+});
+
+describe("a room's fairness", () => {
+  it.each([1, 7, 99])("puts every human on one spec (seed %i)", (seed) => {
+    const { humans, setup } = seatedRace(seed, 4);
+    const specs = createRace(setup)
+      .riders.filter((rider) => humans.includes(rider.id))
+      .map(({ bike, profile, weaponHits }) => ({
+        aggression: profile.aggression,
+        bike: bike.id,
+        skill: profile.skill,
+        weapon: profile.weapon,
+        weaponHits,
+      }));
+    expect(new Set(specs.map((spec) => JSON.stringify(spec))).size).toBe(1);
+    expect(specs[0]?.bike).toBe(STARTING_BIKE);
+  });
+
+  it.each([1, 7, 99])(
+    "puts the AI racers on the same bike, with their own skill (seed %i)",
+    (seed) => {
+      const { humans, setup } = seatedRace(seed, 2);
+      const ai = createRace(setup).riders.filter(
+        (rider) => !humans.includes(rider.id) && rider.profile.role === "racer"
+      );
+      expect(ai.every((rider) => rider.bike.id === STARTING_BIKE)).toBeTruthy();
+      expect(
+        new Set(ai.map((rider) => rider.profile.skill)).size
+      ).toBeGreaterThan(1);
+    }
+  );
+
+  it("leaves the police on the tier's bike", () => {
+    const riders = createRace(seatedRace(7, 2).setup).riders.filter(
+      (rider) => rider.profile.role === "police"
+    );
+    expect(riders.length).toBeGreaterThan(0);
+    expect(
+      riders.every((rider) => rider.bike.id !== STARTING_BIKE)
+    ).toBeTruthy();
+  });
+
+  it("starts two humans side by side, ahead of no one but the AI", () => {
+    const { humans, setup } = seatedRace(7, 2);
+    const state = createRace(setup);
+    const startOf = (rider: RiderId) =>
+      state.riders.find((each) => each.id === rider)?.s ?? 0;
+    const [first, second] = humans.map(startOf);
+    expect(first).toBe(second);
+    const ai = state.riders.filter(
+      (rider) => rider.controller === "pilot" && rider.profile.role === "racer"
+    );
+    expect(ai.every((rider) => rider.s <= (first ?? 0))).toBeTruthy();
+  });
+
+  it("keeps eight humans within the front rows", () => {
+    const { humans, setup } = seatedRace(7, 8);
+    const starts = createRace(setup)
+      .riders.filter((rider) => humans.includes(rider.id))
+      .map((rider) => rider.s);
+    expect(Math.max(...starts) - Math.min(...starts)).toBeLessThanOrEqual(21);
   });
 });
 

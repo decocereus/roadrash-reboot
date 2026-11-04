@@ -262,15 +262,13 @@ const setupSchema = writtenSchemaOf<SetupSource>({
   track: writtenRecordAt("track", trackSchema),
 });
 
-export const setupDigest = (state: RaceView, track: Track): Uint32Array => {
-  const source: SetupSource = {
-    format: SNAPSHOT_FORMAT,
-    race: state,
-    track,
-  };
-  const bytes = new DataView(new ArrayBuffer(bytesOf(setupSchema, source)));
+const digestOf = <Source>(
+  schema: WrittenSchema<Source>,
+  source: Source
+): Uint32Array => {
+  const bytes = new DataView(new ArrayBuffer(bytesOf(schema, source)));
   cursor.byte = 0;
-  putRecord(bytes, setupSchema, source);
+  putRecord(bytes, schema, source);
   if (cursor.byte !== bytes.byteLength) {
     refuse(
       `The setup digest wrote ${cursor.byte} of ${bytes.byteLength} bytes.`
@@ -280,3 +278,9 @@ export const setupDigest = (state: RaceView, track: Track): Uint32Array => {
   hashBytes(bytes, 0, bytes.byteLength, digest);
   return digest;
 };
+
+export const setupDigest = (state: RaceView, track: Track): Uint32Array =>
+  digestOf(setupSchema, { format: SNAPSHOT_FORMAT, race: state, track });
+
+export const trackDigest = (track: Track): Uint32Array =>
+  digestOf(trackSchema, track);

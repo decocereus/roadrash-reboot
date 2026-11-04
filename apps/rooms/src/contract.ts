@@ -14,7 +14,9 @@ export const RoomIdSchema = Schema.String.pipe(
 );
 
 const RoomStatusSchema = Schema.Struct({
+  build: Schema.String,
   catchUpWakes: Schema.Number,
+  lagTicks: Schema.Number,
   names: Schema.Array(Schema.String),
   phase: Schema.Literals(ROOM_PHASES),
   raceId: Schema.NullOr(Schema.String),

@@ -1,8 +1,10 @@
+import { STARTING_BIKE } from "@racer/career/tables";
 import {
   PING_PACKET_BYTES,
   PONG_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   readPing,
+  ROOM_PROTOCOL,
   writePong,
 } from "@racer/sim/room-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -72,17 +74,32 @@ class FakeSocket {
 }
 
 const loadingSeat = () => {
-  const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+  const seat = openRoomSeat(
+    "http://rooms.test",
+    "friday-ride",
+    "Near",
+    "test-build"
+  );
   const [socket] = FakeSocket.opened;
   socket?.open();
   socket?.hear(
     encodeRoomMessage({
-      digest: [0],
       kind: "started",
-      names: ["Near"],
-      raceId: "race-1",
-      seats: 1,
-      seed: 1,
+      manifest: {
+        build: "test-build",
+        contentHash: [0],
+        loadingDeadlineMs: 20_000,
+        protocol: ROOM_PROTOCOL,
+        raceId: "race-1",
+        reconnect: "none",
+        roster: [
+          { bikeId: STARTING_BIKE, kind: "human", name: "Near", rider: 0 },
+        ],
+        rule: { bikeId: STARTING_BIKE, roadId: "slag-row", tier: 2 },
+        seed: 1,
+        tickRate: 60,
+        trackHash: [0],
+      },
       you: 0,
     })
   );
@@ -112,13 +129,23 @@ describe("a seat loading the race", () => {
   });
 
   it("has no stats to send from a lobby", () => {
-    const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      "test-build"
+    );
     seat.leave();
     expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
   });
 
   it("pings the room from the lobby, so the room can tell it is still there", () => {
-    const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      "test-build"
+    );
     const [socket] = FakeSocket.opened;
     socket?.open();
     vi.advanceTimersByTime(PING_EVERY_MS);

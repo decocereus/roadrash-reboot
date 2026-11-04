@@ -1,5 +1,6 @@
 import { decodeRoomMessage, SEAT_CLOSED } from "@racer/rooms/messages";
 import type { RoomMessage } from "@racer/rooms/messages";
+import { seatUrl } from "@racer/rooms/seat-client";
 import { createRoomClock } from "@racer/sim/room-clock";
 import { createTickFrame } from "@racer/sim/room-frame";
 import {
@@ -10,11 +11,9 @@ import {
   readPong,
   READY_PACKET_BYTES,
   readTick,
-  START_PACKET_BYTES,
   writeInput,
   writePing,
   writeReady,
-  writeStart,
 } from "@racer/sim/room-wire";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { Control } from "@racer/sim/state";
@@ -44,22 +43,20 @@ export const createLoadTally = (): LoadTally => ({
 
 export interface ThinSeat {
   readonly leave: () => void;
-  readonly start: () => void;
 }
 
 export const openThinSeat = (
   roomsUrl: string,
   roomId: string,
   inputEvery: number,
-  tally: LoadTally
+  tally: LoadTally,
+  build: string
 ): ThinSeat => {
-  const socket = new WebSocket(
-    `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=Load`
-  );
+  const socket = new WebSocket(seatUrl(roomsUrl, roomId, "Load", build));
   socket.binaryType = "arraybuffer";
   const clock = createRoomClock();
   const read = createReadTick(createTickFrame());
-  const pong = { stamp: 0, tick: 0 };
+  const pong = { roomMs: 0, stamp: 0 };
   const input = new DataView(
     new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS))
   );
@@ -110,18 +107,20 @@ export const openThinSeat = (
     }
   };
 
-  const sendReady = (): void => {
+  const sendReady = (digest: readonly number[]): void => {
     const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
-    writeReady(packet);
+    writeReady(packet, new Uint32Array(digest));
     socket.send(packet.buffer);
   };
 
   const onBinary = (data: ArrayBuffer): void => {
     const view = new DataView(data);
     if (readPong(view, pong)) {
-      const rtt = Math.floor(performance.now()) - pong.stamp;
+      const arrival = performance.now();
+      const rtt = Math.floor(arrival) - pong.stamp;
       tally.worstRttMs = Math.max(tally.worstRttMs, rtt);
       clock.heardRtt(rtt);
+      clock.heardRoomTime(pong.roomMs, arrival);
       return;
     }
     if (!readTick(view, read)) {
@@ -141,15 +140,16 @@ export const openThinSeat = (
   const onMessage = (message: RoomMessage): void => {
     switch (message.kind) {
       case "lobby": {
+        clock.heardRoomTime(message.atMs, performance.now());
         break;
       }
       case "started": {
         rider = message.you;
-        sendReady();
+        sendReady(message.manifest.contentHash);
         break;
       }
       case "countdown": {
-        clock.start(message.startsInMs, performance.now());
+        clock.start(message.startAtMs);
         timers = [...timers, setInterval(sendControls, TICK_MS)];
         break;
       }
@@ -195,11 +195,6 @@ export const openThinSeat = (
       left = true;
       stop();
       socket.close(SEAT_CLOSED, "The load test is over.");
-    },
-    start: () => {
-      const packet = new DataView(new ArrayBuffer(START_PACKET_BYTES));
-      writeStart(packet);
-      socket.send(packet.buffer);
     },
   };
 };

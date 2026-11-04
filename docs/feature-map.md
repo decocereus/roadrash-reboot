@@ -1359,6 +1359,7 @@ Source files:
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
+- `apps/rooms/src/manifest.ts`
 - `apps/rooms/src/messages.ts`
 - `apps/rooms/src/not-web-socket.ts`
 - `apps/rooms/src/notes.ts`
