@@ -153,7 +153,12 @@ describe("a seat loading the race", () => {
   });
 
   it("pings the room from the lobby, so the room can tell it is still there", () => {
-    const seat = openRoomSeat("http://rooms.test", "friday-ride", "Near");
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      () => null
+    );
     const [socket] = FakeSocket.opened;
     socket?.open();
     vi.advanceTimersByTime(PING_EVERY_MS);
