@@ -2,6 +2,9 @@ import type { BillConsequence } from "@racer/career/settle";
 import { chapterOf } from "@racer/career/story";
 import { prizeFor } from "@racer/career/tables";
 import type { Tier, RoadId } from "@racer/career/tables";
+import { celebrityRiders } from "@racer/content/celebrities";
+import { ordinaryRiders } from "@racer/content/riders";
+import { byId } from "@racer/content/rows";
 import type { RivalId } from "@racer/sim/cast";
 import type { BikeClass } from "@racer/sim/state";
 
@@ -78,63 +81,27 @@ export const BROKE_CARD =
 
 export const ENVELOPE_INSIDE = "$1,500 inside.";
 
-export const shortNames = {
-  "agnes-mulcahy": "Agnes",
-  "benny-okafor": "Benny",
-  "captain-penaldo": "Captain Penaldo",
-  "coach-dale-hutto": "Coach",
-  "dee-santangelo": "Dee",
-  "elongated-muskrat": "Elongated Muskrat",
-  "felix-aurand": "Felix",
-  "gus-abernathy": "Gus",
-  "hollis-thorne": "Hollis",
-  "ines-marchetti": "Ines",
-  "juno-kade": "Juno",
-  "kylip-jetner": "Kylip Jetner",
-  "lyle-gorski": "Lyle",
-  "mags-dunleavy": "Mags",
-  "moose-kowalczyk": "Moose",
-  "orrin-blackwell": "Orrin",
-  "ranwear-bling": "Ranwear Bling",
-  "ruth-ann-bixby": "Ruth Ann",
-  "slam-altruman": "Slam Altruman",
-  "supreme-leader-mbosse": "Supreme Leader M'Bossé",
-  "tristan-lux": "Tristan",
-  "wanda-pruitt": "Wanda",
-} as const satisfies Record<RivalId, string>;
+const riders = [...ordinaryRiders, ...celebrityRiders];
+
+export const shortNames: Readonly<Record<RivalId, string>> = byId(
+  riders,
+  ({ shortName }) => shortName
+);
 
 interface Pronouns {
   readonly their: string;
   readonly them: string;
 }
 
-const hers: Pronouns = { their: "her", them: "her" };
-const his: Pronouns = { their: "his", them: "him" };
+const pronounForms = {
+  hers: { their: "her", them: "her" },
+  his: { their: "his", them: "him" },
+} as const satisfies Record<string, Pronouns>;
 
-export const pronouns = {
-  "agnes-mulcahy": hers,
-  "benny-okafor": his,
-  "captain-penaldo": his,
-  "coach-dale-hutto": his,
-  "dee-santangelo": hers,
-  "elongated-muskrat": his,
-  "felix-aurand": his,
-  "gus-abernathy": his,
-  "hollis-thorne": his,
-  "ines-marchetti": hers,
-  "juno-kade": hers,
-  "kylip-jetner": hers,
-  "lyle-gorski": his,
-  "mags-dunleavy": hers,
-  "moose-kowalczyk": his,
-  "orrin-blackwell": his,
-  "ranwear-bling": his,
-  "ruth-ann-bixby": hers,
-  "slam-altruman": his,
-  "supreme-leader-mbosse": his,
-  "tristan-lux": his,
-  "wanda-pruitt": hers,
-} as const satisfies Record<RivalId, Pronouns>;
+export const pronouns: Readonly<Record<RivalId, Pronouns>> = byId(
+  riders,
+  (row) => pronounForms[row.pronouns]
+);
 
 export const saveErrors = {
   inconsistent: "The save contradicts itself",

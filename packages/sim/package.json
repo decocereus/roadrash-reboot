@@ -12,6 +12,7 @@
     "typecheck": "tsrs --noEmit"
   },
   "dependencies": {
+    "@racer/content": "workspace:*",
     "@racer/track": "workspace:*"
   },
   "devDependencies": {

@@ -10,6 +10,8 @@ import {
 import type { ShopRow } from "@racer/career/shop";
 import type { CareerState } from "@racer/career/state";
 import { tradeInOf } from "@racer/career/tables";
+import { bikeDefinitions } from "@racer/content/bikes";
+import { byId } from "@racer/content/rows";
 import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
@@ -51,17 +53,10 @@ const MECHANIC_SPEECH = { x: 1000, y: 120 } as const;
 const PERCENT = 100;
 const MECHANIC_NAME = "The mechanic";
 
-const showroomPaint = {
-  "brack-anvil-1100": 14,
-  "brack-stoker-800": 9,
-  "gutter-pup-250": 5,
-  "halden-kite-500": 8,
-  "halden-meridian-900": 6,
-  "halden-wren-400": 0,
-  "ostra-nera-1000": 1,
-  "ostra-sesta-600": 2,
-  "ostra-sette-750": 7,
-} as const satisfies Record<BikeId, number>;
+const showroomPaint: Readonly<Record<BikeId, number>> = byId(
+  bikeDefinitions,
+  ({ looks }) => looks.showroomPaint
+);
 
 type Asking = "nothing" | "buy" | "sell";
 

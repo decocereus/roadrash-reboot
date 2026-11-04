@@ -1,3 +1,5 @@
+import { bikeDefinitions } from "@racer/content/bikes";
+import { byId } from "@racer/content/rows";
 import { bikeIds, bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { officerFor } from "@racer/sim/cast";
@@ -100,17 +102,10 @@ const fines = {
   3: 3000,
 } as const satisfies Record<Tier, number>;
 
-const stockTier = {
-  "brack-anvil-1100": 3,
-  "brack-stoker-800": 2,
-  "gutter-pup-250": 1,
-  "halden-kite-500": 1,
-  "halden-meridian-900": 2,
-  "halden-wren-400": 1,
-  "ostra-nera-1000": 3,
-  "ostra-sesta-600": 1,
-  "ostra-sette-750": 2,
-} as const satisfies Record<BikeId, Tier>;
+const stockTier: Readonly<Record<BikeId, Tier>> = byId(
+  bikeDefinitions,
+  ({ shop }) => shop.arrivesAt
+);
 
 export const pacingFor = (tier: Tier): PacingRules => difficulties[tier].pacing;
 

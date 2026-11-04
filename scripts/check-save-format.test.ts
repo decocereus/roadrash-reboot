@@ -434,6 +434,7 @@ describe("check:save-format", () => {
     ["the unchanged save", base],
     ["a new bike with its registry membership appended", addBike],
     ["a new road with its optional qualified keys", addRoad],
+    ["a new rival with its optional memory and season rows", addRival],
     ["every declaration and catalogue in reverse order", reordered],
     ["documentation on every schema node", documented],
     ["a field behind a local reference", local("Story")],
@@ -488,7 +489,6 @@ describe("check:save-format", () => {
       edit(base, bound("maxLength", 300, 301)),
       structure,
     ],
-    ["a required rival row", addRival, structure],
     ["a required tier row", addLevel, structure],
     [
       "a catalogue-sized bound raised without a new bike",

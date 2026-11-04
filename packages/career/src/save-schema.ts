@@ -23,7 +23,7 @@ import {
   Seed,
   Weapon,
 } from "./save-values.ts";
-import { BOARD_NOTES, byRacer, byRival, SAVE_VERSION } from "./state.ts";
+import { BOARD_NOTES, SAVE_VERSION } from "./state.ts";
 import { byTier } from "./tables.ts";
 
 type SaveErrorKind = "notJson" | "wrongVersion" | "invalid" | "inconsistent";
@@ -124,12 +124,12 @@ export const EncodedSaveSchema = Schema.Struct({
   gameOver: Schema.Boolean,
   garage: Schema.Array(Bike).check(Schema.isMaxLength(bikeIds.length)),
   lastResult: Schema.NullOr(LastResultSchema),
-  memory: Schema.Struct(byRival(() => RivalMemory)),
+  memory: Schema.Record(Rival, Schema.optionalKey(RivalMemory)),
   qualified: Schema.Struct(
     byTier(() => Schema.Record(Road, Schema.optionalKey(QualifiedPlace)))
   ),
   record: CareerRecord,
-  season: Schema.Struct(byRacer(() => SeasonEntry)),
+  season: Schema.Record(Racer, Schema.optionalKey(SeasonEntry)),
   seed: Seed,
   story: Story,
   tier: Tier,
@@ -141,7 +141,7 @@ export const EncodedSaveSchema = Schema.Struct({
 const sourceList = (longest: number) =>
   Schema.Array(Schema.Unknown).check(Schema.isMaxLength(longest));
 
-const sourceKeys = (keys: typeof Road | typeof Racer) =>
+const sourceKeys = (keys: typeof Road | typeof Racer | typeof Rival) =>
   Schema.Record(Schema.String, Schema.Unknown).check(
     Schema.isPropertyNames(keys)
   );
@@ -162,8 +162,10 @@ export const SaveSourceSchema = Schema.Struct({
       }),
     })
   ),
+  memory: sourceKeys(Rival),
   qualified: Schema.Struct(byTier(() => sourceKeys(Road))),
-  season: Schema.Struct(
-    byRacer(() => Schema.Struct({ lastAhead: sourceKeys(Racer) }))
-  ),
+  season: Schema.Record(
+    Schema.String,
+    Schema.Struct({ lastAhead: sourceKeys(Racer) })
+  ).check(Schema.isPropertyNames(Racer)),
 });

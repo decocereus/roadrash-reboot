@@ -1,3 +1,5 @@
+import { byId } from "@racer/content/rows";
+import { bikeVisuals } from "@racer/content/visuals";
 import type { BikeId } from "@racer/sim/bikes";
 import { PLAYER_COLOURS, riderPalette } from "@racer/sim/palette";
 import * as THREE from "three";
@@ -142,12 +144,10 @@ const openRoom = (
   scene.add(light, light.target, stands.group);
   pipeline.prepare(scene);
 
-  const footprints = {
-    classic: footprintOf(bikes.classic),
-    ghost: footprintOf(bikes.ghost),
-    oni: footprintOf(bikes.oni),
-    seraph: footprintOf(bikes.seraph),
-  } satisfies Record<BikeModelId, Footprint>;
+  const footprints: Readonly<Record<BikeModelId, Footprint>> = byId(
+    bikeVisuals,
+    ({ id }) => footprintOf(bikes[id])
+  );
   let model: BikeModelId = "classic";
   let footprint = footprints[model];
   const camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.1, 40);

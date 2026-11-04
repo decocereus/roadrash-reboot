@@ -67,6 +67,8 @@ const missing = (career: CareerState, path: string): string =>
     withoutField(parseJson(serialiseCareer(career)), path.split("."))
   );
 
+const blank: Json = { lastAhead: {}, points: 0, wins: 0 };
+
 const verdictOn = (save: string): string => {
   const result = parseCareer(save);
   return result.ok ? "loaded" : `${result.error.kind}:${result.error.field}`;
@@ -99,13 +101,13 @@ const careers = [
   play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
 ];
 
-const versionFiveBytes = [
-  ["7404:9afb83d0ffafa23", "7404:9afb83d0ffafa23"],
-  ["20254:1e16fc43dfa22c9a", "20254:1835588f4e0570e0"],
-  ["20261:1eb24a57c5f1a0d3", "20261:3a1f3bfffe9dd1b"],
-  ["11875:1df84392560e235b", "11875:858967fd6fbdc"],
-  ["16805:6dd2ddefb6cd7d5", "16805:eccf688a4e3c1e8"],
-  ["16671:1c0e5dfe4eefa654", "16671:f958efc78bc502d"],
+const versionSixBytes = [
+  ["7404:1334fef16cb692d5", "7404:1334fef16cb692d5"],
+  ["20254:195c29c4b1c4f150", "20254:b426ba03c01f7a6"],
+  ["20261:1c98be9c02bad5e6", "20261:a6e5629d5f55ebe"],
+  ["11875:15c1954f2428fb9d", "11875:139769962ec6fbbc"],
+  ["16805:56c64a4639e2d3e", "16805:1ba42fb01cd12c12"],
+  ["16671:1a9d94c3b720fbbd", "16671:1c6cc823f0a9ba57"],
 ];
 
 describe("the save", () => {
@@ -115,13 +117,13 @@ describe("the save", () => {
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a career writes, and reads back into, the same bytes as the version 5 reader", () => {
+  it("a career writes, and reads back into, the same bytes as the version 6 reader", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
         return [fingerprint(text), fingerprint(rereadOf(text))];
       })
-    ).toStrictEqual(versionFiveBytes);
+    ).toStrictEqual(versionSixBytes);
   });
 
   it("text that is not a save, or a save from another version, is rejected with the reason", () => {
@@ -143,7 +145,7 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(missing(good, "version")),
-      verdictOn(corrupted(good, "version", 6)),
+      verdictOn(corrupted(good, "version", 7)),
       verdictOn('{"version":1e400}'),
       verdictOn(serialiseCareer(good).replace(/"cash":-?\d+/u, '"cash":1e400')),
     ]).toStrictEqual([
@@ -365,9 +367,33 @@ describe("the save", () => {
     expect([
       verdictOn(corrupted(good, "qualified.1.moon-road", 1)),
       verdictOn(corrupted(good, "season.player.lastAhead.nobody", 1)),
+      verdictOn(corrupted(good, "memory.nobody", 1)),
+      verdictOn(corrupted(good, "season.nobody", blank)),
     ]).toStrictEqual([
       "invalid:qualified.1.moon-road",
       "invalid:season.player.lastAhead.nobody",
+      "invalid:memory.nobody",
+      "invalid:season.nobody",
+    ]);
+  });
+
+  it("a save written before a rival joined the game loads with blank rows for that rival", () => {
+    const good = seasonAt(decent, 2).end;
+    const before = parseJson(missing(good, "memory.juno-kade"));
+    const result = parseCareer(
+      JSON.stringify(withoutField(before, ["season", "juno-kade"]))
+    );
+    const fresh = newCareer(1);
+    expect(
+      result.ok && [
+        result.career.memory["juno-kade"],
+        result.career.season["juno-kade"],
+        result.career.season.player,
+      ]
+    ).toStrictEqual([
+      fresh.memory["juno-kade"],
+      fresh.season["juno-kade"],
+      good.season.player,
     ]);
   });
 

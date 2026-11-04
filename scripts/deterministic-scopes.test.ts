@@ -10,7 +10,12 @@ import config, {
   hotBodies,
 } from "../oxlint.config.ts";
 
-const corePackages = ["packages/career", "packages/sim", "packages/track"];
+const corePackages = [
+  "packages/career",
+  "packages/content",
+  "packages/sim",
+  "packages/track",
+];
 
 const testFixtures = new Set([
   "packages/career/src/career-fixtures.ts",

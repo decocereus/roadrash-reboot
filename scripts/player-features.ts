@@ -221,6 +221,26 @@ export const playerFeatures: readonly FeatureEntry[] = [
     verify: [],
   },
   {
+    docs: ["docs/architecture.md#bike-and-rider-tables"],
+    id: "content-tables",
+    kind: "feature",
+    owns: [
+      "packages/content/**",
+      "packages/sim/src/definitions.test.ts",
+      "packages/sim/src/setup-ranges.ts",
+    ],
+    perf: [],
+    start: [
+      "packages/content/src/bikes.ts",
+      "packages/content/src/riders.ts",
+      "packages/content/src/visuals.ts",
+    ],
+    summary:
+      "One table row per bike and per rider: riding numbers, shop details, lines, art and model. The sim, the career and the browser all read their part of a row, and a race refuses numbers outside their range.",
+    title: "Bike and rider tables",
+    verify: ["career.md"],
+  },
+  {
     docs: [
       "docs/architecture.md#race-setup-and-cast",
       "docs/design/game-design.md#9-rival-cast",
