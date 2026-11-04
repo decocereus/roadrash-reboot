@@ -1,6 +1,6 @@
 # Bar look test
 
-The bar runs live in the game's renderer with the real riders and bikes: a neon room with a back bar, a garage corner and a hero bike on a turntable, eight riders in big colour blocks with their names over their heads, and a door counting down to the next race. It answers whether the concept art survives in the real game. It is reached only by a development URL, and no menu leads to it.
+The bar runs live in the game's renderer with the real riders and bikes: a neon room with a back bar, a garage bay under the mezzanine with its own bike and rider, and a hero bike on a turntable, eight riders in big colour blocks with their names over their heads, and a door counting down to the next race. It answers whether the concept art survives in the real game. It is reached only by a development URL, and no menu leads to it.
 
 ## Sub-features
 
@@ -10,7 +10,6 @@ The bar runs live in the game's renderer with the real riders and bikes: a neon 
 - `door`: the countdown, the door rising, the hero bike riding out and the riders gathering.
 - `rev`: the hero bike's engine and the neon pulse.
 - `garage`: the garage camera shot.
-- `blocks`: the same colour blocks on riders and bikes in a real race.
 
 ## How to get to it (user POV)
 
@@ -27,7 +26,6 @@ Preconditions: a slot from `rv up` on a development build.
 - Open the door: `rv js --run <run> '__rushlineBar.openDoor()'`, then `rv screencast --run <run> door --seconds 11 --every 12`. The door lifts, the hero bike rides out down the street, and Parker and Kai walk to the door.
 - Watch the walker: `rv js --run <run> '__rushlineBar.setFocus(5)'`, then `rv screencast --run <run> walk --seconds 4 --every 4`. Kai's legs alternate and he turns before he walks.
 - See the garage: `rv js --run <run> '__rushlineBar.setShot("garage")'`, then `rv shot --run <run> bar-garage`.
-- Race with the blocks: `rv open --run <run> "/?ride=breakwater-run&with=field&blocks&autopilot" --until race`, then `rv shot --run <run> blocks`.
 
 ## Gotchas
 
