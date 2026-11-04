@@ -17,6 +17,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Fighting and weapons](#fighting-and-weapons): `combat`
 - [Police and busts](#police-and-busts): `police`
 - [AI riders (the pilot)](#ai-riders-the-pilot): `pilot`
+- [Bike and rider tables](#bike-and-rider-tables): `content-tables`
 - [Rivals, the field and their lines](#rivals-the-field-and-their-lines): `rivals`
 - [Career money and settlement](#career-money-and-settlement): `career-money`
 - [Career tiers, season and story](#career-tiers-season-and-story): `career-progression`
@@ -289,6 +290,30 @@ Test files:
 - `packages/sim/src/pilot-cornering.test.ts`
 - `packages/sim/src/pilot-flight.test.ts`
 - `packages/sim/src/pilot-traffic.test.ts`
+
+### Bike and rider tables
+
+One table row per bike and per rider: riding numbers, shop details, lines, art and model. The sim, the career and the browser all read their part of a row, and a race refuses numbers outside their range.
+
+- Id: `content-tables`
+- Start: `packages/content/src/bikes.ts`, `packages/content/src/riders.ts`, `packages/content/src/visuals.ts`
+- Docs: [docs/architecture.md#bike-and-rider-tables](architecture.md#bike-and-rider-tables)
+- Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
+- Perf: none yet
+- Owns: `packages/content/**`, `packages/sim/src/definitions.test.ts`, `packages/sim/src/setup-ranges.ts`
+
+Source files:
+
+- `packages/content/src/bikes.ts`
+- `packages/content/src/celebrities.ts`
+- `packages/content/src/riders.ts`
+- `packages/content/src/rows.ts`
+- `packages/content/src/visuals.ts`
+- `packages/sim/src/setup-ranges.ts`
+
+Test files:
+
+- `packages/sim/src/definitions.test.ts`
 
 ### Rivals, the field and their lines
 

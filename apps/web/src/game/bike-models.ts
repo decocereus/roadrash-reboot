@@ -1,20 +1,17 @@
+import { bikeDefinitions } from "@racer/content/bikes";
+import { byId, idsOf } from "@racer/content/rows";
+import { bikeVisuals } from "@racer/content/visuals";
+import type { BikeVisual } from "@racer/content/visuals";
 import type { BikeId } from "@racer/sim/bikes";
 
-export const bikeModelIds = ["classic", "seraph", "ghost", "oni"] as const;
+export const bikeModelIds = idsOf<BikeVisual>(bikeVisuals);
 
 export type BikeModelId = (typeof bikeModelIds)[number];
 
-export const bikeModelOf = {
-  "brack-anvil-1100": "oni",
-  "brack-stoker-800": "oni",
-  "gutter-pup-250": "classic",
-  "halden-kite-500": "ghost",
-  "halden-meridian-900": "ghost",
-  "halden-wren-400": "ghost",
-  "ostra-nera-1000": "seraph",
-  "ostra-sesta-600": "seraph",
-  "ostra-sette-750": "seraph",
-} as const satisfies Record<BikeId, BikeModelId>;
+export const bikeModelOf: Readonly<Record<BikeId, BikeModelId>> = byId(
+  bikeDefinitions,
+  ({ looks }) => looks.model
+);
 
 const modelById: ReadonlyMap<string, BikeModelId> = new Map(
   Object.entries(bikeModelOf)

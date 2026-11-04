@@ -29,6 +29,8 @@ import { meetLights, PULL_OVER, stepPolice } from "./police.ts";
 import type { RaceView, RiderView } from "./race-view.ts";
 import { throwRider } from "./rider-crash.ts";
 import { stepRider } from "./rider.ts";
+import { entrantsOutOfRange, rulesOutOfRange } from "./setup-ranges.ts";
+import type { OutOfRange } from "./setup-ranges.ts";
 import { FULL_CONDITION, MAX_STAMINA, riderOf, rosterOf } from "./state.ts";
 import type {
   BikeSpec,
@@ -255,11 +257,7 @@ const copPost = (track: Track, index: number, count: number): number => {
 export type SetupError =
   | { readonly kind: "tooManyRivals"; readonly count: number }
   | { readonly kind: "duplicateRival"; readonly name: string }
-  | {
-      readonly kind: "outOfRange";
-      readonly rule: string;
-      readonly value: number;
-    }
+  | OutOfRange
   | { readonly kind: "missingBike"; readonly rider: string }
   | { readonly kind: "strayGrudge"; readonly rider: string };
 
@@ -294,43 +292,19 @@ const strayGrudges = (setup: RaceSetup): SetupError[] => {
     .map((rival) => ({ kind: "strayGrudge", rider: rival.name }));
 };
 
-const ruleRanges = [
-  ["hazardShare", 0, 1, (setup) => setup.conditions.hazardShare],
-  ["hitDamage", 0, 10, (setup) => setup.conditions.hitDamage],
-  ["slowConvoys", 0, 4, (setup) => setup.conditions.slowConvoys],
-  ["trafficDensity", 0, 3, (setup) => setup.conditions.trafficDensity],
-  ["catchUp", 0, 1, (setup) => setup.pacing.catchUp],
-  ["leadEase", 0, 1, (setup) => setup.pacing.leadEase],
-  ["police.beat", 0, 20_000, (setup) => setup.police.beat],
-  ["police.count", 0, 8, (setup) => setup.police.count],
-  ["police.fine", 0, 100_000, (setup) => setup.police.fine],
-  ["police.loseRange", 0, 1000, (setup) => setup.police.loseRange],
-  ["police.sightRange", 0, 1000, (setup) => setup.police.sightRange],
-  ["police.topSpeed", 0, 150, (setup) => setup.police.topSpeed],
-] as const satisfies readonly (readonly [
-  string,
-  number,
-  number,
-  (setup: RaceSetup) => number,
-])[];
-
-const rulesOutOfRange = (setup: RaceSetup): SetupError[] =>
-  ruleRanges.flatMap(([rule, least, most, read]) => {
-    const value = read(setup);
-    return value >= least && value <= most
-      ? []
-      : [{ kind: "outOfRange", rule, value } as const];
-  });
-
-export const validateSetup = (setup: RaceSetup): SetupError[] => [
-  ...(setup.rivals.length > MOST_RIVALS
-    ? [{ count: setup.rivals.length, kind: "tooManyRivals" } as const]
-    : []),
-  ...duplicateRivals(setup),
-  ...missingBikes(setup),
-  ...strayGrudges(setup),
-  ...rulesOutOfRange(setup),
-];
+export const validateSetup = (setup: RaceSetup): SetupError[] => {
+  const missing = missingBikes(setup);
+  return [
+    ...(setup.rivals.length > MOST_RIVALS
+      ? [{ count: setup.rivals.length, kind: "tooManyRivals" } as const]
+      : []),
+    ...duplicateRivals(setup),
+    ...missing,
+    ...strayGrudges(setup),
+    ...rulesOutOfRange(setup),
+    ...(missing.length === 0 ? entrantsOutOfRange(setup) : []),
+  ];
+};
 
 const describeSetupError = (error: SetupError): string => {
   switch (error.kind) {
