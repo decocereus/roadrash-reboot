@@ -1,5 +1,5 @@
 {
-  "harnessDigest": "dba006cf3eaad48841d0006819d55792415721de1957a5877b1455ce0681dc7a",
+  "harnessDigest": "f192dfc70ca142011b79746568a47a430578afdcc86d5d12df9db72dca62fffe",
   "observations": [
     {
       "environment": "build",
@@ -2104,11 +2104,635 @@
       "side": "B",
       "source": "baseline-2026-11-04T10-11-19-956Z-caea29f-986cc78",
       "value": 0.08163110508416173
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 16.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 16.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 0.0016611295681063123
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.count",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "main.longTask.count",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.calls.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 524
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.calls.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 508
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 45
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 45
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 80
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 73
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.triangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 2878377
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "render.triangles.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "value": 2319053
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.22581024841304553
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.6256025934915481
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 93891.6605657238
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 227333.07154742096
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 122452.76539101498
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 344808.66555740434
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 189378.51580698835
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 478805.68386023294
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 268409.3710482529
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 758187.0349417637
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.20431212701755314
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.5536023394216005
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.1570085951419748
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.4767624890590195
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 887.4309484193012
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 1015.8362728785357
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 865.2851913477538
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 1036.9564059900167
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 1.2359219367229126
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 3.692957355527637
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 1.040855620766068
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 3.0025588320459504
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.20451775695514493
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.5395388872928464
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.15807541202263595
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.4750798931937964
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 59363.14143094842
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 288891.2212978369
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 44986.15640599002
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 228433.81031613977
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.291431995604172
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.7485191665855528
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.14759487483856
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.44514444008907084
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.32982350049162473
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.8418104235334734
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.19508736618974626
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.4928901492681202
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 6007.370306292896
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 2183.834270424728
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 9699.589118748108
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 3264.4804420975124
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 22224
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 22224
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 17006
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.bytes.max",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 17006
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.0687080802823213
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.13457005120781898
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.050215203819294466
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.hash.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.09786049543009277
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.046135251547296
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.09132895989656147
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.035099402669784834
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.restore.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.06534730459300667
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.05342621690067618
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.1137253098348015
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "value": 0.040905919911442316
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "snapshot.write.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "value": 0.08150342414437427
     }
   ],
   "revisions": {
-    "instrumented": "caea29f3632afc7ec2f0c7b794ca0bd36fef3a96",
-    "parent": "4f3ac20346e3c81de65f8097a022935ed1fb5b7b"
+    "instrumented": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+    "parent": "87ed6085e740c842609e5bd034c57c6193b78d39"
   },
   "runs": [
     {
@@ -2781,37 +3405,123 @@
         "A": "caea29f3632afc7ec2f0c7b794ca0bd36fef3a96",
         "B": "caea29f3632afc7ec2f0c7b794ca0bd36fef3a96"
       }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 8.545999999999992 ms",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "f192dfc70ca142011b79746568a47a430578afdcc86d5d12df9db72dca62fffe",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "sideASourceDigest": "0dd24ba34d89166aaf6c54aa8756c77f8fc70b15e5ed753d22058f487cb5eb67",
+        "sideBSourceDigest": "0dd24ba34d89166aaf6c54aa8756c77f8fc70b15e5ed753d22058f487cb5eb67",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":3687,\"materialize\":12361,\"node\":151112,\"total\":167347}",
+        "machine": "Mac16,8",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "quiet": "on AC, held awake by caffeinate. Calibration read 8.55 ms against 8.37 at the previous baseline. Load fell from 4 to 3 during the run, with other threads holding their tests and builds. Two earlier attempts at load 7 to 27 failed CalibrationUnstable and were discarded.",
+        "command": "caffeinate -ims node tools/perf/gate.ts baseline --baseline-ref 9f67ba98bb85c0d4ac3912d2c61f151235b5a75b"
+      },
+      "id": "baseline-2026-11-04T14-16-34-196Z-9f67ba9-9f67ba9",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 17.615628000000015 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "f192dfc70ca142011b79746568a47a430578afdcc86d5d12df9db72dca62fffe",
+        "memoryBytes": "16760344576",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "sideASourceDigest": "0dd24ba34d89166aaf6c54aa8756c77f8fc70b15e5ed753d22058f487cb5eb67",
+        "sideBSourceDigest": "0dd24ba34d89166aaf6c54aa8756c77f8fc70b15e5ed753d22058f487cb5eb67",
+        "v8": "13.6.233.17-node.58",
+        "wallMs": "{\"build\":5499,\"materialize\":8036,\"node\":392858,\"total\":406753}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "pnpm": "11.21.0",
+        "ci": "GitHub Actions run 41842706293 (perf), push to the temporary branch perf-baseline-tiers",
+        "checkout": "8978e4f, 9f67ba9 plus a workflow commit that runs only this job, deleted after the run",
+        "command": "node tools/perf/gate.ts baseline --baseline-ref 9f67ba98bb85c0d4ac3912d2c61f151235b5a75b, one attempt in each of five parallel perf jobs",
+        "artifact": "perf-results-4",
+        "attempts": "sample 4 of the five. Four of the five landed on an AMD EPYC 7763, the model the budget rows are set on, and the fifth on an Intel Xeon. Its calibration read 17.62 ms, the same as the previous baseline."
+      },
+      "id": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "lanes": ["node", "build"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "8978e4fd00f099d1541fb1d8b3100ebd64125422"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, NVIDIA driver 615.78.08, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "power": "AC power, battery full",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started, lid closed; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload, rv slots 0 and 2, --ozone-platform=x11 --use-gl=angle --use-angle=gl --enable-gpu --ignore-gpu-blocklist --force-device-scale-factor=2 --disable-features=BackForwardCache; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1512x773 CSS at device pixel ratio 2, ?stress&rung=0 and ?stress=reference&rung=0, governor off, rung 0, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1390775",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"reference-v1 pair4 A\", \"reference-v1 pair4 B\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "quiet": "the desktop and the bench lock were free at the start, after the UHD 630 lane finished; the only recorded holders afterwards were these two runs. A first attempt was refused because that lane held the desktop.",
+        "sideA": "A's clone was in /var/tmp because /tmp here is a small tmpfs, and it ran under B's rv because the baseline revision's own rv knows only macOS"
+      },
+      "id": "gpu-2026-11-04T14-14-07-958Z-9f67ba9-9f67ba9",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b"
+      }
     }
   ],
   "scenarios": [
     {
-      "hash": "d9e2daa8c8b6f4e140b2e7a42e54044c4b08725a515f967d2edbe1d491471ba8",
+      "hash": "9ff917b9e6d61f999e051496800ce485efee846ac8734289e325ec9bd603b685",
       "id": "reference-v1",
       "police": 1,
-      "race": "slag-row, rung 1, seed 31, halden-wren-400",
+      "race": "slag-row, tier 1, seed 31, halden-wren-400",
       "racers": 15,
       "window": {
-        "from": 2243,
-        "to": 2843
+        "from": 3849,
+        "to": 4449
       },
-      "workloadDigest": "8030f414222a75c3b6ec9966f818ddfdafa473bb7c15f523ba46ae4a19b0cbb6"
+      "workloadDigest": "4a2de680dc45b6e7386cbf63f77b46f2248e2c267796807f98a4cf4ea5b226cb"
     },
     {
-      "hash": "45a07d201699b0566452169fdb1f507ee0819f113a15019d291a6b5e4b47e2de",
+      "hash": "ea0e1a1e4a22663ebaf5857f01c9f368fef9f1d06c106cb2956879f2695cede3",
       "id": "pack-riding-v1",
       "police": 8,
-      "race": "slag-row, rung 5, seed 8, ostra-sesta-600",
+      "race": "slag-row, tier 3, seed 8, ostra-sesta-600",
       "racers": 15,
       "window": {
-        "from": 1800,
-        "to": 2400
+        "from": 2028,
+        "to": 2628
       },
-      "workloadDigest": "9e127e25a508a731da12dd1d7fa8a13f36b81e1b17d24433da99368db6be5309"
+      "workloadDigest": "e8bcdde4bd0aa0c6ee54a6923fb85efff1537a1cda05f9a6b3f5a8748ab7690e"
     }
   ],
   "trackCompile": {
-    "method": "compileTrack(roads[id]) for the 3 roads, cold, in a fresh Node process on this Mac at caea29f; median of five processes (9.95, 9.99, 10.01, 10.05, 10.10 ms). Recorded, not budgeted.",
-    "ms": 10.01,
+    "method": "compileTrack(roads[id]) for the 3 roads, cold, in a fresh Node process on this Mac at 9f67ba9; median of five processes (10.67, 10.83, 11.08, 11.16, 11.61 ms). Recorded, not budgeted.",
+    "ms": 11.08,
     "tracks": 3
   },
   "version": 1
