@@ -64,11 +64,15 @@
       {
         "file": "tools/perf/baselines/districts.node-darwin-arm64.json.gz",
         "sha256": "70a367582679d4f7331f7c7b7e5b1b464806be11844bdb0983add325b511e479"
+      },
+      {
+        "file": "tools/perf/baselines/districts.node-linux-x64.json.gz",
+        "sha256": "cc0eeefc1626e4051f60797669d510135f837cbfee8d4f3ef03675750de2e821"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "fc99962c6bf2621e6c7b4a94cc33413e54c0b62e6bd9e3a0eea5b5241d11c3e3"
+    "summarySha256": "b550afe5414e5bef42dced17c0dfd6c38391e25bad001c9196e2082717ca5252"
   },
   "limits": [
     {
@@ -997,14 +1001,14 @@
     },
     {
       "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
-      "value": 0.9352758772698644,
-      "baseline": 0.6256025934915481,
+      "value": 3.1333284408373387,
+      "baseline": 2.0958718667808287,
       "direction": "max",
       "environment": "node-linux-x64",
       "metric": "roadLife.tick.p95",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
+      "source": "gate-2026-11-04T19-24-14-797Z-9f67ba9-c56ce15",
       "unit": "ms"
     },
     {

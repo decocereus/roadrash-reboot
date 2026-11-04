@@ -2768,6 +2768,14 @@
       "side": "B",
       "source": "gate-2026-11-04T18-05-09-616Z-9f67ba9-baa60e4",
       "value": 0.8176907948718347
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gate-2026-11-04T19-24-14-797Z-9f67ba9-c56ce15",
+      "value": 2.0958718667808287
     }
   ],
   "revisions": {
@@ -3605,6 +3613,37 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "baa60e470555839d055f2873a668bdaf8d98aa0a"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 17.61641599999996 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "694fe1f7dfb1623258433fe29aef3d8eb610fcfc13695fbeddd754c37d027d8f",
+        "memoryBytes": "16760344576",
+        "node": "v24.22.1",
+        "platform": "linux",
+        "sideASourceDigest": "f4098f05adf0dd81fa2c845d3e9a501683f001590828f9d07f77c76728fd5ad0",
+        "sideBSourceDigest": "1c2d1ca5d170d95c47e9866e0855ac630d9d48d9d4826f7bbd66eb16d8528814",
+        "v8": "13.6.233.17-node.58",
+        "wallMs": "{\"build\":5911,\"materialize\":9576,\"node\":400191,\"total\":416055}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 41896504916 (perf), pull_request event on PR #121",
+        "checkout": "c56ce15, the pull request merge of b594f2e into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results",
+        "attempts": "one run. It landed on an AMD EPYC 7763, the model the budget rows are set on, with its calibration at 17.62 ms, and this was the only row that failed. Breakwater Run took its seven districts, so this run takes the road-life row alone."
+      },
+      "id": "gate-2026-11-04T19-24-14-797Z-9f67ba9-c56ce15",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "c56ce1534adc5030bbc0bb5bd15abab52e6ec59d"
       }
     }
   ],
