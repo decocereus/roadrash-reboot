@@ -35,7 +35,7 @@ interface LobbyView {
 
 export interface Lobby {
   readonly away: (id: string, now: number) => void;
-  readonly choose: (id: string, choice: RoomChoice) => boolean;
+  readonly choose: (id: string, choice: Partial<RoomChoice>) => boolean;
   readonly due: (now: number) => boolean;
   readonly join: (key: string, name: string, now: number) => string | null;
   readonly raceEnded: (now: number) => void;

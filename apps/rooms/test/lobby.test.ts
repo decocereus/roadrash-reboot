@@ -112,6 +112,19 @@ describe("a lobby's rules", () => {
     expect(decodeHeader(header).rule).toMatchObject(somewhereElse);
   });
 
+  it("keep a quick pick the room hadn't answered yet", () => {
+    const { first, host, second } = twoSeated();
+    const pick = (choice: { roadId: "slag-row" } | { tier: 3 }): void => {
+      host.message(first, encodeLobbyCommand({ choice, kind: "choose" }));
+    };
+    pick({ roadId: "slag-row" });
+    pick({ tier: 3 });
+    expect(lastLobby(second).rule).toMatchObject({
+      roadId: "slag-row",
+      tier: 3,
+    });
+  });
+
   it("clear everyone's ready when they change", () => {
     const { first, host, second } = twoSeated();
     readyAll(host, [second]);

@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema";
 import { LOBBY_PHASES } from "./lobby.ts";
 import {
   RaceManifestSchema,
-  RoomChoiceSchema,
+  RoomChoiceChangeSchema,
   RoomRuleSchema,
 } from "./manifest.ts";
 
@@ -89,7 +89,10 @@ const LobbyCommandSchema = Schema.Union([
     kind: Schema.Literal("ready"),
     ready: Schema.Boolean,
   }),
-  Schema.Struct({ choice: RoomChoiceSchema, kind: Schema.Literal("choose") }),
+  Schema.Struct({
+    choice: RoomChoiceChangeSchema,
+    kind: Schema.Literal("choose"),
+  }),
 ]);
 
 export type LobbyCommand = typeof LobbyCommandSchema.Type;

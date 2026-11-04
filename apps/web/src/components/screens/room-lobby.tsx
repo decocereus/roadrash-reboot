@@ -249,13 +249,13 @@ const RuleChoices = ({
   onChoose,
 }: {
   readonly rule: RoomRule;
-  readonly onChoose: (choice: RoomChoice) => void;
+  readonly onChoose: (choice: Partial<RoomChoice>) => void;
 }) => (
   <div className="flex flex-col gap-3">
     <ChoiceRow
       label="Road"
       onPick={(roadId) => {
-        onChoose({ ...rule, roadId });
+        onChoose({ roadId });
       }}
       options={roadOptions}
       picked={rule.roadId}
@@ -263,7 +263,7 @@ const RuleChoices = ({
     <ChoiceRow
       label="Tier"
       onPick={(tier) => {
-        onChoose({ ...rule, tier });
+        onChoose({ tier });
       }}
       options={tierOptions}
       picked={rule.tier}
@@ -271,7 +271,7 @@ const RuleChoices = ({
     <ChoiceRow
       label="Traffic"
       onPick={(traffic) => {
-        onChoose({ ...rule, traffic });
+        onChoose({ traffic });
       }}
       options={trafficOptions}
       picked={rule.traffic}
@@ -279,7 +279,7 @@ const RuleChoices = ({
     <ChoiceRow
       label="Police"
       onPick={(police) => {
-        onChoose({ ...rule, police });
+        onChoose({ police });
       }}
       options={policeOptions}
       picked={rule.police}
@@ -397,7 +397,7 @@ interface RoomLobbyProps extends LobbyActions {
   readonly refusal: Refusal | null;
   readonly roomId: string;
   readonly startsInSeconds: number | null;
-  readonly onChoose: (choice: RoomChoice) => void;
+  readonly onChoose: (choice: Partial<RoomChoice>) => void;
   readonly onReady: (ready: boolean) => void;
 }
 

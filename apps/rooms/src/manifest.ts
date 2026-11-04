@@ -15,16 +15,24 @@ const RosterEntrySchema = Schema.Struct({
   rider: Schema.Number,
 });
 
-export const RoomChoiceSchema = Schema.Struct({
-  police: Schema.Literals(policeChoices),
-  roadId: Schema.Literals(roadIds),
-  tier: Schema.Literals(tiers),
-  traffic: Schema.Literals(trafficChoices),
+const Police = Schema.Literals(policeChoices);
+const Road = Schema.Literals(roadIds);
+const Tier = Schema.Literals(tiers);
+const Traffic = Schema.Literals(trafficChoices);
+
+export const RoomChoiceChangeSchema = Schema.Struct({
+  police: Schema.optionalKey(Police),
+  roadId: Schema.optionalKey(Road),
+  tier: Schema.optionalKey(Tier),
+  traffic: Schema.optionalKey(Traffic),
 });
 
 export const RoomRuleSchema = Schema.Struct({
-  ...RoomChoiceSchema.fields,
   bikeId: Schema.Literals(bikeIds),
+  police: Police,
+  roadId: Road,
+  tier: Tier,
+  traffic: Traffic,
 });
 
 export const RaceManifestSchema = Schema.Struct({

@@ -73,7 +73,7 @@ export interface RoomSeat {
   readonly race: () => SeatRace | null;
   readonly lobby: () => RoomLobbyMessage | null;
   readonly loaded: () => void;
-  readonly choose: (choice: RoomChoice) => void;
+  readonly choose: (choice: Partial<RoomChoice>) => void;
   readonly setReady: (ready: boolean) => void;
   readonly refusal: () => Refusal | null;
   readonly rttMs: () => number;
