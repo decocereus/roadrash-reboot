@@ -127,7 +127,9 @@ const PriceList = ({
         style={{
           ...place(SHEET_ROWS),
           fontSize: stagePx(22),
-          gridAutoRows: stagePx(33.9),
+          gridAutoRows: stagePx(
+            SHEET_ROWS.h / (stock.length + bikeClasses.length)
+          ),
         }}
         value={bikeId}
       >
