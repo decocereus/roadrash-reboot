@@ -114,7 +114,7 @@ A profile's `paint` and `jacket` are indices into the eighteen entries of `palet
 
 Each package reads only its part of a row, and the types of that package check it: `packages/sim` reads `spec` and `game`, `packages/career` reads `shop`, `lines` and `bio`, and the browser reads `looks`, `art` and the names. `packages/sim` builds a `BikeSpec` from `spec` alone, so a change to `looks` cannot change how a bike rides.
 
-To add a bike or a rider, add a row, list its new IDs in `packages/career/save-format.json`, and add its art. Art names are checked against `apps/web/src/assets/art.json` when the web app compiles. A new mechanic, rig or shader still needs a client release, because rows only configure what the game can already do.
+To add a bike or a rider, add a row, list its new IDs in `packages/career/save-format.json`, and add its art. A new bike also needs a rival who rides it, in that rival's `game.bikes`. Perf scenarios, replays and test fixtures race under `recordedRules`, which names its cast in `recordedCast`, so a new rider moves no baseline. Art names are checked against `apps/web/src/assets/art.json` when the web app compiles. A new mechanic, rig or shader still needs a client release, because rows only configure what the game can already do.
 
 A race never looks a number up in these tables once it starts. `RaceSetup` carries each rider's `BikeSpec` and profile, and `validateSetup` refuses numbers outside the ranges in `packages/sim/src/setup-ranges.ts`. A later race manifest can send the same values through the same check.
 
