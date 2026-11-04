@@ -88,7 +88,6 @@ describe("a rider's race tally", () => {
     tally.stepped(2);
     tally.frameDrawn(1100, 0, 12);
     tally.frameDrawn(1300, 0, 20);
-    tally.frameDrawn(1316, 0, 21);
     const expected = Array.from({ length: TRACE_ROW_FIELDS }, () => 0);
     expected[TraceField.atMs] = 300;
     expected[TraceField.tick] = 20;
@@ -108,5 +107,15 @@ describe("a rider's race tally", () => {
       tally.frameDrawn(1000 + row * TRACE_ROW_MS, 0, row);
     }
     expect(tally.traceRows()).toHaveLength(MOST_TRACE_ROWS * TRACE_ROW_FIELDS);
+  });
+
+  it("keeps the last unfinished row, so a stall just before the end still shows", () => {
+    const tally = createRaceTally();
+    tally.frameDrawn(1000, 0, 0);
+    tally.frameDrawn(1120, 0, 7);
+    const rows = tally.traceRows();
+    expect(rows).toHaveLength(TRACE_ROW_FIELDS);
+    expect(rows[TraceField.worstFrameMs]).toBe(120);
+    expect(rows[TraceField.tick]).toBe(7);
   });
 });

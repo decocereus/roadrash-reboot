@@ -7,6 +7,7 @@ const TICKS_PER_SECOND = 60;
 
 const row = (second: number, frameMs: number, gapMs: number): number[] => {
   const values = Array.from({ length: TRACE_ROW_FIELDS }, () => 0);
+  values[TraceField.atMs] = second * 1000;
   values[TraceField.tick] = second * TICKS_PER_SECOND;
   values[TraceField.worstFrameMs] = frameMs;
   values[TraceField.worstTickGapMs] = gapMs;
@@ -53,5 +54,27 @@ describe("the trace report", () => {
     );
     expect(report).toContain("0:10  rider 0 frame 200 ms");
     expect(report).not.toContain("0:01  ");
+  });
+
+  it("places a stall by the browser's clock while no ticks are arriving", () => {
+    const frozen = row(4, 200, 17);
+    frozen[TraceField.tick] = 1 * TICKS_PER_SECOND;
+    const gapEnd = row(5, 16, 2000);
+    const stalledInGap = traceReport(
+      [
+        {
+          rider: 0,
+          trace: {
+            ...browser,
+            rows: [...row(1, 16, 17), ...frozen, ...gapEnd],
+          },
+        },
+      ],
+      { rows: [] }
+    );
+    expect(stalledInGap).toContain("0:04  rider 0 frame 200 ms");
+    expect(stalledInGap).toContain(
+      "tick gaps within a second of a stall in 1 s"
+    );
   });
 });

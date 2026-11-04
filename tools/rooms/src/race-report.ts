@@ -160,7 +160,12 @@ const unfinishedLines = (record: RaceRecord): readonly string[] => [
   ]),
 ];
 
-const timelineLine = ({ countdown, ended, started }: RaceRecord): string => {
+const timelineLine = ({
+  countdown,
+  ended,
+  started,
+  stats,
+}: RaceRecord): string => {
   const parts = [
     started ? `lobby ${seconds(started.lobbyMs)}` : null,
     countdown ? `loading ${seconds(countdown.waitedMs)}` : null,
@@ -169,7 +174,7 @@ const timelineLine = ({ countdown, ended, started }: RaceRecord): string => {
       : null,
     ended ? `raced ${raceTime(ended.tick)}` : null,
     ended
-      ? `browser stats from ${ended.seats.filter((seat) => seat.reported).length} of ${ended.seats.length} riders`
+      ? `browser stats from ${stats.length} of ${ended.seats.length} riders`
       : null,
   ];
   return `  ${parts.filter((part) => part !== null).join(", ")}`;

@@ -21,6 +21,8 @@ const RIDER_FILE = /^rider-(?<rider>\d+)\.trace\.json$/u;
 const STALL_MS = 50;
 const TICK_GAP_MS = 100;
 const SECONDS_IN_MINUTE = 60;
+const MS_PER_SECOND = 1000;
+const TICK_MS = TICK_SECONDS * MS_PER_SECOND;
 const CLOCK_DIGITS = 2;
 
 class TraceReadFailed extends Data.TaggedError("TraceReadFailed")<{
@@ -85,8 +87,18 @@ const momentsOf = (
   room: RoomTrace
 ): Map<number, Moment> => {
   const moments = new Map<number, Moment>();
-  for (const row of chunks(trace.rows, TRACE_ROW_FIELDS)) {
-    const moment = momentAt(moments, secondOf(row[TraceField.tick] ?? 0));
+  const rows = chunks(trace.rows, TRACE_ROW_FIELDS);
+  const raceStartMs = Math.max(
+    ...rows.map(
+      (row) =>
+        (row[TraceField.tick] ?? 0) * TICK_MS - (row[TraceField.atMs] ?? 0)
+    )
+  );
+  for (const row of rows) {
+    const moment = momentAt(
+      moments,
+      Math.floor(((row[TraceField.atMs] ?? 0) + raceStartMs) / MS_PER_SECOND)
+    );
     moment.frameMs = Math.max(
       moment.frameMs,
       row[TraceField.worstFrameMs] ?? 0

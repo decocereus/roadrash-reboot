@@ -187,6 +187,26 @@ export const openRoomSeat = (
   socket.addEventListener("open", () => {
     pings = setInterval(sendPing, PING_EVERY_MS);
   });
+  const reportOnce = (): void => {
+    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    reported = true;
+    tally.frameDrawn(
+      performance.now(),
+      race.client.mine.s,
+      race.client.confirmed.tick
+    );
+    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
+    writeRaceStats(packet, tally.read(race.client, worstRttMs));
+    socket.send(packet.buffer);
+    const identity = browser();
+    if (identity) {
+      const trace: BrowserTrace = { ...identity, rows: tally.traceRows() };
+      socket.send(JSON.stringify(trace));
+    }
+  };
+
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
     stopPings();
@@ -227,6 +247,7 @@ export const openRoomSeat = (
         break;
       }
       case "ended": {
+        reportOnce();
         stopPings();
         socket.close(SEAT_CLOSED, "The race is over.");
         move("ended");
@@ -243,21 +264,6 @@ export const openRoomSeat = (
       }
     }
   });
-
-  const reportOnce = (): void => {
-    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    reported = true;
-    const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
-    writeRaceStats(packet, tally.read(race.client, worstRttMs));
-    socket.send(packet.buffer);
-    const identity = browser();
-    if (identity) {
-      const trace: BrowserTrace = { ...identity, rows: tally.traceRows() };
-      socket.send(JSON.stringify(trace));
-    }
-  };
 
   return {
     closeCode: () => closeCode,

@@ -48,6 +48,7 @@ export const createRaceTally = (): RaceTally => {
   let rttTotal = 0;
   let rttCount = 0;
   let lastFrameAt = 0;
+  let lastConfirmedTick = 0;
   let held = 0;
   let doubled = 0;
   let mostSteps = 0;
@@ -97,6 +98,7 @@ export const createRaceTally = (): RaceTally => {
         }
       }
       lastFrameAt = now;
+      lastConfirmedTick = confirmedTick;
       if (now - rowStartedAt >= TRACE_ROW_MS) {
         closeRow(now, confirmedTick);
       }
@@ -161,6 +163,11 @@ export const createRaceTally = (): RaceTally => {
       open[TraceField.doubled] =
         (open[TraceField.doubled] ?? 0) + (steps >= 2 ? 1 : 0);
     },
-    traceRows: () => [...rows.subarray(0, rowsUsed * TRACE_ROW_FIELDS)],
+    traceRows: () => {
+      if (open.some((value) => value > 0)) {
+        closeRow(lastFrameAt, lastConfirmedTick);
+      }
+      return [...rows.subarray(0, rowsUsed * TRACE_ROW_FIELDS)];
+    },
   };
 };
