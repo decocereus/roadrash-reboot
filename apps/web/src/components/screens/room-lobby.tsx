@@ -47,6 +47,9 @@ const refusalLine = (refusal: Refusal): string => {
     case "full": {
       return "This room is full.";
     }
+    case "replaced": {
+      return "You opened this lobby in another tab.";
+    }
     default: {
       return refusal satisfies never;
     }
@@ -356,15 +359,20 @@ export const RoomInviteScreen = ({
       <p className="font-display text-paper">
         You'll see these rules before you join. They apply to everyone here.
       </p>
-      {preview && <RuleLines rule={preview.rule} />}
-      {preview && (
-        <p className="font-display text-paper/60">
-          {preview.names.length} of {MOST_SEATS} here.
-        </p>
+      {preview ? (
+        <>
+          <RuleLines rule={preview.rule} />
+          <p className="font-display text-paper/60">
+            {preview.names.length} of {MOST_SEATS} here.
+          </p>
+        </>
+      ) : (
+        <p className="font-display text-paper/60">Reading the rules.</p>
       )}
       <MenuList
         autoFocus
-        defaultValue="join"
+        defaultValue={preview ? "join" : "back"}
+        key={preview ? "rules-read" : "reading"}
         label="Invite"
         onSelect={(id) => {
           if (id === "join") {
@@ -374,7 +382,7 @@ export const RoomInviteScreen = ({
           }
         }}
       >
-        <MenuItem value="join">Join</MenuItem>
+        {preview && <MenuItem value="join">Join</MenuItem>}
         <MenuItem value="back">Not now</MenuItem>
       </MenuList>
     </div>

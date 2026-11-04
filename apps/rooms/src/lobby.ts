@@ -25,6 +25,7 @@ interface LobbyMemberView {
 }
 
 interface LobbyView {
+  readonly edition: number;
   readonly hostId: string | null;
   readonly members: readonly LobbyMemberView[];
   readonly phase: LobbyPhase;
@@ -39,7 +40,12 @@ export interface Lobby {
   readonly join: (key: string, name: string, now: number) => string | null;
   readonly raceEnded: (now: number) => void;
   readonly raceStarted: () => void;
-  readonly ready: (id: string, ready: boolean, now: number) => void;
+  readonly ready: (
+    id: string,
+    ready: boolean,
+    edition: number,
+    now: number
+  ) => void;
   readonly rule: () => RoomRule;
   readonly since: () => number;
   readonly size: () => number;
@@ -51,6 +57,7 @@ export const createLobby = (bornAt: number): Lobby => {
   let members: Member[] = [];
   let joined = 0;
   let rule: RoomRule = publicRoomRule;
+  let edition = 0;
   let phase: LobbyPhase = "gathering";
   let firstReadyAt: number | null = null;
   let since = bornAt;
@@ -88,6 +95,7 @@ export const createLobby = (bornAt: number): Lobby => {
         return false;
       }
       rule = { ...rule, ...choice };
+      edition += 1;
       clearReady();
       return true;
     },
@@ -123,8 +131,8 @@ export const createLobby = (bornAt: number): Lobby => {
       phase = "racing";
       clearReady();
     },
-    ready: (id, ready, now) => {
-      if (phase !== "gathering") {
+    ready: (id, ready, seen, now) => {
+      if (phase !== "gathering" || (ready && seen !== edition)) {
         return;
       }
       for (const member of members) {
@@ -147,10 +155,12 @@ export const createLobby = (bornAt: number): Lobby => {
       );
       if (members.length === 0) {
         rule = publicRoomRule;
+        edition += 1;
       }
       return members.length !== before;
     },
     view: (now) => ({
+      edition,
       hostId: hostOf()?.id ?? null,
       members: members.map(({ awaySince, id, name, ready }) => ({
         here: awaySince === null,

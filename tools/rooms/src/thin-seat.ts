@@ -152,7 +152,13 @@ export const openThinSeat = (
         clock.heardRoomTime(message.atMs, performance.now());
         if (!saidReady && message.members.length >= readyAtMembers) {
           saidReady = true;
-          socket.send(encodeLobbyCommand({ kind: "ready", ready: true }));
+          socket.send(
+            encodeLobbyCommand({
+              edition: message.edition,
+              kind: "ready",
+              ready: true,
+            })
+          );
         }
         break;
       }

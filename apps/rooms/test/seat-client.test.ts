@@ -128,6 +128,28 @@ describe("a seat loading the race", () => {
     vi.unstubAllGlobals();
   });
 
+  it("stays down when another tab takes its place in the lobby", () => {
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      "test-build",
+      "member-key",
+      () => null
+    );
+    FakeSocket.opened[0]?.hear(
+      encodeRoomMessage({ kind: "refused", reason: "replaced" })
+    );
+    expect(seat.phase()).toBe("refused");
+    expect(seat.refusal()).toBe("replaced");
+  });
+
+  it("is lost when another tab takes its place during a race", () => {
+    const { seat, socket } = loadingSeat();
+    socket?.hear(encodeRoomMessage({ kind: "refused", reason: "replaced" }));
+    expect(seat.phase()).toBe("lost");
+  });
+
   it("sends its browser trace once with the stats, and none with Race data off", () => {
     const browser = {
       build: "abc",

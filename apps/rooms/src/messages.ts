@@ -24,6 +24,7 @@ export const cleanGuestName = (raw: string): string => {
 
 const Lobby = Schema.Struct({
   atMs: Schema.Number,
+  edition: Schema.Number,
   hostId: Schema.NullOr(Schema.String),
   kind: Schema.Literal("lobby"),
   members: Schema.Array(
@@ -56,7 +57,7 @@ const Ended = Schema.Struct({
   tick: Schema.Number,
 });
 
-export const REFUSALS = ["build", "content", "full"] as const;
+export const REFUSALS = ["build", "content", "full", "replaced"] as const;
 
 export type Refusal = (typeof REFUSALS)[number];
 
@@ -83,7 +84,11 @@ export const encodeRoomMessage = Schema.encodeSync(RoomMessageJson);
 export const decodeRoomMessage = Schema.decodeUnknownOption(RoomMessageJson);
 
 const LobbyCommandSchema = Schema.Union([
-  Schema.Struct({ kind: Schema.Literal("ready"), ready: Schema.Boolean }),
+  Schema.Struct({
+    edition: Schema.Number,
+    kind: Schema.Literal("ready"),
+    ready: Schema.Boolean,
+  }),
   Schema.Struct({ choice: RoomChoiceSchema, kind: Schema.Literal("choose") }),
 ]);
 

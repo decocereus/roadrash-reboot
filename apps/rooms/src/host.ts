@@ -462,7 +462,7 @@ export const createHost = (ports: HostPorts): Host => {
 
   const refuse = (socket: HostSocket, reason: Refusal): void => {
     ports.note({ kind: "refused", reason });
-    socket.send(encodeRoomMessage({ kind: "refused", reason }));
+    sendTo(socket, encodeRoomMessage({ kind: "refused", reason }));
     socket.close(SEAT_CLOSED, reason);
   };
 
@@ -534,7 +534,7 @@ export const createHost = (ports: HostPorts): Host => {
   const obey = ({ memberId }: Present, command: LobbyCommand): void => {
     switch (command.kind) {
       case "ready": {
-        lobby.ready(memberId, command.ready, ports.now());
+        lobby.ready(memberId, command.ready, command.edition, ports.now());
         if (command.ready) {
           ports.after(READY_WAIT_MS, consider);
         }
@@ -631,7 +631,7 @@ export const createHost = (ports: HostPorts): Host => {
       }
       for (const person of present.values()) {
         if (person.memberId === memberId) {
-          person.socket.close(SEAT_CLOSED, "This rider sat down again.");
+          refuse(person.socket, "replaced");
           retire(person.socket);
         }
       }

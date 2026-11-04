@@ -266,7 +266,7 @@ export const openRoomSeat = (
       case "refused": {
         refused = message.value.reason;
         socket.close(SEAT_CLOSED, "This seat was refused.");
-        move("refused");
+        move(race ? "lost" : "refused");
         break;
       }
       default: {
@@ -324,7 +324,11 @@ export const openRoomSeat = (
     refusal: () => refused,
     rttMs: () => rttMs,
     setReady: (ready) => {
-      socket.send(encodeLobbyCommand({ kind: "ready", ready }));
+      if (lobby) {
+        socket.send(
+          encodeLobbyCommand({ edition: lobby.edition, kind: "ready", ready })
+        );
+      }
     },
     startsInMs: () =>
       lobby?.startsInMs === null || lobby === null

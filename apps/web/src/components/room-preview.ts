@@ -1,7 +1,9 @@
 import { decodeRoomPreview } from "@racer/rooms/messages";
 import type { RoomPreview } from "@racer/rooms/messages";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
+import * as Schedule from "effect/Schedule";
+
+const RETRY_EVERY = "2 seconds";
 
 export const readRoomPreview = (
   roomsUrl: string,
@@ -15,15 +17,12 @@ export const readRoomPreview = (
       });
       return await answer.text();
     }).pipe(
-      Effect.match({
-        onFailure: () => Option.none<RoomPreview>(),
-        onSuccess: decodeRoomPreview,
-      }),
+      Effect.map(decodeRoomPreview),
+      Effect.flatMap(Effect.fromOption),
+      Effect.retry({ schedule: Schedule.spaced(RETRY_EVERY) }),
       Effect.tap((preview) =>
         Effect.sync(() => {
-          if (Option.isSome(preview)) {
-            onPreview(preview.value);
-          }
+          onPreview(preview);
         })
       )
     )

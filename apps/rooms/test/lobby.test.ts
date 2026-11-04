@@ -79,7 +79,10 @@ describe("a lobby's start", () => {
   it("stops the minute when the only ready rider takes it back", () => {
     const { clock, first, host, second } = twoSeated();
     readyAll(host, [first]);
-    host.message(first, encodeLobbyCommand({ kind: "ready", ready: false }));
+    host.message(
+      first,
+      encodeLobbyCommand({ edition: 0, kind: "ready", ready: false })
+    );
     expect(lastLobby(second).startsInMs).toBeNull();
     advanceHearing(host, clock, [first, second], READY_WAIT_MS + 1000);
     expect(host.status().phase).toBe("waiting");
@@ -118,6 +121,22 @@ describe("a lobby's rules", () => {
       false,
     ]);
     expect(lastLobby(first).startsInMs).toBeNull();
+  });
+
+  it("leave a Ready sent before a change unheard, so nobody races on rules they didn't see", () => {
+    const { first, host, second } = twoSeated();
+    const seen = lastLobby(second).edition;
+    choose(host, first);
+    readyAll(host, [first]);
+    host.message(
+      second,
+      encodeLobbyCommand({ edition: seen, kind: "ready", ready: true })
+    );
+    expect(host.status().phase).toBe("waiting");
+    expect(lastLobby(second).members.map((each) => each.ready)).toStrictEqual([
+      true,
+      false,
+    ]);
   });
 
   it("go to the next oldest rider while the host is away, and back", () => {
@@ -189,6 +208,10 @@ describe("a lobby across races", () => {
     const again = fakeSocket();
     host.seat(again, "Ann", nearby, sameBuild("ann"));
     expect(first.closed).not.toBeNull();
+    expect(first.messages.at(-1)).toStrictEqual({
+      kind: "refused",
+      reason: "replaced",
+    });
     expect(lastLobby(again).members).toHaveLength(2);
     expect(host.status().waiting).toBe(2);
   });

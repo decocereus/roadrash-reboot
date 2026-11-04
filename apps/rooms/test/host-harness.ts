@@ -194,9 +194,24 @@ export const someRaceStats: RaceStats = {
 export const countdownsOn = (socket: FakeSocket): number =>
   socket.messages.filter((each) => each.kind === "countdown").length;
 
+export const lastLobby = (socket: FakeSocket) => {
+  const message = socket.messages.findLast((each) => each.kind === "lobby");
+  if (message?.kind !== "lobby") {
+    throw new Error("The room never told this seat about its lobby.");
+  }
+  return message;
+};
+
 export const readyAll = (host: Host, sockets: readonly FakeSocket[]): void => {
   for (const socket of sockets) {
-    host.message(socket, encodeLobbyCommand({ kind: "ready", ready: true }));
+    host.message(
+      socket,
+      encodeLobbyCommand({
+        edition: lastLobby(socket).edition,
+        kind: "ready",
+        ready: true,
+      })
+    );
   }
 };
 
@@ -251,14 +266,6 @@ export const race = (
     host.message(socket, readyPacket(socket));
   }
   clock.advance(START_DELAY_MS);
-};
-
-export const lastLobby = (socket: FakeSocket) => {
-  const message = socket.messages.findLast((each) => each.kind === "lobby");
-  if (message?.kind !== "lobby") {
-    throw new Error("The room never told this seat about its lobby.");
-  }
-  return message;
 };
 
 export const followTicks = (socket: FakeSocket, client: RoomClient): void => {
