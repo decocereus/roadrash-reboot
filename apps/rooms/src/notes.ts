@@ -1,6 +1,12 @@
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
 export const WAKE_GAP_CEILINGS_MS = [20, 34, 50, 100] as const;
+
+const orMissing = <S extends Schema.Top>(schema: S) =>
+  Schema.NullOr(schema).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(null))
+  );
 
 export const SeatTallySchema = Schema.Struct({
   accepted: Schema.Number,
@@ -14,15 +20,15 @@ export type SeatTally = typeof SeatTallySchema.Type;
 
 const RaceSeatSchema = Schema.Struct({
   ...SeatTallySchema.fields,
-  colo: Schema.NullOr(Schema.String),
+  colo: orMissing(Schema.String),
   crashes: Schema.Number,
   finishTick: Schema.Number,
-  leftAtTick: Schema.NullOr(Schema.Number),
+  leftAtTick: orMissing(Schema.Number),
   mode: Schema.String,
-  readyMs: Schema.NullOr(Schema.Number),
+  readyMs: orMissing(Schema.Number),
   reported: Schema.Boolean,
   roadMetres: Schema.Number,
-  tcpRttMs: Schema.NullOr(Schema.Number),
+  tcpRttMs: orMissing(Schema.Number),
 });
 
 export type RaceSeat = typeof RaceSeatSchema.Type;
@@ -47,7 +53,9 @@ const Started = Schema.Struct({
 const Countdown = Schema.Struct({
   kind: Schema.Literal("countdown"),
   raceId: Schema.String,
-  stillLoading: Schema.Array(Schema.Number),
+  stillLoading: Schema.Array(Schema.Number).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed<readonly number[]>([]))
+  ),
   waitedMs: Schema.Number,
 });
 

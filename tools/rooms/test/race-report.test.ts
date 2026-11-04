@@ -157,7 +157,14 @@ describe("reading a log", () => {
         "{broken",
       ].join("\n")
     );
-    expect(found).toStrictEqual([{ kind: "refused", reason: "racing" }]);
+    expect(found).toStrictEqual({
+      notes: [{ kind: "refused", reason: "racing" }],
+      unread: 0,
+    });
+  });
+
+  it("counts a line that looks like a note but does not match", () => {
+    expect(notesOfLines('{"kind":"ended","raceId":"a"}').unread).toBe(1);
   });
 });
 
@@ -192,6 +199,86 @@ describe("reading Cloudflare's logs", () => {
         )
       )
     );
-    expect(notesRead).toStrictEqual([{ kind: "refused", reason: "full" }]);
+    expect(notesRead).toStrictEqual({
+      notes: [{ kind: "refused", reason: "full" }],
+      unread: 0,
+    });
+  });
+
+  it("reads an ended line whose nulls the log store dropped", async () => {
+    const { notes: read, unread } = await Effect.runPromise(
+      liveNotes("rooms-script", 24).pipe(
+        Effect.provideService(
+          HttpClient.HttpClient,
+          answerWith([
+            {
+              catchUpWakes: 0,
+              kind: "ended",
+              raceId: "9f635600-4c59-420c-98c2-e9b40f23d752",
+              seats: [
+                {
+                  accepted: 0,
+                  ahead: 0,
+                  crashes: 0,
+                  finishTick: 12_286,
+                  late: 0,
+                  missed: 12_286,
+                  mode: "riding",
+                  reported: false,
+                  rider: 1,
+                  roadMetres: 8624,
+                },
+              ],
+              tick: 12_664,
+              wakeGaps: [13_858, 0, 0, 0, 0],
+              worstBehindTicks: 1,
+            },
+          ])
+        ),
+        Effect.provideService(
+          ConfigProvider.ConfigProvider,
+          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
+        )
+      )
+    );
+    expect({
+      seat: read[0]?.kind === "ended" ? read[0].seats[0] : null,
+      unread,
+    }).toMatchObject({
+      seat: { colo: null, leftAtTick: null, readyMs: null, tcpRttMs: null },
+      unread: 0,
+    });
+  });
+
+  it("reads a countdown whose empty list the log store dropped", async () => {
+    const { notes: read, unread } = await Effect.runPromise(
+      liveNotes("rooms-script", 24).pipe(
+        Effect.provideService(
+          HttpClient.HttpClient,
+          answerWith([
+            {
+              kind: "countdown",
+              raceId: "fa883214-366f-4040-b12b-5ac2969322a9",
+              waitedMs: 122,
+            },
+          ])
+        ),
+        Effect.provideService(
+          ConfigProvider.ConfigProvider,
+          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
+        )
+      )
+    );
+    expect({ read, unread }).toStrictEqual({
+      read: [
+        {
+          kind: "countdown",
+          raceId: "fa883214-366f-4040-b12b-5ac2969322a9",
+          stillLoading: [],
+          waitedMs: 122,
+        },
+      ],
+      unread: 0,
+    });
   });
 });

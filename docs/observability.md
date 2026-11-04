@@ -30,6 +30,7 @@ Every room race has a random race ID that is not the invite link. `apps/rooms/sr
 | No room note holds a guest name, the room ID or an IP address. A rider is named by its number. | `pnpm test` | `apps/rooms/src/notes.ts`, `apps/rooms/src/host.ts` | None |
 | The `ended` note lists every rider who started, including those who left, and says whether each browser's stats arrived, so a missing stats line is a counted fact rather than a guess. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 | The room writes a note per race event and never per tick or per message. In the tick loop it only adds to the wake counters. | `pnpm test` | `apps/rooms/src/host.ts` | None |
+| Workers Logs removes null values and empty lists from a stored line, so `RoomNoteSchema` reads a missing nullable field as null and a missing list as empty. `pnpm rooms:read` warns about any line with a `kind` that still does not decode, because a report without its `ended` line otherwise reads as a dead room. | `pnpm test` | `apps/rooms/src/notes.ts`, `tools/rooms/src/read.ts` | None |
 
 ## Frame profiles
 
