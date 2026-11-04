@@ -1,14 +1,8 @@
+import { GARAGE_PLINTH, MEZZANINE, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-import {
-  GARAGE_LAMPS,
-  GARAGE_PLINTH,
-  LAMP_SPOTS,
-  MEZZANINE,
-  PLINTH,
-  ROOM,
-} from "./bar-room.ts";
+import { GARAGE_LAMPS, LAMP_SPOTS } from "./bar-room.ts";
 import { onFxLayer } from "./cel.ts";
 import { CYAN, MAGENTA, ORANGE, YELLOW } from "./looks.ts";
 

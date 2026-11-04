@@ -1,6 +1,6 @@
+import { ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
-import { ROOM } from "./bar-room.ts";
 import { MAGENTA, CYAN, ORANGE, RED, YELLOW } from "./looks.ts";
 import { FULL_TURN, sheet, textureOf } from "./texture-canvas.ts";
 

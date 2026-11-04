@@ -1,13 +1,18 @@
+import { GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
 import * as THREE from "three";
 
+import type { BarCamera } from "../bar-view.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
 import { riderBlocks } from "./bar-blocks.ts";
+import { createBarEye } from "./bar-camera.ts";
 import { createCast } from "./bar-cast.ts";
 import { buildGarage } from "./bar-garage.ts";
+import { createBarInput } from "./bar-input.ts";
 import { createKit } from "./bar-kit.ts";
 import { duskLook, nightLook, toneAt } from "./bar-light.ts";
 import { createOutside } from "./bar-outside.ts";
+import { createBarPlayer } from "./bar-player.ts";
 import { createPools } from "./bar-pools.ts";
 import { buildProps } from "./bar-props.ts";
 import {
@@ -16,12 +21,11 @@ import {
   buildFixtures,
   buildFloor,
   buildShell,
-  GARAGE_PLINTH,
-  PLINTH,
-  ROOM,
 } from "./bar-room.ts";
 import { countdownPlate, createSignAtlas, signGeometry } from "./bar-signs.ts";
+import { createSpeech } from "./bar-speech.ts";
 import { createTagLayer } from "./bar-tags.ts";
+import { createYou, yourBlocks } from "./bar-you.ts";
 import { createShading } from "./cel.ts";
 import { createPipeline } from "./post.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
@@ -40,37 +44,19 @@ const DOOR_REACH = Math.hypot(
 );
 const SIGN_GLOW = 1.55;
 const REV_PUFF_SPEED = 9;
-const FOCUS_CLEARANCE = PLINTH.radius + 0.6;
 const GARAGE_LIVERY = { bike: 0xc8_21_4a, trim: 0x2a_1a_38 } as const;
 const GARAGE_BIKE_YAW = 2.61;
 const GARAGE_BIKE_SWAY = 0.22;
-const SHOTS = {
-  garage: {
-    aim: new THREE.Vector3(7.5, 1.45, -3.75),
-    fov: 34,
-    spot: new THREE.Vector3(-0.3, 1.6, -1.6),
-  },
-  home: {
-    aim: new THREE.Vector3(-0.4, 2.4, -3),
-    fov: 50,
-    spot: new THREE.Vector3(8, 4.6, 16),
-  },
-} as const;
 const SHADOW_SPAN = 18;
 const SHADOW_DISTANCE = 26;
 const LONGEST_STEP = 0.1;
 const CYCLE_SECONDS = 150;
-const COUNTDOWN_START = 40;
+const COUNTDOWN_START = 90;
 const DOOR_SECONDS = 2.6;
 const DOOR_RISE = 4.5;
 const TURN_SECONDS = 14;
-const BUBBLES = [
-  "RACE NEXT?",
-  "LOBBY LOOKS SICK!",
-  "SAME!",
-  "NICE BIKE",
-  "0:24!",
-];
+const YOUR_BIKE = 2;
+const DOOR_GATHER = { x: 1.3, z: -4.8 } as const;
 
 interface Pins {
   readonly ratio: number | null;
@@ -100,23 +86,15 @@ const pinsFrom = (search: string): Pins => {
   };
 };
 
-const clearOfPlinth = (eye: THREE.Vector3): void => {
-  const dx = eye.x - PLINTH.x;
-  const dz = eye.z - PLINTH.z;
-  const away = Math.hypot(dx, dz);
-  if (away < FOCUS_CLEARANCE) {
-    eye.x = PLINTH.x + (dx / away) * FOCUS_CLEARANCE;
-    eye.z = PLINTH.z + (dz / away) * FOCUS_CLEARANCE;
-  }
-};
-
 export interface BarScene {
+  readonly setCamera: (mode: BarCamera) => void;
   readonly dispose: () => void;
 }
 
 const openRoom = (
   canvas: HTMLCanvasElement,
   assets: Assets,
+  startCamera: BarCamera,
   owners: (() => void)[]
 ): BarScene => {
   const pins = pinsFrom(globalThis.location.search);
@@ -276,13 +254,14 @@ const openRoom = (
       police: false,
     },
     { livery: GARAGE_LIVERY, model: "ghost", paint: 4, police: false },
+    { livery: yourBlocks?.livery, model: "classic", paint: 2, police: false },
   ]);
   scene.add(bikes.group);
   owners.push(() => {
     bikes.dispose();
   });
-  const [heroBike, garageBike] = bikes.roots;
-  if (!(heroBike && garageBike)) {
+  const [heroBike, garageBike, yourBike] = bikes.roots;
+  if (!(heroBike && garageBike && yourBike)) {
     throw new Error("The bar lost a bike.");
   }
   garageBike.position.set(
@@ -307,11 +286,12 @@ const openRoom = (
   owners.push(() => {
     tags.dispose();
   });
+  const speech = createSpeech(tags);
   const cast = createCast(
     assets,
     shading,
     tags,
-    BUBBLES,
+    speech,
     heroBike,
     garageBike,
     pins.riders
@@ -320,22 +300,34 @@ const openRoom = (
   owners.push(() => {
     cast.dispose();
   });
+  const you = createYou(assets, shading, tags);
+  scene.add(you.figure.root);
+  owners.push(() => {
+    you.dispose();
+  });
+  const player = createBarPlayer({
+    bike: yourBike,
+    bikeIndex: YOUR_BIKE,
+    bikes,
+    cast,
+    puffs,
+    speech,
+    you,
+  });
   pipeline.prepare(scene);
 
-  const camera = new THREE.PerspectiveCamera(SHOTS.home.fov, 1, 0.3, 1000);
-  let shot: keyof typeof SHOTS = "home";
-  const eye = SHOTS.home.spot.clone();
-  const aim = SHOTS.home.aim.clone();
-  const wantEye = new THREE.Vector3();
-  const wantAim = new THREE.Vector3();
+  const eye = createBarEye(startCamera, player.view);
+  const { camera } = eye;
   const anchor = new THREE.Vector3();
-  const pointer = new THREE.Vector2();
-  const projected = new THREE.Vector3();
+  const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const ray = new THREE.Raycaster();
+  const clicked = new THREE.Vector2();
+  const hit = new THREE.Vector3();
+  const noControl = { forward: 0, right: 0, sprint: false };
   const viewSize = { height: 1, width: 1 };
   let clock = 0;
   let neonNow = 1;
   let timeShift = 0;
-  let focus: number | null = null;
   let doorOpenedAt: number | null = null;
   let spinAt = 0;
 
@@ -360,57 +352,26 @@ const openRoom = (
   });
   resize();
 
-  const onMove = (event: PointerEvent): void => {
-    pointer.set(
-      (event.clientX / canvas.clientWidth) * 2 - 1,
-      (event.clientY / canvas.clientHeight) * 2 - 1
-    );
-  };
-  const pick = (event: PointerEvent): void => {
-    const x = (event.clientX / canvas.clientWidth) * 2 - 1;
-    const y = 1 - (event.clientY / canvas.clientHeight) * 2;
-    let best: number | null = null;
-    let nearest = 0.12;
-    for (let index = 0; index < cast.members.length; index += 1) {
-      const head = cast.members[index]?.head;
-      if (!head) {
-        continue;
+  const input = createBarInput(canvas, {
+    action(action) {
+      player.act(action, clock);
+    },
+    click(x, y) {
+      clicked.set(x, y);
+      ray.setFromCamera(clicked, camera);
+      if (ray.ray.intersectPlane(floorPlane, hit)) {
+        player.walkTo(hit.x, hit.z);
       }
-      projected
-        .copy(head)
-        .setY(head.y - 0.6)
-        .project(camera);
-      const away = Math.hypot(projected.x - x, (projected.y - y) * 0.6);
-      if (away < nearest) {
-        nearest = away;
-        best = index;
-      }
-    }
-    focus = best === focus ? null : best;
-  };
-  const onKey = (event: KeyboardEvent): void => {
-    if (event.code === "KeyR") {
-      rev();
-    }
-    if (event.code === "Space") {
-      event.preventDefault();
-      doorOpenedAt ??= clock;
-    }
-    if (event.code === "KeyT") {
-      timeShift += CYCLE_SECONDS / 4;
-    }
-    if (event.code === "KeyG") {
-      focus = null;
-      shot = shot === "home" ? "garage" : "home";
-    }
-  };
-  canvas.addEventListener("pointermove", onMove);
-  canvas.addEventListener("pointerdown", pick);
-  globalThis.addEventListener("keydown", onKey);
+    },
+    drag(pixels) {
+      eye.orbit(pixels);
+    },
+    pose(pose) {
+      player.pose(pose);
+    },
+  });
   owners.push(() => {
-    canvas.removeEventListener("pointermove", onMove);
-    canvas.removeEventListener("pointerdown", pick);
-    globalThis.removeEventListener("keydown", onKey);
+    input.dispose();
   });
 
   let last = 0;
@@ -446,36 +407,11 @@ const openRoom = (
     pools.setTime(time, tone.neon);
   };
 
-  const aimCamera = (seconds: number, lift: number): void => {
-    const member = focus === null ? null : cast.members[focus];
-    if (member) {
-      wantAim.copy(member.head).setY(member.head.y - 0.5);
-      wantEye.copy(wantAim).add(projected.set(1.4, 0.9, 5.2));
-      clearOfPlinth(wantEye);
-    } else if (lift > 0) {
-      wantAim.set(ROOM.doorCentre, 2.2, ROOM.backZ - 6);
-      wantEye.set(
-        ROOM.doorCentre - 1 + (1 - lift) * 3,
-        2.4 + (1 - lift) * 4,
-        -1 + (1 - lift) * 20
-      );
-    } else {
-      const { aim: shotAim, spot } = SHOTS[shot];
-      wantAim.copy(shotAim);
-      wantEye.set(spot.x + pointer.x * 0.9, spot.y - pointer.y * 0.4, spot.z);
-      wantAim.x += pointer.x * 0.4;
+  const openDoor = (): void => {
+    if (doorOpenedAt === null) {
+      doorOpenedAt = clock;
+      player.walkTo(DOOR_GATHER.x, DOOR_GATHER.z);
     }
-    const ease = Math.min(1, seconds * 3.2);
-    eye.lerp(wantEye, ease);
-    aim.lerp(wantAim, ease);
-    const wantFov = member || lift > 0 ? SHOTS.home.fov : SHOTS[shot].fov;
-    if (Math.abs(camera.fov - wantFov) > 0.01) {
-      camera.fov += (wantFov - camera.fov) * ease;
-      camera.updateProjectionMatrix();
-    }
-    camera.position.copy(eye);
-    camera.lookAt(aim);
-    camera.updateMatrixWorld();
   };
 
   const frame = (now: number): void => {
@@ -501,12 +437,14 @@ const openRoom = (
       clock = 0;
       doorOpenedAt = null;
       cast.reset();
+      speech.reset();
+      player.reset();
       spinAt = 0;
       heroBike.position.set(PLINTH.x, PLINTH.height, PLINTH.z);
     }
     const left = Math.max(0, COUNTDOWN_START - clock);
     if (left === 0) {
-      doorOpenedAt ??= clock;
+      openDoor();
     }
     const opened = doorOpenedAt === null ? 0 : clock - doorOpenedAt;
     const lift = THREE.MathUtils.smoothstep(opened / DOOR_SECONDS, 0, 1);
@@ -547,6 +485,12 @@ const openRoom = (
     garageBike.rotation.y =
       GARAGE_BIKE_YAW + Math.sin(clock * 0.25) * GARAGE_BIKE_SWAY;
     bikes.show(1);
+    const ticks = player.advance(
+      seconds,
+      lift > 0 ? noControl : input.control(),
+      eye.viewYaw(),
+      clock
+    );
     bikes.commit(anchor);
 
     puffs.update(seconds);
@@ -558,12 +502,21 @@ const openRoom = (
       sweepPhase < 0.5 ? cycle * 0.8 : 0
     );
 
-    aimCamera(seconds, lift);
+    eye.aim(seconds, player.view, lift, input.dragging());
 
     viewSize.width = canvas.clientWidth;
     viewSize.height = canvas.clientHeight;
-    cast.update(seconds, clock, camera, lift, viewSize);
-    tags.reveal(shot === "home" || focus !== null);
+    cast.update(seconds, clock, camera, lift, viewSize, ticks);
+    you.update(
+      player.rider,
+      player.view,
+      yourBike,
+      clock,
+      seconds,
+      camera,
+      viewSize
+    );
+    speech.update(clock, camera, viewSize);
     shading.aim(camera);
     pipeline.render(scene, camera);
 
@@ -584,18 +537,21 @@ const openRoom = (
   Reflect.set(globalThis, "__rushlineBar", {
     calls: () => renderer.info.render.calls,
     frames: () => frameId,
-    openDoor: () => {
-      doorOpenedAt ??= clock;
-    },
+    openDoor,
+    player: () => ({
+      bikeFound: player.rider.bikeFound,
+      camera: eye.mode(),
+      heading: player.rider.heading,
+      lean: player.rider.lean,
+      pace: player.rider.pace,
+      place: player.rider.place,
+      target: player.rider.target,
+      x: player.rider.x,
+      z: player.rider.z,
+    }),
     rev,
-    setFocus: (index: number | null) => {
-      focus = index;
-    },
-    setShot: (name: keyof typeof SHOTS) => {
-      focus = null;
-      shot = name;
-    },
     triangles: () => renderer.info.render.triangles,
+    walkTo: player.walkTo,
   });
   owners.push(() => {
     Reflect.deleteProperty(globalThis, "__rushlineBar");
@@ -607,16 +563,20 @@ const openRoom = (
         release();
       }
     },
+    setCamera(mode) {
+      eye.setMode(mode, player.rider.heading);
+    },
   };
 };
 
 export const createBar = (
   canvas: HTMLCanvasElement,
-  assets: Decoded<Assets>
+  assets: Decoded<Assets>,
+  startCamera: BarCamera
 ): BarScene => {
   const owners = [assets.release];
   try {
-    return openRoom(canvas, assets.value, owners);
+    return openRoom(canvas, assets.value, startCamera, owners);
   } catch (error) {
     for (const release of owners.splice(0).toReversed()) {
       release();
