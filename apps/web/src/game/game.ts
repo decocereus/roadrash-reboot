@@ -1,5 +1,5 @@
 import { createRaceLog, outcomeOf, recordTick } from "@racer/career/outcome";
-import type { RaceLog, RaceOutcome } from "@racer/career/outcome";
+import type { RaceOutcome } from "@racer/career/outcome";
 import { controlOf } from "@racer/sim/control";
 import {
   defaultSetup,
@@ -13,7 +13,6 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import type {
   Control,
   InputFrame,
-  RaceSetup,
   RiderId,
   RiderInput,
 } from "@racer/sim/state";
@@ -40,46 +39,43 @@ import {
   installFrameLoop,
   lapOf,
 } from "./frame-loop.ts";
-import type { GameEvents, GameHandle, GamePhase, RacePlan } from "./hud.ts";
+import {
+  attractAfter,
+  attractOn,
+  builtFrom,
+  countDown,
+  countdownFor,
+  dressingFor,
+  heldFrom,
+  liveRaceOf,
+  pausedFrom,
+  preparationFor,
+  raceOf,
+  racingFrom,
+  releasedFrom,
+  resumedFrom,
+  roomOf,
+  settledFrom,
+  spendConsequence,
+  spendResumeHold,
+  stoodDownFrom,
+  throttleOpen,
+  ticksHalted,
+  unprepared,
+} from "./game-session.ts";
+import type { Attract, Countdown, InRace, Session } from "./game-session.ts";
+import type { GameEvents, GameHandle, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
 import { nativeClock } from "./preparation.ts";
 import { bindQuality, createQuality } from "./presets.ts";
 import { rendererOf } from "./profile.ts";
-import {
-  bindFeedback,
-  consequenceSeconds,
-  createFeedback,
-  out,
-} from "./race-feedback.ts";
+import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
 import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 
-const COUNTDOWN_SECONDS = 3;
-const RESUME_SECONDS = 3;
 const LAST_STRETCH = 1000;
 const MARKER_KEY = "KeyB";
-
-type Prepared =
-  | { readonly kind: "dressing"; readonly setup: RaceSetup }
-  | { readonly kind: "built"; readonly setup: RaceSetup };
-
-interface Session {
-  roadTurn: number;
-  seed: number;
-  phase: GamePhase;
-  plan: RacePlan | null;
-  log: RaceLog | null;
-  settled: RaceOutcome | null;
-  overLeft: number;
-  frozen: boolean;
-  holdLeft: number;
-  countdown: number;
-  lastStretchSaid: boolean;
-  prepared: Prepared | null;
-  preparing: Promise<PrepareOutcome>;
-  dressing: Dressing;
-}
 
 const autopilot =
   (import.meta.env.DEV &&
@@ -153,22 +149,8 @@ const startGame = (
 ): GameHandle => {
   const wardrobe = createWardrobe(loadCelebrity);
   owners.push(wardrobe.dispose);
-  const session: Session = {
-    countdown: 0,
-    dressing: undressed,
-    frozen: false,
-    holdLeft: 0,
-    lastStretchSaid: false,
-    log: null,
-    overLeft: 0,
-    phase: "attract",
-    plan: null,
-    prepared: null,
-    preparing: Promise.resolve(notPrepared),
-    roadTurn: firstRoad,
-    seed: 1,
-    settled: null,
-  };
+  const firstAttract = attractOn(firstRoad);
+  let session: Session = firstAttract;
   const renderer = makeRenderer(canvas);
   owners.push(() => {
     renderer.dispose();
@@ -201,8 +183,8 @@ const startGame = (
 
   const stage = createStage(
     assets,
-    roadForTurn(session.roadTurn),
-    session.seed,
+    roadForTurn(firstAttract.roadTurn),
+    firstAttract.seed,
     quality.preset.shadowMap
   );
   owners.push(() => {
@@ -261,41 +243,28 @@ const startGame = (
     feedback,
     player,
     recorder,
-    session,
+    session: () => session,
     sound,
     stage,
   });
 
-  const begin = (nextPhase: GamePhase) => {
-    session.phase = nextPhase;
-    session.countdown = nextPhase === "countdown" ? COUNTDOWN_SECONDS : 0;
-    session.settled = null;
-    session.overLeft = 0;
-    session.frozen = false;
-    session.holdLeft = 0;
-    session.lastStretchSaid = false;
+  const clearNoticeAndClock = () => {
     feedback.notice = "";
     feedback.noticeLeft = 0;
     frame.clockReset = true;
   };
 
-  const loadAttract = (nextRoad: boolean) => {
-    session.plan = null;
-    session.log = null;
-    session.prepared = null;
+  const loadAttract = (current: Attract) => {
     recorder.leaveRace();
-    session.seed += 1;
-    if (nextRoad) {
-      session.roadTurn += 1;
-    }
+    const next = attractAfter(current);
+    session = next;
     const release = build(
-      defaultSetup(roadForTurn(session.roadTurn), session.seed),
+      defaultSetup(roadForTurn(next.roadTurn), next.seed),
       undressed,
       false
     );
-    session.dressing = undressed;
     try {
-      begin("attract");
+      clearNoticeAndClock();
       void warmSoon();
     } finally {
       release();
@@ -304,79 +273,62 @@ const startGame = (
   };
 
   const record = (view: RaceView) => {
-    if (!(session.plan && session.log) || session.settled) {
+    if (session.phase !== "countdown" && session.phase !== "racing") {
       return;
     }
     recordTick(session.log, view, session.plan.setup);
-    if (!session.log.outcome) {
+    const { outcome } = session.log;
+    if (!outcome) {
       return;
     }
-    session.settled = session.log.outcome;
-    session.phase = "settled";
+    const over = settledFrom(session, outcome);
+    session = over;
     recorder.race("end", stage.race.view.tick);
-    session.overLeft = consequenceSeconds(session.settled);
-    events.onSettle(session.plan, session.settled);
-    if (session.overLeft <= 0) {
-      events.onOver(session.plan, session.settled);
+    events.onSettle(over.plan, outcome);
+    if (over.overLeft <= 0) {
+      events.onOver(over.plan, outcome);
     }
   };
 
-  const go = (next: RacePlan) => {
-    session.prepared = null;
-    session.plan = next;
-    session.log = createRaceLog(next.setup, stage.me);
+  const go = (next: RacePlan, dressing: Dressing) => {
+    const log = createRaceLog(next.setup, stage.me);
     next.room?.listen(record);
     recorder.enterRace();
-    begin("countdown");
+    session = countdownFor(next, log, dressing);
+    clearNoticeAndClock();
     recorder.race("start", stage.race.view.tick);
   };
 
   const standDown = () => {
-    session.plan?.room?.leave();
-    session.plan = null;
-    session.log = null;
-    session.frozen = false;
-    session.phase = "idle";
+    roomOf(session)?.leave();
+    session = stoodDownFrom(session);
     quiet();
     report();
   };
 
-  const restart = (plan: RacePlan) => {
+  const restart = ({ dressing, plan }: InRace) => {
     events.onRestart();
-    const release = build(plan.setup, session.dressing, true, plan.room);
+    const release = build(plan.setup, dressing, true, plan.room);
     try {
       warmNow();
-      go(plan);
+      go(plan, dressing);
     } finally {
       release();
     }
   };
 
-  const halted = (): boolean =>
-    session.frozen || stage.warming || session.phase === "idle";
-
-  const live = (): boolean =>
-    !session.frozen &&
-    (session.phase === "countdown" || session.phase === "racing");
+  const halted = (): boolean => ticksHalted(session) || stage.warming;
 
   const controls = createControls((code) => {
     if (code === "KeyM") {
       toggleMute();
     }
-    if (
-      code === MARKER_KEY &&
-      live() &&
-      recorder.marker(stage.race.view.tick)
-    ) {
+    const race = liveRaceOf(session);
+    if (code === MARKER_KEY && race && recorder.marker(stage.race.view.tick)) {
       say("marked");
     }
-    if (
-      code === "KeyR" &&
-      session.plan?.mode === "quick" &&
-      !session.plan.room &&
-      live()
-    ) {
-      restart(session.plan);
+    if (code === "KeyR" && race?.plan.mode === "quick" && !race.plan.room) {
+      restart(race);
     }
   });
   owners.push(() => {
@@ -395,11 +347,8 @@ const startGame = (
       session.lastStretchSaid = true;
       say("lastKm");
     }
-    if (session.plan && session.settled && session.overLeft > 0) {
-      session.overLeft -= TICK_SECONDS;
-      if (session.overLeft <= 0) {
-        events.onOver(session.plan, session.settled);
-      }
+    if (session.phase === "settled" && spendConsequence(session)) {
+      events.onOver(session.plan, session.outcome);
     }
   };
 
@@ -411,7 +360,7 @@ const startGame = (
   };
 
   const frameOf = (): InputFrame =>
-    session.plan?.room || player().controller === "human"
+    roomOf(session) || player().controller === "human"
       ? playerFrame
       : emptyFrame;
 
@@ -424,14 +373,11 @@ const startGame = (
     }
   };
 
-  const countDown = () => {
-    session.countdown = session.plan?.room
-      ? session.plan.room.countdownSeconds()
-      : session.countdown - TICK_SECONDS;
-    if (session.countdown <= 0 && session.plan) {
-      session.phase = "racing";
+  const countDownTick = (state: Countdown) => {
+    if (countDown(state)) {
+      session = racingFrom(state);
       recorder.race("green", stage.race.view.tick);
-      events.onStart(session.plan);
+      events.onStart(state.plan);
     }
     holdStill();
   };
@@ -460,21 +406,20 @@ const startGame = (
   const tick = () => {
     captureAll("before");
     rememberCars();
-    if (session.holdLeft > 0) {
-      session.holdLeft -= TICK_SECONDS;
+    if (spendResumeHold(session)) {
       holdStill();
       return;
     }
     if (session.phase === "countdown") {
-      countDown();
+      countDownTick(session);
       return;
     }
     readInputs();
     if (session.phase === "attract" && attractOver()) {
-      loadAttract(true);
+      loadAttract(session);
       return;
     }
-    const room = session.plan?.room;
+    const room = roomOf(session);
     const steps = room && autopilot ? 0 : (room?.stepsDue() ?? 1);
     for (let step = 0; step < steps; step += 1) {
       stepOnce();
@@ -483,7 +428,7 @@ const startGame = (
       session.phase === "racing" &&
       devRide?.holds(stage.race.view) === true
     ) {
-      session.frozen = true;
+      session = heldFrom(session);
     }
     if (!room) {
       record(stage.race.view);
@@ -517,7 +462,7 @@ const startGame = (
     if (stage.warming) {
       return;
     }
-    session.plan?.room?.frameDrawn();
+    roomOf(session)?.frameDrawn();
     cast.clock += seconds;
     let index = -1;
     for (const rider of stage.race.view.riders) {
@@ -594,11 +539,12 @@ const startGame = (
 
   frame.last = performance.now();
   devRide?.whenReleased(() => {
-    session.frozen = false;
+    session = releasedFrom(session);
     frame.clockReset = true;
     frame.last = performance.now();
   });
   installFrameLoop({
+    attracting: () => session.phase === "attract",
     checkPresented,
     draw,
     feedback,
@@ -610,10 +556,10 @@ const startGame = (
     recorder,
     renderer,
     report,
-    session,
     skipsVsync,
     sound,
     stage,
+    throttleHeard: () => throttleOpen(session),
     tick,
   });
   owners.push(() => {
@@ -628,37 +574,31 @@ const startGame = (
     return outcome;
   };
 
-  const dressingFor = (setup: RaceSetup): boolean =>
-    session.prepared?.kind === "dressing" && session.prepared.setup === setup;
-
-  const builtFor = (setup: RaceSetup): boolean =>
-    session.prepared?.kind === "built" && session.prepared.setup === setup;
-
   const buildPrepared = async (next: RacePlan): Promise<PrepareOutcome> => {
     const { room, setup } = next;
     let dressing: Dressing | null;
     try {
       dressing = await wardrobe.dress(wornBy(wearing, setup));
     } catch (error) {
-      if (!dressingFor(setup)) {
+      if (preparationFor(session, setup)?.kind !== "dressing") {
         return notPrepared;
       }
-      session.prepared = null;
+      session = unprepared;
       return { cause: errorOf(error), kind: "failed", stage: "dress" };
     }
-    if (dressing === null || !dressingFor(setup)) {
+    const preparation = preparationFor(session, setup);
+    if (dressing === null || preparation?.kind !== "dressing") {
       return notPrepared;
     }
     let release: () => void;
     try {
       release = build(setup, dressing, true, room);
     } catch (error) {
-      session.prepared = null;
+      session = unprepared;
       return { cause: errorOf(error), kind: "failed", stage: "build" };
     }
-    session.prepared = { kind: "built", setup };
-    session.dressing = dressing;
-    begin("idle");
+    session = builtFrom(preparation, dressing);
+    clearNoticeAndClock();
     const warming = showStartWhenWarm();
     release();
     wardrobe.keep(dressing);
@@ -667,16 +607,15 @@ const startGame = (
   };
 
   const prepare = async (next: RacePlan): Promise<PrepareOutcome> => {
-    if (session.prepared?.setup === next.setup) {
-      return await session.preparing;
+    const underway = preparationFor(session, next.setup);
+    if (underway) {
+      return await underway.preparing;
     }
-    session.plan = null;
-    session.log = null;
-    session.phase = "idle";
+    const { promise, resolve } = Promise.withResolvers<PrepareOutcome>();
+    session = dressingFor(next.setup, promise);
     quiet();
-    session.prepared = { kind: "dressing", setup: next.setup };
-    session.preparing = buildPrepared(next);
-    const outcome = await session.preparing;
+    resolve(buildPrepared(next));
+    const outcome = await promise;
     if (outcome.kind === "failed") {
       recorder.fault(
         "error",
@@ -689,22 +628,49 @@ const startGame = (
 
   const startWhenPrepared = async (next: RacePlan): Promise<void> => {
     const outcome = await prepare(next);
-    if (outcome.kind !== "cancelled" && builtFor(next.setup)) {
-      go(next);
+    const built = preparationFor(session, next.setup);
+    if (outcome.kind !== "cancelled" && built?.kind === "built") {
+      go(next, built.dressing);
     }
   };
 
   const startRace = (next: RacePlan) => {
     sound.unlock();
-    if (builtFor(next.setup) && session.phase === "idle") {
+    const built = preparationFor(session, next.setup);
+    const race = raceOf(session);
+    if (built?.kind === "built") {
       if (stage.warming) {
         warmNow();
       }
-      go(next);
-    } else if (next === session.plan) {
-      restart(next);
+      go(next, built.dressing);
+    } else if (race?.plan === next) {
+      restart(race);
     } else {
       void startWhenPrepared(next);
+    }
+  };
+
+  const quitOutcome = (state: Session): RaceOutcome | null => {
+    switch (state.phase) {
+      case "attract":
+      case "idle": {
+        return null;
+      }
+      case "countdown":
+      case "racing": {
+        recorder.race("quit", stage.race.view.tick);
+        return outcomeOf(
+          state.plan.room?.confirmed ?? stage.race.view,
+          state.plan.setup,
+          state.log
+        );
+      }
+      case "settled": {
+        return state.outcome;
+      }
+      default: {
+        return state satisfies never;
+      }
     }
   };
 
@@ -713,35 +679,26 @@ const startGame = (
       releaseAll(owners);
     },
     pause() {
-      if (session.frozen || session.phase !== "racing" || session.plan?.room) {
+      const next = pausedFrom(session);
+      if (next === session) {
         return false;
       }
-      session.frozen = true;
+      session = next;
       quiet();
       return true;
     },
     prepare,
     quit() {
-      if (session.plan && !session.settled) {
-        recorder.race("quit", stage.race.view.tick);
-      }
-      const outcome =
-        session.plan && session.log
-          ? outcomeOf(
-              session.plan.room?.confirmed ?? stage.race.view,
-              session.plan.setup,
-              session.log
-            )
-          : null;
+      const outcome = quitOutcome(session);
       standDown();
       return outcome;
     },
     resume() {
-      if (!session.frozen) {
+      const next = resumedFrom(session);
+      if (next === session) {
         return;
       }
-      session.frozen = false;
-      session.holdLeft = RESUME_SECONDS;
+      session = next;
       frame.clockReset = true;
       frame.last = performance.now();
     },
