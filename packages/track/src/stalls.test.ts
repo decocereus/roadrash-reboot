@@ -38,6 +38,12 @@ const flat = (over: Partial<TrackPlan>): TrackPlan => ({
   ...over,
 });
 
+const WALK_GAP = 1.5;
+const WITHIN_ROUNDING = 1e-9;
+
+const standsInGapOf = (stall: StallFootprint, s: number) =>
+  Math.abs(stall.s - s) + WITHIN_ROUNDING < stall.halfLength + WALK_GAP;
+
 const withoutStalls = (track: Track) => {
   const { stalls: _stalls, ...rest } = track;
   return rest;
@@ -45,9 +51,9 @@ const withoutStalls = (track: Track) => {
 
 describe("Breakwater Run's bazaar", () => {
   it("holds this list of stalls, from the road's seed", () => {
-    expect(breakwater.stalls).toHaveLength(135);
-    expect(rowOf(breakwater.stalls, -1)).toHaveLength(68);
-    expect(rowOf(breakwater.stalls, 1)).toHaveLength(67);
+    expect(breakwater.stalls).toHaveLength(124);
+    expect(rowOf(breakwater.stalls, -1)).toHaveLength(63);
+    expect(rowOf(breakwater.stalls, 1)).toHaveLength(61);
     expect(breakwater.stalls.slice(0, 2)).toStrictEqual([
       {
         halfLength: 2,
@@ -66,7 +72,7 @@ describe("Breakwater Run's bazaar", () => {
         x: 8.1,
       },
     ]);
-    expect(breakwater.stalls.at(-1)?.s).toBeCloseTo(1736.9468, 3);
+    expect(breakwater.stalls.at(-1)?.s).toBeCloseTo(1737.9915, 3);
   });
 
   it("is the same list every time the road compiles", () => {
@@ -75,7 +81,7 @@ describe("Breakwater Run's bazaar", () => {
     );
   });
 
-  it("fills both footpaths of the market squeeze, a stall every 6 to 7 m", () => {
+  it("fills both footpaths of the market squeeze, a stall every 6 to 7.5 m", () => {
     for (const side of [-1, 1]) {
       const row = rowOf(breakwater.stalls, side);
       const [first] = row;
@@ -87,8 +93,20 @@ describe("Breakwater Run's bazaar", () => {
       expect(endOf(last)).toBeLessThanOrEqual(MARKET_TO);
       const pitch = (last.s - first.s) / (row.length - 1);
       expect(pitch).toBeGreaterThan(6);
-      expect(pitch).toBeLessThan(7);
+      expect(pitch).toBeLessThan(7.5);
     }
+  });
+
+  it("leaves walkers a gap at every place they cross", () => {
+    const sites = breakwater.walkSites.filter(
+      ({ s }) => s > MARKET_FROM && s < MARKET_TO
+    );
+    expect(sites.length).toBeGreaterThanOrEqual(11);
+    expect(
+      sites.flatMap((site) =>
+        breakwater.stalls.filter((stall) => standsInGapOf(stall, site.s))
+      )
+    ).toStrictEqual([]);
   });
 
   it("leaves a gap to the next stall on the footpath, and never repeats a kind beside itself", () => {
@@ -177,6 +195,23 @@ describe("placing stalls", () => {
     for (const id of roadIds.filter((road) => road !== "breakwater-run")) {
       expect(trackFor(id).stalls).toStrictEqual([]);
     }
+  });
+
+  it("moves its gaps with the road's walk sites", () => {
+    const { stalls, walkSites } = compileTrack(
+      flat({
+        bazaars: [{ from: 1300, to: 1700 }],
+        crowds: [{ from: 1300, sites: 6, to: 1700 }],
+      })
+    );
+    const crowd = walkSites.filter(({ id }) => id.startsWith("crowd"));
+    expect(crowd).toHaveLength(6);
+    expect(stalls.length).toBeGreaterThan(0);
+    expect(
+      crowd.flatMap((site) =>
+        stalls.filter((stall) => standsInGapOf(stall, site.s))
+      )
+    ).toStrictEqual([]);
   });
 
   it("stands no stall in a crossing's box", () => {

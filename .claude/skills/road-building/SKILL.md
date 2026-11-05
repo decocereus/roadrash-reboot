@@ -57,6 +57,7 @@ People:
 - `crossings` reject bends, so a stretch that bends gets a plan's `crowds` instead. Its walkers cross with no lights, on a gap in the cars. A region's `footfall` raises every road in that city, so check the other roads' sites when you change it.
 - Walkers add hits more than they add stuck. Going from 28 to 59 walkers tripled the times riders hit one and added about 2 points to the stuck mean at most.
 - Every walker in fog range draws about 5,400 triangles with no level of detail. Breakwater Run's peak went from 59,532 to 189,420. Put the walker count beside the frame cost.
+- A plan's `bazaars` fills a stretch's footpaths with stalls. They leave a 3 m gap at every walk site, so moving `crowds` or `footfall` moves the stalls too, and the stall pins in `packages/track/src/stalls.test.ts` change with them. Stalls are solid for a rider, a sliding bike and a thrown body. The market's 56 people draw beside the walkers, about 300,000 triangles a pass while they are in fog range, so put that beside the frame cost too.
 
 Hazards:
 

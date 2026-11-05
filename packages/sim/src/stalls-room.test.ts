@@ -16,7 +16,7 @@ import type { Control, RaceState, RiderId } from "./state.ts";
 const road = trackFor("breakwater-run");
 const RIVAL = riderIdAt(1);
 const SEATS = [PLAYER_RIDER, RIVAL] as const;
-const INTO_THE_MARKET = 2300;
+const INTO_THE_MARKET = 1800;
 const RACE_TICKS = 4000;
 const LEAD_TICKS = 6;
 const SWERVE_TICKS = 150;

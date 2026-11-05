@@ -58,7 +58,7 @@ Density decides the triangle count, and the merged mesh keeps the calls at 2 eit
 ## How the game uses it
 
 - `Track.stalls` comes from `packages/track/src/stalls.ts`, whose `stallSizes` match the footprints in `metrics.json`. A stall's front stands 2.6 m from the road's edge, not the 1.7 m of the review layout, because the chevrons and lamp poles reach 2.58 m from the road's edge.
-- The whole market is 47,667 triangles and 102,167 vertices, 23,105 and 47,389 in the cel mesh and 24,562 and 54,778 in the glow mesh, about 3.96 MB on the GPU. That is 135 stalls and their decorations, worked out from the shipped kit and pinned in `apps/web/test/bazaar-kit.test.ts`. The cost above assumed 30 stalls.
+- The whole market is 42,794 triangles and 91,094 vertices, 20,486 and 42,094 in the cel mesh and 22,308 and 49,000 in the glow mesh, about 3.54 MB on the GPU. That is 124 stalls and their decorations, worked out from the shipped kit and pinned in `apps/web/test/bazaar-kit.test.ts`. The cost above assumed 30 stalls.
 - The merged mesh costs 2 draw calls in the main pass and 2 more in the normal pass in `post.ts`, which the table above leaves out, and none in the shadow pass.
 - `clearance.ts` collapses one stall's index range when the camera reaches it, so the merged mesh and per-stall hiding are not a choice.
 

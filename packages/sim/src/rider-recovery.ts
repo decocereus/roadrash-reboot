@@ -5,6 +5,7 @@ import type { Track } from "@racer/track/track";
 import { onRoad } from "./cross-traffic.ts";
 import { pullOver } from "./police.ts";
 import { damageRunOver } from "./rider-crash.ts";
+import { stopBikeAtStall, stopBodyAtStall } from "./stalls.ts";
 import {
   approach,
   BIKE_HALF_LENGTH,
@@ -53,6 +54,7 @@ const slideBike = (track: Track, rider: RiderState): void => {
     -vergeHalfWidth,
     vergeHalfWidth
   );
+  stopBikeAtStall(track, rider);
 };
 
 const slide = (track: Track, rider: RiderState): boolean => {
@@ -81,6 +83,7 @@ const slide = (track: Track, rider: RiderState): boolean => {
     -bodyVerge,
     bodyVerge
   );
+  stopBodyAtStall(track, rider);
 
   slideBike(track, rider);
   rider.air = Math.max(0, rider.air - 8 * TICK_SECONDS);
@@ -342,6 +345,9 @@ const run = (
     -bodyVerge,
     bodyVerge
   );
+  if (!rider.runningToBike) {
+    stopBodyAtStall(track, rider);
+  }
 };
 
 const mount = (state: RaceState, rider: RiderState): void => {

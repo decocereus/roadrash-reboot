@@ -3,16 +3,12 @@ import type { Track } from "@racer/track/track";
 
 import { comesDownOnCarrier, solidBoxOf, stepCarrierRamp } from "./carrier.ts";
 import { onRoad } from "./cross-traffic.ts";
-import {
-  hitCar,
-  hitCrossCar,
-  hitProps,
-  hitStalls,
-} from "./rider-collisions.ts";
+import { hitCar, hitCrossCar, hitProps } from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
 import { ride } from "./rider-drive.ts";
 import { fly } from "./rider-flight.ts";
 import { stepOffBike } from "./rider-recovery.ts";
+import { hitStalls } from "./stalls.ts";
 import { clamp } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 

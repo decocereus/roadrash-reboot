@@ -1,4 +1,3 @@
-import { LONGEST_STALL_HALF } from "@racer/track/stalls";
 import { firstAlong } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
@@ -22,10 +21,6 @@ const PROP_CRASH_SPEED = 7;
 const CLEARANCE_OVER_PROPS = 2;
 const SIDESTEP_SPEED = 3;
 const STEERING_AWAY = 0.5;
-const STALL_CRASH_SPEED = 14;
-const STALL_NUDGE = 0.06;
-const STALL_BUMP_FROM = WALKING_PACE + 1;
-const STALL_REACH = LONGEST_STALL_HALF + BIKE_HALF_LENGTH;
 
 export const glancesOff = (
   state: RaceState,
@@ -72,56 +67,6 @@ export const hitProps = (
       }
       rider.x -= Math.sign(prop.x) * 0.06;
       rider.speed = Math.min(rider.speed, 3);
-    }
-  }
-  return false;
-};
-
-const touchStall = (
-  state: RaceState,
-  rider: RiderState,
-  toRoad: number
-): void => {
-  if (rider.speed > STALL_BUMP_FROM) {
-    state.events.push({ kind: "bump", rider: rider.id });
-  }
-  rider.speed = Math.min(rider.speed, WALKING_PACE);
-  rider.x += toRoad * STALL_NUDGE;
-  if (rider.lateralSpeed * toRoad < 0) {
-    rider.lateralSpeed = 0;
-  }
-};
-
-export const hitStalls = (
-  state: RaceState,
-  track: Track,
-  rider: RiderState
-): boolean => {
-  const { stalls } = track;
-  if (rider.air >= CLEARANCE_OVER_PROPS) {
-    return false;
-  }
-  for (
-    let index = firstAlong(stalls, rider.s - STALL_REACH);
-    index < stalls.length;
-    index += 1
-  ) {
-    const stall = stalls[index];
-    if (!stall || stall.s > rider.s + STALL_REACH) {
-      return false;
-    }
-    if (
-      Math.abs(stall.s - rider.s) < stall.halfLength + BIKE_HALF_LENGTH &&
-      Math.abs(stall.x - rider.x) < stall.halfWidth + BIKE_HALF_WIDTH
-    ) {
-      const toRoad = -Math.sign(stall.x);
-      if (rider.speed <= STALL_CRASH_SPEED) {
-        touchStall(state, rider, toRoad);
-        return false;
-      }
-      throwRider(state, rider, "prop", 0.15, 0.5);
-      rider.bodyLateralSpeed = toRoad * Math.abs(rider.bodyLateralSpeed);
-      return true;
     }
   }
   return false;

@@ -649,12 +649,13 @@ The market on a road's footpaths: the stall list a road compiles from its seed, 
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#breakwater-run-salt-coast](design/tracks.md#breakwater-run-salt-coast), [docs/art/breakwater-stalls/README.md#contract](art/breakwater-stalls/README.md#contract)
 - Verify: [bazaar.md](../.claude/skills/verify-rushline/features/bazaar.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/track/src/stalls.ts`, `packages/track/src/stalls.test.ts`, `packages/sim/src/stalls-room.test.ts`, `packages/sim/src/stalls.test.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`, `apps/web/test/bazaar.test.ts`, `apps/web/test/bazaar-kit.test.ts`
+- Owns: `packages/track/src/stalls.ts`, `packages/track/src/stalls.test.ts`, `packages/sim/src/stalls.ts`, `packages/sim/src/stalls-room.test.ts`, `packages/sim/src/stalls.test.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`, `apps/web/test/bazaar.test.ts`, `apps/web/test/bazaar-kit.test.ts`
 
 Source files:
 
 - `apps/web/src/game/bazaar-crowd.ts`
 - `apps/web/src/game/bazaar.ts`
+- `packages/sim/src/stalls.ts`
 - `packages/track/src/stalls.ts`
 
 Test files:

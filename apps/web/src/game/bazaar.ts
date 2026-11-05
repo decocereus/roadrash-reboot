@@ -2,6 +2,7 @@ import { createRandom } from "@racer/track/random";
 import { stallVariants } from "@racer/track/stalls";
 import type { StallFootprint } from "@racer/track/stalls";
 import type { Track, TrackPoint } from "@racer/track/track";
+import type { WalkSite } from "@racer/track/walk-sites";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
@@ -57,7 +58,8 @@ const decosBetween = (
   stall: StallFootprint,
   next: StallFootprint,
   place: number,
-  random: () => number
+  random: () => number,
+  walkSites: readonly WalkSite[]
 ): Laid[] => {
   const end = stall.s + stall.halfLength;
   const gap = next.s - next.halfLength - end;
@@ -70,7 +72,10 @@ const decosBetween = (
   const laid: Laid[] = [];
   const ground = groundDecos[place % groundDecos.length];
   const x = side * (front + GROUND_DECO_BACK);
-  if (ground && random() < GROUND_DECO_CHANCE) {
+  const walkersPass = walkSites.some(
+    (site) => site.s > end && site.s < end + gap
+  );
+  if (ground && random() < GROUND_DECO_CHANCE && !walkersPass) {
     laid.push({ drawn: { part: ground, s, turn: turnOf(x), x }, stall: null });
   }
   const overhead = side * (front + STRING_LIGHTS_BACK);
@@ -94,7 +99,7 @@ const decosBetween = (
   return laid;
 };
 
-const layOut = ({ plan, stalls }: Track): Laid[] => {
+const layOut = ({ plan, stalls, walkSites }: Track): Laid[] => {
   const random = createRandom(plan.seed + SEED_SALT);
   const laid: Laid[] = stalls.map((stall) => ({
     drawn: {
@@ -111,7 +116,7 @@ const layOut = ({ plan, stalls }: Track): Laid[] => {
       const stall = row[place];
       const next = row[place + 1];
       if (stall && next) {
-        laid.push(...decosBetween(stall, next, place, random));
+        laid.push(...decosBetween(stall, next, place, random, walkSites));
       }
     }
   }

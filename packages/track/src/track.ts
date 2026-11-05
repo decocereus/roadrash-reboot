@@ -251,7 +251,8 @@ export const compileTrack = (plan: TrackPlan): Track => {
   const crossings = compileCrossings(plan.crossings, centreline);
   checkCrossingsOffTapers(plan, crossings, tapers);
   const widest = widestLanes(plan.districts);
-  const stalls = placeStalls(plan, along, crossings);
+  const walkSites = placeWalkSites({ crossings, length, plan });
+  const stalls = placeStalls(plan, along, crossings, walkSites);
   const props = scatterProps(plan, along).filter(
     (prop) =>
       !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN) &&
@@ -273,8 +274,7 @@ export const compileTrack = (plan: TrackPlan): Track => {
     ),
     stalls,
   };
-  const placed = { ...road, hazards: placeHazards(road) };
-  return { ...placed, walkSites: placeWalkSites(placed) };
+  return { ...road, hazards: placeHazards(road), walkSites };
 };
 
 const sampleAt = sampleAlong;

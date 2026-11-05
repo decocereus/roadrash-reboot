@@ -65,12 +65,12 @@
       "window": "a1dc025e28bc1aff345465c9900564f6"
     },
     {
-      "final": "79a05cea993a23c18248a7ebec7e3051",
-      "full": "b53e71fd9b906e0ba6deef0495739642",
+      "final": "648cde349cdcdc7498a89b347d543a52",
+      "full": "0b66c41ab9109f1965c150c39873fe8d",
       "id": "breakwater-run/tier3/seed9",
-      "result": null,
+      "result": "busted",
       "ticks": 7200,
-      "window": "9d6adfc6fb3993d61c7a2b286ca27307"
+      "window": "774e2d11abd194a703e194f5875ac05a"
     },
     {
       "final": "f6516a9d7a797c8ee9d0af3e1426bb5e",
@@ -93,7 +93,7 @@
     "fixed": 7200,
     "limit": 54000,
     "recordedAt": ["a0674a52", "feat/breakwater-bazaar"],
-    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical. Re-recorded again when a car moving back to its lane where the road opens began braking for a car stopped there. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 13065 to a finish at tick 13075, and the other ten cases are identical. Re-recorded again when Breakwater Run took its eighth district, the Arcades neck, and its tighter and added bends. On the new road the breakwater case's seed 8 is busted at tick 3794 at 1,975 m, so it would no longer ride the neck, the market cross or the trucks, and the case moved to seed 9, which finishes at tick 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took more traffic, more walkers and more hazards. The breakwater ride still finishes, at tick 14865 where it was 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took its market stalls. The setup digest now lists a road's stalls, so every hash moved. With the stalls left out of the digest, the ten cases on other roads and the stress field are identical hash for hash, tick by tick, so only the digest moved them. The breakwater-run/tier3/seed9 row also moved because the stalls took out roadside trees and rocks that the digest lists, and it still finishes at tick 13808. Re-recorded on the merge of the two, because both change the road the two breakwater rows ride.",
+    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical. Re-recorded again when a car moving back to its lane where the road opens began braking for a car stopped there. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 13065 to a finish at tick 13075, and the other ten cases are identical. Re-recorded again when Breakwater Run took its eighth district, the Arcades neck, and its tighter and added bends. On the new road the breakwater case's seed 8 is busted at tick 3794 at 1,975 m, so it would no longer ride the neck, the market cross or the trucks, and the case moved to seed 9, which finishes at tick 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took more traffic, more walkers and more hazards. The breakwater ride still finishes, at tick 14865 where it was 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took its market stalls. The setup digest now lists a road's stalls, so every hash moved. With the stalls left out of the digest, the ten cases on other roads and the stress field are identical hash for hash, tick by tick, so only the digest moved them. The breakwater-run/tier3/seed9 row also moved because the stalls took out roadside trees and rocks that the digest lists, and it still finishes at tick 13808. Re-recorded on the merge of the two, and again when the stalls left gaps at the walk sites and began to stop sliding bikes and bodies. Only the two breakwater rows moved. The breakwater ride now ends at tick 6523, when a cop arrests the rider after a fight at 4,184 m. It crosses the market without touching a stall, and no stall is involved.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -165,12 +165,12 @@
       "window": "a1dc025e28bc1aff345465c9900564f6"
     },
     {
-      "final": "c00660be33f9d51b6270235d2ac8092f",
-      "full": "a5ddb2b930adec05a0f9ab12afdf819f",
+      "final": "682f706a1af325d6c351370bcf538a99",
+      "full": "cb2e4dd8f7e2c5bb37e837cc2dd06e36",
       "id": "breakwater-run/tier3/seed9",
-      "result": "finished",
-      "ticks": 14865,
-      "window": "9d6adfc6fb3993d61c7a2b286ca27307"
+      "result": "busted",
+      "ticks": 6523,
+      "window": "774e2d11abd194a703e194f5875ac05a"
     },
     {
       "final": "48daa3525478159781a46d2c8602e5fc",

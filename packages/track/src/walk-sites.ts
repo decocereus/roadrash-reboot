@@ -31,7 +31,7 @@ export const walkersOn = (sites: readonly WalkSite[]): number => {
   return count;
 };
 
-type Road = Omit<Track, "walkSites">;
+type Road = Pick<Track, "crossings" | "length" | "plan">;
 
 const WALK_SEED_SALT = 0x77_a1;
 const CROWD_SEED_SALT = 0x3c_19;

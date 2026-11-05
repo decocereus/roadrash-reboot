@@ -17,8 +17,8 @@ import { artFile } from "./art-files.ts";
 
 const STALL_LIMIT = 400;
 const DECO_LIMIT = 60;
-const MARKET_CEL_TRIANGLES = 23_105;
-const MARKET_GLOW_TRIANGLES = 24_562;
+const MARKET_CEL_TRIANGLES = 20_486;
+const MARKET_GLOW_TRIANGLES = 22_308;
 
 const kit = async () =>
   await assetParsers.parts(artFile(modelUrls.stalls), modelUrls.stalls);

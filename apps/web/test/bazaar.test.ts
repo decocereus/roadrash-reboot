@@ -83,15 +83,15 @@ const walkerCount = (world: World): number => {
 };
 
 describe("the bazaar's crowd", () => {
-  it("is sixty people, half of them serving, on every third stall", () => {
-    expect(crowd).toHaveLength(60);
-    expect(crowd.filter(({ mode }) => mode === "serve")).toHaveLength(30);
-    expect(crowd.filter(({ mode }) => mode === "haggle")).toHaveLength(15);
-    expect(crowd.filter(({ mode }) => mode === "browse")).toHaveLength(15);
+  it("is 56 people, half of them serving, on every third stall", () => {
+    expect(crowd).toHaveLength(56);
+    expect(crowd.filter(({ mode }) => mode === "serve")).toHaveLength(28);
+    expect(crowd.filter(({ mode }) => mode === "haggle")).toHaveLength(14);
+    expect(crowd.filter(({ mode }) => mode === "browse")).toHaveLength(14);
   });
 
   it("is the same people every time, each with their own id", () => {
-    expect(new Set(crowd.map(({ id }) => id)).size).toBe(60);
+    expect(new Set(crowd.map(({ id }) => id)).size).toBe(crowd.length);
     expect(crowdAt(track)).toStrictEqual(crowd);
   });
 
@@ -208,10 +208,10 @@ describe("the bazaar in the world", () => {
       );
       return walkerCount(world);
     };
-    expect(show(1280)).toBe(60);
+    expect(show(1280)).toBe(crowd.length);
     const midway = show(1600);
     expect(midway).toBeGreaterThan(0);
-    expect(midway).toBeLessThan(60);
+    expect(midway).toBeLessThan(crowd.length);
     expect(show(1800)).toBe(0);
     world.dispose();
   });

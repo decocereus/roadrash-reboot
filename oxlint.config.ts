@@ -69,6 +69,7 @@ export const deterministicFiles = [
   "packages/sim/src/snapshot-setup.ts",
   "packages/sim/src/signals.ts",
   "packages/sim/src/snapshot.ts",
+  "packages/sim/src/stalls.ts",
   "packages/sim/src/state.ts",
   "packages/sim/src/traffic.ts",
   "packages/sim/src/weapons.ts",

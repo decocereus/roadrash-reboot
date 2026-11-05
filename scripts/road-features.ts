@@ -13,6 +13,7 @@ export const roadFeatures: readonly FeatureEntry[] = [
     owns: [
       "packages/track/src/stalls.ts",
       "packages/track/src/stalls.test.ts",
+      "packages/sim/src/stalls.ts",
       "packages/sim/src/stalls-room.test.ts",
       "packages/sim/src/stalls.test.ts",
       "apps/web/src/game/bazaar.ts",

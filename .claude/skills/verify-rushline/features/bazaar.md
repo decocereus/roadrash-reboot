@@ -33,5 +33,5 @@ Preconditions:
 ## Gotchas
 
 - The `clear` flag empties the road, which is what these recipes want. Remove it to see the stalls with the traffic and the field.
-- A rider on foot and a thrown body pass through a stall, and a rider threading a gap passes through decorations. Neither is a defect in this feature.
+- A rider threading a gap passes through decorations. That is not a defect in this feature. A rider, a bike or a body inside a stall's footprint for more than a moment is one.
 - `packages/sim/src/stalls.test.ts` and `apps/web/test/bazaar.test.ts` prove the rule and the clearance. They do not show how it looks.

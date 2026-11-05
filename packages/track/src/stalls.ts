@@ -3,6 +3,7 @@ import type { TrackCrossing } from "./crossings.ts";
 import { roadHalfWidthAt, vergeHalfWidthAt } from "./districts.ts";
 import type { RoadWidths } from "./districts.ts";
 import { createRandom, nextSeed } from "./random.ts";
+import type { WalkSite } from "./walk-sites.ts";
 
 export const stallVariants = [
   "fabric",
@@ -60,25 +61,42 @@ const STALL_SEED_SALT = 0xba_2a;
 const LEAST_GAP = 2;
 const GAP_SPREAD = 1;
 const TREE_AND_BLOCK_MARGIN = 1.5;
+const WALK_GAP = 1.5;
 const SIDES = [-1, 1] as const;
 
-const variantAfter = (
+const variantFitting = (
   roll: number,
-  previous: StallVariant | null
-): StallVariant => {
-  const choices = stallVariants.filter((variant) => variant !== previous);
-  const variant = choices[Math.floor(roll * choices.length)];
-  if (!variant) {
-    throw new Error(`A dice roll of ${roll} picked no stall.`);
-  }
-  return variant;
+  previous: StallVariant | null,
+  room: number
+): StallVariant | undefined => {
+  const choices = stallVariants.filter(
+    (variant) => variant !== previous && stallSizes[variant].wide <= room
+  );
+  return choices[Math.floor(roll * choices.length)];
 };
 
-const clearOfCrossings = (
+const freeRuns = (
+  { from, to }: Bazaar,
   crossings: readonly TrackCrossing[],
-  from: number,
-  to: number
-): boolean => crossings.every(({ fromS, toS }) => from >= toS || to <= fromS);
+  walkSites: readonly WalkSite[]
+): Bazaar[] => {
+  const taken = [
+    ...crossings.map(({ fromS, toS }) => ({ from: fromS, to: toS })),
+    ...walkSites.map(({ s }) => ({ from: s - WALK_GAP, to: s + WALK_GAP })),
+  ].toSorted((left, right) => left.from - right.from);
+  const runs: Bazaar[] = [];
+  let start = from;
+  for (const stretch of taken) {
+    if (stretch.from > start && start < to) {
+      runs.push({ from: start, to: Math.min(stretch.from, to) });
+    }
+    start = Math.max(start, stretch.to);
+  }
+  if (start < to) {
+    runs.push({ from: start, to });
+  }
+  return runs;
+};
 
 const footprintOn = (
   road: RoadAlong,
@@ -109,30 +127,27 @@ const footprintOn = (
 
 const placeAlong = (
   road: RoadAlong,
-  crossings: readonly TrackCrossing[],
-  bazaar: Bazaar,
+  runs: readonly Bazaar[],
   side: -1 | 1,
   seed: number
 ): Omit<StallFootprint, "id">[] => {
   const random = createRandom(nextSeed(seed + STALL_SEED_SALT + side));
   const placed: Omit<StallFootprint, "id">[] = [];
   let previous: StallVariant | null = null;
-  let { from } = bazaar;
-  for (;;) {
-    const variant = variantAfter(random(), previous);
-    const { wide } = stallSizes[variant];
-    if (from + wide > bazaar.to) {
-      return placed;
+  for (const run of runs) {
+    let { from } = run;
+    let variant = variantFitting(random(), previous, run.to - from);
+    while (variant) {
+      const footprint = footprintOn(road, variant, from, side);
+      if (footprint) {
+        placed.push(footprint);
+      }
+      previous = variant;
+      from += stallSizes[variant].wide + LEAST_GAP + random() * GAP_SPREAD;
+      variant = variantFitting(random(), previous, run.to - from);
     }
-    const footprint = clearOfCrossings(crossings, from, from + wide)
-      ? footprintOn(road, variant, from, side)
-      : null;
-    if (footprint) {
-      placed.push(footprint);
-    }
-    previous = variant;
-    from += wide + LEAST_GAP + random() * GAP_SPREAD;
   }
+  return placed;
 };
 
 const checkBazaars = (
@@ -151,15 +166,15 @@ const checkBazaars = (
 export const placeStalls = (
   laid: LaidBazaars,
   road: RoadAlong,
-  crossings: readonly TrackCrossing[]
+  crossings: readonly TrackCrossing[],
+  walkSites: readonly WalkSite[]
 ): StallFootprint[] => {
   checkBazaars(laid, road);
   return laid.bazaars
-    .flatMap((bazaar) =>
-      SIDES.flatMap((side) =>
-        placeAlong(road, crossings, bazaar, side, laid.seed)
-      )
-    )
+    .flatMap((bazaar) => {
+      const runs = freeRuns(bazaar, crossings, walkSites);
+      return SIDES.flatMap((side) => placeAlong(road, runs, side, laid.seed));
+    })
     .toSorted((left, right) => left.s - right.s)
     .map((stall, index) => ({ ...stall, id: `stall-${index}` }));
 };
