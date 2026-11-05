@@ -10,6 +10,7 @@ const RIDER_KINDS = ["human", "ai"] as const;
 
 const RosterEntrySchema = Schema.Struct({
   bikeId: Schema.String,
+  colour: Schema.NullOr(Schema.Number),
   kind: Schema.Literals(RIDER_KINDS),
   name: Schema.NullOr(Schema.String),
   rider: Schema.Number,
@@ -53,6 +54,11 @@ export type RaceManifest = typeof RaceManifestSchema.Type;
 
 export const humanNames = (manifest: RaceManifest): readonly string[] =>
   manifest.roster.flatMap((entry) => (entry.name === null ? [] : [entry.name]));
+
+export const humanColours = (manifest: RaceManifest): readonly number[] =>
+  manifest.roster.flatMap((entry) =>
+    entry.colour === null ? [] : [entry.colour]
+  );
 
 export const seatedCount = (manifest: RaceManifest): number =>
   manifest.roster.filter((entry) => entry.kind === "human").length;

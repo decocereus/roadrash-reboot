@@ -1,4 +1,4 @@
-import type { GuestNames } from "@racer/career/room-race";
+import type { GuestColours, GuestNames } from "@racer/career/room-race";
 import { coasting } from "@racer/sim/control";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RaceView } from "@racer/sim/race-view";
@@ -17,6 +17,8 @@ export interface RoomNet {
 }
 
 export interface RoomReport {
+  readonly colours: GuestColours;
+  readonly myColour: number | undefined;
   readonly names: GuestNames;
   readonly net: RoomNet;
   readonly raceId: string;
@@ -25,6 +27,7 @@ export interface RoomReport {
 
 export interface RoomRun extends RaceRun {
   readonly me: RiderId;
+  readonly riderColours: ReadonlyMap<RiderId, number>;
   readonly confirmed: RaceView;
   readonly countdownSeconds: () => number;
   readonly frameDrawn: () => void;
@@ -41,7 +44,7 @@ export const createRoomRun = (
   roomId: string,
   latency: InputLatency
 ): RoomRun => {
-  const { client, me, names, raceId } = race;
+  const { client, colours, me, names, raceId, riderColours } = race;
   let sent: Control = coasting;
   return {
     confirmed: client.confirmed,
@@ -60,6 +63,8 @@ export const createRoomRun = (
     report: () => {
       client.settle();
       return {
+        colours,
+        myColour: riderColours.get(me),
         names,
         net: {
           inputToFrame: latency.summary(),
@@ -74,6 +79,7 @@ export const createRoomRun = (
         roomId,
       };
     },
+    riderColours,
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       if (control !== sent) {

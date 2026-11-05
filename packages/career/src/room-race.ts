@@ -109,17 +109,18 @@ export const seatedRace = (
 };
 
 export type GuestNames = ReadonlyMap<RacerId, string>;
+export type GuestColours = ReadonlyMap<RacerId, number>;
 
-export const guestNames = (
+export const byGuest = <Value>(
   setup: CareerRaceSetup,
   me: RiderId,
-  names: readonly string[]
-): GuestNames => {
-  const humans = firstRacers(setup, names.length);
+  values: readonly Value[]
+): ReadonlyMap<RacerId, Value> => {
+  const humans = firstRacers(setup, values.length);
   return new Map(
     createRaceLog(setup, me).entrants.flatMap((entrant) => {
-      const name = names[humans.indexOf(entrant.rider)];
-      return name === undefined ? [] : [[entrant.rival, name] as const];
+      const value = values[humans.indexOf(entrant.rider)];
+      return value === undefined ? [] : [[entrant.rival, value] as const];
     })
   );
 };

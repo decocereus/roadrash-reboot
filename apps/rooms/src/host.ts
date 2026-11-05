@@ -37,7 +37,13 @@ import {
 import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RoomNote } from "./notes.ts";
-import { raceSeatsOf, seatFor, tallyOf, traceSeats } from "./race-seat.ts";
+import {
+  raceSeatsOf,
+  rosterOf,
+  seatFor,
+  tallyOf,
+  traceSeats,
+} from "./race-seat.ts";
 import type { Seat, SeatLink } from "./race-seat.ts";
 import type { RoomKind } from "./room-id.ts";
 import {
@@ -383,7 +389,12 @@ export const createHost = (
       if (!reporting.has(person.socket)) {
         seats.set(
           person.socket,
-          seatFor(person.socket, person.name, person.link)
+          seatFor(
+            person.socket,
+            person.name,
+            lobby.colourOf(person.memberId),
+            person.link
+          )
         );
       }
     }
@@ -437,9 +448,6 @@ export const createHost = (
     running = run;
     const trackHash = trackDigest(setup.track);
     const racerIds = firstRacers(setup, Number.POSITIVE_INFINITY);
-    const namesBySeat = new Map(
-      [...seats.values()].map((seat) => [seat.rider, seat.name])
-    );
     const manifest: RaceManifest = {
       build: ports.build,
       contentHash: [...room.digest],
@@ -447,20 +455,7 @@ export const createHost = (
       protocol: ROOM_PROTOCOL,
       raceId,
       reconnect: "none",
-      roster: racerIds.flatMap((rider) => {
-        const state = room.state.riders.find((each) => each.id === rider);
-        const name = namesBySeat.get(rider) ?? null;
-        return state
-          ? [
-              {
-                bikeId: state.bike.id,
-                kind: name === null ? ("ai" as const) : ("human" as const),
-                name,
-                rider,
-              },
-            ]
-          : [];
-      }),
+      roster: rosterOf(room, racerIds, [...seats.values()]),
       rule,
       seed,
       tickRate: Math.round(1 / TICK_SECONDS),

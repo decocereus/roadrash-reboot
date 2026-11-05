@@ -455,7 +455,6 @@ Source files:
 - `apps/web/src/bar-view.ts`
 - `apps/web/src/components/bar-lobby.tsx`
 - `apps/web/src/components/bar-stage.tsx`
-- `apps/web/src/game/bar-blocks.ts`
 - `apps/web/src/game/bar-camera.ts`
 - `apps/web/src/game/bar-cast.ts`
 - `apps/web/src/game/bar-garage.ts`
@@ -604,6 +603,7 @@ Source files:
 - `apps/web/src/game/figure-weapons.ts`
 - `apps/web/src/game/figure-wear.ts`
 - `apps/web/src/game/fleet.ts`
+- `apps/web/src/game/rider-blocks.ts`
 - `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-views.ts`
 
