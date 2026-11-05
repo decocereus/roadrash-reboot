@@ -93,6 +93,8 @@ const Alert = ({
   );
 };
 
+type Overlay = "nothing" | "settings" | "erase";
+
 export const BackRoomScreen = ({
   save,
   failure,
@@ -108,8 +110,7 @@ export const BackRoomScreen = ({
   readonly onQuickRace: () => void;
   readonly onStartOver: () => void;
 }) => {
-  const [asking, setAsking] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay>("nothing");
   const quick: MenuAction[] = [
     {
       detail: "Any road, no money at stake",
@@ -121,14 +122,14 @@ export const BackRoomScreen = ({
       id: "settings",
       label: "Settings",
       run: () => {
-        setAdjusting(true);
+        setOverlay("settings");
       },
     },
   ];
   const careerMenu = (): MenuAction[] => {
     if (save.status === "ready") {
       return careerActions(save.career, onContinue, () => {
-        setAsking(true);
+        setOverlay("erase");
       });
     }
     if (save.status === "corrupt") {
@@ -137,10 +138,10 @@ export const BackRoomScreen = ({
     return [{ id: "continue", label: "Career", run: onNewCareer }];
   };
   const career = careerMenu();
-  useEscape(onContinue, save.status === "ready" && !(asking || adjusting));
+  useEscape(onContinue, save.status === "ready" && overlay === "nothing");
   return (
     <Screen className="bg-ink flex" enter="fade">
-      <Stage inert={asking || adjusting ? true : undefined}>
+      <Stage inert={overlay === "nothing" ? undefined : true}>
         <Plate
           box={BACKDROP}
           className="object-cover"
@@ -150,7 +151,7 @@ export const BackRoomScreen = ({
         {save.status !== "loading" && (
           <PinnedList
             actions={[...career, ...quick]}
-            autoFocus={!adjusting}
+            autoFocus={overlay !== "settings"}
             label="Back room"
             primary="continue"
             title="Back room"
@@ -166,22 +167,22 @@ export const BackRoomScreen = ({
           </p>
         </BarStrip>
       </Stage>
-      {adjusting && (
+      {overlay === "settings" && (
         <SettingsScreen
           onBack={() => {
-            setAdjusting(false);
+            setOverlay("nothing");
           }}
         />
       )}
-      {asking && save.status === "ready" && (
+      {overlay === "erase" && save.status === "ready" && (
         <Confirm
           defaultValue="keep"
           label="Start over"
           onDismiss={() => {
-            setAsking(false);
+            setOverlay("nothing");
           }}
           onSelect={(value) => {
-            setAsking(false);
+            setOverlay("nothing");
             if (value === "erase") {
               onNewCareer();
             }
