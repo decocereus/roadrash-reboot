@@ -288,6 +288,15 @@ describe("the browser save", () => {
     });
   });
 
+  it("marks the career unsaved when the browser refuses to save a left race's charge", () => {
+    const storage = memoryStorage();
+    storeCareer(opened(storage), midRace(freshCareer(0.75)));
+    storage.failing = "set";
+    expect(
+      saveStateOf(loadCareer(recordedRules, opened(storage)))
+    ).toMatchObject({ status: "ready", unsaved: true });
+  });
+
   it("saves a new career over a save it could not read, and reports only a refused write", () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, "the unread save");
