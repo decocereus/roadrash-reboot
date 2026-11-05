@@ -14,6 +14,8 @@ import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
+import { stepRoom } from "../race-handoff.ts";
+import type { RoomHandoff } from "../race-handoff.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
@@ -24,10 +26,25 @@ import {
   RoomInviteScreen,
   RoomLobbyScreen,
 } from "./screens/room-lobby.tsx";
+import { useHandoff } from "./use-handoff.ts";
 
 const DOOR_MOMENT_MS = 5000;
 const REDRAW_MS = 1000;
 const REOPEN_MS = 2000;
+
+interface SeatRide {
+  readonly plan: RacePlan;
+  readonly seat: RoomSeat;
+}
+
+const inTheLobby = (): RoomHandoff<SeatRide> => ({ kind: "lobby" });
+
+const afterDoorMoment = (elapsed: () => void): (() => void) => {
+  const door = setTimeout(elapsed, DOOR_MOMENT_MS);
+  return () => {
+    clearTimeout(door);
+  };
+};
 
 const secondsOf = (ms: number | null): number | null =>
   ms === null ? null : Math.max(0, Math.ceil(ms / 1000));
@@ -93,13 +110,41 @@ const SeatedLobby = ({
   const [seat, setSeat] = useState<RoomSeat | null>(null);
   const [, redraw] = useReducer((count: number) => count + 1, 0);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
-  const handedOver = useRef(false);
-  const riding = useRef(false);
   const lostTold = useRef(false);
   const joinedTold = useRef(false);
-  const [plan, setPlan] = useState<RacePlan | null>(null);
-  const [prepared, setPrepared] = useState(false);
   const lost = useEffectEvent(onLost);
+  const {
+    now: handoffNow,
+    send,
+    state: handoff,
+  } = useHandoff(stepRoom<SeatRide>, inTheLobby, (effect) => {
+    const { plan, seat: ridden } = effect.ride;
+    switch (effect.kind) {
+      case "leave": {
+        ridden.leave();
+        moveToRoom(roomId, "moved");
+        break;
+      }
+      case "prepare": {
+        const prepare = async (): Promise<void> => {
+          send({ kind: preparedRace(await onPrepare(plan)) });
+        };
+        void prepare();
+        break;
+      }
+      case "reportLoaded": {
+        ridden.loaded();
+        break;
+      }
+      case "start": {
+        onStart(plan);
+        break;
+      }
+      default: {
+        effect.kind satisfies never;
+      }
+    }
+  });
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
     const card = graphicsCard();
@@ -146,11 +191,11 @@ const SeatedLobby = ({
       if (reopening) {
         clearTimeout(reopening);
       }
-      if (!riding.current) {
+      if (handoffNow().kind !== "riding") {
         opened.leave();
       }
     };
-  }, [name, roomId, opening]);
+  }, [handoffNow, name, roomId, opening]);
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);
@@ -180,51 +225,31 @@ const SeatedLobby = ({
       clearInterval(redrawing);
     };
   }, []);
+  const doorMoment = seat !== null && raceBegun && ready;
+  useEffect(
+    () =>
+      doorMoment
+        ? afterDoorMoment(() => {
+            send({ kind: "doorElapsed" });
+          })
+        : undefined,
+    [doorMoment, send]
+  );
+  const inLobby = handoff.kind === "lobby";
   useEffect(() => {
-    if (!(seat && raceBegun && ready) || handedOver.current) {
+    if (!(seat && doorMoment && inLobby)) {
       return;
     }
-    const next = planOf(seat, roomId);
-    if (!next) {
-      return;
+    const plan = planOf(seat, roomId);
+    if (plan) {
+      send({ kind: "raceBegun", ride: { plan, seat } });
     }
-    handedOver.current = true;
-    setPlan(next);
-    const begunAt = performance.now();
-    const prepare = async (): Promise<void> => {
-      const race = preparedRace(await onPrepare(next));
-      switch (race) {
-        case "built": {
-          setTimeout(
-            () => {
-              seat.loaded();
-              setPrepared(true);
-            },
-            Math.max(0, DOOR_MOMENT_MS - (performance.now() - begunAt))
-          );
-          break;
-        }
-        case "missing": {
-          seat.leave();
-          moveToRoom(roomId, "moved");
-          break;
-        }
-        case "cancelled": {
-          break;
-        }
-        default: {
-          race satisfies never;
-        }
-      }
-    };
-    void prepare();
-  }, [seat, roomId, raceBegun, ready, onPrepare]);
+  }, [doorMoment, inLobby, roomId, seat, send]);
   useEffect(() => {
-    if (plan && prepared && racing) {
-      riding.current = true;
-      onStart(plan);
+    if (racing) {
+      send({ kind: "roomRacing" });
     }
-  }, [plan, prepared, racing, onStart]);
+  }, [handoff, racing, send]);
   const lobby = seat?.lobby() ?? null;
   if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
