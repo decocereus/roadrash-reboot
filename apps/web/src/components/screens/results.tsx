@@ -38,6 +38,7 @@ import {
 import type { Speech } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
 import { RuledSheet, stampStyle } from "./clubhouse-wall.tsx";
+import { RiderChip } from "./room-lobby.tsx";
 
 const SHEET_TITLE = { h: 62, w: 470, x: 590, y: 136 } as const;
 const SHEET_MARGINS = 265;
@@ -120,6 +121,7 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
           {rows.map((row) => {
             const you = row.racer === "player";
             const note = notes.find((each) => each.racer === row.racer)?.text;
+            const chipColour = report.room?.colours.get(row.racer);
             return (
               <li
                 className={cn(
@@ -130,6 +132,9 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
               >
                 <span className="numeric text-center">{row.place}</span>
                 <span className="truncate">
+                  {chipColour !== undefined && (
+                    <RiderChip colour={chipColour} />
+                  )}{" "}
                   {you
                     ? "You"
                     : (report.room?.names.get(row.racer) ??

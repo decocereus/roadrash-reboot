@@ -1,8 +1,12 @@
 import type { CareerRaceSetup } from "@racer/career/field";
-import { guestNames, seatedRace } from "@racer/career/room-race";
-import type { GuestNames, RoomChoice } from "@racer/career/room-race";
+import { byGuest, seatedRace } from "@racer/career/room-race";
+import type {
+  GuestColours,
+  GuestNames,
+  RoomChoice,
+} from "@racer/career/room-race";
 import type { LobbyAct, LobbyWalk } from "@racer/sim/lobby-walk";
-import { isDone } from "@racer/sim/room";
+import { firstRacers, isDone } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
 import { createRoomClock } from "@racer/sim/room-clock";
@@ -26,7 +30,7 @@ import { riderIdAt } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
-import { humanNames, seatedCount } from "./manifest.ts";
+import { humanColours, humanNames, seatedCount } from "./manifest.ts";
 import {
   decodeRoomMessage,
   encodeLobbyCommand,
@@ -60,9 +64,11 @@ export type SeatPhase =
 
 export interface SeatRace {
   readonly client: RoomClient;
+  readonly colours: GuestColours;
   readonly me: RiderId;
   readonly names: GuestNames;
   readonly raceId: string;
+  readonly riderColours: ReadonlyMap<RiderId, number>;
   readonly setup: CareerRaceSetup;
 }
 
@@ -160,12 +166,20 @@ export const openRoomSeat = (
     );
     const me = riderIdAt(you);
     const client = createRoomClient(setup, me);
+    const colours = humanColours(manifest);
     digest = setupDigest(client.confirmed, setup.track);
     race = {
       client,
+      colours: byGuest(setup, me, colours),
       me,
-      names: guestNames(setup, me, humanNames(manifest)),
+      names: byGuest(setup, me, humanNames(manifest)),
       raceId: manifest.raceId,
+      riderColours: new Map(
+        firstRacers(setup, colours.length).flatMap((rider, at) => {
+          const colour = colours[at];
+          return colour === undefined ? [] : [[rider, colour] as const];
+        })
+      ),
       setup,
     };
     move("loading");

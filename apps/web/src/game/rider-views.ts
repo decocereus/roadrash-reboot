@@ -1,4 +1,6 @@
 import { HIT_STUN_TICKS } from "@racer/sim/combat";
+import { riderBlocks } from "@racer/sim/palette";
+import type { RiderBlocks } from "@racer/sim/palette";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
@@ -15,7 +17,7 @@ import * as THREE from "three";
 
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Reach } from "./actors.ts";
-import type { Assets } from "./assets.ts";
+import type { Assets, Palette } from "./assets.ts";
 import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
@@ -28,6 +30,7 @@ import type { Dressing } from "./figure-wardrobe.ts";
 import type { Fleet } from "./fleet.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
+import { blockPaletteOf } from "./rider-blocks.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
 import type { World } from "./world.ts";
@@ -258,6 +261,7 @@ export const createCast = (shading: Shading): Cast => ({
 });
 
 interface CastStage {
+  readonly colours: ReadonlyMap<RiderId, number>;
   readonly me: RiderId;
   readonly race: Pick<RaceRun, "view">;
   readonly track: Track;
@@ -299,12 +303,21 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     stage.fleet.dispose();
   };
 
+  const blocksOf = (rider: RiderId): RiderBlocks | undefined =>
+    riderBlocks[stage.colours.get(rider) ?? riderBlocks.length];
+
+  const worn = ({ id, profile }: RiderView): Palette => {
+    const blocks = blocksOf(id);
+    return blocks ? blockPaletteOf(blocks) : paletteOf(profile.jacket);
+  };
+
   const buildViews = (dressing: Dressing) => {
     dropViews();
     const fleetOfBikes = createBikes(
       assets,
       stage.world.shading,
       stage.race.view.riders.map((rider) => ({
+        livery: blocksOf(rider.id)?.livery,
         model: bikeModelFor(rider.bike.id),
         paint: rider.profile.paint,
         police: rider.profile.role === "police",
@@ -321,7 +334,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       const figure = createRiderFigure(
         dressing.get(rider.id) ?? bodyFor(assets, rider.id),
         stage.world.shading,
-        paletteOf(rider.profile.jacket)
+        worn(rider)
       );
       stage.world.scene.add(figure.root);
       const view: RiderActor = {

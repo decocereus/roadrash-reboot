@@ -55,6 +55,34 @@ const choose = (
 };
 
 describe("a lobby's start", () => {
+  it("keeps a member's colour when someone leaves, and reuses the free one", () => {
+    const clock = createClock();
+    const host = createHost(clock);
+    const [first, second, third, fourth] = [
+      fakeSocket(),
+      fakeSocket(),
+      fakeSocket(),
+      fakeSocket(),
+    ];
+    host.seat(first, "Ann", nearby, sameBuild("ann"));
+    host.seat(second, "Bo", nearby, sameBuild("bo"));
+    host.seat(third, "Cy", nearby, sameBuild("cy"));
+    host.gone(second, 1000);
+    advanceHearing(host, clock, [first, third], AWAY_MS + 1000);
+    const colours = () =>
+      new Map(
+        lastLobby(third).members.map((member) => [member.name, member.colour])
+      );
+    expect(colours()).toStrictEqual(
+      new Map([
+        ["Ann", 0],
+        ["Cy", 2],
+      ])
+    );
+    host.seat(fourth, "Di", nearby, sameBuild("di"));
+    expect(colours().get("Di")).toBe(1);
+  });
+
   it("waits for ever while nobody is ready", () => {
     const { clock, first, host, second } = twoSeated();
     advanceHearing(host, clock, [first, second], READY_WAIT_MS * 3);

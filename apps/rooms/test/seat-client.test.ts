@@ -114,7 +114,13 @@ const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
         raceId: "race-1",
         reconnect: "none",
         roster: [
-          { bikeId: STARTING_BIKE, kind: "human", name: "Near", rider: 0 },
+          {
+            bikeId: STARTING_BIKE,
+            colour: 0,
+            kind: "human",
+            name: "Near",
+            rider: 0,
+          },
         ],
         rule: publicRoomRule,
         seed: 1,
