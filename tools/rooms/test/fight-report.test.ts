@@ -13,11 +13,14 @@ const CONTACT = 4;
 const SHOWN = SENT + 300;
 const TICK_AT_SHOWN = 200;
 
-const rider = (stamina: number, lastHitTick: number) => ({
+const STRUCK_TICK = 124;
+
+const rider = (stamina: number, lastHitBy: number | null) => ({
   attack: "none",
   attackTicks: 0,
   hitStun: 0,
-  lastHitTick,
+  lastHitBy,
+  lastHitTick: lastHitBy === null ? -1 : STRUCK_TICK,
   mode: "riding",
   s: 0,
   speed: 40,
@@ -45,13 +48,13 @@ const frameOf = ({
   tick,
 }: Drawn): ProbeFrame => ({
   at,
-  confirmed: [rider(100, -1), rider(hit ? 50 : 100, -1)],
+  confirmed: [rider(100, null), rider(hit ? 50 : 100, null)],
   drawn: [
     { flinch: 0, pose, reach, x: 1.3 },
     { flinch, pose: "seated", reach: 0, x: 0 },
   ],
   heard: tick - 17,
-  predicted: [rider(100, -1), rider(100, shoved ? 1 : -1)],
+  predicted: [rider(100, null), rider(100, shoved ? ATTACKER : null)],
   rtt: 114,
   tick,
 });
@@ -211,6 +214,42 @@ describe("reading a fight from both windows", () => {
       ...knocked,
       frames,
     });
+    expect(row.passed).toBeTruthy();
+  });
+
+  it("fails a guessed shove that showed early even when the room called it a miss", () => {
+    const missed = victimSaw(0, KICK_TICKS);
+    const frames = missed.frames.map((frame) => ({
+      ...frame,
+      confirmed: [rider(100, null), rider(100, null)],
+    }));
+    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, attacker, {
+      ...missed,
+      frames,
+    });
+    expect(row.hitLanded).toBeFalsy();
+    expect(row.passed).toBeFalsy();
+  });
+
+  it("ignores another rider's earlier contact with the victim", () => {
+    const kicked = victimSaw(CONTACT, CONTACT);
+    const OTHER = 2;
+    const frames = kicked.frames.map((frame, index) =>
+      index > 0 && index <= CONTACT
+        ? {
+            ...frame,
+            predicted: [
+              rider(100, null),
+              { ...rider(100, null), lastHitBy: OTHER, lastHitTick: 121 },
+            ],
+          }
+        : frame
+    );
+    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, attacker, {
+      ...kicked,
+      frames,
+    });
+    expect(row.strikeOutBeforeShoveMs).toBe(0);
     expect(row.passed).toBeTruthy();
   });
 

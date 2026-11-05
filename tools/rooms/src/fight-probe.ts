@@ -67,7 +67,7 @@ export const FIGHT_PROBE = `(() => {
   };
   const rider = (state, index) => {
     const r = state.riders[index];
-    return { attack: r.attack, attackTicks: r.attackTicks, hitStun: r.hitStun, lastHitTick: r.lastHitTick, mode: r.mode, s: r.s, speed: r.speed, stamina: r.stamina, x: r.x };
+    return { attack: r.attack, attackTicks: r.attackTicks, hitStun: r.hitStun, lastHitBy: r.lastHitBy, lastHitTick: r.lastHitTick, mode: r.mode, s: r.s, speed: r.speed, stamina: r.stamina, x: r.x };
   };
   const sample = () => {
     const room = globalThis.__rushlineRoom;

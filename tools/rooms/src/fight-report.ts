@@ -6,6 +6,7 @@ const probeRider = Schema.Struct({
   attack: Schema.String,
   attackTicks: Schema.Number,
   hitStun: Schema.Number,
+  lastHitBy: Schema.NullOr(Schema.Number),
   lastHitTick: Schema.Number,
   mode: Schema.String,
   s: Schema.Number,
@@ -131,7 +132,7 @@ const network = (
     pressToSendMs: gap(pressAt, sentAt),
     rttAtPressMs,
     sendToVictimMs: gap(sentAt, felt.attacks.find(ran)?.at),
-    victimHeardAt: felt.attacks.find(ran)?.at,
+    victimHeard: felt.attacks.find(ran),
   };
 };
 
@@ -148,6 +149,35 @@ const drawnError = (
     : Math.abs(drawn - truth);
 };
 
+interface Heard {
+  readonly at: number;
+  readonly tick: number;
+}
+
+const reactionsTo = (
+  attacker: number,
+  victim: number,
+  after: readonly ProbeFrame[],
+  heard: Heard | undefined
+) => {
+  const since = after.filter(
+    (frame) => heard !== undefined && frame.at >= heard.at
+  );
+  const struck = (frame: ProbeFrame): boolean => {
+    const rider = frame.predicted[victim];
+    return (
+      rider !== undefined &&
+      heard !== undefined &&
+      rider.lastHitBy === attacker &&
+      rider.lastHitTick >= heard.tick
+    );
+  };
+  return {
+    flinching: since.filter((frame) => (frame.drawn[victim]?.flinch ?? 0) > 0),
+    shove: since.find(struck),
+  };
+};
+
 const victimScreen = (
   kind: FightKind,
   attacker: number,
@@ -155,14 +185,9 @@ const victimScreen = (
   after: readonly ProbeFrame[]
 ) => {
   const shown = after.filter((frame) => frame.drawn[attacker]?.pose === kind);
-  const firstHitTick = after.at(0)?.predicted[victim]?.lastHitTick;
   const staminas = after.map((frame) => frame.confirmed[victim]?.stamina ?? 0);
   const before = staminas.at(0) ?? 0;
-  const flinching = after.filter(
-    (frame) => (frame.drawn[victim]?.flinch ?? 0) > 0
-  );
   return {
-    flinching,
     knockedOff: after.some(
       (frame) => frame.predicted[victim]?.mode !== "riding"
     ),
@@ -170,15 +195,15 @@ const victimScreen = (
       (frame) => (frame.confirmed[victim]?.stamina ?? before) < before
     ),
     lost: before - Math.min(before, ...staminas),
-    shove: after.find(
-      (frame) => frame.predicted[victim]?.lastHitTick !== firstHitTick
-    ),
     shown,
     strikeOut: shown.find(
       (frame) => (frame.drawn[attacker]?.reach ?? 0) >= FULL_REACH
     ),
   };
 };
+
+const notBefore = (outAt: number | undefined, at: number | undefined) =>
+  at === undefined || (outAt !== undefined && at >= outAt);
 
 export const fightRow = (
   kind: FightKind,
@@ -190,38 +215,44 @@ export const fightRow = (
 ): FightRow => {
   const after = felt.frames.filter((frame) => frame.at >= pressAt);
   const screen = victimScreen(kind, attacker, victim, after);
-  const { victimHeardAt, ...stages } = network(
+  const { victimHeard, ...stages } = network(
     kind,
     attacker,
     pressAt,
     seen,
     felt
   );
+  const { flinching, shove } = reactionsTo(
+    attacker,
+    victim,
+    after,
+    victimHeard
+  );
   const outAt = screen.strikeOut?.at;
-  const strikeOutBeforeFlinchMs = gap(outAt, screen.flinching.at(0)?.at);
-  const strikeOutBeforeShoveMs = gap(outAt, screen.shove?.at);
+  const flinchAt = flinching.at(0)?.at;
   const hitLanded = screen.landed !== undefined;
-  const flinchInOrder = screen.knockedOff
-    ? strikeOutBeforeFlinchMs === null || strikeOutBeforeFlinchMs >= 0
-    : (strikeOutBeforeFlinchMs ?? -1) >= 0;
-  const inOrder = flinchInOrder && (strikeOutBeforeShoveMs ?? -1) >= 0;
+  const reacted = !hitLanded || flinching.length > 0 || screen.knockedOff;
   return {
     ...stages,
     attacker,
-    drawnErrorAtHitMetres: drawnError(attacker, screen.shove, felt),
+    drawnErrorAtHitMetres: drawnError(attacker, shove, felt),
     drawnFrames: screen.shown.length,
-    flinchFrames: screen.flinching.length,
+    flinchFrames: flinching.length,
     hitLanded,
     kind,
-    passed: outAt !== undefined && (!hitLanded || inOrder),
+    passed:
+      outAt !== undefined &&
+      reacted &&
+      notBefore(outAt, shove?.at) &&
+      notBefore(outAt, flinchAt),
     pressToLandMs: gap(pressAt, screen.landed?.at),
     pressToShownMs: gap(pressAt, screen.shown.at(0)?.at),
     pressToStrikeOutMs: gap(pressAt, outAt),
     staminaLost: screen.lost,
-    strikeOutBeforeFlinchMs,
-    strikeOutBeforeShoveMs,
+    strikeOutBeforeFlinchMs: gap(outAt, flinchAt),
+    strikeOutBeforeShoveMs: gap(outAt, shove?.at),
     victim,
-    victimConfirmToDrawnMs: gap(victimHeardAt, screen.shown.at(0)?.at),
+    victimConfirmToDrawnMs: gap(victimHeard?.at, screen.shown.at(0)?.at),
   };
 };
 
