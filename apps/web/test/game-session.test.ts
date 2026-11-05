@@ -74,6 +74,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
     riderColours: new Map(),
     step,
     stepsDue: () => 1,
+    takeCorrections: () => [],
     view,
   };
   return { ...soloPlan, room };

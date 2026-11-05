@@ -6,7 +6,7 @@ import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import { createRoom, roomSetup } from "./room.ts";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
-import type { Control, RaceEvent } from "./state.ts";
+import type { Control, RaceEvent, RiderId } from "./state.ts";
 
 const VICTIM = PLAYER_RIDER;
 const ATTACKER = riderIdAt(1);
@@ -196,5 +196,42 @@ describe("what a client hears of another rider's fight", () => {
   it("hears nothing again once it has been read", () => {
     const { client } = race(8, riding, kicking);
     expect(client.takeEvents()).toStrictEqual([]);
+  });
+});
+
+const steering = (lead: number) => {
+  const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
+  const room = createRoom(setup);
+  const client = createRoomClient(setup, VICTIM);
+  const swerve = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
+  for (let tick = 0; tick < lead; tick += 1) {
+    client.predict(riding);
+  }
+  const moved = new Map<RiderId, number>();
+  for (let tick = 0; tick < RIDE_TICKS; tick += 1) {
+    room.accept(VICTIM, room.state.tick + 1, [riding]);
+    room.accept(ATTACKER, room.state.tick + 1, [
+      tick >= RIDE_TICKS / 2 ? swerve : riding,
+    ]);
+    room.step();
+    client.confirm(room.frame, null);
+    client.predict(riding);
+    for (const { rider, x } of client.takeCorrections()) {
+      moved.set(rider, Math.max(moved.get(rider) ?? 0, Math.abs(x)));
+    }
+  }
+  return moved;
+};
+
+describe("how far a correction moved another rider", () => {
+  it("grows with the lead, because the guess ran longer", () => {
+    const near = steering(4).get(ATTACKER) ?? 0;
+    const far = steering(20).get(ATTACKER) ?? 0;
+    expect(near).toBeGreaterThan(0);
+    expect(far).toBeGreaterThan(near * 2);
+  });
+
+  it("never names the client's own rider", () => {
+    expect(steering(20).has(VICTIM)).toBeFalsy();
   });
 });

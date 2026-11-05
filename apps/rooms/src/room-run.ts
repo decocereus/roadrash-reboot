@@ -91,6 +91,7 @@ export const createRoomRun = (
       seat.flush();
     },
     stepsDue: seat.stepsDue,
+    takeCorrections: client.takeCorrections,
     view: client.predicted,
   };
 };

@@ -6,10 +6,12 @@ import {
 } from "./commands.ts";
 import type { RaceView } from "./race-view.ts";
 import { createRace, stepRace } from "./race.ts";
+import type { RiderCorrection } from "./room-client.ts";
 import type { InputFrame, RaceEvent, RaceSetup, RiderId } from "./state.ts";
 
 export interface RaceRun {
   readonly events: () => readonly RaceEvent[];
+  readonly takeCorrections: () => readonly RiderCorrection[];
   readonly view: RaceView;
   readonly step: (frame: InputFrame) => void;
 }
@@ -20,6 +22,8 @@ export interface LocalRun extends RaceRun {
   readonly setRiderSpeed: (id: RiderId, speed: number) => void;
   readonly relocateTraffic: (from: number, to: number) => void;
 }
+
+const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 
 export const createRaceRun = (setup: RaceSetup): LocalRun => {
   const state = createRace(setup);
@@ -41,6 +45,7 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
     step: (frame) => {
       stepRace(state, track, frame);
     },
+    takeCorrections: () => NO_CORRECTIONS,
     view: state,
   };
 };

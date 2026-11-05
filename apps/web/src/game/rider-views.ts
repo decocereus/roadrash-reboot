@@ -24,6 +24,8 @@ import type { Fleet } from "./fleet.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
+import { clearDrift, driftBy, driftSettle, stillDrift } from "./rider-drift.ts";
+import type { RiderDrift } from "./rider-drift.ts";
 import {
   fightFlinch,
   fightHeard,
@@ -68,6 +70,7 @@ interface Pose {
 
 interface RiderActor {
   readonly bike: THREE.Object3D;
+  readonly drift: RiderDrift;
   readonly fight: RiderFight;
   readonly figure: RiderFigure;
   readonly before: Pose;
@@ -174,7 +177,7 @@ export const createCast = (shading: Shading): Cast => ({
 interface CastStage {
   readonly colours: ReadonlyMap<RiderId, number>;
   readonly me: RiderId;
-  readonly race: Pick<RaceRun, "view">;
+  readonly race: Pick<RaceRun, "takeCorrections" | "view">;
   readonly track: Track;
   readonly world: World;
   readonly fleet: Fleet;
@@ -252,6 +255,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         after: emptyPose(),
         before: emptyPose(),
         bike,
+        drift: stillDrift(),
         fight: quietFight(),
         figure,
         lift: figure.standHeight,
@@ -292,6 +296,19 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       const view = cast.views[index];
       if (view) {
         fightTick(view.fight, riders[index]?.airborne === true);
+      }
+    }
+  };
+
+  const takeCorrections = () => {
+    for (const moved of stage.race.takeCorrections()) {
+      const view = riderOf(cast.views, moved.rider);
+      if (view) {
+        view.before.heading -= moved.heading;
+        view.before.lean -= moved.lean;
+        view.before.s -= moved.s;
+        view.before.x -= moved.x;
+        driftBy(view.drift, moved);
       }
     }
   };
@@ -476,16 +493,21 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     blend: number,
     seconds: number
   ) => {
-    const { before, after, bike } = view;
-    const s = mix(before.s, after.s, blend);
-    const x = mix(before.x, after.x, blend);
+    const { before, after, bike, drift } = view;
+    const seated = rider.mode === "riding" || rider.mode === "mounting";
+    if (seated) {
+      driftSettle(drift, seconds);
+    } else {
+      clearDrift(drift);
+    }
+    const s = mix(before.s, after.s, blend) + drift.s;
+    const x = mix(before.x, after.x, blend) + drift.x;
     const air = mix(before.air, after.air, blend);
-    const lean = mix(before.lean, after.lean, blend);
-    const heading = mix(before.heading, after.heading, blend);
+    const lean = mix(before.lean, after.lean, blend) + drift.lean;
+    const heading = mix(before.heading, after.heading, blend) + drift.heading;
     const bodyS = mix(before.bodyS, after.bodyS, blend);
     const bodyX = mix(before.bodyX, after.bodyX, blend);
     const bodyAir = mix(before.bodyAir, after.bodyAir, blend);
-    const seated = rider.mode === "riding" || rider.mode === "mounting";
     const pitch = rider.airborne
       ? Math.atan2(rider.verticalSpeed, Math.max(rider.speed, 1)) * 0.6
       : 0;
@@ -573,6 +595,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     followPlayer,
     holdStill,
     placeFleet,
+    takeCorrections,
     touchDown,
   };
 };
