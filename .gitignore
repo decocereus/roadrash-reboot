@@ -17,6 +17,7 @@ tools/replay/results/
 tools/blender/out/
 .claude/*
 !.claude/skills/
+!.claude/settings.json
 apps/web/.impeccable/
 apps/web/assets/
 tools/madrid/.cache/

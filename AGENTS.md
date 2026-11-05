@@ -22,6 +22,7 @@ The code is the record of how this repository does things. The next agent copies
 
 ## Verification
 
+- A session that starts in a checkout behind `origin/main` gets one warning with the commit count, from `scripts/stale-checkout.ts` through `.claude/settings.json` and `.codex/hooks.json`. Merge or rebase onto `origin/main` before you build on, review or merge that branch.
 - Run `pnpm check` and `pnpm build` after source changes, or `pnpm verify` for both.
 - Look at the running game after any change to `apps/web/src/game` or to handling. Passing tests do not show that it plays well.
 
