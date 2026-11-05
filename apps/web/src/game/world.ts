@@ -273,7 +273,6 @@ const buildMountains = (look: Look): THREE.InstancedMesh => {
 interface SunRig {
   readonly light: THREE.DirectionalLight;
   follow: (camera: THREE.Camera) => void;
-  setMapSize: (size: number) => void;
 }
 
 const createSunRig = (shading: Shading, mapSize: number): SunRig => {
@@ -290,7 +289,7 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
   light.shadow.normalBias = 0.04;
   const across = new THREE.Vector3(0, 1, 0).cross(shading.key).normalize();
   const upward = shading.key.clone().cross(across).normalize();
-  let texel = (SHADOW_SPAN * 2) / mapSize;
+  const texel = (SHADOW_SPAN * 2) / mapSize;
   const forward = new THREE.Vector3();
   const focus = new THREE.Vector3();
   const snapped = new THREE.Vector3();
@@ -312,15 +311,6 @@ const createSunRig = (shading: Shading, mapSize: number): SunRig => {
       light.target.updateMatrixWorld();
     },
     light,
-    setMapSize(size) {
-      if (size === light.shadow.mapSize.x) {
-        return;
-      }
-      light.shadow.mapSize.set(size, size);
-      light.shadow.map?.dispose();
-      light.shadow.map = null;
-      texel = (SHADOW_SPAN * 2) / size;
-    },
   };
 };
 
@@ -333,7 +323,6 @@ export interface World {
     s: number
   ) => void;
   samples: () => THREE.Group;
-  setShadowMap: (size: number) => void;
   dispose: () => void;
 }
 
@@ -517,9 +506,6 @@ export const createWorld = (
       return city?.samples() ?? new THREE.Group();
     },
     scene,
-    setShadowMap(size) {
-      rig.setMapSize(size);
-    },
     shading,
     showRoadLife(view, s) {
       hazards.show(view.hazards, s);

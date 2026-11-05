@@ -18,16 +18,10 @@ const deviceNames = {
   unspecified: "Not set",
 } as const satisfies Record<TestDevice, string>;
 
-const rateNames = {
-  30: "30",
-  60: "60",
-  auto: "Auto",
-} as const satisfies Record<FrameRate, string>;
-
 const onOff = (on: boolean): string => (on ? "On" : "Off");
 
 const nextRate = (rate: FrameRate): FrameRate =>
-  frameRates[(frameRates.indexOf(rate) + 1) % frameRates.length] ?? "auto";
+  frameRates[(frameRates.indexOf(rate) + 1) % frameRates.length] ?? "60";
 
 const nextDevice = (device: TestDevice): TestDevice =>
   testDevices[(testDevices.indexOf(device) + 1) % testDevices.length] ??
@@ -107,16 +101,16 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
   const tester = new URLSearchParams(globalThis.location.search).has("tester");
   const actions: MenuAction[] = [
     {
-      detail: "Auto lowers detail, then holds a steady 30, when frames slip",
+      detail: "The game holds this rate; the picture never changes in a race",
       id: "frame-rate",
       label: "Frame rate",
       run: () => {
         hub.settings.change({ frameRate: nextRate(settings.frameRate) });
       },
-      trailing: rateNames[settings.frameRate],
+      trailing: settings.frameRate,
     },
     {
-      detail: "Frame rate, frame times, and quality rung in the corner",
+      detail: "Frame rate, frame times, and quality preset in the corner",
       id: "overlay",
       label: "Frame meter",
       run: () => {

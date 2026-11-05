@@ -639,3 +639,24 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     touchDown,
   };
 };
+
+const RIDER_METRES = 1.6;
+
+export const pickFarRiders = (
+  views: readonly { readonly figure: RiderFigure }[],
+  me: number,
+  camera: THREE.PerspectiveCamera,
+  canvasHeight: number
+): void => {
+  const perMetre =
+    canvasHeight / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  for (let index = 0; index < views.length; index += 1) {
+    const figure = views[index]?.figure;
+    if (figure && index !== me) {
+      figure.judgeFar(
+        (RIDER_METRES / camera.position.distanceTo(figure.root.position)) *
+          perMetre
+      );
+    }
+  }
+};

@@ -17,6 +17,7 @@ import type {
   RiderId,
   RiderInput,
 } from "@racer/sim/state";
+import { presetIds } from "@racer/telemetry/limits";
 import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 import type { Track } from "@racer/track/track";
@@ -43,15 +44,15 @@ import type { GameEvents, GameHandle, GamePhase, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
 import { nativeClock } from "./preparation.ts";
+import { bindQuality, createQuality } from "./presets.ts";
 import { rendererOf } from "./profile.ts";
-import { bindQuality, createQuality } from "./quality-ladder.ts";
 import {
   bindFeedback,
   consequenceSeconds,
   createFeedback,
   out,
 } from "./race-feedback.ts";
-import { bindCast, createCast } from "./rider-views.ts";
+import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 
 const COUNTDOWN_SECONDS = 3;
@@ -101,9 +102,10 @@ const pinnedPixelRatio = Number(
   new URLSearchParams(globalThis.location.search).get("ratio") ?? 0
 );
 
-const pinnedRung = Number(
-  new URLSearchParams(globalThis.location.search).get("rung") ?? -1
-);
+const pinnedPreset =
+  presetIds.find(
+    (id) => id === new URLSearchParams(globalThis.location.search).get("preset")
+  ) ?? null;
 
 const pinnedRefresh = Number(
   new URLSearchParams(globalThis.location.search).get("hz") ?? 0
@@ -173,8 +175,9 @@ const startGame = (
   });
   const quality = createQuality(
     renderer,
-    { pinnedPixelRatio, pinnedRefresh, pinnedRung },
-    () => window.devicePixelRatio
+    { pinnedPixelRatio, pinnedPreset, pinnedRefresh },
+    () => window.devicePixelRatio,
+    () => rendererOf(renderer)
   );
   const hub = diagnostics();
   const { recorder } = hub;
@@ -191,7 +194,7 @@ const startGame = (
     bench?.dispose();
   });
   const lap = lapOf(frame);
-  const pipeline = createPipeline(renderer, lap);
+  const pipeline = createPipeline(renderer, lap, quality.preset);
   owners.push(() => {
     pipeline.dispose();
   });
@@ -199,7 +202,8 @@ const startGame = (
   const stage = createStage(
     assets,
     roadForTurn(session.roadTurn),
-    session.seed
+    session.seed,
+    quality.preset.shadowMap
   );
   owners.push(() => {
     stage.world.dispose();
@@ -489,17 +493,13 @@ const startGame = (
   };
 
   const {
-    applyDeviceStart,
     applyFrameRate,
-    applyPending,
     checkPresented,
-    forgetHiddenTime,
-    govern,
-    noteQuality,
-    noteRefresh,
+    noteDisplay,
     present,
     resize,
     skipsVsync,
+    stateOf,
   } = bindQuality({
     canvas,
     chase,
@@ -507,7 +507,6 @@ const startGame = (
     halted,
     pipeline,
     quality,
-    readGpu: () => rendererOf(renderer),
     recorder,
     renderer,
     stage,
@@ -543,6 +542,9 @@ const startGame = (
     frame.profiler?.lap("fleet");
 
     chase.update(stage.track, cast.subject, seconds);
+    if (quality.preset.farRiders) {
+      pickFarRiders(cast.views, stage.me, chase.camera, canvas.clientHeight);
+    }
     frame.profiler?.lap("camera");
     stage.world.showRoadLife(stage.race.view, cast.subject.s);
     stage.world.follow(chase.camera, cast.subject.s);
@@ -568,27 +570,23 @@ const startGame = (
       return frame.rendererLabel;
     },
     snapshot() {
-      noteQuality(quality.qualityAfter);
       return {
         phase: session.phase,
-        quality: { ...quality.qualityAfter },
+        quality: stateOf(),
         race: recorder.raceId(),
         tick: stage.race.view.tick,
       };
     },
   });
   owners.push(detachProbe);
-  applyDeviceStart();
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   canvas.addEventListener("webglcontextlost", loseContext);
   canvas.addEventListener("webglcontextrestored", restoreContext);
-  document.addEventListener("visibilitychange", forgetHiddenTime);
   owners.push(() => {
     observer.disconnect();
     canvas.removeEventListener("webglcontextlost", loseContext);
     canvas.removeEventListener("webglcontextrestored", restoreContext);
-    document.removeEventListener("visibilitychange", forgetHiddenTime);
   });
   resize();
   buildViews(undressed);
@@ -601,14 +599,12 @@ const startGame = (
     frame.last = performance.now();
   });
   installFrameLoop({
-    applyPending,
     checkPresented,
     draw,
     feedback,
     frame,
-    govern,
     halted,
-    noteRefresh,
+    noteDisplay,
     player,
     quality,
     recorder,

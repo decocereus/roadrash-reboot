@@ -12,9 +12,9 @@ import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
 import { advanceHud } from "./hud-cadence.ts";
 import type { GamePhase } from "./hud.ts";
+import type { Quality } from "./presets.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd, ProfileMode, Profiler } from "./profile.ts";
-import type { Quality } from "./quality-ladder.ts";
 import type { Feedback } from "./race-feedback.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
@@ -33,10 +33,8 @@ export interface FrameLoop {
   accumulator: number;
   clockReset: boolean;
   hudClock: number;
-  lastBusyMs: number;
   lastGear: number;
   last: number;
-  lastCallback: number;
 }
 
 export const frameLoopOf = (
@@ -48,12 +46,10 @@ export const frameLoopOf = (
   clockReset: false,
   frameEnd: {
     discarded: 0,
-    drawRung: 0,
     drawnEpoch: 0,
     interval: 0,
     pixelRatio: 1,
     race: 0,
-    rung: 0,
     sizeEpoch: 0,
     tick: 0,
     ticks: 0,
@@ -61,8 +57,6 @@ export const frameLoopOf = (
   frameId: 0,
   hudClock: 0,
   last: 0,
-  lastBusyMs: 0,
-  lastCallback: Number.NaN,
   lastGear: 1,
   meter: null,
   meterFlag,
@@ -142,14 +136,12 @@ export interface FrameRenderer {
 }
 
 interface LoopParts {
-  readonly applyPending: () => void;
   readonly checkPresented: () => void;
   readonly draw: (blend: number, seconds: number) => void;
   readonly feedback: Pick<Feedback, "noticeLeft">;
   readonly frame: FrameLoop;
-  readonly govern: (seconds: number, busyMs: number) => void;
   readonly halted: () => boolean;
-  readonly noteRefresh: (now: number) => void;
+  readonly noteDisplay: (now: number) => void;
   readonly player: () => RiderView;
   readonly quality: Quality;
   readonly recorder: Pick<
@@ -166,14 +158,12 @@ interface LoopParts {
 }
 
 export const installFrameLoop = ({
-  applyPending,
   checkPresented,
   draw,
   feedback,
   frame,
-  govern,
   halted,
-  noteRefresh,
+  noteDisplay,
   player,
   quality,
   recorder,
@@ -189,22 +179,12 @@ export const installFrameLoop = ({
 
   const advance = createFixedTick(frame, halted, tick);
 
-  const noteCallback = (now: number) => {
-    noteRefresh(now);
-    const callbackMs = now - frame.lastCallback;
-    frame.lastCallback = now;
-    if (callbackMs >= 0 && !halted()) {
-      govern(clamp(callbackMs / 1000, 0, MAX_FRAME_SECONDS), frame.lastBusyMs);
-    }
-    quality.renderedLast = false;
-  };
   renderer.setAnimationLoop((now) => {
     checkPresented();
-    noteCallback(now);
+    noteDisplay(now);
     if (skipsVsync(now)) {
       return;
     }
-    const entered = performance.now();
     const interval = now - frame.last;
     const seconds = clamp(interval / 1000, 0, MAX_FRAME_SECONDS);
     frame.last = now;
@@ -230,10 +210,8 @@ export const installFrameLoop = ({
       riding && me.offRoad
     );
     renderer.info.reset();
-    applyPending();
     frame.profiler?.lap("other");
     draw(clamp(frame.accumulator / TICK_SECONDS, 0, 1), seconds);
-    quality.renderedLast = true;
     const discarded = Math.max(0, interval - MAX_FRAME_SECONDS * 1000);
     if (frame.meter) {
       sample.calls = renderer.info.render.calls;
@@ -241,10 +219,9 @@ export const installFrameLoop = ({
       sample.intervalMs = interval;
       sample.pace = quality.pace;
       sample.pixelRatio = quality.pixelRatio;
+      sample.preset = quality.preset.id;
       sample.recording = recorder.recording;
       sample.refresh = quality.display.refresh;
-      sample.rung = quality.rung;
-      sample.rungs = quality.ladder.length;
       sample.triangles = renderer.info.render.triangles;
       frame.meter.frame(sample);
     }
@@ -252,12 +229,10 @@ export const installFrameLoop = ({
     advanceHud(frame, seconds, report);
     if (frame.profiler) {
       frameEnd.discarded = discarded;
-      frameEnd.drawRung = quality.drawnRung;
       frameEnd.drawnEpoch = quality.drawnEpoch;
       frameEnd.interval = interval;
       frameEnd.pixelRatio = quality.pixelRatio;
       frameEnd.race = recorder.raceId();
-      frameEnd.rung = quality.rung;
       frameEnd.sizeEpoch = quality.sizeEpoch;
       frameEnd.tick = stage.race.view.tick;
       frameEnd.ticks = ticks;
@@ -265,6 +240,5 @@ export const installFrameLoop = ({
     }
     recorder.frame(frame.frameId, interval, discarded);
     frame.frameId += 1;
-    frame.lastBusyMs = performance.now() - entered;
   });
 };

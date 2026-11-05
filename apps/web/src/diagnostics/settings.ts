@@ -16,7 +16,7 @@ export interface Settings {
 const defaultSettings: Settings = {
   automaticUpload: false,
   device: "unspecified",
-  frameRate: "auto",
+  frameRate: "60",
   noticeSeen: false,
   overlay: false,
   raceData: true,

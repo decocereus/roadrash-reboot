@@ -17,7 +17,7 @@ import type { Fleet } from "./fleet.ts";
 import type { Pipeline } from "./post.ts";
 import { createPreparation } from "./preparation.ts";
 import type { Clock } from "./preparation.ts";
-import type { Quality } from "./quality-ladder.ts";
+import type { Quality } from "./presets.ts";
 import type { Cast } from "./rider-views.ts";
 import { stageEverything, warmStaged } from "./staging.ts";
 import type { Staged } from "./staging.ts";
@@ -44,9 +44,10 @@ const ridden = (setup: RaceSetup, controller: Controller): RaceSetup => ({
 export const createStage = (
   assets: Assets,
   track: Track,
-  seed: number
+  seed: number,
+  shadowMap: number
 ): Stage => {
-  const world = createWorld(track, assets.walkers);
+  const world = createWorld(track, assets.walkers, shadowMap);
   const race = createRaceRun(ridden(defaultSetup(track, seed), "pilot"));
   return {
     colours: new Map(),
@@ -75,7 +76,7 @@ interface StageParts {
   readonly clock: Clock;
   readonly devRide: DevRide | undefined;
   readonly pipeline: Pipeline;
-  readonly quality: Pick<Quality, "ladder" | "rung">;
+  readonly quality: Pick<Quality, "preset">;
   readonly stage: Stage;
 }
 
@@ -136,7 +137,7 @@ export const bindStage = ({
     stage.world = createWorld(
       stage.track,
       assets.walkers,
-      (quality.ladder[quality.rung] ?? quality.ladder[0])?.shadowMap
+      quality.preset.shadowMap
     );
     pipeline.setLook(stage.world.shading.look);
   };

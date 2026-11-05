@@ -66,28 +66,33 @@ describe("render quality never changes the race", () => {
 
   it("the reference ride steps one tick per 60 Hz frame", () => {
     expectProgress(reference);
-    expect(reference.quality.rung).toBe(0);
+    expect(reference.quality.preset.id).toBe("full");
     expect(reference.seen.presents).toBeGreaterThan(LEAST_TICKS);
   });
 
   it(
-    "a low rung renders less and rides the same ticks",
+    "the lean preset draws fewer pixels and rides the same ticks",
     () => {
-      const low = rideThrough({ pinnedRung: 3 }, callbacksEvery(VSYNC_MS));
-      expect(low.quality.rung).toBe(3);
-      expect(low.seen.samples).toContain(0);
-      expect(low.seen.shadowMaps).toContain(2048);
-      expectSameRace(low, reference, "reference");
+      const lean = rideThrough(
+        { dpr: 2, pinnedPreset: "lean" },
+        callbacksEvery(VSYNC_MS)
+      );
+      expect(lean.quality.preset.samples).toBe(0);
+      expect(lean.quality.preset.shadowMap).toBe(2048);
+      expect(lean.quality.pixelRatio).toBeCloseTo(1.05, 5);
+      expectSameRace(lean, reference, "reference");
     },
     QUALITY_TIMEOUT_MS
   );
 
   it(
-    "slow frames step the governor down and ride the same ticks",
+    "slow frames change nothing about the picture and ride the same ticks",
     () => {
       const slow = rideThrough({}, callbacksEvery(VSYNC_MS * 2));
-      expect(slow.quality.rung).toBeGreaterThan(0);
-      expect(slow.seen.shadowMaps.length).toBeGreaterThan(0);
+      expect(slow.quality.preset.id).toBe("full");
+      expect(slow.quality.pixelRatio).toBe(1);
+      expect(slow.quality.pace).toBe(60);
+      expect(slow.seen.resizes).toStrictEqual(["1280x720@1"]);
       expectSameRace(slow, reference, "own");
     },
     QUALITY_TIMEOUT_MS
@@ -120,21 +125,6 @@ describe("render quality never changes the race", () => {
       ]);
       expectSameRace(sharp, reference, "reference");
       expectSameRace(changed, reference, "reference");
-    },
-    QUALITY_TIMEOUT_MS
-  );
-
-  it(
-    "a pinned rung at pixel ratio 2 sizes the canvas down and rides the same ticks",
-    () => {
-      const pinned = rideThrough(
-        { dpr: 2, pinnedRung: 5 },
-        callbacksEvery(VSYNC_MS)
-      );
-      expect(pinned.quality.pixelRatio).toBe(1.8);
-      expect(pinned.seen.pixelRatios).toStrictEqual([2, 1.8]);
-      expect(pinned.seen.sizes).toStrictEqual(["1280x720"]);
-      expectSameRace(pinned, reference, "reference");
     },
     QUALITY_TIMEOUT_MS
   );
@@ -174,4 +164,26 @@ describe("render quality never changes the race", () => {
     },
     QUALITY_TIMEOUT_MS
   );
+
+  it.each([
+    ["ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified)", "full"],
+    [
+      "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti, OpenGL 4.6)",
+      "full",
+    ],
+    ["ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified)", "balanced"],
+    ["Apple GPU", "balanced"],
+    [
+      "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+      "lean",
+    ],
+    ["ANGLE (AMD, AMD Radeon Graphics, OpenGL 4.6)", "lean"],
+    [
+      "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device), SwiftShader driver)",
+      "lean",
+    ],
+    ["", "lean"],
+  ])("the renderer %j starts on the %s preset", (gpu, preset) => {
+    expect(createHost({ gpu }).quality.preset.id).toBe(preset);
+  });
 });

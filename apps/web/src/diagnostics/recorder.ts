@@ -1,7 +1,5 @@
 import {
   faultSources,
-  frameRates,
-  governReasons,
   HISTOGRAM_BUCKETS,
   histogramBucket,
   MAX_BATCH_BYTES,
@@ -16,7 +14,7 @@ import type {
   BatchKind,
   FaultSource,
   FrameRate,
-  GovernReason,
+  PresetId,
   RaceStage,
   ResizeSource,
 } from "@racer/telemetry/limits";
@@ -36,11 +34,8 @@ const SLOTS = 17;
 const FAULT_CAPACITY = 64;
 const FAULTS_PER_BATCH = 32;
 const EVENTS_PER_BATCH = 256;
-const FROM = 3;
-const TO = 10;
 
 const eventKinds = [
-  "governor",
   "canvas",
   "invalidated",
   "incomplete-pass",
@@ -54,24 +49,14 @@ const eventKinds = [
 type EventKind = (typeof eventKinds)[number];
 
 export interface QualityState {
-  frameRate: FrameRate;
-  rung: number;
-  pixelRatio: number;
-  bloomScale: number;
-  shadowMap: number;
-  samples: number;
-  pace: number;
+  readonly bloomScale: number;
+  readonly frameRate: FrameRate;
+  readonly pace: number;
+  readonly pixelRatio: number;
+  readonly preset: PresetId;
+  readonly samples: number;
+  readonly shadowMap: number;
 }
-
-export const emptyQuality = (): QualityState => ({
-  bloomScale: 0,
-  frameRate: "auto",
-  pace: 0,
-  pixelRatio: 0,
-  rung: 0,
-  samples: 0,
-  shadowMap: 0,
-});
 
 type FrameLookup = (frame: number) => ProfileFrame | null;
 
@@ -88,13 +73,6 @@ export interface Recorder {
     intervalMs: number,
     discardedMs: number
   ) => void;
-  readonly governor: (
-    reason: GovernReason,
-    from: QualityState,
-    to: QualityState,
-    lateCredit: number,
-    calmMs: number
-  ) => void;
   readonly canvas: (
     source: ResizeSource,
     epoch: number,
@@ -106,9 +84,7 @@ export interface Recorder {
   readonly invalidated: (
     frame: number,
     drawnEpoch: number,
-    sizeEpoch: number,
-    drawRung: number,
-    nextRung: number
+    sizeEpoch: number
   ) => void;
   readonly incompletePass: (frame: number) => void;
   readonly enterRace: () => number;
@@ -155,7 +131,6 @@ interface Slots {
   readonly stamp: Stamp;
   readonly base: number;
   readonly value: (slot: number) => number;
-  readonly quality: (base: number) => Quality;
   readonly fault: (serial: number) => FaultText;
 }
 
@@ -185,22 +160,11 @@ const decoders = {
       where: text.where,
     };
   },
-  governor: ({ stamp, value, quality, base }) => ({
-    ...stamp,
-    calmMs: value(2),
-    from: quality(base + FROM),
-    kind: "governor",
-    lateCredit: value(1),
-    reason: governReasons[value(0)] ?? "late-budget",
-    to: quality(base + TO),
-  }),
   "incomplete-pass": ({ stamp }) => ({ ...stamp, kind: "incomplete-pass" }),
   invalidated: ({ stamp, value }) => ({
     ...stamp,
-    drawRung: value(2),
     drawnEpoch: value(0),
     kind: "invalidated",
-    nextRung: value(3),
     sizeEpoch: value(1),
   }),
   marker: ({ stamp, value }) => ({ ...stamp, kind: "marker", tick: value(0) }),
@@ -235,11 +199,9 @@ const worstFrameOf = (
       calls: [],
       cpu: [],
       discardedMs: 0,
-      drawRung: 0,
       drawnEpoch: 0,
       frame,
       intervalMs,
-      nextRung: 0,
       pixelRatio: 0,
       race: 0,
       sizeEpoch: 0,
@@ -252,11 +214,9 @@ const worstFrameOf = (
     calls: [...seen.calls],
     cpu: seen.cpu.map(thousandths),
     discardedMs: thousandths(seen.discarded),
-    drawRung: seen.drawRung,
     drawnEpoch: seen.drawnEpoch,
     frame,
     intervalMs,
-    nextRung: seen.rung,
     pixelRatio: seen.pixelRatio,
     race: seen.race,
     sizeEpoch: seen.sizeEpoch,
@@ -315,26 +275,6 @@ export const createRecorder = (): Recorder => {
     return at * SLOTS;
   };
 
-  const writeQuality = (base: number, quality: QualityState): void => {
-    values[base] = quality.rung;
-    values[base + 1] = quality.pixelRatio;
-    values[base + 2] = quality.bloomScale;
-    values[base + 3] = quality.shadowMap;
-    values[base + 4] = quality.pace;
-    values[base + 5] = quality.samples;
-    values[base + 6] = frameRates.indexOf(quality.frameRate);
-  };
-
-  const readQuality = (base: number): Quality => ({
-    bloomScale: values[base + 2] ?? 0,
-    frameRate: frameRates[values[base + 6] ?? 0] ?? "auto",
-    pace: values[base + 4] ?? 0,
-    pixelRatio: values[base + 1] ?? 0,
-    rung: values[base] ?? 0,
-    samples: values[base + 5] ?? 0,
-    shadowMap: values[base + 3] ?? 0,
-  });
-
   const faultOf = (serial: number): FaultText => {
     const text = faultText[serial % FAULT_CAPACITY];
     return text?.serial === serial ? text : overwritten;
@@ -353,7 +293,6 @@ export const createRecorder = (): Recorder => {
     return decoders[kind]({
       base,
       fault: faultOf,
-      quality: readQuality,
       stamp,
       value: (slot) => values[base + slot] ?? 0,
     });
@@ -535,17 +474,6 @@ export const createRecorder = (): Recorder => {
       histogram[bucket] = (histogram[bucket] ?? 0) + 1;
       keepWorst(frame, intervalMs);
     },
-    governor(reason, from, to, lateCredit, calmMs) {
-      if (!recorder.recording) {
-        return;
-      }
-      const base = push("governor");
-      values[base] = indexOf(governReasons, reason);
-      values[base + 1] = lateCredit;
-      values[base + 2] = calmMs;
-      writeQuality(base + FROM, from);
-      writeQuality(base + TO, to);
-    },
     incompletePass(frame) {
       if (!recorder.recording) {
         return;
@@ -553,7 +481,7 @@ export const createRecorder = (): Recorder => {
       push("incomplete-pass");
       frames[(seq - 1) % EVENT_CAPACITY] = frame;
     },
-    invalidated(frame, drawnEpoch, sizeEpoch, drawRung, nextRung) {
+    invalidated(frame, drawnEpoch, sizeEpoch) {
       if (!recorder.recording) {
         return;
       }
@@ -561,8 +489,6 @@ export const createRecorder = (): Recorder => {
       frames[(seq - 1) % EVENT_CAPACITY] = frame;
       values[base] = drawnEpoch;
       values[base + 1] = sizeEpoch;
-      values[base + 2] = drawRung;
-      values[base + 3] = nextRung;
     },
     leaveRace() {
       raceId = 0;

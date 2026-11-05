@@ -91,7 +91,7 @@ const bucketLabel = (index: number): string => {
 };
 
 export const qualityText = (quality: Quality): string =>
-  `rung ${quality.rung} x${quality.pixelRatio.toFixed(2)} bloom ${quality.bloomScale} shadow ${quality.shadowMap}${quality.samples === undefined ? "" : ` msaa ${quality.samples}`} pace ${quality.pace}${quality.frameRate === undefined ? "" : ` rate ${quality.frameRate}`}`;
+  `${quality.preset ?? `rung ${quality.rung ?? 0}`} x${quality.pixelRatio.toFixed(2)} bloom ${quality.bloomScale} shadow ${quality.shadowMap}${quality.samples === undefined ? "" : ` msaa ${quality.samples}`} pace ${quality.pace}${quality.frameRate === undefined ? "" : ` rate ${quality.frameRate}`}`;
 
 export const seconds = (at: number): string => `${(at / 1000).toFixed(2)} s`;
 
@@ -158,7 +158,7 @@ const resizeSuspects = (events: readonly TelemetryEvent[]): Suspect[] => {
       : "resize";
     return {
       at: event.at,
-      detail: `frame ${event.frame} drew canvas generation ${event.drawnEpoch} at rung ${event.drawRung}; a ${how} (generation ${event.sizeEpoch}, rung ${event.nextRung}) cleared it before it was presented`,
+      detail: `frame ${event.frame} drew canvas generation ${event.drawnEpoch}${event.drawRung === undefined ? "" : ` at rung ${event.drawRung}`}; a ${how} (generation ${event.sizeEpoch}${event.nextRung === undefined ? "" : `, rung ${event.nextRung}`}) cleared it before it was presented`,
       frame: event.frame,
       kind: "resize-after-draw",
       score: 100,
