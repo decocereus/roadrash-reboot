@@ -91,7 +91,9 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 | `rv console --run <id> [errors]` | Print what the watcher captured. |
 | `rv list` | Every claimed slot, its run, and whether its processes are up. |
 | `rv desktop up <name>`, `down <name>`, `status` | On Linux, start, release or read the desktop session. `up` holds it under that name until `down` with the same name, so another agent's `down` cannot release it. |
-| `rv bench <label> -- <command> [args]` | Holds the bench lock while the command runs, for a campaign of several measurements. Other agents' `rv up`, `open`, `click`, `press` and `rebuild` fail until it ends. It refuses to start while another run has a browser open. |
+| `rv book <lane> <minutes> <purpose>` | Books a turn on this machine's bench queue and prints `BOOKING=<id>`. On vimaan every `rv` that draws, `rv bench`, `measure.ts` and `pnpm perf:gpu` run under `RUSHLINE_BOOKING=<id>` once that booking holds the turn. [features/vimaan-queue.md](features/vimaan-queue.md) is the recipe. |
+| `rv book status`, `wait <id> [--every s] [--end]`, `release <id>` | `status` shows the holder, the waiters with estimated starts, and the last ended bookings. `wait` blocks until it is the lane's move, or with `--end` until the booking ends. `release` passes the turn on. From the Mac, `pnpm vimaan status`, `book`, `wait`, `run` and `release` do the same over SSH. |
+| `rv bench <label> -- <command> [args]` | Runs the command as its booking's job, for a campaign of several measurements. Other agents' `rv up`, `open`, `click`, `press` and `rebuild` fail until it ends. It refuses to start while another run has a browser open. Under a booking it stops the command at the booking's expected end plus 15 min and exits 124. On the Mac it books itself. |
 
 ### Game state you can read
 
@@ -200,6 +202,9 @@ The development machine is an M4 Pro. DevTools can slow the main thread but not 
 ## Linux
 
 vimaan is a Linux laptop with a GTX 1650 Ti and no running desktop. Everything above works there through one extra step, which `rv up` takes for you: it starts Hyprland on the real panel, then opens Chromium through Xwayland on the NVIDIA GPU. The no-headless rule holds there too. [features/desktop-session.md](features/desktop-session.md) is the recipe.
+
+- vimaan is shared through one bench queue, and nothing draws or measures there without a booking. From the Mac, book with `pnpm vimaan book <lane> <minutes> <purpose>`, and wait with `pnpm vimaan wait <id>` as a background command. Run jobs with `pnpm vimaan run`, and release with `pnpm vimaan release <id>`. On vimaan, every `rv` that draws runs under `RUSHLINE_BOOKING=<id>`. [features/vimaan-queue.md](features/vimaan-queue.md) is the recipe.
+- vimaan is for GPU work: frame-rate campaigns, `pnpm perf:gpu` and render captures. Multiplayer seats and kick or fight checks run on the Mac as two windows with `pnpm rooms:lag`. vimaan joins a multiplayer check only for a final production pass, booked like any other job.
 
 - `rv up`, `rv doctor` and `rv down` manage the session. A second slot shares it, and the last slot to leave stops it. `rv desktop status` says who holds it.
 - It needs a logind seat that can open, which the owner's console login on tty1 gives. Without one `rv up` fails and says so. Nothing needs root.
