@@ -22,11 +22,13 @@ export type SeatTally = typeof SeatTallySchema.Type;
 
 const RaceSeatSchema = Schema.Struct({
   ...SeatTallySchema.fields,
+  asn: orMissing(Schema.Number),
   colo: orMissing(Schema.String),
   crashes: Schema.Number,
   finishTick: Schema.Number,
   leftAtTick: orMissing(Schema.Number),
   mode: Schema.String,
+  network: orMissing(Schema.String),
   readyMs: orMissing(Schema.Number),
   reported: Schema.Boolean,
   roadMetres: Schema.Number,
@@ -50,6 +52,7 @@ const Started = Schema.Struct({
   protocol: orMissing(Schema.Number),
   raceId: Schema.String,
   road: Schema.String,
+  roomColo: orMissing(Schema.String),
   seats: Schema.Number,
   seed: Schema.Number,
   tier: orMissing(Schema.Number),

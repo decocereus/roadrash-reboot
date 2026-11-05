@@ -23,7 +23,12 @@ import { decodeRoomMessage, encodeLobbyCommand } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
 
-export const nearby = { colo: "DEL", tcpRttMs: 8 };
+export const nearby = {
+  asn: 64_512,
+  colo: "DEL",
+  network: "Test Net",
+  tcpRttMs: 8,
+};
 let claims = 0;
 export const sameBuild = (key = "") => {
   claims += 1;
@@ -82,6 +87,7 @@ export const createClock = (): Clock => {
       races += 1;
       return `race-${races}`;
     },
+    roomColo: () => "SIN",
     saveTape: (key, body) => {
       tape.set(key, body);
     },
