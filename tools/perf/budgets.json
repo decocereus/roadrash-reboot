@@ -80,7 +80,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "5b6794ae067eb28f918daf5aaca0077bd3e286ef44a10c00e89c02303feb1699"
+    "summarySha256": "9602ed2cf7a2770776c8c5070b334199a2c9fe11f9ec460199eb791c2f6755ac"
   },
   "limits": [
     {
@@ -421,14 +421,14 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 614264,
-      "baseline": 602219,
+      "value": 626621,
+      "baseline": 614334,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.root.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
       "unit": "B"
     },
     {

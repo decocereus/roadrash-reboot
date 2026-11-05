@@ -2840,6 +2840,14 @@
       "side": "B",
       "source": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
       "value": 1.417910886133199
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
+      "value": 614334
     }
   ],
   "revisions": {
@@ -3813,6 +3821,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "aa043203bfd4b1e42cb0a7eeebfb9e765ba9f783"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1154975, \"bytes.route.root.gzip\": 614334, \"bytes.route.kit.raw\": 952839, \"bytes.route.kit.gzip\": 544738, \"bytes.game.raw\": 1923769, \"bytes.game.gzip\": 828753, \"bytes.game.incremental.raw\": 768794, \"bytes.game.incremental.gzip\": 214419, \"bytes.worker.raw\": 738344, \"bytes.worker.gzip\": 189731, \"bytes.client.raw\": 2055830, \"bytes.client.gzip\": 881142}",
+        "builtB": "{\"bytes.route.root.raw\": 1154975, \"bytes.route.root.gzip\": 614334, \"bytes.route.kit.raw\": 952839, \"bytes.route.kit.gzip\": 544738, \"bytes.game.raw\": 1923769, \"bytes.game.gzip\": 828753, \"bytes.game.incremental.raw\": 768794, \"bytes.game.incremental.gzip\": 214419, \"bytes.worker.raw\": 738344, \"bytes.worker.gzip\": 189731, \"bytes.client.raw\": 2055830, \"bytes.client.gzip\": 881142}",
+        "harnessDigest": "137b3c1b0470d933fa499670022192d29d644be9dc42054e961419d7038f7a65",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "eca1e93e75258c01f65521ce14c803a9b0df9cd561a3bf28527cd2e5922d79db",
+        "sideBSourceDigest": "eca1e93e75258c01f65521ce14c803a9b0df9cd561a3bf28527cd2e5922d79db",
+        "why": "Breakwater Run's density work and the tier 1 bike match add 307 B gzip to the root route over main at 638289cf, which sat 237 B under its limit, so the first page ran 70 B over. This is code players download. Only bytes.route.root.gzip moves, re-measured here at |delta| 0 B, and every other build row keeps its limit."
+      },
+      "id": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
+      "lanes": ["build"],
+      "sides": {
+        "A": "c5626bf810cdeebaaa1934900b297292fabc6262",
+        "B": "c5626bf810cdeebaaa1934900b297292fabc6262"
       }
     }
   ],
