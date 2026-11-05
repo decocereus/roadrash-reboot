@@ -1,0 +1,80 @@
+{
+  "stall_noodle": {
+    "triangles": 389,
+    "glowTriangles": 192,
+    "footprint": {
+      "depth": 3.2,
+      "wide": 4.4
+    }
+  },
+  "stall_food_cart": {
+    "triangles": 294,
+    "glowTriangles": 196,
+    "footprint": {
+      "depth": 2.6,
+      "wide": 3.2
+    }
+  },
+  "stall_fabric": {
+    "triangles": 234,
+    "glowTriangles": 82,
+    "footprint": {
+      "depth": 3.0,
+      "wide": 5.0
+    }
+  },
+  "stall_parts": {
+    "triangles": 330,
+    "glowTriangles": 122,
+    "footprint": {
+      "depth": 3.0,
+      "wide": 4.6
+    }
+  },
+  "stall_fruit": {
+    "triangles": 256,
+    "glowTriangles": 106,
+    "footprint": {
+      "depth": 3.0,
+      "wide": 4.0
+    }
+  },
+  "stall_neon": {
+    "triangles": 224,
+    "glowTriangles": 154,
+    "footprint": {
+      "depth": 3.2,
+      "wide": 3.2
+    }
+  },
+  "deco_crates": {
+    "triangles": 30,
+    "glowTriangles": 0,
+    "footprint": null
+  },
+  "deco_bin": {
+    "triangles": 20,
+    "glowTriangles": 0,
+    "footprint": null
+  },
+  "deco_stool": {
+    "triangles": 34,
+    "glowTriangles": 0,
+    "footprint": null
+  },
+  "deco_string_lights": {
+    "triangles": 60,
+    "glowTriangles": 48,
+    "footprint": null
+  },
+  "deco_lanterns": {
+    "triangles": 56,
+    "glowTriangles": 52,
+    "footprint": null
+  },
+  "deco_hanging_sign": {
+    "triangles": 52,
+    "glowTriangles": 40,
+    "footprint": null
+  }
+}
