@@ -25,7 +25,7 @@ import type {
 
 const MOST_LEAD_TICKS = INPUT_HORIZON;
 
-const SAME_EVENT_WITHIN_TICKS = 5;
+const OLDEST_PLAYED_TICKS = 12;
 const NO_EVENTS: readonly RaceEvent[] = [];
 
 const FELT_JUMP_METRES = 0.25;
@@ -75,8 +75,44 @@ const outOfOrder = (tick: number, after: number): never => {
   throw new RangeError(`The room sent tick ${tick} after tick ${after}.`);
 };
 
-const eventKey = (event: RaceEvent): string =>
-  `${event.kind}:${event.rider}:${"target" in event ? event.target : ""}:${"other" in event ? event.other : ""}`;
+interface RoomEvent {
+  readonly event: RaceEvent;
+  readonly tick: number;
+}
+
+const ownPrediction = (event: RaceEvent, me: RiderId): boolean => {
+  if (event.rider !== me) {
+    return false;
+  }
+  switch (event.kind) {
+    case "crash":
+    case "knockedDown": {
+      return event.by === null || event.by === me;
+    }
+    case "riderContact": {
+      return false;
+    }
+    case "attack":
+    case "bump":
+    case "busted":
+    case "finish":
+    case "glance":
+    case "hazard":
+    case "hit":
+    case "land":
+    case "nearMiss":
+    case "pursuit":
+    case "remount":
+    case "weaponBroken":
+    case "weaponTaken":
+    case "wrecked": {
+      return true;
+    }
+    default: {
+      return event satisfies never;
+    }
+  }
+};
 
 const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
   for (let word = 0; word < HASH_WORDS; word += 1) {
@@ -106,8 +142,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const ownControls = ringOf(() => coasting);
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
-  const heardAt = new Map<number, string[]>();
-  let news: RaceEvent[] = [];
+  let own: RaceEvent[] = [];
+  const fromRoom: RoomEvent[] = [];
+  let playedThrough = 0;
   let sentThrough = 0;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
@@ -164,32 +201,40 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     stepRace(predicted, setup.track, guess(tick));
   };
 
-  const heardNear = (tick: number, key: string): boolean => {
-    for (
-      let near = tick - SAME_EVENT_WITHIN_TICKS;
-      near <= tick + SAME_EVENT_WITHIN_TICKS;
-      near += 1
-    ) {
-      if (heardAt.get(near)?.includes(key) === true) {
-        return true;
+  const hearOwn = (): void => {
+    for (const event of predicted.events) {
+      if (ownPrediction(event, me)) {
+        own.push({ ...event });
       }
     }
-    return false;
   };
 
-  const hear = (state: RaceState): void => {
-    for (const event of state.events) {
-      const key = eventKey(event);
-      if (!heardNear(state.tick, key)) {
-        const keys = heardAt.get(state.tick);
-        if (keys) {
-          keys.push(key);
-        } else {
-          heardAt.set(state.tick, [key]);
-        }
-        news.push(event);
+  const hearRoom = (): void => {
+    for (const event of confirmed.events) {
+      if (!ownPrediction(event, me)) {
+        fromRoom.push({ event: { ...event }, tick: confirmed.tick });
       }
     }
+  };
+
+  const playRoom = (into: RaceEvent[]): void => {
+    const newest = confirmed.tick;
+    const step = newest - playedThrough > 1 ? 2 : 1;
+    playedThrough = Math.max(
+      newest - OLDEST_PLAYED_TICKS,
+      Math.min(newest, playedThrough + step)
+    );
+    let played = 0;
+    for (const heard of fromRoom) {
+      if (heard.tick > playedThrough) {
+        break;
+      }
+      if (heard.tick >= newest - OLDEST_PLAYED_TICKS) {
+        into.push(heard.event);
+      }
+      played += 1;
+    }
+    fromRoom.splice(0, played);
   };
 
   const rewind = (): void => {
@@ -261,8 +306,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         outOfOrder(frame.tick, confirmed.tick);
       }
       stepRace(confirmed, setup.track, frame);
-      hear(confirmed);
-      heardAt.delete(frame.tick - SAME_EVENT_WITHIN_TICKS - 1);
+      hearRoom();
       learn(frame);
       if (serverHash) {
         hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
@@ -303,18 +347,19 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       ownControls[slotOf(tick)] = control;
       advance(tick);
-      hear(predicted);
+      hearOwn();
       return true;
     },
     predicted,
     settle,
     stats,
     takeEvents: () => {
-      if (news.length === 0) {
+      const taken = own;
+      playRoom(taken);
+      if (taken.length === 0) {
         return NO_EVENTS;
       }
-      const taken = news;
-      news = [];
+      own = [];
       return taken;
     },
     writeInputs: (view) => {

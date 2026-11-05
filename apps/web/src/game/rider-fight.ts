@@ -53,6 +53,7 @@ export const fightHeard = (fight: RiderFight, event: RaceEvent): void => {
 };
 
 export const flinchHeard = (fight: RiderFight): void => {
+  fight.attack = "none";
   fight.flinchLeft = HIT_STUN_TICKS;
 };
 

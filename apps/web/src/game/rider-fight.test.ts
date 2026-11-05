@@ -61,6 +61,12 @@ describe("how a rider's strike plays once it is heard", () => {
     expect(strikeFrame(fight, 0, frame)).toBeFalsy();
   });
 
+  it("stops a strike when the rider is hit, as the room does", () => {
+    const { fight, frame } = framesOf(2);
+    flinchHeard(fight);
+    expect(strikeFrame(fight, 0, frame)).toBeFalsy();
+  });
+
   it("flinches from a heard hit when the prediction has no stun left", () => {
     const fight = quietFight();
     flinchHeard(fight);
