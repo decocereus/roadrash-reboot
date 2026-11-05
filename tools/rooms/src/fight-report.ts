@@ -18,8 +18,10 @@ const probeRider = Schema.Struct({
 const drawnRider = Schema.Struct({
   blend: Schema.Number,
   flinch: Schema.Number,
+  fromTick: Schema.Number,
   pose: Schema.String,
   reach: Schema.Number,
+  toTick: Schema.Number,
   x: Schema.Number,
 });
 
@@ -330,16 +332,18 @@ export const riderTrack = (taken: TakenFrames, rider: number): RiderTrack => {
   );
   const frames = taken.frames.map((frame): TrackFrame | null => {
     const now = riding.get(frame.tick);
-    const was = riding.get(frame.tick - 1);
     const drawn = frame.drawn[rider];
+    const from = riding.get(drawn?.fromTick ?? Number.NaN);
+    const to = riding.get(drawn?.toTick ?? Number.NaN);
     const guessed = frame.predicted[rider];
     return now === undefined ||
-      was === undefined ||
+      from === undefined ||
+      to === undefined ||
       drawn === undefined ||
       guessed?.mode !== "riding"
       ? null
       : {
-          drawn: { place: drawn.x, truth: was + (now - was) * drawn.blend },
+          drawn: { place: drawn.x, truth: from + (to - from) * drawn.blend },
           guessed: { place: guessed.x, truth: now },
         };
   });

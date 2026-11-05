@@ -63,6 +63,7 @@ const POTHOLE_SAG_KICK = 1.6;
 const HAZARD_PUFF = 0.6;
 
 interface Pose {
+  tick: number;
   s: number;
   x: number;
   heading: number;
@@ -75,7 +76,9 @@ interface Pose {
 
 interface DrawnPlace {
   blend: number;
+  fromTick: number;
   s: number;
+  toTick: number;
   x: number;
 }
 
@@ -115,6 +118,7 @@ const emptyPose = (): Pose => ({
   heading: 0,
   lean: 0,
   s: 0,
+  tick: 0,
   x: 0,
 });
 
@@ -267,7 +271,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         after: emptyPose(),
         before: emptyPose(),
         bike,
-        drawn: { blend: 0, s: 0, x: 0 },
+        drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
         drift: stillDrift(),
         fight: quietFight(),
         figure,
@@ -359,6 +363,10 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       stage.race.takeCorrections(),
       capture
     );
+    const { tick } = stage.race.view;
+    for (const view of cast.views) {
+      view[into].tick = tick;
+    }
   };
 
   const holdStill = () => {
@@ -502,7 +510,9 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     const s = mix(before.s, after.s, blend) + drift.s;
     const x = mix(before.x, after.x, blend) + drift.x;
     view.drawn.blend = blend;
+    view.drawn.fromTick = before.tick;
     view.drawn.s = s;
+    view.drawn.toTick = after.tick;
     view.drawn.x = x;
     const air = mix(before.air, after.air, blend);
     const lean = mix(before.lean, after.lean, blend) + drift.lean;

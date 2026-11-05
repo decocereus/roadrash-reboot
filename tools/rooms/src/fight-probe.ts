@@ -81,7 +81,7 @@ export const FIGHT_PROBE = `(() => {
       frames.push({
         at: Date.now(),
         confirmed: humans.map((i) => rider(client.confirmed, i)),
-        drawn: humans.map((i) => ({ flinch: stances[i] ? stances[i].flinch : 0, pose: stances[i] ? stances[i].pose : "seated", reach: stances[i] ? stances[i].reach : 0, blend: cast[i].drawn.blend, x: cast[i].drawn.x })),
+        drawn: humans.map((i) => ({ flinch: stances[i] ? stances[i].flinch : 0, pose: stances[i] ? stances[i].pose : "seated", reach: stances[i] ? stances[i].reach : 0, blend: cast[i].drawn.blend, fromTick: cast[i].drawn.fromTick, toTick: cast[i].drawn.toTick, x: cast[i].drawn.x })),
         heard: client.confirmed.tick,
         predicted: humans.map((i) => rider(client.predicted, i)),
         rtt: room.rttMs(),
