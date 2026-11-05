@@ -8,7 +8,7 @@ The game opens in the Lowside bar. Escape there, or Back room in its menu, opens
 - `route-board` shows the Single race list pinned in the back room with Road, Tier, and Bike steppers, the chosen road's flyer, its length, traffic, police, and home riders on the cyan note, and its description on the pink note.
 - `ride-out` shows the road's flyer, the grid, and "Loading the road", then "Ride", and starts the race about 2 seconds after it opens. It has no buttons; Escape goes back.
 - `race-start` counts down 3, 2, 1, then shows the speedometer with place out of 15.
-- `pause` freezes the race on Escape and offers Resume, Restart race, Sound, and Quit race.
+- `pause` freezes the race on Escape and offers Resume, Restart race, Sound, Settings, and Quit race.
 - `restart` starts the same single race again, from the pause menu or with R.
 - `quit` asks to confirm, then returns to the route board.
 
@@ -32,10 +32,12 @@ Preconditions:
 - **Steppers.** Run `rv click --run <run> Tier --within "Route board"` and `rv click --run <run> Bike --within "Route board"`, then `rv aria --run <run> steppers`. A click steps forward and wraps. With no career save only tier 1 and the Halden Wren 400 are offered, so both still read `TIER 1` and `BIKE HALDEN WREN 400`; with a save, the tiers reached and the bikes in its garage appear.
 - **Ride out.** Run `rv click --run <run> Race --within "Route board"` and `rv shot --run <run> ride-out`. The card shows the flyer and the grid with YOU last.
 - **Start.** Run `rv wait --run <run> race`. The `meter "Speed"` appears; `rv shot --run <run> race-start` shows the countdown digits and the speedometer reading 15TH /15.
-- **Pause.** After the countdown, run `rv press --run <run> Escape` and `rv aria --run <run> paused`. `menu "Pause"` shows `RESUME` focused, `RESTART RACE`, `SOUND ON`, `QUIT RACE`.
+- **Pause.** After the countdown, run `rv press --run <run> Escape` and `rv aria --run <run> paused`. `menu "Pause"` shows `RESUME` focused, `RESTART RACE`, `SOUND ON`, `SETTINGS`, `QUIT RACE`.
 - **Resume.** Run `rv click --run <run> Resume --within Pause`. The pause menu is gone and the speed meter moves again while `rv press --run <run> ArrowUp --hold 2000` is held.
 - **Restart.** Run `rv press --run <run> KeyR`, then `rv js --run <run> 'document.querySelector("[role=meter][aria-label=Speed]").getAttribute("aria-valuenow")'`. The countdown starts again and the speed reads `"0"` (with `&prof`, `__rushlineProfile.info().tick` is back to 0).
 - **Quit.** Run `rv press --run <run> Escape`, `rv click --run <run> "Quit race" --within Pause`, then `rv click --run <run> Quit --within "Quit race"`. `rv aria --run <run> after-quit` shows `menu "Route board"` with `RACE` focused.
+- **Pause overlays.** While paused, run `rv click --run <run> Settings --within Pause`. `menu "Settings"` has `FRAME RATE` focused and `menu "Pause"` sits under an `inert` stage. `rv press --run <run> Escape` closes Settings only: the race stays paused with `SETTINGS` focused. `rv click --run <run> "Quit race" --within Pause` opens the `Quit race` dialog with `KEEP RACING` focused. `rv press --run <run> Escape` closes the dialog only: the race stays paused with `QUIT RACE` focused. Read the focus and the `inert` flag with `rv js --run <run> '[document.activeElement.innerText, document.querySelector("[role=menu][aria-label=Pause]").closest("[inert]") !== null]'`.
+- **Back room overlays.** With a career save, `rv press --run <run> Escape` in the back room returns to the bar, and Back room opens it again. `rv click --run <run> Settings --within "Back room"`, then `rv press --run <run> Escape`, leaves `menu "Back room"` up with `SETTINGS` focused. `rv click --run <run> "New career" --within "Back room"` opens the `Start over` dialog with `KEEP IT` focused. `rv press --run <run> Escape` closes the dialog only, with `NEW CAREER` focused. Open it again and `rv click --run <run> "Erase and start" --within "Start over"` lands on the bar with `cash: 1500` in the save. With a damaged save, as in [career.md](career.md), Escape does nothing and Start over erases at once with no dialog.
 
 ## Gotchas
 

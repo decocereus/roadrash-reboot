@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import type { Compiling } from "../src/game/post.ts";
 import { createPreparation } from "../src/game/preparation.ts";
-import type { Clock, PrepareOutcome } from "../src/game/preparation.ts";
+import type { Clock } from "../src/game/preparation.ts";
+import type { PrepareOutcome } from "../src/prepare-outcome.ts";
 
 interface ManualClock extends Clock {
   readonly advance: (ms: number) => void;

@@ -7,6 +7,7 @@ import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type { Controller, RaceSetup, RiderId } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import type { Assets } from "./assets.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import type { DevRide } from "./dev-ride.ts";
@@ -15,7 +16,7 @@ import { createFleet } from "./fleet.ts";
 import type { Fleet } from "./fleet.ts";
 import type { Pipeline } from "./post.ts";
 import { createPreparation } from "./preparation.ts";
-import type { Clock, PrepareOutcome } from "./preparation.ts";
+import type { Clock } from "./preparation.ts";
 import type { Quality } from "./quality-ladder.ts";
 import type { Cast } from "./rider-views.ts";
 import { stageEverything, warmStaged } from "./staging.ts";
