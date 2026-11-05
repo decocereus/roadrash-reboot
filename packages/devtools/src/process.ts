@@ -45,6 +45,15 @@ export const alive = (pid: number | null): boolean => {
   }
 };
 
+export const killNow = (target: number): boolean => {
+  try {
+    process.kill(target, "SIGKILL");
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const isMissingProcess = Schema.is(
   Schema.Struct({ code: Schema.Literal("ESRCH") })
 );

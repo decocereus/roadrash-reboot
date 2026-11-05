@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { OVERRUN_MS } from "@racer/devtools/bench-queue";
+import { OVERRUN_MS, STOP_MS } from "@racer/devtools/bench-queue";
 import { describe, expect, it, onTestFinished } from "vitest";
 
 const root = path.resolve(import.meta.dirname, "../../..");
@@ -199,6 +199,68 @@ describe("rv book between two lanes", () => {
       process.kill(workload, "SIGKILL");
       await expect(statusUntil(temp, "idle since")).resolves.toMatch(
         /lane-a-1 holds it for frame campaign, .*idle since/u
+      );
+    }
+  );
+
+  it(
+    "stops an overdue workload whose rv bench was killed before handing the turn on",
+    { timeout: 30_000 },
+    async () => {
+      const temp = stateDir();
+      const dir = path.join(temp, "rushline-verify");
+      mkdirSync(dir);
+      const workload = spawn(
+        process.execPath,
+        ["-e", "setTimeout(()=>{},120000)"],
+        { detached: true, stdio: "ignore" }
+      );
+      const group = workload.pid ?? 0;
+      onTestFinished(() => {
+        if (alive(-group)) {
+          process.kill(-group, "SIGKILL");
+        }
+      });
+      const now = Date.now();
+      const lane = (id: string, purpose: string) => ({
+        bookedAt: now,
+        id,
+        lane: id.replace(/-\d+$/u, ""),
+        minutes: 1,
+        owner: { kind: "lane" },
+        purpose,
+      });
+      writeFileSync(
+        path.join(dir, "bench-queue.json"),
+        JSON.stringify({
+          ended: [],
+          holder: {
+            booking: lane("lane-a-1", "overdue campaign"),
+            since: now - 60_000 - OVERRUN_MS - STOP_MS - 5000,
+            use: { group, kind: "job", label: "campaign", pid: 2 ** 30 },
+          },
+          next: 3,
+          waiting: [lane("lane-b-2", "next job")],
+        })
+      );
+      expect(alive(-group)).toBeTruthy();
+      const handover = async (attempts: number) => {
+        const { stdout } = rv(temp, ["book", "status"]);
+        if (stdout.includes("holder   lane-b-2") || attempts === 0) {
+          return {
+            newHolder: stdout.includes("holder   lane-b-2"),
+            oldGroupAlive: alive(-group),
+          };
+        }
+        await sleep(200);
+        return await handover(attempts - 1);
+      };
+      await expect(handover(50)).resolves.toStrictEqual({
+        newHolder: true,
+        oldGroupAlive: false,
+      });
+      expect(rv(temp, ["book", "status"]).stdout).toContain(
+        "lane-a-1 (overdue campaign) ended at"
       );
     }
   );

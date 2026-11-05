@@ -5,6 +5,7 @@ import {
   book,
   describeQueue,
   endJob,
+  overdueJob,
   release,
   settle,
   startGroup,
@@ -190,12 +191,20 @@ describe("the bench queue's rules", () => {
     });
   });
 
-  it("gives a live job one more minute to stop itself past its deadline before passing the turn on", () => {
+  it("never passes a turn on while its job lives, and names the job to stop one minute past its deadline", () => {
     const { queue } = bookAll([lane("maps", 30), lane("mp")]);
     const running = startJob(queue, "maps-1", LIVE, "perf:gpu");
     const limit = T0 + 30 * MINUTE + OVERRUN_MS + STOP_MS;
-    expect(settle(running, limit, isAlive).holder?.booking.id).toBe("maps-1");
-    expect(settle(running, limit + 1, isAlive).holder?.booking.id).toBe("mp-2");
+    expect(overdueJob(running, limit, isAlive)).toBeNull();
+    expect(overdueJob(running, limit + 1, isAlive)).toMatchObject({
+      pid: LIVE,
+    });
+    expect(settle(running, limit + 1, isAlive).holder?.booking.id).toBe(
+      "maps-1"
+    );
+    expect(settle(running, limit + 1, () => false).holder?.booking.id).toBe(
+      "mp-2"
+    );
   });
 
   it("returns a lane's turn to idle when its job ends, and ends a process booking as finished", () => {

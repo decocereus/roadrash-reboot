@@ -8,7 +8,7 @@ import * as Schema from "effect/Schema";
 
 import { BenchBusy } from "./bench-busy.ts";
 import { toolStateDir, underClaim } from "./claim.ts";
-import { alive } from "./process.ts";
+import { alive, killNow } from "./process.ts";
 
 export const IDLE_MS = 600_000;
 export const OVERRUN_MS = 900_000;
@@ -130,9 +130,6 @@ const ownerGone = (entry: Booking, isAlive: Liveness): string | null =>
 const jobAlive = (job: Job, isAlive: Liveness): boolean =>
   isAlive(job.pid) || (job.group !== null && isAlive(-job.group));
 
-const stopping = (held: Holder, isAlive: Liveness): number =>
-  held.use.kind === "job" && jobAlive(held.use, isAlive) ? STOP_MS : 0;
-
 const endReason = (
   held: Holder,
   now: number,
@@ -143,7 +140,8 @@ const endReason = (
     return gone;
   }
   const end = expectedEnd(held);
-  if (now > end + OVERRUN_MS + stopping(held, isAlive)) {
+  const running = held.use.kind === "job" && jobAlive(held.use, isAlive);
+  if (now > end + OVERRUN_MS && !running) {
     return `ran past its expected end ${clockOf(end)} by more than 15 min`;
   }
   if (held.use.kind === "idle" && now - held.use.since > IDLE_MS) {
@@ -271,6 +269,19 @@ const withHolder = (
   queue.holder?.booking.id === id
     ? { ...queue, holder: change(queue.holder) }
     : queue;
+
+export const overdueJob = (
+  queue: QueueFile,
+  now: number,
+  isAlive: Liveness
+): Job | null => {
+  const held = queue.holder;
+  return held?.use.kind === "job" &&
+    jobAlive(held.use, isAlive) &&
+    now > deadlineOf(held) + STOP_MS
+    ? held.use
+    : null;
+};
 
 export const startJob = (
   queue: QueueFile,
@@ -423,10 +434,17 @@ export const changeQueue = <A>(
     "bench queue",
     Effect.gen(function* changing() {
       const now = yield* Clock.currentTimeMillis;
-      const [changed, result] = change(
-        settle(yield* readQueue(paths), now, alive),
-        now
-      );
+      const read = yield* readQueue(paths);
+      const overdue = overdueJob(read, now, alive);
+      if (overdue !== null) {
+        yield* Effect.sync(() => {
+          if (overdue.group !== null) {
+            killNow(-overdue.group);
+          }
+          killNow(overdue.pid);
+        });
+      }
+      const [changed, result] = change(settle(read, now, alive), now);
       const queue = settle(changed, now, alive);
       yield* writeQueue(paths, queue);
       return { now, queue, result };
