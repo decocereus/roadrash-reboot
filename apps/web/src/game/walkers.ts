@@ -16,7 +16,7 @@ import type { CrowdMode, WalkerLook } from "./walker-clips.ts";
 import { useWalkerPoses } from "./walker-skin.ts";
 
 const BEHIND = 40;
-const MARGIN = 200;
+const AHEAD = 300;
 const BODY_HEIGHT = 1.7;
 const QUARTER = Math.PI / 2;
 const OUTFIT_SALT = 7919;
@@ -112,7 +112,6 @@ export const createWalkerMarks = (
   asset: WalkerAsset
 ): WalkerMarks => {
   const group = new THREE.Group();
-  const reach = shading.look.fogFar + MARGIN;
   const crowd = crowdAt(track);
   const capacity = walkersOn(track.walkSites) + crowd.length;
   const material = shading.walker(asset.atlas);
@@ -208,7 +207,7 @@ export const createWalkerMarks = (
             fellAt[index] = tick;
           }
           wasDown[index] = down;
-          if (walker.s > centre - BEHIND && walker.s < centre + reach) {
+          if (walker.s > centre - BEHIND && walker.s < centre + AHEAD) {
             place(walker, index, tick);
           }
         }
@@ -216,7 +215,7 @@ export const createWalkerMarks = (
       const standingCount = standing.length;
       for (let index = 0; index < standingCount; index += 1) {
         const member = standing[index];
-        if (member && member.s > centre - BEHIND && member.s < centre + reach) {
+        if (member && member.s > centre - BEHIND && member.s < centre + AHEAD) {
           const { body } = member;
           const slot = body.count;
           body.mesh.setMatrixAt(slot, member.matrix);

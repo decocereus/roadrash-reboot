@@ -199,7 +199,7 @@ describe("the bazaar in the world", () => {
     world.dispose();
   });
 
-  it("shows the crowd beside the rider and none once the market is behind, on the walker instances", () => {
+  it("shows the crowd from 300 m and none once the market is behind, on the walker instances", () => {
     const world = createWorld(track, fakeWorldAssets());
     const show = (s: number): number => {
       world.showRoadLife(
@@ -208,7 +208,12 @@ describe("the bazaar in the world", () => {
       );
       return walkerCount(world);
     };
-    expect(show(1280)).toBe(crowd.length);
+    const first = Math.min(...crowd.map(({ s }) => s));
+    expect(show(0)).toBe(0);
+    expect(show(first - 301)).toBe(0);
+    const entering = show(first - 299);
+    expect(entering).toBeGreaterThan(0);
+    expect(entering).toBeLessThan(crowd.length);
     const midway = show(1600);
     expect(midway).toBeGreaterThan(0);
     expect(midway).toBeLessThan(crowd.length);
