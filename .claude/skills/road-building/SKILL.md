@@ -69,6 +69,7 @@ Pack pressure:
 
 - Check the bikes first. Compare each tier's solo laps with the bike the player rides. At tier 1 the Sesta laps 5.3 s faster than the best rival on Breakwater Run, and that gap was most of "nobody catches me".
 - Pacing is not the lever. `leadEase` does nothing once the player leads, and `catchUp` lifts skill, which barely moves a lap. Raising `catchUp` from 0.08 to 0.2 changed nothing at a 188 s lap.
+- A faster pack is the lever. `bikeMatches` in `launchRules` moves the Kite riders onto the Sesta when the player rides one at tier 1. A rider on a 192 s lap went from 30 wins in 30 to 23, and the margin from 9.5 s to 5.3 s. Rooms leave `bikeMatches` empty.
 - Density can work against you. It slows the pack by about 10 s, and a person who threads it loses less than a bot does. A rider on a 192 s lap won 25 of 30 on the quieter road and all 30 on the busier one. Measure pack pressure again whenever you add density.
 - Tier 3 is not a bike problem. Its rivals lap in about 180 s alone and 225 s in a race, because traffic and fights take the rest. A 189 s rider wins all 30 there. Nothing in the rules fixes that yet, and how the pilot passes a car on one lane is the place to look, for this and for the necks.
 - The pilot is not a person. In the player's seat it queues and fights like a bot. To measure a person, hold the player to a share of a clean solo lap, so it neither queues nor fights, and try several shares. A person sits somewhere between that and the pilot. Count the rivals who come within 20 m.
