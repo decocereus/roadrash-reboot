@@ -205,8 +205,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const noteRoomChoice = (frame: TickFrame, reached: number): void => {
     const slot = frame.tick % LAG_WINDOW_TICKS;
     const lost =
-      reached < frame.tick ||
-      ownControls[slotOf(frame.tick)] !== frame.controls.get(me);
+      frame.tick < PILOT_FROM_TICK &&
+      (reached < frame.tick ||
+        ownControls[slotOf(frame.tick)] !== frame.controls.get(me));
     overruledTicks += (lost ? 1 : 0) - (overruled[slot] ?? 0);
     overruled[slot] = lost ? 1 : 0;
     if (overruledTicks >= LAGGING_FROM_TICKS) {

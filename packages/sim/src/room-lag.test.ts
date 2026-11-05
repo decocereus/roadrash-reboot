@@ -4,7 +4,7 @@ import { controlOf } from "./control.ts";
 import { track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
-import { createRoom, roomSetup } from "./room.ts";
+import { createRoom, PILOT_FROM_TICK, roomSetup } from "./room.ts";
 import { PLAYER_RIDER } from "./state.ts";
 
 const steering = (tick: number) =>
@@ -49,6 +49,10 @@ describe("a rider's lag tag", () => {
     expect(lagged.at(-1)).toBeGreaterThanOrEqual(220);
     expect(lagged.at(-1)).toBeLessThan(300);
   });
+
+  it("stays off when the race's time limit hands every rider to the pilot", () => {
+    expect(laggedTicks(PILOT_FROM_TICK + 120, () => true)).toStrictEqual([]);
+  }, 120_000);
 
   it("does not show for a moment's loss", () => {
     expect(laggedTicks(400, (tick) => tick < 100 || tick >= 110)).toStrictEqual(

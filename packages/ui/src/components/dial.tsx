@@ -183,7 +183,7 @@ const Dial = ({
         {unit}
       </text>
       {warning !== null && (
-        <g role="status">
+        <g aria-hidden="true">
           <rect x={-102} y={66} width={58} height={22} fill={INK} />
           <rect x={-96} y={78} width={4} height={5} fill={RED} />
           <rect
