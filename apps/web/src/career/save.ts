@@ -62,6 +62,7 @@ export type SaveState =
       readonly status: "ready";
       readonly career: CareerState;
       readonly leftRace: Ledger | null;
+      readonly unsaved: boolean;
     }
   | { readonly status: "corrupt"; readonly error: SaveError }
   | { readonly status: "loading" };
@@ -159,9 +160,31 @@ export const storeCareer = (
 export const startOver = (open: () => SaveStorage): Reset =>
   outcomeOf(cleared(open));
 
+export const isUnsaved = (persistence: Persistence): boolean => {
+  switch (persistence.status) {
+    case "saved":
+    case "unchanged": {
+      return false;
+    }
+    case "readFailed":
+    case "unavailable":
+    case "writeFailed": {
+      return true;
+    }
+    default: {
+      return persistence satisfies never;
+    }
+  }
+};
+
 export const saveStateOf = (load: CareerLoad): SaveState => {
   if (load.status === "ready") {
-    return { career: load.career, leftRace: load.leftRace, status: "ready" };
+    return {
+      career: load.career,
+      leftRace: load.leftRace,
+      status: "ready",
+      unsaved: isUnsaved(load.persistence),
+    };
   }
   if (load.status === "corrupt") {
     return load;
