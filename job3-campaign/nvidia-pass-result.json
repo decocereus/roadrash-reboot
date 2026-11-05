@@ -1,0 +1,785 @@
+{
+ "budgets": {
+  "file": "tools/perf/budgets.json",
+  "sha256": "a100817122737a3964031d1ec23b5f788a59e7cec4d8b99c5a8d7319363e1ed6"
+ },
+ "comparisonId": "gpu-2026-11-05T11-45-10-112Z-7fec2e9-7fec2e9",
+ "counts": [
+  {
+   "peaks": {
+    "A": {
+     "calls": 508,
+     "cpuP50": 4.100000023841858,
+     "cpuP95": 6.199999988079071,
+     "programs": 45,
+     "textures": 73,
+     "triangles": 2319053,
+     "worstMs": 33.29999923706055
+    },
+    "B": {
+     "calls": 508,
+     "cpuP50": 4.000000059604645,
+     "cpuP95": 5.999999910593033,
+     "programs": 45,
+     "textures": 73,
+     "triangles": 2319053,
+     "worstMs": 16.799999237060547
+    }
+   },
+   "scenario": "reference-v1"
+  },
+  {
+   "peaks": {
+    "A": {
+     "calls": 524,
+     "cpuP50": 4.499999970197678,
+     "cpuP95": 6.900000035762787,
+     "programs": 45,
+     "textures": 80,
+     "triangles": 2878377,
+     "worstMs": 33.29999923706055
+    },
+    "B": {
+     "calls": 524,
+     "cpuP50": 4.400000035762787,
+     "cpuP95": 6.699999898672104,
+     "programs": 45,
+     "textures": 80,
+     "triangles": 2878377,
+     "worstMs": 33.29999923706055
+    }
+   },
+   "scenario": "pack-riding-v1"
+  }
+ ],
+ "display": {
+  "facts": [
+   "Monitor eDP-1 (ID 0):",
+   "1920x1080@60.05600 at 0x0",
+   "scale: 1",
+   "dpmsStatus: 1",
+   "vrr: false",
+   "NVIDIA GeForce GTX 1650 Ti with Max-Q Design, 615.78.08, [N/A], P8"
+  ],
+  "frameRate": "60",
+  "page": {
+   "A": {
+    "dpr": 2,
+    "frameRate": "60",
+    "height": 773,
+    "refreshHz": 60,
+    "width": 1512
+   },
+   "B": {
+    "dpr": 2,
+    "frameRate": "60",
+    "height": 773,
+    "refreshHz": 60,
+    "width": 1512
+   }
+  }
+ },
+ "environment": "gpu-chromium-nvidia",
+ "files": [
+  {
+   "file": "reference-v1-pair0-A.json",
+   "sha256": "e5a6d5ab84a4c1add383996e79297bbd20f36086781498639b02d0ed5bf4d80b"
+  },
+  {
+   "file": "reference-v1-pair0-B.json",
+   "sha256": "6a9013bdef55a7706e899474d503d7749cca30c2f3dfaab7efd7f45ac8126c18"
+  },
+  {
+   "file": "pack-riding-v1-pair0-B.json",
+   "sha256": "02e642647df3f023b223e3943b432779bb47717e29dab7251e83c4132295803c"
+  },
+  {
+   "file": "pack-riding-v1-pair0-A.json",
+   "sha256": "0135affc320004c7caee53dd8f38ebee0e7c9fbed28930520647f550027d6a16"
+  },
+  {
+   "file": "reference-v1-pair1-B.json",
+   "sha256": "a4f6777eb532487d117dc8c238422faad791845698645e83660657bf9d116297"
+  },
+  {
+   "file": "reference-v1-pair1-A.json",
+   "sha256": "d42aa4ae56710e30709d6a375e9319817904824401f4667eb9c3783bac2acead"
+  },
+  {
+   "file": "pack-riding-v1-pair1-A.json",
+   "sha256": "123a5beccbe26269a2f3469c32a58772e8bde9f7750e771bd01486418d3d7b67"
+  },
+  {
+   "file": "pack-riding-v1-pair1-B.json",
+   "sha256": "dd768d02bb396b7081e511dac2419c1497414851a8c3db768f65a2b28c2dab49"
+  },
+  {
+   "file": "reference-v1-pair2-A.json",
+   "sha256": "93b481b9e4cb9555b15701a7513b572879449a025c2220145623f372c1a1e8d6"
+  },
+  {
+   "file": "reference-v1-pair2-B.json",
+   "sha256": "a42da487177b42d6800542afbd4605b08f70e01095d225173a19a7f451ee12b6"
+  },
+  {
+   "file": "pack-riding-v1-pair2-B.json",
+   "sha256": "93f1e83106cc5eb9c56d246619767f840af0c0547fe72772b5aa77a4ec200ec3"
+  },
+  {
+   "file": "pack-riding-v1-pair2-A.json",
+   "sha256": "7278ce6cd7b267bc6b5b69f6a1e3b886579a9cae67d7577a2a8905cab59812a0"
+  },
+  {
+   "file": "reference-v1-pair3-B.json",
+   "sha256": "ce3727fb96b143c492b11c3a4c94060af5fea813de56d50b3be16e827ce5646c"
+  },
+  {
+   "file": "reference-v1-pair3-A.json",
+   "sha256": "189db89abe6504707114f8785782b4a014ef06d979e803c3bae3131eea0a1d0b"
+  },
+  {
+   "file": "pack-riding-v1-pair3-A.json",
+   "sha256": "8532fc2c148aa313fd7b92633ab891995ea03fc08dc9abe0d0dcdab8b0f6a468"
+  },
+  {
+   "file": "pack-riding-v1-pair3-B.json",
+   "sha256": "d9a9d88bd1543acb4a747e29b5988b15dd5133fc2a721a99468c1ed113a2de0e"
+  },
+  {
+   "file": "reference-v1-pair4-A.json",
+   "sha256": "74b4dc7b24c74efc326614b8e256d41a3b79718c89b58bfcc88753b33b44d6aa"
+  },
+  {
+   "file": "reference-v1-pair4-B.json",
+   "sha256": "511bd739c1b275c4f10a075fabe466d47e859fcdd6295f4f2305b34a03351bd0"
+  },
+  {
+   "file": "pack-riding-v1-pair4-B.json",
+   "sha256": "64a30647f061840c5c488ee4712e3bd6d3f8c5742474e5898ad0e2b2fcda491d"
+  },
+  {
+   "file": "pack-riding-v1-pair4-A.json",
+   "sha256": "ec5064f27b2621c5e5d9dcc62ecc3d24a9f2b923e4a13a54770923370a162640"
+  }
+ ],
+ "lines": [
+  "ok   gpu reference-v1 frame.interval.p50 [gpu-chromium-nvidia] observed=16.700 ms limit <= 17.500 ms A/B=1 (<= 1.1) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+  "ok   gpu pack-riding-v1 frame.interval.p50 [gpu-chromium-nvidia] observed=16.700 ms limit <= 17.500 ms A/B=1 (<= 1.1) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+  "ok   gpu reference-v1 frame.interval.p95 [gpu-chromium-nvidia] observed=16.700 ms limit <= 20 ms A/B=1 (<= 1.15) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+  "ok   gpu pack-riding-v1 frame.interval.p95 [gpu-chromium-nvidia] observed=16.700 ms limit <= 20 ms A/B=1 (<= 1.15) A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+  "ok   gpu reference-v1 frame.interval.p99 [gpu-chromium-nvidia] observed=16.800 ms limit <= 33.334 ms A/B=1 (<= 1.2) A=16.800 (worst of 5 windows; pooled B=16.800 A=16.800)",
+  "ok   gpu pack-riding-v1 frame.interval.p99 [gpu-chromium-nvidia] observed=16.800 ms limit <= 33.334 ms A/B=1 (<= 1.2) A=16.800 (worst of 5 windows; pooled B=16.800 A=16.800)",
+  "ok   gpu reference-v1 frame.missedFraction [gpu-chromium-nvidia] observed=0 share limit <= 0.010000 share A=0.0016611 (worst of 5 windows; pooled B=0.0000 A=0.00066445)",
+  "ok   gpu pack-riding-v1 frame.missedFraction [gpu-chromium-nvidia] observed=0.0016611 share limit <= 0.010000 share A=0.0016611 (worst of 5 windows; pooled B=0.00033223 A=0.00066445)",
+  "ok   gpu reference-v1 riders.cpu.p95 [gpu-chromium-nvidia] observed=0.70000 ms limit <= 1.8000 ms A=0.80000 (worst of 5 windows; pooled B=0.50000 A=0.50000)",
+  "ok   gpu pack-riding-v1 riders.cpu.p95 [gpu-chromium-nvidia] observed=0.90000 ms limit <= 1.8000 ms A=0.90000 (worst of 5 windows; pooled B=0.80000 A=0.70000)",
+  "ok   gpu reference-v1 main.longTask.count [gpu-chromium-nvidia] observed=0 tasks limit <= 0 tasks A=0.0000",
+  "ok   gpu pack-riding-v1 main.longTask.count [gpu-chromium-nvidia] observed=0 tasks limit <= 0 tasks A=0.0000",
+  "ok   gpu reference-v1 main.longTask.blockingMs [gpu-chromium-nvidia] observed=0 ms limit <= 0 ms A=0.0000",
+  "ok   gpu pack-riding-v1 main.longTask.blockingMs [gpu-chromium-nvidia] observed=0 ms limit <= 0 ms A=0.0000",
+  "ok   gpu reference-v1 render.calls.max [gpu-chromium-nvidia] observed=508 calls limit <= 534 calls A=508.00",
+  "ok   gpu pack-riding-v1 render.calls.max [gpu-chromium-nvidia] observed=524 calls limit <= 551 calls A=524.00",
+  "ok   gpu reference-v1 render.triangles.max [gpu-chromium-nvidia] observed=2319053 triangles limit <= 2435006 triangles A=2.3191e+6",
+  "ok   gpu pack-riding-v1 render.triangles.max [gpu-chromium-nvidia] observed=2878377 triangles limit <= 3022296 triangles A=2.8784e+6",
+  "ok   gpu reference-v1 render.programs.max [gpu-chromium-nvidia] observed=45 programs limit <= 46 programs A=45.000",
+  "ok   gpu pack-riding-v1 render.programs.max [gpu-chromium-nvidia] observed=45 programs limit <= 46 programs A=45.000",
+  "ok   gpu reference-v1 render.textures.max [gpu-chromium-nvidia] observed=73 textures limit <= 74 textures A=73.000",
+  "ok   gpu pack-riding-v1 render.textures.max [gpu-chromium-nvidia] observed=80 textures limit <= 81 textures A=80.000",
+  "ok   first-use side=B created no shader program or texture after the first race frame in 10 races of reference-v1 and pack-riding-v1; what only other roads or untriggered effects draw is unchecked",
+  "info gpu reference-v1 A calls=508 triangles=2319053 programs=45 textures=73 worst=33.3 ms frame cpu p50=4.10 p95=6.20 ms; B calls=508 triangles=2319053 programs=45 textures=73 worst=16.8 ms frame cpu p50=4.00 p95=6.00 ms",
+  "info gpu pack-riding-v1 A calls=524 triangles=2878377 programs=45 textures=80 worst=33.3 ms frame cpu p50=4.50 p95=6.90 ms; B calls=524 triangles=2878377 programs=45 textures=80 worst=33.3 ms frame cpu p50=4.40 p95=6.70 ms"
+ ],
+ "observations": [
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.interval.p50",
+   "paired": 1,
+   "runs": {
+    "a": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ],
+    "b": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+   "value": 16.700000762939453
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.interval.p95",
+   "paired": 1,
+   "runs": {
+    "a": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ],
+    "b": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+   "value": 16.700000762939453
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.interval.p99",
+   "paired": 1,
+   "runs": {
+    "a": [
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.700000762939453
+    ],
+    "b": [
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=16.800 (worst of 5 windows; pooled B=16.800 A=16.800)",
+   "value": 16.799999237060547
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.missedFraction",
+   "paired": null,
+   "runs": {
+    "a": [
+     0,
+     0.0016611295681063123,
+     0.0016611295681063123,
+     0,
+     0
+    ],
+    "b": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=0.0016611 (worst of 5 windows; pooled B=0.0000 A=0.00066445)",
+   "value": 0
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "riders.cpu.p95",
+   "paired": null,
+   "runs": {
+    "a": [
+     0.7999999523162842,
+     0.6000000238418579,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "b": [
+     0.5,
+     0.5,
+     0.5,
+     0.699999988079071,
+     0.5
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=0.80000 (worst of 5 windows; pooled B=0.50000 A=0.50000)",
+   "value": 0.699999988079071
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "main.longTask.count",
+   "paired": null,
+   "runs": {
+    "a": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "b": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=0.0000",
+   "value": 0
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "main.longTask.blockingMs",
+   "paired": null,
+   "runs": {
+    "a": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "b": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=0.0000",
+   "value": 0
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.calls.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     508,
+     508,
+     508,
+     508,
+     508
+    ],
+    "b": [
+     508,
+     508,
+     508,
+     508,
+     508
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=508.00",
+   "value": 508
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.triangles.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     2319053,
+     2319053,
+     2319053,
+     2319053,
+     2319053
+    ],
+    "b": [
+     2319053,
+     2319053,
+     2319053,
+     2319053,
+     2319053
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=2.3191e+6",
+   "value": 2319053
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.programs.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ],
+    "b": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=45.000",
+   "value": 45
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.textures.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     73,
+     73,
+     73,
+     73,
+     73
+    ],
+    "b": [
+     73,
+     73,
+     73,
+     73,
+     73
+    ]
+   },
+   "scenario": "reference-v1",
+   "note": "A=73.000",
+   "value": 73
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.interval.p50",
+   "paired": 1,
+   "runs": {
+    "a": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ],
+    "b": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+   "value": 16.700000762939453
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.interval.p95",
+   "paired": 1,
+   "runs": {
+    "a": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ],
+    "b": [
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453,
+     16.700000762939453
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=16.700 (worst of 5 windows; pooled B=16.700 A=16.700)",
+   "value": 16.700000762939453
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.interval.p99",
+   "paired": 1,
+   "runs": {
+    "a": [
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547
+    ],
+    "b": [
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547,
+     16.799999237060547
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=16.800 (worst of 5 windows; pooled B=16.800 A=16.800)",
+   "value": 16.799999237060547
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "frame.missedFraction",
+   "paired": null,
+   "runs": {
+    "a": [
+     0.0016611295681063123,
+     0,
+     0,
+     0,
+     0.0016611295681063123
+    ],
+    "b": [
+     0,
+     0.0016611295681063123,
+     0,
+     0,
+     0
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=0.0016611 (worst of 5 windows; pooled B=0.00033223 A=0.00066445)",
+   "value": 0.0016611295681063123
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "riders.cpu.p95",
+   "paired": null,
+   "runs": {
+    "a": [
+     0.699999988079071,
+     0.699999988079071,
+     0.6000000238418579,
+     0.6000000238418579,
+     0.8999999761581421
+    ],
+    "b": [
+     0.8999999761581421,
+     0.699999988079071,
+     0.699999988079071,
+     0.5,
+     0.5
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=0.90000 (worst of 5 windows; pooled B=0.80000 A=0.70000)",
+   "value": 0.8999999761581421
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "main.longTask.count",
+   "paired": null,
+   "runs": {
+    "a": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "b": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=0.0000",
+   "value": 0
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "main.longTask.blockingMs",
+   "paired": null,
+   "runs": {
+    "a": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "b": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=0.0000",
+   "value": 0
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.calls.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     524,
+     524,
+     524,
+     524,
+     524
+    ],
+    "b": [
+     524,
+     524,
+     524,
+     524,
+     524
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=524.00",
+   "value": 524
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.triangles.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     2878377,
+     2878377,
+     2878377,
+     2878377,
+     2878377
+    ],
+    "b": [
+     2878377,
+     2878377,
+     2878377,
+     2878377,
+     2878377
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=2.8784e+6",
+   "value": 2878377
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.programs.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ],
+    "b": [
+     45,
+     45,
+     45,
+     45,
+     45
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=45.000",
+   "value": 45
+  },
+  {
+   "environment": "gpu-chromium-nvidia",
+   "lane": "gpu",
+   "metric": "render.textures.max",
+   "paired": null,
+   "runs": {
+    "a": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "b": [
+     80,
+     80,
+     80,
+     80,
+     80
+    ]
+   },
+   "scenario": "pack-riding-v1",
+   "note": "A=80.000",
+   "value": 80
+  }
+ ],
+ "ok": true,
+ "order": [
+  "reference-v1 pair0 A",
+  "reference-v1 pair0 B",
+  "pack-riding-v1 pair0 B",
+  "pack-riding-v1 pair0 A",
+  "reference-v1 pair1 B",
+  "reference-v1 pair1 A",
+  "pack-riding-v1 pair1 A",
+  "pack-riding-v1 pair1 B",
+  "reference-v1 pair2 A",
+  "reference-v1 pair2 B",
+  "pack-riding-v1 pair2 B",
+  "pack-riding-v1 pair2 A",
+  "reference-v1 pair3 B",
+  "reference-v1 pair3 A",
+  "pack-riding-v1 pair3 A",
+  "pack-riding-v1 pair3 B",
+  "reference-v1 pair4 A",
+  "reference-v1 pair4 B",
+  "pack-riding-v1 pair4 B",
+  "pack-riding-v1 pair4 A"
+ ],
+ "sides": {
+  "A": {
+   "dirty": false,
+   "revision": "7fec2e9b2c2504211aac07d6885c953b842d694f",
+   "run": "20261105-171457-s0",
+   "sourceDigest": "20cde7d8e37c89647267cfca8b9c54b6d9c1902a7e169e75ffff391e0dd90d72",
+   "sourceFiles": 841
+  },
+  "B": {
+   "dirty": false,
+   "revision": "7fec2e9b2c2504211aac07d6885c953b842d694f",
+   "run": "20261105-171504-s1",
+   "sourceDigest": "20cde7d8e37c89647267cfca8b9c54b6d9c1902a7e169e75ffff391e0dd90d72",
+   "sourceFiles": 841
+  }
+ },
+ "version": 1,
+ "wallMs": 1391373
+}

@@ -1,0 +1,167 @@
+From 7bf68db1d78e801f4a0aa09cc100b2a4ad1fb744 Mon Sep 17 00:00:00 2001
+From: decocereus <amartyasinghkings07@gmail.com>
+Date: Thu, 5 Nov 2026 00:06:55 +0530
+Subject: [PATCH 1/3] exp: merged normals behind ?mrt
+
+Writes normals from the main pass into a second attachment and skips the normal pass. Experiment only.
+---
+ apps/web/src/game/post.ts  | 93 +++++++++++++++++++++++++++++---------
+ apps/web/src/game/puffs.ts |  3 ++
+ 2 files changed, 75 insertions(+), 21 deletions(-)
+
+diff --git a/apps/web/src/game/post.ts b/apps/web/src/game/post.ts
+index 91738c3..b83dacb 100644
+--- a/apps/web/src/game/post.ts
++++ b/apps/web/src/game/post.ts
+@@ -205,6 +205,43 @@ const sortByDepth = flags.get("sort") === "depth";
+ const noFringe = flags.get("fringe") === "0";
+ const internalScale = Number(flags.get("cas") ?? 0);
+ const bloomFactor = Number(flags.get("bloomx") ?? 1);
++const merged = flags.has("mrt");
++if (merged) {
++  const chunks = THREE.ShaderChunk as unknown as Record<string, string>;
++  chunks.colorspace_pars_fragment = `#define MRT_OUT\nlayout(location = 1) out highp vec4 mrtNormal;\n${chunks.colorspace_pars_fragment}`;
++  chunks.common = `${chunks.common}\n#define MRT_VARYING\nvarying vec3 vMrtNormal;\n`;
++  chunks.begin_vertex = `${chunks.begin_vertex}
++#if !defined(TOON) && defined(MRT_VARYING)
++  vec3 mrtObjectNormal = vec3(normal);
++  #ifdef USE_INSTANCING
++    mat3 mrtInstance = mat3(instanceMatrix);
++    mrtObjectNormal /= vec3(dot(mrtInstance[0], mrtInstance[0]), dot(mrtInstance[1], mrtInstance[1]), dot(mrtInstance[2], mrtInstance[2]));
++    mrtObjectNormal = mrtInstance * mrtObjectNormal;
++  #endif
++  #ifdef FLIP_SIDED
++    mrtObjectNormal = -mrtObjectNormal;
++  #endif
++  vMrtNormal = normalMatrix * mrtObjectNormal;
++#endif
++`;
++  chunks.colorspace_fragment = `${chunks.colorspace_fragment}
++#ifdef OPAQUE
++  #if defined(TOON)
++    mrtNormal = vec4(normalize(normal) * 0.5 + 0.5, 1.0);
++  #elif defined(MRT_VARYING)
++    vec3 mrtFacing = normalize(vMrtNormal);
++    #ifdef DOUBLE_SIDED
++      mrtFacing *= gl_FrontFacing ? 1.0 : -1.0;
++    #endif
++    mrtNormal = vec4(mrtFacing * 0.5 + 0.5, 1.0);
++  #else
++    mrtNormal = vec4(0.5, 0.5, 1.0, 1.0);
++  #endif
++#else
++  mrtNormal = vec4(0.0);
++#endif
++`;
++}
+ const skipped = new Set(
+   (new URLSearchParams(globalThis.location.search).get("skip") ?? "").split(",")
+ );
+@@ -254,12 +291,20 @@ export const createPipeline = (
+     depthPacking: THREE.RGBADepthPacking,
+   });
+   const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
+-    samples: preZ === null ? SAMPLES : 0,
++    count: merged ? 2 : 1,
++    samples: preZ === null && !merged ? SAMPLES : 0,
+     type: THREE.HalfFloatType,
+   });
+   if (preZ !== null) {
+     sceneTarget.depthTexture = normalTarget.depthTexture;
+   }
++  if (merged) {
++    sceneTarget.depthTexture = new THREE.DepthTexture(4, 4);
++    const normals = sceneTarget.textures[1];
++    if (normals) {
++      normals.type = THREE.UnsignedByteType;
++    }
++  }
+   const inkTarget = new THREE.WebGLRenderTarget(4, 4, {
+     depthBuffer: false,
+     type: THREE.HalfFloatType,
+@@ -306,8 +351,12 @@ export const createPipeline = (
+   bloom.blendMaterial.blendSrcAlpha = THREE.ZeroFactor;
+   bloom.blendMaterial.blendDstAlpha = THREE.OneFactor;
+ 
+-  uniform(line, "normals").value = normalTarget.texture;
+-  uniform(line, "depths").value = normalTarget.depthTexture;
++  uniform(line, "normals").value = merged
++    ? sceneTarget.textures[1]
++    : normalTarget.texture;
++  uniform(line, "depths").value = merged
++    ? sceneTarget.depthTexture
++    : normalTarget.depthTexture;
+   const clearColour = new THREE.Color();
+   let bloomScale = BLOOM_SCALE;
+   let cssWidth = 1;
+@@ -362,25 +411,27 @@ export const createPipeline = (
+       renderer.shadowMap.needsUpdate = !skipped.has("shadow") || !shadowDrawn;
+       shadowDrawn = true;
+       uniformValue(line, "range", THREE.Vector2).set(camera.near, camera.far);
+-      scene.overrideMaterial = normalMaterial;
+-      scene.background = null;
+-      scene.fog = null;
+-      seesFx(camera, false);
+-      renderer.getClearColor(clearColour);
+-      const clearAlpha = renderer.getClearAlpha();
+-      renderer.setRenderTarget(normalTarget);
+-      renderer.setClearColor(FACING_CAMERA, 1);
+-      renderer.clear();
+-      if (!skipped.has("normal") || !normalDrawn) {
+-        renderer.render(scene, camera);
+-        normalDrawn = true;
++      if (!merged) {
++        scene.overrideMaterial = normalMaterial;
++        scene.background = null;
++        scene.fog = null;
++        seesFx(camera, false);
++        renderer.getClearColor(clearColour);
++        const clearAlpha = renderer.getClearAlpha();
++        renderer.setRenderTarget(normalTarget);
++        renderer.setClearColor(FACING_CAMERA, 1);
++        renderer.clear();
++        if (!skipped.has("normal") || !normalDrawn) {
++          renderer.render(scene, camera);
++          normalDrawn = true;
++        }
++        renderer.setClearColor(clearColour, clearAlpha);
++        scene.overrideMaterial = null;
++        scene.background = background;
++        scene.fog = fog;
++        seesFx(camera, true);
+       }
+-      renderer.setClearColor(clearColour, clearAlpha);
+       lap?.("normal");
+-      scene.overrideMaterial = null;
+-      scene.background = background;
+-      scene.fog = fog;
+-      seesFx(camera, true);
+       renderer.setRenderTarget(sceneTarget);
+       if (!skipped.has("main")) {
+         renderer.autoClearDepth = preZ === null;
+@@ -433,7 +484,7 @@ export const createPipeline = (
+       bloom.strength = look.bloom;
+     },
+     setSamples(samples) {
+-      if (preZ !== null || samples === sceneTarget.samples) {
++      if (preZ !== null || merged || samples === sceneTarget.samples) {
+         return;
+       }
+       sceneTarget.samples = samples;
+diff --git a/apps/web/src/game/puffs.ts b/apps/web/src/game/puffs.ts
+index 40e5be9..a36644e 100644
+--- a/apps/web/src/game/puffs.ts
++++ b/apps/web/src/game/puffs.ts
+@@ -68,6 +68,9 @@ void main() {
+   if (reach > 1.0) discard;
+   float soft = 1.0 - reach;
+   gl_FragColor = vec4(colour, vAlpha * soft * soft);
++#ifdef MRT_OUT
++  mrtNormal = vec4(0.0);
++#endif
+ }`;
+ 
+ const pool = (count: number): Particle[] =>
+-- 
+2.56.0
+

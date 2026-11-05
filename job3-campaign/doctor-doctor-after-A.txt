@@ -1,0 +1,5 @@
+ok   server process: preview on 1410, listener pid 1061433, recorded 1061433
+ok   server answers: http://127.0.0.1:1410/
+ok   build is current: built from 4a3249a at 2026-11-05T13:01:12.373Z; HEAD 4a3249a; newest source edit 2026-11-05T12:43:49.811Z
+rv doctor: Unknown: FileSystem.writeFile (/tmp/rushline-verify/desktop.lock.eH3nhG/27150fa8a533)
+rv-exit=1

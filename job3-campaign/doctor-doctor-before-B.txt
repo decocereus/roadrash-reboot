@@ -1,0 +1,11 @@
+ok   server process: preview on 1411, listener pid 1061801, recorded 1061801
+ok   server answers: http://127.0.0.1:1411/
+ok   build is current: built from 4a3249a at 2026-11-05T13:01:18.407Z; HEAD 4a3249a; newest source edit 2026-11-05T13:01:02.267Z
+ok   desktop session: Hyprland pid 1061473 on :0, instance efb50993780079460b0cbed1363e2166a2de1d9f_1793883675_1560389840, held by 20261105-183112-s0, 20261105-183118-s1
+ok   browser process: devtools 9411, listener pid 1061841, recorded 1061841
+ok   console watcher: pid 1061959, cpu x1, network off
+ok   page: Rushline UI kit at http://127.0.0.1:1411/kit
+ok   page visible: visible; a hidden page pauses the race and stops frames
+ok   gpu: ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+ok   console errors: none
+rv-exit=0

@@ -1,0 +1,214 @@
+{
+ "budgets": {
+  "file": "tools/perf/budgets.json",
+  "sha256": "a100817122737a3964031d1ec23b5f788a59e7cec4d8b99c5a8d7319363e1ed6"
+ },
+ "comparisonId": "gpu-2026-11-05T11-10-34-776Z-7fec2e9-7fec2e9",
+ "counts": [
+  {
+   "peaks": null,
+   "scenario": "reference-v1"
+  },
+  {
+   "peaks": null,
+   "scenario": "pack-riding-v1"
+  }
+ ],
+ "display": {
+  "facts": [
+   "Monitor eDP-1 (ID 0):",
+   "1920x1080@60.05600 at 0x0",
+   "scale: 1",
+   "dpmsStatus: 1",
+   "vrr: false",
+   "NVIDIA GeForce GTX 1650 Ti with Max-Q Design, 615.78.08, [N/A], P8"
+  ],
+  "frameRate": "60",
+  "page": {
+   "A": {
+    "dpr": 2,
+    "frameRate": "60",
+    "height": 773,
+    "refreshHz": 60,
+    "width": 1512
+   },
+   "B": {
+    "dpr": 2,
+    "frameRate": "60",
+    "height": 773,
+    "refreshHz": 60,
+    "width": 1512
+   }
+  }
+ },
+ "environment": "gpu-chromium-nvidia",
+ "files": [
+  {
+   "file": "reference-v1-pair0-A.json",
+   "sha256": "ce3fe8befb0260c893feb1044435e02aa30636da90ec8b009a92d84effe2ef36"
+  },
+  {
+   "file": "reference-v1-pair0-B.json",
+   "sha256": "efc419612aecd36c2645b3e96a43df4705afb38e908670ea17195ca3ed966455"
+  },
+  {
+   "file": "pack-riding-v1-pair0-B.json",
+   "sha256": "3aeb17e93907757bc9fce4dc345e5aaf7ec2046b78105ce449aa9aea576aeb94"
+  },
+  {
+   "file": "pack-riding-v1-pair0-A.json",
+   "sha256": "0b53966aec2f149a2bc0d984c409ffa617ea3ca18c40bbb99b1c5e3e70d9917d"
+  },
+  {
+   "file": "reference-v1-pair1-B.json",
+   "sha256": "92458c7d674d32e757e76e8a6572bc30b8cbd9f7d784e586b55275f32af99fe0"
+  },
+  {
+   "file": "reference-v1-pair1-A.json",
+   "sha256": "d2be4fd827b0b9ef9e7054f0ca2fb1ba4265c0005d65af4b374cb38cffac355d"
+  },
+  {
+   "file": "pack-riding-v1-pair1-A.json",
+   "sha256": "cfdbac1f80fc5c6b19ff4e41a5752b62614c0799d6b8084359b2dfadf2169955"
+  },
+  {
+   "file": "pack-riding-v1-pair1-B.json",
+   "sha256": "e1d0ecb727a640ee52dee1cdff8c448e3b8d3a861fbb1df2cc30a38566b9eca8"
+  },
+  {
+   "file": "reference-v1-pair2-A.json",
+   "sha256": "883803bacaf59910d8fa88212179d8f1408042e59943b0394175ac0127ea9d05"
+  },
+  {
+   "file": "reference-v1-pair2-B.json",
+   "sha256": "cf81433360bbc5aa23c1fa0a2dcdfd8a8b88e62c7b99f842a5d860c04d80488d"
+  },
+  {
+   "file": "pack-riding-v1-pair2-B.json",
+   "sha256": "bf32fce4885f088b430ff9e687285c32c0814293f852e0a5de8cbe73c05fb72c"
+  },
+  {
+   "file": "pack-riding-v1-pair2-A.json",
+   "sha256": "4439ecbe56ec9c0306ec3eb78208ef68e95be95ca5a4c60db3409f77deaabc2b"
+  },
+  {
+   "file": "reference-v1-pair3-B.json",
+   "sha256": "5b083a8aa8ca4323ca7553ea9381712931f02ef91bb2e3f0aa0008b0813ba9fd"
+  },
+  {
+   "file": "reference-v1-pair3-A.json",
+   "sha256": "4416c5bb8f9ec325908b6f101e9083e4b175cabfceca43cd77ddbbebeaac7ab4"
+  },
+  {
+   "file": "pack-riding-v1-pair3-A.json",
+   "sha256": "cfb8c242ab4e60366729f4c709fd0dd0373438ee70b7fd7440bcab926b08bc61"
+  },
+  {
+   "file": "pack-riding-v1-pair3-B.json",
+   "sha256": "d1c67d3339ba9051bd72e6f85e7770157d1d6b55ad5f5a5d21c2f263af17a743"
+  },
+  {
+   "file": "reference-v1-pair4-A.json",
+   "sha256": "bc0839358c9f5b125e4bff0653870f218227c68a0681d73726839c01e04d7e6b"
+  },
+  {
+   "file": "reference-v1-pair4-B.json",
+   "sha256": "d251b7b29d808f258c8594e097643e30bf2d9c9e3ae7b4a210a5bdea69cbfd93"
+  },
+  {
+   "file": "pack-riding-v1-pair4-B.json",
+   "sha256": "796940559b0de18145510af850cd36c99894e11339003a8cd484e846831d06df"
+  },
+  {
+   "file": "pack-riding-v1-pair4-A.json",
+   "sha256": "9bbe2d0038e0a9b2a1404f1a96a0af8cf92e36707fd7faf92eab51551882a882"
+  }
+ ],
+ "lines": [
+  "FAIL workload reference-v1 side=A reference-v1-pair0-A.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=B reference-v1-pair0-B.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=B reference-v1-pair1-B.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=A reference-v1-pair1-A.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=A reference-v1-pair2-A.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=B reference-v1-pair2-B.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=B reference-v1-pair3-B.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=A reference-v1-pair3-A.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=A reference-v1-pair4-A.json console errors=2 expected=0",
+  "FAIL workload reference-v1 side=B reference-v1-pair4-B.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=B pack-riding-v1-pair0-B.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=A pack-riding-v1-pair0-A.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=A pack-riding-v1-pair1-A.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=B pack-riding-v1-pair1-B.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=B pack-riding-v1-pair2-B.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=A pack-riding-v1-pair2-A.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=A pack-riding-v1-pair3-A.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=B pack-riding-v1-pair3-B.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=B pack-riding-v1-pair4-B.json console errors=2 expected=0",
+  "FAIL workload pack-riding-v1 side=A pack-riding-v1-pair4-A.json console errors=2 expected=0",
+  "FAIL gpu reference-v1 frame.interval.p50 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 frame.interval.p50 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 frame.interval.p95 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 frame.interval.p95 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 frame.interval.p99 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 frame.interval.p99 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 frame.missedFraction [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 frame.missedFraction [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 riders.cpu.p95 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 riders.cpu.p95 [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 main.longTask.count [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 main.longTask.count [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 main.longTask.blockingMs [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 main.longTask.blockingMs [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 render.calls.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 render.calls.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 render.triangles.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 render.triangles.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 render.programs.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 render.programs.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu reference-v1 render.textures.max [gpu-chromium-nvidia] missing measurement",
+  "FAIL gpu pack-riding-v1 render.textures.max [gpu-chromium-nvidia] missing measurement",
+  "ok   first-use side=B created no shader program or texture after the first race frame in 10 races of reference-v1 and pack-riding-v1; what only other roads or untriggered effects draw is unchecked"
+ ],
+ "observations": [],
+ "ok": false,
+ "order": [
+  "reference-v1 pair0 A",
+  "reference-v1 pair0 B",
+  "pack-riding-v1 pair0 B",
+  "pack-riding-v1 pair0 A",
+  "reference-v1 pair1 B",
+  "reference-v1 pair1 A",
+  "pack-riding-v1 pair1 A",
+  "pack-riding-v1 pair1 B",
+  "reference-v1 pair2 A",
+  "reference-v1 pair2 B",
+  "pack-riding-v1 pair2 B",
+  "pack-riding-v1 pair2 A",
+  "reference-v1 pair3 B",
+  "reference-v1 pair3 A",
+  "pack-riding-v1 pair3 A",
+  "pack-riding-v1 pair3 B",
+  "reference-v1 pair4 A",
+  "reference-v1 pair4 B",
+  "pack-riding-v1 pair4 B",
+  "pack-riding-v1 pair4 A"
+ ],
+ "sides": {
+  "A": {
+   "dirty": false,
+   "revision": "7fec2e9b2c2504211aac07d6885c953b842d694f",
+   "run": "20261105-164016-s0",
+   "sourceDigest": "20cde7d8e37c89647267cfca8b9c54b6d9c1902a7e169e75ffff391e0dd90d72",
+   "sourceFiles": 841
+  },
+  "B": {
+   "dirty": false,
+   "revision": "7fec2e9b2c2504211aac07d6885c953b842d694f",
+   "run": "20261105-164023-s1",
+   "sourceDigest": "20cde7d8e37c89647267cfca8b9c54b6d9c1902a7e169e75ffff391e0dd90d72",
+   "sourceFiles": 841
+  }
+ },
+ "version": 1,
+ "wallMs": 1398546
+}

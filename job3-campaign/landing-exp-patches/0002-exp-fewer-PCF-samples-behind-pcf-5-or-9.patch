@@ -1,0 +1,41 @@
+From a51967ceae30a7a1cbe31bfc32d015a08f74c7cb Mon Sep 17 00:00:00 2001
+From: decocereus <amartyasinghkings07@gmail.com>
+Date: Thu, 5 Nov 2026 02:41:44 +0530
+Subject: [PATCH 2/3] exp: fewer PCF samples behind ?pcf=5 or 9
+
+---
+ apps/web/src/game/post.ts | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/apps/web/src/game/post.ts b/apps/web/src/game/post.ts
+index b83dacb..2fe762d 100644
+--- a/apps/web/src/game/post.ts
++++ b/apps/web/src/game/post.ts
+@@ -205,6 +205,24 @@ const sortByDepth = flags.get("sort") === "depth";
+ const noFringe = flags.get("fringe") === "0";
+ const internalScale = Number(flags.get("cas") ?? 0);
+ const bloomFactor = Number(flags.get("bloomx") ?? 1);
++const pcfTaps = flags.get("pcf");
++if (pcfTaps !== null) {
++  const chunks = THREE.ShaderChunk as unknown as Record<string, string>;
++  const tap = (x: string, y: string) =>
++    `texture2DCompare( shadowMap, shadowCoord.xy + vec2( ${x}, ${y} ), shadowCoord.z )`;
++  const five = [["0.0", "0.0"], ["dx2", "dy2"], ["dx3", "dy2"], ["dx2", "dy3"], ["dx3", "dy3"]];
++  const nine = [...five, ["dx0", "0.0"], ["dx1", "0.0"], ["0.0", "dy0"], ["0.0", "dy1"]];
++  const taps = pcfTaps === "9" ? nine : five;
++  const before = chunks.shadowmap_pars_fragment ?? "";
++  const after = before.replace(
++    /shadow = \(\s*texture2DCompare[\s\S]*?\) \* \( 1\.0 \/ 17\.0 \);/u,
++    `shadow = ( ${taps.map(([x, y]) => tap(x ?? "0.0", y ?? "0.0")).join(" + ")} ) * ( 1.0 / ${taps.length}.0 );`
++  );
++  if (after === before) {
++    throw new Error("The PCF block did not match.");
++  }
++  chunks.shadowmap_pars_fragment = after;
++}
+ const merged = flags.has("mrt");
+ if (merged) {
+   const chunks = THREE.ShaderChunk as unknown as Record<string, string>;
+-- 
+2.56.0
+

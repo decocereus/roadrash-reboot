@@ -1,0 +1,39 @@
+From 57580ed14ca9fe8fff7166dbf7952d035d2d0622 Mon Sep 17 00:00:00 2001
+From: decocereus <amartyasinghkings07@gmail.com>
+Date: Thu, 5 Nov 2026 02:44:56 +0530
+Subject: [PATCH 3/3] exp: shared depth with its own copy behind ?prez=copy
+
+---
+ apps/web/src/game/post.ts | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/apps/web/src/game/post.ts b/apps/web/src/game/post.ts
+index 2fe762d..038451f 100644
+--- a/apps/web/src/game/post.ts
++++ b/apps/web/src/game/post.ts
+@@ -313,8 +313,10 @@ export const createPipeline = (
+     samples: preZ === null && !merged ? SAMPLES : 0,
+     type: THREE.HalfFloatType,
+   });
++  const mainDepth =
++    preZ === "copy" ? new THREE.DepthTexture(4, 4) : normalTarget.depthTexture;
+   if (preZ !== null) {
+-    sceneTarget.depthTexture = normalTarget.depthTexture;
++    sceneTarget.depthTexture = mainDepth;
+   }
+   if (merged) {
+     sceneTarget.depthTexture = new THREE.DepthTexture(4, 4);
+@@ -451,6 +453,10 @@ export const createPipeline = (
+       }
+       lap?.("normal");
+       renderer.setRenderTarget(sceneTarget);
++      if (preZ === "copy" && normalTarget.depthTexture && mainDepth) {
++        renderer.copyTextureToTexture(normalTarget.depthTexture, mainDepth);
++        renderer.setRenderTarget(sceneTarget);
++      }
+       if (!skipped.has("main")) {
+         renderer.autoClearDepth = preZ === null;
+         renderer.render(scene, camera);
+-- 
+2.56.0
+

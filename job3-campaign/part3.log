@@ -1,0 +1,92 @@
+start 2026-11-05T18:31:11+05:30
+A=20261105-183112-s0 B=20261105-183118-s1
+ok   server process: preview on 1410, listener pid 1061433, recorded 1061433
+ok   server answers: http://127.0.0.1:1410/
+ok   build is current: built from 4a3249a at 2026-11-05T13:01:12.373Z; HEAD 4a3249a; newest source edit 2026-11-05T12:43:49.811Z
+ok   desktop session: Hyprland pid 1061473 on :0, instance efb50993780079460b0cbed1363e2166a2de1d9f_1793883675_1560389840, held by 20261105-183112-s0, 20261105-
+ok   browser process: devtools 9410, listener pid 1061521, recorded 1061521
+ok   console watcher: pid 1061619, cpu x1, network off
+ok   page: Rushline UI kit at http://127.0.0.1:1410/kit
+ok   page visible: visible; a hidden page pauses the race and stops frames
+ok   gpu: ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+ok   console errors: none
+ok   server process: preview on 1411, listener pid 1061801, recorded 1061801
+ok   server answers: http://127.0.0.1:1411/
+ok   build is current: built from 4a3249a at 2026-11-05T13:01:18.407Z; HEAD 4a3249a; newest source edit 2026-11-05T13:01:02.267Z
+ok   desktop session: Hyprland pid 1061473 on :0, instance efb50993780079460b0cbed1363e2166a2de1d9f_1793883675_1560389840, held by 20261105-183112-s0, 20261105-
+ok   browser process: devtools 9411, listener pid 1061841, recorded 1061841
+ok   console watcher: pid 1061959, cpu x1, network off
+ok   page: Rushline UI kit at http://127.0.0.1:1411/kit
+ok   page visible: visible; a hidden page pauses the race and stops frames
+ok   gpu: ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+ok   console errors: none
+$ node tools/perf/gpu.ts --a 20261105-183112-s0 --b 20261105-183118-s1 --baseline-ref 4a3249adf14e --budgets /var/tmp/rushline-round4/job3/budgets-intel-temp.json
+perf gpu gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a: A=20261105-183112-s0 B=20261105-183118-s1
+display A {"dpr":1,"frameRate":"60","height":992,"refreshHz":60,"width":1919} B {"dpr":1,"frameRate":"60","height":992,"refreshHz":60,"width":1919}
+gpu reference-v1 pair 0 A captured
+gpu reference-v1 pair 0 B captured
+gpu pack-riding-v1 pair 0 B captured
+gpu pack-riding-v1 pair 0 A captured
+gpu reference-v1 pair 1 B captured
+gpu reference-v1 pair 1 A captured
+gpu pack-riding-v1 pair 1 A captured
+gpu pack-riding-v1 pair 1 B captured
+gpu reference-v1 pair 2 A captured
+gpu reference-v1 pair 2 B captured
+gpu pack-riding-v1 pair 2 B captured
+gpu pack-riding-v1 pair 2 A captured
+gpu reference-v1 pair 3 B captured
+gpu reference-v1 pair 3 A captured
+gpu pack-riding-v1 pair 3 A captured
+gpu pack-riding-v1 pair 3 B captured
+gpu reference-v1 pair 4 A captured
+gpu reference-v1 pair 4 B captured
+gpu pack-riding-v1 pair 4 B captured
+gpu pack-riding-v1 pair 4 A captured
+FAIL doctor-after side=A doctor browser process is not ok
+FAIL doctor-after side=A doctor console watcher is not ok
+FAIL doctor-after side=A doctor page is not ok
+FAIL doctor-after side=A doctor page visible is not ok
+FAIL doctor-after side=A doctor gpu is not ok
+FAIL doctor-after side=A doctor does not show cpu x1, network off
+FAIL doctor-after side=B doctor browser process is not ok
+FAIL doctor-after side=B doctor console watcher is not ok
+FAIL doctor-after side=B doctor page is not ok
+FAIL doctor-after side=B doctor page visible is not ok
+FAIL doctor-after side=B doctor gpu is not ok
+FAIL doctor-after side=B doctor does not show cpu x1, network off
+FAIL gpu reference-v1 frame.interval.p50 [gpu-chromium-intel] observed=18.200 ms limit <= 17.500 ms A/B=1 (<= 1.1) A=18.000 (worst of 5 windows; pooled B=17.600 A=17.500)
+FAIL gpu pack-riding-v1 frame.interval.p50 [gpu-chromium-intel] observed=19.900 ms limit <= 17.500 ms A/B=1 (<= 1.1) A=19.800 (worst of 5 windows; pooled B=19.800 A=19.700)
+FAIL gpu reference-v1 frame.interval.p95 [gpu-chromium-intel] observed=21.800 ms limit <= 20 ms A/B=0.96618 (<= 1.15) A=21.900 (worst of 5 windows; pooled B=20.300 A=21.000)
+FAIL gpu pack-riding-v1 frame.interval.p95 [gpu-chromium-intel] observed=23.100 ms limit <= 20 ms A/B=1 (<= 1.15) A=22.500 (worst of 5 windows; pooled B=21.900 A=21.200)
+ok   gpu reference-v1 frame.interval.p99 [gpu-chromium-intel] observed=23.200 ms limit <= 33.334 ms A/B=0.90830 (<= 1.2) A=22.900 (worst of 5 windows; pooled B=21.800 A=22.500)
+FAIL gpu pack-riding-v1 frame.interval.p99 [gpu-chromium-intel] observed=39.900 ms limit <= 33.334 ms A/B=1.0734 (<= 1.2) A=24.900 (worst of 5 windows; pooled B=25.300 A=24.000)
+ok   gpu reference-v1 frame.missedFraction [gpu-chromium-intel] observed=0.0018349 share limit <= 0.010000 share A=0.0036101 (worst of 5 windows; pooled B=0.00035625 A=0.00071608)
+FAIL gpu pack-riding-v1 frame.missedFraction [gpu-chromium-intel] observed=0.021825 share limit <= 0.010000 share A=0.011765 (worst of 5 windows; pooled B=0.014873 A=0.0093713)
+ok   gpu reference-v1 riders.cpu.p95 [gpu-chromium-intel] observed=1.4000 ms limit <= 1.8000 ms A=1.4000 (worst of 5 windows; pooled B=1.3000 A=1.3000)
+ok   gpu pack-riding-v1 riders.cpu.p95 [gpu-chromium-intel] observed=1.8000 ms limit <= 1.8000 ms A=1.8000 (worst of 5 windows; pooled B=1.7000 A=1.7000)
+ok   gpu reference-v1 main.longTask.count [gpu-chromium-intel] observed=0 tasks limit <= 0 tasks A=0.0000
+ok   gpu pack-riding-v1 main.longTask.count [gpu-chromium-intel] observed=0 tasks limit <= 0 tasks A=0.0000
+ok   gpu reference-v1 main.longTask.blockingMs [gpu-chromium-intel] observed=0 ms limit <= 0 ms A=0.0000
+ok   gpu pack-riding-v1 main.longTask.blockingMs [gpu-chromium-intel] observed=0 ms limit <= 0 ms A=0.0000
+ok   gpu reference-v1 render.calls.max [gpu-chromium-intel] observed=508 calls limit <= 534 calls A=508.00
+ok   gpu pack-riding-v1 render.calls.max [gpu-chromium-intel] observed=522 calls limit <= 551 calls A=522.00
+ok   gpu reference-v1 render.triangles.max [gpu-chromium-intel] observed=1605457 triangles limit <= 2435006 triangles A=1.6055e+6
+ok   gpu pack-riding-v1 render.triangles.max [gpu-chromium-intel] observed=2066211 triangles limit <= 3022296 triangles A=2.0662e+6
+ok   gpu reference-v1 render.programs.max [gpu-chromium-intel] observed=45 programs limit <= 46 programs A=45.000
+ok   gpu pack-riding-v1 render.programs.max [gpu-chromium-intel] observed=45 programs limit <= 46 programs A=45.000
+ok   gpu reference-v1 render.textures.max [gpu-chromium-intel] observed=74 textures limit <= 74 textures A=74.000
+ok   gpu pack-riding-v1 render.textures.max [gpu-chromium-intel] observed=81 textures limit <= 81 textures A=81.000
+ok   first-use side=B created no shader program or texture after the first race frame in 10 races of reference-v1 and pack-riding-v1; what only other roads or untriggered effects draw is unchecked
+info gpu reference-v1 A calls=508 triangles=1605457 programs=45 textures=74 worst=27.8 ms frame cpu p50=10.10 p95=12.30 ms; B calls=508 triangles=1605457 programs=45 textures=74 worst=33.1 ms frame cpu p50=10.30 p95=12.00 ms
+info gpu pack-riding-v1 A calls=522 triangles=2066211 programs=45 textures=81 worst=46.8 ms frame cpu p50=12.10 p95=15.60 ms; B calls=522 triangles=2066211 programs=45 textures=81 worst=46.3 ms frame cpu p50=12.00 p95=16.00 ms
+evidence /var/tmp/rushline-r4-b/tools/perf/results/gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a/result.json
+FAIL perf gpu gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a
+[ELIFECYCLE] Command failed with exit code 1.
+lane exit=1 2026-11-05T18:55:14+05:30
+ok   gpu: ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+evidence kept: /var/tmp/rushline-perf-gpu-a/tools/perf/results/verify/20261105-183112-s0 (6 entries)
+evidence kept: /var/tmp/rushline-r4-b/tools/perf/results/verify/20261105-183118-s1 (6 entries)
+no verification runs hold a slot
+no desktop session is running
+part3 done 2026-11-05T18:55:19+05:30
