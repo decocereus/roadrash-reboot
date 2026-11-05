@@ -297,6 +297,17 @@ describe("the browser save", () => {
     ).toMatchObject({ status: "ready", unsaved: true });
   });
 
+  it("leaves the career marked saved when the load wrote the charge or had nothing to write", () => {
+    const storage = memoryStorage();
+    storeCareer(opened(storage), midRace(freshCareer(0.75)));
+    const charged = loadCareer(recordedRules, opened(storage));
+    const unchanged = loadCareer(recordedRules, opened(storage));
+    expect([saveStateOf(charged), saveStateOf(unchanged)]).toMatchObject([
+      { status: "ready", unsaved: false },
+      { status: "ready", unsaved: false },
+    ]);
+  });
+
   it("saves a new career over a save it could not read, and reports only a refused write", () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, "the unread save");

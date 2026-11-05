@@ -22,6 +22,7 @@ import {
   browserStorage,
   careerSeedFrom,
   freshCareer,
+  isUnsaved,
   loadCareer,
   randomUnit,
   saveStateOf,
@@ -193,7 +194,6 @@ const useRules = (): RulesLoad | null => {
 
 interface Save {
   readonly save: SaveState;
-  readonly unsaved: boolean;
   readonly careerRef: RefObject<CareerState | null>;
   readonly commit: (career: CareerState) => void;
   readonly settle: (settlement: Settlement) => RaceReport | null;
@@ -203,7 +203,6 @@ interface Save {
 const useSave = (rules: RaceRules | null): Save => {
   const careerRef = useRef<CareerState | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
-  const [unsaved, setUnsaved] = useState(false);
 
   useEffect(() => {
     if (rules === null) {
@@ -216,9 +215,12 @@ const useSave = (rules: RaceRules | null): Save => {
 
   const commit = useCallback((career: CareerState) => {
     careerRef.current = career;
-    setSave({ career, leftRace: null, status: "ready" });
-    const stored = storeCareer(browserStorage, career);
-    setUnsaved(stored.status !== "saved");
+    setSave({
+      career,
+      leftRace: null,
+      status: "ready",
+      unsaved: isUnsaved(storeCareer(browserStorage, career)),
+    });
   }, []);
 
   const settle = useCallback(
@@ -240,7 +242,7 @@ const useSave = (rules: RaceRules | null): Save => {
     }
   }, []);
 
-  return { careerRef, commit, eraseSave, save, settle, unsaved };
+  return { careerRef, commit, eraseSave, save, settle };
 };
 
 interface Game {
@@ -381,7 +383,6 @@ export interface Flow {
   readonly feed: HudFeed;
   readonly ready: boolean;
   readonly failure: string;
-  readonly unsaved: boolean;
   readonly go: (view: View) => void;
   readonly setPick: (pick: QuickPick) => void;
   readonly commit: (career: CareerState) => void;
@@ -410,8 +411,7 @@ export const useFlow = (): Flow => {
   const [pick, setPick] = useState<QuickPick>(firstQuickPick);
   const rulesLoad = useRules();
   const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
-  const { careerRef, commit, eraseSave, save, settle, unsaved } =
-    useSave(rules);
+  const { careerRef, commit, eraseSave, save, settle } = useSave(rules);
   const {
     failure: gameFailure,
     gameRef,
@@ -610,7 +610,6 @@ export const useFlow = (): Flow => {
       game.startRace(plan);
       setView({ finish: null, paused: false, plan, screen: "race" });
     },
-    unsaved,
     view,
   };
 };
