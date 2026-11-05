@@ -43,6 +43,7 @@ const note = (line: RoomNote): void => {
 };
 
 const TRACE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
+const TRACE_TIMEOUT_MS = 3000;
 
 const coloOfTrace = (trace: string): string | null =>
   /^colo=(?<colo>\w+)$/mu.exec(trace)?.groups?.colo ?? null;
@@ -112,7 +113,9 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       );
       let roomColo: string | null = null;
       yield* Effect.tryPromise(async () => {
-        const response = await globalThis.fetch(TRACE_URL);
+        const response = await globalThis.fetch(TRACE_URL, {
+          signal: AbortSignal.timeout(TRACE_TIMEOUT_MS),
+        });
         roomColo = coloOfTrace(await response.text());
       }).pipe(
         Effect.catchCause(() => Effect.void),
