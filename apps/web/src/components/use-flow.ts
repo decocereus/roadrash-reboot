@@ -38,9 +38,9 @@ import type {
   RaceMode,
   RacePlan,
 } from "../game/hud.ts";
-import type { PrepareOutcome } from "../game/preparation.ts";
 import { createHudFeed } from "../hud-feed.ts";
 import type { HudFeed } from "../hud-feed.ts";
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
 

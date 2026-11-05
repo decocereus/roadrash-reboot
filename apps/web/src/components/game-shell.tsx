@@ -8,7 +8,8 @@ import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
-import type { PrepareOutcome } from "../game/preparation.ts";
+import { preparedRace } from "../prepare-outcome.ts";
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { moveToRoom, newRoomId } from "./room-url.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen } from "./screens/boot.tsx";
@@ -49,10 +50,6 @@ const QuickRace = import.meta.env.SSR
     });
 
 const DWELL_MS = 2200;
-
-const noRaceBuilt = (
-  stage: Extract<PrepareOutcome, { readonly kind: "failed" }>["stage"]
-): boolean => stage === "dress" || stage === "build";
 
 const RideOut = ({
   rules,
@@ -96,14 +93,25 @@ const RideOut = ({
   useEffect(() => {
     let current = true;
     const prepare = async (): Promise<void> => {
-      const outcome = await onPrepare(plan);
-      if (!current || outcome.kind === "cancelled") {
+      const race = preparedRace(await onPrepare(plan));
+      if (!current) {
         return;
       }
-      if (outcome.kind === "failed" && noRaceBuilt(outcome.stage)) {
-        setLoadFailed(true);
-      } else {
-        setPrepared(true);
+      switch (race) {
+        case "built": {
+          setPrepared(true);
+          break;
+        }
+        case "missing": {
+          setLoadFailed(true);
+          break;
+        }
+        case "cancelled": {
+          break;
+        }
+        default: {
+          race satisfies never;
+        }
       }
     };
     if (ready) {

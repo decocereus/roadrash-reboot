@@ -1,17 +1,7 @@
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import type { Compiling } from "./post.ts";
 
 const COMPILE_TIMEOUT_MS = 5000;
-
-export type PrepareOutcome =
-  | { readonly kind: "ready" }
-  | { readonly kind: "timedOut" }
-  | {
-      readonly kind: "failed";
-      readonly stage: "dress" | "build" | "compile" | "warm";
-      readonly cause: Error;
-    }
-  | { readonly kind: "lost" }
-  | { readonly kind: "cancelled" };
 
 export interface Clock {
   readonly after: (ms: number, run: () => void) => () => void;

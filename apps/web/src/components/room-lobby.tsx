@@ -12,7 +12,7 @@ import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
-import type { PrepareOutcome } from "../game/preparation.ts";
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
