@@ -180,7 +180,7 @@ describe("preparation", () => {
     expect(ticksHalted(built)).toBeTruthy();
   });
 
-  it("survives a stand down, so a start waiting on it still goes", () => {
+  it("survives a stand down", () => {
     expect(stoodDownFrom(dressing)).toBe(dressing);
     expect(stoodDownFrom(built)).toBe(built);
   });

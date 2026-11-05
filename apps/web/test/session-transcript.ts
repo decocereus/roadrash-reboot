@@ -227,12 +227,28 @@ const holding = async (scene: Scene): Promise<void> => {
   game.sleep();
 };
 
+const quittingWhilePreparing = async ({
+  game,
+  hud,
+  say,
+}: Scene): Promise<void> => {
+  const planB = planOn(ROAD_B);
+  const preparing = game.prepare(planB);
+  game.startRace(planB);
+  say(`quit while preparing=${outcomeLine(game.quit())} phase=${hud().phase}`);
+  const prepared = await preparing;
+  say(`prepared ${prepared.kind}`);
+  await until("the waiting start", () => hud().phase === "countdown");
+  say(`counting on ${hud().roadName}`);
+};
+
 const scenarios = {
   attract,
   crashing,
   finishing,
   holding,
   pausing,
+  quittingWhilePreparing,
 } as const satisfies Record<string, (scene: Scene) => Promise<void>>;
 
 export const run = async (
