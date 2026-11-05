@@ -13,6 +13,7 @@ type MenuOrientation = "vertical" | "horizontal";
 
 interface MenuSelection {
   readonly value: string | undefined;
+  readonly tabStop: string | undefined;
   readonly size: "md" | "sm";
   readonly orientation: MenuOrientation;
   readonly choose: (value: string) => void;
@@ -59,6 +60,7 @@ const MenuList = ({
   label,
   value,
   defaultValue,
+  usable,
   onValueChange,
   onSelect,
   orientation = "vertical",
@@ -71,6 +73,7 @@ const MenuList = ({
   readonly label: string;
   readonly value?: string;
   readonly defaultValue?: string;
+  readonly usable?: readonly string[];
   readonly onValueChange?: (value: string) => void;
   readonly onSelect?: (value: string) => void;
   readonly orientation?: MenuOrientation;
@@ -80,6 +83,10 @@ const MenuList = ({
   const rootRef = useRef<HTMLDivElement>(null);
   const [held, setHeld] = useState(defaultValue);
   const current = value ?? held;
+  const tabStop =
+    usable === undefined || (current !== undefined && usable.includes(current))
+      ? current
+      : usable[0];
 
   useEffect(() => {
     if (!autoFocus) {
@@ -103,9 +110,10 @@ const MenuList = ({
       confirm: (chosen) => onSelect?.(chosen),
       orientation,
       size,
+      tabStop,
       value: current,
     }),
-    [current, onSelect, onValueChange, orientation, size]
+    [current, onSelect, onValueChange, orientation, size, tabStop]
   );
 
   const moveFocus = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -189,7 +197,7 @@ const MenuItem = ({
       role="menuitem"
       type="button"
       disabled={disabled}
-      tabIndex={selected || menu.value === undefined ? 0 : -1}
+      tabIndex={menu.tabStop === value || menu.tabStop === undefined ? 0 : -1}
       className={cn(
         "group/menu-item font-display tracking-display text-text data-selected:text-yellow disabled:text-muted flex items-start gap-[0.4em] rounded-sm py-0.5 pr-2 text-left font-bold uppercase transition-colors duration-100",
         menu.size === "md" ? "text-name" : "text-body leading-tight",

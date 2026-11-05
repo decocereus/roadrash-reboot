@@ -377,6 +377,20 @@ describe("the uploader", () => {
     });
   });
 
+  it("keeps showing the newest report when an older one settles", async () => {
+    const rig = await fixture();
+    rig.uploader.enqueue(outgoing(0, true), true);
+    rig.uploader.drain();
+    await ticks();
+    rig.uploader.enqueue(outgoing(1, true), true);
+    rig.calls[0]?.answer(status(400));
+    await ticks();
+    expect(rig.uploader.report()).toStrictEqual({
+      reportId: reportIdOf(SESSION, 1),
+      state: "sending",
+    });
+  });
+
   it("removes a batch whose answer was lost once the collector acknowledges it as a duplicate", async () => {
     const store = memoryStore();
     const rig = await fixture();

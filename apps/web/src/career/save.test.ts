@@ -149,7 +149,7 @@ describe("the browser save", () => {
       { ...failed("acquire"), status: "unavailable" },
     ]);
     expect([saveStateOf(unreadable), saveStateOf(locked)]).toStrictEqual([
-      { status: "empty" },
+      { status: "unread" },
       { status: "empty" },
     ]);
   });

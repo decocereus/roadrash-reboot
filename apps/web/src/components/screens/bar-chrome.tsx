@@ -126,6 +126,9 @@ export const BarNav = ({
       onSelect={(id) => actions.find((action) => action.id === id)?.run()}
       orientation="horizontal"
       size="sm"
+      usable={actions
+        .filter((action) => action.disabled !== true)
+        .map((action) => action.id)}
     >
       {actions.map((action) => (
         <MenuItem
