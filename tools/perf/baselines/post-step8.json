@@ -3264,6 +3264,14 @@
       "side": "B",
       "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
       "value": 897449
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T18-56-36-101Z-c982325-c982325",
+      "value": 548216
     }
   ],
   "revisions": {
@@ -4446,6 +4454,29 @@
       "sides": {
         "A": "b2687f71237896aaa5419b0aebede7fcacc23b38",
         "B": "62aca5b538887ca9b84848bc5a5a715b3cb5df71"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1160943, \"bytes.route.root.gzip\": 619063, \"bytes.route.kit.raw\": 956645, \"bytes.route.kit.gzip\": 548216, \"bytes.game.raw\": 1987264, \"bytes.game.gzip\": 854021, \"bytes.game.incremental.raw\": 826321, \"bytes.game.incremental.gzip\": 234958, \"bytes.worker.raw\": 743940, \"bytes.worker.gzip\": 191406, \"bytes.client.raw\": 2121433, \"bytes.client.gzip\": 906994}",
+        "builtB": "{\"bytes.route.root.raw\": 1160943, \"bytes.route.root.gzip\": 619063, \"bytes.route.kit.raw\": 956645, \"bytes.route.kit.gzip\": 548216, \"bytes.game.raw\": 1987264, \"bytes.game.gzip\": 854021, \"bytes.game.incremental.raw\": 826321, \"bytes.game.incremental.gzip\": 234958, \"bytes.worker.raw\": 743940, \"bytes.worker.gzip\": 191406, \"bytes.client.raw\": 2121433, \"bytes.client.gzip\": 906994}",
+        "harnessDigest": "5bf5863787497af396693c8435db11de8ecccc28574406667fb9c33679e09ea7",
+        "lockfileSha256": "7d4bce5cacea74cf01953fb780c4165952e9c4dff20c2f7bc3b4c7fced69f4af",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "aa833ad009f0e95ff568ddb296720b5739ec62bdb0d96a686de959ed072183f9",
+        "sideBSourceDigest": "aa833ad009f0e95ff568ddb296720b5739ec62bdb0d96a686de959ed072183f9",
+        "why": "The market's road code reaches the kit route. The route read 548,216 B gzip against a limit of 548,215 B, 1 B over. This branch adds 1,304 B gzip on top of main at fcc2b457, which reads 546,912 B. The row's headroom had gone on earlier work since its October 31 baseline."
+      },
+      "id": "baseline-2026-11-05T18-56-36-101Z-c982325-c982325",
+      "lanes": ["build"],
+      "sides": {
+        "A": "c982325db01c5cecb199395e76ce9d3de937a49c",
+        "B": "c982325db01c5cecb199395e76ce9d3de937a49c"
       }
     }
   ],
