@@ -12,10 +12,10 @@ import { assetParsers, createGame, createRenderer } from "../src/game/game.ts";
 import type { GameHandle, HudState, RacePlan } from "../src/game/hud.ts";
 import { isMesh, isPoints } from "../src/game/meshes.ts";
 import { createPipeline } from "../src/game/post.ts";
-import type { PrepareOutcome } from "../src/game/preparation.ts";
 import { createQuality } from "../src/game/quality-ladder.ts";
 import type { Quality } from "../src/game/quality-ladder.ts";
 import { createWorld } from "../src/game/world.ts";
+import type { PrepareOutcome } from "../src/prepare-outcome.ts";
 import { fakeWalkerAsset } from "./walker-asset.ts";
 
 const WIDTH = 960;
