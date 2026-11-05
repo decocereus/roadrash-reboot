@@ -238,7 +238,7 @@ node tools/verify/rushline.ts js --run <run> 'globalThis.__rushlineProfile.windo
 
 Add `gpu-chromium-intel` rows only when normal selection holds the caps. The lane also pins `rung=0` and ratio 2 today, so judging normal selection needs a change to the lane as well. A cap never moves to make a host pass.
 
-**The bar has no rows yet.** It reads well on both cards. `/bar?prof&time=dusk`, Angled camera, 7 stand-in riders, three 20 s samples each in a development build on `1966237`:
+**The bar has no rows yet.** Its frame and tick rows arrive together once the shared depth pass in `post.ts` lands, because that change moves these numbers. It reads well on both cards. `/bar?prof&time=dusk`, Angled camera, 7 stand-in riders, three 20 s samples each in a development build on `1966237`:
 
 | Card | Page, render ratio | fps | p50 ms | p95 ms | p99 ms | Over 20 ms | JS ms per frame | Calls | Triangles |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
