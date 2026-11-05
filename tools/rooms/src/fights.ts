@@ -31,6 +31,8 @@ const usage =
 const RV = "tools/verify/rushline.ts";
 const SEATED_OR_NAMING =
   "!!document.querySelector('input') || [...document.querySelectorAll('button')].some((b) => /^Ready/.test(b.textContent.trim()))";
+const SEATED =
+  "[...document.querySelectorAll('button')].some((b) => /^Ready/.test(b.textContent.trim()))";
 const BENCH_REFUSAL = "while a bench is measuring";
 const SEAT_PORTS = [1443, 1444] as const;
 const RACE_SPEED = 25;
@@ -229,6 +231,7 @@ const seat = (windowRun: string, name: string) =>
       yield* rv(["click", "--run", windowRun, "Got it"]);
     }
     yield* rv(["click", "--run", windowRun, "Ride"]);
+    yield* rv(["wait", "--run", windowRun, SEATED, "--timeout", "90"]);
   });
 
 const quietRoad = (host: string) =>

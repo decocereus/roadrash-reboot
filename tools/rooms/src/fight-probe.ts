@@ -113,7 +113,7 @@ export const FIGHT_PILOT = `(() => {
     if (down) { held.add(code); } else { held.delete(code); }
     dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { bubbles: true, code, key: code }));
   };
-  const pilot = { armed: null };
+  const pilot = { armed: null, laneX: null };
   globalThis.__fightPilot = pilot;
   const strikeWhenInReach = (room, mine) => {
     const riders = room.client.predicted.riders;
@@ -142,14 +142,18 @@ export const FIGHT_PILOT = `(() => {
       const easing = ahead > 1 && me.speed >= them.speed - 1;
       hold("ArrowUp", riding && !easing);
       hold("ArrowDown", riding && ahead > 6);
-      if (mine === 0 && riding) {
+      if (pilot.laneX === null && riding) { pilot.laneX = me.x; }
+      let toward = 0;
+      if (riding && mine === 0) {
         const gap = Math.abs(them.x - me.x);
-        const towards = gap > 2;
-        const steering = towards || gap < 1.2;
-        const right = them.x > me.x === towards;
-        hold("ArrowRight", steering && right);
-        hold("ArrowLeft", steering && !right);
+        const away = gap < 1.2 ? -1 : 0;
+        toward = (gap > 2 ? 1 : away) * Math.sign(them.x - me.x);
+      } else if (riding) {
+        const off = me.x - pilot.laneX;
+        toward = Math.abs(off) > 0.3 ? -Math.sign(off) : 0;
       }
+      hold("ArrowRight", toward > 0);
+      hold("ArrowLeft", toward < 0);
     }
     requestAnimationFrame(step);
   };
