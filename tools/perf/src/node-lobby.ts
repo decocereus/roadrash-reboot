@@ -58,7 +58,7 @@ const measuredWindow = () => {
     durations[index] = performance.now() - started;
     let moving = 0;
     for (const rider of riders) {
-      if (rider.speed > MOVING_SPEED) {
+      if (rider.pace > MOVING_SPEED) {
         moving += 1;
       }
     }

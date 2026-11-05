@@ -22,9 +22,9 @@ import {
 import type { Evaluation, Samples } from "./evaluate.ts";
 import { guardedLoad } from "./load.ts";
 import type { LoadTooHigh } from "./load.ts";
+import { lobbyWindow, roadLifeWindow, sideBLane } from "./node-lane-side-b.ts";
 import { nodeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
-import { lobbyWindow, roadLifeWindow, sideBLane } from "./node-side-b.ts";
 import { sha256Of } from "./result.ts";
 import { scenarioHash, scenarios } from "./scenarios.ts";
 import { selectWindows } from "./select.ts";

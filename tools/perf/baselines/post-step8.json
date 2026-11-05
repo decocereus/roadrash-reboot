@@ -2824,6 +2824,22 @@
       "side": "B",
       "source": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
       "value": 188205
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "lobby.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T07-12-17-243Z-9f67ba9-51f601f",
+      "value": 0.5962944629810603
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "lobby.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
+      "value": 1.417910886133199
     }
   ],
   "revisions": {
@@ -3738,6 +3754,65 @@
       "sides": {
         "A": "4e4d8847cb4150987d8439bc5ae95bb253792b33",
         "B": "4e4d8847cb4150987d8439bc5ae95bb253792b33"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 8.721771000000018 ms",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "c49fc0fdbfbdaedc495a1f1e4a82dbcaa5582bb895cc763fb4aae34db42d4c67",
+        "memoryBytes": "25769803776",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "sideASourceDigest": "678a0cae0bbfaa1ca7fea4bfb8f0d032c48b5b9940e70506822ed2ea60267e11",
+        "sideBSourceDigest": "7b1fd679e15d78550923dd8d36a451d61f1c9b5a2150d9cec5f75b46e738b36a",
+        "v8": "14.6.202.34-node.40",
+        "wallMs": "{\"build\":0,\"materialize\":15953,\"node\":160322,\"total\":176507}",
+        "machine": "Mac16,8",
+        "os": "macOS 26.6.2 (25G83)",
+        "quiet": "Maps and Multiplayer core stopped their jobs for this window, by arrangement. Load peaked at 3.7 of the gate limit of 9, and every calibration held. This is the first run that measures lobby.tick.p95, so it takes that row alone.",
+        "command": "node tools/perf/gate.ts baseline --baseline-ref 9f67ba98bb85c0d4ac3912d2c61f151235b5a75b --lanes node"
+      },
+      "id": "baseline-2026-11-05T07-12-17-243Z-9f67ba9-51f601f",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "51f601f311943e16a5866e4399969a046533e937"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, c0 17.62 ms",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "harnessDigest": "c49fc0fdbfbdaedc495a1f1e4a82dbcaa5582bb895cc763fb4aae34db42d4c67",
+        "memoryBytes": "16760344576",
+        "node": "v24.22.2",
+        "platform": "linux",
+        "sideASourceDigest": "678a0cae0bbfaa1ca7fea4bfb8f0d032c48b5b9940e70506822ed2ea60267e11",
+        "sideBSourceDigest": "bb7c2958bdc1fd994720b89e1fdf7398376f16efe9749fcb2535cd11c42e662e",
+        "v8": "13.6.233.17-node.63",
+        "wallMs": "{\"build\":5555,\"materialize\":9324,\"node\":404045,\"total\":419344}",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 41986166297 attempt 2 (perf), pull_request event on PR #133",
+        "checkout": "aa04320, the pull request merge of 6a229ba into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results",
+        "attempts": "two runs of the job. The first landed on an AMD EPYC 9V45 at scale 0.792, where road life read 1.31 ms against 2.10 ms on the model the rows are set on, so I re-ran it. This one landed on an AMD EPYC 7763 with its calibration at 17.62 ms. It takes the lobby row alone."
+      },
+      "id": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "aa043203bfd4b1e42cb0a7eeebfb9e765ba9f783"
       }
     }
   ],

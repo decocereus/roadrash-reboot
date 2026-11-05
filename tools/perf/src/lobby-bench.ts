@@ -1,6 +1,6 @@
 export const LOBBY_BENCH = {
   id: "lobby-v1",
-  leastMoving: 6,
+  leastMoving: 4,
   leastRouted: 600,
   riders: 8,
   stops: [
