@@ -1,4 +1,4 @@
-import { refuseDuringBench } from "@racer/devtools/bench-lock";
+import { checkTurn } from "@racer/devtools/bench-turn";
 import type { CurrentHost } from "@racer/devtools/browser-host";
 import { runCommand } from "@racer/devtools/cleanup";
 import type { CleanupOutcomes } from "@racer/devtools/cleanup";
@@ -10,6 +10,7 @@ import type * as Scope from "effect/Scope";
 import type * as Socket from "effect/socket/Socket";
 
 import { bench } from "./bench.ts";
+import { bookCommand } from "./book.ts";
 import {
   ariaCommand,
   clickCommand,
@@ -55,7 +56,9 @@ const HELP = `rv: drive a Rushline verification instance in a windowed browser o
   rv rebuild    --run <id>
   rv down       --run <id>
   rv desktop    up|down <name>, or status                the Linux desktop session rv up starts on demand; each name is its own hold
-  rv bench      <label> -- <command> [args]              holds the bench lock while the command runs; other rv runs may not draw until it ends`;
+  rv book       <lane> <minutes> <purpose>               books a turn on this machine's bench queue and prints BOOKING=<id>
+  rv book       status | wait <id> [--every s] [--end] | release <id>
+  rv bench      <label> -- <command> [args]              runs the command as its booking's job; other rv runs may not draw until it ends`;
 
 type Handler = (
   context: CommandContext
@@ -76,6 +79,7 @@ type Handler = (
 const commands = new Map<string, Handler>([
   ["aria", ariaCommand],
   ["bench", bench],
+  ["book", bookCommand],
   ["click", clickCommand],
   ["console", consoleCommand],
   ["desktop", desktop],
@@ -111,7 +115,7 @@ export const main = (script: string) => {
     return context.print(HELP);
   }
   const started = drawingCommands.has(context.command)
-    ? refuseDuringBench(context.command).pipe(Effect.andThen(chosen(context)))
+    ? checkTurn(context.command).pipe(Effect.andThen(chosen(context)))
     : chosen(context);
   return runCommand(started, `rv ${context.command}: `);
 };

@@ -1151,12 +1151,12 @@ Test files:
 
 ### Browser devtools client
 
-The table of what differs per machine, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.
+The table of what differs per machine, the bench queue that books a machine's turn, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.
 
 - Id: `devtools`
-- Start: `packages/devtools/src/browser-host.ts`, `packages/devtools/src/chrome.ts`, `packages/devtools/src/desktop.ts`
+- Start: `packages/devtools/src/browser-host.ts`, `packages/devtools/src/bench-queue.ts`, `packages/devtools/src/desktop.ts`
 - Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
-- Verify: none yet
+- Verify: [vimaan-queue.md](../.claude/skills/verify-rushline/features/vimaan-queue.md)
 - Perf: none yet
 - Owns: `packages/devtools/**`
 
@@ -1164,7 +1164,8 @@ Source files:
 
 - `packages/devtools/src/analysis.ts`
 - `packages/devtools/src/bench-busy.ts`
-- `packages/devtools/src/bench-lock.ts`
+- `packages/devtools/src/bench-queue.ts`
+- `packages/devtools/src/bench-turn.ts`
 - `packages/devtools/src/browser-error.ts`
 - `packages/devtools/src/browser-host.ts`
 - `packages/devtools/src/cdp-error.ts`
@@ -1186,12 +1187,12 @@ Test files: none
 
 ### rv, the verify tool
 
-`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal.
+`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal. `rv book` and `pnpm vimaan` book turns on vimaan.
 
 - Id: `verify-tool`
-- Start: `tools/verify/rushline.ts`, `tools/verify/src/commands.ts`, `tools/verify/src/lifecycle.ts`
+- Start: `tools/verify/rushline.ts`, `tools/verify/src/commands.ts`, `tools/verify/src/book.ts`
 - Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
-- Verify: [desktop-session.md](../.claude/skills/verify-rushline/features/desktop-session.md)
+- Verify: [desktop-session.md](../.claude/skills/verify-rushline/features/desktop-session.md), [vimaan-queue.md](../.claude/skills/verify-rushline/features/vimaan-queue.md)
 - Perf: none yet
 - Owns: `tools/verify/**`
 
@@ -1199,6 +1200,7 @@ Source files:
 
 - `tools/verify/rushline.ts`
 - `tools/verify/src/bench.ts`
+- `tools/verify/src/book.ts`
 - `tools/verify/src/capture.ts`
 - `tools/verify/src/cli.ts`
 - `tools/verify/src/commands.ts`
@@ -1213,15 +1215,18 @@ Source files:
 - `tools/verify/src/state.ts`
 - `tools/verify/src/verification-error.ts`
 - `tools/verify/src/watcher.ts`
+- `tools/verify/vimaan.ts`
 
 Test files:
 
+- `tools/verify/test/book.test.ts`
 - `tools/verify/test/browser-host.test.ts`
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
 - `tools/verify/test/desktop-session.test.ts`
 - `tools/verify/test/slot-write.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`
+- `tools/verify/test/vimaan.test.ts`
 - `tools/verify/test/wait-deadline.test.ts`
 
 ### Perf gate and frame bench
@@ -1233,7 +1238,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1274,9 +1279,10 @@ Source files:
 
 Test files:
 
-- `tools/perf/test/bench-lock-race.test.ts`
-- `tools/perf/test/bench-lock-worker.ts`
-- `tools/perf/test/bench-lock.test.ts`
+- `tools/perf/test/bench-queue-race.test.ts`
+- `tools/perf/test/bench-queue-rules.test.ts`
+- `tools/perf/test/bench-queue-worker.ts`
+- `tools/perf/test/bench-queue.test.ts`
 - `tools/perf/test/check.test.ts`
 - `tools/perf/test/evaluate.test.ts`
 - `tools/perf/test/fixture-build.ts`

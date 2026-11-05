@@ -83,32 +83,53 @@ describe("rv and another agent's work on the machine", () => {
     }
   );
 
-  it("rv bench holds the lock for its command, gives it the exit code, and frees the lock", () => {
+  it("rv bench runs its command as the booking's job, gives it the exit code, and ends the job", () => {
     const temp = benchTemp();
     const script =
-      "const fs=require('node:fs');const claim=JSON.parse(fs.readFileSync(process.env.TMPDIR+'/rushline-verify/bench.lock','utf-8'));console.log(claim.label,String(claim.pid)===process.env.RUSHLINE_BENCH_PID);process.exit(3)";
+      "const fs=require('node:fs');const queue=JSON.parse(fs.readFileSync(process.env.TMPDIR+'/rushline-verify/bench-queue.json','utf-8'));console.log(queue.holder.use.label,String(queue.holder.use.pid)===process.env.RUSHLINE_BENCH_PID);process.exit(3)";
     const result = runCli(
       ["bench", "campaign", "--", process.execPath, "-e", script],
       { TMPDIR: temp }
     );
     expect(result.stdout).toBe("campaign true\n");
     expect(result.status).toBe(3);
-    expect(
-      existsSync(path.join(temp, "rushline-verify", "bench.lock"))
-    ).toBeFalsy();
+    const queue = readFileSync(
+      path.join(temp, "rushline-verify", "bench-queue.json"),
+      "utf-8"
+    );
+    expect(queue).toContain('"holder": null');
+    expect(queue).toContain('"why": "finished"');
   });
 
-  it("rv open fails and names the bench while another process holds the lock", () => {
+  it("rv open fails and names the bench while another process runs a job", () => {
     const temp = benchTemp();
     const dir = path.join(temp, "rushline-verify");
     mkdirSync(dir);
     writeFileSync(
-      path.join(dir, "bench.lock"),
-      JSON.stringify({ label: "someone's campaign", pid: process.pid })
+      path.join(dir, "bench-queue.json"),
+      JSON.stringify({
+        ended: [],
+        holder: {
+          booking: {
+            bookedAt: Date.now(),
+            id: "other-1",
+            lane: "other",
+            minutes: 30,
+            owner: { kind: "lane" },
+            purpose: "someone's work",
+          },
+          since: Date.now(),
+          use: { kind: "job", label: "someone's campaign", pid: process.pid },
+        },
+        next: 2,
+        waiting: [],
+      })
     );
     const result = runCli(["open", "--run", "x-s0", "/kit"], { TMPDIR: temp });
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("someone's campaign");
+    expect(result.stderr).toContain(
+      `a bench is measuring it: pid ${process.pid}, someone's campaign`
+    );
   });
 });
 

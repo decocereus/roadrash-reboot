@@ -96,12 +96,7 @@ const claimWith = (
     }
   });
 
-export const claimHolder = (file: string) =>
-  readingOf(file).pipe(
-    Effect.map((reading) => (reading.kind === "held" ? reading.holder : null))
-  );
-
-export const takeClaim = Effect.fn("claim.take")(function* takeClaim(
+const takeClaim = Effect.fn("claim.take")(function* takeClaim(
   file: string,
   label: string
 ) {
@@ -116,7 +111,7 @@ export const takeClaim = Effect.fn("claim.take")(function* takeClaim(
   return yield* claimWith(file, draft);
 }, Effect.scoped);
 
-export const dropClaim = (file: string) =>
+const dropClaim = (file: string) =>
   FileSystem.FileSystem.use((fs) => fs.remove(file, { force: true }));
 
 const awaitClaim = <Stuck extends YieldableError>(

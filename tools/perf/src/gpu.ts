@@ -1,7 +1,7 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { holdBench } from "@racer/devtools/bench-lock";
+import { holdBench } from "@racer/devtools/bench-turn";
 import { CurrentHost, HOST_SETTING } from "@racer/devtools/browser-host";
 import type { BrowserHost } from "@racer/devtools/browser-host";
 import { desktopRuntimeEnv } from "@racer/devtools/desktop";

@@ -19,7 +19,8 @@ export const readCommandLine = (script: string) => {
     options: {
       cpu: { type: "string" },
       dev: { default: false, type: "boolean" },
-      every: { default: "1", type: "string" },
+      end: { default: false, type: "boolean" },
+      every: { type: "string" },
       hold: { default: "120", type: "string" },
       network: { type: "string" },
       path: { default: "/", type: "string" },

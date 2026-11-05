@@ -55,4 +55,5 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Race rules](./race-rules.md): the served field size, a ten-racer grid, a three-tier career and what each tier changes, and the save above the top tier refused.
 - [Game art](./art.md): the `/art/<key>` route, the bar's and the race's art loaded from it, the local cache refilled from the deployed game, and the deployed game reading R2.
 - [Desktop session](./desktop-session.md): the Hyprland session `rv up` starts on demand on vimaan, shared by slots and stopped by the last one.
+- [vimaan booking queue](./vimaan-queue.md): booking a turn on vimaan, waiting for it from a background command, running jobs under it, and the turn passing on from a dead, idle or overrunning holder.
 - [Frame rate and load](./frame-rate.md): the stress race, frame sampling, throttled play, traces, first load on a slow network, the perf gate on the GPU, and the measure.ts A/B.

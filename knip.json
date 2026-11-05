@@ -69,7 +69,7 @@
         "session.ts",
         "snapshot.ts",
         "test/**/*.test.ts",
-        "test/bench-lock-worker.ts"
+        "test/bench-queue-worker.ts"
       ],
       "project": ["**/*.ts"],
       "typescript": true

@@ -439,13 +439,13 @@ export const platformFeatures: readonly FeatureEntry[] = [
     perf: [],
     start: [
       "packages/devtools/src/browser-host.ts",
-      "packages/devtools/src/chrome.ts",
+      "packages/devtools/src/bench-queue.ts",
       "packages/devtools/src/desktop.ts",
     ],
     summary:
-      "The table of what differs per machine, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.",
+      "The table of what differs per machine, the bench queue that books a machine's turn, launching the browser and the Linux desktop session, the DevTools protocol client, child processes and trace analysis that the perf gate and `rv` share.",
     title: "Browser devtools client",
-    verify: [],
+    verify: ["vimaan-queue.md"],
   },
   {
     docs: ["docs/coding-standards.md#use-effect-only-at-the-edges"],
@@ -456,12 +456,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
     start: [
       "tools/verify/rushline.ts",
       "tools/verify/src/commands.ts",
-      "tools/verify/src/lifecycle.ts",
+      "tools/verify/src/book.ts",
     ],
     summary:
-      "`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal.",
+      "`rv`, the command the verify-rushline recipes drive: slots with a server and a windowed browser, clicks, key presses, screenshots, page state and the evidence journal. `rv book` and `pnpm vimaan` book turns on vimaan.",
     title: "rv, the verify tool",
-    verify: ["desktop-session.md"],
+    verify: ["desktop-session.md", "vimaan-queue.md"],
   },
   {
     docs: [
@@ -494,9 +494,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/scenarios.ts",
       "tools/perf/src/select.ts",
       "tools/perf/src/sides.ts",
-      "tools/perf/test/bench-lock-race.test.ts",
-      "tools/perf/test/bench-lock-worker.ts",
-      "tools/perf/test/bench-lock.test.ts",
+      "tools/perf/test/bench-queue*.ts",
       "tools/perf/test/load.test.ts",
       "tools/perf/test/check.test.ts",
       "tools/perf/test/evaluate.test.ts",

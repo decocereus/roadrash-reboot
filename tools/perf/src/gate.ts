@@ -2,7 +2,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 
 import type { BenchBusy } from "@racer/devtools/bench-busy";
-import { queueForBench } from "@racer/devtools/bench-lock";
+import { queueForBench } from "@racer/devtools/bench-turn";
 import { UsageError } from "@racer/devtools/usage-error";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";

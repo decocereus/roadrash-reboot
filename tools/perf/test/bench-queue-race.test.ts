@@ -1,7 +1,13 @@
 import { fork } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -11,11 +17,33 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 const CONTENDERS = 4;
 const TRIALS = 40;
-const WORKER = path.join(import.meta.dirname, "bench-lock-worker.ts");
-const DEAD_CLAIM = JSON.stringify({ label: "crashed bench", pid: 2 ** 30 });
+const WORKER = path.join(import.meta.dirname, "bench-queue-worker.ts");
+const DEAD_PID = 2 ** 30;
+const DEAD_CLAIM = JSON.stringify({ label: "crashed bench", pid: DEAD_PID });
+const DEAD_HOLDER = JSON.stringify({
+  ended: [],
+  holder: {
+    booking: {
+      bookedAt: 0,
+      id: "bench-1",
+      lane: "bench",
+      minutes: 120,
+      owner: { kind: "process", pid: DEAD_PID },
+      purpose: "crashed bench",
+    },
+    since: 0,
+    use: { kind: "job", label: "crashed bench", pid: DEAD_PID },
+  },
+  next: 2,
+  waiting: [],
+});
 
 const decodeReport = Schema.decodeUnknownSync(
   Schema.Struct({ entered: Schema.Boolean })
+);
+
+const decodeHolder = Schema.decodeUnknownSync(
+  Schema.Struct({ holder: Schema.Null, waiting: Schema.Tuple([]) })
 );
 
 const nextMessage = async (child: ChildProcess) => {
@@ -50,7 +78,7 @@ const holdersOfOneTrial = async (
   return reports.filter((report) => decodeReport(report).entered).length;
 };
 
-describe("recovering a dead bench claim with real processes", () => {
+describe("contending for the bench queue with real processes", () => {
   const children: ChildProcess[] = [];
 
   beforeAll(async () => {
@@ -66,11 +94,20 @@ describe("recovering a dead bench claim with real processes", () => {
   }, 60_000);
 
   it.for([
-    { name: "a claim whose pid died", seed: { "bench.lock": DEAD_CLAIM } },
-    { name: "a claim nobody can read", seed: { "bench.lock": "not json" } },
     {
-      name: "a dead claim beside a clearer that died",
-      seed: { "bench.lock": DEAD_CLAIM, "bench.lock.clearing": DEAD_CLAIM },
+      name: "a holder whose process died",
+      seed: { "bench-queue.json": DEAD_HOLDER },
+    },
+    {
+      name: "a queue nobody can read",
+      seed: { "bench-queue.json": "not json" },
+    },
+    {
+      name: "a dead lock beside a clearer that died",
+      seed: {
+        "bench-queue.lock": DEAD_CLAIM,
+        "bench-queue.lock.clearing": DEAD_CLAIM,
+      },
     },
   ])(
     "lets one process win every trial over $name",
@@ -87,9 +124,13 @@ describe("recovering a dead bench claim with real processes", () => {
         Effect.all(Array.from({ length: TRIALS }, () => trial))
       );
       const left = readdirSync(dir);
+      const queue = decodeHolder(
+        JSON.parse(readFileSync(path.join(dir, "bench-queue.json"), "utf-8"))
+      );
       rmSync(dir, { force: true, recursive: true });
       expect(holders).toStrictEqual(holders.map(() => 1));
-      expect(left).toStrictEqual([]);
+      expect(left).toStrictEqual(["bench-queue.json"]);
+      expect(queue).toMatchObject({ holder: null, waiting: [] });
     }
   );
 

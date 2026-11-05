@@ -39,6 +39,10 @@ interface DisplayProbe {
 
 type DesktopNeed = "none" | "hyprland";
 
+const bookingRules = ["required", "implicit"] as const;
+
+type BookingRule = (typeof bookingRules)[number];
+
 export interface DesktopEnv {
   readonly DISPLAY?: string;
 }
@@ -50,6 +54,7 @@ interface HostPage {
 }
 
 export interface BrowserHost {
+  readonly booking: BookingRule;
   readonly desktop: DesktopNeed;
   readonly displayProbes: readonly DisplayProbe[];
   readonly headless: {
@@ -105,6 +110,7 @@ const RETINA_WINDOW: Viewport = { height: 860, scale: 2, width: 1512 };
 
 export const browserHosts = {
   "linux-intel": {
+    booking: "required",
     desktop: "hyprland",
     displayProbes: [HYPRCTL_MONITORS],
     headless: {
@@ -139,6 +145,7 @@ export const browserHosts = {
     },
   },
   "linux-nvidia": {
+    booking: "required",
     desktop: "hyprland",
     displayProbes: [
       HYPRCTL_MONITORS,
@@ -191,6 +198,7 @@ export const browserHosts = {
     },
   },
   "macos-metal": {
+    booking: "implicit",
     desktop: "none",
     displayProbes: [
       {
@@ -266,8 +274,10 @@ export const hostOf = (
 export class CurrentHost extends Context.Service<CurrentHost, BrowserHost>()(
   "@racer/devtools/CurrentHost"
 ) {
-  static readonly chosen = () =>
-    Layer.succeed(CurrentHost)(
-      hostOf(process.platform, process.env[HOST_SETTING])
+  static readonly chosen = () => {
+    const host = hostOf(process.platform, process.env[HOST_SETTING]);
+    return Layer.succeed(CurrentHost)(
+      process.env.CI === undefined ? host : { ...host, booking: "implicit" }
     );
+  };
 }

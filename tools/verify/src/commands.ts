@@ -165,7 +165,7 @@ export const screencastCommand = Effect.fn("rv.screencast")(
     const state = yield* requireRun(context);
     const dir = yield* evidenceFile(state, rest[0] ?? "");
     const cast = yield* withPage(state, (page) =>
-      screencast(page, dir, Number(values.seconds), Number(values.every))
+      screencast(page, dir, Number(values.seconds), Number(values.every ?? "1"))
     );
     yield* report(
       context,

@@ -1,11 +1,13 @@
 import { once } from "node:events";
 
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
-import { holdBench } from "@racer/devtools/bench-lock";
+import { holdBench } from "@racer/devtools/bench-turn";
+import { CurrentHost, browserHosts } from "@racer/devtools/browser-host";
 import { CleanupOutcomes } from "@racer/devtools/cleanup";
 import type * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 
@@ -48,4 +50,13 @@ const serve = Effect.gen(function* serve() {
   }
 });
 
-await Effect.runPromise(serve.pipe(Effect.provide(NodeFileSystem.layer)));
+await Effect.runPromise(
+  serve.pipe(
+    Effect.provide(
+      Layer.mergeAll(
+        NodeFileSystem.layer,
+        Layer.succeed(CurrentHost)(browserHosts["macos-metal"])
+      )
+    )
+  )
+);
