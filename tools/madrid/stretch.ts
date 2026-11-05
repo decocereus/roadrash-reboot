@@ -215,6 +215,7 @@ const planOf = (
     carriers: [],
     chevrons,
     crossings: [],
+    crowds: [],
     districts: road.districts,
     hazardsPerKilometre: entry.hazardsPerKilometre,
     id: entry.id,

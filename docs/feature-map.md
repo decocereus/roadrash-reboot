@@ -155,6 +155,7 @@ Test files:
 
 - `packages/sim/src/hazard-commands.test.ts`
 - `packages/sim/src/hazard-contact.test.ts`
+- `packages/sim/src/hazard-only-lane.test.ts`
 
 ### Traffic
 

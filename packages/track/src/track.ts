@@ -53,7 +53,7 @@ export interface Scenery {
   readonly water: readonly SceneryWater[];
 }
 
-export interface Crowd {
+interface Crowd {
   readonly from: number;
   readonly to: number;
   readonly sites: number;

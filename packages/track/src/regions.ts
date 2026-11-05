@@ -12,7 +12,7 @@ interface PropMix {
   readonly chevron: number;
 }
 
-export interface HazardMix {
+interface HazardMix {
   readonly oil: number;
   readonly rock: number;
   readonly pothole: number;

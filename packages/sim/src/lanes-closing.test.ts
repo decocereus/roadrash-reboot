@@ -17,7 +17,12 @@ import {
   writeSnapshot,
 } from "./snapshot.ts";
 import { TICK_RATE } from "./state.ts";
-import type { RaceConditions, RaceState, TrafficCar } from "./state.ts";
+import type {
+  RaceConditions,
+  RaceState,
+  RiderState,
+  TrafficCar,
+} from "./state.ts";
 import { carSlant } from "./traffic.ts";
 
 const NARROW_FROM = 2000;
@@ -275,10 +280,14 @@ describe("a pilot nearing a narrow district", () => {
   });
 });
 
+const FASTER_THAN_A_REMOUNT = 15;
+
+const raceIsOver = (rider: RiderState): boolean =>
+  rider.finishTick >= 0 || rider.mode === "wrecked";
+
 describe("a pilot field on Breakwater Run's districts", () => {
   const raceTicks = 60 * 420;
   const fieldSeeds = [11, 23, 37, 41, 59, 67, 73, 89];
-
   const fieldRide = (
     track: Track,
     seed: number,
@@ -295,18 +304,23 @@ describe("a pilot field on Breakwater Run's districts", () => {
     let offRoad = 0;
     for (
       let tick = 0;
-      tick < raceTicks && state.riders.some((rider) => rider.finishTick < 0);
+      tick < raceTicks && !state.riders.every(raceIsOver);
       tick += 1
     ) {
       stepRace(state, track, emptyFrame);
       for (const rider of state.riders) {
-        if (rider.finishTick < 0 && rider.mode === "riding" && rider.offRoad) {
+        if (
+          rider.finishTick < 0 &&
+          rider.mode === "riding" &&
+          rider.offRoad &&
+          rider.speed > FASTER_THAN_A_REMOUNT
+        ) {
           offRoad += 1;
         }
       }
     }
     return {
-      finished: state.riders.filter((rider) => rider.finishTick >= 0).length,
+      ended: state.riders.filter(raceIsOver).length,
       offRoad,
       riders: state.riders.length,
     };
@@ -315,7 +329,7 @@ describe("a pilot field on Breakwater Run's districts", () => {
   const fieldsOn = (track: Track, conditions: RaceConditions) => {
     const rides = fieldSeeds.map((seed) => fieldRide(track, seed, conditions));
     return {
-      finished: rides.reduce((sum, ride) => sum + ride.finished, 0),
+      ended: rides.reduce((sum, ride) => sum + ride.ended, 0),
       offRoad: rides.reduce((sum, ride) => sum + ride.offRoad, 0),
       riders: rides.reduce((sum, ride) => sum + ride.riders, 0),
     };
@@ -327,7 +341,7 @@ describe("a pilot field on Breakwater Run's districts", () => {
   const offRoadOf = (fields: ReturnType<typeof across>): number =>
     fields.reduce((sum, field) => sum + field.offRoad, 0);
 
-  it("finishes at every tier and leaves the road no more over the tiers than on a road of one width", () => {
+  it("leaves no rider on the road at any tier, and off it no more over the tiers than on a road of one width", () => {
     const plan = roads["breakwater-run"];
     const uniform = across(
       compileTrack({
@@ -338,7 +352,7 @@ describe("a pilot field on Breakwater Run's districts", () => {
       })
     );
     const districted = across(compileTrack(plan));
-    expect(districted.map((field) => field.finished)).toStrictEqual(
+    expect(districted.map((field) => field.ended)).toStrictEqual(
       districted.map((field) => field.riders)
     );
     expect(offRoadOf(districted)).toBeLessThanOrEqual(offRoadOf(uniform));

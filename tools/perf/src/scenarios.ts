@@ -172,6 +172,7 @@ type RaceSettings = Omit<
   Track["plan"],
   | "chevrons"
   | "crossings"
+  | "crowds"
   | "districts"
   | "leadInLength"
   | "pieces"

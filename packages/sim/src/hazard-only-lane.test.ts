@@ -1,4 +1,5 @@
 import { openLanesAt } from "@racer/track/districts";
+import type { HazardPlacement } from "@racer/track/hazards";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, curvatureAt } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
@@ -9,8 +10,14 @@ import type { BikeId } from "./bikes.ts";
 import { placeRiderAcross, placeRiderAt, setRiderSpeed } from "./commands.ts";
 import { controlOf } from "./control.ts";
 import { difficulties } from "./difficulty.ts";
-import { createRace, defaultSetup, emptyFrame, stepRace } from "./race.ts";
-import { noHandovers } from "./race.ts";
+import { player } from "./race-fixtures.ts";
+import {
+  createRace,
+  defaultSetup,
+  emptyFrame,
+  noHandovers,
+  stepRace,
+} from "./race.ts";
 import { PLAYER_RIDER, clamp, curvePushOf, steerFor } from "./state.ts";
 
 const RUN_UP = 160;
@@ -49,16 +56,12 @@ const emptyRoad = (roadId: "breakwater-run" | "ridge-road"): Track =>
   compileTrack({ ...roads[roadId], carriers: [], trafficPerKilometre: 0 });
 
 const racingSpeeds = (track: Track, bikeId: BikeId): readonly number[] => {
-  const race = setupOn(track, bikeId, true);
-  race.pedestrians.length = 0;
-  race.hazards.length = 0;
+  const bare: Track = { ...track, hazards: [], walkSites: [] };
+  const race = setupOn(bare, bikeId, true);
+  const rider = player(race);
   const speeds: number[] = [];
-  const [rider] = race.riders;
-  for (let tick = 0; rider && tick < LAP_TICKS; tick += 1) {
-    if (rider.finishTick >= 0) {
-      break;
-    }
-    stepRace(race, track, emptyFrame);
+  for (let tick = 0; tick < LAP_TICKS && rider.finishTick < 0; tick += 1) {
+    stepRace(race, bare, emptyFrame);
     const at = Math.round(rider.s / SPEED_STEP);
     speeds[at] ??= rider.speed;
   }
@@ -67,28 +70,26 @@ const racingSpeeds = (track: Track, bikeId: BikeId): readonly number[] => {
 
 const crashOver = (
   track: Track,
-  hazardId: string,
+  hazard: HazardPlacement,
   bikeId: BikeId,
   speeds: readonly number[]
 ): string | null => {
-  const race = setupOn(track, bikeId, false);
-  race.pedestrians.length = 0;
-  const hazard = race.hazards.find((each) => each.id === hazardId);
-  if (!hazard) {
-    throw new Error(`No hazard ${hazardId} on ${track.plan.id}.`);
-  }
-  race.hazards.length = 0;
-  race.hazards.push(hazard);
+  const alone: Track = { ...track, hazards: [hazard], walkSites: [] };
+  const race = setupOn(alone, bikeId, false);
   const speedAt = (s: number): number =>
     speeds[Math.round(s / SPEED_STEP)] ?? speeds.at(-1) ?? 0;
-  const [rider] = race.riders;
+  const rider = player(race);
   const from = hazard.s - RUN_UP;
   placeRiderAt(race, PLAYER_RIDER, from);
   placeRiderAcross(race, PLAYER_RIDER, hazard.x);
   setRiderSpeed(race, PLAYER_RIDER, speedAt(from));
   race.tick = STARTED_TICK;
-  while (rider && rider.mode === "riding" && rider.s < hazard.s + RUN_OUT) {
-    const curvature = curvatureAt(track, rider.s);
+  for (
+    let tick = 0;
+    tick < LAP_TICKS && rider.mode === "riding" && rider.s < hazard.s + RUN_OUT;
+    tick += 1
+  ) {
+    const curvature = curvatureAt(alone, rider.s);
     const line = clamp((hazard.x - rider.x) * LINE_PULL, -LINE_SWAY, LINE_SWAY);
     const steer = clamp(
       steerFor(
@@ -101,7 +102,7 @@ const crashOver = (
       1
     );
     const target = speedAt(rider.s);
-    stepRace(race, track, {
+    stepRace(race, alone, {
       controls: new Map([
         [
           PLAYER_RIDER,
@@ -144,7 +145,7 @@ describe("hazards on the only lane", () => {
       const crashes = RIDDEN_BIKES.flatMap((bikeId) => {
         const speeds = racingSpeeds(track, bikeId);
         return onlyLane.flatMap(
-          (hazard) => crashOver(track, hazard.id, bikeId, speeds) ?? []
+          (hazard) => crashOver(track, hazard, bikeId, speeds) ?? []
         );
       });
       expect(crashes).toStrictEqual([]);
