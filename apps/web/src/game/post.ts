@@ -3,9 +3,10 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import type { Part } from "../profile-parts.ts";
-import { seesFx } from "./cel.ts";
+import { onFxLayer, seesFx } from "./cel.ts";
 import type { Look } from "./looks.ts";
 import { isMesh } from "./meshes.ts";
+import { contextOf } from "./profile.ts";
 import { skinWalkers } from "./walker-skin.ts";
 
 const LINE_WIDTH = 1.15;
@@ -170,20 +171,70 @@ export interface Pipeline {
   prepare: (scene: THREE.Scene) => void;
   compile: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => Compiling;
   setLook: (look: Look) => void;
-  setBloomScale: (scale: number) => void;
-  setSamples: (samples: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
   dispose: () => void;
 }
 
+export interface Picture {
+  readonly bloomScale: number;
+  readonly samples: number;
+}
+
+const fullPicture: Picture = { bloomScale: BLOOM_SCALE, samples: SAMPLES };
+
+const seesThrough = (material: THREE.Material): boolean =>
+  material.transparent || material.alphaTest > 0;
+
+const framebufferOf = (
+  renderer: THREE.WebGLRenderer,
+  target: THREE.WebGLRenderTarget
+): WebGLFramebuffer => {
+  const held = renderer.properties.get(target);
+  if (
+    held instanceof Object &&
+    "__webglFramebuffer" in held &&
+    held.__webglFramebuffer instanceof WebGLFramebuffer
+  ) {
+    return held.__webglFramebuffer;
+  }
+  throw new TypeError("The render target has no framebuffer yet.");
+};
+
+const copyDepth = (
+  renderer: THREE.WebGLRenderer,
+  from: THREE.WebGLRenderTarget,
+  to: THREE.WebGLRenderTarget
+): void => {
+  const gl = contextOf(renderer);
+  const { state } = renderer;
+  state.bindFramebuffer(gl.READ_FRAMEBUFFER, framebufferOf(renderer, from));
+  state.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebufferOf(renderer, to));
+  gl.blitFramebuffer(
+    0,
+    0,
+    from.width,
+    from.height,
+    0,
+    0,
+    to.width,
+    to.height,
+    gl.DEPTH_BUFFER_BIT,
+    gl.NEAREST
+  );
+  state.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+  state.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+};
+
 export const createPipeline = (
   renderer: THREE.WebGLRenderer,
-  lap?: (part: Part) => void
+  lap?: (part: Part) => void,
+  { bloomScale, samples }: Picture = fullPicture
 ): Pipeline => {
   renderer.setOpaqueSort(byVariantThenMaterial);
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
-  normalTarget.depthTexture = new THREE.DepthTexture(4, 4);
+  const normalDepth = new THREE.DepthTexture(4, 4);
+  normalTarget.depthTexture = normalDepth;
   const normalMaterial = new THREE.MeshNormalMaterial();
   normalMaterial.onBeforeCompile = skinWalkers;
   normalMaterial.onBeforeRender = (
@@ -207,7 +258,8 @@ export const createPipeline = (
     depthPacking: THREE.RGBADepthPacking,
   });
   const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
-    samples: SAMPLES,
+    depthTexture: samples === 0 ? new THREE.DepthTexture(4, 4) : null,
+    samples,
     type: THREE.HalfFloatType,
   });
   const inkTarget = new THREE.WebGLRenderTarget(4, 4, {
@@ -251,11 +303,8 @@ export const createPipeline = (
   bloom.blendMaterial.blendDstAlpha = THREE.OneFactor;
 
   uniform(line, "normals").value = normalTarget.texture;
-  uniform(line, "depths").value = normalTarget.depthTexture;
+  uniform(line, "depths").value = normalDepth;
   const clearColour = new THREE.Color();
-  let bloomScale = BLOOM_SCALE;
-  let cssWidth = 1;
-  let cssHeight = 1;
 
   return {
     compile(scene, camera) {
@@ -269,7 +318,6 @@ export const createPipeline = (
       }
     },
     dispose() {
-      normalTarget.depthTexture?.dispose();
       normalTarget.dispose();
       normalMaterial.dispose();
       instancedDepth.dispose();
@@ -283,6 +331,9 @@ export const createPipeline = (
     },
     prepare(scene) {
       scene.traverse((node) => {
+        if (isMesh(node) && [node.material].flat().some(seesThrough)) {
+          onFxLayer(node);
+        }
         if (node instanceof THREE.InstancedMesh) {
           node.customDepthMaterial ??= instancedDepth;
         } else if (node instanceof THREE.SkinnedMesh) {
@@ -314,7 +365,13 @@ export const createPipeline = (
       scene.fog = fog;
       seesFx(camera, true);
       renderer.setRenderTarget(sceneTarget);
+      if (sceneTarget.depthTexture) {
+        copyDepth(renderer, normalTarget, sceneTarget);
+        renderer.setRenderTarget(sceneTarget);
+        renderer.autoClearDepth = false;
+      }
       renderer.render(scene, camera);
+      renderer.autoClearDepth = true;
       lap?.("main");
       line.render(renderer, inkTarget, sceneTarget, 0, false);
       lap?.("line");
@@ -324,8 +381,6 @@ export const createPipeline = (
       lap?.("grade");
     },
     resize(width, height, pixelRatio) {
-      cssWidth = width;
-      cssHeight = height;
       const wide = Math.max(1, Math.floor(width * pixelRatio));
       const tall = Math.max(1, Math.floor(height * pixelRatio));
       normalTarget.setSize(wide, tall);
@@ -336,24 +391,10 @@ export const createPipeline = (
       uniform(line, "width").value =
         LINE_WIDTH * Math.max(1, tall / LINE_REFERENCE_HEIGHT);
     },
-    setBloomScale(scale) {
-      if (scale === bloomScale) {
-        return;
-      }
-      bloomScale = scale;
-      bloom.setSize(cssWidth * bloomScale, cssHeight * bloomScale);
-    },
     setLook(look) {
       uniformValue(line, "ink", THREE.Color).set(look.ink);
       uniformValue(grade, "grade", THREE.Vector3).set(...look.grade);
       bloom.strength = look.bloom;
-    },
-    setSamples(samples) {
-      if (samples === sceneTarget.samples) {
-        return;
-      }
-      sceneTarget.samples = samples;
-      sceneTarget.dispose();
     },
   };
 };

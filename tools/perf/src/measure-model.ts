@@ -22,7 +22,6 @@ export const frameSample = Schema.Struct({
   interval: Schema.Number,
   pixelRatio: Schema.Number,
   programs: Schema.optionalKey(Schema.Number),
-  rung: Schema.Number,
   start: Schema.optionalKey(Schema.Number),
   textures: Schema.optionalKey(Schema.Number),
   tick: Schema.Number,
@@ -113,7 +112,6 @@ export interface RunResult {
   readonly triangles: Stats;
   readonly parts: readonly PartSummary[];
   readonly pixelRatios: readonly number[];
-  readonly rungs: readonly number[];
   readonly heapBefore: typeof heapUsage.Type;
   readonly heapAfter: typeof heapUsage.Type;
   readonly trace: TraceSummary | null;

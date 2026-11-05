@@ -30,7 +30,7 @@ The code is the record of how this repository does things. The next agent copies
 Run GPU-heavy work on `vimaan`, the Linux laptop with an NVIDIA GTX 1650 Ti and an Intel UHD 630. That covers `rv` verification of the renderer, the scene and assets, frame profiles, `pnpm perf:gpu` and Blender renders. `rv` starts and stops its own desktop session there. `.claude/skills/verify-rushline/SKILL.md` has the steps.
 
 - From another machine, find vimaan with `t3_environment_links` and send the work with `delegate_task` and `target.environmentId`. If vimaan is unreachable, report that and stop. Do not quietly run the work on the machine you are on.
-- Compare frame numbers only within one machine. Each host with a frame budget has its own rows in `tools/perf/budgets.json`. `linux-intel` has none yet, so `pnpm perf:gpu` refuses it.
+- Compare frame numbers only within one machine. Each host with a frame budget has its own rows in `tools/perf/budgets.json`. `linux-intel` has its own rows, measured on the preset a UHD 630 gets by itself.
 - vimaan does not replace two checks. Its panel stops at 60 Hz, so check 120 Hz on a Mac with a ProMotion display. Its Intel GPU only stands in for thin laptops, so a change that claims a frame-rate gain there still needs a play test on a MacBook Air or Chromebook class machine.
 
 ## Agent skills

@@ -1,5 +1,4 @@
 import { recordedRules } from "@racer/career/bench";
-import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
 
 import { celebrityLoader } from "../src/asset-load.ts";
@@ -7,16 +6,10 @@ import { browserAssetRuntime } from "../src/asset-runtime.ts";
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
 import type { QuickPick } from "../src/career/flow.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
-import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { assetParsers, createGame, createRenderer } from "../src/game/game.ts";
 import type { GameHandle, HudState, RacePlan } from "../src/game/hud.ts";
 import { isMesh, isPoints } from "../src/game/meshes.ts";
-import { createPipeline } from "../src/game/post.ts";
-import { createQuality } from "../src/game/quality-ladder.ts";
-import type { Quality } from "../src/game/quality-ladder.ts";
-import { createWorld } from "../src/game/world.ts";
 import type { PrepareOutcome } from "../src/prepare-outcome.ts";
-import { fakeWorldAssets } from "./walker-asset.ts";
 
 const WIDTH = 960;
 const HEIGHT = 540;
@@ -33,8 +26,6 @@ interface Counts {
   readonly textures: number;
   readonly programs: number;
 }
-
-type Rung = Quality["ladder"][number];
 
 const countsOf = (renderer: THREE.WebGLRenderer): Counts => ({
   geometries: renderer.info.memory.geometries,
@@ -254,66 +245,6 @@ const startDuringPreparation = async (game: GameHandle, seen: Seen) => {
   };
 };
 
-const qualityProof = () => {
-  const canvas = proofCanvas();
-  const renderer = createRenderer(canvas);
-  const { ladder } = createQuality(
-    renderer,
-    { pinnedPixelRatio: 0, pinnedRefresh: 0, pinnedRung: -1 },
-    () => window.devicePixelRatio
-  );
-  const [high] = ladder;
-  const low = ladder.at(-1);
-  if (!high || !low) {
-    throw new Error("The quality ladder has no rungs.");
-  }
-  const world = createWorld(trackFor(ROAD_A), fakeWorldAssets(), low.shadowMap);
-  const pipeline = createPipeline(renderer);
-  const { camera } = createChaseCamera();
-  camera.aspect = WIDTH / HEIGHT;
-  camera.position.set(0, 4, -12);
-  camera.lookAt(0, 0, 40);
-  camera.updateProjectionMatrix();
-  pipeline.setLook(world.shading.look);
-  pipeline.prepare(world.scene);
-  const apply = (rung: Rung): Counts => {
-    world.setShadowMap(rung.shadowMap);
-    pipeline.setSamples(rung.samples);
-    pipeline.setBloomScale(rung.bloomScale);
-    renderer.setPixelRatio(rung.pixelRatio);
-    renderer.setSize(WIDTH, HEIGHT, false);
-    pipeline.resize(WIDTH, HEIGHT, rung.pixelRatio);
-    world.follow(camera, 0);
-    pipeline.render(world.scene, camera);
-    return countsOf(renderer);
-  };
-  const cycle = () => {
-    const atHigh = apply(high);
-    const atLow = apply(low);
-    return { atHigh, atLow };
-  };
-  const first = apply(low);
-  const warming = Array.from({ length: WARM_CYCLES }, cycle);
-  const warmed = warming.at(-1) ?? { atHigh: first, atLow: first };
-  const returns = Array.from({ length: COMPARED_CYCLES }, cycle);
-  pipeline.dispose();
-  world.dispose();
-  renderer.dispose();
-  canvas.remove();
-  return {
-    first,
-    high: { ...high },
-    low: { ...low },
-    returns,
-    stable: returns.every(
-      ({ atHigh, atLow }) =>
-        sameCounts(atHigh, warmed.atHigh) && sameCounts(atLow, warmed.atLow)
-    ),
-    warmed,
-    warming,
-  };
-};
-
 const lossProof = async (
   game: GameHandle,
   renderer: THREE.WebGLRenderer,
@@ -434,7 +365,6 @@ export const run = async () => {
     throw new Error("The game did not make its renderer.");
   }
   const tracks = await trackProof(game, renderer);
-  const quality = qualityProof();
   const loss = await lossProof(game, renderer, canvas, tracks.warmed);
   const retirement = await retirementProof(game, held);
   const startedDuringPreparation = await startDuringPreparation(game, seen);
@@ -454,7 +384,6 @@ export const run = async () => {
     hud,
     loss,
     notes,
-    quality,
     retirement,
     startedDuringPreparation,
     tracks,

@@ -213,7 +213,7 @@ export const sampleCommand = Effect.fn("rv.sample")(function* sampleCommand(
     sample(page, Number(values.seconds))
   );
   const { interval } = sampled;
-  const result = `ticks ${sampled.fromTick}-${sampled.toTick}: ${sampled.frames} frames, ${sampled.fps.toFixed(1)} fps, frame p50 ${interval.p50.toFixed(1)} p95 ${interval.p95.toFixed(1)} p99 ${interval.p99.toFixed(1)} worst ${interval.max.toFixed(1)} ms, late ${JSON.stringify(sampled.late)}, js ${sampled.jsFrame.mean.toFixed(2)} ms/frame, ${sampled.calls.toFixed(0)} calls, ratio ${sampled.pixelRatios.join(",")}, rung ${sampled.rungs.join(",")}, cpu x${state.cpu}, network ${state.network}`;
+  const result = `ticks ${sampled.fromTick}-${sampled.toTick}: ${sampled.frames} frames, ${sampled.fps.toFixed(1)} fps, frame p50 ${interval.p50.toFixed(1)} p95 ${interval.p95.toFixed(1)} p99 ${interval.p99.toFixed(1)} worst ${interval.max.toFixed(1)} ms, late ${JSON.stringify(sampled.late)}, js ${sampled.jsFrame.mean.toFixed(2)} ms/frame, ${sampled.calls.toFixed(0)} calls, ratio ${sampled.pixelRatios.join(",")}, cpu x${state.cpu}, network ${state.network}`;
   yield* fs.writeFileString(
     file,
     `${JSON.stringify({ cpu: state.cpu, network: state.network, ...sampled }, null, 1)}\n`,

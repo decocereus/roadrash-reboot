@@ -85,7 +85,7 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 | `rv shot --run <id> <name>` | PNG screenshot to the evidence folder. |
 | `rv aria --run <id> <name>` | The accessibility tree as indented text: roles, names, and states such as `focused`, `disabled`, `pressed`. Prints it and saves `<name>.aria.txt`. |
 | `rv screencast --run <id> <name> [--seconds s] [--every n]` | `Page.startScreencast` frames as JPEGs at 1512 px wide, with a `frames.json` of timestamps. It delivered 60 frames a second in the proof run. It shows motion; for frame times use `rv sample`. |
-| `rv sample --run <id> <name> [--seconds s]` | Reads `globalThis.__rushlineProfile` before and after the wait and reports frames, fps, frame-interval percentiles, frames over 20 and 33 ms, JS ms per frame, draw calls, pixel ratio, and quality rung. The page must be open with `&prof` (or `?stress`). |
+| `rv sample --run <id> <name> [--seconds s]` | Reads `globalThis.__rushlineProfile` before and after the wait and reports frames, fps, frame-interval percentiles, frames over 20 and 33 ms, JS ms per frame, draw calls, and pixel ratio. The page must be open with `&prof` (or `?stress`). |
 | `rv trace --run <id> <name> [--seconds s]` | A DevTools trace including the GPU process (`gpu`, `disabled-by-default-gpu.service`, `viz`, `devtools.timeline`, `toplevel`). Saves `<name>.trace.json`, which the DevTools Performance panel and Perfetto open, and prints long tasks, GC pauses, and the busiest threads (CrRendererMain, CrGpuMain, VizCompositorThread). Keep it to 10 s or less. |
 | `rv throttle --run <id> [--cpu n] [--network off\|fast4g\|slow4g\|3g\|offline]` | Restarts the console watcher holding `Emulation.setCPUThrottlingRate` and `Network.emulateNetworkConditions`. Throttling lasts while the watcher is attached, survives navigation, and every sample and trace records it. `--cpu 1 --network off` clears it. |
 | `rv console --run <id> [errors]` | Print what the watcher captured. |
@@ -98,7 +98,7 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 The game exposes no general state object, so read what a player sees, plus the development hooks:
 
 - **Speed:** `document.querySelector("[role=meter][aria-label=Speed]").getAttribute("aria-valuenow")`, in km/h. The meter exists only during a race.
-- **Race clock:** with `&prof`, `globalThis.__rushlineProfile.info()` returns `{ frames, tick, renderer, gpuTimer, parts }`, and `window(fromTick, toTick)` returns per-frame samples (interval, CPU ms per part, draw calls, triangles, pixel ratio, rung, three's program, texture, and geometry counts, and `created`, the programs and textures the WebGL context has created so far). The tick is the simulation tick at 60 per second of race time.
+- **Race clock:** with `&prof`, `globalThis.__rushlineProfile.info()` returns `{ frames, tick, renderer, gpuTimer, parts }`, and `window(fromTick, toTick)` returns per-frame samples (interval, CPU ms per part, draw calls, triangles, pixel ratio, three's program, texture, and geometry counts, and `created`, the programs and textures the WebGL context has created so far). The tick is the simulation tick at 60 per second of race time.
 - **Freeze frames:** with `?hold=`, `globalThis.__rushlineHeld` turns `true` when the race freezes, and `globalThis.__rushlineRelease()` resumes it.
 - **The save:** `JSON.parse(localStorage.getItem("rushline.career"))`. Each slot is its own origin with a fresh profile, so every run starts with no save.
 - **Screens:** `rv aria` shows the menu that is up and which item has focus.
@@ -119,9 +119,9 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?road=<n>` (DEV) | Which road the hidden attract race loads first while the game boots. |
 | `?stress`, `?stress=reference` | The fixed benchmark races from `apps/web/src/career/bench.ts`, on the pilot, in any build. |
 | `?prof`, `?prof=gpu` | Record per-frame costs into `__rushlineProfile`; `gpu` adds timer queries ANGLE on Metal answers wrongly. `?stress` implies `?prof`. |
-| `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, rung, pace, refresh, draw calls, triangles. |
+| `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, preset, pace, refresh, draw calls, triangles. |
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
-| `?rung=<n>` | Pin a rung of the quality ladder: 0 full, 1 shadow 2048, 2 lean bloom, 3 no multisampling, then the pixel ratio in steps of 0.1. The governor stays off. |
+| `?preset=full\|balanced\|lean` | Pin a quality preset instead of the one the device check picks. |
 
 Trucks, by where each starts at the race start: Breakwater Run 3.90 and 4.65 km, Slag Row 2.60 and 4.10, Ridge Road 4.50. A truck drives 20 m/s in the first same-way lane, so with `?at` it is that far along when the race starts. Roads end at 8.50 and 8.55 km.
 
@@ -182,18 +182,18 @@ Run these after every source change, as AGENTS.md requires:
 `tools/perf/measure.ts` measures uncapped frame cost on the `pack-riding-v1` window of the `?stress` race, which is useful while you work on a change but is not a gate. Read `tools/perf/README.md`. It launches a headless browser by default, which is allowed for this bench because it measures uncapped frame cost, not how the game looks; pass `--browser windowed` to run the same bench in a window. To compare a change:
 
 1. Build and serve each side from its own checkout on its own port: an `rv up` slot works (`rv up --path "/?stress&ratio=2"` in the baseline checkout and again in the changed one), or follow the README's `vite build --sourcemap` and `vite preview --port <free port>`.
-2. Pin the pixel ratio with `?ratio=2`, so the governor's pacing does not hide headroom.
+2. Pin the pixel ratio with `?ratio=2`, so the pacer does not hide headroom.
 3. Interleave: run `node tools/perf/measure.ts --url "http://127.0.0.1:<port>/?stress&ratio=2" --label <side> --runs 1 --port <free DevTools port>` alternately for A and B, five or more times each, rather than all of A then all of B. The machine is often loaded by other agents, and interleaving spreads that load over both sides. Compare the means and the spread, and quote the load the tool prints.
 4. Use a DevTools port no one else holds (`--port`); its default 9333 is often taken.
 5. `--out` is relative to the current directory, and a worktree's `tools/perf/results` disappears with the worktree. Pass the run's evidence folder (the absolute path `rv up` printed) to keep the JSON.
 
-`rv sample` and `rv throttle` are for questions measure.ts does not answer: how a moment feels under throttling, what the governor does over time, or frame pacing in a real window at the display's refresh.
+`rv sample` and `rv throttle` are for questions measure.ts does not answer: how a moment feels under throttling or frame pacing in a real window at the display's refresh.
 
 ### Approximating a MacBook Air
 
 The development machine is an M4 Pro. DevTools can slow the main thread but not the GPU:
 
-- `rv throttle --run <id> --cpu 2` roughly matches a base M1 or M2 Air's main thread; `--cpu 4` is the pessimistic case. At `--cpu 4` the stress race showed about twice the JS per frame and the governor stepping down quality rungs.
+- `rv throttle --run <id> --cpu 2` roughly matches a base M1 or M2 Air's main thread; `--cpu 4` is the pessimistic case. At `--cpu 4` the stress race showed about twice the JS per frame.
 - GPU fill cost is not emulated. Compare `?ratio=1` with `?ratio=2` to see how much of a frame is fill, and treat a pass that is GPU-bound on the M4 Pro as at risk on an Air.
 - `--network fast4g` or `slow4g` shows the first-load cost of the models and textures. A race HUD took about 20 s on `fast4g` against the dev server.
 
@@ -209,7 +209,7 @@ vimaan is a Linux laptop with a GTX 1650 Ti and no running desktop. Everything a
 - `rv doctor`'s gpu line must contain `NVIDIA`. `tools/perf/README.md`, under Vimaan, says why the flags are what they are.
 - `pnpm perf:gpu` needs side A's clone in `/var/tmp`, because `/tmp` is a small tmpfs. Its limits are the `gpu-chromium-nvidia` rows, never the Mac's.
 - The T3 browser stays on SwiftShader. Use `rv` for anything that needs a GPU.
-- `RUSHLINE_BROWSER_HOST=linux-intel rv up` runs on the Intel UHD 630, the stand-in for thin laptops, fullscreen at 1920x1080 and ratio 1. The slot remembers its host, so `rv doctor` then requires `Intel`, and later commands need no setting. It has no budget rows and `pnpm perf:gpu` refuses it. Run an Intel measurement one slot at a time, because a second slot takes fullscreen from the first and changes its page from 1920x1080 to 1919x1079. `tools/perf/README.md`, under Intel, holds the numbers it measured.
+- `RUSHLINE_BROWSER_HOST=linux-intel rv up` runs on the Intel UHD 630, the stand-in for thin laptops, in a 1919x992 page at device ratio 1. The slot remembers its host, so `rv doctor` then requires `Intel`, and later commands need no setting. It has its own budget rows, measured on the `lean` preset it picks by itself. `tools/perf/README.md`, under Intel, holds the numbers it measured.
 
 ## Sandbox notes for worktree agents
 

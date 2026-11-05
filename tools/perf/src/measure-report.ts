@@ -53,7 +53,7 @@ export const printSummary = (
   );
   console.log(`renderer  ${first.renderer}`);
   console.log(
-    `page ${first.page.width}x${first.page.height} @${first.page.ratio}  pixel ratio ${first.pixelRatios.join(",")}  rung ${first.rungs.join(",")}  gpu timer ${first.gpuTimer ? "yes" : "not exposed"}  heap ${(first.heapAfter.usedSize / 1e6).toFixed(1)} MB`
+    `page ${first.page.width}x${first.page.height} @${first.page.ratio}  pixel ratio ${first.pixelRatios.join(",")}  gpu timer ${first.gpuTimer ? "yes" : "not exposed"}  heap ${(first.heapAfter.usedSize / 1e6).toFixed(1)} MB`
   );
   const across = (pick: (result: RunResult) => number) =>
     `${ms(mean(results.map(pick)))}  [${spread(results.map(pick))}]`;

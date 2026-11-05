@@ -34,8 +34,6 @@ export interface ProfileFrame {
   readonly geometries: number;
   readonly created: Readonly<Created>;
   readonly pixelRatio: number;
-  readonly rung: number;
-  readonly drawRung: number;
   readonly sizeEpoch: number;
   readonly drawnEpoch: number;
   readonly discarded: number;
@@ -65,8 +63,6 @@ export interface FrameEnd {
   tick: number;
   ticks: number;
   pixelRatio: number;
-  rung: number;
-  drawRung: number;
   sizeEpoch: number;
   drawnEpoch: number;
   discarded: number;
@@ -100,10 +96,12 @@ const rendererName = (gl: WebGL2RenderingContext): string =>
     )
   );
 
-const contextOf = (renderer: THREE.WebGLRenderer): WebGL2RenderingContext => {
+export const contextOf = (
+  renderer: THREE.WebGLRenderer
+): WebGL2RenderingContext => {
   const gl = renderer.getContext();
   if (!(gl instanceof WebGL2RenderingContext)) {
-    throw new TypeError("Profiling needs a WebGL 2 context.");
+    throw new TypeError("The game needs a WebGL 2 context.");
   }
   return gl;
 };
@@ -134,8 +132,6 @@ export const createProfiler = (
   const createdPrograms = new Uint32Array(CAPACITY);
   const createdTextures = new Uint32Array(CAPACITY);
   const ratios = new Float32Array(CAPACITY);
-  const rungs = new Uint8Array(CAPACITY);
-  const drawRungs = new Uint8Array(CAPACITY);
   const sizeEpochs = new Uint32Array(CAPACITY);
   const drawnEpochs = new Uint32Array(CAPACITY);
   const discards = new Float32Array(CAPACITY);
@@ -285,7 +281,6 @@ export const createProfiler = (
         textures: createdTextures[at] ?? 0,
       },
       discarded: discards[at] ?? 0,
-      drawRung: drawRungs[at] ?? 0,
       drawnEpoch: drawnEpochs[at] ?? 0,
       frame: index,
       geometries: geometries[at] ?? 0,
@@ -294,7 +289,6 @@ export const createProfiler = (
       pixelRatio: ratios[at] ?? 0,
       programs: programs[at] ?? 0,
       race: races[at] ?? 0,
-      rung: rungs[at] ?? 0,
       sizeEpoch: sizeEpochs[at] ?? 0,
       start: starts[at] ?? 0,
       textures: textures[at] ?? 0,
@@ -352,8 +346,6 @@ export const createProfiler = (
       ticksAt[slot] = end.tick;
       stepped[slot] = end.ticks;
       ratios[slot] = end.pixelRatio;
-      rungs[slot] = end.rung;
-      drawRungs[slot] = end.drawRung;
       sizeEpochs[slot] = end.sizeEpoch;
       drawnEpochs[slot] = end.drawnEpoch;
       discards[slot] = end.discarded;

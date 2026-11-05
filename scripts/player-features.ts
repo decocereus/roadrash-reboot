@@ -517,9 +517,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
     id: "frame-pacing",
     kind: "feature",
     owns: [
-      "apps/web/src/game/governor*.ts",
       "apps/web/src/game/pacer.ts",
-      "apps/web/src/game/quality-ladder.ts",
+      "apps/web/src/game/presets.ts",
+      "apps/web/src/game/presets.test.ts",
       "apps/web/src/game/fps-meter.ts",
       "apps/web/test/render-quality.test.ts",
     ],
@@ -531,13 +531,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "main.longTask.blockingMs",
       "main.longTask.count",
     ],
-    start: [
-      "apps/web/src/game/governor.ts",
-      "apps/web/src/game/pacer.ts",
-      "apps/web/src/game/quality-ladder.ts",
-    ],
+    start: ["apps/web/src/game/pacer.ts", "apps/web/src/game/presets.ts"],
     summary:
-      "Holding 60 frames a second: the pacer, the governor that judges late frames, the quality rungs it steps down, the frame-rate setting and the `?fps` overlay.",
+      "Holding a constant frame rate: the fixed quality presets a device check picks before the race, the pacer, the frame-rate setting and the `?fps` overlay.",
     title: "Frame rate and quality",
     verify: ["frame-rate.md"],
   },

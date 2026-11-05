@@ -89,10 +89,11 @@ describe("browser hosts", () => {
     );
   });
 
-  it("requires budget rows only for hosts that have an environment", () => {
+  it("requires budget rows for every host", () => {
     expect(perfEnvironments).toStrictEqual([
       "gpu-helium-metal",
       "gpu-chromium-nvidia",
+      "gpu-chromium-intel",
     ]);
   });
 
