@@ -220,25 +220,32 @@ A full campaign took 30.7 minutes here on 2026-11-03.
 
 ### Intel
 
-The UHD 630 in vimaan stands in for thin laptops, the class the game has to hold 60 fps on. `RUSHLINE_BROWSER_HOST=linux-intel` selects its row, which leaves out the PRIME variables so Chromium stays on the Intel GPU, and runs fullscreen at the panel's native 1920x1080 at device pixel ratio 1. `rv up` records the host in the slot, so `rv doctor` requires `Intel` in the renderer without the setting being repeated. The setting is checked against the tuple of hosts, and a value outside it stops the command.
+The UHD 630 in vimaan stands in for thin laptops. `RUSHLINE_BROWSER_HOST=linux-intel` selects its row, which leaves out the PRIME variables so Chromium stays on the Intel GPU. It runs a floating 1919x992 page at device pixel ratio 1. The two browsers of a campaign must have the same page size, and a fullscreen window would give one 1920x1080 and the other less. `presets.ts` gives this GPU the `lean` preset by itself, so the canvas is 1402x725 at ratio 0.73, about the pixel count of 1344x756 on a fullscreen page. `rv up` records the host in the slot, so `rv doctor` requires `Intel` in the renderer without the setting being repeated. The setting is checked against the tuple of hosts, and a value outside it stops the command.
 
-**It has no rows, and `pnpm perf:gpu` refuses it, because it misses the owner's frame caps.** This is the known gap. Stress race, the bench window at ticks 2918 to 3518, three runs each on `c794f9a`, `ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)`:
+**The `gpu-chromium-intel` frame rows are a floor, not the 60 fps cap, and the owner accepted that on 2026-11-05.** The UHD 630 does not reach 60 fps. The rows stop it getting worse and say nothing about whether it is good enough. A row's `value` is 1.1 x the worst window for p50, 1.15 x for p95, 1.2 x for p99 and for missed share, and its `derivation` says so. Render counts follow the NVIDIA rule: calls and triangles at 1.05 x, programs and textures at the maximum plus 1, `riders.cpu.p95` at 2 x. Replacing the floor with the caps needs a machine that holds them.
 
-| Selection | Frame-rate setting | fps | p50 ms | p95 ms | p99 ms | Missed | Rung, ratio | Calls | Triangles |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Normal, `/?stress` | 60 | 38.8 to 39.4 | 25.4 to 25.8 | 41.3 to 41.4 | 41.6 | 40.9 to 46.8% | 5, 0.8 | 510 | 2,875,439 to 2,878,271 |
-| Full, `/?stress&rung=0` | 60 | 19.1 to 19.2 | 52.0 to 52.3 | 53.9 to 54.2 | 54.8 to 55.5 | 66.7% | 0, 1 | 508 | 2,875,415 to 2,878,151 |
-| Normal, `/?stress` | Auto, the default | 21.5 to 21.7 | 46.7 to 48.3 | 53.4 to 54.8 | 57.2 to 58.0 | 63.5 to 63.8% | 5, 0.8 | 510 | 2,875,439 to 2,878,319 |
+Campaign `gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a`, setting 60, `ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)`, worst of 5 windows per side:
 
-The caps are 17.5, 20 and 33.334 ms and 1% missed. The governor starts at rung 3 and is on rung 5, the lowest, before the green light, so normal selection has no quality left to give. The GPU is the limit: frame CPU is about 8.5 ms at p50 on rung 5, and native Wayland gave about the same frame rate as Xwayland in a one-run pilot, 37.6 against 38.2 fps, at ticks 2107 to 2707. Auto, the setting a player starts on, reads about 21.6 fps in all three runs, well below the setting of 60 on the same rung. That cause is untraced. To measure again:
+| Scenario | fps, B / A | p50 ms | p95 ms | p99 ms | Missed | Calls | Triangles |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `reference-v1` | 56.0 / 55.7 | 18.2 / 18.0 | 21.8 / 21.9 | 23.2 / 22.9 | 0.18% / 0.36% | 508 | 1,605,457 |
+| `pack-riding-v1` | 50.3 / 50.6 | 19.9 / 19.8 | 23.1 / 22.5 | 39.9 / 24.9 | 2.18% / 1.18% | 522 | 2,066,211 |
+
+One B window on `pack-riding-v1` read 39.9 ms at p99 where the pooled figure is 25.3 ms, so that row's limit of 47.88 ms is loose.
+
+In a stress race and a whole Breakwater Run, before and after the lean preset and shared depth, three capped runs of the stress window and one of the road, the frame rate went from 37.7 to 52.5 fps and from 37.7 to 49.9 fps. The time over 36 ms went from 3.5% to 0.6% and from 2.1% to 0.6%. These runs were on a fullscreen page, so don't compare them with the campaign above.
+
+The campaign's `result.json` reads `ok: false`, for two reasons. The temporary budgets it ran against held placeholder frame caps, and `doctor-after` failed on both sides with `FileSystem.writeFile (/tmp/rushline-verify/desktop.lock.<id>/<id>)`, whose cause is untraced. No workload check failed, and all 20 samples were captured.
+
+The lane turns Race data off, on every host. `/api/events` answers 500 under `vite preview`, because the route imports `cloudflare:workers`, and a failed beacon is a console error, which fails the sample.
+
+To look at a stress race on this GPU outside the lane:
 
 ```sh
 RUSHLINE_BROWSER_HOST=linux-intel node tools/verify/rushline.ts up --path "/?stress"
 node tools/verify/rushline.ts wait --run <run> 'globalThis.__rushlineBench.info().lastTick >= 3518' --timeout 240
 node tools/verify/rushline.ts js --run <run> 'globalThis.__rushlineProfile.window(2918, 3518).map((frame) => frame.interval)'
 ```
-
-Add `gpu-chromium-intel` rows only when normal selection holds the caps. The lane also pins `rung=0` and ratio 2 today, so judging normal selection needs a change to the lane as well. A cap never moves to make a host pass.
 
 **The bar has a tick row, `lobby.tick.p95`, and no frame rows yet.** The frame rows wait on a vimaan run. It reads well on both cards. `/bar?prof&time=dusk`, Angled camera, 7 stand-in riders, three 20 s samples each in a development build on `1966237`:
 
