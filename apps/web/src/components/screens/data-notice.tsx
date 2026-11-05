@@ -3,7 +3,22 @@ import { useSyncExternalStore } from "react";
 import { diagnostics } from "../../diagnostics/hub.ts";
 import { place, Stage, stagePx } from "./clubhouse-stage.tsx";
 
-const NOTICE = { h: 104, w: 620, x: 26, y: 740 } as const;
+const NOTICE = { h: 92, w: 520, x: 26, y: 752 } as const;
+const BODY_PX = 19;
+const ACTION_PX = 16;
+const LEAST_BODY_CSS_PX = 13;
+const LEAST_ACTION_CSS_PX = 12;
+const LEAST_TARGET_CSS_PX = 28;
+
+const atLeast = (cssPx: number, px: number): string =>
+  `max(${cssPx}px, ${stagePx(px)})`;
+
+const ACTION = {
+  alignItems: "center",
+  display: "inline-flex",
+  minHeight: `${LEAST_TARGET_CSS_PX}px`,
+  padding: `0 ${stagePx(10)}`,
+} as const;
 
 export const DataNotice = () => {
   const hub = diagnostics();
@@ -19,9 +34,10 @@ export const DataNotice = () => {
           className="bg-ink/85 border-yellow text-paper font-display pointer-events-auto flex flex-col justify-between border-l-2"
           style={{
             ...place(NOTICE),
-            fontSize: stagePx(22),
+            fontSize: atLeast(LEAST_BODY_CSS_PX, BODY_PX),
+            height: "auto",
             lineHeight: 1.2,
-            padding: `${stagePx(10)} ${stagePx(16)}`,
+            padding: `${stagePx(8)} ${stagePx(12)}`,
           }}
         >
           <p>
@@ -30,12 +46,16 @@ export const DataNotice = () => {
           </p>
           <div
             className="flex justify-end font-bold uppercase"
-            style={{ fontSize: stagePx(18), gap: stagePx(22) }}
+            style={{
+              fontSize: atLeast(LEAST_ACTION_CSS_PX, ACTION_PX),
+              gap: stagePx(8),
+            }}
           >
             <a
               className="text-paper/70 underline underline-offset-4"
               href="/privacy"
               rel="noopener noreferrer"
+              style={ACTION}
               target="_blank"
             >
               Privacy
@@ -45,6 +65,7 @@ export const DataNotice = () => {
               onClick={() => {
                 hub.settings.change({ noticeSeen: true });
               }}
+              style={ACTION}
               type="button"
             >
               Got it
