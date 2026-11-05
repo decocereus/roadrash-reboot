@@ -9,7 +9,9 @@ export type PrepareOutcome =
   | { readonly kind: "lost" }
   | { readonly kind: "cancelled" };
 
-type PreparedRace = "built" | "missing" | "cancelled";
+const preparedRaces = ["built", "missing", "cancelled"] as const;
+
+type PreparedRace = (typeof preparedRaces)[number];
 
 const raceAfterFailureAt = {
   build: "missing",
