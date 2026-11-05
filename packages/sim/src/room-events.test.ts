@@ -150,6 +150,10 @@ describe("what a client hears of another rider's fight", () => {
     expect(burst(1)).toStrictEqual([]);
   });
 
+  it("doesn't play a hit whose strike was too old to draw", () => {
+    expect(burst(32)).toStrictEqual([]);
+  });
+
   it("plays a strike from a burst before its hit, a tick at a time", () => {
     expect(burst(36)).toStrictEqual([
       { kind: "attack", read: 2 },

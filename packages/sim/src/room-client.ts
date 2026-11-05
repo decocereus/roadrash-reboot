@@ -145,6 +145,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   let own: RaceEvent[] = [];
   const fromRoom: RoomEvent[] = [];
   let playedThrough = 0;
+  const unseenStrikes = new Set<RiderId>();
   let sentThrough = 0;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
@@ -225,12 +226,18 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       Math.min(newest, playedThrough + step)
     );
     let played = 0;
-    for (const heard of fromRoom) {
-      if (heard.tick > playedThrough) {
+    for (const { event, tick } of fromRoom) {
+      if (tick > playedThrough) {
         break;
       }
-      if (heard.tick >= newest - OLDEST_PLAYED_TICKS) {
-        into.push(heard.event);
+      const fresh = tick >= newest - OLDEST_PLAYED_TICKS;
+      if (event.kind === "attack" && fresh) {
+        unseenStrikes.delete(event.rider);
+      } else if (event.kind === "attack") {
+        unseenStrikes.add(event.rider);
+      }
+      if (fresh && !(event.kind === "hit" && unseenStrikes.has(event.rider))) {
+        into.push(event);
       }
       played += 1;
     }
