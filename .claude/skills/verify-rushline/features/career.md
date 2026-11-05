@@ -16,6 +16,7 @@ A career starts with $1,500 and a Halden Wren 400 in the Lowside. The game opens
 - `rider-load-failure` keeps the player on the ride-out card with Retry and Back when a race's riders do not load.
 - `save-reload` keeps the career across a reload, and Continue career returns to the clubhouse.
 - `reload-mid-race` charges a race left by reloading as a wreck at the full repair bill.
+- `save-refused` shows the unsaved banner when the browser refuses a write, also when the refused write is the charge for a race left by reloading.
 
 ## How to get to it (user POV)
 
@@ -42,6 +43,7 @@ Preconditions:
 - **Save from an older version.** Set `version` to 2 in `localStorage["rushline.career"]` and `rv open --run <run> /`: the back room says `The save is from another version of the game` and offers Start over, which keeps the old text under the backup key.
 - **Reload.** Run `rv open --run <run> / --until bar`. The status strip shows the saved cash and bike, and Back room's first item reads `BACK TO THE BAR Tier 1 · $...`.
 - **Reload mid-race.** Start a career race from the clubhouse, then `rv wait --run <run> 'JSON.parse(localStorage.getItem("rushline.career")).activeRace' --timeout 15` (the race is recorded at the green light), then `rv open --run <run> / --until bar`. As soon as the bar loads, the save has `activeRace: null`, `record.wrecks` one higher, cash lower by the full repair bill ($400 for the Wren at tier 1), and a `leftRace` note on `board`, which the bar shows as a note; the strip reads `CASH $1,100` in a fresh career.
+- **Save refused during a load.** Start a career race as in Reload mid-race, then fill the storage so the charge cannot be written: `rv js --run <run> '(() => { let filler = ""; for (let size = 1 << 22; size >= 1; size >>= 1) { const chunk = "x".repeat(size); try { localStorage.setItem("rushline.filler", filler + chunk); filler += chunk; } catch {} } return filler.length; })()'`. Run `rv open --run <run> / --until bar`. The strip reads `CASH $1,100`, the banner reads `The browser refused the save. Progress will be lost when you leave.`, and the save still has `activeRace` and `cash: 1500`. Run `rv js --run <run> 'localStorage.removeItem("rushline.filler")'` and `rv open` again: the banner is gone, and the save has `activeRace: null` and `cash: 1100`.
 
 ## Gotchas
 
