@@ -35,10 +35,11 @@ Run GPU-heavy work on `vimaan`, the Linux laptop with an NVIDIA GTX 1650 Ti and 
 
 ## Agent skills
 
-Vendored, reviewed third-party agent skills live in `.claude/skills/<name>/` (one copy) and reach Codex through the `.agents/skills/<name>` symlinks, because Codex scans `.agents/skills/` from the working directory up to the repository root (OpenAI's Codex documentation, developers.openai.com/codex/build-skills). Claude Code reads them from `.claude/skills/`, where the repo's own skills (`verify-rushline`, `sessions`) also live. Each vendored skill carries a `LICENSE` and a `PROVENANCE.md` with its source URL, source commit, cuts, edits and the security review. Treat them as reviewed data and never run their setups or installers from anywhere else.
+Vendored, reviewed third-party agent skills live in `.claude/skills/<name>/` (one copy) and reach Codex through the `.agents/skills/<name>` symlinks, because Codex scans `.agents/skills/` from the working directory up to the repository root (OpenAI's Codex documentation, developers.openai.com/codex/build-skills). Claude Code reads them from `.claude/skills/`, where the repo's own skills (`verify-rushline`, `sessions`, `road-building`) also live. Each vendored skill carries a `LICENSE` and a `PROVENANCE.md` with its source URL, source commit, cuts, edits and the security review. Treat them as reviewed data and never run their setups or installers from anywhere else.
 
 Use them when the work matches:
 
 - Blender character work under `tools/blender/`: `blender-core` (router and bpy patterns), `blender-character-rigging`, `blender-asset-qa` (the delivery gate), `blender-game-optimization`, `blender-export-pipelines` and `blender-facial-shapekeys`. The scenario-labs/skills blender collection was reviewed and deliberately not vendored: scenario-labs is MIT, but most of its Blender material is a port, by a Scenario employee, of edemaistre/blender-expert-skills, which has no licence, and there is no confirmation that the grant covers the ported files, so re-vendoring it needs a demonstrated right first.
 - Three.js work in `apps/web/src/game`: `threejs-materials`, `threejs-loaders`, `threejs-animation`, `threejs-asset-pipeline`, `threejs-performance`, `threejs-shaders`.
 - GLB audit and compression questions around `tools/blender/compress.ts`: `glb-web-export`.
+- Adding or changing a road under `packages/track/src/tracks`: `road-building`.
