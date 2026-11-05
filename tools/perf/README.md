@@ -254,7 +254,7 @@ node tools/verify/rushline.ts js --run <run> 'globalThis.__rushlineProfile.windo
 | GTX 1650 Ti | 1512x773, 2 | 60.1 | 16.7 | 16.7 | 16.8 | 0 of 1,202 | 2.4 to 3.0 | 102 | 834,473 |
 | UHD 630 | 1920x1080, 0.7 | 59.3 to 59.7 | 16.7 | 17.2 to 17.3 | 24.0 to 33.2 | 21 to 22 of about 1,190 | 4.9 to 5.1 | 102 | 834,473 |
 
-The UHD 630 applies the bar's lean settings by itself, because `presets.ts` gives its name the `lean` preset. About 1% of its frames miss a vsync. JS is about 5 ms of a 16.7 ms frame, so the main thread is not the limit, but no GPU timer query separated the GPU from the compositor. p99 is noisy there, because a handful of frames moves it. The panel stops at 60 Hz, so the GTX 1650 Ti's numbers hide any headroom. The Whole room camera adds about 63,000 triangles and 0.6 ms of JS on the UHD 630. Measure again after a change to `post.ts`.
+The UHD 630 applies the bar's lean settings by itself, because `presets.ts` gives its name the `lean` preset. The bar keeps a glow scale of 1 where races use 0.5 on this preset, because half-size glow breaks its thin lights into patches, and the owner chose that on 2026-11-05. About 1% of its frames miss a vsync. JS is about 5 ms of a 16.7 ms frame, so the main thread is not the limit, but no GPU timer query separated the GPU from the compositor. p99 is noisy there, because a handful of frames moves it. The panel stops at 60 Hz, so the GTX 1650 Ti's numbers hide any headroom. The Whole room camera adds about 63,000 triangles and 0.6 ms of JS on the UHD 630. Measure again after a change to `post.ts`.
 
 ### Adding a host
 

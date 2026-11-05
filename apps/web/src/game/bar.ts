@@ -63,6 +63,7 @@ const TURN_SECONDS = 14;
 const FIRST_WALKER_BIKE = 2;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
+const MIN_BLOOM_SCALE = 1;
 
 interface Pins {
   readonly ratio: number | null;
@@ -84,7 +85,7 @@ const pinsFrom = (search: string): Pins => {
   const named = flags.get("time");
   const fixed = named === "night" ? 1 : number("time");
   return {
-    bloom: number("bloom") ?? preset.bloomScale,
+    bloom: number("bloom") ?? Math.max(preset.bloomScale, MIN_BLOOM_SCALE),
     maxPixels: preset.maxPixels,
     ratio: number("ratio"),
     riders: number("riders") ?? riderBlocks.length,
