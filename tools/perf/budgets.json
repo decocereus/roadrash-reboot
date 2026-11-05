@@ -68,11 +68,19 @@
       {
         "file": "tools/perf/baselines/districts.node-linux-x64.json.gz",
         "sha256": "cc0eeefc1626e4051f60797669d510135f837cbfee8d4f3ef03675750de2e821"
+      },
+      {
+        "file": "tools/perf/baselines/lobby.node-darwin-arm64.json.gz",
+        "sha256": "9bd5f82f90b7f3718f95b4968cd5052034046dbf27c9f807473854de11ef3981"
+      },
+      {
+        "file": "tools/perf/baselines/lobby.node-linux-x64.json.gz",
+        "sha256": "c46b0494adb5b8e588c68ba0f8d17650aa2d9a8fabfadff348103d0bfafed577"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "4217d6eb128b337a697c52692004ef2f8ab22ac52e902fa158057f2d9ebcd090"
+    "summarySha256": "04e25fd511d3fb9fccadf88c63c82c8aea8dc60264231a203a35b2ad3a24a221"
   },
   "limits": [
     {
@@ -425,14 +433,14 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 614264,
-      "baseline": 602219,
+      "value": 626621,
+      "baseline": 614334,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.root.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
       "unit": "B"
     },
     {
@@ -1694,6 +1702,30 @@
       "scenario": "reference-v1",
       "source": "baseline-2026-11-04T13-56-57-498Z-9f67ba9-8978e4f",
       "unit": "ms"
+    },
+    {
+      "baseline": 0.5962944629810603,
+      "derivation": "1.15 x calibrated baseline median",
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "lobby.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-05T07-12-17-243Z-9f67ba9-51f601f",
+      "unit": "ms",
+      "value": 0.6857386324282192
+    },
+    {
+      "baseline": 1.417910886133199,
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "lobby.tick.p95",
+      "paired": null,
+      "scenario": null,
+      "source": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
+      "unit": "ms",
+      "value": 2.1197767747691323
     }
   ],
   "nodeProfiles": {

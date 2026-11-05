@@ -1,3 +1,4 @@
+import { blockCssOf } from "@racer/sim/palette";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef } from "react";
@@ -98,3 +99,11 @@ export const stepped = <Item,>(
     items[(Math.max(0, index) + step + items.length) % items.length] ?? current
   );
 };
+
+export const RiderChip = ({ colour }: { readonly colour: number }) => (
+  <span
+    aria-hidden
+    className="inline-block size-[0.7em] shrink-0 -skew-x-12"
+    style={{ background: blockCssOf(colour) }}
+  />
+);

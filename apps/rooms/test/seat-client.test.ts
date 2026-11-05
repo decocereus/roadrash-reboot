@@ -114,7 +114,13 @@ const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
         raceId: "race-1",
         reconnect: "none",
         roster: [
-          { bikeId: STARTING_BIKE, kind: "human", name: "Near", rider: 0 },
+          {
+            bikeId: STARTING_BIKE,
+            colour: 0,
+            kind: "human",
+            name: "Near",
+            rider: 0,
+          },
         ],
         rule: publicRoomRule,
         seed: 1,
@@ -221,6 +227,26 @@ describe("a seat loading the race", () => {
     seat.leave();
     const [report] = socket?.sentBuffers ?? [];
     expect(report && readRaceStats(new DataView(report))?.rollbacks).toBe(1);
+  });
+
+  it("tells the results screen the rider's own colour", () => {
+    const { seat } = loadingSeat();
+    const race = seat.race();
+    if (!race) {
+      throw new Error("The seat has no race.");
+    }
+    const run = createRoomRun(
+      seat,
+      race,
+      "friday-ride",
+      createInputLatency(
+        () => 0,
+        (done) => {
+          done();
+        }
+      )
+    );
+    expect(run.report().myColour).toBe(0);
   });
 
   it("counts a correction it had not yet replayed on the results screen", () => {

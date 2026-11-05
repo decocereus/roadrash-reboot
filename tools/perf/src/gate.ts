@@ -22,10 +22,10 @@ import {
 import type { Evaluation, Samples } from "./evaluate.ts";
 import { guardedLoad } from "./load.ts";
 import type { LoadTooHigh } from "./load.ts";
-import { nodeLane, roadLifeLane } from "./node-lane.ts";
+import { lobbyWindow, roadLifeWindow, sideBLane } from "./node-lane-side-b.ts";
+import { nodeLane } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { sha256Of } from "./result.ts";
-import { ROAD_LIFE } from "./road-life.ts";
 import { scenarioHash, scenarios } from "./scenarios.ts";
 import { selectWindows } from "./select.ts";
 import {
@@ -173,6 +173,7 @@ const measure = Effect.fn("gate.measure")(function* measure(
     build: null,
     comparisonId,
     lanes: [],
+    lobby: null,
     mode: options.mode,
     node: [],
     roadLife: null,
@@ -193,12 +194,23 @@ const measure = Effect.fn("gate.measure")(function* measure(
     }
     const [calibrator] = scenarios;
     const roadLife = calibrator
-      ? yield* roadLifeLane(B, calibrator, path.join(dir, "node"))
+      ? yield* sideBLane(roadLifeWindow, B, calibrator, path.join(dir, "node"))
       : null;
     load.note();
-    yield* say(`node ${ROAD_LIFE.id} measured`);
+    yield* say(`node ${roadLifeWindow.id} measured`);
+    const lobby = calibrator
+      ? yield* sideBLane(lobbyWindow, B, calibrator, path.join(dir, "node"))
+      : null;
+    load.note();
+    yield* say(`node ${lobbyWindow.id} measured`);
     nodeMs = (yield* Clock.currentTimeMillis) - startedNode;
-    samples = yield* save({ ...samples, lanes: ["node"], node, roadLife });
+    samples = yield* save({
+      ...samples,
+      lanes: ["node"],
+      lobby,
+      node,
+      roadLife,
+    });
   }
   if (options.lanes.includes("build")) {
     const ran = yield* timed(

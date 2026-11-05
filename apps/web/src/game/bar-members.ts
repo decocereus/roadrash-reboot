@@ -1,3 +1,4 @@
+import type { RoomLobbyMessage } from "@racer/rooms/messages";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import {
   angleOff,
@@ -14,11 +15,11 @@ import type { LobbyRider } from "@racer/sim/lobby";
 import { doorSpot } from "@racer/sim/lobby-floor";
 import type { Spot } from "@racer/sim/lobby-floor";
 import type { LobbyAct, LobbyWalk } from "@racer/sim/lobby-walk";
+import { riderBlocks } from "@racer/sim/palette";
 import { hypot2 } from "@racer/track/math";
 import type * as THREE from "three";
 
 import type { Bikes } from "./actors.ts";
-import { riderBlocks } from "./bar-blocks.ts";
 import type { BarCompany } from "./bar-player.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import { SOLO_SLOT } from "./bar-walker.ts";
@@ -116,6 +117,12 @@ const headForDoor = (body: Body, slot: number, seconds: number): LobbyWalk => {
   return walkOf(rider);
 };
 
+const memberWearing = (
+  members: RoomLobbyMessage["members"],
+  colour: number
+): RoomLobbyMessage["members"][number] | undefined =>
+  members.find((member) => member.colour === colour);
+
 export const createMembers = ({
   bikes,
   firstBike,
@@ -133,7 +140,7 @@ export const createMembers = ({
   let now = 0;
 
   const slotOf = (id: string): number =>
-    seat.lobby()?.members.findIndex((member) => member.id === id) ?? -1;
+    seat.lobby()?.members.find((member) => member.id === id)?.colour ?? -1;
 
   const heardAct = (act: LobbyAct, from: string, target: string): void => {
     const fromSlot = slotOf(from);
@@ -186,7 +193,7 @@ export const createMembers = ({
 
   const placeMe = (): void => {
     const lobby = seat.lobby();
-    const mine = lobby?.members.findIndex(({ id }) => id === lobby.you) ?? -1;
+    const mine = lobby ? slotOf(lobby.you) : -1;
     if (mine >= 0) {
       slot = mine;
       if (!placed) {
@@ -258,7 +265,8 @@ export const createMembers = ({
     },
     mine: () => slot,
     myLabel: () =>
-      seat.lobby()?.members[slot]?.ready === true
+      seat.lobby()?.members.find(({ colour }) => colour === slot)?.ready ===
+      true
         ? `${YOU}${READY_SUFFIX}`
         : YOU,
     nearest(x, z, reach) {
@@ -293,7 +301,7 @@ export const createMembers = ({
       const begun = phase === "loading" || phase === "racing";
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
-        const member = members[index];
+        const member = memberWearing(members, index);
         const heard =
           member?.here === true ? seat.walkOf(member.id) : undefined;
         if (index !== slot && member && heard && body) {

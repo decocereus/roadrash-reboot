@@ -24,6 +24,7 @@ import { createWorld } from "./world.ts";
 import type { World } from "./world.ts";
 
 export interface Stage {
+  colours: ReadonlyMap<RiderId, number>;
   track: Track;
   world: World;
   race: RaceRun;
@@ -47,6 +48,7 @@ export const createStage = (
   const world = createWorld(track, assets);
   const race = createRaceRun(ridden(defaultSetup(track, seed), "pilot"));
   return {
+    colours: new Map(),
     fleet: createFleet(
       assets,
       world.shading,
@@ -198,6 +200,7 @@ export const bindStage = ({
     const previous = stage.world;
     takeTrack(setup.track);
     const replaced = stage.world === previous ? null : previous;
+    stage.colours = room?.riderColours ?? new Map();
     if (room) {
       stage.race = room;
       stage.me = room.me;

@@ -368,8 +368,11 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/bar*.ts",
       "apps/web/src/routes/bar.tsx",
       "packages/sim/src/lobby*.ts",
+      "tools/perf/lobby.ts",
+      "tools/perf/src/lobby-bench.ts",
+      "tools/perf/src/node-lobby.ts",
     ],
-    perf: [],
+    perf: ["lobby.tick.p95"],
     start: [
       "packages/sim/src/lobby.ts",
       "apps/web/src/game/bar.ts",

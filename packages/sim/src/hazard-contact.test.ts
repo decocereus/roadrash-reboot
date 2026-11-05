@@ -109,6 +109,7 @@ const gentleBend = compileTrack({
   bazaars: [],
   carriers: [],
   chevrons: [],
+  crowds: [],
   hazardsPerKilometre: 0,
   pieces: eased([
     [600, 0, 0],
@@ -162,6 +163,7 @@ const climbThenFlat = compileTrack({
   bazaars: [],
   carriers: [],
   chevrons: [],
+  crowds: [],
   hazardsPerKilometre: 0,
   pieces: eased([
     [2000, 0, 100],

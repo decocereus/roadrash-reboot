@@ -16,6 +16,7 @@ const minus = (at: number | null, now: number): number | null =>
   at === null ? null : at - now;
 
 interface Member {
+  readonly colour: number;
   readonly id: string;
   readonly key: string;
   awaySince: number | null;
@@ -24,6 +25,7 @@ interface Member {
 }
 
 interface LobbyMemberView {
+  readonly colour: number;
   readonly here: boolean;
   readonly id: string;
   readonly name: string;
@@ -43,6 +45,7 @@ interface LobbyView {
 export interface Lobby {
   readonly away: (id: string, now: number) => void;
   readonly choose: (id: string, choice: Partial<RoomChoice>) => boolean;
+  readonly colourOf: (id: string) => number;
   readonly due: (now: number) => boolean;
   readonly join: (key: string, name: string, now: number) => string | null;
   readonly raceEnded: (now: number) => void;
@@ -78,6 +81,14 @@ export const createLobby = (
 
   const hostOf = (): Member | null =>
     kind === "public" ? null : (here()[0] ?? members[0] ?? null);
+
+  const freeColour = (): number => {
+    let colour = 0;
+    while (members.some((member) => member.colour === colour)) {
+      colour += 1;
+    }
+    return colour;
+  };
 
   const clockRuns = {
     custom: () => members.some((member) => member.ready),
@@ -137,6 +148,13 @@ export const createLobby = (
       clearReady();
       return true;
     },
+    colourOf: (id) => {
+      const member = members.find((each) => each.id === id);
+      if (!member) {
+        throw new RangeError(`No member ${id} in this lobby.`);
+      }
+      return member.colour;
+    },
     due: (now) => {
       const at = startsAt();
       return (
@@ -159,7 +177,14 @@ export const createLobby = (
       }
       joined += 1;
       const id = `m${joined}`;
-      members.push({ awaySince: null, id, key, name, ready: false });
+      members.push({
+        awaySince: null,
+        colour: freeColour(),
+        id,
+        key,
+        name,
+        ready: false,
+      });
       settleClock(now);
       return id;
     },
@@ -205,7 +230,8 @@ export const createLobby = (
     view: (now) => ({
       edition,
       hostId: hostOf()?.id ?? null,
-      members: members.map(({ awaySince, id, name, ready }) => ({
+      members: members.map(({ awaySince, colour, id, name, ready }) => ({
+        colour,
         here: awaySince === null,
         id,
         name,

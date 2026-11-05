@@ -29,6 +29,9 @@ Breakwater Run's shape, as a target:
 | Tightest bend              |                  83 m |
 | Solo lap, Sesta            |               181.5 s |
 | Solo lap, Wren             |               190.8 s |
+| Cars per kilometre         |                     7 |
+| Hazards by tier            |            15, 20, 24 |
+| Walkers                    |       59, on 36 sites |
 
 ## What makes a road fight
 
@@ -38,6 +41,38 @@ Measured on Breakwater Run on 2026-11-05:
 - Fighting collapses after about 2,300 m, because the field spreads. A road needs a squeeze after that point as well as before it.
 - A wide road with nothing in it leaves a leading rider nothing to do. The owner said so after riding it.
 - A long stretch without steering is dull. Measure the longest one.
+
+## How busy a road should be
+
+The owner asked for more of everything on Breakwater Run, because a rider out front had too much room. These are what the numbers said on 2026-11-05.
+
+Traffic:
+
+- Traffic slows the whole field. Each 2 cars per kilometre from 5 to 9 added about 8 s to the median finish and about 3 points to the stuck mean.
+- Stop before tier 3 wrecks climb. At 9 per kilometre, 13 riders wrecked in 30 races and the worst seed was stuck 26% of the time. Breakwater Run stopped at 7.
+- Necks rise first, and cars are not what jams. In a neck cars hold 0.8 to 0.9 of cruise and stop less than 2% of the time. Riders queue behind them, because the only way past is the oncoming lane and its gaps close as density rises. Where cars are seated does not help, since seating does not survive about 30 s of driving. Leave the merge constants alone. A fix belongs in how the pilot passes a car on one lane, and nobody has built it yet.
+
+People:
+
+- `crossings` reject bends, so a stretch that bends gets a plan's `crowds` instead. Its walkers cross with no lights, on a gap in the cars. A region's `footfall` raises every road in that city, so check the other roads' sites when you change it.
+- Walkers add hits more than they add stuck. Going from 28 to 59 walkers tripled the times riders hit one and added about 2 points to the stuck mean at most.
+- Every walker in fog range draws about 5,400 triangles with no level of detail. Breakwater Run's peak went from 59,532 to 189,420. Put the walker count beside the frame cost.
+
+Hazards:
+
+- Read the kinds after you raise the rate. A tight bend bars a rock, so a road made of tight bends came out almost all oil whatever its region's mix said. Change the region's `hazardHabit` rather than hunting for a seed.
+- "Slips" is what oil does to a bike. There is no fourth kind.
+- The only lane has its own rule, because a rider there cannot go round. It takes no rock, and no oil within reach of a bend tighter than 125 m. Ridden at racing speed, a pothole on the only lane threw nobody in 120 rides and a rock threw 31. Oil threw 11 of 66 near a sharp bend and 0 of 54 elsewhere.
+- Wrecks come from crashes adding up, and those are nearly all fights and traffic. At tier 3 with the career field, 10 riders in 300 wrecked where none had before, and only 3 of 594 crashes named a hazard. Report wrecks beside stuck.
+
+Pack pressure:
+
+- Check the bikes first. Compare each tier's solo laps with the bike the player rides. At tier 1 the Sesta laps 5.3 s faster than the best rival on Breakwater Run, and that gap was most of "nobody catches me".
+- Pacing is not the lever. `leadEase` does nothing once the player leads, and `catchUp` lifts skill, which barely moves a lap. Raising `catchUp` from 0.08 to 0.2 changed nothing at a 188 s lap.
+- A faster pack is the lever. `bikeMatches` in `launchRules` moves the Kite riders onto the Sesta when the player rides one at tier 1. A rider on a 192 s lap went from 30 wins in 30 to 23, and the margin from 9.5 s to 5.3 s. Rooms leave `bikeMatches` empty.
+- Density can work against you. It slows the pack by about 10 s, and a person who threads it loses less than a bot does. A rider on a 192 s lap won 25 of 30 on the quieter road and all 30 on the busier one. Measure pack pressure again whenever you add density.
+- Tier 3 is not a bike problem. Its rivals lap in about 180 s alone and 225 s in a race, because traffic and fights take the rest. A 189 s rider wins all 30 there. Nothing in the rules fixes that yet, and how the pilot passes a car on one lane is the place to look, for this and for the necks.
+- The pilot is not a person. In the player's seat it queues and fights like a bot. To measure a person, hold the player to a share of a clean solo lap, so it neither queues nor fights, and try several shares. A person sits somewhere between that and the pilot. Count the rivals who come within 20 m.
 
 ## Prove the road
 
@@ -51,9 +86,9 @@ Do these in order. A road that fails a step goes back to the plan.
 
    Compare a variant plan with `--plan <module>`. `tools/road-test/README.md` defines each number. The player is the AI pilot, which rides differently from a person, so treat its numbers as a floor for what a person meets. Run at most 3 of these at once, because the machine is shared.
 
-2. Hold these against Breakwater Run at commit `2d942624`, with the default field and pacing off. Riders' stuck mean was 4.4% at tier 1 and 7.3% at tier 3. Median finish was 201 s and 209 s. Riders spent 21% and 26% of their time on one-lane stretches stuck, which is the most a one-lane stretch should reach. Stuck bots were the owner's original complaint, so a road that gains fights by jamming the field has failed.
+2. Hold these against Breakwater Run at commit `5190e123`, with the default field and pacing off. Riders' stuck mean was 6.7% at tier 1 and 13.5% at tier 3. Median finish was 206 s and 224 s. Riders spent 28% and 46% of their time on one-lane stretches stuck, which is the most a one-lane stretch should reach. One rider in 180 failed to finish at each tier. Those numbers follow the owner's request for a busier road, and the owner has not ridden them yet. Before it, at commit `433e82d7`, the same measure read 4.4% and 7.3%, 201 s and 209 s, and 21% and 26%. Stuck bots were the owner's original complaint, so a road that gains fights by jamming the field has failed.
 
-3. Check every hazard placement by tier. Hazards are hard and survivable, good to avoid but not must-avoid, graded by speed and lean, with no telegraphing. A rider at racing speed must survive any placement on a one-lane stretch.
+3. Check every hazard placement by tier. Hazards are hard and survivable, good to avoid but not must-avoid, graded by speed and lean, with no telegraphing. A rider at racing speed must survive any placement on a one-lane stretch, and `packages/sim/src/hazard-only-lane.test.ts` rides them, so add any new road with a one-lane stretch to it.
 
 4. Update the pins. `packages/track/src/chevron-runs.ts` is a snapshot of generated runs, and the test in `packages/sim/src/corner-warnings.test.ts` names any that changed. Update the road's table and history line in `docs/design/tracks.md`. Update `docs/architecture.md` if a stated fact moved.
 

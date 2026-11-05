@@ -3,15 +3,19 @@ import type { RaceStats } from "@racer/sim/room-wire";
 import type { RiderId } from "@racer/sim/state";
 
 import type { HostSocket } from "./host.ts";
+import type { RaceManifest } from "./manifest.ts";
 import type { RaceSeat, SeatTally } from "./notes.ts";
 import type { SeatBrowser } from "./tape.ts";
 
 export interface SeatLink {
+  readonly asn: number | null;
   readonly colo: string | null;
+  readonly network: string | null;
   readonly tcpRttMs: number | null;
 }
 
 export interface Seat {
+  readonly colour: number;
   readonly link: SeatLink;
   readonly name: string;
   readonly socket: HostSocket;
@@ -29,14 +33,40 @@ export interface Seat {
   tracedMissed: number;
 }
 
+export const rosterOf = (
+  room: Room,
+  racerIds: readonly RiderId[],
+  seats: readonly Seat[]
+): RaceManifest["roster"] => {
+  const seatOfRider = new Map(seats.map((seat) => [seat.rider, seat]));
+  return racerIds.flatMap((rider) => {
+    const state = room.state.riders.find((each) => each.id === rider);
+    const seat = seatOfRider.get(rider);
+    const name = seat?.name ?? null;
+    return state
+      ? [
+          {
+            bikeId: state.bike.id,
+            colour: seat?.colour ?? null,
+            kind: name === null ? ("ai" as const) : ("human" as const),
+            name,
+            rider,
+          },
+        ]
+      : [];
+  });
+};
+
 export const seatFor = (
   socket: HostSocket,
   name: string,
+  colour: number,
   link: SeatLink
 ): Seat => ({
   accepted: 0,
   ahead: 0,
   browser: null,
+  colour,
   late: 0,
   leftAtTick: null,
   link,
@@ -75,11 +105,13 @@ export const raceSeatsOf = (
         ? [
             {
               ...tally,
+              asn: seat.link.asn,
               colo: seat.link.colo,
               crashes: state.crashes,
               finishTick: state.finishTick,
               leftAtTick: seat.leftAtTick,
               mode: state.mode,
+              network: seat.link.network,
               readyMs: seat.readyMs,
               reported: seat.reported,
               roadMetres: Math.round(state.s),

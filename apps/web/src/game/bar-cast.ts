@@ -1,16 +1,17 @@
 import { carryPush, shoveRider } from "@racer/sim/lobby";
 import { GARAGE_PLINTH, PLINTH } from "@racer/sim/lobby-floor";
+import { riderBlocks } from "@racer/sim/palette";
+import type { RiderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import type { Assets } from "./assets.ts";
-import { blockPaletteOf, riderBlocks } from "./bar-blocks.ts";
-import type { RiderBlocks } from "./bar-blocks.ts";
 import type { BarCompany } from "./bar-player.ts";
 import { poseTurns, breathTurns } from "./bar-poses.ts";
 import type { BarSpeech } from "./bar-speech.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
+import { blockPaletteOf } from "./rider-blocks.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
 

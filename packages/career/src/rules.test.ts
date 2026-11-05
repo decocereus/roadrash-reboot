@@ -1,7 +1,11 @@
 import { bikeIds } from "@racer/sim/bikes";
+import type { BikeId } from "@racer/sim/bikes";
 import { tierAfter } from "@racer/sim/difficulty";
+import type { Tier } from "@racer/sim/difficulty";
+import { trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
 
+import { recordedRules } from "./bench.ts";
 import {
   decentSeason,
   enter,
@@ -14,8 +18,9 @@ import {
   sprint,
   weakSeason,
 } from "./career-fixtures.ts";
-import { fieldFor, roadsFor, setupFor } from "./field.ts";
+import { fieldFor, practiceSetup, roadsFor, setupFor } from "./field.ts";
 import { launchRules } from "./rules.ts";
+import type { RaceRules } from "./rules.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
 import { startRace } from "./settle.ts";
 import { newCareer } from "./state.ts";
@@ -37,6 +42,48 @@ const qualifyOn = (career: CareerState, roads: typeof roadList): CareerState =>
     roads.map((entry) => ({ place: 3, roadId: entry.id })),
     served
   );
+
+const bikesOn = (
+  rules: RaceRules,
+  bikeId: BikeId,
+  tier: Tier
+): readonly (readonly [string, BikeId])[] =>
+  practiceSetup(
+    rules,
+    { bikeId, roadId: "breakwater-run", seed: 5, tier },
+    trackFor("breakwater-run")
+  ).rivals.map((rival) => [rival.name, rival.bike.id] as const);
+
+describe("bike matches", () => {
+  const kiteRiders = bikesOn(served, "halden-wren-400", 1).filter(
+    ([, bikeId]) => bikeId === "halden-kite-500"
+  );
+
+  it("puts the Kite riders of tier 1 on the Sesta when the player rides one", () => {
+    expect(kiteRiders.length).toBeGreaterThan(0);
+    const matched = new Map(bikesOn(served, "ostra-sesta-600", 1));
+    for (const [name] of kiteRiders) {
+      expect(matched.get(name)).toBe("ostra-sesta-600");
+    }
+  });
+
+  it("leaves them on the Kite against a rider on any other bike, and at any other tier", () => {
+    const onKite = new Map(bikesOn(served, "halden-kite-500", 1));
+    for (const [name] of kiteRiders) {
+      expect(onKite.get(name)).toBe("halden-kite-500");
+    }
+    expect(bikesOn(served, "ostra-sesta-600", 2)).toStrictEqual(
+      bikesOn({ ...served, bikeMatches: [] }, "ostra-sesta-600", 2)
+    );
+  });
+
+  it("leaves the recorded rules, which the perf scenarios race on, alone", () => {
+    expect(recordedRules.bikeMatches).toStrictEqual([]);
+    expect(bikesOn(recordedRules, "ostra-sesta-600", 1)).toStrictEqual(
+      bikesOn(recordedRules, "halden-wren-400", 1)
+    );
+  });
+});
 
 describe("ten racers over three tiers", () => {
   it("draws nine different rivals for every road at every tier", () => {

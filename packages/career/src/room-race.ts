@@ -13,7 +13,11 @@ import type { RacerId } from "./state.ts";
 import { STARTING_BIKE } from "./tables.ts";
 import type { RoadId, Tier } from "./tables.ts";
 
-const roomRules: RaceRules = { ...launchRules, celebrities: false };
+const roomRules: RaceRules = {
+  ...launchRules,
+  bikeMatches: [],
+  celebrities: false,
+};
 
 export const trafficChoices = ["light", "normal", "heavy"] as const;
 export const policeChoices = ["none", "normal", "many"] as const;
@@ -109,17 +113,18 @@ export const seatedRace = (
 };
 
 export type GuestNames = ReadonlyMap<RacerId, string>;
+export type GuestColours = ReadonlyMap<RacerId, number>;
 
-export const guestNames = (
+export const byGuest = <Value>(
   setup: CareerRaceSetup,
   me: RiderId,
-  names: readonly string[]
-): GuestNames => {
-  const humans = firstRacers(setup, names.length);
+  values: readonly Value[]
+): ReadonlyMap<RacerId, Value> => {
+  const humans = firstRacers(setup, values.length);
   return new Map(
     createRaceLog(setup, me).entrants.flatMap((entrant) => {
-      const name = names[humans.indexOf(entrant.rider)];
-      return name === undefined ? [] : [[entrant.rival, name] as const];
+      const value = values[humans.indexOf(entrant.rider)];
+      return value === undefined ? [] : [[entrant.rival, value] as const];
     })
   );
 };

@@ -52,6 +52,7 @@ const Lobby = Schema.Struct({
   kind: Schema.Literal("lobby"),
   members: Schema.Array(
     Schema.Struct({
+      colour: Schema.Number,
       here: Schema.Boolean,
       id: Schema.String,
       name: Schema.String,

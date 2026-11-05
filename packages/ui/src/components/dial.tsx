@@ -16,6 +16,7 @@ const YELLOW = "#fff04a";
 const CYAN = "#19e6ff";
 const RED = "#ff2e3d";
 const INK = "#0a0810";
+const PAPER = "#f2efe6";
 
 const onRing = (degrees: number, radius: number) => {
   const angle = (degrees * Math.PI) / 180;
@@ -53,6 +54,7 @@ const Dial = ({
   field,
   progress,
   gear = 0,
+  warning = null,
   ...props
 }: Omit<ComponentProps<"svg">, "children"> & {
   readonly value: number;
@@ -63,6 +65,7 @@ const Dial = ({
   readonly field: number;
   readonly progress: number;
   readonly gear?: number;
+  readonly warning?: string | null;
 }) => {
   const ratio = ratioOf(value, max);
   const shown = Math.round(value);
@@ -179,6 +182,37 @@ const Dial = ({
       >
         {unit}
       </text>
+      {warning !== null && (
+        <g aria-hidden="true">
+          <rect x={-102} y={66} width={58} height={22} fill={INK} />
+          <rect x={-96} y={78} width={4} height={5} fill={RED} />
+          <rect
+            x={-90}
+            y={75}
+            width={4}
+            height={8}
+            fill={PAPER}
+            fillOpacity={0.3}
+          />
+          <rect
+            x={-84}
+            y={71}
+            width={4}
+            height={12}
+            fill={PAPER}
+            fillOpacity={0.3}
+          />
+          <text
+            x={-61}
+            y={83}
+            textAnchor="middle"
+            fill={PAPER}
+            className="numeric text-[15px] font-extrabold tracking-[1px] uppercase"
+          >
+            {warning}
+          </text>
+        </g>
+      )}
       <polygon points="-40,54 40,54 40,78 31,88 -40,88" fill={YELLOW} />
       <text
         x={-11}

@@ -43,7 +43,7 @@ Neither wait in a report is load time alone. `readyMs` ("ready after") runs unti
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
 | A race ID is minted once per race, not per room, and every note about that race, the `started` message and `RoomReport` carry it. A room that runs a second race gives it a new ID. | `pnpm test`, `pnpm rooms:race` | `apps/rooms/src/host.ts`, `tools/rooms/src/race.ts` | None |
-| No room note holds a guest name, the room ID or an IP address. A rider is named by its number. | `pnpm test` | `apps/rooms/src/notes.ts`, `apps/rooms/src/host.ts` | None |
+| No room note holds a guest name, the room ID or an IP address. A rider is named by its number. A seat's edge (`colo`), its network (`asn`, `network`, the provider's name from Cloudflare) and the `started` note's `roomColo` say where a race's time went, and none of them names a person. | `pnpm test` | `apps/rooms/src/notes.ts`, `apps/rooms/src/host.ts` | None |
 | The `ended` note lists every rider who started, including those who left, and says whether each browser's stats arrived, so a missing stats line is a counted fact rather than a guess. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 | The room writes a note per race event and never per tick or per message. In the tick loop it only adds to the wake counters. | `pnpm test` | `apps/rooms/src/host.ts` | None |
 | Workers Logs removes null values and empty lists from a stored line, so `RoomNoteSchema` reads a missing nullable field as null and a missing list as empty. `pnpm rooms:read` warns about any line with a `kind` that still does not decode, because a report without its `ended` line otherwise reads as a dead room. | `pnpm test` | `apps/rooms/src/notes.ts`, `tools/rooms/src/read.ts` | None |

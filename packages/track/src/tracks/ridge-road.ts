@@ -7,6 +7,7 @@ export const ridgeRoad: TrackPlan = {
   carriers: [4500],
   chevrons: chevronRuns["ridge-road"],
   crossings: [],
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 1, shoulderWidth: 0.9, vergeWidth: 9 }],
   hazardsPerKilometre: 1,
   id: "ridge-road",

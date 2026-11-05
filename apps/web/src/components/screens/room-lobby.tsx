@@ -27,6 +27,8 @@ import { Stencil } from "@racer/ui/components/stencil";
 import { cn } from "@racer/ui/utils";
 import { useState } from "react";
 
+import { RiderChip } from "./shared.tsx";
+
 const trafficLabels = {
   heavy: "Heavy",
   light: "Light",
@@ -306,6 +308,7 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
         className="font-display text-paper border-paper/20 flex items-center gap-3 border-b py-1"
         key={member.id}
       >
+        <RiderChip colour={member.colour} />
         <span className="flex-1 truncate">
           {member.name}
           {member.id === lobby.you && " (you)"}

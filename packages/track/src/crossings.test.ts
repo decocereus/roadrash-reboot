@@ -25,6 +25,7 @@ const flatRoad = (
   carriers: [],
   chevrons: [],
   crossings,
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 }],
   pieces,
 });

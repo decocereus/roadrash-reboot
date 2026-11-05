@@ -55,11 +55,18 @@ export interface Scenery {
   readonly water: readonly SceneryWater[];
 }
 
+interface Crowd {
+  readonly from: number;
+  readonly to: number;
+  readonly sites: number;
+}
+
 export interface TrackPlan extends Alignment {
   readonly bazaars: readonly Bazaar[];
   readonly id: string;
   readonly chevrons: readonly ChevronRun[];
   readonly crossings: readonly CrossingRule[];
+  readonly crowds: readonly Crowd[];
   readonly districts: Districts;
   readonly name: string;
   readonly region: RegionId;

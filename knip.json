@@ -60,6 +60,7 @@
     "tools/perf": {
       "entry": [
         "gate.ts",
+        "lobby.ts",
         "measure.ts",
         "node.ts",
         "road-life.ts",

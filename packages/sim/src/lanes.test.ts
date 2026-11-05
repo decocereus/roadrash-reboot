@@ -17,6 +17,7 @@ const straightOf = (lanesEachWay: 1 | 2): Track =>
   compileTrack({
     ...ridgeRoad,
     chevrons: [],
+    crowds: [],
     districts: [{ ...ridgeRoad.districts[0], lanesEachWay }],
     pieces: eased([[6000, 0, 0]]),
     trafficPerKilometre: 0,

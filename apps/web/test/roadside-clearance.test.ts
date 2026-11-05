@@ -276,6 +276,7 @@ describe("the roadside clears the chase camera", () => {
       carriers: [],
       chevrons: [],
       crossings: [rule],
+      crowds: [],
       region: "stonepeak",
     });
     const world = createWorld(track, fakeWorldAssets());

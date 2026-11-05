@@ -42,8 +42,15 @@ const note = (line: RoomNote): void => {
   console.log(JSON.stringify(line));
 };
 
+const TRACE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
+const TRACE_TIMEOUT_MS = 3000;
+
+const coloOfTrace = (trace: string): string | null =>
+  /^colo=(?<colo>\w+)$/mu.exec(trace)?.groups?.colo ?? null;
+
 const portsFor = (
   build: string,
+  roomColo: HostPorts["roomColo"],
   saveTape: HostPorts["saveTape"]
 ): HostPorts => ({
   after: (ms, wake) => {
@@ -53,11 +60,14 @@ const portsFor = (
   note,
   now: () => Date.now(),
   raceId: () => crypto.randomUUID(),
+  roomColo,
   saveTape,
   seed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
 });
 
 const EdgeSchema = Schema.Struct({
+  asOrganization: Schema.optional(Schema.String),
+  asn: Schema.optional(Schema.Number),
   clientTcpRtt: Schema.optional(Schema.Number),
   colo: Schema.optional(Schema.String),
 });
@@ -66,9 +76,11 @@ const decodeEdge = Schema.decodeUnknownOption(EdgeSchema);
 
 const linkOf = (edge: Option.Option<typeof EdgeSchema.Type>) =>
   Option.match(edge, {
-    onNone: () => ({ colo: null, tcpRttMs: null }),
-    onSome: ({ clientTcpRtt, colo }) => ({
+    onNone: () => ({ asn: null, colo: null, network: null, tcpRttMs: null }),
+    onSome: ({ asn, asOrganization, clientTcpRtt, colo }) => ({
+      asn: asn ?? null,
       colo: colo ?? null,
+      network: asOrganization ?? null,
       tcpRttMs: clientTcpRtt ?? null,
     }),
   });
@@ -99,12 +111,26 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
         Effect.forever,
         Effect.forkDetach
       );
+      let roomColo: string | null = null;
+      yield* Effect.tryPromise(async () => {
+        const response = await globalThis.fetch(TRACE_URL, {
+          signal: AbortSignal.timeout(TRACE_TIMEOUT_MS),
+        });
+        roomColo = coloOfTrace(await response.text());
+      }).pipe(
+        Effect.catchCause(() => Effect.void),
+        Effect.forkDetach
+      );
       let opened: Host | null = null;
       const hostOf = (roomId: string): Host => {
         opened ??= createHost(
-          portsFor(build, (key, body) => {
-            Queue.offerUnsafe(saves, { body, key });
-          }),
+          portsFor(
+            build,
+            () => roomColo,
+            (key, body) => {
+              Queue.offerUnsafe(saves, { body, key });
+            }
+          ),
           roomKindOf(roomId)
         );
         return opened;

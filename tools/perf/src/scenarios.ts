@@ -173,6 +173,7 @@ type RaceSettings = Omit<
   | "bazaars"
   | "chevrons"
   | "crossings"
+  | "crowds"
   | "districts"
   | "leadInLength"
   | "pieces"
