@@ -24,6 +24,7 @@ import * as THREE from "three";
 
 import { benchOf } from "../career/bench.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import type { AcquiredAssets } from "./assets.ts";
 import { createSound } from "./audio.ts";
 import { createBenchProfile } from "./bench-profile.ts";
@@ -42,7 +43,6 @@ import type { GameEvents, GameHandle, GamePhase, RacePlan } from "./hud.ts";
 import { createControls } from "./input.ts";
 import { createPipeline } from "./post.ts";
 import { nativeClock } from "./preparation.ts";
-import type { PrepareOutcome } from "./preparation.ts";
 import { rendererOf } from "./profile.ts";
 import { bindQuality, createQuality } from "./quality-ladder.ts";
 import {

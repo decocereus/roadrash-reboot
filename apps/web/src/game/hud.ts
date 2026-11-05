@@ -4,7 +4,7 @@ import type { RaceRules } from "@racer/career/rules";
 import type { RoomRun } from "@racer/rooms/room-run";
 import type { BikeId } from "@racer/sim/bikes";
 
-import type { PrepareOutcome } from "./preparation.ts";
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 
 export type GamePhase = "attract" | "idle" | "countdown" | "racing" | "settled";
 

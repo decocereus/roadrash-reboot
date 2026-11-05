@@ -12,7 +12,8 @@ import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
-import type { PrepareOutcome } from "../game/preparation.ts";
+import { preparedRace } from "../prepare-outcome.ts";
+import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
@@ -191,15 +192,29 @@ const SeatedLobby = ({
     setPlan(next);
     const begunAt = performance.now();
     const prepare = async (): Promise<void> => {
-      const outcome = await onPrepare(next);
-      if (outcome.kind !== "cancelled") {
-        setTimeout(
-          () => {
-            seat.loaded();
-            setPrepared(true);
-          },
-          Math.max(0, DOOR_MOMENT_MS - (performance.now() - begunAt))
-        );
+      const race = preparedRace(await onPrepare(next));
+      switch (race) {
+        case "built": {
+          setTimeout(
+            () => {
+              seat.loaded();
+              setPrepared(true);
+            },
+            Math.max(0, DOOR_MOMENT_MS - (performance.now() - begunAt))
+          );
+          break;
+        }
+        case "missing": {
+          seat.leave();
+          moveToRoom(roomId, "moved");
+          break;
+        }
+        case "cancelled": {
+          break;
+        }
+        default: {
+          race satisfies never;
+        }
       }
     };
     void prepare();
