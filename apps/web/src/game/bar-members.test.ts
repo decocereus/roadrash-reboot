@@ -1,6 +1,6 @@
 import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomLobbyMessage, RoomWalked } from "@racer/rooms/messages";
-import type { SeatPhase } from "@racer/rooms/seat-client";
+import type { RoomSeat, SeatPhase } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
 import { riderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
@@ -10,6 +10,7 @@ import { createMembers } from "./bar-members.ts";
 import type { BarWalker } from "./bar-walker.ts";
 
 const FRAME = 1 / 8;
+const BLINK = 1 / 6000;
 
 const standing: RoomWalked = {
   heading: 0,
@@ -50,12 +51,14 @@ interface Heard {
 
 const room = ({ lobby, phase, walkOf }: Heard) => {
   const rename = vi.fn<BarWalker["rename"]>();
+  const update = vi.fn<BarWalker["update"]>();
+  const listen = vi.fn<RoomSeat["listen"]>();
   const walker: BarWalker = {
     dispose: vi.fn<BarWalker["dispose"]>(),
     head: new THREE.Vector3(),
     rename,
     show: vi.fn<BarWalker["show"]>(),
-    update: vi.fn<BarWalker["update"]>(),
+    update,
   };
   const walk = vi.fn<() => void>();
   const members = createMembers({
@@ -68,7 +71,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
     rider: createLobbyRider(),
     seat: {
       act: vi.fn<() => void>(),
-      listen: vi.fn<() => void>(),
+      listen,
       lobby,
       phase: phase ?? (() => "lobby"),
       walk,
@@ -77,7 +80,7 @@ const room = ({ lobby, phase, walkOf }: Heard) => {
     speech: { say: vi.fn<() => void>() },
     walkers: { at: () => walker, hide: vi.fn<() => void>() },
   });
-  return { members, rename, walk };
+  return { listen, members, rename, update, walk };
 };
 
 describe("members in the bar", () => {
@@ -99,6 +102,27 @@ describe("members in the bar", () => {
     members.step(FRAME, 0);
     expect(rename).toHaveBeenCalledWith("far");
     expect(members.spotOf(1)).toMatchObject({ x: standing.x, z: standing.z });
+  });
+
+  it("does not hand a shove to the next member in the same colour", () => {
+    let ids = ["near", "far"];
+    const { listen, members, update } = room({
+      lobby: () => lobbyOf(ids),
+      walkOf: () => standing,
+    });
+    members.step(FRAME, 0);
+    listen.mock.calls[0]?.[0].onActed?.({
+      act: "shove",
+      from: "far",
+      kind: "act",
+      target: "near",
+    });
+    ids = ["near"];
+    members.step(BLINK, 0);
+    ids = ["near", "next"];
+    members.step(BLINK, 0);
+    members.draw(BLINK, new THREE.Camera(), { height: 1, width: 1 });
+    expect(update.mock.calls.at(-1)?.[0]).toMatchObject({ shoving: 0 });
   });
 
   it("walks the others to the door and stops sending once the race begins", () => {

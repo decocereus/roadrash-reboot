@@ -36,10 +36,12 @@ export const createPlayerEvents = ({
 }: PlayerEventParts): PlayerEvents => {
   let pending: { readonly at: number; readonly event: PlayerEvent }[] = [];
   let armed = false;
+  let flushes = 0;
   let dropped = 0;
 
   const flush = (): void => {
     armed = false;
+    flushes += 1;
     const leaving = pending;
     pending = [];
     if (leaving.length === 0 || !enabled()) {
@@ -76,7 +78,12 @@ export const createPlayerEvents = ({
         flush();
       } else if (!armed) {
         armed = true;
-        after(FLUSH_MS, flush);
+        const armedAt = flushes;
+        after(FLUSH_MS, () => {
+          if (armedAt === flushes) {
+            flush();
+          }
+        });
       }
     },
   };

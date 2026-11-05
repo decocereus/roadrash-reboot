@@ -4,7 +4,7 @@ import { Screen } from "@racer/ui/components/screen";
 import { useState } from "react";
 
 import { backRoomPlates, plates } from "../../assets/clubhouse-art.ts";
-import { CONTROLS, saveErrors } from "../../career/copy.ts";
+import { CONTROLS, SAVE_UNREAD, saveErrors } from "../../career/copy.ts";
 import { bikeName } from "../../career/format.ts";
 import type { SaveState } from "../../career/save.ts";
 import { BarHeader, BarStrip } from "./bar-chrome.tsx";
@@ -64,7 +64,7 @@ const Alert = ({
   readonly save: SaveState;
   readonly failure: string;
 }) => {
-  if (save.status !== "corrupt" && failure === "") {
+  if (save.status !== "corrupt" && save.status !== "unread" && failure === "") {
     return null;
   }
   return (
@@ -87,6 +87,7 @@ const Alert = ({
             </p>
           </>
         )}
+        {save.status === "unread" && <p>{SAVE_UNREAD}</p>}
         {failure !== "" && <p>Could not start the game: {failure}</p>}
       </div>
     </>
@@ -136,6 +137,17 @@ export const BackRoomScreen = ({
     }
     if (save.status === "corrupt") {
       return [{ id: "continue", label: "Start over", run: onStartOver }];
+    }
+    if (save.status === "unread") {
+      return [
+        {
+          id: "continue",
+          label: "Try again",
+          run: () => {
+            globalThis.location.reload();
+          },
+        },
+      ];
     }
     return [{ id: "continue", label: "Career", run: onNewCareer }];
   };

@@ -65,6 +65,7 @@ export type SaveState =
       readonly unsaved: boolean;
     }
   | { readonly status: "corrupt"; readonly error: SaveError }
+  | { readonly status: "unread" }
   | { readonly status: "loading" };
 
 const saved = { status: "saved" } as const;
@@ -188,6 +189,9 @@ export const saveStateOf = (load: CareerLoad): SaveState => {
   }
   if (load.status === "corrupt") {
     return load;
+  }
+  if (load.status === "readFailed") {
+    return { status: "unread" };
   }
   return { status: "empty" };
 };

@@ -1,3 +1,4 @@
+import { MAX_EVENTS_IN_BATCH } from "@racer/telemetry/limits";
 import type { PlayerEvent } from "@racer/telemetry/player-events";
 import { describe, expect, it } from "vitest";
 
@@ -69,6 +70,25 @@ describe("the player event sender", () => {
     events.track(again);
     events.track(again);
     expect(timers).toHaveLength(1);
+  });
+
+  it("gives a later batch its full wait when a full batch beat the first timer", () => {
+    const sent: string[] = [];
+    const { events, timers } = senderWith((body) => {
+      sent.push(body);
+      return true;
+    });
+    for (let count = 0; count <= MAX_EVENTS_IN_BATCH; count += 1) {
+      events.track(again);
+    }
+    expect(sent).toHaveLength(1);
+    expect(timers).toHaveLength(2);
+    timers[0]?.();
+    expect(sent).toHaveLength(1);
+    events.track(again);
+    expect(timers).toHaveLength(2);
+    timers[1]?.();
+    expect(sent).toHaveLength(2);
   });
 
   it("sends nothing while the switch is off", () => {

@@ -65,7 +65,7 @@ export const createUploader = (
   };
 
   const setReport = (entry: Entry, next: ReportStatus) => {
-    if (entry.batch.reportId !== null) {
+    if (report.state !== "idle" && report.reportId === entry.batch.reportId) {
       report = next;
       notify();
     }

@@ -110,6 +110,9 @@ export const saveErrors = {
   wrongVersion: "The save is from another version of the game",
 } as const;
 
+export const SAVE_UNREAD =
+  "The browser would not let the game read your save. Nothing was changed.";
+
 export const billWarning = (
   consequence: BillConsequence,
   bill: string,
