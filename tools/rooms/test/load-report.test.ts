@@ -17,6 +17,7 @@ const statusAt = (tick: number): RoomStatus => ({
   names: [],
   phase: "racing",
   raceId: null,
+  roles: [],
   rule: publicRoomRule,
   seats: [],
   tick,

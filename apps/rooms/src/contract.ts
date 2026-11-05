@@ -10,6 +10,7 @@ import { ROOM_PHASES } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import { SeatTallySchema } from "./notes.ts";
 import { ROOM_ID_PATTERN } from "./room-id.ts";
+import { SOCKET_ROLES } from "./socket-role.ts";
 
 export const RoomIdSchema = Schema.String.pipe(
   Schema.check(Schema.isPattern(ROOM_ID_PATTERN)),
@@ -24,6 +25,7 @@ const RoomStatusSchema = Schema.Struct({
   names: Schema.Array(Schema.String),
   phase: Schema.Literals(ROOM_PHASES),
   raceId: Schema.NullOr(Schema.String),
+  roles: Schema.Array(Schema.Literals(SOCKET_ROLES)),
   rule: RoomRuleSchema,
   seats: Schema.Array(SeatTallySchema),
   tick: Schema.Number,

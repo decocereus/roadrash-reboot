@@ -1462,6 +1462,7 @@ Source files:
 - `apps/rooms/src/room-id.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/socket-role.ts`
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
@@ -1508,6 +1509,7 @@ Test files:
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`
 - `apps/rooms/test/host-notes.test.ts`
+- `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
@@ -1519,6 +1521,7 @@ Test files:
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
 - `apps/rooms/test/seat-socket.ts`
+- `apps/rooms/test/socket-role.test.ts`
 - `apps/rooms/test/tape.test.ts`
 - `apps/web/test/prepare-outcome.test.ts`
 - `apps/web/test/race-handoff.test.ts`

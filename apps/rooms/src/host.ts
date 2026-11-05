@@ -12,7 +12,6 @@ import {
   PONG_PACKET_BYTES,
   readInput,
   readPing,
-  readRaceStats,
   readReady,
   ROOM_PROTOCOL,
   tickCapacity,
@@ -23,7 +22,6 @@ import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { trackDigest } from "@racer/sim/snapshot-setup";
 import { TICK_SECONDS } from "@racer/sim/state";
 import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
 
 import type { RoomStatus } from "./contract.ts";
 import { hostAfter, NEW_HOST } from "./host-phase.ts";
@@ -40,6 +38,9 @@ import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RoomNote } from "./notes.ts";
 import {
+  keepBrowserRows,
+  keepReport,
+  keepStats,
   raceSeatsOf,
   rosterOf,
   seatFor,
@@ -49,10 +50,9 @@ import {
 } from "./race-seat.ts";
 import type { Seat, SeatLink } from "./race-seat.ts";
 import type { RoomKind } from "./room-id.ts";
+import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
+import type { SocketEvent, SocketRole } from "./socket-role.ts";
 import {
-  BrowserTraceSchema,
-  MOST_TRACE_CHARS,
-  MOST_TRACE_ROW_VALUES,
   riderTraceName,
   ROOM_TRACE_EVERY_TICKS,
   roomTraceName,
@@ -73,10 +73,6 @@ const NO_STAMP = 0;
 const SILENT_SEAT_MS = 10_000;
 const SEAT_WATCH_MS = 1000;
 const SEND_FAILED = Number.NEGATIVE_INFINITY;
-
-const decodeBrowserTrace = Schema.decodeUnknownOption(
-  Schema.fromJsonString(BrowserTraceSchema)
-);
 
 export interface HostSocket {
   readonly send: (data: string | ArrayBufferView) => void;
@@ -100,14 +96,6 @@ export interface HostPorts {
   readonly seed: () => number;
 }
 
-interface Present {
-  readonly link: SeatLink;
-  readonly memberId: string;
-  readonly name: string;
-  readonly socket: HostSocket;
-  heardAt: number;
-}
-
 interface Run {
   readonly raceId: string;
   readonly riders: readonly Seat[];
@@ -116,6 +104,16 @@ interface Run {
   readonly tape: TapeWriter;
   readonly trace: number[];
   readonly wakeGaps: Uint32Array;
+}
+
+interface Present {
+  readonly link: SeatLink;
+  readonly memberId: string;
+  readonly name: string;
+  readonly socket: HostSocket;
+  heardAt: number;
+  role: SocketRole<Run, Seat>;
+  walk: string | null;
 }
 
 export interface Host {
@@ -141,27 +139,8 @@ const noteGap = (gaps: Uint32Array, gapMs: number): void => {
   gaps[bucket] = (gaps[bucket] ?? 0) + 1;
 };
 
-const keepBrowserRows = (seat: Seat, text: string): void => {
-  if (text.length > MOST_TRACE_CHARS) {
-    return;
-  }
-  const decoded = decodeBrowserTrace(text);
-  if (Option.isNone(decoded)) {
-    return;
-  }
-  const { rows, ...browser } = decoded.value;
-  if (seat.traceRows.length + rows.length <= MOST_TRACE_ROW_VALUES) {
-    seat.browser = browser;
-    seat.traceRows.push(...rows);
-  }
-};
-
-const keepStats = (seat: Seat, view: DataView): void => {
-  const stats = readRaceStats(view);
-  if (stats) {
-    seat.reported = true;
-    seat.stats = stats;
-  }
+const moveSocket = (person: Present, event: SocketEvent<Run, Seat>): void => {
+  person.role = roleAfter(person.role, event) ?? person.role;
 };
 
 export const createHost = (
@@ -169,9 +148,6 @@ export const createHost = (
   kind: RoomKind = "custom"
 ): Host => {
   const present = new Map<HostSocket, Present>();
-  const walks = new Map<string, string>();
-  const seats = new Map<HostSocket, Seat>();
-  const reporting = new Map<HostSocket, { raceId: string; seat: Seat }>();
   const batch = createInputBatch();
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
@@ -212,47 +188,40 @@ export const createHost = (
 
   const tell = (message: RoomMessage): void => {
     const text = encodeRoomMessage(message);
-    for (const socket of seats.keys()) {
-      sendTo(socket, text);
+    for (const { role, socket } of present.values()) {
+      if (role.kind === "seated") {
+        sendTo(socket, text);
+      }
     }
   };
 
   const tellWalkers = (from: HostSocket, text: string): void => {
-    for (const person of present.values()) {
-      if (
-        person.socket !== from &&
-        !seats.has(person.socket) &&
-        !reporting.has(person.socket)
-      ) {
-        sendTo(person.socket, text);
+    for (const { role, socket } of present.values()) {
+      if (socket !== from && role.kind === "lobby") {
+        sendTo(socket, text);
       }
     }
   };
 
   const tellLobby = (): void => {
     const view = lobby.view(ports.now());
-    for (const person of present.values()) {
-      if (!seats.has(person.socket) && !reporting.has(person.socket)) {
+    for (const { memberId, role, socket } of present.values()) {
+      if (role.kind === "lobby") {
         sendTo(
-          person.socket,
+          socket,
           encodeRoomMessage({
             ...view,
             atMs: roomMs(),
             kind: "lobby",
-            you: person.memberId,
+            you: memberId,
           })
         );
       }
     }
   };
 
-  const settleReport = (seat: Seat, raceId: string): void => {
-    const { browser, rider, stats, traceRows } = seat;
-    if (rider === null) {
-      return;
-    }
-    seat.browser = null;
-    seat.stats = null;
+  const settleReport = (seat: Seat): void => {
+    const { browser, raceId, rider, stats, traceRows } = seat;
     if (stats) {
       ports.note({ kind: "stats", raceId, rider, stats });
     }
@@ -266,7 +235,7 @@ export const createHost = (
   };
 
   const end = (run: Run): void => {
-    const { raceId, room, tape, trace } = run;
+    const { room, tape, trace } = run;
     traceSeats(run.riders, run.room, run.trace);
     tape.finish();
     ports.saveTape(
@@ -288,18 +257,18 @@ export const createHost = (
     });
     move({ kind: "raceOver" });
     tell({ kind: "ended", tick: room.state.tick });
-    const finished = [...seats.values()];
-    for (const seat of finished) {
-      reporting.set(seat.socket, { raceId, seat });
+    for (const person of present.values()) {
+      moveSocket(person, { kind: "raceOver" });
     }
-    seats.clear();
     lobby.raceEnded(ports.now());
     tellLobby();
     ports.after(REPORT_GRACE_MS, () => {
-      for (const seat of finished) {
-        if (reporting.delete(seat.socket)) {
-          settleReport(seat, raceId);
-          seat.socket.close(SEAT_CLOSED, "The race is over.");
+      for (const person of present.values()) {
+        const { role } = person;
+        if (role.kind === "reporting") {
+          moveSocket(person, { kind: "graceOver" });
+          settleReport(role.seat);
+          person.socket.close(SEAT_CLOSED, "The race is over.");
         }
       }
     });
@@ -318,8 +287,10 @@ export const createHost = (
     );
     const packet = new Uint8Array(tickBuffer, 0, bytes);
     tape.add(packet);
-    for (const socket of seats.keys()) {
-      sendTo(socket, packet);
+    for (const { role, socket } of present.values()) {
+      if (role.kind === "seated") {
+        sendTo(socket, packet);
+      }
     }
   };
 
@@ -379,23 +350,9 @@ export const createHost = (
   };
 
   const start = (): void => {
-    walks.clear();
-    for (const person of present.values()) {
-      if (!reporting.has(person.socket)) {
-        seats.set(
-          person.socket,
-          seatFor(
-            person.socket,
-            person.name,
-            lobby.colourOf(person.memberId),
-            person.link
-          )
-        );
-      }
-    }
-    if (seats.size === 0) {
-      return;
-    }
+    const gathered = [...present.values()].filter(
+      ({ role }) => role.kind === "lobby"
+    );
     const lobbyMs = ports.now() - lobby.since();
     const rule = lobby.rule();
     lobby.raceStarted();
@@ -404,7 +361,7 @@ export const createHost = (
     worstBehindTicks = 0;
     const seed = ports.seed();
     const raceId = ports.raceId();
-    const { humans, road, setup } = seatedRace(seed, seats.size, rule);
+    const { humans, road, setup } = seatedRace(seed, gathered.length, rule);
     const room = createRoom(setup);
     const digest = hexOfWords(room.digest);
     ports.saveTape(
@@ -415,20 +372,30 @@ export const createHost = (
         raceId,
         road,
         rule,
-        seats: seats.size,
+        seats: humans.length,
         seed,
         version: TAPE_VERSION,
       })
     );
-    let at = 0;
-    for (const seat of seats.values()) {
-      const rider = humans[at];
-      seat.rider = rider ?? null;
-      at += 1;
-    }
+    const seated = humans.flatMap((rider, at) => {
+      const person = gathered[at];
+      return person
+        ? [
+            {
+              person,
+              seat: seatFor(
+                person,
+                lobby.colourOf(person.memberId),
+                raceId,
+                rider
+              ),
+            },
+          ]
+        : [];
+    });
     const run: Run = {
       raceId,
-      riders: [...seats.values()],
+      riders: seated.map(({ seat }) => seat),
       room,
       since: ports.now(),
       tape: createTapeWriter(tickBuffer.byteLength, (part, bytes) => {
@@ -438,6 +405,10 @@ export const createHost = (
       wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
     };
     move({ kind: "raceBuilt", run });
+    for (const { person, seat } of seated) {
+      person.walk = null;
+      moveSocket(person, { kind: "raceBuilt", run, seat });
+    }
     const trackHash = trackDigest(setup.track);
     const racerIds = firstRacers(setup, Number.POSITIVE_INFINITY);
     const manifest: RaceManifest = {
@@ -447,7 +418,7 @@ export const createHost = (
       protocol: ROOM_PROTOCOL,
       raceId,
       reconnect: "none",
-      roster: rosterOf(room, racerIds, [...seats.values()]),
+      roster: rosterOf(room, racerIds, run.riders),
       rule,
       seed,
       tickRate: Math.round(1 / TICK_SECONDS),
@@ -470,14 +441,10 @@ export const createHost = (
       trackHash: hexOfWords(trackHash),
       traffic: rule.traffic,
     });
-    for (const seat of seats.values()) {
+    for (const { person, seat } of seated) {
       sendTo(
-        seat.socket,
-        encodeRoomMessage({
-          kind: "started",
-          manifest,
-          you: seat.rider ?? 0,
-        })
+        person.socket,
+        encodeRoomMessage({ kind: "started", manifest, you: seat.rider })
       );
     }
     ports.after(READY_DEADLINE_MS, () => {
@@ -491,38 +458,47 @@ export const createHost = (
     socket.close(SEAT_CLOSED, reason);
   };
 
-  const leaveRace = (seat: Seat, closeCode: number | null): void => {
-    seats.delete(seat.socket);
-    const { run } = state;
-    if (run && seat.rider !== null) {
-      const { raceId, room } = run;
-      room.leave(seat.rider);
-      seat.leftAtTick = room.state.tick;
-      for (const tally of tallyOf(seat, room)) {
-        ports.note({
-          closeCode,
-          kind: "left",
-          raceId,
-          seatsLeft: seats.size,
-          tally,
-          tick: room.state.tick,
-        });
-      }
-      settleReport(seat, raceId);
-      countDownOnceLoaded(run);
-    }
+  const inRace = () =>
+    [...present.values()].flatMap(({ role }) =>
+      role.kind === "seated" ? [role] : []
+    );
+
+  const leaveRace = (run: Run, seat: Seat, closeCode: number | null): void => {
+    const { raceId, room } = run;
+    room.leave(seat.rider);
+    seat.leftAtTick = room.state.tick;
+    ports.note({
+      closeCode,
+      kind: "left",
+      raceId,
+      seatsLeft: inRace().length,
+      tally: tallyOf(seat, room),
+      tick: room.state.tick,
+    });
+    settleReport(seat);
+    countDownOnceLoaded(run);
   };
 
-  const retire = (socket: HostSocket, closeCode: number | null): void => {
+  const retire = (
+    { role, socket }: Present,
+    closeCode: number | null
+  ): void => {
     present.delete(socket);
-    const late = reporting.get(socket);
-    if (late) {
-      reporting.delete(socket);
-      settleReport(late.seat, late.raceId);
-    }
-    const seat = seats.get(socket);
-    if (seat) {
-      leaveRace(seat, closeCode);
+    switch (role.kind) {
+      case "lobby": {
+        return;
+      }
+      case "seated": {
+        leaveRace(role.run, role.seat, closeCode);
+        return;
+      }
+      case "reporting": {
+        settleReport(role.seat);
+        return;
+      }
+      default: {
+        role satisfies never;
+      }
     }
   };
 
@@ -532,13 +508,9 @@ export const createHost = (
     }
   };
 
-  const drop = (
-    { memberId, socket }: Present,
-    closeCode: number | null
-  ): void => {
-    retire(socket, closeCode);
-    walks.delete(memberId);
-    lobby.away(memberId, ports.now());
+  const drop = (person: Present, closeCode: number | null): void => {
+    retire(person, closeCode);
+    lobby.away(person.memberId, ports.now());
     tellLobby();
     consider();
   };
@@ -567,11 +539,12 @@ export const createHost = (
     }
   };
 
-  const obey = ({ memberId, socket }: Present, command: LobbyCommand): void => {
+  const obey = (person: Present, command: LobbyCommand): void => {
+    const { memberId, socket } = person;
     switch (command.kind) {
       case "walk": {
         const text = encodeRoomMessage({ ...command, member: memberId });
-        walks.set(memberId, text);
+        person.walk = text;
         tellWalkers(socket, text);
         return;
       }
@@ -595,6 +568,69 @@ export const createHost = (
     consider();
   };
 
+  const hearLobby = (person: Present, data: string | ArrayBuffer): void => {
+    person.heardAt = ports.now();
+    if (data instanceof ArrayBuffer) {
+      const stamp = readPing(new DataView(data));
+      if (stamp >= NO_STAMP) {
+        const bytes = writePong(pongView, stamp, roomMs());
+        sendTo(person.socket, new Uint8Array(pongBuffer, 0, bytes));
+      }
+      return;
+    }
+    const command = decodeLobbyCommand(data);
+    if (Option.isSome(command)) {
+      obey(person, command.value);
+    }
+  };
+
+  const hearRider = (
+    person: Present,
+    run: Run,
+    seat: Seat,
+    data: string | ArrayBuffer
+  ): void => {
+    person.heardAt = ports.now();
+    if (!(data instanceof ArrayBuffer)) {
+      const command = decodeLobbyCommand(data);
+      if (Option.isSome(command)) {
+        obey(person, command.value);
+      } else {
+        keepBrowserRows(seat, data);
+      }
+      return;
+    }
+    const view = new DataView(data);
+    if (readInput(view, batch)) {
+      const tally = run.room.accept(
+        seat.rider,
+        batch.firstTick,
+        batch.controls
+      );
+      seat.accepted += tally.accepted;
+      seat.ahead += tally.ahead;
+      seat.late += tally.late;
+      return;
+    }
+    const stamp = readPing(view);
+    if (stamp >= NO_STAMP) {
+      const bytes = writePong(pongView, stamp, roomMs());
+      sendTo(person.socket, new Uint8Array(pongBuffer, 0, bytes));
+      return;
+    }
+    if (!readReady(view, readyDigest)) {
+      keepStats(seat, view);
+      return;
+    }
+    if (hexOfWords(readyDigest) !== hexOfWords(run.room.digest)) {
+      refuse(person.socket, "content");
+      drop(person, SEAT_CLOSED);
+      return;
+    }
+    seat.readyMs ??= ports.now() - run.since;
+    countDownOnceLoaded(run);
+  };
+
   return {
     gone: (socket, closeCode) => {
       const person = present.get(socket);
@@ -603,63 +639,27 @@ export const createHost = (
       }
     },
     message: (socket, data) => {
-      const late = reporting.get(socket);
-      if (late) {
-        if (data instanceof ArrayBuffer) {
-          keepStats(late.seat, new DataView(data));
-        } else {
-          keepBrowserRows(late.seat, data);
-        }
-        return;
-      }
       const person = present.get(socket);
       if (!person) {
         return;
       }
-      person.heardAt = ports.now();
-      const seat = seats.get(socket);
-      if (!(data instanceof ArrayBuffer)) {
-        const command = decodeLobbyCommand(data);
-        if (Option.isSome(command)) {
-          obey(person, command.value);
-        } else if (seat) {
-          keepBrowserRows(seat, data);
-        }
-        return;
-      }
-      const { run } = state;
-      const view = new DataView(data);
-      if (readInput(view, batch)) {
-        if (run && seat && seat.rider !== null) {
-          const tally = run.room.accept(
-            seat.rider,
-            batch.firstTick,
-            batch.controls
-          );
-          seat.accepted += tally.accepted;
-          seat.ahead += tally.ahead;
-          seat.late += tally.late;
-        }
-        return;
-      }
-      const stamp = readPing(view);
-      if (stamp >= NO_STAMP) {
-        const bytes = writePong(pongView, stamp, roomMs());
-        sendTo(socket, new Uint8Array(pongBuffer, 0, bytes));
-        return;
-      }
-      if (run && seat && readReady(view, readyDigest)) {
-        if (hexOfWords(readyDigest) !== hexOfWords(run.room.digest)) {
-          refuse(socket, "content");
-          drop(person, SEAT_CLOSED);
+      const { role } = person;
+      switch (role.kind) {
+        case "lobby": {
+          hearLobby(person, data);
           return;
         }
-        seat.readyMs ??= ports.now() - run.since;
-        countDownOnceLoaded(run);
-        return;
-      }
-      if (seat) {
-        keepStats(seat, view);
+        case "seated": {
+          hearRider(person, role.run, role.seat, data);
+          return;
+        }
+        case "reporting": {
+          keepReport(role.seat, data);
+          return;
+        }
+        default: {
+          role satisfies never;
+        }
       }
     },
     seat: (socket, name, link, claim) => {
@@ -672,27 +672,30 @@ export const createHost = (
         refuse(socket, "full");
         return;
       }
-      for (const person of present.values()) {
-        if (person.memberId === memberId) {
-          refuse(person.socket, "replaced");
-          retire(person.socket, SEAT_CLOSED);
-        }
+      const replaced = [...present.values()].find(
+        (person) => person.memberId === memberId
+      );
+      if (replaced) {
+        refuse(replaced.socket, "replaced");
+        retire(replaced, SEAT_CLOSED);
       }
       present.set(socket, {
         heardAt: ports.now(),
         link,
         memberId,
         name,
+        role: IN_THE_LOBBY,
         socket,
+        walk: replaced?.walk ?? null,
       });
       if (!watching) {
         watching = true;
         ports.after(SEAT_WATCH_MS, watchSeats);
       }
       tellLobby();
-      for (const [walker, text] of walks) {
-        if (walker !== memberId) {
-          sendTo(socket, text);
+      for (const person of present.values()) {
+        if (person.socket !== socket && person.walk !== null) {
+          sendTo(socket, person.walk);
         }
       }
     },
@@ -713,10 +716,9 @@ export const createHost = (
         names: [...present.values()].map((person) => person.name),
         phase: run ? "racing" : "waiting",
         raceId: run?.raceId ?? null,
+        roles: [...present.values()].map(({ role }) => role.kind),
         rule: lobby.rule(),
-        seats: run
-          ? [...seats.values()].flatMap((seat) => tallyOf(seat, run.room))
-          : [],
+        seats: inRace().map((role) => tallyOf(role.seat, role.run.room)),
         tick: run ? run.room.state.tick : 0,
         waiting: present.size,
         wakes,
