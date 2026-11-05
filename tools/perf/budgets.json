@@ -76,11 +76,15 @@
       {
         "file": "tools/perf/baselines/lobby.node-linux-x64.json.gz",
         "sha256": "c46b0494adb5b8e588c68ba0f8d17650aa2d9a8fabfadff348103d0bfafed577"
+      },
+      {
+        "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "f744e417d1ec94cdc7a111d53896515dd55fa535bdbfc3420706b8e4a349fd56"
+    "summarySha256": "91ae4914c302683a4191d50b433e39d6194cc05df273d415d4cd69351a067a10"
   },
   "limits": [
     {
@@ -1716,160 +1720,160 @@
       "value": 2.1197767747691323
     },
     {
-      "baseline": 16.700000762939453,
-      "derivation": "owner cap",
+      "baseline": 19.899999618530273,
+      "derivation": "1.1 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p50",
       "paired": 1.1,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 17.5
+      "value": 21.889999580383304
     },
     {
-      "baseline": 16.700000762939453,
-      "derivation": "owner cap",
+      "baseline": 18.200000762939453,
+      "derivation": "1.1 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p50",
       "paired": 1.1,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 17.5
+      "value": 20.0200008392334
     },
     {
-      "baseline": 16.700000762939453,
-      "derivation": "owner cap",
+      "baseline": 23.100000381469727,
+      "derivation": "1.15 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p95",
       "paired": 1.15,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 20
+      "value": 26.565000438690184
     },
     {
-      "baseline": 16.700000762939453,
-      "derivation": "owner cap",
+      "baseline": 21.899999618530273,
+      "derivation": "1.15 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p95",
       "paired": 1.15,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 20
+      "value": 25.184999561309812
     },
     {
-      "baseline": 16.799999237060547,
-      "derivation": "owner cap",
+      "baseline": 39.900001525878906,
+      "derivation": "1.2 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p99",
       "paired": 1.2,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 33.334
+      "value": 47.880001831054685
     },
     {
-      "baseline": 16.799999237060547,
-      "derivation": "owner cap",
+      "baseline": 23.200000762939453,
+      "derivation": "1.2 x the worst window: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.interval.p99",
       "paired": 1.2,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 33.334
+      "value": 27.840000915527344
     },
     {
-      "baseline": 0.0016611295681063123,
-      "derivation": "owner cap",
+      "baseline": 0.021825396825396824,
+      "derivation": "1.2 x the worst window, capped at 1: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "share",
-      "value": 0.01
+      "value": 0.026190476190476188
     },
     {
-      "baseline": 0,
-      "derivation": "owner cap",
+      "baseline": 0.0036101083032490976,
+      "derivation": "1.2 x the worst window, capped at 1: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "frame.missedFraction",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "share",
-      "value": 0.01
+      "value": 0.004332129963898917
     },
     {
       "baseline": 0,
-      "derivation": "owner cap",
+      "derivation": "the worst window + 1 if nonzero, else 0: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "main.longTask.blockingMs",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
       "value": 0
     },
     {
       "baseline": 0,
-      "derivation": "owner cap",
+      "derivation": "the worst window + 1 if nonzero, else 0: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "main.longTask.blockingMs",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
       "value": 0
     },
     {
       "baseline": 0,
-      "derivation": "owner cap",
+      "derivation": "the worst window + 1 if nonzero, else 0: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "main.longTask.count",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "tasks",
       "value": 0
     },
     {
       "baseline": 0,
-      "derivation": "owner cap",
+      "derivation": "the worst window + 1 if nonzero, else 0: Intel's floor, owner accepted 2026-11-05, not the 60 fps cap",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "main.longTask.count",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "tasks",
       "value": 0
     },
     {
-      "baseline": 524,
+      "baseline": 522,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "render.calls.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "calls",
-      "value": 551
+      "value": 549
     },
     {
       "baseline": 508,
@@ -1879,7 +1883,7 @@
       "metric": "render.calls.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "calls",
       "value": 534
     },
@@ -1891,7 +1895,7 @@
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "programs",
       "value": 46
     },
@@ -1903,81 +1907,81 @@
       "metric": "render.programs.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "programs",
       "value": 46
     },
     {
-      "baseline": 80,
+      "baseline": 81,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "textures",
-      "value": 81
+      "value": 82
     },
     {
-      "baseline": 73,
+      "baseline": 74,
       "derivation": "baseline maximum over both sides' windows + 1",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "render.textures.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "textures",
-      "value": 74
+      "value": 75
     },
     {
-      "baseline": 2878377,
+      "baseline": 2066211,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "render.triangles.max",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "triangles",
-      "value": 3022296
+      "value": 2169522
     },
     {
-      "baseline": 2319053,
+      "baseline": 1605457,
       "derivation": "ceil(1.05 x baseline maximum over both sides' windows)",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "render.triangles.max",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "triangles",
-      "value": 2435006
+      "value": 1685730
     },
     {
-      "baseline": 0.8999999761581421,
-      "derivation": "2 x the worst B window of vimaan's first campaign",
+      "baseline": 1.7999999523162842,
+      "derivation": "2 x the worst B window of the first Intel campaign",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "riders.cpu.p95",
       "paired": null,
       "scenario": "pack-riding-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 1.7999999523162842
+      "value": 3.5999999046325684
     },
     {
-      "baseline": 0.8999999761581421,
-      "derivation": "2 x the worst B window of vimaan's first campaign",
+      "baseline": 1.399999976158142,
+      "derivation": "2 x the worst B window of the first Intel campaign",
       "direction": "max",
       "environment": "gpu-chromium-intel",
       "metric": "riders.cpu.p95",
       "paired": null,
       "scenario": "reference-v1",
-      "source": "pending-first-intel-campaign",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
       "unit": "ms",
-      "value": 1.7999999523162842
+      "value": 2.799999952316284
     }
   ],
   "nodeProfiles": {

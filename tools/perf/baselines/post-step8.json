@@ -2896,6 +2896,182 @@
       "side": "B",
       "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
       "value": 902258
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 19.899999618530273
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p50",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 18.200000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 23.100000381469727
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p95",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 21.899999618530273
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 39.900001525878906
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.interval.p99",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 23.200000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 0.021825396825396824
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "frame.missedFraction",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 0.0036101083032490976
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "main.longTask.blockingMs",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "main.longTask.count",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "main.longTask.count",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 0
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.calls.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 522
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.calls.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 508
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.programs.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 45
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.programs.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 45
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.textures.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 81
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.textures.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 74
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.triangles.max",
+      "scenario": "pack-riding-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 2066211
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "render.triangles.max",
+      "scenario": "reference-v1",
+      "side": "A+B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 1605457
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "riders.cpu.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 1.7999999523162842
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "riders.cpu.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "value": 1.399999976158142
     }
   ],
   "revisions": {
@@ -3892,6 +4068,32 @@
       "sides": {
         "A": "7fec2e9b2c2504211aac07d6885c953b842d694f",
         "B": "7fec2e9b2c2504211aac07d6885c953b842d694f"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, Mesa 26.2.5, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "power": "AC power, battery not charging",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, rv slots 0 and 1, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1919x992 CSS at device pixel ratio 1, ?stress&rung=0 and ?stress=reference&rung=0, the lean preset, cpu x1, network off",
+        "pairs": "5 alternating pairs per scenario after one warm-up per scenario and side; the idle side parked on /kit",
+        "wallMs": "1429363",
+        "order": "[\"reference-v1 pair0 A\", \"reference-v1 pair0 B\", \"pack-riding-v1 pair0 B\", \"pack-riding-v1 pair0 A\", \"reference-v1 pair1 B\", \"reference-v1 pair1 A\", \"pack-riding-v1 pair1 A\", \"pack-riding-v1 pair1 B\", \"reference-v1 pair2 A\", \"reference-v1 pair2 B\", \"pack-riding-v1 pair2 B\", \"pack-riding-v1 pair2 A\", \"reference-v1 pair3 B\", \"reference-v1 pair3 A\", \"pack-riding-v1 pair3 A\", \"pack-riding-v1 pair3 B\", \"reference-v1 pair4 A\", \"reference-v1 pair4 B\", \"pack-riding-v1 pair4 B\", \"pack-riding-v1 pair4 A\"]",
+        "quiet": "the desktop and the bench lock were free at the start; no other process ran a bench during the campaign",
+        "doctorAfter": "the lane read FAIL doctor-after on both sides: rv doctor stopped at FileSystem.writeFile on /tmp/rushline-verify/desktop.lock. All 20 samples had been captured and passed their workload checks by then",
+        "sideA": "A's clone was in /var/tmp because /tmp here is a small tmpfs, and it ran under B's rv"
+      },
+      "id": "gpu-2026-11-05T13-01-24-628Z-4a3249a-4a3249a",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "4a3249adf14e0048151a7f1bf5348f90c68716cb",
+        "B": "4a3249adf14e0048151a7f1bf5348f90c68716cb"
       }
     }
   ],
