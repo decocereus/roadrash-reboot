@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fightRow, worstPop } from "../src/fight-report.ts";
+import { fightRow, riderTrack } from "../src/fight-report.ts";
 import type { ProbeFrame, TakenFrames } from "../src/fight-report.ts";
 
 const PRESS = 1000;
@@ -115,7 +115,14 @@ const victimSaw = (shoveFrom: number, flinchFrom: number): TakenFrames => {
     ...nothing,
     attacks: [{ at: SENT + 297, attack: "kick", rider: ATTACKER, tick: 120 }],
     frames,
-    placed: [{ at: SHOWN, tick: TICK_AT_SHOWN + CONTACT, x: [1, 0] }],
+    placed: [
+      {
+        at: SHOWN,
+        riding: [true, true],
+        tick: TICK_AT_SHOWN + CONTACT,
+        x: [1, 0],
+      },
+    ],
   };
 };
 
@@ -260,23 +267,56 @@ describe("reading a fight from both windows", () => {
   });
 });
 
-describe("how far a rider pops in one frame", () => {
-  it("reads the biggest step between frames", () => {
-    const frames = [0, 0.03, 0.5, 0.53].map((x, index) => ({
-      ...frameOf({
-        at: index,
-        flinch: 0,
-        hit: false,
-        pose: "seated",
-        reach: 0,
-        shoved: false,
-        tick: index,
-      }),
+describe("how far another rider is drawn from the room's position", () => {
+  const GUESSES = [0, 0.25, 1, 1.25];
+  const DRIFT = [0, 0.125, 0.5, 0.125];
+  const frames = GUESSES.map((x, index) => {
+    const base = frameOf({
+      at: index * FRAME_MS,
+      flinch: 0,
+      hit: false,
+      pose: "seated",
+      reach: 0,
+      shoved: false,
+      tick: index,
+    });
+    const settling = x - (DRIFT[index] ?? 0);
+    return {
+      ...base,
       drawn: [
-        { flinch: 0, pose: "seated", reach: 0, x },
+        { flinch: 0, pose: "seated", reach: 0, x: settling },
         { flinch: 0, pose: "seated", reach: 0, x: 0 },
       ],
-    }));
-    expect(worstPop(frames, ATTACKER)).toBeCloseTo(0.47);
+      predicted: [{ ...rider(100, null), x }, rider(100, null)],
+    };
+  });
+  const taken: TakenFrames = {
+    ...nothing,
+    frames,
+    placed: GUESSES.map((x, tick) => ({
+      at: tick,
+      riding: [true, true],
+      tick,
+      x: [x, 0],
+    })),
+  };
+
+  it("measures the guess and the drawn rider against the same race", () => {
+    expect(riderTrack(taken, ATTACKER)).toStrictEqual({
+      drawn: { errorP95Metres: 0.5, frames: 4, worstStepMetres: 0.625 },
+      guessed: { errorP95Metres: 0, frames: 4, worstStepMetres: 0.75 },
+      rider: ATTACKER,
+    });
+  });
+
+  it("skips the frames where the room has the rider down", () => {
+    const down = taken.placed.map((one) =>
+      one.tick === 2 ? { ...one, riding: [false, true] } : one
+    );
+    expect(riderTrack({ ...taken, placed: down }, ATTACKER)).toStrictEqual({
+      drawn: { errorP95Metres: 0.125, frames: 3, worstStepMetres: 0.125 },
+      guessed: { errorP95Metres: 0, frames: 3, worstStepMetres: 0.25 },
+      rider: ATTACKER,
+    });
   });
 });

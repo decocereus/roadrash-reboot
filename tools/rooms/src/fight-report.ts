@@ -52,7 +52,11 @@ export const takenFrames = Schema.Struct({
   }),
   frames: Schema.Array(probeFrame),
   lostButtons: stamped({ tick: Schema.Number }),
-  placed: stamped({ tick: Schema.Number, x: Schema.Array(Schema.Number) }),
+  placed: stamped({
+    riding: Schema.Array(Schema.Boolean),
+    tick: Schema.Number,
+    x: Schema.Array(Schema.Number),
+  }),
   presses: stamped({ code: Schema.String }),
   sends: stamped({ through: Schema.Number }),
 });
@@ -256,17 +260,76 @@ export const fightRow = (
   };
 };
 
-export const worstPop = (
-  frames: readonly ProbeFrame[],
-  rider: number
-): number => {
-  let worst = 0;
-  for (let index = 1; index < frames.length; index += 1) {
-    const from = frames[index - 1]?.drawn[rider]?.x;
-    const to = frames[index]?.drawn[rider]?.x;
-    if (from !== undefined && to !== undefined) {
-      worst = Math.max(worst, Math.abs(to - from));
+interface TrackError {
+  readonly errorP95Metres: number;
+  readonly frames: number;
+  readonly worstStepMetres: number;
+}
+
+export interface RiderTrack {
+  readonly drawn: TrackError;
+  readonly guessed: TrackError;
+  readonly rider: number;
+}
+
+const P95 = 0.95;
+
+const p95 = (values: readonly number[]): number => {
+  const sorted = values.toSorted((a, b) => a - b);
+  return (
+    sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * P95))] ?? 0
+  );
+};
+
+interface TrackFrame {
+  readonly frame: ProbeFrame;
+  readonly server: number;
+}
+
+const trackError = (
+  frames: readonly (TrackFrame | null)[],
+  xOf: (frame: ProbeFrame) => number
+): TrackError => {
+  const errors: number[] = [];
+  let worstStepMetres = 0;
+  for (const [index, one] of frames.entries()) {
+    if (one === null) {
+      continue;
+    }
+    errors.push(Math.abs(xOf(one.frame) - one.server));
+    const before = frames[index - 1];
+    if (before) {
+      worstStepMetres = Math.max(
+        worstStepMetres,
+        Math.abs(xOf(one.frame) - xOf(before.frame))
+      );
     }
   }
-  return worst;
+  return {
+    errorP95Metres: p95(errors),
+    frames: errors.length,
+    worstStepMetres,
+  };
+};
+
+export const riderTrack = (taken: TakenFrames, rider: number): RiderTrack => {
+  const riding = new Map(
+    taken.placed.flatMap((one) => {
+      const x = one.x[rider];
+      return x === undefined || one.riding[rider] !== true
+        ? []
+        : [[one.tick, x] as const];
+    })
+  );
+  const frames = taken.frames.map((frame): TrackFrame | null => {
+    const server = riding.get(frame.tick);
+    return server === undefined || frame.predicted[rider]?.mode !== "riding"
+      ? null
+      : { frame, server };
+  });
+  return {
+    drawn: trackError(frames, (frame) => frame.drawn[rider]?.x ?? 0),
+    guessed: trackError(frames, (frame) => frame.predicted[rider]?.x ?? 0),
+    rider,
+  };
 };
