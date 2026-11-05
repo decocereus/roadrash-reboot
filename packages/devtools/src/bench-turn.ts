@@ -3,6 +3,7 @@ import path from "node:path";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -11,11 +12,13 @@ import { BenchBusy } from "./bench-busy.ts";
 import {
   book,
   changeQueue,
+  clockOf,
   deadlineOf,
   endJob,
   endedLine,
   holdsLine,
   release,
+  startGroup,
   startJob,
   touch,
   turnOf,
@@ -28,7 +31,7 @@ import type {
   QueueFile,
 } from "./bench-queue.ts";
 import { CurrentHost } from "./browser-host.ts";
-import type { BrowserHost } from "./browser-host.ts";
+import type { MachineHost } from "./browser-host.ts";
 import { toolStateDir } from "./claim.ts";
 import { released } from "./cleanup.ts";
 import { alive } from "./process.ts";
@@ -48,12 +51,12 @@ export const benchChildEnv = (): NodeJS.ProcessEnv => ({
 interface Caller {
   readonly bench: string | undefined;
   readonly booking: string | null;
-  readonly host: BrowserHost;
+  readonly host: MachineHost;
   readonly label: string;
   readonly pid: number;
 }
 
-const callerOf = (host: BrowserHost, label: string): Caller => {
+const callerOf = (host: MachineHost, label: string): Caller => {
   const booking = process.env[BOOKING_SETTING] ?? "";
   return {
     bench: process.env[BENCH_PID],
@@ -72,7 +75,7 @@ const insideJob = (queue: QueueFile, caller: Caller): boolean => {
   return job !== null && String(job.pid) === caller.bench;
 };
 
-const requiredText = (what: string, host: BrowserHost) =>
+const requiredText = (what: string, host: MachineHost) =>
   `This machine (${host.id}) is shared through the bench queue, so ${what} needs a booking. Book a turn, wait for it, then run under it:
   rv book <lane> <minutes> <purpose>    prints BOOKING=<id>
   rv book wait <id>                     returns when it is your turn
@@ -239,6 +242,32 @@ const liveRunsBesides = Effect.fnUntraced(function* liveRunsBesides(
   });
 });
 
+const stopAt = Effect.fnUntraced(function* stopAt(
+  deadline: number,
+  label: string
+) {
+  const caller = yield* Effect.fiber;
+  const left = deadline - (yield* Clock.currentTimeMillis);
+  yield* Effect.forkScoped(
+    Effect.sleep(Math.max(0, left)).pipe(
+      Effect.andThen(
+        Effect.sync(() => {
+          process.stderr.write(
+            `${label}: stopped at ${clockOf(deadline)}, because its booking ran out: its expected end plus 15 min.\n`
+          );
+        })
+      ),
+      Effect.andThen(Effect.forkDetach(Fiber.interrupt(caller)))
+    )
+  );
+});
+
+export const recordWorkload = (group: number, dir: string = toolStateDir) =>
+  changeQueue(
+    (queue) => [startGroup(queue, process.pid, group), null] as const,
+    dir
+  );
+
 export const holdBench = Effect.fnUntraced(function* holdBench(
   label: string,
   allowedRuns: readonly string[] = [],
@@ -251,7 +280,7 @@ export const holdBench = Effect.fnUntraced(function* holdBench(
       admitted.kind === "admitted" ? endedJob(admitted.id, dir) : Effect.void
   );
   if (result.kind === "refused") {
-    return yield* new BenchBusy({ message: result.message });
+    yield* new BenchBusy({ message: result.message });
   }
   const others = yield* liveRunsBesides(allowedRuns, dir);
   if (others.length > 0) {
@@ -259,7 +288,9 @@ export const holdBench = Effect.fnUntraced(function* holdBench(
       message: `A browser from another rv run is open or starting on this machine and would skew the bench: ${others.join(", ")}. If the run is yours, rv down --run <id>. If not, wait for it.`,
     });
   }
-  return result.kind === "admitted" ? result.deadline : null;
+  if (result.kind === "admitted") {
+    yield* stopAt(result.deadline, label);
+  }
 });
 
 interface Patience {
@@ -332,6 +363,9 @@ const awaitTurn = Effect.fnUntraced(function* awaitTurn(
   }
   if (claim.kind === "refused") {
     yield* new BenchBusy({ message: claim.message });
+  }
+  if (claim.kind === "admitted") {
+    yield* stopAt(claim.deadline, caller.label);
   }
 });
 

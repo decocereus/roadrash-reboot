@@ -55,7 +55,10 @@ await Effect.runPromise(
     Effect.provide(
       Layer.mergeAll(
         NodeFileSystem.layer,
-        Layer.succeed(CurrentHost)(browserHosts["macos-metal"])
+        Layer.succeed(CurrentHost)({
+          ...browserHosts["macos-metal"],
+          booking: "implicit",
+        })
       )
     )
   )

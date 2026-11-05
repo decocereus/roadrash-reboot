@@ -119,7 +119,12 @@ describe("rv and another agent's work on the machine", () => {
             purpose: "someone's work",
           },
           since: Date.now(),
-          use: { kind: "job", label: "someone's campaign", pid: process.pid },
+          use: {
+            group: null,
+            kind: "job",
+            label: "someone's campaign",
+            pid: process.pid,
+          },
         },
         next: 2,
         waiting: [],

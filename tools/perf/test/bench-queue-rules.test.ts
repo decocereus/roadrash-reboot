@@ -1,11 +1,13 @@
 import {
   IDLE_MS,
   OVERRUN_MS,
+  STOP_MS,
   book,
   describeQueue,
   endJob,
   release,
   settle,
+  startGroup,
   startJob,
   touch,
   turnOf,
@@ -129,7 +131,7 @@ describe("the bench queue's rules", () => {
 
   it("keeps a turn until its expected end plus 15 min and drops it one ms later", () => {
     const { queue } = bookAll([lane("maps", 30), lane("mp")]);
-    const running = startJob(queue, "maps-1", LIVE, "perf:gpu");
+    const running = startJob(queue, "maps-1", DEAD, "perf:gpu");
     const limit = T0 + 30 * MINUTE + OVERRUN_MS;
     expect(settle(running, limit, isAlive).holder?.booking.id).toBe("maps-1");
     const over = settle(running, limit + 1, isAlive);
@@ -164,10 +166,36 @@ describe("the bench queue's rules", () => {
     expect(
       settle(running, T0 + 40 * MINUTE, isAlive).holder?.use
     ).toStrictEqual({
+      group: null,
       kind: "job",
       label: "perf:gpu",
       pid: LIVE,
     });
+  });
+
+  it("keeps a job running while its workload's process group lives after its wrapper died", () => {
+    const { queue } = bookAll([lane("maps", 60)]);
+    const running = startGroup(
+      startJob(queue, "maps-1", DEAD, "campaign"),
+      DEAD,
+      LIVE
+    );
+    const later = T0 + 5 * MINUTE;
+    expect(
+      settle(running, later, (pid) => pid === -LIVE).holder?.use
+    ).toMatchObject({ group: LIVE, kind: "job" });
+    expect(settle(running, later, () => false).holder?.use).toStrictEqual({
+      kind: "idle",
+      since: later,
+    });
+  });
+
+  it("gives a live job one more minute to stop itself past its deadline before passing the turn on", () => {
+    const { queue } = bookAll([lane("maps", 30), lane("mp")]);
+    const running = startJob(queue, "maps-1", LIVE, "perf:gpu");
+    const limit = T0 + 30 * MINUTE + OVERRUN_MS + STOP_MS;
+    expect(settle(running, limit, isAlive).holder?.booking.id).toBe("maps-1");
+    expect(settle(running, limit + 1, isAlive).holder?.booking.id).toBe("mp-2");
   });
 
   it("returns a lane's turn to idle when its job ends, and ends a process booking as finished", () => {

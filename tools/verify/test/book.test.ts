@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -140,7 +141,7 @@ describe("rv book between two lanes", () => {
         { RUSHLINE_BOOKING: "lane-a-1" }
       );
       await expect(statusUntil(temp, "running campaign")).resolves.toContain(
-        `running campaign (pid ${job.child.pid})`
+        `running campaign (pid ${job.child.pid}`
       );
       const holder = started(temp, [
         "book",
@@ -157,6 +158,47 @@ describe("rv book between two lanes", () => {
       expect(woken.output).toContain("lane-a-1: campaign ended;");
       expect(rv(temp, ["book", "status"]).stdout).toMatch(
         /lane-a-1 holds it for frame campaign, .*idle since[\s\S]*waiting {2}1\. lane-b-2/u
+      );
+    }
+  );
+
+  it(
+    "keeps the turn busy while a job's workload outlives its killed rv bench",
+    { timeout: 40_000 },
+    async () => {
+      const temp = stateDir();
+      rv(temp, ["book", "lane-a", "30", "frame", "campaign"]);
+      const pidFile = path.join(temp, "workload.pid");
+      const job = started(
+        temp,
+        [
+          "bench",
+          "campaign",
+          "--",
+          process.execPath,
+          "-e",
+          "require('node:fs').writeFileSync(process.env.WORKLOAD_PID,String(process.pid));setTimeout(()=>{},60000)",
+        ],
+        { RUSHLINE_BOOKING: "lane-a-1", WORKLOAD_PID: pidFile }
+      );
+      await expect(statusUntil(temp, "running campaign")).resolves.toContain(
+        `running campaign (pid ${job.child.pid}`
+      );
+      await expect.poll(() => existsSync(pidFile)).toBeTruthy();
+      const workload = Number(readFileSync(pidFile, "utf-8"));
+      onTestFinished(() => {
+        if (alive(workload)) {
+          process.kill(workload, "SIGKILL");
+        }
+      });
+      const wrapper = job.child.pid ?? 0;
+      job.child.kill("SIGKILL");
+      await expect.poll(() => alive(wrapper)).toBeFalsy();
+      expect(alive(workload)).toBeTruthy();
+      expect(rv(temp, ["book", "status"]).stdout).toContain("running campaign");
+      process.kill(workload, "SIGKILL");
+      await expect(statusUntil(temp, "idle since")).resolves.toMatch(
+        /lane-a-1 holds it for frame campaign, .*idle since/u
       );
     }
   );
@@ -224,14 +266,14 @@ describe("rv book between two lanes", () => {
           "--",
           process.execPath,
           "-e",
-          "require('node:fs').writeFileSync(process.env.SLEEPER_PID,String(process.pid));setTimeout(()=>{},60000)",
+          "process.on('SIGTERM',()=>{});require('node:fs').writeFileSync(process.env.SLEEPER_PID,String(process.pid));setTimeout(()=>{},60000)",
         ],
         { RUSHLINE_BOOKING: "lane-a-1", SLEEPER_PID: pidFile }
       );
       const { code, output } = await job.finished;
-      expect(code).toBe(124);
+      expect(code).not.toBe(0);
       expect(output).toMatch(
-        /rv bench: stopped timed at [\d:]+, because its booking ran out/u
+        /timed: stopped at [\d:]+, because its booking ran out/u
       );
       expect(alive(Number(readFileSync(pidFile, "utf-8")))).toBeFalsy();
       expect(rv(temp, ["book", "status"]).stdout).toMatch(

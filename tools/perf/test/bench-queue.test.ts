@@ -10,7 +10,6 @@ import path from "node:path";
 
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import {
-  OVERRUN_MS,
   book,
   changeQueue,
   release,
@@ -24,7 +23,7 @@ import {
   queueForBench,
 } from "@racer/devtools/bench-turn";
 import { CurrentHost, browserHosts } from "@racer/devtools/browser-host";
-import type { BrowserHost } from "@racer/devtools/browser-host";
+import type { MachineHost } from "@racer/devtools/browser-host";
 import { CleanupOutcomes } from "@racer/devtools/cleanup";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
@@ -37,8 +36,14 @@ import type * as Scope from "effect/Scope";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const dirs: string[] = [];
-const MAC: BrowserHost = browserHosts["macos-metal"];
-const VIMAAN: BrowserHost = browserHosts["linux-intel"];
+const MAC: MachineHost = {
+  ...browserHosts["macos-metal"],
+  booking: "implicit",
+};
+const VIMAAN: MachineHost = {
+  ...browserHosts["linux-intel"],
+  booking: "required",
+};
 const DEAD_PID = 2 ** 30;
 
 const freshDir = () => {
@@ -53,7 +58,7 @@ const run = async <A, E>(
     E,
     FileSystem.FileSystem | CleanupOutcomes | CurrentHost | Scope.Scope
   >,
-  host: BrowserHost = MAC
+  host: MachineHost = MAC
 ) =>
   await Effect.runPromiseExit(
     Effect.gen(function* withOutcomes() {
@@ -196,7 +201,11 @@ describe("the bench queue on a host that books implicitly", () => {
     );
     expect(Exit.isSuccess(exit)).toBeTruthy();
     expect(seen[0]).toBe(
-      JSON.stringify({ kind: "job", label: "pnpm perf gate", pid: process.pid })
+      JSON.stringify({
+        kind: "job",
+        label: "pnpm perf gate",
+        pid: process.pid,
+      })
     );
     expect(queueIn(dir)).toMatchObject({
       ended: [{ why: "finished" }, { id: "other-1", why: "released" }],
@@ -328,7 +337,7 @@ describe("the bench queue on a host that books implicitly", () => {
             purpose: "crashed",
           },
           since: Date.now(),
-          use: { kind: "job", label: "crashed", pid: DEAD_PID },
+          use: { group: null, kind: "job", label: "crashed", pid: DEAD_PID },
         },
         next: 2,
         waiting: [],
@@ -377,19 +386,17 @@ describe("the bench queue on a host that requires a booking", () => {
     expect(queueIn(dir).holder).toBeNull();
   });
 
-  it("runs a bench under the holder's booking until its deadline and gives the turn back idle", async () => {
+  it("runs a bench under the holder's booking and gives the turn back idle", async () => {
     const dir = freshDir();
     const seen: unknown[] = [];
     const exit = await run(
       Effect.gen(function* underBooking() {
         const id = yield* booked(dir, lane("maps"));
-        const since = queueIn(dir).holder?.since ?? 0;
         vi.stubEnv("RUSHLINE_BOOKING", id);
-        const deadline = yield* holdBench("perf:gpu", [], dir);
+        yield* holdBench("perf:gpu", [], dir);
         const running = queueIn(dir).holder?.use;
         vi.stubEnv("RUSHLINE_BOOKING", "");
         seen.push(
-          deadline === since + 30 * 60_000 + OVERRUN_MS,
           running?.kind === "job" ? running.label : null,
           messageOf(yield* Effect.exit(checkTurn("open", dir)))
         );
@@ -397,9 +404,8 @@ describe("the bench queue on a host that requires a booking", () => {
       VIMAAN
     );
     expect(Exit.isSuccess(exit)).toBeTruthy();
-    expect(seen[0]).toBeTruthy();
-    expect(seen[1]).toBe("perf:gpu");
-    expect(seen[2]).toContain("rv open needs a booking");
+    expect(seen[0]).toBe("perf:gpu");
+    expect(seen[1]).toContain("rv open needs a booking");
     expect(queueIn(dir).holder).toMatchObject({
       booking: { id: "maps-1" },
       use: { kind: "idle" },

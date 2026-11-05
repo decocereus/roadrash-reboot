@@ -5,6 +5,7 @@ import * as NodeChildProcessSpawner from "@effect/platform-node/NodeChildProcess
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodePath from "@effect/platform-node/NodePath";
 import {
+  bookingOn,
   browserHosts,
   hostOf,
   perfEnvironments,
@@ -35,6 +36,15 @@ const run = async <A>(
   effect: Effect.Effect<A, ProcessError, ToolProcesses>,
   layer: Layer.Layer<ToolProcesses> = realProcesses
 ) => await Effect.runPromiseExit(effect.pipe(Effect.provide(layer)));
+
+describe("booking rule", () => {
+  it("requires a booking only on vimaan, the shared machine", () => {
+    expect(bookingOn("vimaan")).toBe("required");
+    expect(bookingOn("vimaan.local")).toBe("required");
+    expect(bookingOn("Amartyas-MacBook-Pro.local")).toBe("implicit");
+    expect(bookingOn("runnervmg1sw1")).toBe("implicit");
+  });
+});
 
 describe("browser hosts", () => {
   it.for([

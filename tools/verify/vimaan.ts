@@ -95,10 +95,15 @@ const runJob = Effect.fnUntraced(function* runJob(
   const code = yield* onVimaan(
     `mkdir -p ${LOG_DIR} && cd ${placeOf(dir)} && RUSHLINE_BOOKING=${quoted(id)} setsid -w nohup node tools/verify/rushline.ts bench ${quoted(label)} -- ${command.map(quoted).join(" ")} > ${quoted(log)} 2>&1 < /dev/null`
   );
-  const known = code === LINK_DROPPED ? yield* waitRemote(id, false) : code;
+  if (code === LINK_DROPPED) {
+    yield* say(
+      "the link dropped during the run, so its exit code is unknown; waiting for the booking's job to end."
+    );
+    yield* waitRemote(id, false);
+  }
   yield* say(`last ${TAIL_LINES} lines of ${log} on vimaan:`);
   yield* onVimaan(`tail -n ${TAIL_LINES} ${quoted(log)}`);
-  return known;
+  return code;
 });
 
 const usage = (message: string) =>

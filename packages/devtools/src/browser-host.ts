@@ -1,3 +1,5 @@
+import { hostname } from "node:os";
+
 import * as Context from "effect/Context";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -43,6 +45,11 @@ const bookingRules = ["required", "implicit"] as const;
 
 type BookingRule = (typeof bookingRules)[number];
 
+const sharedMachines: ReadonlySet<string> = new Set(["vimaan"]);
+
+export const bookingOn = (machine: string): BookingRule =>
+  sharedMachines.has(machine.split(".")[0] ?? "") ? "required" : "implicit";
+
 export interface DesktopEnv {
   readonly DISPLAY?: string;
 }
@@ -54,7 +61,6 @@ interface HostPage {
 }
 
 export interface BrowserHost {
-  readonly booking: BookingRule;
   readonly desktop: DesktopNeed;
   readonly displayProbes: readonly DisplayProbe[];
   readonly headless: {
@@ -110,7 +116,6 @@ const RETINA_WINDOW: Viewport = { height: 860, scale: 2, width: 1512 };
 
 export const browserHosts = {
   "linux-intel": {
-    booking: "required",
     desktop: "hyprland",
     displayProbes: [HYPRCTL_MONITORS],
     headless: {
@@ -145,7 +150,6 @@ export const browserHosts = {
     },
   },
   "linux-nvidia": {
-    booking: "required",
     desktop: "hyprland",
     displayProbes: [
       HYPRCTL_MONITORS,
@@ -198,7 +202,6 @@ export const browserHosts = {
     },
   },
   "macos-metal": {
-    booking: "implicit",
     desktop: "none",
     displayProbes: [
       {
@@ -271,13 +274,16 @@ export const hostOf = (
   );
 };
 
-export class CurrentHost extends Context.Service<CurrentHost, BrowserHost>()(
+export interface MachineHost extends BrowserHost {
+  readonly booking: BookingRule;
+}
+
+export class CurrentHost extends Context.Service<CurrentHost, MachineHost>()(
   "@racer/devtools/CurrentHost"
 ) {
-  static readonly chosen = () => {
-    const host = hostOf(process.platform, process.env[HOST_SETTING]);
-    return Layer.succeed(CurrentHost)(
-      process.env.CI === undefined ? host : { ...host, booking: "implicit" }
-    );
-  };
+  static readonly chosen = () =>
+    Layer.succeed(CurrentHost)({
+      ...hostOf(process.platform, process.env[HOST_SETTING]),
+      booking: bookingOn(hostname()),
+    });
 }

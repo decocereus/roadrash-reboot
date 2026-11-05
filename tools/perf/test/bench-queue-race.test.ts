@@ -32,7 +32,7 @@ const DEAD_HOLDER = JSON.stringify({
       purpose: "crashed bench",
     },
     since: 0,
-    use: { kind: "job", label: "crashed bench", pid: DEAD_PID },
+    use: { group: null, kind: "job", label: "crashed bench", pid: DEAD_PID },
   },
   next: 2,
   waiting: [],

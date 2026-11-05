@@ -12,6 +12,7 @@ import { alive } from "./process.ts";
 
 export const IDLE_MS = 600_000;
 export const OVERRUN_MS = 900_000;
+export const STOP_MS = 60_000;
 const MINUTE_MS = 60_000;
 const ENDED_KEPT = 20;
 const ENDED_SHOWN = 5;
@@ -32,6 +33,7 @@ const bookingOwner = Schema.Union([
 const turnUse = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("idle"), since: Schema.Number }),
   Schema.Struct({
+    group: Schema.NullOr(Schema.Number),
     kind: Schema.Literal("job"),
     label: Schema.String,
     pid: Schema.Number,
@@ -125,6 +127,12 @@ const ownerGone = (entry: Booking, isAlive: Liveness): string | null =>
     ? `its process ${entry.owner.pid} died`
     : null;
 
+const jobAlive = (job: Job, isAlive: Liveness): boolean =>
+  isAlive(job.pid) || (job.group !== null && isAlive(-job.group));
+
+const stopping = (held: Holder, isAlive: Liveness): number =>
+  held.use.kind === "job" && jobAlive(held.use, isAlive) ? STOP_MS : 0;
+
 const endReason = (
   held: Holder,
   now: number,
@@ -135,7 +143,7 @@ const endReason = (
     return gone;
   }
   const end = expectedEnd(held);
-  if (now > end + OVERRUN_MS) {
+  if (now > end + OVERRUN_MS + stopping(held, isAlive)) {
     return `ran past its expected end ${clockOf(end)} by more than 15 min`;
   }
   if (held.use.kind === "idle" && now - held.use.since > IDLE_MS) {
@@ -183,7 +191,7 @@ const settledHolder = (queue: QueueFile, now: number, isAlive: Liveness) => {
   return {
     gone: [],
     kept:
-      use.kind === "job" && !isAlive(use.pid)
+      use.kind === "job" && !jobAlive(use, isAlive)
         ? withUse(queue.holder, idle(now))
         : queue.holder,
   };
@@ -270,7 +278,21 @@ export const startJob = (
   pid: number,
   label: string
 ): QueueFile =>
-  withHolder(queue, id, (held) => withUse(held, { kind: "job", label, pid }));
+  withHolder(queue, id, (held) =>
+    withUse(held, { group: null, kind: "job", label, pid })
+  );
+
+export const startGroup = (
+  queue: QueueFile,
+  pid: number,
+  group: number
+): QueueFile =>
+  queue.holder?.use.kind === "job" && queue.holder.use.pid === pid
+    ? {
+        ...queue,
+        holder: withUse(queue.holder, { ...queue.holder.use, group }),
+      }
+    : queue;
 
 export const endJob = (
   queue: QueueFile,
@@ -322,7 +344,9 @@ const useText = (current: Use): string => {
       return `idle since ${clockOf(current.since)}`;
     }
     case "job": {
-      return `running ${current.label} (pid ${current.pid})`;
+      return current.group === null
+        ? `running ${current.label} (pid ${current.pid})`
+        : `running ${current.label} (pid ${current.pid}, workload group ${current.group})`;
     }
     default: {
       return current satisfies never;

@@ -171,7 +171,10 @@ const upWhereWriteFails = async (failing: number) => {
     }).pipe(
       Effect.provide(
         Layer.mergeAll(
-          Layer.succeed(CurrentHost)(browserHosts["macos-metal"]),
+          Layer.succeed(CurrentHost)({
+            ...browserHosts["macos-metal"],
+            booking: "implicit",
+          }),
           processes,
           slots,
           server,
