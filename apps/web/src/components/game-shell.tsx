@@ -222,7 +222,13 @@ const raceAgainOffered = (
     afterResults(report) === clubhouse &&
     roadOpen(career, report.roadId));
 
-const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
+const MenuScreens = ({
+  flow,
+  onDoorMoment,
+}: {
+  readonly flow: Flow;
+  readonly onDoorMoment: (atDoor: boolean) => void;
+}) => {
   const { view, career, rules } = flow;
   if (view.screen === "boot") {
     return <BootScreen />;
@@ -287,6 +293,7 @@ const MenuScreens = ({ flow }: { readonly flow: Flow }) => {
           onBack={() => {
             globalThis.location.assign("/");
           }}
+          onDoorMoment={onDoorMoment}
           onLost={flow.roomLost}
           onPrepare={flow.prepare}
           onStart={flow.start}
@@ -385,6 +392,7 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
 
 export const GameShell = () => {
   const flow = useFlow();
+  const [atDoor, setAtDoor] = useState(false);
   return (
     <div className="bg-ink fixed inset-0 overflow-hidden select-none">
       <canvas
@@ -392,11 +400,11 @@ export const GameShell = () => {
         className="block size-full"
         ref={flow.canvasRef}
       />
-      <MenuScreens flow={flow} />
+      <MenuScreens flow={flow} onDoorMoment={setAtDoor} />
       <RaceScreens flow={flow} />
-      {flow.view.screen !== "boot" && flow.view.screen !== "race" && (
-        <DataNotice />
-      )}
+      {flow.view.screen !== "boot" &&
+        flow.view.screen !== "race" &&
+        !atDoor && <DataNotice />}
       {flow.unsaved && (
         <p
           className="bg-red text-text text-label fixed top-0 left-1/2 z-50 -translate-x-1/2 px-4 py-1 font-semibold uppercase"

@@ -68,6 +68,7 @@ interface RoomProps {
   readonly roomId: string;
   readonly ready: boolean;
   readonly onBack: () => void;
+  readonly onDoorMoment: (atDoor: boolean) => void;
   readonly onLost: () => void;
   readonly onPrepare: (plan: RacePlan) => Promise<PrepareOutcome>;
   readonly onStart: (plan: RacePlan) => void;
@@ -79,6 +80,7 @@ const SeatedLobby = ({
   roomId,
   ready,
   onBack,
+  onDoorMoment,
   onLost,
   onPrepare,
   onStart,
@@ -165,6 +167,12 @@ const SeatedLobby = ({
   }, [phase]);
   const racing = phase === "racing";
   const raceBegun = racing || phase === "loading";
+  useEffect(() => {
+    onDoorMoment(raceBegun);
+    return () => {
+      onDoorMoment(false);
+    };
+  }, [raceBegun, onDoorMoment]);
   useEffect(() => {
     const redrawing = setInterval(redraw, REDRAW_MS);
     return () => {
