@@ -8,7 +8,7 @@ import type {
   RideOutHandoff,
   Step,
 } from "../src/race-handoff.ts";
-import { roomSignals, stepRoom } from "../src/room-handoff.ts";
+import { roomSignals, seatClosing, stepRoom } from "../src/room-handoff.ts";
 import type { RoomEvent, RoomHandoff } from "../src/room-handoff.ts";
 
 const RIDE = "the ride";
@@ -351,5 +351,20 @@ describe("a room's handoff", () => {
     expect(
       sequences(events, 6).filter((run) => !roomRulesHold(run))
     ).toStrictEqual([]);
+  });
+});
+
+describe("a room seat that closes", () => {
+  it("leaves the room, freeing the spot, when the game failed to boot", () => {
+    expect(seatClosing(FIRST_ROOM, true)).toBe("leaveRoom");
+  });
+
+  it("keeps the away hold when the lobby closes for any other reason", () => {
+    expect(seatClosing(FIRST_ROOM, false)).toBe("leave");
+    expect(seatClosing({ kind: "preparing", ride: RIDE }, false)).toBe("leave");
+  });
+
+  it("stays open for the race while the rider is riding", () => {
+    expect(seatClosing({ kind: "riding", ride: RIDE }, false)).toBe("keep");
   });
 });

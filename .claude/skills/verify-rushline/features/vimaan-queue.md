@@ -16,7 +16,7 @@ vimaan is the one shared machine with a real GPU, so lanes take turns on it thro
 ## How to get to it (user POV)
 
 - A player never meets it. A lane meets it from the Mac through `pnpm vimaan status`, `book`, `wait`, `run` and `release`. On vimaan itself the same queue answers `rv book status`, `book`, `wait` and `release`.
-- vimaan is for GPU work: frame-rate campaigns, `pnpm perf:gpu` and render captures. Multiplayer seats and kick or fight checks run on the Mac as two windows with `pnpm rooms:lag`. vimaan joins a multiplayer check only for a final production pass, booked like any other job.
+- vimaan is for GPU work: frame-rate campaigns, `pnpm perf:gpu` and render captures. Multiplayer seats and kick or fight checks run on the Mac as two windows with `pnpm rooms:lag` or `pnpm rooms:fights`. vimaan joins a multiplayer check only for a final production pass, booked like any other job.
 - Book, then run `pnpm vimaan wait <id>` as a background command. In Claude Code that is Bash with `run_in_background` and `timeout: 7200000`. A timeout or an exit 255 means the link dropped, so run it again. Run jobs with `pnpm vimaan run`, and release with `pnpm vimaan release <id>` when done.
 - A T3 child on vimaan may do interactive work under the lane's booking, with `RUSHLINE_BOOKING=<id>` set for every `rv` call. The parent wakes from its own `pnpm vimaan wait <id> --end`, never from the child's completion.
 

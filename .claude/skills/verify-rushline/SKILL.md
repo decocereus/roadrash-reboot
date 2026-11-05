@@ -204,7 +204,7 @@ The development machine is an M4 Pro. DevTools can slow the main thread but not 
 vimaan is a Linux laptop with a GTX 1650 Ti and no running desktop. Everything above works there through one extra step, which `rv up` takes for you: it starts Hyprland on the real panel, then opens Chromium through Xwayland on the NVIDIA GPU. The no-headless rule holds there too. [features/desktop-session.md](features/desktop-session.md) is the recipe.
 
 - vimaan is shared through one bench queue, and nothing draws or measures there without a booking. From the Mac, book with `pnpm vimaan book <lane> <minutes> <purpose>`, and wait with `pnpm vimaan wait <id>` as a background command. Run jobs with `pnpm vimaan run`, and release with `pnpm vimaan release <id>`. On vimaan, every `rv` that draws runs under `RUSHLINE_BOOKING=<id>`. [features/vimaan-queue.md](features/vimaan-queue.md) is the recipe.
-- vimaan is for GPU work: frame-rate campaigns, `pnpm perf:gpu` and render captures. Multiplayer seats and kick or fight checks run on the Mac as two windows with `pnpm rooms:lag`. vimaan joins a multiplayer check only for a final production pass, booked like any other job.
+- vimaan is for GPU work: frame-rate campaigns, `pnpm perf:gpu` and render captures. Multiplayer seats and kick or fight checks run on the Mac as two windows with `pnpm rooms:lag` or `pnpm rooms:fights`. vimaan joins a multiplayer check only for a final production pass, booked like any other job.
 
 - `rv up`, `rv doctor` and `rv down` manage the session. A second slot shares it, and the last slot to leave stops it. `rv desktop status` says who holds it.
 - It needs a logind seat that can open, which the owner's console login on tty1 gives. Without one `rv up` fails and says so. Nothing needs root.

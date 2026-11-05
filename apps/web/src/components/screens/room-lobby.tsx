@@ -417,6 +417,40 @@ export const RoomLobbyScreen = ({
   </Screen>
 );
 
+export const RoomFailedScreen = ({
+  failure,
+  onBack,
+  roomId,
+}: {
+  readonly failure: string;
+  readonly onBack: () => void;
+  readonly roomId: string;
+}) => (
+  <Screen className="bg-ink">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6">
+      <Stencil>{roomId}</Stencil>
+      <p className="font-display text-neon-red normal-case" role="alert">
+        Could not start the game: {failure}
+      </p>
+      <MenuList
+        autoFocus
+        defaultValue="reload"
+        label="Room"
+        onSelect={(id) => {
+          if (id === "reload") {
+            globalThis.location.reload();
+          } else {
+            onBack();
+          }
+        }}
+      >
+        <MenuItem value="reload">Reload</MenuItem>
+        <MenuItem value="back">Leave</MenuItem>
+      </MenuList>
+    </div>
+  </Screen>
+);
+
 const QUEUE_SECONDS = 30;
 
 export const QueueScreen = ({
