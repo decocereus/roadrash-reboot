@@ -121,7 +121,9 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
           {rows.map((row) => {
             const you = row.racer === "player";
             const note = notes.find((each) => each.racer === row.racer)?.text;
-            const chipColour = report.room?.colours.get(row.racer);
+            const chipColour = you
+              ? report.room?.myColour
+              : report.room?.colours.get(row.racer);
             return (
               <li
                 className={cn(

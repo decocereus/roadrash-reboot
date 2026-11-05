@@ -18,6 +18,7 @@ export interface RoomNet {
 
 export interface RoomReport {
   readonly colours: GuestColours;
+  readonly myColour: number | undefined;
   readonly names: GuestNames;
   readonly net: RoomNet;
   readonly raceId: string;
@@ -63,6 +64,7 @@ export const createRoomRun = (
       client.settle();
       return {
         colours,
+        myColour: riderColours.get(me),
         names,
         net: {
           inputToFrame: latency.summary(),

@@ -229,6 +229,26 @@ describe("a seat loading the race", () => {
     expect(report && readRaceStats(new DataView(report))?.rollbacks).toBe(1);
   });
 
+  it("tells the results screen the rider's own colour", () => {
+    const { seat } = loadingSeat();
+    const race = seat.race();
+    if (!race) {
+      throw new Error("The seat has no race.");
+    }
+    const run = createRoomRun(
+      seat,
+      race,
+      "friday-ride",
+      createInputLatency(
+        () => 0,
+        (done) => {
+          done();
+        }
+      )
+    );
+    expect(run.report().myColour).toBe(0);
+  });
+
   it("counts a correction it had not yet replayed on the results screen", () => {
     const { seat, socket } = loadingSeat();
     const race = seat.race();
