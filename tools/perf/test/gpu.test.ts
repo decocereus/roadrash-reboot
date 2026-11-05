@@ -5,7 +5,8 @@ import { browserHosts } from "@racer/devtools/browser-host";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
-import { budgetsFile } from "../src/budgets.ts";
+import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
+import type { Limit } from "../src/budgets.ts";
 import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
 import type { GpuSample } from "../src/gpu-frames.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
@@ -107,14 +108,12 @@ const frameOf = (scenario: Scenario, playback: Playback, index: number) => ({
     0.1,
   ],
   discarded: index === playback.discardedAt ? 40 : 0,
-  drawRung: 0,
   drawnEpoch: 1,
   frame: 100 + index,
   interval: playback.interval(index),
-  pixelRatio: scenario.quality.ratio,
+  pixelRatio: 2,
   programs: 40,
   race: RACE,
-  rung: 0,
   sizeEpoch: 1,
   start: START_MS + index * SLOT,
   textures: 30,
@@ -491,5 +490,58 @@ describe("gpu frame lane", () => {
     expect(
       new Set(evaluation.observations.map((each) => each.environment))
     ).toStrictEqual(new Set([nvidia]));
+  });
+});
+
+const ENVIRONMENT = "gpu-chromium-intel";
+const SCENARIO = "pack-riding-v1";
+
+const overLimit = (metric: string) => {
+  const kind = metricKinds.find((each) => each.metric === metric);
+  if (!kind) {
+    throw new Error(`No kind named ${metric}.`);
+  }
+  const limit: Limit = {
+    baseline: 1,
+    derivation: "test",
+    direction: kind.direction,
+    environment: ENVIRONMENT,
+    metric,
+    paired: kind.paired,
+    scenario: SCENARIO,
+    source: "test",
+    unit: kind.unit,
+    value: 1,
+  };
+  const [verdict] = judge(
+    [limit],
+    [
+      {
+        environment: ENVIRONMENT,
+        lane: "gpu",
+        metric,
+        note: "",
+        paired: 1,
+        runs: { a: [1], b: [2] },
+        scenario: SCENARIO,
+        value: 2,
+      },
+    ],
+    [{ environment: ENVIRONMENT, kind, scenario: SCENARIO }]
+  );
+  return verdict;
+};
+
+describe("budget verdicts", () => {
+  it("warns on triangles over their limit without failing", () => {
+    const verdict = overLimit("render.triangles.max");
+    expect(verdict?.ok).toBeTruthy();
+    expect(verdict?.text).toMatch(/^WARN /u);
+  });
+
+  it("fails frame time over its limit", () => {
+    const verdict = overLimit("frame.interval.p95");
+    expect(verdict?.ok).toBeFalsy();
+    expect(verdict?.text).toMatch(/^FAIL /u);
   });
 });

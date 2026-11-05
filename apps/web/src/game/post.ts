@@ -170,16 +170,22 @@ export interface Pipeline {
   prepare: (scene: THREE.Scene) => void;
   compile: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => Compiling;
   setLook: (look: Look) => void;
-  setBloomScale: (scale: number) => void;
-  setSamples: (samples: number) => void;
   resize: (width: number, height: number, pixelRatio: number) => void;
   render: (scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void;
   dispose: () => void;
 }
 
+export interface Picture {
+  readonly bloomScale: number;
+  readonly samples: number;
+}
+
+const fullPicture: Picture = { bloomScale: BLOOM_SCALE, samples: SAMPLES };
+
 export const createPipeline = (
   renderer: THREE.WebGLRenderer,
-  lap?: (part: Part) => void
+  lap?: (part: Part) => void,
+  { bloomScale, samples }: Picture = fullPicture
 ): Pipeline => {
   renderer.setOpaqueSort(byVariantThenMaterial);
   const normalTarget = new THREE.WebGLRenderTarget(4, 4);
@@ -207,7 +213,7 @@ export const createPipeline = (
     depthPacking: THREE.RGBADepthPacking,
   });
   const sceneTarget = new THREE.WebGLRenderTarget(4, 4, {
-    samples: SAMPLES,
+    samples,
     type: THREE.HalfFloatType,
   });
   const inkTarget = new THREE.WebGLRenderTarget(4, 4, {
@@ -253,9 +259,6 @@ export const createPipeline = (
   uniform(line, "normals").value = normalTarget.texture;
   uniform(line, "depths").value = normalTarget.depthTexture;
   const clearColour = new THREE.Color();
-  let bloomScale = BLOOM_SCALE;
-  let cssWidth = 1;
-  let cssHeight = 1;
 
   return {
     compile(scene, camera) {
@@ -324,8 +327,6 @@ export const createPipeline = (
       lap?.("grade");
     },
     resize(width, height, pixelRatio) {
-      cssWidth = width;
-      cssHeight = height;
       const wide = Math.max(1, Math.floor(width * pixelRatio));
       const tall = Math.max(1, Math.floor(height * pixelRatio));
       normalTarget.setSize(wide, tall);
@@ -336,24 +337,10 @@ export const createPipeline = (
       uniform(line, "width").value =
         LINE_WIDTH * Math.max(1, tall / LINE_REFERENCE_HEIGHT);
     },
-    setBloomScale(scale) {
-      if (scale === bloomScale) {
-        return;
-      }
-      bloomScale = scale;
-      bloom.setSize(cssWidth * bloomScale, cssHeight * bloomScale);
-    },
     setLook(look) {
       uniformValue(line, "ink", THREE.Color).set(look.ink);
       uniformValue(grade, "grade", THREE.Vector3).set(...look.grade);
       bloom.strength = look.bloom;
-    },
-    setSamples(samples) {
-      if (samples === sceneTarget.samples) {
-        return;
-      }
-      sceneTarget.samples = samples;
-      sceneTarget.dispose();
     },
   };
 };

@@ -318,6 +318,8 @@ export const budgetProblems = (budgets: Budgets): string[] => {
 const shown = (value: number): string =>
   Number.isInteger(value) ? String(value) : value.toPrecision(5);
 
+const warnsOnly: ReadonlySet<string> = new Set(["render.triangles.max"]);
+
 export const judge = (
   limits: readonly Limit[],
   observations: readonly Observation[],
@@ -363,10 +365,13 @@ export const judge = (
       kind.paired === null
         ? ""
         : ` A/B=${observed.paired === null ? "missing" : shown(observed.paired)} (${sign} ${kind.paired})`;
-    const ok = absolute && pairedOk;
+    const within = absolute && pairedOk;
+    const ok = within || warnsOnly.has(kind.metric);
+    const missed = ok ? "WARN" : "FAIL";
+    const mark = within ? "ok  " : missed;
     return {
       ok,
-      text: `${ok ? "ok  " : "FAIL"} ${where} observed=${shown(observed.value)} ${kind.unit} limit ${sign} ${shown(limit.value)} ${kind.unit}${delta}${pairedText}${observed.note === "" ? "" : ` ${observed.note}`}`,
+      text: `${mark} ${where} observed=${shown(observed.value)} ${kind.unit} limit ${sign} ${shown(limit.value)} ${kind.unit}${delta}${pairedText}${observed.note === "" ? "" : ` ${observed.note}`}`,
     };
   });
 

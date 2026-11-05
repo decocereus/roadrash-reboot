@@ -13,6 +13,33 @@ const SHADE_CHROMA = 1.24;
 const FIGURE_DEPTH_FLOOR = 0.93;
 const LUMA = new THREE.Vector3(0.2126, 0.7152, 0.0722);
 const SUN_ANCHOR_HEIGHT = 2.2;
+const SHADOW_KERNEL =
+  /shadow = \(\s*texture2DCompare[\s\S]*?\) \* \( 1\.0 \/ 17\.0 \);/u;
+const SHADOW_SAMPLES = [
+  ["0.0", "0.0"],
+  ["dx2", "dy2"],
+  ["dx3", "dy2"],
+  ["dx2", "dy3"],
+  ["dx3", "dy3"],
+  ["dx0", "0.0"],
+  ["dx1", "0.0"],
+  ["0.0", "dy0"],
+  ["0.0", "dy1"],
+] as const;
+
+const seventeenSamples = THREE.ShaderChunk.shadowmap_pars_fragment;
+THREE.ShaderChunk.shadowmap_pars_fragment = seventeenSamples.replace(
+  SHADOW_KERNEL,
+  `shadow = ( ${SHADOW_SAMPLES.map(
+    ([x, y]) =>
+      `texture2DCompare( shadowMap, shadowCoord.xy + vec2( ${x}, ${y} ), shadowCoord.z )`
+  ).join(" + ")} ) * ( 1.0 / ${SHADOW_SAMPLES.length}.0 );`
+);
+if (THREE.ShaderChunk.shadowmap_pars_fragment === seventeenSamples) {
+  throw new Error(
+    "three's shadow kernel changed, so nine samples no longer apply."
+  );
+}
 
 const CEL_UNIFORMS =
   "uniform vec3 rimDirection;uniform vec3 rimColour;uniform vec3 keyDirection;uniform float rimStrength;\n";

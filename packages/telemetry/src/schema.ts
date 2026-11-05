@@ -3,8 +3,9 @@ import * as Schema from "effect/Schema";
 import {
   batchKinds,
   faultSources,
-  frameRates,
   governReasons,
+  presetIds,
+  recordedFrameRates,
   HISTOGRAM_BUCKETS,
   MAX_EVENTS,
   MAX_FAULT_TEXT,
@@ -50,10 +51,11 @@ export type Session = typeof sessionSchema.Type;
 
 const qualitySchema = Schema.Struct({
   bloomScale: Schema.Finite,
-  frameRate: Schema.optionalKey(Schema.Literals(frameRates)),
+  frameRate: Schema.optionalKey(Schema.Literals(recordedFrameRates)),
   pace: Count,
   pixelRatio: Schema.Finite,
-  rung: Count,
+  preset: Schema.optionalKey(Schema.Literals(presetIds)),
+  rung: Schema.optionalKey(Count),
   samples: Schema.optionalKey(Count),
   shadowMap: Count,
 });
@@ -64,11 +66,11 @@ const worstFrameSchema = Schema.Struct({
   calls: listOf(Count, MAX_PARTS),
   cpu: listOf(Schema.Finite, MAX_PARTS),
   discardedMs: Milliseconds,
-  drawRung: Count,
+  drawRung: Schema.optionalKey(Count),
   drawnEpoch: Count,
   frame: Count,
   intervalMs: Milliseconds,
-  nextRung: Count,
+  nextRung: Schema.optionalKey(Count),
   pixelRatio: Schema.Finite,
   race: Count,
   sizeEpoch: Count,
@@ -107,10 +109,10 @@ const canvasEventSchema = Schema.Struct({
 
 const invalidatedEventSchema = Schema.Struct({
   ...stamp,
-  drawRung: Count,
+  drawRung: Schema.optionalKey(Count),
   drawnEpoch: Count,
   kind: Schema.Literal("invalidated"),
-  nextRung: Count,
+  nextRung: Schema.optionalKey(Count),
   sizeEpoch: Count,
 });
 

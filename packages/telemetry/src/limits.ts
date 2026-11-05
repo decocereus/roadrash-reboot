@@ -10,8 +10,12 @@ export const MAX_EVENTS = 512;
 export const MAX_PARTS = 32;
 export const MAX_FAULT_TEXT = 240;
 
-export const frameRates = ["auto", "60", "30"] as const;
+export const frameRates = ["60", "30"] as const;
 export type FrameRate = (typeof frameRates)[number];
+export const recordedFrameRates = [...frameRates, "auto"] as const;
+
+export const presetIds = ["full", "balanced", "lean"] as const;
+export type PresetId = (typeof presetIds)[number];
 
 export const testDevices = ["air", "pro", "unspecified"] as const;
 export type TestDevice = (typeof testDevices)[number];
@@ -29,7 +33,6 @@ export const governReasons = [
   "steady-30",
   "rate-setting",
 ] as const;
-export type GovernReason = (typeof governReasons)[number];
 
 export const resizeSources = ["observer", "rung", "ladder"] as const;
 export type ResizeSource = (typeof resizeSources)[number];

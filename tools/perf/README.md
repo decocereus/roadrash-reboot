@@ -103,7 +103,7 @@ node tools/perf/measure.ts --url "http://localhost:1352/?stress&ratio=2" --label
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `--url` | required | Page to load. Pin the ratio with `?ratio=` so the governor's 60 Hz pacing does not hide the headroom. A browser that reports a modest GPU starts without multisampling; add `&rung=0` to measure full quality there, or `&rung=3` to measure the multisampling-off rung anywhere. |
+| `--url` | required | Page to load. Pin the ratio with `?ratio=` so the 60 Hz pacing does not hide the headroom. Add `&preset=full`, `balanced` or `lean` to measure a preset the device check would not pick. |
 | `--runs` | 3 | Fresh browser per run; the summary shows the mean and the spread across runs. |
 | `--from`, `--to` | the bench window | Tick range measured, inclusive. The default is `benchWindows.stress` in `packages/sim/src/bench-window.ts`, the `pack-riding-v1` window. |
 | `--first-run` | off | Start the trace during the countdown and measure from the green light, tick 1, so first-use stalls (shader compiles, texture uploads, the first city chunk of a kind) land in the window. The trace adds the `toplevel` and `gpu` categories so a stall that happens outside JavaScript still shows up, in the GPU process. |
@@ -135,7 +135,7 @@ By default `measure.ts` measures `benchWindows.stress` from `packages/sim/src/be
 | Part | What it covers |
 | --- | --- |
 | `sim` | Pilot inputs and `stepRace` for the ticks this frame |
-| `other` | Sound, HUD reports, the governor, and the frame meter |
+| `other` | Sound, HUD reports, and the frame meter |
 | `riders` | Bike placement and every figure's pose blend and bone writes |
 | `fleet` | Placing every traffic car and writing the instance buffers |
 | `camera` | The chase camera |
@@ -174,9 +174,9 @@ For each side, the lane:
 
 1. Sets the game's own frame-rate setting to 60 in `localStorage` and measures the page's `requestAnimationFrame` rate. On a 120 Hz display the game then draws every second vsync. The lane never changes display settings.
 2. Warms each scenario once, to tick 120.
-3. Runs five pairs per scenario, alternating which side goes first. Only the measured side renders; the other waits on `/kit`. Each sample opens a fresh race at `?stress&rung=0` or `?stress=reference&rung=0` (pixel ratio 2, governor off, pacer on), installs a buffered long-task observer before the window starts, waits for the window's last tick, and reads the benchmark rows, the frame records and the long tasks. On side B it also reads `created` on every frame since the race's first.
+3. Runs five pairs per scenario, alternating which side goes first. Only the measured side renders; the other waits on `/kit`. Each sample opens a fresh race at `?stress&rung=0` or `?stress=reference&rung=0` (the host's own preset, pacer on; `rung=0` stays in the URL only for side A's older revision), installs a buffered long-task observer before the window starts, waits for the window's last tick, and reads the benchmark rows, the frame records and the long tasks. On side B it also reads `created` on every frame since the race's first.
 
-A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, rung, pixel ratio or size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error. Every sample must also have the same page size and device pixel ratio. The lane stops before warming up if A's and B's windows already differ, which happens when a window is resized; restart that run.
+A sample fails if any of these is wrong: the window's workload, rider counts, tick times, visibility or frame-rate setting, a frame's race, a pixel ratio that changes during the window, or a size epoch, any discarded simulation time, fewer than 120 frames, a missing counter, or a console error. Every sample must also have the same page size and device pixel ratio. The lane stops before warming up if A's and B's windows already differ, which happens when a window is resized; restart that run.
 
 Each of B's races must also create no shader program and no texture after its first frame. The lane subtracts `created` on the first countdown frame from `created` on the window's last tick, so any program compiled or texture created in between fails it, work that can stall a frame, as a new shader variant did for 125 ms at tick 268 before `ba109d2`. It counts creations rather than three's live counts, because three can release a resource and create its replacement on one frame: a texture whose `wrapS` changes gets a new WebGL texture and loses the old one, and the live count stays the same. The lane fails with the resource, how many were created, and the frame and tick of each creation:
 
@@ -198,7 +198,7 @@ Fix it by staging what that frame first drew in `apps/web/src/game/staging.ts`, 
 | `frame.missedFraction` | 0.01, the owner's cap | none |
 | `main.longTask.count` | 0, the owner's cap | none |
 | `main.longTask.blockingMs` | 0 ms, the owner's cap | none |
-| `render.calls.max`, `render.triangles.max` | per scenario, ceil(1.05 x the baseline maximum) | none |
+| `render.calls.max`, `render.triangles.max` | per scenario, ceil(1.05 x the baseline maximum). Triangles over their limit print `WARN` and do not fail, because frame time per scene is the limit that blocks | none |
 | `render.programs.max`, `render.textures.max` | per scenario, the baseline maximum + 1 | none |
 | `riders.cpu.p95` | per scenario, twice the worst B window at the first revision that plants the riders' hands every frame | none |
 
@@ -247,7 +247,7 @@ Add `gpu-chromium-intel` rows only when normal selection holds the caps. The lan
 | GTX 1650 Ti | 1512x773, 2 | 60.1 | 16.7 | 16.7 | 16.8 | 0 of 1,202 | 2.4 to 3.0 | 102 | 834,473 |
 | UHD 630 | 1920x1080, 0.7 | 59.3 to 59.7 | 16.7 | 17.2 to 17.3 | 24.0 to 33.2 | 21 to 22 of about 1,190 | 4.9 to 5.1 | 102 | 834,473 |
 
-The UHD 630 applies the bar's lean settings by itself, because its name matches `MODEST_GPU`. About 1% of its frames miss a vsync. JS is about 5 ms of a 16.7 ms frame, so the main thread is not the limit, but no GPU timer query separated the GPU from the compositor. p99 is noisy there, because a handful of frames moves it. The panel stops at 60 Hz, so the GTX 1650 Ti's numbers hide any headroom. The Whole room camera adds about 63,000 triangles and 0.6 ms of JS on the UHD 630. Measure again after a change to `post.ts`.
+The UHD 630 applies the bar's lean settings by itself, because `presets.ts` gives its name the `lean` preset. About 1% of its frames miss a vsync. JS is about 5 ms of a 16.7 ms frame, so the main thread is not the limit, but no GPU timer query separated the GPU from the compositor. p99 is noisy there, because a handful of frames moves it. The panel stops at 60 Hz, so the GTX 1650 Ti's numbers hide any headroom. The Whole room camera adds about 63,000 triangles and 0.6 ms of JS on the UHD 630. Measure again after a change to `post.ts`.
 
 ### Adding a host
 
@@ -267,7 +267,7 @@ NODE_ENV=development pnpm exec vite preview --mode development --host 127.0.0.1 
 
 Open the game with `?tester` in the address. Settings (from the title or the pause menu) then turns on the frame meter, recording, and automatic upload, and sets the test device to MacBook Air or MacBook Pro. Recording and upload are off until the tester turns them on, and the settings live in `localStorage` under `rushline.settings.v1`, apart from the career save. B while riding stamps a report marker. Send report uploads the current recording and anything still queued, and shows the report id, which is the session's short id and the batch number.
 
-With recording on, every 30 seconds the page turns its rings into one batch of at most 48 KiB: the frame-interval histogram (8.33, 16.67, 23.33, 33.33, 50, 100, 250, and 1000 ms edges plus overflow), the 32 slowest frames with each part's CPU time, and the events since the last batch. Events are governor changes with the quality before and after and the reason, canvas resizes with their size generation, frames whose drawing a resize cleared before it was presented, unfinished render passes, WebGL context loss, errors with query strings stripped, visibility changes, race start, green, end, crash and quit, and report markers. Batches are numbered per session, sent oldest first, removed only once the collector acknowledges them, retried with backoff, and deduplicated by session and batch number on the server. The queue holds 24 batches and counts what it drops.
+With recording on, every 30 seconds the page turns its rings into one batch of at most 48 KiB: the frame-interval histogram (8.33, 16.67, 23.33, 33.33, 50, 100, 250, and 1000 ms edges plus overflow), the 32 slowest frames with each part's CPU time, and the events since the last batch. Events are canvas resizes with their size generation, frames whose drawing a resize cleared before it was presented, unfinished render passes, WebGL context loss, errors with query strings stripped, visibility changes, race start, green, end, crash and quit, and report markers. Batches are numbered per session, sent oldest first, removed only once the collector acknowledges them, retried with backoff, and deduplicated by session and batch number on the server. The queue holds 24 batches and counts what it drops.
 
 ### Read a session
 

@@ -659,25 +659,24 @@ Test files:
 
 ### Frame rate and quality
 
-Holding 60 frames a second: the pacer, the governor that judges late frames, the quality rungs it steps down, the frame-rate setting and the `?fps` overlay.
+Holding a constant frame rate: the fixed quality presets a device check picks before the race, the pacer, the frame-rate setting and the `?fps` overlay.
 
 - Id: `frame-pacing`
-- Start: `apps/web/src/game/governor.ts`, `apps/web/src/game/pacer.ts`, `apps/web/src/game/quality-ladder.ts`
+- Start: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: `frame.interval.p50`, `frame.interval.p95`, `frame.interval.p99`, `frame.missedFraction`, `main.longTask.blockingMs`, `main.longTask.count`
-- Owns: `apps/web/src/game/governor*.ts`, `apps/web/src/game/pacer.ts`, `apps/web/src/game/quality-ladder.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
+- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
 
 Source files:
 
 - `apps/web/src/game/fps-meter.ts`
-- `apps/web/src/game/governor.ts`
 - `apps/web/src/game/pacer.ts`
-- `apps/web/src/game/quality-ladder.ts`
+- `apps/web/src/game/presets.ts`
 
 Test files:
 
-- `apps/web/src/game/governor.test.ts`
+- `apps/web/src/game/presets.test.ts`
 - `apps/web/test/render-quality.test.ts`
 
 ## Platform

@@ -112,7 +112,6 @@ const frameSample = Schema.Struct({
   cpu: Schema.Array(Schema.Number),
   interval: Schema.Number,
   pixelRatio: Schema.Number,
-  rung: Schema.Number,
   tick: Schema.Number,
 });
 
@@ -153,7 +152,6 @@ interface Sample {
   readonly calls: number;
   readonly late: Readonly<Record<string, number>>;
   readonly pixelRatios: readonly number[];
-  readonly rungs: readonly number[];
 }
 
 export const sample = Effect.fn("rv.sample")(function* sample(
@@ -197,7 +195,6 @@ export const sample = Effect.fn("rv.sample")(function* sample(
     ),
     pixelRatios: [...new Set(frames.map((frame) => frame.pixelRatio))],
     renderer: after.renderer,
-    rungs: [...new Set(frames.map((frame) => frame.rung))],
     toTick: after.tick,
   };
   return sampled;

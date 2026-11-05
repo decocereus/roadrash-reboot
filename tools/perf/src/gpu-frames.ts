@@ -24,14 +24,12 @@ const gpuFrame = Schema.Struct({
   calls: Schema.Array(Schema.Number),
   cpu: Schema.Array(Schema.Number),
   discarded: Schema.Number,
-  drawRung: Schema.Number,
   drawnEpoch: Schema.Number,
   frame: Schema.Number,
   interval: Schema.Number,
   pixelRatio: Schema.Number,
   programs: Schema.Number,
   race: Schema.Number,
-  rung: Schema.Number,
   sizeEpoch: Schema.Number,
   start: Schema.Number,
   textures: Schema.Number,
@@ -121,22 +119,16 @@ const total = (values: readonly number[]): number =>
   values.reduce((sum, each) => sum + each, 0);
 
 const frameProblem = (
-  scenario: Scenario,
   race: number,
   first: GpuFrame,
   frame: GpuFrame
 ): string | null => {
-  const { ratio, rung } = scenario.quality;
   const where = `frame=${frame.frame} tick=${frame.tick}`;
   if (frame.race !== race) {
     return `${where} race=${frame.race} expected=${race}`;
   }
-  if (
-    frame.rung !== rung ||
-    frame.drawRung !== rung ||
-    frame.pixelRatio !== ratio
-  ) {
-    return `${where} rung=${frame.rung} drawn=${frame.drawRung} ratio=${frame.pixelRatio} expected=${rung}/${rung}/${ratio}`;
+  if (frame.pixelRatio !== first.pixelRatio) {
+    return `${where} ratio=${frame.pixelRatio} expected=${first.pixelRatio}`;
   }
   if (
     frame.sizeEpoch !== first.sizeEpoch ||
@@ -206,7 +198,7 @@ const sampleProblems = (scenario: Scenario, sample: GpuSample): string[] => {
     return problems;
   }
   const bad = capture.frames
-    .map((frame) => frameProblem(scenario, bench.race, first, frame))
+    .map((frame) => frameProblem(bench.race, first, frame))
     .find((each) => each !== null);
   if (bad !== undefined) {
     problems.push(bad);

@@ -38,14 +38,6 @@ interface Band {
   readonly total: number;
 }
 
-interface Quality {
-  readonly width: number;
-  readonly height: number;
-  readonly scale: number;
-  readonly ratio: number;
-  readonly rung: number;
-}
-
 export interface Scenario {
   readonly id: ScenarioId;
   readonly bench: Bench;
@@ -56,16 +48,7 @@ export interface Scenario {
   readonly workloadDigest: string;
   readonly racers: number;
   readonly police: number;
-  readonly quality: Quality;
 }
-
-const quality: Quality = {
-  height: 860,
-  ratio: 2,
-  rung: 0,
-  scale: 2,
-  width: 1512,
-};
 
 export const scenarios: readonly Scenario[] = [
   {
@@ -75,7 +58,6 @@ export const scenarios: readonly Scenario[] = [
     id: "reference-v1",
     minSpeed: 39.837493659184844,
     police: 1,
-    quality,
     racers: 15,
     window: benchWindows.reference,
     workloadDigest:
@@ -88,7 +70,6 @@ export const scenarios: readonly Scenario[] = [
     id: "pack-riding-v1",
     minSpeed: 43.83868577198478,
     police: 8,
-    quality,
     racers: 15,
     window: benchWindows.stress,
     workloadDigest:

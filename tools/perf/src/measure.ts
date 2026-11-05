@@ -170,7 +170,6 @@ const measureOnce = (options: Options, run: number, desktopEnv: DesktopEnv) =>
         pixelRatios: [...new Set(frames.map((frame) => frame.pixelRatio))],
         renderer: info.renderer,
         run,
-        rungs: [...new Set(frames.map((frame) => frame.rung))],
         samples: frames,
         shots,
         stalls: stallsOf(

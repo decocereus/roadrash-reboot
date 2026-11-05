@@ -4,7 +4,7 @@ import { createRaceRun } from "@racer/sim/race-run";
 import type { RaceRun } from "@racer/sim/race-run";
 import { PLAYER_RIDER, riderOf } from "@racer/sim/state";
 import type { RiderInput } from "@racer/sim/state";
-import type { FrameRate } from "@racer/telemetry/limits";
+import type { FrameRate, PresetId } from "@racer/telemetry/limits";
 import { trackFor } from "@racer/track/roads";
 import * as THREE from "three";
 
@@ -12,9 +12,9 @@ import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { frameLoopOf, installFrameLoop } from "../src/game/frame-loop.ts";
 import type { FrameLoop, FrameRenderer } from "../src/game/frame-loop.ts";
 import type { InputHost, KeyEvent, Pad } from "../src/game/input.ts";
+import { bindQuality, createQuality } from "../src/game/presets.ts";
+import type { Quality, QualityRenderer } from "../src/game/presets.ts";
 import type { Profiler } from "../src/game/profile.ts";
-import { bindQuality, createQuality } from "../src/game/quality-ladder.ts";
-import type { Quality, QualityRenderer } from "../src/game/quality-ladder.ts";
 import { hasherFor } from "./race-hash.ts";
 
 export const VSYNC_MS = 1000 / 60;
@@ -30,15 +30,15 @@ const scriptedInput = (tick: number, input: RiderInput): void => {
 
 export interface HostOptions {
   readonly dpr?: number;
+  readonly gpu?: string;
   readonly pinnedPixelRatio?: number;
+  readonly pinnedPreset?: PresetId;
   readonly pinnedRefresh?: number;
-  readonly pinnedRung?: number;
   readonly profiled?: boolean;
   readonly sounded?: boolean;
 }
 
 interface Seen {
-  bloomScales: number[];
   calls: number;
   drives: number;
   laps: number;
@@ -47,8 +47,6 @@ interface Seen {
   profiled: number;
   reports: number;
   resizes: string[];
-  samples: number[];
-  shadowMaps: number[];
   sizes: string[];
 }
 
@@ -137,7 +135,6 @@ export const createHost = (options: HostOptions = {}): Host => {
     throw new Error("The race has no player.");
   }
   const seen: Seen = {
-    bloomScales: [],
     calls: 0,
     drives: 0,
     laps: 0,
@@ -146,8 +143,6 @@ export const createHost = (options: HostOptions = {}): Host => {
     profiled: 0,
     reports: 0,
     resizes: [],
-    samples: [],
-    shadowMaps: [],
     sizes: [],
   };
   const canvas = { clientHeight: 720, clientWidth: 1280, height: 0, width: 0 };
@@ -182,7 +177,6 @@ export const createHost = (options: HostOptions = {}): Host => {
     beginFrame: note,
     canvas: note,
     frame: note,
-    governor: note,
     incompletePass: note,
     invalidated: note,
     raceId: () => 1,
@@ -198,10 +192,12 @@ export const createHost = (options: HostOptions = {}): Host => {
     renderer,
     {
       pinnedPixelRatio: options.pinnedPixelRatio ?? 0,
+      pinnedPreset:
+        options.gpu === undefined ? (options.pinnedPreset ?? "full") : null,
       pinnedRefresh: options.pinnedRefresh ?? 0,
-      pinnedRung: options.pinnedRung ?? -1,
     },
-    () => control.dpr
+    () => control.dpr,
+    () => options.gpu ?? "test"
   );
   const bound = bindQuality({
     canvas,
@@ -215,15 +211,8 @@ export const createHost = (options: HostOptions = {}): Host => {
       resize: (width, height, ratio) => {
         seen.resizes.push(`${width}x${height}@${ratio}`);
       },
-      setBloomScale: (scale) => {
-        seen.bloomScales.push(scale);
-      },
-      setSamples: (samples) => {
-        seen.samples.push(samples);
-      },
     },
     quality,
-    readGpu: () => "test",
     recorder,
     renderer,
     stage: {
@@ -231,26 +220,20 @@ export const createHost = (options: HostOptions = {}): Host => {
       world: {
         follow: note,
         scene: new THREE.Scene(),
-        setShadowMap: (size) => {
-          seen.shadowMaps.push(size);
-        },
       },
     },
     subject: { air: 0, s: 0, speed: 0, tuck: 0, x: 0 },
   });
-  bound.applyDeviceStart();
   bound.resize();
   installFrameLoop({
-    applyPending: bound.applyPending,
     checkPresented: bound.checkPresented,
     draw: () => {
       bound.present();
     },
     feedback: { noticeLeft: 0 },
     frame,
-    govern: bound.govern,
     halted,
-    noteRefresh: bound.noteRefresh,
+    noteDisplay: bound.noteDisplay,
     player: () => player,
     quality,
     recorder,
