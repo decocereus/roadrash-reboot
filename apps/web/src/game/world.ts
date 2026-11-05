@@ -9,7 +9,8 @@ import { placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint, TrackProp } from "@racer/track/track";
 import * as THREE from "three";
 
-import type { WalkerAsset } from "./assets.ts";
+import type { Assets } from "./assets.ts";
+import { buildBazaar } from "./bazaar.ts";
 import { createShading, onFxLayer } from "./cel.ts";
 import type { Shading } from "./cel.ts";
 import { FRONT_GAP, LONGEST_BLOCK } from "./city-blocks.ts";
@@ -328,7 +329,7 @@ export interface World {
 
 export const createWorld = (
   track: Track,
-  walkerAsset: WalkerAsset,
+  assets: Pick<Assets, "stalls" | "walkers">,
   shadowMap = SHADOW_MAP
 ): World => {
   const look = lookOf(track.plan.region);
@@ -440,9 +441,14 @@ export const createWorld = (
     }
   }
   scene.add(freeze(buildScenery(track, shading, textures, clearance)));
+  if (track.stalls.length > 0) {
+    const bazaar = buildBazaar(track, shading, assets.stalls, clearance);
+    scene.add(freeze(bazaar.object));
+    stretches.push(bazaar);
+  }
   const hazards = createHazardMarks(track, shading);
   scene.add(hazards.group);
-  const walkers = createWalkerMarks(track, shading, walkerAsset);
+  const walkers = createWalkerMarks(track, shading, assets.walkers);
   scene.add(walkers.group);
   const junctions = buildJunctions(track, shading, clearance);
   scene.add(junctions.group);

@@ -1,15 +1,18 @@
 import type { PedestrianView } from "@racer/sim/race-view";
 import { describe, expect, it } from "vitest";
 
-import { walkerFrameOf } from "../src/game/walker-clips.ts";
+import { crowdModes, walkerFrameOf } from "../src/game/walker-clips.ts";
 import type { WalkerClips } from "../src/game/walker-clips.ts";
 
 const clips: WalkerClips = {
+  browse: { frames: 90, start: 900 },
   fall: { frames: 22, start: 200 },
   flinch: { frames: 16, start: 300 },
   get_up: { frames: 38, start: 400 },
+  haggle: { frames: 90, start: 1000 },
   lie: { frames: 60, start: 500 },
   run: { frames: 20, start: 600 },
+  serve: { frames: 90, start: 1100 },
   wait: { frames: 90, start: 700 },
   walk: { frames: 30, start: 800 },
 };
@@ -116,5 +119,36 @@ describe("which frame a walker shows", () => {
     ).not.toBe(
       walkerFrameOf(clips, standing, 40, 0, { offset: 0.5, scale: 1 })
     );
+  });
+});
+
+describe("the frame a stall's crowd stands on", () => {
+  const look = { offset: 0.25, scale: 1 };
+
+  it("plays each mode's own clip, from the person's own offset", () => {
+    for (const mode of crowdModes) {
+      const clip = clips[mode];
+      const frame = walkerFrameOf(clips, { mode }, 0, 0, look);
+      expect(frame).toBe(clip.start + Math.floor(look.offset * clip.frames));
+    }
+  });
+
+  it("advances one frame every two ticks, and loops inside its clip", () => {
+    for (const mode of crowdModes) {
+      const clip = clips[mode];
+      const first = walkerFrameOf(clips, { mode }, 1000, 0, look);
+      const next = walkerFrameOf(clips, { mode }, 1002, 0, look);
+      const around = walkerFrameOf(
+        clips,
+        { mode },
+        1000 + clip.frames * 2,
+        0,
+        look
+      );
+      expect(next - first === 1 || next === clip.start).toBeTruthy();
+      expect(around).toBe(first);
+      expect(first).toBeGreaterThanOrEqual(clip.start);
+      expect(first).toBeLessThan(clip.start + clip.frames);
+    }
   });
 });

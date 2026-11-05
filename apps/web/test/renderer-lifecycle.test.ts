@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { modelUrls } from "../src/assets/model-urls.ts";
 import { createBikes } from "../src/game/actors.ts";
 import { assetParsers, glows } from "../src/game/assets.ts";
-import type { Assets, BikeParts, RiderAsset } from "../src/game/assets.ts";
+import type { Assets, ModelParts, RiderAsset } from "../src/game/assets.ts";
 import { bikeModelFor, bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import type { Shading } from "../src/game/cel.ts";
@@ -31,7 +31,7 @@ const HELMET_REACH = 0.4;
 const pinnedAssets = async (): Promise<Assets> => {
   const [riderA, riderB, riderC] = modelUrls.figures;
   const { classic, ghost, oni, seraph } = modelUrls.bikes;
-  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c, walkers] =
+  const [bikeA, bikeB, bikeC, bikeD, car, van, a, b, c, walkers, stalls] =
     await Promise.all([
       assetParsers.parts(artFile(classic), classic),
       assetParsers.parts(artFile(ghost), ghost),
@@ -43,6 +43,7 @@ const pinnedAssets = async (): Promise<Assets> => {
       assetParsers.rider(artFile(riderB), riderB),
       assetParsers.rider(artFile(riderC), riderC),
       assetParsers.walkers(artFile(modelUrls.walkers), modelUrls.walkers),
+      assetParsers.parts(artFile(modelUrls.stalls), modelUrls.stalls),
     ]);
   return {
     bikes: {
@@ -53,6 +54,7 @@ const pinnedAssets = async (): Promise<Assets> => {
     },
     car: car.value,
     figures: [a.value, b.value, c.value],
+    stalls: stalls.value,
     truck: car.value,
     van: van.value,
     walkers: walkers.value,
@@ -191,7 +193,7 @@ const drawnOf = (mesh: THREE.InstancedMesh) => ({
   matrices: mesh.instanceMatrix.array.slice(0, mesh.count * 16),
 });
 
-const bodyVertices = (bike: BikeParts): number =>
+const bodyVertices = (bike: ModelParts): number =>
   (bike.get("bike_body") ?? [])
     .filter((primitive) => !glows(primitive.slot))
     .reduce(

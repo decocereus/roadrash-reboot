@@ -8,6 +8,7 @@ import { throwRider } from "./rider-crash.ts";
 import { ride } from "./rider-drive.ts";
 import { fly } from "./rider-flight.ts";
 import { stepOffBike } from "./rider-recovery.ts";
+import { hitStalls } from "./stalls.ts";
 import { clamp } from "./state.ts";
 import type { RaceState, RiderInput, RiderState } from "./state.ts";
 
@@ -89,7 +90,7 @@ export const stepRider = (
     thrown = true;
   }
   if (!thrown) {
-    thrown = hitProps(state, track, rider);
+    thrown = hitProps(state, track, rider) || hitStalls(state, track, rider);
   }
   thrown ||= hitTraffic(state, rider);
   if (thrown) {

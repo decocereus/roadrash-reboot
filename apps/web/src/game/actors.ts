@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { glows, paintPrimitives } from "./assets.ts";
-import type { Assets, BikeParts, Palette, Primitive } from "./assets.ts";
+import type { Assets, ModelParts, Palette, Primitive } from "./assets.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
@@ -207,7 +207,7 @@ export const createBikes = (
     z,
   }));
 
-  const modelFleet = (bike: BikeParts, seats: number): ModelFleet => {
+  const modelFleet = (bike: ModelParts, seats: number): ModelFleet => {
     const paint = new THREE.InstancedBufferAttribute(
       new Float32Array(seats * 3),
       3

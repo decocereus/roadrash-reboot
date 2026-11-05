@@ -5,7 +5,7 @@ import { PLAYER_COLOURS, riderPalette } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import { createBikes } from "./actors.ts";
-import type { Assets, BikeParts, Decoded } from "./assets.ts";
+import type { Assets, ModelParts, Decoded } from "./assets.ts";
 import { bikeModelIds, bikeModelOf } from "./bike-models.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import { createShading } from "./cel.ts";
@@ -42,7 +42,7 @@ interface Footprint {
   readonly height: number;
 }
 
-const footprintOf = (bike: BikeParts): Footprint => {
+const footprintOf = (bike: ModelParts): Footprint => {
   const bounds = new THREE.Box3();
   for (const primitive of [...bike.values()].flat()) {
     primitive.geometry.computeBoundingBox();

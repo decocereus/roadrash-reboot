@@ -16,6 +16,7 @@ const RAW = path.join(import.meta.dirname, "out");
 const ATLAS_SIZE = 1024;
 
 const READ_ATTRIBUTES = new Set([
+  "COLOR_0",
   "POSITION",
   "NORMAL",
   "JOINTS_0",
