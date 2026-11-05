@@ -18,6 +18,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/src/components/use-handoff.ts",
       "apps/web/src/prepare-outcome.ts",
       "apps/web/src/race-handoff.ts",
+      "apps/web/src/room-handoff.ts",
       "apps/web/test/prepare-outcome.test.ts",
       "apps/web/test/race-handoff.test.ts",
       "apps/web/src/components/room-url.ts",

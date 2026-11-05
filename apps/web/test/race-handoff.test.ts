@@ -2,19 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { preparedRace, preparedRaces } from "../src/prepare-outcome.ts";
 import type { PrepareOutcome } from "../src/prepare-outcome.ts";
-import {
-  rideOutSignals,
-  roomSignals,
-  stepRideOut,
-  stepRoom,
-} from "../src/race-handoff.ts";
+import { rideOutSignals, stepRideOut } from "../src/race-handoff.ts";
 import type {
   RideOutEvent,
   RideOutHandoff,
-  RoomEvent,
-  RoomHandoff,
   Step,
 } from "../src/race-handoff.ts";
+import { roomSignals, stepRoom } from "../src/room-handoff.ts";
+import type { RoomEvent, RoomHandoff } from "../src/room-handoff.ts";
 
 const RIDE = "the ride";
 type Ride = typeof RIDE;
