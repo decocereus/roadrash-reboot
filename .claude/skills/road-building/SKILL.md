@@ -67,6 +67,6 @@ Do these in order. A road that fails a step goes back to the plan.
 
 ## Limits
 
-- Rooms have no catch-up. `roomSetup` keeps its pacing at zero and `packages/career/src/room-race.test.ts` asserts it. A road or tuning change must not change a room race.
+- Rooms have no catch-up. `roomSetup` keeps its pacing at zero and `packages/career/src/room-race.test.ts` asserts it. Rooms race the same roads and tier conditions, so a road change also reaches them. Check a room race when you change a road.
 - Tier 3 `hitDamage` is the owner's decision. Leave it.
 - Madrid is faithful to the real city, with some neon. No real logos or brand signs. Each recognisable landmark is a swappable asset.
