@@ -2,6 +2,8 @@ import { RACE_STATS_PACKET_BYTES } from "@racer/sim/room-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SEAT_CLOSED } from "../src/messages.ts";
+import { NEW_SEAT, seatAfter } from "../src/seat-client.ts";
+import type { SeatEvent, SeatPhase } from "../src/seat-client.ts";
 import {
   ABNORMAL_CLOSE,
   countdown,
@@ -10,11 +12,13 @@ import {
   FakeSocket,
   hearTick,
   lobbyAt,
+  lobbyMessage,
   loadingSeat,
   newSeat,
   PING_EVERY_MS,
   replaced,
   started,
+  startedMessage,
 } from "./seat-socket.ts";
 
 const LIVE_ROADS = [
@@ -210,10 +214,143 @@ describe("a seat's way through a room", () => {
     expect(socket.sentBytes).toHaveLength(sent);
   });
 
+  it("tells its listeners when it leaves", () => {
+    const { seat } = newSeat();
+    const onChange = vi.fn<() => void>();
+    seat.listen({ onChange });
+    seat.leave();
+    expect(onChange).toHaveBeenCalledOnce();
+  });
+
   it("stops pinging once it leaves", () => {
     const { seat, socket } = newSeat();
     seat.leave();
     vi.advanceTimersByTime(10 * PING_EVERY_MS);
     expect(socket.sentBytes).toStrictEqual([]);
+  });
+});
+
+const EVENTS = {
+  closed: { kind: "closed" },
+  countdown: { kind: "countdown", startAtMs: 0 },
+  ended: { kind: "ended", tick: 0 },
+  left: { kind: "left" },
+  lobby: lobbyMessage(1),
+  refused: { kind: "refused", reason: "replaced" },
+  silent: { kind: "silent" },
+  started: startedMessage,
+} satisfies Record<SeatEvent["kind"], SeatEvent>;
+
+const GATHERING = {
+  closed: "lost",
+  countdown: null,
+  ended: null,
+  left: "left",
+  lobby: "lobby",
+  refused: "refused",
+  silent: "lost",
+  started: "loading",
+} as const;
+
+const OVER = {
+  closed: null,
+  countdown: null,
+  ended: null,
+  left: null,
+  lobby: null,
+  refused: null,
+  silent: null,
+  started: null,
+} as const;
+
+const MOVES = {
+  connecting: GATHERING,
+  ended: OVER,
+  left: OVER,
+  loading: {
+    ...OVER,
+    closed: "lost",
+    countdown: "racing",
+    left: "left",
+    refused: "lost",
+    silent: "lost",
+  },
+  lobby: GATHERING,
+  lost: OVER,
+  racing: {
+    ...OVER,
+    closed: "lost",
+    ended: "ended",
+    left: "left",
+    refused: "lost",
+    silent: "lost",
+  },
+  refused: OVER,
+} as const satisfies Record<
+  SeatPhase,
+  Record<SeatEvent["kind"], SeatPhase | null>
+>;
+
+const ROADS_TO = {
+  connecting: [],
+  ended: ["lobby", "started", "countdown", "ended"],
+  left: ["left"],
+  loading: ["lobby", "started"],
+  lobby: ["lobby"],
+  lost: ["closed"],
+  racing: ["lobby", "started", "countdown"],
+  refused: ["refused"],
+} as const satisfies Record<SeatPhase, readonly SeatEvent["kind"][]>;
+
+const PHASES = [
+  "connecting",
+  "ended",
+  "left",
+  "loading",
+  "lobby",
+  "lost",
+  "racing",
+  "refused",
+] as const satisfies readonly SeatPhase[];
+
+const KINDS = [
+  "closed",
+  "countdown",
+  "ended",
+  "left",
+  "lobby",
+  "refused",
+  "silent",
+  "started",
+] as const satisfies readonly SeatEvent["kind"][];
+
+const seatIn = (phase: SeatPhase) => {
+  let state = NEW_SEAT;
+  for (const kind of ROADS_TO[phase]) {
+    const next = seatAfter(state, EVENTS[kind]);
+    if (!next) {
+      throw new Error(`A seat cannot reach ${phase} by ${kind}.`);
+    }
+    state = next;
+  }
+  return state;
+};
+
+describe("the moves a seat may make", () => {
+  it.each(
+    PHASES.flatMap((from) =>
+      KINDS.map((kind) => ({ from, kind, to: MOVES[from][kind] }))
+    )
+  )("$from hears $kind and becomes $to", ({ from, kind, to }) => {
+    expect(seatAfter(seatIn(from), EVENTS[kind])?.phase ?? null).toBe(to);
+  });
+
+  it("carries its race from loading through racing to every way out", () => {
+    const racing = seatIn("racing");
+    const followers = (
+      ["ended", "closed", "silent", "left", "refused"] as const
+    ).map((kind) => seatAfter(racing, EVENTS[kind])?.race);
+    expect(new Set(followers)).toStrictEqual(new Set([racing.race]));
+    expect(racing.race).not.toBeNull();
   });
 });

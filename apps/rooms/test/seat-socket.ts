@@ -102,7 +102,7 @@ export class FakeSocket {
   }
 }
 
-const startedMessage = {
+export const startedMessage = {
   kind: "started",
   manifest: {
     build: "test-build",
@@ -128,7 +128,7 @@ const startedMessage = {
   you: 0,
 } satisfies RoomMessage;
 
-const lobbyMessage = (edition: number) =>
+export const lobbyMessage = (edition: number) =>
   ({
     atMs: 0,
     edition,
