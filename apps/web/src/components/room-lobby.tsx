@@ -7,14 +7,22 @@ import { enterQueue } from "@racer/rooms/queue-client";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat } from "@racer/rooms/seat-client";
-import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
+import type { RefObject } from "react";
 
 import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
-import { stepRoom } from "../room-handoff.ts";
+import { seatClosing, stepRoom } from "../room-handoff.ts";
 import type { RoomHandoff } from "../room-handoff.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
@@ -23,6 +31,7 @@ import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
 import {
   GuestNameScreen,
   QueueScreen,
+  RoomFailedScreen,
   RoomInviteScreen,
   RoomLobbyScreen,
 } from "./screens/room-lobby.tsx";
@@ -85,6 +94,7 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
 interface RoomProps {
   readonly roomId: string;
   readonly ready: boolean;
+  readonly failure: string;
   readonly onBack: () => void;
   readonly onDoorMoment: (atDoor: boolean) => void;
   readonly onLost: () => void;
@@ -92,7 +102,12 @@ interface RoomProps {
   readonly onStart: (plan: RacePlan) => void;
 }
 
+interface BootFailed {
+  readonly bootFailed: RefObject<boolean>;
+}
+
 const SeatedLobby = ({
+  bootFailed,
   name,
   onChangeName,
   roomId,
@@ -102,10 +117,11 @@ const SeatedLobby = ({
   onLost,
   onPrepare,
   onStart,
-}: RoomProps & {
-  readonly name: string;
-  readonly onChangeName: () => void;
-}) => {
+}: RoomProps &
+  BootFailed & {
+    readonly name: string;
+    readonly onChangeName: () => void;
+  }) => {
   const [copied, setCopied] = useState(false);
   const [seat, setSeat] = useState<RoomSeat | null>(null);
   const [, redraw] = useReducer((count: number) => count + 1, 0);
@@ -191,11 +207,25 @@ const SeatedLobby = ({
       if (reopening) {
         clearTimeout(reopening);
       }
-      if (handoffNow().kind !== "riding") {
-        opened.leave();
+      const closing = seatClosing(handoffNow(), bootFailed.current);
+      switch (closing) {
+        case "keep": {
+          break;
+        }
+        case "leave": {
+          opened.leave();
+          break;
+        }
+        case "leaveRoom": {
+          opened.leaveRoom();
+          break;
+        }
+        default: {
+          closing satisfies never;
+        }
       }
     };
-  }, [handoffNow, name, roomId, opening]);
+  }, [bootFailed, handoffNow, name, roomId, opening]);
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);
@@ -283,7 +313,7 @@ const SeatedLobby = ({
   );
 };
 
-export const RoomLobby = (props: RoomProps) => {
+const RoomEntry = (props: RoomProps & BootFailed) => {
   const [name, setName] = useState(storedGuestName);
   const [invited, setInvited] = useState(
     () => roomArrivalOf(globalThis.location.search) === "link"
@@ -331,6 +361,22 @@ export const RoomLobby = (props: RoomProps) => {
       onChangeName={() => {
         setName(null);
       }}
+    />
+  );
+};
+
+export const RoomLobby = (props: RoomProps) => {
+  const bootFailed = useRef(false);
+  useLayoutEffect(() => {
+    bootFailed.current = props.failure !== "";
+  }, [props.failure]);
+  return props.failure === "" ? (
+    <RoomEntry {...props} bootFailed={bootFailed} />
+  ) : (
+    <RoomFailedScreen
+      failure={props.failure}
+      onBack={props.onBack}
+      roomId={props.roomId}
     />
   );
 };

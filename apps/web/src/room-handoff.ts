@@ -59,3 +59,17 @@ export const stepRoom = <Ride>(
     ? { effect: null, state }
     : move(roomRows, state, event.kind);
 };
+
+const seatClosings = ["keep", "leave", "leaveRoom"] as const;
+
+type SeatClosing = (typeof seatClosings)[number];
+
+export const seatClosing = <Ride>(
+  handoff: RoomHandoff<Ride>,
+  bootFailed: boolean
+): SeatClosing => {
+  if (bootFailed) {
+    return "leaveRoom";
+  }
+  return handoff.kind === "riding" ? "keep" : "leave";
+};

@@ -286,6 +286,7 @@ const MenuScreens = ({
       return (
         <Suspense>
           <RoomLobby
+            failure={flow.failure}
             onBack={flow.leave}
             onDoorMoment={onDoorMoment}
             onLost={flow.roomLost}
