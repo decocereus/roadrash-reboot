@@ -166,8 +166,8 @@ export const bindFeedback = ({
     }
   };
 
-  const react = () => {
-    for (const event of stage.race.view.events) {
+  const react = (heard: readonly RaceEvent[]) => {
+    for (const event of heard) {
       if (event.kind === "hit") {
         reactToHit(event.rider, event.target, event.weapon !== "none");
       } else if (event.rider === stage.me) {

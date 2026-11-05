@@ -337,6 +337,8 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "apps/web/test/bar-nav.test.tsx",
       "apps/web/src/components/game-shell.tsx",
       "apps/web/src/components/use-flow.ts",
+      "apps/web/src/navigation.ts",
+      "apps/web/test/navigation.test.ts",
       "apps/web/src/assets/*-art.ts",
       "apps/web/src/game/showroom.ts",
       "apps/web/src/styles.css",
@@ -350,9 +352,9 @@ export const playerFeatures: readonly FeatureEntry[] = [
     ],
     perf: ["bytes.route.root.gzip", "bytes.route.root.raw"],
     start: [
+      "apps/web/src/navigation.ts",
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/components/game-shell.tsx",
-      "apps/web/src/career/flow.ts",
     ],
     summary:
       "Every screen React draws around a race, from the bar and the back room to the garage, the ride-out card, pause and results, with the screen flow, the menu art and the copy.",

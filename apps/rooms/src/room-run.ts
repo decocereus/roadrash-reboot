@@ -49,6 +49,7 @@ export const createRoomRun = (
   return {
     confirmed: client.confirmed,
     countdownSeconds: () => (1 - seat.target()) * TICK_SECONDS,
+    events: client.takeEvents,
     frameDrawn: seat.frameDrawn,
     lagging: client.lagging,
     leave: seat.leave,
