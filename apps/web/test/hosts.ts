@@ -226,6 +226,7 @@ export const createHost = (options: HostOptions = {}): Host => {
   });
   bound.resize();
   installFrameLoop({
+    attracting: () => false,
     checkPresented: bound.checkPresented,
     draw: () => {
       bound.present();
@@ -241,10 +242,10 @@ export const createHost = (options: HostOptions = {}): Host => {
     report: () => {
       seen.reports += 1;
     },
-    session: { holdLeft: 0, phase: "racing" },
     skipsVsync: bound.skipsVsync,
     sound: options.sounded === true ? heardSound(seen) : quietSound(seen),
     stage: { race: run },
+    throttleHeard: () => true,
     tick,
   });
   return {

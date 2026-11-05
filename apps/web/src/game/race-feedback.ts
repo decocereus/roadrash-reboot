@@ -1,4 +1,3 @@
-import type { RaceOutcome } from "@racer/career/outcome";
 import { chaserGap } from "@racer/sim/police";
 import { distanceLeft, standings } from "@racer/sim/race";
 import type { RiderView } from "@racer/sim/race-view";
@@ -9,18 +8,10 @@ import { weapons } from "@racer/sim/weapons";
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Sound } from "./audio.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
-import type { GameEvents, GamePhase, Notice, RacePlan } from "./hud.ts";
+import { hudCountdown, roomOf } from "./game-session.ts";
+import type { Session } from "./game-session.ts";
+import type { GameEvents, Notice } from "./hud.ts";
 import type { Stage } from "./scene-lifecycle.ts";
-
-const BUSTED_SECONDS = 0.8;
-const WRECKED_SECONDS = 1.2;
-
-export const consequenceSeconds = (outcome: RaceOutcome): number => {
-  if (outcome.result === "busted") {
-    return BUSTED_SECONDS;
-  }
-  return outcome.result === "wrecked" ? WRECKED_SECONDS : 0;
-};
 
 const NOTICE_SECONDS = 0.8;
 const HAZARD_JOLT = {
@@ -60,21 +51,13 @@ export const createFeedback = (): Feedback => ({
   noticeLeft: 0,
 });
 
-interface FeedbackSession {
-  readonly phase: GamePhase;
-  readonly settled: RaceOutcome | null;
-  readonly holdLeft: number;
-  readonly countdown: number;
-  readonly plan: RacePlan | null;
-}
-
 interface FeedbackParts {
   readonly chase: ChaseCamera;
   readonly events: GameEvents;
   readonly feedback: Feedback;
   readonly player: () => RiderView;
   readonly recorder: Recorder;
-  readonly session: FeedbackSession;
+  readonly session: () => Session;
   readonly sound: Sound;
   readonly stage: Pick<Stage, "me" | "race" | "track">;
 }
@@ -198,23 +181,24 @@ export const bindFeedback = ({
   const report = () => {
     const me = player();
     const order = standings(stage.race.view);
+    const state = session();
     events.onHud({
       bikeName: me.bike.name,
       condition: me.condition / FULL_CONDITION,
       copGap: chaserGap(stage.race.view, stage.me),
-      countdown: Math.max(
-        0,
-        Math.ceil(session.holdLeft > 0 ? session.holdLeft : session.countdown)
-      ),
+      countdown: hudCountdown(state),
       distanceLeft: distanceLeft(stage.track, me),
       gear: me.gear,
-      lagging: session.plan?.room?.lagging() ?? false,
+      lagging: roomOf(state)?.lagging() ?? false,
       muted: feedback.muted,
       notice: feedback.noticeLeft > 0 ? feedback.notice : "",
       noticeDetail: feedback.noticeDetail,
       offBike: me.mode !== "riding",
-      phase: session.phase,
-      position: session.settled?.place ?? order.indexOf(stage.me) + 1,
+      phase: state.phase,
+      position:
+        state.phase === "settled"
+          ? state.outcome.place
+          : order.indexOf(stage.me) + 1,
       progress: clamp(me.bodyS / stage.track.length, 0, 1),
       remountPrompt: needsRemountPrompt(me),
       riderCount: order.length,
