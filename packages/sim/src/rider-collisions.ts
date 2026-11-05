@@ -1,4 +1,4 @@
-import { firstSolidPropFrom } from "@racer/track/track";
+import { firstAlong } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
 
 import { throwRider } from "./rider-crash.ts";
@@ -49,7 +49,7 @@ export const hitProps = (
 ): boolean => {
   const props = track.solidProps;
   for (
-    let index = firstSolidPropFrom(track, rider.s - 3);
+    let index = firstAlong(props, rider.s - 3);
     index < props.length;
     index += 1
   ) {

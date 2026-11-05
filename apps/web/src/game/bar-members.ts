@@ -1,4 +1,4 @@
-import type { RoomLobbyMessage } from "@racer/rooms/messages";
+import type { RoomWalked } from "@racer/rooms/messages";
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import {
   angleOff,
@@ -34,12 +34,26 @@ const READY_SUFFIX = " READY";
 const NO_CONTROL = { forward: 0, right: 0, sprint: false };
 const YOU = "YOU";
 
-interface Body {
-  id: string | null;
-  leaving: LobbyRider | null;
-  leavingBacklog: number;
+interface Occupant {
+  readonly memberId: string;
   shoving: number;
-  walk: LobbyWalk | null;
+  walk: LobbyWalk;
+}
+
+type Occupied =
+  | (Occupant & { readonly phase: "following" })
+  | (Occupant & {
+      readonly phase: "leaving";
+      readonly rider: LobbyRider;
+      backlog: number;
+    });
+
+type Presence = { readonly phase: "vacant" } | Occupied;
+
+const VACANT: Presence = { phase: "vacant" };
+
+interface Body {
+  presence: Presence;
   readonly view: WalkerView;
 }
 
@@ -58,6 +72,7 @@ interface MemberParts {
 export interface BarMembers extends BarCompany {
   readonly mine: () => number;
   readonly myLabel: () => string;
+  readonly presence: () => readonly Presence[];
   readonly step: (seconds: number, time: number) => void;
   readonly draw: (
     seconds: number,
@@ -67,10 +82,7 @@ export interface BarMembers extends BarCompany {
 }
 
 const newBody = (): Body => ({
-  id: null,
-  leaving: null,
-  leavingBacklog: 0,
-  shoving: 0,
+  presence: VACANT,
   view: {
     heading: 0,
     lean: 0,
@@ -80,11 +92,14 @@ const newBody = (): Body => ({
     x: 0,
     z: 0,
   },
-  walk: null,
 });
 
-const followWalk = (body: Body, walk: LobbyWalk, seconds: number): void => {
-  const { view } = body;
+const followWalk = (
+  view: WalkerView,
+  occupant: Occupied,
+  seconds: number
+): void => {
+  const { walk } = occupant;
   const ease = Math.min(1, seconds * FOLLOW_RATE);
   const far = hypot2(walk.x - view.x, walk.z - view.z) > SNAP_METRES;
   const share = far ? 1 : ease;
@@ -95,33 +110,114 @@ const followWalk = (body: Body, walk: LobbyWalk, seconds: number): void => {
   view.pace = walk.pace;
   view.stride += (walk.pace / STRIDE_RUN_SPEED) * seconds;
   view.mounted = walk.place === "bike";
-  body.shoving = Math.max(0, body.shoving - seconds * TICKS_PER_SECOND);
+  occupant.shoving = Math.max(0, occupant.shoving - seconds * TICKS_PER_SECOND);
 };
 
-const headForDoor = (body: Body, slot: number, seconds: number): LobbyWalk => {
-  let rider = body.leaving;
-  if (!rider) {
-    rider = createLobbyRider();
-    rider.x = body.view.x;
-    rider.z = body.view.z;
-    rider.heading = body.view.heading;
-    const spot = doorSpot(slot);
-    sendRiderTo(rider, spot.x, spot.z);
-    body.leaving = rider;
-  }
-  body.leavingBacklog += seconds;
-  while (body.leavingBacklog >= LOBBY_TICK) {
-    stepLobbyRider(rider, NO_CONTROL, 0, []);
-    body.leavingBacklog -= LOBBY_TICK;
-  }
-  return walkOf(rider);
+const followingFrom = (heard: RoomWalked, shoving: number): Occupied => ({
+  memberId: heard.member,
+  phase: "following",
+  shoving,
+  walk: heard,
+});
+
+const leavingFrom = (
+  view: WalkerView,
+  slot: number,
+  heard: RoomWalked,
+  shoving: number
+): Occupied => {
+  const rider = createLobbyRider();
+  rider.x = view.x;
+  rider.z = view.z;
+  rider.heading = view.heading;
+  const spot = doorSpot(slot);
+  sendRiderTo(rider, spot.x, spot.z);
+  return {
+    backlog: 0,
+    memberId: heard.member,
+    phase: "leaving",
+    rider,
+    shoving,
+    walk: heard,
+  };
 };
 
-const memberWearing = (
-  members: RoomLobbyMessage["members"],
-  colour: number
-): RoomLobbyMessage["members"][number] | undefined =>
-  members.find((member) => member.colour === colour);
+const presenceAfter = (
+  presence: Presence,
+  view: WalkerView,
+  slot: number,
+  heard: RoomWalked,
+  begun: boolean
+): Occupied => {
+  switch (presence.phase) {
+    case "vacant": {
+      return begun
+        ? leavingFrom(view, slot, heard, 0)
+        : followingFrom(heard, 0);
+    }
+    case "following": {
+      return begun
+        ? leavingFrom(view, slot, heard, presence.shoving)
+        : presence;
+    }
+    case "leaving": {
+      return begun ? presence : followingFrom(heard, presence.shoving);
+    }
+    default: {
+      return presence satisfies never;
+    }
+  }
+};
+
+const walkNow = (
+  occupant: Occupied,
+  heard: LobbyWalk,
+  seconds: number
+): LobbyWalk => {
+  switch (occupant.phase) {
+    case "following": {
+      return heard;
+    }
+    case "leaving": {
+      occupant.backlog += seconds;
+      while (occupant.backlog >= LOBBY_TICK) {
+        stepLobbyRider(occupant.rider, NO_CONTROL, 0, []);
+        occupant.backlog -= LOBBY_TICK;
+      }
+      return walkOf(occupant.rider);
+    }
+    default: {
+      return occupant satisfies never;
+    }
+  }
+};
+
+const moveBody = (
+  body: Body,
+  slot: number,
+  heard: RoomWalked,
+  begun: boolean,
+  seconds: number
+): Occupied => {
+  const { presence: before, view } = body;
+  const arriving =
+    before.phase === "vacant" || before.memberId !== heard.member;
+  const presence = presenceAfter(
+    arriving ? VACANT : before,
+    view,
+    slot,
+    heard,
+    begun
+  );
+  body.presence = presence;
+  presence.walk = walkNow(presence, heard, seconds);
+  if (arriving) {
+    view.x = presence.walk.x;
+    view.z = presence.walk.z;
+  }
+  followWalk(view, presence, seconds);
+  return presence;
+};
 
 export const createMembers = ({
   bikes,
@@ -159,7 +255,9 @@ export const createMembers = ({
       case "shove": {
         speech.say("OI!", targetHead, now);
         if (sender) {
-          sender.shoving = SHOVE.ticks;
+          if (sender.presence.phase !== "vacant") {
+            sender.presence.shoving = SHOVE.ticks;
+          }
           if (targetSlot === slot) {
             shoveRider(rider, sender.view.x, sender.view.z);
           }
@@ -203,50 +301,18 @@ export const createMembers = ({
     }
   };
 
-  const moveBody = (
-    index: number,
-    id: string,
-    name: string,
-    walk: LobbyWalk,
-    seconds: number
-  ): void => {
-    const body = bodies[index];
-    const bike = bikes.roots[firstBike + index];
-    if (!(body && bike)) {
-      return;
-    }
-    if (body.id !== id) {
-      body.id = id;
-      body.shoving = 0;
-      body.view.x = walk.x;
-      body.view.z = walk.z;
-    }
-    body.walk = walk;
-    followWalk(body, walk, seconds);
-    const walker = walkers.at(index);
-    walker.rename(name);
-    walker.show(true);
-    if (body.view.mounted) {
-      bike.position.set(body.view.x, 0, body.view.z);
-      bike.rotation.set(0, body.view.heading, body.view.lean);
-      bikes.spin(firstBike + index, walk.pace * seconds);
-      bikes.show(firstBike + index);
-    }
-    crowd.push(body.view);
-  };
-
   return {
     crowd: () => crowd,
     draw(seconds, camera, size) {
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
         const bike = bikes.roots[firstBike + index];
-        if (body && body.id !== null && body.walk && bike) {
-          const { pose, place } = body.walk;
+        if (body && body.presence.phase !== "vacant" && bike) {
+          const { shoving, walk } = body.presence;
           walkers
             .at(index)
             .update(
-              { place, pose, shoving: body.shoving },
+              { place: walk.place, pose: walk.pose, shoving },
               body.view,
               bike,
               now,
@@ -258,9 +324,9 @@ export const createMembers = ({
       }
     },
     greet(index, _x, _z, time) {
-      const target = bodies[index];
-      if (target && target.id !== null) {
-        seat.act("greet", target.id);
+      const target = bodies[index]?.presence;
+      if (target && target.phase !== "vacant") {
+        seat.act("greet", target.memberId);
         speech.say("SUP", walkers.at(index).head, time);
       }
     },
@@ -275,7 +341,7 @@ export const createMembers = ({
       let closest = reach;
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
-        if (body && body.id !== null) {
+        if (body && body.presence.phase !== "vacant") {
           const away = hypot2(body.view.x - x, body.view.z - z);
           if (away < closest) {
             best = index;
@@ -285,10 +351,11 @@ export const createMembers = ({
       }
       return best;
     },
+    presence: () => bodies.map(({ presence }) => presence),
     shove(index, _x, _z, time) {
-      const target = bodies[index];
-      if (target && target.id !== null) {
-        seat.act("shove", target.id);
+      const target = bodies[index]?.presence;
+      if (target && target.phase !== "vacant") {
+        seat.act("shove", target.memberId);
         speech.say("OI!", walkers.at(index).head, time);
       }
     },
@@ -302,19 +369,27 @@ export const createMembers = ({
       const begun = phase === "loading" || phase === "racing";
       for (let index = 0; index < bodies.length; index += 1) {
         const body = bodies[index];
-        const member = memberWearing(members, index);
+        const bike = bikes.roots[firstBike + index];
+        const member = members.find(({ colour }) => colour === index);
         const heard =
           member?.here === true ? seat.walkOf(member.id) : undefined;
-        if (index !== slot && member && heard && body) {
-          moveBody(
-            index,
-            member.id,
-            member.ready ? `${member.name}${READY_SUFFIX}` : member.name,
-            begun ? headForDoor(body, index, seconds) : heard,
-            seconds
+        if (index !== slot && member && heard && body && bike) {
+          const { walk } = moveBody(body, index, heard, begun, seconds);
+          const { view } = body;
+          const walker = walkers.at(index);
+          walker.rename(
+            member.ready ? `${member.name}${READY_SUFFIX}` : member.name
           );
+          walker.show(true);
+          if (view.mounted) {
+            bike.position.set(view.x, 0, view.z);
+            bike.rotation.set(0, view.heading, view.lean);
+            bikes.spin(firstBike + index, walk.pace * seconds);
+            bikes.show(firstBike + index);
+          }
+          crowd.push(view);
         } else if (body) {
-          body.id = null;
+          body.presence = VACANT;
           if (index !== slot) {
             walkers.hide(index);
           }

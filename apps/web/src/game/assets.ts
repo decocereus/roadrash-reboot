@@ -61,16 +61,17 @@ export interface WalkerAsset {
   readonly poses: THREE.DataTexture;
 }
 
-export type BikeParts = ReadonlyMap<string, readonly Primitive[]>;
+export type ModelParts = ReadonlyMap<string, readonly Primitive[]>;
 
 const ATLAS = "atlas";
 
 export interface Assets {
-  readonly bikes: Readonly<Record<BikeModelId, BikeParts>>;
+  readonly bikes: Readonly<Record<BikeModelId, ModelParts>>;
   readonly car: readonly Primitive[];
   readonly truck: readonly Primitive[];
   readonly van: readonly Primitive[];
   readonly figures: readonly RiderAsset[];
+  readonly stalls: ModelParts;
   readonly walkers: WalkerAsset;
 }
 
@@ -227,6 +228,16 @@ const sharedBind = (
     .multiply(mesh.bindMatrix);
 };
 
+const rgbOf = (source: Packed): THREE.BufferAttribute => {
+  const values = new Float32Array(source.count * 3);
+  for (let index = 0; index < source.count; index += 1) {
+    values[index * 3] = source.getX(index);
+    values[index * 3 + 1] = source.getY(index);
+    values[index * 3 + 2] = source.getZ(index);
+  }
+  return new THREE.BufferAttribute(values, 3);
+};
+
 const fileSpaceGeometry = (
   source: THREE.BufferGeometry,
   placement: THREE.Matrix4
@@ -254,6 +265,9 @@ const fileSpaceGeometry = (
       "uv",
       unpacked(uv, new Float32Array(uv.count * uv.itemSize))
     );
+  }
+  if (source.hasAttribute("color")) {
+    geometry.setAttribute("color", rgbOf(source.getAttribute("color")));
   }
   if (source.hasAttribute("skinIndex")) {
     const joints = source.getAttribute("skinIndex");
@@ -345,7 +359,7 @@ export type Parse<Value> = (
 ) => Promise<Decoded<Value>>;
 
 export interface AssetParsers {
-  readonly parts: Parse<BikeParts>;
+  readonly parts: Parse<ModelParts>;
   readonly whole: Parse<readonly Primitive[]>;
   readonly rider: Parse<RiderAsset>;
   readonly walkers: Parse<WalkerAsset>;
@@ -458,7 +472,7 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
   });
 };
 
-const parts: Parse<BikeParts> = async (bytes) => {
+const parts: Parse<ModelParts> = async (bytes) => {
   const gltf = await parsed(bytes);
   const byName = new Map<string, readonly Primitive[]>();
   for (const child of gltf.scene.children) {
@@ -505,11 +519,14 @@ const clipsOf = (
     return made;
   };
   const clips: WalkerClips = {
+    browse: slot("browse"),
     fall: slot("fall"),
     flinch: slot("flinch"),
     get_up: slot("get_up"),
+    haggle: slot("haggle"),
     lie: slot("lie"),
     run: slot("run"),
+    serve: slot("serve"),
     wait: slot("wait"),
     walk: slot("walk"),
   };

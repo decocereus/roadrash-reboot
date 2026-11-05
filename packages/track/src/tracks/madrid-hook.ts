@@ -4,9 +4,11 @@ import type { TrackPlan } from "../track.ts";
 import { madridHookScenery } from "./madrid-hook-scenery.ts";
 
 export const madridHook: TrackPlan = {
+  bazaars: [],
   carriers: [],
   chevrons: chevronRuns["madrid-hook"],
   crossings: [],
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 1, shoulderWidth: 0.5, vergeWidth: 5 }],
   hazardsPerKilometre: 2,
   id: "madrid-hook",

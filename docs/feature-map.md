@@ -27,8 +27,9 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Engine and race sound](#engine-and-race-sound): `audio`
 - [Roads, cities and scenery on screen](#roads-cities-and-scenery-on-screen): `world`
 - [Riders, bikes and cars on screen](#riders-bikes-and-cars-on-screen): `riders-on-screen`
-- [The roads](#the-roads): `roads`
 - [Frame rate and quality](#frame-rate-and-quality): `frame-pacing`
+- [Market stalls and their crowd](#market-stalls-and-their-crowd): `bazaar`
+- [The roads](#the-roads): `roads`
 - [Walkable bar lobby](#walkable-bar-lobby): `bar-lobby`
 
 ### Platform
@@ -156,6 +157,7 @@ Test files:
 
 - `packages/sim/src/hazard-commands.test.ts`
 - `packages/sim/src/hazard-contact.test.ts`
+- `packages/sim/src/hazard-only-lane.test.ts`
 
 ### Traffic
 
@@ -573,6 +575,54 @@ Test files:
 - `apps/web/test/planted-hands.test.ts`
 - `apps/web/test/rider-shade.ts`
 
+### Frame rate and quality
+
+Holding a constant frame rate: the fixed quality presets a device check picks before the race, the pacer, the frame-rate setting and the `?fps` overlay.
+
+- Id: `frame-pacing`
+- Start: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`
+- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
+- Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
+- Perf: `frame.interval.p50`, `frame.interval.p95`, `frame.interval.p99`, `frame.missedFraction`, `main.longTask.blockingMs`, `main.longTask.count`
+- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
+
+Source files:
+
+- `apps/web/src/game/fps-meter.ts`
+- `apps/web/src/game/pacer.ts`
+- `apps/web/src/game/presets.ts`
+
+Test files:
+
+- `apps/web/src/game/presets.test.ts`
+- `apps/web/test/render-quality.test.ts`
+
+### Market stalls and their crowd
+
+The market on a road's footpaths: the stall list a road compiles from its seed, the crash or touch a rider meets by speed in hitStalls, the merged stall meshes, and the crowd drawn at the stalls on the walker instances.
+
+- Id: `bazaar`
+- Start: `packages/track/src/stalls.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`
+- Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#breakwater-run-salt-coast](design/tracks.md#breakwater-run-salt-coast), [docs/art/breakwater-stalls/README.md#contract](art/breakwater-stalls/README.md#contract)
+- Verify: [bazaar.md](../.claude/skills/verify-rushline/features/bazaar.md)
+- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
+- Owns: `packages/track/src/stalls.ts`, `packages/track/src/stalls.test.ts`, `packages/sim/src/stalls.ts`, `packages/sim/src/stalls-room.test.ts`, `packages/sim/src/stalls.test.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`, `apps/web/test/bazaar.test.ts`, `apps/web/test/bazaar-kit.test.ts`
+
+Source files:
+
+- `apps/web/src/game/bazaar-crowd.ts`
+- `apps/web/src/game/bazaar.ts`
+- `packages/sim/src/stalls.ts`
+- `packages/track/src/stalls.ts`
+
+Test files:
+
+- `apps/web/test/bazaar-kit.test.ts`
+- `apps/web/test/bazaar.test.ts`
+- `packages/sim/src/stalls-room.test.ts`
+- `packages/sim/src/stalls.test.ts`
+- `packages/track/src/stalls.test.ts`
+
 ### The roads
 
 The roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career. `pnpm road:test` races the bots to judge a road.
@@ -614,28 +664,6 @@ Test files:
 - `packages/track/src/roads.test.ts`
 - `tools/road-test/test/road-test.test.ts`
 - `tools/road-test/test/variant-plan.ts`
-
-### Frame rate and quality
-
-Holding a constant frame rate: the fixed quality presets a device check picks before the race, the pacer, the frame-rate setting and the `?fps` overlay.
-
-- Id: `frame-pacing`
-- Start: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
-- Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
-- Perf: `frame.interval.p50`, `frame.interval.p95`, `frame.interval.p99`, `frame.missedFraction`, `main.longTask.blockingMs`, `main.longTask.count`
-- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
-
-Source files:
-
-- `apps/web/src/game/fps-meter.ts`
-- `apps/web/src/game/pacer.ts`
-- `apps/web/src/game/presets.ts`
-
-Test files:
-
-- `apps/web/src/game/presets.test.ts`
-- `apps/web/test/render-quality.test.ts`
 
 ### Walkable bar lobby
 
@@ -1416,6 +1444,7 @@ Source files:
 - `scripts/player-features.ts`
 - `scripts/postcss-tokenize.d.ts`
 - `scripts/renderer-imports.ts`
+- `scripts/road-features.ts`
 - `scripts/room-features.ts`
 - `scripts/rule-ledger.ts`
 - `scripts/session-features.ts`

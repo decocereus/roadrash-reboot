@@ -30,6 +30,7 @@ export const recordedCast = [
 ] as const satisfies readonly OrdinaryRivalId[];
 
 export const recordedRules: RaceRules = {
+  bikeMatches: [],
   celebrities: false,
   fieldSize: 15,
   ordinaryCast: recordedCast,

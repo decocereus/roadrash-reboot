@@ -255,6 +255,27 @@ describe("a pedestrian's own walk", () => {
     );
   });
 
+  it("crosses the market squeeze with no lights, every walker of the crowd within a minute", () => {
+    const market = trackFor("breakwater-run");
+    const state = raceOn(market);
+    state.cars.length = 0;
+    const crowd = state.pedestrians.filter(({ id }) => id.startsWith("crowd-"));
+    expect(crowd.length).toBeGreaterThanOrEqual(20);
+    expect(
+      crowd.every((walker) => walker.crossing === NO_CROSSING)
+    ).toBeTruthy();
+    const crossed = new Set<string>();
+    for (let tick = 0; tick < 60 * TICK_RATE; tick += 1) {
+      stepRace(state, market, frameOf(state));
+      for (const walker of crowd) {
+        if (walker.mode === "walking") {
+          crossed.add(walker.id);
+        }
+      }
+    }
+    expect(crossed.size).toBe(crowd.length);
+  });
+
   it("steps out into a gap in the cars and not in front of one", () => {
     const road: Track = { ...onStraight };
     const state = raceOn(road);

@@ -8,16 +8,27 @@ const RUN_STRIDE = 1.98;
 export const WALKER_OUTFITS = 8;
 
 export const walkerClipLoops = {
+  browse: true,
   fall: false,
   flinch: false,
   get_up: false,
+  haggle: true,
   lie: true,
   run: true,
+  serve: true,
   wait: true,
   walk: true,
 } as const;
 
 export type WalkerClipName = keyof typeof walkerClipLoops;
+
+export const crowdModes = ["browse", "haggle", "serve"] as const;
+
+export type CrowdMode = (typeof crowdModes)[number];
+
+interface CrowdPose {
+  readonly mode: CrowdMode;
+}
 
 export interface WalkerClip {
   readonly start: number;
@@ -63,7 +74,7 @@ const stepping = (
 
 export const walkerFrameOf = (
   clips: WalkerClips,
-  walker: PedestrianView,
+  walker: CrowdPose | PedestrianView,
   tick: number,
   fellAt: number,
   look: WalkerLook
@@ -96,8 +107,14 @@ export const walkerFrameOf = (
     case "waiting": {
       return looped(clips.wait, inTicks);
     }
+    case "browse":
+    case "haggle":
+    case "serve": {
+      const clip = clips[walker.mode];
+      return looped(clip, tick / TICKS_PER_FRAME + look.offset * clip.frames);
+    }
     default: {
-      return walker.mode satisfies never;
+      return walker satisfies never;
     }
   }
 };
