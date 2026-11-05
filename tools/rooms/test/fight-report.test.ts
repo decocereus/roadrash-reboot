@@ -19,10 +19,13 @@ const rider = (stamina: number) => ({
   x: 0,
 });
 
+const KICK_TICKS = 15;
+const LAND = 4;
+
 const frameAt = (
   at: number,
-  attack: string,
-  elapsed: number,
+  pose: string,
+  reach: number,
   stamina: number,
   flinch: number,
   x = 0
@@ -30,8 +33,8 @@ const frameAt = (
   at,
   confirmed: [rider(100), rider(stamina)],
   drawn: [
-    { attack, elapsed, flinch: 0, x },
-    { attack: "none", elapsed: 0, flinch, x: 0 },
+    { flinch: 0, pose, reach, x },
+    { flinch, pose: "seated", reach: 0, x: 0 },
   ],
   heard: 100,
   predicted: [rider(100), rider(stamina)],
@@ -39,17 +42,16 @@ const frameAt = (
   tick: 113,
 });
 
-const kickFrames = (firstElapsed: number): ProbeFrame[] => {
-  const frames = [frameAt(PRESS, "none", 0, 100, 0)];
-  for (let elapsed = firstElapsed; elapsed < 15; elapsed += 1) {
-    const landed = elapsed >= 4;
+const kickFrames = (flinchFrom: number): ProbeFrame[] => {
+  const frames = [frameAt(PRESS, "seated", 0, 100, 0)];
+  for (let elapsed = 0; elapsed < KICK_TICKS; elapsed += 1) {
     frames.push(
       frameAt(
         PRESS + 200 + elapsed * FRAME_MS,
         "kick",
-        elapsed,
-        landed ? 50 : 100,
-        landed ? 10 : 0
+        Math.min(1, elapsed / LAND),
+        elapsed >= LAND ? 50 : 100,
+        elapsed >= flinchFrom ? 10 : 0
       )
     );
   }
@@ -57,32 +59,31 @@ const kickFrames = (firstElapsed: number): ProbeFrame[] => {
 };
 
 describe("reading a fight from the victim's window", () => {
-  it("passes a kick drawn from its first frames, with the delay to the victim", () => {
-    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, kickFrames(0));
+  it("passes a kick whose leg is out when the hit shows, with the delays", () => {
+    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, kickFrames(LAND));
     expect(row.passed).toBeTruthy();
     expect(row.pressToShownMs).toBe(200);
-    expect(row.shownBeforeLandMs).toBe(4 * FRAME_MS);
+    expect(row.pressToLandMs).toBe(200 + LAND * FRAME_MS);
+    expect(row.legOutBeforeHitMs).toBe(0);
     expect(row.staminaLost).toBe(50);
   });
 
-  it("fails a kick the victim only saw the end of", () => {
-    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, kickFrames(13));
+  it("fails a kick whose hit showed before the leg was out", () => {
+    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, kickFrames(1));
     expect(row.passed).toBeFalsy();
+    expect(row.legOutBeforeHitMs).toBe(-(LAND - 1) * FRAME_MS);
   });
 
   it("fails a kick the victim never saw", () => {
     const row = fightRow("kick", ATTACKER, VICTIM, PRESS, [
-      frameAt(PRESS, "none", 0, 100, 0),
+      frameAt(PRESS, "seated", 0, 100, 0),
     ]);
     expect(row.passed).toBeFalsy();
     expect(row.pressToShownMs).toBeNull();
   });
 
   it("fails a landed hit with no flinch", () => {
-    const frames = kickFrames(0).map((frame) => ({
-      ...frame,
-      drawn: frame.drawn.map((drawn) => ({ ...drawn, flinch: 0 })),
-    }));
+    const frames = kickFrames(KICK_TICKS);
     expect(
       fightRow("kick", ATTACKER, VICTIM, PRESS, frames).passed
     ).toBeFalsy();
@@ -92,7 +93,7 @@ describe("reading a fight from the victim's window", () => {
 describe("how far a rider pops in one frame", () => {
   it("reads the biggest step between frames", () => {
     const frames = [0, 0.03, 0.5, 0.53].map((x, index) =>
-      frameAt(index, "none", 0, 100, 0, x)
+      frameAt(index, "seated", 0, 100, 0, x)
     );
     expect(worstPop(frames, ATTACKER)).toBeCloseTo(0.47);
   });

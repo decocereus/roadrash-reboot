@@ -6,6 +6,19 @@ export const FIGHT_PROBE = `(() => {
   addEventListener("keydown", (event) => {
     if (!event.repeat) { presses.push({ at: Date.now(), code: event.code }); }
   }, true);
+  const stances = [];
+  const watchFigures = (cast) => {
+    cast.forEach((view, index) => {
+      const { figure } = view;
+      if (figure.__probed) { return; }
+      const animate = figure.animate;
+      figure.__probed = true;
+      figure.animate = (stance, seconds) => {
+        stances[index] = { flinch: stance.flinch, pose: stance.pose, reach: stance.reach };
+        animate(stance, seconds);
+      };
+    });
+  };
   const rider = (state, index) => {
     const r = state.riders[index];
     return { attack: r.attack, attackTicks: r.attackTicks, hitStun: r.hitStun, mode: r.mode, s: r.s, speed: r.speed, stamina: r.stamina, x: r.x };
@@ -16,10 +29,11 @@ export const FIGHT_PROBE = `(() => {
     if (room && cast) {
       const { client } = room;
       const humans = [0, 1];
+      watchFigures(cast);
       frames.push({
         at: Date.now(),
         confirmed: humans.map((i) => rider(client.confirmed, i)),
-        drawn: humans.map((i) => ({ attack: cast[i].fight.attack, elapsed: cast[i].fight.elapsed, flinch: cast[i].fight.flinchLeft, x: client.predicted.riders[i].x + (cast[i].drift ? cast[i].drift.x : 0) })),
+        drawn: humans.map((i) => ({ flinch: stances[i] ? stances[i].flinch : 0, pose: stances[i] ? stances[i].pose : "seated", reach: stances[i] ? stances[i].reach : 0, x: client.predicted.riders[i].x + (cast[i].drift ? cast[i].drift.x : 0) })),
         heard: client.confirmed.tick,
         predicted: humans.map((i) => rider(client.predicted, i)),
         rtt: room.rttMs(),
@@ -46,6 +60,7 @@ export const TAKE_FRAMES = (since: number): string =>
 export const FIGHT_PILOT = `(() => {
   if (globalThis.__fightPilot) { return "kept"; }
   const held = new Set();
+  addEventListener("blur", () => { held.clear(); });
   const hold = (code, down) => {
     if (down === held.has(code)) { return; }
     if (down) { held.add(code); } else { held.delete(code); }

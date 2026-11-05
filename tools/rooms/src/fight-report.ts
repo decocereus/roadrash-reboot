@@ -1,4 +1,3 @@
-import { strikeOf } from "@racer/sim/weapons";
 import * as Schema from "effect/Schema";
 
 export type FightKind = "kick" | "punch";
@@ -15,9 +14,9 @@ const probeRider = Schema.Struct({
 });
 
 const drawnRider = Schema.Struct({
-  attack: Schema.String,
-  elapsed: Schema.Number,
   flinch: Schema.Number,
+  pose: Schema.String,
+  reach: Schema.Number,
   x: Schema.Number,
 });
 
@@ -59,40 +58,22 @@ export type Positions = typeof positions.Type;
 export interface FightRow {
   readonly attacker: number;
   readonly drawnFrames: number;
-  readonly firstElapsed: number | null;
   readonly flinchFrames: number;
   readonly hitLanded: boolean;
   readonly kind: FightKind;
   readonly lead: number;
+  readonly legOutBeforeHitMs: number | null;
   readonly passed: boolean;
   readonly pressToLandMs: number | null;
   readonly pressToShownMs: number | null;
-  readonly shownBeforeLandMs: number | null;
   readonly staminaLost: number;
   readonly victim: number;
 }
 
-const MOST_LATE_ELAPSED = 2;
+const FULL_REACH = 0.99;
 
 const gapFrom = (from: number, to: number | undefined): number | null =>
   to === undefined ? null : to - from;
-
-const strikeSeen = (
-  kind: FightKind,
-  attacker: number,
-  shown: readonly ProbeFrame[]
-) => {
-  const firstElapsed = shown.at(0)?.drawn[attacker]?.elapsed ?? null;
-  const lastElapsed = shown.at(-1)?.drawn[attacker]?.elapsed ?? 0;
-  const strike = strikeOf(kind, "none");
-  return {
-    firstElapsed,
-    seenWhole:
-      firstElapsed !== null &&
-      firstElapsed <= MOST_LATE_ELAPSED &&
-      lastElapsed >= strike.ticks - strike.strikeTick,
-  };
-};
 
 const hitFelt = (
   victim: number,
@@ -101,10 +82,12 @@ const hitFelt = (
 ) => {
   const staminaOf = (frame: ProbeFrame | undefined): number =>
     frame?.confirmed[victim]?.stamina ?? before;
+  const flinching = after.filter(
+    (frame) => (frame.drawn[victim]?.flinch ?? 0) > 0
+  );
   return {
-    flinchFrames: after.filter(
-      (frame) => (frame.drawn[victim]?.flinch ?? 0) > 0
-    ).length,
+    flinchAt: flinching.at(0)?.at,
+    flinchFrames: flinching.length,
     landed: after.find((frame) => staminaOf(frame) < before),
     lost: before - staminaOf(after.at(-1)),
   };
@@ -118,27 +101,33 @@ export const fightRow = (
   victimFrames: readonly ProbeFrame[]
 ): FightRow => {
   const after = victimFrames.filter((frame) => frame.at >= pressAt);
-  const shown = after.filter((frame) => frame.drawn[attacker]?.attack === kind);
-  const { firstElapsed, seenWhole } = strikeSeen(kind, attacker, shown);
+  const shown = after.filter((frame) => frame.drawn[attacker]?.pose === kind);
+  const legOut = shown.find(
+    (frame) => (frame.drawn[attacker]?.reach ?? 0) >= FULL_REACH
+  );
   const before = victimFrames.at(0)?.confirmed[victim]?.stamina ?? 0;
-  const { flinchFrames, landed, lost } = hitFelt(victim, after, before);
-  const shownAt = shown.at(0)?.at;
+  const { flinchAt, flinchFrames, landed, lost } = hitFelt(
+    victim,
+    after,
+    before
+  );
   const hitLanded = landed !== undefined;
+  const legOutBeforeHitMs =
+    legOut === undefined || flinchAt === undefined
+      ? null
+      : flinchAt - legOut.at;
   return {
     attacker,
     drawnFrames: shown.length,
-    firstElapsed,
     flinchFrames,
     hitLanded,
     kind,
     lead: (after.at(0)?.tick ?? 0) - (after.at(0)?.heard ?? 0),
-    passed: seenWhole && (!hitLanded || flinchFrames > 0),
+    legOutBeforeHitMs,
+    passed:
+      legOut !== undefined && (!hitLanded || (legOutBeforeHitMs ?? -1) >= 0),
     pressToLandMs: gapFrom(pressAt, landed?.at),
-    pressToShownMs: gapFrom(pressAt, shownAt),
-    shownBeforeLandMs:
-      shownAt === undefined || landed === undefined
-        ? null
-        : landed.at - shownAt,
+    pressToShownMs: gapFrom(pressAt, shown.at(0)?.at),
     staminaLost: lost,
     victim,
   };

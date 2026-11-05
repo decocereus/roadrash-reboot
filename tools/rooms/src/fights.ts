@@ -463,19 +463,19 @@ const tableOf = (
       verdictOf(row),
       row.lead,
       row.drawnFrames,
-      row.firstElapsed ?? "never",
       row.hitLanded
         ? `hit, ${Math.round(row.staminaLost)} stamina, ${row.flinchFrames} flinch frames`
         : "miss",
       row.pressToShownMs === null ? "never" : Math.round(row.pressToShownMs),
-      row.shownBeforeLandMs === null
+      row.pressToLandMs === null ? "n/a" : Math.round(row.pressToLandMs),
+      row.legOutBeforeHitMs === null
         ? "n/a"
-        : Math.round(row.shownBeforeLandMs),
+        : Math.round(row.legOutBeforeHitMs),
     ].join(" | ")
   );
 
 const TABLE_HEAD =
-  "| Network | Action | Result | Lead (ticks) | Frames drawn | First frame of the strike | What landed | Input to victim's screen (ms) | Shown before it landed (ms) |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |";
+  "| Network | Action | Result | Lead (ticks) | Frames drawn | What landed | Input to victim's screen (ms) | Input to hit (ms) | Strike out before the hit showed (ms) |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |";
 
 const roomName = (): string => crypto.randomUUID().slice(0, 8);
 
