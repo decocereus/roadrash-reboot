@@ -2,6 +2,17 @@ import * as Schema from "effect/Schema";
 
 import { judge, metricKinds, requiredRows } from "./budgets.ts";
 import type { Limit, MetricKind, Observation } from "./budgets.ts";
+import { barResult } from "./gpu-bar.ts";
+import type { BarSample } from "./gpu-bar.ts";
+import {
+  frameReaders,
+  gpuFrame,
+  intervalsOf,
+  missedFractionOf,
+  peakOf,
+  total,
+} from "./gpu-frame-reads.ts";
+import type { GpuFrame } from "./gpu-frame-reads.ts";
 import { median, quantile } from "./result.ts";
 import {
   scenarios,
@@ -14,31 +25,12 @@ import type { Scenario } from "./scenarios.ts";
 export const GPU_PAIRS = 5;
 export const FRAME_RATE = "60";
 
-const SLOT_MS = 1000 / 60;
 const MIN_FRAMES = 120;
 const LONG_TASK_MS = 50;
 
-const gpuKinds = metricKinds.filter((kind) => kind.lane === "gpu");
-
-const gpuFrame = Schema.Struct({
-  calls: Schema.Array(Schema.Number),
-  cpu: Schema.Array(Schema.Number),
-  discarded: Schema.Number,
-  drawnEpoch: Schema.Number,
-  frame: Schema.Number,
-  interval: Schema.Number,
-  pixelRatio: Schema.Number,
-  programs: Schema.Number,
-  race: Schema.Number,
-  sizeEpoch: Schema.Number,
-  start: Schema.Number,
-  textures: Schema.Number,
-  tick: Schema.Number,
-  ticks: Schema.Number,
-  triangles: Schema.Array(Schema.Number),
-});
-
-type GpuFrame = typeof gpuFrame.Type;
+const gpuKinds = metricKinds.filter(
+  (kind) => kind.lane === "gpu" && kind.perScenario
+);
 
 const longTask = Schema.Struct({
   duration: Schema.Number,
@@ -114,9 +106,6 @@ const gpuSample = Schema.Union([
 ]);
 
 export type GpuSample = typeof gpuSample.Type;
-
-const total = (values: readonly number[]): number =>
-  values.reduce((sum, each) => sum + each, 0);
 
 const frameProblem = (
   race: number,
@@ -261,9 +250,6 @@ const firstUseOf = (samples: readonly GpuSample[]) => {
   return { failures, held };
 };
 
-const missedSlots = (interval: number): number =>
-  Math.max(0, Math.round(interval / SLOT_MS) - 1);
-
 const blocking = (task: LongTask, begin: number, end: number): number =>
   Math.max(
     0,
@@ -290,17 +276,6 @@ const blockingOf = (sample: GpuSample): number => {
   return total(longTasksIn(sample).map((task) => blocking(task, begin, end)));
 };
 
-const intervalsOf = (samples: readonly GpuSample[]): number[] =>
-  samples
-    .flatMap((sample) => sample.capture.frames.map((frame) => frame.interval))
-    .toSorted((left, right) => left - right);
-
-const missedFractionOf = (samples: readonly GpuSample[]): number => {
-  const intervals = intervalsOf(samples);
-  const missed = total(intervals.map(missedSlots));
-  return missed / (intervals.length + missed);
-};
-
 const partTimesOf = (samples: readonly GpuSample[], part: string): number[] =>
   samples
     .flatMap(({ capture }) => {
@@ -322,19 +297,6 @@ const judgedPerWindow: ReadonlySet<string> = new Set([
   "frame.missedFraction",
   "riders.cpu.p95",
 ]);
-
-const frameReaders = {
-  "render.calls.max": (frame: GpuFrame) => total(frame.calls),
-  "render.programs.max": (frame: GpuFrame) => frame.programs,
-  "render.textures.max": (frame: GpuFrame) => frame.textures,
-  "render.triangles.max": (frame: GpuFrame) => total(frame.triangles),
-};
-
-const peakOf = (
-  samples: readonly GpuSample[],
-  read: (frame: GpuFrame) => number
-): number =>
-  Math.max(...samples.flatMap((sample) => sample.capture.frames.map(read)));
 
 const isCount = (metric: string): metric is keyof typeof frameReaders =>
   Object.hasOwn(frameReaders, metric);
@@ -493,6 +455,7 @@ const peaksText = (peaks: ReturnType<typeof countsOf>): string =>
 
 export const evaluateGpu = (
   samples: readonly GpuSample[],
+  bar: readonly BarSample[],
   limits: readonly Limit[],
   environment: string,
   page: GpuSample["capture"]["viewport"] | null
@@ -507,11 +470,16 @@ export const evaluateGpu = (
     ),
   }));
   const firstUse = firstUseOf(samples);
+  const barRead = barResult(bar, environment, page);
   const failures = [
     ...results.flatMap((each) => each.failures),
     ...firstUse.failures,
+    ...barRead.failures,
   ];
-  const observations = results.flatMap((each) => each.observations);
+  const observations = [
+    ...results.flatMap((each) => each.observations),
+    ...barRead.observations,
+  ];
   const verdicts = judge(
     limits,
     observations,

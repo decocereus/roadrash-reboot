@@ -782,23 +782,23 @@
       "metric": "render.calls.max",
       "scenario": "pack-riding-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
-      "value": 510
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 522
     },
     {
       "environment": "gpu-helium-metal",
       "metric": "render.calls.max",
       "scenario": "reference-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
-      "value": 422
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 508
     },
     {
       "environment": "gpu-helium-metal",
       "metric": "render.programs.max",
       "scenario": "pack-riding-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
       "value": 45
     },
     {
@@ -806,7 +806,7 @@
       "metric": "render.programs.max",
       "scenario": "reference-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
       "value": 45
     },
     {
@@ -814,7 +814,7 @@
       "metric": "render.textures.max",
       "scenario": "pack-riding-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
       "value": 80
     },
     {
@@ -822,7 +822,7 @@
       "metric": "render.textures.max",
       "scenario": "reference-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
       "value": 73
     },
     {
@@ -830,16 +830,16 @@
       "metric": "render.triangles.max",
       "scenario": "pack-riding-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
-      "value": 2875351
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 2878377
     },
     {
       "environment": "gpu-helium-metal",
       "metric": "render.triangles.max",
       "scenario": "reference-v1",
       "side": "A+B",
-      "source": "gpu-2026-11-03T11-28-37-738Z-094d561-8f2bb84",
-      "value": 2526537
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 2319133
     },
     {
       "environment": "node-darwin-arm64",
@@ -3080,6 +3080,150 @@
       "side": "B",
       "source": "baseline-2026-11-05T12-02-58-493Z-fbefe7d-fbefe7d",
       "value": 614495
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "bar.frame.interval.p50",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 8.300000190734863
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "bar.frame.interval.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 9.199999809265137
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "bar.frame.interval.p99",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 10
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "bar.frame.missedFraction",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 0
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "bar.render.calls.max",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 98
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "metric": "bar.render.triangles.max",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "value": 897449
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "bar.frame.interval.p50",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "bar.frame.interval.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "bar.frame.interval.p99",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "value": 16.799999237060547
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "bar.frame.missedFraction",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "value": 0.0008319467554076539
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "bar.render.calls.max",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "value": 98
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "metric": "bar.render.triangles.max",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "value": 897449
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "bar.frame.interval.p50",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "value": 16.700000762939453
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "bar.frame.interval.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "value": 17.899999618530273
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "bar.frame.interval.p99",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "value": 33.099998474121094
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "bar.frame.missedFraction",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "value": 0.012335526315789474
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "bar.render.calls.max",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "value": 98
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "metric": "bar.render.triangles.max",
+      "scenario": null,
+      "side": "B",
+      "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "value": 897449
     }
   ],
   "revisions": {
@@ -4125,6 +4269,74 @@
       "sides": {
         "A": "fbefe7dd0ede4aa44cf261d81be762c08cc05ffe",
         "B": "fbefe7dd0ede4aa44cf261d81be762c08cc05ffe"
+      }
+    },
+    {
+      "environment": "gpu-helium-metal",
+      "facts": {
+        "machine": "this Mac, Apple M4 Pro",
+        "display": "External 1920x1080 display at 120 Hz; requestAnimationFrame measured 120 Hz on both sides. The page was 1504x790 CSS at device pixel ratio 1, not the 1283x790 at ratio 2 of the laptop panel. Render counts do not move with it: the same code read 507 calls at ratio 2 and 508 at ratio 1, with triangles within 0.05%. The frame rows are owner caps, so they do not depend on it either",
+        "frameRate": "game setting 60 (rushline.settings.v1)",
+        "browser": "Helium, windowed, rv slots 0 and 1",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1504x790 CSS at device pixel ratio 1",
+        "bar": "/bar?prof&time=dusk, Whole room camera, five windows of frames 300 to 1500 on side B, after the race pairs",
+        "wallMs": "1386345",
+        "quiet": "Maps, Multiplayer core and the state machine thread held their benches and browsers; load started at 4.1 on 12 cores",
+        "side": "side A was a /tmp clone at b2687f71 under B's rv"
+      },
+      "id": "gpu-2026-11-05T14-20-41-801Z-b2687f7-4606b8d",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b2687f71237896aaa5419b0aebede7fcacc23b38",
+        "B": "4606b8d74d914ef698e2e669ecc2921d5157ac82"
+      }
+    },
+    {
+      "environment": "gpu-chromium-nvidia",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, NVIDIA GeForce GTX 1650 Ti with Max-Q Design 4 GiB, 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, NVIDIA driver 615.78.08, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started",
+        "frameRate": "game setting 60 (rushline.settings.v1)",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland with PRIME offload, rv slots 0 and 2, --ozone-platform=x11 --use-gl=angle --use-angle=gl --enable-gpu --ignore-gpu-blocklist --force-device-scale-factor=2 --disable-features=BackForwardCache; the sandbox stays on",
+        "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti with Max-Q Design/PCIe/SSE2, OpenGL 4.5.0)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview",
+        "page": "1512x773 CSS at device pixel ratio 2",
+        "bar": "/bar?prof&time=dusk, Whole room camera, five windows of frames 300 to 1500 on side B, after the race pairs",
+        "wallMs": "1560976",
+        "sideA": "A's clone was in /var/tmp at b2687f71, and it ran under B's rv"
+      },
+      "id": "gpu-2026-11-05T14-18-02-383Z-b2687f7-4606b8d",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b2687f71237896aaa5419b0aebede7fcacc23b38",
+        "B": "4606b8d74d914ef698e2e669ecc2921d5157ac82"
+      }
+    },
+    {
+      "environment": "gpu-chromium-intel",
+      "facts": {
+        "machine": "vimaan, Intel Core i7-9750H, Intel UHD Graphics 630 (CFL GT2), 8 GiB of RAM",
+        "os": "Linux 7.2.8-9-omarchy, Mesa 26.2.5, Hyprland 0.56.2, Chromium 155.0.8059.84",
+        "display": "Built-in panel eDP-1 at 1920x1080, 60.056 Hz, driven by the Hyprland session rv started; requestAnimationFrame measured 60 Hz on both sides",
+        "frameRate": "game setting 60 (rushline.settings.v1), so every vsync is drawn",
+        "browser": "/usr/lib/chromium/chromium, windowed through Xwayland on the Intel GPU, rv slots 0 and 1, RUSHLINE_BROWSER_HOST=linux-intel; the sandbox stays on",
+        "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)",
+        "build": "rv up: NODE_ENV=development vite build --mode development, served by vite preview; doctor build is current on both sides",
+        "page": "1919x992 CSS at device pixel ratio 1, the lean preset, cpu x1, network off",
+        "bar": "/bar?prof&time=dusk, Whole room camera, five windows of frames 300 to 1500 on side B, after the race pairs",
+        "wallMs": "1602861",
+        "sideA": "A's clone was in /var/tmp at b2687f71, and it ran under B's rv",
+        "tmpQuota": "/tmp reached its per-user quota, inferred at about 3,108 MB, at about 21:04 IST, and profile cache writes failed from about 21:08 until the end, including through all five bar windows. Two leftovers from an earlier day held most of it. The windows may read slightly worse than a clean run's; Rendering's reference on d4df3a89 at the Angled camera read p95 17.2, p99 22.0 to 33.5, 1.3% to 1.8% over 20 ms",
+        "doctorAfter": "the lane read FAIL doctor-after on both sides: rv doctor stopped at FileSystem.writeFile on /tmp/rushline-verify/desktop.lock, the same quota. All samples had been captured and doctor read healthy on both when run again with the browsers alive",
+        "gpuLoss": "the previous Intel attempt, gpu-2026-11-05T14-44-44-843Z-b2687f7-4606b8d, lost side A's GPU process three times (exit 133, 133, 512) after profile cache writes failed, and captured no bar windows. This attempt lost none. Why it trapped once and not the second time is not known"
+      },
+      "id": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
+      "lanes": ["gpu"],
+      "sides": {
+        "A": "b2687f71237896aaa5419b0aebede7fcacc23b38",
+        "B": "62aca5b538887ca9b84848bc5a5a715b3cb5df71"
       }
     }
   ],

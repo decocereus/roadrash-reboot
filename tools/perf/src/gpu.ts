@@ -1,7 +1,7 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { benchChildEnv, holdBench } from "@racer/devtools/bench-lock";
+import { holdBench } from "@racer/devtools/bench-lock";
 import { CurrentHost, HOST_SETTING } from "@racer/devtools/browser-host";
 import type { BrowserHost } from "@racer/devtools/browser-host";
 import { desktopRuntimeEnv } from "@racer/devtools/desktop";
@@ -14,6 +14,7 @@ import * as Schema from "effect/Schema";
 
 import { readBudgets } from "./approved.ts";
 import type { ConfigInvalid } from "./config-invalid.ts";
+import { measureBar } from "./gpu-bar-capture.ts";
 import {
   evaluateGpu,
   FRAME_RATE,
@@ -22,6 +23,16 @@ import {
   racedCapture,
 } from "./gpu-frames.ts";
 import type { GpuSample } from "./gpu-frames.ts";
+import {
+  consoleErrors,
+  failed,
+  OPEN_TIMEOUT_S,
+  PARK,
+  REPO_ROOT,
+  rv,
+  RV,
+  WINDOW_TIMEOUT_S,
+} from "./gpu-rv.ts";
 import { MeasurementFailed } from "./measurement-failed.ts";
 import { sha256Of } from "./result.ts";
 import { scenarios } from "./scenarios.ts";
@@ -29,15 +40,10 @@ import type { Scenario } from "./scenarios.ts";
 import { checkoutAt, currentSide, revisionOf } from "./sides.ts";
 import type { Side, SideName } from "./sides.ts";
 
-const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
-const RV = path.join(REPO_ROOT, "tools/verify/rushline.ts");
 const DEFAULT_BUDGETS = path.join(REPO_ROOT, "tools/perf/budgets.json");
 const DEFAULT_OUT = path.join(REPO_ROOT, "tools/perf/results");
 
-const PARK = "/kit";
 const WARM_TICKS = 120;
-const OPEN_TIMEOUT_S = 90;
-const WINDOW_TIMEOUT_S = 240;
 const SETTINGS_KEY = "rushline.settings.v1";
 const READY =
   "globalThis.__rushlineBench !== undefined && globalThis.__rushlineProfile !== undefined";
@@ -94,24 +100,6 @@ const readGpuOptions = (args: readonly string[]) =>
         runs: { A: a, B: b },
       });
     })
-  );
-
-const failed = (message: string) => (cause: { readonly message: string }) =>
-  new MeasurementFailed({
-    cause,
-    lane: "gpu",
-    message: `${message}: ${cause.message}`,
-  });
-
-const rv = (args: readonly string[]) =>
-  ToolProcesses.use((processes) =>
-    processes.run(process.execPath, [RV, ...args], {
-      cwd: REPO_ROOT,
-      env: benchChildEnv(),
-    })
-  ).pipe(
-    Effect.map((output) => output.stdout.trim()),
-    Effect.mapError(failed(`rv ${args.slice(0, 3).join(" ")}`))
   );
 
 const decodeInstalled = Schema.decodeUnknownEffect(
@@ -245,15 +233,6 @@ const doctorProblems = (text: string): string[] => [
     ? []
     : ["doctor does not show cpu x1, network off"]),
 ];
-
-const consoleErrors = (run: string) =>
-  rv(["console", "--run", run, "errors"]).pipe(
-    Effect.map((text) =>
-      Number(
-        /^(?<count>\d+) lines from /mu.exec(text)?.groups?.count ?? Number.NaN
-      )
-    )
-  );
 
 const checkoutOf = (listed: string, run: string): string | null =>
   listed
@@ -527,15 +506,18 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
       }
     }
   }
+  const bar = yield* measureBar(dir, options.runs.B);
+  yield* say(`gpu bar captured ${bar.length} windows on B`);
   const after = yield* doctorAll(options, dir, "doctor-after");
   const evaluation = evaluateGpu(
     samples,
+    bar,
     approved.budgets.limits,
     environment,
     host.page
   );
   const files = yield* Effect.all(
-    samples.map((sample) =>
+    [...samples, ...bar].map((sample) =>
       fs
         .readFileString(path.join(dir, "gpu", sample.file))
         .pipe(
