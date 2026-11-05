@@ -1,9 +1,9 @@
 import { RACE_STATS_PACKET_BYTES } from "@racer/sim/room-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SEAT_CLOSED } from "../src/messages.ts";
+import { encodeRoomMessage, SEAT_CLOSED } from "../src/messages.ts";
 import { NEW_SEAT, seatAfter } from "../src/seat-client.ts";
-import type { SeatEvent, SeatPhase } from "../src/seat-client.ts";
+import type { RoomSeat, SeatEvent, SeatPhase } from "../src/seat-client.ts";
 import {
   ABNORMAL_CLOSE,
   countdown,
@@ -227,6 +227,113 @@ describe("a seat's way through a room", () => {
     seat.leave();
     vi.advanceTimersByTime(10 * PING_EVERY_MS);
     expect(socket.sentBytes).toStrictEqual([]);
+  });
+});
+
+const ENDINGS = [
+  {
+    finish: (_seat: RoomSeat, socket: FakeSocket) => {
+      for (const message of [lobbyAt(1), started, countdown, ended]) {
+        socket.hear(message);
+      }
+    },
+    phase: "ended",
+  },
+  {
+    finish: (seat: RoomSeat, socket: FakeSocket) => {
+      socket.hear(lobbyAt(1));
+      seat.leave();
+    },
+    phase: "left",
+  },
+  {
+    finish: (_seat: RoomSeat, socket: FakeSocket) => {
+      for (const message of [lobbyAt(1), started, countdown]) {
+        socket.hear(message);
+      }
+      socket.droppedByRoom(ABNORMAL_CLOSE);
+    },
+    phase: "lost",
+  },
+  {
+    finish: (_seat: RoomSeat, socket: FakeSocket) => {
+      socket.hear(lobbyAt(1));
+      socket.hear(replaced);
+    },
+    phase: "refused",
+  },
+] as const;
+
+describe("a seat that is over", () => {
+  beforeEach(() => {
+    FakeSocket.opened = [];
+    vi.useFakeTimers();
+    vi.stubGlobal("WebSocket", FakeSocket);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it.each(ENDINGS)(
+    "stays $phase when a late lobby arrives, and tells nobody",
+    ({ finish, phase }) => {
+      const { seat, socket } = newSeat();
+      finish(seat, socket);
+      const onChange = vi.fn<() => void>();
+      seat.listen({ onChange });
+      socket.hear(lobbyAt(2));
+      expect(seat.phase()).toBe(phase);
+      expect(seat.lobby()?.edition).toBe(1);
+      expect(onChange).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(ENDINGS)(
+    "stays $phase with the same race when a late start arrives",
+    ({ finish, phase }) => {
+      const { seat, socket } = newSeat();
+      finish(seat, socket);
+      const race = seat.race();
+      socket.hear(started);
+      socket.hear(countdown);
+      expect(seat.phase()).toBe(phase);
+      expect(seat.race()).toBe(race);
+    }
+  );
+
+  it.each(ENDINGS)(
+    "stays $phase with its first reason when a late refusal arrives",
+    ({ finish, phase }) => {
+      const { seat, socket } = newSeat();
+      finish(seat, socket);
+      const reason = seat.refusal();
+      socket.hear(encodeRoomMessage({ kind: "refused", reason: "full" }));
+      expect(seat.phase()).toBe(phase);
+      expect(seat.refusal()).toBe(reason);
+    }
+  );
+
+  it.each(ENDINGS)(
+    "stays $phase when the rider leaves after it",
+    ({ finish, phase }) => {
+      const { seat, socket } = newSeat();
+      finish(seat, socket);
+      seat.leave();
+      expect(seat.phase()).toBe(phase);
+    }
+  );
+
+  it("stays refused and stops pinging while its socket is still closing", () => {
+    const { seat, socket } = newSeat();
+    socket.answers = false;
+    socket.hear(lobbyAt(1));
+    socket.hear(replaced);
+    const sent = socket.sentBytes.length;
+    vi.advanceTimersByTime(4 * DEAD_AFTER_MS);
+    expect(seat.phase()).toBe("refused");
+    expect(socket.sentBytes).toHaveLength(sent);
   });
 });
 
