@@ -27,6 +27,7 @@ const MOST_LEAD_TICKS = INPUT_HORIZON;
 
 const OLDEST_PLAYED_TICKS = 12;
 const NO_EVENTS: readonly RaceEvent[] = [];
+const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 
 const FELT_JUMP_METRES = 0.25;
 
@@ -53,6 +54,14 @@ interface RoomStats {
   readonly worstJump: { metres: number; roadMetres: number; tick: number };
 }
 
+export interface RiderCorrection {
+  heading: number;
+  lean: number;
+  readonly rider: RiderId;
+  s: number;
+  x: number;
+}
+
 export interface RoomClient {
   readonly confirmed: RaceState;
   readonly lagging: () => boolean;
@@ -62,6 +71,7 @@ export interface RoomClient {
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly settle: () => void;
+  readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
   readonly writeInputs: (view: DataView) => number;
 }
@@ -123,6 +133,14 @@ const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
   return true;
 };
 
+const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
+  heading: 0,
+  lean: 0,
+  rider: id,
+  s: 0,
+  x: 0,
+});
+
 const ringOf = <Value>(fill: () => Value): Value[] =>
   Array.from({ length: MOST_LEAD_TICKS + 1 }, fill);
 
@@ -146,6 +164,11 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const fromRoom: RoomEvent[] = [];
   let playedThrough = 0;
   const unseenStrikes = new Set<RiderId>();
+  const others = predicted.riders.filter((rider) => rider.id !== me);
+  const wasAt = others.map(stillCorrection);
+  let corrections = others.map(stillCorrection);
+  let handed = others.map(stillCorrection);
+  let corrected = false;
   let sentThrough = 0;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
@@ -272,6 +295,34 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     }
   };
 
+  const noteWhereRidersAre = (): void => {
+    for (let index = 0; index < others.length; index += 1) {
+      const rider = others[index];
+      const was = wasAt[index];
+      if (rider && was) {
+        was.heading = rider.heading;
+        was.lean = rider.lean;
+        was.s = rider.s;
+        was.x = rider.x;
+      }
+    }
+  };
+
+  const noteCorrections = (): void => {
+    corrected = true;
+    for (let index = 0; index < others.length; index += 1) {
+      const rider = others[index];
+      const was = wasAt[index];
+      const moved = corrections[index];
+      if (rider && was && moved) {
+        moved.heading += was.heading - rider.heading;
+        moved.lean += was.lean - rider.lean;
+        moved.s += was.s - rider.s;
+        moved.x += was.x - rider.x;
+      }
+    }
+  };
+
   const settle = (): void => {
     if (!stale) {
       return;
@@ -281,12 +332,14 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     const fromS = mine.s;
     const fromX = mine.x;
     const crashesBefore = mine.crashes;
+    noteWhereRidersAre();
     rewind();
     stats.rollbacks += 1;
     for (let tick = confirmed.tick + 1; tick <= reached; tick += 1) {
       advance(tick);
       stats.resimulatedTicks += 1;
     }
+    noteCorrections();
     stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
     noteJump(staleCause, fromS, fromX);
     staleCause = "otherRiders";
@@ -360,6 +413,22 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     predicted,
     settle,
     stats,
+    takeCorrections: () => {
+      if (!corrected) {
+        return NO_CORRECTIONS;
+      }
+      corrected = false;
+      const taken = corrections;
+      corrections = handed;
+      handed = taken;
+      for (const moved of corrections) {
+        moved.heading = 0;
+        moved.lean = 0;
+        moved.s = 0;
+        moved.x = 0;
+      }
+      return taken;
+    },
     takeEvents: () => {
       const taken = own;
       playRoom(taken);

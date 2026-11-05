@@ -25,6 +25,13 @@ import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
 import {
+  captureCast,
+  clearDrift,
+  driftSettle,
+  stillDrift,
+} from "./rider-drift.ts";
+import type { RiderDrift } from "./rider-drift.ts";
+import {
   fightFlinch,
   fightHeard,
   fightTick,
@@ -56,6 +63,7 @@ const POTHOLE_SAG_KICK = 1.6;
 const HAZARD_PUFF = 0.6;
 
 interface Pose {
+  tick: number;
   s: number;
   x: number;
   heading: number;
@@ -66,8 +74,18 @@ interface Pose {
   bodyAir: number;
 }
 
+interface DrawnPlace {
+  blend: number;
+  fromTick: number;
+  s: number;
+  toTick: number;
+  x: number;
+}
+
 interface RiderActor {
   readonly bike: THREE.Object3D;
+  readonly drift: RiderDrift;
+  readonly drawn: DrawnPlace;
   readonly fight: RiderFight;
   readonly figure: RiderFigure;
   readonly before: Pose;
@@ -100,6 +118,7 @@ const emptyPose = (): Pose => ({
   heading: 0,
   lean: 0,
   s: 0,
+  tick: 0,
   x: 0,
 });
 
@@ -174,7 +193,7 @@ export const createCast = (shading: Shading): Cast => ({
 interface CastStage {
   readonly colours: ReadonlyMap<RiderId, number>;
   readonly me: RiderId;
-  readonly race: Pick<RaceRun, "view">;
+  readonly race: Pick<RaceRun, "takeCorrections" | "view">;
   readonly track: Track;
   readonly world: World;
   readonly fleet: Fleet;
@@ -252,6 +271,8 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         after: emptyPose(),
         before: emptyPose(),
         bike,
+        drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
+        drift: stillDrift(),
         fight: quietFight(),
         figure,
         lift: figure.standHeight,
@@ -335,13 +356,16 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   const captureAll = (into: "before" | "after") => {
-    const { riders } = stage.race.view;
-    for (let index = 0; index < riders.length; index += 1) {
-      const rider = riders[index];
-      const view = cast.views[index];
-      if (rider && view) {
-        capture(rider, view[into]);
-      }
+    captureCast(
+      into,
+      stage.race.view.riders,
+      cast.views,
+      stage.race.takeCorrections(),
+      capture
+    );
+    const { tick } = stage.race.view;
+    for (const view of cast.views) {
+      view[into].tick = tick;
     }
   };
 
@@ -476,16 +500,26 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     blend: number,
     seconds: number
   ) => {
-    const { before, after, bike } = view;
-    const s = mix(before.s, after.s, blend);
-    const x = mix(before.x, after.x, blend);
+    const { before, after, bike, drift } = view;
+    const seated = rider.mode === "riding" || rider.mode === "mounting";
+    if (seated) {
+      driftSettle(drift, seconds);
+    } else {
+      clearDrift(drift);
+    }
+    const s = mix(before.s, after.s, blend) + drift.s;
+    const x = mix(before.x, after.x, blend) + drift.x;
+    view.drawn.blend = blend;
+    view.drawn.fromTick = before.tick;
+    view.drawn.s = s;
+    view.drawn.toTick = after.tick;
+    view.drawn.x = x;
     const air = mix(before.air, after.air, blend);
-    const lean = mix(before.lean, after.lean, blend);
-    const heading = mix(before.heading, after.heading, blend);
+    const lean = mix(before.lean, after.lean, blend) + drift.lean;
+    const heading = mix(before.heading, after.heading, blend) + drift.heading;
     const bodyS = mix(before.bodyS, after.bodyS, blend);
     const bodyX = mix(before.bodyX, after.bodyX, blend);
     const bodyAir = mix(before.bodyAir, after.bodyAir, blend);
-    const seated = rider.mode === "riding" || rider.mode === "mounting";
     const pitch = rider.airborne
       ? Math.atan2(rider.verticalSpeed, Math.max(rider.speed, 1)) * 0.6
       : 0;

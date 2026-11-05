@@ -16,9 +16,12 @@ const probeRider = Schema.Struct({
 });
 
 const drawnRider = Schema.Struct({
+  blend: Schema.Number,
   flinch: Schema.Number,
+  fromTick: Schema.Number,
   pose: Schema.String,
   reach: Schema.Number,
+  toTick: Schema.Number,
   x: Schema.Number,
 });
 
@@ -52,7 +55,11 @@ export const takenFrames = Schema.Struct({
   }),
   frames: Schema.Array(probeFrame),
   lostButtons: stamped({ tick: Schema.Number }),
-  placed: stamped({ tick: Schema.Number, x: Schema.Array(Schema.Number) }),
+  placed: stamped({
+    riding: Schema.Array(Schema.Boolean),
+    tick: Schema.Number,
+    x: Schema.Array(Schema.Number),
+  }),
   presses: stamped({ code: Schema.String }),
   sends: stamped({ through: Schema.Number }),
 });
@@ -256,17 +263,93 @@ export const fightRow = (
   };
 };
 
-export const worstPop = (
-  frames: readonly ProbeFrame[],
-  rider: number
-): number => {
-  let worst = 0;
-  for (let index = 1; index < frames.length; index += 1) {
-    const from = frames[index - 1]?.drawn[rider]?.x;
-    const to = frames[index]?.drawn[rider]?.x;
-    if (from !== undefined && to !== undefined) {
-      worst = Math.max(worst, Math.abs(to - from));
+interface TrackError {
+  readonly errorP95Metres: number;
+  readonly frames: number;
+  readonly worstStepMetres: number;
+}
+
+export interface RiderTrack {
+  readonly drawn: TrackError;
+  readonly guessed: TrackError;
+  readonly rider: number;
+}
+
+const P95 = 0.95;
+
+const p95 = (values: readonly number[]): number => {
+  const sorted = values.toSorted((a, b) => a - b);
+  return (
+    sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * P95))] ?? 0
+  );
+};
+
+interface Sample {
+  readonly place: number;
+  readonly truth: number;
+}
+
+interface TrackFrame {
+  readonly drawn: Sample;
+  readonly guessed: Sample;
+}
+
+const trackError = (
+  frames: readonly (TrackFrame | null)[],
+  pick: (one: TrackFrame) => Sample
+): TrackError => {
+  const errors: number[] = [];
+  let worstStepMetres = 0;
+  for (const [index, one] of frames.entries()) {
+    if (one === null) {
+      continue;
+    }
+    const { place, truth } = pick(one);
+    errors.push(Math.abs(place - truth));
+    const before = frames[index - 1];
+    if (before) {
+      worstStepMetres = Math.max(
+        worstStepMetres,
+        Math.abs(place - pick(before).place)
+      );
     }
   }
-  return worst;
+  return {
+    errorP95Metres: p95(errors),
+    frames: errors.length,
+    worstStepMetres,
+  };
+};
+
+export const riderTrack = (taken: TakenFrames, rider: number): RiderTrack => {
+  const riding = new Map(
+    taken.placed.flatMap((one) => {
+      const x = one.x[rider];
+      return x === undefined || one.riding[rider] !== true
+        ? []
+        : [[one.tick, x] as const];
+    })
+  );
+  const frames = taken.frames.map((frame): TrackFrame | null => {
+    const now = riding.get(frame.tick);
+    const drawn = frame.drawn[rider];
+    const from = riding.get(drawn?.fromTick ?? Number.NaN);
+    const to = riding.get(drawn?.toTick ?? Number.NaN);
+    const guessed = frame.predicted[rider];
+    return now === undefined ||
+      from === undefined ||
+      to === undefined ||
+      drawn === undefined ||
+      guessed?.mode !== "riding"
+      ? null
+      : {
+          drawn: { place: drawn.x, truth: from + (to - from) * drawn.blend },
+          guessed: { place: guessed.x, truth: now },
+        };
+  });
+  return {
+    drawn: trackError(frames, (one) => one.drawn),
+    guessed: trackError(frames, (one) => one.guessed),
+    rider,
+  };
 };

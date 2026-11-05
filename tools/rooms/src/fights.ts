@@ -17,7 +17,12 @@ import {
   POSITIONS,
   TAKE_FRAMES,
 } from "./fight-probe.ts";
-import { fightRow, positions, takenFrames, worstPop } from "./fight-report.ts";
+import {
+  fightRow,
+  positions,
+  riderTrack,
+  takenFrames,
+} from "./fight-report.ts";
 import type {
   FightKind,
   FightRow,
@@ -572,20 +577,23 @@ const runNetwork = (
       const fall = yield* knockDown(windows).pipe(
         Effect.catchTag("FightCheckFailed", () => Effect.succeed(null))
       );
+      const fromOne = yield* readTaken(windows[0], startedAt);
       const taken = yield* readTaken(windows[1], startedAt);
       const report = {
         fall,
         falls: taken.falls,
         network,
-        popMetres: worstPop(taken.frames, 0),
         rows,
         rtt: taken.frames.at(-1)?.rtt ?? 0,
+        tracks: [riderTrack(fromOne, 1), riderTrack(taken, 0)],
       };
       yield* fs.writeFileString(
         path.join(places.out, `${network}.json`),
         JSON.stringify(report, null, 2)
       );
-      yield* Console.log(JSON.stringify({ fall, network, rows }));
+      yield* Console.log(
+        JSON.stringify({ fall, network, rows, tracks: report.tracks })
+      );
       return tableOf(network, rows);
     })
   );

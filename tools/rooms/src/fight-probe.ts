@@ -29,7 +29,8 @@ export const FIGHT_PROBE = `(() => {
       confirm(frame, hash);
       const at = Date.now();
       const { tick } = client.confirmed;
-      placed.push({ at, tick, x: [client.confirmed.riders[0].x, client.confirmed.riders[1].x] });
+      const [first, second] = client.confirmed.riders;
+      placed.push({ at, riding: [first.mode === "riding", second.mode === "riding"], tick, x: [first.x, second.x] });
       const sent = own.get(tick);
       own.delete(tick);
       if (sent !== undefined && Math.floor(sent / BUTTONS_PLACE) > 0 && frame.controls.get(me) !== sent) {
@@ -80,7 +81,7 @@ export const FIGHT_PROBE = `(() => {
       frames.push({
         at: Date.now(),
         confirmed: humans.map((i) => rider(client.confirmed, i)),
-        drawn: humans.map((i) => ({ flinch: stances[i] ? stances[i].flinch : 0, pose: stances[i] ? stances[i].pose : "seated", reach: stances[i] ? stances[i].reach : 0, x: client.predicted.riders[i].x + (cast[i].drift ? cast[i].drift.x : 0) })),
+        drawn: humans.map((i) => ({ flinch: stances[i] ? stances[i].flinch : 0, pose: stances[i] ? stances[i].pose : "seated", reach: stances[i] ? stances[i].reach : 0, blend: cast[i].drawn.blend, fromTick: cast[i].drawn.fromTick, toTick: cast[i].drawn.toTick, x: cast[i].drawn.x })),
         heard: client.confirmed.tick,
         predicted: humans.map((i) => rider(client.predicted, i)),
         rtt: room.rttMs(),
@@ -113,6 +114,8 @@ export const FIGHT_PILOT = `(() => {
     if (down) { held.add(code); } else { held.delete(code); }
     dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { bubbles: true, code, key: code }));
   };
+  const WEAVE_MS = 2400;
+  const WEAVE_METRES = 0.3;
   const pilot = { armed: null, laneX: null };
   globalThis.__fightPilot = pilot;
   const strikeWhenInReach = (room, mine) => {
@@ -149,8 +152,9 @@ export const FIGHT_PILOT = `(() => {
         const away = gap < 1.2 ? -1 : 0;
         toward = (gap > 2 ? 1 : away) * Math.sign(them.x - me.x);
       } else if (riding) {
-        const off = me.x - pilot.laneX;
-        toward = Math.abs(off) > 0.3 ? -Math.sign(off) : 0;
+        const side = Math.floor(performance.now() / WEAVE_MS) % 2 === 0 ? 1 : -1;
+        const off = me.x - (pilot.laneX + side * WEAVE_METRES);
+        toward = Math.abs(off) > 0.15 ? -Math.sign(off) : 0;
       }
       hold("ArrowRight", toward > 0);
       hold("ArrowLeft", toward < 0);

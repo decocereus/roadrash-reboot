@@ -562,12 +562,14 @@ Source files:
 - `apps/web/src/game/figure-wear.ts`
 - `apps/web/src/game/fleet.ts`
 - `apps/web/src/game/rider-blocks.ts`
+- `apps/web/src/game/rider-drift.ts`
 - `apps/web/src/game/rider-fight.ts`
 - `apps/web/src/game/rider-figure.ts`
 - `apps/web/src/game/rider-views.ts`
 
 Test files:
 
+- `apps/web/src/game/rider-drift.test.ts`
 - `apps/web/src/game/rider-fight.test.ts`
 - `apps/web/test/bike-contact.ts`
 - `apps/web/test/figure-shadow.test.ts`
