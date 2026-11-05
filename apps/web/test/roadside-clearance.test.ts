@@ -268,7 +268,7 @@ describe("the roadside clears the chase camera", () => {
         laneWidth: 3.4,
         lanesEachWay: 1,
       },
-      s: 4000,
+      s: 2100,
       walk: "unmarked",
     };
     const track = compileTrack({

@@ -139,7 +139,7 @@ describe("the roads", () => {
   it("Breakwater Run changes width district by district, with its lanes opening and closing from the outside", () => {
     const track = trackFor("breakwater-run");
     expect(
-      [650, 1600, 2100, 2900, 4200, 5500, 7300].map((s) => [
+      [650, 1500, 2100, 2900, 3700, 4100, 5500, 7300].map((s) => [
         openLanesAt(track, s),
         2 * roadHalfWidthAt(track, s),
       ])
@@ -149,6 +149,7 @@ describe("the roads", () => {
       [3, 36],
       [3, 23],
       [2, 16],
+      [1, 8],
       [2, 15],
       [3, 22],
     ]);
@@ -371,7 +372,9 @@ describe("hazards", () => {
             return [];
           }
           const inside = Math.sign(curvatureAt(track, hazard.s));
-          const lanes = track.sameWayLanes.map((lane) => lane * inside);
+          const lanes = track.sameWayLanes
+            .slice(0, openLanesAt(track, hazard.s))
+            .map((lane) => lane * inside);
           return [
             {
               innermost: hazard.x * inside - Math.max(...lanes),

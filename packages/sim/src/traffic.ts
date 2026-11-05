@@ -270,8 +270,8 @@ const isDownOnTheRoad = (rider: RiderState): boolean =>
 
 interface Flow {
   readonly facingDown: boolean[];
+  readonly heading: number[];
   readonly merging: boolean[];
-  readonly occupied: number[];
   readonly queue: number[];
   readonly lastS: number[];
   readonly lastSpeed: number[];
@@ -281,19 +281,19 @@ interface Flow {
 
 const trafficFlow: Flow = {
   facingDown: [],
+  heading: [],
   lane: { along: [], count: 0, direction: 1, longest: 0, order: [] },
   lastS: [],
   lastSpeed: [],
   merging: [],
-  occupied: [],
   queue: [],
   target: [],
 };
 
-const occupiedLaneOf = (track: Track, car: TrafficCar): number =>
+const laneAcross = (track: Track, x: number): number =>
   Math.min(
     track.sameWayLanes.length - 1,
-    Math.floor(Math.abs(car.x) / track.plan.laneWidth)
+    Math.floor(Math.abs(x) / track.plan.laneWidth)
   );
 
 const queueOf = (track: Track, car: TrafficCar, occupied: number): number =>
@@ -303,13 +303,28 @@ const queueOf = (track: Track, car: TrafficCar, occupied: number): number =>
     occupied
   );
 
+const headingOf = (track: Track, car: TrafficCar, occupied: number): number =>
+  car.x === car.home
+    ? occupied
+    : Math.max(
+        occupied,
+        laneAcross(
+          track,
+          seatOf(
+            car.home,
+            track,
+            car.s + Math.sign(car.cruiseSpeed) * MERGE_SIGHT
+          )
+        )
+      );
+
 const gatherLane = (
   cars: readonly TrafficCar[],
   flow: Flow,
   direction: number,
   laneIndex: number
 ): void => {
-  const { lane, lastS, occupied, queue } = flow;
+  const { heading, lane, lastS, queue } = flow;
   const { along, order } = lane;
   lane.direction = direction;
   lane.count = 0;
@@ -319,7 +334,8 @@ const gatherLane = (
     if (
       car &&
       Math.sign(car.cruiseSpeed) === direction &&
-      (queue[index] === laneIndex || occupied[index] === laneIndex)
+      (queue[index] ?? 0) <= laneIndex &&
+      laneIndex <= (heading[index] ?? 0)
     ) {
       const carAlong = (lastS[index] ?? 0) * direction;
       let place = lane.count;
@@ -522,16 +538,16 @@ const yieldToWalker = (
 };
 
 const readCars = (cars: readonly TrafficCar[], track: Track): void => {
-  const { facingDown, lastS, lastSpeed, merging, occupied, queue, target } =
+  const { facingDown, heading, lastS, lastSpeed, merging, queue, target } =
     trafficFlow;
   const offHomeCounts = narrows(track);
   const { laneWidth } = track.plan;
   for (let index = 0; index < cars.length; index += 1) {
     const car = cars[index];
     if (car) {
-      const inLane = occupiedLaneOf(track, car);
+      const inLane = laneAcross(track, car.x);
       const lane = queueOf(track, car, inLane);
-      occupied[index] = inLane;
+      heading[index] = headingOf(track, car, inLane);
       queue[index] = lane;
       merging[index] =
         offHomeCounts &&
