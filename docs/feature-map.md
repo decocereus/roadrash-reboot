@@ -54,6 +54,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Lint plugins](#lint-plugins): `lint-plugins`
 - [Repository checks](#repository-checks): `repo-checks`
 - [Race rooms](#race-rooms): `race-room`
+- [Race session](#race-session): `race-session`
 
 ## Features
 
@@ -1408,6 +1409,7 @@ Source files:
 - `scripts/renderer-imports.ts`
 - `scripts/room-features.ts`
 - `scripts/rule-ledger.ts`
+- `scripts/session-features.ts`
 - `scripts/setup-effect-reference.ts`
 - `scripts/verify.ts`
 - `scripts/write-feature-map.ts`
@@ -1514,3 +1516,20 @@ Test files:
 - `tools/rooms/test/replay.test.ts`
 - `tools/rooms/test/send-budget.test.ts`
 - `tools/rooms/test/trace.test.ts`
+
+### Race session
+
+What the game does across attract, preparation, the countdown, the race with its pause and resume hold, and the settled race with its consequence delay, printed line by line from a real game.
+
+- Id: `race-session`
+- Start: `apps/web/test/session-transcript.ts`
+- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
+- Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
+- Perf: `frame.interval.p95`, `frame.missedFraction`
+- Owns: `apps/web/test/session-transcript.ts`
+
+Source files: none
+
+Test files:
+
+- `apps/web/test/session-transcript.ts`
