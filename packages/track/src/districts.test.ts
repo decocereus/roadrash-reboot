@@ -26,9 +26,11 @@ const straight = (
 ): Track =>
   compileTrack({
     ...ridgeRoad,
+    bazaars: [],
     carriers: [],
     chevrons: [],
     crossings,
+    crowds: [],
     districts,
     hazardsPerKilometre: 0,
     pieces: eased([[6000, 0, 0]]),

@@ -96,7 +96,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "1f99c43cebe8c45e253f0c8b330aa3deef895e04deb503ddb3b91692f8d2b3d1"
+    "summarySha256": "9ac9f4b548fefb18c586ddce3d1c846df5349c2236ab8c2da6755a25a5c1e549"
   },
   "limits": [
     {
@@ -149,14 +149,14 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 297036,
-      "baseline": 297036,
+      "value": 327348,
+      "baseline": 327348,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.pedestrians",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
       "unit": "B"
     },
     {
@@ -281,14 +281,26 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 3474992,
-      "baseline": 3474992,
+      "value": 55976,
+      "baseline": 55976,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.stalls",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 3561280,
+      "baseline": 3561280,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
       "unit": "B"
     },
     {
@@ -413,26 +425,26 @@
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 548215,
-      "baseline": 537465,
+      "value": 559181,
+      "baseline": 548216,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.kit.gzip",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-05T18-56-36-101Z-c982325-c982325",
       "unit": "B"
     },
     {
       "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 955467,
-      "baseline": 936732,
+      "value": 974586,
+      "baseline": 955476,
       "direction": "max",
       "environment": "build",
       "metric": "bytes.route.kit.raw",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-05T10-06-25-634Z-43d81a8-43d81a8",
       "unit": "B"
     },
     {

@@ -3,9 +3,11 @@ import { chevronRuns } from "../chevron-runs.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
+  bazaars: [],
   carriers: [2600, 4100],
   chevrons: chevronRuns["slag-row"],
   crossings: [],
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.5, vergeWidth: 6 }],
   hazardsPerKilometre: 1,
   id: "slag-row",

@@ -1,99 +1,99 @@
 {
   "fixed": [
     {
-      "final": "596e5a7007b55e759a149b737e0a8b09",
-      "full": "53bdd83604558d402a6e2f3553a1775e",
+      "final": "9eea997419263fe525b9687370c2fa73",
+      "full": "7631764e90e4588cdc13ef5c7fdcfc34",
       "id": "ridge-road/tier3/seed1",
       "result": null,
       "ticks": 7200,
-      "window": "8cf56be00479686e50e8ac62dc81b211"
+      "window": "375df4832975b3cfdca4dd2336e00030"
     },
     {
-      "final": "362412693044210a1f9ddea17b53e34f",
-      "full": "0080628c66e6ced44d8b217369026a91",
+      "final": "ea101e3801be110c6e389daa55f5f462",
+      "full": "ade1fb88365a72621243437c4fa01452",
       "id": "ridge-road/tier3/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "083e43b91f2ac7283b2dd05700c30d68"
+      "window": "332e48cd2cedceacdbde8aed271f808c"
     },
     {
-      "final": "b8f1a744ebcfbf7041a11b6e78e124d2",
-      "full": "7433429f7e4d3fd9665fbcc63f675c3e",
+      "final": "ecf402c6c1c67759942dd2c43b06c5e3",
+      "full": "8b3219d5822d472ac804c445204c8c88",
       "id": "ridge-road/tier3/seed9",
       "result": "busted",
       "ticks": 7200,
-      "window": "1282d72ba13e8d4d7c24e05cea6edd96"
+      "window": "a990f0da17dff1ddf63f944197fca726"
     },
     {
-      "final": "ffff0e803177375016382f0550a90136",
-      "full": "cbad09f261a156aec609feb7ceb82342",
+      "final": "b9e2241bfb61bb19d35eecfe7fcba828",
+      "full": "94407948caa9ec38f6b9fd15a01f9e6d",
       "id": "ridge-road/tier3/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "7f5b576dc80d6ab046b4247b95976640"
+      "window": "25b64eab32daa7c9bed5e3e1df48cca2"
     },
     {
-      "final": "9cd7f050f7b67fb722f578e3d924d775",
-      "full": "1d963870d49261ab4a823f6a4bf7dfd6",
+      "final": "954dd07d07ecd28b1d2485d10e6f94cd",
+      "full": "63f3e77e28a6da0a93bb1be04c15599e",
       "id": "slag-row/tier3/seed1",
       "result": null,
       "ticks": 7200,
-      "window": "0c495566ebb9f71c28c16bee172b4c0a"
+      "window": "04196ac52831712c598cb020e50d8b9e"
     },
     {
-      "final": "a4f7f0066813c4fe26b13d57b34ae618",
-      "full": "6af0938b83a9738a32396aff7cb9f92e",
+      "final": "159531d0af728b3213bfb4e9140edeb0",
+      "full": "e919ae4b43ee8c2230b5a7b0daad8918",
       "id": "slag-row/tier3/seed5",
       "result": "busted",
       "ticks": 7200,
-      "window": "f655d2226be06f91c7b850ca621e06bc"
+      "window": "fe72044781ab8e4e633b81ca0004c4c0"
     },
     {
-      "final": "68bcff0cc46518eeab1eed5750c93538",
-      "full": "bad26b7f9e3c94e0288a57156c99f1a1",
+      "final": "cae13206af2c1d4d55a247eb8f633108",
+      "full": "fd180446e6442aa7d25dcf64f3f63ce9",
       "id": "slag-row/tier3/seed9",
       "result": null,
       "ticks": 7200,
-      "window": "ec25cc719346d24b7b6a3218579266cc"
+      "window": "c784f159fcc097b6156d5211b726888b"
     },
     {
-      "final": "c56cdf5de0bf1d56fd8d84d89cdf2963",
-      "full": "e61e0448c2b7cdc048baa8d9dfb38dcf",
+      "final": "f199414c9c027246719ae7ff28c615bb",
+      "full": "36042fb7bf1ebaadb61b83d9607d4d76",
       "id": "slag-row/tier3/seed31",
       "result": null,
       "ticks": 7200,
-      "window": "1b845fa97eb5a7d38720ab5ad2f71fa0"
+      "window": "a1dc025e28bc1aff345465c9900564f6"
     },
     {
-      "final": "5acd1fa7e9d990b0978ce78a8895ccaa",
-      "full": "8b497c9b5cf05acfcc28f0624916b628",
+      "final": "648cde349cdcdc7498a89b347d543a52",
+      "full": "0b66c41ab9109f1965c150c39873fe8d",
       "id": "breakwater-run/tier3/seed9",
-      "result": null,
+      "result": "busted",
       "ticks": 7200,
-      "window": "3126cdce9a2e47094afb27ed69641d76"
+      "window": "774e2d11abd194a703e194f5875ac05a"
     },
     {
-      "final": "78fd15f4641f3116a03a59b51b673b0b",
-      "full": "a269c9dc0b6cbadcee1253d81e9609b5",
+      "final": "f6516a9d7a797c8ee9d0af3e1426bb5e",
+      "full": "1c02cbefcad821a22c49c7a87ba207d4",
       "id": "stress/seed8",
       "result": null,
       "ticks": 7200,
-      "window": "607f947ee9356eb36d61c3502826fe42"
+      "window": "7351804dddc27000a05d620a8c63a577"
     },
     {
-      "final": "f5b700d584fbf4a081b1a54606b17927",
-      "full": "405a17d8654abea718308c47afe8cc19",
+      "final": "8f8c4f6720ddde360a5889af265de06c",
+      "full": "bbab99c6a89b6ecfae4130f30c35c139",
       "id": "handover/slag-row/tier3/seed5",
       "result": null,
       "ticks": 7200,
-      "window": "4ab1d4aea798cc30d54ffbef1fe972be"
+      "window": "d4b05a8c79fb57879e98a943f67b0652"
     }
   ],
   "provenance": {
     "fixed": 7200,
     "limit": 54000,
-    "recordedAt": ["045935c6", "feat/breakwater-bends"],
-    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical. Re-recorded again when a car moving back to its lane where the road opens began braking for a car stopped there. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 13065 to a finish at tick 13075, and the other ten cases are identical. Re-recorded again when Breakwater Run took its eighth district, the Arcades neck, and its tighter and added bends. On the new road the breakwater case's seed 8 is busted at tick 3794 at 1,975 m, so it would no longer ride the neck, the market cross or the trucks, and the case moved to seed 9, which finishes at tick 13808. Only the two breakwater rows moved, and the other ten cases are identical.",
+    "recordedAt": ["a0674a52", "feat/breakwater-bazaar"],
+    "recordedWith": "snapshot format 7, at the first three-tier difficulty table. Re-recorded on darwin-arm64 Node v26.13.0 when a car began braking for a stopped car ahead from its stopping distance rather than only inside its following distance. Every hash moved because traffic drives differently on every road, and that moves the riders. Three races changed outcome: ridge-road/tier3/seed31 from a bust to a finish, slag-row/tier3/seed1 from a bust to a finish, and slag-row/tier3/seed5 from a finish to a bust. The solo, fixed, interleaved and restored rides still agree on every tick. Re-recorded again when Breakwater Run took its seven districts, its squeeze and hill bends and its moved crossing and trucks. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 12790 to a finish at tick 13065, and the other ten cases are identical. Re-recorded again when a car moving back to its lane where the road opens began braking for a car stopped there. Only the two breakwater-run/tier3/seed8 rows moved, the solo ride from a finish at tick 13065 to a finish at tick 13075, and the other ten cases are identical. Re-recorded again when Breakwater Run took its eighth district, the Arcades neck, and its tighter and added bends. On the new road the breakwater case's seed 8 is busted at tick 3794 at 1,975 m, so it would no longer ride the neck, the market cross or the trucks, and the case moved to seed 9, which finishes at tick 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took more traffic, more walkers and more hazards. The breakwater ride still finishes, at tick 14865 where it was 13808. Only the two breakwater rows moved, and the other ten cases are identical. Re-recorded again when Breakwater Run took its market stalls. The setup digest now lists a road's stalls, so every hash moved. With the stalls left out of the digest, the ten cases on other roads and the stress field are identical hash for hash, tick by tick, so only the digest moved them. The breakwater-run/tier3/seed9 row also moved because the stalls took out roadside trees and rocks that the digest lists, and it still finishes at tick 13808. Re-recorded on the merge of the two, and again when the stalls left gaps at the walk sites and began to stop sliding bikes and bodies. Only the two breakwater rows moved. The breakwater ride now ends at tick 6523, when a cop arrests the rider after a fight at 4,184 m. It crosses the market without touching a stall, and no stall is involved.",
     "window": {
       "from": 2880,
       "to": 3480
@@ -101,92 +101,92 @@
   },
   "solo": [
     {
-      "final": "ec19b6eaa4b119785f5ddd3e64cd1023",
-      "full": "9c6d18e9920447860e6f709ca094916e",
+      "final": "0ac5c59fd3b9a1e4ffb4ba465c090d3e",
+      "full": "3e7a2b01958062aff49aecbb74e93b9b",
       "id": "ridge-road/tier3/seed1",
       "result": "finished",
       "ticks": 17043,
-      "window": "8cf56be00479686e50e8ac62dc81b211"
+      "window": "375df4832975b3cfdca4dd2336e00030"
     },
     {
-      "final": "381262683045c4febb5083266e8a6736",
-      "full": "f13fcf15ff9833073d2868b03531e8d8",
+      "final": "63db086b4dfb9d4a58da74822fd457e8",
+      "full": "64ff5b5d55c46f70b911d3a4f20c90b9",
       "id": "ridge-road/tier3/seed5",
       "result": "finished",
       "ticks": 14567,
-      "window": "083e43b91f2ac7283b2dd05700c30d68"
+      "window": "332e48cd2cedceacdbde8aed271f808c"
     },
     {
-      "final": "0c88c876121926801ef725f0d9188488",
-      "full": "ded87f8d46597bf3e4b783e828d581bc",
+      "final": "3cdc4da506155bef9a956a3540d63c57",
+      "full": "f1f0193499df9b6771e2651fcf1845b4",
       "id": "ridge-road/tier3/seed9",
       "result": "busted",
       "ticks": 6896,
-      "window": "1282d72ba13e8d4d7c24e05cea6edd96"
+      "window": "a990f0da17dff1ddf63f944197fca726"
     },
     {
-      "final": "6fadcf922de8d5eae2881c9691aa675d",
-      "full": "4361cd2fcaea5212f6fd9ef2d1b7a73b",
+      "final": "7470b2afb4b3d2f9581c4b5faeac7d75",
+      "full": "041609f1e2ff175fd0637cdc1a260a6d",
       "id": "ridge-road/tier3/seed31",
       "result": "finished",
       "ticks": 21726,
-      "window": "7f5b576dc80d6ab046b4247b95976640"
+      "window": "25b64eab32daa7c9bed5e3e1df48cca2"
     },
     {
-      "final": "7e4303626fe64b97381d741677a1b7a7",
-      "full": "59eb9987545fa30ec75787d8428f0cb4",
+      "final": "294ffcad7933a1708f13474cbd5971b1",
+      "full": "bc8e3e04928effaf33b93cbe4ad6b225",
       "id": "slag-row/tier3/seed1",
       "result": "finished",
       "ticks": 12718,
-      "window": "0c495566ebb9f71c28c16bee172b4c0a"
+      "window": "04196ac52831712c598cb020e50d8b9e"
     },
     {
-      "final": "12b688fad14a5bb8951c8c8a723760fb",
-      "full": "d7e0dbf96bec651ff81688d51e74888a",
+      "final": "7889a77645ad2c75bd466870713780d4",
+      "full": "11ee37ab77493dda297c4a1516de5016",
       "id": "slag-row/tier3/seed5",
       "result": "busted",
       "ticks": 4721,
-      "window": "f655d2226be06f91c7b850ca621e06bc"
+      "window": "fe72044781ab8e4e633b81ca0004c4c0"
     },
     {
-      "final": "361ca18c2dd23a2df6d110e9ab8ee290",
-      "full": "0b3dfcaab0ba7d62f135e4775bc021e2",
+      "final": "ec65a8535bc6a00457e032d79df005ed",
+      "full": "2a9069fa1ddd01566fb93703b981e49f",
       "id": "slag-row/tier3/seed9",
       "result": "finished",
       "ticks": 12994,
-      "window": "ec25cc719346d24b7b6a3218579266cc"
+      "window": "c784f159fcc097b6156d5211b726888b"
     },
     {
-      "final": "4bd74f5a3a8a72aa45cdf4a64a5e93e0",
-      "full": "e205591575ae983ec0051f7af8442f2a",
+      "final": "1de57cae59c9a1be164256209ee2d86b",
+      "full": "e457234c5e20ebc897c188a58a3653ce",
       "id": "slag-row/tier3/seed31",
       "result": "finished",
       "ticks": 12471,
-      "window": "1b845fa97eb5a7d38720ab5ad2f71fa0"
+      "window": "a1dc025e28bc1aff345465c9900564f6"
     },
     {
-      "final": "9915443fd149fbb42ce0d0662a1b63d6",
-      "full": "8a0f17e5e00883a63f7789d37f1135ab",
+      "final": "682f706a1af325d6c351370bcf538a99",
+      "full": "cb2e4dd8f7e2c5bb37e837cc2dd06e36",
       "id": "breakwater-run/tier3/seed9",
-      "result": "finished",
-      "ticks": 13808,
-      "window": "3126cdce9a2e47094afb27ed69641d76"
+      "result": "busted",
+      "ticks": 6523,
+      "window": "774e2d11abd194a703e194f5875ac05a"
     },
     {
-      "final": "dee5bcd6c69b24dd2bb08c58eb586c90",
-      "full": "1b71a2fbf32b3846987680b7d7584a10",
+      "final": "48daa3525478159781a46d2c8602e5fc",
+      "full": "60c416e6c20af4e322b2f63519662ed2",
       "id": "stress/seed8",
       "result": "busted",
       "ticks": 9931,
-      "window": "607f947ee9356eb36d61c3502826fe42"
+      "window": "7351804dddc27000a05d620a8c63a577"
     },
     {
-      "final": "8433d0dd8b1a85c6c525e84f54d5bedf",
-      "full": "9c9263caf67c18340005e26da8921cca",
+      "final": "8486d459fa531e7ca4bdec9c30e1938f",
+      "full": "d0dfaef292b8e8ecdea0c1507aac4ec2",
       "id": "handover/slag-row/tier3/seed5",
       "result": "finished",
       "ticks": 13814,
-      "window": "4ab1d4aea798cc30d54ffbef1fe972be"
+      "window": "d4b05a8c79fb57879e98a943f67b0652"
     }
   ]
 }

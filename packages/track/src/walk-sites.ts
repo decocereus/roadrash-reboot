@@ -31,9 +31,10 @@ export const walkersOn = (sites: readonly WalkSite[]): number => {
   return count;
 };
 
-type Road = Omit<Track, "walkSites">;
+type Road = Pick<Track, "crossings" | "length" | "plan">;
 
 const WALK_SEED_SALT = 0x77_a1;
+const CROWD_SEED_SALT = 0x3c_19;
 const METRES_PER_KILOMETRE = 1000;
 const CROSSING_CLEARANCE = 20;
 const seededKinds = ["unmarked", "jaywalk"] as const;
@@ -84,7 +85,19 @@ const seededSites = (road: Road): WalkSite[] => {
   return sites;
 };
 
+const crowdSites = (road: Road): WalkSite[] => {
+  const random = createRandom(nextSeed(road.plan.seed + CROWD_SEED_SALT));
+  return road.plan.crowds.flatMap(({ from, sites, to }, crowd) =>
+    Array.from({ length: sites }, (_, place) => ({
+      crossing: NO_CROSSING,
+      id: `crowd-${crowd}-${place}`,
+      kind: "unmarked" as const,
+      s: from + ((place + random()) * (to - from)) / sites,
+    }))
+  );
+};
+
 export const placeWalkSites = (road: Road): WalkSite[] =>
-  [...declaredSites(road), ...seededSites(road)].toSorted(
+  [...declaredSites(road), ...seededSites(road), ...crowdSites(road)].toSorted(
     (one, other) => one.s - other.s
   );

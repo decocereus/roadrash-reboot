@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import { modelUrls } from "../src/assets/model-urls.ts";
 import { assetParsers } from "../src/game/assets.ts";
-import { walkerBodies } from "../src/game/walker-clips.ts";
+import { crowdModes, walkerBodies } from "../src/game/walker-clips.ts";
 import { artFile } from "./art-files.ts";
 
 const BONES = 23;
 const TEXELS_PER_BONE = 3;
 const ROW = BONES * TEXELS_PER_BONE * 4;
-const FRAMES = [22, 16, 38, 60, 20, 90, 30];
+const FRAMES = [90, 22, 16, 38, 90, 60, 20, 90, 90, 30];
 const LYING_KNEE = 0.401;
 const LOWEST_LYING = -0.05;
 
@@ -110,6 +110,36 @@ describe("the pinned pedestrian model", () => {
       expect(standing.high).toBeLessThan(1.75);
       expect(lying.high).toBeCloseTo(LYING_KNEE, 2);
       expect(lying.low).toBeGreaterThan(LOWEST_LYING);
+    }
+    release();
+  });
+
+  it("keeps a stall's crowd on its feet through every clip, moving, and closing its loop", async () => {
+    const { release, value } = await assetParsers.walkers(
+      artFile(modelUrls.walkers),
+      modelUrls.walkers
+    );
+    const { clips, geometries, poses } = value;
+    const data = posesOf(poses);
+    for (const mode of crowdModes) {
+      const { frames, start } = clips[mode];
+      expect(frames).toBe(90);
+      expect(rowsDiffer(data, start, start + 30)).toBeTruthy();
+      const last = data.subarray(
+        (start + frames - 1) * ROW,
+        (start + frames) * ROW
+      );
+      const first = data.subarray(start * ROW, (start + 1) * ROW);
+      expect(
+        Math.max(...last.map((each, at) => Math.abs(each - (first[at] ?? 0))))
+      ).toBeLessThan(0.12);
+      for (const body of geometries) {
+        for (let frame = 0; frame < frames; frame += 15) {
+          const { high, low } = heightsOf(body, data, start + frame);
+          expect(low).toBeCloseTo(0, 2);
+          expect(high).toBeGreaterThan(1.5);
+        }
+      }
     }
     release();
   });

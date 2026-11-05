@@ -8,7 +8,7 @@ const CELL = 8;
 const CELL_OFFSET = 32_768;
 const CELL_SPAN = 65_536;
 
-interface Extent {
+export interface Extent {
   readonly x: number;
   readonly z: number;
   readonly radius: number;
@@ -32,7 +32,21 @@ interface Standing {
   hidden: boolean;
 }
 
-type Unit = Placed | Standing;
+interface IndexSpan {
+  readonly index: THREE.BufferAttribute;
+  readonly from: number;
+  readonly to: number;
+}
+
+interface Merged {
+  readonly kind: "merged";
+  readonly spans: readonly IndexSpan[];
+  readonly drawn: readonly ArrayLike<number>[];
+  readonly extents: readonly Extent[];
+  hidden: boolean;
+}
+
+type Unit = Merged | Placed | Standing;
 
 export interface Clearance {
   addInstance: (
@@ -41,6 +55,7 @@ export interface Clearance {
     pose: THREE.Matrix4
   ) => void;
   addObject: (root: THREE.Object3D) => void;
+  addSpans: (spans: readonly IndexSpan[], extents: readonly Extent[]) => void;
   follow: (eye: THREE.Vector3) => void;
 }
 
@@ -77,6 +92,11 @@ const placedAt = (footprint: Extent, matrix: THREE.Matrix4): Extent => {
   };
 };
 
+export const extentOf = (
+  geometry: THREE.BufferGeometry,
+  matrix: THREE.Matrix4
+): Extent => placedAt(footprintOf(geometry), matrix);
+
 const gapTo = (extent: Extent, eye: THREE.Vector3): number =>
   Math.hypot(
     Math.max(0, Math.hypot(eye.x - extent.x, eye.z - extent.z) - extent.radius),
@@ -104,6 +124,21 @@ const show = (unit: Unit, shown: boolean): void => {
     case "object": {
       for (const part of unit.parts) {
         part.visible = shown;
+      }
+      return;
+    }
+    case "merged": {
+      for (let place = 0; place < unit.spans.length; place += 1) {
+        const span = unit.spans[place];
+        const drawn = unit.drawn[place];
+        if (span && drawn) {
+          if (shown) {
+            span.index.array.set(drawn, span.from);
+          } else {
+            span.index.array.fill(0, span.from, span.to);
+          }
+          uploadSpan(span.index, span.from, span.to);
+        }
       }
       return;
     }
@@ -176,6 +211,15 @@ export const createClearance = (): Clearance => {
         hidden: false,
         kind: "object",
         parts,
+      });
+    },
+    addSpans(spans, extents) {
+      file({
+        drawn: spans.map(({ from, index, to }) => index.array.slice(from, to)),
+        extents,
+        hidden: false,
+        kind: "merged",
+        spans,
       });
     },
     follow(eye) {

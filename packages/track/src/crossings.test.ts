@@ -21,9 +21,11 @@ const flatRoad = (
   pieces = eased([[3000, 0, 0]])
 ): TrackPlan => ({
   ...roads["breakwater-run"],
+  bazaars: [],
   carriers: [],
   chevrons: [],
   crossings,
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 }],
   pieces,
 });

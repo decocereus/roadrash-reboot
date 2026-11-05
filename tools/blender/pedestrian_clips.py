@@ -323,6 +323,55 @@ def rising_pose(p):
         p.arm_at(s, sx, 8 if sx == 1 else -4, 22, 0.2)
 
 
+def bump(phase, rise_from, rise_to, fall_from, fall_to):
+    return smooth((phase - rise_from) / (rise_to - rise_from)) * (1 - smooth((phase - fall_from) / (fall_to - fall_from)))
+
+
+def browse_pose(p, phase):
+    turn = math.tau * phase
+    reach = bump(phase, 0.22, 0.42, 0.62, 0.82)
+    stand_pose(p, shift=0.02 * math.sin(turn), breathe=math.sin(2 * turn), yaw=16 * math.sin(turn))
+    p.rot("spine_01", X, 3 + 4 * reach)
+    p.rot("spine_02", X, 3 + 5 * reach)
+    p.rot("head", X, 10 + 6 * reach)
+    p.arm_at("_l", 1, 18 + 4 * math.sin(turn), 62, 0.16)
+    swing = 6 + 46 * reach
+    p.arm_at("_r", -1, swing, 14 + 34 * reach, 0.18 - 0.1 * reach)
+    if reach > 0:
+        p.rot("hand_r", X, 26 * reach * math.sin(3 * turn))
+
+
+def haggle_pose(p, phase):
+    turn = math.tau * phase
+    beat = math.sin(4 * turn)
+    offer = bump(phase, 0.0, 0.1, 0.42, 0.52)
+    refuse = bump(phase, 0.5, 0.6, 0.86, 0.96)
+    stand_pose(p, shift=0.024 * math.sin(turn), breathe=math.sin(2 * turn), yaw=10 * math.sin(turn))
+    p.rot("spine_02", X, 4 + 5 * offer - 5 * refuse)
+    p.rot("spine_03", X, 2 + 3 * offer - 4 * refuse)
+    p.rot("head", X, 7 * beat * offer)
+    p.rot("head", Z, 22 * math.sin(6 * turn) * refuse)
+    left_swing = 16 + 12 * refuse
+    left_elbow = 62 + 20 * refuse + 14 * beat * offer
+    right_swing = 26 + 22 * offer + 8 * refuse
+    right_elbow = 66 + 24 * offer * (0.5 + 0.5 * beat) + 18 * refuse
+    p.arm_at("_l", 1, left_swing, left_elbow, 0.18 + 0.34 * refuse)
+    p.arm_at("_r", -1, right_swing, right_elbow, 0.16 + 0.34 * refuse)
+
+
+def serve_pose(p, phase):
+    turn = math.tau * phase
+    scoop = bump(phase, 0.04, 0.2, 0.32, 0.46)
+    hand_over = bump(phase, 0.42, 0.56, 0.72, 0.86)
+    stand_pose(p, shift=0.03 * math.sin(turn), breathe=math.sin(2 * turn), yaw=-16 * scoop + 8 * hand_over)
+    p.rot("spine_01", X, 5 + 7 * scoop + 2 * hand_over)
+    p.rot("spine_02", X, 5 + 8 * scoop + 3 * hand_over)
+    p.rot("spine_02", Z, 12 * scoop - 8 * hand_over)
+    p.rot("head", X, 8 + 16 * scoop - 8 * hand_over)
+    p.arm_at("_l", 1, 30 + 16 * scoop + 26 * hand_over, 42 + 24 * scoop + 8 * hand_over, 0.2 - 0.06 * hand_over)
+    p.arm_at("_r", -1, 26 + 22 * scoop + 40 * hand_over, 44 + 22 * scoop + 10 * hand_over, 0.16 - 0.04 * hand_over)
+
+
 def capture(p, fn):
     fn(p)
     pose = {pb.name: pb.matrix_basis.copy() for pb in p.pbs}
@@ -399,6 +448,9 @@ def author(arm):
         "walk": looped(WALK, "walk"),
         "run": looped(RUN, "run"),
         "wait": loop_frames(p, 90, wait),
+        "browse": loop_frames(p, 90, browse_pose),
+        "haggle": loop_frames(p, 90, haggle_pose),
+        "serve": loop_frames(p, 90, serve_pose),
         "flinch": keyed(p, [(0.0, stand_pose), (0.12, flinch_pose), (0.3, flinch_pose), (0.5, stand_pose)]),
         "fall": keyed(p, [(0.0, stand_pose), (0.1, recoil_pose), (0.28, thrown_pose), (0.5, landing_pose), (0.72, lie_pose)]),
         "lie": loop_frames(p, 60, lambda pp, phase: lie_pose(pp, math.sin(math.tau * phase))),

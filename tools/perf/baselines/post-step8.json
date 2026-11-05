@@ -2826,6 +2826,30 @@
       "value": 188205
     },
     {
+      "environment": "build",
+      "metric": "assets.glb.pedestrians",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "value": 327348
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.stalls",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "value": 55976
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "value": 3561280
+    },
+    {
       "environment": "node-darwin-arm64",
       "metric": "lobby.tick.p95",
       "scenario": null,
@@ -2840,6 +2864,22 @@
       "side": "B",
       "source": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
       "value": 1.417910886133199
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
+      "value": 614334
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T10-06-25-634Z-43d81a8-43d81a8",
+      "value": 955476
     },
     {
       "environment": "build",
@@ -3224,6 +3264,14 @@
       "side": "B",
       "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
       "value": 897449
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T18-56-36-101Z-c982325-c982325",
+      "value": 548216
     }
   ],
   "revisions": {
@@ -4141,6 +4189,29 @@
       }
     },
     {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1153859, \"bytes.route.root.gzip\": 614079, \"bytes.route.kit.raw\": 952055, \"bytes.route.kit.gzip\": 544605, \"bytes.game.raw\": 1927071, \"bytes.game.gzip\": 830119, \"bytes.game.incremental.raw\": 773212, \"bytes.game.incremental.gzip\": 216040, \"bytes.worker.raw\": 737045, \"bytes.worker.gzip\": 189458, \"bytes.client.raw\": 2059615, \"bytes.client.gzip\": 882619}",
+        "builtB": "{\"bytes.route.root.raw\": 1153859, \"bytes.route.root.gzip\": 614079, \"bytes.route.kit.raw\": 952055, \"bytes.route.kit.gzip\": 544605, \"bytes.game.raw\": 1927071, \"bytes.game.gzip\": 830119, \"bytes.game.incremental.raw\": 773212, \"bytes.game.incremental.gzip\": 216040, \"bytes.worker.raw\": 737147, \"bytes.worker.gzip\": 189473, \"bytes.client.raw\": 2059615, \"bytes.client.gzip\": 882619}",
+        "harnessDigest": "9a2051b12e466b0e43d8def5a6e77c89ff1177b7793f14c2032dff5b4800d7ef",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "da4851db676051f3399e009c3d3524f8170d027e772faa55145dd966eadf1860",
+        "sideBSourceDigest": "da4851db676051f3399e009c3d3524f8170d027e772faa55145dd966eadf1860",
+        "why": "Breakwater Run's market adds the stall kit as one model on the art CDN, and the browse, haggle and serve clips grow the pedestrian model. No code byte row moved past its limit, so those rows stay."
+      },
+      "id": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d743540c78b1cfd2b7e28c4d4c7514306d26241e",
+        "B": "d743540c78b1cfd2b7e28c4d4c7514306d26241e"
+      }
+    },
+    {
       "environment": "node-darwin-arm64",
       "facts": {
         "arch": "arm64",
@@ -4197,6 +4268,52 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "aa043203bfd4b1e42cb0a7eeebfb9e765ba9f783"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1154975, \"bytes.route.root.gzip\": 614334, \"bytes.route.kit.raw\": 952839, \"bytes.route.kit.gzip\": 544738, \"bytes.game.raw\": 1923769, \"bytes.game.gzip\": 828753, \"bytes.game.incremental.raw\": 768794, \"bytes.game.incremental.gzip\": 214419, \"bytes.worker.raw\": 738344, \"bytes.worker.gzip\": 189731, \"bytes.client.raw\": 2055830, \"bytes.client.gzip\": 881142}",
+        "builtB": "{\"bytes.route.root.raw\": 1154975, \"bytes.route.root.gzip\": 614334, \"bytes.route.kit.raw\": 952839, \"bytes.route.kit.gzip\": 544738, \"bytes.game.raw\": 1923769, \"bytes.game.gzip\": 828753, \"bytes.game.incremental.raw\": 768794, \"bytes.game.incremental.gzip\": 214419, \"bytes.worker.raw\": 738344, \"bytes.worker.gzip\": 189731, \"bytes.client.raw\": 2055830, \"bytes.client.gzip\": 881142}",
+        "harnessDigest": "137b3c1b0470d933fa499670022192d29d644be9dc42054e961419d7038f7a65",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "eca1e93e75258c01f65521ce14c803a9b0df9cd561a3bf28527cd2e5922d79db",
+        "sideBSourceDigest": "eca1e93e75258c01f65521ce14c803a9b0df9cd561a3bf28527cd2e5922d79db",
+        "why": "Breakwater Run's density work and the tier 1 bike match add 307 B gzip to the root route over main at 638289cf, which sat 237 B under its limit, so the first page ran 70 B over. This is code players download. Only bytes.route.root.gzip moves, re-measured here at |delta| 0 B, and every other build row keeps its limit."
+      },
+      "id": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
+      "lanes": ["build"],
+      "sides": {
+        "A": "c5626bf810cdeebaaa1934900b297292fabc6262",
+        "B": "c5626bf810cdeebaaa1934900b297292fabc6262"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1157612, \"bytes.route.root.gzip\": 615361, \"bytes.route.kit.raw\": 955476, \"bytes.route.kit.gzip\": 545769, \"bytes.game.raw\": 1931176, \"bytes.game.gzip\": 831576, \"bytes.game.incremental.raw\": 773564, \"bytes.game.incremental.gzip\": 216215, \"bytes.worker.raw\": 741972, \"bytes.worker.gzip\": 190761, \"bytes.client.raw\": 2063369, \"bytes.client.gzip\": 884030}",
+        "builtB": "{\"bytes.route.root.raw\": 1157612, \"bytes.route.root.gzip\": 615361, \"bytes.route.kit.raw\": 955476, \"bytes.route.kit.gzip\": 545769, \"bytes.game.raw\": 1931176, \"bytes.game.gzip\": 831576, \"bytes.game.incremental.raw\": 773564, \"bytes.game.incremental.gzip\": 216215, \"bytes.worker.raw\": 742074, \"bytes.worker.gzip\": 190776, \"bytes.client.raw\": 2063369, \"bytes.client.gzip\": 884030}",
+        "harnessDigest": "6077db52927bcfa701897fb1a60fd0ea84de27fc564d67d4e268583147ccff45",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "51e74724ae1dec63613f939a07eed612d43acd59054cdb99c3c20de1e4ea9e21",
+        "sideBSourceDigest": "51e74724ae1dec63613f939a07eed612d43acd59054cdb99c3c20de1e4ea9e21",
+        "why": "The stall placement and the stall rule are shared road code, so they reach the kit route. The route read 955,476 B against a limit of 955,467 B. This branch adds 2,637 B raw and 1,034 B gzip on the density branch's head, and the row's headroom had gone on earlier work since its October 31 baseline. No other byte row passed its limit, so they stay."
+      },
+      "id": "baseline-2026-11-05T10-06-25-634Z-43d81a8-43d81a8",
+      "lanes": ["build"],
+      "sides": {
+        "A": "43d81a8403baea32ecc5f7858a91295dec9246c3",
+        "B": "43d81a8403baea32ecc5f7858a91295dec9246c3"
       }
     },
     {
@@ -4337,6 +4454,29 @@
       "sides": {
         "A": "b2687f71237896aaa5419b0aebede7fcacc23b38",
         "B": "62aca5b538887ca9b84848bc5a5a715b3cb5df71"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1160943, \"bytes.route.root.gzip\": 619063, \"bytes.route.kit.raw\": 956645, \"bytes.route.kit.gzip\": 548216, \"bytes.game.raw\": 1987264, \"bytes.game.gzip\": 854021, \"bytes.game.incremental.raw\": 826321, \"bytes.game.incremental.gzip\": 234958, \"bytes.worker.raw\": 743940, \"bytes.worker.gzip\": 191406, \"bytes.client.raw\": 2121433, \"bytes.client.gzip\": 906994}",
+        "builtB": "{\"bytes.route.root.raw\": 1160943, \"bytes.route.root.gzip\": 619063, \"bytes.route.kit.raw\": 956645, \"bytes.route.kit.gzip\": 548216, \"bytes.game.raw\": 1987264, \"bytes.game.gzip\": 854021, \"bytes.game.incremental.raw\": 826321, \"bytes.game.incremental.gzip\": 234958, \"bytes.worker.raw\": 743940, \"bytes.worker.gzip\": 191406, \"bytes.client.raw\": 2121433, \"bytes.client.gzip\": 906994}",
+        "harnessDigest": "5bf5863787497af396693c8435db11de8ecccc28574406667fb9c33679e09ea7",
+        "lockfileSha256": "7d4bce5cacea74cf01953fb780c4165952e9c4dff20c2f7bc3b4c7fced69f4af",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "aa833ad009f0e95ff568ddb296720b5739ec62bdb0d96a686de959ed072183f9",
+        "sideBSourceDigest": "aa833ad009f0e95ff568ddb296720b5739ec62bdb0d96a686de959ed072183f9",
+        "why": "The market's road code reaches the kit route. The route read 548,216 B gzip against a limit of 548,215 B, 1 B over. This branch adds 1,304 B gzip on top of main at fcc2b457, which reads 546,912 B. The row's headroom had gone on earlier work since its October 31 baseline."
+      },
+      "id": "baseline-2026-11-05T18-56-36-101Z-c982325-c982325",
+      "lanes": ["build"],
+      "sides": {
+        "A": "c982325db01c5cecb199395e76ce9d3de937a49c",
+        "B": "c982325db01c5cecb199395e76ce9d3de937a49c"
       }
     }
   ],

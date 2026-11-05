@@ -5,7 +5,7 @@ import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import type { Random } from "./random.ts";
 import { regions } from "./regions.ts";
-import type { HazardMix } from "./regions.ts";
+import type { HazardSetting, Region } from "./regions.ts";
 import type { Track } from "./track.ts";
 
 export const hazardKinds = ["oil", "rock", "pothole"] as const;
@@ -23,8 +23,6 @@ export const hazardSizes = {
   pothole: { halfLength: 0.5, halfWidth: 0.6, height: 0 },
   rock: { halfLength: 0.3, halfWidth: 0.3, height: 0.3 },
 } as const satisfies Record<HazardKind, HazardSize>;
-
-export type HazardSetting = "turnIn" | "apex" | "exit" | "crest" | "traffic";
 
 export interface HazardPlacement {
   readonly id: string;
@@ -59,24 +57,24 @@ const APEX_REACH = 0.7;
 const SEAM_SPREAD = 0.9;
 export const HAZARD_TIGHT_CURVATURE = 0.0015;
 export const HAZARD_GENTLE_CURVATURE = 0.0003;
-const ROCK_LEAD = 10;
-const ROCK_RUNOUT = 40;
+export const ONLY_LANE_OIL_CURVATURE = 0.008;
+const BEND_LEAD = 10;
+const BEND_RUNOUT = 40;
 const LANE_SPREAD = {
   oil: 0.5,
   pothole: 0.9,
   rock: 1.2,
 } as const satisfies Record<HazardKind, number>;
-const SETTING_WEIGHTS = {
-  apex: { oil: 0, pothole: 1, rock: 0 },
-  crest: { oil: 0, pothole: 1, rock: 2 },
-  exit: { oil: 1, pothole: 0, rock: 1 },
-  traffic: { oil: 1, pothole: 1, rock: 1.5 },
-  turnIn: { oil: 1, pothole: 0, rock: 0 },
-} as const satisfies Record<HazardSetting, Record<HazardKind, number>>;
 
 type Road = Omit<Track, "hazards" | "walkSites">;
 
 type Bend = "straight" | "gentle" | "tight";
+
+interface Ground {
+  readonly bend: Bend;
+  readonly takesOil: boolean;
+  readonly takesRock: boolean;
+}
 
 interface Place {
   readonly s: number;
@@ -85,14 +83,14 @@ interface Place {
 }
 
 const kindOf = (
-  mix: HazardMix,
+  { hazardHabit, hazardMix: mix }: Region,
   roll: number,
   setting: HazardSetting,
-  bend: Bend
+  ground: Ground
 ): HazardKind => {
-  const weight = SETTING_WEIGHTS[setting];
-  const oil = mix.oil * weight.oil;
-  const rock = bend === "tight" ? 0 : mix.rock * weight.rock;
+  const weight = hazardHabit[setting];
+  const oil = ground.takesOil ? mix.oil * weight.oil : 0;
+  const rock = ground.takesRock ? mix.rock * weight.rock : 0;
   const total = oil + rock + mix.pothole * weight.pothole;
   if (roll * total < oil) {
     return "oil";
@@ -235,11 +233,18 @@ const seenFrom = (road: Road, s: number, x: number, distance: number) => {
 export const inSight = (road: Road, s: number, x: number): boolean =>
   seenFrom(road, s, x, HAZARD_SIGHT);
 
-const bendAt = (road: Road, s: number): Bend => {
+const bendOf = (sharpest: number): Bend => {
+  if (sharpest >= HAZARD_TIGHT_CURVATURE) {
+    return "tight";
+  }
+  return sharpest >= HAZARD_GENTLE_CURVATURE ? "gentle" : "straight";
+};
+
+const groundAt = (road: Road, s: number): Ground => {
   let sharpest = 0;
   for (
-    let along = s - ROCK_LEAD;
-    along <= s + ROCK_RUNOUT;
+    let along = s - BEND_LEAD;
+    along <= s + BEND_RUNOUT;
     along += SIGHT_STEP
   ) {
     sharpest = Math.max(
@@ -247,10 +252,13 @@ const bendAt = (road: Road, s: number): Bend => {
       Math.abs(sampleAlong(road, road.curvature, along))
     );
   }
-  if (sharpest >= HAZARD_TIGHT_CURVATURE) {
-    return "tight";
-  }
-  return sharpest >= HAZARD_GENTLE_CURVATURE ? "gentle" : "straight";
+  const bend = bendOf(sharpest);
+  const onlyLane = openLanesAt(road, s) === 1;
+  return {
+    bend,
+    takesOil: !onlyLane || sharpest < ONLY_LANE_OIL_CURVATURE,
+    takesRock: !onlyLane && bend !== "tight",
+  };
 };
 
 const clearOfCrossings = (road: Road, s: number, halfLength: number): boolean =>
@@ -316,7 +324,7 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
   if (rate <= 0) {
     return [];
   }
-  const mix = regions[road.plan.region].hazardMix;
+  const region = regions[road.plan.region];
   const random = createRandom(nextSeed(road.plan.seed + HAZARD_SEED_SALT));
   const places = placesOf(road);
   const claimed = new Set<Place>();
@@ -342,12 +350,12 @@ export const placeHazards = (road: Road): HazardPlacement[] => {
     ];
     const chosen = options
       .map((place) => {
-        const bend = bendAt(road, place.s);
-        const kind = kindOf(mix, kindRoll, place.setting, bend);
+        const ground = groundAt(road, place.s);
+        const kind = kindOf(region, kindRoll, place.setting, ground);
         return {
           kind,
           place,
-          x: acrossOf(road, place, kind, bend, laneRoll, offsetRoll),
+          x: acrossOf(road, place, kind, ground.bend, laneRoll, offsetRoll),
         };
       })
       .find(({ kind, place, x }) => placeable(road, kind, place.s, x));

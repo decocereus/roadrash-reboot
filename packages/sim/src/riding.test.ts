@@ -34,6 +34,7 @@ const arcOf = (curvature: number) =>
     ...ridgeRoad,
     carriers: [],
     chevrons: [],
+    crowds: [],
     hazardsPerKilometre: 0,
     pieces: clothoids([
       [40, curvature, 0],
@@ -117,6 +118,7 @@ describe("riding", () => {
       ...ridgeRoad,
       carriers: [],
       chevrons: [],
+      crowds: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,
@@ -174,6 +176,7 @@ describe("riding", () => {
       ...ridgeRoad,
       carriers: [],
       chevrons: [],
+      crowds: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,
