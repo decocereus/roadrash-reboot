@@ -2,7 +2,24 @@ export const FIGHT_PROBE = `(() => {
   if (globalThis.__fightProbe) { return "kept"; }
   const frames = [];
   const presses = [];
-  globalThis.__fightProbe = { frames, presses };
+  const attacks = [];
+  globalThis.__fightProbe = { attacks, frames, presses };
+  const watchConfirms = (client) => {
+    if (client.__probed) { return; }
+    client.__probed = true;
+    const confirm = client.confirm;
+    const was = [];
+    client.confirm = (frame, hash) => {
+      confirm(frame, hash);
+      [0, 1].forEach((index) => {
+        const { attack } = client.confirmed.riders[index];
+        if (attack !== "none" && attack !== was[index]) {
+          attacks.push({ at: Date.now(), attack, rider: index, tick: client.confirmed.tick });
+        }
+        was[index] = attack;
+      });
+    };
+  };
   addEventListener("keydown", (event) => {
     if (!event.repeat) { presses.push({ at: Date.now(), code: event.code }); }
   }, true);
@@ -30,6 +47,7 @@ export const FIGHT_PROBE = `(() => {
       const { client } = room;
       const humans = [0, 1];
       watchFigures(cast);
+      watchConfirms(client);
       frames.push({
         at: Date.now(),
         confirmed: humans.map((i) => rider(client.confirmed, i)),
@@ -55,7 +73,7 @@ export const POSITIONS = `(() => {
 })()`;
 
 export const TAKE_FRAMES = (since: number): string =>
-  `(() => { const p = globalThis.__fightProbe; return { frames: p.frames.filter((f) => f.at >= ${since}), presses: p.presses.filter((f) => f.at >= ${since}) }; })()`;
+  `(() => { const p = globalThis.__fightProbe; return { attacks: p.attacks.filter((f) => f.at >= ${since}), frames: p.frames.filter((f) => f.at >= ${since}), presses: p.presses.filter((f) => f.at >= ${since}) }; })()`;
 
 export const FIGHT_PILOT = `(() => {
   if (globalThis.__fightPilot) { return "kept"; }

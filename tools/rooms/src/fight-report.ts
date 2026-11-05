@@ -33,6 +33,14 @@ const probeFrame = Schema.Struct({
 export type ProbeFrame = typeof probeFrame.Type;
 
 export const takenFrames = Schema.Struct({
+  attacks: Schema.Array(
+    Schema.Struct({
+      at: Schema.Number,
+      attack: Schema.String,
+      rider: Schema.Number,
+      tick: Schema.Number,
+    })
+  ),
   frames: Schema.Array(probeFrame),
   presses: Schema.Array(
     Schema.Struct({ at: Schema.Number, code: Schema.String })

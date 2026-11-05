@@ -391,8 +391,8 @@ const strikeOnce = Effect.fn("rooms.fights.strike")(function* strikeOnce(
   const pressAt = fromAttacker.presses.find(
     (one) => one.code === CODE_OF[kind]
   )?.at;
-  const roomRan = fromVictim.frames.some(
-    (frame) => frame.confirmed[attacker]?.attack === kind
+  const roomRan = fromVictim.attacks.some(
+    (one) => one.rider === attacker && one.attack === kind
   );
   const row: BoutRow = {
     ...fightRow(kind, attacker, victim, pressAt ?? since, fromVictim.frames),
