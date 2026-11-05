@@ -56,7 +56,7 @@ People:
 
 - `crossings` reject bends, so a stretch that bends gets a plan's `crowds` instead. Its walkers cross with no lights, on a gap in the cars. A region's `footfall` raises every road in that city, so check the other roads' sites when you change it.
 - Walkers add hits more than they add stuck. Going from 28 to 59 walkers tripled the times riders hit one and added about 2 points to the stuck mean at most.
-- Every walker within 300 m draws about 5,400 triangles in each of three passes, with no level of detail. Before that cap they drew all the way to the fog, and on the UHD 630 Breakwater Run's first 1,300 m lost 6 fps to people about 1 pixel tall. Put the walker count beside the frame cost.
+- Every walker within 300 m draws about 5,400 triangles in each of three passes, with no level of detail. Before that cap they drew all the way to the fog. On the UHD 630, Breakwater Run's first 1,300 m fell from 51.3 to 44.6 fps when the walkers and the market were added, and people that far off, about 1 pixel tall, are the suspected cause. The count of triangles fits that, but nobody has measured the cause. Put the walker count beside the frame cost.
 - A plan's `bazaars` fills a stretch's footpaths with stalls. They leave a 3 m gap at every walk site, so moving `crowds` or `footfall` moves the stalls too, and the stall pins in `packages/track/src/stalls.test.ts` change with them. Stalls are solid for a rider, a sliding bike and a thrown body. The market's 56 people draw beside the walkers, about 300,000 triangles a pass when all of them are within 300 m, so put that beside the frame cost too.
 
 Hazards:
