@@ -2872,6 +2872,14 @@
       "side": "B",
       "source": "baseline-2026-11-05T08-55-26-976Z-c5626bf-c5626bf",
       "value": 614334
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T10-06-25-634Z-43d81a8-43d81a8",
+      "value": 955476
     }
   ],
   "revisions": {
@@ -3891,6 +3899,29 @@
       "sides": {
         "A": "c5626bf810cdeebaaa1934900b297292fabc6262",
         "B": "c5626bf810cdeebaaa1934900b297292fabc6262"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1157612, \"bytes.route.root.gzip\": 615361, \"bytes.route.kit.raw\": 955476, \"bytes.route.kit.gzip\": 545769, \"bytes.game.raw\": 1931176, \"bytes.game.gzip\": 831576, \"bytes.game.incremental.raw\": 773564, \"bytes.game.incremental.gzip\": 216215, \"bytes.worker.raw\": 741972, \"bytes.worker.gzip\": 190761, \"bytes.client.raw\": 2063369, \"bytes.client.gzip\": 884030}",
+        "builtB": "{\"bytes.route.root.raw\": 1157612, \"bytes.route.root.gzip\": 615361, \"bytes.route.kit.raw\": 955476, \"bytes.route.kit.gzip\": 545769, \"bytes.game.raw\": 1931176, \"bytes.game.gzip\": 831576, \"bytes.game.incremental.raw\": 773564, \"bytes.game.incremental.gzip\": 216215, \"bytes.worker.raw\": 742074, \"bytes.worker.gzip\": 190776, \"bytes.client.raw\": 2063369, \"bytes.client.gzip\": 884030}",
+        "harnessDigest": "6077db52927bcfa701897fb1a60fd0ea84de27fc564d67d4e268583147ccff45",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "51e74724ae1dec63613f939a07eed612d43acd59054cdb99c3c20de1e4ea9e21",
+        "sideBSourceDigest": "51e74724ae1dec63613f939a07eed612d43acd59054cdb99c3c20de1e4ea9e21",
+        "why": "The stall placement and the stall rule are shared road code, so they reach the kit route. The route read 955,476 B against a limit of 955,467 B. This branch adds 2,637 B raw and 1,034 B gzip on the density branch's head, and the row's headroom had gone on earlier work since its October 31 baseline. No other byte row passed its limit, so they stay."
+      },
+      "id": "baseline-2026-11-05T10-06-25-634Z-43d81a8-43d81a8",
+      "lanes": ["build"],
+      "sides": {
+        "A": "43d81a8403baea32ecc5f7858a91295dec9246c3",
+        "B": "43d81a8403baea32ecc5f7858a91295dec9246c3"
       }
     }
   ],
