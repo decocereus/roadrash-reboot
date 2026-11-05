@@ -1,8 +1,13 @@
 import { MAX_EVENTS_IN_BATCH } from "@racer/telemetry/limits";
+import type { GraphicsPlace } from "@racer/telemetry/limits";
 import type { PlayerEvent } from "@racer/telemetry/player-events";
 import { describe, expect, it } from "vitest";
 
 import { roomArrivalOf } from "../src/components/room-url.ts";
+import {
+  createGraphicsLoss,
+  RECOVERY_WAIT_MS,
+} from "../src/diagnostics/graphics-loss.ts";
 import {
   browserFamilyOf,
   createPlayerEvents,
@@ -250,5 +255,140 @@ describe("device facts", () => {
     ["?room=abc&via=nonsense", "link"],
   ])("reads the arrival in %s as %s", (search, arrival) => {
     expect(roomArrivalOf(search)).toBe(arrival);
+  });
+});
+
+const LOST = "webglcontextlost";
+const RESTORED = "webglcontextrestored";
+
+const lossTracker = () => {
+  const sent: PlayerEvent[] = [];
+  const waits = new Map<number, () => void>();
+  let next = 0;
+  const loss = createGraphicsLoss({
+    after(ms, run) {
+      expect(ms).toBe(RECOVERY_WAIT_MS);
+      next += 1;
+      const id = next;
+      waits.set(id, run);
+      return () => {
+        waits.delete(id);
+      };
+    },
+    track(event) {
+      sent.push(event);
+    },
+  });
+  const giveUp = (): void => {
+    for (const run of waits.values()) {
+      run();
+    }
+  };
+  return { giveUp, loss, sent, waits };
+};
+
+const report = (
+  where: GraphicsPlace,
+  recovered: "no" | "yes"
+): readonly PlayerEvent[] => [{ event: "graphics_lost", recovered, where }];
+
+const fire = (canvas: EventTarget, name: string): void => {
+  canvas.dispatchEvent(new Event(name));
+};
+
+describe("a graphics loss", () => {
+  it("reports yes when the graphics come back, and not before", () => {
+    const { loss, sent, waits } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, () => "race");
+    fire(canvas, LOST);
+    expect(sent).toStrictEqual([]);
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual(report("race", "yes"));
+    expect(waits.size).toBe(0);
+  });
+
+  it("reports no when the wait runs out, and stays one report if they return later", () => {
+    const { giveUp, loss, sent } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, () => "menu");
+    fire(canvas, LOST);
+    giveUp();
+    expect(sent).toStrictEqual(report("menu", "no"));
+    fire(canvas, RESTORED);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("reports no when the page closes before the answer is known", () => {
+    const { loss, sent, waits } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, () => "race");
+    fire(canvas, LOST);
+    loss.leaving();
+    loss.leaving();
+    expect(sent).toStrictEqual(report("race", "no"));
+    expect(waits.size).toBe(0);
+  });
+
+  it("says where the player was when it happened, not where they went next", () => {
+    const { loss, sent } = lossTracker();
+    const canvas = new EventTarget();
+    let place: GraphicsPlace = "race";
+    loss.watch(canvas, () => place);
+    fire(canvas, LOST);
+    place = "menu";
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual(report("race", "yes"));
+  });
+
+  it("makes one report when a GPU crash takes the bar and the game behind it", () => {
+    const { loss, sent } = lossTracker();
+    const game = new EventTarget();
+    const bar = new EventTarget();
+    loss.watch(game, () => "menu");
+    loss.watch(bar, () => "bar");
+    fire(game, LOST);
+    fire(bar, LOST);
+    fire(game, RESTORED);
+    expect(sent).toStrictEqual([]);
+    fire(bar, RESTORED);
+    expect(sent).toStrictEqual(report("bar", "yes"));
+  });
+
+  it("reports a second loss on its own", () => {
+    const { loss, sent } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, () => "bar");
+    fire(canvas, LOST);
+    fire(canvas, RESTORED);
+    fire(canvas, LOST);
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual([
+      ...report("bar", "yes"),
+      ...report("bar", "yes"),
+    ]);
+  });
+
+  it("says nothing when the bar closes its own healthy canvas", () => {
+    const { loss, sent } = lossTracker();
+    const canvas = new EventTarget();
+    const unwatch = loss.watch(canvas, () => "bar");
+    unwatch();
+    fire(canvas, LOST);
+    expect(sent).toStrictEqual([]);
+  });
+
+  it("reports no when the player leaves the bar with its graphics still gone", () => {
+    const { loss, sent } = lossTracker();
+    const game = new EventTarget();
+    const bar = new EventTarget();
+    loss.watch(game, () => "menu");
+    const unwatch = loss.watch(bar, () => "bar");
+    fire(bar, LOST);
+    unwatch();
+    expect(sent).toStrictEqual(report("bar", "no"));
+    fire(game, LOST);
+    fire(game, RESTORED);
+    expect(sent.at(-1)).toStrictEqual(report("menu", "yes")[0]);
   });
 });

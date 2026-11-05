@@ -55,6 +55,7 @@ import {
   releasedFrom,
   resumedFrom,
   roomOf,
+  graphicsPlaceOf,
   settledFrom,
   spendConsequence,
   spendResumeHold,
@@ -511,7 +512,10 @@ const startGame = (
     renderer,
   });
 
-  owners.push(hub.watchCanvas(canvas), hub.settings.subscribe(applySettings));
+  owners.push(
+    hub.watchCanvas(canvas, () => graphicsPlaceOf[session.phase]),
+    hub.settings.subscribe(applySettings)
+  );
   applySettings();
   const detachProbe = hub.attachGame({
     frameAt: (index) => frame.profiler?.reader.frameAt(index) ?? null,

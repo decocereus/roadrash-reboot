@@ -165,6 +165,57 @@ describe("forwarding player events", () => {
     expect(seen[0]?.body).not.toContain("Vidu");
   });
 
+  it("forwards a graphics loss with only where and recovered", async () => {
+    const { seen, send } = forwardedBy(accepted);
+    await statusOf(
+      requestOf(
+        JSON.stringify({
+          ...batch,
+          events: [
+            {
+              agoMs: 0,
+              event: {
+                error: "CONTEXT_LOST_WEBGL",
+                event: "graphics_lost",
+                recovered: "no",
+                where: "bar",
+              },
+            },
+          ],
+        })
+      ),
+      KEY,
+      send
+    );
+    expect(seen[0]?.body).toContain('"recovered":"no"');
+    expect(seen[0]?.body).toContain('"where":"bar"');
+    expect(seen[0]?.body).not.toContain("CONTEXT_LOST_WEBGL");
+  });
+
+  it("refuses a graphics loss from a place the list does not have", async () => {
+    const { send } = forwardedBy(accepted);
+    const status = await statusOf(
+      requestOf(
+        JSON.stringify({
+          ...batch,
+          events: [
+            {
+              agoMs: 0,
+              event: {
+                event: "graphics_lost",
+                recovered: "yes",
+                where: "showroom",
+              },
+            },
+          ],
+        })
+      ),
+      KEY,
+      send
+    );
+    expect(status).toBe(400);
+  });
+
   it("refuses an oversized batch", async () => {
     const { send } = forwardedBy(accepted);
     const status = await statusOf(

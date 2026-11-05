@@ -2,11 +2,13 @@ import { PLAYER_EVENTS_ENDPOINT, shortSession } from "@racer/telemetry/limits";
 import type {
   BatchKind,
   FaultSource,
+  GraphicsPlace,
   TestDevice,
 } from "@racer/telemetry/limits";
 import type { Quality, Session, TelemetryEvent } from "@racer/telemetry/schema";
 
 import type { ProfileFrame } from "../game/profile.ts";
+import { createGraphicsLoss } from "./graphics-loss.ts";
 import {
   browserFamilyOf,
   createPlayerEvents,
@@ -69,7 +71,10 @@ export interface Diagnostics {
   readonly recorder: Recorder;
   readonly qualityRung: () => number;
   readonly attachGame: (probe: GameProbe) => () => void;
-  readonly watchCanvas: (canvas: HTMLCanvasElement) => () => void;
+  readonly watchCanvas: (
+    canvas: HTMLCanvasElement,
+    place: () => GraphicsPlace
+  ) => () => void;
   readonly sendReport: () => void;
   readonly view: () => DiagnosticsView;
   readonly subscribe: (listener: () => void) => () => void;
@@ -148,6 +153,15 @@ const createDiagnostics = (): Diagnostics => {
         PLAYER_EVENTS_ENDPOINT,
         new Blob([body], { type: "application/json" })
       ),
+  });
+  const graphicsLoss = createGraphicsLoss({
+    after(ms, run) {
+      const timer = setTimeout(run, ms);
+      return () => {
+        clearTimeout(timer);
+      };
+    },
+    track: events.track,
   });
 
   const notify = () => {
@@ -232,6 +246,7 @@ const createDiagnostics = (): Diagnostics => {
     recorder.visibility(document.hidden);
   });
   window.addEventListener("pagehide", () => {
+    graphicsLoss.leaving();
     events.flush();
     if (recorder.recording) {
       enqueue("final", false);
@@ -316,12 +331,14 @@ const createDiagnostics = (): Diagnostics => {
       };
       return view;
     },
-    watchCanvas(canvas) {
+    watchCanvas(canvas, place) {
       canvas.addEventListener("webglcontextlost", lost);
       canvas.addEventListener("webglcontextrestored", restored);
+      const unwatch = graphicsLoss.watch(canvas, place);
       return () => {
         canvas.removeEventListener("webglcontextlost", lost);
         canvas.removeEventListener("webglcontextrestored", restored);
+        unwatch();
       };
     },
   };
