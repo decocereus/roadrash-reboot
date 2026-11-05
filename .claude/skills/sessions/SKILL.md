@@ -57,7 +57,7 @@ Start with coverage: received and missing batches, duplicate and unreadable line
 
 - Every `worst` entry: interval, `ticks`, `discardedMs`, race and tick, `cpu` and `calls`, `drawRung` and `nextRung`, pixel ratio, `drawnEpoch` and `sizeEpoch`.
 - Every fault: source, message, `where`, frame, race and `seq`. A fault has no tick; do not borrow one from a nearby frame.
-- Every suspect and the raw events behind it, and the governor, canvas, race, marker, visibility and overlay events.
+- Every suspect and the raw events behind it, and the governor (recordings before fixed presets only), canvas, race, marker, visibility and overlay events.
 - The histogram and the per-batch periods. A batch's `quality` is its state when it was sent, and `pace` is the frame rate the pacer aimed for. Compare a batch's `totalMs` divided by 1000 / `pace` with its `frames` as a check on its average cadence. Agreement does not prove that it missed no slot or that every retained sample was on pace, because fast intervals can offset slow ones; inspect the retained intervals and the histogram separately. Split a batch where a governor event changed the pace.
 
 Name the `cpu` and `calls` indices from the `parts` array of the batch that holds the frame. The JSON summary leaves `parts` out, and the text output names the top four parts with the last batch's layout. An older recording can differ from today's `apps/web/src/profile-parts.ts`; read the batch, do not relabel from source.
@@ -82,7 +82,7 @@ An unresolved cause is a result, not permission to guess. Give the smallest next
 - Frames are counted only while recording is on and the game loop is running. Compare each batch's `totalMs` with the page time since the previous batch's `at` to find time with no counted frames.
 - Missing batches, dropped batches, events and faults, unreadable lines and fault text clipped at `MAX_FAULT_TEXT` limit every claim. No recorded fault is not the same as no fault.
 - There is no GPU timing, GC cause or browser scheduling trace. Do not get GPU time by subtracting CPU parts from an interval; the interval also holds the wait between frames.
-- A sample whose profile frame was gone has `at` 0, empty `cpu` and `calls`, and zero rungs, epochs, race, tick and ticks (`worstFrameOf` in `apps/web/src/diagnostics/recorder.ts`). That is missing data, not a measured zero.
+- A sample whose profile frame was gone has `at` 0, empty `cpu` and `calls`, and zero epochs, race, tick and ticks (`worstFrameOf` in `apps/web/src/diagnostics/recorder.ts`). That is missing data, not a measured zero.
 - The stall threshold, suspect scores, nearby-event windows and the "late" label in `tools/perf/src/session-summary.ts` are heuristics, not budgets and not proof of cause. A quality change beside a stall does not show what caused it.
 - A dirty build cannot be rebuilt from its SHA. Source at that SHA shows where the build started, not what ran. Check the commit exists and predates `startedAt` (`git log -1 --format=%cI <sha>`), read it with `git show <sha>:<path>` or `git grep <pattern> <sha>`, and never check it out in the shared checkout. Say which readings rest on that source.
 

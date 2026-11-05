@@ -60,7 +60,7 @@ export interface BrowserHost {
   readonly id: BrowserHostId;
   readonly listener: ListenerProbe;
   readonly page: HostPage | null;
-  readonly perfEnvironment: string | null;
+  readonly perfEnvironment: string;
   readonly platform: NodeJS.Platform;
   readonly processMark: string;
   readonly rendererMark: string;
@@ -120,7 +120,7 @@ export const browserHosts = {
     id: "linux-intel",
     listener: ss,
     page: null,
-    perfEnvironment: null,
+    perfEnvironment: "gpu-chromium-intel",
     platform: "linux",
     processMark: "chromium",
     rendererMark: "Intel",
@@ -133,7 +133,6 @@ export const browserHosts = {
         "--enable-gpu",
         "--ignore-gpu-blocklist",
         "--disable-features=BackForwardCache",
-        "--start-fullscreen",
       ],
       launcher: { binary: CHROMIUM, kind: "direct" },
       viewport: { height: 1080, scale: 1, width: 1920 },
@@ -221,11 +220,8 @@ export const browserHosts = {
   },
 } as const satisfies Readonly<Record<BrowserHostId, BrowserHost>>;
 
-export const perfEnvironments: readonly string[] = browserHostIds.flatMap(
-  (id) => {
-    const environment: string | null = browserHosts[id].perfEnvironment;
-    return environment === null ? [] : [environment];
-  }
+export const perfEnvironments: readonly string[] = browserHostIds.map(
+  (id) => browserHosts[id].perfEnvironment
 );
 
 const decodeHostId = Schema.decodeUnknownOption(browserHostId);

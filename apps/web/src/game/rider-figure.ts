@@ -1,4 +1,5 @@
 import type { WeaponKind } from "@racer/sim/state";
+import { MeshoptSimplifier } from "meshoptimizer/simplifier";
 import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
@@ -52,6 +53,7 @@ export interface RiderFigure {
   dispose: () => void;
   animate: (stance: Stance, seconds: number) => void;
   rest: () => void;
+  readonly judgeFar: (pixelsTall: number) => void;
   holdEveryWeapon: () => () => void;
   bakePose: (base: PoseName, turns: readonly Turn[]) => number[];
   holdPose: (
@@ -61,6 +63,61 @@ export interface RiderFigure {
     seconds: number
   ) => void;
 }
+
+await MeshoptSimplifier.ready;
+
+const FAR_TRIANGLES = 4000;
+const FAR_ERROR = 0.4;
+const FAR_BELOW_PIXELS = 80;
+const NEAR_ABOVE_PIXELS = 92;
+
+const staysFar = (wasFar: boolean, pixelsTall: number): boolean =>
+  pixelsTall < (wasFar ? NEAR_ABOVE_PIXELS : FAR_BELOW_PIXELS);
+
+const farIndexes = new WeakMap<RiderAsset, THREE.BufferAttribute>();
+
+const farIndexOf = (
+  asset: RiderAsset,
+  near: THREE.BufferGeometry
+): THREE.BufferAttribute => {
+  const known = farIndexes.get(asset);
+  if (known) {
+    return known;
+  }
+  const { index } = near;
+  if (!index) {
+    throw new Error("The rider body has no index.");
+  }
+  const position = near.getAttribute("position");
+  const positions = new Float32Array(position.count * 3);
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    positions[vertex * 3] = position.getX(vertex);
+    positions[vertex * 3 + 1] = position.getY(vertex);
+    positions[vertex * 3 + 2] = position.getZ(vertex);
+  }
+  const [simplified] = MeshoptSimplifier.simplify(
+    new Uint32Array(index.array),
+    positions,
+    3,
+    FAR_TRIANGLES * 3,
+    FAR_ERROR
+  );
+  const attribute = new THREE.BufferAttribute(simplified, 1);
+  farIndexes.set(asset, attribute);
+  return attribute;
+};
+
+const farBodyOf = (
+  asset: RiderAsset,
+  near: THREE.BufferGeometry
+): THREE.BufferGeometry => {
+  const far = new THREE.BufferGeometry();
+  for (const [name, attribute] of Object.entries(near.attributes)) {
+    far.setAttribute(name, attribute);
+  }
+  far.setIndex(farIndexOf(asset, near));
+  return far;
+};
 
 const reachByAsset = new WeakMap<RiderAsset, THREE.Sphere>();
 
@@ -89,7 +146,10 @@ export const createRiderFigure = (
     first.skeleton.bones,
     first.skeleton.boneInverses
   );
-  const body = new THREE.SkinnedMesh(painted.cel, shading.figure(asset.atlas));
+  const near = painted.cel;
+  const farBody = farBodyOf(asset, near);
+  let far = false;
+  const body = new THREE.SkinnedMesh(near, shading.figure(asset.atlas));
   body.castShadow = true;
   body.receiveShadow = true;
   first.parent?.add(body);
@@ -389,6 +449,8 @@ export const createRiderFigure = (
           disposeTree(mesh);
         }
       }
+      body.geometry = near;
+      farBody.dispose();
       disposeTree(model);
       skeleton.dispose();
     },
@@ -437,6 +499,10 @@ export const createRiderFigure = (
       }
       apply();
       model.position.set(0, 0, 0);
+    },
+    judgeFar(pixelsTall) {
+      far = staysFar(far, pixelsTall);
+      body.geometry = far ? farBody : near;
     },
     rest() {
       if (!resting) {

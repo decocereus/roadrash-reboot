@@ -151,7 +151,7 @@ const sizeOf = ({
 
 const PREPARE = `(async () => {
   const stored = JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}");
-  localStorage.setItem("${SETTINGS_KEY}", JSON.stringify({ ...stored, frameRate: "${FRAME_RATE}" }));
+  localStorage.setItem("${SETTINGS_KEY}", JSON.stringify({ ...stored, frameRate: "${FRAME_RATE}", raceData: false }));
   const stamps = [];
   await new Promise((resolve) => {
     const step = (now) => {
@@ -465,12 +465,7 @@ const measureGpu = Effect.fn("gpu.measure")(function* measureGpu(
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
   const host = yield* CurrentHost;
-  const environment: string | null = host.perfEnvironment;
-  if (environment === null) {
-    return yield* new UsageError({
-      message: `${host.id} has no rows in tools/perf/budgets.json, so perf:gpu cannot judge it. tools/perf/README.md, under Intel, records why and the numbers measured so far.`,
-    });
-  }
+  const environment: string = host.perfEnvironment;
   yield* holdBench(`perf:gpu --a ${options.runs.A} --b ${options.runs.B}`, [
     options.runs.A,
     options.runs.B,

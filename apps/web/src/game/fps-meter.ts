@@ -1,4 +1,4 @@
-import { governReasons } from "@racer/telemetry/limits";
+import type { PresetId } from "@racer/telemetry/limits";
 
 const REPORT_MS = 500;
 
@@ -8,31 +8,21 @@ export interface FrameSample {
   pixelRatio: number;
   refresh: number;
   pace: number;
-  rung: number;
-  rungs: number;
+  preset: PresetId;
   calls: number;
   triangles: number;
-  changeFrom: number;
-  changeTo: number;
-  changeReason: number;
-  changeAt: number;
   recording: boolean;
 }
 
 export const emptySample = (): FrameSample => ({
   calls: 0,
-  changeAt: -1,
-  changeFrom: 0,
-  changeReason: 0,
-  changeTo: 0,
   discardedMs: 0,
   intervalMs: 0,
   pace: 0,
   pixelRatio: 1,
+  preset: "lean",
   recording: false,
   refresh: 60,
-  rung: 0,
-  rungs: 1,
   triangles: 0,
 });
 
@@ -62,15 +52,6 @@ const style = (readout: HTMLElement): void => {
 export const wantsFrameMeter = (): boolean =>
   new URLSearchParams(globalThis.location.search).has("fps");
 
-const changeLine = (sample: FrameSample, now: number): string => {
-  if (sample.changeAt < 0) {
-    return "no rung change yet";
-  }
-  const reason = governReasons[sample.changeReason] ?? "";
-  const ago = Math.round((now - sample.changeAt) / 1000);
-  return `rung ${sample.changeFrom}→${sample.changeTo} ${reason} ${ago} s ago`;
-};
-
 export const createFrameMeter = (beside: Node, session: string): FrameMeter => {
   const readout = document.createElement("output");
   style(readout);
@@ -96,7 +77,7 @@ export const createFrameMeter = (beside: Node, session: string): FrameMeter => {
       const peak = worst.toFixed(1);
       const lost = discarded > 0 ? `  lost ${Math.round(discarded)} ms` : "";
       const recording = sample.recording ? `\nrecording ${session}` : "";
-      readout.textContent = `${fps} fps  ${mean} ms  worst ${peak} ms${lost}\n×${sample.pixelRatio.toFixed(2)}  rung ${sample.rung}/${sample.rungs - 1}  pace ${sample.pace}  display ${sample.refresh} Hz\n${sample.calls} calls  ${sample.triangles} tris\n${changeLine(sample, performance.now())}${recording}`;
+      readout.textContent = `${fps} fps  ${mean} ms  worst ${peak} ms${lost}\n×${sample.pixelRatio.toFixed(2)}  ${sample.preset}  pace ${sample.pace}  display ${sample.refresh} Hz\n${sample.calls} calls  ${sample.triangles} tris${recording}`;
       frames = 0;
       elapsed = 0;
       worst = 0;

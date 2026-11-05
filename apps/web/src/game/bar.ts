@@ -33,15 +33,13 @@ import { createTagLayer } from "./bar-tags.ts";
 import { createWalkers, SOLO_SLOT } from "./bar-walker.ts";
 import { createShading } from "./cel.ts";
 import { createPipeline } from "./post.ts";
+import { pixelRatioFor, presetFor, presets } from "./presets.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd } from "./profile.ts";
 import { createPuffs } from "./puffs.ts";
-import { MODEST_GPU } from "./quality-ladder.ts";
 
 export { assetParsers } from "./assets.ts";
 
-const MAX_PIXEL_RATIO = 2;
-const LEAN_SCALE = 0.7;
 const LOOP_AFTER_DOOR = 15;
 const BIKE_WAITS = 1.3;
 const BIKE_PULL = 1.6;
@@ -65,13 +63,14 @@ const TURN_SECONDS = 14;
 const FIRST_WALKER_BIKE = 2;
 const MS_PER_SECOND = 1000;
 const NO_RACE_YET = "--";
+const MIN_BLOOM_SCALE = 1;
 
 interface Pins {
   readonly ratio: number | null;
   readonly riders: number;
-  readonly samples: number | null;
-  readonly bloom: number | null;
-  readonly scale: number;
+  readonly samples: number;
+  readonly bloom: number;
+  readonly maxPixels: number | null;
   readonly shadow: number;
   readonly time: number | null;
 }
@@ -82,16 +81,16 @@ const pinsFrom = (search: string): Pins => {
     const value = flags.get(name);
     return value === null ? null : Number(value);
   };
-  const lean = flags.has("lean") || MODEST_GPU.test(graphicsCard());
+  const preset = flags.has("lean") ? presets.lean : presetFor(graphicsCard());
   const named = flags.get("time");
   const fixed = named === "night" ? 1 : number("time");
   return {
-    bloom: lean ? 1 : number("bloom"),
+    bloom: number("bloom") ?? Math.max(preset.bloomScale, MIN_BLOOM_SCALE),
+    maxPixels: preset.maxPixels,
     ratio: number("ratio"),
     riders: number("riders") ?? riderBlocks.length,
-    samples: lean ? 0 : number("samples"),
-    scale: lean ? LEAN_SCALE : 1,
-    shadow: lean ? 2048 : (number("shadow") ?? 4096),
+    samples: number("samples") ?? preset.samples,
+    shadow: number("shadow") ?? preset.shadowMap,
     time: named === "dusk" ? 0 : fixed,
   };
 };
@@ -131,18 +130,16 @@ const openRoom = (
       profiler.dispose();
     });
   }
-  const pipeline = createPipeline(renderer, (part) => {
-    profiler?.lap(part);
-  });
+  const pipeline = createPipeline(
+    renderer,
+    (part) => {
+      profiler?.lap(part);
+    },
+    { bloomScale: pins.bloom, samples: pins.samples }
+  );
   owners.push(() => {
     pipeline.dispose();
   });
-  if (pins.samples !== null) {
-    pipeline.setSamples(pins.samples);
-  }
-  if (pins.bloom !== null) {
-    pipeline.setBloomScale(pins.bloom);
-  }
 
   const shading = createShading(duskLook);
   owners.push(() => {
@@ -375,7 +372,7 @@ const openRoom = (
     }
     const ratio =
       pins.ratio ??
-      Math.min(globalThis.devicePixelRatio, MAX_PIXEL_RATIO) * pins.scale;
+      pixelRatioFor(pins, globalThis.devicePixelRatio, width, height);
     renderer.setPixelRatio(ratio);
     renderer.setSize(width, height, false);
     pipeline.resize(width, height, ratio);
@@ -417,12 +414,10 @@ const openRoom = (
   let timeStep = -1;
   const frameEnd: FrameEnd = {
     discarded: 0,
-    drawRung: 0,
     drawnEpoch: 0,
     interval: 0,
     pixelRatio: 1,
     race: 0,
-    rung: 0,
     sizeEpoch: 0,
     tick: 0,
     ticks: 1,
