@@ -65,6 +65,7 @@ export type SeatPhase =
 export interface SeatRace {
   readonly client: RoomClient;
   readonly colours: GuestColours;
+  readonly digest: Uint32Array;
   readonly me: RiderId;
   readonly names: GuestNames;
   readonly raceId: string;
@@ -139,7 +140,6 @@ export const openRoomSeat = (
   let lobbyHeardAt = 0;
   let race: SeatRace | null = null;
   let refused: Refusal | null = null;
-  let digest: Uint32Array = new Uint32Array();
   let closeCode: number | null = null;
   let rttMs = 0;
   let worstRttMs = 0;
@@ -167,10 +167,10 @@ export const openRoomSeat = (
     const me = riderIdAt(you);
     const client = createRoomClient(setup, me);
     const colours = humanColours(manifest);
-    digest = setupDigest(client.confirmed, setup.track);
     race = {
       client,
       colours: byGuest(setup, me, colours),
+      digest: setupDigest(client.confirmed, setup.track),
       me,
       names: byGuest(setup, me, humanNames(manifest)),
       raceId: manifest.raceId,
@@ -377,9 +377,11 @@ export const openRoomSeat = (
       listeners = { ...listeners, ...next };
     },
     loaded: () => {
-      const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
-      writeReady(packet, digest);
-      socket.send(packet.buffer);
+      if (race) {
+        const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
+        writeReady(packet, race.digest);
+        socket.send(packet.buffer);
+      }
     },
     lobby: () => lobby,
     phase: () => phase,
