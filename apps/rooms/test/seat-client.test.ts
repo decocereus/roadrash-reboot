@@ -11,7 +11,7 @@ import { riderIdAt } from "@racer/sim/state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createInputLatency } from "../src/input-latency.ts";
-import { encodeRoomMessage } from "../src/messages.ts";
+import { encodeRoomMessage, SEAT_CLOSED, SEAT_LEFT } from "../src/messages.ts";
 import { createRoomRun } from "../src/room-run.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
 import {
@@ -216,6 +216,17 @@ describe("a seat loading the race", () => {
     );
     seat.leave();
     expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
+  });
+
+  it("tells the room a Leave from a hang-up by its close code", () => {
+    const { seat: leaving, socket: left } = newSeat();
+    leaving.leaveRoom();
+    const { seat: hanging, socket: hungUp } = newSeat();
+    hanging.leave();
+    expect([left.closedWith, hungUp.closedWith]).toStrictEqual([
+      SEAT_LEFT,
+      SEAT_CLOSED,
+    ]);
   });
 
   it("pings the room from the lobby, so the room can tell it is still there", () => {
