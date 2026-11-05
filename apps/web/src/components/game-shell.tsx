@@ -2,7 +2,7 @@ import { roadOpen } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { acceptEnvelope, refuseEnvelope } from "@racer/career/story";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { planFor } from "../career/flow.ts";
 import type { RaceEntry, RaceReport } from "../career/flow.ts";
@@ -10,6 +10,8 @@ import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
+import { stepRideOut } from "../race-handoff.ts";
+import type { RideOutHandoff } from "../race-handoff.ts";
 import { moveToRoom, newRoomId } from "./room-url.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
 import { BootScreen } from "./screens/boot.tsx";
@@ -32,6 +34,7 @@ import {
   useFlow,
 } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
+import { useHandoff } from "./use-handoff.ts";
 
 const drawsNothing = () => null;
 
@@ -70,69 +73,58 @@ const RideOut = ({
   readonly onStart: (plan: RacePlan) => void;
   readonly onBack: () => void;
 }) => {
-  const [plan] = useState(() => planFor(rules, career, entry));
-  const [prepared, setPrepared] = useState(false);
-  const [dwelt, setDwelt] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const started = useRef(false);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDwelt(true);
-    }, DWELL_MS);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
-  useEffect(() => {
-    if (prepared && dwelt && !started.current) {
-      started.current = true;
-      onStart(plan);
-    }
-  }, [prepared, dwelt, plan, onStart]);
-  useEffect(() => {
-    let current = true;
-    const prepare = async (): Promise<void> => {
-      const race = preparedRace(await onPrepare(plan));
-      if (!current) {
-        return;
-      }
-      switch (race) {
-        case "built": {
-          setPrepared(true);
+  const { send, state: handoff } = useHandoff(
+    stepRideOut<RacePlan>,
+    (): RideOutHandoff<RacePlan> => ({
+      kind: "waitingForGame",
+      ride: planFor(rules, career, entry),
+    }),
+    (effect) => {
+      switch (effect.kind) {
+        case "prepare": {
+          const prepare = async (): Promise<void> => {
+            send({ kind: preparedRace(await onPrepare(effect.ride)) });
+          };
+          void prepare();
           break;
         }
-        case "missing": {
-          setLoadFailed(true);
-          break;
-        }
-        case "cancelled": {
+        case "start": {
+          onStart(effect.ride);
           break;
         }
         default: {
-          race satisfies never;
+          effect.kind satisfies never;
         }
       }
-    };
-    if (ready) {
-      void prepare();
     }
+  );
+  useEffect(() => {
+    const dwell = setTimeout(() => {
+      send({ kind: "dwellElapsed" });
+    }, DWELL_MS);
     return () => {
-      current = false;
+      clearTimeout(dwell);
     };
-  }, [ready, plan, onPrepare, attempt]);
+  }, [send]);
+  useEffect(() => {
+    if (ready) {
+      send({ kind: "gameReady" });
+    }
+  }, [ready, send]);
   return (
     <RideOutScreen
       career={career}
       failure={failure}
-      loadFailed={loadFailed}
-      onBack={onBack}
-      onRetry={() => {
-        setLoadFailed(false);
-        setAttempt((tried) => tried + 1);
+      loadFailed={handoff.kind === "failed" || handoff.kind === "failedDwelt"}
+      onBack={() => {
+        send({ kind: "closed" });
+        onBack();
       }}
-      plan={plan}
-      ready={ready && prepared}
+      onRetry={() => {
+        send({ kind: "retry" });
+      }}
+      plan={handoff.ride}
+      ready={handoff.kind === "dwelling" || handoff.kind === "started"}
     />
   );
 };
