@@ -1514,6 +1514,7 @@ Source files:
 - `packages/sim/src/room-tape.ts`
 - `packages/sim/src/room-wire.ts`
 - `packages/sim/src/room.ts`
+- `tools/rooms/fights.ts`
 - `tools/rooms/lag.ts`
 - `tools/rooms/load-clients.ts`
 - `tools/rooms/load.ts`
@@ -1521,6 +1522,9 @@ Source files:
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
 - `tools/rooms/replay.ts`
+- `tools/rooms/src/fight-probe.ts`
+- `tools/rooms/src/fight-report.ts`
+- `tools/rooms/src/fights.ts`
 - `tools/rooms/src/lag.ts`
 - `tools/rooms/src/load-clients.ts`
 - `tools/rooms/src/load-plan.ts`
@@ -1568,6 +1572,7 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
+- `tools/rooms/test/fight-report.test.ts`
 - `tools/rooms/test/load-report.test.ts`
 - `tools/rooms/test/race-report.test.ts`
 - `tools/rooms/test/replay.test.ts`
