@@ -23,7 +23,7 @@ export default defineConfig({
             "apps/**/*.test.ts",
             "packages/**/*.test.ts",
             "scripts/**/*.test.ts",
-            "tools/{art,perf,verify,madrid,rooms}/test/**/*.test.ts",
+            "tools/{art,perf,verify,madrid,road-test,rooms}/test/**/*.test.ts",
           ],
           name: "node",
         },
