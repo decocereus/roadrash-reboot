@@ -281,3 +281,14 @@ export const followTicks = (socket: FakeSocket, client: RoomClient): void => {
     client.confirm(read.frame, read.hashed ? read.hash : null);
   }
 };
+
+export const room = () => {
+  const clock = createClock();
+  const host = createHost(clock);
+  const seated = (key: string, name = "Guest"): FakeSocket => {
+    const socket = fakeSocket();
+    host.seat(socket, name, nearby, sameBuild(key));
+    return socket;
+  };
+  return { clock, host, seated };
+};

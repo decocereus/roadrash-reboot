@@ -1536,6 +1536,7 @@ Source files:
 Test files:
 
 - `apps/rooms/test/host-harness.ts`
+- `apps/rooms/test/host-leave.test.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`
 - `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host-ownership.test.ts`

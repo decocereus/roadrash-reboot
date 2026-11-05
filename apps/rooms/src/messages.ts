@@ -152,4 +152,5 @@ export const decodeRoomPreview = Schema.decodeUnknownOption(
 );
 
 export const SEAT_CLOSED = 1000;
+export const SEAT_LEFT = 4410;
 export const SEAT_SILENT = 4408;

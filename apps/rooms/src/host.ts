@@ -32,6 +32,7 @@ import {
   decodeLobbyCommand,
   encodeRoomMessage,
   SEAT_CLOSED,
+  SEAT_LEFT,
   SEAT_SILENT,
 } from "./messages.ts";
 import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
@@ -510,7 +511,8 @@ export const createHost = (
 
   const drop = (person: Present, closeCode: number | null): void => {
     retire(person, closeCode);
-    lobby.away(person.memberId, ports.now());
+    const part = closeCode === SEAT_LEFT ? lobby.leave : lobby.away;
+    part(person.memberId, ports.now());
     tellLobby();
     consider();
   };

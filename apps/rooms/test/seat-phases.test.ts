@@ -341,7 +341,7 @@ const EVENTS = {
   closed: { kind: "closed" },
   countdown: { kind: "countdown", startAtMs: 0 },
   ended: { kind: "ended", tick: 0 },
-  left: { kind: "left" },
+  left: { code: SEAT_CLOSED, kind: "left" },
   lobby: lobbyMessage(1),
   refused: { kind: "refused", reason: "replaced" },
   silent: { kind: "silent" },
