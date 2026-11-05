@@ -134,11 +134,7 @@ export const bindStage = ({
       return;
     }
     stage.track = next;
-    stage.world = createWorld(
-      stage.track,
-      assets,
-      quality.preset.shadowMap
-    );
+    stage.world = createWorld(stage.track, assets, quality.preset.shadowMap);
     pipeline.setLook(stage.world.shading.look);
   };
 

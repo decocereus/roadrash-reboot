@@ -884,8 +884,6 @@ Source files:
 - `apps/web/src/game/post.ts`
 - `apps/web/src/game/preparation.ts`
 - `apps/web/src/game/scene-lifecycle.ts`
-- `apps/web/src/game/scene-lifecycle.ts`
-- `apps/web/src/game/scene-lifecycle.ts`
 - `apps/web/src/game/staging.ts`
 - `apps/web/src/game/uploads.ts`
 
@@ -896,8 +894,6 @@ Test files:
 - `apps/web/test/outline-sides.ts`
 - `apps/web/test/preparation.test.ts`
 - `apps/web/test/renderer-lifecycle.test.ts`
-- `apps/web/test/renderer-lifecycle.ts`
-- `apps/web/test/renderer-lifecycle.ts`
 - `apps/web/test/renderer-lifecycle.ts`
 
 ### Model and font loading
