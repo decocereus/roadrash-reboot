@@ -35,7 +35,7 @@ Load (wordmark while the bar's art decodes)
                                                    └─ Ending ──► Back Room
 ```
 
-A promotion returns to the bar, where Vic says the tier's line. A damaged save opens the Back Room. A wreck or a bust no longer has its own screen; Results shows it as a stamp.
+A promotion returns to the bar, where Vic says the tier's line. A damaged save opens the Back Room. A wreck or a bust no longer has its own screen; Results shows it as a stamp. `stepNavigation` in `apps/web/src/navigation.ts` is this diagram as code.
 
 ## 1. Boot and the Back Room
 
