@@ -93,7 +93,9 @@ const Alert = ({
   );
 };
 
-type Overlay = "nothing" | "settings" | "erase";
+const overlays = ["nothing", "settings", "erase"] as const;
+
+type Overlay = (typeof overlays)[number];
 
 export const BackRoomScreen = ({
   save,

@@ -19,7 +19,9 @@ import { SettingsScreen } from "./settings.tsx";
 import { useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
-type Overlay = "nothing" | "settings" | "quit";
+const overlays = ["nothing", "settings", "quit"] as const;
+
+type Overlay = (typeof overlays)[number];
 
 export const PauseScreen = ({
   plan,
