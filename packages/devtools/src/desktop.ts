@@ -7,7 +7,7 @@ import * as Schema from "effect/Schema";
 
 import { CurrentHost } from "./browser-host.ts";
 import type { BrowserHost, DesktopEnv } from "./browser-host.ts";
-import { dropClaim, takeClaim, toolStateDir } from "./claim.ts";
+import { toolStateDir, underClaim } from "./claim.ts";
 import { released } from "./cleanup.ts";
 import { DesktopError } from "./desktop-error.ts";
 import { ToolProcesses, alive } from "./process.ts";
@@ -19,7 +19,6 @@ const CONFIG = path.join(import.meta.dirname, CONFIG_NAME);
 const DISPLAY_FILE_ENV = "RUSHLINE_DESKTOP_DISPLAY_FILE";
 const POLL_MS = 200;
 const READY_ATTEMPTS = 150;
-const LOCK_ATTEMPTS = 300;
 const LOG_TAIL_LINES = 12;
 
 const desktopHold = Schema.Struct({
@@ -213,32 +212,19 @@ const readState = Effect.fnUntraced(function* readState(paths: DesktopPaths) {
   return desktopStateOf(yield* readClaim(paths), yield* processes.listed);
 });
 
-const takeLock = Effect.fnUntraced(function* takeLock(paths: DesktopPaths) {
-  let outcome = yield* takeClaim(paths.lock, "desktop session");
-  for (
-    let attempt = 0;
-    outcome.kind === "held" && attempt < LOCK_ATTEMPTS;
-    attempt += 1
-  ) {
-    yield* Effect.sleep(POLL_MS);
-    outcome = yield* takeClaim(paths.lock, "desktop session");
-  }
-  if (outcome.kind === "held") {
-    yield* new DesktopError({
-      message: `Pid ${outcome.holder.pid} has held the desktop session lock ${paths.lock} for a minute. Find out what it is doing before you take it.`,
-      operation: "lock",
-    });
-  }
-});
-
 const underLock = <A, E, R>(
   paths: DesktopPaths,
   step: Effect.Effect<A, E, R>
 ) =>
-  Effect.acquireUseRelease(
-    Effect.interruptible(takeLock(paths)),
-    () => step,
-    () => released(dropClaim(paths.lock))
+  underClaim(
+    paths.lock,
+    "desktop session",
+    step,
+    (holder) =>
+      new DesktopError({
+        message: `Pid ${holder.pid} has held the desktop session lock ${paths.lock} for a minute. Find out what it is doing before you take it.`,
+        operation: "lock",
+      })
   );
 
 const instanceOf = (pid: number) =>
