@@ -135,6 +135,7 @@ export const ${camel}: TrackPlan = {
   carriers: [],
   chevrons: chevronRuns["${entry.id}"],
   crossings: [],
+  crowds: [],
   districts: ${districtsOf(road.districts)},
   hazardsPerKilometre: ${entry.hazardsPerKilometre},
   id: "${entry.id}",

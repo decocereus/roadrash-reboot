@@ -7,6 +7,7 @@ export const madridGranVia: TrackPlan = {
   carriers: [],
   chevrons: chevronRuns["madrid-gran-via"],
   crossings: [],
+  crowds: [],
   districts: [{ from: 0, lanesEachWay: 2, shoulderWidth: 0.5, vergeWidth: 5 }],
   hazardsPerKilometre: 2,
   id: "madrid-gran-via",

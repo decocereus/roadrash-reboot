@@ -32,6 +32,7 @@ const oilyTurnIn = compileTrack({
   ...ridgeRoad,
   carriers: [],
   chevrons: [],
+  crowds: [],
   hazardsPerKilometre: 0,
   pieces: eased([
     [900, 0, 0],

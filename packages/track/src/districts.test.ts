@@ -28,6 +28,7 @@ const straight = (
     ...ridgeRoad,
     carriers: [],
     chevrons: [],
+    crowds: [],
     crossings,
     districts,
     hazardsPerKilometre: 0,

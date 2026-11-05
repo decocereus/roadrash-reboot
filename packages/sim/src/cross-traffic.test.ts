@@ -224,6 +224,7 @@ describe("a car turning onto a road of districts", () => {
         walk: "unmarked",
       },
     ],
+    crowds: [],
     districts: [
       { ...widths, from: 0, lanesEachWay: 1 },
       { ...widths, from: 800, lanesEachWay: 3 },
@@ -273,6 +274,7 @@ describe("a give-way side road", () => {
         walk: "unmarked",
       },
     ],
+    crowds: [],
     districts: [
       { from: 0, lanesEachWay: 2, shoulderWidth: 0.9, vergeWidth: 7 },
     ],

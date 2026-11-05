@@ -51,6 +51,7 @@ describe("the pack", () => {
       ...ridgeRoad,
       carriers: [],
       chevrons: [],
+      crowds: [],
       hazardsPerKilometre: 0,
       pieces: eased([[6000, 0, 0]]),
       trafficPerKilometre: 0,

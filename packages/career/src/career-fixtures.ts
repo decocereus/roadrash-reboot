@@ -35,6 +35,7 @@ export const road = compileTrack({
   ...ridgeRoad,
   carriers: [],
   chevrons: [],
+  crowds: [],
   pieces: eased([[9000, 0, 0]]),
   trafficPerKilometre: 0,
 });
