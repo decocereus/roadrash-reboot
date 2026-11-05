@@ -29,7 +29,7 @@ export const createTagLayer = (canvas: HTMLCanvasElement): TagLayer => {
   const layer = document.createElement("div");
   layer.style.cssText =
     "position:absolute;inset:0;overflow:hidden;pointer-events:none;";
-  canvas.parentNode?.append(layer);
+  canvas.parentNode?.insertBefore(layer, canvas.nextSibling);
 
   const made = (label: string, style: string, lift: number): Tag => {
     const element = document.createElement("div");

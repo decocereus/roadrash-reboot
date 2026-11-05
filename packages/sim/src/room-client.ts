@@ -16,6 +16,7 @@ import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
 import { riderOf } from "./state.ts";
 import type {
   Control,
+  RaceEvent,
   RaceSetup,
   RaceState,
   RiderId,
@@ -23,6 +24,9 @@ import type {
 } from "./state.ts";
 
 const MOST_LEAD_TICKS = INPUT_HORIZON;
+
+const OLDEST_PLAYED_TICKS = 12;
+const NO_EVENTS: readonly RaceEvent[] = [];
 
 const FELT_JUMP_METRES = 0.25;
 
@@ -58,6 +62,7 @@ export interface RoomClient {
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly settle: () => void;
+  readonly takeEvents: () => readonly RaceEvent[];
   readonly writeInputs: (view: DataView) => number;
 }
 
@@ -68,6 +73,45 @@ interface Remote {
 
 const outOfOrder = (tick: number, after: number): never => {
   throw new RangeError(`The room sent tick ${tick} after tick ${after}.`);
+};
+
+interface RoomEvent {
+  readonly event: RaceEvent;
+  readonly tick: number;
+}
+
+const ownPrediction = (event: RaceEvent, me: RiderId): boolean => {
+  if (event.rider !== me) {
+    return false;
+  }
+  switch (event.kind) {
+    case "crash":
+    case "knockedDown": {
+      return event.by === null || event.by === me;
+    }
+    case "riderContact": {
+      return false;
+    }
+    case "attack":
+    case "bump":
+    case "busted":
+    case "finish":
+    case "glance":
+    case "hazard":
+    case "hit":
+    case "land":
+    case "nearMiss":
+    case "pursuit":
+    case "remount":
+    case "weaponBroken":
+    case "weaponTaken":
+    case "wrecked": {
+      return true;
+    }
+    default: {
+      return event satisfies never;
+    }
+  }
 };
 
 const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
@@ -98,6 +142,10 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const ownControls = ringOf(() => coasting);
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
+  let own: RaceEvent[] = [];
+  const fromRoom: RoomEvent[] = [];
+  let playedThrough = 0;
+  const unseenStrikes = new Set<RiderId>();
   let sentThrough = 0;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
@@ -152,6 +200,48 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
 
   const advance = (tick: number): void => {
     stepRace(predicted, setup.track, guess(tick));
+  };
+
+  const hearOwn = (): void => {
+    for (const event of predicted.events) {
+      if (ownPrediction(event, me)) {
+        own.push({ ...event });
+      }
+    }
+  };
+
+  const hearRoom = (): void => {
+    for (const event of confirmed.events) {
+      if (!ownPrediction(event, me)) {
+        fromRoom.push({ event: { ...event }, tick: confirmed.tick });
+      }
+    }
+  };
+
+  const playRoom = (into: RaceEvent[]): void => {
+    const newest = confirmed.tick;
+    const step = newest - playedThrough > 1 ? 2 : 1;
+    playedThrough = Math.max(
+      newest - OLDEST_PLAYED_TICKS,
+      Math.min(newest, playedThrough + step)
+    );
+    let played = 0;
+    for (const { event, tick } of fromRoom) {
+      if (tick > playedThrough) {
+        break;
+      }
+      const fresh = tick >= newest - OLDEST_PLAYED_TICKS;
+      if (event.kind === "attack" && fresh) {
+        unseenStrikes.delete(event.rider);
+      } else if (event.kind === "attack") {
+        unseenStrikes.add(event.rider);
+      }
+      if (fresh && !(event.kind === "hit" && unseenStrikes.has(event.rider))) {
+        into.push(event);
+      }
+      played += 1;
+    }
+    fromRoom.splice(0, played);
   };
 
   const rewind = (): void => {
@@ -223,6 +313,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         outOfOrder(frame.tick, confirmed.tick);
       }
       stepRace(confirmed, setup.track, frame);
+      hearRoom();
       learn(frame);
       if (serverHash) {
         hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
@@ -263,11 +354,21 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       ownControls[slotOf(tick)] = control;
       advance(tick);
+      hearOwn();
       return true;
     },
     predicted,
     settle,
     stats,
+    takeEvents: () => {
+      const taken = own;
+      playRoom(taken);
+      if (taken.length === 0) {
+        return NO_EVENTS;
+      }
+      own = [];
+      return taken;
+    },
     writeInputs: (view) => {
       const unsent = Math.max(sentThrough, confirmed.tick) + 1;
       const last = Math.min(predicted.tick, unsent + MOST_BATCHED_CONTROLS - 1);
