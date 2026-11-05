@@ -19,16 +19,16 @@ The owner decided these. Do not change them without asking.
 
 Breakwater Run's shape, as a target:
 
-| Measure | Value |
-| --- | ---: |
-| Length | 8,500 m |
-| Districts | 8 |
-| One-lane stretches | 2, of 440 m and 320 m |
-| Bends | 25 |
-| Bends under a 100 m radius | 7 |
-| Tightest bend | 83 m |
-| Solo lap, Sesta | 181.5 s |
-| Solo lap, Wren | 190.8 s |
+| Measure                    |                 Value |
+| -------------------------- | --------------------: |
+| Length                     |               8,500 m |
+| Districts                  |                     8 |
+| One-lane stretches         | 2, of 440 m and 320 m |
+| Bends                      |                    25 |
+| Bends under a 100 m radius |                     7 |
+| Tightest bend              |                  83 m |
+| Solo lap, Sesta            |               181.5 s |
+| Solo lap, Wren             |               190.8 s |
 
 ## What makes a road fight
 
