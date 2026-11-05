@@ -81,7 +81,7 @@ const kindsOf = (
 ): readonly string[] =>
   clock.notes.map((note) => note.kind).filter((kind) => kinds.includes(kind));
 
-const rollbacksOf = (clock: Clock, rider: number): readonly number[] =>
+const rollbacksOf = (clock: Clock, rider: number) =>
   clock.notes.flatMap((note) =>
     note.kind === "stats" && note.rider === rider ? [note.stats.rollbacks] : []
   );
@@ -552,4 +552,36 @@ describe("who hears what", () => {
     readyAll(host, [walker]);
     expect(walksOn(seated("late"))).toStrictEqual([]);
   });
+});
+
+describe("each socket's role on the status route", () => {
+  it(
+    "reads lobby, seated and reporting in the order of names, through a replacement, a drop and the grace",
+    () => {
+      const riding = ridingRoom();
+      const { clock, host, seated, second } = riding;
+      const walker = seated("walker", "Cy");
+      const read = () => {
+        const { names, roles } = host.status();
+        return names.map((name, at) => `${name}:${roles[at] ?? "none"}`);
+      };
+      const steps = [read()];
+      const back = seated("first", "Ann");
+      steps.push(read());
+      pilotRide(riding, [second, walker, back]);
+      steps.push(read());
+      clock.advance(REPORT_GRACE_MS);
+      steps.push(read());
+      host.gone(walker, 1000);
+      steps.push(read());
+      expect(steps).toStrictEqual([
+        ["Ann:seated", "Bo:seated", "Cy:lobby"],
+        ["Bo:seated", "Cy:lobby", "Ann:lobby"],
+        ["Bo:reporting", "Cy:lobby", "Ann:lobby"],
+        ["Bo:lobby", "Cy:lobby", "Ann:lobby"],
+        ["Bo:lobby", "Ann:lobby"],
+      ]);
+    },
+    FULL_RIDE_TIMEOUT_MS
+  );
 });
