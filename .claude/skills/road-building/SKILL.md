@@ -46,12 +46,12 @@ Do these in order. A road that fails a step goes back to the plan.
 1. Run the bot test at the top tier and at tier 1, with the real tier conditions:
 
    ```sh
-   pnpm road:test --road <roadId> --tiers 1,3 --out <file>.json
+   pnpm road:test --road <roadId> --tiers 1,3 --pacing off --out <file>.json
    ```
 
-   Compare a variant plan with `--plan <module>`. The player is the AI pilot, which rides differently from a person, so treat its numbers as a floor for what a person meets.
+   Compare a variant plan with `--plan <module>`. `tools/road-test/README.md` defines each number. The player is the AI pilot, which rides differently from a person, so treat its numbers as a floor for what a person meets. Run at most 3 of these at once, because the machine is shared.
 
-2. Hold these against Breakwater Run's numbers at the same commit. Riders stuck behind cars, as a mean across 30 seeds, were 5.1% at tier 1 and 7.7% at tier 3. Its Arcades neck was 23.4%, which is the most a one-lane stretch should reach. Finish times were 202 s and 208 s. Stuck bots were the owner's original complaint, so a road that beats these on fights by jamming the field has failed.
+2. Hold these against Breakwater Run at commit `2d942624`, with the default field and pacing off. Riders' stuck mean was 4.4% at tier 1 and 7.3% at tier 3. Median finish was 201 s and 209 s. Riders spent 21% and 26% of their time on one-lane stretches stuck, which is the most a one-lane stretch should reach. Stuck bots were the owner's original complaint, so a road that gains fights by jamming the field has failed.
 
 3. Check every hazard placement by tier. Hazards are hard and survivable, good to avoid but not must-avoid, graded by speed and lean, with no telegraphing. A rider at racing speed must survive any placement on a one-lane stretch.
 
