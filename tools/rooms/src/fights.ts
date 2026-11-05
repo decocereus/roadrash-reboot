@@ -177,7 +177,7 @@ const startLink = (port: number, target: number, link: Link) =>
         "--loss",
         String(link.lossPercent),
         "--burst-every",
-        String(link.burstEveryMs),
+        String(link.burstEveryMs / 1000),
         "--burst-ms",
         String(link.burstMs),
       ],
@@ -340,6 +340,7 @@ interface Places {
 
 interface BoutRow extends FightRow {
   readonly fired: boolean;
+  readonly pressed: boolean;
   readonly gapAcross: number;
   readonly rtt: number;
 }
@@ -390,10 +391,14 @@ const strikeOnce = Effect.fn("rooms.fights.strike")(function* strikeOnce(
   const pressAt = fromAttacker.presses.find(
     (one) => one.code === CODE_OF[kind]
   )?.at;
+  const roomRan = fromVictim.frames.some(
+    (frame) => frame.confirmed[attacker]?.attack === kind
+  );
   const row: BoutRow = {
     ...fightRow(kind, attacker, victim, pressAt ?? since, fromVictim.frames),
-    fired: pressAt !== undefined,
+    fired: pressAt !== undefined && roomRan,
     gapAcross: Math.abs(before.bX - before.aX),
+    pressed: pressAt !== undefined,
     rtt: fromVictim.frames.at(-1)?.rtt ?? 0,
   };
   return row;
@@ -403,6 +408,7 @@ const neverAlongside = ({ attacker, kind }: Bout): BoutRow => ({
   ...fightRow(kind, attacker, attacker === 0 ? 1 : 0, 0, []),
   fired: false,
   gapAcross: 0,
+  pressed: false,
   rtt: 0,
 });
 
@@ -446,8 +452,11 @@ const knockDown = Effect.fn("rooms.fights.knockDown")(function* knockDown(
 });
 
 const verdictOf = (row: BoutRow): string => {
-  if (!row.fired) {
+  if (!row.pressed) {
     return "not in reach";
+  }
+  if (!row.fired) {
+    return "room ran no strike";
   }
   return row.passed ? "pass" : "FAIL";
 };
@@ -550,13 +559,21 @@ const runOf = (text: string): string =>
     .find((line) => line.startsWith("RUN="))
     ?.slice("RUN=".length) ?? "";
 
-const upOne = (slot: string, port: number, target: Target) =>
-  (target.kind === "server"
-    ? rv(["up", "--server", target.url, "--user-asked", "--slot", slot])
-    : rv(["up", "--dev", "--slot", slot], {
-        VITE_ROOMS_URL: `http://127.0.0.1:${port}`,
-      })
-  ).pipe(Effect.map(runOf));
+const windowUp = (slot: string, port: number, target: Target) =>
+  Effect.acquireRelease(
+    (target.kind === "server"
+      ? rv(["up", "--server", target.url, "--user-asked", "--slot", slot])
+      : rv(["up", "--dev", "--slot", slot], {
+          VITE_ROOMS_URL: `http://127.0.0.1:${port}`,
+        })
+    ).pipe(Effect.map(runOf)),
+    (windowRun) =>
+      rv(["down", "--run", windowRun]).pipe(
+        Effect.catchTag("ProcessError", (failure) =>
+          Console.error(`Could not close ${windowRun}: ${failure.message}`)
+        )
+      )
+  );
 
 export const main = Effect.fn("rooms.fights")(function* main(
   args: readonly string[]
@@ -607,26 +624,18 @@ export const main = Effect.fn("rooms.fights")(function* main(
     ),
   };
   const [firstSlot = "1", secondSlot = "2"] = values.slots.split(",");
-  const windows: Windows = [
-    yield* upOne(firstSlot, SEAT_PORTS[0], target),
-    yield* upOne(secondSlot, SEAT_PORTS[1], target),
-  ];
-  const tables = yield* Effect.all(
-    (target.kind === "server" ? ["live" as const] : networks).map((network) =>
-      runNetwork(windows, network, target, places)
-    )
-  ).pipe(
-    Effect.ensuring(
-      Effect.all(
-        windows.map((windowRun) =>
-          rv(["down", "--run", windowRun]).pipe(
-            Effect.catchTag("ProcessError", (error) =>
-              Console.error(`Could not close ${windowRun}: ${error.message}`)
-            )
-          )
+  const tables = yield* Effect.scoped(
+    Effect.gen(function* raceWindows() {
+      const windows: Windows = [
+        yield* windowUp(firstSlot, SEAT_PORTS[0], target),
+        yield* windowUp(secondSlot, SEAT_PORTS[1], target),
+      ];
+      return yield* Effect.all(
+        (target.kind === "server" ? ["live" as const] : networks).map(
+          (network) => runNetwork(windows, network, target, places)
         )
-      )
-    )
+      );
+    })
   );
   const lines = tables.flat().map((row) => `| ${row} |`);
   yield* fs.writeFileString(
