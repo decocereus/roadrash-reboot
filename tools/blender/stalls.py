@@ -195,7 +195,7 @@ def deco_lanterns():
 def deco_hanging_sign():
     p = Part("deco_hanging_sign", DECO_LIMIT)
     p.post(0, 0, 0, 2.3, INK)
-    p.sign((0, 2.9, 0), 1.3, 1.2, "z", "OIL", YELLOW, MAGENTA, 0.5)
+    p.sign((0, 2.9, 0), 1.3, 1.2, "z", "INK", YELLOW, MAGENTA, 0.5)
     return p
 
 

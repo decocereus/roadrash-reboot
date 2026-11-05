@@ -170,6 +170,7 @@ type Track = RaceSetup["track"];
 
 type RaceSettings = Omit<
   Track["plan"],
+  | "bazaars"
   | "chevrons"
   | "crossings"
   | "districts"
@@ -187,6 +188,7 @@ type Road = Omit<
   | "openLanes"
   | "plan"
   | "roadHalfWidth"
+  | "stalls"
   | "trafficReach"
   | "vergeHalfWidth"
   | "walkSites"
@@ -209,12 +211,16 @@ type EitherSideTrack = Omit<
   | "openLanes"
   | "plan"
   | "roadHalfWidth"
+  | "stalls"
   | "trafficReach"
   | "vergeHalfWidth"
   | "walkSites"
 > &
   Partial<
-    Pick<Track, "crossings" | "openLanes" | "trafficReach" | "walkSites">
+    Pick<
+      Track,
+      "crossings" | "openLanes" | "stalls" | "trafficReach" | "walkSites"
+    >
   > & {
     readonly plan: EitherSidePlan;
     readonly roadHalfWidth: Float64Array | number;
@@ -253,6 +259,7 @@ const raceTrack = (track: EitherSideTrack): RaceTrack => {
   const {
     crossings = [],
     openLanes: _openLanes,
+    stalls: _stalls,
     trafficReach: _trafficReach,
     walkSites: _sideBOnly,
     ...compiled

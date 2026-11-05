@@ -73,8 +73,8 @@
     "footprint": null
   },
   "deco_hanging_sign": {
-    "triangles": 52,
-    "glowTriangles": 40,
+    "triangles": 56,
+    "glowTriangles": 44,
     "footprint": null
   }
 }

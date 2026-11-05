@@ -10,7 +10,7 @@ import { lookOf } from "../src/game/looks.ts";
 import { districtPieces } from "../src/game/road-strips.ts";
 import { roadSurfacesOf } from "../src/game/road-texture.ts";
 import { createWorld } from "../src/game/world.ts";
-import { fakeWalkerAsset } from "./walker-asset.ts";
+import { fakeWorldAssets } from "./walker-asset.ts";
 
 const WIDTHS = { shoulderWidth: 0.9, vergeWidth: 7 };
 
@@ -83,7 +83,7 @@ describe("a road of several districts in the world", () => {
   });
 
   it("builds", () => {
-    const world = createWorld(threeOneTwo, fakeWalkerAsset());
+    const world = createWorld(threeOneTwo, fakeWorldAssets());
     expect(world.scene.children.length).toBeGreaterThan(0);
     world.dispose();
   });

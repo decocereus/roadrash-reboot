@@ -3,7 +3,12 @@ import type { Track } from "@racer/track/track";
 
 import { comesDownOnCarrier, solidBoxOf, stepCarrierRamp } from "./carrier.ts";
 import { onRoad } from "./cross-traffic.ts";
-import { hitCar, hitCrossCar, hitProps } from "./rider-collisions.ts";
+import {
+  hitCar,
+  hitCrossCar,
+  hitProps,
+  hitStalls,
+} from "./rider-collisions.ts";
 import { throwRider } from "./rider-crash.ts";
 import { ride } from "./rider-drive.ts";
 import { fly } from "./rider-flight.ts";
@@ -89,7 +94,7 @@ export const stepRider = (
     thrown = true;
   }
   if (!thrown) {
-    thrown = hitProps(state, track, rider);
+    thrown = hitProps(state, track, rider) || hitStalls(state, track, rider);
   }
   thrown ||= hitTraffic(state, rider);
   if (thrown) {

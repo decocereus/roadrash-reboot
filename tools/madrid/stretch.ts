@@ -132,6 +132,7 @@ import type { TrackPlan } from "../track.ts";
 import { ${camel}Scenery } from "./${entry.id}-scenery.ts";
 
 export const ${camel}: TrackPlan = {
+  bazaars: [],
   carriers: [],
   chevrons: chevronRuns["${entry.id}"],
   crossings: [],
@@ -211,6 +212,7 @@ const planOf = (
 ): TrackPlan => {
   const { road } = entry.settings;
   return {
+    bazaars: [],
     carriers: [],
     chevrons,
     crossings: [],

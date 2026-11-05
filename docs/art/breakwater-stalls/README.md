@@ -1,10 +1,10 @@
 # Breakwater Run stall kit
 
-Stall art for the bazaar patch on Breakwater Run's footpaths, the market squeeze at 1300 to 1740 m. The owner approves this art before it goes on the road, so nothing loads it yet. `apps/web/src/assets/art.json` has no entry for it and no game code reads it.
+Stall art for the market on Breakwater Run's footpaths, the squeeze at 1300 to 1740 m. The owner approved this art, and `apps/web/src/game/bazaar.ts` draws it from `models/stalls.glb` in `apps/web/src/assets/art.json`.
 
 ## Contract
 
-`stalls.glb` is 55,940 B and holds twelve nodes: six stalls and six decorations. `metrics.json` lists each part's triangles, its glowing triangles and its footprint. `tools/blender/stalls.py` refuses to build a stall over 400 triangles or a decoration over 60.
+`stalls.glb` is 55,976 B and holds twelve nodes: six stalls and six decorations. `metrics.json` lists each part's triangles, its glowing triangles and its footprint. `tools/blender/stalls.py` refuses to build a stall over 400 triangles or a decoration over 60.
 
 Each node's local `+x` faces the road and its origin stands on the footpath, which is the convention `plant` in `apps/web/src/game/ground.ts` uses with `turnedOnRight`. `deco_string_lights` is the exception. Its span runs along `x`, so it turns a quarter turn to run along the road, with its `+z` towards the road. Its span is 6 m.
 
@@ -17,7 +17,7 @@ Colour is per-vertex `COLOR_0`. There are two materials, which are the two the c
 
 The renderer has no local lights in the city, so the lamp light in the art is painted into the vertices. Awning undersides, lit back panels and hanging cloth are `stall_glow` with a vertex gradient. The review pictures scale glow by 1.6. The city scales its own glow by 1.5 to 2.5.
 
-Sign words are invented generic words drawn as polygons: NOODLE, HOT, SILK, SCRAP, FRUIT, NEON, 24H, OIL. There are no logos or brands.
+Sign words are invented generic words drawn as polygons: NOODLE, HOT, SILK, SCRAP, FRUIT, NEON, 24H, INK. The hanging sign said OIL in the review pictures. It became INK before the kit shipped, because OIL could read as a warning for the oil hazard. There are no logos or brands.
 
 ## Parts
 
@@ -55,13 +55,12 @@ Stalls set `castShadow = false` and `receiveShadow = true`. Each stall has a dar
 
 Density decides the triangle count, and the merged mesh keeps the calls at 2 either way. The review patch is the dense form: 12 stalls and 14 decorations in 40 m, 4,104 triangles. Thirty stalls is about two and a half of those clusters. Filling all 440 m at that density takes about 132 stalls and about 45,000 triangles.
 
-## Wiring it in
+## How the game uses it
 
-- Run `node tools/blender/compress.ts`, then `pnpm art:upload`. That adds `models/stalls.glb` to the manifest. Add an `assets.glb.stalls` row to `tools/perf/budgets.json`.
-- Quantisation stores `COLOR_0` as normalised 8-bit RGB and positions as 16-bit integers scaled by the node's transform. Bake each node's matrix into its geometry before you place it. `mergeGeometries` needs matching attributes, so bring the geometry to the shape `coloured` in `city.ts` builds: float RGB in a `color` attribute.
-- Riders can ride the footpath, because `packages/sim/src/combat.ts` clamps them to the verge's half-width, 11 m here. The review layout puts stalls 5.7 to 8.9 m from the road centre, so a rider passes through them until `packages/sim` has a rule for it. Either make stalls solid or narrow the rideable width along the patch.
-- `clearance.ts` hides a single object or instance when it comes within 2 m of the camera. A merged mesh cannot hide one stall. If a rider can reach the stalls, choose between the merged mesh and per-stall hiding after a ride.
-- Run `pnpm perf:gpu` on vimaan before and after.
+- `Track.stalls` comes from `packages/track/src/stalls.ts`, whose `stallSizes` match the footprints in `metrics.json`. A stall's front stands 2.6 m from the road's edge, not the 1.7 m of the review layout, because the chevrons and lamp poles reach 2.58 m from the road's edge.
+- The whole market is 47,667 triangles and 102,167 vertices, 23,105 and 47,389 in the cel mesh and 24,562 and 54,778 in the glow mesh, about 3.96 MB on the GPU. That is 135 stalls and their decorations, worked out from the shipped kit and pinned in `apps/web/test/bazaar-kit.test.ts`. The cost above assumed 30 stalls.
+- The merged mesh costs 2 draw calls in the main pass and 2 more in the normal pass in `post.ts`, which the table above leaves out, and none in the shadow pass.
+- `clearance.ts` collapses one stall's index range when the camera reaches it, so the merged mesh and per-stall hiding are not a choice.
 
 ## Rebuild
 
@@ -71,6 +70,6 @@ node tools/blender/compress.ts
 blender -b --factory-startup --python-exit-code 1 -P tools/blender/stalls_preview.py -- <output folder>
 ```
 
-`compress.ts` writes the new key into `art.json`. While the kit is unapproved, copy the compressed file from `~/.cache/rushline/art/<key>` to this folder and restore `art.json`.
+`compress.ts` writes the new key into `art.json`. Copy the compressed file from `~/.cache/rushline/art/<key>` to this folder so the record stays current, and run `pnpm art:upload` before you push.
 
 The preview script renders with Eevee using the `dusk` look's key direction, lit tone and shadow tone in a cel shader that follows `createShading`, then adds ink lines and bloom. The road width, kerb, footpath and building line are the market squeeze's numbers, and the camera comes from `frameRig` in `chase-camera.ts`. The buildings are dark stand-ins, so judge the stalls against them and not the city.

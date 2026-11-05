@@ -125,8 +125,8 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 297036,
-      "baseline": 297036,
+      "value": 327348,
+      "baseline": 327348,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.pedestrians",
@@ -257,8 +257,20 @@
     },
     {
       "derivation": "exact baseline",
-      "value": 3474992,
-      "baseline": 3474992,
+      "value": 55976,
+      "baseline": 55976,
+      "direction": "max",
+      "environment": "build",
+      "metric": "assets.glb.stalls",
+      "paired": null,
+      "scenario": null,
+      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "unit": "B"
+    },
+    {
+      "derivation": "exact baseline",
+      "value": 3561280,
+      "baseline": 3561280,
       "direction": "max",
       "environment": "build",
       "metric": "assets.glb.total",

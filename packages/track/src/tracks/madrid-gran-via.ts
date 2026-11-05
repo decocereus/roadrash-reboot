@@ -4,6 +4,7 @@ import type { TrackPlan } from "../track.ts";
 import { madridGranViaScenery } from "./madrid-gran-via-scenery.ts";
 
 export const madridGranVia: TrackPlan = {
+  bazaars: [],
   carriers: [],
   chevrons: chevronRuns["madrid-gran-via"],
   crossings: [],

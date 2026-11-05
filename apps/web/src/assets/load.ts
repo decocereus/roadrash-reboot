@@ -106,7 +106,7 @@ const model = <Value>(
     );
   });
 
-const bikeParts = (parsers: AssetParsers) => parsers.parts;
+const modelParts = (parsers: AssetParsers) => parsers.parts;
 const wholeModel = (parsers: AssetParsers) => parsers.whole;
 const riderModel = (parsers: AssetParsers) => parsers.rider;
 const walkerModel = (parsers: AssetParsers) => parsers.walkers;
@@ -130,7 +130,7 @@ interface Loaded {
 
 const bikeModels = (cache: ByteCache, { bikes }: ModelUrls) =>
   Effect.all(
-    byId(bikeVisuals, ({ id }) => model(cache, bikes[id], bikeParts)),
+    byId(bikeVisuals, ({ id }) => model(cache, bikes[id], modelParts)),
     { concurrency: "unbounded" }
   );
 
@@ -160,6 +160,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
     riderA,
     riderB,
     riderC,
+    stalls,
     walkers,
     fontFallback,
   ] = yield* Effect.all(
@@ -171,6 +172,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       model(cache, buildA, riderModel),
       model(cache, buildB, riderModel),
       model(cache, buildC, riderModel),
+      model(cache, urls.stalls, modelParts),
       model(cache, urls.walkers, walkerModel),
       displayFont,
     ],
@@ -181,6 +183,7 @@ export const loadAssets = Effect.fn("assets.load")(function* loadAssets(
       bikes,
       car,
       figures: [riderA, riderB, riderC],
+      stalls,
       truck,
       van,
       walkers,

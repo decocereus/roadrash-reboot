@@ -14,7 +14,7 @@ import { placeOnGround } from "../src/game/ground.ts";
 import { isInstancedMesh, isMesh } from "../src/game/meshes.ts";
 import { createWorld } from "../src/game/world.ts";
 import type { World } from "../src/game/world.ts";
-import { fakeWalkerAsset } from "./walker-asset.ts";
+import { fakeWorldAssets } from "./walker-asset.ts";
 
 const drawsNothing = new Proxy(
   {},
@@ -130,7 +130,7 @@ describe("the roadside clears the chase camera", () => {
 
   it("hides the chevron, board and post together, on either side of the road, while a rider running wide puts the camera at it, and puts both back once the camera has passed", () => {
     const track = trackFor("slag-row");
-    const world = createWorld(track, fakeWalkerAsset());
+    const world = createWorld(track, fakeWorldAssets());
     const right = instancesAt(world, footOf(track, 1700, 9.3));
     const left = instancesAt(world, footOf(track, 310, -9.3));
     const ahead = instancesAt(world, footOf(track, 1712, 9.3));
@@ -161,7 +161,7 @@ describe("the roadside clears the chase camera", () => {
 
   it("hides the whole scaled pine whose canopy covers the camera behind a crashed bike, though its foot is 4.6 m from the eye", () => {
     const track = trackFor("ridge-road");
-    const world = createWorld(track, fakeWalkerAsset());
+    const world = createWorld(track, fakeWorldAssets());
     const foot = footOf(track, 700.3308, 8.5107);
     const pine = instancesAt(world, foot);
     const across = instancesAt(world, footOf(track, 701.0156, -10.1369));
@@ -185,7 +185,7 @@ describe("the roadside clears the chase camera", () => {
 
   it("keeps every signal across the junction drawn while a rider rides the right lane through Harbour Cross", () => {
     const track = trackFor("breakwater-run");
-    const world = createWorld(track, fakeWalkerAsset());
+    const world = createWorld(track, fakeWorldAssets());
     const harbour = track.crossings.find(({ id }) => id === "harbour-cross");
     if (!harbour) {
       throw new Error("Breakwater Run has Harbour Cross.");
@@ -220,7 +220,7 @@ describe("the roadside clears the chase camera", () => {
 
   it("runs Harbour Cross's pavement right up to each arm and leaves no gap beside it", () => {
     const track = trackFor("breakwater-run");
-    const world = createWorld(track, fakeWalkerAsset());
+    const world = createWorld(track, fakeWorldAssets());
     const harbour = track.crossings.find(({ id }) => id === "harbour-cross");
     if (!harbour) {
       throw new Error("Breakwater Run has Harbour Cross.");
@@ -278,7 +278,7 @@ describe("the roadside clears the chase camera", () => {
       crossings: [rule],
       region: "stonepeak",
     });
-    const world = createWorld(track, fakeWalkerAsset());
+    const world = createWorld(track, fakeWorldAssets());
     const ground: THREE.Mesh[] = [];
     world.scene.traverse((node) => {
       if (isMesh(node) && !isInstancedMesh(node)) {
@@ -321,7 +321,7 @@ describe("the roadside clears the chase camera", () => {
     const box = new THREE.Box3();
     for (const roadId of roadIds) {
       const track = trackFor(roadId);
-      const world = createWorld(track, fakeWalkerAsset());
+      const world = createWorld(track, fakeWorldAssets());
       const batches: {
         bounds: THREE.Box3;
         mesh: THREE.InstancedMesh;

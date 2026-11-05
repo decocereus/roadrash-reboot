@@ -3,6 +3,7 @@ import { chevronRuns } from "../chevron-runs.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const breakwaterRun: TrackPlan = {
+  bazaars: [{ from: 1300, to: 1740 }],
   carriers: [3900, 4650],
   chevrons: chevronRuns["breakwater-run"],
   crossings: [

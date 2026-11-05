@@ -33,6 +33,7 @@ export const TICKS = 60;
 
 export const road = compileTrack({
   ...ridgeRoad,
+  bazaars: [],
   carriers: [],
   chevrons: [],
   pieces: eased([[9000, 0, 0]]),

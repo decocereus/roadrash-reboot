@@ -6,11 +6,13 @@ import { walkersOn } from "@racer/track/walk-sites";
 import * as THREE from "three";
 
 import type { WalkerAsset } from "./assets.ts";
+import { crowdAt } from "./bazaar-crowd.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
+import { placeOnGround } from "./ground.ts";
 import { uploadSpan } from "./uploads.ts";
 import { WALKER_OUTFITS, walkerBodies, walkerFrameOf } from "./walker-clips.ts";
-import type { WalkerLook } from "./walker-clips.ts";
+import type { CrowdMode, WalkerLook } from "./walker-clips.ts";
 import { useWalkerPoses } from "./walker-skin.ts";
 
 const BEHIND = 40;
@@ -40,6 +42,12 @@ interface BodyMarks {
 interface Identity extends WalkerLook {
   readonly body: BodyMarks;
   readonly outfit: number;
+}
+
+interface Standing extends Identity {
+  readonly matrix: THREE.Matrix4;
+  readonly mode: CrowdMode;
+  readonly s: number;
 }
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
@@ -105,7 +113,8 @@ export const createWalkerMarks = (
 ): WalkerMarks => {
   const group = new THREE.Group();
   const reach = shading.look.fogFar + MARGIN;
-  const capacity = walkersOn(track.walkSites);
+  const crowd = crowdAt(track);
+  const capacity = walkersOn(track.walkSites) + crowd.length;
   const material = shading.walker(asset.atlas);
   useWalkerPoses(asset.poses);
   const bodies = asset.geometries.map((geometry, index) =>
@@ -119,6 +128,33 @@ export const createWalkerMarks = (
   for (const { mesh } of bodies) {
     group.add(mesh);
   }
+  const looksOf = (id: string): Identity => {
+    const seed = siteSeed(0, id);
+    const body = bodies[seed % bodies.length];
+    if (!body) {
+      throw new Error("The walker model has no bodies.");
+    }
+    return {
+      body,
+      offset: unitOf(seed),
+      outfit: siteSeed(OUTFIT_SALT, id) % WALKER_OUTFITS,
+      scale: body.scale,
+    };
+  };
+  const standing: readonly Standing[] = crowd.map((member) => {
+    const looks = looksOf(member.id);
+    placeOnGround(track, member.s, member.x, point);
+    placer.position.set(point.x, point.y, point.z);
+    placer.rotation.set(0, member.turn - point.heading, 0);
+    placer.scale.setScalar(looks.scale);
+    placer.updateMatrix();
+    return {
+      ...looks,
+      matrix: placer.matrix.clone(),
+      mode: member.mode,
+      s: member.s,
+    };
+  });
   const identities: Identity[] = [];
   const fellAt = new Int32Array(capacity);
   const wasDown = new Uint8Array(capacity);
@@ -128,17 +164,7 @@ export const createWalkerMarks = (
     if (known) {
       return known;
     }
-    const seed = siteSeed(0, walker.id);
-    const body = bodies[seed % bodies.length];
-    if (!body) {
-      throw new Error("The walker model has no bodies.");
-    }
-    const made: Identity = {
-      body,
-      offset: unitOf(seed),
-      outfit: siteSeed(OUTFIT_SALT, walker.id) % WALKER_OUTFITS,
-      scale: body.scale,
-    };
+    const made = looksOf(walker.id);
     identities[index] = made;
     return made;
   };
@@ -185,6 +211,21 @@ export const createWalkerMarks = (
           if (walker.s > centre - BEHIND && walker.s < centre + reach) {
             place(walker, index, tick);
           }
+        }
+      }
+      const standingCount = standing.length;
+      for (let index = 0; index < standingCount; index += 1) {
+        const member = standing[index];
+        if (member && member.s > centre - BEHIND && member.s < centre + reach) {
+          const { body } = member;
+          const slot = body.count;
+          body.mesh.setMatrixAt(slot, member.matrix);
+          body.frames.setX(
+            slot,
+            walkerFrameOf(asset.clips, member, tick, tick, member) + 1
+          );
+          body.outfits.setX(slot, member.outfit);
+          body.count = slot + 1;
         }
       }
       for (const { count, frames, mesh, outfits } of bodies) {

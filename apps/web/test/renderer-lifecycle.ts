@@ -16,7 +16,7 @@ import type { PrepareOutcome } from "../src/game/preparation.ts";
 import { createQuality } from "../src/game/quality-ladder.ts";
 import type { Quality } from "../src/game/quality-ladder.ts";
 import { createWorld } from "../src/game/world.ts";
-import { fakeWalkerAsset } from "./walker-asset.ts";
+import { fakeWorldAssets } from "./walker-asset.ts";
 
 const WIDTH = 960;
 const HEIGHT = 540;
@@ -267,7 +267,7 @@ const qualityProof = () => {
   if (!high || !low) {
     throw new Error("The quality ladder has no rungs.");
   }
-  const world = createWorld(trackFor(ROAD_A), fakeWalkerAsset(), low.shadowMap);
+  const world = createWorld(trackFor(ROAD_A), fakeWorldAssets(), low.shadowMap);
   const pipeline = createPipeline(renderer);
   const { camera } = createChaseCamera();
   camera.aspect = WIDTH / HEIGHT;

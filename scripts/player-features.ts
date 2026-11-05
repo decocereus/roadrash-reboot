@@ -476,6 +476,35 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
+      "docs/architecture.md#tracks",
+      "docs/design/tracks.md#breakwater-run-salt-coast",
+      "docs/art/breakwater-stalls/README.md#contract",
+    ],
+    id: "bazaar",
+    kind: "feature",
+    owns: [
+      "packages/track/src/stalls.ts",
+      "packages/track/src/stalls.test.ts",
+      "packages/sim/src/room-stalls.test.ts",
+      "packages/sim/src/stalls.test.ts",
+      "apps/web/src/game/bazaar.ts",
+      "apps/web/src/game/bazaar-crowd.ts",
+      "apps/web/test/bazaar.test.ts",
+      "apps/web/test/bazaar-kit.test.ts",
+    ],
+    perf: sceneCounts,
+    start: [
+      "packages/track/src/stalls.ts",
+      "apps/web/src/game/bazaar.ts",
+      "apps/web/src/game/bazaar-crowd.ts",
+    ],
+    summary:
+      "The market on a road's footpaths: the stall list a road compiles from its seed, the crash or touch a rider meets by speed in hitStalls, the merged stall meshes, and the crowd drawn at the stalls on the walker instances.",
+    title: "Market stalls and their crowd",
+    verify: ["bazaar.md"],
+  },
+  {
+    docs: [
       "docs/architecture.md#browser-client",
       "docs/design/art-direction.md#riders-and-bikes",
       "docs/design/art-direction.md#budget-and-build",

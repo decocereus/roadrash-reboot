@@ -3,6 +3,7 @@ import { chevronRuns } from "../chevron-runs.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const slagRow: TrackPlan = {
+  bazaars: [],
   carriers: [2600, 4100],
   chevrons: chevronRuns["slag-row"],
   crossings: [],

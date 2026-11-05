@@ -27,6 +27,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Chase camera](#chase-camera): `camera`
 - [Engine and race sound](#engine-and-race-sound): `audio`
 - [Roads, cities and scenery on screen](#roads-cities-and-scenery-on-screen): `world`
+- [Market stalls and their crowd](#market-stalls-and-their-crowd): `bazaar`
 - [Riders, bikes and cars on screen](#riders-bikes-and-cars-on-screen): `riders-on-screen`
 - [The roads](#the-roads): `roads`
 - [Frame rate and quality](#frame-rate-and-quality): `frame-pacing`
@@ -575,6 +576,31 @@ Test files:
 
 - `apps/web/test/road-districts.test.ts`
 - `apps/web/test/roadside-clearance.test.ts`
+
+### Market stalls and their crowd
+
+The market on a road's footpaths: the stall list a road compiles from its seed, the crash or touch a rider meets by speed in hitStalls, the merged stall meshes, and the crowd drawn at the stalls on the walker instances.
+
+- Id: `bazaar`
+- Start: `packages/track/src/stalls.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`
+- Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#breakwater-run-salt-coast](design/tracks.md#breakwater-run-salt-coast), [docs/art/breakwater-stalls/README.md#contract](art/breakwater-stalls/README.md#contract)
+- Verify: [bazaar.md](../.claude/skills/verify-rushline/features/bazaar.md)
+- Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
+- Owns: `packages/track/src/stalls.ts`, `packages/track/src/stalls.test.ts`, `packages/sim/src/room-stalls.test.ts`, `packages/sim/src/stalls.test.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`, `apps/web/test/bazaar.test.ts`, `apps/web/test/bazaar-kit.test.ts`
+
+Source files:
+
+- `apps/web/src/game/bazaar-crowd.ts`
+- `apps/web/src/game/bazaar.ts`
+- `packages/track/src/stalls.ts`
+
+Test files:
+
+- `apps/web/test/bazaar-kit.test.ts`
+- `apps/web/test/bazaar.test.ts`
+- `packages/sim/src/room-stalls.test.ts`
+- `packages/sim/src/stalls.test.ts`
+- `packages/track/src/stalls.test.ts`
 
 ### Riders, bikes and cars on screen
 
@@ -1501,6 +1527,7 @@ Test files:
 - `packages/sim/src/room-jumps.test.ts`
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
+- `packages/sim/src/room-stalls.test.ts`
 - `packages/sim/src/room.test.ts`
 - `tools/rooms/test/load-report.test.ts`
 - `tools/rooms/test/race-report.test.ts`

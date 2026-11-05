@@ -26,6 +26,7 @@ const straight = (
 ): Track =>
   compileTrack({
     ...ridgeRoad,
+    bazaars: [],
     carriers: [],
     chevrons: [],
     crossings,

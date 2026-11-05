@@ -87,6 +87,7 @@ export const deterministicFiles = [
   "packages/track/src/regions.ts",
   "packages/track/src/road.ts",
   "packages/track/src/roads.ts",
+  "packages/track/src/stalls.ts",
   "packages/track/src/stretches.ts",
   "packages/track/src/track.ts",
   "packages/track/src/tracks/breakwater-run.ts",

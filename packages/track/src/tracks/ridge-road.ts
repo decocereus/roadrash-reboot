@@ -3,6 +3,7 @@ import { chevronRuns } from "../chevron-runs.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const ridgeRoad: TrackPlan = {
+  bazaars: [],
   carriers: [4500],
   chevrons: chevronRuns["ridge-road"],
   crossings: [],
