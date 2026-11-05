@@ -266,6 +266,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       capture(rider, view.after);
       return view;
     });
+    Reflect.set(globalThis, "__rushlineCast", cast.views);
   };
 
   const touchHazard = (
