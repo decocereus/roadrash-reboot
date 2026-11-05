@@ -2840,6 +2840,14 @@
       "side": "B",
       "source": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
       "value": 1.417910886133199
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T12-02-58-493Z-fbefe7d-fbefe7d",
+      "value": 614495
     }
   ],
   "revisions": {
@@ -3813,6 +3821,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "aa043203bfd4b1e42cb0a7eeebfb9e765ba9f783"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1155669, \"bytes.route.root.gzip\": 614495, \"bytes.route.kit.raw\": 952134, \"bytes.route.kit.gzip\": 544465, \"bytes.game.raw\": 1924463, \"bytes.game.gzip\": 828917, \"bytes.game.incremental.raw\": 768794, \"bytes.game.incremental.gzip\": 214422, \"bytes.worker.raw\": 738669, \"bytes.worker.gzip\": 189833, \"bytes.client.raw\": 2058129, \"bytes.client.gzip\": 881704, \"assets.glb.bike\": 122108, \"assets.glb.car\": 53048, \"assets.glb.ghost\": 116948, \"assets.glb.oni\": 126272, \"assets.glb.pedestrians\": 297036, \"assets.glb.rider_a\": 238128, \"assets.glb.rider_altman\": 347996, \"assets.glb.rider_b\": 238876, \"assets.glb.rider_c\": 237836, \"assets.glb.rider_kylie\": 344904, \"assets.glb.rider_mbappe\": 236968, \"assets.glb.rider_musk\": 261240, \"assets.glb.rider_ranveer\": 302744, \"assets.glb.rider_ronaldo\": 316580, \"assets.glb.seraph\": 118884, \"assets.glb.truck\": 67640, \"assets.glb.van\": 47784, \"assets.glb.total\": 3474992, \"assets.image.total\": 9099096, \"assets.texture.total\": 33554764}",
+        "builtB": "{\"bytes.route.root.raw\": 1155669, \"bytes.route.root.gzip\": 614495, \"bytes.route.kit.raw\": 952134, \"bytes.route.kit.gzip\": 544465, \"bytes.game.raw\": 1924463, \"bytes.game.gzip\": 828917, \"bytes.game.incremental.raw\": 768794, \"bytes.game.incremental.gzip\": 214422, \"bytes.worker.raw\": 738831, \"bytes.worker.gzip\": 189850, \"bytes.client.raw\": 2058129, \"bytes.client.gzip\": 881704, \"assets.glb.bike\": 122108, \"assets.glb.car\": 53048, \"assets.glb.ghost\": 116948, \"assets.glb.oni\": 126272, \"assets.glb.pedestrians\": 297036, \"assets.glb.rider_a\": 238128, \"assets.glb.rider_altman\": 347996, \"assets.glb.rider_b\": 238876, \"assets.glb.rider_c\": 237836, \"assets.glb.rider_kylie\": 344904, \"assets.glb.rider_mbappe\": 236968, \"assets.glb.rider_musk\": 261240, \"assets.glb.rider_ranveer\": 302744, \"assets.glb.rider_ronaldo\": 316580, \"assets.glb.seraph\": 118884, \"assets.glb.truck\": 67640, \"assets.glb.van\": 47784, \"assets.glb.total\": 3474992, \"assets.image.total\": 9099096, \"assets.texture.total\": 33554764}",
+        "harnessDigest": "0a41badc3799441610b4bce3c9a3d38632dfdad808f6b09784318bbb5143fdd1",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "c12bb0563f542df1a308c1c4b6abcd7a994042cc02c8a5a50005ce7b55516d13",
+        "sideBSourceDigest": "c12bb0563f542df1a308c1c4b6abcd7a994042cc02c8a5a50005ce7b55516d13",
+        "why": "The first load now holds the ride-out handoff table and the race-preparation types, 346 B gzip against main. The baseline dated from 2026-10-31 and main had used all but 115 B of its margin. The seat table stays in the lazy lobby chunk. Only the gzip row moves. The raw row stays under its limit and keeps it."
+      },
+      "id": "baseline-2026-11-05T12-02-58-493Z-fbefe7d-fbefe7d",
+      "lanes": ["build"],
+      "sides": {
+        "A": "fbefe7dd0ede4aa44cf261d81be762c08cc05ffe",
+        "B": "fbefe7dd0ede4aa44cf261d81be762c08cc05ffe"
       }
     }
   ],
