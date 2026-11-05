@@ -2,6 +2,7 @@ import { perfEnvironments } from "@racer/devtools/browser-host";
 import * as Schema from "effect/Schema";
 
 import { glbNames } from "./build.ts";
+import { barMetrics } from "./gpu-bar.ts";
 import { scenarios } from "./scenarios.ts";
 
 export type Lane = "node" | "build" | "gpu";
@@ -133,6 +134,10 @@ const gpuKinds: readonly MetricKind[] = [
   gpuKind("render.triangles.max", "triangles", null),
   gpuKind("render.programs.max", "programs", null),
   gpuKind("render.textures.max", "textures", null),
+  ...barMetrics.map(({ metric, unit }): MetricKind => ({
+    ...gpuKind(metric, unit, null),
+    perScenario: false,
+  })),
 ];
 
 export const metricKinds: readonly MetricKind[] = [

@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import { budgetsFile, judge, metricKinds } from "../src/budgets.ts";
 import type { Limit } from "../src/budgets.ts";
+import { BAR_BENCH } from "../src/gpu-bar.ts";
+import type { BarSample } from "../src/gpu-bar.ts";
 import { evaluateGpu, FRAME_RATE, GPU_PAIRS } from "../src/gpu-frames.ts";
 import type { GpuSample } from "../src/gpu-frames.ts";
 import { scenarios, WINDOW_TICKS } from "../src/scenarios.ts";
@@ -188,10 +190,106 @@ const [reference, packRiding] = scenarios;
 
 const isPack = (scenario: Scenario): boolean => scenario.id === packRiding?.id;
 
+const BAR_FRAMES = BAR_BENCH.to - BAR_BENCH.from;
+
+const barSampleOf = (
+  index: number,
+  interval: (frame: number) => number,
+  capture: Partial<BarSample["capture"]> = {}
+): BarSample => ({
+  capture: {
+    camera: BAR_BENCH.camera,
+    frames: Array.from({ length: BAR_FRAMES }, (_, frame) => ({
+      calls: [90],
+      cpu: [1],
+      discarded: 0,
+      drawnEpoch: 0,
+      frame,
+      interval: interval(frame),
+      pixelRatio: 2,
+      programs: 40,
+      race: 0,
+      sizeEpoch: 0,
+      start: frame * SLOT,
+      textures: 30,
+      tick: frame,
+      ticks: 1,
+      triangles: [600_000],
+    })),
+    viewport: steady.viewport,
+    visibility: "visible",
+    ...capture,
+  },
+  consoleErrors: 0,
+  file: `bar-${index}.json`,
+});
+
+const barOf = (
+  interval: (frame: number) => number,
+  capture: Partial<BarSample["capture"]> = {}
+): BarSample[] =>
+  Array.from({ length: BAR_BENCH.samples }, (_, index) =>
+    barSampleOf(index, interval, capture)
+  );
+
+const steadyBar = barOf(() => 16.7);
+
+const judged = (bar: readonly BarSample[]) =>
+  failing(
+    evaluateGpu(
+      campaign(() => steady),
+      bar,
+      limits,
+      METAL,
+      null
+    ).lines
+  ).join("\n");
+
+describe("bar frame rows", () => {
+  it("passes a steady bar", () => {
+    expect(judged(steadyBar)).toBe("");
+  });
+
+  it("fails when one window's frames slow past the cap", () => {
+    const slowOnce = [...steadyBar.slice(1), barSampleOf(0, () => 25)];
+    expect(judged(slowOnce)).toContain("bar.frame.interval.p50");
+  });
+
+  it("fails when the bar draws more than its budget", () => {
+    const heavy = steadyBar.map((sample) => ({
+      ...sample,
+      capture: {
+        ...sample.capture,
+        frames: sample.capture.frames.map((frame) => ({
+          ...frame,
+          triangles: [2_000_000],
+        })),
+      },
+    }));
+    expect(judged(heavy)).toContain("bar.render.triangles.max");
+  });
+
+  it("refuses a window on another camera", () => {
+    expect(judged(barOf(() => 16.7, { camera: "angled" }))).toContain(
+      "camera=angled expected=room"
+    );
+  });
+
+  it("refuses a short or missing capture", () => {
+    expect(judged(barOf(() => 16.7, { frames: [] }))).toContain(
+      `frames=0 expected>=${BAR_FRAMES}`
+    );
+    expect(judged([])).toContain(
+      `FAIL bar samples=0 expected=${BAR_BENCH.samples}`
+    );
+  });
+});
+
 describe("gpu frame lane", () => {
   it("fails a campaign whose every page left the host's required page", () => {
     const evaluation = evaluateGpu(
       campaign(() => steady),
+      steadyBar,
       limits,
       METAL,
       { dpr: 2, height: 773, width: 1512 }
@@ -205,6 +303,7 @@ describe("gpu frame lane", () => {
   it("passes a steady 60 Hz campaign against the owner caps", () => {
     const evaluation = evaluateGpu(
       campaign(() => steady),
+      steadyBar,
       limits,
       METAL,
       null
@@ -230,6 +329,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, discardedAt: 9 }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -261,6 +361,7 @@ describe("gpu frame lane", () => {
             }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -288,6 +389,7 @@ describe("gpu frame lane", () => {
       campaign((scenario, side) =>
         isPack(scenario) && side === "B" ? slower : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -315,6 +417,7 @@ describe("gpu frame lane", () => {
       campaign((scenario, side, pair) =>
         isPack(scenario) && side === "B" && pair === 0 ? stalled : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -333,6 +436,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, viewport: { ...steady.viewport, height: 836 } }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -366,6 +470,7 @@ describe("gpu frame lane", () => {
             }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -393,6 +498,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, riders: (index) => (index % 10 === 0 ? slow : 0.2) }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -423,6 +529,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: uploaded }
           : steady;
       }),
+      steadyBar,
       limits,
       METAL,
       null
@@ -448,6 +555,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: replaced }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -468,6 +576,7 @@ describe("gpu frame lane", () => {
           ? { ...steady, ride: [] }
           : steady
       ),
+      steadyBar,
       limits,
       METAL,
       null
@@ -481,6 +590,7 @@ describe("gpu frame lane", () => {
     const nvidia = browserHosts["linux-nvidia"].perfEnvironment;
     const evaluation = evaluateGpu(
       campaign(() => steady),
+      steadyBar,
       limits.filter((limit) => limit.environment === nvidia),
       nvidia,
       null
