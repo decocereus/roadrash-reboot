@@ -132,7 +132,7 @@ const entrance = async (
   if (roomId !== null) {
     return { roomId, screen: "room" };
   }
-  if (save.status === "corrupt") {
+  if (save.status === "corrupt" || save.status === "unread") {
     return backRoom;
   }
   if (save.status === "empty") {
