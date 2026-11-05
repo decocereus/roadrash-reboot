@@ -441,3 +441,96 @@ describe("members in the bar", () => {
     expect(members.spotOf(1)).toMatchObject({ x: standing.x, z: standing.z });
   });
 });
+
+describe("what each colour in the bar is doing", () => {
+  it("is vacant, then follows a heard member, then leaves for the door", () => {
+    let phase: SeatPhase = "lobby";
+    let heard: RoomWalked | null = null;
+    const { members } = room({
+      lobby: () => lobbyOf(["near", "far"]),
+      phase: () => phase,
+      walkOf: (id) => (id === "far" ? heard : null),
+    });
+    members.step(FRAME, 0);
+    expect(members.presence()[1]).toStrictEqual({ phase: "vacant" });
+    heard = standing;
+    members.step(FRAME, 0);
+    expect(members.presence()[1]).toMatchObject({
+      memberId: "far",
+      phase: "following",
+      shoving: 0,
+      walk: standing,
+    });
+    phase = "loading";
+    members.step(FRAME, 0);
+    expect(members.presence()[1]).toMatchObject({
+      memberId: "far",
+      phase: "leaving",
+    });
+    phase = "ended";
+    members.step(FRAME, 0);
+    expect(members.presence()[1]).toMatchObject({
+      memberId: "far",
+      phase: "following",
+    });
+  });
+
+  it("keeps this rider's own colour vacant", () => {
+    const { members } = room({
+      lobby: () => lobbyOf(["near", "far"]),
+      walkOf: () => standing,
+    });
+    members.step(FRAME, 0);
+    expect(members.presence()[0]).toStrictEqual({ phase: "vacant" });
+  });
+
+  it("goes vacant the moment a member is away", () => {
+    let away: readonly string[] = [];
+    const { members } = room({
+      lobby: () => lobbyOf(["near", "far"], away),
+      walkOf: () => standing,
+    });
+    members.step(FRAME, 0);
+    away = ["far"];
+    members.step(FRAME, 0);
+    expect(members.presence()[1]).toStrictEqual({ phase: "vacant" });
+  });
+
+  it("reads a shove on the state and clears it for the next member", () => {
+    let ids = ["near", "far"];
+    const { heardShove, members } = room({
+      lobby: () => lobbyOf(ids),
+      walkOf: (id) => heardAt(id, standing.x, standing.z),
+    });
+    members.step(FRAME, 0);
+    heardShove("far", "near");
+    expect(members.presence()[1]).toMatchObject({ shoving: SHOVE.ticks });
+    ids = ["near", "next"];
+    members.step(TICK, 0);
+    expect(members.presence()[1]).toMatchObject({
+      memberId: "next",
+      shoving: 0,
+    });
+  });
+
+  it("builds a new state only when the member or the phase changes", () => {
+    let phase: SeatPhase = "lobby";
+    let { x } = standing;
+    const { members } = room({
+      lobby: () => lobbyOf(["near", "far"]),
+      phase: () => phase,
+      walkOf: () => ({ ...standing, x }),
+    });
+    members.step(FRAME, 0);
+    const [, following] = members.presence();
+    x += 1;
+    members.step(TICK, 0);
+    expect(members.presence()[1]).toBe(following);
+    phase = "loading";
+    members.step(TICK, 0);
+    const [, leaving] = members.presence();
+    expect(leaving).not.toBe(following);
+    members.step(TICK, 0);
+    expect(members.presence()[1]).toBe(leaving);
+  });
+});

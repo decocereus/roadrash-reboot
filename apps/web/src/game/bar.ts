@@ -609,6 +609,7 @@ const openRoom = (
       x: rider.x,
       z: rider.z,
     }),
+    presence: () => members?.presence() ?? [],
     rev,
     triangles: () => renderer.info.render.triangles,
     walkTo: player.walkTo,
