@@ -16,6 +16,7 @@ const probeRider = Schema.Struct({
 });
 
 const drawnRider = Schema.Struct({
+  blend: Schema.Number,
   flinch: Schema.Number,
   pose: Schema.String,
   reach: Schema.Number,
@@ -281,14 +282,19 @@ const p95 = (values: readonly number[]): number => {
   );
 };
 
+interface Sample {
+  readonly place: number;
+  readonly truth: number;
+}
+
 interface TrackFrame {
-  readonly frame: ProbeFrame;
-  readonly server: number;
+  readonly drawn: Sample;
+  readonly guessed: Sample;
 }
 
 const trackError = (
   frames: readonly (TrackFrame | null)[],
-  xOf: (frame: ProbeFrame) => number
+  pick: (one: TrackFrame) => Sample
 ): TrackError => {
   const errors: number[] = [];
   let worstStepMetres = 0;
@@ -296,12 +302,13 @@ const trackError = (
     if (one === null) {
       continue;
     }
-    errors.push(Math.abs(xOf(one.frame) - one.server));
+    const { place, truth } = pick(one);
+    errors.push(Math.abs(place - truth));
     const before = frames[index - 1];
     if (before) {
       worstStepMetres = Math.max(
         worstStepMetres,
-        Math.abs(xOf(one.frame) - xOf(before.frame))
+        Math.abs(place - pick(before).place)
       );
     }
   }
@@ -322,14 +329,23 @@ export const riderTrack = (taken: TakenFrames, rider: number): RiderTrack => {
     })
   );
   const frames = taken.frames.map((frame): TrackFrame | null => {
-    const server = riding.get(frame.tick);
-    return server === undefined || frame.predicted[rider]?.mode !== "riding"
+    const now = riding.get(frame.tick);
+    const was = riding.get(frame.tick - 1);
+    const drawn = frame.drawn[rider];
+    const guessed = frame.predicted[rider];
+    return now === undefined ||
+      was === undefined ||
+      drawn === undefined ||
+      guessed?.mode !== "riding"
       ? null
-      : { frame, server };
+      : {
+          drawn: { place: drawn.x, truth: was + (now - was) * drawn.blend },
+          guessed: { place: guessed.x, truth: now },
+        };
   });
   return {
-    drawn: trackError(frames, (frame) => frame.drawn[rider]?.x ?? 0),
-    guessed: trackError(frames, (frame) => frame.predicted[rider]?.x ?? 0),
+    drawn: trackError(frames, (one) => one.drawn),
+    guessed: trackError(frames, (one) => one.guessed),
     rider,
   };
 };

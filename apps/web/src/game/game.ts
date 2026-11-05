@@ -210,7 +210,6 @@ const startGame = (
     followPlayer,
     holdStill,
     placeFleet,
-    takeCorrections,
     touchDown,
   } = bindCast({ assets, cast, stage });
   owners.push(() => {
@@ -388,7 +387,6 @@ const startGame = (
     stage.race.step(frameOf());
     bench?.record(stage.race.view);
     fightsTick();
-    takeCorrections();
     const heard = stage.race.events();
     for (const event of heard) {
       touchDown(event);

@@ -1,4 +1,5 @@
 import type { RiderCorrection } from "@racer/sim/room-client";
+import { riderOf } from "@racer/sim/state";
 
 const SETTLE_MS = 100;
 const MOST_ALONG_METRES = 6;
@@ -44,4 +45,43 @@ export const driftSettle = (drift: RiderDrift, seconds: number): void => {
   drift.lean *= left;
   drift.s *= left;
   drift.x *= left;
+};
+
+interface Placed {
+  heading: number;
+  lean: number;
+  s: number;
+  x: number;
+}
+
+interface PlacedView<Pose extends Placed> {
+  readonly after: Pose;
+  readonly before: Pose;
+  readonly drift: RiderDrift;
+}
+
+export const captureCast = <Rider, Pose extends Placed>(
+  into: "after" | "before",
+  riders: readonly Rider[],
+  views: readonly PlacedView<Pose>[],
+  corrections: readonly RiderCorrection[],
+  capture: (rider: Rider, pose: Pose) => void
+): void => {
+  for (const moved of corrections) {
+    const view = riderOf(views, moved.rider);
+    if (view) {
+      view.before.heading -= moved.heading;
+      view.before.lean -= moved.lean;
+      view.before.s -= moved.s;
+      view.before.x -= moved.x;
+      driftBy(view.drift, moved);
+    }
+  }
+  for (let index = 0; index < riders.length; index += 1) {
+    const rider = riders[index];
+    const view = views[index];
+    if (rider !== undefined && view) {
+      capture(rider, view[into]);
+    }
+  }
 };

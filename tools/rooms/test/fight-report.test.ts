@@ -50,8 +50,8 @@ const frameOf = ({
   at,
   confirmed: [rider(100, null), rider(hit ? 50 : 100, null)],
   drawn: [
-    { flinch: 0, pose, reach, x: 1.3 },
-    { flinch, pose: "seated", reach: 0, x: 0 },
+    { blend: 1, flinch: 0, pose, reach, x: 1.3 },
+    { blend: 1, flinch, pose: "seated", reach: 0, x: 0 },
   ],
   heard: tick - 17,
   predicted: [rider(100, null), rider(100, shoved ? ATTACKER : null)],
@@ -270,30 +270,30 @@ describe("reading a fight from both windows", () => {
 describe("how far another rider is drawn from the room's position", () => {
   const GUESSES = [0, 0.25, 1, 1.25];
   const DRIFT = [0, 0.125, 0.5, 0.125];
-  const frames = GUESSES.map((x, index) => {
-    const base = frameOf({
-      at: index * FRAME_MS,
-      flinch: 0,
-      hit: false,
-      pose: "seated",
-      reach: 0,
-      shoved: false,
-      tick: index,
+  const framesAt = (blend: number, drawnOf: (index: number) => number) =>
+    GUESSES.map((x, index) => {
+      const base = frameOf({
+        at: index * FRAME_MS,
+        flinch: 0,
+        hit: false,
+        pose: "seated",
+        reach: 0,
+        shoved: false,
+        tick: index + 1,
+      });
+      return {
+        ...base,
+        drawn: [
+          { blend, flinch: 0, pose: "seated", reach: 0, x: drawnOf(index) },
+          { blend, flinch: 0, pose: "seated", reach: 0, x: 0 },
+        ],
+        predicted: [{ ...rider(100, null), x }, rider(100, null)],
+      };
     });
-    const settling = x - (DRIFT[index] ?? 0);
-    return {
-      ...base,
-      drawn: [
-        { flinch: 0, pose: "seated", reach: 0, x: settling },
-        { flinch: 0, pose: "seated", reach: 0, x: 0 },
-      ],
-      predicted: [{ ...rider(100, null), x }, rider(100, null)],
-    };
-  });
   const taken: TakenFrames = {
     ...nothing,
-    frames,
-    placed: GUESSES.map((x, tick) => ({
+    frames: framesAt(1, (index) => (GUESSES[index] ?? 0) - (DRIFT[index] ?? 0)),
+    placed: [0, ...GUESSES].map((x, tick) => ({
       at: tick,
       riding: [true, true],
       tick,
@@ -309,13 +309,23 @@ describe("how far another rider is drawn from the room's position", () => {
     });
   });
 
+  it("compares the drawn rider with the room's place at the same blend", () => {
+    const halfway = framesAt(0.5, (index) => {
+      const now = GUESSES[index] ?? 0;
+      const was = GUESSES[index - 1] ?? 0;
+      return (was + now) / 2;
+    });
+    const track = riderTrack({ ...taken, frames: halfway }, ATTACKER);
+    expect(track.drawn.errorP95Metres).toBe(0);
+  });
+
   it("skips the frames where the room has the rider down", () => {
     const down = taken.placed.map((one) =>
-      one.tick === 2 ? { ...one, riding: [false, true] } : one
+      one.tick === 3 ? { ...one, riding: [false, true] } : one
     );
     expect(riderTrack({ ...taken, placed: down }, ATTACKER)).toStrictEqual({
-      drawn: { errorP95Metres: 0.125, frames: 3, worstStepMetres: 0.125 },
-      guessed: { errorP95Metres: 0, frames: 3, worstStepMetres: 0.25 },
+      drawn: { errorP95Metres: 0.125, frames: 2, worstStepMetres: 0.125 },
+      guessed: { errorP95Metres: 0, frames: 2, worstStepMetres: 0.25 },
       rider: ATTACKER,
     });
   });
