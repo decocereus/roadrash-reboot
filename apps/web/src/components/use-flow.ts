@@ -1,6 +1,6 @@
 import type { RaceRules } from "@racer/career/rules";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
-import type { TierUp, Settlement } from "@racer/career/settle";
+import type { Settlement } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
 import type { RoadId } from "@racer/career/tables";
 import { ROOM_ID_PATTERN, roomKindOf } from "@racer/rooms/room-id";
@@ -17,7 +17,7 @@ import {
   quickEntry,
   quickReport,
 } from "../career/flow.ts";
-import type { QuickPick, RaceEntry, RaceReport } from "../career/flow.ts";
+import type { QuickPick, RaceReport } from "../career/flow.ts";
 import {
   browserStorage,
   careerSeedFrom,
@@ -41,71 +41,16 @@ import type {
 } from "../game/hud.ts";
 import { createHudFeed } from "../hud-feed.ts";
 import type { HudFeed } from "../hud-feed.ts";
+import { firstView, stageOf, stepNavigation } from "../navigation.ts";
+import type { NavigationEvent, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
 import type { RulesLoad } from "../rules/load.ts";
-
-export type View =
-  | { readonly screen: "boot" }
-  | { readonly screen: "clubhouse"; readonly promotion?: TierUp }
-  | { readonly screen: "backRoom" }
-  | { readonly screen: "routeBoard" }
-  | { readonly screen: "garage" }
-  | { readonly screen: "rideOut"; readonly entry: RaceEntry }
-  | { readonly screen: "queue" }
-  | { readonly screen: "room"; readonly roomId: string }
-  | {
-      readonly screen: "race";
-      readonly plan: RacePlan;
-      readonly paused: boolean;
-      readonly finish: RaceReport | null;
-    }
-  | { readonly screen: "results"; readonly report: RaceReport }
-  | { readonly screen: "ending" }
-  | { readonly screen: "gameOver" };
-
-export const clubhouse: View = { screen: "clubhouse" };
-export const backRoom: View = { screen: "backRoom" };
-export const singleRace: View = { screen: "routeBoard" };
-
-export const homeOf = (career: CareerState): View => {
-  if (career.gameOver) {
-    return { screen: "gameOver" };
-  }
-  return career.story.ending === null ? clubhouse : { screen: "ending" };
-};
-
-export const afterResults = (report: RaceReport): View => {
-  if (!report.ledger) {
-    return singleRace;
-  }
-  if (report.ledger.gameOver) {
-    return { screen: "gameOver" };
-  }
-  if (report.ledger.ending !== null) {
-    return { screen: "ending" };
-  }
-  return report.ledger.tierUp
-    ? { promotion: report.ledger.tierUp, screen: "clubhouse" }
-    : clubhouse;
-};
-
-const stageOf = (view: View): "boot" | "race" | "menu" => {
-  if (view.screen === "boot") {
-    return "boot";
-  }
-  return view.screen === "race" ? "race" : "menu";
-};
+import { moveToRoom } from "./room-url.ts";
+import { useHandoff } from "./use-handoff.ts";
 
 const modeOf = ({ mode }: RacePlan): "career" | "single" =>
   mode === "career" ? "career" : "single";
-
-const afterConsequence = (plan: RacePlan, report: RaceReport | null): View => {
-  if (report) {
-    return { report, screen: "results" };
-  }
-  return plan.mode === "career" ? clubhouse : singleRace;
-};
 
 const urlRide = (rules: RaceRules): RacePlan | null => {
   const bench = benchOf(globalThis.location.search);
@@ -115,66 +60,6 @@ const urlRide = (rules: RaceRules): RacePlan | null => {
 const roomOf = (search: string): string | null => {
   const roomId = new URLSearchParams(search).get("room");
   return roomId !== null && ROOM_ID_PATTERN.test(roomId) ? roomId : null;
-};
-
-const entrance = async (
-  rules: RulesLoad | null,
-  save: SaveState,
-  begin: (career: CareerState) => void
-): Promise<View | null> => {
-  if (rules?.status === "failed") {
-    return backRoom;
-  }
-  if (rules === null || save.status === "loading") {
-    return null;
-  }
-  const roomId = roomOf(globalThis.location.search);
-  if (roomId !== null) {
-    return { roomId, screen: "room" };
-  }
-  if (save.status === "corrupt" || save.status === "unread") {
-    return backRoom;
-  }
-  if (save.status === "empty") {
-    begin(freshCareer(randomUnit()));
-    return null;
-  }
-  const home = homeOf(save.career);
-  if (home.screen === "clubhouse") {
-    await preload(
-      barPlates(
-        barCast(rules.rules, save.career, firstRoad(rules.rules, save.career))
-      )
-    );
-  }
-  return home;
-};
-
-const useBoot = (
-  booting: boolean,
-  rules: RulesLoad | null,
-  save: SaveState,
-  begin: (career: CareerState) => void,
-  go: (view: View) => void
-): void => {
-  useEffect(() => {
-    const entering = new AbortController();
-    const enter = async () => {
-      const next = await entrance(rules, save, begin);
-      if (next && !entering.signal.aborted) {
-        go(next);
-      }
-    };
-    if (
-      booting &&
-      !(rules?.status === "ready" && urlRide(rules.rules) !== null)
-    ) {
-      void enter();
-    }
-    return () => {
-      entering.abort();
-    };
-  }, [booting, rules, save, begin, go]);
 };
 
 const useRules = (): RulesLoad | null => {
@@ -383,7 +268,8 @@ export interface Flow {
   readonly feed: HudFeed;
   readonly ready: boolean;
   readonly failure: string;
-  readonly go: (view: View) => void;
+  readonly send: (event: NavigationEvent) => void;
+  readonly leave: () => void;
   readonly setPick: (pick: QuickPick) => void;
   readonly commit: (career: CareerState) => void;
   readonly eraseSave: () => void;
@@ -400,14 +286,12 @@ export interface Flow {
 export const useFlow = (): Flow => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const eventsRef = useRef<GameEvents | null>(null);
-  const pendingRef = useRef<RaceReport | null>(null);
   const [feed] = useState(createHudFeed);
   const [races] = useState<RaceEvents>(() =>
     createRaceEvents((event) => {
       diagnostics().events.track(event);
     })
   );
-  const [view, setView] = useState<View>({ screen: "boot" });
   const [pick, setPick] = useState<QuickPick>(firstQuickPick);
   const rulesLoad = useRules();
   const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
@@ -417,10 +301,53 @@ export const useFlow = (): Flow => {
     gameRef,
     ready,
   } = useGame(canvasRef, eventsRef);
+  const { send, state: view } = useHandoff(
+    stepNavigation,
+    firstView,
+    (effect) => {
+      switch (effect.kind) {
+        case "beginCareer": {
+          commit(freshCareer(randomUnit()));
+          break;
+        }
+        case "decodeBar": {
+          const decode = async (): Promise<void> => {
+            const roadId = firstRoad(effect.rules, effect.career);
+            await preload(
+              barPlates(barCast(effect.rules, effect.career, roadId))
+            );
+            send({ kind: "barDecoded" });
+          };
+          void decode();
+          break;
+        }
+        case "openBar": {
+          globalThis.location.assign("/");
+          break;
+        }
+        case "rematch": {
+          moveToRoom(effect.roomId, "rematch");
+          break;
+        }
+        default: {
+          effect satisfies never;
+        }
+      }
+    }
+  );
   const failure =
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
-  useBoot(view.screen === "boot", rulesLoad, save, commit, setView);
+  useEffect(() => {
+    send({
+      kind: "entered",
+      roomId: roomOf(globalThis.location.search),
+      rules: rulesLoad,
+      save,
+      urlRide:
+        rulesLoad?.status === "ready" && urlRide(rulesLoad.rules) !== null,
+    });
+  }, [rulesLoad, save, send]);
   useLoadEvents(
     ready && rules !== null,
     failure,
@@ -451,11 +378,8 @@ export const useFlow = (): Flow => {
   useEffect(() => {
     eventsRef.current = {
       onHud: feed.write,
-      onOver(plan, outcome) {
-        if (outcome.result !== "finished") {
-          setView(afterConsequence(plan, pendingRef.current));
-          pendingRef.current = null;
-        }
+      onOver() {
+        send({ kind: "raceOver" });
       },
       onRestart() {
         races.ended("restarted", factsNow());
@@ -466,29 +390,37 @@ export const useFlow = (): Flow => {
         let report: RaceReport | null = null;
         if (plan.mode === "quick") {
           report = quickReport(plan, outcome);
-        } else if (racer && rules) {
+        } else if (racer) {
           report = settle(settleRace(racer, outcome));
         }
-        pendingRef.current = report;
-        if (outcome.result === "finished" && report) {
-          setView({ finish: report, paused: false, plan, screen: "race" });
-        }
+        send({ kind: "raceSettled", report, result: outcome.result });
       },
       onStart(plan) {
         races.started(raceStartOf(plan, feed.read().riderCount));
         const racer = careerRef.current;
-        if (plan.mode !== "career" || !racer || !rules) {
+        if (plan.mode !== "career" || !racer) {
           return;
         }
         const started = startRace(racer, plan.setup.roadId, plan.setup.seed);
         if (started.started) {
           commit(started.career);
         } else {
-          setView(clubhouse);
+          send({ kind: "raceRefused" });
         }
       },
     };
-  }, [careerRef, commit, factsNow, feed, races, rules, settle]);
+  }, [careerRef, commit, factsNow, feed, races, send, settle]);
+
+  const start = useCallback(
+    (plan: RacePlan) => {
+      const game = gameRef.current;
+      if (game) {
+        game.startRace(plan);
+        send({ kind: "raceBegun", plan });
+      }
+    },
+    [gameRef, send]
+  );
 
   const stage = stageOf(view);
   useEffect(() => {
@@ -498,22 +430,22 @@ export const useFlow = (): Flow => {
     }
     const plan = stage === "boot" ? urlRide(rules) : null;
     if (plan) {
-      pendingRef.current = null;
-      game.startRace(plan);
-      setView({ finish: null, paused: false, plan, screen: "race" });
+      start(plan);
     } else if (stage !== "race") {
       game.sleep();
     }
-  }, [gameRef, ready, rules, stage]);
+  }, [gameRef, ready, rules, stage, start]);
 
   const pause = useCallback(() => {
     if (gameRef.current?.pause() === true) {
-      setView((current) =>
-        current.screen === "race" ? { ...current, paused: true } : current
-      );
+      send({ kind: "paused" });
     }
-  }, [gameRef]);
-  usePauseKeys(view.screen === "race" && !view.paused && !view.finish, pause);
+  }, [gameRef, send]);
+  usePauseKeys(view.screen === "race" && view.stage.kind === "riding", pause);
+
+  const leave = useCallback(() => {
+    send({ career: careerRef.current, kind: "left" });
+  }, [careerRef, send]);
 
   const prepare = useCallback(
     async (plan: RacePlan): Promise<PrepareOutcome> => {
@@ -560,56 +492,47 @@ export const useFlow = (): Flow => {
     eraseSave,
     failure,
     feed,
-    go: setView,
+    leave,
     mute: () => gameRef.current?.toggleMute(),
     newCareer() {
       commit(freshCareer(randomUnit()));
-      setView(clubhouse);
+      send({ kind: "careerBegun" });
     },
     pick,
     prepare,
     quit(plan) {
       races.ended("quit", factsNow());
       const outcome = gameRef.current?.quit() ?? null;
-      const report =
-        plan.mode === "career" && career && outcome && rules
-          ? settle(quitRace(career, outcome))
-          : null;
-      if (report) {
-        setView({ report, screen: "results" });
-      } else {
-        setView(plan.mode === "career" ? clubhouse : singleRace);
-      }
+      send({
+        kind: "raceSettled",
+        report:
+          plan.mode === "career" && career && outcome
+            ? settle(quitRace(career, outcome))
+            : null,
+        result: "quit",
+      });
+      send({ kind: "raceOver" });
     },
     ready,
     resume() {
       gameRef.current?.resume();
-      setView((current) =>
-        current.screen === "race" ? { ...current, paused: false } : current
-      );
+      send({ kind: "resumed" });
     },
     rideOut(mode, roadId) {
       const entry =
         mode === "career" && career
           ? careerEntry(career, roadId)
           : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
-      setView({ entry, screen: "rideOut" });
+      send({ entry, kind: "ridePicked" });
     },
     roomLost() {
       races.ended("lost", factsNow());
     },
     rules,
     save,
+    send,
     setPick,
-    start(plan) {
-      const game = gameRef.current;
-      if (!game) {
-        return;
-      }
-      pendingRef.current = null;
-      game.startRace(plan);
-      setView({ finish: null, paused: false, plan, screen: "race" });
-    },
+    start,
     view,
   };
 };
