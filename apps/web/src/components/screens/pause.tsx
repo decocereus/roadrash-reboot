@@ -19,6 +19,8 @@ import { SettingsScreen } from "./settings.tsx";
 import { useEscape } from "./shared.tsx";
 import type { MenuAction } from "./shared.tsx";
 
+type Overlay = "nothing" | "settings" | "quit";
+
 export const PauseScreen = ({
   plan,
   career,
@@ -38,12 +40,11 @@ export const PauseScreen = ({
   readonly onMute: () => void;
   readonly onQuit: () => void;
 }) => {
-  const [asking, setAsking] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay>("nothing");
   const hud = useSyncExternalStore(feed.subscribe, feed.read, () => idleHud);
   const racing = plan.mode === "career" && career !== null && rules !== null;
   const bill = racing ? repairBill(career.tier, career.bikeId) : 0;
-  useEscape(onResume, !(asking || adjusting));
+  useEscape(onResume, overlay === "nothing");
   const actions: MenuAction[] = [
     { id: "resume", label: "Resume", run: onResume },
     ...(racing
@@ -59,23 +60,23 @@ export const PauseScreen = ({
       id: "settings",
       label: "Settings",
       run: () => {
-        setAdjusting(true);
+        setOverlay("settings");
       },
     },
     {
       id: "quit",
       label: "Quit race",
       run: () => {
-        setAsking(true);
+        setOverlay("quit");
       },
     },
   ];
   return (
     <Screen className="bg-ink/60 flex">
-      <Stage inert={asking || adjusting ? true : undefined}>
+      <Stage inert={overlay === "nothing" ? undefined : true}>
         <PinnedList
           actions={actions}
-          autoFocus={!adjusting}
+          autoFocus={overlay !== "settings"}
           label="Pause"
           primary="resume"
           title="Paused"
@@ -97,22 +98,22 @@ export const PauseScreen = ({
           </p>
         </BarStrip>
       </Stage>
-      {adjusting && (
+      {overlay === "settings" && (
         <SettingsScreen
           onBack={() => {
-            setAdjusting(false);
+            setOverlay("nothing");
           }}
         />
       )}
-      {asking && (
+      {overlay === "quit" && (
         <Confirm
           defaultValue="keep"
           label="Quit race"
           onDismiss={() => {
-            setAsking(false);
+            setOverlay("nothing");
           }}
           onSelect={(value) => {
-            setAsking(false);
+            setOverlay("nothing");
             if (value === "quit") {
               onQuit();
             }
