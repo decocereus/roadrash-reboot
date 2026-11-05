@@ -8,11 +8,15 @@ export const sessionFeatures: readonly FeatureEntry[] = [
     ],
     id: "race-session",
     kind: "platform",
-    owns: ["apps/web/test/session-transcript.ts"],
+    owns: [
+      "apps/web/src/game/game-session.ts",
+      "apps/web/test/game-session.test.ts",
+      "apps/web/test/session-transcript.ts",
+    ],
     perf: ["frame.interval.p95", "frame.missedFraction"],
-    start: ["apps/web/test/session-transcript.ts"],
+    start: ["apps/web/src/game/game-session.ts"],
     summary:
-      "What the game does across attract, preparation, the countdown, the race with its pause and resume hold, and the settled race with its consequence delay, printed line by line from a real game.",
+      "One value for what the game is doing: attract, idle with or without a preparation, the countdown, the race with its pause and resume hold, and the settled race with its consequence delay. Pure transitions and the counters a tick spends live here, and game.ts performs the effects.",
     title: "Race session",
     verify: ["single-race.md"],
   },

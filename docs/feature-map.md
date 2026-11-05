@@ -1519,17 +1519,20 @@ Test files:
 
 ### Race session
 
-What the game does across attract, preparation, the countdown, the race with its pause and resume hold, and the settled race with its consequence delay, printed line by line from a real game.
+One value for what the game is doing: attract, idle with or without a preparation, the countdown, the race with its pause and resume hold, and the settled race with its consequence delay. Pure transitions and the counters a tick spends live here, and game.ts performs the effects.
 
 - Id: `race-session`
-- Start: `apps/web/test/session-transcript.ts`
+- Start: `apps/web/src/game/game-session.ts`
 - Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `frame.interval.p95`, `frame.missedFraction`
-- Owns: `apps/web/test/session-transcript.ts`
+- Owns: `apps/web/src/game/game-session.ts`, `apps/web/test/game-session.test.ts`, `apps/web/test/session-transcript.ts`
 
-Source files: none
+Source files:
+
+- `apps/web/src/game/game-session.ts`
 
 Test files:
 
+- `apps/web/test/game-session.test.ts`
 - `apps/web/test/session-transcript.ts`

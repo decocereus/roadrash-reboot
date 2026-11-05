@@ -11,7 +11,6 @@ import { createFixedTick } from "./fixed-tick.ts";
 import { createFrameMeter, emptySample, wantsFrameMeter } from "./fps-meter.ts";
 import type { FrameMeter, FrameSample } from "./fps-meter.ts";
 import { advanceHud } from "./hud-cadence.ts";
-import type { GamePhase } from "./hud.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
 import type { FrameEnd, ProfileMode, Profiler } from "./profile.ts";
 import type { Quality } from "./quality-ladder.ts";
@@ -143,6 +142,7 @@ export interface FrameRenderer {
 
 interface LoopParts {
   readonly applyPending: () => void;
+  readonly attracting: () => boolean;
   readonly checkPresented: () => void;
   readonly draw: (blend: number, seconds: number) => void;
   readonly feedback: Pick<Feedback, "noticeLeft">;
@@ -158,15 +158,16 @@ interface LoopParts {
   >;
   readonly renderer: FrameRenderer;
   readonly report: () => void;
-  readonly session: { readonly phase: GamePhase; readonly holdLeft: number };
   readonly skipsVsync: (now: number) => boolean;
   readonly sound: Pick<Sound, "drive" | "shift">;
   readonly stage: Pick<Stage, "race">;
+  readonly throttleHeard: () => boolean;
   readonly tick: () => void;
 }
 
 export const installFrameLoop = ({
   applyPending,
+  attracting,
   checkPresented,
   draw,
   feedback,
@@ -179,10 +180,10 @@ export const installFrameLoop = ({
   recorder,
   renderer,
   report,
-  session,
   skipsVsync,
   sound,
   stage,
+  throttleHeard,
   tick,
 }: LoopParts): void => {
   const { frameEnd, sample } = frame;
@@ -216,16 +217,14 @@ export const installFrameLoop = ({
     const ticks = advance(seconds);
     frame.profiler?.lap("sim");
     const me = player();
-    const riding = me.mode === "riding" && session.phase !== "attract";
+    const riding = me.mode === "riding" && !attracting();
     if (riding && me.gear > frame.lastGear) {
       sound.shift();
     }
     frame.lastGear = me.gear;
     sound.drive(
       riding ? me.speed : 0,
-      riding && session.phase === "racing" && session.holdLeft <= 0
-        ? me.input.throttle
-        : 0,
+      riding && throttleHeard() ? me.input.throttle : 0,
       riding ? me.revs : 0,
       riding && me.offRoad
     );
