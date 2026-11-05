@@ -606,7 +606,6 @@ export const useFlow = (): Flow => {
       if (!game) {
         return;
       }
-      diagnostics().settings.change({ noticeSeen: true });
       pendingRef.current = null;
       game.startRace(plan);
       setView({ finish: null, paused: false, plan, screen: "race" });

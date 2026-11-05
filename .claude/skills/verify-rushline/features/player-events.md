@@ -1,11 +1,11 @@
 # Player events
 
-The game sends a short list of events about where players stop, under a random ID kept on the device. `docs/observability.md` has the list and the rules. The notice appears once on the first menu, `/privacy` has the detail, and Settings has the Race data switch and shows the ID.
+The game sends a short list of events about where players stop, under a random ID kept on the device. `docs/observability.md` has the list and the rules. The notice appears on the first menu until Got it, `/privacy` has the detail, and Settings has the Race data switch and shows the ID.
 
 ## Sub-features
 
 - `events`: the eleven events, sent in batches by `navigator.sendBeacon` to `POST /api/events`, which forwards them to PostHog.
-- `notice`: small and quiet above the menu strip, gone after Got it or the first race.
+- `notice`: small and quiet above the menu strip, gone only after Got it. It hides during the door moment and the race, then comes back.
 - `privacy`: `/privacy`, linked from the notice and Settings.
 - `race-data-switch`: Settings > Race data. Off means no more beacons.
 - `dropped-calls`: a failed send never affects a race.

@@ -87,6 +87,11 @@
       "project": ["**/*.ts"],
       "typescript": true
     },
+    "tools/road-test": {
+      "entry": ["test/**/*.test.ts", "test/variant-plan.ts"],
+      "project": ["**/*.ts"],
+      "typescript": true
+    },
     "tools/art": {
       "entry": ["test/**/*.test.ts"],
       "project": ["**/*.ts"],

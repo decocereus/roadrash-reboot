@@ -38,7 +38,7 @@ Preconditions: a slot from `rv up` on a development build.
 ## Gotchas
 
 - `?time` holds the clock until the page reloads.
-- First-time browsers show the data notice over the left of the room, door moment included, until `Got it`.
+- First-time browsers show the data notice over the left of the room until `Got it`. It hides during the door moment and comes back afterwards, still not dismissed.
 - The countdown opens the door by itself after 90 s and the scene loops 15 s later, so open a fresh page before a timed sample.
 - The bike unlock lasts until the page reloads.
 - The first `rv up --dev` after new imports can hit Vite's `504 Outdated Optimize Dep`, and the page never reaches the bar. Open the page again.

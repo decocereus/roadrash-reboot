@@ -49,6 +49,7 @@ describe("Effect boundary scopes", () => {
     "apps/web/src/diagnostics/uploader-runtime.ts",
     "tools/verify/rushline.ts",
     "tools/madrid/generate.ts",
+    "tools/road-test/road-test.ts",
     "apps/web/src/career/save.ts",
     "apps/web/src/asset-runtime.ts",
   ])("give the entry %s every rule but the library ones", (file) => {
@@ -70,6 +71,7 @@ describe("Effect boundary scopes", () => {
     "tools/verify/src/state.ts",
     "tools/madrid/src/acquire.ts",
     "tools/madrid/src/roads.ts",
+    "tools/road-test/src/main.ts",
     "packages/track/src/madrid-schema.ts",
     "packages/track/src/madrid-corridor.ts",
     "packages/devtools/src/process.ts",
