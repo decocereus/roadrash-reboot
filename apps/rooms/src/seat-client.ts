@@ -41,6 +41,7 @@ import type {
   Refusal,
   RoomActed,
   RoomLobbyMessage,
+  RoomMessage,
   RoomStarted,
   RoomWalked,
 } from "./messages.ts";
@@ -52,25 +53,152 @@ const DEAD_AFTER_MS = 5000;
 const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 const PINGS_PER_REPORT = 30;
 
-export type SeatPhase =
-  | "connecting"
-  | "ended"
-  | "left"
-  | "loading"
-  | "lobby"
-  | "lost"
-  | "racing"
-  | "refused";
-
 export interface SeatRace {
   readonly client: RoomClient;
   readonly colours: GuestColours;
+  readonly digest: Uint32Array;
   readonly me: RiderId;
   readonly names: GuestNames;
   readonly raceId: string;
   readonly riderColours: ReadonlyMap<RiderId, number>;
   readonly setup: CareerRaceSetup;
 }
+
+type LiveSeat =
+  | {
+      readonly phase: "connecting" | "lobby";
+      readonly race: null;
+      readonly refusal: null;
+    }
+  | {
+      readonly phase: "loading" | "racing";
+      readonly race: SeatRace;
+      readonly refusal: null;
+    };
+
+type SeatState =
+  | LiveSeat
+  | {
+      readonly phase: "ended";
+      readonly race: SeatRace;
+      readonly refusal: null;
+    }
+  | {
+      readonly phase: "left" | "lost";
+      readonly race: SeatRace | null;
+      readonly refusal: null;
+    }
+  | {
+      readonly phase: "lost";
+      readonly race: SeatRace;
+      readonly refusal: Refusal;
+    }
+  | {
+      readonly phase: "refused";
+      readonly race: null;
+      readonly refusal: Refusal;
+    };
+
+export type SeatPhase = SeatState["phase"];
+
+export type SeatEvent =
+  | Exclude<RoomMessage, { readonly kind: "act" | "walk" }>
+  | { readonly kind: "closed" | "left" | "silent" };
+
+export const NEW_SEAT: SeatState = {
+  phase: "connecting",
+  race: null,
+  refusal: null,
+};
+
+const raceOf = ({ manifest, you }: RoomStarted): SeatRace => {
+  const { setup } = seatedRace(
+    manifest.seed,
+    seatedCount(manifest),
+    manifest.rule
+  );
+  const me = riderIdAt(you);
+  const client = createRoomClient(setup, me);
+  const colours = humanColours(manifest);
+  return {
+    client,
+    colours: byGuest(setup, me, colours),
+    digest: setupDigest(client.confirmed, setup.track),
+    me,
+    names: byGuest(setup, me, humanNames(manifest)),
+    raceId: manifest.raceId,
+    riderColours: new Map(
+      firstRacers(setup, colours.length).flatMap((rider, at) => {
+        const colour = colours[at];
+        return colour === undefined ? [] : [[rider, colour] as const];
+      })
+    ),
+    setup,
+  };
+};
+
+const liveSeatAfter = (state: LiveSeat, event: SeatEvent): SeatState | null => {
+  switch (event.kind) {
+    case "lobby": {
+      return state.race === null
+        ? { phase: "lobby", race: null, refusal: null }
+        : null;
+    }
+    case "started": {
+      return state.race === null
+        ? { phase: "loading", race: raceOf(event), refusal: null }
+        : null;
+    }
+    case "countdown": {
+      return state.phase === "loading"
+        ? { phase: "racing", race: state.race, refusal: null }
+        : null;
+    }
+    case "ended": {
+      return state.phase === "racing"
+        ? { phase: "ended", race: state.race, refusal: null }
+        : null;
+    }
+    case "refused": {
+      return state.race === null
+        ? { phase: "refused", race: null, refusal: event.reason }
+        : { phase: "lost", race: state.race, refusal: event.reason };
+    }
+    case "closed":
+    case "silent": {
+      return { phase: "lost", race: state.race, refusal: null };
+    }
+    case "left": {
+      return { phase: "left", race: state.race, refusal: null };
+    }
+    default: {
+      return event satisfies never;
+    }
+  }
+};
+
+export const seatAfter = (
+  state: SeatState,
+  event: SeatEvent
+): SeatState | null => {
+  switch (state.phase) {
+    case "connecting":
+    case "lobby":
+    case "loading":
+    case "racing": {
+      return liveSeatAfter(state, event);
+    }
+    case "ended":
+    case "left":
+    case "lost":
+    case "refused": {
+      return null;
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
+};
 
 export interface SeatListeners {
   readonly onChange?: () => void;
@@ -132,24 +260,15 @@ export const openRoomSeat = (
   let reported = false;
   let pingsUntilReport = PINGS_PER_REPORT;
   let listeners: SeatListeners = {};
-  let phase: SeatPhase = "connecting";
+  let state: SeatState = NEW_SEAT;
   let lobby: RoomLobbyMessage | null = null;
   const walks = new Map<string, RoomWalked>();
-  let counting = false;
   let lobbyHeardAt = 0;
-  let race: SeatRace | null = null;
-  let refused: Refusal | null = null;
-  let digest: Uint32Array = new Uint32Array();
   let closeCode: number | null = null;
   let rttMs = 0;
   let worstRttMs = 0;
   let unansweredPings = 0;
   let pings: ReturnType<typeof setInterval> | null = null;
-
-  const move = (next: SeatPhase): void => {
-    phase = next;
-    listeners.onChange?.();
-  };
 
   const stopPings = (): void => {
     if (pings) {
@@ -158,31 +277,9 @@ export const openRoomSeat = (
     }
   };
 
-  const onStarted = ({ manifest, you }: RoomStarted): void => {
-    const { setup } = seatedRace(
-      manifest.seed,
-      seatedCount(manifest),
-      manifest.rule
-    );
-    const me = riderIdAt(you);
-    const client = createRoomClient(setup, me);
-    const colours = humanColours(manifest);
-    digest = setupDigest(client.confirmed, setup.track);
-    race = {
-      client,
-      colours: byGuest(setup, me, colours),
-      me,
-      names: byGuest(setup, me, humanNames(manifest)),
-      raceId: manifest.raceId,
-      riderColours: new Map(
-        firstRacers(setup, colours.length).flatMap((rider, at) => {
-          const colour = colours[at];
-          return colour === undefined ? [] : [[rider, colour] as const];
-        })
-      ),
-      setup,
-    };
-    move("loading");
+  const hangUp = (reason: string): void => {
+    stopPings();
+    socket.close(SEAT_CLOSED, reason);
   };
 
   const sendReport = ({ client }: SeatRace, rows: readonly number[]): void => {
@@ -198,21 +295,88 @@ export const openRoomSeat = (
 
   const reportWhileRiding = (): void => {
     pingsUntilReport -= 1;
-    if (pingsUntilReport > 0 || !race || reported || phase !== "racing") {
+    if (pingsUntilReport > 0 || reported || state.phase !== "racing") {
       return;
     }
     pingsUntilReport = PINGS_PER_REPORT;
-    sendReport(race, tally.closedTraceRows());
+    sendReport(state.race, tally.closedTraceRows());
+  };
+
+  const reportOnce = (): void => {
+    const { race } = state;
+    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    reported = true;
+    race.client.settle();
+    tally.frameDrawn(
+      performance.now(),
+      race.client.mine.s,
+      race.client.confirmed.tick
+    );
+    sendReport(race, tally.lastTraceRows());
+  };
+
+  const enter = (event: SeatEvent): void => {
+    switch (event.kind) {
+      case "lobby": {
+        lobby = event;
+        lobbyHeardAt = performance.now();
+        clock.heardRoomTime(event.atMs, lobbyHeardAt);
+        break;
+      }
+      case "started": {
+        break;
+      }
+      case "countdown": {
+        clock.start(event.startAtMs);
+        pingsUntilReport = PINGS_PER_REPORT;
+        break;
+      }
+      case "ended": {
+        reportOnce();
+        hangUp("The race is over.");
+        break;
+      }
+      case "refused": {
+        hangUp("This seat was refused.");
+        break;
+      }
+      case "silent": {
+        hangUp("The room went silent.");
+        break;
+      }
+      case "left": {
+        reportOnce();
+        hangUp("The rider left this seat.");
+        break;
+      }
+      case "closed": {
+        stopPings();
+        break;
+      }
+      default: {
+        event satisfies never;
+      }
+    }
+  };
+
+  const move = (event: SeatEvent): void => {
+    const next = seatAfter(state, event);
+    if (next) {
+      state = next;
+      enter(event);
+      listeners.onChange?.();
+    }
   };
 
   const sendPing = (): void => {
-    const silent = counting
-      ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
-      : unansweredPings > MOST_UNANSWERED_PINGS;
+    const silent =
+      state.phase === "racing"
+        ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
+        : unansweredPings > MOST_UNANSWERED_PINGS;
     if (silent) {
-      stopPings();
-      socket.close(SEAT_CLOSED, "The room went silent.");
-      move("lost");
+      move({ kind: "silent" });
       return;
     }
     writePing(ping, Math.floor(performance.now()));
@@ -233,6 +397,7 @@ export const openRoomSeat = (
       tally.heardRtt(rttMs);
       return;
     }
+    const { race } = state;
     if (race && readTick(view, read)) {
       const now = performance.now();
       clock.heardTick(read.frame.tick, now);
@@ -247,31 +412,9 @@ export const openRoomSeat = (
     pings = setInterval(sendPing, PING_EVERY_MS);
   });
 
-  const reportOnce = (): void => {
-    if (!race || reported || socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    reported = true;
-    race.client.settle();
-    tally.frameDrawn(
-      performance.now(),
-      race.client.mine.s,
-      race.client.confirmed.tick
-    );
-    sendReport(race, tally.lastTraceRows());
-  };
-
   socket.addEventListener("close", (event) => {
     closeCode = event.code;
-    stopPings();
-    if (
-      phase === "connecting" ||
-      phase === "lobby" ||
-      phase === "loading" ||
-      phase === "racing"
-    ) {
-      move("lost");
-    }
+    move({ kind: "closed" });
   });
   socket.addEventListener("message", (event) => {
     const data: unknown = event.data;
@@ -292,35 +435,12 @@ export const openRoomSeat = (
         listeners.onActed?.(message.value);
         break;
       }
-      case "lobby": {
-        lobby = message.value;
-        lobbyHeardAt = performance.now();
-        clock.heardRoomTime(message.value.atMs, lobbyHeardAt);
-        move("lobby");
-        break;
-      }
-      case "started": {
-        onStarted(message.value);
-        break;
-      }
-      case "countdown": {
-        clock.start(message.value.startAtMs);
-        counting = true;
-        pingsUntilReport = PINGS_PER_REPORT;
-        move("racing");
-        break;
-      }
-      case "ended": {
-        reportOnce();
-        stopPings();
-        socket.close(SEAT_CLOSED, "The race is over.");
-        move("ended");
-        break;
-      }
+      case "lobby":
+      case "started":
+      case "countdown":
+      case "ended":
       case "refused": {
-        refused = message.value.reason;
-        socket.close(SEAT_CLOSED, "This seat was refused.");
-        move(race ? "lost" : "refused");
+        move(message.value);
         break;
       }
       default: {
@@ -344,6 +464,7 @@ export const openRoomSeat = (
     },
     closeCode: () => closeCode,
     flush: () => {
+      const { race } = state;
       if (!race || socket.readyState !== WebSocket.OPEN) {
         return;
       }
@@ -359,6 +480,7 @@ export const openRoomSeat = (
       }
     },
     frameDrawn: () => {
+      const { race } = state;
       if (race && race.client.predicted.tick > 0) {
         tally.frameDrawn(
           performance.now(),
@@ -368,23 +490,22 @@ export const openRoomSeat = (
       }
     },
     leave: () => {
-      reportOnce();
-      stopPings();
-      phase = "left";
-      socket.close(SEAT_CLOSED, "The rider left this seat.");
+      move({ kind: "left" });
     },
     listen: (next) => {
       listeners = { ...listeners, ...next };
     },
     loaded: () => {
-      const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
-      writeReady(packet, digest);
-      socket.send(packet.buffer);
+      if (state.race) {
+        const packet = new DataView(new ArrayBuffer(READY_PACKET_BYTES));
+        writeReady(packet, state.race.digest);
+        socket.send(packet.buffer);
+      }
     },
     lobby: () => lobby,
-    phase: () => phase,
-    race: () => race,
-    refusal: () => refused,
+    phase: () => state.phase,
+    race: () => state.race,
+    refusal: () => state.refusal,
     rttMs: () => rttMs,
     setReady: (ready) => {
       if (lobby) {
@@ -396,6 +517,7 @@ export const openRoomSeat = (
         ? null
         : lobby.startsInMs - (performance.now() - lobbyHeardAt),
     stepsDue: () => {
+      const { race } = state;
       if (!race) {
         return 0;
       }
