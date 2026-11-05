@@ -6,11 +6,14 @@ import {
   HAZARD_GENTLE_CURVATURE,
   HAZARD_START_CLEARANCE,
   HAZARD_TIGHT_CURVATURE,
+  hazardKinds,
   hazardSizes,
   inSight,
+  ONLY_LANE_OIL_CURVATURE,
 } from "./hazards.ts";
-import type { HazardKind, HazardSetting } from "./hazards.ts";
+import type { HazardKind } from "./hazards.ts";
 import { nextSeed } from "./random.ts";
+import type { HazardSetting } from "./regions.ts";
 import { roadIds } from "./road.ts";
 import type { RoadId } from "./road.ts";
 import { regionOf, roads, trackFor } from "./roads.ts";
@@ -33,32 +36,40 @@ interface Expected {
   readonly lowestLaunch: number;
   readonly carriers: readonly number[];
   readonly signature: Stretch | undefined;
+  readonly firstTierHazards: readonly [least: number, most: number];
+  readonly turnInKinds: readonly HazardKind[];
 }
 
 const design: readonly Expected[] = [
   {
     carriers: [3900, 4650],
+    firstTierHazards: [12, 18],
     length: 8500,
     lowestLaunch: 169,
     roadId: "breakwater-run",
     signature: undefined,
-    traffic: 5,
+    traffic: 7,
+    turnInKinds: ["oil", "pothole"],
   },
   {
     carriers: [2600, 4100],
+    firstTierHazards: [4, 7],
     length: 8500,
     lowestLaunch: 152,
     roadId: "slag-row",
     signature: { from: 960, to: 1020 },
     traffic: 8,
+    turnInKinds: ["oil"],
   },
   {
     carriers: [4500],
+    firstTierHazards: [4, 7],
     length: 8550,
     lowestLaunch: 162,
     roadId: "ridge-road",
     signature: undefined,
     traffic: 5,
+    turnInKinds: ["oil"],
   },
 ];
 
@@ -243,18 +254,54 @@ describe("car carriers", () => {
 
 describe("hazards", () => {
   it.each(design)(
-    "$roadId has a handful of hazards, at least one an oil slick",
-    ({ roadId }) => {
+    "$roadId has its count of first-tier hazards, at least one an oil slick",
+    ({ firstTierHazards: [least, most], roadId }) => {
       const hazards = trackFor(roadId).hazards.filter(
         (hazard) => hazard.rarity < FIRST_TIER_SHARE
       );
-      expect(hazards.length).toBeGreaterThanOrEqual(4);
-      expect(hazards.length).toBeLessThanOrEqual(7);
+      expect(hazards.length).toBeGreaterThanOrEqual(least);
+      expect(hazards.length).toBeLessThanOrEqual(most);
       expect(
         hazards.filter((hazard) => hazard.kind === "oil").length
       ).toBeGreaterThanOrEqual(1);
     }
   );
+
+  it("Breakwater Run's first tier has every kind in about equal numbers, and oil does not take over its bends", () => {
+    const hazards = trackFor("breakwater-run").hazards.filter(
+      (hazard) => hazard.rarity < FIRST_TIER_SHARE
+    );
+    expect(
+      hazardKinds.map(
+        (kind) => hazards.filter((hazard) => hazard.kind === kind).length
+      )
+    ).toStrictEqual([5, 5, 5]);
+  });
+
+  it("on the only lane no road has a rock, or oil within reach of a sharp bend", () => {
+    const onlyLane = roadIds.flatMap((roadId) =>
+      [0, 1, 2, 3].flatMap((extra) => {
+        const track = compileTrack({
+          ...roads[roadId],
+          hazardsPerKilometre: 4,
+          seed: roads[roadId].seed + extra,
+        });
+        return track.hazards
+          .filter((hazard) => openLanesAt(track, hazard.s) === 1)
+          .map((hazard) => ({
+            kind: hazard.kind,
+            sharpest: sharpestNear(track, hazard.s),
+          }));
+      })
+    );
+    expect(onlyLane.length).toBeGreaterThan(40);
+    expect(onlyLane.filter(({ kind }) => kind === "rock")).toStrictEqual([]);
+    const oil = onlyLane.filter(({ kind }) => kind === "oil");
+    expect(oil.length).toBeGreaterThan(0);
+    expect(Math.max(...oil.map(({ sharpest }) => sharpest))).toBeLessThan(
+      ONLY_LANE_OIL_CURVATURE
+    );
+  });
 
   it("oil is the most common hazard across the roads", () => {
     const kinds = roadIds.flatMap((roadId) =>
@@ -363,8 +410,8 @@ describe("hazards", () => {
   });
 
   it.each(design)(
-    "on $roadId a hazard mid-bend is a pothole on the inside line, and one where the bend begins is oil on the outside line",
-    ({ roadId }) => {
+    "on $roadId a hazard mid-bend is a pothole on the inside line, and one where the bend begins is its region's kind on the outside line",
+    ({ roadId, turnInKinds }) => {
       const track = trackFor(roadId);
       const across = (setting: HazardSetting) =>
         track.hazards.flatMap((hazard) => {
@@ -388,7 +435,7 @@ describe("hazards", () => {
         expect(apex.innermost).toBeGreaterThanOrEqual(-1e-9);
       }
       for (const turnIn of across("turnIn")) {
-        expect(turnIn.kind).toBe("oil");
+        expect(turnInKinds).toContain(turnIn.kind);
         expect(turnIn.outermost).toBeLessThanOrEqual(1e-9);
       }
     }

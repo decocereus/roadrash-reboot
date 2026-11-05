@@ -27,6 +27,7 @@ const districts: Districts = [
 
 const track = compileTrack({
   ...breakwaterRun,
+  bazaars: [],
   carriers: [],
   chevrons: [],
   crossings: [],

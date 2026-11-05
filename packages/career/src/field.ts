@@ -120,6 +120,18 @@ const withMemory = (
     : { ...entry, aggressionBoost };
 };
 
+const rivalBike = (
+  rules: RaceRules,
+  career: CareerState,
+  bike: RivalSetup["bike"]
+): RivalSetup["bike"] =>
+  rules.bikeMatches.some(
+    ({ from, tier, to }) =>
+      tier === career.tier && from === bike.id && to === career.bikeId
+  )
+    ? bikes[career.bikeId]
+    : bike;
+
 export const setupFor = (
   rules: RaceRules,
   career: CareerState,
@@ -142,16 +154,18 @@ export const setupFor = (
     },
     police: policeFor(tier, roads[roadId].region),
     raceId: career.activeRace?.raceId ?? nextRaceId(career),
-    rivals: field.map((rival) =>
-      withMemory(
+    rivals: field.map((id) => {
+      const rival = rivalAt(rivals[id], tier);
+      return withMemory(
         {
-          ...rivalAt(rivals[rival], tier),
-          aggression: aggressionOf(rival, roadId, tier),
+          ...rival,
+          aggression: aggressionOf(id, roadId, tier),
+          bike: rivalBike(rules, career, rival.bike),
         },
-        career.memory[rival],
-        rival === ALLY && career.story.deeAlly
-      )
-    ),
+        career.memory[id],
+        id === ALLY && career.story.deeAlly
+      );
+    }),
     roadId,
     seed,
     tier,

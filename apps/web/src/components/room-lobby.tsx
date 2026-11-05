@@ -251,13 +251,17 @@ const SeatedLobby = ({
     }
   }, [handoff, racing, send]);
   const lobby = seat?.lobby() ?? null;
+  const leaveRoom = (): void => {
+    seat?.leaveRoom();
+    onBack();
+  };
   if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
       <BarLobby
         copied={copied}
         lobby={lobby}
         name={name}
-        onBack={onBack}
+        onBack={leaveRoom}
         onChangeName={onChangeName}
         onCopyLink={() => {
           void copyLink();
@@ -271,7 +275,7 @@ const SeatedLobby = ({
   return (
     <RoomLobbyScreen
       name={name}
-      onBack={onBack}
+      onBack={leaveRoom}
       phase={phase}
       refusal={seat?.refusal() ?? null}
       roomId={roomId}

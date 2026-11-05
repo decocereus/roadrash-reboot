@@ -47,6 +47,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
 - [Jumps](./jumps.md): car carrier trucks, time in the air, landings, and landing dust.
 - [Roadside clearance](./roadside-clearance.md): signs, trees and posts that give way to the chase camera on the shoulder, and signs that never show what stands behind them.
+- [Market bazaar](./bazaar.md): Breakwater Run's market stalls and their crowd on both footpaths of the squeeze, a fast hit that crashes, a slow touch that does not, and the stall that gives way to the camera.
 - [Road hazards](./hazards.md): where oil, rocks, and potholes lie, how each draws, what contact costs by speed, what missing one costs, and the frame rate with them on screen.
 - [Junctions and crossings](./junctions.md): where a road's junctions and pedestrian crossings stand, how the arms, zebras, stop lines and signals draw, and the light cycle.
 - [Walkable bar](./walkable-bar.md): the development-only bar the player walks around, its cameras, the hidden bike, the cast, the door cutscene and the clock.

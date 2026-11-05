@@ -1,13 +1,17 @@
 name: Deploy
+run-name: Deploy ${{ github.event.workflow_run.head_sha || github.sha }} (${{ github.event.workflow_run.conclusion || 'manual' }})
 
 on:
-  push:
+  workflow_run:
+    workflows: [Quality]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 concurrency:
   group: deploy-prod
   cancel-in-progress: false
+  queue: max
 
 permissions:
   contents: read
@@ -15,6 +19,7 @@ permissions:
 jobs:
   prod:
     name: prod
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
@@ -24,19 +29,36 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: 6979943b697a28951d44b9bcbcf61b42
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       POSTHOG_PROJECT_KEY: ${{ secrets.POSTHOG_PROJECT_KEY }}
-      RUSHLINE_BUILD: ${{ github.sha }}
+      RUSHLINE_BUILD: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ env.RUSHLINE_BUILD }}
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: rebuild the game for this commit, because the rooms admit only this build
         run: printf '%s' "$RUSHLINE_BUILD" > apps/web/public/rushline-build.txt
-      - run: pnpm exec alchemy deploy --stage prod --no-input --yes
+      - id: tip
+        name: deploy only the tip of main, so a late or retried run never rolls production back
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+            tip=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+            if [ "$tip" != "$RUSHLINE_BUILD" ]; then
+              echo "::notice::Not deploying $RUSHLINE_BUILD: main has moved on to $tip, and the CI run for $tip decides the next deploy."
+              exit 0
+            fi
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
+      - if: steps.tip.outputs.current == 'true'
+        run: pnpm exec alchemy deploy --stage prod --no-input --yes
       - name: serves the game for this commit
+        if: steps.tip.outputs.current == 'true'
         run: |
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             test "$(curl --fail --silent --show-error --max-time 10 https://rushline.amartya-faceless.workers.dev/rushline-build.txt)" = "$RUSHLINE_BUILD" && exit 0
@@ -44,6 +66,8 @@ jobs:
           done
           exit 1
       - name: serves the game
+        if: steps.tip.outputs.current == 'true'
         run: curl --fail --silent --show-error --output /dev/null https://rushline.amartya-faceless.workers.dev/
       - name: serves every manifest key
+        if: steps.tip.outputs.current == 'true'
         run: pnpm art:pull

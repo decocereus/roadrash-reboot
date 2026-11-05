@@ -15,7 +15,7 @@ import { assetParsers } from "../src/game/assets.ts";
 import type {
   AssetParsers,
   Assets,
-  BikeParts,
+  ModelParts,
   Decoded,
   Primitive,
   RiderAsset,
@@ -38,6 +38,7 @@ const urls: ModelUrls = {
     "/models/rider_b.glb",
     "/models/rider_c.glb",
   ],
+  stalls: "/models/stalls.glb",
   truck: "/models/truck.glb",
   van: "/models/van.glb",
   walkers: "/models/pedestrians.glb",
@@ -48,6 +49,7 @@ const everyUrl = [
   ...Object.values(urls.bikes),
   urls.car,
   urls.truck,
+  urls.stalls,
   urls.van,
   urls.walkers,
   ...urls.figures,
@@ -529,7 +531,7 @@ const riderSummary = (rider: RiderAsset) => {
   };
 };
 
-const partsSummary = (parts: BikeParts) =>
+const partsSummary = (parts: ModelParts) =>
   [...parts].map(([name, primitives]) => ({
     name,
     primitives: primitives.map(primitiveSummary),

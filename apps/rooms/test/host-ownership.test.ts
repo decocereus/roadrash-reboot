@@ -7,7 +7,6 @@ import {
 } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
-import { createHost } from "../src/host.ts";
 import { AWAY_MS } from "../src/lobby.ts";
 import {
   encodeLobbyCommand,
@@ -17,14 +16,11 @@ import {
 import {
   advanceHearing,
   countdownsOn,
-  createClock,
-  fakeSocket,
   lastLobby,
-  nearby,
   pingPacket,
   readyAll,
   readyPacket,
-  sameBuild,
+  room,
   someRaceStats,
   START_DELAY_MS,
   startedOf,
@@ -91,17 +87,6 @@ const walksOn = (socket: FakeSocket) =>
 
 const heardKinds = (socket: FakeSocket, from: number): readonly string[] =>
   socket.messages.slice(from).map(({ kind }) => kind);
-
-const room = () => {
-  const clock = createClock();
-  const host = createHost(clock);
-  const seated = (key: string, name = "Guest"): FakeSocket => {
-    const socket = fakeSocket();
-    host.seat(socket, name, nearby, sameBuild(key));
-    return socket;
-  };
-  return { clock, host, seated };
-};
 
 const ridingRoom = () => {
   const { clock, host, seated } = room();

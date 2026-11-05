@@ -3,6 +3,7 @@ import { chevronRuns } from "../chevron-runs.ts";
 import type { TrackPlan } from "../track.ts";
 
 export const breakwaterRun: TrackPlan = {
+  bazaars: [{ from: 1300, to: 1740 }],
   carriers: [3900, 4650],
   chevrons: chevronRuns["breakwater-run"],
   crossings: [
@@ -38,6 +39,7 @@ export const breakwaterRun: TrackPlan = {
       walk: "zebra",
     },
   ],
+  crowds: [{ from: 1300, sites: 11, to: 1740 }],
   districts: [
     { from: 0, lanesEachWay: 3, shoulderWidth: 0.7, vergeWidth: 7 },
     { from: 1300, lanesEachWay: 1, shoulderWidth: 0.4, vergeWidth: 7 },
@@ -48,7 +50,7 @@ export const breakwaterRun: TrackPlan = {
     { from: 4220, lanesEachWay: 2, shoulderWidth: 0.3, vergeWidth: 7 },
     { from: 7150, lanesEachWay: 3, shoulderWidth: 0.2, vergeWidth: 7 },
   ],
-  hazardsPerKilometre: 1,
+  hazardsPerKilometre: 3,
   id: "breakwater-run",
   laneWidth: 3.6,
   leadInLength: 80,
@@ -115,5 +117,5 @@ export const breakwaterRun: TrackPlan = {
   runoffLength: 400,
   seed: 0xb4_7a_c1,
   start: { heading: 0, x: 0, z: 0 },
-  trafficPerKilometre: 5,
+  trafficPerKilometre: 7,
 };

@@ -1,6 +1,7 @@
 import type { CrossRoad, Lights, TrackCrossing } from "@racer/track/crossings";
 import type { District } from "@racer/track/districts";
 import type { HazardPlacement } from "@racer/track/hazards";
+import type { StallFootprint } from "@racer/track/stalls";
 import type { Track, TrackPlan, TrackProp } from "@racer/track/track";
 import type { WalkSite } from "@racer/track/walk-sites";
 
@@ -81,6 +82,15 @@ const propSchema = writtenSchemaOf<TrackProp>({
   x: floatAt("x"),
 });
 
+const stallSchema = writtenSchemaOf<StallFootprint>({
+  halfLength: floatAt("halfLength"),
+  halfWidth: floatAt("halfWidth"),
+  id: textAt("id"),
+  s: floatAt("s"),
+  variant: textAt("variant"),
+  x: floatAt("x"),
+});
+
 const lightsSchema = writtenSchemaOf<Lights>({
   offsetTicks: floatAt("offsetTicks"),
 });
@@ -138,6 +148,7 @@ const trackSchema: WrittenSchema<Track> = writtenSchemaOf<Track>({
   slope: samplesAt("slope"),
   slopeRate: samplesAt("slopeRate"),
   solidProps: writtenListAt("solidProps", propSchema),
+  stalls: writtenListAt("stalls", stallSchema),
   startS: floatAt("startS"),
   trafficReach: samplesAt("trafficReach"),
   vergeHalfWidth: samplesAt("vergeHalfWidth"),

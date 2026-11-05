@@ -47,7 +47,7 @@ export const createStage = (
   seed: number,
   shadowMap: number
 ): Stage => {
-  const world = createWorld(track, assets.walkers, shadowMap);
+  const world = createWorld(track, assets, shadowMap);
   const race = createRaceRun(ridden(defaultSetup(track, seed), "pilot"));
   return {
     colours: new Map(),
@@ -134,11 +134,7 @@ export const bindStage = ({
       return;
     }
     stage.track = next;
-    stage.world = createWorld(
-      stage.track,
-      assets.walkers,
-      quality.preset.shadowMap
-    );
+    stage.world = createWorld(stage.track, assets, quality.preset.shadowMap);
     pipeline.setLook(stage.world.shading.look);
   };
 

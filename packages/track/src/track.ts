@@ -23,6 +23,8 @@ import { cos, sin } from "./math.ts";
 import { createRandom, nextSeed } from "./random.ts";
 import { regions } from "./regions.ts";
 import type { RegionId } from "./regions.ts";
+import { placeStalls, stallClaims } from "./stalls.ts";
+import type { Bazaar, StallFootprint } from "./stalls.ts";
 import { placeWalkSites } from "./walk-sites.ts";
 import type { WalkSite } from "./walk-sites.ts";
 
@@ -53,10 +55,18 @@ export interface Scenery {
   readonly water: readonly SceneryWater[];
 }
 
+interface Crowd {
+  readonly from: number;
+  readonly to: number;
+  readonly sites: number;
+}
+
 export interface TrackPlan extends Alignment {
+  readonly bazaars: readonly Bazaar[];
   readonly id: string;
   readonly chevrons: readonly ChevronRun[];
   readonly crossings: readonly CrossingRule[];
+  readonly crowds: readonly Crowd[];
   readonly districts: Districts;
   readonly name: string;
   readonly region: RegionId;
@@ -90,6 +100,7 @@ export interface Track extends Centreline, RoadWidths {
   readonly oncomingLanes: LaneCentres;
   readonly props: readonly TrackProp[];
   readonly solidProps: readonly TrackProp[];
+  readonly stalls: readonly StallFootprint[];
   readonly carrierStarts: readonly number[];
   readonly hazards: readonly HazardPlacement[];
   readonly crossings: readonly TrackCrossing[];
@@ -206,6 +217,12 @@ const scatterProps = (
   return props.toSorted((left, right) => left.s - right.s);
 };
 
+const givesWayToStall = (
+  stalls: readonly StallFootprint[],
+  { kind, radius, s, x }: TrackProp
+): boolean =>
+  (kind === "tree" || kind === "rock") && stallClaims(stalls, s, x, radius);
+
 const carrierStartsOf = (
   plan: TrackPlan,
   length: number
@@ -234,8 +251,12 @@ export const compileTrack = (plan: TrackPlan): Track => {
   const crossings = compileCrossings(plan.crossings, centreline);
   checkCrossingsOffTapers(plan, crossings, tapers);
   const widest = widestLanes(plan.districts);
+  const walkSites = placeWalkSites({ crossings, length, plan });
+  const stalls = placeStalls(plan, along, crossings, walkSites);
   const props = scatterProps(plan, along).filter(
-    (prop) => !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN)
+    (prop) =>
+      !armClaims(crossings, prop.s, prop.s, prop.x, ARM_PROP_MARGIN) &&
+      !givesWayToStall(stalls, prop)
   );
 
   const road = {
@@ -251,9 +272,9 @@ export const compileTrack = (plan: TrackPlan): Track => {
         prop.radius > 0 &&
         Math.abs(prop.x) < vergeHalfWidthAt(along, prop.s) + 1
     ),
+    stalls,
   };
-  const placed = { ...road, hazards: placeHazards(road) };
-  return { ...placed, walkSites: placeWalkSites(placed) };
+  return { ...road, hazards: placeHazards(road), walkSites };
 };
 
 const sampleAt = sampleAlong;
@@ -287,13 +308,16 @@ export const placeOnTrack = (
   point.z = sampleAt(track, track.worldZ, s) + sin(heading) * x;
 };
 
-export const firstSolidPropFrom = (track: Track, s: number): number => {
+export const firstAlong = (
+  list: readonly { readonly s: number }[],
+  s: number
+): number => {
   let low = 0;
-  let high = track.solidProps.length;
+  let high = list.length;
   while (low < high) {
     const middle = Math.floor((low + high) / 2);
-    const prop = track.solidProps[middle];
-    if (prop && prop.s < s) {
+    const entry = list[middle];
+    if (entry && entry.s < s) {
       low = middle + 1;
     } else {
       high = middle;

@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/stale-checkout.ts\"",
+            "timeout": 10,
+            "statusMessage": "Checking how far behind origin/main this checkout is"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -35,6 +35,7 @@ import {
   decodeRoomMessage,
   encodeLobbyCommand,
   SEAT_CLOSED,
+  SEAT_LEFT,
 } from "./messages.ts";
 import type {
   LobbyCommand,
@@ -103,7 +104,11 @@ export type SeatPhase = SeatState["phase"];
 
 export type SeatEvent =
   | Exclude<RoomMessage, { readonly kind: "act" | "walk" }>
-  | { readonly kind: "closed" | "left" | "silent" };
+  | { readonly kind: "closed" | "silent" }
+  | {
+      readonly kind: "left";
+      readonly code: typeof SEAT_CLOSED | typeof SEAT_LEFT;
+    };
 
 export const NEW_SEAT: SeatState = {
   phase: "connecting",
@@ -212,6 +217,7 @@ export interface RoomSeat {
   readonly flush: () => void;
   readonly frameDrawn: () => void;
   readonly leave: () => void;
+  readonly leaveRoom: () => void;
   readonly listen: (next: SeatListeners) => void;
   readonly phase: () => SeatPhase;
   readonly race: () => SeatRace | null;
@@ -277,9 +283,9 @@ export const openRoomSeat = (
     }
   };
 
-  const hangUp = (reason: string): void => {
+  const hangUp = (reason: string, code = SEAT_CLOSED): void => {
     stopPings();
-    socket.close(SEAT_CLOSED, reason);
+    socket.close(code, reason);
   };
 
   const sendReport = ({ client }: SeatRace, rows: readonly number[]): void => {
@@ -348,7 +354,7 @@ export const openRoomSeat = (
       }
       case "left": {
         reportOnce();
-        hangUp("The rider left this seat.");
+        hangUp("The rider left this seat.", event.code);
         break;
       }
       case "closed": {
@@ -490,7 +496,10 @@ export const openRoomSeat = (
       }
     },
     leave: () => {
-      move({ kind: "left" });
+      move({ code: SEAT_CLOSED, kind: "left" });
+    },
+    leaveRoom: () => {
+      move({ code: SEAT_LEFT, kind: "left" });
     },
     listen: (next) => {
       listeners = { ...listeners, ...next };

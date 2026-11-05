@@ -235,6 +235,7 @@ const planningRoad = (pieces: TrackPieces): Track =>
   compileTrack({
     ...ridgeRoad,
     chevrons: [],
+    crowds: [],
     hazardsPerKilometre: 0,
     pieces,
     trafficPerKilometre: 0,
@@ -397,6 +398,7 @@ describe("the pilot plans its speed along the road", () => {
       ...compileTrack({
         ...ridgeRoad,
         chevrons: [],
+        crowds: [],
         districts: [{ ...ridgeRoad.districts[0], lanesEachWay: 2 }],
         hazardsPerKilometre: 0,
         pieces: eased([[6000, 0, 0]]),

@@ -48,6 +48,7 @@ export interface Lobby {
   readonly colourOf: (id: string) => number;
   readonly due: (now: number) => boolean;
   readonly join: (key: string, name: string, now: number) => string | null;
+  readonly leave: (id: string, now: number) => void;
   readonly raceEnded: (now: number) => void;
   readonly raceStarted: () => void;
   readonly ready: (
@@ -104,6 +105,16 @@ export const createLobby = (
     custom: 0,
     public: PUBLIC_GATHER_MS,
   } as const satisfies Record<RoomKind, number>;
+
+  const keep = (kept: (member: Member) => boolean): boolean => {
+    const before = members.length;
+    members = members.filter(kept);
+    if (members.length === 0) {
+      rule = freshRule();
+      edition += 1;
+    }
+    return members.length !== before;
+  };
 
   const settleClock = (now: number): void => {
     clockFrom =
@@ -188,6 +199,10 @@ export const createLobby = (
       settleClock(now);
       return id;
     },
+    leave: (id, now) => {
+      keep((member) => member.id !== id);
+      settleClock(now);
+    },
     raceEnded: (now) => {
       phase = "gathering";
       since = now;
@@ -216,17 +231,8 @@ export const createLobby = (
     rule: () => rule,
     since: () => since,
     size: () => members.length,
-    sweep: (now) => {
-      const before = members.length;
-      members = members.filter(
-        ({ awaySince }) => awaySince === null || now - awaySince < AWAY_MS
-      );
-      if (members.length === 0) {
-        rule = freshRule();
-        edition += 1;
-      }
-      return members.length !== before;
-    },
+    sweep: (now) =>
+      keep(({ awaySince }) => awaySince === null || now - awaySince < AWAY_MS),
     view: (now) => ({
       edition,
       hostId: hostOf()?.id ?? null,

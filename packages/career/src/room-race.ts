@@ -13,7 +13,11 @@ import type { RacerId } from "./state.ts";
 import { STARTING_BIKE } from "./tables.ts";
 import type { RoadId, Tier } from "./tables.ts";
 
-const roomRules: RaceRules = { ...launchRules, celebrities: false };
+const roomRules: RaceRules = {
+  ...launchRules,
+  bikeMatches: [],
+  celebrities: false,
+};
 
 export const trafficChoices = ["light", "normal", "heavy"] as const;
 export const policeChoices = ["none", "normal", "many"] as const;
