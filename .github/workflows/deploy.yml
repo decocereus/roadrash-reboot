@@ -8,6 +8,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+  queue: max
+
 permissions:
   contents: read
 
@@ -15,9 +20,6 @@ jobs:
   prod:
     name: prod
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
-    concurrency:
-      group: deploy-prod
-      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
