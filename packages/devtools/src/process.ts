@@ -15,6 +15,7 @@ import { ProcessError } from "./process-error.ts";
 
 const POLL_MS = 200;
 const STOP_ATTEMPTS = 50;
+const STOP_GRACE = "10 seconds";
 const LOGGED_EXEC = 'log=$1; shift; exec "$@" >>"$log" 2>&1';
 
 export interface CommandOutput {
@@ -38,6 +39,15 @@ export const alive = (pid: number | null): boolean => {
   }
   try {
     process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const killNow = (target: number): boolean => {
+  try {
+    process.kill(target, "SIGKILL");
     return true;
   } catch {
     return false;
@@ -91,11 +101,12 @@ export class ToolProcesses extends Context.Service<
       args: readonly string[],
       options?: RunOptions
     ) => Effect.Effect<CommandOutput, ProcessError>;
-    readonly runShown: (
+    readonly runShown: <E = never, R = never>(
       file: string,
       args: readonly string[],
-      env: NodeJS.ProcessEnv
-    ) => Effect.Effect<number, ProcessError>;
+      env: NodeJS.ProcessEnv,
+      started?: (pid: number) => Effect.Effect<void, E, R>
+    ) => Effect.Effect<number, ProcessError | E, R>;
     readonly spawnScoped: (
       file: string,
       args: readonly string[],
@@ -178,10 +189,15 @@ export class ToolProcesses extends Context.Service<
           return { stderr, stdout };
         }, Effect.scoped);
 
-        const runShown = Effect.fn("ToolProcesses.runShown")(function* runShown(
+        const runShown = Effect.fn("ToolProcesses.runShown")(function* runShown<
+          E = never,
+          R = never,
+        >(
           file: string,
           args: readonly string[],
-          env: NodeJS.ProcessEnv
+          env: NodeJS.ProcessEnv,
+          started: (pid: number) => Effect.Effect<void, E, R> = () =>
+            Effect.void
         ) {
           const failure =
             (operation: "run" | "start") =>
@@ -197,12 +213,14 @@ export class ToolProcesses extends Context.Service<
               ChildProcess.make(file, [...args], {
                 env,
                 extendEnv: false,
+                forceKillAfter: STOP_GRACE,
                 stderr: "inherit",
                 stdin: "ignore",
                 stdout: "inherit",
               })
             )
             .pipe(Effect.mapError(failure("start")));
+          yield* started(handle.pid);
           return Number(
             yield* handle.exitCode.pipe(Effect.mapError(failure("run")))
           );

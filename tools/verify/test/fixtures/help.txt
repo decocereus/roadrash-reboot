@@ -19,4 +19,6 @@ rv: drive a Rushline verification instance in a windowed browser over DevTools
   rv rebuild    --run <id>
   rv down       --run <id>
   rv desktop    up|down <name>, or status                the Linux desktop session rv up starts on demand; each name is its own hold
-  rv bench      <label> -- <command> [args]              holds the bench lock while the command runs; other rv runs may not draw until it ends
+  rv book       <lane> <minutes> <purpose>               books a turn on this machine's bench queue and prints BOOKING=<id>
+  rv book       status | wait <id> [--every s] [--end] | release <id>
+  rv bench      <label> -- <command> [args]              runs the command as its booking's job; other rv runs may not draw until it ends

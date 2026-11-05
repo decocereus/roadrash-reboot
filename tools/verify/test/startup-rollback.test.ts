@@ -128,7 +128,13 @@ const upWhereWriteFails = async (failing: number) => {
 
   const files = Evidence.layer.pipe(
     Layer.provideMerge(
-      FileSystem.layerNoop({ makeDirectory: () => Effect.void })
+      FileSystem.layerNoop({
+        link: () => Effect.void,
+        makeDirectory: () => Effect.void,
+        makeTempFileScoped: () => Effect.succeed("bench-queue.claim"),
+        rename: () => Effect.void,
+        writeFileString: () => Effect.void,
+      })
     )
   );
 
@@ -143,7 +149,7 @@ const upWhereWriteFails = async (failing: number) => {
     script: `${CHECKOUT}/tools/verify/rushline.ts`,
     values: {
       dev: true,
-      every: "1",
+      end: false,
       hold: "120",
       path: "/",
       seconds: "5",
@@ -165,7 +171,10 @@ const upWhereWriteFails = async (failing: number) => {
     }).pipe(
       Effect.provide(
         Layer.mergeAll(
-          Layer.succeed(CurrentHost)(browserHosts["macos-metal"]),
+          Layer.succeed(CurrentHost)({
+            ...browserHosts["macos-metal"],
+            booking: "implicit",
+          }),
           processes,
           slots,
           server,

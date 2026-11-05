@@ -6,7 +6,7 @@ import {
   gcNamesSeen,
   summariseTrace,
 } from "@racer/devtools/analysis";
-import { holdBench } from "@racer/devtools/bench-lock";
+import { holdBench } from "@racer/devtools/bench-turn";
 import type { DesktopEnv } from "@racer/devtools/browser-host";
 import { evaluate } from "@racer/devtools/cdp";
 import { launch } from "@racer/devtools/chrome";

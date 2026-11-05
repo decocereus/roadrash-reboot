@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { refuseDuringBench } from "@racer/devtools/bench-lock";
+import { checkTurn } from "@racer/devtools/bench-turn";
 import { browserHosts } from "@racer/devtools/browser-host";
 import {
   awaitPortClosed,
@@ -194,7 +194,7 @@ export const startBrowser = Effect.fn("rv.startBrowser")(function* startBrowser(
 ) {
   const host = browserHosts[state.host];
   const desktopEnv = yield* desktopEnvFor(host, state.run, process.pid);
-  yield* refuseDuringBench("up");
+  yield* checkTurn("up");
   const flags = [
     ...sharedFlags(
       host.windowed.flags,

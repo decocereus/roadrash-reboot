@@ -1,15 +1,20 @@
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import type { YieldableError } from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import type * as PlatformError from "effect/PlatformError";
 import * as Schema from "effect/Schema";
 
+import { released } from "./cleanup.ts";
 import { alive } from "./process.ts";
 
 export const toolStateDir = path.join(tmpdir(), "rushline-verify");
+
+const CLAIM_POLL_MS = 50;
+const CLAIM_ATTEMPTS = 1200;
 
 const claimBody = Schema.Struct({ label: Schema.String, pid: Schema.Number });
 
@@ -91,12 +96,7 @@ const claimWith = (
     }
   });
 
-export const claimHolder = (file: string) =>
-  readingOf(file).pipe(
-    Effect.map((reading) => (reading.kind === "held" ? reading.holder : null))
-  );
-
-export const takeClaim = Effect.fn("claim.take")(function* takeClaim(
+const takeClaim = Effect.fn("claim.take")(function* takeClaim(
   file: string,
   label: string
 ) {
@@ -111,5 +111,37 @@ export const takeClaim = Effect.fn("claim.take")(function* takeClaim(
   return yield* claimWith(file, draft);
 }, Effect.scoped);
 
-export const dropClaim = (file: string) =>
+const dropClaim = (file: string) =>
   FileSystem.FileSystem.use((fs) => fs.remove(file, { force: true }));
+
+const awaitClaim = <Stuck extends YieldableError>(
+  file: string,
+  label: string,
+  stuck: (holder: ClaimBody) => Stuck
+) =>
+  Effect.gen(function* untilTaken() {
+    let outcome = yield* takeClaim(file, label);
+    for (
+      let attempt = 0;
+      outcome.kind === "held" && attempt < CLAIM_ATTEMPTS;
+      attempt += 1
+    ) {
+      yield* Effect.sleep(CLAIM_POLL_MS);
+      outcome = yield* takeClaim(file, label);
+    }
+    if (outcome.kind === "held") {
+      yield* stuck(outcome.holder);
+    }
+  });
+
+export const underClaim = <A, E, R, Stuck extends YieldableError>(
+  file: string,
+  label: string,
+  step: Effect.Effect<A, E, R>,
+  stuck: (holder: ClaimBody) => Stuck
+) =>
+  Effect.acquireUseRelease(
+    Effect.interruptible(awaitClaim(file, label, stuck)),
+    () => step,
+    () => released(dropClaim(file))
+  );

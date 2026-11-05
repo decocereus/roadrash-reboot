@@ -1,3 +1,5 @@
+import { hostname } from "node:os";
+
 import * as Context from "effect/Context";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -38,6 +40,15 @@ interface DisplayProbe {
 }
 
 type DesktopNeed = "none" | "hyprland";
+
+const bookingRules = ["required", "implicit"] as const;
+
+type BookingRule = (typeof bookingRules)[number];
+
+const sharedMachines: ReadonlySet<string> = new Set(["vimaan"]);
+
+export const bookingOn = (machine: string): BookingRule =>
+  sharedMachines.has(machine.split(".")[0] ?? "") ? "required" : "implicit";
 
 export interface DesktopEnv {
   readonly DISPLAY?: string;
@@ -263,11 +274,16 @@ export const hostOf = (
   );
 };
 
-export class CurrentHost extends Context.Service<CurrentHost, BrowserHost>()(
+export interface MachineHost extends BrowserHost {
+  readonly booking: BookingRule;
+}
+
+export class CurrentHost extends Context.Service<CurrentHost, MachineHost>()(
   "@racer/devtools/CurrentHost"
 ) {
   static readonly chosen = () =>
-    Layer.succeed(CurrentHost)(
-      hostOf(process.platform, process.env[HOST_SETTING])
-    );
+    Layer.succeed(CurrentHost)({
+      ...hostOf(process.platform, process.env[HOST_SETTING]),
+      booking: bookingOn(hostname()),
+    });
 }

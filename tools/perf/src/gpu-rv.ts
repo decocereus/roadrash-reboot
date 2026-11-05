@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { benchChildEnv } from "@racer/devtools/bench-lock";
+import { benchChildEnv } from "@racer/devtools/bench-turn";
 import { ToolProcesses } from "@racer/devtools/process";
 import * as Effect from "effect/Effect";
 
