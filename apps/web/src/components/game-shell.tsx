@@ -1,13 +1,14 @@
-import { roadOpen } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
 import { acceptEnvelope, refuseEnvelope } from "@racer/career/story";
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import { planFor } from "../career/flow.ts";
-import type { RaceEntry, RaceReport } from "../career/flow.ts";
+import type { RaceEntry } from "../career/flow.ts";
 import { diagnostics } from "../diagnostics/hub.ts";
 import type { RacePlan } from "../game/hud.ts";
+import { raceAgainOffered, stageOf } from "../navigation.ts";
+import type { View } from "../navigation.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { stepRideOut } from "../race-handoff.ts";
@@ -25,14 +26,7 @@ import { RaceHud } from "./screens/race-hud.tsx";
 import { ResultsScreen } from "./screens/results.tsx";
 import { RideOutScreen } from "./screens/ride-out.tsx";
 import { RouteBoardScreen } from "./screens/route-board.tsx";
-import {
-  afterResults,
-  backRoom,
-  clubhouse,
-  homeOf,
-  singleRace,
-  useFlow,
-} from "./use-flow.ts";
+import { useFlow } from "./use-flow.ts";
 import type { Flow } from "./use-flow.ts";
 import { useHandoff } from "./use-handoff.ts";
 
@@ -133,94 +127,80 @@ const CareerScreens = ({
   flow,
   rules,
   career,
+  view,
 }: {
   readonly flow: Flow;
   readonly rules: RaceRules;
   readonly career: CareerState;
+  readonly view: Extract<
+    View,
+    { readonly screen: "clubhouse" | "ending" | "gameOver" | "garage" }
+  >;
 }) => {
-  const { view } = flow;
-  if (view.screen === "clubhouse") {
-    return (
-      <ClubhouseScreen
-        career={career}
-        onBackRoom={() => {
-          flow.go(backRoom);
-        }}
-        onFriends={() => {
-          diagnostics().events.track({
-            choice: "friends",
-            event: "race_picked",
-          });
-          moveToRoom(newRoomId(), "made");
-        }}
-        onFindRace={() => {
-          diagnostics().events.track({
-            choice: "public",
-            event: "race_picked",
-          });
-          flow.go({ screen: "queue" });
-        }}
-        onEnvelope={(take) => {
-          flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
-        }}
-        onGarage={() => {
-          flow.go({ screen: "garage" });
-        }}
-        onRide={(roadId) => {
-          diagnostics().events.track({
-            choice: "career",
-            event: "race_picked",
-          });
-          flow.rideOut("career", roadId);
-        }}
-        promotion={view.promotion}
-        rules={rules}
-      />
-    );
+  switch (view.screen) {
+    case "clubhouse": {
+      return (
+        <ClubhouseScreen
+          career={career}
+          onBackRoom={flow.leave}
+          onFriends={() => {
+            diagnostics().events.track({
+              choice: "friends",
+              event: "race_picked",
+            });
+            moveToRoom(newRoomId(), "made");
+          }}
+          onFindRace={() => {
+            diagnostics().events.track({
+              choice: "public",
+              event: "race_picked",
+            });
+            flow.send({ kind: "picked", screen: "queue" });
+          }}
+          onEnvelope={(take) => {
+            flow.commit(take ? acceptEnvelope(career) : refuseEnvelope(career));
+          }}
+          onGarage={() => {
+            flow.send({ kind: "picked", screen: "garage" });
+          }}
+          onRide={(roadId) => {
+            diagnostics().events.track({
+              choice: "career",
+              event: "race_picked",
+            });
+            flow.rideOut("career", roadId);
+          }}
+          promotion={view.promotion}
+          rules={rules}
+        />
+      );
+    }
+    case "ending": {
+      return <EndingScreen career={career} onBackRoom={flow.leave} />;
+    }
+    case "gameOver": {
+      return (
+        <GameOverScreen
+          career={career}
+          onBackRoom={flow.leave}
+          onNewCareer={flow.newCareer}
+        />
+      );
+    }
+    case "garage": {
+      return (
+        <GarageScreen
+          career={career}
+          onBack={flow.leave}
+          onTrade={flow.commit}
+        />
+      );
+    }
+    default: {
+      return view satisfies never;
+    }
   }
-  if (view.screen === "garage") {
-    return (
-      <GarageScreen
-        career={career}
-        onBack={() => {
-          flow.go(clubhouse);
-        }}
-        onTrade={flow.commit}
-      />
-    );
-  }
-  if (view.screen === "ending") {
-    return (
-      <EndingScreen
-        career={career}
-        onBackRoom={() => {
-          flow.go(backRoom);
-        }}
-      />
-    );
-  }
-  if (view.screen === "gameOver") {
-    return (
-      <GameOverScreen
-        career={career}
-        onBackRoom={() => {
-          flow.go(backRoom);
-        }}
-        onNewCareer={flow.newCareer}
-      />
-    );
-  }
-  return null;
 };
-
-const raceAgainOffered = (
-  report: RaceReport,
-  career: CareerState | null
-): boolean =>
-  report.ledger === null ||
-  (career !== null &&
-    afterResults(report) === clubhouse &&
-    roadOpen(career, report.roadId));
 
 const MenuScreens = ({
   flow,
@@ -237,14 +217,10 @@ const MenuScreens = ({
     return (
       <BackRoomScreen
         failure={flow.failure}
-        onContinue={() => {
-          if (career) {
-            flow.go(homeOf(career));
-          }
-        }}
+        onContinue={flow.leave}
         onNewCareer={flow.newCareer}
         onQuickRace={() => {
-          flow.go(singleRace);
+          flow.send({ kind: "picked", screen: "routeBoard" });
         }}
         onStartOver={flow.eraseSave}
         save={flow.save}
@@ -254,103 +230,96 @@ const MenuScreens = ({
   if (!rules) {
     return null;
   }
-  if (view.screen === "routeBoard") {
-    return (
-      <RouteBoardScreen
-        career={career}
-        onBack={() => {
-          flow.go(backRoom);
-        }}
-        onPick={flow.setPick}
-        onRace={() => {
-          diagnostics().events.track({
-            choice: "single",
-            event: "race_picked",
-          });
-          flow.rideOut("quick", flow.pick.roadId);
-        }}
-        pick={flow.pick}
-        ready={flow.ready}
-        rules={rules}
-      />
-    );
-  }
-  if (view.screen === "queue") {
-    return (
-      <Suspense>
-        <QuickRace
-          onBack={() => {
-            flow.go(clubhouse);
+  switch (view.screen) {
+    case "clubhouse":
+    case "ending":
+    case "gameOver":
+    case "garage": {
+      return career ? (
+        <CareerScreens career={career} flow={flow} rules={rules} view={view} />
+      ) : null;
+    }
+    case "queue": {
+      return (
+        <Suspense>
+          <QuickRace onBack={flow.leave} />
+        </Suspense>
+      );
+    }
+    case "race": {
+      return null;
+    }
+    case "results": {
+      return (
+        <ResultsScreen
+          canRaceAgain={raceAgainOffered(view.report, career)}
+          career={career}
+          onContinue={flow.leave}
+          onRaceAgain={() => {
+            diagnostics().events.track({ event: "race_again" });
+            flow.rideOut(view.report.mode, view.report.roadId);
           }}
+          repeatRun={
+            view.report.ledger !== null &&
+            career?.qualified[career.tier][view.report.roadId] !== undefined
+          }
+          report={view.report}
+          riding={career?.bikeId ?? flow.pick.bikeId}
         />
-      </Suspense>
-    );
-  }
-  if (view.screen === "room") {
-    return (
-      <Suspense>
-        <RoomLobby
-          onBack={() => {
-            globalThis.location.assign("/");
-          }}
-          onDoorMoment={onDoorMoment}
-          onLost={flow.roomLost}
+      );
+    }
+    case "rideOut": {
+      return (
+        <RideOut
+          career={career}
+          failure={flow.failure}
+          entry={view.entry}
+          onBack={flow.leave}
           onPrepare={flow.prepare}
           onStart={flow.start}
-          roomId={view.roomId}
           ready={flow.ready}
+          rules={rules}
         />
-      </Suspense>
-    );
+      );
+    }
+    case "room": {
+      return (
+        <Suspense>
+          <RoomLobby
+            onBack={flow.leave}
+            onDoorMoment={onDoorMoment}
+            onLost={flow.roomLost}
+            onPrepare={flow.prepare}
+            onStart={flow.start}
+            roomId={view.roomId}
+            ready={flow.ready}
+          />
+        </Suspense>
+      );
+    }
+    case "routeBoard": {
+      return (
+        <RouteBoardScreen
+          career={career}
+          onBack={flow.leave}
+          onPick={flow.setPick}
+          onRace={() => {
+            diagnostics().events.track({
+              choice: "single",
+              event: "race_picked",
+            });
+            flow.rideOut("quick", flow.pick.roadId);
+          }}
+          pick={flow.pick}
+          ready={flow.ready}
+          rules={rules}
+        />
+      );
+    }
+    default: {
+      return view satisfies never;
+    }
   }
-  if (view.screen === "rideOut") {
-    return (
-      <RideOut
-        career={career}
-        failure={flow.failure}
-        entry={view.entry}
-        onBack={() => {
-          flow.go(view.entry.mode === "career" ? clubhouse : singleRace);
-        }}
-        onPrepare={flow.prepare}
-        onStart={flow.start}
-        ready={flow.ready}
-        rules={rules}
-      />
-    );
-  }
-  if (view.screen === "results") {
-    return (
-      <ResultsScreen
-        canRaceAgain={raceAgainOffered(view.report, career)}
-        career={career}
-        onContinue={() => {
-          if (view.report.room) {
-            globalThis.location.assign("/");
-          } else {
-            flow.go(afterResults(view.report));
-          }
-        }}
-        onRaceAgain={() => {
-          diagnostics().events.track({ event: "race_again" });
-          if (view.report.room) {
-            moveToRoom(view.report.room.roomId, "rematch");
-          } else {
-            flow.rideOut(view.report.mode, view.report.roadId);
-          }
-        }}
-        repeatRun={
-          view.report.ledger !== null &&
-          career?.qualified[career.tier][view.report.roadId] !== undefined
-        }
-        report={view.report}
-        riding={career?.bikeId ?? flow.pick.bikeId}
-      />
-    );
-  }
-  return career ? (
-    <CareerScreens career={career} flow={flow} rules={rules} />
-  ) : null;
 };
 
 const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
@@ -358,19 +327,14 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
   if (view.screen !== "race") {
     return null;
   }
-  const { finish } = view;
+  const { stage } = view;
   return (
     <>
-      <RaceHud feed={flow.feed} settled={finish !== null} />
-      {finish && (
-        <FinishBanner
-          onContinue={() => {
-            flow.go({ report: finish, screen: "results" });
-          }}
-          report={finish}
-        />
+      <RaceHud feed={flow.feed} settled={stage.kind === "finishing"} />
+      {stage.kind === "finishing" && (
+        <FinishBanner onContinue={flow.leave} report={stage.report} />
       )}
-      {view.paused && (
+      {stage.kind === "paused" && (
         <PauseScreen
           career={flow.career}
           feed={flow.feed}
@@ -402,9 +366,7 @@ export const GameShell = () => {
       />
       <MenuScreens flow={flow} onDoorMoment={setAtDoor} />
       <RaceScreens flow={flow} />
-      {flow.view.screen !== "boot" &&
-        flow.view.screen !== "race" &&
-        !atDoor && <DataNotice />}
+      {stageOf(flow.view) === "menu" && !atDoor && <DataNotice />}
       {flow.save.status === "ready" && flow.save.unsaved && (
         <p
           className="bg-red text-text text-label fixed top-0 left-1/2 z-50 -translate-x-1/2 px-4 py-1 font-semibold uppercase"
