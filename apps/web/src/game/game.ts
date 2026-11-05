@@ -206,6 +206,7 @@ const startGame = (
     drawRider,
     dropFleet,
     dropViews,
+    fightsTick,
     followPlayer,
     holdStill,
     placeFleet,
@@ -385,11 +386,13 @@ const startGame = (
   const stepOnce = () => {
     stage.race.step(frameOf());
     bench?.record(stage.race.view);
-    for (const event of stage.race.view.events) {
+    fightsTick();
+    const heard = stage.race.events();
+    for (const event of heard) {
       touchDown(event);
     }
     if (session.phase !== "attract") {
-      react();
+      react(heard);
     }
   };
 
