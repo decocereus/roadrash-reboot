@@ -34,6 +34,11 @@ const checks: readonly Check[] = [
     stage: "static",
   },
   { command: ["pnpm", "check:roots"], name: "roots", stage: "static" },
+  {
+    command: ["pnpm", "check:action-pins"],
+    name: "action pins",
+    stage: "static",
+  },
   { command: ["pnpm", "check:art"], name: "art", stage: "static" },
   {
     command: ["pnpm", "check:renderer-imports"],

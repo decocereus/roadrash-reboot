@@ -1418,17 +1418,18 @@ Test files:
 
 ### Repository checks
 
-`pnpm verify` and the repository checks it runs: the rule ledger, the roots, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest.
+`pnpm verify` and the repository checks it runs: the rule ledger, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
 
 - Id: `repo-checks`
 - Start: `scripts/verify.ts`, `scripts/features.ts`, `scripts/rule-ledger.ts`
 - Docs: [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: none yet
 - Perf: none yet
-- Owns: `scripts/verify.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/setup-effect-reference.ts`, `scripts/write-feature-map.ts`
+- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
 
 Source files:
 
+- `scripts/check-action-pins.ts`
 - `scripts/check-css-comments.ts`
 - `scripts/check-feature-map.ts`
 - `scripts/check-renderer-imports.ts`
@@ -1444,20 +1445,24 @@ Source files:
 - `scripts/player-features.ts`
 - `scripts/postcss-tokenize.d.ts`
 - `scripts/renderer-imports.ts`
+- `scripts/repo-features.ts`
 - `scripts/road-features.ts`
 - `scripts/room-features.ts`
 - `scripts/rule-ledger.ts`
 - `scripts/session-features.ts`
 - `scripts/setup-effect-reference.ts`
+- `scripts/stale-checkout.ts`
 - `scripts/verify.ts`
 - `scripts/write-feature-map.ts`
 
 Test files:
 
+- `scripts/check-action-pins.test.ts`
 - `scripts/check-size.test.ts`
 - `scripts/feature-map.test.ts`
 - `scripts/renderer-imports.test.ts`
 - `scripts/rule-ledger.test.ts`
+- `scripts/stale-checkout.test.ts`
 
 ### Race rooms
 
