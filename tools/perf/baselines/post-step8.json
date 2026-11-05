@@ -2824,6 +2824,30 @@
       "side": "B",
       "source": "baseline-2026-11-04T20-30-08-238Z-4e4d884-4e4d884",
       "value": 188205
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.pedestrians",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "value": 327348
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.stalls",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "value": 55976
+    },
+    {
+      "environment": "build",
+      "metric": "assets.glb.total",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "value": 3561280
     }
   ],
   "revisions": {
@@ -3738,6 +3762,29 @@
       "sides": {
         "A": "4e4d8847cb4150987d8439bc5ae95bb253792b33",
         "B": "4e4d8847cb4150987d8439bc5ae95bb253792b33"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1153859, \"bytes.route.root.gzip\": 614079, \"bytes.route.kit.raw\": 952055, \"bytes.route.kit.gzip\": 544605, \"bytes.game.raw\": 1927071, \"bytes.game.gzip\": 830119, \"bytes.game.incremental.raw\": 773212, \"bytes.game.incremental.gzip\": 216040, \"bytes.worker.raw\": 737045, \"bytes.worker.gzip\": 189458, \"bytes.client.raw\": 2059615, \"bytes.client.gzip\": 882619}",
+        "builtB": "{\"bytes.route.root.raw\": 1153859, \"bytes.route.root.gzip\": 614079, \"bytes.route.kit.raw\": 952055, \"bytes.route.kit.gzip\": 544605, \"bytes.game.raw\": 1927071, \"bytes.game.gzip\": 830119, \"bytes.game.incremental.raw\": 773212, \"bytes.game.incremental.gzip\": 216040, \"bytes.worker.raw\": 737147, \"bytes.worker.gzip\": 189473, \"bytes.client.raw\": 2059615, \"bytes.client.gzip\": 882619}",
+        "harnessDigest": "9a2051b12e466b0e43d8def5a6e77c89ff1177b7793f14c2032dff5b4800d7ef",
+        "lockfileSha256": "26913eb3a25a86876c546e642bba405a612c98147387ed3b011c6f460ba9b320",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "da4851db676051f3399e009c3d3524f8170d027e772faa55145dd966eadf1860",
+        "sideBSourceDigest": "da4851db676051f3399e009c3d3524f8170d027e772faa55145dd966eadf1860",
+        "why": "Breakwater Run's market adds the stall kit as one model on the art CDN, and the browse, haggle and serve clips grow the pedestrian model. No code byte row moved past its limit, so those rows stay."
+      },
+      "id": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d743540c78b1cfd2b7e28c4d4c7514306d26241e",
+        "B": "d743540c78b1cfd2b7e28c4d4c7514306d26241e"
       }
     }
   ],

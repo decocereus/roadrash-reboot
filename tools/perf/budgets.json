@@ -72,7 +72,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "40411cd807a434802556e6cc31e7902abf618462802a283f1e1d561bcd53f5f8"
+    "summarySha256": "4217d6eb128b337a697c52692004ef2f8ab22ac52e902fa158057f2d9ebcd090"
   },
   "limits": [
     {
@@ -132,7 +132,7 @@
       "metric": "assets.glb.pedestrians",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-02T19-14-19-116Z-d9bd0b2-d9bd0b2",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
       "unit": "B"
     },
     {
@@ -264,7 +264,7 @@
       "metric": "assets.glb.stalls",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-10-31T08-36-37-604Z-8b0a017-8b0a017",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
       "unit": "B"
     },
     {
@@ -276,7 +276,7 @@
       "metric": "assets.glb.total",
       "paired": null,
       "scenario": null,
-      "source": "baseline-2026-11-03T11-18-12-058Z-094d561-8f2bb84",
+      "source": "baseline-2026-11-05T08-54-54-799Z-d743540-d743540",
       "unit": "B"
     },
     {
