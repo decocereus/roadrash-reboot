@@ -28,6 +28,7 @@ export interface RoomRun extends RaceRun {
   readonly confirmed: RaceView;
   readonly countdownSeconds: () => number;
   readonly frameDrawn: () => void;
+  readonly lagging: () => boolean;
   readonly leave: () => void;
   readonly listen: (onConfirmed: (view: RaceView) => void) => void;
   readonly report: () => RoomReport;
@@ -46,6 +47,7 @@ export const createRoomRun = (
     confirmed: client.confirmed,
     countdownSeconds: () => (1 - seat.target()) * TICK_SECONDS,
     frameDrawn: seat.frameDrawn,
+    lagging: client.lagging,
     leave: seat.leave,
     listen: (onConfirmed) => {
       seat.listen({

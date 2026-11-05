@@ -54,6 +54,7 @@ const Speedometer = ({ hud }: { readonly hud: HudState }) => (
     field={hud.riderCount}
     gear={hud.offBike ? 0 : hud.gear}
     label="Speed"
+    warning={hud.lagging ? "Lag" : null}
     max={DIAL_TOP_KMH}
     place={ordinal(hud.position)}
     progress={hud.progress}

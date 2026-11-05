@@ -9,7 +9,7 @@ import { weapons } from "@racer/sim/weapons";
 import type { Recorder } from "../diagnostics/recorder.ts";
 import type { Sound } from "./audio.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
-import type { GameEvents, GamePhase, Notice } from "./hud.ts";
+import type { GameEvents, GamePhase, Notice, RacePlan } from "./hud.ts";
 import type { Stage } from "./scene-lifecycle.ts";
 
 const BUSTED_SECONDS = 0.8;
@@ -65,6 +65,7 @@ interface FeedbackSession {
   readonly settled: RaceOutcome | null;
   readonly holdLeft: number;
   readonly countdown: number;
+  readonly plan: RacePlan | null;
 }
 
 interface FeedbackParts {
@@ -207,6 +208,7 @@ export const bindFeedback = ({
       ),
       distanceLeft: distanceLeft(stage.track, me),
       gear: me.gear,
+      lagging: session.plan?.room?.lagging() ?? false,
       muted: feedback.muted,
       notice: feedback.noticeLeft > 0 ? feedback.notice : "",
       noticeDetail: feedback.noticeDetail,

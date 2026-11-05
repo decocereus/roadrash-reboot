@@ -1503,6 +1503,7 @@ Test files:
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
 - `packages/sim/src/room-jumps.test.ts`
+- `packages/sim/src/room-lag.test.ts`
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`

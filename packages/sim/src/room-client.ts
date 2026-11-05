@@ -26,6 +26,9 @@ const MOST_LEAD_TICKS = INPUT_HORIZON;
 
 const FELT_JUMP_METRES = 0.25;
 
+const LAG_WINDOW_TICKS = 60;
+const LAGGING_FROM_TICKS = 20;
+
 const JUMP_CAUSES = ["behindServer", "otherRiders", "ownControl"] as const;
 
 type JumpCause = (typeof JUMP_CAUSES)[number];
@@ -48,6 +51,7 @@ interface RoomStats {
 
 export interface RoomClient {
   readonly confirmed: RaceState;
+  readonly lagging: () => boolean;
   readonly mine: RiderState;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
@@ -97,6 +101,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   let sentThrough = 0;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
+  const overruled = new Uint8Array(LAG_WINDOW_TICKS);
+  let overruledTicks = 0;
+  let lagging = false;
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
     desyncs: 0,
@@ -195,6 +202,20 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     staleCause = "otherRiders";
   };
 
+  const noteRoomChoice = (frame: TickFrame, reached: number): void => {
+    const slot = frame.tick % LAG_WINDOW_TICKS;
+    const lost =
+      reached < frame.tick ||
+      ownControls[slotOf(frame.tick)] !== frame.controls.get(me);
+    overruledTicks += (lost ? 1 : 0) - (overruled[slot] ?? 0);
+    overruled[slot] = lost ? 1 : 0;
+    if (overruledTicks >= LAGGING_FROM_TICKS) {
+      lagging = true;
+    } else if (overruledTicks === 0) {
+      lagging = false;
+    }
+  };
+
   return {
     confirm: (frame, serverHash) => {
       if (frame.tick !== confirmed.tick + 1) {
@@ -209,6 +230,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         }
       }
       const reached = predicted.tick;
+      noteRoomChoice(frame, reached);
       if (reached < frame.tick) {
         const fromS = mine.s;
         const fromX = mine.x;
@@ -229,6 +251,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
     },
     confirmed,
+    lagging: () => lagging,
     mine,
     predict: (control) => {
       settle();
