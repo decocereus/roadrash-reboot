@@ -217,6 +217,7 @@ export const createMembers = ({
     }
     if (body.id !== id) {
       body.id = id;
+      body.shoving = 0;
       body.view.x = walk.x;
       body.view.z = walk.z;
     }
