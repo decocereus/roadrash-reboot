@@ -63,7 +63,7 @@ A save whose tier is above the top tier is refused as `invalid` at `tier`, so th
 
 ## Asset loading
 
-`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the nine boot models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. A celebrity rider is not among them: the game's wardrobe asks the same runtime for each celebrity a race wears, through `loadCelebrity`, while it prepares that race. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection that the Back Room shows after "Could not start the game:".
+`bootGame` in `apps/web/src/asset-load.ts` starts the game chunk and `apps/web/src/asset-runtime.ts` together. The runtime runs `loadAssets` from `apps/web/src/assets/load.ts` with `Effect.runForkWith` and the mount's `AbortSignal`, and it is the only browser code besides the uploader and the race rules that forks an Effect. It downloads the nine boot models, parses each with the game's parser once the game chunk has arrived, and waits for the display font. A celebrity rider is not among them: the game's wardrobe asks the same runtime for each celebrity a race wears, through `loadCelebrity`, while it prepares that race. The bridge turns the outcome into a promise: the game, `null` when the mount ended first, or a rejection. The Back Room and the ride-out card show its message after "Could not start the game:". In a race room the same line replaces the lobby, with Reload and Leave, and the rider holds no seat, so no race waits for a game that cannot load it.
 
 | Tag | Retried | What the player sees |
 | --- | --- | --- |
@@ -81,6 +81,7 @@ A celebrity's download and parse follow the same rules and retries, keyed by its
 | Only a completed download enters the byte cache. A failed download or answer caches nothing, so the next mount fetches again. A parse failure keeps the completed bytes but no decoded model, so a later mount parses them again without fetching. Decoded models belong to one mount and are released once when it ends. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | A race loads only the celebrities its riders wear, once each, and a plain race loads none. The next race with the same rider fetches and parses nothing. The wardrobe releases a celebrity once when a race is built without it, and every celebrity it holds once when the game is disposed. A failed celebrity load fails the race's dressing and the next race fetches it again. | `pnpm test` | `apps/web/test/celebrity-load.test.ts` | None |
 | A race that was not built never reports a room's seat as loaded: the seat leaves and moves back to the room. On the ride-out card it offers Retry and Back and starts nothing. An outcome that arrives after the card closed starts nothing. | `pnpm test` | `apps/web/src/race-handoff.ts`, `apps/web/test/race-handoff.test.ts` | None |
+| A game that failed to boot holds no seat in a race room. The room shows "Could not start the game:" with the message, Reload and Leave, in place of the lobby. | `pnpm test` | `apps/web/src/components/room-lobby.tsx`, `apps/web/test/room-boot-failure.test.tsx` | None |
 | Only a transport or body-read failure or a 5xx answer is retried, once, through `Effect.retry`. A 4xx answer, a parser rejection, a font failure and an interruption are not retried. | `pnpm test` | `apps/web/test/asset-load.test.ts` | None |
 | Each asset failure is a `Schema.TaggedError` built with its constructor, and a thrown failure keeps what was thrown as its `cause`. A rejected HTTP status has nothing thrown to keep. | `rushline/no-manual-tagged-construction`, `rushline/require-wrapped-cause` | `apps/web/src/assets` | None |
 
@@ -96,13 +97,14 @@ In dev and preview the middleware in `apps/web/vite.config.ts` answers instead. 
 
 ## Shader preparation
 
-`createPreparation` in `apps/web/src/game/preparation.ts` turns a race's shader preparation into a typed outcome instead of a rejection, and the ride-out card handles every outcome the way it handled a finished preparation before: the race starts. Nothing new is shown to the player.
+`prepare` in `apps/web/src/game/game.ts` dresses and builds a race, and `createPreparation` in `apps/web/src/game/preparation.ts` compiles and warms its shaders. Each turns a failure into a typed outcome instead of a rejection, and `preparedRace` in `apps/web/src/prepare-outcome.ts` sorts every outcome into a race that was built or one that was not. A built race starts, and the player sees nothing new. A `dress` or `build` failure leaves no race to start, so the ride-out card offers Retry and Back, and in a race room the seat leaves the race, as [Asset loading](#asset-loading) describes.
 
 | Outcome | When | What happens |
 | --- | --- | --- |
 | `ready` | Every program compiled. | The game warms up and draws the start grid. |
 | `timedOut` | The compile was still pending after five seconds. | The game warms up anyway, so the first frame may stall. |
-| `failed`, stage `build` | Building the race threw. | The flow records a recorder fault from `prepare build` with the error's message. |
+| `failed`, stage `dress` | A celebrity rider the race wears did not load. | The game records a recorder fault from `prepare dress` with the error's message. No race is built: the ride-out card offers Retry and Back, and a room seat leaves the race. |
+| `failed`, stage `build` | Building the race threw. | The game records a recorder fault from `prepare build` with the error's message. No race is built, as for `dress`. |
 | `failed`, stage `compile` | `compile` threw. | The game warms up anyway and records a fault from `prepare compile`. |
 | `failed`, stage `warm` | The warm-up draw threw. | Staging is put back and the game records a fault from `prepare warm`. |
 | `lost` | The WebGL context was lost before or during the compile. | Nothing warms while the context is lost. The race stays as it is. |
@@ -110,4 +112,4 @@ In dev and preview the middleware in `apps/web/vite.config.ts` answers instead. 
 
 | Rule | Check | Scope | Exemption |
 | --- | --- | --- | --- |
-| A thrown build, compile or warm-up becomes a `failed` outcome that keeps the thrown error as its `cause` and names its stage, and the game records it as a recorder fault from `prepare <stage>`. No preparation rejects, and none changes what the pre-race screen shows. | `pnpm test` | `apps/web/src/game/preparation.ts`, `apps/web/test/preparation.test.ts` | None |
+| A thrown dress, build, compile or warm-up becomes a `failed` outcome that keeps the thrown error as its `cause` and names its stage, and the game records it as a recorder fault from `prepare <stage>`. No preparation rejects. Only a `dress` or `build` failure changes what the pre-race screen shows, because it leaves no race to start. | `pnpm test` | `apps/web/src/game/preparation.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/prepare-outcome.test.ts` | None |

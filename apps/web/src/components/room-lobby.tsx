@@ -23,6 +23,7 @@ import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
 import {
   GuestNameScreen,
   QueueScreen,
+  RoomFailedScreen,
   RoomInviteScreen,
   RoomLobbyScreen,
 } from "./screens/room-lobby.tsx";
@@ -85,6 +86,7 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
 interface RoomProps {
   readonly roomId: string;
   readonly ready: boolean;
+  readonly failure: string;
   readonly onBack: () => void;
   readonly onDoorMoment: (atDoor: boolean) => void;
   readonly onLost: () => void;
@@ -283,7 +285,7 @@ const SeatedLobby = ({
   );
 };
 
-export const RoomLobby = (props: RoomProps) => {
+const RoomEntry = (props: RoomProps) => {
   const [name, setName] = useState(storedGuestName);
   const [invited, setInvited] = useState(
     () => roomArrivalOf(globalThis.location.search) === "link"
@@ -334,6 +336,17 @@ export const RoomLobby = (props: RoomProps) => {
     />
   );
 };
+
+export const RoomLobby = (props: RoomProps) =>
+  props.failure === "" ? (
+    <RoomEntry {...props} />
+  ) : (
+    <RoomFailedScreen
+      failure={props.failure}
+      onBack={props.onBack}
+      roomId={props.roomId}
+    />
+  );
 
 const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
   const [riders, setRiders] = useState(1);
