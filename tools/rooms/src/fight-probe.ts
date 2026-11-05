@@ -3,18 +3,47 @@ export const FIGHT_PROBE = `(() => {
   const frames = [];
   const presses = [];
   const attacks = [];
-  globalThis.__fightProbe = { attacks, frames, presses };
-  const watchConfirms = (client) => {
+  const falls = [];
+  const lostButtons = [];
+  const placed = [];
+  const sends = [];
+  globalThis.__fightProbe = { attacks, falls, frames, lostButtons, placed, presses, sends };
+  const BUTTONS_PLACE = 256 * 256 * 256;
+  const watchClient = (client, me) => {
     if (client.__probed) { return; }
     client.__probed = true;
-    const confirm = client.confirm;
+    const { confirm, predict, writeInputs } = client;
+    const own = new Map();
     const was = [];
+    client.predict = (control) => {
+      const went = predict(control);
+      if (went) { own.set(client.predicted.tick, control); }
+      return went;
+    };
+    client.writeInputs = (view) => {
+      const bytes = writeInputs(view);
+      if (bytes > 0) { sends.push({ at: Date.now(), through: client.predicted.tick }); }
+      return bytes;
+    };
     client.confirm = (frame, hash) => {
       confirm(frame, hash);
+      const at = Date.now();
+      const { tick } = client.confirmed;
+      placed.push({ at, tick, x: [client.confirmed.riders[0].x, client.confirmed.riders[1].x] });
+      const sent = own.get(tick);
+      own.delete(tick);
+      if (sent !== undefined && Math.floor(sent / BUTTONS_PLACE) > 0 && frame.controls.get(me) !== sent) {
+        lostButtons.push({ at, tick });
+      }
+      for (const event of client.confirmed.events) {
+        if ((event.kind === "crash" || event.kind === "knockedDown") && event.rider <= 1) {
+          falls.push({ at, by: event.by, cause: event.kind === "crash" ? event.cause : "knockedDown", rider: event.rider, s: client.confirmed.riders[event.rider].s, tick });
+        }
+      }
       [0, 1].forEach((index) => {
         const { attack } = client.confirmed.riders[index];
         if (attack !== "none" && attack !== was[index]) {
-          attacks.push({ at: Date.now(), attack, rider: index, tick: client.confirmed.tick });
+          attacks.push({ at, attack, rider: index, tick });
         }
         was[index] = attack;
       });
@@ -38,7 +67,7 @@ export const FIGHT_PROBE = `(() => {
   };
   const rider = (state, index) => {
     const r = state.riders[index];
-    return { attack: r.attack, attackTicks: r.attackTicks, hitStun: r.hitStun, mode: r.mode, s: r.s, speed: r.speed, stamina: r.stamina, x: r.x };
+    return { attack: r.attack, attackTicks: r.attackTicks, hitStun: r.hitStun, lastHitTick: r.lastHitTick, mode: r.mode, s: r.s, speed: r.speed, stamina: r.stamina, x: r.x };
   };
   const sample = () => {
     const room = globalThis.__rushlineRoom;
@@ -47,7 +76,7 @@ export const FIGHT_PROBE = `(() => {
       const { client } = room;
       const humans = [0, 1];
       watchFigures(cast);
-      watchConfirms(client);
+      watchClient(client, room.me);
       frames.push({
         at: Date.now(),
         confirmed: humans.map((i) => rider(client.confirmed, i)),
@@ -73,7 +102,7 @@ export const POSITIONS = `(() => {
 })()`;
 
 export const TAKE_FRAMES = (since: number): string =>
-  `(() => { const p = globalThis.__fightProbe; return { attacks: p.attacks.filter((f) => f.at >= ${since}), frames: p.frames.filter((f) => f.at >= ${since}), presses: p.presses.filter((f) => f.at >= ${since}) }; })()`;
+  `(() => { const p = globalThis.__fightProbe; const after = (list) => list.filter((f) => f.at >= ${since}); return { attacks: after(p.attacks), falls: after(p.falls), frames: after(p.frames), lostButtons: after(p.lostButtons), placed: after(p.placed), presses: after(p.presses), sends: after(p.sends) }; })()`;
 
 export const FIGHT_PILOT = `(() => {
   if (globalThis.__fightPilot) { return "kept"; }

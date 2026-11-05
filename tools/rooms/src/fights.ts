@@ -340,9 +340,8 @@ interface Places {
 
 interface BoutRow extends FightRow {
   readonly fired: boolean;
-  readonly pressed: boolean;
   readonly gapAcross: number;
-  readonly rtt: number;
+  readonly pressed: boolean;
 }
 
 const strikeOnce = Effect.fn("rooms.fights.strike")(function* strikeOnce(
@@ -395,21 +394,43 @@ const strikeOnce = Effect.fn("rooms.fights.strike")(function* strikeOnce(
     (one) => one.rider === attacker && one.attack === kind
   );
   const row: BoutRow = {
-    ...fightRow(kind, attacker, victim, pressAt ?? since, fromVictim.frames),
+    ...fightRow(
+      kind,
+      attacker,
+      victim,
+      pressAt ?? since,
+      fromAttacker,
+      fromVictim
+    ),
     fired: pressAt !== undefined && roomRan,
     gapAcross: Math.abs(before.bX - before.aX),
     pressed: pressAt !== undefined,
-    rtt: fromVictim.frames.at(-1)?.rtt ?? 0,
   };
   return row;
 });
 
+const NOTHING_TAKEN: TakenFrames = {
+  attacks: [],
+  falls: [],
+  frames: [],
+  lostButtons: [],
+  placed: [],
+  presses: [],
+  sends: [],
+};
+
 const neverAlongside = ({ attacker, kind }: Bout): BoutRow => ({
-  ...fightRow(kind, attacker, attacker === 0 ? 1 : 0, 0, []),
+  ...fightRow(
+    kind,
+    attacker,
+    attacker === 0 ? 1 : 0,
+    0,
+    NOTHING_TAKEN,
+    NOTHING_TAKEN
+  ),
   fired: false,
   gapAcross: 0,
   pressed: false,
-  rtt: 0,
 });
 
 const fightOnce = Effect.fn("rooms.fights.bout")(function* fightOnce(
@@ -461,6 +482,9 @@ const verdictOf = (row: BoutRow): string => {
   return row.passed ? "pass" : "FAIL";
 };
 
+const msOf = (value: number | null): number | string =>
+  value === null ? "n/a" : Math.round(value);
+
 const tableOf = (
   network: RunName,
   rows: readonly BoutRow[]
@@ -470,21 +494,29 @@ const tableOf = (
       network,
       `${row.kind} ${row.attacker} on ${row.victim}`,
       verdictOf(row),
-      row.lead,
-      row.drawnFrames,
       row.hitLanded
         ? `hit, ${Math.round(row.staminaLost)} stamina, ${row.flinchFrames} flinch frames`
         : "miss",
-      row.pressToShownMs === null ? "never" : Math.round(row.pressToShownMs),
-      row.pressToLandMs === null ? "n/a" : Math.round(row.pressToLandMs),
-      row.legOutBeforeHitMs === null
+      row.lead ?? "n/a",
+      msOf(row.rttAtPressMs),
+      msOf(row.pressToSendMs),
+      msOf(row.sendToVictimMs),
+      msOf(row.holdMs),
+      msOf(row.victimConfirmToDrawnMs),
+      msOf(row.pressToStrikeOutMs),
+      msOf(row.strikeOutBeforeShoveMs),
+      msOf(row.strikeOutBeforeFlinchMs),
+      row.drawnErrorAtHitMetres === null
         ? "n/a"
-        : Math.round(row.legOutBeforeHitMs),
+        : row.drawnErrorAtHitMetres.toFixed(2),
+      row.lostPresses,
     ].join(" | ")
   );
 
-const TABLE_HEAD =
-  "| Network | Action | Result | Lead (ticks) | Frames drawn | What landed | Input to victim's screen (ms) | Input to hit (ms) | Strike out before the hit showed (ms) |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |";
+const TABLE_HEAD = [
+  "| Network | Action | Result | What landed | Lead (ticks) | Round trip at the press (ms) | Press to send (ms) | Send to the victim's confirm (ms) | Room hold (ms) | Victim's confirm to the strike drawn (ms) | Press to the strike out (ms) | Strike out before the shove (ms) | Strike out before the flinch (ms) | Attacker drawn off the room's place at the hit (m) | Presses the room dropped |",
+  "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+].join("\n");
 
 const roomName = (): string => crypto.randomUUID().slice(0, 8);
 
@@ -513,6 +545,7 @@ const runNetwork = (
     Effect.gen(function* oneNetwork() {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
+      const startedAt = Date.now();
       yield* linksUp(target, network);
       const room = roomName();
       yield* Effect.all(
@@ -536,9 +569,10 @@ const runNetwork = (
       const fall = yield* knockDown(windows).pipe(
         Effect.catchTag("FightCheckFailed", () => Effect.succeed(null))
       );
-      const taken = yield* readTaken(windows[1], Date.now() - 30_000);
+      const taken = yield* readTaken(windows[1], startedAt);
       const report = {
         fall,
+        falls: taken.falls,
         network,
         popMetres: worstPop(taken.frames, 0),
         rows,
