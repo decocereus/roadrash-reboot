@@ -360,31 +360,6 @@ export const playerFeatures: readonly FeatureEntry[] = [
     verify: ["single-race.md", "career.md"],
   },
   {
-    docs: ["docs/architecture.md#the-bar-lobby"],
-    id: "bar-lobby",
-    kind: "feature",
-    owns: [
-      "apps/web/src/bar-view.ts",
-      "apps/web/src/components/bar-*.tsx",
-      "apps/web/src/game/bar*.ts",
-      "apps/web/src/routes/bar.tsx",
-      "packages/sim/src/lobby*.ts",
-      "tools/perf/lobby.ts",
-      "tools/perf/src/lobby-bench.ts",
-      "tools/perf/src/node-lobby.ts",
-    ],
-    perf: ["lobby.tick.p95"],
-    start: [
-      "packages/sim/src/lobby.ts",
-      "apps/web/src/game/bar.ts",
-      "apps/web/src/game/bar-player.ts",
-    ],
-    summary:
-      "The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.",
-    title: "Walkable bar lobby",
-    verify: ["walkable-bar.md"],
-  },
-  {
     docs: [
       "docs/architecture.md#browser-client",
       "docs/design/screens.md#6-race-hud",

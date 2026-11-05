@@ -2,6 +2,39 @@ import type { FeatureEntry } from "./feature-map.ts";
 
 export const roomFeatures: readonly FeatureEntry[] = [
   {
+    docs: ["docs/architecture.md#the-bar-lobby"],
+    id: "bar-lobby",
+    kind: "feature",
+    owns: [
+      "apps/web/src/bar-view.ts",
+      "apps/web/src/components/bar-*.tsx",
+      "apps/web/src/game/bar*.ts",
+      "apps/web/src/routes/bar.tsx",
+      "packages/sim/src/lobby*.ts",
+      "tools/perf/lobby.ts",
+      "tools/perf/src/lobby-bench.ts",
+      "tools/perf/src/node-lobby.ts",
+    ],
+    perf: [
+      "bar.frame.interval.p50",
+      "bar.frame.interval.p95",
+      "bar.frame.interval.p99",
+      "bar.frame.missedFraction",
+      "bar.render.calls.max",
+      "bar.render.triangles.max",
+      "lobby.tick.p95",
+    ],
+    start: [
+      "packages/sim/src/lobby.ts",
+      "apps/web/src/game/bar.ts",
+      "apps/web/src/game/bar-player.ts",
+    ],
+    summary:
+      "The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.",
+    title: "Walkable bar lobby",
+    verify: ["walkable-bar.md"],
+  },
+  {
     docs: [
       "docs/architecture.md#race-rooms",
       "docs/coding-standards.md#keep-the-simulation-deterministic",

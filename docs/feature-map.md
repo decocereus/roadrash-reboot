@@ -22,7 +22,6 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Career money and settlement](#career-money-and-settlement): `career-money`
 - [Career tiers, season and story](#career-tiers-season-and-story): `career-progression`
 - [Menus and screens](#menus-and-screens): `menus`
-- [Walkable bar lobby](#walkable-bar-lobby): `bar-lobby`
 - [Race HUD and notices](#race-hud-and-notices): `hud`
 - [Chase camera](#chase-camera): `camera`
 - [Engine and race sound](#engine-and-race-sound): `audio`
@@ -31,6 +30,7 @@ Every TS, TSX, CSS and SQL file under `apps/`, `packages/`, `tools/` and `script
 - [Frame rate and quality](#frame-rate-and-quality): `frame-pacing`
 - [Market stalls and their crowd](#market-stalls-and-their-crowd): `bazaar`
 - [The roads](#the-roads): `roads`
+- [Walkable bar lobby](#walkable-bar-lobby): `bar-lobby`
 
 ### Platform
 
@@ -443,55 +443,6 @@ Test files:
 - `apps/web/src/career/copy.test.ts`
 - `apps/web/test/bar-nav.test.tsx`
 
-### Walkable bar lobby
-
-The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.
-
-- Id: `bar-lobby`
-- Start: `packages/sim/src/lobby.ts`, `apps/web/src/game/bar.ts`, `apps/web/src/game/bar-player.ts`
-- Docs: [docs/architecture.md#the-bar-lobby](architecture.md#the-bar-lobby)
-- Verify: [walkable-bar.md](../.claude/skills/verify-rushline/features/walkable-bar.md)
-- Perf: `lobby.tick.p95`
-- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/components/bar-*.tsx`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`, `tools/perf/lobby.ts`, `tools/perf/src/lobby-bench.ts`, `tools/perf/src/node-lobby.ts`
-
-Source files:
-
-- `apps/web/src/bar-view.ts`
-- `apps/web/src/components/bar-lobby.tsx`
-- `apps/web/src/components/bar-stage.tsx`
-- `apps/web/src/game/bar-camera.ts`
-- `apps/web/src/game/bar-cast.ts`
-- `apps/web/src/game/bar-garage.ts`
-- `apps/web/src/game/bar-input.ts`
-- `apps/web/src/game/bar-kit.ts`
-- `apps/web/src/game/bar-light.ts`
-- `apps/web/src/game/bar-members.ts`
-- `apps/web/src/game/bar-outside.ts`
-- `apps/web/src/game/bar-player.ts`
-- `apps/web/src/game/bar-pools.ts`
-- `apps/web/src/game/bar-poses.ts`
-- `apps/web/src/game/bar-props.ts`
-- `apps/web/src/game/bar-room.ts`
-- `apps/web/src/game/bar-signs.ts`
-- `apps/web/src/game/bar-speech.ts`
-- `apps/web/src/game/bar-tags.ts`
-- `apps/web/src/game/bar-walker.ts`
-- `apps/web/src/game/bar.ts`
-- `apps/web/src/routes/bar.tsx`
-- `packages/sim/src/lobby-floor.ts`
-- `packages/sim/src/lobby-walk.ts`
-- `packages/sim/src/lobby.ts`
-- `tools/perf/lobby.ts`
-- `tools/perf/src/lobby-bench.ts`
-- `tools/perf/src/node-lobby.ts`
-
-Test files:
-
-- `apps/web/src/game/bar-input.test.ts`
-- `apps/web/src/game/bar-members.test.ts`
-- `apps/web/src/game/bar-player.test.ts`
-- `packages/sim/src/lobby.test.ts`
-
 ### Race HUD and notices
 
 The race state the HUD shows and how often it is published: speed, gear, place, progress, the countdown, notices and the cop warning; the React HUD screen sits with the menus.
@@ -709,6 +660,55 @@ Test files:
 - `packages/track/src/roads.test.ts`
 - `tools/road-test/test/road-test.test.ts`
 - `tools/road-test/test/variant-plan.ts`
+
+### Walkable bar lobby
+
+The bar players walk around before a race, with the movement rules and floor in the simulation package, three saved cameras, greet, shove, sit and pose, the hidden bike, the stand-in cast and the door cutscene.
+
+- Id: `bar-lobby`
+- Start: `packages/sim/src/lobby.ts`, `apps/web/src/game/bar.ts`, `apps/web/src/game/bar-player.ts`
+- Docs: [docs/architecture.md#the-bar-lobby](architecture.md#the-bar-lobby)
+- Verify: [walkable-bar.md](../.claude/skills/verify-rushline/features/walkable-bar.md)
+- Perf: `bar.frame.interval.p50`, `bar.frame.interval.p95`, `bar.frame.interval.p99`, `bar.frame.missedFraction`, `bar.render.calls.max`, `bar.render.triangles.max`, `lobby.tick.p95`
+- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/components/bar-*.tsx`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`, `tools/perf/lobby.ts`, `tools/perf/src/lobby-bench.ts`, `tools/perf/src/node-lobby.ts`
+
+Source files:
+
+- `apps/web/src/bar-view.ts`
+- `apps/web/src/components/bar-lobby.tsx`
+- `apps/web/src/components/bar-stage.tsx`
+- `apps/web/src/game/bar-camera.ts`
+- `apps/web/src/game/bar-cast.ts`
+- `apps/web/src/game/bar-garage.ts`
+- `apps/web/src/game/bar-input.ts`
+- `apps/web/src/game/bar-kit.ts`
+- `apps/web/src/game/bar-light.ts`
+- `apps/web/src/game/bar-members.ts`
+- `apps/web/src/game/bar-outside.ts`
+- `apps/web/src/game/bar-player.ts`
+- `apps/web/src/game/bar-pools.ts`
+- `apps/web/src/game/bar-poses.ts`
+- `apps/web/src/game/bar-props.ts`
+- `apps/web/src/game/bar-room.ts`
+- `apps/web/src/game/bar-signs.ts`
+- `apps/web/src/game/bar-speech.ts`
+- `apps/web/src/game/bar-tags.ts`
+- `apps/web/src/game/bar-walker.ts`
+- `apps/web/src/game/bar.ts`
+- `apps/web/src/routes/bar.tsx`
+- `packages/sim/src/lobby-floor.ts`
+- `packages/sim/src/lobby-walk.ts`
+- `packages/sim/src/lobby.ts`
+- `tools/perf/lobby.ts`
+- `tools/perf/src/lobby-bench.ts`
+- `tools/perf/src/node-lobby.ts`
+
+Test files:
+
+- `apps/web/src/game/bar-input.test.ts`
+- `apps/web/src/game/bar-members.test.ts`
+- `apps/web/src/game/bar-player.test.ts`
+- `packages/sim/src/lobby.test.ts`
 
 ## Platform
 
@@ -1257,7 +1257,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1274,7 +1274,11 @@ Source files:
 - `tools/perf/src/evaluate.ts`
 - `tools/perf/src/gate.ts`
 - `tools/perf/src/glb-textures.ts`
+- `tools/perf/src/gpu-bar-capture.ts`
+- `tools/perf/src/gpu-bar.ts`
+- `tools/perf/src/gpu-frame-reads.ts`
 - `tools/perf/src/gpu-frames.ts`
+- `tools/perf/src/gpu-rv.ts`
 - `tools/perf/src/gpu.ts`
 - `tools/perf/src/load.ts`
 - `tools/perf/src/measure-model.ts`
@@ -1465,6 +1469,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 Source files:
 
 - `apps/rooms/src/contract.ts`
+- `apps/rooms/src/host-phase.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
 - `apps/rooms/src/lobby.ts`
@@ -1526,7 +1531,9 @@ Source files:
 Test files:
 
 - `apps/rooms/test/host-harness.ts`
+- `apps/rooms/test/host-lifecycle.test.ts`
 - `apps/rooms/test/host-notes.test.ts`
+- `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`

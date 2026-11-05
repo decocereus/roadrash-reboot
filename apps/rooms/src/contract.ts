@@ -4,6 +4,7 @@ import * as HttpApiGroup from "effect/http-api/HttpApiGroup";
 import * as HttpApiSchema from "effect/http-api/HttpApiSchema";
 import * as Schema from "effect/Schema";
 
+import { HOST_PHASES } from "./host-phase.ts";
 import { RoomRuleSchema } from "./manifest.ts";
 import { ROOM_PHASES } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
@@ -18,6 +19,7 @@ export const RoomIdSchema = Schema.String.pipe(
 const RoomStatusSchema = Schema.Struct({
   build: Schema.String,
   catchUpWakes: Schema.Number,
+  hostPhase: Schema.Literals(HOST_PHASES),
   lagTicks: Schema.Number,
   names: Schema.Array(Schema.String),
   phase: Schema.Literals(ROOM_PHASES),
