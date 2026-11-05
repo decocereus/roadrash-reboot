@@ -6,9 +6,10 @@ import {
 } from "./commands.ts";
 import type { RaceView } from "./race-view.ts";
 import { createRace, stepRace } from "./race.ts";
-import type { InputFrame, RaceSetup, RiderId } from "./state.ts";
+import type { InputFrame, RaceEvent, RaceSetup, RiderId } from "./state.ts";
 
 export interface RaceRun {
+  readonly events: () => readonly RaceEvent[];
   readonly view: RaceView;
   readonly step: (frame: InputFrame) => void;
 }
@@ -24,6 +25,7 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
   const state = createRace(setup);
   const { track } = setup;
   return {
+    events: () => state.events,
     placeRiderAcross: (id, x) => {
       placeRiderAcross(state, id, x);
     },

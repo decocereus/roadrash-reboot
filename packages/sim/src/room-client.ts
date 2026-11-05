@@ -16,6 +16,7 @@ import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
 import { riderOf } from "./state.ts";
 import type {
   Control,
+  RaceEvent,
   RaceSetup,
   RaceState,
   RiderId,
@@ -23,6 +24,9 @@ import type {
 } from "./state.ts";
 
 const MOST_LEAD_TICKS = INPUT_HORIZON;
+
+const SAME_EVENT_WITHIN_TICKS = 5;
+const NO_EVENTS: readonly RaceEvent[] = [];
 
 const FELT_JUMP_METRES = 0.25;
 
@@ -58,6 +62,7 @@ export interface RoomClient {
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly settle: () => void;
+  readonly takeEvents: () => readonly RaceEvent[];
   readonly writeInputs: (view: DataView) => number;
 }
 
@@ -69,6 +74,9 @@ interface Remote {
 const outOfOrder = (tick: number, after: number): never => {
   throw new RangeError(`The room sent tick ${tick} after tick ${after}.`);
 };
+
+const eventKey = (event: RaceEvent): string =>
+  `${event.kind}:${event.rider}:${"target" in event ? event.target : ""}:${"other" in event ? event.other : ""}`;
 
 const sameHash = (left: Uint32Array, right: Uint32Array): boolean => {
   for (let word = 0; word < HASH_WORDS; word += 1) {
@@ -98,6 +106,8 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const ownControls = ringOf(() => coasting);
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
+  const heardAt = new Map<number, string[]>();
+  let news: RaceEvent[] = [];
   let sentThrough = 0;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
@@ -152,6 +162,34 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
 
   const advance = (tick: number): void => {
     stepRace(predicted, setup.track, guess(tick));
+  };
+
+  const heardNear = (tick: number, key: string): boolean => {
+    for (
+      let near = tick - SAME_EVENT_WITHIN_TICKS;
+      near <= tick + SAME_EVENT_WITHIN_TICKS;
+      near += 1
+    ) {
+      if (heardAt.get(near)?.includes(key) === true) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hear = (state: RaceState): void => {
+    for (const event of state.events) {
+      const key = eventKey(event);
+      if (!heardNear(state.tick, key)) {
+        const keys = heardAt.get(state.tick);
+        if (keys) {
+          keys.push(key);
+        } else {
+          heardAt.set(state.tick, [key]);
+        }
+        news.push(event);
+      }
+    }
   };
 
   const rewind = (): void => {
@@ -223,6 +261,8 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         outOfOrder(frame.tick, confirmed.tick);
       }
       stepRace(confirmed, setup.track, frame);
+      hear(confirmed);
+      heardAt.delete(frame.tick - SAME_EVENT_WITHIN_TICKS - 1);
       learn(frame);
       if (serverHash) {
         hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
@@ -263,11 +303,20 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       ownControls[slotOf(tick)] = control;
       advance(tick);
+      hear(predicted);
       return true;
     },
     predicted,
     settle,
     stats,
+    takeEvents: () => {
+      if (news.length === 0) {
+        return NO_EVENTS;
+      }
+      const taken = news;
+      news = [];
+      return taken;
+    },
     writeInputs: (view) => {
       const unsent = Math.max(sentThrough, confirmed.tick) + 1;
       const last = Math.min(predicted.tick, unsent + MOST_BATCHED_CONTROLS - 1);
