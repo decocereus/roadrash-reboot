@@ -88,6 +88,15 @@ describe("keyboard controls", () => {
     expect(readOnce(controls).brake).toBe(1);
   });
 
+  it("leaves a key typed into a text field to the field", () => {
+    const { controls, keyboard } = setUp();
+    keyboard.typeInField("KeyA");
+    keyboard.typeInField("KeyM");
+    expect(keyboard.prevented()).toBe(0);
+    expect(keyboard.commands).toStrictEqual([]);
+    expect(readOnce(controls).steer).toBe(0);
+  });
+
   it("punch and kick stay held while their keys are down", () => {
     const { controls, keyboard } = setUp();
     keyboard.press("Space");

@@ -25,6 +25,7 @@ export interface KeyEvent {
   readonly code: string;
   readonly repeat: boolean;
   readonly metaKey: boolean;
+  readonly target: EventTarget | null;
   readonly preventDefault: () => void;
 }
 
@@ -46,9 +47,11 @@ export interface InputHost {
     blur: () => void
   ) => () => void;
   readonly pads: () => readonly (Pad | null)[];
+  readonly isTextField: (target: EventTarget | null) => boolean;
 }
 
 const browserHost: InputHost = {
+  isTextField: (target) => target instanceof HTMLInputElement,
   listen(press, release, blur) {
     window.addEventListener("keydown", press);
     window.addEventListener("keyup", release);
@@ -104,6 +107,9 @@ export const createControls = (
   let steer = 0;
 
   const press = (event: KeyEvent) => {
+    if (host.isTextField(event.target)) {
+      return;
+    }
     if (handled.has(event.code)) {
       event.preventDefault();
     }

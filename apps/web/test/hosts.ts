@@ -280,6 +280,7 @@ export interface Keyboard {
   readonly prevented: () => number;
   readonly press: (code: string, repeat?: boolean) => void;
   readonly release: (code: string) => void;
+  readonly typeInField: (code: string) => void;
 }
 
 const isCmd = (code: string): boolean =>
@@ -291,14 +292,20 @@ export const createKeyboard = (): Keyboard => {
   const blurs: (() => void)[] = [];
   const pads: (Pad | null)[] = [];
   const count = { prevented: 0 };
+  const field = new EventTarget();
   let cmdHeld = false;
-  const eventOf = (code: string, repeat: boolean): KeyEvent => ({
+  const eventOf = (
+    code: string,
+    repeat: boolean,
+    target: EventTarget | null = null
+  ): KeyEvent => ({
     code,
     metaKey: cmdHeld,
     preventDefault: () => {
       count.prevented += 1;
     },
     repeat,
+    target,
   });
   return {
     blur: () => {
@@ -308,6 +315,7 @@ export const createKeyboard = (): Keyboard => {
     },
     commands: [],
     host: {
+      isTextField: (target) => target === field,
       listen: (press, release, blur) => {
         presses.push(press);
         releases.push(release);
@@ -333,6 +341,11 @@ export const createKeyboard = (): Keyboard => {
       cmdHeld &&= !isCmd(code);
       for (const release of releases) {
         release(eventOf(code, false));
+      }
+    },
+    typeInField: (code) => {
+      for (const press of presses) {
+        press(eventOf(code, false, field));
       }
     },
   };
