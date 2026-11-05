@@ -81,7 +81,12 @@ export const seatFor = (
   tracedMissed: 0,
 });
 
-export const tallyOf = (seat: Seat, room: Room | null): readonly SeatTally[] =>
+export const stillLoading = (riders: readonly Seat[]): readonly RiderId[] =>
+  riders.flatMap(({ leftAtTick, readyMs, rider }) =>
+    leftAtTick === null && readyMs === null && rider !== null ? [rider] : []
+  );
+
+export const tallyOf = (seat: Seat, room: Room): readonly SeatTally[] =>
   seat.rider === null
     ? []
     : [
@@ -89,7 +94,7 @@ export const tallyOf = (seat: Seat, room: Room | null): readonly SeatTally[] =>
           accepted: seat.accepted,
           ahead: seat.ahead,
           late: seat.late,
-          missed: room?.missedControls(seat.rider) ?? 0,
+          missed: room.missedControls(seat.rider),
           rider: seat.rider,
         },
       ];

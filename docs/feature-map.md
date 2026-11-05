@@ -1440,6 +1440,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 Source files:
 
 - `apps/rooms/src/contract.ts`
+- `apps/rooms/src/host-phase.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
 - `apps/rooms/src/lobby.ts`
@@ -1501,7 +1502,9 @@ Source files:
 Test files:
 
 - `apps/rooms/test/host-harness.ts`
+- `apps/rooms/test/host-lifecycle.test.ts`
 - `apps/rooms/test/host-notes.test.ts`
+- `apps/rooms/test/host-phases.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`

@@ -342,6 +342,12 @@ describe("a room host", () => {
     }
     expect(socket.messages.at(-1)?.kind).toBe("ended");
     expect(socket.closed).toBeNull();
+    expect(host.status()).toMatchObject({
+      hostPhase: "waiting",
+      raceId: null,
+      seats: [],
+      tick: 0,
+    });
     const stats = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(stats), someRaceStats);
     host.message(socket, stats);
