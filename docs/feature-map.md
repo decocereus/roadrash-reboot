@@ -1500,6 +1500,8 @@ Test files:
 - `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
+- `apps/rooms/test/seat-phases.test.ts`
+- `apps/rooms/test/seat-socket.ts`
 - `apps/rooms/test/tape.test.ts`
 - `apps/web/test/prepare-outcome.test.ts`
 - `packages/career/src/room-race.test.ts`
