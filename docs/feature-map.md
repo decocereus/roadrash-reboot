@@ -614,14 +614,14 @@ Test files:
 
 ### The roads
 
-The roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career.
+The roads and their regions: each road's sections, crests, truck starts, roadblock spots, the chevron runs that the riding-speed audit writes for the bends a rider has to brake for, and the blocks that levels 2 to 5 add. Also the two generated Madrid stretches, the Casa de Campo hook and Puerta de Alcalá into Gran Vía, development-only greyboxes outside the career. `pnpm road:test` races the bots to judge a road.
 
 - Id: `roads`
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`
 - Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#summary](design/tracks.md#summary)
 - Verify: none yet
 - Perf: none yet
-- Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/stretches.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`
+- Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/stretches.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`, `tools/road-test/**`
 
 Source files:
 
@@ -640,11 +640,19 @@ Source files:
 - `packages/track/src/tracks/madrid-hook.ts`
 - `packages/track/src/tracks/ridge-road.ts`
 - `packages/track/src/tracks/slag-row.ts`
+- `tools/road-test/road-test.ts`
+- `tools/road-test/src/main.ts`
+- `tools/road-test/src/options.ts`
+- `tools/road-test/src/race.ts`
+- `tools/road-test/src/report.ts`
+- `tools/road-test/src/tally.ts`
 
 Test files:
 
 - `packages/sim/src/corner-warnings.test.ts`
 - `packages/track/src/roads.test.ts`
+- `tools/road-test/test/road-test.test.ts`
+- `tools/road-test/test/variant-plan.ts`
 
 ### Frame rate and quality
 

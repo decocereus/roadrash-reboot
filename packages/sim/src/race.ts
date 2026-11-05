@@ -50,6 +50,8 @@ import type {
 import { createTraffic, stepTraffic } from "./traffic.ts";
 import { weapons } from "./weapons.ts";
 
+export { carThreat } from "./pilot-lines.ts";
+
 const GRID_S = -2;
 const GRID_ROW_GAP = 7;
 const FIRST_COP_S = 1500;
