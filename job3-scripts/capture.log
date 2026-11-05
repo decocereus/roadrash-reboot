@@ -1,0 +1,183 @@
+2026-11-05T12:18:53.257Z rv up 20261105-174849-s0
+2026-11-05T12:18:53.874Z ok   build is current: built from 7fec2e9 at 2026-11-05T12:18:49.363Z; HEAD 7fec2e9; newest source edit 2026-11-05T11:09:38.844Z
+2026-11-05T12:20:28.077Z proof landing breakwater 4200: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:20:37.072Z proof landing breakwater 4600: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:20:45.879Z proof landing breakwater 5000: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:20:54.539Z proof landing breakwater 5400: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:03.451Z proof landing breakwater 5800: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:12.365Z proof landing breakwater 6200: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:21.001Z proof landing breakwater 6600: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:29.017Z proof landing breakwater 7000: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:37.074Z proof landing breakwater 7400: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:46.023Z proof landing breakwater 7800: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:21:54.731Z proof landing breakwater 8200: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:03.092Z proof landing breakwater 8600: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:12.008Z proof landing breakwater 9000: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:20.595Z proof landing breakwater 9400: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:29.867Z proof landing breakwater 9800: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:38.531Z proof landing breakwater 10200: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:47.220Z proof landing breakwater 10600: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:22:56.251Z proof landing breakwater 11000: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:23:05.310Z proof landing breakwater 11400: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:23:14.321Z proof landing breakwater 11800: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:23:22.608Z proof landing breakwater 12200: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:23:30.889Z proof landing breakwater 12600: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:23:38.941Z proof landing breakwater 13000: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:23:46.467Z proof landing breakwater 13400: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:24:06.624Z   tick stopped at 13953, wanted 13700
+2026-11-05T12:24:06.672Z proof landing breakwater 13700: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:24:18.073Z   tick stopped at 13953, wanted 13900
+2026-11-05T12:24:18.127Z proof landing breakwater 13900: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:24:19.939Z landing/breakwater: 26 stills, last {"d":null,"g":13953} jumps=[] stalls=1246 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:24:19.940Z breakwater: console 139 lines, 135 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js)
+2026-11-05T12:24:38.485Z rock-crash: WIPEOUT first at tick 77; speeds [[0,215],[0,215],[0,215],[0,215],[0,215],[0,215],[0,215],[15,212],[30,214],[45,180],[60,180],[75,180]]
+2026-11-05T12:24:38.487Z proof landing rock-crash: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:24:50.220Z rock-crash: console 16 lines, 12 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js)
+2026-11-05T12:25:32.121Z proof landing stress 1800: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:37.119Z proof landing stress 2026: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:37.956Z proof landing stress 2032: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:38.749Z proof landing stress 2044: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:39.823Z proof landing stress 2060: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:41.931Z proof landing stress 2140: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:44.134Z proof landing stress 2217: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:44.994Z proof landing stress 2221: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:45.796Z proof landing stress 2227: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:46.605Z proof landing stress 2235: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:47.418Z proof landing stress 2247: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:48.544Z proof landing stress 2265: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:53.540Z proof landing stress 2492: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:54.379Z proof landing stress 2498: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:55.200Z proof landing stress 2510: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:25:59.891Z proof landing stress 2731: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:00.746Z proof landing stress 2737: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:01.570Z proof landing stress 2745: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:02.608Z proof landing stress 2760: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:03.709Z proof landing stress 2780: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:04.492Z proof landing stress 2786: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:05.361Z proof landing stress 2796: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:06.490Z proof landing stress 2815: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:07.560Z proof landing stress 2840: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:08.949Z proof landing stress 2870: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:26:09.588Z landing/stress: 25 stills, last {"d":1482.649514774855,"g":2870} jumps=[] stalls=0 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:26:09.588Z stress: console 46 lines, 42 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js)
+2026-11-05T12:26:24.494Z landing/bar-door-dusk: 3 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=87 tris=614271 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:26:24.495Z bar-door-dusk: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:26:39.570Z landing/bar-door-night: 3 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=87 tris=614271 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:26:39.570Z bar-door-night: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:26:47.506Z landing/bar-room-night: 2 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=99 tris=897451 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:26:47.506Z bar-room-night: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:26:54.758Z landing/bar-follow-dusk: 2 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=96 tris=834461 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:26:54.759Z bar-follow-dusk: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:26:55.898Z rv down 20261105-174849-s0: evidence kept: /var/tmp/rushline-r4-b/tools/perf/results/verify/20261105-174849-s0 (6 entries)
+2026-11-05T12:29:23.379Z rv up 20261105-175919-s0
+2026-11-05T12:29:24.150Z ok   build is current: built from 7fec2e9 at 2026-11-05T12:29:19.271Z; HEAD 7fec2e9; newest source edit 2026-11-05T11:09:38.844Z
+2026-11-05T12:30:19.941Z proof landing stress 2440: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:20.742Z proof landing stress 2441: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:21.559Z proof landing stress 2442: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:22.395Z proof landing stress 2443: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:23.225Z proof landing stress 2444: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:24.070Z proof landing stress 2445: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:24.856Z proof landing stress 2446: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:25.687Z proof landing stress 2447: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:26.509Z proof landing stress 2448: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:28.646Z proof landing stress 2526: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:29.523Z proof landing stress 2527: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:30.338Z proof landing stress 2528: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:31.143Z proof landing stress 2529: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:31.997Z proof landing stress 2530: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:32.797Z proof landing stress 2531: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:33.613Z proof landing stress 2532: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:34.368Z proof landing stress 2533: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:35.191Z proof landing stress 2534: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:35.959Z proof landing stress 2535: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:36.728Z proof landing stress 2536: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:37.519Z proof landing stress 2537: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:38.325Z proof landing stress 2538: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:39.108Z proof landing stress 2539: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:39.890Z proof landing stress 2540: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:40.686Z proof landing stress 2541: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:41.471Z proof landing stress 2542: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:42.256Z proof landing stress 2543: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:43.043Z proof landing stress 2544: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:43.846Z proof landing stress 2545: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:45.682Z proof landing stress 2610: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:46.489Z proof landing stress 2611: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:47.257Z proof landing stress 2612: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:48.048Z proof landing stress 2613: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:48.813Z proof landing stress 2614: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:49.583Z proof landing stress 2615: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:50.385Z proof landing stress 2616: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:51.177Z proof landing stress 2617: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:51.941Z proof landing stress 2618: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:30:52.532Z landing/stress: 38 stills, last {"d":1375.100662412842,"g":2618} jumps=[] stalls=0 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:30:52.534Z stress: console 34 lines, 30 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js)
+2026-11-05T12:30:53.664Z rv down 20261105-175919-s0: evidence kept: /var/tmp/rushline-r4-b/tools/perf/results/verify/20261105-175919-s0 (6 entries)
+2026-11-05T12:31:02.736Z rv up 20261105-180058-s0
+2026-11-05T12:31:03.594Z ok   build is current: built from e6eefae at 2026-11-05T12:30:58.442Z; HEAD e6eefae; newest source edit 2026-11-05T09:54:48.576Z
+2026-11-05T12:33:04.381Z proof today breakwater 4200: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:33:47.389Z proof today breakwater 5800: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:35:33.799Z proof today breakwater 9800: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:35:34.666Z today/breakwater: 3 stills, last {"d":5693.533757908619,"g":9800} jumps=[] stalls=8 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:35:34.668Z breakwater: console 123 lines, 119 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:36:29.468Z proof today stress 1800: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:36:39.077Z proof today stress 2140: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:36:39.759Z today/stress: 2 stills, last {"d":943.7200799430356,"g":2140} jumps=[] stalls=0 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:36:39.795Z stress: console 31 lines, 27 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:36:54.894Z today/bar-door-dusk: 3 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=92 tris=614281 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:36:54.894Z bar-door-dusk: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:37:09.643Z today/bar-door-night: 3 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=92 tris=614281 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:37:09.643Z bar-door-night: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:37:17.196Z today/bar-room-night: 2 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=105 tris=897463 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:37:17.196Z bar-room-night: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:37:24.520Z today/bar-follow-dusk: 2 stills canvas=1344,756 inner=1920,1080 dpr=1 calls=102 tris=834473 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), Open
+2026-11-05T12:37:24.521Z bar-follow-dusk: console 4 lines, 0 errors or warnings: 
+2026-11-05T12:37:25.678Z rv down 20261105-180058-s0: evidence kept: /var/tmp/rushline-r4-a/tools/perf/results/verify/20261105-180058-s0 (6 entries)
+2026-11-05T12:37:36.332Z rv up 20261105-180731-s0
+2026-11-05T12:37:37.018Z ok   build is current: built from e6eefae at 2026-11-05T12:37:31.814Z; HEAD e6eefae; newest source edit 2026-11-05T09:54:48.576Z
+2026-11-05T12:43:25.865Z proof today breakwater 12600: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:43:26.853Z today/breakwater: 1 stills, last {"d":7829.031293465195,"g":12600} jumps=[] stalls=6 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:43:26.854Z breakwater: console 129 lines, 125 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:43:44.852Z rock-crash: WIPEOUT first at tick 77; speeds [[0,215],[0,215],[0,215],[0,215],[0,215],[0,215],[0,215],[15,212],[30,214],[45,180],[60,180],[75,180]]
+2026-11-05T12:43:44.863Z proof today rock-crash: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:43:58.589Z rock-crash: console 16 lines, 12 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:45:13.876Z proof today stress 2492: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:45:14.720Z proof today stress 2498: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:45:22.223Z proof today stress 2780: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:45:23.363Z proof today stress 2796: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:45:24.420Z proof today stress 2815: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:45:25.092Z today/stress: 5 stills, last {"d":1474.8582542258193,"g":2815} jumps=[] stalls=0 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:45:25.093Z stress: console 46 lines, 42 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:45:26.191Z rv down 20261105-180731-s0: evidence kept: /var/tmp/rushline-r4-a/tools/perf/results/verify/20261105-180731-s0 (6 entries)
+2026-11-05T12:45:36.206Z rv up 20261105-181531-s0
+2026-11-05T12:45:36.893Z ok   build is current: built from 7fec2e9 at 2026-11-05T12:45:31.536Z; HEAD 7fec2e9; newest source edit 2026-11-05T11:09:38.844Z
+2026-11-05T12:50:23.956Z proof landing breakwater 13600: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:50:40.940Z   tick stopped at 13951, wanted 13700
+2026-11-05T12:50:41.026Z proof landing breakwater 13700: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:50:52.363Z   tick stopped at 13951, wanted 13740
+2026-11-05T12:50:52.411Z proof landing breakwater 13740: {"canvas":[1344,756],"quality":{"bloomScale":0.5,"frameRate":"60","pace":60,"pixelRatio":0.7,"preset":"lean","samples":0,"shadowMap":2048}}
+2026-11-05T12:50:54.136Z landing/breakwater: 3 stills, last {"d":null,"g":13951} jumps=[] stalls=1250 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:50:54.137Z breakwater: console 139 lines, 135 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-BTwZ71gO.js)
+2026-11-05T12:50:55.412Z rv down 20261105-181531-s0: evidence kept: /var/tmp/rushline-r4-b/tools/perf/results/verify/20261105-181531-s0 (6 entries)
+2026-11-05T12:51:07.117Z rv up 20261105-182102-s0
+2026-11-05T12:51:07.770Z ok   build is current: built from e6eefae at 2026-11-05T12:51:02.463Z; HEAD e6eefae; newest source edit 2026-11-05T09:54:48.576Z
+2026-11-05T12:51:52.392Z realtime today: tick 2144 {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}} {"canvas":{"client":[1920,1080],"drawing":[1536,864]},"dpr":1,"inner":[1920,1080],"renderer":"ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)","url":"http://127.0.0.1:1410/?stress"}
+2026-11-05T12:51:58.691Z aspect nudge breakwater: [1920,1080,1536,864]
+2026-11-05T12:53:57.829Z proof today breakwater 4200: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:54:41.264Z proof today breakwater 5800: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:56:28.811Z proof today breakwater 9800: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:56:29.827Z today/breakwater: 3 stills, last {"d":5693.533757908619,"g":9800} jumps=[] stalls=1 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:56:29.827Z breakwater: console 123 lines, 119 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:56:40.469Z aspect nudge stress: [1920,1080,1536,864]
+2026-11-05T12:57:25.800Z proof today stress 1800: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:57:35.440Z proof today stress 2140: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:57:36.134Z today/stress: 2 stills, last {"d":943.7200799430356,"g":2140} jumps=[] stalls=0 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:57:36.134Z stress: console 31 lines, 27 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:57:37.201Z rv down 20261105-182102-s0: evidence kept: /var/tmp/rushline-r4-a/tools/perf/results/verify/20261105-182102-s0 (6 entries)
+2026-11-05T12:57:47.567Z rv up 20261105-182743-s0
+2026-11-05T12:57:48.248Z ok   build is current: built from e6eefae at 2026-11-05T12:57:43.179Z; HEAD e6eefae; newest source edit 2026-11-05T09:54:48.576Z
+2026-11-05T12:57:59.549Z aspect nudge stress: [1920,1080,1536,864]
+2026-11-05T12:59:12.034Z proof today stress 2780: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:59:13.178Z proof today stress 2796: {"canvas":[1536,864],"quality":{"bloomScale":1,"frameRate":"60","pace":60,"pixelRatio":0.8,"rung":5,"samples":0,"shadowMap":2048}}
+2026-11-05T12:59:13.914Z today/stress: 2 stills, last {"d":1471.8464945059259,"g":2796} jumps=[] stalls=0 client=1920,1080 inner=1920,1080 dpr=1 renderer=ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)
+2026-11-05T12:59:13.915Z stress: console 46 lines, 42 errors or warnings: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js) | The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio (http://127.0.0.1:1410/assets/game-CzMdqzQ0.js)
+2026-11-05T12:59:14.964Z rv down 20261105-182743-s0: evidence kept: /var/tmp/rushline-r4-a/tools/perf/results/verify/20261105-182743-s0 (6 entries)
