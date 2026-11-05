@@ -151,7 +151,7 @@ const sizeOf = ({
 
 const PREPARE = `(async () => {
   const stored = JSON.parse(localStorage.getItem("${SETTINGS_KEY}") ?? "{}");
-  localStorage.setItem("${SETTINGS_KEY}", JSON.stringify({ ...stored, frameRate: "${FRAME_RATE}" }));
+  localStorage.setItem("${SETTINGS_KEY}", JSON.stringify({ ...stored, frameRate: "${FRAME_RATE}", raceData: false }));
   const stamps = [];
   await new Promise((resolve) => {
     const step = (now) => {

@@ -209,7 +209,7 @@ vimaan is a Linux laptop with a GTX 1650 Ti and no running desktop. Everything a
 - `rv doctor`'s gpu line must contain `NVIDIA`. `tools/perf/README.md`, under Vimaan, says why the flags are what they are.
 - `pnpm perf:gpu` needs side A's clone in `/var/tmp`, because `/tmp` is a small tmpfs. Its limits are the `gpu-chromium-nvidia` rows, never the Mac's.
 - The T3 browser stays on SwiftShader. Use `rv` for anything that needs a GPU.
-- `RUSHLINE_BROWSER_HOST=linux-intel rv up` runs on the Intel UHD 630, the stand-in for thin laptops, fullscreen at 1920x1080 and device ratio 1. The slot remembers its host, so `rv doctor` then requires `Intel`, and later commands need no setting. It has its own budget rows, measured on the `lean` preset it picks by itself. Run an Intel measurement one slot at a time, because a second slot takes fullscreen from the first and changes its page from 1920x1080 to 1919x1079. `tools/perf/README.md`, under Intel, holds the numbers it measured.
+- `RUSHLINE_BROWSER_HOST=linux-intel rv up` runs on the Intel UHD 630, the stand-in for thin laptops, in a 1919x1079 page at device ratio 1. The slot remembers its host, so `rv doctor` then requires `Intel`, and later commands need no setting. It has its own budget rows, measured on the `lean` preset it picks by itself. `tools/perf/README.md`, under Intel, holds the numbers it measured.
 
 ## Sandbox notes for worktree agents
 

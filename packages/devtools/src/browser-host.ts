@@ -133,7 +133,6 @@ export const browserHosts = {
         "--enable-gpu",
         "--ignore-gpu-blocklist",
         "--disable-features=BackForwardCache",
-        "--start-fullscreen",
       ],
       launcher: { binary: CHROMIUM, kind: "direct" },
       viewport: { height: 1080, scale: 1, width: 1920 },

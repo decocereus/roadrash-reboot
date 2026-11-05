@@ -2840,6 +2840,62 @@
       "side": "B",
       "source": "gate-2026-11-05T07-27-02-176Z-9f67ba9-aa04320",
       "value": 1.417910886133199
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 617105
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 1975971
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 849702
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 820031
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.incremental.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 232597
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 2109083
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "value": 902258
     }
   ],
   "revisions": {
@@ -3813,6 +3869,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "aa043203bfd4b1e42cb0a7eeebfb9e765ba9f783"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1155940, \"bytes.route.root.gzip\": 617105, \"bytes.route.kit.raw\": 953094, \"bytes.route.kit.gzip\": 546796, \"bytes.game.raw\": 1975971, \"bytes.game.gzip\": 849702, \"bytes.game.incremental.raw\": 820031, \"bytes.game.incremental.gzip\": 232597, \"bytes.worker.raw\": 736211, \"bytes.worker.gzip\": 189135, \"bytes.client.raw\": 2109083, \"bytes.client.gzip\": 902258}",
+        "builtB": "{\"bytes.route.root.raw\": 1155940, \"bytes.route.root.gzip\": 617105, \"bytes.route.kit.raw\": 953094, \"bytes.route.kit.gzip\": 546796, \"bytes.game.raw\": 1975971, \"bytes.game.gzip\": 849702, \"bytes.game.incremental.raw\": 820031, \"bytes.game.incremental.gzip\": 232597, \"bytes.worker.raw\": 736361, \"bytes.worker.gzip\": 189152, \"bytes.client.raw\": 2109083, \"bytes.client.gzip\": 902258}",
+        "harnessDigest": "f9fb6725587691b956587b3096b252c41749fea3f876f278e85b663a37843603",
+        "lockfileSha256": "7d4bce5cacea74cf01953fb780c4165952e9c4dff20c2f7bc3b4c7fced69f4af",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "20cde7d8e37c89647267cfca8b9c54b6d9c1902a7e169e75ffff391e0dd90d72",
+        "sideBSourceDigest": "20cde7d8e37c89647267cfca8b9c54b6d9c1902a7e169e75ffff391e0dd90d72",
+        "why": "Far riders on the lean preset simplify each rider body at load, so meshoptimizer's simplifier ships to every player: the client rows grow by 52,653 B raw and 21,154 B gzip against main at a179ab2."
+      },
+      "id": "baseline-2026-11-05T11-10-18-314Z-7fec2e9-7fec2e9",
+      "lanes": ["build"],
+      "sides": {
+        "A": "7fec2e9b2c2504211aac07d6885c953b842d694f",
+        "B": "7fec2e9b2c2504211aac07d6885c953b842d694f"
       }
     }
   ],
