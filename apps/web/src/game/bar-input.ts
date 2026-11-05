@@ -37,7 +37,10 @@ export interface BarInput {
 }
 
 export const createBarInput = (
-  canvas: HTMLCanvasElement,
+  canvas: Pick<
+    HTMLCanvasElement,
+    "addEventListener" | "getBoundingClientRect" | "removeEventListener"
+  >,
   events: BarInputEvents
 ): BarInput => {
   const held = new Set<string>();
@@ -94,9 +97,15 @@ export const createBarInput = (
     }
   };
 
+  const onPointerCancel = (): void => {
+    dragFrom = null;
+    dragged = false;
+  };
+
   canvas.addEventListener("pointerdown", onPointerDown);
   globalThis.addEventListener("pointermove", onPointerMove);
   globalThis.addEventListener("pointerup", onPointerUp);
+  globalThis.addEventListener("pointercancel", onPointerCancel);
   globalThis.addEventListener("keydown", onKeyDown);
   globalThis.addEventListener("keyup", onKeyUp);
   globalThis.addEventListener("blur", onBlur);
@@ -116,6 +125,7 @@ export const createBarInput = (
       canvas.removeEventListener("pointerdown", onPointerDown);
       globalThis.removeEventListener("pointermove", onPointerMove);
       globalThis.removeEventListener("pointerup", onPointerUp);
+      globalThis.removeEventListener("pointercancel", onPointerCancel);
       globalThis.removeEventListener("keydown", onKeyDown);
       globalThis.removeEventListener("keyup", onKeyUp);
       globalThis.removeEventListener("blur", onBlur);
