@@ -38,7 +38,7 @@ import {
 import type { Speech } from "./clubhouse-bar.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
 import { RuledSheet, stampStyle } from "./clubhouse-wall.tsx";
-import { RiderChip } from "./room-lobby.tsx";
+import { RiderChip } from "./shared.tsx";
 
 const SHEET_TITLE = { h: 62, w: 470, x: 590, y: 136 } as const;
 const SHEET_MARGINS = 265;

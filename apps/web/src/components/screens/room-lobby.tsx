@@ -19,7 +19,6 @@ import type {
 import type { SeatPhase } from "@racer/rooms/seat-client";
 import { bikes } from "@racer/sim/bikes";
 import { tiers } from "@racer/sim/difficulty";
-import { blockCssOf } from "@racer/sim/palette";
 import { MOST_SEATS } from "@racer/sim/room";
 import { roadIds } from "@racer/track/road";
 import { MenuItem, MenuList } from "@racer/ui/components/menu-list";
@@ -27,6 +26,8 @@ import { Screen } from "@racer/ui/components/screen";
 import { Stencil } from "@racer/ui/components/stencil";
 import { cn } from "@racer/ui/utils";
 import { useState } from "react";
+
+import { RiderChip } from "./shared.tsx";
 
 const trafficLabels = {
   heavy: "Heavy",
@@ -299,14 +300,6 @@ export const startLine = (
     ? "Starts when everyone is ready."
     : `Rolling out in ${startsInSeconds} s, ready or not.`;
 };
-
-export const RiderChip = ({ colour }: { readonly colour: number }) => (
-  <span
-    aria-hidden
-    className="inline-block size-[0.7em] shrink-0 -skew-x-12"
-    style={{ background: blockCssOf(colour) }}
-  />
-);
 
 export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
   <ul className="flex flex-col gap-1">
