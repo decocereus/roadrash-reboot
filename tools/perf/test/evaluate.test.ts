@@ -20,6 +20,7 @@ import {
   BIKE_BYTES,
   samplesOf,
   steadyLanes,
+  syntheticLobby,
   syntheticRoadLife,
   syntheticBudgets,
   syntheticBuild,
@@ -118,6 +119,40 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     expect(
       result.lines.some((line) => line.includes("fewestCrossCars=0"))
     ).toBeTruthy();
+  });
+
+  it("fails the lobby when its tick slows past its limit", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "lobby-slow",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife(steady),
+        syntheticLobby({ runner: 1.6, sim: 1.3 })
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(
+      result.lines.some(
+        (line) => line.startsWith("FAIL") && line.includes("lobby.tick.p95")
+      )
+    ).toBeTruthy();
+  });
+
+  it("fails the lobby when its window plans no routes", () => {
+    const result = evaluateGate(
+      samplesOf(
+        "lobby-empty",
+        steadyLanes(steady),
+        build,
+        syntheticRoadLife(steady),
+        syntheticLobby(steady, 0)
+      ),
+      budgets
+    );
+    expect(result.ok).toBeFalsy();
+    expect(result.lines.some((line) => line.includes("routed=0"))).toBeTruthy();
   });
 
   it("passes an unchanged synthetic A/B", () => {

@@ -27,7 +27,7 @@ The six `room.*` rows measure side B alone as well, because no room exists at th
 | `sim.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | at most 1.10 |
 | `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `snapshot.bytes.max` | the baseline size exactly | none, side B only |
-| `roadLife.tick.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
+| `roadLife.tick.p95`, `lobby.tick.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | none, side B only |
 | `bytes.*.raw`, `bytes.*.gzip` | the baseline plus 4,096 B or 2%, whichever is larger | none |
@@ -63,6 +63,8 @@ The harness runs on side A as well, so it drives a race only in ways both sides 
 `node tools/perf/gate.ts --select-window` replays both races and checks that the registered windows are still the ones the fixed selection rule picks.
 
 `road-life-v1` is the third window, and it runs on side B alone, because the roads at the baseline revision have no junctions and a window on them could not hold the same race on both sides. It is `roadLifeSetup` in `packages/career/src/bench.ts`, Breakwater Run on seed 8 with the full field, ticks 840 to 1,440, as the pack rides through `harbour-cross` at 560 m, which is the road's costliest window. Its one budget row, `roadLife.tick.p95`, covers the whole race step, cross cars and the pilot's forecast of them included. Each of five child runs measures a warmed second pass. The window checks only that at least four cross cars stay on the road and that three racers reach a junction, so a change to how riders ride does not invalidate it. It is not in the scenario registry, and the windows the registry pins are untouched.
+
+`lobby-v1` is the fourth window, on side B alone for the same reason, because the baseline revision predates the bar. `tools/perf/src/node-lobby.ts` steps eight riders across the bar floor with each other as blockers, the door moment's load, and each tick one rider plans a new route. A plain step takes about 3 microseconds and a route takes about 0.45 ms, so a window of plain steps would put the plans beyond its p95. Its one row, `lobby.tick.p95`, is therefore the cost of the costliest kind of tick. Each of five child runs measures a warmed second pass. The window checks that at least four riders keep moving and that the plans find routes.
 
 ### `pnpm perf`
 
@@ -238,7 +240,7 @@ node tools/verify/rushline.ts js --run <run> 'globalThis.__rushlineProfile.windo
 
 Add `gpu-chromium-intel` rows only when normal selection holds the caps. The lane also pins `rung=0` and ratio 2 today, so judging normal selection needs a change to the lane as well. A cap never moves to make a host pass.
 
-**The bar has no rows yet.** Its frame and tick rows arrive together once the shared depth pass in `post.ts` lands, because that change moves these numbers. It reads well on both cards. `/bar?prof&time=dusk`, Angled camera, 7 stand-in riders, three 20 s samples each in a development build on `1966237`:
+**The bar has a tick row, `lobby.tick.p95`, and no frame rows yet.** The frame rows wait on a vimaan run. It reads well on both cards. `/bar?prof&time=dusk`, Angled camera, 7 stand-in riders, three 20 s samples each in a development build on `1966237`:
 
 | Card | Page, render ratio | fps | p50 ms | p95 ms | p99 ms | Over 20 ms | JS ms per frame | Calls | Triangles |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

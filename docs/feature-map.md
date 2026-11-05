@@ -447,8 +447,8 @@ The bar players walk around before a race, with the movement rules and floor in 
 - Start: `packages/sim/src/lobby.ts`, `apps/web/src/game/bar.ts`, `apps/web/src/game/bar-player.ts`
 - Docs: [docs/architecture.md#the-bar-lobby](architecture.md#the-bar-lobby)
 - Verify: [walkable-bar.md](../.claude/skills/verify-rushline/features/walkable-bar.md)
-- Perf: none yet
-- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/components/bar-*.tsx`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`
+- Perf: `lobby.tick.p95`
+- Owns: `apps/web/src/bar-view.ts`, `apps/web/src/components/bar-*.tsx`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`, `tools/perf/lobby.ts`, `tools/perf/src/lobby-bench.ts`, `tools/perf/src/node-lobby.ts`
 
 Source files:
 
@@ -478,6 +478,9 @@ Source files:
 - `packages/sim/src/lobby-floor.ts`
 - `packages/sim/src/lobby-walk.ts`
 - `packages/sim/src/lobby.ts`
+- `tools/perf/lobby.ts`
+- `tools/perf/src/lobby-bench.ts`
+- `tools/perf/src/node-lobby.ts`
 
 Test files:
 
@@ -1224,7 +1227,7 @@ Test files:
 - Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
-- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
+- Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu.ts`, `tools/perf/src/gpu-frames.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-lock-race.test.ts`, `tools/perf/test/bench-lock-worker.ts`, `tools/perf/test/bench-lock.test.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
 
 Source files:
 
@@ -1250,6 +1253,7 @@ Source files:
 - `tools/perf/src/measure-report.ts`
 - `tools/perf/src/measure.ts`
 - `tools/perf/src/measurement-failed.ts`
+- `tools/perf/src/node-lane-side-b.ts`
 - `tools/perf/src/node-lane.ts`
 - `tools/perf/src/node-room.ts`
 - `tools/perf/src/node.ts`

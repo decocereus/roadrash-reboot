@@ -9,13 +9,8 @@ import {
 } from "./budgets.ts";
 import type { Budgets, Limit, NodeProfile, Observation } from "./budgets.ts";
 import { buildRecord, buildVerdicts } from "./build.ts";
-import {
-  nodeEnvironment,
-  nodeLaneRecord,
-  nodeVerdicts,
-  roadLifeRecord,
-  roadLifeVerdict,
-} from "./node-lane.ts";
+import { sideBRecord, sideBVerdict, sideBWindows } from "./node-lane-side-b.ts";
+import { nodeEnvironment, nodeLaneRecord, nodeVerdicts } from "./node-lane.ts";
 import type { NodeLane } from "./node-lane.ts";
 import { CALIBRATION_ROUNDS, CALIBRATION_VERSION } from "./node.ts";
 import { median } from "./result.ts";
@@ -30,9 +25,10 @@ export const samplesRecord = Schema.Struct({
   build: Schema.NullOr(Schema.Struct({ A: buildRecord, B: buildRecord })),
   comparisonId: Schema.String,
   lanes: Schema.Array(Schema.Literals(portableLanes)),
+  lobby: Schema.NullOr(sideBRecord),
   mode: Schema.Literals(["gate", "baseline"]),
   node: Schema.Array(nodeLaneRecord),
-  roadLife: Schema.NullOr(roadLifeRecord),
+  roadLife: Schema.NullOr(sideBRecord),
   sides: Schema.Struct({ A: sideIdentity, B: sideIdentity }),
   version: Schema.Literal(1),
 });
@@ -71,12 +67,15 @@ const observe = (
         failures.push(`FAIL node ${scenario.id} has no samples`);
       }
     }
-    if (samples.roadLife) {
-      const verdict = roadLifeVerdict(samples.roadLife, profiles);
-      failures.push(...verdict.failures);
-      observations.push(...verdict.observations);
-    } else {
-      failures.push("FAIL node road life has no samples");
+    for (const window of sideBWindows) {
+      const lane = samples[window.task];
+      if (lane) {
+        const verdict = sideBVerdict(window, lane, profiles);
+        failures.push(...verdict.failures);
+        observations.push(...verdict.observations);
+      } else {
+        failures.push(`FAIL node ${window.id} has no samples`);
+      }
     }
   }
   if (samples.lanes.includes("build")) {

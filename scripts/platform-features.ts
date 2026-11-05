@@ -489,7 +489,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "tools/perf/src/gpu-frames.ts",
       "tools/perf/src/measure*.ts",
       "tools/perf/src/node.ts",
-      "tools/perf/src/node-lane.ts",
+      "tools/perf/src/node-lane*.ts",
       "tools/perf/src/node-room.ts",
       "tools/perf/src/result.ts",
       "tools/perf/src/scenarios.ts",
