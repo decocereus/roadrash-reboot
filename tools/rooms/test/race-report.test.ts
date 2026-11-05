@@ -12,6 +12,7 @@ import { liveNotes, notesOfLines } from "../src/read.ts";
 const seat = (rider: number, more: Partial<RaceSeat>): RaceSeat => ({
   accepted: 100,
   ahead: 0,
+  asn: 64_512,
   colo: "DEL",
   crashes: 3,
   finishTick: -1,
@@ -19,6 +20,7 @@ const seat = (rider: number, more: Partial<RaceSeat>): RaceSeat => ({
   leftAtTick: null,
   missed: 1,
   mode: "riding",
+  network: "Test Net",
   readyMs: 2500,
   reported: false,
   rider,
@@ -38,6 +40,7 @@ const notes: readonly RoomNote[] = [
     protocol: 1,
     raceId: "race-a",
     road: "slag-row",
+    roomColo: "SIN",
     seats: 2,
     seed: 7,
     tier: 2,
@@ -73,6 +76,7 @@ const notes: readonly RoomNote[] = [
     protocol: 1,
     raceId: "race-b",
     road: "slag-row",
+    roomColo: "SIN",
     seats: 1,
     seed: 8,
     tier: 2,
@@ -103,6 +107,12 @@ describe("the race report", () => {
       "race-a",
       "race-b",
     ]);
+  });
+
+  it("says where the room ran and which network each rider came through", () => {
+    const report = reportOf(0);
+    expect(report).toContain("room in SIN");
+    expect(report).toContain("DEL at 8 ms on Test Net");
   });
 
   it("names the race and how it started", () => {

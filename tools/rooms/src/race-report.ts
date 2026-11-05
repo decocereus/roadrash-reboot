@@ -92,7 +92,7 @@ const raceTime = (ticks: number): string => {
 
 const headline = ({ raceId, started }: RaceRecord): string =>
   started
-    ? `Race ${raceId} on ${started.road}, ${new Date(started.at).toISOString()}, build ${started.build.slice(0, 12)}, ${started.seats} human(s), seed ${started.seed}`
+    ? `Race ${raceId} on ${started.road}, ${new Date(started.at).toISOString()}, build ${started.build.slice(0, 12)}, ${started.seats} human(s), seed ${started.seed}, room in ${started.roomColo ?? "an unknown place"}`
     : `Race ${raceId}, its started line is missing`;
 
 const outcomeOf = ({ finishTick, leftAtTick, mode }: RaceSeat): string => {
@@ -130,7 +130,7 @@ const seatLines = (
   const report = stats.find((note) => note.rider === seat.rider);
   const browser = browsers.find((note) => note.rider === seat.rider);
   return [
-    `  Rider ${seat.rider}: ${outcomeOf(seat)}, ${seat.colo ?? "unknown colo"} at ${seat.tcpRttMs ?? "?"} ms, ready after ${seat.readyMs === null ? "never" : seconds(seat.readyMs)}, road ${seat.roadMetres} m`,
+    `  Rider ${seat.rider}: ${outcomeOf(seat)}, ${seat.colo ?? "unknown colo"} at ${seat.tcpRttMs ?? "?"} ms on ${seat.network ?? "an unknown network"}, ready after ${seat.readyMs === null ? "never" : seconds(seat.readyMs)}, road ${seat.roadMetres} m`,
     `    server: ${seat.crashes} crashes, controls ${seat.accepted} accepted, ${seat.missed} missed, ${seat.late} late, ${seat.ahead} ahead`,
     ...(browser ? [browserIdentity(browser)] : []),
     ...(report ? browserLines(report) : ["    browser: no stats line arrived"]),

@@ -34,6 +34,7 @@ describe("the room's notes", () => {
       "started",
       "countdown",
     ]);
+    expect(clock.notes[0]).toMatchObject({ roomColo: "SIN" });
     expect(clock.notes[1]).toMatchObject({
       stillLoading: [],
       waitedMs: 6000,
@@ -201,7 +202,9 @@ describe("the room's notes", () => {
       raceId: "race-1",
       seats: [
         expect.objectContaining({
+          asn: 64_512,
           colo: "DEL",
+          network: "Test Net",
           readyMs: 1500,
           reported: true,
           rider: 0,

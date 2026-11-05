@@ -86,6 +86,7 @@ export interface HostPorts {
   readonly after: (ms: number, wake: () => void) => void;
   readonly note: (note: RoomNote) => void;
   readonly raceId: () => string;
+  readonly roomColo: () => string | null;
   readonly saveTape: (key: string, body: string | Uint8Array) => void;
   readonly seed: () => number;
 }
@@ -475,6 +476,7 @@ export const createHost = (
       protocol: ROOM_PROTOCOL,
       raceId,
       road,
+      roomColo: ports.roomColo(),
       seats: humans.length,
       seed,
       tier: rule.tier,

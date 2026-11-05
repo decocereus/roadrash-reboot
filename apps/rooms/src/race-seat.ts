@@ -7,7 +7,9 @@ import type { RaceSeat, SeatTally } from "./notes.ts";
 import type { SeatBrowser } from "./tape.ts";
 
 export interface SeatLink {
+  readonly asn: number | null;
   readonly colo: string | null;
+  readonly network: string | null;
   readonly tcpRttMs: number | null;
 }
 
@@ -75,11 +77,13 @@ export const raceSeatsOf = (
         ? [
             {
               ...tally,
+              asn: seat.link.asn,
               colo: seat.link.colo,
               crashes: state.crashes,
               finishTick: state.finishTick,
               leftAtTick: seat.leftAtTick,
               mode: state.mode,
+              network: seat.link.network,
               readyMs: seat.readyMs,
               reported: seat.reported,
               roadMetres: Math.round(state.s),
