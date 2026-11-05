@@ -82,6 +82,11 @@ const walkerCount = (world: World): number => {
   return count;
 };
 
+const crowdShownAt = (world: World, s: number): number => {
+  world.showRoadLife({ hazards: [], pedestrians: NO_WALKERS, tick: 600 }, s);
+  return walkerCount(world);
+};
+
 describe("the bazaar's crowd", () => {
   it("is 56 people, half of them serving, on every third stall", () => {
     expect(crowd).toHaveLength(56);
@@ -199,25 +204,23 @@ describe("the bazaar in the world", () => {
     world.dispose();
   });
 
-  it("shows the crowd from 300 m and none once the market is behind, on the walker instances", () => {
+  it("draws no one from the crowd until the rider is within 300 m", () => {
     const world = createWorld(track, fakeWorldAssets());
-    const show = (s: number): number => {
-      world.showRoadLife(
-        { hazards: [], pedestrians: NO_WALKERS, tick: 600 },
-        s
-      );
-      return walkerCount(world);
-    };
     const first = Math.min(...crowd.map(({ s }) => s));
-    expect(show(0)).toBe(0);
-    expect(show(first - 301)).toBe(0);
-    const entering = show(first - 299);
+    expect(crowdShownAt(world, 0)).toBe(0);
+    expect(crowdShownAt(world, first - 301)).toBe(0);
+    const entering = crowdShownAt(world, first - 299);
     expect(entering).toBeGreaterThan(0);
     expect(entering).toBeLessThan(crowd.length);
-    const midway = show(1600);
+    world.dispose();
+  });
+
+  it("shows part of the crowd midway and none once the market is behind, on the walker instances", () => {
+    const world = createWorld(track, fakeWorldAssets());
+    const midway = crowdShownAt(world, 1600);
     expect(midway).toBeGreaterThan(0);
     expect(midway).toBeLessThan(crowd.length);
-    expect(show(1800)).toBe(0);
+    expect(crowdShownAt(world, 1800)).toBe(0);
     world.dispose();
   });
 });
