@@ -17,7 +17,6 @@ import {
 } from "./node.ts";
 import type { ChildRecord } from "./node.ts";
 import { median, quantile } from "./result.ts";
-import { ROAD_LIFE } from "./road-life.ts";
 import { validateWorkload, WINDOW_TICKS } from "./scenarios.ts";
 import type { Scenario } from "./scenarios.ts";
 import type { Side, SideName } from "./sides.ts";
@@ -25,7 +24,6 @@ import type { Side, SideName } from "./sides.ts";
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
 const SNAPSHOT_RUNS = 3;
-const ROAD_LIFE_RUNS = 5;
 const ROOM_RUNS = 3;
 
 const decodeChild = Schema.decodeUnknownEffect(
@@ -34,7 +32,7 @@ const decodeChild = Schema.decodeUnknownEffect(
 
 const sideName = Schema.Literals(["A", "B"]);
 
-const nodeSample = Schema.Struct({
+export const nodeSample = Schema.Struct({
   file: Schema.String,
   record: childRecord,
   side: sideName,
@@ -51,13 +49,6 @@ const nodePair = Schema.Struct({
 });
 
 type NodePair = typeof nodePair.Type;
-
-export const roadLifeRecord = Schema.Struct({
-  calibrations: Schema.Array(nodeSample),
-  runs: Schema.Array(nodeSample),
-});
-
-export type RoadLifeLane = typeof roadLifeRecord.Type;
 
 export const nodeLaneRecord = Schema.Struct({
   allocation: Schema.Array(nodePair),
@@ -89,6 +80,7 @@ export const layoutPadding = (childFile: string): string =>
 const childScripts = {
   alloc: NODE_CHILD,
   calibrate: NODE_CHILD,
+  lobby: "tools/perf/lobby.ts",
   roadLife: "tools/perf/road-life.ts",
   room: "tools/perf/room.ts",
   snapshot: "tools/perf/snapshot.ts",
@@ -96,7 +88,7 @@ const childScripts = {
   validate: NODE_CHILD,
 } as const satisfies Readonly<Record<ChildRecord["task"], string>>;
 
-const runChild = Effect.fnUntraced(function* runChild(
+export const runChild = Effect.fnUntraced(function* runChild(
   side: Side,
   task: ChildRecord["task"],
   scenario: { readonly id: string },
@@ -228,31 +220,6 @@ export const nodeLane = Effect.fn("node.lane")(function* nodeLane(
   return lane;
 });
 
-export const roadLifeLane = Effect.fn("node.roadLife")(function* roadLifeLane(
-  side: Side,
-  calibrator: Scenario,
-  dir: string
-) {
-  const calibrate = (index: number) =>
-    runChild(
-      side,
-      "calibrate",
-      calibrator,
-      dir,
-      `road-life-calibrate-${index}`
-    );
-  const calibrations = [yield* calibrate(0)];
-  const runs: NodeSample[] = [];
-  for (let run = 0; run < ROAD_LIFE_RUNS; run += 1) {
-    runs.push(
-      yield* runChild(side, "roadLife", { id: ROAD_LIFE.id }, dir, `run-${run}`)
-    );
-    calibrations.push(yield* calibrate(run + 1));
-  }
-  const lane: RoadLifeLane = { calibrations, runs };
-  return lane;
-});
-
 export const nodeEnvironment = (record: ChildRecord): string =>
   `node-${record.runtime.platform}-${record.runtime.arch}`;
 
@@ -295,7 +262,7 @@ const workloadFailures = (
       : [];
   });
 
-const calibrationFailures = (
+export const calibrationFailures = (
   scenario: { readonly id: string },
   lane: { readonly calibrations: readonly NodeSample[] },
   environment: string,
@@ -325,7 +292,7 @@ const calibrationFailures = (
   });
 };
 
-const scalesAcross = (
+export const scalesAcross = (
   scenario: { readonly id: string },
   calibrations: readonly NodeSample[],
   count: number,
@@ -391,7 +358,7 @@ const snapshotMetrics = [
   { metric: "snapshot.hash.p95", of: (run: SnapshotRun) => run.hash },
 ] as const;
 
-const p95Of = (durations: readonly number[]): number =>
+export const p95Of = (durations: readonly number[]): number =>
   quantile(
     durations.toSorted((left, right) => left - right),
     0.95
@@ -575,61 +542,4 @@ export const nodeVerdicts = (
     ...roomObservations(scenario, lane, environment, laneScale),
   ];
   return { environment, failures, observations, scales };
-};
-
-const roadLifeWorkloadFailures = (lane: RoadLifeLane): string[] =>
-  lane.runs.flatMap(({ file, record }) => {
-    const seen = record.roadLife;
-    const where = `FAIL workload ${ROAD_LIFE.id} ${file}`;
-    if (!seen || record.durations?.length !== WINDOW_TICKS) {
-      return [`${where} wrote no road life window`];
-    }
-    return seen.fewestCrossCars >= ROAD_LIFE.leastCrossCars &&
-      seen.fewestWalkers >= ROAD_LIFE.leastWalkers &&
-      seen.mostRacersAtCrossing >= ROAD_LIFE.leastRacersAtCrossing
-      ? []
-      : [
-          `${where} fewestCrossCars=${seen.fewestCrossCars} fewestWalkers=${seen.fewestWalkers} mostRacersAtCrossing=${seen.mostRacersAtCrossing} expected at least ${ROAD_LIFE.leastCrossCars} and ${ROAD_LIFE.leastRacersAtCrossing}`,
-        ];
-  });
-
-export const roadLifeVerdict = (
-  lane: RoadLifeLane,
-  profiles: Readonly<Record<string, NodeProfile>>
-) => {
-  const scenario = { id: ROAD_LIFE.id };
-  const [first] = lane.calibrations;
-  const environment = first ? nodeEnvironment(first.record) : "node-unknown";
-  const profile = profiles[environment];
-  const failures = [
-    ...roadLifeWorkloadFailures(lane),
-    ...calibrationFailures(scenario, lane, environment, profile),
-  ];
-  if (failures.length > 0 || !profile) {
-    return { failures, observations: [] };
-  }
-  const { failures: unstable, scales } = scalesAcross(
-    scenario,
-    lane.calibrations,
-    lane.runs.length,
-    profile.calibration
-  );
-  if (unstable.length > 0) {
-    return { failures: unstable, observations: [] };
-  }
-  const measured = lane.runs.map(
-    ({ record }, index) =>
-      p95Of(record.durations ?? []) / (scales[index]?.scale ?? Number.NaN)
-  );
-  const observation: Observation = {
-    environment,
-    lane: "node",
-    metric: "roadLife.tick.p95",
-    note: `runs=${measured.length} scale=${median(scales.map((each) => each.scale)).toFixed(3)}`,
-    paired: null,
-    runs: { a: [], b: measured },
-    scenario: null,
-    value: median(measured),
-  };
-  return { failures, observations: [observation] };
 };

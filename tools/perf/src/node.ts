@@ -180,6 +180,7 @@ const tasks = [
   "alloc",
   "calibrate",
   "snapshot",
+  "lobby",
   "roadLife",
   "room",
 ] as const;
@@ -200,6 +201,9 @@ export const childRecord = Schema.Struct({
     })
   ),
   durations: Schema.optionalKey(Schema.Array(Schema.Number)),
+  lobby: Schema.optionalKey(
+    Schema.Struct({ fewestMoving: Schema.Number, routed: Schema.Number })
+  ),
   police: Schema.optionalKey(Schema.Number),
   racers: Schema.optionalKey(Schema.Number),
   roadLife: Schema.optionalKey(

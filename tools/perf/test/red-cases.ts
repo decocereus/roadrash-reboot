@@ -6,7 +6,9 @@ import { glbNames } from "../src/build.ts";
 import type { BuildRecord } from "../src/build.ts";
 import { evaluateBaseline } from "../src/evaluate.ts";
 import type { Samples } from "../src/evaluate.ts";
-import type { NodeLane, NodeSample, RoadLifeLane } from "../src/node-lane.ts";
+import { LOBBY_BENCH } from "../src/lobby-bench.ts";
+import type { NodeLane, NodeSample } from "../src/node-lane.ts";
+import type { SideBLane } from "../src/node-side-b.ts";
 import { CALIBRATION_ROUNDS } from "../src/node.ts";
 import type { ChildRecord } from "../src/node.ts";
 import { ROAD_LIFE } from "../src/road-life.ts";
@@ -37,7 +39,7 @@ const hashes = new Map(
 );
 const TIMING_PAIRS = 5;
 const ALLOCATION_PAIRS = 3;
-const ROAD_LIFE_RUNS = 5;
+const SIDE_B_RUNS = 5;
 const SNAPSHOT_RUNS = 3;
 const SNAPSHOT_WRITE_MS = 0.05;
 const SNAPSHOT_RESTORE_MS = 0.04;
@@ -226,29 +228,26 @@ const identity = {
   sourceFiles: 1,
 };
 
-const roadLifeSample = (
+const sideBSample = (
+  id: string,
   task: ChildRecord["task"],
   file: string,
   measured: Partial<ChildRecord>
 ): NodeSample => ({
   file,
-  record: {
-    ...measured,
-    runtime,
-    scenario: ROAD_LIFE.id,
-    scenarioHash: "road-life",
-    task,
-  },
+  record: { ...measured, runtime, scenario: id, scenarioHash: id, task },
   side: "B",
   startedAt: 0,
 });
 
-export const syntheticRoadLife = (
+const syntheticSideB = (
+  id: string,
   slowdown: Slowdown,
-  fewestCrossCars: number = ROAD_LIFE.leastCrossCars
-): RoadLifeLane => ({
-  calibrations: pairs(ROAD_LIFE_RUNS + 1).map((index) =>
-    roadLifeSample("calibrate", `road-life-calibrate-${index}.json`, {
+  run: (durations: readonly number[]) => Partial<ChildRecord>,
+  task: ChildRecord["task"]
+): SideBLane => ({
+  calibrations: pairs(SIDE_B_RUNS + 1).map((index) =>
+    sideBSample(id, "calibrate", `${id}-calibrate-${index}.json`, {
       calibration: {
         checksums: [CHECKSUM],
         durations: Array.from(
@@ -259,27 +258,59 @@ export const syntheticRoadLife = (
       },
     })
   ),
-  runs: pairs(ROAD_LIFE_RUNS).map((run) =>
-    roadLifeSample("roadLife", `road-life-run-${run}.json`, {
-      durations: tickDurations(slowdown.runner * slowdown.sim),
+  runs: pairs(SIDE_B_RUNS).map((index) =>
+    sideBSample(
+      id,
+      task,
+      `${id}-run-${index}.json`,
+      run(tickDurations(slowdown.runner * slowdown.sim))
+    )
+  ),
+});
+
+export const syntheticRoadLife = (
+  slowdown: Slowdown,
+  fewestCrossCars: number = ROAD_LIFE.leastCrossCars
+): SideBLane =>
+  syntheticSideB(
+    ROAD_LIFE.id,
+    slowdown,
+    (durations) => ({
+      durations,
       roadLife: {
         fewestCrossCars,
         fewestWalkers: ROAD_LIFE.leastWalkers,
         mostRacersAtCrossing: ROAD_LIFE.leastRacersAtCrossing,
       },
-    })
-  ),
-});
+    }),
+    "roadLife"
+  );
+
+export const syntheticLobby = (
+  slowdown: Slowdown,
+  routed: number = LOBBY_BENCH.leastRouted
+): SideBLane =>
+  syntheticSideB(
+    LOBBY_BENCH.id,
+    slowdown,
+    (durations) => ({
+      durations,
+      lobby: { fewestMoving: LOBBY_BENCH.leastMoving, routed },
+    }),
+    "lobby"
+  );
 
 export const samplesOf = (
   comparisonId: string,
   node: readonly NodeLane[],
   build: { readonly A: BuildRecord; readonly B: BuildRecord },
-  roadLife: RoadLifeLane = syntheticRoadLife({ runner: 1, sim: 1 })
+  roadLife: SideBLane = syntheticRoadLife({ runner: 1, sim: 1 }),
+  lobby: SideBLane = syntheticLobby({ runner: 1, sim: 1 })
 ): Samples => ({
   build,
   comparisonId,
   lanes: ["node", "build"],
+  lobby,
   mode: "gate",
   node,
   roadLife,
