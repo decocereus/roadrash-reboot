@@ -7,6 +7,7 @@ export const idleHud: HudState = {
   countdown: 0,
   distanceLeft: 0,
   gear: 1,
+  lagging: false,
   muted: false,
   notice: "",
   noticeDetail: "",

@@ -227,6 +227,17 @@ describe("a room host", () => {
     );
   });
 
+  it("gives each person a colour for the race and the AI none", () => {
+    const { near } = loadingRace();
+    const { roster } = startedOf(near).manifest;
+    expect(
+      roster.flatMap((entry) => (entry.kind === "human" ? [entry.colour] : []))
+    ).toStrictEqual([0, 1]);
+    expect(
+      roster.every((entry) => entry.kind === "human" || entry.colour === null)
+    ).toBeTruthy();
+  });
+
   it("drops a seat whose loaded race does not match, and starts without it", () => {
     const { clock, far, host, near } = loadingRace();
     host.message(near, readyPacket(near));

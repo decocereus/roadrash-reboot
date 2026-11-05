@@ -1,13 +1,13 @@
 import type { RoomSeat } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
 import { doorSpot, GARAGE_PLINTH, PLINTH, ROOM } from "@racer/sim/lobby-floor";
+import { riderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
-import { riderBlocks } from "./bar-blocks.ts";
 import { createBarEye } from "./bar-camera.ts";
 import { createCast } from "./bar-cast.ts";
 import { buildGarage } from "./bar-garage.ts";

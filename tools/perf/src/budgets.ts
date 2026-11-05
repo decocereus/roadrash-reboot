@@ -44,10 +44,10 @@ const snapshotKind = (metric: string, unit: string): MetricKind => ({
   unit,
 });
 
-const roadLifeKind: MetricKind = {
-  ...snapshotKind("roadLife.tick.p95", "ms"),
+const sideBKind = (metric: string): MetricKind => ({
+  ...snapshotKind(metric, "ms"),
   perScenario: false,
-};
+});
 
 const ROOM_ALLOCATION_HEADROOM = 1.1;
 
@@ -70,7 +70,8 @@ const nodeKinds: readonly MetricKind[] = [
   snapshotKind("snapshot.restore.p95", "ms"),
   snapshotKind("snapshot.hash.p95", "ms"),
   snapshotKind(SNAPSHOT_BYTES_METRIC, "B"),
-  roadLifeKind,
+  sideBKind("roadLife.tick.p95"),
+  sideBKind("lobby.tick.p95"),
   snapshotKind("room.tick.p95", "ms"),
   snapshotKind("room.confirm.p95", "ms"),
   snapshotKind("room.rollback.p95", "ms"),

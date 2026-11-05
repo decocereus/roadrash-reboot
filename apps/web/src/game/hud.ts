@@ -49,6 +49,7 @@ export interface HudState {
   readonly bikeName: string;
   readonly condition: number;
   readonly copGap: number | null;
+  readonly lagging: boolean;
   readonly distanceLeft: number;
   readonly roadName: string;
   readonly roadLength: number;

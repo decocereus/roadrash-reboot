@@ -1,15 +1,16 @@
 import { LOBBY_MAX_LEAN, LOBBY_TICK, SHOVE } from "@racer/sim/lobby";
 import { lobbyPoses } from "@racer/sim/lobby-walk";
 import type { LobbyPlaceKind, LobbyPose } from "@racer/sim/lobby-walk";
+import { riderBlocks } from "@racer/sim/palette";
+import type { RiderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import type { Assets } from "./assets.ts";
-import { blockPaletteOf, riderBlocks } from "./bar-blocks.ts";
-import type { RiderBlocks } from "./bar-blocks.ts";
 import { breathTurns, poseTurns } from "./bar-poses.ts";
 import type { Tag, TagLayer } from "./bar-tags.ts";
 import type { Shading } from "./cel.ts";
 import { bodyFor } from "./figure-rig.ts";
+import { blockPaletteOf } from "./rider-blocks.ts";
 import { createRiderFigure } from "./rider-figure.ts";
 import type { RiderFigure, Stance } from "./rider-figure.ts";
 

@@ -2,10 +2,10 @@ import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomLobbyMessage, RoomWalked } from "@racer/rooms/messages";
 import type { SeatPhase } from "@racer/rooms/seat-client";
 import { createLobbyRider } from "@racer/sim/lobby";
+import { riderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
-import { riderBlocks } from "./bar-blocks.ts";
 import { createMembers } from "./bar-members.ts";
 import type { BarWalker } from "./bar-walker.ts";
 
@@ -28,7 +28,13 @@ const lobbyOf = (ids: readonly string[]): RoomLobbyMessage => ({
   edition: 0,
   hostId: null,
   kind: "lobby",
-  members: ids.map((id) => ({ here: true, id, name: id, ready: false })),
+  members: ids.map((id, colour) => ({
+    colour,
+    here: true,
+    id,
+    name: id,
+    ready: false,
+  })),
   phase: "gathering",
   roomKind: "custom",
   rule: publicRoomRule,

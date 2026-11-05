@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
 import { summaryOf } from "./result.ts";
 import {
-  guestNames,
+  byGuest,
   policeChoices,
   publicRoomRule,
   publicRuleFor,
@@ -230,7 +230,7 @@ describe("the humans' names in a result", () => {
     if (first === undefined || second === undefined || third === undefined) {
       throw new RangeError("A three-seat race has three humans.");
     }
-    const names = guestNames(setup, second, ["Ann", "Bo", "Cy"]);
+    const names = byGuest(setup, second, ["Ann", "Bo", "Cy"]);
     const log = createRaceLog(setup, second);
     const racerOf = (rider: number) =>
       log.entrants.find((entrant) => entrant.rider === rider)?.rival;
@@ -246,7 +246,7 @@ describe("the humans' names in a result", () => {
     if (me === undefined) {
       throw new RangeError("A two-seat race has a first human.");
     }
-    expect([...guestNames(setup, me, ["Ann", "Bo"]).values()]).toStrictEqual([
+    expect([...byGuest(setup, me, ["Ann", "Bo"]).values()]).toStrictEqual([
       "Bo",
     ]);
   });

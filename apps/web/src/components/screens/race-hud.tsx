@@ -49,17 +49,23 @@ const CopWarning = ({ gap }: { readonly gap: number }) => (
 );
 
 const Speedometer = ({ hud }: { readonly hud: HudState }) => (
-  <Dial
-    className={`absolute bottom-[1.5%] left-1/2 h-[25%] min-h-36 -translate-x-1/2 ${hud.offBike ? "opacity-60" : ""}`}
-    field={hud.riderCount}
-    gear={hud.offBike ? 0 : hud.gear}
-    label="Speed"
-    max={DIAL_TOP_KMH}
-    place={ordinal(hud.position)}
-    progress={hud.progress}
-    unit="km/h"
-    value={hud.speedKmh}
-  />
+  <>
+    <span className="sr-only" role="status">
+      {hud.lagging ? "Weak connection" : null}
+    </span>
+    <Dial
+      className={`absolute bottom-[1.5%] left-1/2 h-[25%] min-h-36 -translate-x-1/2 ${hud.offBike ? "opacity-60" : ""}`}
+      field={hud.riderCount}
+      gear={hud.offBike ? 0 : hud.gear}
+      label="Speed"
+      warning={hud.lagging ? "Lag" : null}
+      max={DIAL_TOP_KMH}
+      place={ordinal(hud.position)}
+      progress={hud.progress}
+      unit="km/h"
+      value={hud.speedKmh}
+    />
+  </>
 );
 
 export const RaceHud = ({
