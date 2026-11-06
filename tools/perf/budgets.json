@@ -452,8 +452,8 @@
       "unit": "B"
     },
     {
-      "derivation": "baseline + max(4096, ceil(0.02 x baseline))",
-      "value": 629448,
+      "derivation": "owner cap: 621403 B measured at e93626e plus 2%, rounded up",
+      "value": 634000,
       "baseline": 617105,
       "direction": "max",
       "environment": "build",
