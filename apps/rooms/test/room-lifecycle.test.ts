@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SEAT_LEFT, SEAT_SILENT } from "../src/messages.ts";
+import { SEAT_LEFT, SEAT_QUIT, SEAT_SILENT } from "../src/messages.ts";
 import {
   advanceHearing,
   AWAY_MS,
@@ -77,5 +77,20 @@ describe("RoomLifecycle.tla counterexamples on the real host", () => {
         .filter(({ kind }) => ["held", "left", "rejoined"].includes(kind))
         .map(({ kind }) => kind)
     ).toStrictEqual(["held", "rejoined", "held", "rejoined"]);
+  });
+
+  it("known defect lateQuitRejoins: puts a racer whose failed preparation quit back on the bike when the new page's seat beats the quit", () => {
+    const { clock, host, seated } = room();
+    const ann = seated("ann", "Ann");
+    const bo = seated("bo", "Bo");
+    readyAll(host, [ann, bo]);
+    const again = seated("ann", "Ann");
+    host.gone(ann, SEAT_QUIT);
+    expect(startedOf(again)).toMatchObject({ you: 0 });
+    expect(
+      clock.notes
+        .filter(({ kind }) => ["held", "left", "rejoined"].includes(kind))
+        .map(({ kind }) => kind)
+    ).toStrictEqual(["held", "rejoined"]);
   });
 });

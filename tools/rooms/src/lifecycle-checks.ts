@@ -64,6 +64,7 @@ interface Bounds {
   readonly kind: "custom" | "public";
   readonly maxRaces: number;
   readonly mostSeats: number;
+  readonly oldPageFirst: boolean;
   readonly riders: 1 | 2 | 3;
   readonly slots: number;
   readonly twins: boolean;
@@ -84,6 +85,7 @@ export const CHECKS = {
       kind: "public",
       maxRaces: 1,
       mostSeats: 1,
+      oldPageFirst: true,
       riders: 2,
       slots: 2,
       twins: false,
@@ -97,6 +99,7 @@ export const CHECKS = {
       kind: "custom",
       maxRaces: 1,
       mostSeats: 2,
+      oldPageFirst: true,
       riders: 2,
       slots: 2,
       twins: false,
@@ -110,6 +113,7 @@ export const CHECKS = {
       kind: "public",
       maxRaces: 1,
       mostSeats: 2,
+      oldPageFirst: true,
       riders: 2,
       slots: 2,
       twins: false,
@@ -123,6 +127,7 @@ export const CHECKS = {
       kind: "custom",
       maxRaces: 2,
       mostSeats: 2,
+      oldPageFirst: true,
       riders: 1,
       slots: 2,
       twins: false,
@@ -136,6 +141,7 @@ export const CHECKS = {
       kind: "public",
       maxRaces: 1,
       mostSeats: 1,
+      oldPageFirst: true,
       riders: 2,
       slots: 1,
       twins: true,
@@ -147,6 +153,39 @@ export const CHECKS = {
 } as const satisfies Record<string, Check>;
 
 export type CheckName = keyof typeof CHECKS;
+
+interface Defect {
+  readonly bounds: Bounds;
+  readonly breaks: Rule;
+  readonly rules: readonly Rule[];
+  readonly says: string;
+}
+
+export const KNOWN_DEFECTS = {
+  lateQuitRejoins: {
+    bounds: { ...CHECKS.solo.bounds, oldPageFirst: false },
+    breaks: "NeverStuck",
+    rules: CHECKS.solo.rules,
+    says: "a failed preparation's quit that reaches the room after the new page's seat puts the rider back on the bike, for Multiplayer core, whose fix deletes this entry and the oldPageFirst bound",
+  },
+  staleRejoinNo: {
+    bounds: {
+      kind: "public",
+      maxRaces: 2,
+      mostSeats: 1,
+      oldPageFirst: true,
+      riders: 1,
+      slots: 2,
+      twins: false,
+      userActs: 4,
+    },
+    breaks: "BikeHeldForHold",
+    rules: ["BikeHeldForHold"],
+    says: "room-lobby.tsx keeps rejoin=no for every later seat and lets go of the bike, for Multiplayer core, whose fix deletes this entry",
+  },
+} as const satisfies Record<string, Defect>;
+
+export type DefectName = keyof typeof KNOWN_DEFECTS;
 
 interface GuardOff {
   readonly breaks: Rule;
@@ -190,7 +229,16 @@ const TIMERS = {
 } as const;
 
 const constantsOf = (
-  { kind, maxRaces, mostSeats, riders, slots, twins, userActs }: Bounds,
+  {
+    kind,
+    maxRaces,
+    mostSeats,
+    oldPageFirst,
+    riders,
+    slots,
+    twins,
+    userActs,
+  }: Bounds,
   off: Guard | null
 ): readonly string[] => [
   `Riders = {${RIDER_NAMES.slice(0, riders).join(", ")}}`,
@@ -200,6 +248,7 @@ const constantsOf = (
   `MaxRaces = ${maxRaces}`,
   `Slots = ${slots}`,
   `UserActs = ${userActs}`,
+  `OldPageFirst = ${oldPageFirst ? "TRUE" : "FALSE"}`,
   ...Object.entries(TIMERS).map(([name, ticks]) => `${name} = ${ticks}`),
   ...GUARDS.map((guard) => `${guard} = ${guard === off ? "FALSE" : "TRUE"}`),
 ];

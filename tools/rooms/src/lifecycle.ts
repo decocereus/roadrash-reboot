@@ -7,8 +7,14 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as ChildProcess from "effect/process/ChildProcess";
 
-import { CHECKS, configOf, GUARD_OFFS, GUARDS } from "./lifecycle-checks.ts";
-import type { CheckName, Guard, Rule } from "./lifecycle-checks.ts";
+import {
+  CHECKS,
+  configOf,
+  GUARD_OFFS,
+  GUARDS,
+  KNOWN_DEFECTS,
+} from "./lifecycle-checks.ts";
+import type { CheckName, DefectName, Guard, Rule } from "./lifecycle-checks.ts";
 import {
   exitOf,
   LifecycleToolFailed,
@@ -18,25 +24,43 @@ import {
 import type { Outcome } from "./lifecycle-tlc.ts";
 import { traceOf, traceText } from "./lifecycle-trace.ts";
 
-const usage = `Usage: pnpm rooms:lifecycle [--only <${[...Object.keys(CHECKS), ...GUARDS].join("|")}>]`;
+const usage = `Usage: pnpm rooms:lifecycle [--only <${[...Object.keys(CHECKS), ...GUARDS, ...Object.keys(KNOWN_DEFECTS)].join("|")}>]`;
 
 const SPEC = path.join(import.meta.dirname, "../spec/RoomLifecycle.tla");
 
 type Run =
   | { readonly kind: "check"; readonly name: CheckName }
-  | { readonly guard: Guard; readonly kind: "guardOff" };
+  | { readonly guard: Guard; readonly kind: "guardOff" }
+  | { readonly kind: "defect"; readonly name: DefectName };
 
 const CHECK_NAMES = Object.keys(CHECKS).filter(
   (name): name is CheckName => name in CHECKS
 );
 
+const DEFECT_NAMES = Object.keys(KNOWN_DEFECTS).filter(
+  (name): name is DefectName => name in KNOWN_DEFECTS
+);
+
 const ALL_RUNS: readonly Run[] = [
   ...CHECK_NAMES.map((name): Run => ({ kind: "check", name })),
   ...GUARDS.map((guard): Run => ({ guard, kind: "guardOff" })),
+  ...DEFECT_NAMES.map((name): Run => ({ kind: "defect", name })),
 ];
 
-const nameOf = (run: Run): string =>
-  run.kind === "check" ? run.name : run.guard;
+const nameOf = (run: Run): string => {
+  switch (run.kind) {
+    case "check":
+    case "defect": {
+      return run.name;
+    }
+    case "guardOff": {
+      return run.guard;
+    }
+    default: {
+      return run satisfies never;
+    }
+  }
+};
 
 const options = (args: readonly string[]) =>
   Effect.try({
@@ -47,12 +71,23 @@ const options = (args: readonly string[]) =>
   });
 
 const configFor = (run: Run): string => {
-  if (run.kind === "check") {
-    const { bounds, rules } = CHECKS[run.name];
-    return configOf(bounds, rules, null);
+  switch (run.kind) {
+    case "check": {
+      const { bounds, rules } = CHECKS[run.name];
+      return configOf(bounds, rules, null);
+    }
+    case "defect": {
+      const { bounds, rules } = KNOWN_DEFECTS[run.name];
+      return configOf(bounds, rules, null);
+    }
+    case "guardOff": {
+      const { breaks, on } = GUARD_OFFS[run.guard];
+      return configOf(CHECKS[on].bounds, [breaks], run.guard);
+    }
+    default: {
+      return run satisfies never;
+    }
   }
-  const { breaks, on } = GUARD_OFFS[run.guard];
-  return configOf(CHECKS[on].bounds, [breaks], run.guard);
 };
 
 const brokeAsExpected = (outcome: Outcome, rule: Rule): boolean =>
@@ -65,6 +100,18 @@ const verdictOf = (
   outcome: Outcome,
   output: string
 ): { readonly line: string; readonly ok: boolean } => {
+  if (run.kind === "defect") {
+    const { breaks } = KNOWN_DEFECTS[run.name];
+    return brokeAsExpected(outcome, breaks)
+      ? {
+          line: `still breaks ${breaks} in ${traceOf(output).length} states\n${traceText(output)}`,
+          ok: true,
+        }
+      : {
+          line: `expected the known defect to break ${breaks}, got ${JSON.stringify(outcome)}; once it is fixed, delete its entry in KNOWN_DEFECTS`,
+          ok: false,
+        };
+  }
   if (run.kind === "check") {
     return outcome.kind === "passed"
       ? {
@@ -85,10 +132,22 @@ const verdictOf = (
       };
 };
 
-const describeRun = (run: Run): string =>
-  run.kind === "check"
-    ? `${run.name}: ${CHECKS[run.name].says}`
-    : `${run.guard} off, on the ${GUARD_OFFS[run.guard].on} bounds`;
+const describeRun = (run: Run): string => {
+  switch (run.kind) {
+    case "check": {
+      return `${run.name}: ${CHECKS[run.name].says}`;
+    }
+    case "defect": {
+      return `known defect ${run.name}: ${KNOWN_DEFECTS[run.name].says}`;
+    }
+    case "guardOff": {
+      return `${run.guard} off, on the ${GUARD_OFFS[run.guard].on} bounds`;
+    }
+    default: {
+      return run satisfies never;
+    }
+  }
+};
 
 export const main = Effect.fn("rooms.lifecycle")(function* main(
   args: readonly string[]

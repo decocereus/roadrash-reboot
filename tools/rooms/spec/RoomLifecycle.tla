@@ -53,6 +53,7 @@ CONSTANTS
     Door,           \* room-lobby.tsx DOOR_MOMENT_MS 5 s
     Reopen,         \* room-lobby.tsx REOPEN_MS 2 s
     ClientDead,     \* seat-client.ts DEAD_AFTER_MS 5 s
+    OldPageFirst,   \* TRUE: the room hears a reloaded page's old sockets before its new seat (Reloaded)
     GuardRetireReplaced, GuardJoinByKey, GuardSweepWaits, GuardLeaveCode,
     GuardBootLeavesRoom, GuardFreeColour, GuardDropMarks, GuardDropRetires,
     GuardWaitForLoads, GuardSameRun, GuardReopen, GuardLateRoomRacing,
@@ -722,12 +723,16 @@ RetryBack(r) ==
 
 \* a page load (moveToRoom or a reload) keeps the address: the game boots
 \* again, and RoomEntry shows the taken screen for rejoin=taken, or
-\* SeatedLobby opens a seat with the same member key.  A page load takes
-\* longer than one network trip, so the room hears what the old page sent
-\* on a working link first; a dead link (Break) loses it.
+\* SeatedLobby opens a seat with the same member key.  The old page's last
+\* messages and the new page's seat travel on different sockets, so the
+\* room may hear them in either order; a dead link (Break) loses them.
+\* OldPageFirst keeps only the order in which the old page's messages arrive
+\* first.
+\* The checks set it, because without it pair alone runs past ten minutes.
+\* The known defect lateQuitRejoins clears it.
 Reloaded(r) ==
     /\ tab[r].page = "reloading"
-    /\ Delivered(r)
+    /\ OldPageFirst => Delivered(r)
     /\ LET t == [tab[r] EXCEPT !.handoff = "lobby", !.prep = FALSE, !.door = -1,
                                !.game = "booting", !.fresh = FALSE, !.quit = FALSE,
                                !.bootQuit = FALSE]
