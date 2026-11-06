@@ -34,7 +34,13 @@ import {
   storeGuestName,
 } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
-import { moveToRoom, rejoinOf, roomArrivalOf, roomLink } from "./room-url.ts";
+import {
+  clearRejoinNo,
+  moveToRoom,
+  rejoinOf,
+  roomArrivalOf,
+  roomLink,
+} from "./room-url.ts";
 import { GettingBackOn, TooLate } from "./screens/rejoin.tsx";
 import {
   GuestNameScreen,
@@ -139,7 +145,9 @@ const SeatedLobby = ({
   const [, redraw] = useReducer((count: number) => count + 1, 0);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
   const lostTold = useRef(false);
-  const [rejoin] = useState(() => rejoinOf(globalThis.location.search));
+  const [tooLate] = useState(
+    () => rejoinOf(globalThis.location.search) === "try"
+  );
   const joinedTold = useRef(false);
   const lost = useEffectEvent(onLost);
   const {
@@ -192,7 +200,7 @@ const SeatedLobby = ({
               graphics: `quality rung ${diagnostics().qualityRung()}`,
             }
           : null,
-      rejoin !== "no"
+      rejoinOf(globalThis.location.search) !== "no"
     );
     const tellLost = () => {
       if (!lostTold.current) {
@@ -252,6 +260,7 @@ const SeatedLobby = ({
           }
         }
       },
+      onOpen: clearRejoinNo,
     });
     setSeat(opened);
     return () => {
@@ -277,7 +286,7 @@ const SeatedLobby = ({
         }
       }
     };
-  }, [bootFailed, handoffNow, name, rejoin, roomId, opening]);
+  }, [bootFailed, handoffNow, name, roomId, opening]);
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);
@@ -347,7 +356,7 @@ const SeatedLobby = ({
   if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
       <>
-        {rejoin === "try" && <TooLate holdSeconds={lobby.seatHoldSeconds} />}
+        {tooLate && <TooLate holdSeconds={lobby.seatHoldSeconds} />}
         <BarLobby
           copied={copied}
           lobby={lobby}

@@ -36,6 +36,18 @@ export const rejoinOf = (search: string): RejoinChoice | null =>
     (each) => each === new URLSearchParams(search).get(REJOIN_PARAM)
   ) ?? null;
 
+export const clearRejoinNo = (): void => {
+  const search = new URLSearchParams(globalThis.location.search);
+  if (search.get(REJOIN_PARAM) === "no") {
+    search.delete(REJOIN_PARAM);
+    globalThis.history.replaceState(
+      globalThis.history.state,
+      "",
+      `${globalThis.location.pathname}?${search.toString()}`
+    );
+  }
+};
+
 export const roomArrivalOf = (search: string): RoomArrival => {
   const named = new URLSearchParams(search).get(ARRIVAL_PARAM);
   return roomArrivals.find((each) => each === named) ?? "link";

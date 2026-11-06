@@ -168,21 +168,6 @@ export const KNOWN_DEFECTS = {
     rules: CHECKS.solo.rules,
     says: "a failed preparation's quit that reaches the room after the new page's seat puts the rider back on the bike, for Multiplayer core, whose fix deletes this entry and the oldPageFirst bound",
   },
-  staleRejoinNo: {
-    bounds: {
-      kind: "public",
-      maxRaces: 2,
-      mostSeats: 1,
-      oldPageFirst: true,
-      riders: 1,
-      slots: 2,
-      twins: false,
-      userActs: 4,
-    },
-    breaks: "BikeHeldForHold",
-    rules: ["BikeHeldForHold"],
-    says: "room-lobby.tsx keeps rejoin=no for every later seat and lets go of the bike, for Multiplayer core, whose fix deletes this entry",
-  },
 } as const satisfies Record<string, Defect>;
 
 export type DefectName = keyof typeof KNOWN_DEFECTS;
