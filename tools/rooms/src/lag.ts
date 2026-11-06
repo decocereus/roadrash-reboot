@@ -11,7 +11,7 @@ const usage =
 
 const RETRANSMIT_EXTRA_MS = 50;
 
-interface Link {
+export interface Link {
   readonly burstEveryMs: number;
   readonly burstMs: number;
   readonly jitterMs: number;
@@ -55,12 +55,16 @@ const burstEndsAt = ({ burstEveryMs, burstMs }: Link, now: number): number => {
   return into < burstMs ? now - into + burstMs : now;
 };
 
-const delayedWrites = (
-  to: Socket,
-  link: Link,
-  slowerMs: (now: number) => number
-) => {
-  const queue: { readonly at: number; readonly data: Buffer | null }[] = [];
+interface Lane {
+  readonly send: (to: Socket, data: Buffer | null) => void;
+}
+
+const laneOf = (link: Link, slowerMs: (now: number) => number): Lane => {
+  const queue: {
+    readonly at: number;
+    readonly data: Buffer | null;
+    readonly to: Socket;
+  }[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastAt = 0;
   const drain = (): void => {
@@ -70,9 +74,9 @@ const delayedWrites = (
     while (next && next.at <= now) {
       queue.shift();
       if (next.data === null) {
-        to.end();
-      } else if (!to.destroyed) {
-        to.write(next.data);
+        next.to.end();
+      } else if (!next.to.destroyed) {
+        next.to.write(next.data);
       }
       [next] = queue;
     }
@@ -80,43 +84,60 @@ const delayedWrites = (
       timer = setTimeout(drain, Math.max(0, next.at - now));
     }
   };
-  return (data: Buffer | null): void => {
-    const now = performance.now();
-    lastAt = Math.max(
-      lastAt,
-      burstEndsAt(link, now) + delayOf(link) + slowerMs(now)
-    );
-    queue.push({ at: lastAt, data });
-    timer ??= setTimeout(drain, Math.max(0, lastAt - performance.now()));
+  return {
+    send(to, data) {
+      const now = performance.now();
+      lastAt = Math.max(
+        lastAt,
+        burstEndsAt(link, now) + delayOf(link) + slowerMs(now)
+      );
+      queue.push({ at: lastAt, data, to });
+      timer ??= setTimeout(drain, Math.max(0, lastAt - now));
+    },
   };
 };
 
 const NOT_SLOWER = (): number => 0;
 
-const bridge = (
-  client: Socket,
-  targetPort: number,
-  link: Link,
-  uploadSlowerMs: (now: number) => number
-): void => {
+interface Lanes {
+  readonly down: Lane;
+  readonly up: Lane;
+}
+
+const bridge = (client: Socket, targetPort: number, lanes: Lanes): void => {
   const upstream = net.connect(targetPort, "127.0.0.1");
   client.setNoDelay(true);
   upstream.setNoDelay(true);
-  const toUpstream = delayedWrites(upstream, link, uploadSlowerMs);
-  const toClient = delayedWrites(client, link, NOT_SLOWER);
-  client.on("data", toUpstream);
-  upstream.on("data", toClient);
+  client.on("data", (data: Buffer) => {
+    lanes.up.send(upstream, data);
+  });
+  upstream.on("data", (data: Buffer) => {
+    lanes.down.send(client, data);
+  });
   client.on("end", () => {
-    toUpstream(null);
+    lanes.up.send(upstream, null);
   });
   upstream.on("end", () => {
-    toClient(null);
+    lanes.down.send(client, null);
   });
   client.on("error", () => {
     upstream.destroy();
   });
   upstream.on("error", () => {
     client.destroy();
+  });
+};
+
+export const linkServer = (targetPort: number, link: Link): net.Server => {
+  const startedAt = performance.now();
+  const uploadSlowerMs = (now: number): number =>
+    now - startedAt >= link.uploadAfterMs ? link.uploadMs : 0;
+  const lanes: Lanes = {
+    down: laneOf(link, NOT_SLOWER),
+    up: laneOf(link, uploadSlowerMs),
+  };
+  return net.createServer((client) => {
+    bridge(client, targetPort, lanes);
   });
 };
 
@@ -137,13 +158,7 @@ export const main = Effect.fn("rooms.lag")(function* main(
     uploadAfterMs: Number(values["upload-after"]) * 1000,
     uploadMs: Number(values["upload-ms"]),
   };
-  const startedAt = performance.now();
-  const uploadSlowerMs = (now: number): number =>
-    now - startedAt >= link.uploadAfterMs ? link.uploadMs : 0;
-  const server = net.createServer((client) => {
-    bridge(client, Number(target), link, uploadSlowerMs);
-  });
-  server.listen(Number(listen), "127.0.0.1");
+  linkServer(Number(target), link).listen(Number(listen), "127.0.0.1");
   yield* Console.log(
     `Port ${listen} reaches ${target} with ${link.rttMs} ms round trip, ${link.jitterMs} ms jitter and ${values.loss}% loss. Press Ctrl-C to stop.`
   );

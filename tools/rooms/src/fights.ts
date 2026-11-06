@@ -251,6 +251,11 @@ const align = Effect.fn("rooms.fights.align")(function* align(
     if (alongside(now)) {
       return now;
     }
+    if (now.aMode === "wrecked" || now.bMode === "wrecked") {
+      return yield* new FightCheckFailed({
+        message: `Rider ${now.aMode === "wrecked" ? "A" : "B"} is wrecked, so this race can't bring the riders alongside again.`,
+      });
+    }
     yield* Effect.sleep(`${ALIGN_WAIT_MS} millis`);
   }
   return yield* new FightCheckFailed({
@@ -406,8 +411,8 @@ const fightOnce = Effect.fn("rooms.fights.bout")(function* fightOnce(
   network: RunName
 ) {
   const once = strikeOnce(windows, bout, places, network).pipe(
-    Effect.catchTag("FightCheckFailed", () =>
-      Effect.succeed(neverAlongside(bout))
+    Effect.catchTag("FightCheckFailed", ({ message }) =>
+      Console.error(message).pipe(Effect.as(neverAlongside(bout)))
     )
   );
   let row = yield* once;

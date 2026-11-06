@@ -180,6 +180,7 @@ export const someRaceStats: RaceStats = {
   mostSteps: 3,
   refusedPredictions: 0,
   resimulatedTicks: 90,
+  retriedPresses: 0,
   rollbacks: 7,
   rttMeanMs: 95,
   rttWorstMs: 204,
