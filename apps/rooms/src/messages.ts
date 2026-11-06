@@ -82,7 +82,13 @@ const Ended = Schema.Struct({
   tick: Schema.Number,
 });
 
-export const REFUSALS = ["build", "content", "full", "replaced"] as const;
+export const REFUSALS = [
+  "build",
+  "content",
+  "full",
+  "limited",
+  "replaced",
+] as const;
 
 export type Refusal = (typeof REFUSALS)[number];
 

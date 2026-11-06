@@ -102,7 +102,7 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
   return {
     enter: (socket, claim) => {
       if (claim.build !== ports.build || claim.protocol !== ROOM_PROTOCOL) {
-        send(socket, { kind: "refused" });
+        send(socket, { kind: "refused", reason: "build" });
         socket.close(SEAT_CLOSED, "build");
         return;
       }

@@ -4,6 +4,7 @@ import { createInputLatency } from "@racer/rooms/input-latency";
 import { cleanGuestName } from "@racer/rooms/messages";
 import type { RoomPreview } from "@racer/rooms/messages";
 import { enterQueue } from "@racer/rooms/queue-client";
+import type { QueueRefusal } from "@racer/rooms/queue-messages";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat, SeatRace } from "@racer/rooms/seat-client";
@@ -457,7 +458,7 @@ export const RoomLobby = (props: RoomProps) => {
 
 const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
   const [riders, setRiders] = useState(1);
-  const [refused, setRefused] = useState(false);
+  const [refusal, setRefusal] = useState<QueueRefusal | null>(null);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
@@ -479,7 +480,7 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
               break;
             }
             case "refused": {
-              setRefused(true);
+              setRefusal(message.reason);
               break;
             }
             default: {
@@ -496,7 +497,7 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
       leave();
     };
   }, [opening]);
-  return <QueueScreen onBack={onBack} refused={refused} riders={riders} />;
+  return <QueueScreen onBack={onBack} refusal={refusal} riders={riders} />;
 };
 
 export const QuickRace = ({ onBack }: { readonly onBack: () => void }) => {

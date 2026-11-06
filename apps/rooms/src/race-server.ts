@@ -10,11 +10,14 @@ import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
 
 import { RoomApi } from "./contract.ts";
+import { gatedClient, ROOM_LIMITED } from "./gate.ts";
 import { createHost } from "./host.ts";
 import type { Host, HostPorts, HostSocket } from "./host.ts";
+import { gateLimiter, passes } from "./limiter.ts";
 import { cleanGuestName, SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import type { RoomNote } from "./notes.ts";
+import { refusedSeat } from "./refused-seat.ts";
 import { launchRoomConfig } from "./room-config.ts";
 import { roomKindOf } from "./room-id.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
@@ -98,6 +101,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       Effect.catchTag("ConfigError", () => Effect.succeed(LOCAL_BUILD))
     );
     const tapes = yield* Cloudflare.R2.WriteBucket(RaceTapes);
+    const opens = yield* gateLimiter("open");
     return Effect.gen(function* raceServerInstance() {
       const saves = yield* Queue.unbounded<TapeSave>();
       yield* Queue.take(saves).pipe(
@@ -149,10 +153,19 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
                   message: "A seat is a WebSocket upgrade.",
                 });
               }
+              const host = hostOf(params.roomId);
+              const client = gatedClient(request.remoteAddress);
+              if (
+                host.status().waiting === 0 &&
+                Option.isSome(client) &&
+                !(yield* passes(opens, client.value))
+              ) {
+                return refusedSeat(ROOM_LIMITED);
+              }
               const [response, socket] = yield* Cloudflare.upgrade();
               const url = new URL(request.url, "http://rooms");
               const name = cleanGuestName(url.searchParams.get("name") ?? "");
-              hostOf(params.roomId).seat(
+              host.seat(
                 rawSocket(socket),
                 name,
                 linkOf(
@@ -196,5 +209,10 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
           }),
       };
     });
-  }).pipe(Effect.provide(Cloudflare.R2.WriteBucketBinding))
+  }).pipe(
+    Effect.provide([
+      Cloudflare.R2.WriteBucketBinding,
+      Cloudflare.RateLimitBinding,
+    ])
+  )
 ) {}

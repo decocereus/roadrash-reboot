@@ -30,8 +30,10 @@ const decodeStatus = Schema.decodeUnknownSync(
   Schema.fromJsonString(StatusSchema)
 );
 
+type Heard = QueueMessage | { readonly kind: "lost" };
+
 interface Rider {
-  readonly heard: QueueMessage[];
+  readonly heard: Heard[];
   readonly leave: () => void;
 }
 
@@ -42,10 +44,10 @@ const fetchText = (url: string) =>
   });
 
 const openRider = (url: string, build: string): Rider => {
-  const heard: QueueMessage[] = [];
+  const heard: Heard[] = [];
   const leave = enterQueue(url, build, {
     onLost: () => {
-      heard.push({ kind: "refused" });
+      heard.push({ kind: "lost" });
     },
     onMessage: (message) => {
       heard.push(message);
@@ -125,10 +127,10 @@ export const main = Effect.fn("rooms.queue")(function* queue(
     "a lone rider placed",
     msOf(launchRoomConfig.queueWaitSeconds) + MARGIN_MS
   );
-  const stale = yield* Effect.callback<QueueMessage>((resume) => {
+  const stale = yield* Effect.callback<Heard>((resume) => {
     enterQueue(url, `${build}-old`, {
       onLost: () => {
-        resume(Effect.succeed({ kind: "refused" }));
+        resume(Effect.succeed({ kind: "lost" }));
       },
       onMessage: (message) => {
         resume(Effect.succeed(message));
@@ -142,7 +144,9 @@ export const main = Effect.fn("rooms.queue")(function* queue(
     ...(waitedMs > msOf(launchRoomConfig.queueWaitSeconds) - MARGIN_MS
       ? []
       : [`A lone rider left after only ${waitedMs} ms.`]),
-    ...(stale.kind === "refused" ? [] : ["The queue took an old build."]),
+    ...(stale.kind === "refused" && stale.reason === "build"
+      ? []
+      : ["The queue took an old build."]),
   ];
   console.log(
     JSON.stringify(
