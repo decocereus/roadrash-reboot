@@ -1,6 +1,7 @@
 import { HIT_STUN_TICKS } from "@racer/sim/combat";
-import { clamp } from "@racer/sim/state";
-import type { AttackKind, RaceEvent, WeaponKind } from "@racer/sim/state";
+import type { RiderView } from "@racer/sim/race-view";
+import { clamp, riderOf } from "@racer/sim/state";
+import type { AttackKind, HeardFight, WeaponKind } from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
 
 import type { RiderPose } from "./figure-pose.ts";
@@ -15,11 +16,21 @@ const KICK_RETRACT_TICKS = 3;
 const KICK_DROP_FROM = 8;
 const KICK_DROP_TICKS = 5;
 
+interface HeardStrike {
+  readonly attack: AttackKind;
+  readonly side: number;
+  readonly tick: number;
+  readonly weapon: WeaponKind;
+}
+
 export interface RiderFight {
   attack: AttackKind | "none";
   elapsed: number;
   flinchLeft: number;
+  hitSeen: number;
+  readonly queued: HeardStrike[];
   side: number;
+  startTick: number;
   weapon: WeaponKind;
 }
 
@@ -29,32 +40,77 @@ export interface StrikeFrame {
   rise: number;
 }
 
-export const quietFight = (): RiderFight => ({
+export const quietFight = (hitSeen: number): RiderFight => ({
   attack: "none",
   elapsed: 0,
   flinchLeft: 0,
+  hitSeen,
+  queued: [],
   side: 1,
+  startTick: 0,
   weapon: "none",
 });
 
-export const fightTick = (fight: RiderFight, airborne: boolean): void => {
-  fight.attack = airborne ? "none" : fight.attack;
-  fight.elapsed += 1;
-  fight.flinchLeft = Math.max(0, fight.flinchLeft - 1);
+const begin = (
+  fight: RiderFight,
+  heard: HeardStrike,
+  drawnTick: number
+): void => {
+  const strike = strikeOf(heard.attack, heard.weapon);
+  fight.attack = heard.attack;
+  fight.elapsed = clamp(
+    drawnTick - heard.tick,
+    0,
+    strike.ticks - strike.strikeTick
+  );
+  fight.side = heard.side;
+  fight.startTick = heard.tick;
+  fight.weapon = heard.weapon;
 };
 
-export const fightHeard = (fight: RiderFight, event: RaceEvent): void => {
-  if (event.kind === "attack") {
-    fight.attack = event.attack;
-    fight.elapsed = 0;
-    fight.side = event.side;
-    fight.weapon = event.weapon;
+export const fightTick = (
+  fight: RiderFight,
+  rider: Pick<RiderView, "airborne" | "lastHitTick">,
+  drawnTick: number
+): void => {
+  fight.attack = rider.airborne ? "none" : fight.attack;
+  fight.elapsed += 1;
+  fight.flinchLeft = Math.max(0, fight.flinchLeft - 1);
+  if (
+    fight.attack !== "none" &&
+    fight.elapsed >= strikeOf(fight.attack, fight.weapon).ticks
+  ) {
+    fight.attack = "none";
+  }
+  const next = fight.attack === "none" ? fight.queued.shift() : undefined;
+  if (next) {
+    begin(fight, next, drawnTick);
+  }
+  if (rider.lastHitTick > fight.hitSeen) {
+    fight.hitSeen = rider.lastHitTick;
+    fight.flinchLeft = HIT_STUN_TICKS;
   }
 };
 
-export const flinchHeard = (fight: RiderFight): void => {
-  fight.attack = "none";
-  fight.flinchLeft = HIT_STUN_TICKS;
+export const fightHeard = (
+  fighters: readonly { readonly fight: RiderFight }[],
+  { event, tick }: HeardFight,
+  drawnTick: number
+): void => {
+  if (event.kind === "attack") {
+    const fight = riderOf(fighters, event.rider)?.fight;
+    const heard = { ...event, tick };
+    if (fight?.attack === "none") {
+      begin(fight, heard, drawnTick);
+    } else {
+      fight?.queued.push(heard);
+    }
+    return;
+  }
+  const struck = riderOf(fighters, event.target)?.fight;
+  if (struck && struck.attack !== "none" && struck.startTick <= tick) {
+    struck.attack = "none";
+  }
 };
 
 export const fightFlinch = (
@@ -125,7 +181,6 @@ export const strikeFrame = (
   const land = strike.ticks - strike.strikeTick;
   const elapsed = fight.elapsed + subTick;
   if (elapsed >= strike.ticks) {
-    fight.attack = "none";
     return false;
   }
   if (fight.attack === "kick") {

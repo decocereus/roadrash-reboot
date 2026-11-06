@@ -397,6 +397,19 @@ export type RaceEvent =
     }
   | { readonly kind: "finish"; readonly rider: RiderId; readonly tick: number };
 
+export type FightEvent = Extract<
+  RaceEvent,
+  { readonly kind: "attack" | "hit" }
+>;
+
+export interface HeardFight {
+  readonly event: FightEvent;
+  readonly tick: number;
+}
+
+export const isFightEvent = (event: RaceEvent): event is FightEvent =>
+  event.kind === "attack" || event.kind === "hit";
+
 export interface PoliceRules {
   readonly topSpeed: number;
   readonly sightRange: number;

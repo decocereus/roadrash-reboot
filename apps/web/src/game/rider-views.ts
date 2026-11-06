@@ -35,7 +35,6 @@ import {
   fightFlinch,
   fightHeard,
   fightTick,
-  flinchHeard,
   quietFight,
   strikeFrame,
 } from "./rider-fight.ts";
@@ -193,7 +192,7 @@ export const createCast = (shading: Shading): Cast => ({
 interface CastStage {
   readonly colours: ReadonlyMap<RiderId, number>;
   readonly me: RiderId;
-  readonly race: Pick<RaceRun, "takeCorrections" | "view">;
+  readonly race: Pick<RaceRun, "fights" | "takeCorrections" | "view">;
   readonly track: Track;
   readonly world: World;
   readonly fleet: Fleet;
@@ -273,7 +272,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         bike,
         drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
         drift: stillDrift(),
-        fight: quietFight(),
+        fight: quietFight(rider.lastHitTick),
         figure,
         lift: figure.standHeight,
         pitch: 0,
@@ -308,32 +307,25 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     s <= subject.s + cast.riderReach.ahead;
 
   const fightsTick = () => {
-    const { riders } = stage.race.view;
+    const { riders, tick } = stage.race.view;
     for (let index = 0; index < cast.views.length; index += 1) {
       const view = cast.views[index];
-      if (view) {
-        fightTick(view.fight, riders[index]?.airborne === true);
+      const rider = riders[index];
+      if (view && rider) {
+        fightTick(view.fight, rider, tick);
       }
     }
-  };
-
-  const flinchTarget = (event: RaceEvent) => {
-    if (event.kind === "hit") {
-      const struck = riderOf(cast.views, event.target);
-      if (struck) {
-        flinchHeard(struck.fight);
-      }
+    for (const heard of stage.race.fights()) {
+      fightHeard(cast.views, heard, tick);
     }
   };
 
   const touchDown = (event: RaceEvent) => {
-    flinchTarget(event);
     const view = riderOf(cast.views, event.rider);
     const rider = riderOf(stage.race.view.riders, event.rider);
     if (!(view && rider)) {
       return;
     }
-    fightHeard(view.fight, event);
     const near = event.rider === stage.me || withinReach(rider.s);
     if (event.kind === "land") {
       view.sagSpeed += Math.min(MOST_SAG_KICK, -event.impact * SAG_PER_IMPACT);

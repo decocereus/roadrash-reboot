@@ -7,10 +7,13 @@ import { createRoomClient } from "./room-client.ts";
 import { createRoom, roomSetup } from "./room.ts";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 import type { Control, RaceEvent, RiderId } from "./state.ts";
+import { strikeOf } from "./weapons.ts";
 
 const VICTIM = PLAYER_RIDER;
 const ATTACKER = riderIdAt(1);
 const RIDE_TICKS = 240;
+const KICK = strikeOf("kick", "none");
+const KICK_CONTACT = KICK.ticks - KICK.strikeTick;
 const AFTER_TICKS = 60;
 const riding = controlOf({ ...neutralInput, throttle: 1 });
 const kicking = controlOf({ ...neutralInput, kick: true, throttle: 1 });
@@ -77,19 +80,16 @@ const burst = (kickAfter: number) => {
     }
     client.confirm(room.frame, null);
     if (tick <= RIDE_TICKS) {
-      client.takeEvents();
+      client.takeFights();
     }
   }
-  const played: { readonly kind: string; readonly read: number }[] = [];
-  for (let read = 0; read < 12; read += 1) {
-    client.predict(riding);
-    for (const event of client.takeEvents()) {
-      if (event.kind === "attack" || event.kind === "hit") {
-        played.push({ kind: event.kind, read });
-      }
-    }
-  }
-  return played;
+  client.predict(riding);
+  return {
+    kickAt,
+    taken: client
+      .takeFights()
+      .map(({ event, tick }) => ({ kind: event.kind, tick })),
+  };
 };
 
 const kindsBy = (heard: readonly Heard[], kind: RaceEvent["kind"]) =>
@@ -146,19 +146,14 @@ describe("what a client hears of another rider's fight", () => {
     expect(attackers).toStrictEqual([VICTIM, ATTACKER]);
   });
 
-  it("skips a strike that is long over when a burst of the room's ticks arrives", () => {
-    expect(burst(1)).toStrictEqual([]);
-  });
-
-  it("doesn't play a hit whose strike was too old to draw", () => {
-    expect(burst(32)).toStrictEqual([]);
-  });
-
-  it("plays a strike from a burst before its hit, a tick at a time", () => {
-    expect(burst(36)).toStrictEqual([
-      { kind: "attack", read: 2 },
-      { kind: "hit", read: 4 },
-    ]);
+  it("hands over every strike and hit in a burst at once, with the tick the room ran each", () => {
+    for (const kickAfter of [1, 32, 36]) {
+      const { kickAt, taken } = burst(kickAfter);
+      expect(taken).toStrictEqual([
+        { kind: "attack", tick: kickAt },
+        { kind: "hit", tick: kickAt + KICK_CONTACT },
+      ]);
+    }
   });
 
   it("hears its own strike once when the room starts it later than the prediction did", () => {

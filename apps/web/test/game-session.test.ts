@@ -57,6 +57,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
     confirmed: view,
     countdownSeconds,
     events: () => [],
+    fights: () => [],
     frameDrawn: () => {
       throw new Error("The session never draws.");
     },
