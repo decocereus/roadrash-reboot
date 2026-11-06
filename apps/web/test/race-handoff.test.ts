@@ -8,7 +8,12 @@ import type {
   RideOutHandoff,
   Step,
 } from "../src/race-handoff.ts";
-import { roomSignals, seatClosing, stepRoom } from "../src/room-handoff.ts";
+import {
+  roomSignals,
+  seatChange,
+  seatClosing,
+  stepRoom,
+} from "../src/room-handoff.ts";
 import type { RoomEvent, RoomHandoff } from "../src/room-handoff.ts";
 
 const RIDE = "the ride";
@@ -366,5 +371,35 @@ describe("a room seat that closes", () => {
 
   it("stays open for the race while the rider is riding", () => {
     expect(seatClosing({ kind: "riding", ride: RIDE }, false)).toBe("keep");
+  });
+});
+
+describe("a room seat that changes", () => {
+  it("sends a rider whose race ended before they rode it back to the room's lobby", () => {
+    expect(seatChange("ended", false, FIRST_ROOM)).toBe("backToLobby");
+    expect(seatChange("ended", true, { kind: "preparing", ride: RIDE })).toBe(
+      "backToLobby"
+    );
+    expect(
+      seatChange("ended", true, { kind: "preparingPastDoor", ride: RIDE })
+    ).toBe("backToLobby");
+  });
+
+  it("leaves a rider who rode the race on its results", () => {
+    expect(seatChange("ended", true, { kind: "riding", ride: RIDE })).toBe(
+      "redraw"
+    );
+  });
+
+  it("reopens a seat lost in the lobby and ends a seat lost in a race", () => {
+    expect(seatChange("lost", false, FIRST_ROOM)).toBe("reopen");
+    expect(seatChange("lost", true, { kind: "riding", ride: RIDE })).toBe(
+      "raceLost"
+    );
+  });
+
+  it("redraws every other change", () => {
+    expect(seatChange("lobby", false, FIRST_ROOM)).toBe("redraw");
+    expect(seatChange("loading", true, FIRST_ROOM)).toBe("redraw");
   });
 });

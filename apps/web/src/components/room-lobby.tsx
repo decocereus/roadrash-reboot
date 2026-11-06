@@ -22,7 +22,7 @@ import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
-import { seatClosing, stepRoom } from "../room-handoff.ts";
+import { seatChange, seatClosing, stepRoom } from "../room-handoff.ts";
 import type { RoomHandoff } from "../room-handoff.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
@@ -190,15 +190,34 @@ const SeatedLobby = ({
     };
     opened.listen({
       onChange: () => {
-        if (opened.phase() !== "lost") {
-          redraw();
-        } else if (opened.race()) {
-          tellLost();
-          lost();
-          moveToRoom(roomId, "moved");
-        } else {
-          tellLost();
-          reopening = setTimeout(reopen, REOPEN_MS);
+        const change = seatChange(
+          opened.phase(),
+          opened.race() !== null,
+          handoffNow()
+        );
+        switch (change) {
+          case "backToLobby": {
+            moveToRoom(roomId, "moved");
+            break;
+          }
+          case "raceLost": {
+            tellLost();
+            lost();
+            moveToRoom(roomId, "moved");
+            break;
+          }
+          case "redraw": {
+            redraw();
+            break;
+          }
+          case "reopen": {
+            tellLost();
+            reopening = setTimeout(reopen, REOPEN_MS);
+            break;
+          }
+          default: {
+            change satisfies never;
+          }
         }
       },
     });
