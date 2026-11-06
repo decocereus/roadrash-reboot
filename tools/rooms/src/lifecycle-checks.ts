@@ -94,6 +94,20 @@ export const CHECKS = {
     rules: SAFETY,
     says: "one seat in a public room, three actions",
   },
+  newMember: {
+    bounds: {
+      kind: "public",
+      maxRaces: 2,
+      mostSeats: 1,
+      oldPageFirst: true,
+      riders: 1,
+      slots: 2,
+      twins: false,
+      userActs: 4,
+    },
+    rules: ["BackOnBike"],
+    says: "one rider in a public room over two races, whom the lobby can make a new member mid-race",
+  },
   pair: {
     bounds: {
       kind: "custom",
