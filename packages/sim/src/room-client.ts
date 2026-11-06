@@ -65,6 +65,7 @@ export interface RiderCorrection {
 export interface RoomClient {
   readonly confirmed: RaceState;
   readonly lagging: () => boolean;
+  readonly lostControls: () => number;
   readonly mine: RiderState;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
@@ -168,6 +169,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   let staleCause: JumpCause = "otherRiders";
   const overruled = new Uint8Array(LAG_WINDOW_TICKS);
   let overruledTicks = 0;
+  let lostControls = 0;
   let lagging = false;
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
@@ -333,6 +335,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       frame.tick < PILOT_FROM_TICK &&
       (reached < frame.tick ||
         ownControls[slotOf(frame.tick)] !== frame.controls.get(me));
+    lostControls += lost ? 1 : 0;
     overruledTicks += (lost ? 1 : 0) - (overruled[slot] ?? 0);
     overruled[slot] = lost ? 1 : 0;
     if (overruledTicks >= LAGGING_FROM_TICKS) {
@@ -379,6 +382,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     },
     confirmed,
     lagging: () => lagging,
+    lostControls: () => lostControls,
     mine,
     predict: (control) => {
       settle();

@@ -7,7 +7,7 @@ import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 
 const usage =
-  "Usage: pnpm rooms:lag --listen <port> --target <port> [--rtt 100] [--jitter 20] [--loss 1] [--burst-every 10] [--burst-ms 1000]";
+  "Usage: pnpm rooms:lag --listen <port> --target <port> [--rtt 100] [--jitter 20] [--loss 1] [--burst-every 10] [--burst-ms 1000] [--upload-ms 150 --upload-after 30]";
 
 const RETRANSMIT_EXTRA_MS = 50;
 
@@ -17,6 +17,8 @@ interface Link {
   readonly jitterMs: number;
   readonly lossShare: number;
   readonly rttMs: number;
+  readonly uploadAfterMs: number;
+  readonly uploadMs: number;
 }
 
 const options = (args: readonly string[]) =>
@@ -33,6 +35,8 @@ const options = (args: readonly string[]) =>
           loss: { default: "1", type: "string" },
           rtt: { default: "100", type: "string" },
           target: { type: "string" },
+          "upload-after": { default: "0", type: "string" },
+          "upload-ms": { default: "0", type: "string" },
         },
       }).values,
   });
@@ -51,7 +55,11 @@ const burstEndsAt = ({ burstEveryMs, burstMs }: Link, now: number): number => {
   return into < burstMs ? now - into + burstMs : now;
 };
 
-const delayedWrites = (to: Socket, link: Link) => {
+const delayedWrites = (
+  to: Socket,
+  link: Link,
+  slowerMs: (now: number) => number
+) => {
   const queue: { readonly at: number; readonly data: Buffer | null }[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastAt = 0;
@@ -74,18 +82,28 @@ const delayedWrites = (to: Socket, link: Link) => {
   };
   return (data: Buffer | null): void => {
     const now = performance.now();
-    lastAt = Math.max(lastAt, burstEndsAt(link, now) + delayOf(link));
+    lastAt = Math.max(
+      lastAt,
+      burstEndsAt(link, now) + delayOf(link) + slowerMs(now)
+    );
     queue.push({ at: lastAt, data });
     timer ??= setTimeout(drain, Math.max(0, lastAt - performance.now()));
   };
 };
 
-const bridge = (client: Socket, targetPort: number, link: Link): void => {
+const NOT_SLOWER = (): number => 0;
+
+const bridge = (
+  client: Socket,
+  targetPort: number,
+  link: Link,
+  uploadSlowerMs: (now: number) => number
+): void => {
   const upstream = net.connect(targetPort, "127.0.0.1");
   client.setNoDelay(true);
   upstream.setNoDelay(true);
-  const toUpstream = delayedWrites(upstream, link);
-  const toClient = delayedWrites(client, link);
+  const toUpstream = delayedWrites(upstream, link, uploadSlowerMs);
+  const toClient = delayedWrites(client, link, NOT_SLOWER);
   client.on("data", toUpstream);
   upstream.on("data", toClient);
   client.on("end", () => {
@@ -116,9 +134,14 @@ export const main = Effect.fn("rooms.lag")(function* main(
     jitterMs: Number(values.jitter),
     lossShare: Number(values.loss) / 100,
     rttMs: Number(values.rtt),
+    uploadAfterMs: Number(values["upload-after"]) * 1000,
+    uploadMs: Number(values["upload-ms"]),
   };
+  const startedAt = performance.now();
+  const uploadSlowerMs = (now: number): number =>
+    now - startedAt >= link.uploadAfterMs ? link.uploadMs : 0;
   const server = net.createServer((client) => {
-    bridge(client, Number(target), link);
+    bridge(client, Number(target), link, uploadSlowerMs);
   });
   server.listen(Number(listen), "127.0.0.1");
   yield* Console.log(

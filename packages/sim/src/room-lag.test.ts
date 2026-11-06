@@ -14,10 +14,7 @@ const steering = (tick: number) =>
     throttle: 1,
   });
 
-const laggedTicks = (
-  ticks: number,
-  reachesRoom: (tick: number) => boolean
-): readonly number[] => {
+const ridden = (ticks: number, reachesRoom: (tick: number) => boolean) => {
   const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
   const room = createRoom(setup);
   const client = createRoomClient(setup, PLAYER_RIDER);
@@ -34,8 +31,13 @@ const laggedTicks = (
       lagged.push(tick);
     }
   }
-  return lagged;
+  return { lagged, lost: client.lostControls() };
 };
+
+const laggedTicks = (
+  ticks: number,
+  reachesRoom: (tick: number) => boolean
+): readonly number[] => ridden(ticks, reachesRoom).lagged;
 
 describe("a rider's lag tag", () => {
   it("stays off while the room rides the rider's own controls", () => {
@@ -53,6 +55,13 @@ describe("a rider's lag tag", () => {
   it("stays off when the race's time limit hands every rider to the pilot", () => {
     expect(laggedTicks(PILOT_FROM_TICK + 120, () => true)).toStrictEqual([]);
   }, 120_000);
+
+  it("counts every tick the room rode without the rider's own control", () => {
+    expect([
+      ridden(400, () => true).lost,
+      ridden(400, (tick) => tick < 100 || tick >= 110).lost,
+    ]).toStrictEqual([0, 10]);
+  });
 
   it("does not show for a moment's loss", () => {
     expect(laggedTicks(400, (tick) => tick < 100 || tick >= 110)).toStrictEqual(
