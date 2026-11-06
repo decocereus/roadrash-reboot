@@ -25,6 +25,7 @@ import { NO_FIGHTS, isFightEvent, riderOf } from "./state.ts";
 import type {
   Control,
   HeardFight,
+  HitEvent,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -40,6 +41,7 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 const FELT_JUMP_METRES = 0.25;
 
 const LAG_WINDOW_TICKS = 60;
+const SAME_HIT_TICKS = 15;
 const MOST_RETRY_TICKS = 60;
 const LAGGING_FROM_TICKS = 20;
 
@@ -85,6 +87,13 @@ export interface RoomClient {
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
+}
+
+interface ShownHit {
+  backed: boolean;
+  readonly hit: HitEvent;
+  refused: boolean;
+  tick: number;
 }
 
 interface Remote {
@@ -168,6 +177,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const batch: Control[] = [];
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
+  const shownHits: ShownHit[] = [];
   const others = predicted.riders.filter((rider) => rider.id !== me);
   const wasAt = others.map(stillCorrection);
   let corrections = others.map(stillCorrection);
@@ -230,10 +240,58 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     return frame;
   };
 
+  const hear = (event: RaceEvent): void => {
+    heard.push({ ...event });
+  };
+
+  const shownHitOf = (event: HitEvent, tick: number): ShownHit | undefined =>
+    shownHits.find(
+      (shown) =>
+        shown.hit.rider === event.rider &&
+        shown.hit.target === event.target &&
+        shown.hit.attack === event.attack &&
+        Math.abs(shown.tick - tick) <= SAME_HIT_TICKS
+    );
+
+  const guessedHit = (event: HitEvent, tick: number): void => {
+    const shown = shownHitOf(event, tick);
+    if (shown) {
+      shown.backed = true;
+      shown.refused = false;
+      shown.tick = tick;
+      return;
+    }
+    shownHits.push({ backed: true, hit: { ...event }, refused: false, tick });
+    if (event.rider === me) {
+      hear(event);
+    }
+  };
+
+  const roomHit = (event: HitEvent, tick: number): void => {
+    const shown = shownHitOf(event, tick);
+    if (shown) {
+      shownHits.splice(shownHits.indexOf(shown), 1);
+    } else if (event.rider === me) {
+      hear(event);
+    }
+  };
+
+  const refuseUnbacked = (): void => {
+    for (const shown of shownHits) {
+      if (!shown.backed && !shown.refused) {
+        shown.refused = true;
+        fights.push({ refused: shown.hit, tick: shown.tick });
+      }
+    }
+  };
+
   const hearFights = (race: RaceState): void => {
     for (const event of race.events) {
       if (isFightEvent(event)) {
         fights.push({ event: { ...event }, tick: race.tick });
+      }
+      if (event.kind === "hit") {
+        (race === predicted ? guessedHit : roomHit)(event, race.tick);
       }
     }
   };
@@ -243,13 +301,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     hearFights(predicted);
   };
 
-  const hear = (event: RaceEvent): void => {
-    heard.push({ ...event });
-  };
-
   const hearOwn = (): void => {
     for (const event of predicted.events) {
-      if (ownPrediction(event, me)) {
+      if (event.kind !== "hit" && ownPrediction(event, me)) {
         hear(event);
       }
     }
@@ -262,6 +316,16 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
     }
     hearFights(confirmed);
+    const overdue = confirmed.tick - SAME_HIT_TICKS;
+    for (const shown of shownHits) {
+      shown.backed &&= shown.tick >= overdue;
+    }
+    refuseUnbacked();
+    for (let at = shownHits.length - 1; at >= 0; at -= 1) {
+      if ((shownHits[at]?.tick ?? overdue) < overdue) {
+        shownHits.splice(at, 1);
+      }
+    }
   };
 
   const rewind = (): void => {
@@ -332,10 +396,14 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     noteWhereRidersAre();
     rewind();
     stats.rollbacks += 1;
+    for (const shown of shownHits) {
+      shown.backed = false;
+    }
     for (let tick = confirmed.tick + 1; tick <= reached; tick += 1) {
       advance(tick);
       stats.resimulatedTicks += 1;
     }
+    refuseUnbacked();
     noteCorrections();
     stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
     noteJump(staleCause, fromS, fromX);
