@@ -87,7 +87,7 @@ The career is three tiers on the three roads: nine qualifying races and a finale
 - **A convoy** is six cars at 15 m/s, 14 m apart in alternating same-way lanes, spaced evenly along the road with some jitter. It is the owner's "traffic engaged in some sections". Same-way cars near one are removed, so the road is blocked by the convoy and not by what happens to be beside it.
 - **Damage applies to every rider.** Rivals fall as fast as the player, so a tier-3 fight is short for both sides.
 - **Rival bikes and weapons rise with the tier.** Section 9 lists the bikes and section 7 the weapons. Skill, capped at 1, rises by the table's value.
-- **Rooms.** Multiplayer rooms use `publicRoomRule` in `packages/career/src/room-race.ts`: tier 2, Slag Row, and the starting bike, with catch-up and lead ease at zero. A later host choice replaces the rule's value.
+- **Rooms.** Multiplayer rooms start from `publicRace` in `launchRoomConfig` (`apps/rooms/src/room-config.ts`): tier 2 and the starting bike, with catch-up and lead ease at zero. A public race takes a road the server picks from its list; a custom lobby starts on the first road, and the host's choice replaces the rule's value.
 
 The owner chose this on November 4, 2026: difficulty rises through the career, road lengths stay the same, and "if it takes three hits on tier one, on tier three it might take one or one and a half".
 

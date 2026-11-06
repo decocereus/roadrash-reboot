@@ -1,7 +1,6 @@
 import type { BikeId } from "@racer/sim/bikes";
 import { firstRacers, roomSetup } from "@racer/sim/room";
 import type { RiderId } from "@racer/sim/state";
-import { roadIds } from "@racer/track/road";
 import { trackFor } from "@racer/track/roads";
 
 import { practiceSetup } from "./field.ts";
@@ -10,7 +9,6 @@ import { createRaceLog } from "./outcome.ts";
 import { launchRules } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import type { RacerId } from "./state.ts";
-import { STARTING_BIKE } from "./tables.ts";
 import type { RoadId, Tier } from "./tables.ts";
 
 const roomRules: RaceRules = {
@@ -35,19 +33,6 @@ export interface RoomChoice {
 export interface RoomRule extends RoomChoice {
   readonly bikeId: BikeId;
 }
-
-export const publicRoomRule: RoomRule = {
-  bikeId: STARTING_BIKE,
-  police: "normal",
-  roadId: "slag-row",
-  tier: 2,
-  traffic: "normal",
-};
-
-export const publicRuleFor = (seed: number): RoomRule => ({
-  ...publicRoomRule,
-  roadId: roadIds[seed % roadIds.length] ?? publicRoomRule.roadId,
-});
 
 const trafficScale = {
   heavy: 1.5,
@@ -88,7 +73,7 @@ const fairStartFor = (
 export const seatedRace = (
   seed: number,
   seats: number,
-  rule: RoomRule = publicRoomRule
+  rule: RoomRule
 ): SeatedRace => {
   const race: PracticeRace = { ...rule, seed };
   const practice = practiceSetup(roomRules, race, trackFor(race.roadId));

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { controlOf } from "./control.ts";
-import { track } from "./race-fixtures.ts";
+import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import type { TickFrame } from "./room-frame.ts";
@@ -11,7 +11,7 @@ import {
   MOST_BATCHED_CONTROLS,
   readInput,
 } from "./room-wire.ts";
-import { createRoom, PILOT_FROM_TICK, roomSetup } from "./room.ts";
+import { createRoom, roomSetup } from "./room.ts";
 import { PLAYER_RIDER } from "./state.ts";
 
 const steering = (tick: number) =>
@@ -23,8 +23,8 @@ const steering = (tick: number) =>
 
 const ridden = (ticks: number, reachesRoom: (tick: number) => boolean) => {
   const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
-  const room = createRoom(setup);
-  const client = createRoomClient(setup, PLAYER_RIDER);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
   const lagged: number[] = [];
   for (let tick = 1; tick <= ticks; tick += 1) {
     const control = steering(tick);
@@ -63,8 +63,8 @@ const kicksTheRoomRode = (
   confirmsEvery = 1
 ): PressesRidden => {
   const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
-  const room = createRoom(setup);
-  const client = createRoomClient(setup, PLAYER_RIDER);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
   const out = new DataView(new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS)));
   const batch = createInputBatch();
   let kicks = 0;
@@ -145,7 +145,7 @@ describe("a rider's lag tag", () => {
   });
 
   it("stays off when the race's time limit hands every rider to the pilot", () => {
-    expect(laggedTicks(PILOT_FROM_TICK + 120, () => true)).toStrictEqual([]);
+    expect(laggedTicks(ROOM_LIMIT_TICKS + 120, () => true)).toStrictEqual([]);
   }, 120_000);
 
   it("counts every tick the room rode without the rider's own control", () => {

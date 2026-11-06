@@ -1508,6 +1508,7 @@ Source files:
 - `apps/rooms/src/race-tally.ts`
 - `apps/rooms/src/room-config.ts`
 - `apps/rooms/src/room-id.ts`
+- `apps/rooms/src/room-rule.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
 - `apps/rooms/src/socket-role.ts`
@@ -1573,6 +1574,7 @@ Test files:
 - `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
+- `apps/rooms/test/room-config.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
 - `apps/rooms/test/seat-socket.ts`

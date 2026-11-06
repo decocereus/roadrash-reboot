@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { createHost } from "../src/host.ts";
 import { SEAT_QUIT } from "../src/messages.ts";
 import { TapeEndSchema, TapeHeaderSchema } from "../src/tape.ts";
+import type { TapeHeader } from "../src/tape.ts";
 import { createClock, fakeSocket, race } from "./host-harness.ts";
 
 const decodeHeader = Schema.decodeUnknownSync(
@@ -48,16 +49,13 @@ const recorded = () => {
   return { end, header, parts };
 };
 
-const setupOf = (seed: number, seats: number) => seatedRace(seed, seats).setup;
+const setupOf = ({ rule, seats, seed }: TapeHeader, seedShift = 0) =>
+  seatedRace(seed + seedShift, seats, rule).setup;
 
 describe("a race's tape", () => {
   it("replays to the same state hashes the room sent", () => {
     const { end, header, parts } = recorded();
-    const replay = replayTape(
-      setupOf(header.seed, header.seats),
-      header.digest,
-      parts
-    );
+    const replay = replayTape(setupOf(header), header.digest, parts);
     expect(replay).toMatchObject({ kind: "matched" });
     expect(replay.kind === "matched" && replay.state.tick).toBe(end.tick);
     expect(parts).toHaveLength(end.parts);
@@ -70,31 +68,19 @@ describe("a race's tape", () => {
     const first = changed[0] ?? new Uint8Array();
     const CONTROL_AT = 100;
     first[CONTROL_AT] = (first[CONTROL_AT] ?? 0) + 40;
-    const replay = replayTape(
-      setupOf(header.seed, header.seats),
-      header.digest,
-      changed
-    );
+    const replay = replayTape(setupOf(header), header.digest, changed);
     expect(["diverged", "unreadable", "gap"]).toContain(replay.kind);
   });
 
   it("refuses a tape recorded on another setup", () => {
     const { header, parts } = recorded();
-    const replay = replayTape(
-      setupOf(header.seed + 1, header.seats),
-      header.digest,
-      parts
-    );
+    const replay = replayTape(setupOf(header, 1), header.digest, parts);
     expect(replay.kind).toBe("wrongSetup");
   });
 
   it("finds a missing part", () => {
     const { header, parts } = recorded();
-    const replay = replayTape(
-      setupOf(header.seed, header.seats),
-      header.digest,
-      parts.slice(1)
-    );
+    const replay = replayTape(setupOf(header), header.digest, parts.slice(1));
     expect(replay.kind).toBe("gap");
   });
 });

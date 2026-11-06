@@ -25,7 +25,6 @@ export const HOLD_TICKS = 6;
 export const AUTO_AFTER_TICKS = 30;
 export const INPUT_HORIZON = 90;
 export const HASH_EVERY = 60;
-export const PILOT_FROM_TICK = 21_600;
 
 const NO_TICK = -1;
 
@@ -117,10 +116,15 @@ export interface Room {
   readonly step: () => void;
 }
 
-const seatFrame = (seat: Seat, tick: number, frame: TickFrame): void => {
+const seatFrame = (
+  seat: Seat,
+  tick: number,
+  frame: TickFrame,
+  pilotFromTick: number
+): void => {
   const { rider } = seat;
   const slot = tick % INPUT_HORIZON;
-  if (seat.left || tick >= PILOT_FROM_TICK) {
+  if (seat.left || tick >= pilotFromTick) {
     if (rider.controller === "human") {
       frame.handovers.set(rider.id, "pilot");
     }
@@ -153,7 +157,7 @@ const seatFrame = (seat: Seat, tick: number, frame: TickFrame): void => {
   );
 };
 
-export const createRoom = (setup: RaceSetup): Room => {
+export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
   const state = createRace(setup);
   const digest = setupDigest(state, setup.track);
   const scratch = createScratch(state);
@@ -204,7 +208,7 @@ export const createRoom = (setup: RaceSetup): Room => {
       const tick = state.tick + 1;
       clearFrame(room.frame, tick);
       for (const seat of seats) {
-        seatFrame(seat, tick, room.frame);
+        seatFrame(seat, tick, room.frame, pilotFromTick);
       }
       stepRace(state, setup.track, room.frame);
       room.hashed = tick % HASH_EVERY === 0;

@@ -1,12 +1,9 @@
 import type { RoomChoice, RoomRule } from "@racer/career/room-race";
 import { MOST_SEATS } from "@racer/sim/room";
 
+import { msOf } from "./room-config.ts";
+import type { RoomConfig } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
-
-export const READY_WAIT_MS = 60_000;
-export const PUBLIC_WAIT_MS = 45_000;
-export const PUBLIC_GATHER_MS = 10_000;
-export const AWAY_MS = 120_000;
 
 export const LOBBY_PHASES = ["gathering", "racing"] as const;
 
@@ -67,6 +64,7 @@ export interface Lobby {
 export const createLobby = (
   bornAt: number,
   kind: RoomKind,
+  config: RoomConfig,
   freshRule: () => RoomRule
 ): Lobby => {
   let members: Member[] = [];
@@ -97,13 +95,13 @@ export const createLobby = (
   } as const satisfies Record<RoomKind, () => boolean>;
 
   const waitMs = {
-    custom: READY_WAIT_MS,
-    public: PUBLIC_WAIT_MS,
+    custom: msOf(config.customStartSeconds),
+    public: msOf(config.publicStartSeconds),
   } as const satisfies Record<RoomKind, number>;
 
   const earliestMs = {
     custom: 0,
-    public: PUBLIC_GATHER_MS,
+    public: msOf(config.publicGatherSeconds),
   } as const satisfies Record<RoomKind, number>;
 
   const keep = (kept: (member: Member) => boolean): boolean => {
@@ -232,7 +230,10 @@ export const createLobby = (
     since: () => since,
     size: () => members.length,
     sweep: (now) =>
-      keep(({ awaySince }) => awaySince === null || now - awaySince < AWAY_MS),
+      keep(
+        ({ awaySince }) =>
+          awaySince === null || now - awaySince < msOf(config.awaySeconds)
+      ),
     view: (now) => ({
       edition,
       hostId: hostOf()?.id ?? null,

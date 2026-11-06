@@ -7,7 +7,6 @@ import {
 } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
-import { AWAY_MS } from "../src/lobby.ts";
 import {
   encodeLobbyCommand,
   SEAT_CLOSED,
@@ -16,7 +15,9 @@ import {
 } from "../src/messages.ts";
 import {
   advanceHearing,
+  AWAY_MS,
   countdownsOn,
+  CUSTOM_START_MS,
   HOLD_MS,
   lastLobby,
   pingPacket,
@@ -32,7 +33,6 @@ import type { Clock, FakeSocket } from "./host-harness.ts";
 
 const REPORT_GRACE_MS = 5000;
 const SILENT_SEAT_MS = 10_000;
-const READY_WAIT_MS = 60_000;
 const RIDE_STEP_MS = 1000;
 const FULL_RIDE_TIMEOUT_MS = 60_000;
 const TRACE = JSON.stringify({
@@ -466,7 +466,7 @@ describe("a rider who leaves and rejoins", () => {
       host.gone(second, SEAT_CLOSED);
       readyAll(host, [back]);
       expect(host.status().hostPhase).toBe("waiting");
-      advanceHearing(host, clock, [back], READY_WAIT_MS + 1000);
+      advanceHearing(host, clock, [back], CUSTOM_START_MS + 1000);
       expect({
         seats: host.status().seats.map((seat) => seat.rider),
         secondStarts: second.messages.filter(({ kind }) => kind === "started")
