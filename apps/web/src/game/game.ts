@@ -511,7 +511,10 @@ const startGame = (
     renderer,
   });
 
-  owners.push(hub.watchCanvas(canvas), hub.settings.subscribe(applySettings));
+  owners.push(
+    hub.watchCanvas(canvas, "game"),
+    hub.settings.subscribe(applySettings)
+  );
   applySettings();
   const detachProbe = hub.attachGame({
     frameAt: (index) => frame.profiler?.reader.frameAt(index) ?? null,

@@ -1058,6 +1058,7 @@ Race data and play-test recording: the player events sender, `POST /api/events`,
 
 Source files:
 
+- `apps/web/src/diagnostics/graphics-loss.ts`
 - `apps/web/src/diagnostics/hub.ts`
 - `apps/web/src/diagnostics/player-events.ts`
 - `apps/web/src/diagnostics/race-events.ts`

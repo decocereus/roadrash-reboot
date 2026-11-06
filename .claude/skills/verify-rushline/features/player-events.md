@@ -4,7 +4,7 @@ The game sends a short list of events about where players stop, under a random I
 
 ## Sub-features
 
-- `events`: the eleven events, sent in batches by `navigator.sendBeacon` to `POST /api/events`, which forwards them to PostHog.
+- `events`: the twelve events, sent in batches by `navigator.sendBeacon` to `POST /api/events`, which forwards them to PostHog.
 - `notice`: small and quiet above the menu strip, gone only after Got it. It hides during the door moment and the race, then comes back.
 - `privacy`: `/privacy`, linked from the notice and Settings.
 - `race-data-switch`: Settings > Race data. Off means no more beacons.
@@ -21,6 +21,7 @@ The route needs a Worker, so `vite preview` answers 500. Start the stack with `a
 - **Sending.** In a fresh browser, watch `/api/events` requests while you open the game, ride a race and finish it. Expect 202 from the route, batches about 5 seconds apart at most, and `game_opened`, `game_ready`, `race_picked`, `race_loaded`, `race_started`, `race_ended`. No request carries a name.
 - **Dropped calls.** Run the same race with no key, so every beacon answers 503. The race finishes the same way and the console has no error from the sender.
 - **Switch.** Turn Race data off in Settings and ride. No `/api/events` request leaves.
+- **Graphics lost.** In a window, keep the extension with `const ext = document.querySelector("canvas").getContext("webgl2").getExtension("WEBGL_lose_context")`, using the canvas on top for the bar, and call `ext.loseContext()`. Call `ext.restoreContext()` for `recovered` `yes`, and check the picture comes back. Leave it lost for 30 s, or close the page, for `no`. Do both in the bar and in a race, then read `graphics_lost` with its `where` and `recovered` in PostHog. Use the T3 browser for that, because Helium blocks the beacon.
 - **Live events.** In PostHog's activity view for the project, the events appear with no person profile.
 
 ## Gotchas

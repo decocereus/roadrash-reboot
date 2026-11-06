@@ -71,6 +71,10 @@ export const roomArrivals = [
 ] as const;
 export type RoomArrival = (typeof roomArrivals)[number];
 export const roomLostStages = ["lobby", "race"] as const;
+export const graphicsPlaces = ["bar", "race", "menu"] as const;
+export type GraphicsPlace = (typeof graphicsPlaces)[number];
+export const graphicsRecoveries = ["yes", "no"] as const;
+export type GraphicsRecovery = (typeof graphicsRecoveries)[number];
 export const playerRaceEnds = [
   "finished",
   "busted",
