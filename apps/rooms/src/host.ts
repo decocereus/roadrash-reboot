@@ -112,6 +112,7 @@ interface Present {
   readonly memberId: string;
   readonly name: string;
   readonly socket: HostSocket;
+  arrived: boolean;
   heardAt: number;
   role: SocketRole<Run, Seat>;
   walk: string | null;
@@ -645,6 +646,10 @@ export const createHost = (
       if (!person) {
         return;
       }
+      if (!person.arrived) {
+        person.arrived = true;
+        lobby.arrive(person.memberId);
+      }
       const { role } = person;
       switch (role.kind) {
         case "lobby": {
@@ -682,6 +687,7 @@ export const createHost = (
         retire(replaced, SEAT_CLOSED);
       }
       present.set(socket, {
+        arrived: false,
         heardAt: ports.now(),
         link,
         memberId,

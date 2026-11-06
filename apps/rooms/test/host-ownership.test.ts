@@ -170,13 +170,14 @@ describe("a socket replaced by the same member's newer one", () => {
   it("ignores everything the old socket still sends", () => {
     const { clock, first, host, seated } = ridingRoom();
     seated("first", "Ann");
+    const pongsBefore = first.pongs.length;
     host.message(first, inputPacket(10_000));
     host.message(first, statsPacket(1));
     host.message(first, TRACE);
     host.message(first, pingPacket());
     expect({
       accepted: host.status().seats.map((seat) => seat.accepted),
-      pongs: first.pongs.length,
+      pongs: first.pongs.length - pongsBefore,
       reports: rollbacksOf(clock, 0),
     }).toStrictEqual({ accepted: [0], pongs: 0, reports: [] });
   });

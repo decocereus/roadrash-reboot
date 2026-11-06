@@ -19,6 +19,7 @@ interface Member {
   readonly colour: number;
   readonly id: string;
   readonly key: string;
+  arrived: boolean;
   awaySince: number | null;
   name: string;
   ready: boolean;
@@ -43,6 +44,7 @@ interface LobbyView {
 }
 
 export interface Lobby {
+  readonly arrive: (id: string) => void;
   readonly away: (id: string, now: number) => void;
   readonly choose: (id: string, choice: Partial<RoomChoice>) => boolean;
   readonly colourOf: (id: string) => number;
@@ -141,7 +143,15 @@ export const createLobby = (
   };
 
   return {
+    arrive: (id) => {
+      for (const member of members) {
+        if (member.id === id) {
+          member.arrived = true;
+        }
+      }
+    },
     away: (id, now) => {
+      keep((member) => member.id !== id || member.arrived);
       for (const member of members) {
         if (member.id === id) {
           member.awaySince = now;
@@ -189,6 +199,7 @@ export const createLobby = (
       joined += 1;
       const id = `m${joined}`;
       members.push({
+        arrived: false,
         awaySince: null,
         colour: freeColour(),
         id,
