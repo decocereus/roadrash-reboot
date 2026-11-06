@@ -1535,6 +1535,7 @@ Source files:
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
 - `tools/rooms/replay.ts`
+- `tools/rooms/src/fight-links.ts`
 - `tools/rooms/src/fight-probe.ts`
 - `tools/rooms/src/fight-report.ts`
 - `tools/rooms/src/fights.ts`

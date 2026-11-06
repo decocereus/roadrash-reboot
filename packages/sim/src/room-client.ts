@@ -1,4 +1,12 @@
-import { coasting, withoutButtons } from "./control.ts";
+import {
+  BUTTONS_OF_A_CONTROL,
+  coasting,
+  holds,
+  pressing,
+  startsAStrike,
+  withoutButtons,
+} from "./control.ts";
+import type { Button } from "./control.ts";
 import { createRace, stepRace } from "./race.ts";
 import {
   clearFrame,
@@ -32,6 +40,7 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 const FELT_JUMP_METRES = 0.25;
 
 const LAG_WINDOW_TICKS = 60;
+const MOST_RETRY_TICKS = 60;
 const LAGGING_FROM_TICKS = 20;
 
 const JUMP_CAUSES = ["behindServer", "otherRiders", "ownControl"] as const;
@@ -65,6 +74,7 @@ export interface RiderCorrection {
 export interface RoomClient {
   readonly confirmed: RaceState;
   readonly lagging: () => boolean;
+  readonly lostControls: () => number;
   readonly mine: RiderState;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
@@ -168,6 +178,11 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   let staleCause: JumpCause = "otherRiders";
   const overruled = new Uint8Array(LAG_WINDOW_TICKS);
   let overruledTicks = 0;
+  let lostControls = 0;
+  const pressHeld = BUTTONS_OF_A_CONTROL.map(() => false);
+  const pressLanded = BUTTONS_OF_A_CONTROL.map(() => false);
+  const missed: Button[] = [];
+  let retriedFor = 0;
   let lagging = false;
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
@@ -327,12 +342,54 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     staleCause = "otherRiders";
   };
 
+  const notePresses = (frame: TickFrame, reached: number): void => {
+    const sent =
+      frame.tick <= reached && frame.tick < PILOT_FROM_TICK
+        ? (ownControls[slotOf(frame.tick)] ?? coasting)
+        : coasting;
+    const ridden = frame.controls.get(me) ?? coasting;
+    for (let at = 0; at < BUTTONS_OF_A_CONTROL.length; at += 1) {
+      const button = BUTTONS_OF_A_CONTROL[at] ?? BUTTONS_OF_A_CONTROL[0];
+      const held = holds(sent, button);
+      if (held) {
+        pressLanded[at] = pressLanded[at] === true || holds(ridden, button);
+      } else if (pressHeld[at] === true) {
+        if (pressLanded[at] !== true) {
+          missed.push(button);
+        }
+        pressLanded[at] = false;
+      }
+      pressHeld[at] = held;
+    }
+  };
+
+  const retryMissed = (control: Control): Control => {
+    const [button] = missed;
+    return button === undefined ? control : pressing(control, button);
+  };
+
+  const retried = (): void => {
+    const [button] = missed;
+    if (button === undefined) {
+      return;
+    }
+    retriedFor += 1;
+    const struck = predicted.events.some(
+      (event) => event.kind === "attack" && event.rider === me
+    );
+    if (!startsAStrike(button) || struck || retriedFor >= MOST_RETRY_TICKS) {
+      missed.shift();
+      retriedFor = 0;
+    }
+  };
+
   const noteRoomChoice = (frame: TickFrame, reached: number): void => {
     const slot = frame.tick % LAG_WINDOW_TICKS;
     const lost =
       frame.tick < PILOT_FROM_TICK &&
       (reached < frame.tick ||
         ownControls[slotOf(frame.tick)] !== frame.controls.get(me));
+    lostControls += lost ? 1 : 0;
     overruledTicks += (lost ? 1 : 0) - (overruled[slot] ?? 0);
     overruled[slot] = lost ? 1 : 0;
     if (overruledTicks >= LAGGING_FROM_TICKS) {
@@ -358,6 +415,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       const reached = predicted.tick;
       noteRoomChoice(frame, reached);
+      notePresses(frame, reached);
       if (reached < frame.tick) {
         const fromS = mine.s;
         const fromX = mine.x;
@@ -379,6 +437,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     },
     confirmed,
     lagging: () => lagging,
+    lostControls: () => lostControls,
     mine,
     predict: (control) => {
       settle();
@@ -387,8 +446,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
         stats.refusedPredictions += 1;
         return false;
       }
-      ownControls[slotOf(tick)] = control;
+      ownControls[slotOf(tick)] = retryMissed(control);
       advance(tick);
+      retried();
       hearOwn();
       return true;
     },
