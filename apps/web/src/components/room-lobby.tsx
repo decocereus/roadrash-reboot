@@ -25,7 +25,13 @@ import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { seatClosing, stepRoom } from "../room-handoff.ts";
 import type { RoomHandoff } from "../room-handoff.ts";
 import { BarLobby } from "./bar-lobby.tsx";
-import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
+import {
+  memberKey,
+  racedIn,
+  rememberRaceRoom,
+  storedGuestName,
+  storeGuestName,
+} from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
 import { moveToRoom, rejoinOf, roomArrivalOf, roomLink } from "./room-url.ts";
 import { GettingBackOn, TooLate } from "./screens/rejoin.tsx";
@@ -79,6 +85,7 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
     }
   });
   globalThis.addEventListener("pagehide", seat.reportNow);
+  rememberRaceRoom(roomId);
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
@@ -334,7 +341,9 @@ const SeatedLobby = ({
 const RoomEntry = (props: RoomProps & BootFailed) => {
   const [name, setName] = useState(storedGuestName);
   const [invited, setInvited] = useState(
-    () => roomArrivalOf(globalThis.location.search) === "link"
+    () =>
+      roomArrivalOf(globalThis.location.search) === "link" &&
+      !racedIn(props.roomId)
   );
   const [preview, setPreview] = useState<RoomPreview | null>(null);
   useEffect(

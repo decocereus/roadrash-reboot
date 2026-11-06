@@ -219,7 +219,7 @@ export const BikeUp = ({ feed }: { readonly feed: HudFeed }) => {
         Your bike is up
       </span>
       <span className="text-paper/70">
-        You&apos;re running {ordinal(position)}. Go.
+        You&apos;re running {ordinal(position).toLowerCase()}. Go.
       </span>
     </div>
   ) : null;
