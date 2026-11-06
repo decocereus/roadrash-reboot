@@ -186,7 +186,7 @@ export const RouteBoardScreen = ({
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(22) }}
           >
-            No money · Nothing to qualify
+            No money, nothing to qualify
           </p>
           <p
             className="text-paper/60 tracking-wide"
