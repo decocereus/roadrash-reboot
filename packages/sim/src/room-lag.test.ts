@@ -112,6 +112,12 @@ describe("a rider's press the room never rode", () => {
     });
   });
 
+  it("counts no retry for presses still waiting to go out when the race stops", () => {
+    expect(
+      kicksTheRoomRode((tick) => tick < 95, [100, 145], STALL_TICKS)
+    ).toStrictEqual({ kicks: 0, retried: 0 });
+  });
+
   it("is sent again, once, when every tick of it arrived too late", () => {
     expect([
       kicksTheRoomRode(() => true),

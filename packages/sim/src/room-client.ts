@@ -426,7 +426,6 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       } else if (pressHeld[at] === true) {
         if (pressLanded[at] !== true) {
           missed.push(button);
-          stats.retriedPresses += 1;
         }
         pressLanded[at] = false;
       }
@@ -445,6 +444,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       return;
     }
     retriedFor += 1;
+    if (retriedFor === 1) {
+      stats.retriedPresses += 1;
+    }
     const struck = predicted.events.some(
       (event) => event.kind === "attack" && event.rider === me
     );
