@@ -14,6 +14,8 @@ import {
   storedPlayerId,
 } from "../src/diagnostics/player-events.ts";
 import { createRaceEvents } from "../src/diagnostics/race-events.ts";
+import { graphicsPlaceOf } from "../src/navigation.ts";
+import type { View } from "../src/navigation.ts";
 
 const PLAYER = "3f0c2a1e-7b6d-4c1a-9e2f-0123456789ab";
 const again: PlayerEvent = { event: "race_again" };
@@ -261,9 +263,14 @@ describe("device facts", () => {
 const LOST = "webglcontextlost";
 const RESTORED = "webglcontextrestored";
 
+interface ShownScreen {
+  shown: View["screen"];
+}
+
 const lossTracker = () => {
   const sent: PlayerEvent[] = [];
   const waits = new Map<number, () => void>();
+  const screen: ShownScreen = { shown: "race" };
   let next = 0;
   const loss = createGraphicsLoss({
     after(ms, run) {
@@ -275,6 +282,7 @@ const lossTracker = () => {
         waits.delete(id);
       };
     },
+    place: () => graphicsPlaceOf[screen.shown],
     track(event) {
       sent.push(event);
     },
@@ -284,7 +292,7 @@ const lossTracker = () => {
       run();
     }
   };
-  return { giveUp, loss, sent, waits };
+  return { giveUp, loss, screen, sent, waits };
 };
 
 const report = (
@@ -300,7 +308,7 @@ describe("a graphics loss", () => {
   it("reports yes when the graphics come back, and not before", () => {
     const { loss, sent, waits } = lossTracker();
     const canvas = new EventTarget();
-    loss.watch(canvas, () => "race");
+    loss.watch(canvas);
     fire(canvas, LOST);
     expect(sent).toStrictEqual([]);
     fire(canvas, RESTORED);
@@ -309,9 +317,10 @@ describe("a graphics loss", () => {
   });
 
   it("reports no when the wait runs out, and stays one report if they return later", () => {
-    const { giveUp, loss, sent } = lossTracker();
+    const { giveUp, loss, screen, sent } = lossTracker();
     const canvas = new EventTarget();
-    loss.watch(canvas, () => "menu");
+    screen.shown = "clubhouse";
+    loss.watch(canvas);
     fire(canvas, LOST);
     giveUp();
     expect(sent).toStrictEqual(report("menu", "no"));
@@ -322,7 +331,7 @@ describe("a graphics loss", () => {
   it("reports no when the page closes before the answer is known", () => {
     const { loss, sent, waits } = lossTracker();
     const canvas = new EventTarget();
-    loss.watch(canvas, () => "race");
+    loss.watch(canvas);
     fire(canvas, LOST);
     loss.leaving();
     loss.leaving();
@@ -331,22 +340,32 @@ describe("a graphics loss", () => {
   });
 
   it("says where the player was when it happened, not where they went next", () => {
-    const { loss, sent } = lossTracker();
+    const { loss, screen, sent } = lossTracker();
     const canvas = new EventTarget();
-    let place: GraphicsPlace = "race";
-    loss.watch(canvas, () => place);
+    loss.watch(canvas);
     fire(canvas, LOST);
-    place = "menu";
+    screen.shown = "clubhouse";
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual(report("race", "yes"));
+  });
+
+  it("counts the results screen as the race", () => {
+    const { loss, screen, sent } = lossTracker();
+    const canvas = new EventTarget();
+    screen.shown = "results";
+    loss.watch(canvas);
+    fire(canvas, LOST);
     fire(canvas, RESTORED);
     expect(sent).toStrictEqual(report("race", "yes"));
   });
 
   it("makes one report when a GPU crash takes the bar and the game behind it", () => {
-    const { loss, sent } = lossTracker();
+    const { loss, screen, sent } = lossTracker();
     const game = new EventTarget();
     const bar = new EventTarget();
-    loss.watch(game, () => "menu");
-    loss.watch(bar, () => "bar");
+    screen.shown = "room";
+    loss.watch(game);
+    loss.watch(bar);
     fire(game, LOST);
     fire(bar, LOST);
     fire(game, RESTORED);
@@ -356,9 +375,10 @@ describe("a graphics loss", () => {
   });
 
   it("reports a second loss on its own", () => {
-    const { loss, sent } = lossTracker();
+    const { loss, screen, sent } = lossTracker();
     const canvas = new EventTarget();
-    loss.watch(canvas, () => "bar");
+    screen.shown = "room";
+    loss.watch(canvas);
     fire(canvas, LOST);
     fire(canvas, RESTORED);
     fire(canvas, LOST);
@@ -372,23 +392,39 @@ describe("a graphics loss", () => {
   it("says nothing when the bar closes its own healthy canvas", () => {
     const { loss, sent } = lossTracker();
     const canvas = new EventTarget();
-    const unwatch = loss.watch(canvas, () => "bar");
+    const unwatch = loss.watch(canvas);
     unwatch();
     fire(canvas, LOST);
     expect(sent).toStrictEqual([]);
   });
 
   it("reports no when the player leaves the bar with its graphics still gone", () => {
-    const { loss, sent } = lossTracker();
+    const { loss, screen, sent } = lossTracker();
     const game = new EventTarget();
     const bar = new EventTarget();
-    loss.watch(game, () => "menu");
-    const unwatch = loss.watch(bar, () => "bar");
+    screen.shown = "room";
+    loss.watch(game);
+    const unwatch = loss.watch(bar);
     fire(bar, LOST);
     unwatch();
     expect(sent).toStrictEqual(report("bar", "no"));
+    screen.shown = "clubhouse";
     fire(game, LOST);
     fire(game, RESTORED);
     expect(sent.at(-1)).toStrictEqual(report("menu", "yes")[0]);
+  });
+
+  it("stays no when the bar is left lost and the game behind it comes back", () => {
+    const { loss, screen, sent } = lossTracker();
+    const game = new EventTarget();
+    const bar = new EventTarget();
+    screen.shown = "room";
+    loss.watch(game);
+    const unwatch = loss.watch(bar);
+    fire(game, LOST);
+    fire(bar, LOST);
+    unwatch();
+    fire(game, RESTORED);
+    expect(sent).toStrictEqual(report("bar", "no"));
   });
 });

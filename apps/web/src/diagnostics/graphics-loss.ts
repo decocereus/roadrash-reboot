@@ -5,22 +5,20 @@ export const RECOVERY_WAIT_MS = 30_000;
 
 interface GraphicsLossParts {
   readonly after: (ms: number, run: () => void) => () => void;
+  readonly place: () => GraphicsPlace;
   readonly track: (event: PlayerEvent) => void;
 }
 
 export interface GraphicsLoss {
   readonly leaving: () => void;
-  readonly watch: (
-    canvas: EventTarget,
-    place: () => GraphicsPlace
-  ) => () => void;
+  readonly watch: (canvas: EventTarget) => () => void;
 }
 
 export const createGraphicsLoss = ({
   after,
+  place,
   track,
 }: GraphicsLossParts): GraphicsLoss => {
-  const places: (() => GraphicsPlace)[] = [];
   const down = new Set<EventTarget>();
   let open: {
     readonly stopWaiting: () => void;
@@ -39,14 +37,14 @@ export const createGraphicsLoss = ({
     leaving: () => {
       settle("no");
     },
-    watch(canvas, place) {
+    watch(canvas) {
       const lost = (): void => {
         down.add(canvas);
         open ??= {
           stopWaiting: after(RECOVERY_WAIT_MS, () => {
             settle("no");
           }),
-          where: (places.at(-1) ?? place)(),
+          where: place(),
         };
       };
       const restored = (): void => {
@@ -57,12 +55,10 @@ export const createGraphicsLoss = ({
       };
       canvas.addEventListener("webglcontextlost", lost);
       canvas.addEventListener("webglcontextrestored", restored);
-      places.push(place);
       return () => {
         canvas.removeEventListener("webglcontextlost", lost);
         canvas.removeEventListener("webglcontextrestored", restored);
-        places.splice(places.indexOf(place), 1);
-        if (down.delete(canvas) && down.size === 0) {
+        if (down.delete(canvas)) {
           settle("no");
         }
       };

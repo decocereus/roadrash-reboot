@@ -2,7 +2,6 @@ import type { RaceLog, RaceOutcome, RaceResult } from "@racer/career/outcome";
 import type { RoomRun } from "@racer/rooms/room-run";
 import { TICK_SECONDS } from "@racer/sim/state";
 import type { RaceSetup } from "@racer/sim/state";
-import type { GraphicsPlace } from "@racer/telemetry/limits";
 
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
@@ -91,14 +90,6 @@ interface Settled extends Entered {
 export type InRace = Countdown | Racing | Settled;
 
 export type Session = Attract | Idle | InRace;
-
-export const graphicsPlaceOf = {
-  attract: "menu",
-  countdown: "race",
-  idle: "menu",
-  racing: "race",
-  settled: "race",
-} as const satisfies Record<Session["phase"], GraphicsPlace>;
 
 export const attractOn = (roadTurn: number): Attract => ({
   phase: "attract",

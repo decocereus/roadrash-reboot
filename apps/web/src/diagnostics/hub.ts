@@ -71,10 +71,8 @@ export interface Diagnostics {
   readonly recorder: Recorder;
   readonly qualityRung: () => number;
   readonly attachGame: (probe: GameProbe) => () => void;
-  readonly watchCanvas: (
-    canvas: HTMLCanvasElement,
-    place: () => GraphicsPlace
-  ) => () => void;
+  readonly showing: (place: GraphicsPlace) => void;
+  readonly watchCanvas: (canvas: HTMLCanvasElement) => () => void;
   readonly sendReport: () => void;
   readonly view: () => DiagnosticsView;
   readonly subscribe: (listener: () => void) => () => void;
@@ -154,6 +152,7 @@ const createDiagnostics = (): Diagnostics => {
         new Blob([body], { type: "application/json" })
       ),
   });
+  let shown: GraphicsPlace = "menu";
   const graphicsLoss = createGraphicsLoss({
     after(ms, run) {
       const timer = setTimeout(run, ms);
@@ -161,6 +160,7 @@ const createDiagnostics = (): Diagnostics => {
         clearTimeout(timer);
       };
     },
+    place: () => shown,
     track: events.track,
   });
 
@@ -315,6 +315,9 @@ const createDiagnostics = (): Diagnostics => {
       uploader.drain();
     },
     settings,
+    showing(place) {
+      shown = place;
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => {
@@ -331,10 +334,10 @@ const createDiagnostics = (): Diagnostics => {
       };
       return view;
     },
-    watchCanvas(canvas, place) {
+    watchCanvas(canvas) {
       canvas.addEventListener("webglcontextlost", lost);
       canvas.addEventListener("webglcontextrestored", restored);
-      const unwatch = graphicsLoss.watch(canvas, place);
+      const unwatch = graphicsLoss.watch(canvas);
       return () => {
         canvas.removeEventListener("webglcontextlost", lost);
         canvas.removeEventListener("webglcontextrestored", restored);
