@@ -3,6 +3,7 @@ import type { RaceResult } from "@racer/career/outcome";
 import type { RaceRules } from "@racer/career/rules";
 import type { TierUp } from "@racer/career/settle";
 import type { CareerState } from "@racer/career/state";
+import type { GraphicsPlace } from "@racer/telemetry/limits";
 
 import type { RaceEntry, RaceReport } from "./career/flow.ts";
 import type { SaveState } from "./career/save.ts";
@@ -83,6 +84,21 @@ const ending: View = { screen: "ending" };
 const routeBoard: View = { screen: "routeBoard" };
 
 export const firstView = (): View => ({ screen: "boot" });
+
+export const graphicsPlaceOf = {
+  backRoom: "menu",
+  boot: "menu",
+  clubhouse: "menu",
+  ending: "menu",
+  gameOver: "menu",
+  garage: "menu",
+  queue: "menu",
+  race: "race",
+  results: "race",
+  rideOut: "menu",
+  room: "menu",
+  routeBoard: "menu",
+} as const satisfies Record<View["screen"], GraphicsPlace>;
 
 export const stageOf = (view: View): "boot" | "race" | "menu" => {
   if (view.screen === "boot") {
