@@ -13,7 +13,7 @@ import { INPUT_HORIZON, PILOT_FROM_TICK, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
-import { isFightEvent, riderOf } from "./state.ts";
+import { NO_FIGHTS, isFightEvent, riderOf } from "./state.ts";
 import type {
   Control,
   HeardFight,
@@ -27,7 +27,6 @@ import type {
 const MOST_LEAD_TICKS = INPUT_HORIZON;
 
 const NO_EVENTS: readonly RaceEvent[] = [];
-const NO_FIGHTS: readonly HeardFight[] = [];
 const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 
 const FELT_JUMP_METRES = 0.25;
@@ -75,7 +74,6 @@ export interface RoomClient {
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
-  readonly takeShownHits: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
 }
 
@@ -160,7 +158,6 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const batch: Control[] = [];
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
-  let shownHits: HeardFight[] = [];
   const others = predicted.riders.filter((rider) => rider.id !== me);
   const wasAt = others.map(stillCorrection);
   let corrections = others.map(stillCorrection);
@@ -218,31 +215,27 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     return frame;
   };
 
-  const hearShown = (tick: number): void => {
-    for (const event of predicted.events) {
-      if (event.kind === "hit") {
-        shownHits.push({ event: { ...event }, tick });
+  const hearFights = (race: RaceState): void => {
+    for (const event of race.events) {
+      if (isFightEvent(event)) {
+        fights.push({ event: { ...event }, tick: race.tick });
       }
     }
   };
 
   const advance = (tick: number): void => {
     stepRace(predicted, setup.track, guess(tick));
-    hearShown(tick);
+    hearFights(predicted);
   };
 
-  const hear = (event: RaceEvent, tick: number): void => {
-    const copy = { ...event };
-    heard.push(copy);
-    if (isFightEvent(copy)) {
-      fights.push({ event: copy, tick });
-    }
+  const hear = (event: RaceEvent): void => {
+    heard.push({ ...event });
   };
 
   const hearOwn = (): void => {
     for (const event of predicted.events) {
       if (ownPrediction(event, me)) {
-        hear(event, predicted.tick);
+        hear(event);
       }
     }
   };
@@ -250,12 +243,10 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const hearRoom = (): void => {
     for (const event of confirmed.events) {
       if (!ownPrediction(event, me)) {
-        hear(event, confirmed.tick);
-      }
-      if (event.kind === "hit") {
-        shownHits.push({ event: { ...event }, tick: confirmed.tick });
+        hear(event);
       }
     }
+    hearFights(confirmed);
   };
 
   const rewind = (): void => {
@@ -434,14 +425,6 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       const taken = fights;
       fights = [];
-      return taken;
-    },
-    takeShownHits: () => {
-      if (shownHits.length === 0) {
-        return NO_FIGHTS;
-      }
-      const taken = shownHits;
-      shownHits = [];
       return taken;
     },
     writeInputs: (view) => {

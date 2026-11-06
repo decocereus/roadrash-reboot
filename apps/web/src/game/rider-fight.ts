@@ -27,6 +27,7 @@ export interface RiderFight {
   elapsed: number;
   flinchLeft: number;
   hitSeen: number;
+  nextStrikeFrom: number;
   readonly queued: HeardStrike[];
   side: number;
   startTick: number;
@@ -44,6 +45,7 @@ export const quietFight = (): RiderFight => ({
   elapsed: 0,
   flinchLeft: 0,
   hitSeen: Number.NEGATIVE_INFINITY,
+  nextStrikeFrom: Number.NEGATIVE_INFINITY,
   queued: [],
   side: 1,
   startTick: 0,
@@ -87,6 +89,49 @@ export const fightTick = (
   }
 };
 
+const runsAt = (
+  attack: AttackKind,
+  weapon: WeaponKind,
+  from: number,
+  tick: number
+): boolean => from <= tick && tick < from + strikeOf(attack, weapon).ticks;
+
+const strikeHeard = (
+  fight: RiderFight,
+  heard: HeardStrike,
+  drawnTick: number
+) => {
+  if (heard.tick < fight.nextStrikeFrom) {
+    return;
+  }
+  fight.nextStrikeFrom =
+    heard.tick + strikeOf(heard.attack, heard.weapon).cooldown;
+  if (fight.attack === "none") {
+    begin(fight, heard, drawnTick);
+  } else {
+    fight.queued.push(heard);
+  }
+};
+
+const struckAt = (fight: RiderFight, tick: number): void => {
+  if (
+    fight.attack !== "none" &&
+    runsAt(fight.attack, fight.weapon, fight.startTick, tick)
+  ) {
+    fight.attack = "none";
+  }
+  const cut = fight.queued.findIndex((queued) =>
+    runsAt(queued.attack, queued.weapon, queued.tick, tick)
+  );
+  if (cut !== -1) {
+    fight.queued.splice(cut, 1);
+  }
+  if (tick >= fight.hitSeen + HIT_STUN_TICKS) {
+    fight.hitSeen = tick;
+    fight.flinchLeft = HIT_STUN_TICKS;
+  }
+};
+
 export const fightHeard = (
   fighters: readonly { readonly fight: RiderFight }[],
   { event, tick }: HeardFight,
@@ -94,29 +139,14 @@ export const fightHeard = (
 ): void => {
   if (event.kind === "attack") {
     const fight = riderOf(fighters, event.rider)?.fight;
-    const heard = { ...event, tick };
-    if (fight?.attack === "none") {
-      begin(fight, heard, drawnTick);
-    } else {
-      fight?.queued.push(heard);
+    if (fight) {
+      strikeHeard(fight, { ...event, tick }, drawnTick);
     }
     return;
   }
   const struck = riderOf(fighters, event.target)?.fight;
-  if (struck && struck.attack !== "none" && struck.startTick <= tick) {
-    struck.attack = "none";
-  }
-};
-
-export const hitShown = (
-  fighters: readonly { readonly fight: RiderFight }[],
-  { event, tick }: HeardFight
-): void => {
-  const struck =
-    event.kind === "hit" ? riderOf(fighters, event.target)?.fight : undefined;
-  if (struck && tick >= struck.hitSeen + HIT_STUN_TICKS) {
-    struck.hitSeen = tick;
-    struck.flinchLeft = HIT_STUN_TICKS;
+  if (struck) {
+    struckAt(struck, tick);
   }
 };
 

@@ -50,7 +50,6 @@ export const createRoomRun = (
     confirmed: client.confirmed,
     countdownSeconds: () => (1 - seat.target()) * TICK_SECONDS,
     events: client.takeEvents,
-    fights: client.takeFights,
     frameDrawn: seat.frameDrawn,
     lagging: client.lagging,
     leave: seat.leave,
@@ -82,7 +81,6 @@ export const createRoomRun = (
       };
     },
     riderColours,
-    shownHits: client.takeShownHits,
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       if (control !== sent) {
@@ -94,6 +92,7 @@ export const createRoomRun = (
     },
     stepsDue: seat.stepsDue,
     takeCorrections: client.takeCorrections,
+    takeFights: client.takeFights,
     view: client.predicted,
   };
 };

@@ -407,6 +407,8 @@ export interface HeardFight {
   readonly tick: number;
 }
 
+export const NO_FIGHTS: readonly HeardFight[] = [];
+
 export const isFightEvent = (event: RaceEvent): event is FightEvent =>
   event.kind === "attack" || event.kind === "hit";
 

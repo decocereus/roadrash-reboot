@@ -201,12 +201,12 @@ const startGame = (
   const feedback = createFeedback();
 
   const {
+    ageFights,
     buildViews,
     captureAll,
     drawRider,
     dropFleet,
     dropViews,
-    fightsTick,
     followPlayer,
     holdStill,
     placeFleet,
@@ -386,7 +386,7 @@ const startGame = (
   const stepOnce = () => {
     stage.race.step(frameOf());
     bench?.record(stage.race.view);
-    fightsTick();
+    ageFights();
     const heard = stage.race.events();
     for (const event of heard) {
       touchDown(event);

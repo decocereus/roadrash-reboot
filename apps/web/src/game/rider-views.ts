@@ -35,7 +35,6 @@ import {
   fightFlinch,
   fightHeard,
   fightTick,
-  hitShown,
   quietFight,
   strikeFrame,
 } from "./rider-fight.ts";
@@ -193,10 +192,7 @@ export const createCast = (shading: Shading): Cast => ({
 interface CastStage {
   readonly colours: ReadonlyMap<RiderId, number>;
   readonly me: RiderId;
-  readonly race: Pick<
-    RaceRun,
-    "fights" | "shownHits" | "takeCorrections" | "view"
-  >;
+  readonly race: Pick<RaceRun, "takeCorrections" | "takeFights" | "view">;
   readonly track: Track;
   readonly world: World;
   readonly fleet: Fleet;
@@ -310,7 +306,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     s >= subject.s - cast.riderReach.behind &&
     s <= subject.s + cast.riderReach.ahead;
 
-  const fightsTick = () => {
+  const ageFights = () => {
     const { riders, tick } = stage.race.view;
     for (let index = 0; index < cast.views.length; index += 1) {
       const view = cast.views[index];
@@ -318,12 +314,6 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       if (view && rider) {
         fightTick(view.fight, rider.airborne, tick);
       }
-    }
-    for (const heard of stage.race.fights()) {
-      fightHeard(cast.views, heard, tick);
-    }
-    for (const shown of stage.race.shownHits()) {
-      hitShown(cast.views, shown);
     }
   };
 
@@ -369,6 +359,10 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   const holdStill = () => {
+    const { tick } = stage.race.view;
+    for (const heard of stage.race.takeFights()) {
+      fightHeard(cast.views, heard, tick);
+    }
     captureAll("after");
   };
 
@@ -597,12 +591,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   return {
+    ageFights,
     buildViews,
     captureAll,
     drawRider,
     dropFleet,
     dropViews,
-    fightsTick,
     followPlayer,
     holdStill,
     placeFleet,

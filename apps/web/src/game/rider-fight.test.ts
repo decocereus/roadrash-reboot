@@ -12,7 +12,6 @@ import {
   fightFlinch,
   fightHeard,
   fightTick,
-  hitShown,
   quietFight,
   strikeFrame,
 } from "./rider-fight.ts";
@@ -70,6 +69,13 @@ const played = (
   return { reaches, striker };
 };
 
+const strikesOf = (heard: readonly HeardFight[]) => {
+  const { reaches } = played(heard, 140, 60);
+  return reaches.filter(
+    (reach, at) => reach >= 0 && (reaches[at - 1] ?? -1) < 0
+  ).length;
+};
+
 describe("how a rider's strike track plays what it hears", () => {
   it("plays a strike heard on its own tick from the first frame", () => {
     const { reaches } = played([kickAt(100)], 100, KICK.ticks + 1);
@@ -104,6 +110,23 @@ describe("how a rider's strike track plays what it hears", () => {
     expect(striker.attack).toBe("kick");
   });
 
+  it("cuts the strike a hit lands in, queued or playing, and keeps the rest", () => {
+    const later = 136;
+    expect([
+      strikesOf([kickAt(100), kickAt(later)]),
+      strikesOf([kickAt(100), kickAt(later), hitOnStriker(later + 2)]),
+      strikesOf([kickAt(100), kickAt(later), hitOnStriker(102)]),
+    ]).toStrictEqual([2, 1, 1]);
+  });
+
+  it("plays a strike once when the drawn race and the room both report it", () => {
+    const once = played([kickAt(100)], 120, 0).striker;
+    for (const again of [kickAt(100), kickAt(101)]) {
+      const { striker } = played([kickAt(100), again], 120, 0);
+      expect(striker.queued).toStrictEqual(once.queued);
+    }
+  });
+
   it("stops a strike when the rider leaves the ground", () => {
     const { striker } = played([kickAt(100)], 100, 2);
     fightTick(striker, true, 103);
@@ -113,10 +136,10 @@ describe("how a rider's strike track plays what it hears", () => {
   it("flinches in full on a shown hit, not again when a correction moves it a tick", () => {
     const cast = fighters();
     const struck = cast[1]?.fight ?? quietFight();
-    hitShown(cast, hitOnStriker(50));
+    fightHeard(cast, hitOnStriker(50), 50);
     const first = fightFlinch(struck, 0, 0);
     fightTick(struck, GROUNDED, 51);
-    hitShown(cast, hitOnStriker(51));
+    fightHeard(cast, hitOnStriker(51), 51);
     expect([first, fightFlinch(struck, 0, 0)]).toStrictEqual([
       1,
       expect.closeTo(0.9),
@@ -136,6 +159,7 @@ const SIDE_BY_SIDE_X = 1.6;
 const ATTACKER_BEHIND_S = 2.6;
 const OBSERVER_AHEAD_S = 40;
 const LEAD = 13;
+const AI_FIGHTS_UNTIL = 1200;
 const rideOn = controlOf({ ...neutralInput, throttle: 1 });
 const kicking = controlOf({ ...neutralInput, kick: true, throttle: 1 });
 
@@ -143,18 +167,30 @@ type Plan = (rider: RiderId, tick: number) => Control;
 
 interface Drawn {
   readonly attackerReach: number;
+  readonly attackerLastHit: number;
   readonly victimBumpedAt: number;
   readonly victimFlinch: number;
-  readonly victimShoved: boolean;
+}
+
+interface Watching {
+  readonly behind?: number;
+  readonly seats?: readonly RiderId[];
+  readonly stepsPerFrame?: readonly [number, ...number[]];
+  readonly until?: number;
 }
 
 const raceSeenBy = (
   me: RiderId,
   bunch: number,
   plan: Plan,
-  behind = ATTACKER_BEHIND_S
+  {
+    behind = ATTACKER_BEHIND_S,
+    seats = SEATS,
+    stepsPerFrame = [1],
+    until = KICK_AT + AFTER_TICKS,
+  }: Watching = {}
 ) => {
-  const setup = roomSetup(defaultSetup(track, 3), [...SEATS]);
+  const setup = roomSetup(defaultSetup(track, 3), [...seats]);
   const room = createRoom(setup);
   const client = createRoomClient(setup, me);
   for (const state of [room.state, client.confirmed, client.predicted]) {
@@ -169,26 +205,33 @@ const raceSeenBy = (
   }
   const cast = client.predicted.riders.map(() => ({ fight: quietFight() }));
   const drawn: Drawn[] = [];
-  const drawOne = () => {
-    client.predict(plan(me, client.predicted.tick + 1));
-    const { riders, tick } = client.predicted;
-    for (const seat of SEATS) {
-      const view = riderOf(cast, seat);
-      const rider = riderOf(riders, seat);
-      if (view && rider) {
-        fightTick(view.fight, rider.airborne, tick);
+  const roomHits: number[] = [];
+  let frame = 0;
+  const drawFrame = (steps: number) => {
+    client.settle();
+    for (let step = 0; step < steps; step += 1) {
+      client.predict(plan(me, client.predicted.tick + 1));
+      for (const seat of SEATS) {
+        const view = riderOf(cast, seat);
+        const rider = riderOf(client.predicted.riders, seat);
+        if (view && rider) {
+          fightTick(view.fight, rider.airborne, client.predicted.tick);
+        }
       }
     }
+    const { riders, tick } = client.predicted;
     for (const heard of client.takeFights()) {
       fightHeard(cast, heard, tick);
-    }
-    const shown = client.takeShownHits();
-    for (const hit of shown) {
-      hitShown(cast, hit);
     }
     const attacker = riderOf(cast, ATTACKER)?.fight ?? quietFight();
     const victim = riderOf(riders, VICTIM);
     drawn.push({
+      attackerLastHit: Math.max(
+        -1,
+        ...riders
+          .filter(({ lastHitBy }) => lastHitBy === ATTACKER)
+          .map(({ lastHitTick }) => lastHitTick)
+      ),
       attackerReach: reachOf(attacker),
       victimBumpedAt: victim?.lastHitTick ?? 0,
       victimFlinch: fightFlinch(
@@ -196,27 +239,42 @@ const raceSeenBy = (
         victim?.hitStun ?? 0,
         0
       ),
-      victimShoved: shown.some(
-        ({ event }) => event.kind === "hit" && event.target === VICTIM
-      ),
     });
   };
-  for (let tick = 0; tick < LEAD; tick += 1) {
-    drawOne();
-  }
-  for (let tick = 1; tick <= KICK_AT + AFTER_TICKS; tick += bunch) {
+  const drawTicks = (ticks: number) => {
+    let left = ticks;
+    while (left > 0) {
+      const steps = Math.min(
+        left,
+        stepsPerFrame[frame % stepsPerFrame.length] ?? 1
+      );
+      frame += 1;
+      drawFrame(steps);
+      left -= steps;
+    }
+  };
+  drawTicks(LEAD);
+  for (let tick = 1; tick <= until; tick += bunch) {
     for (let step = tick; step < tick + bunch; step += 1) {
-      for (const seat of SEATS) {
+      for (const seat of seats) {
         room.accept(seat, step, [plan(seat, step)]);
       }
       room.step();
+      for (const event of room.state.events) {
+        if (event.kind === "hit" && event.rider === ATTACKER) {
+          roomHits.push(room.state.tick);
+        }
+      }
       client.confirm(room.frame, null);
     }
-    for (let step = 0; step < bunch; step += 1) {
-      drawOne();
-    }
+    drawTicks(bunch);
   }
-  return drawn;
+  return {
+    drawn,
+    shoves: roomHits.map((hit) =>
+      drawn.find(({ attackerLastHit }) => attackerLastHit >= hit)
+    ),
+  };
 };
 
 const attackerKicksAt =
@@ -224,8 +282,7 @@ const attackerKicksAt =
   (rider, tick) =>
     rider === ATTACKER && ticks.includes(tick) ? kicking : rideOn;
 
-const shoveFrame = (drawn: readonly Drawn[]) =>
-  drawn.find(({ victimShoved }) => victimShoved);
+const shoveFrame = (seen: ReturnType<typeof raceSeenBy>) => seen.shoves[0];
 
 describe("another rider's strike in a real race", () => {
   it("shows the leg at contact and the full flinch on the frame of the shove when a burst starts with the kick", () => {
@@ -236,10 +293,41 @@ describe("another rider's strike in a real race", () => {
     expect([shove?.attackerReach, shove?.victimFlinch]).toStrictEqual([1, 1]);
   });
 
+  it("shows the leg and the flinch with the shove on frames that step no tick", () => {
+    const shove = shoveFrame(
+      raceSeenBy(VICTIM, 1, attackerKicksAt(KICK_AT), {
+        stepsPerFrame: [0, 2],
+      })
+    );
+    expect([shove?.attackerReach, shove?.victimFlinch]).toStrictEqual([1, 1]);
+  });
+
+  it("draws a strike heard in a catch-up frame at its contact pose, not past it", () => {
+    const catchUp = 4;
+    const shove = shoveFrame(
+      raceSeenBy(VICTIM, catchUp, attackerKicksAt(KICK_AT + 1), {
+        stepsPerFrame: [catchUp],
+      })
+    );
+    expect([shove?.attackerReach, shove?.victimFlinch]).toStrictEqual([1, 1]);
+  });
+
+  it("shows an AI rider's strike out on every frame its hit lands", () => {
+    const { shoves } = raceSeenBy(VICTIM, 1, () => rideOn, {
+      behind: 0,
+      seats: [VICTIM, OBSERVER],
+      until: AI_FIGHTS_UNTIL,
+    });
+    expect(shoves.length).toBeGreaterThan(0);
+    expect(shoves.map((shove) => shove?.attackerReach)).toStrictEqual(
+      shoves.map(() => 1)
+    );
+  });
+
   it("plays both of one rider's strikes from one burst", () => {
     const first = KICK_AT + 1;
     const second = first + KICK.cooldown + 1;
-    const drawn = raceSeenBy(
+    const { drawn } = raceSeenBy(
       OBSERVER,
       TWO_KICK_BURST,
       attackerKicksAt(first, second)
@@ -258,15 +346,16 @@ describe("another rider's strike in a real race", () => {
         ? kicking
         : rideOn;
     const legOut = (plan: Plan) =>
-      raceSeenBy(OBSERVER, 1, plan).filter((one) => one.attackerReach >= 0)
-        .length;
+      raceSeenBy(OBSERVER, 1, plan).drawn.filter(
+        (one) => one.attackerReach >= 0
+      ).length;
     expect(legOut(struckFirst)).toBeLessThan(legOut(attackerKicksAt(KICK_AT)));
   });
 
   it("doesn't flinch a rider who was only bumped", () => {
     const steerIn = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
     const bumping: Plan = (rider) => (rider === ATTACKER ? steerIn : rideOn);
-    const drawn = raceSeenBy(OBSERVER, 1, bumping, 0);
+    const { drawn } = raceSeenBy(OBSERVER, 1, bumping, { behind: 0 });
     const bumped = new Set(drawn.map(({ victimBumpedAt }) => victimBumpedAt));
     const flinched = drawn.filter(({ victimFlinch }) => victimFlinch > 0);
     expect([bumped.size > 1, flinched]).toStrictEqual([true, []]);

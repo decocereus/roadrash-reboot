@@ -57,7 +57,6 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
     confirmed: view,
     countdownSeconds,
     events: () => [],
-    fights: () => [],
     frameDrawn: () => {
       throw new Error("The session never draws.");
     },
@@ -73,10 +72,10 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
       throw new Error("The session never reports.");
     },
     riderColours: new Map(),
-    shownHits: () => [],
     step,
     stepsDue: () => 1,
     takeCorrections: () => [],
+    takeFights: () => [],
     view,
   };
   return { ...soloPlan, room };
