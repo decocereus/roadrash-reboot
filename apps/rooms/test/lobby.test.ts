@@ -16,6 +16,7 @@ import {
   PUBLIC_RULE,
   PUBLIC_START_MS,
   readyAll,
+  room,
   sameBuild,
   startedOf,
 } from "./host-harness.ts";
@@ -33,13 +34,13 @@ const somewhereElse = {
 } as const;
 
 const twoSeated = () => {
-  const clock = createClock();
-  const host = createHost(clock);
-  const first = fakeSocket();
-  const second = fakeSocket();
-  host.seat(first, "Ann", nearby, sameBuild("ann"));
-  host.seat(second, "Bo", nearby, sameBuild("bo"));
-  return { clock, first, host, second };
+  const { clock, host, seated } = room();
+  return {
+    clock,
+    first: seated("ann", "Ann"),
+    host,
+    second: seated("bo", "Bo"),
+  };
 };
 
 const choose = (

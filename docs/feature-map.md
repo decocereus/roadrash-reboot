@@ -1539,6 +1539,7 @@ Source files:
 - `tools/rooms/fights.ts`
 - `tools/rooms/gate.ts`
 - `tools/rooms/lag.ts`
+- `tools/rooms/lifecycle.ts`
 - `tools/rooms/load-clients.ts`
 - `tools/rooms/load.ts`
 - `tools/rooms/queue.ts`
@@ -1551,6 +1552,10 @@ Source files:
 - `tools/rooms/src/fights.ts`
 - `tools/rooms/src/gate.ts`
 - `tools/rooms/src/lag.ts`
+- `tools/rooms/src/lifecycle-checks.ts`
+- `tools/rooms/src/lifecycle-tlc.ts`
+- `tools/rooms/src/lifecycle-trace.ts`
+- `tools/rooms/src/lifecycle.ts`
 - `tools/rooms/src/load-clients.ts`
 - `tools/rooms/src/load-plan.ts`
 - `tools/rooms/src/load-report.ts`
@@ -1584,6 +1589,7 @@ Test files:
 - `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/room-config.test.ts`
+- `apps/rooms/test/room-lifecycle.test.ts`
 - `apps/rooms/test/route.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`
@@ -1605,6 +1611,7 @@ Test files:
 - `packages/sim/src/room.test.ts`
 - `tools/rooms/test/fight-report.test.ts`
 - `tools/rooms/test/lag.test.ts`
+- `tools/rooms/test/lifecycle.test.ts`
 - `tools/rooms/test/load-report.test.ts`
 - `tools/rooms/test/race-report.test.ts`
 - `tools/rooms/test/replay.test.ts`
