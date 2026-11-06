@@ -15,6 +15,7 @@ import type {
   RoomLobbyMessage,
   RoomPreview,
 } from "@racer/rooms/messages";
+import type { QueueRefusal } from "@racer/rooms/queue-messages";
 import { launchRoomConfig } from "@racer/rooms/room-config";
 import type { SeatPhase } from "@racer/rooms/seat-client";
 import { bikes } from "@racer/sim/bikes";
@@ -43,14 +44,21 @@ const policeLabels = {
   normal: "Normal",
 } as const satisfies Record<PoliceChoice, string>;
 
+const UPDATED_LINE = "The game has updated. Reload to join.";
+const LIMITED_LINE =
+  "Too many riders joined from your network. Try again in a minute.";
+
 const refusalLine = (refusal: Refusal): string => {
   switch (refusal) {
     case "build":
     case "content": {
-      return "The game has updated. Reload to join.";
+      return UPDATED_LINE;
     }
     case "full": {
       return "This room is full.";
+    }
+    case "limited": {
+      return LIMITED_LINE;
     }
     case "replaced": {
       return "You opened this lobby in another tab.";
@@ -455,12 +463,26 @@ export const RoomFailedScreen = ({
 
 const QUEUE_SECONDS = 30;
 
+const queueRefusalLine = (refusal: QueueRefusal): string => {
+  switch (refusal) {
+    case "build": {
+      return UPDATED_LINE;
+    }
+    case "limited": {
+      return LIMITED_LINE;
+    }
+    default: {
+      return refusal satisfies never;
+    }
+  }
+};
+
 export const QueueScreen = ({
-  refused,
+  refusal,
   riders,
   onBack,
 }: {
-  readonly refused: boolean;
+  readonly refusal: QueueRefusal | null;
   readonly riders: number;
   readonly onBack: () => void;
 }) => (
@@ -469,9 +491,9 @@ export const QueueScreen = ({
       <div className="flex min-h-0 flex-col justify-center gap-4">
         <Stencil>Finding riders</Stencil>
         <p aria-live="polite" className="font-display text-quote text-paper">
-          {refused
-            ? "The game has updated. Reload to join."
-            : `${riders} of ${MOST_SEATS}`}
+          {refusal === null
+            ? `${riders} of ${MOST_SEATS}`
+            : queueRefusalLine(refusal)}
         </p>
         <p className="font-display text-paper/60">
           The race leaves with whoever is here after {QUEUE_SECONDS} s. Street
@@ -479,8 +501,8 @@ export const QueueScreen = ({
         </p>
         <MenuList
           autoFocus
-          defaultValue={refused ? "reload" : "back"}
-          key={String(refused)}
+          defaultValue={refusal === "build" ? "reload" : "back"}
+          key={String(refusal)}
           label="Queue"
           onSelect={(id) => {
             if (id === "reload") {
@@ -490,7 +512,7 @@ export const QueueScreen = ({
             }
           }}
         >
-          {refused && <MenuItem value="reload">Reload</MenuItem>}
+          {refusal === "build" && <MenuItem value="reload">Reload</MenuItem>}
           <MenuItem value="back">Leave the queue</MenuItem>
         </MenuList>
       </div>
