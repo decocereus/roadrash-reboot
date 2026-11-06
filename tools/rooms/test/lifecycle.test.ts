@@ -54,17 +54,22 @@ describe("the room lifecycle checks", () => {
       ["SeatsCanRide"],
       "GuardDropRetires"
     );
-    const off = config.split("\n").filter((line) => line.endsWith("= FALSE"));
+    const off = config
+      .split("\n")
+      .filter((line) => line.includes("Guard") && line.endsWith("= FALSE"));
     expect(off).toStrictEqual(["    GuardDropRetires = FALSE"]);
   });
 
-  it("uses rider symmetry only where no liveness rule is checked", () => {
+  it("uses rider symmetry only for tabs with their own keys and no liveness rule", () => {
     expect(configOf(CHECKS.pair.bounds, CHECKS.pair.rules, null)).toContain(
       "SYMMETRY RiderSymmetry"
     );
     expect(configOf(CHECKS.pair.bounds, ["NeverStuck"], null)).not.toContain(
       "SYMMETRY"
     );
+    expect(
+      configOf(CHECKS.twins.bounds, ["OneSocketPerMember"], null)
+    ).not.toContain("SYMMETRY");
   });
 });
 

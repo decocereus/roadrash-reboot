@@ -13,6 +13,11 @@ export const GUARDS = [
   "GuardReopen",
   "GuardLateRoomRacing",
   "GuardEndedBackToLobby",
+  "GuardDropHolds",
+  "GuardReplacedHolds",
+  "GuardRejoin",
+  "GuardRejoinCountdown",
+  "GuardTakenStaysPut",
 ] as const;
 
 export type Guard = (typeof GUARDS)[number];
@@ -23,6 +28,7 @@ const INVARIANTS = [
   "NoGhostInBar",
   "LeaveFreesSpot",
   "BootFailureFreesSpot",
+  "TakenTabStaysPut",
 ] as const;
 
 const ACTION_PROPERTIES = [
@@ -31,6 +37,8 @@ const ACTION_PROPERTIES = [
   "SeatsCanRide",
   "FairStart",
   "ReadyRiderRides",
+  "BackOnBike",
+  "BikeHeldForHold",
 ] as const;
 
 const LIVENESS = ["NeverStuck"] as const;
@@ -58,6 +66,7 @@ interface Bounds {
   readonly mostSeats: number;
   readonly riders: 1 | 2 | 3;
   readonly slots: number;
+  readonly twins: boolean;
   readonly userActs: number;
 }
 
@@ -77,6 +86,7 @@ export const CHECKS = {
       mostSeats: 1,
       riders: 2,
       slots: 2,
+      twins: false,
       userActs: 3,
     },
     rules: SAFETY,
@@ -89,6 +99,7 @@ export const CHECKS = {
       mostSeats: 2,
       riders: 2,
       slots: 2,
+      twins: false,
       userActs: 3,
     },
     rules: SAFETY,
@@ -101,6 +112,7 @@ export const CHECKS = {
       mostSeats: 2,
       riders: 2,
       slots: 2,
+      twins: false,
       userActs: 2,
     },
     rules: SAFETY,
@@ -113,10 +125,24 @@ export const CHECKS = {
       mostSeats: 2,
       riders: 1,
       slots: 2,
+      twins: false,
       userActs: 4,
     },
     rules: [...SAFETY, ...LIVENESS],
     says: "one rider racing twice, never stuck",
+  },
+  twins: {
+    bounds: {
+      kind: "public",
+      maxRaces: 1,
+      mostSeats: 1,
+      riders: 2,
+      slots: 1,
+      twins: true,
+      userActs: 2,
+    },
+    rules: SAFETY,
+    says: "two tabs of one browser in a public room",
   },
 } as const satisfies Record<string, Check>;
 
@@ -129,6 +155,7 @@ interface GuardOff {
 
 export const GUARD_OFFS = {
   GuardBootLeavesRoom: { breaks: "BootFailureFreesSpot", on: "solo" },
+  GuardDropHolds: { breaks: "BikeHeldForHold", on: "solo" },
   GuardDropMarks: { breaks: "NoGhostInBar", on: "solo" },
   GuardDropRetires: { breaks: "SeatsCanRide", on: "full" },
   GuardEndedBackToLobby: { breaks: "NeverStuck", on: "solo" },
@@ -137,10 +164,14 @@ export const GUARD_OFFS = {
   GuardLateRoomRacing: { breaks: "ReadyRiderRides", on: "solo" },
   GuardLeaveCode: { breaks: "LeaveFreesSpot", on: "solo" },
   GuardNeverArrived: { breaks: "LeaveFreesSpot", on: "solo" },
+  GuardRejoin: { breaks: "BackOnBike", on: "solo" },
+  GuardRejoinCountdown: { breaks: "ReadyRiderRides", on: "solo" },
   GuardReopen: { breaks: "NeverStuck", on: "solo" },
+  GuardReplacedHolds: { breaks: "BackOnBike", on: "solo" },
   GuardRetireReplaced: { breaks: "OneSocketPerMember", on: "solo" },
   GuardSameRun: { breaks: "FairStart", on: "solo" },
   GuardSweepWaits: { breaks: "HoldLastsAway", on: "solo" },
+  GuardTakenStaysPut: { breaks: "TakenTabStaysPut", on: "twins" },
   GuardWaitForLoads: { breaks: "FairStart", on: "pair" },
 } as const satisfies Record<Guard, GuardOff>;
 
@@ -151,6 +182,7 @@ const TIMERS = {
   Door: 1,
   Gather: 2,
   Grace: 1,
+  Hold: 1,
   Quiet: 2,
   Reopen: 1,
   StartDelay: 1,
@@ -158,10 +190,11 @@ const TIMERS = {
 } as const;
 
 const constantsOf = (
-  { kind, maxRaces, mostSeats, riders, slots, userActs }: Bounds,
+  { kind, maxRaces, mostSeats, riders, slots, twins, userActs }: Bounds,
   off: Guard | null
 ): readonly string[] => [
   `Riders = {${RIDER_NAMES.slice(0, riders).join(", ")}}`,
+  `Twins = ${twins ? "TRUE" : "FALSE"}`,
   `Kind = "${kind}"`,
   `MostSeats = ${mostSeats}`,
   `MaxRaces = ${maxRaces}`,
@@ -189,7 +222,9 @@ export const configOf = (
     ...(properties.length > 0
       ? ["PROPERTIES", ...properties.map((rule) => `    ${rule}`)]
       : []),
-    ...(bounds.riders > 1 && !live ? ["SYMMETRY RiderSymmetry"] : []),
+    ...(bounds.riders > 1 && !bounds.twins && !live
+      ? ["SYMMETRY RiderSymmetry"]
+      : []),
     "",
   ].join("\n");
 };

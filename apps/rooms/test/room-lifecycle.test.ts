@@ -6,7 +6,11 @@ import {
   AWAY_MS,
   lastLobby,
   readyAll,
+  readyPacket,
   room,
+  START_DELAY_MS,
+  startedOf,
+  TICK_MS,
 } from "./host-harness.ts";
 
 const ABNORMAL_CLOSE = 1006;
@@ -51,5 +55,27 @@ describe("RoomLifecycle.tla counterexamples on the real host", () => {
     });
     advanceHearing(host, clock, [other], AWAY_MS);
     expect(lastLobby(other).members).toHaveLength(1);
+  });
+
+  it("keeps the hold and the bike of a racer whose rejoin closed before it opened", () => {
+    const { clock, connecting, host, seated } = room();
+    const ann = seated("ann", "Ann");
+    const bo = seated("bo", "Bo");
+    readyAll(host, [ann, bo]);
+    host.message(ann, readyPacket(ann));
+    host.message(bo, readyPacket(bo));
+    clock.advance(START_DELAY_MS + TICK_MS * 10);
+    const cy = seated("cy", "Cy");
+    host.gone(ann, ABNORMAL_CLOSE);
+    host.gone(connecting("ann", "Ann"), ABNORMAL_CLOSE);
+    expect(lastLobby(cy).members).toContainEqual(
+      expect.objectContaining({ here: false, name: "Ann" })
+    );
+    expect(startedOf(seated("ann", "Ann"))).toMatchObject({ you: 0 });
+    expect(
+      clock.notes
+        .filter(({ kind }) => ["held", "left", "rejoined"].includes(kind))
+        .map(({ kind }) => kind)
+    ).toStrictEqual(["held", "rejoined", "held", "rejoined"]);
   });
 });
