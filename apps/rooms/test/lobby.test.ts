@@ -1,22 +1,20 @@
-import { publicRoomRule } from "@racer/career/room-race";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import {
-  AWAY_MS,
-  PUBLIC_GATHER_MS,
-  PUBLIC_WAIT_MS,
-  READY_WAIT_MS,
-} from "../src/lobby.ts";
 import { encodeLobbyCommand } from "../src/messages.ts";
 import { TapeHeaderSchema } from "../src/tape.ts";
 import {
   advanceHearing,
+  AWAY_MS,
   createClock,
+  CUSTOM_START_MS,
   fakeSocket,
   lastLobby,
   nearby,
+  PUBLIC_GATHER_MS,
+  PUBLIC_RULE,
+  PUBLIC_START_MS,
   readyAll,
   sameBuild,
   startedOf,
@@ -85,7 +83,7 @@ describe("a lobby's start", () => {
 
   it("waits for ever while nobody is ready", () => {
     const { clock, first, host, second } = twoSeated();
-    advanceHearing(host, clock, [first, second], READY_WAIT_MS * 3);
+    advanceHearing(host, clock, [first, second], CUSTOM_START_MS * 3);
     expect(host.status().phase).toBe("waiting");
     expect(lastLobby(first).startsInMs).toBeNull();
   });
@@ -101,8 +99,8 @@ describe("a lobby's start", () => {
   it("starts with everyone a minute after the first rider readied", () => {
     const { clock, first, host, second } = twoSeated();
     readyAll(host, [first]);
-    expect(lastLobby(second).startsInMs).toBe(READY_WAIT_MS);
-    advanceHearing(host, clock, [first, second], READY_WAIT_MS - 1000);
+    expect(lastLobby(second).startsInMs).toBe(CUSTOM_START_MS);
+    advanceHearing(host, clock, [first, second], CUSTOM_START_MS - 1000);
     expect(host.status().phase).toBe("waiting");
     advanceHearing(host, clock, [first, second], 1000);
     expect(host.status().phase).toBe("racing");
@@ -117,7 +115,7 @@ describe("a lobby's start", () => {
       encodeLobbyCommand({ edition: 0, kind: "ready", ready: false })
     );
     expect(lastLobby(second).startsInMs).toBeNull();
-    advanceHearing(host, clock, [first, second], READY_WAIT_MS + 1000);
+    advanceHearing(host, clock, [first, second], CUSTOM_START_MS + 1000);
     expect(host.status().phase).toBe("waiting");
   });
 
@@ -126,7 +124,7 @@ describe("a lobby's start", () => {
     host.gone(second, 1000);
     readyAll(host, [first]);
     expect(host.status().phase).toBe("waiting");
-    advanceHearing(host, clock, [first], READY_WAIT_MS + 1000);
+    advanceHearing(host, clock, [first], CUSTOM_START_MS + 1000);
     expect(host.status().phase).toBe("racing");
     expect(startedOf(first).manifest.roster[1]?.kind).toBe("ai");
   });
@@ -155,7 +153,7 @@ describe("a public lobby", () => {
 
   it("leaves on its timer with nobody ready", () => {
     const { clock, first, host, second } = publicRoom();
-    advanceHearing(host, clock, [first, second], PUBLIC_WAIT_MS - 1000);
+    advanceHearing(host, clock, [first, second], PUBLIC_START_MS - 1000);
     expect(host.status().phase).toBe("waiting");
     advanceHearing(host, clock, [first, second], 2000);
     expect(host.status().phase).toBe("racing");
@@ -174,7 +172,7 @@ describe("a lobby's rules", () => {
   it("are the host's to choose, and reach the race and its tape", () => {
     const { clock, first, host, second } = twoSeated();
     choose(host, second);
-    expect(lastLobby(first).rule).toStrictEqual(publicRoomRule);
+    expect(lastLobby(first).rule).toStrictEqual(PUBLIC_RULE);
     choose(host, first);
     expect(lastLobby(second).rule).toMatchObject(somewhereElse);
     readyAll(host, [first, second]);
@@ -269,7 +267,7 @@ describe("a lobby across races", () => {
     clock.advance(AWAY_MS + 2000);
     const next = fakeSocket();
     host.seat(next, "Cy", nearby, sameBuild());
-    expect(lastLobby(next).rule).toStrictEqual(publicRoomRule);
+    expect(lastLobby(next).rule).toStrictEqual(PUBLIC_RULE);
   });
 
   it("seats a late rider for the next race, not this one", () => {

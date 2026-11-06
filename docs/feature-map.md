@@ -1380,6 +1380,7 @@ Source files:
 - `tools/oxlint/rushline/rules/no-service-constructor-imports.ts`
 - `tools/oxlint/rushline/rules/no-swallowed-failure.ts`
 - `tools/oxlint/rushline/rules/numeric-draw-sort.ts`
+- `tools/oxlint/rushline/rules/player-copy.ts`
 - `tools/oxlint/rushline/rules/prefer-catch-tags.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-fn.ts`
 - `tools/oxlint/rushline/rules/prefer-effect-match.ts`
@@ -1415,6 +1416,7 @@ Test files:
 - `tools/oxlint/test/no-entries-loop.test.ts`
 - `tools/oxlint/test/no-hot-allocation.test.ts`
 - `tools/oxlint/test/numeric-draw-sort.test.ts`
+- `tools/oxlint/test/player-copy.test.ts`
 - `tools/oxlint/test/ranged-buffer-upload.test.ts`
 - `tools/oxlint/test/reflect.test.ts`
 - `tools/oxlint/test/require-nul-file-list.test.ts`
@@ -1509,6 +1511,7 @@ Source files:
 - `apps/rooms/src/refused-seat.ts`
 - `apps/rooms/src/room-config.ts`
 - `apps/rooms/src/room-id.ts`
+- `apps/rooms/src/room-rule.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/route.ts`
 - `apps/rooms/src/seat-client.ts`
@@ -1577,6 +1580,7 @@ Test files:
 - `apps/rooms/test/messages.test.ts`
 - `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
+- `apps/rooms/test/room-config.test.ts`
 - `apps/rooms/test/route.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`

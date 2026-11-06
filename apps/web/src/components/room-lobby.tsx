@@ -176,6 +176,7 @@ const SeatedLobby = ({
   });
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
+    let watching: (() => void) | null = null;
     const card = graphicsCard();
     const opened = openRoomSeat(
       import.meta.env.VITE_ROOMS_URL,
@@ -211,7 +212,15 @@ const SeatedLobby = ({
         } else if (opened.race()) {
           tellLost();
           lost();
-          if (handoffNow().kind !== "riding") {
+          if (handoffNow().kind === "riding") {
+            watching ??= readRoomPreview(
+              import.meta.env.VITE_ROOMS_URL,
+              roomId,
+              () => {
+                moveToRoom(roomId, "moved", "try");
+              }
+            );
+          } else {
             moveToRoom(roomId, "moved", "try");
           }
         } else {
@@ -225,6 +234,7 @@ const SeatedLobby = ({
       if (reopening) {
         clearTimeout(reopening);
       }
+      watching?.();
       const closing = seatClosing(handoffNow(), bootFailed.current);
       switch (closing) {
         case "keep": {

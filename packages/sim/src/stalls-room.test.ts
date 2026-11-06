@@ -2,7 +2,7 @@ import { trackFor } from "@racer/track/roads";
 import { describe, expect, it } from "vitest";
 
 import { controlOf } from "./control.ts";
-import { riderAt } from "./race-fixtures.ts";
+import { riderAt, ROOM_LIMIT_TICKS } from "./race-fixtures.ts";
 import { neutralInput, defaultSetup } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import { createScratch, scratchFor } from "./room-frame.ts";
@@ -61,9 +61,9 @@ const atStall = (rider: RiderId, state: RaceState): boolean => {
 
 const race = () => {
   const setup = roomSetup(defaultSetup(road, 7), [...SEATS]);
-  const room = createRoom(setup);
-  const host = createRoomClient(setup, PLAYER_RIDER);
-  const guest = createRoomClient(setup, RIVAL);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const host = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
+  const guest = createRoomClient(setup, RIVAL, ROOM_LIMIT_TICKS);
   const hashes: (readonly number[])[] = [];
   let stallCrashes = 0;
   const predictUpTo = (tick: number): void => {

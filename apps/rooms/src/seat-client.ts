@@ -49,6 +49,7 @@ import type {
   RoomWalked,
 } from "./messages.ts";
 import { createRaceTally } from "./race-tally.ts";
+import { ticksOf } from "./room-config.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
 const PING_EVERY_MS = 500;
@@ -127,7 +128,11 @@ const raceOf = ({ awayMs, manifest, you }: RoomStarted): SeatRace => {
     manifest.rule
   );
   const me = riderIdAt(you);
-  const client = createRoomClient(setup, me);
+  const client = createRoomClient(
+    setup,
+    me,
+    ticksOf(manifest.raceLimitSeconds)
+  );
   const colours = humanColours(manifest);
   return {
     awayMs,

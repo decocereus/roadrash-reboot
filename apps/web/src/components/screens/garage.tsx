@@ -181,7 +181,7 @@ const SpecBoard = ({
           className="text-neon-yellow mt-[0.3em] tracking-wide"
           style={{ fontSize: stagePx(22) }}
         >
-          {classNames[row.bikeClass]} · {formatMoney(row.price)}
+          {classNames[row.bikeClass]}, {formatMoney(row.price)}
         </p>
       </div>
       <dl

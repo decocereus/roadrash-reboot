@@ -2,13 +2,10 @@ import { lobbyActs, lobbyPlaces, lobbyPoses } from "@racer/sim/lobby-walk";
 import * as Schema from "effect/Schema";
 
 import { LOBBY_PHASES } from "./lobby.ts";
-import {
-  RaceManifestSchema,
-  RoomChoiceChangeSchema,
-  RoomRuleSchema,
-} from "./manifest.ts";
+import { RaceManifestSchema } from "./manifest.ts";
 import { RoomConfigSchema } from "./room-config.ts";
 import { ROOM_KINDS } from "./room-id.ts";
+import { RoomChoiceChangeSchema, RoomRuleSchema } from "./room-rule.ts";
 
 const MOST_NAME_CHARS = 12;
 const BARRED_NAME_CHARS = /[^\p{L}\p{M}\p{N} ._-]/gu;

@@ -2,11 +2,11 @@ import { RACE_STATS_PACKET_BYTES, writeRaceStats } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import { AWAY_MS } from "../src/lobby.ts";
 import { SEAT_QUIT } from "../src/messages.ts";
 import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
   advanceHearing,
+  AWAY_MS,
   createClock,
   fakeSocket,
   HOLD_MS,

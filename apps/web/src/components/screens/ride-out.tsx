@@ -16,7 +16,7 @@ import type { RacePlan } from "../../game/hud.ts";
 import { ActionMenu, standingTag, useEscape } from "./shared.tsx";
 
 const kitOf = (bike: string, weapon: string): string =>
-  weapon === "" ? shortBike(bike) : `${shortBike(bike)} · ${weapon}`;
+  weapon === "" ? shortBike(bike) : `${shortBike(bike)}, ${weapon}`;
 
 const GridRow = ({
   slot,
@@ -93,11 +93,11 @@ export const RideOutScreen = ({
           className="font-display text-paper flex w-[34vw] flex-col gap-4 font-bold uppercase"
         >
           <p className="text-neon-cyan tracking-wide">
-            {quick ? "Single race" : `Tier ${setup.tier} · Top 3 qualifies`}
+            {quick ? "Single race" : `Tier ${setup.tier}, top 3 qualify`}
           </p>
           <h1 className="font-stencil text-[5vw] leading-none">{road.name}</h1>
           <p className="text-paper/70 tracking-wide">
-            {kilometres(setup.track.length)} km · {copCount(setup.police.count)}
+            {kilometres(setup.track.length)} km, {copCount(setup.police.count)}
           </p>
           <ol className="flex flex-col text-[1.35vw] leading-tight">
             {setup.field.map((rival, slot) => {

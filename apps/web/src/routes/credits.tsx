@@ -31,9 +31,7 @@ const CreditsPage = () => (
               href={source.licenceUrl}
             >
               {source.licence}
-              {source.id === "microsoft-buildings"
-                ? " · full licence text"
-                : ""}
+              {source.id === "microsoft-buildings" ? ", full licence text" : ""}
             </a>
           </li>
         ))}
@@ -46,7 +44,7 @@ export const Route = createFileRoute("/credits")({
   component: CreditsPage,
   head: () => ({
     meta: [
-      { title: "Data credits · Lowside" },
+      { title: "Data credits | Lowside" },
       {
         content: "Sources and licences for Lowside's Madrid corridor.",
         name: "description",

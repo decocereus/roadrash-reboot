@@ -1,5 +1,5 @@
-import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomLobbyMessage, RoomWalked } from "@racer/rooms/messages";
+import { launchRoomConfig, publicRuleFor } from "@racer/rooms/room-config";
 import type { RoomSeat, SeatPhase } from "@racer/rooms/seat-client";
 import { createLobbyRider, SHOVE } from "@racer/sim/lobby";
 import { doorSpot } from "@racer/sim/lobby-floor";
@@ -51,7 +51,7 @@ const lobbyOf = (
   })),
   phase: "gathering",
   roomKind: "custom",
-  rule: publicRoomRule,
+  rule: publicRuleFor(launchRoomConfig.publicRace, 0),
   seatHoldSeconds: 30,
   startsInMs: null,
   you: "near",

@@ -1,6 +1,5 @@
 import {
   policeChoices,
-  publicRoomRule,
   ROOM_FIELD_SIZE,
   trafficChoices,
 } from "@racer/career/room-race";
@@ -17,6 +16,7 @@ import type {
   RoomPreview,
 } from "@racer/rooms/messages";
 import type { QueueRefusal } from "@racer/rooms/queue-messages";
+import { launchRoomConfig } from "@racer/rooms/room-config";
 import type { SeatPhase } from "@racer/rooms/seat-client";
 import { bikes } from "@racer/sim/bikes";
 import { tiers } from "@racer/sim/difficulty";
@@ -29,6 +29,8 @@ import { cn } from "@racer/ui/utils";
 import { useState } from "react";
 
 import { RiderChip } from "./shared.tsx";
+
+const { publicRace } = launchRoomConfig;
 
 const trafficLabels = {
   heavy: "Heavy",
@@ -91,7 +93,7 @@ const statusOf = (phase: SeatPhase, refusal: Refusal | null): string => {
       return "Reconnecting to the room.";
     }
     case "refused": {
-      return refusal ? refusalLine(refusal) : "This seat was refused.";
+      return refusal ? refusalLine(refusal) : "You can't get in right now.";
     }
     default: {
       return phase satisfies never;
@@ -330,7 +332,7 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
       </li>
     ))}
     <li className="font-display text-paper/60 py-1">
-      {ROOM_FIELD_SIZE - lobby.members.length} AI riders fill the grid to{" "}
+      {ROOM_FIELD_SIZE - lobby.members.length} street riders join to make{" "}
       {ROOM_FIELD_SIZE}.
     </li>
   </ul>
@@ -494,8 +496,8 @@ export const QueueScreen = ({
             : queueRefusalLine(refusal)}
         </p>
         <p className="font-display text-paper/60">
-          The race leaves with whoever is here after {QUEUE_SECONDS} s. AI
-          riders fill the grid to 10 and are labelled AI.
+          The race leaves with whoever is here after {QUEUE_SECONDS} s. Street
+          riders join to make 10.
         </p>
         <MenuList
           autoFocus
@@ -517,13 +519,13 @@ export const QueueScreen = ({
       <div className="border-paper/30 flex flex-col gap-4 border-2 p-6">
         <p className="font-display text-quote text-paper">Public rules</p>
         <div className="flex flex-col gap-2">
-          <RuleLine label="Road" value="The server picks it" />
-          <RuleLine label="Tier" value={String(publicRoomRule.tier)} />
+          <RuleLine label="Road" value="Picked for you" />
+          <RuleLine label="Tier" value={String(publicRace.tier)} />
           <RuleLine
             label="Bike"
-            value={`${bikes[publicRoomRule.bikeId].name}, same for all`}
+            value={`${bikes[publicRace.bikeId].name}, same for all`}
           />
-          <RuleLine label="Catch-up" value="None, for humans or AI" />
+          <RuleLine label="Speed help" value="None, for anyone" />
           <RuleLine label="Rank" value="Doesn't count" />
         </div>
       </div>

@@ -1,4 +1,3 @@
-import { publicRoomRule } from "@racer/career/room-race";
 import { STARTING_BIKE } from "@racer/career/tables";
 import { coasting } from "@racer/sim/control";
 import { clearFrame, createTickFrame } from "@racer/sim/room-frame";
@@ -14,8 +13,11 @@ import { riderIdAt } from "@racer/sim/state";
 
 import { encodeRoomMessage } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
+import { launchRoomConfig, publicRuleFor } from "../src/room-config.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
 import type { SeatBrowser } from "../src/tape.ts";
+
+const PUBLIC_RULE = publicRuleFor(launchRoomConfig.publicRace, 0);
 
 export const DEAD_AFTER_MS = 5000;
 export const PING_EVERY_MS = 500;
@@ -111,6 +113,7 @@ export const startedMessage = {
     loadingDeadlineMs: 20_000,
     protocol: ROOM_PROTOCOL,
     raceId: "race-1",
+    raceLimitSeconds: 360,
     reconnect: { holdSeconds: 30 },
     roster: [
       {
@@ -121,7 +124,7 @@ export const startedMessage = {
         rider: 0,
       },
     ],
-    rule: publicRoomRule,
+    rule: PUBLIC_RULE,
     seed: 1,
     tickRate: 60,
     trackHash: [0],
@@ -140,7 +143,7 @@ export const lobbyMessage = (edition: number) =>
     ],
     phase: "gathering",
     roomKind: "custom",
-    rule: publicRoomRule,
+    rule: PUBLIC_RULE,
     seatHoldSeconds: 30,
     startsInMs: null,
     you: "near",

@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { decodeQueueMessage } from "../src/queue-messages.ts";
 import type { QueueMessage } from "../src/queue-messages.ts";
-import { createQueue, QUEUE_WAIT_MS } from "../src/queue.ts";
+import { createQueue } from "../src/queue.ts";
+import { launchRoomConfig, msOf } from "../src/room-config.ts";
+
+const QUEUE_WAIT_MS = msOf(launchRoomConfig.queueWaitSeconds);
 
 const ticketSocket = () => {
   let closed = false;
@@ -42,6 +45,7 @@ const openQueue = () => {
       wakes.push({ at: now + ms, wake });
     },
     build: "test",
+    config: launchRoomConfig,
     note: () => {
       noted += 1;
     },

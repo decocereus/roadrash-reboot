@@ -11,10 +11,10 @@ import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
-import { AWAY_MS } from "../src/lobby.ts";
 import { SEAT_QUIT } from "../src/messages.ts";
 import {
   advanceHearing,
+  AWAY_MS,
   countdownsOn,
   createClock,
   fakeSocket,

@@ -1,5 +1,5 @@
 import { defaultSetup } from "@racer/sim/race";
-import { track } from "@racer/sim/race-fixtures";
+import { ROOM_LIMIT_TICKS, track } from "@racer/sim/race-fixtures";
 import { roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import { PLAYER_RIDER } from "@racer/sim/state";
@@ -14,7 +14,7 @@ import {
 } from "../src/tape.ts";
 
 const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
-const client = createRoomClient(setup, PLAYER_RIDER);
+const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
 
 describe("a rider's race tally", () => {
   it("counts the frames the clock held the bike or moved it more than once", () => {
@@ -53,7 +53,7 @@ describe("a rider's race tally", () => {
   });
 
   it("reports the rider's crashes and those a correction brought", () => {
-    const crashed = createRoomClient(setup, PLAYER_RIDER);
+    const crashed = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
     crashed.stats.crashesAfterCorrection = 1;
     crashed.mine.crashes = 3;
     expect(createRaceTally().read(crashed, 0)).toMatchObject({

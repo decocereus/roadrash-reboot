@@ -48,7 +48,7 @@ const careerActions = (
   }
   return [
     {
-      detail: `Tier ${career.tier} · ${formatMoney(career.cash)} · ${bikeName(career.bikeId)}`,
+      detail: `Tier ${career.tier}, ${formatMoney(career.cash)}, ${bikeName(career.bikeId)}`,
       id: "continue",
       label: "Back to the bar",
       run: onContinue,

@@ -5,11 +5,11 @@ import * as HttpApiSchema from "effect/http-api/HttpApiSchema";
 import * as Schema from "effect/Schema";
 
 import { HOST_PHASES } from "./host-phase.ts";
-import { RoomRuleSchema } from "./manifest.ts";
 import { ROOM_PHASES } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import { SeatTallySchema } from "./notes.ts";
 import { ROOM_ID_PATTERN } from "./room-id.ts";
+import { RoomRuleSchema } from "./room-rule.ts";
 import { SOCKET_ROLES } from "./socket-role.ts";
 
 export const RoomIdSchema = Schema.String.pipe(
