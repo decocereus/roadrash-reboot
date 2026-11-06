@@ -334,6 +334,7 @@ const RACE_STAT_FIELDS = [
   "desyncs",
   "refusedPredictions",
   "resimulatedTicks",
+  "retriedPresses",
   "rollbacks",
   "rttMeanMs",
   "rttWorstMs",

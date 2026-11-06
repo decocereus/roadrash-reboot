@@ -1584,6 +1584,7 @@ Test files:
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
 - `tools/rooms/test/fight-report.test.ts`
+- `tools/rooms/test/lag.test.ts`
 - `tools/rooms/test/load-report.test.ts`
 - `tools/rooms/test/race-report.test.ts`
 - `tools/rooms/test/replay.test.ts`
