@@ -92,6 +92,7 @@ export const createRoomRun = (
     },
     stepsDue: seat.stepsDue,
     takeCorrections: client.takeCorrections,
+    takeFights: client.takeFights,
     view: client.predicted,
   };
 };

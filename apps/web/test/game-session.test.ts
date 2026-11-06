@@ -75,6 +75,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
     step,
     stepsDue: () => 1,
     takeCorrections: () => [],
+    takeFights: () => [],
     view,
   };
   return { ...soloPlan, room };

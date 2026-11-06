@@ -13,9 +13,10 @@ import { INPUT_HORIZON, PILOT_FROM_TICK, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
-import { riderOf } from "./state.ts";
+import { NO_FIGHTS, isFightEvent, riderOf } from "./state.ts";
 import type {
   Control,
+  HeardFight,
   RaceEvent,
   RaceSetup,
   RaceState,
@@ -25,7 +26,6 @@ import type {
 
 const MOST_LEAD_TICKS = INPUT_HORIZON;
 
-const OLDEST_PLAYED_TICKS = 12;
 const NO_EVENTS: readonly RaceEvent[] = [];
 const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 
@@ -73,6 +73,7 @@ export interface RoomClient {
   readonly settle: () => void;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
+  readonly takeFights: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
 }
 
@@ -84,11 +85,6 @@ interface Remote {
 const outOfOrder = (tick: number, after: number): never => {
   throw new RangeError(`The room sent tick ${tick} after tick ${after}.`);
 };
-
-interface RoomEvent {
-  readonly event: RaceEvent;
-  readonly tick: number;
-}
 
 const ownPrediction = (event: RaceEvent, me: RiderId): boolean => {
   if (event.rider !== me) {
@@ -160,10 +156,8 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const ownControls = ringOf(() => coasting);
   const guesses = ringOf(createTickFrame);
   const batch: Control[] = [];
-  let own: RaceEvent[] = [];
-  const fromRoom: RoomEvent[] = [];
-  let playedThrough = 0;
-  const unseenStrikes = new Set<RiderId>();
+  let heard: RaceEvent[] = [];
+  let fights: HeardFight[] = [];
   const others = predicted.riders.filter((rider) => rider.id !== me);
   const wasAt = others.map(stillCorrection);
   let corrections = others.map(stillCorrection);
@@ -221,14 +215,27 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     return frame;
   };
 
+  const hearFights = (race: RaceState): void => {
+    for (const event of race.events) {
+      if (isFightEvent(event)) {
+        fights.push({ event: { ...event }, tick: race.tick });
+      }
+    }
+  };
+
   const advance = (tick: number): void => {
     stepRace(predicted, setup.track, guess(tick));
+    hearFights(predicted);
+  };
+
+  const hear = (event: RaceEvent): void => {
+    heard.push({ ...event });
   };
 
   const hearOwn = (): void => {
     for (const event of predicted.events) {
       if (ownPrediction(event, me)) {
-        own.push({ ...event });
+        hear(event);
       }
     }
   };
@@ -236,35 +243,10 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const hearRoom = (): void => {
     for (const event of confirmed.events) {
       if (!ownPrediction(event, me)) {
-        fromRoom.push({ event: { ...event }, tick: confirmed.tick });
+        hear(event);
       }
     }
-  };
-
-  const playRoom = (into: RaceEvent[]): void => {
-    const newest = confirmed.tick;
-    const step = newest - playedThrough > 1 ? 2 : 1;
-    playedThrough = Math.max(
-      newest - OLDEST_PLAYED_TICKS,
-      Math.min(newest, playedThrough + step)
-    );
-    let played = 0;
-    for (const { event, tick } of fromRoom) {
-      if (tick > playedThrough) {
-        break;
-      }
-      const fresh = tick >= newest - OLDEST_PLAYED_TICKS;
-      if (event.kind === "attack" && fresh) {
-        unseenStrikes.delete(event.rider);
-      } else if (event.kind === "attack") {
-        unseenStrikes.add(event.rider);
-      }
-      if (fresh && !(event.kind === "hit" && unseenStrikes.has(event.rider))) {
-        into.push(event);
-      }
-      played += 1;
-    }
-    fromRoom.splice(0, played);
+    hearFights(confirmed);
   };
 
   const rewind = (): void => {
@@ -430,12 +412,19 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       return taken;
     },
     takeEvents: () => {
-      const taken = own;
-      playRoom(taken);
-      if (taken.length === 0) {
+      if (heard.length === 0) {
         return NO_EVENTS;
       }
-      own = [];
+      const taken = heard;
+      heard = [];
+      return taken;
+    },
+    takeFights: () => {
+      if (fights.length === 0) {
+        return NO_FIGHTS;
+      }
+      const taken = fights;
+      fights = [];
       return taken;
     },
     writeInputs: (view) => {

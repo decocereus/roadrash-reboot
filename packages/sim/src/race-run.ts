@@ -7,11 +7,19 @@ import {
 import type { RaceView } from "./race-view.ts";
 import { createRace, stepRace } from "./race.ts";
 import type { RiderCorrection } from "./room-client.ts";
-import type { InputFrame, RaceEvent, RaceSetup, RiderId } from "./state.ts";
+import { NO_FIGHTS, isFightEvent } from "./state.ts";
+import type {
+  HeardFight,
+  InputFrame,
+  RaceEvent,
+  RaceSetup,
+  RiderId,
+} from "./state.ts";
 
 export interface RaceRun {
   readonly events: () => readonly RaceEvent[];
   readonly takeCorrections: () => readonly RiderCorrection[];
+  readonly takeFights: () => readonly HeardFight[];
   readonly view: RaceView;
   readonly step: (frame: InputFrame) => void;
 }
@@ -28,6 +36,14 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 export const createRaceRun = (setup: RaceSetup): LocalRun => {
   const state = createRace(setup);
   const { track } = setup;
+  let fights: HeardFight[] = [];
+  const hear = (): void => {
+    for (const event of state.events) {
+      if (isFightEvent(event)) {
+        fights.push({ event, tick: state.tick });
+      }
+    }
+  };
   return {
     events: () => state.events,
     placeRiderAcross: (id, x) => {
@@ -44,8 +60,17 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
     },
     step: (frame) => {
       stepRace(state, track, frame);
+      hear();
     },
     takeCorrections: () => NO_CORRECTIONS,
+    takeFights: () => {
+      if (fights.length === 0) {
+        return NO_FIGHTS;
+      }
+      const taken = fights;
+      fights = [];
+      return taken;
+    },
     view: state,
   };
 };

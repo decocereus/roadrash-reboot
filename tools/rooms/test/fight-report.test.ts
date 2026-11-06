@@ -15,10 +15,12 @@ const TICK_AT_SHOWN = 200;
 
 const STRUCK_TICK = 124;
 
+const STUNNED = 10;
+
 const rider = (stamina: number, lastHitBy: number | null) => ({
   attack: "none",
   attackTicks: 0,
-  hitStun: 0,
+  hitStun: lastHitBy === null ? 0 : STUNNED,
   lastHitBy,
   lastHitTick: lastHitBy === null ? -1 : STRUCK_TICK,
   mode: "riding",
@@ -79,6 +81,7 @@ const nothing: TakenFrames = {
   attacks: [],
   falls: [],
   frames: [],
+  hits: [],
   lostButtons: [],
   placed: [],
   presses: [],
@@ -264,6 +267,31 @@ describe("reading a fight from both windows", () => {
             predicted: [
               rider(100, null),
               { ...rider(100, null), lastHitBy: OTHER, lastHitTick: 121 },
+            ],
+          }
+        : frame
+    );
+    const row = fightRow("kick", ATTACKER, VICTIM, PRESS, attacker, {
+      ...kicked,
+      frames,
+    });
+    expect(row.strikeOutBeforeShoveMs).toBe(0);
+    expect(row.passed).toBeTruthy();
+  });
+
+  it("ignores the attacker bumping the victim before the strike is out", () => {
+    const kicked = victimSaw(CONTACT, CONTACT);
+    const frames = kicked.frames.map((frame, index) =>
+      index > 0 && index <= CONTACT
+        ? {
+            ...frame,
+            predicted: [
+              rider(100, null),
+              {
+                ...rider(100, null),
+                lastHitBy: ATTACKER,
+                lastHitTick: STRUCK_TICK - 1,
+              },
             ],
           }
         : frame

@@ -1,6 +1,6 @@
 import { HIT_STUN_TICKS } from "@racer/sim/combat";
-import { clamp } from "@racer/sim/state";
-import type { AttackKind, RaceEvent, WeaponKind } from "@racer/sim/state";
+import { clamp, riderOf } from "@racer/sim/state";
+import type { AttackKind, HeardFight, WeaponKind } from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
 
 import type { RiderPose } from "./figure-pose.ts";
@@ -15,11 +15,22 @@ const KICK_RETRACT_TICKS = 3;
 const KICK_DROP_FROM = 8;
 const KICK_DROP_TICKS = 5;
 
+interface HeardStrike {
+  readonly attack: AttackKind;
+  readonly side: number;
+  readonly tick: number;
+  readonly weapon: WeaponKind;
+}
+
 export interface RiderFight {
   attack: AttackKind | "none";
   elapsed: number;
   flinchLeft: number;
+  hitSeen: number;
+  nextStrikeFrom: number;
+  readonly queued: HeardStrike[];
   side: number;
+  startTick: number;
   weapon: WeaponKind;
 }
 
@@ -33,28 +44,110 @@ export const quietFight = (): RiderFight => ({
   attack: "none",
   elapsed: 0,
   flinchLeft: 0,
+  hitSeen: Number.NEGATIVE_INFINITY,
+  nextStrikeFrom: Number.NEGATIVE_INFINITY,
+  queued: [],
   side: 1,
+  startTick: 0,
   weapon: "none",
 });
 
-export const fightTick = (fight: RiderFight, airborne: boolean): void => {
+const begin = (
+  fight: RiderFight,
+  heard: HeardStrike,
+  drawnTick: number
+): void => {
+  const strike = strikeOf(heard.attack, heard.weapon);
+  fight.attack = heard.attack;
+  fight.elapsed = clamp(
+    drawnTick - heard.tick,
+    0,
+    strike.ticks - strike.strikeTick
+  );
+  fight.side = heard.side;
+  fight.startTick = heard.tick;
+  fight.weapon = heard.weapon;
+};
+
+export const fightTick = (
+  fight: RiderFight,
+  airborne: boolean,
+  drawnTick: number
+): void => {
   fight.attack = airborne ? "none" : fight.attack;
   fight.elapsed += 1;
   fight.flinchLeft = Math.max(0, fight.flinchLeft - 1);
-};
-
-export const fightHeard = (fight: RiderFight, event: RaceEvent): void => {
-  if (event.kind === "attack") {
-    fight.attack = event.attack;
-    fight.elapsed = 0;
-    fight.side = event.side;
-    fight.weapon = event.weapon;
+  if (
+    fight.attack !== "none" &&
+    fight.elapsed >= strikeOf(fight.attack, fight.weapon).ticks
+  ) {
+    fight.attack = "none";
+  }
+  const next = fight.attack === "none" ? fight.queued.shift() : undefined;
+  if (next) {
+    begin(fight, next, drawnTick);
   }
 };
 
-export const flinchHeard = (fight: RiderFight): void => {
-  fight.attack = "none";
-  fight.flinchLeft = HIT_STUN_TICKS;
+const runsAt = (
+  attack: AttackKind,
+  weapon: WeaponKind,
+  from: number,
+  tick: number
+): boolean => from <= tick && tick < from + strikeOf(attack, weapon).ticks;
+
+const strikeHeard = (
+  fight: RiderFight,
+  heard: HeardStrike,
+  drawnTick: number
+) => {
+  if (heard.tick < fight.nextStrikeFrom) {
+    return;
+  }
+  fight.nextStrikeFrom =
+    heard.tick + strikeOf(heard.attack, heard.weapon).cooldown;
+  if (fight.attack === "none") {
+    begin(fight, heard, drawnTick);
+  } else {
+    fight.queued.push(heard);
+  }
+};
+
+const struckAt = (fight: RiderFight, tick: number): void => {
+  if (
+    fight.attack !== "none" &&
+    runsAt(fight.attack, fight.weapon, fight.startTick, tick)
+  ) {
+    fight.attack = "none";
+  }
+  const cut = fight.queued.findIndex((queued) =>
+    runsAt(queued.attack, queued.weapon, queued.tick, tick)
+  );
+  if (cut !== -1) {
+    fight.queued.splice(cut, 1);
+  }
+  if (tick >= fight.hitSeen + HIT_STUN_TICKS) {
+    fight.hitSeen = tick;
+    fight.flinchLeft = HIT_STUN_TICKS;
+  }
+};
+
+export const fightHeard = (
+  fighters: readonly { readonly fight: RiderFight }[],
+  { event, tick }: HeardFight,
+  drawnTick: number
+): void => {
+  if (event.kind === "attack") {
+    const fight = riderOf(fighters, event.rider)?.fight;
+    if (fight) {
+      strikeHeard(fight, { ...event, tick }, drawnTick);
+    }
+    return;
+  }
+  const struck = riderOf(fighters, event.target)?.fight;
+  if (struck) {
+    struckAt(struck, tick);
+  }
 };
 
 export const fightFlinch = (
@@ -125,7 +218,6 @@ export const strikeFrame = (
   const land = strike.ticks - strike.strikeTick;
   const elapsed = fight.elapsed + subTick;
   if (elapsed >= strike.ticks) {
-    fight.attack = "none";
     return false;
   }
   if (fight.attack === "kick") {

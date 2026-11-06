@@ -4,10 +4,11 @@ export const FIGHT_PROBE = `(() => {
   const presses = [];
   const attacks = [];
   const falls = [];
+  const hits = [];
   const lostButtons = [];
   const placed = [];
   const sends = [];
-  globalThis.__fightProbe = { attacks, falls, frames, lostButtons, placed, presses, sends };
+  globalThis.__fightProbe = { attacks, falls, frames, hits, lostButtons, placed, presses, sends };
   const BUTTONS_PLACE = 256 * 256 * 256;
   const watchClient = (client, me) => {
     if (client.__probed) { return; }
@@ -37,6 +38,9 @@ export const FIGHT_PROBE = `(() => {
         lostButtons.push({ at, tick });
       }
       for (const event of client.confirmed.events) {
+        if (event.kind === "hit" && event.rider <= 1 && event.target <= 1) {
+          hits.push({ at, attack: event.attack, rider: event.rider, target: event.target, tick });
+        }
         if ((event.kind === "crash" || event.kind === "knockedDown") && event.rider <= 1) {
           falls.push({ at, by: event.by, cause: event.kind === "crash" ? event.cause : "knockedDown", rider: event.rider, s: client.confirmed.riders[event.rider].s, tick });
         }
@@ -103,7 +107,7 @@ export const POSITIONS = `(() => {
 })()`;
 
 export const TAKE_FRAMES = (since: number): string =>
-  `(() => { const p = globalThis.__fightProbe; const after = (list) => list.filter((f) => f.at >= ${since}); return { attacks: after(p.attacks), falls: after(p.falls), frames: after(p.frames), lostButtons: after(p.lostButtons), placed: after(p.placed), presses: after(p.presses), sends: after(p.sends) }; })()`;
+  `(() => { const p = globalThis.__fightProbe; const after = (list) => list.filter((f) => f.at >= ${since}); return { attacks: after(p.attacks), falls: after(p.falls), frames: after(p.frames), hits: after(p.hits), lostButtons: after(p.lostButtons), placed: after(p.placed), presses: after(p.presses), sends: after(p.sends) }; })()`;
 
 export const FIGHT_PILOT = `(() => {
   if (globalThis.__fightPilot) { return "kept"; }
