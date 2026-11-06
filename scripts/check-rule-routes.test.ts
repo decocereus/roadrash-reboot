@@ -8,8 +8,10 @@ import { afterEach, describe, expect, it } from "vitest";
 const script = path.join(import.meta.dirname, "check-rule-routes.ts");
 const repositories: string[] = [];
 
-const ruleTable = (check: string) =>
-  `| Rule | Check | Scope | Exemption |\n| --- | --- | --- | --- |\n| A rule. | ${check} | Repository | None |\n`;
+const ruleTable = (...checks: readonly string[]) =>
+  `| Rule | Check | Scope | Exemption |\n| --- | --- | --- | --- |\n${checks
+    .map((check) => `| A rule. | ${check} | Repository | None |\n`)
+    .join("")}`;
 
 const agents = (rows: string) =>
   `# Guidance\n\n| Paths | Rules | Design |\n| --- | --- | --- |\n${rows}\n`;
@@ -20,9 +22,13 @@ const routedRepository = {
   ),
   "docs/core.md": `# Core\n\n${ruleTable("`pnpm check:size`")}`,
   "docs/design.md": "# Design\n\nHow it is built.\n",
-  "docs/src.md": `# Source\n\n${ruleTable("judgment")}`,
+  "docs/src.md": `# Source\n\n${ruleTable("judgment", "`pnpm test`")}`,
   "package.json": JSON.stringify({
     scripts: { "check:size": "node size.ts", test: "vitest" },
+  }),
+  "scripts/rule-rows.json": JSON.stringify({
+    "docs/core.md": 1,
+    "docs/src.md": 2,
   }),
   "src/main.ts": "export const main = 1;\n",
 };
@@ -133,6 +139,30 @@ describe("check:rule-routes", () => {
       ),
     });
     expect(status).toBe(1);
-    expect(stderr).toContain("no route covers `**`");
+    expect(stderr).toContain("no route sends `**` to a rule doc");
+  });
+
+  it("fails when a judgment row or a row sharing a check is deleted", () => {
+    for (const kept of ["judgment", "`pnpm test`"]) {
+      const { status, stderr } = checkRoutes({
+        ...routedRepository,
+        "docs/src.md": `# Source\n\n${ruleTable(kept)}`,
+      });
+      expect(status).toBe(1);
+      expect(stderr).toContain(
+        "docs/src.md: holds 1 rule rows but scripts/rule-rows.json records 2"
+      );
+    }
+  });
+
+  it("fails a global route whose Rules cell names no rule doc", () => {
+    const { status, stderr } = checkRoutes({
+      ...routedRepository,
+      "AGENTS.md": agents(
+        "| `**` | None | `docs/design.md` |\n| `src/**` | `docs/src.md`, `docs/core.md` | None |"
+      ),
+    });
+    expect(status).toBe(1);
+    expect(stderr).toContain("no route sends `**` to a rule doc");
   });
 });

@@ -8,6 +8,10 @@ import { repositoryFiles } from "./git-files.ts";
 import { routedRuleDocs, routesIn, ruleChecksIn } from "./rule-routes.ts";
 
 const routeFile = "AGENTS.md";
+const rowLedgerFile = "scripts/rule-rows.json";
+const rowLedger = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.Record(Schema.String, Schema.Number))
+);
 const manifest = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({ scripts: Schema.Record(Schema.String, Schema.String) })
@@ -20,9 +24,11 @@ const ruleDocs = routedRuleDocs(routes);
 const designDocs = new Set(routes.flatMap((route) => route.design));
 const problems: string[] = [];
 
-if (!routes.some((route) => route.paths.includes("**"))) {
+if (
+  !routes.some((route) => route.paths.includes("**") && route.rules.length > 0)
+) {
   problems.push(
-    `${routeFile}: no route covers \`**\`, so no rule doc is read for every change`
+    `${routeFile}: no route sends \`**\` to a rule doc, so no rule doc is read for every change`
   );
 }
 
@@ -47,6 +53,18 @@ for (const doc of ruleDocs) {
   } else if (checks.length === 0) {
     problems.push(
       `${routeFile}: \`${doc}\` is in the Rules column but holds no rule row`
+    );
+  }
+}
+
+const recordedRows = rowLedger(readFileSync(rowLedgerFile, "utf-8"));
+
+for (const doc of new Set([...ruleDocs, ...Object.keys(recordedRows)])) {
+  const counted = checksIn.get(doc)?.length ?? 0;
+  const recorded = recordedRows[doc] ?? 0;
+  if (counted !== recorded) {
+    problems.push(
+      `${doc}: holds ${counted} rule rows but ${rowLedgerFile} records ${recorded}; a row was added, moved or deleted, so change the count in the same change only if that was meant`
     );
   }
 }

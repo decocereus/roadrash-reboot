@@ -11,18 +11,18 @@ A path that matches several rows takes every file they name. Rules are binding; 
 | Paths | Rules | Design |
 | --- | --- | --- |
 | `**` | `docs/coding-standards.md` | `docs/architecture.md` |
-| `packages/sim/**`, `tools/handling/**`, `tools/replay/**` | `docs/standards/simulation.md` | `docs/architecture/riding-model.md`, `docs/architecture/race-setup.md`, `docs/handling-matrix.md` |
-| `packages/track/**`, `tools/madrid/**`, `tools/road-test/**` | `docs/standards/simulation.md` | `docs/architecture/tracks.md`, `docs/madrid-corridor.md` |
-| `packages/career/**`, `packages/content/**` | `docs/standards/simulation.md` | `docs/architecture/career.md`, `docs/architecture/race-setup.md` |
-| `apps/web/src/game/**`, `apps/web/test/**` | `docs/standards/renderer.md`, `docs/standards/simulation.md` | `docs/architecture/browser-client.md`, `docs/gpu-work.md` |
-| `apps/web/src/*.ts`, `apps/web/src/*.tsx`, `apps/web/src/components/**`, `apps/web/src/routes/**`, `apps/web/src/career/**`, `packages/ui/**` | `docs/standards/web-app.md` | `docs/architecture/browser-client.md` |
+| `packages/sim/**`, `tools/handling/**`, `tools/replay/**`, `apps/rooms/src/race-tally.ts`, `scripts/deterministic-scopes.test.ts`, `.github/workflows/quality.yml` | `docs/standards/simulation.md`, `docs/observability.md` | `docs/architecture/riding-model.md`, `docs/architecture/race-setup.md`, `docs/handling-matrix.md` |
+| `packages/track/**`, `tools/madrid/**`, `tools/road-test/**` | `docs/standards/simulation.md`, `docs/observability.md` | `docs/architecture/tracks.md`, `docs/madrid-corridor.md` |
+| `packages/career/**`, `packages/content/**` | `docs/standards/simulation.md`, `docs/observability.md` | `docs/architecture/career.md`, `docs/architecture/race-setup.md` |
+| `apps/web/src/game/**`, `apps/web/test/**`, `apps/web/public/**` | `docs/standards/renderer.md`, `docs/standards/simulation.md`, `docs/errors.md`, `docs/observability.md` | `docs/architecture/browser-client.md`, `docs/gpu-work.md` |
+| `apps/web/src/*.ts`, `apps/web/src/*.tsx`, `apps/web/src/components/**`, `apps/web/src/routes/**`, `apps/web/src/career/**`, `apps/web/src/game/hud.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/game/bar-signs.ts`, `apps/web/vite.config.ts`, `packages/ui/**` | `docs/standards/web-app.md`, `docs/errors.md`, `docs/observability.md` | `docs/architecture/browser-client.md` |
 | `apps/rooms/**`, `tools/rooms/**` | `docs/standards/effect.md`, `docs/observability.md` | `docs/architecture/race-rooms.md`, `docs/durable-object-http.md` |
 | `apps/web/src/server/**`, `apps/web/src/diagnostics/**`, `apps/web/src/routes/api/**`, `packages/telemetry/**` | `docs/standards/effect.md`, `docs/errors.md`, `docs/observability.md` | `docs/architecture/browser-client.md` |
-| `apps/web/src/asset-runtime.ts`, `apps/web/src/assets/**`, `apps/web/src/rules/**`, `apps/web/src/career/save*.ts`, `packages/career/src/save*.ts`, `packages/track/src/madrid-*.ts` | `docs/standards/effect.md`, `docs/errors.md` | `docs/architecture/game-art.md`, `docs/architecture/career.md` |
-| `tools/perf/**`, `tools/verify/**`, `packages/devtools/**` | `docs/standards/effect.md`, `docs/observability.md` | `docs/gpu-work.md` |
-| `tools/art/**`, `tools/road-test/**` | `docs/standards/effect.md` | `docs/architecture/game-art.md` |
+| `apps/web/src/asset-runtime.ts`, `apps/web/src/assets/**`, `apps/web/src/rules/**`, `apps/web/src/career/save*.ts`, `packages/career/src/save*.ts`, `packages/career/src/rules-schema.ts`, `packages/track/src/madrid-*.ts` | `docs/standards/effect.md`, `docs/errors.md` | `docs/architecture/game-art.md`, `docs/architecture/career.md` |
+| `tools/perf/**`, `tools/verify/**`, `packages/devtools/**`, `.claude/skills/sessions/**` | `docs/standards/effect.md`, `docs/observability.md` | `docs/gpu-work.md` |
+| `tools/art/**`, `tools/madrid/**`, `tools/road-test/**` | `docs/standards/effect.md`, `docs/errors.md` | `docs/architecture/game-art.md` |
 | `tools/blender/**` | None beyond the core | `docs/architecture/game-art.md`, `docs/gpu-work.md` |
-| `scripts/**`, `tools/oxlint/**`, `.github/**`, `oxlint.config.ts`, `package.json`, `AGENTS.md`, `docs/coding-standards.md`, `docs/standards/**` | `docs/standards/tooling.md` | `docs/architecture/deploy.md` |
+| `scripts/**`, `tools/oxlint/**`, `.github/**`, `oxlint.config.ts`, `package.json`, `AGENTS.md`, `docs/coding-standards.md`, `docs/standards/**`, `docs/errors.md`, `docs/observability.md` | `docs/standards/tooling.md` | `docs/architecture/deploy.md` |
 
 ## How to work here
 
