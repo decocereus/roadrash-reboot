@@ -168,6 +168,24 @@ describe("how a rider's strike track plays what it hears", () => {
     ]);
   });
 
+  it("doesn't flinch again when an older hit is confirmed after a newer one", () => {
+    const cast = fighters();
+    const struck = cast[1]?.fight ?? quietFight();
+    const FIRST = 244;
+    const SECOND = 260;
+    const CONFIRMED_AT = 276;
+    fightHeard(cast, hitOnStriker(FIRST), FIRST);
+    for (let tick = FIRST + 1; tick <= SECOND; tick += 1) {
+      fightTick(struck, GROUNDED, tick);
+    }
+    fightHeard(cast, hitOnStriker(SECOND), SECOND);
+    for (let tick = SECOND + 1; tick <= CONFIRMED_AT; tick += 1) {
+      fightTick(struck, GROUNDED, tick);
+    }
+    fightHeard(cast, hitOnStriker(FIRST), CONFIRMED_AT);
+    expect(fightFlinch(struck, 0, 0)).toBe(0);
+  });
+
   it("flinches in full on a shown hit, not again when a correction moves it a tick", () => {
     const cast = fighters();
     const struck = cast[1]?.fight ?? quietFight();

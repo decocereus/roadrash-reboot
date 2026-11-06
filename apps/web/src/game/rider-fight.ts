@@ -37,6 +37,7 @@ export interface RiderFight {
   elapsed: number;
   flinchLeft: number;
   readonly hitsShown: ShownHit[];
+  newestHit: number;
   nextStrikeFrom: number;
   readonly queued: HeardStrike[];
   side: number;
@@ -55,6 +56,7 @@ export const quietFight = (): RiderFight => ({
   elapsed: 0,
   flinchLeft: 0,
   hitsShown: [],
+  newestHit: Number.NEGATIVE_INFINITY,
   nextStrikeFrom: Number.NEGATIVE_INFINITY,
   queued: [],
   side: 1,
@@ -148,11 +150,13 @@ const struckAt = (fight: RiderFight, tick: number, by: RiderId): void => {
   } else {
     fight.hitsShown.push({ by, tick });
   }
-  if (!running) {
+  if (!running && tick > fight.newestHit - HIT_STUN_TICKS) {
     fight.flinchLeft = HIT_STUN_TICKS;
   }
+  fight.newestHit = Math.max(fight.newestHit, tick);
+  const stale = fight.newestHit - HIT_STUN_TICKS;
   for (let at = fight.hitsShown.length - 1; at >= 0; at -= 1) {
-    if ((fight.hitsShown[at]?.tick ?? tick) <= tick - HIT_STUN_TICKS) {
+    if ((fight.hitsShown[at]?.tick ?? stale) <= stale) {
       fight.hitsShown.splice(at, 1);
     }
   }
