@@ -4744,8 +4744,8 @@
         "checkout": "d3c9f34, the pull request merge of 1dad65f into main",
         "command": "node tools/perf/gate.ts, the perf job's ordinary run",
         "artifact": "perf-results",
-        "attempts": "three runs of the perf job on Node 26.13.0. Attempt 1 landed on an AMD EPYC 9V45 and attempt 2 on an Intel Xeon Platinum 8573C; their allocation rows matched this run within 3%, and their calibrated timings did not. This run landed on an AMD EPYC 7763, the model the budget rows are set on, so every re-pinned row comes from it. The node-linux-x64 profile is kept: this run scaled by 1.017 against its c0.",
-        "why": "The perf job moved from Node 24.22.1 (V8 13.6) to Node 26.13.0 (V8 14.6). The allocation rows moved to 0.12 to 0.89 of their baselines, and the sim, room, road-life and lobby timing rows to 0.69 to 0.88, or 1.17 to 1.20 for throughput. The snapshot rows moved 2% or less and keep their baselines. Node 24 on this Mac reproduced CI's old allocation numbers within 2%, so the change is V8's, not the runner's."
+        "attempts": "three runs of the perf job on Node 26.13.0. Attempt 1 landed on an AMD EPYC 9V45 and attempt 2 on an Intel Xeon Platinum 8573C; their allocation rows matched this run within 5%, and their calibrated timings did not. This run landed on an AMD EPYC 7763, the model the budget rows are set on, so every re-pinned row comes from it. The node-linux-x64 profile is kept: this run scaled by 1.017 against its c0.",
+        "why": "The perf job moved from Node 24.22.1 (V8 13.6) to Node 26.13.0 (V8 14.6). The allocation rows moved to 0.12 to 0.89 of their baselines, and the sim, room, road-life and lobby timing rows to 0.69 to 0.88, or 1.17 to 1.20 for throughput. The snapshot rows moved about 2% (at most 2.2%) and keep their baselines. Node 24 on this Mac reproduced CI's old allocation numbers within 2%, so the change is V8's, not the runner's."
       },
       "id": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
       "lanes": ["node"],
