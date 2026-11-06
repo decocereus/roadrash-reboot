@@ -123,7 +123,7 @@ export const WallBoard = () => (
     <Standings playerCaption="Two to qualify" rows={seasonBoard(career)} />
     <WallNotes
       notes={[
-        { signature: "— Vex", text: "Ridge Road tonight. Bring a lock." },
+        { signature: "Vex", text: "Ridge Road tonight. Bring a lock." },
         { text: "Cops on the coast after ten" },
       ]}
     />

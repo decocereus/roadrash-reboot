@@ -77,7 +77,7 @@ export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
   head: () => ({
     meta: [
-      { title: "What we record · Lowside" },
+      { title: "What we record | Lowside" },
       {
         content: "What Lowside records about races, and how to switch it off.",
         name: "description",

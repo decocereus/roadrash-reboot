@@ -196,6 +196,12 @@ When a chain of `map`, `flatMap` or `andThen` carries earlier results into later
 | Every lint suppression and `@ts-expect-error` says why after `--`. `@ts-ignore` and `@ts-nocheck` are banned. Prefer code that needs no directive. | `rushline/require-suppression-reason` | Repository | None |
 | No comments in CSS. The check tokenizes each CSS file with PostCSS, so a `/*` inside a string or a `url()` is not a comment. | `pnpm check:css-comments` | `*.css` | None |
 
+## Write player text in the game's voice
+
+| Rule | Check | Scope | Exemption |
+| --- | --- | --- | --- |
+| Player text never says AI, and uses no em dash and no middle dot as a separator. The other riders are street riders, and a rider the room rides for after a drop looks like anyone else, so no screen marks them. Separate parts with a comma or plain words. The owner set this on November 6, 2026, after the rejoin screens and again after the queue screen said `labelled AI`. The rule reads JSX text, string literals and template text. It cannot judge tone or jargon, such as `server` or `Catch-up`; review checks those against the street-crew voice. | `rushline/player-copy` | `apps/web/src/components/**`, `apps/web/src/routes/**/*.tsx`, `apps/web/src/career/copy.ts`, `apps/web/src/game/hud.ts`, `apps/web/src/game/race-feedback.ts` | None |
+
 ## Test what a player would notice
 
 | Rule | Check | Scope | Exemption |

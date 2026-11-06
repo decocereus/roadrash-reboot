@@ -64,7 +64,7 @@ const testerActions = (
       trailing: onOff(settings.recording),
     },
     {
-      detail: "Sends the recording to the play server every 30 seconds",
+      detail: "Sends the recording to us every 30 seconds",
       id: "upload",
       label: "Automatic upload",
       run: () => {
@@ -156,7 +156,7 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
               className="text-paper/50 tracking-wide"
               style={{ fontSize: stagePx(18) }}
             >
-              B while riding marks the moment · Session {session}
+              B while riding marks the moment. Session {session}
             </p>
           )}
           <div className="flex" style={{ gap: stagePx(24) }}>

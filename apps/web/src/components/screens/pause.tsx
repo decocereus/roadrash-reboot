@@ -88,7 +88,7 @@ export const PauseScreen = ({
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(22) }}
           >
-            {CONTROLS} · M to mute
+            {CONTROLS}, M to mute
           </p>
           <p
             className="text-paper/60 tracking-wide"
