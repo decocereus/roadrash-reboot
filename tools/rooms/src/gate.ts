@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 
 import { gateRules } from "@racer/rooms/gate";
+import type { Gate } from "@racer/rooms/gate";
 import { decodeRoomMessage, SEAT_CLOSED } from "@racer/rooms/messages";
 import { queueUrl } from "@racer/rooms/queue-client";
 import { decodeQueueMessage } from "@racer/rooms/queue-messages";
@@ -10,8 +11,7 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
-const usage =
-  "Usage: pnpm rooms:gate --url http://127.0.0.1:<dev proxy port> [--network 203.0.113] (three octets, a new one each run by default) [--repeat n]";
+const usage = "Usage: pnpm rooms:gate --url http://127.0.0.1:<dev proxy port>";
 const ANSWER_MS = 5000;
 const OVER = 3;
 
@@ -64,6 +64,9 @@ const knock = (
     }, ANSWER_MS);
   });
 
+const refusalAnswer = (reason: string): Answer =>
+  reason === "limited" ? "limited" : "other";
+
 const seatAnswer = (data: string): Answer | null =>
   Option.match(decodeRoomMessage(data), {
     onNone: () => null,
@@ -71,129 +74,78 @@ const seatAnswer = (data: string): Answer | null =>
       if (message.kind === "lobby") {
         return "admitted";
       }
-      if (message.kind === "refused") {
-        return message.reason === "limited" ? "limited" : "other";
-      }
-      return null;
+      return message.kind === "refused" ? refusalAnswer(message.reason) : null;
     },
   });
 
 const ticketAnswer = (data: string): Answer | null =>
   Option.match(decodeQueueMessage(data), {
     onNone: () => null,
-    onSome: (message) => {
-      if (message.kind === "refused") {
-        return message.reason === "limited" ? "limited" : "other";
-      }
-      return "admitted";
-    },
+    onSome: (message) =>
+      message.kind === "refused" ? refusalAnswer(message.reason) : "admitted",
   });
-
-interface Tally {
-  admitted: number;
-  limited: number;
-  other: number;
-}
-
-const tallyOf = (doors: readonly Door[]): Tally => {
-  const tally = { admitted: 0, limited: 0, other: 0 };
-  for (const { answer } of doors) {
-    tally[answer] += 1;
-  }
-  return tally;
-};
-
-const expect = (
-  name: string,
-  tally: Tally,
-  admitted: number,
-  limited: number
-): readonly string[] =>
-  tally.admitted === admitted && tally.limited === limited && tally.other === 0
-    ? []
-    : [
-        `${name}: expected ${admitted} admitted and ${limited} limited, heard ${JSON.stringify(tally)}.`,
-      ];
 
 export const main = Effect.fn("rooms.gate")(function* gate(
   args: readonly string[]
 ) {
-  const { network, repeat, url } = parseArgs({
+  const { url } = parseArgs({
     args: [...args],
-    options: {
-      network: {
-        default: `203.0.${Math.floor(Math.random() * 250)}`,
-        type: "string",
-      },
-      repeat: { default: "1", type: "string" },
-      url: { type: "string" },
-    },
+    options: { url: { type: "string" } },
   }).values;
   if (url === undefined || url === "") {
     return yield* new GateCheckFailed({ message: usage });
   }
-  const stamp = Date.now().toString(36);
+  const room = `gate-${Date.now().toString(36)}`;
   const { build } = decodeStatus(
     yield* Effect.tryPromise(async () => {
-      const answer = await globalThis.fetch(`${url}/rooms/gate-${stamp}`);
+      const answer = await globalThis.fetch(`${url}/rooms/${room}`);
       return await answer.text();
     })
   );
-  const seatIn = (roomId: string, key: string) =>
-    seatUrl(url, roomId, "Gate", build, key);
-  const rounds = Number(repeat);
-  const reports = [];
-  const problems: string[] = [];
-  for (let round = 0; round < rounds; round += 1) {
-    const seatClient = `${network}.${10 + round * 3}`;
-    const openClient = `${network}.${11 + round * 3}`;
-    const ticketClient = `${network}.${12 + round * 3}`;
-    const room = `gate-${stamp}-${round}`;
-    const anchor = yield* knock(seatIn(room, "anchor"), seatClient, seatAnswer);
-    const seats: Door[] = [];
-    for (let seat = 0; seat < gateRules.seat.limit + OVER; seat += 1) {
-      const door = yield* knock(
-        seatIn(room, "visitor"),
-        seatClient,
+  const network = `203.0.${Math.floor(Math.random() * 250)}`;
+  const anchor = yield* knock(
+    seatUrl(url, room, "Gate", build, "anchor"),
+    `${network}.10`,
+    seatAnswer
+  );
+  const bursts = {
+    open: (knockNumber) =>
+      knock(
+        seatUrl(url, `${room}-${knockNumber}`, "Gate", build, "opener"),
+        `${network}.11`,
         seatAnswer
-      );
+      ),
+    queue: () => knock(queueUrl(url, build), `${network}.12`, ticketAnswer),
+    seat: () =>
+      knock(
+        seatUrl(url, room, "Gate", build, "visitor"),
+        `${network}.10`,
+        seatAnswer
+      ),
+  } satisfies Record<Gate, (knockNumber: number) => Effect.Effect<Door>>;
+  const problems: string[] = [];
+  const tallies = {
+    open: { admitted: 0, limited: 0, other: 0 },
+    queue: { admitted: 0, limited: 0, other: 0 },
+    seat: { admitted: 0, limited: 0, other: 0 },
+  } satisfies Record<Gate, Record<Answer, number>>;
+  tallies.seat[anchor.answer] += 1;
+  for (const name of ["seat", "open", "queue"] as const) {
+    const tally = tallies[name];
+    const { limit } = gateRules[name];
+    while (tally.admitted + tally.limited + tally.other < limit + OVER) {
+      const door = yield* bursts[name](tally.admitted + tally.limited);
       door.close();
-      seats.push(door);
+      tally[door.answer] += 1;
     }
-    anchor.close();
-    const opens: Door[] = [];
-    for (let open = 0; open < gateRules.open.limit + OVER; open += 1) {
-      opens.push(
-        yield* knock(
-          seatIn(`${room}-open-${open}`, "opener"),
-          openClient,
-          seatAnswer
-        )
+    if (tally.admitted !== limit || tally.limited !== OVER) {
+      problems.push(
+        `${name}: expected ${limit} admitted and ${OVER} limited, heard ${JSON.stringify(tally)}.`
       );
     }
-    const tickets: Door[] = [];
-    for (let ticket = 0; ticket < gateRules.queue.limit + OVER; ticket += 1) {
-      tickets.push(
-        yield* knock(queueUrl(url, build), ticketClient, ticketAnswer)
-      );
-    }
-    for (const door of [...opens, ...tickets]) {
-      door.close();
-    }
-    const report = {
-      opens: tallyOf(opens),
-      round,
-      seats: tallyOf([anchor, ...seats]),
-      tickets: tallyOf(tickets),
-    };
-    reports.push(report);
-    problems.push(
-      ...expect("seats", report.seats, gateRules.seat.limit, OVER + 1),
-      ...expect("opens", report.opens, gateRules.open.limit, OVER),
-      ...expect("tickets", report.tickets, gateRules.queue.limit, OVER)
-    );
   }
-  console.log(JSON.stringify({ problems, reports }, null, 2));
+  anchor.close();
+  console.log(JSON.stringify({ problems, tallies }, null, 2));
   if (problems.length > 0) {
     return yield* new GateCheckFailed({ message: problems.join(" ") });
   }

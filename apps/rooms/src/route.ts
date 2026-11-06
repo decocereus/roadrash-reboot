@@ -11,7 +11,6 @@ import type { Gate } from "./gate.ts";
 const decodeRoomId = Schema.decodeUnknownOption(RoomIdSchema);
 const ROOM_PATH = /^\/rooms\/(?<roomId>[^/]+)/u;
 const QUEUE_PATH = /^\/queue(?:\/|$)/u;
-const SEAT_PATH = "/seat";
 
 type Door = Exclude<Gate, "open">;
 
@@ -30,9 +29,9 @@ export interface RoutePorts<E, R> {
 
 const allowOthers = (
   response: HttpServerResponse.HttpServerResponse,
-  path: string
+  seat: boolean
 ): HttpServerResponse.HttpServerResponse =>
-  path.endsWith(SEAT_PATH)
+  seat
     ? response
     : HttpServerResponse.setHeader(
         response,
@@ -53,8 +52,8 @@ export const route = Effect.fn("rooms.route")(function* route<E, R>(
     });
   }
   const client = gatedClient(request.remoteAddress);
-  const upgrade = request.headers.upgrade?.toLowerCase() === "websocket";
-  if (upgrade && path.endsWith(SEAT_PATH) && Option.isSome(client)) {
+  const seat = request.headers.upgrade?.toLowerCase() === "websocket";
+  if (seat && Option.isSome(client)) {
     const passed = yield* ports.pass(toQueue ? "queue" : "seat", client.value);
     if (!passed) {
       return ports.refuse(toQueue ? QUEUE_LIMITED : ROOM_LIMITED);
@@ -63,5 +62,5 @@ export const route = Effect.fn("rooms.route")(function* route<E, R>(
   const response = Option.isSome(roomId)
     ? yield* ports.room(roomId.value)
     : yield* ports.queue();
-  return allowOthers(response, path);
+  return allowOthers(response, seat);
 });

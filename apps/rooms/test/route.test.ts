@@ -20,12 +20,11 @@ const openDoors = () => {
   const refusals: string[] = [];
   const reach = (
     path: string,
-    address: string | null
+    address: string | null,
+    headers: Record<string, string>
   ): Effect.Effect<Reached> => {
     const request = HttpServerRequest.fromWeb(
-      new Request(`http://rooms${path}`, {
-        headers: path.endsWith("/seat") ? { upgrade: "websocket" } : {},
-      })
+      new Request(`http://rooms${path}`, { headers })
     ).modify({ remoteAddress: Option.fromNullOr(address) });
     return route(request, {
       pass: (door, client) =>
@@ -57,8 +56,12 @@ const openDoors = () => {
     path: string,
     address: string | null
   ): readonly Reached[] =>
-    Array.from({ length: times }, () => Effect.runSync(reach(path, address)));
-  return { many, refusals };
+    Array.from({ length: times }, () =>
+      Effect.runSync(reach(path, address, { upgrade: "websocket" }))
+    );
+  const look = (path: string, address: string): Reached =>
+    Effect.runSync(reach(path, address, {}));
+  return { look, many, refusals };
 };
 
 describe("the rooms Worker's gates", () => {
@@ -80,9 +83,7 @@ describe("the rooms Worker's gates", () => {
     const doors = openDoors();
     doors.many(gateRules.seat.limit + 1, SEAT, "203.0.113.7");
     expect(doors.many(1, SEAT, "198.51.100.20")).toStrictEqual(["room"]);
-    expect(doors.many(1, `/rooms/${ROOM}`, "203.0.113.7")).toStrictEqual([
-      "room",
-    ]);
+    expect(doors.look(`/rooms/${ROOM}`, "203.0.113.7")).toBe("room");
   });
 
   it("counts queue tickets apart from seats and refuses them in the queue's own words", () => {
@@ -96,6 +97,16 @@ describe("the rooms Worker's gates", () => {
     expect(
       Option.getOrNull(decodeQueueMessage(doors.refusals.at(-1)))
     ).toStrictEqual({ kind: "refused", reason: "limited" });
+  });
+
+  it.each([
+    ["/queue/seat/", "queue"],
+    ["/queue/%73eat", "queue"],
+    [`/rooms/${ROOM}/SEAT`, "seat"],
+  ] as const)("counts a seat sent to %s against the %s limit", (path, door) => {
+    const doors = openDoors();
+    const { limit } = gateRules[door];
+    expect(doors.many(limit + 1, path, "203.0.113.7").at(-1)).toBe("refused");
   });
 
   it("counts every address in one IPv6 /64 as one client", () => {
