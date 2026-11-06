@@ -30,12 +30,15 @@ The six `room.*` rows measure side B alone as well, because no room exists at th
 | `roadLife.tick.p95`, `lobby.tick.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95` | at most 1.15 x the calibrated baseline median | none, side B only |
 | `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick` | at most 1.10 x the baseline median, never calibrated | none, side B only |
-| `bytes.*.raw`, `bytes.*.gzip` | the baseline plus 4,096 B or 2%, whichever is larger | none |
+| `bytes.route.root.gzip` | 634,000 B, the owner's cap on the first download | none |
+| every other `bytes.*.raw` and `bytes.*.gzip` | the baseline plus 4,096 B or 2%, whichever is larger | none |
 | `assets.glb.*`, `assets.texture.total` | the baseline size exactly | none |
 | `render.calls.max`, `render.triangles.max` | ceil(1.05 x the largest frame in any baseline window, either side) | none |
 | `render.programs.max`, `render.textures.max` | the largest baseline count plus one | none |
 | `riders.cpu.p95` | twice the worst B window at the first revision that plants the riders' hands every frame | none |
 | `frame.interval.*`, `frame.missedFraction`, `main.longTask.*` | the owner's caps, in the GPU lane's table below | at most 1.10 / 1.15 / 1.20 for p50 / p95 / p99 |
+
+`bytes.route.root.gzip` is the first download, what a player's browser fetches for `/` before the menus run: the root and `/` route chunks, their static imports, every stylesheet and every file those name, fonts included. Its limit is a fixed number, not a formula, so measuring a new baseline or re-pinning the row's baseline does not raise it. The cap is 2% over the 621,403 B measured at `e93626e`, rounded up. A change that crosses it moves code out of the root route or brings the owner a new cap. The closure counts every font file the stylesheets name, including the `.woff` fallbacks and the Cyrillic, Vietnamese and extended-Latin subsets that a current browser on an English page never fetches, so it reads more than a player downloads.
 
 Every Node child runs with `--no-concurrent-recompilation`. With the background compiler on, what the optimised code inlines depends on when each compile job finishes, so identical code settles into one of two states per run. On CI `pack-riding-v1` then read about 30 or about 47 kB per tick, `sim.tick.p95` about 0.105 or about 0.13 ms, and `reference-v1` `room.allocatedBytesPerTick` about 28 or about 31 kB, and the pairs were too few to hide it. Compiling on the main thread takes the timing of the compile jobs out of the run. It also makes the readings slower than the background compiler's best, so these rows are for comparing two sides and do not say what a player's tick costs.
 
