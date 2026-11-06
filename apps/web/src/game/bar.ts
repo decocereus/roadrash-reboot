@@ -5,6 +5,7 @@ import { riderBlocks } from "@racer/sim/palette";
 import * as THREE from "three";
 
 import type { BarCamera } from "../bar-view.ts";
+import { diagnostics } from "../diagnostics/hub.ts";
 import { graphicsCard } from "../diagnostics/player-events.ts";
 import { createBikes } from "./actors.ts";
 import type { Assets, Decoded } from "./assets.ts";
@@ -109,10 +110,13 @@ const openRoom = (
 ): BarScene => {
   const pins = pinsFrom(globalThis.location.search);
   const renderer = new THREE.WebGLRenderer({ antialias: false, canvas });
-  owners.push(() => {
-    renderer.dispose();
-    renderer.forceContextLoss();
-  });
+  owners.push(
+    () => {
+      renderer.dispose();
+      renderer.forceContextLoss();
+    },
+    diagnostics().watchCanvas(canvas, "bar")
+  );
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;

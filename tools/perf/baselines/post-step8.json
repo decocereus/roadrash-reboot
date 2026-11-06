@@ -3272,6 +3272,22 @@
       "side": "B",
       "source": "baseline-2026-11-05T18-56-36-101Z-c982325-c982325",
       "value": 548216
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T04-45-16-186Z-e3f38fe-e3f38fe",
+      "value": 748098
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T04-45-16-186Z-e3f38fe-e3f38fe",
+      "value": 192711
     }
   ],
   "revisions": {
@@ -4477,6 +4493,29 @@
       "sides": {
         "A": "c982325db01c5cecb199395e76ce9d3de937a49c",
         "B": "c982325db01c5cecb199395e76ce9d3de937a49c"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1163202, \"bytes.route.root.gzip\": 619548, \"bytes.route.kit.raw\": 956784, \"bytes.route.kit.gzip\": 548269, \"bytes.game.raw\": 1992458, \"bytes.game.gzip\": 855571, \"bytes.game.incremental.raw\": 829256, \"bytes.game.incremental.gzip\": 236023, \"bytes.worker.raw\": 747990, \"bytes.worker.gzip\": 192695, \"bytes.client.raw\": 2131535, \"bytes.client.gzip\": 910223}",
+        "builtB": "{\"bytes.route.root.raw\": 1163202, \"bytes.route.root.gzip\": 619548, \"bytes.route.kit.raw\": 956784, \"bytes.route.kit.gzip\": 548269, \"bytes.game.raw\": 1992458, \"bytes.game.gzip\": 855571, \"bytes.game.incremental.raw\": 829256, \"bytes.game.incremental.gzip\": 236023, \"bytes.worker.raw\": 748098, \"bytes.worker.gzip\": 192711, \"bytes.client.raw\": 2131535, \"bytes.client.gzip\": 910223}",
+        "harnessDigest": "111643861c121f03cb08b212da05c81fe0f1c0c85d3839affd5b2fca9ba51ea5",
+        "lockfileSha256": "7d4bce5cacea74cf01953fb780c4165952e9c4dff20c2f7bc3b4c7fced69f4af",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "5e1f6971c2e1c791f63441a64c2858ec69f2ab08ae1b186b5b444369644335f3",
+        "sideBSourceDigest": "5e1f6971c2e1c791f63441a64c2858ec69f2ab08ae1b186b5b444369644335f3",
+        "why": "The graphics_lost player event, its loss tracker and the screen-to-place table reach the worker bundle. The worker read 747,863 B raw and 192,652 B gzip in CI on 0a188e35, against limits of 747,381 B and 192,301 B. Main at b06f24dc reads 745,776 B and 192,127 B, so this branch adds 2,087 B raw and 525 B gzip. The rows' headroom had gone on earlier work since their November 4 baseline. A and B differ by 108 B raw and 16 B gzip, all in the TanStack start manifest's build names."
+      },
+      "id": "baseline-2026-11-06T04-45-16-186Z-e3f38fe-e3f38fe",
+      "lanes": ["build"],
+      "sides": {
+        "A": "e3f38febb210bf6e5317abd6499d731df2ee28dc",
+        "B": "e3f38febb210bf6e5317abd6499d731df2ee28dc"
       }
     }
   ],

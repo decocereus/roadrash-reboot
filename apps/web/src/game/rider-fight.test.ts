@@ -1,3 +1,4 @@
+import { HIT_STUN_TICKS } from "@racer/sim/combat";
 import { controlOf } from "@racer/sim/control";
 import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { track } from "@racer/sim/race-fixtures";
@@ -76,6 +77,14 @@ const strikesOf = (heard: readonly HeardFight[]) => {
   ).length;
 };
 
+const struckBy = (rider: RiderId) => ({
+  attack: "kick" as const,
+  kind: "hit" as const,
+  rider,
+  target: STRIKER,
+  weapon: "none" as const,
+});
+
 describe("how a rider's strike track plays what it hears", () => {
   it("plays a strike heard on its own tick from the first frame", () => {
     const { reaches } = played([kickAt(100)], 100, KICK.ticks + 1);
@@ -133,6 +142,50 @@ describe("how a rider's strike track plays what it hears", () => {
     expect(reachOf(striker)).toBe(-1);
   });
 
+  it("keeps another rider's flinch running when one striker's hit on the same target is refused", () => {
+    const guessed = riderIdAt(2);
+    const real = PLAYER_RIDER;
+    const cast = [
+      { fight: quietFight() },
+      { fight: quietFight() },
+      { fight: quietFight() },
+    ];
+    const struck = cast[1]?.fight ?? quietFight();
+    const HIT_AT = 84;
+    const DRAWN_AT = 80;
+    fightHeard(cast, { event: struckBy(guessed), tick: HIT_AT }, DRAWN_AT);
+    fightHeard(cast, { event: struckBy(real), tick: HIT_AT }, DRAWN_AT);
+    fightHeard(cast, { refused: struckBy(guessed), tick: HIT_AT }, DRAWN_AT);
+    const afterRefusal = fightFlinch(struck, 0, 0);
+    const later = 4;
+    for (let tick = 1; tick <= later; tick += 1) {
+      fightTick(struck, GROUNDED, DRAWN_AT + tick);
+    }
+    fightHeard(cast, { event: struckBy(real), tick: HIT_AT }, HIT_AT);
+    expect([afterRefusal, fightFlinch(struck, 0, 0)]).toStrictEqual([
+      1,
+      (HIT_STUN_TICKS - later) / HIT_STUN_TICKS,
+    ]);
+  });
+
+  it("doesn't flinch again when an older hit is confirmed after a newer one", () => {
+    const cast = fighters();
+    const struck = cast[1]?.fight ?? quietFight();
+    const FIRST = 244;
+    const SECOND = 260;
+    const CONFIRMED_AT = 276;
+    fightHeard(cast, hitOnStriker(FIRST), FIRST);
+    for (let tick = FIRST + 1; tick <= SECOND; tick += 1) {
+      fightTick(struck, GROUNDED, tick);
+    }
+    fightHeard(cast, hitOnStriker(SECOND), SECOND);
+    for (let tick = SECOND + 1; tick <= CONFIRMED_AT; tick += 1) {
+      fightTick(struck, GROUNDED, tick);
+    }
+    fightHeard(cast, hitOnStriker(FIRST), CONFIRMED_AT);
+    expect(fightFlinch(struck, 0, 0)).toBe(0);
+  });
+
   it("flinches in full on a shown hit, not again when a correction moves it a tick", () => {
     const cast = fighters();
     const struck = cast[1]?.fight ?? quietFight();
@@ -174,6 +227,7 @@ interface Drawn {
 
 interface Watching {
   readonly behind?: number;
+  readonly gapX?: number;
   readonly seats?: readonly RiderId[];
   readonly stepsPerFrame?: readonly [number, ...number[]];
   readonly until?: number;
@@ -185,6 +239,7 @@ const raceSeenBy = (
   plan: Plan,
   {
     behind = ATTACKER_BEHIND_S,
+    gapX = SIDE_BY_SIDE_X,
     seats = SEATS,
     stepsPerFrame = [1],
     until = KICK_AT + AFTER_TICKS,
@@ -199,7 +254,7 @@ const raceSeenBy = (
     const observer = riderOf(state.riders, OBSERVER);
     if (victim && attacker && observer) {
       attacker.s = victim.s - behind;
-      attacker.x = victim.x - SIDE_BY_SIDE_X;
+      attacker.x = victim.x - gapX;
       observer.s = victim.s + OBSERVER_AHEAD_S;
     }
   }
@@ -270,6 +325,7 @@ const raceSeenBy = (
   }
   return {
     drawn,
+    roomHits,
     shoves: roomHits.map((hit) =>
       drawn.find(({ attackerLastHit }) => attackerLastHit >= hit)
     ),
@@ -358,5 +414,30 @@ describe("another rider's strike in a real race", () => {
     const bumped = new Set(drawn.map(({ victimBumpedAt }) => victimBumpedAt));
     const flinched = drawn.filter(({ victimFlinch }) => victimFlinch > 0);
     expect([bumped.size > 1, flinched]).toStrictEqual([true, []]);
+  });
+
+  it("ends the target's flinch on the attacker's screen early when the room refuses the hit", () => {
+    const KICK_HELD = 8;
+    const STEER_TICKS = 20;
+    const EDGE_OF_REACH_X = 2.1;
+    const steerAway = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
+    const dodged: Plan = (rider, tick) => {
+      if (rider === ATTACKER && tick >= KICK_AT && tick < KICK_AT + KICK_HELD) {
+        return kicking;
+      }
+      const steerFrom = KICK_AT - KICK_HELD;
+      return rider === VICTIM &&
+        tick >= steerFrom &&
+        tick < steerFrom + STEER_TICKS
+        ? steerAway
+        : rideOn;
+    };
+    const { drawn, roomHits } = raceSeenBy(ATTACKER, 1, dodged, {
+      gapX: EDGE_OF_REACH_X,
+    });
+    const flinched = drawn.filter(({ victimFlinch }) => victimFlinch > 0);
+    expect(roomHits).toStrictEqual([]);
+    expect(flinched.length).toBeGreaterThan(0);
+    expect(flinched.length).toBeLessThan(HIT_STUN_TICKS);
   });
 });
