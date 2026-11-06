@@ -65,7 +65,7 @@ How the bike answers the keys and the gamepad: throttle, brakes, steering, the p
 
 - Id: `riding`
 - Start: `packages/sim/src/rider-drive.ts`, `apps/web/src/game/input.ts`, `tools/handling/hands-off.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
+- Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
@@ -99,7 +99,7 @@ Hitting a car, a prop or another rider, the throw and the slide, bike condition,
 
 - Id: `crashes`
 - Start: `packages/sim/src/rider-collisions.ts`, `packages/sim/src/rider-crash.ts`, `packages/sim/src/rider-recovery.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/game-design.md#condition-by-speed](design/game-design.md#condition-by-speed), [docs/design/game-design.md#the-fall-by-speed](design/game-design.md#the-fall-by-speed)
+- Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/design/game-design.md#condition-by-speed](design/game-design.md#condition-by-speed), [docs/design/game-design.md#the-fall-by-speed](design/game-design.md#the-fall-by-speed)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/rider-crash.ts`, `packages/sim/src/rider-collisions.ts`, `packages/sim/src/rider-recovery.ts`, `packages/sim/src/crash-and-recovery.test.ts`, `packages/sim/src/on-foot.test.ts`, `packages/sim/src/run-over.test.ts`
@@ -122,7 +122,7 @@ Crests and truck ramps that launch the bike, flight, judged landings, and the la
 
 - Id: `jumps`
 - Start: `packages/sim/src/rider-flight.ts`, `apps/web/src/game/puffs.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/tracks.md#the-crest-rule](design/tracks.md#the-crest-rule), [docs/design/tracks.md#carriers-and-humps](design/tracks.md#carriers-and-humps)
+- Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/design/tracks.md#the-crest-rule](design/tracks.md#the-crest-rule), [docs/design/tracks.md#carriers-and-humps](design/tracks.md#carriers-and-humps)
 - Verify: [jumps.md](../.claude/skills/verify-rushline/features/jumps.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/rider-flight.ts`, `packages/sim/src/jumps.test.ts`, `apps/web/src/game/puffs.ts`
@@ -142,7 +142,7 @@ Oil slicks, rocks and potholes: where the track schedules them, what touching on
 
 - Id: `hazards`
 - Start: `packages/track/src/hazards.ts`, `packages/sim/src/hazards.ts`, `apps/web/src/game/hazards.ts`
-- Docs: [docs/architecture.md#hazards-as-race-state](architecture.md#hazards-as-race-state), [docs/design/tracks.md#hazards](design/tracks.md#hazards), [docs/design/tracks.md#where-hazards-lie](design/tracks.md#where-hazards-lie)
+- Docs: [docs/architecture/riding-model.md#hazards-as-race-state](architecture/riding-model.md#hazards-as-race-state), [docs/design/tracks.md#hazards](design/tracks.md#hazards), [docs/design/tracks.md#where-hazards-lie](design/tracks.md#where-hazards-lie)
 - Verify: [hazards.md](../.claude/skills/verify-rushline/features/hazards.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/track/src/hazards.ts`, `packages/sim/src/hazard*.ts`, `apps/web/src/game/hazards.ts`
@@ -165,7 +165,7 @@ Same-way and oncoming cars in every lane, spawned from each road's traffic densi
 
 - Id: `traffic`
 - Start: `packages/sim/src/traffic.ts`
-- Docs: [docs/architecture.md#tracks](architecture.md#tracks)
+- Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks)
 - Verify: none yet
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/carrier.ts`, `packages/sim/src/carrier.test.ts`, `packages/sim/src/traffic.ts`, `packages/sim/src/lanes.test.ts`, `packages/sim/src/lanes-closing.test.ts`
@@ -187,7 +187,7 @@ Junctions, cross roads and pedestrian crossings a road declares, their lights, t
 
 - Id: `junctions`
 - Start: `packages/track/src/crossings.ts`, `packages/sim/src/signals.ts`, `apps/web/src/game/junctions.ts`
-- Docs: [docs/architecture.md#junctions-and-crossings](architecture.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
+- Docs: [docs/architecture/tracks.md#junctions-and-crossings](architecture/tracks.md#junctions-and-crossings), [docs/design/tracks.md#junctions-and-crossings](design/tracks.md#junctions-and-crossings)
 - Verify: [junctions.md](../.claude/skills/verify-rushline/features/junctions.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `roadLife.tick.p95`
 - Owns: `packages/track/src/crossings*.ts`, `packages/sim/src/signals*.ts`, `packages/sim/src/junction-traffic*.ts`, `packages/sim/src/cross-traffic*.ts`, `packages/track/src/walk-sites*.ts`, `packages/sim/src/pedestrians*.ts`, `apps/web/src/game/junctions.ts`, `apps/web/src/game/road-sheet.ts`, `apps/web/src/game/walker*.ts`, `apps/web/test/walker-*.ts`, `tools/perf/road-life.ts`, `tools/perf/src/node-road-life.ts`, `tools/perf/src/road-life.ts`
@@ -226,7 +226,7 @@ Punches, kicks and weapon swings: reach, timing, damage, shove and stun, stealin
 
 - Id: `combat`
 - Start: `packages/sim/src/combat.ts`, `packages/sim/src/weapons.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/game-design.md#7-weapons](design/game-design.md#7-weapons)
+- Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/design/game-design.md#7-weapons](design/game-design.md#7-weapons)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/combat.ts`, `packages/sim/src/weapons.ts`, `packages/sim/src/combat.test.ts`, `packages/sim/src/weapons-and-grudges.test.ts`
@@ -247,7 +247,7 @@ Parked cops along the road, the chase, the bust window and the arrest, with the 
 
 - Id: `police`
 - Start: `packages/sim/src/police.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/game-design.md#8-police](design/game-design.md#8-police)
+- Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/design/game-design.md#8-police](design/game-design.md#8-police)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/police*.ts`, `packages/career/src/police*.ts`
@@ -270,7 +270,7 @@ The AI rider behind every rival, every cop and `?autopilot`: corner speeds, line
 
 - Id: `pilot`
 - Start: `packages/sim/src/pilot.ts`, `packages/sim/src/pilot-corners.ts`, `packages/sim/src/pilot-lines.ts`
-- Docs: [docs/architecture.md#riding-model](architecture.md#riding-model), [docs/design/game-design.md#pilot-rules-two-riders-need](design/game-design.md#pilot-rules-two-riders-need)
+- Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/design/game-design.md#pilot-rules-two-riders-need](design/game-design.md#pilot-rules-two-riders-need)
 - Verify: none yet
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/pilot*.ts`, `apps/web/test/pilot-replay*.ts`
@@ -301,7 +301,7 @@ One table row per bike and per rider: riding numbers, shop details, lines, art a
 
 - Id: `content-tables`
 - Start: `packages/content/src/bikes.ts`, `packages/content/src/riders.ts`, `packages/content/src/visuals.ts`
-- Docs: [docs/architecture.md#bike-and-rider-tables](architecture.md#bike-and-rider-tables)
+- Docs: [docs/architecture/race-setup.md#bike-and-rider-tables](architecture/race-setup.md#bike-and-rider-tables)
 - Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: none yet
 - Owns: `packages/content/**`, `packages/sim/src/definitions.test.ts`, `packages/sim/src/setup-ranges.ts`
@@ -325,7 +325,7 @@ The sixteen ordinary rivals, the six celebrity rivals and two officers, their co
 
 - Id: `rivals`
 - Start: `packages/sim/src/cast.ts`, `packages/career/src/field.ts`, `packages/career/src/lines.ts`
-- Docs: [docs/architecture.md#race-setup-and-cast](architecture.md#race-setup-and-cast), [docs/design/game-design.md#9-rival-cast](design/game-design.md#9-rival-cast), [docs/design/game-design.md#10-memory](design/game-design.md#10-memory)
+- Docs: [docs/architecture/race-setup.md#race-setup-and-cast](architecture/race-setup.md#race-setup-and-cast), [docs/design/game-design.md#9-rival-cast](design/game-design.md#9-rival-cast), [docs/design/game-design.md#10-memory](design/game-design.md#10-memory)
 - Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: none yet
 - Owns: `packages/sim/src/cast.ts`, `packages/sim/src/palette.ts`, `packages/career/src/field.ts`, `packages/career/src/memory.ts`, `packages/career/src/lines.ts`, `packages/career/src/field-and-rivals.test.ts`
@@ -348,7 +348,7 @@ Prizes, repair bills, fines, debt and the rewarded ad, buying and selling bikes,
 
 - Id: `career-money`
 - Start: `packages/career/src/settle.ts`, `packages/career/src/tables.ts`, `packages/career/src/shop.ts`
-- Docs: [docs/architecture.md#career](architecture.md#career), [docs/design/game-design.md#5-economy](design/game-design.md#5-economy)
+- Docs: [docs/architecture/career.md#career](architecture/career.md#career), [docs/design/game-design.md#5-economy](design/game-design.md#5-economy)
 - Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: none yet
 - Owns: `packages/career/src/tables.ts`, `packages/career/src/shop.ts`, `packages/career/src/settle.ts`, `packages/career/src/outcome.ts`, `packages/career/src/result.ts`, `packages/career/src/economy-and-shop.test.ts`, `packages/career/src/debt-and-repair.test.ts`, `packages/career/src/settlement.test.ts`, `packages/career/src/last-result.test.ts`
@@ -374,7 +374,7 @@ The career state itself, tiers, qualification and promotion, the season board, t
 
 - Id: `career-progression`
 - Start: `packages/career/src/state.ts`, `packages/career/src/story.ts`, `packages/career/src/season.ts`
-- Docs: [docs/architecture.md#career](architecture.md#career), [docs/design/game-design.md#4-career-structure](design/game-design.md#4-career-structure), [docs/design/game-design.md#11-story](design/game-design.md#11-story)
+- Docs: [docs/architecture/career.md#career](architecture/career.md#career), [docs/design/game-design.md#4-career-structure](design/game-design.md#4-career-structure), [docs/design/game-design.md#11-story](design/game-design.md#11-story)
 - Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: none yet
 - Owns: `packages/career/src/state.ts`, `packages/career/src/season.ts`, `packages/career/src/story.ts`, `packages/career/src/career-fixtures.ts`, `packages/career/src/progression-and-story.test.ts`, `packages/career/src/season.test.ts`
@@ -452,7 +452,7 @@ The race state the HUD shows and how often it is published: speed, gear, place, 
 
 - Id: `hud`
 - Start: `apps/web/src/game/hud.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/screens.md#6-race-hud](design/screens.md#6-race-hud), [docs/design/art-direction.md#hud-style](design/art-direction.md#hud-style), [DESIGN.md#speedometer](../DESIGN.md#speedometer)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/screens.md#6-race-hud](design/screens.md#6-race-hud), [docs/design/art-direction.md#hud-style](design/art-direction.md#hud-style), [DESIGN.md#speedometer](../DESIGN.md#speedometer)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md), [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: none yet
 - Owns: `apps/web/src/game/hud*.ts`, `apps/web/src/game/race-feedback.ts`, `apps/web/src/hud-feed.ts`, `apps/web/test/hud-cadence.test.ts`
@@ -474,7 +474,7 @@ The chase camera behind the player's bike: its framing along the road, the field
 
 - Id: `camera`
 - Start: `apps/web/src/game/chase-camera.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#camera-rules](design/art-direction.md#camera-rules)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#camera-rules](design/art-direction.md#camera-rules)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: none yet
 - Owns: `apps/web/src/game/chase-camera.ts`
@@ -491,7 +491,7 @@ The synthesized engine note that follows the simulation's revs and dips at each 
 
 - Id: `audio`
 - Start: `apps/web/src/game/audio.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#audio-direction](design/art-direction.md#audio-direction)
 - Verify: none yet
 - Perf: none yet
 - Owns: `apps/web/src/game/audio.ts`
@@ -508,7 +508,7 @@ The road, terrain, sky, city blocks, signs and roadside props drawn from the com
 
 - Id: `world`
 - Start: `apps/web/src/game/world.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/city.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#palette](design/art-direction.md#palette), [docs/design/art-direction.md#regions](design/art-direction.md#regions)
 - Verify: [roadside-clearance.md](../.claude/skills/verify-rushline/features/roadside-clearance.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`
 - Owns: `apps/web/src/game/world.ts`, `apps/web/src/game/city-blocks.ts`, `apps/web/src/game/road-strips.ts`, `apps/web/src/game/city.ts`, `apps/web/src/game/clearance.ts`, `apps/web/src/game/ground.ts`, `apps/web/src/game/greybox.ts`, `apps/web/src/game/roadside.ts`, `apps/web/src/game/looks.ts`, `apps/web/src/game/facade-texture.ts`, `apps/web/src/game/road-texture.ts`, `apps/web/src/game/shop-texture.ts`, `apps/web/src/game/sky-texture.ts`, `apps/web/src/game/sign-*.ts`, `apps/web/src/game/texture-canvas.ts`, `apps/web/test/roadside-clearance.test.ts`, `apps/web/test/road-districts.test.ts`
@@ -543,7 +543,7 @@ The riders, bikes and traffic cars drawn from the race each frame: placement on 
 
 - Id: `riders-on-screen`
 - Start: `apps/web/src/game/rider-views.ts`, `apps/web/src/game/rider-figure.ts`, `apps/web/src/game/actors.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#riders-and-bikes](design/art-direction.md#riders-and-bikes), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `riders.cpu.p95`
 - Owns: `apps/web/src/game/actors.ts`, `apps/web/src/game/fleet.ts`, `apps/web/src/game/cross-car-pose.ts`, `apps/web/src/game/bike-models.ts`, `apps/web/test/bike-contact.ts`, `apps/web/test/figure-wear.test.ts`, `apps/web/test/figure-shadow.test.ts`, `apps/web/test/planted-hands.test.ts`, `apps/web/test/rider-shade.ts`, `apps/web/src/game/rider-*.ts`, `apps/web/src/game/figure-*.ts`
@@ -584,7 +584,7 @@ Holding a constant frame rate: the fixed quality presets a device check picks be
 
 - Id: `frame-pacing`
 - Start: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: `frame.interval.p50`, `frame.interval.p95`, `frame.interval.p99`, `frame.missedFraction`, `main.longTask.blockingMs`, `main.longTask.count`
 - Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
@@ -606,7 +606,7 @@ The market on a road's footpaths: the stall list a road compiles from its seed, 
 
 - Id: `bazaar`
 - Start: `packages/track/src/stalls.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`
-- Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#breakwater-run-salt-coast](design/tracks.md#breakwater-run-salt-coast), [docs/art/breakwater-stalls/README.md#contract](art/breakwater-stalls/README.md#contract)
+- Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks), [docs/design/tracks.md#breakwater-run-salt-coast](design/tracks.md#breakwater-run-salt-coast), [docs/art/breakwater-stalls/README.md#contract](art/breakwater-stalls/README.md#contract)
 - Verify: [bazaar.md](../.claude/skills/verify-rushline/features/bazaar.md)
 - Perf: `render.calls.max`, `render.triangles.max`, `render.textures.max`, `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/track/src/stalls.ts`, `packages/track/src/stalls.test.ts`, `packages/sim/src/stalls.ts`, `packages/sim/src/stalls-room.test.ts`, `packages/sim/src/stalls.test.ts`, `apps/web/src/game/bazaar.ts`, `apps/web/src/game/bazaar-crowd.ts`, `apps/web/test/bazaar.test.ts`, `apps/web/test/bazaar-kit.test.ts`
@@ -632,7 +632,7 @@ The roads and their regions: each road's sections, crests, truck starts, roadblo
 
 - Id: `roads`
 - Start: `packages/track/src/tracks/slag-row.ts`, `packages/track/src/regions.ts`, `packages/sim/src/corner-warnings.ts`
-- Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/design/tracks.md#summary](design/tracks.md#summary)
+- Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks), [docs/design/tracks.md#summary](design/tracks.md#summary)
 - Verify: none yet
 - Perf: none yet
 - Owns: `packages/track/src/tracks/**`, `packages/track/src/regions.ts`, `packages/track/src/roads.test.ts`, `packages/track/src/stretches.ts`, `packages/track/src/chevron-runs.ts`, `packages/sim/src/corner-warnings.ts`, `packages/sim/src/corner-warnings.test.ts`, `tools/road-test/**`
@@ -674,7 +674,7 @@ The bar players walk around before a race, with the movement rules and floor in 
 
 - Id: `bar-lobby`
 - Start: `packages/sim/src/lobby.ts`, `apps/web/src/game/bar.ts`, `apps/web/src/game/bar-player.ts`
-- Docs: [docs/architecture.md#the-bar-lobby](architecture.md#the-bar-lobby)
+- Docs: [docs/architecture/browser-client.md#the-bar-lobby](architecture/browser-client.md#the-bar-lobby)
 - Verify: [walkable-bar.md](../.claude/skills/verify-rushline/features/walkable-bar.md)
 - Perf: `bar.frame.interval.p50`, `bar.frame.interval.p95`, `bar.frame.interval.p99`, `bar.frame.missedFraction`, `bar.render.calls.max`, `bar.render.triangles.max`, `lobby.tick.p95`
 - Owns: `apps/web/src/bar-view.ts`, `apps/web/src/components/bar-*.tsx`, `apps/web/src/game/bar*.ts`, `apps/web/src/routes/bar.tsx`, `packages/sim/src/lobby*.ts`, `tools/perf/lobby.ts`, `tools/perf/src/lobby-bench.ts`, `tools/perf/src/node-lobby.ts`
@@ -769,7 +769,7 @@ Test files:
 
 - Id: `race-core`
 - Start: `packages/sim/src/race.ts`, `packages/sim/src/state.ts`, `packages/sim/src/race-run.ts`
-- Docs: [docs/architecture.md#race-setup-and-cast](architecture.md#race-setup-and-cast), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic)
+- Docs: [docs/architecture/race-setup.md#race-setup-and-cast](architecture/race-setup.md#race-setup-and-cast), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic)
 - Verify: none yet
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
 - Owns: `packages/sim/src/race*.ts`, `packages/sim/src/state.ts`, `packages/sim/src/control*.ts`, `apps/web/test/race-view.test.ts`
@@ -795,7 +795,7 @@ The versioned race snapshot: one schema as data, the encoder, the decoder that r
 
 - Id: `race-snapshot`
 - Start: `packages/sim/src/snapshot.ts`, `packages/sim/src/snapshot-format.ts`, `packages/sim/src/snapshot-members.ts`
-- Docs: [docs/architecture.md#race-snapshots](architecture.md#race-snapshots), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Docs: [docs/architecture/race-setup.md#race-snapshots](architecture/race-setup.md#race-snapshots), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: none yet
 - Perf: `snapshot.write.p95`, `snapshot.restore.p95`, `snapshot.hash.p95`, `snapshot.bytes.max`
 - Owns: `packages/sim/src/snapshot*.ts`, `apps/web/test/race-hash.ts`, `apps/web/test/replay-bundle.ts`, `apps/web/test/cold-restore-worker.ts`, `apps/web/test/cold-restore.test.ts`, `tools/perf/snapshot.ts`, `tools/perf/src/node-snapshot.ts`, `tools/replay/**`
@@ -830,7 +830,7 @@ The owned `sin`, `cos`, `atan` and `hypot2` that give the same bits on every mac
 
 - Id: `deterministic-math`
 - Start: `packages/track/src/math.ts`, `packages/track/src/random.ts`
-- Docs: [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic)
+- Docs: [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic)
 - Verify: none yet
 - Perf: none yet
 - Owns: `packages/track/src/math*.ts`, `packages/track/src/random.ts`
@@ -854,7 +854,7 @@ Compiling a `TrackPlan` into the `Track` the simulation and renderer share: the 
 
 - Id: `track-compiler`
 - Start: `packages/track/src/districts.ts`, `packages/track/src/track.ts`, `packages/track/src/roads.ts`
-- Docs: [docs/architecture.md#tracks](architecture.md#tracks), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
+- Docs: [docs/architecture/tracks.md#tracks](architecture/tracks.md#tracks), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
 - Verify: none yet
 - Perf: none yet
 - Owns: `packages/track/src/alignment*.ts`, `packages/track/src/districts*.ts`, `packages/track/src/track.ts`, `packages/track/src/road.ts`, `packages/track/src/roads.ts`
@@ -878,7 +878,7 @@ Test files:
 
 - Id: `renderer-core`
 - Start: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/scene-lifecycle.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job), [docs/coding-standards.md#upload-and-sort-only-what-the-frame-needs](coding-standards.md#upload-and-sort-only-what-the-frame-needs), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/standards/renderer.md#keep-each-module-to-its-job](standards/renderer.md#keep-each-module-to-its-job), [docs/standards/renderer.md#upload-and-sort-only-what-the-frame-needs](standards/renderer.md#upload-and-sort-only-what-the-frame-needs), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `bytes.game.gzip`, `bytes.game.raw`, `bytes.game.incremental.gzip`, `bytes.game.incremental.raw`, `render.programs.max`
 - Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/outline-sides.ts`, `apps/web/test/hosts.ts`
@@ -912,7 +912,7 @@ Booting the game module with a dynamic import, downloading and decoding the nine
 
 - Id: `asset-loading`
 - Start: `apps/web/src/asset-load.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/game/assets.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/errors.md#asset-loading](errors.md#asset-loading)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/errors.md#asset-loading](errors.md#asset-loading)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
 - Owns: `apps/web/src/asset-*.ts`, `apps/web/src/assets/load.ts`, `apps/web/src/assets/model-*.ts`, `apps/web/src/assets/font-readiness-failed.ts`, `apps/web/src/game/assets.ts`, `apps/web/test/asset-load.test.ts`, `apps/web/test/celebrity-load.test.ts`, `apps/web/test/node-images.ts`
@@ -941,7 +941,7 @@ Game art in R2: the manifest that maps each model and plate to its content-addre
 
 - Id: `art-store`
 - Start: `tools/art/src/manifest.ts`, `tools/art/upload.ts`, `apps/web/src/server/art.ts`
-- Docs: [docs/architecture.md#game-art](architecture.md#game-art), [docs/errors.md#game-art](errors.md#game-art), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
+- Docs: [docs/architecture/game-art.md#game-art](architecture/game-art.md#game-art), [docs/errors.md#game-art](errors.md#game-art), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
 - Verify: [art.md](../.claude/skills/verify-rushline/features/art.md)
 - Perf: `assets.image.total`
 - Owns: `tools/art/**`, `apps/web/src/assets/art.ts`, `apps/web/src/routes/art/**`, `apps/web/src/server/art*.ts`, `apps/web/test/art-files.ts`, `apps/web/test/pull-art.ts`, `scripts/check-art.ts`
@@ -975,7 +975,7 @@ The Blender scripts for the shipped models, the Wren and cyber sport-bike studie
 
 - Id: `blender-tools`
 - Start: `tools/blender/compress.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build), [docs/art/wren-400-study/README.md#contract](art/wren-400-study/README.md#contract), [docs/art/cyber-bike-options/README.md#files-and-contract](art/cyber-bike-options/README.md#files-and-contract)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/design/art-direction.md#budget-and-build](design/art-direction.md#budget-and-build), [docs/art/wren-400-study/README.md#contract](art/wren-400-study/README.md#contract), [docs/art/cyber-bike-options/README.md#files-and-contract](art/cyber-bike-options/README.md#files-and-contract)
 - Verify: none yet
 - Perf: `assets.glb.bike`, `assets.glb.car`, `assets.glb.ghost`, `assets.glb.oni`, `assets.glb.rider_a`, `assets.glb.rider_b`, `assets.glb.rider_c`, `assets.glb.rider_kylie`, `assets.glb.rider_ronaldo`, `assets.glb.rider_mbappe`, `assets.glb.rider_musk`, `assets.glb.rider_altman`, `assets.glb.rider_ranveer`, `assets.glb.seraph`, `assets.glb.van`, `assets.glb.total`, `assets.texture.total`
 - Owns: `tools/blender/**`
@@ -992,7 +992,7 @@ Writing and reading the career save: the versioned schema and its checks, the br
 
 - Id: `save-format`
 - Start: `packages/career/src/save.ts`, `apps/web/src/career/save.ts`, `scripts/check-save-format.ts`
-- Docs: [docs/errors.md#the-career-save](errors.md#the-career-save), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
+- Docs: [docs/errors.md#the-career-save](errors.md#the-career-save), [docs/standards/simulation.md#keep-each-module-to-its-job](standards/simulation.md#keep-each-module-to-its-job)
 - Verify: [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: none yet
 - Owns: `packages/career/src/save*.ts`, `apps/web/src/career/save*.ts`, `scripts/check-save-format*.ts`, `scripts/save-wire.ts`
@@ -1023,7 +1023,7 @@ The difficulty tiers, and the server-owned field size and celebrity switch: the 
 
 - Id: `race-rules`
 - Start: `apps/web/src/server/race-rules.ts`, `packages/sim/src/difficulty.ts`, `apps/web/src/rules/load.ts`
-- Docs: [docs/architecture.md#career](architecture.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Docs: [docs/architecture/career.md#career](architecture/career.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-rules.md](../.claude/skills/verify-rushline/features/race-rules.md)
 - Perf: none yet
 - Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
@@ -1159,7 +1159,7 @@ The URL flags that skip the menus and stage a moment (`?ride`, `?at`, `?kmh`, `?
 
 - Id: `dev-flags`
 - Start: `apps/web/src/career/bench.ts`, `apps/web/src/game/dev-ride.ts`, `apps/web/src/game/profile.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
 - Owns: `apps/web/src/game/dev-ride.ts`, `apps/web/src/game/bench-profile.ts`, `apps/web/src/game/profile.ts`, `apps/web/src/profile-parts.ts`, `apps/web/src/career/bench.ts`, `apps/web/test/dev-ride.test.ts`, `packages/sim/src/commands.ts`, `packages/sim/src/dev-commands.test.ts`, `packages/sim/src/bench-*.ts`, `packages/career/src/bench.ts`
@@ -1187,7 +1187,7 @@ The table of what differs per machine, the bench queue that books a machine's tu
 
 - Id: `devtools`
 - Start: `packages/devtools/src/browser-host.ts`, `packages/devtools/src/bench-queue.ts`, `packages/devtools/src/desktop.ts`
-- Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
+- Docs: [docs/standards/effect.md#use-effect-only-at-the-edges](standards/effect.md#use-effect-only-at-the-edges)
 - Verify: [vimaan-queue.md](../.claude/skills/verify-rushline/features/vimaan-queue.md)
 - Perf: none yet
 - Owns: `packages/devtools/**`
@@ -1223,7 +1223,7 @@ Test files: none
 
 - Id: `verify-tool`
 - Start: `tools/verify/rushline.ts`, `tools/verify/src/commands.ts`, `tools/verify/src/book.ts`
-- Docs: [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
+- Docs: [docs/standards/effect.md#use-effect-only-at-the-edges](standards/effect.md#use-effect-only-at-the-edges)
 - Verify: [desktop-session.md](../.claude/skills/verify-rushline/features/desktop-session.md), [vimaan-queue.md](../.claude/skills/verify-rushline/features/vimaan-queue.md)
 - Perf: none yet
 - Owns: `tools/verify/**`
@@ -1267,7 +1267,7 @@ Test files:
 
 - Id: `perf-gate`
 - Start: `tools/perf/src/gate.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/scenarios.ts`
-- Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
+- Docs: [docs/observability.md#frame-profiles](observability.md#frame-profiles), [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: none yet
 - Owns: `tools/perf/gate.ts`, `tools/perf/gpu.ts`, `tools/perf/measure.ts`, `tools/perf/node.ts`, `tools/perf/room.ts`, `tools/perf/src/approved.ts`, `tools/perf/src/baseline.ts`, `tools/perf/src/budgets.ts`, `tools/perf/src/build.ts`, `tools/perf/src/config-invalid.ts`, `tools/perf/src/evaluate.ts`, `tools/perf/src/load.ts`, `tools/perf/src/gate.ts`, `tools/perf/src/glb-textures.ts`, `tools/perf/src/gpu*.ts`, `tools/perf/src/measure*.ts`, `tools/perf/src/node.ts`, `tools/perf/src/node-lane*.ts`, `tools/perf/src/node-room.ts`, `tools/perf/src/result.ts`, `tools/perf/src/scenarios.ts`, `tools/perf/src/select.ts`, `tools/perf/src/sides.ts`, `tools/perf/test/bench-queue*.ts`, `tools/perf/test/load.test.ts`, `tools/perf/test/check.test.ts`, `tools/perf/test/evaluate.test.ts`, `tools/perf/test/fixture-build.ts`, `tools/perf/test/gate.test.ts`, `tools/perf/test/gpu-page.test.ts`, `tools/perf/test/gpu.test.ts`, `tools/perf/test/measure-page.test.ts`, `tools/perf/test/red-cases.ts`
@@ -1331,7 +1331,7 @@ The `rushline/` and vendored `anti-slop/` oxlint rules with their cases, and the
 
 - Id: `lint-plugins`
 - Start: `tools/oxlint/rushline/index.ts`, `tools/oxlint/anti-slop/index.ts`, `tools/oxlint/rushline/rules/deterministic-core.ts`
-- Docs: [docs/coding-standards.md#keep-types-honest](coding-standards.md#keep-types-honest), [docs/coding-standards.md#use-effect-only-at-the-edges](coding-standards.md#use-effect-only-at-the-edges)
+- Docs: [docs/coding-standards.md#keep-types-honest](coding-standards.md#keep-types-honest), [docs/standards/effect.md#use-effect-only-at-the-edges](standards/effect.md#use-effect-only-at-the-edges)
 - Verify: none yet
 - Perf: none yet
 - Owns: `tools/oxlint/**`, `scripts/deterministic-scopes.test.ts`, `scripts/telemetry-scopes.test.ts`
@@ -1430,14 +1430,14 @@ Test files:
 
 ### Repository checks
 
-`pnpm verify` and the repository checks it runs: the rule ledger, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
+`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
 
 - Id: `repo-checks`
 - Start: `scripts/verify.ts`, `scripts/features.ts`, `scripts/rule-ledger.ts`
-- Docs: [docs/coding-standards.md#the-checks](coding-standards.md#the-checks)
+- Docs: [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: none yet
 - Perf: none yet
-- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
+- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-rule-routes*.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/rule-routes.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
 
 Source files:
 
@@ -1446,6 +1446,7 @@ Source files:
 - `scripts/check-feature-map.ts`
 - `scripts/check-renderer-imports.ts`
 - `scripts/check-roots.ts`
+- `scripts/check-rule-routes.ts`
 - `scripts/check-rules.ts`
 - `scripts/check-size.ts`
 - `scripts/check-typescript-only.ts`
@@ -1461,6 +1462,7 @@ Source files:
 - `scripts/road-features.ts`
 - `scripts/room-features.ts`
 - `scripts/rule-ledger.ts`
+- `scripts/rule-routes.ts`
 - `scripts/session-features.ts`
 - `scripts/setup-effect-reference.ts`
 - `scripts/stale-checkout.ts`
@@ -1470,6 +1472,7 @@ Source files:
 Test files:
 
 - `scripts/check-action-pins.test.ts`
+- `scripts/check-rule-routes.test.ts`
 - `scripts/check-size.test.ts`
 - `scripts/feature-map.test.ts`
 - `scripts/renderer-imports.test.ts`
@@ -1482,7 +1485,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 
 - Id: `race-room`
 - Start: `apps/rooms/src/host.ts`, `apps/rooms/src/lobby.ts`, `packages/sim/src/room.ts`
-- Docs: [docs/architecture.md#race-rooms](architecture.md#race-rooms), [docs/coding-standards.md#keep-the-simulation-deterministic](coding-standards.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
+- Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
 - Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `tools/rooms/**`
@@ -1614,7 +1617,7 @@ One value for what the game is doing: attract, idle with or without a preparatio
 
 - Id: `race-session`
 - Start: `apps/web/src/game/game-session.ts`
-- Docs: [docs/architecture.md#browser-client](architecture.md#browser-client), [docs/coding-standards.md#keep-each-module-to-its-job](coding-standards.md#keep-each-module-to-its-job)
+- Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/standards/web-app.md#keep-each-module-to-its-job](standards/web-app.md#keep-each-module-to-its-job)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `frame.interval.p95`, `frame.missedFraction`
 - Owns: `apps/web/src/game/game-session.ts`, `apps/web/test/game-session.test.ts`, `apps/web/test/session-transcript.ts`

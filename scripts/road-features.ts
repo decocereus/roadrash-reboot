@@ -4,7 +4,7 @@ import { sceneCounts, simTick } from "./player-features.ts";
 export const roadFeatures: readonly FeatureEntry[] = [
   {
     docs: [
-      "docs/architecture.md#tracks",
+      "docs/architecture/tracks.md#tracks",
       "docs/design/tracks.md#breakwater-run-salt-coast",
       "docs/art/breakwater-stalls/README.md#contract",
     ],
@@ -33,7 +33,10 @@ export const roadFeatures: readonly FeatureEntry[] = [
     verify: ["bazaar.md"],
   },
   {
-    docs: ["docs/architecture.md#tracks", "docs/design/tracks.md#summary"],
+    docs: [
+      "docs/architecture/tracks.md#tracks",
+      "docs/design/tracks.md#summary",
+    ],
     id: "roads",
     kind: "feature",
     owns: [
