@@ -229,6 +229,7 @@ export interface RoomSeat {
   readonly walkOf: (member: string) => RoomWalked | undefined;
   readonly act: (act: LobbyAct, target: string) => void;
   readonly refusal: () => Refusal | null;
+  readonly leadBloated: () => boolean;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
   readonly startsInMs: () => number | null;
@@ -398,7 +399,7 @@ export const openRoomSeat = (
       const now = performance.now();
       rttMs = Math.floor(now) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
-      clock.heardRtt(rttMs);
+      clock.heardRtt(rttMs, now);
       clock.heardRoomTime(pong.roomMs, now);
       tally.heardRtt(rttMs);
       return;
@@ -409,7 +410,12 @@ export const openRoomSeat = (
       clock.heardTick(read.frame.tick, now);
       tally.heardTick(now);
       listeners.onTickHeard?.(now, read.hashed);
+      const lostBefore = race.client.lostControls();
+      const predictedThrough = race.client.predicted.tick;
       race.client.confirm(read.frame, read.hashed ? read.hash : null);
+      if (race.client.lostControls() > lostBefore) {
+        clock.lostControl(read.frame.tick, predictedThrough, now);
+      }
       listeners.onConfirmed?.(race.client);
     }
   };
@@ -494,6 +500,13 @@ export const openRoomSeat = (
           race.client.confirmed.tick
         );
       }
+    },
+    leadBloated: () => {
+      const { race } = state;
+      return (
+        race !== null &&
+        clock.leadBloated(race.client.predicted.tick, performance.now())
+      );
     },
     leave: () => {
       move({ code: SEAT_CLOSED, kind: "left" });
