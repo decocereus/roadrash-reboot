@@ -161,7 +161,7 @@ describe("the room clock", () => {
     expect(lead(13_000)).toBeLessThanOrEqual(STEADY_LEAD + 3);
   });
 
-  it("rises once for each run of lost controls, not for every lost tick", () => {
+  it("rises once for each run of lost controls, and not for ticks it never predicted", () => {
     const clock = createRoomClock();
     clock.heardTick(100, 1000);
     clock.heardRtt(100, 1000);
@@ -171,6 +171,10 @@ describe("the room clock", () => {
     clock.lostControl(110, 112, 1000);
     expect(clock.target(1000)).toBe(steady + 2);
     clock.lostControl(111, 114, 1000);
+    expect(clock.target(1000)).toBe(steady + 4);
+    for (let tick = 115; tick < 170; tick += 1) {
+      clock.lostControl(tick, 114, 1000);
+    }
     expect(clock.target(1000)).toBe(steady + 4);
     expect(clock.target(1000 + FADED_MS)).toBe(
       steady + roomTick(1000 + FADED_MS) - roomTick(1000)

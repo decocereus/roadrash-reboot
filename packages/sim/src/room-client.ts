@@ -3,8 +3,10 @@ import {
   coasting,
   holds,
   pressing,
+  startsAStrike,
   withoutButtons,
 } from "./control.ts";
+import type { Button } from "./control.ts";
 import { createRace, stepRace } from "./race.ts";
 import {
   clearFrame,
@@ -38,6 +40,7 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 const FELT_JUMP_METRES = 0.25;
 
 const LAG_WINDOW_TICKS = 60;
+const MOST_RETRY_TICKS = 60;
 const LAGGING_FROM_TICKS = 20;
 
 const JUMP_CAUSES = ["behindServer", "otherRiders", "ownControl"] as const;
@@ -178,7 +181,8 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   let lostControls = 0;
   const pressHeld = BUTTONS_OF_A_CONTROL.map(() => false);
   const pressLanded = BUTTONS_OF_A_CONTROL.map(() => false);
-  const pressMissed = BUTTONS_OF_A_CONTROL.map(() => false);
+  const missed: Button[] = [];
+  let retriedFor = 0;
   let lagging = false;
   const stats: RoomStats = {
     crashesAfterCorrection: 0,
@@ -350,7 +354,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       if (held) {
         pressLanded[at] = pressLanded[at] === true || holds(ridden, button);
       } else if (pressHeld[at] === true) {
-        pressMissed[at] = pressMissed[at] === true || pressLanded[at] !== true;
+        if (pressLanded[at] !== true) {
+          missed.push(button);
+        }
         pressLanded[at] = false;
       }
       pressHeld[at] = held;
@@ -358,15 +364,23 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   };
 
   const retryMissed = (control: Control): Control => {
-    let retried = control;
-    for (let at = 0; at < BUTTONS_OF_A_CONTROL.length; at += 1) {
-      const button = BUTTONS_OF_A_CONTROL[at];
-      if (button !== undefined && pressMissed[at] === true) {
-        retried = pressing(retried, button);
-        pressMissed[at] = false;
-      }
+    const [button] = missed;
+    return button === undefined ? control : pressing(control, button);
+  };
+
+  const retried = (): void => {
+    const [button] = missed;
+    if (button === undefined) {
+      return;
     }
-    return retried;
+    retriedFor += 1;
+    const struck = predicted.events.some(
+      (event) => event.kind === "attack" && event.rider === me
+    );
+    if (!startsAStrike(button) || struck || retriedFor >= MOST_RETRY_TICKS) {
+      missed.shift();
+      retriedFor = 0;
+    }
   };
 
   const noteRoomChoice = (frame: TickFrame, reached: number): void => {
@@ -434,6 +448,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       ownControls[slotOf(tick)] = retryMissed(control);
       advance(tick);
+      retried();
       hearOwn();
       return true;
     },

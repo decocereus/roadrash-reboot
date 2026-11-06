@@ -97,6 +97,8 @@ export const withoutButtons = (control: Control): Control => {
 export const BUTTONS_OF_A_CONTROL = [PUNCH, KICK, REMOUNT] as const;
 export type Button = (typeof BUTTONS_OF_A_CONTROL)[number];
 
+export const startsAStrike = (button: Button): boolean => button !== REMOUNT;
+
 export const holds = (control: Control, button: Button): boolean =>
   Math.floor(control / BUTTONS_PLACE / button) % 2 === 1;
 

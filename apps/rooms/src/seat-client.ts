@@ -411,9 +411,10 @@ export const openRoomSeat = (
       tally.heardTick(now);
       listeners.onTickHeard?.(now, read.hashed);
       const lostBefore = race.client.lostControls();
+      const predictedThrough = race.client.predicted.tick;
       race.client.confirm(read.frame, read.hashed ? read.hash : null);
       if (race.client.lostControls() > lostBefore) {
-        clock.lostControl(read.frame.tick, race.client.predicted.tick, now);
+        clock.lostControl(read.frame.tick, predictedThrough, now);
       }
       listeners.onConfirmed?.(race.client);
     }

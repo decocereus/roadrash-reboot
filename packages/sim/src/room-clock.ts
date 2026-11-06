@@ -110,7 +110,7 @@ export const createRoomClock = (): RoomClock => {
         leadFor(Math.max(0, lastRtt - typicalRtt)) >=
       BLOATED_FROM_TICKS,
     lostControl: (tick, sentThrough, now) => {
-      if (tick <= raisedThrough) {
+      if (tick <= raisedThrough || tick > sentThrough) {
         return;
       }
       raisedThrough = sentThrough;

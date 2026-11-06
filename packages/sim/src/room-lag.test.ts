@@ -4,6 +4,7 @@ import { controlOf } from "./control.ts";
 import { track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
+import type { TickFrame } from "./room-frame.ts";
 import {
   createInputBatch,
   inputBytes,
@@ -47,19 +48,29 @@ const laggedTicks = (
 
 const KICK_FROM = 100;
 const KICK_TICKS = 8;
-const kickHeld = (tick: number) =>
-  tick >= KICK_FROM && tick < KICK_FROM + KICK_TICKS;
+const STALL_TICKS = 300;
+const kickHeld = (tick: number, from: readonly number[] = [KICK_FROM]) =>
+  from.some((start) => tick >= start && tick < start + KICK_TICKS);
 
-const kicksTheRoomRode = (reachesRoom: (tick: number) => boolean): number => {
+const kicksTheRoomRode = (
+  reachesRoom: (tick: number) => boolean,
+  kicksFrom: readonly number[] = [KICK_FROM],
+  confirmsEvery = 1
+): number => {
   const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
   const room = createRoom(setup);
   const client = createRoomClient(setup, PLAYER_RIDER);
   const out = new DataView(new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS)));
   const batch = createInputBatch();
   let kicks = 0;
-  for (let tick = 1; tick <= 200; tick += 1) {
+  const heldBack: TickFrame[] = [];
+  for (let tick = 1; tick <= 300; tick += 1) {
     client.predict(
-      controlOf({ ...neutralInput, kick: kickHeld(tick), throttle: 1 })
+      controlOf({
+        ...neutralInput,
+        kick: kickHeld(tick, kicksFrom),
+        throttle: 1,
+      })
     );
     const length = client.writeInputs(out);
     if (
@@ -72,12 +83,27 @@ const kicksTheRoomRode = (reachesRoom: (tick: number) => boolean): number => {
     kicks += room.state.events.filter(
       (event) => event.kind === "attack" && event.rider === PLAYER_RIDER
     ).length;
-    client.confirm(room.frame, null);
+    heldBack.push({
+      controls: new Map(room.frame.controls),
+      handovers: new Map(room.frame.handovers),
+      tick: room.frame.tick,
+    });
+    if (reachesRoom(tick) || tick % confirmsEvery === 0) {
+      for (const frame of heldBack.splice(0)) {
+        client.confirm(frame, null);
+      }
+    }
   }
   return kicks;
 };
 
+const stalled = (tick: number) => tick < 95 || tick > 170;
+
 describe("a rider's press the room never rode", () => {
+  it("sends each of two presses again when a stall swallows both", () => {
+    expect(kicksTheRoomRode(stalled, [100, 145], STALL_TICKS)).toBe(2);
+  });
+
   it("is sent again, once, when every tick of it arrived too late", () => {
     expect([
       kicksTheRoomRode(() => true),
