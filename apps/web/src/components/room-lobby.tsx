@@ -6,7 +6,7 @@ import type { RoomPreview } from "@racer/rooms/messages";
 import { enterQueue } from "@racer/rooms/queue-client";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
-import type { RoomSeat } from "@racer/rooms/seat-client";
+import type { RoomSeat, SeatRace } from "@racer/rooms/seat-client";
 import {
   useEffect,
   useEffectEvent,
@@ -27,7 +27,8 @@ import type { RoomHandoff } from "../room-handoff.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import { memberKey, storedGuestName, storeGuestName } from "./guest-name.ts";
 import { readRoomPreview } from "./room-preview.ts";
-import { moveToRoom, roomArrivalOf, roomLink } from "./room-url.ts";
+import { moveToRoom, rejoinOf, roomArrivalOf, roomLink } from "./room-url.ts";
+import { GettingBackOn, TooLate } from "./screens/rejoin.tsx";
 import {
   GuestNameScreen,
   QueueScreen,
@@ -48,12 +49,15 @@ interface SeatRide {
 
 const inTheLobby = (): RoomHandoff<SeatRide> => ({ kind: "lobby" });
 
-const afterDoorMoment = (elapsed: () => void): (() => void) => {
-  const door = setTimeout(elapsed, DOOR_MOMENT_MS);
+const afterDoorMoment = (ms: number, elapsed: () => void): (() => void) => {
+  const door = setTimeout(elapsed, ms);
   return () => {
     clearTimeout(door);
   };
 };
+
+const doorWaitOf = (race: SeatRace | null): number =>
+  race !== null && race.awayMs !== null ? 0 : DOOR_MOMENT_MS;
 
 const secondsOf = (ms: number | null): number | null =>
   ms === null ? null : Math.max(0, Math.ceil(ms / 1000));
@@ -74,7 +78,7 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
       latency.pressed();
     }
   });
-  globalThis.addEventListener("pagehide", seat.leave);
+  globalThis.addEventListener("pagehide", seat.reportNow);
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
     client: race.client,
@@ -127,6 +131,7 @@ const SeatedLobby = ({
   const [, redraw] = useReducer((count: number) => count + 1, 0);
   const [opening, reopen] = useReducer((count: number) => count + 1, 0);
   const lostTold = useRef(false);
+  const [rejoin] = useState(() => rejoinOf(globalThis.location.search));
   const joinedTold = useRef(false);
   const lost = useEffectEvent(onLost);
   const {
@@ -177,7 +182,8 @@ const SeatedLobby = ({
               gpu: card,
               graphics: `quality rung ${diagnostics().qualityRung()}`,
             }
-          : null
+          : null,
+      rejoin !== "no"
     );
     const tellLost = () => {
       if (!lostTold.current) {
@@ -195,7 +201,9 @@ const SeatedLobby = ({
         } else if (opened.race()) {
           tellLost();
           lost();
-          moveToRoom(roomId, "moved");
+          if (handoffNow().kind !== "riding") {
+            moveToRoom(roomId, "moved", "try");
+          }
         } else {
           tellLost();
           reopening = setTimeout(reopen, REOPEN_MS);
@@ -225,7 +233,7 @@ const SeatedLobby = ({
         }
       }
     };
-  }, [bootFailed, handoffNow, name, roomId, opening]);
+  }, [bootFailed, handoffNow, name, rejoin, roomId, opening]);
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(roomLink(roomId));
     setCopied(true);
@@ -256,14 +264,16 @@ const SeatedLobby = ({
     };
   }, []);
   const doorMoment = seat !== null && raceBegun && ready;
+  const race = seat?.race() ?? null;
+  const doorMs = doorWaitOf(race);
   useEffect(
     () =>
       doorMoment
-        ? afterDoorMoment(() => {
+        ? afterDoorMoment(doorMs, () => {
             send({ kind: "doorElapsed" });
           })
         : undefined,
-    [doorMoment, send]
+    [doorMoment, doorMs, send]
   );
   const inLobby = handoff.kind === "lobby";
   useEffect(() => {
@@ -285,21 +295,29 @@ const SeatedLobby = ({
     seat?.leaveRoom();
     onBack();
   };
+  if (race && race.awayMs !== null) {
+    return (
+      <GettingBackOn awayMs={race.awayMs} holdSeconds={race.holdSeconds} />
+    );
+  }
   if (seat && lobby && ((raceBegun && ready) || phase === "lobby")) {
     return (
-      <BarLobby
-        copied={copied}
-        lobby={lobby}
-        name={name}
-        onBack={leaveRoom}
-        onChangeName={onChangeName}
-        onCopyLink={() => {
-          void copyLink();
-        }}
-        roomId={roomId}
-        seat={seat}
-        startsInSeconds={secondsOf(seat.startsInMs())}
-      />
+      <>
+        {rejoin === "try" && <TooLate holdSeconds={lobby.seatHoldSeconds} />}
+        <BarLobby
+          copied={copied}
+          lobby={lobby}
+          name={name}
+          onBack={leaveRoom}
+          onChangeName={onChangeName}
+          onCopyLink={() => {
+            void copyLink();
+          }}
+          roomId={roomId}
+          seat={seat}
+          startsInSeconds={secondsOf(seat.startsInMs())}
+        />
+      </>
     );
   }
   return (

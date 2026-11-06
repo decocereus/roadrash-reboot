@@ -23,6 +23,7 @@ import { EndingScreen, GameOverScreen } from "./screens/game-over.tsx";
 import { GarageScreen } from "./screens/garage.tsx";
 import { PauseScreen } from "./screens/pause.tsx";
 import { RaceHud } from "./screens/race-hud.tsx";
+import { BikeUp, SignalLost } from "./screens/rejoin.tsx";
 import { ResultsScreen } from "./screens/results.tsx";
 import { RideOutScreen } from "./screens/ride-out.tsx";
 import { RouteBoardScreen } from "./screens/route-board.tsx";
@@ -335,6 +336,16 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
       {stage.kind === "finishing" && (
         <FinishBanner onContinue={flow.leave} report={stage.report} />
       )}
+      {stage.kind === "signalLost" && view.plan.room && (
+        <SignalLost
+          holdSeconds={view.plan.room.holdSeconds}
+          lostAt={stage.lostAt}
+          roomId={view.plan.room.roomId}
+        />
+      )}
+      {stage.kind === "riding" &&
+        view.plan.room !== undefined &&
+        view.plan.room.awayMs !== null && <BikeUp feed={flow.feed} />}
       {stage.kind === "paused" && (
         <PauseScreen
           career={flow.career}

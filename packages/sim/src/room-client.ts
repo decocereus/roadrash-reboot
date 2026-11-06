@@ -16,7 +16,12 @@ import {
   scratchFor,
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
-import { MOST_BATCHED_CONTROLS, writeInput } from "./room-wire.ts";
+import { readTapePart } from "./room-tape.ts";
+import {
+  createReadTick,
+  MOST_BATCHED_CONTROLS,
+  writeInput,
+} from "./room-wire.ts";
 import { INPUT_HORIZON, PILOT_FROM_TICK, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
@@ -83,6 +88,7 @@ export interface RoomClient {
   readonly stats: RoomStats;
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
+  readonly catchUp: (part: DataView) => void;
   readonly settle: () => void;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
@@ -472,20 +478,41 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     }
   };
 
+  const stepConfirmed = (
+    frame: TickFrame,
+    serverHash: Uint32Array | null
+  ): void => {
+    if (frame.tick !== confirmed.tick + 1) {
+      outOfOrder(frame.tick, confirmed.tick);
+    }
+    stepRace(confirmed, setup.track, frame);
+    learn(frame);
+    if (serverHash) {
+      hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
+      if (!sameHash(hash, serverHash)) {
+        stats.desyncs += 1;
+      }
+    }
+  };
+
+  const caughtUp = createReadTick(createTickFrame());
+
   return {
+    catchUp: (part) => {
+      const read = readTapePart(part, caughtUp, (tick) => {
+        stepConfirmed(tick.frame, tick.hashed ? tick.hash : null);
+        return null;
+      });
+      if (read.kind !== "read") {
+        throw new RangeError(
+          `The room sent a catch-up the client could not read after tick ${confirmed.tick}.`
+        );
+      }
+      rewind();
+    },
     confirm: (frame, serverHash) => {
-      if (frame.tick !== confirmed.tick + 1) {
-        outOfOrder(frame.tick, confirmed.tick);
-      }
-      stepRace(confirmed, setup.track, frame);
+      stepConfirmed(frame, serverHash);
       hearRoom();
-      learn(frame);
-      if (serverHash) {
-        hashRace(confirmed, digest, scratchFor(scratch, confirmed), hash);
-        if (!sameHash(hash, serverHash)) {
-          stats.desyncs += 1;
-        }
-      }
       const reached = predicted.tick;
       noteRoomChoice(frame, reached);
       notePresses(frame, reached);

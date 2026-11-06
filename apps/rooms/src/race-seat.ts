@@ -25,9 +25,17 @@ export interface SeatLink {
   readonly tcpRttMs: number | null;
 }
 
+export type SeatPresence =
+  | { readonly kind: "here" }
+  | { readonly kind: "held"; readonly since: number }
+  | { readonly kind: "left"; readonly tick: number };
+
+export const HERE: SeatPresence = { kind: "here" };
+
 export interface Seat {
   readonly colour: number;
   readonly link: SeatLink;
+  readonly memberId: string;
   readonly name: string;
   readonly raceId: string;
   readonly rider: RiderId;
@@ -36,7 +44,7 @@ export interface Seat {
   ahead: number;
   browser: SeatBrowser | null;
   late: number;
-  leftAtTick: number | null;
+  presence: SeatPresence;
   readyMs: number | null;
   reported: boolean;
   stats: RaceStats | null;
@@ -69,7 +77,7 @@ export const rosterOf = (
 };
 
 export const seatFor = (
-  { link, name }: Pick<Seat, "link" | "name">,
+  { link, memberId, name }: Pick<Seat, "link" | "memberId" | "name">,
   colour: number,
   raceId: string,
   rider: RiderId
@@ -79,9 +87,10 @@ export const seatFor = (
   browser: null,
   colour,
   late: 0,
-  leftAtTick: null,
   link,
+  memberId,
   name,
+  presence: HERE,
   raceId,
   readyMs: null,
   reported: false,
@@ -124,9 +133,12 @@ export const keepReport = (seat: Seat, data: string | ArrayBuffer): void => {
 };
 
 export const stillLoading = (riders: readonly Seat[]): readonly RiderId[] =>
-  riders.flatMap(({ leftAtTick, readyMs, rider }) =>
-    leftAtTick === null && readyMs === null ? [rider] : []
+  riders.flatMap(({ presence, readyMs, rider }) =>
+    presence.kind === "here" && readyMs === null ? [rider] : []
   );
+
+const leftAtTickOf = (presence: SeatPresence): number | null =>
+  presence.kind === "left" ? presence.tick : null;
 
 export const tallyOf = (seat: Seat, room: Room): SeatTally => ({
   accepted: seat.accepted,
@@ -150,7 +162,7 @@ export const raceSeatsOf = (
             colo: seat.link.colo,
             crashes: state.crashes,
             finishTick: state.finishTick,
-            leftAtTick: seat.leftAtTick,
+            leftAtTick: leftAtTickOf(seat.presence),
             mode: state.mode,
             network: seat.link.network,
             readyMs: seat.readyMs,

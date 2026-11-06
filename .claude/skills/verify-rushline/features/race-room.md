@@ -9,7 +9,7 @@ A race room runs one race for up to eight humans on the `RaceServer` Durable Obj
 - `no-missed-inputs` gets a seat's controls in on time. `missed` in the status counts the ticks the room stepped with no control from that seat, and it is 0 or close to it on a local link. `pnpm rooms:race` fails when a seat misses over 2% of the ticks. `late` counts every copy of a control that arrived after its tick, and a batch resends up to 8 controls, so it overstates what a rider loses.
 - `seat-refusals` sends a ninth seat `refused` with `full`, seats a member who arrives after the start in the lobby for the next race, and answers a plain request to a seat with 426 and a malformed room ID with 404.
 - `own-room` gives each room ID its own room: another room ID reads as a waiting room with no seats while this race runs.
-- `dropped-seat` hands a closed seat to the pilot while the others ride on.
+- `dropped-seat` holds a closed seat for the room's seat hold, 30 s at launch, while the pilot rides it and the others ride on, then leaves it with the pilot.
 - `vanished-seat` drops a seat the room has heard nothing from for 10 s, as a friend losing Wi-Fi looks, writes its `left` line, and the others ride on.
 - `lobby-stays-awake` starts a race after the lobby sat longer than the 10 s a Durable Object needs to hibernate. Its fill and deadline timers keep it in memory.
 - `fair-start` holds the countdown until every seat has loaded the race, for at most 20 s, so a slow browser does not miss the start. A seat reads `Loading the race` until then.
@@ -23,7 +23,8 @@ A race room runs one race for up to eight humans on the `RaceServer` Durable Obj
 - `queue` forms a public lobby of up to eight riders, at once when the eighth arrives or when the oldest ticket has waited 30 s. It runs on one `QueueServer` Durable Object, which refuses an older build. `pnpm rooms:queue --url <rooms url>` fails when a rider who left stays queued, when eight riders do not land in one public room, when a lone rider leaves early or at tier or bike other than the public rule, or when an old build gets in.
 - A public lobby (a `pub-` room ID) has no host, the server picks its road for each race, and it leaves 45 s after the first rider arrives, or 10 s after if everyone is ready.
 - `lobby` keeps its members, host, rules and ready state across races, and starts a race when every member is ready or a minute after the first rider readied, so a friend still on results gets that minute to come back. No player has a start button.
-- `lost-room` puts a window that loses the room mid-race back in the same room's lobby, as the same member. There is no rejoining a running race.
+- `lost-room` shows a window that loses the room mid-race `Signal lost` with the hold counting down, and reloads into the same room as the same member.
+- `rejoin` puts a rider who comes back inside the hold on the same bike, caught up to the room's tick through catch-up packets, with `Your bike is up` and their place for 3 s. A rider back after the hold sees `We kept your bike` in the lobby. `Back to the bar` gives the bike up at once. `pnpm exec vitest run --project node apps/rooms/test/host-rejoin.test.ts` pins the rules, and the two-window check below shows the screens.
 - `friends-link` opens a new room from `Race friends` on the bar. `Copy the link` copies a URL that seats a second window in the same room.
 - `guest-names` asks for a name once per browser, keeps it in `rushline.guestName.v1`, and shows each human's name on the other humans' result sheets in place of a field name. The server cleans every name, so a tampered URL cannot send markup or more than 12 characters.
 - `room-logs` writes a few lines per race instead of one per message, because a log event costs far more than the message it records.
@@ -96,6 +97,5 @@ Reading the numbers: `rollbacks` and `resimulatedTicks` count every remote steer
 - A deployed room. Cloudflare's scheduling and `locationHint` placement are untested here. Point `--url` at the deployed Worker to test them.
 - Real network lag, jitter or loss. A local link hides lag, and a clock that led by half the round trip passed every local run. A throwaway TCP proxy adding 100 and 200 ms round trips gave `late` 0 and 0 desyncs, and that clock lost every control at 100 ms. No lag tool is checked in yet.
 - How a rollback looks over a real network. On a local link the other rider's largest frame-to-frame sideways move was 7.1 cm over 88 rollbacks.
-- That a race can be rejoined. A window that comes back mid-race waits in the lobby until the race ends.
 - Public Quick Race matchmaking. Rooms are joined by link only.
 - Input to screen. `Input to frame` runs from the key event to the start of the frame after the one that drew the change. It does not include the compositor or the display, and a gamepad has no key event, so a gamepad rider reads 0 samples.

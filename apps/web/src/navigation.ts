@@ -14,6 +14,7 @@ import type { RulesLoad } from "./rules/load.ts";
 type RaceStage =
   | { readonly kind: "riding" }
   | { readonly kind: "paused" }
+  | { readonly kind: "signalLost"; readonly lostAt: number }
   | { readonly kind: "finishing"; readonly report: RaceReport }
   | { readonly kind: "consequence"; readonly report: RaceReport | null };
 
@@ -38,6 +39,7 @@ export type View =
 type RaceNews =
   | { readonly kind: "paused" }
   | { readonly kind: "resumed" }
+  | { readonly kind: "signalLost"; readonly lostAt: number }
   | {
       readonly kind: "raceSettled";
       readonly report: RaceReport | null;
@@ -173,6 +175,9 @@ const raceAfter = (
     case "resumed": {
       return { ...view, stage: { kind: "riding" } };
     }
+    case "signalLost": {
+      return { ...view, stage: { kind: "signalLost", lostAt: event.lostAt } };
+    }
     default: {
       return event satisfies never;
     }
@@ -290,7 +295,8 @@ export const stepNavigation = (
     case "paused":
     case "raceOver":
     case "raceSettled":
-    case "resumed": {
+    case "resumed":
+    case "signalLost": {
       return to(view.screen === "race" ? raceAfter(view, event) : view);
     }
     case "picked": {

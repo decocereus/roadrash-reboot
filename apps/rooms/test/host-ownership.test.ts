@@ -11,11 +11,13 @@ import { AWAY_MS } from "../src/lobby.ts";
 import {
   encodeLobbyCommand,
   SEAT_CLOSED,
+  SEAT_QUIT,
   SEAT_SILENT,
 } from "../src/messages.ts";
 import {
   advanceHearing,
   countdownsOn,
+  HOLD_MS,
   lastLobby,
   pingPacket,
   readyAll,
@@ -124,38 +126,32 @@ const finishedRoom = () => {
 };
 
 describe("a socket replaced by the same member's newer one", () => {
-  it("takes a rider out of the race, and the newer socket waits in the lobby", () => {
+  it("hands the rider's race to the newer socket", () => {
     const { clock, first, host, seated, second } = ridingRoom();
     const back = seated("first", "Ann");
     expect({
       closed: first.closed,
       last: first.messages.at(-1),
-      left: clock.notes.find((note) => note.kind === "left"),
-    }).toMatchObject({
+      notes: kindsOf(clock, "held", "rejoined", "left"),
+    }).toStrictEqual({
       closed: SEAT_CLOSED,
       last: { kind: "refused", reason: "replaced" },
-      left: { closeCode: SEAT_CLOSED, seatsLeft: 1, tally: { rider: 0 } },
+      notes: ["held", "rejoined"],
     });
     expect(host.status()).toMatchObject({
       names: ["Bo", "Ann"],
-      seats: [{ rider: 1 }],
-      waiting: 2,
+      roles: ["seated", "seated"],
+      seats: [{ rider: 1 }, { rider: 0 }],
     });
-    expect(lastLobby(back)).toMatchObject({
-      members: [
-        { here: true, id: "m1" },
-        { here: true, id: "m2" },
-      ],
-      phase: "racing",
-      you: "m1",
-    });
+    expect(heardKinds(back, 0)).toStrictEqual(["started", "countdown"]);
+    expect(startedOf(back).you).toBe(0);
     const heard = [first, back, second].map((socket) => socket.ticks.length);
     clock.advance(TICK_MS * 5);
     expect(
       [first, back, second].map(
         ({ ticks }, at) => ticks.length > (heard[at] ?? 0)
       )
-    ).toStrictEqual([false, false, true]);
+    ).toStrictEqual([false, true, true]);
   });
 
   it("does not make the member away when the old socket's close arrives later", () => {
@@ -178,7 +174,7 @@ describe("a socket replaced by the same member's newer one", () => {
       accepted: host.status().seats.map((seat) => seat.accepted),
       pongs: first.pongs.length,
       reports: rollbacksOf(clock, 0),
-    }).toStrictEqual({ accepted: [0], pongs: 0, reports: [] });
+    }).toStrictEqual({ accepted: [0, 0], pongs: 0, reports: [] });
   });
 
   it("logs a replaced rider's report, and stops the race waiting for it to load", () => {
@@ -260,15 +256,24 @@ describe("a socket that drops", () => {
     expect(walksOn(seated("late"))).toStrictEqual([]);
   });
 
-  it("in a race leaves it once, and the others ride on", () => {
+  it("in a race holds the bike, leaves once the hold runs out, and the others ride on", () => {
     const { clock, first, host, second } = ridingRoom();
     host.message(first, statsPacket(4));
     host.gone(first, 1006);
     host.gone(first, 1006);
-    expect(kindsOf(clock, "left", "stats")).toStrictEqual(["left", "stats"]);
-    expect(clock.notes.find((note) => note.kind === "left")).toMatchObject({
-      closeCode: 1006,
-      seatsLeft: 1,
+    expect(kindsOf(clock, "held", "left", "stats")).toStrictEqual([
+      "held",
+      "stats",
+    ]);
+    advanceHearing(host, clock, [second], HOLD_MS - 1000);
+    expect(kindsOf(clock, "left")).toStrictEqual([]);
+    advanceHearing(host, clock, [second], 1000);
+    expect({
+      left: clock.notes.find((note) => note.kind === "left"),
+      notes: kindsOf(clock, "held", "left", "stats"),
+    }).toMatchObject({
+      left: { closeCode: 1006, seatsLeft: 1 },
+      notes: ["held", "stats", "left"],
     });
     expect(host.status()).toMatchObject({
       names: ["Bo"],
@@ -279,12 +284,13 @@ describe("a socket that drops", () => {
     expect(second.ticks.length).toBeGreaterThan(heard);
   });
 
-  it("as silence while a race runs writes one left, even when its close arrives", () => {
+  it("as silence while a race runs is held once, even when its close arrives", () => {
     const { clock, first, host, second } = ridingRoom();
     advanceHearing(host, clock, [second], SILENT_SEAT_MS + 2000);
     expect(first.closed).toBe(SEAT_SILENT);
     host.gone(first, SEAT_SILENT);
-    expect(kindsOf(clock, "left")).toStrictEqual(["left"]);
+    advanceHearing(host, clock, [second], HOLD_MS);
+    expect(kindsOf(clock, "held", "left")).toStrictEqual(["held", "left"]);
   });
 
   it(
@@ -434,7 +440,7 @@ describe("a rider who leaves and rejoins", () => {
       const riding = ridingRoom();
       const { clock, first, host, seated, second } = riding;
       const id = lastLobby(first).you;
-      host.gone(first, 1000);
+      host.gone(first, SEAT_QUIT);
       const back = seated("first", "Ann");
       expect(lastLobby(back)).toMatchObject({
         members: [{ here: true, id }, { id: "m2" }],
@@ -561,8 +567,8 @@ describe("each socket's role on the status route", () => {
       steps.push(read());
       expect(steps).toStrictEqual([
         ["Ann:seated", "Bo:seated", "Cy:lobby"],
-        ["Bo:seated", "Cy:lobby", "Ann:lobby"],
-        ["Bo:reporting", "Cy:lobby", "Ann:lobby"],
+        ["Bo:seated", "Cy:lobby", "Ann:seated"],
+        ["Bo:reporting", "Cy:lobby", "Ann:reporting"],
         ["Bo:lobby", "Cy:lobby", "Ann:lobby"],
         ["Bo:lobby", "Ann:lobby"],
       ]);

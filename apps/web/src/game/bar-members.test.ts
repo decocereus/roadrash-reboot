@@ -52,6 +52,7 @@ const lobbyOf = (
   phase: "gathering",
   roomKind: "custom",
   rule: publicRoomRule,
+  seatHoldSeconds: 30,
   startsInMs: null,
   you: "near",
 });

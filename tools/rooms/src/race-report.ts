@@ -2,7 +2,9 @@ import { WAKE_GAP_CEILINGS_MS } from "@racer/rooms/notes";
 import type {
   RaceCountdown,
   RaceEnded,
+  RaceHeld,
   RaceLeft,
+  RaceRejoined,
   RaceSeat,
   RaceStarted,
   RaceBrowserNote,
@@ -18,6 +20,7 @@ interface RaceRecord {
   readonly raceId: string;
   readonly browsers: RaceBrowserNote[];
   countdown?: RaceCountdown;
+  readonly drops: (RaceHeld | RaceRejoined)[];
   ended?: RaceEnded;
   readonly left: RaceLeft[];
   started?: RaceStarted;
@@ -32,7 +35,13 @@ const recordOf = (
   if (known) {
     return known;
   }
-  const fresh: RaceRecord = { browsers: [], left: [], raceId, stats: [] };
+  const fresh: RaceRecord = {
+    browsers: [],
+    drops: [],
+    left: [],
+    raceId,
+    stats: [],
+  };
   records.set(raceId, fresh);
   return fresh;
 };
@@ -54,6 +63,11 @@ export const groupRaces = (
       }
       case "countdown": {
         recordOf(records, note.raceId).countdown = note;
+        break;
+      }
+      case "held":
+      case "rejoined": {
+        recordOf(records, note.raceId).drops.push(note);
         break;
       }
       case "left": {
@@ -181,10 +195,25 @@ const timelineLine = ({
   return `  ${parts.filter((part) => part !== null).join(", ")}`;
 };
 
+const dropLine = (note: RaceHeld | RaceRejoined): string => {
+  switch (note.kind) {
+    case "held": {
+      return `  Rider ${note.rider} lost the link at ${raceTime(note.tick)}, socket closed ${note.closeCode ?? "with no code"}, bike held`;
+    }
+    case "rejoined": {
+      return `  Rider ${note.rider} came back after ${seconds(note.awayMs)} and caught up ${note.catchUpTicks} ticks`;
+    }
+    default: {
+      return note satisfies never;
+    }
+  }
+};
+
 export const raceReport = (record: RaceRecord): string =>
   [
     headline(record),
     timelineLine(record),
+    ...record.drops.map(dropLine),
     ...(record.ended
       ? [
           serverLine(record.ended),

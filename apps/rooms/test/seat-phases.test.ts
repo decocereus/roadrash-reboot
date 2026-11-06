@@ -1,7 +1,7 @@
 import { RACE_STATS_PACKET_BYTES } from "@racer/sim/room-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { encodeRoomMessage, SEAT_CLOSED } from "../src/messages.ts";
+import { encodeRoomMessage, SEAT_CLOSED, SEAT_QUIT } from "../src/messages.ts";
 import { NEW_SEAT, seatAfter } from "../src/seat-client.ts";
 import type { RoomSeat, SeatEvent, SeatPhase } from "../src/seat-client.ts";
 import {
@@ -115,10 +115,10 @@ describe("a seat's way through a room", () => {
     socket.hear(lobbyAt(1));
     seat.leave();
     expect(seat.phase()).toBe("left");
-    expect(socket.closedWith).toBe(SEAT_CLOSED);
+    expect(socket.closedWith).toBe(SEAT_QUIT);
     socket.closedByBrowser();
     expect(seat.phase()).toBe("left");
-    expect(seat.closeCode()).toBe(SEAT_CLOSED);
+    expect(seat.closeCode()).toBe(SEAT_QUIT);
     expect(socket.sentBytes).toStrictEqual([]);
   });
 
@@ -341,7 +341,7 @@ const EVENTS = {
   closed: { kind: "closed" },
   countdown: { kind: "countdown", startAtMs: 0 },
   ended: { kind: "ended", tick: 0 },
-  left: { code: SEAT_CLOSED, kind: "left" },
+  left: { code: SEAT_QUIT, kind: "left" },
   lobby: lobbyMessage(1),
   refused: { kind: "refused", reason: "replaced" },
   silent: { kind: "silent" },

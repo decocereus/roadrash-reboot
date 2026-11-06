@@ -1,6 +1,7 @@
 import { createRace, stepRace } from "./race.ts";
 import { createScratch, createTickFrame, scratchFor } from "./room-frame.ts";
 import { createReadTick, readTick } from "./room-wire.ts";
+import type { ReadTick } from "./room-wire.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace } from "./snapshot.ts";
@@ -13,6 +14,7 @@ export interface TapeWriter {
   readonly add: (packet: Uint8Array) => void;
   readonly finish: () => void;
   readonly parts: () => number;
+  readonly sofar: () => readonly Uint8Array[];
 }
 
 export const createTapeWriter = (
@@ -23,12 +25,15 @@ export const createTapeWriter = (
     TICKS_IN_PART * (LENGTH_BYTES + mostPacketBytes)
   );
   const view = new DataView(buffer.buffer);
+  const kept: Uint8Array[] = [];
   let used = 0;
   let ticks = 0;
   let parts = 0;
   const finish = (): void => {
     if (ticks > 0) {
-      save(parts, buffer.slice(0, used));
+      const part = buffer.slice(0, used);
+      kept.push(part);
+      save(parts, part);
       parts += 1;
       used = 0;
       ticks = 0;
@@ -46,7 +51,43 @@ export const createTapeWriter = (
     },
     finish,
     parts: () => parts,
+    sofar: () => (used > 0 ? [...kept, buffer.slice(0, used)] : kept),
   };
+};
+
+export type TapeRead<Stop> =
+  | { readonly kind: "read" }
+  | { readonly kind: "unreadable" }
+  | { readonly kind: "stopped"; readonly stop: Stop };
+
+export const readTapePart = <Stop>(
+  part: DataView,
+  read: ReadTick,
+  visit: (read: ReadTick) => Stop | null
+): TapeRead<Stop> => {
+  let at = 0;
+  while (at < part.byteLength) {
+    if (at + LENGTH_BYTES > part.byteLength) {
+      return { kind: "unreadable" };
+    }
+    const length = part.getUint16(at, true);
+    const end = at + LENGTH_BYTES + length;
+    if (
+      end > part.byteLength ||
+      !readTick(
+        new DataView(part.buffer, part.byteOffset + at + LENGTH_BYTES, length),
+        read
+      )
+    ) {
+      return { kind: "unreadable" };
+    }
+    const stop = visit(read);
+    if (stop !== null) {
+      return { kind: "stopped", stop };
+    }
+    at = end;
+  }
+  return { kind: "read" };
 };
 
 export const hexOfWords = (words: Uint32Array): string =>
@@ -80,35 +121,31 @@ export const replayTape = (
   const read = createReadTick(createTickFrame());
   const hash = new Uint32Array(HASH_WORDS);
   let hashes = 0;
+  const stepTick = (tick: ReadTick): TapeReplay | null => {
+    if (tick.frame.tick !== state.tick + 1) {
+      return { afterTick: state.tick, kind: "gap", tick: tick.frame.tick };
+    }
+    stepRace(state, setup.track, tick.frame);
+    if (tick.hashed) {
+      hashRace(state, setupWords, scratchFor(scratch, state), hash);
+      if (!sameWords(hash, tick.hash)) {
+        return { kind: "diverged", tick: tick.frame.tick };
+      }
+      hashes += 1;
+    }
+    return null;
+  };
   for (const part of parts) {
-    const view = new DataView(part.buffer, part.byteOffset, part.byteLength);
-    let at = 0;
-    while (at < part.byteLength) {
-      const length = view.getUint16(at, true);
-      const packet = new DataView(
-        part.buffer,
-        part.byteOffset + at + LENGTH_BYTES,
-        length
-      );
-      if (!readTick(packet, read)) {
-        return { afterTick: state.tick, kind: "unreadable" };
-      }
-      if (read.frame.tick !== state.tick + 1) {
-        return {
-          afterTick: state.tick,
-          kind: "gap",
-          tick: read.frame.tick,
-        };
-      }
-      stepRace(state, setup.track, read.frame);
-      if (read.hashed) {
-        hashRace(state, setupWords, scratchFor(scratch, state), hash);
-        if (!sameWords(hash, read.hash)) {
-          return { kind: "diverged", tick: read.frame.tick };
-        }
-        hashes += 1;
-      }
-      at += LENGTH_BYTES + length;
+    const result = readTapePart(
+      new DataView(part.buffer, part.byteOffset, part.byteLength),
+      read,
+      stepTick
+    );
+    if (result.kind === "unreadable") {
+      return { afterTick: state.tick, kind: "unreadable" };
+    }
+    if (result.kind === "stopped") {
+      return result.stop;
     }
   }
   return { hashes, kind: "matched", state };

@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
 import { AWAY_MS } from "../src/lobby.ts";
+import { SEAT_QUIT } from "../src/messages.ts";
 import {
   advanceHearing,
   countdownsOn,
@@ -98,7 +99,7 @@ describe("a race's way through the room host", () => {
     const rider = fakeSocket();
     race(host, clock, [rider]);
     clock.advance(TICK_MS * 30);
-    host.gone(rider, 1000);
+    host.gone(rider, SEAT_QUIT);
     clock.advance(1000);
     expect(host.status()).toMatchObject({
       lagTicks: 0,
@@ -141,8 +142,8 @@ describe("a race's way through the room host", () => {
     host.seat(first, "Ann", nearby, sameBuild("ann"));
     host.seat(second, "Bo", nearby, sameBuild("bo"));
     readyAll(host, [first, second]);
-    host.gone(first, 1000);
-    host.gone(second, 1000);
+    host.gone(first, SEAT_QUIT);
+    host.gone(second, SEAT_QUIT);
     clock.advance(START_DELAY_MS + 1000);
     expect(host.status().phase).toBe("waiting");
     const backFirst = fakeSocket();
@@ -181,8 +182,8 @@ describe("a race's way through the room host", () => {
     host.message(far, readyPacket(far));
     clock.advance(START_DELAY_MS);
     host.message(far, readyPacket(far));
-    host.gone(near, 1000);
-    host.gone(far, 1000);
+    host.gone(near, SEAT_QUIT);
+    host.gone(far, SEAT_QUIT);
     clock.advance(1000);
     expect(endedNote(clock.notes).seats).toMatchObject([
       { readyMs: 0, rider: 0 },
@@ -229,8 +230,8 @@ describe("a race's way through the room host", () => {
     host.message(far, readyPacket(far));
     host.message(near, readyPacket(near));
     host.message(far, statsPacket());
-    host.gone(near, 1000);
-    host.gone(far, 1000);
+    host.gone(near, SEAT_QUIT);
+    host.gone(far, SEAT_QUIT);
     expect(clock.notes.filter((note) => note.kind === "stats")).toHaveLength(2);
   });
 
@@ -245,8 +246,8 @@ describe("a race's way through the room host", () => {
         host.message(near, readyPacket(near));
         host.message(far, readyPacket(far));
       }
-      host.gone(near, 1000);
-      host.gone(far, 1000);
+      host.gone(near, SEAT_QUIT);
+      host.gone(far, SEAT_QUIT);
       clock.advance(START_DELAY_MS - 1);
       expect(host.status().phase).toBe("racing");
       clock.advance(100);
@@ -264,8 +265,8 @@ describe("a race's way through the room host", () => {
     clock.wakeOnce();
     const { wakes } = host.status();
     expect(wakes).toBe(1);
-    host.gone(near, 1000);
-    host.gone(far, 1000);
+    host.gone(near, SEAT_QUIT);
+    host.gone(far, SEAT_QUIT);
     clock.advance(1000);
     const { wakeGaps } = endedNote(clock.notes);
     expect(wakeGaps[3]).toBe(1);
@@ -290,7 +291,7 @@ describe("a race's way through the room host", () => {
     expect(host.status().seats.map((seat) => seat.accepted)).toStrictEqual([
       0, 0,
     ]);
-    host.gone(late, 1000);
+    host.gone(late, SEAT_QUIT);
     expect(host.status().seats).toHaveLength(2);
     expect(clock.notes.map((note) => note.kind)).toStrictEqual(["started"]);
   });
@@ -313,7 +314,7 @@ describe("a race's way through the room host", () => {
       seats: [],
     });
     expect(walker.closed).toBeNull();
-    host.gone(walker, 1000);
+    host.gone(walker, SEAT_QUIT);
     expect(clock.notes).toStrictEqual([]);
   });
 });
