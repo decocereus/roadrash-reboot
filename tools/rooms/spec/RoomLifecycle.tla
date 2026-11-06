@@ -542,12 +542,17 @@ HostConsider ==
 (* Browser actions the code takes by itself.                               *)
 (***************************************************************************)
 
-\* the WebSocket open event, once the room took the upgrade
+\* the WebSocket open event, once the room took the upgrade, and with it the
+\* seat's rejoin choice; room-lobby.tsx onOpen then takes rejoin=no out of
+\* the address (room-url.ts clearRejoinNo), so later seats rejoin
 ClientOpened(s) ==
     /\ wire.cs[s] = "connecting"
     /\ room.sock[s] # "none"
     /\ wire' = [wire EXCEPT !.cs[s] = "open"]
-    /\ UNCHANGED <<room, tab>>
+    /\ tab' = IF tab[s[1]].cur = s[2]
+              THEN [tab EXCEPT ![s[1]].url = IF @ = "no" THEN "try" ELSE @]
+              ELSE tab
+    /\ UNCHANGED room
 
 \* seat-client.ts message and close listeners, move, enter (hangUp on
 \* ended and refused), then room-lobby.tsx onChange

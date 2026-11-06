@@ -218,6 +218,7 @@ export const seatAfter = (
 
 export interface SeatListeners {
   readonly onChange?: () => void;
+  readonly onOpen?: () => void;
   readonly onActed?: (acted: RoomActed) => void;
   readonly onConfirmed?: (client: RoomClient) => void;
   readonly onTickHeard?: (now: number, hashed: boolean) => void;
@@ -444,6 +445,7 @@ export const openRoomSeat = (
 
   socket.addEventListener("open", () => {
     pings = setInterval(sendPing, PING_EVERY_MS);
+    listeners.onOpen?.();
   });
 
   socket.addEventListener("close", (event) => {

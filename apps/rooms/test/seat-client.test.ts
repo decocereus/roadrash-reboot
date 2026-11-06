@@ -229,6 +229,24 @@ describe("a seat loading the race", () => {
     ]);
   });
 
+  it("tells the lobby once the room took the seat and its rejoin choice", () => {
+    const seat = openRoomSeat(
+      "http://rooms.test",
+      "friday-ride",
+      "Near",
+      "test-build",
+      "member-key",
+      () => null,
+      false
+    );
+    const opened = vi.fn<() => void>();
+    seat.listen({ onOpen: opened });
+    expect(opened).not.toHaveBeenCalled();
+    FakeSocket.opened.at(-1)?.open();
+    expect(opened).toHaveBeenCalledOnce();
+    seat.leave();
+  });
+
   it("pings the room from the lobby, so the room can tell it is still there", () => {
     const { seat, socket } = newSeat();
     vi.advanceTimersByTime(PING_EVERY_MS);
