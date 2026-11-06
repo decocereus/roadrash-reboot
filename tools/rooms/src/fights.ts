@@ -11,6 +11,8 @@ import * as Path from "effect/Path";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
 
+import { linksOf, NETWORK_NAMES } from "./fight-links.ts";
+import type { Link, RunName } from "./fight-links.ts";
 import {
   FIGHT_PILOT,
   FIGHT_PROBE,
@@ -31,7 +33,7 @@ import type {
 } from "./fight-report.ts";
 
 const usage =
-  "Usage: pnpm rooms:fights --out <dir> (--rooms-port <port> [--links direct,home,mobile,far,bursts] | --server <game url>) [--slots 1,2]";
+  "Usage: pnpm rooms:fights --out <dir> (--rooms-port <port> [--links direct,home,mobile,far,bursts,upload] | --server <game url>) [--slots 1,2]";
 
 const RV = "tools/verify/rushline.ts";
 const SEATED_OR_NAMING =
@@ -54,55 +56,6 @@ const DISARM = "(globalThis.__fightPilot.armed = null)";
 const MOST_STRIKE_TRIES = 3;
 const ARM_KICK = `(globalThis.__fightPilot.armed = "KeyK")`;
 const LINK_START_MS = 700;
-
-interface Link {
-  readonly burstEveryMs: number;
-  readonly burstMs: number;
-  readonly jitterMs: number;
-  readonly lossPercent: number;
-  readonly rttMs: number;
-}
-
-const steady = (rttMs: number, jitterMs: number, lossPercent = 0): Link => ({
-  burstEveryMs: 0,
-  burstMs: 0,
-  jitterMs,
-  lossPercent,
-  rttMs,
-});
-
-const home = steady(110, 15);
-const far = steady(300, 20);
-
-const NETWORK_NAMES = ["direct", "home", "mobile", "far", "bursts"] as const;
-type NetworkName = (typeof NETWORK_NAMES)[number];
-type RunName = NetworkName | "live";
-
-const linksOf = (name: NetworkName): readonly [Link, Link] => {
-  switch (name) {
-    case "direct": {
-      return [steady(0, 0), steady(0, 0)];
-    }
-    case "home": {
-      return [home, home];
-    }
-    case "mobile": {
-      return [steady(180, 60, 1), steady(180, 60, 1)];
-    }
-    case "far": {
-      return [home, far];
-    }
-    case "bursts": {
-      return [
-        home,
-        { ...far, burstEveryMs: 10_000, burstMs: 1000, lossPercent: 1 },
-      ];
-    }
-    default: {
-      return name satisfies never;
-    }
-  }
-};
 
 const decodeNetworks = Schema.decodeUnknownEffect(
   Schema.Array(Schema.Literals(NETWORK_NAMES))
@@ -187,6 +140,10 @@ const startLink = (port: number, target: number, link: Link) =>
         String(link.burstEveryMs / 1000),
         "--burst-ms",
         String(link.burstMs),
+        "--upload-ms",
+        String(link.uploadMs),
+        "--upload-after",
+        String(link.uploadAfterMs / 1000),
       ],
       process.env
     );
