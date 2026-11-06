@@ -145,7 +145,7 @@ export const main = Effect.fn("rooms.gate")(function* gate(
     }
   }
   anchor.close();
-  console.log(JSON.stringify({ problems, tallies }, null, 2));
+  console.log(JSON.stringify({ network, problems, tallies }, null, 2));
   if (problems.length > 0) {
     return yield* new GateCheckFailed({ message: problems.join(" ") });
   }
