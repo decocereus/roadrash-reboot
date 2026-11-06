@@ -54,7 +54,7 @@ export const FinishBanner = ({
           {ordinal(report.place)}
           {report.mode === "career" && (
             <span className={qualified ? "text-neon-yellow" : "text-text"}>
-              {qualified ? " · Qualified" : " · Not this time"}
+              {qualified ? ", qualified" : ", not this time"}
             </span>
           )}
         </p>

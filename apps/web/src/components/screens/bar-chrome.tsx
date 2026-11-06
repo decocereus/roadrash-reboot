@@ -36,7 +36,7 @@ const StatusStrip = ({ career }: { readonly career: CareerState }) => (
     className="bg-ink/85 font-display text-paper flex items-center justify-around border-y border-white/10 font-bold tracking-wide uppercase"
     style={{ ...place(STATUS), fontSize: stagePx(27) }}
   >
-    <StatusItem label={`Tier ${career.tier} ·`} tone="text-neon-cyan">
+    <StatusItem label={`Tier ${career.tier}`} tone="text-neon-cyan">
       {tierName(career.tier)}
     </StatusItem>
     <StatusItem label="Roads" tone="text-neon-yellow">
