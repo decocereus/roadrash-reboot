@@ -21,11 +21,11 @@ export const storeGuestName = (name: string): boolean => {
 export const memberKey = (): string => {
   const fresh = crypto.randomUUID();
   try {
-    const stored = globalThis.sessionStorage.getItem(MEMBER_KEY);
+    const stored = globalThis.localStorage.getItem(MEMBER_KEY);
     if (stored !== null) {
       return stored;
     }
-    globalThis.sessionStorage.setItem(MEMBER_KEY, fresh);
+    globalThis.localStorage.setItem(MEMBER_KEY, fresh);
     return fresh;
   } catch {
     return fresh;
