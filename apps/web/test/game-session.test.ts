@@ -73,6 +73,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
       throw new Error("The session never reports.");
     },
     riderColours: new Map(),
+    shownHits: () => [],
     step,
     stepsDue: () => 1,
     takeCorrections: () => [],

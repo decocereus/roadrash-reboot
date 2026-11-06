@@ -1,5 +1,4 @@
 import { HIT_STUN_TICKS } from "@racer/sim/combat";
-import type { RiderView } from "@racer/sim/race-view";
 import { clamp, riderOf } from "@racer/sim/state";
 import type { AttackKind, HeardFight, WeaponKind } from "@racer/sim/state";
 import { strikeOf } from "@racer/sim/weapons";
@@ -40,11 +39,11 @@ export interface StrikeFrame {
   rise: number;
 }
 
-export const quietFight = (hitSeen: number): RiderFight => ({
+export const quietFight = (): RiderFight => ({
   attack: "none",
   elapsed: 0,
   flinchLeft: 0,
-  hitSeen,
+  hitSeen: Number.NEGATIVE_INFINITY,
   queued: [],
   side: 1,
   startTick: 0,
@@ -70,10 +69,10 @@ const begin = (
 
 export const fightTick = (
   fight: RiderFight,
-  rider: Pick<RiderView, "airborne" | "lastHitTick">,
+  airborne: boolean,
   drawnTick: number
 ): void => {
-  fight.attack = rider.airborne ? "none" : fight.attack;
+  fight.attack = airborne ? "none" : fight.attack;
   fight.elapsed += 1;
   fight.flinchLeft = Math.max(0, fight.flinchLeft - 1);
   if (
@@ -85,10 +84,6 @@ export const fightTick = (
   const next = fight.attack === "none" ? fight.queued.shift() : undefined;
   if (next) {
     begin(fight, next, drawnTick);
-  }
-  if (rider.lastHitTick > fight.hitSeen) {
-    fight.hitSeen = rider.lastHitTick;
-    fight.flinchLeft = HIT_STUN_TICKS;
   }
 };
 
@@ -110,6 +105,18 @@ export const fightHeard = (
   const struck = riderOf(fighters, event.target)?.fight;
   if (struck && struck.attack !== "none" && struck.startTick <= tick) {
     struck.attack = "none";
+  }
+};
+
+export const hitShown = (
+  fighters: readonly { readonly fight: RiderFight }[],
+  { event, tick }: HeardFight
+): void => {
+  const struck =
+    event.kind === "hit" ? riderOf(fighters, event.target)?.fight : undefined;
+  if (struck && tick >= struck.hitSeen + HIT_STUN_TICKS) {
+    struck.hitSeen = tick;
+    struck.flinchLeft = HIT_STUN_TICKS;
   }
 };
 

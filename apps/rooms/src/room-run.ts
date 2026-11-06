@@ -82,6 +82,7 @@ export const createRoomRun = (
       };
     },
     riderColours,
+    shownHits: client.takeShownHits,
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       if (control !== sent) {

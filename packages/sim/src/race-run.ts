@@ -19,6 +19,7 @@ import type {
 export interface RaceRun {
   readonly events: () => readonly RaceEvent[];
   readonly fights: () => readonly HeardFight[];
+  readonly shownHits: () => readonly HeardFight[];
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly view: RaceView;
   readonly step: (frame: InputFrame) => void;
@@ -37,17 +38,22 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
   const state = createRace(setup);
   const { track } = setup;
   const fights: HeardFight[] = [];
+  const hits: HeardFight[] = [];
+  const hear = (): void => {
+    fights.length = 0;
+    hits.length = 0;
+    for (const event of state.events) {
+      if (isFightEvent(event)) {
+        fights.push({ event, tick: state.tick });
+      }
+      if (event.kind === "hit") {
+        hits.push({ event, tick: state.tick });
+      }
+    }
+  };
   return {
     events: () => state.events,
-    fights: () => {
-      fights.length = 0;
-      for (const event of state.events) {
-        if (isFightEvent(event)) {
-          fights.push({ event, tick: state.tick });
-        }
-      }
-      return fights;
-    },
+    fights: () => fights,
     placeRiderAcross: (id, x) => {
       placeRiderAcross(state, id, x);
     },
@@ -60,8 +66,10 @@ export const createRaceRun = (setup: RaceSetup): LocalRun => {
     setRiderSpeed: (id, speed) => {
       setRiderSpeed(state, id, speed);
     },
+    shownHits: () => hits,
     step: (frame) => {
       stepRace(state, track, frame);
+      hear();
     },
     takeCorrections: () => NO_CORRECTIONS,
     view: state,

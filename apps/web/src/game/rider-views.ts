@@ -35,6 +35,7 @@ import {
   fightFlinch,
   fightHeard,
   fightTick,
+  hitShown,
   quietFight,
   strikeFrame,
 } from "./rider-fight.ts";
@@ -192,7 +193,10 @@ export const createCast = (shading: Shading): Cast => ({
 interface CastStage {
   readonly colours: ReadonlyMap<RiderId, number>;
   readonly me: RiderId;
-  readonly race: Pick<RaceRun, "fights" | "takeCorrections" | "view">;
+  readonly race: Pick<
+    RaceRun,
+    "fights" | "shownHits" | "takeCorrections" | "view"
+  >;
   readonly track: Track;
   readonly world: World;
   readonly fleet: Fleet;
@@ -272,7 +276,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
         bike,
         drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
         drift: stillDrift(),
-        fight: quietFight(rider.lastHitTick),
+        fight: quietFight(),
         figure,
         lift: figure.standHeight,
         pitch: 0,
@@ -312,11 +316,14 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
       const view = cast.views[index];
       const rider = riders[index];
       if (view && rider) {
-        fightTick(view.fight, rider, tick);
+        fightTick(view.fight, rider.airborne, tick);
       }
     }
     for (const heard of stage.race.fights()) {
       fightHeard(cast.views, heard, tick);
+    }
+    for (const shown of stage.race.shownHits()) {
+      hitShown(cast.views, shown);
     }
   };
 

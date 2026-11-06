@@ -75,6 +75,7 @@ export interface RoomClient {
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
+  readonly takeShownHits: () => readonly HeardFight[];
   readonly writeInputs: (view: DataView) => number;
 }
 
@@ -159,6 +160,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const batch: Control[] = [];
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
+  let shownHits: HeardFight[] = [];
   const others = predicted.riders.filter((rider) => rider.id !== me);
   const wasAt = others.map(stillCorrection);
   let corrections = others.map(stillCorrection);
@@ -216,8 +218,17 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     return frame;
   };
 
+  const hearShown = (tick: number): void => {
+    for (const event of predicted.events) {
+      if (event.kind === "hit") {
+        shownHits.push({ event: { ...event }, tick });
+      }
+    }
+  };
+
   const advance = (tick: number): void => {
     stepRace(predicted, setup.track, guess(tick));
+    hearShown(tick);
   };
 
   const hear = (event: RaceEvent, tick: number): void => {
@@ -240,6 +251,9 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     for (const event of confirmed.events) {
       if (!ownPrediction(event, me)) {
         hear(event, confirmed.tick);
+      }
+      if (event.kind === "hit") {
+        shownHits.push({ event: { ...event }, tick: confirmed.tick });
       }
     }
   };
@@ -420,6 +434,14 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
       const taken = fights;
       fights = [];
+      return taken;
+    },
+    takeShownHits: () => {
+      if (shownHits.length === 0) {
+        return NO_FIGHTS;
+      }
+      const taken = shownHits;
+      shownHits = [];
       return taken;
     },
     writeInputs: (view) => {
