@@ -32,8 +32,8 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#race-setup-and-cast",
-      "docs/coding-standards.md#keep-the-simulation-deterministic",
+      "docs/architecture/race-setup.md#race-setup-and-cast",
+      "docs/standards/simulation.md#keep-the-simulation-deterministic",
     ],
     id: "race-core",
     kind: "platform",
@@ -61,8 +61,8 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#race-snapshots",
-      "docs/coding-standards.md#keep-the-simulation-deterministic",
+      "docs/architecture/race-setup.md#race-snapshots",
+      "docs/standards/simulation.md#keep-the-simulation-deterministic",
       "docs/design/game-design.md#12-multiplayer",
     ],
     id: "race-snapshot",
@@ -94,7 +94,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     verify: [],
   },
   {
-    docs: ["docs/coding-standards.md#keep-the-simulation-deterministic"],
+    docs: ["docs/standards/simulation.md#keep-the-simulation-deterministic"],
     id: "deterministic-math",
     kind: "platform",
     owns: ["packages/track/src/math*.ts", "packages/track/src/random.ts"],
@@ -107,7 +107,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#tracks",
+      "docs/architecture/tracks.md#tracks",
       "docs/coding-standards.md#keep-each-module-to-its-job",
     ],
     id: "track-compiler",
@@ -132,9 +132,9 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
-      "docs/coding-standards.md#keep-each-module-to-its-job",
-      "docs/coding-standards.md#upload-and-sort-only-what-the-frame-needs",
+      "docs/architecture/browser-client.md#browser-client",
+      "docs/standards/renderer.md#keep-each-module-to-its-job",
+      "docs/standards/renderer.md#upload-and-sort-only-what-the-frame-needs",
       "docs/errors.md#shader-preparation",
     ],
     id: "renderer-core",
@@ -176,7 +176,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/errors.md#asset-loading",
     ],
     id: "asset-loading",
@@ -204,7 +204,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#game-art",
+      "docs/architecture/game-art.md#game-art",
       "docs/errors.md#game-art",
       "docs/coding-standards.md#the-checks",
     ],
@@ -232,7 +232,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/design/art-direction.md#budget-and-build",
       "docs/art/wren-400-study/README.md#contract",
       "docs/art/cyber-bike-options/README.md#files-and-contract",
@@ -263,7 +263,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   {
     docs: [
       "docs/errors.md#the-career-save",
-      "docs/coding-standards.md#keep-each-module-to-its-job",
+      "docs/standards/simulation.md#keep-each-module-to-its-job",
     ],
     id: "save-format",
     kind: "platform",
@@ -286,7 +286,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#career",
+      "docs/architecture/career.md#career",
       "docs/errors.md#race-rules",
       "docs/design/game-design.md#12-multiplayer",
     ],
@@ -403,7 +403,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/observability.md#frame-profiles",
     ],
     id: "dev-flags",
@@ -432,7 +432,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     verify: ["frame-rate.md"],
   },
   {
-    docs: ["docs/coding-standards.md#use-effect-only-at-the-edges"],
+    docs: ["docs/standards/effect.md#use-effect-only-at-the-edges"],
     id: "devtools",
     kind: "platform",
     owns: ["packages/devtools/**"],
@@ -448,7 +448,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
     verify: ["vimaan-queue.md"],
   },
   {
-    docs: ["docs/coding-standards.md#use-effect-only-at-the-edges"],
+    docs: ["docs/standards/effect.md#use-effect-only-at-the-edges"],
     id: "verify-tool",
     kind: "platform",
     owns: ["tools/verify/**"],
@@ -466,7 +466,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   {
     docs: [
       "docs/observability.md#frame-profiles",
-      "docs/coding-standards.md#the-checks",
+      "docs/standards/tooling.md#the-checks",
     ],
     id: "perf-gate",
     kind: "platform",
@@ -519,7 +519,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
   {
     docs: [
       "docs/coding-standards.md#keep-types-honest",
-      "docs/coding-standards.md#use-effect-only-at-the-edges",
+      "docs/standards/effect.md#use-effect-only-at-the-edges",
     ],
     id: "lint-plugins",
     kind: "platform",

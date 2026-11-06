@@ -1,6 +1,6 @@
 # Rushline
 
-An original motorcycle combat racer for desktop browsers. RUSHLINE is the working title. See [docs/architecture.md](docs/architecture.md) for the design and build order.
+An original motorcycle combat racer for desktop browsers. RUSHLINE is the working title. See [docs/architecture.md](docs/architecture.md) for the design and [docs/architecture/build-order.md](docs/architecture/build-order.md) for the build order.
 
 ## Setup
 

@@ -19,6 +19,7 @@
     "check:perf": "node tools/perf/gate.ts --check",
     "check:renderer-imports": "node scripts/check-renderer-imports.ts",
     "check:roots": "node scripts/check-roots.ts",
+    "check:rule-routes": "node scripts/check-rule-routes.ts",
     "check:rules": "node scripts/check-rules.ts",
     "check:save-format": "node scripts/check-save-format.ts",
     "check:size": "node scripts/check-size.ts",
