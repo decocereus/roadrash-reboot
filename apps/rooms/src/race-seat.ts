@@ -6,11 +6,13 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import type { RaceManifest } from "./manifest.ts";
-import type { RaceSeat, SeatTally } from "./notes.ts";
+import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
 import {
   BrowserTraceSchema,
   MOST_TRACE_CHARS,
   MOST_TRACE_ROW_VALUES,
+  riderTraceName,
+  tapeKey,
 } from "./tape.ts";
 import type { SeatBrowser } from "./tape.ts";
 
@@ -40,6 +42,7 @@ export interface Seat {
   readonly raceId: string;
   readonly rider: RiderId;
   readonly traceRows: number[];
+  readonly tracedConnections: number[][];
   accepted: number;
   ahead: number;
   browser: SeatBrowser | null;
@@ -97,6 +100,7 @@ export const seatFor = (
   rider,
   stats: null,
   traceRows: [],
+  tracedConnections: [],
   tracedLate: 0,
   tracedMissed: 0,
 });
@@ -110,10 +114,39 @@ export const keepBrowserRows = (seat: Seat, text: string): void => {
     return;
   }
   const { rows, ...browser } = decoded.value;
-  if (seat.traceRows.length + rows.length <= MOST_TRACE_ROW_VALUES) {
+  const kept = seat.tracedConnections.reduce(
+    (sum, connection) => sum + connection.length,
+    seat.traceRows.length
+  );
+  if (kept + rows.length <= MOST_TRACE_ROW_VALUES) {
     seat.browser = browser;
     seat.traceRows.push(...rows);
   }
+};
+
+interface ReportPorts {
+  readonly note: (note: RoomNote) => void;
+  readonly saveTape: (key: string, body: string) => void;
+}
+
+export const settleReport = (seat: Seat, ports: ReportPorts): void => {
+  const { browser, raceId, rider, stats, traceRows, tracedConnections } = seat;
+  if (stats) {
+    ports.note({ kind: "stats", raceId, rider, stats });
+  }
+  if (traceRows.length > 0) {
+    tracedConnections.push([...traceRows]);
+    traceRows.length = 0;
+  }
+  if (browser) {
+    ports.note({ ...browser, kind: "browser", raceId, rider });
+    ports.saveTape(
+      tapeKey(raceId, riderTraceName(rider)),
+      JSON.stringify({ ...browser, connections: tracedConnections })
+    );
+  }
+  seat.stats = null;
+  seat.browser = null;
 };
 
 export const keepStats = (seat: Seat, view: DataView): void => {

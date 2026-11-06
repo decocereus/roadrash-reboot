@@ -125,7 +125,7 @@ describe("a rider who drops and comes back", () => {
     host.message(back, JSON.stringify({ ...trace, rows: [3] }));
     host.gone(back, SEAT_QUIT);
     const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
-    expect(saved).toContain("[1,2,3]");
+    expect(saved).toContain('"connections":[[1,2],[3]]');
   });
 });
 

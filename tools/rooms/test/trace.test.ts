@@ -22,15 +22,17 @@ const report = traceReport(
       rider: 0,
       trace: {
         ...browser,
-        rows: [
-          ...row(1, 16, 17),
-          ...row(2, 16, 300),
-          ...row(10, 200, 17),
-          ...row(11, 16, 210),
+        connections: [
+          [
+            ...row(1, 16, 17),
+            ...row(2, 16, 300),
+            ...row(10, 200, 17),
+            ...row(11, 16, 210),
+          ],
         ],
       },
     },
-    { rider: 1, trace: { ...browser, rows: [...row(2, 16, 17)] } },
+    { rider: 1, trace: { ...browser, connections: [[...row(2, 16, 17)]] } },
   ],
   { rows: [2 * TICKS_PER_SECOND, 0, 5, 1, 2 * TICKS_PER_SECOND, 1, 3, 0] }
 );
@@ -66,7 +68,7 @@ describe("the trace report", () => {
           rider: 0,
           trace: {
             ...browser,
-            rows: [...row(1, 16, 17), ...frozen, ...gapEnd],
+            connections: [[...row(1, 16, 17), ...frozen, ...gapEnd]],
           },
         },
       ],
@@ -76,5 +78,17 @@ describe("the trace report", () => {
     expect(stalledInGap).toContain(
       "tick gaps within a second of a stall in 1 s"
     );
+  });
+
+  it("places each connection's rows on the race's clock after a rejoin", () => {
+    const stall = row(1, 200, 17);
+    const later = row(1, 16, 17);
+    later[TraceField.tick] = 11 * TICKS_PER_SECOND;
+    const rejoined = traceReport(
+      [{ rider: 0, trace: { ...browser, connections: [stall, later] } }],
+      { rows: [] }
+    );
+    expect(rejoined).toContain("0:01  rider 0 frame 200 ms");
+    expect(rejoined).not.toContain("0:11  rider 0 frame 200 ms");
   });
 });

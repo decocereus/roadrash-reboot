@@ -72,6 +72,13 @@ export const BrowserTraceSchema = Schema.Struct({
 
 export type BrowserTrace = typeof BrowserTraceSchema.Type;
 
+export const RiderTraceSchema = Schema.Struct({
+  ...SeatBrowserSchema.fields,
+  connections: Schema.Array(Schema.Array(Schema.Number)),
+});
+
+export type RiderTraceFile = typeof RiderTraceSchema.Type;
+
 export const MOST_TRACE_CHARS = 512_000;
 
 export const RoomTraceSchema = Schema.Struct({

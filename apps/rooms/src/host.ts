@@ -39,6 +39,7 @@ import {
   keepReport,
   keepStats,
   raceSeatsOf,
+  settleReport,
   stillLoading,
   tallyOf,
   traceSeats,
@@ -48,7 +49,6 @@ import type { RoomKind } from "./room-id.ts";
 import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
 import type { SocketEvent, SocketRole } from "./socket-role.ts";
 import {
-  riderTraceName,
   ROOM_TRACE_EVERY_TICKS,
   roomTraceName,
   tapeEndName,
@@ -202,22 +202,6 @@ export const createHost = (
     }
   };
 
-  const settleReport = (seat: Seat): void => {
-    const { browser, raceId, rider, stats, traceRows } = seat;
-    if (stats) {
-      ports.note({ kind: "stats", raceId, rider, stats });
-    }
-    if (browser) {
-      ports.note({ ...browser, kind: "browser", raceId, rider });
-      ports.saveTape(
-        tapeKey(raceId, riderTraceName(rider)),
-        JSON.stringify({ ...browser, rows: traceRows })
-      );
-    }
-    seat.stats = null;
-    seat.browser = null;
-  };
-
   const end = (run: Run): void => {
     const { room, tape, trace } = run;
     traceSeats(run.riders, run.room, run.trace);
@@ -251,7 +235,7 @@ export const createHost = (
         const { role } = person;
         if (role.kind === "reporting") {
           moveSocket(person, { kind: "graceOver" });
-          settleReport(role.seat);
+          settleReport(role.seat, ports);
           person.socket.close(SEAT_CLOSED, "The race is over.");
         }
       }
@@ -398,7 +382,7 @@ export const createHost = (
       tally: tallyOf(seat, room),
       tick: room.state.tick,
     });
-    settleReport(seat);
+    settleReport(seat, ports);
     countDownOnceLoaded(run);
   };
 
@@ -415,7 +399,7 @@ export const createHost = (
       rider: seat.rider,
       tick: run.room.state.tick,
     });
-    settleReport(seat);
+    settleReport(seat, ports);
     countDownOnceLoaded(run);
     ports.after(ports.config.seatHoldSeconds * 1000, () => {
       if (state.run === run && seat.presence === held) {
@@ -440,7 +424,7 @@ export const createHost = (
         return;
       }
       case "reporting": {
-        settleReport(role.seat);
+        settleReport(role.seat, ports);
         return;
       }
       default: {
