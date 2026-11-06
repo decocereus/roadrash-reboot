@@ -5,7 +5,7 @@ description: Launch and drive Rushline, the Three.js motorcycle combat racer in 
 
 # Verify Rushline
 
-Rushline is a browser game. A change is verified when you have driven the real game in a real browser, captured what happened, and run the repo's checks. Passing tests do not show that it plays well (AGENTS.md).
+Rushline is a browser game. A change is verified when you have driven the real game in a real browser, captured what happened, and run the repo's checks. Passing tests do not show that it plays well (docs/coding-standards.md).
 
 Everything below goes through one helper, `rv`. Run it from the root of the checkout you are verifying, so the instance serves that checkout's code:
 
