@@ -162,6 +162,26 @@ describe("the race report", () => {
     );
   });
 
+  it("lists each link's browser stats when a rider came back", () => {
+    const [race] = groupRaces([
+      ...notes,
+      {
+        kind: "stats",
+        raceId: "race-a",
+        rider: 0,
+        stats: { crashes: 5 },
+      },
+    ]);
+    if (!race) {
+      throw new Error("No race.");
+    }
+    const report = raceReport(race);
+    expect(report).toContain("browser stats from 1 of 2 riders");
+    expect(report).toMatch(
+      /connection 1:\n {4}crashes 3[^]*connection 2:\n {4}crashes 5/u
+    );
+  });
+
   it("says when a race has no ended line, and what it knows", () => {
     const report = reportOf(1);
     expect(report).toContain("No ended line");

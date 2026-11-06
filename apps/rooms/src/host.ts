@@ -216,7 +216,6 @@ export const createHost = (
     }
     seat.stats = null;
     seat.browser = null;
-    traceRows.length = 0;
   };
 
   const end = (run: Run): void => {
@@ -467,14 +466,12 @@ export const createHost = (
     return null;
   };
 
-  const rejoin = (
-    person: Present,
-    run: Run,
-    seat: Seat,
-    since: number
-  ): void => {
-    const awayMs = ports.now() - since;
+  const rejoin = (person: Present, run: Run, seat: Seat, at: number): void => {
+    const awayMs = ports.now() - at;
     seat.presence = HERE;
+    if (state.phase === "loading") {
+      seat.readyMs = null;
+    }
     moveSocket(person, { kind: "rejoined", run, seat });
     sendTo(
       person.socket,

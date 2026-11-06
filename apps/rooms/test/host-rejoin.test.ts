@@ -115,6 +115,20 @@ describe("a rider whose link drops mid-race", () => {
   });
 });
 
+describe("a rider who drops and comes back", () => {
+  it("keeps the frame trace from both links in one file", () => {
+    const { ann, clock, host, seated } = loadingRoom();
+    const trace = { build: "abc", gpu: "Test GPU", graphics: "rung 1" };
+    host.message(ann, JSON.stringify({ ...trace, rows: [1, 2] }));
+    host.gone(ann, 1006);
+    const back = seated("ann", "Ann");
+    host.message(back, JSON.stringify({ ...trace, rows: [3] }));
+    host.gone(back, SEAT_QUIT);
+    const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
+    expect(saved).toContain("[1,2,3]");
+  });
+});
+
 describe("a rider whose link drops while the road loads", () => {
   it("does not hold the countdown for the others", () => {
     const { ann, bo, host, seated } = loadingRoom();
@@ -135,5 +149,16 @@ describe("a rider whose link drops while the road loads", () => {
     expect(countdownsOn(bo)).toBe(0);
     host.message(back, readyPacket(back));
     expect([countdownsOn(bo), countdownsOn(back)]).toStrictEqual([1, 1]);
+  });
+
+  it("waits for the new load even when the rider was ready before the drop", () => {
+    const { ann, bo, host, seated } = loadingRoom();
+    host.message(ann, readyPacket(ann));
+    host.gone(ann, 1006);
+    const back = seated("ann", "Ann");
+    host.message(bo, readyPacket(bo));
+    expect(countdownsOn(bo)).toBe(0);
+    host.message(back, readyPacket(back));
+    expect(countdownsOn(bo)).toBe(1);
   });
 });

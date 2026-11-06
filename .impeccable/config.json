@@ -13,9 +13,7 @@
       {
         "rule": "side-tab",
         "value": "*",
-        "files": [
-          "apps/web/src/components/screens/rejoin.tsx"
-        ],
+        "files": ["apps/web/src/components/screens/rejoin.tsx"],
         "createdAt": "2026-11-06T10:49:05.112Z",
         "reason": "Owner approved rejoin mock v2 via master on 2026-11-06 (LGTM, final); the mock specifies this green left accent on the 'Your bike is up' note"
       }

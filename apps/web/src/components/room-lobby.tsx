@@ -205,6 +205,8 @@ const SeatedLobby = ({
       onChange: () => {
         if (opened.phase() !== "lost") {
           redraw();
+        } else if (opened.refusal() === "replaced") {
+          moveToRoom(roomId, "moved", "taken");
         } else if (opened.race()) {
           tellLost();
           lost();
@@ -378,6 +380,17 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
           storeGuestName(clean);
           setName(clean);
         }}
+      />
+    );
+  }
+  if (rejoinOf(globalThis.location.search) === "taken") {
+    return (
+      <RoomLobbyScreen
+        name={name}
+        onBack={props.onBack}
+        phase="refused"
+        refusal="replaced"
+        roomId={props.roomId}
       />
     );
   }
