@@ -421,6 +421,7 @@ const NOTHING_TAKEN: TakenFrames = {
   attacks: [],
   falls: [],
   frames: [],
+  hits: [],
   lostButtons: [],
   placed: [],
   presses: [],

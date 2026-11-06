@@ -54,6 +54,12 @@ export const takenFrames = Schema.Struct({
     tick: Schema.Number,
   }),
   frames: Schema.Array(probeFrame),
+  hits: stamped({
+    attack: Schema.String,
+    rider: Schema.Number,
+    target: Schema.Number,
+    tick: Schema.Number,
+  }),
   lostButtons: stamped({ tick: Schema.Number }),
   placed: stamped({
     riding: Schema.Array(Schema.Boolean),
@@ -165,7 +171,8 @@ const reactionsTo = (
   attacker: number,
   victim: number,
   after: readonly ProbeFrame[],
-  heard: Heard | undefined
+  heard: Heard | undefined,
+  roomHitTick: number | undefined
 ) => {
   const since = after.filter(
     (frame) => heard !== undefined && frame.at >= heard.at
@@ -176,7 +183,8 @@ const reactionsTo = (
       rider !== undefined &&
       heard !== undefined &&
       rider.lastHitBy === attacker &&
-      rider.lastHitTick >= heard.tick
+      rider.lastHitTick >= heard.tick &&
+      (rider.hitStun > 0 || rider.lastHitTick === roomHitTick)
     );
   };
   return {
@@ -229,11 +237,19 @@ export const fightRow = (
     seen,
     felt
   );
+  const roomHit = felt.hits.find(
+    (hit) =>
+      hit.rider === attacker &&
+      hit.target === victim &&
+      hit.attack === kind &&
+      hit.at >= pressAt
+  );
   const { flinching, shove } = reactionsTo(
     attacker,
     victim,
     after,
-    victimHeard
+    victimHeard,
+    roomHit?.tick
   );
   const outAt = screen.strikeOut?.at;
   const flinchAt = flinching.at(0)?.at;
