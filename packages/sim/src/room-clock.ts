@@ -23,7 +23,11 @@ export interface RoomClock {
   readonly heardTick: (tick: number, now: number) => void;
   readonly heardRtt: (rttMs: number, now: number) => void;
   readonly leadBloated: (predictedTick: number, now: number) => boolean;
-  readonly lostControl: (now: number) => void;
+  readonly lostControl: (
+    tick: number,
+    sentThrough: number,
+    now: number
+  ) => void;
   readonly silentMs: (now: number) => number;
   readonly target: (now: number) => number;
   readonly stepsDue: (predictedTick: number, now: number) => number;
@@ -38,8 +42,10 @@ export const createRoomClock = (): RoomClock => {
   const sorted: number[] = [];
   let rttAt = 0;
   let typicalRtt = NOT_MEASURED;
-  let raisedMs = 0;
+  let lastRtt = NOT_MEASURED;
+  let raisedRtt = 0;
   let raisedAt = 0;
+  let raisedThrough = 0;
   let jitterMs = 0;
   let framesSinceEased = FRAMES_PER_EASED_STEP;
   const serverTick = (now: number): number =>
@@ -47,10 +53,11 @@ export const createRoomClock = (): RoomClock => {
       ? Math.floor((now - startsAt) / TICK_MS)
       : Math.floor((now + offset) / TICK_MS);
   const raisedAbove = (now: number): number =>
-    raisedMs * Math.max(0, 1 - (now - raisedAt) / RAISE_FADE_MS);
-  const raiseTo = (excessMs: number, now: number): void => {
-    if (excessMs > raisedAbove(now)) {
-      raisedMs = excessMs;
+    Math.max(0, raisedRtt - typicalRtt) *
+    Math.max(0, 1 - (now - raisedAt) / RAISE_FADE_MS);
+  const raiseTo = (rttMs: number, now: number): void => {
+    if (rttMs - typicalRtt > raisedAbove(now)) {
+      raisedRtt = rttMs;
       raisedAt = now;
     }
   };
@@ -80,7 +87,8 @@ export const createRoomClock = (): RoomClock => {
       sorted.push(...rtts);
       sorted.sort((left, right) => left - right);
       typicalRtt = sorted[Math.floor(sorted.length / 2)] ?? rttMs;
-      raiseTo(rttMs - typicalRtt, now);
+      lastRtt = rttMs;
+      raiseTo(rttMs, now);
     },
     heardTick: (tick, now) => {
       const sample = tick * TICK_MS - now;
@@ -97,9 +105,16 @@ export const createRoomClock = (): RoomClock => {
       );
     },
     leadBloated: (predictedTick, now) =>
-      predictedTick - serverTick(now) - leadFor(0) >= BLOATED_FROM_TICKS,
-    lostControl: (now) => {
-      raiseTo(raisedAbove(now) + LOST_CONTROL_RAISE_MS, now);
+      predictedTick -
+        serverTick(now) -
+        leadFor(Math.max(0, lastRtt - typicalRtt)) >=
+      BLOATED_FROM_TICKS,
+    lostControl: (tick, sentThrough, now) => {
+      if (tick <= raisedThrough) {
+        return;
+      }
+      raisedThrough = sentThrough;
+      raiseTo(typicalRtt + raisedAbove(now) + LOST_CONTROL_RAISE_MS, now);
     },
     silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
     start: (startAtRoomMs) => {

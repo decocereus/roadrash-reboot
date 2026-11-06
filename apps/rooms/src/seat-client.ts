@@ -413,7 +413,7 @@ export const openRoomSeat = (
       const lostBefore = race.client.lostControls();
       race.client.confirm(read.frame, read.hashed ? read.hash : null);
       if (race.client.lostControls() > lostBefore) {
-        clock.lostControl(now);
+        clock.lostControl(read.frame.tick, race.client.predicted.tick, now);
       }
       listeners.onConfirmed?.(race.client);
     }

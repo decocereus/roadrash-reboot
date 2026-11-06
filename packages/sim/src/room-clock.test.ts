@@ -161,17 +161,36 @@ describe("the room clock", () => {
     expect(lead(13_000)).toBeLessThanOrEqual(STEADY_LEAD + 3);
   });
 
-  it("rises when the room ran one of its own controls without it", () => {
+  it("rises once for each run of lost controls, not for every lost tick", () => {
     const clock = createRoomClock();
     clock.heardTick(100, 1000);
     clock.heardRtt(100, 1000);
     const steady = clock.target(1000);
-    clock.lostControl(1000);
-    clock.lostControl(1000);
+    clock.lostControl(101, 110, 1000);
+    clock.lostControl(105, 110, 1000);
+    clock.lostControl(110, 112, 1000);
+    expect(clock.target(1000)).toBe(steady + 2);
+    clock.lostControl(111, 114, 1000);
     expect(clock.target(1000)).toBe(steady + 4);
     expect(clock.target(1000 + FADED_MS)).toBe(
       steady + roomTick(1000 + FADED_MS) - roomTick(1000)
     );
+  });
+
+  it("counts a slow ping once when the typical round trip rises to meet it", () => {
+    const clock = createRoomClock();
+    clock.heardTick(100, 1000);
+    for (let sample = 0; sample < 10; sample += 1) {
+      clock.heardRtt(100, 1000);
+    }
+    for (let sample = 0; sample < 5; sample += 1) {
+      clock.heardRtt(400, 1000 + sample * PING_EVERY_MS);
+    }
+    const always = createRoomClock();
+    always.heardTick(100, 1000);
+    always.heardRtt(400, 1000);
+    const now = 1000 + 4 * PING_EVERY_MS;
+    expect(clock.target(now)).toBe(always.target(now));
   });
 
   it("calls a lead bloated when it runs far past what the round trip needs", () => {
@@ -180,6 +199,8 @@ describe("the room clock", () => {
     clock.heardRtt(100, 1000);
     expect(clock.leadBloated(118, 1000)).toBeFalsy();
     expect(clock.leadBloated(120, 1000)).toBeTruthy();
+    clock.heardRtt(400, 1000);
+    expect(clock.leadBloated(126, 1000)).toBeFalsy();
   });
 
   it("skips a step when far ahead and catches up when behind, at most four", () => {

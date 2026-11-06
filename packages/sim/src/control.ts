@@ -93,3 +93,14 @@ export const withoutButtons = (control: Control): Control => {
   const movement = control % BUTTONS_PLACE;
   return isControl(movement) ? movement : coasting;
 };
+
+export const BUTTONS_OF_A_CONTROL = [PUNCH, KICK, REMOUNT] as const;
+export type Button = (typeof BUTTONS_OF_A_CONTROL)[number];
+
+export const holds = (control: Control, button: Button): boolean =>
+  Math.floor(control / BUTTONS_PLACE / button) % 2 === 1;
+
+export const pressing = (control: Control, button: Button): Control => {
+  const pressed = control + button * BUTTONS_PLACE;
+  return holds(control, button) || !isControl(pressed) ? control : pressed;
+};
