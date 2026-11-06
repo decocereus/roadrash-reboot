@@ -92,6 +92,7 @@ export interface RoomClient {
 interface ShownHit {
   backed: boolean;
   readonly hit: HitEvent;
+  refused: boolean;
   tick: number;
 }
 
@@ -176,7 +177,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const batch: Control[] = [];
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
-  let shownHits: ShownHit[] = [];
+  const shownHits: ShownHit[] = [];
   const others = predicted.riders.filter((rider) => rider.id !== me);
   const wasAt = others.map(stillCorrection);
   let corrections = others.map(stillCorrection);
@@ -256,10 +257,11 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     const shown = shownHitOf(event, tick);
     if (shown) {
       shown.backed = true;
+      shown.refused = false;
       shown.tick = tick;
       return;
     }
-    shownHits.push({ backed: true, hit: { ...event }, tick });
+    shownHits.push({ backed: true, hit: { ...event }, refused: false, tick });
     if (event.rider === me) {
       hear(event);
     }
@@ -275,15 +277,12 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   };
 
   const refuseUnbacked = (): void => {
-    if (shownHits.every((shown) => shown.backed)) {
-      return;
-    }
     for (const shown of shownHits) {
-      if (!shown.backed) {
+      if (!shown.backed && !shown.refused) {
+        shown.refused = true;
         fights.push({ refused: shown.hit, tick: shown.tick });
       }
     }
-    shownHits = shownHits.filter((shown) => shown.backed);
   };
 
   const hearFights = (race: RaceState): void => {
@@ -317,10 +316,16 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       }
     }
     hearFights(confirmed);
+    const overdue = confirmed.tick - SAME_HIT_TICKS;
     for (const shown of shownHits) {
-      shown.backed = shown.tick >= confirmed.tick - SAME_HIT_TICKS;
+      shown.backed &&= shown.tick >= overdue;
     }
     refuseUnbacked();
+    for (let at = shownHits.length - 1; at >= 0; at -= 1) {
+      if ((shownHits[at]?.tick ?? overdue) < overdue) {
+        shownHits.splice(at, 1);
+      }
+    }
   };
 
   const rewind = (): void => {

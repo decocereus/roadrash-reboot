@@ -77,6 +77,14 @@ const strikesOf = (heard: readonly HeardFight[]) => {
   ).length;
 };
 
+const struckBy = (rider: RiderId) => ({
+  attack: "kick" as const,
+  kind: "hit" as const,
+  rider,
+  target: STRIKER,
+  weapon: "none" as const,
+});
+
 describe("how a rider's strike track plays what it hears", () => {
   it("plays a strike heard on its own tick from the first frame", () => {
     const { reaches } = played([kickAt(100)], 100, KICK.ticks + 1);
@@ -132,6 +140,32 @@ describe("how a rider's strike track plays what it hears", () => {
     const { striker } = played([kickAt(100)], 100, 2);
     fightTick(striker, true, 103);
     expect(reachOf(striker)).toBe(-1);
+  });
+
+  it("keeps another rider's flinch running when one striker's hit on the same target is refused", () => {
+    const guessed = riderIdAt(2);
+    const real = PLAYER_RIDER;
+    const cast = [
+      { fight: quietFight() },
+      { fight: quietFight() },
+      { fight: quietFight() },
+    ];
+    const struck = cast[1]?.fight ?? quietFight();
+    const HIT_AT = 84;
+    const DRAWN_AT = 80;
+    fightHeard(cast, { event: struckBy(guessed), tick: HIT_AT }, DRAWN_AT);
+    fightHeard(cast, { event: struckBy(real), tick: HIT_AT }, DRAWN_AT);
+    fightHeard(cast, { refused: struckBy(guessed), tick: HIT_AT }, DRAWN_AT);
+    const afterRefusal = fightFlinch(struck, 0, 0);
+    const later = 4;
+    for (let tick = 1; tick <= later; tick += 1) {
+      fightTick(struck, GROUNDED, DRAWN_AT + tick);
+    }
+    fightHeard(cast, { event: struckBy(real), tick: HIT_AT }, HIT_AT);
+    expect([afterRefusal, fightFlinch(struck, 0, 0)]).toStrictEqual([
+      1,
+      (HIT_STUN_TICKS - later) / HIT_STUN_TICKS,
+    ]);
   });
 
   it("flinches in full on a shown hit, not again when a correction moves it a tick", () => {

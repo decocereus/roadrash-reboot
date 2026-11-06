@@ -104,6 +104,7 @@ interface Swing {
   readonly roomMissesFirst?: number;
   readonly victim?: Control;
   readonly victimFrom?: number;
+  readonly victimTicks?: number;
 }
 
 const attackerHears = ({
@@ -111,6 +112,7 @@ const attackerHears = ({
   roomMissesFirst = 0,
   victim = riding,
   victimFrom = 0,
+  victimTicks = STEER_TICKS,
 }: Swing) => {
   const { client, room } = sideBySide(ATTACKER, gapX);
   const own = (tick: number): Control =>
@@ -118,7 +120,7 @@ const attackerHears = ({
       ? kicking
       : riding;
   const victimRides = (tick: number): Control =>
-    tick >= victimFrom && tick < victimFrom + STEER_TICKS ? victim : riding;
+    tick >= victimFrom && tick < victimFrom + victimTicks ? victim : riding;
   const isOwnHit = (event: RaceEvent) =>
     event.kind === "hit" && event.rider === ATTACKER;
   for (let tick = 1; tick <= OWN_LEAD; tick += 1) {
@@ -165,6 +167,19 @@ describe("an attacker's own hits, reconciled with the room", () => {
       guessed: 1,
       refused: [CONTACT_TICK],
       roomHits: [],
+    });
+  });
+
+  it("hears a hit once when a rollback refuses it and a later one finds it again", () => {
+    const { heardHits, roomHits } = attackerHears({
+      gapX: EDGE_OF_REACH_X,
+      victim: steerAway,
+      victimFrom: RIDE_TICKS - 6,
+      victimTicks: 2,
+    });
+    expect({ heard: heardHits.length, roomHits }).toStrictEqual({
+      heard: 1,
+      roomHits: [CONTACT_TICK],
     });
   });
 
