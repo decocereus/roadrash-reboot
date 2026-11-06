@@ -34,7 +34,14 @@ export const RoomConfigSchema = Schema.Struct({
   queueWaitSeconds: secondsBetween(5, 300),
   raceLimitSeconds: secondsBetween(120, 1200),
   seatHoldSeconds: secondsBetween(5, 120),
-});
+}).check(
+  Schema.makeFilter(
+    ({ awaySeconds, seatHoldSeconds }) =>
+      awaySeconds >= seatHoldSeconds ||
+      "awaySeconds is shorter than seatHoldSeconds",
+    { title: "a lobby AWAY no shorter than the race hold" }
+  )
+);
 
 export type RoomConfig = typeof RoomConfigSchema.Type;
 export type PublicRace = typeof PublicRaceSchema.Type;

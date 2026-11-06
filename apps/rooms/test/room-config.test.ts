@@ -39,6 +39,15 @@ describe("the room config", () => {
     expect(Schema.is(RoomConfigSchema)(noRoads)).toBeFalsy();
   });
 
+  it("refuses a lobby AWAY shorter than the race hold, and takes one as long", () => {
+    expect(
+      accepts({ ...launchRoomConfig, awaySeconds: 20, seatHoldSeconds: 30 })
+    ).toBeFalsy();
+    expect(
+      accepts({ ...launchRoomConfig, awaySeconds: 30, seatHoldSeconds: 30 })
+    ).toBeTruthy();
+  });
+
   it("lets the server pick any listed road for a public race, and only the road", () => {
     const { publicRace } = launchRoomConfig;
     const rules = Array.from({ length: publicRace.roads.length }, (_, seed) =>
