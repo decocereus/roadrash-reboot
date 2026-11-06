@@ -13,8 +13,9 @@ const FRAMES_PER_EASED_STEP = 6;
 const FRAMES_PER_EASED_SKIP = 3;
 const RAISE_FADE_MS = 2000;
 const LOST_CONTROL_RAISE_MS = 2 * TICK_MS;
-const JITTER_QUANTILE = 0.9;
-const JITTER_STEP_MS = 0.5;
+const ARRIVAL_WINDOW = 120;
+const ARRIVAL_WINDOW_MS = 2000;
+const EARLY_SHARE = 0.1;
 const BLOATED_FROM_TICKS = 12;
 
 export interface RoomClock {
@@ -47,6 +48,29 @@ export const createRoomClock = (): RoomClock => {
   let raisedAt = 0;
   let raisedThrough = 0;
   let jitterMs = 0;
+  const arrivals = new Float64Array(ARRIVAL_WINDOW);
+  const arrivedAt = new Float64Array(ARRIVAL_WINDOW).fill(
+    Number.NEGATIVE_INFINITY
+  );
+  const ordered = new Float64Array(ARRIVAL_WINDOW);
+  let arrivalAt = 0;
+  const lateSpread = (sample: number, now: number): number => {
+    arrivals[arrivalAt] = sample;
+    arrivedAt[arrivalAt] = now;
+    arrivalAt = (arrivalAt + 1) % ARRIVAL_WINDOW;
+    ordered.fill(Number.NaN);
+    let count = 0;
+    for (let at = 0; at < ARRIVAL_WINDOW; at += 1) {
+      if ((arrivedAt[at] ?? 0) > now - ARRIVAL_WINDOW_MS) {
+        ordered[count] = arrivals[at] ?? sample;
+        count += 1;
+      }
+    }
+    ordered.sort();
+    const earliest = ordered[count - 1] ?? sample;
+    const late = ordered[Math.floor(EARLY_SHARE * (count - 1))] ?? sample;
+    return Math.floor(earliest - late);
+  };
   let framesSinceEased = FRAMES_PER_EASED_STEP;
   const serverTick = (now: number): number =>
     lastArrival === 0
@@ -97,12 +121,7 @@ export const createRoomClock = (): RoomClock => {
           ? sample
           : Math.max(sample, offset - (now - lastArrival) * OFFSET_SAG_PER_MS);
       lastArrival = now;
-      jitterMs = Math.max(
-        0,
-        offset - sample > jitterMs
-          ? jitterMs + JITTER_STEP_MS * JITTER_QUANTILE
-          : jitterMs - JITTER_STEP_MS * (1 - JITTER_QUANTILE)
-      );
+      jitterMs = lateSpread(sample, now);
     },
     leadBloated: (predictedTick, now) =>
       predictedTick -
