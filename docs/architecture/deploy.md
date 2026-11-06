@@ -1,0 +1,11 @@
+# Deploy
+
+`.github/workflows/deploy.yml` deploys `prod` when the Quality run for a push to `main` passes, and only when that commit is still the tip of `main`. A red, cancelled or skipped Quality run deploys nothing. The `prod` job checks the tip again just before `alchemy deploy`, and a commit that `main` has moved past deploys nothing, because the newer commit's own run decides. Re-running CI on an old commit, retrying an old deploy, or a deploy that waited behind another one therefore never rolls production back. Deploy runs share the `deploy-prod` concurrency group with `queue: max` and no cancelling, so a deploy in progress always finishes and every waiting run gets its turn in order, where the tip check lets only the current tip deploy. Without `queue: max` a newly waiting run cancels the one already waiting, so a re-run of an old commit could cancel the tip's deploy. GitHub ignores `queue` in a job's `concurrency`, so the group stays at workflow level. `workflow_dispatch` deploys the chosen ref by hand without waiting for CI. The `prod` job runs `alchemy deploy --stage prod`, then checks that the site answers and runs `pnpm art:pull` against it, which fetches every manifest key and checks its hash. The stack keeps its deploy state in the account's Alchemy state store, the `alchemy-state-store` Worker, as the `Rushline` stack, so CI and a local deploy see the same resources. Other projects on the account keep their own stacks in the same store.
+
+The job runs in the GitHub `production` environment, which only `main` can deploy to. Its one secret, `CLOUDFLARE_API_TOKEN`, is the account-owned token `rushline-deploy-ci`. Alchemy's own CI login uses it to reach the state store, and it holds three permissions.
+
+- Workers Scripts Write deploys the Worker.
+- Workers R2 Storage Write manages the bucket.
+- Secrets Store Write lets Alchemy bind the state store's token into a short-lived preview Worker and upgrade the store.
+
+A local `alchemy deploy --stage prod` uses the Alchemy login instead. `alchemy dev` keeps its state in the local `.alchemy` folder and needs no Cloudflare login. A stage other than `prod` would claim the same bucket name, so only `prod` is deployed. `pnpm dev` runs the bucket in the local simulator.

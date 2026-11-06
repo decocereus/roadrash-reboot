@@ -2,7 +2,7 @@ import type { FeatureEntry } from "./feature-map.ts";
 
 export const roomFeatures: readonly FeatureEntry[] = [
   {
-    docs: ["docs/architecture.md#the-bar-lobby"],
+    docs: ["docs/architecture/browser-client.md#the-bar-lobby"],
     id: "bar-lobby",
     kind: "feature",
     owns: [
@@ -36,8 +36,8 @@ export const roomFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#race-rooms",
-      "docs/coding-standards.md#keep-the-simulation-deterministic",
+      "docs/architecture/race-rooms.md#race-rooms",
+      "docs/standards/simulation.md#keep-the-simulation-deterministic",
       "docs/design/game-design.md#12-multiplayer",
     ],
     id: "race-room",

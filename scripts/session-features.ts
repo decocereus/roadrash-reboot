@@ -3,8 +3,8 @@ import type { FeatureEntry } from "./feature-map.ts";
 export const sessionFeatures: readonly FeatureEntry[] = [
   {
     docs: [
-      "docs/architecture.md#browser-client",
-      "docs/coding-standards.md#keep-each-module-to-its-job",
+      "docs/architecture/browser-client.md#browser-client",
+      "docs/standards/web-app.md#keep-each-module-to-its-job",
     ],
     id: "race-session",
     kind: "platform",

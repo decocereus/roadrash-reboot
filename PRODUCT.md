@@ -25,7 +25,7 @@ Road Rash's riding and picture composition (a camera that faces along the road, 
 ## Operating Context
 
 - Modes: Career (your own rider, money, the bike shop, the cast, the story), Single Race (no money, nothing written to the career), and Multiplayer (rooms joined with a code, plus a public Quick Race). All three ship at launch on the same simulation.
-- Launch scope: three cities (Madrid, Mumbai, and a Bay Area mountain road), six parody celebrities, ten riders a race, and a career of three levels across the three cities plus a finale. `docs/architecture.md` has the build order.
+- Launch scope: three cities (Madrid, Mumbai, and a Bay Area mountain road), six parody celebrities, ten riders a race, and a career of three levels across the three cities plus a finale. `docs/architecture/build-order.md` has the build order.
 - Accounts: anyone can play, and start a career, as a guest, and a guest's career saves in the browser. Signing in, with Discord, Google, or an emailed link, adds saving across devices and is required to buy something or to race online.
 - Menus are keyboard first: arrows or WASD move, Enter confirms, Escape goes back, everything is also clickable, and a gamepad maps the same way.
 - Every screen outside the race is a place or an object in the world: the Lowside bar, its corkboard, the garage, a ticket. Flow and copy are in `docs/design/screens.md`.
@@ -40,7 +40,7 @@ Road Rash's riding and picture composition (a camera that faces along the road, 
 - The game is free. Money comes from sponsors, who buy billboards along the roads, and from cosmetics: character skins and bike skins at listed prices. Nothing sold changes speed or handling, there are no random loot boxes, and bikes are earned with prize money, never bought.
 - Celebrities are parodies: a twisted name on a recognisable caricature, never a real name, photo, or exact likeness. Jokes come from public, well-known memes and never claim real crimes or private facts. Bike makers get parody brands with no logos. A lawyer reviews the cast, the brands, and the store before launch.
 - Nothing of Electronic Arts' is used. "Road Rash" is their trademark. Every name, road, bike, rider, line, piece of art, and sound is original.
-- Rules and numbers live in `docs/architecture.md` and `docs/design/game-design.md`; the roads in `docs/design/tracks.md`.
+- Rules and numbers live in `docs/architecture.md`, the area files under `docs/architecture/`, and `docs/design/game-design.md`; the roads in `docs/design/tracks.md`.
 - Undecided: the final name, where the database is hosted, the payment provider (Polar or Dodo Payments), and cosmetic prices.
 - Parked: a classic mode whose interface closely resembles Road Rash's. It is low priority and is not to be planned for now.
 

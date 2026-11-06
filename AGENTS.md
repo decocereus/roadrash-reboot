@@ -1,17 +1,35 @@
 # Repository guidance
 
-Read `docs/architecture.md` first. It defines the game, the riding model, and the build order.
+Read three files before any work: this one, `docs/architecture.md`, which defines the game and the platform and links each area's design, and `docs/coding-standards.md`, which holds the rules that apply to every change. Then read what the route table sends you to for each path you change. Each rule names the lint rule or `pnpm` script that enforces it, or says `judgment`.
 
 Find your way with `docs/feature-map.md` before you search. Each entry names one feature's files, tests, docs, verify recipes and perf budgets. The map is generated from `scripts/features.ts`. When you add, move or delete a source file, update that manifest and run `pnpm feature-map`; `pnpm check:feature-map` fails until you do.
 
-Read `docs/coding-standards.md` before you write or review code. It holds every rule for this repository: module ownership, determinism, tuning, Effect at the edges, types, comments, tests, and verification. Each rule names the lint rule or `pnpm` script that enforces it, or says `judgment`. `docs/errors.md` covers the telemetry endpoint, the uploader, and the career save. `docs/observability.md` covers play-test telemetry and frame profiles.
+## Read before you change a path
+
+A path that matches several rows takes every file they name. Rules are binding; read every file in the Rules column for the paths you change, before you write or review code there. Design files say how that area is built. `pnpm check:rule-routes` fails when a rule table sits in a file this table does not route.
+
+| Paths | Rules | Design |
+| --- | --- | --- |
+| `**` | `docs/coding-standards.md` | `docs/architecture.md` |
+| `packages/sim/**`, `tools/handling/**`, `tools/replay/**` | `docs/standards/simulation.md` | `docs/architecture/riding-model.md`, `docs/architecture/race-setup.md`, `docs/handling-matrix.md` |
+| `packages/track/**`, `tools/madrid/**`, `tools/road-test/**` | `docs/standards/simulation.md` | `docs/architecture/tracks.md`, `docs/madrid-corridor.md` |
+| `packages/career/**`, `packages/content/**` | `docs/standards/simulation.md` | `docs/architecture/career.md`, `docs/architecture/race-setup.md` |
+| `apps/web/src/game/**`, `apps/web/test/**` | `docs/standards/renderer.md`, `docs/standards/simulation.md` | `docs/architecture/browser-client.md`, `docs/gpu-work.md` |
+| `apps/web/src/*.ts`, `apps/web/src/*.tsx`, `apps/web/src/components/**`, `apps/web/src/routes/**`, `apps/web/src/career/**`, `packages/ui/**` | `docs/standards/web-app.md` | `docs/architecture/browser-client.md` |
+| `apps/rooms/**`, `tools/rooms/**` | `docs/standards/effect.md`, `docs/observability.md` | `docs/architecture/race-rooms.md`, `docs/durable-object-http.md` |
+| `apps/web/src/server/**`, `apps/web/src/diagnostics/**`, `apps/web/src/routes/api/**`, `packages/telemetry/**` | `docs/standards/effect.md`, `docs/errors.md`, `docs/observability.md` | `docs/architecture/browser-client.md` |
+| `apps/web/src/asset-runtime.ts`, `apps/web/src/assets/**`, `apps/web/src/rules/**`, `apps/web/src/career/save*.ts`, `packages/career/src/save*.ts`, `packages/track/src/madrid-*.ts` | `docs/standards/effect.md`, `docs/errors.md` | `docs/architecture/game-art.md`, `docs/architecture/career.md` |
+| `tools/perf/**`, `tools/verify/**`, `packages/devtools/**` | `docs/standards/effect.md`, `docs/observability.md` | `docs/gpu-work.md` |
+| `tools/art/**`, `tools/road-test/**` | `docs/standards/effect.md` | `docs/architecture/game-art.md` |
+| `tools/blender/**` | None beyond the core | `docs/architecture/game-art.md`, `docs/gpu-work.md` |
+| `scripts/**`, `tools/oxlint/**`, `.github/**`, `oxlint.config.ts`, `package.json`, `AGENTS.md`, `docs/coding-standards.md`, `docs/standards/**` | `docs/standards/tooling.md` | `docs/architecture/deploy.md` |
 
 ## How to work here
 
 The code is the record of how this repository does things. The next agent copies what you leave, so leave only what is worth copying.
 
-- Check a pattern against `docs/coding-standards.md` before you copy it. If the nearest example breaks a rule or works around a problem, fix the cause. Build the better shape, move every caller to it in the same change, and delete the old one. Never leave two ways to do the same thing.
-- Turn a repeated correction into structure. When a review or a fix corrects the same mistake a second time, or one mistake let a broken change pass its checks, add a lint rule in `tools/oxlint/rushline` or a check in `scripts/`. Give it a row in `docs/coding-standards.md` and fix every existing instance in the same pull request. There are no exemptions, so a rule that cannot hold everywhere is not ready. Mark a rule `judgment` only when no rule, check or type can express it.
+- Check a pattern against the rules for its paths before you copy it. If the nearest example breaks a rule or works around a problem, fix the cause. Build the better shape, move every caller to it in the same change, and delete the old one. Never leave two ways to do the same thing.
+- Turn a repeated correction into structure. When a review or a fix corrects the same mistake a second time, or one mistake let a broken change pass its checks, add a lint rule in `tools/oxlint/rushline` or a check in `scripts/`. Give it a row in the rule doc that the route table below sends that path to, and fix every existing instance in the same pull request. There are no exemptions, so a rule that cannot hold everywhere is not ready. Mark a rule `judgment` only when no rule, check or type can express it.
 - Make wrong states impossible to write before you guard against them. A list that must have an element is a non-empty tuple. A finite set of values is one `as const` tuple that both its type and its schema come from. An operation that must decide what every variant means is an exhaustive `switch` with no catch-all default.
 - Put each rule in the package that owns it, and write it as data where you can, such as a table, a union or a state machine. `packages/sim` owns the game rules, `packages/career` owns the career rules, and the browser draws the race and forwards input.
 - Delete before you add. Remove dead code, one-caller wrappers and stale fallbacks first, then build on what is left. Fix what a player, a caller or a check can actually hit, and add no fallback for a state the types already rule out.
@@ -24,17 +42,8 @@ The code is the record of how this repository does things. The next agent copies
 
 - A session that starts in a checkout behind `origin/main` gets one warning with the commit count, from `scripts/stale-checkout.ts` through `.claude/settings.json` and `.codex/hooks.json`. Merge or rebase onto `origin/main` before you build on, review or merge that branch.
 - Run `pnpm check` and `pnpm build` after source changes, or `pnpm verify` for both.
-- Look at the running game after any change to `apps/web/src/game` or to handling. Passing tests do not show that it plays well.
 
-## Where GPU work runs
-
-Run GPU-heavy work on `vimaan`, the Linux laptop with an NVIDIA GTX 1650 Ti and an Intel UHD 630. That covers `rv` verification of the renderer, the scene and assets, frame profiles, `pnpm perf:gpu` and Blender renders. `rv` starts and stops its own desktop session there. `.claude/skills/verify-rushline/SKILL.md` has the steps.
-
-- Book vimaan before you use it, and never because another lane said it is free. From the Mac, `pnpm vimaan book <lane> <minutes> <purpose>` prints `BOOKING=<id>`, and `pnpm vimaan status` shows who holds vimaan, for what, until when, and who waits. Wait for your turn with `pnpm vimaan wait <id>` as a background command: in Claude Code, Bash with `run_in_background` and `timeout: 7200000`. A timeout or a dropped link just means run it again. Run jobs with `pnpm vimaan run <id> --cwd <dir on vimaan> <label> -- <command>`, and release with `pnpm vimaan release <id>`. If vimaan is unreachable, report that and stop. Do not quietly run the work on the machine you are on.
-- A T3 child on vimaan, found with `t3_environment_links` and sent with `delegate_task` and `target.environmentId`, may do interactive work under the lane's booking with `RUSHLINE_BOOKING=<id>`. The parent wakes from its own `pnpm vimaan wait <id> --end`, never from the child's completion.
-- vimaan is for GPU work: frame-rate campaigns, `pnpm perf:gpu` and render captures. Multiplayer seats and kick or fight checks run on the Mac as two windows with `pnpm rooms:lag` or `pnpm rooms:fights`. vimaan joins a multiplayer check only for a final production pass, booked like any other job.
-- Compare frame numbers only within one machine. Each host with a frame budget has its own rows in `tools/perf/budgets.json`. `linux-intel` has its own rows, measured on the preset a UHD 630 gets by itself.
-- vimaan does not replace two checks. Its panel stops at 60 Hz, so check 120 Hz on a Mac with a ProMotion display. Its Intel GPU only stands in for thin laptops, so a change that claims a frame-rate gain there still needs a play test on a MacBook Air or Chromebook class machine.
+GPU-heavy work, such as `rv` checks of the renderer, the scene and assets, frame profiles, `pnpm perf:gpu` and Blender renders, runs on `vimaan` under a booking. Read `docs/gpu-work.md` before any of it.
 
 ## Agent skills
 

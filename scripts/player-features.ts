@@ -16,7 +16,7 @@ export const sceneCounts = [
 export const playerFeatures: readonly FeatureEntry[] = [
   {
     docs: [
-      "docs/architecture.md#riding-model",
+      "docs/architecture/riding-model.md#riding-model",
       "docs/handling-matrix.md#fields",
       "docs/design/game-design.md#6-bike-catalogue",
     ],
@@ -47,7 +47,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#riding-model",
+      "docs/architecture/riding-model.md#riding-model",
       "docs/design/game-design.md#condition-by-speed",
       "docs/design/game-design.md#the-fall-by-speed",
     ],
@@ -74,7 +74,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#riding-model",
+      "docs/architecture/riding-model.md#riding-model",
       "docs/design/tracks.md#the-crest-rule",
       "docs/design/tracks.md#carriers-and-humps",
     ],
@@ -94,7 +94,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#hazards-as-race-state",
+      "docs/architecture/riding-model.md#hazards-as-race-state",
       "docs/design/tracks.md#hazards",
       "docs/design/tracks.md#where-hazards-lie",
     ],
@@ -117,7 +117,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     verify: ["hazards.md"],
   },
   {
-    docs: ["docs/architecture.md#tracks"],
+    docs: ["docs/architecture/tracks.md#tracks"],
     id: "traffic",
     kind: "feature",
     owns: [
@@ -136,7 +136,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#junctions-and-crossings",
+      "docs/architecture/tracks.md#junctions-and-crossings",
       "docs/design/tracks.md#junctions-and-crossings",
     ],
     id: "junctions",
@@ -169,7 +169,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#riding-model",
+      "docs/architecture/riding-model.md#riding-model",
       "docs/design/game-design.md#7-weapons",
     ],
     id: "combat",
@@ -189,7 +189,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#riding-model",
+      "docs/architecture/riding-model.md#riding-model",
       "docs/design/game-design.md#8-police",
     ],
     id: "police",
@@ -204,7 +204,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#riding-model",
+      "docs/architecture/riding-model.md#riding-model",
       "docs/design/game-design.md#pilot-rules-two-riders-need",
     ],
     id: "pilot",
@@ -222,7 +222,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     verify: [],
   },
   {
-    docs: ["docs/architecture.md#bike-and-rider-tables"],
+    docs: ["docs/architecture/race-setup.md#bike-and-rider-tables"],
     id: "content-tables",
     kind: "feature",
     owns: [
@@ -243,7 +243,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#race-setup-and-cast",
+      "docs/architecture/race-setup.md#race-setup-and-cast",
       "docs/design/game-design.md#9-rival-cast",
       "docs/design/game-design.md#10-memory",
     ],
@@ -270,7 +270,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#career",
+      "docs/architecture/career.md#career",
       "docs/design/game-design.md#5-economy",
     ],
     id: "career-money",
@@ -299,7 +299,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#career",
+      "docs/architecture/career.md#career",
       "docs/design/game-design.md#4-career-structure",
       "docs/design/game-design.md#11-story",
     ],
@@ -363,7 +363,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/design/screens.md#6-race-hud",
       "docs/design/art-direction.md#hud-style",
       "DESIGN.md#speedometer",
@@ -389,7 +389,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/design/art-direction.md#camera-rules",
     ],
     id: "camera",
@@ -404,7 +404,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/design/art-direction.md#audio-direction",
     ],
     id: "audio",
@@ -419,7 +419,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/design/art-direction.md#palette",
       "docs/design/art-direction.md#regions",
     ],
@@ -457,7 +457,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/design/art-direction.md#riders-and-bikes",
       "docs/design/art-direction.md#budget-and-build",
     ],
@@ -489,7 +489,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
   },
   {
     docs: [
-      "docs/architecture.md#browser-client",
+      "docs/architecture/browser-client.md#browser-client",
       "docs/observability.md#frame-profiles",
     ],
     id: "frame-pacing",

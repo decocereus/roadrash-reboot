@@ -24,6 +24,11 @@ const checks: readonly Check[] = [
   { command: ["pnpm", "lint:rules"], name: "lint rules", stage: "static" },
   { command: ["pnpm", "check:rules"], name: "rules", stage: "static" },
   {
+    command: ["pnpm", "check:rule-routes"],
+    name: "rule routes",
+    stage: "static",
+  },
+  {
     command: ["pnpm", "check:css-comments"],
     name: "css comments",
     stage: "static",
