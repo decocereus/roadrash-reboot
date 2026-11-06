@@ -23,8 +23,38 @@ runRule("rushline/player-copy", playerCopyRule, {
       errors: [{ messageId: "emDash" }],
       filename: "screen.tsx",
     },
+    {
+      code: 'const line = "Wait\\u2014go";',
+      errors: [{ messageId: "emDash" }],
+      filename: "screen.tsx",
+    },
+    {
+      code: 'const line = "\\u0041I riders";',
+      errors: [{ messageId: "robot" }],
+      filename: "screen.tsx",
+    },
+    {
+      code: 'const head = <h2 title="Road &middot; Tier">Road</h2>;',
+      errors: [{ messageId: "middot" }],
+      filename: "screen.tsx",
+    },
+    {
+      code: "const line = <p>Wait &mdash; go</p>;",
+      errors: [{ messageId: "emDash" }],
+      filename: "screen.tsx",
+    },
+    {
+      code: "const line = <p>Wait &#8212; go</p>;",
+      errors: [{ messageId: "emDash" }],
+      filename: "screen.tsx",
+    },
   ],
   valid: [
+    {
+      code: "const line = <p>Fast &amp; loud</p>;",
+      filename: "screen.tsx",
+    },
+    "const pattern = /AI/u;",
     {
       code: "const Fill = () => <li>{left} street riders join to make 10.</li>;",
       filename: "screen.tsx",

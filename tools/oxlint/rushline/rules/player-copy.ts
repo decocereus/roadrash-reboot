@@ -1,6 +1,26 @@
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree } from "@oxlint/plugins";
 
+const entities: Readonly<Record<string, string>> = {
+  centerdot: "·",
+  mdash: "—",
+  middot: "·",
+};
+
+const decodeEntities = (text: string): string =>
+  text.replaceAll(
+    /&(?:#x(?<hex>[\da-f]+)|#(?<decimal>\d+)|(?<name>[a-z]+));/giu,
+    (whole, hex?: string, decimal?: string, name?: string) => {
+      if (hex !== undefined) {
+        return String.fromCodePoint(Number.parseInt(hex, 16));
+      }
+      if (decimal !== undefined) {
+        return String.fromCodePoint(Number(decimal));
+      }
+      return entities[name ?? ""] ?? whole;
+    }
+  );
+
 const offences = [
   { messageId: "robot", pattern: /\bAI\b/u },
   { messageId: "emDash", pattern: /—/u },
@@ -18,10 +38,17 @@ export const playerCopyRule = defineRule({
     };
     return {
       JSXText(node) {
-        check(node, node.value);
+        check(node, decodeEntities(node.value));
       },
       Literal(node) {
-        check(node, context.sourceCode.getText(node));
+        if (typeof node.value === "string") {
+          check(
+            node,
+            node.parent.type === "JSXAttribute"
+              ? decodeEntities(node.value)
+              : node.value
+          );
+        }
       },
       TemplateElement(node) {
         check(node, node.value.cooked ?? node.value.raw);
