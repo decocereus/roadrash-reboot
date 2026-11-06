@@ -3,7 +3,7 @@ import type { Random } from "@racer/track/random";
 import { describe, expect, it } from "vitest";
 
 import { coasting, controlOf } from "./control.ts";
-import { riderAt, track } from "./race-fixtures.ts";
+import { riderAt, ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import type { RoomClient } from "./room-client.ts";
@@ -142,11 +142,11 @@ const race = (riders: readonly Rider[], ticks: number): Session => {
     defaultSetup(track, 7),
     riders.map((rider) => rider.id)
   );
-  const room = createRoom(setup);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
   const random = createRandom(11);
   const seated = riders.map((rider) => ({
     ...rider,
-    client: createRoomClient(setup, rider.id),
+    client: createRoomClient(setup, rider.id, ROOM_LIMIT_TICKS),
     down: linkOf(),
     up: linkOf(),
   }));
@@ -318,7 +318,10 @@ describe("a race room", () => {
   });
 
   it("a silent seat holds its last steer and pedals without the buttons, then coasts, then goes to the pilot", () => {
-    const room = createRoom(roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]));
+    const room = createRoom(
+      roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]),
+      ROOM_LIMIT_TICKS
+    );
     const punching = controlOf({
       ...neutralInput,
       punch: true,
@@ -347,8 +350,8 @@ describe("a race room", () => {
 
   it("a client that predicts sixteen ticks before it writes sends every one of them, eight to a packet", () => {
     const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
-    const room = createRoom(setup);
-    const client = createRoomClient(setup, PLAYER_RIDER);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
     const ridden = Array.from({ length: 16 }, (_, at) =>
       controlOf({ ...neutralInput, steer: at / 16, throttle: 1 })
     );
@@ -378,7 +381,7 @@ describe("a race room", () => {
 
   it("a rider who leaves is handed to the pilot on the next tick and later inputs change nothing", () => {
     const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER, RIVAL]);
-    const room = createRoom(setup);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
     const full = controlOf({ ...neutralInput, throttle: 1 });
     room.accept(PLAYER_RIDER, 1, [full, full]);
     room.accept(RIVAL, 1, [full, full]);
@@ -393,7 +396,10 @@ describe("a race room", () => {
   });
 
   it("an input for a tick already ridden is late, one past the horizon is ahead, and the first input for a tick wins", () => {
-    const room = createRoom(roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]));
+    const room = createRoom(
+      roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]),
+      ROOM_LIMIT_TICKS
+    );
     const full = controlOf({ ...neutralInput, throttle: 1 });
     const brake = controlOf({ ...neutralInput, brake: 1 });
     room.step();
@@ -419,7 +425,10 @@ describe("a race room", () => {
   });
 
   it("hashes the race every second of ticks", () => {
-    const room = createRoom(roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]));
+    const room = createRoom(
+      roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]),
+      ROOM_LIMIT_TICKS
+    );
     const hashed: number[] = [];
     for (let tick = 1; tick <= HASH_EVERY * 3; tick += 1) {
       room.step();

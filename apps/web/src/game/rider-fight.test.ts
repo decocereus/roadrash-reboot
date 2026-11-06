@@ -1,7 +1,7 @@
 import { HIT_STUN_TICKS } from "@racer/sim/combat";
 import { controlOf } from "@racer/sim/control";
 import { defaultSetup, neutralInput } from "@racer/sim/race";
-import { track } from "@racer/sim/race-fixtures";
+import { ROOM_LIMIT_TICKS, track } from "@racer/sim/race-fixtures";
 import { createRoom, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "@racer/sim/state";
@@ -246,8 +246,8 @@ const raceSeenBy = (
   }: Watching = {}
 ) => {
   const setup = roomSetup(defaultSetup(track, 3), [...seats]);
-  const room = createRoom(setup);
-  const client = createRoomClient(setup, me);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const client = createRoomClient(setup, me, ROOM_LIMIT_TICKS);
   for (const state of [room.state, client.confirmed, client.predicted]) {
     const victim = riderOf(state.riders, VICTIM);
     const attacker = riderOf(state.riders, ATTACKER);

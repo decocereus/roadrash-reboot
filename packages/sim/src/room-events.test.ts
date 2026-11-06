@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { controlOf } from "./control.ts";
-import { track } from "./race-fixtures.ts";
+import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import { createRoom, roomSetup } from "./room.ts";
@@ -29,8 +29,8 @@ interface Heard {
 
 const sideBySide = (me: RiderId = VICTIM, gapX = SIDE_BY_SIDE_X) => {
   const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
-  const room = createRoom(setup);
-  const client = createRoomClient(setup, me);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const client = createRoomClient(setup, me, ROOM_LIMIT_TICKS);
   for (const state of [room.state, client.confirmed, client.predicted]) {
     const near = riderOf(state.riders, VICTIM);
     const far = riderOf(state.riders, ATTACKER);
@@ -233,8 +233,8 @@ describe("what a client hears of another rider's fight", () => {
 
   it("doesn't hear its own predicted kick a second time when the room confirms it", () => {
     const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
-    const room = createRoom(setup);
-    const client = createRoomClient(setup, VICTIM);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, VICTIM, ROOM_LIMIT_TICKS);
     let attacks = 0;
     const count = (): void => {
       for (const event of client.takeEvents()) {
@@ -316,8 +316,8 @@ describe("what a client hears of another rider's fight", () => {
 
 const steering = (lead: number) => {
   const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
-  const room = createRoom(setup);
-  const client = createRoomClient(setup, VICTIM);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const client = createRoomClient(setup, VICTIM, ROOM_LIMIT_TICKS);
   const swerve = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
   for (let tick = 0; tick < lead; tick += 1) {
     client.predict(riding);

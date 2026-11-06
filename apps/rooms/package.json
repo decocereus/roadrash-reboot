@@ -11,6 +11,7 @@
     "./queue": "./src/queue.ts",
     "./queue-client": "./src/queue-client.ts",
     "./queue-messages": "./src/queue-messages.ts",
+    "./room-config": "./src/room-config.ts",
     "./room-id": "./src/room-id.ts",
     "./notes": "./src/notes.ts",
     "./room-run": "./src/room-run.ts",

@@ -13,10 +13,9 @@ import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RoomNote } from "./notes.ts";
 import { rosterOf, seatFor } from "./race-seat.ts";
 import type { Seat } from "./race-seat.ts";
+import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
 import { TAPE_VERSION, tapeHeaderName, tapeKey, tapePartName } from "./tape.ts";
-
-export const READY_DEADLINE_MS = 20_000;
 
 export interface RacePorts {
   readonly build: string;
@@ -57,7 +56,9 @@ export const buildRace = <Person extends Sitter>(
   const seed = ports.seed();
   const raceId = ports.raceId();
   const { humans, road, setup } = seatedRace(seed, gathered.length, rule);
-  const room = createRoom(setup);
+  const { loadDeadlineSeconds, raceLimitSeconds, seatHoldSeconds } =
+    ports.config;
+  const room = createRoom(setup, ticksOf(raceLimitSeconds));
   const digest = hexOfWords(room.digest);
   ports.saveTape(
     tapeKey(raceId, tapeHeaderName),
@@ -88,10 +89,11 @@ export const buildRace = <Person extends Sitter>(
   const manifest: RaceManifest = {
     build: ports.build,
     contentHash: [...room.digest],
-    loadingDeadlineMs: READY_DEADLINE_MS,
+    loadingDeadlineMs: msOf(loadDeadlineSeconds),
     protocol: ROOM_PROTOCOL,
     raceId,
-    reconnect: { holdSeconds: ports.config.seatHoldSeconds },
+    raceLimitSeconds,
+    reconnect: { holdSeconds: seatHoldSeconds },
     roster: rosterOf(
       room,
       firstRacers(setup, Number.POSITIVE_INFINITY),

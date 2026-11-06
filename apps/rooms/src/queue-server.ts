@@ -11,6 +11,7 @@ import type { HostSocket } from "./host.ts";
 import { SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import { createQueue } from "./queue.ts";
+import { launchRoomConfig } from "./room-config.ts";
 import { publicRoomId } from "./room-id.ts";
 
 const LOCAL_BUILD = "local";
@@ -31,6 +32,7 @@ export class QueueServer extends Cloudflare.DurableObject<QueueServer>()(
           setTimeout(wake, ms);
         },
         build,
+        config: launchRoomConfig,
         note: (line) => {
           console.log(JSON.stringify(line));
         },

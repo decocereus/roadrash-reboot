@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { AWAY_MS } from "../src/lobby.ts";
 import { SEAT_LEFT } from "../src/messages.ts";
-import { advanceHearing, lastLobby, room } from "./host-harness.ts";
+import { advanceHearing, AWAY_MS, lastLobby, room } from "./host-harness.ts";
 
 describe("a rider who presses Leave", () => {
   it("is gone from the lobby at once, and the room makes the next rider host", () => {

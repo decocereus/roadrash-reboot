@@ -22,7 +22,12 @@ import { seatedCount } from "../src/manifest.ts";
 import { decodeRoomMessage, encodeLobbyCommand } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
-import { launchRoomConfig } from "../src/room-config.ts";
+import {
+  launchRoomConfig,
+  msOf,
+  publicRuleFor,
+  ticksOf,
+} from "../src/room-config.ts";
 
 export const nearby = {
   asn: 64_512,
@@ -42,7 +47,12 @@ export const sameBuild = (key = "") => {
 };
 export const TICK_MS = 1000 / 60;
 export const START_DELAY_MS = 3000;
-export const HOLD_MS = launchRoomConfig.seatHoldSeconds * 1000;
+export const HOLD_MS = msOf(launchRoomConfig.seatHoldSeconds);
+export const AWAY_MS = msOf(launchRoomConfig.awaySeconds);
+export const CUSTOM_START_MS = msOf(launchRoomConfig.customStartSeconds);
+export const PUBLIC_START_MS = msOf(launchRoomConfig.publicStartSeconds);
+export const PUBLIC_GATHER_MS = msOf(launchRoomConfig.publicGatherSeconds);
+export const PUBLIC_RULE = publicRuleFor(launchRoomConfig.publicRace, 0);
 
 export interface Clock extends HostPorts {
   readonly advance: (ms: number) => void;
@@ -261,7 +271,11 @@ export const clientOf = (socket: FakeSocket): RoomClient => {
     seatedCount(started.manifest),
     started.manifest.rule
   );
-  return createRoomClient(setup, riderIdAt(started.you));
+  return createRoomClient(
+    setup,
+    riderIdAt(started.you),
+    ticksOf(started.manifest.raceLimitSeconds)
+  );
 };
 
 export const race = (

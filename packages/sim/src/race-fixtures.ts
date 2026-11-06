@@ -28,6 +28,7 @@ import type {
 } from "./state.ts";
 
 export const KMH = 3.6;
+export const ROOM_LIMIT_TICKS = 6 * 60 * TICK_RATE;
 
 export const track = compileTrack(ridgeRoad);
 

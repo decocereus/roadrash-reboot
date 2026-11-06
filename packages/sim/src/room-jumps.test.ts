@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { controlOf } from "./control.ts";
-import { track } from "./race-fixtures.ts";
+import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
 import { createRoom, INPUT_HORIZON, roomSetup } from "./room.ts";
@@ -18,8 +18,8 @@ const veering = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
 
 const rideTogether = () => {
   const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER, RIVAL]);
-  const room = createRoom(setup);
-  const client = createRoomClient(setup, PLAYER_RIDER);
+  const room = createRoom(setup, ROOM_LIMIT_TICKS);
+  const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
   const step = (mine: Control, rival: Control): void => {
     room.accept(PLAYER_RIDER, room.state.tick + 1, [mine]);
     room.accept(RIVAL, room.state.tick + 1, [rival]);

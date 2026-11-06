@@ -1,6 +1,5 @@
 import {
   policeChoices,
-  publicRoomRule,
   ROOM_FIELD_SIZE,
   trafficChoices,
 } from "@racer/career/room-race";
@@ -16,6 +15,7 @@ import type {
   RoomLobbyMessage,
   RoomPreview,
 } from "@racer/rooms/messages";
+import { launchRoomConfig } from "@racer/rooms/room-config";
 import type { SeatPhase } from "@racer/rooms/seat-client";
 import { bikes } from "@racer/sim/bikes";
 import { tiers } from "@racer/sim/difficulty";
@@ -28,6 +28,8 @@ import { cn } from "@racer/ui/utils";
 import { useState } from "react";
 
 import { RiderChip } from "./shared.tsx";
+
+const { publicRace } = launchRoomConfig;
 
 const trafficLabels = {
   heavy: "Heavy",
@@ -496,10 +498,10 @@ export const QueueScreen = ({
         <p className="font-display text-quote text-paper">Public rules</p>
         <div className="flex flex-col gap-2">
           <RuleLine label="Road" value="The server picks it" />
-          <RuleLine label="Tier" value={String(publicRoomRule.tier)} />
+          <RuleLine label="Tier" value={String(publicRace.tier)} />
           <RuleLine
             label="Bike"
-            value={`${bikes[publicRoomRule.bikeId].name}, same for all`}
+            value={`${bikes[publicRace.bikeId].name}, same for all`}
           />
           <RuleLine label="Catch-up" value="None, for humans or AI" />
           <RuleLine label="Rank" value="Doesn't count" />
