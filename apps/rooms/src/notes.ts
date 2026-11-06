@@ -78,6 +78,22 @@ const Left = Schema.Struct({
   tick: Schema.Number,
 });
 
+const Held = Schema.Struct({
+  closeCode: orMissing(Schema.Number),
+  kind: Schema.Literal("held"),
+  raceId: Schema.String,
+  rider: Schema.Number,
+  tick: Schema.Number,
+});
+
+const Rejoined = Schema.Struct({
+  awayMs: Schema.Number,
+  catchUpTicks: Schema.Number,
+  kind: Schema.Literal("rejoined"),
+  raceId: Schema.String,
+  rider: Schema.Number,
+});
+
 const Stats = Schema.Struct({
   kind: Schema.Literal("stats"),
   raceId: Schema.String,
@@ -122,6 +138,8 @@ export const RoomNoteSchema = Schema.Union([
   Started,
   Countdown,
   Left,
+  Held,
+  Rejoined,
   Stats,
   Browser,
   Ended,
@@ -134,3 +152,5 @@ export type RaceCountdown = typeof Countdown.Type;
 export type RaceStatsNote = typeof Stats.Type;
 export type RaceBrowserNote = typeof Browser.Type;
 export type RaceLeft = typeof Left.Type;
+export type RaceHeld = typeof Held.Type;
+export type RaceRejoined = typeof Rejoined.Type;

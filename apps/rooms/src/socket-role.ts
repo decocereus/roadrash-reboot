@@ -8,7 +8,11 @@ export type SocketRole<Run, Seat> =
   | { readonly kind: "reporting"; readonly seat: Seat };
 
 export type SocketEvent<Run, Seat> =
-  | { readonly kind: "raceBuilt"; readonly run: Run; readonly seat: Seat }
+  | {
+      readonly kind: "raceBuilt" | "rejoined";
+      readonly run: Run;
+      readonly seat: Seat;
+    }
   | { readonly kind: "graceOver" | "raceOver" };
 
 export const IN_THE_LOBBY = { kind: "lobby" } as const;
@@ -18,7 +22,8 @@ export const roleAfter = <Run, Seat>(
   event: SocketEvent<Run, Seat>
 ): SocketRole<Run, Seat> | null => {
   switch (event.kind) {
-    case "raceBuilt": {
+    case "raceBuilt":
+    case "rejoined": {
       return role.kind === "lobby"
         ? { kind: "seated", run: event.run, seat: event.seat }
         : null;

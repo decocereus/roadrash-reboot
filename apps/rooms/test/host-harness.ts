@@ -22,6 +22,7 @@ import { seatedCount } from "../src/manifest.ts";
 import { decodeRoomMessage, encodeLobbyCommand } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import type { RoomNote } from "../src/notes.ts";
+import { launchRoomConfig } from "../src/room-config.ts";
 
 export const nearby = {
   asn: 64_512,
@@ -36,10 +37,12 @@ export const sameBuild = (key = "") => {
     build: "test-build",
     key: key === "" ? `key-${claims}` : key,
     protocol: ROOM_PROTOCOL,
+    rejoin: true,
   };
 };
 export const TICK_MS = 1000 / 60;
 export const START_DELAY_MS = 3000;
+export const HOLD_MS = launchRoomConfig.seatHoldSeconds * 1000;
 
 export interface Clock extends HostPorts {
   readonly advance: (ms: number) => void;
@@ -77,6 +80,7 @@ export const createClock = (): Clock => {
       timers.push({ due: at + ms, wake });
     },
     build: "test-build",
+    config: launchRoomConfig,
     note: (note) => {
       notes.push(note);
     },

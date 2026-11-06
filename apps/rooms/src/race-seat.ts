@@ -6,11 +6,13 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import type { RaceManifest } from "./manifest.ts";
-import type { RaceSeat, SeatTally } from "./notes.ts";
+import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
 import {
   BrowserTraceSchema,
   MOST_TRACE_CHARS,
   MOST_TRACE_ROW_VALUES,
+  riderTraceName,
+  tapeKey,
 } from "./tape.ts";
 import type { SeatBrowser } from "./tape.ts";
 
@@ -25,18 +27,27 @@ export interface SeatLink {
   readonly tcpRttMs: number | null;
 }
 
+export type SeatPresence =
+  | { readonly kind: "here" }
+  | { readonly kind: "held"; readonly since: number }
+  | { readonly kind: "left"; readonly tick: number };
+
+export const HERE: SeatPresence = { kind: "here" };
+
 export interface Seat {
   readonly colour: number;
   readonly link: SeatLink;
+  readonly memberId: string;
   readonly name: string;
   readonly raceId: string;
   readonly rider: RiderId;
   readonly traceRows: number[];
+  readonly tracedConnections: number[][];
   accepted: number;
   ahead: number;
   browser: SeatBrowser | null;
   late: number;
-  leftAtTick: number | null;
+  presence: SeatPresence;
   readyMs: number | null;
   reported: boolean;
   stats: RaceStats | null;
@@ -69,7 +80,7 @@ export const rosterOf = (
 };
 
 export const seatFor = (
-  { link, name }: Pick<Seat, "link" | "name">,
+  { link, memberId, name }: Pick<Seat, "link" | "memberId" | "name">,
   colour: number,
   raceId: string,
   rider: RiderId
@@ -79,15 +90,17 @@ export const seatFor = (
   browser: null,
   colour,
   late: 0,
-  leftAtTick: null,
   link,
+  memberId,
   name,
+  presence: HERE,
   raceId,
   readyMs: null,
   reported: false,
   rider,
   stats: null,
   traceRows: [],
+  tracedConnections: [],
   tracedLate: 0,
   tracedMissed: 0,
 });
@@ -101,10 +114,39 @@ export const keepBrowserRows = (seat: Seat, text: string): void => {
     return;
   }
   const { rows, ...browser } = decoded.value;
-  if (seat.traceRows.length + rows.length <= MOST_TRACE_ROW_VALUES) {
+  const kept = seat.tracedConnections.reduce(
+    (sum, connection) => sum + connection.length,
+    seat.traceRows.length
+  );
+  if (kept + rows.length <= MOST_TRACE_ROW_VALUES) {
     seat.browser = browser;
     seat.traceRows.push(...rows);
   }
+};
+
+interface ReportPorts {
+  readonly note: (note: RoomNote) => void;
+  readonly saveTape: (key: string, body: string) => void;
+}
+
+export const settleReport = (seat: Seat, ports: ReportPorts): void => {
+  const { browser, raceId, rider, stats, traceRows, tracedConnections } = seat;
+  if (stats) {
+    ports.note({ kind: "stats", raceId, rider, stats });
+  }
+  if (traceRows.length > 0) {
+    tracedConnections.push([...traceRows]);
+    traceRows.length = 0;
+  }
+  if (browser) {
+    ports.note({ ...browser, kind: "browser", raceId, rider });
+    ports.saveTape(
+      tapeKey(raceId, riderTraceName(rider)),
+      JSON.stringify({ ...browser, connections: tracedConnections })
+    );
+  }
+  seat.stats = null;
+  seat.browser = null;
 };
 
 export const keepStats = (seat: Seat, view: DataView): void => {
@@ -124,9 +166,12 @@ export const keepReport = (seat: Seat, data: string | ArrayBuffer): void => {
 };
 
 export const stillLoading = (riders: readonly Seat[]): readonly RiderId[] =>
-  riders.flatMap(({ leftAtTick, readyMs, rider }) =>
-    leftAtTick === null && readyMs === null ? [rider] : []
+  riders.flatMap(({ presence, readyMs, rider }) =>
+    presence.kind === "here" && readyMs === null ? [rider] : []
   );
+
+const leftAtTickOf = (presence: SeatPresence): number | null =>
+  presence.kind === "left" ? presence.tick : null;
 
 export const tallyOf = (seat: Seat, room: Room): SeatTally => ({
   accepted: seat.accepted,
@@ -150,7 +195,7 @@ export const raceSeatsOf = (
             colo: seat.link.colo,
             crashes: state.crashes,
             finishTick: state.finishTick,
-            leftAtTick: seat.leftAtTick,
+            leftAtTick: leftAtTickOf(seat.presence),
             mode: state.mode,
             network: seat.link.network,
             readyMs: seat.readyMs,

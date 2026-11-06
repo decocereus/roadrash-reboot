@@ -132,6 +132,56 @@ describe("the race report", () => {
     expect(report).toContain("browser: no stats line arrived");
   });
 
+  it("says when a rider lost the link and when they came back", () => {
+    const [race] = groupRaces([
+      ...notes,
+      {
+        closeCode: 1006,
+        kind: "held",
+        raceId: "race-a",
+        rider: 1,
+        tick: 3600,
+      },
+      {
+        awayMs: 4200,
+        catchUpTicks: 3852,
+        kind: "rejoined",
+        raceId: "race-a",
+        rider: 1,
+      },
+    ]);
+    if (!race) {
+      throw new Error("No race.");
+    }
+    const report = raceReport(race);
+    expect(report).toContain(
+      "Rider 1 lost the link at 1:00, socket closed 1006, bike held"
+    );
+    expect(report).toContain(
+      "Rider 1 came back after 4.2 s and caught up 3852 ticks"
+    );
+  });
+
+  it("lists each link's browser stats when a rider came back", () => {
+    const [race] = groupRaces([
+      ...notes,
+      {
+        kind: "stats",
+        raceId: "race-a",
+        rider: 0,
+        stats: { crashes: 5 },
+      },
+    ]);
+    if (!race) {
+      throw new Error("No race.");
+    }
+    const report = raceReport(race);
+    expect(report).toContain("browser stats from 1 of 2 riders");
+    expect(report).toMatch(
+      /connection 1:\n {4}crashes 3[^]*connection 2:\n {4}crashes 5/u
+    );
+  });
+
   it("says when a race has no ended line, and what it knows", () => {
     const report = reportOf(1);
     expect(report).toContain("No ended line");
@@ -142,6 +192,7 @@ describe("the race report", () => {
 const reportOfSeat = (only: RaceSeat): string =>
   raceReport({
     browsers: [],
+    drops: [],
     ended: {
       catchUpWakes: 0,
       kind: "ended",
