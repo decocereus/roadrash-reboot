@@ -23,7 +23,7 @@ import { graphicsCard } from "../diagnostics/player-events.ts";
 import type { RacePlan } from "../game/hud.ts";
 import { preparedRace } from "../prepare-outcome.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
-import { seatClosing, stepRoom } from "../room-handoff.ts";
+import { seatChange, seatClosing, stepRoom } from "../room-handoff.ts";
 import type { RoomHandoff } from "../room-handoff.ts";
 import { BarLobby } from "./bar-lobby.tsx";
 import {
@@ -205,14 +205,20 @@ const SeatedLobby = ({
     };
     opened.listen({
       onChange: () => {
-        if (opened.phase() !== "lost") {
-          redraw();
-        } else if (opened.refusal() === "replaced") {
-          moveToRoom(roomId, "moved", "taken");
-        } else if (opened.race()) {
-          tellLost();
-          lost();
-          if (handoffNow().kind === "riding") {
+        const change = seatChange(
+          opened.phase(),
+          opened.refusal(),
+          opened.race() !== null,
+          handoffNow()
+        );
+        switch (change) {
+          case "backToLobby": {
+            moveToRoom(roomId, "moved");
+            break;
+          }
+          case "raceLost": {
+            tellLost();
+            lost();
             watching ??= readRoomPreview(
               import.meta.env.VITE_ROOMS_URL,
               roomId,
@@ -220,12 +226,30 @@ const SeatedLobby = ({
                 moveToRoom(roomId, "moved", "try");
               }
             );
-          } else {
-            moveToRoom(roomId, "moved", "try");
+            break;
           }
-        } else {
-          tellLost();
-          reopening = setTimeout(reopen, REOPEN_MS);
+          case "redraw": {
+            redraw();
+            break;
+          }
+          case "reopen": {
+            tellLost();
+            reopening = setTimeout(reopen, REOPEN_MS);
+            break;
+          }
+          case "seatTaken": {
+            moveToRoom(roomId, "moved", "taken");
+            break;
+          }
+          case "tryRejoin": {
+            tellLost();
+            lost();
+            moveToRoom(roomId, "moved", "try");
+            break;
+          }
+          default: {
+            change satisfies never;
+          }
         }
       },
     });

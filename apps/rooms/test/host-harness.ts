@@ -304,10 +304,15 @@ export const followTicks = (socket: FakeSocket, client: RoomClient): void => {
 export const room = () => {
   const clock = createClock();
   const host = createHost(clock);
-  const seated = (key: string, name = "Guest"): FakeSocket => {
+  const connecting = (key: string, name = "Guest"): FakeSocket => {
     const socket = fakeSocket();
     host.seat(socket, name, nearby, sameBuild(key));
     return socket;
   };
-  return { clock, host, seated };
+  const seated = (key: string, name = "Guest"): FakeSocket => {
+    const socket = connecting(key, name);
+    host.message(socket, pingPacket());
+    return socket;
+  };
+  return { clock, connecting, host, seated };
 };

@@ -455,6 +455,7 @@ describe("a room host", () => {
     const here = fakeSocket();
     host.seat(lost, "Lost", nearby, sameBuild());
     host.seat(here, "Here", nearby, sameBuild());
+    host.message(lost, pingPacket());
     for (let second = 0; second < 12; second += 1) {
       clock.advance(1000);
       host.message(here, pingPacket());
