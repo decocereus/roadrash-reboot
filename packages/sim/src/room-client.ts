@@ -61,6 +61,7 @@ interface RoomStats {
   resimulatedTicks: number;
   desyncs: number;
   refusedPredictions: number;
+  retriedPresses: number;
   readonly jumps: Record<JumpCause, JumpTally>;
   readonly worstJump: { metres: number; roadMetres: number; tick: number };
 }
@@ -204,6 +205,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
     },
     refusedPredictions: 0,
     resimulatedTicks: 0,
+    retriedPresses: 0,
     rollbacks: 0,
     worstJump: { metres: 0, roadMetres: 0, tick: 0 },
   };
@@ -424,6 +426,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
       } else if (pressHeld[at] === true) {
         if (pressLanded[at] !== true) {
           missed.push(button);
+          stats.retriedPresses += 1;
         }
         pressLanded[at] = false;
       }

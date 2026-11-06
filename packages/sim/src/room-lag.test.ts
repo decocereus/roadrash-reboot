@@ -52,11 +52,16 @@ const STALL_TICKS = 300;
 const kickHeld = (tick: number, from: readonly number[] = [KICK_FROM]) =>
   from.some((start) => tick >= start && tick < start + KICK_TICKS);
 
+interface PressesRidden {
+  readonly kicks: number;
+  readonly retried: number;
+}
+
 const kicksTheRoomRode = (
   reachesRoom: (tick: number) => boolean,
   kicksFrom: readonly number[] = [KICK_FROM],
   confirmsEvery = 1
-): number => {
+): PressesRidden => {
   const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
   const room = createRoom(setup);
   const client = createRoomClient(setup, PLAYER_RIDER);
@@ -94,14 +99,17 @@ const kicksTheRoomRode = (
       }
     }
   }
-  return kicks;
+  return { kicks, retried: client.stats.retriedPresses };
 };
 
 const stalled = (tick: number) => tick < 95 || tick > 170;
 
 describe("a rider's press the room never rode", () => {
   it("sends each of two presses again when a stall swallows both", () => {
-    expect(kicksTheRoomRode(stalled, [100, 145], STALL_TICKS)).toBe(2);
+    expect(kicksTheRoomRode(stalled, [100, 145], STALL_TICKS)).toStrictEqual({
+      kicks: 2,
+      retried: 2,
+    });
   });
 
   it("is sent again, once, when every tick of it arrived too late", () => {
@@ -109,7 +117,11 @@ describe("a rider's press the room never rode", () => {
       kicksTheRoomRode(() => true),
       kicksTheRoomRode((tick) => !kickHeld(tick)),
       kicksTheRoomRode((tick) => tick !== KICK_FROM),
-    ]).toStrictEqual([1, 1, 1]);
+    ]).toStrictEqual([
+      { kicks: 1, retried: 0 },
+      { kicks: 1, retried: 1 },
+      { kicks: 1, retried: 0 },
+    ]);
   });
 });
 
