@@ -132,11 +132,26 @@ const struckAt = (fight: RiderFight, tick: number): void => {
   }
 };
 
+const hitRefused = (fight: RiderFight, tick: number): void => {
+  if (Math.abs(fight.hitSeen - tick) < HIT_STUN_TICKS) {
+    fight.flinchLeft = 0;
+    fight.hitSeen = Number.NEGATIVE_INFINITY;
+  }
+};
+
 export const fightHeard = (
   fighters: readonly { readonly fight: RiderFight }[],
-  { event, tick }: HeardFight,
+  heard: HeardFight,
   drawnTick: number
 ): void => {
+  if ("refused" in heard) {
+    const struck = riderOf(fighters, heard.refused.target)?.fight;
+    if (struck) {
+      hitRefused(struck, heard.tick);
+    }
+    return;
+  }
+  const { event, tick } = heard;
   if (event.kind === "attack") {
     const fight = riderOf(fighters, event.rider)?.fight;
     if (fight) {

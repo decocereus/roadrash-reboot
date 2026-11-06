@@ -27,16 +27,16 @@ interface Heard {
   readonly tick: number;
 }
 
-const sideBySide = () => {
+const sideBySide = (me: RiderId = VICTIM, gapX = SIDE_BY_SIDE_X) => {
   const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
   const room = createRoom(setup);
-  const client = createRoomClient(setup, VICTIM);
+  const client = createRoomClient(setup, me);
   for (const state of [room.state, client.confirmed, client.predicted]) {
     const near = riderOf(state.riders, VICTIM);
     const far = riderOf(state.riders, ATTACKER);
     if (near && far) {
       far.s = near.s - ATTACKER_BEHIND_S;
-      far.x = near.x - SIDE_BY_SIDE_X;
+      far.x = near.x - gapX;
     }
   }
   return { client, room };
@@ -86,11 +86,116 @@ const burst = (kickAfter: number) => {
   client.predict(riding);
   return {
     kickAt,
-    taken: client
-      .takeFights()
-      .map(({ event, tick }) => ({ kind: event.kind, tick })),
+    taken: client.takeFights().map((heard) => ({
+      kind: "refused" in heard ? "refused" : heard.event.kind,
+      tick: heard.tick,
+    })),
   };
 };
+
+const KICK_HELD_TICKS = 8;
+const STEER_TICKS = 20;
+const OWN_LEAD = 13;
+const steerAway = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
+const steerIn = controlOf({ ...neutralInput, steer: -1, throttle: 1 });
+
+interface Swing {
+  readonly gapX: number;
+  readonly roomMissesFirst?: number;
+  readonly victim?: Control;
+  readonly victimFrom?: number;
+}
+
+const attackerHears = ({
+  gapX,
+  roomMissesFirst = 0,
+  victim = riding,
+  victimFrom = 0,
+}: Swing) => {
+  const { client, room } = sideBySide(ATTACKER, gapX);
+  const own = (tick: number): Control =>
+    tick >= RIDE_TICKS && tick < RIDE_TICKS + KICK_HELD_TICKS
+      ? kicking
+      : riding;
+  const victimRides = (tick: number): Control =>
+    tick >= victimFrom && tick < victimFrom + STEER_TICKS ? victim : riding;
+  const isOwnHit = (event: RaceEvent) =>
+    event.kind === "hit" && event.rider === ATTACKER;
+  for (let tick = 1; tick <= OWN_LEAD; tick += 1) {
+    client.predict(own(tick));
+  }
+  const roomHits: number[] = [];
+  const heardHits: number[] = [];
+  const refused: number[] = [];
+  for (let tick = 1; tick <= RIDE_TICKS + AFTER_TICKS; tick += 1) {
+    const lost = tick < RIDE_TICKS + roomMissesFirst;
+    room.accept(ATTACKER, tick, [lost ? riding : own(tick)]);
+    room.accept(VICTIM, tick, [victimRides(tick)]);
+    room.step();
+    roomHits.push(...room.state.events.filter(isOwnHit).map(() => tick));
+    client.confirm(room.frame, null);
+    client.predict(own(tick + OWN_LEAD));
+    heardHits.push(
+      ...client
+        .takeEvents()
+        .filter(isOwnHit)
+        .map(() => tick)
+    );
+    for (const heard of client.takeFights()) {
+      if ("refused" in heard) {
+        refused.push(heard.tick);
+      }
+    }
+  }
+  return { heardHits, refused, roomHits };
+};
+
+const EDGE_OF_REACH_X = 2.1;
+const JUST_OUT_OF_REACH_X = 2.2;
+const CONTACT_TICK = RIDE_TICKS + KICK_CONTACT;
+
+describe("an attacker's own hits, reconciled with the room", () => {
+  it("takes back a predicted hit the room refused", () => {
+    const { heardHits, refused, roomHits } = attackerHears({
+      gapX: EDGE_OF_REACH_X,
+      victim: steerAway,
+      victimFrom: RIDE_TICKS - KICK_HELD_TICKS,
+    });
+    expect({ guessed: heardHits.length, refused, roomHits }).toStrictEqual({
+      guessed: 1,
+      refused: [CONTACT_TICK],
+      roomHits: [],
+    });
+  });
+
+  it("hears a hit the room granted and the guess missed, once, before the room lands it", () => {
+    const { heardHits, refused, roomHits } = attackerHears({
+      gapX: JUST_OUT_OF_REACH_X,
+      victim: steerIn,
+      victimFrom: RIDE_TICKS - 4,
+    });
+    expect({ refused, roomHits }).toStrictEqual({
+      refused: [],
+      roomHits: [CONTACT_TICK],
+    });
+    expect(heardHits).toHaveLength(1);
+    expect(heardHits[0]).toBeLessThanOrEqual(CONTACT_TICK);
+  });
+
+  it("hears its hit once when the room starts the strike later than the guess", () => {
+    for (const roomMissesFirst of [1, 2, 4]) {
+      const { heardHits, refused, roomHits } = attackerHears({
+        gapX: SIDE_BY_SIDE_X,
+        roomMissesFirst,
+      });
+      expect({ heard: heardHits.length, refused, roomHits }).toStrictEqual({
+        heard: 1,
+        refused: [],
+        roomHits: [CONTACT_TICK + roomMissesFirst],
+      });
+    }
+  });
+});
 
 const kindsBy = (heard: readonly Heard[], kind: RaceEvent["kind"]) =>
   heard.filter(({ event }) => event.kind === kind);

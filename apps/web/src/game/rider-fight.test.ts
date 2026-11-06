@@ -1,3 +1,4 @@
+import { HIT_STUN_TICKS } from "@racer/sim/combat";
 import { controlOf } from "@racer/sim/control";
 import { defaultSetup, neutralInput } from "@racer/sim/race";
 import { track } from "@racer/sim/race-fixtures";
@@ -174,6 +175,7 @@ interface Drawn {
 
 interface Watching {
   readonly behind?: number;
+  readonly gapX?: number;
   readonly seats?: readonly RiderId[];
   readonly stepsPerFrame?: readonly [number, ...number[]];
   readonly until?: number;
@@ -185,6 +187,7 @@ const raceSeenBy = (
   plan: Plan,
   {
     behind = ATTACKER_BEHIND_S,
+    gapX = SIDE_BY_SIDE_X,
     seats = SEATS,
     stepsPerFrame = [1],
     until = KICK_AT + AFTER_TICKS,
@@ -199,7 +202,7 @@ const raceSeenBy = (
     const observer = riderOf(state.riders, OBSERVER);
     if (victim && attacker && observer) {
       attacker.s = victim.s - behind;
-      attacker.x = victim.x - SIDE_BY_SIDE_X;
+      attacker.x = victim.x - gapX;
       observer.s = victim.s + OBSERVER_AHEAD_S;
     }
   }
@@ -270,6 +273,7 @@ const raceSeenBy = (
   }
   return {
     drawn,
+    roomHits,
     shoves: roomHits.map((hit) =>
       drawn.find(({ attackerLastHit }) => attackerLastHit >= hit)
     ),
@@ -358,5 +362,30 @@ describe("another rider's strike in a real race", () => {
     const bumped = new Set(drawn.map(({ victimBumpedAt }) => victimBumpedAt));
     const flinched = drawn.filter(({ victimFlinch }) => victimFlinch > 0);
     expect([bumped.size > 1, flinched]).toStrictEqual([true, []]);
+  });
+
+  it("ends the target's flinch on the attacker's screen early when the room refuses the hit", () => {
+    const KICK_HELD = 8;
+    const STEER_TICKS = 20;
+    const EDGE_OF_REACH_X = 2.1;
+    const steerAway = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
+    const dodged: Plan = (rider, tick) => {
+      if (rider === ATTACKER && tick >= KICK_AT && tick < KICK_AT + KICK_HELD) {
+        return kicking;
+      }
+      const steerFrom = KICK_AT - KICK_HELD;
+      return rider === VICTIM &&
+        tick >= steerFrom &&
+        tick < steerFrom + STEER_TICKS
+        ? steerAway
+        : rideOn;
+    };
+    const { drawn, roomHits } = raceSeenBy(ATTACKER, 1, dodged, {
+      gapX: EDGE_OF_REACH_X,
+    });
+    const flinched = drawn.filter(({ victimFlinch }) => victimFlinch > 0);
+    expect(roomHits).toStrictEqual([]);
+    expect(flinched.length).toBeGreaterThan(0);
+    expect(flinched.length).toBeLessThan(HIT_STUN_TICKS);
   });
 });
