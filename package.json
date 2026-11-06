@@ -39,6 +39,7 @@
     "road:test": "node tools/road-test/road-test.ts",
     "rooms:fights": "node tools/rooms/fights.ts",
     "rooms:lag": "node tools/rooms/lag.ts",
+    "rooms:lifecycle": "node tools/rooms/lifecycle.ts",
     "rooms:load": "node tools/rooms/load.ts",
     "rooms:queue": "node tools/rooms/queue.ts",
     "rooms:race": "node tools/rooms/race.ts",
