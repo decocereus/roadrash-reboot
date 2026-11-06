@@ -127,7 +127,7 @@ describe("the public queue", () => {
     const { queue } = openQueue();
     const stale = ticketSocket();
     queue.enter(stale, { ...claim, build: "older" });
-    expect(stale.heard).toStrictEqual([{ kind: "refused" }]);
+    expect(stale.heard).toStrictEqual([{ kind: "refused", reason: "build" }]);
     expect(queue.status().waiting).toBe(0);
   });
 });
