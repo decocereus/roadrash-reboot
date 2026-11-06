@@ -56,6 +56,10 @@ runRule("rushline/player-copy", playerCopyRule, {
     },
     "const pattern = /AI/u;",
     {
+      code: "const line = <p>&#x110000; &#99999999;</p>;",
+      filename: "screen.tsx",
+    },
+    {
       code: "const Fill = () => <li>{left} street riders join to make 10.</li>;",
       filename: "screen.tsx",
     },

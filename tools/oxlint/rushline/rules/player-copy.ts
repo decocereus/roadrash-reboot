@@ -1,23 +1,30 @@
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree } from "@oxlint/plugins";
 
-const entities: Readonly<Record<string, string>> = {
-  centerdot: "·",
-  mdash: "—",
-  middot: "·",
-};
+import { isStringLiteral } from "../tagged-values.ts";
+
+const entities = new Map([
+  ["centerdot", "·"],
+  ["mdash", "—"],
+  ["middot", "·"],
+]);
+
+const MOST_CODE_POINT = 0x10_ff_ff;
+
+const characterOf = (codePoint: number, whole: string): string =>
+  codePoint <= MOST_CODE_POINT ? String.fromCodePoint(codePoint) : whole;
 
 const decodeEntities = (text: string): string =>
   text.replaceAll(
     /&(?:#x(?<hex>[\da-f]+)|#(?<decimal>\d+)|(?<name>[a-z]+));/giu,
     (whole, hex?: string, decimal?: string, name?: string) => {
       if (hex !== undefined) {
-        return String.fromCodePoint(Number.parseInt(hex, 16));
+        return characterOf(Number.parseInt(hex, 16), whole);
       }
       if (decimal !== undefined) {
-        return String.fromCodePoint(Number(decimal));
+        return characterOf(Number(decimal), whole);
       }
-      return entities[name ?? ""] ?? whole;
+      return entities.get(name ?? "") ?? whole;
     }
   );
 
@@ -41,7 +48,7 @@ export const playerCopyRule = defineRule({
         check(node, decodeEntities(node.value));
       },
       Literal(node) {
-        if (typeof node.value === "string") {
+        if (isStringLiteral(node)) {
           check(
             node,
             node.parent.type === "JSXAttribute"
