@@ -5,12 +5,9 @@ import * as Schema from "effect/Schema";
 
 import config from "../oxlint.config.ts";
 import { ruleLedger } from "./rule-ledger.ts";
+import { routedRuleDocs, routesIn, ruleChecksIn } from "./rule-routes.ts";
 
-const ruleDocs = [
-  "docs/coding-standards.md",
-  "docs/errors.md",
-  "docs/observability.md",
-];
+const ruleDocs = routedRuleDocs(routesIn(readFileSync("AGENTS.md", "utf-8")));
 const projectPlugins = /^(?:rushline|anti-slop)\//u;
 const manifest = Schema.decodeUnknownSync(
   Schema.fromJsonString(
@@ -23,10 +20,6 @@ const scripts = new Set(
 );
 
 const { enabled: enabledRules, exemptions } = ruleLedger(config);
-
-const ruleHeader =
-  /^\|\s*Rule\s*\|\s*Check\s*\|\s*Scope\s*\|\s*Exemption\s*\|$/u;
-const checkCell = /^\|[^|]*\|\s*(?<check>[^|]+?)\s*\|/u;
 
 const problems = exemptions.map(
   (exemption) => `oxlint.config.ts: ${exemption}; fix the code instead`
@@ -53,20 +46,7 @@ const checkNamed = (file: string, check: string) => {
 };
 
 for (const file of ruleDocs) {
-  let inRuleTable = false;
-  for (const line of readFileSync(file, "utf-8").split("\n")) {
-    if (ruleHeader.test(line.trim())) {
-      inRuleTable = true;
-      continue;
-    }
-    const check = checkCell.exec(line)?.groups?.check;
-    if (check === undefined) {
-      inRuleTable = false;
-      continue;
-    }
-    if (!inRuleTable || /^-+$/u.test(check)) {
-      continue;
-    }
+  for (const check of ruleChecksIn(readFileSync(file, "utf-8"))) {
     rows += 1;
     for (const part of check.replaceAll("`", "").split(",")) {
       checkNamed(file, part.trim());

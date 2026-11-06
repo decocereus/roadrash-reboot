@@ -69,11 +69,11 @@ export const playerCopyRule = defineRule({
     },
     messages: {
       emDash:
-        "Player text uses no em dash. End the sentence or use a comma (docs/coding-standards.md, player copy).",
+        "Player text uses no em dash. End the sentence or use a comma (docs/standards/web-app.md, player copy).",
       middot:
-        "Player text uses no middle dot as a separator. Use a comma or plain words (docs/coding-standards.md, player copy).",
+        "Player text uses no middle dot as a separator. Use a comma or plain words (docs/standards/web-app.md, player copy).",
       robot:
-        "Player text never says AI. The other riders are street riders, and a rider the room rides for looks like anyone else (docs/coding-standards.md, player copy).",
+        "Player text never says AI. The other riders are street riders, and a rider the room rides for looks like anyone else (docs/standards/web-app.md, player copy).",
     },
     type: "problem",
   },

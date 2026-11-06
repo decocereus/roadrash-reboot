@@ -23,7 +23,7 @@ Breakwater Run's market squeeze, 1,300 to 1,740 m, has stalls down both footpath
 Preconditions:
 
 - `rv doctor --run <run>` passes on a development build (the flags below are DEV only).
-- Frame numbers and the look go on `vimaan`, as `AGENTS.md` says. Compare frame numbers only within one machine.
+- Frame numbers and the look go on `vimaan`, as `docs/gpu-work.md` says. Compare frame numbers only within one machine.
 
 - **Riding through (`bazaar-look`, `bazaar-crowd`, `bazaar-clear`).** Run `rv open --run <run> "/?ride=breakwater-run&at=1280&kmh=90&autopilot&clear&hold=at&holdafter=1500&prof" --until race`, `rv wait --run <run> held --timeout 90`, `rv shot --run <run> bazaar-lane`. Stalls stand on both footpaths, signs face the road, and people stand behind counters and in front of stalls with no gap to the ground. No stall is missing beside the road.
 - **Watching the crowd (`bazaar-crowd`).** Run `rv open --run <run> "/?ride=breakwater-run&at=1280&kmh=40&autopilot&clear&prof" --until race` and at once `rv screencast --run <run> bazaar-crowd --seconds 10`. Look through the frames. Every person keeps moving, with no jump where a clip loops and no foot off the footpath.

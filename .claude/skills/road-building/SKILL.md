@@ -5,7 +5,7 @@ description: Build or rework a Rushline road the way the owner approved on Break
 
 # Road building
 
-Breakwater Run is the reference road. On 2026-11-05 the owner rode it and called the map design "perfect", and asked that the rest of the maps follow it. Read `packages/track/src/tracks/breakwater-run.ts` and its section in `docs/design/tracks.md` before you lay a new road. `docs/architecture.md` explains how a plan compiles.
+Breakwater Run is the reference road. On 2026-11-05 the owner rode it and called the map design "perfect", and asked that the rest of the maps follow it. Read `packages/track/src/tracks/breakwater-run.ts` and its section in `docs/design/tracks.md` before you lay a new road. `docs/architecture/tracks.md` explains how a plan compiles.
 
 ## Layout rules
 
@@ -91,11 +91,11 @@ Do these in order. A road that fails a step goes back to the plan.
 
 3. Check every hazard placement by tier. Hazards are hard and survivable, good to avoid but not must-avoid, graded by speed and lean, with no telegraphing. A rider at racing speed must survive any placement on a one-lane stretch, and `packages/sim/src/hazard-only-lane.test.ts` rides them, so add any new road with a one-lane stretch to it.
 
-4. Update the pins. `packages/track/src/chevron-runs.ts` is a snapshot of generated runs, and the test in `packages/sim/src/corner-warnings.test.ts` names any that changed. Update the road's table and history line in `docs/design/tracks.md`. Update `docs/architecture.md` if a stated fact moved.
+4. Update the pins. `packages/track/src/chevron-runs.ts` is a snapshot of generated runs, and the test in `packages/sim/src/corner-warnings.test.ts` names any that changed. Update the road's table and history line in `docs/design/tracks.md`. Update `docs/architecture/tracks.md` if a stated fact moved.
 
 5. Run `pnpm check`, `pnpm build` and `pnpm perf`. Re-pin perf rows only by the procedure in `tools/perf/README.md`, with the reason in the PR. Append to the baseline file, never overwrite it. Merge main into your branch rather than rebasing, or the commits the pins name are lost. Linux rows come from the `perf-results` artifact of the CI perf job.
 
-6. Measure the frame cost on the UHD 630 before and after, on `vimaan`, as `AGENTS.md` describes. Density, stalls, walkers and new skylines add frame cost, so this result lands with the change, beside the ride.
+6. Measure the frame cost on the UHD 630 before and after, on `vimaan`, as `docs/gpu-work.md` describes. Density, stalls, walkers and new skylines add frame cost, so this result lands with the change, beside the ride.
 
 7. Look at it. Follow `.claude/skills/verify-rushline/SKILL.md`, and watch every taper and every bend under 100 m frame by frame, at racing speed with traffic on. Check that kerbs and stripes stay connected, buildings stay behind the pavement, and chevrons point the right way. `?ride=<roadId>&at=<metres>&autopilot` starts there. `at` moves only the player, so also run from the grid to see the pack.
 

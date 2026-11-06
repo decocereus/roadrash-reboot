@@ -34,7 +34,7 @@ Rushline has five places where a failure reaches someone: the telemetry endpoint
 
 ## The career save
 
-`parseCareer` (`packages/career/src/save.ts`) decodes the text with Effect Schema: first a JSON object, then its `version`, then `EncodedSaveSchema` with every failure collected, then the plain checks in `save-invariants.ts`. `save-issues.ts` turns the collected failures into the one field the version 2 reader reported, so the title's corrupt panel names the same field. `pnpm check:save-format` keeps the encoded save tied to `SAVE_VERSION` ([coding-standards.md](coding-standards.md)).
+`parseCareer` (`packages/career/src/save.ts`) decodes the text with Effect Schema: first a JSON object, then its `version`, then `EncodedSaveSchema` with every failure collected, then the plain checks in `save-invariants.ts`. `save-issues.ts` turns the collected failures into the one field the version 2 reader reported, so the title's corrupt panel names the same field. `pnpm check:save-format` keeps the encoded save tied to `SAVE_VERSION` ([standards/simulation.md](standards/simulation.md)).
 
 The browser save, `apps/web/src/career/save.ts`, runs each storage step with `Effect.runSync` and returns a typed outcome to `use-flow.ts`. `save-storage.ts` turns a `localStorage` call that throws into a `SaveStorageFailed` (`save-storage-error.ts`) that names the step, `acquire`, `read`, `write`, `backup` or `remove`, and keeps the browser's error as its `cause`.
 

@@ -1,6 +1,6 @@
 # Durable Object HTTP conventions
 
-These are the conventions for the race service in `apps/rooms`. `RaceServer` in `apps/rooms/src/race-server.ts` is its Durable Object, one per room, and [architecture.md](architecture.md#the-room-on-a-durable-object) says how it runs. [coding-standards.md](coding-standards.md) keeps Effect at boundaries such as this one.
+These are the conventions for the race service in `apps/rooms`. `RaceServer` in `apps/rooms/src/race-server.ts` is its Durable Object, one per room, and [architecture/race-rooms.md](architecture/race-rooms.md#the-room-on-a-durable-object) says how it runs. [coding-standards.md](coding-standards.md) keeps Effect at boundaries such as this one.
 
 ## Boundary and ownership
 
@@ -41,4 +41,4 @@ These are the conventions for the race service in `apps/rooms`. `RaceServer` in 
 
 ## Sources
 
-The rules on ownership, naming, identity and invocation lifetime come from cf-workflow-pool's [Durable Object HTTP boundary](https://github.com/dmmulroy/cf-workflow-pool/blob/73e0f2f5d3b72d85a17384638716c4b0490e16aa/docs/coding-standards.md#durable-object-http-boundary). Its `/v1` rule is left out, and so are its imports from the `effect` root, which `no-restricted-imports` bans here. Look up each API in the installed Effect 4.0.0 and Alchemy source, as [coding-standards.md](coding-standards.md) says, rather than copy examples written for another version.
+The rules on ownership, naming, identity and invocation lifetime come from cf-workflow-pool's [Durable Object HTTP boundary](https://github.com/dmmulroy/cf-workflow-pool/blob/73e0f2f5d3b72d85a17384638716c4b0490e16aa/docs/coding-standards.md#durable-object-http-boundary). Its `/v1` rule is left out, and so are its imports from the `effect` root, which `no-restricted-imports` bans here. Look up each API in the installed Effect 4.0.0 and Alchemy source, as [standards/effect.md](standards/effect.md) says, rather than copy examples written for another version.

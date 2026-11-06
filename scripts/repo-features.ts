@@ -2,7 +2,7 @@ import type { FeatureEntry } from "./feature-map.ts";
 
 export const repoFeatures: readonly FeatureEntry[] = [
   {
-    docs: ["docs/coding-standards.md#the-checks"],
+    docs: ["docs/standards/tooling.md#the-checks"],
     id: "repo-checks",
     kind: "platform",
     owns: [
@@ -11,6 +11,7 @@ export const repoFeatures: readonly FeatureEntry[] = [
       "scripts/check-css-comments.ts",
       "scripts/check-feature-map.ts",
       "scripts/check-renderer-imports.ts",
+      "scripts/check-rule-routes*.ts",
       "scripts/check-roots.ts",
       "scripts/check-rules.ts",
       "scripts/check-size*.ts",
@@ -22,6 +23,7 @@ export const repoFeatures: readonly FeatureEntry[] = [
       "scripts/postcss-tokenize.d.ts",
       "scripts/renderer-imports*.ts",
       "scripts/rule-ledger*.ts",
+      "scripts/rule-routes.ts",
       "scripts/setup-effect-reference.ts",
       "scripts/stale-checkout*.ts",
       "scripts/write-feature-map.ts",
@@ -33,7 +35,7 @@ export const repoFeatures: readonly FeatureEntry[] = [
       "scripts/rule-ledger.ts",
     ],
     summary:
-      "`pnpm verify` and the repository checks it runs: the rule ledger, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.",
+      "`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.",
     title: "Repository checks",
     verify: [],
   },
