@@ -3,6 +3,11 @@ import type { RoomArrival } from "@racer/telemetry/limits";
 
 const ROOM_ID_CHARS = 8;
 const ARRIVAL_PARAM = "via";
+const REJOIN_PARAM = "rejoin";
+
+const rejoinChoices = ["try", "no", "taken"] as const;
+
+export type RejoinChoice = (typeof rejoinChoices)[number];
 
 export const newRoomId = (): string =>
   crypto.randomUUID().slice(0, ROOM_ID_CHARS);
@@ -11,12 +16,25 @@ export const roomLink = (roomId: string): string => {
   const search = new URLSearchParams(globalThis.location.search);
   search.set("room", roomId);
   search.delete(ARRIVAL_PARAM);
+  search.delete(REJOIN_PARAM);
   return `${globalThis.location.origin}/?${search.toString()}`;
 };
 
-export const moveToRoom = (roomId: string, arrival: RoomArrival): void => {
-  globalThis.location.assign(`${roomLink(roomId)}&${ARRIVAL_PARAM}=${arrival}`);
+export const moveToRoom = (
+  roomId: string,
+  arrival: RoomArrival,
+  rejoin: RejoinChoice | null = null
+): void => {
+  const choice = rejoin === null ? "" : `&${REJOIN_PARAM}=${rejoin}`;
+  globalThis.location.assign(
+    `${roomLink(roomId)}&${ARRIVAL_PARAM}=${arrival}${choice}`
+  );
 };
+
+export const rejoinOf = (search: string): RejoinChoice | null =>
+  rejoinChoices.find(
+    (each) => each === new URLSearchParams(search).get(REJOIN_PARAM)
+  ) ?? null;
 
 export const roomArrivalOf = (search: string): RoomArrival => {
   const named = new URLSearchParams(search).get(ARRIVAL_PARAM);

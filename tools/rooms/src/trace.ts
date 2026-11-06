@@ -1,14 +1,14 @@
 import { parseArgs } from "node:util";
 
 import {
-  BrowserTraceSchema,
   ROOM_TRACE_FIELDS,
   roomTraceName,
+  RiderTraceSchema,
   RoomTraceSchema,
   TRACE_ROW_FIELDS,
   TraceField,
 } from "@racer/rooms/tape";
-import type { BrowserTrace, RoomTrace } from "@racer/rooms/tape";
+import type { RiderTraceFile, RoomTrace } from "@racer/rooms/tape";
 import { TICK_SECONDS } from "@racer/sim/state";
 import * as Console from "effect/Console";
 import * as Data from "effect/Data";
@@ -31,7 +31,7 @@ class TraceReadFailed extends Data.TaggedError("TraceReadFailed")<{
 }> {}
 
 const decodeBrowser = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(BrowserTraceSchema)
+  Schema.fromJsonString(RiderTraceSchema)
 );
 const decodeRoom = Schema.decodeUnknownEffect(
   Schema.fromJsonString(RoomTraceSchema)
@@ -42,7 +42,7 @@ const failed = (message: string) => (cause: unknown) =>
 
 export interface RiderTrace {
   readonly rider: number;
-  readonly trace: BrowserTrace;
+  readonly trace: RiderTraceFile;
 }
 
 interface Moment {
@@ -87,14 +87,17 @@ const momentsOf = (
   room: RoomTrace
 ): Map<number, Moment> => {
   const moments = new Map<number, Moment>();
-  const rows = chunks(trace.rows, TRACE_ROW_FIELDS);
-  const raceStartMs = Math.max(
-    ...rows.map(
-      (row) =>
-        (row[TraceField.tick] ?? 0) * TICK_MS - (row[TraceField.atMs] ?? 0)
-    )
-  );
-  for (const row of rows) {
+  const rows = trace.connections.flatMap((connection) => {
+    const own = chunks(connection, TRACE_ROW_FIELDS);
+    const raceStartMs = Math.max(
+      ...own.map(
+        (row) =>
+          (row[TraceField.tick] ?? 0) * TICK_MS - (row[TraceField.atMs] ?? 0)
+      )
+    );
+    return own.map((row) => ({ raceStartMs, row }));
+  });
+  for (const { raceStartMs, row } of rows) {
     const moment = momentAt(
       moments,
       Math.floor(((row[TraceField.atMs] ?? 0) + raceStartMs) / MS_PER_SECOND)

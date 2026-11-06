@@ -536,6 +536,7 @@ export const useFlow = (): Flow => {
     },
     roomLost() {
       races.ended("lost", factsNow());
+      send({ kind: "signalLost", lostAt: performance.now() });
     },
     rules,
     save,

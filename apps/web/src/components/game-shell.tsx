@@ -46,6 +46,20 @@ const QuickRace = import.meta.env.SSR
       return { default: finding };
     });
 
+const SignalLost = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { SignalLost: lost } = await import("./screens/rejoin.tsx");
+      return { default: lost };
+    });
+
+const BikeUp = import.meta.env.SSR
+  ? drawsNothing
+  : lazy(async () => {
+      const { BikeUp: up } = await import("./screens/rejoin.tsx");
+      return { default: up };
+    });
+
 const DWELL_MS = 2200;
 
 const RideOut = ({
@@ -335,6 +349,18 @@ const RaceScreens = ({ flow }: { readonly flow: Flow }) => {
       {stage.kind === "finishing" && (
         <FinishBanner onContinue={flow.leave} report={stage.report} />
       )}
+      <Suspense>
+        {stage.kind === "signalLost" && view.plan.room && (
+          <SignalLost
+            holdSeconds={view.plan.room.holdSeconds}
+            lostAt={stage.lostAt}
+            roomId={view.plan.room.roomId}
+          />
+        )}
+        {stage.kind === "riding" &&
+          view.plan.room !== undefined &&
+          view.plan.room.awayMs !== null && <BikeUp feed={flow.feed} />}
+      </Suspense>
       {stage.kind === "paused" && (
         <PauseScreen
           career={flow.career}

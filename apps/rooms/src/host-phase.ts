@@ -60,3 +60,21 @@ export const hostAfter = <Run>(
     }
   }
 };
+
+export const startMomentOf = <Run>(state: HostState<Run>): number | null => {
+  switch (state.phase) {
+    case "waiting":
+    case "loading": {
+      return null;
+    }
+    case "countdown": {
+      return state.startsAt;
+    }
+    case "racing": {
+      return state.startedAt;
+    }
+    default: {
+      return state satisfies never;
+    }
+  }
+};

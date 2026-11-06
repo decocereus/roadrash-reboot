@@ -7,6 +7,7 @@ import {
   RoomChoiceChangeSchema,
   RoomRuleSchema,
 } from "./manifest.ts";
+import { RoomConfigSchema } from "./room-config.ts";
 import { ROOM_KINDS } from "./room-id.ts";
 
 const MOST_NAME_CHARS = 12;
@@ -62,11 +63,13 @@ const Lobby = Schema.Struct({
   phase: Schema.Literals(LOBBY_PHASES),
   roomKind: Schema.Literals(ROOM_KINDS),
   rule: RoomRuleSchema,
+  seatHoldSeconds: RoomConfigSchema.fields.seatHoldSeconds,
   startsInMs: Schema.NullOr(Schema.Number),
   you: Schema.String,
 });
 
 const Started = Schema.Struct({
+  awayMs: Schema.NullOr(Schema.Number),
   kind: Schema.Literal("started"),
   manifest: RaceManifestSchema,
   you: Schema.Number,
@@ -160,3 +163,4 @@ export const decodeRoomPreview = Schema.decodeUnknownOption(
 export const SEAT_CLOSED = 1000;
 export const SEAT_LEFT = 4410;
 export const SEAT_SILENT = 4408;
+export const SEAT_QUIT = 4411;

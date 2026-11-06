@@ -18,6 +18,7 @@ import { cleanGuestName, SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import type { RoomNote } from "./notes.ts";
 import { refusedSeat } from "./refused-seat.ts";
+import { launchRoomConfig } from "./room-config.ts";
 import { roomKindOf } from "./room-id.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
 
@@ -60,6 +61,7 @@ const portsFor = (
     setTimeout(wake, ms);
   },
   build,
+  config: launchRoomConfig,
   note,
   now: () => Date.now(),
   raceId: () => crypto.randomUUID(),
@@ -175,6 +177,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
                   build: url.searchParams.get("build") ?? "",
                   key: url.searchParams.get("key") ?? crypto.randomUUID(),
                   protocol: Number(url.searchParams.get("protocol")),
+                  rejoin: url.searchParams.get("rejoin") !== "no",
                 }
               );
               return response;

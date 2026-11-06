@@ -54,12 +54,14 @@ const soloPlan: RacePlan = planFor(
 const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
   const { step, view } = createRaceRun(soloPlan.setup);
   const room: RoomRun = {
+    awayMs: null,
     confirmed: view,
     countdownSeconds,
     events: () => [],
     frameDrawn: () => {
       throw new Error("The session never draws.");
     },
+    holdSeconds: 30,
     lagging: () => false,
     leave: () => {
       throw new Error("The session never leaves a room.");
@@ -72,6 +74,7 @@ const roomPlan = (countdownSeconds: () => number = () => 3): RacePlan => {
       throw new Error("The session never reports.");
     },
     riderColours: new Map(),
+    roomId: "test-room",
     step,
     stepsDue: () => 1,
     takeCorrections: () => [],
