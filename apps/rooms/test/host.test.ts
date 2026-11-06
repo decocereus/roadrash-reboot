@@ -41,6 +41,7 @@ import {
   lastLobby,
   readyAll,
   followTicks,
+  HOLD_MS,
 } from "./host-harness.ts";
 import type { FakeSocket } from "./host-harness.ts";
 
@@ -168,13 +169,18 @@ describe("a room host", () => {
   it.each([
     [
       "another build",
-      { build: "old-build", key: "k", protocol: ROOM_PROTOCOL },
+      { build: "old-build", key: "k", protocol: ROOM_PROTOCOL, rejoin: true },
     ],
     [
       "another protocol",
-      { build: "test-build", key: "k", protocol: ROOM_PROTOCOL + 1 },
+      {
+        build: "test-build",
+        key: "k",
+        protocol: ROOM_PROTOCOL + 1,
+        rejoin: true,
+      },
     ],
-    ["no claim", { build: "", key: "k", protocol: 0 }],
+    ["no claim", { build: "", key: "k", protocol: 0, rejoin: true }],
   ])("refuses a seat with %s before it sits", (_case, claim) => {
     const clock = createClock();
     const host = createHost(clock);
@@ -207,7 +213,7 @@ describe("a room host", () => {
     expect(manifest).toMatchObject({
       build: "test-build",
       protocol: ROOM_PROTOCOL,
-      reconnect: "none",
+      reconnect: { holdSeconds: 30 },
       rule: { roadId: setup.roadId, tier: 2 },
       tickRate: 60,
     });
@@ -369,7 +375,7 @@ describe("a room host", () => {
     });
   }, 60_000);
 
-  it("drops a rider whose link died with no close, and the race rides on", () => {
+  it("holds the bike of a rider whose link died with no close, and the race rides on", () => {
     const clock = createClock();
     const host = createHost(clock);
     const lost = fakeSocket();
@@ -386,16 +392,16 @@ describe("a room host", () => {
       host.message(here, pingPacket());
     }
     expect(lost.closed).toBe(SEAT_SILENT);
-    expect(clock.notes.find((note) => note.kind === "left")).toMatchObject({
-      kind: "left",
-      seatsLeft: 1,
+    expect(clock.notes.find((note) => note.kind === "held")).toMatchObject({
+      closeCode: SEAT_SILENT,
+      rider: 0,
     });
     expect(host.status().phase).toBe("racing");
     expect(host.status().seats).toHaveLength(1);
     expect(host.status().tick).toBeGreaterThan(heardUntil);
   });
 
-  it("writes a left line for a seat it could not send to", () => {
+  it("holds the bike of a seat it could not send to", () => {
     const clock = createClock();
     const host = createHost(clock);
     const here = fakeSocket();
@@ -416,9 +422,8 @@ describe("a room host", () => {
     host.message(failing, pingPacket());
     host.message(here, pingPacket());
     clock.advance(1000);
-    expect(clock.notes.find((note) => note.kind === "left")).toMatchObject({
-      kind: "left",
-      seatsLeft: 1,
+    expect(clock.notes.find((note) => note.kind === "held")).toMatchObject({
+      closeCode: null,
     });
     expect(host.status().seats).toHaveLength(1);
   });
@@ -429,6 +434,8 @@ describe("a room host", () => {
     const sockets = [fakeSocket(), fakeSocket()];
     race(host, clock, sockets);
     clock.advance(12_000);
+    expect(host.status().phase).toBe("racing");
+    clock.advance(HOLD_MS);
     expect(host.status().phase).toBe("waiting");
     expect(clock.notes.filter((note) => note.kind === "left")).toHaveLength(2);
     expect(clock.notes.at(-1)?.kind).toBe("ended");

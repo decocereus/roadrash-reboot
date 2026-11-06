@@ -375,31 +375,41 @@ describe("a room seat that closes", () => {
 });
 
 describe("a room seat that changes", () => {
+  const RIDING: RoomHandoff<Ride> = { kind: "riding", ride: RIDE };
+  const PREPARING: RoomHandoff<Ride> = { kind: "preparing", ride: RIDE };
+
   it("sends a rider whose race ended before they rode it back to the room's lobby", () => {
-    expect(seatChange("ended", false, FIRST_ROOM)).toBe("backToLobby");
-    expect(seatChange("ended", true, { kind: "preparing", ride: RIDE })).toBe(
-      "backToLobby"
-    );
+    expect(seatChange("ended", null, false, FIRST_ROOM)).toBe("backToLobby");
+    expect(seatChange("ended", null, true, PREPARING)).toBe("backToLobby");
     expect(
-      seatChange("ended", true, { kind: "preparingPastDoor", ride: RIDE })
+      seatChange("ended", null, true, { kind: "preparingPastDoor", ride: RIDE })
     ).toBe("backToLobby");
   });
 
   it("leaves a rider who rode the race on its results", () => {
-    expect(seatChange("ended", true, { kind: "riding", ride: RIDE })).toBe(
-      "redraw"
-    );
+    expect(seatChange("ended", null, true, RIDING)).toBe("redraw");
   });
 
-  it("reopens a seat lost in the lobby and ends a seat lost in a race", () => {
-    expect(seatChange("lost", false, FIRST_ROOM)).toBe("reopen");
-    expect(seatChange("lost", true, { kind: "riding", ride: RIDE })).toBe(
-      "raceLost"
-    );
+  it("reopens a seat lost in the lobby", () => {
+    expect(seatChange("lost", null, false, FIRST_ROOM)).toBe("reopen");
+  });
+
+  it("keeps a rider who lost the link mid-race on the race to get back on", () => {
+    expect(seatChange("lost", null, true, RIDING)).toBe("raceLost");
+  });
+
+  it("tries to put a rider who lost the link before riding back on their bike", () => {
+    expect(seatChange("lost", null, true, PREPARING)).toBe("tryRejoin");
+  });
+
+  it("sends a seat another tab took to the taken screen, riding or not", () => {
+    expect(seatChange("lost", "replaced", true, RIDING)).toBe("seatTaken");
+    expect(seatChange("lost", "replaced", true, PREPARING)).toBe("seatTaken");
   });
 
   it("redraws every other change", () => {
-    expect(seatChange("lobby", false, FIRST_ROOM)).toBe("redraw");
-    expect(seatChange("loading", true, FIRST_ROOM)).toBe("redraw");
+    expect(seatChange("lobby", null, false, FIRST_ROOM)).toBe("redraw");
+    expect(seatChange("loading", null, true, FIRST_ROOM)).toBe("redraw");
+    expect(seatChange("refused", "replaced", false, FIRST_ROOM)).toBe("redraw");
   });
 });

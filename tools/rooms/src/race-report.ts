@@ -2,7 +2,9 @@ import { WAKE_GAP_CEILINGS_MS } from "@racer/rooms/notes";
 import type {
   RaceCountdown,
   RaceEnded,
+  RaceHeld,
   RaceLeft,
+  RaceRejoined,
   RaceSeat,
   RaceStarted,
   RaceBrowserNote,
@@ -18,6 +20,7 @@ interface RaceRecord {
   readonly raceId: string;
   readonly browsers: RaceBrowserNote[];
   countdown?: RaceCountdown;
+  readonly drops: (RaceHeld | RaceRejoined)[];
   ended?: RaceEnded;
   readonly left: RaceLeft[];
   started?: RaceStarted;
@@ -32,7 +35,13 @@ const recordOf = (
   if (known) {
     return known;
   }
-  const fresh: RaceRecord = { browsers: [], left: [], raceId, stats: [] };
+  const fresh: RaceRecord = {
+    browsers: [],
+    drops: [],
+    left: [],
+    raceId,
+    stats: [],
+  };
   records.set(raceId, fresh);
   return fresh;
 };
@@ -54,6 +63,11 @@ export const groupRaces = (
       }
       case "countdown": {
         recordOf(records, note.raceId).countdown = note;
+        break;
+      }
+      case "held":
+      case "rejoined": {
+        recordOf(records, note.raceId).drops.push(note);
         break;
       }
       case "left": {
@@ -127,13 +141,19 @@ const seatLines = (
   stats: readonly RaceStatsNote[],
   browsers: readonly RaceBrowserNote[]
 ): readonly string[] => {
-  const report = stats.find((note) => note.rider === seat.rider);
-  const browser = browsers.find((note) => note.rider === seat.rider);
+  const reports = stats.filter((note) => note.rider === seat.rider);
+  const identities = browsers.filter((note) => note.rider === seat.rider);
+  const connections = reports.flatMap((report, at) => [
+    ...(reports.length > 1 ? [`    connection ${at + 1}:`] : []),
+    ...browserLines(report),
+  ]);
   return [
     `  Rider ${seat.rider}: ${outcomeOf(seat)}, ${seat.colo ?? "unknown colo"} at ${seat.tcpRttMs ?? "?"} ms on ${seat.network ?? "an unknown network"}, ready after ${seat.readyMs === null ? "never" : seconds(seat.readyMs)}, road ${seat.roadMetres} m`,
     `    server: ${seat.crashes} crashes, controls ${seat.accepted} accepted, ${seat.missed} missed, ${seat.late} late, ${seat.ahead} ahead`,
-    ...(browser ? [browserIdentity(browser)] : []),
-    ...(report ? browserLines(report) : ["    browser: no stats line arrived"]),
+    ...identities.map(browserIdentity),
+    ...(connections.length > 0
+      ? connections
+      : ["    browser: no stats line arrived"]),
   ];
 };
 
@@ -175,16 +195,31 @@ const timelineLine = ({
       : null,
     ended ? `raced ${raceTime(ended.tick)}` : null,
     ended
-      ? `browser stats from ${stats.length} of ${ended.seats.length} riders`
+      ? `browser stats from ${new Set(stats.map(({ rider }) => rider)).size} of ${ended.seats.length} riders`
       : null,
   ];
   return `  ${parts.filter((part) => part !== null).join(", ")}`;
+};
+
+const dropLine = (note: RaceHeld | RaceRejoined): string => {
+  switch (note.kind) {
+    case "held": {
+      return `  Rider ${note.rider} lost the link at ${raceTime(note.tick)}, socket closed ${note.closeCode ?? "with no code"}, bike held`;
+    }
+    case "rejoined": {
+      return `  Rider ${note.rider} came back after ${seconds(note.awayMs)} and caught up ${note.catchUpTicks} ticks`;
+    }
+    default: {
+      return note satisfies never;
+    }
+  }
 };
 
 export const raceReport = (record: RaceRecord): string =>
   [
     headline(record),
     timelineLine(record),
+    ...record.drops.map(dropLine),
     ...(record.ended
       ? [
           serverLine(record.ended),

@@ -4,7 +4,7 @@ import { tiers } from "@racer/sim/difficulty";
 import { roadIds } from "@racer/track/road";
 import * as Schema from "effect/Schema";
 
-const RECONNECT_POLICIES = ["none"] as const;
+import { RoomConfigSchema } from "./room-config.ts";
 
 const RIDER_KINDS = ["human", "ai"] as const;
 
@@ -42,7 +42,9 @@ export const RaceManifestSchema = Schema.Struct({
   loadingDeadlineMs: Schema.Number,
   protocol: Schema.Number,
   raceId: Schema.String,
-  reconnect: Schema.Literals(RECONNECT_POLICIES),
+  reconnect: Schema.Struct({
+    holdSeconds: RoomConfigSchema.fields.seatHoldSeconds,
+  }),
   roster: Schema.Array(RosterEntrySchema),
   rule: RoomRuleSchema,
   seed: Schema.Number,

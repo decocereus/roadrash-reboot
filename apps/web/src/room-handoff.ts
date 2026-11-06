@@ -1,3 +1,4 @@
+import type { Refusal } from "@racer/rooms/messages";
 import type { SeatPhase } from "@racer/rooms/seat-client";
 
 import type { PreparedRace } from "./prepare-outcome.ts";
@@ -76,12 +77,20 @@ export const seatClosing = <Ride>(
   return handoff.kind === "riding" ? "keep" : "leave";
 };
 
-const seatChanges = ["backToLobby", "raceLost", "redraw", "reopen"] as const;
+const seatChanges = [
+  "backToLobby",
+  "raceLost",
+  "redraw",
+  "reopen",
+  "seatTaken",
+  "tryRejoin",
+] as const;
 
 type SeatChange = (typeof seatChanges)[number];
 
 export const seatChange = <Ride>(
   phase: SeatPhase,
+  refusal: Refusal | null,
   inRace: boolean,
   handoff: RoomHandoff<Ride>
 ): SeatChange => {
@@ -90,7 +99,13 @@ export const seatChange = <Ride>(
       return handoff.kind === "riding" ? "redraw" : "backToLobby";
     }
     case "lost": {
-      return inRace ? "raceLost" : "reopen";
+      if (refusal === "replaced") {
+        return "seatTaken";
+      }
+      if (!inRace) {
+        return "reopen";
+      }
+      return handoff.kind === "riding" ? "raceLost" : "tryRejoin";
     }
     case "connecting":
     case "left":

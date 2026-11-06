@@ -18,6 +18,7 @@ import {
   PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
+  readCatchUp,
   readPong,
   readTick,
   ROOM_PROTOCOL,
@@ -36,6 +37,7 @@ import {
   encodeLobbyCommand,
   SEAT_CLOSED,
   SEAT_LEFT,
+  SEAT_QUIT,
 } from "./messages.ts";
 import type {
   LobbyCommand,
@@ -55,9 +57,11 @@ const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 const PINGS_PER_REPORT = 30;
 
 export interface SeatRace {
+  readonly awayMs: number | null;
   readonly client: RoomClient;
   readonly colours: GuestColours;
   readonly digest: Uint32Array;
+  readonly holdSeconds: number;
   readonly me: RiderId;
   readonly names: GuestNames;
   readonly raceId: string;
@@ -107,7 +111,7 @@ export type SeatEvent =
   | { readonly kind: "closed" | "silent" }
   | {
       readonly kind: "left";
-      readonly code: typeof SEAT_CLOSED | typeof SEAT_LEFT;
+      readonly code: typeof SEAT_LEFT | typeof SEAT_QUIT;
     };
 
 export const NEW_SEAT: SeatState = {
@@ -116,7 +120,7 @@ export const NEW_SEAT: SeatState = {
   refusal: null,
 };
 
-const raceOf = ({ manifest, you }: RoomStarted): SeatRace => {
+const raceOf = ({ awayMs, manifest, you }: RoomStarted): SeatRace => {
   const { setup } = seatedRace(
     manifest.seed,
     seatedCount(manifest),
@@ -126,9 +130,11 @@ const raceOf = ({ manifest, you }: RoomStarted): SeatRace => {
   const client = createRoomClient(setup, me);
   const colours = humanColours(manifest);
   return {
+    awayMs,
     client,
     colours: byGuest(setup, me, colours),
     digest: setupDigest(client.confirmed, setup.track),
+    holdSeconds: manifest.reconnect.holdSeconds,
     me,
     names: byGuest(setup, me, humanNames(manifest)),
     raceId: manifest.raceId,
@@ -223,6 +229,7 @@ export interface RoomSeat {
   readonly race: () => SeatRace | null;
   readonly lobby: () => RoomLobbyMessage | null;
   readonly loaded: () => void;
+  readonly reportNow: () => void;
   readonly choose: (choice: Partial<RoomChoice>) => void;
   readonly setReady: (ready: boolean) => void;
   readonly walk: (walk: LobbyWalk) => void;
@@ -242,9 +249,10 @@ export const seatUrl = (
   roomId: string,
   name: string,
   build: string,
-  key: string
+  key: string,
+  rejoin = true
 ): string =>
-  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}&build=${encodeURIComponent(build)}&protocol=${ROOM_PROTOCOL}&key=${encodeURIComponent(key)}`;
+  `${roomsUrl.replace(/^http/u, "ws")}/rooms/${roomId}/seat?name=${encodeURIComponent(name)}&build=${encodeURIComponent(build)}&protocol=${ROOM_PROTOCOL}&key=${encodeURIComponent(key)}${rejoin ? "" : "&rejoin=no"}`;
 
 export const openRoomSeat = (
   roomsUrl: string,
@@ -252,9 +260,12 @@ export const openRoomSeat = (
   name: string,
   build: string,
   key: string,
-  browser: () => SeatBrowser | null
+  browser: () => SeatBrowser | null,
+  rejoin = true
 ): RoomSeat => {
-  const socket = new WebSocket(seatUrl(roomsUrl, roomId, name, build, key));
+  const socket = new WebSocket(
+    seatUrl(roomsUrl, roomId, name, build, key, rejoin)
+  );
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
   const pong = { roomMs: 0, stamp: 0 };
@@ -405,6 +416,12 @@ export const openRoomSeat = (
       return;
     }
     const { race } = state;
+    const caughtUp = readCatchUp(view);
+    if (race && caughtUp) {
+      race.client.catchUp(caughtUp);
+      listeners.onConfirmed?.(race.client);
+      return;
+    }
     if (race && readTick(view, read)) {
       const now = performance.now();
       clock.heardTick(read.frame.tick, now);
@@ -509,7 +526,7 @@ export const openRoomSeat = (
       );
     },
     leave: () => {
-      move({ code: SEAT_CLOSED, kind: "left" });
+      move({ code: SEAT_QUIT, kind: "left" });
     },
     leaveRoom: () => {
       move({ code: SEAT_LEFT, kind: "left" });
@@ -528,6 +545,7 @@ export const openRoomSeat = (
     phase: () => state.phase,
     race: () => state.race,
     refusal: () => state.refusal,
+    reportNow: reportOnce,
     rttMs: () => rttMs,
     setReady: (ready) => {
       if (lobby) {

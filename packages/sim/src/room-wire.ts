@@ -11,6 +11,7 @@ const PING_KIND = 3;
 const PONG_KIND = 4;
 const READY_KIND = 6;
 const RACE_STATS_KIND = 7;
+const CATCH_UP_KIND = 8;
 const KIND_BYTES = 1;
 const TICK_BYTES = 4;
 const COUNT_BYTES = 1;
@@ -379,5 +380,21 @@ export const readRaceStats = (
           field,
           view.getUint32(KIND_BYTES + index * WORD_BYTES),
         ])
+      )
+    : null;
+
+export const writeCatchUp = (part: Uint8Array): Uint8Array => {
+  const packet = new Uint8Array(KIND_BYTES + part.byteLength);
+  packet[0] = CATCH_UP_KIND;
+  packet.set(part, KIND_BYTES);
+  return packet;
+};
+
+export const readCatchUp = (view: DataView): DataView | null =>
+  view.byteLength > KIND_BYTES && view.getUint8(0) === CATCH_UP_KIND
+    ? new DataView(
+        view.buffer,
+        view.byteOffset + KIND_BYTES,
+        view.byteLength - KIND_BYTES
       )
     : null;
