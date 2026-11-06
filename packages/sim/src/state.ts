@@ -402,10 +402,19 @@ export type FightEvent = Extract<
   { readonly kind: "attack" | "hit" }
 >;
 
-export interface HeardFight {
+export type HitEvent = Extract<RaceEvent, { readonly kind: "hit" }>;
+
+interface LandedFight {
   readonly event: FightEvent;
   readonly tick: number;
 }
+
+interface RefusedHit {
+  readonly refused: HitEvent;
+  readonly tick: number;
+}
+
+export type HeardFight = LandedFight | RefusedHit;
 
 export const NO_FIGHTS: readonly HeardFight[] = [];
 

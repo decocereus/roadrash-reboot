@@ -41,7 +41,12 @@ import type {
 } from "../game/hud.ts";
 import { createHudFeed } from "../hud-feed.ts";
 import type { HudFeed } from "../hud-feed.ts";
-import { firstView, stageOf, stepNavigation } from "../navigation.ts";
+import {
+  firstView,
+  graphicsPlaceOf,
+  stageOf,
+  stepNavigation,
+} from "../navigation.ts";
 import type { NavigationEvent, View } from "../navigation.ts";
 import type { PrepareOutcome } from "../prepare-outcome.ts";
 import { loadRaceRules } from "../rules/load.ts";
@@ -421,6 +426,10 @@ export const useFlow = (): Flow => {
     },
     [gameRef, send]
   );
+
+  useEffect(() => {
+    diagnostics().showing(graphicsPlaceOf[view.screen]);
+  }, [view.screen]);
 
   const stage = stageOf(view);
   useEffect(() => {

@@ -3,6 +3,8 @@ import * as Schema from "effect/Schema";
 import {
   browserFamilies,
   gameLoadStages,
+  graphicsPlaces,
+  graphicsRecoveries,
   MAX_EVENTS_IN_BATCH,
   playerRaceEnds,
   raceChoices,
@@ -84,6 +86,12 @@ const RaceAgain = Schema.Struct({
   event: Schema.Literal("race_again"),
 });
 
+const GraphicsLost = Schema.Struct({
+  event: Schema.Literal("graphics_lost"),
+  recovered: Schema.Literals(graphicsRecoveries),
+  where: Schema.Literals(graphicsPlaces),
+});
+
 const PlayerEventSchema = Schema.Union([
   GameOpened,
   GameReady,
@@ -96,6 +104,7 @@ const PlayerEventSchema = Schema.Union([
   RaceStarted,
   RaceEnded,
   RaceAgain,
+  GraphicsLost,
 ]);
 
 export type PlayerEvent = typeof PlayerEventSchema.Type;

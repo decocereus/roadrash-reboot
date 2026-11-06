@@ -37,6 +37,30 @@ const riddenLead = (spikes: readonly Spike[]) => {
   return (atMs: number): number => leads.get(atMs) ?? Number.NaN;
 };
 
+const ONE_WAY_MS = STEADY_RTT_MS / 2;
+
+const heldTicksAfter = (
+  lateMs: (sentAt: number) => number,
+  untilMs: number
+): number => {
+  const clock = createRoomClock();
+  let now = 0;
+  for (let tick = 0; tick * TICK_MS <= untilMs; tick += 1) {
+    now = tick * TICK_MS + ONE_WAY_MS + lateMs(tick * TICK_MS);
+    clock.heardTick(tick, now);
+  }
+  clock.heardRtt(STEADY_RTT_MS, now);
+  return clock.target(now) - roomTick(now + ONE_WAY_MS);
+};
+
+const STALLED_UNTIL_MS = 10_000;
+const STALL_EVERY_MS = 500;
+const STALL_MS = 300;
+const stalledAtStart = (sentAt: number): number => {
+  const into = sentAt % STALL_EVERY_MS;
+  return sentAt < STALLED_UNTIL_MS && into < STALL_MS ? STALL_MS - into : 0;
+};
+
 describe("the room clock", () => {
   it("counts down to the room's start moment, as fast as this link can hear it", () => {
     const clock = createRoomClock();
@@ -205,6 +229,21 @@ describe("the room clock", () => {
     expect(clock.leadBloated(120, 1000)).toBeTruthy();
     clock.heardRtt(400, 1000);
     expect(clock.leadBloated(126, 1000)).toBeFalsy();
+  });
+
+  it("holds a control at the room for the two-tick margin on a steady link", () => {
+    expect(heldTicksAfter(() => 0, STALLED_UNTIL_MS)).toBe(2);
+  });
+
+  it("forgets ticks heard late while the race loads within a few seconds", () => {
+    expect(heldTicksAfter(stalledAtStart, STALLED_UNTIL_MS + 3000)).toBe(2);
+  });
+
+  it("does not read a few seconds of slower delivery as jitter", () => {
+    const slowerPerMs = 0.017;
+    expect(
+      heldTicksAfter((sentAt) => sentAt * slowerPerMs, STALLED_UNTIL_MS)
+    ).toBeLessThanOrEqual(4);
   });
 
   it("skips a step when far ahead and catches up when behind, at most four", () => {

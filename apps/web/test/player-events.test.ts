@@ -1,14 +1,21 @@
 import { MAX_EVENTS_IN_BATCH } from "@racer/telemetry/limits";
+import type { GraphicsPlace } from "@racer/telemetry/limits";
 import type { PlayerEvent } from "@racer/telemetry/player-events";
 import { describe, expect, it } from "vitest";
 
 import { roomArrivalOf } from "../src/components/room-url.ts";
+import {
+  createGraphicsLoss,
+  RECOVERY_WAIT_MS,
+} from "../src/diagnostics/graphics-loss.ts";
 import {
   browserFamilyOf,
   createPlayerEvents,
   storedPlayerId,
 } from "../src/diagnostics/player-events.ts";
 import { createRaceEvents } from "../src/diagnostics/race-events.ts";
+import { graphicsPlaceOf } from "../src/navigation.ts";
+import type { View } from "../src/navigation.ts";
 
 const PLAYER = "3f0c2a1e-7b6d-4c1a-9e2f-0123456789ab";
 const again: PlayerEvent = { event: "race_again" };
@@ -250,5 +257,184 @@ describe("device facts", () => {
     ["?room=abc&via=nonsense", "link"],
   ])("reads the arrival in %s as %s", (search, arrival) => {
     expect(roomArrivalOf(search)).toBe(arrival);
+  });
+});
+
+const LOST = "webglcontextlost";
+const RESTORED = "webglcontextrestored";
+
+interface ShownScreen {
+  shown: View["screen"];
+}
+
+const lossTracker = () => {
+  const sent: PlayerEvent[] = [];
+  const waits = new Map<number, () => void>();
+  const screen: ShownScreen = { shown: "race" };
+  let next = 0;
+  const loss = createGraphicsLoss({
+    after(ms, run) {
+      expect(ms).toBe(RECOVERY_WAIT_MS);
+      next += 1;
+      const id = next;
+      waits.set(id, run);
+      return () => {
+        waits.delete(id);
+      };
+    },
+    place: () => graphicsPlaceOf[screen.shown],
+    track(event) {
+      sent.push(event);
+    },
+  });
+  const giveUp = (): void => {
+    for (const run of waits.values()) {
+      run();
+    }
+  };
+  return { giveUp, loss, screen, sent, waits };
+};
+
+const report = (
+  where: GraphicsPlace,
+  recovered: "no" | "yes"
+): readonly PlayerEvent[] => [{ event: "graphics_lost", recovered, where }];
+
+const fire = (canvas: EventTarget, name: string): void => {
+  canvas.dispatchEvent(new Event(name));
+};
+
+describe("a graphics loss", () => {
+  it("reports yes when the graphics come back, and not before", () => {
+    const { loss, sent, waits } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, "game");
+    fire(canvas, LOST);
+    expect(sent).toStrictEqual([]);
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual(report("race", "yes"));
+    expect(waits.size).toBe(0);
+  });
+
+  it("reports no when the wait runs out, and stays one report if they return later", () => {
+    const { giveUp, loss, screen, sent } = lossTracker();
+    const canvas = new EventTarget();
+    screen.shown = "clubhouse";
+    loss.watch(canvas, "game");
+    fire(canvas, LOST);
+    giveUp();
+    expect(sent).toStrictEqual(report("menu", "no"));
+    fire(canvas, RESTORED);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("reports no when the page closes before the answer is known", () => {
+    const { loss, sent, waits } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, "game");
+    fire(canvas, LOST);
+    loss.leaving();
+    loss.leaving();
+    expect(sent).toStrictEqual(report("race", "no"));
+    expect(waits.size).toBe(0);
+  });
+
+  it("says where the player was when it happened, not where they went next", () => {
+    const { loss, screen, sent } = lossTracker();
+    const canvas = new EventTarget();
+    loss.watch(canvas, "game");
+    fire(canvas, LOST);
+    screen.shown = "clubhouse";
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual(report("race", "yes"));
+  });
+
+  it("counts the results screen as the race", () => {
+    const { loss, screen, sent } = lossTracker();
+    const canvas = new EventTarget();
+    screen.shown = "results";
+    loss.watch(canvas, "game");
+    fire(canvas, LOST);
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual(report("race", "yes"));
+  });
+
+  it("makes one report when a GPU crash takes the bar and the game behind it", () => {
+    const { loss, screen, sent } = lossTracker();
+    const game = new EventTarget();
+    const bar = new EventTarget();
+    screen.shown = "room";
+    loss.watch(game, "game");
+    loss.watch(bar, "bar");
+    fire(game, LOST);
+    fire(bar, LOST);
+    fire(game, RESTORED);
+    expect(sent).toStrictEqual([]);
+    fire(bar, RESTORED);
+    expect(sent).toStrictEqual(report("bar", "yes"));
+  });
+
+  it("reports a second loss on its own", () => {
+    const { loss, screen, sent } = lossTracker();
+    const canvas = new EventTarget();
+    screen.shown = "room";
+    loss.watch(canvas, "bar");
+    fire(canvas, LOST);
+    fire(canvas, RESTORED);
+    fire(canvas, LOST);
+    fire(canvas, RESTORED);
+    expect(sent).toStrictEqual([
+      ...report("bar", "yes"),
+      ...report("bar", "yes"),
+    ]);
+  });
+
+  it("counts a room's invitation screen as a menu until the bar is drawn", () => {
+    const { loss, screen, sent } = lossTracker();
+    const game = new EventTarget();
+    screen.shown = "room";
+    loss.watch(game, "game");
+    fire(game, LOST);
+    fire(game, RESTORED);
+    expect(sent).toStrictEqual(report("menu", "yes"));
+  });
+
+  it("says nothing when the bar closes its own healthy canvas", () => {
+    const { loss, sent } = lossTracker();
+    const canvas = new EventTarget();
+    const unwatch = loss.watch(canvas, "game");
+    unwatch();
+    fire(canvas, LOST);
+    expect(sent).toStrictEqual([]);
+  });
+
+  it("reports no when the player leaves the bar with its graphics still gone", () => {
+    const { loss, screen, sent } = lossTracker();
+    const game = new EventTarget();
+    const bar = new EventTarget();
+    screen.shown = "room";
+    loss.watch(game, "game");
+    const unwatch = loss.watch(bar, "bar");
+    fire(bar, LOST);
+    unwatch();
+    expect(sent).toStrictEqual(report("bar", "no"));
+    screen.shown = "clubhouse";
+    fire(game, LOST);
+    fire(game, RESTORED);
+    expect(sent.at(-1)).toStrictEqual(report("menu", "yes")[0]);
+  });
+
+  it("stays no when the bar is left lost and the game behind it comes back", () => {
+    const { loss, screen, sent } = lossTracker();
+    const game = new EventTarget();
+    const bar = new EventTarget();
+    screen.shown = "room";
+    loss.watch(game, "game");
+    const unwatch = loss.watch(bar, "bar");
+    fire(game, LOST);
+    fire(bar, LOST);
+    unwatch();
+    fire(game, RESTORED);
+    expect(sent).toStrictEqual(report("bar", "no"));
   });
 });
