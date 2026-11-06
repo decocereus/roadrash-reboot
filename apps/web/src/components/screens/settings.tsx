@@ -35,12 +35,12 @@ const reportLine = (report: ReportStatus): string => {
     return `Sending ${report.reportId}`;
   }
   if (report.state === "saved") {
-    return `Saved ${report.reportId}`;
+    return `Sent ${report.reportId}`;
   }
   if (report.state === "queued") {
-    return `Queued ${report.reportId}: ${report.reason}, retrying`;
+    return `Could not send ${report.reportId} yet. Trying again.`;
   }
-  return `Failed ${report.reportId}: ${report.reason}`;
+  return `Could not send ${report.reportId}.`;
 };
 
 const useDiagnosticsView = (): DiagnosticsView => {
@@ -64,7 +64,7 @@ const testerActions = (
       trailing: onOff(settings.recording),
     },
     {
-      detail: "Sends the recording to the play server every 30 seconds",
+      detail: "Sends the recording to us every 30 seconds",
       id: "upload",
       label: "Automatic upload",
       run: () => {
@@ -156,7 +156,7 @@ export const SettingsScreen = ({ onBack }: { readonly onBack: () => void }) => {
               className="text-paper/50 tracking-wide"
               style={{ fontSize: stagePx(18) }}
             >
-              B while riding marks the moment · Session {session}
+              B while riding marks the moment. Recording {session}
             </p>
           )}
           <div className="flex" style={{ gap: stagePx(24) }}>

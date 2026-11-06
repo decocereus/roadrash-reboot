@@ -60,7 +60,7 @@ export const Palette = () => (
             {face.sample}
           </p>
           <p className="text-paper/60 text-label mt-2">
-            {face.face} · {face.use}
+            {face.face}, {face.use}
           </p>
         </li>
       ))}

@@ -100,7 +100,7 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
         className="font-display text-ink flex -rotate-6 items-center justify-center leading-none font-black whitespace-nowrap uppercase"
         style={{ ...place(SHEET_TITLE), fontSize: stagePx(36) }}
       >
-        {roads[report.roadId].name} · Tier {report.tier}
+        {roads[report.roadId].name}, tier {report.tier}
       </h2>
       {rows.length === 0 ? (
         <p
@@ -141,11 +141,6 @@ const RaceSheet = ({ report }: { readonly report: RaceReport }) => {
                     ? "You"
                     : (report.room?.names.get(row.racer) ??
                       shortNames[row.racer])}
-                  {report.room && !you && !report.room.names.has(row.racer) && (
-                    <span className="text-ink/60 ml-[0.5em] text-[0.6em]">
-                      AI
-                    </span>
-                  )}
                   {note !== undefined && (
                     <span className="text-neon-red ml-[0.5em] text-[0.6em]">
                       {note}
@@ -186,7 +181,7 @@ const verdictOf = ({ ledger, summary, result }: RaceReport): string => {
     const taken =
       bust.weapon === "none"
         ? ""
-        : ` · Took your ${weaponLabel(bust.weapon).toLowerCase()}`;
+        : `, took your ${weaponLabel(bust.weapon).toLowerCase()}`;
     return `Km ${bust.km.toFixed(1)}${taken}`;
   }
   if (wreck) {
@@ -198,7 +193,7 @@ const verdictOf = ({ ledger, summary, result }: RaceReport): string => {
     return "Single race";
   }
   if (ledger.qualified) {
-    return `Qualified · ${ledger.qualifiedCount} / ${roadList.length} roads`;
+    return `Qualified, ${ledger.qualifiedCount} of ${roadList.length} roads`;
   }
   return ledger.repeat ? "Qualified already" : "Not qualified";
 };
@@ -239,7 +234,7 @@ const prizeLabel = (ledger: Ledger): string => {
   if (!ledger.repeat) {
     return `Prize, ${ordinal(ledger.place)}`;
   }
-  return ledger.prize > 0 ? "Prize · Half, repeat run" : "Repeat run · No pay";
+  return ledger.prize > 0 ? "Half prize, repeat run" : "Repeat run, no pay";
 };
 
 const LedgerLine = ({
@@ -278,7 +273,7 @@ const Takings = ({ ledger }: { readonly ledger: Ledger }) => (
       <LedgerLine amount={ledger.prize} label={prizeLabel(ledger)} />
       <LedgerLine
         amount={-ledger.repair}
-        label={ledger.repairHalved ? "Repairs · Half" : "Repairs"}
+        label={ledger.repairHalved ? "Half repairs" : "Repairs"}
       />
       <LedgerLine amount={-ledger.fine} label="Fines" />
       {ledger.envelope !== 0 && (
@@ -409,7 +404,7 @@ const againLabel = (report: RaceReport, repeatRun: boolean): string => {
   if (report.room) {
     return "Back to the lobby";
   }
-  return repeatRun ? "Race again · Half pay" : "Race again";
+  return repeatRun ? "Race again for half pay" : "Race again";
 };
 
 export const ResultsScreen = ({

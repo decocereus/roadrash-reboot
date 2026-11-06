@@ -85,7 +85,7 @@ const statusOf = (phase: SeatPhase, refusal: Refusal | null): string => {
       return "Reconnecting to the room.";
     }
     case "refused": {
-      return refusal ? refusalLine(refusal) : "This seat was refused.";
+      return refusal ? refusalLine(refusal) : "You can't get in right now.";
     }
     default: {
       return phase satisfies never;
@@ -324,7 +324,7 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
       </li>
     ))}
     <li className="font-display text-paper/60 py-1">
-      {ROOM_FIELD_SIZE - lobby.members.length} AI riders fill the grid to{" "}
+      {ROOM_FIELD_SIZE - lobby.members.length} street riders join to make{" "}
       {ROOM_FIELD_SIZE}.
     </li>
   </ul>
@@ -474,8 +474,8 @@ export const QueueScreen = ({
             : `${riders} of ${MOST_SEATS}`}
         </p>
         <p className="font-display text-paper/60">
-          The race leaves with whoever is here after {QUEUE_SECONDS} s. AI
-          riders fill the grid to 10 and are labelled AI.
+          The race leaves with whoever is here after {QUEUE_SECONDS} s. Street
+          riders join to make 10.
         </p>
         <MenuList
           autoFocus
@@ -497,13 +497,13 @@ export const QueueScreen = ({
       <div className="border-paper/30 flex flex-col gap-4 border-2 p-6">
         <p className="font-display text-quote text-paper">Public rules</p>
         <div className="flex flex-col gap-2">
-          <RuleLine label="Road" value="The server picks it" />
+          <RuleLine label="Road" value="Picked for you" />
           <RuleLine label="Tier" value={String(publicRace.tier)} />
           <RuleLine
             label="Bike"
             value={`${bikes[publicRace.bikeId].name}, same for all`}
           />
-          <RuleLine label="Catch-up" value="None, for humans or AI" />
+          <RuleLine label="Speed help" value="None, for anyone" />
           <RuleLine label="Rank" value="Doesn't count" />
         </div>
       </div>

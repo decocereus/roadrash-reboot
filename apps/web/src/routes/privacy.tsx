@@ -5,19 +5,19 @@ const records = [
     kept: "Kept about 7 days in Cloudflare's logs.",
     title: "How each race ran",
     what: "The race ID, the road, the seed, connection times, where each rider connected from at city level, crashes, controls and frame times. With Race data on, it also holds the game version, your graphics card and quality level, and a timeline of your frame and network timing during the race. Riders are numbers. It holds no player ID, name or invite link.",
-    why: "To find out why a race went badly. The room server writes most of this for every race, because it runs the race, so the switch below stops only the game version, graphics card, quality level and timeline.",
+    why: "To find out why a race went badly. We record most of this for every race, because we run the race, so the switch below stops only the game version, graphics card, quality level and timeline.",
   },
   {
     kept: "Kept by PostHog, in the EU, under its retention rules.",
     title: "Where people stop playing",
     what: "A small list of events: the game opened and loaded, which race you picked, joining a room, copying an invite, a race starting and ending, and racing again. Each one carries your random ID, the race ID, your country, your graphics card, screen size and browser family.",
-    why: "To see where the game loses people and what breaks on which machines. Events go through our server first, so PostHog never receives your IP address.",
+    why: "To see where the game loses people and what breaks on which machines. Events reach us first, so PostHog never receives your IP address.",
   },
   {
     kept: "Every race during the closed test. Kept 7 days in Cloudflare's storage.",
     title: "Race tapes",
     what: "The controls each rider sent, the race's seed and versions, and checks that let us replay the race. Riders are numbers. It holds no player ID, name or invite link.",
-    why: "To replay what a race went through when something goes wrong. The room server writes this too, so the switch below does not stop it.",
+    why: "To replay what a race went through when something goes wrong. We record this for every race too, so the switch below does not stop it.",
   },
 ] as const;
 
@@ -77,7 +77,7 @@ export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
   head: () => ({
     meta: [
-      { title: "What we record · Lowside" },
+      { title: "What we record | Lowside" },
       {
         content: "What Lowside records about races, and how to switch it off.",
         name: "description",
