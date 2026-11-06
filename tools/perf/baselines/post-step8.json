@@ -3288,6 +3288,14 @@
       "side": "B",
       "source": "baseline-2026-11-06T04-45-16-186Z-e3f38fe-e3f38fe",
       "value": 192711
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T11-47-50-980Z-d4df00f-d4df00f",
+      "value": 1170534
     }
   ],
   "revisions": {
@@ -4516,6 +4524,29 @@
       "sides": {
         "A": "e3f38febb210bf6e5317abd6499d731df2ee28dc",
         "B": "e3f38febb210bf6e5317abd6499d731df2ee28dc"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 1170534, \"bytes.route.root.gzip\": 621484, \"bytes.route.kit.raw\": 959991, \"bytes.route.kit.gzip\": 548736, \"bytes.game.raw\": 1999790, \"bytes.game.gzip\": 857508, \"bytes.game.incremental.raw\": 829256, \"bytes.game.incremental.gzip\": 236024, \"bytes.worker.raw\": 753283, \"bytes.worker.gzip\": 194052, \"bytes.client.raw\": 2140845, \"bytes.client.gzip\": 912841}",
+        "builtB": "{\"bytes.route.root.raw\": 1170534, \"bytes.route.root.gzip\": 621484, \"bytes.route.kit.raw\": 959991, \"bytes.route.kit.gzip\": 548736, \"bytes.game.raw\": 1999790, \"bytes.game.gzip\": 857508, \"bytes.game.incremental.raw\": 829256, \"bytes.game.incremental.gzip\": 236024, \"bytes.worker.raw\": 753391, \"bytes.worker.gzip\": 194068, \"bytes.client.raw\": 2140845, \"bytes.client.gzip\": 912841}",
+        "harnessDigest": "111643861c121f03cb08b212da05c81fe0f1c0c85d3839affd5b2fca9ba51ea5",
+        "lockfileSha256": "7d4bce5cacea74cf01953fb780c4165952e9c4dff20c2f7bc3b4c7fced69f4af",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "8f2a3cb3f3e076b5906cb013102fb751a77d5355ab1d5f5037600e089ab56587",
+        "sideBSourceDigest": "8f2a3cb3f3e076b5906cb013102fb751a77d5355ab1d5f5037600e089ab56587",
+        "why": "Signal lost and Your bike is up move from a lazy chunk into the root route, because a rider whose network drops cannot download the screen that tells them so. Main at 22e4cdab read 1,167,867 B raw in CI against a limit of 1,169,266 B, and this branch reads 1,170,534 B on this Mac, about 2.7 KB more. The gzip row stays under its limit. A and B read the same."
+      },
+      "id": "baseline-2026-11-06T11-47-50-980Z-d4df00f-d4df00f",
+      "lanes": ["build"],
+      "sides": {
+        "A": "d4df00fec2bea4ad5614dc06985b9ff199cd9786",
+        "B": "d4df00fec2bea4ad5614dc06985b9ff199cd9786"
       }
     }
   ],
