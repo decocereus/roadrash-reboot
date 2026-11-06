@@ -1135,8 +1135,10 @@ WaitsForBegunRace(r) ==
 ReadyRiderRides ==
     [][Tick => \A r \in Riders : ~WaitsForBegunRace(r)]_vars
 
-\* A dropped rider who comes back while the room still holds their bike
-\* and their spot gets back on it, unless they chose rejoin=no.  Guards:
+\* A dropped rider who comes back as the same member while the room still
+\* holds their bike and their spot gets back on it, unless they chose
+\* rejoin=no.  A rider the lobby made a new member does not own the bike.
+\* Guards:
 \* host.ts seat retires a replaced socket with a hold, and looks up the
 \* held seat (heldSeatOf, rejoin).
 BackOnBike ==
@@ -1146,7 +1148,8 @@ BackOnBike ==
              /\ room'.sock[s] = "present"
              /\ Head(wire.toH[s]) = "seat"
              /\ room.pres[k] \in InRace
-             /\ room.mem[k] # "none")
+             /\ room.mem[k] # "none"
+             /\ room.seatInc[k] = room.inc[k])
               => (room'.pres[k] = "here" /\ room'.role[s] = "seated")]_vars
 
 \* The room lets go of a dropped rider's bike only when the hold runs out,
