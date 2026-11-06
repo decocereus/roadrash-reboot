@@ -22,6 +22,7 @@ import { describe, expect, it } from "vitest";
 import { createHost } from "../src/host.ts";
 import { humanNames, seatedCount } from "../src/manifest.ts";
 import { SEAT_CLOSED, SEAT_SILENT } from "../src/messages.ts";
+import { ticksOf } from "../src/room-config.ts";
 import {
   nearby,
   sameBuild,
@@ -205,7 +206,11 @@ describe("a room host", () => {
       seatedCount(manifest),
       manifest.rule
     );
-    const { confirmed } = createRoomClient(setup, riderIdAt(0));
+    const { confirmed } = createRoomClient(
+      setup,
+      riderIdAt(0),
+      ticksOf(manifest.raceLimitSeconds)
+    );
     expect(manifest.contentHash).toStrictEqual([
       ...setupDigest(confirmed, setup.track),
     ]);

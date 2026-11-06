@@ -79,7 +79,7 @@ const RecordNote = ({
         <RecordLine label="Reached" value={`Tier ${career.tier}`} />
         <RecordLine
           label="Races"
-          value={`${record.starts} · ${plural(record.wins, "win", "wins")}`}
+          value={`${plural(record.wins, "win", "wins")} in ${record.starts}`}
         />
         <RecordLine
           label="Knocked down"

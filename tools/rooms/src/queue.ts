@@ -1,10 +1,9 @@
 import { parseArgs } from "node:util";
 
-import { publicRoomRule } from "@racer/career/room-race";
 import { decodeRoomPreview } from "@racer/rooms/messages";
-import { QUEUE_WAIT_MS } from "@racer/rooms/queue";
 import { enterQueue, queueUrl } from "@racer/rooms/queue-client";
 import type { QueueMessage } from "@racer/rooms/queue-messages";
+import { launchRoomConfig, msOf } from "@racer/rooms/room-config";
 import { roomKindOf } from "@racer/rooms/room-id";
 import { MOST_SEATS } from "@racer/sim/room";
 import * as Clock from "effect/Clock";
@@ -90,7 +89,8 @@ const ruleProblems = (url: string, roomId: string | null) =>
       return ["The public room did not say its rules."];
     }
     const { bikeId, tier } = preview.value.rule;
-    return bikeId === publicRoomRule.bikeId && tier === publicRoomRule.tier
+    const { publicRace } = launchRoomConfig;
+    return bikeId === publicRace.bikeId && tier === publicRace.tier
       ? []
       : [`The public room runs ${bikeId} at tier ${tier}.`];
   });
@@ -123,7 +123,7 @@ export const main = Effect.fn("rooms.queue")(function* queue(
   const waitedMs = yield* waitFor(
     () => placedIn(lonely) !== null,
     "a lone rider placed",
-    QUEUE_WAIT_MS + MARGIN_MS
+    msOf(launchRoomConfig.queueWaitSeconds) + MARGIN_MS
   );
   const stale = yield* Effect.callback<QueueMessage>((resume) => {
     enterQueue(url, `${build}-old`, {
@@ -139,7 +139,7 @@ export const main = Effect.fn("rooms.queue")(function* queue(
     ...(afterLeaving === 0 ? [] : ["A rider who left stayed in the queue."]),
     ...oneRoomProblems(group),
     ...(yield* ruleProblems(url, placedIn(lonely))),
-    ...(waitedMs > QUEUE_WAIT_MS - MARGIN_MS
+    ...(waitedMs > msOf(launchRoomConfig.queueWaitSeconds) - MARGIN_MS
       ? []
       : [`A lone rider left after only ${waitedMs} ms.`]),
     ...(stale.kind === "refused" ? [] : ["The queue took an old build."]),

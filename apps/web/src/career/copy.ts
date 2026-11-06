@@ -11,7 +11,7 @@ import type { BikeClass } from "@racer/sim/state";
 export const WORDMARK = "Rushline";
 export const TAGLINE = "Race. Fight. Pay for it.";
 export const CONTROLS =
-  "Arrows to steer · Space to punch · Shift to kick · E to get back on";
+  "Arrows to steer, Space to punch, Shift to kick, E to get back on";
 
 export const introCards = [
   "You've got $1,500, a Halden Wren, and nobody knows your name.",

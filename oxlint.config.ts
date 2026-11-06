@@ -520,6 +520,18 @@ export default defineConfig({
       rules: { "rushline/no-entries-loop": "error" },
     },
     {
+      files: [
+        "apps/web/src/components/**/*.{ts,tsx}",
+        "apps/web/src/routes/**/*.tsx",
+        "apps/web/src/career/copy.ts",
+        "apps/web/src/game/hud.ts",
+        "apps/web/src/game/race-feedback.ts",
+        "apps/web/src/career/notes.ts",
+        "apps/web/src/game/bar-signs.ts",
+      ],
+      rules: { "rushline/player-copy": "error" },
+    },
+    {
       files: ["apps/web/src/game/**/*.ts"],
       rules: {
         "rushline/no-distance-hide": "error",

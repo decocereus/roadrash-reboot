@@ -6,12 +6,13 @@ import { SEAT_CLOSED } from "./messages.ts";
 import type { RoomNote } from "./notes.ts";
 import { encodeQueueMessage } from "./queue-messages.ts";
 import type { QueueMessage } from "./queue-messages.ts";
-
-export const QUEUE_WAIT_MS = 30_000;
+import { msOf } from "./room-config.ts";
+import type { RoomConfig } from "./room-config.ts";
 
 export interface QueuePorts {
   readonly after: (ms: number, wake: () => void) => void;
   readonly build: string;
+  readonly config: RoomConfig;
   readonly note: (line: RoomNote) => void;
   readonly now: () => number;
   readonly roomId: () => string;
@@ -69,7 +70,9 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
 
   const deadline = (): number | null => {
     const [oldest] = tickets;
-    return oldest ? oldest.enteredAt + QUEUE_WAIT_MS : null;
+    return oldest
+      ? oldest.enteredAt + msOf(ports.config.queueWaitSeconds)
+      : null;
   };
 
   const settle = (): void => {

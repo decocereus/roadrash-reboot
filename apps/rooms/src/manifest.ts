@@ -1,10 +1,7 @@
-import { policeChoices, trafficChoices } from "@racer/career/room-race";
-import { bikeIds } from "@racer/sim/bikes";
-import { tiers } from "@racer/sim/difficulty";
-import { roadIds } from "@racer/track/road";
 import * as Schema from "effect/Schema";
 
 import { RoomConfigSchema } from "./room-config.ts";
+import { RoomRuleSchema } from "./room-rule.ts";
 
 const RIDER_KINDS = ["human", "ai"] as const;
 
@@ -16,32 +13,13 @@ const RosterEntrySchema = Schema.Struct({
   rider: Schema.Number,
 });
 
-const Police = Schema.Literals(policeChoices);
-const Road = Schema.Literals(roadIds);
-const Tier = Schema.Literals(tiers);
-const Traffic = Schema.Literals(trafficChoices);
-
-export const RoomChoiceChangeSchema = Schema.Struct({
-  police: Schema.optionalKey(Police),
-  roadId: Schema.optionalKey(Road),
-  tier: Schema.optionalKey(Tier),
-  traffic: Schema.optionalKey(Traffic),
-});
-
-export const RoomRuleSchema = Schema.Struct({
-  bikeId: Schema.Literals(bikeIds),
-  police: Police,
-  roadId: Road,
-  tier: Tier,
-  traffic: Traffic,
-});
-
 export const RaceManifestSchema = Schema.Struct({
   build: Schema.String,
   contentHash: Schema.Array(Schema.Number),
   loadingDeadlineMs: Schema.Number,
   protocol: Schema.Number,
   raceId: Schema.String,
+  raceLimitSeconds: RoomConfigSchema.fields.raceLimitSeconds,
   reconnect: Schema.Struct({
     holdSeconds: RoomConfigSchema.fields.seatHoldSeconds,
   }),

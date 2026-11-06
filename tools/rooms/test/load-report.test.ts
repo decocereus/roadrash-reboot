@@ -1,5 +1,5 @@
-import { publicRoomRule } from "@racer/career/room-race";
 import type { RoomStatus } from "@racer/rooms/contract";
+import { launchRoomConfig, publicRuleFor } from "@racer/rooms/room-config";
 import { describe, expect, it } from "vitest";
 
 import type { ClientResult } from "../src/load-plan.ts";
@@ -18,7 +18,7 @@ const statusAt = (tick: number): RoomStatus => ({
   phase: "racing",
   raceId: null,
   roles: [],
-  rule: publicRoomRule,
+  rule: publicRuleFor(launchRoomConfig.publicRace, 0),
   seats: [],
   tick,
   waiting: 4,

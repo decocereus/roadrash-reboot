@@ -22,7 +22,7 @@ import {
   MOST_BATCHED_CONTROLS,
   writeInput,
 } from "./room-wire.ts";
-import { INPUT_HORIZON, PILOT_FROM_TICK, seatsOf } from "./room.ts";
+import { INPUT_HORIZON, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
@@ -166,7 +166,11 @@ const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
 const ringOf = <Value>(fill: () => Value): Value[] =>
   Array.from({ length: MOST_LEAD_TICKS + 1 }, fill);
 
-export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
+export const createRoomClient = (
+  setup: RaceSetup,
+  me: RiderId,
+  pilotFromTick: number
+): RoomClient => {
   const confirmed = createRace(setup);
   const predicted = createRace(setup);
   const digest = setupDigest(confirmed, setup.track);
@@ -224,7 +228,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const guess = (tick: number): TickFrame => {
     const frame = guesses[slotOf(tick)] ?? createTickFrame();
     clearFrame(frame, tick);
-    if (tick >= PILOT_FROM_TICK) {
+    if (tick >= pilotFromTick) {
       if (mine.controller === "human") {
         frame.handovers.set(me, "pilot");
       }
@@ -420,7 +424,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
 
   const notePresses = (frame: TickFrame, reached: number): void => {
     const sent =
-      frame.tick <= reached && frame.tick < PILOT_FROM_TICK
+      frame.tick <= reached && frame.tick < pilotFromTick
         ? (ownControls[slotOf(frame.tick)] ?? coasting)
         : coasting;
     const ridden = frame.controls.get(me) ?? coasting;
@@ -465,7 +469,7 @@ export const createRoomClient = (setup: RaceSetup, me: RiderId): RoomClient => {
   const noteRoomChoice = (frame: TickFrame, reached: number): void => {
     const slot = frame.tick % LAG_WINDOW_TICKS;
     const lost =
-      frame.tick < PILOT_FROM_TICK &&
+      frame.tick < pilotFromTick &&
       (reached < frame.tick ||
         ownControls[slotOf(frame.tick)] !== frame.controls.get(me));
     lostControls += lost ? 1 : 0;

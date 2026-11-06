@@ -1,4 +1,3 @@
-import { publicRoomRule, publicRuleFor } from "@racer/career/room-race";
 import { MOST_SEATS } from "@racer/sim/room";
 import { hexOfWords } from "@racer/sim/room-tape";
 import {
@@ -31,7 +30,7 @@ import {
 } from "./messages.ts";
 import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
-import { buildRace, READY_DEADLINE_MS } from "./race-build.ts";
+import { buildRace } from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
   HERE,
@@ -45,6 +44,7 @@ import {
   traceSeats,
 } from "./race-seat.ts";
 import type { Seat, SeatLink, SeatPresence } from "./race-seat.ts";
+import { msOf, publicRuleFor } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
 import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
 import type { SocketEvent, SocketRole } from "./socket-role.ts";
@@ -137,8 +137,9 @@ export const createHost = (
   const pongView = new DataView(pongBuffer);
   const readyDigest = new Uint32Array(HASH_WORDS);
   const bornAt = ports.now();
-  const lobby = createLobby(bornAt, kind, () =>
-    kind === "public" ? publicRuleFor(ports.seed()) : publicRoomRule
+  const { publicRace } = ports.config;
+  const lobby = createLobby(bornAt, kind, ports.config, () =>
+    publicRuleFor(publicRace, kind === "public" ? ports.seed() : 0)
   );
   let state: HostState<Run> = NEW_HOST;
   let wakes = 0;
@@ -352,7 +353,7 @@ export const createHost = (
         })
       );
     }
-    ports.after(READY_DEADLINE_MS, () => {
+    ports.after(msOf(ports.config.loadDeadlineSeconds), () => {
       countDown(run);
     });
   };

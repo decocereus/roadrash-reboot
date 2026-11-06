@@ -1,24 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import { controlOf } from "./control.ts";
-import { track } from "./race-fixtures.ts";
+import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
-import { createRoom, PILOT_FROM_TICK, roomSetup } from "./room.ts";
+import { createRoom, roomSetup } from "./room.ts";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 
 const RIVAL = riderIdAt(1);
 
 describe("a room's time limit", () => {
   it("hands a seat still sending controls to the pilot and keeps it there", () => {
-    const room = createRoom(roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]));
+    const room = createRoom(
+      roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]),
+      ROOM_LIMIT_TICKS
+    );
     const stopped = controlOf(neutralInput);
     const controllerAfterStep = (): string | undefined => {
       room.accept(PLAYER_RIDER, room.state.tick + 1, [stopped]);
       room.step();
       return riderOf(room.state.riders, PLAYER_RIDER)?.controller;
     };
-    while (room.state.tick < PILOT_FROM_TICK - 2) {
+    while (room.state.tick < ROOM_LIMIT_TICKS - 2) {
       controllerAfterStep();
     }
     expect(controllerAfterStep()).toBe("human");
@@ -29,10 +32,10 @@ describe("a room's time limit", () => {
 
   it("predicts the handover, so no client rolls back for it", () => {
     const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER, RIVAL]);
-    const room = createRoom(setup);
-    const client = createRoomClient(setup, PLAYER_RIDER);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
     const stopped = controlOf(neutralInput);
-    while (room.state.tick < PILOT_FROM_TICK + 60) {
+    while (room.state.tick < ROOM_LIMIT_TICKS + 60) {
       client.predict(stopped);
       room.accept(PLAYER_RIDER, room.state.tick + 1, [stopped]);
       room.accept(RIVAL, room.state.tick + 1, [stopped]);

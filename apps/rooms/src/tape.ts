@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-import { RoomRuleSchema } from "./manifest.ts";
+import { RoomRuleSchema } from "./room-rule.ts";
 
 export const TAPE_VERSION = 2;
 export const TAPE_KEEP_DAYS = 7;

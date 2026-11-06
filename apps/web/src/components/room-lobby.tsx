@@ -175,6 +175,7 @@ const SeatedLobby = ({
   });
   useEffect(() => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
+    let watching: (() => void) | null = null;
     const card = graphicsCard();
     const opened = openRoomSeat(
       import.meta.env.VITE_ROOMS_URL,
@@ -217,6 +218,13 @@ const SeatedLobby = ({
           case "raceLost": {
             tellLost();
             lost();
+            watching ??= readRoomPreview(
+              import.meta.env.VITE_ROOMS_URL,
+              roomId,
+              () => {
+                moveToRoom(roomId, "moved", "try");
+              }
+            );
             break;
           }
           case "redraw": {
@@ -249,6 +257,7 @@ const SeatedLobby = ({
       if (reopening) {
         clearTimeout(reopening);
       }
+      watching?.();
       const closing = seatClosing(handoffNow(), bootFailed.current);
       switch (closing) {
         case "keep": {

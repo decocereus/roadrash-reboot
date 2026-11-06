@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { AWAY_MS } from "../src/lobby.ts";
 import { SEAT_LEFT, SEAT_SILENT } from "../src/messages.ts";
-import { advanceHearing, lastLobby, readyAll, room } from "./host-harness.ts";
+import {
+  advanceHearing,
+  AWAY_MS,
+  lastLobby,
+  readyAll,
+  room,
+} from "./host-harness.ts";
 
 const ABNORMAL_CLOSE = 1006;
 

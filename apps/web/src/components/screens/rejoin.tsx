@@ -3,7 +3,6 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { ordinal } from "../../career/format.ts";
 import { idleHud } from "../../hud-feed.ts";
 import type { HudFeed } from "../../hud-feed.ts";
-import { readRoomPreview } from "../room-preview.ts";
 import { moveToRoom } from "../room-url.ts";
 
 const TICK_MS = 250;
@@ -144,20 +143,10 @@ export const SignalLost = ({
   const now = useNow();
   const holdMs = holdSeconds * 1000;
   const leftMs = holdMs - (now - lostAt);
-  const tooLate = leftMs <= 0;
-  useEffect(
-    () =>
-      tooLate
-        ? undefined
-        : readRoomPreview(import.meta.env.VITE_ROOMS_URL, roomId, () => {
-            moveToRoom(roomId, "moved", "try");
-          }),
-    [roomId, tooLate]
-  );
   const backToBar = () => {
     moveToRoom(roomId, "moved", "no");
   };
-  if (tooLate) {
+  if (leftMs <= 0) {
     return <LateCard holdSeconds={holdSeconds} onBack={backToBar} />;
   }
   return (

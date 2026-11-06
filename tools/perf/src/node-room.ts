@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 
 import { UsageError } from "@racer/devtools/usage-error";
 import { createRaceTally } from "@racer/rooms/race-tally";
+import { launchRoomConfig, ticksOf } from "@racer/rooms/room-config";
 import { controlOf } from "@racer/sim/control";
 import { createRoom, firstRacers, roomSetup } from "@racer/sim/room";
 import { createRoomClient } from "@racer/sim/room-client";
@@ -54,12 +55,13 @@ const prepareRoom = (scenario: Scenario) => {
   const bench = benchStart(scenario.bench);
   const humans = firstRacers(bench, SEATS);
   const setup = roomSetup(bench, humans);
-  const room = createRoom(setup);
+  const pilotFromTick = ticksOf(launchRoomConfig.raceLimitSeconds);
+  const room = createRoom(setup, pilotFromTick);
   const [me] = humans;
   if (me === undefined) {
     throw new RangeError("A measured room seats at least one rider.");
   }
-  const client = createRoomClient(setup, me);
+  const client = createRoomClient(setup, me, pilotFromTick);
   const out = new DataView(new ArrayBuffer(tickCapacity(SEATS)));
   const savedParts: Uint8Array[] = [];
   const tape = createTapeWriter(tickCapacity(SEATS), (_part, bytes) => {
