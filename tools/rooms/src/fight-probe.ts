@@ -138,7 +138,7 @@ export const FIGHT_PILOT = `(() => {
   const step = () => {
     const room = globalThis.__rushlineRoom;
     if (room) {
-      const riders = room.client.confirmed.riders;
+      const riders = room.client.predicted.riders;
       const mine = riders.findIndex((rider) => rider.id === room.me);
       const me = riders[mine];
       const them = riders[mine === 0 ? 1 : 0];

@@ -155,6 +155,7 @@ export const createRaceTally = (): RaceTally => {
       mostSteps,
       refusedPredictions: stats.refusedPredictions,
       resimulatedTicks: stats.resimulatedTicks,
+      retriedPresses: stats.retriedPresses,
       rollbacks: stats.rollbacks,
       rttMeanMs: rttCount === 0 ? 0 : rttTotal / rttCount,
       rttWorstMs,

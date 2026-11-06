@@ -116,7 +116,7 @@ const browserLines = (note: RaceStatsNote): readonly string[] => [
   `    round trip: mean ${stat(note, "rttMeanMs")} ms, worst ${stat(note, "rttWorstMs")} ms`,
   `    frame times: ${stat(note, "frameCount")} frames, p50 ${stat(note, "frameP50Ms")} ms, p95 ${stat(note, "frameP95Ms")} ms, p99 ${stat(note, "frameP99Ms")} ms`,
   `    frames: slowest ${stat(note, "worstFrameMs")} ms at ${stat(note, "worstFrameRoadMetres")} m, ${stat(note, "slowFrames")} slow`,
-  `    desyncs ${stat(note, "desyncs")}, rollbacks ${stat(note, "rollbacks")}, refused predictions ${stat(note, "refusedPredictions")}`,
+  `    desyncs ${stat(note, "desyncs")}, rollbacks ${stat(note, "rollbacks")}, refused predictions ${stat(note, "refusedPredictions")}, retried presses ${stat(note, "retriedPresses")}`,
 ];
 
 const browserIdentity = ({ build, gpu, graphics }: RaceBrowserNote): string =>
