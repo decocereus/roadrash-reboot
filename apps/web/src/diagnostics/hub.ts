@@ -9,6 +9,7 @@ import type { Quality, Session, TelemetryEvent } from "@racer/telemetry/schema";
 
 import type { ProfileFrame } from "../game/profile.ts";
 import { createGraphicsLoss } from "./graphics-loss.ts";
+import type { Drawing } from "./graphics-loss.ts";
 import {
   browserFamilyOf,
   createPlayerEvents,
@@ -72,7 +73,10 @@ export interface Diagnostics {
   readonly qualityRung: () => number;
   readonly attachGame: (probe: GameProbe) => () => void;
   readonly showing: (place: GraphicsPlace) => void;
-  readonly watchCanvas: (canvas: HTMLCanvasElement) => () => void;
+  readonly watchCanvas: (
+    canvas: HTMLCanvasElement,
+    drawing: Drawing
+  ) => () => void;
   readonly sendReport: () => void;
   readonly view: () => DiagnosticsView;
   readonly subscribe: (listener: () => void) => () => void;
@@ -334,10 +338,10 @@ const createDiagnostics = (): Diagnostics => {
       };
       return view;
     },
-    watchCanvas(canvas) {
+    watchCanvas(canvas, drawing) {
       canvas.addEventListener("webglcontextlost", lost);
       canvas.addEventListener("webglcontextrestored", restored);
-      const unwatch = graphicsLoss.watch(canvas);
+      const unwatch = graphicsLoss.watch(canvas, drawing);
       return () => {
         canvas.removeEventListener("webglcontextlost", lost);
         canvas.removeEventListener("webglcontextrestored", restored);

@@ -9,9 +9,11 @@ interface GraphicsLossParts {
   readonly track: (event: PlayerEvent) => void;
 }
 
+export type Drawing = "bar" | "game";
+
 export interface GraphicsLoss {
   readonly leaving: () => void;
-  readonly watch: (canvas: EventTarget) => () => void;
+  readonly watch: (canvas: EventTarget, drawing: Drawing) => () => void;
 }
 
 export const createGraphicsLoss = ({
@@ -20,6 +22,7 @@ export const createGraphicsLoss = ({
   track,
 }: GraphicsLossParts): GraphicsLoss => {
   const down = new Set<EventTarget>();
+  let barsDrawn = 0;
   let open: {
     readonly stopWaiting: () => void;
     readonly where: GraphicsPlace;
@@ -37,14 +40,17 @@ export const createGraphicsLoss = ({
     leaving: () => {
       settle("no");
     },
-    watch(canvas) {
+    watch(canvas, drawing) {
+      if (drawing === "bar") {
+        barsDrawn += 1;
+      }
       const lost = (): void => {
         down.add(canvas);
         open ??= {
           stopWaiting: after(RECOVERY_WAIT_MS, () => {
             settle("no");
           }),
-          where: place(),
+          where: barsDrawn > 0 ? "bar" : place(),
         };
       };
       const restored = (): void => {
@@ -58,6 +64,9 @@ export const createGraphicsLoss = ({
       return () => {
         canvas.removeEventListener("webglcontextlost", lost);
         canvas.removeEventListener("webglcontextrestored", restored);
+        if (drawing === "bar") {
+          barsDrawn -= 1;
+        }
         if (down.delete(canvas)) {
           settle("no");
         }

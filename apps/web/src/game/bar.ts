@@ -110,10 +110,13 @@ const openRoom = (
 ): BarScene => {
   const pins = pinsFrom(globalThis.location.search);
   const renderer = new THREE.WebGLRenderer({ antialias: false, canvas });
-  owners.push(() => {
-    renderer.dispose();
-    renderer.forceContextLoss();
-  }, diagnostics().watchCanvas(canvas));
+  owners.push(
+    () => {
+      renderer.dispose();
+      renderer.forceContextLoss();
+    },
+    diagnostics().watchCanvas(canvas, "bar")
+  );
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;

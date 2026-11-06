@@ -96,7 +96,7 @@ export const graphicsPlaceOf = {
   race: "race",
   results: "race",
   rideOut: "menu",
-  room: "bar",
+  room: "menu",
   routeBoard: "menu",
 } as const satisfies Record<View["screen"], GraphicsPlace>;
 
