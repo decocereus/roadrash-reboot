@@ -13,6 +13,8 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
+import { parse } from "postcss";
+import type { AtRule, Declaration } from "postcss";
 
 import type { Observation } from "./budgets.ts";
 import { textureBytesOf } from "./glb-textures.ts";
@@ -189,6 +191,49 @@ const keyByFile = (manifest: ViteManifest, file: string): string[] =>
   Object.entries(manifest)
     .filter(([, chunk]) => chunk.file === file)
     .map(([key]) => key);
+
+const FONT_EXTENSIONS = [".woff2", ".woff", ".ttf", ".otf"] as const;
+const ENGLISH_TEXT = { from: 0x20, to: 0x7e } as const;
+const FIRST_URL = /url\(\s*(["']?)([^"')]+)\1\s*\)/u;
+
+const isFont = (file: string): boolean =>
+  FONT_EXTENSIONS.some((extension) => file.endsWith(extension));
+
+const spanOf = (token: string): readonly [number, number] => {
+  const digits = token.trim().replace(/^U\+/iu, "");
+  if (digits.includes("?")) {
+    return [
+      Number.parseInt(digits.replaceAll("?", "0"), 16),
+      Number.parseInt(digits.replaceAll("?", "F"), 16),
+    ];
+  }
+  const [from = "", to = from] = digits.split("-");
+  return [Number.parseInt(from, 16), Number.parseInt(to, 16)];
+};
+
+const holdsEnglish = (unicodeRange: string | null): boolean =>
+  unicodeRange === null ||
+  unicodeRange.split(",").some((token) => {
+    const [from, to] = spanOf(token);
+    return from <= ENGLISH_TEXT.to && to >= ENGLISH_TEXT.from;
+  });
+
+const declared = (face: AtRule, prop: string): string | null =>
+  (face.nodes ?? []).find(
+    (node): node is Declaration => node.type === "decl" && node.prop === prop
+  )?.value ?? null;
+
+const englishFontsOf = (stylesheet: string, css: string): string[] => {
+  const fonts: string[] = [];
+  parse(css).walkAtRules("font-face", (face) => {
+    const source = FIRST_URL.exec(declared(face, "src") ?? "")?.[2] ?? null;
+    if (source !== null && holdsEnglish(declared(face, "unicode-range"))) {
+      const { pathname } = new URL(source, `file:///${stylesheet}`);
+      fonts.push(pathname.slice(1));
+    }
+  });
+  return fonts;
+};
 
 const costOf = (
   files: readonly string[],
@@ -394,6 +439,13 @@ export const accountBuild = Effect.fn("build.account")(function* accountBuild(
       (each) => each.file.startsWith("client/") && each.file.endsWith(".css")
     )
     .map((each) => each.file.slice("client/".length));
+  const englishFonts = new Set<string>();
+  for (const stylesheet of stylesheets) {
+    const css = yield* fs.readFileString(path.join(out, "client", stylesheet));
+    for (const font of englishFontsOf(stylesheet, css)) {
+      englishFonts.add(font);
+    }
+  }
   const rootKeys = clientKeys(start.root, "__root__");
   const closure = (keys: readonly string[], extra: readonly string[] = []) => {
     const walked = walk(client, keys, routeWalk);
@@ -401,6 +453,7 @@ export const accountBuild = Effect.fn("build.account")(function* accountBuild(
       problems.push(`The client manifest has no chunk ${key}`);
     }
     return [...new Set([...walked.files, ...extra])]
+      .filter((file) => !isFont(file) || englishFonts.has(file))
       .map((file) => `client/${file}`)
       .toSorted();
   };
