@@ -71,6 +71,9 @@ const ATLAS_WITH_MIPS = 5_592_404;
 const [reference, packRiding] = scenarios;
 const middle = Math.floor(WINDOW_TICKS / 2);
 
+const fonts = (files: readonly string[]) =>
+  files.filter((file) => file.includes("/face-"));
+
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
@@ -382,8 +385,6 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
 
   it("counts the first source of each font face that English text uses", async () => {
     const record = await accounted("A", plainFixture);
-    const fonts = (files: readonly string[]) =>
-      files.filter((file) => file.includes("/face-"));
     expect({
       client: fonts(record.closures.client.files),
       kit: fonts(record.closures.kit.files),

@@ -16,7 +16,8 @@ const KIT_CHUNK = "src/routes/kit.tsx?tsr-split=component";
 const ENTRY_CHUNK = "client-entry.tsx";
 
 const STYLESHEET_BYTES = 600;
-const STYLESHEET = `@font-face{font-family:Face;src:url(/assets/face-latin.woff2)format("woff2"),url(/assets/face-latin.woff)format("woff");unicode-range:U+0000-00FF}
+const STYLESHEET =
+  `@font-face{font-family:Face;src:url(/assets/face-latin.woff2)format("woff2"),url(/assets/face-latin.woff)format("woff");unicode-range:U+0000-00FF}
 @font-face{font-family:Face;src:url(./face-cyrillic.woff2)format("woff2");unicode-range:U+0400-045F}
 `.padEnd(STYLESHEET_BYTES, " ");
 

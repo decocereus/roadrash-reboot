@@ -194,7 +194,7 @@ const keyByFile = (manifest: ViteManifest, file: string): string[] =>
 
 const FONT_EXTENSIONS = [".woff2", ".woff", ".ttf", ".otf"] as const;
 const ENGLISH_TEXT = { from: 0x20, to: 0x7e } as const;
-const FIRST_URL = /url\(\s*(["']?)([^"')]+)\1\s*\)/u;
+const FIRST_URL = /url\(\s*(?<quote>["']?)(?<source>[^"')]+)\k<quote>\s*\)/u;
 
 const isFont = (file: string): boolean =>
   FONT_EXTENSIONS.some((extension) => file.endsWith(extension));
@@ -226,7 +226,8 @@ const declared = (face: AtRule, prop: string): string | null =>
 const englishFontsOf = (stylesheet: string, css: string): string[] => {
   const fonts: string[] = [];
   parse(css).walkAtRules("font-face", (face) => {
-    const source = FIRST_URL.exec(declared(face, "src") ?? "")?.[2] ?? null;
+    const source =
+      FIRST_URL.exec(declared(face, "src") ?? "")?.groups?.source ?? null;
     if (source !== null && holdsEnglish(declared(face, "unicode-range"))) {
       const { pathname } = new URL(source, `file:///${stylesheet}`);
       fonts.push(pathname.slice(1));
