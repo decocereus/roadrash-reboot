@@ -14,7 +14,8 @@
     "@racer/rooms": "workspace:*",
     "@racer/sim": "workspace:*",
     "@racer/telemetry": "workspace:*",
-    "effect": "4.0.0"
+    "effect": "4.0.0",
+    "postcss": "8.5.29"
   },
   "devDependencies": {
     "@types/node": "26.4.1",

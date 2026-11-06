@@ -71,6 +71,9 @@ const ATLAS_WITH_MIPS = 5_592_404;
 const [reference, packRiding] = scenarios;
 const middle = Math.floor(WINDOW_TICKS / 2);
 
+const fonts = (files: readonly string[]) =>
+  files.filter((file) => file.includes("/face-"));
+
 const failing = (lines: readonly string[]) =>
   lines.filter((line) => line.startsWith("FAIL"));
 
@@ -358,6 +361,7 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
     const record = await accounted("A", plainFixture);
     expect(record.problems).toStrictEqual([]);
     expect(record.closures.root.files).toStrictEqual([
+      "client/assets/face-latin.woff2",
       "client/assets/invoice.js",
       "client/assets/main.js",
       "client/assets/routes.js",
@@ -372,10 +376,27 @@ describe("perf gate red cases", { timeout: 30_000 }, () => {
       worker: record.closures.worker.raw,
     }).toStrictEqual({
       gameIncremental: 5000 + 300,
-      kit: 8700,
-      root: 9000,
+      kit: 8700 + 800,
+      root: 9000 + 800,
       uploaderIncremental: 400,
       worker: 3000 + 200 + 1500,
+    });
+  });
+
+  it("counts the first source of each font face that English text uses", async () => {
+    const record = await accounted("A", plainFixture);
+    expect({
+      client: fonts(record.closures.client.files),
+      kit: fonts(record.closures.kit.files),
+      root: fonts(record.closures.root.files),
+    }).toStrictEqual({
+      client: [
+        "client/assets/face-cyrillic.woff2",
+        "client/assets/face-latin.woff",
+        "client/assets/face-latin.woff2",
+      ],
+      kit: ["client/assets/face-latin.woff2"],
+      root: ["client/assets/face-latin.woff2"],
     });
   });
 

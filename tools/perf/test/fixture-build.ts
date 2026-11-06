@@ -15,15 +15,23 @@ const ROUTE_CHUNK = "src/routes/index.tsx?tsr-split=component";
 const KIT_CHUNK = "src/routes/kit.tsx?tsr-split=component";
 const ENTRY_CHUNK = "client-entry.tsx";
 
+const STYLESHEET_BYTES = 600;
+const STYLESHEET =
+  `@font-face{font-family:Face;src:url(/assets/face-latin.woff2)format("woff2"),url(/assets/face-latin.woff)format("woff");unicode-range:U+0000-00FF}
+@font-face{font-family:Face;src:url(./face-cyrillic.woff2)format("woff2");unicode-range:U+0400-045F}
+`.padEnd(STYLESHEET_BYTES, " ");
+
 const clientFiles = {
   "assets/asset-runtime.js": 300,
+  "assets/face-cyrillic.woff2": 500,
+  "assets/face-latin.woff": 1000,
+  "assets/face-latin.woff2": 800,
   "assets/game.js": 5000,
   "assets/invoice.js": 700,
   "assets/kit.js": 900,
   "assets/main.js": 4000,
   "assets/routes.js": 1200,
   "assets/shared.js": 2500,
-  "assets/styles.css": 600,
   "assets/uploader-runtime.js": 400,
 };
 
@@ -54,6 +62,11 @@ const clientManifest = (missingEdge: boolean) => ({
   _invoice: { file: "assets/invoice.js", imports: [ENTRY_CHUNK] },
   _shared: { file: "assets/shared.js" },
   [ENTRY_CHUNK]: {
+    assets: [
+      "assets/face-cyrillic.woff2",
+      "assets/face-latin.woff",
+      "assets/face-latin.woff2",
+    ],
     file: "assets/main.js",
     imports: ["_shared"],
     isEntry: true,
@@ -171,6 +184,7 @@ export const fixtureBuild = (
   for (const [file, size] of Object.entries(clientFiles)) {
     write(path.join(out, "client", file), "x".repeat(size));
   }
+  write(path.join(out, "client/assets/styles.css"), STYLESHEET);
   write(
     path.join(out, "client/.vite/manifest.json"),
     JSON.stringify(clientManifest(options.missingEdge))

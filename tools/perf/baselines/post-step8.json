@@ -3472,6 +3472,86 @@
       "side": "B",
       "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
       "value": 1.0583697760772492
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 917392
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.root.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 385548
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 730306
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.route.kit.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 320763
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 1746653
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.game.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 621582
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 719617
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.worker.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 184697
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.raw",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 2045862
+    },
+    {
+      "environment": "build",
+      "metric": "bytes.client.gzip",
+      "scenario": null,
+      "side": "B",
+      "source": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "value": 834325
     }
   ],
   "revisions": {
@@ -4752,6 +4832,29 @@
       "sides": {
         "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
         "B": "d3c9f34e706a05c26cd73d2ad10786a29fdfa6f5"
+      }
+    },
+    {
+      "environment": "build",
+      "facts": {
+        "buildCommand": "NODE_ENV=production node apps/web/node_modules/vite/bin/vite.js build --manifest --outDir <tmp>",
+        "builtA": "{\"bytes.route.root.raw\": 917392, \"bytes.route.root.gzip\": 385548, \"bytes.route.kit.raw\": 730306, \"bytes.route.kit.gzip\": 320763, \"bytes.game.raw\": 1746653, \"bytes.game.gzip\": 621582, \"bytes.game.incremental.raw\": 829261, \"bytes.game.incremental.gzip\": 236034, \"bytes.worker.raw\": 719419, \"bytes.worker.gzip\": 184671, \"bytes.client.raw\": 2045862, \"bytes.client.gzip\": 834325}",
+        "builtB": "{\"bytes.route.root.raw\": 917392, \"bytes.route.root.gzip\": 385548, \"bytes.route.kit.raw\": 730306, \"bytes.route.kit.gzip\": 320763, \"bytes.game.raw\": 1746653, \"bytes.game.gzip\": 621582, \"bytes.game.incremental.raw\": 829261, \"bytes.game.incremental.gzip\": 236034, \"bytes.worker.raw\": 719617, \"bytes.worker.gzip\": 184697, \"bytes.client.raw\": 2045862, \"bytes.client.gzip\": 834325}",
+        "harnessDigest": "839771ac60965a8d1efa8a247a04bb87de6a86c65c13d6f8081ec64ce109c094",
+        "lockfileSha256": "6513cf647bf427da9473ab84d5a94d1024fb387b6cf585d3e051ce3035d6bbf2",
+        "machine": "Mac16,8",
+        "node": "v26.13.0",
+        "os": "macOS 26.6.2 (25G83)",
+        "pnpm": "11.21.0",
+        "sideASourceDigest": "8b1da2fe5e5e4efcae885b9750bfb99d83f9f22c4c5113efaa93cfaf7e1d8b63",
+        "sideBSourceDigest": "8b1da2fe5e5e4efcae885b9750bfb99d83f9f22c4c5113efaa93cfaf7e1d8b63",
+        "why": "The first download stops counting font files a browser never fetches: the .woff fallback behind each woff2, the non-Latin subsets, and Geist Mono, which nothing renders. The Madrid stretches leave the bundle once @racer/track declares its import side effects. Against main at 36883781 the root route and the game fall by about 236 KB gzip, the kit route by about 228 KB, the client by about 79 KB and the Worker by about 9 KB, so those rows re-pin on this run and the root row takes a new owner cap, 2% over 385,548 B, rounded up."
+      },
+      "id": "baseline-2026-11-06T14-23-30-459Z-5eed07d-5eed07d",
+      "lanes": ["build"],
+      "sides": {
+        "A": "5eed07d2fe0c79e205b3b504b995d16949f3d2f4",
+        "B": "5eed07d2fe0c79e205b3b504b995d16949f3d2f4"
       }
     }
   ],
