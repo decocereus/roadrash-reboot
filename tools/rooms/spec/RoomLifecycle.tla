@@ -455,6 +455,9 @@ Act(t) == [t EXCEPT !.acts = @ + 1, !.told = FALSE]
 
 \* race-server.ts webSocketMessage, webSocketClose, and the seat upgrade.
 \* quitHeard records that the room took a deliberate close on a seat it held.
+\* The upgrade's join gate (gate.ts) is left out.  It refuses "limited" only
+\* while nobody is present and before the host hears the seat, and the seat
+\* client reads any refusal on a fresh socket as "refused", like "full".
 HostRecv(s) ==
     /\ wire.toH[s] # <<>>
     /\ LET m == Head(wire.toH[s])
