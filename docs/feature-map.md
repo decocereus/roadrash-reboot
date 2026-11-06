@@ -428,6 +428,7 @@ Source files:
 - `apps/web/src/components/screens/pause.tsx`
 - `apps/web/src/components/screens/pinned-list.tsx`
 - `apps/web/src/components/screens/race-hud.tsx`
+- `apps/web/src/components/screens/rejoin.tsx`
 - `apps/web/src/components/screens/results.tsx`
 - `apps/web/src/components/screens/ride-out.tsx`
 - `apps/web/src/components/screens/room-lobby.tsx`
@@ -1501,9 +1502,11 @@ Source files:
 - `apps/rooms/src/queue-messages.ts`
 - `apps/rooms/src/queue-server.ts`
 - `apps/rooms/src/queue.ts`
+- `apps/rooms/src/race-build.ts`
 - `apps/rooms/src/race-seat.ts`
 - `apps/rooms/src/race-server.ts`
 - `apps/rooms/src/race-tally.ts`
+- `apps/rooms/src/room-config.ts`
 - `apps/rooms/src/room-id.ts`
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/seat-client.ts`
@@ -1562,6 +1565,7 @@ Test files:
 - `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`
+- `apps/rooms/test/host-rejoin.test.ts`
 - `apps/rooms/test/host-walk.test.ts`
 - `apps/rooms/test/host.test.ts`
 - `apps/rooms/test/input-latency.test.ts`

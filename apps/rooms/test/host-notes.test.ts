@@ -3,19 +3,21 @@ import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
 import { AWAY_MS } from "../src/lobby.ts";
+import { SEAT_QUIT } from "../src/messages.ts";
 import { MOST_TRACE_CHARS } from "../src/tape.ts";
 import {
   advanceHearing,
-  nearby,
-  sameBuild,
-  START_DELAY_MS,
   createClock,
   fakeSocket,
-  someRaceStats,
-  readyPacket,
+  HOLD_MS,
   loadingRace,
-  startedOf,
+  nearby,
   race,
+  readyPacket,
+  sameBuild,
+  someRaceStats,
+  START_DELAY_MS,
+  startedOf,
 } from "./host-harness.ts";
 
 const packetOf = (rollbacks: number): ArrayBuffer => {
@@ -54,7 +56,7 @@ describe("the room's notes", () => {
 
   it("says who left and who was refused", () => {
     const { clock, far, host } = loadingRace();
-    host.gone(far, 1000);
+    host.gone(far, SEAT_QUIT);
     host.seat(fakeSocket(), "Stale", nearby, {
       ...sameBuild(),
       build: "old-build",
@@ -79,6 +81,7 @@ describe("the room's notes", () => {
     host.message(near, packetOf(7));
     expect(clock.notes.some((note) => note.kind === "stats")).toBeFalsy();
     host.gone(near, 1006);
+    clock.advance(HOLD_MS);
     const stats = clock.notes.filter((note) => note.kind === "stats");
     expect(stats).toHaveLength(1);
     expect(stats[0]).toMatchObject({
@@ -103,6 +106,7 @@ describe("the room's notes", () => {
     host.message(near, JSON.stringify(trace));
     host.message(near, JSON.stringify({ ...trace, rows: [250] }));
     host.gone(near, 1006);
+    clock.advance(HOLD_MS);
     expect(clock.notes.filter((note) => note.kind === "browser")).toStrictEqual(
       [
         {
@@ -124,6 +128,7 @@ describe("the room's notes", () => {
     const { clock, host, near } = loadingRace();
     host.message(near, "not json");
     host.gone(near, 1006);
+    clock.advance(HOLD_MS);
     expect(clock.tape.has("tapes/race-1/rider-0.trace.json")).toBeFalsy();
     const { clock: other, host: otherHost, near: otherNear } = loadingRace();
     otherHost.message(otherNear, "x".repeat(MOST_TRACE_CHARS + 1));
@@ -132,6 +137,7 @@ describe("the room's notes", () => {
       JSON.stringify({ build: "abc", gpu: "g", graphics: "q", rows: [] })
     );
     otherHost.gone(otherNear, 1006);
+    other.advance(HOLD_MS);
     expect(other.tape.has("tapes/race-1/rider-0.trace.json")).toBeTruthy();
   });
 
@@ -144,6 +150,7 @@ describe("the room's notes", () => {
     });
     host.message(near, packet);
     host.gone(near, 1006);
+    clock.advance(HOLD_MS);
     expect(clock.notes.find((note) => note.kind === "stats")).toMatchObject({
       stats: { worstFrameRoadMetres: 0 },
     });
@@ -158,7 +165,7 @@ describe("the room's notes", () => {
     expect(startedOf(first[1] ?? fakeSocket()).manifest.raceId).toBe("race-1");
     expect(host.status().raceId).toBe("race-1");
     for (const socket of first) {
-      host.gone(socket, 1000);
+      host.gone(socket, SEAT_QUIT);
     }
     clock.advance(1000);
     expect(host.status().raceId).toBeNull();
@@ -173,8 +180,8 @@ describe("the room's notes", () => {
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
     host.message(near, packet);
-    host.gone(far, 1000);
-    host.gone(near, 1000);
+    host.gone(far, SEAT_QUIT);
+    host.gone(near, SEAT_QUIT);
     host.seat(fakeSocket(), "Late", nearby, sameBuild());
     clock.advance(40_000);
     const written = JSON.stringify(clock.notes);
@@ -194,8 +201,8 @@ describe("the room's notes", () => {
     const packet = new ArrayBuffer(RACE_STATS_PACKET_BYTES);
     writeRaceStats(new DataView(packet), someRaceStats);
     host.message(near, packet);
-    host.gone(near, 1000);
-    host.gone(far, 1000);
+    host.gone(near, SEAT_QUIT);
+    host.gone(far, SEAT_QUIT);
     clock.advance(1000);
     const ended = clock.notes.find((note) => note.kind === "ended");
     expect(ended).toMatchObject({
@@ -222,8 +229,8 @@ describe("the room's notes", () => {
     clock.advance(START_DELAY_MS + 1000);
     clock.stall(70);
     clock.wakeOnce();
-    host.gone(near, 1000);
-    host.gone(far, 1000);
+    host.gone(near, SEAT_QUIT);
+    host.gone(far, SEAT_QUIT);
     clock.advance(1000);
     const ended = clock.notes.find((note) => note.kind === "ended");
     if (ended?.kind !== "ended") {

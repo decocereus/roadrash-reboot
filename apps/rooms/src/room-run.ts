@@ -26,7 +26,10 @@ export interface RoomReport {
 }
 
 export interface RoomRun extends RaceRun {
+  readonly awayMs: number | null;
+  readonly holdSeconds: number;
   readonly me: RiderId;
+  readonly roomId: string;
   readonly riderColours: ReadonlyMap<RiderId, number>;
   readonly confirmed: RaceView;
   readonly countdownSeconds: () => number;
@@ -44,13 +47,24 @@ export const createRoomRun = (
   roomId: string,
   latency: InputLatency
 ): RoomRun => {
-  const { client, colours, me, names, raceId, riderColours } = race;
+  const {
+    awayMs,
+    client,
+    colours,
+    holdSeconds,
+    me,
+    names,
+    raceId,
+    riderColours,
+  } = race;
   let sent: Control = coasting;
   return {
+    awayMs,
     confirmed: client.confirmed,
     countdownSeconds: () => (1 - seat.target()) * TICK_SECONDS,
     events: client.takeEvents,
     frameDrawn: seat.frameDrawn,
+    holdSeconds,
     lagging: () => client.lagging() || seat.leadBloated(),
     leave: seat.leave,
     listen: (onConfirmed) => {
@@ -81,6 +95,7 @@ export const createRoomRun = (
       };
     },
     riderColours,
+    roomId,
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       if (control !== sent) {

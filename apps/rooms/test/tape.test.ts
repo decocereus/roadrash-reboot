@@ -5,6 +5,7 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
+import { SEAT_QUIT } from "../src/messages.ts";
 import { TapeEndSchema, TapeHeaderSchema } from "../src/tape.ts";
 import { createClock, fakeSocket, race } from "./host-harness.ts";
 
@@ -35,7 +36,7 @@ const recorded = () => {
     clock.advance(PING_EVERY_MS);
   }
   for (const socket of sockets) {
-    host.gone(socket, 1000);
+    host.gone(socket, SEAT_QUIT);
   }
   clock.advance(1000);
   const parts = [...clock.tape.entries()]

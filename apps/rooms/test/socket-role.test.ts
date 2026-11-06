@@ -17,6 +17,7 @@ const EVENTS = {
   graceOver: { kind: "graceOver" },
   raceBuilt: { kind: "raceBuilt", run: RUN, seat: SEAT },
   raceOver: { kind: "raceOver" },
+  rejoined: { kind: "rejoined", run: RUN, seat: SEAT },
 } as const satisfies Record<Event["kind"], Event>;
 
 const ROLES = {
@@ -26,9 +27,24 @@ const ROLES = {
 } as const satisfies Record<SocketRoleKind, Role>;
 
 const MOVES = {
-  lobby: { graceOver: null, raceBuilt: "seated", raceOver: null },
-  reporting: { graceOver: "lobby", raceBuilt: null, raceOver: null },
-  seated: { graceOver: null, raceBuilt: null, raceOver: "reporting" },
+  lobby: {
+    graceOver: null,
+    raceBuilt: "seated",
+    raceOver: null,
+    rejoined: "seated",
+  },
+  reporting: {
+    graceOver: "lobby",
+    raceBuilt: null,
+    raceOver: null,
+    rejoined: null,
+  },
+  seated: {
+    graceOver: null,
+    raceBuilt: null,
+    raceOver: "reporting",
+    rejoined: null,
+  },
 } as const satisfies Record<
   SocketRoleKind,
   Record<Event["kind"], SocketRoleKind | null>
@@ -38,6 +54,7 @@ const KINDS = [
   "graceOver",
   "raceBuilt",
   "raceOver",
+  "rejoined",
 ] as const satisfies readonly Event["kind"][];
 
 describe("the moves a socket may make", () => {

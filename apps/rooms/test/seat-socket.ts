@@ -103,6 +103,7 @@ export class FakeSocket {
 }
 
 export const startedMessage = {
+  awayMs: null,
   kind: "started",
   manifest: {
     build: "test-build",
@@ -110,7 +111,7 @@ export const startedMessage = {
     loadingDeadlineMs: 20_000,
     protocol: ROOM_PROTOCOL,
     raceId: "race-1",
-    reconnect: "none",
+    reconnect: { holdSeconds: 30 },
     roster: [
       {
         bikeId: STARTING_BIKE,
@@ -140,6 +141,7 @@ export const lobbyMessage = (edition: number) =>
     phase: "gathering",
     roomKind: "custom",
     rule: publicRoomRule,
+    seatHoldSeconds: 30,
     startsInMs: null,
     you: "near",
   }) satisfies RoomMessage;

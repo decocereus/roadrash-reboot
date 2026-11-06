@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { HOST_PHASES, hostAfter, NEW_HOST } from "../src/host-phase.ts";
 import type { HostEvent, HostPhase, HostState } from "../src/host-phase.ts";
 import { createHost } from "../src/host.ts";
-import { decodeRoomPreview, ROOM_PHASES } from "../src/messages.ts";
+import { decodeRoomPreview, ROOM_PHASES, SEAT_QUIT } from "../src/messages.ts";
 import {
   advanceHearing,
   createClock,
@@ -126,8 +126,8 @@ describe("a host's status", () => {
     steps.push(host.status().hostPhase);
     clock.advance(TICK_MS * 3);
     steps.push(host.status().hostPhase);
-    host.gone(near, 1000);
-    host.gone(far, 1000);
+    host.gone(near, SEAT_QUIT);
+    host.gone(far, SEAT_QUIT);
     steps.push(host.status().hostPhase);
     clock.advance(1000);
     steps.push(host.status().hostPhase);
