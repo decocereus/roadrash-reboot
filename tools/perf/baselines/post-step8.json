@@ -3296,6 +3296,182 @@
       "side": "B",
       "source": "baseline-2026-11-06T11-47-50-980Z-d4df00f-d4df00f",
       "value": 1170534
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "roadLife.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 1.44113600129031
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 43146.95507487521
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 41209.996672212976
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 80327.4143094842
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.client.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 88357.3244592346
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.479544046045713
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.confirm.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.37697198020539047
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 901.3291181364393
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.frame.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 895.1594009983361
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 2.8827777571646216
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.rollback.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 2.3597591402383205
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.47622396312530724
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "room.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.3741745640266767
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 61588.79201331115
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.allocatedBytesPerTick",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 46131.07487520799
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.6402109001740512
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.3547614795078488
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.7137570761926414
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.tick.p99",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 0.38105340800103443
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 2558.956956857074
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "sim.ticksPerSecond",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 3915.034574705851
+    },
+    {
+      "environment": "node-linux-x64",
+      "metric": "lobby.tick.p95",
+      "scenario": null,
+      "side": "B",
+      "source": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "value": 1.0583697760772492
     }
   ],
   "revisions": {
@@ -4547,6 +4723,35 @@
       "sides": {
         "A": "d4df00fec2bea4ad5614dc06985b9ff199cd9786",
         "B": "d4df00fec2bea4ad5614dc06985b9ff199cd9786"
+      }
+    },
+    {
+      "environment": "node-linux-x64",
+      "facts": {
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "cpus": "4",
+        "execArgv": "[\"--no-concurrent-recompilation\"]",
+        "memoryBytes": "16760344576",
+        "node": "v26.13.0",
+        "platform": "linux",
+        "v8": "14.6.202.34-node.40",
+        "calibration": "v1, 10 rounds over 65,536 Uint32 words, 31 samples per block, checksum 1059875404, first block median 17.92410600000005 ms, scale 1.017 against the retained profile's c0 17.6156 ms",
+        "harnessDigest": "ad7dee2c0ad9f64d71e47153e81cae98e2c823d9d49c2269f7303f3f35977db5",
+        "machine": "GitHub-hosted runner, AMD EPYC 7763 64-Core Processor",
+        "os": "Ubuntu 24.04, runner image ubuntu-24.04",
+        "ci": "GitHub Actions run 42222707665 (perf), attempt 3, pull_request event on PR #174",
+        "checkout": "d3c9f34, the pull request merge of 1dad65f into main",
+        "command": "node tools/perf/gate.ts, the perf job's ordinary run",
+        "artifact": "perf-results",
+        "attempts": "three runs of the perf job on Node 26.13.0. Attempt 1 landed on an AMD EPYC 9V45 and attempt 2 on an Intel Xeon Platinum 8573C; their allocation rows matched this run within 5%, and their calibrated timings did not. This run landed on an AMD EPYC 7763, the model the budget rows are set on, so every re-pinned row comes from it. The node-linux-x64 profile is kept: this run scaled by 1.017 against its c0.",
+        "why": "The perf job moved from Node 24.22.1 (V8 13.6) to Node 26.13.0 (V8 14.6). The allocation rows moved to 0.12 to 0.89 of their baselines, and the sim, room, road-life and lobby timing rows to 0.69 to 0.88, or 1.17 to 1.20 for throughput. The snapshot rows moved about 2% (at most 2.2%) and keep their baselines. Node 24 on this Mac reproduced CI's old allocation numbers within 2%, so the change is V8's, not the runner's."
+      },
+      "id": "gate-2026-11-06T13-20-57-263Z-9f67ba9-d3c9f34",
+      "lanes": ["node"],
+      "sides": {
+        "A": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
+        "B": "d3c9f34e706a05c26cd73d2ad10786a29fdfa6f5"
       }
     }
   ],
