@@ -208,7 +208,6 @@ const raceSeenBy = (
   const roomHits: number[] = [];
   let frame = 0;
   const drawFrame = (steps: number) => {
-    client.settle();
     for (let step = 0; step < steps; step += 1) {
       client.predict(plan(me, client.predicted.tick + 1));
       for (const seat of SEATS) {
@@ -293,10 +292,10 @@ describe("another rider's strike in a real race", () => {
     expect([shove?.attackerReach, shove?.victimFlinch]).toStrictEqual([1, 1]);
   });
 
-  it("shows the leg and the flinch with the shove on frames that step no tick", () => {
+  it("shows the leg and the flinch with the shove on a frame drawn between ticks", () => {
     const shove = shoveFrame(
-      raceSeenBy(VICTIM, 1, attackerKicksAt(KICK_AT), {
-        stepsPerFrame: [0, 2],
+      raceSeenBy(VICTIM, BURST, attackerKicksAt(KICK_AT + 1), {
+        stepsPerFrame: [0, 1],
       })
     );
     expect([shove?.attackerReach, shove?.victimFlinch]).toStrictEqual([1, 1]);

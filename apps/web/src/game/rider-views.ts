@@ -359,11 +359,14 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   };
 
   const holdStill = () => {
+    captureAll("after");
+  };
+
+  const hearFights = () => {
     const { tick } = stage.race.view;
     for (const heard of stage.race.takeFights()) {
       fightHeard(cast.views, heard, tick);
     }
-    captureAll("after");
   };
 
   const flinchSideOf = (rider: RiderView): number => {
@@ -598,6 +601,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     dropFleet,
     dropViews,
     followPlayer,
+    hearFights,
     holdStill,
     placeFleet,
     touchDown,

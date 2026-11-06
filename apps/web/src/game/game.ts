@@ -208,6 +208,7 @@ const startGame = (
     dropFleet,
     dropViews,
     followPlayer,
+    hearFights,
     holdStill,
     placeFleet,
     touchDown,
@@ -465,6 +466,7 @@ const startGame = (
     if (stage.warming) {
       return;
     }
+    hearFights();
     roomOf(session)?.frameDrawn();
     cast.clock += seconds;
     let index = -1;
