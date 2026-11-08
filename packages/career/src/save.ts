@@ -3,11 +3,7 @@ import * as Schema from "effect/Schema";
 
 import { problemOf } from "./save-invariants.ts";
 import { firstField, issuePaths } from "./save-issues.ts";
-import {
-  EncodedSaveSchema,
-  SaveSourceSchema,
-  VersionSixSaveSchema,
-} from "./save-schema.ts";
+import { EncodedSaveSchema, SaveSourceSchema } from "./save-schema.ts";
 import type { SaveError } from "./save-schema.ts";
 import {
   blankMemory,
@@ -22,23 +18,15 @@ export type SaveResult =
   | { readonly ok: true; readonly career: CareerState }
   | { readonly ok: false; readonly error: SaveError };
 
-const RawSaveSchema = Schema.Record(Schema.String, Schema.Unknown);
+const RawSave = Schema.Record(Schema.String, Schema.Unknown);
 
-const decodeText = Schema.decodeUnknownResult(
-  Schema.fromJsonString(RawSaveSchema)
-);
+const decodeText = Schema.decodeUnknownResult(Schema.fromJsonString(RawSave));
 const decodeSave = Schema.decodeUnknownResult(EncodedSaveSchema, {
-  errors: "all",
-});
-const decodeVersionSix = Schema.decodeUnknownResult(VersionSixSaveSchema, {
   errors: "all",
 });
 const decodeSources = Schema.decodeUnknownResult(SaveSourceSchema, {
   errors: "all",
 });
-
-type RawSave = typeof RawSaveSchema.Type;
-type EncodedSave = typeof EncodedSaveSchema.Type;
 
 const refused = (kind: SaveError["kind"], field: string): SaveResult => ({
   error: { field, kind },
@@ -52,65 +40,38 @@ const loaded = (career: CareerState): SaveResult => {
     : { error: problem, ok: false };
 };
 
-const withEveryRacer = (save: EncodedSave): CareerState => ({
+const withEveryRacer = (save: typeof EncodedSaveSchema.Type): CareerState => ({
   ...save,
   memory: byRival((rival) => save.memory[rival] ?? blankMemory),
   season: byRacer((racer) => save.season[racer] ?? blankSeason),
 });
 
-const fromVersionSix = (
-  save: typeof VersionSixSaveSchema.Type
-): EncodedSave => ({
-  ...save,
-  season: byRacer((racer) => {
-    const entry = save.season[racer];
-    return entry === undefined
-      ? blankSeason
-      : { ...entry, bestPlace: entry.wins > 0 ? 1 : null };
-  }),
-  version: SAVE_VERSION,
-});
-
-const readSave =
-  <Save>(
-    decode: (save: RawSave) => Result.Result<Save, Schema.SchemaError>,
-    careerOf: (save: Save) => CareerState
-  ) =>
-  (save: RawSave): SaveResult => {
-    const sources = Result.match(decodeSources(save), {
-      onFailure: issuePaths,
-      onSuccess: () => [],
-    });
-    return Result.match(decode(save), {
-      onFailure: (error) =>
-        refused("invalid", firstField([...issuePaths(error), ...sources])),
-      onSuccess: (decoded) =>
-        sources.length > 0
-          ? refused("invalid", firstField(sources))
-          : loaded(careerOf(decoded)),
-    });
-  };
-
-const readers = new Map<unknown, (save: RawSave) => SaveResult>([
-  [
-    EncodedSaveSchema.fields.version.literal,
-    readSave(decodeSave, withEveryRacer),
-  ],
-  [
-    VersionSixSaveSchema.fields.version.literal,
-    readSave(decodeVersionSix, (save) => withEveryRacer(fromVersionSix(save))),
-  ],
-]);
+const currentSave = (save: typeof RawSave.Type): SaveResult => {
+  const sources = Result.match(decodeSources(save), {
+    onFailure: issuePaths,
+    onSuccess: () => [],
+  });
+  return Result.match(decodeSave(save), {
+    onFailure: (error) =>
+      refused("invalid", firstField([...issuePaths(error), ...sources])),
+    onSuccess: (career) =>
+      sources.length > 0
+        ? refused("invalid", firstField(sources))
+        : loaded(withEveryRacer(career)),
+  });
+};
 
 const decode = (text: string): SaveResult =>
   Result.match(decodeText(text), {
     onFailure: () => refused("notJson", ""),
     onSuccess: (save) =>
-      readers.get(save.version)?.(save) ?? refused("wrongVersion", "version"),
+      save.version === SAVE_VERSION
+        ? currentSave(save)
+        : refused("wrongVersion", "version"),
   });
 
 export const serialiseCareer = (career: CareerState): string => {
-  const save: EncodedSave = career;
+  const save: typeof EncodedSaveSchema.Type = career;
   return JSON.stringify(save);
 };
 

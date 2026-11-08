@@ -1,7 +1,6 @@
 import { bikeIds } from "@racer/sim/bikes";
 import { MOST_RACERS } from "@racer/sim/race";
 import * as Schema from "effect/Schema";
-import * as Struct from "effect/Struct";
 
 import { LastResultSchema } from "./save-result-schema.ts";
 import {
@@ -139,15 +138,6 @@ export const EncodedSaveSchema = Schema.Struct({
   weapon: Weapon,
   weaponHits: Hits,
 });
-
-export const VersionSixSaveSchema = EncodedSaveSchema.mapFields((fields) => ({
-  ...fields,
-  season: Schema.Record(
-    Racer,
-    Schema.optionalKey(SeasonEntry.mapFields(Struct.omit(["bestPlace"])))
-  ),
-  version: Schema.Literal(6),
-}));
 
 const sourceList = (longest: number) =>
   Schema.Array(Schema.Unknown).check(Schema.isMaxLength(longest));

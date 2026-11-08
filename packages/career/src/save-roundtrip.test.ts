@@ -4,12 +4,11 @@ import { weapons } from "@racer/sim/weapons";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
-import versionSix from "../test/version-6-save.json" with { type: "json" };
 import { recordedCast } from "./bench.ts";
 import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
-import { newCareer, racerIds, SAVE_VERSION } from "./state.ts";
-import type { CareerState, RacerId } from "./state.ts";
+import { newCareer, racerIds } from "./state.ts";
+import type { CareerState } from "./state.ts";
 
 type Json = Schema.MutableJson;
 
@@ -72,9 +71,17 @@ const missing = (career: CareerState, path: string): string =>
 
 const blank: Json = { bestPlace: null, points: 0, wins: 0 };
 
-const scores = (
-  season: Record<RacerId, { readonly points: number; readonly wins: number }>
-) => racerIds.map((racer) => [season[racer].points, season[racer].wins]);
+const versionSixOf = (career: CareerState): string =>
+  JSON.stringify({
+    ...career,
+    season: Object.fromEntries(
+      racerIds.map((racer) => {
+        const { points, wins } = career.season[racer];
+        return [racer, { lastAhead: {}, points, wins }];
+      })
+    ),
+    version: 6,
+  });
 
 const verdictOn = (save: string): string => {
   const result = parseCareer(save);
@@ -413,23 +420,10 @@ describe("the save", () => {
     ]);
   });
 
-  it("a version 6 save loads, with first as the best finish of each racer who won and none for the rest, since version 6 kept no other finish", () => {
-    const result = parseCareer(JSON.stringify(versionSix));
-    expect(
-      result.ok && [
-        racerIds.filter((racer) => result.career.season[racer].bestPlace === 1),
-        racerIds.filter(
-          (racer) => result.career.season[racer].bestPlace === null
-        ).length,
-        scores(result.career.season),
-        { ...result.career, season: null },
-      ]
-    ).toStrictEqual([
-      ["mags-dunleavy", "gus-abernathy", "orrin-blackwell", "hollis-thorne"],
-      racerIds.length - 4,
-      scores(versionSix.season),
-      { ...versionSix, season: null, version: SAVE_VERSION },
-    ]);
+  it("a version 6 save is refused at the version, not read into version 7", () => {
+    expect(verdictOn(versionSixOf(seasonAt(decent, 2).end))).toBe(
+      "wrongVersion:version"
+    );
   });
 
   it("a save written before a rival joined the game loads with blank rows for that rival", () => {
