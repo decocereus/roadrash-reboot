@@ -7,7 +7,7 @@ The game sends a short list of events about where players stop, under a random I
 - `events`: the twelve events, sent in batches by `navigator.sendBeacon` to `POST /api/events`, which forwards them to PostHog.
 - `notice`: small and quiet at the bottom left of the first menu, gone only after Got it. It hides during the door moment and the race, then comes back.
 - `privacy`: `/privacy`, linked from the notice and Settings.
-- `race-data-switch`: Settings > Race data. Off means no more beacons.
+- `race-data-switch`: Settings > Race data. Off sends what the game already holds, then no more beacons, in every open tab.
 - `dropped-calls`: a failed send never affects a race.
 
 ## How to get to it (user POV)
@@ -27,7 +27,7 @@ Preconditions:
 - **Race data and the ID.** Run `rv click --run <run> "Back room" --within Clubhouse`, `rv click --run <run> Settings --within "Back room"`, `rv press --run <run> ArrowDown`, `rv press --run <run> ArrowDown` and `rv shot --run <run> race-data`. `RACE DATA` is focused and the strip reads `Sends race and game events under your ID <id>`, the ID from Capture.
 - **Sending.** Close Settings, then `rv click --run <run> "Single race" --within "Back room"`, `rv click --run <run> Race --within "Route board"`, `rv wait --run <run> race`, pause and quit with `rv press --run <run> Escape`, `rv click --run <run> "Quit race" --within Pause` and `rv click --run <run> Quit --within "Quit race"`. Then `rv wait --run <run> 'globalThis.__sent.length > 0' --timeout 15` and `rv js --run <run> 'globalThis.__sent.map((text) => JSON.parse(text).events.map((each) => each.event.event))'`. It lists `race_picked`, `race_loaded`, `race_started` and `race_ended`, in batches at most 5 seconds apart. `rv js --run <run> 'globalThis.__sent.some((text) => /name/i.test(text))'` is `false`.
 - **Dropped calls.** Run `rv console --run <run> errors` after the race. Every beacon failed, the race quit normally, and no error comes from the sender.
-- **Switch.** Run `rv js --run <run> 'globalThis.__sent.length'` and note it. Open Settings again, run `rv click --run <run> "Race data" --within Settings` so it reads `OFF`, close it, ride and quit a single race again. `rv js --run <run> 'new Promise((done) => setTimeout(() => done(globalThis.__sent.length), 8000))'` prints the same count.
+- **Switch.** Open Settings again and run `rv click --run <run> "Race data" --within Settings` so it reads `OFF`. One last beacon may leave at the switch, carrying the events from before it. Wait a second, run `rv js --run <run> 'globalThis.__sent.length'` and note it. Close Settings, ride and quit a single race again. `rv js --run <run> 'new Promise((done) => setTimeout(() => done(globalThis.__sent.length), 8000))'` prints the same count. With a second tab open, turning it off in one tab stops the other the same way.
 - **Graphics lost.** In the bar or a race, run `rv js --run <run> 'globalThis.__lose = document.querySelector("canvas").getContext("webgl2").getExtension("WEBGL_lose_context"); globalThis.__lose.loseContext()'`, using the canvas on top for the bar. Run `rv js --run <run> 'globalThis.__lose.restoreContext()'` and check with `rv shot` that the picture comes back. Within 5 seconds `__sent` holds `graphics_lost` with `where` `bar`, `race` or `menu` and `recovered` `yes`. Leave it lost for 30 seconds, or close the page, for `no`.
 - **Live events.** Only with `alchemy dev` and a key: in PostHog's activity view for the project, the events appear with no person profile.
 

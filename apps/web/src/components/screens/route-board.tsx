@@ -1,17 +1,19 @@
-import { practiceCareer, roadsFor } from "@racer/career/field";
-import type { RoadStatus } from "@racer/career/field";
+import {
+  pickWithin,
+  practiceCareer,
+  practiceChoices,
+  roadsFor,
+} from "@racer/career/field";
+import type { PracticePick, RoadStatus } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import type { CareerState } from "@racer/career/state";
-import { tiers } from "@racer/career/tables";
 import type { RoadId, Tier } from "@racer/career/tables";
-import type { BikeId } from "@racer/sim/bikes";
 import { difficulties } from "@racer/sim/difficulty";
 import { roads as roadPlans } from "@racer/track/roads";
 import { Screen } from "@racer/ui/components/screen";
 
 import { backRoomPlates, flyers, plates } from "../../assets/clubhouse-art.ts";
 import { roadDescriptions, shortNames } from "../../career/copy.ts";
-import type { QuickPick } from "../../career/flow.ts";
 import { bikeName, kilometres } from "../../career/format.ts";
 import { BarHeader, BarStrip } from "./bar-chrome.tsx";
 import { Plate, place, Stage, stagePx } from "./clubhouse-stage.tsx";
@@ -86,24 +88,24 @@ export const RouteBoardScreen = ({
 }: {
   readonly rules: RaceRules;
   readonly career: CareerState | null;
-  readonly pick: QuickPick;
+  readonly pick: PracticePick;
   readonly ready: boolean;
-  readonly onPick: (pick: QuickPick) => void;
+  readonly onPick: (pick: PracticePick) => void;
   readonly onRace: () => void;
   readonly onBack: () => void;
 }) => {
-  const board = roadsFor(rules, practiceCareer(pick, 0));
+  const shown = pickWithin(pick, career);
+  const { bikes, tiers } = practiceChoices(career);
+  const board = roadsFor(rules, practiceCareer(shown, 0));
   const roadIds = board.roads.map((status) => status.road.id);
   const status =
-    board.roads.find((each) => each.road.id === pick.roadId) ?? board.roads[0];
-  const reached = tiers.filter((tier) => tier <= (career?.tier ?? 1));
-  const owned: readonly BikeId[] = career?.garage ?? [pick.bikeId];
+    board.roads.find((each) => each.road.id === shown.roadId) ?? board.roads[0];
   useEscape(onBack);
   if (!status) {
     return null;
   }
   const nextRoad = (step: 1 | -1) => {
-    onPick({ ...pick, roadId: stepped(roadIds, status.road.id, step) });
+    onPick({ ...shown, roadId: stepped(roadIds, status.road.id, step) });
   };
   return (
     <Screen className="bg-ink flex" enter="fade">
@@ -133,7 +135,7 @@ export const RouteBoardScreen = ({
             src={flyers[status.road.id]}
           />
         </button>
-        <RoadFacts status={status} tier={pick.tier} />
+        <RoadFacts status={status} tier={shown.tier} />
         <Plate box={ABOUT} src={plates.noteMagenta} />
         <p
           className="font-display text-ink flex -rotate-2 items-center leading-tight font-bold"
@@ -166,17 +168,20 @@ export const RouteBoardScreen = ({
               id: "tier",
               label: "Tier",
               onStep: (step) => {
-                onPick({ ...pick, tier: stepped(reached, pick.tier, step) });
+                onPick({ ...shown, tier: stepped(tiers, shown.tier, step) });
               },
-              value: pick.tier,
+              value: shown.tier,
             },
             {
               id: "bike",
               label: "Bike",
               onStep: (step) => {
-                onPick({ ...pick, bikeId: stepped(owned, pick.bikeId, step) });
+                onPick({
+                  ...shown,
+                  bikeId: stepped(bikes, shown.bikeId, step),
+                });
               },
-              value: bikeName(pick.bikeId),
+              value: bikeName(shown.bikeId),
             },
           ]}
           title="Single race"

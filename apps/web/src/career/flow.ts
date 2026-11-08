@@ -1,9 +1,10 @@
-import { practiceSetup, setupFor } from "@racer/career/field";
+import { pickWithin, practiceSetup, setupFor } from "@racer/career/field";
+import type { PracticePick } from "@racer/career/field";
 import { resultLine } from "@racer/career/lines";
 import type { RivalLine } from "@racer/career/lines";
 import type { RaceOutcome, RaceResult } from "@racer/career/outcome";
 import { summaryOf } from "@racer/career/result";
-import type { LastResult, RaceSummary } from "@racer/career/result";
+import type { RaceSummary } from "@racer/career/result";
 import type { RaceRules } from "@racer/career/rules";
 import type { Ledger } from "@racer/career/settle";
 import { nextRaceSeed } from "@racer/career/state";
@@ -24,13 +25,7 @@ export interface RaceEntry {
   readonly seed: number;
 }
 
-export interface QuickPick {
-  readonly roadId: RoadId;
-  readonly tier: Tier;
-  readonly bikeId: BikeId;
-}
-
-export const firstQuickPick: QuickPick = {
+export const firstQuickPick: PracticePick = {
   bikeId: STARTING_BIKE,
   roadId: "ridge-road",
   tier: 1,
@@ -44,6 +39,7 @@ export interface RaceReport {
   readonly place: number;
   readonly summary: RaceSummary;
   readonly ledger: Ledger | null;
+  readonly unsaved: boolean;
   readonly line: RivalLine | null;
   readonly room?: RoomReport;
 }
@@ -59,11 +55,22 @@ export const careerEntry = (
   tier: career.tier,
 });
 
-export const quickEntry = (pick: QuickPick, seed: number): RaceEntry => ({
+export const quickEntry = (pick: PracticePick, seed: number): RaceEntry => ({
   ...pick,
   mode: "quick",
   seed,
 });
+
+export const rideEntry = (
+  mode: RaceMode,
+  roadId: RoadId,
+  career: CareerState | null,
+  pick: PracticePick,
+  seed: number
+): RaceEntry =>
+  mode === "career" && career
+    ? careerEntry(career, roadId)
+    : quickEntry(pickWithin({ ...pick, roadId }, career), seed);
 
 export const planFor = (
   rules: RaceRules,
@@ -86,17 +93,6 @@ export const planFor = (
       };
 };
 
-export const careerReport = (last: LastResult): RaceReport => ({
-  ledger: last.ledger,
-  line: last.ledger.line,
-  mode: "career",
-  place: last.ledger.place,
-  result: last.ledger.result,
-  roadId: last.ledger.roadId,
-  summary: last.summary,
-  tier: last.ledger.tier,
-});
-
 export const quickReport = (
   plan: RacePlan,
   outcome: RaceOutcome
@@ -108,6 +104,7 @@ export const quickReport = (
   result: outcome.result,
   roadId: outcome.roadId,
   tier: outcome.tier,
+  unsaved: false,
   ...(plan.room && { room: plan.room.report() }),
   summary: summaryOf(
     {

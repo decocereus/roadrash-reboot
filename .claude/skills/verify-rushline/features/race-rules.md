@@ -1,6 +1,6 @@
 # Race rules
 
-The server decides how many racers a race seats, whether the celebrities ride, and which rivals' bikes match the player's. A fresh game seats ten racers, the player and nine rivals. The tier table in `packages/sim/src/difficulty.ts` sets traffic, convoys, hazards, hit damage, police, pacing and rival skill for each of the three tiers. Qualifying two roads at tier 3 opens the Long Ridge finale, and no career moves past tier 3. The player never sees a setting for any of it. If the rules cannot be read, the Back Room says "Could not start the game:" and why.
+The server decides how many racers a race seats, whether the celebrities ride, and which rivals' bikes match the player's. A fresh game seats ten racers, the player and nine rivals. The tier table in `packages/sim/src/difficulty.ts` sets traffic, convoys, hazards, hit damage, police, pacing and rival skill for each of the three tiers. Qualifying two roads at tier 3 opens the Long Ridge finale, and no career moves past tier 3. The player never sees a setting for any of it. If the rules cannot be read, or take more than 10 seconds, the Back Room says "Could not start the game:" and why, and its menu offers only `TRY AGAIN`, which reloads the page.
 
 ## Sub-features
 
@@ -10,6 +10,7 @@ The server decides how many racers a race seats, whether the celebrities ride, a
 - `three-tiers` offers tiers 1 to 3 in a single race for a tier-3 career, and opens the Long Ridge after two tier-3 roads.
 - `tier-conditions` shows more cops, more traffic, a slow convoy and more hazards as the tier rises, on the same road.
 - `bike-match` puts a tier-1 career rider on the Ostra Sesta 600 against rivals who would ride the Halden Kite 500 on Sestas too. Room races match no bikes.
+- `rules-failure` shows the Back Room with only `TRY AGAIN` when the rules never answer, and Try again loads the game once they do.
 - `tier-refusal` refuses a save from tier 4 and names `tier` in the Back Room.
 
 ## How to get to it (user POV)
@@ -32,6 +33,7 @@ Preconditions:
 - **Tier conditions.** Run `rv open --run <run> "/?ride=slag-row&tier=1&prof" --until race` and the same with `tier=3`. The road and its length do not change. Tier 3 shows five cops against one, more cars, and two groups of six slow cars filling the same-way lanes.
 - **Bike match.** In a tier-1 career, buy the Ostra Sesta 600 as in [career.md](career.md), then ride a career race. Results' race sheet names each rider's bike: no rival rides a Halden Kite 500, and the rivals who would have ride the Sesta.
 - **Tier refusal.** Run the same `rv js` with `c.tier = 4`, then `rv open --run <run> /` and `rv wait --run <run> 'document.querySelector("[role=menu][aria-label=\"Back room\"]") !== null' --timeout 30`. The Back Room's pink note reads `The save holds a value the game does not have (tier).` and the menu offers `START OVER`.
+- **Rules failure.** Hold the rules open with the CDP Fetch domain on the page's DevTools socket: `Fetch.enable` with the pattern `*/api/race-rules*` at the `Request` stage, and never continue the paused request. Open `/` on a fresh profile. At 4 s the boot screen still shows `RUSHLINE`. After 10 s the Back Room's pink note reads `Could not start the game: Getting the race ready took too long. Try again.` and the menu holds one item, `TRY AGAIN`. Send `Fetch.disable`, then click Try again. The page reloads once and the bar opens.
 
 ## Gotchas
 

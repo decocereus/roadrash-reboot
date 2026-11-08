@@ -10,7 +10,7 @@
 | `rules.ts` | `RaceRules`, whether the celebrities ride, the field size and the bike matches that a career and a race are set up under |
 | `rules-schema.ts` | `RaceRulesSchema`, the reader for served rules, which holds the field between the smallest that seats every road's home riders and `MOST_RACERS`, and refuses a bike match onto a bike no faster than the one it replaces |
 | `state.ts` | `CareerState` and `newCareer` |
-| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open; `practiceCareer` and `practiceSetup`, the fresh career and setup of a quick race or a benchmark on a picked bike and tier |
+| `field.ts` | `fieldFor`, `setupFor`, and `roadsFor`: who races, the `RaceSetup`, and which roads are open; `practiceCareer` and `practiceSetup`, the fresh career and setup of a quick race or a benchmark on a picked bike and tier; `practiceChoices` and `pickWithin`, the tiers and bikes a career opens to a single race and the pick held inside them, so a pick made in an earlier career rides the current one's reach |
 | `outcome.ts` | The race log and `outcomeOf` |
 | `settle.ts` | `startRace`, `settleRace`, `quitRace`, `resumeCareer`, and the `Ledger` |
 | `result.ts` | `LastResult`: the stored summary of the last settled race |

@@ -17,6 +17,40 @@ const attempt = <Value>(
     try: run,
   });
 
+export type SaveLocks = Pick<LockManager, "request">;
+
+export const holdLock = (
+  locks: SaveLocks,
+  name: string,
+  waitMs: number,
+  granted: (held: boolean) => void
+) =>
+  Effect.tryPromise({
+    catch: (cause) => new SaveStorageFailed({ cause, operation: "lock" }),
+    try: async (signal) => {
+      const waited = AbortSignal.timeout(waitMs);
+      try {
+        await locks.request(
+          name,
+          { signal: AbortSignal.any([signal, waited]) },
+          async () => {
+            granted(true);
+            const released = Promise.withResolvers<null>();
+            signal.addEventListener("abort", () => {
+              released.resolve(null);
+            });
+            await released.promise;
+          }
+        );
+      } catch (error) {
+        if (!waited.aborted || signal.aborted) {
+          throw error;
+        }
+        granted(false);
+      }
+    },
+  });
+
 export const acquireStorage = (open: () => SaveStorage) =>
   attempt("acquire", open);
 

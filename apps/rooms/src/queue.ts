@@ -1,8 +1,9 @@
 import { MOST_SEATS } from "@racer/sim/room";
 import { ROOM_PROTOCOL } from "@racer/sim/room-wire";
 
+import { createPongs, watchForSilence } from "./heartbeat.ts";
 import type { HostSocket } from "./host.ts";
-import { SEAT_CLOSED } from "./messages.ts";
+import { SEAT_CLOSED, SEAT_SILENT } from "./messages.ts";
 import type { RoomNote } from "./notes.ts";
 import { encodeQueueMessage } from "./queue-messages.ts";
 import type { QueueMessage } from "./queue-messages.ts";
@@ -20,11 +21,14 @@ export interface QueuePorts {
 
 interface Ticket {
   readonly enteredAt: number;
+  readonly key: string;
   readonly socket: HostSocket;
+  heardAt: number;
 }
 
 interface QueueClaim {
   readonly build: string;
+  readonly key: string;
   readonly protocol: number;
 }
 
@@ -36,19 +40,26 @@ export interface QueueStatus {
 export interface RaceQueue {
   readonly enter: (socket: HostSocket, claim: QueueClaim) => void;
   readonly gone: (socket: HostSocket) => void;
+  readonly message: (socket: HostSocket, data: string | ArrayBuffer) => void;
   readonly status: () => QueueStatus;
 }
 
 export const createQueue = (ports: QueuePorts): RaceQueue => {
+  const bornAt = ports.now();
+  const pongFor = createPongs(() => ports.now() - bornAt);
   let tickets: readonly Ticket[] = [];
   let waking = false;
 
-  const send = (socket: HostSocket, message: QueueMessage): void => {
+  const send = (socket: HostSocket, data: string | ArrayBufferView): void => {
     try {
-      socket.send(encodeQueueMessage(message));
+      socket.send(data);
     } catch {
       tickets = tickets.filter((ticket) => ticket.socket !== socket);
     }
+  };
+
+  const tell = (socket: HostSocket, message: QueueMessage): void => {
+    send(socket, encodeQueueMessage(message));
   };
 
   const form = (): void => {
@@ -63,7 +74,7 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
       waitedMs: now - (oldest?.enteredAt ?? now),
     });
     for (const { socket } of group) {
-      send(socket, { kind: "placed", roomId });
+      tell(socket, { kind: "placed", roomId });
       socket.close(SEAT_CLOSED, "Placed in a lobby.");
     }
   };
@@ -88,7 +99,7 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
       return;
     }
     for (const { socket } of tickets) {
-      send(socket, { kind: "waiting", riders: tickets.length });
+      tell(socket, { kind: "waiting", riders: tickets.length });
     }
     if (!waking) {
       waking = true;
@@ -99,19 +110,63 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
     }
   };
 
+  const watchTickets = watchForSilence(ports, {
+    heard: () => tickets,
+    onSilent: (silent) => {
+      tickets = tickets.filter((ticket) => ticket !== silent);
+      silent.socket.close(
+        SEAT_SILENT,
+        "The queue stopped hearing this ticket."
+      );
+    },
+    onSwept: (_now, silent) => {
+      if (silent > 0) {
+        settle();
+      }
+      return tickets.length > 0;
+    },
+  });
+
   return {
     enter: (socket, claim) => {
       if (claim.build !== ports.build || claim.protocol !== ROOM_PROTOCOL) {
-        send(socket, { kind: "refused", reason: "build" });
+        tell(socket, { kind: "refused", reason: "build" });
         socket.close(SEAT_CLOSED, "build");
         return;
       }
-      tickets = [...tickets, { enteredAt: ports.now(), socket }];
+      const now = ports.now();
+      const older = tickets.find((ticket) => ticket.key === claim.key);
+      const ticket = {
+        enteredAt: older?.enteredAt ?? now,
+        heardAt: now,
+        key: claim.key,
+        socket,
+      };
+      tickets = older
+        ? tickets.map((held) => (held === older ? ticket : held))
+        : [...tickets, ticket];
+      if (older) {
+        tell(older.socket, { kind: "refused", reason: "replaced" });
+        older.socket.close(SEAT_CLOSED, "replaced");
+      }
+      watchTickets();
       settle();
     },
     gone: (socket) => {
       tickets = tickets.filter((ticket) => ticket.socket !== socket);
       settle();
+    },
+    message: (socket, data) => {
+      const ticket = tickets.find((held) => held.socket === socket);
+      if (ticket === undefined) {
+        return;
+      }
+      ticket.heardAt = ports.now();
+      const pong =
+        data instanceof ArrayBuffer ? pongFor(new DataView(data)) : null;
+      if (pong) {
+        send(socket, pong);
+      }
     },
     status: () => ({ build: ports.build, waiting: tickets.length }),
   };

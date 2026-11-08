@@ -48,6 +48,23 @@ describe("the room config", () => {
     ).toBeTruthy();
   });
 
+  it("refuses a public lobby's earliest start later than its latest, and takes the two equal", () => {
+    expect(
+      accepts({
+        ...launchRoomConfig,
+        publicGatherSeconds: 50,
+        publicStartSeconds: 45,
+      })
+    ).toBeFalsy();
+    expect(
+      accepts({
+        ...launchRoomConfig,
+        publicGatherSeconds: 45,
+        publicStartSeconds: 45,
+      })
+    ).toBeTruthy();
+  });
+
   it("lets the server pick any listed road for a public race, and only the road", () => {
     const { publicRace } = launchRoomConfig;
     const rules = Array.from({ length: publicRace.roads.length }, (_, seed) =>

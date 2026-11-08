@@ -1,3 +1,4 @@
+import { launchRoomConfig } from "@racer/rooms/room-config";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -26,7 +27,12 @@ describe("a rider the rooms Worker refused for joining too often", () => {
 
   it("reads why on the queue screen instead of a rider count", () => {
     const screen = renderToStaticMarkup(
-      <QueueScreen onBack={vi.fn<() => void>()} refusal="limited" riders={1} />
+      <QueueScreen
+        onBack={vi.fn<() => void>()}
+        refusal="limited"
+        riders={1}
+        waitSeconds={launchRoomConfig.queueWaitSeconds}
+      />
     );
     expect(screen).toContain(LIMITED);
     expect(screen).not.toContain("Reload");
@@ -35,7 +41,12 @@ describe("a rider the rooms Worker refused for joining too often", () => {
 
   it("still sends a rider on an old build to Reload from the queue", () => {
     const screen = renderToStaticMarkup(
-      <QueueScreen onBack={vi.fn<() => void>()} refusal="build" riders={1} />
+      <QueueScreen
+        onBack={vi.fn<() => void>()}
+        refusal="build"
+        riders={1}
+        waitSeconds={launchRoomConfig.queueWaitSeconds}
+      />
     );
     expect(screen).toContain("The game has updated. Reload to join.");
     expect(screen).toContain("Reload");
