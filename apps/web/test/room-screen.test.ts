@@ -48,8 +48,16 @@ interface Race {
 interface Drawn {
   frames: number;
   last: number;
-  lastSpeed: number;
+  ridingTick: number;
   worstOff: number;
+}
+
+interface Pose {
+  heading: number;
+  lean: number;
+  s: number;
+  tick: number;
+  x: number;
 }
 
 interface Screen {
@@ -94,57 +102,48 @@ const takeDue = <Due extends { readonly at: number }>(
   return due;
 };
 
-const pose = () => ({ heading: 0, lean: 0, s: 0, x: 0 });
-
-const copy = (
-  rider: { heading: number; lean: number; s: number; x: number },
-  into: { heading: number; lean: number; s: number; x: number }
-) => {
-  into.heading = rider.heading;
-  into.lean = rider.lean;
-  into.s = rider.s;
-  into.x = rider.x;
-};
+const pose = (): Pose => ({ heading: 0, lean: 0, s: 0, tick: 0, x: 0 });
 
 const seen = (): Drawn => ({
   frames: 0,
   last: Number.NaN,
-  lastSpeed: 0,
+  ridingTick: 0,
   worstOff: 0,
 });
 
+const mix = (from: number, to: number, blend: number): number =>
+  from + (to - from) * blend;
+
 const drawFrame = (
   drawn: Drawn,
-  view: {
-    after: { s: number };
-    before: { s: number };
-    drift: ReturnType<typeof stillDrift>;
-  },
+  view: { after: Pose; before: Pose; drift: ReturnType<typeof stillDrift> },
   rider: { mode: string; speed: number },
   blend: number,
   measured: boolean
 ): void => {
+  const fromS = view.drift.s;
   const fromX = view.drift.x;
   driftSettle(view.drift, FRAME_SECONDS, rider.speed);
-  const next =
-    rider.mode === "riding"
-      ? view.before.s + (view.after.s - view.before.s) * blend + view.drift.s
-      : Number.NaN;
+  const ridingS = mix(view.before.s, view.after.s, blend);
+  const ridingTick = mix(view.before.tick, view.after.tick, blend);
+  const next = rider.mode === "riding" ? ridingS + view.drift.s : Number.NaN;
   if (measured && Number.isFinite(next) && Number.isFinite(drawn.last)) {
     drawn.frames += 1;
     drawn.worstOff = Math.max(
       drawn.worstOff,
       drawnOff(
         next - drawn.last,
+        ridingS + fromS - drawn.last,
         view.drift.x - fromX,
+        0,
+        (ridingTick - drawn.ridingTick) * TICK_SECONDS,
         rider.speed,
-        drawn.lastSpeed,
         FRAME_SECONDS
       )
     );
   }
   drawn.last = next;
-  drawn.lastSpeed = rider.speed;
+  drawn.ridingTick = ridingTick;
 };
 
 const rideOnScreen = (race: Race): Screen => {
@@ -171,7 +170,13 @@ const rideOnScreen = (race: Race): Screen => {
       client.predicted.riders,
       views,
       client.takeCorrections(),
-      copy
+      (rider, posed) => {
+        posed.heading = rider.heading;
+        posed.lean = rider.lean;
+        posed.s = rider.s;
+        posed.tick = client.predicted.tick;
+        posed.x = rider.x;
+      }
     );
   };
   let now = 0;

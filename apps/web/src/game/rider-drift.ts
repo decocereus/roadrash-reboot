@@ -102,25 +102,36 @@ export const captureCast = <Rider, Pose extends Placed>(
   }
 };
 
+const beyond = (
+  drawn: number,
+  riding: number,
+  perSecond: number,
+  seconds: number
+): number =>
+  Math.max(
+    0,
+    Math.abs(drawn - riding) -
+      PACE_SHARE_UNSEEN * Math.abs(riding) -
+      perSecond * seconds
+  );
+
 export const drawnOff = (
-  moved: number,
-  glidedAcross: number,
+  drawnAlong: number,
+  ridingAlong: number,
+  drawnAcross: number,
+  ridingAcross: number,
+  ridingSeconds: number,
   speed: number,
-  lastSpeed: number,
   seconds: number
 ): number => {
-  if (!Number.isFinite(moved)) {
-    return 0;
-  }
-  const slowest = Math.min(speed, lastSpeed) * seconds;
-  const fastest = Math.max(speed, lastSpeed) * seconds;
-  const unseen =
-    PACE_SHARE_UNSEEN * Math.max(Math.abs(slowest), Math.abs(fastest)) +
-    alongGlide(Math.max(Math.abs(speed), Math.abs(lastSpeed))) * seconds;
-  const along = Math.max(0, moved - fastest - unseen, slowest - unseen - moved);
-  const across = Math.max(
-    0,
-    Math.abs(glidedAcross) - ACROSS_METRES_PER_SECOND * seconds
+  const atPace = ridingSeconds > 0 ? seconds / ridingSeconds : 0;
+  return Math.hypot(
+    beyond(drawnAlong, ridingAlong * atPace, alongGlide(speed), seconds),
+    beyond(
+      drawnAcross,
+      ridingAcross * atPace,
+      ACROSS_METRES_PER_SECOND,
+      seconds
+    )
   );
-  return Math.hypot(along, across);
 };

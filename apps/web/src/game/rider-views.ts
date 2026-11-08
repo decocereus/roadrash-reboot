@@ -3,7 +3,7 @@ import type { RiderBlocks } from "@racer/sim/palette";
 import type { RaceRun } from "@racer/sim/race-run";
 import type { RiderView } from "@racer/sim/race-view";
 import { RUN_SPEED } from "@racer/sim/rider-recovery";
-import { clamp, riderOf, TICK_RATE } from "@racer/sim/state";
+import { clamp, riderOf, TICK_RATE, TICK_SECONDS } from "@racer/sim/state";
 import type { HazardEffect, RaceEvent, RiderId } from "@racer/sim/state";
 import type { Track } from "@racer/track/track";
 import * as THREE from "three";
@@ -82,7 +82,6 @@ interface DrawnPlace {
   off: number;
   riding: boolean;
   s: number;
-  speed: number;
   toTick: number;
   x: number;
 }
@@ -297,7 +296,6 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
             off: 0,
             riding: false,
             s: 0,
-            speed: 0,
             toTick: 0,
             x: 0,
           },
@@ -544,34 +542,40 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     blend: number,
     seconds: number
   ) => {
-    const { before, after, bike, drift } = view;
+    const { before, after, bike, drift, drawn } = view;
     const seated = rider.mode === "riding" || rider.mode === "mounting";
+    const fromS = drift.s;
     const fromX = drift.x;
     if (seated) {
       driftSettle(drift, seconds, rider.speed);
     } else {
       clearDrift(drift);
     }
-    const s = mix(before.s, after.s, blend) + drift.s;
-    const x = mix(before.x, after.x, blend) + drift.x;
+    const ridingS = mix(before.s, after.s, blend);
+    const ridingX = mix(before.x, after.x, blend);
+    const s = ridingS + drift.s;
+    const x = ridingX + drift.x;
     const riding = rider.mode === "riding";
-    view.drawn.off =
-      riding && view.drawn.riding
+    drawn.off =
+      riding && drawn.riding
         ? drawnOff(
-            s - view.drawn.s,
-            drift.x - fromX,
+            s - drawn.s,
+            ridingS + fromS - drawn.s,
+            x - drawn.x,
+            ridingX + fromX - drawn.x,
+            (mix(before.tick, after.tick, blend) -
+              mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
+              TICK_SECONDS,
             rider.speed,
-            view.drawn.speed,
             seconds
           )
         : 0;
-    view.drawn.riding = riding;
-    view.drawn.speed = rider.speed;
-    view.drawn.blend = blend;
-    view.drawn.fromTick = before.tick;
-    view.drawn.s = s;
-    view.drawn.toTick = after.tick;
-    view.drawn.x = x;
+    drawn.riding = riding;
+    drawn.blend = blend;
+    drawn.fromTick = before.tick;
+    drawn.s = s;
+    drawn.toTick = after.tick;
+    drawn.x = x;
     const air = mix(before.air, after.air, blend);
     const lean = mix(before.lean, after.lean, blend) + drift.lean;
     const heading = mix(before.heading, after.heading, blend) + drift.heading;

@@ -413,20 +413,24 @@ export const createRoomClient = (
     noteJump(mendCause, fromS, fromX);
   };
 
+  const startMending = (): void => {
+    stale = false;
+    mending = true;
+    mendCause = staleCause;
+    staleCause = "otherRiders";
+    copyRace(confirmed, mended);
+    stats.rollbacks += 1;
+    for (const shown of shownHits) {
+      shown.backed = false;
+    }
+  };
+
   const settle = (most = Number.POSITIVE_INFINITY): number => {
+    if (!mending && !stale) {
+      return 0;
+    }
     if (!mending) {
-      if (!stale) {
-        return 0;
-      }
-      stale = false;
-      mending = true;
-      mendCause = staleCause;
-      staleCause = "otherRiders";
-      copyRace(confirmed, mended);
-      stats.rollbacks += 1;
-      for (const shown of shownHits) {
-        shown.backed = false;
-      }
+      startMending();
     }
     const from = mended.tick;
     const until = Math.min(predicted.tick, from + most);
@@ -435,10 +439,12 @@ export const createRoomClient = (
       hearFights(mended);
       stats.resimulatedTicks += 1;
     }
-    if (mended.tick === predicted.tick) {
-      finishMending();
+    const replayed = mended.tick - from;
+    if (mended.tick !== predicted.tick) {
+      return replayed;
     }
-    return mended.tick - from;
+    finishMending();
+    return replayed + settle(most - replayed);
   };
 
   const notePresses = (frame: TickFrame, reached: number): void => {

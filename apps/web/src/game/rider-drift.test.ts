@@ -124,27 +124,51 @@ describe("when a correction reaches the cast", () => {
   });
 });
 
-describe("how far a frame draws a bike off its riding", () => {
-  it.each([
-    ["at its speed", SPEED * FRAME, 0],
-    [
-      "15% faster than its speed, inside the pace and glide",
-      1.15 * SPEED * FRAME,
-      0,
-    ],
-  ] as const)(
-    "counts nothing for a bike drawn %s",
-    (_name, travelled, glided) => {
-      expect(drawnOff(travelled, glided, SPEED, SPEED, FRAME)).toBe(0);
-    }
+const frameAt = (
+  drawnAlong: number,
+  drawnAcross: number,
+  ridingAlong: number,
+  ridingSeconds: number
+): number =>
+  drawnOff(
+    drawnAlong,
+    ridingAlong,
+    drawnAcross,
+    0,
+    ridingSeconds,
+    SPEED,
+    FRAME
   );
 
+describe("how far a frame draws a bike off its riding", () => {
   it.each([
-    ["three tenths faster than its speed", 1.3 * SPEED * FRAME, 0],
-    ["gliding sideways at 3 m/s", SPEED * FRAME, 3 * FRAME],
-  ] as const)("counts a bike drawn %s", (_name, travelled, glided) => {
-    expect(drawnOff(travelled, glided, SPEED, SPEED, FRAME)).toBeGreaterThan(
-      0.008
-    );
+    ["at its speed", frameAt(SPEED * FRAME, 0, SPEED * FRAME, FRAME)],
+    [
+      "15% faster than its speed, inside the pace and glide",
+      frameAt(1.15 * SPEED * FRAME, 0, SPEED * FRAME, FRAME),
+    ],
+    [
+      "where a bump in the race pushed it a metre",
+      frameAt(SPEED * FRAME + 1, 0, SPEED * FRAME + 1, FRAME),
+    ],
+  ] as const)("counts nothing for a bike drawn %s", (_name, off) => {
+    expect(off).toBe(0);
+  });
+
+  it.each([
+    [
+      "three tenths faster than its speed",
+      frameAt(1.3 * SPEED * FRAME, 0, SPEED * FRAME, FRAME),
+    ],
+    [
+      "gliding sideways at 3 m/s",
+      frameAt(SPEED * FRAME, 3 * FRAME, SPEED * FRAME, FRAME),
+    ],
+    [
+      "two ticks on in one frame",
+      frameAt(2 * SPEED * FRAME, 0, 2 * SPEED * FRAME, 2 * FRAME),
+    ],
+  ] as const)("counts a bike drawn %s", (_name, off) => {
+    expect(off).toBeGreaterThan(0.008);
   });
 });

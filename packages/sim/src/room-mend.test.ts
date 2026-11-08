@@ -97,4 +97,18 @@ describe("a long rollback on the room client", () => {
       ahead.confirmed.riders.map((rider) => [rider.s, rider.x, rider.speed])
     );
   });
+
+  it("keeps to a frame's share when the room disagrees again while it is still replaying", () => {
+    const { ahead, roomSteps } = rodeApart();
+    const replayed: number[] = [];
+    for (let frame = 1; frame <= FRAMES; frame += 1) {
+      const before = ahead.stats.resimulatedTicks;
+      ahead.confirm(roomSteps(HEARD_TICKS + frame), null);
+      ahead.settle(MOST_PER_FRAME);
+      ahead.predict(weaving(AHEAD_TICKS + frame, 25));
+      replayed.push(ahead.stats.resimulatedTicks - before);
+    }
+    expect(ahead.stats.rollbacks).toBeGreaterThan(1);
+    expect(Math.max(...replayed)).toBeLessThanOrEqual(MOST_PER_FRAME);
+  });
 });
