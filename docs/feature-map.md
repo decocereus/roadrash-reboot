@@ -1255,6 +1255,7 @@ Test files:
 - `tools/verify/test/browser-host.test.ts`
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
+- `tools/verify/test/console-noise.test.ts`
 - `tools/verify/test/desktop-session.test.ts`
 - `tools/verify/test/slot-write.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`

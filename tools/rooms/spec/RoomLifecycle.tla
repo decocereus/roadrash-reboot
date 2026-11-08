@@ -61,6 +61,10 @@ CONSTANTS
     GuardReplacedHolds, GuardRejoin, GuardRejoinCountdown, GuardTakenStaysPut,
     GuardHoldDeadline
 
+\* room-config.ts RoomConfigSchema refuses a config whose awaySeconds is
+\* shorter than its seatHoldSeconds
+ASSUME Away >= Hold
+
 VARIABLES
     room,   \* the host, its lobby, its race seats and the messages it has sent
     wire,   \* each socket as the browser sees it, and what it has sent
