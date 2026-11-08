@@ -2,7 +2,6 @@ import type { RiderCorrection } from "@racer/sim/room-client";
 import { riderOf } from "@racer/sim/state";
 
 const SETTLE_MS = 100;
-const GLIDE_SECONDS = 2;
 const ALONG_SHARE_OF_SPEED = 0.1;
 const SLOWEST_ALONG_METRES_PER_SECOND = 0.5;
 const ACROSS_METRES_PER_SECOND = 2.5;
@@ -35,7 +34,7 @@ const settled = (
   perSecond: number,
   seconds: number
 ): number => {
-  const most = Math.max(perSecond, Math.abs(left) / GLIDE_SECONDS) * seconds;
+  const most = perSecond * seconds;
   return left - Math.min(most, Math.max(-most, left * by));
 };
 
@@ -109,14 +108,18 @@ export const drawnOff = (
   drawnS: number,
   lastDrawnS: number,
   speed: number,
+  lastSpeed: number,
   seconds: number
 ): number => {
-  const riding = speed * seconds;
-  return Number.isFinite(drawnS) && Number.isFinite(lastDrawnS)
-    ? Math.max(
-        0,
-        Math.abs(drawnS - lastDrawnS - riding) -
-          RIDING_SHARE_UNSEEN * Math.abs(riding)
-      )
-    : 0;
+  if (!Number.isFinite(drawnS) || !Number.isFinite(lastDrawnS)) {
+    return 0;
+  }
+  const moved = drawnS - lastDrawnS;
+  const slowest = Math.min(speed, lastSpeed) * seconds;
+  const fastest = Math.max(speed, lastSpeed) * seconds;
+  return Math.max(
+    0,
+    moved - fastest - RIDING_SHARE_UNSEEN * Math.abs(fastest),
+    slowest - RIDING_SHARE_UNSEEN * Math.abs(slowest) - moved
+  );
 };

@@ -82,6 +82,7 @@ interface DrawnPlace {
   off: number;
   riding: boolean;
   s: number;
+  speed: number;
   toTick: number;
   x: number;
 }
@@ -296,6 +297,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
             off: 0,
             riding: false,
             s: 0,
+            speed: 0,
             toTick: 0,
             x: 0,
           },
@@ -554,9 +556,10 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     const riding = rider.mode === "riding";
     view.drawn.off =
       riding && view.drawn.riding
-        ? drawnOff(s, view.drawn.s, rider.speed, seconds)
+        ? drawnOff(s, view.drawn.s, rider.speed, view.drawn.speed, seconds)
         : 0;
     view.drawn.riding = riding;
+    view.drawn.speed = rider.speed;
     view.drawn.blend = blend;
     view.drawn.fromTick = before.tick;
     view.drawn.s = s;

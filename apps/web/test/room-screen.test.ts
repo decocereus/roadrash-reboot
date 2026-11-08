@@ -37,7 +37,6 @@ const PING_EVERY_MS = 500;
 const RIDE_MS = 28_000;
 const SETTLED_AFTER_MS = 4000;
 const CUT_FROM_MS = 20_000;
-const GLIDE_LIMIT_METRES = 1;
 
 interface Race {
   readonly downMs: (sentAt: number) => number;
@@ -49,6 +48,7 @@ interface Race {
 interface Drawn {
   frames: number;
   last: number;
+  lastSpeed: number;
   worstOff: number;
 }
 
@@ -109,6 +109,7 @@ const copy = (
 const seen = (): Drawn => ({
   frames: 0,
   last: Number.NaN,
+  lastSpeed: 0,
   worstOff: 0,
 });
 
@@ -132,10 +133,11 @@ const drawFrame = (
     drawn.frames += 1;
     drawn.worstOff = Math.max(
       drawn.worstOff,
-      drawnOff(next, drawn.last, rider.speed, FRAME_SECONDS)
+      drawnOff(next, drawn.last, rider.speed, drawn.lastSpeed, FRAME_SECONDS)
     );
   }
   drawn.last = next;
+  drawn.lastSpeed = rider.speed;
 };
 
 const rideOnScreen = (race: Race): Screen => {
@@ -321,8 +323,8 @@ describe("both bikes on screen in a room race", () => {
     (_name, race) => {
       const screen = rideOnScreen(race);
       expect(screen.me.frames).toBeGreaterThan(1200);
-      expect(screen.me.worstOff).toBeLessThan(GLIDE_LIMIT_METRES);
-      expect(screen.rival.worstOff).toBeLessThan(GLIDE_LIMIT_METRES);
+      expect(screen.me.worstOff).toBeLessThan(0.05);
+      expect(screen.rival.worstOff).toBeLessThan(0.05);
     }
   );
 });

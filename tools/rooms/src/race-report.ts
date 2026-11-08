@@ -125,7 +125,7 @@ const stat = (note: RaceStatsNote, field: string): number =>
 
 const browserLines = (note: RaceStatsNote): readonly string[] => [
   `    crashes ${stat(note, "crashes")}, ${stat(note, "crashesAfterCorrection")} after a correction`,
-  `    clock: slowed ${stat(note, "slowedMs")} ms, stopped ${stat(note, "stoppedMs")} ms, frames drawn off their riding ${stat(note, "surgedFrames")} own and ${stat(note, "rivalsSurgedFrames")} rivals, worst ${stat(note, "worstDrawnOffCm")} cm`,
+  `    clock: slowed ${stat(note, "slowedMs")} ms, sped up ${stat(note, "spedUpMs")} ms, stopped ${stat(note, "stoppedMs")} ms, frames drawn off their riding ${stat(note, "surgedFrames")} own and ${stat(note, "rivalsSurgedFrames")} rivals, worst ${stat(note, "worstDrawnOffCm")} cm, most ticks replayed in a frame ${stat(note, "mostReplayedTicks")}`,
   `    worst jump: own control ${stat(note, "worstOwnControlCm")} cm, behind the server ${stat(note, "worstBehindServerCm")} cm, other riders ${stat(note, "worstOtherRidersCm")} cm, at ${stat(note, "worstJumpRoadMetres")} m`,
   `    round trip: mean ${stat(note, "rttMeanMs")} ms, worst ${stat(note, "rttWorstMs")} ms`,
   `    frame times: ${stat(note, "frameCount")} frames, p50 ${stat(note, "frameP50Ms")} ms, p95 ${stat(note, "frameP95Ms")} ms, p99 ${stat(note, "frameP99Ms")} ms`,

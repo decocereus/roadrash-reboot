@@ -1631,6 +1631,7 @@ Test files:
 - `packages/sim/src/room-jumps.test.ts`
 - `packages/sim/src/room-lag.test.ts`
 - `packages/sim/src/room-limit.test.ts`
+- `packages/sim/src/room-mend.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`

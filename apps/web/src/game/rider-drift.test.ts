@@ -62,14 +62,14 @@ describe("how a corrected rider settles on screen", () => {
     expect(4 - drift.x).toBeCloseTo(2.5 / 60);
   });
 
-  it("glides a correction too big for a tenth of the speed over a few seconds, never jumping", () => {
+  it("glides even a 60 m correction no faster than a tenth of the bike's speed, closing it in about twelve seconds", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, s: 60, x: 9 });
     expect({ s: drift.s, x: drift.x }).toStrictEqual({ s: 60, x: 9 });
     driftSettle(drift, FRAME, SPEED);
-    expect(60 - drift.s).toBeCloseTo(60 / 2 / 60);
-    expect(9 - drift.x).toBeCloseTo(9 / 2 / 60);
-    for (let frame = 1; frame < 360; frame += 1) {
+    expect(60 - drift.s).toBeCloseTo((SPEED * 0.1) / 60);
+    expect(9 - drift.x).toBeCloseTo(2.5 / 60);
+    for (let frame = 1; frame < 750; frame += 1) {
       driftSettle(drift, FRAME, SPEED);
     }
     expect(Math.max(drift.s, drift.x)).toBeLessThan(0.01);

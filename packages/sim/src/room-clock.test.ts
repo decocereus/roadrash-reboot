@@ -287,15 +287,27 @@ describe("the room clock", () => {
     const clock = createRoomClock();
     clock.heardTick(100, 1000);
     for (let sample = 0; sample < 10; sample += 1) {
-      clock.heardRtt(100, 1000);
+      clock.heardRtt(100, 1000 + sample * PING_EVERY_MS);
     }
     const steady = clock.target(1000);
-    clock.heardRtt(400, 1000);
+    clock.heardRtt(400, 1000 + 10 * PING_EVERY_MS);
     expect(clock.target(1000)).toBe(steady);
-    for (let sample = 0; sample < 4; sample += 1) {
-      clock.heardRtt(400, 1000);
+    for (let sample = 11; sample < 15; sample += 1) {
+      clock.heardRtt(400, 1000 + sample * PING_EVERY_MS);
     }
     expect(clock.target(1000)).toBe(steady + 18);
+  });
+
+  it("leaves out pongs a hold in the lobby released together, before any tick", () => {
+    const clock = createRoomClock();
+    for (let sample = 0; sample < 6; sample += 1) {
+      clock.heardRtt(100, sample * PING_EVERY_MS);
+    }
+    const steady = clock.target(3000);
+    for (let sample = 6; sample < 11; sample += 1) {
+      clock.heardRtt(5600 - sample * PING_EVERY_MS, 5600);
+    }
+    expect(clock.target(3000)).toBe(steady);
   });
 
   it("calls a lead bloated when it runs far past what the round trip needs", () => {
@@ -304,7 +316,7 @@ describe("the room clock", () => {
     clock.heardRtt(100, 1000);
     expect(clock.leadBloated(118, 1000)).toBeFalsy();
     expect(clock.leadBloated(120, 1000)).toBeTruthy();
-    clock.heardRtt(400, 1000);
+    clock.heardRtt(400, 1000 + PING_EVERY_MS);
     expect(clock.leadBloated(126, 1000)).toBeFalsy();
   });
 

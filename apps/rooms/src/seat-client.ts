@@ -7,7 +7,10 @@ import type {
 } from "@racer/career/room-race";
 import type { LobbyAct, LobbyWalk } from "@racer/sim/lobby-walk";
 import { firstRacers, isDone } from "@racer/sim/room";
-import { createRoomClient } from "@racer/sim/room-client";
+import {
+  createRoomClient,
+  MOST_TICKS_PER_SETTLE,
+} from "@racer/sim/room-client";
 import type { RoomClient } from "@racer/sim/room-client";
 import { createRoomClock } from "@racer/sim/room-clock";
 import { createTickFrame } from "@racer/sim/room-frame";
@@ -51,6 +54,8 @@ import { ticksOf } from "./room-config.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
 const PINGS_PER_REPORT = 30;
+
+const NOT_DRAWING_AFTER_MS = 250;
 
 export interface SeatRace {
   readonly awayMs: number | null;
@@ -276,6 +281,9 @@ export const openRoomSeat = (
   );
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
+  const backlog: ArrayBuffer[] = [];
+  let confirmedThisFrame = 0;
+  let framedAt = Number.NEGATIVE_INFINITY;
   const input = new DataView(
     new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS))
   );
@@ -331,6 +339,29 @@ export const openRoomSeat = (
     socket.close(code, reason);
   };
 
+  const confirmRead = (race: SeatRace, now: number): void => {
+    confirmedThisFrame += 1;
+    const lostBefore = race.client.lostControls();
+    const predictedThrough = race.client.predicted.tick;
+    race.client.confirm(read.frame, read.hashed ? read.hash : null);
+    if (race.client.lostControls() > lostBefore) {
+      clock.lostControl(read.frame.tick, predictedThrough, now);
+    }
+    listeners.onConfirmed?.(race.client);
+  };
+
+  const confirmHeld = (race: SeatRace, most: number): void => {
+    for (let held = confirmedThisFrame; held < most; held += 1) {
+      const data = backlog.shift();
+      if (!data) {
+        return;
+      }
+      if (readTick(new DataView(data), read)) {
+        confirmRead(race, performance.now());
+      }
+    }
+  };
+
   const reportWhileRiding = (): void => {
     pingsUntilReport -= 1;
     if (pingsUntilReport > 0 || reported || state.phase !== "racing") {
@@ -346,6 +377,7 @@ export const openRoomSeat = (
       return;
     }
     reported = true;
+    confirmHeld(race, Number.POSITIVE_INFINITY);
     race.client.settle();
     tally.frameDrawn(
       performance.now(),
@@ -353,7 +385,8 @@ export const openRoomSeat = (
       race.client.confirmed.tick,
       1,
       0,
-      0
+      0,
+      race.client.stats.resimulatedTicks
     );
     sendReport(race, tally.lastTraceRows());
   };
@@ -426,6 +459,7 @@ export const openRoomSeat = (
     const { race } = state;
     const caughtUp = readCatchUp(view);
     if (race && caughtUp) {
+      backlog.length = 0;
       race.client.catchUp(caughtUp);
       listeners.onConfirmed?.(race.client);
       return;
@@ -435,13 +469,14 @@ export const openRoomSeat = (
       clock.heardTick(read.frame.tick, now);
       tally.heardTick(now);
       listeners.onTickHeard?.(now, read.hashed);
-      const lostBefore = race.client.lostControls();
-      const predictedThrough = race.client.predicted.tick;
-      race.client.confirm(read.frame, read.hashed ? read.hash : null);
-      if (race.client.lostControls() > lostBefore) {
-        clock.lostControl(read.frame.tick, predictedThrough, now);
+      if (backlog.length === 0 && confirmedThisFrame < MOST_TICKS_PER_SETTLE) {
+        confirmRead(race, now);
+        return;
       }
-      listeners.onConfirmed?.(race.client);
+      backlog.push(data);
+      if (now - framedAt >= NOT_DRAWING_AFTER_MS) {
+        confirmHeld(race, Number.POSITIVE_INFINITY);
+      }
     }
   };
 
@@ -540,7 +575,8 @@ export const openRoomSeat = (
             now
           ),
           ownOffMetres,
-          rivalOffMetres
+          rivalOffMetres,
+          race.client.stats.resimulatedTicks
         );
       }
     },
@@ -597,6 +633,9 @@ export const openRoomSeat = (
       if (!race) {
         return 0;
       }
+      framedAt = performance.now();
+      confirmHeld(race, MOST_TICKS_PER_SETTLE);
+      confirmedThisFrame = 0;
       race.client.settle();
       const { confirmed, predicted } = race.client;
       return clock.stepsDue(predicted.tick, confirmed.tick, performance.now());

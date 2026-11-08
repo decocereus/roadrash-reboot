@@ -15,6 +15,7 @@ const P50 = 0.5;
 const P95 = 0.95;
 const P99 = 0.99;
 const SLOWED_BELOW_PACE = 0.95;
+const SPED_ABOVE_PACE = 1.05;
 const STOPPED_BELOW_PACE = 0.5;
 const SURGED_FROM_METRES = 0.05;
 
@@ -27,7 +28,8 @@ export interface RaceTally {
     confirmedTick: number,
     pace: number,
     ownOffMetres: number,
-    rivalOffMetres: number
+    rivalOffMetres: number,
+    replayedTicks: number
   ) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
   readonly closedTraceRows: () => readonly number[] | null;
@@ -57,7 +59,10 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
   let rttCount = 0;
   let lastFrameAt = 0;
   let lastConfirmedTick = 0;
+  let lastReplayedTicks = 0;
+  let mostReplayedTicks = 0;
   let slowedMs = 0;
+  let spedUpMs = 0;
   let stoppedMs = 0;
   let surgedFrames = 0;
   let rivalsSurgedFrames = 0;
@@ -114,7 +119,8 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       confirmedTick,
       pace,
       ownOffMetres,
-      rivalOffMetres
+      rivalOffMetres,
+      replayedTicks
     ) => {
       if (lastFrameAt === 0) {
         firstFrameAt = now;
@@ -128,6 +134,11 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
         const slowed = pace < SLOWED_BELOW_PACE ? frameMs : 0;
         const surged = ownOffMetres > SURGED_FROM_METRES ? 1 : 0;
         slowedMs += slowed;
+        spedUpMs += pace > SPED_ABOVE_PACE ? frameMs : 0;
+        mostReplayedTicks = Math.max(
+          mostReplayedTicks,
+          confirmedTick - lastConfirmedTick + replayedTicks - lastReplayedTicks
+        );
         stoppedMs += pace < STOPPED_BELOW_PACE ? frameMs : 0;
         surgedFrames += surged;
         rivalsSurgedFrames += rivalOffMetres > SURGED_FROM_METRES ? 1 : 0;
@@ -153,6 +164,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       }
       lastFrameAt = now;
       lastConfirmedTick = confirmedTick;
+      lastReplayedTicks = replayedTicks;
       if (tracing && now - rowStartedAt >= TRACE_ROW_MS) {
         closeRow(now, confirmedTick);
       }
@@ -193,6 +205,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       jumpsBehindServer: stats.jumps.behindServer.felt,
       jumpsOtherRiders: stats.jumps.otherRiders.felt,
       jumpsOwnControl: stats.jumps.ownControl.felt,
+      mostReplayedTicks,
       refusedPredictions: stats.refusedPredictions,
       resimulatedTicks: stats.resimulatedTicks,
       retriedPresses: stats.retriedPresses,
@@ -202,6 +215,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       rttWorstMs,
       slowFrames,
       slowedMs,
+      spedUpMs,
       stoppedMs,
       surgedFrames,
       tick: predicted.tick,

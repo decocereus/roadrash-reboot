@@ -17,6 +17,7 @@ const PACE_PER_TICK = 0.02;
 const MOST_PACE_CHANGE = 0.1;
 const AHEAD_SLACK_TICKS = 5;
 const HELD_FROM_MS = 250;
+const HOLDS_RECUR_WITHIN_MS = JITTER_SECONDS * 1000;
 
 export interface RoomClock {
   readonly start: (startAtRoomMs: number) => void;
@@ -47,6 +48,7 @@ export const createRoomClock = (): RoomClock => {
   let startsAt = 0;
   let lastArrival = 0;
   let offset = 0;
+  let placed = false;
   let roomAhead = Number.NEGATIVE_INFINITY;
   const rtts: number[] = [];
   const sorted: number[] = [];
@@ -58,6 +60,9 @@ export const createRoomClock = (): RoomClock => {
   let raisedThrough = 0;
   let jitterMs = 0;
   let heldEndedAt = Number.NEGATIVE_INFINITY;
+  let gapEndedAt = Number.NEGATIVE_INFINITY;
+  let lastPongAt = Number.NEGATIVE_INFINITY;
+  let lastPongSentAt = Number.NEGATIVE_INFINITY;
   const arrivals = new Float64Array(ARRIVAL_WINDOW);
   const arrivedAt = new Float64Array(ARRIVAL_WINDOW).fill(
     Number.NEGATIVE_INFINITY
@@ -110,9 +115,10 @@ export const createRoomClock = (): RoomClock => {
     }
     ordered.sort();
     settled.sort();
-    if (steady === 0 && lastArrival > 0) {
+    if (steady === 0 && placed) {
       return;
     }
+    placed = true;
     const earliest = ordered[count - 1] ?? sample;
     const late = settled[Math.floor(EARLY_SHARE * (steady - 1))] ?? sample;
     offset = earliest;
@@ -144,20 +150,34 @@ export const createRoomClock = (): RoomClock => {
       roomAhead = Math.max(roomAhead, roomMs - now);
     },
     heardRtt: (rttMs, now) => {
-      if (heldEndedAt > now - rttMs) {
-        return;
+      const sentAt = now - rttMs;
+      const bunched =
+        now - lastPongAt < HELD_FROM_MS &&
+        Math.abs(sentAt - lastPongSentAt) >= HELD_FROM_MS;
+      lastPongAt = now;
+      lastPongSentAt = sentAt;
+      if (bunched) {
+        rtts[(rttAt + RTT_SAMPLES - 1) % RTT_SAMPLES] = Number.NaN;
+      } else {
+        rtts[rttAt] = rttMs;
+        rttAt = (rttAt + 1) % RTT_SAMPLES;
       }
-      rtts[rttAt] = rttMs;
-      rttAt = (rttAt + 1) % RTT_SAMPLES;
       sorted.length = 0;
-      sorted.push(...rtts);
+      for (const rtt of rtts) {
+        if (!Number.isNaN(rtt)) {
+          sorted.push(rtt);
+        }
+      }
       sorted.sort((left, right) => left - right);
-      typicalRtt = sorted[Math.floor(sorted.length / 2)] ?? rttMs;
-      lastRtt = rttMs;
+      typicalRtt = sorted[Math.floor(sorted.length / 2)] ?? typicalRtt;
+      lastRtt = bunched ? lastRtt : rttMs;
     },
     heardTick: (tick, now) => {
-      if (lastArrival > 0 && now - lastArrival >= HELD_FROM_MS) {
-        heldEndedAt = now;
+      if (now - (lastArrival === 0 ? startsAt : lastArrival) >= HELD_FROM_MS) {
+        if (now - gapEndedAt >= HOLDS_RECUR_WITHIN_MS) {
+          heldEndedAt = now;
+        }
+        gapEndedAt = now;
       }
       heardArrival(tick * TICK_MS - now, now);
       lastArrival = now;
@@ -195,6 +215,8 @@ export const createRoomClock = (): RoomClock => {
     silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
     start: (startAtRoomMs) => {
       startsAt = startAtRoomMs - roomAhead;
+      offset = -startsAt;
+      placed = true;
     },
     stepsDue: (predictedTick, confirmedTick, now) =>
       target(now) <= 0 || predictedTick - confirmedTick >= INPUT_HORIZON

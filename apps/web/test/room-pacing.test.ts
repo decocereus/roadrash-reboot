@@ -1,4 +1,4 @@
-import { INPUT_HORIZON } from "@racer/sim/room";
+import { MOST_LEAD_TICKS } from "@racer/sim/room";
 import { createRoomClock } from "@racer/sim/room-clock";
 import { TICK_SECONDS } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
@@ -328,6 +328,14 @@ const lagProxyHolds: Link = {
   upMs: jitteredWithHolds(5),
 };
 
+const heldAtTheStart = cutOff(80, 200, 2700);
+
+const batchedFromSlowRoom: Link = {
+  downMs: heldEvery(70, 300, 300),
+  roomHz: ratesFrom([[5000, 57]]),
+  upMs: heldEvery(70, 300, 300),
+};
+
 const risingRoundTrip: Link = {
   downMs: risesAt(75, 200, 20_000),
   roomHz: steadyHz,
@@ -381,6 +389,19 @@ describe("a room race on a rough link", () => {
     expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
   });
 
+  it("follows a room sending 57 ticks a second through a proxy that hands packets over in batches every 300 ms", () => {
+    const result = ride(batchedFromSlowRoom, 60);
+    expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
+      leaps: 0,
+      stops: 0,
+    });
+    expect(
+      Math.max(1 - result.slowest, result.fastest - 1)
+    ).toBeLessThanOrEqual(0.11);
+    expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
+    expect(result.lateShare).toBeLessThan(0.01);
+  });
+
   it.each([
     ["a one-second cut both ways", cutBothWays(1), 1],
     ["a 2.5 s hold on ticks from the room", heldDownstream(2.5), 0.01],
@@ -391,6 +412,11 @@ describe("a room race on a rough link", () => {
       "the rooms:lag proxy at 130 ms, 30 ms jitter, 1% loss and a 2.5 s hold both ways every 15 s",
       lagProxyHolds,
       0.2,
+    ],
+    [
+      "a 2.5 s hold both ways that holds the lobby's last pings and the race's first ticks",
+      { downMs: heldAtTheStart, roomHz: steadyHz, upMs: heldAtTheStart },
+      1,
     ],
     [
       "a 2.5 s hold both ways whose held packets dribble out over a second",
@@ -408,7 +434,7 @@ describe("a room race on a rough link", () => {
       expect(
         Math.max(1 - result.slowest, result.fastest - 1)
       ).toBeLessThanOrEqual(0.11);
-      expect(result.mostAheadOfRoom).toBeLessThan(INPUT_HORIZON);
+      expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
       expect(result.lateShare).toBeLessThan(lateLimit);
       expect(result.offPace).toBeLessThan(0.01);
     }
