@@ -204,7 +204,8 @@ const freshDir = () => {
 
 interface Machine {
   readonly commands: Map<number, string>;
-  displaySession: string;
+  seatSession: string;
+  sessionUser: string;
   readonly sessions: (string | undefined)[];
   readonly starts: string[];
   readonly stops: (readonly [number | null, string])[];
@@ -213,25 +214,35 @@ interface Machine {
 
 const machineOf = (): Machine => ({
   commands: new Map(),
-  displaySession: "2",
   seatOpens: true,
+  seatSession: "2",
+  sessionUser: String(process.getuid?.() ?? 0),
   sessions: [],
   starts: [],
   stops: [],
 });
 
-const stdoutOf = (machine: Machine, file: string): string => {
-  switch (file) {
-    case "hyprctl": {
-      return JSON.stringify([{ instance: "sig", pid: OWNED_PID }]);
-    }
-    case "loginctl": {
-      return `${machine.displaySession}\n`;
-    }
-    default: {
-      return "";
-    }
+const stdoutOf = (
+  machine: Machine,
+  file: string,
+  args: readonly string[]
+): string => {
+  if (file === "hyprctl") {
+    return JSON.stringify([{ instance: "sig", pid: OWNED_PID }]);
   }
+  const [verb, target, property] = args;
+  if (file !== "loginctl") {
+    return "";
+  }
+  if (verb === "show-seat" && target === "seat0") {
+    return property === "--property=ActiveSession"
+      ? `${machine.seatSession}\n`
+      : "";
+  }
+  if (verb === "show-session" && target === machine.seatSession) {
+    return property === "--property=User" ? `${machine.sessionUser}\n` : "";
+  }
+  return "";
 };
 
 const processesOn = (machine: Machine) =>
@@ -241,8 +252,11 @@ const processesOn = (machine: Machine) =>
       [...machine.commands].map(([pid, command]) => ({ command, pid }))
     ),
     listenerOf: () => Effect.succeed(null),
-    run: (file) =>
-      Effect.sync(() => ({ stderr: "", stdout: stdoutOf(machine, file) })),
+    run: (file, args) =>
+      Effect.sync(() => ({
+        stderr: "",
+        stdout: stdoutOf(machine, file, args),
+      })),
     runShown: () => Effect.die("nothing here runs a shown command"),
     spawnScoped: () => Effect.die("the desktop session spawns nothing scoped"),
     startDetached: (file, _args, _cwd, _log, env) =>
@@ -517,17 +531,28 @@ describe("desktop session lifecycle", () => {
     expect(machine.sessions).toStrictEqual(["2"]);
   });
 
-  it("fails naming the tty1 login when logind has no display session, launching nothing", async () => {
-    const machine = machineOf();
-    machine.displaySession = "";
-    const dir = freshDir();
-    const up = await onMachine(machine, desktopUp("run-a", null, dir));
-    expect(machine.starts).toStrictEqual([]);
-    expect(failureText(up)).toContain("logind has no display session");
-    expect(failureText(up)).toContain("console login on tty1");
-    expect(existsSync(path.join(dir, "desktop.json"))).toBeFalsy();
-    expect(existsSync(path.join(dir, "desktop.lock"))).toBeFalsy();
-  });
+  it.for([
+    { case: "seat0 has no active session", seatSession: "", sessionUser: "" },
+    {
+      case: "seat0's active session is another user's",
+      seatSession: "2",
+      sessionUser: "4242",
+    },
+  ])(
+    "fails naming the tty1 login when $case, launching nothing",
+    async ({ seatSession, sessionUser }) => {
+      const machine = machineOf();
+      machine.seatSession = seatSession;
+      machine.sessionUser = sessionUser;
+      const dir = freshDir();
+      const up = await onMachine(machine, desktopUp("run-a", null, dir));
+      expect(machine.starts).toStrictEqual([]);
+      expect(failureText(up)).toContain("seat0 has no active session of uid");
+      expect(failureText(up)).toContain("console login on tty1");
+      expect(existsSync(path.join(dir, "desktop.json"))).toBeFalsy();
+      expect(existsSync(path.join(dir, "desktop.lock"))).toBeFalsy();
+    }
+  );
 
   it("moves a hold to the browser's pid so a crash frees the session", async () => {
     const machine = machineOf();

@@ -17,6 +17,7 @@ const COMPOSITOR = "Hyprland";
 const CONFIG_NAME = "rushline-desktop.conf";
 const CONFIG = path.join(import.meta.dirname, CONFIG_NAME);
 const DISPLAY_FILE_ENV = "RUSHLINE_DESKTOP_DISPLAY_FILE";
+const SEAT = "seat0";
 const POLL_MS = 200;
 const READY_ATTEMPTS = 150;
 const LOG_TAIL_LINES = 12;
@@ -256,19 +257,31 @@ const logTail = (paths: DesktopPaths) =>
     Effect.orElseSucceed(() => "")
   );
 
-const displaySession = Effect.fnUntraced(function* displaySession() {
-  const processes = yield* ToolProcesses;
-  const uid = userId();
-  const { stdout } = yield* processes.run("loginctl", [
-    "show-user",
-    String(uid),
-    "--property=Display",
+const loginProperty = (args: readonly string[]) =>
+  ToolProcesses.use((processes) => processes.run("loginctl", args)).pipe(
+    Effect.map(({ stdout }) => stdout.trim())
+  );
+
+const consoleSession = Effect.fnUntraced(function* consoleSession() {
+  const uid = String(userId());
+  const session = yield* loginProperty([
+    "show-seat",
+    SEAT,
+    "--property=ActiveSession",
     "--value",
   ]);
-  const session = stdout.trim();
-  if (session === "") {
+  const owner =
+    session === ""
+      ? ""
+      : yield* loginProperty([
+          "show-session",
+          session,
+          "--property=User",
+          "--value",
+        ]);
+  if (owner !== uid) {
     return yield* new DesktopError({
-      message: `Hyprland cannot open the seat: logind has no display session for uid ${uid}. It needs the owner's console login on tty1, which holds seat0. Log in on tty1, then run this again.`,
+      message: `Hyprland cannot open the seat: ${SEAT} has no active session of uid ${uid}. It needs the owner's console login on tty1, active on ${SEAT}. Log in on tty1, then run this again.`,
       operation: "start",
     });
   }
@@ -307,7 +320,7 @@ const started = Effect.fnUntraced(function* started(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
-  const session = yield* displaySession();
+  const session = yield* consoleSession();
   yield* fs.remove(paths.claim, { force: true });
   yield* fs.remove(paths.display, { force: true });
   yield* fs.writeFileString(paths.log, "");
