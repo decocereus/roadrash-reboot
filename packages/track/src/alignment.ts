@@ -25,6 +25,7 @@ type ClothoidRow = readonly [
 ];
 
 export interface Alignment {
+  readonly name: string;
   readonly start: TrackStart;
   readonly pieces: TrackPieces;
   readonly leadInLength: number;
@@ -165,7 +166,36 @@ const sampleSpan = (
       2;
 };
 
+const PIECE_TERMS = [
+  "endCurvature",
+  "endGrade",
+  "easedTurn",
+  "easedClimb",
+] as const satisfies readonly (keyof TrackPiece)[];
+
+const checkAlignment = ({ leadInLength, name, pieces }: Alignment): void => {
+  if (!(Number.isInteger(leadInLength) && leadInLength >= 0)) {
+    throw new Error(
+      `${name} has a lead-in of ${leadInLength} m, and it must be a whole number of metres from 0 up.`
+    );
+  }
+  for (const [index, piece] of pieces.entries()) {
+    if (!(Number.isFinite(piece.length) && piece.length > 0)) {
+      throw new Error(
+        `Piece ${index} of ${name} runs ${piece.length} m, and a piece must run a finite length above 0.`
+      );
+    }
+    const odd = PIECE_TERMS.find((term) => !Number.isFinite(piece[term]));
+    if (odd) {
+      throw new Error(
+        `Piece ${index} of ${name} has ${odd} ${piece[odd]}, and it must be finite.`
+      );
+    }
+  }
+};
+
 export const sampleAlignment = (alignment: Alignment): Centreline => {
+  checkAlignment(alignment);
   const spans = pieceSpans(alignment.pieces);
   const last = spans.at(-1);
   if (!last || last.piece.endCurvature !== 0 || last.piece.endGrade !== 0) {

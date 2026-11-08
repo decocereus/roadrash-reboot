@@ -18,6 +18,7 @@ export const GUARDS = [
   "GuardRejoin",
   "GuardRejoinCountdown",
   "GuardTakenStaysPut",
+  "GuardHoldDeadline",
 ] as const;
 
 export type Guard = (typeof GUARDS)[number];
@@ -39,6 +40,7 @@ const ACTION_PROPERTIES = [
   "ReadyRiderRides",
   "BackOnBike",
   "BikeHeldForHold",
+  "HoldEndsOnTime",
 ] as const;
 
 const LIVENESS = ["NeverStuck"] as const;
@@ -198,6 +200,7 @@ export const GUARD_OFFS = {
   GuardDropRetires: { breaks: "SeatsCanRide", on: "full" },
   GuardEndedBackToLobby: { breaks: "NeverStuck", on: "solo" },
   GuardFreeColour: { breaks: "SlotNeverShared", on: "pair" },
+  GuardHoldDeadline: { breaks: "HoldEndsOnTime", on: "solo" },
   GuardJoinByKey: { breaks: "RejoinKeepsSpot", on: "solo" },
   GuardLateRoomRacing: { breaks: "ReadyRiderRides", on: "solo" },
   GuardLeaveCode: { breaks: "LeaveFreesSpot", on: "solo" },

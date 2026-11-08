@@ -3,6 +3,7 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 
+import { roomsBuild } from "./build-id.ts";
 import { gateLimiter, passes } from "./limiter.ts";
 import { QueueServer } from "./queue-server.ts";
 import { RaceServer } from "./race-server.ts";
@@ -13,7 +14,7 @@ const THE_QUEUE = "public";
 
 const props = Effect.map(
   Effect.all({
-    build: Config.String("RUSHLINE_BUILD").pipe(Config.withDefault("local")),
+    build: roomsBuild,
     port: Config.Int("RUSHLINE_ROOMS_PORT").pipe(Config.withDefault(1352)),
   }),
   ({ build, port }) => ({

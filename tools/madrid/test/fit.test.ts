@@ -43,6 +43,7 @@ describe("fitting pieces to a street", () => {
     const start = { heading: 1.1, x: 300, z: -50 };
     const road = sampleAlignment({
       leadInLength: 0,
+      name: "a test street",
       pieces: [
         piece(100, 0),
         piece(75, 1 / 120),
@@ -120,6 +121,7 @@ describe("fitting pieces to a street", () => {
     );
     const road = sampleAlignment({
       leadInLength: 0,
+      name: "a test street",
       pieces: fit.pieces,
       runoffLength: 0,
       start: fit.start,
@@ -168,6 +170,7 @@ describe("fitting pieces to a street", () => {
     const fit = fitPolyline(street, { ...options, minRadiusM: 60 });
     const road = sampleAlignment({
       leadInLength: 0,
+      name: "a test street",
       pieces: fit.pieces,
       runoffLength: 0,
       start: fit.start,
@@ -191,6 +194,7 @@ describe("fitting pieces to a street", () => {
     const grades = fitGrades({ knotS, samples });
     const road = sampleAlignment({
       leadInLength: 0,
+      name: "a test street",
       pieces: [
         { ...piece(25, 0), endGrade: grades.knots[1] ?? 0 },
         ...Array.from(grades.knots.subarray(2), (endGrade) => ({

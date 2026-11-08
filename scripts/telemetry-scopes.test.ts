@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import path from "node:path";
 
 import type { OxlintOverride } from "oxlint";
@@ -86,6 +87,23 @@ describe("Effect boundary scopes", () => {
     "apps/web/src/assets/font-readiness-failed.ts",
   ])("give the library %s all fourteen rules", (file) => {
     expect(boundaryRulesFor(file)).toStrictEqual(libraryRules);
+  });
+
+  it("give the race rules entry and every module beside it the boundary rules", () => {
+    const rulesDir = "apps/web/src/rules";
+    const entry = `${rulesDir}/load.ts`;
+    const files = readdirSync(rulesDir)
+      .filter((name) => name.endsWith(".ts"))
+      .map((name) => `${rulesDir}/${name}`)
+      .toSorted();
+    expect(files).toContain(entry);
+    expect(
+      Object.fromEntries(files.map((file) => [file, boundaryRulesFor(file)]))
+    ).toStrictEqual(
+      Object.fromEntries(
+        files.map((file) => [file, file === entry ? entryRules : libraryRules])
+      )
+    );
   });
 
   it.each([

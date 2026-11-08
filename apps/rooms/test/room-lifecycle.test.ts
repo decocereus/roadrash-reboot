@@ -4,6 +4,7 @@ import { SEAT_LEFT, SEAT_QUIT, SEAT_SILENT } from "../src/messages.ts";
 import {
   advanceHearing,
   AWAY_MS,
+  HOLD_MS,
   lastLobby,
   readyAll,
   readyPacket,
@@ -77,6 +78,30 @@ describe("RoomLifecycle.tla counterexamples on the real host", () => {
         .filter(({ kind }) => ["held", "left", "rejoined"].includes(kind))
         .map(({ kind }) => kind)
     ).toStrictEqual(["held", "rejoined", "held", "rejoined"]);
+  });
+
+  it("lets a hold that ran out go when the rider is back before the hold's timer wakes", () => {
+    const { clock, host, seated } = room();
+    const ann = seated("ann", "Ann");
+    const bo = seated("bo", "Bo");
+    readyAll(host, [ann, bo]);
+    host.message(ann, readyPacket(ann));
+    host.message(bo, readyPacket(bo));
+    clock.advance(START_DELAY_MS + TICK_MS * 10);
+    host.gone(ann, ABNORMAL_CLOSE);
+    advanceHearing(host, clock, [bo], HOLD_MS - 1000);
+    clock.stall(2000);
+    const back = seated("ann", "Ann");
+    expect(back.messages.map(({ kind }) => kind)).not.toContain("started");
+    clock.advance(1000);
+    expect(
+      clock.notes
+        .filter(({ kind }) => ["held", "left", "rejoined"].includes(kind))
+        .map((note) => [note.kind, "closeCode" in note ? note.closeCode : null])
+    ).toStrictEqual([
+      ["held", ABNORMAL_CLOSE],
+      ["left", ABNORMAL_CLOSE],
+    ]);
   });
 
   it("known defect lateQuitRejoins: puts a racer whose failed preparation quit back on the bike when the new page's seat beats the quit", () => {

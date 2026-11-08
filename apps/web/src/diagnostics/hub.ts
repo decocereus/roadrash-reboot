@@ -126,7 +126,7 @@ const lazyDelivery = (): ((queue: UploadQueue) => void) => {
 };
 
 const createDiagnostics = (): Diagnostics => {
-  const settings = createSettingsStore();
+  const settings = createSettingsStore(storage, window);
   const recorder = createRecorder();
   const uploader = createUploader(lazyDelivery());
   const sessionId = crypto.randomUUID();
@@ -147,9 +147,9 @@ const createDiagnostics = (): Diagnostics => {
       setTimeout(run, ms);
     },
     build: __RUSHLINE_BUILD__.sha,
-    enabled: () => settings.read().raceData,
     now: () => performance.now(),
     playerId: player,
+    raceData: settings.raceData,
     send: (body) =>
       navigator.sendBeacon(
         PLAYER_EVENTS_ENDPOINT,
@@ -261,7 +261,7 @@ const createDiagnostics = (): Diagnostics => {
   settings.subscribe(apply);
   uploader.subscribe(notify);
   apply();
-  if (settings.read().raceData) {
+  if (settings.raceData.sharing()) {
     events.track({
       browser: browserFamilyOf(navigator.userAgent),
       event: "game_opened",

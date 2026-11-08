@@ -15,7 +15,7 @@ import {
 } from "./tables.ts";
 import type { Tier, RoadId } from "./tables.ts";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export const racerIds = ["player", ...rivalIds] as const;
 
@@ -45,9 +45,9 @@ export interface CareerRecord {
 }
 
 export interface SeasonEntry {
+  readonly bestPlace: number | null;
   readonly points: number;
   readonly wins: number;
-  readonly lastAhead: Partial<Record<RacerId, number>>;
 }
 
 export interface RivalMemory {
@@ -161,7 +161,11 @@ export const blankMemory: RivalMemory = {
   weaponTakenByPlayer: 0,
 };
 
-export const blankSeason: SeasonEntry = { lastAhead: {}, points: 0, wins: 0 };
+export const blankSeason: SeasonEntry = {
+  bestPlace: null,
+  points: 0,
+  wins: 0,
+};
 
 export const newCareer = (seed: number): CareerState => ({
   activeRace: null,

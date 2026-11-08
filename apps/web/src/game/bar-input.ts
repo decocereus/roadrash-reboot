@@ -1,6 +1,8 @@
 import type { LobbyControl } from "@racer/sim/lobby";
 import type { LobbyPose } from "@racer/sim/lobby-walk";
 
+import { createHeldKeys } from "./held-keys.ts";
+
 const POSE_KEYS = {
   Digit1: "arms",
   Digit2: "chat",
@@ -43,16 +45,15 @@ export const createBarInput = (
   >,
   events: BarInputEvents
 ): BarInput => {
-  const held = new Set<string>();
+  const held = createHeldKeys();
   const control = { forward: 0, right: 0, sprint: false };
   let dragFrom: number | null = null;
   let dragged = false;
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.repeat) {
+    if (!held.press(event)) {
       return;
     }
-    held.add(event.code);
     if (isPoseKey(event.code)) {
       events.pose(POSE_KEYS[event.code]);
     }
@@ -61,11 +62,9 @@ export const createBarInput = (
     }
   };
   const onKeyUp = (event: KeyboardEvent): void => {
-    held.delete(event.code);
+    held.release(event.code);
   };
-  const onBlur = (): void => {
-    held.clear();
-  };
+  const onBlur = held.clear;
   const onPointerDown = (event: PointerEvent): void => {
     dragFrom = event.clientX;
     dragged = false;

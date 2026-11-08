@@ -3,6 +3,8 @@ import type { BikeId } from "@racer/sim/bikes";
 import { tierAfter } from "@racer/sim/difficulty";
 import type { Tier } from "@racer/sim/difficulty";
 import { trackFor } from "@racer/track/roads";
+import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import { recordedRules } from "./bench.ts";
@@ -19,6 +21,7 @@ import {
   weakSeason,
 } from "./career-fixtures.ts";
 import { fieldFor, practiceSetup, roadsFor, setupFor } from "./field.ts";
+import { RaceRulesSchema } from "./rules-schema.ts";
 import { launchRules } from "./rules.ts";
 import type { RaceRules } from "./rules.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
@@ -54,6 +57,13 @@ const bikesOn = (
     trackFor("breakwater-run")
   ).rivals.map((rival) => [rival.name, rival.bike.id] as const);
 
+const readRules = Schema.decodeUnknownResult(RaceRulesSchema);
+
+const matching = (from: BikeId, to: BikeId) => ({
+  ...launchRules,
+  bikeMatches: [{ from, tier: 3, to }],
+});
+
 describe("bike matches", () => {
   const kiteRiders = bikesOn(served, "halden-wren-400", 1).filter(
     ([, bikeId]) => bikeId === "halden-kite-500"
@@ -75,6 +85,18 @@ describe("bike matches", () => {
     expect(bikesOn(served, "ostra-sesta-600", 2)).toStrictEqual(
       bikesOn({ ...served, bikeMatches: [] }, "ostra-sesta-600", 2)
     );
+  });
+
+  it("refuses, when the rules are read, a match onto a bike no faster than the one it replaces", () => {
+    expect(
+      [
+        launchRules,
+        matching("ostra-nera-1000", "gutter-pup-250"),
+        matching("halden-kite-500", "halden-kite-500"),
+        matching("ostra-sette-750", "brack-stoker-800"),
+        matching("brack-stoker-800", "ostra-sette-750"),
+      ].map((rules) => Result.isSuccess(readRules(rules)))
+    ).toStrictEqual([true, false, false, false, true]);
   });
 
   it("leaves the recorded rules, which the perf scenarios race on, alone", () => {

@@ -192,6 +192,7 @@ const piecesOf = (grid: Grid, knots: Float64Array): TrackPieces => {
 const centrelineOf = (grid: Grid, model: Model): Centreline =>
   sampleAlignment({
     leadInLength: 0,
+    name: "a fitted street",
     pieces: piecesOf(grid, model.knots),
     runoffLength: 0,
     start: model.start,

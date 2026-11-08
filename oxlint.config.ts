@@ -429,6 +429,7 @@ const effectFiles = [
   "apps/web/src/rules/rules-request-failed.ts",
   "apps/web/src/rules/rules-response-rejected.ts",
   "apps/web/src/rules/rules-decode-failed.ts",
+  "apps/web/src/rules/rules-timed-out.ts",
 ];
 
 const libraryFiles = [
@@ -455,6 +456,7 @@ const libraryFiles = [
   "apps/web/src/rules/rules-request-failed.ts",
   "apps/web/src/rules/rules-response-rejected.ts",
   "apps/web/src/rules/rules-decode-failed.ts",
+  "apps/web/src/rules/rules-timed-out.ts",
 ];
 
 export default defineConfig({
