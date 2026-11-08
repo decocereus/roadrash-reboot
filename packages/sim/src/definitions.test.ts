@@ -78,6 +78,59 @@ describe("the bike and rider tables", () => {
     expect(() => createRace(bad)).toThrow("You.skill");
   });
 
+  it("refuses a gearbox whose upshift drops the revs low enough to shift straight back down", () => {
+    const hunting = {
+      ...defaultSetup(slagRow, 1),
+      player: { ...defaultPlayer, bike: { ...streetBike, gears: [10, 100] } },
+    } as const;
+    expect(validateSetup(hunting)).toStrictEqual([
+      { kind: "outOfRange", rule: "ostra-sesta-600.gears", value: 100 },
+    ]);
+    expect(() => createRace(hunting)).toThrow("ostra-sesta-600.gears");
+  });
+
+  it("refuses an officer outside the rider ranges before the race starts", () => {
+    const setup = defaultSetup(slagRow, 1);
+    const reckless = {
+      ...setup,
+      police: {
+        ...setup.police,
+        officer: { ...setup.police.officer, aggression: 3 },
+      },
+    };
+    expect(validateSetup(reckless)).toStrictEqual([
+      {
+        kind: "outOfRange",
+        rule: `${setup.police.officer.name}.aggression`,
+        value: 3,
+      },
+    ]);
+    expect(() => createRace(reckless)).toThrow(
+      `${setup.police.officer.name}.aggression`
+    );
+  });
+
+  it("refuses a colour between two palette entries, so every rider is drawn in one", () => {
+    const setup = defaultSetup(slagRow, 1);
+    const blended = {
+      ...setup,
+      player: { ...defaultPlayer, jacket: 2.5, paint: 0.5 },
+      police: {
+        ...setup.police,
+        officer: { ...setup.police.officer, paint: 1.5 },
+      },
+    };
+    expect(validateSetup(blended)).toStrictEqual([
+      { kind: "outOfRange", rule: "You.jacket", value: 2.5 },
+      { kind: "outOfRange", rule: "You.paint", value: 0.5 },
+      {
+        kind: "outOfRange",
+        rule: `${setup.police.officer.name}.paint`,
+        value: 1.5,
+      },
+    ]);
+  });
+
   it("builds a bike from its spec alone, so its looks and shop rows cannot change how it rides", () => {
     expect(bikeDefinitions.map(({ id }) => bikes[id])).toStrictEqual(
       bikeDefinitions.map(({ id, spec }) => ({ ...spec, id }))

@@ -15,7 +15,7 @@ import { stepRideOut } from "../race-handoff.ts";
 import type { RideOutHandoff } from "../race-handoff.ts";
 import { moveToRoom, newRoomId } from "./room-url.ts";
 import { BackRoomScreen } from "./screens/back-room.tsx";
-import { BootScreen } from "./screens/boot.tsx";
+import { BootScreen, ElsewhereScreen } from "./screens/boot.tsx";
 import { ClubhouseScreen } from "./screens/clubhouse.tsx";
 import { DataNotice } from "./screens/data-notice.tsx";
 import { FinishBanner } from "./screens/finish.tsx";
@@ -213,6 +213,9 @@ const MenuScreens = ({
   const { view, career, rules } = flow;
   if (view.screen === "boot") {
     return <BootScreen />;
+  }
+  if (view.screen === "elsewhere") {
+    return <ElsewhereScreen />;
   }
   if (view.screen === "backRoom") {
     return (

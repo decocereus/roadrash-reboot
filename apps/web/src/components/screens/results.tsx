@@ -397,7 +397,10 @@ const footOf = (report: RaceReport): string => {
   if (report.room) {
     return netLine(report.room.net);
   }
-  return report.ledger ? "Settled and saved" : "Single race";
+  if (report.ledger) {
+    return report.unsaved ? "Settled, not saved" : "Settled and saved";
+  }
+  return "Single race";
 };
 
 const againLabel = (report: RaceReport, repeatRun: boolean): string => {

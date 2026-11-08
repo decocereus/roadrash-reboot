@@ -1,10 +1,10 @@
 import { recordedRules } from "@racer/career/bench";
+import type { PracticePick } from "@racer/career/field";
 import type { RaceOutcome } from "@racer/career/outcome";
 
 import { celebrityLoader } from "../src/asset-load.ts";
 import { browserAssetRuntime } from "../src/asset-runtime.ts";
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
-import type { QuickPick } from "../src/career/flow.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
 import { assetParsers, createGame } from "../src/game/game.ts";
 import type { GameHandle, HudState, RacePlan } from "../src/game/hud.ts";
@@ -15,9 +15,9 @@ const HEIGHT = 540;
 const LOOK_MS = 500;
 const WAIT_MS = 400_000;
 const POLL_MS = 16;
-const ROAD_A: QuickPick["roadId"] = "ridge-road";
-const ROAD_B: QuickPick["roadId"] = "slag-row";
-const ROAD_C: QuickPick["roadId"] = "breakwater-run";
+const ROAD_A: PracticePick["roadId"] = "ridge-road";
+const ROAD_B: PracticePick["roadId"] = "slag-row";
+const ROAD_C: PracticePick["roadId"] = "breakwater-run";
 
 interface DevHold {
   readonly held: () => boolean;
@@ -31,7 +31,7 @@ interface Scene {
   readonly say: (line: string) => void;
 }
 
-const planOn = (roadId: QuickPick["roadId"]): RacePlan =>
+const planOn = (roadId: PracticePick["roadId"]): RacePlan =>
   planFor(recordedRules, null, quickEntry({ ...firstQuickPick, roadId }, SEED));
 
 const proofCanvas = (): HTMLCanvasElement => {

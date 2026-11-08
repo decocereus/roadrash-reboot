@@ -45,6 +45,7 @@ A promotion returns to the bar, where Vic says the tier's line. A damaged save o
 
 - New career confirm, when a save exists: `Start over? Your Tier {tier} career will be erased.` Buttons `ERASE AND START` / `KEEP IT`.
 - Damaged save, on the pink note on the wall (template): `{what is wrong} ({field}).` / `Save error: {kind}. Start over keeps the old save in the browser under a backup key and begins a new career.` The first menu item becomes `START OVER`. What is wrong, by kind: `notJson` reads `The save is not a save file`, `wrongVersion` reads `The save is from another version of the game`, `invalid` reads `The save holds a value the game does not have`, `inconsistent` reads `The save contradicts itself`.
+- Race rules that fail to load, on the pink note: `Could not start the game: {message}`, with the messages in `docs/errors.md`. The menu holds only `TRY AGAIN`, which reloads the page.
 - When the browser will not store the save, every screen carries a red line at the top: `The browser refused the save. Progress will be lost when you leave.`
 - Bottom strip: `Arrows to steer · Space to punch · Shift to kick`
 - Settings is a second ruled sheet pinned beside the list, one line per setting, with the highlighted setting's explanation in an opaque bottom strip and `B while riding marks the moment · Session {id}` at its right. It opens the same way over Pause.
@@ -64,7 +65,7 @@ A promotion returns to the bar, where Vic says the tier's line. A damaged save o
 - Tier names: `NEW MEAT`, `DEE'S TIP`, `THE LONG RIDGE`
 - Board heading: `THE BOARD`
 - Board Polaroids: the top three of the season standings, then `YOU` wherever the player ranks, each with its points (`JUNO · 61`). Caption under the player's at tier 1: `NEW MEAT`; after tier 1: `KID CAN RIDE`.
-- Season standings: every settled career race gives 8 points for 1st down to 1 for 8th, and 0 to a rider who was busted, wrecked, or not in that race. Ties go to more wins, then to whoever most recently placed better than the other in a race they shared.
+- Season standings: every settled career race gives 8 points for 1st down to 1 for 8th, and 0 to a rider who was busted, wrecked, or not in that race. Ties go to more wins, then to the best single finish of the season, then to the fixed order of the cast list, with the player first.
 - Board notes (templates, newest first, at most three shown):
   - `{RIVAL} WANTS {THEIR} {WEAPON} BACK.`
   - `{RIVAL} WENT DOWN AT {km} KM ON {ROAD}. ASK {THEM} ABOUT IT.`

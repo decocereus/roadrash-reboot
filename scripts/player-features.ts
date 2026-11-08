@@ -31,6 +31,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
       "packages/sim/src/braking-and-cornering.test.ts",
       "packages/sim/src/engine-and-tuck.test.ts",
       "apps/web/src/game/input.ts",
+      "apps/web/src/game/held-keys.ts",
       "apps/web/test/input.test.ts",
       "tools/handling/**",
     ],
@@ -335,6 +336,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     owns: [
       "apps/web/src/components/screens/**",
       "apps/web/test/bar-nav.test.tsx",
+      "apps/web/test/career-screens.test.tsx",
       "apps/web/src/components/game-shell.tsx",
       "apps/web/src/components/use-flow.ts",
       "apps/web/src/navigation.ts",
@@ -497,6 +499,7 @@ export const playerFeatures: readonly FeatureEntry[] = [
     kind: "feature",
     owns: [
       "apps/web/src/game/pacer.ts",
+      "apps/web/src/game/pacer.test.ts",
       "apps/web/src/game/presets.ts",
       "apps/web/src/game/presets.test.ts",
       "apps/web/src/game/fps-meter.ts",

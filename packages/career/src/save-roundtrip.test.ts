@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { recordedCast } from "./bench.ts";
 import { decent, enter, play, seasonAt, weak } from "./career-fixtures.ts";
 import { parseCareer, serialiseCareer } from "./save.ts";
-import { newCareer } from "./state.ts";
+import { newCareer, racerIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
 
 type Json = Schema.MutableJson;
@@ -69,7 +69,19 @@ const missing = (career: CareerState, path: string): string =>
     withoutField(parseJson(serialiseCareer(career)), path.split("."))
   );
 
-const blank: Json = { lastAhead: {}, points: 0, wins: 0 };
+const blank: Json = { bestPlace: null, points: 0, wins: 0 };
+
+const versionSixOf = (career: CareerState): string =>
+  JSON.stringify({
+    ...career,
+    season: Object.fromEntries(
+      racerIds.map((racer) => {
+        const { points, wins } = career.season[racer];
+        return [racer, { lastAhead: {}, points, wins }];
+      })
+    ),
+    version: 6,
+  });
 
 const verdictOn = (save: string): string => {
   const result = parseCareer(save);
@@ -129,13 +141,13 @@ const careers = [
   play(newCareer(2), { ends: "wrecked", roadId: "slag-row" }).career,
 ];
 
-const versionSixBytes = [
-  ["7404:1334fef16cb692d5", "7404:1334fef16cb692d5"],
-  ["20254:195c29c4b1c4f150", "20254:b426ba03c01f7a6"],
-  ["20261:1c98be9c02bad5e6", "20261:a6e5629d5f55ebe"],
-  ["11875:15c1954f2428fb9d", "11875:139769962ec6fbbc"],
-  ["16805:56c64a4639e2d3e", "16805:1ba42fb01cd12c12"],
-  ["16671:1a9d94c3b720fbbd", "16671:1c6cc823f0a9ba57"],
+const versionSevenBytes = [
+  ["7450:1eb57f1baccf76a9", "7450:1eb57f1baccf76a9"],
+  ["15288:13d091a7e7ad767c", "15288:1f86363f0dc7af63"],
+  ["15257:16e0223aba3d0f6c", "15257:f3ec067533c68e"],
+  ["7770:1ec8072fd4f9ba2", "7770:ba648b8323f06fa"],
+  ["15033:d9641a7316f9687", "15033:d00f83914d5d423"],
+  ["14899:b4f4f31ea5a002", "14899:32e127b17ee8bf4"],
 ];
 
 describe("the save", () => {
@@ -145,7 +157,7 @@ describe("the save", () => {
     ).toStrictEqual(careers.map((career) => ({ career, ok: true })));
   });
 
-  it("a career writes, and reads back into, the same bytes as the version 6 reader", () => {
+  it("a career writes, and reads back into, the same bytes as the version 7 reader", () => {
     expect(
       careers.map((career) => {
         const text = serialiseCareer(career);
@@ -154,7 +166,7 @@ describe("the save", () => {
           fingerprint(recordedBytes(rereadOf(text))),
         ];
       })
-    ).toStrictEqual(versionSixBytes);
+    ).toStrictEqual(versionSevenBytes);
   });
 
   it("text that is not a save, or a save from another version, is rejected with the reason", () => {
@@ -176,7 +188,7 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(missing(good, "version")),
-      verdictOn(corrupted(good, "version", 7)),
+      verdictOn(corrupted(good, "version", 8)),
       verdictOn('{"version":1e400}'),
       verdictOn(serialiseCareer(good).replace(/"cash":-?\d+/u, '"cash":1e400')),
     ]).toStrictEqual([
@@ -199,6 +211,7 @@ describe("the save", () => {
       ["record.starts", -1],
       ["story.envelope", "burned"],
       ["memory.juno-kade.aggressionBonus", 2],
+      ["season.player.bestPlace", 0],
       ["board.0.kind", "graffiti"],
       ["lastResult.ledger.cashAfter", "lots"],
       ["lastResult.ledger.result", "won"],
@@ -218,6 +231,7 @@ describe("the save", () => {
       "invalid:record.starts",
       "invalid:story.envelope",
       "invalid:memory.juno-kade.aggressionBonus",
+      "invalid:season.player.bestPlace",
       "invalid:board.0",
       "invalid:lastResult.ledger.cashAfter",
       "invalid:lastResult.ledger.result",
@@ -397,15 +411,19 @@ describe("the save", () => {
     const good = seasonAt(decent, 2).end;
     expect([
       verdictOn(corrupted(good, "qualified.1.moon-road", 1)),
-      verdictOn(corrupted(good, "season.player.lastAhead.nobody", 1)),
       verdictOn(corrupted(good, "memory.nobody", 1)),
       verdictOn(corrupted(good, "season.nobody", blank)),
     ]).toStrictEqual([
       "invalid:qualified.1.moon-road",
-      "invalid:season.player.lastAhead.nobody",
       "invalid:memory.nobody",
       "invalid:season.nobody",
     ]);
+  });
+
+  it("a version 6 save is refused at the version, not read into version 7", () => {
+    expect(verdictOn(versionSixOf(seasonAt(decent, 2).end))).toBe(
+      "wrongVersion:version"
+    );
   });
 
   it("a save written before a rival joined the game loads with blank rows for that rival", () => {
@@ -447,9 +465,6 @@ describe("the save", () => {
           tier: settled.tier,
         })
       ),
-      verdictOn(
-        corrupted(settled, "season.player.lastAhead.juno-kade", starts + 1)
-      ),
       verdictOn(corrupted(settled, "lastResult.summary.raceId", starts + 1)),
       verdictOn(corrupted(settled, "memory.juno-kade.sharedRace", starts + 1)),
       verdictOn(corrupted(settled, "bikeId", "ostra-nera-1000")),
@@ -459,7 +474,6 @@ describe("the save", () => {
       "inconsistent:activeRace.raceId",
       "inconsistent:activeRace.tier",
       "inconsistent:lastResult",
-      "inconsistent:season.player.lastAhead.juno-kade",
       "inconsistent:lastResult.summary.raceId",
       "inconsistent:memory.juno-kade",
       "inconsistent:garage",

@@ -1,6 +1,5 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Http from "alchemy/Http";
-import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 import * as HttpRouter from "effect/http/HttpRouter";
@@ -9,6 +8,7 @@ import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
 
+import { roomsBuild } from "./build-id.ts";
 import { RoomApi } from "./contract.ts";
 import { gatedClient, ROOM_LIMITED } from "./gate.ts";
 import { createHost } from "./host.ts";
@@ -21,8 +21,6 @@ import { refusedSeat } from "./refused-seat.ts";
 import { launchRoomConfig } from "./room-config.ts";
 import { roomKindOf } from "./room-id.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
-
-const LOCAL_BUILD = "local";
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -96,9 +94,8 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
   "RaceServer",
   Effect.gen(function* raceServer() {
     const state = yield* Cloudflare.DurableObjectState;
-    const build = yield* Config.String("RUSHLINE_BUILD").pipe(
-      Config.withDefault(LOCAL_BUILD),
-      Effect.catchTag("ConfigError", () => Effect.succeed(LOCAL_BUILD))
+    const build = yield* roomsBuild.pipe(
+      Effect.catchTag("ConfigError", (missing) => Effect.die(missing))
     );
     const tapes = yield* Cloudflare.R2.WriteBucket(RaceTapes);
     const opens = yield* gateLimiter("open");

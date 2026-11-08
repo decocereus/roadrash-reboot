@@ -32,7 +32,7 @@ import * as Option from "effect/Option";
 import type * as Path from "effect/Path";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const CONFIG_COMMAND = "Hyprland --config /x/rushline-desktop.conf";
 const OWNED_PID = process.pid;
@@ -204,6 +204,9 @@ const freshDir = () => {
 
 interface Machine {
   readonly commands: Map<number, string>;
+  seatSession: string;
+  sessionUser: string;
+  readonly sessions: (string | undefined)[];
   readonly starts: string[];
   readonly stops: (readonly [number | null, string])[];
   seatOpens: boolean;
@@ -212,9 +215,35 @@ interface Machine {
 const machineOf = (): Machine => ({
   commands: new Map(),
   seatOpens: true,
+  seatSession: "2",
+  sessionUser: String(process.getuid?.() ?? 0),
+  sessions: [],
   starts: [],
   stops: [],
 });
+
+const stdoutOf = (
+  machine: Machine,
+  file: string,
+  args: readonly string[]
+): string => {
+  if (file === "hyprctl") {
+    return JSON.stringify([{ instance: "sig", pid: OWNED_PID }]);
+  }
+  const [verb, target, property] = args;
+  if (file !== "loginctl") {
+    return "";
+  }
+  if (verb === "show-seat" && target === "seat0") {
+    return property === "--property=ActiveSession"
+      ? `${machine.seatSession}\n`
+      : "";
+  }
+  if (verb === "show-session" && target === machine.seatSession) {
+    return property === "--property=User" ? `${machine.sessionUser}\n` : "";
+  }
+  return "";
+};
 
 const processesOn = (machine: Machine) =>
   Layer.succeed(ToolProcesses)({
@@ -223,19 +252,17 @@ const processesOn = (machine: Machine) =>
       [...machine.commands].map(([pid, command]) => ({ command, pid }))
     ),
     listenerOf: () => Effect.succeed(null),
-    run: (file) =>
+    run: (file, args) =>
       Effect.sync(() => ({
         stderr: "",
-        stdout:
-          file === "hyprctl"
-            ? JSON.stringify([{ instance: "sig", pid: OWNED_PID }])
-            : "",
+        stdout: stdoutOf(machine, file, args),
       })),
     runShown: () => Effect.die("nothing here runs a shown command"),
     spawnScoped: () => Effect.die("the desktop session spawns nothing scoped"),
     startDetached: (file, _args, _cwd, _log, env) =>
       Effect.sync(() => {
         machine.starts.push(file);
+        machine.sessions.push(env.XDG_SESSION_ID);
         if (machine.seatOpens) {
           machine.commands.set(OWNED_PID, CONFIG_COMMAND);
           writeFileSync(env.RUSHLINE_DESKTOP_DISPLAY_FILE ?? "", ":7");
@@ -288,8 +315,17 @@ const decodeWrittenClaim = Schema.decodeUnknownSync(
   )
 );
 
+const failureText = (exit: Exit.Exit<unknown, unknown>): string =>
+  Exit.isFailure(exit)
+    ? exit.cause.reasons
+        .filter(Cause.isFailReason)
+        .map((reason) => String(reason.error))
+        .join("\n")
+    : "";
+
 describe("desktop session lifecycle", () => {
   afterEach(() => {
+    vi.unstubAllEnvs();
     for (const dir of dirs.splice(0)) {
       rmSync(dir, { force: true, recursive: true });
     }
@@ -461,13 +497,8 @@ describe("desktop session lifecycle", () => {
     const up = await onMachine(machine, desktopUp("run-a", null, dir));
     expect(machine.starts).toStrictEqual([]);
     expect(machine.stops).toStrictEqual([]);
-    const messages = Exit.isFailure(up)
-      ? up.cause.reasons
-          .filter(Cause.isFailReason)
-          .map((reason) => String(reason.error))
-      : [];
-    expect(messages.join("\n")).toContain("still starting");
-    expect(messages.join("\n")).toContain("disables Xwayland");
+    expect(failureText(up)).toContain("still starting");
+    expect(failureText(up)).toContain("disables Xwayland");
   });
 
   it("leaves a compositor with no display alone on down", async () => {
@@ -487,16 +518,41 @@ describe("desktop session lifecycle", () => {
     machine.seatOpens = false;
     const dir = freshDir();
     const up = await onMachine(machine, desktopUp("run-a", null, dir));
-    expect(Exit.isFailure(up)).toBeTruthy();
-    const messages = Exit.isFailure(up)
-      ? up.cause.reasons
-          .filter(Cause.isFailReason)
-          .map((reason) => String(reason.error))
-      : [];
-    expect(messages.join("\n")).toContain("could not open the seat");
+    expect(failureText(up)).toContain("could not open the seat");
     expect(existsSync(path.join(dir, "desktop.json"))).toBeFalsy();
     expect(existsSync(path.join(dir, "desktop.lock"))).toBeFalsy();
   });
+
+  it("opens the seat through the console's display session, not the caller's ssh session", async () => {
+    vi.stubEnv("XDG_SESSION_ID", "555");
+    const machine = machineOf();
+    const up = await onMachine(machine, desktopUp("run-a", null, freshDir()));
+    expect(Exit.isSuccess(up)).toBeTruthy();
+    expect(machine.sessions).toStrictEqual(["2"]);
+  });
+
+  it.for([
+    { case: "seat0 has no active session", seatSession: "", sessionUser: "" },
+    {
+      case: "seat0's active session is another user's",
+      seatSession: "2",
+      sessionUser: "4242",
+    },
+  ])(
+    "fails naming the tty1 login when $case, launching nothing",
+    async ({ seatSession, sessionUser }) => {
+      const machine = machineOf();
+      machine.seatSession = seatSession;
+      machine.sessionUser = sessionUser;
+      const dir = freshDir();
+      const up = await onMachine(machine, desktopUp("run-a", null, dir));
+      expect(machine.starts).toStrictEqual([]);
+      expect(failureText(up)).toContain("seat0 has no active session of uid");
+      expect(failureText(up)).toContain("console login on tty1");
+      expect(existsSync(path.join(dir, "desktop.json"))).toBeFalsy();
+      expect(existsSync(path.join(dir, "desktop.lock"))).toBeFalsy();
+    }
+  );
 
   it("moves a hold to the browser's pid so a crash frees the session", async () => {
     const machine = machineOf();

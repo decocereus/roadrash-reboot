@@ -33,7 +33,12 @@ interface Pressed {
 
 const button = (value: number) => ({ pressed: value > 0.5, value });
 
-const pad = (axis: number | null, pressed: Pressed, connected = true): Pad => ({
+const pad = (
+  axis: number | null,
+  pressed: Pressed,
+  connected = true,
+  mapping: GamepadMappingType = "standard"
+): Pad => ({
   axes: axis === null ? [] : [axis],
   buttons: [
     button(pressed.remount === true ? 1 : 0),
@@ -46,6 +51,7 @@ const pad = (axis: number | null, pressed: Pressed, connected = true): Pad => ({
     button(pressed.throttle ?? 0),
   ],
   connected,
+  mapping,
 });
 
 const soloRun = () => {
@@ -179,6 +185,19 @@ describe("gamepad controls", () => {
     });
   });
 
+  it("skips a pad the browser cannot map to the standard layout, whose buttons mean something else", () => {
+    const { controls, keyboard } = setUp();
+    keyboard.pads.push(
+      pad(1, { kick: true, throttle: 1 }, true, ""),
+      pad(-0.5, { brake: 0.6 })
+    );
+    expect(readOnce(controls)).toStrictEqual({
+      ...neutralInput,
+      brake: 0.6,
+      steer: -0.5,
+    });
+  });
+
   it("a stick inside its deadzone leaves steering to the keys", () => {
     const { controls, keyboard } = setUp();
     keyboard.pads.push(pad(0.1, {}));
@@ -188,7 +207,12 @@ describe("gamepad controls", () => {
 
   it("a pad without axes or buttons reads as idle", () => {
     const { controls, keyboard } = setUp();
-    keyboard.pads.push({ axes: [], buttons: [], connected: true });
+    keyboard.pads.push({
+      axes: [],
+      buttons: [],
+      connected: true,
+      mapping: "standard",
+    });
     expect(readOnce(controls)).toStrictEqual(neutralInput);
   });
 

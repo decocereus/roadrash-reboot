@@ -16,6 +16,7 @@ export const repoFeatures: readonly FeatureEntry[] = [
       "scripts/check-rules.ts",
       "scripts/check-size*.ts",
       "scripts/check-typescript-only.ts",
+      "scripts/check-workflow-runs*.ts",
       "scripts/feature-map*.ts",
       "scripts/*features.ts",
       "scripts/git-files.ts",
@@ -35,7 +36,7 @@ export const repoFeatures: readonly FeatureEntry[] = [
       "scripts/rule-ledger.ts",
     ],
     summary:
-      "`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.",
+      "`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, workflow runs, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.",
     title: "Repository checks",
     verify: [],
   },

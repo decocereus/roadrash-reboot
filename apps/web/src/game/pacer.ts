@@ -30,23 +30,36 @@ export const createPacer = (): Pacer => {
 
 const REFRESH_WINDOW_MS = 1000;
 const FEWEST_GAPS = 20;
-const MISSED_GAP_SHARE = 1.75;
 const SAME_RATE_SHARE = 0.03;
+const STRAY_SHARE = 0.1;
 
-const meanOf = (values: readonly number[]): number =>
-  values.reduce((sum, value) => sum + value, 0) / values.length;
-
-const readingOf = (gaps: readonly number[]): number | null => {
-  if (gaps.length < FEWEST_GAPS) {
-    return null;
-  }
-  const cutoff = meanOf(gaps) * MISSED_GAP_SHARE;
-  const single = gaps.filter((gap) => gap <= cutoff);
-  return Math.round(1000 / meanOf(single));
-};
+const sumOf = (values: readonly number[]): number =>
+  values.reduce((sum, value) => sum + value, 0);
 
 const agree = (one: number, other: number): boolean =>
   Math.abs(one - other) <= one * SAME_RATE_SHARE;
+
+const keepsTime = (gaps: readonly number[], refresh: number): boolean => {
+  const vsyncs = sumOf(gaps.map((gap) => vsyncsSpanned(gap, refresh)));
+  return agree(sumOf(gaps), (vsyncs * 1000) / refresh);
+};
+
+const screenRate = (gaps: readonly number[]): number => {
+  const sorted = gaps.toSorted((one, other) => one - other);
+  const shortest = Math.min(
+    ...sorted.slice(Math.floor(sorted.length * STRAY_SHARE))
+  );
+  const single = gaps.filter((gap) => Math.round(gap / shortest) === 1);
+  return Math.round((single.length * 1000) / sumOf(single));
+};
+
+const rateOf = (gaps: readonly number[], refresh: number): number | null => {
+  if (keepsTime(gaps, refresh)) {
+    return refresh;
+  }
+  const rate = screenRate(gaps);
+  return keepsTime(gaps, rate) ? rate : null;
+};
 
 export const createRefreshMeter = (initial: number) => {
   let refresh = initial;
@@ -55,12 +68,12 @@ export const createRefreshMeter = (initial: number) => {
   const gaps: number[] = [];
   let candidate = Number.NaN;
 
-  const settle = (reading: number) => {
-    const higher = reading > refresh && !agree(refresh, reading);
-    if (higher && agree(candidate, reading)) {
-      refresh = reading;
+  const settle = (rate: number | null) => {
+    const moved = rate !== null && rate !== refresh;
+    if (moved && agree(candidate, rate)) {
+      refresh = rate;
     }
-    candidate = higher ? reading : Number.NaN;
+    candidate = moved ? rate : Number.NaN;
   };
 
   return (now: number): number => {
@@ -73,12 +86,11 @@ export const createRefreshMeter = (initial: number) => {
     if (now - start < REFRESH_WINDOW_MS) {
       return refresh;
     }
-    const reading = readingOf(gaps);
+    if (gaps.length >= FEWEST_GAPS) {
+      settle(rateOf(gaps, refresh));
+    }
     gaps.length = 0;
     start = now;
-    if (reading !== null) {
-      settle(reading);
-    }
     return refresh;
   };
 };

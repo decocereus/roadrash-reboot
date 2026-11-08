@@ -68,10 +68,11 @@ How the bike answers the keys and the gamepad: throttle, brakes, steering, the p
 - Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
+- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/src/game/held-keys.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
 
 Source files:
 
+- `apps/web/src/game/held-keys.ts`
 - `apps/web/src/game/input.ts`
 - `packages/sim/src/bikes.ts`
 - `packages/sim/src/engine.ts`
@@ -400,7 +401,7 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -444,6 +445,7 @@ Test files:
 
 - `apps/web/src/career/copy.test.ts`
 - `apps/web/test/bar-nav.test.tsx`
+- `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/navigation.test.ts`
 
 ### Race HUD and notices
@@ -588,7 +590,7 @@ Holding a constant frame rate: the fixed quality presets a device check picks be
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: `frame.interval.p50`, `frame.interval.p95`, `frame.interval.p99`, `frame.missedFraction`, `main.longTask.blockingMs`, `main.longTask.count`
-- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
+- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/pacer.test.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
 
 Source files:
 
@@ -598,6 +600,7 @@ Source files:
 
 Test files:
 
+- `apps/web/src/game/pacer.test.ts`
 - `apps/web/src/game/presets.test.ts`
 - `apps/web/test/render-quality.test.ts`
 
@@ -1030,7 +1033,7 @@ The difficulty tiers, and the server-owned field size and celebrity switch: the 
 - Docs: [docs/architecture/career.md#career](architecture/career.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-rules.md](../.claude/skills/verify-rushline/features/race-rules.md)
 - Perf: none yet
-- Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
+- Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`, `apps/web/test/race-rules-failure.test.tsx`
 
 Source files:
 
@@ -1039,6 +1042,7 @@ Source files:
 - `apps/web/src/rules/rules-decode-failed.ts`
 - `apps/web/src/rules/rules-request-failed.ts`
 - `apps/web/src/rules/rules-response-rejected.ts`
+- `apps/web/src/rules/rules-timed-out.ts`
 - `apps/web/src/server/race-rules.ts`
 - `packages/career/src/rules-schema.ts`
 - `packages/career/src/rules.ts`
@@ -1046,6 +1050,7 @@ Source files:
 
 Test files:
 
+- `apps/web/test/race-rules-failure.test.tsx`
 - `apps/web/test/race-rules.test.ts`
 - `packages/career/src/rules.test.ts`
 - `packages/sim/src/difficulty.test.ts`
@@ -1259,6 +1264,7 @@ Test files:
 - `tools/verify/test/browser-host.test.ts`
 - `tools/verify/test/capture-interrupt.test.ts`
 - `tools/verify/test/cli.test.ts`
+- `tools/verify/test/console-noise.test.ts`
 - `tools/verify/test/desktop-session.test.ts`
 - `tools/verify/test/slot-write.test.ts`
 - `tools/verify/test/startup-rollback.test.ts`
@@ -1434,14 +1440,14 @@ Test files:
 
 ### Repository checks
 
-`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
+`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, workflow runs, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
 
 - Id: `repo-checks`
 - Start: `scripts/verify.ts`, `scripts/features.ts`, `scripts/rule-ledger.ts`
 - Docs: [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: none yet
 - Perf: none yet
-- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-rule-routes*.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/rule-routes.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
+- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-rule-routes*.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/check-workflow-runs*.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/rule-routes.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
 
 Source files:
 
@@ -1454,6 +1460,7 @@ Source files:
 - `scripts/check-rules.ts`
 - `scripts/check-size.ts`
 - `scripts/check-typescript-only.ts`
+- `scripts/check-workflow-runs.ts`
 - `scripts/feature-map.ts`
 - `scripts/features.ts`
 - `scripts/git-files.ts`
@@ -1478,6 +1485,7 @@ Test files:
 - `scripts/check-action-pins.test.ts`
 - `scripts/check-rule-routes.test.ts`
 - `scripts/check-size.test.ts`
+- `scripts/check-workflow-runs.test.ts`
 - `scripts/feature-map.test.ts`
 - `scripts/renderer-imports.test.ts`
 - `scripts/rule-ledger.test.ts`
@@ -1492,12 +1500,14 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `tools/rooms/**`
 
 Source files:
 
+- `apps/rooms/src/build-id.ts`
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/gate.ts`
+- `apps/rooms/src/heartbeat.ts`
 - `apps/rooms/src/host-phase.ts`
 - `apps/rooms/src/host.ts`
 - `apps/rooms/src/input-latency.ts`
@@ -1578,6 +1588,7 @@ Source files:
 
 Test files:
 
+- `apps/rooms/test/build-id.test.ts`
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-leave.test.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`
@@ -1590,6 +1601,7 @@ Test files:
 - `apps/rooms/test/input-latency.test.ts`
 - `apps/rooms/test/lobby.test.ts`
 - `apps/rooms/test/messages.test.ts`
+- `apps/rooms/test/queue-client.test.ts`
 - `apps/rooms/test/queue.test.ts`
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/room-config.test.ts`
@@ -1601,10 +1613,13 @@ Test files:
 - `apps/rooms/test/socket-role.test.ts`
 - `apps/rooms/test/tape.test.ts`
 - `apps/web/test/member-key.test.ts`
+- `apps/web/test/member-rows.test.tsx`
 - `apps/web/test/prepare-outcome.test.ts`
+- `apps/web/test/queue-screen.test.tsx`
 - `apps/web/test/race-handoff.test.ts`
 - `apps/web/test/room-boot-failure.test.tsx`
 - `apps/web/test/room-limited.test.tsx`
+- `apps/web/test/room-preview.test.ts`
 - `apps/web/test/room-rejoin-choice.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
@@ -1614,6 +1629,7 @@ Test files:
 - `packages/sim/src/room-limit.test.ts`
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
+- `scripts/rooms-build.test.ts`
 - `tools/rooms/test/fight-report.test.ts`
 - `tools/rooms/test/lag.test.ts`
 - `tools/rooms/test/lifecycle.test.ts`

@@ -48,7 +48,7 @@ GPU-heavy work, such as `rv` checks of the renderer, the scene and assets, frame
 
 ## Agent skills
 
-Vendored, reviewed third-party agent skills live in `.claude/skills/<name>/` (one copy) and reach Codex through the `.agents/skills/<name>` symlinks, because Codex scans `.agents/skills/` from the working directory up to the repository root (OpenAI's Codex documentation, developers.openai.com/codex/build-skills). Claude Code reads them from `.claude/skills/`, where the repo's own skills (`verify-rushline`, `sessions`, `road-building`) also live. Each vendored skill carries a `LICENSE` and a `PROVENANCE.md` with its source URL, source commit, cuts, edits and the security review. Treat them as reviewed data and never run their setups or installers from anywhere else.
+Vendored, reviewed third-party agent skills live in `.claude/skills/<name>/` (one copy) and reach Codex through the `.agents/skills/<name>` symlinks, because Codex scans `.agents/skills/` from the working directory up to the repository root (OpenAI's Codex documentation, developers.openai.com/codex/build-skills). Claude Code reads them from `.claude/skills/`, where the repo's own skills (`verify-rushline`, `verify-room-lifecycle`, `sessions`, `road-building`) also live. Each vendored skill carries a `LICENSE` and a `PROVENANCE.md` with its source URL, source commit, cuts, edits and the security review. Treat them as reviewed data and never run their setups or installers from anywhere else.
 
 Use them when the work matches:
 
