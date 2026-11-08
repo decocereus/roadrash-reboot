@@ -17,6 +17,7 @@ const COMPOSITOR = "Hyprland";
 const CONFIG_NAME = "rushline-desktop.conf";
 const CONFIG = path.join(import.meta.dirname, CONFIG_NAME);
 const DISPLAY_FILE_ENV = "RUSHLINE_DESKTOP_DISPLAY_FILE";
+const SEAT = "seat0";
 const POLL_MS = 200;
 const READY_ATTEMPTS = 150;
 const LOG_TAIL_LINES = 12;
@@ -170,10 +171,11 @@ export const withDesktopHold = (
   ],
 });
 
+const userId = (): number => process.getuid?.() ?? 0;
+
 export const desktopRuntimeEnv = (): NodeJS.ProcessEnv => ({
   ...process.env,
-  XDG_RUNTIME_DIR:
-    process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 0}`,
+  XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR ?? `/run/user/${userId()}`,
 });
 
 interface DesktopPaths {
@@ -255,6 +257,37 @@ const logTail = (paths: DesktopPaths) =>
     Effect.orElseSucceed(() => "")
   );
 
+const loginProperty = (args: readonly string[]) =>
+  ToolProcesses.use((processes) => processes.run("loginctl", args)).pipe(
+    Effect.map(({ stdout }) => stdout.trim())
+  );
+
+const consoleSession = Effect.fnUntraced(function* consoleSession() {
+  const uid = String(userId());
+  const session = yield* loginProperty([
+    "show-seat",
+    SEAT,
+    "--property=ActiveSession",
+    "--value",
+  ]);
+  const owner =
+    session === ""
+      ? ""
+      : yield* loginProperty([
+          "show-session",
+          session,
+          "--property=User",
+          "--value",
+        ]);
+  if (owner !== uid) {
+    return yield* new DesktopError({
+      message: `Hyprland cannot open the seat: ${SEAT} has no active session of uid ${uid}. It needs the owner's console login on tty1, active on ${SEAT}. Log in on tty1, then run this again.`,
+      operation: "start",
+    });
+  }
+  return session;
+});
+
 const awaitReady = Effect.fnUntraced(function* awaitReady(
   paths: DesktopPaths,
   pid: number
@@ -287,6 +320,7 @@ const started = Effect.fnUntraced(function* started(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
+  const session = yield* consoleSession();
   yield* fs.remove(paths.claim, { force: true });
   yield* fs.remove(paths.display, { force: true });
   yield* fs.writeFileString(paths.log, "");
@@ -297,7 +331,11 @@ const started = Effect.fnUntraced(function* started(
         ["--config", CONFIG],
         dir,
         paths.log,
-        { ...desktopRuntimeEnv(), [DISPLAY_FILE_ENV]: paths.display }
+        {
+          ...desktopRuntimeEnv(),
+          [DISPLAY_FILE_ENV]: paths.display,
+          XDG_SESSION_ID: session,
+        }
       );
       const ready = yield* restore(awaitReady(paths, pid)).pipe(
         Effect.onError(() => released(processes.stopOwned(pid, CONFIG_NAME)))
