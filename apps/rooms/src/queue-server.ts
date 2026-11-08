@@ -1,11 +1,11 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Http from "alchemy/Http";
-import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as Layer from "effect/Layer";
 
+import { roomsBuild } from "./build-id.ts";
 import { QueueApi } from "./contract.ts";
 import type { HostSocket } from "./host.ts";
 import { SEAT_CLOSED } from "./messages.ts";
@@ -14,17 +14,14 @@ import { createQueue } from "./queue.ts";
 import { launchRoomConfig } from "./room-config.ts";
 import { publicRoomId } from "./room-id.ts";
 
-const LOCAL_BUILD = "local";
-
 const rawSocket = (socket: Cloudflare.WebSocket): HostSocket => socket.ws;
 
 export class QueueServer extends Cloudflare.DurableObject<QueueServer>()(
   "QueueServer",
   Effect.gen(function* queueServer() {
     const state = yield* Cloudflare.DurableObjectState;
-    const build = yield* Config.String("RUSHLINE_BUILD").pipe(
-      Config.withDefault(LOCAL_BUILD),
-      Effect.catchTag("ConfigError", () => Effect.succeed(LOCAL_BUILD))
+    const build = yield* roomsBuild.pipe(
+      Effect.catchTag("ConfigError", (missing) => Effect.die(missing))
     );
     return Effect.gen(function* queueServerInstance() {
       const queue = createQueue({

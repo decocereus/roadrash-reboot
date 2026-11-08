@@ -191,7 +191,7 @@ const SeatedLobby = ({
       import.meta.env.VITE_ROOMS_URL,
       roomId,
       name,
-      __RUSHLINE_BUILD__.rooms,
+      import.meta.env.VITE_ROOMS_BUILD,
       memberKey(),
       () =>
         diagnostics().settings.read().raceData
@@ -479,7 +479,7 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
     const leave = enterQueue(
       import.meta.env.VITE_ROOMS_URL,
-      __RUSHLINE_BUILD__.rooms,
+      import.meta.env.VITE_ROOMS_BUILD,
       memberKey(),
       {
         onLost: () => {
