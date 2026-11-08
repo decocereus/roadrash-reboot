@@ -53,9 +53,6 @@ const gearFor = (bike: BikeSpec, gear: number, speed: number): number => {
   return gear;
 };
 
-export const keepsGearAfterUpshift = (bike: BikeSpec, from: number): boolean =>
-  gearFor(bike, from + 1, SHIFT_UP_REVS * gearTop(bike, from)) === from + 1;
-
 const thrustOf = (
   bike: BikeSpec,
   gear: number,
@@ -98,6 +95,17 @@ export const stepDrive = (
 export const dragOf = (bike: BikeSpec, speed: number, tuck: number): number =>
   bike.dragFactor * (1 - TUCK_DRAG_CUT * tuck) * speed * speed +
   bike.rollingDeceleration;
+
+export const keepsGearAfterUpshift = (
+  bike: BikeSpec,
+  from: number
+): boolean => {
+  let speed = SHIFT_UP_REVS * gearTop(bike, from);
+  for (let tick = 0; tick < SHIFT_TICKS; tick += 1) {
+    speed -= dragOf(bike, speed, 0) * TICK_SECONDS;
+  }
+  return gearFor(bike, from + 1, speed) === from + 1;
+};
 
 export const topSpeedOf = (bike: BikeSpec, tucked = false): number => {
   const gear = topGearOf(bike);
