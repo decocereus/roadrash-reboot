@@ -129,29 +129,49 @@ export const BackRoomScreen = ({
       },
     },
   ];
-  const careerMenu = (): MenuAction[] => {
-    if (save.status === "ready") {
-      return careerActions(save.career, onContinue, () => {
-        setOverlay("erase");
-      });
-    }
-    if (save.status === "corrupt") {
-      return [{ id: "continue", label: "Start over", run: onStartOver }];
-    }
-    if (save.status === "unread") {
-      return [
-        {
-          id: "continue",
-          label: "Try again",
-          run: () => {
-            globalThis.location.reload();
-          },
-        },
-      ];
-    }
-    return [{ id: "continue", label: "Career", run: onNewCareer }];
+  const tryAgain: MenuAction = {
+    id: "continue",
+    label: "Try again",
+    run: () => {
+      globalThis.location.reload();
+    },
   };
-  const career = careerMenu();
+  const menu = (): MenuAction[] => {
+    switch (save.status) {
+      case "ready": {
+        return [
+          ...careerActions(save.career, onContinue, () => {
+            setOverlay("erase");
+          }),
+          ...quick,
+        ];
+      }
+      case "corrupt": {
+        return [
+          { id: "continue", label: "Start over", run: onStartOver },
+          ...quick,
+        ];
+      }
+      case "unread": {
+        return [tryAgain, ...quick];
+      }
+      case "empty": {
+        return [
+          { id: "continue", label: "Career", run: onNewCareer },
+          ...quick,
+        ];
+      }
+      case "loading": {
+        return [tryAgain];
+      }
+      case "elsewhere": {
+        return [];
+      }
+      default: {
+        return save satisfies never;
+      }
+    }
+  };
   useEscape(onContinue, save.status === "ready" && overlay === "nothing");
   return (
     <Screen className="bg-ink flex" enter="fade">
@@ -162,9 +182,9 @@ export const BackRoomScreen = ({
           src={backRoomPlates.backdrop}
         />
         <BarHeader career={save.status === "ready" ? save.career : null} />
-        {save.status !== "loading" && save.status !== "elsewhere" && (
+        {save.status !== "elsewhere" && (
           <PinnedList
-            actions={[...career, ...quick]}
+            actions={menu()}
             autoFocus={overlay !== "settings"}
             label="Back room"
             primary="continue"

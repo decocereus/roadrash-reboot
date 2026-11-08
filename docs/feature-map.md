@@ -1026,7 +1026,7 @@ The difficulty tiers, and the server-owned field size and celebrity switch: the 
 - Docs: [docs/architecture/career.md#career](architecture/career.md#career), [docs/errors.md#race-rules](errors.md#race-rules), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-rules.md](../.claude/skills/verify-rushline/features/race-rules.md)
 - Perf: none yet
-- Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`
+- Owns: `packages/career/src/rules*.ts`, `packages/sim/src/difficulty*.ts`, `apps/web/src/server/race-rules.ts`, `apps/web/src/routes/api/race-rules.ts`, `apps/web/src/rules/**`, `apps/web/test/race-rules.test.ts`, `apps/web/test/race-rules-failure.test.tsx`
 
 Source files:
 
@@ -1035,6 +1035,7 @@ Source files:
 - `apps/web/src/rules/rules-decode-failed.ts`
 - `apps/web/src/rules/rules-request-failed.ts`
 - `apps/web/src/rules/rules-response-rejected.ts`
+- `apps/web/src/rules/rules-timed-out.ts`
 - `apps/web/src/server/race-rules.ts`
 - `packages/career/src/rules-schema.ts`
 - `packages/career/src/rules.ts`
@@ -1042,6 +1043,7 @@ Source files:
 
 Test files:
 
+- `apps/web/test/race-rules-failure.test.tsx`
 - `apps/web/test/race-rules.test.ts`
 - `packages/career/src/rules.test.ts`
 - `packages/sim/src/difficulty.test.ts`
