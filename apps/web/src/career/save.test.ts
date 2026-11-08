@@ -486,6 +486,31 @@ describe("one career tab", () => {
     expect(next.shown).toStrictEqual([{ status: "empty" }]);
   });
 
+  it("refuses every save step from a page the browser brings back after it let go, while another page holds the career", async () => {
+    const storage = memoryStorage();
+    const career = { ...freshCareer(0.4), cash: 1000 };
+    storage.setItem(SAVE_KEY, serialiseCareer(career));
+    const leaving = fakePage();
+    const first = await openTab(globalThis.navigator.locks, storage, leaving);
+    leaving.fire("pagehide", true);
+    const second = await openTab(globalThis.navigator.locks, storage);
+    second.tab.commit({ ...career, cash: 9000 });
+    leaving.fire("pageshow", true);
+    storage.calls.length = 0;
+    first.tab.commit({ ...career, cash: 1100 });
+    first.tab.eraseSave();
+    first.tab.load(recordedRules);
+    expect(storage.calls).toStrictEqual([]);
+    expect(storage.items.get(SAVE_KEY)).toBe(
+      serialiseCareer({ ...career, cash: 9000 })
+    );
+    expect(first.shown).toStrictEqual([
+      readyWith(career),
+      { status: "elsewhere" },
+    ]);
+    expect(leaving.reloads()).toBe(1);
+  });
+
   it("reloads a page the browser brings back from its history, which no longer holds the career", async () => {
     const page = fakePage();
     await openTab(globalThis.navigator.locks, memoryStorage(), page);
