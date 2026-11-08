@@ -74,6 +74,7 @@ export interface RiderCorrection {
   lean: number;
   readonly rider: RiderId;
   s: number;
+  speed: number;
   x: number;
 }
 
@@ -81,6 +82,7 @@ export interface RoomClient {
   readonly confirmed: RaceState;
   readonly lagging: () => boolean;
   readonly lostControls: () => number;
+  readonly mending: () => boolean;
   readonly mine: RiderState;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
@@ -158,6 +160,7 @@ const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
   lean: 0,
   rider: id,
   s: 0,
+  speed: 0,
   x: 0,
 });
 
@@ -187,6 +190,7 @@ export const createRoomClient = (
   const batch: Control[] = [];
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
+  const mendedFights: HeardFight[] = [];
   const shownHits: ShownHit[] = [];
   const tracked = [...predicted.riders];
   const wasAt = tracked.map(stillCorrection);
@@ -299,7 +303,10 @@ export const createRoomClient = (
   const hearFights = (race: RaceState): void => {
     for (const event of race.events) {
       if (isFightEvent(event)) {
-        fights.push({ event: { ...event }, tick: race.tick });
+        (race === mended ? mendedFights : fights).push({
+          event: { ...event },
+          tick: race.tick,
+        });
       }
       if (event.kind === "hit") {
         (race === confirmed ? roomHit : guessedHit)(event, race.tick);
@@ -347,6 +354,7 @@ export const createRoomClient = (
 
   const rewind = (): void => {
     mending = false;
+    mendedFights.length = 0;
     copyRace(confirmed, predicted);
   };
 
@@ -380,6 +388,7 @@ export const createRoomClient = (
         was.heading = rider.heading;
         was.lean = rider.lean;
         was.s = rider.s;
+        was.speed = rider.speed;
         was.x = rider.x;
       }
     }
@@ -395,6 +404,7 @@ export const createRoomClient = (
         moved.heading += was.heading - rider.heading;
         moved.lean += was.lean - rider.lean;
         moved.s += was.s - rider.s;
+        moved.speed += was.speed - rider.speed;
         moved.x += was.x - rider.x;
       }
     }
@@ -407,6 +417,8 @@ export const createRoomClient = (
     noteWhereRidersAre();
     copyRace(mended, predicted);
     mending = false;
+    fights.push(...mendedFights);
+    mendedFights.length = 0;
     refuseUnbacked();
     noteCorrections();
     stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
@@ -419,6 +431,7 @@ export const createRoomClient = (
     mendCause = staleCause;
     staleCause = "otherRiders";
     copyRace(confirmed, mended);
+    mendedFights.length = 0;
     stats.rollbacks += 1;
     for (const shown of shownHits) {
       shown.backed = false;
@@ -574,6 +587,7 @@ export const createRoomClient = (
     confirmed,
     lagging: () => lagging,
     lostControls: () => lostControls,
+    mending: () => mending,
     mine,
     predict: (control) => {
       if (!mending) {
@@ -605,6 +619,7 @@ export const createRoomClient = (
         moved.heading = 0;
         moved.lean = 0;
         moved.s = 0;
+        moved.speed = 0;
         moved.x = 0;
       }
       return taken;

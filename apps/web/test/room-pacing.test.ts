@@ -1,5 +1,6 @@
 import { MOST_LEAD_TICKS } from "@racer/sim/room";
 import { createRoomClock } from "@racer/sim/room-clock";
+import { PACE_SLEW_PER_SECOND } from "@racer/sim/room-pace";
 import { TICK_SECONDS } from "@racer/sim/state";
 import { describe, expect, it } from "vitest";
 
@@ -12,6 +13,7 @@ const SETTLED_AFTER_MS = START_MS + 3000;
 const RIDE_MS = 60_000;
 const OFF_PACE = 0.05;
 const MOST_AHEAD_ON_ROUGH_LINKS = 50;
+const EASED_PER_SECOND = PACE_SLEW_PER_SECOND * 1.001;
 
 interface Link {
   readonly downMs: (sentAt: number) => number;
@@ -26,6 +28,7 @@ interface Ride {
   readonly leaps: number;
   readonly mostAhead: number;
   readonly mostAheadOfRoom: number;
+  readonly mostEase: number;
   readonly slowest: number;
   readonly stops: number;
 }
@@ -165,6 +168,8 @@ const ride = (link: Link, displayHz: number): Ride => {
   let settled = 0;
   let mostAhead = 0;
   let mostAheadOfRoom = 0;
+  let mostEase = 0;
+  let lastMoved = 1;
   let roomTick = 0;
   for (now = 0; now < RIDE_MS; now += frameMs) {
     while ((emitted[roomTick + 1] ?? Number.POSITIVE_INFINITY) <= now) {
@@ -202,7 +207,12 @@ const ride = (link: Link, displayHz: number): Ride => {
       settled += 1;
       mostAhead = Math.max(mostAhead, predicted - confirmed);
       mostAheadOfRoom = Math.max(mostAheadOfRoom, predicted - roomTick);
+      mostEase = Math.max(
+        mostEase,
+        Math.abs(moved - lastMoved) / (frameMs / 1000)
+      );
     }
+    lastMoved = moved;
   }
   let late = 0;
   let counted = 0;
@@ -224,6 +234,7 @@ const ride = (link: Link, displayHz: number): Ride => {
     leaps,
     mostAhead,
     mostAheadOfRoom,
+    mostEase,
     offPace: offPace / Math.max(1, settled),
     slowest,
     stops,
@@ -367,10 +378,11 @@ describe("a room race on a rough link", () => {
     "moves the race on screen at a steady speed over %s",
     (_name, link, displayHz) => {
       const result = ride(link, displayHz);
-      expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
-        leaps: 0,
-        stops: 0,
-      });
+      expect({
+        eased: result.mostEase <= EASED_PER_SECOND,
+        leaps: result.leaps,
+        stops: result.stops,
+      }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
       expect(result.slowest).toBeGreaterThanOrEqual(0.89);
       expect(result.fastest).toBeLessThanOrEqual(1.11);
       expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
@@ -380,10 +392,11 @@ describe("a room race on a rough link", () => {
 
   it("keeps its speed when the round trip rises from 150 ms to 400 ms and stays there", () => {
     const result = ride(risingRoundTrip, 60);
-    expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
-      leaps: 0,
-      stops: 0,
-    });
+    expect({
+      eased: result.mostEase <= EASED_PER_SECOND,
+      leaps: result.leaps,
+      stops: result.stops,
+    }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
     expect(result.slowest).toBeGreaterThanOrEqual(0.89);
     expect(result.fastest).toBeLessThanOrEqual(1.11);
     expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
@@ -391,10 +404,11 @@ describe("a room race on a rough link", () => {
 
   it("follows a room sending 57 ticks a second through a proxy that hands packets over in batches every 300 ms", () => {
     const result = ride(batchedFromSlowRoom, 60);
-    expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
-      leaps: 0,
-      stops: 0,
-    });
+    expect({
+      eased: result.mostEase <= EASED_PER_SECOND,
+      leaps: result.leaps,
+      stops: result.stops,
+    }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
     expect(
       Math.max(1 - result.slowest, result.fastest - 1)
     ).toBeLessThanOrEqual(0.11);
@@ -427,10 +441,11 @@ describe("a room race on a rough link", () => {
     "rides on at its own pace through %s, never sending controls the room would refuse",
     (_name, link, lateLimit) => {
       const result = ride(link, 60);
-      expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
-        leaps: 0,
-        stops: 0,
-      });
+      expect({
+        eased: result.mostEase <= EASED_PER_SECOND,
+        leaps: result.leaps,
+        stops: result.stops,
+      }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
       expect(
         Math.max(1 - result.slowest, result.fastest - 1)
       ).toBeLessThanOrEqual(0.11);

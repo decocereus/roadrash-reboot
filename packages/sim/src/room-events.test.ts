@@ -157,6 +157,29 @@ const JUST_OUT_OF_REACH_X = 2.2;
 const CONTACT_TICK = RIDE_TICKS + KICK_CONTACT;
 
 describe("an attacker's own hits, reconciled with the room", () => {
+  it("holds a hit a long replay finds until the replay is drawn", () => {
+    const { client, room } = sideBySide();
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      client.confirm(room.frame, null);
+    }
+    client.takeFights();
+    const hits = { afterwards: 0, whileReplaying: 0 };
+    for (let frame = 0; frame < AFTER_TICKS; frame += 1) {
+      client.settle(4);
+      const heard = client
+        .takeFights()
+        .filter((fight) => "event" in fight && fight.event.kind === "hit");
+      hits[client.mending() ? "whileReplaying" : "afterwards"] += heard.length;
+    }
+    expect(hits).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
+  });
+
   it("takes back a predicted hit the room refused", () => {
     const { heardHits, refused, roomHits } = attackerHears({
       gapX: EDGE_OF_REACH_X,

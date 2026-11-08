@@ -204,6 +204,30 @@ describe("a seat loading the race", () => {
     );
   });
 
+  it("waits for a burst of held ticks to be caught up before it reports a finished rider", () => {
+    const { seat, socket } = loadingSeat();
+    const client = seat.race()?.client;
+    seat.frameDrawn(0, 0);
+    for (let tick = 1; tick <= HELD_TICKS; tick += 1) {
+      hearTick(socket, tick);
+    }
+    const reports = () =>
+      socket.sentBytes.filter((bytes) => bytes === RACE_STATS_PACKET_BYTES)
+        .length;
+    const reported: number[] = [];
+    for (let frame = 0; frame < 6; frame += 1) {
+      seat.stepsDue();
+      if (client) {
+        client.mine.finishTick = 1;
+      }
+      seat.flush();
+      seat.frameDrawn(0, 0);
+      reported.push(reports());
+    }
+    expect(reported).toStrictEqual([0, 0, 0, 0, 1, 1]);
+    expect(client?.confirmed.tick).toBe(HELD_TICKS);
+  });
+
   it("confirms every tick as it arrives while the page is hidden", () => {
     const { seat, socket } = loadingSeat();
     const client = seat.race()?.client;

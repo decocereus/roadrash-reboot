@@ -335,15 +335,30 @@ describe("the room clock", () => {
     ).toBeLessThanOrEqual(4);
   });
 
-  it("eases its speed by at most a tenth, and slows only once more than five ticks ahead", () => {
+  it.each([
+    [108, 1],
+    [111, 0.94],
+    [150, 0.9],
+    [102, 1.02],
+  ])(
+    "eases its speed by at most a tenth, and slows only once more than five ticks ahead, at tick %i",
+    (predicted, pace) => {
+      const clock = createRoomClock();
+      clock.heardRtt(1, 1000);
+      clock.heardTick(100, 1000);
+      expect(clock.pace(predicted, 100, 1000)).toBeCloseTo(pace, 9);
+      expect(clock.stepsDue(predicted, 100, 1000)).toBe(1);
+    }
+  );
+
+  it("moves its speed toward a new pace by at most a tenth a second", () => {
     const clock = createRoomClock();
     clock.heardRtt(1, 1000);
     clock.heardTick(100, 1000);
-    expect(clock.pace(108, 100, 1000)).toBe(1);
-    expect(clock.pace(111, 100, 1000)).toBeCloseTo(0.94, 9);
     expect(clock.pace(150, 100, 1000)).toBeCloseTo(0.9, 9);
-    expect(clock.pace(102, 100, 1000)).toBeCloseTo(1.02, 9);
-    expect(clock.stepsDue(150, 100, 1000)).toBe(1);
+    expect(clock.pace(102, 100, 1100)).toBeCloseTo(0.91, 9);
+    expect(clock.pace(102, 100, 1100)).toBeCloseTo(0.91, 9);
+    expect(clock.pace(102, 100, 1600)).toBeCloseTo(0.96, 9);
   });
 
   it("slows toward a stop only as its guess nears seven seconds past the last tick it heard, after the link is given up", () => {

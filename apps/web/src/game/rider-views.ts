@@ -33,7 +33,7 @@ import {
   driftSettle,
   stillDrift,
 } from "./rider-drift.ts";
-import type { RiderDrift } from "./rider-drift.ts";
+import type { DrawnRates, RiderDrift } from "./rider-drift.ts";
 import {
   fightFlinch,
   fightHeard,
@@ -76,7 +76,7 @@ interface Pose {
   bodyAir: number;
 }
 
-interface DrawnPlace {
+interface DrawnPlace extends DrawnRates {
   blend: number;
   fromTick: number;
   off: number;
@@ -292,9 +292,11 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           bike: riderOf(bikes.roots, rider.id) ?? new THREE.Object3D(),
           drawn: {
             blend: 0,
+            drawnRate: 0,
             fromTick: 0,
             off: 0,
             riding: false,
+            ridingRate: 0,
             s: 0,
             toTick: 0,
             x: 0,
@@ -566,10 +568,13 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
             (mix(before.tick, after.tick, blend) -
               mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
               TICK_SECONDS,
+            drift.kicked,
             rider.speed,
-            seconds
+            seconds,
+            drawn
           )
         : 0;
+    drift.kicked = 0;
     drawn.riding = riding;
     drawn.blend = blend;
     drawn.fromTick = before.tick;

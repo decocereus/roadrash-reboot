@@ -1,3 +1,4 @@
+import { PACE_SLEW_PER_SECOND } from "./room-pace.ts";
 import { INPUT_HORIZON, MOST_LEAD_TICKS, SLOWING_TICKS } from "./room.ts";
 import { TICK_SECONDS } from "./state.ts";
 
@@ -49,6 +50,8 @@ export const createRoomClock = (): RoomClock => {
   let lastArrival = 0;
   let offset = 0;
   let placed = false;
+  let paced = 1;
+  let pacedAt = Number.NEGATIVE_INFINITY;
   let roomAhead = Number.NEGATIVE_INFINITY;
   const rtts: number[] = [];
   const sorted: number[] = [];
@@ -197,6 +200,8 @@ export const createRoomClock = (): RoomClock => {
     pace: (predictedTick, confirmedTick, now) => {
       const wanted = target(now);
       if (wanted <= 0) {
+        paced = 1;
+        pacedAt = now;
         return 1;
       }
       const behind = wanted - predictedTick;
@@ -208,9 +213,12 @@ export const createRoomClock = (): RoomClock => {
           MOST_PACE_CHANGE,
           Math.max(-MOST_PACE_CHANGE, steered * PACE_PER_TICK)
         );
+      const most = (PACE_SLEW_PER_SECOND * (now - pacedAt)) / 1000;
+      paced += Math.min(most, Math.max(-most, steer - paced));
+      pacedAt = now;
       const room = INPUT_HORIZON - (predictedTick - confirmedTick);
       const slowing = Math.max(0, room) / SLOWING_TICKS;
-      return slowing < 1 ? Math.min(steer, slowing) : steer;
+      return slowing < 1 ? Math.min(paced, slowing) : paced;
     },
     silentMs: (now) => now - (lastArrival === 0 ? startsAt : lastArrival),
     start: (startAtRoomMs) => {

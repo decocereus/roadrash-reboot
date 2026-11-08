@@ -27,6 +27,7 @@ import {
   driftSettle,
   stillDrift,
 } from "../src/game/rider-drift.ts";
+import type { DrawnRates } from "../src/game/rider-drift.ts";
 
 const ME = PLAYER_RIDER;
 const RIVAL = riderIdAt(1);
@@ -45,7 +46,7 @@ interface Race {
   readonly roomStallsMs?: number;
 }
 
-interface Drawn {
+interface Drawn extends DrawnRates {
   frames: number;
   last: number;
   ridingTick: number;
@@ -105,8 +106,10 @@ const takeDue = <Due extends { readonly at: number }>(
 const pose = (): Pose => ({ heading: 0, lean: 0, s: 0, tick: 0, x: 0 });
 
 const seen = (): Drawn => ({
+  drawnRate: 0,
   frames: 0,
   last: Number.NaN,
+  ridingRate: 0,
   ridingTick: 0,
   worstOff: 0,
 });
@@ -127,21 +130,24 @@ const drawFrame = (
   const ridingS = mix(view.before.s, view.after.s, blend);
   const ridingTick = mix(view.before.tick, view.after.tick, blend);
   const next = rider.mode === "riding" ? ridingS + view.drift.s : Number.NaN;
-  if (measured && Number.isFinite(next) && Number.isFinite(drawn.last)) {
-    drawn.frames += 1;
-    drawn.worstOff = Math.max(
-      drawn.worstOff,
-      drawnOff(
-        next - drawn.last,
-        ridingS + fromS - drawn.last,
-        view.drift.x - fromX,
-        0,
-        (ridingTick - drawn.ridingTick) * TICK_SECONDS,
-        rider.speed,
-        FRAME_SECONDS
-      )
+  if (Number.isFinite(next) && Number.isFinite(drawn.last)) {
+    const off = drawnOff(
+      next - drawn.last,
+      ridingS + fromS - drawn.last,
+      view.drift.x - fromX,
+      0,
+      (ridingTick - drawn.ridingTick) * TICK_SECONDS,
+      view.drift.kicked,
+      rider.speed,
+      FRAME_SECONDS,
+      drawn
     );
+    if (measured) {
+      drawn.frames += 1;
+      drawn.worstOff = Math.max(drawn.worstOff, off);
+    }
   }
+  view.drift.kicked = 0;
   drawn.last = next;
   drawn.ridingTick = ridingTick;
 };

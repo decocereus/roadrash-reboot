@@ -562,7 +562,11 @@ export const openRoomSeat = (
       ) {
         socket.send(new Uint8Array(input.buffer, 0, bytes));
       }
-      if (isDone(race.client.mine)) {
+      if (
+        isDone(race.client.mine) &&
+        backlog.length === 0 &&
+        !race.client.mending()
+      ) {
         reportOnce();
       }
     },

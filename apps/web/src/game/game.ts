@@ -238,6 +238,7 @@ const startGame = (
   owners.push(cancelPreparation);
   const { quiet, react, report, say, toggleMute } = bindFeedback({
     chase,
+    drawnSpeed: () => player().speed + (cast.views[stage.me]?.drift.along ?? 0),
     events,
     feedback,
     player,
