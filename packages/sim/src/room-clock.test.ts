@@ -159,13 +159,13 @@ describe("the room clock", () => {
     );
   });
 
-  it("runs half again as fast, one tick a step, when its controls would reach the room too late", () => {
+  it("runs at most a tenth faster, one tick a step, even when its controls would reach the room too late", () => {
     const clock = createRoomClock();
     for (let sample = 0; sample < 10; sample += 1) {
       clock.heardRtt(300);
     }
     clock.heardTick(309, 5000);
-    expect(clock.pace(312, 309, 5000)).toBe(1.5);
+    expect(clock.pace(312, 309, 5000)).toBeCloseTo(1.1);
     expect(clock.stepsDue(312, 309, 5000)).toBe(1);
   });
 

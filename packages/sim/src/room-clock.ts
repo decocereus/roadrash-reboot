@@ -14,7 +14,6 @@ const EARLY_SHARE = 0.1;
 const BLOATED_FROM_TICKS = 12;
 const PACE_PER_TICK = 0.02;
 const MOST_PACE_CHANGE = 0.1;
-const CATCH_UP_PACE = 1.5;
 const SLOWING_ROOM_TICKS = 30;
 
 export interface RoomClock {
@@ -93,11 +92,6 @@ export const createRoomClock = (): RoomClock => {
       raisedAt = now;
     }
   };
-  const tooLateBelow = (now: number): number =>
-    serverTick(now) +
-    (typicalRtt === NOT_MEASURED
-      ? LEAD_MARGIN_TICKS
-      : Math.max(LEAD_MARGIN_TICKS, Math.ceil(typicalRtt / TICK_MS)));
   const leadFor = (excessMs: number): number =>
     typicalRtt === NOT_MEASURED
       ? FIRST_LEAD_TICKS
@@ -140,16 +134,11 @@ export const createRoomClock = (): RoomClock => {
         return 1;
       }
       const steer =
-        predictedTick < tooLateBelow(now)
-          ? CATCH_UP_PACE
-          : 1 +
-            Math.min(
-              MOST_PACE_CHANGE,
-              Math.max(
-                -MOST_PACE_CHANGE,
-                (wanted - predictedTick) * PACE_PER_TICK
-              )
-            );
+        1 +
+        Math.min(
+          MOST_PACE_CHANGE,
+          Math.max(-MOST_PACE_CHANGE, (wanted - predictedTick) * PACE_PER_TICK)
+        );
       const room = INPUT_HORIZON - (predictedTick - confirmedTick);
       const slowing = Math.max(0, room) / SLOWING_ROOM_TICKS;
       return slowing < 1 ? Math.min(steer, slowing) : steer;

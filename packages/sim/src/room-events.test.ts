@@ -365,4 +365,25 @@ describe("how far a correction moved another rider", () => {
     }
     expect(ownMoved).toBeGreaterThan(0);
   });
+
+  it("names every bike when a stalled client falls behind the room, so the jump forward glides", () => {
+    const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, VICTIM, ROOM_LIMIT_TICKS);
+    for (let tick = 0; tick < 10; tick += 1) {
+      client.predict(riding);
+    }
+    const along = new Map<RiderId, number>();
+    for (let tick = 0; tick < 40; tick += 1) {
+      room.accept(VICTIM, room.state.tick + 1, [riding]);
+      room.accept(ATTACKER, room.state.tick + 1, [riding]);
+      room.step();
+      client.confirm(room.frame, null);
+      for (const { rider, s: moved } of client.takeCorrections()) {
+        along.set(rider, Math.max(along.get(rider) ?? 0, Math.abs(moved)));
+      }
+    }
+    expect(along.get(VICTIM)).toBeGreaterThan(0);
+    expect(along.get(ATTACKER)).toBeGreaterThan(0);
+  });
 });

@@ -524,7 +524,9 @@ export const createRoomClient = (
         const fromS = mine.s;
         const fromX = mine.x;
         stale = false;
+        noteWhereRidersAre();
         rewind();
+        noteCorrections();
         noteJump("behindServer", fromS, fromX);
         return;
       }

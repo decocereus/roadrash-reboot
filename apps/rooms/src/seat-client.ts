@@ -616,8 +616,7 @@ export const predictSteps = (
     return 0;
   }
   let refused = 0;
-  const steps = seat.stepsDue();
-  for (let step = 0; step < steps; step += 1) {
+  while (race.client.predicted.tick < seat.target() && seat.stepsDue() > 0) {
     if (!race.client.predict(controlFor(race.client.predicted.tick + 1))) {
       refused += 1;
       break;

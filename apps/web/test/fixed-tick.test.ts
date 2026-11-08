@@ -178,6 +178,17 @@ describe("the frame loop's clock", () => {
     expect(host.digests.length - paused).toBe(1);
   });
 
+  it("runs the race at the pace a room asks for", () => {
+    const slowed = createHost({ pace: 0.9 });
+    const steady = createHost();
+    for (let frame = 1; frame <= 600; frame += 1) {
+      slowed.at(frame * VSYNC_MS);
+      steady.at(frame * VSYNC_MS);
+    }
+    expect(steady.digests.length).toBeGreaterThanOrEqual(599);
+    expect(slowed.digests.length / steady.digests.length).toBeCloseTo(0.9, 2);
+  });
+
   it("time from callbacks the pacer skips reaches the race on the next drawn frame", () => {
     const paced = createHost();
     const steady = createHost();

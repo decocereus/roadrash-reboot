@@ -42,6 +42,11 @@ const cutOff =
   (sentAt: number): number =>
     sentAt >= fromMs && sentAt < untilMs ? untilMs - sentAt + baseMs : baseMs;
 
+const risesAt =
+  (beforeMs: number, afterMs: number, fromMs: number) =>
+  (sentAt: number): number =>
+    sentAt < fromMs ? beforeMs : afterMs;
+
 const PARK_MILLER = 16_807;
 const MERSENNE_31 = 2_147_483_647;
 
@@ -262,6 +267,12 @@ const proxySpike: Link = {
   upMs: cutOff(80, 20_000, 21_000),
 };
 
+const risingRoundTrip: Link = {
+  downMs: risesAt(75, 200, 20_000),
+  roomHz: steadyHz,
+  upMs: risesAt(75, 200, 20_000),
+};
+
 describe("a room race on a rough link", () => {
   it.each([
     ["a steady 150 ms round trip", steady, 60],
@@ -298,10 +309,24 @@ describe("a room race on a rough link", () => {
     }
   );
 
-  it("slows down rather than stopping through a one-second cut, and never leaps", () => {
+  it("keeps its speed when the round trip rises from 150 ms to 400 ms and stays there", () => {
+    const result = ride(risingRoundTrip, 60);
+    expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
+      leaps: 0,
+      stops: 0,
+    });
+    expect(result.slowest).toBeGreaterThanOrEqual(0.89);
+    expect(result.fastest).toBeLessThanOrEqual(1.11);
+    expect(result.mostAhead).toBeLessThan(INPUT_HORIZON / 2);
+  });
+
+  it("slows down rather than stopping through a one-second cut, and never leaps or speeds up", () => {
     const result = ride(proxySpike, 60);
-    expect(result.stops).toBe(0);
-    expect(result.leaps).toBe(0);
+    expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
+      leaps: 0,
+      stops: 0,
+    });
+    expect(result.fastest).toBeLessThanOrEqual(1.11);
     expect(result.mostAhead).toBeLessThan(INPUT_HORIZON);
   });
 });
