@@ -2,12 +2,13 @@ import type { RaceRules } from "@racer/career/rules";
 import { parseCareer, serialiseCareer } from "@racer/career/save";
 import type { SaveError } from "@racer/career/save-schema";
 import { resumeCareer } from "@racer/career/settle";
-import type { Ledger } from "@racer/career/settle";
+import type { Ledger, Settlement } from "@racer/career/settle";
 import { newCareer } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 
+import type { RaceReport } from "./flow.ts";
 import type { SaveStorageFailed } from "./save-storage-error.ts";
 import {
   acquireStorage,
@@ -189,6 +190,31 @@ export const storedSave = (
   status: "ready",
   unsaved: isUnsaved(storeCareer(open, career)),
 });
+
+export const settledRace = (
+  open: () => SaveStorage,
+  settlement: Settlement
+): { readonly save: ReadySave; readonly report: RaceReport } | null => {
+  const last = settlement.career.lastResult;
+  if (!(settlement.settled && last)) {
+    return null;
+  }
+  const save = storedSave(open, settlement.career);
+  return {
+    report: {
+      ledger: last.ledger,
+      line: last.ledger.line,
+      mode: "career",
+      place: last.ledger.place,
+      result: last.ledger.result,
+      roadId: last.ledger.roadId,
+      summary: last.summary,
+      tier: last.ledger.tier,
+      unsaved: save.unsaved,
+    },
+    save,
+  };
+};
 
 export const saveStateOf = (load: CareerLoad): SaveState => {
   if (load.status === "ready") {

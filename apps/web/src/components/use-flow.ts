@@ -11,12 +11,7 @@ import type { RefObject } from "react";
 import { bootGame } from "../asset-load.ts";
 import { barCast, barPlates, firstRoad, preload } from "../career/bar.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
-import {
-  firstQuickPick,
-  quickReport,
-  rideEntry,
-  settledRace,
-} from "../career/flow.ts";
+import { firstQuickPick, quickReport, rideEntry } from "../career/flow.ts";
 import type { RaceReport } from "../career/flow.ts";
 import {
   browserStorage,
@@ -25,6 +20,7 @@ import {
   loadCareer,
   randomUnit,
   saveStateOf,
+  settledRace,
   startOver,
   storedSave,
 } from "../career/save.ts";

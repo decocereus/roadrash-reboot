@@ -6,7 +6,7 @@ import type { RaceOutcome, RaceResult } from "@racer/career/outcome";
 import { summaryOf } from "@racer/career/result";
 import type { RaceSummary } from "@racer/career/result";
 import type { RaceRules } from "@racer/career/rules";
-import type { Ledger, Settlement } from "@racer/career/settle";
+import type { Ledger } from "@racer/career/settle";
 import { nextRaceSeed } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { STARTING_BIKE } from "@racer/career/tables";
@@ -16,9 +16,6 @@ import type { BikeId } from "@racer/sim/bikes";
 import { trackFor } from "@racer/track/roads";
 
 import type { RaceMode, RacePlan } from "../game/hud.ts";
-import type { SaveStorage } from "./save-storage.ts";
-import { storedSave } from "./save.ts";
-import type { ReadySave } from "./save.ts";
 
 export interface RaceEntry {
   readonly mode: RaceMode;
@@ -94,31 +91,6 @@ export const planFor = (
         rules,
         setup: practiceSetup(rules, entry, track),
       };
-};
-
-export const settledRace = (
-  open: () => SaveStorage,
-  settlement: Settlement
-): { readonly save: ReadySave; readonly report: RaceReport } | null => {
-  const last = settlement.career.lastResult;
-  if (!(settlement.settled && last)) {
-    return null;
-  }
-  const save = storedSave(open, settlement.career);
-  return {
-    report: {
-      ledger: last.ledger,
-      line: last.ledger.line,
-      mode: "career",
-      place: last.ledger.place,
-      result: last.ledger.result,
-      roadId: last.ledger.roadId,
-      summary: last.summary,
-      tier: last.ledger.tier,
-      unsaved: save.unsaved,
-    },
-    save,
-  };
 };
 
 export const quickReport = (

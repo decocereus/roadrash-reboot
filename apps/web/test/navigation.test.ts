@@ -12,10 +12,10 @@ import {
   planFor,
   quickEntry,
   quickReport,
-  settledRace,
 } from "../src/career/flow.ts";
 import type { RaceReport } from "../src/career/flow.ts";
 import type { SaveStorage } from "../src/career/save-storage.ts";
+import { settledRace } from "../src/career/save.ts";
 import type { SaveState } from "../src/career/save.ts";
 import type { RacePlan } from "../src/game/hud.ts";
 import {

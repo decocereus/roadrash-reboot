@@ -9,15 +9,10 @@ import { bikeIds } from "@racer/sim/bikes";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  careerEntry,
-  planFor,
-  rideEntry,
-  settledRace,
-} from "../src/career/flow.ts";
+import { careerEntry, planFor, rideEntry } from "../src/career/flow.ts";
 import { bikeName } from "../src/career/format.ts";
 import type { SaveStorage } from "../src/career/save-storage.ts";
-import { freshCareer } from "../src/career/save.ts";
+import { freshCareer, settledRace } from "../src/career/save.ts";
 import { ResultsScreen } from "../src/components/screens/results.tsx";
 import { RouteBoardScreen } from "../src/components/screens/route-board.tsx";
 import { stepNavigation } from "../src/navigation.ts";
