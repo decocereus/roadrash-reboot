@@ -14,15 +14,44 @@ import {
   storedPlayerId,
 } from "../src/diagnostics/player-events.ts";
 import { createRaceEvents } from "../src/diagnostics/race-events.ts";
+import { createSettingsStore } from "../src/diagnostics/settings.ts";
+import type { SettingsStore } from "../src/diagnostics/settings.ts";
 import { graphicsPlaceOf } from "../src/navigation.ts";
 import type { View } from "../src/navigation.ts";
 
 const PLAYER = "3f0c2a1e-7b6d-4c1a-9e2f-0123456789ab";
 const again: PlayerEvent = { event: "race_again" };
 
+type StorageListener = (event: { readonly key: string | null }) => void;
+
+const browserTabs = () => {
+  const items = new Map<string, string>();
+  const tabs: StorageListener[][] = [];
+  return (): SettingsStore => {
+    const heard: StorageListener[] = [];
+    tabs.push(heard);
+    return createSettingsStore(
+      () => ({
+        getItem: (key) => items.get(key) ?? null,
+        setItem(key, value) {
+          items.set(key, value);
+          for (const listener of tabs.filter((tab) => tab !== heard).flat()) {
+            listener({ key });
+          }
+        },
+      }),
+      {
+        addEventListener(_type, listener) {
+          heard.push(listener);
+        },
+      }
+    );
+  };
+};
+
 const senderWith = (
   send: (body: string) => boolean,
-  sharing: () => boolean = () => true
+  settings: SettingsStore = browserTabs()()
 ) => {
   const timers: (() => void)[] = [];
   let clock = 0;
@@ -31,10 +60,10 @@ const senderWith = (
       timers.push(run);
     },
     build: "abc",
-    enabled: sharing,
     now: () => clock,
     playerId: () => PLAYER,
     send,
+    settings,
   });
   return {
     advance: (ms: number) => {
@@ -98,22 +127,63 @@ describe("the player event sender", () => {
     expect(sent).toHaveLength(2);
   });
 
-  it("sends nothing while the switch is off", () => {
+  it("sends what it held when the switch goes off, then records and sends nothing more", () => {
     const sent: string[] = [];
-    let sharing = true;
-    const { events, fire } = senderWith(
-      (body) => {
-        sent.push(body);
-        return true;
-      },
-      () => sharing
-    );
+    const settings = browserTabs()();
+    const { events, fire } = senderWith((body) => {
+      sent.push(body);
+      return true;
+    }, settings);
     events.track(again);
-    sharing = false;
+    settings.change({ raceData: false });
+    expect(sent).toHaveLength(1);
+    expect(JSON.parse(sent[0] ?? "")).toStrictEqual({
+      build: "abc",
+      events: [{ agoMs: 0, event: again }],
+      playerId: PLAYER,
+    });
+    events.track({ event: "invite_copied" });
     fire();
-    events.track(again);
     events.flush();
-    expect(sent).toHaveLength(0);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("sends what this tab held when another tab turns the switch off, then stops", () => {
+    const sent: string[] = [];
+    const tab = browserTabs();
+    const here = tab();
+    const there = tab();
+    const { events, fire } = senderWith((body) => {
+      sent.push(body);
+      return true;
+    }, here);
+    events.track(again);
+    there.change({ raceData: false });
+    expect(sent).toHaveLength(1);
+    events.track(again);
+    fire();
+    events.flush();
+    expect(sent).toHaveLength(1);
+  });
+
+  it("records again from the moment the switch is back on", () => {
+    const sent: string[] = [];
+    const settings = browserTabs()();
+    const { events, fire } = senderWith((body) => {
+      sent.push(body);
+      return true;
+    }, settings);
+    settings.change({ raceData: false });
+    events.track(again);
+    settings.change({ raceData: true });
+    events.track({ event: "invite_copied" });
+    fire();
+    expect(sent).toHaveLength(1);
+    expect(JSON.parse(sent[0] ?? "")).toStrictEqual({
+      build: "abc",
+      events: [{ agoMs: 0, event: { event: "invite_copied" } }],
+      playerId: PLAYER,
+    });
   });
 
   it("does not let a failed send reach the caller", () => {
@@ -218,6 +288,24 @@ const memoryStorage = (read?: (key: string) => string | null): Storage => {
     },
   };
 };
+
+describe("the settings", () => {
+  it("reach a tab that is already open when another tab changes them", () => {
+    const tab = browserTabs();
+    const here = tab();
+    const there = tab();
+    let heard = 0;
+    here.subscribe(() => {
+      heard += 1;
+    });
+    expect(here.read().raceData).toBeTruthy();
+    there.change({ raceData: false });
+    expect({ heard, raceData: here.read().raceData }).toStrictEqual({
+      heard: 1,
+      raceData: false,
+    });
+  });
+});
 
 describe("the player ID", () => {
   it("stays the same on the same device", () => {
