@@ -64,7 +64,7 @@ A promotion returns to the bar, where Vic says the tier's line. A damaged save o
 - Tier names: `NEW MEAT`, `DEE'S TIP`, `THE LONG RIDGE`
 - Board heading: `THE BOARD`
 - Board Polaroids: the top three of the season standings, then `YOU` wherever the player ranks, each with its points (`JUNO · 61`). Caption under the player's at tier 1: `NEW MEAT`; after tier 1: `KID CAN RIDE`.
-- Season standings: every settled career race gives 8 points for 1st down to 1 for 8th, and 0 to a rider who was busted, wrecked, or not in that race. Ties go to more wins, then to whoever most recently placed better than the other in a race they shared.
+- Season standings: every settled career race gives 8 points for 1st down to 1 for 8th, and 0 to a rider who was busted, wrecked, or not in that race. Ties go to more wins, then to the best single finish of the season, then to the fixed order of the cast list, with the player first.
 - Board notes (templates, newest first, at most three shown):
   - `{RIVAL} WANTS {THEIR} {WEAPON} BACK.`
   - `{RIVAL} WENT DOWN AT {km} KM ON {ROAD}. ASK {THEM} ABOUT IT.`

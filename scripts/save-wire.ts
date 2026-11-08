@@ -88,7 +88,6 @@ const roles = {
   memory: { domain: "Rival", kind: "keys" },
   "qualified.*": { domain: "Road", kind: "keys" },
   season: { domain: "Racer", kind: "keys" },
-  "season.*.lastAhead": { domain: "Racer", kind: "keys" },
   tier: ids("Tier"),
   weapon: ids("Weapon"),
 } satisfies Record<string, Role>;

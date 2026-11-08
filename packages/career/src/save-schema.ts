@@ -1,6 +1,7 @@
 import { bikeIds } from "@racer/sim/bikes";
 import { MOST_RACERS } from "@racer/sim/race";
 import * as Schema from "effect/Schema";
+import * as Struct from "effect/Struct";
 
 import { LastResultSchema } from "./save-result-schema.ts";
 import {
@@ -10,6 +11,7 @@ import {
   Count,
   Ending,
   Envelope,
+  FieldPlace,
   Hits,
   Kilometres,
   Tier,
@@ -92,7 +94,7 @@ const RivalMemory = Schema.Struct({
 });
 
 const SeasonEntry = Schema.Struct({
-  lastAhead: Schema.Record(Racer, Schema.optionalKey(Count)),
+  bestPlace: Schema.NullOr(FieldPlace),
   points: SeasonPoints,
   wins: Count,
 });
@@ -138,6 +140,15 @@ export const EncodedSaveSchema = Schema.Struct({
   weaponHits: Hits,
 });
 
+export const VersionSixSaveSchema = EncodedSaveSchema.mapFields((fields) => ({
+  ...fields,
+  season: Schema.Record(
+    Racer,
+    Schema.optionalKey(SeasonEntry.mapFields(Struct.omit(["bestPlace"])))
+  ),
+  version: Schema.Literal(6),
+}));
+
 const sourceList = (longest: number) =>
   Schema.Array(Schema.Unknown).check(Schema.isMaxLength(longest));
 
@@ -164,8 +175,5 @@ export const SaveSourceSchema = Schema.Struct({
   ),
   memory: sourceKeys(Rival),
   qualified: Schema.Struct(byTier(() => sourceKeys(Road))),
-  season: Schema.Record(
-    Schema.String,
-    Schema.Struct({ lastAhead: sourceKeys(Racer) })
-  ).check(Schema.isPropertyNames(Racer)),
+  season: sourceKeys(Racer),
 });
