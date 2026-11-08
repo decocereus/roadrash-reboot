@@ -95,7 +95,7 @@ describe("loading the race rules", () => {
       ]);
       await vi.advanceTimersByTimeAsync(1);
       const timedOut = {
-        message: "The race rules took more than 10 seconds to answer.",
+        message: "Getting the race ready took too long. Try again.",
         tag: "RulesTimedOut",
       };
       expect([

@@ -47,12 +47,12 @@ The browser save, `apps/web/src/career/save.ts`, runs each storage step with `Ef
 
 ## Race rules
 
-The server serves the race rules at `GET /api/race-rules` from `apps/web/src/server/race-rules.ts`, as JSON with `cache-control: no-store`. The browser asks once at boot. `loadRaceRules` in `apps/web/src/rules/load.ts` forks the request with `Effect.runFork`, decodes the answer with `RaceRulesSchema`, and hands `use-flow.ts` a ready rules record or a failure. Unmounting interrupts the request. The request has one deadline of 10 seconds, `RULES_DEADLINE_MS`, over the answer and its body together, so a server that never answers or never finishes the body fails the load instead of leaving the player on the boot screen, and the request is aborted. Nothing is retried. The career save waits for the rules, and a failure sends the player to the Back Room, which shows "Could not start the game:" and the message.
+The server serves the race rules at `GET /api/race-rules` from `apps/web/src/server/race-rules.ts`, as JSON with `cache-control: no-store`. The browser asks once at boot. `loadRaceRules` in `apps/web/src/rules/load.ts` forks the request with `Effect.runFork`, decodes the answer with `RaceRulesSchema`, and hands `use-flow.ts` a ready rules record or a failure. Unmounting interrupts the request. The request has one deadline of 10 seconds, `RULES_DEADLINE_MS`, over the answer and its body together, so a server that never answers or never finishes the body fails the load instead of leaving the player on the boot screen, and the request is aborted. The loader never retries. The career save waits for the rules, and a failure sends the player to the Back Room, which shows "Could not start the game:" and the message, with Try again as its only action. Try again reloads the page, which asks for the rules again.
 
 | Tag | What the player sees |
 | --- | --- |
 | `RulesRequestFailed` | The fetch or the body read failed. The Back Room shows the browser's message. |
-| `RulesTimedOut` | The answer and its body took more than 10 seconds. The Back Room shows `The race rules took more than 10 seconds to answer.` |
+| `RulesTimedOut` | The answer and its body took more than 10 seconds. The Back Room shows `Getting the race ready took too long. Try again.` |
 | `RulesResponseRejected` | The Back Room shows `The race rules answered <status>.` |
 | `RulesDecodeFailed` | The answer was not JSON or broke the schema, such as a field above 15 racers. The Back Room shows `The race rules did not decode.` |
 

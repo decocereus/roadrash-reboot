@@ -54,7 +54,7 @@ const fetchRules = Effect.fn("rules.load")(function* fetchRules(
       orElse: () =>
         Effect.fail(
           new RulesTimedOut({
-            message: "The race rules took more than 10 seconds to answer.",
+            message: "Getting the race ready took too long. Try again.",
           })
         ),
     })
