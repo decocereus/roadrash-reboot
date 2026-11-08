@@ -58,7 +58,8 @@ export type CareerLoad =
 type Hold =
   | { readonly status: "asking" }
   | { readonly status: "held"; readonly open: () => SaveStorage }
-  | { readonly status: "elsewhere" };
+  | { readonly status: "elsewhere" }
+  | { readonly status: "released" };
 
 export type Stored = { readonly status: "saved" } | StorageFailure;
 
@@ -262,6 +263,8 @@ export const holdCareer = (
     )
   );
   const release = () => {
+    hold = { status: "released" };
+    changed(elsewhere);
     fiber.interruptUnsafe();
   };
   page.addEventListener("pagehide", release);
