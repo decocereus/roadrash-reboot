@@ -57,6 +57,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/test/race-handoff.test.ts",
       "apps/web/test/room-boot-failure.test.tsx",
       "apps/web/test/room-limited.test.tsx",
+      "apps/web/test/queue-screen.test.tsx",
       "apps/web/test/room-rejoin-choice.test.ts",
       "apps/web/src/components/room-url.ts",
       "apps/web/src/components/room-preview.ts",

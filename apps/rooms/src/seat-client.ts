@@ -15,14 +15,11 @@ import {
   createReadTick,
   inputBytes,
   MOST_BATCHED_CONTROLS,
-  PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
   readCatchUp,
-  readPong,
   readTick,
   ROOM_PROTOCOL,
-  writePing,
   writeRaceStats,
   writeReady,
 } from "@racer/sim/room-wire";
@@ -31,6 +28,7 @@ import { riderIdAt } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
+import { createPings, DEAD_AFTER_MS } from "./heartbeat.ts";
 import { humanColours, humanNames, seatedCount } from "./manifest.ts";
 import {
   decodeRoomMessage,
@@ -52,9 +50,6 @@ import { createRaceTally } from "./race-tally.ts";
 import { ticksOf } from "./room-config.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
-const PING_EVERY_MS = 500;
-const DEAD_AFTER_MS = 5000;
-const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 const PINGS_PER_REPORT = 30;
 
 export interface SeatRace {
@@ -274,11 +269,10 @@ export const openRoomSeat = (
   );
   socket.binaryType = "arraybuffer";
   const read = createReadTick(createTickFrame());
-  const pong = { roomMs: 0, stamp: 0 };
   const input = new DataView(
     new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS))
   );
-  const ping = new DataView(new ArrayBuffer(PING_PACKET_BYTES));
+  const pings = createPings(socket);
   const clock = createRoomClock();
   const tally = createRaceTally();
   let reported = false;
@@ -291,18 +285,9 @@ export const openRoomSeat = (
   let closeCode: number | null = null;
   let rttMs = 0;
   let worstRttMs = 0;
-  let unansweredPings = 0;
-  let pings: ReturnType<typeof setInterval> | null = null;
-
-  const stopPings = (): void => {
-    if (pings) {
-      clearInterval(pings);
-      pings = null;
-    }
-  };
 
   const hangUp = (reason: string, code = SEAT_CLOSED): void => {
-    stopPings();
+    pings.stop();
     socket.close(code, reason);
   };
 
@@ -376,7 +361,7 @@ export const openRoomSeat = (
         break;
       }
       case "closed": {
-        stopPings();
+        pings.stop();
         break;
       }
       default: {
@@ -394,25 +379,10 @@ export const openRoomSeat = (
     }
   };
 
-  const sendPing = (): void => {
-    const silent =
-      state.phase === "racing"
-        ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
-        : unansweredPings > MOST_UNANSWERED_PINGS;
-    if (silent) {
-      move({ kind: "silent" });
-      return;
-    }
-    writePing(ping, Math.floor(performance.now()));
-    socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
-    unansweredPings += 1;
-    reportWhileRiding();
-  };
-
   const onBinary = (data: ArrayBuffer): void => {
     const view = new DataView(data);
-    if (readPong(view, pong)) {
-      unansweredPings = 0;
+    const pong = pings.hear(view);
+    if (pong) {
       const now = performance.now();
       rttMs = Math.floor(now) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
@@ -444,7 +414,16 @@ export const openRoomSeat = (
   };
 
   socket.addEventListener("open", () => {
-    pings = setInterval(sendPing, PING_EVERY_MS);
+    pings.start({
+      onPinged: reportWhileRiding,
+      onSilent: () => {
+        move({ kind: "silent" });
+      },
+      silent: (pongsStopped) =>
+        state.phase === "racing"
+          ? clock.silentMs(performance.now()) > DEAD_AFTER_MS
+          : pongsStopped,
+    });
     listeners.onOpen?.();
   });
 

@@ -115,7 +115,12 @@ export const main = Effect.fn("rooms.gate")(function* gate(
         `${network}.11`,
         seatAnswer
       ),
-    queue: () => knock(queueUrl(url, build), `${network}.12`, ticketAnswer),
+    queue: () =>
+      knock(
+        queueUrl(url, build, crypto.randomUUID()),
+        `${network}.12`,
+        ticketAnswer
+      ),
     seat: () =>
       knock(
         seatUrl(url, room, "Gate", build, "visitor"),

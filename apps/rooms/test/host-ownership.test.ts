@@ -7,6 +7,7 @@ import {
 } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
+import { SILENT_SEAT_MS } from "../src/heartbeat.ts";
 import {
   encodeLobbyCommand,
   SEAT_CLOSED,
@@ -33,7 +34,6 @@ import {
 import type { Clock, FakeSocket } from "./host-harness.ts";
 
 const REPORT_GRACE_MS = 5000;
-const SILENT_SEAT_MS = 10_000;
 const RIDE_STEP_MS = 1000;
 const FULL_RIDE_TIMEOUT_MS = 60_000;
 const TRACE = JSON.stringify({

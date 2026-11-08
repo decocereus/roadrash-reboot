@@ -5,7 +5,7 @@ import { cleanGuestName } from "@racer/rooms/messages";
 import type { RoomPreview } from "@racer/rooms/messages";
 import { enterQueue } from "@racer/rooms/queue-client";
 import type { QueueRefusal } from "@racer/rooms/queue-messages";
-import { msOf } from "@racer/rooms/room-config";
+import { launchRoomConfig, msOf } from "@racer/rooms/room-config";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat, SeatRace } from "@racer/rooms/seat-client";
@@ -480,6 +480,7 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
     const leave = enterQueue(
       import.meta.env.VITE_ROOMS_URL,
       __RUSHLINE_BUILD__.rooms,
+      memberKey(),
       {
         onLost: () => {
           reopening = setTimeout(reopen, REOPEN_MS);
@@ -512,7 +513,14 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
       leave();
     };
   }, [opening]);
-  return <QueueScreen onBack={onBack} refusal={refusal} riders={riders} />;
+  return (
+    <QueueScreen
+      onBack={onBack}
+      refusal={refusal}
+      riders={riders}
+      waitSeconds={launchRoomConfig.queueWaitSeconds}
+    />
+  );
 };
 
 export const QuickRace = ({ onBack }: { readonly onBack: () => void }) => {

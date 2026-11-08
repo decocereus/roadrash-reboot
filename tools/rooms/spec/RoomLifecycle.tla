@@ -44,7 +44,7 @@ CONSTANTS
     UserActs,       \* actions all players may take together, so a behaviour ends with them at rest
     StartDelay,     \* host.ts START_DELAY_MS 3 s
     Grace,          \* host.ts REPORT_GRACE_MS 5 s
-    Quiet,          \* host.ts SILENT_SEAT_MS 10 s
+    Quiet,          \* heartbeat.ts SILENT_SEAT_MS 10 s
     Deadline,       \* room-config.ts loadDeadlineSeconds, 20 s at launch
     Gather,         \* room-config.ts publicGatherSeconds, 10 s at launch
     Wait,           \* room-config.ts customStartSeconds 60 s and publicStartSeconds 45 s at launch
@@ -52,7 +52,7 @@ CONSTANTS
     Hold,           \* room-config.ts seatHoldSeconds, 30 s at launch and 5 s at least
     Door,           \* room-lobby.tsx DOOR_MOMENT_MS 5 s
     Reopen,         \* room-lobby.tsx REOPEN_MS 2 s
-    ClientDead,     \* seat-client.ts DEAD_AFTER_MS 5 s
+    ClientDead,     \* heartbeat.ts DEAD_AFTER_MS 5 s
     OldPageFirst,   \* TRUE: the room hears a reloaded page's old sockets before its new seat (Reloaded)
     GuardRetireReplaced, GuardJoinByKey, GuardSweepWaits, GuardLeaveCode,
     GuardBootLeavesRoom, GuardFreeColour, GuardDropMarks, GuardDropRetires,
@@ -536,7 +536,8 @@ HostGrace ==
                      !.role = [s \in Sock |-> IF s \in rep THEN "lobby" ELSE room.role[s]]]
     /\ UNCHANGED <<wire, tab>>
 
-\* host.ts watchSeats: a seat silent for SILENT_SEAT_MS is closed with 4408 and dropped
+\* host.ts watchSeats, a heartbeat.ts watchForSilence: a seat silent for
+\* SILENT_SEAT_MS is closed with 4408 and dropped
 HostQuiet(s) ==
     /\ room.sock[s] = "present"
     /\ room.quiet[s] = 0
@@ -604,7 +605,8 @@ ClientRecv(s) ==
                                      ev = "replaced")]
                     ELSE tab
 
-\* seat-client.ts open listener: the first sendPing, PING_EVERY_MS after open
+\* seat-client.ts open listener: heartbeat.ts createPings sends the first ping
+\* PING_EVERY_MS after open
 ClientPing(s) ==
     /\ wire.cs[s] = "open"
     /\ ~wire.pinged[s]
@@ -619,8 +621,9 @@ ClientDiscard(s) ==
     /\ room' = [room EXCEPT !.out[s] = Tail(@)]
     /\ UNCHANGED <<wire, tab>>
 
-\* seat-client.ts sendPing: unanswered pings for DEAD_AFTER_MS make the seat
-\* silent; a connection that never opened fails with a close event
+\* heartbeat.ts createPings with seat-client.ts's silent rule: unanswered pings
+\* for DEAD_AFTER_MS make the seat silent; a connection that never opened fails
+\* with a close event
 ClientDeadFire(s) ==
     /\ wire.dead[s] = 0
     /\ LET r == s[1]
