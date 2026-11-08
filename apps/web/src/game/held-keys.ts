@@ -4,7 +4,7 @@ export interface KeyPress {
   readonly repeat: boolean;
 }
 
-export interface HeldKeys {
+interface HeldKeys {
   readonly clear: () => void;
   readonly has: (code: string) => boolean;
   readonly press: (event: KeyPress) => boolean;

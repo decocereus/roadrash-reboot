@@ -5,66 +5,165 @@ import { createPacer, createRefreshMeter } from "./pacer.ts";
 const PACE = 60;
 const STARTING_REFRESH = 60;
 
-const gapsAt = (hertz: number): readonly [number] => [1000 / hertz];
+type Gaps = readonly [number, ...number[]];
 
-const screen = () => {
+interface Stretch {
+  readonly gaps: Gaps;
+  readonly ms: number;
+}
+
+type Clock = (now: number) => number;
+
+const exact: Clock = (now) => now;
+const wholeMs: Clock = Math.floor;
+
+const at = (hertz: number, ms: number): Stretch => ({
+  gaps: [1000 / hertz],
+  ms,
+});
+
+const screen = (clock: Clock) => {
   const readRefresh = createRefreshMeter(STARTING_REFRESH);
   const pacer = createPacer();
   let now = 0;
   let refresh = STARTING_REFRESH;
+  const drawn = (gap: number): number => {
+    now += gap;
+    refresh = readRefresh(clock(now));
+    return Number(pacer.due(clock(now), refresh, PACE));
+  };
   return {
-    drawn(gaps: readonly [number, ...number[]], ms: number): number {
-      const end = now + ms;
+    refresh: () => refresh,
+    ride({ gaps, ms }: Stretch) {
+      for (let elapsed = 0, index = 0; elapsed < ms; index += 1) {
+        const gap = gaps[index % gaps.length] ?? gaps[0];
+        elapsed += gap;
+        drawn(gap);
+      }
+    },
+    second(hertz: number): number {
       let frames = 0;
-      for (let index = 0; now < end; index += 1) {
-        now += gaps[index % gaps.length] ?? gaps[0];
-        refresh = readRefresh(now);
-        frames += Number(pacer.due(now, refresh, PACE));
+      for (let index = 0; index < hertz; index += 1) {
+        frames += drawn(1000 / hertz);
       }
       return frames;
     },
-    refresh: () => refresh,
   };
 };
 
-describe("the refresh meter", () => {
-  it("follows the window up from a 120 Hz screen to a 165 Hz one", () => {
-    const display = screen();
-    display.drawn(gapsAt(120), 3000);
-    expect(display.refresh()).toBe(120);
-    display.drawn(gapsAt(165), 3000);
-    expect({
-      drawn: display.drawn(gapsAt(165), 1000),
-      refresh: display.refresh(),
-    }).toStrictEqual({ drawn: 55, refresh: 165 });
-  });
+const vsync = 1000 / 120;
 
-  it("follows the window down from a 165 Hz screen to a 120 Hz one, and draws 60 a second there", () => {
-    const display = screen();
-    display.drawn(gapsAt(165), 3000);
-    expect(display.refresh()).toBe(165);
-    display.drawn(gapsAt(120), 3000);
-    expect({
-      drawn: display.drawn(gapsAt(120), 1000),
-      refresh: display.refresh(),
-    }).toStrictEqual({ drawn: 60, refresh: 120 });
-  });
+interface Sequence {
+  readonly before: readonly Stretch[];
+  readonly clock: Clock;
+  readonly drawn: number;
+  readonly name: string;
+  readonly refresh: number;
+}
+
+const sequences: readonly Sequence[] = [
+  {
+    before: [at(120, 3000), at(165, 3000)],
+    clock: exact,
+    drawn: 55,
+    name: "120 Hz to 165 Hz",
+    refresh: 165,
+  },
+  {
+    before: [at(165, 3000), at(120, 3000)],
+    clock: exact,
+    drawn: 60,
+    name: "165 Hz to 120 Hz",
+    refresh: 120,
+  },
+  {
+    before: [at(165, 3000), at(144, 3000)],
+    clock: exact,
+    drawn: 72,
+    name: "165 Hz to 144 Hz",
+    refresh: 144,
+  },
+  {
+    before: [at(144, 3000), at(120, 3000)],
+    clock: exact,
+    drawn: 60,
+    name: "144 Hz to 120 Hz",
+    refresh: 120,
+  },
+  {
+    before: [at(120, 3000), at(100, 3000)],
+    clock: exact,
+    drawn: 50,
+    name: "120 Hz to 100 Hz",
+    refresh: 100,
+  },
+  {
+    before: [at(165, 3000), at(144, 3000)],
+    clock: wholeMs,
+    drawn: 72,
+    name: "165 Hz to 144 Hz, read in whole milliseconds",
+    refresh: 144,
+  },
+  {
+    before: [
+      at(60, 3000),
+      { gaps: [1000 / 60, 2000 / 60], ms: 5000 },
+      at(30, 5000),
+    ],
+    clock: exact,
+    drawn: 60,
+    name: "a 60 Hz screen whose GPU misses vsyncs",
+    refresh: 60,
+  },
+  {
+    before: [
+      at(120, 3000),
+      { gaps: [vsync, 2 * vsync], ms: 5000 },
+      at(60, 5000),
+    ],
+    clock: exact,
+    drawn: 60,
+    name: "a 120 Hz screen whose GPU misses every other vsync",
+    refresh: 120,
+  },
+  {
+    before: [
+      { gaps: [vsync, vsync, vsync, vsync, 2 * vsync], ms: 4000 },
+      at(40, 4000),
+    ],
+    clock: exact,
+    drawn: 60,
+    name: "a 120 Hz screen whose GPU misses vsyncs from the start",
+    refresh: 120,
+  },
+  {
+    before: [at(120, 3000), { gaps: [vsync, 2 * vsync], ms: 5000 }],
+    clock: wholeMs,
+    drawn: 60,
+    name: "a 120 Hz screen whose GPU misses vsyncs, read in whole milliseconds",
+    refresh: 120,
+  },
+];
+
+describe("the refresh meter", () => {
+  it.each(sequences)(
+    "$name draws $drawn frames a second at $refresh Hz",
+    ({ before, clock, drawn, refresh }) => {
+      const display = screen(clock);
+      for (const stretch of before) {
+        display.ride(stretch);
+      }
+      expect({
+        drawn: display.second(refresh),
+        refresh: display.refresh(),
+      }).toStrictEqual({ drawn, refresh });
+    }
+  );
 
   it("waits for two readings before it trusts a lower rate", () => {
-    const display = screen();
-    display.drawn(gapsAt(165), 3000);
-    display.drawn(gapsAt(120), 1100);
+    const display = screen(exact);
+    display.ride(at(165, 3000));
+    display.ride(at(120, 1100));
     expect(display.refresh()).toBe(165);
-  });
-
-  it("keeps a 120 Hz screen whose GPU misses vsyncs, so it draws no extra frames once the GPU catches up", () => {
-    const display = screen();
-    display.drawn(gapsAt(120), 3000);
-    display.drawn([1000 / 120, 1000 / 60], 5000);
-    display.drawn(gapsAt(60), 5000);
-    expect({
-      drawn: display.drawn(gapsAt(120), 1000),
-      refresh: display.refresh(),
-    }).toStrictEqual({ drawn: 60, refresh: 120 });
   });
 });
