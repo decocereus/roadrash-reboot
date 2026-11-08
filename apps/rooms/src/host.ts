@@ -2,14 +2,11 @@ import { MOST_SEATS } from "@racer/sim/room";
 import { hexOfWords } from "@racer/sim/room-tape";
 import {
   createInputBatch,
-  PONG_PACKET_BYTES,
   readInput,
-  readPing,
   readReady,
   ROOM_PROTOCOL,
   tickCapacity,
   writeCatchUp,
-  writePong,
   writeTick,
 } from "@racer/sim/room-wire";
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
@@ -17,6 +14,7 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
 import type { RoomStatus } from "./contract.ts";
+import { createPongs, SEAT_WATCH_MS, SILENT_SEAT_MS } from "./heartbeat.ts";
 import { hostAfter, NEW_HOST, startMomentOf } from "./host-phase.ts";
 import type { HostEvent, HostState } from "./host-phase.ts";
 import { createLobby } from "./lobby.ts";
@@ -60,9 +58,6 @@ const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
 const START_DELAY_MS = 3000;
 const REPORT_GRACE_MS = 5000;
-const NO_STAMP = 0;
-const SILENT_SEAT_MS = 10_000;
-const SEAT_WATCH_MS = 1000;
 const SEND_FAILED = Number.NEGATIVE_INFINITY;
 
 export interface HostSocket {
@@ -133,8 +128,6 @@ export const createHost = (
   const batch = createInputBatch();
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
-  const pongBuffer = new ArrayBuffer(PONG_PACKET_BYTES);
-  const pongView = new DataView(pongBuffer);
   const readyDigest = new Uint32Array(HASH_WORDS);
   const bornAt = ports.now();
   const { publicRace } = ports.config;
@@ -148,6 +141,7 @@ export const createHost = (
   let watching = false;
 
   const roomMs = (): number => ports.now() - bornAt;
+  const pongFor = createPongs(roomMs);
 
   const move = (event: HostEvent<Run>): boolean => {
     const next = hostAfter(state, event);
@@ -555,10 +549,9 @@ export const createHost = (
   const hearLobby = (person: Present, data: string | ArrayBuffer): void => {
     person.heardAt = ports.now();
     if (data instanceof ArrayBuffer) {
-      const stamp = readPing(new DataView(data));
-      if (stamp >= NO_STAMP) {
-        const bytes = writePong(pongView, stamp, roomMs());
-        sendTo(person.socket, new Uint8Array(pongBuffer, 0, bytes));
+      const pong = pongFor(new DataView(data));
+      if (pong) {
+        sendTo(person.socket, pong);
       }
       return;
     }
@@ -596,10 +589,9 @@ export const createHost = (
       seat.late += tally.late;
       return;
     }
-    const stamp = readPing(view);
-    if (stamp >= NO_STAMP) {
-      const bytes = writePong(pongView, stamp, roomMs());
-      sendTo(person.socket, new Uint8Array(pongBuffer, 0, bytes));
+    const pong = pongFor(view);
+    if (pong) {
+      sendTo(person.socket, pong);
       return;
     }
     if (!readReady(view, readyDigest)) {

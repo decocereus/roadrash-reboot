@@ -19,8 +19,6 @@ import type { SeatBrowser } from "../src/tape.ts";
 
 const PUBLIC_RULE = publicRuleFor(launchRoomConfig.publicRace, 0);
 
-export const DEAD_AFTER_MS = 5000;
-export const PING_EVERY_MS = 500;
 export const ABNORMAL_CLOSE = 1006;
 
 interface SocketEvent {

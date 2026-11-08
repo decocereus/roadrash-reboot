@@ -31,6 +31,11 @@ import { riderIdAt } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
+import {
+  DEAD_AFTER_MS,
+  MOST_UNANSWERED_PINGS,
+  PING_EVERY_MS,
+} from "./heartbeat.ts";
 import { humanColours, humanNames, seatedCount } from "./manifest.ts";
 import {
   decodeRoomMessage,
@@ -52,9 +57,6 @@ import { createRaceTally } from "./race-tally.ts";
 import { ticksOf } from "./room-config.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 
-const PING_EVERY_MS = 500;
-const DEAD_AFTER_MS = 5000;
-const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 const PINGS_PER_REPORT = 30;
 
 export interface SeatRace {

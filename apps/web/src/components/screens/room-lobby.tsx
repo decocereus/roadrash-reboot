@@ -461,8 +461,6 @@ export const RoomFailedScreen = ({
   </Screen>
 );
 
-const QUEUE_SECONDS = 30;
-
 const queueRefusalLine = (refusal: QueueRefusal): string => {
   switch (refusal) {
     case "build": {
@@ -470,6 +468,9 @@ const queueRefusalLine = (refusal: QueueRefusal): string => {
     }
     case "limited": {
       return LIMITED_LINE;
+    }
+    case "replaced": {
+      return "You opened the queue in another tab.";
     }
     default: {
       return refusal satisfies never;
@@ -480,10 +481,12 @@ const queueRefusalLine = (refusal: QueueRefusal): string => {
 export const QueueScreen = ({
   refusal,
   riders,
+  waitSeconds,
   onBack,
 }: {
   readonly refusal: QueueRefusal | null;
   readonly riders: number;
+  readonly waitSeconds: number;
   readonly onBack: () => void;
 }) => (
   <Screen className="bg-ink">
@@ -496,8 +499,8 @@ export const QueueScreen = ({
             : queueRefusalLine(refusal)}
         </p>
         <p className="font-display text-paper/60">
-          The race leaves with whoever is here after {QUEUE_SECONDS} s. Street
-          riders join to make 10.
+          The race leaves with whoever is here after {waitSeconds} s. Street
+          riders join to make {ROOM_FIELD_SIZE}.
         </p>
         <MenuList
           autoFocus

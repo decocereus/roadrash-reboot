@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
-import { encodeQueueMessage } from "../src/queue-messages.ts";
 import { enterQueue, queueUrl } from "../src/queue-client.ts";
+import { encodeQueueMessage } from "../src/queue-messages.ts";
 import { FakeSocket } from "./seat-socket.ts";
 
 const ticket = () => {

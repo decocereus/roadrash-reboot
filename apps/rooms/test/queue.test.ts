@@ -40,7 +40,7 @@ const ticketSocket = () => {
     pongs: () => pongs,
     quiet: () => quiet,
     send: (data: string | ArrayBufferView) => {
-      if (typeof data !== "string") {
+      if (ArrayBuffer.isView(data)) {
         pongs += 1;
         return;
       }
