@@ -332,8 +332,8 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
       </li>
     ))}
     <li className="font-display text-paper/60 py-1">
-      {ROOM_FIELD_SIZE - lobby.members.length} street riders join to make{" "}
-      {ROOM_FIELD_SIZE}.
+      {ROOM_FIELD_SIZE - lobby.members.filter(({ here }) => here).length} street
+      riders join to make {ROOM_FIELD_SIZE}.
     </li>
   </ul>
 );
