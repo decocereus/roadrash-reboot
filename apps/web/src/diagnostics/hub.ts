@@ -149,12 +149,12 @@ const createDiagnostics = (): Diagnostics => {
     build: __RUSHLINE_BUILD__.sha,
     now: () => performance.now(),
     playerId: player,
+    raceData: settings.raceData,
     send: (body) =>
       navigator.sendBeacon(
         PLAYER_EVENTS_ENDPOINT,
         new Blob([body], { type: "application/json" })
       ),
-    settings,
   });
   let shown: GraphicsPlace = "menu";
   const graphicsLoss = createGraphicsLoss({
@@ -261,7 +261,7 @@ const createDiagnostics = (): Diagnostics => {
   settings.subscribe(apply);
   uploader.subscribe(notify);
   apply();
-  if (settings.read().raceData) {
+  if (settings.raceData.sharing()) {
     events.track({
       browser: browserFamilyOf(navigator.userAgent),
       event: "game_opened",

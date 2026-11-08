@@ -2,7 +2,7 @@ import { MAX_EVENTS_IN_BATCH } from "@racer/telemetry/limits";
 import type { BrowserFamily } from "@racer/telemetry/limits";
 import type { PlayerEvent } from "@racer/telemetry/player-events";
 
-import type { SettingsStore } from "./settings.ts";
+import type { RaceDataSwitch } from "./settings.ts";
 
 const FLUSH_MS = 5000;
 const PLAYER_KEY = "rushline.player.v1";
@@ -18,8 +18,8 @@ interface Timers {
 interface PlayerEventParts extends Timers {
   readonly build: string;
   readonly playerId: () => string;
+  readonly raceData: RaceDataSwitch;
   readonly send: (body: string) => boolean;
-  readonly settings: Pick<SettingsStore, "read" | "subscribe">;
 }
 
 export interface PlayerEvents {
@@ -33,8 +33,8 @@ export const createPlayerEvents = ({
   build,
   now,
   playerId,
+  raceData,
   send,
-  settings,
 }: PlayerEventParts): PlayerEvents => {
   let pending: { readonly at: number; readonly event: PlayerEvent }[] = [];
   let armed = false;
@@ -67,9 +67,8 @@ export const createPlayerEvents = ({
     }
   };
 
-  const sharing = () => settings.read().raceData;
-  settings.subscribe(() => {
-    if (!sharing()) {
+  raceData.watch((sharing) => {
+    if (!sharing) {
       flush();
     }
   });
@@ -78,7 +77,7 @@ export const createPlayerEvents = ({
     dropped: () => dropped,
     flush,
     track(event) {
-      if (!sharing()) {
+      if (!raceData.sharing()) {
         return;
       }
       pending.push({ at: now(), event });

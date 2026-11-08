@@ -47,10 +47,16 @@ const parseSettings = (text: string | null): Settings => {
   }
 };
 
+export interface RaceDataSwitch {
+  readonly sharing: () => boolean;
+  readonly watch: (turned: (sharing: boolean) => void) => () => void;
+}
+
 export interface SettingsStore {
   readonly read: () => Settings;
   readonly change: (next: Partial<Settings>) => void;
   readonly subscribe: (listener: () => void) => () => void;
+  readonly raceData: RaceDataSwitch;
 }
 
 type SettingsDevice = Pick<Storage, "getItem" | "setItem">;
@@ -58,7 +64,9 @@ type SettingsDevice = Pick<Storage, "getItem" | "setItem">;
 export interface SettingsChanges {
   readonly addEventListener: (
     type: "storage",
-    listener: (event: Pick<StorageEvent, "key">) => void
+    listener: (
+      event: Pick<StorageEvent, "key" | "newValue" | "oldValue">
+    ) => void
   ) => void;
 }
 
@@ -70,59 +78,82 @@ export const storage = (): Storage | null => {
   }
 };
 
-const readStored = (device: SettingsDevice | null): Settings => {
+const readText = (device: SettingsDevice | null): string | null => {
   try {
-    return parseSettings(device?.getItem(SETTINGS_KEY) ?? null);
+    return device?.getItem(SETTINGS_KEY) ?? null;
   } catch {
-    return defaultSettings;
+    return null;
   }
 };
 
-const writeStored = (
-  device: SettingsDevice | null,
-  settings: Settings
-): boolean => {
+const wroteText = (device: SettingsDevice | null, text: string): boolean => {
+  if (device === null) {
+    return false;
+  }
   try {
-    device?.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    device.setItem(SETTINGS_KEY, text);
     return true;
   } catch {
     return false;
   }
 };
 
+const listen = <Listener>(
+  listeners: Set<Listener>,
+  listener: Listener
+): (() => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
 export const createSettingsStore = (
   device: () => SettingsDevice | null,
   changes: SettingsChanges
 ): SettingsStore => {
-  let current: Settings | null = null;
+  let seen = readText(device());
+  let current = parseSettings(seen);
   const listeners = new Set<() => void>();
-  const notify = () => {
+  const turns = new Set<(sharing: boolean) => void>();
+  const read = (): Settings => {
+    const text = readText(device());
+    if (text !== seen) {
+      seen = text;
+      current = parseSettings(text);
+    }
+    return current;
+  };
+  const changed = (before: Settings, after: Settings): void => {
+    if (before.raceData !== after.raceData) {
+      for (const turned of turns) {
+        turned(after.raceData);
+      }
+    }
     for (const listener of listeners) {
       listener();
     }
   };
-  const read = (): Settings => {
-    current ??= readStored(device());
-    return current;
-  };
-  changes.addEventListener("storage", ({ key }) => {
+  changes.addEventListener("storage", ({ key, newValue, oldValue }) => {
     if (key === SETTINGS_KEY || key === null) {
-      current = null;
-      notify();
+      changed(parseSettings(oldValue), parseSettings(newValue));
     }
   });
   return {
     change(next) {
-      current = { ...read(), ...next };
-      writeStored(device(), current);
-      notify();
+      const before = read();
+      current = { ...before, ...next };
+      const text = JSON.stringify(current);
+      if (wroteText(device(), text)) {
+        seen = text;
+      }
+      changed(before, current);
+    },
+    raceData: {
+      sharing: () => read().raceData,
+      watch: (turned) => listen(turns, turned),
     },
     read,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: (listener) => listen(listeners, listener),
   };
 };

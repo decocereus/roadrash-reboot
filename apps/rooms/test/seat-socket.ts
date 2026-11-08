@@ -15,6 +15,7 @@ import { encodeRoomMessage } from "../src/messages.ts";
 import type { RoomMessage } from "../src/messages.ts";
 import { launchRoomConfig, publicRuleFor } from "../src/room-config.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
+import type { SeatTrace } from "../src/seat-client.ts";
 import type { SeatBrowser } from "../src/tape.ts";
 
 const PUBLIC_RULE = publicRuleFor(launchRoomConfig.publicRace, 0);
@@ -159,14 +160,39 @@ export const replaced = encodeRoomMessage({
   reason: "replaced",
 });
 
-export const newSeat = (browser: () => SeatBrowser | null = () => null) => {
+export const raceDataSwitch = (browser: SeatBrowser, sharing: boolean) => {
+  let on = sharing;
+  const turns = new Set<(sharing: boolean) => void>();
+  const trace: SeatTrace = {
+    browser: () => browser,
+    sharing: () => on,
+    watch: (turned) => {
+      turns.add(turned);
+      return () => {
+        turns.delete(turned);
+      };
+    },
+  };
+  return {
+    trace,
+    turn: (next: boolean) => {
+      on = next;
+      for (const turned of turns) {
+        turned(next);
+      }
+    },
+    watched: () => turns.size > 0,
+  };
+};
+
+export const newSeat = (trace: SeatTrace | null = null) => {
   const seat = openRoomSeat(
     "http://rooms.test",
     "friday-ride",
     "Near",
     "test-build",
     "member-key",
-    browser
+    trace
   );
   const socket = FakeSocket.opened.at(-1);
   if (!socket) {
@@ -176,8 +202,8 @@ export const newSeat = (browser: () => SeatBrowser | null = () => null) => {
   return { seat, socket };
 };
 
-export const loadingSeat = (browser: () => SeatBrowser | null = () => null) => {
-  const { seat, socket } = newSeat(browser);
+export const loadingSeat = (trace: SeatTrace | null = null) => {
+  const { seat, socket } = newSeat(trace);
   socket.hear(started);
   return { seat, socket };
 };

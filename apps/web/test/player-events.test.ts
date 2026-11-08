@@ -22,36 +22,49 @@ import type { View } from "../src/navigation.ts";
 const PLAYER = "3f0c2a1e-7b6d-4c1a-9e2f-0123456789ab";
 const again: PlayerEvent = { event: "race_again" };
 
-type StorageListener = (event: { readonly key: string | null }) => void;
+type StorageListener = (
+  event: Pick<StorageEvent, "key" | "newValue" | "oldValue">
+) => void;
 
 const browserTabs = () => {
   const items = new Map<string, string>();
   const tabs: StorageListener[][] = [];
-  return (): SettingsStore => {
-    const heard: StorageListener[] = [];
-    tabs.push(heard);
-    return createSettingsStore(
-      () => ({
-        getItem: (key) => items.get(key) ?? null,
-        setItem(key, value) {
-          items.set(key, value);
-          for (const listener of tabs.filter((tab) => tab !== heard).flat()) {
-            listener({ key });
-          }
-        },
-      }),
-      {
-        addEventListener(_type, listener) {
-          heard.push(listener);
-        },
+  const queued: (() => void)[] = [];
+  return {
+    deliver: () => {
+      for (const news of queued.splice(0)) {
+        news();
       }
-    );
+    },
+    open: (): SettingsStore => {
+      const heard: StorageListener[] = [];
+      tabs.push(heard);
+      return createSettingsStore(
+        () => ({
+          getItem: (key) => items.get(key) ?? null,
+          setItem(key, newValue) {
+            const oldValue = items.get(key) ?? null;
+            items.set(key, newValue);
+            for (const listener of tabs.filter((tab) => tab !== heard).flat()) {
+              queued.push(() => {
+                listener({ key, newValue, oldValue });
+              });
+            }
+          },
+        }),
+        {
+          addEventListener(_type, listener) {
+            heard.push(listener);
+          },
+        }
+      );
+    },
   };
 };
 
 const senderWith = (
   send: (body: string) => boolean,
-  settings: SettingsStore = browserTabs()()
+  settings: SettingsStore = browserTabs().open()
 ) => {
   const timers: (() => void)[] = [];
   let clock = 0;
@@ -62,8 +75,8 @@ const senderWith = (
     build: "abc",
     now: () => clock,
     playerId: () => PLAYER,
+    raceData: settings.raceData,
     send,
-    settings,
   });
   return {
     advance: (ms: number) => {
@@ -129,7 +142,7 @@ describe("the player event sender", () => {
 
   it("sends what it held when the switch goes off, then records and sends nothing more", () => {
     const sent: string[] = [];
-    const settings = browserTabs()();
+    const settings = browserTabs().open();
     const { events, fire } = senderWith((body) => {
       sent.push(body);
       return true;
@@ -150,15 +163,16 @@ describe("the player event sender", () => {
 
   it("sends what this tab held when another tab turns the switch off, then stops", () => {
     const sent: string[] = [];
-    const tab = browserTabs();
-    const here = tab();
-    const there = tab();
+    const tabs = browserTabs();
+    const here = tabs.open();
+    const there = tabs.open();
     const { events, fire } = senderWith((body) => {
       sent.push(body);
       return true;
     }, here);
     events.track(again);
     there.change({ raceData: false });
+    tabs.deliver();
     expect(sent).toHaveLength(1);
     events.track(again);
     fire();
@@ -166,9 +180,53 @@ describe("the player event sender", () => {
     expect(sent).toHaveLength(1);
   });
 
+  it("keeps nothing this tab records after another tab turns the switch off, before the news arrives", () => {
+    const sent: string[] = [];
+    const tabs = browserTabs();
+    const here = tabs.open();
+    const there = tabs.open();
+    const { events, fire } = senderWith((body) => {
+      sent.push(body);
+      return true;
+    }, here);
+    events.track(again);
+    there.change({ raceData: false });
+    events.track({ event: "invite_copied" });
+    tabs.deliver();
+    fire();
+    events.flush();
+    expect(sent).toHaveLength(1);
+    expect(JSON.parse(sent[0] ?? "")).toStrictEqual({
+      build: "abc",
+      events: [{ agoMs: 0, event: again }],
+      playerId: PLAYER,
+    });
+  });
+
+  it("sends what it held at the switch when another tab turns it off and on again before the news arrives", () => {
+    const sent: string[] = [];
+    const tabs = browserTabs();
+    const here = tabs.open();
+    const there = tabs.open();
+    const { events } = senderWith((body) => {
+      sent.push(body);
+      return true;
+    }, here);
+    events.track(again);
+    there.change({ raceData: false });
+    there.change({ raceData: true });
+    tabs.deliver();
+    expect(sent).toHaveLength(1);
+    expect(JSON.parse(sent[0] ?? "")).toStrictEqual({
+      build: "abc",
+      events: [{ agoMs: 0, event: again }],
+      playerId: PLAYER,
+    });
+  });
+
   it("records again from the moment the switch is back on", () => {
     const sent: string[] = [];
-    const settings = browserTabs()();
+    const settings = browserTabs().open();
     const { events, fire } = senderWith((body) => {
       sent.push(body);
       return true;
@@ -291,19 +349,39 @@ const memoryStorage = (read?: (key: string) => string | null): Storage => {
 
 describe("the settings", () => {
   it("reach a tab that is already open when another tab changes them", () => {
-    const tab = browserTabs();
-    const here = tab();
-    const there = tab();
+    const tabs = browserTabs();
+    const here = tabs.open();
+    const there = tabs.open();
     let heard = 0;
     here.subscribe(() => {
       heard += 1;
     });
     expect(here.read().raceData).toBeTruthy();
     there.change({ raceData: false });
+    tabs.deliver();
     expect({ heard, raceData: here.read().raceData }).toStrictEqual({
       heard: 1,
       raceData: false,
     });
+  });
+
+  it("keep the switch in this tab when the browser will not store it", () => {
+    const heard: StorageListener[] = [];
+    const settings = createSettingsStore(
+      () => ({
+        getItem: () => null,
+        setItem: () => {
+          throw new Error("The quota is full.");
+        },
+      }),
+      {
+        addEventListener(_type, listener) {
+          heard.push(listener);
+        },
+      }
+    );
+    settings.change({ raceData: false });
+    expect(settings.raceData.sharing()).toBeFalsy();
   });
 });
 

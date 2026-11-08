@@ -5,7 +5,7 @@ const records = [
     kept: "Kept about 7 days in Cloudflare's logs.",
     title: "How each race ran",
     what: "The race ID, the road, the seed, connection times, where each rider connected from at city level, crashes, controls and frame times. With Race data on, it also holds the game version, your graphics card and quality level, and a timeline of your frame and network timing during the race. Riders are numbers. It holds no player ID, name or invite link.",
-    why: "To find out why a race went badly. We record most of this for every race, because we run the race, so the switch below stops only the game version, graphics card, quality level and timeline.",
+    why: "To find out why a race went badly. We record most of this for every race, because we run the race, so the switch below stops only the game version, graphics card, quality level and timeline. Turn it off during a race and your game sends the timeline it already has, then keeps no more. Turn it back on and a new timeline starts from that moment.",
   },
   {
     kept: "Kept by PostHog, in the EU, under its retention rules.",
@@ -65,10 +65,11 @@ const PrivacyPage = () => (
       <p className="mt-3">
         Settings has a Race data switch. Turn it off and the game sends the
         events it already holds, from the last few seconds, then records and
-        sends nothing more under your ID, in every open tab. Settings also shows
-        your ID. During the closed test, send it to whoever invited you to have
-        what is tied to it deleted. Clearing this site's data in your browser
-        removes the ID from your device.
+        sends nothing more under your ID, in every open tab. Turn it back on and
+        it records again from that moment. Settings also shows your ID. During
+        the closed test, send it to whoever invited you to have what is tied to
+        it deleted. Clearing this site's data in your browser removes the ID
+        from your device.
       </p>
     </div>
   </main>
