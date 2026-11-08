@@ -4,7 +4,7 @@ Every model and menu picture the player sees comes from the art store, not from 
 
 ## Sub-features
 
-- `art-route` answers `/art/<key>` with the file, its content type and an immutable cache header, and a key it does not hold with an uncached 404.
+- `art-route` answers `/art/<key>` with the file, its content type and an immutable cache header, and a malformed key with a 404. A well-formed key it does not hold answers an uncached 404 on the deployed game and 502 on a local build, which asked the deployed game for it and was refused.
 - `bar-art` shows the bar, its plates and the rival figures with every picture from `/art/`.
 - `race-art` loads the boot models and a race's riders from `/art/`, with no art under `/assets/`.
 - `read-through` refills a cache that lacks a key from the deployed game.
@@ -23,10 +23,10 @@ Preconditions:
 - `rv doctor --run <run>` passes on a slot started with a fresh profile, or, for `deployed`, a slot started with `rv up --server https://rushline.amartya-faceless.workers.dev/ --user-asked` when the owner asked for the deployed check.
 - The slot's port, printed by `rv up`, is `<port>` below.
 
-- **Art route.** Run `node -p 'require("./apps/web/src/assets/art.json")["models/bike.glb"]'` for a key, then `curl -sI http://127.0.0.1:<port>/art/<key>`. The answer is `200` with `content-type: model/gltf-binary` and `cache-control: public, max-age=31536000, immutable`. `curl -sI http://127.0.0.1:<port>/art/00000000000000000000000000000000.glb` answers `404`, and `curl -sI http://127.0.0.1:<port>/art/bike.glb` answers `404`.
+- **Art route.** Run `node -p 'require("./apps/web/src/assets/art.json")["models/bike.glb"]'` for a key, then `curl -sI http://127.0.0.1:<port>/art/<key>`. The answer is `200` with `content-type: model/gltf-binary` and `cache-control: public, max-age=31536000, immutable`. `curl -sI http://127.0.0.1:<port>/art/00000000000000000000000000000000.glb` answers `502`, and `curl -sI http://127.0.0.1:<port>/art/bike.glb` answers `404`.
 - **Bar art.** Run `rv open --run <run> / --until bar`, then `rv shot --run <run> bar-art`. The plates, the counter and the rival figures are painted. `rv js --run <run> 'performance.getEntriesByType("resource").filter((e) => /\.(webp|glb)$/u.test(e.name)).every((e) => new URL(e.name).pathname.startsWith("/art/"))'` prints `true`.
 - **Race art.** Run `rv open --run <run> "/?ride=breakwater-run&at=3700&autopilot" --until race`, then `rv shot --run <run> race-art`. The bikes, riders, cars and vans are drawn. `rv js --run <run> 'performance.getEntriesByType("resource").filter((e) => e.name.endsWith(".glb")).map((e) => new URL(e.name).pathname.split("/")[1])'` lists only `art`. Ride a Madrid stretch the same way with `?ride=madrid-gran-via` in a development build.
-- **Read-through.** Move one key out of the cache with `mv ~/.cache/rushline/art/<key> /tmp/`, then `curl -so /dev/null -w "%{http_code}" http://127.0.0.1:<port>/art/<key>`. It answers `200`, and the file is back in `~/.cache/rushline/art`.
+- **Read-through.** Move one key out of the cache with `mv ~/.cache/rushline/art/<key> /tmp/`, then `curl -so /dev/null -w "%{http_code}" http://127.0.0.1:<port>/art/<key>`. It answers `200`, and the file is back in `~/.cache/rushline/art`. It needs the network: offline it answers `502`.
 - **Deployed.** On the deployed slot, run the bar and race steps with `--until bar` and `--until race`, and `rv console --run <run> errors`. Every `.glb` and `.webp` path starts with `/art/` and the console has no errors.
 
 ## Gotchas
