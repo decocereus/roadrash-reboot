@@ -124,6 +124,7 @@ const drawFrame = (
   blend: number,
   measured: boolean
 ): void => {
+  const fromX = view.drift.x;
   driftSettle(view.drift, FRAME_SECONDS, rider.speed);
   const next =
     rider.mode === "riding"
@@ -133,7 +134,13 @@ const drawFrame = (
     drawn.frames += 1;
     drawn.worstOff = Math.max(
       drawn.worstOff,
-      drawnOff(next, drawn.last, rider.speed, drawn.lastSpeed, FRAME_SECONDS)
+      drawnOff(
+        next - drawn.last,
+        view.drift.x - fromX,
+        rider.speed,
+        drawn.lastSpeed,
+        FRAME_SECONDS
+      )
     );
   }
   drawn.last = next;
@@ -295,12 +302,12 @@ describe("both bikes on screen in a room race", () => {
       0,
     ],
   ] as const)(
-    "draws each bike within a quarter of its riding every frame over %s, and the room misses only controls the link lost",
+    "draws each bike within its pace and glide limits every frame over %s, and the room misses only controls the link lost",
     (_name, race, mostMissed) => {
       const screen = rideOnScreen(race);
       expect(screen.me.frames).toBeGreaterThan(1200);
-      expect(screen.me.worstOff).toBeLessThan(0.05);
-      expect(screen.rival.worstOff).toBeLessThan(0.05);
+      expect(screen.me.worstOff).toBeLessThan(0.01);
+      expect(screen.rival.worstOff).toBeLessThan(0.01);
       expect(screen.missedInStall).toBeLessThanOrEqual(mostMissed);
     }
   );
@@ -323,8 +330,8 @@ describe("both bikes on screen in a room race", () => {
     (_name, race) => {
       const screen = rideOnScreen(race);
       expect(screen.me.frames).toBeGreaterThan(1200);
-      expect(screen.me.worstOff).toBeLessThan(0.05);
-      expect(screen.rival.worstOff).toBeLessThan(0.05);
+      expect(screen.me.worstOff).toBeLessThan(0.01);
+      expect(screen.rival.worstOff).toBeLessThan(0.01);
     }
   );
 });

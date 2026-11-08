@@ -22,7 +22,7 @@ describe("a rider's race tally", () => {
     tally.frameDrawn(1000, 0, 0, 1, 0, 0, 0);
     tally.frameDrawn(1016, 0, 2, 0.9, 0, 0.2, 0);
     tally.frameDrawn(1036, 0, 5, 0.2, 0.4, 0, 70);
-    tally.frameDrawn(1052, 0, 6, 1, 0.3, 0.03, 70);
+    tally.frameDrawn(1052, 0, 6, 1, 0.3, 0.008, 70);
     tally.frameDrawn(1068, 0, 7, 1.1, 0.01, 0.1, 75);
     expect(tally.read(client, 0)).toMatchObject({
       mostReplayedTicks: 73,

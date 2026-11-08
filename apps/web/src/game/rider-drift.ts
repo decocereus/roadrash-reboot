@@ -5,7 +5,7 @@ const SETTLE_MS = 100;
 const ALONG_SHARE_OF_SPEED = 0.1;
 const SLOWEST_ALONG_METRES_PER_SECOND = 0.5;
 const ACROSS_METRES_PER_SECOND = 2.5;
-const RIDING_SHARE_UNSEEN = 0.25;
+const PACE_SHARE_UNSEEN = 0.1;
 
 export interface RiderDrift {
   heading: number;
@@ -38,6 +38,12 @@ const settled = (
   return left - Math.min(most, Math.max(-most, left * by));
 };
 
+const alongGlide = (speed: number): number =>
+  Math.max(
+    SLOWEST_ALONG_METRES_PER_SECOND,
+    ALONG_SHARE_OF_SPEED * Math.abs(speed)
+  );
+
 export const driftBy = (drift: RiderDrift, moved: RiderCorrection): void => {
   drift.heading += moved.heading;
   drift.lean += moved.lean;
@@ -53,15 +59,7 @@ export const driftSettle = (
   const by = 1 - Math.exp((-seconds * 1000) / SETTLE_MS);
   drift.heading -= drift.heading * by;
   drift.lean -= drift.lean * by;
-  drift.s = settled(
-    drift.s,
-    by,
-    Math.max(
-      SLOWEST_ALONG_METRES_PER_SECOND,
-      ALONG_SHARE_OF_SPEED * Math.abs(speed)
-    ),
-    seconds
-  );
+  drift.s = settled(drift.s, by, alongGlide(speed), seconds);
   drift.x = settled(drift.x, by, ACROSS_METRES_PER_SECOND, seconds);
 };
 
@@ -105,21 +103,24 @@ export const captureCast = <Rider, Pose extends Placed>(
 };
 
 export const drawnOff = (
-  drawnS: number,
-  lastDrawnS: number,
+  moved: number,
+  glidedAcross: number,
   speed: number,
   lastSpeed: number,
   seconds: number
 ): number => {
-  if (!Number.isFinite(drawnS) || !Number.isFinite(lastDrawnS)) {
+  if (!Number.isFinite(moved)) {
     return 0;
   }
-  const moved = drawnS - lastDrawnS;
   const slowest = Math.min(speed, lastSpeed) * seconds;
   const fastest = Math.max(speed, lastSpeed) * seconds;
-  return Math.max(
+  const unseen =
+    PACE_SHARE_UNSEEN * Math.max(Math.abs(slowest), Math.abs(fastest)) +
+    alongGlide(Math.max(Math.abs(speed), Math.abs(lastSpeed))) * seconds;
+  const along = Math.max(0, moved - fastest - unseen, slowest - unseen - moved);
+  const across = Math.max(
     0,
-    moved - fastest - RIDING_SHARE_UNSEEN * Math.abs(fastest),
-    slowest - RIDING_SHARE_UNSEEN * Math.abs(slowest) - moved
+    Math.abs(glidedAcross) - ACROSS_METRES_PER_SECOND * seconds
   );
+  return Math.hypot(along, across);
 };

@@ -546,6 +546,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
   ) => {
     const { before, after, bike, drift } = view;
     const seated = rider.mode === "riding" || rider.mode === "mounting";
+    const fromX = drift.x;
     if (seated) {
       driftSettle(drift, seconds, rider.speed);
     } else {
@@ -556,7 +557,13 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     const riding = rider.mode === "riding";
     view.drawn.off =
       riding && view.drawn.riding
-        ? drawnOff(s, view.drawn.s, rider.speed, view.drawn.speed, seconds)
+        ? drawnOff(
+            s - view.drawn.s,
+            drift.x - fromX,
+            rider.speed,
+            view.drawn.speed,
+            seconds
+          )
         : 0;
     view.drawn.riding = riding;
     view.drawn.speed = rider.speed;

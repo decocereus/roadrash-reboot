@@ -43,8 +43,6 @@ const NO_CORRECTIONS: readonly RiderCorrection[] = [];
 
 const FELT_JUMP_METRES = 0.25;
 
-export const MOST_TICKS_PER_SETTLE = 60;
-
 const LAG_WINDOW_TICKS = 60;
 const SAME_HIT_TICKS = 15;
 const MOST_RETRY_TICKS = 60;
@@ -89,7 +87,7 @@ export interface RoomClient {
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly catchUp: (part: DataView) => void;
-  readonly settle: () => void;
+  readonly settle: (most?: number) => number;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
   readonly takeFights: () => readonly HeardFight[];
@@ -200,7 +198,6 @@ export const createRoomClient = (
   let staleCause: JumpCause = "otherRiders";
   let mending = false;
   let mendCause: JumpCause = "otherRiders";
-  let replayedAt = -1;
   const overruled = new Uint8Array(LAG_WINDOW_TICKS);
   let overruledTicks = 0;
   let lostControls = 0;
@@ -416,12 +413,11 @@ export const createRoomClient = (
     noteJump(mendCause, fromS, fromX);
   };
 
-  const settle = (): void => {
-    if ((!mending && !stale) || replayedAt === predicted.tick) {
-      return;
-    }
-    replayedAt = predicted.tick;
+  const settle = (most = Number.POSITIVE_INFINITY): number => {
     if (!mending) {
+      if (!stale) {
+        return 0;
+      }
       stale = false;
       mending = true;
       mendCause = staleCause;
@@ -432,8 +428,9 @@ export const createRoomClient = (
         shown.backed = false;
       }
     }
-    const until = Math.min(predicted.tick, mended.tick + MOST_TICKS_PER_SETTLE);
-    for (let tick = mended.tick + 1; tick <= until; tick += 1) {
+    const from = mended.tick;
+    const until = Math.min(predicted.tick, from + most);
+    for (let tick = from + 1; tick <= until; tick += 1) {
       stepRace(mended, setup.track, guess(mended, tick));
       hearFights(mended);
       stats.resimulatedTicks += 1;
@@ -441,6 +438,7 @@ export const createRoomClient = (
     if (mended.tick === predicted.tick) {
       finishMending();
     }
+    return mended.tick - from;
   };
 
   const notePresses = (frame: TickFrame, reached: number): void => {
@@ -559,6 +557,11 @@ export const createRoomClient = (
         }
       }
       if (reached === frame.tick) {
+        if (mending && mendCause === "ownControl") {
+          staleCause = mendCause;
+        }
+        stale ||= mending;
+        mending = false;
         settle();
       }
     },
@@ -567,7 +570,9 @@ export const createRoomClient = (
     lostControls: () => lostControls,
     mine,
     predict: (control) => {
-      settle();
+      if (!mending) {
+        settle();
+      }
       const tick = predicted.tick + 1;
       if (tick - confirmed.tick > INPUT_HORIZON) {
         stats.refusedPredictions += 1;

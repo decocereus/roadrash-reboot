@@ -17,7 +17,7 @@ const P99 = 0.99;
 const SLOWED_BELOW_PACE = 0.95;
 const SPED_ABOVE_PACE = 1.05;
 const STOPPED_BELOW_PACE = 0.5;
-const SURGED_FROM_METRES = 0.05;
+const SURGED_FROM_METRES = 0.01;
 
 export interface RaceTally {
   readonly heardRtt: (rttMs: number) => void;

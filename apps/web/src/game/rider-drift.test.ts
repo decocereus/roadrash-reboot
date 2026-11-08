@@ -5,6 +5,7 @@ import {
   captureCast,
   clearDrift,
   driftBy,
+  drawnOff,
   driftSettle,
   stillDrift,
 } from "./rider-drift.ts";
@@ -120,5 +121,30 @@ describe("when a correction reaches the cast", () => {
     captureCast("after", ridersAt(GUESSED), views, [corrected], copy);
     expect(drawnAt(views[1], 0)).toBeCloseTo(DRAWN);
     expect(drawnAt(views[1], 1)).toBeCloseTo(DRAWN);
+  });
+});
+
+describe("how far a frame draws a bike off its riding", () => {
+  it.each([
+    ["at its speed", SPEED * FRAME, 0],
+    [
+      "15% faster than its speed, inside the pace and glide",
+      1.15 * SPEED * FRAME,
+      0,
+    ],
+  ] as const)(
+    "counts nothing for a bike drawn %s",
+    (_name, travelled, glided) => {
+      expect(drawnOff(travelled, glided, SPEED, SPEED, FRAME)).toBe(0);
+    }
+  );
+
+  it.each([
+    ["three tenths faster than its speed", 1.3 * SPEED * FRAME, 0],
+    ["gliding sideways at 3 m/s", SPEED * FRAME, 3 * FRAME],
+  ] as const)("counts a bike drawn %s", (_name, travelled, glided) => {
+    expect(drawnOff(travelled, glided, SPEED, SPEED, FRAME)).toBeGreaterThan(
+      0.008
+    );
   });
 });

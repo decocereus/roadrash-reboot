@@ -1,6 +1,5 @@
 import { coasting, controlOf } from "@racer/sim/control";
 import { neutralInput } from "@racer/sim/race";
-import { MOST_TICKS_PER_SETTLE } from "@racer/sim/room-client";
 import { clearFrame, createTickFrame } from "@racer/sim/room-frame";
 import {
   PING_PACKET_BYTES,
@@ -16,7 +15,7 @@ import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
 import { createRoomRun } from "../src/room-run.ts";
-import { openRoomSeat } from "../src/seat-client.ts";
+import { MOST_TICKS_PER_FRAME, openRoomSeat } from "../src/seat-client.ts";
 import {
   BrowserTraceSchema,
   TRACE_ROW_FIELDS,
@@ -34,6 +33,7 @@ import {
 
 const LONGEST_LOAD_MS = 20_000;
 const FRAME_MS = 50;
+const HELD_TICKS = 300;
 const browser = {
   build: "abc",
   gpu: "Test GPU",
@@ -176,34 +176,43 @@ describe("a seat loading the race", () => {
     expect(raceData.watched()).toBeFalsy();
   });
 
-  it("confirms a burst of held ticks a frame's share at a time, and all of it within a few frames", () => {
+  it("spends one frame's share on held ticks and their replay, however many steps the frame takes", () => {
     const { seat, socket } = loadingSeat();
     const client = seat.race()?.client;
-    seat.stepsDue();
-    for (let tick = 1; tick <= 5 * MOST_TICKS_PER_SETTLE - 10; tick += 1) {
+    const flooring = controlOf({ ...neutralInput, throttle: 1 });
+    for (let tick = 1; tick <= HELD_TICKS; tick += 1) {
+      client?.predict(flooring);
+    }
+    seat.frameDrawn(0, 0);
+    for (let tick = 1; tick <= HELD_TICKS - 10; tick += 1) {
       hearTick(socket, tick);
     }
-    const confirmedThrough = [client?.confirmed.tick];
-    for (let frame = 0; frame < 5; frame += 1) {
+    const workDone = () =>
+      (client?.confirmed.tick ?? 0) + (client?.stats.resimulatedTicks ?? 0);
+    const work = [workDone()];
+    for (let frame = 0; frame < 12; frame += 1) {
+      const before = workDone();
       seat.stepsDue();
-      confirmedThrough.push(client?.confirmed.tick);
+      seat.stepsDue();
+      seat.frameDrawn(0, 0);
+      work.push(workDone() - before);
     }
-    expect(confirmedThrough).toStrictEqual(
-      [1, 1, 2, 3, 4, 5].map((share) =>
-        Math.min(5 * MOST_TICKS_PER_SETTLE - 10, share * MOST_TICKS_PER_SETTLE)
-      )
+    expect(Math.max(...work)).toBe(MOST_TICKS_PER_FRAME);
+    expect(client?.confirmed.tick).toBe(HELD_TICKS - 10);
+    expect(client?.stats.resimulatedTicks).toBeGreaterThan(
+      MOST_TICKS_PER_FRAME
     );
   });
 
-  it("confirms every tick as it arrives while the page draws no frames", () => {
+  it("confirms every tick as it arrives while the page is hidden", () => {
     const { seat, socket } = loadingSeat();
     const client = seat.race()?.client;
-    seat.stepsDue();
-    vi.advanceTimersByTime(1000);
-    for (let tick = 1; tick <= 3 * MOST_TICKS_PER_SETTLE; tick += 1) {
+    seat.frameDrawn(0, 0);
+    seat.stoppedDrawing();
+    for (let tick = 1; tick <= 3 * MOST_TICKS_PER_FRAME; tick += 1) {
       hearTick(socket, tick);
     }
-    expect(client?.confirmed.tick).toBe(3 * MOST_TICKS_PER_SETTLE);
+    expect(client?.confirmed.tick).toBe(3 * MOST_TICKS_PER_FRAME);
   });
 
   it("counts a correction it had not yet replayed in its last report", () => {

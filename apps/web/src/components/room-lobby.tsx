@@ -93,6 +93,11 @@ const planOf = (seat: RoomSeat, roomId: string): RacePlan | null => {
     }
   });
   globalThis.addEventListener("pagehide", seat.reportNow);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      seat.stoppedDrawing();
+    }
+  });
   rememberRaceRoom(roomId);
   const room = createRoomRun(seat, race, roomId, latency);
   Reflect.set(globalThis, "__rushlineRoom", {
