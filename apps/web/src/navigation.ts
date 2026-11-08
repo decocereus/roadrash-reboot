@@ -20,6 +20,7 @@ type RaceStage =
 
 export type View =
   | { readonly screen: "boot" }
+  | { readonly screen: "elsewhere" }
   | { readonly screen: "clubhouse"; readonly promotion?: TierUp }
   | { readonly screen: "backRoom" }
   | { readonly screen: "routeBoard" }
@@ -80,6 +81,7 @@ type NavigationEffect =
 type NavigationStep = Step<View, NavigationEffect>;
 
 const backRoom: View = { screen: "backRoom" };
+const elsewhere: View = { screen: "elsewhere" };
 const clubhouse: View = { screen: "clubhouse" };
 const gameOver: View = { screen: "gameOver" };
 const ending: View = { screen: "ending" };
@@ -91,6 +93,7 @@ export const graphicsPlaceOf = {
   backRoom: "menu",
   boot: "menu",
   clubhouse: "menu",
+  elsewhere: "menu",
   ending: "menu",
   gameOver: "menu",
   garage: "menu",
@@ -207,6 +210,9 @@ const entering = (
     case "unread": {
       return to(backRoom);
     }
+    case "elsewhere": {
+      return to(elsewhere);
+    }
     case "empty": {
       return { effect: { kind: "beginCareer" }, state: view };
     }
@@ -236,7 +242,8 @@ const openingBar = (view: View): NavigationStep => ({
 
 const leaving = (view: View, career: CareerState | null): NavigationStep => {
   switch (view.screen) {
-    case "boot": {
+    case "boot":
+    case "elsewhere": {
       return to(view);
     }
     case "backRoom": {

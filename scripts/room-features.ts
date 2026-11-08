@@ -61,6 +61,7 @@ export const roomFeatures: readonly FeatureEntry[] = [
       "apps/web/test/room-rejoin-choice.test.ts",
       "apps/web/src/components/room-url.ts",
       "apps/web/src/components/room-preview.ts",
+      "apps/web/test/room-preview.test.ts",
       "tools/rooms/**",
     ],
     perf: [
