@@ -36,16 +36,19 @@ export const racedIn = (roomId: string): boolean => {
   }
 };
 
+let unstoredKey: string | null = null;
+
 export const memberKey = (): string => {
-  const fresh = crypto.randomUUID();
   try {
     const stored = globalThis.localStorage.getItem(MEMBER_KEY);
     if (stored !== null) {
       return stored;
     }
+    const fresh = crypto.randomUUID();
     globalThis.localStorage.setItem(MEMBER_KEY, fresh);
     return fresh;
   } catch {
-    return fresh;
+    unstoredKey ??= crypto.randomUUID();
+    return unstoredKey;
   }
 };

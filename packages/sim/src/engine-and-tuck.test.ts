@@ -72,6 +72,22 @@ describe("gears and the tuck", () => {
     expect((trace.at(-1)?.speed ?? 0) * KMH).toBeGreaterThan(185);
   });
 
+  it("refuses a gearbox whose upshift lands so near the downshift point that the cut lets it fall back a gear, and one just inside climbs through every gear", () => {
+    const wren = bikes["halden-wren-400"];
+    expect(() =>
+      gearTrace({ ...wren, gears: [22.9, 37.9, 45.3, 51.6, 57.4] }, 1)
+    ).toThrow("halden-wren-400.gears");
+    const trace = gearTrace(
+      { ...wren, gears: [22.9, 37.6, 45.3, 51.6, 57.4] },
+      25
+    );
+    expect(
+      trace.flatMap((step, tick) =>
+        tick > 0 && step.gear !== trace[tick - 1]?.gear ? [step.gear] : []
+      )
+    ).toStrictEqual([2, 3, 4, 5]);
+  });
+
   it("in a gear the bike pulls hardest in the middle of the rev range and tails off toward the redline", () => {
     const trace = gearTrace(bikes["halden-wren-400"], 25);
     const inTheBand = pullAt(trace, 2, 0.8);

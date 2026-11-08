@@ -168,6 +168,33 @@ describe("compiling districts refuses", () => {
     ).toThrow("over the taper");
   });
 
+  it("a lane width that is not a finite width above 0", () => {
+    for (const laneWidth of [0, -3.5, Number.NaN, Infinity]) {
+      expect(() =>
+        compileTrack({ ...ridgeRoad, crowds: [], laneWidth })
+      ).toThrow(`${ridgeRoad.name} has lanes ${laneWidth} m wide`);
+    }
+  });
+
+  it("a shoulder or a verge that is not a finite width from 0 up, on a road of one district or several", () => {
+    for (const odd of [
+      { shoulderWidth: -0.5 },
+      { shoulderWidth: Number.NaN },
+      { vergeWidth: -1 },
+      { vergeWidth: Infinity },
+    ]) {
+      expect(() => straight([{ ...lanes(0, 2), ...odd, from: 0 }])).toThrow(
+        `District 0 of ${ridgeRoad.name} has a`
+      );
+      expect(() =>
+        straight([
+          { ...lanes(0, 3), from: 0 },
+          { ...lanes(NARROW_FROM, 1), ...odd },
+        ])
+      ).toThrow(`District 1 of ${ridgeRoad.name} has a`);
+    }
+  });
+
   it("no crossing clear of the tapers", () => {
     expect(() =>
       straight(threeOneThree, [

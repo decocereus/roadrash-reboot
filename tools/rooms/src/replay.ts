@@ -8,7 +8,7 @@ import {
   tapeHeaderName,
   tapePartName,
 } from "@racer/rooms/tape";
-import type { TapeEnd, TapeHeader } from "@racer/rooms/tape";
+import type { TapeHeader } from "@racer/rooms/tape";
 import { replayTape } from "@racer/sim/room-tape";
 import type { TapeReplay } from "@racer/sim/room-tape";
 import { riderOf, TICK_SECONDS } from "@racer/sim/state";
@@ -51,7 +51,6 @@ const riderLines = (
 
 const replayReport = (
   header: TapeHeader,
-  end: TapeEnd,
   humans: readonly RiderId[],
   replay: TapeReplay
 ): string => {
@@ -69,12 +68,14 @@ const replayReport = (
     case "diverged": {
       return `${title}\n  The replay left the race's state at tick ${replay.tick}.`;
     }
+    case "wrongEnd": {
+      return `${title}\n  The tape reaches tick ${replay.afterTick}, and the race ended at tick ${replay.endTick}.`;
+    }
     case "matched": {
       const { tick } = replay.state;
-      const whole = tick === end.tick;
       return [
         title,
-        `  Replayed ${tick} of ${end.tick} ticks (${(tick * TICK_SECONDS).toFixed(1)} s). All ${replay.hashes} state hashes match.${whole ? "" : " The tape stops early."}`,
+        `  Replayed all ${tick} ticks (${(tick * TICK_SECONDS).toFixed(1)} s). All ${replay.hashes} state hashes match, the last one at the race's end.`,
         ...riderLines(replay.state, humans),
       ].join("\n");
     }
@@ -124,9 +125,9 @@ export const main = Effect.fn("rooms.replay")(function* main(
     );
   }
   const { humans, setup } = seatedRace(header.seed, header.seats, header.rule);
-  const replay = replayTape(setup, header.digest, parts);
-  yield* Console.log(replayReport(header, end, humans, replay));
-  if (replay.kind !== "matched" || replay.state.tick !== end.tick) {
+  const replay = replayTape(setup, header.digest, parts, end);
+  yield* Console.log(replayReport(header, humans, replay));
+  if (replay.kind !== "matched") {
     return yield* failed("The replay did not match the race.");
   }
   return replay;
