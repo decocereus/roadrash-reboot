@@ -140,10 +140,11 @@ interface Framed {
   readonly ridingSeconds?: number;
 }
 
-const offOver = (first: Framed, second: Framed): number => {
+const offOver = (first: Framed, second: Framed, unseen = false): number => {
   const last = { drawnRate: 0, ridingRate: 0 };
-  const measure = (frame: Framed): number =>
+  const measure = (frame: Framed, measured = true): number =>
     drawnOff(
+      measured,
       frame.along,
       frame.riding,
       frame.across ?? 0,
@@ -155,6 +156,9 @@ const offOver = (first: Framed, second: Framed): number => {
       last
     );
   measure(first);
+  if (unseen) {
+    measure(first, false);
+  }
   return measure(second);
 };
 
@@ -183,6 +187,12 @@ describe("how far a frame draws a bike off its riding", () => {
     ],
   ] as const)("counts nothing for a bike drawn %s", (_name, first, second) => {
     expect(offOver(first, second)).toBe(0);
+  });
+
+  it("counts nothing for a bike back on the road at another speed after frames it did not measure", () => {
+    const remounted = { along: 2 * FRAME, riding: 19 * FRAME };
+    expect(offOver(at(30), remounted, true)).toBe(0);
+    expect(offOver(at(30), remounted)).toBeGreaterThan(0.008);
   });
 
   it.each([

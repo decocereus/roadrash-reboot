@@ -149,6 +149,7 @@ export interface DrawnRates {
 }
 
 export const drawnOff = (
+  measured: boolean,
   drawnAlong: number,
   ridingAlong: number,
   drawnAcross: number,
@@ -159,15 +160,22 @@ export const drawnOff = (
   seconds: number,
   last: DrawnRates
 ): number => {
+  if (!measured) {
+    last.drawnRate = Number.NaN;
+    last.ridingRate = Number.NaN;
+    return 0;
+  }
   const atPace = ridingSeconds > 0 ? seconds / ridingSeconds : 0;
   const drawnRate = drawnAlong / seconds;
   const ridingRate = (ridingAlong * atPace) / seconds;
-  const sped = beyond(
-    drawnRate - last.drawnRate,
-    ridingRate - last.ridingRate + kicked,
-    GLIDE_ACCELERATION + PACE_SLEW_PER_SECOND * Math.abs(speed),
-    seconds
-  );
+  const sped = Number.isNaN(last.drawnRate)
+    ? 0
+    : beyond(
+        drawnRate - last.drawnRate,
+        ridingRate - last.ridingRate + kicked,
+        GLIDE_ACCELERATION + PACE_SLEW_PER_SECOND * Math.abs(speed),
+        seconds
+      );
   last.drawnRate = drawnRate;
   last.ridingRate = ridingRate;
   return Math.hypot(

@@ -130,22 +130,21 @@ const drawFrame = (
   const ridingS = mix(view.before.s, view.after.s, blend);
   const ridingTick = mix(view.before.tick, view.after.tick, blend);
   const next = rider.mode === "riding" ? ridingS + view.drift.s : Number.NaN;
-  if (Number.isFinite(next) && Number.isFinite(drawn.last)) {
-    const off = drawnOff(
-      next - drawn.last,
-      ridingS + fromS - drawn.last,
-      view.drift.x - fromX,
-      0,
-      (ridingTick - drawn.ridingTick) * TICK_SECONDS,
-      view.drift.kicked,
-      rider.speed,
-      FRAME_SECONDS,
-      drawn
-    );
-    if (measured) {
-      drawn.frames += 1;
-      drawn.worstOff = Math.max(drawn.worstOff, off);
-    }
+  const off = drawnOff(
+    Number.isFinite(next) && Number.isFinite(drawn.last),
+    next - drawn.last,
+    ridingS + fromS - drawn.last,
+    view.drift.x - fromX,
+    0,
+    (ridingTick - drawn.ridingTick) * TICK_SECONDS,
+    view.drift.kicked,
+    rider.speed,
+    FRAME_SECONDS,
+    drawn
+  );
+  if (measured && Number.isFinite(next) && Number.isFinite(drawn.last)) {
+    drawn.frames += 1;
+    drawn.worstOff = Math.max(drawn.worstOff, off);
   }
   view.drift.kicked = 0;
   drawn.last = next;

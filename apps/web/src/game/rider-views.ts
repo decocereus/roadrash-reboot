@@ -558,22 +558,20 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     const s = ridingS + drift.s;
     const x = ridingX + drift.x;
     const riding = rider.mode === "riding";
-    drawn.off =
-      riding && drawn.riding
-        ? drawnOff(
-            s - drawn.s,
-            ridingS + fromS - drawn.s,
-            x - drawn.x,
-            ridingX + fromX - drawn.x,
-            (mix(before.tick, after.tick, blend) -
-              mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
-              TICK_SECONDS,
-            drift.kicked,
-            rider.speed,
-            seconds,
-            drawn
-          )
-        : 0;
+    drawn.off = drawnOff(
+      riding && drawn.riding,
+      s - drawn.s,
+      ridingS + fromS - drawn.s,
+      x - drawn.x,
+      ridingX + fromX - drawn.x,
+      (mix(before.tick, after.tick, blend) -
+        mix(drawn.fromTick, drawn.toTick, drawn.blend)) *
+        TICK_SECONDS,
+      drift.kicked,
+      rider.speed,
+      seconds,
+      drawn
+    );
     drift.kicked = 0;
     drawn.riding = riding;
     drawn.blend = blend;
