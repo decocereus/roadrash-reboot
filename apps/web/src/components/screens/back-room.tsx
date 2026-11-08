@@ -162,7 +162,7 @@ export const BackRoomScreen = ({
           src={backRoomPlates.backdrop}
         />
         <BarHeader career={save.status === "ready" ? save.career : null} />
-        {save.status !== "loading" && (
+        {save.status !== "loading" && save.status !== "elsewhere" && (
           <PinnedList
             actions={[...career, ...quick]}
             autoFocus={overlay !== "settings"}

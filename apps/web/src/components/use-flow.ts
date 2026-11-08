@@ -22,6 +22,7 @@ import {
   browserStorage,
   careerSeedFrom,
   freshCareer,
+  holdCareer,
   isUnsaved,
   loadCareer,
   randomUnit,
@@ -29,7 +30,7 @@ import {
   startOver,
   storeCareer,
 } from "../career/save.ts";
-import type { SaveState } from "../career/save.ts";
+import type { CareerTab, SaveState } from "../career/save.ts";
 import { diagnostics, sanitise } from "../diagnostics/hub.ts";
 import { createRaceEvents } from "../diagnostics/race-events.ts";
 import type { RaceEvents, RaceFacts } from "../diagnostics/race-events.ts";
@@ -92,26 +93,42 @@ interface Save {
 
 const useSave = (rules: RaceRules | null): Save => {
   const careerRef = useRef<CareerState | null>(null);
+  const [tab, setTab] = useState<CareerTab | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
 
+  useEffect(
+    () => holdCareer(globalThis.navigator.locks, browserStorage, setTab),
+    []
+  );
+
   useEffect(() => {
-    if (rules === null) {
+    if (tab?.status === "elsewhere") {
+      setSave({ status: "elsewhere" });
       return;
     }
-    const loaded = loadCareer(rules, browserStorage);
+    if (rules === null || tab === null) {
+      return;
+    }
+    const loaded = loadCareer(rules, tab.open);
     careerRef.current = loaded.status === "ready" ? loaded.career : null;
     setSave(saveStateOf(loaded));
-  }, [rules]);
+  }, [rules, tab]);
 
-  const commit = useCallback((career: CareerState) => {
-    careerRef.current = career;
-    setSave({
-      career,
-      leftRace: null,
-      status: "ready",
-      unsaved: isUnsaved(storeCareer(browserStorage, career)),
-    });
-  }, []);
+  const commit = useCallback(
+    (career: CareerState) => {
+      if (tab?.status !== "owner") {
+        return;
+      }
+      careerRef.current = career;
+      setSave({
+        career,
+        leftRace: null,
+        status: "ready",
+        unsaved: isUnsaved(storeCareer(tab.open, career)),
+      });
+    },
+    [tab]
+  );
 
   const settle = useCallback(
     (settlement: Settlement): RaceReport | null => {
@@ -125,12 +142,15 @@ const useSave = (rules: RaceRules | null): Save => {
   );
 
   const eraseSave = useCallback(() => {
-    const reset = startOver(browserStorage);
+    if (tab?.status !== "owner") {
+      return;
+    }
+    const reset = startOver(tab.open);
     if (reset.status === "reset") {
       careerRef.current = null;
       setSave({ status: "empty" });
     }
-  }, []);
+  }, [tab]);
 
   return { careerRef, commit, eraseSave, save, settle };
 };

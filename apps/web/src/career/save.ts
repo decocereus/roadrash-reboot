@@ -12,11 +12,12 @@ import type { SaveStorageFailed } from "./save-storage-error.ts";
 import {
   acquireStorage,
   backUpItem,
+  holdLock,
   readItem,
   removeItem,
   writeItem,
 } from "./save-storage.ts";
-import type { SaveStorage } from "./save-storage.ts";
+import type { SaveLocks, SaveStorage } from "./save-storage.ts";
 
 export const SAVE_KEY = "rushline.career";
 export const BACKUP_KEY = "rushline.career.backup";
@@ -26,6 +27,7 @@ const SEED_RANGE = 2 ** 32;
 const failedStatus = {
   acquire: "unavailable",
   backup: "writeFailed",
+  lock: "unavailable",
   read: "readFailed",
   remove: "writeFailed",
   write: "writeFailed",
@@ -52,6 +54,10 @@ export type CareerLoad =
     }
   | StorageFailure;
 
+export type CareerTab =
+  | { readonly status: "owner"; readonly open: () => SaveStorage }
+  | { readonly status: "elsewhere" };
+
 export type Stored = { readonly status: "saved" } | StorageFailure;
 
 export type Reset = { readonly status: "reset" } | StorageFailure;
@@ -66,6 +72,7 @@ export type SaveState =
     }
   | { readonly status: "corrupt"; readonly error: SaveError }
   | { readonly status: "unread" }
+  | { readonly status: "elsewhere" }
   | { readonly status: "loading" };
 
 const saved = { status: "saved" } as const;
@@ -139,6 +146,32 @@ const cleared = Effect.fn("career.save.clear")(function* cleared(
   yield* removeItem(storage, SAVE_KEY);
   return { status: "reset" } satisfies Reset;
 });
+
+export const holdCareer = (
+  locks: SaveLocks,
+  open: () => SaveStorage,
+  settle: (tab: CareerTab) => void
+): (() => void) => {
+  const fiber = Effect.runFork(
+    holdLock(locks, SAVE_KEY, (held) => {
+      settle(held ? { open, status: "owner" } : { status: "elsewhere" });
+    }).pipe(
+      Effect.catchTag("SaveStorageFailed", (failure) =>
+        Effect.sync(() => {
+          settle({
+            open: () => {
+              throw failure;
+            },
+            status: "owner",
+          });
+        })
+      )
+    )
+  );
+  return () => {
+    fiber.interruptUnsafe();
+  };
+};
 
 export const loadCareer = (
   rules: RaceRules,
