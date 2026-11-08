@@ -211,6 +211,12 @@ export const seatAfter = (
   }
 };
 
+export interface SeatTrace {
+  readonly browser: () => SeatBrowser;
+  readonly sharing: () => boolean;
+  readonly watch: (turned: (sharing: boolean) => void) => () => void;
+}
+
 export interface SeatListeners {
   readonly onChange?: () => void;
   readonly onOpen?: () => void;
@@ -261,7 +267,7 @@ export const openRoomSeat = (
   name: string,
   build: string,
   key: string,
-  browser: () => SeatBrowser | null,
+  trace: SeatTrace | null,
   rejoin = true
 ): RoomSeat => {
   const socket = new WebSocket(
@@ -274,7 +280,7 @@ export const openRoomSeat = (
   );
   const pings = createPings(socket);
   const clock = createRoomClock();
-  const tally = createRaceTally();
+  const tally = createRaceTally(trace?.sharing() ?? false);
   let reported = false;
   let pingsUntilReport = PINGS_PER_REPORT;
   let listeners: SeatListeners = {};
@@ -286,20 +292,42 @@ export const openRoomSeat = (
   let rttMs = 0;
   let worstRttMs = 0;
 
-  const hangUp = (reason: string, code = SEAT_CLOSED): void => {
-    pings.stop();
-    socket.close(code, reason);
+  const sendTrace = (rows: readonly number[] | null): void => {
+    if (trace && rows) {
+      const sent: BrowserTrace = { ...trace.browser(), rows };
+      socket.send(JSON.stringify(sent));
+    }
   };
 
-  const sendReport = ({ client }: SeatRace, rows: readonly number[]): void => {
+  const sendReport = (
+    { client }: SeatRace,
+    rows: readonly number[] | null
+  ): void => {
     const packet = new DataView(new ArrayBuffer(RACE_STATS_PACKET_BYTES));
     writeRaceStats(packet, tally.read(client, worstRttMs));
     socket.send(packet.buffer);
-    const identity = browser();
-    if (identity) {
-      const trace: BrowserTrace = { ...identity, rows };
-      socket.send(JSON.stringify(trace));
+    sendTrace(rows);
+  };
+
+  const stopWatching = trace?.watch((sharing) => {
+    if (sharing) {
+      tally.traceOn(performance.now());
+      return;
     }
+    const rows = tally.traceOff();
+    if (state.phase === "racing" && !reported) {
+      sendTrace(rows);
+    }
+  });
+
+  const standDown = (): void => {
+    stopWatching?.();
+    pings.stop();
+  };
+
+  const hangUp = (reason: string, code = SEAT_CLOSED): void => {
+    standDown();
+    socket.close(code, reason);
   };
 
   const reportWhileRiding = (): void => {
@@ -361,7 +389,7 @@ export const openRoomSeat = (
         break;
       }
       case "closed": {
-        pings.stop();
+        standDown();
         break;
       }
       default: {

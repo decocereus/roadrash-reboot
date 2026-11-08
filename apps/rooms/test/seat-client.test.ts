@@ -8,6 +8,7 @@ import {
   writeTick,
 } from "@racer/sim/room-wire";
 import { riderIdAt } from "@racer/sim/state";
+import * as Schema from "effect/Schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
@@ -15,9 +16,39 @@ import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
 import { createRoomRun } from "../src/room-run.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
-import { FakeSocket, loadingSeat, newSeat } from "./seat-socket.ts";
+import {
+  BrowserTraceSchema,
+  TRACE_ROW_FIELDS,
+  TRACE_ROW_MS,
+  TraceField,
+} from "../src/tape.ts";
+import {
+  countdown,
+  FakeSocket,
+  hearTick,
+  loadingSeat,
+  newSeat,
+  raceDataSwitch,
+} from "./seat-socket.ts";
 
 const LONGEST_LOAD_MS = 20_000;
+const FRAME_MS = 50;
+const browser = {
+  build: "abc",
+  gpu: "Test GPU",
+  graphics: "quality rung 1",
+};
+
+const decodeTrace = Schema.decodeUnknownSync(
+  Schema.fromJsonString(BrowserTraceSchema)
+);
+
+const rowsOf = (text: string | undefined): readonly (readonly number[])[] => {
+  const { rows } = decodeTrace(text);
+  return Array.from({ length: rows.length / TRACE_ROW_FIELDS }, (_, row) =>
+    rows.slice(row * TRACE_ROW_FIELDS, (row + 1) * TRACE_ROW_FIELDS)
+  );
+};
 
 describe("a seat loading the race", () => {
   beforeEach(() => {
@@ -38,7 +69,7 @@ describe("a seat loading the race", () => {
       "Near",
       "test-build",
       "member-key",
-      () => null
+      null
     );
     FakeSocket.opened[0]?.hear(
       encodeRoomMessage({ kind: "refused", reason: "replaced" })
@@ -54,7 +85,7 @@ describe("a seat loading the race", () => {
       "Near",
       "test-build",
       "member-key",
-      () => null
+      null
     );
     const walk = {
       heading: 1,
@@ -79,21 +110,69 @@ describe("a seat loading the race", () => {
   });
 
   it("sends its browser trace once with the stats, and none with Race data off", () => {
-    const browser = {
-      build: "abc",
-      gpu: "Test GPU",
-      graphics: "quality rung 1",
-    };
-    const { seat, socket } = loadingSeat(() => browser);
+    const { seat, socket } = loadingSeat(raceDataSwitch(browser, true).trace);
     seat.leave();
     seat.leave();
     expect(socket.sentText).toStrictEqual([
       JSON.stringify({ ...browser, rows: [] }),
     ]);
     FakeSocket.opened = [];
-    const { seat: off, socket: quiet } = loadingSeat();
+    const { seat: off, socket: quiet } = loadingSeat(
+      raceDataSwitch(browser, false).trace
+    );
     off.leave();
     expect(quiet.sentText).toStrictEqual([]);
+  });
+
+  it("sends the timeline from before Race data went off once, then only what it rode after it came back on", () => {
+    const raceData = raceDataSwitch(browser, true);
+    const { seat, socket } = loadingSeat(raceData.trace);
+    socket.hear(countdown);
+    seat.race()?.client.predict(coasting);
+    let tick = 0;
+    const ride = (ms: number): void => {
+      for (let ridden = 0; ridden < ms; ridden += FRAME_MS) {
+        vi.advanceTimersByTime(FRAME_MS);
+        tick += 1;
+        hearTick(socket, tick);
+        seat.frameDrawn();
+      }
+    };
+    const startedAt = performance.now();
+    ride(1000);
+    raceData.turn(false);
+    const offAt = performance.now() - startedAt;
+    expect(socket.sentText).toHaveLength(1);
+    const before = rowsOf(socket.sentText[0]);
+    ride(1000);
+    raceData.turn(true);
+    const onAt = performance.now() - startedAt;
+    ride(1000);
+    seat.leave();
+    expect(socket.sentText).toHaveLength(2);
+    const after = rowsOf(socket.sentText[1]);
+    expect({
+      afterOn:
+        after.length > 0 &&
+        after.every((row) => (row[TraceField.atMs] ?? 0) > onAt),
+      beforeOff: before.every((row) => (row[TraceField.atMs] ?? 0) <= offAt),
+      beforeRows: before.length,
+      worstGapAfter: Math.max(
+        ...after.map((row) => row[TraceField.worstTickGapMs] ?? 0)
+      ),
+    }).toStrictEqual({
+      afterOn: true,
+      beforeOff: true,
+      beforeRows: 1000 / TRACE_ROW_MS,
+      worstGapAfter: FRAME_MS,
+    });
+  });
+
+  it("stops following the Race data switch once its seat is done", () => {
+    const raceData = raceDataSwitch(browser, true);
+    const { seat } = loadingSeat(raceData.trace);
+    seat.leave();
+    expect(raceData.watched()).toBeFalsy();
   });
 
   it("counts a correction it had not yet replayed in its last report", () => {
@@ -167,12 +246,7 @@ describe("a seat loading the race", () => {
   });
 
   it("sends its stats and finished rows every 15 s while it rides, so a dead socket loses little", () => {
-    const browser = {
-      build: "abc",
-      gpu: "Test GPU",
-      graphics: "quality rung 1",
-    };
-    const { seat, socket } = loadingSeat(() => browser);
+    const { seat, socket } = loadingSeat(raceDataSwitch(browser, true).trace);
     socket.hear(encodeRoomMessage({ kind: "countdown", startAtMs: 0 }));
     const frame = createTickFrame();
     const view = new DataView(new ArrayBuffer(64));
@@ -207,7 +281,7 @@ describe("a seat loading the race", () => {
       "Near",
       "test-build",
       "member-key",
-      () => null
+      null
     );
     seat.leave();
     expect(FakeSocket.opened[0]?.sentBytes).toStrictEqual([]);
@@ -231,7 +305,7 @@ describe("a seat loading the race", () => {
       "Near",
       "test-build",
       "member-key",
-      () => null,
+      null,
       false
     );
     const opened = vi.fn<() => void>();

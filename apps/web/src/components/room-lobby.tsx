@@ -193,14 +193,14 @@ const SeatedLobby = ({
       name,
       import.meta.env.VITE_ROOMS_BUILD,
       memberKey(),
-      () =>
-        diagnostics().settings.read().raceData
-          ? {
-              build: __RUSHLINE_BUILD__.sha,
-              gpu: card,
-              graphics: `quality rung ${diagnostics().qualityRung()}`,
-            }
-          : null,
+      {
+        ...diagnostics().settings.raceData,
+        browser: () => ({
+          build: __RUSHLINE_BUILD__.sha,
+          gpu: card,
+          graphics: `quality rung ${diagnostics().qualityRung()}`,
+        }),
+      },
       rejoinOf(globalThis.location.search) !== "no"
     );
     const tellLost = () => {

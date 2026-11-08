@@ -25,8 +25,10 @@ export interface RaceTally {
   ) => void;
   readonly stepped: (steps: number) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
-  readonly closedTraceRows: () => readonly number[];
-  readonly lastTraceRows: () => readonly number[];
+  readonly closedTraceRows: () => readonly number[] | null;
+  readonly lastTraceRows: () => readonly number[] | null;
+  readonly traceOff: () => readonly number[] | null;
+  readonly traceOn: (now: number) => void;
 }
 
 const percentileOf = (
@@ -45,7 +47,7 @@ const percentileOf = (
   return 0;
 };
 
-export const createRaceTally = (): RaceTally => {
+export const createRaceTally = (sharing: boolean): RaceTally => {
   let rttTotal = 0;
   let rttCount = 0;
   let lastFrameAt = 0;
@@ -66,6 +68,7 @@ export const createRaceTally = (): RaceTally => {
   let rowStartedAt = 0;
   let lastTickAt = 0;
   const open = new Uint32Array(TRACE_ROW_FIELDS);
+  let tracing = sharing;
 
   const closeRow = (now: number, confirmedTick: number): void => {
     if (rowsUsed < MOST_TRACE_ROWS) {
@@ -78,12 +81,22 @@ export const createRaceTally = (): RaceTally => {
     rowStartedAt = now;
   };
 
-  const takeRows = (): readonly number[] => {
+  const takeRows = (): readonly number[] | null => {
+    if (!tracing) {
+      return null;
+    }
     const from = rowsTaken;
     rowsTaken = rowsUsed;
     return [
       ...rows.subarray(from * TRACE_ROW_FIELDS, rowsUsed * TRACE_ROW_FIELDS),
     ];
+  };
+
+  const lastRows = (): readonly number[] | null => {
+    if (tracing && open.some((value) => value > 0)) {
+      closeRow(lastFrameAt, lastConfirmedTick);
+    }
+    return takeRows();
   };
 
   return {
@@ -98,11 +111,13 @@ export const createRaceTally = (): RaceTally => {
         frameCount += 1;
         const counted = Math.min(LONGEST_COUNTED_FRAME_MS, Math.floor(frameMs));
         frameMsCounts[counted] = (frameMsCounts[counted] ?? 0) + 1;
-        open[TraceField.frames] = (open[TraceField.frames] ?? 0) + 1;
-        open[TraceField.worstFrameMs] = Math.max(
-          open[TraceField.worstFrameMs] ?? 0,
-          frameMs
-        );
+        if (tracing) {
+          open[TraceField.frames] = (open[TraceField.frames] ?? 0) + 1;
+          open[TraceField.worstFrameMs] = Math.max(
+            open[TraceField.worstFrameMs] ?? 0,
+            frameMs
+          );
+        }
         if (frameMs > worstFrameMs) {
           worstFrameMs = frameMs;
           worstFrameRoadMetres = roadMetres;
@@ -110,19 +125,24 @@ export const createRaceTally = (): RaceTally => {
       }
       lastFrameAt = now;
       lastConfirmedTick = confirmedTick;
-      if (now - rowStartedAt >= TRACE_ROW_MS) {
+      if (tracing && now - rowStartedAt >= TRACE_ROW_MS) {
         closeRow(now, confirmedTick);
       }
     },
     heardRtt: (rttMs) => {
       rttTotal += rttMs;
       rttCount += 1;
-      open[TraceField.worstRttMs] = Math.max(
-        open[TraceField.worstRttMs] ?? 0,
-        rttMs
-      );
+      if (tracing) {
+        open[TraceField.worstRttMs] = Math.max(
+          open[TraceField.worstRttMs] ?? 0,
+          rttMs
+        );
+      }
     },
     heardTick: (now) => {
+      if (!tracing) {
+        return;
+      }
       open[TraceField.ticksHeard] = (open[TraceField.ticksHeard] ?? 0) + 1;
       if (lastTickAt > 0) {
         open[TraceField.worstTickGapMs] = Math.max(
@@ -132,12 +152,7 @@ export const createRaceTally = (): RaceTally => {
       }
       lastTickAt = now;
     },
-    lastTraceRows: () => {
-      if (open.some((value) => value > 0)) {
-        closeRow(lastFrameAt, lastConfirmedTick);
-      }
-      return takeRows();
-    },
+    lastTraceRows: lastRows,
     read: ({ mine, predicted, stats }, rttWorstMs) => ({
       crashes: mine.crashes,
       crashesAfterCorrection: stats.crashesAfterCorrection,
@@ -176,10 +191,24 @@ export const createRaceTally = (): RaceTally => {
       held += steps === 0 ? 1 : 0;
       doubled += steps >= 2 ? 1 : 0;
       mostSteps = Math.max(mostSteps, steps);
-      open[TraceField.held] =
-        (open[TraceField.held] ?? 0) + (steps === 0 ? 1 : 0);
-      open[TraceField.doubled] =
-        (open[TraceField.doubled] ?? 0) + (steps >= 2 ? 1 : 0);
+      if (tracing) {
+        open[TraceField.held] =
+          (open[TraceField.held] ?? 0) + (steps === 0 ? 1 : 0);
+        open[TraceField.doubled] =
+          (open[TraceField.doubled] ?? 0) + (steps >= 2 ? 1 : 0);
+      }
+    },
+    traceOff: () => {
+      const taken = lastRows();
+      tracing = false;
+      lastTickAt = 0;
+      return taken;
+    },
+    traceOn: (now) => {
+      if (!tracing) {
+        tracing = true;
+        rowStartedAt = now;
+      }
     },
   };
 };
