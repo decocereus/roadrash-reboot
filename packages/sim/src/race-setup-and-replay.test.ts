@@ -26,6 +26,7 @@ import {
   defaultSetup,
   emptyFrame,
   neutralInput,
+  standings,
   stepRace,
   validateSetup,
 } from "./race.ts";
@@ -207,6 +208,35 @@ describe("race setups", () => {
     ]);
     expect(validateSetup(grudging(mooseId, PLAYER_RIDER))).toStrictEqual([]);
     expect(() => createRace(grudging(deeId, PLAYER_RIDER))).toThrow(dee.name);
+  });
+
+  it("seats the player and the rivals as racers and the officer as police, so every racer is placed and no cop is", () => {
+    const setup = setupWith(everyRival.slice(0, 3));
+    const crossed: RaceSetup = {
+      ...setup,
+      player: {
+        ...setup.player,
+        // @ts-expect-error -- the player rides as a racer
+        role: "police",
+      },
+      police: {
+        ...setup.police,
+        officer: {
+          ...setup.police.officer,
+          // @ts-expect-error -- the officer rides as police
+          role: "racer",
+        },
+      },
+      rivals: setup.rivals.map((rival): RivalSetup => ({
+        ...rival,
+        // @ts-expect-error -- a rival rides as a racer
+        role: "police",
+      })),
+    };
+    const roster = rosterOf(crossed);
+    expect(
+      standings(createRace(setup)).toSorted((left, right) => left - right)
+    ).toStrictEqual([roster.player, ...roster.rivals]);
   });
 });
 

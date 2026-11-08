@@ -1,3 +1,4 @@
+import { PING_EVERY_MS } from "@racer/rooms/heartbeat";
 import {
   decodeRoomMessage,
   encodeLobbyCommand,
@@ -26,7 +27,6 @@ import * as Option from "effect/Option";
 import { weavingControl } from "./seat.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
-const PING_EVERY_MS = 500;
 const GAP_BUCKETS = 2000;
 
 export interface LoadTally {

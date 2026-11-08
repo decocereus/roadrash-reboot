@@ -5,6 +5,7 @@ import { cleanGuestName } from "@racer/rooms/messages";
 import type { RoomPreview } from "@racer/rooms/messages";
 import { enterQueue } from "@racer/rooms/queue-client";
 import type { QueueRefusal } from "@racer/rooms/queue-messages";
+import { launchRoomConfig, msOf } from "@racer/rooms/room-config";
 import { createRoomRun } from "@racer/rooms/room-run";
 import { openRoomSeat } from "@racer/rooms/seat-client";
 import type { RoomSeat, SeatRace } from "@racer/rooms/seat-client";
@@ -33,7 +34,7 @@ import {
   storedGuestName,
   storeGuestName,
 } from "./guest-name.ts";
-import { readRoomPreview } from "./room-preview.ts";
+import { NO_HOLD, readRoomPreview } from "./room-preview.ts";
 import {
   clearRejoinNo,
   moveToRoom,
@@ -190,7 +191,7 @@ const SeatedLobby = ({
       import.meta.env.VITE_ROOMS_URL,
       roomId,
       name,
-      __RUSHLINE_BUILD__.rooms,
+      import.meta.env.VITE_ROOMS_BUILD,
       memberKey(),
       {
         ...diagnostics().settings.raceData,
@@ -213,10 +214,11 @@ const SeatedLobby = ({
     };
     opened.listen({
       onChange: () => {
+        const race = opened.race();
         const change = seatChange(
           opened.phase(),
           opened.refusal(),
-          opened.race() !== null,
+          race !== null,
           handoffNow()
         );
         switch (change) {
@@ -227,13 +229,16 @@ const SeatedLobby = ({
           case "raceLost": {
             tellLost();
             lost();
-            watching ??= readRoomPreview(
-              import.meta.env.VITE_ROOMS_URL,
-              roomId,
-              () => {
-                moveToRoom(roomId, "moved", "try");
-              }
-            );
+            if (race) {
+              watching ??= readRoomPreview(
+                import.meta.env.VITE_ROOMS_URL,
+                roomId,
+                msOf(race.holdSeconds),
+                () => {
+                  moveToRoom(roomId, "moved", "try");
+                }
+              );
+            }
             break;
           }
           case "redraw": {
@@ -398,6 +403,7 @@ const RoomEntry = (props: RoomProps & BootFailed) => {
         ? readRoomPreview(
             import.meta.env.VITE_ROOMS_URL,
             props.roomId,
+            NO_HOLD,
             setPreview
           )
         : undefined,
@@ -473,7 +479,8 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
     let reopening: ReturnType<typeof setTimeout> | null = null;
     const leave = enterQueue(
       import.meta.env.VITE_ROOMS_URL,
-      __RUSHLINE_BUILD__.rooms,
+      import.meta.env.VITE_ROOMS_BUILD,
+      memberKey(),
       {
         onLost: () => {
           reopening = setTimeout(reopen, REOPEN_MS);
@@ -506,7 +513,14 @@ const FindingRiders = ({ onBack }: { readonly onBack: () => void }) => {
       leave();
     };
   }, [opening]);
-  return <QueueScreen onBack={onBack} refusal={refusal} riders={riders} />;
+  return (
+    <QueueScreen
+      onBack={onBack}
+      refusal={refusal}
+      riders={riders}
+      waitSeconds={launchRoomConfig.queueWaitSeconds}
+    />
+  );
 };
 
 export const QuickRace = ({ onBack }: { readonly onBack: () => void }) => {

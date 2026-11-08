@@ -35,11 +35,14 @@ export const evidenceFile = (state: InstanceState, name: string) =>
       )
     : Effect.succeed(path.join(state.evidence, name));
 
-const KNOWN_NOISE = "favicon.ico";
+const KNOWN_NOISE = [
+  ["favicon.ico"],
+  ["ERR_BLOCKED_BY_CLIENT", "/api/events"],
+] as const;
 
 export const isError = (line: ConsoleLine): boolean =>
   (line.level === "error" || line.kind === "exception") &&
-  !line.text.includes(KNOWN_NOISE);
+  !KNOWN_NOISE.some((marks) => marks.every((mark) => line.text.includes(mark)));
 
 export class Evidence extends Context.Service<
   Evidence,

@@ -11,6 +11,7 @@ import { riderIdAt } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
 import { createRoomRun } from "../src/room-run.ts";
@@ -23,12 +24,10 @@ import {
 } from "../src/tape.ts";
 import {
   countdown,
-  DEAD_AFTER_MS,
   FakeSocket,
   hearTick,
   loadingSeat,
   newSeat,
-  PING_EVERY_MS,
   raceDataSwitch,
 } from "./seat-socket.ts";
 

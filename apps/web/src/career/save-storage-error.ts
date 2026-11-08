@@ -6,6 +6,7 @@ export class SaveStorageFailed extends TaggedErrorClass<SaveStorageFailed>()(
   {
     cause: Schema.Defect(),
     operation: Schema.Literals([
+      "lock",
       "acquire",
       "read",
       "write",

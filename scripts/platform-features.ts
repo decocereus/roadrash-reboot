@@ -299,6 +299,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/routes/api/race-rules.ts",
       "apps/web/src/rules/**",
       "apps/web/test/race-rules.test.ts",
+      "apps/web/test/race-rules-failure.test.tsx",
     ],
     perf: [],
     start: [

@@ -78,6 +78,7 @@ const sweeper: TrackPieces = [
 const lineOf = (pieces: TrackPieces) =>
   sampleAlignment({
     leadInLength: 0,
+    name: "a test line",
     pieces,
     runoffLength: 0,
     start: { heading: 0, x: 0, z: 0 },
@@ -195,5 +196,47 @@ describe("track pieces", () => {
         pieces: [...eased([[300, 0, 0]]), piece(50, 0, 0.02)],
       })
     ).toThrow("A track must finish straight and level.");
+  });
+
+  it("a lead-in that is not a whole number of metres from 0 up does not compile", () => {
+    for (const leadInLength of [100.5, -1, Number.NaN, Infinity]) {
+      expect(() => compileTrack({ ...ridgeRoad, leadInLength })).toThrow(
+        `Ridge Road has a lead-in of ${leadInLength} m,`
+      );
+    }
+  });
+
+  it("a piece that does not run forward a finite length does not compile", () => {
+    for (const length of [-10, 0, Number.NaN, Infinity]) {
+      expect(() =>
+        compileTrack({
+          ...ridgeRoad,
+          carriers: [],
+          pieces: [piece(100, 0), piece(length, 0), piece(100, 0)],
+        })
+      ).toThrow(`Piece 1 of Ridge Road runs ${length} m,`);
+    }
+  });
+
+  it("a piece with a curvature, grade, turn or climb that is not finite does not compile", () => {
+    const straightPiece = piece(100, 0);
+    for (const [term, value] of [
+      ["endCurvature", Number.NaN],
+      ["endGrade", Infinity],
+      ["easedTurn", Number.NaN],
+      ["easedClimb", -Infinity],
+    ] as const) {
+      expect(() =>
+        compileTrack({
+          ...ridgeRoad,
+          carriers: [],
+          pieces: [
+            straightPiece,
+            { ...straightPiece, [term]: value },
+            straightPiece,
+          ],
+        })
+      ).toThrow(`Piece 1 of Ridge Road has ${term} ${value},`);
+    }
   });
 });
