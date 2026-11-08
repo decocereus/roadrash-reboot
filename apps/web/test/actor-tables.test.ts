@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { createBikes } from "../src/game/actors.ts";
+import type { Assets } from "../src/game/assets.ts";
 import { bikeModelIds } from "../src/game/bike-models.ts";
 import { createShading } from "../src/game/cel.ts";
 import { bodyFor, paletteOf } from "../src/game/figure-rig.ts";
@@ -181,9 +182,35 @@ const sweptAbout = (
     )
   );
 
+const MOVED_HUB = new THREE.Vector3(0, 0.08, 0.15);
+const RESIZED = 1.2;
+
+const moveEveryWheel = (assets: Assets): Assets => {
+  for (const bike of Object.values(assets.bikes)) {
+    for (const part of ["wheel_f", "wheel_r"]) {
+      const primitives = bike.get(part) ?? [];
+      const tyre = new THREE.Box3();
+      for (const { geometry, slot } of primitives) {
+        geometry.computeBoundingBox();
+        if (slot === "tyre" && geometry.boundingBox) {
+          tyre.union(geometry.boundingBox);
+        }
+      }
+      const hub = tyre.getCenter(new THREE.Vector3());
+      for (const { geometry } of primitives) {
+        geometry
+          .translate(0, -hub.y, -hub.z)
+          .scale(1, RESIZED, RESIZED)
+          .translate(0, hub.y + MOVED_HUB.y, hub.z + MOVED_HUB.z);
+      }
+    }
+  }
+  return assets;
+};
+
 describe("bike wheels", () => {
-  it("turns each shipped bike's wheels about their own axles, one turn for each circumference rolled", async () => {
-    const assets = await pinnedAssets();
+  it("turns each bike's wheels about their own tyres, one turn for each circumference rolled, wherever the model puts them", async () => {
+    const assets = moveEveryWheel(await pinnedAssets());
     const shading = createShading(lookOf(track.plan.region));
     const turned = bikeModelIds.map((model) => {
       const bikes = createBikes(assets, shading, [
