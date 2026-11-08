@@ -7,7 +7,6 @@ import * as NodePath from "@effect/platform-node/NodePath";
 import { artBytes } from "@racer/art/cache";
 import { ArtKey, contentTypes, extensionOf } from "@racer/art/manifest";
 import { artCacheControl } from "@racer/art/remote";
-import { LOCAL_BUILD } from "@racer/rooms/build-id";
 import { jsonlStoreLayer } from "@racer/telemetry/jsonl-store";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -45,7 +44,6 @@ const buildIdentity = () => ({
       ":/",
       ":(top,exclude)apps/web/public/rushline-build.txt"
     ) ?? "") !== "",
-  rooms: process.env.RUSHLINE_BUILD ?? LOCAL_BUILD,
   sha: git("rev-parse", "--short=12", "HEAD") ?? "unknown",
 });
 
