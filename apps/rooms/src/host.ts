@@ -43,7 +43,7 @@ import {
   tallyOf,
   traceSeats,
 } from "./race-seat.ts";
-import type { Seat, SeatLink, SeatPresence } from "./race-seat.ts";
+import type { Seat, SeatHold, SeatLink } from "./race-seat.ts";
 import { msOf, publicRuleFor } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
 import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
@@ -206,7 +206,7 @@ export const createHost = (
 
   const end = (run: Run): void => {
     const { room, tape, trace } = run;
-    traceSeats(run.riders, run.room, run.trace);
+    traceSeats(run.riders, room, trace);
     tape.finish();
     ports.saveTape(
       tapeKey(run.raceId, roomTraceName),
@@ -248,7 +248,7 @@ export const createHost = (
     const { room, tape } = run;
     room.step();
     if (room.state.tick % ROOM_TRACE_EVERY_TICKS === 0) {
-      traceSeats(run.riders, run.room, run.trace);
+      traceSeats(run.riders, room, run.trace);
     }
     const bytes = writeTick(
       tickView,
@@ -388,12 +388,24 @@ export const createHost = (
     countDownOnceLoaded(run);
   };
 
+  const holdRunsOut = (run: Run, seat: Seat, hold: SeatHold): void => {
+    if (state.run === run && seat.presence === hold) {
+      leaveRace(run, seat, hold.closeCode);
+    }
+  };
+
   const holdSeat = (run: Run, seat: Seat, closeCode: number | null): void => {
     if (seat.presence.kind !== "here") {
       return;
     }
-    const held: SeatPresence = { kind: "held", since: ports.now() };
-    seat.presence = held;
+    const since = ports.now();
+    const hold: SeatHold = {
+      closeCode,
+      kind: "held",
+      since,
+      until: since + msOf(ports.config.seatHoldSeconds),
+    };
+    seat.presence = hold;
     ports.note({
       closeCode,
       kind: "held",
@@ -403,10 +415,8 @@ export const createHost = (
     });
     settleReport(seat, ports);
     countDownOnceLoaded(run);
-    ports.after(ports.config.seatHoldSeconds * 1000, () => {
-      if (state.run === run && seat.presence === held) {
-        leaveRace(run, seat, closeCode);
-      }
+    ports.after(hold.until - since, () => {
+      holdRunsOut(run, seat, hold);
     });
   };
 
@@ -441,12 +451,15 @@ export const createHost = (
     }
   };
 
-  const heldSeatOf = (memberId: string) => {
+  const claimHold = (memberId: string) => {
     const { run } = state;
     for (const seat of run?.riders ?? []) {
       const { presence } = seat;
       if (run && seat.memberId === memberId && presence.kind === "held") {
-        return { run, seat, since: presence.since };
+        if (ports.now() < presence.until) {
+          return { run, seat, since: presence.since };
+        }
+        holdRunsOut(run, seat, presence);
       }
     }
     return null;
@@ -678,7 +691,7 @@ export const createHost = (
         walk: replaced?.walk ?? null,
       };
       present.set(socket, person);
-      const held = heldSeatOf(memberId);
+      const held = claimHold(memberId);
       if (held && claim.rejoin) {
         rejoin(person, held.run, held.seat, held.since);
       } else if (held) {

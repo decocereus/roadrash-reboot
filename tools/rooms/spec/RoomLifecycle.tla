@@ -58,7 +58,8 @@ CONSTANTS
     GuardBootLeavesRoom, GuardFreeColour, GuardDropMarks, GuardDropRetires,
     GuardWaitForLoads, GuardSameRun, GuardReopen, GuardLateRoomRacing,
     GuardNeverArrived, GuardEndedBackToLobby, GuardDropHolds,
-    GuardReplacedHolds, GuardRejoin, GuardRejoinCountdown, GuardTakenStaysPut
+    GuardReplacedHolds, GuardRejoin, GuardRejoinCountdown, GuardTakenStaysPut,
+    GuardHoldDeadline
 
 VARIABLES
     room,   \* the host, its lobby, its race seats and the messages it has sent
@@ -282,8 +283,23 @@ End(R) ==
             !.holdLeft = [k \in Riders |-> -1],
             !.letGo = [k \in Riders |-> FALSE]])
 
-\* host.ts heldSeatOf: the running race's seat for this member id, if held
-HeldFor(R, k) == GuardRejoin /\ R.pres[k] = "held" /\ R.seatInc[k] = R.inc[k]
+\* host.ts claimHold: the running race's seat for this member id, if it is
+\* held and its hold has time left
+HeldFor(R, k) ==
+    /\ GuardRejoin
+    /\ R.pres[k] = "held"
+    /\ R.seatInc[k] = R.inc[k]
+    /\ (R.holdLeft[k] > 0 \/ ~GuardHoldDeadline)
+
+\* host.ts claimHold with holdRunsOut: a hold whose time ran out before its
+\* timer woke leaves the race, as the timer would
+ClaimLapsed(R, k) ==
+    IF /\ GuardHoldDeadline
+       /\ R.pres[k] = "held"
+       /\ R.seatInc[k] = R.inc[k]
+       /\ R.holdLeft[k] = 0
+    THEN LeaveRace(R, k, FALSE)
+    ELSE R
 
 \* host.ts rejoin with socket-role.ts rejoined: the returning socket takes
 \* the held seat and hears "started" with awayMs; while the race loads it
@@ -298,8 +314,9 @@ Rejoin(R, s, k) ==
        ELSE R2
 
 \* host.ts seat: refuse "full", or join and retire this member's older
-\* socket with a hold, then put a returning rider back on a held seat, or
-\* let it go (leaveRace SEAT_QUIT) for a seat opened with rejoin=no.
+\* socket with a hold, let a hold that ran out go, then put a returning
+\* rider back on a held seat, or let it go (leaveRace SEAT_QUIT) for a seat
+\* opened with rejoin=no.
 \* tellLobby reaches the socket only while it is in the lobby.  gaveUp is a
 \* ghost: this tab's player chose Back to bar in the running race.
 HostSeat(R, s, claim, gaveUp) ==
@@ -314,8 +331,9 @@ HostSeat(R, s, claim, gaveUp) ==
                            IN IF GuardRetireReplaced
                               THEN Retire(R0, o, IF GuardReplacedHolds THEN "hold" ELSE "leave", FALSE)
                               ELSE R0
-                R2 == [R1 EXCEPT !.sock[s] = "present", !.role[s] = "lobby",
-                                 !.quiet[s] = -1]
+                R2 == ClaimLapsed([R1 EXCEPT !.sock[s] = "present",
+                                             !.role[s] = "lobby",
+                                             !.quiet[s] = -1], k)
                 R3 == CASE HeldFor(R2, k) /\ claim -> Rejoin(R2, s, k)
                         [] HeldFor(R2, k) -> LeaveRace(R2, k, gaveUp)
                         [] OTHER -> R2
@@ -1140,7 +1158,7 @@ ReadyRiderRides ==
 \* rejoin=no.  A rider the lobby made a new member does not own the bike.
 \* Guards:
 \* host.ts seat retires a replaced socket with a hold, and looks up the
-\* held seat (heldSeatOf, rejoin).
+\* held seat (claimHold, rejoin).
 BackOnBike ==
     [][\A s \in Sock :
          LET k == Key(s[1])
@@ -1148,6 +1166,7 @@ BackOnBike ==
              /\ room'.sock[s] = "present"
              /\ Head(wire.toH[s]) = "seat"
              /\ room.pres[k] \in InRace
+             /\ room.holdLeft[k] # 0
              /\ room.mem[k] # "none"
              /\ room.seatInc[k] = room.inc[k])
               => (room'.pres[k] = "here" /\ room'.role[s] = "seated")]_vars
@@ -1160,6 +1179,13 @@ BikeHeldForHold ==
     [][\A k \in Riders :
          (room.pres[k] \in InRace /\ room'.pres[k] = "left")
             => (room'.letGo[k] \/ (room.pres[k] = "held" /\ room.holdLeft[k] = 0))]_vars
+
+\* A rider back after the hold ran out does not get the bike, even when the
+\* hold's timer has not woken yet.  Guard: host.ts claimHold compares the
+\* hold's deadline with the room's clock.
+HoldEndsOnTime ==
+    [][\A k \in Riders :
+         (room.pres[k] = "held" /\ room.holdLeft[k] = 0) => room'.pres[k] # "here"]_vars
 
 \* A tab that hears another tab of its browser took its race seat stays on
 \* the taken screen until its player acts, so two tabs never trade the seat

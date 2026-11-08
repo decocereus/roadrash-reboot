@@ -27,9 +27,16 @@ export interface SeatLink {
   readonly tcpRttMs: number | null;
 }
 
+export interface SeatHold {
+  readonly closeCode: number | null;
+  readonly kind: "held";
+  readonly since: number;
+  readonly until: number;
+}
+
 export type SeatPresence =
   | { readonly kind: "here" }
-  | { readonly kind: "held"; readonly since: number }
+  | SeatHold
   | { readonly kind: "left"; readonly tick: number };
 
 export const HERE: SeatPresence = { kind: "here" };

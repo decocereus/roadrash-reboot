@@ -4,6 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
 const RETRY_EVERY = "2 seconds";
+const ATTEMPT_DEADLINE = "4 seconds";
 
 export const readRoomPreview = (
   roomsUrl: string,
@@ -19,6 +20,7 @@ export const readRoomPreview = (
     }).pipe(
       Effect.map(decodeRoomPreview),
       Effect.flatMap(Effect.fromOption),
+      Effect.timeout(ATTEMPT_DEADLINE),
       Effect.retry({ schedule: Schedule.spaced(RETRY_EVERY) }),
       Effect.tap((preview) =>
         Effect.sync(() => {
