@@ -128,6 +128,7 @@ const readySave = (career: CareerState): SaveState => ({
 const LOADING: SaveState = { status: "loading" };
 const EMPTY: SaveState = { status: "empty" };
 const UNREAD: SaveState = { status: "unread" };
+const ELSEWHERE: SaveState = { status: "elsewhere" };
 const CORRUPT: SaveState = {
   error: { field: "", kind: "wrongVersion" },
   status: "corrupt",
@@ -189,6 +190,7 @@ const everyScreen = {
   backRoom: { screen: "backRoom" },
   boot: { screen: "boot" },
   clubhouse: { screen: "clubhouse" },
+  elsewhere: { screen: "elsewhere" },
   ending: { screen: "ending" },
   gameOver: { screen: "gameOver" },
   garage: { screen: "garage" },
@@ -240,7 +242,7 @@ describe("the way into the game", () => {
   });
 
   it("seats a room link whatever the save says", () => {
-    for (const save of [EMPTY, CORRUPT, UNREAD, readySave(fresh)]) {
+    for (const save of [EMPTY, CORRUPT, UNREAD, ELSEWHERE, readySave(fresh)]) {
       expect(
         walk(firstView(), entered(rulesReady, save, ROOM_ID))
       ).toMatchObject({
@@ -257,6 +259,16 @@ describe("the way into the game", () => {
         trail: ["backRoom"],
       });
     }
+  });
+
+  it("stops a tab whose career is open in another tab, with no way on and no career begun", () => {
+    const { effects, trail } = walk(
+      firstView(),
+      entered(rulesReady, ELSEWHERE),
+      LEFT
+    );
+    expect(trail).toStrictEqual(["elsewhere", "elsewhere"]);
+    expect(effects).toStrictEqual([]);
   });
 
   it("stops at the back room when the rules fail, ahead of a room or a URL ride", () => {
@@ -296,6 +308,7 @@ describe("leaving each screen", () => {
       backRoom: "clubhouse",
       boot: "boot",
       clubhouse: "backRoom",
+      elsewhere: "elsewhere",
       ending: "backRoom",
       gameOver: "backRoom",
       garage: "clubhouse",

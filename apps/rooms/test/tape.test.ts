@@ -53,34 +53,61 @@ const setupOf = ({ rule, seats, seed }: TapeHeader, seedShift = 0) =>
   seatedRace(seed + seedShift, seats, rule).setup;
 
 describe("a race's tape", () => {
-  it("replays to the same state hashes the room sent", () => {
+  it("replays to the same state hashes the room sent, and to the state the race ended on", () => {
     const { end, header, parts } = recorded();
-    const replay = replayTape(setupOf(header), header.digest, parts);
+    const replay = replayTape(setupOf(header), header.digest, parts, end);
     expect(replay).toMatchObject({ kind: "matched" });
     expect(replay.kind === "matched" && replay.state.tick).toBe(end.tick);
     expect(parts).toHaveLength(end.parts);
     expect(end.parts).toBeGreaterThan(1);
   });
 
+  it("refuses a tape whose last state is not the one the race ended on", () => {
+    const { end, header, parts } = recorded();
+    const replay = replayTape(setupOf(header), header.digest, parts, {
+      ...end,
+      hash: "0".repeat(end.hash.length),
+    });
+    expect(replay).toStrictEqual({ kind: "diverged", tick: end.tick });
+  });
+
+  it("refuses a tape that stops before the race ended", () => {
+    const { end, header, parts } = recorded();
+    const replay = replayTape(setupOf(header), header.digest, parts, {
+      ...end,
+      tick: end.tick + 1,
+    });
+    expect(replay).toStrictEqual({
+      afterTick: end.tick,
+      endTick: end.tick + 1,
+      kind: "wrongEnd",
+    });
+  });
+
   it("names the tick where a changed control leaves the race", () => {
-    const { header, parts } = recorded();
+    const { end, header, parts } = recorded();
     const changed = parts.map((part) => Uint8Array.from(part));
     const first = changed[0] ?? new Uint8Array();
     const CONTROL_AT = 100;
     first[CONTROL_AT] = (first[CONTROL_AT] ?? 0) + 40;
-    const replay = replayTape(setupOf(header), header.digest, changed);
+    const replay = replayTape(setupOf(header), header.digest, changed, end);
     expect(["diverged", "unreadable", "gap"]).toContain(replay.kind);
   });
 
   it("refuses a tape recorded on another setup", () => {
-    const { header, parts } = recorded();
-    const replay = replayTape(setupOf(header, 1), header.digest, parts);
+    const { end, header, parts } = recorded();
+    const replay = replayTape(setupOf(header, 1), header.digest, parts, end);
     expect(replay.kind).toBe("wrongSetup");
   });
 
   it("finds a missing part", () => {
-    const { header, parts } = recorded();
-    const replay = replayTape(setupOf(header), header.digest, parts.slice(1));
+    const { end, header, parts } = recorded();
+    const replay = replayTape(
+      setupOf(header),
+      header.digest,
+      parts.slice(1),
+      end
+    );
     expect(replay.kind).toBe("gap");
   });
 });

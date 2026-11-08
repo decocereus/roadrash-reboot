@@ -164,6 +164,9 @@ export const BackRoomScreen = ({
       case "loading": {
         return [tryAgain];
       }
+      case "elsewhere": {
+        return [];
+      }
       default: {
         return save satisfies never;
       }
@@ -179,13 +182,15 @@ export const BackRoomScreen = ({
           src={backRoomPlates.backdrop}
         />
         <BarHeader career={save.status === "ready" ? save.career : null} />
-        <PinnedList
-          actions={menu()}
-          autoFocus={overlay !== "settings"}
-          label="Back room"
-          primary="continue"
-          title="Back room"
-        />
+        {save.status !== "elsewhere" && (
+          <PinnedList
+            actions={menu()}
+            autoFocus={overlay !== "settings"}
+            label="Back room"
+            primary="continue"
+            title="Back room"
+          />
+        )}
         <Alert failure={failure} save={save} />
         <BarStrip>
           <p

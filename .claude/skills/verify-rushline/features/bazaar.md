@@ -37,5 +37,7 @@ Preconditions:
 ## Gotchas
 
 - The `clear` flag empties the road, which is what these recipes want. Remove it to see the stalls with the traffic and the field.
+- Each loose decoration, such as a crate or a bin, hides on its own when the camera reaches it, so a crate can vanish while no stall flickers. The crowd never hides.
+- A rider 2 m or more in the air passes over a stall.
 - A rider threading a gap passes through decorations. That is not a defect in this feature. A rider running for their own bike also passes through a stall, because a bike can come to rest behind the row. Any other rider, bike or body inside a stall's footprint for more than a moment is a defect.
 - `packages/sim/src/stalls.test.ts` and `apps/web/test/bazaar.test.ts` prove the rule and the clearance. They do not show how it looks.

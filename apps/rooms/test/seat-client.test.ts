@@ -10,17 +10,12 @@ import {
 import { riderIdAt } from "@racer/sim/state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
 import { createRoomRun } from "../src/room-run.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
-import {
-  DEAD_AFTER_MS,
-  FakeSocket,
-  loadingSeat,
-  newSeat,
-  PING_EVERY_MS,
-} from "./seat-socket.ts";
+import { FakeSocket, loadingSeat, newSeat } from "./seat-socket.ts";
 
 const LONGEST_LOAD_MS = 20_000;
 

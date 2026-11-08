@@ -53,6 +53,7 @@ export class QueueServer extends Cloudflare.DurableObject<QueueServer>()(
               const url = new URL(request.url, "http://rooms");
               queue.enter(rawSocket(socket), {
                 build: url.searchParams.get("build") ?? "",
+                key: url.searchParams.get("key") ?? crypto.randomUUID(),
                 protocol: Number(url.searchParams.get("protocol")),
               });
               return response;
@@ -74,6 +75,13 @@ export class QueueServer extends Cloudflare.DurableObject<QueueServer>()(
         webSocketError: (socket: Cloudflare.WebSocket) =>
           Effect.sync(() => {
             queue.gone(rawSocket(socket));
+          }),
+        webSocketMessage: (
+          socket: Cloudflare.WebSocket,
+          message: string | ArrayBuffer
+        ) =>
+          Effect.sync(() => {
+            queue.message(rawSocket(socket), message);
           }),
       };
     });

@@ -184,4 +184,20 @@ describe("the difficulty table", () => {
     ]);
     expect(() => createRace(bad)).toThrow("The rule hazardShare cannot be 2.");
   });
+
+  it("refuses a part of a cop or a part of a convoy, since a race seats whole ones", () => {
+    const setup = defaultSetup(slagRow, 1);
+    const fractional = {
+      ...setup,
+      conditions: { ...setup.conditions, slowConvoys: 1.5 },
+      police: { ...setup.police, count: 1.5 },
+    };
+    expect(validateSetup(fractional)).toStrictEqual([
+      { kind: "outOfRange", rule: "slowConvoys", value: 1.5 },
+      { kind: "outOfRange", rule: "police.count", value: 1.5 },
+    ]);
+    expect(() => createRace(fractional)).toThrow(
+      "The rule slowConvoys cannot be 1.5."
+    );
+  });
 });
