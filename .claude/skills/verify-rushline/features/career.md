@@ -20,7 +20,7 @@ A career starts with $1,500 and a Halden Wren 400 in the Lowside. The game opens
 - `rider-load-failure` keeps the player on the ride-out card with Retry and Back when a race's riders do not load.
 - `save-reload` keeps the career across a reload, and Continue career returns to the clubhouse.
 - `reload-mid-race` charges a race left by reloading as a wreck at the full repair bill.
-- `save-refused` shows the unsaved banner when the browser refuses a write, also when the refused write is the charge for a race left by reloading.
+- `save-refused` shows the unsaved banner when the browser refuses a write, also when the refused write is the charge for a race left by reloading. Results after a refused settlement reads `Settled, not saved` at the foot instead of `Settled and saved`.
 
 ## How to get to it (user POV)
 

@@ -2,12 +2,13 @@ import type { RaceRules } from "@racer/career/rules";
 import { parseCareer, serialiseCareer } from "@racer/career/save";
 import type { SaveError } from "@racer/career/save-schema";
 import { resumeCareer } from "@racer/career/settle";
-import type { Ledger } from "@racer/career/settle";
+import type { Ledger, Settlement } from "@racer/career/settle";
 import { newCareer } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 
+import type { RaceReport } from "./flow.ts";
 import type { SaveStorageFailed } from "./save-storage-error.ts";
 import {
   acquireStorage,
@@ -65,14 +66,16 @@ export type Stored = { readonly status: "saved" } | StorageFailure;
 
 export type Reset = { readonly status: "reset" } | StorageFailure;
 
+export interface ReadySave {
+  readonly status: "ready";
+  readonly career: CareerState;
+  readonly leftRace: Ledger | null;
+  readonly unsaved: boolean;
+}
+
 export type SaveState =
   | { readonly status: "empty" }
-  | {
-      readonly status: "ready";
-      readonly career: CareerState;
-      readonly leftRace: Ledger | null;
-      readonly unsaved: boolean;
-    }
+  | ReadySave
   | { readonly status: "corrupt"; readonly error: SaveError }
   | { readonly status: "unread" }
   | { readonly status: "elsewhere" }
@@ -188,6 +191,41 @@ const isUnsaved = (persistence: Persistence): boolean => {
   }
 };
 
+const storedSave = (
+  open: () => SaveStorage,
+  career: CareerState
+): ReadySave => ({
+  career,
+  leftRace: null,
+  status: "ready",
+  unsaved: isUnsaved(storeCareer(open, career)),
+});
+
+export const settledRace = (
+  open: () => SaveStorage,
+  settlement: Settlement
+): { readonly save: ReadySave; readonly report: RaceReport } | null => {
+  const last = settlement.career.lastResult;
+  if (!(settlement.settled && last)) {
+    return null;
+  }
+  const save = storedSave(open, settlement.career);
+  return {
+    report: {
+      ledger: last.ledger,
+      line: last.ledger.line,
+      mode: "career",
+      place: last.ledger.place,
+      result: last.ledger.result,
+      roadId: last.ledger.roadId,
+      summary: last.summary,
+      tier: last.ledger.tier,
+      unsaved: save.unsaved,
+    },
+    save,
+  };
+};
+
 export const saveStateOf = (load: CareerLoad): SaveState => {
   if (load.status === "ready") {
     return {
@@ -217,6 +255,7 @@ export interface CareerPage {
 export interface CareerTab {
   readonly load: (rules: RaceRules) => void;
   readonly commit: (career: CareerState) => void;
+  readonly settle: (settlement: Settlement) => RaceReport | null;
   readonly eraseSave: () => void;
   readonly release: () => void;
 }
@@ -276,12 +315,7 @@ export const holdCareer = (
   return {
     commit(career) {
       if (hold.status === "held") {
-        changed({
-          career,
-          leftRace: null,
-          status: "ready",
-          unsaved: isUnsaved(storeCareer(hold.open, career)),
-        });
+        changed(storedSave(hold.open, career));
       }
     },
     eraseSave() {
@@ -294,6 +328,17 @@ export const holdCareer = (
       read();
     },
     release,
+    settle(settlement) {
+      if (hold.status !== "held") {
+        return null;
+      }
+      const settled = settledRace(hold.open, settlement);
+      if (settled === null) {
+        return null;
+      }
+      changed(settled.save);
+      return settled.report;
+    },
   };
 };
 
