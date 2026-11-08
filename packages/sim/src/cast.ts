@@ -12,7 +12,7 @@ import type { BikeId } from "./bikes.ts";
 import { difficulties } from "./difficulty.ts";
 import type { Tier } from "./difficulty.ts";
 import { POLICE_COLOURS } from "./palette.ts";
-import type { RiderProfile, RivalSetup, WeaponKind } from "./state.ts";
+import type { OfficerProfile, RivalSetup, WeaponKind } from "./state.ts";
 
 export type { RegionId } from "@racer/track/regions";
 
@@ -97,11 +97,11 @@ export type OfficerId = (typeof officerIds)[number];
 
 export interface Officer {
   readonly id: OfficerId;
-  readonly profile: RiderProfile;
+  readonly profile: OfficerProfile;
   readonly patrols: readonly RegionId[];
 }
 
-const officerProfile = (name: string): RiderProfile => ({
+const officerProfile = (name: string): OfficerProfile => ({
   aggression: 0.9,
   jacket: POLICE_COLOURS,
   name,

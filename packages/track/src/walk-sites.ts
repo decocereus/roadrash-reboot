@@ -85,7 +85,31 @@ const seededSites = (road: Road): WalkSite[] => {
   return sites;
 };
 
+const checkCrowds = ({ crossings, length, plan }: Road): void => {
+  for (const { from, sites, to } of plan.crowds) {
+    if (!(from >= 0 && from < to && to <= length)) {
+      throw new Error(
+        `A crowd on ${plan.name} runs ${from} to ${to}, which is not a stretch of its ${length} m.`
+      );
+    }
+    if (!(Number.isInteger(sites) && sites >= 0)) {
+      throw new Error(
+        `A crowd on ${plan.name} has ${sites} sites, and it needs a whole number from 0 up.`
+      );
+    }
+    const crossed = crossings.find(
+      ({ fromS, toS }) => from < toS && to > fromS
+    );
+    if (crossed) {
+      throw new Error(
+        `A crowd on ${plan.name} runs ${from} to ${to}, over crossing "${crossed.id}", which reserves ${crossed.fromS} to ${crossed.toS}.`
+      );
+    }
+  }
+};
+
 const crowdSites = (road: Road): WalkSite[] => {
+  checkCrowds(road);
   const random = createRandom(nextSeed(road.plan.seed + CROWD_SEED_SALT));
   return road.plan.crowds.flatMap(({ from, sites, to }, crowd) =>
     Array.from({ length: sites }, (_, place) => ({

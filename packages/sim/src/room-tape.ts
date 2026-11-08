@@ -93,11 +93,21 @@ export const readTapePart = <Stop>(
 export const hexOfWords = (words: Uint32Array): string =>
   [...words].map((word) => word.toString(16).padStart(8, "0")).join("");
 
+export interface TapeEnding {
+  readonly hash: string;
+  readonly tick: number;
+}
+
 export type TapeReplay =
   | { readonly kind: "wrongSetup"; readonly digest: string }
   | { readonly kind: "unreadable"; readonly afterTick: number }
   | { readonly kind: "gap"; readonly afterTick: number; readonly tick: number }
   | { readonly kind: "diverged"; readonly tick: number }
+  | {
+      readonly kind: "wrongEnd";
+      readonly afterTick: number;
+      readonly endTick: number;
+    }
   | {
       readonly kind: "matched";
       readonly hashes: number;
@@ -110,7 +120,8 @@ const sameWords = (left: Uint32Array, right: Uint32Array): boolean =>
 export const replayTape = (
   setup: RaceSetup,
   digest: string,
-  parts: readonly Uint8Array[]
+  parts: readonly Uint8Array[],
+  end: TapeEnding
 ): TapeReplay => {
   const state = createRace(setup);
   const setupWords = setupDigest(state, setup.track);
@@ -148,5 +159,12 @@ export const replayTape = (
       return result.stop;
     }
   }
-  return { hashes, kind: "matched", state };
+  if (state.tick !== end.tick) {
+    return { afterTick: state.tick, endTick: end.tick, kind: "wrongEnd" };
+  }
+  hashRace(state, setupWords, scratchFor(scratch, state), hash);
+  if (hexOfWords(hash) !== end.hash) {
+    return { kind: "diverged", tick: state.tick };
+  }
+  return { hashes: hashes + 1, kind: "matched", state };
 };

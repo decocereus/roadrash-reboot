@@ -113,6 +113,9 @@ export const saveErrors = {
 export const SAVE_UNREAD =
   "The browser would not let the game read your save. Nothing was changed.";
 
+export const CAREER_ELSEWHERE =
+  "Your career is open in another tab. Close that tab, then try again.";
+
 export const billWarning = (
   consequence: BillConsequence,
   bill: string,

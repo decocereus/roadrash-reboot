@@ -98,11 +98,29 @@ export const tapersOf = ({ districts, laneWidth }: LaidRoad): Taper[] => {
   return tapers;
 };
 
+const checkWidths = ({ districts, laneWidth, name }: LaidRoad): void => {
+  if (!(Number.isFinite(laneWidth) && laneWidth > 0)) {
+    throw new Error(
+      `${name} has lanes ${laneWidth} m wide, and a lane must be a finite width above 0.`
+    );
+  }
+  for (const [index, { shoulderWidth, vergeWidth }] of districts.entries()) {
+    const widths = [shoulderWidth, vergeWidth];
+    if (!widths.every((width) => Number.isFinite(width) && width >= 0)) {
+      throw new Error(
+        `District ${index} of ${name} has a ${shoulderWidth} m shoulder and a ${vergeWidth} m verge, and each must be a finite width from 0 up.`
+      );
+    }
+  }
+};
+
 export const checkDistricts = (
-  { districts, name }: LaidRoad,
+  road: LaidRoad,
   tapers: readonly Taper[],
   length: number
 ): void => {
+  checkWidths(road);
+  const { districts, name } = road;
   if (districts.length === 1) {
     return;
   }

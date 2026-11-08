@@ -9,6 +9,7 @@
   "dependencies": {
     "@effect/platform-node": "4.0.0",
     "@racer/devtools": "workspace:*",
+    "@racer/rooms": "workspace:*",
     "effect": "4.0.0"
   },
   "devDependencies": {

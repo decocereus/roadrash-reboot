@@ -17,14 +17,10 @@ import {
   browserStorage,
   careerSeedFrom,
   freshCareer,
-  loadCareer,
+  holdCareer,
   randomUnit,
-  saveStateOf,
-  settledRace,
-  startOver,
-  storedSave,
 } from "../career/save.ts";
-import type { ReadySave, SaveState } from "../career/save.ts";
+import type { CareerTab, SaveState } from "../career/save.ts";
 import { diagnostics, sanitise } from "../diagnostics/hub.ts";
 import { createRaceEvents } from "../diagnostics/race-events.ts";
 import type { RaceEvents, RaceFacts } from "../diagnostics/race-events.ts";
@@ -87,48 +83,45 @@ interface Save {
 
 const useSave = (rules: RaceRules | null): Save => {
   const careerRef = useRef<CareerState | null>(null);
+  const [tab, setTab] = useState<CareerTab | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
 
   useEffect(() => {
-    if (rules === null) {
-      return;
-    }
-    const loaded = loadCareer(rules, browserStorage);
-    careerRef.current = loaded.status === "ready" ? loaded.career : null;
-    setSave(saveStateOf(loaded));
-  }, [rules]);
-
-  const adopt = useCallback((stored: ReadySave) => {
-    careerRef.current = stored.career;
-    setSave(stored);
+    const held = holdCareer(
+      globalThis.navigator.locks,
+      globalThis.window,
+      browserStorage,
+      (next) => {
+        careerRef.current = next.status === "ready" ? next.career : null;
+        setSave(next);
+      }
+    );
+    setTab(held);
+    return held.release;
   }, []);
+
+  useEffect(() => {
+    if (rules !== null) {
+      tab?.load(rules);
+    }
+  }, [rules, tab]);
 
   const commit = useCallback(
     (career: CareerState) => {
-      adopt(storedSave(browserStorage, career));
+      tab?.commit(career);
     },
-    [adopt]
+    [tab]
   );
 
   const settle = useCallback(
-    (settlement: Settlement): RaceReport | null => {
-      const settled = settledRace(browserStorage, settlement);
-      if (settled === null) {
-        return null;
-      }
-      adopt(settled.save);
-      return settled.report;
-    },
-    [adopt]
+    (settlement: Settlement): RaceReport | null =>
+      tab?.settle(settlement) ?? null,
+    [tab]
   );
 
   const eraseSave = useCallback(() => {
-    const reset = startOver(browserStorage);
-    if (reset.status === "reset") {
-      careerRef.current = null;
-      setSave({ status: "empty" });
-    }
-  }, []);
+    tab?.eraseSave();
+  }, [tab]);
 
   return { careerRef, commit, eraseSave, save, settle };
 };

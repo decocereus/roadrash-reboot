@@ -16,6 +16,14 @@ import type { Seat } from "./race-seat.ts";
 import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
 import { TAPE_VERSION, tapeHeaderName, tapeKey, tapePartName } from "./tape.ts";
+import type { TapeEnd } from "./tape.ts";
+
+export const tapeEndOf = (room: Room, parts: number): string =>
+  JSON.stringify({
+    hash: hexOfWords(room.hashNow()),
+    parts,
+    tick: room.state.tick,
+  } satisfies TapeEnd);
 
 export interface RacePorts {
   readonly build: string;

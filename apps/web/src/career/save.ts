@@ -13,20 +13,23 @@ import type { SaveStorageFailed } from "./save-storage-error.ts";
 import {
   acquireStorage,
   backUpItem,
+  holdLock,
   readItem,
   removeItem,
   writeItem,
 } from "./save-storage.ts";
-import type { SaveStorage } from "./save-storage.ts";
+import type { SaveLocks, SaveStorage } from "./save-storage.ts";
 
 export const SAVE_KEY = "rushline.career";
 export const BACKUP_KEY = "rushline.career.backup";
 
 const SEED_RANGE = 2 ** 32;
+const LOCK_WAIT_MS = 2000;
 
 const failedStatus = {
   acquire: "unavailable",
   backup: "writeFailed",
+  lock: "unavailable",
   read: "readFailed",
   remove: "writeFailed",
   write: "writeFailed",
@@ -53,6 +56,12 @@ export type CareerLoad =
     }
   | StorageFailure;
 
+type Hold =
+  | { readonly status: "asking" }
+  | { readonly status: "held"; readonly open: () => SaveStorage }
+  | { readonly status: "elsewhere" }
+  | { readonly status: "released" };
+
 export type Stored = { readonly status: "saved" } | StorageFailure;
 
 export type Reset = { readonly status: "reset" } | StorageFailure;
@@ -69,6 +78,7 @@ export type SaveState =
   | ReadySave
   | { readonly status: "corrupt"; readonly error: SaveError }
   | { readonly status: "unread" }
+  | { readonly status: "elsewhere" }
   | { readonly status: "loading" };
 
 const saved = { status: "saved" } as const;
@@ -181,7 +191,7 @@ const isUnsaved = (persistence: Persistence): boolean => {
   }
 };
 
-export const storedSave = (
+const storedSave = (
   open: () => SaveStorage,
   career: CareerState
 ): ReadySave => ({
@@ -232,6 +242,104 @@ export const saveStateOf = (load: CareerLoad): SaveState => {
     return { status: "unread" };
   }
   return { status: "empty" };
+};
+
+export interface CareerPage {
+  readonly addEventListener: (
+    type: "pagehide" | "pageshow",
+    listener: (event: Pick<PageTransitionEvent, "persisted">) => void
+  ) => void;
+  readonly location: Pick<Location, "reload">;
+}
+
+export interface CareerTab {
+  readonly load: (rules: RaceRules) => void;
+  readonly commit: (career: CareerState) => void;
+  readonly settle: (settlement: Settlement) => RaceReport | null;
+  readonly eraseSave: () => void;
+  readonly release: () => void;
+}
+
+const elsewhere = { status: "elsewhere" } as const;
+
+export const holdCareer = (
+  locks: SaveLocks,
+  page: CareerPage,
+  open: () => SaveStorage,
+  changed: (save: SaveState) => void
+): CareerTab => {
+  let hold: Hold = { status: "asking" };
+  let rules: RaceRules | null = null;
+  const read = () => {
+    if (hold.status === "held" && rules !== null) {
+      changed(saveStateOf(loadCareer(rules, hold.open)));
+    }
+  };
+  const decide = (next: Hold) => {
+    if (hold.status !== "asking") {
+      return;
+    }
+    hold = next;
+    if (next.status === "elsewhere") {
+      changed(elsewhere);
+    }
+    read();
+  };
+  const fiber = Effect.runFork(
+    holdLock(locks, SAVE_KEY, LOCK_WAIT_MS, (held) => {
+      decide(held ? { open, status: "held" } : elsewhere);
+    }).pipe(
+      Effect.catchTag("SaveStorageFailed", (failure) =>
+        Effect.sync(() => {
+          decide({
+            open: () => {
+              throw failure;
+            },
+            status: "held",
+          });
+        })
+      )
+    )
+  );
+  const release = () => {
+    hold = { status: "released" };
+    changed(elsewhere);
+    fiber.interruptUnsafe();
+  };
+  page.addEventListener("pagehide", release);
+  page.addEventListener("pageshow", ({ persisted }) => {
+    if (persisted) {
+      page.location.reload();
+    }
+  });
+  return {
+    commit(career) {
+      if (hold.status === "held") {
+        changed(storedSave(hold.open, career));
+      }
+    },
+    eraseSave() {
+      if (hold.status === "held" && startOver(hold.open).status === "reset") {
+        changed({ status: "empty" });
+      }
+    },
+    load(next) {
+      rules = next;
+      read();
+    },
+    release,
+    settle(settlement) {
+      if (hold.status !== "held") {
+        return null;
+      }
+      const settled = settledRace(hold.open, settlement);
+      if (settled === null) {
+        return null;
+      }
+      changed(settled.save);
+      return settled.report;
+    },
+  };
 };
 
 export const careerSeedFrom = (unit: number): number =>
