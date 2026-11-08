@@ -170,10 +170,11 @@ export const withDesktopHold = (
   ],
 });
 
+const userId = (): number => process.getuid?.() ?? 0;
+
 export const desktopRuntimeEnv = (): NodeJS.ProcessEnv => ({
   ...process.env,
-  XDG_RUNTIME_DIR:
-    process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 0}`,
+  XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR ?? `/run/user/${userId()}`,
 });
 
 interface DesktopPaths {
@@ -255,6 +256,25 @@ const logTail = (paths: DesktopPaths) =>
     Effect.orElseSucceed(() => "")
   );
 
+const displaySession = Effect.fnUntraced(function* displaySession() {
+  const processes = yield* ToolProcesses;
+  const uid = userId();
+  const { stdout } = yield* processes.run("loginctl", [
+    "show-user",
+    String(uid),
+    "--property=Display",
+    "--value",
+  ]);
+  const session = stdout.trim();
+  if (session === "") {
+    return yield* new DesktopError({
+      message: `Hyprland cannot open the seat: logind has no display session for uid ${uid}. It needs the owner's console login on tty1, which holds seat0. Log in on tty1, then run this again.`,
+      operation: "start",
+    });
+  }
+  return session;
+});
+
 const awaitReady = Effect.fnUntraced(function* awaitReady(
   paths: DesktopPaths,
   pid: number
@@ -287,6 +307,7 @@ const started = Effect.fnUntraced(function* started(
 ) {
   const fs = yield* FileSystem.FileSystem;
   const processes = yield* ToolProcesses;
+  const session = yield* displaySession();
   yield* fs.remove(paths.claim, { force: true });
   yield* fs.remove(paths.display, { force: true });
   yield* fs.writeFileString(paths.log, "");
@@ -297,7 +318,11 @@ const started = Effect.fnUntraced(function* started(
         ["--config", CONFIG],
         dir,
         paths.log,
-        { ...desktopRuntimeEnv(), [DISPLAY_FILE_ENV]: paths.display }
+        {
+          ...desktopRuntimeEnv(),
+          [DISPLAY_FILE_ENV]: paths.display,
+          XDG_SESSION_ID: session,
+        }
       );
       const ready = yield* restore(awaitReady(paths, pid)).pipe(
         Effect.onError(() => released(processes.stopOwned(pid, CONFIG_NAME)))
