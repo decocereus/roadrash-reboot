@@ -53,6 +53,9 @@ const gearFor = (bike: BikeSpec, gear: number, speed: number): number => {
   return gear;
 };
 
+export const keepsGearAfterUpshift = (bike: BikeSpec, from: number): boolean =>
+  gearFor(bike, from + 1, SHIFT_UP_REVS * gearTop(bike, from)) === from + 1;
+
 const thrustOf = (
   bike: BikeSpec,
   gear: number,
