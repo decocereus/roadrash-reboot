@@ -171,7 +171,7 @@ export const storeCareer = (
 export const startOver = (open: () => SaveStorage): Reset =>
   outcomeOf(cleared(open));
 
-export const isUnsaved = (persistence: Persistence): boolean => {
+const isUnsaved = (persistence: Persistence): boolean => {
   switch (persistence.status) {
     case "saved":
     case "unchanged": {
