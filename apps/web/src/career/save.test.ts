@@ -1,10 +1,11 @@
 import { recordedRules } from "@racer/career/bench";
 import { serialiseCareer } from "@racer/career/save";
-import { startRace } from "@racer/career/settle";
+import { resumeCareer, startRace } from "@racer/career/settle";
+import { sellBike } from "@racer/career/shop";
 import { nextRaceSeed } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
 import { repairBill } from "@racer/career/tables";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 
 import type { SaveStorageFailed } from "./save-storage-error.ts";
 import type { SaveLocks, SaveStorage } from "./save-storage.ts";
@@ -19,7 +20,7 @@ import {
   startOver,
   storeCareer,
 } from "./save.ts";
-import type { CareerPage, CareerTab } from "./save.ts";
+import type { CareerPage, SaveState } from "./save.ts";
 
 type Failing = "get" | "set" | "backup" | "remove";
 
@@ -421,16 +422,16 @@ const openTab = async (
   storage: SaveStorage,
   page: CareerPage = fakePage()
 ) => {
-  const told = Promise.withResolvers<CareerTab>();
-  const close = holdCareer(locks, page, opened(storage), told.resolve);
-  return { close, tab: await told.promise };
-};
-
-const ownedSave = (tab: CareerTab) => {
-  if (tab.status !== "owner") {
-    throw new Error("This tab does not hold the career.");
-  }
-  return tab.open;
+  const shown: SaveState[] = [];
+  const decided = Promise.withResolvers<null>();
+  const tab = holdCareer(locks, page, opened(storage), (save) => {
+    shown.push(save);
+    decided.resolve(null);
+  });
+  onTestFinished(tab.release);
+  tab.load(recordedRules);
+  await decided.promise;
+  return { shown, tab };
 };
 
 const lockFreed = async () => {
@@ -442,90 +443,91 @@ const refusingLocks: SaveLocks = {
     await Promise.reject(new Error("The browser refused the lock.")),
 };
 
+const readyWith = (career: CareerState): SaveState => ({
+  career,
+  leftRace: null,
+  status: "ready",
+  unsaved: false,
+});
+
 describe("one career tab", () => {
-  it("keeps the career in the tab that holds it and gives a second tab nothing to load or write", async () => {
+  it("gives a second tab no career to load or resume, and writes nothing it settles, buys, begins or erases", async () => {
     const storage = memoryStorage();
     const first = await openTab(globalThis.navigator.locks, storage);
     const racing = midRace({ ...freshCareer(0.75), cash: 1500 });
-    storeCareer(ownedSave(first.tab), racing);
+    first.tab.commit(racing);
+    storage.calls.length = 0;
     const second = await openTab(globalThis.navigator.locks, storage);
-    expect(second.tab).toStrictEqual({ status: "elsewhere" });
+    const settled = resumeCareer(recordedRules, racing).career;
+    second.tab.commit(settled);
+    second.tab.commit(sellBike(settled));
+    second.tab.commit(freshCareer(0.2));
+    second.tab.eraseSave();
+    second.tab.load(recordedRules);
+    expect(second.shown).toStrictEqual([{ status: "elsewhere" }]);
+    expect(storage.calls).toStrictEqual([]);
     expect(storage.items.get(SAVE_KEY)).toBe(serialiseCareer(racing));
-    second.close();
-    first.close();
-    await lockFreed();
   });
 
   it("keeps the career for a tab that asks while the holder is letting go, as a reload does", async () => {
     const storage = memoryStorage();
     const first = await openTab(globalThis.navigator.locks, storage);
-    first.close();
+    first.tab.release();
     const reloaded = await openTab(globalThis.navigator.locks, storage);
-    expect(reloaded.tab.status).toBe("owner");
-    reloaded.close();
-    await lockFreed();
+    expect(reloaded.shown).toStrictEqual([{ status: "empty" }]);
   });
 
   it("lets go of the career when its page is hidden, so the page that replaces it holds it", async () => {
     const storage = memoryStorage();
     const leaving = fakePage();
-    const first = await openTab(globalThis.navigator.locks, storage, leaving);
+    await openTab(globalThis.navigator.locks, storage, leaving);
     leaving.fire("pagehide", true);
     const next = await openTab(globalThis.navigator.locks, storage);
-    expect(next.tab.status).toBe("owner");
-    next.close();
-    first.close();
-    await lockFreed();
+    expect(next.shown).toStrictEqual([{ status: "empty" }]);
   });
 
   it("reloads a page the browser brings back from its history, which no longer holds the career", async () => {
     const page = fakePage();
-    const tab = await openTab(
-      globalThis.navigator.locks,
-      memoryStorage(),
-      page
-    );
+    await openTab(globalThis.navigator.locks, memoryStorage(), page);
     page.fire("pageshow", false);
     expect(page.reloads()).toBe(0);
     page.fire("pageshow", true);
     expect(page.reloads()).toBe(1);
-    tab.close();
-    await lockFreed();
   });
 
   it("gives the career to a tab opened after the holder closed, which charges the left race once", async () => {
     const storage = memoryStorage();
     const first = await openTab(globalThis.navigator.locks, storage);
     const racing = midRace({ ...freshCareer(0.75), cash: 1500 });
-    storeCareer(ownedSave(first.tab), racing);
-    first.close();
+    first.tab.commit(racing);
+    first.tab.release();
     await lockFreed();
     const next = await openTab(globalThis.navigator.locks, storage);
     const bill = repairBill(racing.tier, racing.bikeId);
-    expect(loadCareer(recordedRules, ownedSave(next.tab))).toMatchObject({
-      career: { activeRace: null, cash: 1500 - bill },
-      leftRace: { repair: bill, result: "quit" },
-      persistence: { status: "saved" },
-      status: "ready",
-    });
-    next.close();
-    await lockFreed();
+    expect(next.shown).toMatchObject([
+      {
+        career: { activeRace: null, cash: 1500 - bill },
+        leftRace: { repair: bill, result: "quit" },
+        status: "ready",
+        unsaved: false,
+      },
+    ]);
+    expect(storage.items.get(SAVE_KEY)).toBe(
+      serialiseCareer(resumeCareer(recordedRules, racing).career)
+    );
   });
 
   it("treats a lock the browser refuses as storage it denies, and touches no save", async () => {
     const storage = memoryStorage();
     storage.setItem(SAVE_KEY, serialiseCareer(freshCareer(0.3)));
     storage.calls.length = 0;
-    const tab = await openTab(refusingLocks, storage);
-    const open = ownedSave(tab.tab);
-    expect([
-      loadCareer(recordedRules, open),
-      storeCareer(open, freshCareer(0.6)),
-    ]).toStrictEqual([
-      { ...failed("acquire"), status: "unavailable" },
-      { ...failed("acquire"), status: "unavailable" },
+    const { shown, tab } = await openTab(refusingLocks, storage);
+    const fresh = freshCareer(0.6);
+    tab.commit(fresh);
+    expect(shown).toStrictEqual([
+      { status: "empty" },
+      { ...readyWith(fresh), unsaved: true },
     ]);
     expect(storage.calls).toStrictEqual([]);
-    tab.close();
   });
 });

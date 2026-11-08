@@ -55,8 +55,9 @@ export type CareerLoad =
     }
   | StorageFailure;
 
-export type CareerTab =
-  | { readonly status: "owner"; readonly open: () => SaveStorage }
+type Hold =
+  | { readonly status: "asking" }
+  | { readonly status: "held"; readonly open: () => SaveStorage }
   | { readonly status: "elsewhere" };
 
 export type Stored = { readonly status: "saved" } | StorageFailure;
@@ -148,48 +149,6 @@ const cleared = Effect.fn("career.save.clear")(function* cleared(
   return { status: "reset" } satisfies Reset;
 });
 
-export interface CareerPage {
-  readonly addEventListener: (
-    type: "pagehide" | "pageshow",
-    listener: (event: Pick<PageTransitionEvent, "persisted">) => void
-  ) => void;
-  readonly location: Pick<Location, "reload">;
-}
-
-export const holdCareer = (
-  locks: SaveLocks,
-  page: CareerPage,
-  open: () => SaveStorage,
-  settle: (tab: CareerTab) => void
-): (() => void) => {
-  const fiber = Effect.runFork(
-    holdLock(locks, SAVE_KEY, LOCK_WAIT_MS, (held) => {
-      settle(held ? { open, status: "owner" } : { status: "elsewhere" });
-    }).pipe(
-      Effect.catchTag("SaveStorageFailed", (failure) =>
-        Effect.sync(() => {
-          settle({
-            open: () => {
-              throw failure;
-            },
-            status: "owner",
-          });
-        })
-      )
-    )
-  );
-  const release = () => {
-    fiber.interruptUnsafe();
-  };
-  page.addEventListener("pagehide", release);
-  page.addEventListener("pageshow", ({ persisted }) => {
-    if (persisted) {
-      page.location.reload();
-    }
-  });
-  return release;
-};
-
 export const loadCareer = (
   rules: RaceRules,
   open: () => SaveStorage
@@ -244,6 +203,95 @@ export const saveStateOf = (load: CareerLoad): SaveState => {
     return { status: "unread" };
   }
   return { status: "empty" };
+};
+
+export interface CareerPage {
+  readonly addEventListener: (
+    type: "pagehide" | "pageshow",
+    listener: (event: Pick<PageTransitionEvent, "persisted">) => void
+  ) => void;
+  readonly location: Pick<Location, "reload">;
+}
+
+export interface CareerTab {
+  readonly load: (rules: RaceRules) => void;
+  readonly commit: (career: CareerState) => void;
+  readonly eraseSave: () => void;
+  readonly release: () => void;
+}
+
+const elsewhere = { status: "elsewhere" } as const;
+
+export const holdCareer = (
+  locks: SaveLocks,
+  page: CareerPage,
+  open: () => SaveStorage,
+  changed: (save: SaveState) => void
+): CareerTab => {
+  let hold: Hold = { status: "asking" };
+  let rules: RaceRules | null = null;
+  const read = () => {
+    if (hold.status === "held" && rules !== null) {
+      changed(saveStateOf(loadCareer(rules, hold.open)));
+    }
+  };
+  const decide = (next: Hold) => {
+    if (hold.status !== "asking") {
+      return;
+    }
+    hold = next;
+    if (next.status === "elsewhere") {
+      changed(elsewhere);
+    }
+    read();
+  };
+  const fiber = Effect.runFork(
+    holdLock(locks, SAVE_KEY, LOCK_WAIT_MS, (held) => {
+      decide(held ? { open, status: "held" } : elsewhere);
+    }).pipe(
+      Effect.catchTag("SaveStorageFailed", (failure) =>
+        Effect.sync(() => {
+          decide({
+            open: () => {
+              throw failure;
+            },
+            status: "held",
+          });
+        })
+      )
+    )
+  );
+  const release = () => {
+    fiber.interruptUnsafe();
+  };
+  page.addEventListener("pagehide", release);
+  page.addEventListener("pageshow", ({ persisted }) => {
+    if (persisted) {
+      page.location.reload();
+    }
+  });
+  return {
+    commit(career) {
+      if (hold.status === "held") {
+        changed({
+          career,
+          leftRace: null,
+          status: "ready",
+          unsaved: isUnsaved(storeCareer(hold.open, career)),
+        });
+      }
+    },
+    eraseSave() {
+      if (hold.status === "held" && startOver(hold.open).status === "reset") {
+        changed({ status: "empty" });
+      }
+    },
+    load(next) {
+      rules = next;
+      read();
+    },
+    release,
+  };
 };
 
 export const careerSeedFrom = (unit: number): number =>

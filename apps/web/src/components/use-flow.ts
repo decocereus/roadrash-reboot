@@ -23,12 +23,7 @@ import {
   careerSeedFrom,
   freshCareer,
   holdCareer,
-  isUnsaved,
-  loadCareer,
   randomUnit,
-  saveStateOf,
-  startOver,
-  storeCareer,
 } from "../career/save.ts";
 import type { CareerTab, SaveState } from "../career/save.ts";
 import { diagnostics, sanitise } from "../diagnostics/hub.ts";
@@ -96,42 +91,29 @@ const useSave = (rules: RaceRules | null): Save => {
   const [tab, setTab] = useState<CareerTab | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
 
-  useEffect(
-    () =>
-      holdCareer(
-        globalThis.navigator.locks,
-        globalThis.window,
-        browserStorage,
-        setTab
-      ),
-    []
-  );
+  useEffect(() => {
+    const held = holdCareer(
+      globalThis.navigator.locks,
+      globalThis.window,
+      browserStorage,
+      (next) => {
+        careerRef.current = next.status === "ready" ? next.career : null;
+        setSave(next);
+      }
+    );
+    setTab(held);
+    return held.release;
+  }, []);
 
   useEffect(() => {
-    if (tab?.status === "elsewhere") {
-      setSave({ status: "elsewhere" });
-      return;
+    if (rules !== null) {
+      tab?.load(rules);
     }
-    if (rules === null || tab === null) {
-      return;
-    }
-    const loaded = loadCareer(rules, tab.open);
-    careerRef.current = loaded.status === "ready" ? loaded.career : null;
-    setSave(saveStateOf(loaded));
   }, [rules, tab]);
 
   const commit = useCallback(
     (career: CareerState) => {
-      if (tab?.status !== "owner") {
-        return;
-      }
-      careerRef.current = career;
-      setSave({
-        career,
-        leftRace: null,
-        status: "ready",
-        unsaved: isUnsaved(storeCareer(tab.open, career)),
-      });
+      tab?.commit(career);
     },
     [tab]
   );
@@ -148,14 +130,7 @@ const useSave = (rules: RaceRules | null): Save => {
   );
 
   const eraseSave = useCallback(() => {
-    if (tab?.status !== "owner") {
-      return;
-    }
-    const reset = startOver(tab.open);
-    if (reset.status === "reset") {
-      careerRef.current = null;
-      setSave({ status: "empty" });
-    }
+    tab?.eraseSave();
   }, [tab]);
 
   return { careerRef, commit, eraseSave, save, settle };
