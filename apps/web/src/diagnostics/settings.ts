@@ -53,6 +53,15 @@ export interface SettingsStore {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
+type SettingsDevice = Pick<Storage, "getItem" | "setItem">;
+
+export interface SettingsChanges {
+  readonly addEventListener: (
+    type: "storage",
+    listener: (event: Pick<StorageEvent, "key">) => void
+  ) => void;
+}
+
 export const storage = (): Storage | null => {
   try {
     return globalThis.localStorage ?? null;
@@ -61,37 +70,52 @@ export const storage = (): Storage | null => {
   }
 };
 
-const readStored = (): Settings => {
+const readStored = (device: SettingsDevice | null): Settings => {
   try {
-    return parseSettings(storage()?.getItem(SETTINGS_KEY) ?? null);
+    return parseSettings(device?.getItem(SETTINGS_KEY) ?? null);
   } catch {
     return defaultSettings;
   }
 };
 
-const writeStored = (settings: Settings): boolean => {
+const writeStored = (
+  device: SettingsDevice | null,
+  settings: Settings
+): boolean => {
   try {
-    storage()?.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    device?.setItem(SETTINGS_KEY, JSON.stringify(settings));
     return true;
   } catch {
     return false;
   }
 };
 
-export const createSettingsStore = (): SettingsStore => {
+export const createSettingsStore = (
+  device: () => SettingsDevice | null,
+  changes: SettingsChanges
+): SettingsStore => {
   let current: Settings | null = null;
   const listeners = new Set<() => void>();
+  const notify = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
   const read = (): Settings => {
-    current ??= readStored();
+    current ??= readStored(device());
     return current;
   };
+  changes.addEventListener("storage", ({ key }) => {
+    if (key === SETTINGS_KEY || key === null) {
+      current = null;
+      notify();
+    }
+  });
   return {
     change(next) {
       current = { ...read(), ...next };
-      writeStored(current);
-      for (const listener of listeners) {
-        listener();
-      }
+      writeStored(device(), current);
+      notify();
     },
     read,
     subscribe(listener) {

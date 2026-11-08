@@ -63,11 +63,12 @@ const PrivacyPage = () => (
       </ul>
       <h2 className="mt-12 text-xl font-medium">Your choices</h2>
       <p className="mt-3">
-        Settings has a Race data switch. Turn it off and the game stops sending
-        events under your ID. Settings also shows your ID. During the closed
-        test, send it to whoever invited you to have what is tied to it deleted.
-        Clearing this site's data in your browser removes the ID from your
-        device.
+        Settings has a Race data switch. Turn it off and the game sends the
+        events it already holds, from the last few seconds, then records and
+        sends nothing more under your ID, in every open tab. Settings also shows
+        your ID. During the closed test, send it to whoever invited you to have
+        what is tied to it deleted. Clearing this site's data in your browser
+        removes the ID from your device.
       </p>
     </div>
   </main>

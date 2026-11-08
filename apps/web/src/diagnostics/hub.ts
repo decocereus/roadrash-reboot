@@ -126,7 +126,7 @@ const lazyDelivery = (): ((queue: UploadQueue) => void) => {
 };
 
 const createDiagnostics = (): Diagnostics => {
-  const settings = createSettingsStore();
+  const settings = createSettingsStore(storage, window);
   const recorder = createRecorder();
   const uploader = createUploader(lazyDelivery());
   const sessionId = crypto.randomUUID();
@@ -147,7 +147,6 @@ const createDiagnostics = (): Diagnostics => {
       setTimeout(run, ms);
     },
     build: __RUSHLINE_BUILD__.sha,
-    enabled: () => settings.read().raceData,
     now: () => performance.now(),
     playerId: player,
     send: (body) =>
@@ -155,6 +154,7 @@ const createDiagnostics = (): Diagnostics => {
         PLAYER_EVENTS_ENDPOINT,
         new Blob([body], { type: "application/json" })
       ),
+    settings,
   });
   let shown: GraphicsPlace = "menu";
   const graphicsLoss = createGraphicsLoss({
