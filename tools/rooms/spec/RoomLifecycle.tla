@@ -514,7 +514,8 @@ HostGrace ==
                      !.role = [s \in Sock |-> IF s \in rep THEN "lobby" ELSE room.role[s]]]
     /\ UNCHANGED <<wire, tab>>
 
-\* host.ts watchSeats: a seat silent for SILENT_SEAT_MS is closed with 4408 and dropped
+\* host.ts watchSeats, a heartbeat.ts watchForSilence: a seat silent for
+\* SILENT_SEAT_MS is closed with 4408 and dropped
 HostQuiet(s) ==
     /\ room.sock[s] = "present"
     /\ room.quiet[s] = 0
@@ -582,7 +583,8 @@ ClientRecv(s) ==
                                      ev = "replaced")]
                     ELSE tab
 
-\* seat-client.ts open listener: the first sendPing, PING_EVERY_MS after open
+\* seat-client.ts open listener: heartbeat.ts createPings sends the first ping
+\* PING_EVERY_MS after open
 ClientPing(s) ==
     /\ wire.cs[s] = "open"
     /\ ~wire.pinged[s]
@@ -597,8 +599,9 @@ ClientDiscard(s) ==
     /\ room' = [room EXCEPT !.out[s] = Tail(@)]
     /\ UNCHANGED <<wire, tab>>
 
-\* seat-client.ts sendPing: unanswered pings for DEAD_AFTER_MS make the seat
-\* silent; a connection that never opened fails with a close event
+\* heartbeat.ts createPings with seat-client.ts's silent rule: unanswered pings
+\* for DEAD_AFTER_MS make the seat silent; a connection that never opened fails
+\* with a close event
 ClientDeadFire(s) ==
     /\ wire.dead[s] = 0
     /\ LET r == s[1]

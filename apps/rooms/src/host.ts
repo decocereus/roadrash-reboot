@@ -14,7 +14,7 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
 import type { RoomStatus } from "./contract.ts";
-import { createPongs, SEAT_WATCH_MS, SILENT_SEAT_MS } from "./heartbeat.ts";
+import { createPongs, watchForSilence } from "./heartbeat.ts";
 import { hostAfter, NEW_HOST, startMomentOf } from "./host-phase.ts";
 import type { HostEvent, HostState } from "./host-phase.ts";
 import { createLobby } from "./lobby.ts";
@@ -138,7 +138,6 @@ export const createHost = (
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
-  let watching = false;
 
   const roomMs = (): number => ports.now() - bornAt;
   const pongFor = createPongs(roomMs);
@@ -493,29 +492,23 @@ export const createHost = (
     consider();
   };
 
-  const watchSeats = (): void => {
-    const now = ports.now();
-    for (const person of present.values()) {
-      if (now - person.heardAt > SILENT_SEAT_MS) {
-        const heard = person.heardAt !== SEND_FAILED;
-        if (heard) {
-          person.socket.close(
-            SEAT_SILENT,
-            "The room stopped hearing this seat."
-          );
-        }
-        drop(person, heard ? SEAT_SILENT : null);
+  const watchSeats = watchForSilence(ports, {
+    heard: () => present.values(),
+    onSilent: (person) => {
+      const heard = person.heardAt !== SEND_FAILED;
+      if (heard) {
+        person.socket.close(SEAT_SILENT, "The room stopped hearing this seat.");
       }
-    }
-    if (lobby.sweep(now)) {
-      tellLobby();
-    }
-    consider();
-    watching = present.size > 0 || lobby.size() > 0;
-    if (watching) {
-      ports.after(SEAT_WATCH_MS, watchSeats);
-    }
-  };
+      drop(person, heard ? SEAT_SILENT : null);
+    },
+    onSwept: (now) => {
+      if (lobby.sweep(now)) {
+        tellLobby();
+      }
+      consider();
+      return present.size > 0 || lobby.size() > 0;
+    },
+  });
 
   const obey = (person: Present, command: LobbyCommand): void => {
     const { memberId, socket } = person;
@@ -676,10 +669,7 @@ export const createHost = (
       } else if (held) {
         leaveRace(held.run, held.seat, SEAT_QUIT);
       }
-      if (!watching) {
-        watching = true;
-        ports.after(SEAT_WATCH_MS, watchSeats);
-      }
+      watchSeats();
       tellLobby();
       for (const other of present.values()) {
         if (other.socket !== socket && other.walk !== null) {

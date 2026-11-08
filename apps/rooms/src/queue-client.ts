@@ -1,12 +1,7 @@
-import {
-  PING_PACKET_BYTES,
-  readPong,
-  ROOM_PROTOCOL,
-  writePing,
-} from "@racer/sim/room-wire";
+import { ROOM_PROTOCOL } from "@racer/sim/room-wire";
 import * as Option from "effect/Option";
 
-import { MOST_UNANSWERED_PINGS, PING_EVERY_MS } from "./heartbeat.ts";
+import { createPings } from "./heartbeat.ts";
 import { SEAT_CLOSED } from "./messages.ts";
 import { decodeQueueMessage } from "./queue-messages.ts";
 import type { QueueMessage } from "./queue-messages.ts";
@@ -37,47 +32,29 @@ export const enterQueue = (
 ): (() => void) => {
   const socket = new WebSocket(queueUrl(roomsUrl, build, key));
   socket.binaryType = "arraybuffer";
-  const ping = new DataView(new ArrayBuffer(PING_PACKET_BYTES));
-  const pong = { roomMs: 0, stamp: 0 };
+  const pings = createPings(socket);
   let settled = false;
-  let unansweredPings = 0;
-  let pings: ReturnType<typeof setInterval> | null = null;
-
-  const stopPings = (): void => {
-    if (pings) {
-      clearInterval(pings);
-      pings = null;
-    }
-  };
 
   const lose = (): void => {
-    stopPings();
+    pings.stop();
     if (!settled) {
       settled = true;
       onLost();
     }
   };
 
-  const sendPing = (): void => {
-    if (unansweredPings > MOST_UNANSWERED_PINGS) {
-      lose();
-      socket.close(SEAT_CLOSED, "The queue went silent.");
-      return;
-    }
-    writePing(ping, Math.floor(performance.now()));
-    socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
-    unansweredPings += 1;
-  };
-
   socket.addEventListener("open", () => {
-    pings = setInterval(sendPing, PING_EVERY_MS);
+    pings.start({
+      onSilent: () => {
+        lose();
+        socket.close(SEAT_CLOSED, "The queue went silent.");
+      },
+    });
   });
   socket.addEventListener("message", (event) => {
     const data: unknown = event.data;
     if (data instanceof ArrayBuffer) {
-      if (readPong(new DataView(data), pong)) {
-        unansweredPings = 0;
-      }
+      pings.hear(new DataView(data));
       return;
     }
     const message = decodeQueueMessage(data);
@@ -89,7 +66,7 @@ export const enterQueue = (
   socket.addEventListener("close", lose);
   return () => {
     settled = true;
-    stopPings();
+    pings.stop();
     socket.close(SEAT_CLOSED, "The rider left the queue.");
   };
 };

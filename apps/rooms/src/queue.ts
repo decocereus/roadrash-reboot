@@ -1,7 +1,7 @@
 import { MOST_SEATS } from "@racer/sim/room";
 import { ROOM_PROTOCOL } from "@racer/sim/room-wire";
 
-import { createPongs, SEAT_WATCH_MS, SILENT_SEAT_MS } from "./heartbeat.ts";
+import { createPongs, watchForSilence } from "./heartbeat.ts";
 import type { HostSocket } from "./host.ts";
 import { SEAT_CLOSED, SEAT_SILENT } from "./messages.ts";
 import type { RoomNote } from "./notes.ts";
@@ -49,7 +49,6 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
   const pongFor = createPongs(() => ports.now() - bornAt);
   let tickets: readonly Ticket[] = [];
   let waking = false;
-  let watching = false;
 
   const send = (socket: HostSocket, data: string | ArrayBufferView): void => {
     try {
@@ -111,23 +110,22 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
     }
   };
 
-  const watchTickets = (): void => {
-    const now = ports.now();
-    const silent = tickets.filter(
-      (ticket) => now - ticket.heardAt > SILENT_SEAT_MS
-    );
-    if (silent.length > 0) {
-      tickets = tickets.filter((ticket) => !silent.includes(ticket));
-      for (const { socket } of silent) {
-        socket.close(SEAT_SILENT, "The queue stopped hearing this ticket.");
+  const watchTickets = watchForSilence(ports, {
+    heard: () => tickets,
+    onSilent: (silent) => {
+      tickets = tickets.filter((ticket) => ticket !== silent);
+      silent.socket.close(
+        SEAT_SILENT,
+        "The queue stopped hearing this ticket."
+      );
+    },
+    onSwept: (_now, silent) => {
+      if (silent > 0) {
+        settle();
       }
-      settle();
-    }
-    watching = tickets.length > 0;
-    if (watching) {
-      ports.after(SEAT_WATCH_MS, watchTickets);
-    }
-  };
+      return tickets.length > 0;
+    },
+  });
 
   return {
     enter: (socket, claim) => {
@@ -151,10 +149,7 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
         tell(older.socket, { kind: "refused", reason: "replaced" });
         older.socket.close(SEAT_CLOSED, "replaced");
       }
-      if (!watching) {
-        watching = true;
-        ports.after(SEAT_WATCH_MS, watchTickets);
-      }
+      watchTickets();
       settle();
     },
     gone: (socket) => {
