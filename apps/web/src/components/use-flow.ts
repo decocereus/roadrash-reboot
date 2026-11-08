@@ -1,3 +1,4 @@
+import type { PracticePick } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { Settlement } from "@racer/career/settle";
@@ -10,26 +11,16 @@ import type { RefObject } from "react";
 import { bootGame } from "../asset-load.ts";
 import { barCast, barPlates, firstRoad, preload } from "../career/bar.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
-import {
-  careerEntry,
-  careerReport,
-  firstQuickPick,
-  quickEntry,
-  quickReport,
-} from "../career/flow.ts";
-import type { QuickPick, RaceReport } from "../career/flow.ts";
+import { firstQuickPick, quickReport, rideEntry } from "../career/flow.ts";
+import type { RaceReport } from "../career/flow.ts";
 import {
   browserStorage,
   careerSeedFrom,
   freshCareer,
-  isUnsaved,
-  loadCareer,
+  holdCareer,
   randomUnit,
-  saveStateOf,
-  startOver,
-  storeCareer,
 } from "../career/save.ts";
-import type { SaveState } from "../career/save.ts";
+import type { CareerTab, SaveState } from "../career/save.ts";
 import { diagnostics, sanitise } from "../diagnostics/hub.ts";
 import { createRaceEvents } from "../diagnostics/race-events.ts";
 import type { RaceEvents, RaceFacts } from "../diagnostics/race-events.ts";
@@ -92,45 +83,45 @@ interface Save {
 
 const useSave = (rules: RaceRules | null): Save => {
   const careerRef = useRef<CareerState | null>(null);
+  const [tab, setTab] = useState<CareerTab | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "loading" });
 
   useEffect(() => {
-    if (rules === null) {
-      return;
-    }
-    const loaded = loadCareer(rules, browserStorage);
-    careerRef.current = loaded.status === "ready" ? loaded.career : null;
-    setSave(saveStateOf(loaded));
-  }, [rules]);
-
-  const commit = useCallback((career: CareerState) => {
-    careerRef.current = career;
-    setSave({
-      career,
-      leftRace: null,
-      status: "ready",
-      unsaved: isUnsaved(storeCareer(browserStorage, career)),
-    });
+    const held = holdCareer(
+      globalThis.navigator.locks,
+      globalThis.window,
+      browserStorage,
+      (next) => {
+        careerRef.current = next.status === "ready" ? next.career : null;
+        setSave(next);
+      }
+    );
+    setTab(held);
+    return held.release;
   }, []);
 
-  const settle = useCallback(
-    (settlement: Settlement): RaceReport | null => {
-      if (!(settlement.settled && settlement.career.lastResult)) {
-        return null;
-      }
-      commit(settlement.career);
-      return careerReport(settlement.career.lastResult);
+  useEffect(() => {
+    if (rules !== null) {
+      tab?.load(rules);
+    }
+  }, [rules, tab]);
+
+  const commit = useCallback(
+    (career: CareerState) => {
+      tab?.commit(career);
     },
-    [commit]
+    [tab]
+  );
+
+  const settle = useCallback(
+    (settlement: Settlement): RaceReport | null =>
+      tab?.settle(settlement) ?? null,
+    [tab]
   );
 
   const eraseSave = useCallback(() => {
-    const reset = startOver(browserStorage);
-    if (reset.status === "reset") {
-      careerRef.current = null;
-      setSave({ status: "empty" });
-    }
-  }, []);
+    tab?.eraseSave();
+  }, [tab]);
 
   return { careerRef, commit, eraseSave, save, settle };
 };
@@ -269,13 +260,13 @@ export interface Flow {
   readonly view: View;
   readonly save: SaveState;
   readonly career: CareerState | null;
-  readonly pick: QuickPick;
+  readonly pick: PracticePick;
   readonly feed: HudFeed;
   readonly ready: boolean;
   readonly failure: string;
   readonly send: (event: NavigationEvent) => void;
   readonly leave: () => void;
-  readonly setPick: (pick: QuickPick) => void;
+  readonly setPick: (pick: PracticePick) => void;
   readonly commit: (career: CareerState) => void;
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
@@ -297,7 +288,7 @@ export const useFlow = (): Flow => {
       diagnostics().events.track(event);
     })
   );
-  const [pick, setPick] = useState<QuickPick>(firstQuickPick);
+  const [pick, setPick] = useState<PracticePick>(firstQuickPick);
   const rulesLoad = useRules();
   const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
   const { careerRef, commit, eraseSave, save, settle } = useSave(rules);
@@ -528,11 +519,16 @@ export const useFlow = (): Flow => {
       send({ kind: "resumed" });
     },
     rideOut(mode, roadId) {
-      const entry =
-        mode === "career" && career
-          ? careerEntry(career, roadId)
-          : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
-      send({ entry, kind: "ridePicked" });
+      send({
+        entry: rideEntry(
+          mode,
+          roadId,
+          career,
+          pick,
+          careerSeedFrom(randomUnit())
+        ),
+        kind: "ridePicked",
+      });
     },
     roomLost() {
       races.ended("lost", factsNow());

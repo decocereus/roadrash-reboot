@@ -113,6 +113,7 @@ export interface Room {
   readonly leave: (rider: RiderId) => void;
   readonly missedControls: (rider: RiderId) => number;
   readonly over: () => boolean;
+  readonly hashNow: () => Uint32Array;
   readonly step: () => void;
 }
 
@@ -164,6 +165,7 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
   const seats = seatsOf(state).map(seatFor);
   const seatOf = (rider: RiderId): Seat | undefined =>
     seats.find((seat) => seat.rider.id === rider);
+  const hashedNow = new Uint32Array(HASH_WORDS);
   const room: Room = {
     accept: (rider, firstTick, controls) => {
       const seat = seatOf(rider);
@@ -194,6 +196,10 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
     digest,
     frame: createTickFrame(),
     hash: new Uint32Array(HASH_WORDS),
+    hashNow: () => {
+      hashRace(state, digest, scratchFor(scratch, state), hashedNow);
+      return hashedNow;
+    },
     hashed: false,
     leave: (rider) => {
       const seat = seatOf(rider);

@@ -60,6 +60,41 @@ describe("walk sites", () => {
     expect(compileTrack(roads["ridge-road"]).walkSites).toStrictEqual([]);
   });
 
+  it("refuses a crowd that is not a stretch of the road", () => {
+    const plan = roads["breakwater-run"];
+    for (const [from, to] of [
+      [-400, -300],
+      [1700, 1300],
+      [Number.NaN, 1300],
+      [8000, 90_000],
+    ] as const) {
+      expect(() =>
+        compileTrack({ ...plan, crowds: [{ from, sites: 4, to }] })
+      ).toThrow(`A crowd on ${plan.name} runs ${from} to ${to}`);
+    }
+  });
+
+  it("refuses a crowd that is not a whole number of sites from 0 up", () => {
+    const plan = roads["breakwater-run"];
+    for (const sites of [2.5, -1, Number.NaN]) {
+      expect(() =>
+        compileTrack({ ...plan, crowds: [{ from: 1300, sites, to: 1740 }] })
+      ).toThrow(`A crowd on ${plan.name} has ${sites} sites`);
+    }
+  });
+
+  it("refuses a crowd on a crossing's reserved stretch, where its walkers would cross against the lights", () => {
+    const plan = roads["breakwater-run"];
+    const [harbour] = breakwater.crossings;
+    expect(harbour?.id).toBe("harbour-cross");
+    expect(() =>
+      compileTrack({
+        ...plan,
+        crowds: [{ from: (harbour?.toS ?? 0) - 10, sites: 4, to: 1000 }],
+      })
+    ).toThrow(`over crossing "harbour-cross"`);
+  });
+
   it("names each site once", () => {
     const ids = breakwater.walkSites.map((site) => site.id);
     expect(new Set(ids).size).toBe(ids.length);

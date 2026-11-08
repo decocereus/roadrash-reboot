@@ -67,7 +67,7 @@ export const openSeat = (
     "Script",
     build,
     crypto.randomUUID(),
-    () => null
+    null
   );
   let saidReady = false;
   const gaps: number[] = [];

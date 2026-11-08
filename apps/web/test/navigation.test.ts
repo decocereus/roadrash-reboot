@@ -4,17 +4,18 @@ import type { RaceResult } from "@racer/career/outcome";
 import { settleRace, startRace } from "@racer/career/settle";
 import { newCareer } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   careerEntry,
-  careerReport,
   firstQuickPick,
   planFor,
   quickEntry,
   quickReport,
 } from "../src/career/flow.ts";
 import type { RaceReport } from "../src/career/flow.ts";
+import type { SaveStorage } from "../src/career/save-storage.ts";
+import { settledRace } from "../src/career/save.ts";
 import type { SaveState } from "../src/career/save.ts";
 import type { RacePlan } from "../src/game/hud.ts";
 import {
@@ -42,22 +43,28 @@ const rulesFailed: RulesLoad = {
 
 const fresh: CareerState = newCareer(SEED);
 
+const writable: SaveStorage = {
+  getItem: () => null,
+  removeItem: vi.fn<SaveStorage["removeItem"]>(),
+  setItem: vi.fn<SaveStorage["setItem"]>(),
+};
+
 const settledCareer = () => {
   const begun = startRace(fresh, ROAD, SEED);
   if (!begun.started || !begun.career.activeRace) {
     throw new Error("A new career starts its first road.");
   }
-  const settlement = settleRace(
-    begun.career,
-    abandonedOutcome(recordedRules, begun.career.activeRace)
+  const settled = settledRace(
+    () => writable,
+    settleRace(
+      begun.career,
+      abandonedOutcome(recordedRules, begun.career.activeRace)
+    )
   );
-  if (!settlement.settled || !settlement.career.lastResult) {
+  if (settled === null) {
     throw new Error("A race that started settles.");
   }
-  return {
-    career: settlement.career,
-    report: careerReport(settlement.career.lastResult),
-  };
+  return { career: settled.save.career, report: settled.report };
 };
 
 const { career: raced, report: careerResult } = settledCareer();
@@ -128,6 +135,7 @@ const readySave = (career: CareerState): SaveState => ({
 const LOADING: SaveState = { status: "loading" };
 const EMPTY: SaveState = { status: "empty" };
 const UNREAD: SaveState = { status: "unread" };
+const ELSEWHERE: SaveState = { status: "elsewhere" };
 const CORRUPT: SaveState = {
   error: { field: "", kind: "wrongVersion" },
   status: "corrupt",
@@ -189,6 +197,7 @@ const everyScreen = {
   backRoom: { screen: "backRoom" },
   boot: { screen: "boot" },
   clubhouse: { screen: "clubhouse" },
+  elsewhere: { screen: "elsewhere" },
   ending: { screen: "ending" },
   gameOver: { screen: "gameOver" },
   garage: { screen: "garage" },
@@ -240,7 +249,7 @@ describe("the way into the game", () => {
   });
 
   it("seats a room link whatever the save says", () => {
-    for (const save of [EMPTY, CORRUPT, UNREAD, readySave(fresh)]) {
+    for (const save of [EMPTY, CORRUPT, UNREAD, ELSEWHERE, readySave(fresh)]) {
       expect(
         walk(firstView(), entered(rulesReady, save, ROOM_ID))
       ).toMatchObject({
@@ -257,6 +266,16 @@ describe("the way into the game", () => {
         trail: ["backRoom"],
       });
     }
+  });
+
+  it("stops a tab whose career is open in another tab, with no way on and no career begun", () => {
+    const { effects, trail } = walk(
+      firstView(),
+      entered(rulesReady, ELSEWHERE),
+      LEFT
+    );
+    expect(trail).toStrictEqual(["elsewhere", "elsewhere"]);
+    expect(effects).toStrictEqual([]);
   });
 
   it("stops at the back room when the rules fail, ahead of a room or a URL ride", () => {
@@ -296,6 +315,7 @@ describe("leaving each screen", () => {
       backRoom: "clubhouse",
       boot: "boot",
       clubhouse: "backRoom",
+      elsewhere: "elsewhere",
       ending: "backRoom",
       gameOver: "backRoom",
       garage: "clubhouse",

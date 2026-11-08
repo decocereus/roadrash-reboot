@@ -44,7 +44,6 @@ const buildIdentity = () => ({
       ":/",
       ":(top,exclude)apps/web/public/rushline-build.txt"
     ) ?? "") !== "",
-  rooms: process.env.RUSHLINE_BUILD ?? "local",
   sha: git("rev-parse", "--short=12", "HEAD") ?? "unknown",
 });
 

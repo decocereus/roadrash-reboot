@@ -63,6 +63,9 @@ importers:
       vitest:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.3.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   apps/rooms:
     dependencies:
@@ -511,6 +514,9 @@ importers:
       '@racer/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
+      '@racer/rooms':
+        specifier: workspace:*
+        version: link:../../apps/rooms
       effect:
         specifier: 4.0.0
         version: 4.0.0

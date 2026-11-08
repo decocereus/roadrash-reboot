@@ -234,24 +234,6 @@ const noteEvent = (log: RaceLog, state: RaceView, event: RaceEvent): void => {
   }
 };
 
-const terminalOf = (
-  events: readonly RaceEvent[],
-  me: RiderId
-): RaceResult | null => {
-  for (const event of events) {
-    if (event.rider !== me) {
-      continue;
-    }
-    if (event.kind === "finish") {
-      return "finished";
-    }
-    if (event.kind === "busted" || event.kind === "wrecked") {
-      return event.kind;
-    }
-  }
-  return null;
-};
-
 const fateOf = (rider: RiderView): Fate => {
   if (rider.finishTick >= 0) {
     return "finished";
@@ -259,6 +241,12 @@ const fateOf = (rider: RiderView): Fate => {
   return rider.mode === "busted" || rider.mode === "wrecked"
     ? rider.mode
     : "racing";
+};
+
+const resultOf = (state: RaceView, me: RiderId): RaceResult | null => {
+  const rider = riderOf(state.riders, me);
+  const fate = rider ? fateOf(rider) : "racing";
+  return fate === "racing" ? null : fate;
 };
 
 const isOut = (rider: RiderView | undefined): boolean =>
@@ -301,18 +289,21 @@ const lostByAWheel = (player: RiderView, rival: RiderView): boolean => {
 const arrestOf = (
   state: RaceView,
   setup: CareerRaceSetup,
-  me: RiderId
-): Arrest | null => {
-  const bust = bustOf(state, me);
-  return bust
-    ? {
-        fine: bust.fine,
-        km: kmOf(bust.s),
-        officer: officerFor(roads[setup.roadId].region).id,
-        weapon: bust.weapon,
-        x: bust.x,
-      }
-    : null;
+  rider: RiderView
+): Arrest => {
+  const bust = bustOf(state, rider.id) ?? {
+    fine: state.police.fine,
+    s: rider.bodyS,
+    weapon: rider.weaponAtThrow,
+    x: rider.bodyX,
+  };
+  return {
+    fine: bust.fine,
+    km: kmOf(bust.s),
+    officer: officerFor(roads[setup.roadId].region).id,
+    weapon: bust.weapon,
+    x: bust.x,
+  };
 };
 
 const classify = (
@@ -360,7 +351,8 @@ const classify = (
   });
   const finished = result === "finished";
   return {
-    arrest: result === "busted" ? arrestOf(state, setup, me) : null,
+    arrest:
+      result === "busted" && player ? arrestOf(state, setup, player) : null,
     finishTick: player?.finishTick ?? -1,
     incidents,
     km: kmOf(bodyOf(state, me)),
@@ -388,7 +380,7 @@ export const recordTick = (
   for (const event of state.events) {
     noteEvent(log, state, event);
   }
-  const result = terminalOf(state.events, log.rider);
+  const result = resultOf(state, log.rider);
   if (result) {
     log.outcome = classify(log, state, setup, result);
   }
@@ -398,7 +390,9 @@ export const outcomeOf = (
   state: RaceView,
   setup: CareerRaceSetup,
   log: RaceLog
-): RaceOutcome => log.outcome ?? classify(log, state, setup, "quit");
+): RaceOutcome =>
+  log.outcome ??
+  classify(log, state, setup, resultOf(state, log.rider) ?? "quit");
 
 export const abandonedOutcome = (
   rules: RaceRules,

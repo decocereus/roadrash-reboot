@@ -1,10 +1,10 @@
 import { recordedRules } from "@racer/career/bench";
+import type { PracticePick } from "@racer/career/field";
 import * as THREE from "three";
 
 import { celebrityLoader } from "../src/asset-load.ts";
 import { browserAssetRuntime } from "../src/asset-runtime.ts";
 import { firstQuickPick, planFor, quickEntry } from "../src/career/flow.ts";
-import type { QuickPick } from "../src/career/flow.ts";
 import type { AcquiredAssets } from "../src/game/assets.ts";
 import { assetParsers, createGame, createRenderer } from "../src/game/game.ts";
 import type { GameHandle, HudState, RacePlan } from "../src/game/hud.ts";
@@ -18,8 +18,8 @@ const WARM_CYCLES = 2;
 const COMPARED_CYCLES = 5;
 const EVENT_DEADLINE_MS = 10_000;
 const COUNTDOWN_FRAMES = 60;
-const ROAD_A: QuickPick["roadId"] = "ridge-road";
-const ROAD_B: QuickPick["roadId"] = "slag-row";
+const ROAD_A: PracticePick["roadId"] = "ridge-road";
+const ROAD_B: PracticePick["roadId"] = "slag-row";
 
 interface Counts {
   readonly geometries: number;
@@ -129,7 +129,7 @@ interface Seen {
   hud: HudState | null;
 }
 
-const planOf = (roadId: QuickPick["roadId"]): RacePlan =>
+const planOf = (roadId: PracticePick["roadId"]): RacePlan =>
   planFor(recordedRules, null, quickEntry({ ...firstQuickPick, roadId }, SEED));
 
 const trackProof = async (game: GameHandle, renderer: THREE.WebGLRenderer) => {
@@ -187,7 +187,7 @@ const watchScene = (scene: THREE.Scene) => {
 const failedReload = async (
   game: GameHandle,
   held: CapturedRenderer,
-  roadId: QuickPick["roadId"]
+  roadId: PracticePick["roadId"]
 ) => {
   const prepared = await kindOf(game.prepare(planOf(ROAD_A)));
   const { scene } = held;

@@ -524,7 +524,7 @@ export const settleRace = (
     memory: memoryAfter(career, outcome),
     qualified: { ...career.qualified, [race.tier]: progress.roads },
     record: recordAfter(career.record, outcome, bill.prize),
-    season: scoreRace(career.season, outcome.placings, career.record.starts),
+    season: scoreRace(career.season, outcome.placings),
     story: storyAfter(career, outcome, progress, bill),
     tier: progress.tier,
   };
