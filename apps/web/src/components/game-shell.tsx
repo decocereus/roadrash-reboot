@@ -266,6 +266,7 @@ const MenuScreens = ({
           }
           report={view.report}
           riding={career?.bikeId ?? flow.pick.bikeId}
+          unsaved={flow.save.status === "ready" && flow.save.unsaved}
         />
       );
     }

@@ -36,6 +36,21 @@ export const firstQuickPick: QuickPick = {
   tier: 1,
 };
 
+export const pickWithin = (
+  pick: QuickPick,
+  career: CareerState | null
+): QuickPick => {
+  const reach = career?.tier ?? 1;
+  return {
+    bikeId:
+      career === null || career.garage.includes(pick.bikeId)
+        ? pick.bikeId
+        : career.bikeId,
+    roadId: pick.roadId,
+    tier: pick.tier <= reach ? pick.tier : reach,
+  };
+};
+
 export interface RaceReport {
   readonly mode: RaceMode;
   readonly roadId: RoadId;

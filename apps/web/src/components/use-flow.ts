@@ -14,6 +14,7 @@ import {
   careerEntry,
   careerReport,
   firstQuickPick,
+  pickWithin,
   quickEntry,
   quickReport,
 } from "../career/flow.ts";
@@ -297,7 +298,7 @@ export const useFlow = (): Flow => {
       diagnostics().events.track(event);
     })
   );
-  const [pick, setPick] = useState<QuickPick>(firstQuickPick);
+  const [picked, setPick] = useState<QuickPick>(firstQuickPick);
   const rulesLoad = useRules();
   const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
   const { careerRef, commit, eraseSave, save, settle } = useSave(rules);
@@ -343,6 +344,7 @@ export const useFlow = (): Flow => {
   const failure =
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
+  const pick = pickWithin(picked, career);
   useEffect(() => {
     send({
       kind: "entered",

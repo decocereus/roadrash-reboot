@@ -5,7 +5,7 @@ The game opens in the Lowside bar. Escape there, or Back room in its menu, opens
 ## Sub-features
 
 - `back-room` shows Back to the bar (or Career over, Season over, Start over for a damaged save), New career, Single race, and Settings.
-- `route-board` shows the Single race list pinned in the back room with Road, Tier, and Bike steppers, the chosen road's flyer, its length, traffic, police, and home riders on the cyan note, and its description on the pink note.
+- `route-board` shows the Single race list pinned in the back room with Road, Tier, and Bike steppers, the chosen road's flyer, its length, traffic, police, and home riders on the cyan note, and its description on the pink note. Tier and Bike stay inside the current career: after New career they read tier 1 and the bike that career owns, and the race rides them.
 - `ride-out` shows the road's flyer, the grid, and "Loading the road", then "Ride", and starts the race about 2 seconds after it opens. It has no buttons; Escape goes back.
 - `ride-out-failed-load` shows `The riders did not load.` with Retry and Back when a rider's model cannot load. Retry prepares the race again and starts it without waiting out the dwell again. A Retry before the dwell ends still waits it out. Back returns to the route board.
 - `ride-out-back` leaves the card while the road is loading, and the preparation that finishes later starts nothing.

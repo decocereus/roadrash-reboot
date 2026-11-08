@@ -400,7 +400,7 @@ Every screen React draws around a race, from the bar and the back room to the ga
 - Docs: [docs/design/screens.md#flow](design/screens.md#flow), [docs/design/game-design.md#3-modes](design/game-design.md#3-modes), [DESIGN.md#components](../DESIGN.md#components)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md), [career.md](../.claude/skills/verify-rushline/features/career.md)
 - Perf: `bytes.route.root.gzip`, `bytes.route.root.raw`
-- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
+- Owns: `apps/web/src/components/screens/**`, `apps/web/test/bar-nav.test.tsx`, `apps/web/test/career-screens.test.tsx`, `apps/web/src/components/game-shell.tsx`, `apps/web/src/components/use-flow.ts`, `apps/web/src/navigation.ts`, `apps/web/test/navigation.test.ts`, `apps/web/src/assets/*-art.ts`, `apps/web/src/game/showroom.ts`, `apps/web/src/styles.css`, `apps/web/src/career/bar.ts`, `apps/web/src/career/bike-stats.ts`, `apps/web/src/career/copy.ts`, `apps/web/src/career/copy.test.ts`, `apps/web/src/career/flow.ts`, `apps/web/src/career/format.ts`, `apps/web/src/career/notes.ts`
 
 Source files:
 
@@ -444,6 +444,7 @@ Test files:
 
 - `apps/web/src/career/copy.test.ts`
 - `apps/web/test/bar-nav.test.tsx`
+- `apps/web/test/career-screens.test.tsx`
 - `apps/web/test/navigation.test.ts`
 
 ### Race HUD and notices
