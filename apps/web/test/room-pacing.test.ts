@@ -22,6 +22,7 @@ interface Ride {
   readonly lateShare: number;
   readonly leaps: number;
   readonly mostAhead: number;
+  readonly mostAheadOfRoom: number;
   readonly slowest: number;
   readonly stops: number;
 }
@@ -158,7 +159,12 @@ const ride = (link: Link, displayHz: number): Ride => {
   let stops = 0;
   let leaps = 0;
   let mostAhead = 0;
+  let mostAheadOfRoom = 0;
+  let roomTick = 0;
   for (now = 0; now < RIDE_MS; now += frameMs) {
+    while ((emitted[roomTick + 1] ?? Number.POSITIVE_INFINITY) <= now) {
+      roomTick += 1;
+    }
     while (heard < arrived.length && (arrived[heard] ?? 0) <= now) {
       clock.heardTick(heard, arrived[heard] ?? now);
       confirmed = heard;
@@ -188,6 +194,7 @@ const ride = (link: Link, displayHz: number): Ride => {
       stops += moved <= 0 ? 1 : 0;
       leaps += moved > 2 ? 1 : 0;
       mostAhead = Math.max(mostAhead, predicted - confirmed);
+      mostAheadOfRoom = Math.max(mostAheadOfRoom, predicted - roomTick);
     }
   }
   let late = 0;
@@ -209,6 +216,7 @@ const ride = (link: Link, displayHz: number): Ride => {
     lateShare: late / Math.max(1, counted),
     leaps,
     mostAhead,
+    mostAheadOfRoom,
     slowest,
     stops,
   };
@@ -261,11 +269,17 @@ const stalledRoom: Link = {
   upMs: fixedDelay(70),
 };
 
-const proxySpike: Link = {
-  downMs: cutOff(80, 20_000, 21_000),
+const cutBothWays = (seconds: number): Link => ({
+  downMs: cutOff(80, 20_000, 20_000 + seconds * 1000),
   roomHz: steadyHz,
-  upMs: cutOff(80, 20_000, 21_000),
-};
+  upMs: cutOff(80, 20_000, 20_000 + seconds * 1000),
+});
+
+const heldDownstream = (seconds: number): Link => ({
+  downMs: cutOff(80, 20_000, 20_000 + seconds * 1000),
+  roomHz: steadyHz,
+  upMs: fixedDelay(80),
+});
 
 const risingRoundTrip: Link = {
   downMs: risesAt(75, 200, 20_000),
@@ -320,13 +334,23 @@ describe("a room race on a rough link", () => {
     expect(result.mostAhead).toBeLessThan(INPUT_HORIZON / 2);
   });
 
-  it("slows down rather than stopping through a one-second cut, and never leaps or speeds up", () => {
-    const result = ride(proxySpike, 60);
-    expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
-      leaps: 0,
-      stops: 0,
-    });
-    expect(result.fastest).toBeLessThanOrEqual(1.11);
-    expect(result.mostAhead).toBeLessThan(INPUT_HORIZON);
-  });
+  it.each([
+    ["a one-second cut both ways", cutBothWays(1), 1],
+    ["a 2.5 s hold on ticks from the room", heldDownstream(2.5), 0.01],
+    ["a 2.5 s cut both ways", cutBothWays(2.5), 1],
+    ["a 4 s cut both ways", cutBothWays(4), 1],
+  ] as const)(
+    "rides on at a steady speed through %s, never sending controls the room would refuse",
+    (_name, link, lateLimit) => {
+      const result = ride(link, 60);
+      expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
+        leaps: 0,
+        stops: 0,
+      });
+      expect(result.slowest).toBeGreaterThanOrEqual(0.89);
+      expect(result.fastest).toBeLessThanOrEqual(1.11);
+      expect(result.mostAheadOfRoom).toBeLessThan(INPUT_HORIZON);
+      expect(result.lateShare).toBeLessThan(lateLimit);
+    }
+  );
 });

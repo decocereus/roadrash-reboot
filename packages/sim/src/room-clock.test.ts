@@ -263,15 +263,15 @@ describe("the room clock", () => {
     expect(clock.stepsDue(150, 100, 1000)).toBe(1);
   });
 
-  it("slows toward a stop as its guess nears the room's input horizon, and never runs past it", () => {
+  it("slows toward a stop only as its guess nears five seconds past the last tick it heard", () => {
     const clock = createRoomClock();
     clock.heardRtt(1);
     clock.heardTick(100, 1000);
-    const now = 1000 + 5 * TICK_MS;
-    expect(clock.pace(160, 100, now)).toBeCloseTo(0.9, 9);
-    expect(clock.pace(175, 100, now)).toBeCloseTo(0.5, 9);
-    expect(clock.pace(190, 100, now)).toBe(0);
-    expect(clock.stepsDue(190, 100, now)).toBe(0);
+    const now = 1000 + 300 * TICK_MS;
+    expect(clock.pace(370, 100, now)).toBeCloseTo(1.1, 9);
+    expect(clock.pace(385, 100, now)).toBeCloseTo(0.5, 9);
+    expect(clock.pace(400, 100, now)).toBe(0);
+    expect(clock.stepsDue(400, 100, now)).toBe(0);
   });
 
   it("follows a room that sends 57 ticks a second instead of running away from it", () => {

@@ -135,7 +135,7 @@ describe("a seat loading the race", () => {
         vi.advanceTimersByTime(FRAME_MS);
         tick += 1;
         hearTick(socket, tick);
-        seat.frameDrawn();
+        seat.frameDrawn(1);
       }
     };
     const startedAt = performance.now();

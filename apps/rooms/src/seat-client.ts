@@ -228,7 +228,7 @@ export interface SeatListeners {
 export interface RoomSeat {
   readonly closeCode: () => number | null;
   readonly flush: () => void;
-  readonly frameDrawn: () => void;
+  readonly frameDrawn: (drawnShare: number) => void;
   readonly leave: () => void;
   readonly leaveRoom: () => void;
   readonly listen: (next: SeatListeners) => void;
@@ -350,7 +350,9 @@ export const openRoomSeat = (
     tally.frameDrawn(
       performance.now(),
       race.client.mine.s,
-      race.client.confirmed.tick
+      race.client.confirmed.tick,
+      1,
+      1
     );
     sendReport(race, tally.lastTraceRows());
   };
@@ -523,13 +525,20 @@ export const openRoomSeat = (
         reportOnce();
       }
     },
-    frameDrawn: () => {
+    frameDrawn: (drawnShare) => {
       const { race } = state;
       if (race && race.client.predicted.tick > 0) {
+        const now = performance.now();
         tally.frameDrawn(
-          performance.now(),
+          now,
           race.client.mine.s,
-          race.client.confirmed.tick
+          race.client.confirmed.tick,
+          clock.pace(
+            race.client.predicted.tick,
+            race.client.confirmed.tick,
+            now
+          ),
+          drawnShare
         );
       }
     },
@@ -588,15 +597,7 @@ export const openRoomSeat = (
       }
       race.client.settle();
       const { confirmed, predicted } = race.client;
-      const steps = clock.stepsDue(
-        predicted.tick,
-        confirmed.tick,
-        performance.now()
-      );
-      if (predicted.tick > 0) {
-        tally.stepped(steps);
-      }
-      return steps;
+      return clock.stepsDue(predicted.tick, confirmed.tick, performance.now());
     },
     target: () => clock.target(performance.now()),
     walk: (walk) => {

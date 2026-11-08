@@ -1,4 +1,4 @@
-import { INPUT_HORIZON } from "./room.ts";
+import { INPUT_HORIZON, PREDICTION_WINDOW } from "./room.ts";
 import { TICK_SECONDS } from "./state.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
@@ -98,7 +98,8 @@ export const createRoomClock = (): RoomClock => {
       : Math.ceil((typicalRtt + excessMs + jitterMs) / TICK_MS) +
         LEAD_MARGIN_TICKS;
   const target = (now: number): number =>
-    serverTick(now) + leadFor(raisedAbove(now));
+    serverTick(now) +
+    Math.min(INPUT_HORIZON - LEAD_MARGIN_TICKS, leadFor(raisedAbove(now)));
   return {
     heardRoomTime: (roomMs, now) => {
       roomAhead = Math.max(roomAhead, roomMs - now);
@@ -139,7 +140,7 @@ export const createRoomClock = (): RoomClock => {
           MOST_PACE_CHANGE,
           Math.max(-MOST_PACE_CHANGE, (wanted - predictedTick) * PACE_PER_TICK)
         );
-      const room = INPUT_HORIZON - (predictedTick - confirmedTick);
+      const room = PREDICTION_WINDOW - (predictedTick - confirmedTick);
       const slowing = Math.max(0, room) / SLOWING_ROOM_TICKS;
       return slowing < 1 ? Math.min(steer, slowing) : steer;
     },
@@ -148,7 +149,7 @@ export const createRoomClock = (): RoomClock => {
       startsAt = startAtRoomMs - roomAhead;
     },
     stepsDue: (predictedTick, confirmedTick, now) =>
-      target(now) <= 0 || predictedTick - confirmedTick >= INPUT_HORIZON
+      target(now) <= 0 || predictedTick - confirmedTick >= PREDICTION_WINDOW
         ? 0
         : 1,
     target,

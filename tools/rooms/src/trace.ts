@@ -46,23 +46,23 @@ export interface RiderTrace {
 }
 
 interface Moment {
-  doubled: number;
-  gapMs: number;
   frameMs: number;
-  held: number;
+  gapMs: number;
   late: number;
   missed: number;
   rttMs: number;
+  slowedMs: number;
+  surged: number;
 }
 
 const freshMoment = (): Moment => ({
-  doubled: 0,
   frameMs: 0,
   gapMs: 0,
-  held: 0,
   late: 0,
   missed: 0,
   rttMs: 0,
+  slowedMs: 0,
+  surged: 0,
 });
 
 const secondOf = (tick: number): number => Math.floor(tick * TICK_SECONDS);
@@ -108,8 +108,8 @@ const momentsOf = (
     );
     moment.gapMs = Math.max(moment.gapMs, row[TraceField.worstTickGapMs] ?? 0);
     moment.rttMs = Math.max(moment.rttMs, row[TraceField.worstRttMs] ?? 0);
-    moment.held += row[TraceField.held] ?? 0;
-    moment.doubled += row[TraceField.doubled] ?? 0;
+    moment.slowedMs += row[TraceField.slowedMs] ?? 0;
+    moment.surged += row[TraceField.surgedFrames] ?? 0;
   }
   for (const [tick = 0, owner, missed = 0, late = 0] of chunks(
     room.rows,
@@ -140,7 +140,7 @@ const clockOf = (second: number): string =>
 
 const momentText = (rider: number, moment: Moment | undefined): string =>
   moment
-    ? `rider ${rider} frame ${moment.frameMs} ms, tick gap ${moment.gapMs} ms, round trip ${moment.rttMs} ms, held ${moment.held}, doubled ${moment.doubled}, missed ${moment.missed}, late ${moment.late}`
+    ? `rider ${rider} frame ${moment.frameMs} ms, tick gap ${moment.gapMs} ms, round trip ${moment.rttMs} ms, slowed ${moment.slowedMs} ms, surged ${moment.surged}, missed ${moment.missed}, late ${moment.late}`
     : `rider ${rider} no row`;
 
 export const traceReport = (

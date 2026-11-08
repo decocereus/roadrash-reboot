@@ -4,7 +4,7 @@ import { controlOf } from "./control.ts";
 import { ROOM_LIMIT_TICKS, track } from "./race-fixtures.ts";
 import { defaultSetup, neutralInput } from "./race.ts";
 import { createRoomClient } from "./room-client.ts";
-import { createRoom, INPUT_HORIZON, roomSetup } from "./room.ts";
+import { createRoom, PREDICTION_WINDOW, roomSetup } from "./room.ts";
 import { PLAYER_RIDER, riderIdAt, riderOf } from "./state.ts";
 import type { Control } from "./state.ts";
 
@@ -78,7 +78,7 @@ describe("how far a correction moves the rider's own bike", () => {
   it("counts the predictions it refuses when the room goes quiet", () => {
     const { client } = rideTogether();
     let refused = 0;
-    for (let tick = 0; tick <= INPUT_HORIZON + LEAD_TICKS; tick += 1) {
+    for (let tick = 0; tick <= PREDICTION_WINDOW + LEAD_TICKS; tick += 1) {
       refused += client.predict(riding) ? 0 : 1;
     }
     expect(refused).toBeGreaterThan(0);

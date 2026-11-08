@@ -17,24 +17,25 @@ const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
 const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
 
 describe("a rider's race tally", () => {
-  it("counts the frames the clock held the bike or moved it more than once", () => {
+  it("counts the time the race ran slowed or stopped, and the frames the bike was drawn off its speed", () => {
     const tally = createRaceTally(true);
-    tally.stepped(1);
-    tally.stepped(0);
-    tally.stepped(4);
-    tally.stepped(2);
+    tally.frameDrawn(1000, 0, 0, 1, 1);
+    tally.frameDrawn(1016, 0, 0, 0.9, 1);
+    tally.frameDrawn(1036, 0, 0, 0.2, 1.4);
+    tally.frameDrawn(1052, 0, 0, 1, 0.6);
+    tally.frameDrawn(1068, 0, 0, 1.1, 1.1);
     expect(tally.read(client, 0)).toMatchObject({
-      doubledSteps: 2,
-      heldSteps: 1,
-      mostSteps: 4,
+      slowedMs: 36,
+      stoppedMs: 20,
+      surgedFrames: 2,
     });
   });
 
   it("keeps the slowest frame and where on the road it happened", () => {
     const tally = createRaceTally(true);
-    tally.frameDrawn(1000, 10, 0);
-    tally.frameDrawn(1080, 500, 0);
-    tally.frameDrawn(1096, 501, 0);
+    tally.frameDrawn(1000, 10, 0, 1, 1);
+    tally.frameDrawn(1080, 500, 0, 1, 1);
+    tally.frameDrawn(1096, 501, 0, 1, 1);
     expect(tally.read(client, 0)).toMatchObject({
       slowFrames: 1,
       worstFrameMs: 80,
@@ -65,10 +66,10 @@ describe("a rider's race tally", () => {
   it("counts frames and reads percentiles from every frame interval", () => {
     const tally = createRaceTally(true);
     let now = 1000;
-    tally.frameDrawn(now, 0, 0);
+    tally.frameDrawn(now, 0, 0, 1, 1);
     for (let frame = 0; frame < 100; frame += 1) {
       now += frame < 90 ? 16 : 40;
-      tally.frameDrawn(now, 0, 0);
+      tally.frameDrawn(now, 0, 0, 1, 1);
     }
     expect(tally.read(client, 0)).toMatchObject({
       frameCount: 100,
@@ -80,14 +81,12 @@ describe("a rider's race tally", () => {
 
   it("writes a row every quarter second with that moment's worst numbers", () => {
     const tally = createRaceTally(true);
-    tally.frameDrawn(1000, 0, 10);
+    tally.frameDrawn(1000, 0, 10, 1, 1);
     tally.heardTick(1010);
     tally.heardTick(1130);
     tally.heardRtt(90);
-    tally.stepped(0);
-    tally.stepped(2);
-    tally.frameDrawn(1100, 0, 12);
-    tally.frameDrawn(1300, 0, 20);
+    tally.frameDrawn(1100, 0, 12, 0.5, 2);
+    tally.frameDrawn(1300, 0, 20, 1, 1);
     const expected = Array.from({ length: TRACE_ROW_FIELDS }, () => 0);
     expected[TraceField.atMs] = 300;
     expected[TraceField.tick] = 20;
@@ -96,16 +95,16 @@ describe("a rider's race tally", () => {
     expected[TraceField.ticksHeard] = 2;
     expected[TraceField.worstTickGapMs] = 120;
     expected[TraceField.worstRttMs] = 90;
-    expected[TraceField.held] = 1;
-    expected[TraceField.doubled] = 1;
+    expected[TraceField.slowedMs] = 100;
+    expected[TraceField.surgedFrames] = 1;
     expect(tally.lastTraceRows()).toStrictEqual(expected);
   });
 
   it("hands over each row once, and only finished rows while riding", () => {
     const tally = createRaceTally(true);
-    tally.frameDrawn(1000, 0, 0);
-    tally.frameDrawn(1000 + TRACE_ROW_MS, 0, 1);
-    tally.frameDrawn(1000 + TRACE_ROW_MS + 10, 0, 2);
+    tally.frameDrawn(1000, 0, 0, 1, 1);
+    tally.frameDrawn(1000 + TRACE_ROW_MS, 0, 1, 1, 1);
+    tally.frameDrawn(1000 + TRACE_ROW_MS + 10, 0, 2, 1, 1);
     expect(tally.closedTraceRows()).toHaveLength(TRACE_ROW_FIELDS);
     expect(tally.closedTraceRows()).toHaveLength(0);
     expect(tally.lastTraceRows()).toHaveLength(TRACE_ROW_FIELDS);
@@ -114,7 +113,7 @@ describe("a rider's race tally", () => {
   it("stops at the row limit instead of growing", () => {
     const tally = createRaceTally(true);
     for (let row = 0; row <= MOST_TRACE_ROWS + 1; row += 1) {
-      tally.frameDrawn(1000 + row * TRACE_ROW_MS, 0, row);
+      tally.frameDrawn(1000 + row * TRACE_ROW_MS, 0, row, 1, 1);
     }
     expect(tally.lastTraceRows()).toHaveLength(
       MOST_TRACE_ROWS * TRACE_ROW_FIELDS
@@ -123,8 +122,8 @@ describe("a rider's race tally", () => {
 
   it("keeps the last unfinished row, so a stall just before the end still shows", () => {
     const tally = createRaceTally(true);
-    tally.frameDrawn(1000, 0, 0);
-    tally.frameDrawn(1120, 0, 7);
+    tally.frameDrawn(1000, 0, 0, 1, 1);
+    tally.frameDrawn(1120, 0, 7, 1, 1);
     const rows = tally.lastTraceRows();
     expect(rows).toHaveLength(TRACE_ROW_FIELDS);
     expect(rows?.[TraceField.worstFrameMs]).toBe(120);

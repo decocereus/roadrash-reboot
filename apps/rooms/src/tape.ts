@@ -41,9 +41,9 @@ const MOST_BROWSER_TEXT = 120;
 
 export const TraceField = {
   atMs: 0,
-  doubled: 1,
   frames: 2,
-  held: 3,
+  slowedMs: 3,
+  surgedFrames: 1,
   tick: 4,
   ticksHeard: 5,
   worstFrameMs: 6,

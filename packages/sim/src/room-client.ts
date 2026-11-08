@@ -22,7 +22,7 @@ import {
   MOST_BATCHED_CONTROLS,
   writeInput,
 } from "./room-wire.ts";
-import { INPUT_HORIZON, seatsOf } from "./room.ts";
+import { PREDICTION_WINDOW, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
@@ -38,7 +38,7 @@ import type {
   RiderState,
 } from "./state.ts";
 
-const MOST_LEAD_TICKS = INPUT_HORIZON;
+const MOST_LEAD_TICKS = PREDICTION_WINDOW;
 
 const NO_EVENTS: readonly RaceEvent[] = [];
 const NO_CORRECTIONS: readonly RiderCorrection[] = [];

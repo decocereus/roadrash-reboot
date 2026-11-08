@@ -10,6 +10,7 @@ import {
 } from "./rider-drift.ts";
 
 const FRAME = 1 / 60;
+const SPEED = 50;
 const moved = { heading: 0, lean: 0, rider: riderIdAt(1), s: 0, x: 1 };
 
 describe("how a corrected rider settles on screen", () => {
@@ -19,39 +20,52 @@ describe("how a corrected rider settles on screen", () => {
     expect(drift.x).toBe(1);
   });
 
-  it("moves them about a sixth of the way each frame, not all at once", () => {
+  it("settles a small slip by the frame, not all at once", () => {
     const drift = stillDrift();
-    driftBy(drift, moved);
-    driftSettle(drift, FRAME);
-    expect(1 - drift.x).toBeLessThan(0.2);
-    expect(1 - drift.x).toBeGreaterThan(0.1);
+    driftBy(drift, { ...moved, x: 0.2 });
+    driftSettle(drift, FRAME, SPEED);
+    expect(0.2 - drift.x).toBeLessThan(0.04);
+    expect(0.2 - drift.x).toBeGreaterThan(0.02);
   });
 
-  it("has them on their true line within half a second", () => {
+  it("has a rider a metre off their line back on it within two thirds of a second", () => {
     const drift = stillDrift();
     driftBy(drift, moved);
-    driftSettle(drift, 0.5);
+    for (let frame = 0; frame < 40; frame += 1) {
+      driftSettle(drift, FRAME, SPEED);
+    }
     expect(drift.x).toBeLessThan(0.01);
   });
 
-  it("glides the biggest correction a production race showed, 6.5 m along the road", () => {
+  it("glides 6.5 m along the road no faster than a tenth of the bike's speed", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, s: 6.46, x: 0 });
     expect(drift.s).toBe(6.46);
-    driftSettle(drift, FRAME);
-    expect(6.46 - drift.s).toBeLessThan(1.5);
+    driftSettle(drift, FRAME, SPEED);
+    expect(6.46 - drift.s).toBeCloseTo((SPEED * 0.1) / 60);
   });
 
-  it("glides a rider pushed a lane across", () => {
+  it("still settles a stopped bike", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 1, x: 0 });
+    for (let frame = 0; frame < 180; frame += 1) {
+      driftSettle(drift, FRAME, 0);
+    }
+    expect(drift.s).toBeLessThan(0.01);
+  });
+
+  it("glides a rider pushed a lane across at a steady sideways speed", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: 4 });
     expect(drift.x).toBe(4);
+    driftSettle(drift, FRAME, SPEED);
+    expect(4 - drift.x).toBeCloseTo(2.5 / 60);
   });
 
-  it("snaps a correction too big to be riding, such as a respawn", () => {
+  it("jumps only the part of a correction too big to glide", () => {
     const drift = stillDrift();
-    driftBy(drift, { ...moved, s: 20, x: 0 });
-    expect(drift.s).toBe(0);
+    driftBy(drift, { ...moved, s: 20, x: 9 });
+    expect({ s: drift.s, x: drift.x }).toStrictEqual({ s: 15, x: 6 });
   });
 
   it("stops when cleared", () => {

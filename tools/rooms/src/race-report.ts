@@ -125,7 +125,7 @@ const stat = (note: RaceStatsNote, field: string): number =>
 
 const browserLines = (note: RaceStatsNote): readonly string[] => [
   `    crashes ${stat(note, "crashes")}, ${stat(note, "crashesAfterCorrection")} after a correction`,
-  `    clock: held steps ${stat(note, "heldSteps")}, multi-steps ${stat(note, "doubledSteps")}, most in one frame ${stat(note, "mostSteps")}`,
+  `    clock: slowed ${stat(note, "slowedMs")} ms, stopped ${stat(note, "stoppedMs")} ms, frames with the bike drawn off its speed ${stat(note, "surgedFrames")}`,
   `    worst jump: own control ${stat(note, "worstOwnControlCm")} cm, behind the server ${stat(note, "worstBehindServerCm")} cm, other riders ${stat(note, "worstOtherRidersCm")} cm, at ${stat(note, "worstJumpRoadMetres")} m`,
   `    round trip: mean ${stat(note, "rttMeanMs")} ms, worst ${stat(note, "rttWorstMs")} ms`,
   `    frame times: ${stat(note, "frameCount")} frames, p50 ${stat(note, "frameP50Ms")} ms, p95 ${stat(note, "frameP95Ms")} ms, p99 ${stat(note, "frameP99Ms")} ms`,

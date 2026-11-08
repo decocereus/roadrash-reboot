@@ -33,7 +33,7 @@ export interface RoomRun extends RaceRun {
   readonly riderColours: ReadonlyMap<RiderId, number>;
   readonly confirmed: RaceView;
   readonly countdownSeconds: () => number;
-  readonly frameDrawn: () => void;
+  readonly frameDrawn: (drawnShare: number) => void;
   readonly lagging: () => boolean;
   readonly leave: () => void;
   readonly listen: (onConfirmed: (view: RaceView) => void) => void;

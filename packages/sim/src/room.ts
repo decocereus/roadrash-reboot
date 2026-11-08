@@ -24,6 +24,7 @@ export const MOST_SEATS = 8;
 export const HOLD_TICKS = 6;
 export const AUTO_AFTER_TICKS = 30;
 export const INPUT_HORIZON = 90;
+export const PREDICTION_WINDOW = 300;
 export const HASH_EVERY = 60;
 
 const NO_TICK = -1;

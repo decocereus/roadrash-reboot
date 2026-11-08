@@ -52,7 +52,7 @@ describe("the trace report", () => {
 
   it("lists only the bad seconds, on the race's clock, for every rider", () => {
     expect(report).toContain(
-      "0:02  rider 0 frame 16 ms, tick gap 300 ms, round trip 0 ms, held 0, doubled 0, missed 5, late 1 | rider 1 frame 16 ms, tick gap 17 ms, round trip 0 ms, held 0, doubled 0, missed 3, late 0"
+      "0:02  rider 0 frame 16 ms, tick gap 300 ms, round trip 0 ms, slowed 0 ms, surged 0, missed 5, late 1 | rider 1 frame 16 ms, tick gap 17 ms, round trip 0 ms, slowed 0 ms, surged 0, missed 3, late 0"
     );
     expect(report).toContain("0:10  rider 0 frame 200 ms");
     expect(report).not.toContain("0:01  ");
