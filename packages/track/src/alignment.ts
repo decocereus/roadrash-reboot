@@ -25,6 +25,7 @@ type ClothoidRow = readonly [
 ];
 
 export interface Alignment {
+  readonly name: string;
   readonly start: TrackStart;
   readonly pieces: TrackPieces;
   readonly leadInLength: number;
@@ -165,27 +166,29 @@ const sampleSpan = (
       2;
 };
 
-const checkAlignment = ({ leadInLength, pieces }: Alignment): void => {
+const PIECE_TERMS = [
+  "endCurvature",
+  "endGrade",
+  "easedTurn",
+  "easedClimb",
+] as const satisfies readonly (keyof TrackPiece)[];
+
+const checkAlignment = ({ leadInLength, name, pieces }: Alignment): void => {
   if (!(Number.isInteger(leadInLength) && leadInLength >= 0)) {
     throw new Error(
-      `A track's lead-in runs ${leadInLength} m, and it must be a whole number of metres from 0 up.`
+      `${name} has a lead-in of ${leadInLength} m, and it must be a whole number of metres from 0 up.`
     );
   }
   for (const [index, piece] of pieces.entries()) {
     if (!(Number.isFinite(piece.length) && piece.length > 0)) {
       throw new Error(
-        `Piece ${index} of a track runs ${piece.length} m, and a piece must run a finite length above 0.`
+        `Piece ${index} of ${name} runs ${piece.length} m, and a piece must run a finite length above 0.`
       );
     }
-    const terms = [
-      piece.endCurvature,
-      piece.endGrade,
-      piece.easedTurn,
-      piece.easedClimb,
-    ];
-    if (!terms.every((value) => Number.isFinite(value))) {
+    const odd = PIECE_TERMS.find((term) => !Number.isFinite(piece[term]));
+    if (odd) {
       throw new Error(
-        `Piece ${index} of a track has a curvature, grade, turn or climb that is not finite.`
+        `Piece ${index} of ${name} has ${odd} ${piece[odd]}, and it must be finite.`
       );
     }
   }

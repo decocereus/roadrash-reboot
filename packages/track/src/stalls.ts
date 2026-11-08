@@ -155,7 +155,7 @@ const checkBazaars = (
   { length }: Centreline
 ): void => {
   for (const { from, to } of bazaars) {
-    if (from < 0 || to > length || from >= to) {
+    if (!(from >= 0 && to <= length && from < to)) {
       throw new Error(
         `A bazaar on ${name} runs ${from} to ${to}, which is not a stretch of its ${length} m.`
       );
