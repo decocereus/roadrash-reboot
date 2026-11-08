@@ -40,6 +40,12 @@ export const RoomConfigSchema = Schema.Struct({
       awaySeconds >= seatHoldSeconds ||
       "awaySeconds is shorter than seatHoldSeconds",
     { title: "a lobby AWAY no shorter than the race hold" }
+  ),
+  Schema.makeFilter(
+    ({ publicGatherSeconds, publicStartSeconds }) =>
+      publicGatherSeconds <= publicStartSeconds ||
+      "publicGatherSeconds is longer than publicStartSeconds",
+    { title: "a public lobby's earliest start no later than its latest" }
   )
 );
 
