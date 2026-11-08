@@ -9,6 +9,7 @@ import type { Assets, ModelParts, Decoded } from "./assets.ts";
 import { bikeModelIds, bikeModelOf } from "./bike-models.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import { createShading } from "./cel.ts";
+import { releaseAll } from "./dispose.ts";
 import { lookOf } from "./looks.ts";
 import { createPipeline } from "./post.ts";
 
@@ -68,12 +69,6 @@ const distanceToFit = (
   const across = footprint.radius / (wide * FILL);
   const up = (footprint.height * (1 - AIM_HEIGHT)) / (tall * FILL);
   return Math.max(across, up) + footprint.radius * NEAR_END;
-};
-
-const releaseAll = (owners: (() => void)[]): void => {
-  for (const release of owners.splice(0).toReversed()) {
-    release();
-  }
 };
 
 const paintOf = (paint: number): number =>

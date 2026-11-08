@@ -885,7 +885,7 @@ Test files:
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/standards/renderer.md#keep-each-module-to-its-job](standards/renderer.md#keep-each-module-to-its-job), [docs/standards/renderer.md#upload-and-sort-only-what-the-frame-needs](standards/renderer.md#upload-and-sort-only-what-the-frame-needs), [docs/errors.md#shader-preparation](errors.md#shader-preparation)
 - Verify: [single-race.md](../.claude/skills/verify-rushline/features/single-race.md)
 - Perf: `bytes.game.gzip`, `bytes.game.raw`, `bytes.game.incremental.gzip`, `bytes.game.incremental.raw`, `render.programs.max`
-- Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/outline-sides.ts`, `apps/web/test/hosts.ts`
+- Owns: `apps/web/src/game/game.ts`, `apps/web/src/game/frame-loop.ts`, `apps/web/src/game/fixed-tick.ts`, `apps/web/src/game/scene-lifecycle.ts`, `apps/web/src/game/staging.ts`, `apps/web/src/game/preparation.ts`, `apps/web/src/game/post.ts`, `apps/web/src/game/cel.ts`, `apps/web/src/game/dispose.ts`, `apps/web/src/game/meshes.ts`, `apps/web/src/game/uploads.ts`, `apps/web/test/fixed-tick.test.ts`, `apps/web/test/preparation.test.ts`, `apps/web/test/canvas-stub.ts`, `apps/web/test/renderer-lifecycle*.ts`, `apps/web/test/outline-sides.ts`, `apps/web/test/hosts.ts`
 
 Source files:
 
@@ -903,10 +903,12 @@ Source files:
 
 Test files:
 
+- `apps/web/test/canvas-stub.ts`
 - `apps/web/test/fixed-tick.test.ts`
 - `apps/web/test/hosts.ts`
 - `apps/web/test/outline-sides.ts`
 - `apps/web/test/preparation.test.ts`
+- `apps/web/test/renderer-lifecycle-build.test.ts`
 - `apps/web/test/renderer-lifecycle.test.ts`
 - `apps/web/test/renderer-lifecycle.ts`
 

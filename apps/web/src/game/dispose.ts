@@ -23,3 +23,9 @@ export const disposeTree = (root: THREE.Object3D): void => {
     material.dispose();
   }
 };
+
+export const releaseAll = (owners: (() => void)[]): void => {
+  for (const release of owners.splice(0).toReversed()) {
+    release();
+  }
+};

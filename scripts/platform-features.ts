@@ -153,6 +153,7 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/game/uploads.ts",
       "apps/web/test/fixed-tick.test.ts",
       "apps/web/test/preparation.test.ts",
+      "apps/web/test/canvas-stub.ts",
       "apps/web/test/renderer-lifecycle*.ts",
       "apps/web/test/outline-sides.ts",
       "apps/web/test/hosts.ts",

@@ -11,6 +11,7 @@ import type { PrepareOutcome } from "../prepare-outcome.ts";
 import type { Assets } from "./assets.ts";
 import type { ChaseCamera } from "./chase-camera.ts";
 import type { DevRide } from "./dev-ride.ts";
+import { releaseAll } from "./dispose.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import { createFleet } from "./fleet.ts";
 import type { Fleet } from "./fleet.ts";
@@ -18,7 +19,7 @@ import type { Pipeline } from "./post.ts";
 import { createPreparation } from "./preparation.ts";
 import type { Clock } from "./preparation.ts";
 import type { Quality } from "./presets.ts";
-import type { Cast } from "./rider-views.ts";
+import type { Actors, Cast, CastTarget } from "./rider-views.ts";
 import { stageEverything, warmStaged } from "./staging.ts";
 import type { Staged } from "./staging.ts";
 import { createWorld } from "./world.ts";
@@ -70,26 +71,39 @@ export const createStage = (
 interface StageParts {
   readonly assets: Assets;
   readonly autopilot: boolean;
-  readonly buildViews: (dressing: Dressing) => void;
   readonly cast: Pick<Cast, "bikes" | "puffs" | "views">;
-  readonly chase: ChaseCamera;
+  readonly castFor: (onto: CastTarget, dressing: Dressing) => Actors;
+  readonly chase: Pick<ChaseCamera, "camera" | "snap">;
   readonly clock: Clock;
   readonly devRide: DevRide | undefined;
-  readonly pipeline: Pipeline;
+  readonly pipeline: Pick<
+    Pipeline,
+    "compile" | "prepare" | "render" | "setLook"
+  >;
   readonly quality: Pick<Quality, "preset">;
+  readonly showCast: (actors: Actors) => void;
   readonly stage: Stage;
+}
+
+interface Replacement {
+  readonly actors: Actors;
+  readonly colours: ReadonlyMap<RiderId, number>;
+  readonly fleet: Fleet;
+  readonly race: RaceRun;
+  readonly world: World;
 }
 
 export const bindStage = ({
   assets,
   autopilot,
-  buildViews,
   cast,
+  castFor,
   chase,
   clock,
   devRide,
   pipeline,
   quality,
+  showCast,
   stage,
 }: StageParts) => {
   const player = (): RiderView => {
@@ -127,15 +141,6 @@ export const bindStage = ({
       oldPuffs?.dispose();
       oldFleet.dispose();
     };
-  };
-
-  const takeTrack = (next: Track) => {
-    if (next === stage.track) {
-      return;
-    }
-    stage.track = next;
-    stage.world = createWorld(stage.track, assets, quality.preset.shadowMap);
-    pipeline.setLook(stage.world.shading.look);
   };
 
   const staged = (): Staged => ({
@@ -188,33 +193,71 @@ export const bindStage = ({
     stage.warming = false;
   };
 
+  const localRace = (setup: RaceSetup, forRace: boolean): RaceRun => {
+    const local = createRaceRun(
+      ridden(setup, forRace && !autopilot ? "human" : "pilot")
+    );
+    if (forRace) {
+      devRide?.place(local);
+    }
+    return local;
+  };
+
+  const replacementFor = (
+    setup: RaceSetup,
+    dressing: Dressing,
+    forRace: boolean,
+    room: RoomRun | null,
+    owners: (() => void)[]
+  ): Replacement => {
+    const world =
+      setup.track === stage.track
+        ? stage.world
+        : createWorld(setup.track, assets, quality.preset.shadowMap);
+    if (world !== stage.world) {
+      owners.push(() => {
+        world.dispose();
+      });
+    }
+    const colours = room?.riderColours ?? new Map<RiderId, number>();
+    const race = room ?? localRace(setup, forRace);
+    const { cars, crossCars } = race.view;
+    const fleet = createFleet(assets, world.shading, cars, crossCars);
+    owners.push(() => {
+      fleet.dispose();
+    });
+    const actors = castFor({ colours, race, world }, dressing);
+    return { actors, colours, fleet, race, world };
+  };
+
   const build = (
     setup: RaceSetup,
     dressing: Dressing,
     forRace: boolean,
     room: RoomRun | null = null
   ): (() => void) => {
+    const owners: (() => void)[] = [];
+    let next: Replacement;
+    try {
+      next = replacementFor(setup, dressing, forRace, room, owners);
+    } catch (error) {
+      releaseAll(owners);
+      throw error;
+    }
     const releaseActors = retire();
     const previous = stage.world;
-    takeTrack(setup.track);
-    const replaced = stage.world === previous ? null : previous;
-    stage.colours = room?.riderColours ?? new Map();
-    if (room) {
-      stage.race = room;
-      stage.me = room.me;
-    } else {
-      const local = createRaceRun(
-        ridden(setup, forRace && !autopilot ? "human" : "pilot")
-      );
-      stage.race = local;
-      stage.me = PLAYER_RIDER;
-      if (forRace) {
-        devRide?.place(local);
-      }
+    const replaced = next.world === previous ? null : previous;
+    stage.track = setup.track;
+    stage.world = next.world;
+    if (replaced) {
+      pipeline.setLook(next.world.shading.look);
     }
-    const { cars, crossCars } = stage.race.view;
-    stage.fleet = createFleet(assets, stage.world.shading, cars, crossCars);
-    stage.world.scene.add(stage.fleet.group);
+    stage.colours = next.colours;
+    stage.race = next.race;
+    stage.me = room?.me ?? PLAYER_RIDER;
+    const { cars, crossCars } = next.race.view;
+    stage.fleet = next.fleet;
+    stage.world.scene.add(next.fleet.group);
     stage.previousCars = new Float64Array(cars.length);
     for (let index = 0; index < cars.length; index += 1) {
       stage.previousCars[index] = cars[index]?.s ?? 0;
@@ -223,7 +266,7 @@ export const bindStage = ({
     for (let index = 0; index < crossCars.length; index += 1) {
       stage.previousCrossCars[index] = crossCars[index]?.travel ?? 0;
     }
-    buildViews(dressing);
+    showCast(next.actors);
     chase.snap();
     return () => {
       releaseActors();

@@ -16,6 +16,7 @@ import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
 import { crossCarPose } from "./cross-car-pose.ts";
 import type { CrossCarPose } from "./cross-car-pose.ts";
+import { releaseAll } from "./dispose.ts";
 import { kneeScrapes } from "./figure-pose.ts";
 import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor, paletteOf } from "./figure-rig.ts";
@@ -201,6 +202,18 @@ interface CastStage {
   readonly previousCrossCars: Float64Array;
 }
 
+export interface Actors {
+  readonly bikes: Bikes;
+  readonly puffs: Puffs;
+  readonly views: RiderActor[];
+}
+
+export interface CastTarget {
+  readonly colours: ReadonlyMap<RiderId, number>;
+  readonly race: Pick<RaceRun, "view">;
+  readonly world: Pick<World, "shading">;
+}
+
 interface CastParts {
   readonly assets: Assets;
   readonly cast: Cast;
@@ -233,60 +246,81 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     stage.fleet.dispose();
   };
 
-  const blocksOf = (rider: RiderId): RiderBlocks | undefined =>
-    riderBlocks[stage.colours.get(rider) ?? riderBlocks.length];
-
-  const worn = ({ id, profile }: RiderView): Palette => {
-    const blocks = blocksOf(id);
-    return blocks ? blockPaletteOf(blocks) : paletteOf(profile.jacket);
+  const castFor = (onto: CastTarget, dressing: Dressing): Actors => {
+    const { riders } = onto.race.view;
+    const { shading } = onto.world;
+    const blocksOf = (rider: RiderId): RiderBlocks | undefined =>
+      riderBlocks[onto.colours.get(rider) ?? riderBlocks.length];
+    const worn = ({ id, profile }: RiderView): Palette => {
+      const blocks = blocksOf(id);
+      return blocks ? blockPaletteOf(blocks) : paletteOf(profile.jacket);
+    };
+    const owners: (() => void)[] = [];
+    try {
+      const bikes = createBikes(
+        assets,
+        shading,
+        riders.map((rider) => ({
+          livery: blocksOf(rider.id)?.livery,
+          model: bikeModelFor(rider.bike.id),
+          paint: rider.profile.paint,
+          police: rider.profile.role === "police",
+        }))
+      );
+      owners.push(() => {
+        bikes.dispose();
+      });
+      const puffs = createPuffs(shading);
+      owners.push(() => {
+        puffs.dispose();
+      });
+      const views = riders.map((rider) => {
+        const figure = createRiderFigure(
+          dressing.get(rider.id) ?? bodyFor(assets, rider.id),
+          shading,
+          worn(rider)
+        );
+        owners.push(() => {
+          figure.dispose();
+        });
+        const view: RiderActor = {
+          after: emptyPose(),
+          before: emptyPose(),
+          bike: riderOf(bikes.roots, rider.id) ?? new THREE.Object3D(),
+          drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
+          drift: stillDrift(),
+          fight: quietFight(),
+          figure,
+          lift: figure.standHeight,
+          pitch: 0,
+          sag: 0,
+          sagSpeed: 0,
+          stride: 0,
+          tumbleAngle: 0,
+          yaw: 0,
+        };
+        capture(rider, view.before);
+        capture(rider, view.after);
+        return view;
+      });
+      return { bikes, puffs, views };
+    } catch (error) {
+      releaseAll(owners);
+      throw error;
+    }
   };
 
-  const buildViews = (dressing: Dressing) => {
-    dropViews();
-    const fleetOfBikes = createBikes(
-      assets,
-      stage.world.shading,
-      stage.race.view.riders.map((rider) => ({
-        livery: blocksOf(rider.id)?.livery,
-        model: bikeModelFor(rider.bike.id),
-        paint: rider.profile.paint,
-        police: rider.profile.role === "police",
-      }))
+  const showCast = ({ bikes, puffs, views }: Actors) => {
+    const { scene, shading } = stage.world;
+    scene.add(
+      bikes.group,
+      puffs.group,
+      ...views.map(({ figure }) => figure.root)
     );
-    cast.bikes = fleetOfBikes;
-    cast.riderReach = reachOf(stage.world.shading);
-    stage.world.scene.add(fleetOfBikes.group);
-    cast.puffs = createPuffs(stage.world.shading);
-    stage.world.scene.add(cast.puffs.group);
-    cast.views = stage.race.view.riders.map((rider) => {
-      const bike =
-        riderOf(fleetOfBikes.roots, rider.id) ?? new THREE.Object3D();
-      const figure = createRiderFigure(
-        dressing.get(rider.id) ?? bodyFor(assets, rider.id),
-        stage.world.shading,
-        worn(rider)
-      );
-      stage.world.scene.add(figure.root);
-      const view: RiderActor = {
-        after: emptyPose(),
-        before: emptyPose(),
-        bike,
-        drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
-        drift: stillDrift(),
-        fight: quietFight(),
-        figure,
-        lift: figure.standHeight,
-        pitch: 0,
-        sag: 0,
-        sagSpeed: 0,
-        stride: 0,
-        tumbleAngle: 0,
-        yaw: 0,
-      };
-      capture(rider, view.before);
-      capture(rider, view.after);
-      return view;
-    });
+    cast.bikes = bikes;
+    cast.puffs = puffs;
+    cast.views = views;
+    cast.riderReach = reachOf(shading);
     Reflect.set(globalThis, "__rushlineCast", cast.views);
   };
 
@@ -596,8 +630,8 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
 
   return {
     ageFights,
-    buildViews,
     captureAll,
+    castFor,
     drawRider,
     dropFleet,
     dropViews,
@@ -605,6 +639,7 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     hearFights,
     holdStill,
     placeFleet,
+    showCast,
     touchDown,
   };
 };

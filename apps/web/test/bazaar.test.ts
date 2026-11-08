@@ -3,7 +3,7 @@ import { roadHalfWidthAt } from "@racer/track/districts";
 import { trackFor } from "@racer/track/roads";
 import type { StallFootprint } from "@racer/track/stalls";
 import type * as THREE from "three";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { crowdAt } from "../src/game/bazaar-crowd.ts";
 import { BAZAAR_NAME } from "../src/game/bazaar.ts";
@@ -12,17 +12,8 @@ import { KERB_WIDTH } from "../src/game/ground.ts";
 import { isInstancedMesh, isMesh } from "../src/game/meshes.ts";
 import { createWorld } from "../src/game/world.ts";
 import type { World } from "../src/game/world.ts";
+import { stubCanvases } from "./canvas-stub.ts";
 import { fakeWorldAssets } from "./walker-asset.ts";
-
-const drawsNothing = new Proxy(
-  {},
-  {
-    get: (_target, key) =>
-      key === "createLinearGradient" || key === "createRadialGradient"
-        ? () => ({ addColorStop: () => null })
-        : () => null,
-  }
-);
 
 const track = trackFor("breakwater-run");
 const crowd = crowdAt(track);
@@ -142,15 +133,7 @@ describe("the bazaar's crowd", () => {
 });
 
 describe("the bazaar in the world", () => {
-  beforeAll(() => {
-    vi.stubGlobal("document", {
-      createElement: () => ({ getContext: () => drawsNothing }),
-    });
-  });
-
-  afterAll(() => {
-    vi.unstubAllGlobals();
-  });
+  stubCanvases();
 
   it("is two merged meshes, casting no shadow, and only the market's road has it", () => {
     const world = createWorld(track, fakeWorldAssets());

@@ -30,6 +30,7 @@ import { createSound } from "./audio.ts";
 import { createBenchProfile } from "./bench-profile.ts";
 import { createChaseCamera } from "./chase-camera.ts";
 import { devRideFrom } from "./dev-ride.ts";
+import { releaseAll } from "./dispose.ts";
 import { createWardrobe, undressed } from "./figure-wardrobe.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import { wearingFrom, wearingNothing, wornBy } from "./figure-wear.ts";
@@ -134,12 +135,6 @@ export const createRenderer = (
   return renderer;
 };
 
-const releaseAll = (owners: (() => void)[]): void => {
-  for (const release of owners.splice(0).toReversed()) {
-    release();
-  }
-};
-
 const startGame = (
   canvas: HTMLCanvasElement,
   events: GameEvents,
@@ -202,8 +197,8 @@ const startGame = (
 
   const {
     ageFights,
-    buildViews,
     captureAll,
+    castFor,
     drawRider,
     dropFleet,
     dropViews,
@@ -211,6 +206,7 @@ const startGame = (
     hearFights,
     holdStill,
     placeFleet,
+    showCast,
     touchDown,
   } = bindCast({ assets, cast, stage });
   owners.push(() => {
@@ -229,13 +225,14 @@ const startGame = (
   } = bindStage({
     assets,
     autopilot,
-    buildViews,
     cast,
+    castFor,
     chase,
     clock: nativeClock,
     devRide,
     pipeline,
     quality,
+    showCast,
     stage,
   });
   owners.push(cancelPreparation);
@@ -542,7 +539,7 @@ const startGame = (
     canvas.removeEventListener("webglcontextrestored", restoreContext);
   });
   resize();
-  buildViews(undressed);
+  showCast(castFor(stage, undressed));
   warmUp();
 
   frame.last = performance.now();
