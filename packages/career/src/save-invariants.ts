@@ -3,7 +3,6 @@ import { weapons } from "@racer/sim/weapons";
 
 import { memoryRows } from "./memory.ts";
 import type { SaveError } from "./save-schema.ts";
-import { racerIds } from "./state.ts";
 import type { CareerState } from "./state.ts";
 
 const holdsWeapon = (career: CareerState): boolean => {
@@ -33,13 +32,6 @@ const raceNumberClash = (career: CareerState): string | null => {
   const { starts } = career.record;
   if (career.lastResult && career.lastResult.summary.raceId !== starts) {
     return "lastResult.summary.raceId";
-  }
-  for (const racer of racerIds) {
-    for (const other of racerIds) {
-      if ((career.season[racer].lastAhead[other] ?? 0) > starts) {
-        return `season.${racer}.lastAhead.${other}`;
-      }
-    }
   }
   const remembered = rivalIds.find((rival) => {
     const memory = career.memory[rival];
