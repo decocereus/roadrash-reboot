@@ -1,8 +1,12 @@
 import { RaceRulesSchema } from "@racer/career/rules-schema";
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { loadRaceRules, RULES_PATH } from "../src/rules/load.ts";
+import {
+  loadRaceRules,
+  RULES_DEADLINE_MS,
+  RULES_PATH,
+} from "../src/rules/load.ts";
 import type { RulesLoad, RulesTransport } from "../src/rules/load.ts";
 import { serveRaceRules } from "../src/server/race-rules.ts";
 
@@ -68,5 +72,39 @@ describe("loading the race rules", () => {
       { message: "The race rules did not decode.", tag: "RulesDecodeFailed" },
       { message: "The race rules did not decode.", tag: "RulesDecodeFailed" },
     ]);
+  });
+
+  it("gives up on rules that never answer, or never finish their body, at the deadline", async () => {
+    vi.useFakeTimers();
+    try {
+      const signals: AbortSignal[] = [];
+      const silent = loaded(async (_url, signal) => {
+        signals.push(signal);
+        return await Promise.withResolvers<Response>().promise;
+      });
+      const endless = loaded(async (_url, signal) => {
+        signals.push(signal);
+        return await Promise.resolve(
+          new Response(new ReadableStream({ start: () => null }))
+        );
+      });
+      await vi.advanceTimersByTimeAsync(RULES_DEADLINE_MS - 1);
+      expect(signals.map((signal) => signal.aborted)).toStrictEqual([
+        false,
+        false,
+      ]);
+      await vi.advanceTimersByTimeAsync(1);
+      const timedOut = {
+        message: "The race rules took more than 10 seconds to answer.",
+        tag: "RulesTimedOut",
+      };
+      expect([
+        failureOf(await silent),
+        failureOf(await endless),
+        signals.map((signal) => signal.aborted),
+      ]).toStrictEqual([timedOut, timedOut, [true, true]]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
