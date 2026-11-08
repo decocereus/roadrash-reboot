@@ -1,11 +1,22 @@
 import { isCelebrity } from "@racer/sim/cast";
 import { difficulties, tiers } from "@racer/sim/difficulty";
-import { createRace } from "@racer/sim/race";
-import { riderIdAt } from "@racer/sim/state";
-import type { RaceEvent, RiderId } from "@racer/sim/state";
+import { createRace, stepRace } from "@racer/sim/race";
+import { riderIdAt, riderOf } from "@racer/sim/state";
+import type { RaceState, RiderId } from "@racer/sim/state";
+import { arm } from "@racer/sim/weapons";
 import { roadIds } from "@racer/track/road";
 import { describe, expect, it } from "vitest";
 
+import {
+  enter,
+  everyRider,
+  flatOut,
+  getArrested,
+  racerIn,
+  road,
+  sprint,
+} from "./career-fixtures.ts";
+import type { Entered } from "./career-fixtures.ts";
 import { createRaceLog, outcomeOf, recordTick } from "./outcome.ts";
 import { summaryOf } from "./result.ts";
 import {
@@ -16,6 +27,7 @@ import {
   trafficChoices,
 } from "./room-race.ts";
 import type { RoomRule } from "./room-race.ts";
+import { newCareer } from "./state.ts";
 import { STARTING_BIKE } from "./tables.ts";
 
 const tierTwo: RoomRule = {
@@ -26,11 +38,14 @@ const tierTwo: RoomRule = {
   traffic: "normal",
 };
 
-const finishOf = (rider: number): RaceEvent => ({
-  kind: "finish",
-  rider: riderIdAt(rider),
-  tick: 0,
-});
+const finished = (state: RaceState, rider: number): RaceState => {
+  const racer = riderOf(state.riders, riderIdAt(rider));
+  if (!racer) {
+    throw new RangeError(`The race has no rider ${rider}.`);
+  }
+  racer.finishTick = state.tick;
+  return state;
+};
 
 describe("a room's field", () => {
   it("names the bike every rider rode on the results board", () => {
@@ -187,9 +202,9 @@ describe("a seat's race log", () => {
     const state = createRace(setup);
     const me = riderIdAt(1);
     const log = createRaceLog(setup, me);
-    recordTick(log, { ...state, events: [finishOf(0)] }, setup);
+    recordTick(log, finished(state, 0), setup);
     expect(log.outcome).toBeNull();
-    recordTick(log, { ...state, events: [finishOf(1)] }, setup);
+    recordTick(log, finished(state, 1), setup);
     expect(log.outcome?.result).toBe("finished");
   });
 
@@ -201,11 +216,41 @@ describe("a seat's race log", () => {
     expect(riders).not.toContain(me);
     expect(riders).toContain(riderIdAt(0));
     const state = createRace(setup);
-    recordTick(log, { ...state, events: [finishOf(1)] }, setup);
+    recordTick(log, finished(state, 1), setup);
     const players = log.outcome?.placings.filter(
       (placing) => placing.racer === "player"
     );
     expect(players).toHaveLength(1);
+  });
+});
+
+const lateLog = (race: Entered) => {
+  const log = createRaceLog(race.setup);
+  stepRace(race.state, road, everyRider(race, flatOut));
+  recordTick(log, race.state, race.setup);
+  return log;
+};
+
+describe("a race log that starts after its rider is out, as a rejoined seat's does", () => {
+  it("settles the bust the rider took while away", () => {
+    const race = enter(newCareer(2), "slag-row");
+    arm(racerIn(race, "player"), "chain");
+    getArrested(race);
+    expect(lateLog(race).outcome).toMatchObject({
+      arrest: { fine: 400, officer: "wendell-haverty", weapon: "chain" },
+      place: 15,
+      result: "busted",
+    });
+  });
+
+  it("settles the finish the rider made while away", () => {
+    const race = enter(newCareer(3), "slag-row");
+    sprint(race, 2);
+    expect(lateLog(race).outcome).toMatchObject({
+      finishTick: race.log.outcome?.finishTick,
+      place: 2,
+      result: "finished",
+    });
   });
 });
 
