@@ -1,5 +1,8 @@
 import type { RiderInput } from "@racer/sim/state";
 
+import { createHeldKeys } from "./held-keys.ts";
+import type { KeyPress } from "./held-keys.ts";
+
 const STEER_ATTACK = 9;
 const STEER_RELEASE = 18;
 const STICK_DEADZONE = 0.12;
@@ -21,10 +24,7 @@ const handled = new Set([
   "ShiftRight",
 ]);
 
-export interface KeyEvent {
-  readonly code: string;
-  readonly repeat: boolean;
-  readonly metaKey: boolean;
+export interface KeyEvent extends KeyPress {
   readonly target: EventTarget | null;
   readonly preventDefault: () => void;
 }
@@ -38,6 +38,7 @@ export interface Pad {
   readonly axes: readonly number[];
   readonly buttons: readonly PadButton[];
   readonly connected: boolean;
+  readonly mapping: GamepadMappingType;
 }
 
 export interface InputHost {
@@ -65,9 +66,9 @@ const browserHost: InputHost = {
   pads: () => navigator.getGamepads(),
 };
 
-const firstConnected = (pads: readonly (Pad | null)[]): Pad | null => {
+const firstStandard = (pads: readonly (Pad | null)[]): Pad | null => {
   for (const pad of pads) {
-    if (pad?.connected === true) {
+    if (pad?.connected === true && pad.mapping === "standard") {
       return pad;
     }
   }
@@ -103,7 +104,7 @@ export const createControls = (
   onCommand: (code: string) => void,
   host: InputHost = browserHost
 ): Controls => {
-  const held = new Set<string>();
+  const held = createHeldKeys();
   let steer = 0;
 
   const press = (event: KeyEvent) => {
@@ -113,21 +114,14 @@ export const createControls = (
     if (handled.has(event.code)) {
       event.preventDefault();
     }
-    if (!(event.repeat || event.metaKey)) {
-      held.add(event.code);
+    if (held.press(event)) {
       onCommand(event.code);
     }
   };
   const release = (event: KeyEvent) => {
-    held.delete(event.code);
-    if (event.code === "MetaLeft" || event.code === "MetaRight") {
-      held.clear();
-    }
+    held.release(event.code);
   };
-  const clear = () => {
-    held.clear();
-  };
-  const unlisten = host.listen(press, release, clear);
+  const unlisten = host.listen(press, release, held.clear);
 
   const down = (...codes: string[]): boolean =>
     codes.some((code) => held.has(code));
@@ -139,7 +133,7 @@ export const createControls = (
       unlisten();
     },
     read(seconds, input) {
-      const pad = firstConnected(host.pads());
+      const pad = firstStandard(host.pads());
       steer = nextSteer(steer, pad?.axes[0] ?? 0, keySteer(), seconds);
       input.steer = steer;
       input.throttle = Math.max(

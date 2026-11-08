@@ -32,17 +32,36 @@ const REFRESH_WINDOW_MS = 1000;
 const FEWEST_GAPS = 20;
 const MISSED_GAP_SHARE = 1.75;
 const SAME_RATE_SHARE = 0.03;
+const BEAT_SLACK = 0.2;
+const ON_BEAT_SHARE = 0.5;
+
+interface Reading {
+  readonly rate: number;
+  readonly onBeat: boolean;
+}
 
 const meanOf = (values: readonly number[]): number =>
   values.reduce((sum, value) => sum + value, 0) / values.length;
 
-const readingOf = (gaps: readonly number[]): number | null => {
+const landsOnVsync = (gap: number, refresh: number): boolean => {
+  const vsyncs = (gap * refresh) / 1000;
+  return Math.abs(vsyncs - Math.max(1, Math.round(vsyncs))) <= BEAT_SLACK;
+};
+
+const readingOf = (
+  gaps: readonly number[],
+  refresh: number
+): Reading | null => {
   if (gaps.length < FEWEST_GAPS) {
     return null;
   }
   const cutoff = meanOf(gaps) * MISSED_GAP_SHARE;
   const single = gaps.filter((gap) => gap <= cutoff);
-  return Math.round(1000 / meanOf(single));
+  const onBeat = single.filter((gap) => landsOnVsync(gap, refresh));
+  return {
+    onBeat: onBeat.length >= single.length * ON_BEAT_SHARE,
+    rate: Math.round(1000 / meanOf(single)),
+  };
 };
 
 const agree = (one: number, other: number): boolean =>
@@ -55,12 +74,12 @@ export const createRefreshMeter = (initial: number) => {
   const gaps: number[] = [];
   let candidate = Number.NaN;
 
-  const settle = (reading: number) => {
-    const higher = reading > refresh && !agree(refresh, reading);
-    if (higher && agree(candidate, reading)) {
-      refresh = reading;
+  const settle = ({ onBeat, rate }: Reading) => {
+    const moved = !agree(refresh, rate) && (rate > refresh || !onBeat);
+    if (moved && agree(candidate, rate)) {
+      refresh = rate;
     }
-    candidate = higher ? reading : Number.NaN;
+    candidate = moved ? rate : Number.NaN;
   };
 
   return (now: number): number => {
@@ -73,7 +92,7 @@ export const createRefreshMeter = (initial: number) => {
     if (now - start < REFRESH_WINDOW_MS) {
       return refresh;
     }
-    const reading = readingOf(gaps);
+    const reading = readingOf(gaps, refresh);
     gaps.length = 0;
     start = now;
     if (reading !== null) {
