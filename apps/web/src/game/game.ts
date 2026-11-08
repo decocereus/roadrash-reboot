@@ -556,6 +556,10 @@ const startGame = (
     frame,
     halted,
     noteDisplay,
+    pace: () => {
+      const room = roomOf(session);
+      return room && !autopilot ? room.pace() : 1;
+    },
     player,
     quality,
     recorder,

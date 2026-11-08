@@ -189,10 +189,10 @@ export const createRoomClient = (
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
   const shownHits: ShownHit[] = [];
-  const others = predicted.riders.filter((rider) => rider.id !== me);
-  const wasAt = others.map(stillCorrection);
-  let corrections = others.map(stillCorrection);
-  let handed = others.map(stillCorrection);
+  const tracked = [...predicted.riders];
+  const wasAt = tracked.map(stillCorrection);
+  let corrections = tracked.map(stillCorrection);
+  let handed = tracked.map(stillCorrection);
   let corrected = false;
   let sentThrough = 0;
   let stale = false;
@@ -369,8 +369,8 @@ export const createRoomClient = (
   };
 
   const noteWhereRidersAre = (): void => {
-    for (let index = 0; index < others.length; index += 1) {
-      const rider = others[index];
+    for (let index = 0; index < tracked.length; index += 1) {
+      const rider = tracked[index];
       const was = wasAt[index];
       if (rider && was) {
         was.heading = rider.heading;
@@ -383,8 +383,8 @@ export const createRoomClient = (
 
   const noteCorrections = (): void => {
     corrected = true;
-    for (let index = 0; index < others.length; index += 1) {
-      const rider = others[index];
+    for (let index = 0; index < tracked.length; index += 1) {
+      const rider = tracked[index];
       const was = wasAt[index];
       const moved = corrections[index];
       if (rider && was && moved) {

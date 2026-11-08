@@ -1502,7 +1502,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
 - Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
-- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `tools/rooms/**`
+- Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `apps/web/test/room-pacing.test.ts`, `tools/rooms/**`
 
 Source files:
 
@@ -1621,6 +1621,7 @@ Test files:
 - `apps/web/test/race-handoff.test.ts`
 - `apps/web/test/room-boot-failure.test.tsx`
 - `apps/web/test/room-limited.test.tsx`
+- `apps/web/test/room-pacing.test.ts`
 - `apps/web/test/room-preview.test.ts`
 - `apps/web/test/room-rejoin-choice.test.ts`
 - `packages/career/src/room-race.test.ts`

@@ -38,6 +38,7 @@ export interface RoomRun extends RaceRun {
   readonly leave: () => void;
   readonly listen: (onConfirmed: (view: RaceView) => void) => void;
   readonly report: () => RoomReport;
+  readonly pace: () => number;
   readonly stepsDue: () => number;
 }
 
@@ -75,6 +76,7 @@ export const createRoomRun = (
       });
     },
     me,
+    pace: seat.pace,
     report: () => {
       client.settle();
       return {

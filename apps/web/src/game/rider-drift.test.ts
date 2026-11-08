@@ -34,10 +34,24 @@ describe("how a corrected rider settles on screen", () => {
     expect(drift.x).toBeLessThan(0.01);
   });
 
-  it("snaps a correction too big to be steering, such as a crash", () => {
+  it("glides the biggest correction a production race showed, 6.5 m along the road", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 6.46, x: 0 });
+    expect(drift.s).toBe(6.46);
+    driftSettle(drift, FRAME);
+    expect(6.46 - drift.s).toBeLessThan(1.5);
+  });
+
+  it("glides a rider pushed a lane across", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: 4 });
-    expect(drift.x).toBe(0);
+    expect(drift.x).toBe(4);
+  });
+
+  it("snaps a correction too big to be riding, such as a respawn", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 20, x: 0 });
+    expect(drift.s).toBe(0);
   });
 
   it("stops when cleared", () => {

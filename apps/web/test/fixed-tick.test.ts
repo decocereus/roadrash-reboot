@@ -28,10 +28,12 @@ interface Ride {
   readonly stepped: number;
 }
 
+const steadyPace = (): number => 1;
+
 const rideFrames = (frames: readonly number[]): Ride => {
   const ticker = createTicker();
   const clock = { accumulator: 0, clockReset: false };
-  const advance = createFixedTick(clock, () => false, ticker.tick);
+  const advance = createFixedTick(clock, () => false, ticker.tick, steadyPace);
   let stepped = 0;
   let idle = 0;
   for (const seconds of frames) {
@@ -89,7 +91,8 @@ describe("the fixed tick", () => {
       () => false,
       () => {
         state.ticks += 1;
-      }
+      },
+      steadyPace
     );
     expect(advance(TICK_SECONDS)).toBe(1);
     expect(clock.accumulator).toBe(0);
@@ -106,7 +109,8 @@ describe("the fixed tick", () => {
       () => {
         state.ticks += 1;
         state.halted = state.ticks === 2;
-      }
+      },
+      steadyPace
     );
     expect(advance(TICK_SECONDS * 5)).toBe(2);
     expect(clock.accumulator / TICK_SECONDS).toBeCloseTo(3, 9);
@@ -120,7 +124,8 @@ describe("the fixed tick", () => {
       () => false,
       () => {
         state.ticks += 1;
-      }
+      },
+      steadyPace
     );
     advance(TICK_SECONDS * 0.9);
     clock.clockReset = true;
@@ -137,7 +142,8 @@ describe("the fixed tick", () => {
       () => {
         state.ticks += 1;
         clock.clockReset = state.ticks === 2;
-      }
+      },
+      steadyPace
     );
     expect(advance(TICK_SECONDS * 4)).toBe(2);
     expect(advance(TICK_SECONDS)).toBe(1);

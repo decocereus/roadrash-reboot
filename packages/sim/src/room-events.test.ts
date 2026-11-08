@@ -346,7 +346,23 @@ describe("how far a correction moved another rider", () => {
     expect(far).toBeGreaterThan(near * 2);
   });
 
-  it("never names the client's own rider", () => {
-    expect(steering(20).has(VICTIM)).toBeFalsy();
+  it("names the client's own bike when the room rode it differently, so its own bike glides too", () => {
+    const setup = roomSetup(defaultSetup(track, 3), [VICTIM, ATTACKER]);
+    const room = createRoom(setup, ROOM_LIMIT_TICKS);
+    const client = createRoomClient(setup, VICTIM, ROOM_LIMIT_TICKS);
+    const swerve = controlOf({ ...neutralInput, steer: 1, throttle: 1 });
+    let ownMoved = 0;
+    for (let tick = 0; tick < RIDE_TICKS; tick += 1) {
+      client.predict(tick >= RIDE_TICKS / 2 ? swerve : riding);
+      room.accept(VICTIM, room.state.tick + 1, [riding]);
+      room.accept(ATTACKER, room.state.tick + 1, [riding]);
+      room.step();
+      client.confirm(room.frame, null);
+      for (const { rider, x } of client.takeCorrections()) {
+        ownMoved =
+          rider === VICTIM ? Math.max(ownMoved, Math.abs(x)) : ownMoved;
+      }
+    }
+    expect(ownMoved).toBeGreaterThan(0);
   });
 });

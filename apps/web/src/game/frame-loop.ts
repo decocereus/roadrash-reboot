@@ -142,6 +142,7 @@ interface LoopParts {
   readonly frame: FrameLoop;
   readonly halted: () => boolean;
   readonly noteDisplay: (now: number) => void;
+  readonly pace: () => number;
   readonly player: () => RiderView;
   readonly quality: Quality;
   readonly recorder: Pick<
@@ -165,6 +166,7 @@ export const installFrameLoop = ({
   frame,
   halted,
   noteDisplay,
+  pace,
   player,
   quality,
   recorder,
@@ -178,7 +180,7 @@ export const installFrameLoop = ({
 }: LoopParts): void => {
   const { frameEnd, sample } = frame;
 
-  const advance = createFixedTick(frame, halted, tick);
+  const advance = createFixedTick(frame, halted, tick, pace);
 
   renderer.setAnimationLoop((now) => {
     checkPresented();

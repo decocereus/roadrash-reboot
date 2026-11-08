@@ -126,7 +126,7 @@ export const openThinSeat = (
       const arrival = performance.now();
       const rtt = Math.floor(arrival) - pong.stamp;
       tally.worstRttMs = Math.max(tally.worstRttMs, rtt);
-      clock.heardRtt(rtt, arrival);
+      clock.heardRtt(rtt);
       clock.heardRoomTime(pong.roomMs, arrival);
       return;
     }

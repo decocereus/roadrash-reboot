@@ -235,6 +235,7 @@ export const createHost = (options: HostOptions = {}): Host => {
     frame,
     halted,
     noteDisplay: bound.noteDisplay,
+    pace: () => 1,
     player: () => player,
     quality,
     recorder,

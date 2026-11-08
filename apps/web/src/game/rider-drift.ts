@@ -2,8 +2,8 @@ import type { RiderCorrection } from "@racer/sim/room-client";
 import { riderOf } from "@racer/sim/state";
 
 const SETTLE_MS = 100;
-const MOST_ALONG_METRES = 6;
-const MOST_ACROSS_METRES = 3;
+const MOST_ALONG_METRES = 15;
+const MOST_ACROSS_METRES = 6;
 
 export interface RiderDrift {
   heading: number;

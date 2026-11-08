@@ -246,6 +246,7 @@ export interface RoomSeat {
   readonly leadBloated: () => boolean;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
+  readonly pace: () => number;
   readonly startsInMs: () => number | null;
   readonly stepsDue: () => number;
   readonly target: () => number;
@@ -414,7 +415,7 @@ export const openRoomSeat = (
       const now = performance.now();
       rttMs = Math.floor(now) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
-      clock.heardRtt(rttMs, now);
+      clock.heardRtt(rttMs);
       clock.heardRoomTime(pong.roomMs, now);
       tally.heardRtt(rttMs);
       return;
@@ -556,6 +557,16 @@ export const openRoomSeat = (
       }
     },
     lobby: () => lobby,
+    pace: () => {
+      const { race } = state;
+      return race
+        ? clock.pace(
+            race.client.predicted.tick,
+            race.client.confirmed.tick,
+            performance.now()
+          )
+        : 1;
+    },
     phase: () => state.phase,
     race: () => state.race,
     refusal: () => state.refusal,
@@ -576,8 +587,12 @@ export const openRoomSeat = (
         return 0;
       }
       race.client.settle();
-      const { predicted } = race.client;
-      const steps = clock.stepsDue(predicted.tick, performance.now());
+      const { confirmed, predicted } = race.client;
+      const steps = clock.stepsDue(
+        predicted.tick,
+        confirmed.tick,
+        performance.now()
+      );
       if (predicted.tick > 0) {
         tally.stepped(steps);
       }
