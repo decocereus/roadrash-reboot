@@ -1525,8 +1525,6 @@ Source files:
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
 - `apps/web/src/components/room-lobby.tsx`
-- `apps/web/src/components/room-lobby.tsx`
-- `apps/web/src/components/room-lobby.tsx`
 - `apps/web/src/components/room-preview.ts`
 - `apps/web/src/components/room-url.ts`
 - `apps/web/src/components/use-handoff.ts`
