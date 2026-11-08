@@ -68,10 +68,11 @@ How the bike answers the keys and the gamepad: throttle, brakes, steering, the p
 - Docs: [docs/architecture/riding-model.md#riding-model](architecture/riding-model.md#riding-model), [docs/handling-matrix.md#fields](handling-matrix.md#fields), [docs/design/game-design.md#6-bike-catalogue](design/game-design.md#6-bike-catalogue)
 - Verify: [riding-and-fighting.md](../.claude/skills/verify-rushline/features/riding-and-fighting.md)
 - Perf: `sim.ticksPerSecond`, `sim.tick.p95`, `sim.tick.p99`, `sim.allocatedBytesPerTick`
-- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
+- Owns: `packages/sim/src/rider.ts`, `packages/sim/src/rider-drive.ts`, `packages/sim/src/engine.ts`, `packages/sim/src/bikes.ts`, `packages/sim/src/riding.test.ts`, `packages/sim/src/braking-and-cornering.test.ts`, `packages/sim/src/engine-and-tuck.test.ts`, `apps/web/src/game/input.ts`, `apps/web/src/game/held-keys.ts`, `apps/web/test/input.test.ts`, `tools/handling/**`
 
 Source files:
 
+- `apps/web/src/game/held-keys.ts`
 - `apps/web/src/game/input.ts`
 - `packages/sim/src/bikes.ts`
 - `packages/sim/src/engine.ts`
@@ -588,7 +589,7 @@ Holding a constant frame rate: the fixed quality presets a device check picks be
 - Docs: [docs/architecture/browser-client.md#browser-client](architecture/browser-client.md#browser-client), [docs/observability.md#frame-profiles](observability.md#frame-profiles)
 - Verify: [frame-rate.md](../.claude/skills/verify-rushline/features/frame-rate.md)
 - Perf: `frame.interval.p50`, `frame.interval.p95`, `frame.interval.p99`, `frame.missedFraction`, `main.longTask.blockingMs`, `main.longTask.count`
-- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
+- Owns: `apps/web/src/game/pacer.ts`, `apps/web/src/game/pacer.test.ts`, `apps/web/src/game/presets.ts`, `apps/web/src/game/presets.test.ts`, `apps/web/src/game/fps-meter.ts`, `apps/web/test/render-quality.test.ts`
 
 Source files:
 
@@ -598,6 +599,7 @@ Source files:
 
 Test files:
 
+- `apps/web/src/game/pacer.test.ts`
 - `apps/web/src/game/presets.test.ts`
 - `apps/web/test/render-quality.test.ts`
 
