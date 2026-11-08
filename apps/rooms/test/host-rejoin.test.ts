@@ -4,6 +4,7 @@ import { createReadTick, readCatchUp, readTick } from "@racer/sim/room-wire";
 import { describe, expect, it } from "vitest";
 
 import { SEAT_QUIT } from "../src/messages.ts";
+import { TRACE_ROW_FIELDS } from "../src/tape.ts";
 import {
   advanceHearing,
   clientOf,
@@ -115,17 +116,23 @@ describe("a rider whose link drops mid-race", () => {
   });
 });
 
+const rowOf = (value: number) =>
+  Array.from({ length: TRACE_ROW_FIELDS }, () => value);
+
 describe("a rider who drops and comes back", () => {
   it("keeps the frame trace from both links in one file", () => {
     const { ann, clock, host, seated } = loadingRoom();
     const trace = { build: "abc", gpu: "Test GPU", graphics: "rung 1" };
-    host.message(ann, JSON.stringify({ ...trace, rows: [1, 2] }));
+    const first = [...rowOf(1), ...rowOf(2)];
+    host.message(ann, JSON.stringify({ ...trace, rows: first }));
     host.gone(ann, 1006);
     const back = seated("ann", "Ann");
-    host.message(back, JSON.stringify({ ...trace, rows: [3] }));
+    host.message(back, JSON.stringify({ ...trace, rows: rowOf(3) }));
     host.gone(back, SEAT_QUIT);
     const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
-    expect(saved).toContain('"connections":[[1,2],[3]]');
+    expect(saved).toContain(
+      `"connections":${JSON.stringify([first, rowOf(3)])}`
+    );
   });
 });
 

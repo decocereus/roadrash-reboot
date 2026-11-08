@@ -94,7 +94,7 @@ describe("the room's notes", () => {
     );
   });
 
-  it("saves every row a seat sent before its socket died, with no extra fields", () => {
+  it("saves every whole row a seat sent before its socket died, with no extra fields", () => {
     const { clock, host, near } = loadingRace();
     const trace = {
       build: "abc",
@@ -105,6 +105,14 @@ describe("the room's notes", () => {
     };
     host.message(near, JSON.stringify(trace));
     host.message(near, JSON.stringify({ ...trace, rows: [250] }));
+    host.message(
+      near,
+      JSON.stringify({ ...trace, rows: [-1, 0, 1, 0, 60, 2, 16, 90, 17] })
+    );
+    host.message(
+      near,
+      JSON.stringify({ ...trace, rows: [0.5, 0, 1, 0, 60, 2, 16, 90, 17] })
+    );
     host.gone(near, 1006);
     clock.advance(HOLD_MS);
     expect(clock.notes.filter((note) => note.kind === "browser")).toStrictEqual(
@@ -120,7 +128,7 @@ describe("the room's notes", () => {
       ]
     );
     const saved = clock.tape.get("tapes/race-1/rider-0.trace.json");
-    expect(saved).toContain("[0,0,1,0,60,2,16,90,17,250]");
+    expect(saved).toContain('"connections":[[0,0,1,0,60,2,16,90,17]]');
     expect(saved).not.toContain("a name");
   });
 

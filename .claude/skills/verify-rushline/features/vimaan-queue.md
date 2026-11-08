@@ -4,12 +4,12 @@ vimaan is the one shared machine with a real GPU, so lanes take turns on it thro
 
 ## Sub-features
 
-- vq-1: `rv book <lane> <minutes> <purpose>` books a turn and prints `BOOKING=<id>`. The first booking holds the turn at once, and the rest wait in order.
+- vq-1: `rv book <lane> <minutes> <purpose>` books a turn and prints `BOOKING=<id>`. The first booking holds the turn at once, and the rest wait in order. A lane is lower case letters, digits and dashes, and minutes run from 1 to 240; anything else exits 1.
 - vq-2: `rv book status` shows the holder with its purpose, turn start, expected end and whether it is idle or running a job. It then lists each waiter with an estimated start, followed by the last ended bookings and why each ended.
 - vq-3: on vimaan (any machine named in `sharedMachines` in `packages/devtools/src/browser-host.ts`), `rv up`, `open`, `click`, `press`, `rebuild`, `rv bench`, `measure.ts` and `pnpm perf:gpu` need `RUSHLINE_BOOKING=<id>` naming the holder. Without one they exit 1 and print the `rv book` commands.
 - vq-4: `pnpm vimaan wait <id>` blocks while the lane waits or its job runs, and exits 0 on its own when it is the lane's move. It retries a dropped link every 15 s for 20 tries.
-- vq-5: `pnpm vimaan run <id> --cwd <dir> <label> -- <command>` runs the command on vimaan as the booking's job, in its own session, so a dropped link does not stop it. It prints the end of the job's log.
-- vq-6: a job whose workload dies gives the turn back to its lane as idle. A job counts as running while `rv bench` or its command's process group lives, so a killed `rv bench` whose workload survives keeps the turn busy. A turn idle for more than 10 min passes to the next lane, and so does a turn that runs more than 15 min past its expected end.
+- vq-5: `pnpm vimaan run <id> --cwd <dir> <label> -- <command>` runs the command on vimaan as the booking's job, in its own session, so a dropped link does not stop it. It writes the job's log to `/var/tmp/rushline-book/<id>.log` on vimaan and prints its last 30 lines.
+- vq-6: a job whose workload dies gives the turn back to its lane as idle. A job counts as running while `rv bench` or its command's process group lives, so a killed `rv bench` whose workload survives keeps the turn busy. A turn idle for more than 10 min passes to the next lane, and so does a turn with no live job that runs more than 15 min past its expected end.
 - vq-7: every bench on a booking stops at the booking's expected end plus 15 min: SIGTERM to its child processes, SIGKILL 10 s later, and a non-zero exit. A turn whose job still lives never passes on: one minute later the next settle SIGKILLs the job's recorded process group and `rv bench` pid, even when `rv bench` itself was killed, and hands the turn on once both are gone.
 - vq-8: on the Mac nothing needs a booking. `measure.ts` and `perf:gpu` fail at once while another bench holds the Mac, and `pnpm perf` queues behind it for up to an hour.
 
@@ -22,7 +22,7 @@ vimaan is the one shared machine with a real GPU, so lanes take turns on it thro
 
 ## Driving it with rv
 
-Preconditions: two lane threads on the Mac, here called A and B. Each has a checkout that `pnpm vimaan` can reach on vimaan, and `pnpm vimaan status` prints `free` or a holder. Lane A's checkout on vimaan is `~/wt/a`. Run every `rv` on vimaan with the same `TMPDIR`.
+Preconditions: two lane threads on the Mac, here called A and B. Each has a checkout that `pnpm vimaan` can reach on vimaan, and `pnpm vimaan status` prints `free` or a holder. Lane A's checkout on vimaan, for `run --cwd`, is `~/wt/a`. `pnpm vimaan book`, `wait`, `status` and `release` run in `RUSHLINE_VIMAAN_CHECKOUT`, `~/roadrash-reboot` by default. Run every `rv` on vimaan with the same `TMPDIR`.
 
 - **vq-3 no booking.** On vimaan, `rv up --path /kit` exits 1 and prints `This machine (linux-nvidia) is shared through the bench queue, so rv up needs a booking`, followed by the `rv book` commands. `rv list` and `rv book status` still work.
 - **vq-1 and vq-2 two lanes.** A runs `pnpm vimaan book lane-a 20 frame campaign`, which prints `BOOKING=lane-a-<n>` and a `holder   lane-a-<n> holds it for frame campaign` line ending `idle since HH:MM`. B runs `pnpm vimaan book lane-b 15 intel capture` and sees `waiting  1. lane-b-<m> ... starts about HH:MM`, about A's expected end.

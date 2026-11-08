@@ -1,13 +1,13 @@
 import { RACE_STATS_PACKET_BYTES } from "@racer/sim/room-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { encodeRoomMessage, SEAT_CLOSED, SEAT_QUIT } from "../src/messages.ts";
 import { NEW_SEAT, seatAfter } from "../src/seat-client.ts";
 import type { RoomSeat, SeatEvent, SeatPhase } from "../src/seat-client.ts";
 import {
   ABNORMAL_CLOSE,
   countdown,
-  DEAD_AFTER_MS,
   ended,
   FakeSocket,
   hearTick,
@@ -15,7 +15,6 @@ import {
   lobbyMessage,
   loadingSeat,
   newSeat,
-  PING_EVERY_MS,
   replaced,
   started,
   startedMessage,

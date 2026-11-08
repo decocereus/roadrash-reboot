@@ -2,7 +2,7 @@ import { bikes } from "@racer/sim/bikes";
 import type { BikeId } from "@racer/sim/bikes";
 import { celebrityCast, ordinaryCast, rivalAt, rivals } from "@racer/sim/cast";
 import type { Rival, RivalId } from "@racer/sim/cast";
-import { difficulties, TOP_TIER } from "@racer/sim/difficulty";
+import { difficulties, tiers, TOP_TIER } from "@racer/sim/difficulty";
 import { defaultPlayer } from "@racer/sim/race";
 import { clamp, PLAYER_RIDER } from "@racer/sim/state";
 import type { RaceSetup, RivalSetup } from "@racer/sim/state";
@@ -173,12 +173,45 @@ export const setupFor = (
   };
 };
 
-export interface PracticeRace {
+export interface PracticePick {
   readonly roadId: RoadId;
   readonly tier: Tier;
   readonly bikeId: BikeId;
+}
+
+export interface PracticeRace extends PracticePick {
   readonly seed: number;
 }
+
+export interface PracticeChoices {
+  readonly tiers: readonly Tier[];
+  readonly bikes: readonly BikeId[];
+}
+
+const reachOf = (career: CareerState | null): CareerState =>
+  career ?? newCareer(0);
+
+export const practiceChoices = (
+  career: CareerState | null
+): PracticeChoices => {
+  const reach = reachOf(career);
+  return {
+    bikes: reach.garage,
+    tiers: tiers.filter((tier) => tier <= reach.tier),
+  };
+};
+
+export const pickWithin = (
+  pick: PracticePick,
+  career: CareerState | null
+): PracticePick => {
+  const reach = reachOf(career);
+  return {
+    bikeId: reach.garage.includes(pick.bikeId) ? pick.bikeId : reach.bikeId,
+    roadId: pick.roadId,
+    tier: pick.tier <= reach.tier ? pick.tier : reach.tier,
+  };
+};
 
 export const practiceCareer = (
   pick: Pick<PracticeRace, "bikeId" | "tier">,

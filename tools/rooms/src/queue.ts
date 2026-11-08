@@ -43,9 +43,9 @@ const fetchText = (url: string) =>
     return await answer.text();
   });
 
-const openRider = (url: string, build: string): Rider => {
+const openRider = (url: string, build: string, key: string): Rider => {
   const heard: Heard[] = [];
-  const leave = enterQueue(url, build, {
+  const leave = enterQueue(url, build, key, {
     onLost: () => {
       heard.push({ kind: "lost" });
     },
@@ -108,27 +108,43 @@ export const main = Effect.fn("rooms.queue")(function* queue(
     return yield* new QueueCheckFailed({ message: usage });
   }
   const { build } = decodeStatus(yield* fetchText(`${url}/queue`));
-  const quitter = openRider(url, build);
+  const quitter = openRider(url, build, crypto.randomUUID());
   yield* waitFor(() => quitter.heard.length > 0, "a first answer", 5000);
   quitter.leave();
   yield* Effect.sleep(SETTLE_MS);
   const { waiting: afterLeaving } = decodeStatus(
     yield* fetchText(`${url}/queue`)
   );
-  const group = Array.from({ length: MOST_SEATS }, () => openRider(url, build));
+  const member = crypto.randomUUID();
+  const olderTab = openRider(url, build, member);
+  yield* waitFor(() => olderTab.heard.length > 0, "the first tab queued", 5000);
+  const newerTab = openRider(url, build, member);
+  yield* waitFor(
+    () => olderTab.heard.some(({ kind }) => kind === "refused"),
+    "the first tab told its spot moved",
+    5000
+  );
+  const { waiting: withTwoTabs } = decodeStatus(
+    yield* fetchText(`${url}/queue`)
+  );
+  newerTab.leave();
+  yield* Effect.sleep(SETTLE_MS);
+  const group = Array.from({ length: MOST_SEATS }, () =>
+    openRider(url, build, crypto.randomUUID())
+  );
   yield* waitFor(
     () => group.every((rider) => placedIn(rider) !== null),
     "eight riders placed",
     5000
   );
-  const lonely = openRider(url, build);
+  const lonely = openRider(url, build, crypto.randomUUID());
   const waitedMs = yield* waitFor(
     () => placedIn(lonely) !== null,
     "a lone rider placed",
     msOf(launchRoomConfig.queueWaitSeconds) + MARGIN_MS
   );
   const stale = yield* Effect.callback<Heard>((resume) => {
-    enterQueue(url, `${build}-old`, {
+    enterQueue(url, `${build}-old`, crypto.randomUUID(), {
       onLost: () => {
         resume(Effect.succeed({ kind: "lost" }));
       },
@@ -139,6 +155,13 @@ export const main = Effect.fn("rooms.queue")(function* queue(
   });
   const problems = [
     ...(afterLeaving === 0 ? [] : ["A rider who left stayed in the queue."]),
+    ...(withTwoTabs === 1 &&
+    olderTab.heard.some(
+      (message) => message.kind === "refused" && message.reason === "replaced"
+    ) &&
+    newerTab.heard.every(({ kind }) => kind === "waiting")
+      ? []
+      : ["One rider's two tabs took two tickets."]),
     ...oneRoomProblems(group),
     ...(yield* ruleProblems(url, placedIn(lonely))),
     ...(waitedMs > msOf(launchRoomConfig.queueWaitSeconds) - MARGIN_MS
@@ -155,7 +178,7 @@ export const main = Effect.fn("rooms.queue")(function* queue(
         loneRiderRoom: placedIn(lonely),
         loneRiderWaitedMs: waitedMs,
         problems,
-        queueUrl: queueUrl(url, build),
+        queueUrl: queueUrl(url, build, member),
       },
       null,
       2

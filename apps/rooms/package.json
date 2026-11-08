@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./build-id": "./src/build-id.ts",
     "./contract": "./src/contract.ts",
     "./gate": "./src/gate.ts",
+    "./heartbeat": "./src/heartbeat.ts",
     "./host": "./src/host.ts",
     "./input-latency": "./src/input-latency.ts",
     "./messages": "./src/messages.ts",

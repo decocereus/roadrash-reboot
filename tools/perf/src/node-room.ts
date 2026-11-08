@@ -237,7 +237,7 @@ const clientWork =
   };
 
 const FRAME_MS = 16;
-const frameTally = createRaceTally();
+const frameTally = createRaceTally(true);
 
 const frameWork = (): void => {
   const left = createTickFrame();

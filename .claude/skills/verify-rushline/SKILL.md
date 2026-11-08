@@ -69,7 +69,7 @@ It only reads. Each line is `ok` or `FAIL`, and the exit code is 1 if any check 
 - For a build instance: the build came from the current `HEAD`, and no file under `apps/web/src`, `apps/web/public`, or `packages/` changed after it. If one did, `rv rebuild`.
 - On a host that needs one, a desktop session is up. The DevTools port's listener is the browser PID this run started, and the console watcher is alive, with the throttling it holds.
 - The page is on this run's server, `document.visibilityState` is `visible` (a hidden page pauses the race and stops frames), and the WebGL renderer contains the mark the machine's row requires, `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, ...)` on the Mac and `ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1650 Ti ...)` on vimaan, never SwiftShader.
-- The console has no errors or uncaught exceptions. The 404 for `/favicon.ico` is known noise (the app ships no favicon) and does not count.
+- The console has no errors or uncaught exceptions. Two lines are known noise and do not count: the 404 for `/favicon.ico` (the app ships no favicon), and Helium's `ERR_BLOCKED_BY_CLIENT` on `/api/events`, which it blocks after any race.
 
 ## Drive
 
@@ -78,7 +78,7 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 | Command | What it does |
 | --- | --- |
 | `rv open --run <id> "/?flags" [--until bar\|race\|held\|<js>]` | Navigate the page, wait for load, then optionally until a signal. Prints both times. `bar` is the Lowside's menu, `race` is the race HUD's speed meter, `held` is a `?hold=` freeze. |
-| `rv click --run <id> "<label>" [--within "<aria-label>"]` | Click the visible control whose text reads the label (case does not matter; menus render upper case). `--within` scopes to the element with that `aria-label`: a menu (`Clubhouse`, `Back room`, `Route board`, `Pause`, `Finish`, `Results`, `Garage`, `Catalogue`) or a confirm dialog (`Quit race`, `Buy`, `Sell`, `Start over`, `The envelope`). It fails if the control is disabled, hidden under an `inert` overlay, or covered at its centre, and lists what is on screen. |
+| `rv click --run <id> "<label>" [--within "<aria-label>"]` | Click the visible control whose text reads the label (case does not matter; menus render upper case). `--within` scopes to the element with that `aria-label`: a menu (`Clubhouse`, `Back room`, `Route board`, `Settings`, `Pause`, `Finish`, `Results`, `Garage`, `Catalogue`) or a confirm dialog (`Quit race`, `Buy`, `Sell`, `Start over`, `The envelope`). It fails if the control is disabled, hidden under an `inert` overlay, or covered at its centre, and lists what is on screen. |
 | `rv press --run <id> ArrowUp KeyJ [--hold ms]` | Hold the keys together for `--hold` ms (default 120), then release. Uses `KeyboardEvent.code` names. |
 | `rv wait --run <id> <signal or js> [--timeout s]` | Poll until the expression is truthy. Default timeout 60 s. |
 | `rv js --run <id> '<expression>'` | `Runtime.evaluate` with promises awaited; prints the JSON value. |
@@ -91,7 +91,7 @@ Read `features/README.md`, then the feature file for what you changed. Each reci
 | `rv console --run <id> [errors]` | Print what the watcher captured. |
 | `rv list` | Every claimed slot, its run, and whether its processes are up. |
 | `rv desktop up <name>`, `down <name>`, `status` | On Linux, start, release or read the desktop session. `up` holds it under that name until `down` with the same name, so another agent's `down` cannot release it. |
-| `rv book <lane> <minutes> <purpose>` | Books a turn on this machine's bench queue and prints `BOOKING=<id>`. On vimaan every `rv` that draws, `rv bench`, `measure.ts` and `pnpm perf:gpu` run under `RUSHLINE_BOOKING=<id>` once that booking holds the turn. [features/vimaan-queue.md](features/vimaan-queue.md) is the recipe. |
+| `rv book <lane> <minutes> <purpose>` | Books a turn on this machine's bench queue and prints `BOOKING=<id>`. A lane is lower case letters, digits and dashes; minutes run from 1 to 240. On vimaan every `rv` that draws, `rv bench`, `measure.ts` and `pnpm perf:gpu` run under `RUSHLINE_BOOKING=<id>` once that booking holds the turn. [features/vimaan-queue.md](features/vimaan-queue.md) is the recipe. |
 | `rv book status`, `wait <id> [--every s] [--end]`, `release <id>` | `status` shows the holder, the waiters with estimated starts, and the last ended bookings. `wait` blocks until it is the lane's move, or with `--end` until the booking ends. `release` passes the turn on. From the Mac, `pnpm vimaan status`, `book`, `wait`, `run` and `release` do the same over SSH. |
 | `rv bench <label> -- <command> [args]` | Runs the command as its booking's job, for a campaign of several measurements. Other agents' `rv up`, `open`, `click`, `press` and `rebuild` fail until it ends. It refuses to start while another run has a browser open. It stops the command at the booking's expected end plus 15 min, SIGTERM then SIGKILL 10 s later, and exits non-zero. On the Mac it books itself. |
 
@@ -115,21 +115,25 @@ These work in the development build `rv up` serves and in `pnpm dev`; the produc
 | `?bike=<bikeId>&with=alone\|field\|traffic` (DEV) | With `?ride`: the player's bike (ids in `packages/sim/src/bikes.ts`), and who rides along. `alone` drops rivals, police and traffic, `field` drops traffic, `traffic` is the full race and the default. |
 | `?at=<metres>` (DEV) | Put the player this far along the road at the start of every race the page starts, including career races. |
 | `?autopilot` (DEV) | The AI pilot rides the player's bike, including truck jumps. The player's rider is built pilot-controlled, so the keys, `?straight` and `?swerve` do nothing. |
-| `?hazard=<id>&before=<m>` (DEV) | Put the player on that road hazard's line, `before` metres (default 150) ahead of it. Ids are per road (`hazard-3` on Breakwater Run), listed by the node command in `features/hazards.md`. With `?kmh=<n>` for the starting speed, `?straight` to hold that line at full throttle, and `?clear` to move traffic out of the way. |
+| `?hazard=<id>&before=<m>` (DEV) | Put the player on that road hazard's line, `before` metres (default 150) ahead of it. Ids are per road (`hazard-10` on Breakwater Run), and so does a pedestrian's id such as `jaywalk-11%230` ([features/junctions.md](features/junctions.md)), listed by the node command in `features/hazards.md`. With `?kmh=<n>` for the starting speed, `?straight` to hold that line at full throttle, `?clear` to move traffic out of the way, and `?passby=<m>` to aim that many metres to the side of a walker. |
 | `?swerve=<m>&swervefor=<m>&swerveto=<-1..1>` (DEV) | After `swerve` metres, force the steer to `swerveto` (default 1, right) for `swervefor` metres (default 25). It steers a player you ride, so pair it with `?straight` for a hands-off run; it does nothing under `?autopilot`. |
 | `?hold=air\|at\|near\|<event>&holdafter=<n>` (DEV) | Freeze the race: `air` after n ticks airborne, `at` at n metres, `near` when the `?hazard=` hazard is n metres ahead, or n ticks after the player's event of that kind (`land`, `crash`, `remount`, `finish`, `hit`, `hazard`, `nearMiss`, `busted`, ...). Fires once per page load. |
+| `?as=<celebrity>&against=<ids>` (DEV) | Dress the player as one celebrity and the first rivals as the listed ones, for example `?as=kylie&against=ronaldo,kylie`. |
 | `?road=<n>` (DEV) | Which road the hidden attract race loads first while the game boots. |
 | `?stress`, `?stress=reference` | The fixed benchmark races from `apps/web/src/career/bench.ts`, on the pilot, in any build. |
 | `?prof`, `?prof=gpu` | Record per-frame costs into `__rushlineProfile`; `gpu` adds timer queries ANGLE on Metal answers wrongly. `?stress` implies `?prof`. |
-| `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, preset, pace, refresh, draw calls, triangles. |
+| `?fps` | An overlay with fps, frame time, worst frame, pixel ratio, preset, pace, refresh, draw calls, triangles. Settings → Frame meter turns on the same overlay. |
 | `?ratio=<n>`, `?hz=<n>` | Pin the pixel ratio or the detected refresh rate. |
 | `?preset=full\|balanced\|lean` | Pin a quality preset instead of the one the device check picks. |
+| `?time=dusk\|night\|<0..1>`, `?lean`, `?ratio`, `?samples`, `?bloom`, `?shadow`, `?riders=<n>` | In the bar: hold the clock, take the lean preset, pin one render setting, or draw fewer riders. `pnpm perf:gpu` uses `/bar?prof&time=dusk`. |
+| `?tester` | Settings gains the recorder rows: Recording, Automatic upload, Test device and Send report. |
+| `?room=<id>`, `&via=`, `&rejoin=` | A race room's invite, arrival and rejoin state; [features/race-room.md](features/race-room.md) has them. |
 
 Trucks, by where each starts at the race start: Breakwater Run 3.90 and 4.65 km, Slag Row 2.60 and 4.10, Ridge Road 4.50. A truck drives 20 m/s in the first same-way lane, so with `?at` it is that far along when the race starts. Roads end at 8.50 and 8.55 km.
 
 ### Alternative: the T3 Code browser
 
-When the main agent runs inside T3 Code it has a built-in browser with `preview_*` tools: `preview_open`, `preview_navigate`, `preview_click`, `preview_press`, `preview_evaluate` (a CDP-style evaluate), `preview_snapshot`, `preview_wait_for`, and `preview_recording_start` / `preview_recording_stop`. Point it at a slot's URL from `rv up`, never at 1350, 1351, or the user's tunnel. Its limits decide what it is good for:
+When the main agent runs inside T3 Code it has a built-in browser with `preview_*` tools: `preview_open`, `preview_navigate`, `preview_act` (clicks and key presses), `preview_evaluate` (a CDP-style evaluate), `preview_snapshot`, `preview_wait_for`, and `preview_recording_start` / `preview_recording_stop`. Point it at a slot's URL from `rv up`, never at 1350, 1351, or the user's tunnel. Its limits decide what it is good for:
 
 - A preview tab opened while its thread is not on screen reports `document.visibilityState` as hidden. The game's `requestAnimationFrame` loop does not advance in a hidden tab, so a race sits at the countdown "3" forever and `__rushlineHeld` never turns true. Check visibility with `preview_evaluate` first.
 - `preview_evaluate` times out after 15 seconds, so poll long waits in short calls instead of awaiting a promise.
@@ -222,4 +226,4 @@ The Claude Code worktree guard rejects some command shapes before they run. Keep
 
 ## Keeping this skill honest
 
-When the app changes, update the feature files with `/maintain-verification-skill`. A recipe that no longer runs is worse than none.
+When the app changes, update the feature files with the pstack `/maintain-verification-skill` skill. A recipe that no longer runs is worse than none.

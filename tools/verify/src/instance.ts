@@ -11,6 +11,7 @@ import {
 import { released } from "@racer/devtools/cleanup";
 import { desktopEnvFor, retainDesktop } from "@racer/devtools/desktop";
 import { ToolProcesses } from "@racer/devtools/process";
+import { LOCAL_BUILD } from "@racer/rooms/build-id";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -64,6 +65,7 @@ export const buildDirFor = (checkout: string, slot: number): string =>
 const devEnv = (): NodeJS.ProcessEnv => ({
   ...process.env,
   NODE_ENV: "development",
+  VITE_ROOMS_BUILD: LOCAL_BUILD,
 });
 
 export const build = Effect.fn("rv.build")(function* build(
