@@ -232,6 +232,7 @@ describe("placing stalls", () => {
             walk: "zebra",
           },
         ],
+        crowds: [],
       })
     );
     const [crossing] = crossings;
@@ -268,5 +269,32 @@ describe("placing stalls", () => {
         /which is not a stretch/u
       );
     }
+  });
+
+  it("refuses two bazaars that overlap, and takes two that meet end to end", () => {
+    for (const bazaars of [
+      [
+        { from: 500, to: 600 },
+        { from: 500, to: 600 },
+      ],
+      [
+        { from: 900, to: 1200 },
+        { from: 500, to: 950 },
+      ],
+    ]) {
+      expect(() => compileTrack(flat({ bazaars }))).toThrow(
+        /Two bazaars on .* overlap/u
+      );
+    }
+    const touching = compileTrack(
+      flat({
+        bazaars: [
+          { from: 500, to: 600 },
+          { from: 600, to: 700 },
+        ],
+      })
+    );
+    const positions = touching.stalls.map(({ s, x }) => `${s}:${x}`);
+    expect(new Set(positions).size).toBe(positions.length);
   });
 });

@@ -161,6 +161,15 @@ const checkBazaars = (
       );
     }
   }
+  let before: Bazaar | null = null;
+  for (const after of bazaars.toSorted((one, other) => one.from - other.from)) {
+    if (before && after.from < before.to) {
+      throw new Error(
+        `Two bazaars on ${name} overlap, ${before.from} to ${before.to} and ${after.from} to ${after.to}.`
+      );
+    }
+    before = after;
+  }
 };
 
 export const placeStalls = (
