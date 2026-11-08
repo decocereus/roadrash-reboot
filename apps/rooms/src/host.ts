@@ -30,7 +30,7 @@ import {
 } from "./messages.ts";
 import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
-import { buildRace } from "./race-build.ts";
+import { buildRace, tapeEndOf } from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
   HERE,
@@ -214,7 +214,7 @@ export const createHost = (
     );
     ports.saveTape(
       tapeKey(run.raceId, tapeEndName),
-      JSON.stringify({ parts: tape.parts(), tick: room.state.tick })
+      tapeEndOf(room, tape.parts())
     );
     ports.note({
       catchUpWakes,
