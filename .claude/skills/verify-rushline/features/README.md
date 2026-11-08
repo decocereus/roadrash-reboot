@@ -5,7 +5,7 @@ This directory is the maintained source for verifying what a player of Rushline 
 ## Baseline preconditions
 
 - A slot from `rv up` (ports 1410-1419, DevTools 9410-9419), serving a development-mode build of this checkout. Never 1350, 1351, or the user's tunnel.
-- `rv doctor --run <run>` passes: our server and browser PIDs on our ports, a current build, a visible page, the renderer this machine's row requires (Metal on the Mac, NVIDIA on vimaan), no console errors.
+- `rv doctor --run <run>` passes: our server and browser PIDs on our ports, a current build, a visible page, the renderer this machine's row requires (Metal on the Mac, NVIDIA on vimaan), no console errors beyond the known noise `SKILL.md` names.
 - A fresh browser profile: no career save, sound muted, focus left with the user.
 - Desktop viewport from the 1512 x 860 window at device pixel ratio 2.
 
@@ -14,7 +14,7 @@ This directory is the maintained source for verifying what a player of Rushline 
 - Start each recipe from `rv open --run <run> "<path>"` so it does not depend on the previous one. A page load resets the game; the save survives it.
 - Reach controls by their visible label and their menu's `aria-label` with `rv click "<label>" --within "<menu>"`. Do not click coordinates.
 - Drive the bike with `rv press` and `KeyboardEvent.code` names: `ArrowUp`/`KeyW` throttle, `ArrowDown`/`KeyS` brake, `ArrowLeft`/`ArrowRight` or `KeyA`/`KeyD` steer, `Space`/`KeyJ` punch, `ShiftLeft`/`KeyK` kick, `Escape` pause, `KeyR` restart a single race, `KeyM` mute.
-- Use URL flags (`?ride`, `?at`, `?autopilot`, `?hold`, `?swerve`) to reach a moment fast, and say so in the report. They skip the menus, so they never prove a menu path.
+- Use URL flags (`?ride`, `?at`, `?autopilot`, `?hold`, `?swerve`; the full table is in `SKILL.md`) to reach a moment fast, and say so in the report. They skip the menus, so they never prove a menu path.
 - Keep every `rv` call literal: no shell variables or loops (the worktree guard rejects them).
 
 ## Proof and skip reporting
@@ -41,7 +41,7 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 
 - [Data credits](./credits.md): Settings link, source notices and the full building data licence.
 - [Casa de Campo hook](./madrid-hook.md): the development-only Madrid park greybox, ridden alone, with the field or with traffic, and its two forced places.
-- [Puerta de Alcalá into Gran Vía](./madrid-gran-via.md): the development-only Madrid city greybox, 2,348 m from the gate to Plaza de España, its two slow places and its five landmarks.
+- [Puerta de Alcalá into Gran Vía](./madrid-gran-via.md): the development-only Madrid city greybox, 2,348 m from the gate to Plaza de España, its two slow places and its six landmarks.
 
 - [Back room and single race](./single-race.md): the back room, route board, ride-out card, starting, pausing, restarting, and quitting a single race.
 - [Riding and fighting](./riding-and-fighting.md): throttle, brake, steering, punches and kicks, crashing, getting back on, the cop warning, and the finish.
@@ -50,8 +50,9 @@ Keep implementation detail out of the map: name player paths, stable handles, re
 - [Market bazaar](./bazaar.md): Breakwater Run's market stalls and their crowd on both footpaths of the squeeze, a fast hit that crashes, a slow touch that does not, and the stall that gives way to the camera.
 - [Road hazards](./hazards.md): where oil, rocks, and potholes lie, how each draws, what contact costs by speed, what missing one costs, and the frame rate with them on screen.
 - [Junctions and crossings](./junctions.md): where a road's junctions and pedestrian crossings stand, how the arms, zebras, stop lines and signals draw, and the light cycle.
-- [Walkable bar](./walkable-bar.md): the development-only bar the player walks around, its cameras, the hidden bike, the cast, the door cutscene and the clock.
+- [Walkable bar](./walkable-bar.md): the bar the player walks around, which is every race room's lobby in production (only the `/bar` route is development-only), its cameras, the hidden bike, the cast, the door cutscene and the clock.
 - [Career](./career.md): a new career, the clubhouse, a career race settled into money and qualification, the garage, and the save across reloads.
+- [Player events](./player-events.md): the race data notice, the Race data switch and player ID in Settings, and the events sent to `/api/events`.
 - [Race room](./race-room.md): the Durable Object that runs a race at 60 Hz for WebSocket seats, raced by scripted clients.
 - [Race rules](./race-rules.md): the served field size, a ten-racer grid, a three-tier career and what each tier changes, and the save above the top tier refused.
 - [Game art](./art.md): the `/art/<key>` route, the bar's and the race's art loaded from it, the local cache refilled from the deployed game, and the deployed game reading R2.

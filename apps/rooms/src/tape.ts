@@ -2,7 +2,7 @@ import * as Schema from "effect/Schema";
 
 import { RoomRuleSchema } from "./room-rule.ts";
 
-export const TAPE_VERSION = 2;
+export const TAPE_VERSION = 3;
 export const TAPE_KEEP_DAYS = 7;
 
 export const TapeHeaderSchema = Schema.Struct({
@@ -19,6 +19,7 @@ export const TapeHeaderSchema = Schema.Struct({
 export type TapeHeader = typeof TapeHeaderSchema.Type;
 
 export const TapeEndSchema = Schema.Struct({
+  hash: Schema.String,
   parts: Schema.Number,
   tick: Schema.Number,
 });
@@ -63,18 +64,27 @@ export const SeatBrowserSchema = Schema.Struct({
 
 export type SeatBrowser = typeof SeatBrowserSchema.Type;
 
+const TraceRows = Schema.Array(
+  Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+).check(
+  Schema.makeFilter(
+    (values) =>
+      values.length % TRACE_ROW_FIELDS === 0 ||
+      `a trace row has ${TRACE_ROW_FIELDS} values`,
+    { title: "whole trace rows" }
+  )
+);
+
 export const BrowserTraceSchema = Schema.Struct({
   ...SeatBrowserSchema.fields,
-  rows: Schema.Array(Schema.Number).check(
-    Schema.isMaxLength(MOST_TRACE_ROW_VALUES)
-  ),
+  rows: TraceRows.check(Schema.isMaxLength(MOST_TRACE_ROW_VALUES)),
 });
 
 export type BrowserTrace = typeof BrowserTraceSchema.Type;
 
 export const RiderTraceSchema = Schema.Struct({
   ...SeatBrowserSchema.fields,
-  connections: Schema.Array(Schema.Array(Schema.Number)),
+  connections: Schema.Array(TraceRows),
 });
 
 export type RiderTraceFile = typeof RiderTraceSchema.Type;

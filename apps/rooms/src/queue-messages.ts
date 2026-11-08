@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-export const QUEUE_REFUSALS = ["build", "limited"] as const;
+export const QUEUE_REFUSALS = ["build", "limited", "replaced"] as const;
 
 export type QueueRefusal = (typeof QUEUE_REFUSALS)[number];
 
