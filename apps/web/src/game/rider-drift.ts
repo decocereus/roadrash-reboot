@@ -2,12 +2,11 @@ import type { RiderCorrection } from "@racer/sim/room-client";
 import { riderOf } from "@racer/sim/state";
 
 const SETTLE_MS = 100;
-const MOST_ALONG_METRES = 15;
-const MOST_ACROSS_METRES = 6;
+const GLIDE_SECONDS = 2;
 const ALONG_SHARE_OF_SPEED = 0.1;
 const SLOWEST_ALONG_METRES_PER_SECOND = 0.5;
 const ACROSS_METRES_PER_SECOND = 2.5;
-const MEASURED_FROM_METRES = 0.1;
+const RIDING_SHARE_UNSEEN = 0.25;
 
 export interface RiderDrift {
   heading: number;
@@ -30,17 +29,21 @@ export const clearDrift = (drift: RiderDrift): void => {
   drift.x = 0;
 };
 
-const clamped = (value: number, most: number): number =>
-  Math.min(most, Math.max(-most, value));
-
-const settled = (left: number, by: number, most: number): number =>
-  left - clamped(left * by, most);
+const settled = (
+  left: number,
+  by: number,
+  perSecond: number,
+  seconds: number
+): number => {
+  const most = Math.max(perSecond, Math.abs(left) / GLIDE_SECONDS) * seconds;
+  return left - Math.min(most, Math.max(-most, left * by));
+};
 
 export const driftBy = (drift: RiderDrift, moved: RiderCorrection): void => {
   drift.heading += moved.heading;
   drift.lean += moved.lean;
-  drift.s = clamped(drift.s + moved.s, MOST_ALONG_METRES);
-  drift.x = clamped(drift.x + moved.x, MOST_ACROSS_METRES);
+  drift.s += moved.s;
+  drift.x += moved.x;
 };
 
 export const driftSettle = (
@@ -57,9 +60,10 @@ export const driftSettle = (
     Math.max(
       SLOWEST_ALONG_METRES_PER_SECOND,
       ALONG_SHARE_OF_SPEED * Math.abs(speed)
-    ) * seconds
+    ),
+    seconds
   );
-  drift.x = settled(drift.x, by, ACROSS_METRES_PER_SECOND * seconds);
+  drift.x = settled(drift.x, by, ACROSS_METRES_PER_SECOND, seconds);
 };
 
 interface Placed {
@@ -101,16 +105,18 @@ export const captureCast = <Rider, Pose extends Placed>(
   }
 };
 
-export const drawnShare = (
+export const drawnOff = (
   drawnS: number,
   lastDrawnS: number,
   speed: number,
   seconds: number
 ): number => {
-  const expected = speed * seconds;
-  return Number.isFinite(drawnS) &&
-    Number.isFinite(lastDrawnS) &&
-    expected > MEASURED_FROM_METRES
-    ? (drawnS - lastDrawnS) / expected
-    : 1;
+  const riding = speed * seconds;
+  return Number.isFinite(drawnS) && Number.isFinite(lastDrawnS)
+    ? Math.max(
+        0,
+        Math.abs(drawnS - lastDrawnS - riding) -
+          RIDING_SHARE_UNSEEN * Math.abs(riding)
+      )
+    : 0;
 };

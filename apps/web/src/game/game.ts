@@ -72,7 +72,6 @@ import { nativeClock } from "./preparation.ts";
 import { bindQuality, createQuality } from "./presets.ts";
 import { rendererOf } from "./profile.ts";
 import { bindFeedback, createFeedback, out } from "./race-feedback.ts";
-import { drawnShare } from "./rider-drift.ts";
 import { bindCast, createCast, pickFarRiders } from "./rider-views.ts";
 import { bindStage, createStage } from "./scene-lifecycle.ts";
 
@@ -460,7 +459,6 @@ const startGame = (
     subject: cast.subject,
   });
 
-  let ownDrawnS = Number.NaN;
   const draw = (blend: number, seconds: number) => {
     if (stage.warming) {
       return;
@@ -468,6 +466,8 @@ const startGame = (
     hearFights();
     cast.clock += seconds;
     let index = -1;
+    let ownOff = 0;
+    let rivalOff = 0;
     for (const rider of stage.race.view.riders) {
       index += 1;
       const view = cast.views[index];
@@ -477,13 +477,12 @@ const startGame = (
       drawRider(index, rider, view, blend, seconds);
       if (index === stage.me) {
         followPlayer(rider);
-        const drawnS = rider.mode === "riding" ? view.drawn.s : Number.NaN;
-        roomOf(session)?.frameDrawn(
-          drawnShare(drawnS, ownDrawnS, rider.speed, seconds)
-        );
-        ownDrawnS = drawnS;
+        ownOff = view.drawn.off;
+      } else {
+        rivalOff = Math.max(rivalOff, view.drawn.off);
       }
     }
+    roomOf(session)?.frameDrawn(ownOff, rivalOff);
     const lead = cast.views[stage.me];
     if (cast.bikes && lead) {
       cast.bikes.commit(lead.bike.position);

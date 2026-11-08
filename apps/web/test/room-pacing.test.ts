@@ -10,6 +10,8 @@ const START_MS = 1000;
 const PING_EVERY_MS = 500;
 const SETTLED_AFTER_MS = START_MS + 3000;
 const RIDE_MS = 60_000;
+const OFF_PACE = 0.05;
+const MOST_AHEAD_ON_ROUGH_LINKS = 50;
 
 interface Link {
   readonly downMs: (sentAt: number) => number;
@@ -20,6 +22,7 @@ interface Link {
 interface Ride {
   readonly fastest: number;
   readonly lateShare: number;
+  readonly offPace: number;
   readonly leaps: number;
   readonly mostAhead: number;
   readonly mostAheadOfRoom: number;
@@ -158,6 +161,8 @@ const ride = (link: Link, displayHz: number): Ride => {
   let slowest = Number.POSITIVE_INFINITY;
   let stops = 0;
   let leaps = 0;
+  let offPace = 0;
+  let settled = 0;
   let mostAhead = 0;
   let mostAheadOfRoom = 0;
   let roomTick = 0;
@@ -179,7 +184,7 @@ const ride = (link: Link, displayHz: number): Ride => {
     for (let at = pongs.length - 1; at >= 0; at -= 1) {
       const [sent, back] = pongs[at] ?? [0, 0];
       if (back <= now) {
-        clock.heardRtt(back - sent);
+        clock.heardRtt(back - sent, back);
         pongs.splice(at, 1);
       }
     }
@@ -193,6 +198,8 @@ const ride = (link: Link, displayHz: number): Ride => {
       slowest = Math.min(slowest, moved);
       stops += moved <= 0 ? 1 : 0;
       leaps += moved > 2 ? 1 : 0;
+      offPace += Number(Math.abs(moved - 1) > OFF_PACE);
+      settled += 1;
       mostAhead = Math.max(mostAhead, predicted - confirmed);
       mostAheadOfRoom = Math.max(mostAheadOfRoom, predicted - roomTick);
     }
@@ -217,6 +224,7 @@ const ride = (link: Link, displayHz: number): Ride => {
     leaps,
     mostAhead,
     mostAheadOfRoom,
+    offPace: offPace / Math.max(1, settled),
     slowest,
     stops,
   };
@@ -281,6 +289,45 @@ const heldDownstream = (seconds: number): Link => ({
   upMs: fixedDelay(80),
 });
 
+const jitteredWithHolds = (seed: number) => {
+  let state = seed;
+  const roll = (): number => {
+    state = (state * PARK_MILLER) % MERSENNE_31;
+    return state / MERSENNE_31;
+  };
+  const delays = new Map<number, number>();
+  return (sentAt: number): number => {
+    const key = Math.round(sentAt);
+    const known = delays.get(key);
+    if (known !== undefined) {
+      return known;
+    }
+    const into = sentAt % 15_000;
+    const hold = sentAt > 5000 && into < 2500 ? 2500 - into : 0;
+    const lost = roll() < 0.01 ? 130 + 50 : 0;
+    const delay = 65 + (roll() - 0.5) * 30 + lost + hold;
+    delays.set(key, delay);
+    return delay;
+  };
+};
+
+const dribbledOut = (sentAt: number): number => {
+  const holdEnds = 22_500;
+  if (sentAt < 20_000) {
+    return 80;
+  }
+  if (sentAt < holdEnds) {
+    return holdEnds - sentAt + 80 + Math.max(0, sentAt - 21_500) * 0.5;
+  }
+  return 80 + Math.max(0, 23_200 - sentAt) * 0.4;
+};
+
+const lagProxyHolds: Link = {
+  downMs: jitteredWithHolds(3),
+  roomHz: steadyHz,
+  upMs: jitteredWithHolds(5),
+};
+
 const risingRoundTrip: Link = {
   downMs: risesAt(75, 200, 20_000),
   roomHz: steadyHz,
@@ -318,7 +365,7 @@ describe("a room race on a rough link", () => {
       });
       expect(result.slowest).toBeGreaterThanOrEqual(0.89);
       expect(result.fastest).toBeLessThanOrEqual(1.11);
-      expect(result.mostAhead).toBeLessThan(INPUT_HORIZON / 2);
+      expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
       expect(result.lateShare).toBeLessThan(0.01);
     }
   );
@@ -331,7 +378,7 @@ describe("a room race on a rough link", () => {
     });
     expect(result.slowest).toBeGreaterThanOrEqual(0.89);
     expect(result.fastest).toBeLessThanOrEqual(1.11);
-    expect(result.mostAhead).toBeLessThan(INPUT_HORIZON / 2);
+    expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
   });
 
   it.each([
@@ -339,18 +386,31 @@ describe("a room race on a rough link", () => {
     ["a 2.5 s hold on ticks from the room", heldDownstream(2.5), 0.01],
     ["a 2.5 s cut both ways", cutBothWays(2.5), 1],
     ["a 4 s cut both ways", cutBothWays(4), 1],
+    ["a 4.9 s hold on ticks from the room", heldDownstream(4.9), 0.01],
+    [
+      "the rooms:lag proxy at 130 ms, 30 ms jitter, 1% loss and a 2.5 s hold both ways every 15 s",
+      lagProxyHolds,
+      0.2,
+    ],
+    [
+      "a 2.5 s hold both ways whose held packets dribble out over a second",
+      { downMs: dribbledOut, roomHz: steadyHz, upMs: dribbledOut },
+      1,
+    ],
   ] as const)(
-    "rides on at a steady speed through %s, never sending controls the room would refuse",
+    "rides on at its own pace through %s, never sending controls the room would refuse",
     (_name, link, lateLimit) => {
       const result = ride(link, 60);
       expect({ leaps: result.leaps, stops: result.stops }).toStrictEqual({
         leaps: 0,
         stops: 0,
       });
-      expect(result.slowest).toBeGreaterThanOrEqual(0.89);
-      expect(result.fastest).toBeLessThanOrEqual(1.11);
+      expect(
+        Math.max(1 - result.slowest, result.fastest - 1)
+      ).toBeLessThanOrEqual(0.11);
       expect(result.mostAheadOfRoom).toBeLessThan(INPUT_HORIZON);
       expect(result.lateShare).toBeLessThan(lateLimit);
+      expect(result.offPace).toBeLessThan(0.01);
     }
   );
 });

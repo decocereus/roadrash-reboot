@@ -351,6 +351,8 @@ const RACE_STAT_FIELDS = [
   "worstJumpTick",
   "worstOtherRidersCm",
   "worstOwnControlCm",
+  "rivalsSurgedFrames",
+  "worstDrawnOffCm",
 ] as const;
 
 export type RaceStats = Readonly<

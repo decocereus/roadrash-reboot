@@ -1,3 +1,4 @@
+import { LINK_DEAD_AFTER_TICKS } from "@racer/sim/room";
 import {
   PING_PACKET_BYTES,
   PONG_PACKET_BYTES,
@@ -7,9 +8,12 @@ import {
   writePong,
 } from "@racer/sim/room-wire";
 import type { Pong } from "@racer/sim/room-wire";
+import { TICK_SECONDS } from "@racer/sim/state";
 
 export const PING_EVERY_MS = 500;
-export const DEAD_AFTER_MS = 5000;
+export const DEAD_AFTER_MS = Math.round(
+  LINK_DEAD_AFTER_TICKS * TICK_SECONDS * 1000
+);
 const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 export const SILENT_SEAT_MS = 10_000;
 export const SEAT_WATCH_MS = 1000;

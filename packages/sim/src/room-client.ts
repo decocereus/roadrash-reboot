@@ -22,7 +22,7 @@ import {
   MOST_BATCHED_CONTROLS,
   writeInput,
 } from "./room-wire.ts";
-import { PREDICTION_WINDOW, seatsOf } from "./room.ts";
+import { INPUT_HORIZON, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace, restoreInto, writeSnapshot } from "./snapshot.ts";
@@ -37,8 +37,6 @@ import type {
   RiderId,
   RiderState,
 } from "./state.ts";
-
-const MOST_LEAD_TICKS = PREDICTION_WINDOW;
 
 const NO_EVENTS: readonly RaceEvent[] = [];
 const NO_CORRECTIONS: readonly RiderCorrection[] = [];
@@ -164,7 +162,7 @@ const stillCorrection = ({ id }: RiderState): RiderCorrection => ({
 });
 
 const ringOf = <Value>(fill: () => Value): Value[] =>
-  Array.from({ length: MOST_LEAD_TICKS + 1 }, fill);
+  Array.from({ length: INPUT_HORIZON + 1 }, fill);
 
 export const createRoomClient = (
   setup: RaceSetup,
@@ -548,7 +546,7 @@ export const createRoomClient = (
     predict: (control) => {
       settle();
       const tick = predicted.tick + 1;
-      if (tick - confirmed.tick > MOST_LEAD_TICKS) {
+      if (tick - confirmed.tick > INPUT_HORIZON) {
         stats.refusedPredictions += 1;
         return false;
       }

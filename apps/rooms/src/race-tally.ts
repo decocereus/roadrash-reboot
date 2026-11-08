@@ -16,8 +16,7 @@ const P95 = 0.95;
 const P99 = 0.99;
 const SLOWED_BELOW_PACE = 0.95;
 const STOPPED_BELOW_PACE = 0.5;
-const SURGED_BELOW_SHARE = 0.75;
-const SURGED_ABOVE_SHARE = 1.25;
+const SURGED_FROM_METRES = 0.05;
 
 export interface RaceTally {
   readonly heardRtt: (rttMs: number) => void;
@@ -27,7 +26,8 @@ export interface RaceTally {
     roadMetres: number,
     confirmedTick: number,
     pace: number,
-    drawnShare: number
+    ownOffMetres: number,
+    rivalOffMetres: number
   ) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
   readonly closedTraceRows: () => readonly number[] | null;
@@ -60,6 +60,8 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
   let slowedMs = 0;
   let stoppedMs = 0;
   let surgedFrames = 0;
+  let rivalsSurgedFrames = 0;
+  let worstDrawnOffMetres = 0;
   let slowFrames = 0;
   let worstFrameMs = 0;
   let worstFrameRoadMetres = 0;
@@ -106,7 +108,14 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
 
   return {
     closedTraceRows: takeRows,
-    frameDrawn: (now, roadMetres, confirmedTick, pace, drawnShare) => {
+    frameDrawn: (
+      now,
+      roadMetres,
+      confirmedTick,
+      pace,
+      ownOffMetres,
+      rivalOffMetres
+    ) => {
       if (lastFrameAt === 0) {
         firstFrameAt = now;
         rowStartedAt = now;
@@ -117,13 +126,16 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
         const counted = Math.min(LONGEST_COUNTED_FRAME_MS, Math.floor(frameMs));
         frameMsCounts[counted] = (frameMsCounts[counted] ?? 0) + 1;
         const slowed = pace < SLOWED_BELOW_PACE ? frameMs : 0;
-        const surged =
-          drawnShare < SURGED_BELOW_SHARE || drawnShare > SURGED_ABOVE_SHARE
-            ? 1
-            : 0;
+        const surged = ownOffMetres > SURGED_FROM_METRES ? 1 : 0;
         slowedMs += slowed;
         stoppedMs += pace < STOPPED_BELOW_PACE ? frameMs : 0;
         surgedFrames += surged;
+        rivalsSurgedFrames += rivalOffMetres > SURGED_FROM_METRES ? 1 : 0;
+        worstDrawnOffMetres = Math.max(
+          worstDrawnOffMetres,
+          ownOffMetres,
+          rivalOffMetres
+        );
         if (tracing) {
           open[TraceField.slowedMs] = (open[TraceField.slowedMs] ?? 0) + slowed;
           open[TraceField.surgedFrames] =
@@ -184,6 +196,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       refusedPredictions: stats.refusedPredictions,
       resimulatedTicks: stats.resimulatedTicks,
       retriedPresses: stats.retriedPresses,
+      rivalsSurgedFrames,
       rollbacks: stats.rollbacks,
       rttMeanMs: rttCount === 0 ? 0 : rttTotal / rttCount,
       rttWorstMs,
@@ -196,6 +209,7 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       totalOtherRidersCm: stats.jumps.otherRiders.totalMetres * CENTIMETRES,
       totalOwnControlCm: stats.jumps.ownControl.totalMetres * CENTIMETRES,
       worstBehindServerCm: stats.jumps.behindServer.worstMetres * CENTIMETRES,
+      worstDrawnOffCm: worstDrawnOffMetres * CENTIMETRES,
       worstFrameMs,
       worstFrameRoadMetres,
       worstJumpRoadMetres: stats.worstJump.roadMetres,

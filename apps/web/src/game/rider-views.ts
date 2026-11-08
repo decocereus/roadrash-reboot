@@ -29,6 +29,7 @@ import { blockPaletteOf } from "./rider-blocks.ts";
 import {
   captureCast,
   clearDrift,
+  drawnOff,
   driftSettle,
   stillDrift,
 } from "./rider-drift.ts";
@@ -78,6 +79,8 @@ interface Pose {
 interface DrawnPlace {
   blend: number;
   fromTick: number;
+  off: number;
+  riding: boolean;
   s: number;
   toTick: number;
   x: number;
@@ -287,7 +290,15 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
           after: emptyPose(),
           before: emptyPose(),
           bike: riderOf(bikes.roots, rider.id) ?? new THREE.Object3D(),
-          drawn: { blend: 0, fromTick: 0, s: 0, toTick: 0, x: 0 },
+          drawn: {
+            blend: 0,
+            fromTick: 0,
+            off: 0,
+            riding: false,
+            s: 0,
+            toTick: 0,
+            x: 0,
+          },
           drift: stillDrift(),
           fight: quietFight(),
           figure,
@@ -540,6 +551,12 @@ export const bindCast = ({ assets, cast, stage }: CastParts) => {
     }
     const s = mix(before.s, after.s, blend) + drift.s;
     const x = mix(before.x, after.x, blend) + drift.x;
+    const riding = rider.mode === "riding";
+    view.drawn.off =
+      riding && view.drawn.riding
+        ? drawnOff(s, view.drawn.s, rider.speed, seconds)
+        : 0;
+    view.drawn.riding = riding;
     view.drawn.blend = blend;
     view.drawn.fromTick = before.tick;
     view.drawn.s = s;

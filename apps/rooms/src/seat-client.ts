@@ -228,7 +228,7 @@ export interface SeatListeners {
 export interface RoomSeat {
   readonly closeCode: () => number | null;
   readonly flush: () => void;
-  readonly frameDrawn: (drawnShare: number) => void;
+  readonly frameDrawn: (ownOffMetres: number, rivalOffMetres: number) => void;
   readonly leave: () => void;
   readonly leaveRoom: () => void;
   readonly listen: (next: SeatListeners) => void;
@@ -352,7 +352,8 @@ export const openRoomSeat = (
       race.client.mine.s,
       race.client.confirmed.tick,
       1,
-      1
+      0,
+      0
     );
     sendReport(race, tally.lastTraceRows());
   };
@@ -417,7 +418,7 @@ export const openRoomSeat = (
       const now = performance.now();
       rttMs = Math.floor(now) - pong.stamp;
       worstRttMs = Math.max(worstRttMs, rttMs);
-      clock.heardRtt(rttMs);
+      clock.heardRtt(rttMs, now);
       clock.heardRoomTime(pong.roomMs, now);
       tally.heardRtt(rttMs);
       return;
@@ -525,7 +526,7 @@ export const openRoomSeat = (
         reportOnce();
       }
     },
-    frameDrawn: (drawnShare) => {
+    frameDrawn: (ownOffMetres, rivalOffMetres) => {
       const { race } = state;
       if (race && race.client.predicted.tick > 0) {
         const now = performance.now();
@@ -538,7 +539,8 @@ export const openRoomSeat = (
             race.client.confirmed.tick,
             now
           ),
-          drawnShare
+          ownOffMetres,
+          rivalOffMetres
         );
       }
     },
