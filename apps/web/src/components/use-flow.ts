@@ -1,3 +1,4 @@
+import type { PracticePick } from "@racer/career/field";
 import type { RaceRules } from "@racer/career/rules";
 import { quitRace, settleRace, startRace } from "@racer/career/settle";
 import type { Settlement } from "@racer/career/settle";
@@ -11,26 +12,23 @@ import { bootGame } from "../asset-load.ts";
 import { barCast, barPlates, firstRoad, preload } from "../career/bar.ts";
 import { benchOf, benchPlan, rideOf } from "../career/bench.ts";
 import {
-  careerEntry,
-  careerReport,
   firstQuickPick,
-  pickWithin,
-  quickEntry,
   quickReport,
+  rideEntry,
+  settledRace,
 } from "../career/flow.ts";
-import type { QuickPick, RaceReport } from "../career/flow.ts";
+import type { RaceReport } from "../career/flow.ts";
 import {
   browserStorage,
   careerSeedFrom,
   freshCareer,
-  isUnsaved,
   loadCareer,
   randomUnit,
   saveStateOf,
   startOver,
-  storeCareer,
+  storedSave,
 } from "../career/save.ts";
-import type { SaveState } from "../career/save.ts";
+import type { ReadySave, SaveState } from "../career/save.ts";
 import { diagnostics, sanitise } from "../diagnostics/hub.ts";
 import { createRaceEvents } from "../diagnostics/race-events.ts";
 import type { RaceEvents, RaceFacts } from "../diagnostics/race-events.ts";
@@ -104,25 +102,28 @@ const useSave = (rules: RaceRules | null): Save => {
     setSave(saveStateOf(loaded));
   }, [rules]);
 
-  const commit = useCallback((career: CareerState) => {
-    careerRef.current = career;
-    setSave({
-      career,
-      leftRace: null,
-      status: "ready",
-      unsaved: isUnsaved(storeCareer(browserStorage, career)),
-    });
+  const adopt = useCallback((stored: ReadySave) => {
+    careerRef.current = stored.career;
+    setSave(stored);
   }, []);
+
+  const commit = useCallback(
+    (career: CareerState) => {
+      adopt(storedSave(browserStorage, career));
+    },
+    [adopt]
+  );
 
   const settle = useCallback(
     (settlement: Settlement): RaceReport | null => {
-      if (!(settlement.settled && settlement.career.lastResult)) {
+      const settled = settledRace(browserStorage, settlement);
+      if (settled === null) {
         return null;
       }
-      commit(settlement.career);
-      return careerReport(settlement.career.lastResult);
+      adopt(settled.save);
+      return settled.report;
     },
-    [commit]
+    [adopt]
   );
 
   const eraseSave = useCallback(() => {
@@ -270,13 +271,13 @@ export interface Flow {
   readonly view: View;
   readonly save: SaveState;
   readonly career: CareerState | null;
-  readonly pick: QuickPick;
+  readonly pick: PracticePick;
   readonly feed: HudFeed;
   readonly ready: boolean;
   readonly failure: string;
   readonly send: (event: NavigationEvent) => void;
   readonly leave: () => void;
-  readonly setPick: (pick: QuickPick) => void;
+  readonly setPick: (pick: PracticePick) => void;
   readonly commit: (career: CareerState) => void;
   readonly eraseSave: () => void;
   readonly newCareer: () => void;
@@ -298,7 +299,7 @@ export const useFlow = (): Flow => {
       diagnostics().events.track(event);
     })
   );
-  const [picked, setPick] = useState<QuickPick>(firstQuickPick);
+  const [pick, setPick] = useState<PracticePick>(firstQuickPick);
   const rulesLoad = useRules();
   const rules = rulesLoad?.status === "ready" ? rulesLoad.rules : null;
   const { careerRef, commit, eraseSave, save, settle } = useSave(rules);
@@ -344,7 +345,6 @@ export const useFlow = (): Flow => {
   const failure =
     rulesLoad?.status === "failed" ? rulesLoad.failure.message : gameFailure;
   const career = save.status === "ready" ? save.career : null;
-  const pick = pickWithin(picked, career);
   useEffect(() => {
     send({
       kind: "entered",
@@ -530,11 +530,16 @@ export const useFlow = (): Flow => {
       send({ kind: "resumed" });
     },
     rideOut(mode, roadId) {
-      const entry =
-        mode === "career" && career
-          ? careerEntry(career, roadId)
-          : quickEntry({ ...pick, roadId }, careerSeedFrom(randomUnit()));
-      send({ entry, kind: "ridePicked" });
+      send({
+        entry: rideEntry(
+          mode,
+          roadId,
+          career,
+          pick,
+          careerSeedFrom(randomUnit())
+        ),
+        kind: "ridePicked",
+      });
     },
     roomLost() {
       races.ended("lost", factsNow());

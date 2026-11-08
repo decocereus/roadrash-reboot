@@ -393,12 +393,12 @@ const netLine = ({
 }: RoomNet): string =>
   `Round trip ${roundTripMs} ms, worst ${worstRoundTripMs}. Rollbacks ${rollbacks}. Resimulated ${resimulatedPerSecond.toFixed(1)} ticks/s. Input to frame ${Math.round(inputToFrame.medianMs)} ms, worst ${Math.round(inputToFrame.worstMs)}.`;
 
-const footOf = (report: RaceReport, unsaved: boolean): string => {
+const footOf = (report: RaceReport): string => {
   if (report.room) {
     return netLine(report.room.net);
   }
   if (report.ledger) {
-    return unsaved ? "Settled, not saved" : "Settled and saved";
+    return report.unsaved ? "Settled, not saved" : "Settled and saved";
   }
   return "Single race";
 };
@@ -416,7 +416,6 @@ export const ResultsScreen = ({
   riding,
   canRaceAgain,
   repeatRun,
-  unsaved,
   onContinue,
   onRaceAgain,
 }: {
@@ -425,7 +424,6 @@ export const ResultsScreen = ({
   readonly riding: BikeId;
   readonly canRaceAgain: boolean;
   readonly repeatRun: boolean;
-  readonly unsaved: boolean;
   readonly onContinue: () => void;
   readonly onRaceAgain: () => void;
 }) => {
@@ -468,7 +466,7 @@ export const ResultsScreen = ({
             className="text-paper/60 tracking-wide"
             style={{ fontSize: stagePx(20) }}
           >
-            {footOf(report, unsaved)}
+            {footOf(report)}
           </p>
         </BarNav>
       </Stage>

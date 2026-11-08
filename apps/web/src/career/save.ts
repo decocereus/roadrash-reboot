@@ -56,14 +56,16 @@ export type Stored = { readonly status: "saved" } | StorageFailure;
 
 export type Reset = { readonly status: "reset" } | StorageFailure;
 
+export interface ReadySave {
+  readonly status: "ready";
+  readonly career: CareerState;
+  readonly leftRace: Ledger | null;
+  readonly unsaved: boolean;
+}
+
 export type SaveState =
   | { readonly status: "empty" }
-  | {
-      readonly status: "ready";
-      readonly career: CareerState;
-      readonly leftRace: Ledger | null;
-      readonly unsaved: boolean;
-    }
+  | ReadySave
   | { readonly status: "corrupt"; readonly error: SaveError }
   | { readonly status: "unread" }
   | { readonly status: "loading" };
@@ -161,7 +163,7 @@ export const storeCareer = (
 export const startOver = (open: () => SaveStorage): Reset =>
   outcomeOf(cleared(open));
 
-export const isUnsaved = (persistence: Persistence): boolean => {
+const isUnsaved = (persistence: Persistence): boolean => {
   switch (persistence.status) {
     case "saved":
     case "unchanged": {
@@ -177,6 +179,16 @@ export const isUnsaved = (persistence: Persistence): boolean => {
     }
   }
 };
+
+export const storedSave = (
+  open: () => SaveStorage,
+  career: CareerState
+): ReadySave => ({
+  career,
+  leftRace: null,
+  status: "ready",
+  unsaved: isUnsaved(storeCareer(open, career)),
+});
 
 export const saveStateOf = (load: CareerLoad): SaveState => {
   if (load.status === "ready") {

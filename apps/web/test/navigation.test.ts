@@ -4,17 +4,18 @@ import type { RaceResult } from "@racer/career/outcome";
 import { settleRace, startRace } from "@racer/career/settle";
 import { newCareer } from "@racer/career/state";
 import type { CareerState } from "@racer/career/state";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   careerEntry,
-  careerReport,
   firstQuickPick,
   planFor,
   quickEntry,
   quickReport,
+  settledRace,
 } from "../src/career/flow.ts";
 import type { RaceReport } from "../src/career/flow.ts";
+import type { SaveStorage } from "../src/career/save-storage.ts";
 import type { SaveState } from "../src/career/save.ts";
 import type { RacePlan } from "../src/game/hud.ts";
 import {
@@ -42,22 +43,28 @@ const rulesFailed: RulesLoad = {
 
 const fresh: CareerState = newCareer(SEED);
 
+const writable: SaveStorage = {
+  getItem: () => null,
+  removeItem: vi.fn<SaveStorage["removeItem"]>(),
+  setItem: vi.fn<SaveStorage["setItem"]>(),
+};
+
 const settledCareer = () => {
   const begun = startRace(fresh, ROAD, SEED);
   if (!begun.started || !begun.career.activeRace) {
     throw new Error("A new career starts its first road.");
   }
-  const settlement = settleRace(
-    begun.career,
-    abandonedOutcome(recordedRules, begun.career.activeRace)
+  const settled = settledRace(
+    () => writable,
+    settleRace(
+      begun.career,
+      abandonedOutcome(recordedRules, begun.career.activeRace)
+    )
   );
-  if (!settlement.settled || !settlement.career.lastResult) {
+  if (settled === null) {
     throw new Error("A race that started settles.");
   }
-  return {
-    career: settlement.career,
-    report: careerReport(settlement.career.lastResult),
-  };
+  return { career: settled.save.career, report: settled.report };
 };
 
 const { career: raced, report: careerResult } = settledCareer();
