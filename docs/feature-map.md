@@ -1035,6 +1035,7 @@ Source files:
 - `apps/web/src/rules/rules-decode-failed.ts`
 - `apps/web/src/rules/rules-request-failed.ts`
 - `apps/web/src/rules/rules-response-rejected.ts`
+- `apps/web/src/rules/rules-timed-out.ts`
 - `apps/web/src/server/race-rules.ts`
 - `packages/career/src/rules-schema.ts`
 - `packages/career/src/rules.ts`

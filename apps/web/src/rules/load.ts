@@ -6,8 +6,10 @@ import * as Schema from "effect/Schema";
 import { RulesDecodeFailed } from "./rules-decode-failed.ts";
 import { RulesRequestFailed } from "./rules-request-failed.ts";
 import { RulesResponseRejected } from "./rules-response-rejected.ts";
+import { RulesTimedOut } from "./rules-timed-out.ts";
 
 export const RULES_PATH = "/api/race-rules";
+export const RULES_DEADLINE_MS = 10_000;
 
 export interface RulesTransport {
   readonly fetch: (
@@ -18,6 +20,7 @@ export interface RulesTransport {
 
 type RulesFailure =
   | RulesRequestFailed
+  | RulesTimedOut
   | RulesResponseRejected
   | RulesDecodeFailed;
 
@@ -45,7 +48,17 @@ const fetchRules = Effect.fn("rules.load")(function* fetchRules(
         text: response.ok ? await response.text() : null,
       };
     },
-  });
+  }).pipe(
+    Effect.timeoutOrElse({
+      duration: RULES_DEADLINE_MS,
+      orElse: () =>
+        Effect.fail(
+          new RulesTimedOut({
+            message: "The race rules took more than 10 seconds to answer.",
+          })
+        ),
+    })
+  );
   if (answer.text === null) {
     return yield* new RulesResponseRejected({
       message: `The race rules answered ${answer.status}.`,
