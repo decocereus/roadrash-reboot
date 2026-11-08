@@ -187,9 +187,12 @@ export const platformFeatures: readonly FeatureEntry[] = [
       "apps/web/src/assets/model-*.ts",
       "apps/web/src/assets/font-readiness-failed.ts",
       "apps/web/src/game/assets.ts",
+      "apps/web/src/game/model-slots.ts",
       "apps/web/test/asset-load.test.ts",
       "apps/web/test/celebrity-load.test.ts",
+      "apps/web/test/model-slots.test.ts",
       "apps/web/test/node-images.ts",
+      "apps/web/test/pinned-assets.ts",
     ],
     perf: [],
     start: [

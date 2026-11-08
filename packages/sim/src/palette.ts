@@ -36,6 +36,10 @@ export const riderPalette: readonly RiderColours[] = [
   { bike: 0x6a_d6_b5, helmet: 0xfa_fa_fa, jacket: 0x2b_5f_8f },
 ];
 
+export const trafficPaints = [
+  0xe8_e2_d6, 0x2f_6f_d0, 0xc8_32_3c, 0x2f_8f_6b, 0xd8_a0_20, 0x3a_35_50,
+] as const;
+
 export const PLAYER_COLOURS = 0;
 export const POLICE_COLOURS = 11;
 

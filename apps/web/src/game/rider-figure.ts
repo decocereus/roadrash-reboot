@@ -1,10 +1,10 @@
+import { weaponKinds } from "@racer/sim/state";
 import type { WeaponKind } from "@racer/sim/state";
 import { MeshoptSimplifier } from "meshoptimizer/simplifier";
 import * as THREE from "three";
 import { clone as cloneRig } from "three/addons/utils/SkeletonUtils.js";
 
-import { paintPrimitives } from "./assets.ts";
-import type { Palette, PoseName, RiderAsset } from "./assets.ts";
+import type { PoseName, RiderAsset } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { reachOfPoses } from "./figure-bounds.ts";
@@ -26,8 +26,10 @@ import {
 import type { RiderPose, Riding, Sided, Turn } from "./figure-pose.ts";
 import { posed, PosedSkeleton } from "./figure-rig.ts";
 import type { Rig } from "./figure-rig.ts";
-import { weaponKinds, weaponMesh } from "./figure-weapons.ts";
+import { weaponMesh } from "./figure-weapons.ts";
 import { isSkinnedMesh } from "./meshes.ts";
+import { paintPrimitives } from "./model-slots.ts";
+import type { Palette } from "./model-slots.ts";
 
 export interface Stance {
   pose: RiderPose;
@@ -223,11 +225,11 @@ export const createRiderFigure = (
     ]);
   reachByAsset.set(asset, reach);
   body.boundingSphere = reach;
-  const held: THREE.Group[][] = hands.map(() =>
+  const held: (THREE.Group | null)[][] = hands.map(() =>
     weaponKinds.map((kind) => {
       const mesh = weaponMesh(kind, shading);
-      mesh.position.set(0, 0.07, 0);
-      mesh.rotation.set(-Math.PI / 2, 0, 0);
+      mesh?.position.set(0, 0.07, 0);
+      mesh?.rotation.set(-Math.PI / 2, 0, 0);
       return mesh;
     })
   );
@@ -236,8 +238,7 @@ export const createRiderFigure = (
   const showWeapon = (weapon: WeaponKind, pose: RiderPose, side: number) => {
     const swinging = pose === "windup" || pose === "swing" || pose === "swung";
     const weaponHand = swinging && side < 0 ? 0 : 1;
-    const kind = weaponKinds.indexOf(weapon);
-    const next = kind === -1 ? null : (held[weaponHand]?.[kind] ?? null);
+    const next = held[weaponHand]?.[weaponKinds.indexOf(weapon)] ?? null;
     if (next === holding) {
       return;
     }
@@ -446,7 +447,9 @@ export const createRiderFigure = (
       holding = null;
       for (const meshes of held) {
         for (const mesh of meshes) {
-          disposeTree(mesh);
+          if (mesh) {
+            disposeTree(mesh);
+          }
         }
       }
       body.geometry = near;
@@ -461,14 +464,16 @@ export const createRiderFigure = (
           continue;
         }
         for (const mesh of meshes) {
-          hands[hand]?.add(mesh);
+          if (mesh) {
+            hands[hand]?.add(mesh);
+          }
         }
       }
       return () => {
         for (const meshes of held) {
           for (const mesh of meshes) {
             if (mesh !== holding) {
-              mesh.removeFromParent();
+              mesh?.removeFromParent();
             }
           }
         }

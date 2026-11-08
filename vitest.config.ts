@@ -3,9 +3,11 @@ import { configDefaults, defineConfig } from "vitest/config";
 const viteTests = [
   "apps/**/*.test.tsx",
   "packages/**/*.test.tsx",
+  "apps/web/test/actor-tables.test.ts",
   "apps/web/test/asset-load.test.ts",
   "apps/web/test/bazaar-kit.test.ts",
   "apps/web/test/celebrity-load.test.ts",
+  "apps/web/test/model-slots.test.ts",
   "apps/web/test/planted-hands.test.ts",
   "apps/web/test/renderer-lifecycle.test.ts",
   "apps/web/test/walker-model.test.ts",

@@ -3,22 +3,20 @@ import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-import { glows, paintPrimitives } from "./assets.ts";
-import type { Assets, ModelParts, Palette, Primitive } from "./assets.ts";
+import type { Assets, ModelParts } from "./assets.ts";
 import type { BikeModelId } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import { disposeTree } from "./dispose.ts";
 import { placeOnGround } from "./ground.ts";
+import { glows, paintPrimitives } from "./model-slots.ts";
+import type { Palette, Primitive } from "./model-slots.ts";
 import { uploadSpan } from "./uploads.ts";
 
 const point: TrackPoint = { heading: 0, slope: 0, x: 0, y: 0, z: 0 };
 
 const DEFAULT_PAINT = 0xc8_2f_2f;
 const DARK_TRIM = "#1c1826";
-const WHEELS = [
-  ["wheel_f", 0.293, 0.69],
-  ["wheel_r", 0.306, -0.69],
-] as const;
+const WHEEL_PARTS = ["wheel_f", "wheel_r"] as const;
 const MODEL = new THREE.Matrix4().makeRotationY(Math.PI);
 const BEACONS = [
   [0x2f_6b_ff, -0.07],
@@ -67,9 +65,9 @@ export interface Bikes {
 }
 
 interface Wheel {
+  readonly part: (typeof WHEEL_PARTS)[number];
+  readonly hub: THREE.Vector3;
   readonly radius: number;
-  readonly z: number;
-  readonly turns: Float64Array;
   readonly frame: THREE.Matrix4;
 }
 
@@ -80,6 +78,7 @@ interface BikePart {
 
 interface ModelFleet {
   readonly parts: readonly BikePart[];
+  readonly wheels: readonly Wheel[];
   readonly paint: THREE.InstancedBufferAttribute;
   readonly trim: THREE.InstancedBufferAttribute;
   readonly slotRider: Int32Array;
@@ -166,6 +165,28 @@ const instanced = (
   return mesh;
 };
 
+const wheelOf = (
+  bike: ModelParts,
+  part: (typeof WHEEL_PARTS)[number]
+): Wheel => {
+  const tyre = new THREE.Box3();
+  for (const { geometry, slot } of bike.get(part) ?? []) {
+    geometry.computeBoundingBox();
+    if (slot === "tyre" && geometry.boundingBox) {
+      tyre.union(geometry.boundingBox);
+    }
+  }
+  if (tyre.isEmpty()) {
+    throw new Error(`The bike model has no tyre on its ${part}.`);
+  }
+  return {
+    frame: new THREE.Matrix4(),
+    hub: tyre.getCenter(new THREE.Vector3()),
+    part,
+    radius: (tyre.max.y - tyre.min.y) / 2,
+  };
+};
+
 const showPrefix = (mesh: THREE.InstancedMesh, count: number): void => {
   mesh.count = count;
   mesh.visible = count > 0;
@@ -200,12 +221,7 @@ export const createBikes = (
     store(trims, index, colours?.trim ?? DARK_TRIM);
   }
   const material = liveried(shading.figure(null));
-  const wheels: Wheel[] = WHEELS.map(([, radius, z]) => ({
-    frame: new THREE.Matrix4(),
-    radius,
-    turns: new Float64Array(capacity),
-    z,
-  }));
+  const rolled = new Float64Array(capacity);
 
   const modelFleet = (bike: ModelParts, seats: number): ModelFleet => {
     const paint = new THREE.InstancedBufferAttribute(
@@ -244,13 +260,13 @@ export const createBikes = (
       }
     };
     addPart("bike_body", null, new THREE.Vector3());
-    for (let index = 0; index < WHEELS.length; index += 1) {
-      const wheel = WHEELS[index];
-      if (!wheel) {
-        continue;
-      }
-      const [name, radius, z] = wheel;
-      addPart(name, wheels[index] ?? null, new THREE.Vector3(0, -radius, -z));
+    const wheels = WHEEL_PARTS.map((part) => wheelOf(bike, part));
+    for (const wheel of wheels) {
+      addPart(
+        wheel.part,
+        wheel,
+        new THREE.Vector3(0, -wheel.hub.y, -wheel.hub.z)
+      );
     }
     return {
       count: 0,
@@ -260,6 +276,7 @@ export const createBikes = (
       parts,
       slotRider: new Int32Array(seats).fill(-1),
       trim,
+      wheels,
     };
   };
 
@@ -332,9 +349,9 @@ export const createBikes = (
         frame.elements[12] -= anchor.x;
         frame.elements[13] -= anchor.y;
         frame.elements[14] -= anchor.z;
-        for (const wheel of wheels) {
-          pivot.makeRotationX(wheel.turns[index] ?? 0);
-          pivot.setPosition(0, wheel.radius, wheel.z);
+        for (const wheel of fleet.wheels) {
+          pivot.makeRotationX((rolled[index] ?? 0) / wheel.radius);
+          pivot.setPosition(0, wheel.hub.y, wheel.hub.z);
           wheel.frame.multiplyMatrices(frame, pivot);
         }
         pivot.makeTranslation(0, -(sags[index] ?? 0), 0);
@@ -376,10 +393,7 @@ export const createBikes = (
       shown[index] = 1;
     },
     spin(index, distance) {
-      for (const wheel of wheels) {
-        wheel.turns[index] =
-          (wheel.turns[index] ?? 0) + distance / wheel.radius;
-      }
+      rolled[index] = (rolled[index] ?? 0) + distance;
     },
   };
 };

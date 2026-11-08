@@ -4,6 +4,7 @@ import type { Random } from "@racer/track/random";
 import type { Track } from "@racer/track/track";
 
 import { carrierAt, clearOfCarrier } from "./carrier.ts";
+import { trafficPaints } from "./palette.ts";
 import { blocksCars } from "./pedestrians.ts";
 import { isSignalled, mainLightOf, signalPhaseAt } from "./signals.ts";
 import {
@@ -28,7 +29,7 @@ export const ACCELERATION = 2.5;
 const FOLLOW_GAP = 10;
 const FOLLOW_SECONDS = 0.9;
 const LOOK_AHEAD = 70;
-export const PAINT_COUNT = 6;
+export const PAINT_COUNT = trafficPaints.length;
 const SLOW_CRUISE = 23;
 const FAVOURED_LANE_SHARE = 0.8;
 const FAVOURED_OF_THREE_SHARE = 0.6;

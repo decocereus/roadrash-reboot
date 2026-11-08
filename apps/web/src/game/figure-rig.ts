@@ -1,7 +1,8 @@
 import { riderPalette } from "@racer/sim/palette";
 import * as THREE from "three";
 
-import type { Assets, Palette, RiderAsset } from "./assets.ts";
+import type { Assets, RiderAsset } from "./assets.ts";
+import type { Palette, Slot } from "./model-slots.ts";
 
 const DEFAULT_JACKET = 0x23_26_2c;
 const DEFAULT_HELMET = 0xf2_c2_30;
@@ -9,7 +10,7 @@ const SUIT_PANEL = "#1c1826";
 
 export const paletteOf = (index: number): Palette => {
   const colours = riderPalette[index];
-  return new Map<string, THREE.ColorRepresentation>([
+  return new Map<Slot, THREE.ColorRepresentation>([
     ["suit", colours?.jacket ?? DEFAULT_JACKET],
     ["suit2", SUIT_PANEL],
     ["helmet", colours?.helmet ?? DEFAULT_HELMET],

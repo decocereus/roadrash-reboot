@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { setImmediate as nextTurn } from "node:timers/promises";
 
 import { celebrityIds } from "@racer/sim/cast";
@@ -17,9 +18,9 @@ import type {
   Assets,
   ModelParts,
   Decoded,
-  Primitive,
   RiderAsset,
 } from "../src/game/assets.ts";
+import type { Primitive } from "../src/game/model-slots.ts";
 import { artFile } from "./art-files.ts";
 import characterization from "./asset-characterization.json" with { type: "json" };
 import { fakeWalkerAsset } from "./walker-asset.ts";
@@ -521,7 +522,10 @@ const riderSummary = (rider: RiderAsset) => {
     bones: rider.bones,
     nodes,
     poses: [...rider.poses].map(([name, pose]) => ({
-      head: pose.slice(0, 4).map(plain),
+      digest: createHash("sha256")
+        .update(Float64Array.from(pose))
+        .digest("hex")
+        .slice(0, 16),
       name,
       values: pose.length,
     })),

@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 import type { Assets, ModelParts, WalkerAsset } from "../src/game/assets.ts";
 import { decoParts, stallParts } from "../src/game/bazaar.ts";
+import type { Primitive, Slot } from "../src/game/model-slots.ts";
 import { walkerBodies } from "../src/game/walker-clips.ts";
 
 const clip = { frames: 1, start: 0 };
@@ -30,7 +31,7 @@ export const fakeWalkerAsset = (): WalkerAsset => ({
   ),
 });
 
-const fakePrimitive = (slot: string) => {
+const fakePrimitive = (slot: Slot): Primitive => {
   const geometry = new THREE.BoxGeometry(1, 2, 1);
   geometry.deleteAttribute("uv");
   geometry.setAttribute(

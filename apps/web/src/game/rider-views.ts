@@ -10,7 +10,7 @@ import * as THREE from "three";
 
 import { createBikes, poseOnTrack, reachOf } from "./actors.ts";
 import type { Bikes, Reach } from "./actors.ts";
-import type { Assets, Palette } from "./assets.ts";
+import type { Assets } from "./assets.ts";
 import { bikeModelFor } from "./bike-models.ts";
 import type { Shading } from "./cel.ts";
 import type { Subject } from "./chase-camera.ts";
@@ -21,6 +21,7 @@ import type { RiderPose } from "./figure-pose.ts";
 import { bodyFor, paletteOf } from "./figure-rig.ts";
 import type { Dressing } from "./figure-wardrobe.ts";
 import type { Fleet } from "./fleet.ts";
+import type { Palette } from "./model-slots.ts";
 import { createPuffs } from "./puffs.ts";
 import type { Puffs } from "./puffs.ts";
 import { blockPaletteOf } from "./rider-blocks.ts";
