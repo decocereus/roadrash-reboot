@@ -201,6 +201,7 @@ export const buildStretch = (
   const origin: Position = [Math.round(first[0]), Math.round(first[1])];
   const horizontal = sampleAlignment({
     leadInLength: 0,
+    name: `the Madrid street from ${settings.fromM} to ${settings.toM} m`,
     pieces: fit.pieces,
     runoffLength: 0,
     start: fit.start,
@@ -249,6 +250,7 @@ export const buildStretch = (
   };
   const road = sampleAlignment({
     leadInLength: settings.road.leadInLength,
+    name: `the Madrid stretch from ${settings.fromM} to ${settings.toM} m`,
     pieces: [firstPiece, ...laterPieces],
     runoffLength: settings.road.runoffLength,
     start,

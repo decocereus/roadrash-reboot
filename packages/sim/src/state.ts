@@ -112,6 +112,14 @@ export interface RiderProfile {
   readonly weapon: WeaponKind;
 }
 
+interface RacerProfile extends RiderProfile {
+  readonly role: "racer";
+}
+
+export interface OfficerProfile extends RiderProfile {
+  readonly role: "police";
+}
+
 export const MAX_STAMINA = 100;
 
 export const FULL_CONDITION = 100;
@@ -441,13 +449,13 @@ export interface PacingRules {
   readonly catchUp: number;
 }
 
-export interface PlayerSetup extends RiderProfile {
+export interface PlayerSetup extends RacerProfile {
   readonly bike: BikeSpec;
   readonly weaponHits: number;
   readonly controller?: Controller;
 }
 
-export interface RivalSetup extends RiderProfile {
+export interface RivalSetup extends RacerProfile {
   readonly bike: BikeSpec;
   readonly grudge?: RiderId;
   readonly aggressionBoost?: number;
@@ -456,7 +464,7 @@ export interface RivalSetup extends RiderProfile {
 
 export interface PoliceSetup extends PoliceRules {
   readonly count: number;
-  readonly officer: RiderProfile;
+  readonly officer: OfficerProfile;
   readonly bike: BikeSpec;
 }
 

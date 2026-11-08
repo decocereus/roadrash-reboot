@@ -1,10 +1,10 @@
 # Frame rate and load
 
-The game holds 60 frames per second on one fixed quality preset, which `apps/web/src/game/presets.ts` picks from the WebGL renderer string before the race. Nothing changes the preset during a race. The target is 60 fps on an integrated-graphics laptop. The heaviest moment is the `?stress` race on Slag Row with the top rung's full field and eight police.
+The game holds 60 frames per second on one fixed quality preset, which `apps/web/src/game/presets.ts` picks from the WebGL renderer string before the race. Nothing changes the preset during a race. The target is 60 fps on an integrated-graphics laptop; the Intel UHD 630 rows are a floor near 50 fps, not that cap. The heaviest moment is the `?stress` race on Slag Row at tier 3 with fifteen riders and eight police.
 
 ## Sub-features
 
-- `fps-overlay` shows fps, frame time, worst frame, pixel ratio, preset, pace, refresh, draw calls, and triangles with `?fps`.
+- `fps-overlay` shows fps, frame time, worst frame, pixel ratio, preset, pace, refresh, draw calls, and triangles with `?fps` or Settings → Frame meter.
 - `device-preset` is the preset the device check picked; `?preset=` pins another.
 - `frame-rate-setting` is Settings → Frame rate, which cycles 60 and 30.
 - `stress-race` starts the fixed worst-case race on the pilot as soon as the page loads.
@@ -17,9 +17,9 @@ The game holds 60 frames per second on one fixed quality preset, which `apps/web
 
 ## How to get to it (user POV)
 
-- A player sees frame rate only as smoothness. Add `?fps` to any URL for the overlay.
+- A player sees frame rate only as smoothness, or turns on Settings → Frame meter. Add `?fps` to any URL for the same overlay.
 - Settings, from the back room or the pause menu, has Frame rate: 60 (the default) or 30.
-- `?stress` and `?stress=reference` work in every build; `&ratio=2` pins the pixel ratio and turns the pacer off.
+- `?stress` and `?stress=reference` work in every build; `&ratio=2` pins the pixel ratio, past the preset's pixel cap, and turns the pacer off.
 
 ## Driving it with rv
 
@@ -40,8 +40,9 @@ Preconditions:
 ## Gotchas
 
 - A frame-rate change applies on the next rendered frame. While the pause menu is up the snapshot still shows the old rate; resume before you read it.
-- `rv sample` measures whatever ticks pass while it waits; it is not the bench window. For a number to quote, use `pnpm perf:gpu` or `measure.ts`, which wait for ticks 2165-2765 of the stress race. In that window the player trails the pack in 14th of 15, with the rivals 100 to 150 m ahead.
+- `rv sample` measures whatever ticks pass while it waits; it is not the bench window. For a number to quote, use `pnpm perf:gpu` or `measure.ts`, which wait for ticks 2028-2628 of the stress race.
 - Compare runs only at the same preset and pixel ratio.
+- `rv sample` appends to `<name>.sample.json`, so a name used twice holds two JSON objects and no longer parses. Use a new name per sample.
 - CPU throttling slows the main thread only. The GPU runs at full speed, so GPU-bound passes look better than they would on an Air; compare `?ratio=1` with `?ratio=2` to see fill cost.
 - Throttling lives in the console watcher. If `rv doctor` shows the watcher dead, the throttling is gone too.
 - `?prof=gpu` timer queries on ANGLE over Metal add up to more than the frame; do not quote them.
