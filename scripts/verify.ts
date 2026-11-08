@@ -44,6 +44,11 @@ const checks: readonly Check[] = [
     name: "action pins",
     stage: "static",
   },
+  {
+    command: ["pnpm", "check:workflow-runs"],
+    name: "workflow runs",
+    stage: "static",
+  },
   { command: ["pnpm", "check:art"], name: "art", stage: "static" },
   {
     command: ["pnpm", "check:renderer-imports"],

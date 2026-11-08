@@ -10,6 +10,7 @@
     "build": "pnpm -r --if-present build",
     "check": "node scripts/verify.ts check",
     "check:action-pins": "node scripts/check-action-pins.ts",
+    "check:workflow-runs": "node scripts/check-workflow-runs.ts",
     "check:art": "node scripts/check-art.ts",
     "check:css-comments": "node scripts/check-css-comments.ts",
     "check:dead": "knip --no-progress",

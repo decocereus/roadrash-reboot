@@ -1430,14 +1430,14 @@ Test files:
 
 ### Repository checks
 
-`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
+`pnpm verify` and the repository checks it runs: the rule ledger, the rule routes, the roots, action pins, workflow runs, renderer imports, source size, CSS comments, TypeScript only, and this feature map with its manifest, and the stale-checkout hook.
 
 - Id: `repo-checks`
 - Start: `scripts/verify.ts`, `scripts/features.ts`, `scripts/rule-ledger.ts`
 - Docs: [docs/standards/tooling.md#the-checks](standards/tooling.md#the-checks)
 - Verify: none yet
 - Perf: none yet
-- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-rule-routes*.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/rule-routes.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
+- Owns: `scripts/verify.ts`, `scripts/check-action-pins*.ts`, `scripts/check-css-comments.ts`, `scripts/check-feature-map.ts`, `scripts/check-renderer-imports.ts`, `scripts/check-rule-routes*.ts`, `scripts/check-roots.ts`, `scripts/check-rules.ts`, `scripts/check-size*.ts`, `scripts/check-typescript-only.ts`, `scripts/check-workflow-runs*.ts`, `scripts/feature-map*.ts`, `scripts/*features.ts`, `scripts/git-files.ts`, `scripts/node-error.ts`, `scripts/postcss-tokenize.d.ts`, `scripts/renderer-imports*.ts`, `scripts/rule-ledger*.ts`, `scripts/rule-routes.ts`, `scripts/setup-effect-reference.ts`, `scripts/stale-checkout*.ts`, `scripts/write-feature-map.ts`
 
 Source files:
 
@@ -1450,6 +1450,7 @@ Source files:
 - `scripts/check-rules.ts`
 - `scripts/check-size.ts`
 - `scripts/check-typescript-only.ts`
+- `scripts/check-workflow-runs.ts`
 - `scripts/feature-map.ts`
 - `scripts/features.ts`
 - `scripts/git-files.ts`
@@ -1474,6 +1475,7 @@ Test files:
 - `scripts/check-action-pins.test.ts`
 - `scripts/check-rule-routes.test.ts`
 - `scripts/check-size.test.ts`
+- `scripts/check-workflow-runs.test.ts`
 - `scripts/feature-map.test.ts`
 - `scripts/renderer-imports.test.ts`
 - `scripts/rule-ledger.test.ts`
@@ -1492,6 +1494,7 @@ The race room's rules: the setup that seats up to eight humans with pacing off, 
 
 Source files:
 
+- `apps/rooms/src/build-id.ts`
 - `apps/rooms/src/contract.ts`
 - `apps/rooms/src/gate.ts`
 - `apps/rooms/src/host-phase.ts`
@@ -1574,6 +1577,7 @@ Source files:
 
 Test files:
 
+- `apps/rooms/test/build-id.test.ts`
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-leave.test.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`
