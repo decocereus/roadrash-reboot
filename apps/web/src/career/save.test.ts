@@ -19,7 +19,7 @@ import {
   startOver,
   storeCareer,
 } from "./save.ts";
-import type { CareerTab } from "./save.ts";
+import type { CareerPage, CareerTab } from "./save.ts";
 
 type Failing = "get" | "set" | "backup" | "remove";
 
@@ -387,9 +387,42 @@ describe("race seeds", () => {
   });
 });
 
-const openTab = async (locks: SaveLocks, storage: SaveStorage) => {
+type PageEvent = "pagehide" | "pageshow";
+
+const fakePage = () => {
+  const listeners: [PageEvent, (event: { persisted: boolean }) => void][] = [];
+  let reloads = 0;
+  const page = {
+    addEventListener: (
+      type: PageEvent,
+      listener: (event: { persisted: boolean }) => void
+    ) => {
+      listeners.push([type, listener]);
+    },
+    fire: (type: PageEvent, persisted: boolean) => {
+      for (const [heard, listener] of listeners) {
+        if (heard === type) {
+          listener({ persisted });
+        }
+      }
+    },
+    location: {
+      reload: () => {
+        reloads += 1;
+      },
+    },
+    reloads: () => reloads,
+  };
+  return page;
+};
+
+const openTab = async (
+  locks: SaveLocks,
+  storage: SaveStorage,
+  page: CareerPage = fakePage()
+) => {
   const told = Promise.withResolvers<CareerTab>();
-  const close = holdCareer(locks, opened(storage), told.resolve);
+  const close = holdCareer(locks, page, opened(storage), told.resolve);
   return { close, tab: await told.promise };
 };
 
@@ -420,6 +453,43 @@ describe("one career tab", () => {
     expect(storage.items.get(SAVE_KEY)).toBe(serialiseCareer(racing));
     second.close();
     first.close();
+    await lockFreed();
+  });
+
+  it("keeps the career for a tab that asks while the holder is letting go, as a reload does", async () => {
+    const storage = memoryStorage();
+    const first = await openTab(globalThis.navigator.locks, storage);
+    first.close();
+    const reloaded = await openTab(globalThis.navigator.locks, storage);
+    expect(reloaded.tab.status).toBe("owner");
+    reloaded.close();
+    await lockFreed();
+  });
+
+  it("lets go of the career when its page is hidden, so the page that replaces it holds it", async () => {
+    const storage = memoryStorage();
+    const leaving = fakePage();
+    const first = await openTab(globalThis.navigator.locks, storage, leaving);
+    leaving.fire("pagehide", true);
+    const next = await openTab(globalThis.navigator.locks, storage);
+    expect(next.tab.status).toBe("owner");
+    next.close();
+    first.close();
+    await lockFreed();
+  });
+
+  it("reloads a page the browser brings back from its history, which no longer holds the career", async () => {
+    const page = fakePage();
+    const tab = await openTab(
+      globalThis.navigator.locks,
+      memoryStorage(),
+      page
+    );
+    page.fire("pageshow", false);
+    expect(page.reloads()).toBe(0);
+    page.fire("pageshow", true);
+    expect(page.reloads()).toBe(1);
+    tab.close();
     await lockFreed();
   });
 

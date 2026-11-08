@@ -97,7 +97,13 @@ const useSave = (rules: RaceRules | null): Save => {
   const [save, setSave] = useState<SaveState>({ status: "loading" });
 
   useEffect(
-    () => holdCareer(globalThis.navigator.locks, browserStorage, setTab),
+    () =>
+      holdCareer(
+        globalThis.navigator.locks,
+        globalThis.window,
+        browserStorage,
+        setTab
+      ),
     []
   );
 

@@ -14,20 +14,22 @@ export const BootScreen = () => (
 );
 
 export const ElsewhereScreen = () => (
-  <Screen className="bg-ink flex flex-col items-center justify-center gap-6">
-    <Stencil>{WORDMARK}</Stencil>
-    <p className="font-display text-neon-red normal-case" role="alert">
-      {CAREER_ELSEWHERE}
-    </p>
-    <MenuList
-      autoFocus
-      defaultValue="retry"
-      label="Career"
-      onSelect={() => {
-        globalThis.location.reload();
-      }}
-    >
-      <MenuItem value="retry">Try again</MenuItem>
-    </MenuList>
+  <Screen className="bg-ink">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6">
+      <Stencil>{WORDMARK}</Stencil>
+      <p className="font-display text-neon-red normal-case" role="alert">
+        {CAREER_ELSEWHERE}
+      </p>
+      <MenuList
+        autoFocus
+        defaultValue="retry"
+        label="Career"
+        onSelect={() => {
+          globalThis.location.reload();
+        }}
+      >
+        <MenuItem value="retry">Try again</MenuItem>
+      </MenuList>
+    </div>
   </Screen>
 );

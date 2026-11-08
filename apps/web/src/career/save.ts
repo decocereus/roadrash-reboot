@@ -23,6 +23,7 @@ export const SAVE_KEY = "rushline.career";
 export const BACKUP_KEY = "rushline.career.backup";
 
 const SEED_RANGE = 2 ** 32;
+const LOCK_WAIT_MS = 2000;
 
 const failedStatus = {
   acquire: "unavailable",
@@ -147,13 +148,22 @@ const cleared = Effect.fn("career.save.clear")(function* cleared(
   return { status: "reset" } satisfies Reset;
 });
 
+export interface CareerPage {
+  readonly addEventListener: (
+    type: "pagehide" | "pageshow",
+    listener: (event: Pick<PageTransitionEvent, "persisted">) => void
+  ) => void;
+  readonly location: Pick<Location, "reload">;
+}
+
 export const holdCareer = (
   locks: SaveLocks,
+  page: CareerPage,
   open: () => SaveStorage,
   settle: (tab: CareerTab) => void
 ): (() => void) => {
   const fiber = Effect.runFork(
-    holdLock(locks, SAVE_KEY, (held) => {
+    holdLock(locks, SAVE_KEY, LOCK_WAIT_MS, (held) => {
       settle(held ? { open, status: "owner" } : { status: "elsewhere" });
     }).pipe(
       Effect.catchTag("SaveStorageFailed", (failure) =>
@@ -168,9 +178,16 @@ export const holdCareer = (
       )
     )
   );
-  return () => {
+  const release = () => {
     fiber.interruptUnsafe();
   };
+  page.addEventListener("pagehide", release);
+  page.addEventListener("pageshow", ({ persisted }) => {
+    if (persisted) {
+      page.location.reload();
+    }
+  });
+  return release;
 };
 
 export const loadCareer = (

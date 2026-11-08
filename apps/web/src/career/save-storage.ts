@@ -22,21 +22,32 @@ export type SaveLocks = Pick<LockManager, "request">;
 export const holdLock = (
   locks: SaveLocks,
   name: string,
+  waitMs: number,
   granted: (held: boolean) => void
 ) =>
   Effect.tryPromise({
     catch: (cause) => new SaveStorageFailed({ cause, operation: "lock" }),
     try: async (signal) => {
-      await locks.request(name, { ifAvailable: true }, async (lock) => {
-        granted(lock !== null);
-        if (lock !== null) {
-          const released = Promise.withResolvers<null>();
-          signal.addEventListener("abort", () => {
-            released.resolve(null);
-          });
-          await released.promise;
+      const waited = AbortSignal.timeout(waitMs);
+      try {
+        await locks.request(
+          name,
+          { signal: AbortSignal.any([signal, waited]) },
+          async () => {
+            granted(true);
+            const released = Promise.withResolvers<null>();
+            signal.addEventListener("abort", () => {
+              released.resolve(null);
+            });
+            await released.promise;
+          }
+        );
+      } catch (error) {
+        if (!waited.aborted || signal.aborted) {
+          throw error;
         }
-      });
+        granted(false);
+      }
     },
   });
 
