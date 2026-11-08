@@ -1,27 +1,31 @@
+import { trafficPaints } from "@racer/sim/palette";
 import type { CrossCarView, TrafficView } from "@racer/sim/race-view";
 import { carSlant, PAINT_COUNT } from "@racer/sim/traffic";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
 
 import { reachOf } from "./actors.ts";
-import { paintPrimitives } from "./assets.ts";
-import type { Assets, Palette, Primitive } from "./assets.ts";
+import type { Assets } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import type { CrossCarPose } from "./cross-car-pose.ts";
 import { disposeTree } from "./dispose.ts";
 import { freeze, placeOnGround, whiteInstances } from "./ground.ts";
+import { paintPrimitives } from "./model-slots.ts";
+import type { Palette, Primitive } from "./model-slots.ts";
 import { uploadSpan } from "./uploads.ts";
 
-const paints = [
-  0xe8_e2_d6, 0x2f_6f_d0, 0xc8_32_3c, 0x2f_8f_6b, 0xd8_a0_20, 0x3a_35_50,
-];
 const BOXY_HEIGHT = 1.8;
 const WHITE: Palette = new Map([["body", "#ffffff"]]);
-const NO_PAINT: Palette = new Map();
+const SIDE_STRIPE: Palette = new Map([["accent", "#ff00ff"]]);
+
+interface FleetMember {
+  readonly index: number;
+  readonly colour: THREE.Color;
+}
 
 interface FleetPart {
   readonly mesh: THREE.InstancedMesh;
-  readonly cars: readonly number[];
+  readonly cars: readonly FleetMember[];
   readonly slotCar: Int32Array | null;
 }
 
@@ -44,6 +48,14 @@ interface FleetBody {
   readonly height: number;
   readonly paint: number;
 }
+
+const colourOf = (paint: number): THREE.Color => {
+  const hex = trafficPaints[paint];
+  if (hex === undefined) {
+    throw new Error(`Traffic paint ${paint} has no colour.`);
+  }
+  return new THREE.Color(hex);
+};
 
 const sizeOf = (primitives: readonly Primitive[]): THREE.Vector3 => {
   const bounds = new THREE.Box3();
@@ -94,7 +106,6 @@ export const createFleet = (
   const along = new Float64Array(bodies.length);
   const reach = reachOf(shading);
   const scratch = new THREE.Object3D();
-  const color = new THREE.Color();
 
   const muster = (
     primitives: readonly Primitive[],
@@ -123,14 +134,17 @@ export const createFleet = (
       scratch.updateMatrix();
       local[index]?.copy(scratch.matrix);
     }
-    const indices = members.map(({ index }) => index);
+    const roster = members.map(({ car, index }) => ({
+      colour: colourOf(car.paint),
+      index,
+    }));
     const body = paintPrimitives(
       primitives.filter((primitive) => primitive.slot === "body"),
       WHITE
     );
     const rest = paintPrimitives(
       primitives.filter((primitive) => primitive.slot !== "body"),
-      NO_PAINT
+      SIDE_STRIPE
     );
     const addPart = (
       geometry: THREE.BufferGeometry | null,
@@ -149,7 +163,7 @@ export const createFleet = (
       whiteInstances(mesh);
       group.add(mesh);
       parts.push({
-        cars: indices,
+        cars: roster,
         mesh,
         slotCar: painted ? new Int32Array(members.length).fill(-1) : null,
       });
@@ -209,13 +223,16 @@ export const createFleet = (
     fitInto(index);
   };
 
-  const recolour = (part: FleetPart, slot: number, index: number): boolean => {
+  const recolour = (
+    part: FleetPart,
+    slot: number,
+    { colour, index }: FleetMember
+  ): boolean => {
     if (!part.slotCar || part.slotCar[slot] === index) {
       return false;
     }
     part.slotCar[slot] = index;
-    const paint = bodies[index]?.paint ?? 0;
-    part.mesh.setColorAt(slot, color.setHex(paints[paint] ?? 0x88_88_88));
+    part.mesh.setColorAt(slot, colour);
     return true;
   };
 
@@ -227,7 +244,8 @@ export const createFleet = (
         let slot = 0;
         let firstRecoloured = part.cars.length;
         let lastRecoloured = -1;
-        for (const index of part.cars) {
+        for (const member of part.cars) {
+          const { index } = member;
           const matrix = placed[index];
           const s = along[ownerOf(index)] ?? Number.NEGATIVE_INFINITY;
           if (!matrix || s < from || s > to) {
@@ -242,7 +260,7 @@ export const createFleet = (
             placedAt[index] = s;
           }
           part.mesh.setMatrixAt(slot, matrix);
-          if (recolour(part, slot, index)) {
+          if (recolour(part, slot, member)) {
             firstRecoloured = Math.min(firstRecoloured, slot);
             lastRecoloured = slot;
           }

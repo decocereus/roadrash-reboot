@@ -3,11 +3,11 @@ import * as THREE from "three";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { BikeModelId } from "./bike-models.ts";
-import { RED } from "./looks.ts";
 import { isMesh, isSkinnedMesh } from "./meshes.ts";
+import { coloured, isSlot } from "./model-slots.ts";
+import type { Primitive, Slot } from "./model-slots.ts";
 import { walkerBodies, walkerClipLoops } from "./walker-clips.ts";
 import type {
   WalkerClip,
@@ -39,11 +39,6 @@ const POSE_NAMES = [
 
 export type PoseName = (typeof POSE_NAMES)[number];
 
-export interface Primitive {
-  readonly slot: string;
-  readonly geometry: THREE.BufferGeometry;
-}
-
 export interface RiderAsset {
   readonly scene: THREE.Object3D;
   readonly primitives: readonly Primitive[];
@@ -63,7 +58,7 @@ export interface WalkerAsset {
 
 export type ModelParts = ReadonlyMap<string, readonly Primitive[]>;
 
-const ATLAS = "atlas";
+const ATLAS = "atlas" satisfies Slot;
 
 export interface Assets {
   readonly bikes: Readonly<Record<BikeModelId, ModelParts>>;
@@ -74,103 +69,6 @@ export interface Assets {
   readonly stalls: ModelParts;
   readonly walkers: WalkerAsset;
 }
-
-const fixedColours: ReadonlyMap<string, string> = new Map([
-  ["dark", "#231d30"],
-  ["metal", "#8f93ad"],
-  ["gold", "#e0ac3a"],
-  ["tyre", "#17141f"],
-  ["glass", "#101c30"],
-  ["seat", "#17141f"],
-  ["plate", "#ece6d8"],
-  ["glove", "#15121c"],
-  ["boot", "#15121c"],
-  ["armour", "#231d30"],
-  ["visor", "#0f1c33"],
-  [ATLAS, "#ffffff"],
-]);
-
-const glossOf: ReadonlyMap<string, number> = new Map([
-  ["body", 1],
-  ["accent", 0.6],
-  ["helmet", 1],
-  ["helmet2", 1],
-  ["visor", 1],
-  ["glass", 1],
-  ["gold", 0.7],
-  ["metal", 0.5],
-]);
-
-const lights: ReadonlyMap<string, readonly [string, number]> = new Map([
-  ["light_tail", [RED, 2.4]],
-  ["light_head", ["#fff7d6", 1.5]],
-  ["light_ind", ["#ff9a1f", 1.6]],
-]);
-
-export const glows = (slot: string): boolean => lights.has(slot);
-
-const MISSING = "#ff00ff";
-
-export type Palette = ReadonlyMap<string, THREE.ColorRepresentation>;
-
-export interface Painted {
-  readonly cel: THREE.BufferGeometry | null;
-  readonly glow: THREE.BufferGeometry | null;
-}
-
-const tint = new THREE.Color();
-
-const coloured = (
-  primitive: Primitive,
-  colour: THREE.Color,
-  gloss: number
-): THREE.BufferGeometry => {
-  const source = primitive.geometry;
-  const geometry = new THREE.BufferGeometry();
-  geometry.setIndex(source.getIndex());
-  for (const name of ["position", "normal", "uv", "skinIndex", "skinWeight"]) {
-    if (source.hasAttribute(name)) {
-      geometry.setAttribute(name, source.getAttribute(name));
-    }
-  }
-  const { count } = source.getAttribute("position");
-  const colours = new Float32Array(count * 3);
-  const glosses = new Float32Array(count).fill(gloss);
-  for (let vertex = 0; vertex < count; vertex += 1) {
-    colours[vertex * 3] = colour.r;
-    colours[vertex * 3 + 1] = colour.g;
-    colours[vertex * 3 + 2] = colour.b;
-  }
-  geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
-  geometry.setAttribute("gloss", new THREE.BufferAttribute(glosses, 1));
-  return geometry;
-};
-
-export const paintPrimitives = (
-  primitives: readonly Primitive[],
-  palette: Palette
-): Painted => {
-  const cel: THREE.BufferGeometry[] = [];
-  const glow: THREE.BufferGeometry[] = [];
-  for (const primitive of primitives) {
-    const light = lights.get(primitive.slot);
-    if (light) {
-      tint.set(light[0]).multiplyScalar(light[1]);
-      glow.push(coloured(primitive, tint, 0));
-    } else {
-      tint.set(
-        palette.get(primitive.slot) ??
-          fixedColours.get(primitive.slot) ??
-          MISSING
-      );
-      cel.push(coloured(primitive, tint, glossOf.get(primitive.slot) ?? 0));
-    }
-  }
-  return {
-    cel: cel.length > 0 ? mergeGeometries(cel) : null,
-    glow: glow.length > 0 ? mergeGeometries(glow) : null,
-  };
-};
 
 const atlasOf = (material: THREE.Material): THREE.Texture | null =>
   material instanceof THREE.MeshStandardMaterial ? material.map : null;
@@ -286,12 +184,18 @@ const fileSpaceGeometry = (
   return geometry;
 };
 
-const primitivesOf = (root: THREE.Object3D): Primitive[] => {
+type Refuse = (why: string, made?: readonly Primitive[]) => Error;
+
+const primitivesOf = (root: THREE.Object3D, refused: Refuse): Primitive[] => {
   const primitives: Primitive[] = [];
   let first: THREE.SkinnedMesh | null = null;
   root.traverse((node) => {
     if (!isMesh(node)) {
       return;
+    }
+    const slot = slotOf(node);
+    if (!isSlot(slot)) {
+      throw refused(`paints a part "${slot}", which no slot policy covers.`);
     }
     node.updateWorldMatrix(true, false);
     let placement = node.matrixWorld.clone();
@@ -302,7 +206,7 @@ const primitivesOf = (root: THREE.Object3D): Primitive[] => {
     }
     primitives.push({
       geometry: fileSpaceGeometry(node.geometry, placement),
-      slot: slotOf(node),
+      slot,
     });
   });
   return primitives;
@@ -426,6 +330,13 @@ const releaseOf =
     }
   };
 
+const refuser =
+  (root: THREE.Object3D, model: string): Refuse =>
+  (why, made = []) => {
+    releaseOf(root, made)();
+    return new Error(`The ${model} ${why}`);
+  };
+
 const decoded = <Value>(
   root: THREE.Object3D,
   made: readonly Primitive[],
@@ -437,28 +348,28 @@ const parsed = async (bytes: ArrayBuffer): Promise<GLTF> =>
 
 const rider: Parse<RiderAsset> = async (bytes, url) => {
   const gltf = await parsed(bytes);
+  const refused = refuser(gltf.scene, `rider model ${url}`);
   const [clip] = gltf.animations;
   const rootBone = gltf.scene.getObjectByName("Root");
   if (!(clip && rootBone)) {
-    releaseOf(gltf.scene, [])();
-    throw new Error(`The rider model ${url} has no poses.`);
+    throw refused("has no poses.");
   }
   const { bones, pelvis, poses } = samplePoses(clip);
   const seat = toGame(rootBone, pelvis.get("seated") ?? new THREE.Vector3());
   const stand = toGame(rootBone, pelvis.get("rest") ?? new THREE.Vector3());
-  const primitives = primitivesOf(gltf.scene);
+  const primitives = primitivesOf(gltf.scene, refused);
   const atlases = atlasesOf(gltf.scene);
   if (atlases.length > 1) {
-    releaseOf(gltf.scene, primitives)();
-    throw new Error(
-      `The rider model ${url} paints from ${atlases.length} atlases; a rider has one.`
+    throw refused(
+      `paints from ${atlases.length} atlases; a rider has one.`,
+      primitives
     );
   }
   const [atlas = null] = atlases;
   if (atlas && primitives.some(({ slot }) => slot !== ATLAS)) {
-    releaseOf(gltf.scene, primitives)();
-    throw new Error(
-      `The rider model ${url} paints some parts from colour slots; a textured rider paints every part from its atlas.`
+    throw refused(
+      "paints some parts from colour slots; a textured rider paints every part from its atlas.",
+      primitives
     );
   }
   return decoded(gltf.scene, primitives, {
@@ -472,18 +383,22 @@ const rider: Parse<RiderAsset> = async (bytes, url) => {
   });
 };
 
-const parts: Parse<ModelParts> = async (bytes) => {
+const parts: Parse<ModelParts> = async (bytes, url) => {
   const gltf = await parsed(bytes);
+  const refused = refuser(gltf.scene, `model ${url}`);
   const byName = new Map<string, readonly Primitive[]>();
   for (const child of gltf.scene.children) {
-    byName.set(child.name, primitivesOf(child));
+    byName.set(child.name, primitivesOf(child, refused));
   }
   return decoded(gltf.scene, [...byName.values()].flat(), byName);
 };
 
-const whole: Parse<readonly Primitive[]> = async (bytes) => {
+const whole: Parse<readonly Primitive[]> = async (bytes, url) => {
   const gltf = await parsed(bytes);
-  const primitives = primitivesOf(gltf.scene);
+  const primitives = primitivesOf(
+    gltf.scene,
+    refuser(gltf.scene, `model ${url}`)
+  );
   return decoded(gltf.scene, primitives, primitives);
 };
 
@@ -616,10 +531,7 @@ const bakePoses = (
 
 const walkers: Parse<WalkerAsset> = async (bytes, url) => {
   const gltf = await parsed(bytes);
-  const refused = (why: string): Error => {
-    releaseOf(gltf.scene, [])();
-    return new Error(`The walker model ${url} ${why}`);
-  };
+  const refused = refuser(gltf.scene, `walker model ${url}`);
   const meshes = walkerBodies.map(({ name }) => {
     const mesh = gltf.scene.getObjectByName(name);
     return mesh && isSkinnedMesh(mesh) ? mesh : null;

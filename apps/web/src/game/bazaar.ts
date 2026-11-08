@@ -6,12 +6,14 @@ import type { WalkSite } from "@racer/track/walk-sites";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-import type { ModelParts, Primitive } from "./assets.ts";
+import type { ModelParts } from "./assets.ts";
 import type { Shading } from "./cel.ts";
 import { extentOf } from "./clearance.ts";
 import type { Clearance, Extent } from "./clearance.ts";
 import { placeOnGround } from "./ground.ts";
 import type { Stretch } from "./ground.ts";
+import { glows } from "./model-slots.ts";
+import type { Primitive } from "./model-slots.ts";
 
 const groundDecos = [
   "deco_crates",
@@ -34,7 +36,6 @@ const STRING_LIGHTS_BACK = 1.7;
 const GLOW_PAINT = 1.6;
 const VISIBLE_MARGIN = 10;
 const LONGEST_GAP = 4;
-const GLOW = "stall_glow";
 const COPIED = ["position", "normal", "color"] as const;
 
 interface Drawn {
@@ -216,7 +217,7 @@ export const buildBazaar = (
     placer.updateMatrix();
     const matrix = placer.matrix.clone();
     const spans = primitives.map((primitive) => {
-      const batch = primitive.slot === GLOW ? glow : cel;
+      const batch = glows(primitive.slot) ? glow : cel;
       return { batch, span: addTo(batch, primitive, matrix) };
     });
     const extents = stall

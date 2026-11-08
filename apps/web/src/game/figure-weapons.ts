@@ -3,7 +3,10 @@ import * as THREE from "three";
 
 import type { Shading } from "./cel.ts";
 
-export const weaponMesh = (kind: WeaponKind, shading: Shading): THREE.Group => {
+export const weaponMesh = (
+  kind: WeaponKind,
+  shading: Shading
+): THREE.Group | null => {
   const held = new THREE.Group();
   const shaft = (
     radiusTop: number,
@@ -78,7 +81,7 @@ export const weaponMesh = (kind: WeaponKind, shading: Shading): THREE.Group => {
       break;
     }
     case "none": {
-      break;
+      return null;
     }
     default: {
       return kind satisfies never;
@@ -86,12 +89,3 @@ export const weaponMesh = (kind: WeaponKind, shading: Shading): THREE.Group => {
   }
   return held;
 };
-
-export const weaponKinds: readonly WeaponKind[] = [
-  "club",
-  "chain",
-  "crowbar",
-  "baton",
-  "cue",
-  "sign",
-];
