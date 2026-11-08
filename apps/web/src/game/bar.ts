@@ -33,6 +33,7 @@ import { createSpeech } from "./bar-speech.ts";
 import { createTagLayer } from "./bar-tags.ts";
 import { createWalkers, SOLO_SLOT } from "./bar-walker.ts";
 import { createShading } from "./cel.ts";
+import { releaseAll } from "./dispose.ts";
 import { createPipeline } from "./post.ts";
 import { pixelRatioFor, presetFor, presets } from "./presets.ts";
 import { createProfiler, profileModeOf } from "./profile.ts";
@@ -624,9 +625,7 @@ const openRoom = (
 
   return {
     dispose() {
-      for (const release of owners.splice(0).toReversed()) {
-        release();
-      }
+      releaseAll(owners);
     },
     setCamera(mode) {
       eye.setMode(mode, rider.heading);
@@ -644,9 +643,7 @@ export const createBar = (
   try {
     return openRoom(canvas, assets.value, startCamera, seat, owners);
   } catch (error) {
-    for (const release of owners.splice(0).toReversed()) {
-      release();
-    }
+    releaseAll(owners);
     throw error;
   }
 };

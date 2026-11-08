@@ -9,6 +9,7 @@ const viteTests = [
   "apps/web/test/celebrity-load.test.ts",
   "apps/web/test/model-slots.test.ts",
   "apps/web/test/planted-hands.test.ts",
+  "apps/web/test/renderer-lifecycle-build.test.ts",
   "apps/web/test/renderer-lifecycle.test.ts",
   "apps/web/test/walker-model.test.ts",
 ];

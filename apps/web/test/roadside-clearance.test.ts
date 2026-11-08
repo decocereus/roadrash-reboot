@@ -6,7 +6,7 @@ import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, placeOnTrack } from "@racer/track/track";
 import type { Track, TrackPoint } from "@racer/track/track";
 import * as THREE from "three";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { createChaseCamera } from "../src/game/chase-camera.ts";
 import { KERB_HEIGHT } from "../src/game/city.ts";
@@ -14,17 +14,8 @@ import { placeOnGround } from "../src/game/ground.ts";
 import { isInstancedMesh, isMesh } from "../src/game/meshes.ts";
 import { createWorld } from "../src/game/world.ts";
 import type { World } from "../src/game/world.ts";
+import { stubCanvases } from "./canvas-stub.ts";
 import { fakeWorldAssets } from "./walker-asset.ts";
-
-const drawsNothing = new Proxy(
-  {},
-  {
-    get: (_target, key) =>
-      key === "createLinearGradient" || key === "createRadialGradient"
-        ? () => ({ addColorStop: () => null })
-        : () => null,
-  }
-);
 
 interface Instance {
   readonly mesh: THREE.InstancedMesh;
@@ -118,15 +109,7 @@ const postsAt = (
 };
 
 describe("the roadside clears the chase camera", () => {
-  beforeAll(() => {
-    vi.stubGlobal("document", {
-      createElement: () => ({ getContext: () => drawsNothing }),
-    });
-  });
-
-  afterAll(() => {
-    vi.unstubAllGlobals();
-  });
+  stubCanvases();
 
   it("hides the chevron, board and post together, on either side of the road, while a rider running wide puts the camera at it, and puts both back once the camera has passed", () => {
     const track = trackFor("slag-row");

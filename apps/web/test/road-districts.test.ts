@@ -3,13 +3,14 @@ import { createRandom } from "@racer/track/random";
 import { roads, trackFor } from "@racer/track/roads";
 import { compileTrack, placeOnTrack } from "@racer/track/track";
 import type { Track } from "@racer/track/track";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { layBlocks } from "../src/game/city-blocks.ts";
 import { lookOf } from "../src/game/looks.ts";
 import { districtPieces } from "../src/game/road-strips.ts";
 import { roadSurfacesOf } from "../src/game/road-texture.ts";
 import { createWorld } from "../src/game/world.ts";
+import { stubCanvases } from "./canvas-stub.ts";
 import { fakeWorldAssets } from "./walker-asset.ts";
 
 const WIDTHS = { shoulderWidth: 0.9, vergeWidth: 7 };
@@ -22,16 +23,6 @@ const threeOneTwo: Track = compileTrack({
     { ...WIDTHS, from: 3600, lanesEachWay: 2 },
   ],
 });
-
-const drawsNothing = new Proxy(
-  {},
-  {
-    get: (_target, key) =>
-      key === "createLinearGradient" || key === "createRadialGradient"
-        ? () => ({ addColorStop: () => null })
-        : () => null,
-  }
-);
 
 describe("the road's pieces along a chunk", () => {
   it("keep one piece on a road of one district, even across the start line", () => {
@@ -56,15 +47,7 @@ describe("the road's pieces along a chunk", () => {
 });
 
 describe("a road of several districts in the world", () => {
-  beforeAll(() => {
-    vi.stubGlobal("document", {
-      createElement: () => ({ getContext: () => drawsNothing }),
-    });
-  });
-
-  afterAll(() => {
-    vi.unstubAllGlobals();
-  });
+  stubCanvases();
 
   it("paints one road surface per lane count, wide enough for its widest district", () => {
     const surfaces = roadSurfacesOf(
