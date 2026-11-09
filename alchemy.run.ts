@@ -1,5 +1,7 @@
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import { artBucketName } from "@racer/art/remote";
 import { pinRoomsBuild, roomsBuild } from "@racer/rooms/build-id";
+import { pinRoomsSim, simFingerprint } from "@racer/rooms/sim-fingerprint";
 import Rooms from "@racer/rooms/worker";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
@@ -18,8 +20,15 @@ const state = Layer.unwrap(
 export const rushline = Effect.gen(function* rushline() {
   const stage = yield* Alchemy.Stage;
   const build = yield* roomsBuild;
+  const sim = yield* simFingerprint(import.meta.dirname).pipe(
+    Effect.provide(NodeFileSystem.layer),
+    Effect.catchTag("PlatformError", (unreadable) => Effect.die(unreadable))
+  );
   const art = yield* Cloudflare.R2.Bucket("Art", { name: artBucketName });
-  const rooms = yield* Effect.provide(Rooms, pinRoomsBuild(build));
+  const rooms = yield* Effect.provide(Rooms, [
+    pinRoomsBuild(build),
+    pinRoomsSim(sim),
+  ]);
   const webPort = yield* Config.Int("RUSHLINE_WEB_PORT").pipe(
     Config.withDefault(1350)
   );

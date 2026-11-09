@@ -72,6 +72,7 @@ export interface SeatClaim {
 
 export interface HostPorts extends Omit<RacePorts, "saveTape">, MemoryPorts {
   readonly after: (ms: number, wake: () => void) => void;
+  readonly endRace: (raceId: string) => void;
 }
 
 export interface Host {
@@ -89,7 +90,8 @@ export interface Host {
 export const createHost = (
   given: HostPorts,
   kind: RoomKind = "custom",
-  memory: RoomMemory | null = null
+  memory: RoomMemory | null = null,
+  ended: string | null = null
 ): Host => {
   const present = new Map<HostSocket, Present>();
   const audience = createAudience(present);
@@ -119,7 +121,7 @@ export const createHost = (
     lostRace: () => lostRace,
     run: () => state.run,
   });
-  const ports: RacePorts & Pick<HostPorts, "after" | "now"> = {
+  const ports: RacePorts & Pick<HostPorts, "after" | "endRace" | "now"> = {
     ...given,
     saveTape,
   };
@@ -161,6 +163,7 @@ export const createHost = (
       worstBehindTicks,
     });
     move({ kind: "raceOver" });
+    ports.endRace(run.raceId);
     tell({ kind: "ended", tick: room.state.tick });
     for (const person of present.values()) {
       moveSocket(person, { kind: "raceOver" });
@@ -591,8 +594,9 @@ export const createHost = (
     ride(run, startedAt, now);
   };
 
-  const restore = ({ at, build, race, unsaved: pending }: RoomMemory): void => {
-    for (const { body, key } of pending) {
+  const restore = (remembered: RoomMemory, endedRace: string | null): void => {
+    const { at, build, race } = remembered;
+    for (const { body, key } of remembered.unsaved) {
       ports.saveTape(key, body);
     }
     if (race === null) {
@@ -604,8 +608,9 @@ export const createHost = (
     const tick = race.checkpoint?.tick ?? 0;
     const restored = restoreRace(
       ports,
+      remembered,
       race,
-      afterMs,
+      endedRace,
       tickBuffer.byteLength,
       now
     );
@@ -637,7 +642,7 @@ export const createHost = (
   };
 
   if (memory) {
-    restore(memory);
+    restore(memory, ended);
   }
 
   return {

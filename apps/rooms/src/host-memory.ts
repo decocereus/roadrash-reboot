@@ -9,6 +9,7 @@ export interface MemoryPorts {
   readonly build: string;
   readonly now: () => number;
   readonly remember: (memory: RoomMemory | null) => void;
+  readonly sim: string;
   readonly saveTape: (
     key: string,
     body: string | Uint8Array,
@@ -26,7 +27,11 @@ export const createMemory = (
   ports: MemoryPorts,
   { lobby, lostRace, run }: Remembered
 ) => {
-  const unsaved = new Map<string, string | Uint8Array>();
+  const unsaved = new Map<
+    string,
+    { readonly body: string | Uint8Array; readonly sequence: number }
+  >();
+  let sequence = 0;
   const remember = (): void => {
     const current = run();
     ports.remember(
@@ -38,15 +43,22 @@ export const createMemory = (
             lobby: lobby.memory(),
             lostRace: lostRace(),
             race: current === null ? null : raceMemoryOf(current),
-            unsaved: [...unsaved].map(([key, body]) => ({ body, key })),
+            sim: ports.sim,
+            unsaved: [...unsaved].map(([key, { body }]) => ({ body, key })),
             version: MEMORY_VERSION,
           }
     );
   };
   const saveTape: RacePorts["saveTape"] = (key, body) => {
-    unsaved.set(key, body);
+    sequence += 1;
+    const written = sequence;
+    unsaved.set(key, { body, sequence: written });
     ports.saveTape(key, body, () => {
-      if (unsaved.delete(key) && unsaved.size === 0) {
+      if (unsaved.get(key)?.sequence !== written) {
+        return;
+      }
+      unsaved.delete(key);
+      if (unsaved.size === 0) {
         remember();
       }
     });

@@ -24,11 +24,35 @@ import { launchRoomConfig } from "./room-config.ts";
 import { roomKindOf } from "./room-id.ts";
 import { decodeRoomMemory } from "./room-memory.ts";
 import type { RoomMemory } from "./room-memory.ts";
+import { roomsSim } from "./sim-fingerprint.ts";
+import { StorageFailed } from "./storage-failed.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
 
 const SECONDS_PER_DAY = 86_400;
 const MEMORY_KEY = "room";
+const ENDED_KEY = "ended";
 const WRITE_RETRIES = 5;
+
+interface MemoryWrite {
+  readonly key: string;
+  readonly value: RoomMemory | string | null;
+}
+
+const decodeEnded = Schema.decodeUnknownOption(Schema.String);
+
+const durable = <A, R>(
+  write: Effect.Effect<A, never, R>
+): Effect.Effect<A, StorageFailed, R> =>
+  write.pipe(
+    Effect.catchCause(
+      (cause) =>
+        new StorageFailed({
+          cause: Cause.squash(cause),
+          message: Cause.pretty(cause),
+        })
+    ),
+    Effect.retry({ times: WRITE_RETRIES })
+  );
 
 const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
   lifecycleRules: [
@@ -57,17 +81,24 @@ const TRACE_TIMEOUT_MS = 3000;
 const coloOfTrace = (trace: string): string | null =>
   /^colo=(?<colo>\w+)$/mu.exec(trace)?.groups?.colo ?? null;
 
+interface Durable {
+  readonly endRace: HostPorts["endRace"];
+  readonly remember: HostPorts["remember"];
+  readonly saveTape: HostPorts["saveTape"];
+}
+
 const portsFor = (
   build: string,
+  sim: string,
   roomColo: HostPorts["roomColo"],
-  saveTape: HostPorts["saveTape"],
-  remember: HostPorts["remember"]
+  { endRace, remember, saveTape }: Durable
 ): HostPorts => ({
   after: (ms, wake) => {
     setTimeout(wake, ms);
   },
   build,
   config: launchRoomConfig,
+  endRace,
   note,
   now: () => Date.now(),
   raceId: () => crypto.randomUUID(),
@@ -75,6 +106,7 @@ const portsFor = (
   roomColo,
   saveTape,
   seed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
+  sim,
 });
 
 const EdgeSchema = Schema.Struct({
@@ -106,6 +138,9 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
     const build = yield* roomsBuild.pipe(
       Effect.catchTag("ConfigError", (missing) => Effect.die(missing))
     );
+    const sim = yield* roomsSim.pipe(
+      Effect.catchTag("ConfigError", (missing) => Effect.die(missing))
+    );
     const tapes = yield* Cloudflare.R2.WriteBucket(RaceTapes);
     const opens = yield* gateLimiter("open");
     return Effect.gen(function* raceServerInstance() {
@@ -125,22 +160,24 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
         Effect.forever,
         Effect.forkDetach
       );
-      const memories = yield* Queue.sliding<RoomMemory | null>(1);
-      yield* Queue.take(memories).pipe(
-        Effect.flatMap((memory) =>
-          (memory === null
-            ? Effect.asVoid(state.storage.delete(MEMORY_KEY))
-            : state.storage.put(MEMORY_KEY, memory)
-          ).pipe(Effect.retry({ times: WRITE_RETRIES }))
-        ),
-        Effect.catchCause((cause) =>
-          Effect.sync(() => {
-            note({
-              detail: Cause.pretty(cause),
-              kind: "memoryLost",
-              when: "write",
-            });
-          })
+      const writes = yield* Queue.unbounded<MemoryWrite>();
+      yield* Queue.take(writes).pipe(
+        Effect.flatMap(({ key, value }) =>
+          durable(
+            value === null
+              ? Effect.asVoid(state.storage.delete(key))
+              : state.storage.put(key, value)
+          ).pipe(
+            Effect.catchTag("StorageFailed", (failure) =>
+              Effect.sync(() => {
+                note({
+                  detail: failure.message,
+                  kind: "memoryLost",
+                  when: "write",
+                });
+              })
+            )
+          )
         ),
         Effect.forever,
         Effect.forkDetach
@@ -150,6 +187,9 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       if (stored !== undefined && remembered === null) {
         note({ detail: null, kind: "memoryLost", when: "read" });
       }
+      const ended = Option.getOrNull(
+        decodeEnded(yield* state.storage.get(ENDED_KEY))
+      );
       let roomColo: string | null = null;
       yield* Effect.tryPromise(async () => {
         const response = await globalThis.fetch(TRACE_URL, {
@@ -163,18 +203,20 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       let opened: Host | null = null;
       const hostOf = (roomId: string): Host => {
         opened ??= createHost(
-          portsFor(
-            build,
-            () => roomColo,
-            (key, body, saved) => {
+          portsFor(build, sim, () => roomColo, {
+            endRace: (raceId) => {
+              Queue.offerUnsafe(writes, { key: ENDED_KEY, value: raceId });
+            },
+            remember: (memory) => {
+              Queue.offerUnsafe(writes, { key: MEMORY_KEY, value: memory });
+            },
+            saveTape: (key, body, saved) => {
               Queue.offerUnsafe(saves, { body, key, saved });
             },
-            (memory) => {
-              Queue.offerUnsafe(memories, memory);
-            }
-          ),
+          }),
           roomKindOf(roomId),
-          remembered
+          remembered,
+          ended
         );
         return opened;
       };

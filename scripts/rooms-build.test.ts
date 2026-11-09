@@ -9,6 +9,7 @@ import { ConfigError } from "effect/Config";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
@@ -33,6 +34,7 @@ const Planned = Schema.Struct({
       env: Schema.Struct({
         ALCHEMY_DEV: Schema.optional(Bound),
         RUSHLINE_BUILD: Bound,
+        RUSHLINE_SIM: Bound,
       }),
     }),
   }),
@@ -44,11 +46,24 @@ const Planned = Schema.Struct({
 });
 const decodePlanned = Schema.decodeUnknownSync(Planned);
 const decodeStored = Schema.decodeUnknownSync(Schema.String);
+const decodeRedactedText = Schema.decodeUnknownOption(
+  Schema.fromJsonString(
+    Schema.Struct({ _tag: Schema.Literal("Redacted"), value: Schema.String })
+  )
+);
+
+const plainText = (text: string): string =>
+  Option.match(decodeRedactedText(text), {
+    onNone: () => text,
+    onSome: (redacted) => redacted.value,
+  });
 
 const stored = (binding: typeof Bound.Type) =>
   Output.evaluate(binding, {}).pipe(
     Effect.map((value) =>
-      decodeStored(Redacted.isRedacted(value) ? Redacted.value(value) : value)
+      plainText(
+        decodeStored(Redacted.isRedacted(value) ? Redacted.value(value) : value)
+      )
     )
   );
 
@@ -68,8 +83,21 @@ const builds = Effect.gen(function* builds() {
       reifyBoundConfigProvider(ConfigProvider.fromUnknown(roomsEnv), roomsEnv)
     )
   );
-  return { game: Web.Props.env.VITE_ROOMS_BUILD, rooms };
+  return {
+    game: Web.Props.env.VITE_ROOMS_BUILD,
+    rooms,
+    sim: yield* stored(Rooms.Props.env.RUSHLINE_SIM),
+  };
 });
+
+const built = (
+  exit: Exit.Exit<
+    typeof builds extends Effect.Effect<infer A, infer _E, infer _R>
+      ? A
+      : never,
+    unknown
+  >
+) => (Exit.isSuccess(exit) ? exit.value : null);
 
 const deployedWith = async (env: Readonly<Record<string, string>>) =>
   await Effect.runPromiseExit(
@@ -87,17 +115,27 @@ const deployedWith = async (env: Readonly<Record<string, string>>) =>
 
 describe("the build the game and the rooms deploy with", () => {
   it("hands the game and the rooms one build, read once from the stack's config", async () => {
-    await expect(
-      deployedWith({ RUSHLINE_BUILD: "3022e4c8" })
-    ).resolves.toStrictEqual(
-      Exit.succeed({ game: "3022e4c8", rooms: "3022e4c8" })
-    );
-    await expect(deployedWith({ ALCHEMY_DEV: "true" })).resolves.toStrictEqual(
-      Exit.succeed({ game: "local", rooms: "local" })
-    );
-    await expect(
-      deployedWith({ ALCHEMY_DEV: "true", RUSHLINE_BUILD: "label" })
-    ).resolves.toStrictEqual(Exit.succeed({ game: "label", rooms: "label" }));
+    const deployed = await deployedWith({ RUSHLINE_BUILD: "3022e4c8" });
+    expect(built(deployed)).toMatchObject({
+      game: "3022e4c8",
+      rooms: "3022e4c8",
+    });
+    expect(built(deployed)?.sim).toMatch(/^[\da-f]{32}$/u);
+    expect(built(await deployedWith({ ALCHEMY_DEV: "true" }))).toMatchObject({
+      game: "local",
+      rooms: "local",
+    });
+    expect(
+      built(
+        await deployedWith({ ALCHEMY_DEV: "true", RUSHLINE_BUILD: "label" })
+      )
+    ).toMatchObject({ game: "label", rooms: "label" });
+  });
+
+  it("fingerprints the simulation the rooms step with, the same on every plan", async () => {
+    const first = built(await deployedWith({ RUSHLINE_BUILD: "3022e4c8" }));
+    const second = built(await deployedWith({ ALCHEMY_DEV: "true" }));
+    expect(first?.sim).toBe(second?.sim);
   });
 
   it("deploys nothing when the stack's config names no build", async () => {

@@ -145,7 +145,13 @@ const Restored = Schema.Struct({
   tick: Schema.Number,
 });
 
-export const LOST_REASONS = ["noCheckpoint", "pastHold", "refused"] as const;
+export const LOST_REASONS = [
+  "ended",
+  "newSim",
+  "noCheckpoint",
+  "pastHold",
+  "refused",
+] as const;
 
 export type LostReason = (typeof LOST_REASONS)[number];
 

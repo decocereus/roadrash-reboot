@@ -23,6 +23,7 @@
     "./race-seat": "./src/race-seat.ts",
     "./race-tally": "./src/race-tally.ts",
     "./seat-client": "./src/seat-client.ts",
+    "./sim-fingerprint": "./src/sim-fingerprint.ts",
     "./tape": "./src/tape.ts",
     "./worker": "./src/worker.ts"
   },

@@ -82,9 +82,14 @@ const racingRoom = () => {
   return { ann, bo, clock, host, stayed };
 };
 
-const restartedRoom = (clock: Clock, gapMs: number) => {
+const restartedRoom = (
+  clock: Clock,
+  gapMs: number,
+  memory: RoomMemory = remembered(clock),
+  ended: string | null = null
+) => {
   const later = createClock(clock.now() + gapMs);
-  const host = createHost(later, "custom", remembered(clock));
+  const host = createHost(later, "custom", memory, ended);
   const seated = (key: string, name: string): FakeSocket => {
     const socket = fakeSocket();
     host.seat(socket, name, nearby, sameBuild(key));
@@ -274,6 +279,62 @@ describe("a room that restarts right after its race ended", () => {
     expect(remembered(clock).lobby.members).toStrictEqual([]);
     clock.releaseSaves();
     expect(clock.memories.at(-1)).toBeNull();
+  });
+});
+
+describe("a room that restarts with a race it must not restore", () => {
+  it("refuses a race it recorded as ended, and says why", () => {
+    const { clock } = racingRoom();
+    const { host, later } = restartedRoom(
+      clock,
+      RESTART_GAP_MS,
+      remembered(clock),
+      "race-1"
+    );
+    expect(notesOf(later, "lost", "restored")).toMatchObject([
+      { kind: "lost", raceId: "race-1", reason: "ended" },
+    ]);
+    expect(host.status().hostPhase).toBe("waiting");
+  });
+
+  it("records the race's end before it forgets the race", () => {
+    const { ann, bo, clock, host } = racingRoom();
+    host.gone(ann, SEAT_QUIT);
+    host.gone(bo, SEAT_QUIT);
+    clock.advance(TICK_MS * 2);
+    expect(clock.endings).toStrictEqual(["race-1"]);
+    expect(remembered(clock).race).toBeNull();
+  });
+
+  it("refuses a checkpoint another simulation build wrote", () => {
+    const { clock } = racingRoom();
+    const { later } = restartedRoom(clock, RESTART_GAP_MS, {
+      ...remembered(clock),
+      sim: "another-sim",
+    });
+    const [lost] = notesOf(later, "lost");
+    expect(lost).toMatchObject({
+      kind: "lost",
+      raceId: "race-1",
+      reason: "newSim",
+    });
+    expect(lost?.kind === "lost" ? lost.detail : null).toContain("another-sim");
+  });
+
+  it("refuses a checkpoint from another wire protocol", () => {
+    const { clock } = racingRoom();
+    const memory = remembered(clock);
+    const { race } = memory;
+    if (race === null) {
+      throw new Error("The room remembered no race.");
+    }
+    const { later } = restartedRoom(clock, RESTART_GAP_MS, {
+      ...memory,
+      race: { ...race, manifest: { ...race.manifest, protocol: 999 } },
+    });
+    expect(notesOf(later, "lost")).toMatchObject([
+      { kind: "lost", reason: "newSim" },
+    ]);
   });
 });
 

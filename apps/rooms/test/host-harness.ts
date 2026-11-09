@@ -64,7 +64,8 @@ export interface Clock extends HostPorts {
   readonly stall: (ms: number) => void;
   readonly wakeOnce: () => void;
   readonly pending: () => number;
-  readonly releaseSaves: () => void;
+  readonly releaseSaves: (count?: number) => void;
+  readonly endings: string[];
   holdSaves: boolean;
 }
 
@@ -79,6 +80,7 @@ export const createClock = (startAt = 1000): Clock => {
     key: string;
     saved: () => void;
   }[] = [];
+  const endings: string[] = [];
   let races = 0;
   const nextBy = (until: number) =>
     timers
@@ -102,6 +104,10 @@ export const createClock = (startAt = 1000): Clock => {
     },
     build: "test-build",
     config: launchRoomConfig,
+    endRace: (raceId) => {
+      endings.push(raceId);
+    },
+    endings,
     holdSaves: false,
     memories,
     note: (note) => {
@@ -114,8 +120,8 @@ export const createClock = (startAt = 1000): Clock => {
       races += 1;
       return `race-${races}`;
     },
-    releaseSaves: () => {
-      for (const { body, key, saved } of held.splice(0)) {
+    releaseSaves: (count = held.length) => {
+      for (const { body, key, saved } of held.splice(0, count)) {
         tape.set(key, body);
         saved();
       }
@@ -133,6 +139,7 @@ export const createClock = (startAt = 1000): Clock => {
       saved();
     },
     seed: () => 7,
+    sim: "test-sim",
     stall: (ms) => {
       at += ms;
     },

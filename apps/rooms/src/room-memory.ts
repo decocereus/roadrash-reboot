@@ -80,6 +80,7 @@ const RoomMemorySchema = Schema.Struct({
   lobby: LobbyMemorySchema,
   lostRace: Schema.NullOr(Schema.String),
   race: Schema.NullOr(RaceMemorySchema),
+  sim: Schema.String,
   unsaved: Schema.Array(UnsavedSchema),
   version: Schema.Literal(MEMORY_VERSION),
 });

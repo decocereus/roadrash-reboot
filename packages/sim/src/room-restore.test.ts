@@ -83,6 +83,27 @@ describe("a room restored from its checkpoint", () => {
     );
   });
 
+  it("refuses a seat record with a flag, a counter or a slot tick the room could not have written", () => {
+    const { seats, setup } = checkpointed();
+    const bytes = new Uint8Array(seats.buffer);
+    const fresh = () => createRoom(setup, ROOM_LIMIT_TICKS);
+    const corrupt = (at: number, value: number): DataView => {
+      const copy = new Uint8Array(bytes);
+      copy[at] = value;
+      return new DataView(copy.buffer);
+    };
+    const flagAt = 1 + 1 + 4 + 4 + 4;
+    expect(() => {
+      fresh().readSeats(corrupt(flagAt, 2));
+    }).toThrow(RangeError);
+    expect(() => {
+      fresh().readSeats(corrupt(1 + 1 + 4 + 3, 0xff));
+    }).toThrow(RangeError);
+    expect(() => {
+      fresh().readSeats(corrupt(flagAt + 1 + 3, 0x7f));
+    }).toThrow(RangeError);
+  });
+
   it("refuses the seat record of another room", () => {
     const { seats, setup } = checkpointed();
     const other = createRoom(

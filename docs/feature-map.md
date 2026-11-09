@@ -1538,8 +1538,10 @@ Source files:
 - `apps/rooms/src/room-status.ts`
 - `apps/rooms/src/route.ts`
 - `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/sim-fingerprint.ts`
 - `apps/rooms/src/socket-budget.ts`
 - `apps/rooms/src/socket-role.ts`
+- `apps/rooms/src/storage-failed.ts`
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
 - `apps/web/src/components/guest-name.ts`
@@ -1602,6 +1604,7 @@ Test files:
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-leave.test.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`
+- `apps/rooms/test/host-memory.test.ts`
 - `apps/rooms/test/host-notes.test.ts`
 - `apps/rooms/test/host-ownership.test.ts`
 - `apps/rooms/test/host-phases.test.ts`

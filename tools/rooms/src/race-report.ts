@@ -185,6 +185,12 @@ const serverLine = (ended: RaceEnded): string => {
 
 const lostReasonLine = ({ build, detail, reason }: RaceLost): string => {
   switch (reason) {
+    case "ended": {
+      return "the race had already ended";
+    }
+    case "newSim": {
+      return `this build steps the race differently, ${detail ?? "no detail"}`;
+    }
     case "noCheckpoint": {
       return "the race had no checkpoint yet";
     }

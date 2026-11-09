@@ -17,7 +17,7 @@ import { restoredSeat, rosterOf, seatFor, traceSeats } from "./race-seat.ts";
 import type { Seat } from "./race-seat.ts";
 import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
-import type { Checkpoint, RaceMemory } from "./room-memory.ts";
+import type { Checkpoint, RaceMemory, RoomMemory } from "./room-memory.ts";
 import {
   roomTraceName,
   TAPE_VERSION,
@@ -43,6 +43,7 @@ export interface RacePorts {
   readonly roomColo: () => string | null;
   readonly saveTape: (key: string, body: string | Uint8Array) => void;
   readonly seed: () => number;
+  readonly sim: string;
 }
 
 export interface Run {
@@ -97,15 +98,31 @@ const lost = (reason: LostReason, detail: string | null): RaceRestore => ({
 
 export const restoreRace = (
   ports: RacePorts,
+  { at, sim }: RoomMemory,
   { checkpoint, manifest, raceId }: RaceMemory,
-  afterMs: number,
+  ended: string | null,
   tickBytes: number,
   now: number
 ): RaceRestore => {
+  if (raceId === ended) {
+    return lost("ended", null);
+  }
+  if (manifest.protocol !== ROOM_PROTOCOL) {
+    return lost(
+      "newSim",
+      `the race spoke protocol ${manifest.protocol}, this room speaks ${ROOM_PROTOCOL}`
+    );
+  }
+  if (sim !== ports.sim) {
+    return lost(
+      "newSim",
+      `the race stepped with simulation ${sim}, this room steps with ${ports.sim}`
+    );
+  }
   if (checkpoint === null) {
     return lost("noCheckpoint", null);
   }
-  if (afterMs > msOf(ports.config.seatHoldSeconds)) {
+  if (now - at > msOf(ports.config.seatHoldSeconds)) {
     return lost("pastHold", null);
   }
   const { setup } = seatedRace(
