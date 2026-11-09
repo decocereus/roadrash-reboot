@@ -44,6 +44,9 @@ const settleFor = (
 
 const HALF_REACH_ACROSS = punch.reachX / 2;
 const HALF_REACH_ALONG = punch.reachS / 2;
+const STRIKE_SECONDS = kick.ticks / 60;
+const FASTEST_ACROSS = punch.reachX / STRIKE_SECONDS;
+const GLIDE_EASING = 200;
 const MOST_STEP_METRES = 0.2;
 
 const framesUntilWithin = (
@@ -72,12 +75,11 @@ describe("how a corrected rider settles on screen", () => {
     expect(drift.x).toBe(1);
   });
 
-  it("eases into a small slip instead of starting it at full speed", () => {
+  it("closes a small slip within a third of a second", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: 0.2 });
-    driftSettle(drift, FRAME, SPEED);
-    expect(0.2 - drift.x).toBeGreaterThan(0);
-    expect(0.2 - drift.x).toBeLessThan(0.01);
+    settleFor(drift, 20, SPEED);
+    expect(Math.abs(drift.x)).toBeLessThan(0.01);
   });
 
   it("has a rider a metre off their line back on it within two thirds of a second", () => {
@@ -111,13 +113,13 @@ describe("how a corrected rider settles on screen", () => {
     expect(Math.abs(drift.s)).toBeLessThan(0.01);
   });
 
-  it("brings a bike drawn a full reach across off its place back inside half a reach within a strike and a third, and onto it within a second, stepping under 20 cm a 60 Hz frame", () => {
+  it("brings a bike drawn a full reach across off its place back inside half a reach within a strike, and onto it within three quarters of a second, stepping under 20 cm a 60 Hz frame", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: punch.reachX });
     const trusted = framesUntilWithin(drift, "x", HALF_REACH_ACROSS, SPEED, 60);
     const home = framesUntilWithin(drift, "x", 0.01, SPEED, 60);
-    expect(trusted.frames).toBeLessThanOrEqual(Math.ceil((kick.ticks * 4) / 3));
-    expect(trusted.frames + home.frames).toBeLessThanOrEqual(60);
+    expect(trusted.frames).toBeLessThanOrEqual(kick.ticks);
+    expect(trusted.frames + home.frames).toBeLessThanOrEqual(45);
     expect(Math.max(trusted.step, home.step)).toBeLessThan(MOST_STEP_METRES);
   });
 
@@ -131,16 +133,16 @@ describe("how a corrected rider settles on screen", () => {
     expect(Math.max(trusted.step, home.step)).toBeLessThan(MOST_STEP_METRES);
   });
 
-  it("keeps a bike's drawn speed through a correction that changes it, then changes it no faster than hard braking", () => {
+  it("keeps a bike's drawn speed through a correction that changes it, then changes it no faster than the glide eases", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, speed: -43, x: 0 });
     expect(drift.along).toBe(-43);
     const { mostChange } = settleFor(drift, 900, 63);
-    expect(mostChange).toBeLessThanOrEqual(25 * FRAME + 1e-9);
+    expect(mostChange).toBeLessThanOrEqual(GLIDE_EASING * FRAME + 1e-9);
     expect(Math.abs(drift.s)).toBeLessThan(0.01);
   });
 
-  it("keeps a bike's drawn sideways speed through a correction that changes it, then changes it no faster than hard braking", () => {
+  it("keeps a bike's drawn sideways speed through a correction that changes it, then changes it no faster than the glide eases", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, lateralSpeed: 1.06, x: 0 });
     expect(drift.across).toBe(1.06);
@@ -150,7 +152,7 @@ describe("how a corrected rider settles on screen", () => {
       driftSettle(drift, FRAME, SPEED);
       mostChange = Math.max(mostChange, Math.abs(drift.across - across));
     }
-    expect(mostChange).toBeLessThanOrEqual(25 * FRAME + 1e-9);
+    expect(mostChange).toBeLessThanOrEqual(GLIDE_EASING * FRAME + 1e-9);
     expect(Math.abs(drift.x)).toBeLessThan(0.01);
   });
 
@@ -228,11 +230,9 @@ describe("a bike's height on screen", () => {
   });
 });
 
-const FASTEST_ACROSS = 2.5 + HALF_REACH_ACROSS / (kick.ticks / 60);
-
 describe("a correction closing at any frame rate", () => {
   it.each([60, 30, 20])(
-    "brings a bike drawn a full reach across off its place back inside half a reach within a strike and a third at %i frames a second, gliding no faster than half a reach per strike on top of 2.5 m/s",
+    "brings a bike drawn a full reach across off its place back inside half a reach within a strike at %i frames a second, gliding no faster than a reach per strike",
     (fps) => {
       const seconds = 1 / fps;
       const view = {
@@ -254,7 +254,7 @@ describe("a correction closing at any frame rate", () => {
         elapsed += seconds;
         fastest = Math.max(fastest, Math.abs(view.drawn.x - from) / seconds);
       }
-      expect(elapsed).toBeLessThanOrEqual((kick.ticks * 4) / 3 / 60 + seconds);
+      expect(elapsed).toBeLessThanOrEqual(STRIKE_SECONDS + seconds);
       expect(fastest).toBeLessThanOrEqual(FASTEST_ACROSS + 1e-9);
     }
   );
@@ -368,14 +368,14 @@ describe("how far a frame draws a bike off its riding", () => {
       { along: 1.3 * SPEED * FRAME, riding: SPEED * FRAME },
     ],
     [
-      "sliding sideways at 3 m/s from one frame to the next",
+      "sliding sideways at 5 m/s from one frame to the next",
       at(SPEED),
-      { ...at(SPEED), across: 3 * FRAME },
+      { ...at(SPEED), across: 5 * FRAME },
     ],
     [
-      "slowing from 2.44 to 1.38 m/s sideways with a correction",
-      sliding(2.44),
-      { ...sliding(1.38), swerved: 1.06 },
+      "stopping a 5 m/s slide in one frame with a correction",
+      sliding(5),
+      { ...sliding(0), swerved: 5 },
     ],
     [
       "two ticks on in one frame",

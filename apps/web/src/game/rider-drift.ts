@@ -7,15 +7,12 @@ const SETTLE_SECONDS = 0.1;
 const ALONG_SHARE_OF_SPEED = 0.1;
 const FASTEST_ALONG_SHARE_OF_SPEED = 0.25;
 const SLOWEST_ALONG_METRES_PER_SECOND = 0.5;
-const ACROSS_METRES_PER_SECOND = 2.5;
-const GLIDE_ACCELERATION = 25;
+const GLIDE_ACCELERATION = 200;
 const PACE_SHARE_UNSEEN = 0.1;
 const TRUSTED_SHARE_OF_REACH = 0.5;
 const STRIKE_SECONDS = Math.min(kick.ticks, punch.ticks) * TICK_SECONDS;
 const TRUSTED_ALONG_METRES = TRUSTED_SHARE_OF_REACH * punch.reachS;
-const TRUSTED_ACROSS_METRES = TRUSTED_SHARE_OF_REACH * punch.reachX;
-const FASTEST_ACROSS_METRES_PER_SECOND =
-  ACROSS_METRES_PER_SECOND + TRUSTED_ACROSS_METRES / STRIKE_SECONDS;
+const ACROSS_METRES_PER_SECOND = punch.reachX / STRIKE_SECONDS;
 
 export interface RiderDrift {
   across: number;
@@ -84,12 +81,6 @@ const alongGlide = (speed: number, gap: number): number =>
     )
   );
 
-const acrossGlide = (gap: number): number =>
-  Math.min(
-    FASTEST_ACROSS_METRES_PER_SECOND,
-    ACROSS_METRES_PER_SECOND + pastTrusted(gap, TRUSTED_ACROSS_METRES)
-  );
-
 export const driftBy = (drift: RiderDrift, moved: RiderCorrection): void => {
   drift.across += moved.lateralSpeed;
   drift.air += moved.air;
@@ -117,7 +108,12 @@ export const driftSettle = (
     alongGlide(speed, drift.s),
     seconds
   );
-  drift.across = glided(drift.x, drift.across, acrossGlide(drift.x), seconds);
+  drift.across = glided(
+    drift.x,
+    drift.across,
+    ACROSS_METRES_PER_SECOND,
+    seconds
+  );
   drift.s += drift.along * seconds;
   drift.x += drift.across * seconds;
 };

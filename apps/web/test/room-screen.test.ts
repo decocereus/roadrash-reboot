@@ -46,14 +46,11 @@ const CUT_FROM_MS = 20_000;
 const GLIDE_SHARE = 0.1;
 const FASTEST_GLIDE_SHARE = 0.25;
 const SLOWEST_GLIDE_ALONG = 0.5;
-const MOST_GLIDE_ACROSS = 2.5;
-const GLIDE_ACCELERATION = 25;
+const GLIDE_ACCELERATION = 200;
 const GLIDE_SETTLE_SECONDS = 0.1;
 const TRUSTED_ALONG = punch.reachS / 2;
-const TRUSTED_ACROSS = punch.reachX / 2;
 const STRIKE_SECONDS = kick.ticks * TICK_SECONDS;
-const FASTEST_GLIDE_ACROSS =
-  MOST_GLIDE_ACROSS + TRUSTED_ACROSS / STRIKE_SECONDS;
+const MOST_GLIDE_ACROSS = punch.reachX / STRIKE_SECONDS;
 const FRAME_SLACK_METRES = 0.01;
 const MOST_STEP_METRES = 0.2;
 
@@ -79,13 +76,10 @@ interface OwnPath {
   beforeX: number;
   carried: number;
   carriedAcross: number;
-  fastAcross: number;
   fastAlong: number;
   followed: boolean;
   gapS: number;
-  gapX: number;
   jumpedS: number;
-  jumpedX: number;
   kicked: number;
   lastS: number;
   lastX: number;
@@ -164,13 +158,10 @@ const ownPath = (): OwnPath => ({
   beforeX: 0,
   carried: 0,
   carriedAcross: 0,
-  fastAcross: 0,
   fastAlong: 0,
   followed: false,
   gapS: 0,
-  gapX: 0,
   jumpedS: 0,
-  jumpedX: 0,
   kicked: 0,
   lastS: 0,
   lastX: 0,
@@ -211,12 +202,6 @@ const glideAlong = (speed: number, off: number): number =>
     )
   );
 
-const glideAcross = (off: number): number =>
-  Math.min(
-    FASTEST_GLIDE_ACROSS,
-    MOST_GLIDE_ACROSS + pastTrusted(off, TRUSTED_ACROSS)
-  );
-
 const glidedPast = (
   path: OwnPath,
   view: { after: Pose; before: Pose; drawn: DrawnPlace },
@@ -234,26 +219,19 @@ const glidedPast = (
     glideAlong(speed, path.gapS + path.jumpedS),
     path.fastAlong - slowed
   );
-  path.fastAcross = Math.max(
-    glideAcross(path.gapX + path.jumpedX),
-    path.fastAcross - slowed
-  );
   path.jumpedS = 0;
-  path.jumpedX = 0;
   path.kicked = 0;
   path.swerved = 0;
   const past = Math.max(
     Math.abs(offS - path.offS) -
       (path.fastAlong + path.carried) * FRAME_SECONDS,
     Math.abs(offX - path.offX) -
-      (path.fastAcross + path.carriedAcross) * FRAME_SECONDS
+      (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS
   );
   path.offS = offS;
   path.offX = offX;
   path.gapS =
     drawn.s - (view.before.s + (view.after.s - view.before.s) * blend);
-  path.gapX =
-    drawn.x - (view.before.x + (view.after.x - view.before.x) * blend);
   return past;
 };
 
@@ -322,7 +300,6 @@ const rideOnScreen = (race: Race): Screen => {
       const path = riderOf(paths, moved.rider);
       if (path) {
         path.jumpedS += moved.s;
-        path.jumpedX += moved.x;
         path.lastS -= moved.s;
         path.lastX -= moved.x;
         path.kicked += moved.speed;
