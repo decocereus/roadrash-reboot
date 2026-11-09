@@ -7,6 +7,8 @@ export type LobbyPlaceKind = (typeof lobbyPlaces)[number];
 export const lobbyActs = ["greet", "shove"] as const;
 export type LobbyAct = (typeof lobbyActs)[number];
 
+export const WALKS_PER_SECOND = 8;
+
 export interface LobbyWalk {
   readonly heading: number;
   readonly lean: number;

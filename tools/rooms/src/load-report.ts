@@ -73,6 +73,7 @@ const serverOf = (facts: StepFacts, ticks: number, seconds: number) => {
 
 const deadlineProblems = (values: {
   readonly catchUpShare: number;
+  readonly dropped: number;
   readonly gapP99Ms: number;
   readonly lost: number;
   readonly missedShare: number;
@@ -93,6 +94,9 @@ const deadlineProblems = (values: {
     : []),
   ...(values.lost > 0 ? [`${values.lost} seats lost their socket.`] : []),
   ...(values.refused > 0 ? [`${values.refused} seats were refused.`] : []),
+  ...(values.dropped > 0
+    ? [`Rooms dropped ${values.dropped} messages over a socket's budget.`]
+    : []),
 ];
 
 const fullSeatProblems = (clients: readonly ClientResult[]) =>
@@ -172,6 +176,7 @@ export const stepReport = (facts: StepFacts) => {
   const problems = [
     ...deadlineProblems({
       catchUpShare: catchUps / Math.max(1, wakes),
+      dropped: sumOf(second.statuses.map((status) => status.dropped)),
       gapP99Ms: gaps.p99Ms,
       lost,
       missedShare,

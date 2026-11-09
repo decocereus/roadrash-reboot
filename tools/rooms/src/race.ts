@@ -244,6 +244,9 @@ export const main = Effect.fn("rooms.race")(function* main(
   const problems = [
     ...problemsOf(drop ? reports.slice(0, -1) : reports, seconds),
     ...missedProblems(status.tick, status.seats),
+    ...(status.dropped > 0
+      ? [`The room dropped ${status.dropped} messages over a socket's budget.`]
+      : []),
     ...raceIdProblems(reports, status.raceId),
     ...contractProblems({
       badPath: badPath.status,

@@ -112,6 +112,7 @@ const Browser = Schema.Struct({
 
 const Ended = Schema.Struct({
   catchUpWakes: Schema.Number,
+  dropped: orMissing(Schema.Number),
   kind: Schema.Literal("ended"),
   raceId: Schema.String,
   seats: Schema.Array(RaceSeatSchema),

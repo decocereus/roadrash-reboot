@@ -54,6 +54,9 @@ const refusalLine = (refusal: Refusal): string => {
     case "content": {
       return UPDATED_LINE;
     }
+    case "flooded": {
+      return "The room closed this seat because it sent too many messages.";
+    }
     case "full": {
       return "This room is full.";
     }

@@ -1534,6 +1534,7 @@ Source files:
 - `apps/rooms/src/room-run.ts`
 - `apps/rooms/src/route.ts`
 - `apps/rooms/src/seat-client.ts`
+- `apps/rooms/src/socket-budget.ts`
 - `apps/rooms/src/socket-role.ts`
 - `apps/rooms/src/tape.ts`
 - `apps/rooms/src/worker.ts`
@@ -1591,6 +1592,7 @@ Source files:
 Test files:
 
 - `apps/rooms/test/build-id.test.ts`
+- `apps/rooms/test/host-budget.test.ts`
 - `apps/rooms/test/host-harness.ts`
 - `apps/rooms/test/host-leave.test.ts`
 - `apps/rooms/test/host-lifecycle.test.ts`

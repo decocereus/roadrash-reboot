@@ -58,6 +58,7 @@ const notes: readonly RoomNote[] = [
   },
   {
     catchUpWakes: 4,
+    dropped: 0,
     kind: "ended",
     raceId: "race-a",
     seats: [
@@ -197,6 +198,7 @@ const reportOfSeat = (only: RaceSeat): string =>
     drops: [],
     ended: {
       catchUpWakes: 0,
+      dropped: 0,
       kind: "ended",
       raceId: "race-c",
       seats: [only],

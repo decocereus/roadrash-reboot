@@ -12,6 +12,7 @@ const SAMPLE_MS = 10_000;
 const statusAt = (tick: number): RoomStatus => ({
   build: "test-build",
   catchUpWakes: 0,
+  dropped: 0,
   hostPhase: "racing",
   lagTicks: 0,
   names: [],

@@ -22,6 +22,7 @@ import {
   decodeLobbyCommand,
   encodeRoomMessage,
   SEAT_CLOSED,
+  SEAT_FLOODED,
   SEAT_LEFT,
   SEAT_QUIT,
   SEAT_SILENT,
@@ -44,6 +45,8 @@ import {
 import type { Seat, SeatHold, SeatLink } from "./race-seat.ts";
 import { msOf, publicRuleFor } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
+import { createSocketBudget, CUT_AFTER_DROPS, spend } from "./socket-budget.ts";
+import type { SocketBudget } from "./socket-budget.ts";
 import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
 import type { SocketEvent, SocketRole } from "./socket-role.ts";
 import {
@@ -78,6 +81,7 @@ export interface HostPorts extends RacePorts {
 }
 
 interface Present {
+  readonly budget: SocketBudget;
   readonly link: SeatLink;
   readonly memberId: string;
   readonly name: string;
@@ -139,6 +143,7 @@ export const createHost = (
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
+  let dropped = 0;
 
   const roomMs = (): number => ports.now() - bornAt;
   const pongFor = createPongs(roomMs);
@@ -213,6 +218,7 @@ export const createHost = (
     );
     ports.note({
       catchUpWakes,
+      dropped,
       kind: "ended",
       raceId: run.raceId,
       seats: raceSeatsOf(run.riders, run.room),
@@ -324,6 +330,7 @@ export const createHost = (
     wakes = 0;
     catchUpWakes = 0;
     worstBehindTicks = 0;
+    dropped = 0;
     const { run, seated } = buildRace(ports, {
       colourOf: lobby.colourOf,
       gathered,
@@ -353,10 +360,14 @@ export const createHost = (
     });
   };
 
-  const refuse = (socket: HostSocket, reason: Refusal): void => {
+  const refuse = (
+    socket: HostSocket,
+    reason: Refusal,
+    closeCode = SEAT_CLOSED
+  ): void => {
     ports.note({ kind: "refused", reason });
     sendTo(socket, encodeRoomMessage({ kind: "refused", reason }));
-    socket.close(SEAT_CLOSED, reason);
+    socket.close(closeCode, reason);
   };
 
   const inRace = () =>
@@ -634,6 +645,14 @@ export const createHost = (
       if (!person) {
         return;
       }
+      if (!spend(person.budget, data, ports.now())) {
+        dropped += 1;
+        if (person.budget.dropped >= CUT_AFTER_DROPS) {
+          refuse(socket, "flooded", SEAT_FLOODED);
+          drop(person, SEAT_FLOODED, "leave");
+        }
+        return;
+      }
       if (!person.arrived) {
         person.arrived = true;
         lobby.arrive(person.memberId);
@@ -676,6 +695,7 @@ export const createHost = (
       }
       const person: Present = {
         arrived: false,
+        budget: createSocketBudget(ports.now()),
         heardAt: ports.now(),
         link,
         memberId,
@@ -704,6 +724,7 @@ export const createHost = (
       return {
         build: ports.build,
         catchUpWakes,
+        dropped,
         hostPhase: phase,
         lagTicks:
           state.phase === "racing"

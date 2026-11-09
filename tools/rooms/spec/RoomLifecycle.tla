@@ -481,6 +481,9 @@ Act(t) == [t EXCEPT !.acts = @ + 1, !.told = FALSE]
 \* The upgrade's join gate (gate.ts) is left out.  It refuses "limited" only
 \* while nobody is present and before the host hears the seat, and the seat
 \* client reads any refusal on a fresh socket as "refused", like "full".
+\* The socket budget (socket-budget.ts) is left out too.  It cuts only a
+\* socket that sends more than an honest seat can, and every seat here is
+\* honest.
 HostRecv(s) ==
     /\ wire.toH[s] # <<>>
     /\ LET m == Head(wire.toH[s])

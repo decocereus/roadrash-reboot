@@ -20,6 +20,7 @@ export const RoomIdSchema = Schema.String.pipe(
 const RoomStatusSchema = Schema.Struct({
   build: Schema.String,
   catchUpWakes: Schema.Number,
+  dropped: Schema.Number,
   hostPhase: Schema.Literals(HOST_PHASES),
   lagTicks: Schema.Number,
   names: Schema.Array(Schema.String),
