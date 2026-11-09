@@ -100,11 +100,11 @@ export const restoreRace = (
   ports: RacePorts,
   { at, sim }: RoomMemory,
   { checkpoint, manifest, raceId }: RaceMemory,
-  ended: string | null,
+  ended: readonly string[],
   tickBytes: number,
   now: number
 ): RaceRestore => {
-  if (raceId === ended) {
+  if (ended.includes(raceId)) {
     return lost("ended", null);
   }
   if (manifest.protocol !== ROOM_PROTOCOL) {

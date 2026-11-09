@@ -104,8 +104,8 @@ export const createClock = (startAt = 1000): Clock => {
     },
     build: "test-build",
     config: launchRoomConfig,
-    endRace: (raceId) => {
-      endings.push(raceId);
+    endRace: (ended) => {
+      endings.splice(0, endings.length, ...ended);
     },
     endings,
     holdSaves: false,

@@ -222,6 +222,18 @@ export const keepReport = (seat: Seat, data: string | ArrayBuffer): void => {
   }
 };
 
+export const heldSeatOf = (
+  riders: readonly Seat[],
+  memberId: string
+): { readonly hold: SeatHold; readonly seat: Seat } | null => {
+  for (const seat of riders) {
+    if (seat.memberId === memberId && seat.presence.kind === "held") {
+      return { hold: seat.presence, seat };
+    }
+  }
+  return null;
+};
+
 export const stillLoading = (riders: readonly Seat[]): readonly RiderId[] =>
   riders.flatMap(({ presence, readyMs, rider }) =>
     presence.kind === "here" && readyMs === null ? [rider] : []

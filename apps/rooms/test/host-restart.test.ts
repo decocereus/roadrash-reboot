@@ -1,3 +1,4 @@
+import { seatsCapacity } from "@racer/sim/room";
 import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
 import { readTapePart, TICKS_IN_PART } from "@racer/sim/room-tape";
@@ -37,6 +38,7 @@ const RACED_MS = 10_000;
 const RACED_TICKS = (RACED_MS / 1000) * 60;
 const RESTART_GAP_MS = 3000;
 const RIDE_ON_MS = 5000;
+const LEFT_FLAG_AT = 1 + 4 + 4 + 4;
 
 const notesOf = (clock: Clock, ...kinds: readonly string[]) =>
   clock.notes.filter((note) => kinds.includes(note.kind));
@@ -86,7 +88,7 @@ const restartedRoom = (
   clock: Clock,
   gapMs: number,
   memory: RoomMemory = remembered(clock),
-  ended: string | null = null
+  ended: readonly string[] = []
 ) => {
   const later = createClock(clock.now() + gapMs);
   const host = createHost(later, "custom", memory, ended);
@@ -289,7 +291,7 @@ describe("a room that restarts with a race it must not restore", () => {
       clock,
       RESTART_GAP_MS,
       remembered(clock),
-      "race-1"
+      ["race-0", "race-1"]
     );
     expect(notesOf(later, "lost", "restored")).toMatchObject([
       { kind: "lost", raceId: "race-1", reason: "ended" },
@@ -297,13 +299,48 @@ describe("a room that restarts with a race it must not restore", () => {
     expect(host.status().hostPhase).toBe("waiting");
   });
 
-  it("records the race's end before it forgets the race", () => {
-    const { ann, bo, clock, host } = racingRoom();
+  it("records the race's end, after the earlier ends it knows, before it forgets the race", () => {
+    const clock = createClock();
+    const host = createHost(clock, "custom", null, ["race-0"]);
+    const ann = fakeSocket();
+    const bo = fakeSocket();
+    host.seat(ann, "Ann", nearby, sameBuild("ann"));
+    host.seat(bo, "Bo", nearby, sameBuild("bo"));
+    readyAll(host, [ann, bo]);
+    host.message(ann, readyPacket(ann));
+    host.message(bo, readyPacket(bo));
+    clock.advance(START_DELAY_MS + TICK_MS);
     host.gone(ann, SEAT_QUIT);
     host.gone(bo, SEAT_QUIT);
     clock.advance(TICK_MS * 2);
-    expect(clock.endings).toStrictEqual(["race-1"]);
+    expect(clock.endings).toStrictEqual(["race-0", "race-1"]);
     expect(remembered(clock).race).toBeNull();
+  });
+
+  it("ends a restored race at once when every rider had already finished or left, with no second result", () => {
+    const { clock } = racingRoom();
+    const memory = remembered(clock);
+    const checkpoint = memory.race?.checkpoint;
+    if (!checkpoint) {
+      throw new Error("The room remembered no checkpoint.");
+    }
+    const controls = new Uint8Array(checkpoint.controls);
+    const stride = seatsCapacity(1) - seatsCapacity(0);
+    for (let seat = 0; seat < 2; seat += 1) {
+      controls[1 + seat * stride + LEFT_FLAG_AT] = 1;
+    }
+    const { race } = memory;
+    if (race === null) {
+      throw new Error("The room remembered no race.");
+    }
+    const { host, later } = restartedRoom(clock, RESTART_GAP_MS, {
+      ...memory,
+      race: { ...race, checkpoint: { ...checkpoint, controls } },
+    });
+    expect(notesOf(later, "restored", "ended", "lost")).toStrictEqual([]);
+    expect(later.endings).toStrictEqual(["race-1"]);
+    expect(remembered(later).race).toBeNull();
+    expect(host.status()).toMatchObject({ hostPhase: "waiting", raceId: null });
   });
 
   it("refuses a checkpoint another simulation build wrote", () => {

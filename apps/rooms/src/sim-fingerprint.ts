@@ -7,7 +7,11 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
 const SIM_KEY = "RUSHLINE_SIM";
-const STEPPING_SOURCES = ["packages/sim/src", "packages/track/src"] as const;
+const STEPPING_SOURCES = [
+  "apps/rooms/src",
+  "packages/sim/src",
+  "packages/track/src",
+] as const;
 
 export const roomsSim = Config.String(SIM_KEY);
 
@@ -35,10 +39,14 @@ export const simFingerprint = Effect.fn("simFingerprint")(
     }
     files.sort();
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
     const chunks: Uint8Array[] = [];
     for (const file of files) {
       const body = yield* fs.readFile(`${root}/${file}`);
-      chunks.push(encoder.encode(`${file}\n`), body);
+      chunks.push(
+        encoder.encode(`${file}\n`),
+        encoder.encode(decoder.decode(body).replaceAll("\r\n", "\n"))
+      );
     }
     const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
     const bytes = new Uint8Array(total);

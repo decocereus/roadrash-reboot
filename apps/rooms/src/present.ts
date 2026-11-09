@@ -1,5 +1,6 @@
-import { encodeRoomMessage } from "./messages.ts";
-import type { RoomLobbyMessage, RoomMessage } from "./messages.ts";
+import { encodeRoomMessage, SEAT_CLOSED } from "./messages.ts";
+import type { Refusal, RoomLobbyMessage, RoomMessage } from "./messages.ts";
+import type { RoomNote } from "./notes.ts";
 import type { Run } from "./race-build.ts";
 import type { Seat, SeatLink } from "./race-seat.ts";
 import type { SocketBudget } from "./socket-budget.ts";
@@ -32,7 +33,10 @@ export const moveSocket = (
   person.role = roleAfter(person.role, event) ?? person.role;
 };
 
-export const createAudience = (present: ReadonlyMap<HostSocket, Present>) => {
+export const createAudience = (
+  present: ReadonlyMap<HostSocket, Present>,
+  note: (line: RoomNote) => void
+) => {
   const sendTo = (socket: HostSocket, data: string | ArrayBufferView): void => {
     try {
       socket.send(data);
@@ -65,5 +69,14 @@ export const createAudience = (present: ReadonlyMap<HostSocket, Present>) => {
       }
     }
   };
-  return { sendTo, tell, tellLobby, tellWalkers };
+  const refuse = (
+    socket: HostSocket,
+    reason: Refusal,
+    closeCode = SEAT_CLOSED
+  ): void => {
+    note({ kind: "refused", reason });
+    sendTo(socket, encodeRoomMessage({ kind: "refused", reason }));
+    socket.close(closeCode, reason);
+  };
+  return { refuse, sendTo, tell, tellLobby, tellWalkers };
 };

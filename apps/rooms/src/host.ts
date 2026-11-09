@@ -30,7 +30,7 @@ import {
   SEAT_QUIT,
   SEAT_SILENT,
 } from "./messages.ts";
-import type { LobbyCommand, Refusal } from "./messages.ts";
+import type { LobbyCommand } from "./messages.ts";
 import { noteGap } from "./notes.ts";
 import { createAudience, moveSocket, SEND_FAILED } from "./present.ts";
 import type { HostSocket, Present } from "./present.ts";
@@ -40,6 +40,7 @@ import {
   HERE,
   keepBrowserRows,
   keepReport,
+  heldSeatOf,
   keepStats,
   partingOf,
   raceSeatsOf,
@@ -72,7 +73,6 @@ export interface SeatClaim {
 
 export interface HostPorts extends Omit<RacePorts, "saveTape">, MemoryPorts {
   readonly after: (ms: number, wake: () => void) => void;
-  readonly endRace: (raceId: string) => void;
 }
 
 export interface Host {
@@ -91,11 +91,11 @@ export const createHost = (
   given: HostPorts,
   kind: RoomKind = "custom",
   memory: RoomMemory | null = null,
-  ended: string | null = null
+  ended: readonly string[] = []
 ): Host => {
   const present = new Map<HostSocket, Present>();
-  const audience = createAudience(present);
-  const { sendTo, tell, tellWalkers } = audience;
+  const audience = createAudience(present, given.note);
+  const { refuse, sendTo, tell, tellWalkers } = audience;
   const batch = createInputBatch();
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
@@ -116,12 +116,14 @@ export const createHost = (
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
   let dropped = 0;
-  const { checkpoint, remember, saveTape } = createMemory(given, {
-    lobby,
-    lostRace: () => lostRace,
-    run: () => state.run,
-  });
-  const ports: RacePorts & Pick<HostPorts, "after" | "endRace" | "now"> = {
+  const { checkpoint, endedRaces, markEnded, remember, saveTape } =
+    createMemory(given, {
+      ended,
+      lobby,
+      lostRace: () => lostRace,
+      run: () => state.run,
+    });
+  const ports: RacePorts & Pick<HostPorts, "after" | "now"> = {
     ...given,
     saveTape,
   };
@@ -163,7 +165,7 @@ export const createHost = (
       worstBehindTicks,
     });
     move({ kind: "raceOver" });
-    ports.endRace(run.raceId);
+    markEnded(run.raceId);
     tell({ kind: "ended", tick: room.state.tick });
     for (const person of present.values()) {
       moveSocket(person, { kind: "raceOver" });
@@ -304,16 +306,6 @@ export const createHost = (
     remember();
   };
 
-  const refuse = (
-    socket: HostSocket,
-    reason: Refusal,
-    closeCode = SEAT_CLOSED
-  ): void => {
-    ports.note({ kind: "refused", reason });
-    sendTo(socket, encodeRoomMessage({ kind: "refused", reason }));
-    socket.close(closeCode, reason);
-  };
-
   const leaveRace = (run: Run, seat: Seat, closeCode: number | null): void => {
     if (seat.presence.kind === "left") {
       return;
@@ -400,15 +392,14 @@ export const createHost = (
 
   const claimHold = (memberId: string) => {
     const { run } = state;
-    for (const seat of run?.riders ?? []) {
-      const { presence } = seat;
-      if (run && seat.memberId === memberId && presence.kind === "held") {
-        if (ports.now() < presence.until) {
-          return { run, seat, since: presence.since };
-        }
-        holdRunsOut(run, seat, presence);
-      }
+    const held = run ? heldSeatOf(run.riders, memberId) : null;
+    if (!(run && held)) {
+      return null;
     }
+    if (ports.now() < held.hold.until) {
+      return { run, seat: held.seat, since: held.hold.since };
+    }
+    holdRunsOut(run, held.seat, held.hold);
     return null;
   };
 
@@ -594,7 +585,7 @@ export const createHost = (
     ride(run, startedAt, now);
   };
 
-  const restore = (remembered: RoomMemory, endedRace: string | null): void => {
+  const restore = (remembered: RoomMemory): void => {
     const { at, build, race } = remembered;
     for (const { body, key } of remembered.unsaved) {
       ports.saveTape(key, body);
@@ -610,7 +601,7 @@ export const createHost = (
       ports,
       remembered,
       race,
-      endedRace,
+      endedRaces,
       tickBuffer.byteLength,
       now
     );
@@ -631,6 +622,11 @@ export const createHost = (
         return;
       }
       case "run": {
+        if (restored.run.room.over()) {
+          markEnded(raceId);
+          remember();
+          return;
+        }
         resume(restored.run, now);
         ports.note({ afterMs, build, kind: "restored", raceId, tick });
         return;
@@ -642,7 +638,7 @@ export const createHost = (
   };
 
   if (memory) {
-    restore(memory, ended);
+    restore(memory);
   }
 
   return {

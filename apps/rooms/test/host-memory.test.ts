@@ -8,6 +8,7 @@ import type { RoomMemory } from "../src/room-memory.ts";
 const memoryWithHeldSaves = () => {
   const saves: { readonly key: string; readonly saved: () => void }[] = [];
   const written: (RoomMemory | null)[] = [];
+  const endings: string[] = [];
   const lobby = createLobby(0, "custom", launchRoomConfig, () =>
     publicRuleFor(launchRoomConfig.publicRace, 0)
   );
@@ -15,6 +16,9 @@ const memoryWithHeldSaves = () => {
   const memory = createMemory(
     {
       build: "test-build",
+      endRace: (ended) => {
+        endings.splice(0, endings.length, ...ended);
+      },
       now: () => 0,
       remember: (record) => {
         written.push(record);
@@ -24,9 +28,9 @@ const memoryWithHeldSaves = () => {
       },
       sim: "test-sim",
     },
-    { lobby, lostRace: () => null, run: () => null }
+    { ended: [], lobby, lostRace: () => null, run: () => null }
   );
-  return { memory, saves, written };
+  return { endings, memory, saves, written };
 };
 
 const unsavedOf = (record: RoomMemory | null | undefined) =>
@@ -48,5 +52,22 @@ describe("what a room keeps unsaved", () => {
     ]);
     saves[1]?.saved();
     expect(unsavedOf(written.at(-1))).toStrictEqual([]);
+  });
+
+  it("keeps the last eight ended races, newest last", () => {
+    const { endings, memory } = memoryWithHeldSaves();
+    for (let race = 1; race <= 10; race += 1) {
+      memory.markEnded(`race-${race}`);
+    }
+    expect(endings).toStrictEqual([
+      "race-3",
+      "race-4",
+      "race-5",
+      "race-6",
+      "race-7",
+      "race-8",
+      "race-9",
+      "race-10",
+    ]);
   });
 });

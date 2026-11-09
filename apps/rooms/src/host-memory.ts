@@ -5,8 +5,11 @@ import { seatMemoryOf } from "./race-seat.ts";
 import { checkpointOf, MEMORY_VERSION } from "./room-memory.ts";
 import type { RoomMemory } from "./room-memory.ts";
 
+const MOST_ENDED = 8;
+
 export interface MemoryPorts {
   readonly build: string;
+  readonly endRace: (ended: readonly string[]) => void;
   readonly now: () => number;
   readonly remember: (memory: RoomMemory | null) => void;
   readonly sim: string;
@@ -18,6 +21,7 @@ export interface MemoryPorts {
 }
 
 interface Remembered {
+  readonly ended: readonly string[];
   readonly lobby: Lobby;
   readonly lostRace: () => string | null;
   readonly run: () => Run | null;
@@ -25,8 +29,16 @@ interface Remembered {
 
 export const createMemory = (
   ports: MemoryPorts,
-  { lobby, lostRace, run }: Remembered
+  { ended, lobby, lostRace, run }: Remembered
 ) => {
+  const endedRaces = [...ended];
+  const markEnded = (raceId: string): void => {
+    endedRaces.push(raceId);
+    if (endedRaces.length > MOST_ENDED) {
+      endedRaces.splice(0, endedRaces.length - MOST_ENDED);
+    }
+    ports.endRace(endedRaces);
+  };
   const unsaved = new Map<
     string,
     { readonly body: string | Uint8Array; readonly sequence: number }
@@ -71,5 +83,5 @@ export const createMemory = (
     );
     remember();
   };
-  return { checkpoint, remember, saveTape };
+  return { checkpoint, endedRaces, markEnded, remember, saveTape };
 };
