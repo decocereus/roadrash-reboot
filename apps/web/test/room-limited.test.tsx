@@ -52,3 +52,21 @@ describe("a rider the rooms Worker refused for joining too often", () => {
     expect(screen).toContain("Reload");
   });
 });
+
+describe("a rider the room cut for sending too many messages", () => {
+  it("reads why and is offered Leave, not Reload or a way back into the race", () => {
+    const screen = renderToStaticMarkup(
+      <RoomLobbyScreen
+        name="Rider"
+        onBack={vi.fn<() => void>()}
+        phase="refused"
+        refusal="flooded"
+        roomId="abcd1234"
+      />
+    );
+    expect(screen).toContain(
+      "The room closed this seat because it sent too many messages."
+    );
+    expect(screen).not.toContain("Reload");
+  });
+});

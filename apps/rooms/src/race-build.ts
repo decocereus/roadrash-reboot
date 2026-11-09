@@ -11,14 +11,21 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import type { RaceManifest } from "./manifest.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RoomNote } from "./notes.ts";
-import { rosterOf, seatFor } from "./race-seat.ts";
+import { rosterOf, seatFor, traceSeats } from "./race-seat.ts";
 import type { Seat } from "./race-seat.ts";
 import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
-import { TAPE_VERSION, tapeHeaderName, tapeKey, tapePartName } from "./tape.ts";
-import type { TapeEnd } from "./tape.ts";
+import {
+  roomTraceName,
+  TAPE_VERSION,
+  tapeEndName,
+  tapeHeaderName,
+  tapeKey,
+  tapePartName,
+} from "./tape.ts";
+import type { RoomTrace, TapeEnd } from "./tape.ts";
 
-export const tapeEndOf = (room: Room, parts: number): string =>
+const tapeEndOf = (room: Room, parts: number): string =>
   JSON.stringify({
     hash: hexOfWords(room.hashNow()),
     parts,
@@ -56,6 +63,19 @@ interface Gathering<Person extends Sitter> {
   readonly rule: RoomRule;
   readonly tickBytes: number;
 }
+
+export const finishTape = (
+  { raceId, riders, room, tape, trace }: Run,
+  saveTape: RacePorts["saveTape"]
+): void => {
+  traceSeats(riders, room, trace);
+  tape.finish();
+  saveTape(
+    tapeKey(raceId, roomTraceName),
+    JSON.stringify({ rows: trace } satisfies RoomTrace)
+  );
+  saveTape(tapeKey(raceId, tapeEndName), tapeEndOf(room, tape.parts()));
+};
 
 export const buildRace = <Person extends Sitter>(
   ports: RacePorts,

@@ -28,7 +28,7 @@ import { riderIdAt } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
-import { createPings, DEAD_AFTER_MS } from "./heartbeat.ts";
+import { createPings, DEAD_AFTER_MS, PINGS_PER_REPORT } from "./heartbeat.ts";
 import { humanColours, humanNames, seatedCount } from "./manifest.ts";
 import {
   decodeRoomMessage,
@@ -49,8 +49,6 @@ import type {
 import { createRaceTally } from "./race-tally.ts";
 import { ticksOf } from "./room-config.ts";
 import type { BrowserTrace, SeatBrowser } from "./tape.ts";
-
-const PINGS_PER_REPORT = 30;
 
 export interface SeatRace {
   readonly awayMs: number | null;

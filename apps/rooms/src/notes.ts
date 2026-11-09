@@ -5,6 +5,17 @@ import { REFUSALS } from "./messages.ts";
 
 export const WAKE_GAP_CEILINGS_MS = [20, 34, 50, 100] as const;
 
+export const noteGap = (gaps: Uint32Array, gapMs: number): void => {
+  let bucket = 0;
+  while (
+    bucket < WAKE_GAP_CEILINGS_MS.length &&
+    gapMs > (WAKE_GAP_CEILINGS_MS[bucket] ?? gapMs)
+  ) {
+    bucket += 1;
+  }
+  gaps[bucket] = (gaps[bucket] ?? 0) + 1;
+};
+
 const orMissing = <S extends Schema.Top>(schema: S) =>
   Schema.NullOr(schema).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(null))
@@ -112,6 +123,7 @@ const Browser = Schema.Struct({
 
 const Ended = Schema.Struct({
   catchUpWakes: Schema.Number,
+  dropped: orMissing(Schema.Number),
   kind: Schema.Literal("ended"),
   raceId: Schema.String,
   seats: Schema.Array(RaceSeatSchema),

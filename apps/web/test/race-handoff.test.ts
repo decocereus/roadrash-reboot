@@ -407,6 +407,11 @@ describe("a room seat that changes", () => {
     expect(seatChange("lost", "replaced", true, PREPARING)).toBe("seatTaken");
   });
 
+  it("sends a seat the room cut for flooding to the flooded screen, never back to its bike", () => {
+    expect(seatChange("lost", "flooded", true, RIDING)).toBe("seatFlooded");
+    expect(seatChange("lost", "flooded", true, PREPARING)).toBe("seatFlooded");
+  });
+
   it("redraws every other change", () => {
     expect(seatChange("lobby", null, false, FIRST_ROOM)).toBe("redraw");
     expect(seatChange("loading", null, true, FIRST_ROOM)).toBe("redraw");

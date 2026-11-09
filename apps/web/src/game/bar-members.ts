@@ -14,6 +14,7 @@ import {
 import type { LobbyRider } from "@racer/sim/lobby";
 import { doorSpot } from "@racer/sim/lobby-floor";
 import type { Spot } from "@racer/sim/lobby-floor";
+import { WALKS_PER_SECOND } from "@racer/sim/lobby-walk";
 import type { LobbyAct, LobbyWalk } from "@racer/sim/lobby-walk";
 import { riderBlocks } from "@racer/sim/palette";
 import { hypot2 } from "@racer/track/math";
@@ -25,7 +26,7 @@ import type { BarSpeech } from "./bar-speech.ts";
 import { SOLO_SLOT } from "./bar-walker.ts";
 import type { BarWalkers, WalkerView } from "./bar-walker.ts";
 
-const SEND_EVERY_SECONDS = 1 / 8;
+const SEND_EVERY_SECONDS = 1 / WALKS_PER_SECOND;
 const FOLLOW_RATE = 12;
 const SNAP_METRES = 4;
 const STRIDE_RUN_SPEED = 7;

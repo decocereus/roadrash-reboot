@@ -9,6 +9,7 @@ import {
 import type { Ping, Pong } from "@racer/sim/room-wire";
 
 export const PING_EVERY_MS = 500;
+export const PINGS_PER_REPORT = 30;
 export const DEAD_AFTER_MS = 5000;
 const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 export const SILENT_SEAT_MS = 10_000;
