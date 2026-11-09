@@ -322,6 +322,40 @@ describe("a seat loading the race", () => {
     expect(client?.confirmed.tick).toBe(HELD_TICKS);
   });
 
+  it("works through held ticks a frame's share at a time once the race ends, then reports and hangs up", () => {
+    const { seat, socket } = loadingSeat();
+    const client = seat.race()?.client;
+    socket.hear(encodeRoomMessage({ kind: "countdown", startAtMs: 0 }));
+    seat.frameDrawn(0, 0);
+    for (let tick = 1; tick <= HELD_TICKS; tick += 1) {
+      hearTick(socket, tick);
+    }
+    const confirmedAt = [client?.confirmed.tick ?? 0];
+    socket.hear(encodeRoomMessage({ kind: "ended", tick: HELD_TICKS }));
+    confirmedAt.push(client?.confirmed.tick ?? 0);
+    const reportedAt: boolean[] = [];
+    for (let frame = 0; frame < 8; frame += 1) {
+      seat.frameDrawn(0, 0);
+      confirmedAt.push(client?.confirmed.tick ?? 0);
+      reportedAt.push(socket.closedWith !== null);
+    }
+    const steps = confirmedAt
+      .slice(1)
+      .map((at, frame) => at - (confirmedAt[frame] ?? 0));
+    expect(Math.max(...steps)).toBeLessThanOrEqual(MOST_TICKS_PER_FRAME);
+    expect({
+      confirmed: client?.confirmed.tick,
+      endedAfterCatchingUp: reportedAt.indexOf(true) > 0,
+      reports: socket.sentBytes.filter(
+        (bytes) => bytes === RACE_STATS_PACKET_BYTES
+      ).length,
+    }).toStrictEqual({
+      confirmed: HELD_TICKS,
+      endedAfterCatchingUp: true,
+      reports: 1,
+    });
+  });
+
   it("confirms what it holds when the rider leaves, without counting that work as a drawn frame", () => {
     const { seat, socket } = loadingSeat();
     const client = seat.race()?.client;

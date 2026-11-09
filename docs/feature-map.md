@@ -1610,6 +1610,7 @@ Test files:
 - `apps/rooms/test/race-tally.test.ts`
 - `apps/rooms/test/room-config.test.ts`
 - `apps/rooms/test/room-lifecycle.test.ts`
+- `apps/rooms/test/room-run.test.ts`
 - `apps/rooms/test/route.test.ts`
 - `apps/rooms/test/seat-client.test.ts`
 - `apps/rooms/test/seat-phases.test.ts`

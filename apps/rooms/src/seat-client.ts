@@ -25,7 +25,7 @@ import {
 } from "@racer/sim/room-wire";
 import { setupDigest } from "@racer/sim/snapshot-setup";
 import { riderIdAt, TICK_SECONDS } from "@racer/sim/state";
-import type { Control, RiderId } from "@racer/sim/state";
+import type { RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
 import { createPings, DEAD_AFTER_MS } from "./heartbeat.ts";
@@ -297,6 +297,7 @@ export const openRoomSeat = (
   const clock = createRoomClock();
   const tally = createRaceTally(trace?.sharing() ?? false);
   let reported = false;
+  let raceOver = false;
   let pingsUntilReport = PINGS_PER_REPORT;
   let listeners: SeatListeners = {};
   let state: SeatState = NEW_SEAT;
@@ -413,6 +414,9 @@ export const openRoomSeat = (
     sendReport(state.race, tally.closedTraceRows());
   };
 
+  const caughtUp = (race: SeatRace): boolean =>
+    backlog.length === 0 && !race.client.mending();
+
   const reportOnce = (): void => {
     const { race } = state;
     if (!race || reported || socket.readyState !== WebSocket.OPEN) {
@@ -434,6 +438,16 @@ export const openRoomSeat = (
     sendReport(race, tally.lastTraceRows());
   };
 
+  const endOnceCaughtUp = (): void => {
+    const { race } = state;
+    if (!raceOver || (race && drawing && !caughtUp(race))) {
+      return;
+    }
+    raceOver = false;
+    reportOnce();
+    hangUp("The race is over.");
+  };
+
   const enter = (event: SeatEvent): void => {
     switch (event.kind) {
       case "lobby": {
@@ -451,8 +465,8 @@ export const openRoomSeat = (
         break;
       }
       case "ended": {
-        reportOnce();
-        hangUp("The race is over.");
+        raceOver = true;
+        endOnceCaughtUp();
         break;
       }
       case "refused": {
@@ -500,10 +514,10 @@ export const openRoomSeat = (
       return;
     }
     const { race } = state;
-    const caughtUp = readCatchUp(view);
-    if (race && caughtUp) {
+    const snapshot = readCatchUp(view);
+    if (race && snapshot) {
       backlog.length = 0;
-      race.client.catchUp(caughtUp);
+      race.client.catchUp(snapshot);
       listeners.onConfirmed?.(race.client);
       return;
     }
@@ -600,11 +614,7 @@ export const openRoomSeat = (
       ) {
         socket.send(new Uint8Array(input.buffer, 0, bytes));
       }
-      if (
-        isDone(race.client.mine) &&
-        backlog.length === 0 &&
-        !race.client.mending()
-      ) {
+      if (isDone(race.client.mine) && caughtUp(race)) {
         reportOnce();
       }
     },
@@ -638,6 +648,7 @@ export const openRoomSeat = (
           race.client.plannedThrough() - race.client.predicted.tick
         );
       }
+      endOnceCaughtUp();
     },
     inputDelay: () => {
       const { race } = state;
@@ -708,6 +719,7 @@ export const openRoomSeat = (
       if (race) {
         confirmHeld(race, true);
       }
+      endOnceCaughtUp();
     },
     target: () => clock.target(performance.now()),
     walk: (walk) => {
@@ -716,23 +728,4 @@ export const openRoomSeat = (
     walkOf: (member) => walks.get(member),
     worstRttMs: () => worstRttMs,
   };
-};
-
-export const predictSteps = (
-  seat: RoomSeat,
-  controlFor: (tick: number) => Control
-): number => {
-  const race = seat.race();
-  if (!race) {
-    return 0;
-  }
-  let refused = 0;
-  while (race.client.predicted.tick < seat.target() && seat.stepsDue() > 0) {
-    if (!race.client.predict(controlFor(race.client.predicted.tick + 1))) {
-      refused += 1;
-      break;
-    }
-  }
-  seat.flush();
-  return refused;
 };

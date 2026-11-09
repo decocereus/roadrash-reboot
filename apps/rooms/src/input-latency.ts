@@ -7,6 +7,7 @@ export interface LatencySummary {
 }
 
 export interface InputLatency {
+  readonly controlApplied: () => void;
   readonly controlChanged: () => void;
   readonly pressed: () => void;
   readonly summary: () => LatencySummary;
@@ -18,19 +19,27 @@ export const createInputLatency = (
 ): InputLatency => {
   const samples: number[] = [];
   let pressedAt: number | null = null;
+  let sampledFrom: number | null = null;
   return {
+    controlApplied: () => {
+      if (sampledFrom === null) {
+        return;
+      }
+      const from = sampledFrom;
+      sampledFrom = null;
+      afterFrame(() => {
+        samples.push(now() - from);
+      });
+    },
     controlChanged: () => {
       if (pressedAt === null) {
         return;
       }
       const from = pressedAt;
       pressedAt = null;
-      if (now() - from > STALE_PRESS_MS) {
-        return;
+      if (now() - from <= STALE_PRESS_MS) {
+        sampledFrom = from;
       }
-      afterFrame(() => {
-        samples.push(now() - from);
-      });
     },
     pressed: () => {
       pressedAt ??= now();

@@ -23,23 +23,26 @@ const rig = () => {
 };
 
 describe("input to frame latency", () => {
-  it("runs from the press to the frame after the control changed", () => {
+  it("runs from the press to the frame after the race took the changed control", () => {
     const { latency, move, nextFrame } = rig();
     latency.pressed();
     move(10);
     latency.controlChanged();
+    move(500);
+    latency.controlApplied();
     move(16);
     nextFrame();
     expect(latency.summary()).toStrictEqual({
-      medianMs: 26,
+      medianMs: 526,
       samples: 1,
-      worstMs: 26,
+      worstMs: 526,
     });
   });
 
   it("ignores a control that changed with no press behind it", () => {
     const { latency, nextFrame } = rig();
     latency.controlChanged();
+    latency.controlApplied();
     nextFrame();
     expect(latency.summary().samples).toBe(0);
   });
@@ -49,6 +52,7 @@ describe("input to frame latency", () => {
     latency.pressed();
     move(501);
     latency.controlChanged();
+    latency.controlApplied();
     nextFrame();
     expect(latency.summary().samples).toBe(0);
   });
@@ -59,6 +63,7 @@ describe("input to frame latency", () => {
     move(5);
     latency.pressed();
     latency.controlChanged();
+    latency.controlApplied();
     nextFrame();
     expect(latency.summary().worstMs).toBe(5);
   });
