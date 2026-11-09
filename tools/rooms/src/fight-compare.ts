@@ -108,7 +108,7 @@ const RULES = [
     kind: "limit",
     label: "Strikes that failed in a run",
     measured:
-      "On 2026-11-09 no strike failed in 18 runs of main's netcode over home, mobile and bursts.",
+      "On 2026-11-09 and 2026-11-10 no strike failed in 30 link runs of main's netcode over home, mobile and bursts.",
     perRun: (run) => run.rows.filter(failedStrike).length,
     unit: "count",
   },
@@ -118,7 +118,7 @@ const RULES = [
     kind: "noWorse",
     label: "Presses the room dropped in a run",
     measured:
-      "On 2026-11-09 main's netcode dropped 3 to 5 presses, all in one strike, in 4 of 12 runs on mobile and bursts, and none in 6 runs on home.",
+      "On 2026-11-09 and 2026-11-10 main's netcode dropped 2 to 5 presses, all in one strike, in 3 of 12 runs on mobile and 2 of 6 on bursts, and none in 12 runs on home.",
     perRun: (run) =>
       run.rows.reduce((total, row) => total + row.lostPresses, 0),
     share: 0,
@@ -132,7 +132,7 @@ const RULES = [
     kind: "noWorse",
     label: "Rival drawn off the room's place, worst p95 in a run",
     measured:
-      "On 2026-11-09 six runs of main's netcode read 0.24 to 0.28 m on home, 1.08 to 1.21 m on mobile and 1.51 to 3.92 m on bursts.",
+      "On 2026-11-09 and 2026-11-10 twelve runs of main's netcode read 0.24 to 0.29 m on home and 1.04 to 1.37 m on mobile, and six read 1.51 to 3.92 m on bursts.",
     perRun: worstDrawn((track) => track.errorP95Metres),
     share: 0.25,
     slack: 0.1,
@@ -146,7 +146,7 @@ const RULES = [
     kind: "limit",
     label: "Rival's biggest sideways jump between frames in a run",
     measured:
-      "On 2026-11-09 main's netcode moved at most 0.11 to 0.20 m on home, snapped 3.30 to 4.11 m in 5 of 6 runs on mobile and 3.86 to 12.39 m in all 6 on bursts.",
+      "On 2026-11-09 and 2026-11-10 main's netcode moved at most 0.11 to 0.26 m in 12 runs on home, snapped 3.07 to 4.11 m in 10 of 12 runs on mobile and 3.86 to 12.39 m in all 6 on bursts.",
     perRun: worstDrawn((track) => track.worstStepMetres),
     unit: "metres",
   },
@@ -158,7 +158,7 @@ const RULES = [
     kind: "limit",
     label: "Attacker drawn off the room's place at a hit, worst in a run",
     measured:
-      "On 2026-11-09 six runs of main's netcode read 0.08 to 0.51 m on home, 0.13 to 1.30 m on mobile and 0.40 to 4.49 m on bursts.",
+      "On 2026-11-09 and 2026-11-10 twelve runs of main's netcode read 0.01 to 0.51 m on home and 0.13 to 1.77 m on mobile, over the limit in 2, and six read 0.40 to 4.49 m on bursts, over it in 4.",
     perRun: (run) =>
       worstOf(rowValues(run, (row) => row.drawnErrorAtHitMetres)),
     unit: "metres",
@@ -170,7 +170,7 @@ const RULES = [
     kind: "noWorse",
     label: "Press to the strike drawn fully out, median in a run",
     measured:
-      "On 2026-11-09 the median of a run of main's netcode read 209 to 227 ms on home, 387 to 539 ms on mobile and 337 to 752 ms on bursts.",
+      "On 2026-11-09 and 2026-11-10 the median of a run of main's netcode read 209 to 227 ms on home and 387 to 539 ms on mobile in twelve runs, and 337 to 752 ms on bursts in six.",
     perRun: (run) => medianOf(rowValues(run, (row) => row.pressToStrikeOutMs)),
     share: 0.15,
     slack: TICK_SECONDS * MS_PER_SECOND,
