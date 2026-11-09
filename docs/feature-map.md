@@ -1640,6 +1640,7 @@ Test files:
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`
+- `tools/rooms/test/fight-probe.test.ts`
 - `tools/rooms/test/fight-report.test.ts`
 - `tools/rooms/test/lag.test.ts`
 - `tools/rooms/test/lifecycle.test.ts`
