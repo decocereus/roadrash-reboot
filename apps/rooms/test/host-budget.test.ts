@@ -23,7 +23,11 @@ import {
   MOST_PACKET_BYTES,
   socketAllowances,
 } from "../src/socket-budget.ts";
-import { RiderTraceSchema, TRACE_ROW_FIELDS } from "../src/tape.ts";
+import {
+  RiderTraceSchema,
+  TRACE_ROW_FIELDS,
+  TRACE_VERSION,
+} from "../src/tape.ts";
 import {
   clientOf,
   followTicks,
@@ -56,6 +60,7 @@ const traceOf = (rows: number): string =>
     gpu: "Test GPU",
     graphics: "quality rung 1",
     rows: Array.from({ length: rows * TRACE_ROW_FIELDS }, () => 1_000_000),
+    version: TRACE_VERSION,
   });
 
 const statsPacket = (): ArrayBuffer => {
