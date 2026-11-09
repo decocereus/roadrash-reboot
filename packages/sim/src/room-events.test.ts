@@ -280,6 +280,82 @@ describe("an attacker's own hits, reconciled with the room", () => {
     expect({ refused, roomHits }).toStrictEqual({ refused: 0, roomHits: 1 });
   });
 
+  it("hears its hit once when the room lands it while a sliced replay has yet to reach it", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    let roomHits = 0;
+    const roomSteps = (tick: number) => {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      roomHits += room.state.events.filter(
+        (event) => event.kind === "hit"
+      ).length;
+      client.confirm(room.frame, null);
+    };
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      roomSteps(tick);
+    }
+    client.takeEvents();
+    const replayed = client.settle(1);
+    for (let tick = RIDE_TICKS + 1; tick <= RIDE_TICKS + 30; tick += 1) {
+      roomSteps(tick);
+    }
+    client.settle();
+    const sounds = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    expect({ replayed, roomHits, sounds }).toStrictEqual({
+      replayed: 1,
+      roomHits: 1,
+      sounds: 1,
+    });
+  });
+
+  it("hears its predicted hit once when the room lands it while a sliced replay from before it has yet to reach it", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    const easing = controlOf({ ...neutralInput, throttle: 0.9 });
+    const STALE_AT = RIDE_TICKS - 10;
+    const own = (tick: number) => (tick === RIDE_TICKS ? kicking : riding);
+    let roomHits = 0;
+    const roomSteps = (tick: number) => {
+      room.accept(ATTACKER, tick, [own(tick)]);
+      room.accept(VICTIM, tick, [tick === STALE_AT ? easing : riding]);
+      room.step();
+      roomHits += room.state.events.filter(
+        (event) => event.kind === "hit"
+      ).length;
+      client.confirm(room.frame, null);
+    };
+    for (let tick = 1; tick < STALE_AT; tick += 1) {
+      client.predict(own(tick));
+      roomSteps(tick);
+    }
+    for (let tick = STALE_AT; tick <= RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(own(tick));
+    }
+    const guessed = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    roomSteps(STALE_AT);
+    const replayed = client.settle(1);
+    for (let tick = STALE_AT + 1; tick <= RIDE_TICKS + 30; tick += 1) {
+      roomSteps(tick);
+    }
+    client.settle();
+    const sounds = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    expect({ guessed, replayed, roomHits, sounds }).toStrictEqual({
+      guessed: 1,
+      replayed: 1,
+      roomHits: 1,
+      sounds: 0,
+    });
+  });
+
   it("takes back a predicted hit the room refused", () => {
     const { heardHits, refused, roomHits } = attackerHears({
       gapX: EDGE_OF_REACH_X,
