@@ -94,11 +94,10 @@ export class FakeSocket {
     if (!this.answers || data.byteLength !== PING_PACKET_BYTES) {
       return;
     }
-    const stamp = readPing(
-      new DataView(data.buffer, data.byteOffset, data.byteLength)
-    );
+    const ping = { rttMs: null, stamp: 0 };
+    readPing(new DataView(data.buffer, data.byteOffset, data.byteLength), ping);
     const buffer = new ArrayBuffer(PONG_PACKET_BYTES);
-    writePong(new DataView(buffer), stamp, 0);
+    writePong(new DataView(buffer), ping.stamp, 0);
     this.hear(buffer);
   }
 }
@@ -138,7 +137,14 @@ export const lobbyMessage = (edition: number) =>
     hostId: "near",
     kind: "lobby",
     members: [
-      { colour: 0, here: true, id: "near", name: "Near", ready: false },
+      {
+        colour: 0,
+        here: true,
+        id: "near",
+        name: "Near",
+        ready: false,
+        rttMs: null,
+      },
     ],
     phase: "gathering",
     roomKind: "custom",

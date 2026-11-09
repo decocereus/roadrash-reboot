@@ -22,7 +22,7 @@ const WORD_BYTES = 4;
 const HASH_BYTES = HASH_WORDS * WORD_BYTES;
 const LARGEST_TICK = 0xff_ff_ff_ff;
 
-export const ROOM_PROTOCOL = 2;
+export const ROOM_PROTOCOL = 3;
 
 export const MOST_BATCHED_CONTROLS = 8;
 
@@ -255,22 +255,42 @@ export const readTick = (view: DataView, into: ReadTick): boolean => {
 };
 
 const STAMP_BYTES = 4;
-const NO_STAMP = -1;
+const ROUND_TRIP_BYTES = 2;
+const NO_ROUND_TRIP = 0xff_ff;
 
-export const PING_PACKET_BYTES = KIND_BYTES + STAMP_BYTES;
+export const PING_PACKET_BYTES = KIND_BYTES + STAMP_BYTES + ROUND_TRIP_BYTES;
 export const PONG_PACKET_BYTES = KIND_BYTES + STAMP_BYTES + STAMP_BYTES;
 export const READY_PACKET_BYTES = KIND_BYTES + HASH_BYTES;
 
-export const writePing = (view: DataView, stamp: number): number => {
+export interface Ping {
+  stamp: number;
+  rttMs: number | null;
+}
+
+export const writePing = (
+  view: DataView,
+  stamp: number,
+  rttMs: number | null
+): number => {
   view.setUint8(0, PING_KIND);
   view.setUint32(KIND_BYTES, stamp, true);
+  view.setUint16(
+    KIND_BYTES + STAMP_BYTES,
+    rttMs === null ? NO_ROUND_TRIP : Math.min(rttMs, NO_ROUND_TRIP - 1),
+    true
+  );
   return PING_PACKET_BYTES;
 };
 
-export const readPing = (view: DataView): number =>
-  view.byteLength === PING_PACKET_BYTES && view.getUint8(0) === PING_KIND
-    ? view.getUint32(KIND_BYTES, true)
-    : NO_STAMP;
+export const readPing = (view: DataView, into: Ping): boolean => {
+  if (view.byteLength !== PING_PACKET_BYTES || view.getUint8(0) !== PING_KIND) {
+    return false;
+  }
+  into.stamp = view.getUint32(KIND_BYTES, true);
+  const rttMs = view.getUint16(KIND_BYTES + STAMP_BYTES, true);
+  into.rttMs = rttMs === NO_ROUND_TRIP ? null : rttMs;
+  return true;
+};
 
 export const writePong = (
   view: DataView,

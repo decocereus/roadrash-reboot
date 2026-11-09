@@ -48,6 +48,7 @@ const lobbyOf = (
     id,
     name: id,
     ready: false,
+    rttMs: null,
   })),
   phase: "gathering",
   roomKind: "custom",
