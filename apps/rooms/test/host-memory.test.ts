@@ -5,10 +5,10 @@ import { createLobby } from "../src/lobby.ts";
 import { launchRoomConfig, publicRuleFor } from "../src/room-config.ts";
 import type { RoomMemory } from "../src/room-memory.ts";
 
-const memoryWithHeldSaves = () => {
+const memoryWithHeldSaves = (ended = 0, races = 0) => {
   const saves: { readonly key: string; readonly saved: () => void }[] = [];
   const written: (RoomMemory | null)[] = [];
-  const endings: string[] = [];
+  const endings: number[] = [];
   const lobby = createLobby(0, "custom", launchRoomConfig, () =>
     publicRuleFor(launchRoomConfig.publicRace, 0)
   );
@@ -16,8 +16,8 @@ const memoryWithHeldSaves = () => {
   const memory = createMemory(
     {
       build: "test-build",
-      endRace: (ended) => {
-        endings.splice(0, endings.length, ...ended);
+      endRace: (through) => {
+        endings.push(through);
       },
       now: () => 0,
       remember: (record) => {
@@ -28,7 +28,7 @@ const memoryWithHeldSaves = () => {
       },
       sim: "test-sim",
     },
-    { ended: [], lobby, lostRace: () => null, run: () => null }
+    { ended, lobby, lostRace: () => null, races, run: () => null }
   );
   return { endings, memory, saves, written };
 };
@@ -54,20 +54,16 @@ describe("what a room keeps unsaved", () => {
     expect(unsavedOf(written.at(-1))).toStrictEqual([]);
   });
 
-  it("keeps the last eight ended races, newest last", () => {
+  it("marks the highest sequence ended and never lets it fall", () => {
     const { endings, memory } = memoryWithHeldSaves();
-    for (let race = 1; race <= 10; race += 1) {
-      memory.markEnded(`race-${race}`);
-    }
-    expect(endings).toStrictEqual([
-      "race-3",
-      "race-4",
-      "race-5",
-      "race-6",
-      "race-7",
-      "race-8",
-      "race-9",
-      "race-10",
-    ]);
+    memory.markEnded(3);
+    memory.markEnded(2);
+    expect(endings).toStrictEqual([3, 3]);
+    expect(memory.endedThrough()).toBe(3);
+  });
+
+  it("numbers the next race above both the races it built and the marker, so a lost record write never refuses a new race", () => {
+    expect(memoryWithHeldSaves().memory.nextSequence()).toBe(1);
+    expect(memoryWithHeldSaves(5, 4).memory.nextSequence()).toBe(6);
   });
 });

@@ -65,7 +65,7 @@ export interface Clock extends HostPorts {
   readonly wakeOnce: () => void;
   readonly pending: () => number;
   readonly releaseSaves: (count?: number) => void;
-  readonly endings: string[];
+  readonly endings: number[];
   holdSaves: boolean;
 }
 
@@ -80,7 +80,7 @@ export const createClock = (startAt = 1000): Clock => {
     key: string;
     saved: () => void;
   }[] = [];
-  const endings: string[] = [];
+  const endings: number[] = [];
   let races = 0;
   const nextBy = (until: number) =>
     timers
@@ -104,8 +104,8 @@ export const createClock = (startAt = 1000): Clock => {
     },
     build: "test-build",
     config: launchRoomConfig,
-    endRace: (ended) => {
-      endings.splice(0, endings.length, ...ended);
+    endRace: (through) => {
+      endings.push(through);
     },
     endings,
     holdSaves: false,

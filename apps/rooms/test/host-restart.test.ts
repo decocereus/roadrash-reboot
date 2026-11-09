@@ -88,7 +88,7 @@ const restartedRoom = (
   clock: Clock,
   gapMs: number,
   memory: RoomMemory = remembered(clock),
-  ended: readonly string[] = []
+  ended = 0
 ) => {
   const later = createClock(clock.now() + gapMs);
   const host = createHost(later, "custom", memory, ended);
@@ -291,7 +291,7 @@ describe("a room that restarts with a race it must not restore", () => {
       clock,
       RESTART_GAP_MS,
       remembered(clock),
-      ["race-0", "race-1"]
+      1
     );
     expect(notesOf(later, "lost", "restored")).toMatchObject([
       { kind: "lost", raceId: "race-1", reason: "ended" },
@@ -299,9 +299,23 @@ describe("a room that restarts with a race it must not restore", () => {
     expect(host.status().hostPhase).toBe("waiting");
   });
 
-  it("records the race's end, after the earlier ends it knows, before it forgets the race", () => {
+  it("refuses a race whose sequence the end marker has passed, however many races later", () => {
+    const { clock } = racingRoom();
+    expect(remembered(clock).race?.sequence).toBe(1);
+    const { later } = restartedRoom(
+      clock,
+      RESTART_GAP_MS,
+      remembered(clock),
+      9
+    );
+    expect(notesOf(later, "lost", "restored")).toMatchObject([
+      { kind: "lost", raceId: "race-1", reason: "ended" },
+    ]);
+  });
+
+  it("records the race's end as the highest sequence ended, before it forgets the race", () => {
     const clock = createClock();
-    const host = createHost(clock, "custom", null, ["race-0"]);
+    const host = createHost(clock, "custom", null, 3);
     const ann = fakeSocket();
     const bo = fakeSocket();
     host.seat(ann, "Ann", nearby, sameBuild("ann"));
@@ -313,8 +327,8 @@ describe("a room that restarts with a race it must not restore", () => {
     host.gone(ann, SEAT_QUIT);
     host.gone(bo, SEAT_QUIT);
     clock.advance(TICK_MS * 2);
-    expect(clock.endings).toStrictEqual(["race-0", "race-1"]);
-    expect(remembered(clock).race).toBeNull();
+    expect(clock.endings).toStrictEqual([4]);
+    expect(remembered(clock)).toMatchObject({ race: null, races: 4 });
   });
 
   it("ends a restored race at once when every rider had already finished or left, with no second result", () => {
@@ -338,7 +352,7 @@ describe("a room that restarts with a race it must not restore", () => {
       race: { ...race, checkpoint: { ...checkpoint, controls } },
     });
     expect(notesOf(later, "restored", "ended", "lost")).toStrictEqual([]);
-    expect(later.endings).toStrictEqual(["race-1"]);
+    expect(later.endings).toStrictEqual([1]);
     expect(remembered(later).race).toBeNull();
     expect(host.status()).toMatchObject({ hostPhase: "waiting", raceId: null });
   });

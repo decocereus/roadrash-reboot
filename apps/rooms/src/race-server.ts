@@ -35,10 +35,10 @@ const WRITE_RETRIES = 5;
 
 interface MemoryWrite {
   readonly key: string;
-  readonly value: RoomMemory | readonly string[] | null;
+  readonly value: RoomMemory | number | null;
 }
 
-const decodeEnded = Schema.decodeUnknownOption(Schema.Array(Schema.String));
+const decodeEnded = Schema.decodeUnknownOption(Schema.Number);
 
 const durable = <A, R>(
   write: Effect.Effect<A, never, R>
@@ -189,7 +189,7 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       }
       const ended = Option.getOrElse(
         decodeEnded(yield* state.storage.get(ENDED_KEY)),
-        (): readonly string[] => []
+        () => 0
       );
       let roomColo: string | null = null;
       yield* Effect.tryPromise(async () => {
@@ -205,8 +205,8 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       const hostOf = (roomId: string): Host => {
         opened ??= createHost(
           portsFor(build, sim, () => roomColo, {
-            endRace: (list) => {
-              Queue.offerUnsafe(writes, { key: ENDED_KEY, value: list });
+            endRace: (through) => {
+              Queue.offerUnsafe(writes, { key: ENDED_KEY, value: through });
             },
             remember: (memory) => {
               Queue.offerUnsafe(writes, { key: MEMORY_KEY, value: memory });

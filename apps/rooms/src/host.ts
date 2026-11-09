@@ -91,7 +91,7 @@ export const createHost = (
   given: HostPorts,
   kind: RoomKind = "custom",
   memory: RoomMemory | null = null,
-  ended: readonly string[] = []
+  ended = 0
 ): Host => {
   const present = new Map<HostSocket, Present>();
   const audience = createAudience(present, given.note);
@@ -116,13 +116,20 @@ export const createHost = (
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
   let dropped = 0;
-  const { checkpoint, endedRaces, markEnded, remember, saveTape } =
-    createMemory(given, {
-      ended,
-      lobby,
-      lostRace: () => lostRace,
-      run: () => state.run,
-    });
+  const {
+    checkpoint,
+    endedThrough,
+    markEnded,
+    nextSequence,
+    remember,
+    saveTape,
+  } = createMemory(given, {
+    ended,
+    lobby,
+    lostRace: () => lostRace,
+    races: memory?.races ?? 0,
+    run: () => state.run,
+  });
   const ports: RacePorts & Pick<HostPorts, "after" | "now"> = {
     ...given,
     saveTape,
@@ -165,7 +172,7 @@ export const createHost = (
       worstBehindTicks,
     });
     move({ kind: "raceOver" });
-    markEnded(run.raceId);
+    markEnded(run.sequence);
     tell({ kind: "ended", tick: room.state.tick });
     for (const person of present.values()) {
       moveSocket(person, { kind: "raceOver" });
@@ -282,6 +289,7 @@ export const createHost = (
       lobbyMs,
       now: ports.now(),
       rule,
+      sequence: nextSequence(),
       tickBytes: tickBuffer.byteLength,
     });
     move({ kind: "raceBuilt", run });
@@ -601,7 +609,7 @@ export const createHost = (
       ports,
       remembered,
       race,
-      endedRaces,
+      endedThrough(),
       tickBuffer.byteLength,
       now
     );
@@ -623,7 +631,7 @@ export const createHost = (
       }
       case "run": {
         if (restored.run.room.over()) {
-          markEnded(raceId);
+          markEnded(restored.run.sequence);
           remember();
           return;
         }

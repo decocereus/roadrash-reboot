@@ -52,6 +52,7 @@ export interface Run {
   readonly raceId: string;
   readonly riders: readonly Seat[];
   readonly room: Room;
+  readonly sequence: number;
   readonly since: number;
   readonly tape: TapeWriter;
   readonly trace: number[];
@@ -63,7 +64,8 @@ export const raceMemoryOf = ({
   checkpoint,
   manifest,
   raceId,
-}: Run): RaceMemory => ({ checkpoint, manifest, raceId });
+  sequence,
+}: Run): RaceMemory => ({ checkpoint, manifest, raceId, sequence });
 
 const freshGaps = (): Uint32Array =>
   new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1);
@@ -99,12 +101,12 @@ const lost = (reason: LostReason, detail: string | null): RaceRestore => ({
 export const restoreRace = (
   ports: RacePorts,
   { at, sim }: RoomMemory,
-  { checkpoint, manifest, raceId }: RaceMemory,
-  ended: readonly string[],
+  { checkpoint, manifest, raceId, sequence }: RaceMemory,
+  endedThrough: number,
   tickBytes: number,
   now: number
 ): RaceRestore => {
-  if (ended.includes(raceId)) {
+  if (sequence <= endedThrough) {
     return lost("ended", null);
   }
   if (manifest.protocol !== ROOM_PROTOCOL) {
@@ -158,6 +160,7 @@ export const restoreRace = (
       raceId,
       riders,
       room,
+      sequence,
       since: now,
       tape: tapeFor(ports, raceId, tickBytes, checkpoint.tape),
       trace: [],
@@ -174,6 +177,7 @@ interface Gathering<Person extends Sitter> {
   readonly lobbyMs: number;
   readonly now: number;
   readonly rule: RoomRule;
+  readonly sequence: number;
   readonly tickBytes: number;
 }
 
@@ -192,7 +196,15 @@ export const finishTape = (
 
 export const buildRace = <Person extends Sitter>(
   ports: RacePorts,
-  { colourOf, gathered, lobbyMs, now, rule, tickBytes }: Gathering<Person>
+  {
+    colourOf,
+    gathered,
+    lobbyMs,
+    now,
+    rule,
+    sequence,
+    tickBytes,
+  }: Gathering<Person>
 ) => {
   const seed = ports.seed();
   const raceId = ports.raceId();
@@ -269,6 +281,7 @@ export const buildRace = <Person extends Sitter>(
     raceId,
     riders,
     room,
+    sequence,
     since: now,
     tape: tapeFor(ports, raceId, tickBytes, null),
     trace: [],

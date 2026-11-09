@@ -5,11 +5,9 @@ import { seatMemoryOf } from "./race-seat.ts";
 import { checkpointOf, MEMORY_VERSION } from "./room-memory.ts";
 import type { RoomMemory } from "./room-memory.ts";
 
-const MOST_ENDED = 8;
-
 export interface MemoryPorts {
   readonly build: string;
-  readonly endRace: (ended: readonly string[]) => void;
+  readonly endRace: (endedThrough: number) => void;
   readonly now: () => number;
   readonly remember: (memory: RoomMemory | null) => void;
   readonly sim: string;
@@ -21,23 +19,26 @@ export interface MemoryPorts {
 }
 
 interface Remembered {
-  readonly ended: readonly string[];
+  readonly ended: number;
   readonly lobby: Lobby;
   readonly lostRace: () => string | null;
+  readonly races: number;
   readonly run: () => Run | null;
 }
 
 export const createMemory = (
   ports: MemoryPorts,
-  { ended, lobby, lostRace, run }: Remembered
+  { ended, lobby, lostRace, races: built, run }: Remembered
 ) => {
-  const endedRaces = [...ended];
-  const markEnded = (raceId: string): void => {
-    endedRaces.push(raceId);
-    if (endedRaces.length > MOST_ENDED) {
-      endedRaces.splice(0, endedRaces.length - MOST_ENDED);
-    }
-    ports.endRace(endedRaces);
+  let endedThrough = ended;
+  let races = Math.max(built, ended);
+  const markEnded = (sequence: number): void => {
+    endedThrough = Math.max(endedThrough, sequence);
+    ports.endRace(endedThrough);
+  };
+  const nextSequence = (): number => {
+    races += 1;
+    return races;
   };
   const unsaved = new Map<
     string,
@@ -55,6 +56,7 @@ export const createMemory = (
             lobby: lobby.memory(),
             lostRace: lostRace(),
             race: current === null ? null : raceMemoryOf(current),
+            races,
             sim: ports.sim,
             unsaved: [...unsaved].map(([key, { body }]) => ({ body, key })),
             version: MEMORY_VERSION,
@@ -83,5 +85,12 @@ export const createMemory = (
     );
     remember();
   };
-  return { checkpoint, endedRaces, markEnded, remember, saveTape };
+  return {
+    checkpoint,
+    endedThrough: () => endedThrough,
+    markEnded,
+    nextSequence,
+    remember,
+    saveTape,
+  };
 };

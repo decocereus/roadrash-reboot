@@ -63,6 +63,7 @@ const RaceMemorySchema = Schema.Struct({
   checkpoint: Schema.NullOr(CheckpointSchema),
   manifest: RaceManifestSchema,
   raceId: Schema.String,
+  sequence: Schema.Number,
 });
 
 export type RaceMemory = typeof RaceMemorySchema.Type;
@@ -80,6 +81,7 @@ const RoomMemorySchema = Schema.Struct({
   lobby: LobbyMemorySchema,
   lostRace: Schema.NullOr(Schema.String),
   race: Schema.NullOr(RaceMemorySchema),
+  races: Schema.Number,
   sim: Schema.String,
   unsaved: Schema.Array(UnsavedSchema),
   version: Schema.Literal(MEMORY_VERSION),
