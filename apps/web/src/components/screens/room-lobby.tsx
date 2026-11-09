@@ -299,6 +299,19 @@ const memberState = (
   return member.ready ? "READY" : "NOT READY";
 };
 
+const roundTripTones = [
+  { below: 150, tone: "text-paper/70" },
+  { below: 250, tone: "text-neon-yellow" },
+] as const;
+
+const roundTripTone = (rttMs: number): string =>
+  roundTripTones.find(({ below }) => rttMs < below)?.tone ?? "text-neon-red";
+
+const RoundTrip = ({ rttMs }: { readonly rttMs: number | null }) =>
+  rttMs === null ? null : (
+    <span className={cn("tabular-nums", roundTripTone(rttMs))}>{rttMs} ms</span>
+  );
+
 export const startLine = (
   phase: RoomLobbyMessage["phase"],
   startsInSeconds: number | null
@@ -326,6 +339,7 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
         {member.id === lobby.hostId && (
           <span className="text-neon-yellow">HOST</span>
         )}
+        <RoundTrip rttMs={member.rttMs} />
         <span className={member.ready ? "text-neon-yellow" : "text-paper/60"}>
           {memberState(member, lobby.phase)}
         </span>
@@ -335,6 +349,12 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
       {ROOM_FIELD_SIZE - lobby.members.filter(({ here }) => here).length} street
       riders join to make {ROOM_FIELD_SIZE}.
     </li>
+    {lobby.members.some(({ rttMs }) => rttMs !== null) && (
+      <li className="text-paper/60 py-1 text-sm">
+        The ms by each rider is their round trip to this room, as their browser
+        measures it.
+      </li>
+    )}
   </ul>
 );
 

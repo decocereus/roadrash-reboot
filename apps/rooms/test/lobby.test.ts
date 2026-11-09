@@ -12,6 +12,7 @@ import {
   fakeSocket,
   lastLobby,
   nearby,
+  pingPacket,
   PUBLIC_GATHER_MS,
   PUBLIC_RULE,
   PUBLIC_START_MS,
@@ -297,5 +298,58 @@ describe("a lobby across races", () => {
     });
     expect(lastLobby(again).members).toHaveLength(2);
     expect(host.status().waiting).toBe(2);
+  });
+});
+
+const roundTrips = (socket: FakeSocket) =>
+  new Map(
+    lastLobby(socket).members.map((member) => [member.name, member.rttMs])
+  );
+
+const lobbiesTo = (socket: FakeSocket): number =>
+  socket.messages.filter((message) => message.kind === "lobby").length;
+
+describe("a lobby's round trips", () => {
+  it("lists each member's reported round trip at its next sweep, at most a second after the ping arrives", () => {
+    const { clock, first, host, second } = twoSeated();
+    host.message(first, pingPacket(48));
+    clock.advance(1000);
+    expect(roundTrips(second)).toStrictEqual(
+      new Map([
+        ["Ann", 48],
+        ["Bo", null],
+      ])
+    );
+  });
+
+  it("tells nobody again while every round trip stays the same", () => {
+    const { clock, first, host, second } = twoSeated();
+    host.message(first, pingPacket(48));
+    clock.advance(1000);
+    const told = lobbiesTo(second);
+    host.message(first, pingPacket(48));
+    host.message(second, pingPacket());
+    clock.advance(1000);
+    expect(lobbiesTo(second)).toBe(told);
+  });
+
+  it("lists a round trip as whole ms from 0 to 65534, and anything else as unmeasured", () => {
+    const { clock, first, host, second } = twoSeated();
+    const shown = (rttMs: number): number | null | undefined => {
+      host.message(first, pingPacket(rttMs));
+      clock.advance(1000);
+      return roundTrips(second).get("Ann");
+    };
+    expect(
+      [48.4, 0, 1_000_000, -5, Number.NaN, Infinity].map(shown)
+    ).toStrictEqual([48, 0, 65_534, null, null, 65_534]);
+  });
+
+  it("forgets the round trip of a member who goes away", () => {
+    const { clock, first, host, second } = twoSeated();
+    host.message(first, pingPacket(48));
+    clock.advance(1000);
+    host.gone(first, 1000);
+    expect(roundTrips(second).get("Ann")).toBeNull();
   });
 });

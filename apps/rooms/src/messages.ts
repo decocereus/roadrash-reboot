@@ -55,6 +55,7 @@ const Lobby = Schema.Struct({
       id: Schema.String,
       name: Schema.String,
       ready: Schema.Boolean,
+      rttMs: Schema.NullOr(Schema.Number),
     })
   ),
   phase: Schema.Literals(LOBBY_PHASES),

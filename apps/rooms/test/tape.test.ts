@@ -21,7 +21,7 @@ const PING_EVERY_MS = 5000;
 
 const pingPacket = (): ArrayBuffer => {
   const view = new DataView(new ArrayBuffer(PING_PACKET_BYTES));
-  writePing(view, 1);
+  writePing(view, 1, null);
   return view.buffer;
 };
 

@@ -9,6 +9,7 @@ import {
   writePong,
   writeTick,
 } from "@racer/sim/room-wire";
+import type { Ping } from "@racer/sim/room-wire";
 import { riderIdAt } from "@racer/sim/state";
 
 import { encodeRoomMessage } from "../src/messages.ts";
@@ -27,6 +28,12 @@ interface SocketEvent {
   readonly data?: string | ArrayBuffer;
 }
 
+export const pongTo = ({ stamp }: Ping): ArrayBuffer => {
+  const buffer = new ArrayBuffer(PONG_PACKET_BYTES);
+  writePong(new DataView(buffer), stamp, 0);
+  return buffer;
+};
+
 export class FakeSocket {
   static readonly OPEN = 1;
 
@@ -43,6 +50,8 @@ export class FakeSocket {
   readonly sentBuffers: ArrayBuffer[] = [];
 
   readonly sentText: string[] = [];
+
+  readonly sentPings: Ping[] = [];
 
   binaryType = "blob";
 
@@ -91,15 +100,15 @@ export class FakeSocket {
       this.sentBuffers.push(data);
       return;
     }
-    if (!this.answers || data.byteLength !== PING_PACKET_BYTES) {
+    if (data.byteLength !== PING_PACKET_BYTES) {
       return;
     }
-    const stamp = readPing(
-      new DataView(data.buffer, data.byteOffset, data.byteLength)
-    );
-    const buffer = new ArrayBuffer(PONG_PACKET_BYTES);
-    writePong(new DataView(buffer), stamp, 0);
-    this.hear(buffer);
+    const ping: Ping = { rttMs: null, stamp: 0 };
+    readPing(new DataView(data.buffer, data.byteOffset, data.byteLength), ping);
+    this.sentPings.push(ping);
+    if (this.answers) {
+      this.hear(pongTo(ping));
+    }
   }
 }
 
@@ -138,7 +147,14 @@ export const lobbyMessage = (edition: number) =>
     hostId: "near",
     kind: "lobby",
     members: [
-      { colour: 0, here: true, id: "near", name: "Near", ready: false },
+      {
+        colour: 0,
+        here: true,
+        id: "near",
+        name: "Near",
+        ready: false,
+        rttMs: null,
+      },
     ],
     phase: "gathering",
     roomKind: "custom",

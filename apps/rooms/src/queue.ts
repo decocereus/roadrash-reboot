@@ -162,10 +162,10 @@ export const createQueue = (ports: QueuePorts): RaceQueue => {
         return;
       }
       ticket.heardAt = ports.now();
-      const pong =
+      const answer =
         data instanceof ArrayBuffer ? pongFor(new DataView(data)) : null;
-      if (pong) {
-        send(socket, pong);
+      if (answer) {
+        send(socket, answer.pong);
       }
     },
     status: () => ({ build: ports.build, waiting: tickets.length }),

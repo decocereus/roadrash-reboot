@@ -20,6 +20,7 @@ interface Member {
   awaySince: number | null;
   name: string;
   ready: boolean;
+  rttMs: number | null;
 }
 
 interface LobbyMemberView {
@@ -28,6 +29,7 @@ interface LobbyMemberView {
   readonly id: string;
   readonly name: string;
   readonly ready: boolean;
+  readonly rttMs: number | null;
 }
 
 interface LobbyView {
@@ -56,6 +58,7 @@ export interface Lobby {
     edition: number,
     now: number
   ) => void;
+  readonly roundTrip: (id: string, rttMs: number | null) => boolean;
   readonly rule: () => RoomRule;
   readonly since: () => number;
   readonly size: () => number;
@@ -154,6 +157,7 @@ export const createLobby = (
         if (member.id === id) {
           member.awaySince = now;
           member.ready = false;
+          member.rttMs = null;
         }
       }
       settleClock(now);
@@ -204,6 +208,7 @@ export const createLobby = (
         key,
         name,
         ready: false,
+        rttMs: null,
       });
       settleClock(now);
       return id;
@@ -237,6 +242,14 @@ export const createLobby = (
       }
       settleClock(now);
     },
+    roundTrip: (id, rttMs) => {
+      const member = members.find((each) => each.id === id);
+      if (member === undefined || member.rttMs === rttMs) {
+        return false;
+      }
+      member.rttMs = rttMs;
+      return true;
+    },
     rule: () => rule,
     since: () => since,
     size: () => members.length,
@@ -248,12 +261,13 @@ export const createLobby = (
     view: (now) => ({
       edition,
       hostId: hostOf()?.id ?? null,
-      members: members.map(({ awaySince, colour, id, name, ready }) => ({
+      members: members.map(({ awaySince, colour, id, name, ready, rttMs }) => ({
         colour,
         here: awaySince === null,
         id,
         name,
         ready,
+        rttMs,
       })),
       phase,
       roomKind: kind,
