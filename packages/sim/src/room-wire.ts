@@ -276,7 +276,9 @@ export const writePing = (
   view.setUint32(KIND_BYTES, stamp, true);
   view.setUint16(
     KIND_BYTES + STAMP_BYTES,
-    rttMs === null ? NO_ROUND_TRIP : Math.min(rttMs, NO_ROUND_TRIP - 1),
+    rttMs !== null && rttMs >= 0
+      ? Math.min(Math.round(rttMs), NO_ROUND_TRIP - 1)
+      : NO_ROUND_TRIP,
     true
   );
   return PING_PACKET_BYTES;

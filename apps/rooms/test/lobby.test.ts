@@ -310,7 +310,7 @@ const lobbiesTo = (socket: FakeSocket): number =>
   socket.messages.filter((message) => message.kind === "lobby").length;
 
 describe("a lobby's round trips", () => {
-  it("shows everyone the round trip each member's pings carry, within a second", () => {
+  it("lists each member's reported round trip at its next sweep, at most a second after the ping arrives", () => {
     const { clock, first, host, second } = twoSeated();
     host.message(first, pingPacket(48));
     clock.advance(1000);
@@ -331,6 +331,18 @@ describe("a lobby's round trips", () => {
     host.message(second, pingPacket());
     clock.advance(1000);
     expect(lobbiesTo(second)).toBe(told);
+  });
+
+  it("lists a round trip as whole ms from 0 to 65534, and anything else as unmeasured", () => {
+    const { clock, first, host, second } = twoSeated();
+    const shown = (rttMs: number): number | null | undefined => {
+      host.message(first, pingPacket(rttMs));
+      clock.advance(1000);
+      return roundTrips(second).get("Ann");
+    };
+    expect(
+      [48.4, 0, 1_000_000, -5, Number.NaN, Infinity].map(shown)
+    ).toStrictEqual([48, 0, 65_534, null, null, 65_534]);
   });
 
   it("forgets the round trip of a member who goes away", () => {

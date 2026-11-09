@@ -351,7 +351,8 @@ export const MemberRows = ({ lobby }: { readonly lobby: RoomLobbyMessage }) => (
     </li>
     {lobby.members.some(({ rttMs }) => rttMs !== null) && (
       <li className="text-paper/60 py-1 text-sm">
-        The ms by each rider is their round trip to this room.
+        The ms by each rider is their round trip to this room, as their browser
+        measures it.
       </li>
     )}
   </ul>
