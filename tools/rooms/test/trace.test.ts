@@ -1,9 +1,23 @@
-import { TRACE_ROW_FIELDS, TraceField } from "@racer/rooms/tape";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import {
+  riderTraceName,
+  TRACE_ROW_FIELDS,
+  TraceField,
+} from "@racer/rooms/tape";
+import * as Console from "effect/Console";
+import * as Effect from "effect/Effect";
 import { describe, expect, it } from "vitest";
 
-import { traceReport } from "../src/trace.ts";
+import { main, traceReport } from "../src/trace.ts";
 
 const TICKS_PER_SECOND = 60;
+const ROW_MS = 250;
+const TICKS_PER_ROW = 15;
+const ROWS_PER_MINUTE = 240;
 
 const row = (second: number, frameMs: number, gapMs: number): number[] => {
   const values = Array.from({ length: TRACE_ROW_FIELDS }, () => 0);
@@ -13,6 +27,25 @@ const row = (second: number, frameMs: number, gapMs: number): number[] => {
   values[TraceField.worstTickGapMs] = gapMs;
   return values;
 };
+
+interface Change {
+  readonly at: number;
+  readonly frameMs?: number;
+  readonly gapMs?: number;
+  readonly rttMs?: number;
+}
+
+const steadyRows = (count: number, changes: readonly Change[]): number[] =>
+  Array.from({ length: count }, (_, at) => {
+    const change = changes.find((wanted) => wanted.at === at);
+    const values = Array.from({ length: TRACE_ROW_FIELDS }, () => 0);
+    values[TraceField.atMs] = (at + 1) * ROW_MS;
+    values[TraceField.tick] = (at + 1) * TICKS_PER_ROW;
+    values[TraceField.worstFrameMs] = change?.frameMs ?? 16;
+    values[TraceField.worstTickGapMs] = change?.gapMs ?? 17;
+    values[TraceField.worstRttMs] = change?.rttMs ?? (at % 2 === 0 ? 100 : 0);
+    return values;
+  }).flat();
 
 const browser = { build: "abc", gpu: "Test GPU", graphics: "quality rung 1" };
 
@@ -38,9 +71,12 @@ const report = traceReport(
 );
 
 describe("the trace report", () => {
-  it("names each browser and separates stalls from tick gaps", () => {
+  it("names each browser and separates a frozen browser's tick gap from the link's", () => {
     expect(report).toContain(
-      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, tick gaps within a second of a stall in 1 s, tick gaps with no stall near in 1 s, missed controls in 1 s."
+      "Rider 0: build abc, Test GPU, quality rung 1. Browser stalls in 1 s, missed controls in 1 s. Raced 0:11."
+    );
+    expect(report).toContain(
+      "Of 2 rows with a gap of 100 ms or more, 1 while the browser froze, 0 on the link with a round-trip spike, 0 on the link with a steady round trip, and 1 on the link with no round trip measured."
     );
   });
 
@@ -76,7 +112,7 @@ describe("the trace report", () => {
     );
     expect(stalledInGap).toContain("0:04  rider 0 frame 200 ms");
     expect(stalledInGap).toContain(
-      "tick gaps within a second of a stall in 1 s"
+      "0 while the browser froze, 0 on the link with a round-trip spike, 0 on the link with a steady round trip, and 1 on the link with no round trip measured"
     );
   });
 
@@ -90,5 +126,122 @@ describe("the trace report", () => {
     );
     expect(rejoined).toContain("0:01  rider 0 frame 200 ms");
     expect(rejoined).not.toContain("0:11  rider 0 frame 200 ms");
+  });
+});
+
+const oneRider = (connections: readonly (readonly number[])[]): string =>
+  traceReport([{ rider: 0, trace: { ...browser, connections } }], {
+    rows: [],
+  });
+
+describe("the stall report", () => {
+  it("measures each floor's share of the race and splits each gap by what the browser and the round trip did", () => {
+    const minute = steadyRows(ROWS_PER_MINUTE, [
+      { at: 20, gapMs: 300, rttMs: 260 },
+      { at: 40, gapMs: 150, rttMs: 110 },
+      { at: 60, frameMs: 80, gapMs: 400, rttMs: 0 },
+      { at: 79, frameMs: 490 },
+      { at: 80, gapMs: 500 },
+      { at: 100, gapMs: 60 },
+    ]);
+    expect(oneRider([minute])).toContain(
+      "Raced 1:00. Rows whose worst tick gap reached 50, 100, 150, 250, and 500 ms came 5.0, 4.0, 4.0, 3.0, and 1.0 times a minute, and those gaps took 2.35%, 2.25%, 2.25%, 2.00%, and 0.83% of the race. Of 4 rows with a gap of 100 ms or more, 1 while the browser froze, 1 on the link with a round-trip spike, 1 on the link with a steady round trip, and 1 on the link with no round trip measured. Link gaps of 100 ms or more took 1.42% of the race."
+    );
+  });
+
+  it("judges a round trip against its own connection's typical one after a rejoin", () => {
+    const slow = steadyRows(8, [
+      ...[0, 1, 2, 3, 4, 5, 6].map((at) => ({ at, rttMs: 150 })),
+      { at: 7, gapMs: 200, rttMs: 180 },
+    ]);
+    const quick = steadyRows(8, [
+      ...[0, 1, 2, 3, 4, 5, 6].map((at) => ({ at, rttMs: 100 })),
+      { at: 7, gapMs: 200, rttMs: 180 },
+    ]);
+    expect(oneRider([slow, quick])).toContain(
+      "Raced 0:04. Rows whose worst tick gap reached 50, 100, 150, 250, and 500 ms came 30.0, 30.0, 30.0, 0.0, and 0.0 times a minute, and those gaps took 10.00%, 10.00%, 10.00%, 0.00%, and 0.00% of the race. Of 2 rows with a gap of 100 ms or more, 0 while the browser froze, 1 on the link with a round-trip spike, 1 on the link with a steady round trip, and 0 on the link with no round trip measured."
+    );
+  });
+
+  it("reads every race folder, sums up every rider and names each race it could not read", async () => {
+    const tapes = mkdtempSync(path.join(os.tmpdir(), "rooms-trace-"));
+    const save = (race: string, rider: number, rows: readonly number[]) => {
+      mkdirSync(path.join(tapes, race), { recursive: true });
+      writeFileSync(
+        path.join(tapes, race, riderTraceName(rider)),
+        JSON.stringify({ ...browser, connections: [rows] })
+      );
+    };
+    save(
+      "race-a",
+      0,
+      steadyRows(ROWS_PER_MINUTE, [
+        { at: 20, gapMs: 300, rttMs: 0 },
+        { at: 100, gapMs: 200, rttMs: 0 },
+      ])
+    );
+    save(
+      "race-a",
+      1,
+      steadyRows(ROWS_PER_MINUTE, [
+        { at: 20, gapMs: 300, rttMs: 0 },
+        { at: 120, gapMs: 200, rttMs: 0 },
+      ])
+    );
+    save(
+      "race-b",
+      0,
+      steadyRows(ROWS_PER_MINUTE, [
+        { at: 20, gapMs: 600, rttMs: 300 },
+        { at: 40, gapMs: 600, rttMs: 300 },
+      ])
+    );
+    writeFileSync(path.join(tapes, "notes.txt"), "not a race");
+    mkdirSync(path.join(tapes, "race-old"));
+    writeFileSync(
+      path.join(tapes, "race-old", riderTraceName(0)),
+      JSON.stringify({ ...browser, rows: steadyRows(ROWS_PER_MINUTE, []) })
+    );
+    const printed: string[] = [];
+    await main(["--races", tapes]).pipe(
+      Effect.provide(NodeFileSystem.layer),
+      Effect.provideService(Console.Console, {
+        ...console,
+        log: (...lines: readonly string[]) => {
+          printed.push(...lines);
+        },
+      }),
+      Effect.runPromise
+    );
+    const text = printed.join("\n");
+    expect(text).toContain(
+      "race-a rider 0, build abc: Raced 1:00. Rows whose worst tick gap reached 50, 100, 150, 250, and 500 ms came 2.0, 2.0, 2.0, 1.0, and 0.0 times a minute, and those gaps took 0.83%"
+    );
+    expect(text).toMatch(
+      /race-b rider 0, build abc: [^\n]*Link gaps of 100 ms or more took 2\.00% of the race\.\n/u
+    );
+    expect(text).toContain(
+      "3 riders in 2 races raced 3:00 in all. Link gaps of 100 ms or more took under 1.00% of the race for 2 of 3 riders. Their share was 0.83% at the median, 2.00% at the 90th percentile and 2.00% at worst. Over all racing, tick gaps of 50, 100, 150, 250, and 500 ms or more took 1.22%, 1.22%, 1.22%, 1.00%, and 0.67% of the time. Gaps of 100 ms or more split into 0.00% while the browser froze, 0.67% on the link with a round-trip spike, 0.00% on the link with a steady round trip, and 0.56% on the link with no round trip measured."
+    );
+    expect(text).toContain(
+      "Skipped race-old: rider-0.trace.json is not a browser trace."
+    );
+  });
+
+  it("names each race it skipped when it could read none", async () => {
+    const tapes = mkdtempSync(path.join(os.tmpdir(), "rooms-trace-"));
+    mkdirSync(path.join(tapes, "race-old"));
+    writeFileSync(
+      path.join(tapes, "race-old", riderTraceName(0)),
+      JSON.stringify({ ...browser, rows: steadyRows(ROWS_PER_MINUTE, []) })
+    );
+    const failure = await main(["--races", tapes]).pipe(
+      Effect.provide(NodeFileSystem.layer),
+      Effect.flip,
+      Effect.runPromise
+    );
+    expect(failure.message).toContain(
+      "Skipped race-old: rider-0.trace.json is not a browser trace."
+    );
   });
 });
