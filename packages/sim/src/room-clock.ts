@@ -16,15 +16,43 @@ const JITTER_SECONDS = 5;
 const BLOATED_FROM_TICKS = 12;
 const PACE_PER_TICK = 0.02;
 const MOST_PACE_CHANGE = 0.1;
-const AHEAD_SLACK_TICKS = 5;
+const MOST_TRIM = 0.02;
+const MOST_INPUT_DELAY_TICKS = 30;
+const MOST_AHEAD_TICKS = 20;
+const LEAST_AHEAD_OF_ROOM_TICKS = 6;
 const HELD_FROM_MS = 250;
 const HOLDS_RECUR_WITHIN_MS = JITTER_SECONDS * 1000;
+
+const clampTo = (value: number, most: number): number =>
+  Math.min(most, Math.max(-most, value));
+
+const steerFor = (
+  predictedTick: number,
+  wanted: number,
+  floor: number,
+  ceiling: number
+): number => {
+  if (predictedTick < floor) {
+    return clampTo(
+      (floor - predictedTick) * PACE_PER_TICK + MOST_TRIM,
+      MOST_PACE_CHANGE
+    );
+  }
+  if (predictedTick > ceiling) {
+    return clampTo(
+      (ceiling - predictedTick) * PACE_PER_TICK - MOST_TRIM,
+      MOST_PACE_CHANGE
+    );
+  }
+  return clampTo((wanted - predictedTick) * PACE_PER_TICK, MOST_TRIM);
+};
 
 export interface RoomClock {
   readonly start: (startAtRoomMs: number) => void;
   readonly heardRoomTime: (roomMs: number, now: number) => void;
   readonly heardTick: (tick: number, now: number) => void;
   readonly heardRtt: (rttMs: number, now: number) => void;
+  readonly inputDelay: (predictedTick: number, now: number) => number;
   readonly leadBloated: (predictedTick: number, now: number) => boolean;
   readonly lostControl: (
     tick: number,
@@ -185,6 +213,11 @@ export const createRoomClock = (): RoomClock => {
       heardArrival(tick * TICK_MS - now, now);
       lastArrival = now;
     },
+    inputDelay: (predictedTick, now) =>
+      Math.min(
+        MOST_INPUT_DELAY_TICKS,
+        Math.max(0, target(now) - predictedTick)
+      ),
     leadBloated: (predictedTick, now) =>
       predictedTick -
         serverTick(now) -
@@ -204,15 +237,15 @@ export const createRoomClock = (): RoomClock => {
         pacedAt = now;
         return 1;
       }
-      const behind = wanted - predictedTick;
-      const steered =
-        behind > 0 ? behind : Math.min(0, behind + AHEAD_SLACK_TICKS);
-      const steer =
-        1 +
-        Math.min(
-          MOST_PACE_CHANGE,
-          Math.max(-MOST_PACE_CHANGE, steered * PACE_PER_TICK)
-        );
+      const floor = Math.max(
+        wanted - MOST_INPUT_DELAY_TICKS,
+        Math.min(wanted, serverTick(now) + LEAST_AHEAD_OF_ROOM_TICKS)
+      );
+      const ceiling = Math.min(
+        wanted + MOST_AHEAD_TICKS,
+        serverTick(now) + MOST_LEAD_TICKS - LEAD_MARGIN_TICKS
+      );
+      const steer = 1 + steerFor(predictedTick, wanted, floor, ceiling);
       const most = (PACE_SLEW_PER_SECOND * (now - pacedAt)) / 1000;
       paced += Math.min(most, Math.max(-most, steer - paced));
       pacedAt = now;

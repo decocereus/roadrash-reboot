@@ -104,7 +104,7 @@ export const createRoomRun = (
         sent = control;
         latency.controlChanged();
       }
-      client.predict(control);
+      client.predict(control, seat.inputDelay());
       seat.flush();
     },
     stepsDue: seat.stepsDue,

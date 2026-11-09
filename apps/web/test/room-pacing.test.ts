@@ -11,9 +11,11 @@ const START_MS = 1000;
 const PING_EVERY_MS = 500;
 const SETTLED_AFTER_MS = START_MS + 3000;
 const RIDE_MS = 60_000;
-const OFF_PACE = 0.05;
 const MOST_AHEAD_ON_ROUGH_LINKS = 50;
 const EASED_PER_SECOND = PACE_SLEW_PER_SECOND * 1.001;
+const TRIMMED = 0.021;
+const FOLLOWED = 0.11;
+const MOST_MEAN_DELAY_TICKS = 3;
 
 interface Link {
   readonly downMs: (sentAt: number) => number;
@@ -24,8 +26,8 @@ interface Link {
 interface Ride {
   readonly fastest: number;
   readonly lateShare: number;
-  readonly offPace: number;
   readonly leaps: number;
+  readonly meanDelay: number;
   readonly mostAhead: number;
   readonly mostAheadOfRoom: number;
   readonly mostEase: number;
@@ -143,6 +145,9 @@ const ride = (link: Link, displayHz: number): Ride => {
   let predicted = 0;
   let before = 0;
   let after = 0;
+  let plannedThrough = 0;
+  let delayed = 0;
+  let planned = 0;
   let nextPing = 0;
   const pongs: (readonly [number, number])[] = [];
   const advance = createFixedTick(
@@ -154,7 +159,15 @@ const ride = (link: Link, displayHz: number): Ride => {
       predicted = Math.max(predicted, confirmed);
       after = predicted;
       for (let tick = before + 1; tick <= after; tick += 1) {
-        sentAt[tick] = now;
+        const delay = clock.inputDelay(tick - 1, now);
+        if (now >= SETTLED_AFTER_MS) {
+          delayed += delay;
+          planned += 1;
+        }
+        plannedThrough = Math.max(plannedThrough, tick - 1);
+        for (; plannedThrough < tick + delay; plannedThrough += 1) {
+          sentAt[plannedThrough + 1] = now;
+        }
       }
     },
     () => clock.pace(predicted, confirmed, now)
@@ -164,8 +177,6 @@ const ride = (link: Link, displayHz: number): Ride => {
   let slowest = Number.POSITIVE_INFINITY;
   let stops = 0;
   let leaps = 0;
-  let offPace = 0;
-  let settled = 0;
   let mostAhead = 0;
   let mostAheadOfRoom = 0;
   let mostEase = 0;
@@ -203,8 +214,6 @@ const ride = (link: Link, displayHz: number): Ride => {
       slowest = Math.min(slowest, moved);
       stops += moved <= 0 ? 1 : 0;
       leaps += moved > 2 ? 1 : 0;
-      offPace += Number(Math.abs(moved - 1) > OFF_PACE);
-      settled += 1;
       mostAhead = Math.max(mostAhead, predicted - confirmed);
       mostAheadOfRoom = Math.max(mostAheadOfRoom, predicted - roomTick);
       mostEase = Math.max(
@@ -232,10 +241,10 @@ const ride = (link: Link, displayHz: number): Ride => {
     fastest,
     lateShare: late / Math.max(1, counted),
     leaps,
+    meanDelay: delayed / Math.max(1, planned),
     mostAhead,
     mostAheadOfRoom,
     mostEase,
-    offPace: offPace / Math.max(1, settled),
     slowest,
     stops,
   };
@@ -355,51 +364,71 @@ const risingRoundTrip: Link = {
 
 describe("a room race on a rough link", () => {
   it.each([
-    ["a steady 150 ms round trip", steady, 60],
+    ["a steady 150 ms round trip", steady, 60, TRIMMED],
     [
       "a home Wi-Fi link that holds every packet for 100 ms twice a second",
       homeWifi,
       60,
+      TRIMMED,
     ],
-    ["the same Wi-Fi link on a 120 Hz screen", homeWifi, 120],
+    ["the same Wi-Fi link on a 120 Hz screen", homeWifi, 120, TRIMMED],
     [
       "a home link whose round trip swings from 100 ms to past 400 ms",
       jitteryHome,
       60,
+      TRIMMED,
     ],
     [
       "the rooms:lag proxy at 130 ms, 40 ms jitter, 1% loss and a 100 ms hold twice a second",
       lagProxy,
       60,
+      TRIMMED,
     ],
-    ["a room that sends 57 ticks a second for 20 s, then 63", slowRoom, 60],
-    ["a room that sends 54 ticks a second for 10 s, then 66", stalledRoom, 60],
+    [
+      "a room that sends 57 ticks a second for 20 s, then 63",
+      slowRoom,
+      60,
+      FOLLOWED,
+    ],
+    [
+      "a room that sends 54 ticks a second for 10 s, then 66",
+      stalledRoom,
+      60,
+      FOLLOWED,
+    ],
   ] as const)(
-    "moves the race on screen at a steady speed over %s",
-    (_name, link, displayHz) => {
+    "moves the race on screen at a steady speed over %s, sending controls ahead instead of surging",
+    (_name, link, displayHz, mostOff) => {
       const result = ride(link, displayHz);
       expect({
         eased: result.mostEase <= EASED_PER_SECOND,
         leaps: result.leaps,
         stops: result.stops,
       }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
-      expect(result.slowest).toBeGreaterThanOrEqual(0.89);
-      expect(result.fastest).toBeLessThanOrEqual(1.11);
+      expect(
+        Math.max(1 - result.slowest, result.fastest - 1)
+      ).toBeLessThanOrEqual(mostOff);
       expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
-      expect(result.lateShare).toBeLessThan(0.01);
+      expect({
+        delayed: result.meanDelay < MOST_MEAN_DELAY_TICKS,
+        late: result.lateShare < 0.01,
+      }).toStrictEqual({ delayed: true, late: true });
     }
   );
 
-  it("keeps its speed when the round trip rises from 150 ms to 400 ms and stays there", () => {
+  it("keeps its speed within 2% when the round trip rises from 150 ms to 400 ms and stays there, and pays the input delay back", () => {
     const result = ride(risingRoundTrip, 60);
     expect({
       eased: result.mostEase <= EASED_PER_SECOND,
       leaps: result.leaps,
       stops: result.stops,
     }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
-    expect(result.slowest).toBeGreaterThanOrEqual(0.89);
-    expect(result.fastest).toBeLessThanOrEqual(1.11);
+    expect(
+      Math.max(1 - result.slowest, result.fastest - 1)
+    ).toBeLessThanOrEqual(TRIMMED);
     expect(result.mostAhead).toBeLessThan(MOST_AHEAD_ON_ROUGH_LINKS);
+    expect(result.meanDelay).toBeLessThan(1);
+    expect(result.lateShare).toBeLessThan(0.05);
   });
 
   it("follows a room sending 57 ticks a second through a proxy that hands packets over in batches every 300 ms", () => {
@@ -411,7 +440,7 @@ describe("a room race on a rough link", () => {
     }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
     expect(
       Math.max(1 - result.slowest, result.fastest - 1)
-    ).toBeLessThanOrEqual(0.11);
+    ).toBeLessThanOrEqual(FOLLOWED);
     expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
     expect(result.lateShare).toBeLessThan(0.01);
   });
@@ -448,10 +477,9 @@ describe("a room race on a rough link", () => {
       }).toStrictEqual({ eased: true, leaps: 0, stops: 0 });
       expect(
         Math.max(1 - result.slowest, result.fastest - 1)
-      ).toBeLessThanOrEqual(0.11);
+      ).toBeLessThanOrEqual(TRIMMED);
       expect(result.mostAheadOfRoom).toBeLessThan(MOST_LEAD_TICKS);
       expect(result.lateShare).toBeLessThan(lateLimit);
-      expect(result.offPace).toBeLessThan(0.01);
     }
   );
 });

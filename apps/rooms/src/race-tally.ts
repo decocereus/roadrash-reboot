@@ -1,5 +1,6 @@
 import type { RoomClient } from "@racer/sim/room-client";
 import type { RaceStats } from "@racer/sim/room-wire";
+import { TICK_SECONDS } from "@racer/sim/state";
 
 import {
   MOST_TRACE_ROWS,
@@ -18,6 +19,7 @@ const SLOWED_BELOW_PACE = 0.95;
 const SPED_ABOVE_PACE = 1.05;
 const STOPPED_BELOW_PACE = 0.5;
 const SURGED_FROM_METRES = 0.01;
+const TICK_MS = TICK_SECONDS * 1000;
 
 export interface RaceTally {
   readonly heardRtt: (rttMs: number) => void;
@@ -29,7 +31,8 @@ export interface RaceTally {
     pace: number,
     ownOffMetres: number,
     rivalOffMetres: number,
-    replayedTicks: number
+    replayedTicks: number,
+    inputDelayTicks: number
   ) => void;
   readonly read: (client: RoomClient, rttWorstMs: number) => RaceStats;
   readonly closedTraceRows: () => readonly number[] | null;
@@ -67,6 +70,8 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
   let surgedFrames = 0;
   let rivalsSurgedFrames = 0;
   let worstDrawnOffMetres = 0;
+  let delayedTickFrames = 0;
+  let worstInputDelayTicks = 0;
   let slowFrames = 0;
   let worstFrameMs = 0;
   let worstFrameRoadMetres = 0;
@@ -120,7 +125,8 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       pace,
       ownOffMetres,
       rivalOffMetres,
-      replayedTicks
+      replayedTicks,
+      inputDelayTicks
     ) => {
       if (lastFrameAt === 0) {
         firstFrameAt = now;
@@ -141,6 +147,8 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
         );
         stoppedMs += pace < STOPPED_BELOW_PACE ? frameMs : 0;
         surgedFrames += surged;
+        delayedTickFrames += inputDelayTicks;
+        worstInputDelayTicks = Math.max(worstInputDelayTicks, inputDelayTicks);
         rivalsSurgedFrames += rivalOffMetres > SURGED_FROM_METRES ? 1 : 0;
         worstDrawnOffMetres = Math.max(
           worstDrawnOffMetres,
@@ -202,6 +210,9 @@ export const createRaceTally = (sharing: boolean): RaceTally => {
       frameP50Ms: percentileOf(frameMsCounts, frameCount, P50),
       frameP95Ms: percentileOf(frameMsCounts, frameCount, P95),
       frameP99Ms: percentileOf(frameMsCounts, frameCount, P99),
+      inputDelayMeanMs:
+        frameCount === 0 ? 0 : (delayedTickFrames / frameCount) * TICK_MS,
+      inputDelayWorstMs: worstInputDelayTicks * TICK_MS,
       jumpsBehindServer: stats.jumps.behindServer.felt,
       jumpsOtherRiders: stats.jumps.otherRiders.felt,
       jumpsOwnControl: stats.jumps.ownControl.felt,

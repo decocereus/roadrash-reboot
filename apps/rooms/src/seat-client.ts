@@ -249,6 +249,7 @@ export interface RoomSeat {
   readonly walkOf: (member: string) => RoomWalked | undefined;
   readonly act: (act: LobbyAct, target: string) => void;
   readonly refusal: () => Refusal | null;
+  readonly inputDelay: () => number;
   readonly leadBloated: () => boolean;
   readonly rttMs: () => number;
   readonly worstRttMs: () => number;
@@ -354,10 +355,10 @@ export const openRoomSeat = (
   const confirmRead = (race: SeatRace, now: number): void => {
     frameLeft -= 1;
     const lostBefore = race.client.lostControls();
-    const predictedThrough = race.client.predicted.tick;
+    const plannedThrough = race.client.plannedThrough();
     race.client.confirm(read.frame, read.hashed ? read.hash : null);
     if (race.client.lostControls() > lostBefore) {
-      clock.lostControl(read.frame.tick, predictedThrough, now);
+      clock.lostControl(read.frame.tick, plannedThrough, now);
     }
     listeners.onConfirmed?.(race.client);
     frameSpentMs += performance.now() - now;
@@ -425,7 +426,8 @@ export const openRoomSeat = (
       1,
       0,
       0,
-      race.client.stats.resimulatedTicks
+      race.client.stats.resimulatedTicks,
+      0
     );
     sendReport(race, tally.lastTraceRows());
   };
@@ -622,9 +624,16 @@ export const openRoomSeat = (
           ),
           ownOffMetres,
           rivalOffMetres,
-          race.client.stats.resimulatedTicks
+          race.client.stats.resimulatedTicks,
+          clock.inputDelay(race.client.predicted.tick, now)
         );
       }
+    },
+    inputDelay: () => {
+      const { race } = state;
+      return race
+        ? clock.inputDelay(race.client.predicted.tick, performance.now())
+        : 0;
     },
     leadBloated: () => {
       const { race } = state;

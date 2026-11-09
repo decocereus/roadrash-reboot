@@ -186,6 +186,8 @@ export const someRaceStats: RaceStats = {
   frameP50Ms: 16,
   frameP95Ms: 18,
   frameP99Ms: 25,
+  inputDelayMeanMs: 17,
+  inputDelayWorstMs: 150,
   jumpsBehindServer: 0,
   jumpsOtherRiders: 1,
   jumpsOwnControl: 4,

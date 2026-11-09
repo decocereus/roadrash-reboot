@@ -1628,6 +1628,7 @@ Test files:
 - `apps/web/test/room-screen.test.ts`
 - `packages/career/src/room-race.test.ts`
 - `packages/sim/src/room-clock.test.ts`
+- `packages/sim/src/room-delay.test.ts`
 - `packages/sim/src/room-events.test.ts`
 - `packages/sim/src/room-jumps.test.ts`
 - `packages/sim/src/room-lag.test.ts`

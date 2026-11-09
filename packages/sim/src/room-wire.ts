@@ -355,6 +355,8 @@ const RACE_STAT_FIELDS = [
   "worstDrawnOffCm",
   "spedUpMs",
   "mostReplayedTicks",
+  "inputDelayMeanMs",
+  "inputDelayWorstMs",
 ] as const;
 
 export type RaceStats = Readonly<

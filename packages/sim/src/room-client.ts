@@ -80,9 +80,10 @@ export interface RoomClient {
   readonly lostControls: () => number;
   readonly mending: () => boolean;
   readonly mine: RiderState;
+  readonly plannedThrough: () => number;
   readonly predicted: RaceState;
   readonly stats: RoomStats;
-  readonly predict: (control: Control) => boolean;
+  readonly predict: (control: Control, delay?: number) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly catchUp: (snapshot: DataView) => void;
   readonly settle: (most?: number) => number;
@@ -196,6 +197,8 @@ export const createRoomClient = (
   let handed = tracked.map(stillCorrection);
   let corrected = false;
   let sentThrough = 0;
+  let plannedThrough = 0;
+  let carried = coasting;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
   let mending = false;
@@ -496,6 +499,36 @@ export const createRoomClient = (
     return button === undefined ? control : pressing(control, button);
   };
 
+  const withCarried = (control: Control): Control => {
+    let pressed = control;
+    for (const button of BUTTONS_OF_A_CONTROL) {
+      if (holds(carried, button)) {
+        pressed = pressing(pressed, button);
+      }
+    }
+    carried = coasting;
+    return pressed;
+  };
+
+  const plan = (control: Control, wanted: number): void => {
+    if (wanted <= plannedThrough) {
+      carried = withCarried(control);
+      return;
+    }
+    const held = withoutButtons(
+      ownControls[slotOf(plannedThrough)] ?? coasting
+    );
+    for (
+      let tick = Math.max(plannedThrough, predicted.tick) + 1;
+      tick < wanted;
+      tick += 1
+    ) {
+      ownControls[slotOf(tick)] = held;
+    }
+    ownControls[slotOf(wanted)] = withCarried(control);
+    plannedThrough = wanted;
+  };
+
   const retried = (): void => {
     const [button] = missed;
     if (button === undefined) {
@@ -556,8 +589,8 @@ export const createRoomClient = (
       stepConfirmed(frame, serverHash);
       hearRoom();
       const reached = predicted.tick;
-      noteRoomChoice(frame, reached);
-      notePresses(frame, reached);
+      noteRoomChoice(frame, plannedThrough);
+      notePresses(frame, plannedThrough);
       if (reached < frame.tick) {
         const fromS = mine.s;
         const fromX = mine.x;
@@ -589,7 +622,8 @@ export const createRoomClient = (
     lostControls: () => lostControls,
     mending: () => mending,
     mine,
-    predict: (control) => {
+    plannedThrough: () => plannedThrough,
+    predict: (control, delay = 0) => {
       if (!mending) {
         settle();
       }
@@ -598,7 +632,10 @@ export const createRoomClient = (
         stats.refusedPredictions += 1;
         return false;
       }
-      ownControls[slotOf(tick)] = retryMissed(control);
+      plan(
+        retryMissed(control),
+        Math.min(tick + delay, confirmed.tick + INPUT_HORIZON)
+      );
       advance(tick);
       retried();
       hearOwn();
@@ -643,7 +680,7 @@ export const createRoomClient = (
     },
     writeInputs: (view) => {
       const unsent = Math.max(sentThrough, confirmed.tick) + 1;
-      const last = Math.min(predicted.tick, unsent + MOST_BATCHED_CONTROLS - 1);
+      const last = Math.min(plannedThrough, unsent + MOST_BATCHED_CONTROLS - 1);
       if (last < unsent) {
         return 0;
       }
