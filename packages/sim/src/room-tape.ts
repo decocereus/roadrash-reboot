@@ -7,7 +7,7 @@ import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace } from "./snapshot.ts";
 import type { RaceSetup, RaceState } from "./state.ts";
 
-const TICKS_IN_PART = 1800;
+export const TICKS_IN_PART = 1800;
 const LENGTH_BYTES = 2;
 
 interface TapeTail {

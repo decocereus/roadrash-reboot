@@ -12,7 +12,7 @@ import { TICK_SECONDS } from "@racer/sim/state";
 import { seatedCount } from "./manifest.ts";
 import type { RaceManifest } from "./manifest.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
-import type { RoomNote } from "./notes.ts";
+import type { LostReason, RoomNote } from "./notes.ts";
 import {
   restoredSeat,
   rosterOf,
@@ -93,14 +93,32 @@ const tapeFor = (
     resume
   );
 
+export type RaceRestore =
+  | { readonly kind: "run"; readonly run: Run }
+  | {
+      readonly kind: "lost";
+      readonly reason: LostReason;
+      readonly detail: string | null;
+    };
+
+const lost = (reason: LostReason, detail: string | null): RaceRestore => ({
+  detail,
+  kind: "lost",
+  reason,
+});
+
 export const restoreRace = (
   ports: RacePorts,
   { checkpoint, manifest, raceId, seats }: RaceMemory,
+  afterMs: number,
   tickBytes: number,
   now: number
-): Run | null => {
+): RaceRestore => {
   if (checkpoint === null) {
-    return null;
+    return lost("noCheckpoint", null);
+  }
+  if (afterMs > msOf(ports.config.seatHoldSeconds)) {
+    return lost("pastHold", null);
   }
   const { setup } = seatedRace(
     manifest.seed,
@@ -116,8 +134,11 @@ export const restoreRace = (
       new DataView(snapshot.buffer, snapshot.byteOffset, snapshot.byteLength),
       setup.track
     );
-  } catch {
-    return null;
+  } catch (error) {
+    return lost(
+      "refused",
+      error instanceof Error ? error.message : String(error)
+    );
   }
   const riders = seats.map((seat) => restoredSeat(seat, raceId));
   for (const seat of riders) {
@@ -126,16 +147,19 @@ export const restoreRace = (
     }
   }
   return {
-    base: snapshot,
-    checkpoint,
-    manifest,
-    raceId,
-    riders,
-    room,
-    since: now,
-    tape: tapeFor(ports, raceId, tickBytes, checkpoint.tape),
-    trace: [],
-    wakeGaps: freshGaps(),
+    kind: "run",
+    run: {
+      base: snapshot,
+      checkpoint,
+      manifest,
+      raceId,
+      riders,
+      room,
+      since: now,
+      tape: tapeFor(ports, raceId, tickBytes, checkpoint.tape),
+      trace: [],
+      wakeGaps: freshGaps(),
+    },
   };
 };
 

@@ -1,5 +1,6 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Http from "alchemy/Http";
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 import * as HttpRouter from "effect/http/HttpRouter";
@@ -127,17 +128,23 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
             ? Effect.asVoid(state.storage.delete(MEMORY_KEY))
             : state.storage.put(MEMORY_KEY, memory)
         ),
-        Effect.catchCause(() =>
+        Effect.catchCause((cause) =>
           Effect.sync(() => {
-            note({ kind: "memoryLost" });
+            note({
+              detail: Cause.pretty(cause),
+              kind: "memoryLost",
+              when: "write",
+            });
           })
         ),
         Effect.forever,
         Effect.forkDetach
       );
-      const remembered = Option.getOrNull(
-        decodeRoomMemory(yield* state.storage.get(MEMORY_KEY))
-      );
+      const stored = yield* state.storage.get(MEMORY_KEY);
+      const remembered = Option.getOrNull(decodeRoomMemory(stored));
+      if (stored !== undefined && remembered === null) {
+        note({ detail: null, kind: "memoryLost", when: "read" });
+      }
       let roomColo: string | null = null;
       yield* Effect.tryPromise(async () => {
         const response = await globalThis.fetch(TRACE_URL, {

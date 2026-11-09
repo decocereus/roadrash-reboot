@@ -145,15 +145,26 @@ const Restored = Schema.Struct({
   tick: Schema.Number,
 });
 
+export const LOST_REASONS = ["noCheckpoint", "pastHold", "refused"] as const;
+
+export type LostReason = (typeof LOST_REASONS)[number];
+
 const Lost = Schema.Struct({
   afterMs: Schema.Number,
+  build: Schema.String,
+  detail: orMissing(Schema.String),
   kind: Schema.Literal("lost"),
   raceId: Schema.String,
+  reason: Schema.Literals(LOST_REASONS),
   tick: Schema.Number,
 });
 
+export const MEMORY_MOMENTS = ["read", "write"] as const;
+
 const MemoryLost = Schema.Struct({
+  detail: orMissing(Schema.String),
   kind: Schema.Literal("memoryLost"),
+  when: Schema.Literals(MEMORY_MOMENTS),
 });
 
 const Placed = Schema.Struct({

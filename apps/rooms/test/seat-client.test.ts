@@ -18,6 +18,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
+import { ticksOf } from "../src/room-config.ts";
+import { CHECKPOINT_TICKS } from "../src/room-memory.ts";
 import { createRoomRun } from "../src/room-run.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
 import {
@@ -72,8 +74,8 @@ describe("a seat loading the race", () => {
     const { seat, socket } = loadingSeat();
     const { manifest } = startedMessage;
     const { setup } = seatedRace(manifest.seed, 1, manifest.rule);
-    const room = createRoom(setup, 21_600);
-    for (let tick = 1; tick <= 300; tick += 1) {
+    const room = createRoom(setup, ticksOf(manifest.raceLimitSeconds));
+    for (let tick = 1; tick <= CHECKPOINT_TICKS; tick += 1) {
       room.accept(riderIdAt(0), tick, [coasting]);
       room.step();
     }
@@ -84,10 +86,10 @@ describe("a seat loading the race", () => {
     new Uint8Array(heard).set(packet);
     socket.hear(heard);
     const race = seat.race();
-    expect(race?.client.confirmed.tick).toBe(300);
-    expect(race?.client.predicted.tick).toBe(300);
-    hearTick(socket, 301);
-    expect(race?.client.confirmed.tick).toBe(301);
+    expect(race?.client.confirmed.tick).toBe(CHECKPOINT_TICKS);
+    expect(race?.client.predicted.tick).toBe(CHECKPOINT_TICKS);
+    hearTick(socket, CHECKPOINT_TICKS + 1);
+    expect(race?.client.confirmed.tick).toBe(CHECKPOINT_TICKS + 1);
   });
 
   it("stays down when another tab takes its place in the lobby", () => {

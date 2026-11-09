@@ -183,13 +183,30 @@ const serverLine = (ended: RaceEnded): string => {
   return `  Server: worst ${ended.worstBehindTicks} ticks behind, ${ended.catchUpWakes} catch-up wakes. Gaps between wakes, ${gaps}.${dropped}`;
 };
 
+const lostReasonLine = ({ build, detail, reason }: RaceLost): string => {
+  switch (reason) {
+    case "noCheckpoint": {
+      return "the race had no checkpoint yet";
+    }
+    case "pastHold": {
+      return "nobody came back within the hold";
+    }
+    case "refused": {
+      return `build ${build.slice(0, 12)} wrote a checkpoint this build refused, ${detail ?? "no detail"}`;
+    }
+    default: {
+      return reason satisfies never;
+    }
+  }
+};
+
 const restartLine = (note: RaceRestored | RaceLost): string => {
   switch (note.kind) {
     case "restored": {
       return `  The room restarted after ${seconds(note.afterMs)} and the race went on from ${raceTime(note.tick)}, checkpointed on build ${note.build.slice(0, 12)}`;
     }
     case "lost": {
-      return `  The room restarted after ${seconds(note.afterMs)} and lost the race at ${raceTime(note.tick)}, no result`;
+      return `  The room restarted after ${seconds(note.afterMs)} and lost the race at ${raceTime(note.tick)}, no result: ${lostReasonLine(note)}`;
     }
     default: {
       return note satisfies never;

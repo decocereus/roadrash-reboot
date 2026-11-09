@@ -101,7 +101,8 @@ export const createHost = (
   memory: RoomMemory | null = null
 ): Host => {
   const present = new Map<HostSocket, Present>();
-  const { sendTo, tell, tellWalkers } = createAudience(present);
+  const audience = createAudience(present);
+  const { sendTo, tell, tellWalkers } = audience;
   const batch = createInputBatch();
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
@@ -157,22 +158,13 @@ export const createHost = (
 
   const tellLobby = (): void => {
     roundTripsMoved = false;
-    const view = lobby.view(ports.now());
-    for (const { memberId, role, socket } of present.values()) {
-      if (role.kind === "lobby") {
-        sendTo(
-          socket,
-          encodeRoomMessage({
-            ...view,
-            atMs: roomMs(),
-            kind: "lobby",
-            lostRace,
-            seatHoldSeconds: ports.config.seatHoldSeconds,
-            you: memberId,
-          })
-        );
-      }
-    }
+    audience.tellLobby({
+      ...lobby.view(ports.now()),
+      atMs: roomMs(),
+      kind: "lobby",
+      lostRace,
+      seatHoldSeconds: ports.config.seatHoldSeconds,
+    });
   };
 
   const end = (run: Run): void => {
@@ -339,11 +331,6 @@ export const createHost = (
     socket.close(closeCode, reason);
   };
 
-  const inRace = () =>
-    [...present.values()].flatMap(({ role }) =>
-      role.kind === "seated" ? [role] : []
-    );
-
   const leaveRace = (run: Run, seat: Seat, closeCode: number | null): void => {
     if (seat.presence.kind === "left") {
       return;
@@ -355,7 +342,9 @@ export const createHost = (
       closeCode,
       kind: "left",
       raceId,
-      seatsLeft: inRace().length,
+      seatsLeft: [...present.values()].filter(
+        ({ role }) => role.kind === "seated"
+      ).length,
       tally: tallyOf(seat, room),
       tick: room.state.tick,
     });
@@ -612,42 +601,56 @@ export const createHost = (
     countDownOnceLoaded(run);
   };
 
-  const restore = (remembered: RoomMemory): void => {
-    const { race } = remembered;
-    if (race === null) {
-      return;
-    }
-    const now = ports.now();
-    const afterMs = now - remembered.at;
-    const run =
-      afterMs <= msOf(ports.config.seatHoldSeconds)
-        ? restoreRace(ports, race, tickBuffer.byteLength, now)
-        : null;
-    if (run === null) {
-      lostRace = race.raceId;
-      ports.note({
-        afterMs,
-        kind: "lost",
-        raceId: race.raceId,
-        tick: race.checkpoint?.tick ?? 0,
-      });
-      remember();
-      return;
-    }
+  const resume = (run: Run, now: number): void => {
     const startedAt = now - run.room.state.tick * TICK_MS;
     state = { phase: "racing", run, startedAt };
     lobby.raceStarted();
     for (const seat of run.riders) {
       holdSeat(run, seat, null);
     }
-    ports.note({
-      afterMs,
-      build: remembered.build,
-      kind: "restored",
-      raceId: run.raceId,
-      tick: run.room.state.tick,
-    });
     ride(run, startedAt, now);
+  };
+
+  const restore = ({ at, build, race }: RoomMemory): void => {
+    if (race === null) {
+      return;
+    }
+    const now = ports.now();
+    const afterMs = now - at;
+    const { raceId } = race;
+    const tick = race.checkpoint?.tick ?? 0;
+    const restored = restoreRace(
+      ports,
+      race,
+      afterMs,
+      tickBuffer.byteLength,
+      now
+    );
+    switch (restored.kind) {
+      case "lost": {
+        lostRace = raceId;
+        const { detail, reason } = restored;
+        ports.note({
+          afterMs,
+          build,
+          detail,
+          kind: "lost",
+          raceId,
+          reason,
+          tick,
+        });
+        remember();
+        return;
+      }
+      case "run": {
+        resume(restored.run, now);
+        ports.note({ afterMs, build, kind: "restored", raceId, tick });
+        return;
+      }
+      default: {
+        restored satisfies never;
+      }
+    }
   };
 
   if (memory) {

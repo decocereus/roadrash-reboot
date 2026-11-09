@@ -1,5 +1,5 @@
 import { encodeRoomMessage } from "./messages.ts";
-import type { RoomMessage } from "./messages.ts";
+import type { RoomLobbyMessage, RoomMessage } from "./messages.ts";
 import type { Run } from "./race-build.ts";
 import type { Seat, SeatLink } from "./race-seat.ts";
 import type { SocketBudget } from "./socket-budget.ts";
@@ -58,5 +58,12 @@ export const createAudience = (present: ReadonlyMap<HostSocket, Present>) => {
       }
     }
   };
-  return { sendTo, tell, tellWalkers };
+  const tellLobby = (message: Omit<RoomLobbyMessage, "you">): void => {
+    for (const { memberId, role, socket } of present.values()) {
+      if (role.kind === "lobby") {
+        sendTo(socket, encodeRoomMessage({ ...message, you: memberId }));
+      }
+    }
+  };
+  return { sendTo, tell, tellLobby, tellWalkers };
 };

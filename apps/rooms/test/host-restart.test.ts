@@ -1,6 +1,6 @@
 import type { RoomClient } from "@racer/sim/room-client";
 import { createTickFrame } from "@racer/sim/room-frame";
-import { readTapePart } from "@racer/sim/room-tape";
+import { readTapePart, TICKS_IN_PART } from "@racer/sim/room-tape";
 import {
   createReadTick,
   readCatchUp,
@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import { createHost } from "../src/host.ts";
 import { SEAT_LEFT } from "../src/messages.ts";
+import { CHECKPOINT_TICKS } from "../src/room-memory.ts";
 import type { RoomMemory } from "../src/room-memory.ts";
 import {
   advanceHearing,
@@ -33,10 +34,9 @@ import {
 import type { Clock, FakeSocket } from "./host-harness.ts";
 
 const RACED_MS = 10_000;
-const RACED_TICKS = 600;
+const RACED_TICKS = (RACED_MS / 1000) * 60;
 const RESTART_GAP_MS = 3000;
 const RIDE_ON_MS = 5000;
-const TICKS_IN_PART = 1800;
 
 const notesOf = (clock: Clock, ...kinds: readonly string[]) =>
   clock.notes.filter((note) => kinds.includes(note.kind));
@@ -108,12 +108,12 @@ const ridersBack = () => {
 };
 
 describe("a room that restarts while a race runs", () => {
-  it("checkpoints the race at the start moment and every 300 ticks", () => {
+  it("checkpoints the race at the start moment and then every checkpoint interval", () => {
     const { clock } = racingRoom();
     const ticks = clock.memories.flatMap((memory) =>
       memory?.race?.checkpoint ? [memory.race.checkpoint.tick] : []
     );
-    expect(ticks).toStrictEqual([0, 300, 600]);
+    expect(ticks).toStrictEqual([0, CHECKPOINT_TICKS, 2 * CHECKPOINT_TICKS]);
   });
 
   it("picks the race up from the last checkpoint and holds every seat", () => {
@@ -194,7 +194,13 @@ describe("a room that restarts while a race runs", () => {
     const { clock } = racingRoom();
     const { host, later, seated } = restartedRoom(clock, HOLD_MS + 1);
     expect(notesOf(later, "restored", "held", "lost")).toMatchObject([
-      { afterMs: HOLD_MS + 1, kind: "lost", raceId: "race-1", tick: 600 },
+      {
+        afterMs: HOLD_MS + 1,
+        kind: "lost",
+        raceId: "race-1",
+        reason: "pastHold",
+        tick: RACED_TICKS,
+      },
     ]);
     expect(host.status()).toMatchObject({
       hostPhase: "waiting",
@@ -232,7 +238,7 @@ describe("a room that restarts while the road loads", () => {
       seated: seatedAgain,
     } = restartedRoom(clock, RESTART_GAP_MS);
     expect(notesOf(later, "lost")).toMatchObject([
-      { kind: "lost", raceId: "race-1", tick: 0 },
+      { kind: "lost", raceId: "race-1", reason: "noCheckpoint", tick: 0 },
     ]);
     const boBack = seatedAgain("bo", "Bo");
     expect(lastLobby(boBack).hostId).toBe(lastLobby(boBack).you);
