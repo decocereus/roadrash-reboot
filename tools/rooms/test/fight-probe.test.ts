@@ -32,17 +32,16 @@ const rider = () => ({
   x: 0,
 });
 
-const probedClient = (): Probed => {
+const probedClient = (plansAhead = true): Probed => {
   const delays: (number | undefined)[] = [];
   const confirmed = { events: [], riders: [rider(), rider()], tick: 0 };
   const predicted = { events: [], riders: [rider(), rider()], tick: 0 };
   let plannedThrough = 0;
-  const client = {
+  const riding = {
     confirm: (frame: { controls: Map<number, number>; tick: number }) => {
       confirmed.tick = frame.tick;
     },
     confirmed,
-    plannedThrough: () => plannedThrough,
     predict: (_control: number, delay?: number) => {
       delays.push(delay);
       predicted.tick += 1;
@@ -52,6 +51,9 @@ const probedClient = (): Probed => {
     predicted,
     writeInputs: () => 0,
   };
+  const client = plansAhead
+    ? { ...riding, plannedThrough: () => plannedThrough }
+    : riding;
   const frames: (() => void)[] = [];
   const listened: string[] = [];
   const animated: string[] = [];
@@ -100,6 +102,14 @@ describe("the fights probe on a room client", () => {
     expect(lostTicks()).toStrictEqual([]);
     confirmTick(2 + DELAY, PUNCHING);
     expect(lostTicks()).toStrictEqual([]);
+  });
+
+  it("keys a press by the tick it was sampled on for a build whose client plans no delay", () => {
+    const { confirmTick, lostTicks, predict } = probedClient(false);
+    predict(STEERING, 0);
+    predict(PUNCHING, 0);
+    confirmTick(2, STEERING);
+    expect(lostTicks()).toStrictEqual([2]);
   });
 
   it("counts a press the room rode without its button at the planned tick", () => {
