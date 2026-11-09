@@ -18,6 +18,7 @@ import {
   RACE_STATS_PACKET_BYTES,
   READY_PACKET_BYTES,
   readCatchUp,
+  readRaceSnapshot,
   readTick,
   ROOM_PROTOCOL,
   writeRaceStats,
@@ -417,6 +418,12 @@ export const openRoomSeat = (
       return;
     }
     const { race } = state;
+    const snapshot = readRaceSnapshot(view);
+    if (race && snapshot) {
+      race.client.catchUpFrom(snapshot);
+      listeners.onConfirmed?.(race.client);
+      return;
+    }
     const caughtUp = readCatchUp(view);
     if (race && caughtUp) {
       race.client.catchUp(caughtUp);

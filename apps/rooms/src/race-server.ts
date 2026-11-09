@@ -20,9 +20,12 @@ import type { RoomNote } from "./notes.ts";
 import { refusedSeat } from "./refused-seat.ts";
 import { launchRoomConfig } from "./room-config.ts";
 import { roomKindOf } from "./room-id.ts";
+import { decodeRoomMemory } from "./room-memory.ts";
+import type { RoomMemory } from "./room-memory.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
 
 const SECONDS_PER_DAY = 86_400;
+const MEMORY_KEY = "room";
 
 const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
   lifecycleRules: [
@@ -53,7 +56,8 @@ const coloOfTrace = (trace: string): string | null =>
 const portsFor = (
   build: string,
   roomColo: HostPorts["roomColo"],
-  saveTape: HostPorts["saveTape"]
+  saveTape: HostPorts["saveTape"],
+  remember: HostPorts["remember"]
 ): HostPorts => ({
   after: (ms, wake) => {
     setTimeout(wake, ms);
@@ -63,6 +67,7 @@ const portsFor = (
   note,
   now: () => Date.now(),
   raceId: () => crypto.randomUUID(),
+  remember,
   roomColo,
   saveTape,
   seed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
@@ -114,6 +119,24 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
         Effect.forever,
         Effect.forkDetach
       );
+      const memories = yield* Queue.sliding<RoomMemory | null>(1);
+      yield* Queue.take(memories).pipe(
+        Effect.flatMap((memory) =>
+          memory === null
+            ? Effect.asVoid(state.storage.delete(MEMORY_KEY))
+            : state.storage.put(MEMORY_KEY, memory)
+        ),
+        Effect.catchCause(() =>
+          Effect.sync(() => {
+            note({ kind: "memoryLost" });
+          })
+        ),
+        Effect.forever,
+        Effect.forkDetach
+      );
+      const remembered = Option.getOrNull(
+        decodeRoomMemory(yield* state.storage.get(MEMORY_KEY))
+      );
       let roomColo: string | null = null;
       yield* Effect.tryPromise(async () => {
         const response = await globalThis.fetch(TRACE_URL, {
@@ -132,9 +155,13 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
             () => roomColo,
             (key, body) => {
               Queue.offerUnsafe(saves, { body, key });
+            },
+            (memory) => {
+              Queue.offerUnsafe(memories, memory);
             }
           ),
-          roomKindOf(roomId)
+          roomKindOf(roomId),
+          remembered
         );
         return opened;
       };

@@ -28,6 +28,7 @@ import {
   publicRuleFor,
   ticksOf,
 } from "../src/room-config.ts";
+import type { RoomMemory } from "../src/room-memory.ts";
 
 export const nearby = {
   asn: 64_512,
@@ -56,6 +57,7 @@ export const PUBLIC_RULE = publicRuleFor(launchRoomConfig.publicRace, 0);
 
 export interface Clock extends HostPorts {
   readonly advance: (ms: number) => void;
+  readonly memories: (RoomMemory | null)[];
   readonly notes: RoomNote[];
   readonly tape: Map<string, string | Uint8Array>;
   readonly stall: (ms: number) => void;
@@ -63,10 +65,11 @@ export interface Clock extends HostPorts {
   readonly pending: () => number;
 }
 
-export const createClock = (): Clock => {
-  let at = 1000;
+export const createClock = (startAt = 1000): Clock => {
+  let at = startAt;
   let timers: { due: number; wake: () => void }[] = [];
   const notes: RoomNote[] = [];
+  const memories: (RoomMemory | null)[] = [];
   const tape = new Map<string, string | Uint8Array>();
   let races = 0;
   const nextBy = (until: number) =>
@@ -91,6 +94,7 @@ export const createClock = (): Clock => {
     },
     build: "test-build",
     config: launchRoomConfig,
+    memories,
     note: (note) => {
       notes.push(note);
     },
@@ -100,6 +104,9 @@ export const createClock = (): Clock => {
     raceId: () => {
       races += 1;
       return `race-${races}`;
+    },
+    remember: (memory) => {
+      memories.push(memory);
     },
     roomColo: () => "SIN",
     saveTape: (key, body) => {

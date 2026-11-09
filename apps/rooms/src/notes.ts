@@ -137,6 +137,25 @@ const TapeLost = Schema.Struct({
   kind: Schema.Literal("tapeLost"),
 });
 
+const Restored = Schema.Struct({
+  afterMs: Schema.Number,
+  build: Schema.String,
+  kind: Schema.Literal("restored"),
+  raceId: Schema.String,
+  tick: Schema.Number,
+});
+
+const Lost = Schema.Struct({
+  afterMs: Schema.Number,
+  kind: Schema.Literal("lost"),
+  raceId: Schema.String,
+  tick: Schema.Number,
+});
+
+const MemoryLost = Schema.Struct({
+  kind: Schema.Literal("memoryLost"),
+});
+
 const Placed = Schema.Struct({
   kind: Schema.Literal("placed"),
   riders: Schema.Number,
@@ -147,7 +166,10 @@ export const RoomNoteSchema = Schema.Union([
   Placed,
   Refused,
   TapeLost,
+  MemoryLost,
   Started,
+  Restored,
+  Lost,
   Countdown,
   Left,
   Held,
@@ -166,3 +188,5 @@ export type RaceBrowserNote = typeof Browser.Type;
 export type RaceLeft = typeof Left.Type;
 export type RaceHeld = typeof Held.Type;
 export type RaceRejoined = typeof Rejoined.Type;
+export type RaceRestored = typeof Restored.Type;
+export type RaceLost = typeof Lost.Type;

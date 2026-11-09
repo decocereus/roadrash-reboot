@@ -20,6 +20,7 @@ const lobby: RoomLobbyMessage = {
   edition: 1,
   hostId: "ann",
   kind: "lobby",
+  lostRace: null,
   members: [member("ann", true, 48), member("bo", true), member("cy", false)],
   phase: "gathering",
   roomKind: "custom",

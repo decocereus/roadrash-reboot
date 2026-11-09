@@ -3,18 +3,27 @@ import type { RoomRule } from "@racer/career/room-race";
 import { createRoom, firstRacers } from "@racer/sim/room";
 import type { Room } from "@racer/sim/room";
 import { createTapeWriter, hexOfWords } from "@racer/sim/room-tape";
-import type { TapeWriter } from "@racer/sim/room-tape";
+import type { TapeResume, TapeWriter } from "@racer/sim/room-tape";
 import { ROOM_PROTOCOL } from "@racer/sim/room-wire";
+import { restoreInto } from "@racer/sim/snapshot";
 import { trackDigest } from "@racer/sim/snapshot-setup";
 import { TICK_SECONDS } from "@racer/sim/state";
 
+import { seatedCount } from "./manifest.ts";
 import type { RaceManifest } from "./manifest.ts";
 import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
 import type { RoomNote } from "./notes.ts";
-import { rosterOf, seatFor, traceSeats } from "./race-seat.ts";
+import {
+  restoredSeat,
+  rosterOf,
+  seatFor,
+  seatMemoryOf,
+  traceSeats,
+} from "./race-seat.ts";
 import type { Seat } from "./race-seat.ts";
 import { msOf, ticksOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
+import type { Checkpoint, RaceMemory } from "./room-memory.ts";
 import {
   roomTraceName,
   TAPE_VERSION,
@@ -43,6 +52,7 @@ export interface RacePorts {
 }
 
 export interface Run {
+  readonly base: Uint8Array | null;
   readonly manifest: RaceManifest;
   readonly raceId: string;
   readonly riders: readonly Seat[];
@@ -51,7 +61,83 @@ export interface Run {
   readonly tape: TapeWriter;
   readonly trace: number[];
   readonly wakeGaps: Uint32Array;
+  checkpoint: Checkpoint | null;
 }
+
+export const raceMemoryOf = ({
+  checkpoint,
+  manifest,
+  raceId,
+  riders,
+}: Run): RaceMemory => ({
+  checkpoint,
+  manifest,
+  raceId,
+  seats: riders.map((seat) => seatMemoryOf(seat)),
+});
+
+const freshGaps = (): Uint32Array =>
+  new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1);
+
+const tapeFor = (
+  ports: RacePorts,
+  raceId: string,
+  tickBytes: number,
+  resume: TapeResume | null
+): TapeWriter =>
+  createTapeWriter(
+    tickBytes,
+    (part, bytes) => {
+      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
+    },
+    resume
+  );
+
+export const restoreRace = (
+  ports: RacePorts,
+  { checkpoint, manifest, raceId, seats }: RaceMemory,
+  tickBytes: number,
+  now: number
+): Run | null => {
+  if (checkpoint === null) {
+    return null;
+  }
+  const { setup } = seatedRace(
+    manifest.seed,
+    seatedCount(manifest),
+    manifest.rule
+  );
+  const room = createRoom(setup, ticksOf(manifest.raceLimitSeconds));
+  const { snapshot } = checkpoint;
+  try {
+    restoreInto(
+      room.state,
+      room.digest,
+      new DataView(snapshot.buffer, snapshot.byteOffset, snapshot.byteLength),
+      setup.track
+    );
+  } catch {
+    return null;
+  }
+  const riders = seats.map((seat) => restoredSeat(seat, raceId));
+  for (const seat of riders) {
+    if (seat.presence.kind === "left") {
+      room.leave(seat.rider);
+    }
+  }
+  return {
+    base: snapshot,
+    checkpoint,
+    manifest,
+    raceId,
+    riders,
+    room,
+    since: now,
+    tape: tapeFor(ports, raceId, tickBytes, checkpoint.tape),
+    trace: [],
+    wakeGaps: freshGaps(),
+  };
+};
 
 type Sitter = Pick<Seat, "link" | "memberId" | "name">;
 
@@ -150,16 +236,16 @@ export const buildRace = <Person extends Sitter>(
     traffic: rule.traffic,
   });
   const run: Run = {
+    base: null,
+    checkpoint: null,
     manifest,
     raceId,
     riders,
     room,
     since: now,
-    tape: createTapeWriter(tickBytes, (part, bytes) => {
-      ports.saveTape(tapeKey(raceId, tapePartName(part)), bytes);
-    }),
+    tape: tapeFor(ports, raceId, tickBytes, null),
     trace: [],
-    wakeGaps: new Uint32Array(WAKE_GAP_CEILINGS_MS.length + 1),
+    wakeGaps: freshGaps(),
   };
   return { run, seated };
 };

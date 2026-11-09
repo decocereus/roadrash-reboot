@@ -7,6 +7,7 @@ import {
   ROOM_PROTOCOL,
   tickCapacity,
   writeCatchUp,
+  writeRaceSnapshot,
   writeTick,
 } from "@racer/sim/room-wire";
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
@@ -29,7 +30,12 @@ import {
 } from "./messages.ts";
 import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
 import { noteGap } from "./notes.ts";
-import { buildRace, finishTape } from "./race-build.ts";
+import {
+  buildRace,
+  finishTape,
+  raceMemoryOf,
+  restoreRace,
+} from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
   HERE,
@@ -45,6 +51,12 @@ import {
 import type { Seat, SeatHold, SeatLink } from "./race-seat.ts";
 import { msOf, publicRuleFor } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
+import {
+  CHECKPOINT_TICKS,
+  checkpointOf,
+  MEMORY_VERSION,
+} from "./room-memory.ts";
+import type { RoomMemory } from "./room-memory.ts";
 import { createSocketBudget, CUT_AFTER_DROPS, spend } from "./socket-budget.ts";
 import type { SocketBudget } from "./socket-budget.ts";
 import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
@@ -72,6 +84,7 @@ export interface SeatClaim {
 export interface HostPorts extends RacePorts {
   readonly now: () => number;
   readonly after: (ms: number, wake: () => void) => void;
+  readonly remember: (memory: RoomMemory | null) => void;
 }
 
 interface Present {
@@ -109,7 +122,8 @@ const moveSocket = (person: Present, event: SocketEvent<Run, Seat>): void => {
 
 export const createHost = (
   ports: HostPorts,
-  kind: RoomKind = "custom"
+  kind: RoomKind = "custom",
+  memory: RoomMemory | null = null
 ): Host => {
   const present = new Map<HostSocket, Present>();
   const batch = createInputBatch();
@@ -118,10 +132,15 @@ export const createHost = (
   const readyDigest = new Uint32Array(HASH_WORDS);
   const bornAt = ports.now();
   const { publicRace } = ports.config;
-  const lobby = createLobby(bornAt, kind, ports.config, () =>
-    publicRuleFor(publicRace, kind === "public" ? ports.seed() : 0)
+  const lobby = createLobby(
+    bornAt,
+    kind,
+    ports.config,
+    () => publicRuleFor(publicRace, kind === "public" ? ports.seed() : 0),
+    memory?.lobby ?? null
   );
   let state: HostState<Run> = NEW_HOST;
+  let lostRace: string | null = null;
   let roundTripsMoved = false;
   let wakes = 0;
   let catchUpWakes = 0;
@@ -130,6 +149,26 @@ export const createHost = (
 
   const roomMs = (): number => ports.now() - bornAt;
   const pongFor = createPongs(roomMs);
+
+  const remember = (): void => {
+    const { run } = state;
+    ports.remember(
+      run === null && lobby.size() === 0
+        ? null
+        : {
+            at: ports.now(),
+            build: ports.build,
+            lobby: lobby.memory(),
+            race: run === null ? null : raceMemoryOf(run),
+            version: MEMORY_VERSION,
+          }
+    );
+  };
+
+  const checkpoint = (run: Run): void => {
+    run.checkpoint = checkpointOf(run.room, run.tape);
+    remember();
+  };
 
   const move = (event: HostEvent<Run>): boolean => {
     const next = hostAfter(state, event);
@@ -179,6 +218,7 @@ export const createHost = (
             ...view,
             atMs: roomMs(),
             kind: "lobby",
+            lostRace,
             seatHoldSeconds: ports.config.seatHoldSeconds,
             you: memberId,
           })
@@ -206,6 +246,7 @@ export const createHost = (
       moveSocket(person, { kind: "raceOver" });
     }
     lobby.raceEnded(ports.now());
+    remember();
     tellLobby();
     ports.after(REPORT_GRACE_MS, () => {
       for (const person of present.values()) {
@@ -239,9 +280,9 @@ export const createHost = (
     }
   };
 
-  const ride = (run: Run, startedAt: number): void => {
+  const ride = (run: Run, startedAt: number, wokeAt = startedAt): void => {
     const { room, wakeGaps } = run;
-    let lastWakeAt = startedAt;
+    let lastWakeAt = wokeAt;
     const wake = (): void => {
       wakes += 1;
       const now = ports.now();
@@ -258,6 +299,9 @@ export const createHost = (
         if (room.over()) {
           end(run);
           return;
+        }
+        if (room.state.tick % CHECKPOINT_TICKS === 0) {
+          checkpoint(run);
         }
       }
       const nextAt = startedAt + (room.state.tick + 1) * TICK_MS;
@@ -284,6 +328,7 @@ export const createHost = (
     tell({ kind: "countdown", startAtMs: startsAt - bornAt });
     ports.after(START_DELAY_MS, () => {
       move({ kind: "startMoment" });
+      checkpoint(run);
       ride(run, startsAt);
     });
   };
@@ -301,6 +346,7 @@ export const createHost = (
     const lobbyMs = ports.now() - lobby.since();
     const rule = lobby.rule();
     lobby.raceStarted();
+    lostRace = null;
     wakes = 0;
     catchUpWakes = 0;
     worstBehindTicks = 0;
@@ -332,6 +378,7 @@ export const createHost = (
     ports.after(msOf(ports.config.loadDeadlineSeconds), () => {
       countDown(run);
     });
+    remember();
   };
 
   const refuse = (
@@ -461,6 +508,9 @@ export const createHost = (
         you: seat.rider,
       })
     );
+    if (run.base) {
+      sendTo(person.socket, writeRaceSnapshot(run.base));
+    }
     for (const part of run.tape.sofar()) {
       sendTo(person.socket, writeCatchUp(part));
     }
@@ -488,6 +538,7 @@ export const createHost = (
     retire(person, closeCode, parting);
     const part = closeCode === SEAT_LEFT ? lobby.leave : lobby.away;
     part(person.memberId, ports.now());
+    remember();
     tellLobby();
     consider();
   };
@@ -502,7 +553,11 @@ export const createHost = (
       drop(person, heard ? SEAT_SILENT : null);
     },
     onSwept: (now) => {
-      if (lobby.sweep(now) || roundTripsMoved) {
+      const swept = lobby.sweep(now);
+      if (swept) {
+        remember();
+      }
+      if (swept || roundTripsMoved) {
         tellLobby();
       }
       consider();
@@ -528,7 +583,9 @@ export const createHost = (
         break;
       }
       case "choose": {
-        lobby.choose(memberId, command.choice);
+        if (lobby.choose(memberId, command.choice)) {
+          remember();
+        }
         break;
       }
       default: {
@@ -607,6 +664,48 @@ export const createHost = (
     countDownOnceLoaded(run);
   };
 
+  const restore = (remembered: RoomMemory): void => {
+    const { race } = remembered;
+    if (race === null) {
+      return;
+    }
+    const now = ports.now();
+    const afterMs = now - remembered.at;
+    const run =
+      afterMs <= msOf(ports.config.seatHoldSeconds)
+        ? restoreRace(ports, race, tickBuffer.byteLength, now)
+        : null;
+    if (run === null) {
+      lostRace = race.raceId;
+      ports.note({
+        afterMs,
+        kind: "lost",
+        raceId: race.raceId,
+        tick: race.checkpoint?.tick ?? 0,
+      });
+      remember();
+      return;
+    }
+    const startedAt = now - run.room.state.tick * TICK_MS;
+    state = { phase: "racing", run, startedAt };
+    lobby.raceStarted();
+    for (const seat of run.riders) {
+      holdSeat(run, seat, null);
+    }
+    ports.note({
+      afterMs,
+      build: remembered.build,
+      kind: "restored",
+      raceId: run.raceId,
+      tick: run.room.state.tick,
+    });
+    ride(run, startedAt, now);
+  };
+
+  if (memory) {
+    restore(memory);
+  }
+
   return {
     gone: (socket, closeCode) => {
       const person = present.get(socket);
@@ -630,6 +729,7 @@ export const createHost = (
       if (!person.arrived) {
         person.arrived = true;
         lobby.arrive(person.memberId);
+        remember();
       }
       const { role } = person;
       switch (role.kind) {
@@ -686,6 +786,7 @@ export const createHost = (
         leaveRace(held.run, held.seat, SEAT_QUIT);
       }
       watchSeats();
+      remember();
       tellLobby();
       for (const other of present.values()) {
         if (other.socket !== socket && other.walk !== null) {

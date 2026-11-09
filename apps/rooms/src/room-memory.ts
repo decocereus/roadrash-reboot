@@ -1,0 +1,88 @@
+import type { Room } from "@racer/sim/room";
+import type { TapeWriter } from "@racer/sim/room-tape";
+import { snapshotCapacity, writeSnapshot } from "@racer/sim/snapshot";
+import * as Schema from "effect/Schema";
+
+import { RaceManifestSchema } from "./manifest.ts";
+import { RoomRuleSchema } from "./room-rule.ts";
+
+export const MEMORY_VERSION = 1;
+export const CHECKPOINT_TICKS = 300;
+
+const MemberMemorySchema = Schema.Struct({
+  colour: Schema.Number,
+  id: Schema.String,
+  key: Schema.String,
+  name: Schema.String,
+});
+
+const LobbyMemorySchema = Schema.Struct({
+  joined: Schema.Number,
+  members: Schema.Array(MemberMemorySchema),
+  rule: RoomRuleSchema,
+});
+
+export type LobbyMemory = typeof LobbyMemorySchema.Type;
+
+const SeatMemorySchema = Schema.Struct({
+  accepted: Schema.Number,
+  ahead: Schema.Number,
+  colour: Schema.Number,
+  late: Schema.Number,
+  leftAtTick: Schema.NullOr(Schema.Number),
+  link: Schema.Struct({
+    asn: Schema.NullOr(Schema.Number),
+    colo: Schema.NullOr(Schema.String),
+    network: Schema.NullOr(Schema.String),
+    tcpRttMs: Schema.NullOr(Schema.Number),
+  }),
+  memberId: Schema.String,
+  name: Schema.String,
+  readyMs: Schema.NullOr(Schema.Number),
+  reported: Schema.Boolean,
+  rider: Schema.Number,
+});
+
+export type SeatMemory = typeof SeatMemorySchema.Type;
+
+const CheckpointSchema = Schema.Struct({
+  snapshot: Schema.Uint8Array,
+  tape: Schema.Struct({
+    parts: Schema.Number,
+    tail: Schema.Struct({ bytes: Schema.Uint8Array, ticks: Schema.Number }),
+  }),
+  tick: Schema.Number,
+});
+
+export type Checkpoint = typeof CheckpointSchema.Type;
+
+const RaceMemorySchema = Schema.Struct({
+  checkpoint: Schema.NullOr(CheckpointSchema),
+  manifest: RaceManifestSchema,
+  raceId: Schema.String,
+  seats: Schema.Array(SeatMemorySchema),
+});
+
+export type RaceMemory = typeof RaceMemorySchema.Type;
+
+const RoomMemorySchema = Schema.Struct({
+  at: Schema.Number,
+  build: Schema.String,
+  lobby: LobbyMemorySchema,
+  race: Schema.NullOr(RaceMemorySchema),
+  version: Schema.Literal(MEMORY_VERSION),
+});
+
+export type RoomMemory = typeof RoomMemorySchema.Type;
+
+export const decodeRoomMemory = Schema.decodeUnknownOption(RoomMemorySchema);
+
+export const checkpointOf = (room: Room, tape: TapeWriter): Checkpoint => {
+  const snapshot = new Uint8Array(snapshotCapacity(room.state));
+  writeSnapshot(room.state, room.digest, new DataView(snapshot.buffer));
+  return {
+    snapshot,
+    tape: { parts: tape.parts(), tail: tape.tail() },
+    tick: room.state.tick,
+  };
+};

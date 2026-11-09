@@ -16,6 +16,7 @@
     "./queue-messages": "./src/queue-messages.ts",
     "./room-config": "./src/room-config.ts",
     "./room-id": "./src/room-id.ts",
+    "./room-memory": "./src/room-memory.ts",
     "./notes": "./src/notes.ts",
     "./room-run": "./src/room-run.ts",
     "./race-tally": "./src/race-tally.ts",

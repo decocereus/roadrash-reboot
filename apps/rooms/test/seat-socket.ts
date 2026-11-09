@@ -146,6 +146,7 @@ export const lobbyMessage = (edition: number) =>
     edition,
     hostId: "near",
     kind: "lobby",
+    lostRace: null,
     members: [
       {
         colour: 0,
