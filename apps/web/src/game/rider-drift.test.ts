@@ -276,6 +276,23 @@ describe("a correction beyond bare-hand reach", () => {
     expect(Math.abs(drift.x)).toBeLessThan(0.01);
   });
 
+  it.each([14, -14])(
+    "moves a bike drawn 6 m across off its place with a carried sideways speed of %i m/s at most half a bike's width a frame",
+    (lateralSpeed) => {
+      const drift = stillDrift();
+      driftBy(drift, { ...moved, lateralSpeed, x: 6 });
+      const { step } = framesBeyond(drift, "x", punch.reachX, SPEED, 60);
+      expect(step).toBeLessThanOrEqual(BIKE_HALF_WIDTH + 1e-9);
+    }
+  );
+
+  it("never cuts a bike past its place when a carried speed already closes the gap, at 30 frames a second", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, s: 2, speed: -57, x: 0 });
+    driftSettle(drift, 1 / 30, 57);
+    expect(drift.s).toBeGreaterThan(0);
+  });
+
   it("leaves a correction inside reach to the glide", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: 1.5 });
