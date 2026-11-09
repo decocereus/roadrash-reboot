@@ -157,9 +157,9 @@ export const fakeSocket = (): FakeSocket => {
   return socket;
 };
 
-export const pingPacket = (): ArrayBuffer => {
+export const pingPacket = (rttMs: number | null = null): ArrayBuffer => {
   const buffer = new ArrayBuffer(PING_PACKET_BYTES);
-  writePing(new DataView(buffer), 1);
+  writePing(new DataView(buffer), 1, rttMs);
   return buffer;
 };
 

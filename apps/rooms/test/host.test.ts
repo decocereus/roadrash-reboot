@@ -484,7 +484,7 @@ describe("a room host", () => {
     host.message(socket, new Uint8Array([9, 9, 9]).buffer);
     host.message(socket, "not a packet");
     const buffer = new ArrayBuffer(PING_PACKET_BYTES);
-    writePing(new DataView(buffer), 1234);
+    writePing(new DataView(buffer), 1234, null);
     host.message(socket, buffer);
     const pong = { roomMs: 0, stamp: 0 };
     const [answer] = socket.pongs;

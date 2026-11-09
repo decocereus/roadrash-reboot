@@ -135,6 +135,7 @@ export const createHost = (
     publicRuleFor(publicRace, kind === "public" ? ports.seed() : 0)
   );
   let state: HostState<Run> = NEW_HOST;
+  let roundTripsMoved = false;
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
@@ -180,6 +181,7 @@ export const createHost = (
   };
 
   const tellLobby = (): void => {
+    roundTripsMoved = false;
     const view = lobby.view(ports.now());
     for (const { memberId, role, socket } of present.values()) {
       if (role.kind === "lobby") {
@@ -513,7 +515,7 @@ export const createHost = (
       drop(person, heard ? SEAT_SILENT : null);
     },
     onSwept: (now) => {
-      if (lobby.sweep(now)) {
+      if (lobby.sweep(now) || roundTripsMoved) {
         tellLobby();
       }
       consider();
@@ -550,13 +552,22 @@ export const createHost = (
     consider();
   };
 
+  const answerPing = (person: Present, view: DataView): boolean => {
+    const answer = pongFor(view);
+    if (answer === null) {
+      return false;
+    }
+    if (lobby.roundTrip(person.memberId, answer.rttMs)) {
+      roundTripsMoved = true;
+    }
+    sendTo(person.socket, answer.pong);
+    return true;
+  };
+
   const hearLobby = (person: Present, data: string | ArrayBuffer): void => {
     person.heardAt = ports.now();
     if (data instanceof ArrayBuffer) {
-      const pong = pongFor(new DataView(data));
-      if (pong) {
-        sendTo(person.socket, pong);
-      }
+      answerPing(person, new DataView(data));
       return;
     }
     const command = decodeLobbyCommand(data);
@@ -593,9 +604,7 @@ export const createHost = (
       seat.late += tally.late;
       return;
     }
-    const pong = pongFor(view);
-    if (pong) {
-      sendTo(person.socket, pong);
+    if (answerPing(person, view)) {
       return;
     }
     if (!readReady(view, readyDigest)) {

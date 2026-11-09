@@ -18,7 +18,7 @@ const QUEUE_WAIT_MS = msOf(launchRoomConfig.queueWaitSeconds);
 
 const pingPacket = (): ArrayBuffer => {
   const buffer = new ArrayBuffer(PING_PACKET_BYTES);
-  writePing(new DataView(buffer), 1);
+  writePing(new DataView(buffer), 1, null);
   return buffer;
 };
 

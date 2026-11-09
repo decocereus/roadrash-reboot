@@ -505,11 +505,10 @@ export const openRoomSeat = (
     const view = new DataView(data);
     const pong = pings.hear(view);
     if (pong) {
-      const now = performance.now();
-      rttMs = Math.floor(now) - pong.stamp;
+      ({ rttMs } = pong);
       worstRttMs = Math.max(worstRttMs, rttMs);
-      clock.heardRtt(rttMs, now);
-      clock.heardRoomTime(pong.roomMs, now);
+      clock.heardRtt(rttMs, pong.at);
+      clock.heardRoomTime(pong.roomMs, pong.at);
       tally.heardRtt(rttMs);
       return;
     }

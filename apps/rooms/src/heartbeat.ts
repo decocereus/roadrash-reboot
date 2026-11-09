@@ -7,7 +7,7 @@ import {
   writePing,
   writePong,
 } from "@racer/sim/room-wire";
-import type { Pong } from "@racer/sim/room-wire";
+import type { Ping, Pong } from "@racer/sim/room-wire";
 import { TICK_SECONDS } from "@racer/sim/state";
 
 export const PING_EVERY_MS = 500;
@@ -17,8 +17,6 @@ export const DEAD_AFTER_MS = Math.round(
 const MOST_UNANSWERED_PINGS = DEAD_AFTER_MS / PING_EVERY_MS;
 export const SILENT_SEAT_MS = 10_000;
 export const SEAT_WATCH_MS = 1000;
-
-const NO_STAMP = 0;
 
 interface PingSocket {
   readonly send: (data: ArrayBufferView) => void;
@@ -30,10 +28,16 @@ interface PingRules {
   readonly silent?: (pongsStopped: boolean) => boolean;
 }
 
+interface HeardPong {
+  readonly at: number;
+  readonly roomMs: number;
+  readonly rttMs: number;
+}
+
 interface Pings {
   readonly start: (rules: PingRules) => void;
   readonly stop: () => void;
-  readonly hear: (view: DataView) => Readonly<Pong> | null;
+  readonly hear: (view: DataView) => HeardPong | null;
 }
 
 const whenPongsStop = (pongsStopped: boolean): boolean => pongsStopped;
@@ -41,6 +45,8 @@ const whenPongsStop = (pongsStopped: boolean): boolean => pongsStopped;
 export const createPings = (socket: PingSocket): Pings => {
   const ping = new DataView(new ArrayBuffer(PING_PACKET_BYTES));
   const pong: Pong = { roomMs: 0, stamp: 0 };
+  const heard = { at: 0, roomMs: 0, rttMs: 0 };
+  let lastRttMs: number | null = null;
   let unanswered = 0;
   let beats: ReturnType<typeof setInterval> | null = null;
 
@@ -50,7 +56,11 @@ export const createPings = (socket: PingSocket): Pings => {
         return null;
       }
       unanswered = 0;
-      return pong;
+      heard.at = performance.now();
+      heard.roomMs = pong.roomMs;
+      heard.rttMs = Math.floor(heard.at) - pong.stamp;
+      lastRttMs = heard.rttMs;
+      return heard;
     },
     start: ({ onPinged, onSilent, silent = whenPongsStop }) => {
       beats = setInterval(() => {
@@ -58,7 +68,7 @@ export const createPings = (socket: PingSocket): Pings => {
           onSilent();
           return;
         }
-        writePing(ping, Math.floor(performance.now()));
+        writePing(ping, Math.floor(performance.now()), lastRttMs);
         socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
         unanswered += 1;
         onPinged?.();
@@ -73,16 +83,25 @@ export const createPings = (socket: PingSocket): Pings => {
   };
 };
 
+interface PingAnswer {
+  readonly pong: Uint8Array;
+  rttMs: number | null;
+}
+
 export const createPongs = (
   roomMs: () => number
-): ((ping: DataView) => Uint8Array | null) => {
+): ((ping: DataView) => Readonly<PingAnswer> | null) => {
   const buffer = new ArrayBuffer(PONG_PACKET_BYTES);
   const view = new DataView(buffer);
+  const heard: Ping = { rttMs: null, stamp: 0 };
+  const answer: PingAnswer = { pong: new Uint8Array(buffer), rttMs: null };
   return (ping) => {
-    const stamp = readPing(ping);
-    return stamp < NO_STAMP
-      ? null
-      : new Uint8Array(buffer, 0, writePong(view, stamp, roomMs()));
+    if (!readPing(ping, heard)) {
+      return null;
+    }
+    writePong(view, heard.stamp, roomMs());
+    answer.rttMs = heard.rttMs;
+    return answer;
   };
 };
 

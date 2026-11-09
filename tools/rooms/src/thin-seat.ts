@@ -73,6 +73,7 @@ export const openThinSeat = (
   let confirmed = 0;
   let sentThrough = 0;
   let lastArrival = 0;
+  let lastRttMs: number | null = null;
   let beats = 0;
   let left = false;
   let timers: readonly ReturnType<typeof setInterval>[] = [];
@@ -109,7 +110,7 @@ export const openThinSeat = (
 
   const sendPing = (): void => {
     if (socket.readyState === WebSocket.OPEN) {
-      writePing(ping, Math.floor(performance.now()));
+      writePing(ping, Math.floor(performance.now()), lastRttMs);
       socket.send(new Uint8Array(ping.buffer, 0, PING_PACKET_BYTES));
     }
   };
@@ -125,6 +126,7 @@ export const openThinSeat = (
     if (readPong(view, pong)) {
       const arrival = performance.now();
       const rtt = Math.floor(arrival) - pong.stamp;
+      lastRttMs = rtt;
       tally.worstRttMs = Math.max(tally.worstRttMs, rtt);
       clock.heardRtt(rtt, arrival);
       clock.heardRoomTime(pong.roomMs, arrival);

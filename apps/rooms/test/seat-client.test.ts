@@ -34,6 +34,7 @@ import {
   hearTick,
   loadingSeat,
   newSeat,
+  pongTo,
   raceDataSwitch,
 } from "./seat-socket.ts";
 
@@ -573,6 +574,24 @@ describe("a seat loading the race", () => {
     const { seat, socket } = newSeat();
     vi.advanceTimersByTime(PING_EVERY_MS);
     expect(socket.sentBytes).toStrictEqual([PING_PACKET_BYTES]);
+    seat.leave();
+  });
+
+  it("tells the room, in its next ping, the round trip it measured on the last one", () => {
+    const { seat, socket } = newSeat();
+    socket.answers = false;
+    vi.advanceTimersByTime(PING_EVERY_MS);
+    const [first] = socket.sentPings;
+    if (!first) {
+      throw new Error("The seat sent no ping.");
+    }
+    vi.advanceTimersByTime(120);
+    socket.hear(pongTo(first));
+    vi.advanceTimersByTime(PING_EVERY_MS - 120);
+    expect(socket.sentPings.map(({ rttMs }) => rttMs)).toStrictEqual([
+      null,
+      120,
+    ]);
     seat.leave();
   });
 
