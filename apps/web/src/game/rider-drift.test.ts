@@ -111,7 +111,7 @@ describe("how a corrected rider settles on screen", () => {
     expect(Math.abs(drift.s)).toBeLessThan(0.01);
   });
 
-  it("brings a bike drawn a full reach across off its place back inside half a reach within a strike and a third, and onto it within a second, stepping under 20 cm a frame", () => {
+  it("brings a bike drawn a full reach across off its place back inside half a reach within a strike and a third, and onto it within a second, stepping under 20 cm a 60 Hz frame", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: punch.reachX });
     const trusted = framesUntilWithin(drift, "x", HALF_REACH_ACROSS, SPEED, 60);
@@ -226,6 +226,38 @@ describe("a bike's height on screen", () => {
     expect(drawnAfter(1)).toBeLessThan(lifted * 0.2);
     expect(drawnAfter(40)).toBeCloseTo(lifted, 4);
   });
+});
+
+const FASTEST_ACROSS = 2.5 + HALF_REACH_ACROSS / (kick.ticks / 60);
+
+describe("a correction closing at any frame rate", () => {
+  it.each([60, 30, 20])(
+    "brings a bike drawn a full reach across off its place back inside half a reach within a strike and a third at %i frames a second, gliding no faster than half a reach per strike on top of 2.5 m/s",
+    (fps) => {
+      const seconds = 1 / fps;
+      const view = {
+        after: tickedPose(),
+        before: tickedPose(),
+        drawn: stillDrawn(),
+        drift: stillDrift(),
+      };
+      const rider = { mode: "riding", speed: SPEED };
+      placeDrawn(view, rider, 0, seconds);
+      view.before.x = -punch.reachX;
+      view.after.x = -punch.reachX;
+      driftBy(view.drift, { ...moved, x: punch.reachX });
+      let elapsed = 0;
+      let fastest = 0;
+      while (Math.abs(view.drift.x) >= HALF_REACH_ACROSS && elapsed < 2) {
+        const from = view.drawn.x;
+        placeDrawn(view, rider, 0, seconds);
+        elapsed += seconds;
+        fastest = Math.max(fastest, Math.abs(view.drawn.x - from) / seconds);
+      }
+      expect(elapsed).toBeLessThanOrEqual((kick.ticks * 4) / 3 / 60 + seconds);
+      expect(fastest).toBeLessThanOrEqual(FASTEST_ACROSS + 1e-9);
+    }
+  );
 });
 
 describe("when a correction reaches the cast", () => {
