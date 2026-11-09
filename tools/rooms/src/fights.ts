@@ -23,11 +23,13 @@ import {
   fightRow,
   positions,
   riderTrack,
+  strikeVerdict,
   takenFrames,
 } from "./fight-report.ts";
 import type {
+  BoutRow,
   FightKind,
-  FightRow,
+  NetworkReport,
   Positions,
   TakenFrames,
 } from "./fight-report.ts";
@@ -308,12 +310,6 @@ interface Places {
   readonly verifyRoot: string;
 }
 
-interface BoutRow extends FightRow {
-  readonly fired: boolean;
-  readonly gapAcross: number;
-  readonly pressed: boolean;
-}
-
 const strikeOnce = Effect.fn("rooms.fights.strike")(function* strikeOnce(
   windows: Windows,
   { attacker, kind }: Bout,
@@ -443,16 +439,6 @@ const knockDown = Effect.fn("rooms.fights.knockDown")(function* knockDown(
   };
 });
 
-const verdictOf = (row: BoutRow): string => {
-  if (!row.pressed) {
-    return "not in reach";
-  }
-  if (!row.fired) {
-    return "room ran no strike";
-  }
-  return row.passed ? "pass" : "FAIL";
-};
-
 const msOf = (value: number | null): number | string =>
   value === null ? "n/a" : Math.round(value);
 
@@ -464,7 +450,7 @@ const tableOf = (
     [
       network,
       `${row.kind} ${row.attacker} on ${row.victim}`,
-      verdictOf(row),
+      strikeVerdict(row),
       row.hitLanded
         ? `hit, ${Math.round(row.staminaLost)} stamina, ${row.flinchFrames} flinch frames`
         : "miss",
@@ -542,7 +528,7 @@ const runNetwork = (
       );
       const fromOne = yield* readTaken(windows[0], startedAt);
       const taken = yield* readTaken(windows[1], startedAt);
-      const report = {
+      const report: NetworkReport = {
         fall,
         falls: taken.falls,
         network,

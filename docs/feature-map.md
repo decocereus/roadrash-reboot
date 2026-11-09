@@ -1495,12 +1495,12 @@ Test files:
 
 ### Race rooms
 
-The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, `pnpm rooms:race` races scripted seats against it, `pnpm rooms:gate` checks the per-client limits on seats, room opens and queue tickets, and `pnpm rooms:replay` runs a saved race tape again.
+The race room's rules: the setup that seats up to eight humans with pacing off, the authority that accepts each rider's controls by tick and holds, coasts or hands a silent seat to the pilot, the input and tick packets, and the client that predicts ahead of the room and rolls back to its confirmed race when a frame differs from its guess. The room runs on the `RaceServer` Durable Object in `apps/rooms`, with WebSocket seats and the 60 Hz tick loop, `pnpm rooms:race` races scripted seats against it, `pnpm rooms:gate` checks the per-client limits on seats, room opens and queue tickets, `pnpm rooms:replay` runs a saved race tape again, and `pnpm rooms:compare` judges a netcode change from `pnpm rooms:fights` runs on its base and head builds.
 
 - Id: `race-room`
 - Start: `apps/rooms/src/host.ts`, `apps/rooms/src/lobby.ts`, `packages/sim/src/room.ts`
 - Docs: [docs/architecture/race-rooms.md#race-rooms](architecture/race-rooms.md#race-rooms), [docs/standards/simulation.md#keep-the-simulation-deterministic](standards/simulation.md#keep-the-simulation-deterministic), [docs/design/game-design.md#12-multiplayer](design/game-design.md#12-multiplayer)
-- Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md)
+- Verify: [race-room.md](../.claude/skills/verify-rushline/features/race-room.md), [netcode-compare.md](../.claude/skills/verify-rushline/features/netcode-compare.md)
 - Perf: `room.tick.p95`, `room.confirm.p95`, `room.rollback.p95`, `room.allocatedBytesPerTick`, `room.client.allocatedBytesPerTick`, `room.frame.allocatedBytesPerTick`
 - Owns: `packages/sim/src/room*.ts`, `packages/career/src/room-race*.ts`, `apps/rooms/**`, `scripts/rooms-build.test.ts`, `apps/web/src/components/guest-name.ts`, `apps/web/test/member-key.test.ts`, `apps/web/test/member-rows.test.tsx`, `apps/web/src/components/room-lobby.tsx`, `apps/web/src/components/use-handoff.ts`, `apps/web/src/prepare-outcome.ts`, `apps/web/src/race-handoff.ts`, `apps/web/src/room-handoff.ts`, `apps/web/test/prepare-outcome.test.ts`, `apps/web/test/race-handoff.test.ts`, `apps/web/test/room-boot-failure.test.tsx`, `apps/web/test/room-limited.test.tsx`, `apps/web/test/queue-screen.test.tsx`, `apps/web/test/room-rejoin-choice.test.ts`, `apps/web/src/components/room-url.ts`, `apps/web/src/components/room-preview.ts`, `apps/web/test/room-preview.test.ts`, `tools/rooms/**`
 
@@ -1553,6 +1553,7 @@ Source files:
 - `packages/sim/src/room-tape.ts`
 - `packages/sim/src/room-wire.ts`
 - `packages/sim/src/room.ts`
+- `tools/rooms/compare.ts`
 - `tools/rooms/fights.ts`
 - `tools/rooms/gate.ts`
 - `tools/rooms/lag.ts`
@@ -1563,6 +1564,7 @@ Source files:
 - `tools/rooms/race.ts`
 - `tools/rooms/read.ts`
 - `tools/rooms/replay.ts`
+- `tools/rooms/src/fight-compare.ts`
 - `tools/rooms/src/fight-links.ts`
 - `tools/rooms/src/fight-probe.ts`
 - `tools/rooms/src/fight-report.ts`
@@ -1634,6 +1636,7 @@ Test files:
 - `packages/sim/src/room-missed.test.ts`
 - `packages/sim/src/room.test.ts`
 - `scripts/rooms-build.test.ts`
+- `tools/rooms/test/fight-compare.test.ts`
 - `tools/rooms/test/fight-report.test.ts`
 - `tools/rooms/test/lag.test.ts`
 - `tools/rooms/test/lifecycle.test.ts`
