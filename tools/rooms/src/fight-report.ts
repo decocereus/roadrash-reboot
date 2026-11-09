@@ -1,6 +1,10 @@
 import * as Schema from "effect/Schema";
 
-export type FightKind = "kick" | "punch";
+import { RUN_NAMES } from "./fight-links.ts";
+
+const FIGHT_KINDS = ["kick", "punch"] as const;
+
+export type FightKind = (typeof FIGHT_KINDS)[number];
 
 const probeRider = Schema.Struct({
   attack: Schema.String,
@@ -40,19 +44,21 @@ export type ProbeFrame = typeof probeFrame.Type;
 const stamped = <Fields extends Schema.Struct.Fields>(fields: Fields) =>
   Schema.Array(Schema.Struct({ at: Schema.Number, ...fields }));
 
+const falls = stamped({
+  by: Schema.NullOr(Schema.Number),
+  cause: Schema.String,
+  rider: Schema.Number,
+  s: Schema.Number,
+  tick: Schema.Number,
+});
+
 export const takenFrames = Schema.Struct({
   attacks: stamped({
     attack: Schema.String,
     rider: Schema.Number,
     tick: Schema.Number,
   }),
-  falls: stamped({
-    by: Schema.NullOr(Schema.Number),
-    cause: Schema.String,
-    rider: Schema.Number,
-    s: Schema.Number,
-    tick: Schema.Number,
-  }),
+  falls,
   frames: Schema.Array(probeFrame),
   hits: stamped({
     attack: Schema.String,
@@ -86,29 +92,52 @@ export const positions = Schema.Struct({
 
 export type Positions = typeof positions.Type;
 
-export interface FightRow {
-  readonly attacker: number;
-  readonly drawnErrorAtHitMetres: number | null;
-  readonly drawnFrames: number;
-  readonly flinchFrames: number;
-  readonly hitLanded: boolean;
-  readonly holdMs: number | null;
-  readonly kind: FightKind;
-  readonly lead: number | null;
-  readonly lostPresses: number;
-  readonly passed: boolean;
-  readonly pressToLandMs: number | null;
-  readonly pressToSendMs: number | null;
-  readonly pressToShownMs: number | null;
-  readonly pressToStrikeOutMs: number | null;
-  readonly rttAtPressMs: number | null;
-  readonly sendToVictimMs: number | null;
-  readonly staminaLost: number;
-  readonly strikeOutBeforeFlinchMs: number | null;
-  readonly strikeOutBeforeShoveMs: number | null;
-  readonly victim: number;
-  readonly victimConfirmToDrawnMs: number | null;
-}
+const numberOrNull = Schema.NullOr(Schema.Number);
+
+const FightRowSchema = Schema.Struct({
+  attacker: Schema.Number,
+  drawnErrorAtHitMetres: numberOrNull,
+  drawnFrames: Schema.Number,
+  flinchFrames: Schema.Number,
+  hitLanded: Schema.Boolean,
+  holdMs: numberOrNull,
+  kind: Schema.Literals(FIGHT_KINDS),
+  lead: numberOrNull,
+  lostPresses: Schema.Number,
+  passed: Schema.Boolean,
+  pressToLandMs: numberOrNull,
+  pressToSendMs: numberOrNull,
+  pressToShownMs: numberOrNull,
+  pressToStrikeOutMs: numberOrNull,
+  rttAtPressMs: numberOrNull,
+  sendToVictimMs: numberOrNull,
+  staminaLost: Schema.Number,
+  strikeOutBeforeFlinchMs: numberOrNull,
+  strikeOutBeforeShoveMs: numberOrNull,
+  victim: Schema.Number,
+  victimConfirmToDrawnMs: numberOrNull,
+});
+
+type FightRow = typeof FightRowSchema.Type;
+
+const BoutRowSchema = Schema.Struct({
+  ...FightRowSchema.fields,
+  fired: Schema.Boolean,
+  gapAcross: Schema.Number,
+  pressed: Schema.Boolean,
+});
+
+export type BoutRow = typeof BoutRowSchema.Type;
+
+export const strikeVerdict = (row: BoutRow) => {
+  if (!row.pressed) {
+    return "not in reach";
+  }
+  if (!row.fired) {
+    return "room ran no strike";
+  }
+  return row.passed ? "pass" : "FAIL";
+};
 
 const FULL_REACH = 0.99;
 
@@ -279,17 +308,37 @@ export const fightRow = (
   };
 };
 
-interface TrackError {
-  readonly errorP95Metres: number;
-  readonly frames: number;
-  readonly worstStepMetres: number;
-}
+const TrackErrorSchema = Schema.Struct({
+  errorP95Metres: Schema.Number,
+  frames: Schema.Number,
+  worstStepMetres: Schema.Number,
+});
 
-export interface RiderTrack {
-  readonly drawn: TrackError;
-  readonly guessed: TrackError;
-  readonly rider: number;
-}
+type TrackError = typeof TrackErrorSchema.Type;
+
+const RiderTrackSchema = Schema.Struct({
+  drawn: TrackErrorSchema,
+  guessed: TrackErrorSchema,
+  rider: Schema.Number,
+});
+
+type RiderTrack = typeof RiderTrackSchema.Type;
+
+export const NetworkReportSchema = Schema.Struct({
+  fall: Schema.NullOr(
+    Schema.Struct({
+      attackerSaw: Schema.Array(Schema.String),
+      victimSaw: Schema.Array(Schema.String),
+    })
+  ),
+  falls,
+  network: Schema.Literals(RUN_NAMES),
+  rows: Schema.Array(BoutRowSchema),
+  rtt: Schema.Number,
+  tracks: Schema.Array(RiderTrackSchema),
+});
+
+export type NetworkReport = typeof NetworkReportSchema.Type;
 
 const P95 = 0.95;
 

@@ -39,6 +39,7 @@
     "perf:gpu": "node tools/perf/gpu.ts",
     "replay:engines": "node tools/replay/engines.ts",
     "road:test": "node tools/road-test/road-test.ts",
+    "rooms:compare": "node tools/rooms/compare.ts",
     "rooms:fights": "node tools/rooms/fights.ts",
     "rooms:gate": "node tools/rooms/gate.ts",
     "rooms:lag": "node tools/rooms/lag.ts",

@@ -30,7 +30,8 @@ export const NETWORK_NAMES = [
   "upload",
 ] as const;
 export type NetworkName = (typeof NETWORK_NAMES)[number];
-export type RunName = NetworkName | "live";
+export const RUN_NAMES = [...NETWORK_NAMES, "live"] as const;
+export type RunName = (typeof RUN_NAMES)[number];
 
 export const linksOf = (name: NetworkName): readonly [Link, Link] => {
   switch (name) {
