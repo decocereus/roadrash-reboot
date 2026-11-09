@@ -78,7 +78,11 @@ type Build = readonly (readonly NetworkReport[])[];
 
 const OUT = "compare.md";
 
-const compare = async (base: Build, head: Build) => {
+const compare = async (
+  base: Build,
+  head: Build,
+  written: (json: string) => string = (json) => json
+) => {
   const files = new Map<string, string>();
   const listings = new Map<string, string[]>();
   const place = (side: string, build: Build) =>
@@ -92,7 +96,7 @@ const compare = async (base: Build, head: Build) => {
           `${one.network}-kick-0on1-victim.json`,
         ];
         listings.get(dir)?.push(...names);
-        files.set(`${dir}/${one.network}.json`, JSON.stringify(one));
+        files.set(`${dir}/${one.network}.json`, written(JSON.stringify(one)));
         files.set(`${dir}/${one.network}-rows.json`, JSON.stringify(one.rows));
         files.set(`${dir}/${one.network}-kick-0on1-victim.json`, "[]");
       }
@@ -240,6 +244,16 @@ describe("comparing two builds' fights", () => {
       "- FAIL mobile link-on-both",
       "- Head fails 1 of 7 checks",
     ]);
+  });
+
+  it("refuses a report whose measure is not a finite number", async () => {
+    const { exit, verdicts } = await compare(
+      [[report("home", { ...steady, p95: 4242 })]],
+      [[report("home", { ...steady, p95: 100 })]],
+      (json) => json.replaceAll("4242", "1e309")
+    );
+    expect(Exit.isFailure(exit)).toBeTruthy();
+    expect(verdicts).toStrictEqual([]);
   });
 
   it("refuses a folder with no fights report", async () => {

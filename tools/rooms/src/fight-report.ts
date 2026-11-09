@@ -92,30 +92,30 @@ export const positions = Schema.Struct({
 
 export type Positions = typeof positions.Type;
 
-const numberOrNull = Schema.NullOr(Schema.Number);
+const finiteOrNull = Schema.NullOr(Schema.Finite);
 
 const FightRowSchema = Schema.Struct({
-  attacker: Schema.Number,
-  drawnErrorAtHitMetres: numberOrNull,
-  drawnFrames: Schema.Number,
-  flinchFrames: Schema.Number,
+  attacker: Schema.Finite,
+  drawnErrorAtHitMetres: finiteOrNull,
+  drawnFrames: Schema.Finite,
+  flinchFrames: Schema.Finite,
   hitLanded: Schema.Boolean,
-  holdMs: numberOrNull,
+  holdMs: finiteOrNull,
   kind: Schema.Literals(FIGHT_KINDS),
-  lead: numberOrNull,
-  lostPresses: Schema.Number,
+  lead: finiteOrNull,
+  lostPresses: Schema.Finite,
   passed: Schema.Boolean,
-  pressToLandMs: numberOrNull,
-  pressToSendMs: numberOrNull,
-  pressToShownMs: numberOrNull,
-  pressToStrikeOutMs: numberOrNull,
-  rttAtPressMs: numberOrNull,
-  sendToVictimMs: numberOrNull,
-  staminaLost: Schema.Number,
-  strikeOutBeforeFlinchMs: numberOrNull,
-  strikeOutBeforeShoveMs: numberOrNull,
-  victim: Schema.Number,
-  victimConfirmToDrawnMs: numberOrNull,
+  pressToLandMs: finiteOrNull,
+  pressToSendMs: finiteOrNull,
+  pressToShownMs: finiteOrNull,
+  pressToStrikeOutMs: finiteOrNull,
+  rttAtPressMs: finiteOrNull,
+  sendToVictimMs: finiteOrNull,
+  staminaLost: Schema.Finite,
+  strikeOutBeforeFlinchMs: finiteOrNull,
+  strikeOutBeforeShoveMs: finiteOrNull,
+  victim: Schema.Finite,
+  victimConfirmToDrawnMs: finiteOrNull,
 });
 
 type FightRow = typeof FightRowSchema.Type;
@@ -123,7 +123,7 @@ type FightRow = typeof FightRowSchema.Type;
 const BoutRowSchema = Schema.Struct({
   ...FightRowSchema.fields,
   fired: Schema.Boolean,
-  gapAcross: Schema.Number,
+  gapAcross: Schema.Finite,
   pressed: Schema.Boolean,
 });
 
@@ -309,9 +309,9 @@ export const fightRow = (
 };
 
 const TrackErrorSchema = Schema.Struct({
-  errorP95Metres: Schema.Number,
-  frames: Schema.Number,
-  worstStepMetres: Schema.Number,
+  errorP95Metres: Schema.Finite,
+  frames: Schema.Finite,
+  worstStepMetres: Schema.Finite,
 });
 
 type TrackError = typeof TrackErrorSchema.Type;
@@ -319,7 +319,7 @@ type TrackError = typeof TrackErrorSchema.Type;
 const RiderTrackSchema = Schema.Struct({
   drawn: TrackErrorSchema,
   guessed: TrackErrorSchema,
-  rider: Schema.Number,
+  rider: Schema.Finite,
 });
 
 type RiderTrack = typeof RiderTrackSchema.Type;
@@ -334,7 +334,7 @@ export const NetworkReportSchema = Schema.Struct({
   falls,
   network: Schema.Literals(RUN_NAMES),
   rows: Schema.Array(BoutRowSchema),
-  rtt: Schema.Number,
+  rtt: Schema.Finite,
   tracks: Schema.Array(RiderTrackSchema),
 });
 
