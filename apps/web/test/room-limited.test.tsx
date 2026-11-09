@@ -54,7 +54,7 @@ describe("a rider the rooms Worker refused for joining too often", () => {
 });
 
 describe("a rider the room cut for sending too many messages", () => {
-  it("reads why and is offered Back, not Reload or a way back into the race", () => {
+  it("reads why and is offered Leave, not Reload or a way back into the race", () => {
     const screen = renderToStaticMarkup(
       <RoomLobbyScreen
         name="Rider"
