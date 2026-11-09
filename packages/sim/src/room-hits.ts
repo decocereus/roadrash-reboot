@@ -2,11 +2,14 @@ import type { HitEvent } from "./state.ts";
 
 const SAME_HIT_TICKS = 15;
 
-interface ShownHit {
-  backed: boolean;
+interface HitAt {
   readonly hit: HitEvent;
-  refused: boolean;
   tick: number;
+}
+
+interface ShownHit extends HitAt {
+  backed: boolean;
+  refused: boolean;
 }
 
 export interface HitLedger {
@@ -18,25 +21,31 @@ export interface HitLedger {
   readonly replayStarted: () => void;
 }
 
+const sameHit = <Hit extends HitAt>(
+  among: readonly Hit[],
+  event: HitEvent,
+  tick: number
+): Hit | undefined =>
+  among.find(
+    ({ hit, tick: at }) =>
+      hit.rider === event.rider &&
+      hit.target === event.target &&
+      hit.attack === event.attack &&
+      Math.abs(at - tick) <= SAME_HIT_TICKS
+  );
+
+const drop = <Hit extends HitAt>(among: Hit[], hit: Hit): void => {
+  among.splice(among.indexOf(hit), 1);
+};
+
 export const createHitLedger = (
   shows: (hit: HitEvent) => void,
   refuses: (hit: HitEvent, tick: number) => void
 ): HitLedger => {
   const shown: ShownHit[] = [];
   const replayed: ShownHit[] = [];
-
-  const sameHit = (
-    among: readonly ShownHit[],
-    event: HitEvent,
-    tick: number
-  ): ShownHit | undefined =>
-    among.find(
-      ({ hit, tick: at }) =>
-        hit.rider === event.rider &&
-        hit.target === event.target &&
-        hit.attack === event.attack &&
-        Math.abs(at - tick) <= SAME_HIT_TICKS
-    );
+  const settled: HitAt[] = [];
+  let midReplay = false;
 
   const refuse = (hit: ShownHit): void => {
     hit.refused = true;
@@ -52,6 +61,9 @@ export const createHitLedger = (
         known.tick = tick;
         return;
       }
+      if (sameHit(settled, event, tick)) {
+        return;
+      }
       const found = { backed: true, hit: { ...event }, refused: false, tick };
       if (replaying) {
         replayed.push(found);
@@ -62,15 +74,19 @@ export const createHitLedger = (
     },
     landed: (event, tick) => {
       const known = sameHit(shown, event, tick);
+      const pending = known ? undefined : sameHit(replayed, event, tick);
       if (known) {
-        shown.splice(shown.indexOf(known), 1);
-        return;
+        drop(shown, known);
       }
-      const pending = sameHit(replayed, event, tick);
       if (pending) {
-        replayed.splice(replayed.indexOf(pending), 1);
+        drop(replayed, pending);
       }
-      shows(event);
+      if (midReplay) {
+        settled.push(known ?? pending ?? { hit: { ...event }, tick });
+      }
+      if (!known) {
+        shows(event);
+      }
     },
     passed: (confirmedTick) => {
       const overdue = confirmedTick - SAME_HIT_TICKS;
@@ -85,6 +101,8 @@ export const createHitLedger = (
       }
     },
     replayDrawn: () => {
+      midReplay = false;
+      settled.length = 0;
       for (const found of replayed) {
         shown.push(found);
         shows(found.hit);
@@ -97,9 +115,13 @@ export const createHitLedger = (
       }
     },
     replayDropped: () => {
+      midReplay = false;
+      settled.length = 0;
       replayed.length = 0;
     },
     replayStarted: () => {
+      midReplay = true;
+      settled.length = 0;
       replayed.length = 0;
       for (const hit of shown) {
         hit.backed = false;
