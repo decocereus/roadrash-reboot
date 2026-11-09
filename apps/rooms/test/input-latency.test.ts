@@ -27,9 +27,9 @@ describe("input to frame latency", () => {
     const { latency, move, nextFrame } = rig();
     latency.pressed();
     move(10);
-    latency.controlChanged();
+    latency.controlChanged(30);
     move(500);
-    latency.controlApplied();
+    latency.reached(30);
     move(16);
     nextFrame();
     expect(latency.summary()).toStrictEqual({
@@ -39,10 +39,28 @@ describe("input to frame latency", () => {
     });
   });
 
+  it("keeps timing the first press while later ones change the control again", () => {
+    const { latency, move, nextFrame } = rig();
+    latency.pressed();
+    latency.controlChanged(30);
+    for (let tick = 31; tick <= 60; tick += 1) {
+      move(10);
+      latency.pressed();
+      latency.controlChanged(tick);
+      latency.reached(tick - 30);
+    }
+    nextFrame();
+    expect(latency.summary()).toStrictEqual({
+      medianMs: 300,
+      samples: 1,
+      worstMs: 300,
+    });
+  });
+
   it("ignores a control that changed with no press behind it", () => {
     const { latency, nextFrame } = rig();
-    latency.controlChanged();
-    latency.controlApplied();
+    latency.controlChanged(0);
+    latency.reached(0);
     nextFrame();
     expect(latency.summary().samples).toBe(0);
   });
@@ -51,8 +69,8 @@ describe("input to frame latency", () => {
     const { latency, move, nextFrame } = rig();
     latency.pressed();
     move(501);
-    latency.controlChanged();
-    latency.controlApplied();
+    latency.controlChanged(0);
+    latency.reached(0);
     nextFrame();
     expect(latency.summary().samples).toBe(0);
   });
@@ -62,8 +80,8 @@ describe("input to frame latency", () => {
     latency.pressed();
     move(5);
     latency.pressed();
-    latency.controlChanged();
-    latency.controlApplied();
+    latency.controlChanged(0);
+    latency.reached(0);
     nextFrame();
     expect(latency.summary().worstMs).toBe(5);
   });

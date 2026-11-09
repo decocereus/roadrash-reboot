@@ -356,6 +356,32 @@ describe("a seat loading the race", () => {
     });
   });
 
+  it("replays a correction the room's last tick asked for a frame's share at a time once the race ends", () => {
+    const { seat, socket } = loadingSeat();
+    const client = seat.race()?.client;
+    socket.hear(encodeRoomMessage({ kind: "countdown", startAtMs: 0 }));
+    seat.frameDrawn(0, 0);
+    for (let tick = 0; tick < 2 * MOST_TICKS_PER_FRAME; tick += 1) {
+      client?.predict(coasting);
+    }
+    const frame = createTickFrame();
+    clearFrame(frame, 1);
+    frame.controls.set(
+      riderIdAt(0),
+      controlOf({ ...neutralInput, throttle: 1 })
+    );
+    const view = new DataView(new ArrayBuffer(64));
+    socket.hear(view.buffer.slice(0, writeTick(view, frame, null)));
+    socket.hear(encodeRoomMessage({ kind: "ended", tick: 1 }));
+    const replayedAt = [client?.stats.resimulatedTicks ?? 0];
+    for (let drawn = 0; drawn < 4; drawn += 1) {
+      seat.frameDrawn(0, 0);
+      replayedAt.push(client?.stats.resimulatedTicks ?? 0);
+    }
+    expect(replayedAt[0]).toBeLessThanOrEqual(MOST_TICKS_PER_FRAME);
+    expect(socket.closedWith).not.toBeNull();
+  });
+
   it("confirms what it holds when the rider leaves, without counting that work as a drawn frame", () => {
     const { seat, socket } = loadingSeat();
     const client = seat.race()?.client;

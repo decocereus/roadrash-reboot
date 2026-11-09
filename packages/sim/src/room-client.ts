@@ -77,9 +77,9 @@ export interface RiderCorrection {
 
 export interface RoomClient {
   readonly confirmed: RaceState;
+  readonly correcting: () => boolean;
   readonly lagging: () => boolean;
   readonly lostControls: () => number;
-  readonly mending: () => boolean;
   readonly mine: RiderState;
   readonly plannedThrough: () => number;
   readonly predicted: RaceState;
@@ -556,9 +556,9 @@ export const createRoomClient = (
       }
     },
     confirmed,
+    correcting: () => mending || stale,
     lagging: () => lagging,
     lostControls: () => lostControls,
-    mending: () => mending,
     mine,
     plannedThrough: () => plannedThrough,
     predict: (control, delay = 0) => {

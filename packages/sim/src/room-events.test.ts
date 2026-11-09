@@ -175,7 +175,8 @@ describe("an attacker's own hits, reconciled with the room", () => {
       const heard = client
         .takeFights()
         .filter((fight) => "event" in fight && fight.event.kind === "hit");
-      hits[client.mending() ? "whileReplaying" : "afterwards"] += heard.length;
+      hits[client.correcting() ? "whileReplaying" : "afterwards"] +=
+        heard.length;
     }
     expect(hits).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
   });
@@ -198,7 +199,7 @@ describe("an attacker's own hits, reconciled with the room", () => {
       const heard = client
         .takeEvents()
         .filter((event) => event.kind === "hit").length;
-      sounds[client.mending() ? "whileReplaying" : "afterwards"] += heard;
+      sounds[client.correcting() ? "whileReplaying" : "afterwards"] += heard;
     }
     expect(sounds).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
   });
@@ -223,7 +224,7 @@ describe("an attacker's own hits, reconciled with the room", () => {
     for (let frame = 0; frame < 4; frame += 1) {
       client.settle(4);
     }
-    const replaying = client.mending();
+    const replaying = client.correcting();
     for (
       let tick = RIDE_TICKS + 1;
       tick <= RIDE_TICKS + AFTER_TICKS;

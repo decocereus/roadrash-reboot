@@ -415,7 +415,7 @@ export const openRoomSeat = (
   };
 
   const caughtUp = (race: SeatRace): boolean =>
-    backlog.length === 0 && !race.client.mending();
+    backlog.length === 0 && !race.client.correcting();
 
   const reportOnce = (): void => {
     const { race } = state;

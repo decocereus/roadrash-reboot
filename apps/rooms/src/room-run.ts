@@ -59,7 +59,6 @@ export const createRoomRun = (
     riderColours,
   } = race;
   let sent: Control = coasting;
-  let appliesAt = 0;
   return {
     awayMs,
     confirmed: client.confirmed,
@@ -102,17 +101,12 @@ export const createRoomRun = (
     step: (frame) => {
       const control = frame.controls.get(me) ?? coasting;
       const changed = control !== sent;
-      if (changed) {
-        sent = control;
-        latency.controlChanged();
-      }
+      sent = control;
       client.predict(control, seat.inputDelay());
       if (changed) {
-        appliesAt = client.plannedThrough();
+        latency.controlChanged(client.plannedThrough());
       }
-      if (client.predicted.tick >= appliesAt) {
-        latency.controlApplied();
-      }
+      latency.reached(client.predicted.tick);
       seat.flush();
     },
     stepsDue: seat.stepsDue,
