@@ -28,6 +28,25 @@ const punchingRight = controlOf({
   throttle: 1,
 });
 
+const strikesWith = (firstDelay: number): number => {
+  const setup = roomSetup(defaultSetup(track, 3), [PLAYER_RIDER]);
+  const client = createRoomClient(setup, PLAYER_RIDER, ROOM_LIMIT_TICKS);
+  let strikes = 0;
+  for (let tick = 1; tick <= 120; tick += 1) {
+    const punching = tick === 2 || tick === 20;
+    client.predict(
+      punching ? punchingRight : steeringLeft,
+      tick === 1 ? firstDelay : 0
+    );
+    strikes += client
+      .takeEvents()
+      .filter(
+        (event) => event.kind === "attack" && event.rider === PLAYER_RIDER
+      ).length;
+  }
+  return strikes;
+};
+
 const sentControls = (
   ridden: (client: ReturnType<typeof createRoomClient>) => void
 ): Map<number, Control> => {
@@ -66,16 +85,25 @@ describe("controls a room client sends ahead of its race", () => {
     expect(sent.get(5)).toBe(steeringLeft);
   });
 
-  it("keeps the controls it already planned when the delay shrinks, and carries a press into the next control it plans", () => {
+  it.each([0, 30])(
+    "lands two separate presses made while the delay shrinks from %i ticks",
+    (firstDelay) => {
+      expect(strikesWith(firstDelay)).toBe(2);
+    }
+  );
+
+  it("keeps the controls it already planned when the delay shrinks, drops at most one later control a while, and never a press", () => {
     const sent = sentControls((client) => {
       client.predict(steeringLeft, 3);
       client.predict(punchingRight, 0);
       client.predict(steeringLeft, 0);
       client.predict(steeringLeft, 0);
-      client.predict(steeringLeft, 0);
     });
-    expect([...sent.keys()]).toStrictEqual([1, 2, 3, 4, 5]);
-    expect(sent.get(4)).toBe(steeringLeft);
+    expect([...sent.keys()]).toStrictEqual([1, 2, 3, 4, 5, 6]);
+    expect([sent.get(4), sent.get(6)]).toStrictEqual([
+      steeringLeft,
+      steeringLeft,
+    ]);
     expect(holds(sent.get(5) ?? steeringLeft, PUNCH)).toBeTruthy();
   });
 });

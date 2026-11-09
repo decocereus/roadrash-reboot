@@ -41,6 +41,7 @@ const FELT_JUMP_METRES = 0.25;
 const LAG_WINDOW_TICKS = 60;
 const SAME_HIT_TICKS = 15;
 const MOST_RETRY_TICKS = 60;
+const SHRINK_EVERY_TICKS = 12;
 const LAGGING_FROM_TICKS = 20;
 
 const JUMP_CAUSES = ["behindServer", "otherRiders", "ownControl"] as const;
@@ -198,7 +199,8 @@ export const createRoomClient = (
   let corrected = false;
   let sentThrough = 0;
   let plannedThrough = 0;
-  let carried = coasting;
+  let sampled = coasting;
+  let shrunkAt = Number.NEGATIVE_INFINITY;
   let stale = false;
   let staleCause: JumpCause = "otherRiders";
   let mending = false;
@@ -499,22 +501,12 @@ export const createRoomClient = (
     return button === undefined ? control : pressing(control, button);
   };
 
-  const withCarried = (control: Control): Control => {
-    let pressed = control;
-    for (const button of BUTTONS_OF_A_CONTROL) {
-      if (holds(carried, button)) {
-        pressed = pressing(pressed, button);
-      }
-    }
-    carried = coasting;
-    return pressed;
-  };
+  const pressesAnew = (control: Control): boolean =>
+    BUTTONS_OF_A_CONTROL.some(
+      (button) => holds(control, button) && !holds(sampled, button)
+    );
 
   const plan = (control: Control, wanted: number): void => {
-    if (wanted <= plannedThrough) {
-      carried = withCarried(control);
-      return;
-    }
     const held = withoutButtons(
       ownControls[slotOf(plannedThrough)] ?? coasting
     );
@@ -525,7 +517,7 @@ export const createRoomClient = (
     ) {
       ownControls[slotOf(tick)] = held;
     }
-    ownControls[slotOf(wanted)] = withCarried(control);
+    ownControls[slotOf(wanted)] = retryMissed(control);
     plannedThrough = wanted;
   };
 
@@ -632,10 +624,18 @@ export const createRoomClient = (
         stats.refusedPredictions += 1;
         return false;
       }
-      plan(
-        retryMissed(control),
-        Math.min(tick + delay, confirmed.tick + INPUT_HORIZON)
+      const shrinks =
+        !pressesAnew(control) && tick - shrunkAt >= SHRINK_EVERY_TICKS;
+      const wanted = Math.min(
+        Math.max(tick + delay, shrinks ? 0 : plannedThrough + 1),
+        confirmed.tick + INPUT_HORIZON
       );
+      if (wanted > plannedThrough) {
+        plan(control, wanted);
+      } else {
+        shrunkAt = tick;
+      }
+      sampled = control;
       advance(tick);
       retried();
       hearOwn();

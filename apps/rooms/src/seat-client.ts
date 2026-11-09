@@ -24,7 +24,7 @@ import {
   writeReady,
 } from "@racer/sim/room-wire";
 import { setupDigest } from "@racer/sim/snapshot-setup";
-import { riderIdAt } from "@racer/sim/state";
+import { riderIdAt, TICK_SECONDS } from "@racer/sim/state";
 import type { Control, RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 
@@ -54,9 +54,9 @@ import type { BrowserTrace, SeatBrowser } from "./tape.ts";
 const PINGS_PER_REPORT = 30;
 
 export const MOST_TICKS_PER_FRAME = 60;
-export const LEAST_TICKS_PER_FRAME = 4;
 export const MOST_CATCH_UP_MS_PER_FRAME = 4;
 const REPLAY_CHUNK_TICKS = 4;
+const TICK_MS = TICK_SECONDS * 1000;
 
 export interface SeatRace {
   readonly awayMs: number | null;
@@ -288,6 +288,8 @@ export const openRoomSeat = (
   let drawing = false;
   let frameLeft = MOST_TICKS_PER_FRAME;
   let frameSpentMs = 0;
+  let frameKeepsUp = 1;
+  let lastDrawnAt = Number.POSITIVE_INFINITY;
   const input = new DataView(
     new ArrayBuffer(inputBytes(MOST_BATCHED_CONTROLS))
   );
@@ -349,7 +351,7 @@ export const openRoomSeat = (
 
   const mayCatchUp = (): boolean =>
     frameLeft > 0 &&
-    (MOST_TICKS_PER_FRAME - frameLeft < LEAST_TICKS_PER_FRAME ||
+    (MOST_TICKS_PER_FRAME - frameLeft < frameKeepsUp ||
       frameSpentMs < MOST_CATCH_UP_MS_PER_FRAME);
 
   const confirmRead = (race: SeatRace, now: number): void => {
@@ -607,12 +609,20 @@ export const openRoomSeat = (
       }
     },
     frameDrawn: (ownOffMetres, rivalOffMetres) => {
+      const { race } = state;
+      if (race) {
+        catchUpWork(race);
+      }
       drawing = true;
+      const now = performance.now();
       frameLeft = MOST_TICKS_PER_FRAME;
       frameSpentMs = 0;
-      const { race } = state;
+      frameKeepsUp = Math.min(
+        MOST_TICKS_PER_FRAME,
+        Math.max(1, Math.ceil((now - lastDrawnAt) / TICK_MS) + 1)
+      );
+      lastDrawnAt = now;
       if (race && race.client.predicted.tick > 0) {
-        const now = performance.now();
         tally.frameDrawn(
           now,
           race.client.mine.s,
