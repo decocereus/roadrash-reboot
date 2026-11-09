@@ -5,6 +5,7 @@ import * as HttpClient from "effect/http/HttpClient";
 import type * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import * as Schema from "effect/Schema";
+import { TestClock } from "effect/testing";
 import { describe, expect, it } from "vitest";
 
 import { groupRaces, raceReport } from "../src/race-report.ts";
@@ -243,20 +244,6 @@ describe("reading a log", () => {
   });
 });
 
-const answerWith = (sources: readonly unknown[]) =>
-  HttpClient.make((request) =>
-    Effect.succeed(
-      HttpClientResponse.fromWeb(
-        request,
-        Response.json({
-          result: {
-            events: { events: sources.map((source) => ({ source })) },
-          },
-        })
-      )
-    )
-  );
-
 const textOf = ({ body }: HttpClientRequest.HttpClientRequest): string =>
   body._tag === "Uint8Array" ? new TextDecoder().decode(body.body) : "";
 
@@ -270,11 +257,12 @@ const decodeAsked = Schema.decodeUnknownSync(
 );
 
 interface StoredLine {
-  readonly source: RoomNote;
+  readonly source: unknown;
   readonly timestamp: number;
 }
 
 const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
 
 const logStore = (
   lines: readonly StoredLine[],
@@ -283,10 +271,12 @@ const logStore = (
   HttpClient.make((request) => {
     const { limit, timeframe } = decodeAsked(textOf(request));
     const sampled = timeframe.to - timeframe.from > widestUnsampledMs;
-    const inWindow = lines.filter(
-      ({ timestamp }) =>
-        timestamp >= timeframe.from && timestamp <= timeframe.to
-    );
+    const inWindow = lines
+      .filter(
+        ({ timestamp }) =>
+          timestamp > timeframe.from && timestamp < timeframe.to
+      )
+      .toSorted((left, right) => right.timestamp - left.timestamp);
     const answered = sampled
       ? inWindow.filter((_line, at) => at % 10 === 0)
       : inWindow;
@@ -309,7 +299,14 @@ const readFrom = (store: HttpClient.HttpClient) =>
     Effect.provideService(
       ConfigProvider.ConfigProvider,
       ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
-    )
+    ),
+    Effect.provide(TestClock.layer())
+  );
+
+const storeOf = (sources: readonly unknown[]): HttpClient.HttpClient =>
+  logStore(
+    sources.map((source) => ({ source, timestamp: -MS_PER_HOUR })),
+    Number.POSITIVE_INFINITY
   );
 
 const refusedLines = (count: number, from: number): readonly StoredLine[] =>
@@ -321,18 +318,11 @@ const refusedLines = (count: number, from: number): readonly StoredLine[] =>
 describe("reading Cloudflare's logs", () => {
   it("keeps the room's notes and skips other events", async () => {
     const notesRead = await Effect.runPromise(
-      liveNotes("rooms-script", 24).pipe(
-        Effect.provideService(
-          HttpClient.HttpClient,
-          answerWith([
-            { kind: "refused", reason: "full" },
-            { message: "Some other log line" },
-          ])
-        ),
-        Effect.provideService(
-          ConfigProvider.ConfigProvider,
-          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
-        )
+      readFrom(
+        storeOf([
+          { kind: "refused", reason: "full" },
+          { message: "Some other log line" },
+        ])
       )
     );
     expect(notesRead).toStrictEqual({
@@ -341,67 +331,54 @@ describe("reading Cloudflare's logs", () => {
     });
   });
 
-  it("asks only for the room's notes, so other log lines cannot use up the limit", async () => {
+  it("asks only for the room's notes, without saving the query in the account", async () => {
     const asked: string[] = [];
     await Effect.runPromise(
-      liveNotes("rooms-script", 24).pipe(
-        Effect.provideService(
-          HttpClient.HttpClient,
-          HttpClient.make((request) => {
-            asked.push(textOf(request));
-            return Effect.succeed(
-              HttpClientResponse.fromWeb(
-                request,
-                Response.json({ result: { events: { events: [] } } })
-              )
-            );
-          })
-        ),
-        Effect.provideService(
-          ConfigProvider.ConfigProvider,
-          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
-        )
+      readFrom(
+        HttpClient.make((request) => {
+          asked.push(textOf(request));
+          return Effect.succeed(
+            HttpClientResponse.fromWeb(
+              request,
+              Response.json({ result: { events: { events: [] } } })
+            )
+          );
+        })
       )
     );
     expect(asked[0]).toContain(
       '{"key":"kind","operation":"exists","type":"string"}'
     );
+    expect(asked[0]).toContain('"dry":true');
   });
 
   it("reads an ended line whose nulls the log store dropped", async () => {
     const { notes: read, unread } = await Effect.runPromise(
-      liveNotes("rooms-script", 24).pipe(
-        Effect.provideService(
-          HttpClient.HttpClient,
-          answerWith([
-            {
-              catchUpWakes: 0,
-              kind: "ended",
-              raceId: "9f635600-4c59-420c-98c2-e9b40f23d752",
-              seats: [
-                {
-                  accepted: 0,
-                  ahead: 0,
-                  crashes: 0,
-                  finishTick: 12_286,
-                  late: 0,
-                  missed: 12_286,
-                  mode: "riding",
-                  reported: false,
-                  rider: 1,
-                  roadMetres: 8624,
-                },
-              ],
-              tick: 12_664,
-              wakeGaps: [13_858, 0, 0, 0, 0],
-              worstBehindTicks: 1,
-            },
-          ])
-        ),
-        Effect.provideService(
-          ConfigProvider.ConfigProvider,
-          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
-        )
+      readFrom(
+        storeOf([
+          {
+            catchUpWakes: 0,
+            kind: "ended",
+            raceId: "9f635600-4c59-420c-98c2-e9b40f23d752",
+            seats: [
+              {
+                accepted: 0,
+                ahead: 0,
+                crashes: 0,
+                finishTick: 12_286,
+                late: 0,
+                missed: 12_286,
+                mode: "riding",
+                reported: false,
+                rider: 1,
+                roadMetres: 8624,
+              },
+            ],
+            tick: 12_664,
+            wakeGaps: [13_858, 0, 0, 0, 0],
+            worstBehindTicks: 1,
+          },
+        ])
       )
     );
     expect({
@@ -415,21 +392,14 @@ describe("reading Cloudflare's logs", () => {
 
   it("reads a countdown whose empty list the log store dropped", async () => {
     const { notes: read, unread } = await Effect.runPromise(
-      liveNotes("rooms-script", 24).pipe(
-        Effect.provideService(
-          HttpClient.HttpClient,
-          answerWith([
-            {
-              kind: "countdown",
-              raceId: "fa883214-366f-4040-b12b-5ac2969322a9",
-              waitedMs: 122,
-            },
-          ])
-        ),
-        Effect.provideService(
-          ConfigProvider.ConfigProvider,
-          ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
-        )
+      readFrom(
+        storeOf([
+          {
+            kind: "countdown",
+            raceId: "fa883214-366f-4040-b12b-5ac2969322a9",
+            waitedMs: 122,
+          },
+        ])
       )
     );
     expect({ read, unread }).toStrictEqual({
@@ -446,15 +416,14 @@ describe("reading Cloudflare's logs", () => {
   });
 
   it("reads a window Cloudflare samples in parts, so every race keeps its ended line", async () => {
-    const twoHoursAgo = Date.now() - 2 * 60 * MS_PER_MINUTE;
     const { notes: read } = await Effect.runPromise(
       readFrom(
         logStore(
           notes.map((source, at) => ({
             source,
-            timestamp: twoHoursAgo + at * MS_PER_MINUTE,
+            timestamp: -2 * MS_PER_HOUR + at * MS_PER_MINUTE,
           })),
-          60 * MS_PER_MINUTE
+          MS_PER_HOUR
         )
       )
     );
@@ -462,7 +431,7 @@ describe("reading Cloudflare's logs", () => {
   });
 
   it("reads a window whose answer fills the limit in parts", async () => {
-    const lines = refusedLines(4500, Date.now() - 3 * 60 * MS_PER_MINUTE);
+    const lines = refusedLines(4500, -3 * MS_PER_HOUR);
     const { notes: read } = await Effect.runPromise(
       readFrom(logStore(lines, Number.POSITIVE_INFINITY))
     );
@@ -471,10 +440,20 @@ describe("reading Cloudflare's logs", () => {
 
   it("fails rather than report a sampled log as the whole log", async () => {
     const failure = await Effect.runPromise(
-      Effect.flip(
-        readFrom(logStore(refusedLines(30, Date.now() - 60 * MS_PER_MINUTE), 0))
-      )
+      Effect.flip(readFrom(logStore(refusedLines(30, -MS_PER_HOUR), 0)))
     );
     expect(failure.message).toContain("sampled");
+  });
+
+  it("keeps a line that falls exactly where the reader splits a window", async () => {
+    const day = 24 * MS_PER_HOUR;
+    const middle: StoredLine = {
+      source: { kind: "refused", reason: "full" },
+      timestamp: -day / 2,
+    };
+    const { notes: read } = await Effect.runPromise(
+      readFrom(logStore([middle], day - 1))
+    );
+    expect(read).toStrictEqual([middle.source]);
   });
 });
