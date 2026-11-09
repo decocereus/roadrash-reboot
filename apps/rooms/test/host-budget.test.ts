@@ -169,7 +169,7 @@ describe("a socket's message budget", () => {
     expect(walker.closed).toBeNull();
   });
 
-  it("never drops an honest rider's messages, even the burst after a stalled link or a frozen tab", () => {
+  it("drops nothing from a rider at the paces the budget assumes, even the burst after a stalled link or a frozen tab", () => {
     const lobby = room();
     const { clock, host } = lobby;
     const rider = lobby.seated("rider");
