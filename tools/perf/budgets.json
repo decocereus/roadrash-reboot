@@ -82,6 +82,10 @@
         "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
       },
       {
+        "file": "tools/perf/baselines/room-checkpoint.node-darwin-arm64.json.gz",
+        "sha256": "abdcd21316cf6fbc051db534d2ca56062300f2fab3d442731b8ef37398ed89a4"
+      },
+      {
         "file": "tools/perf/baselines/room-checkpoint.node-linux-x64.json.gz",
         "sha256": "f338793c75c9696bdba9019d28df6eefe61ba395d5fff26da151b02f83e6ca2e"
       },
@@ -104,7 +108,7 @@
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "a0838ad0741b16a4dda5448660d33da8a4e2c540df7d9a51066d916d61362e91"
+    "summarySha256": "9b54127e8f6252f617ac1cfb255760d2812876932793a2a9b8d8fe0bc0ee4b8b"
   },
   "limits": [
     {
@@ -2253,6 +2257,30 @@
       "paired": null,
       "scenario": "pack-riding-v1",
       "source": "baseline-2026-11-09T21-26-16-361Z-6351bfb-6351bfb",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.20280069541145895,
+      "baseline": 0.176348430792573,
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.1564855254796539,
+      "baseline": 0.13607436998230774,
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
       "unit": "ms"
     }
   ],

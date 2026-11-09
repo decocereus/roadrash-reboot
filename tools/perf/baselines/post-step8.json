@@ -3568,6 +3568,22 @@
       "side": "B",
       "source": "baseline-2026-11-09T21-26-16-361Z-6351bfb-6351bfb",
       "value": 0.2821458338618071
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p95",
+      "scenario": "reference-v1",
+      "side": "B",
+      "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
+      "value": 0.176348430792573
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p95",
+      "scenario": "pack-riding-v1",
+      "side": "B",
+      "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
+      "value": 0.13607436998230774
     }
   ],
   "revisions": {
@@ -4888,20 +4904,26 @@
       "id": "baseline-2026-11-09T21-26-16-361Z-6351bfb-6351bfb",
       "lanes": ["node"],
       "sides": {
-        "A": {
-          "dirty": false,
-          "harnessDigest": "db34f5acef02c463ea2d1cf221b001a7f3ed64726ed8ad53a92d7d7496583626",
-          "revision": "6351bfbe4fd209b0289ac9272ba0ad14afbbfb7f",
-          "sourceDigest": "0cca4cd12b64c4074098417c68eec5eff075af525fdd9c2d8849f16244f034a2",
-          "sourceFiles": 975
-        },
-        "B": {
-          "dirty": false,
-          "harnessDigest": "db34f5acef02c463ea2d1cf221b001a7f3ed64726ed8ad53a92d7d7496583626",
-          "revision": "6351bfbe4fd209b0289ac9272ba0ad14afbbfb7f",
-          "sourceDigest": "0cca4cd12b64c4074098417c68eec5eff075af525fdd9c2d8849f16244f034a2",
-          "sourceFiles": 975
-        }
+        "A": "6351bfbe4fd209b0289ac9272ba0ad14afbbfb7f",
+        "B": "6351bfbe4fd209b0289ac9272ba0ad14afbbfb7f"
+      }
+    },
+    {
+      "environment": "node-darwin-arm64",
+      "facts": {
+        "arch": "arm64",
+        "cpu": "Apple M4 Pro",
+        "cpus": "12",
+        "harness": "the room child of tools/perf/room.ts, timing checkpointOf twenty times after each scenario's window",
+        "node": "v26.13.0",
+        "platform": "darwin",
+        "why": "Astra, the Mac that runs the netcode playtests, one baseline run of the node lane under the playtest lock at e4d8504e, peak load 4.67 of a 9 limit, no calibration warning; the darwin rows take 1.15 x the median with no runner spread, like the other darwin rows"
+      },
+      "id": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
+      "lanes": ["node"],
+      "sides": {
+        "A": "e4d8504e1ed93eea80db40218f140d862e0003ad",
+        "B": "e4d8504e1ed93eea80db40218f140d862e0003ad"
       }
     }
   ],
