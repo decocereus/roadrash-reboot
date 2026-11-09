@@ -28,8 +28,8 @@ import {
   SEAT_SILENT,
 } from "./messages.ts";
 import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
-import { WAKE_GAP_CEILINGS_MS } from "./notes.ts";
-import { buildRace, tapeEndOf } from "./race-build.ts";
+import { noteGap } from "./notes.ts";
+import { buildRace, finishTape } from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
   HERE,
@@ -49,13 +49,7 @@ import { createSocketBudget, CUT_AFTER_DROPS, spend } from "./socket-budget.ts";
 import type { SocketBudget } from "./socket-budget.ts";
 import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
 import type { SocketEvent, SocketRole } from "./socket-role.ts";
-import {
-  ROOM_TRACE_EVERY_TICKS,
-  roomTraceName,
-  tapeEndName,
-  tapeKey,
-} from "./tape.ts";
-import type { RoomTrace } from "./tape.ts";
+import { ROOM_TRACE_EVERY_TICKS } from "./tape.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
@@ -103,17 +97,6 @@ export interface Host {
   readonly gone: (socket: HostSocket, closeCode: number | null) => void;
   readonly status: () => RoomStatus;
 }
-
-const noteGap = (gaps: Uint32Array, gapMs: number): void => {
-  let bucket = 0;
-  while (
-    bucket < WAKE_GAP_CEILINGS_MS.length &&
-    gapMs > (WAKE_GAP_CEILINGS_MS[bucket] ?? gapMs)
-  ) {
-    bucket += 1;
-  }
-  gaps[bucket] = (gaps[bucket] ?? 0) + 1;
-};
 
 type Parting = "hold" | "leave";
 
@@ -205,17 +188,8 @@ export const createHost = (
   };
 
   const end = (run: Run): void => {
-    const { room, tape, trace } = run;
-    traceSeats(run.riders, room, trace);
-    tape.finish();
-    ports.saveTape(
-      tapeKey(run.raceId, roomTraceName),
-      JSON.stringify({ rows: trace } satisfies RoomTrace)
-    );
-    ports.saveTape(
-      tapeKey(run.raceId, tapeEndName),
-      tapeEndOf(room, tape.parts())
-    );
+    const { room } = run;
+    finishTape(run, ports.saveTape);
     ports.note({
       catchUpWakes,
       dropped,
