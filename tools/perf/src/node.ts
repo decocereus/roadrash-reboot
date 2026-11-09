@@ -221,6 +221,7 @@ export const childRecord = Schema.Struct({
         server: Schema.Number,
       }),
       checkpoint: Schema.Array(Schema.Number),
+      checkpointBytes: Schema.Array(Schema.Number),
       confirm: Schema.Array(Schema.Number),
       resimulated: Schema.Array(Schema.Number),
       rollback: Schema.Array(Schema.Number),

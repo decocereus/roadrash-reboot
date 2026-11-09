@@ -145,6 +145,7 @@ export const syntheticLane = (
       room: {
         allocated: { client: 900, frame: 200, server: 900 },
         checkpoint: tickDurations(ROOM_CHECKPOINT_MS * slowdown.runner),
+        checkpointBytes: [40_000],
         confirm: tickDurations(ROOM_CONFIRM_MS * slowdown.runner),
         resimulated: [5],
         rollback: tickDurations(ROOM_ROLLBACK_MS * slowdown.runner),
