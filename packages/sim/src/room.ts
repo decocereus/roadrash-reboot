@@ -25,7 +25,7 @@ export const HOLD_TICKS = 6;
 export const AUTO_AFTER_TICKS = 30;
 export const MOST_LEAD_TICKS = 90;
 export const LINK_DEAD_AFTER_TICKS = 300;
-export const SLOWING_TICKS = 30;
+const SLOWING_TICKS = 30;
 export const INPUT_HORIZON =
   LINK_DEAD_AFTER_TICKS + MOST_LEAD_TICKS + SLOWING_TICKS;
 export const HASH_EVERY = 60;
