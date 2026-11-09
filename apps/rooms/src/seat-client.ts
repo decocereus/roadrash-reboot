@@ -635,7 +635,7 @@ export const openRoomSeat = (
           ownOffMetres,
           rivalOffMetres,
           race.client.stats.resimulatedTicks,
-          clock.inputDelay(race.client.predicted.tick, now)
+          race.client.plannedThrough() - race.client.predicted.tick
         );
       }
     },

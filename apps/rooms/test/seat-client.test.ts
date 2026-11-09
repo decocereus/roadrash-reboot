@@ -8,7 +8,7 @@ import {
   readRaceStats,
   writeTick,
 } from "@racer/sim/room-wire";
-import { riderIdAt } from "@racer/sim/state";
+import { riderIdAt, TICK_SECONDS } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -40,6 +40,7 @@ import {
 const LONGEST_LOAD_MS = 20_000;
 const FRAME_MS = 50;
 const HELD_TICKS = 300;
+const DELAYED_TICKS = 30;
 const browser = {
   build: "abc",
   gpu: "Test GPU",
@@ -337,6 +338,23 @@ describe("a seat loading the race", () => {
     const stats = report && readRaceStats(new DataView(report));
     expect(client?.confirmed.tick).toBe(HELD_TICKS);
     expect(stats?.mostReplayedTicks).toBeLessThanOrEqual(MOST_TICKS_PER_FRAME);
+  });
+
+  it("reports how far ahead its controls were sent, also once the delay it asks for falls back", () => {
+    const { seat, socket } = loadingSeat();
+    const client = seat.race()?.client;
+    client?.predict(coasting, DELAYED_TICKS);
+    client?.predict(coasting, 0);
+    for (let frame = 0; frame < 2; frame += 1) {
+      vi.advanceTimersByTime(FRAME_MS);
+      seat.frameDrawn(0, 0);
+    }
+    seat.leave();
+    const [report] = socket.sentBuffers;
+    const stats = report && readRaceStats(new DataView(report));
+    expect(stats?.inputDelayWorstMs).toBe(
+      Math.round((DELAYED_TICKS - 1) * TICK_SECONDS * 1000)
+    );
   });
 
   it("confirms every tick as it arrives while the page is hidden", () => {

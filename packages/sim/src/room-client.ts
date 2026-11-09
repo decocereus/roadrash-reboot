@@ -190,7 +190,7 @@ export const createRoomClient = (
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
   const mendedFights: HeardFight[] = [];
-  const mendedHits: RaceEvent[] = [];
+  const mendedHits: ShownHit[] = [];
   const shownHits: ShownHit[] = [];
   const tracked = [...predicted.riders];
   const wasAt = tracked.map(stillCorrection);
@@ -262,8 +262,12 @@ export const createRoomClient = (
     heard.push({ ...event });
   };
 
-  const shownHitOf = (event: HitEvent, tick: number): ShownHit | undefined =>
-    shownHits.find(
+  const shownHitOf = (
+    event: HitEvent,
+    tick: number,
+    among: readonly ShownHit[] = shownHits
+  ): ShownHit | undefined =>
+    among.find(
       (shown) =>
         shown.hit.rider === event.rider &&
         shown.hit.target === event.target &&
@@ -283,9 +287,14 @@ export const createRoomClient = (
       shown.tick = tick;
       return;
     }
-    shownHits.push({ backed: true, hit: { ...event }, refused: false, tick });
+    const found = { backed: true, hit: { ...event }, refused: false, tick };
+    if (replaying) {
+      mendedHits.push(found);
+      return;
+    }
+    shownHits.push(found);
     if (event.rider === me) {
-      (replaying ? mendedHits : heard).push({ ...event });
+      heard.push({ ...event });
     }
   };
 
@@ -293,7 +302,13 @@ export const createRoomClient = (
     const shown = shownHitOf(event, tick);
     if (shown) {
       shownHits.splice(shownHits.indexOf(shown), 1);
-    } else if (event.rider === me) {
+      return;
+    }
+    const pending = shownHitOf(event, tick, mendedHits);
+    if (pending) {
+      mendedHits.splice(mendedHits.indexOf(pending), 1);
+    }
+    if (event.rider === me) {
       hear(event);
     }
   };
@@ -431,7 +446,12 @@ export const createRoomClient = (
     mending = false;
     fights.push(...mendedFights);
     mendedFights.length = 0;
-    heard.push(...mendedHits);
+    for (const found of mendedHits) {
+      shownHits.push(found);
+      if (found.hit.rider === me) {
+        heard.push({ ...found.hit });
+      }
+    }
     mendedHits.length = 0;
     refuseUnbacked();
     noteCorrections();

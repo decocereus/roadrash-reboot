@@ -203,6 +203,45 @@ describe("an attacker's own hits, reconciled with the room", () => {
     expect(sounds).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
   });
 
+  it("hears a hit a replay found once, when the room reaches the prediction before the replay is drawn", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    const roomSteps = (tick: number) => {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      client.confirm(room.frame, null);
+      return room.state.events.filter((event) => event.kind === "hit").length;
+    };
+    let roomHits = 0;
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      roomHits += roomSteps(tick);
+    }
+    client.takeEvents();
+    for (let frame = 0; frame < 4; frame += 1) {
+      client.settle(4);
+    }
+    const replaying = client.mending();
+    for (
+      let tick = RIDE_TICKS + 1;
+      tick <= RIDE_TICKS + AFTER_TICKS;
+      tick += 1
+    ) {
+      roomHits += roomSteps(tick);
+    }
+    client.settle(4);
+    const sounds = client
+      .takeEvents()
+      .filter((event) => event.kind === "hit").length;
+    expect({ replaying, roomHits, sounds }).toStrictEqual({
+      replaying: true,
+      roomHits: 1,
+      sounds: 1,
+    });
+  });
+
   it("takes back a predicted hit the room refused", () => {
     const { heardHits, refused, roomHits } = attackerHears({
       gapX: EDGE_OF_REACH_X,
