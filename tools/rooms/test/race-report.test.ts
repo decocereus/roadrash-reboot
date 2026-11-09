@@ -4,6 +4,7 @@ import * as Effect from "effect/Effect";
 import * as HttpClient from "effect/http/HttpClient";
 import type * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import { groupRaces, raceReport } from "../src/race-report.ts";
@@ -259,6 +260,64 @@ const answerWith = (sources: readonly unknown[]) =>
 const textOf = ({ body }: HttpClientRequest.HttpClientRequest): string =>
   body._tag === "Uint8Array" ? new TextDecoder().decode(body.body) : "";
 
+const decodeAsked = Schema.decodeUnknownSync(
+  Schema.fromJsonString(
+    Schema.Struct({
+      limit: Schema.Number,
+      timeframe: Schema.Struct({ from: Schema.Number, to: Schema.Number }),
+    })
+  )
+);
+
+interface StoredLine {
+  readonly source: RoomNote;
+  readonly timestamp: number;
+}
+
+const MS_PER_MINUTE = 60_000;
+
+const logStore = (
+  lines: readonly StoredLine[],
+  widestUnsampledMs: number
+): HttpClient.HttpClient =>
+  HttpClient.make((request) => {
+    const { limit, timeframe } = decodeAsked(textOf(request));
+    const sampled = timeframe.to - timeframe.from > widestUnsampledMs;
+    const inWindow = lines.filter(
+      ({ timestamp }) =>
+        timestamp >= timeframe.from && timestamp <= timeframe.to
+    );
+    const answered = sampled
+      ? inWindow.filter((_line, at) => at % 10 === 0)
+      : inWindow;
+    return Effect.succeed(
+      HttpClientResponse.fromWeb(
+        request,
+        Response.json({
+          result: {
+            events: { events: answered.slice(0, limit) },
+            statistics: { abr_level: sampled ? 10 : 1 },
+          },
+        })
+      )
+    );
+  });
+
+const readFrom = (store: HttpClient.HttpClient) =>
+  liveNotes("rooms-script", 24).pipe(
+    Effect.provideService(HttpClient.HttpClient, store),
+    Effect.provideService(
+      ConfigProvider.ConfigProvider,
+      ConfigProvider.fromUnknown({ CLOUDFLARE_API_TOKEN: "test" })
+    )
+  );
+
+const refusedLines = (count: number, from: number): readonly StoredLine[] =>
+  Array.from({ length: count }, (_unused, at) => ({
+    source: { kind: "refused", reason: "full" },
+    timestamp: from + at * 1000,
+  }));
+
 describe("reading Cloudflare's logs", () => {
   it("keeps the room's notes and skips other events", async () => {
     const notesRead = await Effect.runPromise(
@@ -384,5 +443,38 @@ describe("reading Cloudflare's logs", () => {
       ],
       unread: 0,
     });
+  });
+
+  it("reads a window Cloudflare samples in parts, so every race keeps its ended line", async () => {
+    const twoHoursAgo = Date.now() - 2 * 60 * MS_PER_MINUTE;
+    const { notes: read } = await Effect.runPromise(
+      readFrom(
+        logStore(
+          notes.map((source, at) => ({
+            source,
+            timestamp: twoHoursAgo + at * MS_PER_MINUTE,
+          })),
+          60 * MS_PER_MINUTE
+        )
+      )
+    );
+    expect(read).toStrictEqual(notes);
+  });
+
+  it("reads a window whose answer fills the limit in parts", async () => {
+    const lines = refusedLines(4500, Date.now() - 3 * 60 * MS_PER_MINUTE);
+    const { notes: read } = await Effect.runPromise(
+      readFrom(logStore(lines, Number.POSITIVE_INFINITY))
+    );
+    expect(read).toHaveLength(lines.length);
+  });
+
+  it("fails rather than report a sampled log as the whole log", async () => {
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        readFrom(logStore(refusedLines(30, Date.now() - 60 * MS_PER_MINUTE), 0))
+      )
+    );
+    expect(failure.message).toContain("sampled");
   });
 });
