@@ -25,6 +25,7 @@ const ROOMS_ACCOUNT = "6979943b697a28951d44b9bcbcf61b42";
 const PROD_ROOMS_SCRIPT = "rushline-rooms-prod-yzaffdxxtu73r6ek";
 const MS_PER_HOUR = 3_600_000;
 const MOST_EVENTS = 2000;
+const SHORTEST_WINDOW_MS = 60_000;
 
 class RoomReadFailed extends Data.TaggedError("RoomReadFailed")<{
   readonly cause?: unknown;
@@ -83,10 +84,37 @@ export const notesOfLines = (text: string): NotesRead =>
 const QueryAnswer = Schema.Struct({
   result: Schema.Struct({
     events: Schema.Struct({
-      events: Schema.Array(Schema.Struct({ source: Schema.Unknown })),
+      events: Schema.Array(
+        Schema.Struct({ source: Schema.Unknown, timestamp: Schema.Number })
+      ),
     }),
+    statistics: Schema.optionalKey(
+      Schema.Struct({ abr_level: Schema.optionalKey(Schema.Number) })
+    ),
   }),
 });
+
+type LoggedEvent =
+  (typeof QueryAnswer.Type)["result"]["events"]["events"][number];
+
+interface Timeframe {
+  readonly from: number;
+  readonly to: number;
+}
+
+const halvesOf = ({ from, to }: Timeframe): readonly [Timeframe, Timeframe] => {
+  const middle = Math.floor((from + to) / 2);
+  return [
+    { from, to: middle + 1 },
+    { from: middle, to },
+  ];
+};
+
+const unreadable = (cause: unknown) =>
+  new RoomReadFailed({
+    cause,
+    message: `Could not read the Workers logs: ${String(cause)}`,
+  });
 
 export const liveNotes = (script: string, hours: number) =>
   Effect.gen(function* live() {
@@ -96,43 +124,65 @@ export const liveNotes = (script: string, hours: number) =>
     );
     const now = yield* Clock.currentTimeMillis;
     const client = yield* HttpClient.HttpClient;
-    const request = yield* HttpClientRequest.post(
-      `https://api.cloudflare.com/client/v4/accounts/${account}/workers/observability/telemetry/query`
-    ).pipe(
-      HttpClientRequest.bearerToken(Redacted.value(token)),
-      HttpClientRequest.bodyJson({
-        limit: MOST_EVENTS,
-        parameters: {
-          filters: [
-            {
-              key: "$workers.scriptName",
-              operation: "eq",
-              type: "string",
-              value: script,
+    const ask = (timeframe: Timeframe) =>
+      Effect.gen(function* askCloudflare() {
+        const request = yield* HttpClientRequest.post(
+          `https://api.cloudflare.com/client/v4/accounts/${account}/workers/observability/telemetry/query`
+        ).pipe(
+          HttpClientRequest.bearerToken(Redacted.value(token)),
+          HttpClientRequest.bodyJson({
+            dry: true,
+            limit: MOST_EVENTS,
+            parameters: {
+              filters: [
+                {
+                  key: "$workers.scriptName",
+                  operation: "eq",
+                  type: "string",
+                  value: script,
+                },
+                { key: "kind", operation: "exists", type: "string" },
+              ],
             },
-            { key: "kind", operation: "exists", type: "string" },
-          ],
-        },
-        queryId: "rushline-rooms-read",
-        timeframe: { from: now - hours * MS_PER_HOUR, to: now },
-        view: "events",
-      })
-    );
-    const response = yield* client.execute(request);
-    const answer = yield* HttpClientResponse.schemaBodyJson(QueryAnswer)(
-      yield* HttpClientResponse.filterStatusOk(response)
-    );
+            queryId: "rushline-rooms-read",
+            timeframe,
+            view: "events",
+          })
+        );
+        const response = yield* client.execute(request);
+        return yield* HttpClientResponse.schemaBodyJson(QueryAnswer)(
+          yield* HttpClientResponse.filterStatusOk(response)
+        );
+      }).pipe(Effect.mapError(unreadable));
+    const readWhole = (
+      timeframe: Timeframe
+    ): Effect.Effect<readonly LoggedEvent[], RoomReadFailed> =>
+      Effect.gen(function* whole() {
+        const { result } = yield* ask(timeframe);
+        const { events } = result.events;
+        const sampled = (result.statistics?.abr_level ?? 1) > 1;
+        if (!sampled && events.length < MOST_EVENTS) {
+          return events;
+        }
+        if (timeframe.to - timeframe.from < SHORTEST_WINDOW_MS) {
+          return yield* new RoomReadFailed({
+            message: `Cloudflare ${sampled ? "sampled" : `cut at ${MOST_EVENTS} lines`} its answer even for the ${Math.round((timeframe.to - timeframe.from) / 1000)} s after ${new Date(timeframe.from).toISOString()}, so the log cannot be read whole.`,
+          });
+        }
+        const [earlier, later] = halvesOf(timeframe);
+        return [...(yield* readWhole(earlier)), ...(yield* readWhole(later))];
+      });
+    const events = yield* readWhole({
+      from: now - hours * MS_PER_HOUR,
+      to: now,
+    });
     return notesOfValues(
-      answer.result.events.events.map(({ source }) => source)
+      events
+        .toSorted((left, right) => left.timestamp - right.timestamp)
+        .map(({ source }) => source)
     );
   }).pipe(
-    Effect.mapError(
-      (cause) =>
-        new RoomReadFailed({
-          cause,
-          message: `Could not read the Workers logs: ${String(cause)}`,
-        })
-    )
+    Effect.catchTag("ConfigError", (cause) => Effect.fail(unreadable(cause)))
   );
 
 export const main = Effect.fn("rooms.read")(function* main(
