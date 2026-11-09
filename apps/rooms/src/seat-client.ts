@@ -417,8 +417,6 @@ export const openRoomSeat = (
       return;
     }
     reported = true;
-    confirmHeld(race, true);
-    race.client.settle();
     tally.frameDrawn(
       performance.now(),
       race.client.mine.s,
@@ -429,6 +427,8 @@ export const openRoomSeat = (
       race.client.stats.resimulatedTicks,
       0
     );
+    confirmHeld(race, true);
+    race.client.settle();
     sendReport(race, tally.lastTraceRows());
   };
 

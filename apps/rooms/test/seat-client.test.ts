@@ -278,6 +278,24 @@ describe("a seat loading the race", () => {
     expect(client?.confirmed.tick).toBe(HELD_TICKS);
   });
 
+  it("confirms what it holds when the rider leaves, without counting that work as a drawn frame", () => {
+    const { seat, socket } = loadingSeat();
+    const client = seat.race()?.client;
+    client?.predict(coasting);
+    vi.advanceTimersByTime(FRAME_MS);
+    seat.frameDrawn(0, 0);
+    vi.advanceTimersByTime(FRAME_MS);
+    seat.frameDrawn(0, 0);
+    for (let tick = 1; tick <= HELD_TICKS; tick += 1) {
+      hearTick(socket, tick);
+    }
+    seat.leave();
+    const [report] = socket.sentBuffers;
+    const stats = report && readRaceStats(new DataView(report));
+    expect(client?.confirmed.tick).toBe(HELD_TICKS);
+    expect(stats?.mostReplayedTicks).toBeLessThanOrEqual(MOST_TICKS_PER_FRAME);
+  });
+
   it("confirms every tick as it arrives while the page is hidden", () => {
     const { seat, socket } = loadingSeat();
     const client = seat.race()?.client;
