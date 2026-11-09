@@ -89,14 +89,15 @@ const caughtUp = (
   reach: number,
   trusted: number,
   seconds: number,
-  most: number
+  most: number,
+  skipFrom: number
 ): number => {
   if (Math.abs(gap) <= reach) {
     return gap;
   }
   const beyond = Math.abs(gap) - trusted;
   const cut =
-    Math.abs(gap) > SKIP_METRES
+    Math.abs(gap) > skipFrom
       ? beyond
       : Math.min(
           most * seconds,
@@ -144,14 +145,16 @@ export const driftSettle = (
     punch.reachS,
     TRUSTED_ALONG_METRES,
     seconds,
-    Number.POSITIVE_INFINITY
+    Number.POSITIVE_INFINITY,
+    SKIP_METRES
   );
   drift.x = caughtUp(
     drift.x + acrossMove,
     punch.reachX,
     TRUSTED_ACROSS_METRES,
     seconds,
-    Math.max(0, BIKE_HALF_WIDTH - Math.abs(acrossMove)) / seconds
+    Math.max(0, BIKE_HALF_WIDTH - Math.abs(acrossMove)) / seconds,
+    Number.POSITIVE_INFINITY
   );
 };
 

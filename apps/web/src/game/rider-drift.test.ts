@@ -300,6 +300,14 @@ describe("a correction beyond bare-hand reach", () => {
     expect(Math.abs(drift.s)).toBeLessThanOrEqual(HALF_REACH_ALONG + 1e-9);
   });
 
+  it("never skips sideways: a 21 m lateral correction, a rival riding on through 4.7 s without confirms, moves the drawn bike at most half a bike's width a frame", () => {
+    const drift = stillDrift();
+    driftBy(drift, { ...moved, x: 21.02 });
+    const { step } = framesBeyond(drift, "x", punch.reachX, SPEED, 120);
+    expect(step).toBeLessThanOrEqual(BIKE_HALF_WIDTH + 1e-9);
+    expect(Math.abs(drift.x)).toBeLessThan(0.01);
+  });
+
   it("leaves a correction inside reach to the glide", () => {
     const drift = stillDrift();
     driftBy(drift, { ...moved, x: 1.5 });

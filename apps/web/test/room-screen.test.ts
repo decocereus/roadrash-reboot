@@ -254,9 +254,14 @@ const glideAlong = (speed: number, off: number): number =>
     )
   );
 
-const cutAllowed = (gap: number, reach: number, trusted: number): number => {
+const cutAllowed = (
+  gap: number,
+  reach: number,
+  trusted: number,
+  skipFrom: number
+): number => {
   const beyond = Math.abs(gap) - trusted;
-  if (Math.abs(gap) > SKIP_METRES) {
+  if (Math.abs(gap) > skipFrom) {
     return beyond;
   }
   return Math.abs(gap) > reach ? beyond * CATCH_UP_SHARE : 0;
@@ -289,15 +294,13 @@ const glidedPast = (
   const past = Math.max(
     Math.abs(offS - path.offS) -
       (path.fastAlong + path.carried) * FRAME_SECONDS -
-      cutAllowed(gapS, punch.reachS, TRUSTED_ALONG),
+      cutAllowed(gapS, punch.reachS, TRUSTED_ALONG, SKIP_METRES),
     Math.abs(offX - path.offX) -
       (MOST_GLIDE_ACROSS + path.carriedAcross) * FRAME_SECONDS -
-      (Math.abs(gapX) > SKIP_METRES
-        ? cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS)
-        : Math.min(
-            BIKE_HALF_WIDTH - MOST_GLIDE_ACROSS * FRAME_SECONDS,
-            cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS)
-          ))
+      Math.min(
+        BIKE_HALF_WIDTH - MOST_GLIDE_ACROSS * FRAME_SECONDS,
+        cutAllowed(gapX, punch.reachX, TRUSTED_ACROSS, Number.POSITIVE_INFINITY)
+      )
   );
   path.offS = offS;
   path.offX = offX;
