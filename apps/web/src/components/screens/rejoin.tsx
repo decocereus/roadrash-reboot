@@ -119,16 +119,37 @@ const LateCard = ({
   </Backdrop>
 );
 
-export const TooLate = ({ holdSeconds }: { readonly holdSeconds: number }) => {
+const LostCard = ({ onBack }: { readonly onBack: () => void }) => (
+  <Backdrop>
+    <Card label="Room restarted" late title="That race is gone">
+      <p className="text-paper/70">
+        The room restarted and lost the race. No result counts. Ready up and the
+        next one starts from the line.
+      </p>
+      <BarButton onClick={onBack} strong />
+    </Card>
+  </Backdrop>
+);
+
+export const TooLate = ({
+  holdSeconds,
+  lostRace,
+}: {
+  readonly holdSeconds: number;
+  readonly lostRace: string | null;
+}) => {
   const [shown, setShown] = useState(true);
-  return shown ? (
-    <LateCard
-      holdSeconds={holdSeconds}
-      onBack={() => {
-        setShown(false);
-      }}
-    />
-  ) : null;
+  const hide = () => {
+    setShown(false);
+  };
+  if (!shown) {
+    return null;
+  }
+  return lostRace === null ? (
+    <LateCard holdSeconds={holdSeconds} onBack={hide} />
+  ) : (
+    <LostCard onBack={hide} />
+  );
 };
 
 export const SignalLost = ({
