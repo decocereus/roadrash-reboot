@@ -444,6 +444,7 @@ const roomObservations = (
     timed("room.tick.p95", (run) => run.tick),
     timed("room.confirm.p95", (run) => run.confirm),
     timed("room.rollback.p95", (run) => run.rollback),
+    timed("room.checkpoint.p95", (run) => run.checkpoint),
     allocated("room.allocatedBytesPerTick", (run) => run.allocated.server),
     allocated(
       "room.client.allocatedBytesPerTick",

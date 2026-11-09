@@ -9,6 +9,7 @@ import { QueueServer } from "./queue-server.ts";
 import { RaceServer } from "./race-server.ts";
 import { refusedSeat } from "./refused-seat.ts";
 import { route } from "./route.ts";
+import { roomsSim } from "./sim-fingerprint.ts";
 
 const THE_QUEUE = "public";
 
@@ -16,10 +17,11 @@ const props = Effect.map(
   Effect.all({
     build: roomsBuild,
     port: Config.Int("RUSHLINE_ROOMS_PORT").pipe(Config.withDefault(1352)),
+    sim: roomsSim,
   }),
-  ({ build, port }) => ({
+  ({ build, port, sim }) => ({
     dev: { port, strictPort: true },
-    env: { RUSHLINE_BUILD: build },
+    env: { RUSHLINE_BUILD: build, RUSHLINE_SIM: sim },
     main: import.meta.url,
     observability: {
       enabled: true,

@@ -7,36 +7,53 @@ import { setupDigest } from "./snapshot-setup.ts";
 import { hashRace } from "./snapshot.ts";
 import type { RaceSetup, RaceState } from "./state.ts";
 
-const TICKS_IN_PART = 1800;
+export const TICKS_IN_PART = 1800;
 const LENGTH_BYTES = 2;
+
+interface TapeTail {
+  readonly bytes: Uint8Array;
+  readonly ticks: number;
+}
+
+export interface TapeResume {
+  readonly parts: number;
+  readonly tail: TapeTail;
+}
 
 export interface TapeWriter {
   readonly add: (packet: Uint8Array) => void;
   readonly finish: () => void;
   readonly parts: () => number;
   readonly sofar: () => readonly Uint8Array[];
+  readonly tail: () => TapeTail;
 }
 
 export const createTapeWriter = (
   mostPacketBytes: number,
-  save: (part: number, bytes: Uint8Array) => void
+  save: (part: number, bytes: Uint8Array) => void,
+  resume: TapeResume | null = null
 ): TapeWriter => {
   const buffer = new Uint8Array(
     TICKS_IN_PART * (LENGTH_BYTES + mostPacketBytes)
   );
   const view = new DataView(buffer.buffer);
   const kept: Uint8Array[] = [];
-  let used = 0;
-  let ticks = 0;
-  let parts = 0;
+  let used = resume?.tail.bytes.byteLength ?? 0;
+  let ticks = resume?.tail.ticks ?? 0;
+  let parts = resume?.parts ?? 0;
+  let resumed = used;
+  if (resume) {
+    buffer.set(resume.tail.bytes, 0);
+  }
   const finish = (): void => {
     if (ticks > 0) {
       const part = buffer.slice(0, used);
-      kept.push(part);
+      kept.push(part.subarray(resumed));
       save(parts, part);
       parts += 1;
       used = 0;
       ticks = 0;
+      resumed = 0;
     }
   };
   return {
@@ -51,7 +68,9 @@ export const createTapeWriter = (
     },
     finish,
     parts: () => parts,
-    sofar: () => (used > 0 ? [...kept, buffer.slice(0, used)] : kept),
+    sofar: () =>
+      used > resumed ? [...kept, buffer.slice(resumed, used)] : kept,
+    tail: () => ({ bytes: buffer.slice(0, used), ticks }),
   };
 };
 

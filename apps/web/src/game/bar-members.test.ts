@@ -42,6 +42,7 @@ const lobbyOf = (
   edition: 0,
   hostId: null,
   kind: "lobby",
+  lostRace: null,
   members: ids.map((id, colour) => ({
     colour,
     here: !away.includes(id),

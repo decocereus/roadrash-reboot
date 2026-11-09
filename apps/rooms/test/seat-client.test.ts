@@ -1,12 +1,16 @@
+import { seatedRace } from "@racer/career/room-race";
 import { coasting, controlOf } from "@racer/sim/control";
 import { neutralInput } from "@racer/sim/race";
+import { createRoom } from "@racer/sim/room";
 import { clearFrame, createTickFrame } from "@racer/sim/room-frame";
 import {
   PING_PACKET_BYTES,
   RACE_STATS_PACKET_BYTES,
   readRaceStats,
+  writeRaceSnapshot,
   writeTick,
 } from "@racer/sim/room-wire";
+import { snapshotCapacity, writeSnapshot } from "@racer/sim/snapshot";
 import { riderIdAt } from "@racer/sim/state";
 import * as Schema from "effect/Schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,6 +18,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEAD_AFTER_MS, PING_EVERY_MS } from "../src/heartbeat.ts";
 import { createInputLatency } from "../src/input-latency.ts";
 import { encodeRoomMessage, SEAT_LEFT, SEAT_QUIT } from "../src/messages.ts";
+import { ticksOf } from "../src/room-config.ts";
+import { CHECKPOINT_TICKS } from "../src/room-memory.ts";
 import { createRoomRun } from "../src/room-run.ts";
 import { openRoomSeat } from "../src/seat-client.ts";
 import {
@@ -30,6 +36,7 @@ import {
   newSeat,
   pongTo,
   raceDataSwitch,
+  startedMessage,
 } from "./seat-socket.ts";
 
 const LONGEST_LOAD_MS = 20_000;
@@ -61,6 +68,28 @@ describe("a seat loading the race", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("catches up from the room's snapshot, then follows the ticks after it", () => {
+    const { seat, socket } = loadingSeat();
+    const { manifest } = startedMessage;
+    const { setup } = seatedRace(manifest.seed, 1, manifest.rule);
+    const room = createRoom(setup, ticksOf(manifest.raceLimitSeconds));
+    for (let tick = 1; tick <= CHECKPOINT_TICKS; tick += 1) {
+      room.accept(riderIdAt(0), tick, [coasting]);
+      room.step();
+    }
+    const snapshot = new Uint8Array(snapshotCapacity(room.state));
+    writeSnapshot(room.state, room.digest, new DataView(snapshot.buffer));
+    const packet = writeRaceSnapshot(snapshot);
+    const heard = new ArrayBuffer(packet.byteLength);
+    new Uint8Array(heard).set(packet);
+    socket.hear(heard);
+    const race = seat.race();
+    expect(race?.client.confirmed.tick).toBe(CHECKPOINT_TICKS);
+    expect(race?.client.predicted.tick).toBe(CHECKPOINT_TICKS);
+    hearTick(socket, CHECKPOINT_TICKS + 1);
+    expect(race?.client.confirmed.tick).toBe(CHECKPOINT_TICKS + 1);
   });
 
   it("stays down when another tab takes its place in the lobby", () => {

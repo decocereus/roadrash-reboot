@@ -7,9 +7,9 @@ import * as Layer from "effect/Layer";
 
 import { roomsBuild } from "./build-id.ts";
 import { QueueApi } from "./contract.ts";
-import type { HostSocket } from "./host.ts";
 import { SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
+import type { HostSocket } from "./present.ts";
 import { createQueue } from "./queue.ts";
 import { launchRoomConfig } from "./room-config.ts";
 import { publicRoomId } from "./room-id.ts";

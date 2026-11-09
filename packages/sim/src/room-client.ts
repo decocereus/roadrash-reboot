@@ -89,6 +89,7 @@ export interface RoomClient {
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
   readonly catchUp: (part: DataView) => void;
+  readonly catchUpFrom: (snapshot: DataView) => void;
   readonly settle: () => void;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
@@ -512,6 +513,10 @@ export const createRoomClient = (
           `The room sent a catch-up the client could not read after tick ${confirmed.tick}.`
         );
       }
+      rewind();
+    },
+    catchUpFrom: (snapshot) => {
+      restoreInto(confirmed, digest, snapshot, setup.track);
       rewind();
     },
     confirm: (frame, serverHash) => {

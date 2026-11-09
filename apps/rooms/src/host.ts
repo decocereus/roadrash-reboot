@@ -7,6 +7,7 @@ import {
   ROOM_PROTOCOL,
   tickCapacity,
   writeCatchUp,
+  writeRaceSnapshot,
   writeTick,
 } from "@racer/sim/room-wire";
 import { HASH_WORDS } from "@racer/sim/snapshot-bytes";
@@ -15,6 +16,8 @@ import * as Option from "effect/Option";
 
 import type { RoomStatus } from "./contract.ts";
 import { createPongs, watchForSilence } from "./heartbeat.ts";
+import { createMemory } from "./host-memory.ts";
+import type { MemoryPorts } from "./host-memory.ts";
 import { hostAfter, NEW_HOST, startMomentOf } from "./host-phase.ts";
 import type { HostEvent, HostState } from "./host-phase.ts";
 import { createLobby } from "./lobby.ts";
@@ -27,40 +30,39 @@ import {
   SEAT_QUIT,
   SEAT_SILENT,
 } from "./messages.ts";
-import type { LobbyCommand, Refusal, RoomMessage } from "./messages.ts";
+import type { LobbyCommand } from "./messages.ts";
 import { noteGap } from "./notes.ts";
-import { buildRace, finishTape } from "./race-build.ts";
+import { createAudience, moveSocket, SEND_FAILED } from "./present.ts";
+import type { HostSocket, Present } from "./present.ts";
+import { buildRace, finishTape, restoreRace } from "./race-build.ts";
 import type { RacePorts, Run } from "./race-build.ts";
 import {
   HERE,
   keepBrowserRows,
   keepReport,
+  heldSeatOf,
   keepStats,
+  partingOf,
   raceSeatsOf,
   settleReport,
   stillLoading,
   tallyOf,
   traceSeats,
 } from "./race-seat.ts";
-import type { Seat, SeatHold, SeatLink } from "./race-seat.ts";
+import type { Parting, Seat, SeatHold, SeatLink } from "./race-seat.ts";
 import { msOf, publicRuleFor } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
+import { CHECKPOINT_TICKS } from "./room-memory.ts";
+import type { RoomMemory } from "./room-memory.ts";
+import { roomStatus } from "./room-status.ts";
 import { createSocketBudget, CUT_AFTER_DROPS, spend } from "./socket-budget.ts";
-import type { SocketBudget } from "./socket-budget.ts";
-import { IN_THE_LOBBY, roleAfter } from "./socket-role.ts";
-import type { SocketEvent, SocketRole } from "./socket-role.ts";
+import { IN_THE_LOBBY } from "./socket-role.ts";
 import { ROOM_TRACE_EVERY_TICKS } from "./tape.ts";
 
 const TICK_MS = TICK_SECONDS * 1000;
 const MOST_CATCH_UP_TICKS = 4;
 const START_DELAY_MS = 3000;
 const REPORT_GRACE_MS = 5000;
-const SEND_FAILED = Number.NEGATIVE_INFINITY;
-
-export interface HostSocket {
-  readonly send: (data: string | ArrayBufferView) => void;
-  readonly close: (code: number, reason: string) => void;
-}
 
 export interface SeatClaim {
   readonly build: string;
@@ -69,21 +71,8 @@ export interface SeatClaim {
   readonly rejoin: boolean;
 }
 
-export interface HostPorts extends RacePorts {
-  readonly now: () => number;
+export interface HostPorts extends Omit<RacePorts, "saveTape">, MemoryPorts {
   readonly after: (ms: number, wake: () => void) => void;
-}
-
-interface Present {
-  readonly budget: SocketBudget;
-  readonly link: SeatLink;
-  readonly memberId: string;
-  readonly name: string;
-  readonly socket: HostSocket;
-  arrived: boolean;
-  heardAt: number;
-  role: SocketRole<Run, Seat>;
-  walk: string | null;
 }
 
 export interface Host {
@@ -98,35 +87,53 @@ export interface Host {
   readonly status: () => RoomStatus;
 }
 
-type Parting = "hold" | "leave";
-
-const partingOf = (closeCode: number | null): Parting =>
-  closeCode === SEAT_LEFT || closeCode === SEAT_QUIT ? "leave" : "hold";
-
-const moveSocket = (person: Present, event: SocketEvent<Run, Seat>): void => {
-  person.role = roleAfter(person.role, event) ?? person.role;
-};
-
 export const createHost = (
-  ports: HostPorts,
-  kind: RoomKind = "custom"
+  given: HostPorts,
+  kind: RoomKind = "custom",
+  memory: RoomMemory | null = null,
+  ended = 0
 ): Host => {
   const present = new Map<HostSocket, Present>();
+  const audience = createAudience(present, given.note);
+  const { refuse, sendTo, tell, tellWalkers } = audience;
   const batch = createInputBatch();
   const tickBuffer = new ArrayBuffer(tickCapacity(MOST_SEATS));
   const tickView = new DataView(tickBuffer);
   const readyDigest = new Uint32Array(HASH_WORDS);
-  const bornAt = ports.now();
-  const { publicRace } = ports.config;
-  const lobby = createLobby(bornAt, kind, ports.config, () =>
-    publicRuleFor(publicRace, kind === "public" ? ports.seed() : 0)
+  const bornAt = given.now();
+  const { publicRace } = given.config;
+  const lobby = createLobby(
+    bornAt,
+    kind,
+    given.config,
+    () => publicRuleFor(publicRace, kind === "public" ? given.seed() : 0),
+    memory?.lobby ?? null
   );
   let state: HostState<Run> = NEW_HOST;
+  let lostRace = memory?.lostRace ?? null;
   let roundTripsMoved = false;
   let wakes = 0;
   let catchUpWakes = 0;
   let worstBehindTicks = 0;
   let dropped = 0;
+  const {
+    checkpoint,
+    endedThrough,
+    markEnded,
+    nextSequence,
+    remember,
+    saveTape,
+  } = createMemory(given, {
+    ended,
+    lobby,
+    lostRace: () => lostRace,
+    races: memory?.races ?? 0,
+    run: () => state.run,
+  });
+  const ports: RacePorts & Pick<HostPorts, "after" | "now"> = {
+    ...given,
+    saveTape,
+  };
 
   const roomMs = (): number => ports.now() - bornAt;
   const pongFor = createPongs(roomMs);
@@ -140,51 +147,15 @@ export const createHost = (
     return true;
   };
 
-  const sendTo = (socket: HostSocket, data: string | ArrayBufferView): void => {
-    try {
-      socket.send(data);
-    } catch {
-      const person = present.get(socket);
-      if (person) {
-        person.heardAt = SEND_FAILED;
-      }
-    }
-  };
-
-  const tell = (message: RoomMessage): void => {
-    const text = encodeRoomMessage(message);
-    for (const { role, socket } of present.values()) {
-      if (role.kind === "seated") {
-        sendTo(socket, text);
-      }
-    }
-  };
-
-  const tellWalkers = (from: HostSocket, text: string): void => {
-    for (const { role, socket } of present.values()) {
-      if (socket !== from && role.kind === "lobby") {
-        sendTo(socket, text);
-      }
-    }
-  };
-
   const tellLobby = (): void => {
     roundTripsMoved = false;
-    const view = lobby.view(ports.now());
-    for (const { memberId, role, socket } of present.values()) {
-      if (role.kind === "lobby") {
-        sendTo(
-          socket,
-          encodeRoomMessage({
-            ...view,
-            atMs: roomMs(),
-            kind: "lobby",
-            seatHoldSeconds: ports.config.seatHoldSeconds,
-            you: memberId,
-          })
-        );
-      }
-    }
+    audience.tellLobby({
+      ...lobby.view(ports.now()),
+      atMs: roomMs(),
+      kind: "lobby",
+      lostRace,
+      seatHoldSeconds: ports.config.seatHoldSeconds,
+    });
   };
 
   const end = (run: Run): void => {
@@ -201,11 +172,13 @@ export const createHost = (
       worstBehindTicks,
     });
     move({ kind: "raceOver" });
+    markEnded(run.sequence);
     tell({ kind: "ended", tick: room.state.tick });
     for (const person of present.values()) {
       moveSocket(person, { kind: "raceOver" });
     }
     lobby.raceEnded(ports.now());
+    remember();
     tellLobby();
     ports.after(REPORT_GRACE_MS, () => {
       for (const person of present.values()) {
@@ -239,9 +212,9 @@ export const createHost = (
     }
   };
 
-  const ride = (run: Run, startedAt: number): void => {
+  const ride = (run: Run, startedAt: number, wokeAt = startedAt): void => {
     const { room, wakeGaps } = run;
-    let lastWakeAt = startedAt;
+    let lastWakeAt = wokeAt;
     const wake = (): void => {
       wakes += 1;
       const now = ports.now();
@@ -258,6 +231,9 @@ export const createHost = (
         if (room.over()) {
           end(run);
           return;
+        }
+        if (room.state.tick % CHECKPOINT_TICKS === 0) {
+          checkpoint(run);
         }
       }
       const nextAt = startedAt + (room.state.tick + 1) * TICK_MS;
@@ -284,6 +260,7 @@ export const createHost = (
     tell({ kind: "countdown", startAtMs: startsAt - bornAt });
     ports.after(START_DELAY_MS, () => {
       move({ kind: "startMoment" });
+      checkpoint(run);
       ride(run, startsAt);
     });
   };
@@ -301,6 +278,7 @@ export const createHost = (
     const lobbyMs = ports.now() - lobby.since();
     const rule = lobby.rule();
     lobby.raceStarted();
+    lostRace = null;
     wakes = 0;
     catchUpWakes = 0;
     worstBehindTicks = 0;
@@ -311,6 +289,7 @@ export const createHost = (
       lobbyMs,
       now: ports.now(),
       rule,
+      sequence: nextSequence(),
       tickBytes: tickBuffer.byteLength,
     });
     move({ kind: "raceBuilt", run });
@@ -332,22 +311,8 @@ export const createHost = (
     ports.after(msOf(ports.config.loadDeadlineSeconds), () => {
       countDown(run);
     });
+    remember();
   };
-
-  const refuse = (
-    socket: HostSocket,
-    reason: Refusal,
-    closeCode = SEAT_CLOSED
-  ): void => {
-    ports.note({ kind: "refused", reason });
-    sendTo(socket, encodeRoomMessage({ kind: "refused", reason }));
-    socket.close(closeCode, reason);
-  };
-
-  const inRace = () =>
-    [...present.values()].flatMap(({ role }) =>
-      role.kind === "seated" ? [role] : []
-    );
 
   const leaveRace = (run: Run, seat: Seat, closeCode: number | null): void => {
     if (seat.presence.kind === "left") {
@@ -360,7 +325,9 @@ export const createHost = (
       closeCode,
       kind: "left",
       raceId,
-      seatsLeft: inRace().length,
+      seatsLeft: [...present.values()].filter(
+        ({ role }) => role.kind === "seated"
+      ).length,
       tally: tallyOf(seat, room),
       tick: room.state.tick,
     });
@@ -433,15 +400,14 @@ export const createHost = (
 
   const claimHold = (memberId: string) => {
     const { run } = state;
-    for (const seat of run?.riders ?? []) {
-      const { presence } = seat;
-      if (run && seat.memberId === memberId && presence.kind === "held") {
-        if (ports.now() < presence.until) {
-          return { run, seat, since: presence.since };
-        }
-        holdRunsOut(run, seat, presence);
-      }
+    const held = run ? heldSeatOf(run.riders, memberId) : null;
+    if (!(run && held)) {
+      return null;
     }
+    if (ports.now() < held.hold.until) {
+      return { run, seat: held.seat, since: held.hold.since };
+    }
+    holdRunsOut(run, held.seat, held.hold);
     return null;
   };
 
@@ -461,6 +427,9 @@ export const createHost = (
         you: seat.rider,
       })
     );
+    if (run.base) {
+      sendTo(person.socket, writeRaceSnapshot(run.base));
+    }
     for (const part of run.tape.sofar()) {
       sendTo(person.socket, writeCatchUp(part));
     }
@@ -488,6 +457,7 @@ export const createHost = (
     retire(person, closeCode, parting);
     const part = closeCode === SEAT_LEFT ? lobby.leave : lobby.away;
     part(person.memberId, ports.now());
+    remember();
     tellLobby();
     consider();
   };
@@ -502,7 +472,11 @@ export const createHost = (
       drop(person, heard ? SEAT_SILENT : null);
     },
     onSwept: (now) => {
-      if (lobby.sweep(now) || roundTripsMoved) {
+      const swept = lobby.sweep(now);
+      if (swept) {
+        remember();
+      }
+      if (swept || roundTripsMoved) {
         tellLobby();
       }
       consider();
@@ -528,7 +502,9 @@ export const createHost = (
         break;
       }
       case "choose": {
-        lobby.choose(memberId, command.choice);
+        if (lobby.choose(memberId, command.choice)) {
+          remember();
+        }
         break;
       }
       default: {
@@ -607,6 +583,72 @@ export const createHost = (
     countDownOnceLoaded(run);
   };
 
+  const resume = (run: Run, now: number): void => {
+    const startedAt = now - run.room.state.tick * TICK_MS;
+    state = { phase: "racing", run, startedAt };
+    lobby.raceStarted();
+    for (const seat of run.riders) {
+      holdSeat(run, seat, null);
+    }
+    ride(run, startedAt, now);
+  };
+
+  const restore = (remembered: RoomMemory): void => {
+    const { at, build, race } = remembered;
+    for (const { body, key } of remembered.unsaved) {
+      ports.saveTape(key, body);
+    }
+    if (race === null) {
+      return;
+    }
+    const now = ports.now();
+    const afterMs = now - at;
+    const { raceId } = race;
+    const tick = race.checkpoint?.tick ?? 0;
+    const restored = restoreRace(
+      ports,
+      remembered,
+      race,
+      endedThrough(),
+      tickBuffer.byteLength,
+      now
+    );
+    switch (restored.kind) {
+      case "lost": {
+        lostRace = raceId;
+        const { detail, reason } = restored;
+        ports.note({
+          afterMs,
+          build,
+          detail,
+          kind: "lost",
+          raceId,
+          reason,
+          tick,
+        });
+        remember();
+        return;
+      }
+      case "run": {
+        if (restored.run.room.over()) {
+          markEnded(restored.run.sequence);
+          remember();
+          return;
+        }
+        resume(restored.run, now);
+        ports.note({ afterMs, build, kind: "restored", raceId, tick });
+        return;
+      }
+      default: {
+        restored satisfies never;
+      }
+    }
+  };
+
+  if (memory) {
+    restore(memory);
+  }
+
   return {
     gone: (socket, closeCode) => {
       const person = present.get(socket);
@@ -630,6 +672,7 @@ export const createHost = (
       if (!person.arrived) {
         person.arrived = true;
         lobby.arrive(person.memberId);
+        remember();
       }
       const { role } = person;
       switch (role.kind) {
@@ -686,6 +729,7 @@ export const createHost = (
         leaveRace(held.run, held.seat, SEAT_QUIT);
       }
       watchSeats();
+      remember();
       tellLobby();
       for (const other of present.values()) {
         if (other.socket !== socket && other.walk !== null) {
@@ -693,32 +737,14 @@ export const createHost = (
         }
       }
     },
-    status: () => {
-      const { phase, run } = state;
-      return {
-        build: ports.build,
-        catchUpWakes,
-        dropped,
-        hostPhase: phase,
-        lagTicks:
-          state.phase === "racing"
-            ? Math.max(
-                0,
-                Math.floor((ports.now() - state.startedAt) / TICK_MS) -
-                  state.run.room.state.tick
-              )
-            : 0,
-        names: [...present.values()].map((person) => person.name),
-        phase: run ? "racing" : "waiting",
-        raceId: run?.raceId ?? null,
-        roles: [...present.values()].map(({ role }) => role.kind),
-        rule: lobby.rule(),
-        seats: inRace().map((role) => tallyOf(role.seat, role.run.room)),
-        tick: run ? run.room.state.tick : 0,
-        waiting: present.size,
-        wakes,
-        worstBehindTicks,
-      };
-    },
+    status: () =>
+      roomStatus(
+        ports.build,
+        state,
+        [...present.values()],
+        lobby.rule(),
+        { catchUpWakes, dropped, wakes, worstBehindTicks },
+        ports.now()
+      ),
   };
 };

@@ -1,12 +1,15 @@
 import type { Room } from "@racer/sim/room";
 import { readRaceStats } from "@racer/sim/room-wire";
 import type { RaceStats } from "@racer/sim/room-wire";
+import { riderIdAt } from "@racer/sim/state";
 import type { RiderId } from "@racer/sim/state";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import type { RaceManifest } from "./manifest.ts";
+import { SEAT_LEFT, SEAT_QUIT } from "./messages.ts";
 import type { RaceSeat, RoomNote, SeatTally } from "./notes.ts";
+import type { SeatMemory } from "./room-memory.ts";
 import {
   BrowserTraceSchema,
   MOST_TRACE_CHARS,
@@ -40,6 +43,11 @@ export type SeatPresence =
   | { readonly kind: "left"; readonly tick: number };
 
 export const HERE: SeatPresence = { kind: "here" };
+
+export type Parting = "hold" | "leave";
+
+export const partingOf = (closeCode: number | null): Parting =>
+  closeCode === SEAT_LEFT || closeCode === SEAT_QUIT ? "leave" : "hold";
 
 export interface Seat {
   readonly colour: number;
@@ -112,6 +120,48 @@ export const seatFor = (
   tracedMissed: 0,
 });
 
+const leftAtTickOf = (presence: SeatPresence): number | null =>
+  presence.kind === "left" ? presence.tick : null;
+
+export const seatMemoryOf = ({
+  accepted,
+  ahead,
+  colour,
+  late,
+  link,
+  memberId,
+  name,
+  presence,
+  readyMs,
+  reported,
+  rider,
+}: Seat): SeatMemory => ({
+  accepted,
+  ahead,
+  colour,
+  late,
+  leftAtTick: leftAtTickOf(presence),
+  link,
+  memberId,
+  name,
+  readyMs,
+  reported,
+  rider,
+});
+
+export const restoredSeat = (memory: SeatMemory, raceId: string): Seat => ({
+  ...seatFor(memory, memory.colour, raceId, riderIdAt(memory.rider)),
+  accepted: memory.accepted,
+  ahead: memory.ahead,
+  late: memory.late,
+  presence:
+    memory.leftAtTick === null
+      ? HERE
+      : { kind: "left", tick: memory.leftAtTick },
+  readyMs: memory.readyMs,
+  reported: memory.reported,
+});
+
 export const keepBrowserRows = (seat: Seat, text: string): void => {
   if (text.length > MOST_TRACE_CHARS) {
     return;
@@ -172,13 +222,22 @@ export const keepReport = (seat: Seat, data: string | ArrayBuffer): void => {
   }
 };
 
+export const heldSeatOf = (
+  riders: readonly Seat[],
+  memberId: string
+): { readonly hold: SeatHold; readonly seat: Seat } | null => {
+  for (const seat of riders) {
+    if (seat.memberId === memberId && seat.presence.kind === "held") {
+      return { hold: seat.presence, seat };
+    }
+  }
+  return null;
+};
+
 export const stillLoading = (riders: readonly Seat[]): readonly RiderId[] =>
   riders.flatMap(({ presence, readyMs, rider }) =>
     presence.kind === "here" && readyMs === null ? [rider] : []
   );
-
-const leftAtTickOf = (presence: SeatPresence): number | null =>
-  presence.kind === "left" ? presence.tick : null;
 
 export const tallyOf = (seat: Seat, room: Room): SeatTally => ({
   accepted: seat.accepted,

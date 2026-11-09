@@ -49,6 +49,7 @@ const Lobby = Schema.Struct({
   edition: Schema.Number,
   hostId: Schema.NullOr(Schema.String),
   kind: Schema.Literal("lobby"),
+  lostRace: Schema.NullOr(Schema.String),
   members: Schema.Array(
     Schema.Struct({
       colour: Schema.Number,

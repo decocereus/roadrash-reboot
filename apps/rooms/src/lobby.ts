@@ -4,6 +4,7 @@ import { MOST_SEATS } from "@racer/sim/room";
 import { msOf } from "./room-config.ts";
 import type { RoomConfig } from "./room-config.ts";
 import type { RoomKind } from "./room-id.ts";
+import type { LobbyMemory } from "./room-memory.ts";
 
 export const LOBBY_PHASES = ["gathering", "racing"] as const;
 
@@ -50,6 +51,7 @@ export interface Lobby {
   readonly due: (now: number) => boolean;
   readonly join: (key: string, name: string, now: number) => string | null;
   readonly leave: (id: string, now: number) => void;
+  readonly memory: () => LobbyMemory;
   readonly raceEnded: (now: number) => void;
   readonly raceStarted: () => void;
   readonly ready: (
@@ -70,11 +72,23 @@ export const createLobby = (
   bornAt: number,
   kind: RoomKind,
   config: RoomConfig,
-  freshRule: () => RoomRule
+  freshRule: () => RoomRule,
+  memory: LobbyMemory | null = null
 ): Lobby => {
-  let members: Member[] = [];
-  let joined = 0;
-  let rule = freshRule();
+  let members: Member[] = (memory?.members ?? []).map(
+    ({ colour, id, key, name }) => ({
+      arrived: true,
+      awaySince: bornAt,
+      colour,
+      id,
+      key,
+      name,
+      ready: false,
+      rttMs: null,
+    })
+  );
+  let joined = memory?.joined ?? 0;
+  let rule = memory?.rule ?? freshRule();
   let edition = 0;
   let phase: LobbyPhase = "gathering";
   let clockFrom: number | null = null;
@@ -217,6 +231,13 @@ export const createLobby = (
       keep((member) => member.id !== id);
       settleClock(now);
     },
+    memory: () => ({
+      joined,
+      members: members.flatMap(({ arrived, colour, id, key, name }) =>
+        arrived ? [{ colour, id, key, name }] : []
+      ),
+      rule,
+    }),
     raceEnded: (now) => {
       phase = "gathering";
       since = now;

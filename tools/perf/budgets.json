@@ -2,64 +2,16 @@
   "baseline": {
     "raw": [
       {
-        "file": "tools/perf/baselines/post-step8.bikes.json.gz",
-        "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
+        "file": "tools/perf/baselines/bar.mac.gpu-helium-metal.json.gz",
+        "sha256": "0259f386185869722e968c50417dde9d8264a84e2692cdcca8c09c9c7bccac42"
       },
       {
-        "file": "tools/perf/baselines/post-step8.node-darwin-arm64.json.gz",
-        "sha256": "8001c17c091cba4095859bc247bcadec523f1d41dde51948f992a41c070da4b1"
+        "file": "tools/perf/baselines/bar.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "9432673d20fe7836d369a516ad95dbb0c3caf2c84672e3f2a7def6e0b4258c3b"
       },
       {
-        "file": "tools/perf/baselines/post-step8.riders.json.gz",
-        "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.six-celebrities.json.gz",
-        "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.worker.json.gz",
-        "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.trucks.node-darwin-arm64.json.gz",
-        "sha256": "1d7967622616eb8e73159336269120dd4817941d8c61e6505e61fd2346fc7de2"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.trucks.node-linux-x64.json.gz",
-        "sha256": "4da5994a32530c922bf7ed07c5ecde402f816076c7349bcb7765af62b51fe4fc"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.trucks.gpu-helium-metal.json.gz",
-        "sha256": "a9dfbbc2b179905fb949a7f706b892675ca5614d4d0bbf82c7e2e73177287d53"
-      },
-      {
-        "file": "tools/perf/baselines/post-step8.vimaan.gpu-chromium-nvidia.json.gz",
-        "sha256": "e2cf7bc8917be10a965f1364d30858f4af8d95196effde9df957c2701d8504cf"
-      },
-      {
-        "file": "tools/perf/baselines/one-layout.node-darwin-arm64.json.gz",
-        "sha256": "3b09b83d3d9e28a2a7b3d6b50b8a7e837626de0bc0e0102d616bfdf7415a255c"
-      },
-      {
-        "file": "tools/perf/baselines/one-layout.node-linux-x64.json.gz",
-        "sha256": "0138bf307dae462ef6239c48971901651e58d3a1410214bfe1d13ab60b73cebc"
-      },
-      {
-        "file": "tools/perf/baselines/one-layout.vimaan.gpu-chromium-nvidia.json.gz",
-        "sha256": "bdaadfbc1d65eb7526256f44d0891fa13f7b2ddad85d95b2f609726303795184"
-      },
-      {
-        "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
-        "sha256": "04e49d7a716e1b697e070f51d8e98185aa38863bb3d2d815954d85faa4732698"
-      },
-      {
-        "file": "tools/perf/baselines/tiers.node-linux-x64.json.gz",
-        "sha256": "6a8e5760d034331e819a1b19cc9f8647dee0520ae9d60f7e3c5d25539dd42451"
-      },
-      {
-        "file": "tools/perf/baselines/tiers.vimaan.gpu-chromium-nvidia.json.gz",
-        "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
+        "file": "tools/perf/baselines/bar.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "43cefd5e6825840093baaa34aa8c9d484fd9fc69c0b6502894f6086578820918"
       },
       {
         "file": "tools/perf/baselines/districts.node-darwin-arm64.json.gz",
@@ -78,29 +30,85 @@
         "sha256": "c46b0494adb5b8e588c68ba0f8d17650aa2d9a8fabfadff348103d0bfafed577"
       },
       {
-        "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
-        "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
-      },
-      {
-        "file": "tools/perf/baselines/bar.mac.gpu-helium-metal.json.gz",
-        "sha256": "0259f386185869722e968c50417dde9d8264a84e2692cdcca8c09c9c7bccac42"
-      },
-      {
-        "file": "tools/perf/baselines/bar.vimaan.gpu-chromium-nvidia.json.gz",
-        "sha256": "43cefd5e6825840093baaa34aa8c9d484fd9fc69c0b6502894f6086578820918"
-      },
-      {
-        "file": "tools/perf/baselines/bar.vimaan.gpu-chromium-intel.json.gz",
-        "sha256": "9432673d20fe7836d369a516ad95dbb0c3caf2c84672e3f2a7def6e0b4258c3b"
-      },
-      {
         "file": "tools/perf/baselines/node26.node-linux-x64.json.gz",
         "sha256": "91854f9ba1695cc1746bbfcd9987beb2c2a2a853a8910f7a8ba0a1c9ced39dc8"
+      },
+      {
+        "file": "tools/perf/baselines/one-layout.node-darwin-arm64.json.gz",
+        "sha256": "3b09b83d3d9e28a2a7b3d6b50b8a7e837626de0bc0e0102d616bfdf7415a255c"
+      },
+      {
+        "file": "tools/perf/baselines/one-layout.node-linux-x64.json.gz",
+        "sha256": "0138bf307dae462ef6239c48971901651e58d3a1410214bfe1d13ab60b73cebc"
+      },
+      {
+        "file": "tools/perf/baselines/one-layout.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "bdaadfbc1d65eb7526256f44d0891fa13f7b2ddad85d95b2f609726303795184"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.bikes.json.gz",
+        "sha256": "7540b4bef4ab8087f0da2942803e9bebb1db27cd96bafbffecc0cef3a61faede"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.node-darwin-arm64.json.gz",
+        "sha256": "8001c17c091cba4095859bc247bcadec523f1d41dde51948f992a41c070da4b1"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.riders.json.gz",
+        "sha256": "b25596271c3dc07853b946afe46dcecf94b5c57dfa00cfcedbd191d3336ca595"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.six-celebrities.json.gz",
+        "sha256": "8c023dd1146ef043e7e84fd07a5a2e6d7d78ea8c2d49a39db189bbad15d64373"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.trucks.gpu-helium-metal.json.gz",
+        "sha256": "a9dfbbc2b179905fb949a7f706b892675ca5614d4d0bbf82c7e2e73177287d53"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.trucks.node-darwin-arm64.json.gz",
+        "sha256": "1d7967622616eb8e73159336269120dd4817941d8c61e6505e61fd2346fc7de2"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.trucks.node-linux-x64.json.gz",
+        "sha256": "4da5994a32530c922bf7ed07c5ecde402f816076c7349bcb7765af62b51fe4fc"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "e2cf7bc8917be10a965f1364d30858f4af8d95196effde9df957c2701d8504cf"
+      },
+      {
+        "file": "tools/perf/baselines/post-step8.worker.json.gz",
+        "sha256": "6ed750d7075a87fd0dbf274d704ca3b8548b8cab7aaf4b4e69f366046deb2502"
+      },
+      {
+        "file": "tools/perf/baselines/room-checkpoint.node-darwin-arm64.json.gz",
+        "sha256": "abdcd21316cf6fbc051db534d2ca56062300f2fab3d442731b8ef37398ed89a4"
+      },
+      {
+        "file": "tools/perf/baselines/room-checkpoint.node-linux-x64.json.gz",
+        "sha256": "f338793c75c9696bdba9019d28df6eefe61ba395d5fff26da151b02f83e6ca2e"
+      },
+      {
+        "file": "tools/perf/baselines/tiers.node-darwin-arm64.json.gz",
+        "sha256": "04e49d7a716e1b697e070f51d8e98185aa38863bb3d2d815954d85faa4732698"
+      },
+      {
+        "file": "tools/perf/baselines/tiers.node-linux-x64.json.gz",
+        "sha256": "6a8e5760d034331e819a1b19cc9f8647dee0520ae9d60f7e3c5d25539dd42451"
+      },
+      {
+        "file": "tools/perf/baselines/tiers.vimaan.gpu-chromium-nvidia.json.gz",
+        "sha256": "4f57a4f3763f5a136641e64b11e000f07ff364fdd77acd106470f5d55fcca012"
+      },
+      {
+        "file": "tools/perf/baselines/uhd630.vimaan.gpu-chromium-intel.json.gz",
+        "sha256": "fbd6ed619b13e9b5b48d776e6d974ae2aaeed0473c7c659b50613b4129874939"
       }
     ],
     "revision": "9f67ba98bb85c0d4ac3912d2c61f151235b5a75b",
     "summary": "tools/perf/baselines/post-step8.json",
-    "summarySha256": "c1bac44eb512c1ea50db96ff63ee0401ea324b3d7985bb1eda3a53c646d6b359"
+    "summarySha256": "9b54127e8f6252f617ac1cfb255760d2812876932793a2a9b8d8fe0bc0ee4b8b"
   },
   "limits": [
     {
@@ -2226,6 +2234,54 @@
       "source": "gpu-2026-11-05T15-29-20-313Z-b2687f7-62aca5b",
       "unit": "triangles",
       "value": 942322
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "value": 0.5614854403568156,
+      "baseline": 0.3755755453891743,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-09T21-26-16-361Z-6351bfb-6351bfb",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median, with 1.3 x for the spread between GitHub runners",
+      "value": 0.4218080216234016,
+      "baseline": 0.2821458338618071,
+      "direction": "max",
+      "environment": "node-linux-x64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-09T21-26-16-361Z-6351bfb-6351bfb",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.20280069541145895,
+      "baseline": 0.176348430792573,
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "reference-v1",
+      "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
+      "unit": "ms"
+    },
+    {
+      "derivation": "1.15 x calibrated baseline median",
+      "value": 0.1564855254796539,
+      "baseline": 0.13607436998230774,
+      "direction": "max",
+      "environment": "node-darwin-arm64",
+      "metric": "room.checkpoint.p95",
+      "paired": null,
+      "scenario": "pack-riding-v1",
+      "source": "baseline-2026-11-09T22-28-40-968Z-e4d8504-e4d8504",
+      "unit": "ms"
     }
   ],
   "nodeProfiles": {

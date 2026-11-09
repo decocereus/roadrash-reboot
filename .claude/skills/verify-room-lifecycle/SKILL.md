@@ -15,7 +15,7 @@ Run the check when your diff touches any covered file. Each action in the spec n
 
 | Covered file | What the spec models from it |
 | --- | --- |
-| `apps/rooms/src/host.ts` | seat, drop, retire, holdSeat, partingOf, rejoin, heldSeatOf, countDownOnceLoaded, watchSeats, the timers START_DELAY_MS, REPORT_GRACE_MS, SILENT_SEAT_MS |
+| `apps/rooms/src/host.ts` | seat, drop, retire, holdSeat, partingOf, rejoin, heldSeatOf, countDownOnceLoaded, watchSeats, restore after a Durable Object restart, the timers START_DELAY_MS, REPORT_GRACE_MS, SILENT_SEAT_MS |
 | `apps/rooms/src/host-phase.ts` | the room phase and loadingOver |
 | `apps/rooms/src/socket-role.ts` | which socket is a lobby seat and which a race seat |
 | `apps/rooms/src/race-seat.ts`, `race-build.ts`, `race-server.ts` | building the race from the seats |
@@ -40,7 +40,7 @@ The first run downloads a pinned `tla2tools.jar` and a pinned Temurin JRE into `
 
 Every line must read `ok`. There are three kinds:
 
-- **Checks** (`full`, `newMember`, `pair`, `public`, `solo`, `twins` in `tools/rooms/src/lifecycle-checks.ts`). Each runs TLC with a set of bounds and must find no counterexample to its rules.
+- **Checks** (`full`, `newMember`, `pair`, `public`, `restart`, `solo`, `twins` in `tools/rooms/src/lifecycle-checks.ts`). Each runs TLC with a set of bounds and must find no counterexample to its rules. `restart` is the one check whose room may restart (`Restarts` 1): every other check keeps `Restarts` 0.
 - **Guard-offs** (`GUARD_OFFS`). Each turns one `Guard*` constant FALSE, which removes the code behaviour that protects one rule, and TLC must then break that rule. This is the proof that the rule can fail. A guard-off that passes means the model no longer needs that behaviour, which is a modelling error to fix.
 - **Known defects** (`KNOWN_DEFECTS`). Each is a real bug in the code that the model shows and that its owner has not fixed. It must still break its rule. When the owner fixes the code, the line fails, and the fix deletes the entry in the same pull request.
 
@@ -65,11 +65,12 @@ Each is an invariant or property in the spec with its guard named in the comment
 | `ReadyRiderRides` | A rider whose game is ready rides the race the room is running. |
 | `BackOnBike` | A dropped rider who comes back as the same member while the room holds their bike gets back on it, unless they chose rejoin=no. |
 | `BikeHeldForHold` | The room lets go of a dropped rider's bike only when the hold runs out, the race ends, or the rider chose to leave. |
+| `RideSurvivesRestart` | A race the room had checkpointed survives a restart: every rider on a bike is held for the full hold and gets back on through the rejoin path. |
 | `NeverStuck` | Every tab ends in the bar, riding, on results, on a screen that says why it is out, or closed. Checked only in `solo`, because liveness is slow. |
 
 ## Bounds and what is left out
 
-The bounds are in `CHECKS`: at most three tabs, at most two seats, at most two races, two to four player actions, one or two sockets per tab. Time moves in ticks of about five seconds (`TIMERS`), so `Hold` is 1 tick, `Away` 3, `Wait` 3, and anything a live link does happens before the next tick. A pass covers these bounds, not a room of ten riders over an evening.
+The bounds are in `CHECKS`: at most three tabs, at most two seats, at most two races, two to four player actions, one or two sockets per tab, and at most one restart of the Durable Object (`HostRestart`), which kills every socket the host held and loses its timers and unsent messages. Time moves in ticks of about five seconds (`TIMERS`), so `Hold` is 1 tick, `Away` 3, `Wait` 3, and anything a live link does happens before the next tick. A pass covers these bounds, not a room of ten riders over an evening.
 
 The model leaves out the race simulation, the join rate limits from #163 (the spec says why near its join action), message loss on a link that stays open, and the browser's own crash. It models the room config at its launch values; `ASSUME Away >= Hold` mirrors the schema check in `room-config.ts`.
 

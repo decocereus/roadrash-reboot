@@ -1,5 +1,6 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Http from "alchemy/Http";
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 import * as HttpRouter from "effect/http/HttpRouter";
@@ -12,17 +13,46 @@ import { roomsBuild } from "./build-id.ts";
 import { RoomApi } from "./contract.ts";
 import { gatedClient, ROOM_LIMITED } from "./gate.ts";
 import { createHost } from "./host.ts";
-import type { Host, HostPorts, HostSocket } from "./host.ts";
+import type { Host, HostPorts } from "./host.ts";
 import { gateLimiter, passes } from "./limiter.ts";
 import { cleanGuestName, SEAT_CLOSED } from "./messages.ts";
 import { NotWebSocket } from "./not-web-socket.ts";
 import type { RoomNote } from "./notes.ts";
+import type { HostSocket } from "./present.ts";
 import { refusedSeat } from "./refused-seat.ts";
 import { launchRoomConfig } from "./room-config.ts";
 import { roomKindOf } from "./room-id.ts";
+import { decodeRoomMemory } from "./room-memory.ts";
+import type { RoomMemory } from "./room-memory.ts";
+import { roomsSim } from "./sim-fingerprint.ts";
+import { StorageFailed } from "./storage-failed.ts";
 import { TAPE_KEEP_DAYS } from "./tape.ts";
 
 const SECONDS_PER_DAY = 86_400;
+const MEMORY_KEY = "room";
+const ENDED_KEY = "ended";
+const WRITE_RETRIES = 5;
+
+interface MemoryWrite {
+  readonly key: string;
+  readonly value: RoomMemory | number | null;
+}
+
+const decodeEnded = Schema.decodeUnknownOption(Schema.Number);
+
+const durable = <A, R>(
+  write: Effect.Effect<A, never, R>
+): Effect.Effect<A, StorageFailed, R> =>
+  write.pipe(
+    Effect.catchCause(
+      (cause) =>
+        new StorageFailed({
+          cause: Cause.squash(cause),
+          message: Cause.pretty(cause),
+        })
+    ),
+    Effect.retry({ times: WRITE_RETRIES })
+  );
 
 const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
   lifecycleRules: [
@@ -38,6 +68,7 @@ const RaceTapes = Cloudflare.R2.Bucket("RaceTapes", {
 interface TapeSave {
   readonly body: string | Uint8Array;
   readonly key: string;
+  readonly saved: () => void;
 }
 
 const note = (line: RoomNote): void => {
@@ -50,22 +81,32 @@ const TRACE_TIMEOUT_MS = 3000;
 const coloOfTrace = (trace: string): string | null =>
   /^colo=(?<colo>\w+)$/mu.exec(trace)?.groups?.colo ?? null;
 
+interface Durable {
+  readonly endRace: HostPorts["endRace"];
+  readonly remember: HostPorts["remember"];
+  readonly saveTape: HostPorts["saveTape"];
+}
+
 const portsFor = (
   build: string,
+  sim: string,
   roomColo: HostPorts["roomColo"],
-  saveTape: HostPorts["saveTape"]
+  { endRace, remember, saveTape }: Durable
 ): HostPorts => ({
   after: (ms, wake) => {
     setTimeout(wake, ms);
   },
   build,
   config: launchRoomConfig,
+  endRace,
   note,
   now: () => Date.now(),
   raceId: () => crypto.randomUUID(),
+  remember,
   roomColo,
   saveTape,
   seed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
+  sim,
 });
 
 const EdgeSchema = Schema.Struct({
@@ -97,13 +138,18 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
     const build = yield* roomsBuild.pipe(
       Effect.catchTag("ConfigError", (missing) => Effect.die(missing))
     );
+    const sim = yield* roomsSim.pipe(
+      Effect.catchTag("ConfigError", (missing) => Effect.die(missing))
+    );
     const tapes = yield* Cloudflare.R2.WriteBucket(RaceTapes);
     const opens = yield* gateLimiter("open");
     return Effect.gen(function* raceServerInstance() {
       const saves = yield* Queue.unbounded<TapeSave>();
       yield* Queue.take(saves).pipe(
-        Effect.flatMap(({ body, key }) =>
+        Effect.flatMap(({ body, key, saved }) =>
           tapes.put(key, body).pipe(
+            Effect.retry({ times: WRITE_RETRIES }),
+            Effect.tap(() => Effect.sync(saved)),
             Effect.catchCause(() =>
               Effect.sync(() => {
                 note({ key, kind: "tapeLost" });
@@ -113,6 +159,37 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
         ),
         Effect.forever,
         Effect.forkDetach
+      );
+      const writes = yield* Queue.unbounded<MemoryWrite>();
+      yield* Queue.take(writes).pipe(
+        Effect.flatMap(({ key, value }) =>
+          durable(
+            value === null
+              ? Effect.asVoid(state.storage.delete(key))
+              : state.storage.put(key, value)
+          ).pipe(
+            Effect.catchTag("StorageFailed", (failure) =>
+              Effect.sync(() => {
+                note({
+                  detail: failure.message,
+                  kind: "memoryLost",
+                  when: "write",
+                });
+              })
+            )
+          )
+        ),
+        Effect.forever,
+        Effect.forkDetach
+      );
+      const stored = yield* state.storage.get(MEMORY_KEY);
+      const remembered = Option.getOrNull(decodeRoomMemory(stored));
+      if (stored !== undefined && remembered === null) {
+        note({ detail: null, kind: "memoryLost", when: "read" });
+      }
+      const ended = Option.getOrElse(
+        decodeEnded(yield* state.storage.get(ENDED_KEY)),
+        () => 0
       );
       let roomColo: string | null = null;
       yield* Effect.tryPromise(async () => {
@@ -127,14 +204,20 @@ export class RaceServer extends Cloudflare.DurableObject<RaceServer>()(
       let opened: Host | null = null;
       const hostOf = (roomId: string): Host => {
         opened ??= createHost(
-          portsFor(
-            build,
-            () => roomColo,
-            (key, body) => {
-              Queue.offerUnsafe(saves, { body, key });
-            }
-          ),
-          roomKindOf(roomId)
+          portsFor(build, sim, () => roomColo, {
+            endRace: (through) => {
+              Queue.offerUnsafe(writes, { key: ENDED_KEY, value: through });
+            },
+            remember: (memory) => {
+              Queue.offerUnsafe(writes, { key: MEMORY_KEY, value: memory });
+            },
+            saveTape: (key, body, saved) => {
+              Queue.offerUnsafe(saves, { body, key, saved });
+            },
+          }),
+          roomKindOf(roomId),
+          remembered,
+          ended
         );
         return opened;
       };

@@ -4,7 +4,9 @@ import type {
   RaceEnded,
   RaceHeld,
   RaceLeft,
+  RaceLost,
   RaceRejoined,
+  RaceRestored,
   RaceSeat,
   RaceStarted,
   RaceBrowserNote,
@@ -23,6 +25,7 @@ interface RaceRecord {
   readonly drops: (RaceHeld | RaceRejoined)[];
   ended?: RaceEnded;
   readonly left: RaceLeft[];
+  readonly restarts: (RaceRestored | RaceLost)[];
   started?: RaceStarted;
   readonly stats: RaceStatsNote[];
 }
@@ -40,6 +43,7 @@ const recordOf = (
     drops: [],
     left: [],
     raceId,
+    restarts: [],
     stats: [],
   };
   records.set(raceId, fresh);
@@ -52,9 +56,15 @@ export const groupRaces = (
   const records = new Map<string, RaceRecord>();
   for (const note of notes) {
     switch (note.kind) {
+      case "memoryLost":
       case "placed":
       case "refused":
       case "tapeLost": {
+        break;
+      }
+      case "lost":
+      case "restored": {
+        recordOf(records, note.raceId).restarts.push(note);
         break;
       }
       case "started": {
@@ -173,8 +183,47 @@ const serverLine = (ended: RaceEnded): string => {
   return `  Server: worst ${ended.worstBehindTicks} ticks behind, ${ended.catchUpWakes} catch-up wakes. Gaps between wakes, ${gaps}.${dropped}`;
 };
 
+const lostReasonLine = ({ build, detail, reason }: RaceLost): string => {
+  switch (reason) {
+    case "ended": {
+      return "the race had already ended";
+    }
+    case "newSim": {
+      return `this build steps the race differently, ${detail ?? "no detail"}`;
+    }
+    case "noCheckpoint": {
+      return "the race had no checkpoint yet";
+    }
+    case "pastHold": {
+      return "nobody came back within the hold";
+    }
+    case "refused": {
+      return `build ${build.slice(0, 12)} wrote a checkpoint this build refused, ${detail ?? "no detail"}`;
+    }
+    default: {
+      return reason satisfies never;
+    }
+  }
+};
+
+const restartLine = (note: RaceRestored | RaceLost): string => {
+  switch (note.kind) {
+    case "restored": {
+      return `  The room restarted after ${seconds(note.afterMs)} and the race went on from ${raceTime(note.tick)}, checkpointed on build ${note.build.slice(0, 12)}`;
+    }
+    case "lost": {
+      return `  The room restarted after ${seconds(note.afterMs)} and lost the race at ${raceTime(note.tick)}, no result: ${lostReasonLine(note)}`;
+    }
+    default: {
+      return note satisfies never;
+    }
+  }
+};
+
 const unfinishedLines = (record: RaceRecord): readonly string[] => [
-  "  No ended line: the room died, or the race is still running.",
+  record.restarts.some((note) => note.kind === "lost")
+    ? "  No ended line: the room lost this race in a restart."
+    : "  No ended line: the room died, or the race is still running.",
   ...record.left.map(
     ({ closeCode, tally, tick }) =>
       `  Rider ${tally.rider} left at ${raceTime(tick)}, socket closed ${closeCode ?? "with no code"}, controls ${tally.accepted} accepted, ${tally.missed} missed`
@@ -223,6 +272,7 @@ export const raceReport = (record: RaceRecord): string =>
   [
     headline(record),
     timelineLine(record),
+    ...record.restarts.map(restartLine),
     ...record.drops.map(dropLine),
     ...(record.ended
       ? [
