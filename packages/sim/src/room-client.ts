@@ -16,12 +16,7 @@ import {
   scratchFor,
 } from "./room-frame.ts";
 import type { TickFrame } from "./room-frame.ts";
-import { readTapePart } from "./room-tape.ts";
-import {
-  createReadTick,
-  MOST_BATCHED_CONTROLS,
-  writeInput,
-} from "./room-wire.ts";
+import { MOST_BATCHED_CONTROLS, writeInput } from "./room-wire.ts";
 import { INPUT_HORIZON, seatsOf } from "./room.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
@@ -89,7 +84,7 @@ export interface RoomClient {
   readonly stats: RoomStats;
   readonly predict: (control: Control) => boolean;
   readonly confirm: (frame: TickFrame, hash: Uint32Array | null) => void;
-  readonly catchUp: (part: DataView) => void;
+  readonly catchUp: (snapshot: DataView) => void;
   readonly settle: (most?: number) => number;
   readonly takeCorrections: () => readonly RiderCorrection[];
   readonly takeEvents: () => readonly RaceEvent[];
@@ -193,6 +188,7 @@ export const createRoomClient = (
   let heard: RaceEvent[] = [];
   let fights: HeardFight[] = [];
   const mendedFights: HeardFight[] = [];
+  const mendedHits: RaceEvent[] = [];
   const shownHits: ShownHit[] = [];
   const tracked = [...predicted.riders];
   const wasAt = tracked.map(stillCorrection);
@@ -270,7 +266,11 @@ export const createRoomClient = (
         Math.abs(shown.tick - tick) <= SAME_HIT_TICKS
     );
 
-  const guessedHit = (event: HitEvent, tick: number): void => {
+  const guessedHit = (
+    event: HitEvent,
+    tick: number,
+    replaying: boolean
+  ): void => {
     const shown = shownHitOf(event, tick);
     if (shown) {
       shown.backed = true;
@@ -280,7 +280,7 @@ export const createRoomClient = (
     }
     shownHits.push({ backed: true, hit: { ...event }, refused: false, tick });
     if (event.rider === me) {
-      hear(event);
+      (replaying ? mendedHits : heard).push({ ...event });
     }
   };
 
@@ -310,8 +310,10 @@ export const createRoomClient = (
           tick: race.tick,
         });
       }
-      if (event.kind === "hit") {
-        (race === confirmed ? roomHit : guessedHit)(event, race.tick);
+      if (event.kind === "hit" && race === confirmed) {
+        roomHit(event, race.tick);
+      } else if (event.kind === "hit") {
+        guessedHit(event, race.tick, race === mended);
       }
     }
   };
@@ -357,6 +359,7 @@ export const createRoomClient = (
   const rewind = (): void => {
     mending = false;
     mendedFights.length = 0;
+    mendedHits.length = 0;
     copyRace(confirmed, predicted);
   };
 
@@ -423,6 +426,8 @@ export const createRoomClient = (
     mending = false;
     fights.push(...mendedFights);
     mendedFights.length = 0;
+    heard.push(...mendedHits);
+    mendedHits.length = 0;
     refuseUnbacked();
     noteCorrections();
     stats.crashesAfterCorrection += Math.max(0, mine.crashes - crashesBefore);
@@ -436,6 +441,7 @@ export const createRoomClient = (
     staleCause = "otherRiders";
     copyRace(confirmed, mended);
     mendedFights.length = 0;
+    mendedHits.length = 0;
     stats.rollbacks += 1;
     for (const shown of shownHits) {
       shown.backed = false;
@@ -541,19 +547,9 @@ export const createRoomClient = (
     }
   };
 
-  const caughtUp = createReadTick(createTickFrame());
-
   return {
-    catchUp: (part) => {
-      const read = readTapePart(part, caughtUp, (tick) => {
-        stepConfirmed(tick.frame, tick.hashed ? tick.hash : null);
-        return null;
-      });
-      if (read.kind !== "read") {
-        throw new RangeError(
-          `The room sent a catch-up the client could not read after tick ${confirmed.tick}.`
-        );
-      }
+    catchUp: (snapshot) => {
+      restoreInto(confirmed, digest, snapshot, setup.track);
       rewind();
     },
     confirm: (frame, serverHash) => {

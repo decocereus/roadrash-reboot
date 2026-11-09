@@ -180,6 +180,29 @@ describe("an attacker's own hits, reconciled with the room", () => {
     expect(hits).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
   });
 
+  it("holds the sound of a hit a long replay finds until the replay is drawn", () => {
+    const { client, room } = sideBySide(ATTACKER);
+    for (let tick = 0; tick < RIDE_TICKS + AFTER_TICKS; tick += 1) {
+      client.predict(riding);
+    }
+    for (let tick = 1; tick <= RIDE_TICKS; tick += 1) {
+      room.accept(VICTIM, tick, [riding]);
+      room.accept(ATTACKER, tick, [tick === RIDE_TICKS ? kicking : riding]);
+      room.step();
+      client.confirm(room.frame, null);
+    }
+    client.takeEvents();
+    const sounds = { afterwards: 0, whileReplaying: 0 };
+    for (let frame = 0; frame < AFTER_TICKS; frame += 1) {
+      client.settle(4);
+      const heard = client
+        .takeEvents()
+        .filter((event) => event.kind === "hit").length;
+      sounds[client.mending() ? "whileReplaying" : "afterwards"] += heard;
+    }
+    expect(sounds).toStrictEqual({ afterwards: 1, whileReplaying: 0 });
+  });
+
   it("takes back a predicted hit the room refused", () => {
     const { heardHits, refused, roomHits } = attackerHears({
       gapX: EDGE_OF_REACH_X,

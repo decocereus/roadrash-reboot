@@ -14,7 +14,6 @@ export interface TapeWriter {
   readonly add: (packet: Uint8Array) => void;
   readonly finish: () => void;
   readonly parts: () => number;
-  readonly sofar: () => readonly Uint8Array[];
 }
 
 export const createTapeWriter = (
@@ -25,14 +24,12 @@ export const createTapeWriter = (
     TICKS_IN_PART * (LENGTH_BYTES + mostPacketBytes)
   );
   const view = new DataView(buffer.buffer);
-  const kept: Uint8Array[] = [];
   let used = 0;
   let ticks = 0;
   let parts = 0;
   const finish = (): void => {
     if (ticks > 0) {
       const part = buffer.slice(0, used);
-      kept.push(part);
       save(parts, part);
       parts += 1;
       used = 0;
@@ -51,16 +48,15 @@ export const createTapeWriter = (
     },
     finish,
     parts: () => parts,
-    sofar: () => (used > 0 ? [...kept, buffer.slice(0, used)] : kept),
   };
 };
 
-export type TapeRead<Stop> =
+type TapeRead<Stop> =
   | { readonly kind: "read" }
   | { readonly kind: "unreadable" }
   | { readonly kind: "stopped"; readonly stop: Stop };
 
-export const readTapePart = <Stop>(
+const readTapePart = <Stop>(
   part: DataView,
   read: ReadTick,
   visit: (read: ReadTick) => Stop | null

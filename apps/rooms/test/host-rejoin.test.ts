@@ -69,6 +69,15 @@ const loadingRoom = () => {
   return { ann, bo, clock, host, seated };
 };
 
+const caughtUpBytes = (awayMs: number) => {
+  const { bo, clock, host, seated } = droppedRider();
+  advanceHearing(host, clock, [bo], awayMs);
+  const back = seated("ann", "Ann");
+  return back.ticks
+    .filter((packet) => readCatchUp(packet) !== null)
+    .map((packet) => packet.byteLength);
+};
+
 describe("a rider whose link drops mid-race", () => {
   it("gets the same bike back, caught up to the room's race", () => {
     const { bo, clock, host, seated, stayed } = droppedRider();
@@ -90,6 +99,12 @@ describe("a rider whose link drops mid-race", () => {
       { closeCode: 1006, kind: "held", rider: 0 },
       { awayMs: AWAY_MS, kind: "rejoined", rider: 0 },
     ]);
+  });
+
+  it("catches the rider up with one packet of the room's race, whatever its length", () => {
+    const soon = caughtUpBytes(0);
+    expect(soon).toHaveLength(1);
+    expect(caughtUpBytes(HOLD_MS - AWAY_MS - 1000)).toStrictEqual(soon);
   });
 
   it("leaves the bike with the room once the hold runs out, and a late return waits at the bar", () => {

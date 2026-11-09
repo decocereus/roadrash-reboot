@@ -9,7 +9,7 @@ import {
 import type { TickFrame } from "./room-frame.ts";
 import { HASH_WORDS } from "./snapshot-bytes.ts";
 import { setupDigest } from "./snapshot-setup.ts";
-import { hashRace } from "./snapshot.ts";
+import { hashRace, writeSnapshot } from "./snapshot.ts";
 import { rosterOf } from "./state.ts";
 import type {
   Control,
@@ -118,6 +118,7 @@ export interface Room {
   readonly missedControls: (rider: RiderId) => number;
   readonly over: () => boolean;
   readonly hashNow: () => Uint32Array;
+  readonly snapshot: () => Uint8Array;
   readonly step: () => void;
 }
 
@@ -213,6 +214,11 @@ export const createRoom = (setup: RaceSetup, pilotFromTick: number): Room => {
     },
     missedControls: (rider) => seatOf(rider)?.missed ?? 0,
     over: () => seats.every((seat) => seat.left || isDone(seat.rider)),
+    snapshot: () => {
+      const view = scratchFor(scratch, state);
+      const length = writeSnapshot(state, digest, view);
+      return new Uint8Array(view.buffer, view.byteOffset, length).slice();
+    },
     state,
     step: () => {
       const tick = state.tick + 1;

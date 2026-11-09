@@ -474,9 +474,7 @@ export const createHost = (
         you: seat.rider,
       })
     );
-    for (const part of run.tape.sofar()) {
-      sendTo(person.socket, writeCatchUp(part));
-    }
+    sendTo(person.socket, writeCatchUp(run.room.snapshot()));
     const startAt = startMomentOf(state);
     if (startAt !== null) {
       sendTo(
