@@ -80,9 +80,10 @@ const prepareRoom = (scenario: Scenario) => {
   }
   const client = createRoomClient(setup, me, pilotFromTick);
   const out = new DataView(new ArrayBuffer(tickCapacity(SEATS)));
-  const savedParts: Uint8Array[] = [];
-  const tape = createTapeWriter(tickCapacity(SEATS), (_part, bytes) => {
-    savedParts[0] = bytes;
+  let pendingPart: { readonly body: Uint8Array; readonly key: string } | null =
+    null;
+  const tape = createTapeWriter(tickCapacity(SEATS), (part, bytes) => {
+    pendingPart = { body: bytes, key: `tapes/${BENCH_RACE}/${part}.bin` };
   });
   const read = createReadTick(createTickFrame());
   const one: Control[] = [];
@@ -132,7 +133,8 @@ const prepareRoom = (scenario: Scenario) => {
       manifest,
       raceId: BENCH_RACE,
     },
-    unsaved: [],
+    sim: "bench",
+    unsaved: pendingPart === null ? [] : [pendingPart],
     version: MEMORY_VERSION,
   });
   const checkpoint: number[] = [];
@@ -145,6 +147,7 @@ const prepareRoom = (scenario: Scenario) => {
     const bytes = serialize(memoryNow());
     checkpoint.push(performance.now() - at);
     checkpointBytes.push(bytes.byteLength);
+    pendingPart = null;
   };
 
   const serve = (rider: RiderId, seat: number, tick: number): void => {
